@@ -30,7 +30,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Play on phone via **GitHub Pages** (Settings → Pages → Deploy from branch `main`, `/ (root)`).
   Root `index.html` redirects to `dist/game.html`; `.nojekyll` present. URL: https://jxstrr0.github.io/GarageToGlory/
   Owner turned Pages on (2026-09-29).
-- 2026-09-29: Owner: keep building version after version and merging PRs (branch per version → PR → merge → delete branch).
+- 2026-09-29: **Standing authorization from the owner:** keep running autonomously — build version after version
+  (v0.1 → v1.0 per handoff B4) and merge each PR into `main` yourself, without waiting for approval. Process per
+  version: branch `vX.Y-<name>` from `main` → build + tests → push → PR → merge into `main` → delete the branch →
+  update this file → start the next version. Still ask popups only for genuinely open decisions (handoff A16).
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
