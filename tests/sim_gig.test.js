@@ -90,21 +90,21 @@ test('randomOffer / bookLocal respect fans and tiers, never card-only venues', (
   eq(GG.gig.randomOffer(s, GG.RNG(1)), null); GG.content.venues = saved;
 });
 
-test('songs: writePlaceholder, best, polish', () => {
+test('songs: jam, best, polish', () => {
   const s = base();
-  const song = GG.songs.writePlaceholder(s, GG.RNG(3));
-  ok(song.id && song.title && song.titleEn && song.pattern === null && song.plays === 0 && song.written === 1, 'shape');
+  const song = GG.songs.jam(s, GG.RNG(3));
+  ok(song.id && song.title && song.titleEn && GG.songs.validate(song.pattern, s.gear).length === 0 && song.auto && song.plays === 0 && song.written === 1, 'shape');
   ok(song.quality >= 1 && song.quality <= 100 && s.stats.songsWritten === 1);
   const ids = new Set(s.songs.map(x => x.id)); eq(ids.size, s.songs.length, 'unique ids');
-  for (let i = 0; i < 60; i++) GG.songs.writePlaceholder(s, GG.RNG(100 + i));
+  for (let i = 0; i < 60; i++) GG.songs.jam(s, GG.RNG(100 + i));
   eq(new Set(s.songs.map(x => x.title)).size, s.songs.length, 'titles unique (sequels when the pool runs out)');
   const best = GG.songs.best(s, 3); eq(best.length, 3);
   ok(GG.songs.score(best[0]) >= GG.songs.score(best[1]) && GG.songs.score(best[1]) >= GG.songs.score(best[2]));
   const top = s.songs.slice().sort((a, b) => b.quality - a.quality).slice(0, 3).map(x => [x.id, x.polish]);
   const pol = GG.songs.polish(s, 10); eq(pol.length, 3);
   top.forEach(([id, p]) => eq(s.songs.find(x => x.id === id).polish, Math.min(100, p + 10)));
-  const w2 = GG.songs.writePlaceholder(tune(base(), 0.5), GG.RNG(9), { repeatFactor: 0.6 });
-  const w1 = GG.songs.writePlaceholder(tune(base(), 0.5), GG.RNG(9));
+  const w2 = GG.songs.jam(tune(base(), 0.5), GG.RNG(9), { repeatFactor: 0.6 });
+  const w1 = GG.songs.jam(tune(base(), 0.5), GG.RNG(9));
   eq(w1.quality - w2.quality, Math.round(0.4 * GG.content.activities.write.repeatPenalty), 'repeat penalty');
 });
 

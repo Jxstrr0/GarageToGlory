@@ -5,6 +5,9 @@
 //   gigReactions: { <memberId>: { great, ok, bad } }          one per member after a gig
 //   tap:          { <memberId>: [text] }                       tapping a bandmate in the garage
 //   guilt: [text] (parents' loan)   yearEnd: [text]   quietWeek: [text] (Mondays without a card)
+//   songReactions: { marcel: { name }, dana: { noSolo }, jaxon: { fills }, kenji: { great } }   after a Write block
+//                  (marcel.name lines end with a colon: the sim appends the song's French title)
+//   writeTips:     { <memberId>: [text] }   one in-character hint when the sequencer opens for the first-ever Write
 // Tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>}, replaced by GG.career.fillText().
 // Kenji does not speak. His lines are stage directions or punctuation. This is load-bearing.
 (function (GG) {
@@ -293,6 +296,51 @@
       "Kenji gives a year-end nod. Everyone agrees it's the best gift they got.",
       "Dad looks at the garage, looks at the band, and says 'Another year, eh.' It's almost a blessing."
     ],
+
+    songReactions: {
+      marcel: {
+        name: [
+          'It needs a name. A French name. I have it:',
+          'I will call it, and you will not ask what it means:',
+          'This one speaks to me of darkness. And of my yard. Its name is',
+          'I have written the lyrics in the time it took you to count in. It is called',
+          'Silence. Lord Abyssus names it:',
+          'The neighbours will weep when they hear it. It is called'
+        ]
+      },
+      dana: {
+        noSolo: [
+          'Cool. Where does my solo go? Nowhere? Cool. Cool cool cool.',
+          "There's no bridge. Where am I supposed to shred, the parking lot?",
+          "You filled every gap. I'll just solo over the top of it. Loudly.",
+          'Great song. No room for a solo. I will be taking this up with management.',
+          "I needed eight bars. You gave me zero. I'm writing that down."
+        ]
+      },
+      jaxon: {
+        fills: [
+          'ok so i added a fill in bar 4. you did not write it. it is there now',
+          "it felt kinda empty so i snuck a few notes in. baba says it's better",
+          'i played the simple part. then i got bored. then there was a fill. sorry',
+          "don't listen to bar 12 too closely. or do. it's my best work",
+          'the verse had room so i put a little bass run there. like a surprise'
+        ]
+      },
+      kenji: {
+        great: [
+          '(Kenji nods. Once. It is the highest honour in Saskatchewan.)',
+          '(Kenji lowers his sunglasses one centimetre. Then raises them again.)',
+          '(Kenji taps his foot. Everyone stops playing to stare.)',
+          '👍'
+        ]
+      }
+    },
+
+    writeTips: {
+      dana: ["Start with the kick. Metal wants it busy: try every 8th. Then leave me room for a solo.", 'Tap to add a hit, drag down a lane to paint. Kick first, the rest follows.'],
+      marcel: ['Make the chorus different from the verse. A crash on the one. Darkness follows.', 'The chorus must CRASH. Then I will name it.'],
+      jaxon: ['tap a square to add a hit. drag to paint a whole row. hit play to hear it', "kick on every 8th is the metal thing. the pedal thing comes later i think"]
+    },
 
     quietWeek: [
       'A quiet Monday. Marcel is mowing. Nobody interrupts Marcel when he is mowing.',

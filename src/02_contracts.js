@@ -64,7 +64,7 @@
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
    {
-     v: 1, createdVersion: '0.1.0.0', slot: '1',
+     v: 2, createdVersion: '0.1.0.0', slot: '1',
      seed: <uint32>, rng: <uint32>,                 // rng = live RNG state (GG.rngFor(state))
      bandId: 'hail_damage', genre: 'metal', region: 'canada', city: 'Saskatoon', space: 'parents_garage',
      player: { name, nick, presetId, look: LOOK, kitColor: '#rrggbb' },
@@ -126,6 +126,8 @@
              gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
              guilt: [text], yearEnd: [text], quietWeek: [text] }
    songTitles: { metal: [ { fr, en } ], punk|rock|country: [ 'English title' ] }
+   genres: { <genre>: { tempo:[min,max,default], signature, backing, ... } }  (shape documented in content/genres.js)
+   lines.songReactions / lines.writeTips (per member) — band reactions to a new song / first-Write tips
    presets: [ { id, name, blurb, look: LOOK, kitColor } ]
    Text may use tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>} — GG.career.fillText() replaces them.
   ====================================================================== */
@@ -145,7 +147,8 @@
    'career:end'     { state }                 career.endWeek
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
-   'audio:step'     { section, bar, step, time }       audio playback (UI playhead)
+   'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
+   'audio:end'      { handle }                          a song finished (or the app hid)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
@@ -169,8 +172,12 @@
    GG.songs.rate(pattern, genre, gear?) -> { groove, hook, difficulty, notes, tips:[text] }   (pure, deterministic)
    GG.songs.generate(genre, rng, opts?) -> PATTERN ; GG.songs.starter(genre) -> PATTERN ; validate(pattern, gear) -> [errors]
    GG.songs.create(state, pattern, title?, opts?) -> SONG ; GG.songs.best(state, n) -> [song] ; stale/classic updates per gig
-   GG.songs.similarity(a, b) -> 0..1 ; GG.songs.toNotes(song) -> [{ beat, lane, section }] (chart source for v0.3)
-   GG.audio.play(pattern, { genre, section|null (null = full arrangement), loop, backing: true }) -> handle { stop() }
+   GG.songs.similarity(a, b) -> 0..1 ; GG.songs.toNotes(song) -> [{ beat, lane, section, entry, bar, step }] (v0.3 charts)
+   GG.songs.jam(state, rng) (replaces writePlaceholder) ; played / weekly / sanitize / pickTitle / ability
+   rate() also returns sections: { verse, chorus, bridge } (groove per part). GIG_RESULT gains classics: [songId];
+   WEEK_RESULT block deltas.song = { id, title, titleEn, quality, auto, groove, hook, difficulty, reactions }.
+   GG.audio.play(pattern, { genre, section|null (null = full arrangement), loop, backing: true }) -> handle { stop(), beatAt() }
+     (null without Web Audio) ; GG.audio.stop / hit / timeline / styleFor / renderOffline
    GG.gig.makeGig(state, venueId, source) -> GIG ; GG.gig.randomOffer(state, rng) -> GIG|null
    GG.gig.autoResolve(state, rng)        -> GIG_RESULT (v0.1 placeholder; v0.3 replaces with the rhythm game)
    GG.save.write(slot, state) -> bool ; read(slot) -> state|null ; list() -> [{ slot, exists, summary }]

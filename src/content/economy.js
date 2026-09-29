@@ -69,6 +69,19 @@
       burnout: 4
     },
 
+    // ---- Songs (21_sim_songs; the Write activity numbers are in activities.js) ----
+    songs: {
+      // quality = band part + (craft - craftPivot) * craftWeight - max(0, difficulty - ability) * overPenalty
+      //   craft = 0.6 groove + 0.3 hook + 0.1 difficulty; pivot ~ an average band jam, so bots keep v0.1 balance
+      craftPivot: 85, craftWeight: 0.8,
+      overPenalty: 0.4, overPolish: 0.5,    // over-hard songs lose quality and start less polished
+      // ability (hardest difficulty the band plays cleanly) = base + avg member skill * skill + drum skill * drum
+      abilityBase: 22, abilitySkill: 0.5, abilityDrum: 0.4,
+      stalePerPlay: 10, staleDecay: 4,       // each gig play adds stale; each week off takes some away
+      staleWeight: 0.08,                     // setlist score lost per point of stale
+      classicHits: 4, classicGrades: ['S', 'A'], classicBonus: 3   // 4 great gigs make a classic
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one

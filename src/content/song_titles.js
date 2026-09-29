@@ -1,4 +1,4 @@
-// content/song_titles.js: title pools for newly written songs (GG.songs.writePlaceholder).
+// content/song_titles.js: title pools for newly written songs (GG.songs.pickTitle).
 // Shape: GG.content.songTitles = { metal: [ { fr, en } ], punk|rock|country: [ 'English title' ] }
 //   metal:  Marcel names every song in French ({ fr, en }). The English is ALWAYS about his lawn; nobody in
 //           the band knows this until a fan translates it. Song title = fr, titleEn = en.

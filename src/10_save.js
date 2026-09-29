@@ -112,7 +112,15 @@
   // Fills every field a current build expects, then runs version migrations. Idempotent.
   // Add a step here (and bump contracts.SAVE_SCHEMA) whenever the state shape changes.
   var MIGRATIONS = {
-    // 1: function (s) { ... return s; }   // from v1 to v2
+    // v0.1 -> v0.2: every song gets a drum pattern, generated from an RNG seeded by the career seed + song id
+    // (never the career RNG, so the career replays the same). Old quality/polish stay; ratings, gear,
+    // pendingSongs and draft are filled in by the defaults below.
+    1: function (s) {
+      if (GG.songs && Array.isArray(s.songs)) s.songs.forEach(function (x) {
+        if (x && typeof x === 'object' && !x.pattern) { x.pattern = GG.songs.patternFor(s, x.id); x.auto = true; }
+      });
+      return s;
+    }
   };
   function def(o, k, v) { if (o[k] === undefined || o[k] === null && v !== null) o[k] = v; }
   save.migrate = function (s) {
@@ -143,12 +151,22 @@
       def(m, 'status', 'active'); def(m, 'original', true); def(m, 'nick', ''); def(m, 'role', '');
       if (!isFinite(m.mood)) m.mood = 60; if (!isFinite(m.skill)) m.skill = 40;
     });
+    if (!isFinite(s.seed)) s.seed = 1;
+    if (!s.gear || typeof s.gear !== 'object') s.gear = { lanes: 4, doubleKick: false };
+    if (!isFinite(s.gear.lanes)) s.gear.lanes = 4; s.gear.doubleKick = !!s.gear.doubleKick;
+    if (!Array.isArray(s.pendingSongs)) s.pendingSongs = [];
+    def(s, 'draft', null);
+    s.songs = s.songs.filter(function (x) { return x && typeof x === 'object'; });
     s.songs.forEach(function (x) {
       def(x, 'plays', 0); def(x, 'polish', 0); def(x, 'quality', 30); def(x, 'written', 0);
-      if (x.pattern === undefined) x.pattern = null;
       def(x, 'titleEn', x.title);
+      def(x, 'stale', 0); def(x, 'hits', 0); def(x, 'classic', false); def(x, 'auto', true);
+      if (x.lastPlayed === undefined) x.lastPlayed = null;
+      if (!GG.songs) return;
+      if (!x.pattern) x.pattern = GG.songs.patternFor(s, x.id);
+      else if (GG.songs.validate(x.pattern, s.gear).length) x.pattern = GG.songs.sanitize(x.pattern, s.gear, s.genre);
+      if (!x.rating) { var r = GG.songs.rate(x.pattern, s.genre, s.gear); x.rating = { groove: r.groove, hook: r.hook, difficulty: r.difficulty }; }
     });
-    if (!isFinite(s.seed)) s.seed = 1;
     if (!isFinite(s.rng)) s.rng = s.seed;
     return s;
   };

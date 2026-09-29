@@ -24,7 +24,17 @@ const same = (a, b) => !!a && !!b && a.totalWeek === b.totalWeek && a.fund === b
 const PLANS = [['rehearse', 'write', 'promote'], ['hustle', 'book', 'rest'], ['rehearse', 'promote', 'hustle'],
   ['write', 'rehearse', 'rest'], ['book', 'hustle', 'rehearse'], ['promote', 'write', 'hustle']];
 
-// Plays one week through the UI: Monday card (choice 0) → planner → Go → results → wrap → Next week.
+// v0.2: Go opens the sequencer once per Write block; these flows let the band jam each one.
+async function jamWrites(page) {
+  await page.waitForFunction(() => ['seq', 'results'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
+  while (await screen(page) === 'seq') {
+    const i = await page.evaluate(() => GG.ui.get('seq').data.index);
+    await tap(page, 'btn-seq-jam');
+    await page.waitForFunction(i => GG.debug('ui').screen !== 'seq' || GG.ui.get('seq').data.index !== i, i, { timeout: 10000 });
+  }
+  await waitScreen(page, 'results');
+}
+// Plays one week through the UI: Monday card (choice 0) → planner → Go (→ jam any Write blocks) → results → wrap → Next week.
 async function playWeek(page, acts, opts) {
   opts = opts || {};
   await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'), null, { timeout: 10000 });
@@ -39,7 +49,7 @@ async function playWeek(page, acts, opts) {
   for (const a of acts) await tap(page, 'act-' + a);
   if (opts.onPlan) await opts.onPlan();
   await tap(page, 'btn-go');
-  await waitScreen(page, 'results');
+  await jamWrites(page);
   if (opts.onResults) await opts.onResults();
   if (await visible(page, 'btn-results-skip')) await tap(page, 'btn-results-skip');
   await tap(page, 'btn-results-ok');
@@ -263,7 +273,9 @@ async function layout() {
     await tap(page, 'act-rehearse'); await tap(page, 'act-write');
     await check('plan', true);
     await tap(page, 'act-promote');
-    await tap(page, 'btn-go'); await waitScreen(page, 'results');
+    await tap(page, 'btn-go'); await waitScreen(page, 'seq');
+    await check('seq', true);
+    await tap(page, 'btn-seq-jam'); await waitScreen(page, 'results');
     await tap(page, 'btn-results-skip');
     await check('results', true);
     await tap(page, 'btn-results-ok'); await waitScreen(page, 'wrap');
@@ -283,8 +295,8 @@ async function layout() {
     shots[shots.indexOf('laptop-band')] = 'laptop';
     for (const spot of ['kit', 'gigboard', 'merch', 'trophies', 'door']) {
       await page.evaluate(a => GG.emit('hotspot', { action: a }), spot);
-      await waitScreen(page, 'soon'); await check('hotspot-' + spot);
-      await tap(page, 'btn-close');
+      await waitScreen(page, spot === 'kit' ? 'seq' : 'soon'); await check('hotspot-' + spot);
+      await tap(page, spot === 'kit' ? 'btn-seq-close' : 'btn-close');
     }
     await tap(page, 'btn-menu'); await waitScreen(page, 'menu');
     await check('menu', true);
