@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 3;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 4;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -76,7 +76,11 @@
      phase: 'monday'|'plan'|'week'|'wrap'|'ended',
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
-     members: [ { id, name, nick, role, skill, mood, status: 'active', original: true } ],
+     payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
+     recruitAd: null | { role, candidates: [RECRUIT], posts }, rivalDefectors: [memberId],   (v0.4)
+     members: [ { id, name, nick, role, skill, mood, status: 'active'|'away'|'quit', original: true,
+                  stage: 0..4 (0 fine, 1 grumbling, 2 passive-aggressive, 3 ultimatum, 4 quit), want,
+                  exit: null | { storyline, since, returnDue }, recruit?: { trait, quirk, hometown, askingCut }, look? } ],
      songs:   [ SONG ],  pendingSongs: [ PATTERN+title ] (composed in the UI, consumed by Write blocks),
      draft:   null | PATTERN (the kit's scratch pad),
      liveGig: null | LIVE_GIG (a gig in progress; saved between songs),  listings: [GIG] (this week's gig board),
@@ -170,6 +174,8 @@
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
    'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
    'audio:end'      { handle }                          a song finished (or the app hid)
+   'member:stage'   { id, stage }             drama, when a member's grievance stage changes
+   'member:quit'    { id }  'member:return' { id }  'recruit:hired' { member }  'protection:ended' {}   (v0.4 drama)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
