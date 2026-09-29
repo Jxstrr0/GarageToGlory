@@ -128,7 +128,9 @@
     var k = GG.calendar.kind(t.weather), h = t.holiday && GG.calendar.holidayById(t.holiday), d = GG.world.driver(S());
     return k.icon + ' ' + k.label + ', ' + t.temp + '°C' + (h ? ' · ' + h.icon + ' ' + h.name : '') + ' · ' + (d.you ? 'You drive' : d.name + ' drives');
   }
-  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000; }
+  function vprefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  // v0.6.1 (Addendum C4): settings.fastAnim halves the drive; settings.skipVan skips it (the road card still comes up).
+  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000 * (vprefs().fastAnim ? 0.5 : 1); }
   function say(v, b) {
     if (!b || !v.says) return;
     var who = ui.who(b.who);
@@ -206,6 +208,7 @@
       }
       v.last = (typeof performance !== 'undefined' ? performance.now() : 0);
       v.raf = requestAnimationFrame(frame);
+      if (vprefs().skipVan) setTimeout(function () { if (cur === v && v.alive && !v.skipping && !v.arrived) skip(v); }, 60);
     },
     onClose: function (s) {
       var v = s.data.view, d = s.data;

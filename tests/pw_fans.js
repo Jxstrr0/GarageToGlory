@@ -125,7 +125,10 @@ async function bandbook() {
       await page.screenshot({ path: path.join(CACHE, 'garage_fanmail.png') });
     }
     // a queued scandal comes up as next Monday's card
+    // (the walk to the gig board opens the board and hides the dock until it lands: let it settle, then close)
+    await page.waitForTimeout(fm ? 1500 : 0);
     await page.evaluate(() => { GG.ui.closeAll(); });
+    await page.locator(tid('btn-primary')).last().waitFor({ state: 'visible', timeout: 10000 });
     await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
     for (const a of ['rest', 'rest', 'rest']) await tap(page, 'act-' + a);
     await tap(page, 'btn-go');

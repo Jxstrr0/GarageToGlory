@@ -52,10 +52,11 @@ test('storage throwing on read / on write / missing: memory fallback, no throws'
 
 test('settings default + merge', () => {
   const store = load.fakeStorage(), GG = load({ localStorage: store });
-  eq(GG.save.settings(), { muted: false });
+  eq(GG.save.settings(), GG.save.SETTINGS_DEFAULTS); eq(GG.save.settings().muted, false);   // v0.6.1: + the C4 defaults
   GG.save.saveSettings({ muted: true, extra: 1 });
   eq(JSON.parse(store._map.get('gg.v1.settings')), { muted: true, extra: 1 });
-  GG.save.saveSettings({ extra: 2 }); eq(GG.save.settings(), { muted: true, extra: 2 });
+  GG.save.saveSettings({ extra: 2 }); eq(GG.save.settings(), Object.assign({}, GG.save.SETTINGS_DEFAULTS, { muted: true, extra: 2 }));
+  eq(JSON.parse(store._map.get('gg.v1.settings')), { muted: true, extra: 2 });   // only what the player changed is stored
 });
 
 test('compression round-trips unicode and repetitive text', () => {

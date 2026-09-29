@@ -98,7 +98,8 @@
   /* ---- Careers ------------------------------------------------------------------------------------- */
   M.newCareer = function (o) {
     o = o || {};
-    var st = GG.career.newCareer({ seed: o.seed, bandId: o.bandId || 'hail_damage', slot: String(o.slot || '1'), player: o.player || { name: 'You' } });
+    var st = GG.career.newCareer({ seed: o.seed, bandId: o.bandId || 'hail_damage', slot: String(o.slot || '1'), player: o.player || { name: 'You' },
+      careerDifficulty: o.careerDifficulty });   // v0.6.1 C4: chill | normal | brutal, locked for the career
     setState(st);
     write(st.slot, st); write('auto', st);   // the slot is claimed right away, so Continue works from week 1
     return st;
@@ -110,7 +111,7 @@
     var presets = GG.content.presets || [];
     ui.closeAll();
     M.newCareer({ seed: o.seed != null ? (o.seed >>> 0) || 1 : GG.hashSeed(name + Date.now()), slot: o.slot || '1', bandId: o.bandId,
-      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) } });
+      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty });
     if (o.openCard === false) { GG.career.startWeek(GG.state); M.sync(); }
     else M.enterGarage();
     return GG.state;

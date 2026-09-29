@@ -27,6 +27,8 @@
     B_LEG_L = 8, B_SHIN_L = 9, B_LEG_R = 10, B_SHIN_R = 11, B_CAPE1 = 12, B_CAPE2 = 13, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17;
   var HIPS_Y = 0.86;
   var MAX_CROWD = 150, MAX_CUPS = 12, MAX_BOOS = 6, N_FLASH = 6;
+  var NO_PREFS = { calm: false, shake: true, crowdScale: 1 };
+  function rprefs() { return (GG.render && GG.render.prefs && GG.render.prefs()) || NO_PREFS; }   // v0.6.1 (40_render_core)
   var KZ = 1.0, THRONE_Z = 0.62;                  // kit centre z; the drummer sits THRONE_Z behind it
   var STAGE_BACK = 2.6;
   var CAPE_OK = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
@@ -215,7 +217,7 @@
       if (!isFinite(crowd)) crowd = 30;
       return {
         kind: kind, V: KIND[kind], genre: genre, G: GENRE[genre], band: band, members: members, flags: flags, player: player,
-        crowd: Math.round(clamp(crowd, 3, MAX_CROWD)), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
+        crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd,   // v0.6.1: graphics quality venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         banner: cfg.banner || '', bannerSub: cfg.sub || ''
@@ -1083,7 +1085,7 @@
         hand.key = key; hand.t = 0;
         if (lane === 'hat') K.wob.hatT = 0; else if (lane === 'cymbal') K.wob.crashT = 0; else if (lane === 'ride') K.wob.rideT = 0;
       }
-      if (fi >= 0 && fi < N_FLASH) {
+      if (fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
         K.flash.t[fi] = 0; col.setHex(HIT_COL[judgement] || HIT_COL.good);
         K.flash.mesh.setColorAt(fi, col); K.flash.mesh.instanceColor.needsUpdate = true;
       }
@@ -1136,10 +1138,10 @@
 
     function updateLights(dt, t) {
       var L = K.lights, h = S.hype, bt = bump(S.beatT), base = L.base;
-      var wild = S.idx >= 4, lit = S.arms.kind === 'lighters' ? 0.45 : 1;
-      var pulse = base * (0.5 + 0.6 * h) * (0.85 + 0.3 * bt * (0.3 + h)) * lit + S.kickPulse * 0.25 * base;
-      L.washL.intensity = pulse * (wild && (S.beats % 2) ? 0.5 : 1.25);
-      L.washR.intensity = pulse * (wild && !(S.beats % 2) ? 0.5 : 1.25);
+      var wild = S.idx >= 4, lit = S.arms.kind === 'lighters' ? 0.45 : 1, calm = rprefs().calm;   // v0.6.1: calm = no strobing washes
+      var pulse = calm ? base * (0.5 + 0.6 * h) * lit : base * (0.5 + 0.6 * h) * (0.85 + 0.3 * bt * (0.3 + h)) * lit + S.kickPulse * 0.25 * base;
+      L.washL.intensity = pulse * (wild && !calm && (S.beats % 2) ? 0.5 : 1.25);
+      L.washR.intensity = pulse * (wild && !calm && !(S.beats % 2) ? 0.5 : 1.25);
       var F = S.form.kind, C = K.crowd;
       if (F) {                                                                  // a coloured spot follows the pit
         var fin = ease(Math.min(1, S.form.t / 0.6)) * ease(Math.min(1, (S.form.dur - S.form.t) / 0.8));

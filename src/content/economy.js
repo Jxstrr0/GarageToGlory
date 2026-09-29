@@ -256,6 +256,14 @@
       bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
     },
 
+    // ---- Career difficulty (v0.6.1, Addendum C4; read only through GG.difficulty.mul/add, 11_settings.js) ------------
+    // Picked on the new-career screen and locked for that career; old saves = normal. Multipliers (rivalSkill = + points).
+    difficulty: {
+      chill: { startFund: 1.6, money: 1.2, hustle: 1.2, upkeep: 0.85, moodLoss: 0.65, rivalSkill: -5, rivalMiss: 1.4, advance: 1.15, labelHarsh: 0.6 },
+      normal: {},
+      brutal: { startFund: 0.6, money: 0.85, hustle: 0.85, upkeep: 1.2, moodLoss: 1.4, rivalSkill: 4, rivalMiss: 0.3, advance: 0.8, labelHarsh: 1.6 }
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one

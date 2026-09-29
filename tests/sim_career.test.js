@@ -427,4 +427,35 @@ test('bots never stop in phase gig; botBook picks listings; autoGig resolves roa
   ok(Object.keys(s.venueRep).length >= 3 && s.van.trips >= 20, 'venues played and the van drove: ' + s.van.trips);
 });
 
+// ---- v0.6.1 (Addendum C4, SETTINGS): career difficulty, locked per career, read through GG.difficulty ----------------
+test('career difficulty: chosen at newCareer, locked on the state, old saves = normal', () => {
+  const GG = fresh();
+  const n = GG.career.newCareer({ seed: 5 }), c = GG.career.newCareer({ seed: 5, careerDifficulty: 'chill' }), b = GG.career.newCareer({ seed: 5, careerDifficulty: 'brutal' });
+  eq([n.careerDifficulty, c.careerDifficulty, b.careerDifficulty], ['normal', 'chill', 'brutal']);
+  eq(GG.career.newCareer({ seed: 5, careerDifficulty: 'nightmare' }).careerDifficulty, 'normal');
+  ok(c.fund > n.fund && n.fund > b.fund, 'start fund chill > normal > brutal: ' + [c.fund, n.fund, b.fund]);
+  eq(n.fund, GG.content.economy.startFund);
+  ok(GG.career.upkeep(c) < GG.career.upkeep(n) && GG.career.upkeep(n) < GG.career.upkeep(b), 'upkeep scales');
+  const old = JSON.parse(JSON.stringify(n)); delete old.careerDifficulty;
+  eq(GG.save.migrate(old).careerDifficulty, 'normal');
+  eq(GG.save.migrate(JSON.parse(JSON.stringify(b))).careerDifficulty, 'brutal');
+  eq(GG.difficulty.mul(n, 'money'), 1); eq(GG.difficulty.add(n, 'rivalSkill'), 0); eq(GG.difficulty.of(null), 'normal');
+});
+test('career difficulty: softer / ruthless rival, labels and bandmates', () => {
+  const GG = fresh();
+  const mk = d => { const s = GG.career.newCareer({ seed: 77, careerDifficulty: d }); s.totalWeek = 60; return s; };
+  const c = mk('chill'), n = mk('normal'), b = mk('brutal');
+  ok(GG.rival.skill(c) < GG.rival.skill(n) && GG.rival.skill(n) < GG.rival.skill(b), 'rival skill ' + [c, n, b].map(GG.rival.skill));
+  // "a rival that doesn't miss": across many showdowns Brutal's worst night is far better than Normal's
+  const worst = s => { let m = 99; for (let w = 40; w < 140; w++) { s.totalWeek = w; m = Math.min(m, GG.rival.setScore(s, 'botb') - GG.rival.skill(s)); } return m; };
+  ok(worst(b) > worst(n) && worst(n) > worst(c), 'rival off nights: ' + [worst(c), worst(n), worst(b)]);
+  eq(GG.difficulty.mul(b, 'labelHarsh') > 1 && GG.difficulty.mul(c, 'labelHarsh') < 1, true);
+  // bandmates: the same careers run by the same bot, Brutal ends with lower moods than Chill
+  const run = d => { const s = GG.career.newCareer({ seed: 91, careerDifficulty: d }); for (let i = 0; i < 40 && !s.ended; i++) GG.career.botWeek(s, 'avg'); return s; };
+  const mood = s => s.members.reduce((t, m) => t + m.mood, 0) / s.members.length;
+  const rc = run('chill'), rb = run('brutal');
+  ok(mood(rc) > mood(rb), 'moods chill ' + mood(rc).toFixed(1) + ' > brutal ' + mood(rb).toFixed(1));
+  ok(rc.fund > rb.fund, 'money chill ' + rc.fund + ' > brutal ' + rb.fund);
+});
+
 done('sim_career');

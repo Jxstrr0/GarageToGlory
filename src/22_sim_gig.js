@@ -136,6 +136,7 @@
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
     if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
+    if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
@@ -200,8 +201,14 @@
       laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
     normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
       laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
-    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null }
+    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null },
+    // v0.6.1 (Addendum C4): every hit as written, windows a fifth tighter, misses sting more, a faster highway.
+    expert: { window: 0.8, miss: 1.3, look: 1, chord: 6, anyGap: 0, laneGap: null }
   };
+  // v0.6.1 assists (session opts): noFail = the crowd never sinks below `noFailFloor` (never hostile, no boos, no
+  // flying drinks); autoKick = kick notes play themselves as Goods when they reach the line (kick taps are ignored).
+  gig.ASSISTS = ['noFail', 'autoKick'];
+  gig.noFailFloor = 20;
   gig.DEFAULT_DIFFICULTY = 'easy';   // what a new player gets; the sim itself defaults to 'hard' (the chart as written)
   function diffOf(d) { return gig.DIFFICULTIES[d] || gig.DIFFICULTIES.hard; }
   gig.windows = function (state, difficulty) {
@@ -342,13 +349,14 @@
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
     var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
-    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff,
+    var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
+    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff, assists: assists,
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
-    var cur = null, tickOut = { misses: 0, crowd: 0, level: '' };
+    var cur = null, tickOut = { misses: 0, crowd: 0, level: '', autoHits: 0 };
     function emit(ev, p) { if (S.emit) GG.emit(ev, p); }
     function crowdAdd(d) {
-      S.crowd = U.clamp(S.crowd + d, 0, 100);
+      S.crowd = U.clamp(S.crowd + d, floor, 100);
       var lv = gig.levelOf(S.crowd);
       if (lv !== S.level) { S.level = lv; emit('crowd:level', { level: lv, crowd: S.crowd }); }
     }
@@ -418,7 +426,7 @@
       x.j = 3; S.combo = 0; cur.missStreak++;
       crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
-      if (cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
+      if (!assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
         moment('boo', t);
         if (S.crowd < cfg.drinksCrowd && ready('drinks', t)) moment('drinks', t);
       }
@@ -427,6 +435,7 @@
       if (!cur) return null;
       var li = typeof lane === 'number' ? lane : LI[lane];
       if (!(li >= 0 && li < cur.byLane.length)) return null;
+      if (assists.autoKick && li === LI.kick) return { judgement: null, note: null, combo: S.combo, crowd: S.crowd, auto: true };   // the kick plays itself
       var list = cur.byLane[li], k = cur.lp[li], best = -1, bestD = 1e9, n = cur.notes;
       while (k < list.length && n[list[k]].j !== 0) k++;
       cur.lp[li] = k;
@@ -469,6 +478,15 @@
       if (t > cur.lastT) cur.lastT = t;
       S.t = cur.lastT;
       while (cur.ci < cur.cues.length && cur.cues[cur.ci].t <= t) cue(cur.cues[cur.ci++], t);
+      var autoHits = 0;
+      if (assists.autoKick) {   // v0.6.1: Auto-kick hits each kick note as it reaches the line
+        var kl = cur.byLane[LI.kick] || [];
+        while ((cur.ak || 0) < kl.length && n[kl[cur.ak || 0]].t <= t) {
+          var ki = kl[cur.ak || 0]; cur.ak = (cur.ak || 0) + 1;
+          if (n[ki].j === 0 && !n[ki].free) { hit(ki, 'good', t); autoHits++; emit('gig:judge', { lane: 'kick', judgement: 'good', combo: S.combo, crowd: S.crowd, auto: true }); }
+        }
+      }
+      tickOut.autoHits = autoHits;
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];
@@ -554,7 +572,8 @@
       reactions: reacts, lines: lines.filter(Boolean), deltas: null,
       live: true, accuracy: notes ? Math.round((perfect + good) / notes * 1000) / 1000 : 1, perfect: perfect, good: good, miss: miss,
       maxCombo: Math.max.apply(null, [0].concat(res.map(function (r) { return r.maxCombo; }))),
-      songResults: res.slice(), moments: moments, setBonus: { opener: opener, closer: closer }
+      songResults: res.slice(), moments: moments, setBonus: { opener: opener, closer: closer },
+      difficulty: S.difficulty, assists: gig.ASSISTS.filter(function (k) { return S.assists && S.assists[k]; })   // v0.6.1 C4
     };
   }
 

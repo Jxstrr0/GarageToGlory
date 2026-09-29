@@ -511,9 +511,10 @@
     function buildDash(b, item) {
       var x = -0.12, y = WS.y0 + 0.02, z = WS.z0 + 0.22, i;
       if (item === 'cactus') {
-        b.cyl(0.03, 0.024, 0.045, 8, x, y + 0.022, z, 0xb8603a); b.cyl(0.032, 0.032, 0.008, 8, x, y + 0.046, z, 0xa8502e);
-        b.cyl(0.012, 0.014, 0.07, 6, x, y + 0.085, z, 0x3f8a3a); b.box(0.028, 0.01, 0.01, x - 0.016, y + 0.085, z, 0x3f8a3a);
-        b.box(0.008, 0.024, 0.008, x - 0.028, y + 0.097, z, 0x3f8a3a); b.box(0.01, 0.01, 0.01, x, y + 0.124, z, 0xe86a9a);
+        var k = 1.7;   // v0.6.1 verify: tiny, but it has to read from the back bench on a phone
+        b.cyl(0.03 * k, 0.024 * k, 0.045 * k, 8, x, y + 0.022 * k, z, 0xb8603a); b.cyl(0.032 * k, 0.032 * k, 0.008 * k, 8, x, y + 0.046 * k, z, 0xa8502e);
+        b.cyl(0.012 * k, 0.014 * k, 0.07 * k, 6, x, y + 0.085 * k, z, 0x4fae48); b.box(0.028 * k, 0.01 * k, 0.01 * k, x - 0.016 * k, y + 0.085 * k, z, 0x4fae48);
+        b.box(0.008 * k, 0.024 * k, 0.008 * k, x - 0.028 * k, y + 0.097 * k, z, 0x4fae48); b.box(0.012 * k, 0.012 * k, 0.012 * k, x, y + 0.124 * k, z, 0xff7aae);
       } else if (item === 'laundry') {
         b.box(0.16, 0.02, 0.1, x, y + 0.01, z, 0x8a6aa8, 0, 0.3, 0); b.box(0.12, 0.02, 0.08, x + 0.04, y + 0.03, z + 0.01, 0xe8e0c8, 0, -0.4, 0);
         b.box(0.05, 0.12, 0.02, 0.02, 1.62, WS.z1 + 0.09, 0xd84a4a);   // a sock on the mirror

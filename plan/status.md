@@ -5,7 +5,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 ## Version
 - Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
 - Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
-- Next: **0.6.1** (Addendum 1 catch-up), then **0.7.0 "World"** (handoff B4)
+- Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
+- Next: **0.6.2** (two-thumb chords + songwriter presets/steps), then **0.7.0 "World"**
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -105,11 +106,11 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 ## Addendum 1 — pending
 Already-shipped versions → **v0.6.1 catch-up**:
 - [x] C1 van drivers (effects, you-drive pool, seating, dashboard items, new road events) — WORLD, v0.6.1
-- [ ] C3 genre kit tuning, per-genre generated band + random key + section density, vocal hits on the beat grid
-- [ ] C3 venue reverb, crowd bed + cheers/boos, garage hum, van road noise, van radio, mixer, sequencer metronome
-- [ ] C4 calibration (first launch + settings, 2 profiles), career difficulty (locked per career), gig difficulty
-      Expert + note speed, assists (No-fail, Auto-kick, Practice), accessibility/graphics/skip settings, settings screen
-- [ ] C5 Bandbook, virality, comments, scandals, fan types, named superfans, fan mail + gifts, fan club (Signed era)
+- [x] C3 genre kit tuning, per-genre generated band + random key + section density, vocal hits on the beat grid — AUDIO, v0.6.1
+- [x] C3 venue reverb, crowd bed + cheers/boos, garage hum, van road noise, van radio, mixer, sequencer metronome — AUDIO, v0.6.1
+- [x] C4 calibration (first launch + settings, 2 profiles), career difficulty (locked per career), gig difficulty
+      Expert + note speed, assists (No-fail, Auto-kick, Practice), accessibility/graphics/skip settings, settings screen — SETTINGS, v0.6.1
+- [x] C5 Bandbook, virality, comments, scandals, fan types, named superfans, fan mail + gifts, fan club (Signed era) — FANS, v0.6.1
 - [x] C6 Sask ring additions, West ring (Local Heroes), East & North ring (Signed), Canada map in rings — WORLD, v0.6.1
 - [x] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays — WORLD, v0.6.1
 Later versions:
@@ -249,6 +250,69 @@ Later versions:
 - Balance (10y x 20): avg local wk 21 / offer 38 / signed 42 / world-ready y7; good 15 / 26 / 27 / y5; Sad Dome avg
   9/20, good 18/20; quits 0.58/yr; loans after y1 avg 0.10, good 0.05 (before: 23/46/49/y7, 17/29/30/y5, 11/20, 20/20).
 
+## What's in v0.6.1 (fans) — Addendum 1 C5 (FANS agent, lane B2)
+- `GG.fans` (`29_sim_fans.js`, API in its header; content `content/bandbook.js`; numbers `economy.fans`). Own seeded RNG per
+  roll (seed + week + salt + post counter), never the career RNG. Events `fans:post|viral|scandal|gift|club`.
+- Bandbook: every Promote block posts automatically (kind from band state: gig announcement, song teaser, rehearsal clip,
+  behind the scenes, meme) → buzz, fans (one global count) and streams of the newest release. Small viral chance
+  (weirder kinds likelier): good, or the wrong kind (Marcel's "Abyssal Two-Step" dance tutorial: buzz up, his mood down,
+  haters up). 2–4 sentiment comments per post + Tundra Wraith's supportive comment on every post; Dale/Wendell/haters comment.
+- Fan types `state.fanTypes {super, casual, hater}` = shares of `state.fans`; drift weekly (superfans with chemistry and a
+  happy club, haters with fame and scandals). Superfans follow on tour (`gigShape`: crowd/buzz only; merch is v0.8).
+- Named superfans `state.superfans`: Dale from Warman (every show: crowd line + comments; his macaroni portrait of Kenji
+  via a card), Big Wendell the jumper-cable trucker (met via a fan card after long hauls), Japanese fan-club president
+  reserved for v0.7 (shown locked).
+- Scandals → choice cards next Monday (`scandal_turf`: Marcel's lawn is artificial turf, and more); fan cards are forced by
+  `GG.fans.forcedCard`, never drawn. Fan mail + gifts (`state.gifts`) weekly by chance; garage shows the portrait by the gig
+  board, a gift pile (1/3/6 boxes) and a letter stack.
+- Patreeon (`state.fanClub`, Signed era; tiers Drumstick $3 / Snare $8 / Full Kit $20): members from superfans × happiness;
+  a weekly exclusive post (Bandbook app) keeps them happy; payout every second week (12% platform cut).
+- UI: laptop tab "Bandbook" (7 tabs in two rows) → `GG.ui.bandbookPanel` (`5g_ui_bandbook.js`): Feed / Fans / Patreeon.
+- Save: `GG.fans.migrate` chained onto `GG.save.migrate` fills missing fields idempotently.
+- Tests: `sim_fans.test.js` 14, `content.test.js` 46, `pw_fans.js` bandbook 19 / fanclub 13; `pw_rival` scene now expects
+  7 laptop tabs. Balance (10y×20): avg LH/offer/signed wk 20/39/46 (was 21/38/42), good 15/27/28 (15/26/27), world-ready
+  y7/y5 unchanged, avg y10 fund 11.7k (8.9k; Patreeon), quits/yr 0.64 (0.58), Sad Dome 13/20 & 20/20 (9 & 18).
+
+## What's in v0.6.1 (settings) — Addendum 1 C4 (SETTINGS agent, lane B3)
+- `11_settings.js` (node-safe): `GG.prefs` (get/set → 'settings:changed', profile/setProfile, offsets, setCalib,
+  calibCompute, CB_COLOURS) and `GG.difficulty` (of/mul/add/text; wraps `GG.save.migrate`: missing = 'normal').
+  Settings defaults live in `GG.save.SETTINGS_DEFAULTS` (10_save; only changed keys are stored): gigDifficulty, noteSpeed,
+  noFail, autoKick, audioProfile, calib {speaker|headphones: {audio, visual, at}} (ms), calibSeen, lefty, colourblind,
+  bigText, reducedFlash, cameraShake, graphics (low|med|high, default high = the old look), skipVan, fastAnim.
+- Career difficulty (`state.careerDifficulty`, picked on the creator screen, locked): multipliers `economy.difficulty`
+  read only through `GG.difficulty` — start fund, gig pay (applyResult), hustle cash, upkeep, bandmates' mood losses
+  (drama), rival skill + how badly their off nights go, label advances + goodwill losses. Chill: +20% pay, −15% bills,
+  moods fall 35% slower, rival −5; Brutal: −15% pay, +20% bills, moods fall 40% faster, rival +4 and rarely off.
+- Gig: `GG.gig.DIFFICULTIES.expert` (windows ×0.8, misses ×1.3, faster scroll); session opts `noFail` (crowd floor 20,
+  no boos/drinks) and `autoKick` (kick notes play as Goods; kick taps ignored); results carry `difficulty` + `assists`.
+  55: note speed scales the scroll; lefty mirrors drawing/touch/keys; colourblind lane colours; the active profile's
+  audio offset is subtracted from taps and the highway draws (visual − audio) ahead (v0.5.1 clock untouched).
+  Setlist sheet: Expert, speaker/headphones quick switch, assists line → Settings.
+- `5h_ui_settings.js`: 'settings' (title ⚙ + ☰ menu), 'calib' (auto once on first launch, skippable; eight clicks on
+  the AudioContext mapped to performance time once, then the flashing light; saved per profile), 'practice' (any song at
+  50/75/100%, studio mode on a shadow state: nothing saved) from the laptop Band tab, Settings and the kit's sketch pad.
+  `<html>` classes gg-big / gg-calm / gg-fast; 40 `R.prefs()` (pixel ratio 1/1.5/2, crowd 40/70/100%, calm, shake);
+  42 calm = no strobing washes or hit flashes; 57 skipVan / fastAnim.
+- Tests: sim_career +2, sim_gig +4, save (defaults), new `pw_settings.js` (settings 44, calib 14, difficulty 17).
+- Gaps: no camera shake exists yet (the toggle is a hook for later scenes); the first-launch calibration is skipped under
+  automation (navigator.webdriver) unless `?calib=1`; kit practice is a button injected under the sketch pad (54 is lane A's).
+
+## What's in v0.6.1 (audio) — Addendum 1 C3 (AUDIO agent, lane A)
+- `30_audio.js`: per-genre generated band (genre kit tuning in `content/genres.js`, metal doom/chug/tremolo kept), a
+  random key per song (seeded by song id), section density (sparse verse, full chorus, stripped breakdown, solos),
+  formant vocal hits on the beat grid; a convolver per room class picked by the venue; crowd bed following the meter +
+  cheers/boos on 'crowd:moment'; garage hum, van road noise, van radio (your charting singles); 4-bus mixer
+  (settings.mix) + sequencer metronome (♩ in the sequencer header, settings.metronome); settings.brushes (country).
+- Settings screen: mixer sliders, metronome and brushes toggles drive GG.audio (VERIFY wired 'settings:changed').
+- Tests: new `sim_audio.test.js` (10); `pw_seq.js` audio 38, seq 31. Nobody has listened to it yet (offline renders only).
+- Gaps: kit quality tiers v0.8; v0.2 gear upgrades have sounds but no shop; garage hum waits on a 1 s scene poll.
+
+## v0.6.1 verify (Stage C)
+- All node + pw suites green at 390×844; flow/layout/gig e2e/touch also green at 440×956 (scratch viewport override).
+- Integration fixes: 'settings:changed' (mix/metronome/brushes/muted) → `GG.audio.applySettings()`; Brushes toggle in
+  Settings; toasts/sheets/scrim start below the new calendar strip; week chip `W12/24` no longer ellipsizes at 390;
+  "🔊 Speaker" label fits; Kenji's dash cactus 1.7× so it reads. Contact sheet `tests/.cache/v061_sheet.png`.
+
 ## What's in v0.6.0 "Rivals" (stage 1 sim + content, stage 2 UI done)
 - Rival sim (`23_sim_rival.js`, API in its header): Tundra Wraith run a parallel career (fans chase `economy.rival.fansCurve`
   × momentum from the head-to-head record; buzz; garage → local 250 → signed 1,100 with Monolith; one record a year timed
@@ -329,6 +393,12 @@ Later versions:
   `play(pattern, {genre, section|null, loop, backing}) → handle {stop, update(p), beatAt(time), playing, start, bpm}`,
   `stop, isPlaying, current, hit(lane), timeline(p, opts) → {bpm, beats, style, events[{beat, kind, lane|midi, len, gap}]},
   styleFor(genre, bpm), renderOffline(spec) → Promise<{peak, rms, nan}>`. Events: 'audio:step' per 16th, 'audio:end'.
+  v0.5.1 `context()` (the gig clock). v0.6.1: `play` opts `vocals, songId (seeds the key), metronome` (handle `.key`,
+  `.genre`); mixer `setVolume(bus,0..1)` (null for unknown bus; gain = v²) / `getVolume` / `volumes()` over C.MIX_BUSES;
+  `metronome() / setMetronome / toggleMetronome`; `applySettings()` (re-reads mix/metronome/brushes/muted; also run on
+  'settings:changed' for those keys); `keyFor(seed, genre) → {tonic, offset, mode, name}`; `roomFor(gig)` →
+  dry|room|hall|theatre|arena, `room()`; `ambience()` → garage|van|gig|none, `refreshAmbience()`, `radioSong(state)`;
+  `renderOffline` extras `{full, songId, vocals, metronome, room, variant}` / `{ambience}` → also `counts`, `key`.
 - `GG.ui` v0.2: `LANES` (lane name/icon/colour for the v0.3 highway), `composeWeek(n, done), openSketch, openSong(id)`;
   screens `seq` (full) and `seq-tools` (modal).
 - Tests: `node tests/run.js` (content 21, save 7, sim_career 18, sim_gig 7, sim_songs 12) · `pw_flow.js`

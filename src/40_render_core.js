@@ -18,6 +18,26 @@
 
   R.available = false;
 
+  // ---- v0.6.1 (Addendum C4, SETTINGS): graphics quality, camera shake, reduced flashing ----------------------
+  // R.prefs() -> { quality: 'low'|'med'|'high', shake, calm, pixelRatio, crowdScale } (cached; never reads storage per
+  // frame) ; R.applySettings() re-reads GG.prefs and resizes. low = 1x pixels + 40% crowd, med = 1.5x + 70%, high = 2x + all.
+  // Scenes read R.prefs().calm (no strobing lights / hit flashes), .shake (camera shake allowed) and .crowdScale.
+  var QUALITY = { low: { px: 1, crowd: 0.4 }, med: { px: 1.5, crowd: 0.7 }, high: { px: 2, crowd: 1 } };
+  var PREFS = null;
+  R.prefs = function () {
+    if (PREFS) return PREFS;
+    var s = {}; try { s = GG.prefs ? GG.prefs.get() : {}; } catch (e) { s = {}; }
+    var q = QUALITY[s.graphics] ? s.graphics : 'high';
+    PREFS = { quality: q, shake: s.cameraShake !== false, calm: !!s.reducedFlash, pixelRatio: QUALITY[q].px, crowdScale: QUALITY[q].crowd };
+    return PREFS;
+  };
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, (typeof window !== 'undefined' && window.devicePixelRatio) || 1); }
+  R.applySettings = function () { PREFS = null; R.prefs(); if (R.available && renderer) { needsResize = true; applyResize(); } return PREFS; };
+  if (GG.on) GG.on('settings:changed', function (p) {
+    var k = (p && p.keys) || [];
+    if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
+  });
+
   // ---- Tunables ------------------------------------------------------------
   var TAP_SLOP = 12;                      // CSS px a finger may drift and still count as a tap
   var TAP_MS = 650;                       // longer presses are not taps
@@ -56,7 +76,7 @@
       if (!THREE || !THREE.WebGLRenderer || !el) return fail('three.js not loaded');
       var dpr = window.devicePixelRatio || 1;
       renderer = new THREE.WebGLRenderer({ antialias: dpr < 2, alpha: false, powerPreference: 'default' });
-      renderer.setPixelRatio(Math.min(2, dpr));
+      renderer.setPixelRatio(pixelRatio());
       renderer.setClearColor(0x0b1020, 1);
       container = el;
       canvas = renderer.domElement;
@@ -206,7 +226,7 @@
     if (!R.available) return;
     needsResize = false;
     var w = container.clientWidth || window.innerWidth || 1, h = container.clientHeight || window.innerHeight || 1;
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(pixelRatio());
     W = w; H = h;
     renderer.setSize(W, H, false);
     camera.aspect = W / H;

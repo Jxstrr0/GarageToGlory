@@ -204,7 +204,7 @@ async function calendar() {
     const f2 = await fits(); c.ok(f2.in && f2.hs, 'HUD strip fits at 440x956 ' + JSON.stringify(f2));
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
     await tap(page, 'hud-week');
-    await page.waitForTimeout(150);
+    await page.waitForTimeout(450);
     c.ok(/December/.test(await page.evaluate(() => (document.querySelector('#toast') || document.body).textContent)), 'week chip toast explains the calendar');
     await page.screenshot({ path: path.join(CACHE, 'hud_calendar.png') });
     // garage decor by season (3D only)

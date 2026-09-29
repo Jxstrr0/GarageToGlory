@@ -159,7 +159,7 @@
   function skillAt(w) { var S = cfg().skill; return S.cap - (S.cap - S.start) * Math.exp(-Math.max(0, w) / S.tau); }
   R.skill = function (state) {
     var rv = get(state), S = cfg().skill;
-    return Math.round(skillAt(state.totalWeek) + (rv.cracked ? S[rv.cracked] || 0 : 0));
+    return Math.round(skillAt(state.totalWeek) + (rv.cracked ? S[rv.cracked] || 0 : 0) + (GG.difficulty ? GG.difficulty.add(state, 'rivalSkill') : 0));   // v0.6.1 C4
   };
 
   // Originals (and poached members) who joined the rival show up in their lineup, in corpse paint.
@@ -487,7 +487,8 @@
   // Their set score for this week's showdown of `kind` (deterministic: career seed + week + kind).
   R.setScore = function (state, kind) {
     var rv = get(state), k = cfg(), rng = seeded(state, 'set|' + kind);
-    return U.clamp(Math.round(R.skill(state) + (k.kindBonus[kind] || 0) + rv.form + rng.range(-k.noise, k.noise)), 15, 99);
+    var low = k.noise * (GG.difficulty ? GG.difficulty.mul(state, 'rivalMiss') : 1);   // v0.6.1 C4: Brutal's rival rarely has an off night
+    return U.clamp(Math.round(R.skill(state) + (k.kindBonus[kind] || 0) + rv.form + rng.range(-low, k.noise)), 15, 99);
   };
   function texts(kind) { return ((content().showdowns || {})[kind]) || {}; }
   // Setup data for the UI: their lineup, setlist (per-song scores that average to their set score) and the stakes.

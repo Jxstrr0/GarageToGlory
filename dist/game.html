@@ -655,6 +655,30 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .rv-cr { font-size: 22px; color: #ffe27a; margin: 2px 0 4px; }
 .chart-row.rival b { font-family: Georgia, "Times New Roman", serif; } .chart-row.rival { box-shadow: inset 3px 0 0 #ecebe6; }
 /* ==== end v0.6 ==== */
+/* v0.6.1 (Addendum C4, SETTINGS): bigger text, reduced flashing, faster animations (classes on <html>, 5h_ui_settings) */
+html.gg-big body { font-size: 18px; }
+html.gg-big .small { font-size: 15px; } html.gg-big .tiny { font-size: 13px; } html.gg-big .caps { font-size: 12.5px; }
+html.gg-big .btn { font-size: 17px; } html.gg-big .btn.small { font-size: 15px; } html.gg-big .btn.big { font-size: 19px; }
+html.gg-big .screen-sub, html.gg-big .tagline, html.gg-big .toast, html.gg-big .bubble { font-size: 17px; }
+html.gg-big p, html.gg-big li, html.gg-big .card-text { font-size: 1.06em; }
+html.gg-calm .gig-back .lights, html.gg-calm .hail, html.gg-calm .dock .btn.primary, html.gg-calm .title-glow { animation: none !important; }
+html.gg-calm .gig-count { animation-duration: .01s !important; }
+html.gg-fast .full, html.gg-fast .sheet, html.gg-fast .modal, html.gg-fast .scrim, html.gg-fast .toast, html.gg-fast .bubble { animation-duration: .07s !important; }
+html.gg-fast * { transition-duration: .08s !important; }
+/* settings + calibration screens */
+.set-sec { margin: 16px 0 6px; }
+.set-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.set-row .lbl { flex: 1 1 auto; min-width: 0; } .set-row .lbl b { display: block; } .set-row .lbl span { display: block; font-size: 12px; color: var(--dim); }
+.set-seg { display: flex; gap: 6px; flex-wrap: wrap; } .set-seg .btn { flex: 1 1 0; padding: 0 8px; min-width: 48px; }
+.set-toggle { min-width: 72px; }
+.set-slider { width: 100%; height: 48px; accent-color: var(--amber); }
+.calib-light { width: 140px; height: 140px; margin: 18px auto; border-radius: 50%; background: #1b2336; border: 3px solid var(--line); transition: none !important; }
+.calib-light.on { background: #ffe27a; box-shadow: 0 0 60px rgba(255, 226, 122, .7); }
+html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
+.calib-pad { display: flex; align-items: center; justify-content: center; min-height: 160px; border-radius: 18px; border: 2px dashed var(--line); font: 900 22px/1.1 var(--display); text-transform: uppercase; color: var(--dim); touch-action: none; }
+.calib-pad.hit { border-color: var(--amber); color: var(--amber); }
+.diff-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.diff-pick .btn { flex-direction: column; min-height: 64px; padding: 6px; }
 </style>
 </head>
 <body>
@@ -4534,6 +4558,14 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
     },
 
+    // ---- Career difficulty (v0.6.1, Addendum C4; read only through GG.difficulty.mul/add, 11_settings.js) ------------
+    // Picked on the new-career screen and locked for that career; old saves = normal. Multipliers (rivalSkill = + points).
+    difficulty: {
+      chill: { startFund: 1.6, money: 1.2, hustle: 1.2, upkeep: 0.85, moodLoss: 0.65, rivalSkill: -5, rivalMiss: 1.4, advance: 1.15, labelHarsh: 0.6 },
+      normal: {},
+      brutal: { startFund: 0.6, money: 0.85, hustle: 0.85, upkeep: 1.2, moodLoss: 1.4, rivalSkill: 4, rivalMiss: 0.3, advance: 0.8, labelHarsh: 1.6 }
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one
@@ -7399,7 +7431,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   var PREFIX = 'gg.v1.';
   save.KEYS = { slot: function (s) { return PREFIX + 'slot.' + s; }, settings: PREFIX + 'settings', hof: PREFIX + 'hof', meta: PREFIX + 'meta' };
   var DAMAGED = 'That save code is damaged or incomplete. Copy the whole code and try again.';
-  var DEFAULT_SETTINGS = { muted: false };
+  // v0.6.1 (Addendum C4, SETTINGS): every player preference has a default here (GG.prefs normalizes them); lane A's
+  // mix / metronome / brushes default inside GG.audio. Only keys the player changed are stored.
+  var DEFAULT_SETTINGS = { muted: false, gigDifficulty: 'easy', noteSpeed: 1, noFail: false, autoKick: false,
+    audioProfile: 'speaker', calib: { speaker: { audio: 0, visual: 0, at: 0 }, headphones: { audio: 0, visual: 0, at: 0 } }, calibSeen: false,
+    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'high', skipVan: false, fastAnim: false };
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
@@ -7490,11 +7526,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (s && typeof s === 'object') for (var k in s) out[k] = s[k];
     return out;
   };
+  save.SETTINGS_DEFAULTS = DEFAULT_SETTINGS;
   save.saveSettings = function (obj) {
-    var s = save.settings();
-    for (var k in obj || {}) s[k] = obj[k];
-    setRaw(save.KEYS.settings, JSON.stringify(s));
-    return s;
+    var raw = getJSON(save.KEYS.settings); raw = raw && typeof raw === 'object' ? raw : {};
+    for (var k in obj || {}) raw[k] = obj[k];
+    setRaw(save.KEYS.settings, JSON.stringify(raw));
+    return save.settings();
   };
 
   /* ---- Migration ---------------------------------------------------------------- */
@@ -7697,6 +7734,109 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   GG.registerDebug('save', function () {
     return { storageOk: save.storageOk, slots: save.list().map(function (x) { return x.slot + (x.exists ? '*' : ''); }) };
   });
+})(window.GG);
+
+</script>
+<script>/* 11_settings.js */
+// 11_settings.js (v0.6.1, SETTINGS agent; Addendum 1 C4): player preferences + career difficulty. No DOM, node-safe.
+//   GG.prefs: get() -> normalized settings (defaults from GG.save, calib profiles filled in) ; set(obj) -> get() (emits
+//     'settings:changed' { keys }) ; profile() ; setProfile('speaker'|'headphones') ; offsets(s?) -> { audio, visual }
+//     seconds for the active profile ; setCalib(profile, { audio?, visual? } ms) ; calibCompute(clicks[], taps[], opts)
+//     -> { ok, offset (ms, tap minus click), n, spread } (pure) ; PROFILES ; GRAPHICS ; NOTE_SPEEDS ; CB_COLOURS.
+//   Settings keys (GG.save.settings()): gigDifficulty, noteSpeed, noFail, autoKick, audioProfile, calib { speaker|headphones:
+//     { audio, visual, at } }, calibSeen, lefty, colourblind, bigText, reducedFlash, cameraShake, graphics, skipVan,
+//     fastAnim (+ lane A's mix, metronome, brushes; muted).
+//   GG.difficulty: LEVELS ; of(state) -> 'chill'|'normal'|'brutal' (missing = normal) ; mul(state, key) (default 1) ;
+//     add(state, key) (default 0) ; text(id) -> { name, blurb } ; migrate(state). Tunables economy.difficulty[level]:
+//     startFund, money (gig pay), hustle, upkeep, moodLoss, rivalSkill (+points), rivalMiss (their low-roll range),
+//     advance, labelHarsh (goodwill losses). The one helper every sim reads career difficulty through.
+(function (GG) {
+  var C = GG.contracts, U = GG.util;
+
+  /* ---- Preferences ------------------------------------------------------------------------------------------ */
+  var P = GG.prefs = GG.prefs || {};
+  P.PROFILES = ['speaker', 'headphones'];
+  P.GRAPHICS = ['low', 'med', 'high'];
+  P.NOTE_SPEEDS = [0.7, 0.85, 1, 1.2, 1.4];
+  // Okabe–Ito: tells kick / snare / hats / cymbal / toms / ride apart with any colour vision.
+  P.CB_COLOURS = { kick: '#E69F00', snare: '#56B4E9', hat: '#F0E442', cymbal: '#CC79A7', toms: '#009E73', ride: '#D55E00' };
+  var MAX_OFF = 250;   // ms: anything past this is a broken headset, not a latency
+  function num(v, d) { v = +v; return isFinite(v) ? v : d; }
+  function prof(c) { c = c && typeof c === 'object' ? c : {}; return { audio: U.clamp(Math.round(num(c.audio, 0)), -MAX_OFF, MAX_OFF), visual: U.clamp(Math.round(num(c.visual, 0)), -MAX_OFF, MAX_OFF), at: num(c.at, 0) }; }
+  P.normalize = function (s) {
+    s = s && typeof s === 'object' ? s : {};
+    var c = s.calib && typeof s.calib === 'object' ? s.calib : {};
+    s.calib = { speaker: prof(c.speaker), headphones: prof(c.headphones) };
+    if (P.PROFILES.indexOf(s.audioProfile) < 0) s.audioProfile = 'speaker';
+    if (P.GRAPHICS.indexOf(s.graphics) < 0) s.graphics = 'high';
+    s.noteSpeed = U.clamp(num(s.noteSpeed, 1), 0.5, 2);
+    if (!C.GIG_DIFFICULTY || C.GIG_DIFFICULTY.indexOf(s.gigDifficulty) < 0) s.gigDifficulty = 'easy';
+    ['noFail', 'autoKick', 'calibSeen', 'lefty', 'colourblind', 'bigText', 'reducedFlash', 'skipVan', 'fastAnim'].forEach(function (k) { s[k] = !!s[k]; });
+    s.cameraShake = s.cameraShake !== false;
+    return s;
+  };
+  P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };
+  P.set = function (o) {
+    if (GG.save && GG.save.saveSettings) GG.save.saveSettings(o || {});
+    GG.emit('settings:changed', { keys: Object.keys(o || {}) });
+    return P.get();
+  };
+  P.profile = function () { return P.get().audioProfile; };
+  P.setProfile = function (p) { if (P.PROFILES.indexOf(p) >= 0) P.set({ audioProfile: p }); return P.profile(); };
+  P.offsets = function (s) { s = s ? P.normalize(s) : P.get(); var c = s.calib[s.audioProfile]; return { audio: c.audio / 1000, visual: c.visual / 1000 }; };
+  P.setCalib = function (profile, o) {
+    var s = P.get(); if (P.PROFILES.indexOf(profile) < 0) profile = s.audioProfile;
+    var c = s.calib[profile];
+    if (o && o.audio != null) c.audio = U.clamp(Math.round(o.audio), -MAX_OFF, MAX_OFF);
+    if (o && o.visual != null) c.visual = U.clamp(Math.round(o.visual), -MAX_OFF, MAX_OFF);
+    c.at = o && o.at != null ? o.at : c.at;
+    return P.set({ calib: s.calib, calibSeen: true }).calib[profile];
+  };
+  // Each tap is matched to the nearest click inside half a beat; the average of what's left after dropping the two
+  // wildest taps is the offset (positive = you hear it / tap late). Needs 4+ taps that landed near a click.
+  P.calibCompute = function (clicks, taps, opts) {
+    opts = opts || {};
+    var gap = opts.interval || (clicks.length > 1 ? (clicks[clicks.length - 1] - clicks[0]) / (clicks.length - 1) : 600), win = Math.min(gap * 0.5, 350);
+    var offs = [];
+    (taps || []).forEach(function (t) {
+      var best = null;
+      clicks.forEach(function (c) { var d = t - c; if (Math.abs(d) <= win && (best === null || Math.abs(d) < Math.abs(best))) best = d; });
+      if (best !== null) offs.push(best);
+    });
+    if (offs.length < (opts.min || 4)) return { ok: false, offset: 0, n: offs.length, spread: 0 };
+    offs.sort(function (a, b) { return a - b; });
+    var use = offs.length >= 6 ? offs.slice(1, -1) : offs;
+    var mean = use.reduce(function (a, b) { return a + b; }, 0) / use.length;
+    return { ok: true, offset: U.clamp(Math.round(mean), -MAX_OFF, MAX_OFF), n: offs.length, spread: Math.round(use[use.length - 1] - use[0]) };
+  };
+
+  /* ---- Career difficulty ------------------------------------------------------------------------------------- */
+  var D = GG.difficulty = GG.difficulty || {};
+  D.LEVELS = (C && C.CAREER_DIFFICULTY) || ['chill', 'normal', 'brutal'];
+  var FALLBACK = {
+    chill: { startFund: 1.6, money: 1.2, hustle: 1.2, upkeep: 0.85, moodLoss: 0.65, rivalSkill: -5, rivalMiss: 1.4, advance: 1.15, labelHarsh: 0.6 },
+    normal: {},
+    brutal: { startFund: 0.6, money: 0.85, hustle: 0.85, upkeep: 1.2, moodLoss: 1.4, rivalSkill: 4, rivalMiss: 0.3, advance: 0.8, labelHarsh: 1.6 }
+  };
+  var TEXT = {
+    chill: { name: 'Chill', blurb: 'More money, bandmates who let things slide, a rival who has off nights and labels with a heart.' },
+    normal: { name: 'Normal', blurb: 'Scrappy, but not too brutal. The way the prairie intended.' },
+    brutal: { name: 'Brutal', blurb: 'Tight money, touchy bandmates, ruthless labels and a rival who does not miss.' }
+  };
+  D.of = function (state) { var d = state && state.careerDifficulty; return D.LEVELS.indexOf(d) >= 0 ? d : 'normal'; };
+  function row(state) {
+    var t = (GG.content && GG.content.economy && GG.content.economy.difficulty) || FALLBACK;
+    return t[D.of(state)] || {};
+  }
+  D.mul = function (state, key) { var v = row(state)[key]; return typeof v === 'number' && isFinite(v) ? v : 1; };
+  D.add = function (state, key) { var v = row(state)[key]; return typeof v === 'number' && isFinite(v) ? v : 0; };
+  D.text = function (id) { return TEXT[id] || TEXT.normal; };
+  D.migrate = function (s) { if (s && typeof s === 'object' && D.LEVELS.indexOf(s.careerDifficulty) < 0) s.careerDifficulty = 'normal'; return s; };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.difficulty) {
+    var prev = GG.save.migrate;
+    GG.save.migrate = function (s) { return D.migrate(prev(s)); };
+    GG.save.migrate.difficulty = true;
+  }
 })(window.GG);
 
 </script>
@@ -8155,7 +8295,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       space: band.space || 'parents_garage', player: makePlayer(p),
       totalWeek: 1, year: 1, week: 1, maxWeeks: C.WEEKS_PER_YEAR * C.CAREER_YEARS,
       phase: 'monday', era: 'garage', protected: true,
-      fund: E.startFund, fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
+      careerDifficulty: GG.difficulty ? GG.difficulty.of({ careerDifficulty: args.careerDifficulty }) : 'normal',   // v0.6.1 C4: locked per career
+      fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
       members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
@@ -8340,7 +8481,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       addStat(state, 'burnout', A.burnout, d);
     },
     hustle: function (state, A, f, rng, d) {
-      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1));   // v0.5: fame pays (lessons, session work)
+      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1) * (GG.difficulty ? GG.difficulty.mul(state, 'hustle') : 1));   // v0.5: fame pays (lessons, session work)
       addStat(state, 'fund', cash, d);
       state.stats.earned += cash; state.stats.hustles++;
       addStat(state, 'burnout', A.burnout, d);
@@ -8433,7 +8574,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep).
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
-    return Math.round(E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0));
+    return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
   };
   function decayBuzz(state) {
     if (state.buzz <= 0) return 0;
@@ -9261,6 +9402,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
     if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
+    if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
@@ -9325,8 +9467,14 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
     normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
       laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
-    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null }
+    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null },
+    // v0.6.1 (Addendum C4): every hit as written, windows a fifth tighter, misses sting more, a faster highway.
+    expert: { window: 0.8, miss: 1.3, look: 1, chord: 6, anyGap: 0, laneGap: null }
   };
+  // v0.6.1 assists (session opts): noFail = the crowd never sinks below `noFailFloor` (never hostile, no boos, no
+  // flying drinks); autoKick = kick notes play themselves as Goods when they reach the line (kick taps are ignored).
+  gig.ASSISTS = ['noFail', 'autoKick'];
+  gig.noFailFloor = 20;
   gig.DEFAULT_DIFFICULTY = 'easy';   // what a new player gets; the sim itself defaults to 'hard' (the chart as written)
   function diffOf(d) { return gig.DIFFICULTIES[d] || gig.DIFFICULTIES.hard; }
   gig.windows = function (state, difficulty) {
@@ -9467,13 +9615,14 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
     var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
-    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff,
+    var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
+    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff, assists: assists,
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
-    var cur = null, tickOut = { misses: 0, crowd: 0, level: '' };
+    var cur = null, tickOut = { misses: 0, crowd: 0, level: '', autoHits: 0 };
     function emit(ev, p) { if (S.emit) GG.emit(ev, p); }
     function crowdAdd(d) {
-      S.crowd = U.clamp(S.crowd + d, 0, 100);
+      S.crowd = U.clamp(S.crowd + d, floor, 100);
       var lv = gig.levelOf(S.crowd);
       if (lv !== S.level) { S.level = lv; emit('crowd:level', { level: lv, crowd: S.crowd }); }
     }
@@ -9543,7 +9692,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       x.j = 3; S.combo = 0; cur.missStreak++;
       crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
-      if (cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
+      if (!assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
         moment('boo', t);
         if (S.crowd < cfg.drinksCrowd && ready('drinks', t)) moment('drinks', t);
       }
@@ -9552,6 +9701,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       if (!cur) return null;
       var li = typeof lane === 'number' ? lane : LI[lane];
       if (!(li >= 0 && li < cur.byLane.length)) return null;
+      if (assists.autoKick && li === LI.kick) return { judgement: null, note: null, combo: S.combo, crowd: S.crowd, auto: true };   // the kick plays itself
       var list = cur.byLane[li], k = cur.lp[li], best = -1, bestD = 1e9, n = cur.notes;
       while (k < list.length && n[list[k]].j !== 0) k++;
       cur.lp[li] = k;
@@ -9594,6 +9744,15 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       if (t > cur.lastT) cur.lastT = t;
       S.t = cur.lastT;
       while (cur.ci < cur.cues.length && cur.cues[cur.ci].t <= t) cue(cur.cues[cur.ci++], t);
+      var autoHits = 0;
+      if (assists.autoKick) {   // v0.6.1: Auto-kick hits each kick note as it reaches the line
+        var kl = cur.byLane[LI.kick] || [];
+        while ((cur.ak || 0) < kl.length && n[kl[cur.ak || 0]].t <= t) {
+          var ki = kl[cur.ak || 0]; cur.ak = (cur.ak || 0) + 1;
+          if (n[ki].j === 0 && !n[ki].free) { hit(ki, 'good', t); autoHits++; emit('gig:judge', { lane: 'kick', judgement: 'good', combo: S.combo, crowd: S.crowd, auto: true }); }
+        }
+      }
+      tickOut.autoHits = autoHits;
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];
@@ -9679,7 +9838,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       reactions: reacts, lines: lines.filter(Boolean), deltas: null,
       live: true, accuracy: notes ? Math.round((perfect + good) / notes * 1000) / 1000 : 1, perfect: perfect, good: good, miss: miss,
       maxCombo: Math.max.apply(null, [0].concat(res.map(function (r) { return r.maxCombo; }))),
-      songResults: res.slice(), moments: moments, setBonus: { opener: opener, closer: closer }
+      songResults: res.slice(), moments: moments, setBonus: { opener: opener, closer: closer },
+      difficulty: S.difficulty, assists: gig.ASSISTS.filter(function (k) { return S.assists && S.assists[k]; })   // v0.6.1 C4
     };
   }
 
@@ -9885,7 +10045,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   function skillAt(w) { var S = cfg().skill; return S.cap - (S.cap - S.start) * Math.exp(-Math.max(0, w) / S.tau); }
   R.skill = function (state) {
     var rv = get(state), S = cfg().skill;
-    return Math.round(skillAt(state.totalWeek) + (rv.cracked ? S[rv.cracked] || 0 : 0));
+    return Math.round(skillAt(state.totalWeek) + (rv.cracked ? S[rv.cracked] || 0 : 0) + (GG.difficulty ? GG.difficulty.add(state, 'rivalSkill') : 0));   // v0.6.1 C4
   };
 
   // Originals (and poached members) who joined the rival show up in their lineup, in corpse paint.
@@ -10213,7 +10373,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   // Their set score for this week's showdown of `kind` (deterministic: career seed + week + kind).
   R.setScore = function (state, kind) {
     var rv = get(state), k = cfg(), rng = seeded(state, 'set|' + kind);
-    return U.clamp(Math.round(R.skill(state) + (k.kindBonus[kind] || 0) + rv.form + rng.range(-k.noise, k.noise)), 15, 99);
+    var low = k.noise * (GG.difficulty ? GG.difficulty.mul(state, 'rivalMiss') : 1);   // v0.6.1 C4: Brutal's rival rarely has an off night
+    return U.clamp(Math.round(R.skill(state) + (k.kindBonus[kind] || 0) + rv.form + rng.range(-low, k.noise)), 15, 99);
   };
   function texts(kind) { return ((content().showdowns || {})[kind]) || {}; }
   // Setup data for the UI: their lineup, setlist (per-song scores that average to their set score) and the stakes.
@@ -10747,7 +10908,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var t = U.clamp((state.fans / Math.max(1, lab.offerMinFans) - 1) / (K.advanceFansSpan || 4) + (br ? Math.max(0, br.critic - 60) / 100 : 0), 0, 1);
     var adv = (lab.advance[0] + (lab.advance[1] - lab.advance[0]) * t) * rng.range(spread[0], spread[1]);
     var offer = { id: labelId + '_' + state.totalWeek, labelId: labelId, name: lab.name,
-      advance: Math.round(U.clamp(adv, lab.advance[0], lab.advance[1]) / 100) * 100,
+      advance: Math.round(U.clamp(adv, lab.advance[0], lab.advance[1]) * (GG.difficulty ? GG.difficulty.mul(state, 'advance') : 1) / 100) * 100,
       royalty: Math.round(Math.min(0.9, lab.royalty + (br && br.critic >= 75 ? (K.royaltyBonus || 0.02) : 0)) * 100) / 100,
       albums: lab.albums, deadlineWeeks: lab.deadlineWeeks,
       demands: (lab.demands || []).map(function (x) { return x.kind || x; }),
@@ -10859,7 +11020,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       if (m) { mm[m.id] = r.role[role]; fx(state, { mood: mm }, delta); }
     });
     if (r.salesMult) d.salesMult = Math.min(K.salesMultMax || 1.4, (d.salesMult || 1) * r.salesMult);
-    if (r.goodwill) d.goodwill = U.clamp(d.goodwill + r.goodwill, 0, 100);
+    if (r.goodwill) d.goodwill = U.clamp(d.goodwill + (r.goodwill < 0 && GG.difficulty ? Math.round(r.goodwill * GG.difficulty.mul(state, 'labelHarsh')) : r.goodwill), 0, 100);
     if (d.goodwill <= 0) endDeal(state, null, 'goodwill');
     return delta;
   }
@@ -11464,7 +11625,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       deal.albumsDelivered++;
       deal.deadline = state.totalWeek + (L.label(deal.labelId) || {}).deadlineWeeks;
       // bad reviews annoy the label; a hit pleases it. The sales flop check comes after flopWeeks (albumWeek).
-      if (album.critic < ((K.flop || {}).critic || 45)) deal.goodwill = U.clamp(deal.goodwill - (K.goodwillFlop || 20), 0, 100);
+      if (album.critic < ((K.flop || {}).critic || 45)) deal.goodwill = U.clamp(deal.goodwill - Math.round((K.goodwillFlop || 20) * (GG.difficulty ? GG.difficulty.mul(state, 'labelHarsh') : 1)), 0, 100);
       else if (pos && pos <= 40) deal.goodwill = U.clamp(deal.goodwill + (K.goodwillHit || 10), 0, 100);
       if (deal.goodwill <= 0) endDeal(state, out, 'goodwill');
       else if (deal.albumsDelivered >= deal.albumsOwed) endDeal(state, out, 'fulfilled');
@@ -12756,10 +12917,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       var sc = RULES[w.rule](state, acts, gig, rng);
       add(w.rule === 'mystery' ? 'mystery' : 'want', w.rule === 'mystery' ? sc * E.kenjiDrift : sc > 0 ? sc * E.wantMet : sc * E.wantUnmet);
     }
-    var total = 0, worst = null, wv = -0.5;
+    var total = 0, worst = null, wv = -0.5, touchy = GG.difficulty ? GG.difficulty.mul(state, 'moodLoss') : 1;   // v0.6.1 C4
     for (var k in parts) {
       var v = parts[k];
       if (v < 0 && t === 'reliable') v *= 0.5;
+      if (v < 0) v *= touchy;
       total += v;
       if (v < wv) { wv = v; worst = k; }
     }
@@ -15245,6 +15407,26 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 
   R.available = false;
 
+  // ---- v0.6.1 (Addendum C4, SETTINGS): graphics quality, camera shake, reduced flashing ----------------------
+  // R.prefs() -> { quality: 'low'|'med'|'high', shake, calm, pixelRatio, crowdScale } (cached; never reads storage per
+  // frame) ; R.applySettings() re-reads GG.prefs and resizes. low = 1x pixels + 40% crowd, med = 1.5x + 70%, high = 2x + all.
+  // Scenes read R.prefs().calm (no strobing lights / hit flashes), .shake (camera shake allowed) and .crowdScale.
+  var QUALITY = { low: { px: 1, crowd: 0.4 }, med: { px: 1.5, crowd: 0.7 }, high: { px: 2, crowd: 1 } };
+  var PREFS = null;
+  R.prefs = function () {
+    if (PREFS) return PREFS;
+    var s = {}; try { s = GG.prefs ? GG.prefs.get() : {}; } catch (e) { s = {}; }
+    var q = QUALITY[s.graphics] ? s.graphics : 'high';
+    PREFS = { quality: q, shake: s.cameraShake !== false, calm: !!s.reducedFlash, pixelRatio: QUALITY[q].px, crowdScale: QUALITY[q].crowd };
+    return PREFS;
+  };
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, (typeof window !== 'undefined' && window.devicePixelRatio) || 1); }
+  R.applySettings = function () { PREFS = null; R.prefs(); if (R.available && renderer) { needsResize = true; applyResize(); } return PREFS; };
+  if (GG.on) GG.on('settings:changed', function (p) {
+    var k = (p && p.keys) || [];
+    if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
+  });
+
   // ---- Tunables ------------------------------------------------------------
   var TAP_SLOP = 12;                      // CSS px a finger may drift and still count as a tap
   var TAP_MS = 650;                       // longer presses are not taps
@@ -15283,7 +15465,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       if (!THREE || !THREE.WebGLRenderer || !el) return fail('three.js not loaded');
       var dpr = window.devicePixelRatio || 1;
       renderer = new THREE.WebGLRenderer({ antialias: dpr < 2, alpha: false, powerPreference: 'default' });
-      renderer.setPixelRatio(Math.min(2, dpr));
+      renderer.setPixelRatio(pixelRatio());
       renderer.setClearColor(0x0b1020, 1);
       container = el;
       canvas = renderer.domElement;
@@ -15433,7 +15615,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (!R.available) return;
     needsResize = false;
     var w = container.clientWidth || window.innerWidth || 1, h = container.clientHeight || window.innerHeight || 1;
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setPixelRatio(pixelRatio());
     W = w; H = h;
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
@@ -17517,6 +17699,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     B_LEG_L = 8, B_SHIN_L = 9, B_LEG_R = 10, B_SHIN_R = 11, B_CAPE1 = 12, B_CAPE2 = 13, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17;
   var HIPS_Y = 0.86;
   var MAX_CROWD = 150, MAX_CUPS = 12, MAX_BOOS = 6, N_FLASH = 6;
+  var NO_PREFS = { calm: false, shake: true, crowdScale: 1 };
+  function rprefs() { return (GG.render && GG.render.prefs && GG.render.prefs()) || NO_PREFS; }   // v0.6.1 (40_render_core)
   var KZ = 1.0, THRONE_Z = 0.62;                  // kit centre z; the drummer sits THRONE_Z behind it
   var STAGE_BACK = 2.6;
   var CAPE_OK = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
@@ -17705,7 +17889,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       if (!isFinite(crowd)) crowd = 30;
       return {
         kind: kind, V: KIND[kind], genre: genre, G: GENRE[genre], band: band, members: members, flags: flags, player: player,
-        crowd: Math.round(clamp(crowd, 3, MAX_CROWD)), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
+        crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd,   // v0.6.1: graphics quality venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         banner: cfg.banner || '', bannerSub: cfg.sub || ''
@@ -18573,7 +18757,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         hand.key = key; hand.t = 0;
         if (lane === 'hat') K.wob.hatT = 0; else if (lane === 'cymbal') K.wob.crashT = 0; else if (lane === 'ride') K.wob.rideT = 0;
       }
-      if (fi >= 0 && fi < N_FLASH) {
+      if (fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
         K.flash.t[fi] = 0; col.setHex(HIT_COL[judgement] || HIT_COL.good);
         K.flash.mesh.setColorAt(fi, col); K.flash.mesh.instanceColor.needsUpdate = true;
       }
@@ -18626,10 +18810,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 
     function updateLights(dt, t) {
       var L = K.lights, h = S.hype, bt = bump(S.beatT), base = L.base;
-      var wild = S.idx >= 4, lit = S.arms.kind === 'lighters' ? 0.45 : 1;
-      var pulse = base * (0.5 + 0.6 * h) * (0.85 + 0.3 * bt * (0.3 + h)) * lit + S.kickPulse * 0.25 * base;
-      L.washL.intensity = pulse * (wild && (S.beats % 2) ? 0.5 : 1.25);
-      L.washR.intensity = pulse * (wild && !(S.beats % 2) ? 0.5 : 1.25);
+      var wild = S.idx >= 4, lit = S.arms.kind === 'lighters' ? 0.45 : 1, calm = rprefs().calm;   // v0.6.1: calm = no strobing washes
+      var pulse = calm ? base * (0.5 + 0.6 * h) * lit : base * (0.5 + 0.6 * h) * (0.85 + 0.3 * bt * (0.3 + h)) * lit + S.kickPulse * 0.25 * base;
+      L.washL.intensity = pulse * (wild && !calm && (S.beats % 2) ? 0.5 : 1.25);
+      L.washR.intensity = pulse * (wild && !calm && !(S.beats % 2) ? 0.5 : 1.25);
       var F = S.form.kind, C = K.crowd;
       if (F) {                                                                  // a coloured spot follows the pit
         var fin = ease(Math.min(1, S.form.t / 0.6)) * ease(Math.min(1, (S.form.dur - S.form.t) / 0.8));
@@ -19530,9 +19714,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     function buildDash(b, item) {
       var x = -0.12, y = WS.y0 + 0.02, z = WS.z0 + 0.22, i;
       if (item === 'cactus') {
-        b.cyl(0.03, 0.024, 0.045, 8, x, y + 0.022, z, 0xb8603a); b.cyl(0.032, 0.032, 0.008, 8, x, y + 0.046, z, 0xa8502e);
-        b.cyl(0.012, 0.014, 0.07, 6, x, y + 0.085, z, 0x3f8a3a); b.box(0.028, 0.01, 0.01, x - 0.016, y + 0.085, z, 0x3f8a3a);
-        b.box(0.008, 0.024, 0.008, x - 0.028, y + 0.097, z, 0x3f8a3a); b.box(0.01, 0.01, 0.01, x, y + 0.124, z, 0xe86a9a);
+        var k = 1.7;   // v0.6.1 verify: tiny, but it has to read from the back bench on a phone
+        b.cyl(0.03 * k, 0.024 * k, 0.045 * k, 8, x, y + 0.022 * k, z, 0xb8603a); b.cyl(0.032 * k, 0.032 * k, 0.008 * k, 8, x, y + 0.046 * k, z, 0xa8502e);
+        b.cyl(0.012 * k, 0.014 * k, 0.07 * k, 6, x, y + 0.085 * k, z, 0x4fae48); b.box(0.028 * k, 0.01 * k, 0.01 * k, x - 0.016 * k, y + 0.085 * k, z, 0x4fae48);
+        b.box(0.008 * k, 0.024 * k, 0.008 * k, x - 0.028 * k, y + 0.097 * k, z, 0x4fae48); b.box(0.012 * k, 0.012 * k, 0.012 * k, x, y + 0.124 * k, z, 0xff7aae);
       } else if (item === 'laundry') {
         b.box(0.16, 0.02, 0.1, x, y + 0.01, z, 0x8a6aa8, 0, 0.3, 0); b.box(0.12, 0.02, 0.08, x + 0.04, y + 0.03, z + 0.01, 0xe8e0c8, 0, -0.4, 0);
         b.box(0.05, 0.12, 0.02, 0.02, 1.62, WS.z1 + 0.09, 0xd84a4a);   // a sock on the mirror
@@ -20170,7 +20355,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     }
 
     // ---- Per frame -----------------------------------------------------------------------------------------------------
-    function flashOne(i, v) { if (K) K.flashV[i] = Math.max(K.flashV[i], v); }
+    function flashOne(i, v) {   // v0.6.1 reduced flashing (GG.render.prefs().calm): camera flashes at a third, soft
+      if (GG.render && GG.render.prefs && GG.render.prefs().calm) v *= 0.3;
+      if (K) K.flashV[i] = Math.max(K.flashV[i], v);
+    }
     function spawnConfetti() {
       var p = K.conf.geometry.attributes.position.array, v = K.confV;
       for (var i = 0; i < N_CONF; i++) {
@@ -20654,6 +20842,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 <script>/* 51_ui_menu.js */
 // 51_ui_menu.js: everything outside the week loop. Title, load, new-career flow (slot → genre → band intro →
 // character creator → cold open), the in-game ☰ menu, and save-code backup/restore.
+// v0.6.1 (Addendum C4): ⚙ Settings from the title (title-settings) and the menu (menu-settings); the creator picks the
+// career difficulty (diff-chill|normal|brutal, locked for that career) and passes it to GG.main.newCareer.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -20722,7 +20912,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         btn('.btn.grow', { testid: 'btn-load', onclick: function () { ui.show('load'); } }, 'Load'),
         btn('.btn.grow', { testid: 'btn-code-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore code')
       ]));
-      kids.push(btn('.btn.ghost.block', { testid: 'title-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()));
+      kids.push(el('div.row', [
+        btn('.btn.ghost.grow', { testid: 'title-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
+        ui.defined && ui.defined('settings') ? btn('.btn.ghost.grow', { testid: 'title-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null
+      ]));
       ui.append(s.body, [
         el('div.title-glow'), el('div.title-bg'),
         el('div.title-wrap', [
@@ -20865,13 +21058,20 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         grid.appendChild(btn('.preset' + (p.id === draft.presetId ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': p.id === draft.presetId ? 'true' : 'false',
           onclick: function () { draft.presetId = p.id; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
       });
+      var DL = GG.difficulty ? GG.difficulty.LEVELS : ['normal'];
+      if (DL.indexOf(draft.careerDifficulty) < 0) draft.careerDifficulty = 'normal';
+      var diffPick = el('div.diff-pick', { testid: 'diff-pick' }, DL.map(function (d) {
+        var t = GG.difficulty ? GG.difficulty.text(d) : { name: d };
+        return btn('.btn' + (d === draft.careerDifficulty ? '.primary' : ''), { testid: 'diff-' + d, 'aria-pressed': d === draft.careerDifficulty ? 'true' : 'false',
+          onclick: function () { draft.careerDifficulty = d; s.rerender(); } }, [el('b', t.name), el('span.tiny', d === 'chill' ? 'easier life' : d === 'brutal' ? 'no mercy' : 'as intended')]);
+      }));
       create = btn('.btn.primary.big.block', { testid: 'btn-create', disabled: !(draft.name || '').trim(), onclick: function () {
         var n = (name.value || '').trim().slice(0, 16);
         if (!n) { err.textContent = 'Even drummers need a name.'; return; }
         create.disabled = true;
         GG.main.newCareer({ slot: draft.slot || '1', bandId: draft.bandId || 'hail_damage',
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId },
-          seed: GG.hashSeed(n + Date.now()) });
+          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
         ui.closeAll();
         ui.show('coldopen');
       } }, 'Start the band');
@@ -20882,7 +21082,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
           el('div.field', [el('label', { htmlFor: 'cr-name' }, 'Your name'), name, err]),
           el('div.field', [el('label', { htmlFor: 'cr-nick' }, 'Stage nickname'), nick]),
           el('div.caps', 'Pick a look'),
-          grid
+          grid,
+          el('div.caps', 'Career difficulty · locked for this career'),
+          diffPick,
+          el('p.small.dim', { testid: 'diff-blurb' }, GG.difficulty ? GG.difficulty.text(draft.careerDifficulty).blurb : '')
         ])
       ]);
       s.foot.appendChild(create);
@@ -20940,6 +21143,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
           btn('.btn.grow', { testid: 'menu-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
         ]),
         el('div.sep'),
+        ui.defined && ui.defined('settings') ? btn('.btn.block', { testid: 'menu-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null,
         el('div.row', [
           btn('.btn.grow', { testid: 'menu-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
           btn('.btn.danger.grow', { testid: 'menu-quit', onclick: function () {
@@ -21069,7 +21273,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         + ' background: rgba(13, 18, 30, .72); border: 1px solid rgba(255, 255, 255, .08); color: var(--dim); font: 700 11px/1.35 var(--font);'
         + ' white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; box-sizing: border-box; }\n'
         + '.hud-cal b { color: var(--amber); font-weight: 800; } .hud-cal .hol { color: var(--text); }\n'
-        + '.hud-chip.week .v { letter-spacing: -.04em; }';
+        + '.hud-chip.week .v { letter-spacing: -.04em; } .hud-chip.week .wk-of { font-size: 10px; opacity: .8; letter-spacing: 0; }\n'
+        // v0.6.1 verify: the calendar strip adds ~24px to the HUD, so sheets, their scrim and toasts start below it.
+        + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
+        + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
+        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }';
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -21106,7 +21314,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     dock.root.classList.toggle('hidden', !st || stack.length > 0);
     if (!st) return;
     hud.week._l.textContent = 'Y' + st.year;
-    hud.week._v.textContent = 'W' + st.week + '/' + C.WEEKS_PER_YEAR;
+    hud.week._v.textContent = 'W' + st.week;   // v0.6.1 verify: '/24' in a smaller span so W12/24 fits a 390px chip
+    hud.week._v.appendChild(el('small.wk-of', '/' + C.WEEKS_PER_YEAR));
     hud.fund._v.textContent = U.fmtMoney(st.fund);
     hud.fund.classList.toggle('neg', st.fund < 0);
     hud.fans._v.textContent = U.fmtNum(st.fans);
@@ -21679,6 +21888,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
     }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
+    if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
+      onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
     return el('div', out);
   }
 
@@ -22130,6 +22341,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 // exactly. The backing band plays from the scheduler with drums off; your taps play the drum voice; misses are silent.
 // Pause suspends the AudioContext (without a context the song restarts on resume).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
+// v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
+//   (session opts; auto kicks play the kick voice); the active calibration profile's audio offset is subtracted from every
+//   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, keys);
+//   colourblind lane colours (GG.prefs.CB_COLOURS); the setlist sheet has Expert, the speaker/headphones quick switch
+//   (gig-profile-<id>) and an assists line (btn-gig-settings). opts.practice = { speed } relabels a studio-mode run as practice.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
@@ -22164,7 +22380,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function auto() { return !!ui.gigAutoplay; }
   function lanesOf(state) { var n = state && state.gear && state.gear.lanes; return n >= 1 ? Math.min(n, C.LANES.length) : 4; }
-  function laneColor(l) { var L = ui.LANES && ui.LANES[C.LANES[l]]; return L ? L.color : '#8899bb'; }
+  function laneColor(l) {
+    if (G && G.cb && GG.prefs && GG.prefs.CB_COLOURS[C.LANES[l]]) return GG.prefs.CB_COLOURS[C.LANES[l]];
+    var L = ui.LANES && ui.LANES[C.LANES[l]]; return L ? L.color : '#8899bb';
+  }
+  function col(l) { return G && G.lefty ? G.lanes - 1 - l : l; }   // v0.6.1 lefty: lane l is drawn (and tapped) in column col(l)
+  function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
 
   /* ---- Audio clock --------------------------------------------------------------------------------------- */
   function audioCtx() { try { return GG.audio && GG.audio.context ? GG.audio.context() : null; } catch (e) { return null; } }
@@ -22255,7 +22476,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     'gig:judge': function (p) {
       if (!G || !G.chart) return;
       var li = C.LANES.indexOf(p.lane);
-      if (p.judgement) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
+      if (p.judgement && !p.auto) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
       if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now();
     },
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
@@ -22283,6 +22504,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
   }
 
+  GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
+
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
   ui.playGig = function (gig, done, opts) {
@@ -22292,6 +22515,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
+    readPrefs();
     listen(true);
     ui.show('gig', {});
     setupStage();
@@ -22302,8 +22526,13 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     else { G.pick = GG.gig.defaultSetlist(st, gig); ui.show('gig-set', {}); }
     return true;
   };
+  function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
+    var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
+    G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+  }
   function startSession(ids) {
-    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty() });
+    readPrefs();
+    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty(), noFail: !!G.pf.noFail, autoKick: !!G.pf.autoKick });
     G.diff = G.ses.difficulty || difficulty();
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
@@ -22421,10 +22650,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
-      if (t >= 0) G.ses.tick(t);
+      if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
-    if (G && G.chart && G.x) draw(G.paused ? G.pauseT : G.t, p);
+    if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
     if (G && G.ses) {
       var c = Math.round(G.ses.crowd);
       if (c !== G.crowdN) { G.crowdN = c; G.dom.meter.style.width = c + '%'; stageCall('setCrowdLevel', G.ses.crowd); }
@@ -22443,18 +22672,18 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (ev.cancelable) ev.preventDefault();
     wake();
     var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
-    tap(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li, ev.timeStamp);
+    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp);
   }
   function onKey(ev) {
     if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
     ev.preventDefault();
-    tap(li, ev.timeStamp);
+    tap(col(li), ev.timeStamp);
   }
   function tap(li, stamp) {
     var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
-    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero;
+    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero - (G.off ? G.off.audio : 0);   // v0.6.1: calibration
     if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
     G.press[li] = performance.now();
     if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
@@ -22473,7 +22702,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
     G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
-    LOOK = (GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15;   // seconds of highway visible: Easy scrolls slower
+    LOOK = ((GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15) / (G.speed || 1);   // seconds of highway visible: Easy scrolls slower; v0.6.1 note speed
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
@@ -22493,16 +22722,16 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     for (var l = 0; l < G.lanes; l++) {
-      var lx = l * laneW, col = laneColor(l);
+      var lx = col(l) * laneW, lc = laneColor(l);
       x.globalAlpha = l % 2 ? 0.05 : 0.025; x.fillStyle = '#ffffff'; x.fillRect(lx, 0, laneW, H);
-      x.globalAlpha = 0.18; x.fillStyle = col; x.fillRect(lx + laneW / 2 - 1, 0, 2, hitY);
-      x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (l) x.fillRect(lx, 0, 1, H);
+      x.globalAlpha = 0.18; x.fillStyle = lc; x.fillRect(lx + laneW / 2 - 1, 0, 2, hitY);
+      x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
-      x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = col; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
+      x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
       var L = ui.LANES && ui.LANES[C.LANES[l]];
       x.textAlign = 'center'; x.textBaseline = 'middle';
       x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-      x.font = '800 10px ' + FONT; x.fillStyle = col; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+      x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
@@ -22515,7 +22744,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
     for (l = 0; l < G.lanes; l++) {   // tap flashes
       a = 1 - (p - G.press[l]) / 140;
-      if (a > 0) { x.globalAlpha = a * 0.45; x.fillStyle = laneColor(l); rr(x, l * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); }
+      if (a > 0) { x.globalAlpha = a * 0.45; x.fillStyle = laneColor(l); rr(x, col(l) * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); }
     }
     x.globalAlpha = 1;
     var spb = ch.spb, b0 = Math.max(0, Math.ceil((t - 0.3) / spb)), b1 = Math.floor((t + LOOK) / spb);
@@ -22534,7 +22763,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       a = nt.j !== 0 && past > 0 ? 1 - past / 0.35 : 1;   // missed / passed notes fade out below the line
       if (a <= 0) continue;
       y = yOf(nt.t, t);
-      var gx = nt.li * laneW + (laneW - gw) / 2;
+      var gx = col(nt.li) * laneW + (laneW - gw) / 2;
       if (nt.j === 3) { x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063'; }
       else if (nt.free) { x.globalAlpha = 0.3 * a; x.fillStyle = laneColor(nt.li); }
       else { x.globalAlpha = 1; x.fillStyle = laneColor(nt.li); }
@@ -22547,7 +22776,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       a = 1 - (p - G.burst[l]) / 220;
       if (a > 0) {
         x.globalAlpha = a; x.strokeStyle = laneColor(l); x.lineWidth = 3;
-        x.beginPath(); x.arc(l * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
+        x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
       }
     }
     x.globalAlpha = 1; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46);
@@ -22555,7 +22784,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (a > 0 && POP_TEXT[G.popKind]) {
       x.globalAlpha = a < 0.6 ? a / 0.6 : 1; x.fillStyle = POP_COLOR[G.popKind]; x.font = G.fonts.pop;
       x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillText(POP_TEXT[G.popKind], U.clamp(G.popLane * laneW + laneW / 2, 70, W - 70), hitY - 58 - (1 - a) * 14);
+      x.fillText(POP_TEXT[G.popKind], U.clamp(col(G.popLane) * laneW + laneW / 2, 70, W - 70), hitY - 58 - (1 - a) * 14);
     }
     x.globalAlpha = 1;
     var combo = G.ses.combo;
@@ -22587,9 +22816,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var d = G.dom, n = G.ses.setlist.length, i = G.ses.index;   // i = songs played so far
     G.mode = 'between';
     ui.clear(d.mid);
-    var b = banterLine(), next = G.ses.song(), studio = G.opts.studio;
+    var b = banterLine(), next = G.ses.song(), studio = G.opts.studio, pr = G.opts.practice;   // v0.6.1: practice runs in studio mode
     d.mid.appendChild(el('div.gig-mid-card', { testid: 'gig-between' }, [
-      el('div.caps', studio ? (r ? 'Take in the can' : (studio.label || 'Studio take') + ' · red light is on')
+      el('div.caps', pr ? (r ? 'Practice run done' : (studio.label || 'Practice')) : studio ? (r ? 'Take in the can' : (studio.label || 'Studio take') + ' · red light is on')
         : r ? 'Song ' + i + ' of ' + n + ' · saved' : 'Welcome back · ' + i + ' of ' + n + ' played'),
       r ? el('div.gig-song-res', [
         el('b', '“' + r.title + '”'),
@@ -22599,7 +22828,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       b.who ? el('div.react', [ui.avatar(b.who, 'sm'), el('div.t', [el('b', ui.who(b.who).short + ': '), b.text])]) : el('p.small', b.text),
       next ? el('div.small.dim', 'Up next: “' + next.title + '”' + (next.classic ? ' (a classic)' : '')) : null,
       ui.btn('.btn.primary.block', { testid: 'btn-gig-next', onclick: function () { if (G && G.mode === 'between') nextSong(); } },
-        studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
+        pr ? (next ? 'Count me in' : 'Done practising') : studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
@@ -22728,15 +22957,25 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
       s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
-      var cur = difficulty();
-      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:10px' }, [el('span.caps.grow', 'Difficulty'),
-        ['easy', 'normal', 'hard'].map(function (d) {
-          return ui.btn('.btn.small' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, onclick: function () {
-            GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
-        })]));
+      var cur = difficulty(), pf = prefs();
+      s.body.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
+      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
+        return ui.btn('.btn.small.grow' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, style: 'padding:0 6px', onclick: function () {
+          GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
+      })));
       s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
-        ? 'Normal: most of what you wrote, no impossible bursts.' : 'Hard: every hit exactly as written, tight timing.'));
+        ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
+        : 'Expert: every hit as written, a razor-thin window, and misses sting. Kenji nods, once.'));
+      if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
+        s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+          return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
+            onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
+        })));
+        var on = [pf.noFail ? 'No-fail' : null, pf.autoKick ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
+        s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
+          '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
+      }
       var bo = GG.gig.setlistBonuses(st, ids);
       s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
@@ -23215,7 +23454,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var k = GG.calendar.kind(t.weather), h = t.holiday && GG.calendar.holidayById(t.holiday), d = GG.world.driver(S());
     return k.icon + ' ' + k.label + ', ' + t.temp + '°C' + (h ? ' · ' + h.icon + ' ' + h.name : '') + ' · ' + (d.you ? 'You drive' : d.name + ' drives');
   }
-  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000; }
+  function vprefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  // v0.6.1 (Addendum C4): settings.fastAnim halves the drive; settings.skipVan skips it (the road card still comes up).
+  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000 * (vprefs().fastAnim ? 0.5 : 1); }
   function say(v, b) {
     if (!b || !v.says) return;
     var who = ui.who(b.who);
@@ -23293,6 +23534,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       }
       v.last = (typeof performance !== 'undefined' ? performance.now() : 0);
       v.raf = requestAnimationFrame(frame);
+      if (vprefs().skipVan) setTimeout(function () { if (cur === v && v.alive && !v.skipping && !v.arrived) skip(v); }, 60);
     },
     onClose: function (s) {
       var v = s.data.view, d = s.data;
@@ -25772,6 +26014,341 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 })(window.GG);
 
 </script>
+<script>/* 5h_ui_settings.js */
+// 5h_ui_settings.js (v0.6.1, SETTINGS agent; Addendum 1 C4): the settings screen, audio calibration, practice mode.
+//   Screens: 'settings' (full; from the title ⚙ and the ☰ menu; data.tab 'play' scrolls to Play) · 'calib' (full; tap
+//   along to eight clicks -> audio offset, then tap the flashing light -> visual offset; saved per profile, phone speaker /
+//   headphones; data.first = the automatic first-launch run, skippable) · 'practice' (sheet; any catalog song at 50/75/100%
+//   speed, played in the gig's studio mode on a shadow state: no crowd, no pay, nothing saved).
+//   Practice is reachable from the laptop song list (53) and from the drum kit (a button added under the sketch pad).
+//   First launch: the title opens 'calib' once while settings.calibSeen is false (not under automation unless ?calib=1).
+//   <html> classes: gg-big (bigger text), gg-calm (reduced flashing), gg-fast (faster animations).
+//   testids: set-<key> toggles, set-gigdiff-<d>, set-speed-<n>, set-profile-<p>, set-gfx-<q>, set-mix-<bus>, set-metronome,
+//   set-muted, set-calibrate, set-practice, set-career-diff, set-save-load|backup|restore ; calib-profile-<p>, calib-start,
+//   calib-pad, calib-light, calib-result, calib-visual-start, calib-retry, calib-save, calib-skip ; practice-speed-<pct>,
+//   practice-song-<id>, laptop-practice, kit-practice. Debug: GG.debug('settings'), GG.debug('calib').
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, P = GG.prefs;
+  function prefs() { try { return P.get(); } catch (e) { return {}; } }
+  function set(o) { return P.set(o); }
+
+  /* ---- <html> classes ------------------------------------------------------------------------------------ */
+  function applyClasses() {
+    var pf = prefs(), h = typeof document !== 'undefined' && document.documentElement;
+    if (!h) return;
+    h.classList.toggle('gg-big', !!pf.bigText);
+    h.classList.toggle('gg-calm', !!pf.reducedFlash);
+    h.classList.toggle('gg-fast', !!pf.fastAnim);
+  }
+  applyClasses();
+  GG.on('settings:changed', applyClasses);
+  // v0.6.1 verify: audio keys written through GG.prefs.set (or a restored save) reach GG.audio's cached prefs.
+  GG.on('settings:changed', function (p) {
+    var k = (p && p.keys) || [];
+    var hit = !k.length || k.some(function (x) { return /^(mix|metronome|brushes|muted)$/.test(x); });
+    if (hit && GG.audio && GG.audio.applySettings) GG.audio.applySettings();
+  });
+
+  /* ---- Building blocks ------------------------------------------------------------------------------------ */
+  function row(label, sub, ctl, testid) {
+    return el('div.set-row', testid ? { testid: testid } : null, [el('div.lbl', [el('b', label), sub ? el('span', sub) : null]), ctl]);
+  }
+  function toggle(s, key, label, sub) {
+    var on = !!prefs()[key];
+    return row(label, sub, btn('.btn.small.set-toggle' + (on ? '.primary' : ''), { testid: 'set-' + key, 'aria-pressed': on ? 'true' : 'false',
+      onclick: function () { var o = {}; o[key] = !on; set(o); s.rerender(); } }, on ? 'On' : 'Off'));
+  }
+  function seg(s, key, opts, prefix, cur) {
+    return el('div.set-seg', opts.map(function (x) {
+      var on = cur === x[0];
+      return btn('.btn.small' + (on ? '.primary' : ''), { testid: prefix + x[2], 'aria-pressed': on ? 'true' : 'false',
+        onclick: function () { var o = {}; o[key] = x[0]; set(o); s.rerender(); } }, x[1]);
+    }));
+  }
+  function sec(title, id) { return el('div.caps.set-sec', id ? { id: id } : null, title); }
+  function msText(ms) { return ms === 0 ? 'right on it' : Math.abs(ms) + ' ms ' + (ms > 0 ? 'late' : 'early'); }
+  var PROFILE_NAME = { speaker: '🔊 Speaker', headphones: '🎧 Headphones' };
+  var BUS_NAME = { drums: ['Drums', 'your taps + the kit'], band: ['Band', 'backing + vocals'], crowd: ['Crowd', 'cheers, boos, the murmur'], sfx: ['SFX', 'UI sounds, ambience, van radio'] };
+
+  /* ---- Settings screen ---------------------------------------------------------------------------------- */
+  ui.define('settings', {
+    kind: 'full',
+    build: function (s, d) {
+      var pf = prefs(), st = GG.state, A = GG.audio;
+      ui.append(s.body, [el('div.back-row', [btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
+        el('div', [el('div.caps', 'Garage to Glory'), el('h1.display', 'Settings')])])]);
+
+      // Career difficulty: picked on the new-career screen, locked for that career
+      var cd = GG.difficulty ? GG.difficulty.of(st) : 'normal', ct = GG.difficulty ? GG.difficulty.text(cd) : { name: cd, blurb: '' };
+      s.body.appendChild(sec('Career'));
+      s.body.appendChild(row(st ? 'Career difficulty: ' + ct.name + ' 🔒' : 'Career difficulty', st ? 'Locked for this career. ' + ct.blurb : 'Chill, Normal or Brutal: you pick it when you start a new career.', null, 'set-career-diff'));
+
+      // Play
+      s.body.appendChild(sec('Play', 'set-play'));
+      var gd = GG.gig && GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[pf.gigDifficulty] ? pf.gigDifficulty : 'easy';
+      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your drum skill. Change it any time.', null));
+      s.body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
+      s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
+      s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
+      s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
+      s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
+      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', 'Mirrors the lanes: kick on the right.'));
+      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song'));
+
+      // Audio
+      s.body.appendChild(sec('Audio + timing', 'set-audio'));
+      s.body.appendChild(row('Listening on', 'Bluetooth adds delay: each profile keeps its own calibration.', null));
+      s.body.appendChild(seg(s, 'audioProfile', P.PROFILES.map(function (p) { return [p, PROFILE_NAME[p], p]; }), 'set-profile-', pf.audioProfile));
+      var c = pf.calib[pf.audioProfile];
+      s.body.appendChild(row('Calibration', c.at ? 'Taps ' + msText(c.audio) + ' · eyes ' + msText(c.visual) : 'Not calibrated yet on this profile.',
+        btn('.btn.small', { testid: 'set-calibrate', onclick: function () { ui.show('calib', { profile: pf.audioProfile }); } }, c.at ? 'Redo' : 'Calibrate')));
+      if (A && A.isMuted) s.body.appendChild(row('Sound', null, btn('.btn.small.set-toggle' + (A.isMuted() ? '' : '.primary'), { testid: 'set-muted',
+        onclick: function () { A.toggleMuted(); s.rerender(); } }, A.isMuted() ? 'Off' : 'On')));
+      if (A && typeof A.setVolume === 'function' && typeof A.getVolume === 'function') {   // lane A's mixer
+        ((GG.contracts && GG.contracts.MIX_BUSES) || ['drums', 'band', 'crowd', 'sfx']).forEach(function (bus) {
+          var v = A.getVolume(bus); v = v == null ? 1 : v;
+          var n = BUS_NAME[bus] || [bus, ''];
+          s.body.appendChild(el('div.set-row', { style: 'flex-wrap:wrap' }, [el('div.lbl', [el('b', n[0]), el('span', n[1])]),
+            el('input.set-slider', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(v * 100), testid: 'set-mix-' + bus, 'aria-label': n[0] + ' volume',
+              oninput: function (e) { try { A.setVolume(bus, (+e.target.value) / 100); } catch (err) { /* ignore */ } } })]));
+        });
+      }
+      if (A && typeof A.setMetronome === 'function' && typeof A.metronome === 'function') {
+        var mo = !!A.metronome();
+        s.body.appendChild(row('Metronome', 'A click under the sequencer while you write.', btn('.btn.small.set-toggle' + (mo ? '.primary' : ''), { testid: 'set-metronome',
+          'aria-pressed': mo ? 'true' : 'false', onclick: function () { A.setMetronome(!mo); s.rerender(); } }, mo ? 'On' : 'Off')));
+      }
+      if (A && typeof A.applySettings === 'function') {   // country brushed snare (off = ghost notes)
+        var br = (GG.save && GG.save.settings && GG.save.settings().brushes) !== false;
+        s.body.appendChild(row('Brushes', 'Country snare: brushes, or ghost notes when off.', btn('.btn.small.set-toggle' + (br ? '.primary' : ''), { testid: 'set-brushes',
+          'aria-pressed': br ? 'true' : 'false', onclick: function () { GG.prefs.set({ brushes: !br }); s.rerender(); } }, br ? 'On' : 'Off')));
+      }
+
+      // Look + feel
+      s.body.appendChild(sec('Look + feel', 'set-look'));
+      s.body.appendChild(row('Graphics', 'Low saves battery: fewer pixels, a smaller crowd.', null));
+      s.body.appendChild(seg(s, 'graphics', [['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics));
+      s.body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
+      if (pf.colourblind) s.body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
+        return el('span.tag', { style: { background: P.CB_COLOURS[l], color: '#111', flex: '1 1 0', textAlign: 'center' } }, (ui.LANES && ui.LANES[l] ? ui.LANES[l].name : l));
+      })));
+      s.body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
+      s.body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
+      s.body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
+      s.body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
+      s.body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));
+
+      // Saves
+      s.body.appendChild(sec('Saves'));
+      s.body.appendChild(el('div.row', [
+        btn('.btn.grow', { testid: 'set-save-load', onclick: function () { ui.show('load'); } }, 'Slots'),
+        btn('.btn.grow', { testid: 'set-save-backup', disabled: !st, onclick: function () { ui.show('code', { mode: 'backup' }); } }, 'Back up'),
+        btn('.btn.grow', { testid: 'set-save-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
+      ]));
+      s.body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'set-done', onclick: function () { ui.close(s.id); } }, 'Done'));
+      if (d && d.tab && !d._scrolled) {
+        d._scrolled = true;
+        var target = s.body.querySelector('#set-' + d.tab);
+        if (target) setTimeout(function () { try { s.body.scrollTop = target.offsetTop - 12; } catch (e) { /* ignore */ } }, 0);
+      }
+    }
+  });
+
+  /* ---- Calibration ------------------------------------------------------------------------------------------ */
+  var N_CLICKS = 8, GAP = 600, LEAD = 1000;
+  var K = null;   // the test in progress
+  var dbg = { open: false, step: null, clicks: [], taps: [], audio: null, visual: null, profile: null, clock: null };
+  function stopTest() {
+    if (!K) return;
+    K.timers.forEach(clearTimeout); K.timers = [];
+    K.running = false;
+  }
+  function ctxNow() { try { return GG.audio && GG.audio.context ? GG.audio.context() : null; } catch (e) { return null; } }
+  function beep(c, when, hi) {
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = 'square'; o.frequency.value = hi ? 1760 : 1320;
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.3, when + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.06);
+    o.connect(g); g.connect(c.destination); o.start(when); o.stop(when + 0.08);
+  }
+  // Click i is heard at clicks[i] (performance.now() ms): scheduled on the AudioContext, mapped to the performance clock
+  // once at the start (+ the output latency the gig clock also assumes), so later clock hiccups can't skew it.
+  function startAudioTest(s) {
+    stopTest();
+    K = { kind: 'audio', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    try { if (GG.audio && GG.audio.unlock) GG.audio.unlock(); } catch (e) { /* ignore */ }
+    var c = ctxNow(), p0 = performance.now(), i;
+    if (c && c.state !== 'running' && c.resume) { try { c.resume(); } catch (e) { /* ignore */ } }
+    if (c && c.state === 'running') {
+      var a0 = c.currentTime, lat = U.clamp(c.outputLatency > 0 ? c.outputLatency : c.baseLatency > 0 ? c.baseLatency : 0.025, 0, 0.3);
+      for (i = 0; i < N_CLICKS; i++) { var at = a0 + (LEAD + i * GAP) / 1000; try { beep(c, at, i % 4 === 0); } catch (e) { /* ignore */ } K.clicks.push(p0 + LEAD + i * GAP + lat * 1000); }
+      dbg.clock = 'audio';
+    } else {
+      for (i = 0; i < N_CLICKS; i++) K.clicks.push(p0 + LEAD + i * GAP);
+      K.clicks.forEach(function (t) { K.timers.push(setTimeout(function () { if (GG.audio && GG.audio.sfx) GG.audio.sfx('tap'); }, t - p0)); });
+      dbg.clock = 'performance';
+    }
+    K.clicks.forEach(function (t, k) { K.timers.push(setTimeout(function () { K.n = k + 1; count(s); }, Math.max(0, t - performance.now()))); });
+    K.timers.push(setTimeout(function () { finishTest(s); }, K.clicks[N_CLICKS - 1] - p0 + 700));
+    dbg.clicks = K.clicks.slice(); dbg.taps = K.taps;
+    s.rerender({ step: 'audio', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+  }
+  function startVisualTest(s) {
+    stopTest();
+    K = { kind: 'visual', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    var p0 = performance.now();
+    for (var i = 0; i < N_CLICKS; i++) (function (k) {
+      K.timers.push(setTimeout(function () {
+        var l = document.querySelector('[data-testid="calib-light"]');
+        if (l) l.classList.add('on');
+        K.clicks[k] = performance.now(); K.n = k + 1; dbg.clicks = K.clicks.slice(); count(s);
+        K.timers.push(setTimeout(function () { if (l) l.classList.remove('on'); }, 110));
+      }, LEAD + k * GAP));
+    })(i);
+    K.timers.push(setTimeout(function () { finishTest(s); }, LEAD + (N_CLICKS - 1) * GAP + 700));
+    dbg.clicks = []; dbg.taps = K.taps;
+    s.rerender({ step: 'visual', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+  }
+  function count(s) { var e = s.body && s.body.querySelector('[data-testid="calib-count"]'); if (e && K) e.textContent = (K.kind === 'audio' ? 'Click ' : 'Flash ') + Math.min(K.n, N_CLICKS) + ' of ' + N_CLICKS; }
+  function finishTest(s) {
+    if (!K) return;
+    var kind = K.kind, r = P.calibCompute(K.clicks.filter(function (x) { return x != null; }), K.taps, { interval: GAP });
+    stopTest();
+    dbg[kind] = r;
+    var d = { profile: s.data.profile, first: s.data.first, audio: s.data.audio, visual: s.data.visual };
+    d[kind] = r; d.step = kind + 'Done';
+    if (ui.isOpen('calib')) s.rerender(d);
+  }
+  function padTap(ev) {
+    if (!K || !K.running) return;
+    if (ev.cancelable) ev.preventDefault();
+    var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
+    K.taps.push(t);
+    var pad = ev.currentTarget; if (pad && pad.classList) { pad.classList.add('hit'); setTimeout(function () { pad.classList.remove('hit'); }, 90); }
+  }
+  ui.define('calib', {
+    kind: 'full', sticky: true,
+    build: function (s, d) {
+      var pf = prefs(), profile = P.PROFILES.indexOf(d.profile) >= 0 ? d.profile : pf.audioProfile, step = d.step || 'intro';
+      d.profile = profile;
+      dbg.open = true; dbg.step = step; dbg.profile = profile;
+      function skip() { stopTest(); set({ calibSeen: true }); ui.close(s.id); }
+      ui.append(s.body, [el('div.back-row', [d.first ? null : btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { stopTest(); ui.close(s.id); } }, '←'),
+        el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
+      if (step === 'intro') {
+        ui.append(s.body, [
+          el('p.screen-sub', "Phones are late. Bluetooth is later. Tap along once and the game will judge your hits the way you actually hear them."),
+          el('div.caps.set-sec', 'Calibrating for'),
+          el('div.set-seg', P.PROFILES.map(function (p) {
+            return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
+          })),
+          el('p.small.dim', { style: 'margin-top:10px' }, 'Step 1: tap the pad on each of eight clicks. Step 2: tap when the light flashes. Takes twenty seconds.'),
+          GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
+        ]);
+        s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
+          btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, d.first ? 'Skip for now (Settings → Calibrate later)' : 'Cancel')]));
+        return;
+      }
+      if (step === 'audio' || step === 'visual') {
+        var pad = el('div.calib-pad', { testid: 'calib-pad', onpointerdown: padTap }, step === 'audio' ? 'Tap on the click' : 'Tap on the flash');
+        ui.append(s.body, [
+          el('p.screen-sub', step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
+          step === 'visual' ? el('div.calib-light', { testid: 'calib-light', onpointerdown: padTap }) : null,
+          el('div.caps.center', { testid: 'calib-count', style: 'margin:10px 0' }, 'Get ready…'),
+          pad
+        ]);
+        s.foot.appendChild(btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, 'Skip'));
+        return;
+      }
+      // results
+      var a = d.audio, v = d.visual;
+      function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
+      ui.append(s.body, [
+        el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
+        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, a light check keeps the highway in line with what you see.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.')
+      ]);
+      var foot = [];
+      if (step === 'audioDone' && a && a.ok) foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
+      if ((a && a.ok) || (v && v.ok)) foot.push(btn('.btn' + (step === 'visualDone' ? '.primary.big' : '') + '.block', { testid: 'calib-save', onclick: function () {
+        var o = { at: Date.now() };
+        if (a && a.ok) o.audio = a.offset;
+        if (v && v.ok) o.visual = v.offset;
+        P.setCalib(profile, o);
+        ui.close(s.id);
+        ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. Kenji gives a slow thumbs-up.');
+      } }, 'Save calibration'));
+      foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone' && a && a.ok) startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
+      s.foot.appendChild(el('div.stack', foot));
+    },
+    onClose: function () { stopTest(); K = null; dbg.open = false; dbg.step = null; GG.emit('settings:changed', { keys: ['calib'] }); }
+  });
+  GG.registerDebug('calib', function () { return { open: dbg.open, step: dbg.step, profile: dbg.profile, clock: dbg.clock, clicks: dbg.clicks.slice(), taps: (dbg.taps || []).slice(), audio: dbg.audio, visual: dbg.visual }; });
+
+  // First launch: the title opens the calibration once (skippable). Automation (navigator.webdriver) only with ?calib=1.
+  var firstDone = false;
+  GG.on('screen:open', function (p) {
+    if (firstDone || !p || p.id !== 'title') return;
+    firstDone = true;
+    var force = typeof location !== 'undefined' && /[?&]calib=1\b/.test(location.search || '');
+    if (prefs().calibSeen || (!force && typeof navigator !== 'undefined' && navigator.webdriver)) return;
+    setTimeout(function () { if (ui.top() === 'title') ui.show('calib', { first: true }); }, 60);
+  });
+
+  /* ---- Practice mode ---------------------------------------------------------------------------------------- */
+  var SPEEDS = [[0.5, '50%'], [0.75, '75%'], [1, '100%']];
+  ui.practice = function (songId, speed) {
+    var st = GG.state, song = st && GG.songs.byId(st, songId);
+    if (!st || !song || !ui.playGig) return false;
+    speed = speed > 0 && speed <= 1 ? speed : 1;
+    var slow = Object.assign({}, song, { pattern: Object.assign({}, song.pattern, { bpm: Math.max(30, Math.round((song.pattern.bpm || 120) * speed)) }) });
+    var shadow = Object.assign({}, st, { liveGig: null, songs: (st.songs || []).map(function (x) { return x.id === songId ? slow : x; }) });
+    var pct = Math.round(speed * 100);
+    var gig = { venueId: 'practice:' + songId, name: 'Practice · ' + song.title, city: 'The garage', tier: 1, kind: 'studio',
+      capacity: 1, deal: 'flat', pay: 0, gas: 0, quirk: '', source: 'practice', setSize: 1 };
+    if (ui.isOpen('practice')) ui.close('practice');
+    return ui.playGig(gig, function (r) {
+      if (r) ui.toast('Practice at ' + pct + '%: ' + Math.round((r.accuracy || 0) * 100) + '% hit, best combo ' + (r.maxCombo || 0) + '. Nobody saw. Perfect.', { who: 'Practice' });
+    }, { studio: { state: shadow, songId: songId, label: 'Practice · “' + song.title + '” · ' + pct + '% speed' }, practice: { speed: speed }, apply: function () {} });
+  };
+  ui.define('practice', {
+    kind: 'sheet', tall: true, title: 'Practice',
+    build: function (s, d) {
+      var st = GG.state; if (!st) return;
+      var speed = d.speed || 0.75;
+      s.setTitle('Practice', 'No crowd · no pay · nothing saved');
+      s.body.appendChild(el('p.small.dim', 'Any song from your catalog, slowed down if you like. Kenji holds the click. Nobody is watching. Probably.'));
+      s.body.appendChild(el('div.caps.set-sec', 'Speed'));
+      s.body.appendChild(el('div.set-seg', SPEEDS.map(function (x) {
+        return btn('.btn.small' + (x[0] === speed ? '.primary' : ''), { testid: 'practice-speed-' + Math.round(x[0] * 100), onclick: function () { s.rerender({ speed: x[0] }); } }, x[1]);
+      })));
+      s.body.appendChild(el('div.caps.set-sec', 'Pick a song'));
+      var list = el('div.panel', { style: 'padding:0 12px' });
+      GG.songs.best(st).forEach(function (song) {
+        var r = song.rating || {};
+        list.appendChild(btn('.song', { testid: 'practice-song-' + song.id, onclick: function () { ui.practice(song.id, speed); } },
+          el('div.row', [el('span', { style: 'font-size:20px' }, '🥁'), el('div.grow', [el('b', song.title),
+            el('div.tiny.dim', 'Diff ' + (r.difficulty || '?') + ' · ' + Math.round((song.pattern && song.pattern.bpm || 120) * speed) + ' bpm at this speed')])])));
+      });
+      s.body.appendChild(list);
+    }
+  });
+  // The drum kit (the sketch pad) gets a way into practice mode too.
+  GG.on('ui:layout', function (p) {
+    if (!p || p.id !== 'seq' || !ui.get) return;
+    var e = ui.get('seq');
+    if (!e || !e.data || e.data.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
+    if (e.body.querySelector('[data-testid="kit-practice"]')) return;
+    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song instead'));
+  });
+
+  GG.registerDebug('settings', function () {
+    var h = document.documentElement;
+    return { prefs: prefs(), classes: { big: h.classList.contains('gg-big'), calm: h.classList.contains('gg-calm'), fast: h.classList.contains('gg-fast') },
+      render: GG.render && GG.render.prefs ? GG.render.prefs() : null, difficulty: GG.difficulty ? GG.difficulty.of(GG.state) : null };
+  });
+})(window.GG);
+
+</script>
 <script>/* 60_main.js */
 // 60_main.js: boot, the live career (GG.state), routing by phase, the week flow, autosave, and the glue to
 // render + audio. Screens call these; sims never do.
@@ -25873,7 +26450,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   /* ---- Careers ------------------------------------------------------------------------------------- */
   M.newCareer = function (o) {
     o = o || {};
-    var st = GG.career.newCareer({ seed: o.seed, bandId: o.bandId || 'hail_damage', slot: String(o.slot || '1'), player: o.player || { name: 'You' } });
+    var st = GG.career.newCareer({ seed: o.seed, bandId: o.bandId || 'hail_damage', slot: String(o.slot || '1'), player: o.player || { name: 'You' },
+      careerDifficulty: o.careerDifficulty });   // v0.6.1 C4: chill | normal | brutal, locked for the career
     setState(st);
     write(st.slot, st); write('auto', st);   // the slot is claimed right away, so Continue works from week 1
     return st;
@@ -25885,7 +26463,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var presets = GG.content.presets || [];
     ui.closeAll();
     M.newCareer({ seed: o.seed != null ? (o.seed >>> 0) || 1 : GG.hashSeed(name + Date.now()), slot: o.slot || '1', bandId: o.bandId,
-      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) } });
+      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty });
     if (o.openCard === false) { GG.career.startWeek(GG.state); M.sync(); }
     else M.enterGarage();
     return GG.state;

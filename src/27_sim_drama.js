@@ -157,10 +157,11 @@
       var sc = RULES[w.rule](state, acts, gig, rng);
       add(w.rule === 'mystery' ? 'mystery' : 'want', w.rule === 'mystery' ? sc * E.kenjiDrift : sc > 0 ? sc * E.wantMet : sc * E.wantUnmet);
     }
-    var total = 0, worst = null, wv = -0.5;
+    var total = 0, worst = null, wv = -0.5, touchy = GG.difficulty ? GG.difficulty.mul(state, 'moodLoss') : 1;   // v0.6.1 C4
     for (var k in parts) {
       var v = parts[k];
       if (v < 0 && t === 'reliable') v *= 0.5;
+      if (v < 0) v *= touchy;
       total += v;
       if (v < wv) { wv = v; worst = k; }
     }

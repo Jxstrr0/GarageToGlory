@@ -452,7 +452,8 @@
       space: band.space || 'parents_garage', player: makePlayer(p),
       totalWeek: 1, year: 1, week: 1, maxWeeks: C.WEEKS_PER_YEAR * C.CAREER_YEARS,
       phase: 'monday', era: 'garage', protected: true,
-      fund: E.startFund, fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
+      careerDifficulty: GG.difficulty ? GG.difficulty.of({ careerDifficulty: args.careerDifficulty }) : 'normal',   // v0.6.1 C4: locked per career
+      fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
       members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
@@ -637,7 +638,7 @@
       addStat(state, 'burnout', A.burnout, d);
     },
     hustle: function (state, A, f, rng, d) {
-      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1));   // v0.5: fame pays (lessons, session work)
+      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1) * (GG.difficulty ? GG.difficulty.mul(state, 'hustle') : 1));   // v0.5: fame pays (lessons, session work)
       addStat(state, 'fund', cash, d);
       state.stats.earned += cash; state.stats.hustles++;
       addStat(state, 'burnout', A.burnout, d);
@@ -730,7 +731,7 @@
   // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep).
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
-    return Math.round(E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0));
+    return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
   };
   function decayBuzz(state) {
     if (state.buzz <= 0) return 0;

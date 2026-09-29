@@ -59,6 +59,8 @@
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
     }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
+    if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
+      onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
     return el('div', out);
   }
 

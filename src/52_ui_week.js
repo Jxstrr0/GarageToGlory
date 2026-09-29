@@ -67,7 +67,11 @@
         + ' background: rgba(13, 18, 30, .72); border: 1px solid rgba(255, 255, 255, .08); color: var(--dim); font: 700 11px/1.35 var(--font);'
         + ' white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; box-sizing: border-box; }\n'
         + '.hud-cal b { color: var(--amber); font-weight: 800; } .hud-cal .hol { color: var(--text); }\n'
-        + '.hud-chip.week .v { letter-spacing: -.04em; }';
+        + '.hud-chip.week .v { letter-spacing: -.04em; } .hud-chip.week .wk-of { font-size: 10px; opacity: .8; letter-spacing: 0; }\n'
+        // v0.6.1 verify: the calendar strip adds ~24px to the HUD, so sheets, their scrim and toasts start below it.
+        + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
+        + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
+        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }';
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -104,7 +108,8 @@
     dock.root.classList.toggle('hidden', !st || stack.length > 0);
     if (!st) return;
     hud.week._l.textContent = 'Y' + st.year;
-    hud.week._v.textContent = 'W' + st.week + '/' + C.WEEKS_PER_YEAR;
+    hud.week._v.textContent = 'W' + st.week;   // v0.6.1 verify: '/24' in a smaller span so W12/24 fits a 390px chip
+    hud.week._v.appendChild(el('small.wk-of', '/' + C.WEEKS_PER_YEAR));
     hud.fund._v.textContent = U.fmtMoney(st.fund);
     hud.fund.classList.toggle('neg', st.fund < 0);
     hud.fans._v.textContent = U.fmtNum(st.fans);
