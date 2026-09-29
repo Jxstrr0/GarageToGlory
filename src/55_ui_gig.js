@@ -13,6 +13,11 @@
 // exactly. The backing band plays from the scheduler with drums off; your taps play the drum voice; misses are silent.
 // Pause suspends the AudioContext (without a context the song restarts on resume).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
+// v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
+//   (session opts; auto kicks play the kick voice); the active calibration profile's audio offset is subtracted from every
+//   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, keys);
+//   colourblind lane colours (GG.prefs.CB_COLOURS); the setlist sheet has Expert, the speaker/headphones quick switch
+//   (gig-profile-<id>) and an assists line (btn-gig-settings). opts.practice = { speed } relabels a studio-mode run as practice.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
@@ -47,7 +52,12 @@
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function auto() { return !!ui.gigAutoplay; }
   function lanesOf(state) { var n = state && state.gear && state.gear.lanes; return n >= 1 ? Math.min(n, C.LANES.length) : 4; }
-  function laneColor(l) { var L = ui.LANES && ui.LANES[C.LANES[l]]; return L ? L.color : '#8899bb'; }
+  function laneColor(l) {
+    if (G && G.cb && GG.prefs && GG.prefs.CB_COLOURS[C.LANES[l]]) return GG.prefs.CB_COLOURS[C.LANES[l]];
+    var L = ui.LANES && ui.LANES[C.LANES[l]]; return L ? L.color : '#8899bb';
+  }
+  function col(l) { return G && G.lefty ? G.lanes - 1 - l : l; }   // v0.6.1 lefty: lane l is drawn (and tapped) in column col(l)
+  function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
 
   /* ---- Audio clock --------------------------------------------------------------------------------------- */
   function audioCtx() { try { return GG.audio && GG.audio.context ? GG.audio.context() : null; } catch (e) { return null; } }
@@ -138,7 +148,7 @@
     'gig:judge': function (p) {
       if (!G || !G.chart) return;
       var li = C.LANES.indexOf(p.lane);
-      if (p.judgement) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
+      if (p.judgement && !p.auto) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
       if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now();
     },
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
@@ -166,6 +176,8 @@
     else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
   }
 
+  GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
+
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
   ui.playGig = function (gig, done, opts) {
@@ -175,6 +187,7 @@
       syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
+    readPrefs();
     listen(true);
     ui.show('gig', {});
     setupStage();
@@ -185,8 +198,13 @@
     else { G.pick = GG.gig.defaultSetlist(st, gig); ui.show('gig-set', {}); }
     return true;
   };
+  function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
+    var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
+    G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+  }
   function startSession(ids) {
-    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty() });
+    readPrefs();
+    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty(), noFail: !!G.pf.noFail, autoKick: !!G.pf.autoKick });
     G.diff = G.ses.difficulty || difficulty();
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
@@ -304,10 +322,10 @@
         }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
-      if (t >= 0) G.ses.tick(t);
+      if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
-    if (G && G.chart && G.x) draw(G.paused ? G.pauseT : G.t, p);
+    if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
     if (G && G.ses) {
       var c = Math.round(G.ses.crowd);
       if (c !== G.crowdN) { G.crowdN = c; G.dom.meter.style.width = c + '%'; stageCall('setCrowdLevel', G.ses.crowd); }
@@ -326,18 +344,18 @@
     if (ev.cancelable) ev.preventDefault();
     wake();
     var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
-    tap(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li, ev.timeStamp);
+    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp);
   }
   function onKey(ev) {
     if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
     ev.preventDefault();
-    tap(li, ev.timeStamp);
+    tap(col(li), ev.timeStamp);
   }
   function tap(li, stamp) {
     var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
-    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero;
+    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero - (G.off ? G.off.audio : 0);   // v0.6.1: calibration
     if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
     G.press[li] = performance.now();
     if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
@@ -356,7 +374,7 @@
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
     G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
-    LOOK = (GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15;   // seconds of highway visible: Easy scrolls slower
+    LOOK = ((GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15) / (G.speed || 1);   // seconds of highway visible: Easy scrolls slower; v0.6.1 note speed
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
@@ -376,16 +394,16 @@
     var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c');
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     for (var l = 0; l < G.lanes; l++) {
-      var lx = l * laneW, col = laneColor(l);
+      var lx = col(l) * laneW, lc = laneColor(l);
       x.globalAlpha = l % 2 ? 0.05 : 0.025; x.fillStyle = '#ffffff'; x.fillRect(lx, 0, laneW, H);
-      x.globalAlpha = 0.18; x.fillStyle = col; x.fillRect(lx + laneW / 2 - 1, 0, 2, hitY);
-      x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (l) x.fillRect(lx, 0, 1, H);
+      x.globalAlpha = 0.18; x.fillStyle = lc; x.fillRect(lx + laneW / 2 - 1, 0, 2, hitY);
+      x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
-      x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = col; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
+      x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
       var L = ui.LANES && ui.LANES[C.LANES[l]];
       x.textAlign = 'center'; x.textBaseline = 'middle';
       x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-      x.font = '800 10px ' + FONT; x.fillStyle = col; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+      x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
@@ -398,7 +416,7 @@
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
     for (l = 0; l < G.lanes; l++) {   // tap flashes
       a = 1 - (p - G.press[l]) / 140;
-      if (a > 0) { x.globalAlpha = a * 0.45; x.fillStyle = laneColor(l); rr(x, l * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); }
+      if (a > 0) { x.globalAlpha = a * 0.45; x.fillStyle = laneColor(l); rr(x, col(l) * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); }
     }
     x.globalAlpha = 1;
     var spb = ch.spb, b0 = Math.max(0, Math.ceil((t - 0.3) / spb)), b1 = Math.floor((t + LOOK) / spb);
@@ -417,7 +435,7 @@
       a = nt.j !== 0 && past > 0 ? 1 - past / 0.35 : 1;   // missed / passed notes fade out below the line
       if (a <= 0) continue;
       y = yOf(nt.t, t);
-      var gx = nt.li * laneW + (laneW - gw) / 2;
+      var gx = col(nt.li) * laneW + (laneW - gw) / 2;
       if (nt.j === 3) { x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063'; }
       else if (nt.free) { x.globalAlpha = 0.3 * a; x.fillStyle = laneColor(nt.li); }
       else { x.globalAlpha = 1; x.fillStyle = laneColor(nt.li); }
@@ -430,7 +448,7 @@
       a = 1 - (p - G.burst[l]) / 220;
       if (a > 0) {
         x.globalAlpha = a; x.strokeStyle = laneColor(l); x.lineWidth = 3;
-        x.beginPath(); x.arc(l * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
+        x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
       }
     }
     x.globalAlpha = 1; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46);
@@ -438,7 +456,7 @@
     if (a > 0 && POP_TEXT[G.popKind]) {
       x.globalAlpha = a < 0.6 ? a / 0.6 : 1; x.fillStyle = POP_COLOR[G.popKind]; x.font = G.fonts.pop;
       x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.fillText(POP_TEXT[G.popKind], U.clamp(G.popLane * laneW + laneW / 2, 70, W - 70), hitY - 58 - (1 - a) * 14);
+      x.fillText(POP_TEXT[G.popKind], U.clamp(col(G.popLane) * laneW + laneW / 2, 70, W - 70), hitY - 58 - (1 - a) * 14);
     }
     x.globalAlpha = 1;
     var combo = G.ses.combo;
@@ -470,9 +488,9 @@
     var d = G.dom, n = G.ses.setlist.length, i = G.ses.index;   // i = songs played so far
     G.mode = 'between';
     ui.clear(d.mid);
-    var b = banterLine(), next = G.ses.song(), studio = G.opts.studio;
+    var b = banterLine(), next = G.ses.song(), studio = G.opts.studio, pr = G.opts.practice;   // v0.6.1: practice runs in studio mode
     d.mid.appendChild(el('div.gig-mid-card', { testid: 'gig-between' }, [
-      el('div.caps', studio ? (r ? 'Take in the can' : (studio.label || 'Studio take') + ' · red light is on')
+      el('div.caps', pr ? (r ? 'Practice run done' : (studio.label || 'Practice')) : studio ? (r ? 'Take in the can' : (studio.label || 'Studio take') + ' · red light is on')
         : r ? 'Song ' + i + ' of ' + n + ' · saved' : 'Welcome back · ' + i + ' of ' + n + ' played'),
       r ? el('div.gig-song-res', [
         el('b', '“' + r.title + '”'),
@@ -482,7 +500,7 @@
       b.who ? el('div.react', [ui.avatar(b.who, 'sm'), el('div.t', [el('b', ui.who(b.who).short + ': '), b.text])]) : el('p.small', b.text),
       next ? el('div.small.dim', 'Up next: “' + next.title + '”' + (next.classic ? ' (a classic)' : '')) : null,
       ui.btn('.btn.primary.block', { testid: 'btn-gig-next', onclick: function () { if (G && G.mode === 'between') nextSong(); } },
-        studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
+        pr ? (next ? 'Count me in' : 'Done practising') : studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
@@ -611,15 +629,25 @@
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
       s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
-      var cur = difficulty();
-      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:10px' }, [el('span.caps.grow', 'Difficulty'),
-        ['easy', 'normal', 'hard'].map(function (d) {
-          return ui.btn('.btn.small' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, onclick: function () {
-            GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
-        })]));
+      var cur = difficulty(), pf = prefs();
+      s.body.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
+      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
+        return ui.btn('.btn.small.grow' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, style: 'padding:0 6px', onclick: function () {
+          GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
+      })));
       s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
-        ? 'Normal: most of what you wrote, no impossible bursts.' : 'Hard: every hit exactly as written, tight timing.'));
+        ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
+        : 'Expert: every hit as written, a razor-thin window, and misses sting. Kenji nods, once.'));
+      if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
+        s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+          return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
+            onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
+        })));
+        var on = [pf.noFail ? 'No-fail' : null, pf.autoKick ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
+        s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
+          '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
+      }
       var bo = GG.gig.setlistBonuses(st, ids);
       s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });

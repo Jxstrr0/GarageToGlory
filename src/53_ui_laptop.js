@@ -4,10 +4,12 @@
 // v0.5: Label (deal status, recoup, deadline, offers, DIY: GG.ui.labelPanel in 59_ui_label) and Albums (studio session,
 // discography: GG.ui.albumsPanel in 59c_ui_awards) tabs.
 // v0.6: Scene (the rival, heat, the scene leaderboard, rival news: GG.ui.scenePanel in 59d_ui_rival).
+// v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
+// seven tabs wrap into two rows, CSS in 5g).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -57,6 +59,8 @@
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
     }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
+    if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
+      onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
     return el('div', out);
   }
 
@@ -91,7 +95,9 @@
       var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st)
         : tab === 'label' ? (ui.labelPanel ? ui.labelPanel(st, function () { s.rerender({ tab: 'label' }); }) : el('p.dim', 'No label news.'))   // v0.5
         : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.'))
-        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.')) : chatTab(st);   // v0.6
+        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.'))   // v0.6
+        : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
+        : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);

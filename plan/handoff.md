@@ -269,3 +269,177 @@ If the push fails on authentication, stop and ask the owner with a popup how he 
 2. Build v0.1 per B4. Ask popups only for genuinely open items (A16); everything else is locked.
 3. Run tests, build, commit, push (B7).
 4. Update `plan/status.md`, then give the owner a two-sentence summary and the GitHub Pages popup (B6).
+
+
+---
+
+# PART C — ADDENDUM 1 (appended 2026-09-29, after v0.6.0 shipped)
+
+Drop this into the Claude Code session and say "read addendum 1 and queue it behind the current work".
+Written Tuesday, September 29, 2026. Everything here is a locked owner decision unless it's marked open.
+
+**TIMING — READ FIRST:** Nothing in this addendum is to be started until the task currently in progress is finished, tested, built, committed and pushed. Do not interrupt, reshuffle or expand the version you are in the middle of. When that work is done, record these decisions, then pick them up in the next version (or next patch for items whose version already shipped). This addendum adds to the plan; it never replaces the plan's current task.
+
+## C0. How to use this addendum
+- **Order of operations:** (1) finish the in-progress task; (2) append this file to `plan/handoff.md` as **Part C**; (3) record every decision in `plan/status.md` (decisions list, plus an "Addendum 1 — pending" checklist); (4) work through the checklist in roadmap order from the next version onward. Read `plan/status.md` first as usual; don't re-explore the codebase.
+- Each section says which roadmap version it belongs to (see handoff B4). If that version has **already shipped**, add the missing pieces in the next patch/minor release and tell the owner in the post-build summary. Don't rebuild shipped work from scratch.
+- These settle four of the open decisions in handoff A16: city lists, the van driver and names, character creator part lists, and the drum sound palette. Still open: **rival band members** (all four rivals) and **exact balance numbers**. Ask with popups when you reach them.
+- Same rules as before: cheap-game-build doctrine, Red Skies layout, questions as popups, content as data in `src/content/*.js`, no USA content.
+
+---
+
+## C1. The van: drivers, names, stickers (v0.3 drivers + scene; v0.8 names, rename, stickers, upgrades)
+
+**Designated driver per band — the driver changes stats and road cards:**
+| Band | Driver | Effect |
+|---|---|---|
+| Hail Damage | Kenji — silent, perfect record, never uses GPS, always exactly on time, nobody knows if he has a licence | Fewer breakdowns |
+| Frost Heave | Moth — it's her apartment, nobody else may drive | Free maintenance, terrible comfort (her stuff everywhere) |
+| Gravel Kings | T-Bone — the only adult; Chase begs to drive and blasts '80s cassettes | Safe but slow |
+| The Grid Road Ramblers | Earl — 20 under the limit, stops at every historical marker | Slow, but road stories boost band chemistry |
+
+- If the driver quits, **you** drive and the road-card pool changes (more wrong turns, gas-station arguments).
+- Van scene seating: driver up front, you riding shotgun as founder, band in the back rows, gear and merch piled behind.
+
+**Vehicle names (preset per band per tier; the player can rename any vehicle):**
+| Tier | Hail Damage | Frost Heave | Gravel Kings | Grid Road Ramblers |
+|---|---|---|---|---|
+| Rusted minivan | The Moose Hearse | The Pothole | The Mullet Wagon | Grandpa's Suburban |
+| 15-passenger + trailer | The Claim Adjuster | Squat Van | Night Rider | The Hay Wagon |
+| Sprinter | Black Ice | The Eviction Notice | The Power Ballad | The Combine |
+| Tour bus | Doom Coach | Frost Heave One | Thunderdome | The Prairie Palace |
+
+- **Stickers:** every venue played adds a sticker to the van body (visual career scrapbook). Banned venues' stickers get crossed out.
+- **Dashboard item per driver:** Kenji's single tiny cactus, Moth's laundry, Chase's cassette pile, Earl's 1987 road atlas.
+- **Road events** (content pool): deer on the Yellowhead, whiteout on the Trans-Canada, the fight over shotgun, Marcel's cape shut in the sliding door.
+
+## C2. Character creator (v0.1 basic presets; v0.8 full creator and unlocks)
+
+- **Separate everyday and stage looks.** The stage look switches on automatically for gigs, the red carpet and stage scenes.
+- **Unlocks:** basics at the start; pro gear and more items unlock as the career grows. At a new career, the player may choose to **carry unlocks over within the same genre** (toggle on the new-career screen). This works alongside the handoff's cross-career cosmetics carry-over.
+- **Body:** build (slim, average, stocky, big); height slider; ~12 skin-tone swatches; age look (fresh-faced, lived-in, grizzled).
+- **Face:** face shape, eyes (shape + colour), eyebrows, nose, mouth (a few options each); facial hair (clean, stubble, goatee, full beard, handlebar moustache, mutton chops, braided Viking beard); glasses (none, round, aviators, Kenji-style shades).
+- **Hair:** buzz, mop, mullet, long metal hair, dreadlocks, braids, mohawk, liberty spikes, man bun, bald, curly, shaggy, slicked back, hat hair. Colours: naturals + bleach, green, pink, blue.
+- **Everyday clothes:** tops (band tee, flannel, hoodie, parody hockey jersey, tank top, denim jacket); bottoms (jeans, cargo shorts, sweatpants, kilt); shoes (skate shoes, work boots, cowboy boots, Crocs); headwear (toque, trucker hat, cowboy hat, bandana, backwards cap).
+- **Stage outfits:** leather vest, battle jacket with patches, shirtless, spandex, Canadian tuxedo (all denim), rhinestone suit, cape, studded wristbands, corpse paint.
+- **Tattoos:** spots (full/half sleeves, neck, chest, knuckles, face teardrop); designs (skull, maple leaf, wheat sheaf, band logo, "MOM" heart, moose, flames, one misspelled word). **Knuckle tattoos: the player types their own four letters per hand** (filter to letters A–Z).
+- **Piercings:** ear studs, hoops, gauges, nose ring, septum, eyebrow, lip.
+- **Drum kit look:** shell finish (natural wood, black, sparkle, flames, camo); hardware (chrome, black); kick-drum head art (band logo, your face, a moose, custom text); throne (milk crate early → leather); stick colour; extras (cowbell, hair fan, **pyro** for arena shows, unlocked by era). **No gong** — remove it anywhere it appears.
+
+## C3. Drum sounds and genre audio (v0.2 synth + backing; v0.3 gig audio, crowd, venues; v0.8 kit-quality upgrades)
+
+**Kit synthesis (Web Audio, no files):**
+- Kick: deep sine thump with a pitch drop plus a front click.
+- Snare: noise crack over a tuned body.
+- Hi-hat: short, bright, high-passed noise.
+- Cymbal: long shimmering crash.
+- Toms (lane 5): three pitched booms.
+- Ride/china (lane 6): pinging bell (ride) or trashy crash (china).
+
+**Genre kit tuning:** metal = tight clicky kick, high sharp snare (built for double-kick runs); punk = loose, trashy, bright; rock = big roomy kick/snare with lots of reverb; country = soft and dry, rim clicks for the train beat, optional brushed snare.
+
+**Kit quality improves with gear:** the milk-crate-era kit sounds thin and cheap; pro gear sounds full and punchy (audible progression). Implement as a quality tier that changes synth parameters (body, sustain, saturation, reverb send).
+
+**Generated band (new random key per song):**
+- Metal: palm-muted guitars that **chug on every kick hit**, bass doubling the guitars, Dana's solos as fast arpeggios.
+- Punk: fast downstroke power chords, root-note bass, gang shouts "HEY!" in choruses.
+- Rock: riffs and open chords, bluesy lead, walking bass.
+- Country: acoustic boom-chicka strum, fiddle melody, root-fifth bass, twangy guitar licks.
+- Sections change density: sparse verses, full choruses, breakdowns strip back to the heavy parts.
+
+**Vocals:** short synthesized vocal hits (growls, "HEY!", yeehaws, short sung phrases) that are **scheduled on the song's beat grid and fit the song**: shouts on chorus downbeats, growls where a breakdown drops, and anything pitched matched to the song's key. Never free-running or off-beat.
+
+**Gig input:** the player's taps **trigger the drum sounds** — a missed note is silent. The backing band plays on regardless.
+
+**Rooms and ambience:**
+- Venue reverb by size: basements dry, Legion halls echo, arenas huge.
+- Crowd bed that swells with the crowd meter; synthesized cheers and boos.
+- Garage hum with Dana noodling faintly; road noise in the van.
+- **Van radio:** once one of the player's songs charts (Maple 100), it plays on the van radio during drives.
+
+**Mixer:** separate volume sliders for drums, band, crowd and SFX; metronome click toggle in the sequencer.
+
+## C4. Settings, difficulty, calibration (v0.3 calibration + gig difficulty; v0.1/v1.0 career difficulty + settings screen)
+
+**Audio calibration:**
+- **Runs automatically on first launch**, and can be re-run anytime from Settings.
+- Tap-along test: the player taps along to eight clicks; measure the average offset from `AudioContext.currentTime` and apply it to note judgement.
+- Visual check: tap on a flashing light to align visuals with audio.
+- **Two saved profiles: phone speaker and headphones**, with a quick switch (Bluetooth adds noticeable delay).
+
+**Career difficulty:** Chill / Normal / Brutal, chosen on the new-career screen and **locked for that career**.
+- Chill: more money, slower mood decay, softer rivals and labels.
+- Normal: intended.
+- Brutal: tight money, touchy bandmates, ruthless labels, a rival that doesn't miss.
+
+**Gig difficulty (separate, changeable anytime):**
+- Timing window: Easy / Normal / Hard / Expert, stacked with the drum skill stat.
+- Note speed: highway scroll speed, set independently.
+
+**Assists (in):** No-fail (can't be booed off), Auto-kick (the kick lane plays itself), Practice mode for any catalog song with slow-down.
+
+**Other settings:** lefty mode (mirror lanes); graphics quality low/medium/high (battery); camera shake toggle; colourblind-friendly lane colours; bigger text; reduced flashing (pyro, stage lights); skip van scenes / faster animations; save management (slots, export/import save code).
+
+## C5. Bandbook and fans (v0.4 Bandbook + superfans; v0.5 fan club)
+
+- **One parody social app: Bandbook** (all-in-one), on the garage laptop.
+- **Promote blocks post automatically** — no post-type choice. The game picks fitting content (rehearsal clip, gig announcement, song teaser, meme, behind-the-scenes) from the band's current state; posts drive buzz, streams and new fans. **Fans remain one global count.**
+- **Viral:** each post has a small chance to blow up, higher for weirder moments. Good viral (you falling off the riser) or the wrong kind (Marcel's cringe dance tutorial: buzz up, his mood down).
+- **Comments:** each post shows a few generated comedic comments reflecting fan sentiment ("saw them at a Legion hall, 12 people and a dog, I was the dog"). Tundra Wraith leaves a supportive comment on every post.
+- **Scandals:** bandmates post dumb things → a choice card (e.g. it comes out Marcel's beloved lawn is artificial turf).
+- **Fan types:** superfans (buy merch, follow on tour), casuals (show up with buzz), haters (grow with fame, get their own comments).
+- **Recurring named superfans** across the career (crowd, comments, event cards): Dale from Warman (at every show), the trucker from the jumper-cable story, and the president of your Japanese fan club.
+- **Fan mail and gifts** appear in the garage (a macaroni portrait of Kenji; Japanese fan gifts).
+- **Paid fan club** unlocks later in the career: monthly income from superfans that depends on keeping them happy with exclusive posts. Name it with a parody subscription-site name.
+
+## C6. Cities and maps (v0.3 Saskatchewan ring; v0.5 West and East/North rings; v0.7 world maps)
+
+**Canada opens in rings:**
+- Saskatchewan (from day one): Saskatoon, Regina, Prince Albert, Moose Jaw, Swift Current, North Battleford, Yorkton, Humboldt, Gravelbourg, Estevan.
+- The West (Local heroes era): Winnipeg, Brandon, Calgary, Edmonton, Red Deer, Lethbridge, Kelowna, Vancouver, Victoria.
+- The East and North (Signed era): Thunder Bay, Toronto, Ottawa, Montreal, Quebec City, Halifax, St. John's, Whitehorse, Yellowknife.
+
+**World regions:**
+- UK & Europe: London, Manchester, Glasgow, Dublin, Paris, Amsterdam, Berlin, Prague, Madrid, Oslo, Stockholm, Helsinki. Mudstonbury sits in the English countryside; Wackelstein Open Air in northern Germany. Helsinki is where the Moose Opera ending lands.
+- Japan: Tokyo (Budokhan Hall), Osaka, Nagoya, Kyoto, Sendai, Sapporo, Fukuoka, Hiroshima.
+- Australia: Sydney (Big Day Inn), Melbourne, Brisbane, Adelaide, Perth, Hobart, Darwin, Alice Springs.
+- Russia: Moscow, St. Petersburg, Kazan, Yekaterinburg, Novosibirsk, Irkutsk (Siberian Frostfest, by Lake Baikal), Vladivostok.
+
+**Starting cities:** Hail Damage — Saskatoon (parents' garage); Frost Heave — Regina (laundromat basement); Gravel Kings — Edmonton (strip-mall unit); The Grid Road Ramblers — a farm outside Swift Current (Quonset).
+
+## C7. Seasons, weather, holidays (v0.1 calendar; v0.3 weather; v0.5–v0.7 holiday and regional content)
+
+**Calendar:** the 24-week year runs **two weeks per month**; every week has a month and a season, shown in the UI.
+
+**Seasons:**
+- Winter (Dec–Feb): whiteouts, icy roads, the forgotten block heater, fewer outdoor gigs, cabin-fever moods.
+- Spring (Mar–May): pothole season (extra van wear), mud, festival lineups announced.
+- Summer (Jun–Aug): festival season, outdoor shows, fairs, mosquitoes, road construction, hailstorms (Hail Damage takes them personally).
+- Fall (Sep–Nov): frosh-week campus shows, harvest dances (a boost for the Grid Road Ramblers), Halloween.
+- **Genre-season fit:** country thrives at summer fairs and rodeos, punk at summer skate parks and all-ages shows, metal owns the dark winter months.
+
+**Weather:** rolled weekly by season and region (clear, rain, snow, blizzard, heat wave, hail). Affects outdoor-gig turnout, van travel risk, crowd energy, and the van-windshield visuals. **Weather never cancels a gig.** The garage changes with the season (snow at the window, Christmas lights in December, a box fan in July).
+
+**Overseas seasons:** Australia's seasons are reversed — a Canadian winter is Aussie summer festival season, a deliberate touring strategy. Japan: cherry blossom season and summer festivals. Russia: brutal winters, bright summer nights in St. Petersburg.
+
+**Holidays and yearly events (all kept):**
+- New Year's Eve: the best-paying gig of the year.
+- St. Patrick's Day: pub gig circuit.
+- Loonie Awards: every spring (this is the "set week" from handoff A14).
+- Canada Day: free outdoor park shows with huge buzz.
+- Halloween: costume gigs where the band dresses as another band.
+- Thanksgiving: dinner at your parents' place, with guilt cards if you owe them money.
+- Remembrance Day: Legion halls are closed that night (no Legion gigs that week).
+- Christmas: holiday party circuit; your label pushes a terrible Christmas single.
+- **The Grey Mug:** parody of Canada's big football final; its **halftime show is a massive late-career moment**.
+
+---
+
+## C8. Still open (ask with popups when you get there)
+- Rival band members for Tundra Wraith, Mall Rats, Chartbusters and Buckle & Boot.
+- Exact balance numbers (fan thresholds per era/ring/region, prices, pay, mood rates, staleness, viral odds, fan-club income).
+- Parody name for the fan-club subscription site.
+
+
+## Owner clarification (2026-09-29)
+- KEEP the Global Gong award (v0.7). "No gong" only means: never add a gong to the drum kit.

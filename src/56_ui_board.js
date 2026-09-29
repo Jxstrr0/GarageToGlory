@@ -6,6 +6,9 @@
 //     view: the corkboard hotspot. Listings read-only + what's booked, the van, the banned wall.
 //   Screen 'board' (full). testids: btn-board-close, board-tab-list|map, book-<listingId>, board-skip, pin-<cityId>,
 //   board-city, board-listing (one per card). Styles are injected here (self-contained).
+// v0.6.1 (Addendum 1 C6/C7): the map is Canada in rings: ring tabs (ring-<id>; Saskatchewan, the West from Local Heroes,
+//   the East & North from Signed); a locked ring is teased (dimmed pins + ring-locked note). Listings carry tag chips
+//   (holiday, outdoor weather, 'your season'; testid board-tag) and the head shows month · season · weather.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
@@ -37,6 +40,16 @@
     '.gb-est { font-size: 12px; color: var(--faint); }',
     '.gb-card .btn { margin-top: 10px; }',
     '.gb-empty { padding: 18px 14px; text-align: center; color: var(--dim); }',
+    '.gb-chip.tag { color: var(--text); border-color: #6a5a3a; background: rgba(240, 180, 60, .12); }',
+    '.gb-rings { display: flex; gap: 6px; margin-top: 10px; }',
+    '.gb-ring { flex: 1 1 0; min-width: 0; min-height: 48px; padding: 4px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 800 12px/1.2 var(--font); cursor: pointer; }',
+    '.gb-ring small { display: block; font: 700 10px/1.3 var(--font); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+    '.gb-ring.sel { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }',
+    '.gb-ring.locked { color: var(--dim); }',
+    '.gb-map.locked .gb-pin i { background: #4a5060; } .gb-map.locked .gb-lbl { opacity: .55; }',
+    '.gb-lock { position: absolute; left: 8%; right: 8%; top: 50%; transform: translateY(-50%); padding: 10px 12px; border-radius: 12px; background: rgba(10, 13, 22, .88); border: 1px dashed var(--amber); color: var(--text); font: 700 13px/1.4 var(--font); text-align: center; pointer-events: none; }',
+    '.gb-lock b { display: block; color: var(--amber); font: 900 15px/1.2 var(--display); text-transform: uppercase; margin-bottom: 4px; }',
+    '.gb-cal { margin-top: 6px; font: 700 12px/1.4 var(--font); color: var(--dim); }',
     '.gb-map { position: relative; width: 100%; padding-top: 90%; margin-top: 10px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #1d2a18; }',
     '.gb-map svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }',
     '.gb-pin { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; background: transparent; cursor: pointer; }',
@@ -95,7 +108,7 @@
       l.opening ? el('span.gb-open' + (l.opening.rival ? '.rival' : ''), (l.opening.rival ? 'Your rival! ' : '') + 'Opening for ' + l.opening.name) : null,
       l.rebook ? el('span.gb-open', 'They want you back') : null,
       ui.rivalBadge ? ui.rivalBadge(st, l) : null,   // v0.6: stolen slot / festival clash
-      el('div.gb-chips', chips),
+      el('div.gb-chips', chips.concat((l.tags || []).map(function (t) { return el('span.gb-chip.tag', { testid: 'board-tag' }, t.icon + ' ' + t.text); }))),
       l.catch ? el('div.gb-catch', [el('b', 'The catch: '), fill(l.catch)]) : null,
       el('div.gb-est', '~' + e.crowd + ' people · ' + (e.pay ? '~' + U.fmtMoney(e.pay) : 'no pay') + ' · ~' + e.fans + ' new fans' + (e.burnout ? ' · long drive' : '')),
       marcel
@@ -110,23 +123,38 @@
   var NS = 'http://www.w3.org/2000/svg', AR = 0.9;
   function svg(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
   function pts(list) { return list.map(function (p) { return (p[0] * 100).toFixed(1) + ',' + (p[1] * 100 * AR).toFixed(1); }).join(' '); }
-  function mapView(st, list, sel, onSel) {
-    var M = W().map(), home = W().home(st), box = el('div.gb-map', { testid: 'board-map' });
+  // v0.6.1: one ring at a time. Roads that leave the ring run to the "home" box (the rings you already know).
+  function ringOf(c) { return c.ring || 'sask'; }
+  function mapView(st, list, sel, onSel, ringId) {
+    var M = W().map(), home = W().home(st), ring = (W().rings().filter(function (r) { return r.id === ringId; })[0]) || W().rings()[0];
+    var open = W().ringOpen(st, ring.id), hb = ring.home || null;
+    var box = el('div.gb-map' + (open ? '' : '.locked'), { testid: 'board-map', data: { ring: ring.id } });
     var s = svg('svg', { viewBox: '0 0 100 ' + (100 * AR), preserveAspectRatio: 'none' });
     for (var gx = 0; gx <= 100; gx += 8) s.appendChild(svg('line', { x1: gx, y1: 0, x2: gx, y2: 100 * AR, stroke: '#2a3a22', 'stroke-width': 0.3 }));   // grid roads
     for (var gy = 0; gy <= 100 * AR; gy += 8) s.appendChild(svg('line', { x1: 0, y1: gy, x2: 100, y2: gy, stroke: '#2a3a22', 'stroke-width': 0.3 }));
-    (M.lakes || []).forEach(function (l) { s.appendChild(svg('ellipse', { cx: l.x * 100, cy: l.y * 100 * AR, rx: l.rx * 100, ry: l.ry * 100 * AR, fill: '#2d5a86' })); });
-    (M.rivers || []).forEach(function (r) { s.appendChild(svg('polyline', { points: pts(r), fill: 'none', stroke: '#3a6f9e', 'stroke-width': 0.9, 'stroke-linejoin': 'round' })); });
+    if (ring.id === 'sask') {
+      (M.lakes || []).forEach(function (l) { s.appendChild(svg('ellipse', { cx: l.x * 100, cy: l.y * 100 * AR, rx: l.rx * 100, ry: l.ry * 100 * AR, fill: '#2d5a86' })); });
+      (M.rivers || []).forEach(function (r) { s.appendChild(svg('polyline', { points: pts(r), fill: 'none', stroke: '#3a6f9e', 'stroke-width': 0.9, 'stroke-linejoin': 'round' })); });
+    }
+    if (hb) {
+      s.appendChild(svg('rect', { x: hb.x * 100, y: hb.y * 100 * AR, width: hb.w * 100, height: hb.h * 100 * AR, rx: 2, fill: '#2c3a26', stroke: '#6f8f5a', 'stroke-width': 0.5, 'stroke-dasharray': '1.5 1' }));
+      var ht = svg('text', { x: ((hb.x + hb.w / 2) * 100).toFixed(1), y: ((hb.y + hb.h / 2) * 100 * AR).toFixed(1), fill: '#a8c890', 'font-size': 3, 'text-anchor': 'middle', 'font-weight': 800 });
+      ht.textContent = '🏠 ' + (hb.label || 'Home'); s.appendChild(ht);
+    }
+    function pt(c) { return ringOf(c) === ring.id ? { x: c.x, y: c.y } : hb ? { x: hb.x + hb.w / 2, y: hb.y + hb.h / 2 } : null; }
     (M.roads || []).forEach(function (r) {
       var a = M.cities[r[0]], b = M.cities[r[1]]; if (!a || !b) return;
-      s.appendChild(svg('line', { x1: a.x * 100, y1: a.y * 100 * AR, x2: b.x * 100, y2: b.y * 100 * AR, stroke: '#c9b98a', 'stroke-width': 0.7, 'stroke-dasharray': '2 1', opacity: 0.8 }));
-      if (r[2] >= 60) {
-        var t = svg('text', { x: ((a.x + b.x) * 50).toFixed(1), y: ((a.y + b.y) * 50 * AR - 0.8).toFixed(1), fill: '#d9cfae', 'font-size': 2.6, 'text-anchor': 'middle', 'font-weight': 700 });
-        t.textContent = r[2] + ' km'; s.appendChild(t);
+      var inA = ringOf(a) === ring.id, inB = ringOf(b) === ring.id;
+      if (!inA && !inB) return;
+      var pa = pt(a), pb = pt(b); if (!pa || !pb) return;
+      s.appendChild(svg('line', { x1: pa.x * 100, y1: pa.y * 100 * AR, x2: pb.x * 100, y2: pb.y * 100 * AR, stroke: '#c9b98a', 'stroke-width': 0.7, 'stroke-dasharray': '2 1', opacity: inA && inB ? 0.8 : 0.45 }));
+      if (r[2] >= 60 && inA && inB) {
+        var t = svg('text', { x: ((pa.x + pb.x) * 50).toFixed(1), y: ((pa.y + pb.y) * 50 * AR - 0.8).toFixed(1), fill: '#d9cfae', 'font-size': 2.6, 'text-anchor': 'middle', 'font-weight': 700 });
+        t.textContent = U.fmtNum(r[2]) + ' km'; s.appendChild(t);
       }
     });
     box.appendChild(s);
-    Object.keys(M.cities).forEach(function (id) {
+    Object.keys(M.cities).filter(function (id) { return ringOf(M.cities[id]) === ring.id; }).forEach(function (id) {
       var c = M.cities[id], n = list.filter(function (l) { return W().cityId(l.city) === id; }).length;
       var pos = { left: (c.x * 100) + '%', top: (c.y * 100) + '%' };
       box.appendChild(btn('.gb-pin' + (n ? '.has' : '') + (id === home ? '.home' : '') + (id === sel ? '.sel' : ''),
@@ -134,7 +162,22 @@
         [el('i'), n ? el('b', String(n)) : null]));
       box.appendChild(el('span.gb-lbl' + (c.label ? '.' + c.label : ''), { style: pos }, (id === home ? '🏠 ' : '') + c.name));
     });
+    if (!open) box.appendChild(el('div.gb-lock', { testid: 'ring-locked' }, [el('b', '🔒 ' + ring.name), ring.lock || 'Not yet.']));
     return box;
+  }
+  function ringTabs(st, list, cur, onRing) {
+    return el('div.gb-rings', W().rings().map(function (r) {
+      var open = W().ringOpen(st, r.id), n = list.filter(function (l) { return W().ring(l.city) === r.id; }).length;
+      return btn('.gb-ring' + (r.id === cur ? '.sel' : '') + (open ? '' : '.locked'), { testid: 'ring-' + r.id, 'aria-pressed': r.id === cur ? 'true' : 'false', onclick: function () { onRing(r.id); } },
+        [(open ? '' : '🔒 ') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[r.era] || r.era)]);
+    }));
+  }
+  var ERA_NAME = { garage: 'Garage', local: 'Local Heroes', signed: 'Signed', world: 'World Stage' };
+  function calLine(st) {
+    if (!GG.calendar) return null;
+    var L = GG.calendar.label(st);
+    return el('div.gb-cal', { testid: 'board-cal' }, L.monthName + ' · ' + L.seasonIcon + ' ' + L.seasonName + ' · ' + L.weatherIcon + ' ' + L.weatherLabel + ', ' + L.temp + '°C'
+      + (L.holiday ? ' · ' + L.holiday.icon + ' ' + L.holiday.name : '') + (L.fit ? ' — ' + L.fit : ''));
   }
 
   /* ---- The screen ------------------------------------------------------------------------------------- */
@@ -144,7 +187,11 @@
     return el('div.panel', [el('div.gb-van', [el('span', { style: 'font-size:22px' }, '🚐'), el('div.grow', [
       el('div', { style: 'font-weight:800' }, van.name + ' · ' + W().vanLabel(van.condition)),
       ui.bar(van.condition, 100, { color: van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)' }),
-      el('div.small.dim', U.fmtNum(van.km) + ' km driven · Kenji drives. Kenji always drives.')])])]);
+      el('div.small.dim', U.fmtNum(van.km) + ' km driven · ' + driverLine(st))])])]);
+  }
+  function driverLine(st) {   // v0.6.1: the designated driver (or you, when they're gone)
+    var d = W().driver ? W().driver(st) : { id: 'kenji', name: 'Kenji' };
+    return d.you ? 'You drive now. ' + ((d.def && d.def.effect) || '') : d.id === 'kenji' ? 'Kenji drives. Kenji always drives.' : d.name + ' drives. ' + ((d.def && d.def.effect) || '');
   }
   function bannedWall(st) {
     var list = (st.banned || []).map(function (id) { return GG.gig.venue(id); }).filter(Boolean);
@@ -163,21 +210,26 @@
     build: function (s, d) {
       var st = S(); if (!st || !W()) return;
       var list = W().board(st), mode = d.mode === 'book' ? 'book' : 'view', tab = d.tab || 'list';
-      dbg.mode = mode; dbg.tab = tab; dbg.city = d.city || null; dbg.count = list.length;
+      dbg.mode = mode; dbg.tab = tab; dbg.city = d.city || null; dbg.count = list.length; dbg.ring = null;
       ui.append(s.body, el('div.gb-head', [
         el('h2', [el('span.sub', 'YEAR ' + st.year + ' · WEEK ' + st.week + (mode === 'book' ? ' · PICK A GIG' : ' · THE CORKBOARD')), 'Gig board']),
         btn('.icon-btn', { testid: 'btn-board-close', 'aria-label': 'Close', onclick: function () { close(s, 'cancel'); } }, '✕')]));
+      ui.append(s.body, calLine(st));
       if (mode === 'view') ui.append(s.body, [booked(st), !st.gig && !st.offer ? el('p.small.dim', { style: 'margin:6px 0 0' }, 'Put Book in a slot on the whiteboard to take one of these.') : null]);
       s.body.appendChild(ui.tabs([{ id: 'list', label: '📌 List' }, { id: 'map', label: '🗺️ Map' }], tab, function (t) {
         s.rerender(Object.assign({}, s.data, { tab: t }));
       }, 'board-tab-'));
       var pick = mode === 'book' ? function (l) { confirmBook(s, l); } : null;
       if (tab === 'map') {
-        var sel = d.city || W().home(st);
-        s.body.appendChild(mapView(st, list, sel, function (id) { s.rerender(Object.assign({}, s.data, { city: id })); }));
+        var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || 'sask';
+        if (W().ring(sel) !== ringId) sel = Object.keys(W().map().cities).filter(function (id) { return W().ring(id) === ringId; })[0] || sel;
+        dbg.ring = ringId; dbg.city = sel;
+        s.body.appendChild(ringTabs(st, list, ringId, function (r) { s.rerender(Object.assign({}, s.data, { ring: r, city: null })); }));
+        s.body.appendChild(mapView(st, list, sel, function (id) { s.rerender(Object.assign({}, s.data, { city: id, ring: W().ring(id) })); }, ringId));
         var c = W().city(sel), here = list.filter(function (l) { return W().cityId(l.city) === sel; });
         s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', c ? c.name : sel),
-          el('div.small.dim', (c && c.blurb || '') + (sel === W().home(st) ? '' : ' · ' + W().km(W().home(st), sel) + ' km from home')),
+          el('div.small.dim', (c && c.blurb || '') + (sel === W().home(st) ? '' : ' · ' + U.fmtNum(W().km(W().home(st), sel)) + ' km from home')
+            + (W().cityOpen(st, sel) ? '' : ' · Not open to you yet.')),
           here.length ? el('div.gb-list', here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No gigs in ' + (c ? c.name : sel) + ' this week.')]));
       } else {

@@ -6,6 +6,9 @@
 //     (screen 'road', resolved with GG.world.resolveRoad like a Monday card), 1–2 banter bubbles, an arrival line,
 //     then done(trip). The scene is set back to 'garage' before done (the caller may switch to 'stage').
 //   GG.ui.showVan(): screen 'van-info' (condition, space, comfort, km; Cousin Dale's repair).
+// v0.6.1 (Addendum 1 C1/C7): the trip passes weather, temp, holiday, driver + dashboard item to the 3D scene
+//   (setTrip { weather, driver, dashboard }); the route header shows the weather (van-weather); the 2D windshield draws
+//   the weather (rain / snow / blizzard / hail / heat shimmer) and whoever drives; van-info shows the driver (van-driver).
 //   testids: van-route, van-progress, btn-van-skip, van-say, van-arrive, road-choice-<i>, btn-road-ok, van-repair.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -84,21 +87,31 @@
       var dz = ((j + s * 1.6) % 7) / 7, dy = hz + (H - hz) * dz * dz, dh = 3 + 26 * dz * dz, dw = 1 + 6 * dz;
       c.fillRect(W / 2 - dw / 2, dy, dw, dh);
     }
-    if (season === 'winter' || season === 'spring') {   // snow or rain
-      c.fillStyle = season === 'winter' ? 'rgba(255,255,255,.85)' : 'rgba(170,200,230,.7)';
-      for (var f = 0; f < 40; f++) {
-        var fx = (f * 97.3 + v.el * (season === 'winter' ? 30 : 12) * (f % 3 + 1)) % W, fy = (f * 53.1 + v.el * (season === 'winter' ? 60 : 420)) % H;
-        if (season === 'winter') c.fillRect(fx, fy, 2, 2); else c.fillRect(fx, fy, 1, 9);
+    var wx = t.weather || (season === 'winter' ? 'snow' : season === 'spring' ? 'rain' : 'clear');   // v0.6.1: the week's weather
+    if (wx === 'blizzard') { c.fillStyle = 'rgba(235,240,248,.55)'; c.fillRect(0, 0, W, H * 0.8); }
+    if (wx === 'heat' && !night) { c.fillStyle = 'rgba(255,190,90,.12)'; c.fillRect(0, hz - 20, W, 40); }
+    if (wx === 'snow' || wx === 'rain' || wx === 'blizzard' || wx === 'hail') {
+      var snowy = wx !== 'rain', n = wx === 'blizzard' ? 120 : 40, fall = wx === 'rain' ? 420 : wx === 'hail' ? 300 : wx === 'blizzard' ? 90 : 60;
+      c.fillStyle = wx === 'rain' ? 'rgba(170,200,230,.7)' : 'rgba(255,255,255,.85)';
+      for (var f = 0; f < n; f++) {
+        var fx = (f * 97.3 + v.el * (snowy ? (wx === 'blizzard' ? 140 : 30) : 12) * (f % 3 + 1)) % W, fy = (f * 53.1 + v.el * fall) % H;
+        if (wx === 'rain') c.fillRect(fx, fy, 1, 9); else c.fillRect(fx, fy, wx === 'hail' ? 3 : 2, wx === 'hail' ? 3 : 2);
       }
     }
-    // inside the Moose Hearse: dash, wheel, Kenji (sunglasses), the bobblehead
+    // inside the Moose Hearse: dash, wheel, the driver (Kenji in sunglasses, or you), the bobblehead, the dash item
     c.fillStyle = '#121418'; c.fillRect(0, H * 0.8, W, H * 0.2);
     c.fillStyle = '#1b1e24'; c.fillRect(0, H * 0.78, W, H * 0.03);
     c.fillStyle = '#0b0c0f';
     c.beginPath(); c.arc(W * 0.24, H * 0.6, 34, 0, Math.PI * 2); c.fill();                  // Kenji's head
     c.fillRect(W * 0.24 - 46, H * 0.64, 92, H * 0.2);                                     // shoulders
-    c.fillStyle = '#000'; c.fillRect(W * 0.24 - 24, H * 0.595, 48, 9);                    // sunglasses
-    c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(W * 0.24 - 20, H * 0.597, 10, 2);
+    if (t.driver !== 'you') {                                                           // Kenji's sunglasses (you squint)
+      c.fillStyle = '#000'; c.fillRect(W * 0.24 - 24, H * 0.595, 48, 9);
+      c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(W * 0.24 - 20, H * 0.597, 10, 2);
+    }
+    if (v.dash === 'cactus') {                                                     // Kenji's single tiny cactus
+      c.fillStyle = '#8a4a2a'; c.fillRect(W * 0.44, H * 0.78 - 8, 10, 8);
+      c.fillStyle = '#3f8a3a'; c.fillRect(W * 0.44 + 3, H * 0.78 - 20, 4, 12); c.fillRect(W * 0.44, H * 0.78 - 16, 3, 5);
+    }
     c.strokeStyle = '#2a2d33'; c.lineWidth = 9;
     c.beginPath(); c.arc(W * 0.26, H * 0.86, 48, Math.PI * 1.1, Math.PI * 1.9); c.stroke();  // the wheel
     var bob = Math.sin(time / 110) * 4;
@@ -111,7 +124,13 @@
 
   /* ---- The trip screen -------------------------------------------------------------------------------- */
   var cur = null, dbg = { open: false, mode: null, p: 0, card: null, resolved: null, arrived: false, skipped: false };
-  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000; }
+  function weatherText(t) {
+    var k = GG.calendar.kind(t.weather), h = t.holiday && GG.calendar.holidayById(t.holiday), d = GG.world.driver(S());
+    return k.icon + ' ' + k.label + ', ' + t.temp + '°C' + (h ? ' · ' + h.icon + ' ' + h.name : '') + ' · ' + (d.you ? 'You drive' : d.name + ' drives');
+  }
+  function vprefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  // v0.6.1 (Addendum C4): settings.fastAnim halves the drive; settings.skipVan skips it (the road card still comes up).
+  function tripDur(km) { return U.clamp(2600 + km * 14, 3000, 9000) / 1000 * (vprefs().fastAnim ? 0.5 : 1); }
   function say(v, b) {
     if (!b || !v.says) return;
     var who = ui.who(b.who);
@@ -168,6 +187,7 @@
       ui.append(s.body, el('div.van-top', { testid: 'van-route' }, [
         el('div.van-route', t.fromName === t.toName ? t.toName + ', across town' : t.fromName + ' → ' + t.toName),
         el('div.van-sub', [t.highway ? t.highway + ' · ' : '', v.kmEl, ' · ', d.gig.name]),
+        GG.calendar && t.weather ? el('div.van-sub', { testid: 'van-weather' }, weatherText(t)) : null,
         v.bar]));
       v.says = el('div.van-says'); s.body.appendChild(v.says);
       v.arriveEl = el('div.van-arrive', { testid: 'van-arrive', hidden: true }); s.body.appendChild(v.arriveEl);
@@ -188,6 +208,7 @@
       }
       v.last = (typeof performance !== 'undefined' ? performance.now() : 0);
       v.raf = requestAnimationFrame(frame);
+      if (vprefs().skipVan) setTimeout(function () { if (cur === v && v.alive && !v.skipping && !v.arrived) skip(v); }, 60);
     },
     onClose: function (s) {
       var v = s.data.view, d = s.data;
@@ -206,10 +227,17 @@
     if (!st || !gig || !GG.world) { if (done) setTimeout(function () { done(null); }, 0); return null; }
     var trip = GG.world.startTrip(st, gig);
     var v = { trip: trip, mode: has3D() ? '3d' : '2d', dur: tripDur(trip.km), el: 0, p: 0, banter: trip.banter || [] };
+    var drv = GG.world.driver ? GG.world.driver(st) : null;
+    v.dash = drv ? drv.dashboard || (drv.you ? 'cactus' : null) : 'cactus';   // the cactus stays on the dash when you drive
     if (v.mode === '3d') {
       var ok = safe(function () { return R().setScene('van'); });
       if (ok === false || ok === null) v.mode = '2d';
-      else safe(function () { R().van.setTrip({ from: trip.fromName, to: trip.toName, km: trip.km, season: trip.season, night: trip.night, highway: trip.highway }); R().van.setProgress(0); });
+      else safe(function () {
+        var dr = GG.world.driver ? GG.world.driver(st) : { id: 'kenji', dashboard: 'cactus' };
+        R().van.setTrip({ from: trip.fromName, to: trip.toName, km: trip.km, season: trip.season, night: trip.night, highway: trip.highway,
+          weather: trip.weather, driver: dr.id, dashboard: dr.dashboard || (dr.you ? 'cactus' : null) });
+        R().van.setProgress(0);
+      });
     }
     dbg.mode = v.mode; dbg.p = 0; dbg.card = trip.cardId; dbg.resolved = trip.resolved; dbg.arrived = false; dbg.skipped = false;
     return ui.show('van', { gig: gig, trip: trip, done: done, opts: opts || {}, view: v });
@@ -258,10 +286,14 @@
     kind: 'sheet', title: 'The Moose Hearse',
     build: function (s) {
       var st = S(); if (!st || !GG.world) return;
-      var W = GG.world, van = W.van(st), q = W.repairQuote(st);
+      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = W.driver ? W.driver(st) : { id: 'kenji', name: 'Kenji', def: {} };
       var col = van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)';
       ui.append(s.body, [
-        el('p.dim', { style: 'margin-top:0' }, 'A rusted minivan with a moose-shaped dent. Kenji drives. Nobody has ever seen him get in or out.'),
+        el('p.dim', { style: 'margin-top:0' }, 'A rusted minivan with a moose-shaped dent. ' + (dr.you ? 'You drive now. The mirrors are still set for Kenji.'
+          : dr.id === 'kenji' ? 'Kenji drives. Nobody has ever seen him get in or out.' : dr.name + ' drives.')),
+        el('div.panel', { testid: 'van-driver' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Driver: ' + dr.name), el('span.tag', (dr.def && dr.def.effect) || '')]),
+          el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dr.def && dr.def.dashName ? ' On the dash: ' + dr.def.dashName + '.' : '')
+            + ' Seating: ' + (dr.you ? 'you drive, ' : dr.name + ' drives, you ride shotgun, ') + 'the band in the back, gear and merch piled behind.')]),
         el('div.panel', [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Condition: ' + W.vanLabel(van.condition)), el('b', van.condition + '%')]),
           ui.bar(van.condition, 100, { color: col }),
           el('div.small.dim', { style: 'margin-top:6px' }, st.protected ? 'Garage era: it rattles, but it won’t break down (yet).' : 'Low condition means breakdowns on long drives.')]),

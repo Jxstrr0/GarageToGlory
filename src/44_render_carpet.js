@@ -321,7 +321,10 @@
     }
 
     // ---- Per frame -----------------------------------------------------------------------------------------------------
-    function flashOne(i, v) { if (K) K.flashV[i] = Math.max(K.flashV[i], v); }
+    function flashOne(i, v) {   // v0.6.1 reduced flashing (GG.render.prefs().calm): camera flashes at a third, soft
+      if (GG.render && GG.render.prefs && GG.render.prefs().calm) v *= 0.3;
+      if (K) K.flashV[i] = Math.max(K.flashV[i], v);
+    }
     function spawnConfetti() {
       var p = K.conf.geometry.attributes.position.array, v = K.confV;
       for (var i = 0; i < N_CONF; i++) {

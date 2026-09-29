@@ -258,7 +258,7 @@
     var t = U.clamp((state.fans / Math.max(1, lab.offerMinFans) - 1) / (K.advanceFansSpan || 4) + (br ? Math.max(0, br.critic - 60) / 100 : 0), 0, 1);
     var adv = (lab.advance[0] + (lab.advance[1] - lab.advance[0]) * t) * rng.range(spread[0], spread[1]);
     var offer = { id: labelId + '_' + state.totalWeek, labelId: labelId, name: lab.name,
-      advance: Math.round(U.clamp(adv, lab.advance[0], lab.advance[1]) / 100) * 100,
+      advance: Math.round(U.clamp(adv, lab.advance[0], lab.advance[1]) * (GG.difficulty ? GG.difficulty.mul(state, 'advance') : 1) / 100) * 100,
       royalty: Math.round(Math.min(0.9, lab.royalty + (br && br.critic >= 75 ? (K.royaltyBonus || 0.02) : 0)) * 100) / 100,
       albums: lab.albums, deadlineWeeks: lab.deadlineWeeks,
       demands: (lab.demands || []).map(function (x) { return x.kind || x; }),
@@ -370,7 +370,7 @@
       if (m) { mm[m.id] = r.role[role]; fx(state, { mood: mm }, delta); }
     });
     if (r.salesMult) d.salesMult = Math.min(K.salesMultMax || 1.4, (d.salesMult || 1) * r.salesMult);
-    if (r.goodwill) d.goodwill = U.clamp(d.goodwill + r.goodwill, 0, 100);
+    if (r.goodwill) d.goodwill = U.clamp(d.goodwill + (r.goodwill < 0 && GG.difficulty ? Math.round(r.goodwill * GG.difficulty.mul(state, 'labelHarsh')) : r.goodwill), 0, 100);
     if (d.goodwill <= 0) endDeal(state, null, 'goodwill');
     return delta;
   }
@@ -975,7 +975,7 @@
       deal.albumsDelivered++;
       deal.deadline = state.totalWeek + (L.label(deal.labelId) || {}).deadlineWeeks;
       // bad reviews annoy the label; a hit pleases it. The sales flop check comes after flopWeeks (albumWeek).
-      if (album.critic < ((K.flop || {}).critic || 45)) deal.goodwill = U.clamp(deal.goodwill - (K.goodwillFlop || 20), 0, 100);
+      if (album.critic < ((K.flop || {}).critic || 45)) deal.goodwill = U.clamp(deal.goodwill - Math.round((K.goodwillFlop || 20) * (GG.difficulty ? GG.difficulty.mul(state, 'labelHarsh') : 1)), 0, 100);
       else if (pos && pos <= 40) deal.goodwill = U.clamp(deal.goodwill + (K.goodwillHit || 10), 0, 100);
       if (deal.goodwill <= 0) endDeal(state, out, 'goodwill');
       else if (deal.albumsDelivered >= deal.albumsOwed) endDeal(state, out, 'fulfilled');

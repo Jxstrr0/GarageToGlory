@@ -14,8 +14,10 @@
 //     branch outcome (success/fail) says what happened. Show them together: choice.outcome + ' ' + branch.outcome.
 //   - Magnitudes (garage era): fund −250…+200, fans 0…+30, buzz ±2…12, chemistry ±2…8, mood ±3…15,
 //     skill/drumSkill +1…3, burnout ±3…15.
-//   - Seasons via weekOfYear (assumption: week 1 = early July, one game week ≈ two calendar weeks):
-//     summer 1–4 and 23–24, fall 5–10, winter 11–18 (Ukrainian Christmas ≈ 13), spring 19–22.
+//   - Seasons via weekOfYear (v0.6.1 calendar, Addendum 1 C7: two weeks per month, week 1 = early July):
+//     summer 23–24 and 1–4, fall 5–10, winter 11–16 (Ukrainian Christmas ≈ 13), spring 17–22 (the Loonies: 20).
+//     Holidays (content/calendar.js; GG.calendar.holidayCard): Canada Day 1, Thanksgiving 7, Halloween 8, Remembrance 9,
+//     the Grey Mug 10, Christmas 11–12, NYE 12, St. Patrick's 18. Holiday cards are ids holiday_*.
 //
 // Year-one shape: early cards (weeks 2–12, maxWeek), mid cards (minFans 25/40/60/100/120), late cards (minWeek 12+,
 // winter/spring weekOfYear windows), and twelve repeatables (once:false + cooldown) so no year runs dry.
@@ -1443,6 +1445,176 @@
           outcome: 'You mail a shirt to the blog in Tampere. They post a photo of it on a real moose, somehow. The Finnish fan club has eleven members.' },
         { label: 'Too weird. Shelve it.', effects: { mood: { marcel: -10 }, chemistry: -3, flags: { mooseAlbum: 'shelved', moosePlan: false, mooseCall: false }, chain: { moose: { step: 'end' } } },
           outcome: 'The tapes go in the LATER shoebox, under his bed. Every so often you hear him humming track nine. The breathing one.' }
+      ] },
+
+    /* ==========================================================================================================
+       v0.6.1 (WORLD, Addendum 1 C7): holiday Monday cards. GG.calendar.holidayCard puts them on their holiday's Monday
+       (content/calendar.js holidays[].cards, in priority order); once:false + cooldown 20 = once a year. Week 1 of
+       year one belongs to Lord Abyssus, so Canada Day starts in year two.
+       ========================================================================================================== */
+    { id: 'holiday_canada_day', type: 'scene', speaker: 'dad', title: 'Canada Day', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [1, 1] }),
+      text: 'Canada Day. The park bandshells are booking free shows, Mom is doing a barbecue, and Dad bought fireworks "from a guy". The guy was also named Dad.',
+      choices: [
+        { label: 'Flyers at the park all day', hint: 'Buzz ↑ · burnout ↑', effects: { buzz: 8, fans: 12, burnout: 5 },
+          outcome: 'You hand out four hundred flyers in a maple-leaf toque. A kid asks if you are "the moose band". You are now.' },
+        { label: "Dad's fireworks", hint: 'Gamble: a show or a fire truck',
+          roll: { chance: 0.5, success: { effects: { chemistry: 6, mood: { all: 5 } }, outcome: 'Twelve minutes of glory over the garage. Mr. Lindqvist watches from his lawn chair and claps. Once.' },
+            fail: { effects: { fund: -80, mood: { marcel: -5 } }, outcome: "A roman candle finds Marcel's cape. The fire department is very nice about it. The fine is not." } },
+          outcome: 'Dad reads the instructions, then puts them in his pocket.' },
+        { label: "Mom's barbecue", hint: 'Moods ↑ · burnout ↓', effects: { burnout: -6, mood: { all: 4 } },
+          outcome: 'Burgers, corn, a lawn game with horse bones. Baba wins. Baba always wins.' }
+      ] },
+
+    { id: 'holiday_thanksgiving_guilt', type: 'money', speaker: 'mom', title: 'Thanksgiving Dinner', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [7, 7], flags: ['parentsLoan'] }),
+      text: "Thanksgiving at your parents'. Mom made the good stuffing. Dad says grace, and somehow grace is about the loan. \"And thank you, Lord, for repayment schedules.\"",
+      choices: [
+        { label: 'Pay back $100 over pie', hint: 'Debt ↓ · guilt ↓', effects: { repay: 100, chemistry: 2 },
+          outcome: 'You slide five twenties under the pumpkin pie. Dad counts them twice. Mom cries a little. Nobody mentions it again until Christmas.' },
+        { label: 'Talk about the band instead', hint: 'Gamble: pride or a lecture',
+          roll: { chance: 0.45, stat: 'buzz', statScale: 0.005,
+            success: { effects: { mood: { all: 4 }, chemistry: 3 }, outcome: 'You show them a video of the last gig. Dad watches it three times. He says "hm". It is the best "hm" of your life.' },
+            fail: { effects: { burnout: 6 }, outcome: 'Dad pulls out a folder labelled BAND. There are tabs. There is a pie chart. The pie is also a chart.' } },
+          outcome: 'You clear your throat.' },
+        { label: 'Eat three plates, say nothing', hint: 'Burnout ↓', effects: { burnout: -5, mood: { jaxon: 3 } },
+          outcome: 'Stuffing, turkey, perogies, stuffing again. The loan is not mentioned. It is in the room. It had seconds.' }
+      ] },
+
+    { id: 'holiday_thanksgiving', type: 'scene', speaker: 'baba', title: 'Thanksgiving', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [7, 7], notFlags: ['parentsLoan'] }),
+      text: "Thanksgiving. Baba has brought a turkey the size of a bass amp and invited the whole band. Everyone asks when you will get a real job. Baba asks when the next show is.",
+      choices: [
+        { label: 'Bring the whole band', hint: 'Chemistry ↑', effects: { chemistry: 5, burnout: -4 },
+          outcome: 'Marcel says grace in Latin. Kenji carves the turkey without a word, perfectly. Baba rates it a nine.' },
+        { label: 'Play an acoustic set after pie', hint: 'Fans ↑', effects: { fans: 8, mood: { dana: 3 } },
+          outcome: "Unplugged metal in the living room. The cousins film it. An aunt from Humboldt asks for your 'CD-ROM'." },
+        { label: 'Leftovers for the week', hint: '+$30 of food · moods ↑', effects: { fund: 30, mood: { all: 3 } },
+          outcome: 'Eleven containers of leftovers. The band eats like royalty until Tuesday. The garage smells like gravy.' }
+      ] },
+
+    { id: 'holiday_halloween', type: 'fame', speaker: 'marcel', title: 'Halloween Costume Gigs', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [8, 8] }),
+      text: 'Halloween: every bar wants costume bands, and the rule is you dress as ANOTHER band. Marcel has a proposal, a sketchbook and a glue gun.',
+      choices: [
+        { label: 'Go as Tundra Wraith', hint: 'Buzz ↑', effects: { buzz: 6, flags: { costume: 'Tundra Wraith (veggie tray included)' } },
+          outcome: 'Corpse paint, cardigans, a veggie tray on the kick drum. Gord hears about it and sends a fruit basket "for the effort, buddy".' },
+        { label: 'One moose. All of you.', hint: 'Gamble: legendary or a disaster',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 10, fans: 15, flags: { costume: 'a moose (all four of you, one costume)' } }, outcome: 'The moose plays a whole set. The crowd loses its mind. Somebody proposes to the moose.' },
+            fail: { effects: { burnout: 6, flags: { costume: 'half a moose' } }, outcome: 'The moose splits at the seam mid-song. Jaxon, the back half, plays on alone. It is a lot.' } },
+          outcome: 'Marcel unrolls forty metres of brown felt.' },
+        { label: "Costumes? We ARE the costume.", hint: 'Chemistry ↑', effects: { chemistry: 3, flags: { costume: 'Hail Damage (nobody noticed)' } },
+          outcome: 'You go as yourselves. Four people compliment the costumes. One says the cape is "a bit much". Marcel is honoured.' }
+      ] },
+
+    { id: 'holiday_grey_mug', type: 'fame', speaker: 'dj', title: 'The Grey Mug Halftime Show', once: true,
+      gate: g({ era: S, weekOfYear: [10, 10], minFans: 20000, minYear: 4 }),
+      text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
+      choices: [
+        { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your double kick.' },
+        { label: 'The cape, the pyro, everything', hint: 'Gamble: history or a meme',
+          roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'Marcel spins, the pyro hits on the downbeat, four million people scream. It is replayed for years.' },
+            fail: { effects: { fans: 250, buzz: 12, mood: { marcel: -8 }, flags: { greyMug: 'played' } }, outcome: 'The pyro goes off a bar early. The cape survives. The goalposts do not. It is a meme by Monday.' } },
+          outcome: 'Marcel has already called the pyro guy.' },
+        { label: "We're a club band. Pass.", hint: 'Chemistry ↑', effects: { chemistry: 6, burnout: -8 },
+          outcome: 'You watch the game at the Gopher Hole. A band you have never heard of plays halftime. You heckle, lovingly.' }
+      ] },
+
+    { id: 'holiday_xmas_single', type: 'fame', speaker: 'dj', title: 'The Christmas Single', once: false, cooldown: 20,
+      gate: g({ era: S, weekOfYear: [11, 12], flags: ['label'] }),
+      text: 'Deb got the label\'s pitch before you did: a Christmas single. "Grandma Got Run Over by a Zamboni", with sleigh bells. (If you\'re DIY, it\'s Mom\'s pitch. Same song.)',
+      choices: [
+        { label: 'Record it. Sleigh bells and all.', hint: 'Fans ↑ · dignity ↓', effects: { fans: 250, fund: 400, mood: { marcel: -8 } },
+          outcome: 'It charts. It plays in every mall. Marcel hears it in a pharmacy and has to sit down.' },
+        { label: "Metal it: 'Silent Night (Eternal)'", hint: 'Gamble: a cult classic or a flop',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 15, fans: 300 }, outcome: 'Blast beats, a choir, sleigh bells tuned to D. Deci-Hell gives it six skulls out of five.' },
+            fail: { effects: { buzz: -6, fund: -300 }, outcome: 'Nobody wants a nine-minute "Silent Night". The label prints two thousand CDs anyway. They are coasters now.' } },
+          outcome: 'Dana tunes the sleigh bells down.' },
+        { label: 'Refuse. It is a matter of principle.', hint: 'Chemistry ↑ · label ↓', effects: { chemistry: 5, buzz: -4 },
+          outcome: 'The label sends a fruit basket with a note: "Disappointed but festive." Marcel eats the fruit. Principles are one thing.' }
+      ] },
+
+    { id: 'holiday_xmas_parties', type: 'money', speaker: 'barb', title: 'Christmas Party Season', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [11, 12] }),
+      text: "Barb, on the phone: every office, curling club and potash mine in the district wants a band for its Christmas party. \"Ugly sweaters mandatory, dear. No throat thing.\"",
+      choices: [
+        { label: 'The curling club party', hint: 'Books this weekend (if free)', effects: { book: 'warman_curling_lounge', chemistry: 2 },
+          outcome: 'Barb books you for Saturday. Your sweaters have reindeer. Jaxon\'s reindeer is on fire. On purpose.' },
+        { label: "The dentist's office party", hint: '+$150 · dignity ↓', effects: { fund: 150, mood: { all: -4 } },
+          outcome: 'Four hours of "Jingle Bell Rock" for a room of hygienists. They tip in toothbrushes and cash. Mostly toothbrushes.' },
+        { label: "Skip it. It's family time.", hint: 'Burnout ↓', effects: { burnout: -6, chemistry: 2 },
+          outcome: 'You spend a week at home. Baba teaches everyone to make perogies. The band plays one quiet carol. Nobody says "brutal".' }
+      ] },
+
+    { id: 'holiday_st_paddys', type: 'weird', speaker: 'jaxon', title: "St. Paddy's Pub Crawl", once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [18, 18] }),
+      text: "St. Patrick's Day. Every bar in the province is booking bands and dyeing everything green. Jaxon has already dyed his hair. And his eyebrows. And, somehow, his guitar.",
+      choices: [
+        { label: 'Play the pub circuit', hint: 'Fans ↑ · burnout ↑', effects: { fans: 15, buzz: 4, burnout: 6 },
+          outcome: 'Three pubs, one night, one fiddle player who follows you between them. Marcel learns a jig. It is a threat.' },
+        { label: 'Green-beer photo shoot', hint: 'Buzz ↑', effects: { buzz: 6, mood: { jaxon: 4 } },
+          outcome: 'The band, in green, in capes, in front of a leprechaun statue. It makes the Star-Pheasant. Page nine, but still.' },
+        { label: 'Hide in the garage', hint: 'Burnout ↓', effects: { burnout: -5 },
+          outcome: 'You rehearse all night while the city goes green outside. Jaxon keeps the hair. For months.' }
+      ] },
+
+    /* ---- v0.6.1 season cards (C7): cabin fever, frosh week, hail (personally), the festival lineups ---- */
+    { id: 'scene_cabin_fever', type: 'drama', speaker: 'marcel', title: 'Cabin Fever', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [13, 16] }),
+      text: 'Minus thirty-six for nine days straight. Marcel has not been outside since New Year\'s. He has started naming the garage mice. Jaxon is talking to the space heater.',
+      choices: [
+        { label: 'Snow-fort day. Everybody out.', hint: 'Chemistry ↑ · burnout ↓', effects: { chemistry: 4, burnout: -5 },
+          outcome: 'A fort with a stage in it. Marcel sings to the neighbourhood from the battlements. Mr. Lindqvist brings hot chocolate. Voluntarily.' },
+        { label: 'Rehearse until spring', hint: 'Skill ↑ · burnout ↑', effects: { skill: { all: 1 }, burnout: 6 },
+          outcome: 'Eleven-hour sessions. The set is tight. The band is feral. Someone eats a frozen perogy raw.' },
+        { label: 'Drive somewhere. Anywhere.', hint: '−$60 · moods ↑', effects: { fund: -60, mood: { all: 5 } },
+          outcome: 'Four hours to a hotel waterslide in another town. It is closed for the season. It is still the best day of the winter.' }
+      ] },
+
+    { id: 'scene_frosh_week', type: 'scene', speaker: 'jaxon', title: 'Frosh Week', once: false, cooldown: 20,
+      gate: g({ era: GL, weekOfYear: [5, 6] }),
+      text: 'Frosh week on campus: four thousand first-years, free pizza, and a student union that books bands for the bowl. Jaxon has a stack of flyers and a lanyard he did not pay for.',
+      choices: [
+        { label: 'Flyer every residence', hint: 'Fans ↑ · burnout ↑', effects: { fans: 15, buzz: 4, burnout: 5 },
+          outcome: 'Six residences, twelve floors each, no elevators. Forty kids follow the band online. One asks if Marcel is a professor.' },
+        { label: 'Play the pizza line', hint: 'Gamble: new fans or campus security',
+          roll: { chance: 0.5, success: { effects: { fans: 20, buzz: 5 }, outcome: 'An acoustic set in the pizza line. Somebody starts a pit. With pizza.' },
+            fail: { effects: { mood: { all: -4 } }, outcome: 'Campus security asks for your student IDs. You do not have any. You are escorted, politely, off campus.' } },
+          outcome: 'Dana brings the practice amp.' },
+        { label: 'Skip it. They are children.', hint: 'Burnout ↓', effects: { burnout: -4, mood: { marcel: 3 } },
+          outcome: 'Marcel says the youth are not ready for Lord Abyssus. The youth, largely, agree.' }
+      ] },
+
+    { id: 'weird_hail_personal', type: 'weird', speaker: 'dad', title: 'Hail Season', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [1, 4] }),
+      text: "A hailstorm flattens the garden and dents Dad's new truck (again). Dad looks at the sky, then at your band shirt that says HAIL DAMAGE, then at you. For a long time.",
+      choices: [
+        { label: "'We had nothing to do with it'", hint: 'Moods ↓', effects: { mood: { all: -3 }, chemistry: 2 },
+          outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your drum kit. You are not sure what that means.' },
+        { label: 'Film the band in the hail', hint: 'Gamble: content or concussion',
+          roll: { chance: 0.55, success: { effects: { buzz: 8, fans: 10 }, outcome: 'Hail Damage, playing in actual hail damage. The clip goes around the province. Dad shares it. With a sigh.' },
+            fail: { effects: { burnout: 5, fund: -40 }, outcome: 'A hailstone the size of a perogy takes out the ride cymbal. And the phone. Forty bucks.' } },
+          outcome: 'Marcel grabs a hockey helmet.' },
+        { label: 'Help fix the truck', hint: '−$50 · Dad ↑', effects: { fund: -50, burnout: 3, chemistry: 3 },
+          outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad a blast beat. Even trade.' }
+      ] },
+
+    { id: 'fame_festival_lineups', type: 'fame', speaker: 'dj', title: 'The Lineups Are Out', once: false, cooldown: 20,
+      gate: g({ era: GLS, weekOfYear: [17, 18] }),
+      text: 'Deb reads the summer festival lineups on air, very gently. You are not on any of them. Tundra Wraith are on three. She says your name at the end anyway, "for next year".',
+      choices: [
+        { label: 'Apply to every open stage', hint: 'Buzz ↑ · burnout ↑', effects: { buzz: 6, burnout: 4 },
+          outcome: 'Eleven applications, each with a hand-drawn moose. Two say maybe. Maybe is a lot, in March.' },
+        { label: 'Start our own festival', hint: 'Gamble: Garagefest',
+          roll: { chance: 0.45, success: { effects: { fans: 20, buzz: 8, fund: -60 }, outcome: 'Garagefest: one stage (the driveway), four bands, a bouncy castle. Sixty people. A legend is born.' },
+            fail: { effects: { fund: -120, mood: { all: -3 } }, outcome: 'Garagefest: rained out, then snowed out, then the bouncy castle blew into a canola field.' } },
+          outcome: 'Marcel is already designing the wristbands.' },
+        { label: 'Train. Next year is ours.', hint: 'Skill ↑', effects: { skill: { all: 1 }, chemistry: 2 },
+          outcome: 'You print the lineups and tape them to the garage wall. Every rehearsal, Jaxon throws a dart at them.' }
       ] }
   ];
 })(window.GG);

@@ -208,6 +208,7 @@
     },
     book: function (state, venueId, d) {     // books this weekend unless a gig is already booked
       if (state.gig || !GG.gig || (GG.world && GG.world.isBanned(state, venueId))) return;   // banned: they won't have you
+      if (GG.calendar && !GG.calendar.venueOpen(state, GG.gig.venue(venueId))) return;   // v0.6.1: closed this week (Remembrance Day)
       var g = GG.gig.makeGig(state, venueId, 'card');
       if (g && GG.world) GG.world.decorate(state, g);
       if (g) { state.gig = g; state.offer = null; d.book = venueId; }
@@ -280,6 +281,7 @@
       else if (k === 'repay' && v) parts.push('Pay back ' + U.fmtMoney(v));
       else if (k === 'member' && v && GG.drama) parts.push(GG.drama.memberSummary(state, v));
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
+      else if (k === 'fan' && v && GG.fans) { var ft = GG.fans.effectText(v); if (ft) parts.push(ft); }   // v0.6.1 fan cards
     });
     return parts.join(' · ');
   };
@@ -329,7 +331,8 @@
   // + v0.5 studio event cards (drawn by GG.labels.studioEvent on Mondays of studio weeks).
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : []);
+    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
+      GG.fans ? GG.fans.cards() : []);   // v0.6.1: fan cards (scandals, superfans, Patreeon; forced by GG.fans, never drawn)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -449,7 +452,8 @@
       space: band.space || 'parents_garage', player: makePlayer(p),
       totalWeek: 1, year: 1, week: 1, maxWeeks: C.WEEKS_PER_YEAR * C.CAREER_YEARS,
       phase: 'monday', era: 'garage', protected: true,
-      fund: E.startFund, fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
+      careerDifficulty: GG.difficulty ? GG.difficulty.of({ careerDifficulty: args.careerDifficulty }) : 'normal',   // v0.6.1 C4: locked per career
+      fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
       members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
@@ -460,7 +464,8 @@
       weekStart: null, yearStart: null, ended: false,
       // v0.3 (26_sim_world): the gig board, venue rep + banned wall, the van, this week's trip, a live gig in progress
       listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
-      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null,
+      van: GG.world ? GG.world.defaultVan({ bandId: bandId }) : null, trip: null, liveGig: null,
+      weather: null,   // v0.6.1 (28_sim_calendar): this week's weather { week, kind, temp }, rolled on Mondays
       // v0.4 (27_sim_drama): pay the band, fill-ins, the recruit ad, originals who joined your rival
       payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: [],
       // v0.5 (24_sim_labels): eras, labels, the studio, records, awards, the trophy wall
@@ -469,6 +474,7 @@
     };
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
+    if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -476,6 +482,7 @@
     snapshotYear(state);
     if (GG.gig) state.gig = GG.gig.makeGig(state, 'buddys_house_party', 'forced');
     if (GG.world && state.gig) GG.world.decorate(state, state.gig);
+    if (GG.calendar) state.weather = GG.calendar.weatherAt(state);
     GG.emit('career:new', { state: state });
     return state;
   };
@@ -500,9 +507,12 @@
     var rng = GG.rngFor(state);
     endStaleChains(state);
     snapshotWeek(state);
+    if (GG.calendar) GG.calendar.monday(state);   // v0.6.1: this week's weather, season news, the driver, holiday afterglow
     var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : drawCard(state, rng);
+    var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
+    var fan = !forced && !studio && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : holiday || (fan && fan.card) || drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
@@ -535,6 +545,7 @@
     autoAdvanceChain(state, card, d);
     if (GG.drama) GG.drama.afterCard(state, card);
     if (GG.rival) GG.rival.afterCard(state, card);   // v0.6: a resolved poach card is a showdown
+    if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -603,12 +614,13 @@
       addStat(state, 'burnout', A.burnout, d);
       GG.emit('song:written', { song: song, reactions: reactions });
     },
-    promote: function (state, A, f, rng, d) {
+    promote: function (state, A, f, rng, d, lines) {
       addStat(state, 'fund', -A.cost, d);
       if (GG.labels) GG.labels.promoBlock(state, f, d);   // v0.5: hype for a scheduled release
       addStat(state, 'buzz', rngRound(A.buzz * f, rng), d);
       addStat(state, 'fans', rngRound(rng.int(A.fans[0], A.fans[1]) * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
+      if (GG.fans) GG.fans.post(state, { f: f, d: d, lines: lines });   // v0.6.1: the block posts to Bandbook (own seeded RNG)
     },
     // v0.3: the gig board. Takes the board pick (UI: GG.ui.openBoard at Go; bots: botBook), 'skip' = no gig,
     // no pick at all = the best listing (flows without a board). Already booked, or skipped: posters (buzz).
@@ -626,7 +638,7 @@
       addStat(state, 'burnout', A.burnout, d);
     },
     hustle: function (state, A, f, rng, d) {
-      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1));   // v0.5: fame pays (lessons, session work)
+      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1) * (GG.difficulty ? GG.difficulty.mul(state, 'hustle') : 1));   // v0.5: fame pays (lessons, session work)
       addStat(state, 'fund', cash, d);
       state.stats.earned += cash; state.stats.hustles++;
       addStat(state, 'burnout', A.burnout, d);
@@ -719,7 +731,7 @@
   // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep).
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
-    return Math.round(E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0));
+    return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
   };
   function decayBuzz(state) {
     if (state.buzz <= 0) return 0;
@@ -842,6 +854,7 @@
     if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
     if (GG.labels) GG.labels.weekly(state, rng, wrap);  // v0.5: offers, deals, releases, charts, royalties, Loonies
     if (GG.rival) GG.rival.weekly(state, rng, wrap);    // v0.6: the rival's career, heat, forfeits, cracking (wrap.rival)
+    if (GG.fans) GG.fans.weekly(state, wrap);           // v0.6.1: fan types, mail + gifts, Patreeon payouts (wrap.fans; own RNG)
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -878,6 +891,7 @@
     v += (fx.drumSkill || 0) * W.drumSkill + memberSum(state, fx.mood) * W.mood + memberSum(state, fx.skill) * W.skill;
     if (fx.book && !state.gig) v += W.book;
     if (fx.member && GG.drama) v += GG.drama.botValue(state, fx.member);
+    if (fx.fan && GG.fans) v += GG.fans.botValue(state, fx.fan);   // v0.6.1
     if (fx.payCut) v -= fx.payCut * 60;
     if (fx.repay) v += 2 - Math.min(fx.repay, state.debtToParents || 0) * W.fund;
     return v;
@@ -954,6 +968,7 @@
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
     if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release
+    if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough

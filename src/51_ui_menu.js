@@ -1,5 +1,7 @@
 // 51_ui_menu.js: everything outside the week loop. Title, load, new-career flow (slot → genre → band intro →
 // character creator → cold open), the in-game ☰ menu, and save-code backup/restore.
+// v0.6.1 (Addendum C4): ⚙ Settings from the title (title-settings) and the menu (menu-settings); the creator picks the
+// career difficulty (diff-chill|normal|brutal, locked for that career) and passes it to GG.main.newCareer.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -68,7 +70,10 @@
         btn('.btn.grow', { testid: 'btn-load', onclick: function () { ui.show('load'); } }, 'Load'),
         btn('.btn.grow', { testid: 'btn-code-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore code')
       ]));
-      kids.push(btn('.btn.ghost.block', { testid: 'title-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()));
+      kids.push(el('div.row', [
+        btn('.btn.ghost.grow', { testid: 'title-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
+        ui.defined && ui.defined('settings') ? btn('.btn.ghost.grow', { testid: 'title-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null
+      ]));
       ui.append(s.body, [
         el('div.title-glow'), el('div.title-bg'),
         el('div.title-wrap', [
@@ -211,13 +216,20 @@
         grid.appendChild(btn('.preset' + (p.id === draft.presetId ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': p.id === draft.presetId ? 'true' : 'false',
           onclick: function () { draft.presetId = p.id; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
       });
+      var DL = GG.difficulty ? GG.difficulty.LEVELS : ['normal'];
+      if (DL.indexOf(draft.careerDifficulty) < 0) draft.careerDifficulty = 'normal';
+      var diffPick = el('div.diff-pick', { testid: 'diff-pick' }, DL.map(function (d) {
+        var t = GG.difficulty ? GG.difficulty.text(d) : { name: d };
+        return btn('.btn' + (d === draft.careerDifficulty ? '.primary' : ''), { testid: 'diff-' + d, 'aria-pressed': d === draft.careerDifficulty ? 'true' : 'false',
+          onclick: function () { draft.careerDifficulty = d; s.rerender(); } }, [el('b', t.name), el('span.tiny', d === 'chill' ? 'easier life' : d === 'brutal' ? 'no mercy' : 'as intended')]);
+      }));
       create = btn('.btn.primary.big.block', { testid: 'btn-create', disabled: !(draft.name || '').trim(), onclick: function () {
         var n = (name.value || '').trim().slice(0, 16);
         if (!n) { err.textContent = 'Even drummers need a name.'; return; }
         create.disabled = true;
         GG.main.newCareer({ slot: draft.slot || '1', bandId: draft.bandId || 'hail_damage',
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId },
-          seed: GG.hashSeed(n + Date.now()) });
+          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
         ui.closeAll();
         ui.show('coldopen');
       } }, 'Start the band');
@@ -228,7 +240,10 @@
           el('div.field', [el('label', { htmlFor: 'cr-name' }, 'Your name'), name, err]),
           el('div.field', [el('label', { htmlFor: 'cr-nick' }, 'Stage nickname'), nick]),
           el('div.caps', 'Pick a look'),
-          grid
+          grid,
+          el('div.caps', 'Career difficulty · locked for this career'),
+          diffPick,
+          el('p.small.dim', { testid: 'diff-blurb' }, GG.difficulty ? GG.difficulty.text(draft.careerDifficulty).blurb : '')
         ])
       ]);
       s.foot.appendChild(create);
@@ -286,6 +301,7 @@
           btn('.btn.grow', { testid: 'menu-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
         ]),
         el('div.sep'),
+        ui.defined && ui.defined('settings') ? btn('.btn.block', { testid: 'menu-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null,
         el('div.row', [
           btn('.btn.grow', { testid: 'menu-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
           btn('.btn.danger.grow', { testid: 'menu-quit', onclick: function () {

@@ -6,6 +6,8 @@
 //           state.pendingSongs; "Let the band jam one" leaves the block to the band. ✕ goes back to the planner.
 //   sketch: the kit hotspot, editing state.draft; "Use in next Write" queues it for the next Write block.
 //   view  : a catalog song from the laptop (read-only, Play).
+// v0.6.1: ♩ toggles the metronome click (settings.metronome, GG.audio.toggleMetronome); playback passes the song's id so
+// the generated band keeps one key per song.
 // ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
@@ -183,9 +185,36 @@
     playhead(D, null);
     playButtons(D);
   }
+  // v0.6.1: the song's key is seeded by its id (a new song: the id it will most likely get), so it stays put while you edit.
+  function songSeed(D) {
+    if (D.seed) return D.seed;
+    if (D.song && D.song.id != null) return (D.seed = D.song.id);
+    var state = st(), max = 0;
+    if (D.mode === 'write' && state && state.songs) {
+      state.songs.forEach(function (x) { var n = parseInt(String(x.id).slice(1), 10); if (n > max) max = n; });
+      return (D.seed = 's' + (max + 1 + (D.index || 0)));
+    }
+    return (D.seed = 'sketch|' + ((state && state.totalWeek) || 0));
+  }
+  // Metronome toggle (settings.metronome via GG.audio; the settings screen mirrors it).
+  function metroOn() { try { return !!(GG.audio && GG.audio.metronome && GG.audio.metronome()); } catch (e) { return false; } }
+  function metroButton() {
+    var b = btn('.icon-btn', { testid: 'btn-seq-metro', 'aria-label': 'Metronome click', title: 'Metronome click',
+      style: 'width:48px;height:48px;flex:0 0 48px;font-size:22px', onclick: function () {
+        var on = GG.audio && GG.audio.toggleMetronome ? GG.audio.toggleMetronome() : false;
+        paintMetro(b, on);
+        ui.toast(on ? 'Click on. Marcel counts you in: "one, two, uh, the other ones."' : 'Click off. Feel it.');
+      } }, '♩');
+    paintMetro(b, metroOn());
+    return b;
+  }
+  function paintMetro(b, on) {
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.dataset.on = on ? '1' : '0';
+    b.style.background = on ? 'var(--amber)' : ''; b.style.color = on ? '#1d1204' : '';
+  }
   function startPlay(s, D, kind) {
     var section = kind === 'song' ? null : (D.tab === 'song' ? 'verse' : D.tab);
-    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, { genre: genre(), section: section, loop: kind !== 'song' }) : null;
+    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, { genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }) : null;
     if (!h) { ui.toast("No sound on this device. Imagine it. It's heavy."); return; }
     D.handle = h; D.playing = kind;
     if (D.view && D.view.pos) D.view.pos.textContent = '';
@@ -245,7 +274,7 @@
       ui.append(s.body, [
         el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
           stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-        } }, '✕'), V.title, right]),
+        } }, '✕'), V.title, metroButton(), right]),
         el('div.seq-tabs', [ui.tabs(TABS, D.tab, function (id) {
           D.tab = id; s.rerender();
           if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);

@@ -655,6 +655,30 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .rv-cr { font-size: 22px; color: #ffe27a; margin: 2px 0 4px; }
 .chart-row.rival b { font-family: Georgia, "Times New Roman", serif; } .chart-row.rival { box-shadow: inset 3px 0 0 #ecebe6; }
 /* ==== end v0.6 ==== */
+/* v0.6.1 (Addendum C4, SETTINGS): bigger text, reduced flashing, faster animations (classes on <html>, 5h_ui_settings) */
+html.gg-big body { font-size: 18px; }
+html.gg-big .small { font-size: 15px; } html.gg-big .tiny { font-size: 13px; } html.gg-big .caps { font-size: 12.5px; }
+html.gg-big .btn { font-size: 17px; } html.gg-big .btn.small { font-size: 15px; } html.gg-big .btn.big { font-size: 19px; }
+html.gg-big .screen-sub, html.gg-big .tagline, html.gg-big .toast, html.gg-big .bubble { font-size: 17px; }
+html.gg-big p, html.gg-big li, html.gg-big .card-text { font-size: 1.06em; }
+html.gg-calm .gig-back .lights, html.gg-calm .hail, html.gg-calm .dock .btn.primary, html.gg-calm .title-glow { animation: none !important; }
+html.gg-calm .gig-count { animation-duration: .01s !important; }
+html.gg-fast .full, html.gg-fast .sheet, html.gg-fast .modal, html.gg-fast .scrim, html.gg-fast .toast, html.gg-fast .bubble { animation-duration: .07s !important; }
+html.gg-fast * { transition-duration: .08s !important; }
+/* settings + calibration screens */
+.set-sec { margin: 16px 0 6px; }
+.set-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.set-row .lbl { flex: 1 1 auto; min-width: 0; } .set-row .lbl b { display: block; } .set-row .lbl span { display: block; font-size: 12px; color: var(--dim); }
+.set-seg { display: flex; gap: 6px; flex-wrap: wrap; } .set-seg .btn { flex: 1 1 0; padding: 0 8px; min-width: 48px; }
+.set-toggle { min-width: 72px; }
+.set-slider { width: 100%; height: 48px; accent-color: var(--amber); }
+.calib-light { width: 140px; height: 140px; margin: 18px auto; border-radius: 50%; background: #1b2336; border: 3px solid var(--line); transition: none !important; }
+.calib-light.on { background: #ffe27a; box-shadow: 0 0 60px rgba(255, 226, 122, .7); }
+html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
+.calib-pad { display: flex; align-items: center; justify-content: center; min-height: 160px; border-radius: 18px; border: 2px dashed var(--line); font: 900 22px/1.1 var(--display); text-transform: uppercase; color: var(--dim); touch-action: none; }
+.calib-pad.hit { border-color: var(--amber); color: var(--amber); }
+.diff-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.diff-pick .btn { flex-direction: column; min-height: 64px; padding: 6px; }
 </style>
 </head>
 <body>

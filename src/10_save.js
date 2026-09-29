@@ -10,7 +10,11 @@
   var PREFIX = 'gg.v1.';
   save.KEYS = { slot: function (s) { return PREFIX + 'slot.' + s; }, settings: PREFIX + 'settings', hof: PREFIX + 'hof', meta: PREFIX + 'meta' };
   var DAMAGED = 'That save code is damaged or incomplete. Copy the whole code and try again.';
-  var DEFAULT_SETTINGS = { muted: false };
+  // v0.6.1 (Addendum C4, SETTINGS): every player preference has a default here (GG.prefs normalizes them); lane A's
+  // mix / metronome / brushes default inside GG.audio. Only keys the player changed are stored.
+  var DEFAULT_SETTINGS = { muted: false, gigDifficulty: 'easy', noteSpeed: 1, noFail: false, autoKick: false,
+    audioProfile: 'speaker', calib: { speaker: { audio: 0, visual: 0, at: 0 }, headphones: { audio: 0, visual: 0, at: 0 } }, calibSeen: false,
+    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'high', skipVan: false, fastAnim: false };
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
@@ -101,11 +105,12 @@
     if (s && typeof s === 'object') for (var k in s) out[k] = s[k];
     return out;
   };
+  save.SETTINGS_DEFAULTS = DEFAULT_SETTINGS;
   save.saveSettings = function (obj) {
-    var s = save.settings();
-    for (var k in obj || {}) s[k] = obj[k];
-    setRaw(save.KEYS.settings, JSON.stringify(s));
-    return s;
+    var raw = getJSON(save.KEYS.settings); raw = raw && typeof raw === 'object' ? raw : {};
+    for (var k in obj || {}) raw[k] = obj[k];
+    setRaw(save.KEYS.settings, JSON.stringify(raw));
+    return save.settings();
   };
 
   /* ---- Migration ---------------------------------------------------------------- */

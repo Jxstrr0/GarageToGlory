@@ -13,7 +13,12 @@
 //   state: listings [GIG], listingsWeek, bookPick (listing id | 'skip' | null), venueRep { id: -3..3 }, banned [id],
 //          van VAN (+ trips, breakdowns), trip TRIP|null
 //   TRIP = { w, venueId, from, to, fromName, toName, km, highway, season, night, cardId, resolved, choice, outcome,
-//            deltas, success, banter: [{ who, text }] }
+//            deltas, success, banter: [{ who, text }] } + v0.6.1: weather, temp, holiday, driver
+// v0.6.1 (WORLD, Addendum 1): Canada in rings (content/map.js rings; world.ring / ringOpen / cityOpen: Saskatchewan from
+// day one, the West from Local Heroes, the East & North from Signed), the calendar hooks (GG.calendar: venues open by
+// season/holiday, listing weight + pay, weather turnout, road risk) and van drivers (content.drivers; world.driver(state)
+// → { id, name, you, def }: the band's designated driver while active, else YOU drive; world.driverMods, syncDriver).
+// Road-card gates gain driver: [ids|'you'], weather: [C.WEATHER], holiday: [holidayIds].
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
@@ -34,6 +39,7 @@
     opening: { chance: 0.4, minFans: 20, needFrac: 0.35, pay: [20, 45], exposureChance: 0.35, setSize: 2,
                slice: 0.45, fanShare: 0.5, rivalChance: 0.08, rivalMinFans: 60, rivalDraw: 260 },
     road: { chanceLocal: 0.2, chanceLong: 0.9, longKm: 100 },
+    farListings: 1,              // v0.6.1: at most this many gigs a week from outside your home ring (a weekend run out West)
     // v0.5: tier by era (theatres open in the Signed era), the fan scene per era, new-fan factor at theatres
     eraTier: { garage: 2, local: 2, signed: 3, world: 3 },
     scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },
@@ -41,7 +47,7 @@
     commission: { garage: 0, local: 0, signed: 0.15, world: 0.2 },   // management + booking agent, off the top of gig pay
     crew: { 3: 150 },            // $ per show by venue tier (theatres need a crew)
     van: { condition: 72, space: 3, comfort: 2, comfortMax: 5, wearPerKm: 0.008, wearBase: 0.3,
-           burnoutFromKm: 60, burnoutPer100: 0.5, tiredAt: 30, breakdownK: 0.5, towCost: [60, 140],
+           burnoutFromKm: 60, burnoutPer100: 0.5, burnoutMax: 30, burnoutTaper: [300, 0.5], breakdownKmCap: 400, tiredAt: 30, breakdownK: 0.5, towCost: [60, 140],
            repairPerPoint: 3, repairStep: 20 }
   };
   function cfg() {
@@ -112,8 +118,21 @@
     var K = cfg();
     return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm));
   };
-  // Seasons by week of year (contracts): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
-  world.season = function (week) { return week <= 6 ? 'summer' : week <= 10 ? 'fall' : week <= 18 ? 'winter' : week <= 22 ? 'spring' : 'summer'; };
+  // Seasons by week of year (v0.6.1 contracts C.SEASONS via GG.calendar): summer 23–4, fall 5–10, winter 11–16, spring 17–22.
+  world.season = function (week) {
+    if (GG.calendar) return GG.calendar.season(week);
+    var w = ((Math.max(1, week | 0) - 1) % 24) + 1;
+    return w <= 4 || w >= 23 ? 'summer' : w <= 10 ? 'fall' : w <= 16 ? 'winter' : 'spring';
+  };
+  // v0.6.1 rings: which ring a city is in, and whether your era has opened it.
+  world.rings = function () { return map().rings || [{ id: 'sask', era: 'garage' }]; };
+  world.ring = function (x) { var c = world.city(x); return c ? c.ring || 'sask' : null; };
+  world.ringOpen = function (state, ringId) {
+    var r = world.rings().filter(function (x) { return x.id === ringId; })[0];
+    if (!r) return true;
+    return C.ERAS.indexOf(state && state.era || 'garage') >= C.ERAS.indexOf(r.era || 'garage');
+  };
+  world.cityOpen = function (state, x) { var r = world.ring(x); return !r || world.ringOpen(state, r); };
 
   /* ---- Venues: reputation, bans, genre fit ------------------------------------------------------- */
   function venues() { return GG.content.venues || []; }
@@ -127,8 +146,10 @@
     return ago >= 1 && ago <= F.length ? F[ago - 1] : 1;
   };
   // A venue you could headline this week: listed venue, tier in range, enough fans, not banned, not card-only.
+  // v0.6.1: + the venue's ring is open in your era, and the calendar has it on this week (season, holiday, Remembrance Day).
   world.bookable = function (state, v) {
-    return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= world.maxTier(state) && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0);
+    return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= world.maxTier(state) && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0)
+      && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
   };
   // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
   world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
@@ -158,6 +179,8 @@
     g.rebook = g.repLevel >= cfg().rebookAt;
     g.clash = fit < cfg().clashFit;
     if (g.opening === undefined) g.opening = null;
+    g.outdoor = !!v.outdoor;   // v0.6.1: weather hits outdoor turnout; tags = holiday / weather / season chips for the board
+    g.tags = GG.calendar ? GG.calendar.tags(state, { kind: g.kind, city: g.city, outdoor: g.outdoor, holiday: v.holiday, id: g.venueId }, g.city) : [];
     return g;
   };
   // A listing for venue v. opts: { id, source, deal, opening: { id, name, genre, draw, rival } }.
@@ -170,7 +193,8 @@
     if (op) pay = deal === 'flat' ? Math.round(rng.int(K.opening.pay[0], K.opening.pay[1]) / 5) * 5 : 0;
     else if (deal !== 'exposure') {
       var range = (v.payRange && v.payRange[deal]) || [v.pay || 0, v.pay || 0];
-      var mult = Math.max(0.5, 1 + K.repPay * rep) * (fit < K.clashFit && deal === 'flat' ? K.hazardPay : 1);
+      var mult = Math.max(0.5, 1 + K.repPay * rep) * (fit < K.clashFit && deal === 'flat' ? K.hazardPay : 1)
+        * (GG.calendar ? GG.calendar.payMult(state, v) : 1);   // v0.6.1: NYE double pay, party + pub circuits
       pay = deal === 'door' ? Math.round(rng.range(range[0], range[1]) * mult * 2) / 2
         : Math.round(rng.int(range[0], range[1]) * mult / 5) * 5;
     }
@@ -182,7 +206,8 @@
   function listWeight(state, v) {
     var K = cfg(), km = world.km(world.home(state), v.city);
     return (0.3 + fitOf(v, state.genre)) / (1 + km / K.kmSoft) * Math.max(0.2, 1 + K.repWeight * world.rep(state, v.id))
-      * (K.tierWeight[v.tier] || 1) * (v.tier === 1 && state.fans > K.bigBandTier1 ? 0.5 : 1) * (0.5 + 0.5 * world.freshness(state, v.id));
+      * (K.tierWeight[v.tier] || 1) * (v.tier === 1 && state.fans > K.bigBandTier1 ? 0.5 : 1) * (0.5 + 0.5 * world.freshness(state, v.id))
+      * (GG.calendar ? GG.calendar.listWeight(state, v) : 1);
   }
   function headliner(state, v, rng) {
     var K = cfg().opening, band = GG.career.band(state.bandId), rival = band && band.rival && GG.content.rivals && GG.content.rivals[band.rival];
@@ -206,14 +231,18 @@
     if (fans.length) add(rng.weighted(fans, function (v) { return 1 + world.rep(state, v.id); }), {});
     if (state.fans >= K.opening.minFans && rng.chance(K.opening.chance)) {
       var rooms = venues().filter(function (v) {
-        return v.tier >= 2 && v.minFans < CARD_ONLY && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v);
+        return v.tier >= 2 && v.minFans < CARD_ONLY && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v)
+          && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
       });
       var room = rooms.length ? rng.weighted(rooms, function (v) { return listWeight(state, v); }) : null;
       var h = room ? headliner(state, room, rng) : null;
       if (h) add(room, { opening: h });
     }
+    var homeRing = world.ring(world.home(state)) || 'sask';
+    function far(v) { var r = world.ring(v.city); return !!r && r !== homeRing; }
     while (out.length < n) {
-      var left = pool.filter(function (v) { return !used[v.id]; });
+      var farN = out.filter(function (g) { return far(g); }).length;
+      var left = pool.filter(function (v) { return !used[v.id] && (farN < K.farListings || !far(v)); });
       if (!left.length) break;
       add(rng.weighted(left, function (v) { return listWeight(state, v); }), {});
     }
@@ -313,6 +342,7 @@
       var x0 = (r.crowd || 0) * (G.conversion[r.grade] || 0) * (0.5 + 0.5 * fit) * (g.deal === 'exposure' ? G.exposureFanBonus : 1) * fm;
       r.fans = rngRound(x0 * Math.max(0, 1 - state.fans / scene) * (tier3 ? K.theatreFans : 1), rng);
     }
+    if (GG.calendar) GG.calendar.shape(state, g, r, rng);   // v0.6.1: weather turnout (outdoors), holiday buzz + lines
     if (g.opening) {
       var room = Math.max(0, (g.capacity || r.capacity || 0) - (r.crowd || 0));
       var slice = Math.min(room, Math.round(g.opening.draw * K.opening.slice));
@@ -368,27 +398,35 @@
     else if (t.wear && world.van(state).condition < K.van.tiredAt) r.lines.push(pickLine(state, rng, 'vanTired', 'The van is tired.'));
     return r;
   };
-  function tripBurnout(state, km) {
-    var K = cfg().van, van = world.van(state);
-    return km < K.burnoutFromKm ? 0 : Math.round(km / 100 * (K.comfortMax + 1 - U.clamp(van.comfort, 1, K.comfortMax)) * K.burnoutPer100);
+  // v0.6.1: the driver's comfort (Moth's apartment: terrible) and pace (T-Bone, Earl: slow) + the week's weather.
+  function tripBurnout(state, km, city) {
+    var K = cfg().van, van = world.van(state), dm = world.driverMods(state);
+    if (km < K.burnoutFromKm) return 0;
+    var comfort = U.clamp(van.comfort + (dm.comfort || 0), 1, K.comfortMax);
+    var wx = GG.calendar ? GG.calendar.roadMods(state, city).burnout : 0;
+    var T = K.burnoutTaper || [300, 0.5], eff = km <= T[0] ? km : T[0] + (km - T[0]) * T[1];   // v0.6.1: long hauls settle in
+    return Math.min(K.burnoutMax || 30, Math.round(eff / 100 * (K.comfortMax + 1 - comfort) * K.burnoutPer100 * (dm.burnout || 1)) + wx);
   }
   world.tripBurnout = tripBurnout;
-  world.breakdownChance = function (state, km) {
+  world.breakdownChance = function (state, km, city) {
     var K = cfg().van, van = world.van(state);
     if (state.protected) return 0;   // garage era: nothing breaks down (condition still drops)
-    return U.clamp(Math.pow(1 - van.condition / 100, 2) * (0.2 + km / 300) * K.breakdownK, 0, 0.5);
+    var road = GG.calendar ? GG.calendar.roadMods(state, city).road : 1;   // v0.6.1: icy roads, whiteouts, hail
+    var kmRisk = Math.min(km, K.breakdownKmCap || 400);   // v0.6.1: a 1,400 km run isn't 4x riskier than a 350 km one
+    return U.clamp(Math.pow(1 - van.condition / 100, 2) * (0.2 + kmRisk / 300) * K.breakdownK * road * (world.driverMods(state).breakdown || 1), 0, 0.5);
   };
   // One round trip to gig g: wear, burnout from long drives, maybe a breakdown (never while state.protected).
   world.travel = function (state, g, rng, d) {
     var K = cfg().van, van = world.van(state);
     var km = g.km != null ? g.km : world.km(world.home(state), g.city), driven = km * 2;
-    var before = van.condition;
-    van.condition = U.clamp(van.condition - rngRound(driven * K.wearPerKm + K.wearBase, rng), 0, 100);
+    var before = van.condition, dm = world.driverMods(state), rm = GG.calendar ? GG.calendar.roadMods(state, g.city) : { wear: 1 };
+    van.condition = U.clamp(van.condition - rngRound((driven * K.wearPerKm + K.wearBase) * rm.wear * (dm.wear || 1), rng), 0, 100);   // v0.6.1: potholes, hail
     van.km += driven; van.trips = (van.trips || 0) + 1;
-    var burn = tripBurnout(state, km);
+    var burn = tripBurnout(state, km, g.city);
     if (burn) GG.career.applyEffects(state, { burnout: burn }, d);
-    var out = { km: km, driven: driven, wear: before - van.condition, burnout: burn, breakdown: null };
-    if (rng.chance(world.breakdownChance(state, km))) {
+    if (dm.chemistry && km >= K.burnoutFromKm) GG.career.applyEffects(state, { chemistry: dm.chemistry }, d);   // Earl's road stories
+    var out = { km: km, driven: driven, wear: before - van.condition, burnout: burn, breakdown: null, driver: world.driver(state).id };
+    if (rng.chance(world.breakdownChance(state, km, g.city))) {
       var cost = rng.int(K.towCost[0], K.towCost[1]);
       GG.career.applyEffects(state, { fund: -cost, burnout: 3, chemistry: -2 }, d);
       van.breakdowns = (van.breakdowns || 0) + 1;
@@ -399,9 +437,10 @@
   };
 
   /* ---- The van ---------------------------------------------------------------------------------------- */
-  world.defaultVan = function () {
+  world.defaultVan = function (state) {
     var K = cfg().van;
-    return { id: 'moose_hearse', name: 'The Moose Hearse', condition: K.condition, space: K.space, comfort: K.comfort, km: 0, trips: 0, breakdowns: 0 };
+    return { id: 'moose_hearse', name: 'The Moose Hearse', condition: K.condition, space: K.space, comfort: K.comfort, km: 0, trips: 0, breakdowns: 0,
+      driver: world.driverFor(state && state.bandId || 'hail_damage') || 'you' };
   };
   world.van = function (state) { if (!state.van || typeof state.van !== 'object') state.van = world.defaultVan(); return state.van; };
   world.vanLabel = function (condition) {
@@ -411,7 +450,44 @@
   // Cousin Dale's garage: +repairStep condition for repairPerPoint $ a point. { cost, gain } (gain 0 = nothing to fix).
   world.repairQuote = function (state) {
     var K = cfg().van, van = world.van(state), gain = Math.max(0, Math.min(K.repairStep, 100 - van.condition));
-    return { cost: gain * K.repairPerPoint, gain: gain };
+    var rp = world.driverMods(state).repair;   // v0.6.1: Moth does her own maintenance, free
+    return { cost: Math.round(gain * K.repairPerPoint * (rp != null ? rp : 1)), gain: gain };
+  };
+
+  /* ---- v0.6.1 van drivers (Addendum 1 C1) ------------------------------------------------------------------------------ */
+  // content.drivers: { <memberId>: { id, band, name, dashboard, blurb, mods: { breakdown, wear, burnout, comfort, repair,
+  //   chemistry, roadChance } } } + 'you' (the founder, when the band's driver is gone). Only Hail Damage plays now.
+  var DRIVER_MODS = { breakdown: 1, wear: 1, burnout: 1, comfort: 0, repair: 1, chemistry: 0, roadChance: 1 };
+  function drivers() { return GG.content.drivers || {}; }
+  world.driverFor = function (bandId) {
+    var D = drivers();
+    for (var id in D) if (D[id].band === bandId) return id;
+    return bandId === 'hail_damage' ? 'kenji' : null;
+  };
+  // The one behind the wheel this week: the band's designated driver while active, otherwise you.
+  world.driver = function (state) {
+    var id = world.driverFor(state && state.bandId), m = id && state && state.members ? state.members.filter(function (x) { return x.id === id; })[0] : null;
+    var on = !!(m && (!m.status || m.status === 'active')), key = on ? id : 'you', def = drivers()[key] || {};
+    return { id: key, name: on ? (def.name || (m && m.name) || id) : 'You', you: !on, designated: id, def: def, dashboard: def.dashboard || null };
+  };
+  world.driverMods = function (state) {
+    var d = world.driver(state).def.mods || {}, out = {};
+    for (var k in DRIVER_MODS) out[k] = d[k] != null ? d[k] : DRIVER_MODS[k];
+    return out;
+  };
+  // Keeps state.van.driver in step with the lineup (the driver quit -> you drive; they're back -> they drive).
+  // Returns { from, to } when it changed (and posts one group-chat line), else null.
+  world.syncDriver = function (state, quiet) {
+    if (!state) return null;
+    var van = world.van(state), cur = world.driver(state).id, was = van.driver;
+    if (was === cur) return null;
+    van.driver = cur;
+    if (!was || quiet || !GG.career || !GG.career.postChat) return { from: was || null, to: cur };
+    var D = drivers(), text = cur === 'you' ? (D.you && D.you.takeOver) || 'You drive now. The seat is still warm. The mirrors are set for someone taller.'
+      : (D[cur] && D[cur].back) || D[cur] && D[cur].name + ' is back behind the wheel.';
+    GG.career.postChat(state, cur === 'you' ? (state.members.filter(function (m) { return m.status === 'active'; })[0] || {}).id || 'mom' : 'jaxon', text, null, 'news');
+    GG.emit('van:driver', { from: was, to: cur });
+    return { from: was, to: cur };
   };
   world.repairVan = function (state) {
     var q = world.repairQuote(state);
@@ -429,12 +505,16 @@
     if (list !== roadList) { roadIndex = {}; roadList = list; list.forEach(function (c) { roadIndex[c.id] = c; }); }
     return roadIndex[id] || null;
   };
-  var ROAD_GATE = { minKm: 1, maxKm: 1, season: 1 };
-  world.roadGatePasses = function (state, gate, km, season) {
+  var ROAD_GATE = { minKm: 1, maxKm: 1, season: 1, driver: 1, weather: 1, holiday: 1 };
+  // v0.6.1: driver: [memberId|'you'] (who is behind the wheel), weather: [kind] (at the destination), holiday: [id].
+  world.roadGatePasses = function (state, gate, km, season, city) {
     if (!gate) return true;
     if (gate.minKm != null && km < gate.minKm) return false;
     if (gate.maxKm != null && km > gate.maxKm) return false;
     if (gate.season && gate.season.indexOf(season) < 0) return false;
+    if (gate.driver && gate.driver.indexOf(world.driver(state).id) < 0) return false;
+    if (gate.weather && (!GG.calendar || gate.weather.indexOf(GG.calendar.weatherAt(state, city).kind) < 0)) return false;
+    if (gate.holiday && (!GG.calendar || !gate.holiday.some(function (h) { return GG.calendar.isHoliday(state, h); }))) return false;
     var rest = {}, any = false;
     for (var k in gate) if (!ROAD_GATE[k]) { rest[k] = gate[k]; any = true; }
     return !any || GG.career.gatePasses(state, rest);
@@ -446,10 +526,10 @@
     return state.totalWeek - seen >= (c.cooldown || 0);
   }
   // A road card for a trip of `km` one-way km (null: a quiet drive). Uses the rng passed in.
-  world.drawRoad = function (state, km, season, rng) {
+  world.drawRoad = function (state, km, season, rng, city) {
     var K = cfg().road;
-    if (!rng.chance(km >= K.longKm ? K.chanceLong : K.chanceLocal)) return null;
-    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season) && roadAvailable(state, c); });
+    if (!rng.chance(Math.min(0.97, (km >= K.longKm ? K.chanceLong : K.chanceLocal) * (world.driverMods(state).roadChance || 1)))) return null;
+    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c); });
     return list.length ? rng.weighted(list, function (c) { return c.weight != null ? c.weight : 1; }) : null;
   };
   // 1–2 lines of van chatter (a bandmate or two; Kenji only ever gets a stage direction). Seeded, cosmetic.
@@ -475,13 +555,15 @@
     if (t && t.venueId === gig.venueId) return t;
     var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
-    var card = world.drawRoad(state, km, season, rng);
+    var card = world.drawRoad(state, km, season, rng, to);
     if (card) state.seenCards[card.id] = state.totalWeek;
     var fc = world.city(from), tc = world.city(to);
+    var wx = GG.calendar ? GG.calendar.weatherAt(state, to) : { kind: 'clear', temp: 20 }, hol = GG.calendar ? GG.calendar.holiday(state.week, state) : null;
     t = state.trip = { w: state.totalWeek, venueId: gig.venueId, from: from, to: to,
       fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : 'Hwy 7 · the Trans-Canada',
       season: season, night: km >= 180 || season === 'winter', cardId: card ? card.id : null, resolved: !card,
-      choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2) };
+      choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2),
+      weather: wx.kind, temp: wx.temp, holiday: hol ? hol.id : null, driver: world.driver(state).id };
     return t;
   };
   world.roadCard = function (state) { var t = world.trip(state); return t && t.cardId ? world.roadCardById(t.cardId) : null; };
@@ -542,7 +624,7 @@
     if (!s.venueLast || typeof s.venueLast !== 'object' || Array.isArray(s.venueLast)) s.venueLast = {};
     if (!Array.isArray(s.banned)) s.banned = [];
     else if (s.banned.some(function (x) { return typeof x !== 'string'; })) s.banned = s.banned.filter(function (x) { return typeof x === 'string'; });
-    var dv = world.defaultVan();
+    var dv = world.defaultVan(s);
     if (!s.van || typeof s.van !== 'object' || Array.isArray(s.van)) s.van = dv;
     else Object.keys(dv).forEach(function (k) {
       if (typeof dv[k] === 'number') { if (!isFinite(s.van[k])) s.van[k] = dv[k]; }

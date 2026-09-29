@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 6;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 7;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -30,7 +30,15 @@
   C.CERT = { gold: 40000, platinum: 80000 };          // album units (Music Canada thresholds)
   C.SHOWDOWNS = ['botb', 'sameNight', 'stolenSlot', 'loonies', 'poach', 'festival', 'final'];   // v0.6 rivalry
   C.CRACKS = ['breakup', 'rebrand', 'opener'];        // how a beaten rival cracks
-  C.LOONIES_WEEK = 20;                                // Loonie Awards, once a year (late winter)
+  C.LOONIES_WEEK = 20;
+  // v0.6.1 (Addendum 1): two weeks per month; week 1 = early July. Seasons by month (C7).
+  C.MONTHS = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];   // index = floor((week-1)/2)
+  C.SEASONS = { winter: [11, 16], spring: [17, 22], summer: [23, 4], fall: [5, 10] };                 // week ranges (summer wraps)
+  C.WEATHER = ['clear', 'rain', 'snow', 'blizzard', 'heat', 'hail'];                                  // never cancels a gig
+  C.CAREER_DIFFICULTY = ['chill', 'normal', 'brutal'];                                               // locked per career
+  C.GIG_DIFFICULTY = ['easy', 'normal', 'hard', 'expert'];
+  C.FAN_TYPES = ['super', 'casual', 'hater'];                                                        // shares of the one fan count
+  C.MIX_BUSES = ['drums', 'band', 'crowd', 'sfx'];                                // Loonie Awards, once a year (late winter)
   C.LOONIE_CATEGORIES = ['breakthrough', 'album', 'single', 'live', 'fan_choice', 'worst_van'];
   C.JUDGEMENTS = ['perfect', 'good', 'miss'];
   C.CROWD_LEVELS = ['hostile', 'bored', 'warm', 'hyped', 'wild'];   // crowd meter 0..100 bands
@@ -87,6 +95,9 @@
      eraHistory: [ { era, week } ],                  // v0.5: garage → local (250 fans) → signed (a deal or a DIY album) → world (v0.7)
      label: null | DEAL, labelOffers: [ OFFER ], session: null | SESSION, albums: [ ALBUM ], awards: [ AWARD ],
      trophies: [ { kind: 'gold'|'platinum'|'loonie'|'banned'|..., title, year } ],
+     careerDifficulty: 'chill'|'normal'|'brutal', weather: { week, kind, temp }, fanTypes: { super, casual, hater } (0..1),
+     bandbook: { posts: [ POST ], viral, scandals }, superfans: { <id>: { seen, mood } }, fanClub: null | { since, members,
+     happiness, tier }, gifts: [ { id, week, from, text } ],   (v0.6.1; van gains driver)
      rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },

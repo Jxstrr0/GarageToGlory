@@ -8,6 +8,11 @@
 //   van   : playVan to Regina with a road card: progress advances, banter, the card pops mid-drive (road-choice →
 //           OK), arrival → done(trip); skip with no card = done fast; skip with an unresolved card shows the card
 //           first; 3D van scene used when STAGE's scene is registered (else the 2D windshield). No console errors.
+//   calendar (v0.6.1): HUD month · season · weather strip (390 + 440 wide, no overflow) + week-chip toast; garage decor by
+//           season (box fan in July, lights + window snow in December); board: calendar line, ring tabs (Sask 12 pins,
+//           the West locked + teased in the garage era, open for Local Heroes), holiday tag chips on NYE; van: weather +
+//           driver in the header, Kenji + cactus + you riding shotgun in the 3D van, the weather on the windshield; Kenji
+//           quits -> you drive (van sheet). Screenshots tests/.cache/hud_calendar.png, board_rings.png, van_driver.png.
 // Run: node build.js && META_ONLY=board timeout 500 node tests/pw_world.js
 const path = require('path');
 const { open, checker } = require('./_pw');
@@ -77,7 +82,8 @@ async function board() {
     await page.waitForTimeout(400);   // let the screen fade in
     await page.screenshot({ path: path.join(CACHE, 'board_list.png') });
     await tap(page, 'board-tab-map');
-    c.ok(await count(page, 'board-map') === 1 && await page.locator('[data-testid^="pin-"]').count() === 9, 'map with 9 Sask pins');
+    c.ok(await count(page, 'board-map') === 1 && await page.locator('[data-testid^="pin-"]').count() === 12, 'map with 12 Sask pins (v0.6.1 ring)');
+    c.ok(await count(page, 'ring-sask') === 1 && await count(page, 'ring-west') === 1 && await count(page, 'ring-eastnorth') === 1, 'ring tabs');
     await tap(page, 'pin-regina');
     const city = await page.textContent(tid('board-city'));
     const regina = await page.evaluate(() => GG.state.listings.filter(l => l.city === 'Regina').length);
@@ -178,7 +184,97 @@ async function van() {
   c.done();
 }
 
+/* ---- calendar (v0.6.1): HUD strip, garage seasons, rings, holiday tags, van driver + weather --------------------- */
+async function calendar() {
+  const c = checker('calendar');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => GG.main.quickStart({ seed: 4343 }));
+    await toPlan(page);
+    const hud = await page.evaluate(() => ({ t: document.querySelector('[data-testid="hud-cal"]').textContent, L: GG.calendar.label(GG.state) }));
+    c.ok(/Jul/.test(hud.t) && /Summer/.test(hud.t) && hud.t.includes(hud.L.weatherLabel) && /°C/.test(hud.t) && /Canada Day/.test(hud.t), 'HUD: month · season · weather · holiday: ' + hud.t);
+    const fits = async () => page.evaluate(() => { const e = document.querySelector('[data-testid="hud-cal"]'), r = e.getBoundingClientRect(), b = document.querySelector('.hud-bar').getBoundingClientRect();
+      return { in: r.left >= 0 && r.right <= document.documentElement.clientWidth + 0.5, below: r.top >= b.top, h: Math.round(r.height), hs: document.documentElement.scrollWidth <= document.documentElement.clientWidth }; });
+    const f1 = await fits(); c.ok(f1.in && f1.hs && f1.h <= 24, 'HUD strip fits at 390 ' + JSON.stringify(f1));
+    await page.evaluate(() => { const s = GG.state; s.week = 12; s.totalWeek = 12; GG.calendar.monday(s); GG.main.sync(); GG.ui.refreshHud(); });
+    await page.waitForTimeout(100);
+    c.ok(/Dec/.test(await page.textContent(tid('hud-cal'))) && /New Year/.test(await page.textContent(tid('hud-cal'))), 'December + NYE on the HUD');
+    await page.setViewportSize({ width: 440, height: 956 }); await page.waitForTimeout(150);
+    const f2 = await fits(); c.ok(f2.in && f2.hs, 'HUD strip fits at 440x956 ' + JSON.stringify(f2));
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+    await tap(page, 'hud-week');
+    await page.waitForTimeout(450);
+    c.ok(/December/.test(await page.evaluate(() => (document.querySelector('#toast') || document.body).textContent)), 'week chip toast explains the calendar');
+    await page.screenshot({ path: path.join(CACHE, 'hud_calendar.png') });
+    // garage decor by season (3D only)
+    const decor = await page.evaluate(() => {
+      if (!GG.main.renderOk) return null;
+      const s = GG.state, out = {};
+      for (const w of [1, 5, 12]) { s.week = w; s.totalWeek = w; s.weather = GG.calendar.weatherAt(s); GG.render.syncState(s); out[w] = GG.debug('render').decor; }
+      return out;
+    });
+    if (decor) c.ok(decor[1].fan && !decor[1].lights && decor[12].lights && decor[12].snow && !decor[5].lights && !decor[5].fan, 'garage: fan in July, lights + window snow in December ' + JSON.stringify(decor));
+    else c.ok(true, 'garage decor: no WebGL, skipped');
+    // the board: calendar line, rings, NYE tags
+    await page.evaluate(() => { const s = GG.state; s.week = 12; s.totalWeek = 12; s.fans = 300; s.gig = null; s.offer = null; GG.world.refresh(s, true); GG.main.sync(); GG.ui.openBoard({ mode: 'view' }); });
+    await waitScreen(page, 'board');
+    c.ok(/December/.test(await page.textContent(tid('board-cal'))), 'board: calendar line');
+    const tags = await page.$$eval('[data-testid="board-tag"]', els => els.map(e => e.textContent));
+    c.ok(tags.some(t => /New Year/.test(t)), 'NYE tag chips: ' + tags.slice(0, 3).join(' | '));
+    await tap(page, 'board-tab-map');
+    c.ok(await page.locator('[data-testid^="pin-"]').count() === 12, 'Saskatchewan: 12 pins');
+    await tap(page, 'ring-west');
+    const west = await page.evaluate(() => ({ ring: GG.debug('board').ring, pins: document.querySelectorAll('[data-testid^="pin-"]').length, lock: !!document.querySelector('[data-testid="ring-locked"]') }));
+    c.ok(west.ring === 'west' && west.pins === 9 && west.lock, 'the West: 9 pins, locked + teased in the garage era ' + JSON.stringify(west));
+    await page.screenshot({ path: path.join(CACHE, 'board_rings.png') });
+    const badR = await audit(page); c.ok(badR.length === 0, 'rings layout: ' + badR.join(', '));
+    await tap(page, 'pin-calgary');
+    c.ok(/Calgary/.test(await page.textContent(tid('board-city'))) && /Not open to you yet/.test(await page.textContent(tid('board-city'))), 'Calgary: teased');
+    await page.evaluate(() => { GG.state.era = 'local'; });
+    await tap(page, 'ring-eastnorth'); await tap(page, 'ring-west');
+    c.ok(await count(page, 'ring-locked') === 0, 'Local Heroes: the West opens');
+    await tap(page, 'ring-eastnorth');
+    c.ok(await count(page, 'ring-locked') === 1 && await page.locator('[data-testid^="pin-"]').count() === 9, 'East & North: still locked until Signed');
+    await tap(page, 'btn-board-close'); await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
+    await page.evaluate(() => { GG.state.era = 'garage'; });
+    // the van: weather + driver in the header; Kenji up front with the cactus, you riding shotgun
+    await page.evaluate(() => {
+      const s = GG.state, W = GG.world; s.week = 13; s.totalWeek = 13; s.weather = GG.calendar.weatherAt(s);
+      s.gig = W.makeListing(s, GG.gig.venue('craigs_basement'), GG.RNG(1), {}); s.trip = null;
+      const t = W.startTrip(s); t.cardId = null; t.resolved = true; t.banter = [];
+      window.__vanDone = null; GG.ui.playVan(s.gig, () => { window.__vanDone = 'yes'; });
+    });
+    await waitScreen(page, 'van');
+    const vw = await page.evaluate(() => ({ head: document.querySelector('[data-testid="van-weather"]').textContent, t: GG.world.trip(GG.state), info: GG.render.van && GG.render.van.info ? GG.render.van.info() : null }));
+    c.ok(/°C/.test(vw.head) && /Kenji drives/.test(vw.head) && vw.t.weather && vw.t.driver === 'kenji', 'van header: weather + driver: ' + vw.head);
+    if (vw.info && vw.info.built) {
+      c.ok(vw.info.driver === 'kenji' && vw.info.people[1] === 'player:shotgun' && vw.info.dashboard === 'cactus' && vw.info.weatherId === vw.t.weather,
+        'Kenji drives, you ride shotgun, the tiny cactus, the weather on the windshield: ' + JSON.stringify([vw.info.people, vw.info.weatherId, vw.info.weather]));
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: path.join(CACHE, 'van_driver.png') });
+    } else c.ok(true, '2D windshield (no 3D van)');
+    await tap(page, 'btn-van-skip');
+    await page.waitForFunction(() => window.__vanDone === 'yes', null, { timeout: 8000 });
+    // Kenji quits: you drive (van sheet + the 3D seating)
+    await page.evaluate(() => { GG.drama.applyMember(GG.state, { id: 'kenji', act: 'quit' }, {}); GG.main.sync(); GG.emit('hotspot', { action: 'door' }); });
+    await waitScreen(page, 'van-info');
+    c.ok(/Driver: You/.test(await page.textContent(tid('van-driver'))), 'van sheet: you drive now');
+    await tap(page, 'btn-close'); await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
+    const youDrive = await page.evaluate(() => {
+      if (!GG.render.van || !GG.render.sceneNames || !GG.render.sceneNames().includes('van')) return null;
+      GG.render.setScene('van'); GG.render.van.setTrip({ from: 'Saskatoon', to: 'Regina', km: 240, weather: 'blizzard' });
+      const i = GG.render.van.info(); GG.render.setScene('garage'); return i;
+    });
+    if (youDrive) c.ok(youDrive.driver === 'you' && youDrive.people[0] === 'player:driver' && youDrive.weatherId === 'blizzard', 'you drive: ' + youDrive.people.join(' '));
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'calendar threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+
 (async () => {
   if (want('board')) await board();
   if (want('van')) await van();
+  if (want('calendar')) await calendar();
 })();

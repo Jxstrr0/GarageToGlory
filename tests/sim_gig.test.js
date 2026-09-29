@@ -277,4 +277,48 @@ test('difficulty (v0.5.1): easy/normal thin the chart by time, widen windows, so
   ok(re.score > rh.score, 'a sloppy player does better on easy ' + [rh.score, re.score]);
 });
 
+// ---- v0.6.1 (Addendum C4, SETTINGS): Expert, assists, difficulty pay, calibration maths ---------------------------------
+test('Expert: every hit as written, tighter windows than Hard, a sloppy player scores lower', () => {
+  const s = base(), w = d => GG.gig.windows(s, d);
+  ok(w('expert').perfect < w('hard').perfect && w('expert').good < w('hard').good, 'expert windows tighter');
+  ok(GG.gig.DIFFICULTIES.expert.look < GG.gig.DIFFICULTIES.hard.look, 'expert scrolls faster');
+  eq(GG.contracts.GIG_DIFFICULTY.filter(d => !GG.gig.DIFFICULTIES[d]), []);
+  const sess = d => GG.gig.session(base(), legion(base()), null, { emit: false, difficulty: d });
+  const bot = { accuracy: 0.9, jitterMs: 60 };
+  const rh = GG.gig.botPlay(sess('hard'), bot, GG.RNG(4)), rx = GG.gig.botPlay(sess('expert'), bot, GG.RNG(4));
+  eq(rx.difficulty, 'expert');
+  ok(rx.score <= rh.score, 'sloppy on expert ' + rx.score + ' <= hard ' + rh.score);
+});
+test('assists: Auto-kick plays every kick, No-fail keeps the crowd off the floor, both land in the result', () => {
+  const none = { accuracy: 0, jitterMs: 0 };
+  const run = o => GG.gig.botPlay(GG.gig.session(base(), legion(base()), null, Object.assign({ emit: false, difficulty: 'hard' }, o)), none, GG.RNG(2));
+  const plain = run({}), ak = run({ autoKick: true }), nf = run({ noFail: true });
+  const kicks = ak.songResults.reduce((t, r) => t + r.good, 0);
+  ok(plain.perfect + plain.good === 0 && kicks > 0 && ak.perfect === 0, 'auto kicks count as Goods: ' + kicks);
+  eq(ak.assists, ['autoKick']); eq(nf.assists, ['noFail']); eq(plain.assists, []);
+  ok(ak.score > plain.score, 'auto-kick helps ' + ak.score + ' > ' + plain.score);
+  ok(nf.songResults.every(r => r.crowdEnd >= GG.gig.noFailFloor), 'no-fail floor');
+  ok(nf.moments.indexOf('boo') < 0 && nf.moments.indexOf('drinks') < 0, 'nobody boos a no-fail show');
+  ok(plain.songResults.some(r => r.crowdEnd < GG.gig.noFailFloor), 'without it the crowd hits the floor');
+  // a kick tap under Auto-kick is ignored (no stray penalty)
+  const S = GG.gig.session(base(), legion(base()), null, { emit: false, autoKick: true }); S.startSong();
+  eq(S.judge('kick', 0.5).auto, true);
+});
+test('career difficulty scales gig pay once, in applyResult', () => {
+  const pay = d => { const s = GG.career.newCareer({ seed: 31, careerDifficulty: d }); s.gig = legion(s); const r = GG.gig.simulate(s, s.gig, GG.RNG(3)); r.pay = 100; GG.gig.applyResult(s, r); return r.pay; };
+  eq([pay('chill'), pay('normal'), pay('brutal')], [120, 100, 85]);
+});
+test('calibration maths: nearest click, trimmed mean, needs four taps', () => {
+  const clicks = [0, 600, 1200, 1800, 2400, 3000, 3600, 4200].map(x => x + 1000);
+  const r = GG.prefs.calibCompute(clicks, clicks.map((c, i) => c + 50 + (i % 2 ? 6 : -6)).concat([clicks[3] + 280]), { interval: 600 });
+  ok(r.ok && Math.abs(r.offset - 50) <= 12, 'offset ~50: ' + JSON.stringify(r));
+  eq(GG.prefs.calibCompute(clicks, [clicks[0] - 30, clicks[1] - 30], { interval: 600 }).ok, false);
+  eq(GG.prefs.calibCompute(clicks, clicks.map(c => c - 40), { interval: 600 }).offset, -40);
+  const pf = GG.prefs.get();
+  eq([pf.audioProfile, pf.calib.speaker.audio, pf.calib.headphones.visual, pf.noteSpeed, pf.graphics, pf.cameraShake], ['speaker', 0, 0, 1, 'high', true]);
+  GG.prefs.setCalib('headphones', { audio: 180, visual: 400 }); GG.prefs.setProfile('headphones');
+  const o = GG.prefs.offsets(); eq([o.audio, o.visual], [0.18, 0.25]);
+  eq(GG.prefs.get().calibSeen, true);
+});
+
 done('sim_gig');

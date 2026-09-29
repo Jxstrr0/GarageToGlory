@@ -7,6 +7,11 @@
 // API (GG.render.van): setTrip({ from, to, km, season, night }) ; setProgress(0..1) ; moose() (one crosses
 //   the road ahead, the van slows) ; talk(memberId, seconds) (a bandmate gestures while a banter line shows) ;
 //   setFrame({ top, bottom }) ; info().
+// v0.6.1 (WORLD, Addendum 1 C1/C7): setTrip also takes weather (C.WEATHER: clear/rain/snow/blizzard/heat/hail -> the
+//   windshield: rain streaks, snow, a blizzard whiteout, hail bouncing off the glass, a heat haze), driver ('kenji' |
+//   'you' | a member id; default: Kenji while active, else you) and dashboard ('cactus' | 'laundry' | 'cassettes' | 'atlas').
+//   Seating: the driver up front, YOU riding shotgun as founder (or driving), the band in the back rows, gear + merch piled
+//   behind. info() adds weatherId, driver, dashboard.
 // Draw calls ≈ sky 1 + sun/moon 1 + stars 1 + clouds 1 + ground 1 + road 1 + poles 1 + elevators 1 + farms 1
 //   + farm lights 1 + belts 1 + bales 1 + moose 1 + sign 2 + skyline 1 + weather 1-2 + glass 1 + wipers 1
 //   + headlight pool 1 + interior 2 + bobble 1 + freshener 1 + wheel 1 + people 4 ≈ 32.
@@ -47,10 +52,12 @@
     h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
     return (h >>> 0) / 4294967296;
   }
-  function seasonOf(week) {
+  function seasonOf(week) {   // v0.6.1: the calendar's seasons (summer 23–4, fall 5–10, winter 11–16, spring 17–22)
+    if (GG.calendar) return GG.calendar.season(week);
     var w = ((Math.max(1, week | 0) - 1) % 24) + 1;
-    return w <= 6 || w >= 23 ? 'summer' : w <= 10 ? 'fall' : w <= 18 ? 'winter' : 'spring';
+    return w <= 4 || w >= 23 ? 'summer' : w <= 10 ? 'fall' : w <= 16 ? 'winter' : 'spring';
   }
+  var WX = { clear: 1, rain: 1, snow: 1, blizzard: 1, heat: 1, hail: 1 };
   function hex(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
   function mod(a, n) { return ((a % n) + n) % n; }
 
@@ -88,9 +95,15 @@
       var season = o.season && FIELDS[o.season] ? o.season : seasonOf(st.week || 1);
       var gig = (st.liveGig && st.liveGig.gig) || st.gig || null;
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
+      var members = o.members || st.members || (band && band.members) || [], pl = st.player || {};
+      var preset = (GG.content.presets || []).filter(function (x) { return x.id === pl.presetId; })[0];
+      var kenjiOn = members.some(function (m) { return m && m.id === 'kenji' && (!m.status || m.status === 'active'); });
+      var driver = o.driver || (kenjiOn ? 'kenji' : members.length ? 'you' : 'kenji');
       return {
         season: season, night: !!o.night, from: o.from || st.city || 'Saskatoon', to: o.to || (gig && gig.city) || 'Regina',
-        km: +o.km > 0 ? +o.km : 150, members: o.members || st.members || (band && band.members) || [], band: band, flags: st.flags || {}
+        km: +o.km > 0 ? +o.km : 150, members: members, band: band, flags: st.flags || {},
+        weather: WX[o.weather] ? o.weather : null, driver: driver, dashboard: o.dashboard !== undefined ? o.dashboard : driver === 'kenji' || driver === 'you' ? 'cactus' : null,
+        playerLook: pl.look || (preset && preset.look) || null
       };
     }
     function contentMember(band, id) {
@@ -132,6 +145,9 @@
       scene.add(K.root);
       scene.background.setHex(sky.hor);
       scene.fog = new THREE.Fog(sky.fog, 60, D.season === 'spring' && !D.night ? 330 : 460);
+      if (D.weather === 'blizzard') { scene.fog.near = 8; scene.fog.far = 120; scene.fog.color.setHex(D.night ? 0x3a4258 : 0xdfe6ee); scene.background.setHex(D.night ? 0x2a3044 : 0xd8dfe8); }
+      else if (D.weather === 'rain' || D.weather === 'hail') { scene.fog.far = 300; if (!D.night) scene.fog.color.setHex(0xa8b2be); }
+      else if (D.weather === 'heat' && !D.night) scene.fog.color.setHex(0xf2dcae);
       buildSky(D, sky);
       buildLights(D, sky);
       buildGround(D);
@@ -343,17 +359,20 @@
 
     // ---- Weather: snow (+ ground drift), rain streaks, fall leaves; glass drops/splats; wipers -----------------
     function buildWeather(D) {
-      var W = K.weather = { kind: D.season === 'winter' ? 'snow' : D.season === 'spring' ? 'rain' : D.season === 'fall' ? 'leaves' : 'bugs', n: 0 }, i;
+      var dflt = D.season === 'winter' ? 'snow' : D.season === 'spring' ? 'rain' : D.season === 'fall' ? 'leaves' : 'bugs';
+      // v0.6.1: the week's weather picks the windshield (clear keeps the season's look: fireflies/bugs, leaves, light snow)
+      var wx = D.weather, kind = !wx ? dflt : wx === 'rain' ? 'rain' : wx === 'snow' || wx === 'blizzard' || wx === 'hail' ? 'snow' : wx === 'heat' ? 'bugs' : dflt === 'rain' ? 'bugs' : dflt;
+      var W = K.weather = { kind: kind, id: wx || null, heavy: wx === 'blizzard', hail: wx === 'hail', light: wx === 'clear' && kind === 'snow', n: 0 }, i;
       if (W.kind === 'snow' || W.kind === 'leaves') {
-        var n = W.kind === 'snow' ? 520 : 140, pos = new Float32Array(n * 3), cols = new Float32Array(n * 3);
+        var n = W.kind === 'snow' ? (W.light ? 160 : W.hail ? 300 : 520) : 140, pos = new Float32Array(n * 3), cols = new Float32Array(n * 3);
         for (i = 0; i < n; i++) {
           respawn(pos, i, true, W.kind);
-          col.setHex(W.kind === 'snow' ? 0xffffff : [0xd8702a, 0xe8b030, 0xb8401e, 0xc89a2a][i % 4]);
+          col.setHex(W.kind === 'snow' ? (W.hail ? 0xdfeaf6 : 0xffffff) : [0xd8702a, 0xe8b030, 0xb8401e, 0xc89a2a][i % 4]);
           cols[i * 3] = col.r; cols[i * 3 + 1] = col.g; cols[i * 3 + 2] = col.b;
         }
         var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
         g.attributes.position.setUsage(THREE.DynamicDrawUsage);
-        var pm = ownMat(new THREE.PointsMaterial({ size: W.kind === 'snow' ? 0.13 : 0.3, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false }));
+        var pm = ownMat(new THREE.PointsMaterial({ size: W.kind === 'snow' ? (W.hail ? 0.2 : W.heavy ? 0.16 : 0.13) : 0.3, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false }));
         W.points = new THREE.Points(g, pm); W.points.frustumCulled = false; K.root.add(track(W.points)); W.n = n; W.pos = pos;
       } else if (W.kind === 'rain') {
         var nr = 260, rp = new Float32Array(nr * 6);
@@ -436,6 +455,11 @@
       
       b.box(1.9, 0.9, 0.06, 0, 0.45, WS.z0 + 0.3, 0x1a1a1e);                                      // firewall                        // Dana's guitar case, wedged in
       b.box(0.44, 0.3, 0.36, 0.55, 0.15, 1.2, 0xc8a870); b.box(0.46, 0.02, 0.2, 0.55, 0.31, 1.2, 0x2a2a2a);   // merch box
+      // v0.6.1: gear and merch piled behind the back row (amp cases, the kick drum case, T-shirt boxes)
+      b.box(0.62, 0.5, 0.4, -0.45, 0.25, 1.55, 0x1e1e22); b.box(0.5, 0.36, 0.36, -0.4, 0.68, 1.55, 0x26262c); b.cyl(0.3, 0.3, 0.3, 12, 0.35, 0.3, 1.6, 0x3a2a2a, Math.PI / 2, 0, 0);
+      b.box(0.4, 0.26, 0.3, 0.45, 0.6, 1.6, 0xc8a870); b.box(0.36, 0.22, 0.3, 0.1, 0.7, 1.65, 0xd8b880);
+      b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
+      buildDash(b, D.dashboard);
       b.box(2.0, 0.05, 3.8, 0, 0, 0.4, 0x2a2826);                                                 // floor
       // The hood (rust included) and the plastic antlers zip-tied to the front.
       b.push(0, WS.y0 - 0.04, WS.z0 - 0.5, 0.14, 0, 0);
@@ -483,6 +507,23 @@
       K.wipers = instanced(wp.build(), im, 2);
       col.setHex(0xffffff); K.wipers.setColorAt(0, col); K.wipers.setColorAt(1, col);
     }
+    // v0.6.1: the driver's dashboard item (Kenji's single tiny cactus, Moth's laundry, Chase's cassettes, Earl's atlas).
+    function buildDash(b, item) {
+      var x = -0.12, y = WS.y0 + 0.02, z = WS.z0 + 0.22, i;
+      if (item === 'cactus') {
+        var k = 1.7;   // v0.6.1 verify: tiny, but it has to read from the back bench on a phone
+        b.cyl(0.03 * k, 0.024 * k, 0.045 * k, 8, x, y + 0.022 * k, z, 0xb8603a); b.cyl(0.032 * k, 0.032 * k, 0.008 * k, 8, x, y + 0.046 * k, z, 0xa8502e);
+        b.cyl(0.012 * k, 0.014 * k, 0.07 * k, 6, x, y + 0.085 * k, z, 0x4fae48); b.box(0.028 * k, 0.01 * k, 0.01 * k, x - 0.016 * k, y + 0.085 * k, z, 0x4fae48);
+        b.box(0.008 * k, 0.024 * k, 0.008 * k, x - 0.028 * k, y + 0.097 * k, z, 0x4fae48); b.box(0.012 * k, 0.012 * k, 0.012 * k, x, y + 0.124 * k, z, 0xff7aae);
+      } else if (item === 'laundry') {
+        b.box(0.16, 0.02, 0.1, x, y + 0.01, z, 0x8a6aa8, 0, 0.3, 0); b.box(0.12, 0.02, 0.08, x + 0.04, y + 0.03, z + 0.01, 0xe8e0c8, 0, -0.4, 0);
+        b.box(0.05, 0.12, 0.02, 0.02, 1.62, WS.z1 + 0.09, 0xd84a4a);   // a sock on the mirror
+      } else if (item === 'cassettes') {
+        for (i = 0; i < 5; i++) b.box(0.1, 0.016, 0.065, x + (i % 2) * 0.01, y + 0.008 + i * 0.017, z, [0x1e1e22, 0xd8b030, 0x2a5aa8, 0xc0392b, 0xf2f0ea][i], 0, i * 0.2, 0);
+      } else if (item === 'atlas') {
+        b.box(0.22, 0.02, 0.16, x, y + 0.01, z, 0x2a6a4a, 0, 0.15, 0); b.box(0.2, 0.004, 0.14, x, y + 0.022, z, 0xf2ead0, 0, 0.15, 0);
+      }
+    }
     function glassPoint(u, v, out) {                           // u across (-1..1), v up (0..1) on the windshield, a hair inside
       out.set(u * 0.82, WS.y0 + (WS.y1 - WS.y0) * v, WS.z0 + (WS.z1 - WS.z0) * v + 0.012);
       return out;
@@ -493,25 +534,26 @@
       var list = [], i, m;
       for (i = 0; i < D.members.length; i++) { m = D.members[i]; if (m && m.id && (!m.status || m.status === 'active')) list.push(m); }
       var roleOf = function (mm) { var cm = contentMember(D.band, mm.id); return String(mm.role || (cm && cm.role) || '').toLowerCase(); };
-      // Kenji drives. Always. (Otherwise the bassist, otherwise whoever's first.)
+      // v0.6.1 (C1): the band's driver up front (Kenji, silently); YOU ride shotgun as founder (or drive, if the driver
+      // quit); the band in the back rows; gear + merch piled behind.
+      var you = { id: 'player', look: D.playerLook || { skin: '#e0b48c', hair: '#3a2416', hairStyle: 'short', shirt: '#b3262b', pants: '#1e2230', height: 1, build: 1, extras: [] } };
       var driver = null;
-      for (i = 0; i < list.length; i++) if (list[i].id === 'kenji') driver = list[i];
-      for (i = 0; !driver && i < list.length; i++) if (/bass/.test(roleOf(list[i]))) driver = list[i];
-      if (!driver) driver = list[0] || { id: 'kenji' };
+      if (D.driver !== 'you') for (i = 0; i < list.length; i++) if (list[i].id === (D.driver || 'kenji')) driver = list[i];
+      if (!driver) driver = you;
       var rest = list.filter(function (x) { return x !== driver; });
       var voc = null;
       for (i = 0; i < rest.length; i++) if (/vocal/.test(roleOf(rest[i]))) { voc = rest[i]; break; }
       if (voc) { rest.splice(rest.indexOf(voc), 1); rest.unshift(voc); }
       var seats = [
         { x: -0.47, z: -0.47, role: 'driver' }, { x: 0.49, z: -0.47, role: 'shotgun' },
-        { x: -0.6, z: 0.72, role: 'middleL' }, { x: 0.6, z: 0.72, role: 'middleR' }
+        { x: -0.6, z: 0.72, role: 'middleL' }, { x: 0.6, z: 0.72, role: 'middleR' }, { x: 0, z: 1.3, role: 'back' }
       ];
       var cv = D.flags && D.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
-      var riders = [driver].concat(rest.slice(0, 3));
+      var riders = [driver].concat(driver === you ? rest.slice(0, 4) : [you].concat(rest.slice(0, 3)));
       var pm = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: new THREE.Color(D.night ? 0.45 : 0.62, D.night ? 0.45 : 0.62, D.night ? 0.5 : 0.64) }));
       for (i = 0; i < riders.length; i++) {
         m = riders[i]; var seat = seats[i], cm = contentMember(D.band, m.id), look = m.look || (cm && cm.look) || null;
-        if (seat.role === 'driver') {                                                 // sunglasses, whatever the look says
+        if (seat.role === 'driver' && m !== you) {                                    // sunglasses, whatever the look says
           look = JSON.parse(JSON.stringify(look || { skin: '#d8b28a', hair: '#0c0c0e', hairStyle: 'short', shirt: '#101014', pants: '#141418', height: 1.08, build: 1.05, extras: [] }));
           look.extras = (look.extras || []).filter(function (e) { return e !== 'glasses'; });
           if (look.extras.indexOf('sunglasses') < 0) look.extras.push('sunglasses');
@@ -647,10 +689,10 @@
     function updateWeather(dt, ds, t) {
       var W = K.weather, i, j, p = W.pos;
       if (W.kind === 'snow' || W.kind === 'leaves') {
-        var fall = W.kind === 'snow' ? 1.6 : 0.5, sway = W.kind === 'snow' ? 0.6 : 2.2;
+        var fall = W.kind === 'snow' ? (W.hail ? 9 : W.heavy ? 2.6 : 1.6) : 0.5, sway = W.kind === 'snow' ? (W.hail ? 0.1 : W.heavy ? 1.8 : 0.6) : 2.2;
         for (i = 0; i < W.n; i++) {
           j = i * 3;
-          p[j] += Math.sin(t * 1.3 + i) * sway * dt + (W.kind === 'leaves' ? 2.5 * dt : 0);
+          p[j] += Math.sin(t * 1.3 + i) * sway * dt + (W.kind === 'leaves' ? 2.5 * dt : W.heavy ? -4 * dt : 0);
           p[j + 1] -= fall * dt * (0.6 + (i % 5) * 0.15);
           p[j + 2] += ds * (W.kind === 'snow' ? 1.05 : 1);
           if (p[j + 2] > -2.3 || p[j + 1] < 0.05) respawn(p, i, false, W.kind);
@@ -685,7 +727,7 @@
       K.fresh.rotation.set(clamp(S.fresh, -0.5, 0.5) * 0.6, S.fresh * 0.8, clamp(S.fresh, -0.5, 0.5));
       K.wheel.rotation.z = 0.05 * Math.sin(t * 0.5) + 0.02 * Math.sin(t * 1.7);
       // Wipers and glass.
-      var W = K.weather, wet = W.kind === 'rain' || W.kind === 'snow', period = 1.5;
+      var W = K.weather, wet = (W.kind === 'rain' || W.kind === 'snow') && !W.light, period = W.heavy || W.hail ? 1.0 : 1.5;
       var wa = wet ? 1.55 * bump((t % period) / period) : 0, wiped = wet && (t % period) < dt * 1.5;
       for (i = 0; i < 2; i++) {
         mA.makeRotationZ(wa);
@@ -694,7 +736,7 @@
         K.wipers.setMatrixAt(i, mB);
       }
       K.wipers.instanceMatrix.needsUpdate = true;
-      var rate = W.kind === 'rain' ? 1.6 : W.kind === 'snow' ? 0.6 : W.kind === 'bugs' ? 0.02 : 0.05;
+      var rate = W.kind === 'rain' ? 1.6 : W.kind === 'snow' ? (W.hail ? 2.4 : W.heavy ? 1.4 : W.light ? 0.1 : 0.6) : W.kind === 'bugs' ? (W.id === 'heat' ? 0.06 : 0.02) : 0.05;
       for (var i = 0; i < 40; i++) {
         if (wiped) K.glassT[i] = -hash01(i + Math.floor(t * 3), 62) * 1.2;
         K.glassT[i] += dt * rate;
@@ -776,7 +818,8 @@
       info: function () {
         if (!K) return { built: false };
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
-          weather: K.weather.kind, people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: (K.people[0] || {}).id || null,
+          weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null,
+          people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length };
       }
     };
