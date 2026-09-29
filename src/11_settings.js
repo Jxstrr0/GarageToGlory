@@ -5,7 +5,7 @@
 //     -> { ok, offset (ms, tap minus click), n, spread } (pure) ; PROFILES ; GRAPHICS ; NOTE_SPEEDS ; CB_COLOURS.
 //   Settings keys (GG.save.settings()): gigDifficulty, noteSpeed, noFail, autoKick, audioProfile, calib { speaker|headphones:
 //     { audio, visual, at } }, calibSeen, lefty, colourblind, bigText, reducedFlash, cameraShake, graphics, skipVan,
-//     fastAnim (+ lane A's mix, metronome, brushes; muted).
+//     fastAnim, songwriterMode ('guided'|'advanced', v0.6.2) (+ lane A's mix, metronome, brushes; muted).
 //   GG.difficulty: LEVELS ; of(state) -> 'chill'|'normal'|'brutal' (missing = normal) ; mul(state, key) (default 1) ;
 //     add(state, key) (default 0) ; text(id) -> { name, blurb } ; migrate(state). Tunables economy.difficulty[level]:
 //     startFund, money (gig pay), hustle, upkeep, moodLoss, rivalSkill (+points), rivalMiss (their low-roll range),
@@ -33,6 +33,7 @@
     if (!C.GIG_DIFFICULTY || C.GIG_DIFFICULTY.indexOf(s.gigDifficulty) < 0) s.gigDifficulty = 'easy';
     ['noFail', 'autoKick', 'calibSeen', 'lefty', 'colourblind', 'bigText', 'reducedFlash', 'skipVan', 'fastAnim'].forEach(function (k) { s[k] = !!s[k]; });
     s.cameraShake = s.cameraShake !== false;
+    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2: the Write flow's step-by-step screens (default)
     return s;
   };
   P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };

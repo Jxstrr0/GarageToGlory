@@ -8,6 +8,10 @@
 //   view  : a catalog song from the laptop (read-only, Play).
 // v0.6.1: ♩ toggles the metronome click (settings.metronome, GG.audio.toggleMetronome); playback passes the song's id so
 // the generated band keeps one key per song.
+// v0.6.2 guided flow (write mode, settings.songwriterMode 'guided', the default): one thing per screen, Verse → Chorus →
+// Bridge (pick a groove preset from content/grooves.js, optional one-tap tweak) → Tempo → Song order → Name → Save, each
+// with Play / Back / Next and a bandmate's coach line. "Advanced" jumps to the full grid (and is remembered); the Song
+// tab's "Guided steps" goes back. The kit's sketch pad always opens the grid.
 // ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
@@ -51,6 +55,7 @@
     V.ability.style.left = U.clamp(ability, 0, 99) + '%';
     var tips = r.tips.slice();
     if (r.difficulty > ability + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
+    if (!V.tip) return r;
     ui.clear(V.tip);
     if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
     else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
@@ -158,6 +163,9 @@
     }));
     var r = D.rating || rerate(D);
     var parts = [
+      D.mode === 'write' ? el('div.row.small.dim', [el('span.grow', 'Rather go one step at a time?'), btn('.btn.small', { testid: 'btn-seq-guided', onclick: function () {
+        stopPlay(D); D.guided = true; D.step = 'verse'; setMode('guided'); s.rerender();
+      } }, 'Guided steps')]) : null,
       el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
         : el('div.row', [
           el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let Marcel',
@@ -223,7 +231,9 @@
   function restart(s, D) { var k = D.playing; if (k) startPlay(s, D, k); }
   function toggle(s, D, kind) { if (D.playing === kind) stopPlay(D); else startPlay(s, D, kind); }
   function playButtons(D) {
-    var V = D.view; if (!V || !V.loop) return;
+    var V = D.view; if (!V) return;
+    if (V.play) { V.play.textContent = D.playing ? '■ Stop' : '▶ Play'; V.play.classList.toggle('on', !!D.playing); return; }
+    if (!V.loop) return;
     var sec = D.tab === 'song' ? 'verse' : D.tab;
     V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop ' + sec;
     V.song.textContent = D.playing === 'song' ? '■ Stop' : '▶ Song';
@@ -260,6 +270,8 @@
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      if (D.mode === 'write' && D.guided == null) D.guided = prefMode() === 'guided';
+      if (D.mode === 'write' && D.guided) { buildGuided(s, D); return; }
       var ro = D.mode === 'view', V = D.view = {};
       V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro, onclick: function () { if (!ro && !D.custom) { reroll(D); head(s, D); } } });
       var right = D.mode === 'write' ? btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () {
@@ -303,6 +315,126 @@
       (s.off || []).forEach(function (off) { off(); });
     }
   });
+
+  /* ---- v0.6.2 guided songwriter ---------------------------------------------------------------------------- */
+  var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'];
+  var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', tempo: 'Tempo', order: 'Song order', name: 'Name' };
+  var ORDER_BLURB = { short: 'Verse, chorus, twice. In and out before the fries get cold.',
+    classic: 'Adds a bridge: the solo spot. Crowds like a bridge.', epic: 'Double verses, double bridges. Pack a lunch.' };
+  function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
+  function setMode(m) { try { if (GG.prefs && prefMode() !== m) GG.prefs.set({ songwriterMode: m }); } catch (e) { /* storage off */ } }
+  // One line from whoever fits the screen (role match on the active lineup). (The first-ever Write's hint is about the grid.)
+  function coachFor(D, step) {
+    var lines = ((GG.content.grooves || {}).coach || {})[step] || [], state = st();
+    var act = state ? state.members.filter(function (m) { return m.status === 'active'; }) : [];
+    for (var k = 0; k < lines.length; k++) {
+      var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
+      for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ln.text };
+    }
+    return lines[0] ? { who: null, text: lines[0].text } : null;
+  }
+  function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }
+  function chip(label, a, b, neutral) {
+    var d = b - a;
+    return el('span.chip' + (!d ? '' : neutral ? '.gd' : d > 0 ? '.up' : '.down'), label + ' ' + a + ' → ' + b);
+  }
+  function sectionStep(s, D, name) {
+    var list = GG.songs.presets(genre(), gear()), cur = GG.songs.presetOf(D.pat, name, genre(), gear());
+    var verseP = name === 'verse' ? null : GG.songs.presetOf(D.pat, 'verse', genre(), gear());
+    var hint = name === 'chorus' ? 'Pick something different from the verse' + (verseP ? ' (' + presetName(verseP) + ')' : '') + ': the contrast is the hook.'
+      : name === 'bridge' ? 'The bridge is the detour: go somewhere new, then the last chorus hits harder.'
+      : 'Pick a beat to start from. Tap ▶ Play to hear it.';
+    var cards = list.map(function (pr) {
+      var tag = pr.id === cur ? el('span.gp-tag.on', '✓ picked') : pr.id === verseP ? el('span.gp-tag', 'verse') : pr.signature ? el('span.gp-tag', 'signature') : null;
+      return btn('.guide-preset' + (pr.id === cur ? '.on' : ''), { testid: 'guide-preset-' + pr.id, disabled: pr.locked, onclick: function () {
+        D.pat = GG.songs.applyPreset(D.pat, name, pr.id, gear(), genre()); D.change = null; changed(D); s.rerender();
+      } }, [el('span.gp-top', [el('b', pr.name), tag]), el('span.gp-desc', pr.locked ? '🔒 Needs a double-kick pedal. ' + pr.desc : pr.desc)]);
+    });
+    var mods = GG.songs.grooves(genre()).mods.filter(function (m) { return !m.sections || m.sections.indexOf(name) >= 0; });
+    var ch = D.change && D.change.section === name ? D.change : null;
+    return [
+      el('div.guide-hint', { testid: 'guide-hint' }, hint),
+      el('div.guide-presets', cards),
+      el('div.caps', { style: 'margin-top:4px' }, cur ? 'Tweak it (optional)' : 'Tweaked · tap a beat above to start over'),
+      el('div.guide-mods', mods.map(function (m) {
+        return btn('.guide-mod', { testid: 'guide-mod-' + m.id, title: m.desc, onclick: function () {
+          var r = GG.songs.modify(D.pat, name, m.id, gear(), genre());
+          // A no-op tweak says so inline (a toast would sit over the meters and linger across steps).
+          if (JSON.stringify(r.pattern) === JSON.stringify(GG.songs.sanitize(D.pat, gear()))) { D.change = { section: name, name: m.name, noop: true }; s.rerender(); return; }
+          D.pat = r.pattern; D.change = { section: name, name: m.name, desc: m.desc, before: r.before, after: r.after };
+          changed(D); s.rerender();
+        } }, m.name);
+      })),
+      ch && ch.noop ? el('div.guide-change.small.dim', { testid: 'guide-change' }, '“' + ch.name + '” has nothing left to change here. Try another tweak.') :
+      ch ? el('div.guide-change', { testid: 'guide-change' }, [el('div', [el('b', ch.name + ': '), ch.desc]), el('div.chips', [
+        chip('Groove', ch.before.groove, ch.after.groove), chip('Hook', ch.before.hook, ch.after.hook), chip('Difficulty', ch.before.difficulty, ch.after.difficulty, true)])]) : null
+    ];
+  }
+  function tempoStep(s, D) {
+    var G = GG.songs.genre(genre()), p = D.pat;
+    function style() { return GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : ''; }
+    var num = el('b', { testid: 'guide-bpm' }, String(p.bpm)), lab = el('div.guide-tlabel', { testid: 'guide-tempo-label' }, GG.songs.tempoLabel(genre(), p.bpm));
+    var sty = el('div.small.dim', style() ? 'The band plays: ' + style() : '');
+    var r = el('input.seq-tempo.guide-range', { type: 'range', testid: 'guide-tempo', min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
+    r.addEventListener('input', function () {
+      p.bpm = +r.value; num.textContent = String(p.bpm); lab.textContent = GG.songs.tempoLabel(genre(), p.bpm);
+      sty.textContent = style() ? 'The band plays: ' + style() : ''; rerate(D);
+    });
+    r.addEventListener('change', function () { changed(D); if (D.handle && D.handle.playing) restart(s, D); });
+    var marks = (GG.songs.grooves(genre()).tempo || []).filter(function (t) { return t[0] <= G.tempo[1]; });
+    return [el('div.guide-tempo', [el('div.guide-bignum', [num, el('span', ' BPM')]), lab, sty]), r,
+      el('div.row.tiny.faint', [el('span.grow', G.tempo[0] + ' · ' + (marks[0] ? marks[0][1] : '')), el('span', (marks.length ? marks[marks.length - 1][1] : '') + ' · ' + G.tempo[1])]),
+      el('div.small.dim', 'Faster songs are harder to play live. Slower ones feel heavier. Neither pays more.')];
+  }
+  function orderStep(s, D) {
+    var p = D.pat, cur = GG.songs.arrangementId(p);
+    return [el('div.guide-orders', GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = GG.songs.ARRANGEMENTS[id];
+      return btn('.guide-preset' + (id === cur ? '.on' : ''), { testid: 'guide-order-' + id, onclick: function () {
+        p.arrangement = a.slice(); changed(D); if (D.playing) restart(s, D); s.rerender();
+      } }, [el('span.gp-top', [el('b', ARR_NAMES[id]), el('span.gp-tag' + (id === cur ? '.on' : ''), '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]),
+        el('span.gp-seq', a.map(function (x) { return cap(x); }).join(' · ')), el('span.gp-desc', ORDER_BLURB[id])]);
+    }))];
+  }
+  function nameStep(s, D) {
+    return [el('div.guide-name', [el('div.caps', 'Your song'), el('div.fr', { testid: 'guide-title' }, D.title || 'Untitled'),
+        D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
+      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another French title'),
+      el('div.caps', { style: 'margin-top:6px' }, 'Or type your own'),
+      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Mon Beau Sapin de Doom',
+        oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D);
+          var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
+  }
+  function buildGuided(s, D) {
+    var step = GSTEPS.indexOf(D.step) >= 0 ? D.step : (D.step = 'verse'), i = GSTEPS.indexOf(step), sec = i < 3, V = D.view = {};
+    D.tab = sec ? step : 'song';
+    V.title = btn('.seq-title', { testid: 'seq-title', onclick: function () { if (!D.custom) { reroll(D); if (step === 'name') s.rerender(); else head(s, D); } } });
+    var jam = btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () { if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam(); } }, 'Let the band jam one');
+    var adv = btn('.btn.small.guide-adv', { testid: 'btn-guide-advanced', onclick: function () {
+      stopPlay(D); D.guided = false; D.tab = sec ? step : 'verse'; setMode('advanced'); s.rerender();
+    } }, 'Advanced ⚙');
+    var dots = el('div.guide-dots', GSTEPS.map(function (x, k) { return el('i' + (k === i ? '.on' : k < i ? '.done' : '')); }));
+    V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
+    V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
+    var c = coachFor(D, step);
+    var body = step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D) : sectionStep(s, D, step);
+    ui.append(s.body, [
+      el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': 'Back to the planner', onclick: function () {
+        stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
+      } }, '✕'), V.title, jam]),
+      el('div.guide-top', [el('div.guide-prog', [el('div.caps', { testid: 'guide-step' }, 'Step ' + (i + 1) + ' of ' + GSTEPS.length + ' · ' + GNAMES[step]), dots]), adv]),
+      el('div.seq-meters', [V.groove, V.hook, V.diff]),
+      c ? el('div.guide-coach', { testid: 'guide-coach' }, [el('b', c.who ? ui.who(c.who).short + ': ' : ''), c.text]) : null,
+      el('div.seq-main.guide-main', { testid: 'guide-screen-' + step }, body)
+    ]);
+    function go(k) { stopPlay(D); D.step = GSTEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
+    var back = btn('.btn', { testid: 'btn-guide-back', disabled: i === 0, onclick: function () { if (i > 0) go(i - 1); } }, '‹ Back');
+    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec ? 'loop' : 'song'); } });
+    var next = i < GSTEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
+      : btn('.btn.primary', { testid: 'btn-guide-save', onclick: function () { save(s, D); } }, 'Save ✓');
+    ui.append(s.foot, [back, V.play, next]);
+    head(s, D); rerate(D); playButtons(D);
+  }
 
   // Copy another section into this one, or clear it.
   ui.define('seq-tools', {
@@ -380,7 +512,7 @@
 
   GG.registerDebug('seq', function () {
     var e = ui.get && ui.get('seq'), D = e && e.data;
-    return D ? { mode: D.mode, tab: D.tab, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
+    return D ? { mode: D.mode, tab: D.tab, guided: !!D.guided, step: D.guided ? D.step : null, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
       playhead: D.view ? D.view.ph : null } : null;
   });
 })(window.GG);

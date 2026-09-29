@@ -819,10 +819,12 @@
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
   var previewPort = null;
-  A.hit = function (lane) {
+  // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
+  A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
     if (!previewPort) previewPort = makePort(rig);
     var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
+    if (when > t && when < t + 1) t = when;
     if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {

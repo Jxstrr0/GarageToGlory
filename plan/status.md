@@ -6,7 +6,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
 - Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
 - Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
-- Next: **0.6.2** (two-thumb chords + songwriter presets/steps), then **0.7.0 "World"**
+- Also shipped: **0.6.2.0** two-thumb chords + guided songwriter (merged 2026-09-29)
+- Next: **0.7.0 "World"**
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -225,6 +226,26 @@ Later versions:
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## What's in v0.6.2 "Two thumbs" (owner feedback: chords + songwriter)
+- **Two-thumb rule** (`22_sim_gig`): every difficulty caps a moment at 2 judged notes (kick > snare > cymbal > toms >
+  ride > hat; `gig.THUMBS`, `gig.THUMB_PRIORITY`; all DIFFICULTIES `chord: 2`). Dropped hits go to `chart.auto`
+  (not judged, never a miss, not in total/accuracy). The live gig plays them via `GG.audio.hit(lane, ctxTime)` scheduled
+  `lat + 0.15 s` ahead at `G.zero + t` on a healthy audio clock (frame-due fallback when free-running) and draws them as
+  dashed ghost gems + a small ring. Free-style windows untouched. Hard/Expert stay harder via density + speed.
+- **Groove presets** (`content/grooves.js`): 5–6 named one-bar beats per genre with a one-line description (metal
+  Headbanger*, Blast beat, Thrash skank, Half-time doom, Gallop + Double-kick run locked until the pedal; punk Punk skank*,
+  D-beat, Four on the floor, Buzzsaw 8ths, Hardcore two-step; rock Rock backbeat*, Half-time, Shuffle, Four on the floor,
+  Bleacher stomp; country Train beat*, Two-step, Waltz feel, Brush shuffle, Hoedown; * = signature, Groove ≥ 70) +
+  4 one-tap mods per genre (More metal/punk/rock/twang, Make it catchier (chorus only), Simpler, Busier) as op lists,
+  tempo labels (metal Doom crawl/Headbang/Mosh/Thrash/Blast …) and per-step coach lines (picked by member role).
+- **Guided Write flow** (`54_ui_sequencer`, default; `settings.songwriterMode` 'guided'|'advanced'): Verse → Chorus
+  (contrast hint) → Bridge (preset cards + tweak buttons showing Groove/Hook/Difficulty before → after) → Tempo (big
+  BPM + label + slider) → Song order (Short/Classic/Epic cards) → Name (Marcel's reroll or type) → Save; Back / ▶ Play /
+  Next on every screen, "Let the band jam one" still in the header. "Advanced ⚙" opens the grid (remembered); the grid's
+  Song tab has "Guided steps" back. The kit sketch pad and catalog view always use the grid.
+- Tests: sim_gig two-thumb test (20), content grooves test (47), pw_seq new `guided` section (23; seq 34 checks the
+  Advanced switch + memory), pw_gig gig (29) checks auto notes play + are scheduled ahead. Sheet: `tests/.cache/v062_sheet.png`.
+
 ## What's in v0.6.1 (world) — Addendum 1 C1/C6/C7 (WORLD agent, lane B1)
 - Calendar `src/28_sim_calendar.js` (`GG.calendar`): two weeks per month from July, C.SEASONS (winter 11–16, spring 17–22,
   summer 23–4, fall 5–10; world/garage/van seasons follow it), weekly weather per season + city climate (coast/north) from
@@ -381,6 +402,8 @@ Later versions:
   fillInFigures, payCut, setPayCut, split, fillInCost, gigMods, want, gripeText, stageText, postAd, repost, cancelAd,
   hire, candidates, candidateScore, hireFillIn, dismissFillIn, quirk, traitDef, rivalBlurb, makeLook, botWeek,
   botCardChoice, botValue, migrate, cards, cfg`. Tunables `economy.drama`; content `drama.js`, `recruits.js`.
+- `GG.gig` v0.6.2: `chart(song, {solo, extras, free, difficulty, thumbs:false = raw})` → `{notes, auto, total, ...}`;
+  `THUMBS` (2), `THUMB_PRIORITY`.
 - `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
   → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
   performance, gradeFor, payFor`.
@@ -390,6 +413,9 @@ Later versions:
   addStarter, pickTitle, ability, byId, score, best, polish, played(state, ids, grade) → new classics, weekly,
   reactions, kickBlocked, setHit, isHit, blankSection, ARRANGEMENTS, ARRANGEMENT_IDS, arrangementId, genre(id)`.
   Tunables: `economy.songs`; genre data: `content/genres.js`; lines: `lines.songReactions`, `lines.writeTips`.
+  v0.6.2: `grooves(genre)` (content/grooves.js), `presets(genre, gear)` → `[{id, name, desc, signature, pedal, locked, bar}]`,
+  `applyPreset(p, section, id, gear, genre)`, `presetOf(p, section, genre, gear)`, `modify(p, section, modId, gear, genre)`
+  → `{pattern, before, after}` (pure), `tempoLabel(genre, bpm)`.
 - `GG.save`: `write, read, readRecord, list, remove, autosave, toCode, fromCode, migrate, storageOk, settings,
   saveSettings, init, KEYS, compress/decompress`. Keys `gg.v1.slot.<auto|1|2|3>`, `gg.v1.settings`.
 - `GG.render`: `init, available, setScene, syncState, setPaused, goToHotspot, hotspotScreenPos, memberScreenPos,
@@ -401,7 +427,7 @@ Later versions:
   beginWeek, afterCard, wrapWeek, nextWeek, saveTo, quitToTitle, sync`. URL `?quick=1&seed=N`.
 - `GG.audio`: `unlock, sfx(name), setMuted, isMuted, toggleMuted, suspend (also stops a song), resume` + v0.2
   `play(pattern, {genre, section|null, loop, backing}) → handle {stop, update(p), beatAt(time), playing, start, bpm}`,
-  `stop, isPlaying, current, hit(lane), timeline(p, opts) → {bpm, beats, style, events[{beat, kind, lane|midi, len, gap}]},
+  `stop, isPlaying, current, hit(lane, when?) (v0.6.2: optional AudioContext time, < 1 s ahead), timeline(p, opts) → {bpm, beats, style, events[{beat, kind, lane|midi, len, gap}]},
   styleFor(genre, bpm), renderOffline(spec) → Promise<{peak, rms, nan}>`. Events: 'audio:step' per 16th, 'audio:end'.
   v0.5.1 `context()` (the gig clock). v0.6.1: `play` opts `vocals, songId (seeds the key), metronome` (handle `.key`,
   `.genre`); mixer `setVolume(bus,0..1)` (null for unknown bus; gain = v²) / `getVolume` / `volumes()` over C.MIX_BUSES;
@@ -410,10 +436,11 @@ Later versions:
   dry|room|hall|theatre|arena, `room()`; `ambience()` → garage|van|gig|none, `refreshAmbience()`, `radioSong(state)`;
   `renderOffline` extras `{full, songId, vocals, metronome, room, variant}` / `{ambience}` → also `counts`, `key`.
 - `GG.ui` v0.2: `LANES` (lane name/icon/colour for the v0.3 highway), `composeWeek(n, done), openSketch, openSong(id)`;
-  screens `seq` (full) and `seq-tools` (modal).
+  screens `seq` (full) and `seq-tools` (modal). v0.6.2: `seq` write mode has `D.guided` / `D.step`
+  (verse|chorus|bridge|tempo|order|name); debug `seq` adds `guided, step`; debug `gigui` adds `auto, autoPlayed`.
 - Tests: `node tests/run.js` (content 21, save 7, sim_career 18, sim_gig 7, sim_songs 12) · `pw_flow.js`
   META_ONLY=flow|year|code|layout (flows jam their Write blocks) · `pw_garage.js` META_ONLY=garage (48) ·
-  `pw_seq.js` META_ONLY=seq (29, screenshot `tests/.cache/seq.png`)|audio (16).
+  `pw_seq.js` META_ONLY=seq (34, screenshot `tests/.cache/seq.png`; also runs guided)|guided (23)|audio (38).
 
 
 ## v0.5.1 hotfix (owner phone report: "the playing mini game is broken, it's also quite difficult")

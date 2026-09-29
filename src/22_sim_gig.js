@@ -8,7 +8,7 @@
 //                  songs:[titles], songIds, reactions:[{ who, text }], lines:[text], source, deltas }
 //   live extras: { live: true, tier, kind, accuracy, perfect, good, miss, maxCombo, songResults:[SONG_RESULT],
 //                  moments:[kind], setBonus: { opener, closer } }
-//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free }) ; setSize ; defaultSetlist ;
+//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free, difficulty, thumbs }) -> {notes, auto (v0.6.2 two-thumb drops), total..} ; setSize ; defaultSetlist ;
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -192,6 +192,27 @@
   function active(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
 
   // Timing windows from drum skill (seconds, +/- around each note).
+  // v0.6.2 two-thumb rule (owner): on EVERY difficulty a moment asks for at most 2 notes; kick > snare > cymbal > toms >
+  // ride > hat win. The dropped hits become chart.auto notes: never judged, never a miss, not in total/accuracy, but the
+  // live gig still plays them (GG.audio.hit at their time) so the groove sounds whole. Hard/Expert = density + speed.
+  gig.THUMBS = 2;
+  gig.THUMB_PRIORITY = ['kick', 'snare', 'cymbal', 'toms', 'ride', 'hat'];
+  function twoThumbs(notes) {
+    var keep = [], auto = [], i = 0, pr = {};
+    gig.THUMB_PRIORITY.forEach(function (l, k) { pr[l] = k; });
+    while (i < notes.length) {
+      var j = i; while (j < notes.length && Math.abs(notes[j].t - notes[i].t) < 0.001) j++;
+      var m = notes.slice(i, j), judged = m.filter(function (n) { return !n.free; }), kept = 0;
+      judged.sort(function (a, b) { return (pr[a.lane] - pr[b.lane]) || (a.extra ? -1 : 0); });
+      judged.forEach(function (n) { if (kept < gig.THUMBS) { kept++; n.keep = 1; } });
+      m.forEach(function (n) {
+        if (n.free || n.keep) { delete n.keep; keep.push(n); }
+        else auto.push({ t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true });
+      });
+      i = j;
+    }
+    return { notes: keep, auto: auto };
+  }
   // Gig difficulty (v0.5.1 hotfix; Addendum C4 adds Expert + a settings screen). Charts are thinned by time, not by beat:
   // each lane keeps a hit only if it's at least laneGap seconds after that lane's last kept hit, any two kept moments are
   // at least anyGap apart, and a chord keeps at most `chord` notes (kick, then snare, win). Hard = the song exactly as
@@ -199,11 +220,11 @@
   gig.DIFFICULTIES = {
     easy: { window: 1.45, miss: 0.55, look: 1.6, chord: 2, anyGap: 0.24,
       laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
-    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
+    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 2, anyGap: 0.08,
       laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
-    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null },
+    hard: { window: 1, miss: 1, look: 1.15, chord: 2, anyGap: 0, laneGap: null },
     // v0.6.1 (Addendum C4): every hit as written, windows a fifth tighter, misses sting more, a faster highway.
-    expert: { window: 0.8, miss: 1.3, look: 1, chord: 6, anyGap: 0, laneGap: null }
+    expert: { window: 0.8, miss: 1.3, look: 1, chord: 2, anyGap: 0, laneGap: null }
   };
   // v0.6.1 assists (session opts): noFail = the crowd never sinks below `noFailFloor` (never hostile, no boos, no
   // flying drinks); autoKick = kick notes play themselves as Goods when they reach the line (kick taps are ignored).
@@ -285,10 +306,12 @@
       });
     }
     notes.sort(function (a, b) { return a.t - b.t || a.li - b.li; });
+    var tt = o.thumbs === false ? { notes: notes, auto: [] } : twoThumbs(notes);   // v0.6.2 two-thumb rule
+    notes = tt.notes;
     if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0; notes.forEach(function (n) { if (!n.free) total++; });
     return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
-      duration: GG.songs.seconds(p), notes: notes, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
+      duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
   };
 
   /* ---- Setlists ------------------------------------------------------------------------------------------ */

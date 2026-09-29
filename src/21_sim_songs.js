@@ -419,6 +419,70 @@
     return out;
   };
 
+  /* ---- v0.6.2 songwriter: groove presets + one-tap modifiers (content/grooves.js) --------------------------- */
+  // grooves(genre) -> { presets, mods, tempo, coach } ; presets(genre, gear) -> [{ id, name, desc, signature, pedal,
+  // locked (needs the pedal you don't own), bar (sanitized for the gear) }] ; applyPreset(p, section, id, gear, genre) -> new
+  // PATTERN with that section set (genre default: the career's) ; modify(p, section, modId, gear, genre) -> { pattern, before, after } (ratings; pure,
+  // deterministic) ; tempoLabel(genre, bpm) -> 'Headbang'.. ; presetOf(p, section, genre, gear) -> preset id | null.
+  var LANE_IX = { kick: KICK, snare: SNARE, hat: HAT, cymbal: CYM, toms: TOMS, ride: RIDE };
+  songs.grooves = function (genre) { var G = GG.content.grooves || {}; return G[genre] || G.metal || { presets: [], mods: [], tempo: [] }; };
+  function presetBar(pr, g) {
+    var bar = padBar(pr.bar, g.lanes);
+    return songs.sanitize({ bpm: 120, lanes: g.lanes, sections: { verse: bar, chorus: bar, bridge: bar }, arrangement: ['verse'] }, g).sections.verse;
+  }
+  songs.presets = function (genre, gear) {
+    var g = gearOf(gear);
+    return songs.grooves(genre).presets.map(function (pr) {
+      return { id: pr.id, name: pr.name, desc: pr.desc, signature: !!pr.signature, pedal: !!pr.pedal, locked: !!pr.pedal && !g.doubleKick, bar: presetBar(pr, g) };
+    });
+  };
+  songs.applyPreset = function (p, section, id, gear, genre) {
+    var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), pr = null;
+    songs.grooves(genre || (GG.state && GG.state.genre) || 'metal').presets.forEach(function (x) { if (x.id === id) pr = x; });
+    if (pr && SECTIONS.indexOf(section) >= 0) out.sections[section] = padBar(presetBar(pr, g), out.lanes).slice(0, out.lanes);
+    return out;
+  };
+  songs.presetOf = function (p, section, genre, gear) {
+    var sec = p && p.sections && p.sections[section], hit = null;
+    if (!sec) return null;
+    songs.presets(genre, gear).forEach(function (pr) {
+      if (!hit && pr.bar.every(function (str, l) { return lane(sec, l) === str; })) hit = pr.id;
+    });
+    return hit;
+  };
+  function applyOp(bar, op, g, out, genre) {
+    var lanes = op.lane === 'all' ? bar.map(function (_, i) { return i; }) : [LANE_IX[op.lane]];
+    lanes.forEach(function (l) {
+      if (l == null || l >= bar.length) return;
+      var s = bar[l], i;
+      if (op.op === 'fill') { for (i = op.from || 0; i < STEPS; i += op.every) s = set(s, i, true); }
+      else if (op.op === 'pedal') { for (i = 0; i < STEPS; i += g.doubleKick ? 1 : 2) s = set(s, i, true); }
+      else if (op.op === 'hits') op.steps.forEach(function (i) { s = set(s, i, true); });
+      else if (op.op === 'clear') { if (op.steps) op.steps.forEach(function (i) { s = set(s, i, false); }); else s = BLANK; }
+      else if (op.op === 'thin') { for (i = 0; i < STEPS; i++) if (i % op.keep) s = set(s, i, false); }
+      bar[l] = s;
+    });
+    if (op.op === 'mirror') for (var l = 0; l < bar.length; l++) bar[l] = bar[l].slice(0, 8) + bar[l].slice(0, 8);
+    if (op.op === 'bpm') { var r = songs.genre(genre).tempo; out.bpm = U.clamp(5 * Math.round((out.bpm + op.by) / 5), r[0], r[1]); }
+  }
+  songs.modify = function (p, section, modId, gear, genre) {
+    var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), mod = null;
+    songs.grooves(genre).mods.forEach(function (m) { if (m.id === modId) mod = m; });
+    var before = songs.rate(out, genre, g);
+    if (mod && SECTIONS.indexOf(section) >= 0) {
+      var bar = out.sections[section].slice();
+      mod.ops.forEach(function (op) { applyOp(bar, op, g, out, genre); });
+      out.sections[section] = bar;
+      out = songs.sanitize(out, g);
+    }
+    return { pattern: out, before: before, after: songs.rate(out, genre, g) };
+  };
+  songs.tempoLabel = function (genre, bpm) {
+    var t = songs.grooves(genre).tempo || [], lab = '';
+    t.forEach(function (x) { if (bpm >= x[0]) lab = x[1]; });
+    return lab;
+  };
+
   GG.registerDebug('songs', function () {
     var s = GG.state; if (!s) return { songs: 0 };
     var top = songs.best(s, 3);

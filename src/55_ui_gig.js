@@ -184,7 +184,7 @@
     var st = S(); if (!st || !gig) return false;
     if (G) teardown();
     G = { gig: gig, done: done, opts: opts || {}, mode: 'set', ses: null, chart: null, t: 0, zero: 0, offset: 0, synced: false,
-      syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0],
+      syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0], dash: [5, 4], noDash: [], ap: 0, autoN: 0, autoAt: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
     readPrefs();
@@ -240,6 +240,7 @@
     var p = performance.now(), ch = G.chart, lead = U.clamp(4 * ch.spb, 1.6, 2.6);
     resync(p, true);
     G.mode = 'count'; G.paused = false; G.restart = false; G.drawFrom = 0; G.countBeat = 99; G.popAt = -1e9;
+    G.ap = 0; G.autoN = G.autoN || 0; G.autoAt = G.autoAt || [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9];
     G.zero = heardAt(p) + lead; G.t = -lead;
     var wait = G.zero - G.lat - LEAD_IN - heardAt(p);
     G.startTimer = setTimeout(startAudio, Math.max(0, wait * 1000));
@@ -302,6 +303,21 @@
     resync(performance.now(), true);
   }
 
+  /* ---- v0.6.2 two-thumb auto notes: the hits a third thumb would need play themselves on the audio clock ---- */
+  // A healthy running clock schedules each one AUTO_AHEAD early at its exact context time (G.zero + t, same heard-clock
+  // pairing as the backing band); a stalled/free-running clock plays it on the frame it comes due. Never judged.
+  var AUTO_AHEAD = 0.15;
+  function autoNotes(t, p) {
+    var a = G.chart.auto, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
+    if (!a) return;
+    while (G.ap < a.length && a[G.ap].t <= t + (sched ? G.lat + AUTO_AHEAD : 0)) {   // heard clock + output latency = context time
+      var n = a[G.ap++];
+      if (n.t < t - 0.08 || n.li >= G.lanes) continue;   // skipped past (a resync jump): stay quiet rather than flam
+      if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zero + n.t : undefined);
+      G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - t) * 1000;   // the ring shows when it's heard
+    }
+  }
+
   /* ---- The frame loop (no allocations in here) ------------------------------------------------------------ */
   function loop() { if (G && !G.raf) G.raf = requestAnimationFrame(frame); }
   function frame() {
@@ -323,6 +339,7 @@
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
       if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
+      if (t >= -0.5) autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
     if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
@@ -427,7 +444,15 @@
     for (k = 0; k < ch.fills.length; k++) band(x, ch.fills[k], t, 'rgba(185,140,255,.13)', '#c9a4ff', 'FREESTYLE · GO WILD');
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', 'SOLO · KEEP IT SIMPLE');
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1;
+    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
+    for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
+      var an = au[k]; if (an.t > t + LOOK + 0.05) break;
+      if (an.li >= G.lanes || an.t < t - 0.25) continue;
+      x.globalAlpha = an.t < t ? 0.45 * (1 - (t - an.t) / 0.25) : 0.45; x.strokeStyle = laneColor(an.li);
+      rr(x, col(an.li) * laneW + (laneW - gw) / 2 + 4, yOf(an.t, t) - gh / 2 + 3, gw - 8, gh - 6, gr - 3); x.stroke();
+    }
+    x.setLineDash(G.noDash); x.globalAlpha = 1;
     for (k = G.drawFrom; k < n.length; k++) {
       var nt = n[k], past = t - nt.t;
       if (nt.t > t + LOOK + 0.05) break;
@@ -444,6 +469,10 @@
       if (nt.extra) { x.globalAlpha = 1; x.lineWidth = 2; x.strokeStyle = '#ffffff'; x.stroke(); }
     }
     x.globalAlpha = 1;
+    for (l = 0; l < G.lanes; l++) {   // v0.6.2 auto-note ticks: a small ring, no judgement pop
+      a = G.autoAt ? 1 - (p - G.autoAt[l]) / 180 : 0;
+      if (a > 0 && a <= 1) { x.globalAlpha = a * 0.6; x.strokeStyle = laneColor(l); x.lineWidth = 2; x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 10 + (1 - a) * 10, 0, 6.2832); x.stroke(); }
+    }
     for (l = 0; l < G.lanes; l++) {   // hit bursts
       a = 1 - (p - G.burst[l]) / 220;
       if (a > 0) {
@@ -708,7 +737,7 @@
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };

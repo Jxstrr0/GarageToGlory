@@ -1117,4 +1117,48 @@ test('bandbook: fan cards (scandals, superfans, Patreeon) are valid, unique and 
   ok(byId('fans_patreeon').choices.filter(ch => ch.effects.fan && ch.effects.fan.club === 'open').length === 2, 'two ways to open it, one to wait');
 });
 
+// ---- v0.6.2 songwriter: groove presets, modifiers, tempo labels, coach lines -------------------------------------------
+test('grooves: every preset validates for its gear; each signature preset grooves >= 70 in its genre; mods are pure', () => {
+  const GR = K.grooves, GENRES = ['metal', 'punk', 'rock', 'country'], NO = { lanes: 4, doubleKick: false }, DK = { lanes: 6, doubleKick: true };
+  const whole = (g, id, gear) => { let p = GG.songs.starter(g, gear); C.SECTIONS.forEach(sec => { p = GG.songs.applyPreset(p, sec, id, gear, g); }); p.bpm = GG.songs.genre(g).tempo[2]; return p; };
+  GENRES.forEach(g => {
+    const G = GR[g], ids = new Set();
+    ok(G && G.presets.length >= 5 && G.mods.length >= 4, g + ': 5+ presets, 4+ mods');
+    ok(G.presets.filter(x => x.signature).length === 1, g + ': one signature preset');
+    G.presets.forEach(x => {
+      ok(!ids.has(x.id) && ids.add(x.id), g + ' unique id ' + x.id);
+      ok(x.name && x.desc && x.desc.length <= 100 && !/\n/.test(x.desc), g + '/' + x.id + ': a one-line plain description');
+      ok(x.bar.length >= 4 && x.bar.every(l => /^[x.]{16}$/.test(l)), g + '/' + x.id + ': one bar');
+      [NO, DK].forEach(gear => {
+        const list = GG.songs.presets(g, gear), pr = list.find(y => y.id === x.id);
+        eq(pr.locked, !!x.pedal && !gear.doubleKick, x.id + ' locked only without the pedal');
+        const p = whole(g, x.id, gear);
+        eq(GG.songs.validate(p, gear), [], g + '/' + x.id + ' validates' + (gear.doubleKick ? ' (pedal)' : ''));
+        if (!pr.locked) eq(GG.songs.presetOf(p, 'chorus', g, gear), x.id, x.id + ' is recognised');
+        if (!gear.doubleKick && !x.pedal) ok(!/xx/.test(pr.bar[0]), x.id + ': no back-to-back kicks without the pedal');
+      });
+      if (x.signature) [NO, DK].forEach(gear => { const r = GG.songs.rate(whole(g, x.id, gear), g, gear); ok(r.groove >= 70, g + ' signature ' + x.id + ' groove ' + r.groove); });
+    });
+    const base = GG.songs.applyPreset(GG.songs.starter(g, NO), 'chorus', G.presets[1].id, NO, g);
+    G.mods.forEach(m => {
+      ok(m.name && m.desc && m.ops.length, g + ' mod ' + m.id);
+      C.SECTIONS.forEach(sec => {
+        const a = GG.songs.modify(base, sec, m.id, NO, g), b = GG.songs.modify(base, sec, m.id, NO, g);
+        eq(JSON.stringify(a), JSON.stringify(b), m.id + ' deterministic');
+        eq(GG.songs.validate(a.pattern, NO), [], g + ' ' + m.id + ' on ' + sec + ' stays valid');
+        ok(['groove', 'hook', 'difficulty'].every(k => a.before[k] >= 0 && a.after[k] <= 100), 'before/after ratings');
+        C.SECTIONS.filter(o => o !== sec).forEach(o => eq(a.pattern.sections[o], GG.songs.sanitize(base, NO).sections[o], 'only ' + sec + ' changes'));
+      });
+    });
+    const more = GG.songs.modify(GG.songs.starter(g, NO), 'verse', 'more', NO, g);
+    ok(more.after.groove > more.before.groove, g + ': "More ' + g + '" grooves harder on the starter ' + more.before.groove + '→' + more.after.groove);
+    const T = GG.songs.genre(g).tempo;
+    ok(GG.songs.tempoLabel(g, T[0]) && GG.songs.tempoLabel(g, T[1]) && G.tempo.every((x, i) => i === 0 || x[0] > G.tempo[i - 1][0]), g + ': tempo labels cover the range');
+  });
+  eq(GG.songs.tempoLabel('metal', 110), 'Headbang'); eq(GG.songs.tempoLabel('metal', 150), 'Mosh'); eq(GG.songs.tempoLabel('metal', 230), 'Blast');
+  ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'].forEach(st => ok(GR.coach[st] && GR.coach[st].length && GR.coach[st].every(l => l.text.length <= 120 && new RegExp(l.role)), 'coach line for ' + st));
+  const txt = JSON.stringify(GR);
+  ok(!/\b(USA|U\.S\.|America|American|United States|Texas|Nashville|Las Vegas|New York|California)\b/i.test(txt), 'no USA content');
+});
+
 done('content');
