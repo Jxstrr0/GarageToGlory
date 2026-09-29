@@ -5,6 +5,9 @@
 //   state.liveGig and fires 'gig:song'; main autosaves). Results ('gig-results', full) -> "Wrap up the week" -> done(result).
 //   A pending state.liveGig for this gig resumes at its next song. opts.apply(state, result) applies the result
 //   (default: GG.career.finishGig in phase 'gig', else GG.gig.applyResult).
+// v0.5 studio mode: opts.studio = { state, songId, label } plays ONE song as a studio take: no 3D stage, no crowd, no
+//   results screen; the session runs on opts.studio.state (a shadow copy, so state.liveGig and autosaves stay clean) and
+//   done(SONG_RESULT) fires after "Keep this take" (59b_ui_studio turns it into a 0..100 take).
 // Timing: judged on the audio clock. "Heard" time = the AudioContext time now leaving the speakers (getOutputTimestamp,
 // else currentTime - outputLatency), kept as an offset from performance.now() so a pointer event's timeStamp maps onto it
 // exactly. The backing band plays from the scheduler with drums off; your taps play the drum voice; misses are silent.
@@ -84,7 +87,7 @@
   }
   function setupStage() {
     var R = GG.render, ok = false;
-    if (GG.main && GG.main.renderOk && R && R.available && R.stage && typeof R.stage.setup === 'function'
+    if (!G.opts.studio && GG.main && GG.main.renderOk && R && R.available && R.stage && typeof R.stage.setup === 'function'
       && (!R.sceneNames || R.sceneNames().indexOf('stage') >= 0)) {
       try { ok = R.setScene('stage') !== false; if (ok) R.stage.setup(stageData(S(), G.gig)); }
       catch (e) { console.error('[gig] stage setup failed', e); ok = false; }
@@ -128,7 +131,7 @@
     },
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
     'crowd:moment': function (p) {
-      if (!G) return;
+      if (!G || G.opts.studio) return;
       if (p.kind !== 'solo') banner(MOMENT_TEXT[p.kind] || p.kind, p.kind === 'boo' || p.kind === 'drinks' ? 'bad' : '');
       if (p.kind === 'boo') sfx('boo'); else if (p.kind !== 'solo' && p.kind !== 'drinks') sfx('cheer');
     },
@@ -163,6 +166,7 @@
     listen(true);
     ui.show('gig', {});
     setupStage();
+    if (G.opts.studio) { startSession([G.opts.studio.songId]); if (auto()) nextSong(); else showBetween(null); return true; }   // v0.5 studio take
     var live = st.liveGig && st.liveGig.gig && st.liveGig.gig.venueId === gig.venueId ? st.liveGig : null;
     if (live) { startSession(null); if (G.ses.done) finishShow(); else { showBetween(null); if (auto()) G.autoT = setTimeout(nextSong, 30); } }
     else if (auto()) { startSession(GG.gig.defaultSetlist(st, gig)); nextSong(); }
@@ -170,7 +174,7 @@
     return true;
   };
   function startSession(ids) {
-    G.ses = GG.gig.session(S(), G.gig, ids, {});
+    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, {});
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
     stageCall('setCrowdLevel', G.ses.crowd, true);
@@ -444,9 +448,10 @@
     var d = G.dom, n = G.ses.setlist.length, i = G.ses.index;   // i = songs played so far
     G.mode = 'between';
     ui.clear(d.mid);
-    var b = banterLine(), next = G.ses.song();
+    var b = banterLine(), next = G.ses.song(), studio = G.opts.studio;
     d.mid.appendChild(el('div.gig-mid-card', { testid: 'gig-between' }, [
-      el('div.caps', r ? 'Song ' + i + ' of ' + n + ' · saved' : 'Welcome back · ' + i + ' of ' + n + ' played'),
+      el('div.caps', studio ? (r ? 'Take in the can' : (studio.label || 'Studio take') + ' · red light is on')
+        : r ? 'Song ' + i + ' of ' + n + ' · saved' : 'Welcome back · ' + i + ' of ' + n + ' played'),
       r ? el('div.gig-song-res', [
         el('b', '“' + r.title + '”'),
         el('div.small', Math.round(r.accuracy * 100) + '% hit · best combo ' + r.maxCombo + ' · ' + r.perfect + ' perfect / ' + r.good + ' good / ' + r.miss + ' missed'),
@@ -455,7 +460,7 @@
       b.who ? el('div.react', [ui.avatar(b.who, 'sm'), el('div.t', [el('b', ui.who(b.who).short + ': '), b.text])]) : el('p.small', b.text),
       next ? el('div.small.dim', 'Up next: “' + next.title + '”' + (next.classic ? ' (a classic)' : '')) : null,
       ui.btn('.btn.primary.block', { testid: 'btn-gig-next', onclick: function () { if (G && G.mode === 'between') nextSong(); } },
-        next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
+        studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
@@ -468,6 +473,13 @@
     else GG.gig.applyResult(st, r);
   }
   function finishShow() {
+    if (G.opts.studio) {   // v0.5 studio take: hand the song result back, no gig result, no results screen
+      var take = G.ses.live.songs[0] || null, cb = G.done;
+      stopAudio(); G.mode = 'results';
+      ui.close('gig');
+      if (cb) setTimeout(function () { cb(take); }, 0);
+      return;
+    }
     var st = S(), r = G.ses.finish(), before = st.venueRep ? st.venueRep[r.venueId] : undefined;
     stopAudio();
     G.mode = 'results';
@@ -535,6 +547,7 @@
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
+      s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       d.back = el('div.gig-back', { data: { level: 'warm' } }, [el('div.lights'), el('div.band', [el('i'), el('i'), el('i'), el('i')]),
         el('div.floor'), el('div.crowd')]);
       d.back.hidden = !!G.stageOn;

@@ -562,6 +562,8 @@
 
     // ---- Band banner on the garage door (name from content; redrawn only when it changes) ----
     var banner = buildBanner(); scene.add(banner.mesh);
+    // v0.5: the trophy wall (gold/platinum records, loonie trophies, banned-venue photos), rebuilt when state changes.
+    var trophyWall = buildTrophyWall(); scene.add(trophyWall.mesh);
 
     // ---- Drum kit (own mesh: rebuilt when state.player.kitColor changes) ----
     var kit = { mesh: null, color: null };
@@ -636,6 +638,7 @@
       state = st;
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId];
       banner.set((band && band.name) || 'Hail Damage');
+      trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
@@ -995,7 +998,8 @@
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
-        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season
+        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season,
+        trophyWall: trophyWall.counts
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
@@ -1391,6 +1395,59 @@
       for (i = 0; i < 4; i++) b.box(0.52, 0.12, 0.02, 0, 0.42 + i * 0.12, -0.24, i % 2 ? W : G, -0.25);
       b.box(0.03, 0.32, 0.03, 0.26, 0.16, 0.18, M); b.box(0.03, 0.32, 0.03, -0.26, 0.16, 0.18, M); b.box(0.03, 0.75, 0.03, 0.26, 0.4, -0.22, M, -0.25); b.box(0.03, 0.75, 0.03, -0.26, 0.4, -0.22, M, -0.25);
       b.cyl(0.035, 0.035, 0.12, 8, 0.36, 0.06, 0.3, 0x9ad13a);                                                                                           // somebody's pop can
+    }
+
+    // v0.5 trophy wall: framed gold/platinum records above the shelf (up to 4, platinum first), loonie trophies (giant
+    // 11-sided coins with a loon) on a new lower shelf (up to 5), banned-venue polaroids with a red bar (up to 6) below.
+    // One merged mesh (1 draw call), rebuilt only when the counts change.
+    function buildTrophyWall() {
+      var mesh = new THREE.Mesh(new THREE.BufferGeometry(), ctx.mats.vc); mesh.visible = false;
+      var self = {
+        mesh: mesh, sig: '', counts: { records: 0, loonies: 0, banned: 0, other: 0 },
+        set: function (trophies, banned) {
+          var list = Array.isArray(trophies) ? trophies : [], rec = [], loon = 0, other = 0, ban = (Array.isArray(banned) ? banned.length : 0);
+          for (var i = 0; i < list.length; i++) {
+            var k = list[i] && list[i].kind;
+            if (k === 'gold' || k === 'platinum') rec.push(k); else if (k === 'loonie') loon++; else if (k === 'banned') ban++; else if (k) other++;
+          }
+          rec.sort(function (a, b) { return a === b ? 0 : a === 'platinum' ? -1 : 1; });
+          var sig = rec.join(',') + '|' + loon + '|' + ban + '|' + other;
+          if (sig === self.sig) return;
+          self.sig = sig;
+          self.counts = { records: rec.length, loonies: loon, banned: ban, other: other };
+          var b = new ctx.Builder({ jitter: 0.02, seed: 29 }), x0 = PROPS.trophies.x, z = Z0, n = 0, GOLD = 0xd4a940, WOOD = 0x3a2616;
+          for (i = 0; i < Math.min(4, rec.length); i++, n++) {             // framed records above the shelf
+            var rx = x0 - 0.48 + i * 0.32, ry = 2.22, disc = rec[i] === 'platinum' ? 0xdfe3ea : 0xe0b63a;
+            b.box(0.3, 0.36, 0.03, rx, ry, z + 0.02, WOOD); b.box(0.26, 0.32, 0.01, rx, ry, z + 0.038, 0x141414);
+            b.cyl(0.1, 0.1, 0.01, 18, rx, ry + 0.03, z + 0.046, disc, Math.PI / 2); b.cyl(0.034, 0.034, 0.012, 12, rx, ry + 0.03, z + 0.048, 0xb3141c, Math.PI / 2);
+            b.box(0.15, 0.035, 0.008, rx, ry - 0.12, z + 0.045, 0xc9a24a);
+          }
+          var nl = Math.min(5, loon + Math.min(other, 5 - Math.min(5, loon)));
+          if (nl) {                                                          // lower shelf + loonies (and other cups)
+            b.box(1.05, 0.04, 0.24, x0 + 0.08, 1.12, z + 0.12, 0x7a5a3a); b.box(0.03, 0.14, 0.18, x0 - 0.4, 1.04, z + 0.09, 0x444444); b.box(0.03, 0.14, 0.18, x0 + 0.56, 1.04, z + 0.09, 0x444444);
+            for (i = 0; i < nl; i++, n++) {
+              var lx = x0 - 0.3 + i * 0.2;
+              b.box(0.12, 0.05, 0.1, lx, 1.165, z + 0.13, WOOD);
+              if (i < loon) {
+                b.box(0.025, 0.05, 0.025, lx, 1.21, z + 0.13, GOLD);
+                b.cyl(0.075, 0.075, 0.02, 11, lx, 1.3, z + 0.13, 0xc9a227, Math.PI / 2); b.cyl(0.06, 0.06, 0.022, 11, lx, 1.3, z + 0.13, 0xe0bb3a, Math.PI / 2);
+                b.box(0.06, 0.018, 0.01, lx - 0.005, 1.29, z + 0.143, 0x2a2016); b.box(0.014, 0.03, 0.01, lx + 0.025, 1.31, z + 0.143, 0x2a2016);
+              } else { b.cyl(0.045, 0.025, 0.09, 8, lx, 1.24, z + 0.13, 0xc9ced6); b.cyl(0.012, 0.012, 0.05, 6, lx, 1.315, z + 0.13, 0xc9ced6); }
+            }
+          }
+          for (i = 0; i < Math.min(6, ban); i++, n++) {                     // banned polaroids, pinned a bit crooked
+            var bx = x0 - 0.32 + i * 0.18, by = 0.8 + (i % 2) * 0.05, tilt = ((i * 37) % 7 - 3) * 0.05;
+            b.push(bx, by, z + 0.02, 0, 0, tilt);
+            b.box(0.15, 0.18, 0.01, 0, 0, 0, 0xf0ece2); b.box(0.12, 0.11, 0.004, 0, 0.02, 0.007, 0x3a4a5a);
+            b.box(0.15, 0.022, 0.006, 0, 0.02, 0.011, 0xd0201a, 0, 0, 0.72); b.box(0.02, 0.02, 0.012, 0, 0.08, 0.012, 0xe0403a);
+            b.pop();
+          }
+          mesh.geometry.dispose();
+          mesh.geometry = n ? b.build() : new THREE.BufferGeometry();
+          mesh.visible = n > 0;
+        }
+      };
+      return self;
     }
 
     // Bedsheet banner with the band name in red spray paint, tied across the garage door.

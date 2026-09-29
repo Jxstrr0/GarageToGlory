@@ -308,7 +308,7 @@ async function layout() {
     await page.waitForFunction(() => GG.state.totalWeek === 2);
     if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
     await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
-    for (const tab of ['band', 'money', 'chat']) {
+    for (const tab of ['band', 'money', 'label', 'albums', 'chat']) {   // v0.5: + Label, Albums
       await page.evaluate(() => GG.emit('hotspot', { action: 'laptop' }));
       await waitScreen(page, 'laptop');
       await tap(page, 'laptop-tab-' + tab);
@@ -317,7 +317,7 @@ async function layout() {
     }
     fs.renameSync(path.join(CACHE, 'ui_laptop-band.png'), path.join(CACHE, 'ui_laptop.png'));
     shots[shots.indexOf('laptop-band')] = 'laptop';
-    const SPOT = { kit: ['seq', 'btn-seq-close'], gigboard: ['board', 'btn-board-close'], door: ['van-info', 'btn-close'] };
+    const SPOT = { kit: ['seq', 'btn-seq-close'], gigboard: ['board', 'btn-board-close'], door: ['van-info', 'btn-close'], trophies: ['trophies', 'btn-close'] };   // v0.5: the real trophy shelf
     for (const spot of ['kit', 'gigboard', 'merch', 'trophies', 'door']) {
       const [scr, close] = SPOT[spot] || ['soon', 'btn-close'];
       await page.evaluate(a => GG.emit('hotspot', { action: a }), spot);
