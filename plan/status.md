@@ -55,6 +55,68 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
+## Addendum 1 (handoff Part C) — decisions (owner, 2026-09-29; locked unless marked open)
+- C1 Van: designated driver per band changes stats + road cards — Hail Damage **Kenji** (silent, perfect record, never
+  uses GPS, always exactly on time; fewer breakdowns), Frost Heave **Moth** (her apartment; free maintenance, terrible
+  comfort), Gravel Kings **T-Bone** (safe but slow; Chase begs to drive, blasts '80s cassettes), Grid Road Ramblers **Earl**
+  (20 under the limit, stops at every historical marker; slow, road stories boost chemistry). If the driver quits, **you**
+  drive and the road-card pool changes (wrong turns, gas-station arguments). Seating: driver up front, you shotgun, band
+  in the back rows, gear + merch piled behind. Dashboard item per driver (Kenji's tiny cactus, Moth's laundry, Chase's
+  cassettes, Earl's 1987 road atlas). Road events: deer on the Yellowhead, whiteout on the Trans-Canada, the fight over
+  shotgun, Marcel's cape shut in the sliding door. Vehicle names per band per tier (table in Part C1), renamable; venue
+  stickers on the van body (banned venues crossed out) → v0.8.
+- C2 Character creator (v0.8): separate everyday + stage looks (stage look auto for gigs/red carpet/stage scenes);
+  unlocks grow with the career; optional carry-over of unlocks within the same genre at a new career; full part lists
+  in Part C2 (knuckle tattoos: player types 4 letters per hand, A–Z). **No gong on the drum kit, ever** (the Global Gong
+  award stays — owner clarification).
+- C3 Audio: kit voices as specified; genre kit tuning (metal tight/clicky, punk loose/trashy, rock big/roomy, country
+  soft/dry + rim clicks + optional brushes); kit quality tiers (v0.8); generated band per genre with a new random key per
+  song and section density (sparse verses, full choruses, stripped breakdowns); synthesized vocal hits on the beat grid
+  (shouts on chorus downbeats, growls on breakdowns, pitched to the key, never off-beat); taps trigger drums (done);
+  venue reverb by size; crowd bed that swells with the meter + cheers/boos; garage hum with Dana noodling; van road
+  noise; van radio plays your charted song; mixer (drums/band/crowd/SFX) + metronome toggle in the sequencer.
+- C4 Settings: audio calibration runs on first launch (tap along to 8 clicks → offset; visual flash check; two profiles:
+  phone speaker / headphones, quick switch); career difficulty Chill / Normal / Brutal chosen at new career and locked;
+  gig difficulty Easy / Normal / Hard / Expert (stacked with drum skill) + independent note speed; assists: No-fail,
+  Auto-kick, Practice mode (any catalog song, slow-down); lefty mode, graphics low/med/high, camera shake toggle,
+  colourblind lane colours, bigger text, reduced flashing, skip van scenes / faster animations, save management.
+- C5 Bandbook (one parody social app on the laptop): Promote posts automatically (content picked from band state);
+  viral chance (good or cringe); generated comedic comments (Tundra Wraith leaves a supportive one on every post);
+  scandals → choice cards (Marcel's lawn is artificial turf); fan types superfans / casuals / haters (fans stay one global
+  count); recurring superfans (Dale from Warman, the jumper-cable trucker, the president of your Japanese fan club); fan
+  mail + gifts in the garage (macaroni portrait of Kenji); paid fan club later in the career (parody subscription site —
+  name is OPEN).
+- C6 Maps in rings: Saskatchewan from day one (Saskatoon, Regina, Prince Albert, Moose Jaw, Swift Current, North
+  Battleford, Yorkton, Humboldt, Gravelbourg, Estevan; Warman/Martensville stay as Saskatoon satellites since venues
+  shipped there); **the West** in Local Heroes (Winnipeg, Brandon, Calgary, Edmonton, Red Deer, Lethbridge, Kelowna,
+  Vancouver, Victoria); **the East and North** in Signed (Thunder Bay, Toronto, Ottawa, Montreal, Quebec City, Halifax,
+  St. John's, Whitehorse, Yellowknife); world regions + city lists in Part C6 (v0.7; Helsinki hosts the Moose Opera
+  ending). Starting cities: Hail Damage Saskatoon, Frost Heave Regina, Gravel Kings Edmonton, Ramblers a farm outside
+  Swift Current (v0.9).
+- C7 Calendar: two weeks per month, every week shows its month + season. Week 1–2 = July … 11–12 = Dec, 13–14 = Jan,
+  15–16 = Feb, 17–18 = Mar, 19–20 = Apr (Loonies, week 20), 21–22 = May, 23–24 = Jun. Winter Dec–Feb (weeks 11–16),
+  spring Mar–May (17–22), summer Jun–Aug (23–24, 1–4), fall Sep–Nov (5–10). Season effects + genre-season fit; weekly
+  weather by season/region (never cancels a gig); garage changes with the season; overseas seasons (v0.7); holidays:
+  NYE best-paying gig, St. Patrick's pub circuit, Canada Day free park shows, Halloween costume gigs, Thanksgiving dinner
+  (guilt cards if you owe), Remembrance Day (no Legion gigs that week), Christmas party circuit + the label's terrible
+  Christmas single, the Grey Mug halftime show (late-career moment).
+- C8 still OPEN (popups when reached): other rivals' members (v0.9), exact balance numbers, the fan-club site name.
+
+## Addendum 1 — pending
+Already-shipped versions → **v0.6.1 catch-up**:
+- [ ] C1 van drivers (effects, you-drive pool, seating, dashboard items, new road events)
+- [ ] C3 genre kit tuning, per-genre generated band + random key + section density, vocal hits on the beat grid
+- [ ] C3 venue reverb, crowd bed + cheers/boos, garage hum, van road noise, van radio, mixer, sequencer metronome
+- [ ] C4 calibration (first launch + settings, 2 profiles), career difficulty (locked per career), gig difficulty
+      Expert + note speed, assists (No-fail, Auto-kick, Practice), accessibility/graphics/skip settings, settings screen
+- [ ] C5 Bandbook, virality, comments, scandals, fan types, named superfans, fan mail + gifts, fan club (Signed era)
+- [ ] C6 Sask ring additions, West ring (Local Heroes), East & North ring (Signed), Canada map in rings
+- [ ] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays
+Later versions:
+- [ ] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong
+- [ ] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers
+- [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
+
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
 - Build: `node build.js` → dist/. ORDER rule: 01_ns, 02_contracts, content/*.js, then other src/*.js by name.
