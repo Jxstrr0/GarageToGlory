@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 1;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 2;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -17,6 +17,11 @@
   C.PHASES = ['monday', 'plan', 'week', 'wrap', 'ended'];
   C.DEALS = ['exposure', 'flat', 'door'];
   C.GRADES = ['S', 'A', 'B', 'C', 'D'];
+  // Drum lanes, left to right on the sequencer grid and the gig highway. Kit starts with the first 4 (v0.8 unlocks toms, ride).
+  C.LANES = ['kick', 'snare', 'hat', 'cymbal', 'toms', 'ride'];
+  C.STEPS = 16;                  // steps per bar; steps run top-to-bottom like the note highway
+  C.SECTIONS = ['verse', 'chorus', 'bridge'];          // v0.8 unlocks 'outro', 'solo'
+  C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
   C.HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
@@ -68,7 +73,8 @@
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      members: [ { id, name, nick, role, skill, mood, status: 'active', original: true } ],
-     songs:   [ { id, title, titleEn, quality, polish, plays, written, pattern: null } ],  // pattern arrives in v0.2
+     songs:   [ SONG ],  pendingSongs: [ PATTERN+title ] (composed in the UI, consumed by Write blocks),
+     draft:   null | PATTERN (the kit's scratch pad),  gear: { lanes: 4, doubleKick: false } (v0.8 unlocks more),
      card:    null | { id, resolved: false } | { id, resolved: true, choice, outcome, deltas },
      plan:    [activityId|null, activityId|null, activityId|null],
      gig:     null | GIG,   offer: null | GIG,        // booked gig for this weekend / pending offer
@@ -85,6 +91,10 @@
    LOOK = { skin:'#rrggbb', hair:'#rrggbb', hairStyle:'short'|'long'|'mohawk'|'bald'|'bun'|'mullet'|'spiky'|'cap',
             shirt:'#rrggbb', pants:'#rrggbb', height: 0.9..1.1, build: 0.9..1.2,
             extras: ['sunglasses'|'beard'|'moustache'|'glasses'|'headband'|'tattoos'|'hat'|'bandana'] }
+   PATTERN = { bpm, lanes: 4, sections: { verse: [laneStr x lanes], chorus: [...], bridge: [...] }, arrangement: ['verse','chorus',...] }
+             laneStr = 16 chars, 'x' = hit, '.' = rest (index = step, top to bottom). Lane order = C.LANES.
+   SONG = { id, title, titleEn, written, pattern: PATTERN, rating: { groove, hook, difficulty }, quality, polish,
+            plays, lastPlayed, stale 0..100, hits, classic: bool, auto: bool (band jammed it, not you) }
    GIG  = { venueId, name, city, tier, kind, capacity, deal, pay, gas, quirk, source: 'forced'|'book'|'offer'|'card' }
    GIG_RESULT = { venueId, name, city, deal, crowd, capacity, score, grade, pay, gas, fans, buzz,
                   songs:[titles], songIds, source, deltas, reactions:[{ who, text }], lines:[text] }
@@ -134,6 +144,8 @@
    'year:end'       { year, summary }         career.endWeek
    'career:end'     { state }                 career.endWeek
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
+   'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
+   'audio:step'     { section, bar, step, time }       audio playback (UI playhead)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
@@ -154,7 +166,11 @@
    GG.career.moodLabel(mood)             -> 'happy'|'ok'|'grumpy'|'sulking'
    GG.career.fillText(state, text)       -> text with tokens replaced
    GG.career.botPlan(state, style) / botChoice(state, card, style)   style 'avg'|'good'
-   GG.songs.writePlaceholder(state, rng) -> song ; GG.songs.best(state, n) -> [song]
+   GG.songs.rate(pattern, genre, gear?) -> { groove, hook, difficulty, notes, tips:[text] }   (pure, deterministic)
+   GG.songs.generate(genre, rng, opts?) -> PATTERN ; GG.songs.starter(genre) -> PATTERN ; validate(pattern, gear) -> [errors]
+   GG.songs.create(state, pattern, title?, opts?) -> SONG ; GG.songs.best(state, n) -> [song] ; stale/classic updates per gig
+   GG.songs.similarity(a, b) -> 0..1 ; GG.songs.toNotes(song) -> [{ beat, lane, section }] (chart source for v0.3)
+   GG.audio.play(pattern, { genre, section|null (null = full arrangement), loop, backing: true }) -> handle { stop() }
    GG.gig.makeGig(state, venueId, source) -> GIG ; GG.gig.randomOffer(state, rng) -> GIG|null
    GG.gig.autoResolve(state, rng)        -> GIG_RESULT (v0.1 placeholder; v0.3 replaces with the rhythm game)
    GG.save.write(slot, state) -> bool ; read(slot) -> state|null ; list() -> [{ slot, exists, summary }]
