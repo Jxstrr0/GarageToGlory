@@ -73,10 +73,10 @@
     news: {
       filler: [
         '{rival} played a benefit for the Winnipeg Humane Society. Raised $40,000. Gord cried in full corpse paint.',
-        '{rival} were spotted at a Costco in Brandon buying veggie trays in bulk. Twelve of them.',
+        '{rival} were spotted at the Brandon Co-op buying veggie trays in bulk. Twelve of them.',
         '{rival} posted a tour diary. It is a spreadsheet. It is colour-coded. It is honestly very helpful.',
         "Gord from {rival} did a radio interview. He said {band} are 'the real deal, buddy'. It sounded sincere. That's the worst part.",
-        '{rival} released a music video shot entirely in a Winnipeg bus shelter at minus forty. Nobody's fingers work in it.',
+        "{rival} released a music video shot entirely in a Winnipeg bus shelter at minus forty. Nobody's fingers work in it.",
         "Lorne from {rival} emailed you a tempo report for a show you didn't play. You were still 2% fast.",
         '{rival} sold out the Park Theatre in Winnipeg. The merch table sold out of toques first.',
         "Darryl from {rival} is doing free tax clinics at the Legion. The line is out the door. People are wearing their shirts.",
@@ -105,6 +105,9 @@
         "{rival} opened the show. Gord told the crowd to 'stick around for the real deal'. They did. Most of them."],
       poached: ['{name} is in {rival} now. The welcome photo: corpse paint, cardigans, a cake. You got tagged.'],
       loonies: ['{rival} won {n} Loonie(s) this year. Gord thanked you by name from the stage. You were not there. You were not nominated.'],
+      crack_breakup: ["Tundra Wraith break up. The press release cites 'tax season, our families, and {band}, who beat us fair and square'. There is a pie chart."],
+      crack_rebrand: ["Tundra Wraith are now {rival}. Same four accountants, same minivan, new letterhead. Gord calls it 'a fresh start, buddy'."],
+      crack_opener: ["{rival} have asked to open for you. Gord's email subject line: 'Buddy!!! A proposal (no pressure)'. It has a budget attached."],
       finalSoon: ['The Sad Dome in Calgary wants a co-bill in week {n}: {band} and {rival}. One headlines. One opens. Forever.'],
       reunion: ['{rival} reunite for one night only at the Sad Dome. The accountants took the day off. All four of them.']
     },
@@ -150,11 +153,11 @@
         text: "A fruit basket arrives addressed to {recruit}, not the band. The card: 'Buddy! We have an opening. Dental, vision, " +
           "a very reasonable tour schedule. No pressure! — Gord.' {recruit} is holding a pear and looking at you.",
         choices: [
-          { label: 'Match it: a bigger cut for everyone', hint: 'Pay the band more',
-            effects: { payCut: 0.05, mood: { recruit: 16, all: 2 } },
-            outcome: "You bump everyone's cut. {recruit} sends Gord a polite no. Gord replies in four minutes: 'Totally understand, buddy! Door's always open!'" },
+          { label: 'Match it: a loyalty bonus', hint: 'Cash from the band fund',
+            effects: { fund: -150, mood: { recruit: 16 } },
+            outcome: "You hand {recruit} an envelope and a very sincere speech. {recruit} sends Gord a polite no. Gord replies in four minutes: 'Totally understand, buddy! Door's always open!'" },
           { label: 'Promise {recruit} the spotlight', hint: 'A song of their own, their name on the poster',
-            effects: { fund: -120, mood: { recruit: 14 }, chemistry: -2, burnout: 4 },
+            effects: { mood: { recruit: 14 }, chemistry: -2, burnout: 4 },
             outcome: "New posters, {recruit}'s name in bigger letters, a song built around them. {recruit} eats the pear and stays." },
           { label: "Call Gord's bluff", hint: 'Gamble: they might go',
             roll: { chance: 0.5, stat: 'chemistry', statScale: 0.01,
@@ -242,7 +245,7 @@
         genreFit: FIT, slot: '1 p.m., the Mosquito Stage', quirk: 'Out in the bush past Prince Albert. Bring bug spray. Bring more bug spray.',
         catch: 'Tundra Wraith headline the main stage. You have the lunch slot.' },
       { id: 'sad_dome', name: 'The Sad Dome', city: 'Calgary', region: 'canada', tier: 3, kind: 'club', dome: true, km: 620,
-        capacity: 19000, minFans: 0, walkIns: 4000, setSize: 3, deal: 'flat', pay: 12000, deals: ['flat'], payRange: { flat: [12000, 12000] },
+        capacity: 19000, minFans: 0, walkIns: 4000, setSize: 3, deal: 'flat', pay: 2500, deals: ['flat'], payRange: { flat: [2500, 2500] },
         genreFit: FIT, slot: 'Co-bill', quirk: 'A hockey arena shaped like a saddle that has given up. The biggest room on the prairies.',
         catch: 'One band headlines. One opens. The crowd decides.' }
     ]

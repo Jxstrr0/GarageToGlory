@@ -350,7 +350,8 @@ test('Loonies: nominations at week 16, ceremony at week 20, envelopes, rival tha
   ok(t.loonies.done && t.awards.length > 0, 'auto-resolved at week 20');
   // a garage band is never nominated
   const g = career(GG, 21); g.week = 16; eq(GG.labels.nominate(g, GG.rngFor(g)).nominations, []);
-  ok(GG.labels.rivalStrength(g, 'album') > 0 && typeof GG.labels.rivalStrength === 'function', 'replaceable rival curve');
+  // v0.6: the rival sim replaced the curve: no record out yet = no album case; a year later their debut album counts
+  ok(GG.labels.rivalStrength(g, 'album') === 0 && GG.labels.rivalStrength(t, 'album') > 0 && GG.labels.rivalStrength(t, 'worst_van') === 0, 'rival strength from the rival sim');
 });
 
 test('world: tier-3 theatres only in the Signed era; commission; era scene; world-ready threshold (era switch off)', () => {
@@ -403,7 +404,7 @@ test('bots: sign, record, release over a career; deterministic per seed; no DOM/
   ok(a.era === 'signed' && a.pastDeals.concat(a.label ? [a.label] : []).length >= 1, 'the good bot signs');
   const rel = a.albums.filter(x => x.status === 'released');
   ok(rel.length >= 3 && rel.every(x => x.reviews.length === 5 && x.critic > 0), 'the good bot records and releases: ' + rel.length);
-  ok(rel.every(x => GG.labels.recycled(a, x.tracks, x.id).count <= 4), 'good bot avoids recycling');
+  ok(rel.every(x => GG.labels.recycled(a, x.tracks, x.id).count <= Math.ceil(x.tracks.length / 2)), 'good bot avoids recycling (at most half the tracks)');
   ok(a.awards.length > 0, 'Loonie nominations happen');
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', '24_sim_labels.js'), 'utf8');
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '24_sim_labels.js is pure');

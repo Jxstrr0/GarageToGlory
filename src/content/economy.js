@@ -204,33 +204,34 @@
     // ---- The rival (23_sim_rival.js, v0.6): their career, heat, showdowns, cracking, the Sad Dome final ----------------
     rival: {
       // their career: fans chase this curve (fans at the start of each year, geometric in between) x momentum
-      fansCurve: [30, 380, 1500, 4400, 8800, 13500, 18500, 23500, 27500, 31000, 34000, 36500, 38500],
-      pull: 0.12, momentumPer: 0.02, momentum: [0.7, 1.25],
+      fansCurve: [40, 450, 1700, 4300, 8200, 12500, 17000, 21500, 25500, 29000, 32000, 34500, 36500],
+      pull: 0.18, momentumPer: 0.02, momentum: [0.7, 1.25],
       skill: { start: 50, cap: 87, tau: 66, rebrand: -4, breakup: -6, opener: -3 },   // set strength = cap - (cap - start) * e^(-week / tau)
-      buzz: { start: 15, perYear: 4, max: 55, heat: 0.2, drift: 0.25, win: 5, loss: -3 },
+      buzz: { start: 15, perYear: 5, max: 60, heat: 0.2, drift: 0.25, win: 5, loss: -3 },
       form: { win: 1.5, loss: -1.5, decay: 0.9, max: 6 },
       eras: { local: 250, signed: 1100 },
       release: { week: 8, spread: 4, fromYear: 1, critic: 8, criticNoise: 6, units: 1.6, tail: 4.5, chartWeeks: 9, chartDrop: 7 },
       // heat 0..100: + per clash, slow decay; above `buzzFrom` it feeds buzz to both bands every week
-      heat: { start: 12, decay: 0.025, decayMin: 0.4, buzzFrom: 25, buzz: 0.03,
+      heat: { start: 12, decay: 0.025, decayMin: 0.4, buzzFrom: 25, buzz: 0.02,
               clash: { botb: 12, sameNight: 7, stolenSlot: 6, loonies: 4, poach: 10, festival: 8, final: 15 } },
       // scheduling: weekly chance = base + heat * perHeat (x crack factor), at least minGap weeks apart, per-kind cooldowns
-      schedule: { firstWeek: 6, base: 0.06, perHeat: 0.0018, minGap: 3, crackFactor: { rebrand: 0.7, opener: 0.4, breakup: 0 } },
+      schedule: { firstWeek: 6, base: 0.1, perHeat: 0.0035, minGap: 3, crackFactor: { rebrand: 0.7, opener: 0.4, breakup: 0 } },
       kinds: {
-        botb: { minFans: 30, weight: 3, cooldown: 8, eraWeight: { garage: 1.5, local: 1.2, signed: 0.6, world: 0.4 } },
+        botb: { minFans: 30, weight: 3.5, cooldown: 8, eraWeight: { garage: 1.5, local: 1.2, signed: 0.6, world: 0.4 } },
         sameNight: { minFans: 120, weight: 3, cooldown: 6 },
-        stolenSlot: { minFans: 60, weight: 2, cooldown: 6 },
-        festival: { minFans: 150, weight: 4, cooldown: 10, weeks: [[1, 6], [22, 24]] },
+        stolenSlot: { minFans: 60, weight: 1, cooldown: 8 },
+        festival: { minFans: 150, weight: 6, cooldown: 10, weeks: [[1, 6], [22, 24]] },
         poach: { weight: 4, cooldown: 12, minStage: 2, chance: 0.5 }
       },
-      noise: 8, kindBonus: { botb: 0, sameNight: 0, festival: 3, final: 2 },
-      botb: { prize: { garage: 300, local: 600, signed: 1500, world: 3000 }, steal: 0.03, stealCap: { garage: 40, local: 150, signed: 600, world: 1200 },
+      noise: 8, kindBonus: { botb: 0, sameNight: 0, festival: 3, final: 5 },
+      botb: { prize: { garage: 300, local: 600, signed: 1000, world: 2000 }, steal: 0.03, stealCap: { garage: 40, local: 150, signed: 600, world: 1200 },
               capacity: 250, buzz: 3 },
       sameNight: { split: 0.6, steal: 0.02 },
       festival: { fans: 0.06, buzz: 5, fansMin: 25 },
-      stolenSlot: { defendRep: 2 },
-      final: { year: 10, week: 21, winBuzz: 15, winFans: 0.05, loseBuzz: 5 },
-      crack: { net: 5, minWins: 6, heat: 30, fromYear: 2 },
+      stolenSlot: { defendRep: 3 },   // a venue that loves you (rep 3) turns them down,
+      final: { year: 10, week: 21, winBuzz: 15, winFans: 0.02, loseBuzz: 5 },
+      crack: { net: 7, minWins: 9, heat: 30, fromYear: 2 },
+      awards: { bonus: 12, breakup: 0.75 },   // Loonie strength: award-show darlings (fruit baskets for every voter)
       opener: { chance: 0.2, crowd: [20, 80], fans: 0.3 },
       bot: { avgEnter: 0.75 }
     },

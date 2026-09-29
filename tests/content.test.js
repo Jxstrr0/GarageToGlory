@@ -455,6 +455,7 @@ test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {r
       const good = ['player', 'band', 'city', 'recruit'].includes(t) || (/^content\.drama\.stageText/.test(p) && ['who', 'gripe'].includes(t))
         || (/^content\.reviews\./.test(p) && ['album', 'single'].includes(t)) || (/^content\.awards\./.test(p) && t === 'category')
         || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
+        || (/^content\.rivalry\./.test(p) && ['rival', 'album', 'pos', 'fans', 'venue', 'name', 'prize', 'n'].includes(t))   // v0.6
         || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
     }

@@ -80,8 +80,9 @@ test('escalation steps one stage a week (warnings first), the ultimatum is a for
 
 test('long careers: every stage change is one step and every quit follows an ultimatum', () => {
   for (const style of ['avg', 'good']) {
-    const GG = fresh(), s = career(GG, 99), last = {}, bad = [];
-    GG.on('member:stage', e => { const p = last[e.id] || 0; if (Math.abs(e.stage - p) !== 1) bad.push(e.id + ' ' + p + '->' + e.stage + ' w' + s.totalWeek); last[e.id] = e.stage; });
+    const GG = fresh(), s = career(GG, 99), last = {}, bad = [], poached = {};
+    GG.on('rival:poach', e => { poached[e.who] = true; });   // v0.6: the rival poaches an unhappy member (stage 2+ -> gone)
+    GG.on('member:stage', e => { const p = last[e.id] || 0; if (Math.abs(e.stage - p) !== 1 && !(e.stage === 4 && poached[e.id])) bad.push(e.id + ' ' + p + '->' + e.stage + ' w' + s.totalWeek); last[e.id] = e.stage; });
     GG.on('member:return', e => { last[e.id] = 0; });
     GG.on('recruit:hired', e => { last[e.member.id] = 0; });
     while (!s.ended) GG.career.botWeek(s, style);
@@ -295,7 +296,7 @@ test('migration v3 -> v4: drama defaults for old saves, idempotent; save codes r
   ['quits', 'returns', 'recruits', 'ultimatums'].forEach(k => delete old.stats[k]);
   const m = GG.save.migrate(JSON.parse(JSON.stringify(old)));
   eq([m.v, m.payCut, m.fillIns, m.recruitAd, m.rivalDefectors, m.stats.quits], [GG.contracts.SAVE_SCHEMA, 0.3, {}, null, [], 0]);
-  ok(GG.contracts.SAVE_SCHEMA === 5 && m.members.every(x => x.stage === 0 && x.exit === null && x.want === null), 'member defaults');
+  ok(GG.contracts.SAVE_SCHEMA >= 5 && m.members.every(x => x.stage === 0 && x.exit === null && x.want === null), 'member defaults');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
   GG.career.botWeek(m, 'avg');
   const t = open(GG); forceUltimatum(GG, t, 'dana'); GG.career.resolveCard(t, 2); t.fund = 300; GG.drama.postAd(t, 'lead guitar');

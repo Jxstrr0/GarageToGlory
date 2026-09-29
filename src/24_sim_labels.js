@@ -5,7 +5,7 @@
 //   release week, promo) -> reviews from 5 outlets (recycled drum patterns cost points) -> first-week sales -> the
 //   Maple 100 (debut / peak / weeks) -> weekly sales + streams for months -> royalties (recoup the advance first, then
 //   the band gets paid, split by the pay-the-band setting) -> gold / platinum certs -> trophies. The Loonie Awards
-//   every year at week C.LOONIES_WEEK (nominations 4 weeks earlier) against a scripted Tundra Wraith curve.
+//   every year at week C.LOONIES_WEEK (nominations 4 weeks earlier) against the rival (v0.6: GG.rival.strength).
 // Pure sim: state is the first argument, no DOM. Career randomness comes from GG.rngFor(state); UI previews (title
 // and cover options) use RNGs seeded from the career seed so they never move the career RNG.
 // Numbers: content/economy.js (`labels`, `loonies`, `eras`, `eraUpkeep`). Words: content/labels.js (labels, studios,
@@ -44,7 +44,7 @@
 //   Loonies   loonies(state)* -> LOONIES + noms: [AWARD-ish] ; openEnvelope(state, category)* -> AWARD + { name, won,
 //             winner, thanks, rivalLine, deltas } ; outfitCard(state) ; outfit(state, i, cardId?)* ; speechCard(state) ;
 //             speech(state, i, cardId?)* -> { cardId, choice, outcome, deltas, success } ; nominate(state, rng) ;
-//             runLoonies(state) -> results ; bandStrength(state, cat) ; rivalStrength(state, cat) (v0.6 replaces it)
+//             runLoonies(state) -> results ; bandStrength(state, cat) ; rivalStrength(state, cat) (v0.6: GG.rival.strength)
 //   Bots      botWeek(state, style) ; botSign ; botRecord ; botRelease ; botTracklist(state, ids) ; botPickSongs
 //   Saves     init(state) (new careers) ; migrate(state) (v4 -> v5; wraps GG.save.migrate)
 // Events: 'era:changed' {era, from, week, why, text} (career.setEra), 'label:offer' {offer}, 'label:signed' {deal},
@@ -920,14 +920,17 @@
     var week = c.week || state.totalWeek, pos = c.pos || null, rows = [];
     var artists = (GG.content.headliners || []).map(function (h) { return h.name; }).concat(FALLBACK_OTHERS, [rivalName(state)])
       .filter(function (x, i, l) { return l.indexOf(x) === i; });
-    var want = {};
+    var want = {}, rc = GG.rival && state.rival ? GG.rival.chartEntry(state, week) : null;   // v0.6: the rival's record charts too
+    if (rc && rc.pos === pos) rc = null;
     for (var i = 1; i <= 10; i++) want[i] = true;
     if (pos) for (var j = pos - 2; j <= pos + 2; j++) if (j >= 1 && j <= 100) want[j] = true;
+    if (rc) want[rc.pos] = true;
     Object.keys(want).map(Number).sort(function (x, y) { return x - y; }).forEach(function (p) {
       if (p === pos) {
         rows.push({ pos: p, title: a.title, artist: bandName(state), move: c.prev ? c.prev - p : 'new', weeks: c.weeks, you: true });
         return;
       }
+      if (rc && p === rc.pos) { rows.push({ pos: p, title: rc.title, artist: rc.artist, move: rc.move, weeks: rc.weeks, you: false, rival: true }); return; }
       var r = GG.RNG(GG.hashSeed(state.seed + '|chart|' + week + '|' + p));
       var w = wordsFor(r.pick(C.GENRES)), form = r.pick(w.forms || w.patterns || ['{adj} {noun}']);
       var title = String(form).replace(/\{(\w+?)2?\}/g, function (all, slot) { var pl = w[slot]; return pl && pl.length ? r.pick(pl) : slot; });
@@ -1146,14 +1149,19 @@
     }
     return 0;
   };
-  // Tundra Wraith's strength per category: a scripted curve until the v0.6 rival sim replaces this function.
+  // The rival's strength per category: v0.6 = the rival sim (GG.rival.strength: their records, set strength, fans);
+  // the v0.5 scripted curve stays as the fallback without the rival module.
   L.rivalStrength = function (state, cat) {
+    if (GG.rival && GG.rival.strength) return GG.rival.strength(state, cat);
     var K = lcfg().rival || {}, band = GG.career.band(state.bandId), rival = band && band.rival && GG.content.rivals && GG.content.rivals[band.rival];
     if (!rival) return 0;
     if (cat === 'album' && rival.genre && rival.genre !== state.genre) return 0;
     return U.clamp((K.base || 50) + (K.perYear || 4) * state.year + ((K.bias || {})[cat] || 0), 0, K.max || 92);
   };
-  function rivalName(state) { var b = GG.career.band(state.bandId), r = b && b.rival && GG.content.rivals && GG.content.rivals[b.rival]; return r ? r.name : 'Tundra Wraith'; }
+  function rivalName(state) {
+    if (GG.rival && state && state.rival) return GG.rival.name(state);   // v0.6: follows a rebrand
+    var b = GG.career.band(state.bandId), r = b && b.rival && GG.content.rivals && GG.content.rivals[b.rival]; return r ? r.name : 'Tundra Wraith';
+  }
   function otherNominees(state, rng, n, cat) {
     var pool = (GG.content.headliners || []).filter(function (h) { return cat !== 'album' || h.genre === state.genre; }).map(function (h) { return h.name; });
     var extra = awardsContent().nominees || FALLBACK_OTHERS;
@@ -1214,14 +1222,16 @@
     rng = rng || GG.rngFor(state);
     var K = lcfg(), R = K.win || {}, results = [], rname = rivalName(state);
     lo.nominations.forEach(function (n) {
-      var nz = K.noise || 10, best = null, bestV = -Infinity, oth = K.other || [45, 75];
+      var nz = K.noise || 10, best = null, bestV = -Infinity, oth = K.other || [45, 75], vals = {};
       n.nominees.forEach(function (who, i) {
         var v = i === 0 ? n.strength : who === rname ? n.rival : rng.range(oth[0], oth[1]);
         v += rng.range(-nz, nz);
+        vals[who] = v;
         if (v > bestV) { bestV = v; best = who; }
       });
       var won = best === n.nominees[0], rivalWon = best === rname, rivalIn = n.nominees.indexOf(rname) > 0;
-      var res = { category: n.category, name: n.name, won: won, winner: best, rivalWon: rivalWon, thanks: null, rivalLine: null };
+      var res = { category: n.category, name: n.name, won: won, winner: best, rivalWon: rivalWon, thanks: null, rivalLine: null,
+        rivalIn: rivalIn, you: Math.round(vals[n.nominees[0]]), them: rivalIn ? Math.round(vals[rname]) : null };   // v0.6: the rivalry
       var line = function (key, fb) { return fill(state, String(GG.career.pickLine(state, rng, rivalLines(state, key, fb), fb[0])).replace(/\{category\}/g, n.name)); };
       if (rivalWon) res.thanks = line('rivalThanks', FALLBACK_THANKS);
       else if (won && rivalIn) res.rivalLine = line('rivalLoses', ['Tundra Wraith give you a standing ovation. They mean it. That is the worst part.']);
@@ -1244,6 +1254,7 @@
       results.push(res);
     });
     lo.results = results; lo.done = true;
+    if (GG.rival && state.rival) GG.rival.loonies(state, results);   // v0.6: a Loonie clash with the rival (heat, record)
     GG.emit('loonies:result', { year: lo.year, results: results });
     return results;
   };
