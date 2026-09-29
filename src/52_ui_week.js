@@ -37,9 +37,16 @@
     buzz: 'Buzz: how hard people are talking about you right now. Promote and play gigs to pump it; it fades every week.',
     chem: 'Chemistry: how well the band gels. Rehearsing and good gigs help; drama, burnout and grumpy members hurt.'
   };
+  // v0.6.1: the week chip's help adds the calendar (month, season, weather, holiday, the genre-season fit).
+  function weekHelp() {
+    var st = S(), L = st && GG.calendar ? GG.calendar.label(st) : null;
+    if (!L) return STAT_HELP.week;
+    return L.monthName + ', ' + L.seasonName.toLowerCase() + ': ' + L.weatherLabel.toLowerCase() + ', ' + L.temp + '°C. '
+      + (L.holiday ? L.holiday.icon + ' ' + L.holiday.name + ': ' + L.holiday.blurb + ' ' : L.seasonBlurb + ' ') + (L.fit ? L.fit : '');
+  }
   function hudChip(key, testid, label) {
     var v = el('span.v'), l = el('span.l', label), extra = key === 'buzz' || key === 'chem' ? ui.bar(0, 100) : null;
-    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () { ui.toast(STAT_HELP[key]); } }, [l, v, extra]);
+    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () { ui.toast(key === 'week' ? weekHelp() : STAT_HELP[key]); } }, [l, v, extra]);
     b._v = v; b._l = l; b._bar = extra;
     return b;
   }
@@ -50,8 +57,19 @@
       week: hudChip('week', 'hud-week', 'Y1'), fund: hudChip('fund', 'hud-fund', 'Fund'), fans: hudChip('fans', 'hud-fans', 'Fans'),
       buzz: hudChip('buzz', 'hud-buzz', 'Buzz'), chem: hudChip('chem', 'hud-chem', 'Chem')
     };
+    hud.cal = el('div.hud-cal', { testid: 'hud-cal', 'aria-live': 'polite' });   // v0.6.1: month · season · weather · holiday
     hud.bar = el('div.hud-bar', [hud.week, hud.fund, hud.fans, hud.buzz, hud.chem,
-      btn('.hud-menu', { testid: 'btn-menu', 'aria-label': 'Menu', onclick: function () { ui.show('menu'); } }, '☰')]);
+      btn('.hud-menu', { testid: 'btn-menu', 'aria-label': 'Menu', onclick: function () { ui.show('menu'); } }, '☰'), hud.cal]);
+    if (!document.getElementById('gg-hud-cal-css')) {
+      var css = document.createElement('style'); css.id = 'gg-hud-cal-css';
+      css.textContent = '.hud-bar { flex-wrap: wrap; row-gap: 4px; }\n'
+        + '.hud-cal { flex: 1 1 100%; order: 9; min-width: 0; align-self: center; justify-self: center; text-align: center; padding: 3px 10px; border-radius: 99px;'
+        + ' background: rgba(13, 18, 30, .72); border: 1px solid rgba(255, 255, 255, .08); color: var(--dim); font: 700 11px/1.35 var(--font);'
+        + ' white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; box-sizing: border-box; }\n'
+        + '.hud-cal b { color: var(--amber); font-weight: 800; } .hud-cal .hol { color: var(--text); }\n'
+        + '.hud-chip.week .v { letter-spacing: -.04em; }';
+      document.head.appendChild(css);
+    }
     dock = { hint: el('div.hint') };
     dock.btn = btn('.btn.primary.big.block', { testid: 'btn-primary', onclick: primaryAction }, 'Plan the week');
     dock.root = el('div.dock', [dock.hint, dock.btn]);
@@ -93,6 +111,15 @@
     hud.buzz._v.textContent = String(Math.round(st.buzz));
     hud.chem._v.textContent = String(Math.round(st.chemistry));
     setBar(hud.buzz._bar, st.buzz); setBar(hud.chem._bar, st.chemistry);
+    if (GG.calendar) {
+      var L = GG.calendar.label(st), key = [L.totalWeek, L.weather, L.temp, L.holiday && L.holiday.id].join('|');
+      if (hud.cal._k !== key) {
+        hud.cal._k = key; hud.cal.textContent = '';
+        ui.append(hud.cal, [el('b', L.month), ' · ' + L.seasonIcon + ' ' + L.seasonName + ' · ' + L.weatherIcon + ' ' + L.weatherLabel + ' ' + L.temp + '°C',
+          L.holiday ? el('span.hol', ' · ' + L.holiday.icon + ' ' + L.holiday.name) : null]);
+        hud.cal.setAttribute('aria-label', L.text);
+      }
+    }
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
@@ -582,6 +609,7 @@
   ui.refreshGarage = function () { ui.refreshHud(); refreshFallback(); };
   GG.on('stats:changed', ui.refreshHud);
   GG.on('ui:stack', ui.refreshHud);
+  GG.on('calendar:week', function () { setTimeout(ui.refreshHud, 0); });   // v0.6.1: new week, new weather
   GG.on('career:new', ui.refreshGarage);
   GG.on('career:loaded', ui.refreshGarage);
 })(window.GG);

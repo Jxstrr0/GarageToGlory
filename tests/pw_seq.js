@@ -4,8 +4,13 @@
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
 //           → laptop catalog lists it and opens its pattern read-only; kit sketch pad queues a song; in-page
 //           GG.songs.rate equals the node result for the same fixtures; layout audit + screenshot tests/.cache/seq.png
+//           + v0.6.1 metronome toggle (♩, settings.metronome, clicks while looping).
 //   audio : OfflineAudioContext render of every lane voice and 2 bars of every backing style: non-silent, peak < 1.0,
-//           no NaN; a fast song stays within the 12-voice cap.
+//           no NaN; a fast song stays within the 12-voice cap. v0.6.1: every genre's kit (all lanes + country rim/brush)
+//           and full band (verse/chorus/bridge) render clean with their own parts and vocal hits; vocal hits on whole
+//           beats and in key; a key per song id; choruses fuller than verses; breakdowns stripped (growl on the drop);
+//           metal chugs on every kick; venue rooms; crowd/garage/van/radio beds; the mixer API + metronome; live:
+//           garage hum + noodling, van road noise + radio for a charted song, the gig's room + crowd reactions.
 // Run: node build.js && timeout 500 node tests/pw_seq.js
 const fs = require('fs'), path = require('path');
 const { open, checker } = require('./_pw');
@@ -105,6 +110,21 @@ async function seq() {
     await page.waitForTimeout(600);
     const s2 = await page.evaluate(() => ({ n: GG.debug('audio').steps, ph: GG.debug('seq').playhead, sec: GG.debug('audio').lastStep.section }));
     c.ok(s2.n > s1 && s2.ph != null && s2.sec === 'chorus', 'playhead advances on the looped section ' + s1 + ' -> ' + JSON.stringify(s2));
+    // v0.6.1 metronome: off by default; ♩ turns it on (saved), the loop clicks quarter notes; ♩ again turns it off.
+    const mtr = () => page.evaluate(() => { const b = document.querySelector('[data-testid="btn-seq-metro"]');
+      return { on: GG.audio.metronome(), saved: GG.save.settings().metronome, btn: b && b.dataset.on, pressed: b && b.getAttribute('aria-pressed'), clicks: GG.debug('audio').counts.clicks }; });
+    const k0 = await mtr();
+    await tap(page, 'btn-seq-metro');
+    await page.waitForTimeout(900);
+    const k1 = await mtr();
+    c.ok(!k0.on && k0.btn === '0' && k1.on && k1.saved === true && k1.btn === '1' && k1.pressed === 'true' && k1.clicks > k0.clicks,
+      'metronome toggle clicks while looping ' + JSON.stringify([k0, k1]));
+    await tap(page, 'btn-seq-metro');
+    await page.waitForTimeout(300);
+    const k2 = await mtr();
+    await page.waitForTimeout(600);
+    const k3 = await mtr();
+    c.ok(!k2.on && k2.saved === false && k2.btn === '0' && k3.clicks === k2.clicks, 'metronome off: saved, silent ' + JSON.stringify([k2.clicks, k3.clicks]));
     await tap(page, 'seq-tab-song');
     await page.fill(tid('seq-title-input'), 'Mon Gazon Test');
     await page.locator(tid('seq-tempo')).fill('170');
@@ -220,6 +240,128 @@ async function audio() {
       return { drums, notes, beats: t.beats, want: GG.songs.beats(s) };
     });
     c.ok(tl.drums === tl.notes && tl.beats === tl.want, 'timeline drum events === toNotes ' + JSON.stringify(tl));
+
+    // ---- v0.6.1 genre audio ----
+    const kits = await page.evaluate(async () => {
+      const out = {}, e = r => r.rms * r.rms * r.seconds;
+      for (const g of GG.contracts.GENRES) for (const l of GG.contracts.LANES) { const r = await GG.audio.renderOffline({ genre: g, lane: l }); out[g + ' ' + l] = { peak: r.peak, rms: r.rms, nan: r.nan, e: e(r) }; }
+      for (const v of ['rim', 'brush', 'ghost']) { const r = await GG.audio.renderOffline({ genre: 'country', lane: 'snare', variant: v }); out['country snare ' + v] = { peak: r.peak, rms: r.rms, nan: r.nan, e: e(r) }; }
+      return out;
+    });
+    const badKit = Object.entries(kits).filter(([, r]) => r.nan || !(r.peak > 0.02 && r.peak < 1 && r.rms > 0.0005)).map(([k]) => k);
+    c.ok(badKit.length === 0, 'genre kits: ' + Object.keys(kits).length + ' voices clean ' + badKit.join());
+    c.ok(kits['rock kick'].e > kits['metal kick'].e * 1.3 && kits['country kick'].peak < kits['metal kick'].peak && kits['punk hat'].e > kits['metal hat'].e,
+      'kits differ: rock kick big, country soft, punk hats trashy');
+    const full = await page.evaluate(async () => {
+      const out = {};
+      for (const g of GG.contracts.GENRES) {
+        const p = JSON.parse(JSON.stringify(GG.songs.signature(g))); p.arrangement = ['verse', 'chorus', 'bridge'];
+        const v0 = GG.debug('audio').counts.vox;
+        const r = await GG.audio.renderOffline({ genre: g, pattern: p, full: true, bars: 12, songId: 's3', room: g === 'rock' ? 'arena' : undefined });
+        out[g] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan, kinds: Object.keys(r.counts).sort().join(), vox: GG.debug('audio').counts.vox - v0, key: r.key.name };
+      }
+      return out;
+    });
+    const PARTS = { metal: ['gtr', 'gtr2', 'lead', 'bass', 'vox'], punk: ['gtr', 'bass', 'vox'], rock: ['gtr', 'lead', 'bass', 'vox'], country: ['clean', 'fiddle', 'twang', 'bass', 'vox'] };
+    for (const [g, r] of Object.entries(full)) c.ok(!r.nan && r.peak > 0.05 && r.peak < 1 && r.rms > 0.01 && r.vox > 0 && PARTS[g].every(k => r.kinds.split(',').includes(k)), g + ' band renders clean ' + JSON.stringify(r));
+    const shape = await page.evaluate(() => {
+      const A = GG.audio, out = { offGrid: 0, offKey: 0, vox: 0, keys: {}, same: true, range: true, layers: {}, breakOk: true, soloOk: true, drops: {}, chugOk: false };
+      for (const g of GG.contracts.GENRES) {
+        const B = GG.content.genres[g].backing, p = JSON.parse(JSON.stringify(GG.songs.signature(g)));
+        p.arrangement = ['verse', 'chorus', 'bridge']; if (g === 'metal') p.bpm = 140;
+        const ks = new Set();
+        for (let i = 1; i <= 8; i++) { const k = A.keyFor('s' + i, g); ks.add(k.tonic); if (A.keyFor('s' + i, g).tonic !== k.tonic) out.same = false; if (k.offset < B.keys[0] || k.offset > B.keys[1]) out.range = false; }
+        out.keys[g] = ks.size;
+        const t = A.timeline(p, { genre: g, songId: 's4' }), band = t.events.filter(e => e.kind !== 'step' && e.kind !== 'drum');
+        for (const e of band.filter(e => e.kind === 'vox')) { out.vox++; if (e.beat % 1) out.offGrid++; if (!B.scale.includes(((e.midi - t.key.tonic) % 12 + 12) % 12)) out.offKey++; }
+        const kinds = sec => new Set(band.filter(e => e.section === sec).map(e => e.kind)).size;
+        out.layers[g] = [kinds('verse'), kinds('chorus')];
+        const brk = band.filter(e => e.role === 'break'), solo = band.filter(e => e.role === 'solo');
+        if (brk.some(e => !['gtr', 'bass', 'vox'].includes(e.kind))) out.breakOk = false;
+        if (solo.length && !solo.some(e => e.kind === 'lead' || e.kind === 'fiddle')) out.soloOk = false;
+        out.drops[g] = brk.filter(e => e.kind === 'vox').map(e => e.voc).join();
+        if (g === 'metal') {
+          const kicks = t.events.filter(e => e.kind === 'drum' && e.lane === 'kick' && e.section === 'verse');
+          out.chugOk = t.style === 'chug' && kicks.length > 0 && kicks.every(k => band.some(e => e.kind === 'gtr' && e.beat === k.beat));
+        }
+      }
+      return out;
+    });
+    c.ok(shape.vox > 8 && shape.offGrid === 0 && shape.offKey === 0, 'vocal hits: ' + shape.vox + ', all on whole beats and in key');
+    c.ok(shape.same && shape.range && Object.values(shape.keys).every(n => n >= 3), 'a new key per song (seeded by id, in range) ' + JSON.stringify(shape.keys));
+    c.ok(Object.values(shape.layers).every(([v, ch]) => ch > v), 'choruses fuller than verses ' + JSON.stringify(shape.layers));
+    c.ok(shape.breakOk && shape.soloOk && shape.drops.metal === 'growl', 'breakdowns strip to the heavy parts (growl on the drop), solos lead ' + JSON.stringify(shape.drops));
+    c.ok(shape.chugOk, 'metal: palm-muted chugs on every kick hit');
+    const rooms = await page.evaluate(async () => {
+      const f = GG.audio.roomFor, e = r => r.rms * r.rms * r.seconds;
+      const map = [f({ kind: 'house', capacity: 30 }), f({ kind: 'legion', capacity: 120 }), f({ kind: 'club', capacity: 180 }), f({ kind: 'bar', capacity: 1200 }), f({ kind: 'club', capacity: 6000 }), f({ kind: 'church', capacity: 90 })].join();
+      const dry = await GG.audio.renderOffline({ lane: 'snare', room: 'dry' }), arena = await GG.audio.renderOffline({ lane: 'snare', room: 'arena' });
+      return { map, dry: e(dry), arena: e(arena), peak: arena.peak, nan: arena.nan || dry.nan };
+    });
+    c.ok(rooms.map === 'dry,hall,room,theatre,arena,hall' && rooms.arena > rooms.dry * 1.1 && rooms.peak < 1 && !rooms.nan, 'venue rooms by size ' + JSON.stringify(rooms));
+    const beds = await page.evaluate(async () => {
+      const out = {};
+      for (const a of ['garage', 'van', 'crowd', 'radio']) { const r = await GG.audio.renderOffline({ ambience: a, bars: 4 }); out[a] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan }; }
+      const m = await GG.audio.renderOffline({ genre: 'metal', section: 'verse', bars: 1, drums: false, backing: false, metronome: true });
+      out.metronome = { peak: +m.peak.toFixed(3), rms: +m.rms.toFixed(4), nan: m.nan };
+      return out;
+    });
+    for (const [k, r] of Object.entries(beds)) c.ok(!r.nan && r.peak > 0.01 && r.peak < 1 && r.rms > 0.0005, 'bed ' + k + ' ' + JSON.stringify(r));
+    const mix = await page.evaluate(async () => {
+      const A = GG.audio, o = { buses: Object.keys(A.volumes()).join(), bad: A.setVolume('kazoo', 1) };
+      o.full = (await A.renderOffline({ lane: 'kick' })).peak;
+      A.setVolume('band', 0); o.saved = GG.save.settings().mix.band; o.get = A.getVolume('band');
+      o.bandOff = (await A.renderOffline({ backing: 'chug', genre: 'metal', bpm: 140, bars: 1 })).peak;
+      A.setVolume('band', 1); A.setVolume('drums', 0.5);
+      o.half = (await A.renderOffline({ lane: 'kick' })).peak;
+      A.setVolume('drums', 1.7);
+      o.clamped = A.getVolume('drums');
+      o.bandOn = (await A.renderOffline({ backing: 'chug', genre: 'metal', bpm: 140, bars: 1 })).peak;
+      o.reload = A.applySettings().mix;
+      return o;
+    });
+    c.ok(mix.buses === 'drums,band,crowd,sfx' && mix.bad === null && mix.saved === 0 && mix.get === 0 && mix.bandOff < 0.001 && mix.bandOn > 0.02 &&
+      mix.half < mix.full * 0.7 && mix.clamped === 1 && mix.reload.band === 1 && mix.reload.drums === 1, 'mixer: setVolume/getVolume, saved in settings.mix ' + JSON.stringify(mix));
+
+    // Live ambience (bus events + state): garage hum + noodling, van road + radio, the gig's room and crowd.
+    await page.evaluate(() => { GG.main.quickStart({ seed: 5, openCard: false }); GG.ui.closeAll(); });
+    await page.waitForFunction(() => GG.audio.refreshAmbience() === 'garage', null, { timeout: 6000 });
+    await page.waitForFunction(() => GG.debug('audio').counts.noodles > 0, null, { timeout: 9000 });
+    const gar = await page.evaluate(() => ({ amb: GG.debug('audio').ambience, noodles: GG.debug('audio').counts.noodles, v: GG.debug('audio').ambVoices }));
+    c.ok(gar.amb === 'garage' && gar.noodles > 0 && gar.v <= 6, 'garage hum with the guitarist noodling ' + JSON.stringify(gar));
+    const want = await page.evaluate(() => {
+      const s = GG.state, song = s.songs[0];
+      s.albums = (s.albums || []).concat([{ id: 'a_radio', kind: 'ep', title: 'Radio Test', tracks: [song.id], single: song.id, chart: { debut: 60, peak: 37, weeks: 3, pos: 50 } }]);
+      GG.ui.playVan(s.gig, () => {});
+      return song.id;
+    });
+    await page.waitForFunction(() => GG.debug('audio').ambience === 'van', null, { timeout: 4000 });
+    await page.waitForFunction(() => GG.debug('audio').counts.thumps > 0, null, { timeout: 4000 }).catch(() => {});
+    const van = await page.evaluate(() => ({ amb: GG.debug('audio').ambience, radio: GG.debug('audio').radio, thumps: GG.debug('audio').counts.thumps, song: GG.audio.isPlaying() }));
+    c.ok(van.radio === want && van.thumps > 0 && !van.song, 'van: road noise + your charted song on the radio ' + JSON.stringify(van));
+    await page.evaluate(() => { GG.ui.closeAll(); GG.ui.gigAutoplay = false; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    const radioOff = await page.evaluate(() => GG.debug('audio').radio);
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    await page.waitForFunction(() => GG.debug('audio').ambience === 'gig', null, { timeout: 4000 });
+    const gg = await page.evaluate(async () => {
+      const d0 = GG.debug('audio'), want = GG.audio.roomFor(GG.state.liveGig.gig);
+      GG.emit('crowd:level', { level: GG.gig.levelOf(92), crowd: 92 });
+      const level = GG.debug('audio').crowd.level;   // read before the next 'gig:judge' moves it again
+      GG.emit('crowd:moment', { kind: 'mosh' });
+      await new Promise(r => setTimeout(r, 350));
+      GG.emit('crowd:moment', { kind: 'boo' });
+      await new Promise(r => setTimeout(r, 100));
+      const d = GG.debug('audio');
+      return { room: d.room, want, level, crowd: d.crowd, cheers: d.counts.cheers - d0.counts.cheers, boos: d.counts.boos - d0.counts.boos, key: d.key, playing: d.playing, cv: d.crowdVoices };
+    });
+    c.ok(radioOff === null && gg.room === gg.want && gg.crowd.on && gg.level === 92 && gg.cheers === 1 && gg.boos === 1 && gg.playing && !!gg.key,
+      'gig: venue room, crowd bed follows the meter, cheers + boos ' + JSON.stringify(gg));
+    await page.evaluate(() => GG.ui.closeAll());
+    await page.waitForFunction(() => GG.debug('audio').ambience !== 'gig', null, { timeout: 4000 });
+    const after = await page.evaluate(() => ({ room: GG.debug('audio').room, crowd: GG.debug('audio').crowd.on }));
+    c.ok(after.room === 'room' && !after.crowd, 'after the gig: the kit room again, crowd gone ' + JSON.stringify(after));
     c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
   } catch (e) { c.ok(false, 'audio threw: ' + (e.stack || e)); }
   await close();

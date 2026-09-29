@@ -251,6 +251,77 @@ test('migration v2 -> v3: defaults for old saves, idempotent, schema bumped', ()
   const code = GG.save.toCode(m); eq(JSON.stringify(GG.save.fromCode(code)), JSON.stringify(m), 'save code round-trip');
 });
 
+// ---- v0.6.1 (Addendum 1 C1 + C6): Canada in rings, van drivers ----------------------------------------------------
+test('rings: Saskatchewan from day one, the West in Local Heroes, the East & North once Signed; one far gig a week', () => {
+  const GG = fresh(), W = GG.world, V = id => GG.gig.venue(id);
+  const s = career(GG, 61, 20000);
+  eq([W.ring('Saskatoon'), W.ring('Humboldt'), W.ring('Calgary'), W.ring('Winnipeg'), W.ring('Toronto'), W.ring('Yellowknife')], ['sask', 'sask', 'west', 'west', 'eastnorth', 'eastnorth']);
+  ok(W.ringOpen(s, 'sask') && !W.ringOpen(s, 'west') && !W.ringOpen(s, 'eastnorth'), 'garage: Saskatchewan only');
+  ok(!W.bookable(s, V('cowtown_saloon')) && W.bookable(s, V('derrick_lounge')), 'Calgary locked in the garage, Estevan open');
+  s.era = 'local'; ok(W.bookable(s, V('cowtown_saloon')) && !W.bookable(s, V('the_hoofprint')), 'Local Heroes: the West');
+  s.era = 'signed'; ok(W.bookable(s, V('the_hoofprint')) && W.bookable(s, V('commandant_ballroom')), 'Signed: the East & North (+ theatres)');
+  eq(W.km('saskatoon', 'calgary'), 620, 'the Sad Dome drive stays 620 km');
+  for (let w = 1; w <= 40; w++) {
+    s.totalWeek = w; s.week = ((w - 1) % 24) + 1;
+    const far = W.listings(s).filter(l => W.ring(l.city) !== 'sask').length;
+    ok(far <= W.cfg().farListings, 'at most one far gig on the board: week ' + w + ' has ' + far);
+  }
+  const g = W.makeListing(s, V('the_hoofprint'), GG.RNG(3));
+  ok(g.km > 2000 && W.tripBurnout(s, g.km) <= W.cfg().van.burnoutMax, 'long hauls: burnout capped (' + W.tripBurnout(s, g.km) + ')');
+  s.protected = false; s.van.condition = 30;
+  ok(W.breakdownChance(s, 2600) <= W.breakdownChance(s, 400) * 1.001, 'a cross-country run is not 6x riskier than 400 km');
+});
+
+test('drivers: Kenji drives (fewer breakdowns); if he quits you drive, the road pool changes; he comes back', () => {
+  const GG = fresh(), W = GG.world, s = career(GG, 62, 300);
+  s.protected = false; s.van.condition = 40;
+  const k = W.driver(s); eq([k.id, k.you, k.dashboard, s.van.driver], ['kenji', false, 'cactus', 'kenji']);
+  const pk = W.breakdownChance(s, 239);
+  const kenji = s.members.find(m => m.id === 'kenji'), chat0 = s.chat.length;
+  GG.drama.applyMember(s, { id: 'kenji', act: 'quit' }, {});
+  ok(kenji.status !== 'active' && s.van.driver === 'you' && W.driver(s).you, 'you drive now');
+  ok(s.chat.length > chat0 && s.chat.some(c => /You drive now/.test(c.text)), 'the group chat notices');
+  ok(W.breakdownChance(s, 239) > pk * 1.8, 'Kenji halved the breakdowns');
+  const CARDS = GG.content.roadCards, byId = id => CARDS.find(c => c.id === id);
+  ok(W.roadGatePasses(s, byId('road_wrong_turn').gate, 239, 'summer') && !W.roadGatePasses(s, byId('road_moose').gate, 239, 'summer'), 'you-drive pool on, Kenji cards off');
+  const rng = GG.RNG(4), seen = new Set();
+  for (let i = 0; i < 300; i++) { const c = W.drawRoad(s, 239, 'summer', rng); if (c) seen.add(c.id); }
+  ok(seen.has('road_wrong_turn') || seen.has('road_gas_argument'), 'wrong turns + gas-station arguments: ' + [...seen].join(' '));
+  ok([...seen].every(id => !(byId(id).gate && byId(id).gate.driver && byId(id).gate.driver.includes('kenji'))), 'no Kenji-at-the-wheel cards');
+  s.gig = W.decorate(s, GG.gig.makeGig(s, 'craigs_basement', 'book'));
+  eq(W.startTrip(s).driver, 'you');
+  GG.drama.applyMember(s, { id: 'kenji', act: 'return' }, {});
+  eq([s.van.driver, W.driver(s).id], ['kenji', 'kenji']); ok(s.chat.some(c => /Kenji is back/.test(c.text)), 'Kenji is back');
+});
+
+test('drivers of the other bands: Moth fixes the van free (terrible comfort), T-Bone safe but slow, Earl\'s road stories', () => {
+  const GG = fresh(), W = GG.world, D = GG.content.drivers;
+  eq(Object.keys(D).sort(), ['earl', 'kenji', 'moth', 'tamara', 'you']);
+  eq(['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].map(b => W.driverFor(b)), ['kenji', 'moth', 'tamara', 'earl']);
+  const band = id => { const s = GG.career.newCareer({ seed: 63, bandId: id, player: { name: 'T' } }); s.van.condition = 50; return s; };
+  const hd = band('hail_damage'), fh = band('frost_heave'), gk = band('gravel_kings'), gr = band('grid_road_ramblers');
+  eq([hd.van.driver, fh.van.driver, gk.van.driver, gr.van.driver], ['kenji', 'moth', 'tamara', 'earl']);
+  ok(W.repairQuote(fh).cost === 0 && W.repairQuote(fh).gain > 0 && W.repairQuote(hd).cost > 0, 'Moth: free maintenance');
+  ok(W.tripBurnout(fh, 239) > W.tripBurnout(hd, 239), 'Moth: her stuff everywhere');
+  [gk, hd].forEach(s => { s.protected = false; });
+  ok(W.breakdownChance(gk, 239) < W.breakdownChance(Object.assign(band('gravel_kings'), { protected: false, members: [] }), 239), 'T-Bone: safe');
+  ok(W.tripBurnout(gk, 239) > W.tripBurnout(hd, 239), 'T-Bone: slow');
+  const d = {}; gr.gig = W.decorate(gr, GG.gig.makeGig(gr, 'craigs_basement', 'book'));
+  const c0 = gr.chemistry; W.travel(gr, gr.gig, GG.RNG(5), d); ok(gr.chemistry > c0, 'Earl: road stories boost chemistry');
+});
+
+test('trips carry the weather, the holiday and the driver; road cards gate on weather + holidays', () => {
+  const GG = fresh(), W = GG.world, s = career(GG, 64, 200);
+  s.week = 12; s.totalWeek = 12;
+  s.gig = W.decorate(s, GG.gig.makeGig(s, 'craigs_basement', 'book'));
+  const t = W.startTrip(s);
+  eq([t.weather, t.temp, t.holiday, t.driver], [GG.calendar.weatherAt(s, 'regina').kind, GG.calendar.weatherAt(s, 'regina').temp, 'nye', 'kenji']);
+  const byId = id => GG.content.roadCards.find(c => c.id === id);
+  ok(W.roadGatePasses(s, byId('road_xmas_lights').gate, 239, 'winter') && !W.roadGatePasses(s, byId('road_long_weekend').gate, 239, 'winter'), 'holiday gates');
+  const hail = byId('road_hailstorm').gate, wk = GG.calendar.weatherAt(s, 'regina').kind;
+  eq(W.roadGatePasses(s, hail, 239, 'winter', 'regina'), wk === 'hail', 'weather gate');
+});
+
 test('sim purity: 26_sim_world has no Math.random / Date / DOM', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', '26_sim_world.js'), 'utf8');
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), 'pure');

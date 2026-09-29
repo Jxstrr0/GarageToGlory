@@ -28,10 +28,11 @@
     winter: { ground: 0x243048, color: 0xe8efff, size: 0.11, opacity: 0.8, count: 150, speed: [0.25, 0.5], sway: 0.15 },
     spring: { ground: 0x1b261d, color: 0x9ab8e8, size: 0.065, opacity: 0.7, count: 150, speed: [2.6, 3.4], sway: 0.02 }
   };
-  // Week of year (1..24) -> season: summer 1–6 and 23–24, fall 7–10, winter 11–18, spring 19–22.
+  // Week of year (1..24) -> season (v0.6.1 calendar, C.SEASONS): summer 23–4, fall 5–10, winter 11–16, spring 17–22.
   function seasonOf(week) {
+    if (GG.calendar) return GG.calendar.season(week);
     var w = ((Math.max(1, week | 0) - 1) % 24) + 1;
-    return w <= 6 || w >= 23 ? 'summer' : w <= 10 ? 'fall' : w <= 18 ? 'winter' : 'spring';
+    return w <= 4 || w >= 23 ? 'summer' : w <= 10 ? 'fall' : w <= 16 ? 'winter' : 'spring';
   }
 
   // Every prop's place. Back-wall props take x (they hang on z = z0), right-wall props take z (x = x1),
@@ -545,6 +546,7 @@
     scene.add(buildShafts());
     var dust = buildDust(); scene.add(dust.points);
     var yard = buildYard();
+    var decor = buildDecor();   // v0.6.1: snow at the window (winter), Christmas lights (December), a box fan (July / heat wave)
 
     // ---- Bulb on a cord (swings a little; carries the warm point light and a halo) ----
     var bulbPivot = new THREE.Group();
@@ -640,6 +642,7 @@
       banner.set((band && band.name) || 'Hail Damage');
       trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
+      decor.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
       if (kc !== kit.color) buildKit(kc);
@@ -969,7 +972,7 @@
       var fl = (t % 13) < 0.18 ? 0.72 + 0.2 * Math.sin(t * 90) : 1;
       bulb.intensity = 1.55 * fl * (1 + 0.025 * Math.sin(t * 23) * Math.sin(t * 3.1));
       halo.material.opacity = 0.5 * fl;
-      dust.update(t); yard.update(t);
+      dust.update(t); yard.update(t); decor.update(t);
       // Camera: gently follow the player.
       var k2 = 1 - Math.exp(-2.5 * dt);
       followT.x += (camT.x + (player.x - camT.x) * CAM.follow - followT.x) * k2;
@@ -998,7 +1001,7 @@
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
-        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season,
+        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(),
         trophyWall: trophyWall.counts
       };
     }
@@ -1363,6 +1366,57 @@
         }
       };
       return self;
+    }
+    // v0.6.1 (Addendum 1 C7): the garage changes with the season. Three small meshes, shown only when they apply:
+    // frost + a snow drift on the garage-door windows (winter or snowy weather), a string of Christmas lights across the
+    // door header (December), a box fan by the couch with spinning blades (July or a heat wave). ≤ 4 extra draw calls,
+    // only while shown. Hidden with an empty draw range (not visible=false) so their buffers upload with the garage once
+    // and the GPU geometry count doesn't creep when the season changes.
+    function buildDecor() {
+      var hw = PROPS.door.w / 2, pw = (PROPS.door.w - 0.12) / 3, yc = 3.5 * DOOR_SEC, k, i;
+      var sb = new ctx.Builder({ jitter: 0.01, seed: 41 });
+      for (k = -1; k <= 1; k++) {
+        var wx = PROPS.door.x + k * (pw + 0.03);
+        sb.box(pw - 0.14, 0.05, 0.012, wx, yc - 0.105, Z0 + 0.083, 0xf2f6ff);                        // drift along the pane
+        sb.box(0.08, 0.035, 0.012, wx - (pw - 0.14) / 2 + 0.04, yc - 0.07, Z0 + 0.083, 0xe6eefa);   // frosty corners
+        sb.box(0.06, 0.03, 0.012, wx + (pw - 0.14) / 2 - 0.03, yc - 0.075, Z0 + 0.083, 0xe6eefa);
+        sb.box(0.05, 0.02, 0.012, wx - (pw - 0.14) / 2 + 0.025, yc + 0.1, Z0 + 0.083, 0xdfe8f6);
+      }
+      function show(m, on) { m.geometry.setDrawRange(0, on ? Infinity : 0); }
+      var snow = new THREE.Mesh(sb.build(), ctx.mats.unlit); show(snow, false); scene.add(snow);
+      var lb = new ctx.Builder({ jitter: 0 }), COLS = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xfff4e0];
+      var n = 22;
+      for (i = 0; i < n; i++) {
+        var u = i / (n - 1), x = PROPS.door.x - hw - 0.05 + u * (PROPS.door.w + 0.1), sag = 0.07 * Math.sin(Math.PI * ((u * 3) % 1));
+        lb.box(0.035, 0.05, 0.035, x, 2.18 - sag, Z0 + 0.1, COLS[i % COLS.length]);
+        if (i < n - 1) lb.box(PROPS.door.w / (n - 1), 0.006, 0.006, x + PROPS.door.w / (n - 1) / 2, 2.2 - sag, Z0 + 0.1, 0x1a3a1a);
+      }
+      var lm = new THREE.MeshBasicMaterial({ vertexColors: true });
+      var lights = new THREE.Mesh(lb.build(), lm); show(lights, false); scene.add(lights);
+      var fb = new ctx.Builder({ jitter: 0.01, seed: 43 }), FAN = 0xe8e2d4;
+      fb.box(0.5, 0.5, 0.14, 0, 0.27, 0, FAN); fb.box(0.42, 0.42, 0.15, 0, 0.27, 0, 0x2a2a2e);
+      fb.box(0.12, 0.04, 0.3, 0, 0.02, 0, FAN); fb.box(0.06, 0.03, 0.02, 0.17, 0.5, 0.075, 0x9a9a9a);   // feet, the dial
+      var fan = new THREE.Mesh(fb.build(), ctx.mats.vc);
+      var bb = new ctx.Builder({ jitter: 0 });
+      for (i = 0; i < 3; i++) bb.box(0.07, 0.17, 0.01, 0, 0.09, 0, 0xb8c4cc, 0, 0, i * Math.PI * 2 / 3);
+      var blades = new THREE.Mesh(bb.build(), ctx.mats.vc); blades.position.set(0, 0.27, 0.08); fan.add(blades);
+      fan.position.set(X1 - 0.45, 0, PROPS.couch.z - 1.2); fan.rotation.y = -Math.PI / 2 - 0.5; show(fan, false); show(blades, false); scene.add(fan);
+      var cur = { snow: false, lights: false, fan: false };
+      return {
+        set: function (st) {
+          var w = st.week || 1, season = seasonOf(w), month = GG.calendar ? GG.calendar.month(w) : null;
+          var wx = GG.calendar && st.seed != null ? GG.calendar.weather(st).kind : null;
+          cur.snow = season === 'winter' || wx === 'snow' || wx === 'blizzard';
+          cur.lights = month === 'Dec';
+          cur.fan = month === 'Jul' || wx === 'heat';
+          show(snow, cur.snow); show(lights, cur.lights); show(fan, cur.fan); show(blades, cur.fan);
+        },
+        update: function (t) {
+          if (cur.fan) blades.rotation.z = t * 14;
+          if (cur.lights) { var b = 0.65 + 0.35 * (Math.sin(t * 2.2) > 0 ? 1 : 0.4); lm.color.setScalar(b); }
+        },
+        state: function () { return { snow: cur.snow, lights: cur.lights, fan: cur.fan }; }
+      };
     }
     function yardProp(fill) {
       var b = new ctx.Builder({ jitter: 0.04, seed: 17 });

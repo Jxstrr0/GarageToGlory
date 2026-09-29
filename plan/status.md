@@ -104,14 +104,14 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Addendum 1 — pending
 Already-shipped versions → **v0.6.1 catch-up**:
-- [ ] C1 van drivers (effects, you-drive pool, seating, dashboard items, new road events)
+- [x] C1 van drivers (effects, you-drive pool, seating, dashboard items, new road events) — WORLD, v0.6.1
 - [ ] C3 genre kit tuning, per-genre generated band + random key + section density, vocal hits on the beat grid
 - [ ] C3 venue reverb, crowd bed + cheers/boos, garage hum, van road noise, van radio, mixer, sequencer metronome
 - [ ] C4 calibration (first launch + settings, 2 profiles), career difficulty (locked per career), gig difficulty
       Expert + note speed, assists (No-fail, Auto-kick, Practice), accessibility/graphics/skip settings, settings screen
 - [ ] C5 Bandbook, virality, comments, scandals, fan types, named superfans, fan mail + gifts, fan club (Signed era)
-- [ ] C6 Sask ring additions, West ring (Local Heroes), East & North ring (Signed), Canada map in rings
-- [ ] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays
+- [x] C6 Sask ring additions, West ring (Local Heroes), East & North ring (Signed), Canada map in rings — WORLD, v0.6.1
+- [x] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays — WORLD, v0.6.1
 Later versions:
 - [ ] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong
 - [ ] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers
@@ -213,6 +213,41 @@ Later versions:
 - UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
+
+## What's in v0.6.1 (world) — Addendum 1 C1/C6/C7 (WORLD agent, lane B1)
+- Calendar `src/28_sim_calendar.js` (`GG.calendar`): two weeks per month from July, C.SEASONS (winter 11–16, spring 17–22,
+  summer 23–4, fall 5–10; world/garage/van seasons follow it), weekly weather per season + city climate (coast/north) from
+  its own seeded RNG (`weatherAt` pure; `state.weather` cached Mondays; never cancels a gig), holidays (Canada Day 1,
+  Thanksgiving 7, Halloween 8, Remembrance 9, Grey Mug 10, Christmas 11–12, NYE 12, St. Paddy's 18, Loonies 20).
+  Effects: outdoor turnout by weather (`shape`), crowd/score/fans via `gigMods` (folded into `GG.drama.gigMods`), road
+  risk/wear/burnout (`roadMods`: winter ice, spring potholes, blizzards, hail), genre-season fit (metal owns winter,
+  country/punk the summer; doubled x1.5 at their rooms), venue availability (`venueOpen`: seasonal/holiday rooms, no
+  skate parks in winter, no Legion on Remembrance Day), holiday pay/weights (NYE x2 floor, pub + party circuits), holiday
+  Monday cards (`holidayCard`, priority order; guilt Thanksgiving if you owe, Halloween costumes -> flags.costume, the
+  label's Christmas single, the Grey Mug halftime once in Signed with 20k fans -> next Monday +5% fans + trophy
+  'greymug'), season news lines, season cards (cabin fever, frosh week, hail season, the festival lineups).
+- Rings (`content/map.js` rings + city.ring): Sask (+ Humboldt, Gravelbourg, Estevan), the West (Local Heroes), East &
+  North (Signed); `world.ring/ringOpen/cityOpen`; ≤1 far listing a week (`economy.world.farListings`); long hauls taper
+  burnout (`burnoutTaper`, `burnoutMax` 30) and cap breakdown km (`breakdownKmCap` 400). 37 new rooms:
+  parody venues per ring city (Frostbite Lounge, Commandant Ballroom, The Hoofprint, Messy Hall, …) + seasonal/holiday
+  rooms (Canada Day bandshells, fair grandstand, stampede beer gardens, frosh bowl, harvest dance, potash Christmas
+  party, the Bassborough NYE ballroom, Paddy O'Furniture's). Venue fields: outdoor, season, weeks, holiday.
+- Drivers (`content.drivers`, `world.driver/driverMods/syncDriver/driverFor`): Kenji (breakdowns x0.5, cactus), Moth
+  (free repairs, comfort −2, laundry), T-Bone (safe x0.6, slow, cassettes), Earl (slow, +2 chemistry on long drives,
+  atlas), you (x1.15 breakdowns, +25% road cards). Driver quits/poached -> you drive (drama hook + chat), returns -> back.
+  Road cards: Kenji-at-the-wheel cards gated `driver:['kenji']`; new gates driver/weather/holiday; 15 new cards (deer on
+  the Yellowhead, the fight over shotgun, cape in the sliding door, whiteout on the Trans-Canada, hail, heat, frozen van,
+  construction, mosquitoes, Christmas lights, long weekend; you-drive: wrong turn, gas-station argument, lead foot, music).
+- UI: HUD calendar strip (`hud-cal`, month · season · weather °C · holiday; week-chip toast explains it); board calendar
+  line (`board-cal`), ring tabs (`ring-<id>`), locked-ring teaser (`ring-locked`), tag chips (`board-tag`); van header
+  weather + driver (`van-weather`), van sheet driver panel (`van-driver`), 2D windshield weather + cactus; 3D van: setTrip
+  { weather, driver, dashboard } (blizzard whiteout, hail, heat haze), you ride shotgun / drive, band behind, gear + merch
+  piled behind, dash item; garage decor (window snow in winter, Christmas lights in December, box fan in July / heat).
+- Save: v6 -> v7 (`GG.calendar.migrate`: weather; van.driver via world.migrate); `state.v = 7`.
+- Tests: node sim_calendar 15 (new), sim_world 19, content 42 · pw_world calendar (19; screenshots hud_calendar.png,
+  board_rings.png, van_driver.png) + board 14 + van 13.
+- Balance (10y x 20): avg local wk 21 / offer 38 / signed 42 / world-ready y7; good 15 / 26 / 27 / y5; Sad Dome avg
+  9/20, good 18/20; quits 0.58/yr; loans after y1 avg 0.10, good 0.05 (before: 23/46/49/y7, 17/29/30/y5, 11/20, 20/20).
 
 ## What's in v0.6.0 "Rivals" (stage 1 sim + content, stage 2 UI done)
 - Rival sim (`23_sim_rival.js`, API in its header): Tundra Wraith run a parallel career (fans chase `economy.rival.fansCurve`

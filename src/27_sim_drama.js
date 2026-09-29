@@ -114,8 +114,9 @@
       if (t === 'party_animal') fans *= T.partyFans;
       if (t === 'local_legend') fans *= T.legendGigFans;
     });
-    return { open: open, fills: fills, score: score - open * E.holePenalty - fills * E.fillInPenalty,
-      crowd: -open * E.holeCrowd, fansMult: fans, fillSkill: E.fillInSkill };
+    var cal = GG.calendar ? GG.calendar.gigMods(state) : { score: 0, crowd: 0, fansMult: 1 };   // v0.6.1: weather, season fit, holidays
+    return { open: open, fills: fills, score: score - open * E.holePenalty - fills * E.fillInPenalty + cal.score,
+      crowd: -open * E.holeCrowd + cal.crowd, fansMult: fans * cal.fansMult, fillSkill: E.fillInSkill };
   };
 
   /* ---- Wants ------------------------------------------------------------------------------------------- */
@@ -313,6 +314,7 @@
       m.exit = { storyline: ex.id, since: state.totalWeek, returnDue: state.totalWeek + rng.int(ra[0], ra[1]), beat: 0 };
       if (ex.quitLine) chat(state, ex.quitLine.who || m.id, ex.quitLine.text, 'news');
     }
+    if (GG.world && GG.world.syncDriver) GG.world.syncDriver(state);   // v0.6.1: the driver quit -> you drive
     GG.emit('member:quit', { id: m.id });
   }
   function returnMember(state, m) {
@@ -328,6 +330,7 @@
     m.exit = null;
     bump(state, 'returns');
     if (ex && ex.backLine) chat(state, ex.backLine.who || m.id, ex.backLine.text, 'news');
+    if (GG.world && GG.world.syncDriver) GG.world.syncDriver(state);   // v0.6.1: the driver is back behind the wheel
     GG.emit('member:return', { id: m.id });
   }
   function defect(state, m) {
@@ -342,6 +345,7 @@
     m.stage = 4; m.ultimatum = null; m.stageWeek = state.totalWeek;
     m.exit = { storyline: 'rival', since: state.totalWeek, returnDue: null, beat: 0 };
     defect(state, m);
+    if (GG.world && GG.world.syncDriver) GG.world.syncDriver(state);
     GG.emit('member:stage', { id: m.id, stage: 4 });
     GG.emit('member:quit', { id: m.id });
   }

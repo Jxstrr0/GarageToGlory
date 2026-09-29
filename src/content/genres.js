@@ -5,7 +5,12 @@
 //   groove: [ RULE ],  sync: max share of kick/snare hits on 16th off-beats before it feels jumpy,
 //   signature: PATTERN (scores Groove >= 80 here, clearly lower elsewhere), starter: PATTERN (first Write),
 //   parts: { verse: [BAR], chorus: [BAR], bridge: [BAR] }  (GG.songs.generate mixes these), BAR = [laneStr x 4],
-//   backing: { root: midi, styles: [[bpmFrom, style, label]], progressions: { verse|chorus|bridge: [[semitones x 4 bars]] }, riffs },
+//   backing: { root: midi, styles: [[bpmFrom, style, label]], progressions: { verse|chorus|bridge: [[semitones x 4 bars]] }, riffs,
+//              keys: [lo, hi] (semitones around root: each song gets its own key, seeded by its id), mode, scale (lead notes),
+//              roles: { verse|chorus|bridge: [role x 4 bars] } role = sparse | full | break (strip to the heavy parts) | solo,
+//              vox: { hits: [[bar, step, voc, semis above the bar's chord, gang?]] (chorus only), drop: [voc, semis] | null } },
+//   kit: { room, verb, level, six: 'ride'|'china', train (country rim/brush snare), kick, snare, hat, cymbal, toms, tomDec }
+//        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | yeah | yeehaw | ooh),
 //   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
 // RULE = { f: feature, lo, hi, soft, w, tip, loDK? (lo when the double-kick pedal is owned), any?: [RULE] (best of) }
 //   A feature inside [lo, hi] scores 1 and falls to 0 at `soft` beyond the range. Features (per bar, see 21_sim_songs):
@@ -63,8 +68,17 @@
           chorus: [[5, 3, 0, 0], [8, 7, 5, 3], [0, 8, 5, 7], [3, 5, 7, 5], [10, 8, 7, 0]],
           bridge: [[1, 1, 0, 0], [6, 5, 6, 7], [0, 1, 3, 1], [8, 8, 7, 6]]
         },
-        riffs: [[0, 0, 12, 0, 7, 0, 5, 0], [0, 1, 0, 3, 0, 5, 3, 1], [0, 12, 10, 7, 0, 5, 7, 8], [0, 0, 3, 0, 5, 0, 6, 5]]
+        riffs: [[0, 0, 12, 0, 7, 0, 5, 0], [0, 1, 0, 3, 0, 5, 3, 1], [0, 12, 10, 7, 0, 5, 7, 8], [0, 0, 3, 0, 5, 0, 6, 5]],
+        keys: [-2, 5], mode: 'minor', scale: [0, 1, 3, 5, 7, 8, 10],
+        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
+        vox: { hits: [[0, 0, 'shout', 12], [2, 0, 'shout', 12]], drop: ['growl', 12] }
       },
+      // Tight, clicky kick and a high, sharp snare: built for double-kick runs. China on lane 6.
+      kit: { room: 'room', verb: 0.3, level: 1, six: 'china',
+        kick: { f0: 190, f1: 55, glide: 0.04, dec: 0.26, body: 1, click: 0.75, clickHp: 3800, clickLen: 0.012 },
+        snare: { f0: 290, f1: 220, body: 0.5, bodyDec: 0.08, noise: 0.75, hp: 2400, dec: 0.15 },
+        hat: { hp: 8800, dec: 0.045, lv: 0.38 }, cymbal: { hp: 8500, f1: 5000, dec: 1.2, lv: 0.4 },
+        toms: [260, 205, 160], tomDec: 0.3 },
       reactions: { great: 'Neck-snapping.', good: 'Heavy enough.', meh: 'Needs more heavy.', bad: 'That is a polka.' }
     },
 
@@ -103,7 +117,15 @@
       },
       backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths']],
         progressions: { verse: [[0, 5, 7, 5], [0, 0, 5, 7], [0, 3, 5, 7]], chorus: [[5, 7, 0, 0], [3, 5, 7, 7], [7, 5, 0, 0]], bridge: [[5, 5, 7, 7], [3, 3, 5, 7]] },
-        riffs: [[0, 0, 0, 0, 7, 7, 5, 5]] },
+        riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
+        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'full', 'full'] },
+        vox: { hits: [[1, 0, 'hey', 12, true], [3, 0, 'hey', 12, true], [3, 8, 'hey', 12, true]], drop: ['shout', 12] } },
+      // Loose, trashy and bright: sloshy hats, a ringy snare, a china that sounds like a garbage-can lid.
+      kit: { room: 'room', verb: 0.45, level: 1, six: 'china',
+        kick: { f0: 150, f1: 48, glide: 0.08, dec: 0.36, body: 0.95, click: 0.35, clickHp: 2400 },
+        snare: { f0: 215, f1: 165, body: 0.45, bodyDec: 0.12, noise: 0.9, hp: 1000, dec: 0.27 },
+        hat: { hp: 6200, dec: 0.1, lv: 0.36 }, cymbal: { hp: 5200, f1: 3200, dec: 1.6, lv: 0.44 },
+        toms: [215, 170, 130], tomDec: 0.36 },
       reactions: { great: 'Riot-grade.', good: 'Snotty enough.', meh: 'Too polite.', bad: 'Your mom likes this.' }
     },
 
@@ -143,7 +165,15 @@
       },
       backing: { root: 45, styles: [[0, 'rock', 'Big open chords']],
         progressions: { verse: [[0, 0, 5, 7], [0, 10, 5, 0], [0, 7, 5, 5]], chorus: [[5, 7, 0, 0], [0, 5, 7, 5], [10, 5, 0, 7]], bridge: [[3, 5, 7, 7], [9, 7, 5, 7]] },
-        riffs: [[0, 0, 7, 0, 10, 0, 7, 5]] },
+        riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
+        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
+        vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null } },
+      // Big, roomy kick and snare with lots of reverb (the strip-mall unit is all concrete). Ride bell on lane 6.
+      kit: { room: 'hall', verb: 0.8, level: 1, six: 'ride',
+        kick: { f0: 135, f1: 44, glide: 0.1, dec: 0.55, body: 1, click: 0.22, clickHp: 2000 },
+        snare: { f0: 195, f1: 150, body: 0.6, bodyDec: 0.16, noise: 0.7, hp: 1200, dec: 0.32 },
+        hat: { hp: 7400, dec: 0.06, lv: 0.38 }, cymbal: { hp: 7800, f1: 4200, dec: 1.9, lv: 0.42 },
+        toms: [190, 145, 105], tomDec: 0.45 },
       reactions: { great: 'Stadium-sized.', good: 'Solid.', meh: 'A bit wobbly.', bad: 'Where is the backbeat?' }
     },
 
@@ -182,7 +212,15 @@
       },
       backing: { root: 43, styles: [[0, 'boomchick', 'Boom-chick']],
         progressions: { verse: [[0, 0, 5, 7], [0, 5, 0, 7], [0, 7, 5, 0]], chorus: [[5, 0, 7, 0], [5, 5, 0, 7], [0, 5, 7, 7]], bridge: [[9, 5, 7, 7], [2, 7, 0, 0]] },
-        riffs: [[0, 0, 7, 0, 5, 0, 7, 0]] },
+        riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
+        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
+        vox: { hits: [[0, 0, 'yeehaw', 19], [2, 0, 'ooh', 16]], drop: null } },
+      // Soft and dry: rim clicks on the train beat's backbeats, brushes on the rest (settings.brushes, default on).
+      kit: { room: 'dry', verb: 0.2, level: 0.8, six: 'ride', train: true,
+        kick: { f0: 115, f1: 52, glide: 0.08, dec: 0.28, body: 0.8, click: 0.06, clickHp: 1800 },
+        snare: { f0: 200, f1: 170, body: 0.35, bodyDec: 0.08, noise: 0.45, hp: 1800, dec: 0.16 },
+        hat: { hp: 7200, dec: 0.04, lv: 0.28 }, cymbal: { hp: 7600, f1: 4800, dec: 1.0, lv: 0.3 },
+        toms: [175, 145, 118], tomDec: 0.3 },
       reactions: { great: 'Boot-scootin’.', good: 'Two-steppable.', meh: 'Lost the train.', bad: 'Derailed.' }
     }
   };

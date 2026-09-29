@@ -208,6 +208,7 @@
     },
     book: function (state, venueId, d) {     // books this weekend unless a gig is already booked
       if (state.gig || !GG.gig || (GG.world && GG.world.isBanned(state, venueId))) return;   // banned: they won't have you
+      if (GG.calendar && !GG.calendar.venueOpen(state, GG.gig.venue(venueId))) return;   // v0.6.1: closed this week (Remembrance Day)
       var g = GG.gig.makeGig(state, venueId, 'card');
       if (g && GG.world) GG.world.decorate(state, g);
       if (g) { state.gig = g; state.offer = null; d.book = venueId; }
@@ -460,7 +461,8 @@
       weekStart: null, yearStart: null, ended: false,
       // v0.3 (26_sim_world): the gig board, venue rep + banned wall, the van, this week's trip, a live gig in progress
       listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
-      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null,
+      van: GG.world ? GG.world.defaultVan({ bandId: bandId }) : null, trip: null, liveGig: null,
+      weather: null,   // v0.6.1 (28_sim_calendar): this week's weather { week, kind, temp }, rolled on Mondays
       // v0.4 (27_sim_drama): pay the band, fill-ins, the recruit ad, originals who joined your rival
       payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: [],
       // v0.5 (24_sim_labels): eras, labels, the studio, records, awards, the trophy wall
@@ -476,6 +478,7 @@
     snapshotYear(state);
     if (GG.gig) state.gig = GG.gig.makeGig(state, 'buddys_house_party', 'forced');
     if (GG.world && state.gig) GG.world.decorate(state, state.gig);
+    if (GG.calendar) state.weather = GG.calendar.weatherAt(state);
     GG.emit('career:new', { state: state });
     return state;
   };
@@ -500,9 +503,11 @@
     var rng = GG.rngFor(state);
     endStaleChains(state);
     snapshotWeek(state);
+    if (GG.calendar) GG.calendar.monday(state);   // v0.6.1: this week's weather, season news, the driver, holiday afterglow
     var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : drawCard(state, rng);
+    var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : holiday || drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
