@@ -165,6 +165,8 @@
    GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; suspend() / resume()
    GG.ui.show(id, data) ; close() ; toast(text) ; refreshHud()
    GG.main.quickStart({ seed, slot }) -> state   (dev/tests: skips menus, lands in the garage)
+   Extras as built (v0.1): see plan/status.md "APIs" (render setViewInsets/pickAt/defineScene/buildCharacter,
+   gig simulate/applyResult, ui toolkit, main routing).
    Every module: GG.registerDebug('<module>', fn) ; GG.debug() returns all.
   ====================================================================== */
 })(window.GG);

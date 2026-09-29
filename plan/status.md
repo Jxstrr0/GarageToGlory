@@ -3,7 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.1.0.0 "Garage"** (in progress)
+- Current: **0.1.0.0 "Garage"** (merged to main 2026-09-29)
+- Next: **0.2.0 "Sequencer"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -47,8 +48,43 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Tests: `node tests/run.js` (all node tests). Playwright: `timeout 500 node tests/pw_flow.js` with `META_ONLY=<section>`; helper `tests/_pw.js` routes three.js to `tests/.cache/` (gitignored) and runs at 390×844.
 - Balance: `node tools/balance.js`.
 
-## APIs
-See `src/02_contracts.js` (state, content schemas, events, commands). Filled in as modules land.
+## What's in v0.1.0 "Garage"
+- Title → slot → genre (Metal playable; Punk/Rock/Country locked "v0.9") → band intro → basic creator (name, nickname,
+  6 presets) → 5-panel cold open → the 3D garage (tap-to-walk, 7 labelled hotspots, bandmates with idles/moods,
+  seasonal yard, Marcel's cape from `flags.cape`).
+- Week loop: Monday card (50 cards incl. forced `lord_abyssus` + 6-card Cape Saga; 13 gambles) → whiteboard (3 blocks,
+  6 activities; offers accept/decline) → results (block lines + auto-resolved gig) → wrap (deltas, milestones, moods,
+  group chat, parents' loan + guilt) → autosave (auto + career slot). Year rollover at 24 weeks; career ends at 240.
+- Laptop (chat / band / money), ☰ menu (save slots, save code backup/restore, sound, quit). Synth sfx.
+- Balance (5 seeds, year 1): avg bot fund min $140 end $531, 253 fans, 0.2 loans; good bot 458 fans, 0 loans.
+
+## APIs (full shapes in `src/02_contracts.js`)
+- `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
+  pickLine, contentLines, botWeek, botOffer`. startWeek/runWeek/endWeek are double-call safe.
+- `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
+  → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
+  performance, gradeFor, payFor`.
+- `GG.songs`: `writePlaceholder, best, polish, addStarter, score` (songs carry `pattern: null` until v0.2).
+- `GG.save`: `write, read, readRecord, list, remove, autosave, toCode, fromCode, migrate, storageOk, settings,
+  saveSettings, init, KEYS, compress/decompress`. Keys `gg.v1.slot.<auto|1|2|3>`, `gg.v1.settings`.
+- `GG.render`: `init, available, setScene, syncState, setPaused, goToHotspot, hotspotScreenPos, memberScreenPos,
+  setViewInsets({top,bottom}), pickAt, worldToScreen, playerScreenPos, isPaused, defineScene(name, factory),
+  buildCharacter(look, opts)`. ~26 draw calls. Later scenes (stage, van, red carpet) register via `defineScene`.
+- `GG.ui` (50_ui_core toolkit): `define, show, close, closeAll, replace, top, isOpen, hasFull, confirm (Promise), toast,
+  bubble, tabs, bar, deltaChips, avatar, el, btn, pick, rng` + week helpers. Screens are full / sheet / modal layers.
+- `GG.main`: `quickStart({seed,slot,name,openCard,bandId,presetId}), newCareer, load, loadState, enterGarage, route,
+  beginWeek, afterCard, wrapWeek, nextWeek, saveTo, quitToTitle, sync`. URL `?quick=1&seed=N`.
+- `GG.audio`: `unlock, sfx(name), setMuted, isMuted, toggleMuted, suspend, resume`.
+- Tests: `node tests/run.js` (content 21, save 7, sim_career 18, sim_gig 7) · `pw_flow.js` META_ONLY=flow|year|code|layout
+  · `pw_garage.js` META_ONLY=garage (48 checks).
+
 
 ## Back-burner
-- (empty)
+- Restoring a save code keeps the code's slot; its next autosave overwrites that slot without asking.
+- With the planner sheet open the room squeezes into a 150px band and hotspot labels overlap a little.
+- `debtToParents` is never repaid (v0.4 parents' loan + guilt cards).
+- Once-only garage cards run out after ~1.5 years; later garage years lean on repeatables (eras/content in v0.5+).
+- Full-career save code ≈ 17.6k chars (could trim `history`).
+- Flags `mooseMuse` and `babaMad` are set by cards but unused yet (hooks for the moose album chain / baba storyline).
+- Week-one teaching is one in-character toast; the full guided tutorial is v1.0.
+- Marcel's mirror has no reflection.

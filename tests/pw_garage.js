@@ -71,7 +71,7 @@ const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
       GG.on('hotspot', p => window.__ev.push({ t: 'hotspot', v: p && p.action }));
       GG.on('member:tap', p => window.__ev.push({ t: 'member', v: p && p.id }));
       if (GG.main && typeof GG.main.quickStart === 'function') {
-        const st = GG.main.quickStart({ seed: 12345, slot: 'auto' });
+        const st = GG.main.quickStart({ seed: 12345, slot: '1', openCard: false });
         window.__st = st || GG.state;
         if (!GG.render.available) GG.render.init(document.getElementById('scene'));
         GG.render.setScene('garage'); GG.render.syncState(window.__st);
@@ -118,7 +118,10 @@ const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
     const d2 = await dbg(page);
     const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
     c.ok(d2.walking && d2.target && dist(d2.target, tgt) < 0.35, 'floor tap sets a walk target near the tap (' + JSON.stringify(d2.target) + ')');
-    c.ok(dist(d2.player, tgt) < dist(p0, tgt) - 0.1, 'player moves toward the target');
+    // Software GL can run at a few fps under load: poll (up to 4 s) instead of trusting one fixed sleep.
+    let dw = d2;
+    for (let i = 0; i < 20 && !(dist(dw.player, tgt) < dist(p0, tgt) - 0.1); i++) { await sleep(200); dw = await dbg(page); }
+    c.ok(dist(dw.player, tgt) < dist(p0, tgt) - 0.1, 'player moves toward the target ' + JSON.stringify([p0, dw.player, tgt, dw.frames]));
     await page.waitForFunction(() => !GG.debug('render').walking, null, { timeout: 6000 }).catch(() => {});
     const d3 = await dbg(page);
     c.ok(!d3.walking && dist(d3.player, tgt) < 0.4, 'player arrives (' + JSON.stringify(d3.player) + ')');
