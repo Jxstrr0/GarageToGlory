@@ -52,6 +52,10 @@ async function gig() {
       GG.main.quickStart({ seed: 5150, openCard: false });
       const s = GG.state; s.card = null; s.phase = 'plan';
       for (let i = 0; i < 3; i++) GG.songs.jam(s, GG.RNG(40 + i));
+      s.songs.forEach(x => ['verse', 'chorus', 'bridge'].forEach(n => { const sec = x.pattern.sections[n];   // v0.6.2: 4-note downbeats
+        for (let l = 0; l < Math.min(4, sec.length); l++) sec[l] = 'x' + sec[l].slice(1); }));
+      window.__ah = []; const h0 = GG.audio.hit;
+      GG.audio.hit = (l, w) => { if (w != null) window.__ah.push(w - GG.audio.context().currentTime); return h0(l, w); };
       s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
       window.__songs = []; GG.on('gig:song', p => window.__songs.push(p.index));
       window.__done = null; GG.ui.gigAutoplay = false;
@@ -95,6 +99,9 @@ async function gig() {
     const st1 = (await dbg(page, 'gigui')).stats;
     c.ok(st1 && st1.perfect + st1.good >= 3, 'session counted the hits ' + JSON.stringify(st1));
     await page.waitForTimeout(700);
+    const au = await page.evaluate(() => ({ auto: GG.debug('gigui').auto, played: GG.debug('gigui').autoPlayed, lead: window.__ah.slice(0, 20) }));
+    c.ok(au.auto > 0 && au.played > 0, 'two-thumb auto notes play themselves ' + JSON.stringify(au));
+    c.ok(au.lead.length > 0 && au.lead.filter(x => x > -0.01).length >= au.lead.length * 0.6 && au.lead.every(x => x < 0.35), 'auto notes are scheduled ahead on the audio clock (headless clock is bursty) ' + au.lead.map(x => x.toFixed(3)));
     const meter = await page.evaluate(() => ({ w: document.querySelector('.gig-crowd .bar > i').style.width, lv: document.querySelector('.gig-crowd .lv').textContent,
       px: (() => { const cv = document.querySelector('[data-testid="gig-highway"]'), d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
         let lit = 0; for (let i = 0; i < d.length; i += 4 * 97) if (d[i] + d[i + 1] + d[i + 2] > 120) lit++; return lit; })() }));

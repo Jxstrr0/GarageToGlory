@@ -1,10 +1,14 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|audio, comma-separated; default both). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
 //           → laptop catalog lists it and opens its pattern read-only; kit sketch pad queues a song; in-page
 //           GG.songs.rate equals the node result for the same fixtures; layout audit + screenshot tests/.cache/seq.png
 //           + v0.6.1 metronome toggle (♩, settings.metronome, clicks while looping).
+//           v0.6.2: the first Write opens the guided flow; "Advanced ⚙" jumps to the grid and the next Write remembers it.
+//   guided: v0.6.2 step-by-step Write: verse preset (+ pedal presets locked) + "More metal" shows the meter change →
+//           chorus (contrast hint, "Make it catchier") → Back keeps the verse → bridge → tempo slider + label → song order
+//           → name (reroll, type your own) → Save → the song lands with exactly those parts; layout audit on every screen.
 //   audio : OfflineAudioContext render of every lane voice and 2 bars of every backing style: non-silent, peak < 1.0,
 //           no NaN; a fast song stays within the 12-voice cap. v0.6.1: every genre's kit (all lanes + country rim/brush)
 //           and full band (verse/chorus/bridge) render clean with their own parts and vocal hits; vocal hits on whole
@@ -46,6 +50,87 @@ function audit(page) {
   });
 }
 
+async function guided() {
+  const c = checker('guided');
+  const { page, errors, close } = await open();
+  const ev = (f, a) => page.evaluate(f, a);
+  const secOf = name => page.evaluate(n => JSON.stringify(GG.ui.get('seq').data.pat.sections[n]), name);
+  const presetBar = id => page.evaluate(i => JSON.stringify(GG.songs.presets(GG.state.genre, GG.state.gear).find(p => p.id === i).bar), id);
+  const step = () => page.evaluate(() => GG.debug('seq').step);
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await ev(() => GG.main.quickStart({ seed: 777 }));
+    await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
+    if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
+    await page.waitForFunction(() => GG.state.phase === 'plan' && GG.debug('ui').stack.length === 0);
+    await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
+    for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
+    await tap(page, 'btn-go'); await waitScreen(page, 'seq');
+    const v0 = await ev(() => ({ dbg: GG.debug('seq'), n: document.querySelectorAll('[data-testid^="guide-preset-"]').length,
+      locked: [...document.querySelectorAll('[data-testid^="guide-preset-"]:disabled')].map(b => b.dataset.testid),
+      coach: document.querySelector('[data-testid="guide-coach"]').textContent, back: document.querySelector('[data-testid="btn-guide-back"]').disabled,
+      step: document.querySelector('[data-testid="guide-step"]').textContent, catchy: !!document.querySelector('[data-testid="guide-mod-catchy"]') }));
+    c.ok(v0.dbg.guided && v0.dbg.step === 'verse' && /Step 1 of 6/.test(v0.step), 'guided flow opens on the verse ' + v0.step);
+    c.ok(v0.n >= 5 && v0.locked.join() === 'guide-preset-gallop,guide-preset-dkrun', 'metal presets; pedal beats locked without a double kick ' + v0.locked);
+    c.ok(/^\S.*: \S/.test(v0.coach) && v0.back && !v0.catchy, 'a bandmate coach line; Back off on step 1; "catchier" is a chorus tweak: ' + v0.coach);
+    c.ok((await audit(page)).length === 0, 'verse screen layout ' + (await audit(page)).join('; '));
+    await tap(page, 'guide-preset-thrash');
+    c.ok(await secOf('verse') === await presetBar('thrash') && await ev(() => !!document.querySelector('[data-testid="guide-preset-thrash"].on')), 'picking a preset sets the verse');
+    const g1 = (await meters(page))[0];
+    await tap(page, 'guide-mod-more');
+    const ch = await ev(() => document.querySelector('[data-testid="guide-change"]').textContent);
+    const g2 = (await meters(page))[0];
+    c.ok(/More metal/.test(ch) && /Groove \d+ → \d+/.test(ch) && /Hook/.test(ch) && /Difficulty/.test(ch) && g2 > g1, '"More metal" shows the Groove/Hook/Difficulty change ' + g1 + '→' + g2 + ' ' + ch);
+    const verse = await secOf('verse');
+    c.ok(verse !== await presetBar('thrash'), 'the tweak changed the verse');
+    await tap(page, 'btn-guide-play');
+    await page.waitForFunction(() => GG.debug('seq').playing === 'loop' && GG.debug('audio').playing, null, { timeout: 5000 });
+    await tap(page, 'btn-guide-play');
+    c.ok(await ev(() => !GG.debug('seq').playing), 'Play previews the verse loop, tap again to stop');
+    await tap(page, 'btn-guide-next');
+    const cs = await ev(() => ({ hint: document.querySelector('[data-testid="guide-hint"]').textContent, catchy: !!document.querySelector('[data-testid="guide-mod-catchy"]') }));
+    c.ok(await step() === 'chorus' && /different from the verse/.test(cs.hint) && cs.catchy, 'chorus: contrast hint + "Make it catchier" ' + cs.hint);
+    await tap(page, 'guide-preset-headbanger');
+    await tap(page, 'guide-mod-catchy');
+    const chorus = await secOf('chorus');
+    await tap(page, 'btn-guide-back');
+    c.ok(await step() === 'verse' && await secOf('verse') === verse, 'Back returns to the verse, tweak kept');
+    await tap(page, 'btn-guide-next'); await tap(page, 'btn-guide-next');
+    c.ok(await step() === 'bridge' && await secOf('chorus') === chorus, 'Next, Next: bridge (chorus kept)');
+    await tap(page, 'guide-preset-blast');
+    await tap(page, 'btn-guide-next');
+    c.ok(await step() === 'tempo', 'tempo screen');
+    const setT = v => ev(v => { const r = document.querySelector('[data-testid="guide-tempo"]'); r.value = v; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change'));
+      return { bpm: GG.ui.get('seq').data.pat.bpm, label: document.querySelector('[data-testid="guide-tempo-label"]').textContent, num: document.querySelector('[data-testid="guide-bpm"]').textContent }; }, v);
+    const t1 = await setT(225), t2 = await setT(150);
+    c.ok(t1.bpm === 225 && t1.label === 'Blast' && t2.bpm === 150 && t2.label === 'Mosh' && t2.num === '150', 'tempo slider + plain label ' + JSON.stringify([t1, t2]));
+    c.ok((await audit(page)).length === 0, 'tempo screen layout ' + (await audit(page)).join('; '));
+    await tap(page, 'btn-guide-next');
+    await tap(page, 'guide-order-epic');
+    c.ok(await step() === 'order' && await ev(() => GG.songs.arrangementId(GG.ui.get('seq').data.pat)) === 'epic', 'song order: Epic');
+    c.ok((await audit(page)).length === 0, 'order screen layout ' + (await audit(page)).join('; '));
+    await tap(page, 'btn-guide-next');
+    const n0 = await ev(() => GG.debug('seq').title);
+    await tap(page, 'btn-guide-reroll');
+    const n1 = await ev(() => ({ t: GG.debug('seq').title, shown: document.querySelector('[data-testid="guide-title"]').textContent }));
+    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls a French title ' + n0 + ' → ' + n1.t);
+    await page.locator(tid('guide-title-input')).fill('Le Test Guidé');
+    c.ok(await ev(() => GG.debug('seq').title) === 'Le Test Guidé', 'type your own title');
+    c.ok((await audit(page)).length === 0, 'name screen layout ' + (await audit(page)).join('; '));
+    await tap(page, 'btn-guide-save');
+    await waitScreen(page, 'results');
+    const last = await ev(() => GG.state.songs[GG.state.songs.length - 1]);
+    c.ok(last.title === 'Le Test Guidé' && !last.auto && last.pattern.bpm === 150 && GG_arr(last) === 'epic', 'the song lands: title, tempo, order');
+    c.ok(JSON.stringify(last.pattern.sections.verse) === verse && JSON.stringify(last.pattern.sections.chorus) === chorus
+      && JSON.stringify(last.pattern.sections.bridge) === await presetBar('blast'), 'with exactly the picked + tweaked parts');
+    c.ok(await ev(() => GG.prefs.get().songwriterMode) === 'guided', 'guided stays the preference');
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'guided threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+function GG_arr(song) { return song.pattern.arrangement.join(',') === 'verse,verse,chorus,verse,chorus,bridge,bridge,chorus,chorus' ? 'epic' : song.pattern.arrangement.join(','); }
+
 async function seq() {
   const c = checker('seq');
   const { page, errors, close } = await open();
@@ -59,6 +144,11 @@ async function seq() {
     for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
     await tap(page, 'btn-go');
     await waitScreen(page, 'seq');
+    const g0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), mode: GG.prefs.get().songwriterMode }));
+    c.ok(g0.dbg.guided && g0.dbg.step === 'verse' && g0.mode === 'guided', 'v0.6.2: a Write block opens the guided flow by default');
+    await tap(page, 'btn-guide-advanced');
+    c.ok(await page.evaluate(() => !GG.debug('seq').guided && GG.prefs.get().songwriterMode === 'advanced' && !!document.querySelector('[data-testid="cell-kick-0"]')),
+      'Advanced jumps to the full grid and the choice is remembered');
     const d0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), phase: GG.state.phase, starter: JSON.stringify(GG.songs.starter(GG.state.genre)),
       pat: JSON.stringify(GG.ui.get('seq').data.pat), sub: document.querySelector('[data-testid="seq-title"]').textContent,
       tip: document.querySelector('[data-testid="seq-tip"]').textContent, render: GG.debug('render') && GG.debug('render').paused }));
@@ -181,6 +271,7 @@ async function seq() {
     await tap(page, 'btn-go'); await waitScreen(page, 'seq');
     const w1 = await page.evaluate(() => ({ sub: document.querySelector('[data-testid="seq-title"]').textContent, title: GG.debug('seq').title }));
     c.ok(/1 of 2/.test(w1.sub) && /sketch/i.test(w1.sub) && w1.title === q.title, 'Write block 1 of 2 opens the queued sketch');
+    c.ok(await page.evaluate(() => !GG.debug('seq').guided && !!document.querySelector('[data-testid="cell-kick-0"]')), 'the next Write remembers Advanced');
     await tap(page, 'btn-seq-save');
     await page.waitForFunction(() => /2 of 2/.test(document.querySelector('[data-testid="seq-title"]').textContent));
     await tap(page, 'btn-seq-jam');
@@ -370,5 +461,6 @@ async function audio() {
 
 (async () => {
   if (want('seq')) await seq();
+  if (want('seq') || want('guided')) await guided();
   if (want('audio')) await audio();
 })();

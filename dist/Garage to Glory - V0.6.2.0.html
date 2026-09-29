@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V0.6.1.0</title>
+<title>Garage to Glory - V0.6.2.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -353,6 +353,39 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-arr .arr.on { border-color: var(--amber); box-shadow: inset 0 -2px 0 var(--amber); background: var(--panel2); }
 .seq-arr .arr .seqs { font: 800 10px var(--font); color: var(--dim); letter-spacing: .08em; }
 .seq-arr .arr:disabled { opacity: .4; }
+/* v0.6.2 guided songwriter */
+.guide-top { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.guide-prog { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.guide-prog .caps { font-size: 11px; color: var(--amber); }
+.guide-dots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.guide-dots i { height: 5px; border-radius: 3px; background: #26304a; } .guide-dots i.done { background: #7a6a45; } .guide-dots i.on { background: var(--amber); }
+.btn.guide-adv { flex: 0 0 auto; min-height: 44px; padding: 0 12px; font-size: 13px; }
+.guide-coach { flex: 0 0 auto; font-size: 13px; line-height: 1.35; color: var(--dim); background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.guide-coach b { color: var(--text); }
+.guide-main { gap: 8px; padding-bottom: 8px; }
+.guide-hint { font-size: 13px; color: var(--text); line-height: 1.35; }
+.guide-presets, .guide-orders { display: flex; flex-direction: column; gap: 8px; }
+.guide-preset { min-height: 56px; width: 100%; border-radius: 14px; border: 1px solid var(--line); background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
+  align-items: stretch; gap: 3px; padding: 9px 14px; text-align: left; cursor: pointer; font: inherit; }
+.guide-preset.on { border-color: var(--amber); background: var(--panel2); box-shadow: inset 3px 0 0 var(--amber); }
+.guide-preset:disabled { opacity: .5; cursor: default; }
+.gp-top { display: flex; align-items: center; gap: 8px; } .gp-top b { flex: 1 1 auto; font-size: 16px; }
+.gp-tag { flex: 0 0 auto; font: 800 10px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
+.gp-tag.on { color: #1d1204; background: var(--amber); border-color: var(--amber); }
+.gp-desc { font-size: 12.5px; line-height: 1.3; color: var(--dim); }
+.gp-seq { font: 800 11px var(--font); letter-spacing: .04em; color: var(--text); }
+.guide-mods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.guide-mod { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 800 14px var(--font); padding: 0 8px; cursor: pointer; }
+.guide-change { font-size: 12.5px; color: var(--dim); background: var(--bg2); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.guide-change b { color: var(--text); } .chip.gd { color: #a9c4ff; background: rgba(79, 140, 255, .12); border-color: rgba(79, 140, 255, .35); }
+.guide-tempo { text-align: center; padding: 14px 0 4px; }
+.guide-bignum b { font: 900 56px/1 var(--display); color: var(--text); } .guide-bignum span { font: 800 16px var(--font); color: var(--dim); }
+.guide-tlabel { font: 900 26px var(--display); color: var(--amber); margin: 6px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
+.guide-range { height: 52px; margin: 0; flex: 0 0 auto; }
+.guide-main .seq-name { flex: 0 0 auto; min-height: 48px; }
+.guide-name { text-align: center; padding: 18px 8px 10px; background: var(--bg2); border-radius: 14px; }
+.guide-name .fr { font-weight: 800; font-style: italic; font-size: 24px; line-height: 1.2; margin: 6px 0 4px; overflow-wrap: anywhere; }
+.full.seq .full-foot .btn:disabled { opacity: .45; }
 
 /* ---- 2D fallback garage (no WebGL / three.js) ---- */
 .fallback { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #1b2236 0%, #151b2b 58%, #2a2a2e 58%, #1d1d22 100%); }
@@ -687,14 +720,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.6.1.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.6.2.0</div></div>
 </div>
 <script>/* 01_ns.js */
 // 01_ns.js: window.GG namespace, event bus, seeded RNG, small utils, debug registry.
 // Loaded first. Works in the browser and in node (tests set window = globalThis).
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '0.6.1.0';
+  GG.VERSION = '0.6.2.0';
   GG.content = GG.content || {};
 
   // ---- Event bus -------------------------------------------------------
@@ -4811,6 +4844,140 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* content/grooves.js */
+// content/grooves.js (v0.6.2): the songwriter's groove presets, one-tap modifiers, tempo labels and coach tips.
+// Shape: GG.content.grooves = { <genre>: {
+//   presets: [{ id, name, desc (one plain line), bar: [laneStr x 4..6] (kick, snare, hat, cymbal, toms?, ride?),
+//               signature?: true (scores Groove >= 70 in this genre), pedal?: true (needs the double-kick pedal) }],
+//   mods: [{ id, name, desc, sections?: [offered only on these], ops: [OP] }]   (GG.songs.modify applies them to one section, then sanitizes for the gear)
+//   tempo: [[bpmFrom, label]] (plain words for the Tempo step) } ,
+//   coach: { verse|chorus|bridge|tempo|order|name: [{ role (regex on member role), text }] } }
+// OP = { op: 'fill', lane, every, from? }  add a hit every `every` 16ths (from step `from`, default 0)
+//      { op: 'hits', lane, steps: [] }       add hits           { op: 'clear', lane, steps?: [] } remove (all if no steps)
+//      { op: 'thin', lane: name|'all', keep } keep only steps divisible by `keep`
+//      { op: 'mirror' }                        second half of the bar = the first half (catchy, steady)
+//      { op: 'bpm', by }                       nudges the whole song's tempo (clamped to the genre range)
+//      { op: 'pedal', lane: 'kick' }          kick on every 16th with a double-kick pedal, else every 8th
+// Lanes by name: kick snare hat cymbal toms ride. Patterns without the pedal lose back-to-back kicks (GG.songs.sanitize).
+(function (GG) {
+  var E = '................';
+  var CATCHY = { id: 'catchy', name: 'Make it catchier', sections: ['chorus'], desc: 'Crash on the one, and the second half echoes the first.',
+    ops: [{ op: 'mirror' }, { op: 'hits', lane: 'cymbal', steps: [0] }] };
+  var SIMPLER = { id: 'simpler', name: 'Simpler', desc: 'Only the 8th notes survive, hats on the beat. Easier on the hands.',
+    ops: [{ op: 'thin', lane: 'all', keep: 2 }, { op: 'thin', lane: 'hat', keep: 4 }, { op: 'clear', lane: 'toms' }] };
+  GG.content.grooves = {
+    metal: {
+      presets: [
+        { id: 'headbanger', name: 'Headbanger', signature: true, desc: 'Kick on every 8th, snare on 2 and 4. The neck-snapper.',
+          bar: ['x.x.x.x.x.x.x.x.', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'blast', name: 'Blast beat', desc: 'Kick, snare and crash on every 8th. The neighbours will call someone.',
+          bar: ['x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', E, 'x.x.x.x.x.x.x.x.'] },
+        { id: 'thrash', name: 'Thrash skank', desc: 'Kick on the beat, snare on the "and". Polka, but angry.',
+          bar: ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'doom', name: 'Half-time doom', desc: 'One snare a bar, big crashes. Play it slow, like a Regina February.',
+          bar: ['x.....x.x.......', '........x.......', 'x...x...x...x...', 'x.......x.......'] },
+        { id: 'gallop', name: 'Gallop', pedal: true, desc: 'Da-ga-da, da-ga-da. Horses, but metal.',
+          bar: ['x.xxx.xxx.xxx.xx', '....x.......x...', E, 'x...x...x...x...'] },
+        { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. Your calves file a complaint.',
+          bar: ['xxxxxxxxxxxxxxxx', '....x.......x...', E, 'x.......x.......'] }
+      ],
+      mods: [
+        { id: 'more', name: 'More metal', desc: 'Busier kick, a crash on the one, hats on every 8th.',
+          ops: [{ op: 'pedal', lane: 'kick' }, { op: 'hits', lane: 'cymbal', steps: [0] }, { op: 'fill', lane: 'hat', every: 2 }] },
+        CATCHY, SIMPLER,
+        { id: 'busier', name: 'Busier', desc: 'Hats on every 16th and a tom roll to finish.',
+          ops: [{ op: 'fill', lane: 'hat', every: 1 }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }] }
+      ],
+      tempo: [[0, 'Doom crawl'], [95, 'Headbang'], [135, 'Mosh'], [175, 'Thrash'], [205, 'Blast']]
+    },
+    punk: {
+      presets: [
+        { id: 'skank', name: 'Punk skank', signature: true, desc: 'Kick on the beat, snare on the "and", hats flat out.',
+          bar: ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'dbeat', name: 'D-beat', desc: 'Boom, crack, ba-boom. Every crust punk in Moose Jaw knows it.',
+          bar: ['x.....x.x.....x.', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'floor', name: 'Four on the floor', desc: 'Kick on every beat, open hats in between. Dance, you cowards.',
+          bar: ['x...x...x...x...', '....x.......x...', '..x...x...x...x.', 'x...............'] },
+        { id: 'buzzsaw', name: 'Buzzsaw 8ths', desc: 'Kick on every 8th under a plain backbeat. One speed: yes.',
+          bar: ['x.x.x.x.x.x.x.x.', '....x.......x...', 'x.x.x.x.x.x.x.x.', E] },
+        { id: 'hardcore', name: 'Hardcore two-step', desc: 'Stop-start snare hits for the circle pit.',
+          bar: ['x.x...x.x.x...x.', '....x.x.....x.x.', 'x...x...x...x...', 'x...............'] }
+      ],
+      mods: [
+        { id: 'more', name: 'More punk', desc: 'Faster, snare on the "and", straight 8th hats.',
+          ops: [{ op: 'bpm', by: 15 }, { op: 'hits', lane: 'snare', steps: [2, 6, 10, 14] }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'thin', lane: 'hat', keep: 2 }] },
+        CATCHY, SIMPLER,
+        { id: 'busier', name: 'Busier', desc: 'Kick on every 8th and a crash to kick it off.',
+          ops: [{ op: 'fill', lane: 'kick', every: 2 }, { op: 'hits', lane: 'cymbal', steps: [0, 8] }] }
+      ],
+      tempo: [[0, 'Pogo'], [170, 'Mosh'], [195, 'Circle pit'], [215, 'Speed of sound']]
+    },
+    rock: {
+      presets: [
+        { id: 'backbeat', name: 'Rock backbeat', signature: true, desc: 'Kick on 1 and 3, snare on 2 and 4, 8th hats. The classic.',
+          bar: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'halftime', name: 'Half-time', desc: 'One big snare in the middle. Feels slow, sounds huge.',
+          bar: ['x.........x.....', '........x.......', 'x.x.x.x.x.x.x.x.', 'x...............'] },
+        { id: 'shuffle', name: 'Shuffle', desc: 'Swung hats, lazy and bluesy. Wear the good boots.',
+          bar: ['x.......x.......', '....x.......x...', 'x..xx..xx..xx..x', E] },
+        { id: 'floor', name: 'Four on the floor', desc: 'Kick on every beat, open hats on the "and".',
+          bar: ['x...x...x...x...', '....x.......x...', '..x...x...x...x.', 'x...............'] },
+        { id: 'stomp', name: 'Bleacher stomp', desc: 'Boom-boom-clap. The whole arena joins in, even the ushers.',
+          bar: ['x.x.....x.x.....', '....x.......x...', E, 'x...............'] }
+      ],
+      mods: [
+        { id: 'more', name: 'More rock', desc: 'Kick on 1 and 3, snare on 2 and 4, steady 8th hats.',
+          ops: [{ op: 'hits', lane: 'kick', steps: [0, 8] }, { op: 'thin', lane: 'snare', keep: 4 }, { op: 'hits', lane: 'snare', steps: [4, 12] },
+            { op: 'fill', lane: 'hat', every: 2 }, { op: 'thin', lane: 'hat', keep: 2 }] },
+        CATCHY, SIMPLER,
+        { id: 'busier', name: 'Busier', desc: 'Extra kicks on the "and" and a crash on the one.',
+          ops: [{ op: 'hits', lane: 'kick', steps: [6, 10] }, { op: 'hits', lane: 'cymbal', steps: [0] }, { op: 'fill', lane: 'hat', every: 2 }] }
+      ],
+      tempo: [[0, 'Slow burn'], [105, 'Head nod'], [125, 'Fist pump'], [145, 'Air guitar']]
+    },
+    country: {
+      presets: [
+        { id: 'train', name: 'Train beat', signature: true, desc: 'Snare on every 16th, kick on 1 and 3. Chugga-chugga.',
+          bar: ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', E] },
+        { id: 'twostep', name: 'Two-step', desc: 'Boom-chick, boom-chick. Grab a partner at the Legion.',
+          bar: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E] },
+        { id: 'waltz', name: 'Waltz feel', desc: 'Boom-chick-chick. A waltz squeezed into four, like a Stetson in an overhead bin.',
+          bar: ['x.......x.......', '....x.x.....x.x.', '....x.......x...', E] },
+        { id: 'brush', name: 'Brush shuffle', desc: 'Swung brushes on the snare. Sounds like a dusty gravel road.',
+          bar: ['x.......x.......', 'x..xx..xx..xx..x', '....x.......x...', E] },
+        { id: 'hoedown', name: 'Hoedown', desc: 'Kick on the beat, snare on the "and". Fiddles optional, joy mandatory.',
+          bar: ['x...x...x...x...', '..x...x...x...x.', E, E] }
+      ],
+      mods: [
+        { id: 'more', name: 'More twang', desc: 'The train beat: snare on every 16th, kick on 1 and 3, a chick on 2 and 4.',
+          ops: [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'thin', lane: 'kick', keep: 8 }, { op: 'hits', lane: 'kick', steps: [0, 8] },
+            { op: 'hits', lane: 'hat', steps: [4, 12] }, { op: 'clear', lane: 'cymbal' }] },
+        CATCHY,
+        { id: 'simpler', name: 'Simpler', desc: 'Only the 8th notes survive, hats on the beat. Easier on the wrists.', ops: SIMPLER.ops },
+        { id: 'busier', name: 'Busier', desc: 'Snare on every 8th and a hat chick on 2 and 4.',
+          ops: [{ op: 'fill', lane: 'snare', every: 2 }, { op: 'hits', lane: 'hat', steps: [4, 12] }] }
+      ],
+      tempo: [[0, 'Porch swing'], [85, 'Two-step'], [100, 'Line dance'], [115, 'Barn burner']]
+    },
+    // One line per screen from whoever fits (role regex on the active lineup; the first match speaks).
+    coach: {
+      verse: [{ role: 'guitar', text: "Start with the verse. Pick a beat that makes you nod, then we'll riff on top." },
+        { role: 'bass', text: "Verse first. Keep it steady and I'll lock in with the kick." }],
+      chorus: [{ role: 'vocals', text: 'The chorus should feel different from the verse. Bigger. Louder. More me.' },
+        { role: 'guitar', text: "Pick something that isn't the verse again. Contrast is the hook, eh." }],
+      bridge: [{ role: 'lead guitar|guitar|fiddle', text: "The bridge is my solo spot. Something wild, or something half-time. Surprise me." },
+        { role: 'bass', text: 'Bridge time. Change it up so the last chorus hits like a snowplough.' }],
+      tempo: [{ role: 'bass', text: "Tempo's the whole mood. Slide it and hit Play. Trust your neck." },
+        { role: 'guitar', text: "Faster is harder to play live. Just saying. My fingers have a union." }],
+      order: [{ role: 'vocals', text: 'Short is punchy, Epic is a journey. I have stamina for either. Probably.' },
+        { role: 'bass', text: 'Classic has a bridge. Crowds like a bridge. Engineers too.' }],
+      name: [{ role: 'vocals', text: 'I have titles. French ones. Nobody knows what they mean, including me.' },
+        { role: 'guitar', text: 'Name it something. Or let the singer do the French thing again.' }]
+    }
+  };
+})(window.GG);
+
+</script>
 <script>/* content/labels.js */
 // content/labels.js: v0.5 record labels, studios and producers (24_sim_labels.js reads the numbers; UI reads the words).
 //   GG.content.labels = { gopherwood|monolith|diy: { id, name, blurb, advance: [min, max] $, royalty (band share of each
@@ -7745,7 +7912,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //     -> { ok, offset (ms, tap minus click), n, spread } (pure) ; PROFILES ; GRAPHICS ; NOTE_SPEEDS ; CB_COLOURS.
 //   Settings keys (GG.save.settings()): gigDifficulty, noteSpeed, noFail, autoKick, audioProfile, calib { speaker|headphones:
 //     { audio, visual, at } }, calibSeen, lefty, colourblind, bigText, reducedFlash, cameraShake, graphics, skipVan,
-//     fastAnim (+ lane A's mix, metronome, brushes; muted).
+//     fastAnim, songwriterMode ('guided'|'advanced', v0.6.2) (+ lane A's mix, metronome, brushes; muted).
 //   GG.difficulty: LEVELS ; of(state) -> 'chill'|'normal'|'brutal' (missing = normal) ; mul(state, key) (default 1) ;
 //     add(state, key) (default 0) ; text(id) -> { name, blurb } ; migrate(state). Tunables economy.difficulty[level]:
 //     startFund, money (gig pay), hustle, upkeep, moodLoss, rivalSkill (+points), rivalMiss (their low-roll range),
@@ -7773,6 +7940,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (!C.GIG_DIFFICULTY || C.GIG_DIFFICULTY.indexOf(s.gigDifficulty) < 0) s.gigDifficulty = 'easy';
     ['noFail', 'autoKick', 'calibSeen', 'lefty', 'colourblind', 'bigText', 'reducedFlash', 'skipVan', 'fastAnim'].forEach(function (k) { s[k] = !!s[k]; });
     s.cameraShake = s.cameraShake !== false;
+    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2: the Write flow's step-by-step screens (default)
     return s;
   };
   P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };
@@ -9254,6 +9422,70 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     return out;
   };
 
+  /* ---- v0.6.2 songwriter: groove presets + one-tap modifiers (content/grooves.js) --------------------------- */
+  // grooves(genre) -> { presets, mods, tempo, coach } ; presets(genre, gear) -> [{ id, name, desc, signature, pedal,
+  // locked (needs the pedal you don't own), bar (sanitized for the gear) }] ; applyPreset(p, section, id, gear, genre) -> new
+  // PATTERN with that section set (genre default: the career's) ; modify(p, section, modId, gear, genre) -> { pattern, before, after } (ratings; pure,
+  // deterministic) ; tempoLabel(genre, bpm) -> 'Headbang'.. ; presetOf(p, section, genre, gear) -> preset id | null.
+  var LANE_IX = { kick: KICK, snare: SNARE, hat: HAT, cymbal: CYM, toms: TOMS, ride: RIDE };
+  songs.grooves = function (genre) { var G = GG.content.grooves || {}; return G[genre] || G.metal || { presets: [], mods: [], tempo: [] }; };
+  function presetBar(pr, g) {
+    var bar = padBar(pr.bar, g.lanes);
+    return songs.sanitize({ bpm: 120, lanes: g.lanes, sections: { verse: bar, chorus: bar, bridge: bar }, arrangement: ['verse'] }, g).sections.verse;
+  }
+  songs.presets = function (genre, gear) {
+    var g = gearOf(gear);
+    return songs.grooves(genre).presets.map(function (pr) {
+      return { id: pr.id, name: pr.name, desc: pr.desc, signature: !!pr.signature, pedal: !!pr.pedal, locked: !!pr.pedal && !g.doubleKick, bar: presetBar(pr, g) };
+    });
+  };
+  songs.applyPreset = function (p, section, id, gear, genre) {
+    var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), pr = null;
+    songs.grooves(genre || (GG.state && GG.state.genre) || 'metal').presets.forEach(function (x) { if (x.id === id) pr = x; });
+    if (pr && SECTIONS.indexOf(section) >= 0) out.sections[section] = padBar(presetBar(pr, g), out.lanes).slice(0, out.lanes);
+    return out;
+  };
+  songs.presetOf = function (p, section, genre, gear) {
+    var sec = p && p.sections && p.sections[section], hit = null;
+    if (!sec) return null;
+    songs.presets(genre, gear).forEach(function (pr) {
+      if (!hit && pr.bar.every(function (str, l) { return lane(sec, l) === str; })) hit = pr.id;
+    });
+    return hit;
+  };
+  function applyOp(bar, op, g, out, genre) {
+    var lanes = op.lane === 'all' ? bar.map(function (_, i) { return i; }) : [LANE_IX[op.lane]];
+    lanes.forEach(function (l) {
+      if (l == null || l >= bar.length) return;
+      var s = bar[l], i;
+      if (op.op === 'fill') { for (i = op.from || 0; i < STEPS; i += op.every) s = set(s, i, true); }
+      else if (op.op === 'pedal') { for (i = 0; i < STEPS; i += g.doubleKick ? 1 : 2) s = set(s, i, true); }
+      else if (op.op === 'hits') op.steps.forEach(function (i) { s = set(s, i, true); });
+      else if (op.op === 'clear') { if (op.steps) op.steps.forEach(function (i) { s = set(s, i, false); }); else s = BLANK; }
+      else if (op.op === 'thin') { for (i = 0; i < STEPS; i++) if (i % op.keep) s = set(s, i, false); }
+      bar[l] = s;
+    });
+    if (op.op === 'mirror') for (var l = 0; l < bar.length; l++) bar[l] = bar[l].slice(0, 8) + bar[l].slice(0, 8);
+    if (op.op === 'bpm') { var r = songs.genre(genre).tempo; out.bpm = U.clamp(5 * Math.round((out.bpm + op.by) / 5), r[0], r[1]); }
+  }
+  songs.modify = function (p, section, modId, gear, genre) {
+    var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), mod = null;
+    songs.grooves(genre).mods.forEach(function (m) { if (m.id === modId) mod = m; });
+    var before = songs.rate(out, genre, g);
+    if (mod && SECTIONS.indexOf(section) >= 0) {
+      var bar = out.sections[section].slice();
+      mod.ops.forEach(function (op) { applyOp(bar, op, g, out, genre); });
+      out.sections[section] = bar;
+      out = songs.sanitize(out, g);
+    }
+    return { pattern: out, before: before, after: songs.rate(out, genre, g) };
+  };
+  songs.tempoLabel = function (genre, bpm) {
+    var t = songs.grooves(genre).tempo || [], lab = '';
+    t.forEach(function (x) { if (bpm >= x[0]) lab = x[1]; });
+    return lab;
+  };
+
   GG.registerDebug('songs', function () {
     var s = GG.state; if (!s) return { songs: 0 };
     var top = songs.best(s, 3);
@@ -9274,7 +9506,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //                  songs:[titles], songIds, reactions:[{ who, text }], lines:[text], source, deltas }
 //   live extras: { live: true, tier, kind, accuracy, perfect, good, miss, maxCombo, songResults:[SONG_RESULT],
 //                  moments:[kind], setBonus: { opener, closer } }
-//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free }) ; setSize ; defaultSetlist ;
+//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free, difficulty, thumbs }) -> {notes, auto (v0.6.2 two-thumb drops), total..} ; setSize ; defaultSetlist ;
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -9458,6 +9690,27 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function active(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
 
   // Timing windows from drum skill (seconds, +/- around each note).
+  // v0.6.2 two-thumb rule (owner): on EVERY difficulty a moment asks for at most 2 notes; kick > snare > cymbal > toms >
+  // ride > hat win. The dropped hits become chart.auto notes: never judged, never a miss, not in total/accuracy, but the
+  // live gig still plays them (GG.audio.hit at their time) so the groove sounds whole. Hard/Expert = density + speed.
+  gig.THUMBS = 2;
+  gig.THUMB_PRIORITY = ['kick', 'snare', 'cymbal', 'toms', 'ride', 'hat'];
+  function twoThumbs(notes) {
+    var keep = [], auto = [], i = 0, pr = {};
+    gig.THUMB_PRIORITY.forEach(function (l, k) { pr[l] = k; });
+    while (i < notes.length) {
+      var j = i; while (j < notes.length && Math.abs(notes[j].t - notes[i].t) < 0.001) j++;
+      var m = notes.slice(i, j), judged = m.filter(function (n) { return !n.free; }), kept = 0;
+      judged.sort(function (a, b) { return (pr[a.lane] - pr[b.lane]) || (a.extra ? -1 : 0); });
+      judged.forEach(function (n) { if (kept < gig.THUMBS) { kept++; n.keep = 1; } });
+      m.forEach(function (n) {
+        if (n.free || n.keep) { delete n.keep; keep.push(n); }
+        else auto.push({ t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true });
+      });
+      i = j;
+    }
+    return { notes: keep, auto: auto };
+  }
   // Gig difficulty (v0.5.1 hotfix; Addendum C4 adds Expert + a settings screen). Charts are thinned by time, not by beat:
   // each lane keeps a hit only if it's at least laneGap seconds after that lane's last kept hit, any two kept moments are
   // at least anyGap apart, and a chord keeps at most `chord` notes (kick, then snare, win). Hard = the song exactly as
@@ -9465,11 +9718,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   gig.DIFFICULTIES = {
     easy: { window: 1.45, miss: 0.55, look: 1.6, chord: 2, anyGap: 0.24,
       laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
-    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
+    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 2, anyGap: 0.08,
       laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
-    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null },
+    hard: { window: 1, miss: 1, look: 1.15, chord: 2, anyGap: 0, laneGap: null },
     // v0.6.1 (Addendum C4): every hit as written, windows a fifth tighter, misses sting more, a faster highway.
-    expert: { window: 0.8, miss: 1.3, look: 1, chord: 6, anyGap: 0, laneGap: null }
+    expert: { window: 0.8, miss: 1.3, look: 1, chord: 2, anyGap: 0, laneGap: null }
   };
   // v0.6.1 assists (session opts): noFail = the crowd never sinks below `noFailFloor` (never hostile, no boos, no
   // flying drinks); autoKick = kick notes play themselves as Goods when they reach the line (kick taps are ignored).
@@ -9551,10 +9804,12 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       });
     }
     notes.sort(function (a, b) { return a.t - b.t || a.li - b.li; });
+    var tt = o.thumbs === false ? { notes: notes, auto: [] } : twoThumbs(notes);   // v0.6.2 two-thumb rule
+    notes = tt.notes;
     if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0; notes.forEach(function (n) { if (!n.free) total++; });
     return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
-      duration: GG.songs.seconds(p), notes: notes, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
+      duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
   };
 
   /* ---- Setlists ------------------------------------------------------------------------------------------ */
@@ -15064,10 +15319,12 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
   var previewPort = null;
-  A.hit = function (lane) {
+  // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
+  A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
     if (!previewPort) previewPort = makePort(rig);
     var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
+    if (when > t && when < t + 1) t = when;
     if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {
@@ -21947,6 +22204,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   view  : a catalog song from the laptop (read-only, Play).
 // v0.6.1: ♩ toggles the metronome click (settings.metronome, GG.audio.toggleMetronome); playback passes the song's id so
 // the generated band keeps one key per song.
+// v0.6.2 guided flow (write mode, settings.songwriterMode 'guided', the default): one thing per screen, Verse → Chorus →
+// Bridge (pick a groove preset from content/grooves.js, optional one-tap tweak) → Tempo → Song order → Name → Save, each
+// with Play / Back / Next and a bandmate's coach line. "Advanced" jumps to the full grid (and is remembered); the Song
+// tab's "Guided steps" goes back. The kit's sketch pad always opens the grid.
 // ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
@@ -21990,6 +22251,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     V.ability.style.left = U.clamp(ability, 0, 99) + '%';
     var tips = r.tips.slice();
     if (r.difficulty > ability + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
+    if (!V.tip) return r;
     ui.clear(V.tip);
     if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
     else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
@@ -22097,6 +22359,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }));
     var r = D.rating || rerate(D);
     var parts = [
+      D.mode === 'write' ? el('div.row.small.dim', [el('span.grow', 'Rather go one step at a time?'), btn('.btn.small', { testid: 'btn-seq-guided', onclick: function () {
+        stopPlay(D); D.guided = true; D.step = 'verse'; setMode('guided'); s.rerender();
+      } }, 'Guided steps')]) : null,
       el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
         : el('div.row', [
           el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let Marcel',
@@ -22162,7 +22427,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function restart(s, D) { var k = D.playing; if (k) startPlay(s, D, k); }
   function toggle(s, D, kind) { if (D.playing === kind) stopPlay(D); else startPlay(s, D, kind); }
   function playButtons(D) {
-    var V = D.view; if (!V || !V.loop) return;
+    var V = D.view; if (!V) return;
+    if (V.play) { V.play.textContent = D.playing ? '■ Stop' : '▶ Play'; V.play.classList.toggle('on', !!D.playing); return; }
+    if (!V.loop) return;
     var sec = D.tab === 'song' ? 'verse' : D.tab;
     V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop ' + sec;
     V.song.textContent = D.playing === 'song' ? '■ Stop' : '▶ Song';
@@ -22199,6 +22466,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      if (D.mode === 'write' && D.guided == null) D.guided = prefMode() === 'guided';
+      if (D.mode === 'write' && D.guided) { buildGuided(s, D); return; }
       var ro = D.mode === 'view', V = D.view = {};
       V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro, onclick: function () { if (!ro && !D.custom) { reroll(D); head(s, D); } } });
       var right = D.mode === 'write' ? btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () {
@@ -22242,6 +22511,126 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       (s.off || []).forEach(function (off) { off(); });
     }
   });
+
+  /* ---- v0.6.2 guided songwriter ---------------------------------------------------------------------------- */
+  var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'];
+  var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', tempo: 'Tempo', order: 'Song order', name: 'Name' };
+  var ORDER_BLURB = { short: 'Verse, chorus, twice. In and out before the fries get cold.',
+    classic: 'Adds a bridge: the solo spot. Crowds like a bridge.', epic: 'Double verses, double bridges. Pack a lunch.' };
+  function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
+  function setMode(m) { try { if (GG.prefs && prefMode() !== m) GG.prefs.set({ songwriterMode: m }); } catch (e) { /* storage off */ } }
+  // One line from whoever fits the screen (role match on the active lineup). (The first-ever Write's hint is about the grid.)
+  function coachFor(D, step) {
+    var lines = ((GG.content.grooves || {}).coach || {})[step] || [], state = st();
+    var act = state ? state.members.filter(function (m) { return m.status === 'active'; }) : [];
+    for (var k = 0; k < lines.length; k++) {
+      var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
+      for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ln.text };
+    }
+    return lines[0] ? { who: null, text: lines[0].text } : null;
+  }
+  function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }
+  function chip(label, a, b, neutral) {
+    var d = b - a;
+    return el('span.chip' + (!d ? '' : neutral ? '.gd' : d > 0 ? '.up' : '.down'), label + ' ' + a + ' → ' + b);
+  }
+  function sectionStep(s, D, name) {
+    var list = GG.songs.presets(genre(), gear()), cur = GG.songs.presetOf(D.pat, name, genre(), gear());
+    var verseP = name === 'verse' ? null : GG.songs.presetOf(D.pat, 'verse', genre(), gear());
+    var hint = name === 'chorus' ? 'Pick something different from the verse' + (verseP ? ' (' + presetName(verseP) + ')' : '') + ': the contrast is the hook.'
+      : name === 'bridge' ? 'The bridge is the detour: go somewhere new, then the last chorus hits harder.'
+      : 'Pick a beat to start from. Tap ▶ Play to hear it.';
+    var cards = list.map(function (pr) {
+      var tag = pr.id === cur ? el('span.gp-tag.on', '✓ picked') : pr.id === verseP ? el('span.gp-tag', 'verse') : pr.signature ? el('span.gp-tag', 'signature') : null;
+      return btn('.guide-preset' + (pr.id === cur ? '.on' : ''), { testid: 'guide-preset-' + pr.id, disabled: pr.locked, onclick: function () {
+        D.pat = GG.songs.applyPreset(D.pat, name, pr.id, gear(), genre()); D.change = null; changed(D); s.rerender();
+      } }, [el('span.gp-top', [el('b', pr.name), tag]), el('span.gp-desc', pr.locked ? '🔒 Needs a double-kick pedal. ' + pr.desc : pr.desc)]);
+    });
+    var mods = GG.songs.grooves(genre()).mods.filter(function (m) { return !m.sections || m.sections.indexOf(name) >= 0; });
+    var ch = D.change && D.change.section === name ? D.change : null;
+    return [
+      el('div.guide-hint', { testid: 'guide-hint' }, hint),
+      el('div.guide-presets', cards),
+      el('div.caps', { style: 'margin-top:4px' }, cur ? 'Tweak it (optional)' : 'Tweaked · tap a beat above to start over'),
+      el('div.guide-mods', mods.map(function (m) {
+        return btn('.guide-mod', { testid: 'guide-mod-' + m.id, title: m.desc, onclick: function () {
+          var r = GG.songs.modify(D.pat, name, m.id, gear(), genre());
+          // A no-op tweak says so inline (a toast would sit over the meters and linger across steps).
+          if (JSON.stringify(r.pattern) === JSON.stringify(GG.songs.sanitize(D.pat, gear()))) { D.change = { section: name, name: m.name, noop: true }; s.rerender(); return; }
+          D.pat = r.pattern; D.change = { section: name, name: m.name, desc: m.desc, before: r.before, after: r.after };
+          changed(D); s.rerender();
+        } }, m.name);
+      })),
+      ch && ch.noop ? el('div.guide-change.small.dim', { testid: 'guide-change' }, '“' + ch.name + '” has nothing left to change here. Try another tweak.') :
+      ch ? el('div.guide-change', { testid: 'guide-change' }, [el('div', [el('b', ch.name + ': '), ch.desc]), el('div.chips', [
+        chip('Groove', ch.before.groove, ch.after.groove), chip('Hook', ch.before.hook, ch.after.hook), chip('Difficulty', ch.before.difficulty, ch.after.difficulty, true)])]) : null
+    ];
+  }
+  function tempoStep(s, D) {
+    var G = GG.songs.genre(genre()), p = D.pat;
+    function style() { return GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : ''; }
+    var num = el('b', { testid: 'guide-bpm' }, String(p.bpm)), lab = el('div.guide-tlabel', { testid: 'guide-tempo-label' }, GG.songs.tempoLabel(genre(), p.bpm));
+    var sty = el('div.small.dim', style() ? 'The band plays: ' + style() : '');
+    var r = el('input.seq-tempo.guide-range', { type: 'range', testid: 'guide-tempo', min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
+    r.addEventListener('input', function () {
+      p.bpm = +r.value; num.textContent = String(p.bpm); lab.textContent = GG.songs.tempoLabel(genre(), p.bpm);
+      sty.textContent = style() ? 'The band plays: ' + style() : ''; rerate(D);
+    });
+    r.addEventListener('change', function () { changed(D); if (D.handle && D.handle.playing) restart(s, D); });
+    var marks = (GG.songs.grooves(genre()).tempo || []).filter(function (t) { return t[0] <= G.tempo[1]; });
+    return [el('div.guide-tempo', [el('div.guide-bignum', [num, el('span', ' BPM')]), lab, sty]), r,
+      el('div.row.tiny.faint', [el('span.grow', G.tempo[0] + ' · ' + (marks[0] ? marks[0][1] : '')), el('span', (marks.length ? marks[marks.length - 1][1] : '') + ' · ' + G.tempo[1])]),
+      el('div.small.dim', 'Faster songs are harder to play live. Slower ones feel heavier. Neither pays more.')];
+  }
+  function orderStep(s, D) {
+    var p = D.pat, cur = GG.songs.arrangementId(p);
+    return [el('div.guide-orders', GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = GG.songs.ARRANGEMENTS[id];
+      return btn('.guide-preset' + (id === cur ? '.on' : ''), { testid: 'guide-order-' + id, onclick: function () {
+        p.arrangement = a.slice(); changed(D); if (D.playing) restart(s, D); s.rerender();
+      } }, [el('span.gp-top', [el('b', ARR_NAMES[id]), el('span.gp-tag' + (id === cur ? '.on' : ''), '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]),
+        el('span.gp-seq', a.map(function (x) { return cap(x); }).join(' · ')), el('span.gp-desc', ORDER_BLURB[id])]);
+    }))];
+  }
+  function nameStep(s, D) {
+    return [el('div.guide-name', [el('div.caps', 'Your song'), el('div.fr', { testid: 'guide-title' }, D.title || 'Untitled'),
+        D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
+      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another French title'),
+      el('div.caps', { style: 'margin-top:6px' }, 'Or type your own'),
+      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Mon Beau Sapin de Doom',
+        oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D);
+          var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
+  }
+  function buildGuided(s, D) {
+    var step = GSTEPS.indexOf(D.step) >= 0 ? D.step : (D.step = 'verse'), i = GSTEPS.indexOf(step), sec = i < 3, V = D.view = {};
+    D.tab = sec ? step : 'song';
+    V.title = btn('.seq-title', { testid: 'seq-title', onclick: function () { if (!D.custom) { reroll(D); if (step === 'name') s.rerender(); else head(s, D); } } });
+    var jam = btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () { if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam(); } }, 'Let the band jam one');
+    var adv = btn('.btn.small.guide-adv', { testid: 'btn-guide-advanced', onclick: function () {
+      stopPlay(D); D.guided = false; D.tab = sec ? step : 'verse'; setMode('advanced'); s.rerender();
+    } }, 'Advanced ⚙');
+    var dots = el('div.guide-dots', GSTEPS.map(function (x, k) { return el('i' + (k === i ? '.on' : k < i ? '.done' : '')); }));
+    V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
+    V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
+    var c = coachFor(D, step);
+    var body = step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D) : sectionStep(s, D, step);
+    ui.append(s.body, [
+      el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': 'Back to the planner', onclick: function () {
+        stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
+      } }, '✕'), V.title, jam]),
+      el('div.guide-top', [el('div.guide-prog', [el('div.caps', { testid: 'guide-step' }, 'Step ' + (i + 1) + ' of ' + GSTEPS.length + ' · ' + GNAMES[step]), dots]), adv]),
+      el('div.seq-meters', [V.groove, V.hook, V.diff]),
+      c ? el('div.guide-coach', { testid: 'guide-coach' }, [el('b', c.who ? ui.who(c.who).short + ': ' : ''), c.text]) : null,
+      el('div.seq-main.guide-main', { testid: 'guide-screen-' + step }, body)
+    ]);
+    function go(k) { stopPlay(D); D.step = GSTEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
+    var back = btn('.btn', { testid: 'btn-guide-back', disabled: i === 0, onclick: function () { if (i > 0) go(i - 1); } }, '‹ Back');
+    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec ? 'loop' : 'song'); } });
+    var next = i < GSTEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
+      : btn('.btn.primary', { testid: 'btn-guide-save', onclick: function () { save(s, D); } }, 'Save ✓');
+    ui.append(s.foot, [back, V.play, next]);
+    head(s, D); rerate(D); playButtons(D);
+  }
 
   // Copy another section into this one, or clear it.
   ui.define('seq-tools', {
@@ -22319,7 +22708,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
   GG.registerDebug('seq', function () {
     var e = ui.get && ui.get('seq'), D = e && e.data;
-    return D ? { mode: D.mode, tab: D.tab, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
+    return D ? { mode: D.mode, tab: D.tab, guided: !!D.guided, step: D.guided ? D.step : null, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
       playhead: D.view ? D.view.ph : null } : null;
   });
 })(window.GG);
@@ -22512,7 +22901,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var st = S(); if (!st || !gig) return false;
     if (G) teardown();
     G = { gig: gig, done: done, opts: opts || {}, mode: 'set', ses: null, chart: null, t: 0, zero: 0, offset: 0, synced: false,
-      syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0],
+      syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0], dash: [5, 4], noDash: [], ap: 0, autoN: 0, autoAt: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
     readPrefs();
@@ -22568,6 +22957,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var p = performance.now(), ch = G.chart, lead = U.clamp(4 * ch.spb, 1.6, 2.6);
     resync(p, true);
     G.mode = 'count'; G.paused = false; G.restart = false; G.drawFrom = 0; G.countBeat = 99; G.popAt = -1e9;
+    G.ap = 0; G.autoN = G.autoN || 0; G.autoAt = G.autoAt || [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9];
     G.zero = heardAt(p) + lead; G.t = -lead;
     var wait = G.zero - G.lat - LEAD_IN - heardAt(p);
     G.startTimer = setTimeout(startAudio, Math.max(0, wait * 1000));
@@ -22630,6 +23020,21 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     resync(performance.now(), true);
   }
 
+  /* ---- v0.6.2 two-thumb auto notes: the hits a third thumb would need play themselves on the audio clock ---- */
+  // A healthy running clock schedules each one AUTO_AHEAD early at its exact context time (G.zero + t, same heard-clock
+  // pairing as the backing band); a stalled/free-running clock plays it on the frame it comes due. Never judged.
+  var AUTO_AHEAD = 0.15;
+  function autoNotes(t, p) {
+    var a = G.chart.auto, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
+    if (!a) return;
+    while (G.ap < a.length && a[G.ap].t <= t + (sched ? G.lat + AUTO_AHEAD : 0)) {   // heard clock + output latency = context time
+      var n = a[G.ap++];
+      if (n.t < t - 0.08 || n.li >= G.lanes) continue;   // skipped past (a resync jump): stay quiet rather than flam
+      if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zero + n.t : undefined);
+      G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - t) * 1000;   // the ring shows when it's heard
+    }
+  }
+
   /* ---- The frame loop (no allocations in here) ------------------------------------------------------------ */
   function loop() { if (G && !G.raf) G.raf = requestAnimationFrame(frame); }
   function frame() {
@@ -22651,6 +23056,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
       if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
+      if (t >= -0.5) autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
     if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
@@ -22755,7 +23161,15 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     for (k = 0; k < ch.fills.length; k++) band(x, ch.fills[k], t, 'rgba(185,140,255,.13)', '#c9a4ff', 'FREESTYLE · GO WILD');
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', 'SOLO · KEEP IT SIMPLE');
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1;
+    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
+    for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
+      var an = au[k]; if (an.t > t + LOOK + 0.05) break;
+      if (an.li >= G.lanes || an.t < t - 0.25) continue;
+      x.globalAlpha = an.t < t ? 0.45 * (1 - (t - an.t) / 0.25) : 0.45; x.strokeStyle = laneColor(an.li);
+      rr(x, col(an.li) * laneW + (laneW - gw) / 2 + 4, yOf(an.t, t) - gh / 2 + 3, gw - 8, gh - 6, gr - 3); x.stroke();
+    }
+    x.setLineDash(G.noDash); x.globalAlpha = 1;
     for (k = G.drawFrom; k < n.length; k++) {
       var nt = n[k], past = t - nt.t;
       if (nt.t > t + LOOK + 0.05) break;
@@ -22772,6 +23186,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (nt.extra) { x.globalAlpha = 1; x.lineWidth = 2; x.strokeStyle = '#ffffff'; x.stroke(); }
     }
     x.globalAlpha = 1;
+    for (l = 0; l < G.lanes; l++) {   // v0.6.2 auto-note ticks: a small ring, no judgement pop
+      a = G.autoAt ? 1 - (p - G.autoAt[l]) / 180 : 0;
+      if (a > 0 && a <= 1) { x.globalAlpha = a * 0.6; x.strokeStyle = laneColor(l); x.lineWidth = 2; x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 10 + (1 - a) * 10, 0, 6.2832); x.stroke(); }
+    }
     for (l = 0; l < G.lanes; l++) {   // hit bursts
       a = 1 - (p - G.burst[l]) / 220;
       if (a > 0) {
@@ -23036,7 +23454,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };

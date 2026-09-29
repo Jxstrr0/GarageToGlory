@@ -131,7 +131,7 @@ test('chart: note count == pattern hits x bars; freestyle windows; solo easing; 
   songs.forEach(song => {
     const p = song.pattern, ch = GG.gig.chart(song), bars = GG.contracts.BARS_PER_SECTION;
     const want = p.arrangement.reduce((t, name) => t + hitsOf(p.sections[name]) * bars, 0);
-    eq(ch.notes.length, want, song.id + ' notes'); eq(ch.notes.length, GG.songs.toNotes(song).length);
+    eq(ch.notes.length + ch.auto.length, want, song.id + ' notes'); eq(ch.notes.length + ch.auto.length, GG.songs.toNotes(song).length);
     eq(ch.fills.length, p.arrangement.filter(x => x === 'bridge').length || 1, 'one freestyle window per bridge');
     eq(ch.total, ch.notes.filter(n => !n.free).length);
     ok(ch.notes.every((n, i) => i === 0 || ch.notes[i - 1].t <= n.t) && ch.notes.every(n => L[n.li] === n.lane && n.j === 0), 'sorted, lanes');
@@ -141,7 +141,7 @@ test('chart: note count == pattern hits x bars; freestyle windows; solo easing; 
     ok(solo.notes.filter(n => n.section === 'bridge' && !n.free).every(n => n.step % 4 === 0), 'solo: quarter notes only');
     ok(solo.total <= ch.total && solo.solos.length === ch.fills.length, 'solo eases');
     const ex = GG.gig.chart(song, { extras: GG.RNG(4) }), extra = ex.notes.filter(n => n.extra);
-    eq(extra.length, ex.extras); eq(ex.notes.length, ch.notes.length + ex.extras);
+    eq(extra.length, ex.extras); eq(ex.notes.length + ex.auto.length, ch.notes.length + ch.auto.length + ex.extras);
     extra.forEach(n => { ok(n.lane === 'snare' && n.section !== 'bridge' && n.bar === bars - 1 && n.step >= 10, 'extra spot');
       ok(!GG.songs.isHit(p.sections[n.section][1], n.step), 'extras never double a written snare'); });
   });
@@ -275,6 +275,36 @@ test('difficulty (v0.5.1): easy/normal thin the chart by time, widen windows, so
   const sloppy = { accuracy: 0.7, jitterMs: 75 };
   const rh = play(decent(22, 2), sloppy, 5), re = GG.gig.botPlay(GG.gig.session(decent(22, 2), legion(decent(22, 2)), null, { emit: false, difficulty: 'easy' }), sloppy, GG.RNG(5));
   ok(re.score > rh.score, 'a sloppy player does better on easy ' + [rh.score, re.score]);
+});
+
+test('two-thumb rule (v0.6.2): no difficulty ever asks for 3+ notes at once; dropped hits become auto notes', () => {
+  const s = base(), pool = s.songs.concat(['metal', 'punk', 'rock', 'country'].map(g => ({ id: 'sig-' + g, title: g, pattern: GG.songs.genre(g).signature })));
+  for (let i = 1; i <= 12; i++) pool.push({ id: 'gen' + i, title: 'g' + i, pattern: GG.songs.generate(['metal', 'punk', 'rock', 'country'][i % 4], GG.RNG(i), { wild: true }) });
+  let chordSongs = 0, autos = 0;
+  const pr = GG.gig.THUMB_PRIORITY;
+  pool.forEach(song => {
+    const raw = GG.gig.chart(song, { thumbs: false, free: false }), big = {};
+    raw.notes.forEach(n => { const k = n.t.toFixed(4); big[k] = (big[k] || 0) + 1; });
+    const had3 = Object.values(big).some(c => c >= 3); if (had3) chordSongs++;
+    GG.contracts.GIG_DIFFICULTY.forEach(d => {
+      [{}, { extras: GG.RNG(3), solo: true }].forEach(o => {
+        const ch = GG.gig.chart(song, Object.assign({ difficulty: d === 'hard' ? null : d }, o)), at = {};
+        ch.notes.filter(n => !n.free).forEach(n => { const k = n.t.toFixed(4); (at[k] = at[k] || []).push(n.lane); });
+        ok(Object.values(at).every(l => l.length <= 2), song.id + ' ' + d + ': never more than 2 judged notes at once');
+        eq(ch.total, ch.notes.filter(n => !n.free).length, 'auto notes stay out of total');
+        ok(ch.auto.every(a => a.auto && !ch.notes.includes(a)), 'auto notes are separate');
+        ch.auto.forEach(a => { const kept = at[a.t.toFixed(4)] || []; ok((kept.length === 2 || GG.gig.DIFFICULTIES[d].laneGap) && kept.every(l => pr.indexOf(l) < pr.indexOf(a.lane)), 'priority kick > snare > cymbal > toms > ride > hat'); });
+        if (had3 && !o.solo) ok(ch.auto.length > 0, song.id + ' ' + d + ': 3-note chords leave auto notes');
+        autos += ch.auto.length;
+      });
+    });
+  });
+  ok(chordSongs >= 3 && autos > 0, 'some songs had 3+ note chords ' + chordSongs);
+  // a perfect bot on a chord-heavy song: accuracy is over judged notes only
+  const sesS = decent(23, 2); sesS.songs.unshift({ id: 'chordy', title: 'Chordy', quality: 60, polish: 60, pattern: GG.songs.genre('metal').signature });
+  const ses = GG.gig.session(sesS, legion(sesS), ['chordy'], { emit: false, difficulty: 'expert' }), ch = ses.startSong();
+  const r = GG.gig.botPlay(ses, { accuracy: 1, jitterMs: 0, one: true }, GG.RNG(1));
+  ok(ch.auto.length > 0 && r.accuracy >= 0.99 && r.notes === ch.total && r.miss === 0, 'accuracy counts judged notes only ' + [r.accuracy, r.notes, ch.total, ch.auto.length]);
 });
 
 // ---- v0.6.1 (Addendum C4, SETTINGS): Expert, assists, difficulty pay, calibration maths ---------------------------------
