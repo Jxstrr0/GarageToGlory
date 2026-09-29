@@ -8,6 +8,9 @@
 //   songReactions: { marcel: { name }, dana: { noSolo }, jaxon: { fills }, kenji: { great } }   after a Write block
 //                  (marcel.name lines end with a colon: the sim appends the song's French title)
 //   writeTips:     { <memberId>: [text] }   one in-character hint when the sequencer opens for the first-ever Write
+// v0.5 (Signed): eraLocal [text] · eraSigned { <labelId>: [text] } · labelOffer { gopherwood|monolith: [text] } ·
+//   offerExpired · labelDropped · studioWeek { <memberId>: [chat] } · releaseDay · chartDebut · chartClimb · chartDrop ·
+//   recouped · cert { gold, platinum } · loonies { nominated, snubbed }   (the sim/UI pick one; all are plain text)
 // Tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>}, replaced by GG.career.fillText().
 // Kenji does not speak. His lines are stage directions or punctuation. This is load-bearing.
 (function (GG) {
@@ -411,7 +414,7 @@
     venueBanned: [
       "Your photo is going up on the wall behind the bar. Under the word BANNED.",
       'Banned. The owner laminated your poster first, so it would last.',
-      'They take a Polaroid of the band on the way out. It is for the banned wall. Marcel poses anyway.'
+      'They take an instant photo of the band on the way out. It is for the banned wall. Marcel poses anyway.'
     ],
     vanTired: [
       'The Moose Hearse makes a sound like a sad moose. It is probably fine.',
@@ -432,6 +435,107 @@
       'You played first. Half their crowd came early. Some of them are yours now.',
       'Opening slot: short set, bad pay, big room. You stole a few fans on the way out.',
       'The headliner said "great warm-up, guys." Their crowd said your band name on the way out.'
-    ]
+    ],
+
+    // ---- v0.5 "Signed" -------------------------------------------------------
+    eraLocal: [
+      "Local heroes. People in Saskatoon know the name now. Some of them even spell it right.",
+      "You're the band people mention at the Co-op. Mom has started saying 'my son, the local hero' at church.",
+      'The garage era is over. The Star-Pheasant calls you "local heroes". Dad cut it out and put it on the fridge.'
+    ],
+    eraSigned: {
+      gopherwood: [
+        "Signed to Gopherwood Records. Wendell shook every hand twice. The label van has a gopher on it. It's official.",
+        'A two-record deal, typed on a typewriter, signed in a feed store. You are a signed band. Baba made a cake.'
+      ],
+      monolith: [
+        'Signed to Monolith Records. A glass tower, a lobby waterfall and a contract as thick as a phone book. Love that.',
+        "Monolith Records. The big one. Marcel read the whole contract looking for the word 'cape'. It's in there. Once."
+      ],
+      diy: [
+        "No label. Your own album, your own money, your own mailing list. Mom's kitchen table is now a distribution centre.",
+        'You put the album out yourselves. Nobody signed you. Nobody had to. The garage is now a record label.'
+      ]
+    },
+    labelOffer: {
+      gopherwood: [
+        "A letter from Humboldt, typed on a typewriter: Gopherwood Records would like a word. There's a gopher stamped on it.",
+        "Wendell from Gopherwood called Mom's landline. He'd like to 'talk records'. Mom has already offered him supper."
+      ],
+      monolith: [
+        'An email from Monolith Records, Toronto. Brayden from A&R would "love to connect". The signature has a lobby waterfall in it.',
+        "Monolith Records want a meeting. Marcel has ironed his cape. Dana has printed questions. Kenji has put on better sunglasses."
+      ]
+    },
+    offerExpired: [
+      "The label's offer ran out. Wendell sends a card anyway: 'Door's always open.' Monolith sends nothing. That's how you can tell.",
+      'The deadline passed. The offer is gone. Marcel says it was "not our destiny". Dana says it was "a Tuesday".'
+    ],
+    labelDropped: [
+      "The label dropped you. A two-line email. Marcel prints it and burns it in the barbecue. You're DIY now, like the old days.",
+      'Dropped. The contract is over, the advance is theirs and the garage is still yours. Mom made perogies. It helps.',
+      "No label any more. Baba says labels are for jam jars. Jaxon writes it on the whiteboard. It stays there for a year."
+    ],
+    studioWeek: {
+      marcel: [
+        'Recorded my vocal in the dark with a candle. The engineer says the candle is on the track. Good. It earned it.',
+        'Take nine. The abyss is not yet satisfied. Neither is the producer. Neither am I.',
+        'Tomorrow I sing the ballad. Tonight I rest my voice. Do not text me. This counts as a text.'
+      ],
+      dana: [
+        "Tracked the solo. All of it. Yes, all of it. They'll edit it. They can try.",
+        'Re-amped the rhythm tracks through Gwendolyn. The engineer asked what the smell was. It was tone.',
+        'Spent four hours tuning. The guitar was in tune at hour one. The other three were for my soul.'
+      ],
+      jaxon: [
+        "Snuck a fill into the second verse. Nobody's noticed yet. Don't tell them. Baba packed studio sandwiches.",
+        "Engineer says my timing's 'honestly really tight'. I'm getting it tattooed. Baba says no. Not getting it tattooed.",
+        'The studio has a vending machine AND a couch. I may never go home. Baba says I will go home.'
+      ],
+      kenji: ['(Sends a photo of a single bass string, coiled on the studio floor.)', '…', '(Thumbs-up emoji, then nothing for two days.)']
+    },
+    releaseDay: [
+      "It's out. The album is out. Mom has bought it four times, in four formats, from four stores.",
+      'Release day. Marcel is refreshing the chart page every ninety seconds. The chart updates weekly.',
+      'The record is in the world now. Dad asked if it comes on 8-track. He was only half joking.'
+    ],
+    chartDebut: [
+      'You debuted on the Maple 100! Somewhere between a fiddle album and a man who whistles. You are on a chart.',
+      "The Maple 100 has your name on it. Marcel screenshotted it. Jaxon screenshotted Marcel's screenshot.",
+      'A chart debut. Baba asked what number is good. You said lower is better. She is now very worried about her cholesterol.'
+    ],
+    chartClimb: [
+      "Up the Maple 100 this week. Dana made a line graph. It's going the right way for once.",
+      'Climbing the chart. Mom called the radio station to request it. Then called again with a different voice.'
+    ],
+    chartDrop: [
+      'Down the chart this week. Marcel says charts are a colonial construct. Then checks it again.',
+      "Slipping on the Maple 100. Jaxon says it's 'a breather'. The chart does not breathe. The chart is a list."
+    ],
+    recouped: [
+      "The advance is paid back. Recouped. From now on the royalties are yours. Dana has opened a spreadsheet just for joy.",
+      'Recouped! The label is even. Wendell sent a card. Monolith sent an automated email. Both count.'
+    ],
+    cert: {
+      gold: [
+        'GOLD. Forty thousand copies. A gold record on the garage wall, next to the rake. Dad keeps touching it when he thinks nobody sees.',
+        'Gold record. Mom has had it appraised. Baba wants it melted down for jewellery. Nobody knows if she is joking.'
+      ],
+      platinum: [
+        'PLATINUM. Eighty thousand. Marcel has hung the record at eye level so it catches the light on his cape.',
+        'A platinum record. Dad moved his truck out of the garage to make room for it. Voluntarily. He has never done that.'
+      ]
+    },
+    loonies: {
+      nominated: [
+        "A Loonie nomination! Marcel is already choosing an outfit. It's March. The ceremony is in March. Okay, fair.",
+        "Nominated for a Loonie. Mom has told everyone at church, the Co-op and the dentist. The dentist is invited.",
+        "You're up for a Loonie. Tundra Wraith sent a fruit basket before the list was even public. How did they know."
+      ],
+      snubbed: [
+        "No Loonie nominations this year. Marcel says awards are 'for the dead'. Then watches the whole broadcast anyway.",
+        'Not nominated. Tundra Wraith were. They called to say "you were robbed, buddy". You were not robbed. It still stung.'
+      ]
+    }
   };
 })(window.GG);

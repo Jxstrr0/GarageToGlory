@@ -39,7 +39,7 @@
   C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
   C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge']; // venue ids cards may `book`
-  C.SIM_FLAGS = ['parentsLoan'];   // flags the sim sets that cards may gate on
+  C.SIM_FLAGS = ['parentsLoan', 'label'];   // label = label id | 'diy' (set by the labels sim)   // flags the sim sets that cards may gate on
   // Seasons by week of year (week 1 = early July): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
 
   // Band-level numeric stats and their clamps. fund may dip below 0 only transiently:
@@ -130,6 +130,10 @@
                production, released (totalWeek), promo, label, reviews: [ { outlet, score, quote } ],
                chart: { debut, peak, weeks, pos }, sales, streams, cert: null|'gold'|'platinum', earned }
    AWARD   = { year, category, nominated: bool, won: bool, against: [ names ] }
+   Content (v0.5): labels, studios, producers, reviews { scoreBands, outlets }, awards, albumWords, studioEvents (card
+   schema + gate keys studio/producer + effect key production). Tokens {album} {single} (reviews), {category} (awards),
+   {adj} {noun} {place} (title forms). Card-set flags: demandEnglish/Radio/Image/Feature/Showcase, loonieOutfit,
+   babaManager, wraithFeud, moosePlan, mooseCall, mooseAlbum ('shelved'|'song'|'ready'|'finland' → v0.7 payoff).
    VAN  = { id: 'moose_hearse', name: 'The Moose Hearse', condition 0..100, space, comfort, km }
    LIVE_GIG = { gig: GIG, setlist: [songId], index (next song to play), songs: [SONG_RESULT], crowd 0..100, started, attendance }
    GIG (v0.3 adds) id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening
