@@ -27,6 +27,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Money feel = **Scrappy, but not too brutal** (always a little short; hustle matters; parents' loan is rare with decent play).
 - 2026-09-29: First storyline chain = **The Cape Saga** (Marcel's cape).
 - 2026-09-29: Owner allows auto-merging PRs into `main`; delete merged branches afterwards.
+- 2026-09-29: Play on phone via **GitHub Pages** (Settings → Pages → Deploy from branch `main`, `/ (root)`).
+  Root `index.html` redirects to `dist/game.html`; `.nojekyll` present. URL: https://jxstrr0.github.io/GarageToGlory/
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
