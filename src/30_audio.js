@@ -432,6 +432,7 @@
     return true;
   };
   A.isPlaying = function () { return !!(current && current.playing); };
+  A.context = function () { return ctx; };   // v0.3 gig clock + pause (null before unlock); read-only use
   A.current = function () { return current; };
 
   /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, nan, seconds }> ------------------------------- */

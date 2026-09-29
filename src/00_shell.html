@@ -368,6 +368,71 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .fallback .spots button span { font-size: 20px; }
 .fallback .mates { position: absolute; left: var(--gutter); right: var(--gutter); top: calc(57% + 124px); display: flex; gap: 6px; }
 .fallback .mates button { flex: 1 1 0; flex-direction: row; gap: 6px; }
+/* ==== Live gig (55_ui_gig, v0.3 RHYTHM): the 3D stage shows through the top, note highway in the bottom third ==== */
+.full.gig { background: transparent; animation: none; }
+.full.gig .full-body { padding: 0; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.full.gig .full-foot { display: none; }
+.gig-top { position: relative; flex: 1 1 auto; min-height: 0; }
+.gig-hw { position: relative; flex: 0 0 34%; min-height: 236px; max-height: 340px; background: #05070d; border-top: 1px solid rgba(255, 255, 255, .12);
+  padding-bottom: var(--safe-bot); }
+.gig-hw canvas { position: absolute; left: 0; top: 0; width: 100%; height: calc(100% - var(--safe-bot)); display: block; touch-action: none; }
+.gig-bar { position: absolute; left: 12px; right: 12px; top: calc(var(--safe-top) + 8px); display: flex; align-items: center; gap: 10px;
+  padding: 4px 4px 4px 12px; border-radius: 14px; background: rgba(8, 11, 19, .66); border: 1px solid rgba(255, 255, 255, .08); }
+.gig-bar b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gig-crowd { position: absolute; left: 12px; right: 12px; top: calc(var(--safe-top) + 70px); padding: 5px 12px 8px; border-radius: 12px; background: rgba(8, 11, 19, .58); }
+.gig-crowd .mh { display: flex; justify-content: space-between; align-items: baseline; }
+.gig-crowd .lv { font: 900 13px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--amber); }
+.gig-crowd .bar { height: 9px; margin-top: 3px; } .gig-crowd .bar > i { transition: width .15s linear, background .3s; }
+.gig-crowd[data-level="hostile"] .bar > i { background: var(--bad); } .gig-crowd[data-level="hostile"] .lv { color: var(--bad); }
+.gig-crowd[data-level="bored"] .bar > i { background: #8a93a8; } .gig-crowd[data-level="bored"] .lv { color: var(--dim); }
+.gig-crowd[data-level="hyped"] .bar > i { background: #ff8a3c; } .gig-crowd[data-level="hyped"] .lv { color: #ffa060; }
+.gig-crowd[data-level="wild"] .bar > i { background: linear-gradient(90deg, #ffb347, #ff4fd8); } .gig-crowd[data-level="wild"] .lv { color: #ff9be8; }
+.gig-banner { position: absolute; left: 8px; right: 8px; top: 40%; text-align: center; font: 900 30px/1.1 var(--display); text-transform: uppercase; color: #fff;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 24px rgba(255, 179, 71, .6); opacity: 0; transform: scale(.8); transition: opacity .2s, transform .2s; pointer-events: none; }
+.gig-banner.show { opacity: 1; transform: scale(1); }
+.gig-banner.bad { color: #ffb3aa; text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 24px rgba(255, 90, 80, .6); }
+.gig-banner.band { font-size: 19px; color: #c8f7d6; }
+.gig-count { position: absolute; left: 0; right: 0; top: 22%; text-align: center; font: 900 72px/1 var(--display); color: #fff; opacity: 0; pointer-events: none; }
+.gig-count.show { animation: gg-count .5s ease-out forwards; }
+@keyframes gg-count { 0% { opacity: 1; transform: scale(1.35); } 100% { opacity: 0; transform: scale(.9); } }
+.gig-mid { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 12px; }
+.gig-mid-card { background: rgba(12, 16, 28, .93); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+.gig-mid-card .react { margin-top: 0; }
+.gig-song-res b { font-style: italic; }
+.gig-pause { position: absolute; inset: 0; z-index: 5; background: rgba(6, 9, 16, .74); display: flex; align-items: center; justify-content: center; padding: var(--gutter); }
+.gig-pause .gig-mid-card { width: 100%; max-width: 360px; }
+.gig-back { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(90% 55% at 50% 38%, #3b2448 0%, #16122a 55%, #07080f 100%); }
+.gig-back .lights { position: absolute; inset: 0; background: linear-gradient(160deg, transparent 38%, rgba(255, 190, 110, .14) 46%, transparent 54%),
+  linear-gradient(200deg, transparent 38%, rgba(130, 170, 255, .14) 46%, transparent 54%), linear-gradient(180deg, transparent 40%, rgba(255, 90, 200, .1) 50%, transparent 60%); }
+.gig-back .band { position: absolute; left: 14%; right: 14%; top: 44%; display: flex; justify-content: space-around; align-items: flex-end; }
+.gig-back .band i { width: 34px; height: 92px; border-radius: 17px 17px 6px 6px; background: #0b0d16; box-shadow: 0 -2px 0 rgba(255, 200, 140, .25); }
+.gig-back .band i:nth-child(2) { height: 104px; } .gig-back .band i:nth-child(3) { height: 98px; }
+.gig-back .floor { position: absolute; left: 0; right: 0; top: calc(44% + 92px); height: 16px; background: linear-gradient(#2c2436, #15121d); }
+.gig-back .crowd { position: absolute; left: 0; right: 0; bottom: 0; height: 24%;
+  background: radial-gradient(circle at 13px 13px, #1d2233 11px, transparent 12px) 0 0 / 26px 30px repeat-x,
+    radial-gradient(circle at 13px 13px, #151927 12px, transparent 13px) 13px 22px / 26px 30px repeat-x, linear-gradient(transparent 40%, #0b0d15 41%); }
+.gig-back[data-level="warm"] .crowd { animation: gg-bob 1.3s ease-in-out infinite; }
+.gig-back[data-level="hyped"] .crowd { animation: gg-bob .55s ease-in-out infinite; }
+.gig-back[data-level="wild"] .crowd { animation: gg-bob .32s ease-in-out infinite; }
+@keyframes gg-bob { 50% { transform: translateY(-7px); } }
+.gigset .set-slots { display: flex; flex-direction: column; gap: 6px; }
+.set-slot { display: flex; align-items: center; gap: 6px; padding: 5px 5px 5px 10px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); min-height: 56px; }
+.set-slot.empty { border-style: dashed; opacity: .7; }
+.set-slot b, .set-song b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-slot .num, .set-song .num, .gigres-song .n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--panel2); display: inline-flex; align-items: center;
+  justify-content: center; font: 900 13px var(--display); color: var(--text); }
+.set-song.on .num { background: var(--amber); color: #1d1204; }
+.set-song .chips { flex: 0 1 auto; justify-content: flex-end; }
+.icon-btn.sm { width: 44px; height: 44px; flex: 0 0 44px; font-size: 15px; } .icon-btn:disabled { opacity: .3; cursor: default; }
+.full.gigres { background: radial-gradient(120% 60% at 50% 0%, #3a2a1a 0%, var(--bg) 65%); }
+.gigres-head { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
+.grade.big { flex: 0 0 92px; height: 92px; font-size: 60px; border-radius: 22px; }
+.gigres-head h1 { font-size: 28px; margin: 2px 0; }
+.gigres-songs { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.gigres-song { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(0, 0, 0, .25); }
+.gigres-song b { display: block; font-style: italic; font-size: 14px; } .gigres-song .acc { font: 900 18px var(--display); }
+/* ==== end live gig ==== */
 </style>
 </head>
 <body>

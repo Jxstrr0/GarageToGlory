@@ -108,4 +108,146 @@ test('songs: jam, best, polish', () => {
   eq(w1.quality - w2.quality, Math.round(0.4 * GG.content.activities.write.repeatPenalty), 'repeat penalty');
 });
 
+/* ---- v0.3 live gig ------------------------------------------------------------------------------------- */
+const L = GG.contracts.LANES;
+const hitsOf = sec => sec.reduce((t, str) => t + (str.match(/x/g) || []).length, 0);
+function decent(seed, n) {   // a band with n decent metal songs at a sane tempo
+  const s = base(); s.songs = [];
+  for (let i = 0; i < (n || 3); i++) {
+    const p = GG.songs.generate('metal', GG.RNG(seed * 10 + i), { gear: s.gear }); p.bpm = Math.min(p.bpm, 160);
+    GG.songs.create(s, p, null, { quality: 55 + i * 3, polish: 40 });
+  }
+  return s;
+}
+const legion = s => GG.gig.makeGig(s, 'legion_63', 'book');
+const play = (s, bot, seed, set, g) => GG.gig.botPlay(GG.gig.session(s, g || legion(s), set || null, { emit: false }), bot, GG.RNG(seed || 1));
+const PERFECT = { accuracy: 1, jitterMs: 0 }, AVG = { accuracy: 0.82, jitterMs: 55 };
+
+test('chart: note count == pattern hits x bars; freestyle windows; solo easing; sneaky fills', () => {
+  const s = base();
+  const songs = s.songs.concat([{ id: 'sig', title: 'Sig', pattern: GG.songs.genre('metal').signature }]);
+  songs.forEach(song => {
+    const p = song.pattern, ch = GG.gig.chart(song), bars = GG.contracts.BARS_PER_SECTION;
+    const want = p.arrangement.reduce((t, name) => t + hitsOf(p.sections[name]) * bars, 0);
+    eq(ch.notes.length, want, song.id + ' notes'); eq(ch.notes.length, GG.songs.toNotes(song).length);
+    eq(ch.fills.length, p.arrangement.filter(x => x === 'bridge').length || 1, 'one freestyle window per bridge');
+    eq(ch.total, ch.notes.filter(n => !n.free).length);
+    ok(ch.notes.every((n, i) => i === 0 || ch.notes[i - 1].t <= n.t) && ch.notes.every(n => L[n.li] === n.lane && n.j === 0), 'sorted, lanes');
+    ok(Math.abs(ch.duration - GG.songs.seconds(p)) < 1e-9 && ch.notes[ch.notes.length - 1].t < ch.duration, 'duration');
+    ch.notes.filter(n => n.free).forEach(n => ok(n.bar === bars - 1, 'free notes sit in the last bar'));
+    const solo = GG.gig.chart(song, { solo: true });
+    ok(solo.notes.filter(n => n.section === 'bridge' && !n.free).every(n => n.step % 4 === 0), 'solo: quarter notes only');
+    ok(solo.total <= ch.total && solo.solos.length === ch.fills.length, 'solo eases');
+    const ex = GG.gig.chart(song, { extras: GG.RNG(4) }), extra = ex.notes.filter(n => n.extra);
+    eq(extra.length, ex.extras); eq(ex.notes.length, ch.notes.length + ex.extras);
+    extra.forEach(n => { ok(n.lane === 'snare' && n.section !== 'bridge' && n.bar === bars - 1 && n.step >= 10, 'extra spot');
+      ok(!GG.songs.isHit(p.sections[n.section][1], n.step), 'extras never double a written snare'); });
+  });
+  let extras = 0; for (let i = 1; i <= 10; i++) extras += GG.gig.chart(s.songs[0], { extras: GG.RNG(i) }).extras;
+  ok(extras > 0, 'fills happen');
+});
+
+test('windows: Forgiving at drum skill 10, widening with skill', () => {
+  const s = base(); s.drumSkill = 10; eq(GG.gig.windows(s), { perfect: 0.06, good: 0.13 });
+  let prev = null;
+  for (const d of [1, 10, 30, 60, 100]) { s.drumSkill = d; const w = GG.gig.windows(s); if (prev) ok(w.perfect > prev.perfect && w.good > prev.good, 'widens @' + d); prev = w; }
+  const sloppy = { accuracy: 1, jitterMs: 90 }, lo = decent(3), hi = decent(3); lo.drumSkill = 10; hi.drumSkill = 80;
+  const a = play(lo, sloppy, 7), b = play(hi, sloppy, 7);
+  ok(b.perfect > a.perfect && b.accuracy > a.accuracy && b.score > a.score, 'same hands, better drummer: ' + [a.perfect, b.perfect, a.accuracy, b.accuracy]);
+});
+
+test('perfect bot: 100% accuracy and an S on a decent song; average bot lands B-C', () => {
+  const s = decent(5, 1), r = play(s, PERFECT, 1, [s.songs[0].id]);
+  eq([r.accuracy, r.miss, r.grade], [1, 0, 'S']); eq(r.songResults[0].accuracy, 1); eq(r.perfect, r.songResults[0].notes);
+  ok(r.live && r.maxCombo === r.perfect && r.songResults[0].crowdEnd >= 80, 'combo + crowd');
+  const full = play(decent(5), PERFECT, 1); eq([full.accuracy, full.grade, full.songResults.length], [1, 'S', 3]);
+  const grades = []; for (let i = 1; i <= 6; i++) grades.push(play(decent(i), AVG, i).grade);
+  ok(grades.every(g => g === 'B' || g === 'C'), 'avg grades ' + grades.join(''));
+  const weak = play(decent(2), { accuracy: 0.55, jitterMs: 90 }, 2);
+  ok(/[CD]/.test(weak.grade) && weak.moments.includes('boo'), 'a bad run gets booed ' + weak.grade + ' ' + weak.moments);
+});
+
+test('live result: deterministic per seed, GIG_RESULT shape, pay/crowd rules, applyResult', () => {
+  const a = decent(8), b = decent(8);
+  const ra = play(a, AVG, 3), rb = play(b, AVG, 3);
+  eq(JSON.stringify(ra), JSON.stringify(rb)); eq(JSON.stringify(a), JSON.stringify(b));
+  ok(JSON.stringify(play(decent(8), AVG, 4)) !== JSON.stringify(ra), 'bot seed matters');
+  ['venueId', 'name', 'city', 'deal', 'crowd', 'capacity', 'score', 'grade', 'pay', 'gas', 'fans', 'buzz', 'songs', 'songIds', 'reactions', 'lines']
+    .forEach(k => ok(ra[k] !== undefined, 'has ' + k));
+  eq(ra.pay, GG.gig.payFor(legion(a), ra.crowd)); ok(ra.crowd >= 1 && ra.crowd <= 60);
+  eq(ra.songIds, a.liveGig.setlist); eq(ra.songs.length, 3); eq(ra.reactions.map(x => x.who).sort(), ['dana', 'jaxon', 'kenji', 'marcel']);
+  a.songResults = null; const fund = a.fund, fans = a.fans; a.gig = legion(a);
+  GG.gig.applyResult(a, ra);
+  eq([a.liveGig, a.gig, a.stats.gigs, a.fund - fund, a.fans - fans], [null, null, 1, ra.pay - ra.gas, ra.fans]);
+  ra.songIds.forEach(id => eq(GG.songs.byId(a, id).plays, 1));
+});
+
+test('session: judging, fill taps, strays, liveGig saves between songs and resumes', () => {
+  const s = decent(9), g = legion(s), ses = GG.gig.session(s, g, null, { emit: false }), W = ses.windows;
+  eq(s.liveGig.index, 0); eq(s.liveGig.setlist.length, GG.gig.setSize(s, g));
+  const ch = ses.startSong(), n = ch.notes.filter(x => !x.free);
+  eq(ses.judge(n[0].lane, n[0].t + W.perfect * 0.5).judgement, 'perfect');
+  const alone = x => ch.notes.every(y => y === x || y.lane !== x.lane || Math.abs(y.t - x.t) > 0.3);
+  const n2 = n.find(x => x.lane !== n[0].lane && x.t > n[0].t + 0.5 && alone(x));
+  eq(ses.judge(n2.li, n2.t - (W.perfect + W.good) / 2).judgement, 'good');
+  const lone = n.find((x, i) => i > 2 && ch.notes.every(y => y === x || y.lane !== x.lane || Math.abs(y.t - x.t) > 0.5));
+  if (lone) { const st = ses.judge(lone.lane, lone.t + W.good + 0.05); ok(st.judgement === null && st.stray, 'stray'); }
+  const f = ch.fills[0], fr = []; for (let i = 0; i < 12; i++) fr.push(ses.judge('cymbal', f.t0 + 0.01 * i).judgement);
+  ok(fr.filter(x => x === 'fill').length >= 8, 'fill taps'); ses.tick(ch.duration + 1);
+  const r1 = ses.endSong(); eq(r1.fills, 8, 'fill taps cap at 8 per window');
+  ok(r1.miss > 0 && r1.perfect === 1 && r1.good === 1, 'missed the rest');
+  eq([s.liveGig.index, s.liveGig.songs.length], [1, 1]);
+  const events = []; const off = GG.on('gig:song', p => events.push(p.index));
+  const saved = JSON.parse(JSON.stringify(s));   // "reload" mid-gig
+  const again = GG.gig.session(saved, saved.liveGig.gig, null, { emit: true });
+  eq([again.index, again.done, again.crowd], [1, false, s.liveGig.crowd]);
+  const r = GG.gig.botPlay(again, PERFECT, GG.RNG(1)); off();
+  eq(events, [1, 2]); eq(r.songResults.length, 3); eq(r.songResults[0].perfect, 1); eq(saved.liveGig.index, 3);
+});
+
+test('stale songs score less; classics get a cheer; setlist opener + closer bonus', () => {
+  const s1 = decent(11, 1), s2 = decent(11, 1), s3 = decent(11, 1);
+  s2.songs[0].stale = 90; s3.songs[0].classic = true;
+  const [a, b, c] = [s1, s2, s3].map(s => play(s, AVG, 5, [s.songs[0].id]).songResults[0]);
+  ok(b.score < a.score && b.crowdAvg < a.crowdAvg, 'stale ' + [a.score, b.score]);
+  ok(c.cheer && !a.cheer && c.score > a.score, 'classic ' + [a.score, c.score]);
+  const s = decent(12, 4), g = legion(s), def = GG.gig.defaultSetlist(s, g);
+  eq(def.length, 4); const bo = GG.gig.setlistBonuses(s, def); ok(bo.opener && bo.closer, 'default set earns both');
+  const ranked = GG.songs.best(s).map(x => x.id), bad = ranked.slice().reverse();
+  const bb = GG.gig.setlistBonuses(s, bad); ok(!bb.opener, 'weakest first: no opener bonus');
+  const good = play(decent(12, 4), AVG, 6, def), worse = play(decent(12, 4), AVG, 6, bad);
+  ok(good.setBonus.opener && good.setBonus.closer && !worse.setBonus.opener, 'flags');
+  ok(good.lines.some(l => /Opening with/.test(l)) && good.lines.some(l => /Closing on/.test(l)), 'bonus lines');
+  ok(good.score > worse.score, 'order matters ' + [good.score, worse.score]);
+});
+
+test('band effects: cape spin, solo, sneaky fills, unhappy members; genre moments for all four genres', () => {
+  const plain = decent(13), caped = decent(13); caped.flags.cape = 'velvet';
+  const rp = play(plain, PERFECT, 2), rc = play(caped, PERFECT, 2);
+  ok(rc.moments.includes('capeSpin') && !rp.moments.includes('capeSpin'), 'cape spin needs a cape');
+  ok(rc.songResults[0].crowdAvg >= rp.songResults[0].crowdAvg, 'the cape helps');
+  ok(rc.reactions.find(x => x.who === 'marcel').text.length > 0);
+  eq(GG.gig.roles(plain), { front: 'marcel', solo: 'dana', fill: 'jaxon' });
+  ok(rp.moments.includes('solo') || !plain.songs.some(x => x.pattern.arrangement.includes('bridge')), 'solo moment');
+  const easy = decent(14, 1); easy.songs[0].rating.difficulty = 30;
+  const ses = GG.gig.session(easy, legion(easy), null, { emit: false }); let extras = 0;
+  for (let i = 0; i < 6 && !extras; i++) { easy.seed = 100 + i; easy.liveGig = null; const x = GG.gig.session(easy, legion(easy), null, { emit: false }); extras += x.startSong().extras; }
+  ok(extras > 0 && ses.startSong() && true, 'Jaxon sneaks fills into simple songs');
+  const hard = decent(14, 1); hard.songs[0].rating.difficulty = 80; eq(GG.gig.session(hard, legion(hard), null, { emit: false }).startSong().extras, 0);
+  const happy = decent(15), grumpy = decent(15); grumpy.members.forEach(m => { if (m.id !== 'marcel') m.mood = 10; });
+  const rh = play(happy, AVG, 3), rg = play(grumpy, AVG, 3);
+  ok(rg.songResults.every(r => r.flubs > 0) && rh.songResults.every(r => r.flubs === 0), 'unhappy members miss cues');
+  ok(rg.score < rh.score, 'and drag the crowd ' + [rh.score, rg.score]);
+  for (const [genre, kind] of [['metal', 'wallOfDeath'], ['punk', 'circlePit'], ['rock', 'lighters'], ['country', 'lineDance']]) {
+    const s = decent(16); s.genre = genre; const seen = [];
+    const off = GG.on('crowd:moment', p => seen.push(p.kind));
+    const r = GG.gig.botPlay(GG.gig.session(s, legion(s), null, {}), PERFECT, GG.RNG(1)); off();
+    ok(r.moments.includes(kind) && seen.includes(kind), genre + ' moment ' + r.moments);
+  }
+  for (const id of Object.keys(GG.content.bands)) {
+    const st = GG.career.newCareer({ seed: 3, bandId: id }), ro = GG.gig.roles(st);
+    ok(ro.front && ro.solo && ro.fill && ro.solo !== ro.fill, id + ' roles ' + JSON.stringify(ro));
+  }
+});
+
 done('sim_gig');
