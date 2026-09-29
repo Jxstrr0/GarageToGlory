@@ -31,6 +31,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   Root `index.html` redirects to `dist/game.html`; `.nojekyll` present. URL: https://jxstrr0.github.io/GarageToGlory/
   Owner turned Pages on (2026-09-29).
 - 2026-09-29: Owner: keep building version after version and merging PRs (branch per version → PR → merge → delete branch).
+- 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
+  lean reviews (tests + one focused review pass), patches done inline by the lead.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
