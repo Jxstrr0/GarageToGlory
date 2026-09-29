@@ -16,6 +16,10 @@
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
+  function difficulty() {
+    var d = GG.save && GG.save.settings ? GG.save.settings().gigDifficulty : null;
+    return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
+  }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
   var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3 };
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
@@ -59,12 +63,20 @@
         if (ts && ts.contextTime > 0 && ts.performanceTime > 0 && p - ts.performanceTime < 150) h = ts.contextTime + (p - ts.performanceTime) / 1000;
       } catch (e) { h = -1; }
     }
+    // Health check (v0.5.1): phones can stall or suspend the audio clock (iOS silent switch, screen recording, Control
+    // Centre) and headless browsers advance it in bursts. Only a running clock that kept pace with performance.now()
+    // since the last check may steer the game clock; otherwise the game free-runs on performance.now().
+    var prev = G.aSample, healthy = c.state === 'running' && prev && (p - prev.p) > 100 &&
+      Math.abs((c.currentTime - prev.a) / ((p - prev.p) / 1000) - 1) < 0.08;
+    G.aSample = { a: c.currentTime, p: p };
+    G.clockOk = c.state === 'running' && (healthy || !prev);
+    if (c.state !== 'running') return;
     var lat = c.outputLatency > 0 ? c.outputLatency : c.baseLatency > 0 ? c.baseLatency : DEFAULT_LAT;
     if (h < 0 || Math.abs(c.currentTime - h - lat) > 0.3) h = c.currentTime - Math.min(lat, 0.3);
     G.lat = U.clamp(c.currentTime - h, 0, 0.3);
     off = h - p / 1000;
-    G.offset = snap || !G.synced || Math.abs(off - G.offset) > 0.03 ? off : G.offset + (off - G.offset) * 0.25;
-    G.synced = true;
+    if (snap || !G.synced) { G.offset = off; G.synced = true; }
+    else if (healthy) G.offset += U.clamp(off - G.offset, -0.004, 0.004);   // drift correction only, never a jump
   }
   function heardAt(p) { return p / 1000 + G.offset; }
   function heardNow() { return heardAt(performance.now()); }
@@ -150,8 +162,8 @@
   function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count')) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
-    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); }
-    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); }
+    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
+    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
   }
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
@@ -174,7 +186,8 @@
     return true;
   };
   function startSession(ids) {
-    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, {});
+    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty() });
+    G.diff = G.ses.difficulty || difficulty();
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
     stageCall('setCrowdLevel', G.ses.crowd, true);
@@ -224,9 +237,9 @@
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
     if (!G.actx) G.actx = audioCtx();
-    if (G.actx) resync(p, true);
-    else G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000;   // no context accessor: anchor on the handle
-    G.zero = h.start;
+    if (G.actx && G.actx.state === 'running') { resync(p, true); G.zero = h.start; }
+    else if (!G.actx) { G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000; G.zero = h.start; }   // no accessor: anchor on the handle
+    else wake();   // a suspended/interrupted context: keep the count-in's performance-clock zero so notes still flow
   }
   function restartSong() {
     stopAudio();
@@ -302,10 +315,17 @@
     if (G && playing) loop();
   }
 
+  // iOS parks the AudioContext as 'suspended'/'interrupted'; a tap is a user gesture, so ask it to come back.
+  function wake() { var c = G && (G.actx || (G.actx = audioCtx())); if (c && c.state !== 'running' && c.resume) { try { var pr = c.resume(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) { /* ignore */ } } }
+  // Listens on the whole document (capture) so a stray layer over the highway can't swallow taps: any press inside the
+  // highway's rectangle during a song counts.
   function onDown(ev) {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
+    var r = G.canvas && G.canvas.getBoundingClientRect();
+    if (!r || ev.clientY < r.top || ev.clientY > r.bottom || ev.clientX < r.left || ev.clientX > r.right) return;
     if (ev.cancelable) ev.preventDefault();
-    var r = G.rect, li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
+    wake();
+    var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
     tap(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li, ev.timeStamp);
   }
   function onKey(ev) {
@@ -316,7 +336,8 @@
     tap(li, ev.timeStamp);
   }
   function tap(li, stamp) {
-    var at = heardAt(stamp > 0 ? stamp : performance.now()) - G.zero;
+    var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
+    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero;
     if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
     G.press[li] = performance.now();
     if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
@@ -335,6 +356,7 @@
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
     G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
+    LOOK = (GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15;   // seconds of highway visible: Easy scrolls slower
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
@@ -565,7 +587,6 @@
         ui.btn('.btn.block', { testid: 'btn-gig-restart', onclick: function () { resume(true); } }, 'Restart this song')]));
       d.pause.hidden = true;
       G.canvas = el('canvas', { testid: 'gig-highway' });
-      G.canvas.addEventListener('pointerdown', onDown, { passive: false });
       G.canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
       G.x = G.canvas.getContext('2d');
       d.hw = el('div.gig-hw', [G.canvas, d.count]);
@@ -590,6 +611,15 @@
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
       s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
+      var cur = difficulty();
+      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:10px' }, [el('span.caps.grow', 'Difficulty'),
+        ['easy', 'normal', 'hard'].map(function (d) {
+          return ui.btn('.btn.small' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, onclick: function () {
+            GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
+        })]));
+      s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
+        ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
+        ? 'Normal: most of what you wrote, no impossible bursts.' : 'Hard: every hit exactly as written, tight timing.'));
       var bo = GG.gig.setlistBonuses(st, ids);
       s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
@@ -614,6 +644,7 @@
         ui.btn('.btn.primary.grow', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
           ui.close('gig-set');
+          for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
           startSession(G.pick.slice());
           nextSong();
         } }, 'Start the show')]));
@@ -648,7 +679,7 @@
         if (!next && n.t > t + 0.35) next = { lane: n.lane, li: n.li, t: n.t };
       }
     }
-    return { open: true, mode: G.mode, paused: G.paused, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
+    return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
       songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,

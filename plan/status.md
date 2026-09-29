@@ -3,8 +3,9 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.5.0.0 "Signed"** (merged to main 2026-09-29) · 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
-- Next: **0.6.0 "Rivals"** (handoff B4) — in progress on branch `v0.6-rivals`
+- Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
+- Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
+- Next: **0.6.1** (Addendum 1 catch-up), then **0.7.0 "World"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -237,6 +238,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   META_ONLY=flow|year|code|layout (flows jam their Write blocks) · `pw_garage.js` META_ONLY=garage (48) ·
   `pw_seq.js` META_ONLY=seq (29, screenshot `tests/.cache/seq.png`)|audio (16).
 
+
+## v0.5.1 hotfix (owner phone report: "the playing mini game is broken, it's also quite difficult")
+- Gig clock now free-runs on performance.now() and only drifts toward the audio clock while it's healthy (running, ~1x);
+  a stalled/suspended/erratic AudioContext (iOS silent switch, screen recording, Control Centre, headless) no longer
+  freezes, rewinds or fast-forwards the notes. Taps wake a suspended context; event timeStamps on another time base are
+  ignored; taps are caught on the document (capture) inside the highway's rectangle so no stray layer can swallow them;
+  any layer above the show is closed at "Start the show".
+- Gig difficulty (owner decision: new players get **Easy**): `GG.gig.DIFFICULTIES` easy / normal / hard, chosen on the
+  setlist sheet, saved in settings (`gigDifficulty`). Easy ≈ 3–4 notes/s (time-spaced lanes, ≤2-note chords, windows
+  ×1.45, misses hurt the crowd ×0.55, slower scroll); Normal ≈ 6–8/s; Hard = as written (the sim's default for bots).
+  Addendum C4 extends this (Expert, note speed, assists, settings screen) in v0.6.1.
+- Tests: sim_gig difficulty test; pw_gig `touch` section (real touchscreen taps under a stray layer, stalled clock).
 
 ## Back-burner
 - v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);

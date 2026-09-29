@@ -7972,11 +7972,43 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   function active(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
 
   // Timing windows from drum skill (seconds, +/- around each note).
-  gig.windows = function (state) {
-    var c = LC(), d = (state && state.drumSkill || 10) - 10;
-    function w(x) { return Math.round(U.clamp(x[0] + d * x[1], x[2], x[3]) * 10000) / 10000; }
+  // Gig difficulty (v0.5.1 hotfix; Addendum C4 adds Expert + a settings screen). Charts are thinned by time, not by beat:
+  // each lane keeps a hit only if it's at least laneGap seconds after that lane's last kept hit, any two kept moments are
+  // at least anyGap apart, and a chord keeps at most `chord` notes (kick, then snare, win). Hard = the song exactly as
+  // written. window scales the timing windows; miss scales how much a miss hurts the crowd; look = seconds of highway.
+  gig.DIFFICULTIES = {
+    easy: { window: 1.45, miss: 0.55, look: 1.6, chord: 2, anyGap: 0.24,
+      laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
+    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
+      laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
+    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null }
+  };
+  gig.DEFAULT_DIFFICULTY = 'easy';   // what a new player gets; the sim itself defaults to 'hard' (the chart as written)
+  function diffOf(d) { return gig.DIFFICULTIES[d] || gig.DIFFICULTIES.hard; }
+  gig.windows = function (state, difficulty) {
+    var c = LC(), d = (state && state.drumSkill || 10) - 10, k = diffOf(difficulty).window;
+    function w(x) { return Math.round(U.clamp(x[0] + d * x[1], x[2], x[3]) * k * 10000) / 10000; }
     return { perfect: w(c.perfect), good: w(c.good) };
   };
+  function thin(notes, r) {
+    var out = [], lastLane = {}, lastAt = -1e9, i = 0;
+    while (i < notes.length) {
+      var j = i; while (j < notes.length && Math.abs(notes[j].t - notes[i].t) < 0.001) j++;
+      var t = notes[i].t, chord = notes.slice(i, j).sort(function (a, b) { return a.li - b.li; }), kept = 0;
+      if (chord.some(function (n) { return n.free; })) { out.push.apply(out, chord); i = j; continue; }   // fill windows stay free-form
+      if (t - lastAt >= r.anyGap - 1e-6) {
+        chord.forEach(function (n) {
+          if (kept >= r.chord) return;
+          var g = r.laneGap[n.lane] || 0.2;
+          if (lastLane[n.lane] != null && t - lastLane[n.lane] < g - 1e-6) return;
+          out.push(n); lastLane[n.lane] = t; kept++;
+        });
+        if (kept) lastAt = t;
+      }
+      i = j;
+    }
+    return out;
+  }
   gig.levelOf = function (crowd) { return C.CROWD_LEVELS[U.clamp(Math.floor(crowd / 20), 0, C.CROWD_LEVELS.length - 1)]; };
   // Who does what on stage: the frontman spins the cape, the soloist takes the bridge, the filler sneaks in fills.
   gig.roles = function (state) {
@@ -8027,6 +8059,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       });
     }
     notes.sort(function (a, b) { return a.t - b.t || a.li - b.li; });
+    if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0; notes.forEach(function (n) { if (!n.free) total++; });
     return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
       duration: GG.songs.seconds(p), notes: notes, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
@@ -8086,9 +8119,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (live.attendance == null) live.attendance = gig.expectCrowd(state, g, live.started);
     if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd, cfg.crowdRange[0], cfg.crowdRange[1]));
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
-    var W = gig.windows(state), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
+    if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
+    var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
+    var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
-    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus,
+    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff,
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
     var cur = null, tickOut = { misses: 0, crowd: 0, level: '' };
@@ -8109,8 +8144,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     S.startSong = function (i) {
       i = i == null ? live.index : i;
       var song = set[i]; if (!song) return null;
-      var rng = GG.RNG((seed + (i + 1) * 7919) >>> 0), diff = song.rating && song.rating.difficulty || 50;
-      var chart = gig.chart(song, { solo: !!roles.solo, extras: roles.fill && diff < cfg.fillsMaxDifficulty ? rng : null });
+      var rng = GG.RNG((seed + (i + 1) * 7919) >>> 0), sdiff = song.rating && song.rating.difficulty || 50;
+      var chart = gig.chart(song, { solo: !!roles.solo, difficulty: thinned ? diff : null,
+        extras: diff !== 'easy' && roles.fill && sdiff < cfg.fillsMaxDifficulty ? rng : null });
       var n = chart.notes, byLane = [], entryTotal = [], cues = [];
       for (var l = 0; l < C.LANES.length; l++) byLane.push([]);
       chart.sections.forEach(function () { entryTotal.push(0); });
@@ -8161,7 +8197,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     }
     function miss(x, t) {
       x.j = 3; S.combo = 0; cur.missStreak++;
-      crowdAdd(cfg.gain.miss * cur.dens);
+      crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
       if (cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
         moment('boo', t);
@@ -8192,7 +8228,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         if (got < cfg.fillCap) { cur.fillsIn[key] = got + 1; cur.fills++; crowdAdd(cfg.gain.fill); }
         out = { judgement: 'fill', note: null, combo: S.combo, crowd: S.crowd };
       } else {
-        cur.stray++; crowdAdd(cfg.gain.stray);
+        cur.stray++; crowdAdd(cfg.gain.stray * dcfg.miss);
         out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, stray: true };
       }
       emit('gig:judge', { lane: C.LANES[li], judgement: out.judgement, combo: S.combo, crowd: S.crowd });
@@ -18861,6 +18897,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
+  function difficulty() {
+    var d = GG.save && GG.save.settings ? GG.save.settings().gigDifficulty : null;
+    return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
+  }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
   var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3 };
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
@@ -18904,12 +18944,20 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         if (ts && ts.contextTime > 0 && ts.performanceTime > 0 && p - ts.performanceTime < 150) h = ts.contextTime + (p - ts.performanceTime) / 1000;
       } catch (e) { h = -1; }
     }
+    // Health check (v0.5.1): phones can stall or suspend the audio clock (iOS silent switch, screen recording, Control
+    // Centre) and headless browsers advance it in bursts. Only a running clock that kept pace with performance.now()
+    // since the last check may steer the game clock; otherwise the game free-runs on performance.now().
+    var prev = G.aSample, healthy = c.state === 'running' && prev && (p - prev.p) > 100 &&
+      Math.abs((c.currentTime - prev.a) / ((p - prev.p) / 1000) - 1) < 0.08;
+    G.aSample = { a: c.currentTime, p: p };
+    G.clockOk = c.state === 'running' && (healthy || !prev);
+    if (c.state !== 'running') return;
     var lat = c.outputLatency > 0 ? c.outputLatency : c.baseLatency > 0 ? c.baseLatency : DEFAULT_LAT;
     if (h < 0 || Math.abs(c.currentTime - h - lat) > 0.3) h = c.currentTime - Math.min(lat, 0.3);
     G.lat = U.clamp(c.currentTime - h, 0, 0.3);
     off = h - p / 1000;
-    G.offset = snap || !G.synced || Math.abs(off - G.offset) > 0.03 ? off : G.offset + (off - G.offset) * 0.25;
-    G.synced = true;
+    if (snap || !G.synced) { G.offset = off; G.synced = true; }
+    else if (healthy) G.offset += U.clamp(off - G.offset, -0.004, 0.004);   // drift correction only, never a jump
   }
   function heardAt(p) { return p / 1000 + G.offset; }
   function heardNow() { return heardAt(performance.now()); }
@@ -18995,8 +19043,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count')) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
-    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); }
-    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); }
+    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
+    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
   }
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
@@ -19019,7 +19067,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     return true;
   };
   function startSession(ids) {
-    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, {});
+    G.ses = GG.gig.session(G.opts.studio ? G.opts.studio.state : S(), G.gig, ids, { difficulty: difficulty() });
+    G.diff = G.ses.difficulty || difficulty();
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
     stageCall('setCrowdLevel', G.ses.crowd, true);
@@ -19069,9 +19118,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
     if (!G.actx) G.actx = audioCtx();
-    if (G.actx) resync(p, true);
-    else G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000;   // no context accessor: anchor on the handle
-    G.zero = h.start;
+    if (G.actx && G.actx.state === 'running') { resync(p, true); G.zero = h.start; }
+    else if (!G.actx) { G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000; G.zero = h.start; }   // no accessor: anchor on the handle
+    else wake();   // a suspended/interrupted context: keep the count-in's performance-clock zero so notes still flow
   }
   function restartSong() {
     stopAudio();
@@ -19147,10 +19196,17 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (G && playing) loop();
   }
 
+  // iOS parks the AudioContext as 'suspended'/'interrupted'; a tap is a user gesture, so ask it to come back.
+  function wake() { var c = G && (G.actx || (G.actx = audioCtx())); if (c && c.state !== 'running' && c.resume) { try { var pr = c.resume(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) { /* ignore */ } } }
+  // Listens on the whole document (capture) so a stray layer over the highway can't swallow taps: any press inside the
+  // highway's rectangle during a song counts.
   function onDown(ev) {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
+    var r = G.canvas && G.canvas.getBoundingClientRect();
+    if (!r || ev.clientY < r.top || ev.clientY > r.bottom || ev.clientX < r.left || ev.clientX > r.right) return;
     if (ev.cancelable) ev.preventDefault();
-    var r = G.rect, li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
+    wake();
+    var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
     tap(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li, ev.timeStamp);
   }
   function onKey(ev) {
@@ -19161,7 +19217,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     tap(li, ev.timeStamp);
   }
   function tap(li, stamp) {
-    var at = heardAt(stamp > 0 ? stamp : performance.now()) - G.zero;
+    var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
+    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero;
     if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
     G.press[li] = performance.now();
     if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
@@ -19180,6 +19237,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
     G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
+    LOOK = (GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15;   // seconds of highway visible: Easy scrolls slower
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
@@ -19410,7 +19468,6 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         ui.btn('.btn.block', { testid: 'btn-gig-restart', onclick: function () { resume(true); } }, 'Restart this song')]));
       d.pause.hidden = true;
       G.canvas = el('canvas', { testid: 'gig-highway' });
-      G.canvas.addEventListener('pointerdown', onDown, { passive: false });
       G.canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
       G.x = G.canvas.getContext('2d');
       d.hw = el('div.gig-hw', [G.canvas, d.count]);
@@ -19435,6 +19492,15 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
       s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
+      var cur = difficulty();
+      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:10px' }, [el('span.caps.grow', 'Difficulty'),
+        ['easy', 'normal', 'hard'].map(function (d) {
+          return ui.btn('.btn.small' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, onclick: function () {
+            GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
+        })]));
+      s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
+        ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
+        ? 'Normal: most of what you wrote, no impossible bursts.' : 'Hard: every hit exactly as written, tight timing.'));
       var bo = GG.gig.setlistBonuses(st, ids);
       s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
@@ -19459,6 +19525,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         ui.btn('.btn.primary.grow', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
           ui.close('gig-set');
+          for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
           startSession(G.pick.slice());
           nextSong();
         } }, 'Start the show')]));
@@ -19493,7 +19560,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         if (!next && n.t > t + 0.35) next = { lane: n.lane, li: n.li, t: n.t };
       }
     }
-    return { open: true, mode: G.mode, paused: G.paused, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
+    return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
       songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
