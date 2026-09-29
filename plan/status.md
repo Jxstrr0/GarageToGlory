@@ -34,6 +34,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (v0.1 → v1.0 per handoff B4) and merge each PR into `main` yourself, without waiting for approval. Process per
   version: branch `vX.Y-<name>` from `main` → build + tests → push → PR → merge into `main` → delete the branch →
   update this file → start the next version. Still ask popups only for genuinely open decisions (handoff A16).
+  **`main` is the one build branch** (always the latest playable build; Pages serves it). After every merge, delete
+  the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
