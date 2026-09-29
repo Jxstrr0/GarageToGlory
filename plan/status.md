@@ -4,7 +4,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
 - Current: **0.4.0.0 "Drama"** (merged to main 2026-09-29) · 0.3 "Stage", 0.2 "Sequencer", 0.1 "Garage" merged earlier
-- Next: **0.5.0 "Signed"** (handoff B4)
+- Next: **0.5.0 "Signed"** (handoff B4) — in progress on branch `v0.5-signed`
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -39,6 +39,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
+- 2026-09-29 (for v0.5): career pace **Steady** — Local Heroes ≈ end of year 1 (250 fans), first label interest in
+  year 2, signed by year 2–3, World Stage reachable ≈ year 5–6 (leaves room for bonus years).
 - 2026-09-29 (for v0.4): Garage-era protection ends at **250 fans**; drama level **"now and then"** (≈ one quit every
   1–2 years with decent play, more if underpaid/overworked; always warned first); pay-the-band default **30%** of gig pay.
 - 2026-09-29 (for v0.3): **Kenji drives the van, silently** (every trip, sunglasses, nobody sees him get in or out);
