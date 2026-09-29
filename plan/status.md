@@ -39,6 +39,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
+- 2026-09-29 (for v0.3): **Kenji drives the van, silently** (every trip, sunglasses, nobody sees him get in or out);
+  v0.3 map = **Saskatchewan core** (Saskatoon, Regina, Prince Albert, Moose Jaw, Swift Current, North Battleford,
+  Yorkton, Warman/Martensville); rhythm timing = **Forgiving** (wide early window; drum skill widens it further).
+- 2026-09-29: Owner turned on GitHub "Automatically delete head branches" (merged branches clean themselves up).
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
