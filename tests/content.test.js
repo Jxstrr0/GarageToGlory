@@ -511,8 +511,8 @@ test('venues: v0.1 ids kept, Sask core cities, kinds, deals, pay ranges, quirk +
     const w = 'venue ' + v.id;
     ok(/^[a-z][a-z0-9_]*$/.test(v.id) && str(v.name, 48) && cities.includes(v.city) && v.region === 'canada', w + ': basics');
     ok(C.VENUE_KINDS.includes(v.kind), w + ': kind ' + v.kind);
-    ok(v.tier === 1 || v.tier === 2, w + ': tier');
-    ok(v.tier === 1 ? v.capacity >= 10 && v.capacity <= 150 : v.capacity >= 100 && v.capacity <= 400, w + ': capacity ' + v.capacity);
+    ok(v.tier === 1 || v.tier === 2 || v.tier === 3, w + ': tier');   // v0.5: tier 3 theatres (500–2,000), Signed era
+    ok(v.tier === 1 ? v.capacity >= 10 && v.capacity <= 150 : v.tier === 2 ? v.capacity >= 100 && v.capacity <= 400 : v.capacity >= 500 && v.capacity <= 2000, w + ': capacity ' + v.capacity);
     ok(v.tier === 1 ? v.setSize >= 2 && v.setSize <= 4 : v.setSize >= 4 && v.setSize <= 5, w + ': setSize');
     ok(isInt(v.minFans) && v.minFans >= 0 && isInt(v.walkIns) && v.walkIns >= 0 && v.walkIns < v.capacity, w + ': fans/walk-ins');
     ok(str(v.quirk, LIMIT.line) && str(v.catch, LIMIT.line), w + ': quirk + catch');

@@ -11,6 +11,8 @@
     // ---- Week wrap (endWeek) ---------------------------------------------
     weeklyUpkeep: 22,          // $ per week: sticks, gas money, the extension-cord bill (v0.4: members buy their own strings from their cut)
     upkeepPerFan: 0.012,       // + this per fan: a bigger band has bigger bills (more gas, more strings, more pizza)
+    upkeepFanCap: 8000,        // v0.5: past this many fans the per-fan bills grow slower...
+    upkeepFanTail: 0.2,        // ...at this fraction of the rate (a national fanbase isn't all in your van)
     buzzDecay: 0.15,           // fraction of buzz lost each week (at least 1 while buzz > 0)
     buzzFans: 0.12,            // organic new fans per week per point of buzz
     burnoutRecovery: 3,        // burnout that fades by itself every week
@@ -107,6 +109,98 @@
       bot: { avgRefuse: 0.45, keep: 40, goodPayUp: 0.4, goodPayFund: 600, repostBelow: 55 }
     },
 
+    // ---- Eras (v0.5): garage -> local (250 fans, the v0.4 protection line) -> signed (a deal or a DIY album) -> world ----
+    eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: false },   // the World era itself is v0.7
+    eraUpkeep: { garage: 0, local: 6, signed: 40, world: 90 },   // extra $/week: jam-space rent, a manager, insurance
+    hustleEra: { garage: 1, local: 1.3, signed: 2.2, world: 3 },   // hustle cash x: drum lessons and session work pay more once you're known
+
+    // ---- World (26_sim_world.js overrides, merged over its DEFAULTS) ----------------------------------------------
+    world: {
+      eraTier: { garage: 2, local: 2, signed: 3, world: 3 },   // tier-3 theatres (500–2,000) open in the Signed era
+      scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },   // fans a band can reach through gigs
+      theatreFans: 0.4,          // new-fan factor at theatres: most of that crowd already knows you
+      commission: { garage: 0, local: 0, signed: 0.15, world: 0.2 },  // management + booking agent, off the top of gig pay
+      crew: { 3: 150 }           // $ per show by venue tier: sound, lights and a merch person (theatres)
+    },
+
+    // ---- Labels, studios, releases (24_sim_labels.js, v0.5) --------------------------------------------------------
+    labels: {
+      // weekly offer chance per label = base + fans * (fans / offerMinFans - 1, capped) + release/chart bonuses + buzz
+      offers: { minEra: 'local', base: 0.05, fans: 0.04, fansCap: 3, goodRelease: 58, releaseBonus: 0.08, chartBonus: 0.06,
+                buzz: 0.001, max: 0.25, expires: 4, cooldown: 6, declineCooldown: 10, dropCooldown: 48,
+                needRelease: { monolith: 55 },   // Monolith only calls after a release that charted or scored this well
+                advanceSpread: [0.85, 1.15], advanceFansSpan: 4, royaltyBonus: 0.02 },
+      recordingShare: 0.6,       // share of an advance the label holds as the recording budget (the rest is paid on signing)
+      signFx: { buzz: 10, mood: { all: 6 } },
+      dropFx: { buzz: -8, mood: { all: -6 } },
+      goodwill: 60, goodwillFlop: 20, goodwillHit: 10, salesMultMax: 1.4,
+      demandEvery: 8, demandGrace: 2, deadlineGrace: 6, deadlineWarn: 8,
+      // label demands, answered 'met' | 'half' | 'refused' (content demand cards set flags.demand<Kind>; the rest go
+      // through GG.labels.answerDemand). goodwill 0 = dropped. effects/role (moods) only apply on the API path.
+      demandFx: {
+        english: { met: { salesMult: 1.1, goodwill: 5 }, half: { salesMult: 1.04 }, refused: { goodwill: -20 } },
+        radio: { met: { salesMult: 1.12, goodwill: 5 }, half: { salesMult: 1.05 }, refused: { goodwill: -15 } },
+        image: { met: { salesMult: 1.05, goodwill: 5 }, half: {}, refused: { goodwill: -15 } },
+        feature: { met: { salesMult: 1.08, goodwill: 5 }, half: { salesMult: 1.03 }, refused: { goodwill: -15 } },
+        showcase: { met: { goodwill: 10 }, half: {}, refused: { goodwill: -10 } },
+        other: { met: { goodwill: 5, effects: { mood: { all: -2 } } }, half: {}, refused: { goodwill: -10 } }
+      },
+      // flop: bad reviews (critic < 45) cost goodwill; the label's sales test (content dropOnFlop = units in the first
+      // `weeks` weeks, 0 = never) drops you
+      flop: { critic: 45, weeks: 12 },
+      recording: {
+        tracks: { ep: [4, 5], album: [8, 10] }, minEra: { ep: 'local', album: 'local' },
+        weeks: { ep: 2, album: 3, albumLong: 4, longAt: 9 },
+        takesPerSong: 3,               // auto takes per song per studio week (best counts; a played take can beat it)
+        take: { base: 32, drum: 0.55, over: 0.6, studio: 0.08, noise: 12, burnout: 0.3 },
+        production: { studio: 0.5, takes: 0.3, polish: 0.2, unknownTake: 50 },
+        burnout: -2, chemistry: 1, eventChance: 1   // studio weeks: long hours, but no driving and no hustling (restful)
+      },
+      styles: {                       // producer styles: studio-week burnout/mood, extra weeks, outlet biases
+        loud: { burnout: 2, outlets: { deci_hell: 4, pitchspork: -3 } },   // (cabin: the woods are restful)
+        cabin: { burnout: -5, mood: 2, outlets: { pitchspork: 3 } },
+        pitch: { outlets: { rolling_scone: 3, proclaim: 2 } },
+        tape: { outlets: { rolling_scone: 3, pitchspork: 2 } },
+        radio: { outlets: { proclaim: 3, pitchspork: -4, deci_hell: -3 } },
+        weird: { outlets: { pitchspork: 5, rolling_scone: -3, tailgate_weekly: -3 } }
+      },
+      tracklist: { base: 50, opener: 15, closer: 15, single: 10, frontSingle: 5, weak: 10, adjacent: 8, adjacentAt: 0.9 },
+      release: { minLead: 2, maxLead: 12, promoEach: 0.08, promoCap: 6, labelPromo: { gopherwood: 1, monolith: 4, diy: 0 },
+                 packages: [{ id: 'posters', name: 'Posters on every pole', cost: 150, promo: 1,
+                              blurb: 'Every lamp post from Warman to Moose Jaw. The staple gun is Baba\'s.' },
+                            { id: 'radio', name: 'Campus + community radio push', cost: 900, promo: 2,
+                              blurb: 'Nine stations, three of them heard beyond the parking lot.' },
+                            { id: 'tv', name: 'Late-night TV spot', cost: 3000, promo: 3,
+                              blurb: 'Thirty seconds between the curling highlights and a mattress ad.' }] },
+      // critic score = quality * 0.5 + production * 0.3 + polish * 0.1 + (tracklist - 50) * 0.2 + base - recycled + outlet
+      reviews: { quality: 0.5, production: 0.3, polish: 0.1, tracklist: 0.2, base: -2, epAdj: -3,
+                 // recycled: a track >= recycledAt similar (GG.songs.similarity) to another track or one on your last
+                 // `recycledReleases` releases costs `recycled` points (capped); jammed songs share a lot, so the bar is high
+                 recycledAt: 0.93, recycledReleases: 2, recycled: 4, recycledCap: 16, pitchsporkRecycled: 1.5, noise: 6, offGenreNoise: 10,
+                 recycledRef: 0.4, recycledQuoteAt: 2, recycledQuoteChance: 0.5,
+                 bands: [40, 62, 80] },   // quote bands when content reviews.scoreBands is missing
+      // week one = (fans * buyRate + buzz * buzzUnits) * critic curve * promo * label reach * single * kind * demands
+      sales: { buyRate: 0.09, buzzUnits: 6, critic: [0.4, 1.2, 1.5], reach: { gopherwood: 1.5, monolith: 2.6, diy: 1 },
+               kind: { ep: 0.5, album: 1 }, single: [0.85, 0.3], noise: [0.9, 1.1], decay: { ep: 0.55, album: 0.62 },
+               minUnits: 5, fansPerUnit: 0.3, unitValue: { ep: 0.25, album: 0.4 },   // $ per unit the royalty applies to
+               streamRate: 2.5, streamReach: { gopherwood: 1.3, monolith: 2, diy: 1 }, streamDecay: 0.965,
+               perStream: 0.0004, streamsPerUnit: 1250, minStreams: 50 },
+      chart: { top: 15000, bottom: 250, noise: 2 },   // Maple 100: units for #1 and #100 (log scale in between)
+      releaseFx: { buzz: 4, buzzPer: 12, chartBuzzPer: 12, moodGood: 5, moodBad: -4 },
+      certFx: { gold: { buzz: 8, fans: 200 }, platinum: { buzz: 12, fans: 500 } },
+      // bots: avg signs a live offer half the time; both avoid studio time they can't cover; good buys label-paid promo
+      bot: { avgSign: 0.5, avgDecline: 0.15, goodSpend: 0.5, avgSpend: 0.2, goodCushion: 800, avgCushion: 600, richAt: 20, goodMinQuality: 55,
+             avgMinQuality: 45, avgDeadlineWeeks: 16, avgRecordChance: 0.12, epGap: 30, diyAlbumYear: 3, diyAlbumFund: 1500,
+             avgDiyChance: 0.08, diyAfterOffer: 30, avgEpChance: 0.1, goodLead: 3, avgLeadMax: 4, labelPromo: 1000,
+             promoCushion: 2500, goodwillFloor: 30 }
+    },
+
+    // ---- Loonie Awards (24_sim_labels.js): nominations `lead` weeks before C.LOONIES_WEEK, releases in the last `window` weeks ----
+    loonies: { lead: 4, window: 24, breakthroughWeeks: 48, nominateAt: 55, rivalNominateAt: 40, liveMinGigs: 6, noise: 10,
+               other: [50, 80],   // strength of the other (parody) nominees
+               rival: { base: 58, perYear: 4, max: 95, bias: { breakthrough: -30, album: 6, single: 4, live: 6, fan_choice: 6, worst_van: -40 } },
+               win: { fund: 1000, fundScale: 0.15, fansScale: 1, fans: 50, fansPct: 0.015, fansCap: 600, buzz: 12, mood: 4 }, nominated: { buzz: 3 }, worstVan: { buzz: 6, van: 15 } },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one
@@ -114,9 +208,9 @@
       // how much a bot values one point of each stat when weighing card choices
       value: { fund: 0.04, fundBroke: 0.2, broke: 150, fans: 0.8, buzz: 0.6, chemistry: 0.8, burnout: 0.5,
                drumSkill: 1, mood: 0.2, skill: 0.8, book: 6 },
-      good: { restAt: 50, hustleBelow: 200, promoteAbove: 350, promoteBuzzBelow: 35, minSongs: 5, writeEvery: 3 },
+      good: { restAt: 50, hustleBelow: 200, brokeWeeks: 2, promoteAbove: 350, promoteBuzzBelow: 35, minSongs: 5, writeEvery: 3 },
       avg: { weights: { rehearse: 3, write: 2, promote: 1.2, book: 2, hustle: 1.5, rest: 1.3 },
-             restAt: 70, hustleBelow: 100 }
+             restAt: 70, hustleBelow: 100, brokeWeeks: 5 }   // v0.5: broke = under brokeWeeks of upkeep (bots hustle + book)
     }
   };
 })(window.GG);

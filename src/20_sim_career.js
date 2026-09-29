@@ -3,6 +3,10 @@
 // Pure sim: state is always the first argument, no DOM, and all randomness comes from GG.rngFor(state),
 // so the same seed replays the same career. Numbers live in content/economy.js + activities.js; text in content/lines.js
 // (with small fallbacks below so the sim runs even when a content module is missing).
+// v0.5 eras: career.setEra(state, era, why) (forward only; eraHistory; 'era:changed'); localHeroes (250 fans) = era
+// 'local'; GG.labels moves you to 'signed'. Hooks into GG.labels: studio weeks replace the blocks (runWeek), studio event
+// cards on session Mondays (startWeek), promo for a scheduled release (Promote), weekly offers/releases/charts/Loonies
+// (endWeek, wrap.labels), afterGig, bots (botWeek). Effect key `production`; era upkeep economy.eraUpkeep.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
@@ -58,8 +62,12 @@
     fans500: '500 fans. People sing along. Mostly the wrong words.',
     fans1000: '1,000 fans. {city} is starting to notice.',
     fund1000: 'First $1,000 in the band fund. Nobody touch it.',
-    localHeroes: 'Local heroes on the horizon. The garage era is over: from now on people can quit and vans can die.'
+    localHeroes: 'Local heroes on the horizon. The garage era is over: from now on people can quit and vans can die.',
+    signed: 'Signed! {band} is a real band now, with paperwork and everything.',
+    diyAlbum: 'A whole album, made and paid for by you. Signed to nobody, answerable to nobody.'
   };
+  // v0.5 eras: garage -> local (localHeroes) -> signed (a deal, or a DIY album) -> world (v0.7). Emits 'era:changed'.
+  var ERA_TEXT = { local: 'Local heroes.', signed: 'The Signed era.', world: 'World stage.' };
 
   /* ======================================================================
      Lookups: band, members, lines, text tokens
@@ -221,7 +229,9 @@
       state.debtToParents -= amt;
       d.repay = (d.repay || 0) + amt;
       if (state.debtToParents <= 0) { state.debtToParents = 0; delete state.flags.parentsLoan; }
-    }
+    },
+    // v0.5 (labels). production: ±n on the recording session's production score (studio event cards).
+    production: function (state, v, d) { if (GG.labels) GG.labels.applyProduction(state, v, d); }
   };
   // Applies every EFFECT_KEYS entry present in fx. Returns d (the deltas object, created if absent).
   career.applyEffects = function (state, fx, d) {
@@ -313,10 +323,11 @@
     return true;
   };
 
-  // Monday cards + v0.4 drama cards (ultimatums, returns, recruit quirk cards: never drawn, only forced by GG.drama).
+  // Monday cards + v0.4 drama cards (ultimatums, returns, recruit quirk cards: never drawn, only forced by GG.drama)
+  // + v0.5 studio event cards (drawn by GG.labels.studioEvent on Mondays of studio weeks).
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [], extra = GG.drama ? GG.drama.cards() : [];
+    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : []);
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -387,7 +398,8 @@
   }
   function snapshotYear(state) {
     state.yearStart = { year: state.year, fans: state.fans, fund: state.fund, gigs: state.stats.gigs,
-      songsWritten: state.stats.songsWritten, parentsLoans: state.stats.parentsLoans, earned: state.stats.earned };
+      songsWritten: state.stats.songsWritten, parentsLoans: state.stats.parentsLoans, earned: state.stats.earned,
+      releases: state.stats.releases || 0, royalties: state.stats.royalties || 0 };
   }
   function historyPoint(state) {
     return { w: state.totalWeek, fund: state.fund, fans: state.fans, buzz: state.buzz, chemistry: state.chemistry };
@@ -413,6 +425,16 @@
   }
 
   // args: { seed?, bandId?, slot?, player: { name, nick, presetId } }. Week one comes pre-booked at Buddy's.
+  // Moves the band to `era` (forward only), logs eraHistory and emits 'era:changed' { era, from, week, why }.
+  career.setEra = function (state, era, why) {
+    if (C.ERAS.indexOf(era) <= C.ERAS.indexOf(state.era)) return false;
+    var from = state.era;
+    state.era = era;
+    (state.eraHistory = state.eraHistory || [{ era: 'garage', week: 1 }]).push({ era: era, week: state.totalWeek });
+    GG.emit('era:changed', { era: era, from: from, week: state.totalWeek, why: why || null, text: ERA_TEXT[era] || '' });
+    return true;
+  };
+
   career.newCareer = function (args) {
     args = args || {};
     var E = econ(), p = args.player || {}, bandId = args.bandId || 'hail_damage';
@@ -438,8 +460,12 @@
       listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
       van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null,
       // v0.4 (27_sim_drama): pay the band, fill-ins, the recruit ad, originals who joined your rival
-      payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: []
+      payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: [],
+      // v0.5 (24_sim_labels): eras, labels, the studio, records, awards, the trophy wall
+      eraHistory: [{ era: 'garage', week: 1 }], label: null, labelOffers: [], labelNext: {}, pastDeals: [], session: null,
+      albums: [], awards: [], trophies: [], loonies: null, liveYear: { gigs: 0, score: 0 }
     };
+    if (GG.labels) GG.labels.init(state);
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -472,7 +498,8 @@
     endStaleChains(state);
     snapshotWeek(state);
     var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
-    var card = forced ? forced.card : drawCard(state, rng);
+    var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
@@ -573,6 +600,7 @@
     },
     promote: function (state, A, f, rng, d) {
       addStat(state, 'fund', -A.cost, d);
+      if (GG.labels) GG.labels.promoBlock(state, f, d);   // v0.5: hype for a scheduled release
       addStat(state, 'buzz', rngRound(A.buzz * f, rng), d);
       addStat(state, 'fans', rngRound(rng.int(A.fans[0], A.fans[1]) * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
@@ -593,7 +621,7 @@
       addStat(state, 'burnout', A.burnout, d);
     },
     hustle: function (state, A, f, rng, d) {
-      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f);
+      var cash = Math.round(rng.int(A.cash[0], A.cash[1]) * f * ((econ().hustleEra || {})[state.era] || 1));   // v0.5: fame pays (lessons, session work)
       addStat(state, 'fund', cash, d);
       state.stats.earned += cash; state.stats.hustles++;
       addStat(state, 'burnout', A.burnout, d);
@@ -622,7 +650,13 @@
     if (state.phase === 'wrap' || state.phase === 'gig') return state.lastWeek;   // double-tap safe
     var rng = GG.rngFor(state), counts = {}, blocks = [];
     state.phase = 'week';
-    for (var i = 0; i < C.BLOCKS_PER_WEEK; i++) {
+    var studio = GG.labels && GG.labels.inSession(state) ? GG.labels.studioWeek(state, rng) : null;   // v0.5: studio weeks
+    if (studio) studio.forEach(function (b, i) {
+      blocks.push(b);
+      GG.emit('block:done', { index: i, activity: b.activity, lines: b.lines, deltas: b.deltas });
+      changed(state);
+    });
+    for (var i = 0; !studio && i < C.BLOCKS_PER_WEEK; i++) {
       var id = state.plan && ACT[state.plan[i]] ? state.plan[i] : 'rest';
       counts[id] = (counts[id] || 0) + 1;
       var block = runActivity(state, id, counts[id], rng);
@@ -653,6 +687,7 @@
     if (GG.world) GG.world.shape(state, g, r, rng);
     GG.gig.applyResult(state, r);
     if (GG.world) GG.world.afterGig(state, g, r, rng);
+    if (GG.labels) GG.labels.afterGig(state, r);   // v0.5: the Best Live Act case for the Loonies
     state.liveGig = null;
     GG.emit('gig:done', { result: r });
     changed(state);
@@ -675,6 +710,11 @@
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
+  // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep).
+  career.upkeep = function (state) {
+    var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
+    return Math.round(E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0));
+  };
   function decayBuzz(state) {
     if (state.buzz <= 0) return 0;
     return -addStat(state, 'buzz', -Math.max(1, Math.round(state.buzz * econ().buzzDecay)));
@@ -735,7 +775,11 @@
     hit('firstSong', state.stats.songsWritten >= 1);
     E.fanMilestones.forEach(function (n) { hit('fans' + n, state.fans >= n); });
     hit('fund' + E.fundMilestone, state.fund >= E.fundMilestone);
-    hit('localHeroes', !state.protected);   // v0.4: garage-era protection is over (250 fans)
+    // v0.4: garage-era protection is over (250 fans). v0.5: that is also the Local Heroes era.
+    hit('localHeroes', GG.drama ? !state.protected : state.fans >= ((E.eras || {}).localFans || 250));
+    if (state.milestones.localHeroes && state.era === 'garage') career.setEra(state, 'local', 'fans');
+    hit('signed', !!(state.label && !state.label.dropped));
+    hit('diyAlbum', (state.albums || []).some(function (a) { return a.status === 'released' && a.kind === 'album' && !a.dealId; }));
     return hits;
   }
   function statDeltas(ws, state) {
@@ -757,7 +801,8 @@
       year: state.year, fans: state.fans, fansGained: state.fans - (ys.fans || 0), fund: state.fund,
       gigs: state.stats.gigs - (ys.gigs || 0), songsWritten: state.stats.songsWritten - (ys.songsWritten || 0),
       parentsLoans: state.stats.parentsLoans - (ys.parentsLoans || 0), earned: state.stats.earned - (ys.earned || 0),
-      bestGrade: state.stats.bestGrade,
+      bestGrade: state.stats.bestGrade, era: state.era,
+      releases: (state.stats.releases || 0) - (ys.releases || 0), royalties: (state.stats.royalties || 0) - (ys.royalties || 0),
       line: career.pickLine(state, rng, contentLines('yearEnd'), FALLBACK_LINES.yearEnd)
     };
   }
@@ -782,13 +827,14 @@
     var wrap = { totalWeek: state.totalWeek, year: state.year, week: state.week, deltas: null,
       upkeep: 0, buzzDecay: 0, parentsLoan: 0, guilt: null, members: null, chat: null, milestones: null,
       yearEnd: false, yearSummary: null, ended: false };
-    wrap.upkeep = -addStat(state, 'fund', -Math.round(E.weeklyUpkeep + state.fans * E.upkeepPerFan), null);
+    wrap.upkeep = -addStat(state, 'fund', -career.upkeep(state), null);
     wrap.buzzDecay = decayBuzz(state);
     addStat(state, 'fans', rngRound(state.buzz * E.buzzFans, rng), null);
     addStat(state, 'burnout', -E.burnoutRecovery, null);
     driftMoods(state);
     wrap.chat = [];
     if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
+    if (GG.labels) GG.labels.weekly(state, rng, wrap);  // v0.5: offers, deals, releases, charts, royalties, Loonies
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -853,12 +899,17 @@
   };
   career.botOffer = function (state, style) {
     if (!state.offer || state.gig) return false;
+    // v0.5: a broke band (after the garage era) turns down shows that cost more than they pay
+    if (style !== 'good' && GG.world && state.fund < career.brokeLine(state, econ().bot.avg) && GG.world.estimate(state, state.offer).net < 0) return false;
     return style === 'good' || GG.rngFor(state).chance(econ().bot.avgAcceptOffer);
   };
+  // v0.5: bots feel broke relative to their weekly bills (a signed band burns more than $100 a week).
+  career.brokeLine = function (state, B) { return state.era === 'garage' ? B.hustleBelow : Math.max(B.hustleBelow, career.upkeep(state) * (B.brokeWeeks || 0)); };
   function goodPlan(state, B) {
     var want = [];
     if (state.burnout >= B.restAt) want.push('rest');
-    if (state.fund < B.hustleBelow) want.push('hustle');
+    if (state.fund < career.brokeLine(state, B)) want.push('hustle');
+    if (GG.labels && GG.labels.promoWanted(state)) want.push('promote');   // v0.5: hype the release
     if (!state.gig) want.push('book');
     if (state.songs.length < B.minSongs || state.totalWeek % B.writeEvery === 0) want.push('write');
     want.push('rehearse');
@@ -869,13 +920,16 @@
     return plan;
   }
   function avgPlan(state, B, rng) {
-    var plan = [];
+    var plan = [], broke = state.fund < career.brokeLine(state, B);
     for (var i = 0; i < C.BLOCKS_PER_WEEK; i++) {
       plan.push(rng.weighted(C.ACTIVITIES, function (a) {
         var w = B.weights[a] || 0;
         if (a === 'rest' && state.burnout >= B.restAt) w *= 4;
-        if (a === 'hustle' && state.fund < B.hustleBelow) w *= 4;
+        if (a === 'hustle' && broke) w *= 4;
         if (a === 'book' && state.gig) w *= 0.3;
+        else if (a === 'book' && broke && state.era !== 'garage') w *= 2;
+        if (a === 'promote' && broke && state.era !== 'garage') w *= 0.3;
+        if (a === 'promote' && GG.labels && GG.labels.promoWanted(state)) w *= B.promoRelease || 3;
         return w;
       }));
     }
@@ -891,6 +945,7 @@
     if (start.card) career.resolveCard(state, career.botChoice(state, start.card, style));
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
     if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
+    if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough

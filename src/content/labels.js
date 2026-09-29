@@ -16,12 +16,12 @@
     gopherwood: {
       id: 'gopherwood', name: 'Gopherwood Records',
       blurb: 'A tiny indie label run out of a former feed store in Humboldt. Small advance, big cut, zero opinions about your cape.',
-      advance: [4000, 10000], royalty: 0.5, albums: 2, deadlineWeeks: 40,
+      advance: [1500, 4000], royalty: 0.5, albums: 2, deadlineWeeks: 40,
       demands: [
         { kind: 'showcase', text: 'Play the Gopherwood Christmas showcase in Humboldt. Every year. Forever.', card: 'signed_gopherwood_showcase' },
         { kind: 'sampler', text: "One song on the label sampler, 'Songs from the Feed Store, Vol. 9'." }
       ],
-      offerMinFans: 500, offerMinBuzz: 35, dropOnFlop: 800,
+      offerMinFans: 500, offerMinBuzz: 25, dropOnFlop: 800,
       rep: { name: 'Wendell Pasloski',
         blurb: 'Retired shop teacher. Owns the label, the feed store and a label van with a gopher painted on the side. Signs contracts in carpenter pencil.' },
       offer: "Wendell hands you a contract typed on a real typewriter. 'Two records. You keep half. I don't tell you what to play. Coffee?'",
@@ -31,14 +31,14 @@
     monolith: {
       id: 'monolith', name: 'Monolith Records',
       blurb: 'The big one. A glass tower in Toronto with a lobby waterfall and a legal department bigger than Humboldt. Huge advance. Opinions.',
-      advance: [25000, 50000], royalty: 0.16, albums: 3, deadlineWeeks: 30,
+      advance: [8000, 16000], royalty: 0.16, albums: 3, deadlineWeeks: 30,
       demands: [
         { kind: 'english', text: 'Marcel should sing in English. Some of the time. Most of the time.', card: 'signed_monolith_english' },
         { kind: 'radio', text: 'The lead single needs a 3:30 radio edit. The solo is not 3:30.', card: 'signed_monolith_radio' },
         { kind: 'image', text: 'An image consultant will be flying in to "refresh the brand".', card: 'signed_monolith_image' },
         { kind: 'feature', text: 'A duet with a Monolith pop-country act, for "reach".' }
       ],
-      offerMinFans: 2500, offerMinBuzz: 60, dropOnFlop: 8000,
+      offerMinFans: 2500, offerMinBuzz: 45, dropOnFlop: 8000,
       rep: { name: 'Brayden Castellano-Pratt',
         blurb: 'Monolith A&R. Wears sunglasses indoors, like Kenji, but with none of the mystery. Says "love that" about everything, including bad news.' },
       offer: "Brayden slides a contract the thickness of a phone book across a boardroom table. 'Three records, huge advance, the machine behind you. Love that.'",

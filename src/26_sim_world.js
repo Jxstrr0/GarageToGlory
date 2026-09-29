@@ -2,6 +2,9 @@
 // pay deals, opening slots (sometimes for your rival), venue reputation + the banned wall, genre-fit comedy,
 // road km + gas from content/map.js, the van (The Moose Hearse: condition / space / comfort, wear per km,
 // burnout on long drives, breakdowns only once the garage-era protection is off) and road trips + road cards.
+// v0.5 (CAREER): world.maxTier(state) (tier-3 theatres from the Signed era, economy.world.eraTier), world.scene(state)
+// (fans gigs can reach per era; shape() rescales gig fans to it; theatres convert fewer new fans); afterGig takes the
+// Signed-era management commission + theatre crew (r.commission, r.crew; economy.world.commission / crew).
 // Pure sim: no DOM, no audio. Randomness only from rngs passed in or seeded ones (the board and the banter use
 // their own RNG seeded by career seed + week, so they never shift the career RNG).
 //   GIG (listing) = contracts GIG + { id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening: null|
@@ -25,11 +28,17 @@
     repDelta: { S: 2, A: 1, B: 0, C: 0, D: -2 },
     repRange: [-3, 3], banAt: -3, rebookAt: 2,
     fresh: [0.4, 0.6, 0.8],      // new-fan factor when you played the same venue 1 / 2 / 3 weeks ago (same faces)
-    tierWeight: { 1: 1, 2: 1.3 }, bigBandTier1: 250,
+    tierWeight: { 1: 1, 2: 1.3, 3: 1.6 }, bigBandTier1: 250,
     clashFit: 0.45, hazardPay: 1.25,   // genre fit below clashFit: flat deals pay hazard rates, boots fly
     opening: { chance: 0.4, minFans: 20, needFrac: 0.35, pay: [20, 45], exposureChance: 0.35, setSize: 2,
                slice: 0.45, fanShare: 0.5, rivalChance: 0.08, rivalMinFans: 60, rivalDraw: 260 },
     road: { chanceLocal: 0.2, chanceLong: 0.9, longKm: 100 },
+    // v0.5: tier by era (theatres open in the Signed era), the fan scene per era, new-fan factor at theatres
+    eraTier: { garage: 2, local: 2, signed: 3, world: 3 },
+    scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },
+    theatreFans: 0.4,
+    commission: { garage: 0, local: 0, signed: 0.15, world: 0.2 },   // management + booking agent, off the top of gig pay
+    crew: { 3: 150 },            // $ per show by venue tier (theatres need a crew)
     van: { condition: 72, space: 3, comfort: 2, comfortMax: 5, wearPerKm: 0.008, wearBase: 0.3,
            burnoutFromKm: 60, burnoutPer100: 0.5, tiredAt: 30, breakdownK: 0.5, towCost: [60, 140],
            repairPerPoint: 3, repairStep: 20 }
@@ -118,8 +127,12 @@
   };
   // A venue you could headline this week: listed venue, tier in range, enough fans, not banned, not card-only.
   world.bookable = function (state, v) {
-    return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= cfg().maxTier && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0);
+    return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= world.maxTier(state) && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0);
   };
+  // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
+  world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
+  // v0.5: how many fans gigs can reach in your era (the garage-era scene is Saskatchewan; Signed is national).
+  world.scene = function (state) { var K = cfg(), v = K.scene && K.scene[state && state.era]; return v || econ().gig.localScene; };
   world.fitLabel = function (fit) {
     return fit >= 0.85 ? { id: 'great', label: 'Your crowd', icon: '🤘' } : fit >= 0.65 ? { id: 'good', label: 'Decent fit', icon: '👍' }
       : fit >= cfg().clashFit ? { id: 'meh', label: 'Tough room', icon: '😬' } : { id: 'clash', label: 'Wrong crowd: expect flying boots', icon: '👢' };
@@ -219,7 +232,7 @@
 
   // An offer that arrives on its own (once you have fans): like v0.1, skewed to better venues, genre fit and rep.
   world.offer = function (state, rng) {
-    var K = cfg(), maxTier = (econ() && econ().offerMaxTier) || 2, home = world.home(state);
+    var K = cfg(), maxTier = Math.max((econ() && econ().offerMaxTier) || 2, world.maxTier(state)), home = world.home(state);
     var pool = venues().filter(function (v) { return world.bookable(state, v) && v.tier <= maxTier; });
     var v = pool.length ? rng.weighted(pool, function (x) {
       return fitOf(x, state.genre) * x.tier * Math.max(0.2, 1 + K.repWeight * world.rep(state, x.id)) / (1 + world.km(home, x.city) / K.kmSoft);
@@ -255,15 +268,17 @@
     var crowd = Math.min(l.capacity || 0, Math.round((v.walkIns || 0) + state.fans * G.fanDraw + state.buzz * G.buzzDraw));
     var slice = l.opening ? Math.max(0, Math.min((l.capacity || 0) - crowd, Math.round(l.opening.draw * K.opening.slice))) : 0;
     var pay = l.deal === 'flat' ? l.pay : l.deal === 'door' ? Math.round(l.pay * crowd) : 0;
-    var head = Math.max(0, 1 - state.fans / G.localScene);
+    var head = Math.max(0, 1 - state.fans / world.scene(state)) * ((l.tier || 0) >= 3 ? K.theatreFans : 1);
     var fans = Math.round((crowd * G.conversion.B * (0.5 + 0.5 * fit) * (l.deal === 'exposure' ? G.exposureFanBonus : 1)
       + slice * G.conversion.B * K.opening.fanShare) * head);
     fans = Math.round(fans * world.freshness(state, l.venueId));
-    return { crowd: crowd + slice, pay: pay, fans: fans, net: pay - (l.gas || 0), burnout: tripBurnout(state, l.km || 0) };
+    var costs = Math.round(pay * ((K.commission || {})[state.era] || 0)) + ((K.crew || {})[l.tier] || 0);   // v0.5: signed-era costs
+    return { crowd: crowd + slice, pay: pay, fans: fans, net: pay - (l.gas || 0) - costs, costs: costs, burnout: tripBurnout(state, l.km || 0) };
   };
   world.value = function (state, l) {
     var W = econ().bot.value, e = world.estimate(state, l), fit = l.fit != null ? l.fit : 0.7;
-    return e.net * (state.fund < W.broke ? W.fundBroke : W.fund) + e.fans * W.fans - e.burnout * W.burnout + (fit - 0.5) * 4;
+    var broke = state.era === 'garage' || !GG.career.brokeLine ? W.broke : Math.max(W.broke, GG.career.brokeLine(state, econ().bot.avg));   // v0.5
+    return e.net * (state.fund < broke ? W.fundBroke : W.fund) + e.fans * W.fans - e.burnout * W.burnout + (fit - 0.5) * 4;
   };
   // Bots pick a listing id ('skip' when nothing is worth it). 'good' = best value; 'avg' = best half the time.
   world.botBook = function (state, style) {
@@ -272,8 +287,9 @@
     var best = null, bestV = -Infinity;
     list.forEach(function (l) { var v = world.value(state, l); if (v > bestV) { bestV = v; best = l; } });
     if (style === 'avg') {
-      var rng = GG.rngFor(state);
-      return rng.chance(econ().bot.avgSmart) ? best.id : rng.pick(list).id;
+      var rng = GG.rngFor(state), B = econ().bot.avg;   // v0.5: a broke signed band books the best-paying show
+      var broke = state.era !== 'garage' && GG.career.brokeLine && state.fund < GG.career.brokeLine(state, B);
+      return broke || rng.chance(econ().bot.avgSmart) ? best.id : rng.pick(list).id;
     }
     return bestV > 0 ? best.id : 'skip';
   };
@@ -287,11 +303,18 @@
     r.lines = r.lines || [];
     r.km = g.km != null ? g.km : world.km(world.home(state), g.city);
     r.opening = g.opening || null;
+    // v0.5: the gig sim's fan headroom is the garage-era scene; bigger eras reach more people, theatres convert fewer
+    var scene = world.scene(state), tier3 = (g.tier || 0) >= 3;
+    if (scene !== G.localScene || tier3) {
+      var fit = g.fit != null ? g.fit : 0.7, fm = GG.drama ? GG.drama.gigMods(state).fansMult : 1;
+      var x0 = (r.crowd || 0) * (G.conversion[r.grade] || 0) * (0.5 + 0.5 * fit) * (g.deal === 'exposure' ? G.exposureFanBonus : 1) * fm;
+      r.fans = rngRound(x0 * Math.max(0, 1 - state.fans / scene) * (tier3 ? K.theatreFans : 1), rng);
+    }
     if (g.opening) {
       var room = Math.max(0, (g.capacity || r.capacity || 0) - (r.crowd || 0));
       var slice = Math.min(room, Math.round(g.opening.draw * K.opening.slice));
       r.crowd = (r.crowd || 0) + slice;
-      var x = slice * (G.conversion[r.grade] || 0) * K.opening.fanShare * Math.max(0, 1 - state.fans / G.localScene);
+      var x = slice * (G.conversion[r.grade] || 0) * K.opening.fanShare * Math.max(0, 1 - state.fans / world.scene(state));
       r.fans = (r.fans || 0) + rngRound(x, rng);
       if (g.deal === 'door' && GG.gig && GG.gig.payFor) r.pay = GG.gig.payFor(g, r.crowd);
       r.lines.push('Opening for ' + g.opening.name + '. ' + pickLine(state, rng, 'openingSlot', 'You stole a few of their fans.'));
@@ -325,6 +348,17 @@
     if (banned) r.lines.push(pickLine(state, rng, 'venueBanned', 'Banned. Your photo goes on the wall.'));
     else if (after > before && after >= K.rebookAt) r.lines.push(pickLine(state, rng, 'venueUp', 'They want you back.'));
     else if (after < before) r.lines.push(pickLine(state, rng, 'venueDown', 'The owner is not impressed.'));
+    var rate = (K.commission || {})[state.era] || 0;   // v0.5: a signed band has a manager and a booking agent
+    r.commission = rate && r.pay > 0 ? Math.round(r.pay * rate) : 0;
+    if (r.commission) {
+      GG.career.applyEffects(state, { fund: -r.commission }, d);
+      r.lines.push('Management and the booking agent take their ' + Math.round(rate * 100) + '% (' + U.fmtMoney(r.commission) + ').');
+    }
+    r.crew = (K.crew || {})[g.tier] || 0;
+    if (r.crew) {
+      GG.career.applyEffects(state, { fund: -r.crew }, d);
+      r.lines.push('Crew, sound and lights: ' + U.fmtMoney(r.crew) + '.');
+    }
     r.travel = world.travel(state, g, rng, d);
     var t = r.travel;
     if (t.breakdown) r.lines.push(pickLine(state, rng, 'breakdown', 'The van broke down.') + ' (Tow: ' + U.fmtMoney(t.breakdown.cost) + ')');

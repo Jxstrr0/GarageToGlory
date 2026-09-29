@@ -59,7 +59,7 @@
   //   book  : <venueId>   books that venue for this weekend (replaces nothing if a gig is already booked)
   //   chat  : { who: <memberId|npcId>, text }        posts a group-chat message
   C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat',
-    'member', 'payCut', 'repay'];   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
+    'member', 'payCut', 'repay', 'production'];   // v0.5: production ±n on the recording session (studio event cards)   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
 
   // Keys allowed in a card gate. All present conditions must hold.
   //   era:[..] genre:[..] region:[..] band:[bandId..]
@@ -194,6 +194,8 @@
    'crowd:moment'   { kind }                  gig session (mosh, lighters, boo, genre moments, band effects)
    'gig:band'       { who, action }           gig session: 'solo' | 'fill' | 'miss' | 'capeSpin'
    'road:resolved'  { card, choice, deltas }  world, after a road card on a van trip
+   'era:changed' {era}  'label:offer'  'label:signed'  'label:dropped' {reason}  'label:fulfilled'  'session:week'
+   'album:released'  'album:reviews'  'chart:week'  'cert'  'loonies:nominations'  'loonies:result'   (v0.5 labels sim)
    'week:done'      { result: WEEK_RESULT }   career.runWeek
    'week:wrap'      { wrap: WRAP }            career.endWeek (main autosaves on this)
    'year:end'       { year, summary }         career.endWeek
