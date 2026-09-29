@@ -415,13 +415,14 @@ test('lines: Kenji never speaks', () => {
   for (const [p, s] of kenji) ok(/^(…|\.|👍|\(.*\))$/u.test(s), p + ': Kenji said words: ' + s);
 });
 
-test('text tokens are only {player} {band} {city} {nick:id} {name:id}', () => {
+test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {recruit}; {who} {gripe} in drama.stageText)', () => {
   const bad = [];
   for (const [p, s] of strings(K, 'content')) {
     const re = /\{([^}]*)\}/g; let m;
     while ((m = re.exec(s))) {
       const t = m[1], parts = t.split(':');
-      const good = ['player', 'band', 'city'].includes(t) || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
+      const good = ['player', 'band', 'city', 'recruit'].includes(t) || (/^content\.drama\.stageText/.test(p) && ['who', 'gripe'].includes(t))
+        || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
     }
     if (/[{}]/.test(s.replace(/\{[^{}]*\}/g, ''))) bad.push(p + ': stray brace');
@@ -552,6 +553,86 @@ test('lines: van banter (Kenji silent), road + venue pools', () => {
   ok(L.vanKenji.length >= 4 && L.vanKenji.every(s => /^\(.*\)$/.test(s)), 'Kenji only gets stage directions');
   ['vanArrive', 'genreClash', 'venueUp', 'venueDown', 'venueBanned', 'vanTired', 'breakdown', 'openingSlot', 'sameCrowd']
     .forEach(k => ok(Array.isArray(L[k]) && L[k].length >= 3, 'lines.' + k + ' ≥3'));
+});
+
+// ---- v0.4 drama + recruits --------------------------------------------------
+const DRAMA_CARDS = (K.dramaCards || []).concat(...((K.recruits && K.recruits.quirks) || []).map(q => q.cards || []));
+const RULES = ['spotlight', 'cape', 'solos', 'practice', 'freedom', 'baba', 'mystery'];
+const ACTS = ['settle', 'quit', 'return', 'later', 'rival'];
+test('drama cards: schema, ids unique across all cards, speakers, lengths, effects (incl. member/payCut/repay)', () => {
+  const ids = new Set(CARDS.map(c => c.id));
+  ok(DRAMA_CARDS.length >= 25, 'drama + quirk cards: ' + DRAMA_CARDS.length);
+  for (const c of DRAMA_CARDS) {
+    const w = 'drama card ' + c.id;
+    ok(/^[a-z][a-z0-9_]*$/.test(c.id) && !ids.has(c.id), w + ': id bad or duplicate'); ids.add(c.id);
+    Object.keys(c).forEach(k => ok(CARD_KEYS.includes(k) && !['chain', 'step', 'forceWeek'].includes(k), w + ': key ' + k));
+    ok(C.CARD_TYPES.includes(c.type), w + ': type');
+    ok(HD_IDS.includes(c.speaker) || NPC_IDS.includes(c.speaker) || c.speaker === 'recruit', w + ': speaker ' + c.speaker);
+    ok(str(c.title, LIMIT.title) && str(c.text, LIMIT.text), w + ': title/text length (' + c.text.length + ')');
+    ok(c.choices.length >= 2 && c.choices.length <= 3, w + ': 2–3 choices');
+    c.choices.forEach((ch, i) => {
+      const cw = w + '#' + i;
+      Object.keys(ch).forEach(k => ok(CHOICE_KEYS.includes(k), cw + ': key ' + k));
+      ok(str(ch.label, LIMIT.label) && str(ch.outcome, LIMIT.outcome), cw + ': label/outcome length');
+      if (ch.roll) ok(/^Gamble: /.test(ch.hint || '') && ['success', 'fail'].every(b => str(ch.roll[b].outcome, LIMIT.outcome)), cw + ': gamble');
+    });
+    for (const { fx, where } of effectsOf(c)) {
+      Object.keys(fx).forEach(k => ok(C.EFFECT_KEYS.includes(k), where + ': unknown effect ' + k));
+      for (const k of ['mood', 'skill']) if (fx[k]) for (const id in fx[k]) ok(id === 'all' || id === 'recruit' || HD_IDS.includes(id), where + ': ' + k + ' key ' + id);
+      if ('fund' in fx) ok(isInt(fx.fund) && fx.fund >= -250 && fx.fund <= 200, where + ': fund');
+      if ('payCut' in fx) ok(fx.payCut === 0.05, where + ': payCut steps of +0.05');
+      if (fx.member) (Array.isArray(fx.member) ? fx.member : [fx.member]).forEach(x =>
+        ok((x.id === 'recruit' || HD_IDS.includes(x.id)) && ACTS.includes(x.act), where + ': member ' + JSON.stringify(x)));
+    }
+  }
+});
+
+test('drama: every original has wants (valid rules), 3 grumble + 3 passive lines, an ultimatum, returns and an exit storyline', () => {
+  const D = K.drama, byId = id => DRAMA_CARDS.find(c => c.id === id);
+  ok(D && D.members && D.recruit && D.fillIns && D.stageText && D.gripes, 'drama content present');
+  for (const id of HD_IDS) {
+    const m = D.members[id], w = 'drama.' + id;
+    ok(m, w + ' missing');
+    ok(m.wants.length >= 1 && m.wants.every(x => str(x.text, LIMIT.line) && str(x.gripe, 40) && RULES.includes(x.rule)), w + ': wants');
+    ok(m.grumble.length >= 2 && m.passive.length >= 2 && m.grumble.concat(m.passive).every(t => str(t, LIMIT.chat)), w + ': stage lines');
+    const u = byId(m.ultimatum);
+    ok(u && u.choices.some(ch => ch.effects.member.act === 'quit') && u.choices.filter(ch => ch.effects.member.act === 'settle').length >= 1, w + ': ultimatum settles or quits');
+    const x = m.exit;
+    ok(x && str(x.status, LIMIT.line) && x.returnAfter[0] >= 6 && x.returnAfter[1] <= 40 && x.beats.length >= 2 && str(x.changed, LIMIT.line), w + ': exit storyline');
+    ok(x.beats.every(b => isInt(b.at) && str(b.text, LIMIT.chat) && (HD_IDS.includes(b.who) || NPC_IDS.includes(b.who))), w + ': beats');
+    ok(str(x.backLine.text, LIMIT.chat) && str(x.quitLine.text, LIMIT.chat) && str(m.epilogue, LIMIT.line), w + ': quit/back/epilogue');
+    const rf = byId(m.returnFilled);
+    ok(rf && ['return', 'rival'].every(a => rf.choices.some(ch => ch.effects.member.act === a && ch.effects.member.id === id)), w + ': keep-vs-original card');
+    if (!x.away) ok(byId(m.return) && byId(m.return).choices.some(ch => ch.effects.member.act === 'return'), w + ': return card');
+  }
+  ok(D.members.kenji.exit.away, "Kenji's exit is a disappearance");
+  ok(byId(D.recruit.ultimatum), 'recruit ultimatum');
+  Object.keys(D.fillIns).forEach(r => ok(D.fillIns[r].length >= 1, 'fill-ins ' + r));
+});
+
+test('drama: Kenji never speaks in drama lines either', () => {
+  const k = K.drama.members.kenji;
+  for (const s of k.grumble.concat(k.passive, [k.exit.quitLine.text, k.exit.backLine.text])) ok(/^(…|\.|👍|\(.*\))$/u.test(s), 'Kenji said words: ' + s);
+  for (const c of DRAMA_CARDS.filter(c => c.speaker === 'kenji')) ok(!/[“"']\s*[A-Z][a-z]+[^'"”]*[.!?]['"”]/.test(c.text), c.id + ': Kenji quoted');
+});
+
+test('recruits: name pools for all four genres, hometowns, 9 traits, ≥10 quirks with cards, chat', () => {
+  const R = K.recruits;
+  C.GENRES.forEach(g => ok(R.names[g] && R.names[g].first.length >= 8 && R.names[g].last.length >= 8 && R.names[g].nicks.length >= 6, 'names.' + g));
+  C.REGIONS.forEach(r => ok(R.hometowns[r] && R.hometowns[r].length >= 3, 'hometowns.' + r));
+  const map = Object.values(K.map.cities).map(c => c.name);
+  ok(map.every(n => R.hometowns.canada.includes(n)), 'every map city is a possible hometown');
+  eq(R.traits.map(t => t.id), ['reliable', 'road_warrior', 'showboat', 'studio_rat', 'hype_machine', 'fast_learner', 'party_animal', 'frugal', 'local_legend']);
+  R.traits.forEach(t => ok(str(t.name, 20) && str(t.effect, 90) && isInt(t.chem), 'trait ' + t.id));
+  ok(R.quirks.length >= 10, 'quirks ≥ 10');
+  R.quirks.forEach(q => ok(str(q.text, 70) && q.cards.length >= 1 && q.cards.length <= 2 && q.cards.every(c => c.speaker === 'recruit'), 'quirk ' + q.id));
+  ['happy', 'ok', 'grumpy'].forEach(b => ok(R.chat[b].length >= 4, 'recruit chat ' + b));
+});
+
+test('guilt cards: ≥5 gated on parentsLoan with repay choices', () => {
+  const guilt = CARDS.filter(c => (c.gate.flags || []).includes('parentsLoan') && c.choices.some(ch => ch.effects && ch.effects.repay));
+  ok(guilt.length >= 5, 'guilt cards with repay: ' + guilt.length);
+  guilt.forEach(c => c.choices.forEach(ch => { if (ch.effects && 'repay' in ch.effects) ok(isInt(ch.effects.repay) && ch.effects.repay >= 20 && ch.effects.repay <= 300, c.id + ': repay'); }));
 });
 
 // ---- No USA, parody names only -------------------------------------------

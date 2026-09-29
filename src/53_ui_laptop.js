@@ -1,5 +1,6 @@
 // 53_ui_laptop.js: the laptop on the cooler. Tabs: Group chat (member-coloured bubbles, newest at the bottom),
 // Band (members' skill + mood, your drum skill, the song catalog: tap a song to hear it) and Money (fund, debt to parents, fund history).
+// v0.4: the Band tab's member section comes from GG.ui.bandPanel (58_ui_band: pay the band, stages, holes, recruits).
 // Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
@@ -13,6 +14,7 @@
     var out = [], week = null;
     msgs.forEach(function (m) {
       if (m.week !== week) { week = m.week; out.push(el('div.day-sep', 'Week ' + (((week - 1) % GG.contracts.WEEKS_PER_YEAR) + 1) + ' · Year ' + (Math.floor((week - 1) / GG.contracts.WEEKS_PER_YEAR) + 1))); }
+      if (ui.chatMsg) { out.push(ui.chatMsg(m)); return; }   // v0.4: tone-aware (passive-aggressive, news)
       var who = ui.who(m.who);
       out.push(el('div.msg', [el('span.w', { style: { color: who.text } }, who.short), el('div.t', { style: { borderLeftColor: who.color } }, fill(m.text))]));
     });
@@ -22,9 +24,10 @@
   function statRow(label, value, color, right) {
     return el('div.kv', [el('span', label), ui.bar(value, 100, { color: color }), el('b', right != null ? right : String(Math.round(value)))]);
   }
-  function bandTab(st) {
+  function bandTab(st, rerender) {
     var out = [];
-    (st.members || []).forEach(function (m) {
+    if (ui.bandPanel) out.push(ui.bandPanel(st, rerender));   // v0.4: pay the band, stages, wants, holes, recruits
+    else (st.members || []).forEach(function (m) {
       var who = ui.who(m.id), label = ui.moodLabel(m.mood);
       out.push(el('div.mem-card', [
         el('div.row', [ui.avatar(who), el('div.grow', [el('div', { style: 'font-weight:800' }, who.full || who.name + (who.nick ? ' "' + who.nick + '"' : '')),
@@ -82,7 +85,7 @@
       var tab = d.tab || lastTab;
       lastTab = tab;
       s.setTitle('The laptop', 'CRACKED SCREEN · 12% BATTERY');
-      var body = tab === 'band' ? bandTab(st) : tab === 'money' ? moneyTab(st) : chatTab(st);
+      var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st) : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);

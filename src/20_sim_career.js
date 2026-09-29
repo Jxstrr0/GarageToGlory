@@ -57,7 +57,8 @@
     fans250: '250 fans. The Gopher Hole knows your name.',
     fans500: '500 fans. People sing along. Mostly the wrong words.',
     fans1000: '1,000 fans. {city} is starting to notice.',
-    fund1000: 'First $1,000 in the band fund. Nobody touch it.'
+    fund1000: 'First $1,000 in the band fund. Nobody touch it.',
+    localHeroes: 'Local heroes on the horizon. The garage era is over: from now on people can quit and vans can die.'
   };
 
   /* ======================================================================
@@ -70,6 +71,7 @@
   };
   function activeMembers(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
   function findMember(state, id) {
+    if (id === 'recruit') id = state && state.card && state.card.who;   // v0.4: the member a drama card is about
     var list = state && state.members || [];
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return null;
@@ -101,11 +103,13 @@
   }
 
   // Replaces {player} {band} {city} {nick:<id>} {name:<id>} ({name} = first name; npc ids work too).
+  // v0.4: {recruit} = the member the current drama card is about (state.card.who; a recruit or a returning original).
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
-    return String(text).replace(/\{(player|band|city|nick|name)(?::([\w-]+))?\}/g, function (all, key, id) {
+    return String(text).replace(/\{(player|band|city|nick|name|recruit)(?::([\w-]+))?\}/g, function (all, key, id) {
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
+      if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? firstName(r.name) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
       if (key === 'city') return state.city || 'Saskatoon';
       if (!id) return all;
@@ -159,14 +163,17 @@
       if (after !== before && d) { d[stat] = d[stat] || {}; d[stat][m.id] = (d[stat][m.id] || 0) + after - before; }
     }
   }
-  function postChat(state, who, text, d) {
+  // tone (v0.4): 'grumble' | 'pa' (passive-aggressive) | 'news' (drama storylines); plain chat has none.
+  function postChat(state, who, text, d, tone) {
     var msg = { week: state.totalWeek, who: who, text: career.fillText(state, text) };
+    if (tone) msg.tone = tone;
     state.chat.push(msg);
     var max = econ().chatMax;
     if (state.chat.length > max) state.chat.splice(0, state.chat.length - max);
     if (d) (d.chat = d.chat || []).push(msg);
     return msg;
   }
+  career.postChat = postChat;
   function numeric(key) { return function (state, v, d) { addStat(state, key, v, d); }; }
   function perMember(stat) {
     return function (state, map, d) { for (var id in map) addMemberStat(state, stat, id, map[id], d); };
@@ -198,6 +205,22 @@
     chat: function (state, v, d) {
       var list = Array.isArray(v) ? v : [v];
       for (var i = 0; i < list.length; i++) if (list[i] && list[i].text) postChat(state, list[i].who, list[i].text, d);
+    },
+    // v0.4 (drama). member: { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (see 27_sim_drama).
+    member: function (state, v, d) { if (GG.drama) GG.drama.applyMember(state, v, d); },
+    // payCut: +/- change to the pay-the-band share (0..payCutMax).  repay: pay your parents back up to $n from the fund.
+    payCut: function (state, v, d) {
+      if (!GG.drama || !v) return;
+      var before = GG.drama.payCut(state), after = GG.drama.setPayCut(state, before + v);
+      if (after !== before) d.payCut = Math.round((after - before) * 100) / 100;
+    },
+    repay: function (state, v, d) {
+      var amt = Math.max(0, Math.min(v || 0, state.debtToParents || 0, state.fund - econ().parentsCushion));   // never borrow to repay
+      if (!amt) return;
+      addStat(state, 'fund', -amt, d);
+      state.debtToParents -= amt;
+      d.repay = (d.repay || 0) + amt;
+      if (state.debtToParents <= 0) { state.debtToParents = 0; delete state.flags.parentsLoan; }
     }
   };
   // Applies every EFFECT_KEYS entry present in fx. Returns d (the deltas object, created if absent).
@@ -241,6 +264,9 @@
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });
       } else if (k === 'book' && v) parts.push('Gig booked');
+      else if (k === 'payCut' && v) parts.push("Band's cut " + (v > 0 ? '+' : '−') + Math.round(Math.abs(v) * 100) + '%');
+      else if (k === 'repay' && v) parts.push('Pay back ' + U.fmtMoney(v));
+      else if (k === 'member' && v && GG.drama) parts.push(GG.drama.memberSummary(state, v));
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
     });
     return parts.join(' · ');
@@ -287,11 +313,13 @@
     return true;
   };
 
-  var cardIndex = {}, indexedList = null, indexedLen = -1;
+  // Monday cards + v0.4 drama cards (ultimatums, returns, recruit quirk cards: never drawn, only forced by GG.drama).
+  var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [];
-    if (list !== indexedList || list.length !== indexedLen) {
-      cardIndex = {}; indexedList = list; indexedLen = list.length;
+    var list = GG.content.cards || [], extra = GG.drama ? GG.drama.cards() : [];
+    if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
+      cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
+      for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
       for (var i = 0; i < list.length; i++) cardIndex[list[i].id] = list[i];
     }
     return cardIndex[id] || null;
@@ -403,12 +431,16 @@
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
-      stats: { gigs: 0, songsWritten: 0, hustles: 0, cards: 0, earned: 0, bestGrade: null, parentsLoans: 0 },
+      stats: { gigs: 0, songsWritten: 0, hustles: 0, cards: 0, earned: 0, bestGrade: null, parentsLoans: 0,
+        quits: 0, returns: 0, recruits: 0, ultimatums: 0 },
       weekStart: null, yearStart: null, ended: false,
       // v0.3 (26_sim_world): the gig board, venue rep + banned wall, the van, this week's trip, a live gig in progress
       listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
-      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null
+      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null,
+      // v0.4 (27_sim_drama): pay the band, fill-ins, the recruit ad, originals who joined your rival
+      payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: []
     };
+    state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
     state.history.push(Object.assign(historyPoint(state), { w: 0 }));   // week 0 baseline for charts
@@ -439,8 +471,10 @@
     var rng = GG.rngFor(state);
     endStaleChains(state);
     snapshotWeek(state);
-    var card = drawCard(state, rng);
+    var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
+    var card = forced ? forced.card : drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
+    if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
     state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
@@ -468,8 +502,11 @@
       }
     }
     autoAdvanceChain(state, card, d);
+    if (GG.drama) GG.drama.afterCard(state, card);
     outcome = career.fillText(state, outcome);
+    var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
+    if (who) { state.card.who = who; state.card.whoName = whoName; }
     state.stats.cards++;
     state.phase = 'plan';
     var res = { cardId: card.id, choice: i, outcome: outcome, deltas: d, success: success };
@@ -523,6 +560,9 @@
         song = GG.songs.create(state, queued, queued.title, { rng: rng, titleEn: queued.titleEn, repeatFactor: f });
         state.stats.songsWritten++;
       } else song = GG.songs.jam(state, rng, { repeatFactor: f });
+      if (GG.drama && activeMembers(state).some(function (m) { return m.recruit && m.recruit.trait === 'studio_rat'; })) {
+        song.quality = U.clamp(song.quality + GG.drama.cfg().traits.studioRatQuality, 0, 100);   // v0.4 trait: Studio Rat
+      }
       var reactions = GG.songs.reactions(state, song, rng);
       d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality, auto: song.auto,
         groove: song.rating.groove, hook: song.rating.hook, difficulty: song.rating.difficulty, reactions: reactions };
@@ -665,7 +705,8 @@
       var n = rng.chance(E.chatChance) ? (rng.chance(E.chatSecondChance) ? 2 : 1) : 0;
       var bucket = chatBucket(m.mood), label = career.moodLabel(m.mood);
       for (var i = 0; i < n; i++) {
-        var pool = contentLines('chat', m.id, label) || contentLines('chat', m.id, bucket);
+        var pool = contentLines('chat', m.id, label) || contentLines('chat', m.id, bucket)
+          || (m.recruit && GG.content.recruits && GG.content.recruits.chat && GG.content.recruits.chat[bucket]);
         var text = career.pickLine(state, rng, pool, FALLBACK_LINES.chat[bucket]);
         if (text) out.push(postChat(state, m.id, text, null));
       }
@@ -694,6 +735,7 @@
     hit('firstSong', state.stats.songsWritten >= 1);
     E.fanMilestones.forEach(function (n) { hit('fans' + n, state.fans >= n); });
     hit('fund' + E.fundMilestone, state.fund >= E.fundMilestone);
+    hit('localHeroes', !state.protected);   // v0.4: garage-era protection is over (250 fans)
     return hits;
   }
   function statDeltas(ws, state) {
@@ -702,10 +744,10 @@
     return d;
   }
   function memberWrap(ws, state) {
-    return state.members.map(function (m) {
+    return activeMembers(state).map(function (m) {
       var before = ws && ws.members[m.id] ? ws.members[m.id].mood : m.mood;
       return { id: m.id, name: m.name, nick: m.nick, mood: m.mood, moodDelta: m.mood - before, skill: m.skill,
-        label: career.moodLabel(m.mood) };
+        label: career.moodLabel(m.mood), stage: m.stage || 0 };
     });
   }
   function yearEnd(state, rng, wrap) {
@@ -745,8 +787,10 @@
     addStat(state, 'fans', rngRound(state.buzz * E.buzzFans, rng), null);
     addStat(state, 'burnout', -E.burnoutRecovery, null);
     driftMoods(state);
+    wrap.chat = [];
+    if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
     driftChemistry(state);
-    wrap.chat = postWeeklyChat(state, rng);
+    wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
     GG.songs.weekly(state);
     wrap.milestones = checkMilestones(state);
@@ -780,6 +824,9 @@
     v -= (fx.burnout || 0) * W.burnout * (state.burnout > 50 ? 2 : 1);
     v += (fx.drumSkill || 0) * W.drumSkill + memberSum(state, fx.mood) * W.mood + memberSum(state, fx.skill) * W.skill;
     if (fx.book && !state.gig) v += W.book;
+    if (fx.member && GG.drama) v += GG.drama.botValue(state, fx.member);
+    if (fx.payCut) v -= fx.payCut * 60;
+    if (fx.repay) v += 2 - Math.min(fx.repay, state.debtToParents || 0) * W.fund;
     return v;
   }
   function choiceValue(state, ch) {
@@ -798,6 +845,8 @@
       var v = choiceValue(state, card.choices[i]);
       if (v > bestV) { bestV = v; best = i; }
     }
+    var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
+    if (dc != null) return dc;
     if (style === 'good') return best;
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
@@ -841,10 +890,12 @@
     var start = career.startWeek(state);
     if (start.card) career.resolveCard(state, career.botChoice(state, start.card, style));
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
+    if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
     if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
+    else if (GG.world && style === 'avg' && van && !state.protected && van.condition < 15 && state.fund > 600) GG.world.repairVan(state);   // v0.4: breakdowns are real now
     career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);
   };

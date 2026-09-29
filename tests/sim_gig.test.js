@@ -57,7 +57,8 @@ test('simulate/autoResolve deterministic per seed; applies result and clears the
   const ra = GG.gig.autoResolve(a, GG.rngFor(a)), rb = GG.gig.autoResolve(b, GG.rngFor(b));
   eq(JSON.stringify(ra), JSON.stringify(rb)); eq(JSON.stringify(a), JSON.stringify(b));
   eq(a.gig, null); eq(a.lastGig, ra); eq(a.stats.gigs, 1); eq(a.stats.bestGrade, ra.grade);
-  eq(a.fund - s.fund, ra.pay - ra.gas); eq(a.fans - s.fans, ra.fans);
+  eq(a.fund - s.fund, ra.pay - ra.cut - ra.fillInCost - ra.gas); eq(a.fans - s.fans, ra.fans);
+  eq(ra.cut, Math.round(ra.pay * s.payCut), 'members take the pay-the-band cut');
   ok(GG.contracts.GRADES.indexOf(ra.grade) >= 0 && ra.score >= 0 && ra.score <= 100, 'grade/score');
   eq(ra.reactions.map(x => x.who).sort(), ['dana', 'jaxon', 'kenji', 'marcel']); ok(ra.reactions.every(x => x.text));
   ok(ra.songs.length === Math.min(4, s.songs.length) && ra.lines.length >= 1 && ra.deltas, 'songs/lines/deltas');
@@ -179,7 +180,7 @@ test('live result: deterministic per seed, GIG_RESULT shape, pay/crowd rules, ap
   eq(ra.songIds, a.liveGig.setlist); eq(ra.songs.length, 3); eq(ra.reactions.map(x => x.who).sort(), ['dana', 'jaxon', 'kenji', 'marcel']);
   a.songResults = null; const fund = a.fund, fans = a.fans; a.gig = legion(a);
   GG.gig.applyResult(a, ra);
-  eq([a.liveGig, a.gig, a.stats.gigs, a.fund - fund, a.fans - fans], [null, null, 1, ra.pay - ra.gas, ra.fans]);
+  eq([a.liveGig, a.gig, a.stats.gigs, a.fund - fund, a.fans - fans], [null, null, 1, ra.pay - ra.cut - ra.gas, ra.fans]);
   ra.songIds.forEach(id => eq(GG.songs.byId(a, id).plays, 1));
 });
 

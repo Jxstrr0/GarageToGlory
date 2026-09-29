@@ -177,11 +177,14 @@ test('every gate key evaluates', () => {
 test('every effect key applies, clamps, and reports real deltas', () => {
   const GG = fresh([]);
   const s = GG.career.newCareer({ seed: 2 });
-  s.gig = null; s.buzz = 98;
+  s.gig = null; s.buzz = 98; s.debtToParents = 30; s.members[0].stage = 3;
   const d = GG.career.applyEffects(s, { fund: -50, fans: 10, buzz: 10, chemistry: 5, burnout: -50, drumSkill: 3,
     mood: { marcel: 200, all: -1 }, skill: { dana: 2, all: 1 }, flags: { cape: 'velvet', x: true },
-    chain: { cape: { step: 2, delay: 3 } }, book: 'legion_63', chat: { who: 'kenji', text: '{nick:marcel}?' } });
-  eq(d.fund, -50); eq(d.fans, 10); eq(d.buzz, 2, 'buzz clamps at 100'); eq(s.buzz, 100); eq(d.burnout, -10); eq(s.burnout, 0);
+    chain: { cape: { step: 2, delay: 3 } }, book: 'legion_63', chat: { who: 'kenji', text: '{nick:marcel}?' },
+    member: { id: s.members[0].id, act: 'settle' }, payCut: 0.05, repay: 100 });
+  eq([d.payCut, s.payCut, d.repay, s.debtToParents, s.members[0].stage], [0.05, 0.35, 30, 0, 2], 'v0.4 drama keys');
+  eq(d.fund, -80); s.fund += 30;
+  eq(d.fans, 10); eq(d.buzz, 2, 'buzz clamps at 100'); eq(s.buzz, 100); eq(d.burnout, -10); eq(s.burnout, 0);
   eq(d.drumSkill, 3); eq(d.chemistry, 5);
   eq(s.members.find(m => m.id === 'marcel').mood, 99, 'marcel clamped to 100 then all -1'); ok(d.mood.marcel > 0 && d.mood.dana === -1);
   eq(d.skill.dana, 3); eq(d.skill.jaxon, 1);
@@ -328,7 +331,9 @@ test('bots: 240-week careers finish, stay in RANGES, fund >= 0, garage protectio
         const bad = inRanges(GG, s);
         if (bad) throw new Error(label + '/' + style + ' week ' + s.totalWeek + ': ' + bad);
         if (s.fund < 0) throw new Error('fund negative after wrap');
-        if (!s.protected || s.era !== 'garage' || s.members.length !== 4 || s.members.some(m => m.status !== 'active')) throw new Error('protection broke');
+        // v0.4: the garage era protects the band until 250 fans (then drama can happen, always warned first)
+        if (s.era !== 'garage' || (s.protected && (s.fans >= 250 || s.members.length !== 4 || s.members.some(m => m.status !== 'active' || m.stage > 2)))) throw new Error('protection broke');
+        if (s.members.some(m => m.status === 'active' && m.stage > 3)) throw new Error('an active member at stage 4');
         if (weeks > 300) throw new Error('never ended');
       }
       eq([weeks, s.totalWeek, s.year, s.week, s.phase], [240, 240, 10, 24, 'ended'], label + '/' + style);

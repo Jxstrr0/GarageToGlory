@@ -4,7 +4,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
 - Current: **0.3.0.0 "Stage"** (merged to main 2026-09-29) · 0.2 "Sequencer", 0.1 "Garage" merged earlier
-- In progress: **0.4.0 "Drama"** on branch `v0.4-drama`
+- Current build on main after merge: **0.4.0.0 "Drama"**; next: **0.5.0 "Signed"**
 - Next: **0.4.0 "Drama"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -103,10 +103,44 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Save schema 3 (v2→v3 migration in `GG.world.migrate`).
 - Tests: node content 26, save 7, sim_career 22, sim_gig 14, sim_songs 12, sim_world 15 · pw_flow flow/year/code/layout
   · pw_garage · pw_seq seq/audio · pw_gig gig/e2e · pw_world board/van · pw_stage stage (incl. van).
+  v0.4: content 31, sim_drama 14 (new) · `pw_drama.js` META_ONLY=drama (19; screenshots `drama_band.png`, `drama_recruit.png`).
+
+## What's in v0.4.0 "Drama"
+- Garage-era protection ends at **250 fans** (wrap milestone "Local heroes on the horizon", `protection:ended`, van
+  breakdowns now fire). Era label stays 'garage' (v0.5).
+- Drama sim (`27_sim_drama.js`): weekly mood pushes from money (pay cut vs expected 25% → +10% with fans; recruits
+  expect their asking cut), overwork (burnout > 55), band success (4-week fans trend, gig grade) and wants (content;
+  Kenji = random drift). Stages 0 fine → 1 grumbling (chat) → 2 passive-aggressive (`tone:'pa'` chat, wrap warnings)
+  → 3 ultimatum (forced Monday card next week) → 4 quit; one step a week, back down as mood recovers; capped at 2 while
+  protected (and for Reliable recruits). Ultimatum fixes cost money/pay/burnout; refusing quits.
+- Quits: originals run an exit storyline (chat beats: Marcel in Rimouski, Dana in 13/8 prog, Jaxon grounded by Baba,
+  Kenji vanishes 'away' and walks back in on his own), a return card months later (empty slot: welcome / conditions /
+  not yet; filled slot: take them back or keep the recruit → original joins Tundra Wraith, `rivalDefectors` + rival
+  blurb). Returners come back changed (+5 skill, `changed` text). Recruits who quit just leave.
+- Holes: −14 gig score (−10 live crowd start) per open hole; fill-in = $40/gig, skill 38, −4 score, −1 chemistry/week.
+  Recruit ad $30 → 3 candidates (genre name pools, Sask hometowns, 1–5★ scaling with era/fans, 9 traits with real
+  effects, 12 quirks with quirk cards, asking cut, chemistry on the card); re-post $20. Generated LOOKs.
+- Pay the band: `payCut` default 30% (0–60%, step 5) of gig pay to members (`r.cut`); upkeep lowered 30 → 22 + 0.012/fan
+  to keep year 1. Parents' loan: 6 guilt cards with `repay` (never below the $100 cushion; paying off clears the flag).
+- UI (`58_ui_band.js`): laptop Band tab = pay slider + live preview, member cards (mood, stage badge, want / trait,
+  quirk, stars), holes (Post an ad / Hire a fill-in / Let go), departed storylines, rival watch; recruit sheet (3 cards,
+  Hire / Re-post / Close); tone-marked chat; wrap panels (protection, "Trouble in the band", "Meanwhile…"); ultimatum
+  card tag. Garage + stage show fill-ins. `.layer` now isolates stacking (sheets stack cleanly).
+- Save schema 4 (`GG.drama.migrate` wraps `GG.save.migrate`). Bots: `drama.botWeek` (good bot pays 40% when someone is
+  upset and fund > $600; both post ads and hire; good re-posts weak batches), avg refuses 45% of ultimatums.
+- Balance (`node tools/balance.js 10 12`): avg quits/yr after protection 0.65 (ultimatums 1.09, returns 0.42), good 0;
+  year 1 (30 seeds) avg fund min $100 end $383, 273 fans, 0.4 loans (v0.3-equivalent `NO_DRAMA=1`: 85/404/265/0.2);
+  good year 1 fund end $887 (was $1,338: members' cut), fans 557.
 
 ## APIs (full shapes in `src/02_contracts.js`)
 - `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
-  pickLine, contentLines, botWeek, botOffer`. startWeek/runWeek/endWeek are double-call safe.
+  pickLine, contentLines, botWeek, botOffer, postChat(state, who, text, d, tone)`. startWeek/runWeek/endWeek are
+  double-call safe. v0.4: effect keys `member`, `payCut`, `repay` (runtime-added to EFFECT_KEYS), token `{recruit}`,
+  `state.card.who/whoName` on forced drama cards, cardById also finds drama + quirk cards.
+- `GG.drama` (v0.4): `weekly, forcedCard, afterCard, applyMember, roles, holder, holes, openHoles, lineup,
+  fillInFigures, payCut, setPayCut, split, fillInCost, gigMods, want, gripeText, stageText, postAd, repost, cancelAd,
+  hire, candidates, candidateScore, hireFillIn, dismissFillIn, quirk, traitDef, rivalBlurb, makeLook, botWeek,
+  botCardChoice, botValue, migrate, cards, cfg`. Tunables `economy.drama`; content `drama.js`, `recruits.js`.
 - `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
   → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
   performance, gradeFor, payFor`.
@@ -137,14 +171,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 
 ## Back-burner
+- v0.4: late-game avg-bot fund plateaus ~$3.5k (was $11k) because of the members' cut; the good bot never sees drama
+  (moods ~85). Both belong to the v0.5 era/economy pass. Pay-the-band money has no other use yet (members' savings).
+- v0.4: fill-ins have generic garage idles/tap lines; the van scene doesn't carry fill-ins.
+- v0.4: epilogue lines per original are content-only hooks for v1.0; `rivalDefectors` isn't used by a rival sim yet (v0.6).
+- v0.4: EFFECT_KEYS additions (`member`, `payCut`, `repay`) are pushed at runtime by 20_sim_career until the lead
+  folds them into 02_contracts.js.
 - v0.3: later years pay far more than v0.2 (good bot year 2 ≈ $7k fund, 2,000 fans) because of 250–300-cap rooms —
   needs the era/economy pass in v0.5.
 - v0.3: no latency-calibration setting for players yet; `A.hit` has no per-lane choke.
-- v0.3: `protected` never turns off, so van breakdowns exist but never fire (first milestone arrives with v0.4/v0.5).
 - v0.3: van space has no use yet (merch in v0.8). Gig banter lines live in 55_ui_gig.js, not content/lines.js.
 - Restoring a save code keeps the code's slot; its next autosave overwrites that slot without asking.
 - With the planner sheet open the room squeezes into a 150px band and hotspot labels overlap a little.
-- `debtToParents` is never repaid (v0.4 parents' loan + guilt cards).
 - Once-only garage cards run out after ~1.5 years; later garage years lean on repeatables (eras/content in v0.5+).
 - Full-career save code ≈ 17.6k chars (could trim `history`).
 - Flags `mooseMuse` and `babaMad` are set by cards but unused yet (hooks for the moose album chain / baba storyline).

@@ -52,7 +52,8 @@
   //   chain : { <chainId>: { step: <n>|'end', delay: <weeks, default 1> } }
   //   book  : <venueId>   books that venue for this weekend (replaces nothing if a gig is already booked)
   //   chat  : { who: <memberId|npcId>, text }        posts a group-chat message
-  C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat'];
+  C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat',
+    'member', 'payCut', 'repay'];   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
 
   // Keys allowed in a card gate. All present conditions must hold.
   //   era:[..] genre:[..] region:[..] band:[bandId..]
@@ -77,7 +78,12 @@
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
-     recruitAd: null | { role, candidates: [RECRUIT], posts }, rivalDefectors: [memberId],   (v0.4)
+     recruitAd: null | { role, candidates: [RECRUIT], posts, week }, rivalDefectors: [memberId],   (v0.4)
+     (v0.4 also) card.who/whoName; chat[].tone 'grumble'|'pa'|'news'; member stageWeek, ultimatum, gripe, changed, returns,
+     recruit.stars/chemistry, exit.beat; fillIns[role].look; stats quits/returns/recruits/ultimatums; milestone localHeroes.
+     WRAP gains warnings, drama, protectionEnded, members[].stage; GIG_RESULT gains cut, fillInCost.
+     Tokens {recruit} (+ {who} {gripe} in drama.stageText); card speaker/mood key 'recruit'.
+     Content: drama, dramaCards, recruits; economy.drama tunables. API: GG.drama.* (27_sim_drama.js header), career.postChat(…, tone).
      members: [ { id, name, nick, role, skill, mood, status: 'active'|'away'|'quit', original: true,
                   stage: 0..4 (0 fine, 1 grumbling, 2 passive-aggressive, 3 ultimatum, 4 quit), want,
                   exit: null | { storyline, since, returnDue }, recruit?: { trait, quirk, hometown, askingCut }, look? } ],
