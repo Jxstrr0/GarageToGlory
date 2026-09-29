@@ -19,6 +19,13 @@
   C.GRADES = ['S', 'A', 'B', 'C', 'D'];
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
+  C.HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
+  C.LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana'];
+  C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
+  C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
+  C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge']; // venue ids cards may `book`
+  C.SIM_FLAGS = ['parentsLoan'];   // flags the sim sets that cards may gate on
+  // Seasons by week of year (week 1 = early July): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
 
   // Band-level numeric stats and their clamps. fund may dip below 0 only transiently:
   // endWeek() tops it back to 0 with a parents' loan.
@@ -71,6 +78,8 @@
      chat:    [ { week: totalWeek, who, text } ]        // newest last, capped at 60
      history: [ { w: totalWeek, fund, fans, buzz, chemistry } ],
      stats:   { gigs, songsWritten, hustles, cards, earned, bestGrade, parentsLoans },
+     quiet: null | text,                              // this Monday's quiet-week line (no card)
+     milestones: { <key>: totalWeek }, weekStart: {stat snapshot for the wrap}, yearStart: {stat snapshot},
      ended: false
    }
    LOOK = { skin:'#rrggbb', hair:'#rrggbb', hairStyle:'short'|'long'|'mohawk'|'bald'|'bun'|'mullet'|'spiky'|'cap',
@@ -78,20 +87,20 @@
             extras: ['sunglasses'|'beard'|'moustache'|'glasses'|'headband'|'tattoos'|'hat'|'bandana'] }
    GIG  = { venueId, name, city, tier, kind, capacity, deal, pay, gas, quirk, source: 'forced'|'book'|'offer'|'card' }
    GIG_RESULT = { venueId, name, city, deal, crowd, capacity, score, grade, pay, gas, fans, buzz,
-                  songs:[titles], reactions:[{ who, text }], lines:[text] }
+                  songs:[titles], songIds, source, deltas, reactions:[{ who, text }], lines:[text] }
    WEEK_RESULT = { blocks: [ { activity, lines:[text], deltas } ], gig: GIG_RESULT|null }
    WRAP = { totalWeek, year, week,                    // the week that just ended
             deltas: { fund, fans, buzz, chemistry, burnout, drumSkill },
             upkeep, buzzDecay, parentsLoan, guilt: text|null,
             members: [ { id, name, mood, moodDelta, skill, label } ],
-            chat: [ newly posted messages ], yearEnd: bool, yearSummary: null|{...}, ended: bool }
+            chat: [ newly posted messages ], milestones: [text], yearEnd: bool, yearSummary: null|{...}, ended: bool }
   ====================================================================== */
 
   /* ======================================================================
    CONTENT SCHEMAS (src/content/*.js, attach to GG.content)
    bands:  { <bandId>: { id, name, genre, city, region, space, spaceName, size, rival, locked, comingIn,
                          blurb, coldOpen: [panel text..], starterSongs: [ { title, titleEn } ],
-                         members: [ { id, name, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
+                         members: [ { id, name, fullName, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
            idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'  (garage idle animation)
    rivals: { <rivalId>: { id, name, city, genre, blurb } }
    npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
@@ -102,11 +111,11 @@
                            success: { effects, outcome }, fail: { effects, outcome } } } ]  (2–3 choices) }
    activities: { <activityId>: { id, name, icon, blurb, ...numbers } }        (owned by the sim)
    economy: { startFund, startFans, startBuzz, weeklyUpkeep, buzzDecay, quietWeekChance, ... } (owned by the sim)
-   venues: [ { id, name, city, region, tier, kind, capacity, deal, pay, minFans, genreFit:{metal..}, quirk } ]
+   venues: [ { id, name, city, region, tier, kind, capacity, deal, pay, minFans, genreFit:{metal..}, quirk, walkIns, gas, setSize } ]
    lines:  { activity: { <activityId>: [text] }, chat: { <memberId>: { happy:[], ok:[], grumpy:[] } },
              gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
              guilt: [text], yearEnd: [text], quietWeek: [text] }
-   songTitles: { metal: [ { fr, en } ] }
+   songTitles: { metal: [ { fr, en } ], punk|rock|country: [ 'English title' ] }
    presets: [ { id, name, blurb, look: LOOK, kitColor } ]
    Text may use tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>} — GG.career.fillText() replaces them.
   ====================================================================== */
@@ -115,7 +124,7 @@
    EVENTS (GG.emit(name, payload))            emitted by
    'career:new'     { state }                 career.newCareer
    'career:loaded'  { state }                 main, after a load
-   'week:start'     { totalWeek, year, week, card: cardId|null, offer: GIG|null }   career.startWeek
+   'week:start'     { totalWeek, year, week, card: cardId|null, offer: GIG|null, quiet: text|null }   career.startWeek
    'card:resolved'  { cardId, choice, outcome, deltas, success }                    career.resolveCard
    'plan:changed'   { plan }                  career.setPlan
    'block:done'     { index, activity, lines, deltas }                              career.runWeek
