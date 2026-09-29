@@ -564,6 +564,97 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .label-news .news-row { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.35; padding: 5px 0; border-top: 1px solid rgba(255, 255, 255, .06); }
 .label-news .news-row:first-of-type { border-top: 0; } .label-news .news-row .ic { flex: 0 0 22px; text-align: center; } .label-news .news-row .btn { flex: 0 0 auto; }
 /* ==== end v0.5 ==== */
+/* ==== v0.6 "Rivals" (59d_ui_rival: Scene tab, showdown card, the rival's set, the verdict; board badges, wrap) ==== */
+.tabs:has(> .tab:nth-child(6)) { gap: 2px; padding: 3px; } .tabs:has(> .tab:nth-child(6)) .tab { font-size: 11px; letter-spacing: 0; }
+.rv-face { position: relative; flex: 0 0 auto; width: 44px; height: 44px; border-radius: 46% 46% 42% 42%; background: #ecebe6; border: 2px solid #0c0c0e;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .15); overflow: hidden; }
+.rv-face i { position: absolute; top: 34%; width: 28%; height: 32%; background: #0b0b0d; border-radius: 40% 40% 50% 50%; }
+.rv-face i:first-child { left: 16%; transform: rotate(8deg); } .rv-face i:nth-child(2) { right: 16%; transform: rotate(-8deg); }
+.rv-face::before { content: ''; position: absolute; left: 50%; top: 4%; width: 6%; height: 30%; margin-left: -3%; background: #0b0b0d; }
+.rv-face::after { content: ''; position: absolute; left: 32%; right: 32%; bottom: 16%; height: 7%; background: #0b0b0d; border-radius: 2px; }
+.rv-face.sm { width: 32px; height: 32px; } .rv-face.lg { width: 56px; height: 56px; }
+.rv-name { font: 900 20px/1.1 Georgia, "Times New Roman", serif; letter-spacing: .02em; }
+.rv-hero { background: linear-gradient(160deg, #1a1a22, #121218); border-color: #3a3a48; }
+.rv-hero .stat-grid { margin: 10px 0 6px; }
+.tag.rv-crack { color: #ffb3aa; border-color: #7a2c35; }
+.rv-record { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: rgba(0, 0, 0, .3); }
+.rv-record > div { display: flex; flex-direction: column; min-width: 0; } .rv-record > div:last-child { text-align: right; }
+.rv-record .caps { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .rv-record b { font: 900 28px/1 var(--display); }
+.rv-record b.you { color: var(--amber); } .rv-record b.them { color: #dcdcea; } .rv-record .vs { font: 900 13px var(--display); color: var(--faint); }
+.rv-heat-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } .rv-heat-top b { font-size: 13px; text-align: right; }
+.rv-heat-bar { height: 10px; margin-top: 5px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.rv-heat-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #6fb3ff, #ffb347 55%, #ff4a4a); }
+.rv-next { display: flex; gap: 10px; align-items: center; padding: 4px 0; } .rv-next .ic { font-size: 22px; flex: 0 0 26px; text-align: center; }
+.rv-next.final.won b { color: #ffe27a; }
+.rv-board { padding: 4px 10px; }
+.rv-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.rv-row:first-child { border-top: 0; } .rv-row .rk { flex: 0 0 30px; font: 900 13px var(--display); color: var(--faint); }
+.rv-row b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .rv-row .grow { min-width: 0; }
+.rv-row .fans { font: 800 13px var(--font); white-space: nowrap; } .rv-row .tr.up { color: var(--good); } .rv-row .tr.down { color: var(--bad); }
+.rv-row.you { background: rgba(255, 179, 71, .12); border-radius: 10px; } .rv-row.you .rk { color: var(--amber); }
+.rv-row.rival { background: rgba(236, 235, 230, .08); border-radius: 10px; } .rv-row.rival b { font-family: Georgia, "Times New Roman", serif; }
+.rv-news-row { display: flex; gap: 8px; font-size: 13px; line-height: 1.35; padding: 5px 0; border-top: 1px solid rgba(255, 255, 255, .06); }
+.rv-news-row:first-child { border-top: 0; } .rv-news-row > span:first-child { flex: 0 0 auto; white-space: nowrap; }
+.rv-sd, .rv-mem, .rv-alb { display: flex; gap: 10px; align-items: center; padding: 5px 0; } .rv-sd .grow, .rv-mem .grow, .rv-alb .grow { min-width: 0; }
+.rv-sd b, .rv-alb b, .rv-mem b { display: block; font-size: 14px; }
+.rv-sd .wl { flex: 0 0 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font: 900 13px var(--display); }
+.rv-sd .wl.w { background: var(--good); color: #0c1a10; } .rv-sd .wl.l { background: #3a1a22; color: #ffb3aa; }
+.rvsd .rv-sd-head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; } .rv-sd-ic { font-size: 34px; }
+.rv-stakes { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 10px 0; padding: 10px 12px; border-radius: 12px;
+  background: linear-gradient(160deg, #2a1d14, #1b1620); border: 1px solid #5a4a3c; } .rv-stakes b { text-align: right; color: var(--amber); }
+.rv-split-bar { display: flex; height: 26px; margin-top: 6px; border-radius: 8px; overflow: hidden; font: 800 12px/26px var(--font); }
+.rv-split-bar i { font-style: normal; padding: 0 8px; white-space: nowrap; overflow: hidden; } .rv-split-bar .you { background: var(--amber); color: #1d1204; }
+.rv-split-bar .them { background: #dcdcea; color: #121218; text-align: right; }
+.quote.rv-good { border-left-color: var(--good); }
+.rv-card-note { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 8px 10px; border-radius: 12px; background: #16161c; border: 1px solid #3a3a48; }
+.rv-card-note b { font-family: Georgia, "Times New Roman", serif; } .rv-mood { flex: 0 0 96px; } .rv-mood .bar { margin-top: 3px; }
+.gb-open.rv-stolen { background: #3a1a22; color: #ffb3aa; border-color: #7a2c35; } .gb-open.rv-defended { background: #14261a; color: #8fe0a8; border-color: #2c6a40; }
+.gb-open.rv-fest { background: #1d1a2e; color: #d8c8ff; border-color: #5a4a8a; white-space: normal; }
+/* the rival's set: the 3D stage from the crowd, a score up top, their setlist at the bottom */
+.full.rvset { background: transparent; animation: none; } .full.rvset .full-body { padding: 0; overflow: hidden; position: relative; } .full.rvset .full-foot { display: none; }
+.rs-back { position: absolute; inset: 0; background: radial-gradient(90% 55% at 50% 38%, #2a2a38 0%, #121218 55%, #06060a 100%); }
+.rs-sil { position: absolute; left: 12%; right: 12%; top: 30%; display: flex; justify-content: space-around; align-items: flex-end; }
+.rs-sil i { width: 40px; height: 104px; border-radius: 20px 20px 6px 6px; background: #0b0b10; position: relative; }
+.rs-sil i::before { content: ''; position: absolute; left: 7px; top: 8px; width: 26px; height: 26px; border-radius: 50%; background: #ecebe6;
+  box-shadow: inset 6px 4px 0 -2px #0b0b0d, inset -6px 4px 0 -2px #0b0b0d; }
+.rs-bar { position: absolute; left: 12px; right: 12px; top: calc(var(--safe-top) + 8px); display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 12px;
+  border-radius: 14px; background: rgba(8, 8, 12, .72); border: 1px solid rgba(255, 255, 255, .1); }
+.rs-bar .grow { min-width: 0; } .rs-bar .caps { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-who { display: block; font: 900 17px/1.2 Georgia, "Times New Roman", serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-score { flex: 0 0 auto; text-align: center; padding: 2px 10px; border-radius: 10px; background: #ecebe6; color: #0c0c0e; }
+.rs-score .caps { color: #4a4a55; font-size: 9px; } .rs-score b { display: block; font: 900 30px/1 var(--display); font-variant-numeric: tabular-nums; min-width: 2ch; }
+.rs-banner { position: absolute; left: 16px; right: 16px; top: calc(var(--safe-top) + 84px); padding: 8px 12px; border-radius: 12px; background: rgba(8, 8, 12, .8);
+  color: #f3efe6; font: 700 14px/1.35 var(--font); text-align: center; opacity: 0; transform: translateY(-6px); transition: opacity .25s, transform .25s; pointer-events: none; }
+.rs-banner.show { opacity: 1; transform: none; }
+.rs-panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px var(--gutter) calc(var(--safe-bot) + 14px); background: rgba(8, 9, 14, .94);
+  border-top: 1px solid rgba(255, 255, 255, .12); display: flex; flex-direction: column; gap: 8px; }
+.rs-ph { display: flex; justify-content: space-between; align-items: baseline; }
+.rs-songs { display: flex; flex-direction: column; gap: 5px; }
+.rs-song { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; background: rgba(255, 255, 255, .04); border: 1px solid transparent; }
+.rs-song .grow { min-width: 0; } .rs-song b { display: block; font-size: 14px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-song .n { flex: 0 0 24px; height: 24px; border-radius: 50%; background: var(--panel2); display: inline-flex; align-items: center; justify-content: center; font: 900 12px var(--display); }
+.rs-song .sc { font: 900 22px var(--display); min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--faint); }
+.rs-song.on { border-color: #ecebe6; background: rgba(236, 235, 230, .1); } .rs-song.on .sc { color: #fff; } .rs-song.done .sc { color: #ecebe6; }
+.rs-names { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-target { flex: 0 0 auto; padding: 4px 9px; border-radius: 10px; background: #ecebe6; color: #0c0c0e; font: 900 13px var(--display); white-space: nowrap; }
+/* the verdict */
+.full.rvverdict { background: radial-gradient(120% 60% at 50% 0%, #2a2a3a 0%, var(--bg) 65%); } .layer.won .full.rvverdict, .full.rvverdict.won { background: radial-gradient(120% 60% at 50% 0%, #4a3a12 0%, var(--bg) 65%); }
+.rv-verdict { display: flex; flex-direction: column; gap: 10px; }
+.rv-vh { font-size: 34px; text-align: center; margin: 2px 0; } .layer.won .rv-vh { color: #ffe27a; text-shadow: 0 0 24px rgba(255, 200, 80, .4); }
+.rv-board2 { display: flex; align-items: stretch; gap: 8px; } .rv-board2 .vs { align-self: center; font: 900 14px var(--display); color: var(--faint); }
+.rv-board2 .side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 16px; background: var(--bg2); border: 1px solid var(--line); }
+.rv-board2 .side .caps { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-board2 .side b { font: 900 44px/1 var(--display); } .rv-board2 .side.win { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(255, 179, 71, .25); }
+.rv-board2 .side.you b { color: var(--amber); } .rv-board2 .side.them { background: #16161c; } .rv-board2 .side.them .rv-face { display: none; }
+.rv-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.rv-chip { font: 800 12px/1.5 var(--font); padding: 3px 10px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); }
+.rv-chip.good { color: var(--good); } .rv-chip.bad { color: var(--bad); }
+.rv-forever { font: 700 15px/1.4 var(--font); color: var(--dim); }
+.rv-wrap { background: #16161c; border-color: #3a3a48; } .rv-wrap .rv-news-row { font-size: 14px; }
+.rv-crackpanel { background: linear-gradient(160deg, #2a1d14, #1a1622); border-color: #e8c547; animation: gg-pop .3s ease-out; }
+.rv-cr { font-size: 22px; color: #ffe27a; margin: 2px 0 4px; }
+.chart-row.rival b { font-family: Georgia, "Times New Roman", serif; } .chart-row.rival { box-shadow: inset 3px 0 0 #ecebe6; }
+/* ==== end v0.6 ==== */
 </style>
 </head>
 <body>
@@ -10946,13 +11037,13 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (!gig) return null;
     var t = world.trip(state);
     if (t && t.venueId === gig.venueId) return t;
-    var rng = GG.rngFor(state), from = world.home(state), to = world.cityId(gig.city) || from;
+    var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
     var card = world.drawRoad(state, km, season, rng);
     if (card) state.seenCards[card.id] = state.totalWeek;
     var fc = world.city(from), tc = world.city(to);
     t = state.trip = { w: state.totalWeek, venueId: gig.venueId, from: from, to: to,
-      fromName: fc ? fc.name : state.city, toName: tc ? tc.name : gig.city, km: km, highway: world.highway(from, to),
+      fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : 'Hwy 7 · the Trans-Canada',
       season: season, night: km >= 180 || season === 'winter', cardId: card ? card.id : null, resolved: !card,
       choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2) };
     return t;
@@ -14236,6 +14327,10 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 //   setup({ venue: GIG|venue|kind, crowd: attendance, members, flags, genre, player, bpm })
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
+// v0.6 (RIVALUI): setup({ ..., rival: true, members: GG.rival.lineup (corpsePaint / stageShirt / defector), drummer: { look,
+//   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
+//   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
+//   with their banner). view 'drummer' (default) is the v0.3 camera. info() adds { view, rival, painted }.
 // Bus: 'gig:judge' -> hit + crowd meter, 'crowd:level' -> setCrowdLevel, 'crowd:moment' -> moment,
 //      'audio:step' -> beat phase (the crowd and band move on the song's beat).
 // Draw calls ≈ room 2 + sign 1 + beams 3 + kit parts 4 + sticks 2 + band 4 + drummer 1 + crowd 6 + glows 1
@@ -14442,7 +14537,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       return {
         kind: kind, V: KIND[kind], genre: genre, G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, MAX_CROWD)), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
-        bpm: +cfg.bpm || GENRE[genre].bpm
+        bpm: +cfg.bpm || GENRE[genre].bpm,
+        view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
+        banner: cfg.banner || '', bannerSub: cfg.sub || ''
       };
     }
 
@@ -14475,7 +14572,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       teardown();
       var D = resolve(), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
       if (V.ceil && V.ceil < hs + CAM.pos[1] + 0.55) V.ceil = hs + CAM.pos[1] + 0.55;   // keep the camera under the roof
-      K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front,
+      K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front, painted: 0,
         band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1 };
       scene.add(K.root);
       scene.background.setHex(V.bg);
@@ -14487,6 +14584,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       buildDressing(lit, glow, D);
       buildKitStatic(lit, hs, kitColor(D));
       buildBackline(lit, glow, V, D);
+      if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       mesh(lit.build(), ctx.mats.vc);
       mesh(glow.build(), ctx.mats.unlit);
       buildSign(D);
@@ -14498,6 +14596,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       buildCrowd(D);
       buildProps(D);
       if (D.kind === 'house') buildDog(D);
+      if (D.view === 'spectator' && D.banner) buildBanner(D);
       frame();
       return K;
     }
@@ -14921,7 +15020,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       var list = D.members || [], sp = spots(D.V), used = {}, cv = D.flags && D.flags.cape, i, m;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var active = [];
-      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active')) active.push(m); }
+      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active') && !/drum/i.test(String(m.role || ''))) active.push(m); }
       var capeId = null;
       for (i = 0; i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';
       for (i = 0; !capeId && i < active.length; i++) if (/vocal/.test(String(active[i].role || roleOf(D, active[i].id)))) capeId = active[i].id;
@@ -14944,9 +15043,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         var ins = o.slot === 'vocals' && !/guitar/.test(o.role) ? 'mic' : instFor(o.role || (cm && cm.role));
         if (o.slot === 'bass') ins = 'bass';
         var cape = o.m.id === capeId ? capeVariant : null;
-        var ch = R.buildCharacter(o.m.look || (cm && cm.look) || null, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
+        var lk = o.m.look || (cm && cm.look) || null;
+        if (o.m.corpsePaint) lk = paintLook(lk, o.m.stageShirt);   // v0.6: the rival's lineup (and your defectors) in corpse paint
+        var ch = R.buildCharacter(lk, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
         if (!ch) continue;
         K.chars.push(ch);
+        if (o.m.corpsePaint) corpsePaint(ch, i);
         if (ins !== 'mic') recolorGear(ch, ins === 'bass' ? 0x1d1d22 : o.slot === 'rhythm' ? 0xb8322a : o.slot === 'extra' ? 0x8a4a22 : null, ins === 'bass');
         ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0);
         ch.root.position.set(sp0.x, K.hs, sp0.z); ch.root.rotation.y = sp0.yaw;
@@ -14983,12 +15085,56 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       mesh(b.build(), ctx.mats.vc);
     }
 
+    // ---- v0.6: corpse paint (white face, black sockets/spikes/drips; same rig as 44_render_carpet), black stage shirts ----
+    function paintLook(l, shirt) {
+      var o = {}, k; l = l || {};
+      for (k in l) o[k] = l[k];
+      o.skin = '#ecebe6'; o.shirt = shirt || '#101014'; o.pants = '#0e0e12'; o.top = 'jacket';
+      o.extras = (l.extras || []).filter(function (x) { return x !== 'sunglasses' && x !== 'glasses'; });
+      return o;
+    }
+    function corpsePaint(ch, style) {
+      var b = new ctx.Builder({ seed: 17 + style, jitter: 0 }), y = 0.295, z = 0.168, blk = 0x0b0b0d;
+      b.box(0.1, 0.12, 0.012, 0.075, y, z, blk); b.box(0.1, 0.12, 0.012, -0.075, y, z, blk);
+      b.box(0.03, 0.08, 0.012, 0.09, y + 0.09, z, blk, 0, 0, -0.35); b.box(0.03, 0.08, 0.012, -0.09, y + 0.09, z, blk, 0, 0, 0.35);
+      b.box(0.02, 0.07, 0.012, 0.075, y - 0.1, z, blk); b.box(0.02, 0.07, 0.012, -0.075, y - 0.1, z, blk);
+      if (style % 2) b.box(0.1, 0.02, 0.012, 0, 0.165, z - 0.004, blk); else { b.box(0.02, 0.09, 0.012, 0.03, 0.14, z - 0.004, blk); b.box(0.02, 0.09, 0.012, -0.03, 0.14, z - 0.004, blk); }
+      var m = new THREE.Mesh(b.build(), ctx.mats.vc);
+      ch.bones[B_HEAD].add(m);
+      K.geos.push(m.geometry); K.painted++;
+    }
+    // The stage end of the room (the v0.3 camera never looks there) + a truss for the banner.
+    function buildBackdrop(B, V, D) {
+      var zEnd = STAGE_BACK + 1.2, top = V.outdoor ? V.hs + 4.2 : V.ceil, w = V.outdoor ? V.sw + 0.6 : V.w;
+      B.box(2 * w + 0.4, top, 0.2, 0, top / 2, zEnd + 0.1, V.outdoor ? 0x15161c : sh(V.wall, 0.7));
+      B.box(2 * V.sw, 0.12, 0.12, 0, V.hs + 3.35, STAGE_BACK - 0.05, 0x2a2a2e);
+    }
+    function buildBanner(D) {
+      var c = document.createElement('canvas'); c.width = 1024; c.height = 256;
+      var g = c.getContext('2d'), title = String(D.banner).toUpperCase(), size = 132;
+      g.fillStyle = '#060608'; g.fillRect(0, 0, 1024, 256);
+      g.strokeStyle = '#3a3a44'; g.lineWidth = 6; g.strokeRect(10, 10, 1004, 236);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '900 ' + size + 'px Georgia, "Times New Roman", serif';
+      var wdt = g.measureText(title).width;
+      if (wdt > 940) { size = Math.max(40, Math.floor(size * 940 / wdt)); g.font = '900 ' + size + 'px Georgia, "Times New Roman", serif'; }
+      g.shadowColor = '#9fb8ff'; g.shadowBlur = 16; g.fillStyle = '#f4f4f8'; g.fillText(title, 512, D.bannerSub ? 112 : 128);
+      for (var i = 0; i < 14; i++) { var x = 70 + i * 68 + hash01(i, 5) * 20; g.fillRect(x, 40 + hash01(i, 9) * 12, 3, 18 + hash01(i, 11) * 22); }   // frost spikes
+      if (D.bannerSub) { g.shadowBlur = 0; g.fillStyle = '#9aa0b4'; g.font = '800 34px system-ui, Arial, sans-serif'; g.fillText(String(D.bannerSub).toUpperCase(), 512, 206); }
+      var tex = new THREE.CanvasTexture(c); K.texs.push(tex);
+      var mat = ownMat(new THREE.MeshBasicMaterial({ map: tex, fog: false }));
+      var wd = Math.min(2 * D.V.sw - 0.4, 5.2), m = mesh(new THREE.PlaneGeometry(wd, wd / 4), mat);
+      m.position.set(0, D.V.hs + 2.72, STAGE_BACK - 0.02); m.rotation.y = Math.PI;
+    }
+
     // ---- Drummer (you) with IK sticks -------------------------------------------------------------------
     function buildDrummer(D) {
-      var pl = D.player || {}, pre = findPreset(pl.presetId);
-      var ch = R.buildCharacter(pl.look || (pre && pre.look) || null, { id: 'player', sticks: false });
+      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = pl.look || (pre && pre.look) || null;
+      if (D.drummer && D.drummer.corpsePaint) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer on your throne
+      var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
+      if (D.drummer && D.drummer.corpsePaint) corpsePaint(ch, 3);
       ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_GEAR].scale.setScalar(0);
       ch.root.position.set(0, K.hs, KZ + THRONE_Z); ch.root.rotation.y = Math.PI;
       K.root.add(ch.root);
@@ -15025,6 +15171,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         if (D.kind === 'bar' && px > V.w - 1.7 && pz < -3.2) continue;                     // the bar
         if (D.kind === 'curling' && px > V.w - 1.0 && pz < -4.5 && pz > -6.2) continue;
         if (D.kind === 'church' && px < -V.w + 1.8 && pz > -3.5 && pz < -2.5) continue;    // the piano
+        if (D.view === 'spectator' && (px - SPEC.x) * (px - SPEC.x) + (pz - (V.front || DEFAULT_FRONT) + SPEC.back) * (pz - (V.front || DEFAULT_FRONT) + SPEC.back) < SPEC.clear * SPEC.clear) continue;   // v0.6: the riser
         slots.push({ x: px, z: pz, d: Math.sqrt(px * px * 0.35 + (pz - front) * (pz - front)) });
       }
       slots.sort(function (a, b) { return a.d - b.d; });
@@ -15170,11 +15317,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 
     // ---- Camera framing ---------------------------------------------------------------------------------
     var CAM = { pos: [0.35, 3.25, 4.2], look: [-0.05, -0.05, -3.6], bandFov: 45, minHFov: 38 };
+    var SPEC = { x: 0.85, y: 2.9, back: 5.2, clear: 1.6, look: [0.1, 1.2, -0.3], bandFov: 40, minHFov: 42 };   // v0.6: a riser in the crowd, facing the stage
     function frame() {
-      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame;
+      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, spec = K && K.D.view === 'spectator', CF = spec ? SPEC : CAM;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H / 3) : F.bottom;
       var bandH = Math.max(80, H - top - bottom);
-      var tb = Math.tan(CAM.bandFov * Math.PI / 360), minT = Math.tan(CAM.minHFov * Math.PI / 360) * bandH / W;
+      var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
@@ -15182,8 +15330,13 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();
       var hs = K ? K.hs : 0;
-      cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
-      cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
+      if (spec) {
+        cam.position.set(SPEC.x, Math.min(K.V.ceil ? K.V.ceil - 0.35 : 99, hs + SPEC.y), K.front - SPEC.back);
+        cam.lookAt(SPEC.look[0], hs + SPEC.look[1], KZ + SPEC.look[2]);
+      } else {
+        cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
+        cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
+      }
       cam.updateMatrixWorld();
       qCam.copy(cam.quaternion);
     }
@@ -15685,7 +15838,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
           cape: K.band.some(function (r) { return r.cape; }), crowd: Math.round(S.smooth), level: LEVELS[S.idx], formation: S.form.kind, arms: S.arms.kind,
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, moments: S.moments,
-          beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length };
+          beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
+          view: K.D.view, rival: K.D.rival, painted: K.painted };
       }
     };
     return shell;
@@ -17761,7 +17915,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
         s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-card-ok', onclick: function () { ui.close(s.id); } }, 'OK'));
         return;
       }
-      ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text))]);
+      ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
+        ui.rivalCardNote ? ui.rivalCardNote(st, card) : null]);   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
           s.body.appendChild(btn('.choice', { testid: 'choice-' + i, onclick: function () {
@@ -18067,6 +18222,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       (w.milestones || []).forEach(function (m) { parts.push(el('div.panel.warm.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', { style: 'font-weight:700' }, fill(m))])); });
       if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
       if (ui.labelWrap) parts.push.apply(parts, ui.labelWrap(w));   // v0.5: offers, release day, charts, certs, royalties
+      if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -18105,7 +18261,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       ui.append(s.body, el('div.title-wrap', [
         el('h1.logo', { style: 'font-size:44px' }, ["That's a", el('span.glory', ' career')]),
         el('p.tagline', (band ? band.name : 'The band') + ' played their last garage show. Your mom kept every flyer.'),
-        el('div.panel', grid)
+        el('div.panel', grid), ui.rivalEnd ? ui.rivalEnd(st) : null
       ]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-end-title', onclick: function () { GG.main.quitToTitle(); } }, 'Back to title'));
     }
@@ -18228,10 +18384,11 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 // v0.4: the Band tab's member section comes from GG.ui.bandPanel (58_ui_band: pay the band, stages, holes, recruits).
 // v0.5: Label (deal status, recoup, deadline, offers, DIY: GG.ui.labelPanel in 59_ui_label) and Albums (studio session,
 // discography: GG.ui.albumsPanel in 59c_ui_awards) tabs.
-// Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
+// v0.6: Scene (the rival, heat, the scene leaderboard, rival news: GG.ui.scenePanel in 59d_ui_rival).
+// Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }];
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -18314,7 +18471,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       s.setTitle('The laptop', 'CRACKED SCREEN · 12% BATTERY');
       var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st)
         : tab === 'label' ? (ui.labelPanel ? ui.labelPanel(st, function () { s.rerender({ tab: 'label' }); }) : el('p.dim', 'No label news.'))   // v0.5
-        : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.')) : chatTab(st);
+        : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.'))
+        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.')) : chatTab(st);   // v0.6
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);
@@ -19240,7 +19398,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       d.back.hidden = !!G.stageOn;
       d.title = el('b', g.name);
       d.pauseBtn = ui.btn('.icon-btn', { testid: 'btn-gig-pause', 'aria-label': 'Pause', onclick: function () { pause(false); } }, '⏸');
-      d.bar = el('div.gig-bar', [el('div.grow', [el('div.caps', [g.city, g.kind].filter(Boolean).join(' · ')), d.title]), d.pauseBtn]);
+      d.bar = el('div.gig-bar', [el('div.grow', [el('div.caps', [g.city, g.kind].filter(Boolean).join(' · ')), d.title]),
+        !G.opts.studio && ui.gigTarget ? ui.gigTarget(g) : null, d.pauseBtn]);   // v0.6: the rival's score to beat
       d.level = el('span.lv', 'Warm'); d.meter = el('i', { style: { width: '40%' } });
       d.crowd = el('div.gig-crowd', { testid: 'gig-crowd', data: { level: 'warm' } }, [el('div.mh', [el('span.caps', 'Crowd'), d.level]), el('div.bar', d.meter)]);
       d.banner = el('div.gig-banner'); d.count = el('div.gig-count');
@@ -19427,26 +19586,27 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   /* ---- One flyer ------------------------------------------------------------------------------------ */
   function listingCard(st, l, mode, onPick) {
     var w = W(), fit = w.fitLabel(l.fit != null ? l.fit : 0.7), e = w.estimate(st, l);
-    var can = w.canBook(st, l), booked = st.gig && st.gig.id && st.gig.id === l.id;
+    var can = w.canBook(st, l), booked = st.gig && st.gig.id && st.gig.id === l.id, taken = !!(l.stolen && !l.stolen.defended);   // v0.6
     var chips = [
       el('span.gb-chip', 'Tier ' + l.tier + ' · ' + l.capacity + ' cap'),
       el('span.gb-chip' + (l.deal === 'exposure' ? '.amber' : ''), ui.dealLabel(l)),
-      el('span.gb-chip' + (can ? '.good' : '.bad'), 'Needs ' + (l.minFans || 0) + ' fans ' + (can ? '✓' : '✗')),
+      taken ? el('span.gb-chip.bad', 'Taken ✗') : el('span.gb-chip' + (can ? '.good' : '.bad'), 'Needs ' + (l.minFans || 0) + ' fans ' + (can ? '✓' : '✗')),
       el('span.gb-chip' + (fit.id === 'clash' ? '.bad' : fit.id === 'great' ? '.good' : ''), fit.icon + ' ' + fit.label)
     ];
     var where = [l.city, l.km ? l.km + ' km' : 'across town', 'gas ' + U.fmtMoney(l.gas || 0)].join(' · ');
     var marcel = l.deal === 'exposure' && mode === 'book' ? el('div.gb-est', 'Marcel: "Exposure is basically money. Say yes."') : null;
     var kids = [
-      el('div.gb-top', [el('span.gb-ico', ui.venueIcon(l.kind)), el('div.grow', [el('div.gb-name', l.name), el('div.gb-where', where)]), repBadge(l.repLevel)]),
+      el('div.gb-top', [el('span.gb-ico', l.showdown && l.showdown.kind === 'festival' ? '🎪' : ui.venueIcon(l.kind)), el('div.grow', [el('div.gb-name', l.name), el('div.gb-where', where)]), repBadge(l.repLevel)]),
       l.opening ? el('span.gb-open' + (l.opening.rival ? '.rival' : ''), (l.opening.rival ? 'Your rival! ' : '') + 'Opening for ' + l.opening.name) : null,
       l.rebook ? el('span.gb-open', 'They want you back') : null,
+      ui.rivalBadge ? ui.rivalBadge(st, l) : null,   // v0.6: stolen slot / festival clash
       el('div.gb-chips', chips),
       l.catch ? el('div.gb-catch', [el('b', 'The catch: '), fill(l.catch)]) : null,
       el('div.gb-est', '~' + e.crowd + ' people · ' + (e.pay ? '~' + U.fmtMoney(e.pay) : 'no pay') + ' · ~' + e.fans + ' new fans' + (e.burnout ? ' · long drive' : '')),
       marcel
     ];
     if (mode === 'book' && onPick) {
-      kids.push(btn('.btn.primary.small.block', { testid: 'book-' + l.id, disabled: !can, onclick: function () { onPick(l); } }, can ? 'Book it' : 'Not enough fans yet'));
+      kids.push(btn('.btn.primary.small.block', { testid: 'book-' + l.id, disabled: !can, onclick: function () { onPick(l); } }, can ? 'Book it' : taken ? 'Taken by ' + l.stolen.by : 'Not enough fans yet'));
     } else if (booked) kids.push(el('div.gb-open', 'Booked this weekend'));
     return el('div.gb-card' + (booked ? '.booked' : ''), { testid: 'board-listing', data: { id: l.id } }, kids);
   }
@@ -21205,7 +21365,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       s.body.appendChild(el('div.maple-logo', [el('span', '🍁'), el('b', 'MAPLE 100'), el('span.tiny', 'as heard in Tim’s')]));
       if (view.rows.length) s.body.appendChild(el('div.chart-list', view.rows.map(function (r) {
         var mv = r.move === 'new' ? el('span.mv.new', 'NEW') : r.move > 0 ? el('span.mv.up', '▲' + r.move) : r.move < 0 ? el('span.mv.down', '▼' + (-r.move)) : el('span.mv', '–');
-        return el('div.chart-row' + (r.you ? '.you' : ''), { testid: r.you ? 'chart-you' : 'chart-row-' + r.pos }, [el('span.pos', String(r.pos)), el('div.grow', [el('b', r.title), el('div.tiny', r.artist)]), mv, el('span.tiny.dim.wk', r.weeks + ' wk')]);
+        return el('div.chart-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: r.you ? 'chart-you' : 'chart-row-' + r.pos }, [el('span.pos', String(r.pos)), el('div.grow', [el('b', r.title), el('div.tiny', r.artist)]), mv, el('span.tiny.dim.wk', r.weeks + ' wk')]);
       })));
       else s.body.appendChild(el('div.panel', { testid: 'chart-you' }, [el('b', 'Not in the Maple 100. Yet.'), el('p.small.dim', 'Somewhere around #140. Your mom bought eleven copies. Two were for the dentist.')]));
       s.body.appendChild(el('div.stat-grid', { testid: 'chart-stats' }, [
@@ -21575,6 +21735,464 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 })(window.GG);
 
 </script>
+<script>/* 59d_ui_rival.js */
+// 59d_ui_rival.js: the rivalry UI (v0.6 "Rivals", RIVALUI agent). Reads GG.rival (23_sim_rival.js); never rolls anything.
+//   Laptop Scene tab (GG.ui.scenePanel via 53_ui_laptop): the rival's card (fans, buzz, set strength, head-to-head), the heat
+//     meter + this week's showdown odds, the Sad Dome countdown (or its result), the scene leaderboard, rival news, recent
+//     showdowns, their lineup (defectors in corpse paint) and their records.
+//   Showdown announcement (screen 'showdown', sheet): after the Monday card (60_main beginWeek/afterCard). BotB: Enter / Pass
+//     (GG.rival.enter/pass); sameNight: the expected crowd split; stolenSlot: taken or defended; festival: see the board;
+//     final: the Sad Dome. Poach/crack/Sad Dome eve are forced Monday cards (card screen + GG.ui.rivalCardNote strip).
+//   GG.ui.playShowdown(gig, done, { resume }) (60_main playWeekend): a set showdown (botb/festival/final) shows the rival's
+//     set first (screen 'rival-set', full, live3d: the 3D stage from the crowd with their lineup in corpse paint and a ticking
+//     score, skippable), then your live set (GG.ui.playGig, v0.3), then the crowd verdict (screen 'rival-verdict', full).
+//     Any gig that resolved a showdown (a same-night split) also ends on the verdict.
+//   GG.ui.showdownViews: null (default: views on unless GG.ui.gigAutoplay) | true | false. Autoplay flows get toasts instead
+//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song.
+//   Hooks: rivalWrap(wrap) (52 wrap), rivalBadge(st, listing) (56 board), rivalCardNote(st, card) (52 card), rivalEnd(st)
+//     (52 end), gigTarget(gig) (55 gig bar). ui.who('wraith_frontman' | 'tw_*') resolves to the rival's cast.
+// testids: laptop-tab-scene, scene-panel, scene-rival, scene-record, scene-heat, scene-next, scene-board, scene-row-<id>,
+//   scene-news, scene-showdowns, scene-lineup, scene-albums · sd-card, btn-sd-enter, btn-sd-pass, btn-sd-ok, btn-sd-board ·
+//   rival-set, rs-score, rs-song-<i>, rs-banner, btn-rs-skip, btn-rs-go · rival-verdict, rv-verdict-head, btn-verdict-done ·
+//   wrap-rival, wrap-crack, board-stolen, board-defended, board-festival, card-rival, gig-target, end-final.
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts;
+  var WPY = C.WEEKS_PER_YEAR;
+  function S() { return GG.state; }
+  function RV() { return GG.rival; }
+  function on(st) { st = st || S(); return !!(RV() && st && st.rival); }
+  function fill(t, vars) {
+    var st = S(); if (!t) return '';
+    t = String(t).replace(/\{(city|venue|rival|name)\}/g, function (a, k) { return vars && vars[k] != null ? String(vars[k]) : k === 'rival' && st && RV() ? RV().name(st) : a; });
+    return st && GG.career && GG.career.fillText ? GG.career.fillText(st, t) : t;
+  }
+  function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
+  function views() { return ui.showdownViews != null ? !!ui.showdownViews : !ui.gigAutoplay; }
+  function wk(w) { return 'Y' + (Math.floor((w - 1) / WPY) + 1) + ' W' + ((w - 1) % WPY + 1); }
+  function bandName(st) { var b = GG.career.band(st); return (b && b.name) || 'You'; }
+  var ERA = { garage: 'Garage', local: 'Local heroes', signed: 'Signed', world: 'World stage' };
+  var SET_KINDS = { botb: 1, festival: 1, final: 1 };
+  var TITLES = { botb: 'Battle of the Bands', sameNight: 'Same night, same town', stolenSlot: 'Slot stolen', festival: 'Festival clash',
+    loonies: 'The Loonies', poach: 'The poach', final: 'The Sad Dome' };
+  function texts(kind) { var c = GG.content.rivalry; return (c && c.showdowns && c.showdowns[kind]) || {}; }
+  function title(kind) { return texts(kind).title || TITLES[kind] || kind; }
+  function icon(kind) { return texts(kind).icon || '⚔️'; }
+
+  /* ---- Heat, faces, people ------------------------------------------------------------------------------------ */
+  function heatLabel(h) { return h < 20 ? 'Polite' : h < 40 ? 'Frosty' : h < 60 ? 'Heated' : h < 80 ? 'Boiling (politely)' : 'Blood feud, with fruit baskets'; }
+  function heatColor(h) { return h < 20 ? '#6fb3ff' : h < 40 ? '#9ec8ff' : h < 60 ? '#ffb347' : h < 80 ? '#ff7a3c' : '#ff4a4a'; }
+  function heatMeter(h, delta, testid) {
+    return el('div.rv-heat', { testid: testid || null }, [
+      el('div.rv-heat-top', [el('span.caps', 'Rivalry heat'), el('b', { style: { color: heatColor(h) } }, heatLabel(h) + ' · ' + Math.round(h)
+        + (delta ? ' ' + (delta > 0 ? '▲' : '▼') + Math.abs(Math.round(delta)) : ''))]),
+      el('div.rv-heat-bar', el('i', { style: { width: U.clamp(h, 0, 100) + '%' } }))]);
+  }
+  // A little corpse-paint face (white, black sockets): the rival's avatar everywhere.
+  function face(size, label) { return el('div.rv-face' + (size ? '.' + size : ''), { 'aria-hidden': 'true' }, [el('i'), el('i'), label ? el('span', label) : null]); }
+  function castMember(st, id) {
+    var c = RV() && st ? RV().cast(st) : null;
+    return c && (c.members || []).filter(function (m) { return m.id === id; })[0] || null;
+  }
+  // ui.who knows the rival's people: 'wraith_frontman' (the Monday cards' speaker) is Gord, 'tw_*' are the accountants.
+  var baseWho = ui.who;
+  ui.who = function (id, state) {
+    var st = state || S();
+    if (st && on(st) && (id === 'wraith_frontman' || /^tw_/.test(String(id || '')))) {
+      var c = RV().cast(st), m = castMember(st, id === 'wraith_frontman' ? c && c.frontman : id);
+      if (m) return { id: id, name: m.fullName.split(' ')[0] + ' "' + m.nick + '" ' + m.fullName.split(' ').slice(1).join(' '), short: m.name, nick: m.nick,
+        color: '#ecebe6', text: '#ecebe6', full: m.fullName, role: RV().name(st) + ' · ' + m.role + (m.dayJob ? ' · ' + m.dayJob.replace(/\s*\(.*\)$/, '').toLowerCase() : '') };
+    }
+    return baseWho(id, state);
+  };
+  function record(st) { var r = RV().record(st); return el('div.rv-record', { testid: 'scene-record' }, [
+    el('div', [el('span.caps', bandName(st)), el('b.you', String(r.you))]), el('span.vs', 'vs'),
+    el('div', [el('span.caps', RV().name(st)), el('b.them', String(r.them))])]); }
+
+  /* ======================================================================================================
+     The laptop Scene tab
+     ====================================================================================================== */
+  function sec(text, testid, kids) { return el('div', { testid: testid || null }, [el('div.caps', { style: 'margin:14px 0 6px' }, text)].concat(kids)); }
+  function nextPanel(st) {
+    var R = RV(), nx = R.next(st), p = nx.pending, fin = st.finalShowdown, rows = [];
+    if (p && p.kind !== 'poach') rows.push(el('div.rv-next', [el('span.ic', icon(p.kind)), el('div.grow', [el('b', 'This week: ' + title(p.kind)),
+      el('div.tiny.dim', (p.venue || '') + (p.city ? ', ' + p.city : '') + (p.status === 'offered' ? ' · you haven\'t answered' : p.status === 'passed' ? ' · you passed' : p.status === 'done' ? ' · settled' : ''))])]));
+    if (fin) rows.push(el('div.rv-next.final' + (fin.won ? '.won' : ''), [el('span.ic', '🏟️'), el('div.grow', [el('b', fin.won ? 'You headlined the Sad Dome. Forever.' : (fin.rival || R.name(st)) + ' headlined the Sad Dome. You opened.'),
+      el('div.tiny.dim', 'Year 10: you ' + fin.score + ' · them ' + fin.rivalScore)])]));
+    else if (nx.final && nx.final.reachable && nx.final.inWeeks >= 0) rows.push(el('div.rv-next', [el('span.ic', '🏟️'), el('div.grow', [el('b', nx.final.inWeeks === 0 ? 'The Sad Dome: this week' : 'The Sad Dome in ' + nx.final.inWeeks + ' week' + (nx.final.inWeeks === 1 ? '' : 's')),
+      el('div.tiny.dim', 'Calgary, ' + wk(nx.final.week) + '. One co-bill decides who headlines and who opens. Forever.')])]));
+    rows.push(el('div.tiny.dim', { style: 'margin-top:6px' }, 'Showdown odds this week: ~' + Math.round(nx.chance * 100) + '% (heat drives it)'));
+    return el('div.panel', { testid: 'scene-next' }, rows);
+  }
+  ui.scenePanel = function (st) {
+    if (!on(st)) return el('p.dim', 'No rivals yet. Enjoy it while it lasts.');
+    var R = RV(), rv = R.get(st), c = R.cast(st) || {}, out = [];
+    var tags = [rv.cracked ? el('span.tag.rv-crack', { rebrand: 'rebranded', breakup: 'broken up', opener: 'your openers' }[rv.cracked] || rv.cracked) : null,
+      rv.label ? el('span.tag', (GG.content.labels && GG.content.labels[rv.label] && GG.content.labels[rv.label].name) || rv.label) : null];
+    out.push(el('div.panel.rv-hero', { testid: 'scene-rival' }, [
+      el('div.row', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), rv.formerName ? el('div.tiny.dim', 'formerly ' + rv.formerName) : null,
+        el('div.small.dim', [rv.city, rv.genre, ERA[rv.era] || rv.era].filter(Boolean).join(' · ')), el('div', { style: 'margin-top:4px' }, tags)])]),
+      el('div.stat-grid', [el('div', [el('span.caps', 'Fans'), el('b', U.fmtNum(rv.fans))]), el('div', [el('span.caps', 'Buzz'), el('b', String(Math.round(rv.buzz)))]),
+        el('div', [el('span.caps', 'Set'), el('b', '~' + R.skill(st))])]),
+      record(st),
+      c.minivan ? el('p.tiny.dim', { style: 'margin:8px 0 0' }, 'Gord drives ' + c.minivan + '.') : null]));
+    out.push(el('div.panel', { style: 'margin-top:10px' }, heatMeter(R.heat(st), 0, 'scene-heat')));
+    out.push(el('div', { style: 'margin-top:10px' }, nextPanel(st)));
+    var board = R.leaderboard(st, 10);
+    out.push(sec('The scene · by fans', 'scene-board', [el('div.panel.rv-board', board.map(function (r) {
+      var tr = r.trend || 0;
+      return el('div.rv-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: 'scene-row-' + r.id }, [el('span.rk', '#' + r.rank),
+        el('div.grow', [el('b', r.name + (r.you ? ' (you)' : '')), el('div.tiny.dim', [r.city, r.era ? ERA[r.era] || r.era : r.genre].filter(Boolean).join(' · ') + (r.cracked ? ' · cracked' : ''))]),
+        el('div.fans', [U.fmtNum(r.fans), el('span.tr' + (tr > 0 ? '.up' : tr < 0 ? '.down' : ''), tr > 0 ? ' ▲' : tr < 0 ? ' ▼' : ' ·')])]);
+    }))]));
+    var news = (rv.news || []).slice(-8).reverse();
+    out.push(sec('Scene news', 'scene-news', [el('div.panel.rv-news', news.length ? news.map(function (n) {
+      return el('div.rv-news-row', [el('span.tiny.dim', wk(n.week)), el('div', fill(n.text))]);
+    }) : el('p.small.dim', 'Nothing yet. Gord is drafting a press release about how excited he is to meet you.'))]));
+    var sds = (st.showdowns || []).slice(-6).reverse();
+    if (sds.length) out.push(sec('Showdowns', 'scene-showdowns', [el('div.panel', sds.map(function (x) {
+      return el('div.rv-sd', [el('span.wl' + (x.won ? '.w' : '.l'), x.won ? 'W' : 'L'), el('div.grow', [el('b', icon(x.kind) + ' ' + title(x.kind)),
+        el('div.tiny.dim', wk(x.week) + (x.name ? ' · ' + x.name : '') + (x.kind === 'poach' || x.kind === 'stolenSlot' || x.kind === 'loonies' ? '' : ' · you ' + x.you + ' · them ' + x.them))])]);
+    }))]));
+    out.push(sec('Lineup', 'scene-lineup', [el('div.panel', R.lineup(st).map(function (m) {
+      var cm = castMember(st, m.id);
+      return el('div.rv-mem', [face('sm'), el('div.grow', [el('b', (m.fullName || m.name) + (m.nick ? ' "' + m.nick + '"' : '')),
+        el('div.tiny.dim', [m.role, cm && cm.dayJob].filter(Boolean).join(' · ')),
+        cm && cm.gags && cm.gags.length ? el('div.tiny', { style: 'margin-top:2px' }, cm.gags[(st.totalWeek + m.id.length) % cm.gags.length]) : null]),
+        m.defector ? el('span.tag.rv-crack', 'ex-yours') : null]);
+    }))]));
+    var albums = (rv.albums || []).slice().reverse();
+    out.push(sec('Their records', 'scene-albums', [el('div.panel', albums.length ? albums.map(function (a) {
+      return el('div.rv-alb', [el('span', '💿'), el('div.grow', [el('b', a.title), el('div.tiny.dim', wk(a.released) + (a.critic ? ' · critics ' + a.critic : ''))]),
+        el('span.small', a.peak ? '#' + a.peak : '—')]);
+    }) : el('p.small.dim', 'No records yet. They are "finalizing the liner-note footnotes".'))]));
+    return el('div', { testid: 'scene-panel' }, out);
+  };
+
+  /* ======================================================================================================
+     Monday: the showdown announcement
+     ====================================================================================================== */
+  var announced = {};
+  function thisWeeks(st, kind) { return (st.showdowns || []).filter(function (x) { return x.week === st.totalWeek && x.kind === kind; })[0] || null; }
+  function splitPreview(st) {
+    var k = RV().cfg(), yb = st.buzz || 0, rb = RV().get(st).buzz || 0, share = (yb + 10) / (yb + rb + 20);
+    return { share: Math.round(share * 100), keep: Math.round((1 - k.sameNight.split * (1 - share)) * 100), yb: Math.round(yb), rb: Math.round(rb) };
+  }
+  // Shows this week's showdown once (after the Monday card). Returns true when a screen opened. Autoplay: a toast.
+  ui.announceShowdown = function (st, force) {
+    st = st || S();
+    if (!on(st) || st.phase !== 'plan') return false;
+    var p = RV().pending(st);
+    if (!p || p.kind === 'poach' || p.status === 'missed' || (announced[p.id] && !force)) return false;
+    announced[p.id] = true;
+    if (!views()) { ui.toast(icon(p.kind) + ' ' + title(p.kind) + (p.venue ? ': ' + p.venue : ''), { who: RV().name(st) }); return false; }
+    // deferred: this often runs from the Monday card's onClose, and a screen opened there would be popped with it
+    Promise.resolve().then(function () { if (GG.state === st && st.phase === 'plan' && !ui.isOpen('showdown')) ui.show('showdown', {}); });
+    return true;
+  };
+  ui.define('showdown', {
+    kind: 'sheet', cls: 'rvsd',
+    build: function (s) {
+      var st = S(); if (!on(st)) return;
+      var R = RV(), p = R.pending(st), kind = p ? p.kind : 'botb', set = R.showdown(st, kind), rv = R.get(st);
+      s.setTitle(set.title, 'YEAR ' + st.year + ' · WEEK ' + st.week + ' · ' + rv.name.toUpperCase());
+      var body = [el('div.rv-sd-head', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
+        el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];
+      if (set.stakes && kind !== 'stolenSlot') body.push(el('div.rv-stakes', [el('span.caps', 'Stakes'), el('b', set.stakes)]));
+      if (SET_KINDS[kind]) body.push(el('div.line-list.panel', [
+        el('div', [el('span', 'Their set strength'), el('span', '~' + set.expected)]),
+        el('div', [el('span', 'Their setlist'), el('span', set.setlist.length + ' songs')]),
+        el('div', [el('span', 'Running order'), el('span', 'They go first')])]));
+      if (kind === 'sameNight') {
+        var sp = splitPreview(st);
+        body.push(el('div.panel.rv-split', [el('div.caps', 'The split, if you play that night'),
+          el('div.rv-split-bar', [el('i.you', { style: { width: sp.share + '%' } }, 'You ' + sp.share + '%'), el('i.them', { style: { width: (100 - sp.share) + '%' } }, (100 - sp.share) + '%')]),
+          el('p.small.dim', { style: 'margin:6px 0 0' }, 'Buzz ' + sp.yb + ' vs ' + sp.rb + '. Book a gig this weekend and you keep about ' + sp.keep + '% of your crowd. More buzz, more room.')]));
+      }
+      var done = kind === 'stolenSlot' ? thisWeeks(st, 'stolenSlot') : null;
+      if (done) body.push(el('div.quote' + (done.won ? '.rv-good' : ''), fill((done.lines || [])[0] || (done.won ? 'The booker kept you.' : 'They took it.'))));
+      if (kind === 'festival') body.push(el('p.small.dim', 'It\'s on the gig board this week. Book it with a Book block.'));
+      if (kind === 'final') body.push(el('p.small.dim', 'Booked for Saturday: 620 km of Trans-Canada to Calgary. Kenji is already in the van.'));
+      ui.append(s.body, body);
+      function close() { ui.close(s.id); GG.main.sync(); }
+      if (kind === 'botb' && p && p.status === 'offered' && st.offer && st.offer.showdown) {
+        ui.append(s.foot, el('div.row', [
+          btn('.btn.grow', { testid: 'btn-sd-pass', onclick: function () { R.pass(S()); ui.toast('You sit this one out. ' + rv.name + ' send a card: "Next time, buddy!"'); close(); } }, set.pass || 'Sit this one out'),
+          btn('.btn.primary.grow', { testid: 'btn-sd-enter', onclick: function () { if (R.enter(S())) { sfx('card'); ui.toast('Entered. The whiteboard says: BATTLE. Marcel has underlined it four times.'); } close(); } }, set.enter || 'Enter the battle')]));
+        return;
+      }
+      if (kind === 'festival' && ui.openBoard) s.foot.appendChild(btn('.btn.block', { testid: 'btn-sd-board', onclick: function () { close(); ui.openBoard({ mode: 'view' }); } }, 'See the gig board'));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-sd-ok', onclick: close }, kind === 'final' ? 'Load the minivan. Er, the Hearse.' : 'Noted'));
+    },
+    onShow: function () { sfx('card'); }
+  });
+
+  /* ---- Monday card strip for the rival's cards (poach / crack / Sad Dome eve) ---- */
+  ui.rivalCardNote = function (st, card) {
+    if (!card || !/^rv_/.test(card.id || '') || !on(st)) return null;
+    var R = RV(), r = R.record(st), kids = [face('sm'), el('div.grow', [el('b', R.name(st)), el('div.tiny.dim', 'Heat ' + Math.round(R.heat(st)) + ' · you ' + r.you + ' · them ' + r.them)])];
+    if (card.id === 'rv_poach' && st.card && st.card.who) {
+      var m = (st.members || []).filter(function (x) { return x.id === st.card.who; })[0];
+      if (m) kids.push(el('div.rv-mood', [el('span.tiny.dim', ui.who(m.id).short + "'s mood"), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) })]));
+    }
+    return el('div.rv-card-note', { testid: 'card-rival' }, kids);
+  };
+
+  /* ======================================================================================================
+     Board badges (56_ui_board)
+     ====================================================================================================== */
+  ui.rivalBadge = function (st, l) {
+    if (!l) return null;
+    if (l.stolen && !l.stolen.defended) return el('span.gb-open.rv-stolen', { testid: 'board-stolen' }, '📌 Stolen by ' + l.stolen.by);
+    if (l.stolen) return el('span.gb-open.rv-defended', { testid: 'board-defended' }, '🛡 ' + l.stolen.by + ' tried. The booker kept you.');
+    if (l.showdown && l.showdown.kind === 'festival') return el('span.gb-open.rv-fest', { testid: 'board-festival' }, '🎪 Festival clash · ' + (l.headliner || 'your rival') + ' headline · you: ' + (l.slot || 'an early slot'));
+    return null;
+  };
+
+  /* ======================================================================================================
+     The rival's set (spectator view)
+     ====================================================================================================== */
+  var BANTER = {
+    open: ['Gord: "Good evening, {city}! Please note the fire exits. Now: ETERNAL WINTER."', 'Gord: "Hello {city}! We are {rival}. Hydrate, buddies."'],
+    mid: ['Gord: "Give it up for {band}, eh? Real good kids."', 'Sheila apologizes to her amp for the last song.', 'Darryl hands the front row tax-tip pamphlets.',
+      'Lorne checks the metronome app. 3% fast. Unacceptable.', 'Gord: "This one is about the wind chill. Dress in layers."'],
+    final: ['Gord: "Calgary! We brought a veggie tray for all nineteen thousand of you."']
+  };
+  function pick(a, i) { return a[Math.abs(i) % a.length]; }
+  function rivalStage(st, gig) {
+    var R = RV(), rv = R.get(st), line = R.lineup(st), drum = line.filter(function (m) { return /drum/i.test(m.role || ''); })[0];
+    return { venue: Object.assign({}, GG.gig.venue(gig.venueId) || {}, gig), crowd: GG.gig.expectCrowd ? GG.gig.expectCrowd(st, gig) : gig.capacity, capacity: gig.capacity,
+      genre: rv.genre || 'metal', flags: {}, player: st.player, rival: true, view: 'spectator', banner: rv.name, sub: rv.city,
+      members: line.filter(function (m) { return m !== drum; }).map(function (m) {
+        return { id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint !== false, stageShirt: m.stageShirt };
+      }),
+      drummer: drum ? { id: drum.id, look: drum.look, corpsePaint: drum.corpsePaint !== false, stageShirt: drum.stageShirt } : null };
+  }
+  function stageApi() { var R = GG.render; return GG.main && GG.main.renderOk && R && R.available && R.stage && typeof R.stage.setup === 'function' ? R.stage : null; }
+  var V = null;   // the spectator session
+  function songPattern(song, i) {
+    try {
+      var p = GG.songs.generate('metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});
+      if (p) p.bpm = U.clamp(song.bpm || p.bpm, 60, 240);
+      return p;
+    } catch (e) { return null; }
+  }
+  ui.watchRival = function (gig, next) {
+    var st = S(); if (!st || !on(st)) { next(); return; }
+    var kind = gig.showdown && gig.showdown.kind || 'botb', set = RV().showdown(st, kind);
+    if (V) stopWatch();
+    V = { gig: gig, set: set, kind: kind, next: next, i: -1, t: 0, songT: 0, ms: ui.rivalSongMs || 5200, raf: 0, last: 0, step: -1, handle: null,
+      scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false };
+    ui.show('rival-set', {});
+    var api = stageApi();
+    if (api) {
+      try { V.stage = GG.render.setScene('stage') !== false; if (V.stage) api.setup(rivalStage(st, gig)); } catch (e) { console.error('[rival] stage setup failed', e); V.stage = false; }
+    }
+    if (V.dom) V.dom.back.hidden = V.stage;
+    frameStage();
+    startSong(0);
+    V.last = performance.now();
+    V.raf = requestAnimationFrame(tick);
+  };
+  function frameStage() {
+    requestAnimationFrame(function () {
+      if (!V || !V.stage || !V.dom || !stageApi()) return;
+      var H = window.innerHeight || 844;
+      stageApi().setFrame({ top: Math.round(V.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - V.dom.panel.getBoundingClientRect().top) });
+    });
+  }
+  function banner(text) {
+    if (!V || !V.dom) return;
+    var b = V.dom.banner; b.textContent = text; b.className = 'rs-banner show';
+    clearTimeout(V.bannerT); V.bannerT = setTimeout(function () { if (V && V.dom) V.dom.banner.className = 'rs-banner'; }, 2400);
+  }
+  function vars() { var p = V.set.venue || {}; return { city: p.city || (V.gig && V.gig.city) || '', venue: p.name || '', rival: V.set.rival.name }; }
+  function startSong(i) {
+    V.i = i; V.songT = 0; V.moment = false; V.step = -1;
+    var song = V.set.setlist[i];
+    V.pattern = songPattern(song, i);
+    if (GG.audio && GG.audio.play && V.pattern) { try { V.handle = GG.audio.play(V.pattern, { genre: 'metal', loop: true }); } catch (e) { V.handle = null; } }
+    var st = S(), pool = i === 0 ? (V.kind === 'final' ? BANTER.final : BANTER.open) : BANTER.mid;
+    banner(fill(pick(pool, st.totalWeek + i * 3), vars()));
+  }
+  function stopAudio() { if (V && V.handle) { try { if (V.handle.playing) V.handle.stop(); } catch (e) { /* ignore */ } V.handle = null; } }
+  function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; }
+  function tick(now) {
+    if (!V || V.ended) return;
+    var dt = Math.min(0.1, Math.max(0, (now - V.last) / 1000)); V.last = now;
+    V.songT += dt * 1000;
+    var song = V.set.setlist[V.i], u = Math.min(1, V.songT / V.ms), api = V.stage ? stageApi() : null;
+    V.scores[V.i] = Math.round(song.score * (u < 0.92 ? u / 0.92 : 1));
+    if (api) {
+      api.setCrowdLevel(U.clamp(25 + (song.score - 40) * 1.1 * Math.min(1, u * 1.6), 5, 98));
+      if (V.pattern) {   // their drummer plays the pattern (16ths at the song's tempo)
+        var spb = 60 / (V.pattern.bpm || 180), step = Math.floor(V.songT / 1000 / (spb / 4)), arr = V.pattern.arrangement || ['verse'];
+        if (step !== V.step) {
+          V.step = step;
+          var sec = V.pattern.sections[arr[Math.floor(step / 16) % arr.length]] || [], s16 = step % 16;
+          for (var l = 0; l < sec.length; l++) if (sec[l] && sec[l][s16] === 'x') api.hit(l, 'perfect');
+        }
+      }
+      if (!V.moment && u > 0.5) { V.moment = true; api.moment(song.score >= 55 ? 'lighters' : 'drinks'); }   // no pits: they'd run through the riser camera
+      if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner('Sheila "Hexenfrost" Wiebe: a solo. She apologizes to her amp after.'); }
+    }
+    updateScores();
+    if (V.songT >= V.ms) {
+      stopAudio();
+      if (V.i + 1 < V.set.setlist.length) startSong(V.i + 1);
+      else { finishWatch(false); return; }
+    }
+    V.raf = requestAnimationFrame(tick);
+  }
+  function setScore() {
+    var done = V.scores.filter(function (x) { return x != null; });
+    if (!done.length) return 0;
+    var sum = 0; done.forEach(function (x) { sum += x; });
+    return Math.round(sum / V.set.setlist.length);
+  }
+  function updateScores() {
+    if (!V.dom) return;
+    V.dom.score.textContent = String(V.ended ? V.set.score : setScore());
+    V.set.setlist.forEach(function (s, i) {
+      var r = V.dom.rows[i]; if (!r) return;
+      r.sc.textContent = V.scores[i] != null ? String(V.scores[i]) : '—';
+      r.row.className = 'rs-song' + (i === V.i && !V.ended ? ' on' : V.scores[i] != null ? ' done' : '');
+    });
+  }
+  function finishWatch(skipped) {
+    if (!V) return;
+    V.ended = true; stopAudio();
+    V.scores = V.set.setlist.map(function (s) { return s.score; });
+    updateScores();
+    if (skipped) { goYourSet(); return; }
+    render();
+    banner(fill('{rival} finish. Gord thanks the sound tech by name. Your turn.', vars()));
+  }
+  function goYourSet() {
+    if (!V) return;
+    var next = V.next;
+    stopWatch(); V = null;
+    ui.close('rival-set');
+    next();
+  }
+  function render() { var e = ui.get('rival-set'); if (e) e.rerender(); }
+  ui.define('rival-set', {
+    kind: 'full', cls: 'rvset', sticky: true, live3d: true,
+    build: function (s) {
+      if (!V) return;
+      var set = V.set, d = V.dom = { rows: [] }, st = S();
+      d.back = el('div.rs-back', [el('div.rs-sil', [el('i'), el('i'), el('i'), el('i')])]);
+      d.back.hidden = !!V.stage;
+      d.score = el('b', { testid: 'rs-score' }, '0');
+      d.bar = el('div.rs-bar', [el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
+        el('b.rs-who', set.rival.name + (V.ended ? ' are done' : ' are on'))]), el('div.rs-score', [el('span.caps', 'Their set'), d.score])]);
+      d.banner = el('div.rs-banner', { testid: 'rs-banner' });
+      var rows = set.setlist.map(function (song, i) {
+        var sc = el('span.sc', '—'), row = el('div.rs-song', { testid: 'rs-song-' + i }, [el('span.n', String(i + 1)), el('div.grow', [el('b', song.title), el('div.tiny.dim', song.bpm + ' bpm')]), sc]);
+        d.rows.push({ row: row, sc: sc });
+        return row;
+      });
+      var names = set.rival.members.map(function (m) { return (m.nick || m.name) + (m.defector ? ' (ex-' + bandName(st) + ')' : ''); }).join(' · ');
+      d.panel = el('div.rs-panel', [el('div.rs-ph', [el('span.caps', 'Their set · expected ~' + set.expected), el('span.tiny.dim', 'heat ' + Math.round(set.rival.heat))]),
+        el('div.rs-songs', rows), el('div.tiny.dim.rs-names', names),
+        V.ended ? btn('.btn.primary.big.block', { testid: 'btn-rs-go', onclick: goYourSet }, 'Your turn. Beat ' + set.score + ' →')
+          : btn('.btn.block', { testid: 'btn-rs-skip', onclick: function () { finishWatch(true); } }, 'Skip their set ▸▸')]);
+      ui.append(s.body, [d.back, d.bar, d.banner, d.panel]);
+      updateScores();
+      frameStage();
+    },
+    onClose: function () { if (V) { stopWatch(); V = null; } }
+  });
+  // The live gig's top bar shows the score to beat on a set showdown (55_ui_gig hook).
+  ui.gigTarget = function (g) {
+    var st = S();
+    if (!g || !g.showdown || !SET_KINDS[g.showdown.kind] || !on(st)) return null;
+    return el('span.rs-target', { testid: 'gig-target' }, 'Beat ' + RV().setScore(st, g.showdown.kind));
+  };
+
+  /* ======================================================================================================
+     The showdown weekend: their set -> your set -> the verdict
+     ====================================================================================================== */
+  ui.playShowdown = function (gig, done, opts) {
+    opts = opts || {};
+    var st = S(), kind = gig && gig.showdown && gig.showdown.kind, v = views();
+    function mine() {
+      ui.playGig(gig, function (res) {
+        var sd = (res && res.showdown) || (S() && S().lastGig && S().lastGig.showdown) || null;
+        if (v && sd && on()) ui.showVerdict(sd, function () { done(res); });
+        else done(res);
+      });
+    }
+    if (kind && SET_KINDS[kind] && v && !opts.resume && on(st)) ui.watchRival(gig, mine);
+    else mine();
+  };
+  ui.showVerdict = function (sd, done) { ui.show('rival-verdict', { sd: sd, done: done }); sfx(sd.won ? 'cheer' : 'boo'); };
+  ui.define('rival-verdict', {
+    kind: 'full', cls: 'rvverdict', sticky: true,
+    build: function (s, d) {
+      var st = S(), sd = d.sd || {}, R = RV(), fin = sd.kind === 'final', split = sd.kind === 'sameNight', rv = st && on(st) ? R.get(st) : null;
+      s.root.classList.toggle('won', !!sd.won);
+      var head = fin ? (sd.won ? 'You headline. Forever.' : 'You open. Forever.') : split ? (sd.won ? 'The scene picked you' : 'The scene picked them') : sd.won ? 'You win!' : (sd.rival || 'They') + ' win';
+      var you = split ? sd.you + '%' : String(sd.you), them = split ? sd.them + '%' : String(sd.them);
+      var chips = [];
+      if (sd.prize) chips.push(el('span.rv-chip.good', '+' + U.fmtMoney(sd.prize) + ' prize'));
+      if (sd.fansSwing) chips.push(el('span.rv-chip' + (sd.fansSwing > 0 ? '.good' : '.bad'), U.signed(sd.fansSwing) + ' fans' + (sd.kind === 'botb' ? (sd.fansSwing > 0 ? ' (theirs)' : ' (to them)') : '')));
+      if (split && sd.crowdLost) chips.push(el('span.rv-chip.bad', sd.crowdLost + ' went to their show'));
+      if (sd.heatDelta) chips.push(el('span.rv-chip', 'Heat ' + U.signed(Math.round(sd.heatDelta))));
+      ui.append(s.body, el('div.rv-verdict', { testid: 'rival-verdict' }, [
+        el('div.caps.center', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name && sd.name !== title(sd.kind) ? ' · ' + String(sd.name).replace(/^Battle of the Bands @ /, '') : '')),
+        el('h1.display.rv-vh', { testid: 'rv-verdict-head' }, head),
+        el('div.rv-board2', [
+          el('div.side.you' + (sd.won ? '.win' : ''), [el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),
+          el('span.vs', 'vs'),
+          el('div.side.them' + (sd.won ? '' : '.win'), [face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
+        split ? el('p.small.dim.center', 'Same night, same town: the crowd split on buzz.') : el('p.small.dim.center', split ? '' : 'The crowd decides. Loudly.'),
+        el('div.rv-chips', chips),
+        el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),
+        rv ? el('div.panel', { style: 'margin-top:10px' }, [record(st), el('div', { style: 'margin-top:8px' }, heatMeter(rv.heat))]) : null,
+        fin ? el('p.center.rv-forever', sd.won ? 'The Sad Dome is yours. Gord already sent a fruit basket the size of a Zamboni.' : 'Gord hugs you in the loading bay. "You were great, buddy. Really." He means it. That is the worst part.') : null
+      ]));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-verdict-done', onclick: function () { var cb = d.done; ui.close(s.id); if (cb) cb(); } }, 'Wrap up the week'));
+    }
+  });
+
+  /* ======================================================================================================
+     Wrap, end
+     ====================================================================================================== */
+  var CRACK = { breakup: ['They broke up.', 'An indefinite hiatus "to focus on tax season". Gord called you personally. He was crying.'],
+    rebrand: ['They rebranded.', 'Same four accountants, same minivan, new name: {rival}. There is a forty-slide deck.'],
+    opener: ['They want to open for you.', 'Gord ran the numbers: you are the bigger draw. They will bring the veggie tray.'] };
+  ui.rivalWrap = function (w) {
+    var st = S(), x = w && w.rival;
+    if (!x || !on(st)) return [];
+    var out = [], sds = x.showdowns || [];
+    if (x.cracked) {
+      var cr = CRACK[x.cracked] || ['They cracked.', ''];
+      out.push(el('div.panel.rv-crackpanel', { testid: 'wrap-crack' }, [el('div.row', [face('lg'), el('div.grow', [el('div.caps', RV().get(st).formerName || RV().name(st)),
+        el('div.display.rv-cr', cr[0]), el('div.small', fill(cr[1]))])])]));
+    }
+    if (!x.news.length && !sds.length && !x.heatBuzz && !x.final) return out;
+    var rows = [];
+    sds.forEach(function (sd) { rows.push(el('div.rv-sd', [el('span.wl' + (sd.won ? '.w' : '.l'), sd.won ? 'W' : 'L'), el('div.grow', el('b', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name ? ' · ' + sd.name : '')))])); });
+    x.news.forEach(function (t) { rows.push(el('div.rv-news-row', [el('span', '📰'), el('div', fill(t))])); });
+    if (x.heatBuzz) rows.push(el('div.tiny.dim', 'The rivalry is good for business: buzz +' + x.heatBuzz + ' (for them too).'));
+    out.push(el('div.panel.rv-wrap', { testid: 'wrap-rival' }, [el('div.row', { style: 'margin-bottom:6px' }, [face('sm'), el('div.grow', el('b', RV().name(st))),
+      el('span.small', { style: { color: heatColor(x.heat) } }, 'Heat ' + Math.round(x.heat) + (x.heatDelta ? ' ' + (x.heatDelta > 0 ? '▲' : '▼') + Math.abs(Math.round(x.heatDelta)) : ''))])].concat(rows)));
+    return out;
+  };
+  ui.rivalEnd = function (st) {
+    var f = st && st.finalShowdown;
+    if (!f) return null;
+    return el('div.panel.rv-next.final' + (f.won ? '.won' : ''), { testid: 'end-final' }, [el('span.ic', '🏟️'), el('div.grow', [
+      el('b', f.won ? 'You headlined the Sad Dome. ' + (f.rival || 'They') + ' opened. Forever.' : (f.rival || 'They') + ' headlined the Sad Dome. You opened. Forever.'),
+      el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
+  };
+
+  GG.registerDebug('rivalui', function () {
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, announced: Object.keys(announced) };
+  });
+})(window.GG);
+
+</script>
 <script>/* 60_main.js */
 // 60_main.js: boot, the live career (GG.state), routing by phase, the week flow, autosave, and the glue to
 // render + audio. Screens call these; sims never do.
@@ -21738,7 +22356,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     function play() {
       if (GG.state !== st || st.phase !== 'gig') return;
       ui.closeAll();
-      ui.playGig(gig, function () { M.wrapWeek(); });
+      // v0.6: a showdown weekend (their set first on a BotB/festival/Sad Dome gig, then yours, then the crowd verdict)
+      if (ui.playShowdown && GG.rival && (gig.showdown || GG.rival.pending(st))) ui.playShowdown(gig, function () { M.wrapWeek(); }, { resume: started });
+      else ui.playGig(gig, function () { M.wrapWeek(); });
     }
     ui.closeAll();
     if (started || !ui.playVan) play();
@@ -21751,6 +22371,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var res = GG.career.startWeek(st) || {};
     M.sync();
     if (st.card && !st.card.resolved) { ui.show('card'); return; }   // offers show up on the whiteboard
+    if (ui.announceShowdown && ui.announceShowdown(st)) return;      // v0.6: this week's rival showdown
     var q = typeof st.quiet === 'string' ? st.quiet : ui.pick(GG.content.lines && GG.content.lines.quietWeek);
     ui.toast(fill(q) || 'Quiet week. Suspiciously quiet.', { who: 'Quiet week' });
     if (res.offer) ui.toast('📨 A gig offer came in for this weekend. Check the whiteboard.');
@@ -21766,6 +22387,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
         : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
     }
+    if (st && ui.announceShowdown) ui.announceShowdown(st);   // v0.6: after the Monday card
   };
   // Results → wrap. Runs endWeek once (phase 'wrap'); a second call just re-shows the same wrap.
   M.wrapWeek = function () {

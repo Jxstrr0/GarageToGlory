@@ -160,7 +160,9 @@
     function play() {
       if (GG.state !== st || st.phase !== 'gig') return;
       ui.closeAll();
-      ui.playGig(gig, function () { M.wrapWeek(); });
+      // v0.6: a showdown weekend (their set first on a BotB/festival/Sad Dome gig, then yours, then the crowd verdict)
+      if (ui.playShowdown && GG.rival && (gig.showdown || GG.rival.pending(st))) ui.playShowdown(gig, function () { M.wrapWeek(); }, { resume: started });
+      else ui.playGig(gig, function () { M.wrapWeek(); });
     }
     ui.closeAll();
     if (started || !ui.playVan) play();
@@ -173,6 +175,7 @@
     var res = GG.career.startWeek(st) || {};
     M.sync();
     if (st.card && !st.card.resolved) { ui.show('card'); return; }   // offers show up on the whiteboard
+    if (ui.announceShowdown && ui.announceShowdown(st)) return;      // v0.6: this week's rival showdown
     var q = typeof st.quiet === 'string' ? st.quiet : ui.pick(GG.content.lines && GG.content.lines.quietWeek);
     ui.toast(fill(q) || 'Quiet week. Suspiciously quiet.', { who: 'Quiet week' });
     if (res.offer) ui.toast('📨 A gig offer came in for this weekend. Check the whiteboard.');
@@ -188,6 +191,7 @@
       ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
         : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
     }
+    if (st && ui.announceShowdown) ui.announceShowdown(st);   // v0.6: after the Monday card
   };
   // Results → wrap. Runs endWeek once (phase 'wrap'); a second call just re-shows the same wrap.
   M.wrapWeek = function () {

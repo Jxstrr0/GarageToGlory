@@ -151,7 +151,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
-## What's in v0.6.0 "Rivals" (in progress: stage 1 sim + content done; stage 2 UI next)
+## What's in v0.6.0 "Rivals" (stage 1 sim + content, stage 2 UI done)
 - Rival sim (`23_sim_rival.js`, API in its header): Tundra Wraith run a parallel career (fans chase `economy.rival.fansCurve`
   × momentum from the head-to-head record; buzz; garage → local 250 → signed 1,100 with Monolith; one record a year timed
   before the Loonie nominations, charting on the Maple 100 and shown in `labels.chartView`). Every roll is seeded by career
@@ -184,6 +184,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (y2+) at heat 20–69, wins 30–56%, never cracks them, headlines the Sad Dome 11/20; good bot 2.5–4.5/yr, wins 64–82%,
   cracks them 19/20 (y3–9), headlines 20/20. Loonie wins ≈ v0.5 (avg ≈ 3.5/career). y10 avg fans 36.1k→37.3k, fund
   $9.7k→$11.6k; good 43.9k→47.9k, $23.6k→$25.7k (prizes, the Sad Dome, heat buzz). Tests: sim_rival 15 (new).
+- UI (`59d_ui_rival.js`, API in its header): laptop **Scene** tab (rival card + head-to-head, heat meter + showdown odds,
+  Sad Dome countdown/result, top-10 scene leaderboard, news, recent showdowns, lineup with gags/defectors, their records);
+  Monday **showdown sheet** after the card (BotB Enter/Pass, same-night split bar, stolen slot verdict, festival → board,
+  Sad Dome); rival cards get a rival strip (poach: the member's mood) and `ui.who('wraith_frontman'|'tw_*')` = the cast;
+  **showdown weekend** (`ui.playShowdown`, from `main.playWeekend`): BotB/festival/final show **their set first** (screen
+  `rival-set`, live3d: `render.stage` spectator camera on a riser in the crowd, their lineup in corpse paint + black stage
+  shirts, their drummer on the throne, a banner, ticking per-song scores, their drummer plays the pattern, skippable) →
+  your live set (score to beat in the gig bar) → **verdict** (`rival-verdict`; also after a same-night split). Board
+  badges (stolen/defended/festival; stolen = "Taken" and unbookable), wrap rival panel (+ crack panel), end-screen Sad Dome
+  line, rival rows on the Maple 100. `GG.ui.showdownViews` (default: on unless `gigAutoplay`) keeps autoplay flows fast
+  (toasts instead). The van to Calgary shows "Saskatoon → Calgary" (world.startTrip: off-map cities keep their name).
+  Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
 - `GG.rival` (v0.6, header of `23_sim_rival.js`): `init, migrate, get, cfg, cast, cards, venue, name, skill, heat, addHeat,
@@ -227,9 +239,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 
 ## Back-burner
-- v0.6 stage 1: the van trip to the Sad Dome (Calgary, off the Sask map) starts and ends at home on the map (km 620 is right);
-  `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" (content test pins it); stolen listings show the fan chip
-  on the board until the UI badge lands; heat decays emit 'heat:changed' every week.
+- v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);
+  `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" in content (the UI shows Gord); heat decays emit
+  'heat:changed' every week; the spectator view keeps crowd pits off (they'd run through the riser camera); rival banter
+  lines live in 59d (UI flavour, like 55's); other bands' rivals have no cast until v0.9 (the Scene tab shows an empty lineup).
 - v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
 - v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
   dressing); producer `weird` unused; full-career save code ≈ 65–70k chars (album reviews); balance 10×20 takes ~39 s.

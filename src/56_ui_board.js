@@ -81,26 +81,27 @@
   /* ---- One flyer ------------------------------------------------------------------------------------ */
   function listingCard(st, l, mode, onPick) {
     var w = W(), fit = w.fitLabel(l.fit != null ? l.fit : 0.7), e = w.estimate(st, l);
-    var can = w.canBook(st, l), booked = st.gig && st.gig.id && st.gig.id === l.id;
+    var can = w.canBook(st, l), booked = st.gig && st.gig.id && st.gig.id === l.id, taken = !!(l.stolen && !l.stolen.defended);   // v0.6
     var chips = [
       el('span.gb-chip', 'Tier ' + l.tier + ' · ' + l.capacity + ' cap'),
       el('span.gb-chip' + (l.deal === 'exposure' ? '.amber' : ''), ui.dealLabel(l)),
-      el('span.gb-chip' + (can ? '.good' : '.bad'), 'Needs ' + (l.minFans || 0) + ' fans ' + (can ? '✓' : '✗')),
+      taken ? el('span.gb-chip.bad', 'Taken ✗') : el('span.gb-chip' + (can ? '.good' : '.bad'), 'Needs ' + (l.minFans || 0) + ' fans ' + (can ? '✓' : '✗')),
       el('span.gb-chip' + (fit.id === 'clash' ? '.bad' : fit.id === 'great' ? '.good' : ''), fit.icon + ' ' + fit.label)
     ];
     var where = [l.city, l.km ? l.km + ' km' : 'across town', 'gas ' + U.fmtMoney(l.gas || 0)].join(' · ');
     var marcel = l.deal === 'exposure' && mode === 'book' ? el('div.gb-est', 'Marcel: "Exposure is basically money. Say yes."') : null;
     var kids = [
-      el('div.gb-top', [el('span.gb-ico', ui.venueIcon(l.kind)), el('div.grow', [el('div.gb-name', l.name), el('div.gb-where', where)]), repBadge(l.repLevel)]),
+      el('div.gb-top', [el('span.gb-ico', l.showdown && l.showdown.kind === 'festival' ? '🎪' : ui.venueIcon(l.kind)), el('div.grow', [el('div.gb-name', l.name), el('div.gb-where', where)]), repBadge(l.repLevel)]),
       l.opening ? el('span.gb-open' + (l.opening.rival ? '.rival' : ''), (l.opening.rival ? 'Your rival! ' : '') + 'Opening for ' + l.opening.name) : null,
       l.rebook ? el('span.gb-open', 'They want you back') : null,
+      ui.rivalBadge ? ui.rivalBadge(st, l) : null,   // v0.6: stolen slot / festival clash
       el('div.gb-chips', chips),
       l.catch ? el('div.gb-catch', [el('b', 'The catch: '), fill(l.catch)]) : null,
       el('div.gb-est', '~' + e.crowd + ' people · ' + (e.pay ? '~' + U.fmtMoney(e.pay) : 'no pay') + ' · ~' + e.fans + ' new fans' + (e.burnout ? ' · long drive' : '')),
       marcel
     ];
     if (mode === 'book' && onPick) {
-      kids.push(btn('.btn.primary.small.block', { testid: 'book-' + l.id, disabled: !can, onclick: function () { onPick(l); } }, can ? 'Book it' : 'Not enough fans yet'));
+      kids.push(btn('.btn.primary.small.block', { testid: 'book-' + l.id, disabled: !can, onclick: function () { onPick(l); } }, can ? 'Book it' : taken ? 'Taken by ' + l.stolen.by : 'Not enough fans yet'));
     } else if (booked) kids.push(el('div.gb-open', 'Booked this weekend'));
     return el('div.gb-card' + (booked ? '.booked' : ''), { testid: 'board-listing', data: { id: l.id } }, kids);
   }

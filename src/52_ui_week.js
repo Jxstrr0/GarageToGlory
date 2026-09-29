@@ -124,7 +124,8 @@
         s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-card-ok', onclick: function () { ui.close(s.id); } }, 'OK'));
         return;
       }
-      ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text))]);
+      ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
+        ui.rivalCardNote ? ui.rivalCardNote(st, card) : null]);   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
           s.body.appendChild(btn('.choice', { testid: 'choice-' + i, onclick: function () {
@@ -430,6 +431,7 @@
       (w.milestones || []).forEach(function (m) { parts.push(el('div.panel.warm.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', { style: 'font-weight:700' }, fill(m))])); });
       if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
       if (ui.labelWrap) parts.push.apply(parts, ui.labelWrap(w));   // v0.5: offers, release day, charts, certs, royalties
+      if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -468,7 +470,7 @@
       ui.append(s.body, el('div.title-wrap', [
         el('h1.logo', { style: 'font-size:44px' }, ["That's a", el('span.glory', ' career')]),
         el('p.tagline', (band ? band.name : 'The band') + ' played their last garage show. Your mom kept every flyer.'),
-        el('div.panel', grid)
+        el('div.panel', grid), ui.rivalEnd ? ui.rivalEnd(st) : null
       ]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-end-title', onclick: function () { GG.main.quitToTitle(); } }, 'Back to title'));
     }

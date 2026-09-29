@@ -473,13 +473,13 @@
     if (!gig) return null;
     var t = world.trip(state);
     if (t && t.venueId === gig.venueId) return t;
-    var rng = GG.rngFor(state), from = world.home(state), to = world.cityId(gig.city) || from;
+    var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
     var card = world.drawRoad(state, km, season, rng);
     if (card) state.seenCards[card.id] = state.totalWeek;
     var fc = world.city(from), tc = world.city(to);
     t = state.trip = { w: state.totalWeek, venueId: gig.venueId, from: from, to: to,
-      fromName: fc ? fc.name : state.city, toName: tc ? tc.name : gig.city, km: km, highway: world.highway(from, to),
+      fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : 'Hwy 7 · the Trans-Canada',
       season: season, night: km >= 180 || season === 'winter', cardId: card ? card.id : null, resolved: !card,
       choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2) };
     return t;
