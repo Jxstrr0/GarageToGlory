@@ -1,10 +1,13 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Section META_ONLY=gig (default). Must finish inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e (default both); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in → backing plays on the audio clock → timed in-page taps on lane zones judge Perfect/Good →
 //         pause suspends the AudioContext and freezes the song, resume continues → screenshot tests/.cache/gig.png →
 //         autoplay bot hook finishes the set ('gig:song' per song, state.liveGig) → results (grade, reactions) → applied →
 //         Wrap up → done(result); a perfect autoplay gig scores S; a half-played liveGig resumes at its next song;
 //         layout audit; no console errors.
+//   e2e : the real weekend through the UI: planner (Book) → board → book → results → Load the van → 3D van (road card)
+//         → setlist over the 3D stage → live song with on-time taps → song 1 autoplayed + saved → reload → Continue
+//         resumes at song 2 → autoplay → results (rep) → Wrap up → wrap; contact sheet tests/.cache/v03_sheet.png
 // Run: node build.js && timeout 500 node tests/pw_gig.js
 const path = require('path');
 const { open, checker } = require('./_pw');
@@ -145,4 +148,101 @@ async function gig() {
   c.done();
 }
 
-(async () => { if (want('gig')) await gig(); })();
+// Taps every upcoming note on time for `secs` (a steady player), in the page.
+function playFor(page, secs) {
+  return page.evaluate(async secs => {
+    const c = document.querySelector('[data-testid="gig-highway"]'), end = performance.now() + secs * 1000;
+    while (performance.now() < end) {
+      const d = GG.debug('gigui'); if (!d.soon || !d.soon.length || d.mode !== 'play') { await new Promise(r => setTimeout(r, 20)); continue; }
+      const r = c.getBoundingClientRect(), n = d.soon[0], chord = d.soon.filter(x => x.t - n.t < 0.002);
+      while (GG.debug('gigui').songT < n.t - 0.012) await new Promise(res => setTimeout(res, 4));
+      while (GG.debug('gigui').songT < n.t) { /* spin */ }
+      for (const x of chord) c.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (x.li + 0.5) * r.width / d.lanes, clientY: r.bottom - 36, pointerId: 11 + x.li, pointerType: 'touch', bubbles: true, cancelable: true }));
+    }
+    return GG.debug('gigui').stats;
+  }, secs);
+}
+async function e2e() {
+  const c = checker('e2e');
+  const { page, context, errors, close } = await open();
+  const shots = [];
+  const shot = async name => { await page.waitForTimeout(350); const f = path.join(CACHE, 'v03_' + name + '.png'); await page.screenshot({ path: f }); shots.push([name, f]); };
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => {
+      GG.main.quickStart({ seed: 9090, slot: '2', openCard: false });
+      const s = GG.state; s.card = null; s.phase = 'plan'; s.gig = null; s.offer = null; s.fans = 160; s.buzz = 20; s.flags.cape = 'velvet';
+      for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(70 + i));
+      GG.ui.gigAutoplay = false; GG.main.sync();
+    });
+    await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
+    for (const a of ['book', 'rehearse', 'rest']) await tap(page, 'act-' + a);
+    await tap(page, 'btn-go');
+    await waitScreen(page, 'board');
+    await shot('board');
+    const book = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="book-"]:not([disabled])')].map(b => b.dataset.testid)[0]);
+    c.ok(!!book, 'the board has a gig to book');
+    await tap(page, book); await waitScreen(page, 'confirm'); await tap(page, 'btn-confirm-yes');
+    await waitScreen(page, 'results');
+    c.ok(await page.evaluate(() => GG.state.phase === 'gig' && !!GG.state.gig), "runWeek leaves the gig to play live (phase 'gig')");
+    const saved0 = await page.evaluate(() => { const r = GG.save.read('2'); return r && r.phase; });
+    c.ok(saved0 === 'gig', "autosaved at 'gig:pending' (" + saved0 + ')');
+    await tap(page, 'btn-results-skip');
+    c.ok(await page.locator(tid('gig-pending')).isVisible() && /Load the van/.test(await page.textContent(tid('btn-results-ok'))), 'results: this weekend + Load the van');
+    await tap(page, 'btn-results-ok');
+    await waitScreen(page, 'van');
+    const vm = await page.evaluate(() => ({ mode: GG.debug('van').mode, scene: GG.debug('render').scene, paused: GG.debug('render').paused }));
+    c.ok(vm.mode === '3d' && vm.scene === 'van' && !vm.paused, 'the 3D van drives (live3d keeps it drawing) ' + JSON.stringify(vm));
+    await page.waitForFunction(() => GG.debug('van').p > 0.3 || GG.debug('ui').screen === 'road', null, { timeout: 12000 });
+    await shot('van');
+    await tap(page, 'btn-van-skip');
+    for (let k = 0; k < 20 && await page.evaluate(() => GG.debug('ui').screen) !== 'gig-set'; k++) {
+      if (await page.evaluate(() => GG.debug('ui').screen) === 'road') { await tap(page, 'road-choice-0'); await tap(page, 'btn-road-ok'); }
+      await page.waitForTimeout(250);
+    }
+    await waitScreen(page, 'gig-set');
+    const st0 = await page.evaluate(() => ({ g: GG.debug('gigui'), r: GG.debug('render'), info: GG.render.stage.info() }));
+    c.ok(st0.g.stage && st0.r.scene === 'stage' && !st0.r.paused, 'setlist sheet over the live 3D stage ' + JSON.stringify({ scene: st0.r.scene, paused: st0.r.paused }));
+    await shot('setlist');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    const hits = await playFor(page, 4);
+    c.ok(hits && hits.perfect >= 10 && hits.maxCombo >= 20, 'on-time taps (chords = multitouch) land ' + JSON.stringify(hits));
+    await shot('gig');
+    const r3 = await page.evaluate(() => ({ r: GG.debug('render'), crowd: GG.debug('gigui').crowd }));
+    c.ok(r3.r.scene === 'stage' && !r3.r.paused && r3.r.drawCalls < 80, 'stage drawing under the gig screen, ' + r3.r.drawCalls + ' draw calls');
+    // Song 1 by the bot, then stop at song 2 and reload: Continue resumes the set.
+    await page.evaluate(() => { GG.once('gig:song', () => { GG.ui.gigAutoplay = false; }); GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; });
+    await page.waitForFunction(() => GG.state.liveGig && GG.state.liveGig.index === 1 && GG.debug('gigui').mode === 'count', null, { timeout: 8000 });
+    const saved1 = await page.evaluate(() => { const r = GG.save.read('2'); return r && r.liveGig && r.liveGig.index; });
+    c.ok(saved1 === 1, "autosaved between songs ('gig:song') " + saved1);
+    await page.reload();
+    await page.waitForSelector(tid('btn-continue'));
+    await tap(page, 'btn-continue');
+    await page.waitForFunction(() => GG.debug('gigui').open && GG.debug('gigui').mode === 'between', null, { timeout: 8000 });
+    const back = await page.evaluate(() => ({ t: document.querySelector('[data-testid="gig-between"]').textContent, idx: GG.debug('gigui').index, van: GG.ui.isOpen('van'), stage: GG.debug('gigui').stage }));
+    c.ok(/Welcome back/.test(back.t) && back.idx === 1 && !back.van && back.stage, 'reload mid-gig: Continue resumes at song 2, no second drive ' + JSON.stringify(back));
+    await page.evaluate(() => { GG.ui.gigAutoplay = true; });
+    await tap(page, 'btn-gig-next');
+    await waitScreen(page, 'gig-results', 15000);
+    const res = await page.evaluate(() => ({ phase: GG.state.phase, r: GG.state.lastGig, rep: (document.querySelector('[data-testid="gig-rep"]') || {}).textContent }));
+    c.ok(res.phase === 'wrap' && res.r.live && res.r.songResults[0].perfect >= 5 && res.r.songResults.length >= 2, 'finishGig applied the live result (song 1 kept my taps)');
+    c.ok(res.r.rep != null && !!res.rep, 'venue rep on the results: ' + res.rep);
+    await shot('results');
+    await tap(page, 'btn-gig-done');
+    await waitScreen(page, 'wrap');
+    c.ok(await page.evaluate(() => GG.debug('render').scene === 'garage' && !GG.state.liveGig && !GG.state.gig), 'wrap: back in the garage, gig cleared');
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+    const sheet = await context.newPage();
+    await sheet.setViewportSize({ width: shots.length * 200 + 10, height: 452 });
+    await sheet.setContent('<style>body{margin:0;padding:5px;background:#05070c;display:flex;font:12px system-ui;color:#aaa}figure{margin:0;padding:4px 5px;width:190px}' +
+      'img{width:190px;height:411px;display:block;border-radius:6px}figcaption{text-align:center;padding:3px}</style>' +
+      shots.map(([n, f]) => `<figure><img src="data:image/png;base64,${require('fs').readFileSync(f).toString('base64')}"><figcaption>${n}</figcaption></figure>`).join(''));
+    await sheet.screenshot({ path: path.join(CACHE, 'v03_sheet.png') });
+    c.ok(shots.length === 5, 'contact sheet v03_sheet.png: ' + shots.map(x => x[0]).join(', '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); })();

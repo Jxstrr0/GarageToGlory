@@ -3,8 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.2.0.0 "Sequencer"** (merged to main 2026-09-29) · 0.1.0.0 "Garage" merged earlier
-- Next: **0.3.0 "Stage"** (handoff B4)
+- Current: **0.3.0.0 "Stage"** (merged to main 2026-09-29) · 0.2 "Sequencer", 0.1 "Garage" merged earlier
+- Next: **0.4.0 "Drama"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -62,7 +62,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Laptop (chat / band / money), ☰ menu (save slots, save code backup/restore, sound, quit). Synth sfx.
 - Balance (5 seeds, year 1): avg bot fund min $140 end $531, 253 fans, 0.2 loans; good bot 458 fans, 0 loans.
 
-## What's in v0.2.0 "Sequencer" (branch `v0.2-sequencer`)
+## What's in v0.2.0 "Sequencer"
 - Songs are drum patterns (`PATTERN`: 3 one-bar sections × 4 lanes × 16 steps, arrangement preset Short/Classic/Epic,
   tempo in the genre range). `GG.songs.rate` → Groove (genre fit, rules in `content/genres.js`), Hook (chorus vs verse
   sweet spot + catchiness), Difficulty (notes × tempo × syncopation). Quality = band part + craft − over-hard penalty.
@@ -83,6 +83,23 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance (5 seeds, year 1): avg bot fund min $221 end $624, 288 fans, 0 loans; good bot 483 fans, 0 loans.
   Over 40 seeds v0.2 vs v0.1-equivalent knobs: avg fund end 593 vs 542, fans 260 vs 266; good fans 425 vs 448
   (staleness), both within seed noise of the v0.1 targets.
+
+## What's in v0.3.0 "Stage"
+- Weekend flow: planner (Book block → gig board) → runWeek → phase 'gig' → "Load the van" → van trip (3D windshield,
+  Kenji drives silently, road card + banter, skippable) → setlist picker → live rhythm gig (3D stage top ⅔, 2D-canvas
+  highway bottom ⅓, multitouch, taps play the drums, backing from the scheduler) → gig results → wrap.
+  Autosave on 'gig:pending' and after every song ('gig:song'); reload mid-gig resumes at the next song.
+- Gig sim (`22_sim_gig.js`): charts from `songs.toNotes`, Forgiving windows (0.060/0.130 s at drum skill 10, widening),
+  combos, crowd meter + levels + moments, band effects (cape spin, Dana's solo, Jaxon's fills, sulking members), genre
+  moments for all 4 genres, freestyle fill windows, setlist opener/closer bonuses, `botPlay` (perfect bot S, avg B).
+- World (`26_sim_world.js`): weekly listings across the Saskatchewan core (map pins + road km), tier 1–2 venues with
+  quirks/catches/kinds/set sizes, three deals, opening slots (rarely for Tundra Wraith), venue reputation + banned wall,
+  the Moose Hearse (condition/space/comfort/wear; no breakdowns while protected), ~12 road cards.
+- Scenes: `42_render_stage.js` (venue dressing per kind, instanced crowd ≤150 with all C.MOMENTS, band + your kit;
+  ~34 draw calls worst case), `43_render_van.js` (seasons × day/night, moose, bandmates lean in to talk; ≤29 draws).
+- Save schema 3 (v2→v3 migration in `GG.world.migrate`).
+- Tests: node content 26, save 7, sim_career 22, sim_gig 14, sim_songs 12, sim_world 15 · pw_flow flow/year/code/layout
+  · pw_garage · pw_seq seq/audio · pw_gig gig/e2e · pw_world board/van · pw_stage stage (incl. van).
 
 ## APIs (full shapes in `src/02_contracts.js`)
 - `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
@@ -117,6 +134,11 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 
 ## Back-burner
+- v0.3: later years pay far more than v0.2 (good bot year 2 ≈ $7k fund, 2,000 fans) because of 250–300-cap rooms —
+  needs the era/economy pass in v0.5.
+- v0.3: no latency-calibration setting for players yet; `A.hit` has no per-lane choke.
+- v0.3: `protected` never turns off, so van breakdowns exist but never fire (first milestone arrives with v0.4/v0.5).
+- v0.3: van space has no use yet (merch in v0.8). Gig banter lines live in 55_ui_gig.js, not content/lines.js.
 - Restoring a save code keeps the code's slot; its next autosave overwrites that slot without asking.
 - With the planner sheet open the room squeezes into a 150px band and hotspot labels overlap a little.
 - `debtToParents` is never repaid (v0.4 parents' loan + guilt cards).

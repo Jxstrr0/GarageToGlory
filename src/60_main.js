@@ -21,7 +21,11 @@
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
 
   // Pause the 3D loop while a full screen hides it, while the tab is hidden, or when no career is loaded.
-  function updatePause() { render('setPaused', !!(document.hidden || ui.hasFull() || !GG.state)); }
+  // Full screens that show the scene through them (def.live3d: the van trip, the live gig) keep it drawing.
+  function covered() {
+    return ui.stackIds().some(function (id) { var e = ui.get(id); return e && e.def.kind === 'full' && !e.def.live3d; });
+  }
+  function updatePause() { render('setPaused', !!(document.hidden || covered() || !GG.state)); }
   GG.on('screen:open', updatePause);
   GG.on('screen:close', updatePause);
 
@@ -74,6 +78,12 @@
     if (st.phase === 'wrap') Promise.resolve().then(function () { if (GG.state === st) autosave(st); });
     else autosave(st);
   });
+  // v0.3: the weekend gig saves when it becomes pending (the blocks are done) and between songs (state.liveGig),
+  // so a reload lands back at the van / the next song.
+  GG.on('gig:pending', function () {
+    var st = GG.state; if (st) Promise.resolve().then(function () { if (GG.state === st && st.phase === 'gig') autosave(st); });
+  });
+  GG.on('gig:song', function () { var st = GG.state; if (st && st.liveGig) autosave(st); });
   // Manual save from the menu. The slot becomes this career's slot; 'auto' is refreshed so Continue lands here.
   M.saveTo = function (slot) {
     var st = GG.state; if (!st) return false;
@@ -137,7 +147,25 @@
     if (st.phase === 'ended' || st.ended) ui.show('end');
     else if (st.phase === 'monday') { if (!st.card) M.beginWeek(); else if (!st.card.resolved) ui.show('card'); }
     else if (st.phase === 'wrap') M.wrapWeek();
+    else if (st.phase === 'gig') M.playWeekend();
     M.sync();
+  };
+  // The weekend (phase 'gig'): the van to the venue (it hands over to the stage scene), the live gig, then the wrap.
+  // A reload between songs skips the drive and resumes the set from state.liveGig; GG.ui.gigAutoplay (tests, flows)
+  // skips the drive too (the bot takes any road card).
+  M.playWeekend = function () {
+    var st = GG.state; if (!st || st.phase !== 'gig' || !st.gig) { if (st && st.phase === 'wrap') M.wrapWeek(); return; }
+    if (ui.isOpen('van') || ui.isOpen('gig')) return;   // already on the road / on stage
+    var gig = st.gig, live = st.liveGig, started = !!(live && live.gig && live.gig.venueId === gig.venueId && live.index > 0);
+    function play() {
+      if (GG.state !== st || st.phase !== 'gig') return;
+      ui.closeAll();
+      ui.playGig(gig, function () { M.wrapWeek(); });
+    }
+    ui.closeAll();
+    if (started || !ui.playVan) play();
+    else if (ui.gigAutoplay) { if (GG.world && GG.world.autoTrip) GG.world.autoTrip(st, 'avg'); play(); }
+    else ui.playVan(gig, play, { scene: 'stage' });
   };
   // Draws this week's Monday card (or a quiet week) and shows it.
   M.beginWeek = function () {

@@ -93,30 +93,22 @@
     if (G.dom) G.dom.back.hidden = ok;
     guard();
   }
-  // main pauses the 3D loop under full screens and frames the room for sheets: while the show is on top, keep the
-  // stage running and framed into the band above the highway.
+  // The 'gig' screen is live3d (main keeps the scene drawing under it); frame the stage into the band between the
+  // top bar and the highway (the stage ignores setViewInsets).
   var guardRaf = 0;
   function guard() {
     if (guardRaf || !G) return;
     guardRaf = requestAnimationFrame(function () {
       guardRaf = 0;
-      var R = GG.render; if (!G || !G.stageOn || !R || !G.dom) return;
-      var top = ui.top() === 'gig' || ui.top() === 'gig-set';
-      if (top && !document.hidden) { try { R.setPaused(false); } catch (e) { /* ignore */ } }
-      if (ui.top() === 'gig') {
-        var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-        try { R.setViewInsets({ top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top) }); } catch (e) { /* ignore */ }
-      }
+      if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
+      var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top) });
     });
   }
-  function restoreScene() {
-    var R = GG.render, bar = document.querySelector('#hud .hud-bar');
-    if (!(GG.main && GG.main.renderOk && R && R.available)) return;
-    try {
-      if (G && G.stageOn) R.setScene(S() ? 'garage' : 'none');
-      R.setViewInsets({ top: bar && !bar.classList.contains('hidden') ? Math.round(bar.getBoundingClientRect().bottom) : 0, bottom: -1 });
-      R.setPaused(!!(document.hidden || ui.hasFull() || !S()));
-    } catch (e) { console.error('[gig] restore scene failed', e); }
+  function restoreScene() {   // back to the garage (the stage hands its GPU memory back)
+    var R = GG.render;
+    if (!(G && G.stageOn && GG.main && GG.main.renderOk && R && R.available)) return;
+    try { R.setScene(S() ? 'garage' : 'none'); } catch (e) { console.error('[gig] restore scene failed', e); }
   }
 
   /* ---- Events ------------------------------------------------------------------------------------------ */
@@ -127,16 +119,16 @@
     G.bannerT = setTimeout(function () { if (G && G.dom) G.dom.banner.className = 'gig-banner'; }, 1500);
   }
   var HANDLERS = {
+    // The stage takes 'gig:judge' (stick hits, flinches), 'crowd:level' and 'crowd:moment' straight off the bus.
     'gig:judge': function (p) {
       if (!G || !G.chart) return;
       var li = C.LANES.indexOf(p.lane);
       if (p.judgement) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
-      if (p.judgement !== 'miss') { if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now(); stageCall('hit', p.lane, p.judgement); }
+      if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now();
     },
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
     'crowd:moment': function (p) {
       if (!G) return;
-      stageCall('moment', p.kind);
       if (p.kind !== 'solo') banner(MOMENT_TEXT[p.kind] || p.kind, p.kind === 'boo' || p.kind === 'drinks' ? 'bad' : '');
       if (p.kind === 'boo') sfx('boo'); else if (p.kind !== 'solo' && p.kind !== 'drinks') sfx('cheer');
     },
@@ -181,7 +173,7 @@
     G.ses = GG.gig.session(S(), G.gig, ids, {});
     G.attendance = G.ses.attendance;
     if (G.dom) { G.dom.level.textContent = LEVEL_TEXT[G.ses.level]; G.dom.crowd.dataset.level = G.ses.level; G.dom.back.dataset.level = G.ses.level; }
-    stageCall('setCrowdLevel', G.ses.crowd);
+    stageCall('setCrowdLevel', G.ses.crowd, true);
     loop();
   }
   function teardown() {
@@ -323,7 +315,7 @@
     var at = heardAt(stamp > 0 ? stamp : performance.now()) - G.zero;
     if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
     G.press[li] = performance.now();
-    if (at < -0.4) { stageCall('hit', C.LANES[li], null); return; }   // noodling during the count-in
+    if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
     G.lastTap = G.ses.judge(li, at);
     if (G.lastTap) G.lastTap.at = at;
   }
@@ -539,7 +531,7 @@
 
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
-    kind: 'full', cls: 'gig', sticky: true,
+    kind: 'full', cls: 'gig', sticky: true, live3d: true,
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
@@ -633,13 +625,17 @@
 
   GG.registerDebug('gigui', function () {
     if (!G) return { open: false };
-    var ses = G.ses, p = performance.now(), next = null, ch = G.chart;
+    var ses = G.ses, p = performance.now(), next = null, ch = G.chart, soon = [];
     if (ch && ses && G.synced) {
       var t = songTime(p);
-      for (var i = 0; i < ch.notes.length; i++) { var n = ch.notes[i]; if (n.j === 0 && !n.free && n.t > t + 0.35 && n.li < G.lanes) { next = { lane: n.lane, li: n.li, t: n.t }; break; } }
+      for (var i = 0; i < ch.notes.length && soon.length < 12; i++) {
+        var n = ch.notes[i]; if (n.j !== 0 || n.free || n.li >= G.lanes) continue;
+        if (n.t > t + 0.03) soon.push({ li: n.li, t: n.t });
+        if (!next && n.t > t + 0.35) next = { lane: n.lane, li: n.li, t: n.t };
+      }
     }
     return { open: true, mode: G.mode, paused: G.paused, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };

@@ -4,6 +4,8 @@
 //   year   : quickStart, 24 weeks through the UI → year 2 week 1; reload → Continue → same state
 //   code   : 2 weeks, back up a save code, restore it in a fresh browser (empty storage); damaged code shows an error
 //   layout : every screen has no horizontal overflow and buttons ≥ 44x44; screenshots + one contact sheet
+// v0.3: every page runs with GG.ui.gigAutoplay (a bot plays booked gigs instantly, the van drive is skipped); Book blocks
+// open the gig board (these flows book the first listing they can).
 // Run: node build.js && timeout 500 node tests/pw_flow.js
 const fs = require('fs'), path = require('path');
 const { open, checker } = require('./_pw');
@@ -13,6 +15,13 @@ const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
 
 /* ---- helpers ---------------------------------------------------------------------------------------- */
+// Opens the game with the gig autoplay hook set on every load (and reload).
+async function openAuto() {
+  const o = await open({ noGoto: true });
+  await o.context.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { if (window.GG && GG.ui) GG.ui.gigAutoplay = true; }));
+  await o.page.goto(o.url);
+  return o;
+}
 const tid = id => `[data-testid="${id}"]`;
 const tap = (page, id) => page.locator(tid(id)).last().click();
 const visible = (page, id) => page.locator(tid(id)).last().isVisible();
@@ -25,14 +34,26 @@ const PLANS = [['rehearse', 'write', 'promote'], ['hustle', 'book', 'rest'], ['r
   ['write', 'rehearse', 'rest'], ['book', 'hustle', 'rehearse'], ['promote', 'write', 'hustle']];
 
 // v0.2: Go opens the sequencer once per Write block; these flows let the band jam each one.
+// v0.3: a Book block then opens the gig board: book the first listing we can (else "No gig").
 async function jamWrites(page) {
-  await page.waitForFunction(() => ['seq', 'results'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
+  await page.waitForFunction(() => ['seq', 'board', 'results'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
   while (await screen(page) === 'seq') {
     const i = await page.evaluate(() => GG.ui.get('seq').data.index);
     await tap(page, 'btn-seq-jam');
     await page.waitForFunction(i => GG.debug('ui').screen !== 'seq' || GG.ui.get('seq').data.index !== i, i, { timeout: 10000 });
   }
+  if (await screen(page) === 'board') {
+    const id = await page.evaluate(() => { const b = document.querySelector('[data-testid^="book-"]:not([disabled])'); return b ? b.dataset.testid : null; });
+    if (id) { await tap(page, id); await waitScreen(page, 'confirm'); await tap(page, 'btn-confirm-yes'); }
+    else await tap(page, 'board-skip');
+  }
   await waitScreen(page, 'results');
+}
+// Results → (a booked gig: autoplayed live gig → its results) → wrap.
+async function toWrap(page) {
+  await tap(page, 'btn-results-ok');
+  await page.waitForFunction(() => ['wrap', 'gig-results'].includes(GG.debug('ui').screen), null, { timeout: 15000 });
+  if (await screen(page) === 'gig-results') { await tap(page, 'btn-gig-done'); await waitScreen(page, 'wrap'); }
 }
 // Plays one week through the UI: Monday card (choice 0) → planner → Go (→ jam any Write blocks) → results → wrap → Next week.
 async function playWeek(page, acts, opts) {
@@ -52,8 +73,7 @@ async function playWeek(page, acts, opts) {
   await jamWrites(page);
   if (opts.onResults) await opts.onResults();
   if (await visible(page, 'btn-results-skip')) await tap(page, 'btn-results-skip');
-  await tap(page, 'btn-results-ok');
-  await waitScreen(page, 'wrap');
+  await toWrap(page);
   if (opts.onWrap) await opts.onWrap();
   await tap(page, 'btn-next-week');
 }
@@ -61,7 +81,7 @@ async function playWeek(page, acts, opts) {
 /* ---- flow ---------------------------------------------------------------------------------------------- */
 async function flow() {
   const c = checker('flow');
-  const { page, errors, close } = await open();
+  const { page, errors, close } = await openAuto();
   try {
     await page.waitForSelector(tid('btn-new'));
     const credit = await page.textContent(tid('title-credit'));
@@ -92,11 +112,11 @@ async function flow() {
     c.ok(/Y1/.test(st1.hud) && /W1\/24/.test(st1.hud), 'HUD shows Y1 · W1/24: ' + st1.hud);
     let sawGig = false, savedText = '';
     await playWeek(page, ['rehearse', 'write', 'rest'], {
-      onResults: async () => { sawGig = await page.locator(tid('gig-result')).count() > 0; },
-      onWrap: async () => { await page.waitForFunction(() => /Saved/.test(document.querySelector('[data-testid="saved-indicator"]').textContent), null, { timeout: 3000 }).catch(() => {});
+      onResults: async () => { sawGig = await page.locator(tid('gig-pending')).count() > 0; },
+      onWrap: async () => { sawGig = sawGig && await page.evaluate(() => !!(GG.state.lastGig && GG.state.lastGig.live && GG.state.stats.gigs === 1)); await page.waitForFunction(() => /Saved/.test(document.querySelector('[data-testid="saved-indicator"]').textContent), null, { timeout: 3000 }).catch(() => {});
         savedText = await page.textContent(tid('saved-indicator')); }
     });
-    c.ok(sawGig, 'week 1 results include the pre-booked gig');
+    c.ok(sawGig, 'week 1: the pre-booked gig is played live (autoplay) after the results');
     c.ok(/Saved/.test(savedText), 'wrap shows the Saved indicator: ' + savedText);
     await page.waitForFunction(() => GG.state.totalWeek === 2);
     c.ok(true, 'reached week 2');
@@ -125,7 +145,7 @@ async function flow() {
 /* ---- year ------------------------------------------------------------------------------------------------- */
 async function year() {
   const c = checker('year');
-  const { page, errors, close } = await open();
+  const { page, errors, close } = await openAuto();
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => GG.main.quickStart({ seed: 424242, slot: '1', name: 'Yearling' }));
@@ -135,6 +155,8 @@ async function year() {
     }
     const s = await snap(page);
     c.ok(s.year === 2 && s.week === 1 && s.totalWeek === 25, 'reached year 2 week 1: ' + JSON.stringify(s));
+    const gigs = await page.evaluate(() => ({ n: GG.state.stats.gigs, live: !!(GG.state.lastGig && GG.state.lastGig.live) }));
+    c.ok(gigs.n >= 4 && gigs.live, 'booked gigs were played live by the autoplay bot: ' + JSON.stringify(gigs));
     const hud = await page.textContent(tid('hud-week'));
     c.ok(/Y2/.test(hud) && /W1\/24/.test(hud), 'HUD rolled to Y2 W1: ' + hud);
     await page.waitForTimeout(200);
@@ -155,7 +177,7 @@ async function code() {
   const c = checker('code');
   let saveCode = '', before = null;
   {
-    const { page, errors, close } = await open();
+    const { page, errors, close } = await openAuto();
     try {
       await page.waitForSelector(tid('btn-new'));
       await page.evaluate(() => GG.main.quickStart({ seed: 99, slot: '3', name: 'Coder' }));
@@ -175,7 +197,7 @@ async function code() {
     await close();
   }
   {
-    const { page, errors, close } = await open();
+    const { page, errors, close } = await openAuto();
     try {
       await page.waitForSelector(tid('btn-new'));
       c.ok(await page.locator(tid('btn-continue')).count() === 0, 'fresh context has empty storage');
@@ -238,7 +260,7 @@ async function contactSheet(ctx, names) {
 }
 async function layout() {
   const c = checker('layout');
-  const { page, context, errors, close } = await open();
+  const { page, context, errors, close } = await openAuto();
   const shots = [];
   async function check(name, shot) {
     await page.waitForTimeout(320);   // let sheet/fade animations settle
@@ -278,7 +300,7 @@ async function layout() {
     await tap(page, 'btn-seq-jam'); await waitScreen(page, 'results');
     await tap(page, 'btn-results-skip');
     await check('results', true);
-    await tap(page, 'btn-results-ok'); await waitScreen(page, 'wrap');
+    await toWrap(page);
     await check('wrap', true);
     await tap(page, 'btn-next-week');
     await page.waitForFunction(() => GG.state.totalWeek === 2);
@@ -293,10 +315,12 @@ async function layout() {
     }
     fs.renameSync(path.join(CACHE, 'ui_laptop-band.png'), path.join(CACHE, 'ui_laptop.png'));
     shots[shots.indexOf('laptop-band')] = 'laptop';
+    const SPOT = { kit: ['seq', 'btn-seq-close'], gigboard: ['board', 'btn-board-close'], door: ['van-info', 'btn-close'] };
     for (const spot of ['kit', 'gigboard', 'merch', 'trophies', 'door']) {
+      const [scr, close] = SPOT[spot] || ['soon', 'btn-close'];
       await page.evaluate(a => GG.emit('hotspot', { action: a }), spot);
-      await waitScreen(page, spot === 'kit' ? 'seq' : 'soon'); await check('hotspot-' + spot);
-      await tap(page, spot === 'kit' ? 'btn-seq-close' : 'btn-close');
+      await waitScreen(page, scr); await check('hotspot-' + spot);
+      await tap(page, close);
     }
     await tap(page, 'btn-menu'); await waitScreen(page, 'menu');
     await check('menu', true);

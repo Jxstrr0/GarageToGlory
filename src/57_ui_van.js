@@ -166,7 +166,7 @@
       v.kmEl = el('span', '0 / ' + t.km + ' km');
       if (v.mode === '2d') { v.cv = el('canvas.van-cv'); s.body.appendChild(v.cv); }
       ui.append(s.body, el('div.van-top', { testid: 'van-route' }, [
-        el('div.van-route', t.fromName + ' → ' + t.toName),
+        el('div.van-route', t.fromName === t.toName ? t.toName + ', across town' : t.fromName + ' → ' + t.toName),
         el('div.van-sub', [t.highway ? t.highway + ' · ' : '', v.kmEl, ' · ', d.gig.name]),
         v.bar]));
       v.says = el('div.van-says'); s.body.appendChild(v.says);
