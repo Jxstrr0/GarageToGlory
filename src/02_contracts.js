@@ -192,6 +192,11 @@
    GG.ui.playGig(gig, done) / gigAutoplay ; openBoard({ mode, onBook, onSkip, onCancel }) ; playVan(gig, done) ; showVan()
    Content (v0.3): map { cities }, roadCards (Monday-card schema + effect key `van`, gate keys minKm/maxKm/season),
    headliners; venue fields deals, payRange, catch, kind (C.VENUE_KINDS), setSize.
+   GG.render.stage.setup({ venue, crowd, members, flags, genre, player?, bpm? }) ; setCrowdLevel(0..100, snap?) ;
+     moment(kind) ; hit(lane, judgement) ; bandAction(id|null, 'capeSpin'|'solo'|'fill'|'miss') ; setFrame({top,bottom}) ;
+     info(). Listens to 'gig:judge', 'crowd:level', 'crowd:moment', 'audio:step'. armPose (shared arm IK).
+   GG.render.van.setTrip({ from, to, km, season?, night?, members? }) ; setProgress(0..1) ; moose() ; talk(id, secs) ;
+     setFrame ; info(). Kenji drives and never talks.
    GG.career.endWeek(state)              -> WRAP          advances the week; phase -> 'monday' (or 'ended')
    GG.career.moodLabel(mood)             -> 'happy'|'ok'|'grumpy'|'sulking'
    GG.career.fillText(state, text)       -> text with tokens replaced
