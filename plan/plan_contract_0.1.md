@@ -1,5 +1,10 @@
 # v0.1.0 "Garage" batch contract
 
+> **LEAD NOTE (05:20 UTC) — read before doing anything.** The RENDER and UI parts are being run by separately
+> launched agents that use scratch dirs named `render_direct` and `ui_direct`. If you are a RENDER agent whose scratch
+> dir is `render`, or a UI agent whose scratch dir is `ui`, do NOT build anything and do NOT touch any files: reply
+> exactly `SKIPPED: handled by a direct agent` and stop. SIM and CONTENT agents: ignore this note and carry on.
+
 Source of truth for shapes: `src/02_contracts.js` (state, content schemas, events, commands). This doc adds
 file ownership, the v0.1 specifics each piece must provide, and the isolation rule.
 

@@ -29,6 +29,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Owner allows auto-merging PRs into `main`; delete merged branches afterwards.
 - 2026-09-29: Play on phone via **GitHub Pages** (Settings → Pages → Deploy from branch `main`, `/ (root)`).
   Root `index.html` redirects to `dist/game.html`; `.nojekyll` present. URL: https://jxstrr0.github.io/GarageToGlory/
+  Owner turned Pages on (2026-09-29).
+- 2026-09-29: Owner: keep building version after version and merging PRs (branch per version → PR → merge → delete branch).
+- 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
+  (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
