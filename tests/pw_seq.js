@@ -123,7 +123,11 @@ async function seq() {
     c.ok(res.song && /Mon Gazon Test/.test(res.text) && res.reacts >= 1, 'results show the new song + ' + res.reacts + ' reactions');
     c.ok(res.last.title === 'Mon Gazon Test' && !res.last.auto && JSON.stringify(res.last.pattern) === saved && res.pending === 0, 'the saved pattern became the song');
     c.ok(/Marcel|Abyssus/.test(res.text) && /Mon Gazon Test/.test(res.text), 'Marcel names it');
-    await tap(page, 'btn-results-ok'); await waitScreen(page, 'wrap'); await tap(page, 'btn-next-week');
+    await page.evaluate(() => { GG.ui.gigAutoplay = true; });   // v0.3: week 1's gig is played live; the bot plays it
+    await tap(page, 'btn-results-ok');
+    await page.waitForFunction(() => ['wrap', 'gig-results'].includes(GG.debug('ui').screen), null, { timeout: 15000 });
+    if (await screen(page) === 'gig-results') await tap(page, 'btn-gig-done');
+    await waitScreen(page, 'wrap'); await tap(page, 'btn-next-week');
     await page.waitForFunction(() => GG.state.totalWeek === 2);
     if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
     await page.waitForFunction(() => GG.debug('ui').stack.length === 0);

@@ -190,8 +190,9 @@
       }
     },
     book: function (state, venueId, d) {     // books this weekend unless a gig is already booked
-      if (state.gig || !GG.gig) return;
+      if (state.gig || !GG.gig || (GG.world && GG.world.isBanned(state, venueId))) return;   // banned: they won't have you
       var g = GG.gig.makeGig(state, venueId, 'card');
+      if (g && GG.world) GG.world.decorate(state, g);
       if (g) { state.gig = g; state.offer = null; d.book = venueId; }
     },
     chat: function (state, v, d) {
@@ -240,6 +241,7 @@
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });
       } else if (k === 'book' && v) parts.push('Gig booked');
+      else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
     });
     return parts.join(' · ');
   };
@@ -402,13 +404,17 @@
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
       stats: { gigs: 0, songsWritten: 0, hustles: 0, cards: 0, earned: 0, bestGrade: null, parentsLoans: 0 },
-      weekStart: null, yearStart: null, ended: false
+      weekStart: null, yearStart: null, ended: false,
+      // v0.3 (26_sim_world): the gig board, venue rep + banned wall, the van, this week's trip, a live gig in progress
+      listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
+      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null
     };
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
     state.history.push(Object.assign(historyPoint(state), { w: 0 }));   // week 0 baseline for charts
     snapshotYear(state);
     if (GG.gig) state.gig = GG.gig.makeGig(state, 'buddys_house_party', 'forced');
+    if (GG.world && state.gig) GG.world.decorate(state, state.gig);
     GG.emit('career:new', { state: state });
     return state;
   };
@@ -419,7 +425,7 @@
   function maybeOffer(state, rng) {
     var E = econ();
     if (state.gig || state.offer || !GG.gig || state.fans < E.offerMinFans) return;
-    if (rng.chance(E.offerChance)) state.offer = GG.gig.randomOffer(state, rng);
+    if (rng.chance(E.offerChance)) state.offer = GG.world ? GG.world.offer(state, rng) : GG.gig.randomOffer(state, rng);
   }
 
   // Idempotent: calling it again in the same week returns the pending card (or null once resolved) without drawing.
@@ -438,6 +444,8 @@
     if (card) state.seenCards[card.id] = state.totalWeek;
     state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
+    state.bookPick = null; state.trip = null;
+    if (GG.world) GG.world.refresh(state, true);   // this week's gig board (own seeded RNG)
     state.phase = card ? 'monday' : 'plan';
     GG.emit('week:start', { totalWeek: state.totalWeek, year: state.year, week: state.week,
       card: card ? card.id : null, offer: state.offer, quiet: state.quiet });
@@ -529,12 +537,17 @@
       addStat(state, 'fans', rngRound(rng.int(A.fans[0], A.fans[1]) * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
     },
+    // v0.3: the gig board. Takes the board pick (UI: GG.ui.openBoard at Go; bots: botBook), 'skip' = no gig,
+    // no pick at all = the best listing (flows without a board). Already booked, or skipped: posters (buzz).
     book: function (state, A, f, rng, d, lines) {
-      var g = !state.gig && GG.gig ? GG.gig.bookLocal(state, rng, A.maxTier) : null;
+      var had = !!state.gig, g = null;
+      if (!had) g = GG.world ? GG.world.takePick(state) : GG.gig ? GG.gig.bookLocal(state, rng, A.maxTier) : null;
+      else state.bookPick = null;
       if (g) {
         state.gig = g; state.offer = null; d.book = g.venueId;
-        lines.push('Booked: ' + g.name + ', ' + g.city + ', this weekend.');
+        lines.push('Booked: ' + g.name + ', ' + g.city + ', this weekend' + (g.opening ? ' (opening for ' + g.opening.name + ').' : '.'));
       } else {
+        if (!had) lines.push('No gig this weekend. You hang posters for the next one instead.');
         addStat(state, 'buzz', rngRound(A.buzzIfBooked * f, rng), d);
       }
       addStat(state, 'burnout', A.burnout, d);
@@ -559,10 +572,14 @@
     return { activity: id, lines: lines, deltas: d };
   }
 
-  // Runs the three blocks (an empty block is a rest), then auto-resolves a booked gig. Phase -> 'wrap'.
-  career.runWeek = function (state) {
+  // Runs the three blocks (an empty block is a rest). A booked gig is then either played live (phase 'gig',
+  // 'gig:pending'; the UI plays the van + the gig and calls finishGig) or, with opts.autoGig (bots, tests,
+  // balance), auto-resolved here (road card by the bot when opts.style is set, then simulate) -> phase 'wrap'.
+  // opts: { autoGig: bool, style: 'avg'|'good' }.
+  career.runWeek = function (state, opts) {
+    opts = opts || {};
     if (state.ended) return null;
-    if (state.phase === 'wrap') return state.lastWeek;   // double-tap safe
+    if (state.phase === 'wrap' || state.phase === 'gig') return state.lastWeek;   // double-tap safe
     var rng = GG.rngFor(state), counts = {}, blocks = [];
     state.phase = 'week';
     for (var i = 0; i < C.BLOCKS_PER_WEEK; i++) {
@@ -573,18 +590,47 @@
       GG.emit('block:done', { index: i, activity: id, lines: block.lines, deltas: block.deltas });
       changed(state);
     }
-    var gig = null;
-    if (state.gig && GG.gig) {
-      gig = GG.gig.autoResolve(state, rng);
-      GG.emit('gig:done', { result: gig });
-      changed(state);
-    }
-    var result = { blocks: blocks, gig: gig };
+    var result = { blocks: blocks, gig: null };
     state.lastWeek = result;
+    if (state.gig && GG.gig && !opts.autoGig) {
+      state.phase = 'gig';
+      GG.emit('gig:pending', { gig: state.gig });
+      GG.emit('week:done', { result: result });
+      return result;
+    }
+    if (state.gig && GG.gig) {
+      if (GG.world && opts.style) GG.world.autoTrip(state, opts.style);
+      result.gig = settleGig(state, GG.gig.simulate(state, state.gig, rng), rng);
+    }
     state.phase = 'wrap';
     GG.emit('week:done', { result: result });
     return result;
   };
+  // Applies a GIG_RESULT for the booked gig: world.shape (opening slot, genre comedy) -> gig.applyResult ->
+  // world.afterGig (venue rep, van wear, long-drive burnout). Emits 'gig:done'.
+  function settleGig(state, r, rng) {
+    var g = state.gig;
+    if (GG.world) GG.world.shape(state, g, r, rng);
+    GG.gig.applyResult(state, r);
+    if (GG.world) GG.world.afterGig(state, g, r, rng);
+    state.liveGig = null;
+    GG.emit('gig:done', { result: r });
+    changed(state);
+    return r;
+  }
+  // Phase 'gig' -> 'wrap': applies the live GIG_RESULT (from the rhythm game; null = simulate it, e.g. a skipped
+  // show) plus venue rep and van wear. Double-call safe: outside phase 'gig' it returns the last result.
+  career.finishGig = function (state, result) {
+    if (state.phase !== 'gig' || !state.gig || !GG.gig) return state.phase === 'wrap' ? state.lastGig : null;
+    var rng = GG.rngFor(state);
+    var r = settleGig(state, result || GG.gig.simulate(state, state.gig, rng), rng);
+    if (state.lastWeek) state.lastWeek.gig = r;
+    state.phase = 'wrap';
+    return r;
+  };
+  // The board pick for this week's Book block (listing id or 'skip'); see GG.world.pick.
+  career.pickListing = function (state, id) { return GG.world ? GG.world.pick(state, id) : null; };
+  career.botBook = function (state, style) { return GG.world ? GG.world.botBook(state, style) : 'skip'; };
 
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
@@ -796,7 +842,10 @@
     if (start.card) career.resolveCard(state, career.botChoice(state, start.card, style));
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
     career.setPlan(state, career.botPlan(state, style));
-    career.runWeek(state);
+    if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
+    var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
+    if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
+    career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);
   };
 

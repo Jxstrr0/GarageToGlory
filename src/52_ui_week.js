@@ -59,18 +59,20 @@
   function setBar(barEl, v) { if (barEl) barEl.firstChild.style.width = U.clamp(v, 0, 100) + '%'; }
 
   var PRIMARY = {
-    monday: 'Monday card', plan: 'Plan the week', week: 'Wrap up the week', wrap: 'Wrap up the week', ended: 'Career over'
+    monday: 'Monday card', plan: 'Plan the week', week: 'Wrap up the week', gig: 'Play the gig', wrap: 'Wrap up the week', ended: 'Career over'
   };
   function primaryAction() {
     var st = S(); if (!st) return;
     if (st.phase === 'monday') { if (st.card && !st.card.resolved) ui.show('card'); else GG.main.beginWeek(); }
     else if (st.phase === 'plan') ui.openPlanner();
+    else if (st.phase === 'gig') GG.main.playWeekend();
     else if (st.phase === 'wrap' || st.phase === 'week') GG.main.wrapWeek();
     else if (st.phase === 'ended') ui.show('end');
   }
   function dockHint(st) {
     if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in the garage to use it.';
     if (st.phase === 'monday') return 'New week. Somebody has news.';
+    if (st.phase === 'gig') return 'The van is warming up. Kenji is already in it.';
     return '';
   }
 
@@ -206,13 +208,20 @@
     var st = S();
     if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;
     commitPlan();
-    var writes = plan.filter(function (a) { return a === 'write'; }).length;
-    if (writes && ui.composeWeek) ui.composeWeek(writes, playWeek); else playWeek();
+    var writes = plan.filter(function (a) { return a === 'write'; }).length, go = bookFirst(playWeek);
+    if (writes && ui.composeWeek) ui.composeWeek(writes, go); else go();
+  }
+  // v0.3 (WORLD): a planned Book block opens the gig board (56_ui_board) after the sequencer, before the week runs.
+  // Book it -> the pick is stored for the Book block; "No gig" -> 'skip'; ✕ -> back to the planner (nothing runs).
+  function bookFirst(next) {
+    var st = S();
+    if (!st || st.gig || plan.indexOf('book') < 0 || !ui.openBoard) return next;
+    return function () { ui.openBoard({ mode: 'book', onBook: next, onSkip: next }); };
   }
   function playWeek() {
     var st = S();
     if (!st || st.phase !== 'plan') return;   // runs exactly once
-    var result = GG.career.runWeek(st);
+    var result = GG.career.runWeek(st);   // a booked gig -> phase 'gig': the results sheet leads to the van + the live gig
     GG.main.sync();
     ui.close('plan');
     ui.show('results', { result: result });
@@ -299,7 +308,10 @@
     build: function (s, d) {
       var st = S(), r = d.result || (st && st.lastWeek);
       s.setTitle('The week', 'YEAR ' + (st ? st.year : 1) + ' · WEEK ' + (st ? st.week : 1));
-      if (!r) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-results-ok', onclick: GG.main.wrapWeek }, 'Wrap up the week')); return; }
+      var pending = st && st.phase === 'gig' && st.gig;   // v0.3: the weekend gig is still to play (van -> live gig)
+      function next() { if (S() && S().phase === 'gig') GG.main.playWeekend(); else GG.main.wrapWeek(); }
+      var nextLabel = pending ? 'Load the van ▸' : 'Wrap up the week';
+      if (!r) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-results-ok', onclick: next }, nextLabel)); return; }
       var steps = [], gigEl = null;   // steps: [node, delayBeforeMs, onReveal]
       (r.blocks || []).forEach(function (b, i) {
         var a = ui.act(b.activity);
@@ -315,12 +327,18 @@
         var g = gigEl = gigNode(r.gig);
         s.body.appendChild(g);
         steps.push([g, 800, function () { sfx('drum'); setTimeout(function () { sfx(/[SAB]/.test(r.gig.grade) ? 'cheer' : r.gig.grade === 'D' ? 'boo' : 'tap'); }, 520); }]);
+      } else if (pending) {
+        var pg = st.gig, up = el('div.gig-res', { testid: 'gig-pending' }, [el('div.row', [el('span', { style: 'font-size:30px' }, '🚐'),
+          el('div.grow', [el('div.caps', 'This weekend'), el('div', { style: 'font-weight:800;font-size:17px' }, pg.name),
+            el('div.small.dim', [pg.city, dealText(pg)].filter(Boolean).join(' · '))])]),
+          el('p.small', { style: 'margin:8px 0 0' }, 'Load the van. Kenji is already in the driver’s seat. Nobody saw him get in.')]);
+        s.body.appendChild(up); steps.push([up, 600]);
       } else {
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
         s.body.appendChild(none); steps.push([none, 300]);
       }
       steps.forEach(function (st2) { st2[0].hidden = true; });
-      var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: function () { GG.main.wrapWeek(); } }, 'Wrap up the week');
+      var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: next }, nextLabel);
       var skip = btn('.btn.ghost.block', { testid: 'btn-results-skip', onclick: function (e) { e.stopPropagation(); revealAll(); } }, 'Skip ▸▸');
       ui.append(s.foot, [skip, ok]);
       var k = 0;
@@ -486,9 +504,10 @@
   var HOT = {
     kit: function () { ui.openSketch(); },
     merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
-    door: function () { ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
+    door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
     trophies: function () { ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
     gigboard: function () {
+      if (ui.openBoard) return ui.openBoard({ mode: 'view' });
       ui.show('soon', { title: 'Gig board', icon: '📌', top: gigBox(S(), true, function () { HOT.gigboard(); }), soon: 'Coming in v0.3',
         text: 'The full gig board arrives in v0.3. For now: put Book in a slot and hope.' });
     },

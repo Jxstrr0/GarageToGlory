@@ -29,7 +29,7 @@
     },
     book: {
       id: 'book', name: 'Book', icon: '📞',
-      blurb: 'Work the phones. Books a local gig this weekend if you have nothing on.',
+      blurb: 'Work the phones and the corkboard. Opens the gig board so you can book this weekend.',
       maxTier: 1,          // v0.1 placeholder: books a tier-1 venue you qualify for
       buzzIfBooked: 2,     // already booked: you hang posters for it instead
       burnout: 1

@@ -4,6 +4,8 @@
 // Uses the real Monday cards when content/cards.js is loaded; otherwise a synthetic deck with the magnitudes
 // the content brief asks for (so the economy can be tuned before content lands). Also checks invariants:
 // no NaN/Infinity, every stat inside contracts.RANGES, fund never negative after a week wrap.
+// v0.3: bots book from the weekly gig board (GG.world.botBook) and play gigs with autoGig; van = condition at
+// year end (the good bot repairs it), bans = venues that banned the band.
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
@@ -68,7 +70,8 @@ function run(style) {
         (rows[yearIdx] = rows[yearIdx] || []).push({
           fundMin: y.fundMin, fundEnd: s.fund, fans: s.fans, buzz: y.buzz / y.n, chem: s.chemistry, burn: y.burn / y.n,
           loans: s.stats.parentsLoans - y.loans0, quits: s.members.filter(m => m.status !== 'active').length,
-          songs: s.stats.songsWritten - y.songs0, gigs: s.stats.gigs - y.gigs0, mood: y.mood / y.n });
+          songs: s.stats.songsWritten - y.songs0, gigs: s.stats.gigs - y.gigs0, mood: y.mood / y.n,
+          van: s.van ? s.van.condition : 0, bans: (s.banned || []).length });
       }
     }
   }
@@ -78,14 +81,14 @@ const avg = (a, k) => a.reduce((t, r) => t + r[k], 0) / a.length;
 const pad = (v, n, d) => { const s = typeof v === 'number' ? v.toFixed(d || 0) : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
 function table(style, rows) {
   const out = [style.toUpperCase() + ' bot',
-    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | quits | songs | gigs | mood'];
+    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | quits | songs | gigs | mood | van | bans'];
   rows.forEach((a, i) => {
     const fans = a.map(r => r.fans);
     out.push(pad(i + 1, 3) + ' | ' + pad(avg(a, 'fundMin'), 7) + ' ' + pad(avg(a, 'fundEnd'), 7) + ' | ' +
       pad(avg(a, 'fans'), 8) + ' (' + pad(Math.min(...fans), 4) + '-' + pad(Math.max(...fans), 5) + ') | ' +
       pad(avg(a, 'buzz'), 4) + ' | ' + pad(avg(a, 'chem'), 4) + ' | ' + pad(avg(a, 'burn'), 4) + ' | ' +
       pad(avg(a, 'loans'), 5, 1) + ' | ' + pad(avg(a, 'quits'), 5) + ' | ' + pad(avg(a, 'songs'), 5, 1) + ' | ' +
-      pad(avg(a, 'gigs'), 4, 1) + ' | ' + pad(avg(a, 'mood'), 4));
+      pad(avg(a, 'gigs'), 4, 1) + ' | ' + pad(avg(a, 'mood'), 4) + ' | ' + pad(avg(a, 'van'), 3) + ' | ' + pad(avg(a, 'bans'), 4, 1));
   });
   return out.join('\n');
 }

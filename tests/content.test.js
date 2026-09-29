@@ -453,6 +453,107 @@ test('song titles: ≥30 metal titles in French, all secretly about the lawn', (
   ['punk', 'rock', 'country'].forEach(g => ok(K.songTitles[g] && K.songTitles[g].length >= 5 && K.songTitles[g].every(t => str(t, 60)), g + ' titles are plain English strings'));
 });
 
+// ---- v0.3 world: venues, map, headliners, road cards, road lines -------------------------------------
+const SASK_CORE = ['Saskatoon', 'Regina', 'Prince Albert', 'Moose Jaw', 'Swift Current', 'North Battleford', 'Yorkton', 'Warman', 'Martensville'];
+test('map: the Saskatchewan core, pins in the box, real-ish road km, connected', () => {
+  const M = K.map, ids = Object.keys(M.cities);
+  eq(ids.map(id => M.cities[id].name).sort(), SASK_CORE.slice().sort(), 'owner decision: Sask core cities');
+  ids.forEach(id => { const c = M.cities[id]; ok(c.id === id && c.x >= 0 && c.x <= 1 && c.y >= 0 && c.y <= 1 && str(c.blurb, 80), 'city ' + id); });
+  M.roads.forEach(r => ok(ids.includes(r[0]) && ids.includes(r[1]) && r[0] !== r[1] && isInt(r[2]) && r[2] >= 5 && r[2] <= 500 && str(r[3], 30), 'road ' + r.join('-')));
+  const W = GG.world;
+  ids.forEach(a => ids.forEach(b => { ok(a === b || W.km(a, b) > 0, 'connected ' + a + '-' + b); eq(W.km(a, b), W.km(b, a)); }));
+  const near = (a, b, lo, hi) => { const k = W.km(a, b); ok(k >= lo && k <= hi, a + '-' + b + ' ' + k + ' km'); };
+  near('saskatoon', 'regina', 220, 260); near('regina', 'moose_jaw', 60, 80); near('saskatoon', 'prince_albert', 130, 150);
+  near('saskatoon', 'north_battleford', 130, 150); near('regina', 'yorkton', 170, 200); near('saskatoon', 'warman', 15, 30);
+});
+
+test('venues: v0.1 ids kept, Sask core cities, kinds, deals, pay ranges, quirk + catch, tiers', () => {
+  const V = K.venues, ids = V.map(v => v.id), cities = Object.values(K.map.cities).map(c => c.name);
+  ['buddys_house_party', 'gopher_hole_openmic', 'martensville_skatepark', 'legion_63', 'bingo_palace', 'warman_curling_lounge',
+    'st_vlads_hall', 'gopher_hole'].concat(BOOKABLE).forEach(id => ok(ids.includes(id), 'kept ' + id));
+  eq(new Set(ids).size, ids.length, 'unique ids');
+  ok(V.length >= 18, 'enough venues: ' + V.length);
+  V.forEach(v => {
+    const w = 'venue ' + v.id;
+    ok(/^[a-z][a-z0-9_]*$/.test(v.id) && str(v.name, 48) && cities.includes(v.city) && v.region === 'canada', w + ': basics');
+    ok(C.VENUE_KINDS.includes(v.kind), w + ': kind ' + v.kind);
+    ok(v.tier === 1 || v.tier === 2, w + ': tier');
+    ok(v.tier === 1 ? v.capacity >= 10 && v.capacity <= 150 : v.capacity >= 100 && v.capacity <= 400, w + ': capacity ' + v.capacity);
+    ok(v.tier === 1 ? v.setSize >= 2 && v.setSize <= 4 : v.setSize >= 4 && v.setSize <= 5, w + ': setSize');
+    ok(isInt(v.minFans) && v.minFans >= 0 && isInt(v.walkIns) && v.walkIns >= 0 && v.walkIns < v.capacity, w + ': fans/walk-ins');
+    ok(str(v.quirk, LIMIT.line) && str(v.catch, LIMIT.line), w + ': quirk + catch');
+    C.GENRES.forEach(g => ok(v.genreFit[g] >= 0 && v.genreFit[g] <= 1, w + ': fit ' + g));
+    ok(Array.isArray(v.deals) && v.deals.length && v.deals.every(d => C.DEALS.includes(d)) && v.deals.includes(v.deal), w + ': deals');
+    v.deals.filter(d => d !== 'exposure').forEach(d => { const r = v.payRange[d]; ok(r && r[0] > 0 && r[0] <= r[1], w + ': payRange ' + d); });
+    ok(v.deal === 'exposure' ? v.pay === 0 : v.pay > 0, w + ': default pay');
+  });
+  const kinds = new Set(V.map(v => v.kind)); C.VENUE_KINDS.forEach(k => ok(kinds.has(k), 'some venue is a ' + k));
+  const deals = new Set([].concat(...V.map(v => v.deals))); eq([...deals].sort(), ['door', 'exposure', 'flat']);
+  SASK_CORE.forEach(c => ok(V.some(v => v.city === c), 'a venue in ' + c));
+  ok(V.some(v => v.name === 'The Gopher Hole' && v.city === 'Saskatoon') && V.some(v => v.name === "Pile o' Bones Tavern" && v.city === 'Regina'), 'the A7 parody venues');
+  ok(V.filter(v => v.tier === 1 && v.minFans === 0).length >= 3, 'a fresh band has at least three rooms');
+  ok(V.some(v => v.tier === 1 && v.genreFit.metal < 0.45) && V.some(v => v.tier === 2 && v.genreFit.metal < 0.45), 'metal has clash rooms');
+});
+
+test('headliners: local parody bands for opening slots', () => {
+  const H = K.headliners, cities = Object.values(K.map.cities).map(c => c.name);
+  ok(H.length >= 5, 'headliners');
+  H.forEach(h => ok(/^[a-z][a-z0-9_]*$/.test(h.id) && str(h.name, 32) && C.GENRES.includes(h.genre) && cities.includes(h.city)
+    && isInt(h.draw) && h.draw >= 50 && h.draw <= 200 && str(h.blurb, LIMIT.line), 'headliner ' + h.id));
+  C.GENRES.forEach(g => ok(H.some(h => h.genre === g), 'a ' + g + ' headliner'));
+});
+
+const ROAD_GATES = ['minKm', 'maxKm', 'season'], SEASONS = ['summer', 'fall', 'winter', 'spring'];
+test('road cards: ~12, Monday-card schema, road gates, van effects, gamble hints, Kenji never speaks', () => {
+  const R = K.roadCards, ids = new Set(), all = [];
+  ok(R.length >= 12, 'road cards: ' + R.length);
+  for (const c of R) {
+    const w = 'road card ' + c.id;
+    ok(/^road_[a-z0-9_]+$/.test(c.id) && !ids.has(c.id), w + ': id'); ids.add(c.id);
+    ok(!CARDS.some(x => x.id === c.id), w + ': id collides with a Monday card');
+    Object.keys(c).forEach(k => ok(CARD_KEYS.includes(k), w + ': key ' + k));
+    ok(c.type === 'road' && (HD_IDS.includes(c.speaker) || NPC_IDS.includes(c.speaker)) && c.speaker !== 'kenji', w + ': type/speaker');
+    ok(str(c.title, LIMIT.title) && str(c.text, LIMIT.text), w + ': title/text length (' + c.text.length + ')');
+    if (c.once === false) ok(isInt(c.cooldown) && c.cooldown >= 4, w + ': cooldown');
+    if (c.gate) Object.keys(c.gate).forEach(k => ok(C.GATE_KEYS.includes(k) || ROAD_GATES.includes(k), w + ': gate ' + k));
+    if (c.gate && c.gate.season) ok(c.gate.season.every(x => SEASONS.includes(x)), w + ': season');
+    ok(c.choices.length >= 2 && c.choices.length <= 3 && new Set(c.choices.map(x => x.label)).size === c.choices.length, w + ': choices');
+    c.choices.forEach((ch, i) => {
+      const cw = w + '#' + i;
+      Object.keys(ch).forEach(k => ok(CHOICE_KEYS.includes(k), cw + ': key ' + k));
+      ok(str(ch.label, LIMIT.label) && str(ch.outcome, LIMIT.outcome) && (!('hint' in ch) || str(ch.hint, LIMIT.hint)), cw + ': lengths');
+      if (ch.roll) ok(/^Gamble: /.test(ch.hint || '') && ch.roll.success && ch.roll.fail && ch.roll.chance > 0 && ch.roll.chance < 1, cw + ': gamble');
+      const fxs = [ch.effects, ch.roll && ch.roll.success.effects, ch.roll && ch.roll.fail.effects].filter(Boolean);
+      ok(fxs.length, cw + ': does something');
+      if (ch.effects && ch.effects.van) ok(ch.hint, cw + ': van effects need a hint');
+      fxs.forEach(fx => {
+        Object.keys(fx).forEach(k => ok(C.EFFECT_KEYS.includes(k) || k === 'van', cw + ': effect ' + k));
+        ok(!fx.book && !fx.chain, cw + ': road cards neither book nor chain');
+        for (const k of ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill']) if (k in fx) {
+          const m = MAG[k], mag = m.abs ? Math.abs(fx[k]) : fx[k]; ok(isInt(fx[k]) && fx[k] !== 0 && mag >= m.lo && mag <= m.hi, cw + ': ' + k + ' ' + fx[k]);
+        }
+        for (const k of ['mood', 'skill']) if (k in fx) for (const id in fx[k]) ok((id === 'all' || HD_IDS.includes(id)) && isInt(fx[k][id]), cw + ': ' + k + '.' + id);
+        if (fx.van) ok(Object.keys(fx.van).join() === 'condition' && isInt(fx.van.condition) && Math.abs(fx.van.condition) >= 1 && Math.abs(fx.van.condition) <= 10, cw + ': van');
+      });
+    });
+    all.push(...strings(c, c.id).map(x => x[1]));
+  }
+  const talk = all.filter(s => /Kenji (says|said|asks|asked|shouts|whispers|yells|mutters)(?! nothing)|Kenji: /.test(s));
+  eq(talk, [], 'Kenji never speaks');
+  ok(R.some(c => c.gate && c.gate.season && c.gate.season.includes('winter')) && R.some(c => c.gate && c.gate.minKm) && R.some(c => !c.gate), 'season, distance and anywhere cards');
+  ok(/moose/i.test(all.join(' ')) && /Yellowhead/.test(all.join(' ')) && /grain elevator/i.test(all.join(' ')) && /baba/i.test(all.join(' ')), 'the brief: moose, Yellowhead, grain elevators, Baba');
+});
+
+test('lines: van banter (Kenji silent), road + venue pools', () => {
+  const L = K.lines;
+  ['marcel', 'dana', 'jaxon'].forEach(id => ok(L.vanBanter[id] && L.vanBanter[id].length >= 5, 'vanBanter.' + id));
+  ok(!L.vanBanter.kenji, 'Kenji has no banter');
+  Object.keys(L.vanBanter).forEach(id => ok(HD_IDS.includes(id), 'vanBanter member ' + id));
+  ok(L.vanKenji.length >= 4 && L.vanKenji.every(s => /^\(.*\)$/.test(s)), 'Kenji only gets stage directions');
+  ['vanArrive', 'genreClash', 'venueUp', 'venueDown', 'venueBanned', 'vanTired', 'breakdown', 'openingSlot', 'sameCrowd']
+    .forEach(k => ok(Array.isArray(L[k]) && L[k].length >= 3, 'lines.' + k + ' ≥3'));
+});
+
 // ---- No USA, parody names only -------------------------------------------
 test('no USA content anywhere in GG.content (places, words, real US brands)', () => {
   const states = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|Wisconsin|Wyoming';
