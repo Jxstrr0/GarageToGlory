@@ -1,5 +1,8 @@
 // venues.js: gig venues (owned by the WORLD agent). v0.3: tier 1 (DIY) and tier 2 (bars & clubs) across the
 // Saskatchewan core (cities in content/map.js). Every v0.1 venue id is kept (cards book them).
+// v0.5 (CAREER agent): tier 3 theatres (500–2,000), bookable from the Signed era (economy.world.eraTier). They use
+//   kind 'club' for the stage dressing until a 'theatre' kind exists; `theatre: true` marks them. The house takes its
+//   cut up front, so door pay per head is lower than in the bars.
 // Contract fields: id, name, city (a content/map.js city name), region, tier (1 DIY, 2 bars & clubs),
 //   kind (contracts.VENUE_KINDS), capacity, minFans (fans needed to be listed/booked/offered; 99999 = card-only),
 //   genreFit { metal, punk, rock, country } 0..1, quirk (one funny line), catch (the listing's small print),
@@ -176,7 +179,57 @@
       deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [180, 260] },
       genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.8 },
       quirk: 'A converted grain elevator. Seven storeys of reverb.',
-      catch: "The stage is on the third floor. The freight elevator is 'mostly fine'." }
+      catch: "The stage is on the third floor. The freight elevator is 'mostly fine'." },
+
+    /* ---- Tier 3: theatres (500–2,000), from the Signed era (v0.5) ------------------------------------ */
+    { id: 'broadway_bijou', name: 'The Broadway Bijou', city: 'Saskatoon', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 550, deal: 'door', pay: 1.5, minFans: 1500, walkIns: 60, gas: 5, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [1.2, 1.8], flat: [600, 850] },
+      genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.8 },
+      quirk: 'The velvet seats are older than your parents. Marcel has asked to wear one.',
+      catch: 'A seated show. The ushers shush the mosh pit.' },
+
+    { id: 'crescent_moose_theatre', name: 'The Crescent Moose Theatre', city: 'Moose Jaw', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 500, deal: 'flat', pay: 650, minFans: 1400, walkIns: 55, gas: 110, setSize: 5,
+      deals: ['flat', 'door'], payRange: { flat: [550, 800], door: [1.2, 1.8] },
+      genreFit: { metal: 0.7, punk: 0.7, rock: 0.9, country: 1 },
+      quirk: 'A 1916 vaudeville house. The ghost in the balcony only claps for ballads.',
+      catch: 'The fly system drops a sandbag once a night. Nobody knows when.' },
+
+    { id: 'perogy_palace_theatre', name: 'The Perogy Palace Theatre', city: 'Yorkton', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 650, deal: 'door', pay: 1.4, minFans: 2000, walkIns: 70, gas: 165, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [1.1, 1.7], flat: [650, 950] },
+      genreFit: { metal: 0.8, punk: 0.8, rock: 0.9, country: 0.9 },
+      quirk: 'The concession sells perogies by the dozen. The front row throws them during solos.',
+      catch: 'Half the crowd is here for the perogies. Win them over anyway.' },
+
+    { id: 'northern_gateway_hall', name: 'Northern Gateway Performing Arts Barn', city: 'Prince Albert', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 800, deal: 'door', pay: 1.3, minFans: 2600, walkIns: 80, gas: 70, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [1.0, 1.5], flat: [750, 1100] },
+      genreFit: fit('any'),
+      quirk: 'A real barn with real seats. The acoustics are great if you like hay.',
+      catch: 'Blackflies get into the lighting rig. The lighting guy calls it "texture".' },
+
+    { id: 'lucky_buffalo_showroom', name: 'Lucky Buffalo Casino Showroom', city: 'Regina', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 950, deal: 'flat', pay: 1000, minFans: 3200, walkIns: 110, gas: 120, setSize: 5,
+      deals: ['flat', 'door'], payRange: { flat: [850, 1250], door: [0.9, 1.4] },
+      genreFit: { metal: 0.5, punk: 0.5, rock: 0.9, country: 1 },
+      quirk: 'The slot machines ding in 4/4, always a hair behind your tempo.',
+      catch: 'Part of the pay comes in buffet vouchers. The buffet is excellent.' },
+
+    { id: 'wascana_performing_arts', name: "Pile o' Bones Performing Arts Centre", city: 'Regina', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 1800, deal: 'door', pay: 0.9, minFans: 6500, walkIns: 150, gas: 120, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [0.7, 1.1], flat: [1300, 1800] },
+      genreFit: { metal: 0.7, punk: 0.7, rock: 1, country: 0.9 },
+      quirk: 'The symphony was here last night. Their timpani are still on stage, and you are not allowed to touch them.',
+      catch: 'Union crew. Their lunch break is at 9:40 p.m., mid-song or not.' },
+
+    { id: 'riverbend_auditorium', name: 'Riverbend Centennial Auditorium', city: 'Saskatoon', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      capacity: 2000, deal: 'door', pay: 0.9, minFans: 8000, walkIns: 160, gas: 5, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [0.7, 1.1], flat: [1400, 1900] },
+      genreFit: fit('any'),
+      quirk: 'There is an orchestra pit. Someone will fall in. It is usually Jaxon.',
+      catch: 'Your mom bought forty tickets and will be introducing you.' }
   ];
 
   // Local bands you can open for (opening slots on the board). draw = the crowd they bring on their own.

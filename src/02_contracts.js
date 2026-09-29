@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 4;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 5;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -24,6 +24,12 @@
   C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
+  C.LABELS = ['gopherwood', 'monolith', 'diy'];      // indie, major, do-it-yourself (no 360 deals, ever)
+  C.RELEASE_KINDS = ['ep', 'album'];                  // EP 4–5 songs (Local Heroes), album 8–10 (Signed / DIY)
+  C.OUTLETS = ['rolling_scone', 'proclaim', 'pitchspork', 'deci_hell', 'tailgate_weekly'];
+  C.CERT = { gold: 40000, platinum: 80000 };          // album units (Music Canada thresholds)
+  C.LOONIES_WEEK = 20;                                // Loonie Awards, once a year (late winter)
+  C.LOONIE_CATEGORIES = ['breakthrough', 'album', 'single', 'live', 'fan_choice', 'worst_van'];
   C.JUDGEMENTS = ['perfect', 'good', 'miss'];
   C.CROWD_LEVELS = ['hostile', 'bored', 'warm', 'hyped', 'wild'];   // crowd meter 0..100 bands
   C.MOMENTS = ['mosh', 'lighters', 'boo', 'drinks', 'wallOfDeath', 'circlePit', 'lineDance', 'capeSpin', 'solo'];
@@ -33,7 +39,7 @@
   C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
   C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge']; // venue ids cards may `book`
-  C.SIM_FLAGS = ['parentsLoan'];   // flags the sim sets that cards may gate on
+  C.SIM_FLAGS = ['parentsLoan', 'label'];   // label = label id | 'diy' (set by the labels sim)   // flags the sim sets that cards may gate on
   // Seasons by week of year (week 1 = early July): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
 
   // Band-level numeric stats and their clamps. fund may dip below 0 only transiently:
@@ -53,7 +59,7 @@
   //   book  : <venueId>   books that venue for this weekend (replaces nothing if a gig is already booked)
   //   chat  : { who: <memberId|npcId>, text }        posts a group-chat message
   C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat',
-    'member', 'payCut', 'repay'];   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
+    'member', 'payCut', 'repay', 'production'];   // v0.5: production ±n on the recording session (studio event cards)   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
 
   // Keys allowed in a card gate. All present conditions must hold.
   //   era:[..] genre:[..] region:[..] band:[bandId..]
@@ -76,6 +82,9 @@
      totalWeek: 1, year: 1, week: 1, maxWeeks: 240, // week = week of year 1..24
      phase: 'monday'|'plan'|'week'|'wrap'|'ended',
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
+     eraHistory: [ { era, week } ],                  // v0.5: garage → local (250 fans) → signed (a deal or a DIY album) → world (v0.7)
+     label: null | DEAL, labelOffers: [ OFFER ], session: null | SESSION, albums: [ ALBUM ], awards: [ AWARD ],
+     trophies: [ { kind: 'gold'|'platinum'|'loonie'|'banned'|..., title, year } ],
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
      recruitAd: null | { role, candidates: [RECRUIT], posts, week }, rivalDefectors: [memberId],   (v0.4)
@@ -112,6 +121,19 @@
              laneStr = 16 chars, 'x' = hit, '.' = rest (index = step, top to bottom). Lane order = C.LANES.
    SONG = { id, title, titleEn, written, pattern: PATTERN, rating: { groove, hook, difficulty }, quality, polish,
             plays, lastPlayed, stale 0..100, hits, classic: bool, auto: bool (band jammed it, not you) }
+   OFFER   = { labelId, advance, royalty (band share of each unit's $), albums, deadlineWeeks, demands: [kind], expires }
+   DEAL    = { labelId, signed, advance, recouped, royalty, albumsOwed, albumsDelivered, deadline (totalWeek), demands:
+               [ { kind, text, due } ], dropped: false }   — advances are recoupable; miss deadlines or flop → dropped
+   SESSION = { kind, studioId, producerId, weeksTotal, weeksDone, tracks: [songId], takes: { songId: 0..100 },
+               events: [ text ], cost, production 0..100 }   — studio weeks replace the planner's blocks
+   ALBUM   = { id, kind, title, cover: { seed, palette, motif, font }, tracks: [songId], single, studioId, producerId,
+               production, released (totalWeek), promo, label, reviews: [ { outlet, score, quote } ],
+               chart: { debut, peak, weeks, pos }, sales, streams, cert: null|'gold'|'platinum', earned }
+   AWARD   = { year, category, nominated: bool, won: bool, against: [ names ] }
+   Content (v0.5): labels, studios, producers, reviews { scoreBands, outlets }, awards, albumWords, studioEvents (card
+   schema + gate keys studio/producer + effect key production). Tokens {album} {single} (reviews), {category} (awards),
+   {adj} {noun} {place} (title forms). Card-set flags: demandEnglish/Radio/Image/Feature/Showcase, loonieOutfit,
+   babaManager, wraithFeud, moosePlan, mooseCall, mooseAlbum ('shelved'|'song'|'ready'|'finland' → v0.7 payoff).
    VAN  = { id: 'moose_hearse', name: 'The Moose Hearse', condition 0..100, space, comfort, km }
    LIVE_GIG = { gig: GIG, setlist: [songId], index (next song to play), songs: [SONG_RESULT], crowd 0..100, started, attendance }
    GIG (v0.3 adds) id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening
@@ -172,6 +194,8 @@
    'crowd:moment'   { kind }                  gig session (mosh, lighters, boo, genre moments, band effects)
    'gig:band'       { who, action }           gig session: 'solo' | 'fill' | 'miss' | 'capeSpin'
    'road:resolved'  { card, choice, deltas }  world, after a road card on a van trip
+   'era:changed' {era}  'label:offer'  'label:signed'  'label:dropped' {reason}  'label:fulfilled'  'session:week'
+   'album:released'  'album:reviews'  'chart:week'  'cert'  'loonies:nominations'  'loonies:result'   (v0.5 labels sim)
    'week:done'      { result: WEEK_RESULT }   career.runWeek
    'week:wrap'      { wrap: WRAP }            career.endWeek (main autosaves on this)
    'year:end'       { year, summary }         career.endWeek

@@ -11,7 +11,8 @@ const HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky'
 const LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana'];
 const IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
 const BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge'];
-const SIM_FLAGS = ['parentsLoan'];                  // flags the sim sets that cards may gate on
+const SIM_FLAGS = ['parentsLoan', 'label'];         // flags the sim sets that cards may gate on (v0.5: label = labelId)
+const SIM_FLAG_VALUES = { parentsLoan: [true], label: C.LABELS };
 const CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];
 const LIMIT = { title: 32, text: 280, label: 38, outcome: 200, hint: 48, chat: 120, line: 140, rollPair: 300 };
 // Effect magnitudes for the garage era: [lo, hi] on the value, or on |value| when abs is set (sign free).
@@ -20,6 +21,17 @@ const MAG = {
   buzz: { lo: 2, hi: 12, abs: true }, chemistry: { lo: 2, hi: 8, abs: true }, burnout: { lo: 3, hi: 15, abs: true },
   mood: { lo: 3, hi: 15, abs: true }, skill: { lo: 1, hi: 3 }
 };
+// v0.5: later eras allow bigger numbers. A card is held to the ranges of the EARLIEST era in its gate.
+const MAG_BY_ERA = {
+  garage: MAG,
+  local: { fund: { lo: -500, hi: 400 }, fans: { lo: 0, hi: 80 }, drumSkill: { lo: 1, hi: 3 }, buzz: { lo: 2, hi: 15, abs: true },
+    chemistry: { lo: 2, hi: 10, abs: true }, burnout: { lo: 3, hi: 18, abs: true }, mood: { lo: 3, hi: 18, abs: true }, skill: { lo: 1, hi: 3 } },
+  signed: { fund: { lo: -1500, hi: 1200 }, fans: { lo: 0, hi: 400 }, drumSkill: { lo: 1, hi: 4 }, buzz: { lo: 2, hi: 18, abs: true },
+    chemistry: { lo: 2, hi: 10, abs: true }, burnout: { lo: 3, hi: 20, abs: true }, mood: { lo: 3, hi: 20, abs: true }, skill: { lo: 1, hi: 4 } }
+};
+MAG_BY_ERA.world = MAG_BY_ERA.signed;
+const earliestEra = gate => C.ERAS.find(e => !gate || !gate.era || gate.era.includes(e)) || 'garage';
+const magFor = gate => MAG_BY_ERA[earliestEra(gate)];
 const CARD_KEYS = ['id', 'type', 'speaker', 'title', 'text', 'gate', 'weight', 'once', 'cooldown', 'chain', 'step', 'forceWeek', 'choices'];
 const CHOICE_KEYS = ['label', 'hint', 'effects', 'outcome', 'roll'];
 const ROLL_KEYS = ['chance', 'stat', 'statScale', 'success', 'fail'];
@@ -93,7 +105,8 @@ function applyRouting(fx, s) {
 
 // ======================================================================
 test('content modules attach to GG.content', () => {
-  ['bands', 'rivals', 'npcs', 'cards', 'lines', 'presets', 'songTitles'].forEach(k => ok(K[k], 'GG.content.' + k + ' missing'));
+  ['bands', 'rivals', 'npcs', 'cards', 'lines', 'presets', 'songTitles',
+    'labels', 'studios', 'producers', 'reviews', 'awards', 'albumWords', 'studioEvents'].forEach(k => ok(K[k], 'GG.content.' + k + ' missing'));
 });
 
 test('bands: four bands, one per genre, full schema', () => {
@@ -187,13 +200,13 @@ test('cards: ids, types, keys, speakers, lengths', () => {
   }
 });
 
-test('cards: gates use only GATE_KEYS with valid values; every card is garage/metal', () => {
+test('cards: gates use only GATE_KEYS with valid values; every card is metal with valid eras', () => {
   const bandIds = Object.keys(K.bands);
   for (const c of CARDS) {
     const g = c.gate, w = 'card ' + c.id + ' gate';
     ok(g && typeof g === 'object', w + ' missing');
     Object.keys(g).forEach(k => ok(C.GATE_KEYS.includes(k), w + ': unknown key ' + k));
-    ok(Array.isArray(g.era) && g.era.includes('garage') && g.era.every(e => C.ERAS.includes(e)), w + ': era');
+    ok(Array.isArray(g.era) && g.era.length > 0 && g.era.every(e => C.ERAS.includes(e) && e !== 'world'), w + ': era (world arrives in v0.7)');
     ok(Array.isArray(g.genre) && g.genre.includes('metal') && g.genre.every(e => C.GENRES.includes(e)), w + ': genre');
     if (g.region) ok(g.region.every(r => C.REGIONS.includes(r)), w + ': region');
     if (g.band) ok(g.band.every(b => bandIds.includes(b)), w + ': band');
@@ -210,13 +223,14 @@ test('cards: gates use only GATE_KEYS with valid values; every card is garage/me
   }
 });
 
-test('cards: effects use only EFFECT_KEYS, with valid targets and garage-era magnitudes', () => {
+test('cards: effects use only EFFECT_KEYS, with valid targets and era-appropriate magnitudes', () => {
   for (const c of CARDS) for (const { fx, where } of effectsOf(c)) {
+    const MAG = magFor(c.gate);
     Object.keys(fx).forEach(k => ok(C.EFFECT_KEYS.includes(k), where + ': unknown effect ' + k));
     for (const k of ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill']) {
       if (!(k in fx)) continue;
       const v = fx[k], m = MAG[k], mag = m.abs ? Math.abs(v) : v;
-      ok(isInt(v) && v !== 0 && mag >= m.lo && mag <= m.hi, where + ': ' + k + ' ' + v + ' outside garage range');
+      ok(isInt(v) && v !== 0 && mag >= m.lo && mag <= m.hi, where + ': ' + k + ' ' + v + ' outside the ' + earliestEra(c.gate) + ' range');
     }
     for (const k of ['mood', 'skill']) {
       if (!(k in fx)) continue;
@@ -279,7 +293,7 @@ test('cards: every gated flag is set by some card (or by the sim), with a matchi
   for (const c of CARDS) {
     const g = c.gate;
     for (const f of (g.flags || []).concat(g.notFlags || [])) ok(set[f] || SIM_FLAGS.includes(f), c.id + ': gates on flag ' + f + ' that nothing sets');
-    for (const f in (g.flagEquals || {})) ok(set[f] && set[f].has(g.flagEquals[f]), c.id + ': flagEquals ' + f + '=' + g.flagEquals[f] + ' is never set');
+    for (const f in (g.flagEquals || {})) ok((set[f] && set[f].has(g.flagEquals[f])) || (SIM_FLAG_VALUES[f] || []).includes(g.flagEquals[f]), c.id + ': flagEquals ' + f + '=' + g.flagEquals[f] + ' is never set');
   }
 });
 
@@ -307,6 +321,8 @@ test('chains: every branch of every chain reaches an end (cape flag valid, helpe
   for (const id of CHAIN_IDS) {
     const cards = CARDS.filter(c => c.chain === id);
     const visited = new Set(), ends = [], problems = [];
+    const g1 = (cards.find(c => c.step === 1) || {}).gate || {}, seed = Object.assign({}, g1.flagEquals || {});
+    (g1.flags || []).forEach(f => { seed[f] = true; });   // a chain may start from a flag (moose: mooseMuse)
     (function visit(st, depth, path) {
       if (depth > 10) { problems.push('loop at ' + path); return; }
       const due = cards.filter(c => c.step === st.step && flagGatePasses(c.gate, st.flags));
@@ -325,7 +341,7 @@ test('chains: every branch of every chain reaches an end (cape flag valid, helpe
           }
         });
       }
-    })({ era: 'garage', genre: 'metal', region: 'canada', bandId: 'hail_damage', flags: {}, step: 1 }, 0, 'start');
+    })({ era: 'garage', genre: 'metal', region: 'canada', bandId: 'hail_damage', flags: seed, step: 1 }, 0, 'start');
     eq(problems, [], id + ': branch problems');
     eq(cards.filter(c => !visited.has(c.id)).map(c => c.id), [], id + ': unreachable chain cards');
     ok(ends.length >= 5, id + ': expected several endings, got ' + ends.length);
@@ -358,8 +374,9 @@ test('cards: year one has early, mid (fans) and late cards, all six types, and r
   HD_IDS.forEach(id => ok(normal.filter(c => c.speaker === id || c.id.startsWith(id + '_')).length >= 2, id + ' needs ≥2 signature cards'));
 });
 
-test('a seeded 240-week draw never runs dry and stays varied', () => {
-  const rng = GG.RNG(20260929);
+// v0.5: the draw walks the eras like a Steady career: garage → local at 250 fans → signed at week 64 (each label in turn).
+function drawCareer(label, seed) {
+  const rng = GG.RNG(seed);
   const s = { era: 'garage', genre: 'metal', region: 'canada', bandId: 'hail_damage', fund: 300, buzz: 20, chemistry: 50, gig: null,
     flags: {}, chains: {}, seen: {}, members: HD.members.map(m => ({ id: m.id, mood: m.mood })) };
   const eligible = c => {
@@ -369,26 +386,40 @@ test('a seeded 240-week draw never runs dry and stays varied', () => {
     if (last != null && (c.once !== false || s.totalWeek - last < (c.cooldown || 0))) return false;
     return gatePasses(c.gate, s);
   };
-  let dry = [], year1 = new Set(), counts = {};
+  const out = { dry: [], year1: new Set(), counts: {}, byEra: { garage: new Set(), local: new Set(), signed: new Set() }, s };
   for (let w = 1; w <= C.CAREER_YEARS * C.WEEKS_PER_YEAR; w++) {
     s.totalWeek = w; s.year = Math.ceil(w / C.WEEKS_PER_YEAR); s.week = (w - 1) % C.WEEKS_PER_YEAR + 1;
-    s.fans = Math.round(12 + Math.min(w, 24) * 12 + Math.max(0, w - 24) * 6);   // ~300 by year end, then slow growth
+    s.fans = w <= 24 ? 12 + w * 12 : w <= 64 ? 300 + (w - 24) * 10 : 700 + (w - 64) * 40;
+    if (s.era === 'garage' && s.fans >= 250) s.era = 'local';
+    if (w === 64) { s.era = 'signed'; s.flags.label = label; }
     if (w === 40) s.flags.parentsLoan = true;
+    if (w === 100) delete s.flags.parentsLoan;          // the loan gets paid off: later eras must not lean on guilt cards
     if (w % 30 === 0) s.members[w / 30 % 4].mood = 30; else if (w % 30 === 5) s.members.forEach(m => { m.mood = 60; });
     let pool = CARDS.filter(c => c.forceWeek === w && s.seen[c.id] == null);
     if (!pool.length) pool = CARDS.filter(c => c.chain && s.chains[c.chain] && s.chains[c.chain].step === c.step && s.chains[c.chain].due <= w && gatePasses(c.gate, s));
     if (!pool.length) pool = CARDS.filter(eligible);
-    if (!pool.length) { dry.push(w); continue; }
+    if (!pool.length) { out.dry.push(s.era + '@' + w); continue; }
     const card = rng.weighted(pool, c => c.weight || 1), ch = rng.pick(card.choices);
-    s.seen[card.id] = w; counts[card.id] = (counts[card.id] || 0) + 1;
-    if (s.year === 1) year1.add(card.id);
+    s.seen[card.id] = w; out.counts[card.id] = (out.counts[card.id] || 0) + 1; out.byEra[s.era].add(card.id);
+    if (s.year === 1) out.year1.add(card.id);
     applyRouting(ch.effects, s);
     if (ch.roll) applyRouting(rng.chance(0.5) ? ch.roll.success.effects : ch.roll.fail.effects, s);
   }
-  eq(dry, [], 'weeks with no eligible Monday card');
-  ok(year1.size >= 18, 'year one should show ≥18 different cards, got ' + year1.size);
-  ok(s.chains.cape && s.chains.cape.step === 'end', 'the Cape Saga finishes within the career');
-  ok(Object.values(counts).every(n => n <= 30), 'no card repeats more than 30 times in 240 weeks');
+  return out;
+}
+
+test('a seeded 240-week draw never runs dry and stays varied, through garage, Local Heroes and Signed (each label)', () => {
+  C.LABELS.forEach((label, i) => {
+    const r = drawCareer(label, 20260929 + i), w = label + ': ';
+    eq(r.dry, [], w + 'weeks with no eligible Monday card');
+    ok(r.year1.size >= 18, w + 'year one should show ≥18 different cards, got ' + r.year1.size);
+    ok(r.s.chains.cape && r.s.chains.cape.step === 'end', w + 'the Cape Saga finishes within the career');
+    ok(Object.values(r.counts).every(n => n <= 30), w + 'no card repeats more than 30 times in 240 weeks');
+    ok(r.byEra.local.size >= 12, w + 'Local Heroes should show ≥12 different cards, got ' + r.byEra.local.size);
+    ok(r.byEra.signed.size >= 20, w + 'Signed should show ≥20 different cards, got ' + r.byEra.signed.size);
+    const labelCards = CARDS.filter(c => c.gate.flagEquals && c.gate.flagEquals.label === label);
+    ok(labelCards.length >= 2 && labelCards.filter(c => r.byEra.signed.has(c.id)).length >= 2, w + 'label cards show up once signed');
+  });
 });
 
 // ---- Lines ------------------------------------------------------------
@@ -422,6 +453,8 @@ test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {r
     while ((m = re.exec(s))) {
       const t = m[1], parts = t.split(':');
       const good = ['player', 'band', 'city', 'recruit'].includes(t) || (/^content\.drama\.stageText/.test(p) && ['who', 'gripe'].includes(t))
+        || (/^content\.reviews\./.test(p) && ['album', 'single'].includes(t)) || (/^content\.awards\./.test(p) && t === 'category')
+        || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
         || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
     }
@@ -478,8 +511,8 @@ test('venues: v0.1 ids kept, Sask core cities, kinds, deals, pay ranges, quirk +
     const w = 'venue ' + v.id;
     ok(/^[a-z][a-z0-9_]*$/.test(v.id) && str(v.name, 48) && cities.includes(v.city) && v.region === 'canada', w + ': basics');
     ok(C.VENUE_KINDS.includes(v.kind), w + ': kind ' + v.kind);
-    ok(v.tier === 1 || v.tier === 2, w + ': tier');
-    ok(v.tier === 1 ? v.capacity >= 10 && v.capacity <= 150 : v.capacity >= 100 && v.capacity <= 400, w + ': capacity ' + v.capacity);
+    ok(v.tier === 1 || v.tier === 2 || v.tier === 3, w + ': tier');   // v0.5: tier 3 theatres (500–2,000), Signed era
+    ok(v.tier === 1 ? v.capacity >= 10 && v.capacity <= 150 : v.tier === 2 ? v.capacity >= 100 && v.capacity <= 400 : v.capacity >= 500 && v.capacity <= 2000, w + ': capacity ' + v.capacity);
     ok(v.tier === 1 ? v.setSize >= 2 && v.setSize <= 4 : v.setSize >= 4 && v.setSize <= 5, w + ': setSize');
     ok(isInt(v.minFans) && v.minFans >= 0 && isInt(v.walkIns) && v.walkIns >= 0 && v.walkIns < v.capacity, w + ': fans/walk-ins');
     ok(str(v.quirk, LIMIT.line) && str(v.catch, LIMIT.line), w + ': quirk + catch');
@@ -644,6 +677,271 @@ test('no USA content anywhere in GG.content (places, words, real US brands)', ()
   const re = new RegExp('\\b(' + [states, cities, words, brands].join('|') + ')\\b');
   const hits = strings(K, 'content').filter(([, s]) => re.test(s)).map(([p, s]) => p + ': ' + s.match(re)[0]);
   eq(hits, [], 'USA or real-brand content found');
+});
+
+// ======================================================================
+// v0.5 "Signed": labels, studios, producers, reviews, awards, album words, studio events, later-era cards
+// ======================================================================
+const KENJI_TALKS = /Kenji (says|said|asks|asked|shouts|whispers|yells|mutters|replies|answers)(?! nothing)|Kenji: /;
+// Problems with one Monday-schema card outside K.cards (awards, studio events). extra = { gates: [], effects: [], mag }
+function cardProblems(c, extra) {
+  const bad = [], w = c.id;
+  const push = (cond, msg) => { if (!cond) bad.push(w + ': ' + msg); };
+  push(/^[a-z][a-z0-9_]*$/.test(c.id), 'id');
+  Object.keys(c).forEach(k => push(CARD_KEYS.includes(k) && !['chain', 'step', 'forceWeek'].includes(k), 'key ' + k));
+  push(C.CARD_TYPES.includes(c.type), 'type');
+  push(HD_IDS.includes(c.speaker) || NPC_IDS.includes(c.speaker), 'speaker ' + c.speaker);
+  push(str(c.title, LIMIT.title) && str(c.text, LIMIT.text), 'title/text length (text ' + (c.text || '').length + ')');
+  if (c.once === false) push(isInt(c.cooldown) && c.cooldown >= 4, 'cooldown');
+  push(Array.isArray(c.choices) && c.choices.length >= 2 && c.choices.length <= 3 && new Set(c.choices.map(x => x.label)).size === c.choices.length, 'choices');
+  Object.keys(c.gate || {}).forEach(k => push(C.GATE_KEYS.includes(k) || (extra.gates || []).includes(k), 'gate ' + k));
+  (c.choices || []).forEach((ch, i) => {
+    const cw = '#' + i;
+    Object.keys(ch).forEach(k => push(CHOICE_KEYS.includes(k), cw + ' key ' + k));
+    push(str(ch.label, LIMIT.label), cw + ' label ' + (ch.label || '').length);
+    push(str(ch.outcome, LIMIT.outcome), cw + ' outcome ' + (ch.outcome || '').length);
+    if ('hint' in ch) push(str(ch.hint, LIMIT.hint), cw + ' hint');
+    if (ch.roll) {
+      push(/^Gamble: /.test(ch.hint || '') && ch.roll.chance >= 0.05 && ch.roll.chance <= 0.95, cw + ' gamble');
+      ['success', 'fail'].forEach(b => push(ch.roll[b] && str(ch.roll[b].outcome, LIMIT.outcome) && (ch.outcome + ' ' + ch.roll[b].outcome).length <= LIMIT.rollPair, cw + ' ' + b));
+    }
+    const fxs = [ch.effects, ch.roll && ch.roll.success.effects, ch.roll && ch.roll.fail.effects].filter(Boolean);
+    push(fxs.length, cw + ' does nothing');
+    fxs.forEach(fx => {
+      Object.keys(fx).forEach(k => push(C.EFFECT_KEYS.includes(k) || (extra.effects || []).includes(k), cw + ' effect ' + k));
+      push(!fx.book && !fx.chain, cw + ' no book/chain here');
+      for (const k of ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill']) if (k in fx) {
+        const m = extra.mag[k], mag = m.abs ? Math.abs(fx[k]) : fx[k]; push(isInt(fx[k]) && fx[k] !== 0 && mag >= m.lo && mag <= m.hi, cw + ' ' + k + ' ' + fx[k]);
+      }
+      for (const k of ['mood', 'skill']) if (k in fx) for (const id in fx[k]) {
+        const m = extra.mag[k], v = fx[k][id]; push((id === 'all' || HD_IDS.includes(id)) && isInt(v) && Math.abs(v) >= m.lo && Math.abs(v) <= m.hi, cw + ' ' + k + '.' + id);
+      }
+      if (fx.chat) push((HD_IDS.includes(fx.chat.who) || NPC_IDS.includes(fx.chat.who)) && str(fx.chat.text, LIMIT.chat), cw + ' chat');
+      if (fx.flags) for (const f in fx.flags) push(/^[a-z][A-Za-z0-9]*$/.test(f) && ['string', 'number', 'boolean'].includes(typeof fx.flags[f]), cw + ' flag ' + f);
+    });
+  });
+  const talk = strings(c, c.id).filter(([, t]) => KENJI_TALKS.test(t));
+  push(!talk.length, 'Kenji speaks: ' + (talk[0] || [])[1]);
+  return bad;
+}
+const ALL_CARD_IDS = () => [].concat(CARDS, K.dramaCards || [], K.roadCards || [], K.studioEvents || [],
+  (K.awards && K.awards.outfitCards) || [], K.awards ? [K.awards.speech, K.awards.speechWorstVan] : []).map(c => c.id);
+
+test('labels: Gopherwood, Monolith and DIY with the contract fields (no 360 deals)', () => {
+  const L = K.labels;
+  eq(Object.keys(L).sort(), C.LABELS.slice().sort(), 'label ids');
+  for (const id of C.LABELS) {
+    const l = L[id], w = 'label ' + id;
+    ok(l.id === id && str(l.name, 32) && str(l.blurb, 200), w + ': id/name/blurb');
+    ok(Array.isArray(l.advance) && l.advance.length === 2 && l.advance.every(isInt) && l.advance[0] >= 0 && l.advance[0] <= l.advance[1], w + ': advance [min,max]');
+    ok(typeof l.royalty === 'number' && l.royalty > 0 && l.royalty <= 1, w + ': royalty 0..1');
+    ['albums', 'deadlineWeeks', 'offerMinFans', 'offerMinBuzz', 'dropOnFlop'].forEach(k => ok(isInt(l[k]) && l[k] >= 0, w + ': ' + k));
+    ok(Array.isArray(l.demands) && l.demands.every(d => /^[a-z][a-zA-Z]*$/.test(d.kind) && str(d.text, 120) && (!d.card || CARDS.some(c => c.id === d.card))), w + ': demands {kind,text,card?}');
+    ok(l.rep && str(l.rep.name, 40) && str(l.rep.blurb, 200) && str(l.offer, 200), w + ': rep + offer');
+    ok(Array.isArray(l.perks) && l.perks.length >= 2 && Array.isArray(l.catches) && l.catches.length >= 2, w + ': perks/catches');
+    ok(!/\b360\b/.test(JSON.stringify(l)), w + ': no 360 deals, ever');
+  }
+  const g = L.gopherwood, m = L.monolith, d = L.diy;
+  ok(m.advance[0] > g.advance[1] && g.royalty > m.royalty && m.offerMinFans > g.offerMinFans && m.offerMinBuzz > g.offerMinBuzz, 'indie: small advance, big cut, earlier; major: huge advance, tiny cut, later');
+  ok(d.advance[1] === 0 && d.royalty === 1 && d.albums === 0 && d.demands.length === 0 && d.dropOnFlop === 0, 'DIY keeps everything, owes nothing, is never dropped');
+  ok(g.albums >= 1 && m.albums > g.albums && g.deadlineWeeks > 0 && m.deadlineWeeks > 0 && m.dropOnFlop > g.dropOnFlop, 'deals set album counts, deadlines and flop lines');
+  ok(m.demands.some(x => x.kind === 'english' && /sing in English/.test(x.text)) && m.demands.some(x => x.kind === 'radio') && m.demands.some(x => x.kind === 'image'), 'Monolith: English, radio edit, image');
+});
+
+test('studios + producers: fields, the four studios, the brief\'s producer styles', () => {
+  const S = K.studios, P = K.producers, ids = S.map(s => s.id);
+  ['moms_basement', 'strip_mall_sound', 'grain_silo', 'abbot_lane'].forEach(id => ok(ids.includes(id), 'studio ' + id));
+  for (const s of S) {
+    const w = 'studio ' + s.id;
+    ok(str(s.name, 32) && str(s.city, 24) && str(s.blurb, 200) && str(s.quirk, 160), w + ': words');
+    ok(isInt(s.costPerWeek) && s.costPerWeek >= 0 && isInt(s.quality) && s.quality >= 0 && s.quality <= 100 && isInt(s.reverb) && s.reverb >= 0 && s.reverb <= 100, w + ': numbers');
+    ok(C.ERAS.includes(s.era) && (!('locked' in s) || typeof s.locked === 'boolean'), w + ': era/locked');
+  }
+  const by = id => S.find(s => s.id === id);
+  ok(by('moms_basement').costPerWeek === 0 && /dryer/i.test(by('moms_basement').quirk + by('moms_basement').blurb), "Mom's Basement is free and has the dryer");
+  ok(/landlord|owns the strip mall/i.test(by('strip_mall_sound').blurb), 'the engineer is the landlord');
+  ok(by('grain_silo').reverb === Math.max(...S.map(s => s.reverb)) && /grain elevator/i.test(by('grain_silo').blurb), 'the grain silo has the best reverb');
+  ok(by('abbot_lane').city === 'London' && by('abbot_lane').era === 'world' && by('abbot_lane').locked === true, 'Abbot Lane waits for the World era');
+  ok(S.filter(s => !s.locked).every(s => s.city !== 'London') && by('moms_basement').quality < by('strip_mall_sound').quality && by('strip_mall_sound').quality < by('grain_silo').quality, 'quality climbs with price');
+  const pid = new Set();
+  for (const p of P) {
+    const w = 'producer ' + p.id;
+    ok(/^[a-z][a-z0-9_]*$/.test(p.id) && !pid.has(p.id), w + ': id'); pid.add(p.id);
+    ok(str(p.name, 32) && str(p.blurb, 200) && str(p.quirk, 160) && /^[a-z]+$/.test(p.style), w + ': words/style');
+    ok(isInt(p.costPerWeek) && p.costPerWeek > 0 && C.ERAS.includes(p.era), w + ': cost/era');
+    ['production', 'polish', 'hook'].forEach(k => ok(isInt(p[k]) && p[k] >= 0 && p[k] <= 10, w + ': ' + k + ' 0..10'));
+    ok(isInt(p.weird) && p.weird >= 0 && p.weird <= 10, w + ': weird 0..10');
+  }
+  const styles = new Set(P.map(p => p.style));
+  ['loud', 'cabin', 'pitch'].forEach(st => ok(styles.has(st), 'style ' + st));
+  ok(styles.size >= 5 && P.length >= 5 && P.length <= 7, '3 required styles + 2–3 more, got ' + [...styles]);
+  ok(/bear/i.test(P.find(p => p.style === 'cabin').blurb) && /pitch/i.test(P.find(p => p.style === 'pitch').blurb), 'the cabin has a bear; pitch fixes Marcel');
+});
+
+test('reviews: five outlets, scales, voices, quotes for every score band (Deci-Hell in caps)', () => {
+  const R = K.reviews, O = R.outlets, BANDS = ['awful', 'meh', 'good', 'great'];
+  eq(Object.keys(R.scoreBands), BANDS, 'score bands in order');
+  ok(R.scoreBands.awful === 0 && BANDS.every((b, i) => !i || R.scoreBands[b] > R.scoreBands[BANDS[i - 1]]) && R.scoreBands.great < 100, 'score bands ascend from 0');
+  eq(Object.keys(O).sort(), C.OUTLETS.slice().sort(), 'outlet ids');
+  for (const id of C.OUTLETS) {
+    const o = O[id], w = 'outlet ' + id;
+    ok(o.id === id && str(o.name, 24) && str(o.critic, 48) && str(o.voice, 200) && str(o.unit, 8), w + ': words');
+    ok([5, 10, 100].includes(o.scale) && [0, 1].includes(o.decimals) && typeof o.caps === 'boolean' && isInt(o.bias), w + ': scale/decimals/caps/bias');
+    eq(Object.keys(o.genres).sort(), C.GENRES.slice().sort(), w + ': genre weights');
+    ok(Object.values(o.genres).every(v => v >= 0 && v <= 1), w + ': weights 0..1');
+    eq(Object.keys(o.weights).sort(), ['polish', 'production', 'quality', 'recycled'], w + ': judging weights');
+    const all = [];
+    for (const b of BANDS) {
+      ok(Array.isArray(o.quotes[b]) && o.quotes[b].length >= 3, w + ': quotes.' + b + ' ≥3');
+      const hd = ((o.byBand || {}).hail_damage || {})[b] || [];
+      ok(o.quotes[b].length + hd.length >= 4, w + ': Hail Damage gets ≥4 quotes for ' + b);
+      all.push(...o.quotes[b], ...hd);
+    }
+    Object.keys(o.byBand || {}).forEach(bid => ok(K.bands[bid], w + ': byBand ' + bid));
+    ok(Array.isArray(o.recycled) && o.recycled.length >= 3, w + ': recycled quotes');
+    all.push(...o.recycled);
+    all.forEach(q => ok(str(q, 200), w + ': quote ≤200: ' + q));
+    all.forEach(q => ok(!/\b\d+(\.\d)?\s*(\/|out of)\s*\d+\b/.test(q), w + ': quotes never state a score: ' + q));
+    eq(all.length, new Set(all).size, w + ': duplicate quotes');
+    if (o.caps) all.forEach(q => ok(!/[a-z]/.test(q.replace(/\{[^}]*\}/g, '')), w + ': ALL CAPS: ' + q));
+  }
+  ok(O.pitchspork.decimals === 1 && O.pitchspork.scale === 10 && O.pitchspork.bias < 0, 'Pitchspork: one decimal, out of ten, harsh');
+  ok(O.deci_hell.caps && O.deci_hell.genres.metal === 1 && O.deci_hell.unit === 'skulls', 'Deci-Hell: caps, metal, skulls');
+  ok(O.tailgate_weekly.genres.country === 1 && O.tailgate_weekly.genres.metal < 0.5, 'Tailgate Weekly is a country paper');
+  ok(/hoedown|not sure|confused|what kind of music/i.test(JSON.stringify(O.tailgate_weekly.byBand.hail_damage)), 'Tailgate Weekly is confused by metal');
+  ok(/record|vinyl|gatefold/i.test(JSON.stringify(O.rolling_scone.quotes)) && /!/.test(O.proclaim.quotes.great.join('')), 'Rolling Scone reveres vinyl; Proclaim! is breathless');
+});
+
+test('awards: Loonie categories, cape-aware outfit cards, the speech, Tundra Wraith thanks you personally', () => {
+  const A = K.awards, mag = MAG_BY_ERA.signed;
+  eq(Object.keys(A.categories).sort(), C.LOONIE_CATEGORIES.slice().sort(), 'categories');
+  for (const id of C.LOONIE_CATEGORIES) {
+    const c = A.categories[id], w = 'category ' + id;
+    ok(c.id === id && str(c.name, 40) && str(c.short, 16) && str(c.blurb, 160), w + ': words');
+    ok(c.reward && ['fund', 'fans', 'buzz'].every(k => isInt(c.reward[k]) && c.reward[k] > 0), w + ': reward {fund,fans,buzz}');
+  }
+  eq(Object.keys(A.categories.album.genreNames).sort(), C.GENRES.slice().sort(), 'Album of the Year per genre');
+  ok(/Worst Van/.test(A.categories.worst_van.name) && A.categories.worst_van.reward.fund < A.categories.album.reward.fund, 'Worst Van is a joke award');
+  ok(str(A.ceremony.name, 40) && str(A.ceremony.venue, 60) && A.ceremony.host && str(A.ceremony.host.blurb, 200), 'ceremony');
+  ok(A.presenters.length >= 4 && A.presenters.every(p => str(p.name, 40) && str(p.blurb, 160)), 'presenters');
+  ok(A.banter.length >= 4 && A.banter.every(t => str(t, 200) && /\{category\}/.test(t)), 'banter names the {category}');
+  ok(A.envelope.length >= 3 && A.win.length >= 3 && A.lose.length >= 3, 'envelope/win/lose lines');
+  [].concat(A.envelope, A.win, A.lose).forEach(t => ok(str(t, 200) && !KENJI_TALKS.test(t), 'line: ' + t));
+  // Outfit cards: exactly one per cape state; every branch writes a known outfit.
+  const outfitIds = Object.keys(A.outfits);
+  ok(outfitIds.includes('cape') && outfitIds.length >= 3, 'outfits');
+  const probs = [];
+  for (const c of A.outfitCards) {
+    probs.push(...cardProblems(c, { mag }));
+    ok(Object.keys(c.gate).every(k => ['band', 'flags', 'notFlags', 'flagEquals'].includes(k)) && c.gate.band.includes('hail_damage'), c.id + ': gates on band + cape only');
+    c.choices.forEach((ch, i) => {
+      const branches = ch.roll ? [ch.roll.success.effects, ch.roll.fail.effects].map(fx => Object.assign({}, ch.effects, fx, { flags: Object.assign({}, (ch.effects || {}).flags, (fx || {}).flags) })) : [ch.effects];
+      branches.forEach(fx => ok(fx && fx.flags && outfitIds.includes(fx.flags.loonieOutfit), c.id + '#' + i + ': sets flags.loonieOutfit'));
+      branches.forEach(fx => { if ('cape' in fx.flags) ok(CAPE_VALUES.includes(fx.flags.cape), c.id + '#' + i + ': cape value'); });
+    });
+  }
+  eq(probs, [], 'outfit card problems');
+  const capeStates = [undefined].concat(CAPE_VALUES);
+  for (const v of capeStates) {
+    const st = { era: 'signed', genre: 'metal', region: 'canada', bandId: 'hail_damage', flags: v === undefined ? {} : { cape: v }, members: [] };
+    const pass = A.outfitCards.filter(c => gatePasses(c.gate, st)).map(c => c.id);
+    eq(pass.length, 1, 'cape=' + v + ' should match exactly one outfit card, got ' + pass);
+  }
+  // The speech: thank your mom / thank the moose / take a shot at the rival.
+  eq(cardProblems(A.speech, { mag }).concat(cardProblems(A.speechWorstVan, { mag })), [], 'speech card problems');
+  const labels = A.speech.choices.map(ch => ch.label).join(' | ');
+  ok(/mom/i.test(labels) && /moose/i.test(labels) && /Tundra Wraith|rival/i.test(labels), 'speech choices: mom, moose, rival: ' + labels);
+  ok(A.speech.choices.some(ch => ch.effects && ch.effects.flags && ch.effects.flags.mooseMuse), 'thanking the moose wakes the moose muse');
+  ok(A.speechWorstVan.speaker === 'kenji' && /Moose Hearse/.test(A.speechWorstVan.text), 'Worst Van: Kenji accepts, silently');
+  const th = A.rivalThanks.tundra_wraith, lo = A.rivalLoses.tundra_wraith;
+  ok(th.length >= 5 && th.every(t => str(t, 200) && /\{band\}/.test(t)) && th.some(t => /buddy/.test(t)), 'Tundra Wraith thank you personally ({band}, buddy)');
+  ok(lo.length >= 2 && lo.every(t => str(t, 200)) && /fruit basket/i.test(lo.join(' ')), 'losing to you, they send a fruit basket');
+  Object.keys(A.rivalThanks).concat(Object.keys(A.rivalLoses)).forEach(r => ok(K.rivals[r], 'rival id ' + r));
+});
+
+test('album words: title pools for every genre, French metal titles, cover motifs/palettes/fonts', () => {
+  const W = K.albumWords;
+  for (const g of C.GENRES) {
+    const t = W.titles[g], w = 'titles.' + g;
+    ok(t && Array.isArray(t.forms) && t.forms.length >= 5, w + ': ≥5 forms');
+    t.forms.forEach(f => {
+      const slots = (f.match(/\{(\w+)\}/g) || []).map(x => x.slice(1, -1));
+      ok(slots.length >= 1 && slots.every(sl => Array.isArray(t[sl]) && t[sl].length >= 6), w + ': form "' + f + '" slots need pools of ≥6');
+      ok(f.length <= 24, w + ': form too long');
+    });
+    ['adj', 'noun', 'place'].forEach(k => { ok(Array.isArray(t[k]) && t[k].every(x => str(x, 22)), w + '.' + k); eq(t[k].length, new Set(t[k]).size, w + '.' + k + ' dupes'); });
+  }
+  const fr = W.titles.metal.fr;
+  ok(fr.length >= 12 && fr.every(x => str(x.fr, 36) && str(x.en, 36)), 'metal: ≥12 French titles with translations');
+  ok(fr.filter(x => /lawn|sod|rake|dandelion|fertilizer|watering|fence|garden|barbecue|mower/i.test(x.en)).length >= fr.length / 2, 'mostly secretly about the lawn');
+  const M = W.covers;
+  ok(M.motifs.length >= 8 && M.motifs.every(m => /^[a-z_]+$/.test(m.id) && str(m.name, 20) && str(m.desc, 80) && m.genres.length && m.genres.every(g => C.GENRES.includes(g))), 'motifs');
+  C.GENRES.forEach(g => ok(M.motifs.filter(m => m.genres.includes(g)).length >= 3 && M.palettes.filter(p => p.genres.includes(g)).length >= 3 && M.fonts.filter(f => f.genres.includes(g)).length >= 2, g + ': enough cover options'));
+  ok(M.palettes.length >= 8 && M.palettes.every(p => str(p.name, 20) && p.colors.length === 3 && p.colors.every(isHex)), 'palettes: [bg, fg, accent] hex');
+  ok(M.fonts.length >= 4 && M.fonts.every(f => str(f.css, 80) && /(serif|sans-serif|monospace)$/.test(f.css) && isInt(f.weight) && typeof f.caps === 'boolean'), 'fonts: system stacks with a generic fallback');
+  ['motifs', 'palettes', 'fonts'].forEach(k => eq(M[k].length, new Set(M[k].map(x => x.id)).size, k + ': unique ids'));
+});
+
+test('studio events: ≥10 Monday-schema cards, studio/producer gates, production effects, the brief', () => {
+  const E = K.studioEvents, sids = K.studios.map(s => s.id), pids = K.producers.map(p => p.id), mag = MAG_BY_ERA.local;
+  ok(E.length >= 10, 'studio events: ' + E.length);
+  const probs = [];
+  for (const c of E) {
+    probs.push(...cardProblems(c, { gates: ['studio', 'producer'], effects: ['production'], mag }));
+    ok(/^studio_[a-z0-9_]+$/.test(c.id), c.id + ': id prefix studio_');
+    if (c.gate.studio) ok(c.gate.studio.length && c.gate.studio.every(id => sids.includes(id)), c.id + ': studio ids');
+    if (c.gate.producer) ok(c.gate.producer.length && c.gate.producer.every(id => pids.includes(id)), c.id + ': producer ids');
+    c.choices.forEach(ch => [ch.effects, ch.roll && ch.roll.success.effects, ch.roll && ch.roll.fail.effects].filter(Boolean).forEach(fx => {
+      if ('production' in fx) ok(isInt(fx.production) && fx.production !== 0 && Math.abs(fx.production) <= 10, c.id + ': production ±1..10');
+    }));
+    ok(c.choices.some(ch => [ch.effects, ch.roll && ch.roll.success.effects].some(fx => fx && fx.production)), c.id + ': a studio event should touch production');
+  }
+  eq(probs, [], 'studio event problems');
+  ['moms_basement', 'strip_mall_sound', 'grain_silo'].forEach(id => ok(E.filter(c => c.gate.studio && c.gate.studio.includes(id)).length >= 2, id + ': ≥2 events'));
+  ['loud', 'cabin', 'pitch'].forEach(st => ok(E.some(c => c.gate.producer && c.gate.producer.includes(K.producers.find(p => p.style === st).id)), st + ' producer event'));
+  ok(E.filter(c => !c.gate.studio && !c.gate.producer).length >= 3, '≥3 events for any session');
+  const all = JSON.stringify(E);
+  ok(/dryer/i.test(all) && /landlord/i.test(all) && /nine seconds|echo|reverb/i.test(all) && /bear/i.test(all), 'the brief: dryer, landlord-engineer, silo echo, cabin bear');
+  const ids = ALL_CARD_IDS();
+  eq(ids.length, new Set(ids).size, 'card ids unique across Monday, drama, road, studio and award cards');
+});
+
+test('v0.5 cards: ≥25 Local Heroes + Signed cards, label drama, the moose album, widened evergreen gates', () => {
+  const later = CARDS.filter(c => !c.gate.era.includes('garage'));
+  const local = later.filter(c => c.gate.era.includes('local')), signed = later.filter(c => c.gate.era.includes('signed'));
+  ok(later.length >= 25, 'new later-era cards: ' + later.length);
+  ok(local.length >= 12 && signed.length >= 25, 'local ' + local.length + ', signed ' + signed.length);
+  C.CARD_TYPES.filter(t => t !== 'road').forEach(t => ok(signed.filter(c => c.type === t).length >= 1 && later.filter(c => c.type === t).length >= 2, 'later-era type ' + t));
+  C.LABELS.forEach(l => ok(signed.filter(c => c.gate.flagEquals && c.gate.flagEquals.label === l).length >= 2, l + ': ≥2 label cards'));
+  const byId = id => CARDS.find(c => c.id === id);
+  ok(/sing in\s+English/.test(byId('signed_monolith_english').text), '"Marcel should sing in English"');
+  ok(/radio edit/i.test(byId('signed_monolith_radio').text) && /image consultant/i.test(byId('signed_monolith_image').text), 'radio singles + image change');
+  ok(later.some(c => /crowdfund|screen-print|mailer|hockey bag/i.test(c.text)), 'DIY hustle');
+  // The moose concept album starts from the existing mooseMuse flag and leaves mooseAlbum for v0.7.
+  const moose = CARDS.filter(c => c.chain === 'moose');
+  ok(moose.length >= 3 && moose.find(c => c.step === 1).gate.flags.includes('mooseMuse'), 'moose chain starts from mooseMuse');
+  const ends = new Set();
+  moose.forEach(c => effectsOf(c).forEach(({ fx }) => { if (fx.flags && fx.flags.mooseAlbum) ends.add(fx.flags.mooseAlbum); }));
+  ok(['shelved', 'song', 'ready', 'finland'].every(v => ends.has(v)), 'mooseAlbum outcomes: ' + [...ends]);
+  ok(/Finland|Finnish/.test(moose.map(c => c.text).join(' ')), 'the Finland foreshadow');
+  // Evergreen garage cards keep flowing in later eras; early/truck-era cards stay in the garage.
+  const widened = CARDS.filter(c => c.gate.era.includes('garage') && c.gate.era.length > 1);
+  ok(widened.length >= 30, 'widened garage cards: ' + widened.length);
+  ok(CARDS.filter(c => c.chain === 'cape').every(c => c.gate.era.includes('local') && c.gate.era.includes('signed')), 'the Cape Saga can finish in any era');
+  ['lord_abyssus', 'road_dads_truck', 'money_wedding_social', 'jaxon_baba_lunch'].forEach(id => eq(byId(id).gate.era, ['garage'], id + ' stays a garage card'));
+  CARDS.filter(c => c.gate.maxWeek && c.gate.maxWeek <= 16).forEach(c => eq(c.gate.era, ['garage'], c.id + ': early cards stay garage-only'));
+  const talk = strings(later, 'later').filter(([, t]) => KENJI_TALKS.test(t));
+  eq(talk, [], 'Kenji never speaks');
+});
+
+test('lines (v0.5): signed-era pools present, Kenji silent in the studio', () => {
+  const L = K.lines;
+  ['eraLocal', 'offerExpired', 'labelDropped', 'releaseDay', 'chartDebut', 'chartClimb', 'chartDrop', 'recouped'].forEach(k => ok(Array.isArray(L[k]) && L[k].length >= 2, 'lines.' + k));
+  C.LABELS.forEach(l => ok(L.eraSigned[l] && L.eraSigned[l].length >= 2, 'eraSigned.' + l));
+  ['gopherwood', 'monolith'].forEach(l => ok(L.labelOffer[l] && L.labelOffer[l].length >= 2, 'labelOffer.' + l));
+  ok(L.cert.gold.length >= 2 && L.cert.platinum.length >= 2 && L.loonies.nominated.length >= 2 && L.loonies.snubbed.length >= 2, 'cert + loonies');
+  HD_IDS.forEach(id => ok(L.studioWeek[id] && L.studioWeek[id].length >= 3, 'studioWeek.' + id));
+  L.studioWeek.kenji.forEach(s => ok(/^(…|\.|👍|\(.*\))$/u.test(s), 'Kenji said words in the studio: ' + s));
 });
 
 done('content');

@@ -3,8 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.4.0.0 "Drama"** (merged to main 2026-09-29) · 0.3 "Stage", 0.2 "Sequencer", 0.1 "Garage" merged earlier
-- Next: **0.5.0 "Signed"** (handoff B4)
+- Current: **0.5.0.0 "Signed"** (merged to main 2026-09-29) · 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
+- Next: **0.6.0 "Rivals"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -39,6 +39,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
+- 2026-09-29 (for v0.5): career pace **Steady** — Local Heroes ≈ end of year 1 (250 fans), first label interest in
+  year 2, signed by year 2–3, World Stage reachable ≈ year 5–6 (leaves room for bonus years).
 - 2026-09-29 (for v0.4): Garage-era protection ends at **250 fans**; drama level **"now and then"** (≈ one quit every
   1–2 years with decent play, more if underpaid/overworked; always warned first); pay-the-band default **30%** of gig pay.
 - 2026-09-29 (for v0.3): **Kenji drives the van, silently** (every trip, sunglasses, nobody sees him get in or out);
@@ -131,6 +133,20 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   year 1 (30 seeds) avg fund min $100 end $383, 273 fans, 0.4 loans (v0.3-equivalent `NO_DRAMA=1`: 85/404/265/0.2);
   good year 1 fund end $887 (was $1,338: members' cut), fans 557.
 
+## What's in v0.5.0 "Signed"
+- Eras: garage → local (250 fans) → signed (a deal or a DIY album); world threshold defined but off until v0.7
+  (`economy.eras.worldEnabled`). Balance (10y × 20): avg bot Local wk 23, first offer wk 47, signed wk 53, $9.7k at y10;
+  good bot signed wk 30, $23.6k at y10.
+- Labels (`24_sim_labels.js`, API in its header): Gopherwood / Monolith / DIY offers, recoupable advances (60% held as
+  recording budget), demands (cards or a demand sheet), deadlines, drops, fulfilment; studios + producers; sessions
+  replace the planner (studio event = Monday card); drum takes by skill or played (gig studio mode); release wizard
+  (tracklist, lead single, generated/typed title, procedural cover, release week, promo); reviews (5 outlets, recycled
+  patterns penalised), Maple 100, streams, royalties, gold/platinum trophies; Loonies at week 20 (3D red carpet
+  `44_render_carpet.js`, outfit card, envelopes, speech). Theatres (tier 3). Signed-era commission + crew costs.
+- UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
+- Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
+  (`META_ONLY=label,studio,awards,sheet`).
+
 ## APIs (full shapes in `src/02_contracts.js`)
 - `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
   pickLine, contentLines, botWeek, botOffer, postChat(state, who, text, d, tone)`. startWeek/runWeek/endWeek are
@@ -170,6 +186,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 
 ## Back-burner
+- v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
+- v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
+  dressing); producer `weird` unused; full-career save code ≈ 65–70k chars (album reviews); balance 10×20 takes ~39 s.
 - v0.4: late-game avg-bot fund plateaus ~$3.5k (was $11k) because of the members' cut; the good bot never sees drama
   (moods ~85). Both belong to the v0.5 era/economy pass. Pay-the-band money has no other use yet (members' savings).
 - v0.4: fill-ins have generic garage idles/tap lines; the van scene doesn't carry fill-ins.

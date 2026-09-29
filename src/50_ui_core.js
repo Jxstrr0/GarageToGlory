@@ -312,6 +312,7 @@
       });
       if (d.book) chips.push(el('span.chip.up', '📅 Gig booked'));
       if (d.payCut) chips.push(el('span.chip', "Band's cut " + (d.payCut > 0 ? '+' : '−') + Math.round(Math.abs(d.payCut) * 100) + '%'));   // v0.4 drama
+      if (d.production) chips.push(el('span.chip.' + (d.production > 0 ? 'up' : 'down'), 'Production ' + U.signed(d.production)));   // v0.5 studio events
       if (d.repay) chips.push(el('span.chip.up', 'Paid back ' + U.fmtMoney(d.repay)));
       (d.member || []).forEach(function (x) {
         var t = { settle: ['up', ' stays'], quit: ['down', ' quits'], 'return': ['up', ' is back'], later: ['', ' waits'], rival: ['down', ' joins the rival'] }[x.act] || ['', ''];

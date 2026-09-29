@@ -295,7 +295,7 @@ test('migration v3 -> v4: drama defaults for old saves, idempotent; save codes r
   ['quits', 'returns', 'recruits', 'ultimatums'].forEach(k => delete old.stats[k]);
   const m = GG.save.migrate(JSON.parse(JSON.stringify(old)));
   eq([m.v, m.payCut, m.fillIns, m.recruitAd, m.rivalDefectors, m.stats.quits], [GG.contracts.SAVE_SCHEMA, 0.3, {}, null, [], 0]);
-  ok(GG.contracts.SAVE_SCHEMA === 4 && m.members.every(x => x.stage === 0 && x.exit === null && x.want === null), 'member defaults');
+  ok(GG.contracts.SAVE_SCHEMA === 5 && m.members.every(x => x.stage === 0 && x.exit === null && x.want === null), 'member defaults');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
   GG.career.botWeek(m, 'avg');
   const t = open(GG); forceUltimatum(GG, t, 'dana'); GG.career.resolveCard(t, 2); t.fund = 300; GG.drama.postAd(t, 'lead guitar');

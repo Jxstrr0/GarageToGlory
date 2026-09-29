@@ -1,9 +1,14 @@
-// content/cards.js: Monday event cards for Hail Damage's garage era (v0.1).
+// content/cards.js: Monday event cards for Hail Damage: the garage era (v0.1), Local Heroes and Signed (v0.5).
 // Shape: GG.content.cards = [ CARD ] (CONTENT SCHEMAS in 02_contracts.js). Gate keys = GG.contracts.GATE_KEYS,
 // effect keys = GG.contracts.EFFECT_KEYS; tests/content.test.js validates every card against both.
 //
 // Conventions
 //   - Every card is gated to { era:['garage'], genre:['metal'], band:['hail_damage'] } via g(); extra conditions merge in.
+//     v0.5: evergreen garage cards pass era: GL (garage + local) or GLS (+ signed) so later eras keep a full deck;
+//     new cards use L / S / LS. Later-era magnitudes scale up (tests/content.test.js MAG_BY_ERA, by the card's earliest era).
+//   - Label cards gate on the sim flag `label` (flagEquals { label: 'monolith'|'gopherwood'|'diy' }); demand cards write
+//     flags.demandEnglish / demandRadio / demandImage / demandFeature / demandShowcase = 'met' | 'half' | 'refused'.
+//   - v0.5 hook flags: babaManager (Baba manages the band), mooseAlbum (see the Moose Album chain), wraithFeud (awards.js).
 //   - Defaults (sim-applied): weight 1, once true, cooldown 0. Only non-defaults are written out.
 //   - A choice with a `roll` always has a `hint` starting "Gamble:". Its own `outcome` is the set-up line; the
 //     branch outcome (success/fail) says what happened. Show them together: choice.outcome + ' ' + branch.outcome.
@@ -24,6 +29,7 @@
 //                  safe spin / no spin ─────────────────────────────────────────────────────────> end (cape kept)
 //   Helper flags capePlan / capeSpin route the branches (flagEquals) and are cleared (false) when the chain ends.
 (function (GG) {
+  var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LS = ['local', 'signed'], L = ['local'], S = ['signed'];
   function g(extra) {
     var gate = { era: ['garage'], genre: ['metal'], band: ['hail_damage'] };
     for (var k in extra) gate[k] = extra[k];
@@ -54,7 +60,7 @@
     // The Cape Saga (chain 'cape', steps 1–4)
     // ======================================================================
     { id: 'cape_1_pitch', type: 'drama', speaker: 'marcel', title: 'A Cape for Lord Abyssus', chain: 'cape', step: 1,
-      weight: 3, gate: g({ minWeek: 3 }),
+      weight: 3, gate: g({ era: GLS, minWeek: 3 }),
       text: "Marcel slides a costume catalogue across your snare. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
         "'Lord Abyssus cannot scream about the void in a hoodie from the Co-op.'",
       choices: [
@@ -70,7 +76,7 @@
       ] },
 
     { id: 'cape_2_velvet', type: 'drama', speaker: 'marcel', title: 'The Cape Arrives', chain: 'cape', step: 2,
-      gate: g({ flagEquals: { capePlan: 'velvet' } }),
+      gate: g({ era: GLS, flagEquals: { capePlan: 'velvet' } }),
       text: "The box from Winnipeg is here. The Nocturne was cut for a man seven feet tall. Marcel, five-foot-eight, " +
         'looks like a sad bat trapped in a purple tent. He has never been happier.',
       choices: [
@@ -86,7 +92,7 @@
       ] },
 
     { id: 'cape_2_curtain', type: 'drama', speaker: 'mom', title: 'The Curtain Cape', chain: 'cape', step: 2,
-      gate: g({ flagEquals: { capePlan: 'curtain' } }),
+      gate: g({ era: GLS, flagEquals: { capePlan: 'curtain' } }),
       text: "Mom's drapes are now a cape. It still has the curtain hooks, so it jingles when Marcel walks. " +
         "He calls it 'the bells of doom'. Your mom asks if the neighbours can see into the living room now. They can.",
       choices: [
@@ -102,7 +108,7 @@
       ] },
 
     { id: 'cape_3_spin', type: 'drama', speaker: 'marcel', title: 'The Abyssal Spin', chain: 'cape', step: 3,
-      gate: g({ flags: ['cape'] }),
+      gate: g({ era: GLS, flags: ['cape'] }),
       text: "Marcel has been practising a move in the driveway: the Abyssal Spin, a full 360 in the breakdown, cape flaring. " +
         'Tonight is the dress rehearsal. The space heater is on high. Dad asks if anyone has checked the extinguisher since 2009.',
       choices: [
@@ -122,7 +128,7 @@
       ] },
 
     { id: 'cape_4_capes', type: 'fame', speaker: 'gord', title: 'Cape Night', chain: 'cape', step: 4,
-      gate: g({ flagEquals: { capeSpin: 'legend' } }),
+      gate: g({ era: GLS, flagEquals: { capeSpin: 'legend' } }),
       text: 'The spin video did numbers. Fans now come to shows in capes: bath towels, a green stadium blanket, a garbage bag. ' +
         'Gord made his from a tarp. They all want to spin with Lord Abyssus. The fire marshal would like a word.',
       choices: [
@@ -138,7 +144,7 @@
       ] },
 
     { id: 'cape_4_funeral', type: 'drama', speaker: 'marcel', title: 'A Cape Funeral', chain: 'cape', step: 4,
-      gate: g({ flagEquals: { capeSpin: 'burnt' } }),
+      gate: g({ era: GLS, flagEquals: { capeSpin: 'burnt' } }),
       text: "Marcel holds a funeral for the cape in the backyard and reads a eulogy in French. Gord translates it online: " +
         "it's mostly about the lawn, which also got a little scorched. The remains lie in state on Dad's lawnmower.",
       choices: [
@@ -181,7 +187,7 @@
           outcome: "Jaxon's phone rings at 10:01. And 10:02. And 10:03. He leaves at 10:04, head down. The riffs are tighter. Baba is not." }
       ] },
 
-    { id: 'jaxon_grounded', type: 'drama', speaker: 'baba', title: 'Grounded', weight: 2, gate: g({ flags: ['babaMad'] }),
+    { id: 'jaxon_grounded', type: 'drama', speaker: 'baba', title: 'Grounded', weight: 2, gate: g({ era: GLS, flags: ['babaMad'] }),
       text: "Baba has grounded Jaxon for coming home 'smelling like amplifier'. He may still rehearse, she says, " +
         'but only in her basement, next to the chest freezer, where she can hear.',
       choices: [
@@ -224,7 +230,7 @@
           outcome: 'The fills get sneakier. You start hearing them in your sleep. Kenji definitely hears them. He says nothing, obviously.' }
       ] },
 
-    { id: 'marcel_lawn_lyrics', type: 'drama', speaker: 'gord', title: 'Lost in Translation', gate: g({ minFans: 40 }),
+    { id: 'marcel_lawn_lyrics', type: 'drama', speaker: 'gord', title: 'Lost in Translation', gate: g({ era: GL, minFans: 40 }),
       text: "A fan named Gord translated 'Le Tombeau Vert' on the band's fan page. It's about Marcel's lawn. All nine verses. " +
         'Verse six is just fertilizer ratios. Marcel has not left the bathroom in an hour.',
       choices: [
@@ -236,7 +242,7 @@
           outcome: "Marcel posts a 400-word denial in French. Gord translates it. It's about the lawn again." }
       ] },
 
-    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ minFans: 40 }),
+    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ era: GL, minFans: 40 }),
       text: "Dana's solo in 'Le Tombeau Vert' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
         'but somehow she makes it work. Marcel has started bringing a book.',
       choices: [
@@ -253,7 +259,7 @@
               outcome: "You tap out at minute nine. Dana doesn't notice. She finishes at minute twenty-two, alone, triumphant." } } }
       ] },
 
-    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', gate: g({ minWeek: 14 }),
+    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', gate: g({ era: GLS, minWeek: 14 }),
       text: "Kenji hasn't been to rehearsal in two weeks. His bass is still in the corner, with a postcard propped against it " +
         'from Churchill, Manitoba. It is blank. The polar bear on the front looks smug.',
       choices: [
@@ -266,7 +272,7 @@
       ] },
 
     { id: 'drama_setlist_fight', type: 'drama', speaker: 'marcel', title: 'The Opener', once: false, cooldown: 8,
-      gate: g({ minWeek: 8 }),
+      gate: g({ era: GLS, minWeek: 8 }),
       text: "The group chat is on fire: should the set open with 'Ma Pelouse, Mon Tombeau' or Dana's new instrumental? " +
         'Marcel has sent fourteen voice memos. Dana has sent one spreadsheet.',
       choices: [
@@ -279,7 +285,7 @@
       ] },
 
     { id: 'dana_prog_offer', type: 'drama', speaker: 'dana', title: 'A Message from Calgary', once: false, cooldown: 10, weight: 3,
-      gate: g({ moodBelow: { dana: 35 } }),
+      gate: g({ era: GLS, moodBelow: { dana: 35 } }),
       text: "Dana leaves her phone face-up on her amp. On the screen, a message from a Calgary prog band called Seventeen Moons: " +
         "'Our songs are 23 minutes. Our solos have solos.' She pretends not to see you reading it.",
       choices: [
@@ -292,7 +298,7 @@
       ] },
 
     { id: 'marcel_sulk', type: 'drama', speaker: 'marcel', title: 'Lord Abyssus Is in His Car', once: false, cooldown: 10, weight: 3,
-      gate: g({ moodBelow: { marcel: 35 } }),
+      gate: g({ era: GLS, moodBelow: { marcel: 35 } }),
       text: 'Marcel has been sitting in his car in the driveway for three hours, engine off, dome light on, writing in a notebook. ' +
         'Occasionally he laughs darkly.',
       choices: [
@@ -305,7 +311,7 @@
       ] },
 
     { id: 'marcel_first_mow', type: 'drama', speaker: 'marcel', title: 'The First Mow', once: false, cooldown: 12,
-      gate: g({ weekOfYear: [20, 23] }),
+      gate: g({ era: GLS, weekOfYear: [20, 23] }),
       text: 'The first mow of spring. Marcel has declared it a band holiday: everyone in his backyard at dawn, in black, ' +
         'for the Ritual of the First Mow. He has written a liturgy. It is in French.',
       choices: [
@@ -318,7 +324,7 @@
       ] },
 
     { id: 'drama_goose_amp', type: 'drama', speaker: 'dana', title: 'The Goose in the Amp', once: false, cooldown: 9,
-      gate: g({ minWeek: 6 }),
+      gate: g({ era: GLS, minWeek: 6 }),
       text: "Dana's amp has started making a noise she describes as 'a goose in a blender, but sad'. She has diagnosed it " +
         'forty different ways. She will not play through it. She will also not leave the garage.',
       choices: [
@@ -336,7 +342,7 @@
       ] },
 
     { id: 'drama_band_photo', type: 'drama', speaker: 'marcel', title: 'The Band Photo', once: false, cooldown: 10,
-      gate: g({ minWeek: 5 }),
+      gate: g({ era: GLS, minWeek: 5 }),
       text: 'The band needs a new photo. Marcel wants a cemetery at dusk. Dana wants to pose with her gear, all of it. Jaxon ' +
         'has to be home by ten. Kenji has already sent a photo of himself. It is completely black.',
       choices: [
@@ -365,7 +371,7 @@
       ] },
 
     { id: 'money_bottle_drive', type: 'money', speaker: 'jaxon', title: 'Bottle Drive', once: false, cooldown: 6,
-      gate: g({ minWeek: 3 }),
+      gate: g({ era: GL, minWeek: 3 }),
       text: "Jaxon has a fundraising plan: a bottle drive. His sign reads 'HAIL DAMAGE BOTTLE DRIVE: SUPPORT LOCAL METAL'. " +
         'Baba laminated it. There are fourteen streets between here and Circle Drive.',
       choices: [
@@ -377,7 +383,7 @@
           outcome: 'Jaxon sighs and leans the sign in the corner, next to Kenji. They look good together.' }
       ] },
 
-    { id: 'money_bingo_palace', type: 'money', speaker: 'lorraine', title: 'Bingo Palace', gate: g({ minWeek: 4 }),
+    { id: 'money_bingo_palace', type: 'money', speaker: 'lorraine', title: 'Bingo Palace', gate: g({ era: GL, minWeek: 4 }),
       text: "Lorraine from the Bingo Palace needs an intermission act between the early bird and the late game. " +
         "'Under ten minutes, and nobody touches the ball machine.' Or you could just play bingo.",
       choices: [
@@ -393,7 +399,7 @@
       ] },
 
     { id: 'money_farmers_market', type: 'money', speaker: 'jaxon', title: "Farmers' Market", once: false, cooldown: 7,
-      gate: g({ minWeek: 4 }),
+      gate: g({ era: GL, minWeek: 4 }),
       text: "The farmers' market lets anyone busk by the kettle corn on Saturdays. Jaxon has claimed a spot between a honey stand " +
         "and a man who sharpens knives. Baba has sent a cooler of perogies 'to sell, not to eat'.",
       choices: [
@@ -405,7 +411,7 @@
           outcome: 'Marcel screams in French over an acoustic guitar. A toddler screams back. They share a moment. Several parents film it.' }
       ] },
 
-    { id: 'money_merch_misprint', type: 'money', speaker: 'dana', title: 'HALE DAMAGE', gate: g({ minFans: 60 }),
+    { id: 'money_merch_misprint', type: 'money', speaker: 'dana', title: 'HALE DAMAGE', gate: g({ era: GL, minFans: 60 }),
       text: "Your first box of band shirts is back from the print shop in Martensville. All fifty say 'HALE DAMAGE'. " +
         "The shop says 'that's what you wrote'. Dana has the order form. It's what you wrote.",
       choices: [
@@ -418,7 +424,7 @@
       ] },
 
     { id: 'money_garage_sale', type: 'money', speaker: 'mom', title: 'Garage Sale Saturday', once: false, cooldown: 12,
-      gate: g({ minWeek: 2, weekOfYear: [2, 8] }),
+      gate: g({ era: GLS, minWeek: 2, weekOfYear: [2, 8] }),
       text: "Your mom is having a garage sale. In the garage. Your rehearsal space. Saturday. 'Just move the drums a bit, honey. " +
         "Maybe someone will buy the amps.' People are already circling in the alley.",
       choices: [
@@ -431,7 +437,7 @@
       ] },
 
     { id: 'money_moving_day', type: 'money', speaker: 'dale', title: 'Cousin Dale Is Moving', once: false, cooldown: 8,
-      gate: g({ minWeek: 5 }),
+      gate: g({ era: GLS, minWeek: 5 }),
       text: "Cousin Dale is moving again, Sutherland to Stonebridge this time. He'll pay $90 and pizza if the band helps. " +
         "'Easy job,' he says. 'Mostly boxes.' He does not mention the piano.",
       choices: [
@@ -444,7 +450,7 @@
       ] },
 
     { id: 'money_night_school', type: 'money', speaker: 'mom', title: 'Night School', once: false, cooldown: 8, weight: 2,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "There's a Prairie Polytechnic pamphlet on your snare: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
         "from Mom: 'No pressure!! Love Mom.' Under it, a smaller one: 'Some pressure.'",
       choices: [
@@ -456,7 +462,7 @@
           outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on the snare.' }
       ] },
 
-    { id: 'money_dad_spreadsheet', type: 'money', speaker: 'dad', title: 'Where Did It Go', gate: g({ flags: ['parentsLoan'] }),
+    { id: 'money_dad_spreadsheet', type: 'money', speaker: 'dad', title: 'Where Did It Go', gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Dad has printed a spreadsheet and taped it to the garage door: 'HAIL DAMAGE: WHERE DID IT GO'. " +
         "Column C is labelled 'drumsticks??'. There are a lot of drumsticks.",
       choices: [
@@ -501,7 +507,7 @@
       ] },
 
     { id: 'road_block_heater', type: 'road', speaker: 'dad', title: 'Minus Forty', once: false, cooldown: 12,
-      gate: g({ weekOfYear: [11, 16] }),
+      gate: g({ era: GL, weekOfYear: [11, 16] }),
       text: "Minus forty with the windchill. Dad's truck won't start because someone (Marcel) unplugged the block heater " +
         'to run a fog machine. The gear has to be across town by seven.',
       choices: [
@@ -513,7 +519,7 @@
           outcome: "The tow driver takes an hour, charges $90 and asks 'Hail Damage? Like the truck?' Yes. Exactly like the truck." }
       ] },
 
-    { id: 'road_farm_auction', type: 'road', speaker: 'marcel', title: 'Farm Auction', gate: g({ weekOfYear: [5, 9] }),
+    { id: 'road_farm_auction', type: 'road', speaker: 'marcel', title: 'Farm Auction', gate: g({ era: GL, weekOfYear: [5, 9] }),
       text: "A farm auction near Rosthern. Lot 47: a box of 'assorted band stuff' from a 1978 polka group. Lot 48: a riding mower " +
         'Marcel has fallen in love with. The auctioneer talks faster than Dana solos.',
       choices: [
@@ -534,7 +540,7 @@
     // Scene & rivals
     // ======================================================================
     { id: 'scene_fruit_basket', type: 'scene', speaker: 'wraith_frontman', title: 'A Fruit Basket from Winnipeg',
-      gate: g({ minFans: 40 }),
+      gate: g({ era: GL, minFans: 40 }),
       text: "A fruit basket arrives. The card: 'Heard great things, buddy! Keep crushing it! Your pals, Tundra Wraith.' " +
         'Someone drew a pentagram with a smiley face in it. The pineapple is perfect.',
       choices: [
@@ -549,7 +555,7 @@
       ] },
 
     { id: 'scene_legion_doreen', type: 'scene', speaker: 'doreen', title: 'Doreen at the Legion',
-      gate: g({ minWeek: 4, minFans: 25 }),
+      gate: g({ era: GL, minWeek: 4, minFans: 25 }),
       text: "Doreen runs the Legion Hall, Branch 63. She'll give you Saturday night on two conditions: one polka in the set, " +
         "and nobody does 'the throat thing' during the meat draw.",
       choices: [
@@ -566,7 +572,7 @@
           outcome: "Doreen says 'your loss, dear' and books an accordion duo. You hear later that it went off." }
       ] },
 
-    { id: 'scene_st_vlads', type: 'scene', speaker: 'baba', title: 'The Fall Supper', gate: g({ minWeek: 4, weekOfYear: [5, 10] }),
+    { id: 'scene_st_vlads', type: 'scene', speaker: 'baba', title: 'The Fall Supper', gate: g({ era: GL, minWeek: 4, weekOfYear: [5, 10] }),
       text: "Baba says St. Vlad's needs music for the fall supper. 'Nothing Satanic. The French one may sing, but only about " +
         "gardening.' Marcel realizes, quietly, that all of his songs already qualify.",
       choices: [
@@ -576,7 +582,7 @@
           outcome: "Baba says 'okay' in a way that means the opposite. Jaxon's lunch the next day is a single dry cracker." }
       ] },
 
-    { id: 'scene_bonspiel', type: 'scene', speaker: 'barb', title: 'Bonspiel Social', gate: g({ minFans: 60, weekOfYear: [12, 18] }),
+    { id: 'scene_bonspiel', type: 'scene', speaker: 'barb', title: 'Bonspiel Social', gate: g({ era: GL, minFans: 60, weekOfYear: [12, 18] }),
       text: "Barb from the Warman Curling Rink wants a band for the bonspiel social: forty curlers, all named Barb or Dale. " +
         "'Metal's fine,' she says. 'We had a polka band last year. Nearly lost the roof.'",
       choices: [
@@ -594,7 +600,7 @@
       ] },
 
     { id: 'scene_ukrainian_christmas', type: 'scene', speaker: 'baba', title: 'Ukrainian Christmas Eve',
-      gate: g({ weekOfYear: [12, 14] }),
+      gate: g({ era: GL, weekOfYear: [12, 14] }),
       text: "Baba invites the whole band to Ukrainian Christmas Eve on January 6th. Twelve meatless dishes. Kenji arrives with " +
         'a thirteenth. Nobody knows what it is. Baba tries it and nods at him. He nods back.',
       choices: [
@@ -607,7 +613,7 @@
       ] },
 
     { id: 'scene_open_mic', type: 'scene', speaker: 'jaxon', title: 'Open Mic Night', once: false, cooldown: 8,
-      gate: g({ minWeek: 6, minFans: 20 }),
+      gate: g({ era: GL, minWeek: 6, minFans: 20 }),
       text: "Open mic night at The Gopher Hole. The sign-up sheet: a poet, two acoustic guitars and a man who plays spoons. " +
         "The host says you get 'two songs, no pyro and please, no French'.",
       choices: [
@@ -620,7 +626,7 @@
       ] },
 
     { id: 'scene_wraith_visit', type: 'scene', speaker: 'wraith_frontman', title: 'Buddy Drops By',
-      gate: g({ minWeek: 12, minFans: 120 }),
+      gate: g({ era: GL, minWeek: 12, minFans: 120 }),
       text: "Tundra Wraith are in town to play The Gopher Hole. Their frontman drops by the garage in full corpse paint and a " +
         "cardigan. He brought muffins. He asks if you're keeping receipts. 'You guys are gonna go places, buddy!'",
       choices: [
@@ -640,7 +646,7 @@
     // ======================================================================
     // Fame (gated on fans)
     // ======================================================================
-    { id: 'fame_campus_radio', type: 'fame', speaker: 'dj', title: 'Midnight Mayhem', gate: g({ minFans: 40 }),
+    { id: 'fame_campus_radio', type: 'fame', speaker: 'dj', title: 'Midnight Mayhem', gate: g({ era: GL, minFans: 40 }),
       text: "Deb Wiebe hosts 'Midnight Mayhem' on CRUD 90.5 campus radio, Tuesdays at 2 a.m. She wants Hail Damage live in " +
         "studio. The studio is a broom closet in a university basement. She whispers 'brutal' as a compliment.",
       choices: [
@@ -659,7 +665,7 @@
           outcome: "Ninety seconds of silence on air. Listeners call in to say it was 'deeply moving'. Kenji nods at the microphone." }
       ] },
 
-    { id: 'fame_fan_mail', type: 'fame', speaker: 'jaxon', title: 'Our First Fan Letter', gate: g({ minFans: 40 }),
+    { id: 'fame_fan_mail', type: 'fame', speaker: 'jaxon', title: 'Our First Fan Letter', gate: g({ era: GL, minFans: 40 }),
       text: "Your first fan letter, from a kid in Kindersley! It's a drawing: Marcel as a dragon, Dana with eight arms, Jaxon " +
         "riding a lunch box, Kenji as a shadow, and you, a small circle labelled 'DRUMS'.",
       choices: [
@@ -669,7 +675,7 @@
           outcome: "A signed sticker and a set list. The kid's mom posts it online. Kindersley is now Hail Damage country." }
       ] },
 
-    { id: 'fame_star_pheasant', type: 'fame', speaker: 'reporter', title: 'The Star-Pheasant', gate: g({ minFans: 100 }),
+    { id: 'fame_star_pheasant', type: 'fame', speaker: 'reporter', title: 'The Star-Pheasant', gate: g({ era: GL, minFans: 100 }),
       text: "Brent from the Star-Pheasant wants a feature: 'Local Garage Band Makes Noise, Neighbours Confirm.' The photographer " +
         'wants a grain elevator at golden hour. Marcel wants creative control.',
       choices: [
@@ -686,7 +692,7 @@
               outcome: "It runs in French, in the Gardening section, under 'Readers' Tips'. Several people write in to say the tips worked." } } }
       ] },
 
-    { id: 'fame_deci_hell', type: 'fame', speaker: 'zine', title: 'Four Skulls', gate: g({ minFans: 100, minWeek: 10 }),
+    { id: 'fame_deci_hell', type: 'fame', speaker: 'zine', title: 'Four Skulls', gate: g({ era: GL, minFans: 100, minWeek: 10 }),
       text: "Deci-Hell, the metal zine photocopied at the downtown library, reviewed your last show: 'Four skulls out of five. " +
         "Minus one skull for the drummer's facial expressions.' Everyone turns to look at you.",
       choices: [
@@ -701,7 +707,7 @@
     // ======================================================================
     // Weird
     // ======================================================================
-    { id: 'weird_moose', type: 'weird', speaker: 'marcel', title: 'The Moose', gate: g({ minWeek: 6 }),
+    { id: 'weird_moose', type: 'weird', speaker: 'marcel', title: 'The Moose', gate: g({ era: GLS, minWeek: 6 }),
       text: "A moose is standing in the driveway. It's been there since 6 a.m. It seems to like the riff from 'Ma Pelouse, " +
         "Mon Tombeau'. Marcel is convinced it's a sign. Dad is convinced it's after the truck.",
       choices: [
@@ -719,7 +725,7 @@
       ] },
 
     { id: 'weird_hailstorm', type: 'weird', speaker: 'dad', title: 'Another Hailstorm', once: false, cooldown: 12,
-      gate: g({ minWeek: 3, weekOfYear: [2, 5] }),
+      gate: g({ era: GLS, minWeek: 3, weekOfYear: [2, 5] }),
       text: "Another hailstorm, golf-ball size. Everyone turns to look at Dad's truck, parked in the driveway because the garage " +
         'is full of amps. Dad turns to look at you.',
       choices: [
@@ -737,7 +743,7 @@
       ] },
 
     { id: 'weird_neighbour', type: 'weird', speaker: 'neighbour', title: 'Mr. Lindqvist', once: false, cooldown: 7,
-      gate: g({ minWeek: 2 }),
+      gate: g({ era: GLS, minWeek: 2 }),
       text: "Mr. Lindqvist from next door is at the garage door in his housecoat. 'It's 10:40. Some of us start at the potash " +
         "mine at six.' Behind him, a porch light comes on. Then another.",
       choices: [
@@ -754,7 +760,7 @@
               outcome: "He calls the city. A bylaw officer writes a $60 ticket and asks if you're 'the lawn band'. She's heard good things." } } }
       ] },
 
-    { id: 'weird_northern_lights', type: 'weird', speaker: 'kenji', title: 'Northern Lights', gate: g({ weekOfYear: [9, 18] }),
+    { id: 'weird_northern_lights', type: 'weird', speaker: 'kenji', title: 'Northern Lights', gate: g({ era: GL, weekOfYear: [9, 18] }),
       text: 'The northern lights are out, green and pink over the whole city. Kenji is on the garage roof. Nobody saw him ' +
         'climb up. He is lying perfectly still, looking up.',
       choices: [
@@ -767,7 +773,7 @@
       ] },
 
     { id: 'weird_spring_melt', type: 'weird', speaker: 'dana', title: 'Spring Melt', once: false, cooldown: 12,
-      gate: g({ weekOfYear: [19, 22] }),
+      gate: g({ era: GLS, weekOfYear: [19, 22] }),
       text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. Dana's pedalboard is floating. " +
         'She is standing on an amp, holding her guitar over her head like a newborn.',
       choices: [
@@ -789,7 +795,7 @@
     // fund; paying the whole debt clears the flag and the guilt stops.
     // ======================================================================
     { id: 'guilt_fridge_calendar', type: 'money', speaker: 'mom', title: 'The Fridge Calendar', once: false, cooldown: 8,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Mom has written 'BAND LOAN' on the fridge calendar every Sunday, in red, with a small heart. The heart is doing a lot of work.",
       choices: [
         { label: 'Pay her back $100', effects: { repay: 100, chemistry: 2 },
@@ -800,7 +806,7 @@
           outcome: "Mom writes 'NEXT MONTH' on next month. In red. With no heart." }
       ] },
     { id: 'guilt_accountant', type: 'money', speaker: 'mom', title: 'Trevor the Accountant', once: false, cooldown: 10,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
         'Mom has invited Trevor for supper. Trevor has brought a pamphlet.',
       choices: [
@@ -812,7 +818,7 @@
             fail: { effects: { burnout: 6 }, outcome: "Trevor wins. He had lessons. Mom says 'see?' and nothing else all evening." } } }
       ] },
     { id: 'guilt_dad_invoice', type: 'money', speaker: 'dad', title: 'An Invoice', once: false, cooldown: 10,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Dad has typed up an invoice: 'One (1) loan, plus garage rental, plus hydro for amplifiers.' Under 'terms' he wrote 'whenever, bud.' " +
         "He's sliding it across the workbench very slowly.",
       choices: [
@@ -824,7 +830,7 @@
           outcome: "Marcel calls it 'the most metal document in Saskatoon' and hangs it over the kit. Dad is secretly delighted." }
       ] },
     { id: 'guilt_aunt_irene', type: 'money', speaker: 'mom', title: 'Aunt Irene Calls', once: false, cooldown: 9,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Aunt Irene from Yorkton is on speakerphone. 'Your mother tells me you owe her money for the little band.' Mom is standing right there. Mom did tell her.",
       choices: [
         { label: 'Pay Mom $50, loudly', effects: { repay: 50, chemistry: 2 },
@@ -835,7 +841,7 @@
           outcome: "Jaxon talks to Irene for forty minutes about Baba's perogy dough. Irene forgets why she called." }
       ] },
     { id: 'guilt_potash_mine', type: 'money', speaker: 'dad', title: 'The Mine Is Hiring', once: false, cooldown: 10,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: 'Over supper, Dad mentions the potash mine is hiring. He mentions Cousin Dale works there now. He mentions Cousin Dale\'s truck. ' +
         'He passes the potatoes without looking at you.',
       choices: [
@@ -847,13 +853,596 @@
           outcome: "Dad listens to the whole plan. He asks one question: 'And the van?' There is no good answer." }
       ] },
     { id: 'guilt_butter_tarts', type: 'money', speaker: 'mom', title: 'The Bake Sale', once: false, cooldown: 12,
-      gate: g({ flags: ['parentsLoan'] }),
+      gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Mom's church is holding a bake sale 'to support local musicians'. You are the local musicians. She baked forty dozen butter tarts. You are selling them.",
       choices: [
         { label: 'Sell them, repay $100', effects: { repay: 100, burnout: 5 },
           outcome: "You sell 480 butter tarts outside the Co-op. Every cent goes to Mom. Mom calls it 'even'. It is not even. But it's closer." },
         { label: 'Eat the tarts', effects: { burnout: -4, mood: { all: 4 } },
           outcome: 'The band eats eleven dozen butter tarts in one sitting. Marcel weeps. Mom never finds out. Mom always finds out.' }
+      ] },
+    // ======================================================================
+    // v0.5 Local Heroes (era 'local'; a few run on into 'signed')
+    // ======================================================================
+    { id: 'local_recognized', type: 'fame', speaker: 'jaxon', title: 'Aren\'t You...?', once: false, cooldown: 9,
+      gate: g({ era: LS }),
+      text: "At the Co-op gas bar, a kid in a homemade Hail Damage shirt stops dead. 'You're RIP!' Jaxon is pumping gas into Baba's " +
+        "car in slippers, holding a bag of perogies. The kid's mom is filming.",
+      choices: [
+        { label: 'Sign his arm', effects: { fans: 25, mood: { jaxon: 6 } },
+          outcome: "Jaxon signs 'RIP' in marker. The kid's mom asks if it washes off. Jaxon says 'it's metal, ma'am'. It washes off. The video doesn't." },
+        { label: 'Give him a pick', effects: { fans: 15, buzz: 4 },
+          outcome: "Jaxon hands over his lucky pick. The kid holds it like a holy relic. Jaxon plays the whole weekend with a butter knife." },
+        { label: "Say you're his cousin", effects: { mood: { jaxon: -4 }, chemistry: 3 },
+          outcome: "'I'm his cousin. Rip's cousin. Pip.' The kid is devastated, then delighted. Now there's a rumour about a sixth member called Pip." }
+      ] },
+    { id: 'local_goal_song', type: 'fame', speaker: 'reporter', title: 'The Goal Song', gate: g({ era: L, minFans: 300 }),
+      text: 'The Saskatoon Blizzard, the junior hockey team, want the riff from "Ma Pelouse, Mon Tombeau" as their goal song. ' +
+        "Brent from the Star-Pheasant is covering it. Four thousand people will hear it every time a seventeen-year-old scores.",
+      choices: [
+        { label: 'Free, for the city', effects: { fans: 60, buzz: 10 },
+          outcome: 'The Blizzard score four times on opening night. Four thousand people chant a song about a lawn. Marcel has to leave the arena to cry.' },
+        { label: 'Charge them $300', effects: { fund: 300, buzz: 5 },
+          outcome: "The team pays in cash and a signed stick. Dad frames the stick. Dad does not frame your gold records, later. Just the stick." },
+        { label: 'Marcel sings it live', hint: 'Gamble: centre ice, in a cape',
+          outcome: 'Marcel walks onto the ice in his cape on opening night.',
+          roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+            success: { effects: { fans: 80, buzz: 12 }, outcome: 'He hits the scream, slides twelve metres on one boot, and ends in a perfect kneel at the blue line. Sports highlight of the week.' },
+            fail: { effects: { buzz: 4, burnout: 6, mood: { marcel: -5 } }, outcome: 'He slips on the first note and delivers the whole song lying on the ice. The ice resurfacer waits. The crowd is supportive, mostly.' } } }
+      ] },
+    { id: 'local_copycats', type: 'scene', speaker: 'marcel', title: 'Hail Damage Jr.', gate: g({ era: LS, minFans: 350 }),
+      text: 'There is a band of fifteen-year-olds in Warman called Hail Damage Jr. They wear bath-towel capes. Their singer screams ' +
+        'in French he learned from a cereal box. Their drummer does your drum face. Marcel is equal parts flattered and threatened.',
+      choices: [
+        { label: 'Mentor them', effects: { chemistry: 5, fans: 30, burnout: 4 },
+          outcome: "You teach their drummer a proper blast beat. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
+        { label: 'Book them as your opener', effects: { fans: 45, buzz: 6, mood: { marcel: -4 } },
+          outcome: "They are good. They are too good. They do the Abyssal Spin better than Marcel. He watches from side stage, arms folded, cape very still." },
+        { label: 'Dad writes them a letter', effects: { buzz: -4, mood: { marcel: 5 } },
+          outcome: "Dad writes a stern cease-and-desist on letterhead he had printed for this. Their moms write back. Nobody wins. Hail Damage Jr. become Hail Damage II." }
+      ] },
+    { id: 'local_gord_wedding', type: 'money', speaker: 'gord', title: "Gord's Wedding", gate: g({ era: LS, minFans: 300 }),
+      text: "Gord, your first superfan, is getting married at the Ukrainian hall in Saskatoon. First dance: 'Ma Pelouse, Mon Tombeau'. " +
+        "The bride has agreed. The bride's grandmother has not been told.",
+      choices: [
+        { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
+          outcome: 'Gord and his bride slow-dance to a blast beat. The grandmother is first on the floor for the breakdown. It is the best wedding in Saskatchewan history.' },
+        { label: 'Play the whole reception', effects: { fund: 350, burnout: 8, fans: 20 },
+          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji bass solo during the cake. $350 and a garbage bag of perogies.' },
+        { label: 'Record them a video', effects: { buzz: 5, mood: { marcel: 4 } },
+          outcome: "Marcel records a toast in French from the garage. Gord translates it at the reception. It is, somehow, about the groom's lawn." }
+      ] },
+    { id: 'local_pheasant_cover', type: 'fame', speaker: 'reporter', title: 'Front of the Arts Section', gate: g({ era: L, minFans: 400 }),
+      text: "Brent wants Hail Damage on the front of the Star-Pheasant arts section: 'LOCAL HEROES'. The photographer wants you on the " +
+        "Traffic Bridge at dawn, at minus thirty, 'looking heroic'. Marcel has already chosen a wind direction.",
+      choices: [
+        { label: 'Dawn on the bridge', effects: { fans: 50, buzz: 10, burnout: 6 },
+          outcome: "Frozen solid, heroic, magnificent. Marcel's cape freezes mid-flutter and stays that way for the whole shoot. Best photo you'll ever have." },
+        { label: 'In the garage, as it is', effects: { fans: 35, chemistry: 5 },
+          outcome: "The photo shows the garage, the goose-amp, Mom's recipe cards, the mower. People say it looks 'real'. Mom says it looks 'untidy'." },
+        { label: 'Let Kenji art-direct', effects: { buzz: 12, mood: { kenji: 5 } },
+          outcome: "Kenji positions everyone without a word. The band in a line, backs to the camera, him facing it. It becomes the band's most famous photo." }
+      ] },
+    { id: 'local_gopherwood_scout', type: 'scene', speaker: 'marcel', title: 'The Man in the Feed Cap', gate: g({ era: L, minFans: 350 }),
+      text: 'A man in a feed-store cap has been at the back of your last three shows, writing in a notebook with a carpenter pencil. ' +
+        'He buys one of each shirt. Marcel thinks he is a spy. Dana thinks he is a tax man. His van has a gopher painted on it.',
+      choices: [
+        { label: 'Go say hello', effects: { buzz: 8, chemistry: 3 },
+          outcome: "'Wendell. Gopherwood Records. Humboldt.' He shakes every hand, including Kenji's, which nobody has done before. He says he'll 'be in touch'." },
+        { label: 'Play hard to get', effects: { buzz: 5, mood: { marcel: 4 } },
+          outcome: "Marcel sweeps past him without a glance. Wendell writes something in the notebook. Later you learn it says 'good cape'." },
+        { label: 'Give him a demo tape', effects: { buzz: 6, fans: 15 },
+          outcome: 'You hand over a cassette recorded in the garage. He listens to it in his van in the parking lot. Twice. With the windows down, at minus twenty.' }
+      ] },
+    { id: 'local_screenprint', type: 'money', speaker: 'dana', title: 'Screen-Print Saturday', once: false, cooldown: 10,
+      gate: g({ era: LS }),
+      text: "Dana has built a screen-printing station in the garage. She has opinions about mesh count. The ink is drying on Dad's " +
+        "workbench and, briefly, on Dad. A hundred blank shirts wait. The design is Marcel's face as a thundercloud.",
+      choices: [
+        { label: 'Print a hundred', effects: { fund: 180, burnout: 6 },
+          outcome: 'A hundred shirts, ninety-four sellable, six that say HAIL DAMGE. You sell those as rare variants. $180.' },
+        { label: 'Limited run of twenty', hint: 'Gamble: collectors, or leftovers',
+          outcome: 'Twenty numbered shirts, signed by everyone. Kenji signs with a small drawing of a bird.',
+          roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+            success: { effects: { fund: 260, buzz: 6 }, outcome: 'They sell out in an hour. Number one goes for $60 online. Kenji\'s bird becomes a logo.' },
+            fail: { effects: { fund: 40, mood: { dana: -4 } }, outcome: "Twelve sell. The other eight become band pyjamas. Dana says limited runs are 'an art, not a science'. It's neither." } } },
+        { label: 'Let Mom run the table', effects: { fund: 120, chemistry: 3, chat: { who: 'mom', text: 'Sold 30 shirts at church! Told them it was gospel. Is it gospel?' } },
+          outcome: 'Mom sells shirts at church, the Co-op and her book club. $120. The book club is now technically your street team.' }
+      ] },
+    { id: 'local_crowdfund', type: 'money', speaker: 'marcel', title: 'The Crowdfund', gate: g({ era: L, minFans: 300 }),
+      text: 'Marcel has launched a crowdfunding page for the EP. Reward tiers: $5, a thank-you. $50, Marcel reads a poem about your ' +
+        "lawn. $500, Kenji stares at you for one full minute. You did not approve any of this. It's live.",
+      choices: [
+        { label: 'Let it ride', hint: 'Gamble: the internet is fickle',
+          outcome: 'You share the link everywhere, including the Legion newsletter.',
+          roll: { chance: 0.5, stat: 'buzz', statScale: 0.006,
+            success: { effects: { fund: 400, fans: 30 }, outcome: 'Funded in three days. Two people buy the Kenji tier. Kenji delivers both in person, silently. Both write glowing reviews.' },
+            fail: { effects: { fund: 90, mood: { marcel: -6 } }, outcome: "$90, mostly from Mom, Baba and a man in Kindersley who wants the lawn poem. Marcel writes him nine verses." } } },
+        { label: 'Take the Kenji tier down', effects: { fund: 150, mood: { kenji: 5 } },
+          outcome: 'Kenji seems relieved. The rest raises $150. The top tier is now "Dana explains her pedalboard", and nobody buys it.' },
+        { label: 'Shut it down', effects: { chemistry: 3, mood: { marcel: -6 } },
+          outcome: 'Marcel refunds all eleven backers by hand, with a letter each. They are in French. Nine backers frame them.' }
+      ] },
+    { id: 'local_baba_manager', type: 'drama', speaker: 'baba', title: 'Baba Takes Calls', gate: g({ era: LS, minWeek: 20 }),
+      text: "Baba has started answering the band's email. In two weeks she has booked three gigs, cancelled two, negotiated a " +
+        "rider of cabbage rolls, and told a promoter in Yorkton to 'eat more'. She would like ten percent.",
+      choices: [
+        { label: 'Make it official', effects: { fund: 150, mood: { jaxon: 6 }, flags: { babaManager: true } },
+          outcome: "Baba has business cards printed: 'MANAGEMENT'. Promoters are terrified of her. Your guarantees go up. So does Jaxon's curfew." },
+        { label: 'Thank her, gently decline', effects: { mood: { jaxon: -4 }, chemistry: 3 },
+          outcome: "Baba accepts with dignity, then sends one last email to the Yorkton promoter: 'Eat more.' He does. He books you again." },
+        { label: 'Only the church halls', effects: { fans: 25, mood: { jaxon: 3 } },
+          outcome: 'Baba handles every Ukrainian hall in the province. You play four fall suppers. Every one sells out. Every one has a polka.' }
+      ] },
+    { id: 'local_marcel_boss', type: 'drama', speaker: 'marcel', title: 'Prairie Mutual Calls', gate: g({ era: LS, minFans: 300 }),
+      text: "Marcel's boss at Prairie Mutual Insurance saw him on the news, in a cape. He isn't angry. He wants Lord Abyssus in a hail " +
+        "insurance commercial: 'Is your roof ready for the ABYSS?' Marcel is staring at the wall.",
+      choices: [
+        { label: 'Do the commercial', effects: { fund: 300, buzz: 8, mood: { marcel: -6 } },
+          outcome: "It airs during the hockey. Marcel screams 'THE ABYSS!' at a dented roof. Sales go up nineteen percent. He's employee of the month. He's mortified." },
+        { label: 'Lord Abyssus is not for sale', effects: { mood: { marcel: 8 }, chemistry: 3 },
+          outcome: "Marcel says no with such dignity that his boss apologises. Then asks if Dana would do it. Dana would. Dana does. It's all about hail specs." },
+        { label: 'Write them a jingle instead', hint: 'Gamble: a hit, or an insurance jingle',
+          outcome: 'The band writes a thirty-second jingle in 7/8 at Dana\'s insistence.',
+          roll: { chance: 0.5,
+            success: { effects: { fund: 350, fans: 40 }, outcome: 'It gets stuck in the entire province\'s head. Kids sing it at recess. $350 and a lifetime of people humming it at you.' },
+            fail: { effects: { fund: 80, burnout: 4 }, outcome: 'The ad agency takes out the 7/8, the guitars and the words. It is now a man whistling. $80. You can hear Kenji in there, faintly.' } } }
+      ] },
+    { id: 'local_dana_endorsement', type: 'drama', speaker: 'dana', title: 'The Endorsement', gate: g({ era: LS, minFans: 400 }),
+      text: "A letter for Dana from Tonnerre Amplification of Laval, Quebec: an artist endorsement. Fifteen percent off, her name " +
+        "on their website and a signed photo of the CEO. Dana has read it forty times. She has questions about the transformers.",
+      choices: [
+        { label: 'Sign it', effects: { mood: { dana: 10 }, skill: { dana: 1 } },
+          outcome: 'Dana is on the website between a jazz bassist and a man who plays amplified accordion. She has never been happier.' },
+        { label: 'Negotiate harder', hint: 'Gamble: Dana vs a French amp company',
+          outcome: 'Dana sends them eleven pages of counter-proposals.',
+          roll: { chance: 0.45,
+            success: { effects: { mood: { dana: 12 }, fund: 200 }, outcome: 'They send a free head, a $200 credit and a note: "Please stop emailing us." Dana frames the note.' },
+            fail: { effects: { mood: { dana: -6 } }, outcome: 'They withdraw the offer and sign a sixteen-year-old from Trois-Rivières. Dana listens to him. Dana grudgingly respects him.' } } },
+        { label: 'Loyal to Gwendolyn', effects: { mood: { dana: 4 }, chemistry: 4 },
+          outcome: 'Dana declines, out of loyalty to her own amp. She writes it a letter too. She reads it to the amp. Everyone pretends not to hear.' }
+      ] },
+    { id: 'local_tundra_split', type: 'scene', speaker: 'wraith_frontman', title: 'A Split Seven-Inch', gate: g({ era: L, minFans: 400 }),
+      text: "Tundra Wraith's frontman calls: 'Buddy! Split seven-inch. One side you, one side us. We'll handle the invoicing, the " +
+        "pressing plant and the GST. It'll be great for both of us! Mostly us! Kidding! Mostly!'",
+      choices: [
+        { label: 'Yes, buddy', effects: { fans: 50, buzz: 8, mood: { marcel: -4 } },
+          outcome: 'It sells out in both cities. Their side is exactly two seconds longer than yours. Marcel has timed it. Marcel will not let it go.' },
+        { label: 'Only if we get side A', hint: 'Gamble: accountants love to negotiate',
+          outcome: 'You ask for side A. He says "ooh, buddy" and puts you on hold.',
+          roll: { chance: 0.5,
+            success: { effects: { fans: 60, buzz: 10 }, outcome: "Side A! He even sends a fruit basket to celebrate losing. You are almost sure he's happy for you. Almost." },
+            fail: { effects: { buzz: 4, chemistry: -3 }, outcome: "He agrees to side A, then prints 'SIDE A' on both sides. Technically nobody lied. Technically." } } },
+        { label: 'No thanks, buddy', effects: { mood: { marcel: 5 }, chemistry: 3 },
+          outcome: "'Totally understand, buddy!' A fruit basket arrives the next day anyway. The card says 'No hard feelings!' The pears are very hard." }
+      ] },
+    { id: 'local_kenji_maestro', type: 'weird', speaker: 'kenji', title: 'Maestro', gate: g({ era: LS, minFans: 300 }),
+      text: "After a show in Prince Albert, an old man in a long coat walks up to Kenji, bows deeply and says 'Maestro.' Kenji bows " +
+        "back. The man leaves. Kenji packs his bass as if nothing happened. Everyone else is having a small crisis.",
+      choices: [
+        { label: 'Follow the old man', hint: 'Gamble: answers, or a parking lot',
+          outcome: 'Jaxon and Dana run after him into the parking lot.',
+          roll: { chance: 0.4,
+            success: { effects: { buzz: 6, mood: { all: 4 } }, outcome: 'He gets into a black car and hands them a concert programme from 1998. Kenji is on the cover, age nine, holding a cello.' },
+            fail: { effects: { burnout: 4 }, outcome: 'He is gone. The parking lot is empty. Snow is falling. There are no footprints. Jaxon will not sleep tonight.' } } },
+        { label: 'Ask Kenji about it', effects: { mood: { kenji: -3 }, chemistry: 3 },
+          outcome: "Kenji takes the setlist, writes '…' on the back, and hands it to you. It's the most he has ever told anyone." },
+        { label: 'Let the mystery be', effects: { mood: { kenji: 6 }, chemistry: 4 },
+          outcome: "Nobody mentions it again. Kenji buys everyone fries on the drive home. He has never bought fries before. It's a thank-you." }
+      ] },
+    { id: 'local_house_party', type: 'scene', speaker: 'jaxon', title: 'The Basement Show', once: false, cooldown: 8, gate: g({ era: L }),
+      text: "Some university kids want Hail Damage in their basement on Saturday. Ceiling height: one metre ninety. Marcel is one " +
+        "metre seventy-two plus a cape. Admission is a can of food for the food bank. There will be at least ninety people.",
+      choices: [
+        { label: 'Play it, loud', effects: { fans: 40, burnout: 8 },
+          outcome: 'Ninety people, one furnace, zero oxygen. The ceiling tiles fall in time. The food bank gets 212 cans. Legendary.' },
+        { label: 'Pass the hat too', effects: { fund: 120, fans: 20, burnout: 5 },
+          outcome: 'The hat comes back with $120, three bus tickets, a phone number and a single perogy. The food bank still gets their cans.' },
+        { label: 'Send Dana, solo', effects: { fans: 15, mood: { dana: 8 } },
+          outcome: 'Dana plays a ninety-minute unaccompanied solo in a basement. Half the room leaves. The other half form a prog band that night.' }
+      ] },
+    { id: 'local_listening_party', type: 'scene', speaker: 'mom', title: 'The Listening Party', gate: g({ era: L, minFans: 350 }),
+      text: "Mom wants to host a listening party for your recordings in the living room. She has made a cheese ball shaped like " +
+        "a skull. She has invited the whole cul-de-sac, the church choir and Mr. Lindqvist, who is bringing his own earplugs.",
+      choices: [
+        { label: 'Play it all, full volume', effects: { fans: 30, buzz: 6, burnout: 4 },
+          outcome: "The choir stays for all of it. Mr. Lindqvist takes out one earplug for the ballad. He'll deny it. Mom sells eleven CDs." },
+        { label: 'Play the quiet songs only', effects: { fans: 20, chemistry: 4, mood: { marcel: -3 } },
+          outcome: "It's lovely. Marcel says it's 'a lie'. The neighbours say 'what nice kids'. You have never been called that before." },
+        { label: 'Let Mom DJ', effects: { mood: { all: 5 }, fans: 15, chat: { who: 'mom', text: 'I played the loud one twice. Linda cried. Good cry!' } },
+          outcome: 'Mom plays the songs in her preferred order, then some polkas, then the songs again. Everyone has a great time. The cheese ball is a hit.' }
+      ] },
+
+    // ======================================================================
+    // v0.5 Signed: label drama (sim flag `label` = labelId; Monolith / Gopherwood / DIY)
+    //   Demand cards write flags.demand<Kind> = 'met' | 'half' | 'refused' (the sim may settle DEAL.demands from them).
+    // ======================================================================
+    { id: 'signed_monolith_english', type: 'drama', speaker: 'marcel', title: 'Notes from Monolith', weight: 2,
+      gate: g({ era: S, flagEquals: { label: 'monolith' } }),
+      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the lawn thing. Love it. Marcel should sing in " +
+        "English.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
+      choices: [
+        { label: 'Tell Monolith "non"', effects: { mood: { marcel: 14 }, buzz: 6, fund: -400, flags: { demandEnglish: 'refused' } },
+          outcome: "Marcel writes the reply himself, in French, on the back of a hail claim form. Monolith trims the promo budget by $400. Marcel frames the letter." },
+        { label: 'One song in English', effects: { fans: 150, mood: { marcel: -8 }, flags: { demandEnglish: 'half' } },
+          outcome: "Marcel translates one song. In English it is still, very clearly, about his lawn. Radio plays it anyway. 'Sod of My Fathers' charts." },
+        { label: 'Bilingual! Every other line', hint: 'Gamble: Canadian content, or chaos',
+          outcome: 'Marcel alternates French and English line by line.',
+          roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fans: 250, buzz: 12, flags: { demandEnglish: 'met' } }, outcome: 'Critics call it "the most Canadian record ever made". Monolith calls it "a strategy". Marcel calls it "Tuesday".' },
+            fail: { effects: { buzz: -6, mood: { marcel: -6 }, flags: { demandEnglish: 'half' } }, outcome: "He loses track mid-verse and sings a line in a language nobody recognises. Brayden says 'love that'. He does not love that." } } }
+      ] },
+    { id: 'signed_monolith_radio', type: 'drama', speaker: 'dana', title: 'The Radio Edit', weight: 2,
+      gate: g({ era: S, flagEquals: { label: 'monolith' } }),
+      text: "Monolith want a 3:30 radio edit of the lead single. The lead single is 9:40. Six minutes of it is Dana's solo. Dana has " +
+        "locked herself in the van with Gwendolyn the amp and a thermos. She says she has 'enough soup for a siege'.",
+      choices: [
+        { label: 'Cut it to 3:30', effects: { fans: 200, buzz: 6, mood: { dana: -12 }, flags: { demandRadio: 'met' } },
+          outcome: 'Radio plays it every hour. Dana hears it at a gas station, the solo cut to four notes, and has to sit down on a bag of ice.' },
+        { label: 'Release the 9:40 anyway', hint: 'Gamble: a cult hit, or a label memo',
+          outcome: 'You send Monolith the full 9:40 with a note: "This is the edit."',
+          roll: { chance: 0.4,
+            success: { effects: { buzz: 14, fans: 180, mood: { dana: 10 }, flags: { demandRadio: 'met' } }, outcome: 'One campus station plays all of it. Then twenty more. It becomes "the long one" everyone requests. Monolith takes credit.' },
+            fail: { effects: { fund: -600, mood: { dana: 6 }, flags: { demandRadio: 'refused' } }, outcome: 'Monolith sends a memo, a lawyer and an invoice for the remastering. $600. Dana is proud of you anyway.' } } },
+        { label: 'The solo gets its own single', effects: { fans: 120, mood: { dana: 12 }, flags: { demandRadio: 'half' } },
+          outcome: 'The 3:30 edit goes to radio. The six-minute solo comes out as a B-side called "Dana". It outsells the single in Quebec.' }
+      ] },
+    { id: 'signed_monolith_image', type: 'drama', speaker: 'marcel', title: 'The Image Consultant',
+      gate: g({ era: S, flagEquals: { label: 'monolith' } }),
+      text: "Monolith have flown in an image consultant from Toronto named Tiffani, with an i. Her notes: lose the capes, matching " +
+        "denim, 'more smiling from the tall one'. The tall one is Kenji. Kenji has put his sunglasses on over his sunglasses.",
+      choices: [
+        { label: 'Let her try', effects: { fans: 200, mood: { all: -8 }, flags: { demandImage: 'met' } },
+          outcome: 'Matching denim. No capes. The photos test brilliantly. The band looks like a dental office Christmas party. Marcel keeps a cape in his jeans.' },
+        { label: 'The cape stays', effects: { mood: { marcel: 12 }, buzz: 6, flags: { demandImage: 'refused' } },
+          outcome: "Marcel explains the Cape Saga to Tiffani for two hours, with diagrams. She leaves converted. Her report to Monolith is one word: 'CAPES'." },
+        { label: 'Kenji meets her alone', effects: { buzz: 10, mood: { kenji: 6 }, flags: { demandImage: 'half' } },
+          outcome: 'Ten minutes later Tiffani leaves, pale. She resigns that week and opens a pottery studio in Nelson. Monolith drop the matter.' }
+      ] },
+    { id: 'signed_monolith_duet', type: 'fame', speaker: 'marcel', title: 'The Duet',
+      gate: g({ era: S, flagEquals: { label: 'monolith' }, minWeek: 30 }),
+      text: "Monolith want a duet with their pop-country star Kaylee Rae Dufresne 'for reach'. She has a song called 'Tailgate Heart'. " +
+        "Marcel has agreed to meet her at a Regina hotel lobby, in full cape, 'to see if our souls align'.",
+      choices: [
+        { label: 'Do the duet', effects: { fans: 300, buzz: 10, mood: { marcel: -5 }, flags: { demandFeature: 'met' } },
+          outcome: "'Tailgate Heart (Abyssal Version)' is a strange, enormous hit. Tailgate Weekly give it a blue ribbon. Deci-Hell print one word: WHY." },
+        { label: 'Only if she screams', hint: 'Gamble: she might actually do it',
+          outcome: 'Marcel asks Kaylee Rae if she can scream.',
+          roll: { chance: 0.5,
+            success: { effects: { fans: 350, buzz: 16, flags: { demandFeature: 'met' } }, outcome: 'She can. Oh, she can. She out-screams Marcel on the first take. He proposes a second album together. She accepts.' },
+            fail: { effects: { buzz: -4, fund: -300, flags: { demandFeature: 'refused' } }, outcome: 'She tries once, loses her voice for a week and cancels a tour date. Monolith bill you $300 in throat lozenges and "damages".' } } },
+        { label: 'Politely, no', effects: { mood: { marcel: 6 }, chemistry: 4, flags: { demandFeature: 'refused' } },
+          outcome: "Kaylee Rae is relieved. So is Marcel. They get pie in the hotel diner and talk about their mothers. They're friends now. Monolith sulks." }
+      ] },
+    { id: 'signed_gopherwood_showcase', type: 'scene', speaker: 'baba', title: 'The Feed Store Showcase',
+      gate: g({ era: S, flagEquals: { label: 'gopherwood' }, weekOfYear: [11, 14] }),
+      text: "Wendell's Christmas showcase at the feed store in Humboldt: every Gopherwood act, a stage made of pallets, a wood stove, " +
+        "and Wendell's wife Lorna on the merch table. Baba has heard there will be a cabbage roll competition. She is entering.",
+      choices: [
+        { label: 'Headline the showcase', effects: { fans: 120, chemistry: 6, burnout: 6, flags: { demandShowcase: 'met' } },
+          outcome: 'Three hundred people in a feed store, steam rising off their parkas. Lorna sells out of shirts. Baba wins the cabbage rolls. Everyone wins.' },
+        { label: 'Play, then help clean up', effects: { fans: 80, mood: { all: 5 }, flags: { demandShowcase: 'met' } },
+          outcome: 'You sweep the feed store until two a.m. with Wendell. He tells you about every record he has ever put out. There are eleven. He loves all of them.' },
+        { label: 'Skip it this year', effects: { burnout: -6, mood: { jaxon: -4 }, flags: { demandShowcase: 'refused' } },
+          outcome: "Wendell says 'no problem'. Lorna says nothing, which is worse. Baba goes anyway, alone, and wins the cabbage rolls." }
+      ] },
+    { id: 'signed_gopherwood_cheque', type: 'money', speaker: 'dana', title: 'The Second Cheque',
+      gate: g({ era: S, flagEquals: { label: 'gopherwood' } }),
+      text: "The second advance cheque from Gopherwood has arrived, handwritten, with a note from Wendell: 'Might want to deposit " +
+        "Tuesday, not Monday. Or Wednesday. Your pal, W.' Dana has calculated the odds. She has a spreadsheet.",
+      choices: [
+        { label: 'Deposit it Wednesday', effects: { fund: 600, chemistry: 3 },
+          outcome: 'It clears. Wendell calls to thank you "for your patience and for Wednesday". He sounds like he has just sold a combine.' },
+        { label: 'Help at the feed store', effects: { fund: 400, burnout: 6, mood: { all: 4 } },
+          outcome: "The band works the feed store till for a weekend so Wendell can do the books. You sell a lot of chick starter. The cheque clears Monday." },
+        { label: 'Tear it up', effects: { chemistry: 6, buzz: 5, mood: { all: 5 } },
+          outcome: "Wendell cries on the phone. He tells everyone. The story gets around. Three promoters book you because 'that's the band that tore up the cheque'." }
+      ] },
+    { id: 'signed_gopherwood_labelmates', type: 'scene', speaker: 'jaxon', title: 'The Label Barbecue',
+      gate: g({ era: S, flagEquals: { label: 'gopherwood' }, weekOfYear: [1, 6] }),
+      text: 'The Gopherwood label barbecue, behind the feed store. Your labelmates: a polka-ska band from Estevan, a folk duo of retired ' +
+        'dentists, and a teenage harpist who only plays death metal covers. Wendell is flipping burgers in an apron that says LABEL BOSS.',
+      choices: [
+        { label: 'Jam with everyone', effects: { fans: 80, chemistry: 5, skill: { all: 1 } },
+          outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and your blast beat. It goes on a label sampler. It is weirdly the best song on it.' },
+        { label: 'Talk shop with the dentists', effects: { mood: { all: 4 }, burnout: -5 },
+          outcome: "They check everyone's teeth for free. Kenji has perfect teeth. This surprises no one and unsettles everyone." },
+        { label: 'Recruit the harpist', effects: { buzz: 8, mood: { dana: -4 } },
+          outcome: 'The harpist plays on one track of your next record. Pitchspork calls it "a genuine provocation". Dana calls it "a lot of strings".' }
+      ] },
+    { id: 'signed_diy_mailout', type: 'money', speaker: 'mom', title: 'Kitchen Table Distribution',
+      gate: g({ era: S, flagEquals: { label: 'diy' } }),
+      text: "Four hundred online orders. No label, no warehouse. Just Mom's kitchen table, a tape gun and a mountain of mailers. " +
+        "Mom has set up a production line. She's timing everyone. Kenji is fastest. Nobody saw him learn.",
+      choices: [
+        { label: 'Mail them all this week', effects: { fund: 800, burnout: 10 },
+          outcome: 'Four hundred parcels, eleven trips to the post office, one tape-gun injury. The postmaster knows your names now. $800.' },
+        { label: 'Hand-deliver the local ones', effects: { fund: 600, fans: 80, burnout: 6 },
+          outcome: 'Marcel delivers in person, in the cape. One fan faints. Several invite you in for supper. You gain eleven pounds and eighty fans.' },
+        { label: 'Hire Cousin Dale', effects: { fund: 500, mood: { all: 4 } },
+          outcome: "Dale does it all for pizza and a credit on the album: 'Logistics: Dale'. He's never been prouder. Two parcels go to the wrong province." }
+      ] },
+    { id: 'signed_diy_distributor', type: 'money', speaker: 'dana', title: 'The Distributor',
+      gate: g({ era: S, flagEquals: { label: 'diy' } }),
+      text: "A distribution company in Winnipeg wants to put your album in record stores across the country, for thirty percent. " +
+        "Dana has read the contract twice and found a clause about 'territories including the Moon'. They say it's standard.",
+      choices: [
+        { label: 'Sign with them', effects: { fans: 250, fund: -500, buzz: 6 },
+          outcome: 'Your album is in shops from Victoria to St. John\'s. The $500 set-up fee stings. The Moon has not yet ordered any.' },
+        { label: 'Stay in the hockey bag', effects: { fund: 400, burnout: 6 },
+          outcome: 'You keep selling from the van, the merch table and a hockey bag. Every dollar is yours. Every dollar is also a trip to the post office.' },
+        { label: 'Cross out the Moon', hint: 'Gamble: they respect it, or they walk',
+          outcome: 'Dana crosses out the Moon clause and initials it.',
+          roll: { chance: 0.5,
+            success: { effects: { fans: 250, fund: -200, mood: { dana: 8 } }, outcome: 'They respect it. Twenty percent, no Moon, and they waive half the fee. Dana is now their favourite client and their most feared.' },
+            fail: { effects: { mood: { dana: -4 }, burnout: 4 }, outcome: 'They walk. Their next email is addressed to "The Moon People". Dana has it framed.' } } }
+      ] },
+    { id: 'signed_diy_warehouse', type: 'money', speaker: 'dad', title: 'The Car Stays Outside',
+      gate: g({ era: S, flagEquals: { label: 'diy' }, minWeek: 40 }),
+      text: 'The garage is now a rehearsal space, a label office and a warehouse holding two thousand CDs and six hundred shirts. ' +
+        "Dad's truck has been parked outside all winter. Dad would like to park the truck in the garage. Just once. Before he dies.",
+      choices: [
+        { label: 'Rent a storage unit', effects: { fund: -300, mood: { all: 3 }, chemistry: 3 },
+          outcome: "$300 for a storage unit in Warman. Dad parks the truck inside for one glorious night. He sits in it. He doesn't turn it on. He's happy." },
+        { label: 'Fire sale: everything $5', effects: { fund: 600, fans: 100, burnout: 6 },
+          outcome: 'One Saturday, everything five dollars, cash only. The line goes around the block. Dad works the till. He is weirdly good at it.' },
+        { label: 'Stack it higher', effects: { mood: { jaxon: 3 }, burnout: 4 },
+          outcome: 'Jaxon builds a CD tower to the rafters, stable enough to survive a blast beat. Mostly. Dad parks outside and looks at the garage the way a man looks at the sea.' }
+      ] },
+
+    // ======================================================================
+    // v0.5 Signed: fame, family and the band
+    // ======================================================================
+    { id: 'signed_music_video', type: 'fame', speaker: 'marcel', title: 'The Music Video', gate: g({ era: S }),
+      text: 'The music video shoot: a canola field near Rosthern, a fog machine, a borrowed drone, a rented horse that does not want to be ' +
+        "here, and Marcel in the cape on a hay bale. The director is twenty-two and keeps saying 'vibes'.",
+      choices: [
+        { label: 'Marcel rides the horse', hint: 'Gamble: epic, or a very long walk',
+          outcome: 'Marcel mounts the horse. The drone lifts off. The fog rolls.',
+          roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fans: 300, buzz: 14 }, outcome: 'The horse gallops into the fog, cape streaming, perfect sunset. People think it is CGI. It is not. The horse was a pro.' },
+            fail: { effects: { fund: -400, buzz: 6, burnout: 6 }, outcome: 'The horse walks calmly to Saskatoon. Marcel stays on for all of it, stoic. The drone follows. That footage becomes the video. $400 horse fee.' } } },
+        { label: 'Just the band and the fog', effects: { fans: 180, buzz: 8, fund: -200 },
+          outcome: "Classic. Moody. The fog machine sets off a farmer's smoke alarm three kilometres away, which you didn't know was possible. $200." },
+        { label: 'Let the director do "vibes"', effects: { buzz: 10, mood: { all: -4 } },
+          outcome: "The video is ninety seconds of Kenji eating a peach in slow motion. It's his idea of the band's vibe. Pitchspork declares it art." }
+      ] },
+    { id: 'signed_morning_tv', type: 'fame', speaker: 'jaxon', title: 'Good Morning Saskatchewan', gate: g({ era: S }),
+      text: "You're booked on Good Morning Saskatchewan, live at 7 a.m., between a cooking segment and the weather. The host has " +
+        "never heard metal. The kitchen set is right behind you. There are eggs everywhere. Baba is watching.",
+      choices: [
+        { label: 'Play the loud one', hint: 'Gamble: morning TV is not ready',
+          outcome: 'You count in the heaviest song you have.',
+          roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+            success: { effects: { fans: 250, buzz: 12 }, outcome: 'The host headbangs. The weatherman headbangs. The eggs on the kitchen set headbang. It is the most-watched clip in the show\'s history.' },
+            fail: { effects: { buzz: 4, mood: { jaxon: -5 } }, outcome: 'The host covers her ears live on air. The weatherman says "and speaking of storms". Baba phones the station to complain about you, to you.' } } },
+        { label: 'Play it acoustic', effects: { fans: 150, mood: { dana: -4 } },
+          outcome: "Acoustic, at dawn, Marcel sings softly about his lawn. Retirees across the province weep into their porridge. Dana hates every second." },
+        { label: 'Marcel does the cooking', effects: { buzz: 10, fans: 100, mood: { marcel: 6 } },
+          outcome: "Marcel hijacks the cooking segment and makes a perfect omelette in his cape, narrating in French. The station offers him a show. He considers it." }
+      ] },
+    { id: 'signed_royalty_statement', type: 'money', speaker: 'dana', title: 'The Royalty Statement', gate: g({ era: S, minWeek: 30 }),
+      text: "Your first royalty statement: forty-three pages, a lot of recoupment, and a final line that reads $3.12. Most of the " +
+        "streams are from Finland. Nobody in the band has ever been to Finland. Marcel has gone very quiet.",
+      choices: [
+        { label: 'Frame the $3.12', effects: { chemistry: 5, mood: { all: 4 } },
+          outcome: 'It goes on the trophy wall next to the Deci-Hell review. Dad adds a sticky note: "A start." Mom adds one: "Proud!"' },
+        { label: 'Hire an accountant', effects: { fund: 500, mood: { marcel: -3 } },
+          outcome: "The only accountant who returns your call is Tundra Wraith's frontman. He finds you $500 in unpaid royalties. He charges nothing. 'Buddy!'" },
+        { label: 'Ask Marcel about Finland', effects: { buzz: 6, mood: { marcel: 6 } },
+          outcome: "Marcel confesses he posted a demo under a fake name, sung from the point of view of a moose. Finland loves it. 'The moose,' he whispers, 'is a Finnish sound.'" }
+      ] },
+    { id: 'signed_parents_proud', type: 'drama', speaker: 'dad', title: 'Eleven Copies', gate: g({ era: S }),
+      text: "Mom has bought eleven copies of the album, one for each relative and four 'for emergencies'. Dad has read the credits " +
+        "twice. He has a question. The question is about your pension plan. He's printed a brochure.",
+      choices: [
+        { label: 'Take the brochure', effects: { fund: -200, mood: { all: 3 }, chemistry: 4 },
+          outcome: 'You open a small retirement savings plan with $200. Dad shakes your hand like you just won the provincial bonspiel. Mom takes a photo.' },
+        { label: 'Play Dad the album', effects: { mood: { all: 5 }, chemistry: 5 },
+          outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "the drums were good". He has never said more.' },
+        { label: 'Sign the emergency copies', effects: { fans: 60, buzz: 4 },
+          outcome: 'Mom gives the emergency copies to the dentist, the mail carrier, her hairdresser and Father Mykola. Father Mykola plays it at the church picnic.' }
+      ] },
+    { id: 'signed_marcel_day_job', type: 'drama', speaker: 'marcel', title: 'The Resignation Letter', gate: g({ era: S, minWeek: 36 }),
+      text: 'Marcel has written his resignation letter to Prairie Mutual Insurance. It is eleven pages, in French, and ends with ' +
+        "'I go now to the abyss.' He wants you to read it before he hands it in. He's already wearing the cape.",
+      choices: [
+        { label: 'Hand it in, Lord Abyssus', effects: { mood: { marcel: 16 }, burnout: -8, fund: -300 },
+          outcome: "He hands it in at 9:02. His co-workers give him a standing ovation and a cake shaped like a cape. You cover his rent this month. $300." },
+        { label: 'Keep the day job', effects: { mood: { marcel: -10 }, fund: 300 },
+          outcome: "He files the letter in a shoebox labelled LATER. He sells hail insurance in eyeliner. He's the best agent in the province." },
+        { label: 'Part-time, like Dana', effects: { mood: { marcel: 6 }, burnout: -4, chemistry: 3 },
+          outcome: "He edits it to one page: 'I go now to the abyss, Tuesday to Thursday.' His boss agrees. Hail season will be complicated." }
+      ] },
+    { id: 'signed_dana_signature', type: 'drama', speaker: 'dana', title: 'The Signature Model', gate: g({ era: S, minFans: 3000 }),
+      text: "Tonnerre of Laval want to build a Dana Okafor signature guitar. Dana has sent them sixty pages of specs, including a " +
+        "diagram of the ideal frets and a poem about pickups. They have asked, gently, if she could narrow it down.",
+      choices: [
+        { label: 'Let Dana have everything', effects: { mood: { dana: 14 }, fund: -400, skill: { dana: 2 } },
+          outcome: 'Eight strings, stainless frets, a pickup called "The Hailstorm". It costs $400 extra to prototype. Dana cries when she plays it.' },
+        { label: 'One page of specs', effects: { mood: { dana: -6 }, fund: 600 },
+          outcome: "The guitar is simpler, cheaper and sells well. You get $600. Dana plays one in a shop and says 'fine'. From Dana it means 'betrayal'." },
+        { label: 'Let fans vote on the colour', effects: { fans: 200, buzz: 8, mood: { dana: 3 } },
+          outcome: 'Fans vote for "Hail Grey". It becomes the band\'s colour. Dana secretly wanted Hail Grey. She pretends she wanted purple.' }
+      ] },
+    { id: 'signed_baba_contract', type: 'drama', speaker: 'baba', title: 'Baba Reads the Contract', gate: g({ era: S, flagEquals: { label: 'gopherwood' } }),
+      text: "Baba has read the whole label contract with a magnifying glass and a red pen. She found three typos, a clause she " +
+        "calls 'a crime', and a page about merch rights she wants to discuss with 'the man in charge'. She has her coat on.",
+      choices: [
+        { label: 'Let Baba negotiate', hint: 'Gamble: never bet against Baba',
+          outcome: 'Baba takes the bus to the label office with a roaster of cabbage rolls.',
+          roll: { chance: 0.6,
+            success: { effects: { fund: 800, mood: { jaxon: 8 }, flags: { babaManager: true } }, outcome: "She returns with $800 in back royalties and the label's cabbage roll order for Christmas. The label now calls her 'Mrs. K'." },
+            fail: { effects: { fund: -200, mood: { jaxon: -5 } }, outcome: "The label man refuses to budge. Baba refuses to leave. They both lose. You pay $200 in legal fees and a lot of cabbage rolls." } } },
+        { label: 'Thank her, file it', effects: { mood: { jaxon: 4 }, chemistry: 3 },
+          outcome: 'Baba\'s notes go in a folder marked "BABA\'S NOTES". You read them later. She was right about all three typos and the crime.' },
+        { label: 'Hire her as manager', effects: { fund: -300, buzz: 6, mood: { jaxon: 6 }, flags: { babaManager: true } },
+          outcome: "Ten percent, a desk in the garage and a phone line. Promoters now call before 9 p.m. and ask how she's doing. $300 set-up." }
+      ] },
+    { id: 'signed_tundra_congrats', type: 'scene', speaker: 'wraith_frontman', title: 'Congrats, Buddy!', gate: g({ era: S }),
+      text: 'The fruit basket has evolved. It is now a fruit bouquet, a metre tall, with a pineapple carved into a skull on top. The ' +
+        "card reads: 'CONGRATS ON THE DEAL, BUDDY!! Can't wait to see you at the Loonies! Your pals, Tundra Wraith.'",
+      choices: [
+        { label: 'Send a thank-you card', effects: { chemistry: 3, mood: { all: 3 } },
+          outcome: "They send a card thanking you for the card. You send one back. It's March before anybody stops. The post office lady knows everything." },
+        { label: 'Send a bigger basket back', effects: { fund: -150, buzz: 6 },
+          outcome: 'You send a basket with a watermelon carved into a moose. $150. They post a photo of it, captioned "our rivals are the BEST". You lost somehow.' },
+        { label: 'Eat the skull', effects: { mood: { all: 6 }, burnout: -5 },
+          outcome: 'The band eats a pineapple skull in total silence, looking at each other. It is the most metal thing you have done all year.' }
+      ] },
+    { id: 'signed_kenji_sunglasses', type: 'weird', speaker: 'kenji', title: 'The Sunglasses', gate: g({ era: S }),
+      text: "At the album photo shoot, the photographer asks Kenji to take off his sunglasses 'for just one shot'. The studio goes " +
+        "silent. Dana steps back. Marcel crosses himself. Kenji's hand moves slowly toward the frames.",
+      choices: [
+        { label: 'Let it happen', hint: 'Gamble: nobody knows what is under there',
+          outcome: 'Kenji removes the sunglasses.',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 14, fans: 200 }, outcome: 'There is a second, smaller pair of sunglasses underneath. The photographer laughs until she cries. It becomes the album cover.' },
+            fail: { effects: { mood: { kenji: -8 }, buzz: 6 }, outcome: 'Nobody will ever say what they saw. The photographer changes careers. The photos are never developed. Kenji puts them back on.' } } },
+        { label: 'Step in front of him', effects: { mood: { kenji: 10 }, chemistry: 6 },
+          outcome: "'Not today.' Kenji rests a hand on your shoulder for one second. It's the most affection he has ever shown. You'll think about it for years." },
+        { label: 'Everyone wears sunglasses', effects: { buzz: 8, chemistry: 4 },
+          outcome: 'The whole band in sunglasses, indoors, at night. Marcel adds a monocle over his. It becomes the look. Fans copy it at every show.' }
+      ] },
+    { id: 'signed_radio_callin', type: 'fame', speaker: 'dj', title: 'Caller, You\'re On the Air', once: false, cooldown: 8, gate: g({ era: S }),
+      text: "Deb Wiebe has moved from campus radio to the big station's late show and has you in as guests. The phone lines light up. " +
+        "Line one wants to know what the lyrics mean. Line two is your mom. Line three is breathing heavily. Probably Gord.",
+      choices: [
+        { label: 'Explain the lyrics', effects: { fans: 120, mood: { marcel: 6 } },
+          outcome: 'Marcel explains every lyric on the album. It takes forty minutes. They are all about the lawn. The callers are moved. One caller re-sods.' },
+        { label: 'Take Mom\'s call', effects: { chemistry: 5, fans: 60, mood: { all: 3 } },
+          outcome: "Mom tells the whole province you used to eat crayons. Then she dedicates the next song to 'my boys and Dana'. Ratings spike." },
+        { label: 'Play live in the booth', effects: { buzz: 10, burnout: 5, fans: 90 },
+          outcome: "You play the loud one in a booth built for a man and a microphone. Deb whispers 'brutal' like a lullaby. The station's transmitter trips." }
+      ] },
+    { id: 'signed_fan_tattoo', type: 'fame', speaker: 'gord', title: 'The Tattoo', once: false, cooldown: 12, gate: g({ era: S, minFans: 1500 }),
+      text: "A fan at the merch table rolls up his sleeve: the Hail Damage logo, tattooed across his forearm. It says HALE DAMAGE. " +
+        "He got it copied from one of the misprinted shirts. He is incredibly proud. Gord is filming.",
+      choices: [
+        { label: 'Sign it, correct it', effects: { fans: 100, buzz: 6 },
+          outcome: "Marcel signs underneath and adds 'the I is silent, like Kenji'. The fan gets the signature tattooed too. It's now a pilgrimage site." },
+        { label: 'Make HALE official merch', effects: { fund: 400, buzz: 8 },
+          outcome: "You print a new run of HALE DAMAGE shirts on purpose. They outsell the real ones. Dad is furious on behalf of spelling. $400." },
+        { label: 'Buy him a coffee', effects: { mood: { all: 4 }, fans: 50 },
+          outcome: "You buy him a coffee and hear about his hometown, his tattoo artist and his cat, Riff. He'll be at every show for the next decade." }
+      ] },
+    { id: 'signed_press_junket', type: 'fame', speaker: 'marcel', title: 'Press Day', once: false, cooldown: 10, gate: g({ era: S }),
+      text: 'Press day: eleven phone interviews back to back. Every one asks where the name Hail Damage comes from. The weekly paper in ' +
+        "Moose Jaw asks if Marcel is single. Marcel has answered every question in character. Some of them in Latin.",
+      choices: [
+        { label: 'Stay on message', effects: { fans: 120, burnout: 6 },
+          outcome: "Eleven interviews, eleven identical answers: 'The hail. It damaged us. It damages us still.' Every paper prints it. It becomes a T-shirt." },
+        { label: 'Let Dana do them', effects: { buzz: 8, mood: { dana: 6, marcel: -4 } },
+          outcome: 'Dana explains pickup winding for six hours. A guitar magazine in Montreal gives her a column. Marcel says he is "happy for her" through his teeth.' },
+        { label: 'Send Kenji', effects: { buzz: 12, mood: { kenji: -4 } },
+          outcome: "Kenji takes all eleven calls. He says nothing on any of them. Three outlets run 'THE SILENT INTERVIEW' as a feature. One wins an award." }
+      ] },
+    { id: 'signed_rider', type: 'money', speaker: 'dana', title: 'The Rider', once: false, cooldown: 10, gate: g({ era: S, minFans: 1200 }),
+      text: "Theatres now ask for your rider. Dana's draft: black grapes for Marcel, a vegetable tray arranged as a pentagram, perogies " +
+        "from Baba only, one (1) bowl of green candies with the others removed, and 'nothing for Kenji, he brings his own'.",
+      choices: [
+        { label: 'Send it as written', effects: { buzz: 6, mood: { all: 4 }, fund: -150 },
+          outcome: 'The theatres comply. Somewhere a stagehand sorts a thousand candies by colour. The pentagram tray is beautiful. $150 in extras.' },
+        { label: 'Just water and a towel', effects: { fund: 150, mood: { marcel: -5 } },
+          outcome: 'Promoters love you. Word gets around: "easy band". Marcel smuggles grapes in his cape like a very sad squirrel.' },
+        { label: "Ask what Kenji brings", effects: { chemistry: 4, mood: { kenji: 5 } },
+          outcome: 'Kenji opens his bag: one apple, one orange, one hard-boiled egg, every show, forever. Nobody asks again. The egg is never mentioned.' }
+      ] },
+    { id: 'signed_fan_mail', type: 'fame', speaker: 'mom', title: 'A Sack of Mail', once: false, cooldown: 12, gate: g({ era: S }),
+      text: "The fan mail now comes to Mom's house in a Canada-sized sack. Drawings, letters, a hand-knit cape, a jar of pickles from " +
+        "Yorkton, and a letter from a girl in Rimouski who has written a French-language fan fiction in which Marcel is a lawn.",
+      choices: [
+        { label: 'Answer every letter', effects: { fans: 150, burnout: 8 },
+          outcome: 'Three nights at the kitchen table. Mom does the envelopes. Kenji signs his name with the small bird. A kid in Flin Flon frames hers.' },
+        { label: 'Mom answers them', effects: { fans: 80, chemistry: 4, chat: { who: 'mom', text: 'Answered 212 letters. Told them all to wear a toque. Pickles are good!' } },
+          outcome: "Mom answers them all herself, signed 'The Drummer's Mom'. She now has more pen pals than you have fans in Regina." },
+        { label: 'Marcel reads the fan fiction', effects: { mood: { marcel: 10 }, buzz: 4 },
+          outcome: "Marcel reads it aloud in the van, all 90 pages. He is moved. He is the lawn. He has never felt so understood." }
+      ] },
+    { id: 'signed_hotel_waffles', type: 'drama', speaker: 'jaxon', title: 'The Waffle Machine', once: false, cooldown: 12, gate: g({ era: S }),
+      text: "The label put you in a real hotel in Regina with a free breakfast. Jaxon has discovered the waffle machine. It is 6 a.m. " +
+        "He has made eleven waffles. He is making more. Baba has phoned twice to ask if he is eating vegetables.",
+      choices: [
+        { label: 'Waffles for everyone', effects: { mood: { all: 6 }, burnout: -5 },
+          outcome: 'The band eats waffles until the machine overheats. Kenji makes one perfect waffle, eats half, leaves the rest as a sculpture.' },
+        { label: 'Tell Baba the truth', effects: { mood: { jaxon: -6 }, chemistry: 4 },
+          outcome: 'Baba sends a care package to the hotel by bus. It is mostly cabbage. Jaxon eats it in the lobby, humbled.' },
+        { label: 'Film the waffle tower', effects: { buzz: 8, fans: 60 },
+          outcome: "A tower of thirty waffles, with Marcel's cape draped over it. The clip goes around. The hotel asks you back as 'brand ambassadors'." }
+      ] },
+    { id: 'signed_old_garage', type: 'drama', speaker: 'marcel', title: 'Leaving the Garage?', gate: g({ era: S, minWeek: 48 }),
+      text: "A real rehearsal room downtown has come up: soundproofing, heat, a sink. Marcel wants it. Dana wants it. Jaxon wants it " +
+        "but is afraid to tell Baba. Kenji is sitting in his corner of the garage, very still, one hand on the wall.",
+      choices: [
+        { label: 'Stay in the garage', effects: { chemistry: 8, mood: { kenji: 8, marcel: -4 } },
+          outcome: "You stay. Mom brings pizza pops. Dad pretends to be annoyed. Kenji's hand comes off the wall. The garage stays yours." },
+        { label: 'Rent the room downtown', effects: { fund: -600, drumSkill: 2, mood: { kenji: -8 } },
+          outcome: "$600 for the first months. Great room. Great sound. On the first night, Kenji brings a brick from the garage and puts it in his corner." },
+        { label: 'Both: weeknights downtown', effects: { fund: -300, chemistry: 4, burnout: -4 },
+          outcome: 'Weeknights in the good room, weekends in the garage. Mom still sends pizza pops downtown, by taxi. $300.' }
+      ] },
+
+    // ======================================================================
+    // v0.5 The Moose Album (chain 'moose'; starts from flags.mooseMuse, set by weird_moose or a Loonies speech)
+    //   1 moose_1_demo ── genius ─> 2 moose_2_full ── (any) ──────────────> 3 moose_3_finland ─> end (ready | finland | shelved)
+    //                  ── one song ─> 2 moose_2_song ── cut to five ─> end (song)
+    //                                                ── whole side / Kenji ──> 3 moose_3_finland
+    //                  ── no ─> end (shelved)
+    //   flags.mooseAlbum = 'shelved' | 'song' | 'ready' | 'finland' (v0.7: the World era pays it off, platinum in Finland).
+    //   Helper flags moosePlan / mooseCall are cleared when the chain ends.
+    // ======================================================================
+    { id: 'moose_1_demo', type: 'weird', speaker: 'marcel', title: 'Élan Éternel', chain: 'moose', step: 1, weight: 2,
+      gate: g({ era: LS, flags: ['mooseMuse'] }),
+      text: "Marcel plays you a forty-minute demo on a boombox: 'Élan Éternel', a concept album told by the moose from the " +
+        "driveway. Fourteen songs. The moose falls in love with a mailbox. Track nine is just breathing.",
+      choices: [
+        { label: "It's genius. Keep going.", effects: { mood: { marcel: 10 }, flags: { moosePlan: 'full' }, chain: { moose: { step: 2, delay: 3 } } },
+          outcome: 'Marcel hugs the boombox. He sews antlers onto a hoodie. He says the moose "has more to say".' },
+        { label: 'One moose song. On the album.', effects: { mood: { marcel: 4 }, chemistry: 3, flags: { moosePlan: 'song' }, chain: { moose: { step: 2, delay: 3 } } },
+          outcome: "'One song,' he agrees, much too quickly." },
+        { label: 'Marcel. No.', effects: { mood: { marcel: -10 }, flags: { mooseAlbum: 'shelved' }, chain: { moose: { step: 'end' } } },
+          outcome: "He ejects the tape and puts it in a shoebox labelled LATER. He writes the date on the lid. He underlines LATER twice." }
+      ] },
+    { id: 'moose_2_full', type: 'weird', speaker: 'marcel', title: 'The Rut', chain: 'moose', step: 2,
+      gate: g({ era: LS, flagEquals: { moosePlan: 'full' } }),
+      text: 'Marcel needs real moose calls for the album. He has booked a dawn field trip to Prince Albert National Park, in the ' +
+        'middle of the rut. He has a camouflage cape. He has a microphone taped to a hockey stick.',
+      choices: [
+        { label: 'Dawn. The rut. Go.', hint: 'Gamble: a real moose, or a real moose',
+          outcome: 'Marcel wades into the marsh and calls.',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 8, flags: { mooseCall: 'real' }, chain: { moose: { step: 3, delay: 4 } } },
+              outcome: 'A bull answers from thirty metres away. The recording is extraordinary. So is the running.' },
+            fail: { effects: { burnout: 8, mood: { all: -4 }, chain: { moose: { step: 3, delay: 4 } } },
+              outcome: 'Nine hours in a swamp, no moose. On the drive home one walks up to the van, looks at Marcel and leaves. He takes it as a review.' } } },
+        { label: 'Jaxon does the moose call', effects: { mood: { jaxon: 6 }, chemistry: 3, chain: { moose: { step: 3, delay: 4 } } },
+          outcome: "Jaxon has done a moose call since cadet camp. It's disturbingly good. The neighbour's dog won't come out from under the deck." },
+        { label: 'Buy a sound-effects CD', effects: { fund: -25, mood: { marcel: -5 }, chain: { moose: { step: 3, delay: 4 } } },
+          outcome: "'Sounds of the Canadian Wilderness, Vol. 2', $25 at a thrift store. Track 14 is a moose. Marcel calls it 'a studio moose'." }
+      ] },
+    { id: 'moose_2_song', type: 'weird', speaker: 'marcel', title: 'The One Moose Song', chain: 'moose', step: 2,
+      gate: g({ era: LS, flagEquals: { moosePlan: 'song' } }),
+      text: "Marcel's 'one moose song' is twenty-three minutes long, in seven movements, and ends with the moose ascending to " +
+        'heaven over a Co-op gas bar. He calls it the radio edit.',
+      choices: [
+        { label: 'Cut it to five minutes', effects: { mood: { marcel: -6 }, fans: 30, flags: { mooseAlbum: 'song', moosePlan: false }, chain: { moose: { step: 'end' } } },
+          outcome: 'The five-minute cut is great, actually. The other eighteen minutes go in the LATER shoebox. It is getting full.' },
+        { label: 'Fine. Give it a whole side.', effects: { mood: { marcel: 8 }, flags: { moosePlan: 'full' }, chain: { moose: { step: 3, delay: 4 } } },
+          outcome: "Side B is now the moose. Dana negotiates a solo in movement four. Jaxon plays the moose's heartbeat on the low string." },
+        { label: 'Let Kenji decide', effects: { mood: { kenji: 4 }, flags: { moosePlan: 'full' }, chain: { moose: { step: 3, delay: 4 } } },
+          outcome: "Kenji listens to all twenty-three minutes without moving, then walks to the whiteboard and writes: '!'" }
+      ] },
+    { id: 'moose_3_finland', type: 'weird', speaker: 'marcel', title: 'Big in Finland', chain: 'moose', step: 3,
+      gate: g({ era: LS, flagEquals: { moosePlan: 'full' } }),
+      text: "Someone put Marcel's moose demos online. A Finnish metal blog calls it 'the most important moose-related record ever " +
+        "made'. Four thousand plays, all from Finland. Marcel has started learning Finnish. It is going badly.",
+      choices: [
+        { label: 'Finish the moose album', effects: { buzz: 8, mood: { marcel: 10 }, flags: { mooseAlbum: 'ready', moosePlan: false, mooseCall: false }, chain: { moose: { step: 'end' } } },
+          outcome: 'The finished demos go into a folder called ÉLAN. Marcel says the world is not ready. The world, specifically Finland, disagrees.' },
+        { label: 'Send Finland a T-shirt', effects: { fans: 40, buzz: 6, flags: { mooseAlbum: 'finland', moosePlan: false, mooseCall: false }, chain: { moose: { step: 'end' } } },
+          outcome: 'You mail a shirt to the blog in Tampere. They post a photo of it on a real moose, somehow. The Finnish fan club has eleven members.' },
+        { label: 'Too weird. Shelve it.', effects: { mood: { marcel: -10 }, chemistry: -3, flags: { mooseAlbum: 'shelved', moosePlan: false, mooseCall: false }, chain: { moose: { step: 'end' } } },
+          outcome: 'The tapes go in the LATER shoebox, under his bed. Every so often you hear him humming track nine. The breathing one.' }
       ] }
   ];
 })(window.GG);

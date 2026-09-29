@@ -18,7 +18,8 @@
     promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facebook." },
     book: { icon: '📅', name: 'Book', blurb: 'Find somewhere that will have you.' },
     hustle: { icon: '💵', name: 'Hustle', blurb: 'Weddings, busking, bingo. Cash.' },
-    rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' }
+    rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' },
+    studio: { icon: '🎙️', name: 'Studio', blurb: 'Red light on. Nobody breathe.' }   // v0.5: studio weeks replace the blocks
   };
   ui.act = function (id) {
     var a = (GG.content.activities && GG.content.activities[id]) || {};
@@ -92,7 +93,7 @@
     hud.buzz._v.textContent = String(Math.round(st.buzz));
     hud.chem._v.textContent = String(Math.round(st.chemistry));
     setBar(hud.buzz._bar, st.buzz); setBar(hud.chem._bar, st.chemistry);
-    dock.btn.textContent = PRIMARY[st.phase] || 'Continue';
+    dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
   };
@@ -197,6 +198,8 @@
         st.phase === 'ended' ? 'The career is over. The whiteboard is now a memorial.' : "This week's already played. Wrap it up first.");
       return;
     }
+    if (ui.checkDemand && ui.checkDemand(ui.openPlanner)) return;                                   // v0.5: a label demand first
+    if (GG.labels && GG.labels.inSession && GG.labels.inSession(st) && ui.openStudio) { ui.openStudio(); return; }   // v0.5: studio week
     plan = (st.plan || []).slice(0, C.BLOCKS_PER_WEEK);
     while (plan.length < C.BLOCKS_PER_WEEK) plan.push(null);
     plan = plan.map(function (a) { return a || null; });
@@ -224,9 +227,10 @@
     if (!st || st.phase !== 'plan') return;   // runs exactly once
     var result = GG.career.runWeek(st);   // a booked gig -> phase 'gig': the results sheet leads to the van + the live gig
     GG.main.sync();
-    ui.close('plan');
+    ui.close('plan'); ui.close('studio');
     ui.show('results', { result: result });
   }
+  ui.runStudioWeek = function () { playWeek(); };   // v0.5: the studio sheet's "Record this week"
   ui.define('plan', {
     kind: 'sheet', title: 'Plan the week',
     build: function (s) {
@@ -254,12 +258,19 @@
         gigBox(st, true, function () { s.rerender(); }),
         slots,
         acts,
-        el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.')
+        el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'),
+        studioBtn(st)
       ])]);
       var full = plan.every(Boolean);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-go', disabled: !full, onclick: goWeek }, full ? 'Go! Play the week' : 'Fill all three blocks'));
     }
   });
+
+  function studioBtn(st) {   // v0.5: book a session from the whiteboard once you can record (it takes over this week)
+    var can = GG.labels && GG.labels.canRecord && ui.openStudioBooking ? GG.labels.canRecord(st) : null;
+    if (!can || !(can.ep || can.album) || st.session && GG.labels.inSession(st)) return null;
+    return btn('.btn.ghost.block', { testid: 'btn-plan-studio', onclick: function () { ui.close('plan'); ui.openStudioBooking(); } }, 'Book the studio instead 🎙');
+  }
 
   /* ======================================================================================================
      Week results: blocks revealed line by line, then the gig
@@ -418,6 +429,7 @@
       }
       (w.milestones || []).forEach(function (m) { parts.push(el('div.panel.warm.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', { style: 'font-weight:700' }, fill(m))])); });
       if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
+      if (ui.labelWrap) parts.push.apply(parts, ui.labelWrap(w));   // v0.5: offers, release day, charts, certs, royalties
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -508,7 +520,7 @@
     kit: function () { ui.openSketch(); },
     merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
     door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
-    trophies: function () { ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
+    trophies: function () { if (ui.defined('trophies')) return ui.show('trophies'); ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
     gigboard: function () {
       if (ui.openBoard) return ui.openBoard({ mode: 'view' });
       ui.show('soon', { title: 'Gig board', icon: '📌', top: gigBox(S(), true, function () { HOT.gigboard(); }), soon: 'Coming in v0.3',

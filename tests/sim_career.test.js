@@ -194,7 +194,8 @@ test('every effect key applies, clamps, and reports real deltas', () => {
   const d2 = GG.career.applyEffects(s, { flags: { x: false }, book: 'bingo_palace', chain: { cape: { step: 'end' } }, drumSkill: -500 });
   ok(!('x' in s.flags), 'false deletes a flag'); eq(s.gig.venueId, 'legion_63', 'book never replaces a booked gig');
   eq(d2.book, undefined); eq(s.chains.cape.step, 'end'); eq(s.drumSkill, 1, 'drumSkill min 1');
-  GG.contracts.EFFECT_KEYS.forEach(k => ok(k in d || k === 'book' || k === 'chat', 'effect key ' + k + ' reported'));
+  // v0.5 `production` only acts inside a recording session (tests/sim_labels.test.js covers it)
+  GG.contracts.EFFECT_KEYS.forEach(k => ok(k in d || k === 'book' || k === 'chat' || k === 'production', 'effect key ' + k + ' reported'));
 });
 
 test('rollChance clamps and scales with the stat', () => {
@@ -331,8 +332,9 @@ test('bots: 240-week careers finish, stay in RANGES, fund >= 0, garage protectio
         const bad = inRanges(GG, s);
         if (bad) throw new Error(label + '/' + style + ' week ' + s.totalWeek + ': ' + bad);
         if (s.fund < 0) throw new Error('fund negative after wrap');
-        // v0.4: the garage era protects the band until 250 fans (then drama can happen, always warned first)
-        if (s.era !== 'garage' || (s.protected && (s.fans >= 250 || s.members.length !== 4 || s.members.some(m => m.status !== 'active' || m.stage > 2)))) throw new Error('protection broke');
+        // v0.4: the garage era protects the band until 250 fans (then drama can happen, always warned first).
+        // v0.5: the era is 'garage' exactly while protected (Local Heroes at 250 fans, then Signed via labels).
+        if ((s.era === 'garage') !== !!s.protected || GG.contracts.ERAS.indexOf(s.era) < 0 || (s.protected && (s.fans >= 250 || s.members.length !== 4 || s.members.some(m => m.status !== 'active' || m.stage > 2)))) throw new Error('protection broke');
         if (s.members.some(m => m.status === 'active' && m.stage > 3)) throw new Error('an active member at stage 4');
         if (weeks > 300) throw new Error('never ended');
       }

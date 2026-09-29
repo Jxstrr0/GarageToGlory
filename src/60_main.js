@@ -192,6 +192,13 @@
   // Results → wrap. Runs endWeek once (phase 'wrap'); a second call just re-shows the same wrap.
   M.wrapWeek = function () {
     var st = GG.state; if (!st) return;
+    // v0.5: the Loonie Awards run during week C.LOONIES_WEEK, BEFORE endWeek (which would auto-resolve them). Flows on
+    // autoplay (tests) let endWeek resolve them.
+    if (st.phase === 'wrap' && ui.loonieDue && ui.loonieDue(st) && ui.playLoonies && !ui.gigAutoplay && !ui.isOpen('loonies')) {
+      ui.close('results');
+      ui.playLoonies(function () { if (GG.state === st) M.wrapWeek(); });
+      return;
+    }
     var wrap = st.wrap;
     if (st.phase === 'wrap') { M.lastSave = null; wrap = GG.career.endWeek(st); }
     M.sync();
