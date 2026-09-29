@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V0.1.0.0</title>
+<title>Garage to Glory - V0.2.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -300,6 +300,60 @@ h1, h2, h3, p { margin: 0; }
 .hist > div { display: grid; grid-template-columns: 44px 1fr 64px; gap: 8px; align-items: center; font-size: 12px; color: var(--dim); }
 .hist .bar { height: 10px; } .hist b { text-align: right; color: var(--text); font-size: 12px; }
 
+/* ---- Song catalog + results song card (53 / 52) ---- */
+button.song { width: 100%; min-height: 52px; background: none; border: 0; border-top: 1px solid rgba(255, 255, 255, .06); color: var(--text);
+  text-align: left; font: inherit; cursor: pointer; }
+button.song:first-child { border-top: 0; } button.song:active { background: rgba(255, 255, 255, .04); }
+.tag.gold { color: #1d1204; background: #e8c547; border-color: #e8c547; } .tag.mine { color: var(--amber); border-color: rgba(255, 179, 71, .5); }
+.song-res { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .22); border: 1px solid rgba(255, 179, 71, .25); }
+
+/* ---- Sequencer (54_ui_sequencer): fits 390x844 without scrolling; rows ~34px, lanes ~80px wide ---- */
+.full.seq { background: radial-gradient(120% 50% at 50% 0%, #1d2740 0%, #0c111c 70%); }
+.full.seq .full-body { display: flex; flex-direction: column; gap: 6px; overflow: hidden; padding: calc(var(--safe-top) + 6px) 12px 4px; }
+.full.seq .full-foot { flex-direction: row; gap: 8px; padding: 6px 12px calc(var(--safe-bot) + 10px); }
+.full.seq .full-foot .btn { flex: 1 1 0; min-width: 0; padding: 0 8px; font-size: 14px; white-space: nowrap; }
+.full.seq .full-foot .btn.on { background: var(--panel2); border-color: var(--amber); color: var(--amber); }
+.seq-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.seq-title { flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 0 4px; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; }
+.seq-title .caps { font-size: 10px; } .seq-title:disabled { cursor: default; }
+.seq-title .fr { font-weight: 800; font-style: italic; font-size: 16px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn.seq-jam { flex: 0 0 auto; max-width: 104px; min-height: 44px; padding: 0 10px; font-size: 12px; line-height: 1.15; white-space: normal; }
+.seq-tabs { display: flex; gap: 6px; flex: 0 0 auto; } .seq-tabs .tabs { flex: 1 1 auto; padding: 3px; }
+.seq-tabs .icon-btn { width: 44px; height: 44px; flex-basis: 44px; font-size: 20px; }
+.seq-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex: 0 0 auto; }
+.meter .mh { display: flex; justify-content: space-between; align-items: baseline; }
+.meter .mh b { font: 900 16px var(--display); }
+.meter .bar { height: 7px; margin-top: 2px; } .meter .bar > i { transition: width .12s, background .12s; }
+.meter .bar > i.ab { left: auto; width: 2px; border-radius: 0; background: rgba(255, 255, 255, .8) !important; transition: none; }
+.seq-tipline { display: flex; gap: 8px; align-items: flex-start; flex: 0 0 auto; min-height: 32px; }
+.seq-tip { flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 1.3; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.seq-tip b { color: var(--text); }
+.seq-pos { flex: 0 0 auto; font: 800 11px var(--font); color: var(--amber); white-space: nowrap; }
+.seq-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+.seq-grid { flex: 1 1 auto; display: grid; grid-template-rows: 22px repeat(16, minmax(30px, 1fr)); gap: 2px 4px; -webkit-user-select: none; user-select: none; }
+.seq-grid .lh { display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px; font: 800 10px var(--font); text-transform: uppercase; letter-spacing: .05em; }
+.seq-grid .bl { display: flex; align-items: center; justify-content: center; font: 700 10px var(--font); color: var(--faint); border-radius: 6px; }
+.seq-grid .bl.q { color: var(--text); font: 900 13px var(--display); }
+.seq-grid .bl.ph { background: var(--amber); color: #1d1204; }
+.seq-grid .cell { border-radius: 7px; background: #141a29; border: 1px solid #222b41; touch-action: none; cursor: pointer; }
+.seq-grid .cell.sh { background: #1a2234; }
+.seq-grid .cell.on { background: var(--lc); border-color: transparent; box-shadow: 0 0 12px -3px var(--lc), inset 0 -3px 0 rgba(0, 0, 0, .28); }
+.seq-grid .cell.ph { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .85); }
+.seq-grid .cell.on.ph { box-shadow: 0 0 16px 0 var(--lc), inset 0 0 0 2px #fff; filter: brightness(1.25); }
+.seq-grid .cell.nope { animation: gg-nope .5s ease-out; }
+.seq-grid.ro .cell { cursor: default; }
+@keyframes gg-nope { 0%, 100% { background: #141a29; } 25% { background: #8a2f3a; transform: scale(.94); } }
+.seq-song { padding-bottom: 8px; }
+.seq-name { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+.seq-tempo { width: 100%; height: 44px; accent-color: var(--amber); }
+.seq-arr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.seq-arr .arr { min-height: 64px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px; font: 700 13px var(--font); cursor: pointer; padding: 4px; }
+.seq-arr .arr.on { border-color: var(--amber); box-shadow: inset 0 -2px 0 var(--amber); background: var(--panel2); }
+.seq-arr .arr .seqs { font: 800 10px var(--font); color: var(--dim); letter-spacing: .08em; }
+.seq-arr .arr:disabled { opacity: .4; }
+
 /* ---- 2D fallback garage (no WebGL / three.js) ---- */
 .fallback { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #1b2236 0%, #151b2b 58%, #2a2a2e 58%, #1d1d22 100%); }
 .fallback .door { position: absolute; left: 12%; right: 12%; top: 16%; height: 38%; border-radius: 6px 6px 0 0; border: 4px solid #3a4150;
@@ -322,14 +376,14 @@ h1, h2, h3, p { margin: 0; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.1.0.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.2.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 // 01_ns.js: window.GG namespace, event bus, seeded RNG, small utils, debug registry.
 // Loaded first. Works in the browser and in node (tests set window = globalThis).
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '0.1.0.0';
+  GG.VERSION = '0.2.0.0';
   GG.content = GG.content || {};
 
   // ---- Event bus -------------------------------------------------------
@@ -418,7 +472,7 @@ h1, h2, h3, p { margin: 0; }
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 1;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 2;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -432,6 +486,11 @@ h1, h2, h3, p { margin: 0; }
   C.PHASES = ['monday', 'plan', 'week', 'wrap', 'ended'];
   C.DEALS = ['exposure', 'flat', 'door'];
   C.GRADES = ['S', 'A', 'B', 'C', 'D'];
+  // Drum lanes, left to right on the sequencer grid and the gig highway. Kit starts with the first 4 (v0.8 unlocks toms, ride).
+  C.LANES = ['kick', 'snare', 'hat', 'cymbal', 'toms', 'ride'];
+  C.STEPS = 16;                  // steps per bar; steps run top-to-bottom like the note highway
+  C.SECTIONS = ['verse', 'chorus', 'bridge'];          // v0.8 unlocks 'outro', 'solo'
+  C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
   C.HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
@@ -474,7 +533,7 @@ h1, h2, h3, p { margin: 0; }
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
    {
-     v: 1, createdVersion: '0.1.0.0', slot: '1',
+     v: 2, createdVersion: '0.1.0.0', slot: '1',
      seed: <uint32>, rng: <uint32>,                 // rng = live RNG state (GG.rngFor(state))
      bandId: 'hail_damage', genre: 'metal', region: 'canada', city: 'Saskatoon', space: 'parents_garage',
      player: { name, nick, presetId, look: LOOK, kitColor: '#rrggbb' },
@@ -483,7 +542,8 @@ h1, h2, h3, p { margin: 0; }
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      members: [ { id, name, nick, role, skill, mood, status: 'active', original: true } ],
-     songs:   [ { id, title, titleEn, quality, polish, plays, written, pattern: null } ],  // pattern arrives in v0.2
+     songs:   [ SONG ],  pendingSongs: [ PATTERN+title ] (composed in the UI, consumed by Write blocks),
+     draft:   null | PATTERN (the kit's scratch pad),  gear: { lanes: 4, doubleKick: false } (v0.8 unlocks more),
      card:    null | { id, resolved: false } | { id, resolved: true, choice, outcome, deltas },
      plan:    [activityId|null, activityId|null, activityId|null],
      gig:     null | GIG,   offer: null | GIG,        // booked gig for this weekend / pending offer
@@ -500,6 +560,10 @@ h1, h2, h3, p { margin: 0; }
    LOOK = { skin:'#rrggbb', hair:'#rrggbb', hairStyle:'short'|'long'|'mohawk'|'bald'|'bun'|'mullet'|'spiky'|'cap',
             shirt:'#rrggbb', pants:'#rrggbb', height: 0.9..1.1, build: 0.9..1.2,
             extras: ['sunglasses'|'beard'|'moustache'|'glasses'|'headband'|'tattoos'|'hat'|'bandana'] }
+   PATTERN = { bpm, lanes: 4, sections: { verse: [laneStr x lanes], chorus: [...], bridge: [...] }, arrangement: ['verse','chorus',...] }
+             laneStr = 16 chars, 'x' = hit, '.' = rest (index = step, top to bottom). Lane order = C.LANES.
+   SONG = { id, title, titleEn, written, pattern: PATTERN, rating: { groove, hook, difficulty }, quality, polish,
+            plays, lastPlayed, stale 0..100, hits, classic: bool, auto: bool (band jammed it, not you) }
    GIG  = { venueId, name, city, tier, kind, capacity, deal, pay, gas, quirk, source: 'forced'|'book'|'offer'|'card' }
    GIG_RESULT = { venueId, name, city, deal, crowd, capacity, score, grade, pay, gas, fans, buzz,
                   songs:[titles], songIds, source, deltas, reactions:[{ who, text }], lines:[text] }
@@ -531,6 +595,8 @@ h1, h2, h3, p { margin: 0; }
              gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
              guilt: [text], yearEnd: [text], quietWeek: [text] }
    songTitles: { metal: [ { fr, en } ], punk|rock|country: [ 'English title' ] }
+   genres: { <genre>: { tempo:[min,max,default], signature, backing, ... } }  (shape documented in content/genres.js)
+   lines.songReactions / lines.writeTips (per member) — band reactions to a new song / first-Write tips
    presets: [ { id, name, blurb, look: LOOK, kitColor } ]
    Text may use tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>} — GG.career.fillText() replaces them.
   ====================================================================== */
@@ -549,6 +615,9 @@ h1, h2, h3, p { margin: 0; }
    'year:end'       { year, summary }         career.endWeek
    'career:end'     { state }                 career.endWeek
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
+   'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
+   'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
+   'audio:end'      { handle }                          a song finished (or the app hid)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
@@ -569,7 +638,15 @@ h1, h2, h3, p { margin: 0; }
    GG.career.moodLabel(mood)             -> 'happy'|'ok'|'grumpy'|'sulking'
    GG.career.fillText(state, text)       -> text with tokens replaced
    GG.career.botPlan(state, style) / botChoice(state, card, style)   style 'avg'|'good'
-   GG.songs.writePlaceholder(state, rng) -> song ; GG.songs.best(state, n) -> [song]
+   GG.songs.rate(pattern, genre, gear?) -> { groove, hook, difficulty, notes, tips:[text] }   (pure, deterministic)
+   GG.songs.generate(genre, rng, opts?) -> PATTERN ; GG.songs.starter(genre) -> PATTERN ; validate(pattern, gear) -> [errors]
+   GG.songs.create(state, pattern, title?, opts?) -> SONG ; GG.songs.best(state, n) -> [song] ; stale/classic updates per gig
+   GG.songs.similarity(a, b) -> 0..1 ; GG.songs.toNotes(song) -> [{ beat, lane, section, entry, bar, step }] (v0.3 charts)
+   GG.songs.jam(state, rng) (replaces writePlaceholder) ; played / weekly / sanitize / pickTitle / ability
+   rate() also returns sections: { verse, chorus, bridge } (groove per part). GIG_RESULT gains classics: [songId];
+   WEEK_RESULT block deltas.song = { id, title, titleEn, quality, auto, groove, hook, difficulty, reactions }.
+   GG.audio.play(pattern, { genre, section|null (null = full arrangement), loop, backing: true }) -> handle { stop(), beatAt() }
+     (null without Web Audio) ; GG.audio.stop / hit / timeline / styleFor / renderOffline
    GG.gig.makeGig(state, venueId, source) -> GIG ; GG.gig.randomOffer(state, rng) -> GIG|null
    GG.gig.autoResolve(state, rng)        -> GIG_RESULT (v0.1 placeholder; v0.3 replaces with the rhythm game)
    GG.save.write(slot, state) -> bool ; read(slot) -> state|null ; list() -> [{ slot, exists, summary }]
@@ -1716,6 +1793,19 @@ h1, h2, h3, p { margin: 0; }
       burnout: 4
     },
 
+    // ---- Songs (21_sim_songs; the Write activity numbers are in activities.js) ----
+    songs: {
+      // quality = band part + (craft - craftPivot) * craftWeight - max(0, difficulty - ability) * overPenalty
+      //   craft = 0.6 groove + 0.3 hook + 0.1 difficulty; pivot ~ an average band jam, so bots keep v0.1 balance
+      craftPivot: 85, craftWeight: 0.8,
+      overPenalty: 0.4, overPolish: 0.5,    // over-hard songs lose quality and start less polished
+      // ability (hardest difficulty the band plays cleanly) = base + avg member skill * skill + drum skill * drum
+      abilityBase: 22, abilitySkill: 0.5, abilityDrum: 0.4,
+      stalePerPlay: 10, staleDecay: 4,       // each gig play adds stale; each week off takes some away
+      staleWeight: 0.08,                     // setlist score lost per point of stale
+      classicHits: 4, classicGrades: ['S', 'A'], classicBonus: 3   // 4 great gigs make a classic
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one
@@ -1731,6 +1821,198 @@ h1, h2, h3, p { margin: 0; }
 })(window.GG);
 
 </script>
+<script>/* content/genres.js */
+// content/genres.js: what each genre wants from a drum pattern (the sequencer's Groove meter), the fixed
+// patterns the sim builds songs from, and how the generated backing band plays along.
+// Shape: GG.content.genres = { <genre>: {
+//   name, tempo: [min, max, default], jamTempo: [lo, hi] (bands jam in this range),
+//   groove: [ RULE ],  sync: max share of kick/snare hits on 16th off-beats before it feels jumpy,
+//   signature: PATTERN (scores Groove >= 80 here, clearly lower elsewhere), starter: PATTERN (first Write),
+//   parts: { verse: [BAR], chorus: [BAR], bridge: [BAR] }  (GG.songs.generate mixes these), BAR = [laneStr x 4],
+//   backing: { root: midi, styles: [[bpmFrom, style, label]], progressions: { verse|chorus|bridge: [[semitones x 4 bars]] }, riffs },
+//   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
+// RULE = { f: feature, lo, hi, soft, w, tip, loDK? (lo when the double-kick pedal is owned), any?: [RULE] (best of) }
+//   A feature inside [lo, hi] scores 1 and falls to 0 at `soft` beyond the range. Features (per bar, see 21_sim_songs):
+//   kick, snare, time (hat + ride + cymbal hits), cym, kickDown (kick on 1 and 3, 0..1), backbeat (snare on 2 and 4),
+//   snareOff (snares off 2/4), snareOdd (snares on 16th off-beats), snare8 / hat8 / hat16 (share of 8th / off-16th
+//   steps with a hit; hat8 and hat16 count hat, ride and cymbal), hatBack (hat chick on 2 and 4), bpm.
+// Only metal is playable before v0.9; all four ship now so tests prove each genre scores as designed.
+(function (GG) {
+  var E = '................';
+  GG.content.genres = {
+    metal: {
+      name: 'Metal', tempo: [60, 240, 150], jamTempo: [80, 215], sync: 0.25,
+      groove: [
+        { f: 'kick', lo: 7, loDK: 11, hi: 16, soft: 5, w: 3, tip: 'Metal wants a busier kick. Try every 8th.' },
+        { any: [{ f: 'backbeat', lo: 1, hi: 1, soft: 0.5 }, { f: 'snare8', lo: 0.75, hi: 1, soft: 0.3 }], w: 2,
+          tip: 'Put the snare on 2 and 4, or go full blast.' },
+        { f: 'time', lo: 6, hi: 24, soft: 4, w: 1.5, tip: 'Keep the hats or cymbals busy.' },
+        { f: 'cym', lo: 1, hi: 8, soft: 2, w: 0.5, tip: 'A crash on the one gives it weight.' }
+      ],
+      signature: { bpm: 170, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x.x.x.x.x.x.x.x.', '....x.......x...', 'xxxxxxxxxxxxxxxx', 'x.......x.......'],
+        chorus: ['x.x.x.x.x.x.x.x.', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
+        bridge: ['x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x...............'] } },
+      // The first Write: a plain rock beat Marcel calls "a good start, for a polka". The tips teach the rest.
+      starter: { bpm: 140, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+        chorus: ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+        bridge: ['x.......x.......', '........x.......', 'x...x...x...x...', E] } },
+      parts: {
+        verse: [
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', 'x...x...x...x...', 'x...............'],
+          ['x.x.x...x.x.x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.x.x.x.x.x.x.x.', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', E],
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', 'xxxxxxxxxxxxxxxx', 'x.......x.......']
+        ],
+        chorus: [
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', E, 'x...x...x...x...'],
+          ['x.x.x.x.x.x.x.x.', '..x...x...x...x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x.......x.......'],
+          ['x.x.x.x.x.x.x.x.', '....x.......x...', E, 'x.x.x.x.x.x.x.x.']
+        ],
+        bridge: [
+          ['x..x..x...x..x..', '........x.......', E, 'x.......x.......'],
+          ['x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.......x.......', '........x.......', 'x.x.x.x.x.x.x.x.', 'x...............']
+        ]
+      },
+      // Owner call: tempo decides. Slow = doom sludge, mid = palm-muted chugs locked to the kick, fast = tremolo riffs.
+      backing: {
+        root: 40,   // E2, drop-anything tuning
+        styles: [[0, 'doom', 'Doom sludge'], [100, 'chug', 'Palm-muted chugs'], [171, 'tremolo', 'Tremolo riffs']],
+        progressions: {
+          verse: [[0, 0, 1, 0], [0, 3, 5, 3], [0, 0, 8, 7], [0, 5, 3, 1], [0, 1, 0, 6]],
+          chorus: [[5, 3, 0, 0], [8, 7, 5, 3], [0, 8, 5, 7], [3, 5, 7, 5], [10, 8, 7, 0]],
+          bridge: [[1, 1, 0, 0], [6, 5, 6, 7], [0, 1, 3, 1], [8, 8, 7, 6]]
+        },
+        riffs: [[0, 0, 12, 0, 7, 0, 5, 0], [0, 1, 0, 3, 0, 5, 3, 1], [0, 12, 10, 7, 0, 5, 7, 8], [0, 0, 3, 0, 5, 0, 6, 5]]
+      },
+      reactions: { great: 'Neck-snapping.', good: 'Heavy enough.', meh: 'Needs more heavy.', bad: 'That is a polka.' }
+    },
+
+    punk: {
+      name: 'Punk', tempo: [150, 230, 190], jamTempo: [175, 215], sync: 0.2,
+      groove: [
+        { f: 'snare', lo: 4, hi: 8, soft: 3, w: 4, tip: 'Punk wants a fast, driving snare.' },
+        { f: 'bpm', lo: 170, hi: 230, soft: 40, w: 3, tip: 'Faster. Punk lives above 170 BPM.' },
+        { f: 'kick', lo: 3, hi: 6, soft: 3, w: 1, tip: 'Kick on the quarters keeps it moving.' },
+        { f: 'hat8', lo: 0.75, hi: 1, soft: 0.5, w: 1, tip: 'Keep 8ths going on the hats.' },
+        { f: 'hat16', lo: 0, hi: 0.25, soft: 0.5, w: 1, tip: 'Straight 8ths. Nobody has time for 16ths.' },
+        { f: 'snareOdd', lo: 0, hi: 1, soft: 3, w: 1, tip: "That's a train, not a riot. Fewer 16th snares." }
+      ],
+      signature: { bpm: 200, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus'], sections: {
+        verse: ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', 'x...............'],
+        chorus: ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......'],
+        bridge: ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'] } },
+      starter: { bpm: 180, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus'], sections: {
+        verse: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+        chorus: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+        bridge: ['x.......x.......', '....x.......x...', 'x...x...x...x...', E] } },
+      parts: {
+        verse: [
+          ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', E],
+          ['x...x...x...x...', '..x...x...x...x.', 'x...x...x...x...', 'x...............'],
+          ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', E]
+        ],
+        chorus: [
+          ['x...x...x...x...', '..x...x...x...x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......']
+        ],
+        bridge: [
+          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+        ]
+      },
+      backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths']],
+        progressions: { verse: [[0, 5, 7, 5], [0, 0, 5, 7], [0, 3, 5, 7]], chorus: [[5, 7, 0, 0], [3, 5, 7, 7], [7, 5, 0, 0]], bridge: [[5, 5, 7, 7], [3, 3, 5, 7]] },
+        riffs: [[0, 0, 0, 0, 7, 7, 5, 5]] },
+      reactions: { great: 'Riot-grade.', good: 'Snotty enough.', meh: 'Too polite.', bad: 'Your mom likes this.' }
+    },
+
+    rock: {
+      name: 'Rock', tempo: [90, 160, 120], jamTempo: [105, 140], sync: 0.3,
+      groove: [
+        { f: 'backbeat', lo: 1, hi: 1, soft: 0.5, w: 3, tip: 'Rock needs a solid backbeat: snare on 2 and 4.' },
+        { f: 'kickDown', lo: 1, hi: 1, soft: 0.5, w: 2, tip: 'Kick on 1 and 3. Every time.' },
+        { f: 'kick', lo: 2, hi: 5, soft: 3, w: 3, tip: 'Rock kick: less is more.' },
+        { f: 'hat8', lo: 0.85, hi: 1, soft: 0.5, w: 3, tip: 'Rock wants steady 8th-note hats.' },
+        { f: 'hat16', lo: 0, hi: 0.25, soft: 0.5, w: 1.5, tip: 'Straight 8ths on the hats, not 16ths.' },
+        { f: 'snareOff', lo: 0, hi: 1, soft: 3, w: 2, tip: 'Too much snare clutter for rock.' },
+        { f: 'bpm', lo: 100, hi: 150, soft: 30, w: 1, tip: 'Rock sits between 100 and 150 BPM.' }
+      ],
+      signature: { bpm: 120, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+        chorus: ['x.......x.x.....', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
+        bridge: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E] } },
+      starter: { bpm: 110, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x.......x.......', '....x.......x...', 'x...x...x...x...', E],
+        chorus: ['x.......x.......', '....x.......x...', 'x...x...x...x...', 'x...............'],
+        bridge: ['x.......x.......', '....x.......x...', 'x...x...x...x...', E] } },
+      parts: {
+        verse: [
+          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x.......x.x.....', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+        ],
+        chorus: [
+          ['x.......x.......', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+        ],
+        bridge: [
+          ['x.......x.......', '....x.......x...', 'x...x...x...x...', 'x...............'],
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+        ]
+      },
+      backing: { root: 45, styles: [[0, 'rock', 'Big open chords']],
+        progressions: { verse: [[0, 0, 5, 7], [0, 10, 5, 0], [0, 7, 5, 5]], chorus: [[5, 7, 0, 0], [0, 5, 7, 5], [10, 5, 0, 7]], bridge: [[3, 5, 7, 7], [9, 7, 5, 7]] },
+        riffs: [[0, 0, 7, 0, 10, 0, 7, 5]] },
+      reactions: { great: 'Stadium-sized.', good: 'Solid.', meh: 'A bit wobbly.', bad: 'Where is the backbeat?' }
+    },
+
+    country: {
+      name: 'Country', tempo: [70, 130, 100], jamTempo: [85, 115], sync: 0.6,
+      groove: [
+        { f: 'snare', lo: 12, hi: 16, soft: 6, w: 5, tip: 'Country wants the train beat: snare on every 16th.' },
+        { f: 'kickDown', lo: 1, hi: 1, soft: 0.5, w: 2, tip: 'Kick on 1 and 3 keeps the train rolling.' },
+        { f: 'kick', lo: 2, hi: 4, soft: 3, w: 1.5, tip: 'Country kick stays simple.' },
+        { f: 'hatBack', lo: 1, hi: 1, soft: 1, w: 1, tip: 'Accent 2 and 4 with a hat chick.' },
+        { f: 'cym', lo: 0, hi: 1, soft: 2, w: 1, tip: 'Easy on the crashes, partner.' },
+        { f: 'bpm', lo: 80, hi: 120, soft: 30, w: 1.5, tip: 'Country rolls between 80 and 120 BPM.' }
+      ],
+      signature: { bpm: 100, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
+        chorus: ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', 'x...............'],
+        bridge: ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', E] } },
+      starter: { bpm: 95, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'], sections: {
+        verse: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+        chorus: ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+        bridge: ['x.......x.......', '....x.......x...', 'x...x...x...x...', E] } },
+      parts: {
+        verse: [
+          ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
+          ['x.......x.......', '.xxx.xxx.xxx.xxx', '....x.......x...', E],
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', E]
+        ],
+        chorus: [
+          ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', 'x...............'],
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', E, 'x...............']
+        ],
+        bridge: [
+          ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', E],
+          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+        ]
+      },
+      backing: { root: 43, styles: [[0, 'boomchick', 'Boom-chick']],
+        progressions: { verse: [[0, 0, 5, 7], [0, 5, 0, 7], [0, 7, 5, 0]], chorus: [[5, 0, 7, 0], [5, 5, 0, 7], [0, 5, 7, 7]], bridge: [[9, 5, 7, 7], [2, 7, 0, 0]] },
+        riffs: [[0, 0, 7, 0, 5, 0, 7, 0]] },
+      reactions: { great: 'Boot-scootin’.', good: 'Two-steppable.', meh: 'Lost the train.', bad: 'Derailed.' }
+    }
+  };
+})(window.GG);
+
+</script>
 <script>/* content/lines.js */
 // content/lines.js: flavour text pools the sim picks from with the career RNG.
 // Shape (CONTENT SCHEMAS in 02_contracts.js):
@@ -1739,6 +2021,9 @@ h1, h2, h3, p { margin: 0; }
 //   gigReactions: { <memberId>: { great, ok, bad } }          one per member after a gig
 //   tap:          { <memberId>: [text] }                       tapping a bandmate in the garage
 //   guilt: [text] (parents' loan)   yearEnd: [text]   quietWeek: [text] (Mondays without a card)
+//   songReactions: { marcel: { name }, dana: { noSolo }, jaxon: { fills }, kenji: { great } }   after a Write block
+//                  (marcel.name lines end with a colon: the sim appends the song's French title)
+//   writeTips:     { <memberId>: [text] }   one in-character hint when the sequencer opens for the first-ever Write
 // Tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>}, replaced by GG.career.fillText().
 // Kenji does not speak. His lines are stage directions or punctuation. This is load-bearing.
 (function (GG) {
@@ -2028,6 +2313,51 @@ h1, h2, h3, p { margin: 0; }
       "Dad looks at the garage, looks at the band, and says 'Another year, eh.' It's almost a blessing."
     ],
 
+    songReactions: {
+      marcel: {
+        name: [
+          'It needs a name. A French name. I have it:',
+          'I will call it, and you will not ask what it means:',
+          'This one speaks to me of darkness. And of my yard. Its name is',
+          'I have written the lyrics in the time it took you to count in. It is called',
+          'Silence. Lord Abyssus names it:',
+          'The neighbours will weep when they hear it. It is called'
+        ]
+      },
+      dana: {
+        noSolo: [
+          'Cool. Where does my solo go? Nowhere? Cool. Cool cool cool.',
+          "There's no bridge. Where am I supposed to shred, the parking lot?",
+          "You filled every gap. I'll just solo over the top of it. Loudly.",
+          'Great song. No room for a solo. I will be taking this up with management.',
+          "I needed eight bars. You gave me zero. I'm writing that down."
+        ]
+      },
+      jaxon: {
+        fills: [
+          'ok so i added a fill in bar 4. you did not write it. it is there now',
+          "it felt kinda empty so i snuck a few notes in. baba says it's better",
+          'i played the simple part. then i got bored. then there was a fill. sorry',
+          "don't listen to bar 12 too closely. or do. it's my best work",
+          'the verse had room so i put a little bass run there. like a surprise'
+        ]
+      },
+      kenji: {
+        great: [
+          '(Kenji nods. Once. It is the highest honour in Saskatchewan.)',
+          '(Kenji lowers his sunglasses one centimetre. Then raises them again.)',
+          '(Kenji taps his foot. Everyone stops playing to stare.)',
+          '👍'
+        ]
+      }
+    },
+
+    writeTips: {
+      dana: ["Start with the kick. Metal wants it busy: try every 8th. Then leave me room for a solo.", 'Tap to add a hit, drag down a lane to paint. Kick first, the rest follows.'],
+      marcel: ['Make the chorus different from the verse. A crash on the one. Darkness follows.', 'The chorus must CRASH. Then I will name it.'],
+      jaxon: ['tap a square to add a hit. drag to paint a whole row. hit play to hear it', "kick on every 8th is the metal thing. the pedal thing comes later i think"]
+    },
+
     quietWeek: [
       'A quiet Monday. Marcel is mowing. Nobody interrupts Marcel when he is mowing.',
       'Nothing happens. Dana practises. The garage hums at sixty cycles.',
@@ -2121,7 +2451,7 @@ h1, h2, h3, p { margin: 0; }
 
 </script>
 <script>/* content/song_titles.js */
-// content/song_titles.js: title pools for newly written songs (GG.songs.writePlaceholder).
+// content/song_titles.js: title pools for newly written songs (GG.songs.pickTitle).
 // Shape: GG.content.songTitles = { metal: [ { fr, en } ], punk|rock|country: [ 'English title' ] }
 //   metal:  Marcel names every song in French ({ fr, en }). The English is ALWAYS about his lawn; nobody in
 //           the band knows this until a fan translates it. Song title = fr, titleEn = en.
@@ -2354,7 +2684,15 @@ h1, h2, h3, p { margin: 0; }
   // Fills every field a current build expects, then runs version migrations. Idempotent.
   // Add a step here (and bump contracts.SAVE_SCHEMA) whenever the state shape changes.
   var MIGRATIONS = {
-    // 1: function (s) { ... return s; }   // from v1 to v2
+    // v0.1 -> v0.2: every song gets a drum pattern, generated from an RNG seeded by the career seed + song id
+    // (never the career RNG, so the career replays the same). Old quality/polish stay; ratings, gear,
+    // pendingSongs and draft are filled in by the defaults below.
+    1: function (s) {
+      if (GG.songs && Array.isArray(s.songs)) s.songs.forEach(function (x) {
+        if (x && typeof x === 'object' && !x.pattern) { x.pattern = GG.songs.patternFor(s, x.id); x.auto = true; }
+      });
+      return s;
+    }
   };
   function def(o, k, v) { if (o[k] === undefined || o[k] === null && v !== null) o[k] = v; }
   save.migrate = function (s) {
@@ -2385,12 +2723,22 @@ h1, h2, h3, p { margin: 0; }
       def(m, 'status', 'active'); def(m, 'original', true); def(m, 'nick', ''); def(m, 'role', '');
       if (!isFinite(m.mood)) m.mood = 60; if (!isFinite(m.skill)) m.skill = 40;
     });
+    if (!isFinite(s.seed)) s.seed = 1;
+    if (!s.gear || typeof s.gear !== 'object') s.gear = { lanes: 4, doubleKick: false };
+    if (!isFinite(s.gear.lanes)) s.gear.lanes = 4; s.gear.doubleKick = !!s.gear.doubleKick;
+    if (!Array.isArray(s.pendingSongs)) s.pendingSongs = [];
+    def(s, 'draft', null);
+    s.songs = s.songs.filter(function (x) { return x && typeof x === 'object'; });
     s.songs.forEach(function (x) {
       def(x, 'plays', 0); def(x, 'polish', 0); def(x, 'quality', 30); def(x, 'written', 0);
-      if (x.pattern === undefined) x.pattern = null;
       def(x, 'titleEn', x.title);
+      def(x, 'stale', 0); def(x, 'hits', 0); def(x, 'classic', false); def(x, 'auto', true);
+      if (x.lastPlayed === undefined) x.lastPlayed = null;
+      if (!GG.songs) return;
+      if (!x.pattern) x.pattern = GG.songs.patternFor(s, x.id);
+      else if (GG.songs.validate(x.pattern, s.gear).length) x.pattern = GG.songs.sanitize(x.pattern, s.gear, s.genre);
+      if (!x.rating) { var r = GG.songs.rate(x.pattern, s.genre, s.gear); x.rating = { groove: r.groove, hook: r.hook, difficulty: r.difficulty }; }
     });
-    if (!isFinite(s.seed)) s.seed = 1;
     if (!isFinite(s.rng)) s.rng = s.seed;
     return s;
   };
@@ -2935,7 +3283,7 @@ h1, h2, h3, p { margin: 0; }
       phase: 'monday', era: 'garage', protected: true,
       fund: E.startFund, fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
-      members: makeMembers(band), songs: [],
+      members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -3045,12 +3393,21 @@ h1, h2, h3, p { margin: 0; }
       if (polished.length) d.polished = polished.map(function (s) { return s.id; });
       addStat(state, 'burnout', A.burnout, d);
     },
+    // Uses the next song composed in the sequencer (state.pendingSongs, queued by the UI; null = "let the band jam
+    // one"), else the band jams one out. Emits 'song:written' with the band's reactions.
     write: function (state, A, f, rng, d, lines) {
-      var song = GG.songs.writePlaceholder(state, rng, { repeatFactor: f });
-      d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality };
+      var queued = state.pendingSongs && state.pendingSongs.length ? state.pendingSongs.shift() : null, song;
+      if (queued && queued.sections) {
+        song = GG.songs.create(state, queued, queued.title, { rng: rng, titleEn: queued.titleEn, repeatFactor: f });
+        state.stats.songsWritten++;
+      } else song = GG.songs.jam(state, rng, { repeatFactor: f });
+      var reactions = GG.songs.reactions(state, song, rng);
+      d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality, auto: song.auto,
+        groove: song.rating.groove, hook: song.rating.hook, difficulty: song.rating.difficulty, reactions: reactions };
       lines.push('New song: “' + song.title + '”' + (song.titleEn && song.titleEn !== song.title ? ' (' + song.titleEn + ')' : '') + '.');
       addStat(state, 'chemistry', rngRound(A.chemistry * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
+      GG.emit('song:written', { song: song, reactions: reactions });
     },
     promote: function (state, A, f, rng, d) {
       addStat(state, 'fund', -A.cost, d);
@@ -3231,6 +3588,7 @@ h1, h2, h3, p { margin: 0; }
     driftChemistry(state);
     wrap.chat = postWeeklyChat(state, rng);
     parentsLoan(state, rng, wrap);
+    GG.songs.weekly(state);
     wrap.milestones = checkMilestones(state);
     state.history.push(historyPoint(state));
     if (state.history.length > E.historyMax) state.history.splice(0, state.history.length - E.historyMax);
@@ -3340,29 +3698,280 @@ h1, h2, h3, p { margin: 0; }
 
 </script>
 <script>/* 21_sim_songs.js */
-// 21_sim_songs.js: the song catalog. v0.1: placeholder songs (a title + quality/polish numbers);
-// v0.2 adds the step-sequencer `pattern` and rates it. No DOM; randomness only from the rng passed in.
-//   SONG = { id, title, titleEn, quality 0..100, polish 0..100, plays, written: totalWeek, pattern: null }
+// 21_sim_songs.js: the song catalog. A song is a drum PATTERN (three one-bar sections, an arrangement, a tempo)
+// that the band builds guitars around. rate() scores a pattern: Groove (genre fit), Hook (chorus vs verse) and
+// Difficulty. create() turns a pattern into a SONG whose quality also depends on the band; jam()/generate() let the
+// band write one without you. Gigs age songs (stale) and great gigs make classics.
+// Pure and deterministic: no DOM, no audio; randomness only from the rng passed in. Genre data: content/genres.js.
+//   PATTERN = { bpm, lanes, sections: { verse|chorus|bridge: [laneStr x lanes] }, arrangement: [section..] }
+//   SONG    = { id, title, titleEn, written, pattern, rating: { groove, hook, difficulty }, quality, polish,
+//               plays, lastPlayed, stale, hits, classic, auto }
 (function (GG) {
-  var U = GG.util;
+  var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};
+  var STEPS = C.STEPS, SECTIONS = C.SECTIONS, BARS = C.BARS_PER_SECTION;
+  var KICK = 0, SNARE = 1, HAT = 2, CYM = 3, TOMS = 4, RIDE = 5;
+  var BLANK = new Array(STEPS + 1).join('.');
+  // Difficulty weight of one hit per lane (kick/toms need feet or travel, hats are easy).
+  var LANE_EFFORT = [1.2, 1, 0.6, 0.8, 1.2, 0.6];
 
+  // Arrangement presets. Each entry plays its one-bar section BARS_PER_SECTION times.
+  songs.ARRANGEMENTS = {
+    short: ['verse', 'chorus', 'verse', 'chorus'],
+    classic: ['verse', 'chorus', 'verse', 'chorus', 'bridge', 'chorus'],
+    epic: ['verse', 'verse', 'chorus', 'verse', 'chorus', 'bridge', 'bridge', 'chorus', 'chorus']
+  };
+  songs.ARRANGEMENT_IDS = ['short', 'classic', 'epic'];
+  songs.arrangementId = function (p) {
+    var a = (p && p.arrangement || []).join(',');
+    for (var id in songs.ARRANGEMENTS) if (songs.ARRANGEMENTS[id].join(',') === a) return id;
+    return null;
+  };
+  songs.DEFAULT_GEAR = { lanes: 4, doubleKick: false };
+
+  function E() { return GG.content.economy.songs; }
+  function gearOf(g) { return { lanes: g && g.lanes >= 1 ? Math.min(g.lanes, C.LANES.length) : 4, doubleKick: !!(g && g.doubleKick) }; }
+  songs.genre = function (genre) { var G = GG.content.genres || {}; return G[genre] || G.metal; };
+
+  /* ---- Pattern helpers ------------------------------------------------------------------------------ */
+  function lane(sec, i) { var s = sec && sec[i]; return typeof s === 'string' && s.length === STEPS ? s : BLANK; }
+  function on(str, i) { return str.charCodeAt(i) === 120; }   // 'x'
+  function count(str) { var n = 0; for (var i = 0; i < STEPS; i++) if (on(str, i)) n++; return n; }
+  function set(str, i, v) { return str.slice(0, i) + (v ? 'x' : '.') + str.slice(i + 1); }
+  function kickPairs(str) { var n = 0; for (var i = 1; i < STEPS; i++) if (on(str, i) && on(str, i - 1)) n++; return n; }
+  // Without a double-kick pedal one foot can't hit two 16ths in a row: keeps the earlier hit of each pair.
+  function oneFoot(str) { for (var i = 1; i < STEPS; i++) if (on(str, i) && on(str, i - 1)) str = set(str, i, false); return str; }
+  songs.kickBlocked = function (kickStr, step, gear) {
+    if (gearOf(gear).doubleKick) return false;
+    return (step > 0 && on(kickStr, step - 1)) || (step < STEPS - 1 && on(kickStr, step + 1));
+  };
+  songs.setHit = set;
+  songs.isHit = on;
+  songs.blankSection = function (lanes) { var a = []; for (var i = 0; i < lanes; i++) a.push(BLANK); return a; };
+  function hitsIn(sec, lanes) { var n = 0; for (var l = 0; l < lanes; l++) n += count(lane(sec, l)); return n; }
+  // Jaccard similarity of two sets of hits (lists of lane strings); `skip` = lane index to ignore. Empty vs empty = 1.
+  function jaccard(a, b, lanes, skip) {
+    var inter = 0, union = 0;
+    for (var l = 0; l < lanes; l++) {
+      if (l === skip) continue;
+      var x = lane(a, l), y = lane(b, l);
+      for (var i = 0; i < STEPS; i++) { var p = on(x, i), q = on(y, i); if (p && q) inter++; if (p || q) union++; }
+    }
+    return union ? inter / union : 1;
+  }
+  // How much a bar repeats itself: first half vs second half, ignoring the crash lane. Empty = 0.
+  function halves(sec, lanes) {
+    var inter = 0, union = 0;
+    for (var l = 0; l < lanes; l++) {
+      if (l === CYM) continue;
+      var s = lane(sec, l);
+      for (var i = 0; i < STEPS / 2; i++) { var p = on(s, i), q = on(s, i + STEPS / 2); if (p && q) inter++; if (p || q) union++; }
+    }
+    return union ? inter / union : 0;
+  }
+
+  /* ---- Features of one bar (see the RULE doc in content/genres.js) ------------------------------------ */
+  function features(sec, lanes, bpm, gear) {
+    var k = lane(sec, KICK), s = lane(sec, SNARE), h = lane(sec, HAT), c = lane(sec, CYM);
+    var t = lanes > TOMS ? lane(sec, TOMS) : BLANK, r = lanes > RIDE ? lane(sec, RIDE) : BLANK;
+    var f = { bpm: bpm, kick: count(k), snare: count(s), cym: count(c), time: 0, hits: hitsIn(sec, lanes), effort: 0, odd: 0 };
+    var s8 = 0, t8 = 0, t16 = 0, sOdd = 0, kOdd = 0;
+    for (var i = 0; i < STEPS; i++) {
+      var tm = on(h, i) || on(r, i) || on(c, i);
+      if (on(h, i)) f.time++; if (on(r, i)) f.time++; if (on(c, i)) f.time++;
+      if (i % 2 === 0) { if (tm) t8++; if (on(s, i)) s8++; }
+      else { if (tm) t16++; if (on(s, i)) sOdd++; if (on(k, i)) kOdd++; }
+    }
+    for (var l = 0; l < lanes; l++) f.effort += count(lane(sec, l)) * LANE_EFFORT[l];
+    if (!gearOf(gear).doubleKick) f.kick -= kickPairs(k);   // the band can only play one foot's worth
+    f.kickDown = ((on(k, 0) ? 1 : 0) + (on(k, 8) ? 1 : 0)) / 2;
+    f.backbeat = ((on(s, 4) ? 1 : 0) + (on(s, 12) ? 1 : 0)) / 2;
+    f.hatBack = ((on(h, 4) ? 1 : 0) + (on(h, 12) ? 1 : 0)) / 2;
+    f.snareOff = f.snare - f.backbeat * 2;
+    f.snareOdd = sOdd;
+    f.snare8 = s8 / 8; f.hat8 = t8 / 8; f.hat16 = t16 / 8;
+    f.odd = kOdd + sOdd;
+    f.sync = f.odd / Math.max(1, count(k) + f.snare);
+    f.steady = halves(sec, lanes);
+    return f;
+  }
+  function ruleScore(rule, f, gear) {
+    if (rule.any) return Math.max.apply(null, rule.any.map(function (r) { return ruleScore(r, f, gear); }));
+    var v = f[rule.f], lo = gear.doubleKick && rule.loDK != null ? rule.loDK : rule.lo;
+    if (v >= lo && v <= rule.hi) return 1;
+    return Math.max(0, 1 - (v < lo ? lo - v : v - rule.hi) / (rule.soft || 1));
+  }
+  // Groove of one bar, 0..1: genre fit x tightness x fullness, plus tips for what cost the most.
+  var TIGHT_TIPS = { sync: 'Too jumpy: lock the kick and snare to the beat.', steady: 'It wanders. Make the second half echo the first.',
+    empty: 'Too empty. Fill in a beat first.' };
+  function barGroove(G, f, gear, tips, weight) {
+    var sum = 0, tot = 0;
+    G.groove.forEach(function (r) {
+      var sc = ruleScore(r, f, gear);
+      sum += sc * r.w; tot += r.w;
+      if (sc < 0.8) tip(tips, r.tip, (1 - sc) * r.w * weight);
+    });
+    var syncSc = f.sync <= G.sync ? 1 : Math.max(0, 1 - (f.sync - G.sync) / 0.3);
+    var steadySc = U.clamp((f.steady - 0.2) / 0.5, 0, 1);
+    var full = Math.min(1, f.hits / 8);
+    if (syncSc < 0.8) tip(tips, TIGHT_TIPS.sync, (1 - syncSc) * 3 * weight);
+    if (steadySc < 0.8) tip(tips, TIGHT_TIPS.steady, (1 - steadySc) * 3 * weight);
+    if (full < 1) tip(tips, TIGHT_TIPS.empty, (1 - full) * 12 * weight);
+    var tight = U.clamp(1 - 0.4 * (1 - syncSc) - 0.4 * (1 - steadySc), 0.2, 1);
+    return (tot ? sum / tot : 0) * tight * full;
+  }
+  function tip(tips, text, cost) { if (text && cost > 0) tips[text] = (tips[text] || 0) + cost; }
+
+  // Hook, 0..1: the chorus should contrast with the verse (sweet spot, not a copy, not unrelated noise) and be catchy
+  // (repeats itself, crash on the downbeat, at least as big as the verse).
+  function hookOf(p, lanes, tips) {
+    var v = p.sections.verse, c = p.sections.chorus;
+    var d = 1 - jaccard(v, c, lanes, -1), vh = hitsIn(v, lanes), ch = hitsIn(c, lanes);
+    var contrast = d < 0.05 ? 0 : d < 0.25 ? (d - 0.05) / 0.2 : d <= 0.6 ? 1 : 1 - 0.8 * (d - 0.6) / 0.4;
+    var rep = U.clamp((halves(c, lanes) - 0.2) / 0.6, 0, 1);
+    var accent = on(lane(c, CYM), 0) || (lanes > RIDE && on(lane(c, RIDE), 0)) ? 1 : 0;
+    var lift = vh ? Math.min(1, ch / vh) : ch ? 1 : 0;
+    if (d < 0.1 && ch) tip(tips, 'Chorus is a copy of the verse. Change it up.', 5);
+    if (d > 0.8 && ch && vh) tip(tips, 'Chorus sounds unrelated to the verse. Keep something in common.', 3);
+    if (!accent && ch) tip(tips, 'Crash on the chorus downbeat: instant hook.', 1.6);
+    if (rep < 0.6 && ch) tip(tips, 'Make the chorus repeat itself: same first and second half.', 2);
+    if (!ch) tip(tips, 'The chorus is empty. Give it something to shout over.', 8);
+    return (0.45 * contrast + 0.3 * rep + 0.15 * accent + 0.1 * lift) * Math.min(1, ch / 8);
+  }
+
+  // Rates a pattern for a genre. Pure and deterministic (same pattern => same numbers, node or browser).
+  // -> { groove, hook, difficulty (0..100 ints), notes (hits in the whole song), tips: [1-2 plain hints], sections }
+  songs.rate = function (pattern, genre, gear) {
+    var G = songs.genre(genre), g = gearOf(gear), p = songs.sanitize(pattern, g, null, true), lanes = p.lanes;
+    var tips = {}, per = {}, feats = {};
+    SECTIONS.forEach(function (name) { feats[name] = features(p.sections[name], lanes, p.bpm, g); });
+    var sumG = 0, sumW = 0, effort = 0, odd = 0, notes = 0;
+    p.arrangement.forEach(function (name) {   // bridges (breakdowns, solo spots) count half toward the groove
+      var w = name === 'bridge' ? 0.5 : 1, f = feats[name];
+      per[name] = barGroove(G, f, g, tips, w);
+      sumG += per[name] * w; sumW += w;
+      effort += f.effort; odd += f.odd; notes += f.hits * BARS;
+    });
+    var n = p.arrangement.length || 1;
+    var raw = (effort / n + 0.6 * odd / n) * p.bpm / 120;
+    var hook = hookOf(p, lanes, tips);
+    var list = Object.keys(tips).sort(function (a, b) { return tips[b] - tips[a] || (a < b ? -1 : 1); });
+    var sections = {};
+    SECTIONS.forEach(function (name) { sections[name] = Math.round(100 * (per[name] != null ? per[name] : barGroove(G, feats[name], g, {}, 0))); });
+    return { groove: Math.round(100 * (sumW ? sumG / sumW : 0)), hook: Math.round(100 * hook),
+      difficulty: Math.round(100 * (1 - Math.exp(-raw / 28))), notes: notes, tips: list.slice(0, 2), sections: sections };
+  };
+  // A one-word verdict for a groove score ("Neck-snapping.").
+  songs.verdict = function (genre, groove) {
+    var r = songs.genre(genre).reactions || {};
+    return groove >= 85 ? r.great : groove >= 70 ? r.good : groove >= 45 ? r.meh : r.bad;
+  };
+
+  /* ---- Validation ------------------------------------------------------------------------------------ */
+  // Problems with a pattern for this gear ([] = fine). The UI never lets these happen; the sim sanitizes.
+  songs.validate = function (p, gear) {
+    var g = gearOf(gear), errs = [];
+    if (!p || typeof p !== 'object') return ['not a pattern'];
+    if (!(p.bpm >= 30 && p.bpm <= 300)) errs.push('tempo out of range');
+    if (!(p.lanes >= 1 && p.lanes <= g.lanes)) errs.push('the kit has ' + g.lanes + ' lanes');
+    if (!Array.isArray(p.arrangement) || !p.arrangement.length || p.arrangement.some(function (s) { return SECTIONS.indexOf(s) < 0; })) errs.push('bad arrangement');
+    SECTIONS.forEach(function (name) {
+      var sec = p.sections && p.sections[name];
+      if (!Array.isArray(sec) || sec.length !== p.lanes || sec.some(function (s) { return !/^[x.]{16}$/.test(s); })) { errs.push(name + ': bad lanes'); return; }
+      if (!g.doubleKick && kickPairs(sec[KICK])) errs.push(name + ': two kicks in a row need a double-kick pedal');
+    });
+    return errs;
+  };
+  // A clean copy that passes validate(): pads/truncates lanes, fixes the arrangement, clamps the tempo into the
+  // genre range (genre null: 30..300) and drops back-to-back kicks without the pedal (loose: keep them, for rating).
+  songs.sanitize = function (p, gear, genre, loose) {
+    var g = gearOf(gear), src = p && typeof p === 'object' ? p : {};
+    var range = genre ? songs.genre(genre).tempo : [30, 300];
+    var bpm = Math.round(U.clamp(Number(src.bpm) || (genre ? range[2] : 120), range[0], range[1]));
+    var lanes = loose ? Math.max(1, Math.min(C.LANES.length, src.lanes || g.lanes)) : g.lanes;
+    var out = { bpm: bpm, lanes: lanes, sections: {}, arrangement: [] };
+    SECTIONS.forEach(function (name) {
+      var sec = src.sections && src.sections[name], clean = [];
+      for (var l = 0; l < lanes; l++) {
+        var s = sec && typeof sec[l] === 'string' ? sec[l].replace(/[^x]/g, '.').slice(0, STEPS) : '';
+        s = (s + BLANK).slice(0, STEPS);
+        clean.push(l === KICK && !g.doubleKick && !loose ? oneFoot(s) : s);
+      }
+      out.sections[name] = clean;
+    });
+    var arr = Array.isArray(src.arrangement) ? src.arrangement.filter(function (s) { return SECTIONS.indexOf(s) >= 0; }) : [];
+    out.arrangement = arr.length ? arr.slice(0, 16) : songs.ARRANGEMENTS.classic.slice();
+    return out;
+  };
+
+  /* ---- Making patterns --------------------------------------------------------------------------------- */
+  function padBar(bar, lanes) { var a = []; for (var l = 0; l < lanes; l++) a.push(bar[l] || BLANK); return a; }
+  // Flips a hit or two on the kick/hat lanes so jams aren't copies of the library.
+  function mutate(bar, rng, wild) {
+    var n = rng.chance(wild) ? rng.int(1, 2) : 0;
+    for (var i = 0; i < n; i++) {
+      var l = rng.pick([KICK, KICK, HAT, CYM]), step = rng.int(0, STEPS - 1);
+      bar[l] = set(bar[l], step, !on(bar[l], step));
+    }
+  }
+  // A decent genre pattern: library bars (content/genres.js parts) with a little randomness.
+  // opts: { gear, wild: 0..1 (chance each section gets a mutation, default 0.35), arrangement: id }
+  songs.generate = function (genre, rng, opts) {
+    opts = opts || {};
+    var G = songs.genre(genre), g = gearOf(opts.gear), wild = opts.wild != null ? opts.wild : 0.35;
+    var arrId = opts.arrangement || rng.weighted(songs.ARRANGEMENT_IDS, function (id) { return id === 'classic' ? 2 : 1; });
+    var p = { bpm: 5 * Math.round(rng.int(G.jamTempo[0], G.jamTempo[1]) / 5), lanes: g.lanes, sections: {},
+      arrangement: songs.ARRANGEMENTS[arrId].slice() };
+    SECTIONS.forEach(function (name) {
+      var bar = padBar(rng.pick(G.parts[name]), g.lanes);
+      mutate(bar, rng, wild);
+      p.sections[name] = bar;
+    });
+    return songs.sanitize(p, g, genre);
+  };
+  // The fixed teaching pattern for the first Write (a plain beat the tips improve on).
+  songs.starter = function (genre, gear) { return songs.sanitize(U.clone(songs.genre(genre).starter), gear, genre); };
+  songs.signature = function (genre, gear) { return songs.sanitize(U.clone(songs.genre(genre).signature), gear, genre); };
+  // Deterministic pattern for a song that never had one (v0.1 saves, starter songs): seeded by career + song id.
+  songs.patternFor = function (state, key) {
+    return songs.generate(state.genre || 'metal', GG.RNG(GG.hashSeed((state.seed || 1) + '|' + key)), { gear: state.gear });
+  };
+
+  // 0..1 how alike two patterns are, section by section (v0.5 reviews flag recycled drum patterns).
+  songs.similarity = function (a, b) {
+    var pa = songs.sanitize(a && a.pattern || a, null, null, true), pb = songs.sanitize(b && b.pattern || b, null, null, true);
+    var lanes = Math.max(pa.lanes, pb.lanes), sum = 0;
+    SECTIONS.forEach(function (name) { sum += jaccard(pa.sections[name], pb.sections[name], lanes, -1); });
+    return Math.round(sum / SECTIONS.length * 1000) / 1000;
+  };
+
+  // Every hit of a song in order: [{ beat, lane, section, entry, bar, step }] (beat = quarter notes from the start).
+  // v0.3 builds gig charts from this. Count = sum over arrangement entries of (hits in that section x BARS_PER_SECTION).
+  songs.toNotes = function (x) {
+    var p = songs.sanitize(x && x.pattern || x, null, null, true), out = [], beat = 0;
+    p.arrangement.forEach(function (name, entry) {
+      var sec = p.sections[name];
+      for (var bar = 0; bar < BARS; bar++, beat += 4) {
+        for (var step = 0; step < STEPS; step++) {
+          for (var l = 0; l < p.lanes; l++) {
+            if (on(sec[l], step)) out.push({ beat: beat + step / 4, lane: C.LANES[l], section: name, entry: entry, bar: bar, step: step });
+          }
+        }
+      }
+    });
+    return out;
+  };
+  songs.beats = function (p) { return (p.arrangement || []).length * BARS * 4; };
+  songs.seconds = function (p) { return songs.beats(p) * 60 / (p.bpm || 120); };
+
+  /* ---- Titles ------------------------------------------------------------------------------------------ */
   // Used only when content/song_titles.js is missing.
   var FALLBACK_TITLES = {
-    metal: [
-      { fr: 'Ma Pelouse, Mon Tombeau', en: 'My Lawn, My Tomb' },
-      { fr: 'Les Pissenlits Éternels', en: 'The Eternal Dandelions' },
-      { fr: 'Tondeuse de l’Apocalypse', en: 'Lawnmower of the Apocalypse' },
-      { fr: 'Le Voisin a Coupé Trop Court', en: 'The Neighbour Cut It Too Short' },
-      { fr: 'Arrosage Interdit', en: 'Watering Ban' },
-      { fr: 'Chiendent Sanglant', en: 'Bloody Crabgrass' }
-    ],
-    punk: [{ fr: 'Council Meeting (Is a Lie)', en: 'Council Meeting (Is a Lie)' }],
-    rock: [{ fr: 'Leather Pants at Minus Forty', en: 'Leather Pants at Minus Forty' }],
-    country: [{ fr: 'My Truck Is in the Condo Lot', en: 'My Truck Is in the Condo Lot' }]
+    metal: [{ fr: 'Ma Pelouse, Mon Tombeau', en: 'My Lawn, My Tomb' }, { fr: 'Arrosage Interdit', en: 'Watering Ban' },
+      { fr: 'Chiendent Sanglant', en: 'Bloody Crabgrass' }],
+    punk: ['Council Meeting (Is a Lie)'], rock: ['Leather Pants at Minus Forty'], country: ['My Truck Is in the Condo Lot']
   };
   var ROMAN = ['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-
   // Content entries may be { fr, en }, { title, titleEn } or plain strings.
   function norm(t) {
     if (typeof t === 'string') return { title: t, titleEn: t };
@@ -3372,15 +3981,12 @@ h1, h2, h3, p { margin: 0; }
     var st = GG.content.songTitles, list = st && st[genre] && st[genre].length ? st[genre] : FALLBACK_TITLES[genre];
     return (list || FALLBACK_TITLES.metal).map(norm);
   }
-  function nextId(state) {
-    var max = 0;
-    state.songs.forEach(function (s) { var n = parseInt(String(s.id).slice(1), 10); if (n > max) max = n; });
-    return 's' + (max + 1);
-  }
   // A fresh title from the genre pool; once every title is used, sequels: "Ma Pelouse, Mon Tombeau II".
-  function pickTitle(state, rng) {
+  // `taken` (optional) = extra titles to avoid, e.g. songs queued in the UI.
+  songs.pickTitle = function (state, rng, taken) {
     var used = {}, pool = titlePool(state.genre);
-    state.songs.forEach(function (s) { used[s.title] = true; });
+    state.songs.concat(state.pendingSongs || []).forEach(function (s) { if (s && s.title) used[s.title] = true; });
+    (taken || []).forEach(function (t) { used[t] = true; });
     var fresh = pool.filter(function (t) { return !used[t.title]; });
     if (fresh.length) return rng.pick(fresh);
     var base = rng.pick(pool);
@@ -3388,42 +3994,77 @@ h1, h2, h3, p { margin: 0; }
       if (!used[base.title + ' ' + ROMAN[i]]) return { title: base.title + ' ' + ROMAN[i], titleEn: base.titleEn + ' ' + ROMAN[i] };
     }
     return { title: base.title + ' ' + (state.songs.length + 1), titleEn: base.titleEn + ' ' + (state.songs.length + 1) };
+  };
+
+  /* ---- Songs in the career --------------------------------------------------------------------------- */
+  function nextId(state) {
+    var max = 0;
+    state.songs.forEach(function (s) { var n = parseInt(String(s.id).slice(1), 10); if (n > max) max = n; });
+    return 's' + (max + 1);
   }
   function avgSkill(state) {
     var act = state.members.filter(function (m) { return m.status === 'active'; });
     if (!act.length) return 0;
     return act.reduce(function (t, m) { return t + m.skill; }, 0) / act.length;
   }
-  function make(state, t, quality, polish) {
-    var song = { id: nextId(state), title: t.title, titleEn: t.titleEn, quality: U.clamp(Math.round(quality), 1, 100),
-      polish: U.clamp(Math.round(polish), 0, 100), plays: 0, written: state.totalWeek, pattern: null };
-    state.songs.push(song);
-    return song;
+  // The hardest song (difficulty 0..100) the band can play cleanly right now.
+  songs.ability = function (state) {
+    var e = E();
+    return Math.round(e.abilityBase + avgSkill(state) * e.abilitySkill + state.drumSkill * e.abilityDrum);
+  };
+  // The band's share of a new song's quality (skill, your chops, chemistry), from the Write activity numbers.
+  function bandPart(state) {
+    var A = GG.content.activities.write;
+    return A.qualityBase + avgSkill(state) * A.qualitySkill + state.drumSkill * A.qualityDrum + state.chemistry * A.qualityChem;
   }
-
-  // Starter songs that come with the band (newCareer). t = { title, titleEn } (or { fr, en }).
-  songs.addStarter = function (state, t, rng) {
-    var E = GG.content.economy;
-    var s = make(state, norm(t), rng.int(E.starterSongQuality[0], E.starterSongQuality[1]), E.starterSongPolish);
-    s.written = 0;
-    return s;
+  songs.byId = function (state, id) {
+    for (var i = 0; i < state.songs.length; i++) if (state.songs[i].id === id) return state.songs[i];
+    return null;
   };
 
-  // Write block: a new song whose quality comes from the band's skills + chemistry + luck.
-  // opts.repeatFactor < 1 (second write in a week) costs quality.
-  songs.writePlaceholder = function (state, rng, opts) {
-    var A = GG.content.activities.write, f = opts && opts.repeatFactor != null ? opts.repeatFactor : 1;
-    var q = A.qualityBase + avgSkill(state) * A.qualitySkill + state.drumSkill * A.qualityDrum
-      + state.chemistry * A.qualityChem + rng.range(A.qualityNoise[0], A.qualityNoise[1]) - (1 - f) * A.repeatPenalty;
-    var song = make(state, pickTitle(state, rng), q, rng.int(A.polish[0], A.polish[1]));
+  // Adds a song built from `pattern` to the catalog. quality = band part + craft (groove, hook, a little flash)
+  // - a penalty when it's harder than the band can play (it also starts rougher) - the same-week repeat penalty.
+  // opts: { rng, titleEn, auto, repeatFactor, noise, polish, quality (keep this quality), written }
+  songs.create = function (state, pattern, title, opts) {
+    opts = opts || {};
+    var e = E(), A = GG.content.activities.write, gear = gearOf(state.gear);
+    var rng = opts.rng || GG.RNG(GG.hashSeed((state.seed || 1) + '|song|' + state.songs.length));
+    var p = songs.sanitize(pattern, gear, state.genre), r = songs.rate(p, state.genre, gear);
+    var t = title ? { title: String(title).slice(0, 60), titleEn: String(opts.titleEn || title).slice(0, 80) } : songs.pickTitle(state, rng);
+    var f = opts.repeatFactor != null ? opts.repeatFactor : 1;
+    var over = Math.max(0, r.difficulty - songs.ability(state));
+    var craft = 0.6 * r.groove + 0.3 * r.hook + 0.1 * r.difficulty;
+    var q = opts.quality != null ? opts.quality
+      : bandPart(state) + (craft - e.craftPivot) * e.craftWeight - over * e.overPenalty - (1 - f) * A.repeatPenalty + (opts.noise || 0);
+    var polish = opts.polish != null ? opts.polish : rng.int(A.polish[0], A.polish[1]) - over * e.overPolish;
+    var song = { id: nextId(state), title: t.title, titleEn: t.titleEn, written: opts.written != null ? opts.written : state.totalWeek,
+      pattern: p, rating: { groove: r.groove, hook: r.hook, difficulty: r.difficulty },
+      quality: U.clamp(Math.round(q), 1, 100), polish: U.clamp(Math.round(polish), 0, 100),
+      plays: 0, lastPlayed: null, stale: 0, hits: 0, classic: false, auto: !!opts.auto };
+    state.songs.push(song);
+    return song;
+  };
+  // Write block with nothing composed: the band jams one out (bots always take this path).
+  songs.jam = function (state, rng, opts) {
+    opts = opts || {};
+    var A = GG.content.activities.write, p = songs.generate(state.genre, rng, { gear: state.gear });
+    var noise = rng.range(A.qualityNoise[0], A.qualityNoise[1]);
+    var song = songs.create(state, p, null, { rng: rng, auto: true, noise: noise, repeatFactor: opts.repeatFactor });
     state.stats.songsWritten++;
     return song;
   };
+  // Starter songs that come with the band (newCareer). t = { title, titleEn } (or { fr, en }). Their patterns are
+  // seeded by the title so the career RNG sequence (and v0.1 balance) is unchanged.
+  songs.addStarter = function (state, t, rng) {
+    var Ec = GG.content.economy, n = norm(t);
+    return songs.create(state, songs.patternFor(state, n.title), n.title, { titleEn: n.titleEn, auto: true, written: 0,
+      quality: rng.int(Ec.starterSongQuality[0], Ec.starterSongQuality[1]), polish: Ec.starterSongPolish });
+  };
 
-  // Ranking used for setlists: quality matters most, polish shows on stage.
+  // Ranking used for setlists: quality matters most, polish shows on stage, stale songs bore the crowd.
   songs.score = function (song) {
-    var w = GG.content.economy.gig.songScore;
-    return song.quality * w.quality + song.polish * w.polish;
+    var w = GG.content.economy.gig.songScore, e = E();
+    return song.quality * w.quality + song.polish * w.polish - (song.stale || 0) * e.staleWeight + (song.classic ? e.classicBonus : 0);
   };
   // The n best songs (stable: earlier songs win ties).
   songs.best = function (state, n) {
@@ -3439,11 +4080,50 @@ h1, h2, h3, p { margin: 0; }
     todo.forEach(function (s) { s.polish = U.clamp(s.polish + amount, 0, 100); });
     return todo;
   };
+  // A gig played these songs: plays, stale, hits (A/S gigs) and classics. Returns the songs that just became classics.
+  songs.played = function (state, ids, grade) {
+    var e = E(), great = e.classicGrades.indexOf(grade) >= 0, fresh = [];
+    (ids || []).forEach(function (id) {
+      var s = songs.byId(state, id); if (!s) return;
+      s.plays++; s.lastPlayed = state.totalWeek;
+      s.stale = U.clamp((s.stale || 0) + (s.classic ? e.stalePerPlay / 2 : e.stalePerPlay), 0, 100);
+      if (great) s.hits = (s.hits || 0) + 1;
+      if (!s.classic && s.hits >= e.classicHits) { s.classic = true; fresh.push(s); }
+    });
+    return fresh;
+  };
+  // Week wrap: songs that weren't played this week freshen up.
+  songs.weekly = function (state) {
+    var e = E();
+    state.songs.forEach(function (s) { if (s.stale > 0 && s.lastPlayed !== state.totalWeek) s.stale = Math.max(0, s.stale - e.staleDecay); });
+  };
+
+  // Band reactions to a new song (career RNG; lines in content/lines.js songReactions): Marcel names it in French,
+  // Dana wants room for a solo, Jaxon sneaks fills into simple parts, Kenji nods at a great one.
+  var FALLBACK_REACT = { name: ['I have named it:'], noSolo: ['Where does my solo go?'], fills: ['i added a fill. you will not notice'],
+    great: ['(A nod.)'] };
+  songs.reactions = function (state, song, rng) {
+    var L = (GG.content.lines && GG.content.lines.songReactions) || {}, out = [];
+    function active(id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); }
+    function say(id, key) {
+      if (!active(id)) return;
+      var pool = L[id] && L[id][key];
+      out.push({ who: id, text: GG.career.pickLine(state, rng, pool && pool.length ? pool : null, FALLBACK_REACT[key]) });
+    }
+    var p = song.pattern, r = song.rating;
+    var bridge = p.arrangement.indexOf('bridge') >= 0 ? hitsIn(p.sections.bridge, p.lanes) : -1;
+    if (active('marcel')) { say('marcel', 'name'); out[out.length - 1].text += ' “' + song.title + '”.'; }
+    if (bridge < 0 || bridge >= 22) say('dana', 'noSolo');
+    if (r.difficulty < 40) say('jaxon', 'fills');
+    if (song.quality >= 60 || (r.groove >= 85 && r.hook >= 70)) say('kenji', 'great');
+    return out;
+  };
 
   GG.registerDebug('songs', function () {
     var s = GG.state; if (!s) return { songs: 0 };
     var top = songs.best(s, 3);
-    return { songs: s.songs.length, best: top.map(function (x) { return x.title + ' q' + x.quality + ' p' + x.polish; }) };
+    return { songs: s.songs.length, pending: (s.pendingSongs || []).length, draft: !!s.draft,
+      best: top.map(function (x) { return x.title + ' q' + x.quality + ' p' + x.polish + ' s' + (x.stale || 0); }) };
   });
 })(window.GG);
 
@@ -3579,9 +4259,7 @@ h1, h2, h3, p { margin: 0; }
     var cfg = G(), fx = { fund: r.pay - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
       burnout: cfg.burnout, mood: { all: cfg.mood[r.grade] } };
     r.deltas = GG.career.applyEffects(state, fx, {});
-    (r.songIds || []).forEach(function (id) {
-      for (var i = 0; i < state.songs.length; i++) if (state.songs[i].id === id) state.songs[i].plays++;
-    });
+    r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
     state.stats.gigs++;
     state.stats.earned += r.pay;
     var best = state.stats.bestGrade;
@@ -3633,21 +4311,39 @@ h1, h2, h3, p { margin: 0; }
 
 </script>
 <script>/* 30_audio.js */
-// 30_audio.js: tiny synthesized sound effects (Web Audio only, no files).
+// 30_audio.js: every sound in the game, synthesized with Web Audio (no files).
 // The AudioContext is created lazily on the first user gesture (GG.audio.unlock, wired in 60_main).
-// All sounds are oscillators + one shared noise buffer through a master gain; at most MAX_VOICES sources
-// play at once (extra sounds are dropped, never queued). Mute persists via GG.save settings.
-//   GG.audio.unlock() ; sfx('tap'|'card'|'cash'|'cheer'|'boo'|'whoosh'|'drum'|'save') ; setMuted(bool) ;
-//   isMuted() ; toggleMuted() ; suspend() ; resume()
+//   sfx:  tiny UI sounds, at most MAX_VOICES sources at once (extra sounds are dropped, never queued).
+//   song: a punchy synth kit (6 lanes) + a generated backing band, played by a look-ahead scheduler that runs on
+//         AudioContext.currentTime (never rAF time). timeline() turns a song into timed events; v0.3's rhythm game
+//         reuses it (and play()'s handle.beatAt) for its note highway.
+// Graph: sfx -> sfxBus ------------------------------------------------------------------------┐
+//        song voices -> per-play ports -> drums | guitar (drive + cab) | clean | bass -> glue comp -> limiter -> songOut ┴> master (mute) -> out
+// Song voices are capped at SONG_VOICES (backing included): each lane/voice is monophonic (a hit chokes the previous one
+// of its lane at the next hit's time) and the scheduler counts every source it has booked.
+//   GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; isMuted() ; toggleMuted() ; suspend() ; resume()
+//   play(pattern, { genre, section|null, loop, backing }) -> handle { stop(), update(pattern), beatAt(time), playing }
+//     emits 'audio:step' { section, bar, step, time, entry } per 16th and 'audio:end' { handle } when a song finishes
+//   hit(lane) (one drum hit now)
+//   stop() ; isPlaying() ; timeline(pattern, opts) ; styleFor(genre, bpm) ; renderOffline(spec) (tests)
 (function (GG) {
   var A = GG.audio = GG.audio || {};
-  var MAX_VOICES = 8, VOLUME = 0.32;
-  var ctx = null, master = null, noise = null, voices = 0, muted = null, suspended = false;
+  var C = GG.contracts;
+  var MAX_VOICES = 8, SFX_VOLUME = 0.32, SONG_VOLUME = 0.62, SONG_VOICES = 12;
+  var LOOKAHEAD = 0.12, TICK_MS = 25, LEAD_IN = 0.06;   // seconds scheduled ahead, scheduler period, start delay
+  var ctx = null, master = null, sfxBus = null, noise = null, rig = null, voices = 0, muted = null, suspended = false;
+  var current = null, stepCount = 0, lastStep = null;
 
   function settings() {
     try { return (GG.save && GG.save.settings && GG.save.settings()) || {}; } catch (e) { return {}; }
   }
   A.isMuted = function () { if (muted === null) muted = !!settings().muted; return muted; };
+  // One second of white noise per context, shared by every noisy sound.
+  function noiseBuffer(c) {
+    var b = c.createBuffer(1, c.sampleRate, c.sampleRate), d = b.getChannelData(0), s = 22222;
+    for (var i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 1073741823.5 - 1; }
+    return b;
+  }
 
   A.unlock = function () {
     if (!ctx) {
@@ -3655,12 +4351,11 @@ h1, h2, h3, p { margin: 0; }
       if (!AC) return false;
       try { ctx = new AC(); } catch (e) { ctx = null; return false; }
       master = ctx.createGain();
-      master.gain.value = A.isMuted() ? 0 : VOLUME;
+      master.gain.value = A.isMuted() ? 0 : 1;
       master.connect(ctx.destination);
-      // One second of white noise, shared by every noisy sound.
-      noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      var d = noise.getChannelData(0), s = 22222;
-      for (var i = 0; i < d.length; i++) { s = (s * 16807) % 2147483647; d[i] = s / 1073741823.5 - 1; }
+      sfxBus = ctx.createGain(); sfxBus.gain.value = SFX_VOLUME; sfxBus.connect(master);
+      noise = noiseBuffer(ctx);
+      rig = makeRig(ctx, master, noise);
     }
     if (ctx.state === 'suspended' && !suspended) { try { ctx.resume(); } catch (e) { /* ignore */ } }
     return true;
@@ -3668,28 +4363,29 @@ h1, h2, h3, p { margin: 0; }
 
   A.setMuted = function (m) {
     muted = !!m;
-    if (master) master.gain.setTargetAtTime(muted ? 0 : VOLUME, ctx.currentTime, 0.02);
+    if (master) master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.02);
     try { if (GG.save && GG.save.saveSettings) GG.save.saveSettings(Object.assign({}, settings(), { muted: muted })); } catch (e) { /* ignore */ }
     return muted;
   };
   A.toggleMuted = function () { return A.setMuted(!A.isMuted()); };
-  A.suspend = function () { suspended = true; if (ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) { /* ignore */ } } };
+  // The app went to the background: stop any song and freeze the context.
+  A.suspend = function () { suspended = true; if (current) current.stop(true); if (ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) { /* ignore */ } } };
   A.resume = function () { suspended = false; if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) { /* ignore */ } } };
 
-  /* ---- Building blocks ----------------------------------------------------------------------------- */
+  /* ---- SFX building blocks ----------------------------------------------------------------------------- */
   // Every source goes through voice(): counted while playing, released on 'ended'.
   function voice(src, t0, dur) {
     voices++;
     src.onended = function () { voices = Math.max(0, voices - 1); };
     src.start(t0); src.stop(t0 + dur + 0.05);
   }
-  // Attack/decay envelope on a fresh gain node connected to `dest` (default master).
+  // Attack/decay envelope on a fresh gain node connected to `dest` (default the sfx bus).
   function env(t0, attack, peak, decay, dest) {
     var g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(peak, t0 + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
-    g.connect(dest || master);
+    g.connect(dest || sfxBus);
     return g;
   }
   // Oscillator note with an optional pitch glide to f1.
@@ -3714,7 +4410,7 @@ h1, h2, h3, p { margin: 0; }
     voice(src, t0, dur);
   }
 
-  /* ---- Recipes: [voices needed, play(t0)] ---------------------------------------------------------- */
+  /* ---- SFX recipes: [voices needed, play(t0)] ---------------------------------------------------------- */
   var SFX = {
     tap: [1, function (t) { tone('sine', 900, 620, t, 0.05, 0.12); }],
     card: [2, function (t) {
@@ -3752,7 +4448,334 @@ h1, h2, h3, p { margin: 0; }
     return true;
   };
 
-  GG.registerDebug('audio', function () { return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), voices: voices }; });
+  /* ======================================================================================================
+     Song engine: a rig (shared processing per context) + ports (per playback, so stop() can silence
+     everything already booked) + voices (drum lanes and backing notes) + the look-ahead scheduler.
+     ====================================================================================================== */
+  function gainNode(c, v, dest) { var g = c.createGain(); g.gain.value = v; if (dest) g.connect(dest); return g; }
+  function filterNode(c, type, f, q, dest) { var n = c.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q || 0.7; if (dest) n.connect(dest); return n; }
+  // Soft clipper for the guitar: y = (1+k)x / (1+k|x|), always inside -1..1.
+  function driveCurve(k) {
+    var n = 1024, c = new Float32Array(n);
+    for (var i = 0; i < n; i++) { var x = i * 2 / (n - 1) - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
+    return c;
+  }
+  function makeRig(c, dest, nz) {
+    var r = { ctx: c, noise: nz || noiseBuffer(c), busy: [] };
+    var glue = c.createDynamicsCompressor();
+    glue.threshold.value = -16; glue.knee.value = 8; glue.ratio.value = 4; glue.attack.value = 0.004; glue.release.value = 0.2;
+    var limit = c.createDynamicsCompressor();   // brick-wall-ish: nothing clips on phone speakers
+    limit.threshold.value = -4; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.001; limit.release.value = 0.08;
+    r.out = gainNode(c, SONG_VOLUME, dest);
+    glue.connect(limit); limit.connect(r.out);
+    r.drums = gainNode(c, 0.8, glue);
+    var shaper = c.createWaveShaper(); shaper.curve = driveCurve(18); shaper.oversample = '2x';
+    var cab = filterNode(c, 'lowpass', 3600, 0.9, filterNode(c, 'highpass', 90, 0.7, gainNode(c, 0.09, glue)));
+    shaper.connect(cab);
+    r.gtr = gainNode(c, 1, shaper);
+    r.clean = gainNode(c, 0.5, filterNode(c, 'lowpass', 2600, 0.7, glue));
+    r.bass = gainNode(c, 0.38, filterNode(c, 'lowpass', 700, 0.8, glue));
+    return r;
+  }
+  // Per-playback inputs into the rig; stop() ramps them to silence and disconnects them.
+  function makePort(r) {
+    var c = r.ctx;
+    return { drums: gainNode(c, 1, r.drums), gtr: gainNode(c, 1, r.gtr), clean: gainNode(c, 1, r.clean), bass: gainNode(c, 1, r.bass) };
+  }
+  function closePort(r, port) {
+    var t = r.ctx.currentTime;
+    Object.keys(port).forEach(function (k) {
+      port[k].gain.cancelScheduledValues(t); port[k].gain.setTargetAtTime(0, t, 0.015);
+      setTimeout(function () { try { port[k].disconnect(); } catch (e) { /* ignore */ } }, 300);
+    });
+  }
+  // Books `n` sources from t to t + dur against the voice cap. false = no room (the hit is dropped).
+  function book(r, t, dur, n) {
+    r.busy = r.busy.filter(function (end) { return end > t; });
+    if (r.busy.length + n > SONG_VOICES) return false;
+    for (var i = 0; i < n; i++) r.busy.push(t + dur);
+    return true;
+  }
+  function run(r, node, t, dur) { node.start(t); node.stop(t + dur); }
+  // Envelope gain: attack to peak, then an exponential decay to silence at t + dur (a choke shortens dur).
+  function decay(c, t, attack, peak, dur, dest) {
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, attack + 0.01));
+    g.connect(dest);
+    return g;
+  }
+  // Held note: attack, a gentle sag, then a short release that ends at t + dur.
+  function held(c, t, peak, dur, dest) {
+    var g = c.createGain(), rel = Math.min(0.05, dur * 0.3);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.006);
+    g.gain.linearRampToValueAtTime(peak * 0.7, t + Math.max(0.01, dur - rel));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(dest);
+    return g;
+  }
+  function osc(r, type, f0, f1, glide, t, dur, gain, detune) {
+    var o = r.ctx.createOscillator();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + glide);
+    if (detune) o.detune.value = detune;
+    o.connect(gain); run(r, o, t, dur);
+    return o;
+  }
+  function noiseHit(r, t, dur, gain, type, f, q, f1) {
+    var s = r.ctx.createBufferSource(); s.buffer = r.noise;
+    var fl = filterNode(r.ctx, type, f, q, gain);
+    if (f1) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    s.connect(fl); run(r, s, t, dur);
+  }
+
+  // Drum voices: [sources, natural length in s, play(rig, port, time, d)] where d = the natural length, cut short
+  // (choked) by the next hit of the same lane. Owner call: a punchy real-ish kit (thumpy kick, cracky snare,
+  // crisp hats, splashy cymbal).
+  var DRUMS = {
+    kick: [2, 0.42, function (r, p, t, d) {
+      var c = r.ctx;
+      osc(r, 'sine', 165, 50, 0.07, t, d, decay(c, t, 0.002, 1, d, p.drums));
+      noiseHit(r, t, Math.min(0.018, d), decay(c, t, 0.001, 0.4, Math.min(0.018, d), p.drums), 'highpass', 2600, 0.7);
+    }],
+    snare: [2, 0.22, function (r, p, t, d) {
+      var c = r.ctx, body = Math.min(0.11, d), wires = d;
+      osc(r, 'triangle', 230, 170, 0.06, t, body, decay(c, t, 0.001, 0.55, body, p.drums));
+      noiseHit(r, t, wires, decay(c, t, 0.001, 0.75, wires, p.drums), 'highpass', 1400, 0.8);
+    }],
+    hat: [1, 0.055, function (r, p, t, d) {
+      noiseHit(r, t, d, decay(r.ctx, t, 0.001, 0.4, d, p.drums), 'highpass', 7800, 0.9);
+    }],
+    cymbal: [1, 1.3, function (r, p, t, d) {
+      noiseHit(r, t, d, decay(r.ctx, t, 0.002, 0.42, d, p.drums), 'highpass', 9000, 0.6, 4800);
+    }],
+    toms: [1, 0.36, function (r, p, t, d) {
+      osc(r, 'sine', 200, 110, 0.2, t, d, decay(r.ctx, t, 0.002, 0.85, d, p.drums));
+    }],
+    ride: [2, 0.5, function (r, p, t, d) {
+      var c = r.ctx;
+      noiseHit(r, t, d, decay(c, t, 0.001, 0.2, d, p.drums), 'bandpass', 6400, 1.4);
+      osc(r, 'triangle', 1180, 0, 0, t, d, decay(c, t, 0.001, 0.07, d, p.drums));
+    }]
+  };
+  function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  // Backing notes: kind 'gtr' (distorted; power: root+fifth, mute: palm-muted), 'clean' (strum) or 'bass'.
+  function playNote(r, p, ev, t, spb) {
+    var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi);
+    if (ev.kind === 'bass') {
+      if (!book(r, t, dur, 1)) return;
+      osc(r, 'sawtooth', f, 0, 0, t, dur, ev.len <= 0.5 ? decay(c, t, 0.004, 0.55, dur, p.bass) : held(c, t, 0.4, dur, p.bass));
+      return;
+    }
+    var n = ev.power ? 2 : 1, dest = ev.kind === 'clean' ? p.clean : p.gtr;
+    if (!book(r, t, dur, n)) return;
+    var tone = filterNode(c, 'lowpass', ev.mute ? 700 : 3200, ev.mute ? 1.2 : 0.7, dest);
+    var g = ev.mute || ev.kind === 'clean' ? decay(c, t, 0.003, ev.kind === 'clean' ? 0.35 : 0.9, dur, tone) : held(c, t, 0.55, dur, tone);
+    var type = ev.kind === 'clean' ? 'triangle' : 'sawtooth';
+    osc(r, type, f, 0, 0, t, dur, g, -7);
+    if (ev.power) osc(r, type, f * 1.4983, 0, 0, t, dur, g, 7);
+  }
+  function drumHit(r, p, lane, t, cap) {
+    var v = DRUMS[lane]; if (!v) return;
+    var d = Math.max(0.012, Math.min(v[1], cap));
+    if (book(r, t, d, v[0])) v[2](r, p, t, d);
+  }
+
+  /* ---- Timeline: song -> timed events ------------------------------------------------------------------ */
+  // The backing style a genre uses at this tempo: { id, label } (metal: doom / chug / tremolo, per the owner).
+  A.styleFor = function (genre, bpm) {
+    var styles = (GG.songs.genre(genre).backing || {}).styles || [[0, 'chug', 'Chugs']], s = styles[0];
+    styles.forEach(function (x) { if (bpm >= x[0]) s = x; });
+    return { id: s[1], label: s[2] };
+  };
+  // Chords follow the song: each section picks a progression from the genre list, keyed by its kick+snare
+  // skeleton, so the guitarist answers what you wrote (and verse/chorus/bridge differ).
+  function progression(B, sec, name) {
+    var list = (B.progressions || {})[name] || [[0, 0, 0, 0]];
+    return list[GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length];
+  }
+  function riffFor(B, sec) { var list = B.riffs || [[0]]; return list[GG.hashSeed('riff|' + (sec[0] || '')) % list.length]; }
+  var HIT = 120;   // 'x'
+  // One bar of backing notes. Lengths are in steps (16ths); beats are quarter notes.
+  function backingBar(out, style, sec, root, riff, beat, name) {
+    var kick = sec[0] || '', cym = sec[3] || '', b = function (step) { return beat + step / 4; };
+    function gtr(step, len, o) { out.push(Object.assign({ beat: b(step), kind: 'gtr', midi: root, len: len / 4, section: name }, o || {})); }
+    function bass(step, len, midi) { out.push({ beat: b(step), kind: 'bass', midi: (midi || root) - 12, len: len / 4, section: name }); }
+    var i;
+    if (style === 'doom') {                          // slow: two huge sustained chords per bar
+      gtr(0, 8, { power: true }); bass(0, 8); gtr(8, 8, { power: true }); bass(8, 8);
+    } else if (style === 'chug') {                   // mid: palm-muted chugs locked to the kick, open chord on a crash
+      var any = false;
+      for (i = 0; i < 16; i++) {
+        if (kick.charCodeAt(i) !== HIT) continue;
+        any = true;
+        var open = i === 0 && cym.charCodeAt(0) === HIT;
+        gtr(i, open ? 4 : 1.5, { power: true, mute: !open }); bass(i, open ? 4 : 1.5);
+      }
+      if (!any) for (i = 0; i < 16; i += 2) { gtr(i, 1.5, { power: true, mute: true }); bass(i, 1.5); }
+    } else if (style === 'tremolo') {                // fast: tremolo-picked 16ths along a riff, bass doubles
+      for (i = 0; i < 16; i++) { var m = root + riff[i % riff.length]; gtr(i, 1, { midi: m }); bass(i, 1, m); }
+    } else if (style === 'eighths') {                // punk: downstroke power chords on every 8th
+      for (i = 0; i < 16; i += 2) { gtr(i, 1.8, { power: true }); bass(i, 1.8); }
+    } else if (style === 'rock') {                   // rock: big open chords with a push
+      [[0, 3], [3, 3], [6, 2], [8, 8]].forEach(function (x) { gtr(x[0], x[1], { power: true }); });
+      for (i = 0; i < 16; i += 2) bass(i, 2);
+    } else if (style === 'boomchick') {              // country: bass boom on 1/3 (root, fifth), clean chick on 2/4
+      bass(0, 4); bass(8, 4, root + 7);
+      [4, 12].forEach(function (s) { out.push({ beat: b(s), kind: 'clean', midi: root + 12, power: true, len: 0.5, section: name }); });
+    }
+  }
+  var KIND_RANK = { step: 0, drum: 1, gtr: 2, clean: 3, bass: 4 };
+  // Song (or one section) -> { bpm, beats, style, styleLabel, events: [{ beat, kind: 'step'|'drum'|'gtr'|'clean'|'bass',
+  //   lane?, midi?, len (beats), gap (beats to the next event of the same voice, wrapping), section, entry, bar, step? }] }
+  // opts: { genre, section (null = the whole arrangement), backing (default true), drums (default true),
+  //         style (force a backing style), bars (limit, tests) }. Pure: no AudioContext needed.
+  A.timeline = function (pattern, opts) {
+    opts = opts || {};
+    var p = GG.songs.sanitize(pattern && pattern.pattern || pattern, null, null, true), genre = opts.genre || 'metal';
+    var B = GG.songs.genre(genre).backing || {}, style = opts.style ? { id: opts.style, label: opts.style } : A.styleFor(genre, p.bpm);
+    var order = opts.section ? [opts.section] : p.arrangement, events = [], beat = 0, bars = 0, maxBars = opts.bars || Infinity;
+    for (var e = 0; e < order.length && bars < maxBars; e++) {
+      var name = order[e], sec = p.sections[name], prog = progression(B, sec, name), riff = riffFor(B, sec);
+      for (var bar = 0; bar < C.BARS_PER_SECTION && bars < maxBars; bar++, bars++, beat += 4) {
+        for (var step = 0; step < C.STEPS; step++) {
+          var at = beat + step / 4;
+          events.push({ beat: at, kind: 'step', section: name, entry: e, bar: bar, step: step });
+          if (opts.drums === false) continue;
+          for (var l = 0; l < p.lanes; l++) if (sec[l].charCodeAt(step) === HIT) events.push({ beat: at, kind: 'drum', lane: C.LANES[l], li: l, section: name });
+        }
+        if (opts.backing !== false) backingBar(events, style.id, sec, (B.root || 40) + prog[bar % prog.length], riff, beat, name);
+      }
+    }
+    events.sort(function (a, b) { return a.beat - b.beat || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.li || 0) - (b.li || 0); });
+    // Gap to the next event of the same voice (drum lane / guitar / bass), wrapping around for loops.
+    var next = {};
+    for (var i = events.length - 1; i >= 0; i--) {
+      var ev = events[i]; if (ev.kind === 'step') continue;
+      var key = ev.kind === 'drum' ? ev.lane : ev.kind;
+      ev.gap = next[key] != null ? next[key] - ev.beat : Infinity;
+      next[key] = ev.beat;
+      if (ev.len == null) ev.len = Infinity;
+    }
+    events.forEach(function (ev) {
+      if (ev.gap === Infinity) { var key = ev.kind === 'drum' ? ev.lane : ev.kind; ev.gap = beat - ev.beat + next[key]; }
+    });
+    return { bpm: p.bpm, beats: beat, style: style.id, styleLabel: style.label, events: events };
+  };
+
+  /* ---- Playback: the look-ahead scheduler --------------------------------------------------------------- */
+  function schedule(r, port, ev, t, spb) {
+    if (ev.kind === 'drum') drumHit(r, port, ev.lane, t, ev.gap * spb);
+    else playNote(r, port, ev, t, spb);
+  }
+  // Plays a pattern (one section on loop, or the whole arrangement). Emits 'audio:step' { section, bar, step, time,
+  // entry } for every 16th, fired by short timeouts aligned to the scheduled AudioContext times. One song at a time.
+  // opts: { genre, section|null, loop (default: true for a section, false for the song), backing (default true) }
+  A.play = function (pattern, opts) {
+    opts = opts || {};
+    if (!A.unlock() || !ctx) return null;
+    A.stop();
+    if (ctx.state === 'suspended') { suspended = false; try { ctx.resume(); } catch (e) { /* ignore */ } }
+    var loop = opts.loop != null ? !!opts.loop : !!opts.section;
+    var tl = A.timeline(pattern, opts), spb = 60 / tl.bpm, port = makePort(rig), timers = [];
+    var i = 0, pass = 0, lastBeat = -1;
+    var h = { playing: true, loop: loop, section: opts.section || null, bpm: tl.bpm, beats: tl.beats, style: tl.style,
+      start: ctx.currentTime + LEAD_IN, timeline: tl };
+    function at(ev) { return h.start + (pass * tl.beats + ev.beat) * spb; }
+    function pump() {
+      if (!h.playing) return;
+      var now = ctx.currentTime, horizon = now + LOOKAHEAD;
+      for (;;) {
+        if (i >= tl.events.length) {
+          if (!loop) { if (now > h.start + tl.beats * spb + 0.2) h.stop(true); return; }
+          i = 0; pass++; lastBeat = -1;
+        }
+        var ev = tl.events[i], t = at(ev);
+        if (t > horizon) break;
+        i++; lastBeat = ev.beat;
+        if (t < now - 0.03) continue;    // fell behind (throttled tab): skip rather than pile up
+        if (ev.kind === 'step') { stepAt(ev, t); continue; }
+        try { schedule(rig, port, ev, t, spb); } catch (e) { /* a dropped note never stops the song */ }
+      }
+      timers = timers.filter(function (x) { return x.t > now - 0.5; });
+    }
+    function stepAt(ev, t) {
+      var id = setTimeout(function () {
+        if (!h.playing) return;
+        stepCount++; lastStep = { section: ev.section, bar: ev.bar, step: ev.step, entry: ev.entry, time: t };
+        GG.emit('audio:step', lastStep);
+      }, Math.max(0, (t - ctx.currentTime) * 1000));
+      timers.push({ id: id, t: t });
+    }
+    // Edit while playing: same length and tempo keep the groove going from where it is; otherwise restart.
+    h.update = function (pat) {
+      if (!h.playing) return h;
+      var nt = A.timeline(pat, opts);
+      if (nt.bpm !== tl.bpm || nt.beats !== tl.beats) return A.play(pat, opts);
+      tl = nt; h.timeline = nt; i = 0;
+      while (i < tl.events.length && tl.events[i].beat <= lastBeat) i++;
+      return h;
+    };
+    // Song position in beats for an AudioContext time (v0.3: where the note highway is).
+    h.beatAt = function (time) { var b = (time - h.start) / spb; return loop ? ((b % tl.beats) + tl.beats) % tl.beats : b; };
+    // ended = the song finished by itself (or the app went to the background): emits 'audio:end' { handle }.
+    h.stop = function (ended) {
+      if (!h.playing) return;
+      h.playing = false;
+      clearInterval(h.timer);
+      timers.forEach(function (x) { clearTimeout(x.id); });
+      closePort(rig, port);
+      if (current === h) current = null;
+      if (ended === true) GG.emit('audio:end', { handle: h });
+    };
+    h.timer = setInterval(pump, TICK_MS);
+    current = h;
+    pump();
+    return h;
+  };
+  A.stop = function () { if (current) current.stop(); };
+  // One drum hit right now (tapping a cell in the sequencer).
+  var previewPort = null;
+  A.hit = function (lane) {
+    if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
+    if (!previewPort) previewPort = makePort(rig);
+    drumHit(rig, previewPort, lane, ctx.currentTime + 0.005, 0.5);
+    return true;
+  };
+  A.isPlaying = function () { return !!(current && current.playing); };
+  A.current = function () { return current; };
+
+  /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, nan, seconds }> ------------------------------- */
+  // spec: { lane } one drum hit | { pattern (default the genre's signature), genre, bpm, section (default 'verse'),
+  //         bars (default 2), backing: styleId (that style alone) | true | false, drums (default: !styleId) }
+  A.renderOffline = function (spec) {
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC) return Promise.reject(new Error('no OfflineAudioContext'));
+    var genre = spec.genre || 'metal', bars = spec.bars || 2, style = typeof spec.backing === 'string' ? spec.backing : null;
+    var pat = GG.songs.sanitize(spec.pattern || GG.songs.genre(genre).signature, null, null, true);
+    if (spec.bpm) pat.bpm = spec.bpm;
+    var sr = 44100, spb = 60 / pat.bpm, seconds = spec.lane ? 1.6 : bars * 4 * spb + 1.4;
+    var oc = new OAC(1, Math.ceil(sr * seconds), sr), r = makeRig(oc, oc.destination), port = makePort(r);
+    if (spec.lane) drumHit(r, port, spec.lane, 0.05, 2);
+    else {
+      var tl = A.timeline(pat, { genre: genre, section: spec.section || 'verse', bars: bars, style: style,
+        drums: spec.drums != null ? spec.drums : !style, backing: spec.backing !== false });
+      tl.events.forEach(function (ev) { if (ev.kind !== 'step') schedule(r, port, ev, 0.05 + ev.beat * spb, spb); });
+    }
+    return oc.startRendering().then(function (buf) {
+      var d = buf.getChannelData(0), peak = 0, sum = 0, nan = false;
+      for (var i = 0; i < d.length; i++) { var v = d[i]; if (v !== v) nan = true; else { var a = Math.abs(v); if (a > peak) peak = a; sum += v * v; } }
+      return { peak: peak, rms: Math.sqrt(sum / d.length), nan: nan, seconds: seconds };
+    });
+  };
+
+  GG.registerDebug('audio', function () {
+    return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), voices: voices, playing: A.isPlaying(),
+      songVoices: rig ? rig.busy.filter(function (e) { return e > ctx.currentTime; }).length : 0,
+      steps: stepCount, lastStep: lastStep, style: current ? current.style : null };
+  });
 })(window.GG);
 
 </script>
@@ -6733,10 +7756,17 @@ h1, h2, h3, p { margin: 0; }
     ui.show('plan');
   };
   function commitPlan() { GG.career.setPlan(S(), plan.slice()); }
+  // Go: each Write block opens the sequencer first (54_ui_sequencer), then the week runs.
   function goWeek() {
     var st = S();
-    if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;   // runs exactly once
+    if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;
     commitPlan();
+    var writes = plan.filter(function (a) { return a === 'write'; }).length;
+    if (writes && ui.composeWeek) ui.composeWeek(writes, playWeek); else playWeek();
+  }
+  function playWeek() {
+    var st = S();
+    if (!st || st.phase !== 'plan') return;   // runs exactly once
     var result = GG.career.runWeek(st);
     GG.main.sync();
     ui.close('plan');
@@ -6799,7 +7829,24 @@ h1, h2, h3, p { margin: 0; }
       ]),
       (g.lines || []).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
       g.songs && g.songs.length ? el('div.small', { style: 'margin-top:6px' }, [el('span.caps', 'Setlist  '), g.songs.join(' · ')]) : null,
+      (g.classics || []).map(function (id) {   // v0.2: enough great gigs make a song a classic
+        var song = S() && GG.songs.byId(S(), id);
+        return song ? el('p.small.amber', { style: 'margin:6px 0 0' }, '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.') : null;
+      }),
       reactions
+    ]);
+  }
+  // A new song from a Write block: its ratings and the band's reactions.
+  function songNode(song) {
+    var r = song.reactions || [];
+    return el('div.song-res', { testid: 'result-song' }, [
+      el('div.row', [el('span', { style: 'font-size:22px' }, '🎵'), el('div.grow', [el('div.caps', song.auto ? 'The band jammed one out' : 'Your new song'),
+        el('div', { style: 'font-weight:800;font-style:italic' }, song.title)]), el('div.small.dim', { style: 'text-align:right' }, 'Q ' + song.quality)]),
+      el('div.small.dim', { style: 'margin:4px 0 2px' }, 'Groove ' + song.groove + ' · Hook ' + song.hook + ' · Difficulty ' + song.difficulty),
+      r.map(function (x) {
+        var who = ui.who(x.who);
+        return el('div.react', { testid: 'song-react-' + x.who }, [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]);
+      })
     ]);
   }
   ui.define('results', {
@@ -6815,6 +7862,7 @@ h1, h2, h3, p { margin: 0; }
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) { var p = el('p', fill(t)); box.appendChild(p); steps.push([p, 650]); });
+        if (b.deltas && b.deltas.song) { var sn = songNode(b.deltas.song); box.appendChild(sn); steps.push([sn, 700]); }
         var chips = ui.deltaChips(b.deltas, { emptyText: false });
         if (chips.children.length) { box.appendChild(chips); steps.push([chips, 250]); }
       });
@@ -6988,12 +8036,10 @@ h1, h2, h3, p { margin: 0; }
       return el('div.row', { style: 'padding:6px 0' }, [el('span', '🏆'), el('span.grow', m.text), m.week ? el('span.small.faint', 'week ' + m.week) : null]);
     }));
   }
-  var KIT_QUIPS = ['You play a fill. Marcel says it "lacks darkness". It was a paradiddle.', 'The ride cymbal has a crack shaped like Manitoba.',
-    'Your throne is a milk crate with a cushion. It is load-bearing.'];
   var DOOR_QUIPS = ["Dad's truck is parked outside. He has made it VERY clear it is not a tour van.", 'The garage door opener works one time in three.'];
   var MERCH_QUIPS = ['Two boxes of shirts printed "HAIL DAMGE". The printer was very sorry.', 'Mostly just boxes of Christmas decorations.'];
   var HOT = {
-    kit: function () { ui.show('soon', { title: 'Your drum kit', icon: '🥁', soon: 'Coming in v0.2', text: 'The step sequencer arrives in v0.2: build drum patterns, and patterns become songs.', quip: ui.pick(KIT_QUIPS) }); },
+    kit: function () { ui.openSketch(); },
     merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
     door: function () { ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
     trophies: function () { ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
@@ -7062,7 +8108,7 @@ h1, h2, h3, p { margin: 0; }
 </script>
 <script>/* 53_ui_laptop.js */
 // 53_ui_laptop.js: the laptop on the cooler. Tabs: Group chat (member-coloured bubbles, newest at the bottom),
-// Band (members' skill + mood, your drum skill, the song catalog) and Money (fund, debt to parents, fund history).
+// Band (members' skill + mood, your drum skill, the song catalog: tap a song to hear it) and Money (fund, debt to parents, fund history).
 // Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
@@ -7102,12 +8148,18 @@ h1, h2, h3, p { margin: 0; }
         el('div.small.dim', 'Drums · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
+    // Song catalog: tap a song to open it read-only in the sequencer (and play it).
     var songs = st.songs || [];
     var list = el('div.panel', { testid: 'laptop-songs' }, songs.length ? songs.map(function (s) {
-      return el('div.song', [el('span', { style: 'font-size:20px' }, '🎵'), el('div.grow', [el('div.fr', s.title), s.titleEn ? el('div.en', s.titleEn) : null]),
+      var r = s.rating || {}, tags = [s.classic ? el('span.tag.gold', 'classic') : null, (s.stale || 0) >= 50 ? el('span.tag', 'stale') : null,
+        s.auto ? null : el('span.tag.mine', 'yours')];
+      return ui.btn('.song', { testid: 'song-' + s.id, onclick: function () { if (ui.openSong) ui.openSong(s.id); } }, [
+        el('span', { style: 'font-size:20px' }, '🎵'),
+        el('div.grow', [el('div.fr', s.title), s.titleEn && s.titleEn !== s.title ? el('div.en', s.titleEn) : null,
+          el('div.tiny.dim', ['Groove ' + (r.groove || 0) + ' · Hook ' + (r.hook || 0) + ' · Diff ' + (r.difficulty || 0) + ' ', tags])]),
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
     }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
-    out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ')'), list);
+    out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
     return el('div', out);
   }
 
@@ -7146,6 +8198,366 @@ h1, h2, h3, p { margin: 0; }
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
+})(window.GG);
+
+</script>
+<script>/* 54_ui_sequencer.js */
+// 54_ui_sequencer.js: the step sequencer, a full screen. Tabs Verse / Chorus / Bridge / Song. The grid runs lanes
+// left→right (colours + icons in GG.ui.LANES, shared with v0.3's note highway) × 16 steps top→bottom, like the gig
+// highway: tap a cell to toggle it, drag to paint. Groove / Hook / Difficulty meters and tips re-rate on every change;
+// Play loops the section (or plays the whole song) with a moving playhead. Modes:
+//   write : one per Write block, opened by the planner's Go (GG.ui.composeWeek). Save queues the song in
+//           state.pendingSongs; "Let the band jam one" leaves the block to the band. ✕ goes back to the planner.
+//   sketch: the kit hotspot, editing state.draft; "Use in next Write" queues it for the next Write block.
+//   view  : a catalog song from the laptop (read-only, Play).
+// ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
+  // Lane look, left to right. v0.3's note highway uses the same colours and icons.
+  ui.LANES = {
+    kick: { name: 'Kick', icon: '🦶', color: '#ff6b4a' }, snare: { name: 'Snare', icon: '🥁', color: '#ffd23f' },
+    hat: { name: 'Hats', icon: '🎩', color: '#3cd0c0' }, cymbal: { name: 'Crash', icon: '💥', color: '#b98cff' },
+    toms: { name: 'Toms', icon: '🛢️', color: '#57c77a' }, ride: { name: 'Ride', icon: '🔔', color: '#4f8cff' }
+  };
+  var TABS = [{ id: 'verse', label: 'Verse' }, { id: 'chorus', label: 'Chorus' }, { id: 'bridge', label: 'Bridge' }, { id: 'song', label: 'Song' }];
+  var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
+  var BEAT_LABELS = ['1', 'e', '&', 'a'];
+  var KICK_HINT = "One foot, one pedal: no two kicks in a row until you own a double kick.";
+
+  function st() { return GG.state; }
+  function gear() { return (st() && st().gear) || GG.songs.DEFAULT_GEAR; }
+  function genre() { return (st() && st().genre) || 'metal'; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function tint(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
+
+  /* ---- Rating display ------------------------------------------------------------------------------------ */
+  function meter(label, testid) {
+    var v = el('b', '0'), bar = ui.bar(0, 100), node = el('div.meter', { testid: testid }, [el('div.mh', [el('span.caps', label), v]), bar]);
+    node._v = v; node._bar = bar;
+    return node;
+  }
+  function setMeter(m, value, color) {
+    m._v.textContent = String(value); m.dataset.value = String(value);
+    m._bar.firstChild.style.width = U.clamp(value, 0, 100) + '%';
+    m._bar.firstChild.style.background = color;
+  }
+  function tone(v) { return v >= 70 ? 'var(--good)' : v >= 45 ? 'var(--amber)' : 'var(--bad)'; }
+  // Re-rates the working pattern and refreshes meters + tip instantly (no re-render).
+  function rerate(D) {
+    var r = GG.songs.rate(D.pat, genre(), gear()), V = D.view, ability = st() ? GG.songs.ability(st()) : 100;
+    D.rating = r;
+    if (!V) return r;
+    setMeter(V.groove, r.groove, tone(r.groove));
+    setMeter(V.hook, r.hook, tone(r.hook));
+    setMeter(V.diff, r.difficulty, r.difficulty > ability ? 'var(--bad)' : 'var(--blue)');
+    V.ability.style.left = U.clamp(ability, 0, 99) + '%';
+    var tips = r.tips.slice();
+    if (r.difficulty > ability + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
+    ui.clear(V.tip);
+    if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
+    else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
+    else ui.append(V.tip, [r.notes ? el('b.amber', GG.songs.verdict(genre(), r.groove) + ' ') : null, tips.slice(0, 2).join(' ')]);
+    return r;
+  }
+  // Every edit: re-rate, keep playback in sync, keep the sketch pad saved.
+  function changed(D) {
+    rerate(D);
+    if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
+    if (D.mode === 'sketch' && st()) st().draft = U.clone(D.pat);
+  }
+
+  /* ---- The grid -------------------------------------------------------------------------------------------- */
+  function buildGrid(s, D) {
+    var sec = D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view';
+    var grid = el('div.seq-grid' + (ro ? '.ro' : ''), { testid: 'seq-grid', style: { gridTemplateColumns: '30px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    grid.appendChild(el('div'));
+    for (var l = 0; l < lanes; l++) {
+      var L = ui.LANES[C.LANES[l]];
+      grid.appendChild(el('div.lh', { style: { color: L.color, background: tint(L.color, 0.14) } }, [el('span', L.icon), L.name]));
+    }
+    var cells = [], labels = [];
+    for (var step = 0; step < C.STEPS; step++) {
+      var q = step % 4 === 0, lab = el('div.bl' + (q ? '.q' : ''), q ? String(step / 4 + 1) : BEAT_LABELS[step % 4]);
+      grid.appendChild(lab); labels.push(lab);
+      var row = [];
+      for (l = 0; l < lanes; l++) {
+        var hit = GG.songs.isHit(sec[l], step), name = C.LANES[l];
+        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (hit ? '.on' : ''),
+          { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
+        c.style.setProperty('--lc', ui.LANES[name].color);
+        grid.appendChild(c); row.push(c);
+      }
+      cells.push(row);
+    }
+    D.view.cells = cells; D.view.labels = labels;
+    if (!ro) paintable(grid, D);
+    return grid;
+  }
+  // Tap toggles; dragging paints the same value (on or off) across every cell the finger crosses.
+  function paintable(grid, D) {
+    var paint = null;
+    function cellOf(node) { return node && node.classList && node.classList.contains('cell') ? node : null; }
+    function apply(c) {
+      var l = +c.dataset.l, step = +c.dataset.s, sec = D.pat.sections[D.tab], cur = GG.songs.isHit(sec[l], step);
+      if (cur === paint.value) return;
+      if (paint.value && l === 0 && GG.songs.kickBlocked(sec[0], step, gear())) {
+        c.classList.remove('nope'); void c.offsetWidth; c.classList.add('nope');   // restart the flash
+        D.hint = { text: KICK_HINT }; rerate(D); D.hint = null;
+        return;
+      }
+      sec[l] = GG.songs.setHit(sec[l], step, paint.value);
+      c.classList.toggle('on', paint.value);
+      if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l]);
+      D.hint = null;
+      changed(D);
+    }
+    grid.addEventListener('pointerdown', function (e) {
+      var c = cellOf(e.target); if (!c) return;
+      e.preventDefault();
+      var sec = D.pat.sections[D.tab];
+      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
+      try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      apply(c);
+    });
+    grid.addEventListener('pointermove', function (e) {
+      if (!paint || e.pointerId !== paint.id) return;
+      var c = cellOf(document.elementFromPoint(e.clientX, e.clientY));
+      if (c && c !== paint.last) { paint.last = c; apply(c); }
+    });
+    function end(e) { if (paint && e.pointerId === paint.id) paint = null; }
+    grid.addEventListener('pointerup', end);
+    grid.addEventListener('pointercancel', end);
+  }
+  function playhead(D, ev) {
+    var V = D.view; if (!V || !V.cells) return;
+    if (V.ph != null) { V.labels[V.ph].classList.remove('ph'); V.cells[V.ph].forEach(function (c) { c.classList.remove('ph'); }); V.ph = null; }
+    if (ev && ev.section === D.tab) { V.ph = ev.step; V.labels[ev.step].classList.add('ph'); V.cells[ev.step].forEach(function (c) { c.classList.add('ph'); }); }
+    if (ev && ev.step === 0 && V.pos) V.pos.textContent = '▶ ' + cap(ev.section) + ' · bar ' + (ev.bar + 1) + '/' + C.BARS_PER_SECTION;
+  }
+
+  /* ---- The Song tab: title, tempo, arrangement ---------------------------------------------------------------- */
+  function songPanel(s, D) {
+    var ro = D.mode === 'view', G = GG.songs.genre(genre()), p = D.pat;
+    var style = GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm) : { label: '' };
+    var bpmLabel = el('b', p.bpm + ' BPM'), styleLabel = el('span.dim', ' · ' + style.label);
+    var tempo = el('input.seq-tempo', { type: 'range', testid: 'seq-tempo', disabled: ro,
+      min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
+    tempo.addEventListener('input', function () {
+      p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
+      styleLabel.textContent = ' · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '');
+      rerate(D);
+      arrRow.querySelectorAll('[data-secs]').forEach(function (n) { n.textContent = '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: GG.songs.ARRANGEMENTS[n.dataset.secs] })) + ' s'; });
+    });
+    tempo.addEventListener('change', function () { changed(D); if (D.handle && D.handle.playing) restart(s, D); });
+    var cur = GG.songs.arrangementId(p);
+    var arrRow = el('div.seq-arr', GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = GG.songs.ARRANGEMENTS[id];
+      return btn('.arr' + (id === cur ? '.on' : ''), { testid: 'seq-arr-' + id, disabled: ro && id !== cur, onclick: function () {
+        if (ro || id === cur) return;
+        p.arrangement = a.slice(); changed(D); if (D.playing === 'song') restart(s, D); s.rerender();
+      } }, [el('b', ARR_NAMES[id]), el('span.seqs', a.map(function (x) { return x.charAt(0).toUpperCase(); }).join(' ')),
+        el('span.small.dim', { data: { secs: id } }, '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]);
+    }));
+    var r = D.rating || rerate(D);
+    var parts = [
+      el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
+        : el('div.row', [
+          el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let Marcel',
+            oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D); } }),
+          btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New French title', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
+        ]), D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
+      el('div.panel.stack.tight', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
+        el('div.row.tiny.faint', [el('span.grow', G.tempo[0]), el('span', G.tempo[1])])]),
+      el('div.stack.tight', [el('div.caps', 'Arrangement (each part plays ' + C.BARS_PER_SECTION + ' bars)'), arrRow]),
+      el('div.panel.small', { testid: 'seq-sections' }, ['Groove by part: ', el('b', 'Verse ' + r.sections.verse), ' · ', el('b', 'Chorus ' + r.sections.chorus),
+        ' · ', el('b', 'Bridge ' + r.sections.bridge), el('div.tiny.faint', { style: 'margin-top:4px' }, r.notes + ' hits in the whole song.')])
+    ];
+    return el('div.seq-song.stack', parts);
+  }
+  function reroll(D) {
+    if (!st()) return;
+    var t = GG.songs.pickTitle(st(), ui.rng, (D.taken || []).concat(D.title ? [D.title] : []));
+    D.title = t.title; D.titleEn = t.titleEn;
+  }
+
+  /* ---- Playback ------------------------------------------------------------------------------------------ */
+  function stopPlay(D) {
+    if (D.handle) D.handle.stop();
+    D.handle = null; D.playing = null;
+    playhead(D, null);
+    playButtons(D);
+  }
+  function startPlay(s, D, kind) {
+    var section = kind === 'song' ? null : (D.tab === 'song' ? 'verse' : D.tab);
+    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, { genre: genre(), section: section, loop: kind !== 'song' }) : null;
+    if (!h) { ui.toast("No sound on this device. Imagine it. It's heavy."); return; }
+    D.handle = h; D.playing = kind;
+    if (D.view && D.view.pos) D.view.pos.textContent = '';
+    playButtons(D);
+  }
+  function restart(s, D) { var k = D.playing; if (k) startPlay(s, D, k); }
+  function toggle(s, D, kind) { if (D.playing === kind) stopPlay(D); else startPlay(s, D, kind); }
+  function playButtons(D) {
+    var V = D.view; if (!V || !V.loop) return;
+    var sec = D.tab === 'song' ? 'verse' : D.tab;
+    V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop ' + sec;
+    V.song.textContent = D.playing === 'song' ? '■ Stop' : '▶ Song';
+    V.loop.classList.toggle('on', D.playing === 'loop'); V.song.classList.toggle('on', D.playing === 'song');
+  }
+
+  /* ---- Screen ---------------------------------------------------------------------------------------------- */
+  function head(s, D) {
+    var V = D.view; if (!V || !V.title) return;
+    ui.clear(V.title);
+    ui.append(V.title, [el('div.caps', D.sub || ''), el('div.fr', D.title || 'Untitled'),
+      D.titleEn && D.titleEn !== D.title ? el('div.en', D.titleEn) : null]);
+  }
+  function subFor(D) {
+    if (D.mode === 'write') return 'Write block ' + (D.index + 1) + ' of ' + D.total + (D.fromSketch ? ' · from your sketch pad' : '');
+    if (D.mode === 'sketch') return 'Sketch pad · tap the title for a name';
+    var s = D.song || {};
+    return (s.auto ? 'Band jam' : 'Your song') + (s.written ? ' · week ' + s.written : ' · came with the band') + (s.classic ? ' · classic' : s.stale >= 50 ? ' · going stale' : '');
+  }
+  function save(s, D) {
+    if (D.done) return;
+    var r = rerate(D);
+    if (!r.notes) { ui.toast('Nothing to save yet. Tap some hits in, or let the band jam one.'); return; }
+    D.done = true; stopPlay(D);
+    var entry = GG.songs.sanitize(D.pat, gear(), genre());
+    entry.title = D.title; entry.titleEn = D.titleEn || D.title;
+    if (D.onSave) D.onSave(entry);
+  }
+
+  ui.define('seq', {
+    kind: 'full', cls: 'seq',
+    build: function (s, D) {
+      if (!D.pat) D.pat = GG.songs.starter(genre(), gear());
+      D.tab = D.tab || 'verse';
+      if (!D.title && D.mode !== 'view') reroll(D);
+      D.sub = subFor(D);
+      var ro = D.mode === 'view', V = D.view = {};
+      V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro, onclick: function () { if (!ro && !D.custom) { reroll(D); head(s, D); } } });
+      var right = D.mode === 'write' ? btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () {
+        if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam();
+      } }, 'Let the band jam one') : null;
+      var tools = ro || D.tab === 'song' ? null : btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'Copy or clear', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯');
+      V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
+      V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
+      V.tip = el('div.seq-tip', { testid: 'seq-tip' });
+      V.pos = el('span.seq-pos');
+      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : buildGrid(s, D));
+      ui.append(s.body, [
+        el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
+          stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
+        } }, '✕'), V.title, right]),
+        el('div.seq-tabs', [ui.tabs(TABS, D.tab, function (id) {
+          D.tab = id; s.rerender();
+          if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);
+        }, 'seq-tab-'), tools]),
+        el('div.seq-meters', [V.groove, V.hook, V.diff]),
+        el('div.seq-tipline', [V.tip, V.pos]),
+        main
+      ]);
+      V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
+      V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
+      var done = D.mode === 'write' ? btn('.btn.primary', { testid: 'btn-seq-save', onclick: function () { save(s, D); } }, 'Save ✓')
+        : D.mode === 'sketch' ? btn('.btn.primary', { testid: 'btn-seq-use', onclick: function () { useSketch(s, D); } }, 'Use in next Write')
+        : null;
+      ui.append(s.foot, [V.loop, V.song, done]);
+      head(s, D); rerate(D); playButtons(D);
+    },
+    // Listeners live on the screen entry (s), not its data: composeWeek swaps the data for each Write block.
+    onShow: function (s) {
+      s.off = [
+        GG.on('audio:step', function (ev) { var D = s.data; if (D.handle && D.handle.playing) playhead(D, ev); }),
+        GG.on('audio:end', function (ev) { var D = s.data; if (ev && ev.handle === D.handle) { D.handle = null; D.playing = null; playhead(D, null); playButtons(D); } })
+      ];
+    },
+    onClose: function (s) {
+      stopPlay(s.data);
+      (s.off || []).forEach(function (off) { off(); });
+    }
+  });
+
+  // Copy another section into this one, or clear it.
+  ui.define('seq-tools', {
+    kind: 'modal', title: 'This section',
+    build: function (s, d) {
+      var owner = d.owner, D = owner && owner.data; if (!D) return;
+      function done(fn) { fn(); ui.close(s.id); owner.rerender(); changed(D); }
+      C.SECTIONS.forEach(function (name) {
+        if (name === D.tab) return;
+        s.body.appendChild(btn('.btn.block', { testid: 'seq-copy-' + name, style: 'margin-bottom:8px', onclick: function () {
+          done(function () { D.pat.sections[D.tab] = D.pat.sections[name].slice(); });
+        } }, 'Copy from ' + cap(name)));
+      });
+      s.body.appendChild(btn('.btn.danger.block', { testid: 'seq-clear', onclick: function () {
+        done(function () { D.pat.sections[D.tab] = GG.songs.blankSection(D.pat.lanes); });
+      } }, 'Clear ' + D.tab));
+      s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: function () { ui.close(s.id); } }, 'Cancel'));
+    }
+  });
+
+  /* ---- Entry points -------------------------------------------------------------------------------------- */
+  // Planner Go with `count` Write blocks: one sequencer per block, then done(). Songs queued earlier from the kit
+  // (state.pendingSongs) open pre-loaded; a jammed block keeps its sketch for later. ✕ returns to the planner without
+  // playing the week, keeping songs saved so far as sketches.
+  ui.composeWeek = function (count, done) {
+    var state = st(); if (!state) return;
+    var before = (state.pendingSongs || []).slice(), queued = before.slice(), out = [], keep = [], taken = [], k = 0;
+    var firstEver = !state.stats.songsWritten;
+    function next() {
+      if (k >= count) {
+        state.pendingSongs = out.concat(keep, queued.slice(count));
+        done();
+        return;
+      }
+      var sketch = queued[k] || null, i = k;
+      var tip = firstEver && i === 0 ? firstTip(state) : null;
+      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), hint: tip,
+        pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : GG.songs.starter(genre(), gear()),
+        title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,
+        onSave: function (entry) { out[i] = entry; taken.push(entry.title); k++; next(); },
+        onJam: function () { out[i] = null; if (sketch) keep.push(sketch); k++; next(); },
+        // ✕ keeps what was already saved this round (and unreached sketches) so nothing is lost; they reopen next Go.
+        onCancel: function () { state.pendingSongs = out.filter(Boolean).concat(keep, queued.slice(k)); } });
+    }
+    next();
+  };
+  function firstTip(state) {
+    var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
+    var ids = Object.keys(tips).filter(function (id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); });
+    var who = ui.pick(ids);
+    return who ? { who: who, text: GG.career.fillText(state, ui.pick(tips[who])) } : null;
+  }
+  // The kit hotspot: the sketch pad on state.draft.
+  ui.openSketch = function () {
+    var state = st(); if (!state) return;
+    ui.show('seq', { mode: 'sketch', pat: state.draft ? GG.songs.sanitize(state.draft, gear(), genre()) : GG.songs.starter(genre(), gear()) });
+  };
+  function useSketch(s, D) {
+    var state = st(); if (!state || D.done) return;
+    var r = rerate(D);
+    if (!r.notes) { ui.toast('The sketch pad is empty. Tap some hits in first.'); return; }
+    D.done = true; stopPlay(D);
+    var entry = GG.songs.sanitize(D.pat, gear(), genre());
+    entry.title = D.title; entry.titleEn = D.titleEn || D.title;
+    state.pendingSongs = (state.pendingSongs || []).concat([entry]);
+    state.draft = null;
+    ui.close(s.id);
+    ui.toast('“' + entry.title + '” is waiting for your next Write block.', { who: 'Sketch pad' });
+  }
+  // A catalog song, read-only.
+  ui.openSong = function (id) {
+    var state = st(), song = state && GG.songs.byId(state, id); if (!song) return;
+    ui.show('seq', { mode: 'view', song: song, pat: U.clone(song.pattern), title: song.title, titleEn: song.titleEn });
+  };
+
+  GG.registerDebug('seq', function () {
+    var e = ui.get && ui.get('seq'), D = e && e.data;
+    return D ? { mode: D.mode, tab: D.tab, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
+      playhead: D.view ? D.view.ph : null } : null;
+  });
 })(window.GG);
 
 </script>
@@ -7342,6 +8754,9 @@ h1, h2, h3, p { margin: 0; }
     updatePause();
   }
   function unlockAudio() { if (GG.audio) GG.audio.unlock(); }
+  // A playing song stops when the week's results (the gig) or any other big moment takes the screen.
+  var STOP_SONG_ON = { results: 1, wrap: 1, card: 1, title: 1, end: 1 };
+  GG.on('screen:open', function (p) { if (p && STOP_SONG_ON[p.id] && GG.audio && GG.audio.stop) GG.audio.stop(); });
 
   M.boot = function () {
     if (M.booted) return;

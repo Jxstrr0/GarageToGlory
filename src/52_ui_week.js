@@ -201,10 +201,17 @@
     ui.show('plan');
   };
   function commitPlan() { GG.career.setPlan(S(), plan.slice()); }
+  // Go: each Write block opens the sequencer first (54_ui_sequencer), then the week runs.
   function goWeek() {
     var st = S();
-    if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;   // runs exactly once
+    if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;
     commitPlan();
+    var writes = plan.filter(function (a) { return a === 'write'; }).length;
+    if (writes && ui.composeWeek) ui.composeWeek(writes, playWeek); else playWeek();
+  }
+  function playWeek() {
+    var st = S();
+    if (!st || st.phase !== 'plan') return;   // runs exactly once
     var result = GG.career.runWeek(st);
     GG.main.sync();
     ui.close('plan');
@@ -267,7 +274,24 @@
       ]),
       (g.lines || []).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
       g.songs && g.songs.length ? el('div.small', { style: 'margin-top:6px' }, [el('span.caps', 'Setlist  '), g.songs.join(' · ')]) : null,
+      (g.classics || []).map(function (id) {   // v0.2: enough great gigs make a song a classic
+        var song = S() && GG.songs.byId(S(), id);
+        return song ? el('p.small.amber', { style: 'margin:6px 0 0' }, '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.') : null;
+      }),
       reactions
+    ]);
+  }
+  // A new song from a Write block: its ratings and the band's reactions.
+  function songNode(song) {
+    var r = song.reactions || [];
+    return el('div.song-res', { testid: 'result-song' }, [
+      el('div.row', [el('span', { style: 'font-size:22px' }, '🎵'), el('div.grow', [el('div.caps', song.auto ? 'The band jammed one out' : 'Your new song'),
+        el('div', { style: 'font-weight:800;font-style:italic' }, song.title)]), el('div.small.dim', { style: 'text-align:right' }, 'Q ' + song.quality)]),
+      el('div.small.dim', { style: 'margin:4px 0 2px' }, 'Groove ' + song.groove + ' · Hook ' + song.hook + ' · Difficulty ' + song.difficulty),
+      r.map(function (x) {
+        var who = ui.who(x.who);
+        return el('div.react', { testid: 'song-react-' + x.who }, [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]);
+      })
     ]);
   }
   ui.define('results', {
@@ -283,6 +307,7 @@
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) { var p = el('p', fill(t)); box.appendChild(p); steps.push([p, 650]); });
+        if (b.deltas && b.deltas.song) { var sn = songNode(b.deltas.song); box.appendChild(sn); steps.push([sn, 700]); }
         var chips = ui.deltaChips(b.deltas, { emptyText: false });
         if (chips.children.length) { box.appendChild(chips); steps.push([chips, 250]); }
       });
@@ -456,12 +481,10 @@
       return el('div.row', { style: 'padding:6px 0' }, [el('span', '🏆'), el('span.grow', m.text), m.week ? el('span.small.faint', 'week ' + m.week) : null]);
     }));
   }
-  var KIT_QUIPS = ['You play a fill. Marcel says it "lacks darkness". It was a paradiddle.', 'The ride cymbal has a crack shaped like Manitoba.',
-    'Your throne is a milk crate with a cushion. It is load-bearing.'];
   var DOOR_QUIPS = ["Dad's truck is parked outside. He has made it VERY clear it is not a tour van.", 'The garage door opener works one time in three.'];
   var MERCH_QUIPS = ['Two boxes of shirts printed "HAIL DAMGE". The printer was very sorry.', 'Mostly just boxes of Christmas decorations.'];
   var HOT = {
-    kit: function () { ui.show('soon', { title: 'Your drum kit', icon: '🥁', soon: 'Coming in v0.2', text: 'The step sequencer arrives in v0.2: build drum patterns, and patterns become songs.', quip: ui.pick(KIT_QUIPS) }); },
+    kit: function () { ui.openSketch(); },
     merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
     door: function () { ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
     trophies: function () { ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },

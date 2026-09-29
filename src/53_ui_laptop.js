@@ -1,5 +1,5 @@
 // 53_ui_laptop.js: the laptop on the cooler. Tabs: Group chat (member-coloured bubbles, newest at the bottom),
-// Band (members' skill + mood, your drum skill, the song catalog) and Money (fund, debt to parents, fund history).
+// Band (members' skill + mood, your drum skill, the song catalog: tap a song to hear it) and Money (fund, debt to parents, fund history).
 // Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
@@ -39,12 +39,18 @@
         el('div.small.dim', 'Drums · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
+    // Song catalog: tap a song to open it read-only in the sequencer (and play it).
     var songs = st.songs || [];
     var list = el('div.panel', { testid: 'laptop-songs' }, songs.length ? songs.map(function (s) {
-      return el('div.song', [el('span', { style: 'font-size:20px' }, '🎵'), el('div.grow', [el('div.fr', s.title), s.titleEn ? el('div.en', s.titleEn) : null]),
+      var r = s.rating || {}, tags = [s.classic ? el('span.tag.gold', 'classic') : null, (s.stale || 0) >= 50 ? el('span.tag', 'stale') : null,
+        s.auto ? null : el('span.tag.mine', 'yours')];
+      return ui.btn('.song', { testid: 'song-' + s.id, onclick: function () { if (ui.openSong) ui.openSong(s.id); } }, [
+        el('span', { style: 'font-size:20px' }, '🎵'),
+        el('div.grow', [el('div.fr', s.title), s.titleEn && s.titleEn !== s.title ? el('div.en', s.titleEn) : null,
+          el('div.tiny.dim', ['Groove ' + (r.groove || 0) + ' · Hook ' + (r.hook || 0) + ' · Diff ' + (r.difficulty || 0) + ' ', tags])]),
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
     }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
-    out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ')'), list);
+    out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
     return el('div', out);
   }
 

@@ -397,7 +397,7 @@
       phase: 'monday', era: 'garage', protected: true,
       fund: E.startFund, fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
-      members: makeMembers(band), songs: [],
+      members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -507,12 +507,21 @@
       if (polished.length) d.polished = polished.map(function (s) { return s.id; });
       addStat(state, 'burnout', A.burnout, d);
     },
+    // Uses the next song composed in the sequencer (state.pendingSongs, queued by the UI; null = "let the band jam
+    // one"), else the band jams one out. Emits 'song:written' with the band's reactions.
     write: function (state, A, f, rng, d, lines) {
-      var song = GG.songs.writePlaceholder(state, rng, { repeatFactor: f });
-      d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality };
+      var queued = state.pendingSongs && state.pendingSongs.length ? state.pendingSongs.shift() : null, song;
+      if (queued && queued.sections) {
+        song = GG.songs.create(state, queued, queued.title, { rng: rng, titleEn: queued.titleEn, repeatFactor: f });
+        state.stats.songsWritten++;
+      } else song = GG.songs.jam(state, rng, { repeatFactor: f });
+      var reactions = GG.songs.reactions(state, song, rng);
+      d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality, auto: song.auto,
+        groove: song.rating.groove, hook: song.rating.hook, difficulty: song.rating.difficulty, reactions: reactions };
       lines.push('New song: “' + song.title + '”' + (song.titleEn && song.titleEn !== song.title ? ' (' + song.titleEn + ')' : '') + '.');
       addStat(state, 'chemistry', rngRound(A.chemistry * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
+      GG.emit('song:written', { song: song, reactions: reactions });
     },
     promote: function (state, A, f, rng, d) {
       addStat(state, 'fund', -A.cost, d);
@@ -693,6 +702,7 @@
     driftChemistry(state);
     wrap.chat = postWeeklyChat(state, rng);
     parentsLoan(state, rng, wrap);
+    GG.songs.weekly(state);
     wrap.milestones = checkMilestones(state);
     state.history.push(historyPoint(state));
     if (state.history.length > E.historyMax) state.history.splice(0, state.history.length - E.historyMax);

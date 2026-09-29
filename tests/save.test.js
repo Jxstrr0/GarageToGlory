@@ -106,9 +106,10 @@ test('migrate fills defaults and is idempotent', () => {
   const old = { bandId: 'hail_damage', totalWeek: 30, fund: 5, members: [{ id: 'marcel', name: 'Marcel Fontaine', skill: 40, mood: 60 }],
     songs: [{ id: 's1', title: 'Ma Pelouse' }] };
   const m = GG.save.migrate(old);
-  eq([m.v, m.year, m.week, m.phase, m.era, m.protected], [1, 2, 6, 'monday', 'garage', true]);
+  eq([m.v, m.year, m.week, m.phase, m.era, m.protected], [GG.contracts.SAVE_SCHEMA, 2, 6, 'monday', 'garage', true]);
   ok(Array.isArray(m.chat) && m.flags && m.chains && m.seenCards && m.stats.gigs === 0 && m.plan.length === 3, 'containers');
-  eq([m.members[0].status, m.songs[0].pattern, m.songs[0].plays, m.songs[0].titleEn], ['active', null, 0, 'Ma Pelouse']);
+  eq([m.members[0].status, m.songs[0].plays, m.songs[0].titleEn, m.songs[0].stale, m.songs[0].classic], ['active', 0, 'Ma Pelouse', 0, false]);
+  eq(GG.songs.validate(m.songs[0].pattern, m.gear), [], 'migrated song has a valid pattern');
   ok(same(GG.save.migrate(JSON.parse(JSON.stringify(m))), m), 'idempotent on old saves');
   let threw = false; try { GG.save.migrate(null); } catch (e) { threw = true; } ok(threw, 'null is not a career');
   // a migrated old save can keep playing

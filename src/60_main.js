@@ -190,6 +190,9 @@
     updatePause();
   }
   function unlockAudio() { if (GG.audio) GG.audio.unlock(); }
+  // A playing song stops when the week's results (the gig) or any other big moment takes the screen.
+  var STOP_SONG_ON = { results: 1, wrap: 1, card: 1, title: 1, end: 1 };
+  GG.on('screen:open', function (p) { if (p && STOP_SONG_ON[p.id] && GG.audio && GG.audio.stop) GG.audio.stop(); });
 
   M.boot = function () {
     if (M.booted) return;

@@ -128,9 +128,7 @@
     var cfg = G(), fx = { fund: r.pay - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
       burnout: cfg.burnout, mood: { all: cfg.mood[r.grade] } };
     r.deltas = GG.career.applyEffects(state, fx, {});
-    (r.songIds || []).forEach(function (id) {
-      for (var i = 0; i < state.songs.length; i++) if (state.songs[i].id === id) state.songs[i].plays++;
-    });
+    r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
     state.stats.gigs++;
     state.stats.earned += r.pay;
     var best = state.stats.bestGrade;

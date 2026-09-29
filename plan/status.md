@@ -3,8 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.1.0.0 "Garage"** (merged to main 2026-09-29)
-- Next: **0.2.0 "Sequencer"** (handoff B4)
+- Current: **0.2.0.0 "Sequencer"** (merged to main 2026-09-29) · 0.1.0.0 "Garage" merged earlier
+- Next: **0.3.0 "Stage"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -58,13 +58,40 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Laptop (chat / band / money), ☰ menu (save slots, save code backup/restore, sound, quit). Synth sfx.
 - Balance (5 seeds, year 1): avg bot fund min $140 end $531, 253 fans, 0.2 loans; good bot 458 fans, 0 loans.
 
+## What's in v0.2.0 "Sequencer" (branch `v0.2-sequencer`)
+- Songs are drum patterns (`PATTERN`: 3 one-bar sections × 4 lanes × 16 steps, arrangement preset Short/Classic/Epic,
+  tempo in the genre range). `GG.songs.rate` → Groove (genre fit, rules in `content/genres.js`), Hook (chorus vs verse
+  sweet spot + catchiness), Difficulty (notes × tempo × syncopation). Quality = band part + craft − over-hard penalty.
+  All 4 genres' rules/signatures ship (signatures score 96–100 at home, ≤ 72 elsewhere); only metal is playable.
+- Write block: the planner's Go opens the full-screen sequencer once per Write block (first-ever Write = starter pattern
+  + a bandmate tip); Save queues into `state.pendingSongs`, "Let the band jam one" = `songs.jam` (bots always jam).
+  Results show the song + reactions (Marcel names it in French, Dana/no solo room, Jaxon/fills, Kenji/nod).
+- Sequencer: tap/drag painting, kick-adjacency rule (no double-kick pedal yet) shown kindly, Verse/Chorus/Bridge/Song
+  tabs, copy/clear, tempo slider (+ backing style label), arrangement chips, live meters + tips + ability tick,
+  Loop/Song playback with playhead. Kit hotspot = sketch pad on `state.draft` ("Use in next Write"). Laptop Band tab
+  catalog shows ratings/tags; tap = read-only sequencer with Play.
+- Audio: punchy synth kit (6 lanes), generated backing (metal: doom < 100 bpm, palm-muted chugs locked to the kick,
+  tremolo > 170; bass doubles; chords per section from the kick/snare skeleton), look-ahead scheduler on
+  `AudioContext.currentTime`, ≤ 12 song voices (per-lane choke + booking), glue comp + limiter (peaks ~0.6).
+- Gigs: plays add stale (decays 4/week off), stale lowers setlist score; 4 A/S gigs make a classic (results line).
+- Saves: schema 2. v1→v2 migration gives every song a pattern from an RNG seeded by career seed + song id (career RNG
+  untouched), rates it, keeps old quality/polish; adds `gear`, `pendingSongs`, `draft`. Fixture `tests/fixtures/save_v01.json`.
+- Balance (5 seeds, year 1): avg bot fund min $221 end $624, 288 fans, 0 loans; good bot 483 fans, 0 loans.
+  Over 40 seeds v0.2 vs v0.1-equivalent knobs: avg fund end 593 vs 542, fans 260 vs 266; good fans 425 vs 448
+  (staleness), both within seed noise of the v0.1 targets.
+
 ## APIs (full shapes in `src/02_contracts.js`)
 - `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
   pickLine, contentLines, botWeek, botOffer`. startWeek/runWeek/endWeek are double-call safe.
 - `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
   → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
   performance, gradeFor, payFor`.
-- `GG.songs`: `writePlaceholder, best, polish, addStarter, score` (songs carry `pattern: null` until v0.2).
+- `GG.songs` (v0.2): `rate(p, genre, gear) → {groove, hook, difficulty, notes, tips, sections}`, `verdict, validate,
+  sanitize(p, gear, genre), generate(genre, rng, {gear, wild, arrangement}), starter, signature, patternFor(state, key),
+  similarity, toNotes → [{beat, lane, section, entry, bar, step}], beats, seconds, create(state, p, title, opts), jam,
+  addStarter, pickTitle, ability, byId, score, best, polish, played(state, ids, grade) → new classics, weekly,
+  reactions, kickBlocked, setHit, isHit, blankSection, ARRANGEMENTS, ARRANGEMENT_IDS, arrangementId, genre(id)`.
+  Tunables: `economy.songs`; genre data: `content/genres.js`; lines: `lines.songReactions`, `lines.writeTips`.
 - `GG.save`: `write, read, readRecord, list, remove, autosave, toCode, fromCode, migrate, storageOk, settings,
   saveSettings, init, KEYS, compress/decompress`. Keys `gg.v1.slot.<auto|1|2|3>`, `gg.v1.settings`.
 - `GG.render`: `init, available, setScene, syncState, setPaused, goToHotspot, hotspotScreenPos, memberScreenPos,
@@ -74,9 +101,15 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   bubble, tabs, bar, deltaChips, avatar, el, btn, pick, rng` + week helpers. Screens are full / sheet / modal layers.
 - `GG.main`: `quickStart({seed,slot,name,openCard,bandId,presetId}), newCareer, load, loadState, enterGarage, route,
   beginWeek, afterCard, wrapWeek, nextWeek, saveTo, quitToTitle, sync`. URL `?quick=1&seed=N`.
-- `GG.audio`: `unlock, sfx(name), setMuted, isMuted, toggleMuted, suspend, resume`.
-- Tests: `node tests/run.js` (content 21, save 7, sim_career 18, sim_gig 7) · `pw_flow.js` META_ONLY=flow|year|code|layout
-  · `pw_garage.js` META_ONLY=garage (48 checks).
+- `GG.audio`: `unlock, sfx(name), setMuted, isMuted, toggleMuted, suspend (also stops a song), resume` + v0.2
+  `play(pattern, {genre, section|null, loop, backing}) → handle {stop, update(p), beatAt(time), playing, start, bpm}`,
+  `stop, isPlaying, current, hit(lane), timeline(p, opts) → {bpm, beats, style, events[{beat, kind, lane|midi, len, gap}]},
+  styleFor(genre, bpm), renderOffline(spec) → Promise<{peak, rms, nan}>`. Events: 'audio:step' per 16th, 'audio:end'.
+- `GG.ui` v0.2: `LANES` (lane name/icon/colour for the v0.3 highway), `composeWeek(n, done), openSketch, openSong(id)`;
+  screens `seq` (full) and `seq-tools` (modal).
+- Tests: `node tests/run.js` (content 21, save 7, sim_career 18, sim_gig 7, sim_songs 12) · `pw_flow.js`
+  META_ONLY=flow|year|code|layout (flows jam their Write blocks) · `pw_garage.js` META_ONLY=garage (48) ·
+  `pw_seq.js` META_ONLY=seq (29, screenshot `tests/.cache/seq.png`)|audio (16).
 
 
 ## Back-burner
@@ -88,3 +121,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Flags `mooseMuse` and `babaMad` are set by cards but unused yet (hooks for the moose album chain / baba storyline).
 - Week-one teaching is one in-character toast; the full guided tutorial is v1.0.
 - Marcel's mirror has no reflection.
+- v0.2: last week's plan stays on the whiteboard (v0.1 behaviour); Go with a kept Write opens the sequencer again.
+- v0.2: the mix was tuned by numbers (peaks/rms), not by ear on a phone; backing for punk/rock/country is basic.
+- v0.2: sketch-pad edits and queued sketches persist only at the next autosave (week wrap).
+- v0.2: gear upgrades (double kick, toms, ride) exist in the model/audio but nothing sells them yet (v0.8).

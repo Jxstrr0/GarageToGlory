@@ -65,10 +65,11 @@ test('newCareer: garage start, fallback roster, week one pre-booked at Buddy\'s'
   const s = GG.career.newCareer({ seed: 5, slot: '1', player: { name: 'Pat', nick: 'Sticks', presetId: 'nope' } });
   eq(s.members.map(m => m.id).sort(), ['dana', 'jaxon', 'kenji', 'marcel']);
   ok(s.members.every(m => m.status === 'active' && m.original));
-  eq([s.totalWeek, s.year, s.week, s.phase, s.era, s.protected, s.slot, s.v], [1, 1, 1, 'monday', 'garage', true, '1', 1]);
+  eq([s.totalWeek, s.year, s.week, s.phase, s.era, s.protected, s.slot, s.v], [1, 1, 1, 'monday', 'garage', true, '1', GG.contracts.SAVE_SCHEMA]);
   const E = GG.content.economy;
   eq([s.fund, s.fans, s.buzz, s.chemistry, s.burnout, s.drumSkill], [E.startFund, E.startFans, E.startBuzz, E.startChemistry, E.startBurnout, E.startDrumSkill]);
-  ok(s.songs.length >= 2 && s.songs.every(x => x.pattern === null && x.title && x.plays === 0), 'starter songs');
+  ok(s.songs.length >= 2 && s.songs.every(x => GG.songs.validate(x.pattern, s.gear).length === 0 && x.rating && x.title && x.plays === 0), 'starter songs');
+  eq([s.pendingSongs, s.draft, s.gear], [[], null, { lanes: 4, doubleKick: false }], 'v0.2 fields');
   eq([s.gig.venueId, s.gig.source, s.gig.deal, s.gig.capacity], ['buddys_house_party', 'forced', 'exposure', 15]);
   ok(s.player.look && s.player.kitColor && s.player.name === 'Pat');
   const t = GG.career.newCareer({ player: { name: 'Pat' } });
@@ -239,7 +240,7 @@ test('activities: each does its job; repeats have diminishing returns', () => {
   ok(r.blocks[0].lines[0].length > 0, 'flavour line');
   [s, r] = run(['write', 'rest', 'rest']);
   const last = s.songs[s.songs.length - 1];
-  eq(s.stats.songsWritten, 1); ok(r.blocks[0].deltas.song.id === last.id && last.written === 1 && last.pattern === null, 'write');
+  eq(s.stats.songsWritten, 1); ok(r.blocks[0].deltas.song.id === last.id && last.written === 1 && last.auto && GG.songs.validate(last.pattern, s.gear).length === 0, 'write (band jam)');
   [s, r] = run(['promote', 'rest', 'rest']);
   eq(r.blocks[0].deltas.fund, -GG.content.activities.promote.cost); ok(r.blocks[0].deltas.buzz > 0);
   [s, r] = run(['book', 'rest', 'rest']);
