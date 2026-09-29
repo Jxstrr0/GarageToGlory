@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V0.3.0.0</title>
+<title>Garage to Glory - V0.4.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -86,7 +86,7 @@ h1, h2, h3, p { margin: 0; }
 .avatar.lg { width: 56px; height: 56px; font-size: 19px; }
 
 /* ---- Screen layers ---- */
-.layer { position: absolute; inset: 0; }
+.layer { position: absolute; inset: 0; isolation: isolate; }   /* each screen its own stacking context (sticky tabs never poke through a sheet above) */
 #screens > .layer[inert] { pointer-events: none; }
 /* Sheets leave the HUD bar tappable (menu, stat help) while they're open; modals and full screens cover everything. */
 #screens > .sheet-layer { pointer-events: none; } #screens > .sheet-layer > * { pointer-events: auto; }
@@ -441,14 +441,14 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.3.0.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.4.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 // 01_ns.js: window.GG namespace, event bus, seeded RNG, small utils, debug registry.
 // Loaded first. Works in the browser and in node (tests set window = globalThis).
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '0.3.0.0';
+  GG.VERSION = '0.4.0.0';
   GG.content = GG.content || {};
 
   // ---- Event bus -------------------------------------------------------
@@ -537,7 +537,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 3;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 4;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -586,7 +586,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   //   chain : { <chainId>: { step: <n>|'end', delay: <weeks, default 1> } }
   //   book  : <venueId>   books that venue for this weekend (replaces nothing if a gig is already booked)
   //   chat  : { who: <memberId|npcId>, text }        posts a group-chat message
-  C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat'];
+  C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat',
+    'member', 'payCut', 'repay'];   // v0.4: member { id|'recruit', act: settle|quit|return|later|rival }, payCut n, repay $
 
   // Keys allowed in a card gate. All present conditions must hold.
   //   era:[..] genre:[..] region:[..] band:[bandId..]
@@ -610,7 +611,16 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
      phase: 'monday'|'plan'|'week'|'wrap'|'ended',
      era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
-     members: [ { id, name, nick, role, skill, mood, status: 'active', original: true } ],
+     payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
+     recruitAd: null | { role, candidates: [RECRUIT], posts, week }, rivalDefectors: [memberId],   (v0.4)
+     (v0.4 also) card.who/whoName; chat[].tone 'grumble'|'pa'|'news'; member stageWeek, ultimatum, gripe, changed, returns,
+     recruit.stars/chemistry, exit.beat; fillIns[role].look; stats quits/returns/recruits/ultimatums; milestone localHeroes.
+     WRAP gains warnings, drama, protectionEnded, members[].stage; GIG_RESULT gains cut, fillInCost.
+     Tokens {recruit} (+ {who} {gripe} in drama.stageText); card speaker/mood key 'recruit'.
+     Content: drama, dramaCards, recruits; economy.drama tunables. API: GG.drama.* (27_sim_drama.js header), career.postChat(…, tone).
+     members: [ { id, name, nick, role, skill, mood, status: 'active'|'away'|'quit', original: true,
+                  stage: 0..4 (0 fine, 1 grumbling, 2 passive-aggressive, 3 ultimatum, 4 quit), want,
+                  exit: null | { storyline, since, returnDue }, recruit?: { trait, quirk, hometown, askingCut }, look? } ],
      songs:   [ SONG ],  pendingSongs: [ PATTERN+title ] (composed in the UI, consumed by Write blocks),
      draft:   null | PATTERN (the kit's scratch pad),
      liveGig: null | LIVE_GIG (a gig in progress; saved between songs),  listings: [GIG] (this week's gig board),
@@ -704,6 +714,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
    'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
    'audio:end'      { handle }                          a song finished (or the app hid)
+   'member:stage'   { id, stage }             drama, when a member's grievance stage changes
+   'member:quit'    { id }  'member:return' { id }  'recruit:hired' { member }  'protection:ended' {}   (v0.4 drama)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
@@ -1813,6 +1825,375 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
               outcome: "Everyone plays standing on milk crates. The video, 'Metal in a Flood', does numbers in three provinces." },
             fail: { effects: { fund: -90, burnout: 5 },
               outcome: "Pop, fizz, darkness. The breaker takes Dana's tuner with it. Mom says 'I said this would happen' to nobody in particular." } } }
+      ] },
+
+    // ======================================================================
+    // v0.4 guilt cards: only while you owe your parents (flags.parentsLoan). `repay: n` pays back up to $n from the
+    // fund; paying the whole debt clears the flag and the guilt stops.
+    // ======================================================================
+    { id: 'guilt_fridge_calendar', type: 'money', speaker: 'mom', title: 'The Fridge Calendar', once: false, cooldown: 8,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom has written 'BAND LOAN' on the fridge calendar every Sunday, in red, with a small heart. The heart is doing a lot of work.",
+      choices: [
+        { label: 'Pay her back $100', effects: { repay: 100, chemistry: 2 },
+          outcome: 'You hand over five twenties. Mom erases one heart and draws a bigger one. Dad pretends not to see.' },
+        { label: 'Clean the eaves instead', effects: { burnout: 5, mood: { all: 3 } },
+          outcome: 'You clean the eaves. Kenji holds the ladder. Mom counts it as $20. Dad counts it as $5.' },
+        { label: 'Promise next month', effects: { burnout: 3 },
+          outcome: "Mom writes 'NEXT MONTH' on next month. In red. With no heart." }
+      ] },
+    { id: 'guilt_accountant', type: 'money', speaker: 'mom', title: 'Trevor the Accountant', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
+        'Mom has invited Trevor for supper. Trevor has brought a pamphlet.',
+      choices: [
+        { label: 'Let Trevor do the books', effects: { repay: 80, burnout: 4 },
+          outcome: "Trevor finds $80 of 'drumstick overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
+        { label: 'Challenge Trevor to a drum-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two kits in the driveway.',
+          roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.008,
+            success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'You win. Trevor shakes your hand and books the band for his office party.' },
+            fail: { effects: { burnout: 6 }, outcome: "Trevor wins. He had lessons. Mom says 'see?' and nothing else all evening." } } }
+      ] },
+    { id: 'guilt_dad_invoice', type: 'money', speaker: 'dad', title: 'An Invoice', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Dad has typed up an invoice: 'One (1) loan, plus garage rental, plus hydro for amplifiers.' Under 'terms' he wrote 'whenever, bud.' " +
+        "He's sliding it across the workbench very slowly.",
+      choices: [
+        { label: 'Pay $150 on the spot', effects: { repay: 150, chemistry: 3 },
+          outcome: "Dad folds the cash into his shirt pocket and says 'didn't need to do that, bud.' He pats the pocket twice." },
+        { label: 'Pay him in hydro savings', effects: { burnout: 4, chemistry: -2 },
+          outcome: 'You unplug the beer fridge. Dad plugs it back in. The invoice stays on the workbench.' },
+        { label: 'Frame the invoice', effects: { burnout: 3, mood: { marcel: 5 } },
+          outcome: "Marcel calls it 'the most metal document in Saskatoon' and hangs it over the kit. Dad is secretly delighted." }
+      ] },
+    { id: 'guilt_aunt_irene', type: 'money', speaker: 'mom', title: 'Aunt Irene Calls', once: false, cooldown: 9,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Aunt Irene from Yorkton is on speakerphone. 'Your mother tells me you owe her money for the little band.' Mom is standing right there. Mom did tell her.",
+      choices: [
+        { label: 'Pay Mom $50, loudly', effects: { repay: 50, chemistry: 2 },
+          outcome: "Irene hears the cash change hands and says 'well, good.' The whole family will know by Sunday." },
+        { label: 'Invite Irene to a gig', effects: { buzz: 3, burnout: 3 },
+          outcome: 'Irene comes with three friends from church. They stand at the back with their arms crossed. It counts as a crowd.' },
+        { label: 'Put Jaxon on the phone', effects: { chemistry: 2, mood: { jaxon: 5 } },
+          outcome: "Jaxon talks to Irene for forty minutes about Baba's perogy dough. Irene forgets why she called." }
+      ] },
+    { id: 'guilt_potash_mine', type: 'money', speaker: 'dad', title: 'The Mine Is Hiring', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: 'Over supper, Dad mentions the potash mine is hiring. He mentions Cousin Dale works there now. He mentions Cousin Dale\'s truck. ' +
+        'He passes the potatoes without looking at you.',
+      choices: [
+        { label: 'Pay Dad back $120', effects: { repay: 120, chemistry: 2 },
+          outcome: "You pay him back. Dad says 'didn't need to do that' and puts it in his wallet immediately." },
+        { label: 'Work two shifts underground', effects: { fund: 60, burnout: 8 },
+          outcome: 'You come home with $60 and a new respect for low frequencies. Dale shows you his truck. Twice.' },
+        { label: 'Pitch him the band plan', effects: { burnout: -3, chemistry: -2 },
+          outcome: "Dad listens to the whole plan. He asks one question: 'And the van?' There is no good answer." }
+      ] },
+    { id: 'guilt_butter_tarts', type: 'money', speaker: 'mom', title: 'The Bake Sale', once: false, cooldown: 12,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom's church is holding a bake sale 'to support local musicians'. You are the local musicians. She baked forty dozen butter tarts. You are selling them.",
+      choices: [
+        { label: 'Sell them, repay $100', effects: { repay: 100, burnout: 5 },
+          outcome: "You sell 480 butter tarts outside the Co-op. Every cent goes to Mom. Mom calls it 'even'. It is not even. But it's closer." },
+        { label: 'Eat the tarts', effects: { burnout: -4, mood: { all: 4 } },
+          outcome: 'The band eats eleven dozen butter tarts in one sitting. Marcel weeps. Mom never finds out. Mom always finds out.' }
+      ] }
+  ];
+})(window.GG);
+
+</script>
+<script>/* content/drama.js */
+// content/drama.js: v0.4 band drama for Hail Damage's originals (27_sim_drama.js reads it).
+//   GG.content.drama = {
+//     stageText: { 1|2|3: text with {who} {gripe} },  gripes: { money, burnout, losing, mystery },
+//     members: { <memberId>: { wants: [{ id, text, gripe, rule }], grumble: [chat], passive: [chat],
+//                ultimatum: cardId, return: cardId, returnFilled: cardId,
+//                exit: { id, away?, returnAfter: [lo, hi] weeks, needBuzz?, status, quitLine: { who, text },
+//                        beats: [{ at: weeks gone, who, text }], changed, backLine: { who, text } }, epilogue } },
+//     recruit: { grumble, passive, ultimatum },  fillIns: { <role>|any: [name] },  protectionToast }
+//   GG.content.dramaCards = [ CARD ]   ultimatum + return cards (Monday-card schema, never drawn: GG.drama forces them).
+//     Extra effect keys: member { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' }, payCut, repay.
+//     {recruit} = the member the card is about (the recruit filling the slot on a *_filled return card).
+// Want rules (27_sim_drama RULES): spotlight, cape, solos, practice, freedom, baba, mystery.
+// Kenji never speaks words: his lines are punctuation or (stage directions). His ultimatum is a packed bass case.
+(function (GG) {
+  function ret(id) { return { member: { id: id, act: 'return' } }; }
+  function fx(extra, id, act) { var o = { member: { id: id, act: act } }; for (var k in extra) o[k] = extra[k]; return o; }
+
+  GG.content.drama = {
+    stageText: {
+      1: '{who} is grumbling about {gripe}.',
+      2: '{who} is getting passive-aggressive in the group chat about {gripe}.',
+      3: '{who} has an ultimatum for you. Monday.'
+    },
+    gripes: { money: 'money', burnout: 'being worked like a rented mule', losing: 'the band going nowhere', mystery: 'nobody knows what' },
+    protectionToast: 'The garage era is over. From here on, people can quit and the van can die. Warnings first. Probably.',
+
+    members: {
+      marcel: {
+        wants: [
+          { id: 'spotlight', text: 'The spotlight. Every song introduced by Lord Abyssus, in French, at length.', gripe: 'the spotlight', rule: 'spotlight' },
+          { id: 'theatrics', text: 'Theatrics. A cape budget. Possibly a fog machine.', gripe: 'the cape budget', rule: 'cape' }
+        ],
+        grumble: [
+          'Lord Abyssus notes that the flyer font makes his name look… small.',
+          "Je dis ça, je dis rien. But the spotlight was on Dana. Again.",
+          'At Prairie Mutual they at least give me a lanyard with my NAME on it.'
+        ],
+        passive: [
+          'Bravo to everyone tonight. Especially the lighting guy, who found every member except one. 🙂',
+          'No, no, it is fine. A cape is only the soul of the show. We can use a tarp. 🙂',
+          "I have updated my profile to 'available for darker opportunities'. No reason."
+        ],
+        ultimatum: 'ult_marcel', 'return': 'ret_marcel', returnFilled: 'ret_marcel_filled',
+        exit: {
+          id: 'quebec', returnAfter: [16, 26],
+          status: 'Fronting Les Chevaliers du Gazon in Rimouski, where people understand the lyrics. That is the problem.',
+          quitLine: { who: 'marcel', text: "Mes amis. I have joined Les Chevaliers du Gazon of Rimouski. They understand me. Au revoir, and good luck with the lawn." },
+          beats: [
+            { at: 3, who: 'gord', text: "Saw a poster: 'LES CHEVALIERS DU GAZON featuring LORD ABYSSUS.' Opening for a polka band in Rivière-du-Loup." },
+            { at: 8, who: 'marcel', text: "Our album 'Tondeuse de l'Enfer' has sold eleven copies. Nine to my mother. They understand every word. It is terrible." },
+            { at: 14, who: 'reporter', text: "Arts brief: Saskatoon expat's solo album flops in Rimouski. 'He screams about grass,' says one listener." }
+          ],
+          changed: 'Back from Quebec. Now demands bilingual stage banter and can hit a high C.',
+          backLine: { who: 'marcel', text: 'Nobody in Quebec found me mysterious. They knew what the songs meant. Lord Abyssus has returned. I brought the cape.' }
+        },
+        epilogue: 'Marcel retires to Gravelbourg and grows the most feared lawn in Saskatchewan.'
+      },
+
+      dana: {
+        wants: [
+          { id: 'solos', text: 'Longer solos. A solo in every song. A solo inside the solo.', gripe: 'solos', rule: 'solos' },
+          { id: 'practice', text: 'More rehearsal. Ten hours a day is a warm-up.', gripe: 'rehearsal time', rule: 'practice' }
+        ],
+        grumble: [
+          "For the record: last night's solo was cut from 32 bars to 8. I have logged it.",
+          'Rehearsal is at 7. It is 7:04. I have tuned twice. Where is everyone.',
+          'My new pickups are 16.4k ohms. Nobody asked. That is the problem.'
+        ],
+        passive: [
+          'Great show everyone!! Loved the part where the solo was supposed to be. 🙂',
+          'Just a reminder that some bands rehearse. Some bands. Other bands.',
+          'A prog band from Calgary just followed me. Unrelated. See you Tuesday. Maybe.'
+        ],
+        ultimatum: 'ult_dana', 'return': 'ret_dana', returnFilled: 'ret_dana_filled',
+        exit: {
+          id: 'prog', returnAfter: [14, 24],
+          status: 'Playing in 13/8 with Tessellated Leviathan in Calgary. There is no mosh pit. She has noticed.',
+          quitLine: { who: 'dana', text: 'Update: I have joined Tessellated Leviathan (Calgary). Our first song is 22 minutes. An overture. Good luck with 4/4.' },
+          beats: [
+            { at: 4, who: 'dana', text: "Tessellated Leviathan's crowd sits down. On chairs. They clap after key changes. Nobody moshes. Nobody has ever moshed." },
+            { at: 10, who: 'zine', text: "Tessellated Leviathan, 'Fractals of a Quiet Glacier'. Three skulls. 'Guitarist incredible. Also clearly miserable.'" }
+          ],
+          changed: 'Back from prog. Plays in 13/8 when bored, but now knows what a mosh pit is for.',
+          backLine: { who: 'dana', text: 'Prog shows have no mosh pit. I checked every one. I am back. I brought two new pedals. Do not ask about the pedals.' }
+        },
+        epilogue: 'Dana opens a guitar shop in Prince Albert where every demo lasts eleven minutes.'
+      },
+
+      jaxon: {
+        wants: [
+          { id: 'freedom', text: 'Freedom. Fewer rehearsals. A life. Mostly a life.', gripe: 'being worked like a rented mule', rule: 'freedom' },
+          { id: 'baba', text: "Baba's approval. A gig Baba can come to. Home by ten.", gripe: 'what Baba will say', rule: 'baba' }
+        ],
+        grumble: [
+          'baba says i look tired. baba is right. baba is always right',
+          'we have rehearsal AGAIN?? i have a curfew bro',
+          "baba asked what the band pays. i said 'exposure'. she laughed for a long time"
+        ],
+        passive: [
+          "no its cool i'll just play the simple parts. like always. 🙂",
+          'baba says hello to everyone. she says it in a tone',
+          'just wondering if anyone else has a baba who packs them perogies for free. asking for the band fund'
+        ],
+        ultimatum: 'ult_jaxon', 'return': 'ret_jaxon', returnFilled: 'ret_jaxon_filled',
+        exit: {
+          id: 'grounded', returnAfter: [12, 22], needBuzz: 12,
+          status: "Grounded at Baba's. Allowed out for church and groceries. Practises with the amp unplugged.",
+          quitLine: { who: 'baba', text: 'Jaxon is grounded from the band. He can come back when I hear you on the radio. Not before. — Baba' },
+          beats: [
+            { at: 3, who: 'jaxon', text: "baba made me join the church choir. the choir director says my vibrato is 'aggressive'" },
+            { at: 8, who: 'baba', text: 'Jaxon is fine. Jaxon ate. Jaxon practises unplugged. It sounds like mice. — Baba' }
+          ],
+          changed: 'Back from being grounded. Baba approves (for now) and packs lunches for the whole band.',
+          backLine: { who: 'baba', text: 'I heard you on the radio. It was loud. Jaxon may come back. Home by ten. — Baba' }
+        },
+        epilogue: "Jaxon becomes a guitar teacher. Every student learns a sneaky fill. Baba approves."
+      },
+
+      kenji: {
+        wants: [{ id: 'unknown', text: "Nobody knows. That's the point.", gripe: 'nobody knows what', rule: 'mystery' }],
+        grumble: [
+          '(Kenji has left the chat)',
+          '…',
+          '(Kenji reacted 😐 to the pay sheet.)'
+        ],
+        passive: [
+          '(Kenji sent a photo of his bass case. It is closed.)',
+          "(Kenji changed the group name to 'Hail Damage (for now)'.)",
+          '(Kenji sent a photo of the highway. No caption. Westbound.)'
+        ],
+        ultimatum: 'ult_kenji', returnFilled: 'ret_kenji_filled',
+        exit: {
+          id: 'vanished', away: true, returnAfter: [10, 20],
+          status: 'Gone. Nobody saw him leave. Postcards arrive. They are blank.',
+          quitLine: { who: 'kenji', text: '(Kenji has left the chat)' },
+          beats: [
+            { at: 3, who: 'mom', text: "A postcard came for the band from Churchill, Manitoba. It's blank. There's a polar bear on it. It looks smug." },
+            { at: 7, who: 'dj', text: "A caller says a bassist in sunglasses sat in at a jam in Flin Flon. Didn't speak. Played like a legend. Left early." }
+          ],
+          changed: 'Back from wherever that was. Now has a small moose tattoo. Will not explain it.',
+          backLine: { who: 'kenji', text: '(Kenji is back in his corner. Nobody saw him come in.)' }
+        },
+        epilogue: 'Kenji is never seen again. Every year, a blank postcard arrives. The polar bears get smugger.'
+      }
+    },
+
+    recruit: {
+      grumble: [
+        "Not to be that guy, but the Kijiji ad said 'paid gigs'.",
+        "Is there a reason my name isn't on the poster? Asking for my mom.",
+        'Rehearsal again? Cool. Cool cool cool.'
+      ],
+      passive: [
+        'Loved the gig! Especially the part where I got paid in exposure. 🙂',
+        'Just saw an ad for a band that pays. Anyway. See you Tuesday.',
+        'Great practice everyone. Some of us even learned the songs. 🙂'
+      ],
+      ultimatum: 'ult_recruit'
+    },
+
+    fillIns: {
+      vocals: ['Brayden from the karaoke bar', 'Wendell, who does weddings', 'Tammy from the church choir'],
+      'lead guitar': ['Dwayne from the music store', "Mrs. Hiebert's grandson", 'Clint, who knows one solo'],
+      'rhythm guitar': ['Cody, who knows three chords', 'Gus from the Legion', 'A kid named Rowan'],
+      bass: ['Ron, who owns a bass', 'Sheila from the jazz trio', 'Lyle, who brought a tuba "just in case"'],
+      any: ['Dwayne from the music store', 'Cousin Dale, somehow']
+    }
+  };
+
+  GG.content.dramaCards = [
+    // ---- Ultimatums (stage 3): 2 fixes at a cost, or refuse and they quit ----
+    { id: 'ult_marcel', type: 'drama', speaker: 'marcel', title: 'Lord Abyssus Has Demands',
+      text: "Marcel arrives in full eyeliner with a typed letter on Prairie Mutual letterhead. Item one: a fog machine. Item two: he " +
+        "introduces every song. Item three is just 'RESPECT', in French. A Quebec band has 'expressed interest'.",
+      choices: [
+        { label: 'Buy the fog machine ($150)', effects: fx({ fund: -150, mood: { marcel: 15 } }, 'marcel', 'settle'),
+          outcome: "The garage fills with fog. You can't see the drum kit. Marcel has never been happier. The smoke detector files a complaint." },
+        { label: 'He introduces every song', effects: fx({ buzz: -3, burnout: 4, mood: { marcel: 12 } }, 'marcel', 'settle'),
+          outcome: 'Sets now run 40% longer. The introductions are in French and describe the lawn in detail. The crowd is baffled. Marcel is radiant.' },
+        { label: 'Call his bluff', effects: fx({ chemistry: -4 }, 'marcel', 'quit'),
+          outcome: "Marcel folds the letter into a swan, sets it on your snare and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
+      ] },
+    { id: 'ult_dana', type: 'drama', speaker: 'dana', title: 'Terms and Conditions',
+      text: "Dana has made a slideshow. Slide one: every solo she's been cut from, in minutes. Slide two: a 7-string with a 26.5-inch scale. " +
+        "Slide three: 'Tessellated Leviathan (Calgary) wants me. They play in 13/8.'",
+      choices: [
+        { label: 'Buy her the 7-string ($180)', effects: fx({ fund: -180, mood: { dana: 15 }, skill: { dana: 2 } }, 'dana', 'settle'),
+          outcome: 'She names it Gwendolyn II and plays it for eleven straight hours. The neighbours move their bedroom to the other side of the house.' },
+        { label: 'A solo in every song', effects: fx({ burnout: 5, mood: { dana: 12 } }, 'dana', 'settle'),
+          outcome: 'Songs now run seven minutes. Marcel introduces each solo. Everyone is tired and nobody can say why.' },
+        { label: 'Tell her to go to Calgary', effects: fx({ chemistry: -4 }, 'dana', 'quit'),
+          outcome: "She packs Gwendolyn and a pedalboard the size of a door. 'It's in 13/8,' she says. 'You wouldn't understand.' You wouldn't." }
+      ] },
+    { id: 'ult_jaxon', type: 'drama', speaker: 'baba', title: 'Baba Has Spoken',
+      text: "Baba Kowalchuk is in your garage with a roaster of perogies and a clipboard. 'Jaxon is tired. Jaxon is thin. Jaxon comes home at " +
+        "one in the morning. Explain.' Jaxon stands behind her, holding his guitar like a shield.",
+      choices: [
+        { label: 'Home by ten, every night', effects: fx({ burnout: -8, mood: { jaxon: 12 } }, 'jaxon', 'settle'),
+          outcome: "Baba writes '22:00' on the clipboard and underlines it. Rehearsals now end at 9:45 with a mandatory perogy break." },
+        { label: 'Give the band a raise (+5%)', effects: fx({ payCut: 0.05, mood: { jaxon: 12 } }, 'jaxon', 'settle'),
+          outcome: 'Baba inspects the new pay sheet, nods, and puts it in her purse. Jaxon gets a raise. So does everyone, which Dana notices.' },
+        { label: "Jaxon's an adult, Baba", effects: fx({ chemistry: -4 }, 'jaxon', 'quit'),
+          outcome: "Baba takes Jaxon by the ear and the perogies by the handle. 'He is grounded,' she says. 'From the band.' The door closes very gently." }
+      ] },
+    { id: 'ult_kenji', type: 'drama', speaker: 'kenji', title: 'The Bass Case',
+      text: "Kenji's bass case is by the door. It is packed. He is wearing his sunglasses, which is normal, and a toque, which is not. " +
+        'He stands beside it, silent, for the whole rehearsal. Nobody knows what he wants.',
+      choices: [
+        { label: "Raise the band's cut (+5%)", effects: fx({ payCut: 0.05, mood: { kenji: 12 } }, 'kenji', 'settle'),
+          outcome: 'You slide the new pay sheet across the amp. Kenji reads it for a long time. He takes off the toque. The case goes back in the corner.' },
+        { label: 'Leave a single nod', effects: fx({ chemistry: 3, mood: { kenji: 15 } }, 'kenji', 'settle'),
+          outcome: 'You give him a small nod. He looks at you for nine seconds, then nods back. The case goes back in the corner. Jaxon cries a little.' },
+        { label: 'Let him go', effects: fx({ chemistry: -3 }, 'kenji', 'quit'),
+          outcome: 'You say nothing. He says nothing. The next morning the case is gone, and so is Kenji. His corner still smells faintly of cedar.' }
+      ] },
+    { id: 'ult_recruit', type: 'drama', speaker: 'recruit', title: '{recruit} Wants a Word',
+      text: "{recruit} catches you after rehearsal. 'I answered a Kijiji ad. It said paid gigs, a real band, and a garage with heat. " +
+        "One out of three. I've had other offers. Well, one. A wedding band.'",
+      choices: [
+        { label: "Raise the band's cut (+5%)", effects: fx({ payCut: 0.05, mood: { recruit: 15 } }, 'recruit', 'settle'),
+          outcome: '{recruit} shakes your hand. The wedding band will have to find someone else to play the Chicken Dance.' },
+        { label: 'Buy a space heater ($60)', effects: fx({ fund: -60, mood: { recruit: 12 } }, 'recruit', 'settle'),
+          outcome: "Two out of three. {recruit} sits right next to the heater at every rehearsal and calls it 'the office'." },
+        { label: "The door's right there", effects: fx({ chemistry: -3 }, 'recruit', 'quit'),
+          outcome: '{recruit} packs up and pins a one-star review of the garage to the music-store corkboard. It is fair.' }
+      ] },
+
+    // ---- Returns: an empty slot (welcome back / conditions / not yet) or a filled one (keep the recruit or the original) ----
+    { id: 'ret_marcel', type: 'drama', speaker: 'marcel', title: 'Le Retour',
+      text: "Marcel is in the driveway holding a cape and one copy of his solo album. 'In Rimouski, they understood the lyrics,' he says. " +
+        "'Nobody found me mysterious. Nobody.' He looks at the empty mic stand.",
+      choices: [
+        { label: 'Welcome back, Lord Abyssus', effects: fx({ chemistry: 4 }, 'marcel', 'return'),
+          outcome: 'He bows to the mic stand, then to you, then to the lawnmower. The garage feels theatrical again. Nobody admits they missed it.' },
+        { label: 'Audition first', effects: fx({ mood: { marcel: -8 }, skill: { marcel: 2 } }, 'marcel', 'return'),
+          outcome: 'He auditions with a nine-minute song about hedges. He gets the gig. He would like everyone to know he was nervous.' },
+        { label: 'Not yet, Marcel', effects: fx({ mood: { marcel: -5 } }, 'marcel', 'later'),
+          outcome: 'He nods gravely, leaves the album on your snare, and waits in his car. For weeks. Occasionally he honks.' }
+      ] },
+    { id: 'ret_marcel_filled', type: 'drama', speaker: 'marcel', title: 'Two Frontmen',
+      text: "Marcel is back from Quebec, cape over one arm. He sees {recruit} at his mic stand. 'Ah,' he says. 'I see.' " +
+        'Somewhere in Winnipeg, a polite accountant in corpse paint is already typing an email.',
+      choices: [
+        { label: 'Take Marcel back', effects: ret('marcel'),
+          outcome: '{recruit} takes it well and leaves a thank-you card. Marcel reads it aloud, dramatically, in French. The garage is complete again.' },
+        { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'marcel', 'rival'),
+          outcome: "Marcel sweeps out. Two weeks later Tundra Wraith announces a new vocalist: 'Lord Abyssus'. They send you a fruit basket." }
+      ] },
+    { id: 'ret_dana', type: 'drama', speaker: 'dana', title: 'No Mosh Pit',
+      text: "Dana is in the driveway with Gwendolyn and a new pedalboard. 'Prog shows have no mosh pit,' she says. 'None. I looked. I need a mosh pit.'",
+      choices: [
+        { label: 'Plug in, Sweep', effects: fx({ chemistry: 4 }, 'dana', 'return'),
+          outcome: "She plugs in and plays a solo so long you order pizza during it. The pizza arrives before it ends. It's good to have her back." },
+        { label: 'Solos stay short', effects: fx({ mood: { dana: -8 } }, 'dana', 'return'),
+          outcome: "She agrees, then plays 'a short solo' of 64 bars. She considers this a compromise. You consider this Dana." },
+        { label: "We're good for now", effects: fx({ mood: { dana: -5 } }, 'dana', 'later'),
+          outcome: 'She nods and practises alone in her car in your driveway. You hear sweep arpeggios through the windshield every night.' }
+      ] },
+    { id: 'ret_dana_filled', type: 'drama', speaker: 'dana', title: 'Amp Settings',
+      text: "Dana is back from Calgary, pedalboard under one arm. {recruit} is using her amp. Dana reads the amp settings and makes a face you have never seen before.",
+      choices: [
+        { label: 'Take Dana back', effects: ret('dana'),
+          outcome: '{recruit} is gracious about it. Dana resets the amp to her exact settings and quietly re-strings everything {recruit} touched.' },
+        { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'dana', 'rival'),
+          outcome: 'Dana leaves without a word, which is new. Tundra Wraith posts a photo of their new lead guitarist. They tag you. Politely.' }
+      ] },
+    { id: 'ret_jaxon', type: 'drama', speaker: 'baba', title: 'Heard You on the Radio',
+      text: "Baba is at the side door. 'I heard you on the radio,' she says. 'Deb Wiebe played the loud one. Olga called me.' Behind her, Jaxon is already holding his guitar.",
+      choices: [
+        { label: 'Welcome back, Rip', effects: fx({ chemistry: 4 }, 'jaxon', 'return'),
+          outcome: "Jaxon plugs in so fast he trips the breaker. Baba leaves a roaster of perogies 'for the band'. You are all Baba's grandchildren now." },
+        { label: 'Only if Baba comes to gigs', effects: fx({ buzz: 3 }, 'jaxon', 'return'),
+          outcome: 'Baba sits front row with earplugs and a thermos. She claps on the wrong beat. The crowd follows her.' },
+        { label: 'Not yet', effects: fx({ mood: { jaxon: -5 } }, 'jaxon', 'later'),
+          outcome: 'Baba narrows her eyes at you. Jaxon waves sadly from the car. You receive no perogies for several weeks.' }
+      ] },
+    { id: 'ret_jaxon_filled', type: 'drama', speaker: 'baba', title: 'Who Is This',
+      text: "Baba has heard you on the radio and brought Jaxon back. She sees {recruit} holding a rhythm guitar. 'Who is this,' she says. It is not a question.",
+      choices: [
+        { label: 'Take Jaxon back', effects: ret('jaxon'),
+          outcome: '{recruit} gets a roaster of perogies as a goodbye gift. Baba insists. Jaxon sneaks a fill into the very first song.' },
+        { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'jaxon', 'rival'),
+          outcome: "Baba says nothing. That is worse. A month later Tundra Wraith's new rhythm guitarist is a very polite nineteen-year-old." }
+      ] },
+    { id: 'ret_kenji_filled', type: 'drama', speaker: 'kenji', title: 'The Corner',
+      text: 'Kenji is back. He is standing in his corner, sunglasses on, bass in hand, looking at {recruit}, who is also standing in his corner. Nobody moves. The fridge hums.',
+      choices: [
+        { label: 'Kenji gets his corner', effects: ret('kenji'),
+          outcome: '{recruit} understands without a word, which is the only way anything is ever said to Kenji. Kenji plugs in. He nods once.' },
+        { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'kenji', 'rival'),
+          outcome: "Kenji nods, which may mean anything. Weeks later, Tundra Wraith's promo photo has a fifth member in sunglasses at the back." }
       ] }
   ];
 })(window.GG);
@@ -1830,8 +2211,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     starterSongQuality: [30, 40], starterSongPolish: 25,
 
     // ---- Week wrap (endWeek) ---------------------------------------------
-    weeklyUpkeep: 30,          // $ per week: strings, sticks, gas money, the extension-cord bill
-    upkeepPerFan: 0.015,       // + this per fan: a bigger band has bigger bills (more gas, more strings, more pizza)
+    weeklyUpkeep: 22,          // $ per week: sticks, gas money, the extension-cord bill (v0.4: members buy their own strings from their cut)
+    upkeepPerFan: 0.012,       // + this per fan: a bigger band has bigger bills (more gas, more strings, more pizza)
     buzzDecay: 0.15,           // fraction of buzz lost each week (at least 1 while buzz > 0)
     buzzFans: 0.12,            // organic new fans per week per point of buzz
     burnoutRecovery: 3,        // burnout that fades by itself every week
@@ -1901,6 +2282,31 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       stalePerPlay: 10, staleDecay: 4,       // each gig play adds stale; each week off takes some away
       staleWeight: 0.08,                     // setlist score lost per point of stale
       classicHits: 4, classicGrades: ['S', 'A'], classicBonus: 3   // 4 great gigs make a classic
+    },
+
+    // ---- Drama (27_sim_drama.js, v0.4): moods, grievance stages, quits/returns, recruits, fill-ins, pay the band ----
+    drama: {
+      protectFans: 250,                    // garage-era protection (nobody quits, nothing breaks) ends here
+      payCut: 0.3, payCutMax: 0.6,         // pay the band: members' share of gig pay (owner default 30%)
+      // money: members expect expectCut (+ a little more as the band grows); recruits expect their askingCut
+      expectCut: 0.25, expectCutPerFan: 0.00002, expectCutMax: 0.1,
+      moneyUp: 16, moneyUpMax: 3, moneyDown: 30, paidBonus: 0.5,
+      burnoutFrom: 55, burnoutScale: 0.12,  // overworked: mood push per burnout point over the line
+      trendWeeks: 4, trendGrow: 0.03, stall: 1, growBonus: 0.5,   // band success: fans trend over 4 weeks
+      gradeMood: { S: 1, A: 0.5, B: 0, C: -1, D: -2 },
+      wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, kenjiDrift: 2.5,  // personal wants (content/drama.js)
+      stageAt: [48, 41, 35], recover: 6,   // mood below -> grumbling / passive-aggressive / ultimatum; +recover to step back
+      grumbleChat: 0.7,
+      returnAfter: [16, 30], laterWeeks: 8, returnMood: 72, returnSkill: 5,
+      quirkChance: 0.1, quirkCooldown: 12,
+      adCost: 30, repostCost: 20,          // Kijiji + the music-store corkboard
+      fillInCost: 40, fillInSkill: 38, fillInChem: 1,
+      holePenalty: 14, fillInPenalty: 4, holeCrowd: 10,
+      recruitStars: [30, 35, 22, 10, 3],   // 1..5 star weights in the garage era (shift up with era/fans)
+      hireChemPull: 0.25,
+      traits: { showboatScore: 4, studioRatQuality: 5, hypeBuzz: 2, fastLearner: 2, fastLearnerCap: 75,
+                roadWarriorBurnout: 3, partyFans: 1.15, partyBurnout: 2, frugalRefund: 5, legendFans: 20, legendGigFans: 1.1 },
+      bot: { avgRefuse: 0.45, keep: 40, goodPayUp: 0.4, goodPayFund: 600, repostBelow: 55 }
     },
 
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
@@ -2674,6 +3080,186 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
         height: 0.95, build: 1.0, extras: ['glasses'] },
       kitColor: '#9aa2ad' }
   ];
+})(window.GG);
+
+</script>
+<script>/* content/recruits.js */
+// content/recruits.js: the recruit generator's pools (27_sim_drama.js reads it). Recruits are lighter characters:
+// one trait (a real mechanical effect, see economy.drama.traits) and one quirk (1–2 quirk cards, forced now and then).
+//   GG.content.recruits = {
+//     names:     { <genre>: { first: [], last: [], nicks: [] } }     metal first; punk/rock/country ready for v0.9
+//     hometowns: { <region>: [city] }                                  real places from wherever the band is
+//     traits:    [ { id, name, effect, chem } ]                        chem = chemistry bias on the candidate card
+//     quirks:    [ { id, text, chem, cards: [CARD] } ]                 quirk cards: speaker 'recruit', {recruit} = them
+//     chat:      { happy, ok, grumpy }                                 weekly group-chat lines for recruits
+//     looks:     { shirts: { <genre>: ['#rrggbb'] } }
+//   }
+// Parody and prairie-Canadian only. No USA.
+(function (GG) {
+  function card(id, type, title, text, choices) { return { id: id, type: type, speaker: 'recruit', title: title, text: text, choices: choices }; }
+
+  GG.content.recruits = {
+    names: {
+      metal: {
+        first: ['Dustin', 'Brandi', 'Trent', 'Krystal', 'Wade', 'Tamara', 'Colton', 'Shayla', 'Brody', 'Jolene', 'Garrett',
+          'Destiny', 'Lyle', 'Raylene', 'Darnell', 'Morgan', 'Kendra', 'Travis', 'Olga', 'Mitch'],
+        last: ['Friesen', 'Tkachuk', 'Lavoie', 'Bergstrom', 'Kowalski', 'Desjardins', 'Olson', 'Wiebe', 'Pelletier', 'Sawchuk',
+          'McAllister', 'Nakamura', 'Okonkwo', 'Delorme', 'Ratushniak', 'Lindgren', 'Boychuk', 'Fehr'],
+        nicks: ['Gravel', 'The Moose', 'Tank', 'Blizzard', 'Pickerel', 'Cinder', 'Frostbite', 'Skullet', 'Hoarfrost',
+          'Wheat King', 'Boomer', 'Gopher', 'Black Ice', 'Wolverine']
+      },
+      punk: {
+        first: ['Riley', 'Skye', 'Jesse', 'Kasey', 'Dakota', 'Robin', 'Taylor', 'Quinn', 'Avery', 'Jordan'],
+        last: ['Doerksen', 'Paquette', 'Hnatiuk', 'Gauthier', 'Unrau', 'Stadnyk', 'Ferris', 'Makowski'],
+        nicks: ['Pothole', 'Snot', 'Rink Rat', 'Dumpster', 'Sparky', 'Gutter', 'Slush', 'Detour']
+      },
+      rock: {
+        first: ['Shane', 'Tanya', 'Curtis', 'Michelle', 'Derek', 'Lisa', 'Kurt', 'Dawn', 'Wes', 'Angie'],
+        last: ['Hamm', 'Campbell', 'Leblanc', 'Kozak', 'Ruston', 'Martens', 'Nystrom', 'Duval'],
+        nicks: ['Chrome', 'Riff', 'Big Smoke', 'Slider', 'Neon', 'Turbo', 'Axle', 'Highway']
+      },
+      country: {
+        first: ['Colt', 'Wynona', 'Dallin', 'Reba-Lynn', 'Boyd', 'Tammy', 'Cash', 'Darla', 'Hank', 'June'],
+        last: ['Peters', 'Klassen', 'Rempel', 'Hildebrand', 'Toews', 'Dyck', 'Penner', 'Loewen'],
+        nicks: ['Tumbleweed', 'Buckshot', 'Canola', 'Two-Step', 'Slim', 'Dusty', 'Gravel Road', 'Haybale']
+      }
+    },
+
+    hometowns: {
+      canada: ['Saskatoon', 'Regina', 'Prince Albert', 'Moose Jaw', 'Swift Current', 'North Battleford', 'Yorkton', 'Warman',
+        'Martensville', 'Humboldt', 'Melfort', 'Estevan', 'Weyburn', 'Kindersley', 'Lloydminster', 'Outlook', 'Rosetown',
+        'Nipawin', 'La Ronge', 'Biggar', 'Wynyard', 'Meadow Lake', 'Gravelbourg', 'Assiniboia'],
+      uk_europe: ['Leeds', 'Bergen', 'Tampere', 'Hamburg', 'Glasgow', 'Ghent'],
+      japan: ['Osaka', 'Sapporo', 'Fukuoka', 'Sendai'],
+      australia: ['Adelaide', 'Perth', 'Hobart', 'Geelong'],
+      russia: ['Novosibirsk', 'Yekaterinburg', 'Murmansk', 'Kazan']
+    },
+
+    traits: [
+      { id: 'reliable', name: 'Reliable', effect: 'Always on time. Never gets past passive-aggressive: no ultimatums.', chem: 6 },
+      { id: 'road_warrior', name: 'Road Warrior', effect: 'Loves the drive. Gig weeks cost the band 3 less burnout.', chem: 2 },
+      { id: 'showboat', name: 'Showboat', effect: 'Gigs score +4. Hogs the spotlight: chemistry −1 a week.', chem: -8 },
+      { id: 'studio_rat', name: 'Studio Rat', effect: 'Lives to write: every new song +5 quality.', chem: 0 },
+      { id: 'hype_machine', name: 'Hype Machine', effect: 'Posts about the band nonstop: buzz +2 a week.', chem: 0 },
+      { id: 'fast_learner', name: 'Fast Learner', effect: 'Skill +2 a week, up to 75.', chem: 3 },
+      { id: 'party_animal', name: 'Party Animal', effect: 'Gigs win 15% more fans, but +2 burnout after each one.', chem: 4 },
+      { id: 'frugal', name: 'Frugal', effect: 'Asks only 10%, cares half as much about pay, brings sandwiches (+$5 a week).', chem: 2 },
+      { id: 'local_legend', name: 'Local Legend', effect: '+20 fans on day one. Gigs win 10% more fans.', chem: 0 }
+    ],
+
+    quirks: [
+      { id: 'barefoot', text: 'Plays barefoot. Even in January.', chem: 0, cards: [
+        card('qk_barefoot', 'weird', 'Frostbite Risk',
+          "It's minus 34. {recruit} arrives at the Legion barefoot, as always, carrying boots 'for the walk home'. The floor is concrete and honestly kind of wet.",
+          [{ label: 'Buy wool socks ($20)', effects: { fund: -20, mood: { recruit: 6 } },
+            outcome: "{recruit} wears the socks on their hands. 'For warmth,' they say, playing barefoot. The crowd loves it." },
+           { label: 'Respect the craft', effects: { buzz: 3, burnout: 3 },
+             outcome: "{recruit} plays barefoot on frozen concrete. Someone films it. 'Prairie Toes' gets shared around Saskatoon all week." }])] },
+      { id: 'ferret', text: 'Tours with a pet ferret named Wayne Ferretsky.', chem: 3, cards: [
+        card('qk_ferret_missing', 'weird', 'Wayne Ferretsky Is Missing',
+          "{recruit}'s ferret, Wayne Ferretsky, has escaped into the garage wall. Rehearsal becomes a search party. Marcel claims he can hear it 'in the bass frequencies'.",
+          [{ label: 'Everyone searches', effects: { chemistry: 4, burnout: 3 },
+            outcome: "You find Wayne asleep in Kenji's bass case. Kenji allows it. This is the most emotion anyone has ever seen from Kenji." },
+           { label: 'Rehearse around it', effects: { drumSkill: 1, mood: { recruit: -6 } },
+             outcome: '{recruit} stares at the wall all night. Wayne reappears at the end of the second song, clearly a critic.' }]),
+        card('qk_ferret_merch', 'money', 'Ferret Merch',
+          "A kid at the last gig asked for a photo with Wayne Ferretsky, not the band. {recruit} thinks Wayne should have his own shirt.",
+          [{ label: 'Print ferret shirts ($80)', effects: { fund: -80, fans: 12, buzz: 4 },
+            outcome: "The 'Wayne Ferretsky World Tour' shirt outsells your band shirt three to one. Marcel is furious. Wayne is indifferent." },
+           { label: 'The band is the brand', effects: { mood: { recruit: -5 } },
+             outcome: "{recruit} sulks. Wayne sulks. It's hard to say who sulks harder." }])] },
+      { id: 'hockey', text: 'Speaks only in hockey metaphors.', chem: 4, cards: [
+        card('qk_hockey', 'drama', 'Line Changes',
+          "{recruit} has drawn the setlist like a line chart. 'Dump it in with the fast one, cycle the mid-tempo, then pull the goalie for the closer.' It might work.",
+          [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your sticks.',
+            roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
+              success: { effects: { buzz: 5, fans: 10 }, outcome: "It works. The crowd chants like it's overtime. {recruit} taps your pads. You don't have pads." },
+              fail: { effects: { burnout: 5 }, outcome: 'You pull the goalie. There is no goalie. The closer starts twice.' } } },
+           { label: 'Keep the old setlist', effects: { chemistry: 2, mood: { recruit: -5 } },
+             outcome: "{recruit} calls it 'playing the trap'. You're not sure that's a compliment. It is not." }])] },
+      { id: 'slow_cooker', text: 'Brings a slow cooker to every gig.', chem: 5, cards: [
+        card('qk_slow_cooker', 'weird', 'The Chili Incident',
+          "{recruit}'s slow cooker tripped the breaker at the bingo hall halfway through the second song. Lorraine wants to know whose chili it is. It is very good chili.",
+          [{ label: 'Share the chili', effects: { fans: 8, chemistry: 3 },
+            outcome: "The crowd eats chili in the dark until the power comes back. It's your best-reviewed show yet. Nobody mentions the music." },
+           { label: 'Unplug the chili', effects: { buzz: 2, mood: { recruit: -6 } },
+             outcome: 'You finish the set. {recruit} plays with the grief of a person whose chili is going cold.' }])] },
+      { id: 'wraith_roadie', text: "Former Tundra Wraith roadie. Won't say why they left.", chem: -2, cards: [
+        card('qk_wraith_basket', 'scene', 'A Basket for {recruit}',
+          "A fruit basket arrives for {recruit}. The card: 'We hope you're doing well. We are not angry. — Tundra Wraith.' {recruit} goes pale and puts it in the alley.",
+          [{ label: 'Ask what happened', effects: { chemistry: 3, mood: { recruit: -5 } },
+            outcome: "{recruit} says one word: 'Spreadsheets.' Then leaves the room. You will never know." },
+           { label: 'Eat the fruit', effects: { burnout: -3, mood: { all: 3 } },
+             outcome: "The pears are incredible. Tundra Wraith's kindness is a weapon, and it is delicious." }])] },
+      { id: 'famous_album', text: "'Basically played on' a famous album. (Held a cable once.)", chem: -3, cards: [
+        card('qk_famous_album', 'fame', 'Basically Played On It',
+          "{recruit} tells the Star-Pheasant they 'basically played on' a famous Canadian album. They held a cable. For one song. The reporter wants a quote from the band.",
+          [{ label: 'Back the story', effects: { buzz: 6, chemistry: -3 },
+            outcome: "The headline: 'LOCAL BAND HAS ALBUM CONNECTION'. Technically not a lie. Dana won't make eye contact with anyone." },
+           { label: 'Tell the truth', effects: { chemistry: 3, mood: { recruit: -5 } },
+             outcome: "'They held a cable,' you say. The reporter writes down 'held a cable'. It's the most honest story in the paper." }])] },
+      { id: 'sasquatch', text: "Won't drive after dark. Sasquatch.", chem: 0, cards: [
+        card('qk_sasquatch', 'road', 'Not After Dark',
+          "The North Battleford gig ends at midnight. {recruit} refuses to be in the van after dark. 'They're out there,' they say, pointing at the treeline, which is canola.",
+          [{ label: 'Get a motel ($70)', effects: { fund: -70, burnout: -4, mood: { recruit: 6 } },
+            outcome: '{recruit} checks the motel window for Sasquatch every twenty minutes. Nobody else sleeps either.' },
+           { label: 'Drive home anyway', effects: { burnout: 6, mood: { recruit: -8 } },
+             outcome: '{recruit} rides under a blanket, whispering. Near the treeline Kenji slows down. Nobody asks why.' }])] },
+      { id: 'crokinole', text: 'Carries their own crokinole board. Challenges everyone.', chem: 6, cards: [
+        card('qk_crokinole', 'weird', 'The Tournament',
+          '{recruit} has set up a crokinole tournament in the garage instead of rehearsal. The bracket is on the whiteboard, over your week plan. Kenji is seeded first.',
+          [{ label: 'Play the tournament', effects: { chemistry: 5, burnout: -4 },
+            outcome: "Kenji wins without speaking. The trophy is a hubcap. It's now the band's most prized possession." },
+           { label: 'Rehearse. Now.', effects: { drumSkill: 1, mood: { recruit: -6 } },
+             outcome: 'You rehearse. {recruit} practises flicks on your snare head between songs. It is somehow in time.' }])] },
+      { id: 'harvest', text: 'Vanishes every fall to help with harvest.', chem: 2, cards: [
+        card('qk_harvest', 'money', 'Harvest Call',
+          "{recruit}'s uncle needs a hand with harvest near Rosetown. 'Two weeks,' says {recruit}. 'Three if it rains. Four if the combine does the thing.'",
+          [{ label: 'The whole band helps', effects: { fund: 80, burnout: 8, chemistry: 3 },
+            outcome: 'The uncle pays in cash and pie. Marcel drives the grain truck in full eyeliner.' },
+           { label: 'Stay, please', effects: { buzz: 2, mood: { recruit: -8 } },
+             outcome: '{recruit} stays but checks the weather radar between every song. It does not rain. They are somehow disappointed.' }])] },
+      { id: 'toque', text: 'Never takes off the toque. Not even in July.', chem: 2, cards: [
+        card('qk_toque', 'weird', 'Toque in July',
+          "It's plus 33 at the farmers' market gig. {recruit} is in a toque. A lady from the market board has asked three times if they're all right.",
+          [{ label: 'Buy a summer toque ($15)', effects: { fund: -15, mood: { recruit: 5 } },
+            outcome: '{recruit} considers the mesh toque a betrayal and wears it over the wool one.' },
+           { label: 'Solidarity toques', effects: { buzz: 4, burnout: 4 },
+             outcome: "The whole band plays in toques. People think it's a bit. The photo runs in the market newsletter." }])] },
+      { id: 'horoscope', text: 'Picks setlists by horoscope.', chem: -1, cards: [
+        card('qk_horoscope', 'weird', 'Mercury in Retrograde',
+          "{recruit} says Mercury is in retrograde: no new songs, no writing, and do not 'trust the van'. Kenji has quietly put on a second pair of sunglasses.",
+          [{ label: 'Trust the stars', effects: { burnout: -5, mood: { recruit: 5 } },
+            outcome: 'You take the week slow. Nothing breaks. {recruit} takes full credit. The van takes some too.' },
+           { label: "Mercury isn't in the band", effects: { chemistry: -3, drumSkill: 1 },
+             outcome: 'You rehearse the new song anyway. Three strings break. {recruit} says nothing. Loudly.' }])] },
+      { id: 'accordion', text: "Brings an accordion to every jam, 'just in case'.", chem: 1, cards: [
+        card('qk_accordion', 'drama', 'Just in Case',
+          "{recruit} has brought the accordion again. 'Just in case,' they say. Marcel is intrigued. Dana is visibly calculating how to make it not happen.",
+          [{ label: 'Let them take the bridge', hint: 'Gamble: polka-metal', outcome: 'The bellows open.',
+            roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+              success: { effects: { buzz: 6, fans: 8 }, outcome: 'Polka-metal. The Ukrainian hall loses its mind. Baba requests it by name.' },
+              fail: { effects: { chemistry: -4 }, outcome: "It's a lot of accordion. Dana leaves during the bridge and comes back when it's over." } } },
+           { label: 'No accordions', effects: { mood: { recruit: -5 } },
+             outcome: 'The accordion goes back in its case. You hear it wheeze sadly all the way home.' }])] }
+    ],
+
+    chat: {
+      happy: ["Best band I've ever answered a Kijiji ad for.", "Tuesday. I'll bring snacks.",
+        "Told my mom I'm in a real band. She asked which one. I said this one.", 'Good week. The garage feels like home. A cold home.'],
+      ok: ['k', 'Who has the extension cord?', 'Parking was a nightmare again.', 'Same setlist as last week?'],
+      grumpy: ['Anyone else not paid yet or just me?', 'Cool. Cool cool cool.', 'My old band had a van with seats.', 'Still here. For now. Kidding. Mostly.']
+    },
+
+    looks: {
+      shirts: {
+        metal: ['#1b1a22', '#2b2b2b', '#5a1a1a', '#20304a', '#3a2a3a', '#101014'],
+        punk: ['#c0392b', '#2d6a4f', '#1b1a22', '#6a4c93', '#e0a100'],
+        rock: ['#2b3346', '#7a2630', '#3d3d3d', '#b5651d', '#1f4e79'],
+        country: ['#8b5a2b', '#3d5a80', '#a52a2a', '#556b2f', '#d2b48c']
+      }
+    }
+  };
 })(window.GG);
 
 </script>
@@ -3542,7 +4128,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     fans250: '250 fans. The Gopher Hole knows your name.',
     fans500: '500 fans. People sing along. Mostly the wrong words.',
     fans1000: '1,000 fans. {city} is starting to notice.',
-    fund1000: 'First $1,000 in the band fund. Nobody touch it.'
+    fund1000: 'First $1,000 in the band fund. Nobody touch it.',
+    localHeroes: 'Local heroes on the horizon. The garage era is over: from now on people can quit and vans can die.'
   };
 
   /* ======================================================================
@@ -3555,6 +4142,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   };
   function activeMembers(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
   function findMember(state, id) {
+    if (id === 'recruit') id = state && state.card && state.card.who;   // v0.4: the member a drama card is about
     var list = state && state.members || [];
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return null;
@@ -3586,11 +4174,13 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   }
 
   // Replaces {player} {band} {city} {nick:<id>} {name:<id>} ({name} = first name; npc ids work too).
+  // v0.4: {recruit} = the member the current drama card is about (state.card.who; a recruit or a returning original).
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
-    return String(text).replace(/\{(player|band|city|nick|name)(?::([\w-]+))?\}/g, function (all, key, id) {
+    return String(text).replace(/\{(player|band|city|nick|name|recruit)(?::([\w-]+))?\}/g, function (all, key, id) {
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
+      if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? firstName(r.name) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
       if (key === 'city') return state.city || 'Saskatoon';
       if (!id) return all;
@@ -3644,14 +4234,17 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       if (after !== before && d) { d[stat] = d[stat] || {}; d[stat][m.id] = (d[stat][m.id] || 0) + after - before; }
     }
   }
-  function postChat(state, who, text, d) {
+  // tone (v0.4): 'grumble' | 'pa' (passive-aggressive) | 'news' (drama storylines); plain chat has none.
+  function postChat(state, who, text, d, tone) {
     var msg = { week: state.totalWeek, who: who, text: career.fillText(state, text) };
+    if (tone) msg.tone = tone;
     state.chat.push(msg);
     var max = econ().chatMax;
     if (state.chat.length > max) state.chat.splice(0, state.chat.length - max);
     if (d) (d.chat = d.chat || []).push(msg);
     return msg;
   }
+  career.postChat = postChat;
   function numeric(key) { return function (state, v, d) { addStat(state, key, v, d); }; }
   function perMember(stat) {
     return function (state, map, d) { for (var id in map) addMemberStat(state, stat, id, map[id], d); };
@@ -3683,6 +4276,22 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     chat: function (state, v, d) {
       var list = Array.isArray(v) ? v : [v];
       for (var i = 0; i < list.length; i++) if (list[i] && list[i].text) postChat(state, list[i].who, list[i].text, d);
+    },
+    // v0.4 (drama). member: { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (see 27_sim_drama).
+    member: function (state, v, d) { if (GG.drama) GG.drama.applyMember(state, v, d); },
+    // payCut: +/- change to the pay-the-band share (0..payCutMax).  repay: pay your parents back up to $n from the fund.
+    payCut: function (state, v, d) {
+      if (!GG.drama || !v) return;
+      var before = GG.drama.payCut(state), after = GG.drama.setPayCut(state, before + v);
+      if (after !== before) d.payCut = Math.round((after - before) * 100) / 100;
+    },
+    repay: function (state, v, d) {
+      var amt = Math.max(0, Math.min(v || 0, state.debtToParents || 0, state.fund - econ().parentsCushion));   // never borrow to repay
+      if (!amt) return;
+      addStat(state, 'fund', -amt, d);
+      state.debtToParents -= amt;
+      d.repay = (d.repay || 0) + amt;
+      if (state.debtToParents <= 0) { state.debtToParents = 0; delete state.flags.parentsLoan; }
     }
   };
   // Applies every EFFECT_KEYS entry present in fx. Returns d (the deltas object, created if absent).
@@ -3726,6 +4335,9 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });
       } else if (k === 'book' && v) parts.push('Gig booked');
+      else if (k === 'payCut' && v) parts.push("Band's cut " + (v > 0 ? '+' : '−') + Math.round(Math.abs(v) * 100) + '%');
+      else if (k === 'repay' && v) parts.push('Pay back ' + U.fmtMoney(v));
+      else if (k === 'member' && v && GG.drama) parts.push(GG.drama.memberSummary(state, v));
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
     });
     return parts.join(' · ');
@@ -3772,11 +4384,13 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     return true;
   };
 
-  var cardIndex = {}, indexedList = null, indexedLen = -1;
+  // Monday cards + v0.4 drama cards (ultimatums, returns, recruit quirk cards: never drawn, only forced by GG.drama).
+  var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [];
-    if (list !== indexedList || list.length !== indexedLen) {
-      cardIndex = {}; indexedList = list; indexedLen = list.length;
+    var list = GG.content.cards || [], extra = GG.drama ? GG.drama.cards() : [];
+    if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
+      cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
+      for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
       for (var i = 0; i < list.length; i++) cardIndex[list[i].id] = list[i];
     }
     return cardIndex[id] || null;
@@ -3888,12 +4502,16 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
-      stats: { gigs: 0, songsWritten: 0, hustles: 0, cards: 0, earned: 0, bestGrade: null, parentsLoans: 0 },
+      stats: { gigs: 0, songsWritten: 0, hustles: 0, cards: 0, earned: 0, bestGrade: null, parentsLoans: 0,
+        quits: 0, returns: 0, recruits: 0, ultimatums: 0 },
       weekStart: null, yearStart: null, ended: false,
       // v0.3 (26_sim_world): the gig board, venue rep + banned wall, the van, this week's trip, a live gig in progress
       listings: [], listingsWeek: 0, bookPick: null, venueRep: {}, venueLast: {}, banned: [],
-      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null
+      van: GG.world ? GG.world.defaultVan() : null, trip: null, liveGig: null,
+      // v0.4 (27_sim_drama): pay the band, fill-ins, the recruit ad, originals who joined your rival
+      payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: []
     };
+    state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
     state.history.push(Object.assign(historyPoint(state), { w: 0 }));   // week 0 baseline for charts
@@ -3924,8 +4542,10 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     var rng = GG.rngFor(state);
     endStaleChains(state);
     snapshotWeek(state);
-    var card = drawCard(state, rng);
+    var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
+    var card = forced ? forced.card : drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
+    if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
     state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
@@ -3953,8 +4573,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       }
     }
     autoAdvanceChain(state, card, d);
+    if (GG.drama) GG.drama.afterCard(state, card);
     outcome = career.fillText(state, outcome);
+    var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
+    if (who) { state.card.who = who; state.card.whoName = whoName; }
     state.stats.cards++;
     state.phase = 'plan';
     var res = { cardId: card.id, choice: i, outcome: outcome, deltas: d, success: success };
@@ -4008,6 +4631,9 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
         song = GG.songs.create(state, queued, queued.title, { rng: rng, titleEn: queued.titleEn, repeatFactor: f });
         state.stats.songsWritten++;
       } else song = GG.songs.jam(state, rng, { repeatFactor: f });
+      if (GG.drama && activeMembers(state).some(function (m) { return m.recruit && m.recruit.trait === 'studio_rat'; })) {
+        song.quality = U.clamp(song.quality + GG.drama.cfg().traits.studioRatQuality, 0, 100);   // v0.4 trait: Studio Rat
+      }
       var reactions = GG.songs.reactions(state, song, rng);
       d.song = { id: song.id, title: song.title, titleEn: song.titleEn, quality: song.quality, auto: song.auto,
         groove: song.rating.groove, hook: song.rating.hook, difficulty: song.rating.difficulty, reactions: reactions };
@@ -4150,7 +4776,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       var n = rng.chance(E.chatChance) ? (rng.chance(E.chatSecondChance) ? 2 : 1) : 0;
       var bucket = chatBucket(m.mood), label = career.moodLabel(m.mood);
       for (var i = 0; i < n; i++) {
-        var pool = contentLines('chat', m.id, label) || contentLines('chat', m.id, bucket);
+        var pool = contentLines('chat', m.id, label) || contentLines('chat', m.id, bucket)
+          || (m.recruit && GG.content.recruits && GG.content.recruits.chat && GG.content.recruits.chat[bucket]);
         var text = career.pickLine(state, rng, pool, FALLBACK_LINES.chat[bucket]);
         if (text) out.push(postChat(state, m.id, text, null));
       }
@@ -4179,6 +4806,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     hit('firstSong', state.stats.songsWritten >= 1);
     E.fanMilestones.forEach(function (n) { hit('fans' + n, state.fans >= n); });
     hit('fund' + E.fundMilestone, state.fund >= E.fundMilestone);
+    hit('localHeroes', !state.protected);   // v0.4: garage-era protection is over (250 fans)
     return hits;
   }
   function statDeltas(ws, state) {
@@ -4187,10 +4815,10 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     return d;
   }
   function memberWrap(ws, state) {
-    return state.members.map(function (m) {
+    return activeMembers(state).map(function (m) {
       var before = ws && ws.members[m.id] ? ws.members[m.id].mood : m.mood;
       return { id: m.id, name: m.name, nick: m.nick, mood: m.mood, moodDelta: m.mood - before, skill: m.skill,
-        label: career.moodLabel(m.mood) };
+        label: career.moodLabel(m.mood), stage: m.stage || 0 };
     });
   }
   function yearEnd(state, rng, wrap) {
@@ -4230,8 +4858,10 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     addStat(state, 'fans', rngRound(state.buzz * E.buzzFans, rng), null);
     addStat(state, 'burnout', -E.burnoutRecovery, null);
     driftMoods(state);
+    wrap.chat = [];
+    if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
     driftChemistry(state);
-    wrap.chat = postWeeklyChat(state, rng);
+    wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
     GG.songs.weekly(state);
     wrap.milestones = checkMilestones(state);
@@ -4265,6 +4895,9 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     v -= (fx.burnout || 0) * W.burnout * (state.burnout > 50 ? 2 : 1);
     v += (fx.drumSkill || 0) * W.drumSkill + memberSum(state, fx.mood) * W.mood + memberSum(state, fx.skill) * W.skill;
     if (fx.book && !state.gig) v += W.book;
+    if (fx.member && GG.drama) v += GG.drama.botValue(state, fx.member);
+    if (fx.payCut) v -= fx.payCut * 60;
+    if (fx.repay) v += 2 - Math.min(fx.repay, state.debtToParents || 0) * W.fund;
     return v;
   }
   function choiceValue(state, ch) {
@@ -4283,6 +4916,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       var v = choiceValue(state, card.choices[i]);
       if (v > bestV) { bestV = v; best = i; }
     }
+    var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
+    if (dc != null) return dc;
     if (style === 'good') return best;
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
@@ -4326,10 +4961,12 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     var start = career.startWeek(state);
     if (start.card) career.resolveCard(state, career.botChoice(state, start.card, style));
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
+    if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
     if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
+    else if (GG.world && style === 'avg' && van && !state.protected && van.condition < 15 && state.fund > 600) GG.world.repairVan(state);   // v0.4: breakdowns are real now
     career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);
   };
@@ -4845,9 +5482,12 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   };
 
   /* ---- Scoring ------------------------------------------------------------ */
+  // v0.4: fill-ins play at the fill-in skill; holes, fill-ins and recruit traits shift the score (GG.drama.gigMods).
+  function mods(state) { return GG.drama ? GG.drama.gigMods(state) : { score: 0, crowd: 0, fansMult: 1, fills: 0, fillSkill: 0 }; }
   function avgSkill(state) {
-    var act = state.members.filter(function (m) { return m.status === 'active'; });
-    return act.length ? act.reduce(function (t, m) { return t + m.skill; }, 0) / act.length : 0;
+    var act = state.members.filter(function (m) { return m.status === 'active'; }), md = mods(state);
+    var n = act.length + md.fills, t = act.reduce(function (a, m) { return a + m.skill; }, 0) + md.fills * md.fillSkill;
+    return n ? t / n : 0;
   }
   // Deterministic part of the score (0..100-ish) from the band, its best songs and the genre fit; simulate() adds noise.
   gig.performance = function (state, set, fit) {
@@ -4855,7 +5495,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     var songAvg = set.length ? set.reduce(function (t, s) { return t + GG.songs.score(s); }, 0) / set.length : 0;
     var raw = g.base + avgSkill(state) * w.skill + state.drumSkill * w.drum + state.chemistry * w.chemistry
       + songAvg * w.songs - Math.max(0, state.burnout - g.burnoutFrom) * g.burnoutPenalty;
-    return raw * (g.fitFloor + (1 - g.fitFloor) * fit);
+    return raw * (g.fitFloor + (1 - g.fitFloor) * fit) + mods(state).score;
   };
   gig.gradeFor = function (score) {
     var gr = G().grades;
@@ -4874,7 +5514,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   function newFans(state, g, crowd, grade, fit, rng) {
     var cfg = G();
     var x = crowd * cfg.conversion[grade] * (0.5 + 0.5 * fit) * (g.deal === 'exposure' ? cfg.exposureFanBonus : 1)
-      * Math.max(0, 1 - state.fans / cfg.localScene);
+      * Math.max(0, 1 - state.fans / cfg.localScene) * mods(state).fansMult;
     var f = Math.floor(x);
     return f + (rng.chance(x - f) ? 1 : 0);
   }
@@ -4909,8 +5549,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   };
 
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
+  // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
-    var cfg = G(), fx = { fund: r.pay - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
+    r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
+    r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
+    var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
       burnout: cfg.burnout, mood: { all: cfg.mood[r.grade] } };
     r.deltas = GG.career.applyEffects(state, fx, {});
     r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
@@ -5075,7 +5718,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     var v = gig.venue(g.venueId) || { capacity: g.capacity, walkIns: 0 }, fit = gig.fit(v, state.genre);
     var seed = GG.hashSeed([state.seed, live.started, g.venueId, live.setlist.join(',')].join('|'));
     if (live.attendance == null) live.attendance = gig.expectCrowd(state, g, live.started);
-    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz, cfg.crowdRange[0], cfg.crowdRange[1]));
+    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd, cfg.crowdRange[0], cfg.crowdRange[1]));
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
     var W = gig.windows(state), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
@@ -5890,6 +6533,561 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     return { listings: (s.listings || []).map(function (l) { return l.id + ':' + l.venueId + (l.opening ? '(open)' : ''); }),
       listingsWeek: s.listingsWeek, bookPick: s.bookPick, van: s.van, venueRep: s.venueRep, banned: s.banned,
       trip: t ? { to: t.to, km: t.km, card: t.cardId, resolved: t.resolved } : null };
+  });
+})(window.GG);
+
+</script>
+<script>/* 27_sim_drama.js */
+// 27_sim_drama.js: band drama (v0.4). Moods get pushed each week by money (pay the band vs what they expect),
+// overwork (burnout), band success (fans trend, gig grades) and personal wants (content/drama.js); recruits add traits.
+// Grievance stages: 0 fine → 1 grumbling → 2 passive-aggressive → 3 ultimatum (a forced Monday card) → 4 quit.
+// A stage moves at most one step per week (the ultimatum card decides 3 → 2 or 4) and ultimatums/quits only happen once
+// the garage-era protection is off (250 fans). Quits leave a hole: play with it (score/crowd penalty), hire a fill-in
+// (cost per gig, lower chemistry, no drama) or post an ad (three generated candidates) and hire one. Originals run an
+// exit storyline (chat beats) and come back months later via a return card; turned down, they defect to your rival.
+// Pure sim: no DOM; randomness only from GG.rngFor(state) (cosmetic fill-in looks use a seeded RNG). Hooks:
+// career.newCareer (init), startWeek (forcedCard), resolveCard (afterCard + the 'member'/'payCut'/'repay' effects),
+// endWeek (weekly), botWeek (botWeek, botCardChoice, botValue); gig.performance/newFans/applyResult (gigMods, split).
+//   member (v0.4): stage 0..4, stageWeek, ultimatum (week the card is due), gripe, want, exit, changed, returns,
+//                  recruit: { trait, quirk, hometown, askingCut, stars, chemistry }, look
+//   RECRUIT (candidate) = { name, nick, hometown, stars 1..5, skill, trait, quirk, askingCut, chemistry 0..100, look }
+(function (GG) {
+  var C = GG.contracts, U = GG.util;
+  var drama = GG.drama = GG.drama || {};
+
+  var DEFAULTS = {
+    protectFans: 250, payCut: 0.3, payCutMax: 0.6, expectCut: 0.25, expectCutPerFan: 0.00002, expectCutMax: 0.1,
+    moneyUp: 16, moneyUpMax: 3, moneyDown: 30, paidBonus: 0.5, burnoutFrom: 55, burnoutScale: 0.12,
+    trendWeeks: 4, trendGrow: 0.03, stall: 1, growBonus: 0.5, gradeMood: { S: 1, A: 0.5, B: 0, C: -1, D: -2 },
+    wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, kenjiDrift: 2.5, stageAt: [44, 34, 26], recover: 6, grumbleChat: 0.7,
+    returnAfter: [16, 30], laterWeeks: 8, returnMood: 72, returnSkill: 5, quirkChance: 0.1, quirkCooldown: 12,
+    adCost: 30, repostCost: 20, fillInCost: 40, fillInSkill: 38, fillInChem: 1, holePenalty: 14, fillInPenalty: 4, holeCrowd: 10,
+    recruitStars: [30, 35, 22, 10, 3], hireChemPull: 0.25,
+    traits: { showboatScore: 4, studioRatQuality: 5, hypeBuzz: 2, fastLearner: 2, fastLearnerCap: 75, roadWarriorBurnout: 3,
+      partyFans: 1.15, partyBurnout: 2, frugalRefund: 5, legendFans: 20, legendGigFans: 1.1 },
+    bot: { avgRefuse: 0.35, keep: 40, goodPayUp: 0.4, goodPayFund: 600, repostBelow: 55 }
+  };
+  var cfgSrc = null, cfgVal = null;
+  function cfg() {
+    var e = GG.content.economy && GG.content.economy.drama;
+    if (e !== cfgSrc || !cfgVal) { cfgSrc = e; cfgVal = Object.assign({}, DEFAULTS, e || {}); }
+    return cfgVal;
+  }
+  drama.cfg = cfg;
+  var FALLBACK = {
+    stageText: { 1: '{who} is grumbling about {gripe}.', 2: '{who} is getting passive-aggressive in the group chat about {gripe}.',
+      3: '{who} has an ultimatum for you. Monday.' },
+    gripes: { money: 'money', burnout: 'being overworked', losing: 'the band going nowhere', want: 'something', mystery: 'nobody knows what' },
+    grumble: ['Just saying. Some of us have rent.'], passive: ['No, it’s fine. Everything is fine. 🙂'],
+    names: { first: ['Dale', 'Shawna', 'Kyle', 'Brenda', 'Travis', 'Crystal'], last: ['Friesen', 'Tkachuk', 'Olson', 'Lavoie'], nicks: ['Moose', 'Gravel', 'Tank'] },
+    traits: [{ id: 'reliable', name: 'Reliable', effect: 'Shows up. Never gets past passive-aggressive.' }],
+    fillIns: ['Dwayne from the music store']
+  };
+  function D() { return GG.content.drama || {}; }
+  function R() { return GG.content.recruits || {}; }
+  function mdef(id) { var m = D().members; return m && m[id] || null; }
+  function exitDef(m) { var d = m && m.original ? mdef(m.id) : null; return d && d.exit || null; }
+  function list(state) { return state.members || []; }
+  function active(state) { return list(state).filter(function (m) { return m.status === 'active'; }); }
+  function find(state, id) {
+    if (id === 'recruit') id = state.card && state.card.who;
+    var l = list(state);
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function first(m) { return String(m.name || m.id).split(' ')[0]; }
+  function trait(m) { return m && m.recruit ? m.recruit.trait : null; }
+  function stats(state) { state.stats = state.stats || {}; return state.stats; }
+  function bump(state, k) { var s = stats(state); s[k] = (s[k] || 0) + 1; }
+  function clampStat(state, k, v) { var r = C.RANGES[k]; state[k] = r ? U.clamp(Math.round(v), r[0], r[1]) : Math.round(v); }
+  function changed(state) { GG.emit('stats:changed', { state: state }); }
+  function chat(state, who, text, tone) { return GG.career.postChat ? GG.career.postChat(state, who, text, null, tone) : null; }
+  drama.active = active;
+  drama.find = find;
+
+  /* ---- Roster: roles, holes, fill-ins, the lineup that plays ------------------------------------------ */
+  // The band's roles (content order); a hole is a role nobody active plays.
+  drama.roles = function (state) {
+    var band = GG.career.band(state), src = band && band.members && band.members.length ? band.members
+      : list(state).filter(function (m) { return m.original; });
+    var out = [];
+    src.forEach(function (m) { if (m.role && out.indexOf(m.role) < 0) out.push(m.role); });
+    return out;
+  };
+  drama.holder = function (state, role) { return active(state).filter(function (m) { return m.role === role; })[0] || null; };
+  drama.holes = function (state) { return drama.roles(state).filter(function (r) { return !drama.holder(state, r); }); };
+  drama.openHoles = function (state) { var f = state.fillIns || {}; return drama.holes(state).filter(function (r) { return !f[r]; }); };
+  function slug(role) { return String(role).toLowerCase().replace(/[^a-z0-9]+/g, '_'); }
+  // Fill-ins as stage/garage figures ({ id: 'fill_<role>', fillIn: true, ... }); only for roles that are still holes.
+  drama.fillInFigures = function (state) {
+    var f = state.fillIns || {}, E = cfg();
+    return drama.holes(state).filter(function (r) { return f[r]; }).map(function (r) {
+      return { id: 'fill_' + slug(r), name: f[r].name, nick: '', role: r, skill: E.fillInSkill, mood: 60, status: 'active', fillIn: true, look: f[r].look || null };
+    });
+  };
+  drama.lineup = function (state) { return active(state).concat(drama.fillInFigures(state)); };
+
+  /* ---- Pay the band ------------------------------------------------------------------------------------ */
+  drama.payCut = function (state) { var v = state.payCut; return isFinite(v) ? U.clamp(v, 0, cfg().payCutMax) : cfg().payCut; };
+  drama.setPayCut = function (state, v) {
+    state.payCut = Math.round(U.clamp(+v || 0, 0, cfg().payCutMax) * 20) / 20;   // steps of 5%
+    changed(state);
+    return state.payCut;
+  };
+  // Gig pay split: members get pay x payCut (nobody active, nobody paid), the fund keeps the rest.
+  drama.split = function (state, pay) {
+    var cut = active(state).length ? Math.round(Math.max(0, pay || 0) * drama.payCut(state)) : 0;
+    return { cut: cut, band: (pay || 0) - cut };
+  };
+  drama.fillInCost = function (state) {
+    var f = state.fillIns || {}, t = 0;
+    drama.holes(state).forEach(function (r) { if (f[r]) t += f[r].costPerGig || 0; });
+    return t;
+  };
+  // What holes, fill-ins and traits do to a gig: score delta, crowd delta (live start), new-fan multiplier.
+  drama.gigMods = function (state) {
+    var E = cfg(), T = E.traits, f = state.fillIns || {}, open = 0, fills = 0, score = 0, fans = 1;
+    drama.holes(state).forEach(function (r) { if (f[r]) fills++; else open++; });
+    active(state).forEach(function (m) {
+      var t = trait(m);
+      if (t === 'showboat') score += T.showboatScore;
+      if (t === 'party_animal') fans *= T.partyFans;
+      if (t === 'local_legend') fans *= T.legendGigFans;
+    });
+    return { open: open, fills: fills, score: score - open * E.holePenalty - fills * E.fillInPenalty,
+      crowd: -open * E.holeCrowd, fansMult: fans, fillSkill: E.fillInSkill };
+  };
+
+  /* ---- Wants ------------------------------------------------------------------------------------------- */
+  drama.want = function (state, m) {
+    var d = m && m.original ? mdef(m.id) : null, w = d && d.wants;
+    if (!w || !w.length) return null;
+    return w[(Math.floor((state.totalWeek - 1) / cfg().wantWeeks) + GG.hashSeed(m.id) % w.length) % w.length];
+  };
+  function count(a, id) { return a.filter(function (x) { return x === id; }).length; }
+  function moment(g, k) { return !!(g && g.moments && g.moments.indexOf(k) >= 0); }
+  // Each rule: +1 met, 0 neutral, -1 unmet, from this week's blocks (a) and gig result (g).
+  var RULES = {
+    spotlight: function (s, a, g) { return moment(g, 'capeSpin') || a.indexOf('promote') >= 0 || (g && /[SA]/.test(g.grade)) ? 1 : g ? 0 : -1; },
+    cape: function (s) { var c = s.flags && s.flags.cape; return c && c !== 'none' ? (c === 'charred' ? 0 : 1) : -1; },
+    solos: function (s, a, g) { return !g ? 0 : moment(g, 'solo') || (!g.live && /[SA]/.test(g.grade)) ? 1 : /[CD]/.test(g.grade) ? -1 : 0; },
+    practice: function (s, a) { return a.indexOf('rehearse') >= 0 ? 1 : -1; },
+    freedom: function (s, a) { return s.burnout >= 60 || count(a, 'rehearse') + count(a, 'hustle') >= 2 ? -1 : a.indexOf('rest') >= 0 || s.burnout < 35 ? 1 : 0; },
+    baba: function (s, a, g) { return s.flags && s.flags.babaMad ? -1 : a.indexOf('rest') >= 0 || (g && /legion|church|bingo/.test(g.kind || '')) ? 1 : 0; },
+    mystery: function (s, a, g, rng) { return rng.range(-1, 1); }
+  };
+
+  /* ---- The week (endWeek) ------------------------------------------------------------------------------ */
+  function moodWeek(state, m, acts, gig, rng) {
+    var E = cfg(), parts = {}, t = trait(m);
+    function add(k, v) { if (v) parts[k] = (parts[k] || 0) + v; }
+    var expect = m.recruit ? m.recruit.askingCut : E.expectCut + Math.min(E.expectCutMax, state.fans * E.expectCutPerFan);
+    var diff = drama.payCut(state) - expect;
+    var money = diff >= 0 ? Math.min(E.moneyUpMax, diff * E.moneyUp) : diff * E.moneyDown;
+    if (gig && gig.cut > 0) money += E.paidBonus;
+    add('money', t === 'frugal' ? money * 0.5 : money);
+    if (state.burnout > E.burnoutFrom) add('burnout', -(state.burnout - E.burnoutFrom) * E.burnoutScale);
+    var h = state.history || [], back = h.length >= E.trendWeeks ? h[h.length - E.trendWeeks] : null;
+    if (back) { if (state.fans <= back.fans) add('losing', -E.stall); else if (state.fans >= back.fans * (1 + E.trendGrow)) add('success', E.growBonus); }
+    if (gig && E.gradeMood[gig.grade]) add(E.gradeMood[gig.grade] < 0 ? 'losing' : 'success', E.gradeMood[gig.grade]);
+    var w = drama.want(state, m);
+    m.want = w ? w.id : null;
+    if (w && RULES[w.rule]) {
+      var sc = RULES[w.rule](state, acts, gig, rng);
+      add(w.rule === 'mystery' ? 'mystery' : 'want', w.rule === 'mystery' ? sc * E.kenjiDrift : sc > 0 ? sc * E.wantMet : sc * E.wantUnmet);
+    }
+    var total = 0, worst = null, wv = -0.5;
+    for (var k in parts) {
+      var v = parts[k];
+      if (v < 0 && t === 'reliable') v *= 0.5;
+      total += v;
+      if (v < wv) { wv = v; worst = k; }
+    }
+    m.gripe = worst;
+    var dm = Math.round(total);
+    if (dm) m.mood = U.clamp(m.mood + dm, C.RANGES.mood[0], C.RANGES.mood[1]);
+  }
+  drama.gripeText = function (state, m) {
+    var g = D().gripes || FALLBACK.gripes, w = drama.want(state, m);
+    if (m.gripe === 'want' && w && w.gripe) return w.gripe;
+    return g[m.gripe] || (m.gripe === 'mystery' || (w && w.rule === 'mystery') ? g.mystery : g.money) || FALLBACK.gripes.money;
+  };
+  drama.stageText = function (state, m, stage) {
+    var t = (D().stageText || FALLBACK.stageText)[stage] || FALLBACK.stageText[stage] || '';
+    return GG.career.fillText(state, String(t).replace(/\{who\}/g, first(m)).replace(/\{gripe\}/g, drama.gripeText(state, m)));
+  };
+  function stagePool(m, key) {
+    var d = m.original ? mdef(m.id) : null;
+    return (d && d[key]) || (D().recruit && D().recruit[key]) || FALLBACK[key];
+  }
+  function stepStage(state, m, rng, wrap) {
+    var E = cfg(), T = E.stageAt, s = m.stage || 0, old = s;
+    if (s < 3 && m.stageWeek !== state.totalWeek) {   // one step a week: a Monday settle counts as this week's step
+      var target = m.mood < T[2] ? 3 : m.mood < T[1] ? 2 : m.mood < T[0] ? 1 : 0;
+      var cap = state.protected || trait(m) === 'reliable' ? 2 : 3;
+      if (target > s && s < cap) s++;
+      else if (target < s && m.mood >= T[s - 1] + E.recover) s--;
+    }
+    if (s !== old) {
+      m.stage = s; m.stageWeek = state.totalWeek;
+      if (s === 3) { m.ultimatum = state.totalWeek + 1; bump(state, 'ultimatums'); }
+      GG.emit('member:stage', { id: m.id, stage: s });
+    }
+    var msg = null;
+    if (s === 1 && s !== old || s === 1 && rng.chance(E.grumbleChat)) msg = chat(state, m.id, GG.career.pickLine(state, rng, stagePool(m, 'grumble')), 'grumble');
+    else if (s === 2) msg = chat(state, m.id, GG.career.pickLine(state, rng, stagePool(m, 'passive')), 'pa');
+    if (msg) wrap.chat.push(msg);
+    if (s >= 1) wrap.warnings.push({ id: m.id, stage: s, text: drama.stageText(state, m, s) });
+  }
+  function traitsWeek(state, gig) {
+    var T = cfg().traits;
+    active(state).forEach(function (m) {
+      var t = trait(m);
+      if (t === 'hype_machine') clampStat(state, 'buzz', state.buzz + T.hypeBuzz);
+      else if (t === 'fast_learner' && m.skill < T.fastLearnerCap) m.skill = Math.min(T.fastLearnerCap, m.skill + T.fastLearner);
+      else if (t === 'road_warrior' && gig) clampStat(state, 'burnout', state.burnout - T.roadWarriorBurnout);
+      else if (t === 'party_animal' && gig) clampStat(state, 'burnout', state.burnout + T.partyBurnout);
+      else if (t === 'showboat') clampStat(state, 'chemistry', state.chemistry - 1);
+      else if (t === 'frugal') state.fund += T.frugalRefund;
+    });
+    var n = drama.holes(state).filter(function (r) { return (state.fillIns || {})[r]; }).length;
+    if (n) clampStat(state, 'chemistry', state.chemistry - n * cfg().fillInChem);
+  }
+  function exitsWeek(state, rng, wrap) {
+    list(state).slice().forEach(function (m) {
+      var x = m.exit;
+      if (!x || m.status === 'active' || x.storyline === 'rival') return;
+      var ex = exitDef(m), beats = ex && ex.beats || [], weeks = state.totalWeek - x.since;
+      while ((x.beat || 0) < beats.length && beats[x.beat || 0].at <= weeks) {
+        var b = beats[x.beat || 0], msg = chat(state, b.who || m.id, b.text, 'news');
+        x.beat = (x.beat || 0) + 1;
+        if (msg) { wrap.chat.push(msg); wrap.drama.push(msg.text); }
+      }
+      // An 'away' member (Kenji) comes back on his own when his spot is still empty.
+      if (m.status === 'away' && x.returnDue != null && state.totalWeek >= x.returnDue && !drama.holder(state, m.role)) {
+        returnMember(state, m);
+        wrap.drama.push(GG.career.fillText(state, ex && ex.backLine ? ex.backLine.text : first(m) + ' is back.'));
+      }
+    });
+  }
+  // Called by career.endWeek after the mood drift. Fills wrap.chat (stage messages, exit news), wrap.warnings, wrap.drama.
+  drama.weekly = function (state, rng, wrap) {
+    var E = cfg(), wk = state.lastWeek || {}, acts = (wk.blocks || []).map(function (b) { return b.activity; }), gig = wk.gig || null;
+    wrap.chat = wrap.chat || []; wrap.warnings = []; wrap.drama = [];
+    active(state).forEach(function (m) { moodWeek(state, m, acts, gig, rng); });
+    active(state).forEach(function (m) { stepStage(state, m, rng, wrap); });
+    traitsWeek(state, gig);
+    exitsWeek(state, rng, wrap);
+    if (state.protected && state.fans >= E.protectFans) {   // after the stages: the first ultimatum is a week away at least
+      state.protected = false;
+      wrap.protectionEnded = true;
+      GG.emit('protection:ended', {});
+    }
+  };
+
+  /* ---- Monday: forced drama cards ------------------------------------------------------------------------ */
+  function card(id) { return id ? GG.career.cardById(id) : null; }
+  function cardFor(m, kind) {
+    var d = m.original ? mdef(m.id) : null;
+    if (d && d[kind]) return card(d[kind]);
+    return kind === 'ultimatum' ? card(D().recruit && D().recruit.ultimatum) : null;
+  }
+  drama.quirk = function (id) { return (R().quirks || []).filter(function (q) { return q.id === id; })[0] || null; };
+  drama.traitDef = function (id) { return (R().traits || FALLBACK.traits).filter(function (t) { return t.id === id; })[0] || null; };
+  // The drama card this Monday, before the normal draw: an ultimatum due > an original's return > a recruit quirk card.
+  // Returns { card, who } (who = the member the card is about; {recruit} in its text) or null.
+  drama.forcedCard = function (state, rng) {
+    if (state.totalWeek <= 1) return null;
+    var E = cfg(), act = active(state), i, m, c;
+    for (i = 0; i < act.length; i++) {
+      m = act[i];
+      if (m.stage >= 3 && (m.ultimatum || 0) <= state.totalWeek && (c = cardFor(m, 'ultimatum'))) return { card: c, who: m.id };
+    }
+    var gone = list(state).filter(function (x) {
+      return x.status !== 'active' && x.exit && x.exit.storyline !== 'rival' && x.exit.returnDue != null && state.totalWeek >= x.exit.returnDue;
+    });
+    for (i = 0; i < gone.length; i++) {
+      m = gone[i];
+      var ex = exitDef(m), holder = drama.holder(state, m.role);
+      if (ex && ex.needBuzz && state.buzz < ex.needBuzz) continue;
+      if (m.status === 'away' && !holder) continue;                     // walks back in on his own at the wrap
+      if ((c = cardFor(m, holder ? 'returnFilled' : 'return'))) return { card: c, who: holder ? holder.id : m.id };
+    }
+    var recs = act.filter(function (x) { return x.recruit && x.recruit.quirk; });
+    if (!recs.length || !rng.chance(E.quirkChance)) return null;
+    var pool = [];
+    recs.forEach(function (x) {
+      var q = drama.quirk(x.recruit.quirk);
+      ((q && q.cards) || []).forEach(function (qc) {
+        var w = state.seenCards[qc.id];
+        if (w == null || state.totalWeek - w > E.quirkCooldown) pool.push({ card: qc, who: x.id });
+      });
+    });
+    return pool.length ? rng.pick(pool) : null;
+  };
+  // Every drama card (for career.cardById): ultimatums, returns, recruit quirk cards.
+  drama.cards = function () {
+    var out = (GG.content.dramaCards || []).slice();
+    (R().quirks || []).forEach(function (q) { (q.cards || []).forEach(function (c) { out.push(c); }); });
+    return out;
+  };
+  // Safety net after a card resolves: an ultimatum card that didn't settle or quit its member settles it.
+  drama.afterCard = function (state, c) {
+    var m = state.card && state.card.who ? find(state, state.card.who) : null;
+    if (m && m.status === 'active' && m.stage >= 3 && c && cardFor(m, 'ultimatum') === c) { m.stage = 2; m.ultimatum = null; m.stageWeek = state.totalWeek; }
+  };
+
+  /* ---- Quit, return, defect (the 'member' effect) --------------------------------------------------------- */
+  function quit(state, m, rng) {
+    var E = cfg(), ex = exitDef(m);
+    bump(state, 'quits');
+    m.stage = 4; m.ultimatum = null; m.stageWeek = state.totalWeek;
+    GG.emit('member:stage', { id: m.id, stage: 4 });
+    if (!m.original) state.members.splice(state.members.indexOf(m), 1);     // recruits just leave: no storyline
+    else if (!ex) { m.status = 'quit'; m.exit = { storyline: 'gone', since: state.totalWeek, returnDue: null, beat: 0 }; }
+    else {
+      var ra = ex.returnAfter || E.returnAfter;
+      m.status = ex.away ? 'away' : 'quit';
+      m.exit = { storyline: ex.id, since: state.totalWeek, returnDue: state.totalWeek + rng.int(ra[0], ra[1]), beat: 0 };
+      if (ex.quitLine) chat(state, ex.quitLine.who || m.id, ex.quitLine.text, 'news');
+    }
+    GG.emit('member:quit', { id: m.id });
+  }
+  function returnMember(state, m) {
+    var E = cfg(), ex = exitDef(m), holder = drama.holder(state, m.role);
+    if (holder && !holder.original) state.members.splice(state.members.indexOf(holder), 1);   // the recruit steps aside
+    if (state.fillIns) delete state.fillIns[m.role];
+    if (state.recruitAd && state.recruitAd.role === m.role) state.recruitAd = null;
+    m.status = 'active'; m.stage = 0; m.ultimatum = null; m.stageWeek = state.totalWeek; m.gripe = null;
+    m.mood = Math.max(m.mood, E.returnMood);
+    m.skill = Math.min(C.RANGES.skill[1], m.skill + E.returnSkill);
+    m.changed = ex && ex.changed || null;
+    m.returns = (m.returns || 0) + 1;
+    m.exit = null;
+    bump(state, 'returns');
+    if (ex && ex.backLine) chat(state, ex.backLine.who || m.id, ex.backLine.text, 'news');
+    GG.emit('member:return', { id: m.id });
+  }
+  function defect(state, m) {
+    state.rivalDefectors = state.rivalDefectors || [];
+    if (state.rivalDefectors.indexOf(m.id) < 0) state.rivalDefectors.push(m.id);
+    m.status = 'quit';
+    m.exit = Object.assign({}, m.exit || {}, { storyline: 'rival', returnDue: null });
+  }
+  // Effect key 'member': { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (or a list).
+  drama.applyMember = function (state, spec, d) {
+    (Array.isArray(spec) ? spec : [spec]).forEach(function (x) {
+      var m = x && find(state, x.id), done = null;
+      if (!m) return;
+      var nm = first(m);
+      if (x.act === 'settle' && m.status === 'active' && m.stage >= 3) {
+        m.stage = 2; m.ultimatum = null; m.stageWeek = state.totalWeek; done = 'settle';
+        GG.emit('member:stage', { id: m.id, stage: 2 });
+      } else if (x.act === 'quit' && m.status === 'active') { quit(state, m, GG.rngFor(state)); done = 'quit'; }
+      else if (x.act === 'return' && m.status !== 'active') { returnMember(state, m); done = 'return'; }
+      else if (x.act === 'later' && m.exit && m.status !== 'active') { m.exit.returnDue = state.totalWeek + cfg().laterWeeks; done = 'later'; }
+      else if (x.act === 'rival' && m.status !== 'active') { defect(state, m); done = 'rival'; }
+      if (done && d) (d.member = d.member || []).push({ id: m.id, act: done, name: nm });
+    });
+  };
+  var ACT_LABEL = { settle: 'stays', quit: 'quits!', 'return': 'is back', later: 'waits', rival: '→ your rival' };
+  drama.memberSummary = function (state, spec) {
+    return (Array.isArray(spec) ? spec : [spec]).map(function (x) {
+      var m = x && find(state, x.id);
+      return (m ? first(m) : x.id === 'recruit' ? 'The new one' : String(x.id)) + ' ' + (ACT_LABEL[x.act] || x.act);
+    }).join(' · ');
+  };
+
+  /* ---- Recruits: post an ad, three candidates, hire -------------------------------------------------------- */
+  var SKINS = ['#f1d0aa', '#e6c19c', '#d8b28a', '#c68e62', '#a8704a', '#8d5a3b', '#6b4429', '#4a2f1e'];
+  var HAIRS = ['#15110f', '#3b2a1e', '#6d4a2a', '#a86e3a', '#d9b36c', '#8a8a8a', '#b0361f', '#e8e0d0'];
+  var PANTS = ['#26252e', '#2b3346', '#3d5a80', '#141418', '#4a3b2a', '#3a3a3a'];
+  function r2(x) { return Math.round(x * 100) / 100; }
+  function makeLook(rng, genre) {
+    var L = R().looks || {}, shirts = (L.shirts && (L.shirts[genre] || L.shirts.metal)) || ['#1b1a22', '#2b2b2b', '#5a1a1a', '#20304a'];
+    var extras = [];
+    rng.shuffle(C.LOOK_EXTRAS).slice(0, rng.int(0, 2)).forEach(function (x) { extras.push(x); });
+    return { skin: rng.pick(SKINS), hair: rng.pick(HAIRS), hairStyle: rng.pick(C.HAIR_STYLES), shirt: rng.pick(shirts), pants: rng.pick(PANTS),
+      height: r2(0.92 + rng.next() * 0.16), build: r2(0.92 + rng.next() * 0.26), extras: extras };
+  }
+  drama.makeLook = makeLook;
+  function fresh(rng, pool, used, key) {
+    var ok = (pool || []).filter(function (x) { var k = key + (x && x.id || x); return !used[k]; });
+    var x = rng.pick(ok.length ? ok : pool);
+    if (x != null) used[key + (x && x.id || x)] = true;
+    return x;
+  }
+  function candidate(state, role, rng, used) {
+    var E = cfg(), Rc = R(), names = (Rc.names && (Rc.names[state.genre] || Rc.names.metal)) || FALLBACK.names;
+    var fn = fresh(rng, names.first, used, 'f'), ln = rng.pick(names.last), nick = fresh(rng, names.nicks, used, 'n');
+    var towns = (Rc.hometowns && (Rc.hometowns[state.region] || Rc.hometowns.canada)) || [state.city || 'Saskatoon'];
+    var hometown = rng.pick(towns), boost = Math.max(0, C.ERAS.indexOf(state.era)) + Math.min(2, (state.fans || 0) / 1500);
+    var stars = 1 + rng.weighted([0, 1, 2, 3, 4], function (i) { return E.recruitStars[i] * (1 + boost * i * 0.35); });
+    var tr = fresh(rng, Rc.traits || FALLBACK.traits, used, 't') || FALLBACK.traits[0];
+    var q = fresh(rng, (Rc.quirks || []).filter(function (x) { return !active(state).some(function (m) { return m.recruit && m.recruit.quirk === x.id; }); }), used, 'q');
+    var ask = tr.id === 'frugal' ? 0.1 : U.clamp(Math.round((0.12 + stars * 0.035 + rng.range(-0.04, 0.04)) * 20) / 20, 0.1, 0.45);
+    var chem = U.clamp(Math.round(50 + (tr.chem || 0) + (q && q.chem || 0) + (hometown === state.city ? 8 : 0)
+      + (state.chemistry - 50) * 0.3 + rng.int(-20, 20)), 5, 95);
+    return { name: fn + ' ' + ln, nick: nick || '', hometown: hometown, stars: stars, skill: U.clamp(14 + stars * 11 + rng.int(-4, 4), 5, 90),
+      trait: tr.id, quirk: q ? q.id : null, askingCut: r2(ask), chemistry: chem, role: role, look: makeLook(rng, state.genre) };
+  }
+  drama.candidates = function (state, role, rng) {
+    var used = {}, out = [];
+    for (var i = 0; i < 3; i++) out.push(candidate(state, role, rng, used));
+    return out;
+  };
+  // Posts an ad for a hole (default: the first open one): costs adCost, gives three candidates. null if not possible.
+  drama.postAd = function (state, role) {
+    var E = cfg(), holes = drama.holes(state);
+    role = role || drama.openHoles(state)[0] || holes[0];
+    if (!role || holes.indexOf(role) < 0) return null;
+    if (state.recruitAd && state.recruitAd.role === role) return state.recruitAd;
+    if (state.fund < E.adCost) return null;
+    state.fund -= E.adCost;
+    state.recruitAd = { role: role, candidates: drama.candidates(state, role, GG.rngFor(state)), posts: 1, week: state.totalWeek };
+    changed(state);
+    return state.recruitAd;
+  };
+  drama.repost = function (state) {
+    var E = cfg(), ad = state.recruitAd;
+    if (!ad || state.fund < E.repostCost) return null;
+    state.fund -= E.repostCost;
+    ad.posts++; ad.week = state.totalWeek;
+    ad.candidates = drama.candidates(state, ad.role, GG.rngFor(state));
+    changed(state);
+    return ad;
+  };
+  drama.cancelAd = function (state) { state.recruitAd = null; changed(state); };
+  drama.hire = function (state, i) {
+    var E = cfg(), ad = state.recruitAd, c = ad && ad.candidates && ad.candidates[i];
+    if (!c || drama.holder(state, ad.role)) return null;
+    var n = (stats(state).recruits || 0) + 1;
+    stats(state).recruits = n;
+    var m = { id: 'rec' + n, name: c.name, nick: c.nick, role: ad.role, skill: c.skill,
+      mood: U.clamp(Math.round(58 + (c.chemistry - 50) * 0.3), 30, 85), status: 'active', original: false,
+      stage: 0, want: null, exit: null, gripe: null,
+      recruit: { trait: c.trait, quirk: c.quirk, hometown: c.hometown, askingCut: c.askingCut, stars: c.stars, chemistry: c.chemistry },
+      look: c.look };
+    state.members.push(m);
+    clampStat(state, 'chemistry', state.chemistry + (c.chemistry - state.chemistry) * E.hireChemPull);
+    if (state.fillIns) delete state.fillIns[ad.role];
+    state.recruitAd = null;
+    if (c.trait === 'local_legend') state.fans += E.traits.legendFans;
+    GG.emit('recruit:hired', { member: m });
+    changed(state);
+    return m;
+  };
+  // Candidate value for bots (and the card's sort hint): skill weighted by chemistry.
+  drama.candidateScore = function (c) { return c ? c.skill * (0.5 + c.chemistry / 100) : 0; };
+
+  /* ---- Fill-ins -------------------------------------------------------------------------------------------- */
+  drama.hireFillIn = function (state, role) {
+    if (drama.holes(state).indexOf(role) < 0) return null;
+    var rng = GG.RNG(GG.hashSeed(state.seed + '|fill|' + role + '|' + state.totalWeek));   // cosmetic: not the career RNG
+    var F = D().fillIns || {}, pool = F[role] || F.any || FALLBACK.fillIns;
+    state.fillIns = state.fillIns || {};
+    state.fillIns[role] = { name: rng.pick(pool), costPerGig: cfg().fillInCost, look: makeLook(rng, state.genre) };
+    changed(state);
+    return state.fillIns[role];
+  };
+  drama.dismissFillIn = function (state, role) { if (state.fillIns) delete state.fillIns[role]; changed(state); };
+
+  /* ---- Rival ----------------------------------------------------------------------------------------------- */
+  drama.rivalBlurb = function (state) {
+    var band = GG.career.band(state), rv = band && GG.content.rivals && GG.content.rivals[band.rival];
+    var names = (state.rivalDefectors || []).map(function (id) { var m = find(state, id); return m ? m.name : id; });
+    if (!rv) return null;
+    return rv.blurb + (names.length ? ' Now featuring ' + names.join(' and ') + ', formerly of ' + (band.name || 'your band') + '.' : '');
+  };
+
+  /* ---- Bots -------------------------------------------------------------------------------------------------- */
+  // Pay the band, fill holes (post an ad and hire the best chemistry x skill; the good bot re-posts a weak batch).
+  drama.botWeek = function (state, style) {
+    var E = cfg(), B = E.bot;
+    if (style === 'good') {
+      var upset = active(state).some(function (m) { return (m.stage || 0) >= 1; });
+      var want = upset && state.fund > B.goodPayFund ? B.goodPayUp : E.payCut;
+      if (drama.payCut(state) !== want) state.payCut = want;
+    }
+    drama.holes(state).forEach(function (role) {
+      if (drama.holder(state, role)) return;
+      var ad = state.recruitAd;
+      if (!ad || ad.role !== role) {
+        if (state.fund < E.adCost + 60) {
+          if (style === 'good' && !(state.fillIns || {})[role] && state.fund > E.fillInCost * 2) drama.hireFillIn(state, role);
+          return;
+        }
+        ad = drama.postAd(state, role);
+        if (!ad) return;
+      }
+      var best = 0;
+      ad.candidates.forEach(function (c, i) { if (drama.candidateScore(c) > drama.candidateScore(ad.candidates[best])) best = i; });
+      if (style === 'good' && drama.candidateScore(ad.candidates[best]) < B.repostBelow && ad.posts < 3 && state.fund > E.repostCost + 150) {
+        drama.repost(state);
+        best = 0;
+        ad.candidates.forEach(function (c, i) { if (drama.candidateScore(c) > drama.candidateScore(ad.candidates[best])) best = i; });
+      }
+      drama.hire(state, style === 'good' ? best : GG.rngFor(state).int(0, ad.candidates.length - 1));
+    });
+  };
+  function quitIndex(c) {
+    for (var i = 0; c && c.choices && i < c.choices.length; i++) {
+      var fx = c.choices[i].effects, mm = fx && fx.member;
+      if ((Array.isArray(mm) ? mm : mm ? [mm] : []).some(function (x) { return x.act === 'quit'; })) return i;
+    }
+    return -1;
+  }
+  // The avg bot refuses an ultimatum now and then (the good bot values its choices normally). null = no opinion.
+  drama.botCardChoice = function (state, c, style) {
+    if (style === 'good') return null;
+    var q = quitIndex(c);
+    if (q < 0) return null;
+    return GG.rngFor(state).chance(cfg().bot.avgRefuse) ? q : null;
+  };
+  drama.botValue = function (state, spec) {
+    var B = cfg().bot, v = 0;
+    (Array.isArray(spec) ? spec : [spec]).forEach(function (x) {
+      var m = x && find(state, x.id), h = m ? drama.holder(state, m.role) : null;
+      if (x.act === 'settle') v += B.keep;
+      else if (x.act === 'quit') v -= B.keep;
+      else if (x.act === 'return' && m) v += h && h !== m ? (m.skill - h.skill) * 0.8 + 3 : B.keep;
+      else if (x.act === 'rival' && m) v += h ? (h.skill - m.skill) * 0.8 : -B.keep;
+      else if (x.act === 'later') v -= 5;
+    });
+    return v;
+  };
+
+  /* ---- Save: v3 -> v4 defaults ------------------------------------------------------------------------------- */
+  drama.init = function (s) { return drama.migrate(s); };
+  drama.migrate = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    var E = cfg();
+    s.payCut = isFinite(s.payCut) ? U.clamp(s.payCut, 0, E.payCutMax) : E.payCut;
+    if (!s.fillIns || typeof s.fillIns !== 'object' || Array.isArray(s.fillIns)) s.fillIns = {};
+    if (s.recruitAd === undefined || (s.recruitAd && (typeof s.recruitAd !== 'object' || !Array.isArray(s.recruitAd.candidates)))) s.recruitAd = null;
+    if (!Array.isArray(s.rivalDefectors)) s.rivalDefectors = [];
+    (Array.isArray(s.members) ? s.members : []).forEach(function (m) {
+      if (!m || typeof m !== 'object') return;
+      if (!isFinite(m.stage)) m.stage = m.status && m.status !== 'active' ? 4 : 0;
+      if (m.want === undefined) m.want = null;
+      if (m.exit === undefined) m.exit = null;
+    });
+    if (s.stats && typeof s.stats === 'object') ['quits', 'returns', 'recruits', 'ultimatums'].forEach(function (k) { if (!isFinite(s.stats[k])) s.stats[k] = 0; });
+    return s;
+  };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.drama) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return drama.migrate(prevMigrate(s)); };
+    GG.save.migrate.drama = true;
+    GG.save.migrate.world = true;
+  }
+
+  GG.registerDebug('drama', function () {
+    var s = GG.state; if (!s) return { state: null };
+    return { protected: s.protected, payCut: s.payCut, holes: drama.holes(s), fillIns: Object.keys(s.fillIns || {}),
+      ad: s.recruitAd ? { role: s.recruitAd.role, posts: s.recruitAd.posts, n: s.recruitAd.candidates.length } : null,
+      rivalDefectors: s.rivalDefectors,
+      members: (s.members || []).map(function (m) { return { id: m.id, status: m.status, stage: m.stage || 0, mood: m.mood, gripe: m.gripe || null }; }) };
   });
 })(window.GG);
 
@@ -7626,7 +8824,9 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 
       var flags = st.flags || {}, cv = flags.cape;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_VARIANTS[cv] ? cv : 'velvet') : null;
-      var list = st.members || [], seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m;
+      // v0.4: fill-ins hang out too (after the roster, so they never take a hand-made member's idle spot)
+      var list = (st.members || []).concat(GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : []);
+      var seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m;
       for (i = 0; i < list.length; i++) if (list[i] && list[i].id === 'marcel') capeId = 'marcel';
       for (i = 0; !capeId && i < list.length; i++) { m = list[i]; if (m && memberIdle(band, m, i) === 'mirror') capeId = m.id; }
       capeShown = 'none';
@@ -11019,6 +12219,12 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
         });
       });
       if (d.book) chips.push(el('span.chip.up', '📅 Gig booked'));
+      if (d.payCut) chips.push(el('span.chip', "Band's cut " + (d.payCut > 0 ? '+' : '−') + Math.round(Math.abs(d.payCut) * 100) + '%'));   // v0.4 drama
+      if (d.repay) chips.push(el('span.chip.up', 'Paid back ' + U.fmtMoney(d.repay)));
+      (d.member || []).forEach(function (x) {
+        var t = { settle: ['up', ' stays'], quit: ['down', ' quits'], 'return': ['up', ' is back'], later: ['', ' waits'], rival: ['down', ' joins the rival'] }[x.act] || ['', ''];
+        chips.push(el('span.chip' + (t[0] ? '.' + t[0] : ''), (x.name || ui.who(x.id).short) + t[1]));
+      });
     }
     if (!chips.length && opts.emptyText !== false) chips.push(el('span.chip', opts.emptyText || 'No change'));
     return el('div.chips', chips);
@@ -11496,9 +12702,10 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
      ====================================================================================================== */
   var lastSuccess = null;   // resolveCard's success flag, for the outcome view
   function cardHead(card) {
-    var who = ui.who(card.speaker);
+    var st = S(), sp = card.speaker === 'recruit' && st && st.card && st.card.who ? st.card.who : card.speaker;   // v0.4 drama cards
+    var who = ui.who(sp), ult = /^ult_/.test(card.id);
     return el('div.card-head', [ui.avatar(who, 'lg'), el('div.grow', [el('div.who', who.name), el('div.role', who.role || who.nick || '')]),
-      card.type ? el('span.tag', card.type) : null]);
+      ult ? el('span.stage-tag.stage-3', { testid: 'card-ultimatum' }, '⚠ ultimatum') : card.type ? el('span.tag', card.type) : null]);
   }
   function choiceHint(st, ch) {
     if (GG.career.choiceHint) return GG.career.choiceHint(st, ch);
@@ -11778,6 +12985,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   }
   function chatList(msgs) {
     return el('div', msgs.map(function (m) {
+      if (ui.chatMsg) return ui.chatMsg(m);
       var who = ui.who(m.who);
       return el('div.msg', [el('span.w', { style: { color: who.text } }, who.short),
         el('div.t', { style: { borderLeftColor: who.color } }, fill(m.text))]);
@@ -11809,12 +13017,13 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
           w.guilt ? el('div.quote', { style: 'margin-top:10px;font-size:14px' }, fill(w.guilt)) : null]));
       }
       (w.milestones || []).forEach(function (m) { parts.push(el('div.panel.warm.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', { style: 'font-weight:700' }, fill(m))])); });
+      if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
           var who = ui.who(m.id), label = m.label || ui.moodLabel(m.mood);
           moods.appendChild(el('div.mood-row', [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
-            el('span.lb', { style: { color: ui.moodColor(m.mood) } }, ui.moodEmoji(label) + ' ' + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
+            el('span.lb', { style: { color: ui.moodColor(m.mood) } }, (m.stage >= 1 && ui.stageBadge ? '' : ui.moodEmoji(label) + ' ') + (m.stage >= 1 && ui.stageBadge ? ['😐', '😒', '⚠'][Math.min(3, m.stage) - 1] + ' ' : '') + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
         });
         parts.push(moods);
       }
@@ -11967,6 +13176,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 <script>/* 53_ui_laptop.js */
 // 53_ui_laptop.js: the laptop on the cooler. Tabs: Group chat (member-coloured bubbles, newest at the bottom),
 // Band (members' skill + mood, your drum skill, the song catalog: tap a song to hear it) and Money (fund, debt to parents, fund history).
+// v0.4: the Band tab's member section comes from GG.ui.bandPanel (58_ui_band: pay the band, stages, holes, recruits).
 // Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
@@ -11980,6 +13190,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     var out = [], week = null;
     msgs.forEach(function (m) {
       if (m.week !== week) { week = m.week; out.push(el('div.day-sep', 'Week ' + (((week - 1) % GG.contracts.WEEKS_PER_YEAR) + 1) + ' · Year ' + (Math.floor((week - 1) / GG.contracts.WEEKS_PER_YEAR) + 1))); }
+      if (ui.chatMsg) { out.push(ui.chatMsg(m)); return; }   // v0.4: tone-aware (passive-aggressive, news)
       var who = ui.who(m.who);
       out.push(el('div.msg', [el('span.w', { style: { color: who.text } }, who.short), el('div.t', { style: { borderLeftColor: who.color } }, fill(m.text))]));
     });
@@ -11989,9 +13200,10 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   function statRow(label, value, color, right) {
     return el('div.kv', [el('span', label), ui.bar(value, 100, { color: color }), el('b', right != null ? right : String(Math.round(value)))]);
   }
-  function bandTab(st) {
+  function bandTab(st, rerender) {
     var out = [];
-    (st.members || []).forEach(function (m) {
+    if (ui.bandPanel) out.push(ui.bandPanel(st, rerender));   // v0.4: pay the band, stages, wants, holes, recruits
+    else (st.members || []).forEach(function (m) {
       var who = ui.who(m.id), label = ui.moodLabel(m.mood);
       out.push(el('div.mem-card', [
         el('div.row', [ui.avatar(who), el('div.grow', [el('div', { style: 'font-weight:800' }, who.full || who.name + (who.nick ? ' "' + who.nick + '"' : '')),
@@ -12049,7 +13261,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
       var tab = d.tab || lastTab;
       lastTab = tab;
       s.setTitle('The laptop', 'CRACKED SCREEN · 12% BATTERY');
-      var body = tab === 'band' ? bandTab(st) : tab === 'money' ? moneyTab(st) : chatTab(st);
+      var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st) : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);
@@ -12500,7 +13712,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
     (band && band.members || []).forEach(function (m) { looks[m.id] = m.look; });
     var v = Object.assign({}, GG.gig.venue(g.venueId) || {}, g);
     return { venue: v, crowd: G.attendance, capacity: g.capacity, genre: state.genre, flags: state.flags || {}, player: state.player,
-      members: state.members.filter(function (m) { return m.status === 'active'; }).map(function (m) {
+      members: (GG.drama ? GG.drama.lineup(state) : state.members.filter(function (m) { return m.status === 'active'; })).map(function (m) {   // v0.4: + fill-ins
         return { id: m.id, name: m.name, role: m.role, mood: m.mood, look: m.look || looks[m.id] || null };
       }) };
   }
@@ -13577,6 +14789,229 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   ui.showVan = function () { return S() && GG.world ? ui.show('van-info') : null; };
 
   GG.registerDebug('van', function () { return Object.assign({}, dbg); });
+})(window.GG);
+
+</script>
+<script>/* 58_ui_band.js */
+// 58_ui_band.js: v0.4 drama UI. The laptop Band tab's band section (pay-the-band slider with a live preview, member
+// cards with mood + grievance-stage badge + current want, holes with Post an ad / Hire a fill-in, storylines of members
+// who are away or gone, rival watch), the recruit screen (three candidate cards: stars, trait, quirk, hometown, asking
+// cut, chemistry meter; Hire / Re-post / Close), tone-aware group-chat bubbles and the wrap's drama panels.
+//   GG.ui.bandPanel(state, rerender) -> node ; GG.ui.openRecruit() ; GG.ui.chatMsg(msg) -> node ; GG.ui.dramaWrap(wrap) -> [node]
+//   Screen 'recruit' (sheet, tall). testids: pay-slider, pay-preview, member-<id>, stage-<id>, want-<id>, hole-<slug>,
+//   btn-post-ad-<slug>, btn-open-ad-<slug>, btn-fillin-<slug>, btn-dismiss-<slug>, gone-<id>, rival-watch,
+//   recruit-card-<i>, btn-hire-<i>, btn-repost, btn-recruit-close, wrap-warnings, wrap-drama, wrap-protection.
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
+  function S() { return GG.state; }
+  function Dr() { return GG.drama; }
+  function fill(t) { return t && GG.career && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function slug(r) { return String(r).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+  function pct(v) { return Math.round((v || 0) * 100) + '%'; }
+  function first(n) { return String(n || '').split(' ')[0]; }
+
+  var CSS = [
+    '.pay-panel input[type=range] { width: 100%; height: 44px; margin: 4px 0 0; accent-color: var(--amber); touch-action: pan-y; }',
+    '.pay-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }',
+    '.pay-head b { font: 900 22px var(--display); color: var(--amber); }',
+    '.pay-prev { font-size: 13px; line-height: 1.35; color: var(--text); } .pay-prev .dim { display: block; font-size: 12px; }',
+    '.stage-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font: 800 10px/1.6 var(--font); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }',
+    '.stage-1 { color: #ffd9a0; background: rgba(255, 179, 71, .14); border: 1px solid rgba(255, 179, 71, .4); }',
+    '.stage-2 { color: #ffb08a; background: rgba(255, 138, 76, .16); border: 1px solid rgba(255, 138, 76, .5); }',
+    '.stage-3 { color: #fff; background: var(--red); border: 1px solid var(--red); }',
+    '.mem-card.s2 { border-color: #7a4a36; } .mem-card.s3 { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset; }',
+    '.mem-want { font-size: 12px; line-height: 1.35; color: var(--dim); margin-top: 6px; } .mem-want b { color: var(--text); }',
+    '.mem-gripe { font-size: 12px; color: #ffb08a; margin-top: 4px; }',
+    '.stars { color: var(--amber); letter-spacing: 1px; white-space: nowrap; } .stars i { color: var(--line); font-style: normal; }',
+    '.hole-card { padding: 12px; border-radius: 14px; margin-bottom: 8px; border: 1px dashed #6d5a4a; background: repeating-linear-gradient(135deg, #1b2030, #1b2030 10px, #1e2234 10px, #1e2234 20px); }',
+    '.hole-card .btn { margin-top: 8px; }',
+    '.gone-card { padding: 10px 12px; border-radius: 14px; margin-bottom: 8px; background: #191d2b; border: 1px solid #2c3552; opacity: .9; }',
+    '.rival-watch { border-color: #6d2f3a; background: #22151c; }',
+    '.rc-card { padding: 12px; border-radius: 14px; background: linear-gradient(160deg, #262232, #1b2033); border: 1px solid #4a4150; margin-bottom: 10px; }',
+    '.rc-top { display: flex; gap: 10px; align-items: center; }',
+    '.rc-name { font-weight: 800; font-size: 16px; line-height: 1.2; } .rc-sub { font-size: 12px; color: var(--dim); }',
+    '.rc-line { font-size: 13px; line-height: 1.35; margin-top: 6px; } .rc-line .k { color: var(--faint); font: 800 10px var(--font); letter-spacing: .08em; text-transform: uppercase; margin-right: 4px; }',
+    '.rc-chem { display: grid; grid-template-columns: 78px 1fr 34px; gap: 8px; align-items: center; font-size: 12px; color: var(--dim); margin-top: 8px; }',
+    '.rc-chem b { color: var(--text); text-align: right; }',
+    '.rc-ad { font-style: italic; color: var(--dim); font-size: 13px; line-height: 1.4; margin: 0 0 10px; padding: 10px 12px; background: #f3efe6; color: #2a2016; border-radius: 4px; transform: rotate(-.6deg); }',
+    '.msg.pa .t { border-left-color: var(--bad); font-style: italic; background: #2c2230; }',
+    '.msg.grumble .t { border-left-color: #ff8a4c; }',
+    '.msg.news .t { border-left-color: var(--purple); background: #231f33; }',
+    '.msg .tone { font: 800 9px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--bad); margin: 3px 0 0 4px; }',
+    '.warn-row { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.35; padding: 5px 0; }',
+    '.warn-row .ic { flex: 0 0 22px; text-align: center; }'
+  ].join('\n');
+  (function inject() {
+    if (typeof document === 'undefined' || document.getElementById('gg-css-band')) return;
+    var st = document.createElement('style'); st.id = 'gg-css-band'; st.textContent = CSS;
+    (document.head || document.documentElement).appendChild(st);
+  })();
+
+  var STAGE = { 1: ['😐', 'grumbling'], 2: ['😒', 'passive-aggressive'], 3: ['⚠', 'ultimatum'] };
+  ui.stageBadge = function (stage, id) {
+    var s = STAGE[stage];
+    return s ? el('span.stage-tag.stage-' + stage, id ? { testid: 'stage-' + id } : {}, s[0] + ' ' + s[1]) : null;
+  };
+  function stars(n) { var out = []; for (var i = 1; i <= 5; i++) out.push(i <= n ? '★' : el('i', '★')); return el('span.stars', { title: n + ' stars' }, out); }
+  function kv(label, value, color, right) {
+    return el('div.kv', [el('span', label), ui.bar(value, 100, { color: color }), el('b', right != null ? right : String(Math.round(value)))]);
+  }
+  function chemColor(c) { return c >= 65 ? 'var(--good)' : c >= 40 ? 'var(--amber)' : 'var(--bad)'; }
+
+  /* ---- Pay the band ------------------------------------------------------------------------------------ */
+  function payPanel(st) {
+    var D = Dr(), E = D.cfg(), cut = D.payCut(st), gig = st.lastGig && st.lastGig.pay > 0 ? st.lastGig.pay : 100;
+    var expect = Math.round((E.expectCut + Math.min(E.expectCutMax, st.fans * E.expectCutPerFan)) * 20) / 20;
+    var val = el('b', pct(cut)), prev = el('div.pay-prev', { testid: 'pay-preview' });
+    function preview(c) {
+      var sp = D.split(st, gig);
+      ui.clear(prev);
+      ui.append(prev, ['Members get ' + U.fmtMoney(sp.cut) + ' of a ' + U.fmtMoney(gig) + ' gig; the fund keeps ' + U.fmtMoney(sp.band) + '.',
+        el('span.dim', c + 0.001 < expect ? 'They expect about ' + pct(expect) + '. Expect grumbling.' : c > expect + 0.12 ? 'Generous. Moods go up, the fund goes down.' : 'About what they expect (' + pct(expect) + ').')]);
+    }
+    var slider = el('input', { type: 'range', min: '0', max: String(Math.round(E.payCutMax * 100)), step: '5', value: String(Math.round(cut * 100)),
+      testid: 'pay-slider', 'aria-label': 'Pay the band',
+      oninput: function (e) { var v = D.setPayCut(st, +e.target.value / 100); val.textContent = pct(v); preview(v); } });
+    preview(cut);
+    return el('div.panel.pay-panel', [el('div.pay-head', [el('span.caps', 'Pay the band (share of gig pay)'), val]), slider, prev]);
+  }
+
+  /* ---- Members, holes, the departed -------------------------------------------------------------------- */
+  function memberCard(st, m) {
+    var D = Dr(), who = ui.who(m.id), stage = m.stage || 0, kids = [];
+    kids.push(el('div.row', [ui.avatar(who), el('div.grow', [el('div', { style: 'font-weight:800' }, who.full || who.name + (who.nick ? ' "' + who.nick + '"' : '')),
+      el('div.small.dim', [m.role || '', m.recruit ? ' · recruit' : ''])]), ui.stageBadge(stage, m.id)]));
+    kids.push(kv('Skill', m.skill, 'var(--blue)'));
+    kids.push(kv('Mood', m.mood, ui.moodColor(m.mood), ui.moodEmoji(ui.moodLabel(m.mood))));
+    var w = D.want(st, m);
+    if (w) kids.push(el('div.mem-want', { testid: 'want-' + m.id }, [el('b', 'Wants: '), fill(w.text)]));
+    if (m.recruit) {
+      var r = m.recruit, t = D.traitDef(r.trait), q = D.quirk(r.quirk);
+      kids.push(el('div.mem-want', { testid: 'want-' + m.id }, [stars(r.stars || 1), ' · from ' + (r.hometown || '?') + ' · asks ' + pct(r.askingCut)]));
+      if (t) kids.push(el('div.mem-want', [el('b', t.name + ': '), t.effect]));
+      if (q) kids.push(el('div.mem-want', [el('b', 'Quirk: '), q.text]));
+    }
+    if (m.changed) kids.push(el('div.mem-want', [el('b', 'Changed: '), fill(m.changed)]));
+    if (stage >= 1) kids.push(el('div.mem-gripe', stage >= 3 ? 'Has an ultimatum for you on Monday.' : 'On about ' + D.gripeText(st, m) + '.'));
+    return el('div.mem-card' + (stage >= 2 ? '.s' + Math.min(3, stage) : ''), { testid: 'member-' + m.id }, kids);
+  }
+  function holeCard(st, role, rerender) {
+    var D = Dr(), E = D.cfg(), sl = slug(role), f = (st.fillIns || {})[role], ad = st.recruitAd && st.recruitAd.role === role ? st.recruitAd : null;
+    var kids = [el('div.row', [el('span', { style: 'font-size:24px' }, '🕳️'), el('div.grow', [el('div', { style: 'font-weight:800' }, 'Empty: ' + role),
+      el('div.small.dim', f ? 'Covered by ' + f.name + ' (' + U.fmtMoney(f.costPerGig) + ' a gig, no chemistry to speak of).' : 'Playing with a hole: worse gigs until someone fills it.')])])];
+    if (ad) kids.push(btn('.btn.primary.small.block', { testid: 'btn-open-ad-' + sl, onclick: function () { ui.openRecruit(); } }, 'See the ' + ad.candidates.length + ' replies to your ad'));
+    else kids.push(btn('.btn.primary.small.block', { testid: 'btn-post-ad-' + sl, disabled: st.fund < E.adCost,
+      onclick: function () { if (D.postAd(S(), role)) { GG.main.sync(); ui.openRecruit(); } } }, 'Post an ad (' + U.fmtMoney(E.adCost) + ')'));
+    if (f) kids.push(btn('.btn.small.block', { testid: 'btn-dismiss-' + sl, onclick: function () { D.dismissFillIn(S(), role); GG.main.sync(); rerender(); } }, 'Let ' + first(f.name) + ' go'));
+    else kids.push(btn('.btn.small.block', { testid: 'btn-fillin-' + sl, onclick: function () {
+      var x = D.hireFillIn(S(), role); GG.main.sync(); rerender(); if (x) ui.toast(x.name + ' will cover ' + role + ' for ' + U.fmtMoney(x.costPerGig) + ' a gig.', { who: 'Fill-in' });
+    } }, 'Hire a fill-in (' + U.fmtMoney(E.fillInCost) + ' a gig)'));
+    return el('div.hole-card', { testid: 'hole-' + sl }, kids);
+  }
+  function goneCard(st, m) {
+    var x = m.exit || {}, dd = GG.content.drama && GG.content.drama.members && GG.content.drama.members[m.id], who = ui.who(m.id);
+    var rv = GG.content.rivals && GG.career.band(st) && GG.content.rivals[GG.career.band(st).rival];
+    var text = x.storyline === 'rival' ? 'Joined ' + (rv ? rv.name : 'your rival') + '. Sends a polite card at Christmas.'
+      : (dd && dd.exit && dd.exit.status) || 'Gone. No forwarding address.';
+    var since = x.since ? ' · gone since week ' + ((x.since - 1) % GG.contracts.WEEKS_PER_YEAR + 1) + ', year ' + (Math.floor((x.since - 1) / GG.contracts.WEEKS_PER_YEAR) + 1) : '';
+    return el('div.gone-card', { testid: 'gone-' + m.id }, [el('div.row', [ui.avatar(who, 'sm'), el('div.grow', [
+      el('div', { style: 'font-weight:800' }, who.name + ' · ' + (m.status === 'away' ? 'away' : x.storyline === 'rival' ? 'with the rival' : 'quit')),
+      el('div.small.dim', fill(text) + since)])])]);
+  }
+  // The band section of the laptop's Band tab (members, pay, holes, the departed, rival watch).
+  ui.bandPanel = function (st, rerender) {
+    var D = Dr(); rerender = rerender || function () {};
+    if (!D) return el('div');
+    var out = [payPanel(st)];
+    D.active(st).forEach(function (m) { out.push(memberCard(st, m)); });
+    D.holes(st).forEach(function (r) { out.push(holeCard(st, r, rerender)); });
+    (st.members || []).filter(function (m) { return m.status !== 'active'; }).forEach(function (m) { out.push(goneCard(st, m)); });
+    var blurb = (st.rivalDefectors || []).length ? D.rivalBlurb(st) : null;
+    if (blurb) out.push(el('div.panel.rival-watch', { testid: 'rival-watch' }, [el('div.caps', 'Rival watch'), el('p.small', { style: 'margin:6px 0 0' }, fill(blurb))]));
+    return el('div.stack.tight', out);
+  };
+
+  /* ---- The recruit screen ------------------------------------------------------------------------------ */
+  function candidateCard(st, c, i, s) {
+    var D = Dr(), t = D.traitDef(c.trait), q = D.quirk(c.quirk), who = { name: c.name, color: c.look && c.look.shirt || '#4f8cff' };
+    return el('div.rc-card', { testid: 'recruit-card-' + i }, [
+      el('div.rc-top', [ui.avatar(who), el('div.grow', [el('div.rc-name', c.name + (c.nick ? ' "' + c.nick + '"' : '')),
+        el('div.rc-sub', ['From ' + c.hometown + ' · ', stars(c.stars)])])]),
+      t ? el('div.rc-line', [el('span.k', 'Trait'), el('b', t.name), ' — ' + t.effect]) : null,
+      q ? el('div.rc-line', [el('span.k', 'Quirk'), q.text]) : null,
+      el('div.rc-line', [el('span.k', 'Asks'), pct(c.askingCut) + ' of gig pay' + (c.askingCut > D.payCut(st) + 0.001 ? ' (more than you pay now)' : '')]),
+      el('div.rc-chem', [el('span', 'Chemistry'), ui.bar(c.chemistry, 100, { color: chemColor(c.chemistry) }), el('b', String(c.chemistry))]),
+      btn('.btn.primary.small.block', { testid: 'btn-hire-' + i, style: 'margin-top:10px', onclick: function () {
+        var m = D.hire(S(), i);
+        if (!m) return;
+        GG.main.sync();
+        ui.close(s.id);
+        if (ui.isOpen('laptop')) ui.show('laptop', { tab: 'band' });
+        ui.toast(first(m.name) + ' is in. Welcome to the garage.', { who: 'Hail to the new ' + m.role, kind: 'good' });
+      } }, 'Hire ' + first(c.name))
+    ]);
+  }
+  ui.define('recruit', {
+    kind: 'sheet', tall: true,
+    build: function (s) {
+      var st = S(), D = Dr(), ad = st && st.recruitAd;
+      s.setTitle('Kijiji + the corkboard', ad ? 'WANTED: ' + String(ad.role).toUpperCase() + ' · POST #' + ad.posts : 'NO AD POSTED');
+      if (!ad) { s.body.appendChild(el('p.dim', 'No ad up right now.')); }
+      else {
+        var genre = st.genre || 'metal';
+        s.body.appendChild(el('div.rc-ad', "'" + genre.charAt(0).toUpperCase() + genre.slice(1) + ' band seeks ' + ad.role + '. Garage. Snacks. Sometimes heat. No drama (lol).' +
+          "' Three replies came in:"));
+        ad.candidates.forEach(function (c, i) { s.body.appendChild(candidateCard(st, c, i, s)); });
+      }
+      var E = D.cfg();
+      ui.append(s.foot, el('div.row', [
+        btn('.btn.grow', { testid: 'btn-recruit-close', onclick: function () { ui.close(s.id); } }, 'Close'),
+        btn('.btn.grow', { testid: 'btn-repost', disabled: !ad || st.fund < E.repostCost, onclick: function () {
+          if (D.repost(S())) { GG.main.sync(); s.rerender(); s.body.scrollTop = 0; }
+        } }, 'Re-post (' + U.fmtMoney(E.repostCost) + ')')]));
+    },
+    onClose: function () { if (ui.isOpen('laptop')) ui.show('laptop', { tab: 'band' }); }
+  });
+  ui.openRecruit = function () { return ui.show('recruit'); };
+
+  /* ---- Chat bubbles + the wrap -------------------------------------------------------------------------- */
+  var TONE = { pa: 'passive-aggressive', grumble: '', news: '' };
+  ui.chatMsg = function (m) {
+    var who = ui.who(m.who);
+    return el('div.msg' + (m.tone ? '.' + m.tone : ''), [el('span.w', { style: { color: who.text } }, who.short),
+      el('div.t', { style: m.tone ? null : { borderLeftColor: who.color } }, fill(m.text)), TONE[m.tone] ? el('span.tone', TONE[m.tone]) : null]);
+  };
+  ui.dramaWrap = function (w) {
+    var out = [];
+    if (w.protectionEnded) {
+      var txt = GG.content.drama && GG.content.drama.protectionToast;
+      out.push(el('div.panel.alert.row', { testid: 'wrap-protection' }, [el('span', { style: 'font-size:24px' }, '🌅'),
+        el('div.grow', [el('div', { style: 'font-weight:800' }, 'Local heroes on the horizon'), el('div.small.dim', fill(txt || 'People can quit now. Warnings first.'))])]));
+    }
+    if (w.warnings && w.warnings.length) out.push(el('div.panel', { testid: 'wrap-warnings' }, [el('div.caps', 'Trouble in the band')].concat(w.warnings.map(function (x) {
+      return el('div.warn-row', [el('span.ic', STAGE[x.stage] ? STAGE[x.stage][0] : '•'), el('div.grow', x.text)]);
+    }))));
+    if (w.drama && w.drama.length) out.push(el('div.panel.warm', { testid: 'wrap-drama' }, [el('div.caps', 'Meanwhile…')].concat(w.drama.map(function (t) {
+      return el('p.small', { style: 'margin:6px 0 0' }, fill(t));
+    }))));
+    return out;
+  };
+
+  // Fill-in figures (garage/stage ids 'fill_<role>') get their real names in bubbles and chips.
+  var baseWho = ui.who;
+  ui.who = function (id, state) {
+    var st = state || S();
+    if (typeof id === 'string' && id.indexOf('fill_') === 0 && Dr() && st) {
+      var f = Dr().fillInFigures(st).filter(function (x) { return x.id === id; })[0];
+      if (f) { var w = baseWho(id, st); w.name = f.name; w.short = first(f.name); w.role = f.role + ' (fill-in)'; return w; }
+    }
+    return baseWho(id, state);
+  };
+
+  GG.registerDebug('band', function () {
+    var st = S();
+    return { recruit: ui.isOpen('recruit'), ad: st && st.recruitAd ? st.recruitAd.candidates.length : 0, payCut: st ? st.payCut : null };
+  });
 })(window.GG);
 
 </script>

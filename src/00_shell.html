@@ -86,7 +86,7 @@ h1, h2, h3, p { margin: 0; }
 .avatar.lg { width: 56px; height: 56px; font-size: 19px; }
 
 /* ---- Screen layers ---- */
-.layer { position: absolute; inset: 0; }
+.layer { position: absolute; inset: 0; isolation: isolate; }   /* each screen its own stacking context (sticky tabs never poke through a sheet above) */
 #screens > .layer[inert] { pointer-events: none; }
 /* Sheets leave the HUD bar tappable (menu, stat help) while they're open; modals and full screens cover everything. */
 #screens > .sheet-layer { pointer-events: none; } #screens > .sheet-layer > * { pointer-events: auto; }

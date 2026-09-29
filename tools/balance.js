@@ -12,6 +12,8 @@ const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
 const t0 = Date.now();
 const GG = load({ localStorage: load.fakeStorage() });
 const C = GG.contracts, WPY = C.WEEKS_PER_YEAR;
+// NO_DRAMA=1: v0.3-equivalent knobs (no drama sim, v0.3 upkeep) to compare against.
+if (process.env.NO_DRAMA) { GG.drama = null; GG.content.economy.weeklyUpkeep = 30; }
 
 // ---- Synthetic deck (only when there are no real cards) --------------------------------------------
 // 12 templates x 2 = 24 once-only cards, like the garage-era brief: most choices cost $20-150,
@@ -60,7 +62,8 @@ function run(style) {
     const s = GG.career.newCareer({ seed: seed * 7919, player: { name: 'Bot' } });
     let y = null;
     for (let w = 0; w < years * WPY && !s.ended; w++) {
-      if (s.week === 1) y = { fundMin: Infinity, buzz: 0, burn: 0, mood: 0, n: 0, loans0: s.stats.parentsLoans, songs0: s.stats.songsWritten, gigs0: s.stats.gigs };
+      if (s.week === 1) y = { fundMin: Infinity, buzz: 0, burn: 0, mood: 0, n: 0, loans0: s.stats.parentsLoans, songs0: s.stats.songsWritten, gigs0: s.stats.gigs,
+        quits0: s.stats.quits || 0, ults0: s.stats.ultimatums || 0, rets0: s.stats.returns || 0, prot: s.protected };
       const yearIdx = s.year - 1;
       GG.career.botWeek(s, style);
       check(s, style + '#' + seed);
@@ -69,7 +72,8 @@ function run(style) {
       if (s.week === 1 || s.ended) {   // endWeek just rolled into a new year (or the career ended)
         (rows[yearIdx] = rows[yearIdx] || []).push({
           fundMin: y.fundMin, fundEnd: s.fund, fans: s.fans, buzz: y.buzz / y.n, chem: s.chemistry, burn: y.burn / y.n,
-          loans: s.stats.parentsLoans - y.loans0, quits: s.members.filter(m => m.status !== 'active').length,
+          loans: s.stats.parentsLoans - y.loans0, quits: (s.stats.quits || 0) - y.quits0, ults: (s.stats.ultimatums || 0) - y.ults0,
+          rets: (s.stats.returns || 0) - y.rets0, prot: y.prot && s.protected ? 1 : 0, out: s.members.filter(m => m.status !== 'active').length,
           songs: s.stats.songsWritten - y.songs0, gigs: s.stats.gigs - y.gigs0, mood: y.mood / y.n,
           van: s.van ? s.van.condition : 0, bans: (s.banned || []).length });
       }
@@ -81,15 +85,19 @@ const avg = (a, k) => a.reduce((t, r) => t + r[k], 0) / a.length;
 const pad = (v, n, d) => { const s = typeof v === 'number' ? v.toFixed(d || 0) : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
 function table(style, rows) {
   const out = [style.toUpperCase() + ' bot',
-    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | quits | songs | gigs | mood | van | bans'];
+    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans'];
   rows.forEach((a, i) => {
     const fans = a.map(r => r.fans);
     out.push(pad(i + 1, 3) + ' | ' + pad(avg(a, 'fundMin'), 7) + ' ' + pad(avg(a, 'fundEnd'), 7) + ' | ' +
       pad(avg(a, 'fans'), 8) + ' (' + pad(Math.min(...fans), 4) + '-' + pad(Math.max(...fans), 5) + ') | ' +
       pad(avg(a, 'buzz'), 4) + ' | ' + pad(avg(a, 'chem'), 4) + ' | ' + pad(avg(a, 'burn'), 4) + ' | ' +
-      pad(avg(a, 'loans'), 5, 1) + ' | ' + pad(avg(a, 'quits'), 5) + ' | ' + pad(avg(a, 'songs'), 5, 1) + ' | ' +
+      pad(avg(a, 'loans'), 5, 1) + ' | ' + pad(avg(a, 'ults'), 4, 1) + ' ' + pad(avg(a, 'quits'), 5, 1) + ' ' + pad(avg(a, 'rets'), 4, 1) + ' ' +
+      pad(avg(a, 'out'), 3, 1) + ' | ' + pad(avg(a, 'songs'), 5, 1) + ' | ' +
       pad(avg(a, 'gigs'), 4, 1) + ' | ' + pad(avg(a, 'mood'), 4) + ' | ' + pad(avg(a, 'van'), 3) + ' | ' + pad(avg(a, 'bans'), 4, 1));
   });
+  // v0.4: quits per year once the garage-era protection is off (years that ended still protected don't count)
+  const after = rows.map(a => a.filter(r => !r.prot)).reduce((t, a) => t.concat(a), []);
+  if (after.length) out.push('quits/year after protection: ' + avg(after, 'quits').toFixed(2) + ' (ultimatums ' + avg(after, 'ults').toFixed(2) + ', returns ' + avg(after, 'rets').toFixed(2) + ', over ' + after.length + ' seed-years)');
   return out.join('\n');
 }
 const results = ['avg', 'good'].map(style => table(style, run(style)));

@@ -78,7 +78,7 @@
     (band && band.members || []).forEach(function (m) { looks[m.id] = m.look; });
     var v = Object.assign({}, GG.gig.venue(g.venueId) || {}, g);
     return { venue: v, crowd: G.attendance, capacity: g.capacity, genre: state.genre, flags: state.flags || {}, player: state.player,
-      members: state.members.filter(function (m) { return m.status === 'active'; }).map(function (m) {
+      members: (GG.drama ? GG.drama.lineup(state) : state.members.filter(function (m) { return m.status === 'active'; })).map(function (m) {   // v0.4: + fill-ins
         return { id: m.id, name: m.name, role: m.role, mood: m.mood, look: m.look || looks[m.id] || null };
       }) };
   }

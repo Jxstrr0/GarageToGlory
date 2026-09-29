@@ -9,8 +9,8 @@
     starterSongQuality: [30, 40], starterSongPolish: 25,
 
     // ---- Week wrap (endWeek) ---------------------------------------------
-    weeklyUpkeep: 30,          // $ per week: strings, sticks, gas money, the extension-cord bill
-    upkeepPerFan: 0.015,       // + this per fan: a bigger band has bigger bills (more gas, more strings, more pizza)
+    weeklyUpkeep: 22,          // $ per week: sticks, gas money, the extension-cord bill (v0.4: members buy their own strings from their cut)
+    upkeepPerFan: 0.012,       // + this per fan: a bigger band has bigger bills (more gas, more strings, more pizza)
     buzzDecay: 0.15,           // fraction of buzz lost each week (at least 1 while buzz > 0)
     buzzFans: 0.12,            // organic new fans per week per point of buzz
     burnoutRecovery: 3,        // burnout that fades by itself every week
@@ -80,6 +80,31 @@
       stalePerPlay: 10, staleDecay: 4,       // each gig play adds stale; each week off takes some away
       staleWeight: 0.08,                     // setlist score lost per point of stale
       classicHits: 4, classicGrades: ['S', 'A'], classicBonus: 3   // 4 great gigs make a classic
+    },
+
+    // ---- Drama (27_sim_drama.js, v0.4): moods, grievance stages, quits/returns, recruits, fill-ins, pay the band ----
+    drama: {
+      protectFans: 250,                    // garage-era protection (nobody quits, nothing breaks) ends here
+      payCut: 0.3, payCutMax: 0.6,         // pay the band: members' share of gig pay (owner default 30%)
+      // money: members expect expectCut (+ a little more as the band grows); recruits expect their askingCut
+      expectCut: 0.25, expectCutPerFan: 0.00002, expectCutMax: 0.1,
+      moneyUp: 16, moneyUpMax: 3, moneyDown: 30, paidBonus: 0.5,
+      burnoutFrom: 55, burnoutScale: 0.12,  // overworked: mood push per burnout point over the line
+      trendWeeks: 4, trendGrow: 0.03, stall: 1, growBonus: 0.5,   // band success: fans trend over 4 weeks
+      gradeMood: { S: 1, A: 0.5, B: 0, C: -1, D: -2 },
+      wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, kenjiDrift: 2.5,  // personal wants (content/drama.js)
+      stageAt: [48, 41, 35], recover: 6,   // mood below -> grumbling / passive-aggressive / ultimatum; +recover to step back
+      grumbleChat: 0.7,
+      returnAfter: [16, 30], laterWeeks: 8, returnMood: 72, returnSkill: 5,
+      quirkChance: 0.1, quirkCooldown: 12,
+      adCost: 30, repostCost: 20,          // Kijiji + the music-store corkboard
+      fillInCost: 40, fillInSkill: 38, fillInChem: 1,
+      holePenalty: 14, fillInPenalty: 4, holeCrowd: 10,
+      recruitStars: [30, 35, 22, 10, 3],   // 1..5 star weights in the garage era (shift up with era/fans)
+      hireChemPull: 0.25,
+      traits: { showboatScore: 4, studioRatQuality: 5, hypeBuzz: 2, fastLearner: 2, fastLearnerCap: 75,
+                roadWarriorBurnout: 3, partyFans: 1.15, partyBurnout: 2, frugalRefund: 5, legendFans: 20, legendGigFans: 1.1 },
+      bot: { avgRefuse: 0.45, keep: 40, goodPayUp: 0.4, goodPayFund: 600, repostBelow: 55 }
     },
 
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---

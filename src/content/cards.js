@@ -782,6 +782,78 @@
               outcome: "Everyone plays standing on milk crates. The video, 'Metal in a Flood', does numbers in three provinces." },
             fail: { effects: { fund: -90, burnout: 5 },
               outcome: "Pop, fizz, darkness. The breaker takes Dana's tuner with it. Mom says 'I said this would happen' to nobody in particular." } } }
+      ] },
+
+    // ======================================================================
+    // v0.4 guilt cards: only while you owe your parents (flags.parentsLoan). `repay: n` pays back up to $n from the
+    // fund; paying the whole debt clears the flag and the guilt stops.
+    // ======================================================================
+    { id: 'guilt_fridge_calendar', type: 'money', speaker: 'mom', title: 'The Fridge Calendar', once: false, cooldown: 8,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom has written 'BAND LOAN' on the fridge calendar every Sunday, in red, with a small heart. The heart is doing a lot of work.",
+      choices: [
+        { label: 'Pay her back $100', effects: { repay: 100, chemistry: 2 },
+          outcome: 'You hand over five twenties. Mom erases one heart and draws a bigger one. Dad pretends not to see.' },
+        { label: 'Clean the eaves instead', effects: { burnout: 5, mood: { all: 3 } },
+          outcome: 'You clean the eaves. Kenji holds the ladder. Mom counts it as $20. Dad counts it as $5.' },
+        { label: 'Promise next month', effects: { burnout: 3 },
+          outcome: "Mom writes 'NEXT MONTH' on next month. In red. With no heart." }
+      ] },
+    { id: 'guilt_accountant', type: 'money', speaker: 'mom', title: 'Trevor the Accountant', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
+        'Mom has invited Trevor for supper. Trevor has brought a pamphlet.',
+      choices: [
+        { label: 'Let Trevor do the books', effects: { repay: 80, burnout: 4 },
+          outcome: "Trevor finds $80 of 'drumstick overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
+        { label: 'Challenge Trevor to a drum-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two kits in the driveway.',
+          roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.008,
+            success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'You win. Trevor shakes your hand and books the band for his office party.' },
+            fail: { effects: { burnout: 6 }, outcome: "Trevor wins. He had lessons. Mom says 'see?' and nothing else all evening." } } }
+      ] },
+    { id: 'guilt_dad_invoice', type: 'money', speaker: 'dad', title: 'An Invoice', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Dad has typed up an invoice: 'One (1) loan, plus garage rental, plus hydro for amplifiers.' Under 'terms' he wrote 'whenever, bud.' " +
+        "He's sliding it across the workbench very slowly.",
+      choices: [
+        { label: 'Pay $150 on the spot', effects: { repay: 150, chemistry: 3 },
+          outcome: "Dad folds the cash into his shirt pocket and says 'didn't need to do that, bud.' He pats the pocket twice." },
+        { label: 'Pay him in hydro savings', effects: { burnout: 4, chemistry: -2 },
+          outcome: 'You unplug the beer fridge. Dad plugs it back in. The invoice stays on the workbench.' },
+        { label: 'Frame the invoice', effects: { burnout: 3, mood: { marcel: 5 } },
+          outcome: "Marcel calls it 'the most metal document in Saskatoon' and hangs it over the kit. Dad is secretly delighted." }
+      ] },
+    { id: 'guilt_aunt_irene', type: 'money', speaker: 'mom', title: 'Aunt Irene Calls', once: false, cooldown: 9,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Aunt Irene from Yorkton is on speakerphone. 'Your mother tells me you owe her money for the little band.' Mom is standing right there. Mom did tell her.",
+      choices: [
+        { label: 'Pay Mom $50, loudly', effects: { repay: 50, chemistry: 2 },
+          outcome: "Irene hears the cash change hands and says 'well, good.' The whole family will know by Sunday." },
+        { label: 'Invite Irene to a gig', effects: { buzz: 3, burnout: 3 },
+          outcome: 'Irene comes with three friends from church. They stand at the back with their arms crossed. It counts as a crowd.' },
+        { label: 'Put Jaxon on the phone', effects: { chemistry: 2, mood: { jaxon: 5 } },
+          outcome: "Jaxon talks to Irene for forty minutes about Baba's perogy dough. Irene forgets why she called." }
+      ] },
+    { id: 'guilt_potash_mine', type: 'money', speaker: 'dad', title: 'The Mine Is Hiring', once: false, cooldown: 10,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: 'Over supper, Dad mentions the potash mine is hiring. He mentions Cousin Dale works there now. He mentions Cousin Dale\'s truck. ' +
+        'He passes the potatoes without looking at you.',
+      choices: [
+        { label: 'Pay Dad back $120', effects: { repay: 120, chemistry: 2 },
+          outcome: "You pay him back. Dad says 'didn't need to do that' and puts it in his wallet immediately." },
+        { label: 'Work two shifts underground', effects: { fund: 60, burnout: 8 },
+          outcome: 'You come home with $60 and a new respect for low frequencies. Dale shows you his truck. Twice.' },
+        { label: 'Pitch him the band plan', effects: { burnout: -3, chemistry: -2 },
+          outcome: "Dad listens to the whole plan. He asks one question: 'And the van?' There is no good answer." }
+      ] },
+    { id: 'guilt_butter_tarts', type: 'money', speaker: 'mom', title: 'The Bake Sale', once: false, cooldown: 12,
+      gate: g({ flags: ['parentsLoan'] }),
+      text: "Mom's church is holding a bake sale 'to support local musicians'. You are the local musicians. She baked forty dozen butter tarts. You are selling them.",
+      choices: [
+        { label: 'Sell them, repay $100', effects: { repay: 100, burnout: 5 },
+          outcome: "You sell 480 butter tarts outside the Co-op. Every cent goes to Mom. Mom calls it 'even'. It is not even. But it's closer." },
+        { label: 'Eat the tarts', effects: { burnout: -4, mood: { all: 4 } },
+          outcome: 'The band eats eleven dozen butter tarts in one sitting. Marcel weeps. Mom never finds out. Mom always finds out.' }
       ] }
   ];
 })(window.GG);

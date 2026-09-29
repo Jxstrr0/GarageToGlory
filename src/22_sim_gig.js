@@ -66,9 +66,12 @@
   };
 
   /* ---- Scoring ------------------------------------------------------------ */
+  // v0.4: fill-ins play at the fill-in skill; holes, fill-ins and recruit traits shift the score (GG.drama.gigMods).
+  function mods(state) { return GG.drama ? GG.drama.gigMods(state) : { score: 0, crowd: 0, fansMult: 1, fills: 0, fillSkill: 0 }; }
   function avgSkill(state) {
-    var act = state.members.filter(function (m) { return m.status === 'active'; });
-    return act.length ? act.reduce(function (t, m) { return t + m.skill; }, 0) / act.length : 0;
+    var act = state.members.filter(function (m) { return m.status === 'active'; }), md = mods(state);
+    var n = act.length + md.fills, t = act.reduce(function (a, m) { return a + m.skill; }, 0) + md.fills * md.fillSkill;
+    return n ? t / n : 0;
   }
   // Deterministic part of the score (0..100-ish) from the band, its best songs and the genre fit; simulate() adds noise.
   gig.performance = function (state, set, fit) {
@@ -76,7 +79,7 @@
     var songAvg = set.length ? set.reduce(function (t, s) { return t + GG.songs.score(s); }, 0) / set.length : 0;
     var raw = g.base + avgSkill(state) * w.skill + state.drumSkill * w.drum + state.chemistry * w.chemistry
       + songAvg * w.songs - Math.max(0, state.burnout - g.burnoutFrom) * g.burnoutPenalty;
-    return raw * (g.fitFloor + (1 - g.fitFloor) * fit);
+    return raw * (g.fitFloor + (1 - g.fitFloor) * fit) + mods(state).score;
   };
   gig.gradeFor = function (score) {
     var gr = G().grades;
@@ -95,7 +98,7 @@
   function newFans(state, g, crowd, grade, fit, rng) {
     var cfg = G();
     var x = crowd * cfg.conversion[grade] * (0.5 + 0.5 * fit) * (g.deal === 'exposure' ? cfg.exposureFanBonus : 1)
-      * Math.max(0, 1 - state.fans / cfg.localScene);
+      * Math.max(0, 1 - state.fans / cfg.localScene) * mods(state).fansMult;
     var f = Math.floor(x);
     return f + (rng.chance(x - f) ? 1 : 0);
   }
@@ -130,8 +133,11 @@
   };
 
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
+  // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
-    var cfg = G(), fx = { fund: r.pay - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
+    r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
+    r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
+    var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
       burnout: cfg.burnout, mood: { all: cfg.mood[r.grade] } };
     r.deltas = GG.career.applyEffects(state, fx, {});
     r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
@@ -296,7 +302,7 @@
     var v = gig.venue(g.venueId) || { capacity: g.capacity, walkIns: 0 }, fit = gig.fit(v, state.genre);
     var seed = GG.hashSeed([state.seed, live.started, g.venueId, live.setlist.join(',')].join('|'));
     if (live.attendance == null) live.attendance = gig.expectCrowd(state, g, live.started);
-    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz, cfg.crowdRange[0], cfg.crowdRange[1]));
+    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd, cfg.crowdRange[0], cfg.crowdRange[1]));
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
     var W = gig.windows(state), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });

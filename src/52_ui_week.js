@@ -102,9 +102,10 @@
      ====================================================================================================== */
   var lastSuccess = null;   // resolveCard's success flag, for the outcome view
   function cardHead(card) {
-    var who = ui.who(card.speaker);
+    var st = S(), sp = card.speaker === 'recruit' && st && st.card && st.card.who ? st.card.who : card.speaker;   // v0.4 drama cards
+    var who = ui.who(sp), ult = /^ult_/.test(card.id);
     return el('div.card-head', [ui.avatar(who, 'lg'), el('div.grow', [el('div.who', who.name), el('div.role', who.role || who.nick || '')]),
-      card.type ? el('span.tag', card.type) : null]);
+      ult ? el('span.stage-tag.stage-3', { testid: 'card-ultimatum' }, '⚠ ultimatum') : card.type ? el('span.tag', card.type) : null]);
   }
   function choiceHint(st, ch) {
     if (GG.career.choiceHint) return GG.career.choiceHint(st, ch);
@@ -384,6 +385,7 @@
   }
   function chatList(msgs) {
     return el('div', msgs.map(function (m) {
+      if (ui.chatMsg) return ui.chatMsg(m);
       var who = ui.who(m.who);
       return el('div.msg', [el('span.w', { style: { color: who.text } }, who.short),
         el('div.t', { style: { borderLeftColor: who.color } }, fill(m.text))]);
@@ -415,12 +417,13 @@
           w.guilt ? el('div.quote', { style: 'margin-top:10px;font-size:14px' }, fill(w.guilt)) : null]));
       }
       (w.milestones || []).forEach(function (m) { parts.push(el('div.panel.warm.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', { style: 'font-weight:700' }, fill(m))])); });
+      if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
           var who = ui.who(m.id), label = m.label || ui.moodLabel(m.mood);
           moods.appendChild(el('div.mood-row', [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
-            el('span.lb', { style: { color: ui.moodColor(m.mood) } }, ui.moodEmoji(label) + ' ' + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
+            el('span.lb', { style: { color: ui.moodColor(m.mood) } }, (m.stage >= 1 && ui.stageBadge ? '' : ui.moodEmoji(label) + ' ') + (m.stage >= 1 && ui.stageBadge ? ['😐', '😒', '⚠'][Math.min(3, m.stage) - 1] + ' ' : '') + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
         });
         parts.push(moods);
       }

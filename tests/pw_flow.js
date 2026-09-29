@@ -67,6 +67,8 @@ async function playWeek(page, acts, opts) {
   await tap(page, 'btn-primary');
   await waitScreen(page, 'plan');
   if (opts.accept && await page.locator(tid('offer-accept')).count()) await tap(page, 'offer-accept');
+  // Last week's plan stays on the whiteboard: wipe it (right to left, so the next tap fills slot 0) so PLANS really apply.
+  for (let i = 2; i >= 0; i--) if (await page.locator(tid('plan-slot-' + i) + '.filled').count()) await tap(page, 'plan-slot-' + i);
   for (const a of acts) await tap(page, 'act-' + a);
   if (opts.onPlan) await opts.onPlan();
   await tap(page, 'btn-go');

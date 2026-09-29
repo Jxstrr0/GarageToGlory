@@ -645,7 +645,9 @@
 
       var flags = st.flags || {}, cv = flags.cape;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_VARIANTS[cv] ? cv : 'velvet') : null;
-      var list = st.members || [], seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m;
+      // v0.4: fill-ins hang out too (after the roster, so they never take a hand-made member's idle spot)
+      var list = (st.members || []).concat(GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : []);
+      var seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m;
       for (i = 0; i < list.length; i++) if (list[i] && list[i].id === 'marcel') capeId = 'marcel';
       for (i = 0; !capeId && i < list.length; i++) { m = list[i]; if (m && memberIdle(band, m, i) === 'mirror') capeId = m.id; }
       capeShown = 'none';
