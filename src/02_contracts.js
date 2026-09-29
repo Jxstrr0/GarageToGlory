@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 7;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 8;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
