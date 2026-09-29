@@ -4,7 +4,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
 - Current: **0.5.0.0 "Signed"** (merged to main 2026-09-29) · 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
-- Next: **0.6.0 "Rivals"** (handoff B4)
+- Next: **0.6.0 "Rivals"** (handoff B4) — in progress on branch `v0.6-rivals`
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -39,6 +39,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
+- 2026-09-29 (for v0.6): Tundra Wraith frontman **Gord "Grimnir" Penner** (chartered accountant, minivan with a
+  Winnipeg Jets bumper sticker, screams about eternal winter, brings a veggie tray to every show) + **3 more polite
+  accountants** (full hand-made lineup). Other rivals' members are designed in **v0.9**. Final showdown = **Sad Dome
+  co-bill** in Calgary in year 10: a head-to-head set decides who headlines and who opens, forever (feeds the ending).
 - 2026-09-29 (for v0.5): career pace **Steady** — Local Heroes ≈ end of year 1 (250 fans), first label interest in
   year 2, signed by year 2–3, World Stage reachable ≈ year 5–6 (leaves room for bonus years).
 - 2026-09-29 (for v0.4): Garage-era protection ends at **250 fans**; drama level **"now and then"** (≈ one quit every

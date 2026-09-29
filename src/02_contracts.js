@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 5;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 6;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -28,6 +28,8 @@
   C.RELEASE_KINDS = ['ep', 'album'];                  // EP 4–5 songs (Local Heroes), album 8–10 (Signed / DIY)
   C.OUTLETS = ['rolling_scone', 'proclaim', 'pitchspork', 'deci_hell', 'tailgate_weekly'];
   C.CERT = { gold: 40000, platinum: 80000 };          // album units (Music Canada thresholds)
+  C.SHOWDOWNS = ['botb', 'sameNight', 'stolenSlot', 'loonies', 'poach', 'festival', 'final'];   // v0.6 rivalry
+  C.CRACKS = ['breakup', 'rebrand', 'opener'];        // how a beaten rival cracks
   C.LOONIES_WEEK = 20;                                // Loonie Awards, once a year (late winter)
   C.LOONIE_CATEGORIES = ['breakthrough', 'album', 'single', 'live', 'fan_choice', 'worst_van'];
   C.JUDGEMENTS = ['perfect', 'good', 'miss'];
@@ -85,6 +87,7 @@
      eraHistory: [ { era, week } ],                  // v0.5: garage → local (250 fans) → signed (a deal or a DIY album) → world (v0.7)
      label: null | DEAL, labelOffers: [ OFFER ], session: null | SESSION, albums: [ ALBUM ], awards: [ AWARD ],
      trophies: [ { kind: 'gold'|'platinum'|'loonie'|'banned'|..., title, year } ],
+     rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
      recruitAd: null | { role, candidates: [RECRUIT], posts, week }, rivalDefectors: [memberId],   (v0.4)
@@ -129,6 +132,9 @@
    ALBUM   = { id, kind, title, cover: { seed, palette, motif, font }, tracks: [songId], single, studioId, producerId,
                production, released (totalWeek), promo, label, reviews: [ { outlet, score, quote } ],
                chart: { debut, peak, weeks, pos }, sales, streams, cert: null|'gold'|'platinum', earned }
+   RIVAL   = { id: 'tundra_wraith', fans, buzz, era, heat 0..100, wins, losses, members: [ { id, name, nick, role, look,
+               defector? } ], albums: [ { title, released, peak, sales } ], cracked: null|C.CRACKS, news: [ { week, text } ] }
+   SHOWDOWN = { week, kind: C.SHOWDOWNS, venueId?, won: bool, you, them (scores), prize, fansSwing, heatDelta }
    AWARD   = { year, category, nominated: bool, won: bool, against: [ names ] }
    Content (v0.5): labels, studios, producers, reviews { scoreBands, outlets }, awards, albumWords, studioEvents (card
    schema + gate keys studio/producer + effect key production). Tokens {album} {single} (reviews), {category} (awards),
