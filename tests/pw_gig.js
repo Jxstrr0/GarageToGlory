@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e (default both); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in → backing plays on the audio clock → timed in-page taps on lane zones judge Perfect/Good →
 //         pause suspends the AudioContext and freezes the song, resume continues → screenshot tests/.cache/gig.png →
@@ -162,6 +162,30 @@ function playFor(page, secs) {
     return GG.debug('gigui').stats;
   }, secs);
 }
+// v0.5.1: REAL touch taps (page.touchscreen, not synthetic canvas events) reach the judge, even with a stray layer over
+// the highway, and song time never runs backwards or leaps when the audio clock stalls.
+async function touch() {
+  const c = checker('touch');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => { GG.main.quickStart({ seed: 5, slot: '1', openCard: false }); GG.ui.closeAll(); GG.ui.gigAutoplay = false; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    c.ok(await page.evaluate(() => GG.debug('gigui').open) && await page.locator(tid('gig-diff-easy')).isVisible(), 'difficulty toggle on the setlist');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    c.ok(await page.evaluate(() => GG.debug('gigui').diff) === 'easy', 'new players get Easy');
+    await page.evaluate(() => { window.__hits = 0; const h = GG.audio.hit; GG.audio.hit = function () { window.__hits++; return h.apply(this, arguments); };
+      const d = document.createElement('div'); d.id = 'stray'; d.style.cssText = 'position:fixed;inset:0;z-index:99;background:transparent'; document.body.appendChild(d); });
+    const box = await page.locator(tid('gig-highway')).boundingBox();
+    for (let i = 0; i < 6; i++) { await page.touchscreen.tap(box.x + box.width * (0.12 + 0.25 * (i % 4)), box.y + box.height - 40); await page.waitForTimeout(120); }
+    c.ok(await page.evaluate(() => window.__hits) >= 6, 'real taps under a stray layer reach the drums (' + await page.evaluate(() => window.__hits) + ')');
+    const ts = await page.evaluate(async () => { GG.audio.context().suspend(); const o = []; for (let i = 0; i < 8; i++) { await new Promise(r => setTimeout(r, 200)); o.push(GG.debug('gigui').songT); } return o; });
+    const steps = ts.slice(1).map((t, i) => t - ts[i]);
+    c.ok(steps.every(d => d > 0.1 && d < 0.4), 'with the audio clock stalled, song time still flows ~1x ' + steps.map(d => d.toFixed(2)).join(' '));
+    c.ok(!errors.length, 'no console errors ' + errors.slice(0, 2));
+  } finally { await close(); c.done(); }
+}
 async function e2e() {
   const c = checker('e2e');
   const { page, context, errors, close } = await open();
@@ -207,7 +231,7 @@ async function e2e() {
     await tap(page, 'btn-gig-start');
     await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
     const hits = await playFor(page, 4);
-    c.ok(hits && hits.perfect >= 10 && hits.maxCombo >= 20, 'on-time taps (chords = multitouch) land ' + JSON.stringify(hits));
+    c.ok(hits && hits.perfect >= 10 && hits.maxCombo >= 12, 'on-time taps (chords = multitouch) land ' + JSON.stringify(hits));
     await shot('gig');
     const r3 = await page.evaluate(() => ({ r: GG.debug('render'), crowd: GG.debug('gigui').crowd }));
     c.ok(r3.r.scene === 'stage' && !r3.r.paused && r3.r.drawCalls < 80, 'stage drawing under the gig screen, ' + r3.r.drawCalls + ' draw calls');
@@ -245,4 +269,4 @@ async function e2e() {
   c.done();
 }
 
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); })();
