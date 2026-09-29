@@ -457,6 +457,7 @@ test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {r
         || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
         || (/^content\.rivalry\./.test(p) && ['rival', 'album', 'pos', 'fans', 'venue', 'name', 'prize', 'n'].includes(t))   // v0.6
         || (/^content\.calendar\.holidays/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band
+        || (/^content\.bandbook\./.test(p) && ['who', 'song', 'venue', 'gcity', 'views', 'n', 'money', 'rival'].includes(t))   // v0.6.1: GG.fans tokens
         || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
     }
@@ -1032,6 +1033,88 @@ test('drivers: all four bands defined (C1) + you; dashboard items; Kenji never s
   ok(you.length >= 3 && you.some(c => /wrong turn/i.test(c.title)) && you.some(c => /gas station/i.test(c.title)), 'the you-drive pool: wrong turns, gas-station arguments');
   const all = strings(K.roadCards, 'road').map(x => x[1]).join(' ');
   ok(/deer/i.test(all) && /Yellowhead/.test(all) && /Whiteout on the Trans-Canada/.test(all) && /shotgun/i.test(all) && /cape/i.test(all) && /sliding door/i.test(all), 'C1 road events');
+});
+
+// ======================================================================
+// v0.6.1 FANS: Bandbook (Addendum 1 C5)
+// ======================================================================
+test('bandbook: post kinds, comments, handles, lengths; Kenji never speaks; no stray tokens', () => {
+  const B = K.bandbook;
+  ok(B && B.name === 'Bandbook', 'one parody social app: Bandbook');
+  eq(Object.keys(B.kinds).sort(), ['bts', 'exclusive', 'gig', 'meme', 'rehearsal', 'teaser']);
+  for (const k of Object.keys(B.kinds)) {
+    ok(str(B.kinds[k].label, 24) && str(B.kinds[k].icon, 4), 'kind ' + k);
+    ok(Array.isArray(B.posts[k]) && B.posts[k].length >= 4 && B.posts[k].every(t => str(t, 140)), 'posts.' + k + ' ≥4 lines ≤140');
+  }
+  ok(B.posts.gig.every(t => /\{venue\}/.test(t)), 'gig announcements name the venue');
+  ok(B.posts.teaser.every(t => /\{song\}/.test(t)), 'teasers name the song');
+  ok(B.viral.good.length >= 4 && B.viral.good.every(t => str(t, 140) && /\{views\}/.test(t)), 'good viral lines');
+  ok(B.viral.good.some(t => /falls off the drum riser/.test(t)), 'owner: you falling off the riser');
+  ok(B.viral.cringe.length >= 4 && B.viral.cringe.every(c => (c.who === 'any' || HD_IDS.includes(c.who)) && c.who !== 'kenji' && str(c.text, 140)), 'cringe viral: a member (never Kenji)');
+  ok(B.viral.cringe.some(c => c.who === 'marcel' && /dance tutorial/.test(c.text)), "owner: Marcel's cringe dance tutorial");
+  const CM = B.comments, MIN = { good: 6, mixed: 4, bad: 3, hater: 5, rival: 5, rivalExclusive: 2 };
+  for (const k in MIN) ok(Array.isArray(CM[k]) && CM[k].length >= MIN[k] && CM[k].every(t => str(t, 120)) && new Set(CM[k]).size === CM[k].length, 'comments.' + k);
+  ok(CM.good.includes('saw them at a Legion hall, 12 people and a dog, I was the dog'), 'owner: the dog comment');
+  ok(B.handles.fan.length >= 10 && B.handles.hater.length >= 4 && B.handles.fan.concat(B.handles.hater).every(h => /^[\w]{3,20}$/.test(h)), 'handles');
+  eq(strings(B, 'bandbook').filter(([, t]) => KENJI_TALKS.test(t)), [], 'Kenji never speaks');
+  ok(Object.values(B.gigLines).every(l => Array.isArray(l) && l.length >= 2 && l.every(t => str(t, 140))), 'gig lines');
+  ok(B.gigLines.dale.every(t => /Dale from Warman/.test(t) && /\{n\}|speed limit/.test(t)), 'Dale at every show');
+});
+
+test('bandbook: superfans (Dale from start, the trucker by story, the Japanese president reserved for v0.7)', () => {
+  const S = K.bandbook.superfans, ids = S.map(x => x.id);
+  eq(ids, ['dale', 'trucker', 'japan']);
+  const [dale, trk, jp] = S;
+  ok(dale.start && dale.name === 'Dale from Warman' && /every show/.test(dale.blurb), 'Dale from Warman, at every show');
+  ok(trk.story && /jumper cables/.test(trk.blurb), 'the trucker from the jumper-cable story');
+  ok(jp.reserved === 'v0.7' && !jp.start && !jp.story, 'Japanese fan-club president reserved for v0.7');
+  S.forEach(x => ok(str(x.name, 44) && str(x.short, 16) && str(x.icon, 4) && str(x.blurb, 140) && Array.isArray(x.comments) && (x.reserved || x.comments.length >= 4) && x.comments.every(t => str(t, 120)), 'superfan ' + x.id));
+  ok(K.npcs.dale_warman && K.npcs.wendell, 'npcs for the superfan cards');
+});
+
+test('bandbook: mail, gifts (macaroni Kenji), Patreeon tiers', () => {
+  const B = K.bandbook, ids = new Set();
+  [].concat(B.mail, B.gifts).forEach(g => { ok(/^[a-z][a-z0-9_]*$/.test(g.id) && !ids.has(g.id) && str(g.from, 44) && str(g.text, 140), 'gift/mail ' + g.id); ids.add(g.id); });
+  ok(B.mail.length >= 5 && B.gifts.length >= 5, 'enough mail + gifts');
+  Object.keys(B.scriptedGifts).forEach(id => ok(!ids.has(id) && str(B.scriptedGifts[id].from, 44) && str(B.scriptedGifts[id].text, 140), 'scripted gift ' + id));
+  ok(/macaroni portrait of Kenji/.test(B.scriptedGifts.macaroni_kenji.text), 'owner: the macaroni portrait of Kenji');
+  eq(B.tiers.map(t => t.name), ['Drumstick', 'Snare', 'Full Kit'], 'owner: tiers');
+  eq(B.tiers.map(t => t.id), ['drumstick', 'snare', 'full_kit']);
+  ok(B.tiers.every((t, i) => isInt(t.price) && t.price > 0 && isInt(t.minMembers) && str(t.perk, 90) && (!i || (t.price > B.tiers[i - 1].price && t.minMembers > B.tiers[i - 1].minMembers))), 'prices + unlocks ascend');
+  ok(B.club.name === 'Patreeon' && /van repairs/.test(B.club.pitch), "owner: Patreeon, 'support your favourite band's van repairs'");
+  ok(B.club.payoutChat.every(t => /\{money\}/.test(t) && str(t, 120)) && B.club.grumbleChat.every(t => str(t, 120)), 'club chat lines');
+  const E = K.economy.fans;
+  ok(E && E.club && E.club.cut > 0 && E.club.cut < 0.3 && Object.keys(E.club.tierShare).sort().join() === 'drumstick,full_kit,snare', 'economy.fans.club');
+  ok(Math.abs(E.shares.start.super + E.shares.start.casual + E.shares.start.hater - 1) < 1e-9, 'start shares sum to 1');
+});
+
+test('bandbook: fan cards (scandals, superfans, Patreeon) are valid, unique and forced-only', () => {
+  const B = K.bandbook, probs = [], all = new Set(ALL_CARD_IDS());
+  const FANS = ['hater', 'super', 'superfan', 'gift', 'club', 'clubHappy'];
+  const SF = B.superfans.filter(x => !x.reserved).map(x => x.id), GIFTS = Object.keys(B.scriptedGifts).concat(B.gifts.map(g => g.id));
+  ok(B.cards.length >= 10, 'fan cards: ' + B.cards.length);
+  B.cards.forEach(c => {
+    ok(!all.has(c.id), c.id + ': id clashes with another card'); all.add(c.id);
+    ok(!CARDS.includes(c), c.id + ': never in the Monday pool');
+    probs.push(...cardProblems(c, { effects: ['fan'], mag: magFor(c.gate) }));
+    c.choices.forEach((ch, i) => [ch.effects, ch.roll && ch.roll.success.effects, ch.roll && ch.roll.fail.effects].filter(Boolean).forEach(fx => {
+      const f = fx.fan; if (!f) return;
+      Object.keys(f).forEach(k => ok(FANS.includes(k), c.id + '#' + i + ' fan.' + k));
+      ['hater', 'super'].forEach(k => { if (k in f) ok(typeof f[k] === 'number' && f[k] && Math.abs(f[k]) <= 0.05, c.id + ' fan.' + k); });
+      if (f.superfan) Object.keys(f.superfan).forEach(id => ok(SF.includes(id) && isInt(f.superfan[id]), c.id + ' superfan ' + id));
+      if (f.gift) ok(GIFTS.includes(f.gift), c.id + ' gift ' + f.gift);
+      if (f.club) eq(f.club, 'open');
+      if ('clubHappy' in f) ok(isInt(f.clubHappy) && f.clubHappy, c.id + ' clubHappy');
+    }));
+  });
+  eq(probs, [], 'fan card problems');
+  const byId = id => B.cards.find(c => c.id === id);
+  B.scandals.forEach(x => ok(byId(x.card) && (HD_IDS.includes(x.who) || ['player', 'band'].includes(x.who)), 'scandal ' + x.card));
+  ok(/artificial turf/.test(byId('scandal_turf').text) && byId('scandal_turf').speaker === 'marcel', "owner: Marcel's beloved lawn is artificial turf");
+  ok(byId('fans_macaroni').choices.every(ch => ch.effects.fan.gift === 'macaroni_kenji'), 'every macaroni choice hangs it in the garage');
+  ok(byId('fans_trucker').choices.every(ch => ch.effects.fan.superfan.trucker > 0) && /jumper cables/.test(byId('fans_trucker').text), 'the jumper-cable story makes Wendell a superfan');
+  eq(byId('fans_patreeon').gate.era, ['signed', 'world'], 'Patreeon unlocks in the Signed era');
+  ok(byId('fans_patreeon').choices.filter(ch => ch.effects.fan && ch.effects.fan.club === 'open').length === 2, 'two ways to open it, one to wait');
 });
 
 done('content');

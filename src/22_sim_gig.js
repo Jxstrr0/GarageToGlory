@@ -135,6 +135,7 @@
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
+    if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],

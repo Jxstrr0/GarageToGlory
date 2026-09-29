@@ -28,7 +28,12 @@
     { id: 'barb', name: 'Barb',
       blurb: 'Runs the lounge at the Warman Curling Rink. Everyone there is named Barb or Dale. She has been both.' },
     { id: 'dale', name: 'Cousin Dale',
-      blurb: 'Your cousin. Moves apartments every six months. Always owns a piano. Pays in cash and pizza.' }
+      blurb: 'Your cousin. Moves apartments every six months. Always owns a piano. Pays in cash and pizza.' },
+    // v0.6.1 (FANS agent): recurring named superfans (content/bandbook.js superfans)
+    { id: 'dale_warman', name: 'Dale from Warman',
+      blurb: 'Your first superfan. At every show, front row, lawn chair. No relation to Cousin Dale; he wants that on the record.' },
+    { id: 'wendell', name: 'Big Wendell',
+      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' }
   ];
 
   var npcs = {};

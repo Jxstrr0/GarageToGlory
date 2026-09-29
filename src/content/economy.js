@@ -236,6 +236,26 @@
       bot: { avgEnter: 0.75 }
     },
 
+    // ---- Fans (29_sim_fans.js, v0.6.1: Bandbook posts, virality, fan types, superfans, mail + gifts, Patreeon) --------
+    fans: {
+      shares: { start: { super: 0.06, casual: 0.92, hater: 0.02 }, drift: 0.15,   // shares of the ONE fan count
+        superBase: 0.04, superChem: 0.04, superClub: 0.02, superRange: [0.03, 0.18],
+        haterBase: 0.01, haterFame: 0.05, haterRange: [0.005, 0.3] },            // haters grow with log10(fans / 100)
+      post: { buzz: 1, fans: 1, fansPer: 0.0015, max: 24, likes: 0.08, streams: 0.01,
+        kinds: { rehearsal: 1, gig: 1.2, teaser: 1.1, meme: 0.9, bts: 1 } },
+      viral: { base: 0.04, weird: { meme: 0.05, bts: 0.02 }, burnout: 0.02, buzzPer: 0.0004, max: 0.2, cringe: 0.3,
+        buzz: 9, cringeBuzz: 6, fans: 15, fansPer: 0.025, cringeFans: 0.5, mood: -6, hater: 0.02, super: 0.005, streams: 0.06 },
+      scandal: { post: 0.03, weekly: 0.01, burnout: 0.02, cooldown: 6, fromWeek: 4 },
+      cardGap: 3, cardFrom: 6,   // weeks between fan cards; none before week 6
+      gig: { followKm: 60, followShare: 0.03, followCap: 0.08, trucker: 0.35, buzzAt: 5, dale: { S: 3, A: 3, B: 1, C: 1, D: -2 } },
+      mail: { chance: 0.1, perSuper: 0.00005, max: 0.3 }, gift: { chance: 0.04, perSuper: 0.00003, max: 0.14 }, giftsMax: 30,
+      superfans: { moodStart: 70, moodHome: 65, drift: 1, daleGiftAfter: 6, truckerAfterGigs: 3, truckerKm: 80 },
+      club: { cut: 0.12, join: 0.005, maxMembers: 60, happyStart: 70, decay: 7, exclusive: 18, exclusiveAgain: 5,
+        exclusiveBurnout: 1, churnBelow: 30, churn: 0.1, move: 0.4, redecline: 8, grumbleBelow: 30, grumbleGap: 6,
+        tierShare: { drumstick: 0.6, snare: 0.3, full_kit: 0.1 }, van: 2 },
+      bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one

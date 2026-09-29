@@ -547,6 +547,7 @@
     var dust = buildDust(); scene.add(dust.points);
     var yard = buildYard();
     var decor = buildDecor();   // v0.6.1: snow at the window (winter), Christmas lights (December), a box fan (July / heat wave)
+    var fanMail = buildFanMail();   // v0.6.1 (FANS): Dale's macaroni portrait of Kenji, the gift pile, the fan-mail stack
 
     // ---- Bulb on a cord (swings a little; carries the warm point light and a halo) ----
     var bulbPivot = new THREE.Group();
@@ -643,6 +644,7 @@
       trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
       decor.set(st);
+      fanMail.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
       if (kc !== kit.color) buildKit(kc);
@@ -1001,7 +1003,7 @@
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
-        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(),
+        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(),
         trophyWall: trophyWall.counts
       };
     }
@@ -1416,6 +1418,67 @@
           if (cur.lights) { var b = 0.65 + 0.35 * (Math.sin(t * 2.2) > 0 ? 1 : 0.4); lm.color.setScalar(b); }
         },
         state: function () { return { snow: cur.snow, lights: cur.lights, fan: cur.fan }; }
+      };
+    }
+    // v0.6.1 (FANS agent; Addendum 1 C5): fan mail + gifts in the garage. Dale's macaroni portrait of Kenji (gold,
+    // on a cookie sheet, sunglasses, a bass) on the right wall by the gig board once state.gifts has 'macaroni_kenji';
+    // a pile of wrapped gifts on the floor by the amps that grows with the gift count (1 / 3 / 6 boxes: one mesh per
+    // size, only one shown); a stack of fan letters beside it. Hidden with an empty draw range (like buildDecor).
+    function buildFanMail() {
+      function show(m, on) { m.geometry.setDrawRange(0, on ? Infinity : 0); }
+      var GOLD = 0xd9ab35, DARK = 0x8c6412, i, a;
+      var pb = new ctx.Builder({ jitter: 0.004, seed: 57 });
+      pb.at(X1, 0, -2.2, -Math.PI / 2);
+      pb.box(0.48, 0.58, 0.015, 0, 1.5, 0.008, 0xb9bec6);                                      // the cookie sheet
+      pb.box(0.44, 0.54, 0.006, 0, 1.5, 0.018, 0x6e5a2a);                                      // glue + cardboard backing
+      for (i = 0; i < 18; i++) {                                                                // macaroni face outline (an oval)
+        a = i / 18 * Math.PI * 2;
+        pb.box(0.045, 0.02, 0.018, Math.cos(a) * 0.13, 1.56 + Math.sin(a) * 0.17, 0.03, GOLD, 0, 0, a + Math.PI / 2);
+      }
+      for (i = 0; i < 6; i++) pb.box(0.04, 0.02, 0.02, -0.12 + i * 0.048, 1.75, 0.032, DARK, 0, 0, (i % 2 ? 0.5 : -0.5));   // hair
+      pb.box(0.09, 0.045, 0.02, -0.055, 1.6, 0.034, 0x2a2410); pb.box(0.09, 0.045, 0.02, 0.055, 1.6, 0.034, 0x2a2410);   // sunglasses
+      pb.box(0.03, 0.012, 0.02, 0, 1.61, 0.034, DARK);
+      pb.box(0.08, 0.018, 0.02, 0, 1.46, 0.032, GOLD);                                          // the mouth: a straight line (it's Kenji)
+      pb.box(0.03, 0.34, 0.02, 0.1, 1.38, 0.03, GOLD, 0, 0, -0.9);                              // the bass neck
+      pb.box(0.1, 0.12, 0.02, -0.03, 1.3, 0.03, GOLD, 0, 0, -0.9);                              // the bass body
+      for (i = 0; i < 5; i++) pb.box(0.4 - i * 0.02, 0.018, 0.02, 0, 1.25 + i * 0.012 - 0.03, 0.028, i % 2 ? GOLD : DARK);   // the "frame" row
+      var portrait = new THREE.Mesh(pb.build(), ctx.mats.vc); show(portrait, false); scene.add(portrait);
+      var WRAP = [[0xc0392b, 0xf2d15b], [0x2f7fff, 0xffffff], [0x34a853, 0xd23c3c], [0x9b6bff, 0xffcc00], [0xf28c28, 0x2a2a2e], [0xe0e0e0, 0xd23c3c]];
+      var SPOT = [[0, 0.11, 0, 0.26, 0.22, 0.24, 0.2], [0.24, 0.08, 0.05, 0.2, 0.16, 0.18, -0.3], [-0.2, 0.07, 0.08, 0.18, 0.14, 0.2, 0.5],
+        [0.05, 0.3, 0.02, 0.18, 0.16, 0.16, -0.15], [0.12, 0.1, 0.26, 0.16, 0.2, 0.14, 0.1], [-0.12, 0.28, 0.06, 0.12, 0.12, 0.12, 0.7]];
+      function pile(n) {
+        var gb = new ctx.Builder({ jitter: 0.006, seed: 60 + n });
+        gb.at(-1.22, 0, -2.3, 0.25);
+        for (var k = 0; k < n; k++) {
+          var q = SPOT[k], c = WRAP[k];
+          gb.push(q[0], q[1], q[2], 0, q[6], 0);
+          gb.box(q[3], q[4], q[5], 0, 0, 0, c[0]);
+          gb.box(q[3] + 0.006, q[4] + 0.006, 0.03, 0, 0, 0, c[1]); gb.box(0.03, q[4] + 0.006, q[5] + 0.006, 0, 0, 0, c[1]);   // ribbon
+          gb.box(0.07, 0.04, 0.05, 0, q[4] / 2 + 0.02, 0, c[1]);                                                               // bow
+          gb.pop();
+        }
+        var m = new THREE.Mesh(gb.build(), ctx.mats.vc); show(m, false); scene.add(m);
+        return m;
+      }
+      var piles = { 1: pile(1), 3: pile(3), 6: pile(6) };
+      var mb = new ctx.Builder({ jitter: 0.01, seed: 66 });
+      mb.at(-1.22, 0, -2.3, 0.25);                                                              // on the floor beside the pile
+      for (i = 0; i < 5; i++) mb.box(0.24, 0.012, 0.15, 0.42 + (i % 2) * 0.02, 0.008 + i * 0.013, (i % 3) * 0.015, i % 2 ? 0xf4efe2 : 0xe8f0fa, 0, (i - 2) * 0.12, 0);
+      mb.box(0.05, 0.004, 0.03, 0.48, 0.074, 0.02, 0xd23c3c);                                  // a stamp
+      var mail = new THREE.Mesh(mb.build(), ctx.mats.vc); show(mail, false); scene.add(mail);
+      var cur = { portrait: false, gifts: 0, mail: false };
+      return {
+        set: function (st) {
+          var list = st.gifts || [], g = 0, m = 0, mac = false;
+          for (var j = 0; j < list.length; j++) {
+            if (list[j].id === 'macaroni_kenji') mac = true;
+            else if (list[j].kind === 'mail') m++; else g++;
+          }
+          cur.portrait = mac; cur.mail = m > 0; cur.gifts = g >= 5 ? 6 : g >= 3 ? 3 : g >= 1 ? 1 : 0;
+          show(portrait, mac); show(mail, cur.mail);
+          for (var k in piles) show(piles[k], +k === cur.gifts);
+        },
+        state: function () { return { portrait: cur.portrait, gifts: cur.gifts, mail: cur.mail }; }
       };
     }
     function yardProp(fill) {

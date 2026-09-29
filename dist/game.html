@@ -1639,6 +1639,387 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 })(window.GG);
 
 </script>
+<script>/* content/bandbook.js */
+// content/bandbook.js (v0.6.1, FANS agent; Addendum 1 C5): Bandbook, the one parody social app on the garage laptop.
+// Pure data. The sim is 29_sim_fans.js (numbers: economy.fans). Tokens in post/comment/line text:
+//   {who} (the featured member's first name) {song} (newest song) {venue} {gcity} (this weekend's gig) {views} {n}
+//   + the usual career tokens ({player} {band} {city} {rival} {name:<id>}). Kenji never speaks (he is filmed, never quoted).
+// Shapes:
+//   posts[kind]      : [text]   kinds: rehearsal | gig | teaser | meme | bts | exclusive (fan club only)
+//   kinds[kind]      : { label, icon }
+//   viral.good       : [text]   viral.cringe: [{ who: memberId|'any', text }]  ('any' = a random active member, never Kenji)
+//   comments.good|mixed|bad|hater|rival|rivalExclusive : [text];  handles.fan|hater: [name]
+//   superfans        : [{ id, name, short, icon, blurb, start|story|reserved, comments: [text] }]
+//   gigLines.*       : lines for the gig result (Dale at every show, superfans on tour, the trucker, a hater)
+//   mail / gifts     : [{ id, from, text }] (random arrivals) ; scripted gifts come from cards (fan: { gift: id })
+//   tiers            : Patreeon tiers [{ id, name, price ($/month), perk, minMembers }]
+//   scandals         : [{ card, who }] (scandal card id -> the member who posted the dumb thing)
+//   cards            : fan cards (Monday schema; forced only, never drawn): scandals + superfans + the fan club.
+//                      Extra effect key: fan: { hater|super: ±share, superfan: { id: ±mood }, gift: id, club: 'open',
+//                      clubHappy: ±n } (GG.fans.apply).
+(function (GG) {
+  var HD = { band: ['hail_damage'] };
+  GG.content.bandbook = {
+    name: 'Bandbook',
+    tagline: 'Where bands post. Where uncles comment.',
+    kinds: {
+      rehearsal: { label: 'Rehearsal clip', icon: '🎬' }, gig: { label: 'Gig announcement', icon: '📣' },
+      teaser: { label: 'Song teaser', icon: '🎵' }, meme: { label: 'Meme', icon: '🐿️' },
+      bts: { label: 'Behind the scenes', icon: '📸' }, exclusive: { label: 'Patreeon exclusive', icon: '🔒' }
+    },
+    posts: {
+      rehearsal: [
+        'Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is Dad\'s deep freeze.',
+        'Garage rehearsal, 40 seconds. Mom walks through the shot with a laundry basket at 0:22. She is now the most-liked part.',
+        'Full run-through of “{song}”. The furnace kicks in during the quiet part. It\'s in the band now.',
+        'Rehearsal clip: {player} counts in, drops a stick, counts in again. Nobody edits anything. Authentic.',
+        'Practice footage: {who} and {player} lock in so tight the garage door rattles along in time.'
+      ],
+      gig: [
+        'THIS SATURDAY: {band} at {venue}, {gcity}. Doors at 8. Parking is a field. Bring a toque.',
+        'Gig announcement! {venue}, {gcity}. Poster by {who}. The font is illegible. That\'s the point.',
+        'We\'re playing {venue} in {gcity} this weekend. Bring this post for nothing. We will wave, though.',
+        '{venue}, {gcity}, Saturday. Last time the crowd was 12 people and a dog. Let\'s get it to 13.'
+      ],
+      teaser: [
+        'New song teaser: nine seconds of “{song}”. The rest is coming. The rest is also louder.',
+        '“{song}”, work in progress. The riff arrived in a grocery-store parking lot. The parking lot wants credit.',
+        'Sneak peek: the chorus of “{song}”, recorded on a phone inside a sock drawer for the acoustics.',
+        'Teaser for “{song}”. Turn it up. No, more. The neighbours will understand eventually.'
+      ],
+      meme: [
+        'Meme: a photo of a frozen van captioned "tour support". That\'s it. That\'s the post.',
+        'Which member of {band} are you, based on your favourite perogy filling? Wrong answers only.',
+        'Meme: "Things I\'d do for a gig": drive six hours to Gravelbourg with my own extension cord.',
+        'POLL: is a Saskatoon berry a berry? {who} has been arguing about it since Tuesday.',
+        'Meme: our van parked next to a gopher. Caption: "the whole crew". The gopher did not consent.'
+      ],
+      bts: [
+        'Behind the scenes: {who} ironing the backdrop with a waffle iron. Don\'t ask how. Don\'t ask why.',
+        'BTS: the band eating perogies off a kick drum case. Catering has arrived.',
+        'Behind the scenes: tonight\'s setlist is written on a pizza box. The pizza box is now framed.',
+        'BTS: loading the van at −31. {who} carries the bass cab like a newborn.',
+        'Behind the scenes: {player} practising on pillows at 2 a.m. so Mom can sleep. Mom cannot sleep.'
+      ],
+      exclusive: [
+        'Members only: forty minutes of Kenji tuning his bass. Members call it "meditative". He does not look up once.',
+        'Exclusive: the demo of “{song}” with the wrong lyrics. The wrong lyrics are better.',
+        'Members only: a guided tour of the van. Featuring: the smell.',
+        'Exclusive: {who}\'s perogy recipe. It\'s Baba\'s recipe, retyped, with one typo.',
+        'Members-only livestream from the garage. 31 viewers. Dale requests the same song six times. You play it six times.'
+      ]
+    },
+    viral: {
+      good: [
+        'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
+        'VIRAL: a moose wanders past the garage window during the breakdown and appears to headbang. It\'s eating. {views} views.',
+        'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.',
+        'VIRAL: the garage door opens by itself mid-song and reveals Dad holding a leaf blower. {views} views.'
+      ],
+      cringe: [
+        { who: 'marcel', text: 'Wrong kind of viral: Marcel\'s dance tutorial, "The Abyssal Two-Step". {views} views, mostly laughing ones.' },
+        { who: 'marcel', text: 'Wrong kind of viral: Marcel reads his poetry over a smoke machine that will not stop. {views} views.' },
+        { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one guitar pick. {views} views.' },
+        { who: 'jaxon', text: 'Wrong kind of viral: Jaxon\'s "how to look metal at a wedding", filmed at a real wedding. {views} views.' },
+        { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
+      ]
+    },
+    comments: {
+      good: [
+        'saw them at a Legion hall, 12 people and a dog, I was the dog',
+        'my mom and I both like this. first thing we\'ve agreed on since the flood',
+        'played this in the combine. harvest went 20% faster',
+        'BEST BAND IN THE 306 🔥🔥🔥',
+        'drove in from Kindersley for the last show. worth the gas. mostly',
+        'absolutely shredding. my dog left the room. respect',
+        'my curling team warms up to this now. we are 0 and 6 but we are LOUD',
+        'grandma asked me to turn it up. GRANDMA'
+      ],
+      mixed: [
+        'not usually my thing but the drummer is working very hard',
+        'is this the band from the grain elevator poster? the one that fell down?',
+        'decent. my cousin\'s band is louder but they only know one song',
+        'turn the vocals up. no, down. no, up. I\'ll get back to you',
+        'saw them at the Legion. the perogies were great. the band was also there',
+        'why is there a lawn mower in the background of every video'
+      ],
+      bad: [
+        'they were better before anyone knew about them (last week)',
+        'sounds like a hailstorm in a coffee can. 3 stars',
+        'unfollowed. refollowed. I don\'t know what I want',
+        'who let them near a microphone. who. I want names'
+      ],
+      hater: [
+        'overrated. never heard them. still overrated',
+        'my uncle could drum like that and he\'s a snowplow',
+        'fake metal. real metal is cold. these guys have a space heater',
+        'only here to hate-watch. 14th time this week. don\'t read into it',
+        'ratio + you play the Legion + your van is a hearse',
+        'this is why Saskatchewan has no mountains. they left'
+      ],
+      rival: [
+        'So proud of you guys. Genuinely. We remember playing rooms that size! 🤘',
+        'Love this!! Great hustle. Come see how it\'s done Saturday (kidding!!) (not kidding)',
+        'Supportive comment! Keep going! We are rooting for you from the big stage.',
+        'Honestly inspiring. Our intern showed us. We had to ask who you were. Love that for you.',
+        'Great energy. A few notes: louder, tighter, more like us. But great energy!',
+        'Can\'t wait to see where you guys end up. Probably opening for us! 😊'
+      ],
+      rivalExclusive: [
+        'Subscribed at the Drumstick tier to support you guys! Every bit helps, right? 🤘',
+        'Members-only content, wow! We had members-only content once. Now we have a building.'
+      ]
+    },
+    handles: {
+      fan: ['PrairieDoom88', 'GopherGrl', 'WheatKing306', 'CombineCarl', 'BerryPieBarb', 'CurlingKev', 'PotashPete', 'SloughQueen',
+        'ToqueLord', 'CanolaChris', 'BunnockBev', 'GrainElevatorGuy', 'ZamboniZoe', 'MooseJawMel', 'HailYeahHelen', 'PerogyPrince'],
+      hater: ['realmetal_only', 'OverratedOlaf', 'BootFromRegina', 'unfollow_ursula', 'HaterTad', 'ActuallyItsKevin']
+    },
+    superfans: [
+      { id: 'dale', name: 'Dale from Warman', short: 'Dale', icon: '🧢', start: true,
+        blurb: 'At every show. Front row. Lawn chair. No relation to Cousin Dale, and he would like that on the record.',
+        comments: [
+          'Dale from Warman here. I\'ll be there Saturday. Front row. Lawn chair. You know the drill.',
+          'Great post. Printed it out. It\'s on the fridge next to my grandson.',
+          'Dale again. Haven\'t missed a show since the first one. Not planning to start.',
+          'Dale from Warman: I have liked this 40 times. The app only counts one. I\'ve written to them.',
+          'Played this at my brother\'s retirement party. He retired again. Early.'
+        ] },
+      { id: 'trucker', name: 'Big Wendell', short: 'Wendell', icon: '🚛', story: true,
+        blurb: 'The trucker with the jumper cables at the Petro-Canuck in Davidson. Follows the band on the CB now.',
+        comments: [
+          'Wendell here (the jumper cables). Playing this on the CB from Davidson to Dundurn. The whole convoy\'s hooked.',
+          'Big Wendell: good highway beat on this one. Exactly 104 km/h.',
+          'Honked twice for this post. You\'ll hear it Tuesday.',
+          'Wendell: still got a set of cables with your name on them. Literally. I wrote on them.'
+        ] },
+      { id: 'japan', name: 'The president of your Japanese fan club', short: 'The President', icon: '🎌', reserved: 'v0.7',
+        blurb: 'Somewhere overseas, somebody is already laminating membership cards. (Arrives with the world tour, v0.7.)',
+        comments: [] }
+    ],
+    gigLines: {
+      dale: [
+        'Dale from Warman is in the front row. Lawn chair, thermos, a homemade shirt. Show number {n}.',
+        'Dale from Warman made it again ({n} shows). He knows every word. Some of them are the real words.',
+        'Dale from Warman holds up a sign: "DALE ♥ {band}". New sign every show. This is sign {n}.',
+        'Dale from Warman is here. He drove the whole way at exactly the speed limit, he wants you to know.'
+      ],
+      daleFar: [
+        'Dale from Warman is in the front row in {gcity}. He took the bus. It took two days. Show number {n}.',
+        'Dale from Warman made it to {gcity}. First time this far from Warman. He brought his own lawn chair on the bus.'
+      ],
+      follow: [
+        '{n} superfans followed you to {gcity}. One brought a banner. One brought a stick to hold up the banner.',
+        '{n} superfans made the drive to {gcity}. They know the setlist better than Marcel does.'
+      ],
+      trucker: [
+        'Big Wendell parks the rig across six stalls and watches from the cab with the door open. Two honks after every song.',
+        'Big Wendell is at the back by the bar, jumper cables over one shoulder like a scarf. Just in case.'
+      ],
+      hater: [
+        'A hater holds up a sign that says "TOO LOUD". He stays for the whole set. He stays for the encore.',
+        'A guy in the back yells "OVERRATED" after every song. He also yells "ONE MORE". Complicated man.'
+      ]
+    },
+    mail: [
+      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
+      { id: 'mail_nan', from: 'someone\'s nan in Melfort', text: '"Too loud. Lovely kids. Enclosed: a doughnut-hole coupon from 1998." It\'s expired. It\'s perfect.' },
+      { id: 'mail_poem', from: 'a poet in Biggar', text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
+      { id: 'mail_teacher', from: 'a music teacher in Unity', text: '"My students now play everything at double speed. Thank you. I think."' },
+      { id: 'mail_farmer', from: 'a farmer near Rosetown', text: '"Your song got my cows to come in on time. Please write one for the chickens."' },
+      { id: 'mail_hater', from: 'a hater in Regina', text: 'Four pages on why you\'re overrated. Handwritten. Double-sided. Signed "a fan (not a fan)".' }
+    ],
+    gifts: [
+      { id: 'toque', from: 'a fan in Humboldt', text: 'A hand-knit toque in band colours. It says HALE DAMAGE. It\'s the thought.' },
+      { id: 'jam', from: 'Barb from the curling rink', text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' },
+      { id: 'abyssus_doll', from: 'a crocheter in Kindersley', text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
+      { id: 'pizza_art', from: 'an art student in Regina', text: 'Fan art on a pizza box: the band as gophers. It\'s accurate.' },
+      { id: 'casserole', from: 'somebody\'s grandma', text: 'A frozen casserole with no note. Just "EAT" in marker on the foil.' },
+      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
+    ],
+    scriptedGifts: {
+      macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },
+      cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' }
+    },
+    tiers: [
+      { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
+      { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly garage livestream.' },
+      { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a thank-you note from Kenji (a drawing of a bass).' }
+    ],
+    club: {
+      name: 'Patreeon', pitch: 'Support your favourite band\'s van repairs.',
+      locked: 'Patreeon opens in the Signed era. Until then, your superfans support you the old way: yelling.',
+      payoutChat: [
+        'Patreeon payout: {money} from {n} members. Dale is on the Full Kit tier. Of course he is.',
+        'Patreeon paid {money} this month. {n} members. One of them is our mom, at the Drumstick tier.',
+        'Patreeon: {money} from {n} members. As promised, some of it went to the van. The heater works now. Mostly.'
+      ],
+      grumbleChat: [
+        'Patreeon members are asking where the exclusives went. One of them is Dale. He is being very polite about it.',
+        'A Patreeon member posted "am I paying for a van repair I\'ll never see". Fair question.'
+      ]
+    },
+    chat: {
+      viral: [
+        'We\'re viral. Mom\'s cousin in Yorkton sent it to Mom. Mom sent it to us. Three times.',
+        'The post is everywhere. Someone at the Legion showed it to me on their phone. At the Legion.'
+      ],
+      cringe: [
+        'Everyone saw it. Everyone. My dentist saw it.',
+        'I\'m logging off forever. (Back in 20 minutes.)'
+      ]
+    },
+    // scandal card -> who posted the dumb thing (must be an active member for the card to come up)
+    scandals: [
+      { card: 'scandal_turf', who: 'marcel' }, { card: 'scandal_cover', who: 'dana' },
+      { card: 'scandal_chips', who: 'jaxon' }, { card: 'scandal_jazz', who: 'kenji' },
+      { card: 'scandal_essay', who: 'player' }, { card: 'scandal_curling', who: 'band' }
+    ],
+    cards: [
+      // ---- Scandals: a bandmate posts something dumb (forced by GG.fans after a post or a weekly roll) ----
+      { id: 'scandal_turf', type: 'fame', speaker: 'marcel', title: 'The Lawn Is Turf', gate: HD,
+        text: 'Marcel posts a lawn-care video: "My beloved lawn, hand-watered since 2019." A fan zooms in. It is artificial turf. ' +
+          'The comments are merciless. Marcel has locked himself in the van.',
+        choices: [
+          { label: 'Marcel apologizes on camera', effects: { buzz: -3, mood: { marcel: -6 }, fan: { hater: -0.02 } },
+            outcome: 'He cries a little. The turf looks great in the background. Most people forgive him. Dale mails a sympathy card.' },
+          { label: 'Double down: turf is metal', effects: { buzz: 6, mood: { marcel: 5 }, fan: { hater: 0.03 } },
+            outcome: '"Real grass dies. Turf is eternal." Half the next crowd chants it ironically. Half does not.' },
+          { label: 'Roll the turf out on stage', hint: 'Gamble: a bit, or a bigger scandal',
+            roll: { chance: 0.5, stat: 'buzz', statScale: 0.004,
+              success: { effects: { buzz: 8, fans: 20, mood: { marcel: 6 } }, outcome: 'He mows it mid-set with a push mower. The crowd loses its mind.' },
+              fail: { effects: { buzz: -4, mood: { marcel: -8 } }, outcome: 'The turf catches on the kick pedal. Marcel spends the encore untangling it.' } },
+            outcome: 'Dana finds a staple gun.' }
+        ] },
+      { id: 'scandal_cover', type: 'fame', speaker: 'dana', title: 'Dana Covers the Enemy', gate: HD,
+        text: 'Dana posts a guitar cover of a {rival} song. Caption: "honestly a banger." The group chat is on fire. ' +
+          'Marcel has typed and deleted a message eleven times.',
+        choices: [
+          { label: 'Delete it. Quietly.', effects: { buzz: -2, mood: { dana: -5 }, chemistry: 3 },
+            outcome: 'Gone in ten minutes. The screenshot is forever. {rival} comments "who deleted our song?? 😢".' },
+          { label: 'Own it. It IS a banger.', effects: { buzz: 5, chemistry: -3, fan: { hater: 0.02 } },
+            outcome: 'Dana plays it faster and better than they do. Nobody says it. Everybody thinks it.' },
+          { label: 'Tag {rival} in it', hint: 'Gamble: a feud, or a collab',
+            roll: { chance: 0.5, success: { effects: { buzz: 8, mood: { dana: 5 } }, outcome: 'They share it. Their fans find you. Some of them stay.' },
+              fail: { effects: { buzz: -3, mood: { dana: -6 } }, outcome: 'They share it as "our biggest fan". Dana will never recover.' } },
+            outcome: 'Dana hits post before anyone can grab the phone.' }
+        ] },
+      { id: 'scandal_chips', type: 'fame', speaker: 'jaxon', title: 'The Hot Take', gate: HD,
+        text: 'At 1 a.m. Jaxon posts a hot take from the band page: "ketchup chips are overrated." ' +
+          'The prairies respond by morning. Someone has made a petition. It has more signatures than you have fans.',
+        choices: [
+          { label: 'Jaxon eats a bag on camera', effects: { buzz: 4, mood: { jaxon: -4 }, fan: { hater: -0.02 } },
+            outcome: 'He eats the whole bag. He admits they are "fine". The petition is closed. His fingers stay red for a week.' },
+          { label: 'Stand with Jaxon', effects: { chemistry: 4, mood: { jaxon: 6 }, fan: { hater: 0.03 } },
+            outcome: 'A band united. A province divided. Dale posts a photo of himself eating ketchup chips "in solidarity with both sides".' },
+          { label: 'Blame a hacker', effects: { buzz: -2, mood: { jaxon: 3 } },
+            outcome: 'Nobody believes it. Mom asks what a hacker is. Jaxon tells her. It takes an hour.' }
+        ] },
+      { id: 'scandal_jazz', type: 'fame', speaker: 'dana', title: 'Kenji Likes Smooth Jazz', gate: HD,
+        text: 'Kenji\'s account liked a smooth-jazz page. One like. The metal forums have noticed. ' +
+          'Threads are titled "IS HAIL DAMAGE COMPROMISED". Dana wants to know what to do. Kenji is eating a sandwich.',
+        choices: [
+          { label: 'Let Kenji handle it', effects: { buzz: 6, mood: { kenji: 5 } },
+            outcome: 'Kenji posts one photo: his bass, standing in a snowbank. No caption. It gets more likes than the band page.' },
+          { label: 'Post a "we are still metal" video', effects: { buzz: 3, burnout: 4 },
+            outcome: 'Marcel screams at a blizzard for four minutes. The forums accept it. The neighbours do not.' },
+          { label: 'Admit it: the whole band likes jazz', effects: { chemistry: 5, fan: { hater: 0.03 } },
+            outcome: 'The forums melt down. A jazz club in Regina sends an invitation. Kenji keeps it.' }
+        ] },
+      { id: 'scandal_essay', type: 'fame', speaker: 'mom', title: 'The 3 a.m. Essay', gate: HD,
+        text: 'At 3 a.m. you replied to a hater with a 900-word essay. You cited sources. There are footnotes. ' +
+          'Mom saw it. Mom printed it. It is on the fridge, and she has highlighted the parts she liked.',
+        choices: [
+          { label: 'Delete it and sleep', effects: { burnout: -4, fan: { hater: -0.01 } },
+            outcome: 'You sleep eleven hours. The hater posts "they deleted it lol". You let it go. Growth.' },
+          { label: 'Post part two', effects: { buzz: 5, burnout: 5, fan: { hater: 0.03 } },
+            outcome: 'Part two has a bibliography. The hater replies "ok". You have won. You feel terrible.' },
+          { label: 'Let Mom reply for you', effects: { buzz: 4, chemistry: 3, fan: { hater: -0.02 } },
+            outcome: 'Mom writes "He is a good boy and he practises". The hater apologizes. Mom now has 400 followers.' }
+        ] },
+      { id: 'scandal_curling', type: 'fame', speaker: 'reporter', title: 'Is Curling a Sport?', gate: HD,
+        text: 'Brent from the Star-Pheasant has found an old poll on the band page: "is curling even a sport?" ' +
+          'Curlers have seen it. Curlers are organized. Curlers have phone trees.',
+        choices: [
+          { label: 'Play a free bonspiel social', effects: { burnout: 5, fans: 15, fan: { hater: -0.02 } },
+            outcome: 'Forty curlers, all named Barb or Dale. By the second set they are sweeping in time. Forgiven.' },
+          { label: '"No comment."', effects: { buzz: -3 },
+            outcome: 'Brent prints "no comment" as the headline. In curling font. The rink puts it on the corkboard.' },
+          { label: 'Curling IS metal. Say it.', effects: { buzz: 6, mood: { marcel: 4 } },
+            outcome: 'Marcel writes a song about granite. It is surprisingly heavy. The curlers adopt it as a walk-out song.' }
+        ] },
+      // ---- Superfans ----
+      { id: 'fans_dale_hello', type: 'fame', speaker: 'dale_warman', title: 'Dale from Warman', gate: HD,
+        text: 'A message on the band page: "Hi. Dale from Warman. I was the one in the lawn chair. I\'ll be at every show. ' +
+          'Every one. This is not a threat. It is a promise. No relation to Cousin Dale."',
+        choices: [
+          { label: 'Welcome aboard, Dale', effects: { chemistry: 3, fan: { superfan: { dale: 10 } } },
+            outcome: 'Dale replies with a thumbs-up, then a longer thumbs-up, then a photo of his lawn chair. It has a name. It is "Chair".' },
+          { label: 'Put him on the guest list forever', effects: { buzz: 2, fan: { superfan: { dale: 15 } } },
+            outcome: 'He insists on paying anyway. He pays in exact change. He brings a roll of dimes.' },
+          { label: 'Ask how he found you', effects: { chemistry: 2, fan: { superfan: { dale: 5 } } },
+            outcome: 'He heard you through the garage door from the highway. With his windows up.' }
+        ] },
+      { id: 'fans_trucker', type: 'road', speaker: 'wendell', title: 'The Jumper-Cable Story', gate: HD,
+        text: 'Driving home from a gig, the van dies at the Petro-Canuck in Davidson at 2 a.m. A semi pulls in. ' +
+          'A man named Wendell produces jumper cables longer than the van. "Heard you on the radio," he says. You have never been on the radio.',
+        choices: [
+          { label: 'Buy him a coffee and a donut', effects: { fund: -12, fan: { superfan: { trucker: 10 } } },
+            outcome: 'He tells you about every band he has ever boosted. It is a long list. You are, he says, "top five".' },
+          { label: 'Play him a song in the lot', effects: { burnout: 4, chemistry: 3, fan: { superfan: { trucker: 15 } } },
+            outcome: 'One song on a practice pad under the gas-station lights. Wendell honks the air horn at the end. A dog in Davidson howls.' },
+          { label: 'Sign his thermos', effects: { buzz: 2, fan: { superfan: { trucker: 8 } } },
+            outcome: '"Now I can never wash it," says Wendell, who has clearly never washed it.' }
+        ] },
+      { id: 'fans_macaroni', type: 'fame', speaker: 'dale_warman', title: 'A Gift from Dale', gate: HD,
+        text: 'After the show Dale hands over a package wrapped in a feed-store flyer: a macaroni portrait of Kenji. ' +
+          'Spray-painted gold. Glued to a cookie sheet. It took him, he says, "most of the winter".',
+        choices: [
+          { label: 'Hang it in the garage', effects: { chemistry: 3, fan: { gift: 'macaroni_kenji', superfan: { dale: 10 } } },
+            outcome: 'It goes up on the wall by the gig board. Kenji looks at it for a long time. He nods once. That\'s a rave.' },
+          { label: 'Let Kenji decide', effects: { mood: { kenji: 5 }, fan: { gift: 'macaroni_kenji', superfan: { dale: 8 } } },
+            outcome: 'Kenji hangs it himself, level to the millimetre, then adds one noodle that fell off. It is perfect now.' }
+        ] },
+      { id: 'fans_hater_page', type: 'fame', speaker: 'reporter', title: 'The Anti-Fan Club', gate: HD,
+        text: 'Brent from the Star-Pheasant reports on a new page: "{band} Is Overrated (Fan Club)". It has an anthem, a logo and ' +
+          'a monthly meeting at a Humboldt Legion. It has more members than some of your gigs.',
+        choices: [
+          { label: 'Show up to their meeting', hint: 'Gamble: charm the haters',
+            roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+              success: { effects: { buzz: 8, fans: 20, fan: { hater: -0.04 } }, outcome: 'You bring perogies. By dessert, three of them have joined Dale\'s group chat.' },
+              fail: { effects: { buzz: -3, mood: { marcel: -5 } }, outcome: 'They vote to make Marcel an honorary member. He is not honoured.' } },
+            outcome: 'You drive to Humboldt with a tray of perogies.' },
+          { label: 'Ignore them. Play louder.', effects: { burnout: 4, chemistry: 3 },
+            outcome: 'They review your next show anyway. "Too loud. 4 stars." It\'s their best review ever.' }
+        ] },
+      // ---- The fan club (Signed era) ----
+      { id: 'fans_patreeon', type: 'money', speaker: 'jaxon', title: 'Patreeon', gate: { era: ['signed', 'world'], band: ['hail_damage'] },
+        text: 'Jaxon found a website: Patreeon. "Support your favourite band\'s van repairs." Superfans pay monthly; you post ' +
+          'exclusive stuff for them. Tiers: Drumstick, Snare, Full Kit. Dale has already asked where to send the cheque.',
+        choices: [
+          { label: 'Open the fan club', effects: { buzz: 3, fan: { club: 'open' } },
+            outcome: 'Patreeon is live. First member: Dale, Full Kit, at 12:01 a.m. Second member: Mom, Drumstick, "to be supportive".' },
+          { label: 'Only if Dale gets it free', effects: { chemistry: 3, fan: { club: 'open', superfan: { dale: 15 } } },
+            outcome: 'Dale refuses the free membership and pays double. He has never been happier. Patreeon is live.' },
+          { label: 'Not yet. We\'re artists.', effects: { chemistry: 3, mood: { marcel: 4 } },
+            outcome: 'Marcel gives a speech about art. The van makes a noise during it. Jaxon bookmarks the website.' }
+        ] },
+      { id: 'fans_club_grumble', type: 'money', speaker: 'dale_warman', title: 'Patreeon Grumbles', gate: { era: ['signed', 'world'], band: ['hail_damage'] },
+        text: 'A polite message from Dale, on behalf of "the members": it\'s been a while since an exclusive. Some folks are ' +
+          'asking what the money\'s for. Dale is not asking. Dale would never. He just thought you should know.',
+        choices: [
+          { label: 'Film an exclusive tonight', effects: { burnout: 5, fan: { clubHappy: 25 } },
+            outcome: 'A 50-minute livestream of the band fixing the van heater. Members love it. The heater still doesn\'t work.' },
+          { label: 'Send every member a postcard', effects: { fund: -150, fan: { clubHappy: 15 } },
+            outcome: 'Four hundred postcards of the Moose Hearse. Dale frames his. Mom frames hers. Kenji draws a bass on each.' },
+          { label: 'They\'ll live', effects: { burnout: -4, fan: { clubHappy: -10, super: -0.01 } },
+            outcome: 'Some cancel. Dale doesn\'t. Dale says it\'s fine. It sounds like it isn\'t fine.' }
+        ] }
+    ]
+  };
+})(window.GG);
+
+</script>
 <script>/* content/bands.js */
 // content/bands.js: the four hand-made bands (you are the drummer in each) and their rivals.
 // Shapes (see CONTENT SCHEMAS in 02_contracts.js):
@@ -4133,6 +4514,26 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       bot: { avgEnter: 0.75 }
     },
 
+    // ---- Fans (29_sim_fans.js, v0.6.1: Bandbook posts, virality, fan types, superfans, mail + gifts, Patreeon) --------
+    fans: {
+      shares: { start: { super: 0.06, casual: 0.92, hater: 0.02 }, drift: 0.15,   // shares of the ONE fan count
+        superBase: 0.04, superChem: 0.04, superClub: 0.02, superRange: [0.03, 0.18],
+        haterBase: 0.01, haterFame: 0.05, haterRange: [0.005, 0.3] },            // haters grow with log10(fans / 100)
+      post: { buzz: 1, fans: 1, fansPer: 0.0015, max: 24, likes: 0.08, streams: 0.01,
+        kinds: { rehearsal: 1, gig: 1.2, teaser: 1.1, meme: 0.9, bts: 1 } },
+      viral: { base: 0.04, weird: { meme: 0.05, bts: 0.02 }, burnout: 0.02, buzzPer: 0.0004, max: 0.2, cringe: 0.3,
+        buzz: 9, cringeBuzz: 6, fans: 15, fansPer: 0.025, cringeFans: 0.5, mood: -6, hater: 0.02, super: 0.005, streams: 0.06 },
+      scandal: { post: 0.03, weekly: 0.01, burnout: 0.02, cooldown: 6, fromWeek: 4 },
+      cardGap: 3, cardFrom: 6,   // weeks between fan cards; none before week 6
+      gig: { followKm: 60, followShare: 0.03, followCap: 0.08, trucker: 0.35, buzzAt: 5, dale: { S: 3, A: 3, B: 1, C: 1, D: -2 } },
+      mail: { chance: 0.1, perSuper: 0.00005, max: 0.3 }, gift: { chance: 0.04, perSuper: 0.00003, max: 0.14 }, giftsMax: 30,
+      superfans: { moodStart: 70, moodHome: 65, drift: 1, daleGiftAfter: 6, truckerAfterGigs: 3, truckerKm: 80 },
+      club: { cut: 0.12, join: 0.005, maxMembers: 60, happyStart: 70, decay: 7, exclusive: 18, exclusiveAgain: 5,
+        exclusiveBurnout: 1, churnBelow: 30, churn: 0.1, move: 0.4, redecline: 8, grumbleBelow: 30, grumbleGap: 6,
+        tierShare: { drumstick: 0.6, snare: 0.3, full_kit: 0.1 }, van: 2 },
+      bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
+    },
+
     // ---- Bots (tools/balance.js and tests; GG.career.botPlan/botChoice) ---
     bot: {
       avgSmart: 0.5,           // avg bot takes the best-valued card choice this often, else a random one
@@ -5173,7 +5574,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     { id: 'barb', name: 'Barb',
       blurb: 'Runs the lounge at the Warman Curling Rink. Everyone there is named Barb or Dale. She has been both.' },
     { id: 'dale', name: 'Cousin Dale',
-      blurb: 'Your cousin. Moves apartments every six months. Always owns a piano. Pays in cash and pizza.' }
+      blurb: 'Your cousin. Moves apartments every six months. Always owns a piano. Pays in cash and pizza.' },
+    // v0.6.1 (FANS agent): recurring named superfans (content/bandbook.js superfans)
+    { id: 'dale_warman', name: 'Dale from Warman',
+      blurb: 'Your first superfan. At every show, front row, lawn chair. No relation to Cousin Dale; he wants that on the record.' },
+    { id: 'wendell', name: 'Big Wendell',
+      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' }
   ];
 
   var npcs = {};
@@ -7578,6 +7984,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       else if (k === 'repay' && v) parts.push('Pay back ' + U.fmtMoney(v));
       else if (k === 'member' && v && GG.drama) parts.push(GG.drama.memberSummary(state, v));
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
+      else if (k === 'fan' && v && GG.fans) { var ft = GG.fans.effectText(v); if (ft) parts.push(ft); }   // v0.6.1 fan cards
     });
     return parts.join(' · ');
   };
@@ -7627,7 +8034,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   // + v0.5 studio event cards (drawn by GG.labels.studioEvent on Mondays of studio weeks).
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : []);
+    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
+      GG.fans ? GG.fans.cards() : []);   // v0.6.1: fan cards (scandals, superfans, Patreeon; forced by GG.fans, never drawn)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -7768,6 +8176,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     };
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
+    if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -7804,7 +8213,8 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
     var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : holiday || drawCard(state, rng);
+    var fan = !forced && !studio && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : holiday || (fan && fan.card) || drawCard(state, rng);
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
@@ -7837,6 +8247,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     autoAdvanceChain(state, card, d);
     if (GG.drama) GG.drama.afterCard(state, card);
     if (GG.rival) GG.rival.afterCard(state, card);   // v0.6: a resolved poach card is a showdown
+    if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -7905,12 +8316,13 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       addStat(state, 'burnout', A.burnout, d);
       GG.emit('song:written', { song: song, reactions: reactions });
     },
-    promote: function (state, A, f, rng, d) {
+    promote: function (state, A, f, rng, d, lines) {
       addStat(state, 'fund', -A.cost, d);
       if (GG.labels) GG.labels.promoBlock(state, f, d);   // v0.5: hype for a scheduled release
       addStat(state, 'buzz', rngRound(A.buzz * f, rng), d);
       addStat(state, 'fans', rngRound(rng.int(A.fans[0], A.fans[1]) * f, rng), d);
       addStat(state, 'burnout', A.burnout, d);
+      if (GG.fans) GG.fans.post(state, { f: f, d: d, lines: lines });   // v0.6.1: the block posts to Bandbook (own seeded RNG)
     },
     // v0.3: the gig board. Takes the board pick (UI: GG.ui.openBoard at Go; bots: botBook), 'skip' = no gig,
     // no pick at all = the best listing (flows without a board). Already booked, or skipped: posters (buzz).
@@ -8144,6 +8556,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
     if (GG.labels) GG.labels.weekly(state, rng, wrap);  // v0.5: offers, deals, releases, charts, royalties, Loonies
     if (GG.rival) GG.rival.weekly(state, rng, wrap);    // v0.6: the rival's career, heat, forfeits, cracking (wrap.rival)
+    if (GG.fans) GG.fans.weekly(state, wrap);           // v0.6.1: fan types, mail + gifts, Patreeon payouts (wrap.fans; own RNG)
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -8180,6 +8593,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     v += (fx.drumSkill || 0) * W.drumSkill + memberSum(state, fx.mood) * W.mood + memberSum(state, fx.skill) * W.skill;
     if (fx.book && !state.gig) v += W.book;
     if (fx.member && GG.drama) v += GG.drama.botValue(state, fx.member);
+    if (fx.fan && GG.fans) v += GG.fans.botValue(state, fx.fan);   // v0.6.1
     if (fx.payCut) v -= fx.payCut * 60;
     if (fx.repay) v += 2 - Math.min(fx.repay, state.debtToParents || 0) * W.fund;
     return v;
@@ -8256,6 +8670,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
     if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release
+    if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
@@ -8845,6 +9260,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   gig.applyResult = function (state, r) {
+    if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
@@ -13031,6 +13447,639 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 })(window.GG);
 
 </script>
+<script>/* 29_sim_fans.js */
+// 29_sim_fans.js: fans and Bandbook (v0.6.1, FANS agent; Addendum 1 C5). Pure sim: no DOM or audio. Seeded RNGs only:
+// every roll uses its own RNG seeded by career seed + week + a salt + the post counter, so it never shifts the career RNG.
+// Content: content/bandbook.js (posts, comments, superfans, mail, gifts, Patreeon tiers, fan cards); numbers: economy.fans.
+//  - Promote blocks post automatically (career ACT.promote -> post): the kind is picked from band state (a booked gig ->
+//    announcement, a new song -> teaser, rehearsals -> clip, studio/van -> behind the scenes, memes). Posts add buzz, new
+//    fans and album streams on top of the old Promote numbers; each has a small viral chance (weirder = likelier), good or
+//    the wrong kind (a cringe member: buzz up, their mood down, haters up). 2–4 generated comments by sentiment + the
+//    rival's supportive comment on every post; Dale and Wendell comment too; haters get their own comments.
+//  - Fans stay ONE count (state.fans); state.fanTypes are shares { super, casual, hater } that drift weekly (superfans with
+//    chemistry and a happy fan club, haters with fame and scandals).
+//  - Named superfans (state.superfans): Dale from Warman (from day one; at every show, in the crowd and the comments),
+//    Big Wendell the jumper-cable trucker (met through a fan card), the Japanese fan-club president (reserved for v0.7).
+//  - Scandals: a post (or a weekly roll: bandmates post on their own) queues a scandal choice card for next Monday.
+//  - Fan mail + gifts (state.gifts) arrive weekly by chance; Dale's macaroni portrait of Kenji comes through a card.
+//  - Patreeon (state.fanClub, Signed era): opened through a card or the Bandbook app; exclusive posts keep members happy;
+//    members + a monthly payout (every second week) depend on superfans and happiness.
+// API (GG.fans):
+//   cfg() · content() · init(s) · ensure(s) · migrate(s) · shares(s) · counts(s) {total, super, casual, hater} · sentiment(s)
+//   post(s, { f, d, lines, kind }) POST · exclusive(s, { d, lines }) POST|null · canExclusive(s) · feed(s, n)
+//   gigShape(s, g, r) (GG.gig.applyResult: superfans follow on tour, Dale, Wendell, hecklers; crowd/buzz only)
+//   weekly(s, wrap) (career.endWeek; wrap.fans) · forcedCard(s) {card}|null (career.startWeek) · afterCard(s, card, i, success, d)
+//   apply(s, v, d) (fan cards' 'fan' effect, applied by afterCard) · effectText(v) · cards() · card(id) · openClub(s) · club(s) view · tiers(s)
+//   superfanList(s) · superfanDef(id) · gifts(s) · addGift(s, id) · kindInfo(kind) · botValue(s, v) · botWeek(s, style)
+// POST = { id, w, kind, who, text, likes, shares, plays, viral: null|'good'|'cringe', exclusive, streams,
+//          fx: { buzz, fans }, comments: [{ who: 'fan'|'hater'|'rival'|'dale'|'trucker', name, text }] }
+// Events: 'fans:post' { post } · 'fans:viral' { post, kind } · 'fans:scandal' { card, who } · 'fans:gift' { gift }
+//         · 'fans:club' { action: 'open'|'exclusive'|'payout', club }
+(function (GG) {
+  var C = GG.contracts, U = GG.util;
+  var F = GG.fans = GG.fans || {};
+
+  var DEF = {
+    shares: { start: { super: 0.06, casual: 0.92, hater: 0.02 }, drift: 0.15, superBase: 0.04, superChem: 0.04, superClub: 0.02,
+      superRange: [0.03, 0.18], haterBase: 0.01, haterFame: 0.05, haterRange: [0.005, 0.3] },
+    post: { buzz: 1, fans: 1, fansPer: 0.0015, max: 24, likes: 0.08, streams: 0.01, kinds: { rehearsal: 1, gig: 1.2, teaser: 1.1, meme: 0.9, bts: 1 } },
+    viral: { base: 0.04, weird: { meme: 0.05, bts: 0.02 }, burnout: 0.02, buzzPer: 0.0004, max: 0.2, cringe: 0.3, buzz: 9, cringeBuzz: 6,
+      fans: 15, fansPer: 0.025, cringeFans: 0.5, mood: -6, hater: 0.02, super: 0.005, streams: 0.06 },
+    scandal: { post: 0.03, weekly: 0.01, burnout: 0.02, cooldown: 6, fromWeek: 4 },
+    cardGap: 3, cardFrom: 6,
+    gig: { followKm: 60, followShare: 0.03, followCap: 0.08, trucker: 0.35, buzzAt: 5, dale: { S: 3, A: 3, B: 1, C: 1, D: -2 } },
+    mail: { chance: 0.1, perSuper: 0.00005, max: 0.3 }, gift: { chance: 0.04, perSuper: 0.00003, max: 0.14 }, giftsMax: 30,
+    superfans: { moodStart: 70, moodHome: 65, drift: 1, daleGiftAfter: 6, truckerAfterGigs: 3, truckerKm: 80 },
+    club: { cut: 0.12, join: 0.005, maxMembers: 60, happyStart: 70, decay: 7, exclusive: 18, exclusiveAgain: 5, exclusiveBurnout: 1,
+      churnBelow: 30, churn: 0.1, move: 0.4, redecline: 8, grumbleBelow: 30, grumbleGap: 6,
+      tierShare: { drumstick: 0.6, snare: 0.3, full_kit: 0.1 }, van: 2 },
+    bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
+  };
+  var KINDS = ['rehearsal', 'gig', 'teaser', 'meme', 'bts'];
+  function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
+  function merge(a, b) {
+    var o = {}, k;
+    for (k in a) o[k] = a[k];
+    for (k in b) o[k] = isObj(a[k]) && isObj(b[k]) ? merge(a[k], b[k]) : b[k];
+    return o;
+  }
+  var cache = { src: null, val: DEF };
+  F.cfg = function () {
+    var e = GG.content.economy && GG.content.economy.fans;
+    if (!e) return DEF;
+    if (cache.src !== e) { cache.src = e; cache.val = merge(DEF, e); }
+    return cache.val;
+  };
+  var EMPTY = { kinds: {}, posts: {}, viral: { good: [], cringe: [] }, comments: {}, handles: { fan: ['a_fan'], hater: ['a_hater'] },
+    superfans: [], gigLines: {}, mail: [], gifts: [], scriptedGifts: {}, tiers: [], club: {}, chat: {}, scandals: [], cards: [] };
+  F.content = function () { return GG.content.bandbook || EMPTY; };
+  function K() { return F.content(); }
+
+  /* ---- Small helpers ------------------------------------------------------------------------------------------ */
+  function rngOf(s, salt) {
+    var b = s.bandbook || {};
+    return GG.RNG(GG.hashSeed((s.seed >>> 0) + '|fans|' + salt + '|' + s.totalWeek + '|' + (b.seq || 0)));
+  }
+  function rr(x, rng) { var f = Math.floor(x); return f + (rng.chance(x - f) ? 1 : 0); }
+  function active(s) { return (s.members || []).filter(function (m) { return m.status === 'active'; }); }
+  function isActive(s, id) {
+    if (id === 'player' || id === 'band') return true;
+    return active(s).some(function (m) { return m.id === id; });
+  }
+  function nameOf(s, id) {
+    if (id === 'player') return (s.player && (s.player.nick || s.player.name)) || 'you';
+    if (id === 'band') { var b = GG.career && GG.career.band ? GG.career.band(s) : null; return b ? b.name : 'the band'; }
+    return GG.career && GG.career.memberName ? GG.career.memberName(s, id) : id;
+  }
+  function newestSong(s) {
+    var l = s.songs || [], best = null;
+    for (var i = 0; i < l.length; i++) if (!best || (l[i].written || 0) >= (best.written || 0)) best = l[i];
+    return best;
+  }
+  function rivalName(s) { return GG.rival && GG.rival.name ? GG.rival.name(s) : 'Tundra Wraith'; }
+  // Bandbook tokens, then the career tokens.
+  function fill(s, text, ctx) {
+    ctx = ctx || {};
+    var t = String(text == null ? '' : text).replace(/\{(who|song|venue|gcity|views|n|money)\}/g, function (all, k) {
+      if (k === 'who') return ctx.who ? nameOf(s, ctx.who) : 'the band';
+      if (k === 'song') { var sg = newestSong(s); return ctx.song || (sg && sg.title) || 'the new one'; }
+      if (k === 'venue') return ctx.venue || (s.gig && s.gig.name) || 'the Legion';
+      if (k === 'gcity') return ctx.gcity || (s.gig && s.gig.city) || s.city || 'Saskatoon';
+      if (k === 'views') return U.fmtNum(ctx.views || 0);
+      if (k === 'n') return String(ctx.n != null ? ctx.n : '');
+      return U.fmtMoney(ctx.money || 0);
+    });
+    return GG.career && GG.career.fillText ? GG.career.fillText(s, t) : t;
+  }
+  function headroom(s) {
+    var scene = GG.world && GG.world.scene ? GG.world.scene(s) : ((GG.content.economy && GG.content.economy.gig || {}).localScene || 6000);
+    return U.clamp(1 - (s.fans || 0) / scene, 0.05, 1);
+  }
+  function round4(x) { return Math.round(x * 10000) / 10000; }
+  function chat(s, who, text, d) { if (GG.career && GG.career.postChat && text) GG.career.postChat(s, who, text, d || null); }
+  function speakerFor(s, prefer) {
+    for (var i = 0; i < prefer.length; i++) if (isActive(s, prefer[i]) && prefer[i] !== 'kenji') return prefer[i];
+    var a = active(s).filter(function (m) { return m.id !== 'kenji'; });
+    return a.length ? a[0].id : null;
+  }
+
+  /* ---- State ------------------------------------------------------------------------------------------------ */
+  // Fills every fan field that is missing (idempotent; never overwrites a valid value).
+  F.ensure = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    var Q = F.cfg();
+    var t = s.fanTypes;
+    if (!isObj(t) || !isFinite(t.super) || !isFinite(t.hater) || !isFinite(t.casual)) s.fanTypes = U.clone(Q.shares.start);
+    if (!isObj(s.bandbook)) s.bandbook = { posts: [], viral: 0, scandals: 0 };
+    var b = s.bandbook;
+    if (!Array.isArray(b.posts)) b.posts = [];
+    if (!isFinite(b.viral)) b.viral = 0;
+    if (!isFinite(b.scandals)) b.scandals = 0;
+    if (!isFinite(b.seq)) b.seq = b.posts.length;
+    if (!isFinite(b.streams)) b.streams = 0;
+    if (b.pending === undefined) b.pending = null;
+    if (!isObj(s.superfans)) s.superfans = {};
+    K().superfans.forEach(function (d) {
+      if (d.start && !isObj(s.superfans[d.id])) s.superfans[d.id] = { seen: 0, mood: Q.superfans.moodStart, since: s.totalWeek || 1 };
+    });
+    if (s.fanClub === undefined || (s.fanClub !== null && !isObj(s.fanClub))) s.fanClub = null;
+    if (!Array.isArray(s.gifts)) s.gifts = [];
+    return s;
+  };
+  F.init = function (s) { return F.ensure(s); };
+  F.shares = function (s) { F.ensure(s); return s.fanTypes; };
+  F.counts = function (s) {
+    var t = F.shares(s), n = Math.max(0, Math.round(s.fans || 0));
+    var sup = Math.round(n * t.super), hat = Math.round(n * t.hater);
+    return { total: n, super: sup, hater: hat, casual: Math.max(0, n - sup - hat) };
+  };
+  function setShare(s, key, v) {
+    var S = F.cfg().shares, t = F.shares(s), r = key === 'super' ? S.superRange : S.haterRange;
+    t[key] = round4(U.clamp(v, r[0], r[1]));
+    t.casual = round4(Math.max(0, 1 - t.super - t.hater));
+  }
+  function shiftShare(s, key, dv) { setShare(s, key, F.shares(s)[key] + dv); }
+  // 'good' | 'mixed' | 'bad': buzz, the last gig, chemistry, haters.
+  F.sentiment = function (s) {
+    var g = s.lastGig && s.lastGig.grade, gs = { S: 0.25, A: 0.2, B: 0.08, C: 0, D: -0.2 }[g] || 0;
+    var x = (s.buzz || 0) / 100 * 0.6 + gs + ((s.chemistry == null ? 50 : s.chemistry) - 50) / 250 - F.shares(s).hater;
+    return x >= 0.35 ? 'good' : x >= 0.12 ? 'mixed' : 'bad';
+  };
+  F.kindInfo = function (kind) { var k = K().kinds[kind] || {}; return { id: kind, label: k.label || kind, icon: k.icon || '📘' }; };
+  F.superfanDef = function (id) { return K().superfans.filter(function (d) { return d.id === id; })[0] || null; };
+
+  /* ---- Comments --------------------------------------------------------------------------------------------- */
+  function pickLine(pool, rng, used) {
+    pool = pool || [];
+    for (var i = 0; i < 5; i++) { var x = rng.pick(pool); if (x != null && !used[x]) { used[x] = 1; return x; } }
+    return rng.pick(pool) || '';
+  }
+  var POOL_MIX = { good: [0.7, 0.25, 0.05], mixed: [0.35, 0.5, 0.15], bad: [0.15, 0.4, 0.45] };
+  function comments(s, post, rng) {
+    var CM = K().comments || {}, H = K().handles || EMPTY.handles, t = F.shares(s), sf = s.superfans || {};
+    var sent = F.sentiment(s), used = {}, names = {}, special = [], out = [];
+    function handle(list) { for (var i = 0; i < 6; i++) { var h = rng.pick(list); if (!names[h]) { names[h] = 1; return h; } } return rng.pick(list); }
+    var dale = F.superfanDef('dale'), trk = F.superfanDef('trucker');
+    if (sf.dale && dale && (post.kind === 'gig' || post.exclusive || rng.chance(0.55))) special.push({ who: 'dale', name: dale.name, text: pickLine(dale.comments, rng, used) });
+    if (sf.trucker && trk && rng.chance(0.3)) special.push({ who: 'trucker', name: trk.name, text: pickLine(trk.comments, rng, used) });
+    if (!post.exclusive && rng.chance(Math.min(0.9, t.hater * 4 + (post.viral === 'cringe' ? 0.5 : 0) + (sent === 'bad' ? 0.2 : 0)))) {
+      special.push({ who: 'hater', name: handle(H.hater), text: pickLine(CM.hater, rng, used) });
+    }
+    var n = Math.min(4, Math.max(rng.int(2, 4), special.length));
+    out = special.slice(0, n);
+    var mix = POOL_MIX[sent];
+    while (out.length < n) {
+      var x = rng.next(), pool = x < mix[0] ? 'good' : x < mix[0] + mix[1] ? 'mixed' : 'bad';
+      out.push({ who: 'fan', name: handle(H.fan), text: pickLine(CM[pool], rng, used) });
+    }
+    out = rng.shuffle(out);
+    out.push({ who: 'rival', name: rivalName(s), text: pickLine(post.exclusive ? CM.rivalExclusive : CM.rival, rng, used) });   // on EVERY post
+    return out.map(function (c) { return { who: c.who, name: c.name, text: fill(s, c.text, { who: post.who }) }; });
+  }
+
+  /* ---- Posts ------------------------------------------------------------------------------------------------ */
+  function pickKind(s, rng) {
+    var w = { rehearsal: 1, gig: 0, teaser: 0, meme: 0.8, bts: 0.9 }, song = newestSong(s);
+    if (s.gig) w.gig = 3;
+    if (song) w.teaser = (s.totalWeek - (song.written || 0) <= 3 ? 2.5 : 0.8);
+    if (s.plan && s.plan.indexOf('rehearse') >= 0) w.rehearsal += 1.5;
+    if (GG.labels && GG.labels.inSession && GG.labels.inSession(s)) { w.bts += 2; w.teaser += 1; }
+    if ((s.stats && s.stats.gigs) > 0) w.bts += 0.4;
+    if ((s.burnout || 0) > 70) w.meme += 1;   // exhausted bands post weird things
+    return rng.weighted(KINDS, function (k) { return w[k]; }) || 'meme';
+  }
+  function pickText(s, kind, rng) {
+    var pool = (K().posts || {})[kind] || [], recent = {};
+    s.bandbook.posts.slice(-6).forEach(function (p) { if (p.kind === kind) recent[p.t] = 1; });
+    var idx = rng.int(0, Math.max(0, pool.length - 1));
+    for (var i = 0; i < 4 && recent[idx]; i++) idx = rng.int(0, Math.max(0, pool.length - 1));
+    return { t: idx, text: pool[idx] || 'New post from {band}.' };
+  }
+  function store(s, post) {
+    var b = s.bandbook, max = F.cfg().post.max;
+    b.posts.push(post);
+    if (b.posts.length > max) b.posts.splice(0, b.posts.length - max);
+  }
+  function bumpStreams(s, x, f) {
+    if (!GG.labels || !GG.labels.released) return 0;
+    var rel = GG.labels.released(s).filter(function (a) { return a.streamRate > 0; }), a = rel[rel.length - 1];
+    if (!a) return 0;
+    var add = Math.round(a.streamRate * x * (f || 1));
+    a.streamRate += add;
+    return add;
+  }
+  function queueScandal(s, rng, source) {
+    var b = s.bandbook, list = (K().scandals || []).filter(function (x) {
+      var c = F.card(x.card), seen = s.seenCards && s.seenCards[x.card];
+      return c && isActive(s, x.who) && (!GG.career || GG.career.gatePasses(s, c.gate)) && !(seen && s.totalWeek - seen < 30);
+    });
+    if (!list.length) return null;
+    var x = rng.pick(list);
+    b.pending = { card: x.card, who: x.who, week: s.totalWeek, source: source };
+    GG.emit('fans:scandal', { card: x.card, who: x.who });
+    return b.pending;
+  }
+  function scandalReady(s) {
+    var b = s.bandbook, S = F.cfg().scandal;
+    return !b.pending && s.totalWeek >= S.fromWeek && s.totalWeek - (b.lastScandal == null ? -99 : b.lastScandal) >= S.cooldown;
+  }
+
+  // One Promote block = one public post. opts: { f (repeat factor), d (block deltas), lines (block lines), kind? }.
+  F.post = function (s, opts) {
+    opts = opts || {};
+    F.ensure(s);
+    var Q = F.cfg(), P = Q.post, V = Q.viral, b = s.bandbook, f = opts.f == null ? 1 : opts.f;
+    b.seq++;
+    var rng = rngOf(s, 'post');
+    var kind = opts.kind && KINDS.indexOf(opts.kind) >= 0 ? opts.kind : pickKind(s, rng);
+    if (kind === 'gig' && !s.gig) kind = 'meme';
+    var crew = active(s), who = crew.length ? rng.pick(crew).id : 'player';
+    var pt = pickText(s, kind, rng), mult = P.kinds[kind] || 1;
+    // viral: weirder moments (memes, behind the scenes, a burnt-out band) are likelier to blow up
+    var vp = V.base + ((V.weird || {})[kind] || 0) + ((s.burnout || 0) > 70 ? V.burnout : 0) + (s.buzz || 0) * V.buzzPer;
+    var viral = rng.chance(Math.min(V.max, vp)) ? (rng.chance(Math.min(Math.max(0.6, V.cringe), V.cringe + F.shares(s).hater)) ? 'cringe' : 'good') : null;
+    var cringeWho = null, text = pt.text;
+    if (viral === 'cringe') {
+      var cr = (K().viral.cringe || []).filter(function (c) { return c.who === 'any' ? crew.some(function (m) { return m.id !== 'kenji'; }) : isActive(s, c.who) && c.who !== 'kenji'; });
+      if (!cr.length) viral = 'good';
+      else {
+        var c = rng.pick(cr);
+        cringeWho = c.who === 'any' ? rng.pick(crew.filter(function (m) { return m.id !== 'kenji'; })).id : c.who;
+        text = c.text; who = cringeWho;
+      }
+    }
+    if (viral === 'good') { text = rng.pick(K().viral.good) || text; if (who === 'kenji') who = speakerFor(s, ['dana', 'marcel', 'jaxon']) || 'player'; }
+    var likes = Math.round(((s.fans || 0) * P.likes + 6) * mult * rng.range(0.7, 1.3));
+    var shares = Math.round(likes * rng.range(0.05, 0.15)), plays = Math.round(likes * rng.range(4, 8));
+    if (viral) { var boost = rng.range(25, 60); likes = Math.round(likes * boost); shares = Math.round(shares * boost * 1.5); plays = Math.round(plays * boost); }
+    // effects, on top of the old Promote numbers (which the career RNG still rolls exactly as before)
+    var head = headroom(s), fx = { buzz: 0, fans: 0 };
+    fx.buzz += rr(P.buzz * f, rng);
+    fx.fans += rr((P.fans + (s.fans || 0) * P.fansPer) * mult * f * head, rng);
+    if (viral === 'good') { fx.buzz += V.buzz; fx.fans += rr((V.fans + (s.fans || 0) * V.fansPer) * head, rng); }
+    if (viral === 'cringe') { fx.buzz += V.cringeBuzz; fx.fans += rr((V.fans + (s.fans || 0) * V.fansPer) * head * V.cringeFans, rng); fx.mood = {}; fx.mood[cringeWho] = V.mood; }
+    var d = opts.d || {};
+    var applied = { buzz: fx.buzz || null, fans: fx.fans || null, mood: fx.mood || null };
+    if (GG.career && GG.career.applyEffects) GG.career.applyEffects(s, applied, d);
+    if (viral === 'cringe') shiftShare(s, 'hater', V.hater);
+    if (viral === 'good') shiftShare(s, 'super', V.super);
+    var streams = bumpStreams(s, viral ? V.streams : P.streams, f);
+    b.streams += plays;
+    if (viral) b.viral++;
+    var post = { id: 'p' + b.seq, w: s.totalWeek, kind: kind, t: pt.t, who: who, text: fill(s, text, { who: who, views: plays }),
+      likes: likes, shares: shares, plays: plays, viral: viral, exclusive: false, streams: streams, fx: { buzz: fx.buzz, fans: fx.fans }, comments: null };
+    post.comments = comments(s, post, rng);
+    store(s, post);
+    d.post = post.id;
+    var lines = opts.lines, info = F.kindInfo(kind);
+    if (lines) {
+      lines.push('📘 Posted to Bandbook: ' + info.label.toLowerCase() + '. 👍 ' + U.fmtNum(likes) + ' · 💬 ' + post.comments.length + '.');
+      if (viral) lines.push((viral === 'good' ? '🚀 ' : '😬 ') + post.text);
+    }
+    if (viral) {
+      var speaker = viral === 'cringe' ? cringeWho : speakerFor(s, ['marcel', 'dana', 'jaxon']);
+      if (speaker) chat(s, speaker, rng.pick((K().chat || {})[viral === 'cringe' ? 'cringe' : 'viral'] || []), d);
+      GG.emit('fans:viral', { post: post, kind: viral });
+    }
+    // bandmates post dumb things: a scandal card next Monday
+    var S = Q.scandal;
+    if (scandalReady(s) && rng.chance(S.post + ((s.burnout || 0) > 75 ? S.burnout : 0) + F.shares(s).hater * 0.1)) {
+      var q = queueScandal(s, rng, post.id);
+      if (q && lines) lines.push('Uh-oh. ' + nameOf(s, q.who === 'band' ? 'band' : q.who) + ' also posted something. You\'ll hear about it Monday.');
+    }
+    GG.emit('fans:post', { post: post });
+    return post;
+  };
+
+  F.feed = function (s, n) { F.ensure(s); var p = s.bandbook.posts.slice().reverse(); return n ? p.slice(0, n) : p; };
+
+  /* ---- Patreeon (the fan club) ---------------------------------------------------------------------------------- */
+  F.clubUnlocked = function (s) { return s.era === 'signed' || s.era === 'world'; };
+  F.openClub = function (s) {
+    F.ensure(s);
+    if (s.fanClub || !F.clubUnlocked(s)) return s.fanClub;
+    var Q = F.cfg().club, sup = F.counts(s).super;
+    s.fanClub = { since: s.totalWeek, members: Math.max(2, Math.round(sup * Q.join * 0.5)), happiness: Q.happyStart, tier: 'drumstick',
+      exclusives: 0, lastExclusive: null, earned: 0, lastPayout: 0, paid: null };
+    s.fanClub.tier = topTier(s.fanClub.members);
+    GG.emit('fans:club', { action: 'open', club: s.fanClub });
+    return s.fanClub;
+  };
+  function topTier(members) {
+    var top = 'drumstick';
+    (K().tiers || []).forEach(function (t) { if (members >= (t.minMembers || 0)) top = t.id; });
+    return top;
+  }
+  // Tier rows with this month's members per tier (unlocked tiers share members by tierShare; Dale is always Full Kit).
+  F.tiers = function (s) {
+    var c = s.fanClub, Q = F.cfg().club, list = K().tiers || [], m = c ? c.members : 0;
+    var open = list.filter(function (t) { return m >= (t.minMembers || 0); }), tot = 0;
+    open.forEach(function (t) { tot += Q.tierShare[t.id] || 0; });
+    var out = list.map(function (t) {
+      var on = open.indexOf(t) >= 0, n = on && tot ? Math.floor(m * (Q.tierShare[t.id] || 0) / tot) : 0;
+      return { id: t.id, name: t.name, icon: t.icon, price: t.price, perk: t.perk, minMembers: t.minMembers || 0, unlocked: on, members: n };
+    });
+    if (c && out.length) {
+      var used = out.reduce(function (a, t) { return a + t.members; }, 0), first = out[0];
+      first.members += Math.max(0, m - used);
+      var fk = out[out.length - 1];
+      if (s.superfans && s.superfans.dale && fk.members < 1 && m >= 1) { fk.members = 1; first.members = Math.max(0, first.members - 1); fk.dale = true; }
+    }
+    return out;
+  };
+  function monthlyGross(s) { return F.tiers(s).reduce(function (a, t) { return a + t.members * t.price; }, 0); }
+  F.club = function (s) {
+    F.ensure(s);
+    var c = s.fanClub, Q = F.cfg().club, gross = c ? monthlyGross(s) : 0;
+    return { unlocked: F.clubUnlocked(s), open: !!c, name: (K().club || {}).name || 'Patreeon', pitch: (K().club || {}).pitch || '',
+      locked: (K().club || {}).locked || '', members: c ? c.members : 0, happiness: c ? c.happiness : 0, tier: c ? c.tier : null,
+      tiers: F.tiers(s), since: c ? c.since : null, earned: c ? c.earned : 0, lastPayout: c ? c.lastPayout : 0,
+      nextPayout: Math.round(gross * (1 - Q.cut)), gross: gross, cut: Q.cut, exclusives: c ? c.exclusives : 0,
+      canExclusive: F.canExclusive(s), payoutWeek: s.week % 2 === 0 ? s.totalWeek : s.totalWeek + 1 };
+  };
+  F.canExclusive = function (s) { return !!(s && s.fanClub && !s.ended && s.fanClub.lastExclusive !== s.totalWeek); };
+  // An exclusive post for the fan club (once a week, an evening's work: a little burnout). Keeps members happy.
+  F.exclusive = function (s, opts) {
+    opts = opts || {};
+    if (!F.canExclusive(s)) return null;
+    var Q = F.cfg(), c = s.fanClub, b = s.bandbook;
+    b.seq++;
+    var rng = rngOf(s, 'exclusive'), crew = active(s), who = crew.length ? rng.pick(crew).id : 'player';
+    var pt = pickText(s, 'exclusive', rng);
+    var likes = Math.max(1, Math.round(c.members * rng.range(0.5, 0.9)));
+    var post = { id: 'p' + b.seq, w: s.totalWeek, kind: 'exclusive', t: pt.t, who: who, text: fill(s, pt.text, { who: who }),
+      likes: likes, shares: 0, plays: Math.round(likes * rng.range(2, 4)), viral: null, exclusive: true, streams: 0, fx: { buzz: 0, fans: 0 }, comments: null };
+    post.comments = comments(s, post, rng);
+    store(s, post);
+    c.happiness = U.clamp(c.happiness + (c.lastExclusive === s.totalWeek ? Q.club.exclusiveAgain : Q.club.exclusive), 0, 100);
+    c.lastExclusive = s.totalWeek; c.exclusives++;
+    shiftShare(s, 'super', 0.002);
+    var d = opts.d || {};
+    if (GG.career && GG.career.applyEffects && Q.club.exclusiveBurnout) GG.career.applyEffects(s, { burnout: Q.club.exclusiveBurnout }, d);
+    if (opts.lines) opts.lines.push('🔒 Patreeon exclusive posted. Members: ' + c.members + '. Happiness ' + Math.round(c.happiness) + '%.');
+    GG.emit('fans:club', { action: 'exclusive', club: c, post: post });
+    return post;
+  };
+  function clubWeek(s, rng, out) {
+    var c = s.fanClub, Q = F.cfg().club;
+    if (c.lastExclusive !== s.totalWeek) c.happiness = U.clamp(c.happiness - Q.decay, 0, 100);
+    if (s.week % 2 !== 0) return;   // month end = the second week of each month
+    var sup = F.counts(s).super, target = Math.min(Q.maxMembers, sup * Q.join * (0.4 + 0.6 * c.happiness / 100));
+    c.members = Math.max(1, Math.round(c.members + (target - c.members) * Q.move));
+    if (c.happiness < Q.churnBelow) c.members = Math.max(1, Math.round(c.members * (1 - Q.churn)));   // Dale never cancels
+    c.tier = topTier(c.members);
+    var net = Math.round(monthlyGross(s) * (1 - Q.cut));
+    if (net > 0 && GG.career) {
+      GG.career.applyEffects(s, { fund: net }, {});
+      if (s.stats) { s.stats.earned = (s.stats.earned || 0) + net; s.stats.patreeon = (s.stats.patreeon || 0) + net; }
+    }
+    if (s.van && isFinite(s.van.condition) && Q.van) s.van.condition = Math.min(100, s.van.condition + Q.van);   // "your favourite band's van repairs"
+    c.earned += net; c.lastPayout = net; c.paid = s.totalWeek;
+    var who = speakerFor(s, ['jaxon', 'dana', 'marcel']);
+    if (who && net > 0) chat(s, who, fill(s, rng.pick((K().club || {}).payoutChat || []), { money: net, n: c.members }));
+    out.club = { paid: net, members: c.members, happiness: c.happiness, tier: c.tier };
+    GG.emit('fans:club', { action: 'payout', club: c, paid: net });
+  }
+
+  /* ---- Gifts and fan mail -------------------------------------------------------------------------------------- */
+  F.gifts = function (s) { F.ensure(s); return s.gifts.slice().reverse(); };
+  F.hasGift = function (s, id) { return (s.gifts || []).some(function (g) { return g.id === id; }); };
+  // Adds a gift (scripted: content scriptedGifts; else from the gifts/mail pools). Returns the entry or null.
+  F.addGift = function (s, id, kind) {
+    F.ensure(s);
+    var G = K(), def = (G.scriptedGifts || {})[id], isMail = false;
+    if (!def) def = (G.gifts || []).filter(function (g) { return g.id === id; })[0];
+    if (!def) { def = (G.mail || []).filter(function (g) { return g.id === id; })[0]; isMail = !!def; }
+    if (!def || (!isMail && F.hasGift(s, id))) return null;
+    var g = { id: id, week: s.totalWeek, from: def.from, text: fill(s, def.text), kind: kind || (isMail ? 'mail' : 'gift') };
+    s.gifts.push(g);
+    var max = F.cfg().giftsMax;
+    while (s.gifts.length > max) {
+      var i = -1;
+      for (var j = 0; j < s.gifts.length; j++) if (s.gifts[j].kind === 'mail') { i = j; break; }
+      s.gifts.splice(i < 0 ? 0 : i, 1);
+    }
+    GG.emit('fans:gift', { gift: g });
+    return g;
+  };
+  function mailWeek(s, rng, out) {
+    var Q = F.cfg(), sup = F.counts(s).super;
+    if (!((s.stats && s.stats.gigs >= 1) || (s.fans || 0) >= 20)) return;
+    if (rng.chance(Math.min(Q.mail.max, Q.mail.chance + sup * Q.mail.perSuper))) {
+      var recent = {}; s.gifts.slice(-4).forEach(function (g) { recent[g.id] = 1; });
+      var pool = (K().mail || []).filter(function (m) { return !recent[m.id]; }), m = rng.pick(pool);
+      if (m) { var e = F.addGift(s, m.id, 'mail'); if (e) out.mail.push(e); }
+    }
+    if (rng.chance(Math.min(Q.gift.max, Q.gift.chance + sup * Q.gift.perSuper))) {
+      var left = (K().gifts || []).filter(function (g) { return !F.hasGift(s, g.id); }), gi = rng.pick(left);
+      if (gi) {
+        var e2 = F.addGift(s, gi.id, 'gift');
+        if (e2) { out.gifts.push(e2); chat(s, 'mom', 'A parcel came for the band, from ' + e2.from + '. I didn\'t open it. I shook it a little.'); }
+      }
+    }
+  }
+
+  /* ---- The week ------------------------------------------------------------------------------------------------ */
+  function driftShares(s) {
+    var S = F.cfg().shares, t = F.shares(s), c = s.fanClub;
+    var superT = U.clamp(S.superBase + S.superChem * (s.chemistry == null ? 50 : s.chemistry) / 100 + (c ? S.superClub * c.happiness / 100 : 0), S.superRange[0], S.superRange[1]);
+    var fame = Math.max(0, Math.log(Math.max(1, s.fans || 0) / 100) / Math.LN10);
+    var recent = s.bandbook.lastScandal != null && s.totalWeek - s.bandbook.lastScandal < 8 ? 0.02 : 0;
+    var haterT = U.clamp(S.haterBase + S.haterFame * fame + recent, S.haterRange[0], S.haterRange[1]);
+    setShare(s, 'super', t.super + (superT - t.super) * S.drift);
+    setShare(s, 'hater', t.hater + (haterT - t.hater) * S.drift);
+  }
+  // career.endWeek: shares drift, superfans settle, mail + gifts, the fan club (decay, month-end payout), bandmates'
+  // own dumb posts. Sets wrap.fans = { shares, counts, mail, gifts, club, scandal }.
+  F.weekly = function (s, wrap) {
+    F.ensure(s);
+    var Q = F.cfg(), rng = rngOf(s, 'weekly'), out = { shares: null, counts: null, mail: [], gifts: [], club: null, scandal: null };
+    driftShares(s);
+    Object.keys(s.superfans).forEach(function (id) {
+      var sf = s.superfans[id], home = Q.superfans.moodHome;
+      if (isFinite(sf.mood)) sf.mood = sf.mood > home ? Math.max(home, sf.mood - Q.superfans.drift) : Math.min(home, sf.mood + Q.superfans.drift);
+    });
+    mailWeek(s, rng, out);
+    if (s.fanClub) clubWeek(s, rng, out);
+    if (scandalReady(s) && rng.chance(Q.scandal.weekly + ((s.burnout || 0) > 75 ? Q.scandal.burnout : 0))) out.scandal = queueScandal(s, rng, 'weekly');
+    out.shares = U.clone(s.fanTypes); out.counts = F.counts(s);
+    if (wrap) wrap.fans = out;
+    return out;
+  };
+
+  /* ---- Gigs: superfans follow on tour, Dale at every show (crowd + buzz only; merch is v0.8) ---------------------- */
+  F.gigShape = function (s, g, r) {
+    if (!r || r.fansShaped) return r;
+    F.ensure(s);
+    r.fansShaped = true;
+    var Q = F.cfg(), GK = Q.gig, L = K().gigLines || {}, rng = rngOf(s, 'gig'), cnt = F.counts(s);
+    var lines = r.lines || (r.lines = []), cap = r.capacity || (g && g.capacity) || 1e6;
+    var km = r.km != null ? r.km : (g && g.km) || 0, gcity = r.city || (g && g.city) || s.city, add = 0;
+    function room() { return Math.max(0, cap - (r.crowd || 0) - add); }
+    if (km >= GK.followKm && cnt.super > 0) {
+      var follow = Math.min(room(), Math.round(Math.min(cnt.super * GK.followShare, cap * GK.followCap)));
+      if (follow > 0) {
+        add += follow; r.superfans = follow;
+        if (follow >= 2) lines.push(fill(s, rng.pick(L.follow || []), { n: follow, gcity: gcity }));
+      }
+    }
+    var dale = s.superfans.dale;
+    if (dale) {
+      dale.seen = (dale.seen || 0) + 1;
+      dale.mood = U.clamp((dale.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
+      if (room() > 0) add++;
+      r.dale = dale.seen;
+      lines.push(fill(s, rng.pick((km >= 500 && L.daleFar) || L.dale || []), { n: dale.seen, gcity: gcity }));
+    }
+    var tr = s.superfans.trucker;
+    if (tr && km >= GK.followKm && rng.chance(GK.trucker)) {
+      tr.seen = (tr.seen || 0) + 1; if (room() > 0) add++;
+      r.trucker = true; lines.push(fill(s, rng.pick(L.trucker || []), { gcity: gcity }));
+    }
+    if (cnt.hater > 0 && rng.chance(Math.min(0.5, F.shares(s).hater * 2))) { r.heckler = true; lines.push(fill(s, rng.pick(L.hater || []))); }
+    if (add) {
+      r.crowd = (r.crowd || 0) + add;
+      if (g && g.deal === 'door' && GG.gig && GG.gig.payFor) r.pay = GG.gig.payFor(g, r.crowd);
+    }
+    if ((r.superfans || 0) >= GK.buzzAt) r.buzz = (r.buzz || 0) + 1;
+    return r;
+  };
+
+  /* ---- Fan cards (forced only; never drawn) ------------------------------------------------------------------- */
+  F.cards = function () { return K().cards || []; };
+  F.card = function (id) { return F.cards().filter(function (c) { return c.id === id; })[0] || null; };
+  function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
+  function seenAt(s, id) { return s.seenCards && s.seenCards[id] != null ? s.seenCards[id] : null; }
+  function superfanCard(s) {
+    var Q = F.cfg(), sf = s.superfans, b = s.bandbook, w = s.totalWeek, c;
+    function once(id) { c = F.card(id); return gateOk(s, c) && seenAt(s, id) == null; }
+    if (sf.dale && sf.dale.seen >= 2 && once('fans_dale_hello')) return c;   // the second show: same guy, same lawn chair
+    if (!sf.trucker && (s.stats && s.stats.gigs) >= Q.superfans.truckerAfterGigs && s.lastGig && (s.lastGig.km || 0) >= Q.superfans.truckerKm && once('fans_trucker')) return c;
+    if (sf.dale && sf.dale.seen >= Q.superfans.daleGiftAfter && !F.hasGift(s, 'macaroni_kenji') && isActive(s, 'kenji') && once('fans_macaroni')) return c;
+    c = F.card('fans_patreeon');
+    if (!s.fanClub && F.clubUnlocked(s) && gateOk(s, c) && (b.clubDeclined == null || w - b.clubDeclined >= Q.club.redecline)) return c;
+    c = F.card('fans_club_grumble');
+    var gs = seenAt(s, 'fans_club_grumble');
+    if (s.fanClub && s.fanClub.happiness < Q.club.grumbleBelow && gateOk(s, c) && (gs == null || w - gs >= Q.club.grumbleGap)) return c;
+    if (F.shares(s).hater >= 0.12 && once('fans_hater_page')) return c;
+    return null;
+  }
+  // career.startWeek (after drama, studio and holiday cards): a pending scandal first, then superfan / fan-club cards.
+  F.forcedCard = function (s) {
+    F.ensure(s);
+    var b = s.bandbook, w = s.totalWeek;
+    if (w < F.cfg().cardFrom || s.ended) return null;
+    if (w - (b.lastCard == null ? -99 : b.lastCard) < F.cfg().cardGap) return null;
+    var pick = null, P = b.pending;
+    if (P) {
+      var c = F.card(P.card);
+      if (c && gateOk(s, c) && isActive(s, P.who)) pick = c;
+      b.pending = null;
+    }
+    if (!pick) pick = superfanCard(s);
+    if (!pick) return null;
+    b.lastCard = w;
+    return { card: pick };
+  };
+  F.isScandal = function (id) { return (K().scandals || []).some(function (x) { return x.card === id; }); };
+  // career.resolveCard (after the choice's normal effects): applies the choice's 'fan' effects (and the roll branch's),
+  // then the bookkeeping (scandal count, a declined Patreeon). 'fan' is not in C.EFFECT_KEYS: only fan cards use it.
+  F.afterCard = function (s, card, i, success, d) {
+    if (!card || !F.card(card.id)) return;
+    F.ensure(s);
+    var b = s.bandbook, ch = card.choices && card.choices[i];
+    if (ch) {
+      if (ch.effects && ch.effects.fan) F.apply(s, ch.effects.fan, d);
+      var br = ch.roll && (success ? ch.roll.success : ch.roll.fail);
+      if (br && br.effects && br.effects.fan) F.apply(s, br.effects.fan, d);
+    }
+    if (F.isScandal(card.id)) { b.scandals++; b.lastScandal = s.totalWeek; }
+    if (card.id === 'fans_patreeon' && !s.fanClub) b.clubDeclined = s.totalWeek;
+  };
+
+  /* ---- The 'fan' effect key ---------------------------------------------------------------------------------- */
+  // v: { hater|super: ±share, superfan: { id: ±mood }, gift: id, club: 'open', clubHappy: ±n }
+  F.apply = function (s, v, d) {
+    if (!v || typeof v !== 'object') return;
+    F.ensure(s);
+    var out = {};
+    if (v.hater) { shiftShare(s, 'hater', v.hater); out.hater = v.hater; }
+    if (v.super) { shiftShare(s, 'super', v.super); out.super = v.super; }
+    if (v.superfan) Object.keys(v.superfan).forEach(function (id) {
+      var def = F.superfanDef(id); if (!def || def.reserved) return;
+      var sf = s.superfans[id] || (s.superfans[id] = { seen: 0, mood: F.cfg().superfans.moodStart, since: s.totalWeek });
+      sf.mood = U.clamp((sf.mood || 0) + (v.superfan[id] || 0), 0, 100);
+      if (id === 'trucker' && !F.hasGift(s, 'cb_radio')) F.addGift(s, 'cb_radio');
+      (out.superfan = out.superfan || {})[id] = v.superfan[id];
+    });
+    if (v.gift && F.addGift(s, v.gift)) out.gift = v.gift;
+    if (v.club === 'open' && !s.fanClub && F.openClub(s)) out.club = 'open';
+    if (v.clubHappy && s.fanClub) { s.fanClub.happiness = U.clamp(s.fanClub.happiness + v.clubHappy, 0, 100); out.clubHappy = v.clubHappy; }
+    if (d) { var prevFan = d.fan || {}; for (var k in out) prevFan[k] = out[k]; d.fan = prevFan; }
+  };
+  function arrow(x) { return x > 0 ? '↑' : '↓'; }
+  F.effectText = function (v) {
+    if (!v) return '';
+    var p = [];
+    if (v.hater) p.push('Haters ' + arrow(v.hater));
+    if (v.super) p.push('Superfans ' + arrow(v.super));
+    if (v.superfan) Object.keys(v.superfan).forEach(function (id) { var d = F.superfanDef(id); if (d && v.superfan[id]) p.push(d.short + ' ' + arrow(v.superfan[id])); });
+    if (v.gift) p.push('A gift');
+    if (v.club === 'open') p.push('Patreeon opens');
+    if (v.clubHappy) p.push('Members ' + arrow(v.clubHappy));
+    return p.join(' · ');
+  };
+
+  /* ---- Views for the Bandbook app ---------------------------------------------------------------------------- */
+  F.superfanList = function (s) {
+    F.ensure(s);
+    return K().superfans.map(function (d) {
+      var st = s.superfans[d.id];
+      return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || null,
+        active: !!st && !d.reserved, seen: st ? st.seen || 0 : 0, mood: st ? st.mood : null, since: st ? st.since : null };
+    });
+  };
+
+  /* ---- Bots ---------------------------------------------------------------------------------------------------- */
+  F.botValue = function (s, v) {
+    if (!v) return 0;
+    var x = 0;
+    if (v.club === 'open') x += 12;
+    if (v.clubHappy) x += v.clubHappy * 0.2;
+    if (v.hater) x -= v.hater * 100;
+    if (v.super) x += v.super * 200;
+    if (v.superfan) Object.keys(v.superfan).forEach(function (id) { x += (v.superfan[id] || 0) * 0.05; });
+    if (v.gift) x += 1;
+    return x;
+  };
+  F.botWeek = function (s, style) {
+    F.ensure(s);
+    if (!F.canExclusive(s)) return null;
+    var c = s.fanClub, B = F.cfg().bot;
+    var go = style === 'good' ? c.happiness < B.goodHappyBelow && (s.burnout || 0) < B.goodBurnoutBelow : rngOf(s, 'bot').chance(B.avgExclusive);
+    return go ? F.exclusive(s) : null;
+  };
+
+  /* ---- Saves (idempotent): fill every fan field that is missing. Chained onto GG.save.migrate. ------------------ */
+  F.migrate = function (s) {
+    if (!s || typeof s !== 'object' || !isFinite(s.totalWeek)) return s;
+    return F.ensure(s);
+  };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.fans) {
+    var prev = GG.save.migrate;
+    GG.save.migrate = function (s) { return F.migrate(prev(s)); };
+    GG.save.migrate.fans = true;
+  }
+  GG.registerDebug('fans', function () {
+    var s = GG.state; if (!s) return { state: null };
+    F.ensure(s);
+    var b = s.bandbook;
+    return { shares: s.fanTypes, counts: F.counts(s), posts: b.posts.length, viral: b.viral, scandals: b.scandals, pending: b.pending,
+      last: b.posts.length ? b.posts[b.posts.length - 1] : null, superfans: s.superfans, club: s.fanClub, gifts: s.gifts.length };
+  });
+})(window.GG);
+
+</script>
 <script>/* 30_audio.js */
 // 30_audio.js: every sound in the game, synthesized with Web Audio (no files).
 // The AudioContext is created lazily on the first user gesture (GG.audio.unlock, wired in 60_main).
@@ -15339,6 +16388,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
     var dust = buildDust(); scene.add(dust.points);
     var yard = buildYard();
     var decor = buildDecor();   // v0.6.1: snow at the window (winter), Christmas lights (December), a box fan (July / heat wave)
+    var fanMail = buildFanMail();   // v0.6.1 (FANS): Dale's macaroni portrait of Kenji, the gift pile, the fan-mail stack
 
     // ---- Bulb on a cord (swings a little; carries the warm point light and a halo) ----
     var bulbPivot = new THREE.Group();
@@ -15435,6 +16485,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
       decor.set(st);
+      fanMail.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
       if (kc !== kit.color) buildKit(kc);
@@ -15793,7 +16844,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
-        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(),
+        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(),
         trophyWall: trophyWall.counts
       };
     }
@@ -16208,6 +17259,67 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
           if (cur.lights) { var b = 0.65 + 0.35 * (Math.sin(t * 2.2) > 0 ? 1 : 0.4); lm.color.setScalar(b); }
         },
         state: function () { return { snow: cur.snow, lights: cur.lights, fan: cur.fan }; }
+      };
+    }
+    // v0.6.1 (FANS agent; Addendum 1 C5): fan mail + gifts in the garage. Dale's macaroni portrait of Kenji (gold,
+    // on a cookie sheet, sunglasses, a bass) on the right wall by the gig board once state.gifts has 'macaroni_kenji';
+    // a pile of wrapped gifts on the floor by the amps that grows with the gift count (1 / 3 / 6 boxes: one mesh per
+    // size, only one shown); a stack of fan letters beside it. Hidden with an empty draw range (like buildDecor).
+    function buildFanMail() {
+      function show(m, on) { m.geometry.setDrawRange(0, on ? Infinity : 0); }
+      var GOLD = 0xd9ab35, DARK = 0x8c6412, i, a;
+      var pb = new ctx.Builder({ jitter: 0.004, seed: 57 });
+      pb.at(X1, 0, -2.2, -Math.PI / 2);
+      pb.box(0.48, 0.58, 0.015, 0, 1.5, 0.008, 0xb9bec6);                                      // the cookie sheet
+      pb.box(0.44, 0.54, 0.006, 0, 1.5, 0.018, 0x6e5a2a);                                      // glue + cardboard backing
+      for (i = 0; i < 18; i++) {                                                                // macaroni face outline (an oval)
+        a = i / 18 * Math.PI * 2;
+        pb.box(0.045, 0.02, 0.018, Math.cos(a) * 0.13, 1.56 + Math.sin(a) * 0.17, 0.03, GOLD, 0, 0, a + Math.PI / 2);
+      }
+      for (i = 0; i < 6; i++) pb.box(0.04, 0.02, 0.02, -0.12 + i * 0.048, 1.75, 0.032, DARK, 0, 0, (i % 2 ? 0.5 : -0.5));   // hair
+      pb.box(0.09, 0.045, 0.02, -0.055, 1.6, 0.034, 0x2a2410); pb.box(0.09, 0.045, 0.02, 0.055, 1.6, 0.034, 0x2a2410);   // sunglasses
+      pb.box(0.03, 0.012, 0.02, 0, 1.61, 0.034, DARK);
+      pb.box(0.08, 0.018, 0.02, 0, 1.46, 0.032, GOLD);                                          // the mouth: a straight line (it's Kenji)
+      pb.box(0.03, 0.34, 0.02, 0.1, 1.38, 0.03, GOLD, 0, 0, -0.9);                              // the bass neck
+      pb.box(0.1, 0.12, 0.02, -0.03, 1.3, 0.03, GOLD, 0, 0, -0.9);                              // the bass body
+      for (i = 0; i < 5; i++) pb.box(0.4 - i * 0.02, 0.018, 0.02, 0, 1.25 + i * 0.012 - 0.03, 0.028, i % 2 ? GOLD : DARK);   // the "frame" row
+      var portrait = new THREE.Mesh(pb.build(), ctx.mats.vc); show(portrait, false); scene.add(portrait);
+      var WRAP = [[0xc0392b, 0xf2d15b], [0x2f7fff, 0xffffff], [0x34a853, 0xd23c3c], [0x9b6bff, 0xffcc00], [0xf28c28, 0x2a2a2e], [0xe0e0e0, 0xd23c3c]];
+      var SPOT = [[0, 0.11, 0, 0.26, 0.22, 0.24, 0.2], [0.24, 0.08, 0.05, 0.2, 0.16, 0.18, -0.3], [-0.2, 0.07, 0.08, 0.18, 0.14, 0.2, 0.5],
+        [0.05, 0.3, 0.02, 0.18, 0.16, 0.16, -0.15], [0.12, 0.1, 0.26, 0.16, 0.2, 0.14, 0.1], [-0.12, 0.28, 0.06, 0.12, 0.12, 0.12, 0.7]];
+      function pile(n) {
+        var gb = new ctx.Builder({ jitter: 0.006, seed: 60 + n });
+        gb.at(-1.22, 0, -2.3, 0.25);
+        for (var k = 0; k < n; k++) {
+          var q = SPOT[k], c = WRAP[k];
+          gb.push(q[0], q[1], q[2], 0, q[6], 0);
+          gb.box(q[3], q[4], q[5], 0, 0, 0, c[0]);
+          gb.box(q[3] + 0.006, q[4] + 0.006, 0.03, 0, 0, 0, c[1]); gb.box(0.03, q[4] + 0.006, q[5] + 0.006, 0, 0, 0, c[1]);   // ribbon
+          gb.box(0.07, 0.04, 0.05, 0, q[4] / 2 + 0.02, 0, c[1]);                                                               // bow
+          gb.pop();
+        }
+        var m = new THREE.Mesh(gb.build(), ctx.mats.vc); show(m, false); scene.add(m);
+        return m;
+      }
+      var piles = { 1: pile(1), 3: pile(3), 6: pile(6) };
+      var mb = new ctx.Builder({ jitter: 0.01, seed: 66 });
+      mb.at(-1.22, 0, -2.3, 0.25);                                                              // on the floor beside the pile
+      for (i = 0; i < 5; i++) mb.box(0.24, 0.012, 0.15, 0.42 + (i % 2) * 0.02, 0.008 + i * 0.013, (i % 3) * 0.015, i % 2 ? 0xf4efe2 : 0xe8f0fa, 0, (i - 2) * 0.12, 0);
+      mb.box(0.05, 0.004, 0.03, 0.48, 0.074, 0.02, 0xd23c3c);                                  // a stamp
+      var mail = new THREE.Mesh(mb.build(), ctx.mats.vc); show(mail, false); scene.add(mail);
+      var cur = { portrait: false, gifts: 0, mail: false };
+      return {
+        set: function (st) {
+          var list = st.gifts || [], g = 0, m = 0, mac = false;
+          for (var j = 0; j < list.length; j++) {
+            if (list[j].id === 'macaroni_kenji') mac = true;
+            else if (list[j].kind === 'mail') m++; else g++;
+          }
+          cur.portrait = mac; cur.mail = m > 0; cur.gifts = g >= 5 ? 6 : g >= 3 ? 3 : g >= 1 ? 1 : 0;
+          show(portrait, mac); show(mail, cur.mail);
+          for (var k in piles) show(piles[k], +k === cur.gifts);
+        },
+        state: function () { return { portrait: cur.portrait, gifts: cur.gifts, mail: cur.mail }; }
       };
     }
     function yardProp(fill) {
@@ -20512,10 +21624,12 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 // v0.5: Label (deal status, recoup, deadline, offers, DIY: GG.ui.labelPanel in 59_ui_label) and Albums (studio session,
 // discography: GG.ui.albumsPanel in 59c_ui_awards) tabs.
 // v0.6: Scene (the rival, heat, the scene leaderboard, rival news: GG.ui.scenePanel in 59d_ui_rival).
+// v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
+// seven tabs wrap into two rows, CSS in 5g).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -20599,7 +21713,9 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
       var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st)
         : tab === 'label' ? (ui.labelPanel ? ui.labelPanel(st, function () { s.rerender({ tab: 'label' }); }) : el('p.dim', 'No label news.'))   // v0.5
         : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.'))
-        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.')) : chatTab(st);   // v0.6
+        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.'))   // v0.6
+        : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
+        : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);
@@ -24457,6 +25573,201 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 
   GG.registerDebug('rivalui', function () {
     return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, announced: Object.keys(announced) };
+  });
+})(window.GG);
+
+</script>
+<script>/* 5g_ui_bandbook.js */
+// 5g_ui_bandbook.js: Bandbook, the band's one parody social app (v0.6.1, FANS agent; Addendum 1 C5). Reads GG.fans
+// (29_sim_fans.js); never rolls anything. The laptop's Bandbook tab (53_ui_laptop -> GG.ui.bandbookPanel) and a
+// standalone sheet (screen 'bandbook', GG.ui.show('bandbook', { tab })) show three sub-tabs:
+//   Feed     : the band page (fans, viral count), posts newest first (kind, week, text, likes/shares/plays, a viral or
+//              members-only badge) with their comments (fans, haters, Dale, Wendell, and the rival on every post).
+//   Fans     : one fan count split into superfans / casuals / haters (bars), the named superfans (Dale from Warman,
+//              Big Wendell once you've met him, the Japanese fan-club president teased for v0.7), fan mail + gifts.
+//   Patreeon : locked before the Signed era (pitch + tiers preview); then open it (button, or the Monday card), members,
+//              happiness, tiers Drumstick / Snare / Full Kit with members and prices, next payout, "Post an exclusive"
+//              (once a week: GG.fans.exclusive) and the latest exclusives.
+// testids: bandbook-panel, bb-page, bb-tab-feed|fans|club, bb-empty, bb-post (data-kind, data-viral), bb-viral, bb-excl,
+//   bb-comment (data-who), bb-types, bb-type-super|casual|hater, bb-superfan-<id>, bb-gifts, bb-gift, bb-club-locked,
+//   bb-club-open, bb-club-stats, bb-club-happiness, bb-tier-<id>, bb-exclusive, bb-club-posts, laptop-tab-bandbook.
+(function (GG) {
+  var ui = GG.ui; if (!ui || !ui.el) return;
+  var el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts, WPY = C.WEEKS_PER_YEAR;
+  var CSS = [
+    '.bb-head{display:flex;align-items:baseline;gap:8px;margin:2px 0 8px}',
+    '.bb-logo{font:900 22px/1 var(--font);letter-spacing:-.02em;color:#7fa8ff}.bb-logo i{font-style:normal;color:var(--amber)}',
+    '.bb-tag{font-size:12px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.bb-page{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);margin-bottom:10px}',
+    '.bb-pic{width:44px;height:44px;flex:0 0 44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:900 20px var(--font);background:linear-gradient(135deg,#b3262b,#3b1a2a);color:#fff}',
+    '.bb-page .grow b{display:block;font-size:15px}.bb-page .grow span{font-size:12px;color:var(--dim)}',
+    '.bb-sub{margin-bottom:10px}',
+    '.bb-post{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;overflow-wrap:anywhere}',
+    '.bb-post.viral{border-color:#4f8cff;box-shadow:0 0 0 1px rgba(79,140,255,.35) inset}.bb-post.cringe{border-color:#b35a2c}.bb-post.excl{border-color:#ff6a4d}',
+    '.bb-top{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);flex-wrap:wrap}.bb-top b{color:var(--text);font-size:13px}',
+    '.bb-badge{margin-left:auto;padding:2px 8px;border-radius:999px;font:800 11px var(--font);background:var(--panel2);border:1px solid var(--line);white-space:nowrap}',
+    '.bb-badge.viral{color:#bcd3ff;border-color:#4f8cff}.bb-badge.cringe{color:#ffc3a0;border-color:#b35a2c}.bb-badge.excl{color:#ffb4a4;border-color:#ff6a4d}',
+    '.bb-text{margin:6px 0;font-size:14px;line-height:1.4}',
+    '.bb-stats{font-size:12px;color:var(--dim);padding-bottom:6px;border-bottom:1px solid var(--line)}',
+    '.bb-c{font-size:13px;line-height:1.35;padding:6px 0 0}.bb-c b{margin-right:4px}.bb-c .tag{font-size:10px;padding:1px 6px;margin-right:4px;vertical-align:1px}',
+    '.bb-c.rival b{color:#ff8a80}.bb-c.dale b{color:#ffd166}.bb-c.trucker b{color:#9fe0a8}.bb-c.hater b{color:#c9a0ff}',
+    '.bb-types{display:grid;gap:8px;margin:8px 0 12px}.bb-type{display:grid;grid-template-columns:92px 1fr 74px;align-items:center;gap:8px;font-size:13px}',
+    '.bb-type .bar{height:10px}.bb-type span:last-child{text-align:right;color:var(--dim);font-size:12px}',
+    '.bb-sf{display:flex;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);margin-bottom:8px}',
+    '.bb-sf .ic{font-size:26px;line-height:1;flex:0 0 30px}.bb-sf.locked{opacity:.6}.bb-sf b{display:block}.bb-sf p{margin:2px 0 0;font-size:12px;color:var(--dim)}',
+    '.bb-gift{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;overflow-wrap:anywhere}.bb-gift .ic{font-size:20px;flex:0 0 24px}',
+    '.bb-gift small{display:block;color:var(--dim)}',
+    '.bb-h{font:800 12px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px}',
+    '.bb-club{padding:12px;border-radius:14px;background:linear-gradient(160deg,rgba(255,106,77,.16),rgba(28,36,56,.4));border:1px solid #7a3a2e;margin-bottom:10px}',
+    '.bb-club .pt{font:900 20px var(--font);color:#ff8a70}.bb-club p{margin:4px 0;font-size:13px}',
+    '.bb-stats4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}',
+    '.bb-stats4 div{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}.bb-stats4 b{display:block;font-size:17px}.bb-stats4 span{font-size:11px;color:var(--dim)}',
+    '.bb-tier{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);margin-bottom:8px}',
+    '.bb-tier.off{opacity:.55}.bb-tier .ic{font-size:22px}.bb-tier .grow b{display:block}.bb-tier .grow span{font-size:12px;color:var(--dim)}',
+    '.bb-tier .price{font:800 15px var(--font);text-align:right;white-space:nowrap}.bb-tier .price small{display:block;font-size:11px;color:var(--dim);font-weight:600}',
+    // the laptop: 7 tabs wrap into two rows (4 + 3) so every tab stays a full thumb target
+    '.tabs:has(> .tab:nth-child(7)){flex-wrap:wrap;gap:4px}.tabs:has(> .tab:nth-child(7)) > .tab{flex:1 0 calc(25% - 4px);font-size:12px;padding:0 2px}'
+  ].join('\n');
+  function css() {
+    if (document.getElementById('gg-css-bandbook')) return;
+    var st = document.createElement('style'); st.id = 'gg-css-bandbook'; st.textContent = CSS; document.head.appendChild(st);
+  }
+  if (typeof document !== 'undefined' && document.head) css();
+
+  var sub = 'feed';
+  var SUBS = [{ id: 'feed', label: 'Feed' }, { id: 'fans', label: 'Fans' }, { id: 'club', label: 'Patreeon' }];
+  function F() { return GG.fans; }
+  function wk(w) {
+    var y = Math.floor((w - 1) / WPY) + 1, woy = (w - 1) % WPY + 1;
+    return 'Y' + y + ' W' + woy + (GG.calendar ? ' · ' + GG.calendar.month(woy) : '');
+  }
+  function bandName(st) { var b = GG.career && GG.career.band(st); return (b && b.name) || 'The band'; }
+  function sync() { if (GG.main && GG.main.sync) GG.main.sync(); }
+  function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
+
+  /* ---- Feed ------------------------------------------------------------------------------------------------ */
+  var WHO_TAG = { rival: 'Rival 🤘', dale: 'Superfan', trucker: 'Superfan', hater: 'Hater' };
+  function comment(c) {
+    return el('div.bb-c.' + c.who, { testid: 'bb-comment', data: { who: c.who } },
+      [el('b', c.name), WHO_TAG[c.who] ? el('span.tag', WHO_TAG[c.who]) : null, el('span', c.text)]);
+  }
+  function postCard(p) {
+    var info = F().kindInfo(p.kind), cls = p.exclusive ? '.excl' : p.viral === 'good' ? '.viral' : p.viral === 'cringe' ? '.cringe' : '';
+    var badge = p.exclusive ? el('span.bb-badge.excl', { testid: 'bb-excl' }, '🔒 Members only')
+      : p.viral === 'good' ? el('span.bb-badge.viral', { testid: 'bb-viral' }, '🚀 Viral')
+      : p.viral === 'cringe' ? el('span.bb-badge.cringe', { testid: 'bb-viral' }, '😬 Wrong kind of viral') : null;
+    return el('div.bb-post' + cls, { testid: 'bb-post', data: { kind: p.kind, viral: p.viral || '' } }, [
+      el('div.bb-top', [el('span', info.icon), el('b', info.label), el('span', '· ' + wk(p.w)), badge]),
+      el('p.bb-text', p.text),
+      el('div.bb-stats', '👍 ' + U.fmtNum(p.likes) + ' · 🔁 ' + U.fmtNum(p.shares) + ' · ▶ ' + U.fmtNum(p.plays) + (p.comments ? ' · 💬 ' + p.comments.length : '')),
+      el('div.bb-comments', (p.comments || []).map(comment))
+    ]);
+  }
+  function feedTab(st) {
+    var posts = F().feed(st, 12);
+    if (!posts.length) return el('p.dim.center', { testid: 'bb-empty', style: 'padding:24px 6px' },
+      'No posts yet. Put a Promote block in your week and the band posts automatically: rehearsal clips, gig announcements, song teasers, memes.');
+    return el('div', posts.map(postCard));
+  }
+
+  /* ---- Fans ------------------------------------------------------------------------------------------------ */
+  var MOOD = function (m) { return m == null ? '' : m >= 75 ? '😍' : m >= 55 ? '🙂' : m >= 35 ? '😐' : '😟'; };
+  function fansTab(st) {
+    var c = F().counts(st), t = F().shares(st);
+    var row = function (id, label, n, share, color) {
+      return el('div.bb-type', { testid: 'bb-type-' + id }, [el('span', label), ui.bar(share * 100, 100, { color: color }),
+        el('span', U.fmtNum(n) + ' · ' + Math.round(share * 100) + '%')]);
+    };
+    var sfs = F().superfanList(st).map(function (x) {
+      var body = x.reserved ? 'Coming with the world tour (' + x.reserved + ').' : x.active ? x.blurb : '??? Some stories need a dead battery at 2 a.m.';
+      var meta = x.active ? 'Shows: ' + x.seen + ' · ' + MOOD(x.mood) : null;
+      return el('div.bb-sf' + (x.active ? '' : '.locked'), { testid: 'bb-superfan-' + x.id }, [el('div.ic', x.active || x.reserved ? x.icon : '❔'),
+        el('div.grow', [el('b', x.active || x.reserved ? x.name : 'A superfan you haven\'t met'), el('p', body), meta ? el('p', meta) : null])]);
+    });
+    var gifts = F().gifts(st).slice(0, 12).map(function (g) {
+      return el('div.bb-gift', { testid: 'bb-gift', data: { id: g.id, kind: g.kind || 'gift' } }, [el('div.ic', g.kind === 'mail' ? '✉️' : '🎁'),
+        el('div.grow', [el('b', (g.kind === 'mail' ? 'Letter from ' : 'Gift from ') + g.from), el('small', g.text + ' · ' + wk(g.week))])]);
+    });
+    return el('div', [
+      el('div.bb-h', 'One fan count: ' + U.fmtNum(c.total)),
+      el('div.bb-types', { testid: 'bb-types' }, [row('super', '⭐ Superfans', c.super, t.super, '#ffd166'),
+        row('casual', '🙂 Casuals', c.casual, t.casual, '#7fa8ff'), row('hater', '👎 Haters', c.hater, t.hater, '#c9a0ff')]),
+      el('p.small.dim', 'Superfans follow you on tour. Casuals show up when the buzz is up. Haters grow with fame, and they comment.'),
+      el('div.bb-h', 'Superfans'), el('div', sfs),
+      el('div.bb-h', 'Fan mail + gifts'),
+      el('div', { testid: 'bb-gifts' }, gifts.length ? gifts : el('p.small.dim', 'Nothing yet. Play some shows. The mail comes to the garage.'))
+    ]);
+  }
+
+  /* ---- Patreeon --------------------------------------------------------------------------------------------- */
+  function happyLabel(h) { return h >= 80 ? 'Thrilled' : h >= 60 ? 'Content' : h >= 40 ? 'Restless' : h >= 25 ? 'Grumbling' : 'Cancelling'; }
+  function tierRow(t, open) {
+    return el('div.bb-tier' + (open && !t.unlocked ? '.off' : ''), { testid: 'bb-tier-' + t.id }, [el('div.ic', t.icon || '🥁'),
+      el('div.grow', [el('b', t.name), el('span', t.perk)]),
+      el('div.price', ['$' + t.price + '/mo', el('small', !open ? (t.minMembers ? 'opens at ' + t.minMembers : '') : t.unlocked ? t.members + (t.dale ? ' (incl. Dale)' : '') + ' members'
+        : t.dale ? 'Dale (not open yet; he pays anyway)' : 'opens at ' + t.minMembers + ' members')])]);
+  }
+  function clubTab(st, rerender) {
+    var v = F().club(st);
+    var head = el('div.bb-club', [el('div.pt', v.name), el('p', '“' + v.pitch + '”')]);
+    if (!v.unlocked) return el('div', { testid: 'bb-club-locked' }, [head, el('p.small.dim', v.locked), el('div.bb-h', 'Tiers'),
+      el('div', v.tiers.map(function (t) { return tierRow(t, false); }))]);
+    if (!v.open) return el('div', [head, el('p.small', 'Superfans pay monthly; you post exclusive stuff to keep them happy. Happy members stay (and tell their friends).'),
+      btn('.btn.primary.block', { testid: 'bb-club-open', onclick: function () {
+        if (!F().openClub(st)) return;
+        sfx('ui'); sync(); ui.toast('Patreeon is live. First member: Dale, Full Kit, at 12:01 a.m.'); rerender();
+      } }, 'Open the fan club'),
+      el('div.bb-h', 'Tiers'), el('div', v.tiers.map(function (t) { return tierRow(t, false); }))]);
+    var can = v.canExclusive, posts = F().feed(st).filter(function (p) { return p.exclusive; }).slice(0, 3);
+    return el('div', [head,
+      el('div.bb-stats4', { testid: 'bb-club-stats' }, [
+        el('div', [el('b', U.fmtNum(v.members)), el('span', 'members')]),
+        el('div', [el('b', U.fmtMoney(v.nextPayout)), el('span', 'next payout (after the ' + Math.round(v.cut * 100) + '% cut)')]),
+        el('div', [el('b', U.fmtMoney(v.earned)), el('span', 'earned so far')]),
+        el('div', [el('b', String(v.exclusives)), el('span', 'exclusives posted')])]),
+      el('div', { testid: 'bb-club-happiness' }, [el('div.row.small', [el('span.grow', 'Member happiness'), el('b', happyLabel(v.happiness) + ' · ' + Math.round(v.happiness) + '%')]),
+        ui.bar(v.happiness, 100, { color: v.happiness >= 60 ? 'var(--good)' : v.happiness >= 35 ? 'var(--amber)' : 'var(--bad)' })]),
+      el('p.small.dim', 'Paid at the end of each month. Members get restless without an exclusive every week; unhappy ones cancel.'),
+      btn('.btn.block' + (can ? '.primary' : ''), { testid: 'bb-exclusive', disabled: !can, style: 'margin:8px 0 4px', onclick: function () {
+        var p = F().exclusive(st, {});
+        if (!p) return;
+        sfx('ui'); sync(); ui.toast('🔒 Exclusive posted. Members are happier. (Burnout +' + (F().cfg().club.exclusiveBurnout || 0) + ')'); rerender();
+      } }, can ? '🔒 Post an exclusive' : '✓ Exclusive posted this week'),
+      el('div.bb-h', 'Tiers'), el('div', v.tiers.map(function (t) { return tierRow(t, true); })),
+      posts.length ? el('div.bb-h', 'Latest exclusives') : null, el('div', { testid: 'bb-club-posts' }, posts.map(postCard))]);
+  }
+
+  /* ---- The panel + the standalone sheet -------------------------------------------------------------------------- */
+  // st: GG.state; rerender(): redraw the host; opts.tab: 'feed'|'fans'|'club'.
+  ui.bandbookPanel = function (st, rerender, opts) {
+    css();
+    if (!F() || !st) return el('p.dim', 'Bandbook is down for maintenance. Kenji is looking at it.');
+    F().ensure(st);
+    if (opts && opts.tab) sub = opts.tab;
+    var redo = function () { if (rerender) rerender(); };
+    var c = F().counts(st), b = st.bandbook, name = bandName(st);
+    var body = sub === 'fans' ? fansTab(st) : sub === 'club' ? clubTab(st, redo) : feedTab(st);
+    return el('div', { testid: 'bandbook-panel' }, [
+      el('div.bb-head', [el('span.bb-logo', ['band', el('i', 'book')]), el('span.bb-tag', (F().content().tagline) || '')]),
+      el('div.bb-page', { testid: 'bb-page' }, [el('div.bb-pic', name.charAt(0)), el('div.grow', [el('b', name),
+        el('span', U.fmtNum(c.total) + ' fans · ' + b.posts.length + ' posts · 🚀 ' + b.viral + ' viral' + (st.fanClub ? ' · Patreeon ' + st.fanClub.members : ''))])]),
+      el('div.bb-sub', ui.tabs(SUBS, sub, function (id) { sub = id; redo(); }, 'bb-tab-')),
+      body
+    ]);
+  };
+  ui.bandbookTab = function () { return sub; };
+  ui.define('bandbook', {
+    kind: 'sheet', tall: true, title: 'Bandbook',
+    build: function (s, d) {
+      var st = GG.state; if (!st) return;
+      s.setTitle('Bandbook', 'THE BAND PAGE');
+      ui.append(s.body, ui.bandbookPanel(st, function () { s.rerender({}); }, d && d.tab ? { tab: d.tab } : null));
+    }
+  });
+  GG.registerDebug('bandbook', function () {
+    var st = GG.state;
+    return { tab: sub, open: ui.isOpen ? ui.isOpen('bandbook') : false, posts: st && st.bandbook ? st.bandbook.posts.length : 0,
+      rendered: typeof document !== 'undefined' ? document.querySelectorAll('[data-testid="bb-post"]').length : 0 };
   });
 })(window.GG);
 
