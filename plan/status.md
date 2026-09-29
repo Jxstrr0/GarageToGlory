@@ -3,9 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.3.0.0 "Stage"** (merged to main 2026-09-29) · 0.2 "Sequencer", 0.1 "Garage" merged earlier
-- Current build on main after merge: **0.4.0.0 "Drama"**; next: **0.5.0 "Signed"**
-- Next: **0.4.0 "Drama"** (handoff B4)
+- Current: **0.4.0.0 "Drama"** (merged to main 2026-09-29) · 0.3 "Stage", 0.2 "Sequencer", 0.1 "Garage" merged earlier
+- Next: **0.5.0 "Signed"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
