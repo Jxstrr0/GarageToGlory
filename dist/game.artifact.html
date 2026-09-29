@@ -1,0 +1,411 @@
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1420">
+<title>Garage to Glory - V0.1.0.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
+<style>
+:root {
+  --bg: #0f1420; --bg2: #161d2e; --panel: #1c2438; --panel2: #243050; --line: #34426a;
+  --text: #f3efe6; --dim: #a9b1c6; --faint: #6f7a96;
+  --amber: #ffb347; --red: #e0403a; --green: #57c77a; --blue: #4f8cff; --purple: #9b6bff;
+  --good: #57c77a; --bad: #ff6b5e;
+  --r: 14px; --tap: 48px; --gutter: 16px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --display: "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.4 var(--font); overflow: hidden; overscroll-behavior: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+button { font: inherit; color: inherit; }
+input, textarea { font: inherit; -webkit-user-select: text; user-select: text; }
+#app { position: fixed; inset: 0; overflow: hidden; }
+#scene { position: absolute; inset: 0; }
+#scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#hud { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; z-index: 10; }
+#hud > * { pointer-events: auto; }
+#screens { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+#screens > * { pointer-events: auto; }
+#toast { position: absolute; left: 50%; bottom: calc(96px + var(--safe-bot)); transform: translateX(-50%); z-index: 40; pointer-events: none; }
+#boot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; z-index: 50; background: var(--bg); }
+#boot .t { font: 900 28px var(--display); letter-spacing: 1px; }
+#boot .s { color: var(--dim); font-size: 14px; }
+/* ---- UI styles (owned by 50_ui_*; keep tokens above) ---- */
+</style>
+
+
+<div id="app">
+  <div id="scene"></div>
+  <div id="hud"></div>
+  <div id="screens"></div>
+  <div id="toast"></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.1.0.0</div></div>
+</div>
+<script>/* 01_ns.js */
+// 01_ns.js: window.GG namespace, event bus, seeded RNG, small utils, debug registry.
+// Loaded first. Works in the browser and in node (tests set window = globalThis).
+(function (root) {
+  var GG = root.GG = root.GG || {};
+  GG.VERSION = '0.1.0.0';
+  GG.content = GG.content || {};
+
+  // ---- Event bus -------------------------------------------------------
+  var handlers = {};
+  GG.on = function (ev, fn) {
+    (handlers[ev] = handlers[ev] || []).push(fn);
+    return function () { GG.off(ev, fn); };
+  };
+  GG.off = function (ev, fn) {
+    var list = handlers[ev]; if (!list) return;
+    var i = list.indexOf(fn); if (i >= 0) list.splice(i, 1);
+  };
+  GG.once = function (ev, fn) {
+    var off = GG.on(ev, function (p) { off(); fn(p); });
+    return off;
+  };
+  GG.emit = function (ev, payload) {
+    var list = handlers[ev]; if (!list) return;
+    list = list.slice();
+    for (var i = 0; i < list.length; i++) {
+      try { list[i](payload); } catch (e) { if (root.console) console.error('[GG] handler for "' + ev + '" failed:', e); }
+    }
+  };
+  GG.clearHandlers = function () { handlers = {}; }; // tests only
+
+  // ---- Seeded RNG (mulberry32) ----------------------------------------
+  // The career's RNG state lives in state.rng (a uint32) so saves resume deterministically.
+  function step(s) {
+    s = (s + 0x6D2B79F5) >>> 0;
+    var t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return { s: s, v: ((t ^ (t >>> 14)) >>> 0) / 4294967296 };
+  }
+  function api(get, set) {
+    var r = {
+      next: function () { var o = step(get()); set(o.s); return o.v; },
+      int: function (lo, hi) { return lo + Math.floor(r.next() * (hi - lo + 1)); },
+      range: function (lo, hi) { return lo + r.next() * (hi - lo); },
+      chance: function (p) { return r.next() < p; },
+      pick: function (arr) { return arr && arr.length ? arr[Math.floor(r.next() * arr.length)] : undefined; },
+      weighted: function (arr, wfn) {
+        var tot = 0, i; for (i = 0; i < arr.length; i++) tot += Math.max(0, wfn(arr[i]));
+        if (tot <= 0) return undefined;
+        var x = r.next() * tot;
+        for (i = 0; i < arr.length; i++) { x -= Math.max(0, wfn(arr[i])); if (x < 0) return arr[i]; }
+        return arr[arr.length - 1];
+      },
+      shuffle: function (arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r.next() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+        return a;
+      }
+    };
+    return r;
+  }
+  // Standalone RNG with its own state.
+  GG.RNG = function (seed) { var s = (seed >>> 0) || 1; return api(function () { return s; }, function (v) { s = v; }); };
+  // RNG whose state is stored in obj[key] (default state.rng). Use this for the career.
+  GG.rngFor = function (obj, key) { key = key || 'rng'; return api(function () { return obj[key] >>> 0; }, function (v) { obj[key] = v; }); };
+  GG.hashSeed = function (str) { var h = 2166136261 >>> 0; str = String(str); for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h || 1; };
+
+  // ---- Utils -----------------------------------------------------------
+  GG.util = {
+    clamp: function (v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; },
+    clone: function (o) { return o == null ? o : JSON.parse(JSON.stringify(o)); },
+    fmtMoney: function (n) { n = Math.round(n); var s = Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−$' : '$') + s; },
+    signed: function (n) { n = Math.round(n); return (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n); },
+    fmtNum: function (n) { n = Math.round(n); return Math.abs(n) >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + 'k' : n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  };
+
+  // ---- Debug registry ----------------------------------------------------
+  // Every module registers a debug() getter so tests assert state instead of screenshots.
+  var dbg = {};
+  GG.registerDebug = function (name, fn) { dbg[name] = fn; };
+  GG.debug = function (name) {
+    if (name) return dbg[name] ? dbg[name]() : undefined;
+    var out = {}; for (var k in dbg) { try { out[k] = dbg[k](); } catch (e) { out[k] = { error: String(e) }; } } return out;
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>/* 02_contracts.js */
+// 02_contracts.js: the single source of truth for state fields, content schemas, events and commands.
+// Constants below are used by code and tests. Comments document shapes. Change this file first.
+(function (GG) {
+  var C = GG.contracts = {};
+
+  C.SAVE_SCHEMA = 1;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.WEEKS_PER_YEAR = 24;
+  C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
+  C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
+  C.BLOCK_LABELS = ['Tue night', 'Thu night', 'Weekend'];
+
+  C.GENRES = ['metal', 'punk', 'rock', 'country'];
+  C.ERAS = ['garage', 'local', 'signed', 'world'];
+  C.REGIONS = ['canada', 'uk_europe', 'japan', 'australia', 'russia']; // no USA, ever
+  C.CARD_TYPES = ['drama', 'money', 'road', 'scene', 'fame', 'weird'];
+  C.ACTIVITIES = ['rehearse', 'write', 'promote', 'book', 'hustle', 'rest'];
+  C.PHASES = ['monday', 'plan', 'week', 'wrap', 'ended'];
+  C.DEALS = ['exposure', 'flat', 'door'];
+  C.GRADES = ['S', 'A', 'B', 'C', 'D'];
+  C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
+  C.SLOTS = ['auto', '1', '2', '3'];
+
+  // Band-level numeric stats and their clamps. fund may dip below 0 only transiently:
+  // endWeek() tops it back to 0 with a parents' loan.
+  C.STATS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill'];
+  C.MEMBER_STATS = ['mood', 'skill'];
+  C.RANGES = {
+    fans: [0, 1e9], buzz: [0, 100], chemistry: [0, 100], burnout: [0, 100], drumSkill: [1, 100],
+    mood: [0, 100], skill: [0, 100]
+  };
+
+  // Keys allowed in an effects object (cards, activities).
+  //   fund, fans, buzz, chemistry, burnout, drumSkill : number deltas
+  //   mood  : { <memberId>|'all': delta }            skill : { <memberId>|'all': delta }
+  //   flags : { <flagName>: value }  (value true/false/string/number; false deletes)
+  //   chain : { <chainId>: { step: <n>|'end', delay: <weeks, default 1> } }
+  //   book  : <venueId>   books that venue for this weekend (replaces nothing if a gig is already booked)
+  //   chat  : { who: <memberId|npcId>, text }        posts a group-chat message
+  C.EFFECT_KEYS = ['fund', 'fans', 'buzz', 'chemistry', 'burnout', 'drumSkill', 'mood', 'skill', 'flags', 'chain', 'book', 'chat'];
+
+  // Keys allowed in a card gate. All present conditions must hold.
+  //   era:[..] genre:[..] region:[..] band:[bandId..]
+  //   minWeek/maxWeek (totalWeek), weekOfYear:[lo,hi], minYear/maxYear
+  //   minFans/maxFans, minFund/maxFund, minBuzz/maxBuzz, minChemistry/maxChemistry
+  //   flags:[names that must be truthy]  notFlags:[names that must be falsy]
+  //   flagEquals:{ name: value }          gigBooked:true|false
+  //   moodBelow:{ memberId: n }  moodAbove:{ memberId: n }
+  C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
+    'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
+
+  /* ======================================================================
+   CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
+   {
+     v: 1, createdVersion: '0.1.0.0', slot: '1',
+     seed: <uint32>, rng: <uint32>,                 // rng = live RNG state (GG.rngFor(state))
+     bandId: 'hail_damage', genre: 'metal', region: 'canada', city: 'Saskatoon', space: 'parents_garage',
+     player: { name, nick, presetId, look: LOOK, kitColor: '#rrggbb' },
+     totalWeek: 1, year: 1, week: 1, maxWeeks: 240, // week = week of year 1..24
+     phase: 'monday'|'plan'|'week'|'wrap'|'ended',
+     era: 'garage', protected: true,                 // garage era: nobody quits, nothing breaks
+     fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
+     members: [ { id, name, nick, role, skill, mood, status: 'active', original: true } ],
+     songs:   [ { id, title, titleEn, quality, polish, plays, written, pattern: null } ],  // pattern arrives in v0.2
+     card:    null | { id, resolved: false } | { id, resolved: true, choice, outcome, deltas },
+     plan:    [activityId|null, activityId|null, activityId|null],
+     gig:     null | GIG,   offer: null | GIG,        // booked gig for this weekend / pending offer
+     lastGig: null | GIG_RESULT, lastWeek: null | WEEK_RESULT, wrap: null | WRAP,
+     chains: { <chainId>: { step: n|'end', due: totalWeek } },
+     flags:  { <name>: value },  seenCards: { <cardId>: totalWeekSeen },
+     chat:    [ { week: totalWeek, who, text } ]        // newest last, capped at 60
+     history: [ { w: totalWeek, fund, fans, buzz, chemistry } ],
+     stats:   { gigs, songsWritten, hustles, cards, earned, bestGrade, parentsLoans },
+     ended: false
+   }
+   LOOK = { skin:'#rrggbb', hair:'#rrggbb', hairStyle:'short'|'long'|'mohawk'|'bald'|'bun'|'mullet'|'spiky'|'cap',
+            shirt:'#rrggbb', pants:'#rrggbb', height: 0.9..1.1, build: 0.9..1.2,
+            extras: ['sunglasses'|'beard'|'moustache'|'glasses'|'headband'|'tattoos'|'hat'|'bandana'] }
+   GIG  = { venueId, name, city, tier, kind, capacity, deal, pay, gas, quirk, source: 'forced'|'book'|'offer'|'card' }
+   GIG_RESULT = { venueId, name, city, deal, crowd, capacity, score, grade, pay, gas, fans, buzz,
+                  songs:[titles], reactions:[{ who, text }], lines:[text] }
+   WEEK_RESULT = { blocks: [ { activity, lines:[text], deltas } ], gig: GIG_RESULT|null }
+   WRAP = { totalWeek, year, week,                    // the week that just ended
+            deltas: { fund, fans, buzz, chemistry, burnout, drumSkill },
+            upkeep, buzzDecay, parentsLoan, guilt: text|null,
+            members: [ { id, name, mood, moodDelta, skill, label } ],
+            chat: [ newly posted messages ], yearEnd: bool, yearSummary: null|{...}, ended: bool }
+  ====================================================================== */
+
+  /* ======================================================================
+   CONTENT SCHEMAS (src/content/*.js, attach to GG.content)
+   bands:  { <bandId>: { id, name, genre, city, region, space, spaceName, size, rival, locked, comingIn,
+                         blurb, coldOpen: [panel text..], starterSongs: [ { title, titleEn } ],
+                         members: [ { id, name, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
+           idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'  (garage idle animation)
+   rivals: { <rivalId>: { id, name, city, genre, blurb } }
+   npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
+   cards:  [ CARD ]
+     CARD = { id, type, speaker, title, text, gate, weight=1, once=true, cooldown=0,
+              chain?: chainId, step?: n, forceWeek?: totalWeek,
+              choices: [ { label, hint?, effects?, outcome, roll?: { chance, stat?, statScale?,
+                           success: { effects, outcome }, fail: { effects, outcome } } } ]  (2–3 choices) }
+   activities: { <activityId>: { id, name, icon, blurb, ...numbers } }        (owned by the sim)
+   economy: { startFund, startFans, startBuzz, weeklyUpkeep, buzzDecay, quietWeekChance, ... } (owned by the sim)
+   venues: [ { id, name, city, region, tier, kind, capacity, deal, pay, minFans, genreFit:{metal..}, quirk } ]
+   lines:  { activity: { <activityId>: [text] }, chat: { <memberId>: { happy:[], ok:[], grumpy:[] } },
+             gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
+             guilt: [text], yearEnd: [text], quietWeek: [text] }
+   songTitles: { metal: [ { fr, en } ] }
+   presets: [ { id, name, blurb, look: LOOK, kitColor } ]
+   Text may use tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>} — GG.career.fillText() replaces them.
+  ====================================================================== */
+
+  /* ======================================================================
+   EVENTS (GG.emit(name, payload))            emitted by
+   'career:new'     { state }                 career.newCareer
+   'career:loaded'  { state }                 main, after a load
+   'week:start'     { totalWeek, year, week, card: cardId|null, offer: GIG|null }   career.startWeek
+   'card:resolved'  { cardId, choice, outcome, deltas, success }                    career.resolveCard
+   'plan:changed'   { plan }                  career.setPlan
+   'block:done'     { index, activity, lines, deltas }                              career.runWeek
+   'gig:done'       { result: GIG_RESULT }    career.runWeek
+   'week:done'      { result: WEEK_RESULT }   career.runWeek
+   'week:wrap'      { wrap: WRAP }            career.endWeek (main autosaves on this)
+   'year:end'       { year, summary }         career.endWeek
+   'career:end'     { state }                 career.endWeek
+   'stats:changed'  { state }                 career (any stat change) -> HUD refresh
+   'hotspot'        { action }                render, when the player reaches a tapped hotspot
+   'member:tap'     { id }                    render, when a bandmate is tapped
+   'screen:open'    { id }  'screen:close' { id }                                   ui
+   'save:done'      { slot }  'save:failed' { slot, error }                         save / main
+  ====================================================================== */
+
+  /* ======================================================================
+   COMMANDS (module APIs). Sims take state as the first arg and never touch the DOM.
+   GG.career.newCareer({ seed, bandId, slot, player:{ name, nick, presetId } }) -> state
+   GG.career.startWeek(state)            -> { card: CARD|null, offer: GIG|null }  phase -> 'monday' | 'plan'
+   GG.career.currentCard(state)          -> CARD|null
+   GG.career.resolveCard(state, i)       -> { cardId, choice, outcome, deltas, success }  phase -> 'plan'
+   GG.career.effectSummary(effects)      -> 'Fund −$150 · Marcel ↑ · Buzz ↑'
+   GG.career.setPlan(state, [a,b,c])     -> plan
+   GG.career.acceptOffer(state) / declineOffer(state)
+   GG.career.runWeek(state)              -> WEEK_RESULT   phase -> 'wrap'
+   GG.career.endWeek(state)              -> WRAP          advances the week; phase -> 'monday' (or 'ended')
+   GG.career.moodLabel(mood)             -> 'happy'|'ok'|'grumpy'|'sulking'
+   GG.career.fillText(state, text)       -> text with tokens replaced
+   GG.career.botPlan(state, style) / botChoice(state, card, style)   style 'avg'|'good'
+   GG.songs.writePlaceholder(state, rng) -> song ; GG.songs.best(state, n) -> [song]
+   GG.gig.makeGig(state, venueId, source) -> GIG ; GG.gig.randomOffer(state, rng) -> GIG|null
+   GG.gig.autoResolve(state, rng)        -> GIG_RESULT (v0.1 placeholder; v0.3 replaces with the rhythm game)
+   GG.save.write(slot, state) -> bool ; read(slot) -> state|null ; list() -> [{ slot, exists, summary }]
+   GG.save.remove(slot) ; toCode(state) -> 'GG1:...' ; fromCode(text) -> state (throws on bad code)
+   GG.save.migrate(state) -> state ; GG.save.storageOk -> bool
+   GG.render.init(containerEl) -> bool ; setScene('garage'|'none') ; syncState(state) ; setPaused(bool)
+   GG.render.goToHotspot(action) ; hotspotScreenPos(action) -> {x,y}|null ; memberScreenPos(id) -> {x,y}|null
+   GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; suspend() / resume()
+   GG.ui.show(id, data) ; close() ; toast(text) ; refreshHud()
+   GG.main.quickStart({ seed, slot }) -> state   (dev/tests: skips menus, lands in the garage)
+   Every module: GG.registerDebug('<module>', fn) ; GG.debug() returns all.
+  ====================================================================== */
+})(window.GG);
+
+</script>
+<script>/* 10_save.js */
+// 10_save.js: localStorage slots, autosave, save codes
+(function (GG) {
+  GG.save = GG.save || {};
+  GG.registerDebug('save', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 20_sim_career.js */
+// 20_sim_career.js: week loop, stats, eras, money, moods (no DOM)
+(function (GG) {
+  GG.career = GG.career || {};
+  GG.registerDebug('career', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 21_sim_songs.js */
+// 21_sim_songs.js: song catalog; v0.1 placeholder songs, v0.2 sequencer model + rating
+(function (GG) {
+  GG.songs = GG.songs || {};
+  GG.registerDebug('songs', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 22_sim_gig.js */
+// 22_sim_gig.js: gigs; v0.1 auto-resolve placeholder, v0.3 chart/judgement/crowd sim (no DOM, no audio)
+(function (GG) {
+  GG.gig = GG.gig || {};
+  GG.registerDebug('gig', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 23_sim_rival.js */
+// 23_sim_rival.js: rival career, heat, showdowns (v0.6)
+(function (GG) {
+  GG.rival = GG.rival || {};
+  GG.registerDebug('rival', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 24_sim_labels.js */
+// 24_sim_labels.js: labels, albums, reviews, charts, awards (v0.5)
+(function (GG) {
+  GG.labels = GG.labels || {};
+  GG.registerDebug('labels', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 25_sim_tour.js */
+// 25_sim_tour.js: regions, unlocks, tour packages (v0.7)
+(function (GG) {
+  GG.tour = GG.tour || {};
+  GG.registerDebug('tour', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 30_audio.js */
+// 30_audio.js: Web Audio synth: sfx now, drums/backing later
+(function (GG) {
+  GG.audio = GG.audio || {};
+  GG.registerDebug('audio', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 40_render_core.js */
+// 40_render_core.js: three.js renderer, loop, camera, tap input
+(function (GG) {
+  GG.render = GG.render || {};
+  GG.registerDebug('render', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 41_render_garage.js */
+// 41_render_garage.js: the 3D garage, characters, hotspots
+(function (GG) {
+  GG.render = GG.render || {};
+  GG.registerDebug('render', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 50_ui_core.js */
+// 50_ui_core.js: DOM screen stack, HUD, toasts, helpers
+(function (GG) {
+  GG.ui = GG.ui || {};
+  GG.registerDebug('ui', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 51_ui_menu.js */
+// 51_ui_menu.js: title, slots, new career, character creator, save codes
+(function (GG) {
+  GG.ui = GG.ui || {};
+  GG.registerDebug('ui', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 52_ui_week.js */
+// 52_ui_week.js: Monday card, whiteboard plan, week results, wrap
+(function (GG) {
+  GG.ui = GG.ui || {};
+  GG.registerDebug('ui', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+<script>/* 60_main.js */
+// 60_main.js: boot, routing, autosave
+(function (GG) {
+  GG.main = GG.main || {};
+  GG.registerDebug('main', function () { return { stub: true }; });
+})(window.GG);
+
+</script>
+
+

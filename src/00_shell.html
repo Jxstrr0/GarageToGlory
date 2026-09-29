@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1420">
+<title>Garage to Glory - V__VERSION__</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
+<style>
+:root {
+  --bg: #0f1420; --bg2: #161d2e; --panel: #1c2438; --panel2: #243050; --line: #34426a;
+  --text: #f3efe6; --dim: #a9b1c6; --faint: #6f7a96;
+  --amber: #ffb347; --red: #e0403a; --green: #57c77a; --blue: #4f8cff; --purple: #9b6bff;
+  --good: #57c77a; --bad: #ff6b5e;
+  --r: 14px; --tap: 48px; --gutter: 16px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --display: "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 16px/1.4 var(--font); overflow: hidden; overscroll-behavior: none; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+button { font: inherit; color: inherit; }
+input, textarea { font: inherit; -webkit-user-select: text; user-select: text; }
+#app { position: fixed; inset: 0; overflow: hidden; }
+#scene { position: absolute; inset: 0; }
+#scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#hud { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; z-index: 10; }
+#hud > * { pointer-events: auto; }
+#screens { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+#screens > * { pointer-events: auto; }
+#toast { position: absolute; left: 50%; bottom: calc(96px + var(--safe-bot)); transform: translateX(-50%); z-index: 40; pointer-events: none; }
+#boot { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; z-index: 50; background: var(--bg); }
+#boot .t { font: 900 28px var(--display); letter-spacing: 1px; }
+#boot .s { color: var(--dim); font-size: 14px; }
+/* ---- UI styles (owned by 50_ui_*; keep tokens above) ---- */
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene"></div>
+  <div id="hud"></div>
+  <div id="screens"></div>
+  <div id="toast"></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V__VERSION__</div></div>
+</div>
+<!-- SCRIPTS -->
+</body>
+</html>
