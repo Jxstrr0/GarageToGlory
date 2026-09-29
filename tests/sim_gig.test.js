@@ -16,7 +16,8 @@ test('venues: required ids and fields, all Saskatchewan, card-only St. Vlad\'s',
   const V = GG.content.venues;
   ['buddys_house_party', 'gopher_hole_openmic', 'legion_63', 'bingo_palace', 'st_vlads_hall', 'warman_curling_lounge',
     'martensville_skatepark', 'gopher_hole'].forEach(id => ok(GG.gig.venue(id), 'venue ' + id));
-  const SK = ['Saskatoon', 'Warman', 'Martensville'];
+  // Any city on the map (v0.3: the Saskatchewan core) — venues must sit on a pin.
+  const SK = Object.keys(GG.content.map.cities).map(k => GG.content.map.cities[k].name);
   V.forEach(v => {
     ok(v.name && v.quirk && v.region === 'canada' && SK.indexOf(v.city) >= 0, v.id + ' basics');
     ok(GG.contracts.DEALS.indexOf(v.deal) >= 0 && v.capacity > 0 && v.tier >= 1 && isFinite(v.minFans), v.id + ' numbers');

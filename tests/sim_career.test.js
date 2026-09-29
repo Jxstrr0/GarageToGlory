@@ -9,6 +9,7 @@ function fresh(cards) {
   if (cards) GG.content.cards = cards;
   return GG;
 }
+const AUTO = { autoGig: true };   // v0.3: play booked gigs automatically (no rhythm game in node)
 const ch = (effects, outcome, extra) => Object.assign({ label: 'x', effects, outcome: outcome || 'ok' }, extra || {});
 const FORCE = { id: 'fx_force', type: 'drama', title: 'F', text: 't', forceWeek: 1, gate: { band: ['hail_damage'] },
   choices: [ch({ mood: { marcel: 5 } }), ch({ mood: { marcel: -5 } })] };
@@ -43,7 +44,7 @@ function week(GG, s, plan, choice) {
   const r = GG.career.startWeek(s);
   if (r.card) GG.career.resolveCard(s, choice || 0);
   GG.career.setPlan(s, plan || ['rest', 'rest', 'rest']);
-  GG.career.runWeek(s);
+  GG.career.runWeek(s, AUTO);
   return GG.career.endWeek(s);
 }
 function inRanges(GG, s) {
@@ -87,9 +88,9 @@ test('forced week-1 card, idempotent startWeek, quiet weeks never in weeks 1-2',
   eq(b.card.id, 'fx_force'); eq(s.rng, rng, 'no rng use on re-call'); eq(starts, 1, 'week:start once');
   GG.career.resolveCard(s, 0);
   eq(GG.career.startWeek(s).card, null, 'resolved card is not returned again');
-  GG.career.runWeek(s); GG.career.endWeek(s);
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
   eq(GG.career.startWeek(s).card.id, 'fx_n', 'week 2 always has a card');
-  GG.career.resolveCard(s, 0); GG.career.runWeek(s); GG.career.endWeek(s);
+  GG.career.resolveCard(s, 0); GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
   const w3 = GG.career.startWeek(s);
   eq(w3.card, null, 'week 3 quiet at chance 1'); ok(w3.quiet && s.quiet, 'quiet line'); eq(s.phase, 'plan');
 });
@@ -102,13 +103,13 @@ test('chain: step 1 starts it, due/delay respected, flag-gated branch, roll, aut
   const fund = s.fund;
   const r = GG.career.resolveCard(s, 0);
   eq(s.fund, fund - 120); eq(s.flags.cape, 'velvet'); eq(s.chains.cape, { step: 2, due: 3 }); eq(r.deltas.fund, -120);
-  GG.career.runWeek(s); GG.career.endWeek(s);                 // week 2
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);                 // week 2
   eq(GG.career.startWeek(s).card, null, 'week 2: chain not due, nothing else eligible');
-  GG.career.runWeek(s); GG.career.endWeek(s);                 // week 3
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);                 // week 3
   eq(GG.career.startWeek(s).card.id, 'fx_c2v', 'due at week 3, velvet branch');
   GG.career.resolveCard(s, 0);
   eq(s.chains.cape, { step: 3, due: 4 });
-  GG.career.runWeek(s); GG.career.endWeek(s);
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
   eq(GG.career.startWeek(s).card.id, 'fx_c3');
   const res = GG.career.resolveCard(s, 0);
   ok(res.success === true || res.success === false, 'roll reports success');
@@ -116,7 +117,7 @@ test('chain: step 1 starts it, due/delay respected, flag-gated branch, roll, aut
   ok(res.success ? res.deltas.fans === 10 : s.flags.cape === 'charred', 'branch effect applied');
   ok(res.outcome.indexOf('You spin.') === 0, 'outcome = choice outcome + branch outcome');
   eq(s.chains.cape.step, 'end', 'no step 4 exists: chain auto-ends');
-  GG.career.runWeek(s); GG.career.endWeek(s);
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
   eq(GG.career.startWeek(s).card, null, 'ended chain draws nothing');
 });
 
@@ -125,7 +126,7 @@ test('chain: curtain branch; end choice ends it; stale chains end', () => {
   GG.content.economy.quietWeekChance = 0;
   const s = GG.career.newCareer({ seed: 12 });
   GG.career.startWeek(s); GG.career.resolveCard(s, 1);
-  GG.career.runWeek(s); GG.career.endWeek(s);
+  GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
   eq(GG.career.startWeek(s).card.id, 'fx_c2c', 'curtain branch at delay 1');
   const s2 = GG.career.newCareer({ seed: 13 });
   GG.career.startWeek(s2); GG.career.resolveCard(s2, 2);
@@ -144,7 +145,7 @@ test('once cards never repeat; cooldown respected; forced cards never drawn rand
   GG.content.economy.quietWeekChance = 0;
   const s = GG.career.newCareer({ seed: 3 });
   const seen = [];
-  for (let i = 0; i < 12; i++) { const c = GG.career.startWeek(s).card; seen.push(c ? c.id : '-'); if (c) GG.career.resolveCard(s, 0); GG.career.runWeek(s); GG.career.endWeek(s); }
+  for (let i = 0; i < 12; i++) { const c = GG.career.startWeek(s).card; seen.push(c ? c.id : '-'); if (c) GG.career.resolveCard(s, 0); GG.career.runWeek(s, AUTO); GG.career.endWeek(s); }
   eq(seen.filter(x => x === 'fx_once').length <= 1, true, 'once');
   const cd = seen.map((x, i) => x === 'fx_cd' ? i + 1 : 0).filter(Boolean);
   for (let i = 1; i < cd.length; i++) ok(cd[i] - cd[i - 1] > 2, 'cooldown gap ' + cd);
@@ -233,7 +234,7 @@ test('fillText tokens, moodLabel, setPlan sanitizing', () => {
 
 test('activities: each does its job; repeats have diminishing returns', () => {
   const GG = fresh([]);
-  const run = (plan, prep) => { const s = GG.career.newCareer({ seed: 21 }); s.gig = null; if (prep) prep(s); GG.career.startWeek(s); GG.career.setPlan(s, plan); return [s, GG.career.runWeek(s)]; };
+  const run = (plan, prep) => { const s = GG.career.newCareer({ seed: 21 }); s.gig = null; if (prep) prep(s); GG.career.startWeek(s); GG.career.setPlan(s, plan); return [s, GG.career.runWeek(s, AUTO)]; };
   let [s, r] = run(['rehearse', 'rest', 'rest']);
   const b = r.blocks[0].deltas;
   ok(b.chemistry > 0 && b.drumSkill >= 2 && b.burnout === 5 && b.polished.length === Math.min(3, s.songs.length), 'rehearse ' + JSON.stringify(b));
@@ -294,7 +295,7 @@ test('offers: arrive from offerMinFans, accept/decline emit stats:changed', () =
 test('parents\' loan tops the fund up, flags guilt, counts', () => {
   const GG = fresh([]);
   const s = GG.career.newCareer({ seed: 6 });
-  GG.career.startWeek(s); GG.career.runWeek(s);
+  GG.career.startWeek(s); GG.career.runWeek(s, AUTO);
   s.fund = -50;
   const w = GG.career.endWeek(s);
   eq(s.fund, GG.content.economy.parentsCushion); ok(w.parentsLoan > 150); eq(s.debtToParents, w.parentsLoan);
@@ -313,7 +314,7 @@ test('year rollover every 24 weeks; career ends at maxWeeks', () => {
   w = week(GG, s); eq([s.totalWeek, s.year, s.week, w.ended], [240, 10, 24, false]);
   w = week(GG, s);
   ok(w.ended && w.yearEnd && s.ended && s.phase === 'ended' && s.totalWeek === 240, 'ended');
-  eq(ends, 1); eq(GG.career.startWeek(s).card, null); eq(GG.career.runWeek(s), null); eq(GG.career.endWeek(s), w);
+  eq(ends, 1); eq(GG.career.startWeek(s).card, null); eq(GG.career.runWeek(s, AUTO), null); eq(GG.career.endWeek(s), w);
 });
 
 test('bots: 240-week careers finish, stay in RANGES, fund >= 0, garage protection holds', () => {
@@ -357,6 +358,66 @@ test('save mid-week and resume gives the same career (rng lives in state)', () =
   const b = JSON.parse(JSON.stringify(a));
   for (let i = 0; i < 30; i++) { GG.career.botWeek(a, 'good'); GG.career.botWeek(b, 'good'); }
   eq(JSON.stringify(a), JSON.stringify(b));
+});
+
+// ---- v0.3: live gigs (phase 'gig'), finishGig, the board in the week ---------------------------------------
+test('runWeek without autoGig: blocks run, then phase gig + gig:pending; double calls are safe', () => {
+  const GG = fresh([FORCE]);
+  const s = GG.career.newCareer({ seed: 4 });
+  const ev = []; ['gig:pending', 'gig:done', 'week:done'].forEach(n => GG.on(n, p => ev.push([n, p])));
+  const r0 = GG.career.startWeek(s); if (r0.card) GG.career.resolveCard(s, 0);
+  GG.career.setPlan(s, ['rehearse', 'rest', 'rest']);
+  const fund0 = s.fund, r = GG.career.runWeek(s);
+  eq([s.phase, r.blocks.length, r.gig, s.gig.venueId, s.stats.gigs], ['gig', 3, null, 'buddys_house_party', 0]);
+  eq(ev.map(e => e[0]), ['gig:pending', 'week:done']); eq(ev[0][1].gig.venueId, 'buddys_house_party');
+  eq(GG.career.runWeek(s), r, 'runWeek again in phase gig = same result, blocks not re-run');
+  eq(GG.career.endWeek(s), null, 'cannot wrap before the gig'); eq(s.totalWeek, 1);
+  eq(s.lastWeek.blocks[0].deltas.drumSkill > 0, true);
+  // the live result comes back from the rhythm game
+  const live = GG.gig.simulate(s, s.gig, GG.RNG(7)); live.grade = 'A'; live.score = 70;
+  const g = GG.career.finishGig(s, live);
+  eq([s.phase, g, s.lastWeek.gig, s.lastGig, s.gig, s.stats.gigs], ['wrap', live, live, live, null, 1]);
+  ok(g.deltas && g.rep === 1 && g.repAfter === 1 && g.banned === false && g.travel && g.shaped, 'rep + travel applied');
+  eq(s.venueRep.buddys_house_party, 1); ok(s.van.km === 0 && s.van.trips === 1, 'across town: 0 km, one trip');
+  eq(ev.filter(e => e[0] === 'gig:done').length, 1);
+  const fund1 = s.fund; eq(GG.career.finishGig(s, live), live, 'finishGig twice returns the result'); eq(s.fund, fund1, 'not applied twice');
+  eq(s.stats.gigs, 1); ok(s.fund === fund0 + live.pay - live.gas || s.fund >= 0, 'fund moved by the gig');
+  const w = GG.career.endWeek(s); ok(w && s.totalWeek === 2 && s.phase === 'monday', 'then the week wraps');
+});
+
+test('finishGig(state) with no result simulates the show; a week with no gig never enters phase gig', () => {
+  const GG = fresh([]);
+  const s = GG.career.newCareer({ seed: 9 });
+  GG.career.startWeek(s); GG.career.setPlan(s, ['rest', 'rest', 'rest']); GG.career.runWeek(s);
+  eq(s.phase, 'gig'); const r = GG.career.finishGig(s);
+  ok(r && GG.contracts.GRADES.includes(r.grade) && s.phase === 'wrap' && s.lastWeek.gig === r, 'simulated');
+  eq(GG.career.finishGig(s), r, 'phase wrap: returns the last gig');
+  GG.career.endWeek(s); s.gig = null; GG.career.startWeek(s); s.gig = null;
+  GG.career.setPlan(s, ['rest', 'rest', 'rest']); const r2 = GG.career.runWeek(s);
+  eq([s.phase, r2.gig], ['wrap', null], 'no gig: straight to wrap');
+  eq(GG.career.finishGig(s), s.lastGig, 'finishGig outside phase gig changes nothing');
+});
+
+test('Book block in a live week: the board pick is booked, then played live', () => {
+  const GG = fresh([]);
+  const s = GG.career.newCareer({ seed: 12 }); s.gig = null; s.fans = 80;
+  GG.career.startWeek(s); s.gig = null;
+  const l = s.listings.find(x => x.km > 100) || s.listings[0];
+  GG.career.pickListing(s, l.id); GG.career.setPlan(s, ['book', 'rehearse', 'rest']);
+  GG.career.runWeek(s);
+  eq([s.phase, s.gig.venueId, s.gig.id, s.gig.source], ['gig', l.venueId, l.id, 'book']);
+  const t = GG.world.startTrip(s); ok(t.venueId === l.venueId && t.km === l.km, 'the van drives there');
+  const c0 = s.van.condition, r = GG.career.finishGig(s, null);
+  eq(r.venueId, l.venueId); ok(s.van.condition <= c0 && r.travel.km === l.km, 'van wear on the way');
+});
+
+test('bots never stop in phase gig; botBook picks listings; autoGig resolves road cards', () => {
+  const GG = fresh();
+  const s = GG.career.newCareer({ seed: 77 });
+  let pending = 0, roads = 0; GG.on('gig:pending', () => pending++); GG.on('road:resolved', () => roads++);
+  for (let i = 0; i < 48; i++) { GG.career.botWeek(s, i % 2 ? 'good' : 'avg'); ok(s.phase === 'monday', 'week ' + i + ' phase ' + s.phase); }
+  eq(pending, 0); ok(roads > 0, 'bots met road cards: ' + roads);
+  ok(Object.keys(s.venueRep).length >= 3 && s.van.trips >= 20, 'venues played and the van drove: ' + s.van.trips);
 });
 
 done('sim_career');

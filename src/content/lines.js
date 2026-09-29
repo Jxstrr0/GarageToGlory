@@ -350,6 +350,88 @@
       'The group chat is silent. Even Marcel. Especially Marcel. Something is brewing.',
       "Quiet week in {city}. The river's high, the rent's free, the band's fine.",
       'Mr. Lindqvist mows his lawn. Marcel watches from the driveway, judging the stripes.'
+    ],
+
+    // ---- v0.3 road trips (WORLD agent). Kenji drives, silently: he never has a banter pool, only stage directions.
+    vanBanter: {
+      marcel: [
+        'Every grain elevator we pass is a cathedral. I will not be taking questions.',
+        'When we are famous, this highway will be named after me. The whole thing.',
+        'Kenji. Kenji. Is it true you have never once used the horn? ...Respect.',
+        'I have written a ballad about this ditch. It is in three movements.',
+        'The cape stays on in the van. The cape is always on.',
+        'Look at that sky. That sky has never been to a gig. We are its first.'
+      ],
+      dana: [
+        'I tuned everything before we left. The potholes have un-tuned everything.',
+        "Nobody touch my pedalboard. I know exactly where everything is. It's chaos, but mine.",
+        'Two hundred kilometres and not one tree. I respect the commitment.',
+        'If we break down out here, I am walking to the gig. I am not missing a solo.',
+        "Kenji's playlist is just the sound of the road. Honestly? It slaps.",
+        'I counted. That was the forty-first grain bin. I need a hobby.'
+      ],
+      jaxon: [
+        "Baba says if we don't finish the perogies she'll know. She'll just know.",
+        "Are we there yet? I'm asking for the whole van.",
+        'I brought snacks. I have already eaten the snacks. I need snack advice.',
+        'Moose-count for this trip: zero. I feel robbed.',
+        'That sign said Tom Harton\'s in 40 km. Just saying. For morale.',
+        'I call the back bench. Wait, the gear is on the back bench. I call the gear.'
+      ]
+    },
+    vanKenji: [
+      '(Kenji adjusts the rear-view mirror by one degree.)',
+      '(Kenji signals for a lane change. There is no one else on the highway.)',
+      '(Kenji eats exactly one sunflower seed.)',
+      '(Kenji nods at a passing grain truck. The grain truck nods back.)',
+      '(Kenji taps the steering wheel once. Everyone falls silent.)'
+    ],
+    vanArrive: [
+      'Kenji parks. Nobody saw him get out. He is already inside, holding the door.',
+      'You arrive. Kenji is somehow already leaning on the van, sunglasses on.',
+      'The Moose Hearse coughs into the lot. Kenji is gone. The keys are in your hand.',
+      'Arrived. Kenji hands the parking ticket to the owner and walks off without a word.'
+    ],
+    genreClash: [
+      'Wrong crowd entirely. The boots started flying in song two. You still got paid.',
+      'The regulars asked for something they could two-step to. Marcel growled at them. The boots came out.',
+      'Half the room left. The other half stayed out of spite. The cheque cleared.',
+      'A cowboy hat hit the snare mid-fill. You kept the hat. You earned the hat.'
+    ],
+    venueUp: [
+      'The owner wants you back. Better money next time.',
+      'You get the handshake-plus-shoulder-grab. That means a rebook.',
+      '"Same time next month?" the owner asks. Marcel says yes before you can blink.'
+    ],
+    venueDown: [
+      'The owner counts out your pay very slowly, looking you in the eye the whole time.',
+      'Somebody wrote your band name on the napkin by the till. Underlined. Twice.',
+      '"We\'ll call you," says the owner. He will not call you.'
+    ],
+    venueBanned: [
+      "Your photo is going up on the wall behind the bar. Under the word BANNED.",
+      'Banned. The owner laminated your poster first, so it would last.',
+      'They take a Polaroid of the band on the way out. It is for the banned wall. Marcel poses anyway.'
+    ],
+    vanTired: [
+      'The Moose Hearse makes a sound like a sad moose. It is probably fine.',
+      'The Moose Hearse is held together by duct tape, zip ties and belief.',
+      'Something fell off the Moose Hearse. Kenji looked at it, then drove on.'
+    ],
+    breakdown: [
+      'The Moose Hearse died on the shoulder. A tow truck, a long wait, a lighter band fund.',
+      'The engine made one final, operatic noise and stopped. Marcel called it beautiful. The tow cost plenty.',
+      'Breakdown. Kenji got out, stared at the engine, got back in. It started. The tow truck still charged you.'
+    ],
+    sameCrowd: [
+      'Same faces as last time. They sang along, at least.',
+      'You recognise half the crowd from last week. So do they. Fewer new fans.',
+      'The regulars are loyal. The regulars are also the only people here.'
+    ],
+    openingSlot: [
+      'You played first. Half their crowd came early. Some of them are yours now.',
+      'Opening slot: short set, bad pay, big room. You stole a few fans on the way out.',
+      'The headliner said "great warm-up, guys." Their crowd said your band name on the way out.'
     ]
   };
 })(window.GG);

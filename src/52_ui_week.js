@@ -206,13 +206,20 @@
     var st = S();
     if (!st || st.phase !== 'plan' || plan.some(function (a) { return !a; })) return;
     commitPlan();
-    var writes = plan.filter(function (a) { return a === 'write'; }).length;
-    if (writes && ui.composeWeek) ui.composeWeek(writes, playWeek); else playWeek();
+    var writes = plan.filter(function (a) { return a === 'write'; }).length, go = bookFirst(playWeek);
+    if (writes && ui.composeWeek) ui.composeWeek(writes, go); else go();
+  }
+  // v0.3 (WORLD): a planned Book block opens the gig board (56_ui_board) after the sequencer, before the week runs.
+  // Book it -> the pick is stored for the Book block; "No gig" -> 'skip'; ✕ -> back to the planner (nothing runs).
+  function bookFirst(next) {
+    var st = S();
+    if (!st || st.gig || plan.indexOf('book') < 0 || !ui.openBoard) return next;
+    return function () { ui.openBoard({ mode: 'book', onBook: next, onSkip: next }); };
   }
   function playWeek() {
     var st = S();
     if (!st || st.phase !== 'plan') return;   // runs exactly once
-    var result = GG.career.runWeek(st);
+    var result = GG.career.runWeek(st, { autoGig: true });   // v0.3 phase 1: auto gig until RHYTHM wires playVan/playGig
     GG.main.sync();
     ui.close('plan');
     ui.show('results', { result: result });
@@ -486,9 +493,10 @@
   var HOT = {
     kit: function () { ui.openSketch(); },
     merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
-    door: function () { ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
+    door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
     trophies: function () { ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
     gigboard: function () {
+      if (ui.openBoard) return ui.openBoard({ mode: 'view' });
       ui.show('soon', { title: 'Gig board', icon: '📌', top: gigBox(S(), true, function () { HOT.gigboard(); }), soon: 'Coming in v0.3',
         text: 'The full gig board arrives in v0.3. For now: put Book in a slot and hope.' });
     },

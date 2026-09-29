@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 2;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 3;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -80,7 +80,8 @@
      songs:   [ SONG ],  pendingSongs: [ PATTERN+title ] (composed in the UI, consumed by Write blocks),
      draft:   null | PATTERN (the kit's scratch pad),
      liveGig: null | LIVE_GIG (a gig in progress; saved between songs),  listings: [GIG] (this week's gig board),
-     venueRep: { <venueId>: -3..3 }, banned: [venueId] (photos on the trophy wall), van: VAN,  gear: { lanes: 4, doubleKick: false } (v0.8 unlocks more),
+     venueRep: { <venueId>: -3..3 }, venueLast: { <venueId>: totalWeek }, banned: [venueId] (photos on the trophy wall),
+     van: VAN (+ trips, breakdowns), listingsWeek, bookPick: listingId|'skip'|null, trip: null | current road trip,  gear: { lanes: 4, doubleKick: false } (v0.8 unlocks more),
      card:    null | { id, resolved: false } | { id, resolved: true, choice, outcome, deltas },
      plan:    [activityId|null, activityId|null, activityId|null],
      gig:     null | GIG,   offer: null | GIG,        // booked gig for this weekend / pending offer
@@ -102,7 +103,11 @@
    SONG = { id, title, titleEn, written, pattern: PATTERN, rating: { groove, hook, difficulty }, quality, polish,
             plays, lastPlayed, stale 0..100, hits, classic: bool, auto: bool (band jammed it, not you) }
    VAN  = { id: 'moose_hearse', name: 'The Moose Hearse', condition 0..100, space, comfort, km }
-   LIVE_GIG = { gig: GIG, setlist: [songId], index (next song to play), songs: [SONG_RESULT], crowd 0..100, started }
+   LIVE_GIG = { gig: GIG, setlist: [songId], index (next song to play), songs: [SONG_RESULT], crowd 0..100, started, attendance }
+   GIG (v0.3 adds) id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening
+   GIG_RESULT (live, v0.3 adds) live, tier, kind, accuracy, perfect, good, miss, maxCombo, songResults, moments, setBonus,
+     shaped, km, opening, rep (delta), repAfter, banned, travel
+   SONG_RESULT (v0.3 adds) crowdAvg, notes, flubs, extras, extrasHit, stray, cheer, stale
    SONG_RESULT = { songId, title, score, accuracy, perfect, good, miss, maxCombo, crowdEnd, fills, moments:[kind] }
    GIG  = { venueId, name, city, tier, kind, capacity, deal, pay, gas, quirk, source: 'forced'|'book'|'offer'|'card' }
    GIG_RESULT = { venueId, name, city, deal, crowd, capacity, score, grade, pay, gas, fans, buzz,
@@ -155,6 +160,8 @@
    'gig:judge'      { lane, judgement, combo, crowd } gig session, every hit/miss (render + UI react)
    'crowd:level'    { level, crowd }          gig session, when the crowd band changes
    'crowd:moment'   { kind }                  gig session (mosh, lighters, boo, genre moments, band effects)
+   'gig:band'       { who, action }           gig session: 'solo' | 'fill' | 'miss' | 'capeSpin'
+   'road:resolved'  { card, choice, deltas }  world, after a road card on a van trip
    'week:done'      { result: WEEK_RESULT }   career.runWeek
    'week:wrap'      { wrap: WRAP }            career.endWeek (main autosaves on this)
    'year:end'       { year, summary }         career.endWeek
@@ -180,6 +187,11 @@
    GG.career.acceptOffer(state) / declineOffer(state)
    GG.career.runWeek(state, { autoGig })  -> WEEK_RESULT   phase -> 'gig' if a gig is booked and !autoGig, else 'wrap'
    GG.career.finishGig(state, result)    -> applies a live GIG_RESULT (+ venue rep, van wear) ; phase -> 'wrap'
+   GG.career.pickListing(state, id|'skip') ; GG.world.* (listings, rep, van, trips, road cards: see 26_sim_world.js header)
+   GG.gig.windows / chart / session / botPlay / setSize / defaultSetlist (see 22_sim_gig.js header) ; GG.audio.context()
+   GG.ui.playGig(gig, done) / gigAutoplay ; openBoard({ mode, onBook, onSkip, onCancel }) ; playVan(gig, done) ; showVan()
+   Content (v0.3): map { cities }, roadCards (Monday-card schema + effect key `van`, gate keys minKm/maxKm/season),
+   headliners; venue fields deals, payRange, catch, kind (C.VENUE_KINDS), setSize.
    GG.career.endWeek(state)              -> WRAP          advances the week; phase -> 'monday' (or 'ended')
    GG.career.moodLabel(mood)             -> 'happy'|'ok'|'grumpy'|'sulking'
    GG.career.fillText(state, text)       -> text with tokens replaced
