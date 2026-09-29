@@ -8,7 +8,8 @@
 // Pure sim: no DOM, no audio. Randomness only from rngs passed in or seeded ones (the board and the banter use
 // their own RNG seeded by career seed + week, so they never shift the career RNG).
 //   GIG (listing) = contracts GIG + { id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening: null|
-//                   { id, name, genre, draw, rival } }
+//                   { id, name, genre, draw, rival } } + v0.6 (23_sim_rival): stolen { by, defended, id }, showdown { kind, id },
+//                   headliner, slot, prize (festival listings and BotB offers come from GG.rival.monday)
 //   state: listings [GIG], listingsWeek, bookPick (listing id | 'skip' | null), venueRep { id: -3..3 }, banned [id],
 //          van VAN (+ trips, breakdowns), trip TRIP|null
 //   TRIP = { w, venueId, from, to, fromName, toName, km, highway, season, night, cardId, resolved, choice, outcome,
@@ -185,8 +186,9 @@
   }
   function headliner(state, v, rng) {
     var K = cfg().opening, band = GG.career.band(state.bandId), rival = band && band.rival && GG.content.rivals && GG.content.rivals[band.rival];
-    if (rival && state.fans >= K.rivalMinFans && rng.chance(K.rivalChance)) {
-      return { id: rival.id, name: rival.name, genre: rival.genre, draw: K.rivalDraw, rival: true };
+    var rv = state.rival, gone = rv && (rv.cracked === 'breakup' || rv.cracked === 'opener');   // v0.6: a cracked rival stops headlining
+    if (rival && !gone && state.fans >= K.rivalMinFans && rng.chance(K.rivalChance)) {
+      return { id: rival.id, name: rv && rv.name || rival.name, genre: rival.genre, draw: K.rivalDraw, rival: true };
     }
     var list = GG.content.headliners || [];
     var h = list.length ? rng.weighted(list, function (x) { return (x.genre === state.genre ? 3 : 1) * (x.city === v.city ? 2 : 1); }) : null;
@@ -228,7 +230,8 @@
   };
   world.board = function (state) { return world.refresh(state); };
   world.find = function (state, id) { return (state.listings || []).filter(function (l) { return l.id === id; })[0] || null; };
-  world.canBook = function (state, l) { return !!l && state.fans >= (l.minFans || 0) && !world.isBanned(state, l.venueId); };
+  // v0.6: a listing the rival stole (l.stolen, not defended) can't be booked.
+  world.canBook = function (state, l) { return !!l && !(l.stolen && !l.stolen.defended) && state.fans >= (l.minFans || 0) && !world.isBanned(state, l.venueId); };
 
   // An offer that arrives on its own (once you have fans): like v0.1, skewed to better venues, genre fit and rep.
   world.offer = function (state, rng) {
@@ -470,13 +473,13 @@
     if (!gig) return null;
     var t = world.trip(state);
     if (t && t.venueId === gig.venueId) return t;
-    var rng = GG.rngFor(state), from = world.home(state), to = world.cityId(gig.city) || from;
+    var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
     var card = world.drawRoad(state, km, season, rng);
     if (card) state.seenCards[card.id] = state.totalWeek;
     var fc = world.city(from), tc = world.city(to);
     t = state.trip = { w: state.totalWeek, venueId: gig.venueId, from: from, to: to,
-      fromName: fc ? fc.name : state.city, toName: tc ? tc.name : gig.city, km: km, highway: world.highway(from, to),
+      fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : 'Hwy 7 · the Trans-Canada',
       season: season, night: km >= 180 || season === 'winter', cardId: card ? card.id : null, resolved: !card,
       choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2) };
     return t;

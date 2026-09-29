@@ -119,7 +119,7 @@
       s.body.appendChild(el('div.maple-logo', [el('span', '🍁'), el('b', 'MAPLE 100'), el('span.tiny', 'as heard in Tim’s')]));
       if (view.rows.length) s.body.appendChild(el('div.chart-list', view.rows.map(function (r) {
         var mv = r.move === 'new' ? el('span.mv.new', 'NEW') : r.move > 0 ? el('span.mv.up', '▲' + r.move) : r.move < 0 ? el('span.mv.down', '▼' + (-r.move)) : el('span.mv', '–');
-        return el('div.chart-row' + (r.you ? '.you' : ''), { testid: r.you ? 'chart-you' : 'chart-row-' + r.pos }, [el('span.pos', String(r.pos)), el('div.grow', [el('b', r.title), el('div.tiny', r.artist)]), mv, el('span.tiny.dim.wk', r.weeks + ' wk')]);
+        return el('div.chart-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: r.you ? 'chart-you' : 'chart-row-' + r.pos }, [el('span.pos', String(r.pos)), el('div.grow', [el('b', r.title), el('div.tiny', r.artist)]), mv, el('span.tiny.dim.wk', r.weeks + ' wk')]);
       })));
       else s.body.appendChild(el('div.panel', { testid: 'chart-you' }, [el('b', 'Not in the Maple 100. Yet.'), el('p.small.dim', 'Somewhere around #140. Your mom bought eleven copies. Two were for the dentist.')]));
       s.body.appendChild(el('div.stat-grid', { testid: 'chart-stats' }, [

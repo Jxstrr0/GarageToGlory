@@ -112,10 +112,12 @@
 
   // Replaces {player} {band} {city} {nick:<id>} {name:<id>} ({name} = first name; npc ids work too).
   // v0.4: {recruit} = the member the current drama card is about (state.card.who; a recruit or a returning original).
+  // v0.6: {rival} = the rival band's current name (GG.rival.name; follows a rebrand).
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
-    return String(text).replace(/\{(player|band|city|nick|name|recruit)(?::([\w-]+))?\}/g, function (all, key, id) {
+    return String(text).replace(/\{(player|band|city|nick|name|recruit|rival)(?::([\w-]+))?\}/g, function (all, key, id) {
+      if (key === 'rival') return GG.rival ? GG.rival.name(state) : 'Tundra Wraith';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
       if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? firstName(r.name) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
@@ -327,7 +329,7 @@
   // + v0.5 studio event cards (drawn by GG.labels.studioEvent on Mondays of studio weeks).
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
-    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : []);
+    var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : []);
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -466,6 +468,7 @@
       albums: [], awards: [], trophies: [], loonies: null, liveYear: { gigs: 0, score: 0 }
     };
     if (GG.labels) GG.labels.init(state);
+    if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -507,6 +510,7 @@
     maybeOffer(state, rng);
     state.bookPick = null; state.trip = null;
     if (GG.world) GG.world.refresh(state, true);   // this week's gig board (own seeded RNG)
+    if (GG.rival) GG.rival.monday(state);   // v0.6: this week's showdown (BotB offer, festival listing, stolen slot, the final)
     state.phase = card ? 'monday' : 'plan';
     GG.emit('week:start', { totalWeek: state.totalWeek, year: state.year, week: state.week,
       card: card ? card.id : null, offer: state.offer, quiet: state.quiet });
@@ -530,6 +534,7 @@
     }
     autoAdvanceChain(state, card, d);
     if (GG.drama) GG.drama.afterCard(state, card);
+    if (GG.rival) GG.rival.afterCard(state, card);   // v0.6: a resolved poach card is a showdown
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -685,6 +690,7 @@
   function settleGig(state, r, rng) {
     var g = state.gig;
     if (GG.world) GG.world.shape(state, g, r, rng);
+    if (GG.rival) GG.rival.shape(state, g, r);   // v0.6: BotB / festival / Sad Dome verdicts, same-night crowd split
     GG.gig.applyResult(state, r);
     if (GG.world) GG.world.afterGig(state, g, r, rng);
     if (GG.labels) GG.labels.afterGig(state, r);   // v0.5: the Best Live Act case for the Loonies
@@ -835,6 +841,7 @@
     wrap.chat = [];
     if (GG.drama) GG.drama.weekly(state, rng, wrap);   // v0.4: mood drivers, grievance stages, exits, protection
     if (GG.labels) GG.labels.weekly(state, rng, wrap);  // v0.5: offers, deals, releases, charts, royalties, Loonies
+    if (GG.rival) GG.rival.weekly(state, rng, wrap);    // v0.6: the rival's career, heat, forfeits, cracking (wrap.rival)
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -943,6 +950,7 @@
   career.botWeek = function (state, style) {
     var start = career.startWeek(state);
     if (start.card) career.resolveCard(state, career.botChoice(state, start.card, style));
+    if (GG.rival) GG.rival.botWeek(state, style);   // v0.6: enter (or pass on) a Battle of the Bands
     if (state.offer) { if (career.botOffer(state, style)) career.acceptOffer(state); else career.declineOffer(state); }
     if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release

@@ -273,6 +273,8 @@
       if (m.status === 'away' && !holder) continue;                     // walks back in on his own at the wrap
       if ((c = cardFor(m, holder ? 'returnFilled' : 'return'))) return { card: c, who: holder ? holder.id : m.id };
     }
+    var rv = GG.rival && GG.rival.forcedCard ? GG.rival.forcedCard(state) : null;   // v0.6: crack / Sad Dome eve / poach cards
+    if (rv) return rv;
     var recs = act.filter(function (x) { return x.recruit && x.recruit.quirk; });
     if (!recs.length || !rng.chance(E.quirkChance)) return null;
     var pool = [];
@@ -334,7 +336,16 @@
     m.status = 'quit';
     m.exit = Object.assign({}, m.exit || {}, { storyline: 'rival', returnDue: null });
   }
-  // Effect key 'member': { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (or a list).
+  // v0.6: the rival poaches an active member: they leave now (a hole) and join the rival's lineup. Recruits stay listed as gone.
+  function poach(state, m) {
+    bump(state, 'poached');   // not a quit: no ultimatum, the rival made them an offer
+    m.stage = 4; m.ultimatum = null; m.stageWeek = state.totalWeek;
+    m.exit = { storyline: 'rival', since: state.totalWeek, returnDue: null, beat: 0 };
+    defect(state, m);
+    GG.emit('member:stage', { id: m.id, stage: 4 });
+    GG.emit('member:quit', { id: m.id });
+  }
+  // Effect key 'member': { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival'|'poach' } (or a list).
   drama.applyMember = function (state, spec, d) {
     (Array.isArray(spec) ? spec : [spec]).forEach(function (x) {
       var m = x && find(state, x.id), done = null;
@@ -347,10 +358,11 @@
       else if (x.act === 'return' && m.status !== 'active') { returnMember(state, m); done = 'return'; }
       else if (x.act === 'later' && m.exit && m.status !== 'active') { m.exit.returnDue = state.totalWeek + cfg().laterWeeks; done = 'later'; }
       else if (x.act === 'rival' && m.status !== 'active') { defect(state, m); done = 'rival'; }
+      else if (x.act === 'poach' && m.status === 'active') { poach(state, m); done = 'rival'; }
       if (done && d) (d.member = d.member || []).push({ id: m.id, act: done, name: nm });
     });
   };
-  var ACT_LABEL = { settle: 'stays', quit: 'quits!', 'return': 'is back', later: 'waits', rival: '→ your rival' };
+  var ACT_LABEL = { settle: 'stays', quit: 'quits!', 'return': 'is back', later: 'waits', rival: '→ your rival', poach: '→ your rival' };
   drama.memberSummary = function (state, spec) {
     return (Array.isArray(spec) ? spec : [spec]).map(function (x) {
       var m = x && find(state, x.id);
@@ -513,6 +525,7 @@
       else if (x.act === 'return' && m) v += h && h !== m ? (m.skill - h.skill) * 0.8 + 3 : B.keep;
       else if (x.act === 'rival' && m) v += h ? (h.skill - m.skill) * 0.8 : -B.keep;
       else if (x.act === 'later') v -= 5;
+      else if (x.act === 'poach' && m && m.status === 'active') v -= B.keep;
     });
     return v;
   };

@@ -3,10 +3,11 @@
 // v0.4: the Band tab's member section comes from GG.ui.bandPanel (58_ui_band: pay the band, stages, holes, recruits).
 // v0.5: Label (deal status, recoup, deadline, offers, DIY: GG.ui.labelPanel in 59_ui_label) and Albums (studio session,
 // discography: GG.ui.albumsPanel in 59c_ui_awards) tabs.
-// Read-only views of GG.state; later versions add socials and the rival leaderboard as more tabs.
+// v0.6: Scene (the rival, heat, the scene leaderboard, rival news: GG.ui.scenePanel in 59d_ui_rival).
+// Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }];
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -89,7 +90,8 @@
       s.setTitle('The laptop', 'CRACKED SCREEN · 12% BATTERY');
       var body = tab === 'band' ? bandTab(st, function () { s.rerender({ tab: 'band' }); }) : tab === 'money' ? moneyTab(st)
         : tab === 'label' ? (ui.labelPanel ? ui.labelPanel(st, function () { s.rerender({ tab: 'label' }); }) : el('p.dim', 'No label news.'))   // v0.5
-        : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.')) : chatTab(st);
+        : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.'))
+        : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.')) : chatTab(st);   // v0.6
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
       if (tab === 'chat') toBottom(s);

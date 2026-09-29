@@ -3,9 +3,9 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.5.0.0 "Signed"** (merged to main 2026-09-29) · 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
+- Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
 - Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
-- Next: **0.6.0 "Rivals"** (handoff B4)
+- Next: **0.6.1** (Addendum 1 catch-up), then **0.7.0 "World"** (handoff B4)
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -40,6 +40,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   the merged branch and any other branches that are no longer needed, so `main` is the only long-lived branch.
 - 2026-09-29: Owner: **prefer token efficiency** — few agents (only for multi-feature batches), no duplicate work,
   lean reviews (tests + one focused review pass), patches done inline by the lead.
+- 2026-09-29 (for v0.6): Tundra Wraith frontman **Gord "Grimnir" Penner** (chartered accountant, minivan with a
+  Winnipeg Jets bumper sticker, screams about eternal winter, brings a veggie tray to every show) + **3 more polite
+  accountants** (full hand-made lineup). Other rivals' members are designed in **v0.9**. Final showdown = **Sad Dome
+  co-bill** in Calgary in year 10: a head-to-head set decides who headlines and who opens, forever (feeds the ending).
 - 2026-09-29 (for v0.5): career pace **Steady** — Local Heroes ≈ end of year 1 (250 fans), first label interest in
   year 2, signed by year 2–3, World Stage reachable ≈ year 5–6 (leaves room for bonus years).
 - 2026-09-29 (for v0.4): Garage-era protection ends at **250 fans**; drama level **"now and then"** (≈ one quit every
@@ -148,7 +152,56 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## What's in v0.6.0 "Rivals" (stage 1 sim + content, stage 2 UI done)
+- Rival sim (`23_sim_rival.js`, API in its header): Tundra Wraith run a parallel career (fans chase `economy.rival.fansCurve`
+  × momentum from the head-to-head record; buzz; garage → local 250 → signed 1,100 with Monolith; one record a year timed
+  before the Loonie nominations, charting on the Maple 100 and shown in `labels.chartView`). Every roll is seeded by career
+  seed + tag + week: the career RNG is never touched. Set strength = 87 − 37·e^(−week/66) + form (± streaks) + crack penalty.
+- Heat 0..100 (start 12): + per clash (`economy.rival.heat.clash`), −max(0.4, 2.5%)/week; above 25 it feeds buzz to both
+  bands; the weekly showdown chance = 0.1 + 0.0035·heat (min gap 3 weeks, per-kind cooldowns, gates in `economy.rival.kinds`).
+- Showdowns (`state.showdowns`, SHOWDOWN + id/name/rival/lines): **botb** = a Monday gig offer (`offer.showdown`, prize by
+  era, winner steals 3% of the loser's fans; their set score deterministic per week), **sameNight** = your gig that weekend
+  loses crowd by buzz share (door pay + fans follow), **stolenSlot** = the best board listing at a venue that doesn't love you
+  is taken (`listing.stolen`, unbookable; rep 3 venues turn them down = a win), **festival** = a summer board listing
+  (festival grounds in `content/rivals.js`, they headline; outplay them for bonus fans + buzz), **loonies** = co-nominations
+  (won if you beat them in ≥ 1 shared category; rival Loonie strength = their records/skill/fans + an award-darling bonus),
+  **poach** = a forced Monday card for an unhappy member (stage ≥ 2, not protected): a bonus / the spotlight keeps them,
+  the gamble can lose them to the rival (member act `poach`, `stats.poached`), **final** = year 10 week 21, the Sad Dome
+  (Calgary, 620 km) is booked on Monday (+ a "Sad Dome eve" card); your score vs theirs → `state.finalShowdown`
+  `{ week, won, headliner: 'you'|'rival', score, rivalScore, rival }` (auto-resolved at the wrap if it wasn't played).
+  Unplayed showdowns close at the wrap with news (forfeit, missed festival, quiet same-night).
+- Cracking (net 7 wins, ≥ 9 wins, heat ≥ 30, from year 2): breakup / rebrand (new name, `{rival}` token follows) / opener
+  (they open for you: extra crowd now and then); a crack card next Monday; heat resets. Defectors (v0.4 + poached) join
+  their lineup in corpse paint (`rival.members[].defector`).
+- Content `content/rivals.js` (`GG.content.rivalry`): Gord "Grimnir" Penner (vocals) + Sheila "Hexenfrost" Wiebe (guitar),
+  Darryl "Vorthul" Klassen (bass), Lorne "Frostgrave" Dueck (drums): looks + `corpsePaint`, gags, 14 songs, 12 records, 5
+  rebrands, news pools, showdown texts (UI cards + verdicts), 5 rival cards, 14 scene bands, 3 festivals + the Sad Dome.
+- Hooks: career (newCareer init, startWeek → `rival.monday` after the board refresh, resolveCard → `afterCard`, settleGig →
+  `rival.shape` before applyResult, endWeek → `rival.weekly` → `wrap.rival`, botWeek → `rival.botWeek`, cardById, `{rival}`),
+  drama (forcedCard → `rival.forcedCard`, act `poach`), labels (rivalStrength, rivalName, runLoonies values + `rival.loonies`,
+  chartView), world (canBook skips stolen listings, a cracked rival stops headlining), gig (`gig.venue` finds rivalry venues).
+- Save schema 6 (`GG.rival.migrate` wraps `GG.save.migrate`: a missing rival is created and caught up quietly).
+- Balance (`node tools/balance.js 10 20`, new columns sd/sdW/heat/rvF + a rival line): avg bot 3.3–4.7 showdowns/yr
+  (y2+) at heat 20–69, wins 30–56%, never cracks them, headlines the Sad Dome 11/20; good bot 2.5–4.5/yr, wins 64–82%,
+  cracks them 19/20 (y3–9), headlines 20/20. Loonie wins ≈ v0.5 (avg ≈ 3.5/career). y10 avg fans 36.1k→37.3k, fund
+  $9.7k→$11.6k; good 43.9k→47.9k, $23.6k→$25.7k (prizes, the Sad Dome, heat buzz). Tests: sim_rival 15 (new).
+- UI (`59d_ui_rival.js`, API in its header): laptop **Scene** tab (rival card + head-to-head, heat meter + showdown odds,
+  Sad Dome countdown/result, top-10 scene leaderboard, news, recent showdowns, lineup with gags/defectors, their records);
+  Monday **showdown sheet** after the card (BotB Enter/Pass, same-night split bar, stolen slot verdict, festival → board,
+  Sad Dome); rival cards get a rival strip (poach: the member's mood) and `ui.who('wraith_frontman'|'tw_*')` = the cast;
+  **showdown weekend** (`ui.playShowdown`, from `main.playWeekend`): BotB/festival/final show **their set first** (screen
+  `rival-set`, live3d: `render.stage` spectator camera on a riser in the crowd, their lineup in corpse paint + black stage
+  shirts, their drummer on the throne, a banner, ticking per-song scores, their drummer plays the pattern, skippable) →
+  your live set (score to beat in the gig bar) → **verdict** (`rival-verdict`; also after a same-night split). Board
+  badges (stolen/defended/festival; stolen = "Taken" and unbookable), wrap rival panel (+ crack panel), end-screen Sad Dome
+  line, rival rows on the Maple 100. `GG.ui.showdownViews` (default: on unless `gigAutoplay`) keeps autoplay flows fast
+  (toasts instead). The van to Calgary shows "Saskatoon → Calgary" (world.startTrip: off-map cities keep their name).
+  Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
+
 ## APIs (full shapes in `src/02_contracts.js`)
+- `GG.rival` (v0.6, header of `23_sim_rival.js`): `init, migrate, get, cfg, cast, cards, venue, name, skill, heat, addHeat,
+  record, lineup, leaderboard, weekly, monday, pending, schedule, next, forcedCard, afterCard, enter, pass, botWeek,
+  showdown (UI setup), setScore, resolve, shape, loonies, strength, chartEntry, crack, final`. Tunables `economy.rival`.
 - `GG.career`: contract commands + `choiceHint, rollChance, gatePasses, applyEffects, cardById, band, memberName,
   pickLine, contentLines, botWeek, botOffer, postChat(state, who, text, d, tone)`. startWeek/runWeek/endWeek are
   double-call safe. v0.4: effect keys `member`, `payCut`, `repay` (runtime-added to EFFECT_KEYS), token `{recruit}`,
@@ -199,6 +252,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Tests: sim_gig difficulty test; pw_gig `touch` section (real touchscreen taps under a stray layer, stalled clock).
 
 ## Back-burner
+- v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);
+  `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" in content (the UI shows Gord); heat decays emit
+  'heat:changed' every week; the spectator view keeps crowd pits off (they'd run through the riser camera); rival banter
+  lines live in 59d (UI flavour, like 55's); other bands' rivals have no cast until v0.9 (the Scene tab shows an empty lineup).
 - v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
 - v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
   dressing); producer `weird` unused; full-career save code ≈ 65–70k chars (album reviews); balance 10×20 takes ~39 s.

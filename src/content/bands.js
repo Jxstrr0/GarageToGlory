@@ -193,11 +193,12 @@
   };
 
   // ---- Rivals ------------------------------------------------------------
-  // Rival member names are an open owner decision (handoff A16): refer to them by role only.
+  // v0.6: Tundra Wraith's lineup (Gord "Grimnir" Penner + three accountants) lives in content/rivals.js; the other rivals'
+  // members are designed in v0.9 (refer to them by role only until then).
   var rivals = {
     tundra_wraith: { id: 'tundra_wraith', name: 'Tundra Wraith', city: 'Winnipeg', genre: 'metal',
-      blurb: "Corpse paint on stage; off stage, four chartered accountants who are unbearably polite. Their frontman calls you " +
-        "'buddy', sends fruit baskets, and wins every award you're up for." },
+      blurb: "Corpse paint on stage; off stage, four chartered accountants who are unbearably polite. Frontman Gord 'Grimnir' " +
+        "Penner calls you 'buddy', sends fruit baskets, and wins every award you're up for." },
     mall_rats: { id: 'mall_rats', name: 'Mall Rats', city: 'Toronto', genre: 'punk',
       blurb: 'Manufactured punk from a TV talent show. Skateboard sponsor, stylist, pre-ripped jeans. ' +
         'They throw sponsor money at everything, including you.' },

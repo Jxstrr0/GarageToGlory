@@ -1,0 +1,455 @@
+// 59d_ui_rival.js: the rivalry UI (v0.6 "Rivals", RIVALUI agent). Reads GG.rival (23_sim_rival.js); never rolls anything.
+//   Laptop Scene tab (GG.ui.scenePanel via 53_ui_laptop): the rival's card (fans, buzz, set strength, head-to-head), the heat
+//     meter + this week's showdown odds, the Sad Dome countdown (or its result), the scene leaderboard, rival news, recent
+//     showdowns, their lineup (defectors in corpse paint) and their records.
+//   Showdown announcement (screen 'showdown', sheet): after the Monday card (60_main beginWeek/afterCard). BotB: Enter / Pass
+//     (GG.rival.enter/pass); sameNight: the expected crowd split; stolenSlot: taken or defended; festival: see the board;
+//     final: the Sad Dome. Poach/crack/Sad Dome eve are forced Monday cards (card screen + GG.ui.rivalCardNote strip).
+//   GG.ui.playShowdown(gig, done, { resume }) (60_main playWeekend): a set showdown (botb/festival/final) shows the rival's
+//     set first (screen 'rival-set', full, live3d: the 3D stage from the crowd with their lineup in corpse paint and a ticking
+//     score, skippable), then your live set (GG.ui.playGig, v0.3), then the crowd verdict (screen 'rival-verdict', full).
+//     Any gig that resolved a showdown (a same-night split) also ends on the verdict.
+//   GG.ui.showdownViews: null (default: views on unless GG.ui.gigAutoplay) | true | false. Autoplay flows get toasts instead
+//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song.
+//   Hooks: rivalWrap(wrap) (52 wrap), rivalBadge(st, listing) (56 board), rivalCardNote(st, card) (52 card), rivalEnd(st)
+//     (52 end), gigTarget(gig) (55 gig bar). ui.who('wraith_frontman' | 'tw_*') resolves to the rival's cast.
+// testids: laptop-tab-scene, scene-panel, scene-rival, scene-record, scene-heat, scene-next, scene-board, scene-row-<id>,
+//   scene-news, scene-showdowns, scene-lineup, scene-albums · sd-card, btn-sd-enter, btn-sd-pass, btn-sd-ok, btn-sd-board ·
+//   rival-set, rs-score, rs-song-<i>, rs-banner, btn-rs-skip, btn-rs-go · rival-verdict, rv-verdict-head, btn-verdict-done ·
+//   wrap-rival, wrap-crack, board-stolen, board-defended, board-festival, card-rival, gig-target, end-final.
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts;
+  var WPY = C.WEEKS_PER_YEAR;
+  function S() { return GG.state; }
+  function RV() { return GG.rival; }
+  function on(st) { st = st || S(); return !!(RV() && st && st.rival); }
+  function fill(t, vars) {
+    var st = S(); if (!t) return '';
+    t = String(t).replace(/\{(city|venue|rival|name)\}/g, function (a, k) { return vars && vars[k] != null ? String(vars[k]) : k === 'rival' && st && RV() ? RV().name(st) : a; });
+    return st && GG.career && GG.career.fillText ? GG.career.fillText(st, t) : t;
+  }
+  function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
+  function views() { return ui.showdownViews != null ? !!ui.showdownViews : !ui.gigAutoplay; }
+  function wk(w) { return 'Y' + (Math.floor((w - 1) / WPY) + 1) + ' W' + ((w - 1) % WPY + 1); }
+  function bandName(st) { var b = GG.career.band(st); return (b && b.name) || 'You'; }
+  var ERA = { garage: 'Garage', local: 'Local heroes', signed: 'Signed', world: 'World stage' };
+  var SET_KINDS = { botb: 1, festival: 1, final: 1 };
+  var TITLES = { botb: 'Battle of the Bands', sameNight: 'Same night, same town', stolenSlot: 'Slot stolen', festival: 'Festival clash',
+    loonies: 'The Loonies', poach: 'The poach', final: 'The Sad Dome' };
+  function texts(kind) { var c = GG.content.rivalry; return (c && c.showdowns && c.showdowns[kind]) || {}; }
+  function title(kind) { return texts(kind).title || TITLES[kind] || kind; }
+  function icon(kind) { return texts(kind).icon || '⚔️'; }
+
+  /* ---- Heat, faces, people ------------------------------------------------------------------------------------ */
+  function heatLabel(h) { return h < 20 ? 'Polite' : h < 40 ? 'Frosty' : h < 60 ? 'Heated' : h < 80 ? 'Boiling (politely)' : 'Blood feud, with fruit baskets'; }
+  function heatColor(h) { return h < 20 ? '#6fb3ff' : h < 40 ? '#9ec8ff' : h < 60 ? '#ffb347' : h < 80 ? '#ff7a3c' : '#ff4a4a'; }
+  function heatMeter(h, delta, testid) {
+    return el('div.rv-heat', { testid: testid || null }, [
+      el('div.rv-heat-top', [el('span.caps', 'Rivalry heat'), el('b', { style: { color: heatColor(h) } }, heatLabel(h) + ' · ' + Math.round(h)
+        + (delta ? ' ' + (delta > 0 ? '▲' : '▼') + Math.abs(Math.round(delta)) : ''))]),
+      el('div.rv-heat-bar', el('i', { style: { width: U.clamp(h, 0, 100) + '%' } }))]);
+  }
+  // A little corpse-paint face (white, black sockets): the rival's avatar everywhere.
+  function face(size, label) { return el('div.rv-face' + (size ? '.' + size : ''), { 'aria-hidden': 'true' }, [el('i'), el('i'), label ? el('span', label) : null]); }
+  function castMember(st, id) {
+    var c = RV() && st ? RV().cast(st) : null;
+    return c && (c.members || []).filter(function (m) { return m.id === id; })[0] || null;
+  }
+  // ui.who knows the rival's people: 'wraith_frontman' (the Monday cards' speaker) is Gord, 'tw_*' are the accountants.
+  var baseWho = ui.who;
+  ui.who = function (id, state) {
+    var st = state || S();
+    if (st && on(st) && (id === 'wraith_frontman' || /^tw_/.test(String(id || '')))) {
+      var c = RV().cast(st), m = castMember(st, id === 'wraith_frontman' ? c && c.frontman : id);
+      if (m) return { id: id, name: m.fullName.split(' ')[0] + ' "' + m.nick + '" ' + m.fullName.split(' ').slice(1).join(' '), short: m.name, nick: m.nick,
+        color: '#ecebe6', text: '#ecebe6', full: m.fullName, role: RV().name(st) + ' · ' + m.role + (m.dayJob ? ' · ' + m.dayJob.replace(/\s*\(.*\)$/, '').toLowerCase() : '') };
+    }
+    return baseWho(id, state);
+  };
+  function record(st) { var r = RV().record(st); return el('div.rv-record', { testid: 'scene-record' }, [
+    el('div', [el('span.caps', bandName(st)), el('b.you', String(r.you))]), el('span.vs', 'vs'),
+    el('div', [el('span.caps', RV().name(st)), el('b.them', String(r.them))])]); }
+
+  /* ======================================================================================================
+     The laptop Scene tab
+     ====================================================================================================== */
+  function sec(text, testid, kids) { return el('div', { testid: testid || null }, [el('div.caps', { style: 'margin:14px 0 6px' }, text)].concat(kids)); }
+  function nextPanel(st) {
+    var R = RV(), nx = R.next(st), p = nx.pending, fin = st.finalShowdown, rows = [];
+    if (p && p.kind !== 'poach') rows.push(el('div.rv-next', [el('span.ic', icon(p.kind)), el('div.grow', [el('b', 'This week: ' + title(p.kind)),
+      el('div.tiny.dim', (p.venue || '') + (p.city ? ', ' + p.city : '') + (p.status === 'offered' ? ' · you haven\'t answered' : p.status === 'passed' ? ' · you passed' : p.status === 'done' ? ' · settled' : ''))])]));
+    if (fin) rows.push(el('div.rv-next.final' + (fin.won ? '.won' : ''), [el('span.ic', '🏟️'), el('div.grow', [el('b', fin.won ? 'You headlined the Sad Dome. Forever.' : (fin.rival || R.name(st)) + ' headlined the Sad Dome. You opened.'),
+      el('div.tiny.dim', 'Year 10: you ' + fin.score + ' · them ' + fin.rivalScore)])]));
+    else if (nx.final && nx.final.reachable && nx.final.inWeeks >= 0) rows.push(el('div.rv-next', [el('span.ic', '🏟️'), el('div.grow', [el('b', nx.final.inWeeks === 0 ? 'The Sad Dome: this week' : 'The Sad Dome in ' + nx.final.inWeeks + ' week' + (nx.final.inWeeks === 1 ? '' : 's')),
+      el('div.tiny.dim', 'Calgary, ' + wk(nx.final.week) + '. One co-bill decides who headlines and who opens. Forever.')])]));
+    rows.push(el('div.tiny.dim', { style: 'margin-top:6px' }, 'Showdown odds this week: ~' + Math.round(nx.chance * 100) + '% (heat drives it)'));
+    return el('div.panel', { testid: 'scene-next' }, rows);
+  }
+  ui.scenePanel = function (st) {
+    if (!on(st)) return el('p.dim', 'No rivals yet. Enjoy it while it lasts.');
+    var R = RV(), rv = R.get(st), c = R.cast(st) || {}, out = [];
+    var tags = [rv.cracked ? el('span.tag.rv-crack', { rebrand: 'rebranded', breakup: 'broken up', opener: 'your openers' }[rv.cracked] || rv.cracked) : null,
+      rv.label ? el('span.tag', (GG.content.labels && GG.content.labels[rv.label] && GG.content.labels[rv.label].name) || rv.label) : null];
+    out.push(el('div.panel.rv-hero', { testid: 'scene-rival' }, [
+      el('div.row', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), rv.formerName ? el('div.tiny.dim', 'formerly ' + rv.formerName) : null,
+        el('div.small.dim', [rv.city, rv.genre, ERA[rv.era] || rv.era].filter(Boolean).join(' · ')), el('div', { style: 'margin-top:4px' }, tags)])]),
+      el('div.stat-grid', [el('div', [el('span.caps', 'Fans'), el('b', U.fmtNum(rv.fans))]), el('div', [el('span.caps', 'Buzz'), el('b', String(Math.round(rv.buzz)))]),
+        el('div', [el('span.caps', 'Set'), el('b', '~' + R.skill(st))])]),
+      record(st),
+      c.minivan ? el('p.tiny.dim', { style: 'margin:8px 0 0' }, 'Gord drives ' + c.minivan + '.') : null]));
+    out.push(el('div.panel', { style: 'margin-top:10px' }, heatMeter(R.heat(st), 0, 'scene-heat')));
+    out.push(el('div', { style: 'margin-top:10px' }, nextPanel(st)));
+    var board = R.leaderboard(st, 10);
+    out.push(sec('The scene · by fans', 'scene-board', [el('div.panel.rv-board', board.map(function (r) {
+      var tr = r.trend || 0;
+      return el('div.rv-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: 'scene-row-' + r.id }, [el('span.rk', '#' + r.rank),
+        el('div.grow', [el('b', r.name + (r.you ? ' (you)' : '')), el('div.tiny.dim', [r.city, r.era ? ERA[r.era] || r.era : r.genre].filter(Boolean).join(' · ') + (r.cracked ? ' · cracked' : ''))]),
+        el('div.fans', [U.fmtNum(r.fans), el('span.tr' + (tr > 0 ? '.up' : tr < 0 ? '.down' : ''), tr > 0 ? ' ▲' : tr < 0 ? ' ▼' : ' ·')])]);
+    }))]));
+    var news = (rv.news || []).slice(-8).reverse();
+    out.push(sec('Scene news', 'scene-news', [el('div.panel.rv-news', news.length ? news.map(function (n) {
+      return el('div.rv-news-row', [el('span.tiny.dim', wk(n.week)), el('div', fill(n.text))]);
+    }) : el('p.small.dim', 'Nothing yet. Gord is drafting a press release about how excited he is to meet you.'))]));
+    var sds = (st.showdowns || []).slice(-6).reverse();
+    if (sds.length) out.push(sec('Showdowns', 'scene-showdowns', [el('div.panel', sds.map(function (x) {
+      return el('div.rv-sd', [el('span.wl' + (x.won ? '.w' : '.l'), x.won ? 'W' : 'L'), el('div.grow', [el('b', icon(x.kind) + ' ' + title(x.kind)),
+        el('div.tiny.dim', wk(x.week) + (x.name ? ' · ' + x.name : '') + (x.kind === 'poach' || x.kind === 'stolenSlot' || x.kind === 'loonies' ? '' : ' · you ' + x.you + ' · them ' + x.them))])]);
+    }))]));
+    out.push(sec('Lineup', 'scene-lineup', [el('div.panel', R.lineup(st).map(function (m) {
+      var cm = castMember(st, m.id);
+      return el('div.rv-mem', [face('sm'), el('div.grow', [el('b', (m.fullName || m.name) + (m.nick ? ' "' + m.nick + '"' : '')),
+        el('div.tiny.dim', [m.role, cm && cm.dayJob].filter(Boolean).join(' · ')),
+        cm && cm.gags && cm.gags.length ? el('div.tiny', { style: 'margin-top:2px' }, cm.gags[(st.totalWeek + m.id.length) % cm.gags.length]) : null]),
+        m.defector ? el('span.tag.rv-crack', 'ex-yours') : null]);
+    }))]));
+    var albums = (rv.albums || []).slice().reverse();
+    out.push(sec('Their records', 'scene-albums', [el('div.panel', albums.length ? albums.map(function (a) {
+      return el('div.rv-alb', [el('span', '💿'), el('div.grow', [el('b', a.title), el('div.tiny.dim', wk(a.released) + (a.critic ? ' · critics ' + a.critic : ''))]),
+        el('span.small', a.peak ? '#' + a.peak : '—')]);
+    }) : el('p.small.dim', 'No records yet. They are "finalizing the liner-note footnotes".'))]));
+    return el('div', { testid: 'scene-panel' }, out);
+  };
+
+  /* ======================================================================================================
+     Monday: the showdown announcement
+     ====================================================================================================== */
+  var announced = {};
+  function thisWeeks(st, kind) { return (st.showdowns || []).filter(function (x) { return x.week === st.totalWeek && x.kind === kind; })[0] || null; }
+  function splitPreview(st) {
+    var k = RV().cfg(), yb = st.buzz || 0, rb = RV().get(st).buzz || 0, share = (yb + 10) / (yb + rb + 20);
+    return { share: Math.round(share * 100), keep: Math.round((1 - k.sameNight.split * (1 - share)) * 100), yb: Math.round(yb), rb: Math.round(rb) };
+  }
+  // Shows this week's showdown once (after the Monday card). Returns true when a screen opened. Autoplay: a toast.
+  ui.announceShowdown = function (st, force) {
+    st = st || S();
+    if (!on(st) || st.phase !== 'plan') return false;
+    var p = RV().pending(st);
+    if (!p || p.kind === 'poach' || p.status === 'missed' || (announced[p.id] && !force)) return false;
+    announced[p.id] = true;
+    if (!views()) { ui.toast(icon(p.kind) + ' ' + title(p.kind) + (p.venue ? ': ' + p.venue : ''), { who: RV().name(st) }); return false; }
+    // deferred: this often runs from the Monday card's onClose, and a screen opened there would be popped with it
+    Promise.resolve().then(function () { if (GG.state === st && st.phase === 'plan' && !ui.isOpen('showdown')) ui.show('showdown', {}); });
+    return true;
+  };
+  ui.define('showdown', {
+    kind: 'sheet', cls: 'rvsd',
+    build: function (s) {
+      var st = S(); if (!on(st)) return;
+      var R = RV(), p = R.pending(st), kind = p ? p.kind : 'botb', set = R.showdown(st, kind), rv = R.get(st);
+      s.setTitle(set.title, 'YEAR ' + st.year + ' · WEEK ' + st.week + ' · ' + rv.name.toUpperCase());
+      var body = [el('div.rv-sd-head', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
+        el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];
+      if (set.stakes && kind !== 'stolenSlot') body.push(el('div.rv-stakes', [el('span.caps', 'Stakes'), el('b', set.stakes)]));
+      if (SET_KINDS[kind]) body.push(el('div.line-list.panel', [
+        el('div', [el('span', 'Their set strength'), el('span', '~' + set.expected)]),
+        el('div', [el('span', 'Their setlist'), el('span', set.setlist.length + ' songs')]),
+        el('div', [el('span', 'Running order'), el('span', 'They go first')])]));
+      if (kind === 'sameNight') {
+        var sp = splitPreview(st);
+        body.push(el('div.panel.rv-split', [el('div.caps', 'The split, if you play that night'),
+          el('div.rv-split-bar', [el('i.you', { style: { width: sp.share + '%' } }, 'You ' + sp.share + '%'), el('i.them', { style: { width: (100 - sp.share) + '%' } }, (100 - sp.share) + '%')]),
+          el('p.small.dim', { style: 'margin:6px 0 0' }, 'Buzz ' + sp.yb + ' vs ' + sp.rb + '. Book a gig this weekend and you keep about ' + sp.keep + '% of your crowd. More buzz, more room.')]));
+      }
+      var done = kind === 'stolenSlot' ? thisWeeks(st, 'stolenSlot') : null;
+      if (done) body.push(el('div.quote' + (done.won ? '.rv-good' : ''), fill((done.lines || [])[0] || (done.won ? 'The booker kept you.' : 'They took it.'))));
+      if (kind === 'festival') body.push(el('p.small.dim', 'It\'s on the gig board this week. Book it with a Book block.'));
+      if (kind === 'final') body.push(el('p.small.dim', 'Booked for Saturday: 620 km of Trans-Canada to Calgary. Kenji is already in the van.'));
+      ui.append(s.body, body);
+      function close() { ui.close(s.id); GG.main.sync(); }
+      if (kind === 'botb' && p && p.status === 'offered' && st.offer && st.offer.showdown) {
+        ui.append(s.foot, el('div.row', [
+          btn('.btn.grow', { testid: 'btn-sd-pass', onclick: function () { R.pass(S()); ui.toast('You sit this one out. ' + rv.name + ' send a card: "Next time, buddy!"'); close(); } }, set.pass || 'Sit this one out'),
+          btn('.btn.primary.grow', { testid: 'btn-sd-enter', onclick: function () { if (R.enter(S())) { sfx('card'); ui.toast('Entered. The whiteboard says: BATTLE. Marcel has underlined it four times.'); } close(); } }, set.enter || 'Enter the battle')]));
+        return;
+      }
+      if (kind === 'festival' && ui.openBoard) s.foot.appendChild(btn('.btn.block', { testid: 'btn-sd-board', onclick: function () { close(); ui.openBoard({ mode: 'view' }); } }, 'See the gig board'));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-sd-ok', onclick: close }, kind === 'final' ? 'Load the minivan. Er, the Hearse.' : 'Noted'));
+    },
+    onShow: function () { sfx('card'); }
+  });
+
+  /* ---- Monday card strip for the rival's cards (poach / crack / Sad Dome eve) ---- */
+  ui.rivalCardNote = function (st, card) {
+    if (!card || !/^rv_/.test(card.id || '') || !on(st)) return null;
+    var R = RV(), r = R.record(st), kids = [face('sm'), el('div.grow', [el('b', R.name(st)), el('div.tiny.dim', 'Heat ' + Math.round(R.heat(st)) + ' · you ' + r.you + ' · them ' + r.them)])];
+    if (card.id === 'rv_poach' && st.card && st.card.who) {
+      var m = (st.members || []).filter(function (x) { return x.id === st.card.who; })[0];
+      if (m) kids.push(el('div.rv-mood', [el('span.tiny.dim', ui.who(m.id).short + "'s mood"), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) })]));
+    }
+    return el('div.rv-card-note', { testid: 'card-rival' }, kids);
+  };
+
+  /* ======================================================================================================
+     Board badges (56_ui_board)
+     ====================================================================================================== */
+  ui.rivalBadge = function (st, l) {
+    if (!l) return null;
+    if (l.stolen && !l.stolen.defended) return el('span.gb-open.rv-stolen', { testid: 'board-stolen' }, '📌 Stolen by ' + l.stolen.by);
+    if (l.stolen) return el('span.gb-open.rv-defended', { testid: 'board-defended' }, '🛡 ' + l.stolen.by + ' tried. The booker kept you.');
+    if (l.showdown && l.showdown.kind === 'festival') return el('span.gb-open.rv-fest', { testid: 'board-festival' }, '🎪 Festival clash · ' + (l.headliner || 'your rival') + ' headline · you: ' + (l.slot || 'an early slot'));
+    return null;
+  };
+
+  /* ======================================================================================================
+     The rival's set (spectator view)
+     ====================================================================================================== */
+  var BANTER = {
+    open: ['Gord: "Good evening, {city}! Please note the fire exits. Now: ETERNAL WINTER."', 'Gord: "Hello {city}! We are {rival}. Hydrate, buddies."'],
+    mid: ['Gord: "Give it up for {band}, eh? Real good kids."', 'Sheila apologizes to her amp for the last song.', 'Darryl hands the front row tax-tip pamphlets.',
+      'Lorne checks the metronome app. 3% fast. Unacceptable.', 'Gord: "This one is about the wind chill. Dress in layers."'],
+    final: ['Gord: "Calgary! We brought a veggie tray for all nineteen thousand of you."']
+  };
+  function pick(a, i) { return a[Math.abs(i) % a.length]; }
+  function rivalStage(st, gig) {
+    var R = RV(), rv = R.get(st), line = R.lineup(st), drum = line.filter(function (m) { return /drum/i.test(m.role || ''); })[0];
+    return { venue: Object.assign({}, GG.gig.venue(gig.venueId) || {}, gig), crowd: GG.gig.expectCrowd ? GG.gig.expectCrowd(st, gig) : gig.capacity, capacity: gig.capacity,
+      genre: rv.genre || 'metal', flags: {}, player: st.player, rival: true, view: 'spectator', banner: rv.name, sub: rv.city,
+      members: line.filter(function (m) { return m !== drum; }).map(function (m) {
+        return { id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint !== false, stageShirt: m.stageShirt };
+      }),
+      drummer: drum ? { id: drum.id, look: drum.look, corpsePaint: drum.corpsePaint !== false, stageShirt: drum.stageShirt } : null };
+  }
+  function stageApi() { var R = GG.render; return GG.main && GG.main.renderOk && R && R.available && R.stage && typeof R.stage.setup === 'function' ? R.stage : null; }
+  var V = null;   // the spectator session
+  function songPattern(song, i) {
+    try {
+      var p = GG.songs.generate('metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});
+      if (p) p.bpm = U.clamp(song.bpm || p.bpm, 60, 240);
+      return p;
+    } catch (e) { return null; }
+  }
+  ui.watchRival = function (gig, next) {
+    var st = S(); if (!st || !on(st)) { next(); return; }
+    var kind = gig.showdown && gig.showdown.kind || 'botb', set = RV().showdown(st, kind);
+    if (V) stopWatch();
+    V = { gig: gig, set: set, kind: kind, next: next, i: -1, t: 0, songT: 0, ms: ui.rivalSongMs || 5200, raf: 0, last: 0, step: -1, handle: null,
+      scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false };
+    ui.show('rival-set', {});
+    var api = stageApi();
+    if (api) {
+      try { V.stage = GG.render.setScene('stage') !== false; if (V.stage) api.setup(rivalStage(st, gig)); } catch (e) { console.error('[rival] stage setup failed', e); V.stage = false; }
+    }
+    if (V.dom) V.dom.back.hidden = V.stage;
+    frameStage();
+    startSong(0);
+    V.last = performance.now();
+    V.raf = requestAnimationFrame(tick);
+  };
+  function frameStage() {
+    requestAnimationFrame(function () {
+      if (!V || !V.stage || !V.dom || !stageApi()) return;
+      var H = window.innerHeight || 844;
+      stageApi().setFrame({ top: Math.round(V.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - V.dom.panel.getBoundingClientRect().top) });
+    });
+  }
+  function banner(text) {
+    if (!V || !V.dom) return;
+    var b = V.dom.banner; b.textContent = text; b.className = 'rs-banner show';
+    clearTimeout(V.bannerT); V.bannerT = setTimeout(function () { if (V && V.dom) V.dom.banner.className = 'rs-banner'; }, 2400);
+  }
+  function vars() { var p = V.set.venue || {}; return { city: p.city || (V.gig && V.gig.city) || '', venue: p.name || '', rival: V.set.rival.name }; }
+  function startSong(i) {
+    V.i = i; V.songT = 0; V.moment = false; V.step = -1;
+    var song = V.set.setlist[i];
+    V.pattern = songPattern(song, i);
+    if (GG.audio && GG.audio.play && V.pattern) { try { V.handle = GG.audio.play(V.pattern, { genre: 'metal', loop: true }); } catch (e) { V.handle = null; } }
+    var st = S(), pool = i === 0 ? (V.kind === 'final' ? BANTER.final : BANTER.open) : BANTER.mid;
+    banner(fill(pick(pool, st.totalWeek + i * 3), vars()));
+  }
+  function stopAudio() { if (V && V.handle) { try { if (V.handle.playing) V.handle.stop(); } catch (e) { /* ignore */ } V.handle = null; } }
+  function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; }
+  function tick(now) {
+    if (!V || V.ended) return;
+    var dt = Math.min(0.1, Math.max(0, (now - V.last) / 1000)); V.last = now;
+    V.songT += dt * 1000;
+    var song = V.set.setlist[V.i], u = Math.min(1, V.songT / V.ms), api = V.stage ? stageApi() : null;
+    V.scores[V.i] = Math.round(song.score * (u < 0.92 ? u / 0.92 : 1));
+    if (api) {
+      api.setCrowdLevel(U.clamp(25 + (song.score - 40) * 1.1 * Math.min(1, u * 1.6), 5, 98));
+      if (V.pattern) {   // their drummer plays the pattern (16ths at the song's tempo)
+        var spb = 60 / (V.pattern.bpm || 180), step = Math.floor(V.songT / 1000 / (spb / 4)), arr = V.pattern.arrangement || ['verse'];
+        if (step !== V.step) {
+          V.step = step;
+          var sec = V.pattern.sections[arr[Math.floor(step / 16) % arr.length]] || [], s16 = step % 16;
+          for (var l = 0; l < sec.length; l++) if (sec[l] && sec[l][s16] === 'x') api.hit(l, 'perfect');
+        }
+      }
+      if (!V.moment && u > 0.5) { V.moment = true; api.moment(song.score >= 55 ? 'lighters' : 'drinks'); }   // no pits: they'd run through the riser camera
+      if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner('Sheila "Hexenfrost" Wiebe: a solo. She apologizes to her amp after.'); }
+    }
+    updateScores();
+    if (V.songT >= V.ms) {
+      stopAudio();
+      if (V.i + 1 < V.set.setlist.length) startSong(V.i + 1);
+      else { finishWatch(false); return; }
+    }
+    V.raf = requestAnimationFrame(tick);
+  }
+  function setScore() {
+    var done = V.scores.filter(function (x) { return x != null; });
+    if (!done.length) return 0;
+    var sum = 0; done.forEach(function (x) { sum += x; });
+    return Math.round(sum / V.set.setlist.length);
+  }
+  function updateScores() {
+    if (!V.dom) return;
+    V.dom.score.textContent = String(V.ended ? V.set.score : setScore());
+    V.set.setlist.forEach(function (s, i) {
+      var r = V.dom.rows[i]; if (!r) return;
+      r.sc.textContent = V.scores[i] != null ? String(V.scores[i]) : '—';
+      r.row.className = 'rs-song' + (i === V.i && !V.ended ? ' on' : V.scores[i] != null ? ' done' : '');
+    });
+  }
+  function finishWatch(skipped) {
+    if (!V) return;
+    V.ended = true; stopAudio();
+    V.scores = V.set.setlist.map(function (s) { return s.score; });
+    updateScores();
+    if (skipped) { goYourSet(); return; }
+    render();
+    banner(fill('{rival} finish. Gord thanks the sound tech by name. Your turn.', vars()));
+  }
+  function goYourSet() {
+    if (!V) return;
+    var next = V.next;
+    stopWatch(); V = null;
+    ui.close('rival-set');
+    next();
+  }
+  function render() { var e = ui.get('rival-set'); if (e) e.rerender(); }
+  ui.define('rival-set', {
+    kind: 'full', cls: 'rvset', sticky: true, live3d: true,
+    build: function (s) {
+      if (!V) return;
+      var set = V.set, d = V.dom = { rows: [] }, st = S();
+      d.back = el('div.rs-back', [el('div.rs-sil', [el('i'), el('i'), el('i'), el('i')])]);
+      d.back.hidden = !!V.stage;
+      d.score = el('b', { testid: 'rs-score' }, '0');
+      d.bar = el('div.rs-bar', [el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
+        el('b.rs-who', set.rival.name + (V.ended ? ' are done' : ' are on'))]), el('div.rs-score', [el('span.caps', 'Their set'), d.score])]);
+      d.banner = el('div.rs-banner', { testid: 'rs-banner' });
+      var rows = set.setlist.map(function (song, i) {
+        var sc = el('span.sc', '—'), row = el('div.rs-song', { testid: 'rs-song-' + i }, [el('span.n', String(i + 1)), el('div.grow', [el('b', song.title), el('div.tiny.dim', song.bpm + ' bpm')]), sc]);
+        d.rows.push({ row: row, sc: sc });
+        return row;
+      });
+      var names = set.rival.members.map(function (m) { return (m.nick || m.name) + (m.defector ? ' (ex-' + bandName(st) + ')' : ''); }).join(' · ');
+      d.panel = el('div.rs-panel', [el('div.rs-ph', [el('span.caps', 'Their set · expected ~' + set.expected), el('span.tiny.dim', 'heat ' + Math.round(set.rival.heat))]),
+        el('div.rs-songs', rows), el('div.tiny.dim.rs-names', names),
+        V.ended ? btn('.btn.primary.big.block', { testid: 'btn-rs-go', onclick: goYourSet }, 'Your turn. Beat ' + set.score + ' →')
+          : btn('.btn.block', { testid: 'btn-rs-skip', onclick: function () { finishWatch(true); } }, 'Skip their set ▸▸')]);
+      ui.append(s.body, [d.back, d.bar, d.banner, d.panel]);
+      updateScores();
+      frameStage();
+    },
+    onClose: function () { if (V) { stopWatch(); V = null; } }
+  });
+  // The live gig's top bar shows the score to beat on a set showdown (55_ui_gig hook).
+  ui.gigTarget = function (g) {
+    var st = S();
+    if (!g || !g.showdown || !SET_KINDS[g.showdown.kind] || !on(st)) return null;
+    return el('span.rs-target', { testid: 'gig-target' }, 'Beat ' + RV().setScore(st, g.showdown.kind));
+  };
+
+  /* ======================================================================================================
+     The showdown weekend: their set -> your set -> the verdict
+     ====================================================================================================== */
+  ui.playShowdown = function (gig, done, opts) {
+    opts = opts || {};
+    var st = S(), kind = gig && gig.showdown && gig.showdown.kind, v = views();
+    function mine() {
+      ui.playGig(gig, function (res) {
+        var sd = (res && res.showdown) || (S() && S().lastGig && S().lastGig.showdown) || null;
+        if (v && sd && on()) ui.showVerdict(sd, function () { done(res); });
+        else done(res);
+      });
+    }
+    if (kind && SET_KINDS[kind] && v && !opts.resume && on(st)) ui.watchRival(gig, mine);
+    else mine();
+  };
+  ui.showVerdict = function (sd, done) { ui.show('rival-verdict', { sd: sd, done: done }); sfx(sd.won ? 'cheer' : 'boo'); };
+  ui.define('rival-verdict', {
+    kind: 'full', cls: 'rvverdict', sticky: true,
+    build: function (s, d) {
+      var st = S(), sd = d.sd || {}, R = RV(), fin = sd.kind === 'final', split = sd.kind === 'sameNight', rv = st && on(st) ? R.get(st) : null;
+      s.root.classList.toggle('won', !!sd.won);
+      var head = fin ? (sd.won ? 'You headline. Forever.' : 'You open. Forever.') : split ? (sd.won ? 'The scene picked you' : 'The scene picked them') : sd.won ? 'You win!' : (sd.rival || 'They') + ' win';
+      var you = split ? sd.you + '%' : String(sd.you), them = split ? sd.them + '%' : String(sd.them);
+      var chips = [];
+      if (sd.prize) chips.push(el('span.rv-chip.good', '+' + U.fmtMoney(sd.prize) + ' prize'));
+      if (sd.fansSwing) chips.push(el('span.rv-chip' + (sd.fansSwing > 0 ? '.good' : '.bad'), U.signed(sd.fansSwing) + ' fans' + (sd.kind === 'botb' ? (sd.fansSwing > 0 ? ' (theirs)' : ' (to them)') : '')));
+      if (split && sd.crowdLost) chips.push(el('span.rv-chip.bad', sd.crowdLost + ' went to their show'));
+      if (sd.heatDelta) chips.push(el('span.rv-chip', 'Heat ' + U.signed(Math.round(sd.heatDelta))));
+      ui.append(s.body, el('div.rv-verdict', { testid: 'rival-verdict' }, [
+        el('div.caps.center', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name && sd.name !== title(sd.kind) ? ' · ' + String(sd.name).replace(/^Battle of the Bands @ /, '') : '')),
+        el('h1.display.rv-vh', { testid: 'rv-verdict-head' }, head),
+        el('div.rv-board2', [
+          el('div.side.you' + (sd.won ? '.win' : ''), [el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),
+          el('span.vs', 'vs'),
+          el('div.side.them' + (sd.won ? '' : '.win'), [face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
+        split ? el('p.small.dim.center', 'Same night, same town: the crowd split on buzz.') : el('p.small.dim.center', split ? '' : 'The crowd decides. Loudly.'),
+        el('div.rv-chips', chips),
+        el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),
+        rv ? el('div.panel', { style: 'margin-top:10px' }, [record(st), el('div', { style: 'margin-top:8px' }, heatMeter(rv.heat))]) : null,
+        fin ? el('p.center.rv-forever', sd.won ? 'The Sad Dome is yours. Gord already sent a fruit basket the size of a Zamboni.' : 'Gord hugs you in the loading bay. "You were great, buddy. Really." He means it. That is the worst part.') : null
+      ]));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-verdict-done', onclick: function () { var cb = d.done; ui.close(s.id); if (cb) cb(); } }, 'Wrap up the week'));
+    }
+  });
+
+  /* ======================================================================================================
+     Wrap, end
+     ====================================================================================================== */
+  var CRACK = { breakup: ['They broke up.', 'An indefinite hiatus "to focus on tax season". Gord called you personally. He was crying.'],
+    rebrand: ['They rebranded.', 'Same four accountants, same minivan, new name: {rival}. There is a forty-slide deck.'],
+    opener: ['They want to open for you.', 'Gord ran the numbers: you are the bigger draw. They will bring the veggie tray.'] };
+  ui.rivalWrap = function (w) {
+    var st = S(), x = w && w.rival;
+    if (!x || !on(st)) return [];
+    var out = [], sds = x.showdowns || [];
+    if (x.cracked) {
+      var cr = CRACK[x.cracked] || ['They cracked.', ''];
+      out.push(el('div.panel.rv-crackpanel', { testid: 'wrap-crack' }, [el('div.row', [face('lg'), el('div.grow', [el('div.caps', RV().get(st).formerName || RV().name(st)),
+        el('div.display.rv-cr', cr[0]), el('div.small', fill(cr[1]))])])]));
+    }
+    if (!x.news.length && !sds.length && !x.heatBuzz && !x.final) return out;
+    var rows = [];
+    sds.forEach(function (sd) { rows.push(el('div.rv-sd', [el('span.wl' + (sd.won ? '.w' : '.l'), sd.won ? 'W' : 'L'), el('div.grow', el('b', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name ? ' · ' + sd.name : '')))])); });
+    x.news.forEach(function (t) { rows.push(el('div.rv-news-row', [el('span', '📰'), el('div', fill(t))])); });
+    if (x.heatBuzz) rows.push(el('div.tiny.dim', 'The rivalry is good for business: buzz +' + x.heatBuzz + ' (for them too).'));
+    out.push(el('div.panel.rv-wrap', { testid: 'wrap-rival' }, [el('div.row', { style: 'margin-bottom:6px' }, [face('sm'), el('div.grow', el('b', RV().name(st))),
+      el('span.small', { style: { color: heatColor(x.heat) } }, 'Heat ' + Math.round(x.heat) + (x.heatDelta ? ' ' + (x.heatDelta > 0 ? '▲' : '▼') + Math.abs(Math.round(x.heatDelta)) : ''))])].concat(rows)));
+    return out;
+  };
+  ui.rivalEnd = function (st) {
+    var f = st && st.finalShowdown;
+    if (!f) return null;
+    return el('div.panel.rv-next.final' + (f.won ? '.won' : ''), { testid: 'end-final' }, [el('span.ic', '🏟️'), el('div.grow', [
+      el('b', f.won ? 'You headlined the Sad Dome. ' + (f.rival || 'They') + ' opened. Forever.' : (f.rival || 'They') + ' headlined the Sad Dome. You opened. Forever.'),
+      el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
+  };
+
+  GG.registerDebug('rivalui', function () {
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, announced: Object.keys(announced) };
+  });
+})(window.GG);

@@ -6,6 +6,10 @@
 //   setup({ venue: GIG|venue|kind, crowd: attendance, members, flags, genre, player, bpm })
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
+// v0.6 (RIVALUI): setup({ ..., rival: true, members: GG.rival.lineup (corpsePaint / stageShirt / defector), drummer: { look,
+//   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
+//   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
+//   with their banner). view 'drummer' (default) is the v0.3 camera. info() adds { view, rival, painted }.
 // Bus: 'gig:judge' -> hit + crowd meter, 'crowd:level' -> setCrowdLevel, 'crowd:moment' -> moment,
 //      'audio:step' -> beat phase (the crowd and band move on the song's beat).
 // Draw calls ≈ room 2 + sign 1 + beams 3 + kit parts 4 + sticks 2 + band 4 + drummer 1 + crowd 6 + glows 1
@@ -212,7 +216,9 @@
       return {
         kind: kind, V: KIND[kind], genre: genre, G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, MAX_CROWD)), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
-        bpm: +cfg.bpm || GENRE[genre].bpm
+        bpm: +cfg.bpm || GENRE[genre].bpm,
+        view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
+        banner: cfg.banner || '', bannerSub: cfg.sub || ''
       };
     }
 
@@ -245,7 +251,7 @@
       teardown();
       var D = resolve(), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
       if (V.ceil && V.ceil < hs + CAM.pos[1] + 0.55) V.ceil = hs + CAM.pos[1] + 0.55;   // keep the camera under the roof
-      K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front,
+      K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front, painted: 0,
         band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1 };
       scene.add(K.root);
       scene.background.setHex(V.bg);
@@ -257,6 +263,7 @@
       buildDressing(lit, glow, D);
       buildKitStatic(lit, hs, kitColor(D));
       buildBackline(lit, glow, V, D);
+      if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       mesh(lit.build(), ctx.mats.vc);
       mesh(glow.build(), ctx.mats.unlit);
       buildSign(D);
@@ -268,6 +275,7 @@
       buildCrowd(D);
       buildProps(D);
       if (D.kind === 'house') buildDog(D);
+      if (D.view === 'spectator' && D.banner) buildBanner(D);
       frame();
       return K;
     }
@@ -691,7 +699,7 @@
       var list = D.members || [], sp = spots(D.V), used = {}, cv = D.flags && D.flags.cape, i, m;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var active = [];
-      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active')) active.push(m); }
+      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active') && !/drum/i.test(String(m.role || ''))) active.push(m); }
       var capeId = null;
       for (i = 0; i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';
       for (i = 0; !capeId && i < active.length; i++) if (/vocal/.test(String(active[i].role || roleOf(D, active[i].id)))) capeId = active[i].id;
@@ -714,9 +722,12 @@
         var ins = o.slot === 'vocals' && !/guitar/.test(o.role) ? 'mic' : instFor(o.role || (cm && cm.role));
         if (o.slot === 'bass') ins = 'bass';
         var cape = o.m.id === capeId ? capeVariant : null;
-        var ch = R.buildCharacter(o.m.look || (cm && cm.look) || null, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
+        var lk = o.m.look || (cm && cm.look) || null;
+        if (o.m.corpsePaint) lk = paintLook(lk, o.m.stageShirt);   // v0.6: the rival's lineup (and your defectors) in corpse paint
+        var ch = R.buildCharacter(lk, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
         if (!ch) continue;
         K.chars.push(ch);
+        if (o.m.corpsePaint) corpsePaint(ch, i);
         if (ins !== 'mic') recolorGear(ch, ins === 'bass' ? 0x1d1d22 : o.slot === 'rhythm' ? 0xb8322a : o.slot === 'extra' ? 0x8a4a22 : null, ins === 'bass');
         ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0);
         ch.root.position.set(sp0.x, K.hs, sp0.z); ch.root.rotation.y = sp0.yaw;
@@ -753,12 +764,56 @@
       mesh(b.build(), ctx.mats.vc);
     }
 
+    // ---- v0.6: corpse paint (white face, black sockets/spikes/drips; same rig as 44_render_carpet), black stage shirts ----
+    function paintLook(l, shirt) {
+      var o = {}, k; l = l || {};
+      for (k in l) o[k] = l[k];
+      o.skin = '#ecebe6'; o.shirt = shirt || '#101014'; o.pants = '#0e0e12'; o.top = 'jacket';
+      o.extras = (l.extras || []).filter(function (x) { return x !== 'sunglasses' && x !== 'glasses'; });
+      return o;
+    }
+    function corpsePaint(ch, style) {
+      var b = new ctx.Builder({ seed: 17 + style, jitter: 0 }), y = 0.295, z = 0.168, blk = 0x0b0b0d;
+      b.box(0.1, 0.12, 0.012, 0.075, y, z, blk); b.box(0.1, 0.12, 0.012, -0.075, y, z, blk);
+      b.box(0.03, 0.08, 0.012, 0.09, y + 0.09, z, blk, 0, 0, -0.35); b.box(0.03, 0.08, 0.012, -0.09, y + 0.09, z, blk, 0, 0, 0.35);
+      b.box(0.02, 0.07, 0.012, 0.075, y - 0.1, z, blk); b.box(0.02, 0.07, 0.012, -0.075, y - 0.1, z, blk);
+      if (style % 2) b.box(0.1, 0.02, 0.012, 0, 0.165, z - 0.004, blk); else { b.box(0.02, 0.09, 0.012, 0.03, 0.14, z - 0.004, blk); b.box(0.02, 0.09, 0.012, -0.03, 0.14, z - 0.004, blk); }
+      var m = new THREE.Mesh(b.build(), ctx.mats.vc);
+      ch.bones[B_HEAD].add(m);
+      K.geos.push(m.geometry); K.painted++;
+    }
+    // The stage end of the room (the v0.3 camera never looks there) + a truss for the banner.
+    function buildBackdrop(B, V, D) {
+      var zEnd = STAGE_BACK + 1.2, top = V.outdoor ? V.hs + 4.2 : V.ceil, w = V.outdoor ? V.sw + 0.6 : V.w;
+      B.box(2 * w + 0.4, top, 0.2, 0, top / 2, zEnd + 0.1, V.outdoor ? 0x15161c : sh(V.wall, 0.7));
+      B.box(2 * V.sw, 0.12, 0.12, 0, V.hs + 3.35, STAGE_BACK - 0.05, 0x2a2a2e);
+    }
+    function buildBanner(D) {
+      var c = document.createElement('canvas'); c.width = 1024; c.height = 256;
+      var g = c.getContext('2d'), title = String(D.banner).toUpperCase(), size = 132;
+      g.fillStyle = '#060608'; g.fillRect(0, 0, 1024, 256);
+      g.strokeStyle = '#3a3a44'; g.lineWidth = 6; g.strokeRect(10, 10, 1004, 236);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '900 ' + size + 'px Georgia, "Times New Roman", serif';
+      var wdt = g.measureText(title).width;
+      if (wdt > 940) { size = Math.max(40, Math.floor(size * 940 / wdt)); g.font = '900 ' + size + 'px Georgia, "Times New Roman", serif'; }
+      g.shadowColor = '#9fb8ff'; g.shadowBlur = 16; g.fillStyle = '#f4f4f8'; g.fillText(title, 512, D.bannerSub ? 112 : 128);
+      for (var i = 0; i < 14; i++) { var x = 70 + i * 68 + hash01(i, 5) * 20; g.fillRect(x, 40 + hash01(i, 9) * 12, 3, 18 + hash01(i, 11) * 22); }   // frost spikes
+      if (D.bannerSub) { g.shadowBlur = 0; g.fillStyle = '#9aa0b4'; g.font = '800 34px system-ui, Arial, sans-serif'; g.fillText(String(D.bannerSub).toUpperCase(), 512, 206); }
+      var tex = new THREE.CanvasTexture(c); K.texs.push(tex);
+      var mat = ownMat(new THREE.MeshBasicMaterial({ map: tex, fog: false }));
+      var wd = Math.min(2 * D.V.sw - 0.4, 5.2), m = mesh(new THREE.PlaneGeometry(wd, wd / 4), mat);
+      m.position.set(0, D.V.hs + 2.72, STAGE_BACK - 0.02); m.rotation.y = Math.PI;
+    }
+
     // ---- Drummer (you) with IK sticks -------------------------------------------------------------------
     function buildDrummer(D) {
-      var pl = D.player || {}, pre = findPreset(pl.presetId);
-      var ch = R.buildCharacter(pl.look || (pre && pre.look) || null, { id: 'player', sticks: false });
+      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = pl.look || (pre && pre.look) || null;
+      if (D.drummer && D.drummer.corpsePaint) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer on your throne
+      var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
+      if (D.drummer && D.drummer.corpsePaint) corpsePaint(ch, 3);
       ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_GEAR].scale.setScalar(0);
       ch.root.position.set(0, K.hs, KZ + THRONE_Z); ch.root.rotation.y = Math.PI;
       K.root.add(ch.root);
@@ -795,6 +850,7 @@
         if (D.kind === 'bar' && px > V.w - 1.7 && pz < -3.2) continue;                     // the bar
         if (D.kind === 'curling' && px > V.w - 1.0 && pz < -4.5 && pz > -6.2) continue;
         if (D.kind === 'church' && px < -V.w + 1.8 && pz > -3.5 && pz < -2.5) continue;    // the piano
+        if (D.view === 'spectator' && (px - SPEC.x) * (px - SPEC.x) + (pz - (V.front || DEFAULT_FRONT) + SPEC.back) * (pz - (V.front || DEFAULT_FRONT) + SPEC.back) < SPEC.clear * SPEC.clear) continue;   // v0.6: the riser
         slots.push({ x: px, z: pz, d: Math.sqrt(px * px * 0.35 + (pz - front) * (pz - front)) });
       }
       slots.sort(function (a, b) { return a.d - b.d; });
@@ -940,11 +996,12 @@
 
     // ---- Camera framing ---------------------------------------------------------------------------------
     var CAM = { pos: [0.35, 3.25, 4.2], look: [-0.05, -0.05, -3.6], bandFov: 45, minHFov: 38 };
+    var SPEC = { x: 0.85, y: 2.9, back: 5.2, clear: 1.6, look: [0.1, 1.2, -0.3], bandFov: 40, minHFov: 42 };   // v0.6: a riser in the crowd, facing the stage
     function frame() {
-      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame;
+      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, spec = K && K.D.view === 'spectator', CF = spec ? SPEC : CAM;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H / 3) : F.bottom;
       var bandH = Math.max(80, H - top - bottom);
-      var tb = Math.tan(CAM.bandFov * Math.PI / 360), minT = Math.tan(CAM.minHFov * Math.PI / 360) * bandH / W;
+      var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
@@ -952,8 +1009,13 @@
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();
       var hs = K ? K.hs : 0;
-      cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
-      cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
+      if (spec) {
+        cam.position.set(SPEC.x, Math.min(K.V.ceil ? K.V.ceil - 0.35 : 99, hs + SPEC.y), K.front - SPEC.back);
+        cam.lookAt(SPEC.look[0], hs + SPEC.look[1], KZ + SPEC.look[2]);
+      } else {
+        cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
+        cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
+      }
       cam.updateMatrixWorld();
       qCam.copy(cam.quaternion);
     }
@@ -1455,7 +1517,8 @@
           cape: K.band.some(function (r) { return r.cape; }), crowd: Math.round(S.smooth), level: LEVELS[S.idx], formation: S.form.kind, arms: S.arms.kind,
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, moments: S.moments,
-          beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length };
+          beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
+          view: K.D.view, rival: K.D.rival, painted: K.painted };
       }
     };
     return shell;

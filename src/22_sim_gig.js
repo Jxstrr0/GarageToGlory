@@ -33,7 +33,7 @@
   gig.venue = function (id) {
     var list = venues();
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
-    return null;
+    return GG.rival && GG.rival.venue ? GG.rival.venue(id) : null;   // v0.6: festival grounds + the Sad Dome
   };
   gig.fit = function (venue, genre) {
     var f = venue && venue.genreFit && venue.genreFit[genre];
