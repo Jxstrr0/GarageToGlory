@@ -226,6 +226,36 @@ Later versions:
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## What's in v0.7 (sim) — WORLDSIM stage 1 (UI = stage 2, WORLDUI)
+- World era ON (`economy.eras.worldEnabled`) at the Steady threshold (25k fans + a charting record; labels.weekly). Home
+  scene stays 40k in World (Canada saturates); each region has its own scene (`world.scene` adds fans abroad).
+  World-era home costs: eraUpkeep 50, commission 15%. Abbot Lane (London) opens in World (`labels.studios`).
+- `GG.tour` (`25_sim_tour.js`, API in its header; content `content/world.js`; numbers `economy.tour`): 4 regions (C6 cities
+  with x/y pins, region `pin` on the world map, `canadaPin`), 43 parody venues (Mudstonbury Jun, Wackelstein Open Air Aug,
+  Summer Sonicboom Aug, Big Day Inn Jan, Siberian Frostfest Jan by Baikal, Budokhan Hall, the Finnish National Moose Opera),
+  17 preset packages (per region: showcase once, 2 tours, 1–2 festival tours whose festival stops fix the departure week),
+  8 rentals, 3 stays, 3 extras. Unlock at `threshold` = region.fans × (1.6 − genre fit) (×1.08 if the rival broke it first)
+  OR an invite (festival slot/showcase: story card, half flights for 10 weeks) OR "big in one place" (a song blows up).
+- Booking: flights (region $ × members + you + fill-ins) + rental + extra up front, hotels weekly; departs next Monday;
+  never over the Loonies week, the Sad Dome, a studio session or the career end; `cancel` before departure.
+- On tour (`away`): Monday = departure (jet lag) + this stop's show (open dates book from the regional board via the Book
+  pick or auto best); region Monday cards (75%) or quiet, never the home deck; no home offers/showdowns; blocks map
+  write→rehearse (hotel room, 70% gains), hustle→rest, book→promote (region fans); homesickness +15/wk (stay, low moods),
+  −6 per rest, −12/wk at home; ≥45 mood drag, ≥70 forced first-block rest, ≥75 the homesick card (fly home early), ≥80
+  burnout; members call home (chat tone 'home'). Gigs: crowd = walk-ins + region fans + buzz×fit (+ festival slice, hall),
+  flat fee × payMult, new fans toward the region scene; rental travel (burnout by comfort, breakdowns), no Moose Hearse wear.
+  Japan (not Osaka): silent crowd (meter frozen per song, reaction + 'applause' at the end, no boos/mosh). Region road cards.
+- Calendar abroad: `seasonIn(region,w)` (Australia reversed), `seasonAt(state)`, regional climates/temps + city offsets,
+  regional holidays replace Canada's (hanami, Golden Week, Bonfire Night, Novy God, white nights, Aussie Christmas…).
+- Story: the Japanese fan-club president (Emiko Tanabe; first Japan week: card, gifts, Japan shows, comments), big in one
+  place, the rival breaking regions (`state.tour.rival`), the Moose Opera (mooseAlbum ready/finland → Nordic Moose Run →
+  Helsinki → `flags.mooseOpera = 'platinum'`, trophy `platinum_fi`, card `wt_moose`), the Global Gong (week 22, World era,
+  nominated with a broken region or a festival; trophy `gong` + $5k), regional charts view. Save v7→v8 (`GG.tour.migrate`).
+- Balance (10y×20, before → after): good world wk 103 (y5) → 103; avg 158 (y7) → 158; good y10 fans 48.7k → 63.7k (15.6k
+  abroad, 5.2 tours, Gong 1.7 wins), fund $25.4k → $21.8k, Sad Dome 20/20 → 20/20, cracks 18 → 17; avg fans 39.5k → 42.9k,
+  fund $11.7k → $11.1k, 2.1 tours, Sad Dome 13/20 → 8/20 (v0.6.1 had 9), quits/yr 0.64 → 0.63; invariants OK.
+- Tests: `sim_tour.test.js` 17 (new); sim_calendar/sim_labels/sim_fans/content updated for World; pw_fans expects "Japan".
+
 ## What's in v0.6.2 "Two thumbs" (owner feedback: chords + songwriter)
 - **Two-thumb rule** (`22_sim_gig`): every difficulty caps a moment at 2 judged notes (kick > snare > cymbal > toms >
   ride > hat; `gig.THUMBS`, `gig.THUMB_PRIORITY`; all DIFFICULTIES `chord: 2`). Dropped hits go to `chart.auto`
@@ -391,6 +421,12 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- `GG.tour` (v0.7, header of `25_sim_tour.js`): lookups `regions, region, cityDef, cities, venue, venues, vehicles, stays,
+  extras, climate, fit, pkg, departWindow, legKm`; state `init, ensure, migrate, threshold, unlocked, unlock, invite`;
+  views `map, regionView, status, summary, charts, gong, packages`; booking `quote, canBook, book, cancel`; the week `active,
+  away, here, stop, regionOf, abroadFans, monday, forcedCard, afterCard, fillText, blockId, allowedBlocks, block, beforeGig,
+  listings, makeGig, estimate, draw, silentCrowd, shape, afterGig, travel, startTrip, roadCardOk, weekly, rivalWeekly,
+  runGong`; bots `botWeek = botTour, botPlan`. Events `tour:*` (see header). `GG.calendar` + `seasonIn, seasonAt`.
 - `GG.rival` (v0.6, header of `23_sim_rival.js`): `init, migrate, get, cfg, cast, cards, venue, name, skill, heat, addHeat,
   record, lineup, leaderboard, weekly, monday, pending, schedule, next, forcedCard, afterCard, enter, pass, botWeek,
   showdown (UI setup), setScore, resolve, shape, loonies, strength, chartEntry, crack, final`. Tunables `economy.rival`.

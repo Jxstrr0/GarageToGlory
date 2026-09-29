@@ -225,7 +225,7 @@ test('bots over 5 years: posts, virality, a Patreeon in the Signed era; determin
   eq(JSON.stringify(a), JSON.stringify(b), 'same seed, same career');
   ok(a.bandbook.seq > 10, 'the avg bot posts: ' + a.bandbook.seq);
   const g = run(9, 'good');
-  ok(g.era === 'signed' && g.fanClub && g.fanClub.earned > 0, 'good bot: a paying Patreeon ' + JSON.stringify(g.fanClub));
+  ok((g.era === 'signed' || g.era === 'world') && g.fanClub && g.fanClub.earned > 0, 'good bot: a paying Patreeon ' + JSON.stringify(g.fanClub));
   ok(g.superfans.dale.seen >= 40, 'Dale at every show: ' + g.superfans.dale.seen + ' / ' + g.stats.gigs);
   ok(Object.values(g.fanTypes).every(isFinite) && g.gifts.length > 0, 'gifts arrive');
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', '29_sim_fans.js'), 'utf8');

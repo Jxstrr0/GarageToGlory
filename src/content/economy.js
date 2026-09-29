@@ -110,17 +110,40 @@
     },
 
     // ---- Eras (v0.5): garage -> local (250 fans, the v0.4 protection line) -> signed (a deal or a DIY album) -> world ----
-    eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: false },   // the World era itself is v0.7
-    eraUpkeep: { garage: 0, local: 6, signed: 40, world: 90 },   // extra $/week: jam-space rent, a manager, insurance
+    eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: true },   // v0.7: the World stage era is on (Steady pace)
+    eraUpkeep: { garage: 0, local: 6, signed: 40, world: 50 },   // extra $/week: jam-space rent, a manager, insurance
     hustleEra: { garage: 1, local: 1.3, signed: 2.2, world: 3 },   // hustle cash x: drum lessons and session work pay more once you're known
 
     // ---- World (26_sim_world.js overrides, merged over its DEFAULTS) ----------------------------------------------
     world: {
       eraTier: { garage: 2, local: 2, signed: 3, world: 3 },   // tier-3 theatres (500–2,000) open in the Signed era
-      scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },   // fans a band can reach through gigs
+      scene: { garage: 6000, local: 6000, signed: 40000, world: 40000 },   // fans a band can reach through gigs at home (v0.7: Canada saturates; abroad = content.world.regions[].scene, added on top)
       theatreFans: 0.4,          // new-fan factor at theatres: most of that crowd already knows you
-      commission: { garage: 0, local: 0, signed: 0.15, world: 0.2 },  // management + booking agent, off the top of gig pay
+      commission: { garage: 0, local: 0, signed: 0.15, world: 0.15 },  // management + booking agent, off the top of gig pay
       crew: { 3: 150 }           // $ per show by venue tier: sound, lights and a merch person (theatres)
+    },
+
+    // ---- Touring abroad (25_sim_tour.js, v0.7; merged over its DEFAULTS) --------------------------------------------
+    tour: {
+      thresholdFit: 1.6,          // region unlock fans = region.fans x (thresholdFit - genre fit) (metal in Japan: x0.6)
+      rivalFirst: 1.08,           // your threshold x this when your rival broke the region first
+      party: 0,                   // extra flight seats beyond the active members + you + fill-ins (the crew is hired locally)
+      jetLag: { uk_europe: 3, japan: 5, australia: 6, russia: 4 },   // burnout on departure and on the flight home
+      invite: { chance: 0.03, fromWeeks: 4, weeks: 10, flights: 0.5, fitMin: 0.6 },   // per locked region per week (World era)
+      homesick: { perWeek: 15, lowMood: 2, rest: -6, home: -12, moodAt: 45, mood: -2, restAt: 70, cardAt: 75, burnoutAt: 80, burnout: 3, max: 100 },
+      crowd: { fanDraw: 0.4, buzzDraw: 6, walkIns: { 2: 150, 3: 400, 4: 500 }, festivalSlot: 0.07, hallDraw: 0.3, publicist: 0.35 },
+      fans: { mult: 1.2, festival: 0.6 }, // new fans abroad x (a new market) ; festival crowds are mostly strangers (convert less)
+      payMult: 1.3, showcase: { flights: 0.5, regionFans: 300 },   // venue pay x ; showcases: the label covers half the flights + industry buzz
+      promote: { regionFans: [40, 110], buzz: 1 },     // a Promote block abroad (promote locally)
+      rehearse: { skill: 0.7 },                         // hotel-room rehearsal: 70% of the gains, quiet drums (a practice pad)
+      blocks: { write: 'rehearse', hustle: 'rest', book: 'promote' },   // what the other planner blocks become on tour
+      travel: { burnoutPer100: 0.35, burnoutMax: 18, breakdownCost: [200, 600] },
+      big: { chance: 0.025, minGigs: 1, minRegionFans: 800, unlockFans: 0.5 },
+      rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
+      gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
+      moose: { fans: 3000, buzz: 12 },
+      cardGap: 3, cardChance: 0.75,   // tour story cards (min weeks apart) ; a region card on this share of tour Mondays
+      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55 }
     },
 
     // ---- Labels, studios, releases (24_sim_labels.js, v0.5) --------------------------------------------------------

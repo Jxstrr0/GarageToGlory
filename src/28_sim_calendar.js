@@ -13,6 +13,10 @@
 //   shape(state, g, r, rng) (called by GG.world.shape: outdoor turnout, holiday buzz, weather lines; r.weather, r.holiday)
 //   roadMods(state, city?) { road, wear, burnout } · holidayCard(state) card|null (career.startWeek) · monday(state)
 //   migrate(s) (v6 -> v7: state.weather; sets s.v = 7)
+// v0.7 (WORLDSIM, C7 overseas): seasonIn(region, w) (Australia reversed: content.world.climates[].seasonShift) · seasonAt(state)
+//   (the season where the band is this week) · abroad (GG.tour.away) the weather uses the tour city's regional climate
+//   (content.world.climates + city temp offsets), holidays() returns the region's holidays (content.world.holidays) instead
+//   of the Canadian ones, season fit / venue seasons / road risk / the label use the local season; no Canadian news abroad.
 // Events: 'calendar:week' { totalWeek, week, month, season, weather, temp, holiday } (from monday).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -45,6 +49,13 @@
     }
     return 'summer';
   };
+  // v0.7: the season in a region (Australia's are reversed) and where the band is this week.
+  cal.seasonIn = function (region, w) {
+    var cl = region && region !== 'canada' && GG.tour && GG.tour.climate ? GG.tour.climate(region) : null;
+    return cal.season(cal.woy(w) + (cl && cl.seasonShift || 0));
+  };
+  function away(state) { return !!(state && GG.tour && GG.tour.away && GG.tour.away(state)); }
+  cal.seasonAt = function (state) { return away(state) ? cal.seasonIn(GG.tour.regionOf(state), state.week) : cal.season(state.week); };
   cal.seasonInfo = function (season) {
     var s = part('seasons')[season] || DEF.seasons[season] || {};
     return { id: season, name: s.name || season, icon: s.icon || '', blurb: s.blurb || '', fx: s.fx || {} };
@@ -53,6 +64,10 @@
   /* ---- Holidays ---------------------------------------------------------------------------------------------- */
   cal.holidays = function (w, state) {
     w = cal.woy(w);
+    if (away(state)) {   // v0.7: abroad, the region's holidays replace the Canadian ones
+      var reg = GG.tour.regionOf(state), W = GG.content.world;
+      return ((W && W.holidays) || []).filter(function (h) { return h.region === reg && h.weeks && w >= h.weeks[0] && w <= h.weeks[1]; });
+    }
     return part('holidays').filter(function (h) {
       return h.weeks && w >= h.weeks[0] && w <= h.weeks[1] && (!h.era || !state || h.era.indexOf(state.era) >= 0);
     });
@@ -68,6 +83,8 @@
   cal.weatherAt = function (state, city, totalWeek) {
     var tw = totalWeek || state.totalWeek || 1, w = ((tw - 1) % WPY) + 1, season = cal.season(w);
     var rng = GG.RNG(GG.hashSeed((state.seed >>> 0) + '|weather|' + tw));
+    var wc = GG.tour && GG.tour.cityDef ? GG.tour.cityDef(city || (!totalWeek || totalWeek === state.totalWeek ? GG.tour.here(state) : null)) : null;
+    if (wc) return worldWeather(wc, tw, w, rng);   // v0.7: a city abroad
     var table = part('weather')[season] || { clear: 1 }, kinds = Object.keys(table).filter(function (k) { return C.WEATHER.indexOf(k) >= 0; });
     var total = kinds.reduce(function (t, k) { return t + table[k]; }, 0), u = rng.next() * total, kind = kinds[kinds.length - 1] || 'clear';
     for (var i = 0; i < kinds.length; i++) { u -= table[kinds[i]]; if (u < 0) { kind = kinds[i]; break; } }
@@ -80,6 +97,18 @@
     if (kind === 'rain' && temp < 1) temp = 1 + Math.round(rng.next() * 3);
     return { week: tw, kind: kind, temp: temp, city: c ? c.id : null };
   };
+  function worldWeather(c, tw, w, rng) {
+    var cl = GG.tour.climate(c.region) || {}, season = cal.seasonIn(c.region, w), table = (cl.weather || {})[season] || { clear: 1 };
+    var kinds = Object.keys(table).filter(function (k) { return C.WEATHER.indexOf(k) >= 0; });
+    var total = kinds.reduce(function (t, k) { return t + table[k]; }, 0), u = rng.next() * total, kind = kinds[kinds.length - 1] || 'clear';
+    for (var i = 0; i < kinds.length; i++) { u -= table[kinds[i]]; if (u < 0) { kind = kinds[i]; break; } }
+    var base = (cl.temps || [])[cal.monthIndex(w)], cold = season === 'winter' ? 2 : 1;
+    var temp = Math.round((isFinite(base) ? base : 12) + cal.kind(kind).temp * 0.5 + (rng.next() - 0.5) * 6 + (c.temp || 0) * cold);
+    if (kind === 'heat' && temp < 28) temp = 28 + Math.round(rng.next() * 8);
+    if ((kind === 'snow' || kind === 'blizzard') && temp > 1) temp = -Math.round(1 + rng.next() * 4);
+    if (kind === 'rain' && temp < 1) temp = 1 + Math.round(rng.next() * 3);
+    return { week: tw, kind: kind, temp: temp, city: c.id, region: c.region };
+  }
   cal.weather = function (state) {
     if (!state) return null;
     var w = state.weather;
@@ -88,19 +117,20 @@
 
   // HUD / UI summary for this week.
   cal.label = function (state) {
-    var w = state.week, season = cal.season(w), si = cal.seasonInfo(season), wx = cal.weather(state), k = cal.kind(wx.kind);
-    var h = cal.holiday(w, state);
+    var w = state.week, season = cal.seasonAt(state), si = cal.seasonInfo(season), wx = cal.weather(state), k = cal.kind(wx.kind);
+    var h = cal.holiday(w, state), ab = away(state), tc = ab && GG.tour.cityDef(GG.tour.here(state));
     return { totalWeek: state.totalWeek, week: w, month: cal.month(w), monthName: cal.monthName(w), season: season,
+      region: ab ? GG.tour.regionOf(state) : 'canada', cityName: tc ? tc.name : state.city,
       seasonName: si.name, seasonIcon: si.icon, seasonBlurb: si.blurb, weather: wx.kind, weatherLabel: k.label, weatherIcon: k.icon,
       temp: wx.temp, holiday: h ? { id: h.id, name: h.name, icon: h.icon || '', blurb: h.blurb || '' } : null,
       fit: cal.fitLine(state),
-      text: cal.monthName(w) + ' · ' + si.name + ' · ' + k.label + ', ' + wx.temp + '°C' + (h ? ' · ' + h.name : '') };
+      text: cal.monthName(w) + ' · ' + si.name + (tc ? ' (' + tc.name + ')' : '') + ' · ' + k.label + ', ' + wx.temp + '°C' + (h ? ' · ' + h.name : '') };
   };
 
   /* ---- Genre-season fit ----------------------------------------------------------------------------------------- */
   // -1..2: how much this season suits your genre at this venue (doubled at your genre's kind of room / summer outdoors).
   cal.seasonFit = function (state, v) {
-    var season = cal.season(state.week), gs = part('genreSeason')[state.genre] || {}, f = gs[season] || 0;
+    var season = cal.seasonAt(state), gs = part('genreSeason')[state.genre] || {}, f = gs[season] || 0;
     if (!f || !v) return f;
     var kinds = part('genreKinds')[state.genre] || [];
     var home = kinds.indexOf(v.kind) >= 0 || (v.outdoor && season === 'summer' && (state.genre === 'country' || state.genre === 'punk'));
@@ -108,13 +138,13 @@
   };
   cal.fitLine = function (state) {
     var fl = part('fitLines')[state.genre] || {};
-    return fl[cal.season(state.week)] || null;
+    return fl[cal.seasonAt(state)] || null;
   };
 
   /* ---- Venues: open this week? listing weight, pay, tags ---------------------------------------------------------- */
   cal.venueOpen = function (state, v) {
     if (!v) return false;
-    var w = cal.woy(state.week), season = cal.season(w), hs = cal.holidays(w, state);
+    var w = cal.woy(state.week), season = cal.seasonAt(state), hs = cal.holidays(w, state);
     if (v.holiday && !hs.some(function (h) { return h.id === v.holiday; })) return false;
     if (v.weeks && (w < v.weeks[0] || w > v.weeks[1])) return false;
     if (v.season && v.season.indexOf(season) < 0) return false;
@@ -205,7 +235,7 @@
   /* ---- The road --------------------------------------------------------------------------------------------------- */
   // Breakdown risk x, van wear x and extra burnout on a drive this week (season + the weather at the destination).
   cal.roadMods = function (state, city) {
-    var fx = cal.seasonInfo(cal.season(state.week)).fx, k = cal.kind(cal.weatherAt(state, city).kind);
+    var fx = cal.seasonInfo(cal.seasonAt(state)).fx, k = cal.kind(cal.weatherAt(state, city).kind);
     return { road: (fx.road || 1) * k.road, wear: (fx.wear || 1) * k.wear, burnout: k.burnout || 0, weather: k.id };
   };
 
@@ -233,7 +263,7 @@
   cal.monday = function (state) {
     if (!state || state.ended) return null;
     state.weather = cal.weatherAt(state);
-    var w = state.week, news = part('news')[w], hs = cal.holidays(w, state), d = {};
+    var w = state.week, news = away(state) ? null : part('news')[w], hs = cal.holidays(w, state), d = {};   // v0.7: no Saskatoon news abroad
     hs.forEach(function (h) { if (h.news) news = h.news; });   // a holiday note beats the season flavour
     if (news && state.totalWeek > 1 && GG.career.postChat) GG.career.postChat(state, news.who, news.text, null, 'news');
     if (state.flags) {

@@ -373,7 +373,7 @@ test('world: tier-3 theatres only in the Signed era; commission; era scene; worl
   s.albums.push({ id: 'Z', status: 'released', tracks: [], chart: { peak: 40 } });
   ok(GG.labels.worldReady(s), 'threshold reached');
   GG.career.endWeek(s);
-  ok(s.milestones.worldReady && s.era === 'signed', 'milestone only; the World era arrives in v0.7');
+  ok(s.milestones.worldReady && s.era === 'world', 'v0.7: the World era switches on at the threshold');
 });
 
 test('migration v4 -> v5: defaults, past-protection saves become local heroes, idempotent, save codes round-trip', () => {
@@ -401,7 +401,7 @@ test('bots: sign, record, release over a career; deterministic per seed; no DOM/
   const run = seed => { const s = GG.career.newCareer({ seed, player: { name: 'Bot' } }); for (let i = 0; i < 24 * 5; i++) GG.career.botWeek(s, 'good'); return s; };
   const a = run(99), b = run(99);
   eq(JSON.stringify(a), JSON.stringify(b), 'same seed, same career');
-  ok(a.era === 'signed' && a.pastDeals.concat(a.label ? [a.label] : []).length >= 1, 'the good bot signs');
+  ok((a.era === 'signed' || a.era === 'world') && a.pastDeals.concat(a.label ? [a.label] : []).length >= 1, 'the good bot signs');
   const rel = a.albums.filter(x => x.status === 'released');
   ok(rel.length >= 3 && rel.every(x => x.reviews.length === 5 && x.critic > 0), 'the good bot records and releases: ' + rel.length);
   ok(rel.every(x => GG.labels.recycled(a, x.tracks, x.id).count <= Math.ceil(x.tracks.length / 2)), 'good bot avoids recycling (at most half the tracks)');

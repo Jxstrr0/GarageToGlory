@@ -428,6 +428,88 @@
         { label: 'Silence. Like Kenji did.', hint: 'Burnout ↓', effects: { burnout: -4, mood: { all: 2 } },
           outcome: 'The prairie goes by in perfect silence. Somebody tears up. Nobody says who.' }
       ] }
+,
+
+    // ---- v0.7 (WORLDSIM): region road cards abroad (gate.region; GG.tour only draws these on tour, never at home).
+    //      No van effects: the Moose Hearse is at home. Kenji still drives, on whichever side of the road they use.
+    { id: 'road_uk_left', type: 'road', speaker: 'dana', title: 'The Wrong Side', gate: { region: ['uk_europe'], driver: ['kenji'] },
+      text: 'Roundabouts. So many roundabouts. Kenji takes every one on the left without a flicker. Dana has her eyes shut and her hands on the dash.',
+      choices: [
+        { label: 'Trust Kenji', hint: 'Chemistry ↑', effects: { chemistry: 3 }, outcome: 'Four hundred roundabouts. Zero mistakes. Kenji parks in a space the width of a shopping cart. Silent applause.' },
+        { label: 'Dana navigates from a paper map', hint: 'Dana ↑ · Burnout ↑', effects: { mood: { dana: 5 }, burnout: 4 }, outcome: 'Three wrong turns, one sheep, one castle nobody planned to see. Dana is thrilled.' }
+      ] },
+    { id: 'road_uk_hedgerow', type: 'road', speaker: 'jaxon', title: 'The Hedgerow Lane', gate: { region: ['uk_europe'], minKm: 100 },
+      text: 'The satnav sends the tiny van down a lane between two hedges, exactly one van wide. A tractor appears ahead. It is not reversing.',
+      choices: [
+        { label: 'Reverse half a mile', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'Twenty minutes backwards through a hedge tunnel. The farmer waves. It feels sarcastic.' },
+        { label: 'Offer him tickets', hint: 'Gamble: a new fan, or a long wait', roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+          success: { effects: { fans: 12, buzz: 3 }, outcome: 'He reverses, then comes to the gig with his whole family. They stand at the front in wellies.' },
+          fail: { effects: { burnout: 6 }, outcome: '"Not my kind of music," he says, without asking what kind it is. He eats a sandwich. You wait.' } }, outcome: 'Jaxon waves the guest list out the window.' }
+      ] },
+    { id: 'road_eu_border', type: 'road', speaker: 'marcel', title: 'The Border Check', gate: { region: ['uk_europe'], minKm: 200 },
+      text: 'A border officer opens the back of the van and finds the cape. He holds it up to the light for a long time. "Purpose of visit?"',
+      choices: [
+        { label: '"Business." (Cape business.)', hint: 'Marcel ↑', effects: { mood: { marcel: 5 } }, outcome: 'He folds the cape with great care and hands it back. "Good luck with the business."' },
+        { label: 'Let Marcel explain the album', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 4, buzz: 3 }, outcome: 'Forty minutes on the moose concept album. The officer asks for a signed copy. For his mother.' }
+      ] },
+    { id: 'road_eu_autobahn', type: 'road', speaker: 'dana', title: 'The Autobahn', gate: { region: ['uk_europe'], minKm: 150 },
+      text: 'No speed limit. The tiny rental van tops out at 104 km/h. Every car in Germany passes you, flashing its lights like a disco.',
+      choices: [
+        { label: 'Stay in the slow lane', hint: 'Burnout ↑', effects: { burnout: 3, chemistry: 2 }, outcome: 'Six hours of trucks. A game of license-plate bingo gets extremely competitive.' },
+        { label: 'Stop at a rest stop with a museum', hint: 'Moods ↑', effects: { mood: { all: 4 }, fund: -60 }, outcome: 'A rest stop with a sausage museum. You do not ask questions. You buy the fridge magnet.' }
+      ] },
+    { id: 'road_jp_toll', type: 'road', speaker: 'jaxon', title: 'The Tolls', gate: { region: ['japan'], minKm: 150 },
+      text: 'Tokyo to Osaka on the expressway. Jaxon reads the toll receipts aloud. The tolls cost more than the first gig ever paid.',
+      choices: [
+        { label: 'Pay and admire the rest stops', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 4 } }, outcome: 'The rest stops have gardens, hot food and a toilet with more buttons than the mixing desk.' },
+        { label: 'Take the slow roads', hint: 'Burnout ↑', effects: { burnout: 5, chemistry: 2 }, outcome: 'Rice fields, mountains, a village festival. You arrive at soundcheck with thirty seconds to spare.' }
+      ] },
+    { id: 'road_jp_parking', type: 'road', speaker: 'dana', title: 'The Parking Tower', gate: { region: ['japan'], driver: ['kenji'] },
+      text: 'The venue\'s parking is a robot tower that lifts cars into slots. The rental van is two centimetres too tall. The robot beeps politely.',
+      choices: [
+        { label: 'Let Kenji try anyway', hint: 'Gamble: two centimetres', roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+          success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'Kenji lets air out of the tyres. The van goes in with a millimetre to spare. The attendant bows to him.' },
+          fail: { effects: { fund: -120, burnout: 3 }, outcome: 'The robot refuses. A very polite man directs you to a lot three km away.' } }, outcome: 'Kenji looks at the robot. The robot looks at Kenji.' },
+        { label: 'Park far away and walk', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'You carry the kit through a train station. Commuters make way in perfect silence.' }
+      ] },
+    { id: 'road_au_roadtrain', type: 'road', speaker: 'jaxon', title: 'Road Train', gate: { region: ['australia'], minKm: 300 },
+      text: 'A road train overtakes you: a truck pulling four trailers, fifty metres of it. It takes nine seconds. Jaxon counts out loud.',
+      choices: [
+        { label: 'Wave at the driver', hint: 'Buzz ↑', effects: { buzz: 3, mood: { jaxon: 4 } }, outcome: 'The driver honks the horn in the rhythm of your single. He has the album. Nobody knows how.' },
+        { label: 'Pull over and let it go', hint: 'Burnout ↑', effects: { burnout: 3 }, outcome: 'You wait in the red dirt. The dust takes ten minutes to settle. It is in the snare forever now.' }
+      ] },
+    { id: 'road_au_nothing', type: 'road', speaker: 'dana', title: 'Eight Hundred km of Nothing', gate: { region: ['australia'], minKm: 500 },
+      text: 'Red dirt, blue sky, a single tree every hundred km. The next fuel stop is 340 km away. The fuel gauge disagrees about the maths.',
+      choices: [
+        { label: 'Fill every jerry can', hint: 'Fund ↓', effects: { fund: -120 }, outcome: 'You roll into the roadhouse on fumes and pride. The owner has a guest book. You sign it as a band.' },
+        { label: 'Risk it', hint: 'Gamble: fine, or a long walk', roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
+          success: { effects: { chemistry: 4 }, outcome: 'You coast in with the needle under E. The band cheers like it is a gig.' },
+          fail: { effects: { burnout: 8, fund: -200 }, outcome: 'Out of fuel at km 322. A grey nomad couple in a caravan tows you in and makes you tea.' } }, outcome: 'You do the maths again. It still disagrees.' }
+      ] },
+    { id: 'road_au_kangaroo', type: 'road', speaker: 'marcel', title: 'Dusk', gate: { region: ['australia'], minKm: 150 },
+      text: 'Dusk on a country road. Kangaroos everywhere, standing, staring. Marcel has named nine of them.',
+      choices: [
+        { label: 'Crawl along at 40', hint: 'Burnout ↑', effects: { burnout: 4, mood: { marcel: 3 } }, outcome: 'Slow and safe. Marcel narrates each kangaroo\'s life story. Some have tragic endings.' },
+        { label: 'Stop for the night in a pub', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 5 } }, outcome: 'A country pub with rooms upstairs. The locals ask for a song. You play one, acoustic, on bar stools.' }
+      ] },
+    { id: 'road_ru_taiga', type: 'road', speaker: 'dmitri', title: 'Breakdown in the Taiga', gate: { region: ['russia'], minKm: 300 },
+      text: 'The old tour bus coughs, shudders and stops in the middle of the taiga. Birch trees for a thousand km. Dmitri sighs, opens a toolbox and a thermos.',
+      choices: [
+        { label: 'Help Dmitri fix it', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 4, burnout: 5 }, outcome: 'Four hours, one borrowed part from a passing farmer, a lot of tea. The bus starts. Everybody cheers.' },
+        { label: 'Flag down a truck', hint: 'Fund ↓', effects: { fund: -200, burnout: 3 }, outcome: 'A logging truck tows the bus to the next town. The driver plays your album on the way. Loud.' }
+      ] },
+    { id: 'road_ru_cold', type: 'road', speaker: 'jaxon', title: 'Minus Thirty-Eight', gate: { region: ['russia'], season: ['winter'] },
+      text: 'Minus thirty-eight. The locals are worried about the band. The band plugs in the block heater they brought from Saskatoon.',
+      choices: [
+        { label: 'Explain the block heater', hint: 'Buzz ↑', effects: { buzz: 4, chemistry: 2 }, outcome: 'A crowd gathers around the Saskatoon block heater. It becomes a local legend. Someone writes a song about it.' },
+        { label: 'Sleep in the warm bus', hint: 'Burnout ↓', effects: { burnout: -4 }, outcome: 'Everyone piles in under every coat. It is cosy. It smells like a hockey bag.' }
+      ] },
+    { id: 'road_ru_train', type: 'road', speaker: 'marcel', title: 'Tea on the Trans-Siberian', gate: { region: ['russia'], minKm: 800 },
+      text: 'Day three on the train. Tea in glass holders, a chess game with a retired sailor, snow forever outside. Marcel has written half an opera.',
+      choices: [
+        { label: 'Let him write the opera', hint: 'Marcel ↑ · Chemistry ↓', effects: { mood: { marcel: 6 }, chemistry: -2 }, outcome: 'He writes all night. It is about a moose on a train. Obviously.' },
+        { label: 'Band chess tournament', hint: 'Chemistry ↑', effects: { chemistry: 4 }, outcome: 'The sailor beats everyone. Then he teaches Jaxon a card game and loses his hat.' }
+      ] }
   ];
 
   // v0.6.1 (Addendum 1 C1): the designated driver per band. Only Hail Damage plays now; the others ride in v0.9.

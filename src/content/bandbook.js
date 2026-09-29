@@ -151,11 +151,21 @@
           'Honked twice for this post. You\'ll hear it Tuesday.',
           'Wendell: still got a set of cables with your name on them. Literally. I wrote on them.'
         ] },
-      { id: 'japan', name: 'The president of your Japanese fan club', short: 'The President', icon: '🎌', reserved: 'v0.7',
-        blurb: 'Somewhere overseas, somebody is already laminating membership cards. (Arrives with the world tour, v0.7.)',
-        comments: [] }
+      { id: 'japan', name: 'Emiko Tanabe (fan-club president)', short: 'The President', icon: '🎌', story: true, region: 'japan',
+        blurb: 'President of your Japanese fan club, member number one. Laminated cards, a spreadsheet of birthdays, a bow deeper than yours.',
+        comments: [
+          'Emiko Tanabe, President, Fan Club Japan: this post is now in our newsletter. Page one. Laminated.',
+          'The fan club has watched this 1,204 times. Official count. We keep a spreadsheet.',
+          'Please come back to Tokyo soon. The members have prepared a banner. It is eleven metres long.',
+          'Happy birthday to the bassist in 23 days. The fan club is ready. The fan club is always ready.'
+        ] }
     ],
     gigLines: {
+      president: [   // v0.7: Japan shows (GG.fans.gigShape)
+        'Emiko, president of the fan club, is in the front row with a laminated banner. She bows after every song. So does the row behind her.',
+        'The fan-club president hands the crew a gift bag for each member. Kenji\'s has a tiny cactus in it. How did she know.',
+        'Emiko has organized the crowd: towels up on the chorus, towels down on the verse. It looks like a flag waving.'
+      ],
       dale: [
         'Dale from Warman is in the front row. Lawn chair, thermos, a homemade shirt. Show number {n}.',
         'Dale from Warman made it again ({n} shows). He knows every word. Some of them are the real words.',
@@ -197,7 +207,11 @@
     ],
     scriptedGifts: {
       macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },
-      cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' }
+      cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' },
+      // v0.7 (WORLDSIM): gifts from Japanese fans (added by GG.tour: region cards, the fan-club president)
+      jp_towel: { from: 'the Japanese fan club', text: 'A concert towel with the band name in katakana. It lives on the drum riser now.' },
+      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. The Moose Hearse has never looked so protected.' },
+      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Kenji is a mysterious silhouette. Accurate.' }
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },

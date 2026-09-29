@@ -113,7 +113,7 @@ async function bandbook() {
       gifts: document.querySelectorAll('[data-testid="bb-gift"]').length, mac: !!document.querySelector('[data-testid="bb-gift"][data-id="macaroni_kenji"]') }));
     c.ok(fans.types === 3, 'superfans / casuals / haters bars');
     c.ok(/Dale from Warman/.test(fans.dale) && /Shows: 1/.test(fans.dale), 'Dale: met, 1 show');
-    c.ok(/locked/.test(fans.trk) && /v0\.7/.test(fans.jp), 'Wendell not met yet; the Japanese president waits for v0.7');
+    c.ok(/locked/.test(fans.trk) && /Japan/.test(fans.jp), 'Wendell not met yet; the Japanese president waits for Japan (v0.7)');
     c.ok(fans.gifts === 4 && fans.mac, 'fan mail + gifts, incl. the macaroni Kenji');
     const bad2 = await audit(page); c.ok(bad2.length === 0, 'fans layout: ' + bad2.join(', '));
     const fm = await page.evaluate(() => { if (!GG.main.renderOk) return null; GG.render.syncState(GG.state); return GG.debug('render').fanMail; });

@@ -33,7 +33,7 @@
   gig.venue = function (id) {
     var list = venues();
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
-    return GG.rival && GG.rival.venue ? GG.rival.venue(id) : null;   // v0.6: festival grounds + the Sad Dome
+    return (GG.rival && GG.rival.venue ? GG.rival.venue(id) : null) || (GG.tour && GG.tour.venue ? GG.tour.venue(id) : null);   // v0.6 rivalry venues, v0.7 world venues
   };
   gig.fit = function (venue, genre) {
     var f = venue && venue.genreFit && venue.genreFit[genre];
@@ -88,7 +88,7 @@
   };
   function crowdFor(state, g, v, rng) {
     var cfg = G();
-    var draw = (v.walkIns || 0) + state.fans * cfg.fanDraw + state.buzz * cfg.buzzDraw;
+    var draw = g.tour && GG.tour ? GG.tour.draw(state, g) : (v.walkIns || 0) + state.fans * cfg.fanDraw + state.buzz * cfg.buzzDraw;   // v0.7: abroad
     return U.clamp(Math.round(draw * rng.range(cfg.crowdNoise[0], cfg.crowdNoise[1])), 1, g.capacity);
   }
   // Pay rules: exposure 0; flat = the guarantee; door = $ per head x crowd.
@@ -377,8 +377,13 @@
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
     var cur = null, tickOut = { misses: 0, crowd: 0, level: '', autoHits: 0 };
+    // v0.7: a silent crowd (Japan): the meter holds still while a song plays (S.crowd frozen; the real crowd moves in
+    // S.hidden), then the whole song's reaction lands at once when it ends, plus polite applause ('crowd:moment' applause).
+    var silent = S.silent = !!(GG.tour && GG.tour.silentCrowd && GG.tour.silentCrowd(g));
+    function real() { return silent && cur ? S.hidden : S.crowd; }
     function emit(ev, p) { if (S.emit) GG.emit(ev, p); }
     function crowdAdd(d) {
+      if (silent && cur) { S.hidden = U.clamp(S.hidden + d, floor, 100); return; }
       S.crowd = U.clamp(S.crowd + d, floor, 100);
       var lv = gig.levelOf(S.crowd);
       if (lv !== S.level) { S.level = lv; emit('crowd:level', { level: lv, crowd: S.crowd }); }
@@ -417,7 +422,7 @@
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
         dens: U.clamp(cfg.densityRef / Math.max(0.5, nps), cfg.densityClamp[0], cfg.densityClamp[1]),
         staleMul: Math.max(0.2, 1 - (song.stale || 0) / cfg.staleGain) };
-      S.chart = chart; S.index = i; S.combo = 0; S.t = 0; S.playing = true; S.crowd = live.crowd;
+      S.chart = chart; S.index = i; S.combo = 0; S.t = 0; S.playing = true; S.crowd = live.crowd; S.hidden = live.crowd;
       S.level = gig.levelOf(S.crowd);
       if (i === 0 && bonus.opener) crowdAdd(cfg.opener);
       if (i === set.length - 1 && bonus.closer && set.length > 1) crowdAdd(cfg.closer);
@@ -438,9 +443,9 @@
       cur.entryHits[x.entry]++;
       S.combo++; cur.missStreak = 0;
       if (S.combo > cur.maxCombo) cur.maxCombo = S.combo;
-      crowdAdd(c * (1.15 - S.crowd / 200));
+      crowdAdd(c * (1.15 - real() / 200));
       if (S.combo % cfg.comboStep === 0) crowdAdd(cfg.comboBonus);
-      if (S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready('mosh', t)) moment('mosh', t);
+      if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready('mosh', t)) moment('mosh', t);
       if (cape && !cur.capeDone && S.combo >= cfg.capeCombo) {
         cur.capeDone = true; crowdAdd(cfg.capeCrowd); moment('capeSpin', t); band(cape, 'capeSpin');
       }
@@ -449,7 +454,7 @@
       x.j = 3; S.combo = 0; cur.missStreak++;
       crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
-      if (!assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
+      if (!silent && !assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {   // v0.7: polite crowds never boo
         moment('boo', t);
         if (S.crowd < cfg.drinksCrowd && ready('drinks', t)) moment('drinks', t);
       }
@@ -515,8 +520,8 @@
         var x = n[cur.mp++];
         if (x.j === 0) { if (x.free) x.j = 4; else { miss(x, t); misses++; } }
       }
-      if (dt > 0) { crowdAdd(-S.crowd * cfg.decay * dt); cur.crowdSum += S.crowd * dt; cur.crowdT += dt; }
-      if (!cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
+      if (dt > 0) { var rc = real(); crowdAdd(-rc * cfg.decay * dt); cur.crowdSum += real() * dt; cur.crowdT += dt; }
+      if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
       tickOut.misses = misses; tickOut.crowd = S.crowd; tickOut.level = S.level;
       return tickOut;
     };
@@ -524,6 +529,13 @@
       if (!cur) return null;
       var n = cur.notes, ch = cur.chart, song = cur.song;
       for (var k = 0; k < n.length; k++) if (n[k].j === 0) n[k].j = n[k].free ? 4 : 3;
+      if (silent) {   // v0.7: the song ends, the silence breaks: the whole reaction at once + polite applause if it went well
+        var acc0 = ch.total ? (cur.perfect + cur.good) / ch.total : 1, roar = acc0 >= 0.7 ? 6 : acc0 >= 0.5 ? 2 : 0;
+        S.crowd = U.clamp(S.hidden + roar, floor, 100);
+        var lv0 = gig.levelOf(S.crowd);
+        if (lv0 !== S.level) { S.level = lv0; emit('crowd:level', { level: lv0, crowd: S.crowd }); }
+        if (roar) { if (cur.moments.indexOf('applause') < 0) cur.moments.push('applause'); emit('crowd:moment', { kind: 'applause' }); }
+      }
       var total = ch.total, miss = total - cur.perfect - cur.good;
       var noteScore = total ? 100 * Math.pow((cur.perfect + cur.good * cfg.goodValue) / total, cfg.noteCurve) : 100;
       var avg = cur.crowdT > 0 ? cur.crowdSum / cur.crowdT : S.crowd, nFill = ch.fills.length * cfg.fillCap;

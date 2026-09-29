@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V0.6.2.0</title>
+<title>Garage to Glory - V0.7.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -720,14 +720,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.6.2.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V0.7.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 // 01_ns.js: window.GG namespace, event bus, seeded RNG, small utils, debug registry.
 // Loaded first. Works in the browser and in node (tests set window = globalThis).
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '0.6.2.0';
+  GG.VERSION = '0.7.0.0';
   GG.content = GG.content || {};
 
   // ---- Event bus -------------------------------------------------------
@@ -816,7 +816,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 7;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 8;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -1850,11 +1850,21 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           'Honked twice for this post. You\'ll hear it Tuesday.',
           'Wendell: still got a set of cables with your name on them. Literally. I wrote on them.'
         ] },
-      { id: 'japan', name: 'The president of your Japanese fan club', short: 'The President', icon: '🎌', reserved: 'v0.7',
-        blurb: 'Somewhere overseas, somebody is already laminating membership cards. (Arrives with the world tour, v0.7.)',
-        comments: [] }
+      { id: 'japan', name: 'Emiko Tanabe (fan-club president)', short: 'The President', icon: '🎌', story: true, region: 'japan',
+        blurb: 'President of your Japanese fan club, member number one. Laminated cards, a spreadsheet of birthdays, a bow deeper than yours.',
+        comments: [
+          'Emiko Tanabe, President, Fan Club Japan: this post is now in our newsletter. Page one. Laminated.',
+          'The fan club has watched this 1,204 times. Official count. We keep a spreadsheet.',
+          'Please come back to Tokyo soon. The members have prepared a banner. It is eleven metres long.',
+          'Happy birthday to the bassist in 23 days. The fan club is ready. The fan club is always ready.'
+        ] }
     ],
     gigLines: {
+      president: [   // v0.7: Japan shows (GG.fans.gigShape)
+        'Emiko, president of the fan club, is in the front row with a laminated banner. She bows after every song. So does the row behind her.',
+        'The fan-club president hands the crew a gift bag for each member. Kenji\'s has a tiny cactus in it. How did she know.',
+        'Emiko has organized the crowd: towels up on the chorus, towels down on the verse. It looks like a flag waving.'
+      ],
       dale: [
         'Dale from Warman is in the front row. Lawn chair, thermos, a homemade shirt. Show number {n}.',
         'Dale from Warman made it again ({n} shows). He knows every word. Some of them are the real words.',
@@ -1896,7 +1906,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     ],
     scriptedGifts: {
       macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },
-      cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' }
+      cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' },
+      // v0.7 (WORLDSIM): gifts from Japanese fans (added by GG.tour: region cards, the fan-club president)
+      jp_towel: { from: 'the Japanese fan club', text: 'A concert towel with the band name in katakana. It lives on the drum riser now.' },
+      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. The Moose Hearse has never looked so protected.' },
+      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Kenji is a mysterious silhouette. Accurate.' }
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
@@ -4445,17 +4459,40 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     },
 
     // ---- Eras (v0.5): garage -> local (250 fans, the v0.4 protection line) -> signed (a deal or a DIY album) -> world ----
-    eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: false },   // the World era itself is v0.7
-    eraUpkeep: { garage: 0, local: 6, signed: 40, world: 90 },   // extra $/week: jam-space rent, a manager, insurance
+    eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: true },   // v0.7: the World stage era is on (Steady pace)
+    eraUpkeep: { garage: 0, local: 6, signed: 40, world: 50 },   // extra $/week: jam-space rent, a manager, insurance
     hustleEra: { garage: 1, local: 1.3, signed: 2.2, world: 3 },   // hustle cash x: drum lessons and session work pay more once you're known
 
     // ---- World (26_sim_world.js overrides, merged over its DEFAULTS) ----------------------------------------------
     world: {
       eraTier: { garage: 2, local: 2, signed: 3, world: 3 },   // tier-3 theatres (500–2,000) open in the Signed era
-      scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },   // fans a band can reach through gigs
+      scene: { garage: 6000, local: 6000, signed: 40000, world: 40000 },   // fans a band can reach through gigs at home (v0.7: Canada saturates; abroad = content.world.regions[].scene, added on top)
       theatreFans: 0.4,          // new-fan factor at theatres: most of that crowd already knows you
-      commission: { garage: 0, local: 0, signed: 0.15, world: 0.2 },  // management + booking agent, off the top of gig pay
+      commission: { garage: 0, local: 0, signed: 0.15, world: 0.15 },  // management + booking agent, off the top of gig pay
       crew: { 3: 150 }           // $ per show by venue tier: sound, lights and a merch person (theatres)
+    },
+
+    // ---- Touring abroad (25_sim_tour.js, v0.7; merged over its DEFAULTS) --------------------------------------------
+    tour: {
+      thresholdFit: 1.6,          // region unlock fans = region.fans x (thresholdFit - genre fit) (metal in Japan: x0.6)
+      rivalFirst: 1.08,           // your threshold x this when your rival broke the region first
+      party: 0,                   // extra flight seats beyond the active members + you + fill-ins (the crew is hired locally)
+      jetLag: { uk_europe: 3, japan: 5, australia: 6, russia: 4 },   // burnout on departure and on the flight home
+      invite: { chance: 0.03, fromWeeks: 4, weeks: 10, flights: 0.5, fitMin: 0.6 },   // per locked region per week (World era)
+      homesick: { perWeek: 15, lowMood: 2, rest: -6, home: -12, moodAt: 45, mood: -2, restAt: 70, cardAt: 75, burnoutAt: 80, burnout: 3, max: 100 },
+      crowd: { fanDraw: 0.4, buzzDraw: 6, walkIns: { 2: 150, 3: 400, 4: 500 }, festivalSlot: 0.07, hallDraw: 0.3, publicist: 0.35 },
+      fans: { mult: 1.2, festival: 0.6 }, // new fans abroad x (a new market) ; festival crowds are mostly strangers (convert less)
+      payMult: 1.3, showcase: { flights: 0.5, regionFans: 300 },   // venue pay x ; showcases: the label covers half the flights + industry buzz
+      promote: { regionFans: [40, 110], buzz: 1 },     // a Promote block abroad (promote locally)
+      rehearse: { skill: 0.7 },                         // hotel-room rehearsal: 70% of the gains, quiet drums (a practice pad)
+      blocks: { write: 'rehearse', hustle: 'rest', book: 'promote' },   // what the other planner blocks become on tour
+      travel: { burnoutPer100: 0.35, burnoutMax: 18, breakdownCost: [200, 600] },
+      big: { chance: 0.025, minGigs: 1, minRegionFans: 800, unlockFans: 0.5 },
+      rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
+      gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
+      moose: { fans: 3000, buzz: 12 },
+      cardGap: 3, cardChance: 0.75,   // tour story cards (min weeks apart) ; a region card on this share of tour Mondays
+      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55 }
     },
 
     // ---- Labels, studios, releases (24_sim_labels.js, v0.5) --------------------------------------------------------
@@ -5778,7 +5815,20 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     { id: 'dale_warman', name: 'Dale from Warman',
       blurb: 'Your first superfan. At every show, front row, lawn chair. No relation to Cousin Dale; he wants that on the record.' },
     { id: 'wendell', name: 'Big Wendell',
-      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' }
+      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' },
+    // v0.7 (WORLDSIM): the world stage cast
+    { id: 'nigel', name: 'Nigel the promoter',
+      blurb: 'Books every pub from London to Glasgow. Pays in drink tickets. Calls everyone "my friend" in a tone that means the opposite.' },
+    { id: 'klaus', name: 'Klaus from the festival',
+      blurb: 'Stage manager at Wackelstein Open Air. Clipboard, headset, knee-high boots, zero tolerance for lateness or clean shoes.' },
+    { id: 'kato', name: 'Mr. Kato',
+      blurb: 'Your Japanese promoter. Immaculate suit, immaculate schedule. Has never been late. Has never seen a band this late.' },
+    { id: 'emiko', name: 'Emiko Tanabe',
+      blurb: 'President of your Japanese fan club. Member number one. Laminates everything. Knows your birthdays better than your mom.' },
+    { id: 'shazza', name: 'Shazza',
+      blurb: 'Your Australian promoter. Tells tall tales about drop bears with a completely straight face. Drives a ute with a snake in the glovebox.' },
+    { id: 'dmitri', name: 'Dmitri',
+      blurb: 'Runs Siberian Frostfest. Apologizes for the cold. The band finds this very funny. Owns a banya and a bus with a past.' }
   ];
 
   var npcs = {};
@@ -6957,6 +7007,88 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Silence. Like Kenji did.', hint: 'Burnout ↓', effects: { burnout: -4, mood: { all: 2 } },
           outcome: 'The prairie goes by in perfect silence. Somebody tears up. Nobody says who.' }
       ] }
+,
+
+    // ---- v0.7 (WORLDSIM): region road cards abroad (gate.region; GG.tour only draws these on tour, never at home).
+    //      No van effects: the Moose Hearse is at home. Kenji still drives, on whichever side of the road they use.
+    { id: 'road_uk_left', type: 'road', speaker: 'dana', title: 'The Wrong Side', gate: { region: ['uk_europe'], driver: ['kenji'] },
+      text: 'Roundabouts. So many roundabouts. Kenji takes every one on the left without a flicker. Dana has her eyes shut and her hands on the dash.',
+      choices: [
+        { label: 'Trust Kenji', hint: 'Chemistry ↑', effects: { chemistry: 3 }, outcome: 'Four hundred roundabouts. Zero mistakes. Kenji parks in a space the width of a shopping cart. Silent applause.' },
+        { label: 'Dana navigates from a paper map', hint: 'Dana ↑ · Burnout ↑', effects: { mood: { dana: 5 }, burnout: 4 }, outcome: 'Three wrong turns, one sheep, one castle nobody planned to see. Dana is thrilled.' }
+      ] },
+    { id: 'road_uk_hedgerow', type: 'road', speaker: 'jaxon', title: 'The Hedgerow Lane', gate: { region: ['uk_europe'], minKm: 100 },
+      text: 'The satnav sends the tiny van down a lane between two hedges, exactly one van wide. A tractor appears ahead. It is not reversing.',
+      choices: [
+        { label: 'Reverse half a mile', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'Twenty minutes backwards through a hedge tunnel. The farmer waves. It feels sarcastic.' },
+        { label: 'Offer him tickets', hint: 'Gamble: a new fan, or a long wait', roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+          success: { effects: { fans: 12, buzz: 3 }, outcome: 'He reverses, then comes to the gig with his whole family. They stand at the front in wellies.' },
+          fail: { effects: { burnout: 6 }, outcome: '"Not my kind of music," he says, without asking what kind it is. He eats a sandwich. You wait.' } }, outcome: 'Jaxon waves the guest list out the window.' }
+      ] },
+    { id: 'road_eu_border', type: 'road', speaker: 'marcel', title: 'The Border Check', gate: { region: ['uk_europe'], minKm: 200 },
+      text: 'A border officer opens the back of the van and finds the cape. He holds it up to the light for a long time. "Purpose of visit?"',
+      choices: [
+        { label: '"Business." (Cape business.)', hint: 'Marcel ↑', effects: { mood: { marcel: 5 } }, outcome: 'He folds the cape with great care and hands it back. "Good luck with the business."' },
+        { label: 'Let Marcel explain the album', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 4, buzz: 3 }, outcome: 'Forty minutes on the moose concept album. The officer asks for a signed copy. For his mother.' }
+      ] },
+    { id: 'road_eu_autobahn', type: 'road', speaker: 'dana', title: 'The Autobahn', gate: { region: ['uk_europe'], minKm: 150 },
+      text: 'No speed limit. The tiny rental van tops out at 104 km/h. Every car in Germany passes you, flashing its lights like a disco.',
+      choices: [
+        { label: 'Stay in the slow lane', hint: 'Burnout ↑', effects: { burnout: 3, chemistry: 2 }, outcome: 'Six hours of trucks. A game of license-plate bingo gets extremely competitive.' },
+        { label: 'Stop at a rest stop with a museum', hint: 'Moods ↑', effects: { mood: { all: 4 }, fund: -60 }, outcome: 'A rest stop with a sausage museum. You do not ask questions. You buy the fridge magnet.' }
+      ] },
+    { id: 'road_jp_toll', type: 'road', speaker: 'jaxon', title: 'The Tolls', gate: { region: ['japan'], minKm: 150 },
+      text: 'Tokyo to Osaka on the expressway. Jaxon reads the toll receipts aloud. The tolls cost more than the first gig ever paid.',
+      choices: [
+        { label: 'Pay and admire the rest stops', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 4 } }, outcome: 'The rest stops have gardens, hot food and a toilet with more buttons than the mixing desk.' },
+        { label: 'Take the slow roads', hint: 'Burnout ↑', effects: { burnout: 5, chemistry: 2 }, outcome: 'Rice fields, mountains, a village festival. You arrive at soundcheck with thirty seconds to spare.' }
+      ] },
+    { id: 'road_jp_parking', type: 'road', speaker: 'dana', title: 'The Parking Tower', gate: { region: ['japan'], driver: ['kenji'] },
+      text: 'The venue\'s parking is a robot tower that lifts cars into slots. The rental van is two centimetres too tall. The robot beeps politely.',
+      choices: [
+        { label: 'Let Kenji try anyway', hint: 'Gamble: two centimetres', roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+          success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'Kenji lets air out of the tyres. The van goes in with a millimetre to spare. The attendant bows to him.' },
+          fail: { effects: { fund: -120, burnout: 3 }, outcome: 'The robot refuses. A very polite man directs you to a lot three km away.' } }, outcome: 'Kenji looks at the robot. The robot looks at Kenji.' },
+        { label: 'Park far away and walk', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'You carry the kit through a train station. Commuters make way in perfect silence.' }
+      ] },
+    { id: 'road_au_roadtrain', type: 'road', speaker: 'jaxon', title: 'Road Train', gate: { region: ['australia'], minKm: 300 },
+      text: 'A road train overtakes you: a truck pulling four trailers, fifty metres of it. It takes nine seconds. Jaxon counts out loud.',
+      choices: [
+        { label: 'Wave at the driver', hint: 'Buzz ↑', effects: { buzz: 3, mood: { jaxon: 4 } }, outcome: 'The driver honks the horn in the rhythm of your single. He has the album. Nobody knows how.' },
+        { label: 'Pull over and let it go', hint: 'Burnout ↑', effects: { burnout: 3 }, outcome: 'You wait in the red dirt. The dust takes ten minutes to settle. It is in the snare forever now.' }
+      ] },
+    { id: 'road_au_nothing', type: 'road', speaker: 'dana', title: 'Eight Hundred km of Nothing', gate: { region: ['australia'], minKm: 500 },
+      text: 'Red dirt, blue sky, a single tree every hundred km. The next fuel stop is 340 km away. The fuel gauge disagrees about the maths.',
+      choices: [
+        { label: 'Fill every jerry can', hint: 'Fund ↓', effects: { fund: -120 }, outcome: 'You roll into the roadhouse on fumes and pride. The owner has a guest book. You sign it as a band.' },
+        { label: 'Risk it', hint: 'Gamble: fine, or a long walk', roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
+          success: { effects: { chemistry: 4 }, outcome: 'You coast in with the needle under E. The band cheers like it is a gig.' },
+          fail: { effects: { burnout: 8, fund: -200 }, outcome: 'Out of fuel at km 322. A grey nomad couple in a caravan tows you in and makes you tea.' } }, outcome: 'You do the maths again. It still disagrees.' }
+      ] },
+    { id: 'road_au_kangaroo', type: 'road', speaker: 'marcel', title: 'Dusk', gate: { region: ['australia'], minKm: 150 },
+      text: 'Dusk on a country road. Kangaroos everywhere, standing, staring. Marcel has named nine of them.',
+      choices: [
+        { label: 'Crawl along at 40', hint: 'Burnout ↑', effects: { burnout: 4, mood: { marcel: 3 } }, outcome: 'Slow and safe. Marcel narrates each kangaroo\'s life story. Some have tragic endings.' },
+        { label: 'Stop for the night in a pub', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 5 } }, outcome: 'A country pub with rooms upstairs. The locals ask for a song. You play one, acoustic, on bar stools.' }
+      ] },
+    { id: 'road_ru_taiga', type: 'road', speaker: 'dmitri', title: 'Breakdown in the Taiga', gate: { region: ['russia'], minKm: 300 },
+      text: 'The old tour bus coughs, shudders and stops in the middle of the taiga. Birch trees for a thousand km. Dmitri sighs, opens a toolbox and a thermos.',
+      choices: [
+        { label: 'Help Dmitri fix it', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 4, burnout: 5 }, outcome: 'Four hours, one borrowed part from a passing farmer, a lot of tea. The bus starts. Everybody cheers.' },
+        { label: 'Flag down a truck', hint: 'Fund ↓', effects: { fund: -200, burnout: 3 }, outcome: 'A logging truck tows the bus to the next town. The driver plays your album on the way. Loud.' }
+      ] },
+    { id: 'road_ru_cold', type: 'road', speaker: 'jaxon', title: 'Minus Thirty-Eight', gate: { region: ['russia'], season: ['winter'] },
+      text: 'Minus thirty-eight. The locals are worried about the band. The band plugs in the block heater they brought from Saskatoon.',
+      choices: [
+        { label: 'Explain the block heater', hint: 'Buzz ↑', effects: { buzz: 4, chemistry: 2 }, outcome: 'A crowd gathers around the Saskatoon block heater. It becomes a local legend. Someone writes a song about it.' },
+        { label: 'Sleep in the warm bus', hint: 'Burnout ↓', effects: { burnout: -4 }, outcome: 'Everyone piles in under every coat. It is cosy. It smells like a hockey bag.' }
+      ] },
+    { id: 'road_ru_train', type: 'road', speaker: 'marcel', title: 'Tea on the Trans-Siberian', gate: { region: ['russia'], minKm: 800 },
+      text: 'Day three on the train. Tea in glass holders, a chess game with a retired sailor, snow forever outside. Marcel has written half an opera.',
+      choices: [
+        { label: 'Let him write the opera', hint: 'Marcel ↑ · Chemistry ↓', effects: { mood: { marcel: 6 }, chemistry: -2 }, outcome: 'He writes all night. It is about a moose on a train. Obviously.' },
+        { label: 'Band chess tournament', hint: 'Chemistry ↑', effects: { chemistry: 4 }, outcome: 'The sailor beats everyone. Then he teaches Jaxon a card game and loses his hat.' }
+      ] }
   ];
 
   // v0.6.1 (Addendum 1 C1): the designated driver per band. Only Hail Damage plays now; the others ride in v0.9.
@@ -7585,6 +7717,444 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* content/world.js */
+// content/world.js: the World stage (v0.7, WORLDSIM). Four regions abroad (Addendum 1 C6; no USA, ever), their cities
+// on stylized regional maps (x/y in a 0..100 box, y down), parody venues + festivals, preset tour packages with a few
+// choices (rental vehicle, where you sleep, one extra), region Monday cards, overseas seasons/weather/holidays (C7),
+// the Japanese fan-club president (C5), the Global Gong and regional chart names. Read by 25_sim_tour.js (GG.tour).
+// Shapes:
+//   regions:  { <id>: { id, name, short, icon, blurb, fans (base unlock threshold), flight ($/person, return), scene (fans
+//               gigs can reach there), breakAt (region fans = "broken"), kmScale (km per map unit), road, chart, home } }
+//   fit:      { <genre>: { <region>: 0..1 } } genre-region fit (A10): thresholds x (1.6 - fit), venue genreFit, crowds
+//   cities:   { <id>: { id, name, region, x, y, country, temp (°C offset), site? (festival grounds), blurb } }
+//   venues:   [ { id, name, city, region, tier 2|3|4, kind (C.VENUE_KINDS), capacity, pay [lo, hi] (flat), quirk, catch,
+//               festival?, hall?, outdoor?, weeks? [lo, hi] week of year, moose? (the Moose Opera), setSize } ]
+//   packages: [ { id, region, name, blurb, stops: [ { city, venue|null (open date: pick from the regional board) } ],
+//               showcase? (one week; the label covers part of the flights), festival? (festival stops fix the departure
+//               week: GG.tour.departWindow), needs? 'moose', minRegionFans? } ]
+//   vehicles: { <id>: { id, region, name, blurb, perWeek, comfort 1..5, breakdown 0..1 per leg, seats, look } }
+//   stays / extras: { <id>: { id, name, blurb, perWeek|cost, homesick, mood, fans, score, burnout } }
+//   cards:    Monday-card schema (type, speaker, gate { region, era, band?, weekOfYear? }) + city? [cityIds] + story?
+//             (forced by the sim only). Extra effect key `tour`: { regionFans, homesick, gift, endTour, accept, big }.
+//   Tokens: {band} {player} {city} {nick:id} {name:id} + {region} {song} {n} {rival} {venue} {festival} {money}.
+(function (GG) {
+  var W = GG.content.world = {};
+
+  W.regions = {
+    uk_europe: { id: 'uk_europe', pin: [50, 28], name: 'UK & Europe', short: 'Europe', icon: '🏰', home: 'london',
+      blurb: 'Rain, pub gigs, tiny vans and festival mud. Twelve cities, two festivals and one opera house with a moose problem.',
+      fans: 38000, flight: 550, scene: 25000, breakAt: 5000, kmScale: 30, road: 'the M6 and the Autobahn',
+      chart: 'The Official Chartz', currency: 'pounds, euros and drink tickets' },
+    japan: { id: 'japan', pin: [90, 40], name: 'Japan', short: 'Japan', icon: '🗾', home: 'tokyo',
+      blurb: 'Polite, silent crowds until the song ends. Then the roof comes off. Fan gifts. Bullet trains. Budokhan Hall.',
+      fans: 42000, flight: 900, scene: 18000, breakAt: 4000, kmScale: 18, road: 'the Tomei Expressway',
+      chart: 'Oricorn Weekly', currency: 'yen and tiny gift bags' },
+    australia: { id: 'australia', pin: [88, 80], name: 'Australia', short: 'Australia', icon: '🦘', home: 'sydney',
+      blurb: 'Seasons upside down: a Canadian winter is Aussie festival summer. Vast drives. Check the kick drum for spiders.',
+      fans: 40000, flight: 1150, scene: 14000, breakAt: 3500, kmScale: 42, road: 'the Stuart Highway',
+      chart: 'The AREA Top 50', currency: 'dollars (the other kind)' },
+    russia: { id: 'russia', pin: [70, 18], name: 'Russia', short: 'Russia', icon: '🐻', home: 'moscow',
+      blurb: 'Brutal winters, bright summer nights, a festival at minus forty by Lake Baikal and a bus that has seen things.',
+      fans: 46000, flight: 650, scene: 15000, breakAt: 3500, kmScale: 95, road: 'the Trans-Siberian Highway',
+      chart: 'The Red Square 40', currency: 'roubles and pickles' }
+  };
+
+  W.canadaPin = [18, 30];   // the world map: Canada on the left, the four regions around it (stylized, no USA)
+
+  // A10: metal huge in Japan & Europe, strong in Russia; punk loves the UK, Australia solid; rock big in UK/Europe/
+  // Australia; country huge in Australia, decent in the UK, cult in Japan.
+  W.fit = {
+    metal: { uk_europe: 1, japan: 1, australia: 0.7, russia: 0.88 },
+    punk: { uk_europe: 0.98, japan: 0.65, australia: 0.82, russia: 0.55 },
+    rock: { uk_europe: 0.95, japan: 0.7, australia: 0.95, russia: 0.6 },
+    country: { uk_europe: 0.72, japan: 0.6, australia: 1, russia: 0.45 }
+  };
+
+  function city(id, name, region, x, y, country, temp, blurb, site) {
+    return { id: id, name: name, region: region, x: x, y: y, country: country, temp: temp || 0, blurb: blurb, site: !!site };
+  }
+  W.cities = {};
+  [
+    city('london', 'London', 'uk_europe', 38, 60, 'England', 0, 'Pub gigs, a zebra crossing, Abbot Lane Studios. It is raining.'),
+    city('manchester', 'Manchester', 'uk_europe', 34, 50, 'England', -1, 'Everyone here was in a band once. It is also raining.'),
+    city('glasgow', 'Glasgow', 'uk_europe', 29, 36, 'Scotland', -2, 'The loudest crowds in the UK, and they sing the guitar solos.'),
+    city('dublin', 'Dublin', 'uk_europe', 18, 48, 'Ireland', 0, 'Every pub has a band. Every band has a fiddle. Even yours, eventually.'),
+    city('paris', 'Paris', 'uk_europe', 42, 72, 'France', 1, 'France loves Marcel. Nobody knows why. Marcel knows why.'),
+    city('amsterdam', 'Amsterdam', 'uk_europe', 50, 58, 'the Netherlands', 0, 'Bikes, canals and a venue in a former church.'),
+    city('berlin', 'Berlin', 'uk_europe', 64, 56, 'Germany', 0, 'The gear shops never close. Neither does Dana.'),
+    city('prague', 'Prague', 'uk_europe', 66, 66, 'Czechia', -1, 'Cobblestones, castles and the best-sounding cellar on the continent.'),
+    city('madrid', 'Madrid', 'uk_europe', 22, 92, 'Spain', 6, 'Doors at midnight. Nobody arrives before one.'),
+    city('oslo', 'Oslo', 'uk_europe', 56, 24, 'Norway', -4, 'Black-metal royalty buys milk at the corner store here.'),
+    city('stockholm', 'Stockholm', 'uk_europe', 70, 22, 'Sweden', -3, 'Everyone is taller than the band and politely pretends not to be.'),
+    city('helsinki', 'Helsinki', 'uk_europe', 86, 18, 'Finland', -5, 'Metal on the radio, saunas everywhere, and a moose concept album on the charts?'),
+    city('mudstonbury', 'Mudstonbury', 'uk_europe', 33, 64, 'England', 0, 'A farm in the English countryside. Once a year it becomes a festival made of mud.', true),
+    city('wackelstein', 'Wackelstein', 'uk_europe', 58, 46, 'Germany', -1, 'A village in northern Germany. Pop. 1,800. Plus 75,000 metalheads every August.', true),
+    city('tokyo', 'Tokyo', 'japan', 72, 56, 'Japan', 0, 'Neon, vending machines on every corner and Budokhan Hall.'),
+    city('osaka', 'Osaka', 'japan', 46, 68, 'Japan', 1, 'The loud city. They cheer between the songs AND during the encore.'),
+    city('nagoya', 'Nagoya', 'japan', 58, 64, 'Japan', 0, 'Halfway between everything. The band eats miso katsu twice a day.'),
+    city('kyoto', 'Kyoto', 'japan', 50, 63, 'Japan', 0, 'Temples, gardens and one very small club in an old sake warehouse.'),
+    city('sendai', 'Sendai', 'japan', 76, 38, 'Japan', -2, 'Grilled beef tongue and a crowd that learned your lyrics phonetically.'),
+    city('sapporo', 'Sapporo', 'japan', 80, 10, 'Japan', -6, 'Snow festivals and a winter that makes Saskatoon nod in respect.'),
+    city('fukuoka', 'Fukuoka', 'japan', 18, 80, 'Japan', 2, 'Street-stall ramen at 2 a.m. after the show. Every show.'),
+    city('hiroshima', 'Hiroshima', 'japan', 32, 72, 'Japan', 1, 'A calm, kind city with a very loud little club.'),
+    city('sydney', 'Sydney', 'australia', 86, 64, 'Australia', 0, 'The harbour, the bridge, and Big Day Inn every January.'),
+    city('melbourne', 'Melbourne', 'australia', 74, 80, 'Australia', -2, 'Four seasons in one day and a pub on every corner with a band in it.'),
+    city('brisbane', 'Brisbane', 'australia', 90, 46, 'Australia', 3, 'Hot, humid and one very large spider per room.'),
+    city('adelaide', 'Adelaide', 'australia', 60, 70, 'Australia', 0, 'Churches, wineries and a sold-out metal night on a Tuesday.'),
+    city('perth', 'Perth', 'australia', 8, 64, 'Australia', 1, 'The most isolated city on Earth. Four days\' drive from anywhere, and they know it.'),
+    city('hobart', 'Hobart', 'australia', 78, 94, 'Australia', -5, 'Tasmania. Cold wind off the Southern Ocean. Feels like home, briefly.'),
+    city('darwin', 'Darwin', 'australia', 48, 8, 'Australia', 8, 'Tropical. There are crocodiles on the signs and, the signs insist, in the water.'),
+    city('alice_springs', 'Alice Springs', 'australia', 50, 42, 'Australia', 4, 'The red centre. Two thousand km of desert in every direction.'),
+    city('moscow', 'Moscow', 'russia', 8, 50, 'Russia', 0, 'Onion domes, a ring road and a club with a real tank in the lobby.'),
+    city('st_petersburg', 'St. Petersburg', 'russia', 10, 30, 'Russia', 0, 'Canals, palaces and white summer nights when nobody sleeps.'),
+    city('kazan', 'Kazan', 'russia', 22, 50, 'Russia', -1, 'Where the Volga meets the Kazanka and a chak-chak meets your mouth.'),
+    city('yekaterinburg', 'Yekaterinburg', 'russia', 34, 46, 'Russia', -3, 'Right on the line between Europe and Asia. The band takes a photo on it.'),
+    city('novosibirsk', 'Novosibirsk', 'russia', 52, 56, 'Russia', -5, 'Siberia\'s big city. The opera house is bigger than Saskatoon\'s airport.'),
+    city('irkutsk', 'Irkutsk', 'russia', 68, 64, 'Russia', -8, 'Lake Baikal, the deepest lake on Earth, and Siberian Frostfest every January.'),
+    city('vladivostok', 'Vladivostok', 'russia', 94, 76, 'Russia', -2, 'The end of the line. Nine thousand km from Moscow and still the same country.')
+  ].forEach(function (c) { W.cities[c.id] = c; });
+
+  function venue(id, name, cityId, tier, kind, capacity, pay, quirk, x) {
+    var v = { id: id, name: name, city: cityId, region: W.cities[cityId].region, tier: tier, kind: kind, capacity: capacity,
+      pay: pay, quirk: quirk, setSize: tier >= 3 ? 5 : 4, genreFit: {} };
+    for (var g in W.fit) v.genreFit[g] = W.fit[g][v.region];
+    for (var k in x || {}) v[k] = x[k];
+    return v;
+  }
+  W.venues = [
+    venue('dog_and_distortion', 'The Dog & Distortion', 'london', 2, 'bar', 320, [700, 1100], 'A pub in Camden. The promoter pays in drink tickets and a firm handshake.', { catch: 'Half the fee is drink tickets.' }),
+    venue('hammersmyth_odium', 'The Hammersmyth Odium', 'london', 3, 'club', 2000, [2600, 4200], 'Every band you ever loved played here. Their sweat is still in the carpet.'),
+    venue('drizzle_factory', 'The Drizzle Factory', 'manchester', 2, 'club', 450, [900, 1400], 'An old mill. The roof leaks onto the ride cymbal, in time.'),
+    venue('barrowlads', 'The Barrowlads Ballroom', 'glasgow', 3, 'club', 1400, [2200, 3400], 'A sprung dance floor. When Glasgow jumps, the whole building bounces.'),
+    venue('whelans_wake', "Whelan's Wake", 'dublin', 2, 'bar', 380, [800, 1200], 'A fiddler sits in whether you ask or not. He is quite good.'),
+    venue('petit_chaos', 'Le Petit Chaos', 'paris', 2, 'club', 520, [1000, 1600], 'Paris loves Marcel. The front row brought roses. For Marcel. Only Marcel.'),
+    venue('paradiso_lost', 'Paradiso Lost', 'amsterdam', 3, 'church', 1300, [2200, 3300], 'A former church with stained glass. The reverb is holy.'),
+    venue('kellerkatze', 'Klub Kellerkatze', 'berlin', 2, 'club', 650, [1100, 1700], 'A techno bunker lending its room to metal for one night. The DJ is sulking.'),
+    venue('rattling_tram', 'The Rattling Tram', 'prague', 2, 'club', 420, [800, 1300], 'A cellar under a tram line. Every six minutes the floor keeps time.'),
+    venue('sala_siesta', 'Sala Siesta', 'madrid', 2, 'club', 700, [1000, 1500], 'Doors at midnight, set at two, breakfast at the bar at five.'),
+    venue('rockefjell', 'Rockefjell', 'oslo', 2, 'club', 800, [1200, 1800], 'A club carved into a hill. Norwegian black metal royalty is at the bar, drinking milk.'),
+    venue('meatball_cellar', 'The Meatball Cellar', 'stockholm', 2, 'club', 450, [1000, 1500], 'Everyone is very tall and very polite. The pit apologizes.'),
+    venue('sauna_inferno', 'Club Sauna Inferno', 'helsinki', 2, 'club', 700, [1100, 1700], 'There is a sauna backstage. Marcel goes in in the cape.'),
+    venue('moose_opera', 'The Finnish National Moose Opera', 'helsinki', 3, 'church', 1350, [3000, 4500], 'A real opera house. The chandelier is shaped like antlers. Nobody can explain it.', { moose: true }),
+    venue('mudstonbury_fest', 'Mudstonbury', 'mudstonbury', 4, 'club', 60000, [5500, 9000], 'The mud is knee-deep by Saturday. A welly boot sails over the crowd during the chorus.', { festival: true, outdoor: true, weeks: [23, 24] }),
+    venue('wackelstein_fest', 'Wackelstein Open Air', 'wackelstein', 4, 'club', 75000, [6500, 11000], 'Seventy-five thousand metalheads in a cow field. The cows have seen worse.', { festival: true, outdoor: true, weeks: [3, 4] }),
+    venue('shinjuku_lofty', 'Shinjuku Lofty', 'tokyo', 2, 'club', 500, [1200, 1800], 'Down six flights of stairs. Silent crowd, perfect sound, a roar when the song ends.'),
+    venue('budokhan', 'Budokhan Hall', 'tokyo', 4, 'club', 14000, [12000, 18000], 'The octagon. Every live album you grew up with was recorded here. Now yours.', { hall: true }),
+    venue('big_kitten', 'Osaka Big Kitten', 'osaka', 3, 'club', 1500, [2400, 3600], 'Osaka crowds cheer between songs too. Rules are more of a suggestion here.'),
+    venue('zircon_hall', 'Nagoya Zircon Hall', 'nagoya', 3, 'club', 1000, [1900, 2800], 'Next to a department store. Shoppers wander in during soundcheck.'),
+    venue('tick_tock', 'Kyoto Tick Tock', 'kyoto', 2, 'club', 260, [700, 1100], 'An old sake warehouse. Take your shoes off at the door. Yes, the drummer too.'),
+    venue('tongue_hall', 'Sendai Beef Tongue Hall', 'sendai', 2, 'club', 500, [900, 1400], 'Named after the local speciality. The rider is entirely grilled beef tongue.'),
+    venue('snow_cellar', 'Sapporo Snow Cellar', 'sapporo', 2, 'club', 550, [1000, 1500], 'Under a snowbank. The crowd arrives dressed for Saskatoon.'),
+    venue('drum_logic', 'Fukuoka Drum Logic', 'fukuoka', 3, 'club', 1000, [1800, 2700], 'A drum shop upstairs lends you a gong. You politely decline. Kit rules.'),
+    venue('club_okonomi', 'Club Okonomi', 'hiroshima', 2, 'club', 400, [800, 1200], 'Above an okonomiyaki restaurant. The whole set smells like cabbage and joy.'),
+    venue('summer_sonicboom', 'Summer Sonicboom', 'tokyo', 4, 'club', 40000, [6000, 10000], 'A seaside festival. Towels with your band name on them sell out by noon.', { festival: true, outdoor: true, weeks: [3, 4] }),
+    venue('metro_gnome', 'The Metro Gnome', 'sydney', 3, 'club', 1200, [2000, 3000], 'Down a lane off George Street. A gnome statue guards the stage door. Nobody knows why.'),
+    venue('big_day_inn', 'Big Day Inn', 'sydney', 4, 'club', 50000, [6000, 10000], 'January, forty degrees, sunscreen on the snare. A Canadian winter, an Aussie summer.', { festival: true, outdoor: true, weeks: [13, 14] }),
+    venue('wrong_corner', 'The Wrong Corner Hotel', 'melbourne', 2, 'bar', 800, [1100, 1700], 'A pub with a band room out back and a beer garden with opinions.'),
+    venue('petting_zoo', 'The Petting Zoo', 'brisbane', 2, 'club', 600, [900, 1400], 'Humid. The fog machine is redundant. Something with too many legs lives behind the amp.'),
+    venue('governors_shed', "The Governor's Shed", 'adelaide', 2, 'bar', 500, [800, 1300], 'A big shed behind a pub. Tuesday metal nights sell out. Nobody explains why.'),
+    venue('isolated_pub', 'The Most Isolated Pub', 'perth', 2, 'bar', 450, [900, 1400], 'Four thousand km from the next gig. The crowd is grateful you came. Very grateful.'),
+    venue('wrest_pointless', 'Wrest Pointless', 'hobart', 2, 'bar', 350, [700, 1100], 'A harbour bar. Cold wind, warm crowd, a bartender who used to play in a band called Yes Mate.'),
+    venue('croc_pit', 'The Croc Pit', 'darwin', 2, 'bar', 300, [700, 1100], 'Outdoor stage. Warning signs about crocodiles. The bassist reads every single one.', { outdoor: true }),
+    venue('red_centre_roadhouse', 'The Red Centre Roadhouse', 'alice_springs', 2, 'bar', 200, [600, 1000], 'A roadhouse in the desert. The crowd drove eight hundred km. You drove two thousand.'),
+    venue('red_octopus', 'The Red Octopus', 'moscow', 3, 'club', 1500, [2200, 3400], 'A club with a decommissioned tank in the lobby. The crowd climbs on it after the show.'),
+    venue('white_nights_hall', 'The White Nights Hall', 'st_petersburg', 3, 'club', 900, [1600, 2400], 'In June the show ends at 2 a.m. and the sun is still up. Nobody finds this strange but you.'),
+    venue('chak_chak_club', 'The Chak-Chak Club', 'kazan', 2, 'club', 420, [700, 1100], 'Named after the honey dessert. There is honey on the monitors. Somehow.'),
+    venue('urals_underground', 'The Urals Underground', 'yekaterinburg', 2, 'club', 600, [900, 1400], 'Half the crowd is in Europe, half in Asia. The mosh pit crosses continents.'),
+    venue('siberian_station', 'Siberian Station Club', 'novosibirsk', 2, 'club', 500, [800, 1300], 'An old railway depot. The trains out back are louder than the PA.'),
+    venue('baikal_frost_hall', 'Baikal Frost Hall', 'irkutsk', 2, 'club', 400, [800, 1200], 'A wooden hall with a wood stove on stage. The stove gets a solo.'),
+    venue('siberian_frostfest', 'Siberian Frostfest', 'irkutsk', 4, 'club', 15000, [5000, 8000], 'On the frozen shore of Lake Baikal in January. Minus forty. The band is unimpressed; they are from Saskatchewan.', { festival: true, outdoor: true, weeks: [13, 14] }),
+    venue('last_stop', 'The Last Stop', 'vladivostok', 2, 'club', 450, [900, 1300], 'The end of the Trans-Siberian. The crowd has come a long way. So have you.')
+  ];
+
+  // Rental vehicles abroad (you fly; Kenji drives whatever they give you, on whichever side of the road).
+  W.vehicles = {
+    sardine_van: { id: 'sardine_van', region: 'uk_europe', name: 'A tiny European van', perWeek: 350, comfort: 1, breakdown: 0.04, seats: 6, look: 'sardine',
+      blurb: 'Five people, a drum kit and a cape in a van the size of a fridge. Packed like sardines.' },
+    splitter_bus: { id: 'splitter_bus', region: 'uk_europe', name: 'A splitter bus with bunks', perWeek: 850, comfort: 3, breakdown: 0.02, seats: 9, look: 'splitter',
+      blurb: 'Bunks in the front, gear in the back. Somebody else\'s band stickers on every surface.' },
+    hiace: { id: 'hiace', region: 'japan', name: 'A rented high-roof van', perWeek: 500, comfort: 2, breakdown: 0.01, seats: 8, look: 'kei',
+      blurb: 'Spotless, polite and it beeps when it reverses. Kenji drives on the left without comment.' },
+    bullet_pass: { id: 'bullet_pass', region: 'japan', name: 'Bullet-train rail passes', perWeek: 1200, comfort: 4, breakdown: 0, seats: 99, look: 'train',
+      blurb: '300 km/h. The gear goes by courier. Marcel\'s cape goes in the overhead rack.' },
+    ute_trailer: { id: 'ute_trailer', region: 'australia', name: 'A ute and a box trailer', perWeek: 400, comfort: 1, breakdown: 0.05, seats: 5, look: 'ute',
+      blurb: 'Three in the cab, two in a borrowed station wagon behind, the kit in a trailer. Vast drives.' },
+    campervan: { id: 'campervan', region: 'australia', name: 'A campervan the size of a road train', perWeek: 950, comfort: 3, breakdown: 0.03, seats: 7, look: 'camper',
+      blurb: 'A kitchen, a fridge and air conditioning that works when it feels like it.' },
+    paz_bus: { id: 'paz_bus', region: 'russia', name: 'An old Soviet tour bus', perWeek: 300, comfort: 1, breakdown: 0.12, seats: 20, look: 'bus',
+      blurb: 'It has seen things. The heater has two settings: off and volcano. It will break down in the taiga.' },
+    sleeper_train: { id: 'sleeper_train', region: 'russia', name: 'Trans-Siberian sleeper tickets', perWeek: 700, comfort: 3, breakdown: 0.01, seats: 99, look: 'train',
+      blurb: 'Four bunks per cabin, tea in glass holders, nine time zones. The gear rides in the baggage car.' }
+  };
+  W.stays = {
+    couch: { id: 'couch', name: "The promoter's floor", perWeek: 0, homesick: 4, mood: -2, blurb: 'Free. Sleeping bags, a cat that hates drummers, one bathroom.' },
+    hostel: { id: 'hostel', name: 'Hostels', perWeek: 350, homesick: 1, mood: 0, blurb: 'Bunk beds, strangers, lockers. The drummer gets the top bunk.' },
+    hotel: { id: 'hotel', name: 'Proper hotels', perWeek: 1000, homesick: -2, mood: 2, blurb: 'Room service, blackout curtains, a hotel-room rehearsal nobody complains about.' }
+  };
+  W.extras = {
+    none: { id: 'none', name: 'Nothing extra', cost: 0, blurb: 'Just the band, the gear and a phrasebook.' },
+    publicist: { id: 'publicist', name: 'A local publicist', cost: 1200, fans: 0.35, buzz: 3, blurb: 'Radio spots and a poster on every lamp post. More people at every show.' },
+    guitar_tech: { id: 'guitar_tech', name: 'A tour tech + translator', cost: 900, score: 3, burnout: -2, blurb: 'Restrings, re-tapes, orders dinner in the local language. Fewer disasters.' }
+  };
+
+  // Preset tour packages: one stop a week (a weekend show; null venue = an open date you book from the regional board).
+  W.packages = [
+    { id: 'uk_showcase', region: 'uk_europe', name: 'London Showcase', showcase: true,
+      blurb: 'One week, one industry showcase in Camden. Label people in the back pretending not to nod.',
+      stops: [{ city: 'london', venue: 'dog_and_distortion' }] },
+    { id: 'uk_pub_crawl', region: 'uk_europe', name: 'The Pub Crawl',
+      blurb: 'Three weeks of rain, pub gigs and drink tickets: London, Manchester, Glasgow.',
+      stops: [{ city: 'london', venue: 'dog_and_distortion' }, { city: 'manchester', venue: 'drizzle_factory' }, { city: 'glasgow', venue: 'barrowlads' }] },
+    { id: 'eu_continental', region: 'uk_europe', name: 'The Continental',
+      blurb: 'The tiny-van classic: Amsterdam, Berlin, Prague and Paris (where they love Marcel).',
+      stops: [{ city: 'amsterdam', venue: 'paradiso_lost' }, { city: 'berlin', venue: 'kellerkatze' }, { city: 'prague', venue: null }, { city: 'paris', venue: 'petit_chaos' }] },
+    { id: 'eu_festival_summer', region: 'uk_europe', name: 'Mudstonbury Summer', festival: true,
+      blurb: 'Mud season: a London warm-up at the Odium, Mudstonbury in June, then the old church in Amsterdam.',
+      stops: [{ city: 'london', venue: 'hammersmyth_odium' }, { city: 'mudstonbury', venue: 'mudstonbury_fest' }, { city: 'amsterdam', venue: 'paradiso_lost' }] },
+    { id: 'eu_wackelstein', region: 'uk_europe', name: 'Wackelstein August', festival: true,
+      blurb: 'Berlin, an open date in Prague, then seventy-five thousand metalheads in a cow field at Wackelstein Open Air.',
+      stops: [{ city: 'berlin', venue: 'kellerkatze' }, { city: 'prague', venue: null }, { city: 'wackelstein', venue: 'wackelstein_fest' }] },
+    { id: 'eu_moose_run', region: 'uk_europe', name: 'The Nordic Moose Run', needs: 'moose',
+      blurb: 'Oslo, Stockholm, then Helsinki, where the moose concept album is, somehow, on the radio. Finale at the opera.',
+      stops: [{ city: 'oslo', venue: 'rockefjell' }, { city: 'stockholm', venue: 'meatball_cellar' }, { city: 'helsinki', venue: 'moose_opera' }] },
+    { id: 'jp_showcase', region: 'japan', name: 'Tokyo Showcase', showcase: true,
+      blurb: 'One week in Tokyo: a showcase in Shinjuku for a room of very polite industry people.',
+      stops: [{ city: 'tokyo', venue: 'shinjuku_lofty' }] },
+    { id: 'jp_bullet', region: 'japan', name: 'The Bullet Train',
+      blurb: 'Tokyo to Fukuoka in four weekends: Tokyo, Nagoya, Osaka, then an open date down south.',
+      stops: [{ city: 'tokyo', venue: 'shinjuku_lofty' }, { city: 'nagoya', venue: 'zircon_hall' }, { city: 'osaka', venue: 'big_kitten' }, { city: 'fukuoka', venue: null }] },
+    { id: 'jp_north', region: 'japan', name: 'Snow Country',
+      blurb: 'Sapporo and Sendai, then home to Tokyo for the big one: Budokhan Hall.', minRegionFans: 1500,
+      stops: [{ city: 'sapporo', venue: 'snow_cellar' }, { city: 'sendai', venue: 'tongue_hall' }, { city: 'tokyo', venue: 'budokhan' }] },
+    { id: 'jp_summer', region: 'japan', name: 'Summer Sonicboom', festival: true,
+      blurb: 'Summer festival season: Kyoto, Osaka, then the seaside stage at Summer Sonicboom.',
+      stops: [{ city: 'kyoto', venue: 'tick_tock' }, { city: 'osaka', venue: 'big_kitten' }, { city: 'tokyo', venue: 'summer_sonicboom' }] },
+    { id: 'au_showcase', region: 'australia', name: 'Sydney Showcase', showcase: true,
+      blurb: 'One week in Sydney: a showcase at the Metro Gnome for the festival bookers.',
+      stops: [{ city: 'sydney', venue: 'metro_gnome' }] },
+    { id: 'au_east_coast', region: 'australia', name: 'The East Coast Run',
+      blurb: 'Brisbane, Sydney, Melbourne: three weeks, three pubs, one spider.',
+      stops: [{ city: 'brisbane', venue: 'petting_zoo' }, { city: 'sydney', venue: 'metro_gnome' }, { city: 'melbourne', venue: 'wrong_corner' }] },
+    { id: 'au_big_lap', region: 'australia', name: 'The Big Lap',
+      blurb: 'The vast one: Darwin, Alice Springs, Adelaide, Perth. Thousands of km of red dirt between shows.',
+      stops: [{ city: 'darwin', venue: 'croc_pit' }, { city: 'alice_springs', venue: 'red_centre_roadhouse' }, { city: 'adelaide', venue: 'governors_shed' }, { city: 'perth', venue: 'isolated_pub' }] },
+    { id: 'au_big_day_inn', region: 'australia', name: 'Big Day Inn Summer', festival: true,
+      blurb: 'Escape the Saskatchewan winter: Hobart, Melbourne, then Big Day Inn in Sydney in January.',
+      stops: [{ city: 'hobart', venue: 'wrest_pointless' }, { city: 'melbourne', venue: 'wrong_corner' }, { city: 'sydney', venue: 'big_day_inn' }] },
+    { id: 'ru_showcase', region: 'russia', name: 'Moscow Showcase', showcase: true,
+      blurb: 'One week in Moscow: a showcase at the Red Octopus. There is a tank in the lobby.',
+      stops: [{ city: 'moscow', venue: 'red_octopus' }] },
+    { id: 'ru_two_capitals', region: 'russia', name: 'Two Capitals',
+      blurb: 'Moscow and St. Petersburg, plus an open date on the Volga.',
+      stops: [{ city: 'moscow', venue: 'red_octopus' }, { city: 'st_petersburg', venue: 'white_nights_hall' }, { city: 'kazan', venue: null }] },
+    { id: 'ru_trans_siberian', region: 'russia', name: 'The Trans-Siberian',
+      blurb: 'Nine time zones in four weekends: Yekaterinburg, Novosibirsk, Irkutsk, Vladivostok.',
+      stops: [{ city: 'yekaterinburg', venue: 'urals_underground' }, { city: 'novosibirsk', venue: 'siberian_station' }, { city: 'irkutsk', venue: 'baikal_frost_hall' }, { city: 'vladivostok', venue: 'last_stop' }] },
+    { id: 'ru_frostfest', region: 'russia', name: 'Siberian Frostfest', festival: true,
+      blurb: 'January in Siberia: Novosibirsk, then Siberian Frostfest on the ice of Lake Baikal. Minus forty. Pack a toque.',
+      stops: [{ city: 'novosibirsk', venue: 'siberian_station' }, { city: 'irkutsk', venue: 'siberian_frostfest' }] }
+  ];
+
+  // Overseas climate (C7): temperature per month (index 0 = July, like C.MONTHS) and weather tables per season (the
+  // region's own season; Australia's are reversed: a Canadian winter is Aussie summer).
+  W.climates = {
+    uk_europe: { temps: [19, 19, 15, 11, 7, 4, 3, 4, 7, 10, 13, 17], seasonShift: 0,
+      weather: { summer: { clear: 4, rain: 5, heat: 1 }, fall: { clear: 3, rain: 6 }, winter: { clear: 3, rain: 5, snow: 2 }, spring: { clear: 4, rain: 5, hail: 0.3 } } },
+    japan: { temps: [27, 28, 24, 18, 12, 7, 5, 6, 9, 14, 19, 22], seasonShift: 0,
+      weather: { summer: { clear: 4, rain: 4, heat: 3 }, fall: { clear: 6, rain: 3 }, winter: { clear: 5, snow: 3, blizzard: 0.5 }, spring: { clear: 6, rain: 3 } } },
+    australia: { temps: [13, 14, 17, 20, 22, 25, 27, 27, 25, 22, 18, 15], seasonShift: 12,
+      weather: { summer: { clear: 6, heat: 4, hail: 0.3 }, fall: { clear: 6, rain: 2 }, winter: { clear: 6, rain: 3 }, spring: { clear: 6, rain: 2, heat: 1 } } },
+    russia: { temps: [19, 17, 10, 3, -5, -12, -18, -15, -6, 4, 12, 17], seasonShift: 0,
+      weather: { summer: { clear: 7, rain: 3 }, fall: { clear: 3, rain: 4, snow: 2 }, winter: { clear: 2, snow: 5, blizzard: 3 }, spring: { clear: 4, rain: 3, snow: 1 } } }
+  };
+  // Regional holidays and seasons (shown instead of the Canadian ones while you are there). Weeks = week of year.
+  W.holidays = [
+    { id: 'bonfire_night', region: 'uk_europe', weeks: [9, 9], name: 'Bonfire Night', icon: '🎆', blurb: 'Fireworks all over England. The pyro is free tonight.', gig: { crowd: 4, fans: 1.1 } },
+    { id: 'oktoberfest', region: 'uk_europe', weeks: [5, 6], name: 'Oktoberfest season', icon: '🍺', blurb: 'Every German bar has a brass band. You are the loud one.', pay: { bar: 1.3 } },
+    { id: 'christmas_markets', region: 'uk_europe', weeks: [11, 12], name: 'Christmas markets', icon: '🎄', blurb: 'Mulled wine and wooden stalls. Very festive. Very cold.', gig: { crowd: 3 } },
+    { id: 'midsummer', region: 'uk_europe', weeks: [24, 24], name: 'Nordic Midsummer', icon: '🌞', blurb: 'The sun never sets up north. Neither does the party.', gig: { crowd: 5, fans: 1.1 } },
+    { id: 'hanami', region: 'japan', weeks: [19, 20], name: 'Cherry blossom season', icon: '🌸', blurb: 'Hanami picnics under the blossoms. Everyone is in a good mood.', gig: { crowd: 5, fans: 1.15 } },
+    { id: 'golden_week', region: 'japan', weeks: [21, 21], name: 'Golden Week', icon: '🎏', blurb: 'The whole country is on holiday. Every train is full. Every show sells out.', gig: { crowd: 6, fans: 1.1 } },
+    { id: 'natsu_matsuri', region: 'japan', weeks: [3, 4], name: 'Summer festivals', icon: '🏮', blurb: 'Lanterns, yukata and festival stages in every town.', gig: { crowd: 4, fans: 1.1 } },
+    { id: 'shogatsu', region: 'japan', weeks: [13, 13], name: 'New Year', icon: '🎍', blurb: 'The quietest week of the year. Everyone is home with family. Including, emotionally, you.', gig: { crowd: -6 } },
+    { id: 'aussie_christmas', region: 'australia', weeks: [11, 12], name: 'Christmas at the beach', icon: '🏖️', blurb: 'Thirty-five degrees, prawns on the barbie, Santa in board shorts.', gig: { crowd: 4 } },
+    { id: 'summer_holidays', region: 'australia', weeks: [13, 15], name: 'The summer holidays', icon: '☀️', blurb: 'Everyone is on holiday and at a festival. Big crowds.', gig: { crowd: 5, fans: 1.1 } },
+    { id: 'race_day', region: 'australia', weeks: [9, 9], name: 'Race day', icon: '🏇', blurb: 'The horse race that stops the nation. It stops soundcheck too.', gig: { crowd: -3 } },
+    { id: 'novy_god', region: 'russia', weeks: [12, 13], name: 'New Year', icon: '🎄', blurb: 'The biggest holiday of the year. Fir trees, fireworks, a double fee.', pay: { all: 1.5 } },
+    { id: 'maslenitsa', region: 'russia', weeks: [17, 17], name: 'Pancake week', icon: '🥞', blurb: 'Pancakes for seven days straight. The band is in heaven.', gig: { crowd: 3 } },
+    { id: 'white_nights', region: 'russia', weeks: [23, 24], name: 'White nights', icon: '🌅', blurb: 'The sun barely sets over St. Petersburg. Shows run until dawn, which is at 3 a.m.', gig: { crowd: 5, fans: 1.1 } }
+  ];
+
+  // Invites (A12: a festival slot or a showcase unlocks a region before the fan threshold). {festival} {region}
+  W.invites = {
+    festival: [
+      '{festival} wants {band}. A real slot, on a real stage, in {region}. The promoter even offered to cover half the flights.',
+      'An email with too many exclamation marks: {festival} has a hole in the lineup and your name on the shortlist.'
+    ],
+    showcase: [
+      'A label in {region} wants to see {band} play. One showcase, half the flights on them. The world just got bigger.',
+      'Your record reached {region} somehow. A booking agent there wants a showcase. "Very big interest," she writes.'
+    ],
+    big: ['{song} is blowing up in {region}. Nobody knows how. Promoters are calling.']
+  };
+
+  // Members calling home from the road (group chat). Per member (Hail Damage) + generic; Kenji never speaks.
+  W.callHome = {
+    marcel: ['Called Maman. She asked if they have real bread here. I said yes. She hung up.', 'Wore the cape to call home on video. Maman said I look thin. Capes are slimming.',
+      'I miss the lawn. Do not tell anyone I miss the lawn.', 'Facetimed the garage. Somebody put the webcam on the lawnmower. I cried a little.'],
+    dana: ['Called my sister. Told her about the gear shops. She told me about her kids. Both of us were bored.', 'I would trade this entire hotel for Mom\'s kitchen and a bag of ketchup chips.',
+      'Missed my cousin\'s wedding for this. Sent a video of a guitar solo. She played it at the reception.'],
+    jaxon: ['Baba called. She wants to know if I am wearing the toque. I am not wearing the toque.', 'Baba sent a photo of perogies. That is psychological warfare.',
+      'Called Baba. She rated the show from the livestream. Four out of ten. The drummer got a nine.'],
+    generic: ['Called home. They asked when we are back. I didn\'t have an answer.', 'It\'s 4 a.m. in Saskatoon. I called anyway. Mom picked up on the first ring.',
+      'Homesick. Is that a thing adults are allowed to say? Asking for the band.', 'Watching hockey highlights in a hotel room at 6 a.m. This is who I am now.',
+      'Found a Canadian flag patch in a shop. Bought six. Sewed one on my pillow.']
+  };
+
+  // Road lines per region (trip banter abroad) + news lines.
+  W.lines = {
+    depart: { uk_europe: 'Wheels up. Next stop: rain.', japan: 'Wheels up. Thirteen hours. Marcel packed the cape in a garment bag. The cape has its own seat.',
+      australia: 'Wheels up. Twenty-two hours, two connections, one very confused sense of what season it is.', russia: 'Wheels up. Jaxon packed three toques. Baba packed a fourth.' },
+    home: ['Home. The garage smells exactly the same. Somebody hugs the Moose Hearse.', 'Back in Saskatoon. Mom made a lasagna the size of a snare case.'],
+    broken: '{band} has broken {region}. Crowds sing along now. In the right accent.',
+    rival: '{rival} just played {region} first. The locals keep asking if you know them. "Tall accountant? Veggie tray?"',
+    big: '{song} is huge in {region}. Nobody at home believes it.',
+    moose: 'The moose concept album just went platinum in Finland. Marcel has been crying at the Helsinki opera house for an hour. Good crying.',
+    gongNominated: '{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. Marcel is already writing the speech.',
+    gongWon: '{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Ever.',
+    gongLost: 'The Global Gong went to {venue}. The band claps politely. Marcel claps sarcastically.'
+  };
+
+  // The Global Gong (A14): the one international award, World stage only. Nominees besides you and (if they toured) your rival.
+  W.gong = {
+    name: 'The Global Gong', week: 22, city: 'Amsterdam',
+    blurb: 'The one international award. A bronze gong on a teak stand. It goes on a shelf, never on a drum kit.',
+    nominees: [
+      { id: 'krautbahn', name: 'Krautbahn', from: 'Germany', strength: 58 },
+      { id: 'kawaii_apocalypse', name: 'Kawaii Apocalypse', from: 'Japan', strength: 62 },
+      { id: 'dingo_fever', name: 'Dingo Fever', from: 'Australia', strength: 54 },
+      { id: 'balalaika_overdrive', name: 'Balalaika Overdrive', from: 'Russia', strength: 52 },
+      { id: 'fjordwrath', name: 'Fjordwrath', from: 'Norway', strength: 60 },
+      { id: 'les_baguettes_maudites', name: 'Les Baguettes Maudites', from: 'France', strength: 50 }
+    ]
+  };
+
+  // Region Monday cards (drawn on tour, one a week) + story cards (forced by the tour sim). Effect key `tour` (see top).
+  var ERA = ['world'];
+  function card(id, region, speaker, title, text, choices, x) {
+    var c = { id: id, type: x && x.type || 'road', speaker: speaker, title: title, text: text, gate: { era: ERA, region: region ? [region] : undefined }, once: true, choices: choices };
+    if (!region) delete c.gate.region;
+    for (var k in x || {}) if (k !== 'type' && k !== 'gate') c[k] = x[k];
+    if (x && x.gate) for (var g in x.gate) c.gate[g] = x.gate[g];
+    return c;
+  }
+  W.cards = [
+    // ---- UK & Europe ----
+    card('wt_uk_drink_tickets', 'uk_europe', 'nigel', 'Paid in Drink Tickets', 'Nigel the promoter counts out your fee: forty pounds and a roll of drink tickets. "Standard," he says. "Very standard."', [
+      { label: 'Take the tickets', hint: 'Moods ↑ · Fund ↓', effects: { fund: -150, mood: { all: 5 } }, outcome: 'The band drinks the fee. Glasgow is a blur. A good blur.' },
+      { label: 'Negotiate like a Canadian', hint: 'Gamble: cash, or banned from his pubs', roll: { chance: 0.5, stat: 'buzz', statScale: 0.006,
+        success: { effects: { fund: 400 }, outcome: 'You apologize four times and he pays in full out of sheer confusion.' },
+        fail: { effects: { buzz: -3, mood: { all: -3 } }, outcome: 'Nigel is wounded. He tells every pub in Manchester. The tickets were real, at least.' } }, outcome: 'You clear your throat. "Sorry, but..."' }
+    ], { type: 'money', once: false, cooldown: 12 }),
+    card('wt_uk_rain', 'uk_europe', 'dana', 'It Is Raining', 'It has rained for nine days. The merch is wet, the cape is wet, the van smells like a wet dog made of cape. Dana wants a day off.', [
+      { label: 'A day in a pub, drying off', hint: 'Burnout ↓ · Homesick ↓', effects: { burnout: -6, tour: { homesick: -6 } }, outcome: 'Pie, chips, a fire, a quiz machine. The cape steams gently by the hearth.' },
+      { label: 'Busk in the rain for content', hint: 'Buzz ↑ · Burnout ↑', effects: { buzz: 6, burnout: 5, tour: { regionFans: 150 } }, outcome: 'Soaked, acoustic, filmed by a stranger. "Canadians Play Through Biblical Rain" does numbers.' }
+    ], { type: 'weird', once: false, cooldown: 10 }),
+    card('wt_eu_gear_shop', 'uk_europe', 'dana', 'Lost in a Gear Shop', 'Dana went into a Berlin gear shop at 10 a.m. It is now 6 p.m. Soundcheck was an hour ago. She is not answering her phone.', [
+      { label: 'Send a search party', hint: 'Chemistry ↑ · Dana ↓', effects: { chemistry: 3, mood: { dana: -4 } }, outcome: 'Found in the basement, holding a fuzz pedal like a newborn. She has to put it back.' },
+      { label: 'Let her buy the pedal', hint: 'Fund ↓ · Dana ↑↑', effects: { fund: -600, mood: { dana: 12 }, skill: { dana: 2 } }, outcome: 'It is a very expensive fuzz pedal. Tonight\'s solo sounds like a jet engine in love.' }
+    ], { type: 'drama', gate: { band: ['hail_damage'] } }),
+    card('wt_eu_france_marcel', 'uk_europe', 'marcel', 'France Loves Marcel', 'A Paris magazine wants Marcel alone for a cover shoot. Just Marcel. And the cape. "Ze rest of ze band can hold ze reflector."', [
+      { label: 'Let Marcel have his moment', hint: 'Marcel ↑↑ · Chemistry ↓', effects: { mood: { marcel: 15 }, chemistry: -4, buzz: 8, tour: { regionFans: 250 } }, outcome: 'Marcel on the cover of Le Rockeur. The band holds the reflector. Jaxon is in the corner of one photo, blurry.' },
+      { label: 'Whole band or nothing', hint: 'Chemistry ↑ · Marcel ↓', effects: { chemistry: 4, mood: { marcel: -6 }, buzz: 4 }, outcome: 'They agree, sadly. The cover is the band, with Marcel slightly larger than everyone else.' }
+    ], { type: 'fame', city: ['paris'], gate: { band: ['hail_damage'] } }),
+    card('wt_eu_mud', 'uk_europe', 'klaus', 'Festival Mud', 'Klaus from the festival: "The stage is fine. The path to the stage is mud. Knee deep. Also the path has a tractor in it."', [
+      { label: 'Wade in with the gear', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 6, buzz: 6, tour: { regionFans: 300 } }, outcome: 'You carry the kick drum over your head through the crowd like a trophy. They chant your name.' },
+      { label: 'Pay for the golf cart', hint: 'Fund ↓', effects: { fund: -300, burnout: -3 }, outcome: 'Dry socks, a dignified arrival, and a golf cart driver who reviews your set from the side of the stage.' }
+    ], { type: 'road', city: ['mudstonbury', 'wackelstein'] }),
+    card('wt_eu_sardines', 'uk_europe', 'jaxon', 'Packed Like Sardines', 'The rental van fits the kit, the merch and exactly four and a half people. Jaxon has been sitting on the floor tom since Amsterdam.', [
+      { label: 'Rotate seats every hour', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 4, burnout: 3 }, outcome: 'A strict rota. Everyone gets an hour on the floor tom. Nobody is happy. Everyone is equal.' },
+      { label: 'Ship the cape home', hint: 'Marcel ↓↓ · Burnout ↓', effects: { mood: { marcel: -10 }, burnout: -5 }, outcome: 'The cape goes home by courier. Marcel waves at the truck. There is room to breathe.' }
+    ], { type: 'road', once: false, cooldown: 12, gate: { band: ['hail_damage'] } }),
+    // ---- Japan ----
+    card('wt_jp_silence', 'japan', 'marcel', 'The Silence', 'Song one ends. Total silence. Then a roar like a jet. Then silence again for song two. Marcel thinks they hate him. Nobody hates him.', [
+      { label: 'Explain Japanese crowds to Marcel', hint: 'Marcel ↑ · Chemistry ↑', effects: { mood: { marcel: 6 }, chemistry: 3 }, outcome: '"They are listening," you say. "Listening?" says Marcel. "To ME?" He sings the best set of his life.' },
+      { label: 'Fill the silence with banter', hint: 'Gamble: charming, or very awkward', roll: { chance: 0.45, stat: 'chemistry', statScale: 0.006,
+        success: { effects: { buzz: 6, tour: { regionFans: 200 } }, outcome: 'Marcel tells a joke in French. Nobody understands. Everybody claps. It works.' },
+        fail: { effects: { mood: { marcel: -5 }, burnout: 3 }, outcome: 'Four minutes of Marcel explaining the lawn. The silence becomes a different silence.' } }, outcome: 'Marcel steps up to the mic.' }
+    ], { type: 'fame', gate: { band: ['hail_damage'] } }),
+    card('wt_jp_gifts', 'japan', 'kato', 'Gift Mountain', 'Mr. Kato the promoter wheels in a trolley of fan gifts: letters, snacks, hand-drawn portraits, a towel with your band name on it.', [
+      { label: 'Write back to every one', hint: 'Burnout ↑ · Fans ↑', effects: { burnout: 4, fans: 120, tour: { gift: 'jp_towel', regionFans: 250 } }, outcome: 'Three hundred thank-you notes on hotel stationery. The towel goes on the drum riser forever.' },
+      { label: 'Share the snacks with the crew', hint: 'Moods ↑', effects: { mood: { all: 6 }, tour: { gift: 'jp_towel' } }, outcome: 'Matcha cookies, rice crackers, a melon that cost more than the rental van. A good night.' }
+    ], { type: 'fame' }),
+    card('wt_jp_vending', 'japan', 'jaxon', 'The Vending Machines', 'Jaxon has found a vending machine that sells hot corn soup in a can. He has now had eleven. He has plans for a twelfth.', [
+      { label: 'Stage an intervention', hint: 'Jaxon ↓ · Chemistry ↑', effects: { mood: { jaxon: -4 }, chemistry: 3 }, outcome: 'The band stands between Jaxon and the machine. He respects it. He sneaks a thirteenth at 3 a.m.' },
+      { label: 'Film the corn soup review', hint: 'Buzz ↑', effects: { buzz: 5, tour: { regionFans: 120 } }, outcome: '"Canadian Guitarist Rates Every Vending Machine in Osaka" becomes a series. Episode 4 is huge.' }
+    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    card('wt_jp_blossoms', 'japan', 'emiko', 'Under the Blossoms', 'Emiko from the fan club has reserved a spot under the cherry blossoms for a band picnic. She has laminated a seating chart.', [
+      { label: 'Go, follow the seating chart', hint: 'Moods ↑ · Homesick ↓', effects: { mood: { all: 8 }, tour: { homesick: -8 } }, outcome: 'Pink petals, a bento with the band logo in seaweed, and the best afternoon of the tour.' },
+      { label: 'Rehearse instead', hint: 'Skill ↑ · Emiko sad', effects: { skill: { all: 1 }, burnout: 3 }, outcome: 'You rehearse in a hotel room. Emiko sends photos of the empty picnic mat. Every petal is a guilt trip.' }
+    ], { type: 'drama', gate: { weekOfYear: [18, 21] } }),
+    // ---- Australia ----
+    card('wt_au_spider', 'australia', 'dana', 'Spider in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Dana looks through the port hole and goes very quiet. "Something in there has eight legs and a mortgage."', [
+      { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
+      { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
+        success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
+        fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
+    ], { type: 'weird' }),
+    card('wt_au_christmas', 'australia', 'marcel', 'Christmas at the Beach', 'It is Christmas and thirty-eight degrees. Marcel has put on the cape and a Santa hat and will not take either off.', [
+      { label: 'Beach barbecue for the band', hint: 'Moods ↑ · Homesick ↓', effects: { mood: { all: 8 }, fund: -200, tour: { homesick: -6 } }, outcome: 'Prawns, sunburn and a Christmas cracker joke read aloud in five accents. Not home, but close.' },
+      { label: 'Video call home for Christmas', hint: 'Homesick ↓↓ · Burnout ↑', effects: { burnout: 4, tour: { homesick: -12 } }, outcome: 'Snow in the garage window behind Mom. Sand in your sandwich. Everyone cries a little. It helps.' }
+    ], { type: 'drama', gate: { weekOfYear: [11, 12], band: ['hail_damage'] } }),
+    card('wt_au_drop_bears', 'australia', 'shazza', 'The Drop Bear Warning', 'Shazza the promoter warns the band about drop bears. Very seriously. Jaxon is now wearing a bike helmet everywhere.', [
+      { label: 'Play along', hint: 'Buzz ↑ · Jaxon ↓', effects: { buzz: 4, mood: { jaxon: -4 } }, outcome: 'The crowd sees Jaxon on stage in a bike helmet and loses it. Shazza wins the tour.' },
+      { label: 'Tell Jaxon the truth', hint: 'Jaxon ↑', effects: { mood: { jaxon: 5 } }, outcome: 'Jaxon removes the helmet with dignity. Shazza looks disappointed in you personally.' }
+    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    // ---- Russia ----
+    card('wt_ru_minus40', 'russia', 'dmitri', 'Minus Forty', 'Dmitri from Frostfest apologizes: it is minus forty on the ice today. The local bands are wearing three coats. Your band is in hoodies, unimpressed.', [
+      { label: '"This is spring in Saskatoon"', hint: 'Buzz ↑↑ · Burnout ↑', effects: { buzz: 10, burnout: 5, tour: { regionFans: 400 } }, outcome: 'Hoodies, no gloves, full set. The Siberians decide you are their people. There is a chant.' },
+      { label: 'Borrow the coats', hint: 'Burnout ↓ · Moods ↑', effects: { burnout: -4, mood: { all: 4 } }, outcome: 'Dmitri hands out fur hats. Marcel wears his over the cape. It is a look.' }
+    ], { type: 'road', city: ['irkutsk'] }),
+    card('wt_ru_white_nights', 'russia', 'marcel', 'White Nights', 'Midnight in St. Petersburg and the sun is still up. The band has not slept in two days. Marcel is writing a symphony about it.', [
+      { label: 'Enforce blackout curtains', hint: 'Burnout ↓', effects: { burnout: -8 }, outcome: 'Tinfoil on the windows, earplugs, a strict bedtime. The symphony is postponed.' },
+      { label: 'Stay up, see the bridges open', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 5, burnout: 5 }, outcome: 'At 2 a.m. the bridges lift over the Neva in daylight. Nobody talks. Nobody needs to.' }
+    ], { type: 'weird', city: ['st_petersburg'], gate: { band: ['hail_damage'] } }),
+    card('wt_ru_babushka', 'russia', 'jaxon', 'A Babushka Adopts Jaxon', 'A babushka at the hotel has decided Jaxon is too thin. She follows him with a pot of borscht. She reminds him, strongly, of Baba.', [
+      { label: 'Eat the borscht', hint: 'Jaxon ↑ · Homesick ↓', effects: { mood: { jaxon: 8 }, tour: { homesick: -6 } }, outcome: 'Jaxon eats three bowls, calls Baba, and describes the borscht in detail. Baba is jealous. Baba is proud.' },
+      { label: 'Politely decline', hint: 'Jaxon ↓', effects: { mood: { jaxon: -5 } }, outcome: 'You cannot decline. Nobody can decline. Jaxon eats the borscht anyway.' }
+    ], { type: 'drama', gate: { band: ['hail_damage'] } }),
+    card('wt_ru_banya', 'russia', 'dmitri', 'The Banya', 'Dmitri invites the band to a banya: steam, birch branches, then a roll in the snow. "For the voice," he says to Marcel.', [
+      { label: 'Everybody in', hint: 'Burnout ↓ · Chemistry ↑', effects: { burnout: -6, chemistry: 4 }, outcome: 'Hot, cold, hot, cold. Marcel hits a note afterwards that shatters a glass. Dmitri nods. "Told you."' },
+      { label: 'Just watch from the door', hint: 'Nothing happens', effects: { mood: { all: 3 } }, outcome: 'You watch your band sprint into a snowbank in towels. You take photos. You will use them.' }
+    ], { type: 'weird' }),
+    // ---- Story cards (forced by the tour sim; story: true) ----
+    card('wt_invite', null, 'dj', 'An Invite from Abroad', '{festival} wants {band} in {region}. The promoter covers half the flights if you come soon. The world just got bigger.', [
+      { label: 'We are going', hint: 'Region unlocked · half flights', effects: { buzz: 5, tour: { accept: true } }, outcome: 'You print the email and pin it on the gig board. Marcel measures the cape for an overhead bin.' },
+      { label: 'Not this year', hint: 'The region stays open', effects: { mood: { all: -3 } }, outcome: 'You say thank you, very politely. The region stays open. The offer of flights does not.' }
+    ], { type: 'fame', story: true }),
+    card('wt_big', null, 'dj', 'Big in One Place', '{song} is number one in {region}. Not at home. There. A radio DJ there plays it every hour. Nobody knows how it happened.', [
+      { label: 'Fly over for surprise shows', hint: 'Fund ↓ · Region fans ↑↑', effects: { fund: -1200, burnout: 6, tour: { regionFans: 1500, big: 'fly' } }, outcome: 'Two sold-out surprise shows. The DJ cries on air. The song goes gold there.' },
+      { label: 'Shoot a local video', hint: 'Fund ↓ · Region fans ↑', effects: { fund: -400, tour: { regionFans: 700, big: 'video' } }, outcome: 'A video of the band pointing at a map of {region}. It is somehow perfect.' },
+      { label: 'Enjoy it from afar', hint: 'Buzz ↑', effects: { buzz: 6, tour: { regionFans: 300, big: 'shrug' } }, outcome: 'You screenshot the chart and put it on the fridge.' }
+    ], { type: 'fame', story: true }),
+    card('wt_president', 'japan', 'emiko', 'The President', 'A woman in a band shirt bows deeply. "Emiko Tanabe. President, {band} Fan Club Japan. Member number one." She hands you a laminated card. You are member number two.', [
+      { label: 'Bow back, deeper', hint: 'Fans ↑ · the president ♥', effects: { fans: 150, mood: { all: 4 }, tour: { regionFans: 300, gift: 'jp_omamori' } }, outcome: 'A bowing contest. Emiko wins. She gives the van a good-luck charm "so it never breaks down again". It is too late for that.' },
+      { label: 'Sign everything she brought', hint: 'Burnout ↑ · the president ♥♥', effects: { burnout: 3, fans: 200, tour: { regionFans: 400, gift: 'jp_omamori' } }, outcome: 'Forty-one items, including a rice cooker. She has a spreadsheet of the band\'s birthdays. It is correct.' }
+    ], { type: 'fame', story: true }),
+    card('wt_moose', 'uk_europe', 'marcel', 'Platinum in Finland', 'Backstage at the Moose Opera, a Finnish label rep hands Marcel a platinum disc. It is the moose concept album. Marcel cannot speak.', [
+      { label: 'Let Marcel make a speech', hint: 'Marcel ↑↑ · Buzz ↑', effects: { mood: { marcel: 18 }, buzz: 10 }, outcome: 'Eleven minutes, in French, about a moose. The opera house gives a standing ovation. So does the moose on the chandelier.' },
+      { label: 'Group hug', hint: 'Chemistry ↑↑', effects: { chemistry: 8, mood: { all: 6 } }, outcome: 'Five Canadians in a pile in a Finnish opera house. Somebody takes a photo. It becomes the next album cover.' }
+    ], { type: 'fame', story: true, gate: { band: ['hail_damage'] } }),
+    card('wt_homesick', null, 'dana', 'Homesick', 'Nobody has slept. Everybody has called home twice today. Dana says it out loud: "Can we just go home?"', [
+      { label: 'Fly home early', hint: 'Skip the rest of the tour', effects: { mood: { all: 8 }, tour: { endTour: true, homesick: -20 } }, outcome: 'You change the flights. The promoter is disappointed. The band sleeps the whole way home.' },
+      { label: 'Finish what we started', hint: 'Moods ↓ · Burnout ↑', effects: { mood: { all: -5 }, burnout: 5, chemistry: 3 }, outcome: 'Group hug in a hotel corridor. You finish the tour. It gets into the band\'s bones.' },
+      { label: 'Book a day off, fly Mom in', hint: 'Fund ↓ · Homesick ↓↓', effects: { fund: -1400, tour: { homesick: -25 } }, outcome: 'Mom arrives with a cooler of frozen perogies and a toque for everyone. She tidies the tour bus.' }
+    ], { type: 'drama', story: true })
+  ];
+
+})(window.GG);
+
+</script>
 <script>/* 10_save.js */
 // 10_save.js: save slots in localStorage (with an in-memory fallback), settings, and copy-paste save codes.
 //   keys: gg.v1.slot.<auto|1|2|3>, gg.v1.settings, gg.v1.hof (reserved), gg.v1.meta (reserved)
@@ -8127,6 +8697,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
+    if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
     return String(text).replace(/\{(player|band|city|nick|name|recruit|rival)(?::([\w-]+))?\}/g, function (all, key, id) {
       if (key === 'rival') return GG.rival ? GG.rival.name(state) : 'Tundra Wraith';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
@@ -8312,7 +8883,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   var GATE = {
     era: function (s, v) { return has(v, s.era); },
     genre: function (s, v) { return has(v, s.genre); },
-    region: function (s, v) { return has(v, s.region); },
+    region: function (s, v) { return has(v, GG.tour ? GG.tour.regionOf(s) : s.region); },   // v0.7: where the band is (abroad on tour)
     band: function (s, v) { return has(v, s.bandId); },
     minWeek: function (s, v) { return s.totalWeek >= v; }, maxWeek: function (s, v) { return s.totalWeek <= v; },
     weekOfYear: function (s, v) { return s.week >= v[0] && s.week <= v[1]; },
@@ -8343,7 +8914,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
     var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
-      GG.fans ? GG.fans.cards() : []);   // v0.6.1: fan cards (scandals, superfans, Patreeon; forced by GG.fans, never drawn)
+      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : []);   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -8486,6 +9057,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
+    if (GG.tour) GG.tour.init(state);     // v0.7: state.tour (regions, invites, the active tour, homesickness, the Gong)
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -8503,7 +9075,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
      ====================================================================== */
   function maybeOffer(state, rng) {
     var E = econ();
-    if (state.gig || state.offer || !GG.gig || state.fans < E.offerMinFans) return;
+    if (state.gig || state.offer || !GG.gig || state.fans < E.offerMinFans || (GG.tour && GG.tour.away(state))) return;   // v0.7: no home offers abroad
     if (rng.chance(E.offerChance)) state.offer = GG.world ? GG.world.offer(state, rng) : GG.gig.randomOffer(state, rng);
   }
 
@@ -8518,12 +9090,15 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var rng = GG.rngFor(state);
     endStaleChains(state);
     snapshotWeek(state);
+    if (GG.tour) GG.tour.monday(state);   // v0.7: departure day, this week's tour stop + its show, the fan-club president
+    var away = !!(GG.tour && GG.tour.away(state));
     if (GG.calendar) GG.calendar.monday(state);   // v0.6.1: this week's weather, season news, the driver, holiday afterglow
     var forced = state.totalWeek > 1 && GG.drama ? GG.drama.forcedCard(state, rng) : null;   // v0.4 drama cards first
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
     var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
-    var fan = !forced && !studio && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : holiday || (fan && fan.card) || drawCard(state, rng);
+    var tourCard = !forced && !studio && GG.tour ? GG.tour.forcedCard(state) : null;   // v0.7: region cards abroad, invites, big in one place
+    var fan = !forced && !studio && !tourCard && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (fan && fan.card) || (away ? null : drawCard(state, rng));
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
@@ -8531,7 +9106,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     maybeOffer(state, rng);
     state.bookPick = null; state.trip = null;
     if (GG.world) GG.world.refresh(state, true);   // this week's gig board (own seeded RNG)
-    if (GG.rival) GG.rival.monday(state);   // v0.6: this week's showdown (BotB offer, festival listing, stolen slot, the final)
+    if (GG.rival && !away) GG.rival.monday(state);   // v0.6: this week's showdown (BotB offer, festival listing, stolen slot, the final)
     state.phase = card ? 'monday' : 'plan';
     GG.emit('week:start', { totalWeek: state.totalWeek, year: state.year, week: state.week,
       card: card ? card.id : null, offer: state.offer, quiet: state.quiet });
@@ -8557,6 +9132,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.drama) GG.drama.afterCard(state, card);
     if (GG.rival) GG.rival.afterCard(state, card);   // v0.6: a resolved poach card is a showdown
     if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
+    if (GG.tour) GG.tour.afterCard(state, card, i, success, d);   // v0.7: world cards' 'tour' effects (region fans, homesick, invites)
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -8664,7 +9240,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function runActivity(state, id, nth, rng) {
     var E = econ(), f = E.repeatFactor[Math.min(nth, E.repeatFactor.length) - 1], d = {}, lines = [];
     lines.push(activityLine(state, rng, id));
-    ACT[id](state, GG.content.activities[id], f, rng, d, lines);
+    if (!(GG.tour && GG.tour.block(state, id, GG.content.activities[id], f, rng, d, lines, ACT))) ACT[id](state, GG.content.activities[id], f, rng, d, lines);   // v0.7: on tour
     return { activity: id, lines: lines, deltas: d };
   }
 
@@ -8686,6 +9262,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     });
     for (var i = 0; !studio && i < C.BLOCKS_PER_WEEK; i++) {
       var id = state.plan && ACT[state.plan[i]] ? state.plan[i] : 'rest';
+      if (GG.tour) id = GG.tour.blockId(state, id, i);   // v0.7: abroad the planner shrinks to rest / promote / rehearse
       counts[id] = (counts[id] || 0) + 1;
       var block = runActivity(state, id, counts[id], rng);
       blocks.push(block);
@@ -8694,6 +9271,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     var result = { blocks: blocks, gig: null };
     state.lastWeek = result;
+    if (GG.tour) GG.tour.beforeGig(state);   // v0.7: an open date on tour books from the regional board
     if (state.gig && GG.gig && !opts.autoGig) {
       state.phase = 'gig';
       GG.emit('gig:pending', { gig: state.gig });
@@ -8866,6 +9444,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.labels) GG.labels.weekly(state, rng, wrap);  // v0.5: offers, deals, releases, charts, royalties, Loonies
     if (GG.rival) GG.rival.weekly(state, rng, wrap);    // v0.6: the rival's career, heat, forfeits, cracking (wrap.rival)
     if (GG.fans) GG.fans.weekly(state, wrap);           // v0.6.1: fan types, mail + gifts, Patreeon payouts (wrap.fans; own RNG)
+    if (GG.tour) GG.tour.weekly(state, rng, wrap);      // v0.7: hotels, homesickness, tour end, unlocks, invites, the Gong (wrap.tour; own RNG)
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -8969,6 +9548,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   }
   career.botPlan = function (state, style) {
     var B = econ().bot;
+    if (GG.tour && GG.tour.away(state)) return GG.tour.botPlan(state, style);   // v0.7: on tour
     return style === 'good' ? goodPlan(state, B.good) : avgPlan(state, B.avg, GG.rngFor(state));
   };
   // One full bot week: card, offer, plan, blocks, wrap. Returns the WRAP.
@@ -8980,6 +9560,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.drama) GG.drama.botWeek(state, style);   // v0.4: pay the band, fill holes (ad + hire)
     if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release
     if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
+    if (GG.tour) GG.tour.botWeek(state, style);      // v0.7: botTour: book a tour package (departs next week)
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
@@ -9531,7 +10112,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   gig.venue = function (id) {
     var list = venues();
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
-    return GG.rival && GG.rival.venue ? GG.rival.venue(id) : null;   // v0.6: festival grounds + the Sad Dome
+    return (GG.rival && GG.rival.venue ? GG.rival.venue(id) : null) || (GG.tour && GG.tour.venue ? GG.tour.venue(id) : null);   // v0.6 rivalry venues, v0.7 world venues
   };
   gig.fit = function (venue, genre) {
     var f = venue && venue.genreFit && venue.genreFit[genre];
@@ -9586,7 +10167,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
   function crowdFor(state, g, v, rng) {
     var cfg = G();
-    var draw = (v.walkIns || 0) + state.fans * cfg.fanDraw + state.buzz * cfg.buzzDraw;
+    var draw = g.tour && GG.tour ? GG.tour.draw(state, g) : (v.walkIns || 0) + state.fans * cfg.fanDraw + state.buzz * cfg.buzzDraw;   // v0.7: abroad
     return U.clamp(Math.round(draw * rng.range(cfg.crowdNoise[0], cfg.crowdNoise[1])), 1, g.capacity);
   }
   // Pay rules: exposure 0; flat = the guarantee; door = $ per head x crowd.
@@ -9875,8 +10456,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
     var cur = null, tickOut = { misses: 0, crowd: 0, level: '', autoHits: 0 };
+    // v0.7: a silent crowd (Japan): the meter holds still while a song plays (S.crowd frozen; the real crowd moves in
+    // S.hidden), then the whole song's reaction lands at once when it ends, plus polite applause ('crowd:moment' applause).
+    var silent = S.silent = !!(GG.tour && GG.tour.silentCrowd && GG.tour.silentCrowd(g));
+    function real() { return silent && cur ? S.hidden : S.crowd; }
     function emit(ev, p) { if (S.emit) GG.emit(ev, p); }
     function crowdAdd(d) {
+      if (silent && cur) { S.hidden = U.clamp(S.hidden + d, floor, 100); return; }
       S.crowd = U.clamp(S.crowd + d, floor, 100);
       var lv = gig.levelOf(S.crowd);
       if (lv !== S.level) { S.level = lv; emit('crowd:level', { level: lv, crowd: S.crowd }); }
@@ -9915,7 +10501,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
         dens: U.clamp(cfg.densityRef / Math.max(0.5, nps), cfg.densityClamp[0], cfg.densityClamp[1]),
         staleMul: Math.max(0.2, 1 - (song.stale || 0) / cfg.staleGain) };
-      S.chart = chart; S.index = i; S.combo = 0; S.t = 0; S.playing = true; S.crowd = live.crowd;
+      S.chart = chart; S.index = i; S.combo = 0; S.t = 0; S.playing = true; S.crowd = live.crowd; S.hidden = live.crowd;
       S.level = gig.levelOf(S.crowd);
       if (i === 0 && bonus.opener) crowdAdd(cfg.opener);
       if (i === set.length - 1 && bonus.closer && set.length > 1) crowdAdd(cfg.closer);
@@ -9936,9 +10522,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       cur.entryHits[x.entry]++;
       S.combo++; cur.missStreak = 0;
       if (S.combo > cur.maxCombo) cur.maxCombo = S.combo;
-      crowdAdd(c * (1.15 - S.crowd / 200));
+      crowdAdd(c * (1.15 - real() / 200));
       if (S.combo % cfg.comboStep === 0) crowdAdd(cfg.comboBonus);
-      if (S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready('mosh', t)) moment('mosh', t);
+      if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready('mosh', t)) moment('mosh', t);
       if (cape && !cur.capeDone && S.combo >= cfg.capeCombo) {
         cur.capeDone = true; crowdAdd(cfg.capeCrowd); moment('capeSpin', t); band(cape, 'capeSpin');
       }
@@ -9947,7 +10533,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       x.j = 3; S.combo = 0; cur.missStreak++;
       crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
-      if (!assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
+      if (!silent && !assists.noFail && cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {   // v0.7: polite crowds never boo
         moment('boo', t);
         if (S.crowd < cfg.drinksCrowd && ready('drinks', t)) moment('drinks', t);
       }
@@ -10013,8 +10599,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         var x = n[cur.mp++];
         if (x.j === 0) { if (x.free) x.j = 4; else { miss(x, t); misses++; } }
       }
-      if (dt > 0) { crowdAdd(-S.crowd * cfg.decay * dt); cur.crowdSum += S.crowd * dt; cur.crowdT += dt; }
-      if (!cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
+      if (dt > 0) { var rc = real(); crowdAdd(-rc * cfg.decay * dt); cur.crowdSum += real() * dt; cur.crowdT += dt; }
+      if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
       tickOut.misses = misses; tickOut.crowd = S.crowd; tickOut.level = S.level;
       return tickOut;
     };
@@ -10022,6 +10608,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (!cur) return null;
       var n = cur.notes, ch = cur.chart, song = cur.song;
       for (var k = 0; k < n.length; k++) if (n[k].j === 0) n[k].j = n[k].free ? 4 : 3;
+      if (silent) {   // v0.7: the song ends, the silence breaks: the whole reaction at once + polite applause if it went well
+        var acc0 = ch.total ? (cur.perfect + cur.good) / ch.total : 1, roar = acc0 >= 0.7 ? 6 : acc0 >= 0.5 ? 2 : 0;
+        S.crowd = U.clamp(S.hidden + roar, floor, 100);
+        var lv0 = gig.levelOf(S.crowd);
+        if (lv0 !== S.level) { S.level = lv0; emit('crowd:level', { level: lv0, crowd: S.crowd }); }
+        if (roar) { if (cur.moments.indexOf('applause') < 0) cur.moments.push('applause'); emit('crowd:moment', { kind: 'applause' }); }
+      }
       var total = ch.total, miss = total - cur.perfect - cur.good;
       var noteScore = total ? 100 * Math.pow((cur.perfect + cur.good * cfg.goodValue) / total, cfg.noteCurve) : 100;
       var avg = cur.crowdT > 0 ? cur.crowdSum / cur.crowdT : S.crowd, nFill = ch.fills.length * cfg.fillCap;
@@ -10830,6 +11423,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       news(state, out, 'loonies', { n: rv.loonieWins - (rv.loonieSeen || 0) }, r);
     }
     rv.loonieSeen = rv.loonieWins;
+    if (GG.tour && state.tour) GG.tour.rivalWeekly(state, function (text) { news(state, out, 'world', null, r, text); });   // v0.7: they break regions too
     if (!out.news.length && r.chance(0.12)) news(state, out, 'filler', null, r);
     out.showdowns = (state.showdowns || []).filter(function (x) { return x.week === w; });
     out.final = out.showdowns.some(function (x) { return x.kind === 'final'; }) ? state.finalShowdown : null;
@@ -11081,7 +11675,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   L.studio = function (id) { return allStudios().filter(function (s) { return s.id === id; })[0] || null; };
   L.producer = function (id) { return id ? allProducers().filter(function (p) { return p.id === id; })[0] || null : null; };
   function availability(state, x) {
-    var why = x.locked ? 'World era' : state && !eraAtLeast(state, x.era || 'local') ? capital(x.era || 'local') + ' era' : '';
+    var why = x.locked && !(state && state.era === 'world') ? 'World era' : state && !eraAtLeast(state, x.era || 'local') ? capital(x.era || 'local') + ' era' : '';   // v0.7: Abbot Lane opens in the World era
     return { available: !why, why: why, locked: !!why, lockedWhy: why };
   }
   L.studios = function (state) { return allStudios().map(function (s) { return Object.assign({}, s, availability(state, s)); }); };
@@ -11310,6 +11904,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var rule = kindRule(kind);
     if (!eraAtLeast(state, rule.era)) return { ok: false, why: 'Become local heroes first (' + ((econ().eras || {}).localFans || 250) + ' fans).' };
     if (state.session) return { ok: false, why: 'You are already in the studio.' };
+    if (GG.tour && GG.tour.active(state)) return { ok: false, why: 'You are on tour (or about to be). Record when you get home.' };   // v0.7
     if (L.pending(state)) return { ok: false, why: 'Release the record you already made first.' };
     if (L.freshSongs(state).length < rule.tracks[0]) return { ok: false, why: 'You need ' + rule.tracks[0] + ' unreleased songs.' };
     return { ok: true, why: '' };
@@ -11985,7 +12580,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // world stage threshold (the era itself arrives in v0.7)
     if (!state.milestones.worldReady && L.worldReady(state)) {
       state.milestones.worldReady = state.totalWeek;
-      news(out, 'world', 'The world is calling: ' + U.fmtNum(state.fans) + ' fans and a charting record.' + ((econ().eras || {}).worldEnabled ? '' : ' (World tours arrive in a later version.)'));
+      news(out, 'world', 'The world is calling: ' + U.fmtNum(state.fans) + ' fans and a charting record.' + ((econ().eras || {}).worldEnabled ? ' The World stage: tour packages abroad are on the laptop, and Abbot Lane Studios in London will take your call.' : ' (World tours arrive in a later version.)'));
       if ((econ().eras || {}).worldEnabled && GG.career.setEra) GG.career.setEra(state, 'world', 'fans');
     }
     return out;
@@ -12350,10 +12945,853 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
 </script>
 <script>/* 25_sim_tour.js */
-// 25_sim_tour.js: regions, unlocks, tour packages (v0.7)
+// 25_sim_tour.js: the World stage (v0.7 "World", WORLDSIM). Four regions abroad (content/world.js; no USA, ever) unlock
+// in the World era at a genre-shifted fan threshold OR through an invite (a festival slot / a showcase), whichever comes
+// first. Preset tour packages with a few choices (rental vehicle, where you sleep, one extra) are bought from the fund
+// (flights + rental + extra up front, hotels weekly) and depart next Monday: one stop a week, a weekend show per stop
+// (festival slots, halls, open dates booked from the regional board). On tour the planner shrinks to rest / promote
+// locally / hotel-room rehearsal; homesickness builds (members call home in the group chat; it forces rests and can end a
+// tour early), region Monday cards replace the home deck, road cards come from the region. Region fans are part of the
+// ONE fan count (state.fans) and grow toward each region's own scene. "Big in one place" (a song blows up in one region,
+// a storyline card), the rival breaking regions first, the Japanese fan-club president, the Moose Opera payoff (Helsinki,
+// platinum in Finland -> flags.mooseOpera), the Global Gong (week 22, World era only). Pure sim: no DOM or audio; every
+// roll is seeded (career seed + tag + week) so the career RNG never moves, except resolving cards/trips (career RNG, as usual).
+// API (GG.tour):
+//   content() · cfg() · regions() [def] · region(id) · cityDef(idOrName) · cities(region) · venue(id) · venues(region)
+//   vehicles(region) · stays() · extras() · climate(region) · fit(genre, region) · pkg(id)
+//   init(s) · ensure(s) · migrate(s) (v7 -> v8) · threshold(s, region) · unlocked(s, region) · unlock(s, region, via)
+//   map(s) -> [REGION_VIEW] (world map) · regionView(s, region) -> { region, cities, packages, season, holiday, ... }
+//   packages(s, region) -> [{ ...pkg, ok, why, quote }] · quote(s, pkgId, choices) -> QUOTE · canBook(s, pkgId, choices)
+//   book(s, pkgId, choices) -> TOUR | { error } · cancel(s) (before departure; rental + extra refunded) · status(s)
+//   active(s) · away(s) · here(s) -> cityId|null · stop(s) -> STOP|null · regionOf(s) ('canada' at home) · abroadFans(s)
+//   monday(s) (career.startWeek, before the calendar) · forcedCard(s) (career.startWeek) · afterCard(s, card, i, success, d)
+//   blockId(s, id, i) · allowedBlocks(s) · block(s, id, A, f, rng, d, lines, ACT) (career runActivity) · beforeGig(s) (runWeek)
+//   listings(s, rng) (world.listings abroad) · makeGig(s, venueId, opts) · estimate(s, gigOrListing) · draw(s, g) (gig crowd)
+//   silentCrowd(g) (Japan: the meter holds until the song ends) · shape(s, g, r, rng) (world.shape) · afterGig(s, g, r, rng, d)
+//   (world.afterGig: region fans, travel, the moose) · travel(s, g, rng, d) · startTrip(s, gig) (world.startTrip abroad)
+//   roadCardOk(s, card) · weekly(s, rng, wrap) (career.endWeek; wrap.tour) · rivalWeekly(s, news) (rival.weekly)
+//   gong(s) view · runGong(s) (idempotent per year; auto at the wrap of GONG week) · charts(s) · summary(s) · fillText(s, t)
+//   botWeek(s, style) = botTour · botPlan(s, style) · cards() · card(id)
+// TOUR = { id, region, packageId, name, choices: { vehicle, stay, extra }, booked, start, stops: [STOP], cost: { flights,
+//          rental, extra, hotels }, paid, invite, status: 'booked'|'on'|'done', index, endAfter, results: [{ week, city,
+//          venueId, name, grade, fans, pay, festival }], fans, pay }
+// STOP = { city, cityName, venue|null (open date), venueName, festival, hall, km (leg from the last stop), week (totalWeek) }
+// state.tour = { regions: { <id>: { unlocked, via: 'fans'|'invite'|'big'|null, fans, gigs, tours, broken, big: null|{ songId,
+//   title, week, choice }, rivalFirst, best } }, invites: [INVITE], active: TOUR|null, history: [SUMMARY], homesick 0..100,
+//   gongs: [GONG], president: week|null, moose: null|{ week }, queue: [{ card, region, invite?, song? }], ctx, lastCard, rival: { <region>: week }, w }
+// INVITE = { id, region, kind: 'festival'|'showcase', festival, week, expires, status: 'open'|'accepted'|'declined'|'used' }
+// Events: 'tour:unlocked' { region, via } · 'tour:invite' { invite } · 'tour:booked' { tour } · 'tour:depart' { tour } ·
+//   'tour:week' { tour, stop, index } · 'tour:home' { summary } · 'tour:broken' { region } · 'tour:big' { region, song } ·
+//   'tour:rival' { region } · 'tour:president' {} · 'tour:moose' {} · 'tour:gong' { result } · 'tour:homesick' { value }
 (function (GG) {
-  GG.tour = GG.tour || {};
-  GG.registerDebug('tour', function () { return { stub: true }; });
+  var C = GG.contracts, U = GG.util;
+  var T = GG.tour = GG.tour || {};
+  var WPY = C.WEEKS_PER_YEAR;
+  var REGION_IDS = C.REGIONS.filter(function (r) { return r !== 'canada'; });
+  var BLOCKS = ['rest', 'promote', 'rehearse'];
+  var GRADE_ORDER = C.GRADES;
+
+  var DEFAULTS = {
+    thresholdFit: 1.6, rivalFirst: 1.08, party: 0,
+    jetLag: { uk_europe: 3, japan: 5, australia: 6, russia: 4 },
+    invite: { chance: 0.03, fromWeeks: 4, weeks: 10, flights: 0.5, fitMin: 0.6 },
+    homesick: { perWeek: 15, lowMood: 2, rest: -6, home: -12, moodAt: 45, mood: -2, restAt: 70, cardAt: 75, burnoutAt: 80, burnout: 3, max: 100 },
+    crowd: { fanDraw: 0.4, buzzDraw: 6, walkIns: { 2: 150, 3: 400, 4: 500 }, festivalSlot: 0.07, hallDraw: 0.3, publicist: 0.35 },
+    fans: { mult: 1.2, festival: 0.6 }, payMult: 1.3, showcase: { flights: 0.5, regionFans: 300 },
+    promote: { regionFans: [40, 110], buzz: 1 },
+    rehearse: { skill: 0.5 },
+    blocks: { write: 'rehearse', hustle: 'rest', book: 'promote' },
+    travel: { burnoutPer100: 0.35, burnoutMax: 18, breakdownCost: [200, 600] },
+    big: { chance: 0.025, minGigs: 1, minRegionFans: 800, unlockFans: 0.5 },
+    rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
+    gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
+    moose: { fans: 3000, buzz: 12 },
+    cardGap: 3, cardChance: 0.75,
+    bot: { goodCushion: 2500, avgCushion: 3500, gap: 10, avgChance: 0.35, restHomesick: 55 }
+  };
+  function cfg() {
+    var o = GG.content.economy && GG.content.economy.tour, out = {};
+    for (var k in DEFAULTS) {
+      var d = DEFAULTS[k], v = o ? o[k] : undefined;
+      out[k] = v === undefined ? d : (d && typeof d === 'object' && !Array.isArray(d)) ? Object.assign({}, d, v) : v;
+    }
+    return out;
+  }
+  T.cfg = cfg;
+  var EMPTY = { regions: {}, fit: {}, cities: {}, venues: [], packages: [], vehicles: {}, stays: {}, extras: {}, climates: {}, holidays: [],
+    invites: {}, callHome: {}, lines: {}, gong: { nominees: [], week: 22 }, cards: [] };
+  function K() { return GG.content.world || EMPTY; }
+  T.content = K;
+  function econ() { return GG.content.economy || {}; }
+  function seeded(s, tag, w) { return GG.RNG(GG.hashSeed((s.seed >>> 0) + '|tour|' + tag + '|' + (w != null ? w : s.totalWeek))); }
+  function rngRound(x, rng) { var f = Math.floor(x); return f + (rng.chance(x - f) ? 1 : 0); }
+  function money(n) { return U.fmtMoney(n); }
+  function woy(w) { return ((w - 1) % WPY + WPY) % WPY + 1; }
+  function bandName(s) { var b = GG.career && GG.career.band(s); return (b && b.name) || 'The band'; }
+  function fx(s, e, d) { return GG.career.applyEffects(s, e, d || {}); }
+  function chat(s, who, text, d, tone) { if (GG.career && GG.career.postChat && text) return GG.career.postChat(s, who, text, d, tone); return null; }
+  function activeMembers(s) { return (s.members || []).filter(function (m) { return m.status === 'active'; }); }
+  function fill(s, text, vars) {
+    var out = String(text || '').replace(/\{(\w+)\}/g, function (all, k) { return vars && vars[k] != null ? vars[k] : all; });
+    return GG.career ? GG.career.fillText(s, out) : out;
+  }
+
+  /* ---- Lookups ------------------------------------------------------------------------------------------------------ */
+  T.regions = function () { return REGION_IDS.map(function (id) { return K().regions[id]; }).filter(Boolean); };
+  T.region = function (id) { return K().regions[id] || null; };
+  T.cityDef = function (x) {
+    if (!x) return null;
+    var cs = K().cities;
+    if (cs[x]) return cs[x];
+    for (var id in cs) if (cs[id].name === x) return cs[id];
+    return null;
+  };
+  T.cities = function (region) { var cs = K().cities; return Object.keys(cs).map(function (k) { return cs[k]; }).filter(function (c) { return !region || c.region === region; }); };
+  T.venue = function (id) { var l = K().venues; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; };
+  T.venues = function (region) { return K().venues.filter(function (v) { return !region || v.region === region; }); };
+  T.vehicles = function (region) { var V = K().vehicles; return Object.keys(V).map(function (k) { return V[k]; }).filter(function (v) { return !region || v.region === region; }); };
+  T.stays = function () { var S = K().stays; return Object.keys(S).map(function (k) { return S[k]; }); };
+  T.extras = function () { var S = K().extras; return Object.keys(S).map(function (k) { return S[k]; }); };
+  T.climate = function (region) { return K().climates[region] || null; };
+  T.pkg = function (id) { var l = K().packages; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; };
+  T.fit = function (genre, region) { var f = (K().fit[genre] || {})[region]; return f != null ? f : 0.7; };
+  T.cards = function () { return K().cards || []; };
+  T.card = function (id) { return T.cards().filter(function (c) { return c.id === id; })[0] || null; };
+  function fitLabel(f) { return f >= 0.95 ? 'Huge here' : f >= 0.85 ? 'Strong' : f >= 0.75 ? 'Solid' : f >= 0.65 ? 'Decent' : 'Cult following'; }
+  function legKm(a, b) {
+    var A = T.cityDef(a), B = T.cityDef(b);
+    if (!A || !B) return 0;
+    var R = T.region(A.region) || { kmScale: 30 }, dx = A.x - B.x, dy = A.y - B.y;
+    return Math.round(Math.sqrt(dx * dx + dy * dy) * R.kmScale / 10) * 10;
+  }
+  T.legKm = legKm;
+
+  /* ---- State --------------------------------------------------------------------------------------------------------- */
+  T.ensure = function (s) {
+    if (!s || typeof s !== 'object') return null;
+    var t = s.tour;
+    if (!t || typeof t !== 'object' || Array.isArray(t)) t = s.tour = {};
+    if (!t.regions || typeof t.regions !== 'object' || Array.isArray(t.regions)) t.regions = {};
+    REGION_IDS.forEach(function (id) {
+      var r = t.regions[id];
+      if (!r || typeof r !== 'object' || Array.isArray(r)) r = t.regions[id] = {};
+      ['unlocked', 'via', 'broken', 'big', 'rivalFirst', 'best'].forEach(function (k) { if (r[k] === undefined) r[k] = null; });
+      ['fans', 'gigs', 'tours'].forEach(function (k) { if (!isFinite(r[k]) || r[k] < 0) r[k] = 0; });
+    });
+    ['invites', 'history', 'gongs', 'queue'].forEach(function (k) { if (!Array.isArray(t[k])) t[k] = []; });
+    if (t.active && (typeof t.active !== 'object' || !Array.isArray(t.active.stops) || !t.active.stops.length)) t.active = null;
+    if (t.active === undefined) t.active = null;
+    if (!isFinite(t.homesick)) t.homesick = 0;
+    t.homesick = U.clamp(t.homesick, 0, 100);
+    if (t.president === undefined) t.president = null;
+    if (t.moose === undefined) t.moose = null;
+    if (t.lastCard === undefined) t.lastCard = null;
+    if (!t.rival || typeof t.rival !== 'object' || Array.isArray(t.rival)) t.rival = {};
+    if (t.ctx === undefined) t.ctx = null;
+    return t;
+  };
+  T.init = function (s) { T.ensure(s); return s; };
+  function rs(s, region) { return T.ensure(s).regions[region] || null; }
+  T.abroadFans = function (s) {
+    var t = s && s.tour; if (!t || !t.regions) return 0;
+    return REGION_IDS.reduce(function (a, id) { return a + ((t.regions[id] && t.regions[id].fans) || 0); }, 0);
+  };
+  function addRegionFans(s, region, n, d) {
+    var r = rs(s, region); if (!r || !n) return 0;
+    var before = s.fans;
+    fx(s, { fans: Math.round(n) }, d);
+    var got = s.fans - before;
+    r.fans = Math.max(0, r.fans + got);
+    if (d) { d.regionFans = d.regionFans || {}; d.regionFans[region] = (d.regionFans[region] || 0) + got; }
+    return got;
+  }
+  T.addRegionFans = addRegionFans;
+
+  /* ---- Where are we? ---------------------------------------------------------------------------------------------- */
+  T.active = function (s) { var t = s && s.tour; return t && t.active && t.active.status !== 'done' ? t.active : null; };
+  function idxOf(s, a) { return a ? s.totalWeek - a.start : -1; }
+  T.stop = function (s) {
+    var a = T.active(s);
+    if (!a || a.status !== 'on') return null;
+    var i = idxOf(s, a);
+    return i >= 0 && i < a.stops.length ? a.stops[i] : null;
+  };
+  T.here = function (s) { var st = T.stop(s); return st ? st.city : null; };
+  T.away = function (s) { return !!T.stop(s); };
+  T.regionOf = function (s) { var a = T.away(s) ? T.active(s) : null; return a ? a.region : (s && s.region) || 'canada'; };
+
+  /* ---- Unlocks, thresholds, invites -------------------------------------------------------------------------------- */
+  T.threshold = function (s, region) {
+    var R = T.region(region); if (!R) return Infinity;
+    var Q = cfg(), r = rs(s, region), x = R.fans * Math.max(0.3, Q.thresholdFit - T.fit(s.genre, region));
+    if (r && r.rivalFirst) x *= Q.rivalFirst;
+    return Math.round(x / 100) * 100;
+  };
+  T.unlocked = function (s, region) { var r = s && s.tour && s.tour.regions && s.tour.regions[region]; return !!(r && r.unlocked); };
+  T.unlock = function (s, region, via, out) {
+    var r = rs(s, region);
+    if (!r || r.unlocked) return false;
+    r.unlocked = s.totalWeek; r.via = via || 'fans';
+    var R = T.region(region), text = R.name + ' is open: ' + (via === 'invite' ? 'an invite got you in.' : via === 'big' ? 'a song blew up there first.' : U.fmtNum(s.fans) + ' fans and counting. Tour packages are on the laptop.');
+    chat(s, 'dj', text, null, 'news');
+    if (out) out.unlocked.push(region);
+    GG.emit('tour:unlocked', { region: region, via: r.via });
+    return true;
+  };
+  function openInvite(s, region) {
+    var t = T.ensure(s);
+    return t.invites.filter(function (i) { return i.region === region && (i.status === 'open' || i.status === 'accepted') && i.expires >= s.totalWeek; })[0] || null;
+  }
+  T.invite = openInvite;
+  function festivalName(region) {
+    var f = K().venues.filter(function (v) { return v.region === region && v.festival; })[0];
+    return f ? f.name : null;
+  }
+  function rollInvites(s, R, out) {
+    var Q = cfg().invite, t = T.ensure(s), since = (s.eraHistory || []).filter(function (e) { return e.era === 'world'; })[0];
+    if (!since || s.totalWeek - since.week < Q.fromWeeks) return;
+    for (var i = 0; i < REGION_IDS.length; i++) {
+      var id = REGION_IDS[i];
+      if (T.unlocked(s, id) || T.fit(s.genre, id) < Q.fitMin) continue;
+      if (!R.chance(Q.chance * T.fit(s.genre, id))) continue;
+      var fest = festivalName(id), kind = fest && R.chance(0.5) ? 'festival' : 'showcase';
+      var inv = { id: 'I' + s.totalWeek + '-' + id, region: id, kind: kind, festival: kind === 'festival' ? fest : T.region(id).name + ' showcase',
+        week: s.totalWeek, expires: s.totalWeek + Q.weeks, status: 'open' };
+      t.invites.push(inv);
+      if (t.invites.length > 12) t.invites.splice(0, t.invites.length - 12);
+      T.unlock(s, id, 'invite', out);
+      t.queue.push({ card: 'wt_invite', region: id, invite: inv.id, festival: inv.festival });
+      out.invite = inv;
+      GG.emit('tour:invite', { invite: inv });
+      return;   // one a week at most
+    }
+  }
+
+  /* ---- Packages, quotes, booking ---------------------------------------------------------------------------------- */
+  function people(s) { return activeMembers(s).length + 1 + Object.keys(s.fillIns || {}).length + (cfg().party || 0); }
+  function choicesFor(pkg, choices) {
+    choices = choices || {};
+    var V = T.vehicles(pkg.region), S = K().stays, X = K().extras;
+    var cheapest = V.slice().sort(function (a, b) { return a.perWeek - b.perWeek; })[0];
+    return { vehicle: V.some(function (v) { return v.id === choices.vehicle; }) ? choices.vehicle : cheapest ? cheapest.id : null,
+      stay: S[choices.stay] ? choices.stay : 'hostel', extra: X[choices.extra] ? choices.extra : 'none' };
+  }
+  function avgPay(v) { return v ? Math.round((v.pay[0] + v.pay[1]) / 2 * cfg().payMult) : 0; }
+  function openVenue(region, city) {   // what an open date usually pays (a club in or near that city)
+    var l = T.venues(region).filter(function (v) { return !v.festival && !v.hall && !v.moose; });
+    return l.filter(function (v) { return v.city === city; })[0] || l[0] || null;
+  }
+  function stopsFor(pkg, start) {
+    var prev = (T.region(pkg.region) || {}).home;
+    return pkg.stops.map(function (st, i) {
+      var c = T.cityDef(st.city), v = st.venue ? T.venue(st.venue) : null;
+      var out = { city: st.city, cityName: c ? c.name : st.city, venue: st.venue || null, venueName: v ? v.name : 'Open date',
+        festival: !!(v && v.festival), hall: !!(v && v.hall), km: i === 0 ? 0 : legKm(prev, st.city), week: start + i };
+      prev = st.city;
+      return out;
+    });
+  }
+  // Why a package can't leave next week ('' = it can).
+  function timing(s, pkg, start) {
+    var n = pkg.stops.length, end = start + n - 1;
+    if (end > s.maxWeeks) return 'The career ends before this tour would.';
+    for (var i = 0; i < n; i++) {
+      var w = woy(start + i), v = pkg.stops[i].venue ? T.venue(pkg.stops[i].venue) : null;
+      if (w === C.LOONIES_WEEK) return 'You fly home for the Loonies (week ' + C.LOONIES_WEEK + ').';
+      if (v && v.weeks && (w < v.weeks[0] || w > v.weeks[1])) { var win = T.departWindow(pkg) || []; return v.name + ' only runs in ' + (GG.calendar ? GG.calendar.monthName(v.weeks[0]) : 'its season') + (win.length ? ': this tour leaves in week ' + win.join(' or ') + ' (' + (GG.calendar ? GG.calendar.monthName(win[0]) : '') + ').' : '.'); }
+      var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
+      if (fin && Math.floor((start + i - 1) / WPY) + 1 === fin.year && w === fin.week) return 'The Sad Dome is that week.';
+    }
+    return '';
+  }
+  T.departWindow = function (pkg) {   // week-of-year departures that line the festival stops up (null = any week)
+    var out = [];
+    for (var w = 1; w <= WPY; w++) {
+      var ok = pkg.stops.every(function (st, i) { var v = st.venue ? T.venue(st.venue) : null, x = woy(w + i); return !(v && v.weeks) || (x >= v.weeks[0] && x <= v.weeks[1]); });
+      if (ok) out.push(w);
+    }
+    return out.length === WPY ? null : out;
+  };
+  T.quote = function (s, pkgId, choices) {
+    var pkg = T.pkg(pkgId); if (!pkg) return null;
+    var R = T.region(pkg.region), ch = choicesFor(pkg, choices), n = pkg.stops.length;
+    var veh = K().vehicles[ch.vehicle] || { perWeek: 0 }, stay = K().stays[ch.stay] || { perWeek: 0 }, ex = K().extras[ch.extra] || { cost: 0 };
+    var inv = openInvite(s, pkg.region), ppl = people(s), flights = R.flight * ppl, disc = 0;
+    if (inv || pkg.showcase) { disc = Math.round(flights * Math.max(inv ? cfg().invite.flights : 0, pkg.showcase ? cfg().showcase.flights : 0)); flights -= disc; }
+    var rental = veh.perWeek * n, hotels = stay.perWeek * n, extra = ex.cost || 0, start = s.totalWeek + 1;
+    var stops = stopsFor(pkg, start), payEst = 0;
+    stops.forEach(function (st) { payEst += avgPay(st.venue ? T.venue(st.venue) : openVenue(pkg.region, st.city)); });
+    var est = T.estimate(s, { packageId: pkgId, choices: ch });
+    return { packageId: pkgId, region: pkg.region, name: pkg.name, choices: ch, people: ppl, flights: flights, inviteDiscount: disc, invite: inv ? inv.id : null,
+      rental: rental, hotels: hotels, extra: extra, upfront: flights + rental + extra, total: flights + rental + extra + hotels,
+      start: start, end: start + n - 1, weeks: n, stops: stops, payEst: payEst, fansEst: est.fans, vehicle: veh, stay: stay, extraDef: ex,
+      affordable: s.fund >= flights + rental + extra };
+  };
+  T.canBook = function (s, pkgId, choices) {
+    var pkg = T.pkg(pkgId), q = pkg ? T.quote(s, pkgId, choices) : null, t = T.ensure(s);
+    function no(why) { return { ok: false, why: why, quote: q }; }
+    if (!pkg) return no('No such tour.');
+    if (s.ended) return no('The career is over.');
+    if (s.era !== 'world') return no('World tours open in the World stage era.');
+    if (!T.unlocked(s, pkg.region)) return no(T.region(pkg.region).name + ' is locked: ' + U.fmtNum(T.threshold(s, pkg.region)) + ' fans, or an invite.');
+    if (t.active) return no(t.active.status === 'on' ? 'You are on tour right now.' : 'A tour is already booked.');
+    if (GG.labels && GG.labels.inSession && GG.labels.inSession(s)) return no('You are in the studio.');
+    if (s.phase === 'gig') return no('Play this weekend first.');
+    if (pkg.needs === 'moose' && !(s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland') && !t.moose)) return no('Finland is waiting for a certain concept album.');
+    if (pkg.showcase && (rs(s, pkg.region).tours > 0 || t.history.some(function (h) { return h.packageId === pkg.id; }))) return no('A showcase is a first impression. You only get one.');
+    if (pkg.minRegionFans && rs(s, pkg.region).fans < pkg.minRegionFans) return no('Needs ' + U.fmtNum(pkg.minRegionFans) + ' fans in ' + T.region(pkg.region).name + '.');
+    var why = timing(s, pkg, s.totalWeek + 1);
+    if (why) return no(why);
+    if (!q.affordable) return no('Flights, the rental and extras cost ' + money(q.upfront) + ' up front.');
+    return { ok: true, why: '', quote: q };
+  };
+  T.packages = function (s, region) {
+    return K().packages.filter(function (p) { return !region || p.region === region; }).filter(function (p) {
+      return p.needs !== 'moose' || (s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland'));
+    }).map(function (p) { var c = T.canBook(s, p.id); return Object.assign({}, p, { ok: c.ok, why: c.why, quote: c.quote, window: T.departWindow(p) }); });
+  };
+  T.book = function (s, pkgId, choices) {
+    var c = T.canBook(s, pkgId, choices);
+    if (!c.ok) return { error: c.why };
+    var q = c.quote, pkg = T.pkg(pkgId), t = T.ensure(s), d = {};
+    fx(s, { fund: -q.upfront }, d);
+    var inv = q.invite ? t.invites.filter(function (i) { return i.id === q.invite; })[0] : null;
+    if (inv) inv.status = 'used';
+    t.active = { id: 'T' + s.totalWeek + '-' + pkg.id, region: pkg.region, packageId: pkg.id, name: pkg.name, choices: q.choices,
+      booked: s.totalWeek, start: q.start, stops: q.stops, cost: { flights: q.flights, rental: q.rental, extra: q.extra, hotels: 0 },
+      paid: q.upfront, invite: q.invite, status: 'booked', index: -1, endAfter: null, results: [], fans: 0, pay: 0, take: 0 };
+    GG.emit('tour:booked', { tour: t.active });
+    GG.emit('stats:changed', { state: s });
+    return t.active;
+  };
+  T.cancel = function (s) {
+    var t = T.ensure(s), a = t.active;
+    if (!a || a.status !== 'booked') return null;
+    var refund = a.cost.rental + a.cost.extra;
+    fx(s, { fund: refund });
+    t.active = null;
+    GG.emit('stats:changed', { state: s });
+    return { refund: refund };
+  };
+
+  /* ---- Gigs abroad ------------------------------------------------------------------------------------------------- */
+  // A GIG for a world venue (flat fee, rolled from its pay range by a seeded rng; holiday pay applies).
+  T.makeGig = function (s, venueId, opts) {
+    opts = opts || {};
+    var v = T.venue(venueId); if (!v) return null;
+    var c = T.cityDef(v.city) || { name: v.city }, rng = opts.rng || seeded(s, 'pay|' + venueId), fit = T.fit(s.genre, v.region);
+    var mult = GG.calendar ? GG.calendar.payMult(s, v) : 1;
+    var pay = Math.round(rng.int(v.pay[0], v.pay[1]) * mult * cfg().payMult / 50) * 50;
+    var g = { id: opts.id || null, venueId: v.id, name: v.name, city: c.name, cityId: v.city, region: v.region, tier: v.tier, kind: v.kind,
+      capacity: v.capacity, deal: 'flat', pay: pay, gas: 0, quirk: v.quirk || '', source: opts.source || 'tour', catch: v.catch || '',
+      minFans: 0, fit: Math.round(fit * 100) / 100, setSize: v.setSize || 4, repLevel: GG.world ? GG.world.rep(s, v.id) : 0, rebook: false,
+      clash: fit < 0.45, opening: null, outdoor: !!v.outdoor, festival: !!v.festival, hall: !!v.hall, moose: !!v.moose,
+      silent: v.region === 'japan' && v.city !== 'osaka', km: opts.km || 0, tour: true, stop: opts.stop != null ? opts.stop : null };
+    g.tags = GG.calendar ? GG.calendar.tags(s, { kind: g.kind, city: g.city, outdoor: g.outdoor, id: g.venueId }, g.city) : [];
+    if (g.festival) g.tags.unshift({ icon: '🎪', text: 'Festival slot' });
+    if (g.silent) g.tags.push({ icon: '🙇', text: 'Silent until the song ends' });
+    return g;
+  };
+  // The regional board on tour (open dates): clubs in the region, nearest to this week's city first.
+  T.listings = function (s, rng) {
+    var st = T.stop(s); if (!st) return [];
+    rng = rng || seeded(s, 'board');
+    var region = T.regionOf(s), pool = T.venues(region).filter(function (v) { return !v.festival && !v.hall && !v.moose; });
+    pool.sort(function (a, b) { return legKm(st.city, a.city) - legKm(st.city, b.city); });
+    var out = pool.slice(0, 4).map(function (v, i) {
+      var g = T.makeGig(s, v.id, { rng: rng, source: 'book', km: st.km + legKm(st.city, v.city), stop: idxOf(s, T.active(s)) });
+      g.id = 'L' + s.totalWeek + '-' + (i + 1);
+      return g;
+    });
+    return out;
+  };
+  T.silentCrowd = function (g) { return !!(g && g.silent); };
+  // Crowd draw abroad: walk-ins + region fans + buzz (scaled by genre fit); festivals add a slice of the festival crowd.
+  T.draw = function (s, g) {
+    var Q = cfg().crowd, r = rs(s, g.region) || { fans: 0 }, fit = T.fit(s.genre, g.region), a = T.active(s);
+    var d = (Q.walkIns[g.tier] || 90) + r.fans * Q.fanDraw + (s.buzz || 0) * Q.buzzDraw * fit;
+    if (g.festival) d += g.capacity * Q.festivalSlot * (0.6 + 0.4 * fit);
+    if (g.hall) d += r.fans * Q.hallDraw;
+    if (a && a.choices && a.choices.extra === 'publicist') d *= 1 + Q.publicist;
+    return d;
+  };
+  function newFansAbroad(s, g, crowd, grade, rng) {
+    var G = econ().gig || { conversion: { B: 0.28 } }, Q = cfg().fans, R = T.region(g.region) || { scene: 30000 }, r = rs(s, g.region);
+    var head = Math.max(0, 1 - r.fans / R.scene), fm = GG.drama ? GG.drama.gigMods(s).fansMult : 1;
+    var x = crowd * (G.conversion[grade] || 0) * (0.5 + 0.5 * (g.fit != null ? g.fit : 0.7)) * Q.mult * (g.festival ? Q.festival : 1) * head * fm;
+    return rng ? rngRound(x, rng) : Math.round(x);
+  }
+  // Preview of a listing / gig ({ crowd, pay, fans, net, burnout }) or of a package ({ fans, pay } over its fixed stops).
+  T.estimate = function (s, x) {
+    if (x && x.packageId) {
+      var pkg = T.pkg(x.packageId), fans = 0, pay = 0;
+      if (!pkg) return { fans: 0, pay: 0 };
+      pkg.stops.forEach(function (st, i) {
+        var v = st.venue ? T.venue(st.venue) : openVenue(pkg.region, st.city); if (!v) return;
+        var g = T.makeGig(s, v.id, { rng: GG.RNG(7 + i) });
+        g.pay = avgPay(v);
+        var e = T.estimate(s, g);
+        fans += e.fans; pay += e.pay;
+      });
+      return { fans: fans, pay: pay };
+    }
+    var g2 = x, crowd = Math.min(g2.capacity || 0, Math.round(T.draw(s, g2)));
+    var f = newFansAbroad(s, g2, crowd, 'B', null), costs = Math.round(g2.pay * (((GG.world && GG.world.cfg().commission) || {})[s.era] || 0));
+    return { crowd: crowd, pay: g2.pay, fans: f, net: g2.pay - costs, costs: costs, burnout: 0 };
+  };
+  // world.shape for a gig abroad (once per result): region fans from the region's scene, weather/holiday, local colour.
+  T.shape = function (s, g, r, rng) {
+    if (!g || !r || r.shaped) return r;
+    r.shaped = true; r.lines = r.lines || []; r.km = g.km || 0; r.region = g.region; r.tour = true;
+    if (GG.calendar) GG.calendar.shape(s, g, r, rng);
+    r.fans = newFansAbroad(s, g, r.crowd || 0, r.grade, rng);
+    var a = T.active(s), ex = a && K().extras[a.choices.extra];
+    if (ex && ex.buzz) r.buzz = (r.buzz || 0) + Math.round(ex.buzz / 2);
+    var first = rs(s, g.region).gigs === 0;
+    if (first) r.lines.push('Your first show in ' + T.region(g.region).name + '. ' + (g.silent ? 'Silence during every song. A roar after. Every single time.' : 'They came. They stayed. Some of them knew the words.'));
+    if (g.cityId === 'paris' && activeMembers(s).some(function (m) { return m.id === 'marcel'; })) r.lines.push('France loves Marcel. Roses land on stage. All of them are for Marcel.');
+    if (g.festival) r.lines.push('A festival crowd: ' + U.fmtNum(r.crowd) + ' people, most of them hearing {band} for the first time.'.replace('{band}', bandName(s)));
+    return r;
+  };
+  // world.afterGig for a gig abroad: region bookkeeping, "broken" check, the moose, then travel in the rental.
+  T.afterGig = function (s, g, r, rng, d) {
+    var t = T.ensure(s), reg = rs(s, g.region), a = T.active(s);
+    reg.fans = Math.max(0, reg.fans + (r.fans || 0));
+    reg.gigs++;
+    if (!reg.best || GRADE_ORDER.indexOf(r.grade) < GRADE_ORDER.indexOf(reg.best)) reg.best = r.grade;
+    var take = (r.pay || 0) - (r.cut || 0) - (r.commission || 0) - (r.crew || 0) - (r.fillInCost || 0);   // what the fund actually kept
+    if (a) {
+      if (a.stops.length === 1 && T.pkg(a.packageId) && T.pkg(a.packageId).showcase && !a.results.length) r.fans = (r.fans || 0) + addRegionFans(s, g.region, cfg().showcase.regionFans, d);   // industry buzz
+      a.results.push({ week: s.totalWeek, city: g.city, venueId: g.venueId, name: g.name, grade: r.grade, fans: r.fans || 0, pay: r.pay || 0, take: take, festival: !!g.festival, score: r.score });
+      a.fans += r.fans || 0; a.pay += r.pay || 0; a.take = (a.take || 0) + take;
+    }
+    if (g.cityId === 'helsinki' && s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland') && !t.moose) moose(s, r, d);
+    return T.travel(s, g, rng, d);
+  };
+  T.travel = function (s, g, rng, d) {
+    var Q = cfg().travel, a = T.active(s), veh = a ? K().vehicles[a.choices.vehicle] : null, km = g.km || 0;
+    var comfort = veh ? veh.comfort : 2, burn = km < 60 ? 0 : Math.min(Q.burnoutMax, Math.round(km / 100 * (6 - comfort) * Q.burnoutPer100));
+    if (burn) fx(s, { burnout: burn }, d);
+    var out = { km: km, driven: km, wear: 0, burnout: burn, breakdown: null, driver: GG.world ? GG.world.driver(s).id : 'kenji', vehicle: veh ? veh.id : null, abroad: true };
+    if (veh && km > 0 && rng.chance(veh.breakdown * (km >= 300 ? 1.5 : 1))) {
+      var cost = rng.int(Q.breakdownCost[0], Q.breakdownCost[1]);
+      fx(s, { fund: -cost, burnout: 3, chemistry: -2 }, d);
+      out.breakdown = { cost: cost };
+      r_line(s, veh, cost);
+    }
+    return out;
+  };
+  function r_line(s, veh, cost) { chat(s, 'dj', 'The ' + veh.name.replace(/^An? /, '').toLowerCase() + ' broke down between shows. Towing and a mechanic who spoke no English: ' + money(cost) + '.', null, 'news'); }
+  // world.startTrip abroad: from the last stop (or the airport) to this week's city, in the rental, with a region road card.
+  T.startTrip = function (s, gig) {
+    var a = T.active(s), st = T.stop(s), rng = GG.rngFor(s);
+    var i = idxOf(s, a), from = i > 0 ? a.stops[i - 1].city : (T.region(a.region) || {}).home, to = gig.cityId || (st && st.city);
+    var km = gig.km != null ? gig.km : legKm(from, to), season = GG.calendar ? GG.calendar.seasonAt(s) : 'summer';
+    var card = GG.world ? GG.world.drawRoad(s, km, season, rng, to) : null;
+    if (card) s.seenCards[card.id] = s.totalWeek;
+    var wx = GG.calendar ? GG.calendar.weatherAt(s, to) : { kind: 'clear', temp: 15 }, hol = GG.calendar ? GG.calendar.holiday(s.week, s) : null;
+    var fc = T.cityDef(from), tc = T.cityDef(to), veh = K().vehicles[a.choices.vehicle] || {};
+    s.trip = { w: s.totalWeek, venueId: gig.venueId, from: from, to: to, fromName: i > 0 && fc ? fc.name : (fc ? fc.name + ' airport' : 'the airport'),
+      toName: tc ? tc.name : gig.city, km: km, highway: (T.region(a.region) || {}).road || '', season: season, night: km >= 400,
+      cardId: card ? card.id : null, resolved: !card, choice: null, outcome: null, deltas: null, success: null,
+      banter: GG.world ? GG.world.banter(s, 2) : [], weather: wx.kind, temp: wx.temp, holiday: hol ? hol.id : null,
+      driver: GG.world ? GG.world.driver(s).id : 'kenji', abroad: true, region: a.region, vehicle: veh.id || null, vehicleName: veh.name || '', vehicleLook: veh.look || null };
+    return s.trip;
+  };
+  T.roadCardOk = function (s, c) {
+    var reg = c && c.gate && c.gate.region;
+    return T.away(s) ? !!(reg && reg.indexOf(T.regionOf(s)) >= 0) : !(reg && reg.indexOf('canada') < 0);
+  };
+
+  /* ---- The week on tour ------------------------------------------------------------------------------------------------ */
+  // career.startWeek (before the calendar): departure day, this week's stop + its show, the president.
+  T.monday = function (s) {
+    var t = T.ensure(s), a = t.active;
+    if (!a || s.ended) return null;
+    if (a.status === 'booked' && s.totalWeek >= a.start) {
+      a.status = 'on';
+      fx(s, { burnout: (cfg().jetLag[a.region] || 5) });
+      chat(s, 'dj', ((K().lines.depart || {})[a.region]) || 'Wheels up.', null, 'news');
+      GG.emit('tour:depart', { tour: a });
+    }
+    if (a.status !== 'on') return null;
+    var i = idxOf(s, a);
+    if (i < 0 || i >= a.stops.length) return null;
+    a.index = i;
+    var st = a.stops[i];
+    s.offer = null;
+    if (st.venue && !s.gig) s.gig = T.makeGig(s, st.venue, { km: st.km, stop: i });
+    if (a.region === 'japan' && !t.president) {
+      t.president = s.totalWeek;
+      if (s.superfans && typeof s.superfans === 'object' && !s.superfans.japan) s.superfans.japan = { seen: 0, mood: 80, since: s.totalWeek };
+      t.queue.unshift({ card: 'wt_president', region: 'japan', now: true });
+      GG.emit('tour:president', {});
+    }
+    GG.emit('tour:week', { tour: a, stop: st, index: i });
+    return st;
+  };
+  // runWeek, before the weekend: an open date takes the board pick (or the best regional listing).
+  T.beforeGig = function (s) {
+    var st = T.stop(s);
+    if (!st || s.gig || st.venue || !GG.world) return null;
+    var g = GG.world.takePick(s);
+    if (g) { g.tour = true; g.stop = idxOf(s, T.active(s)); s.gig = g; }
+    return s.gig;
+  };
+  T.allowedBlocks = function (s) { return T.away(s) ? BLOCKS.slice() : C.ACTIVITIES.slice(); };
+  T.blockId = function (s, id, i) {
+    if (!T.away(s)) return id;
+    var Q = cfg(), out = BLOCKS.indexOf(id) >= 0 ? id : (Q.blocks[id] || 'rest');
+    if (i === 0 && T.ensure(s).homesick >= Q.homesick.restAt) out = 'rest';   // homesickness forces a rest
+    return out;
+  };
+  var BLOCK_LINES = {
+    rest: ['A day off in {here}. Somebody finds a laundromat. It feels like church.', 'Everyone sleeps until noon in {here}. Nobody apologizes.', 'Rest day in {here}. Postcards home. Nobody knows the postage.'],
+    promote: ['Promoting locally in {here}: radio, a record store signing, posters on every lamp post.', 'A morning-radio interview in {here}. The host pronounces the band name three new ways.', 'Flyering outside a record shop in {here}. A stranger already owns your album.'],
+    rehearse: ['Hotel-room rehearsal in {here}: a practice pad, unplugged guitars, a noise complaint by 9 p.m.', 'Rehearsal in a rented room in {here} the size of the van. It helps. A bit.']
+  };
+  // career runActivity abroad: returns true when it handled the block (rehearse = half gains in a hotel room).
+  T.block = function (s, id, A, f, rng, d, lines, ACT) {
+    if (!T.away(s) || !ACT || !ACT[id]) return false;
+    var Q = cfg(), st = T.stop(s), here = st ? st.cityName : 'town', a = T.active(s);
+    lines[0] = rng.pick(BLOCK_LINES[id] || BLOCK_LINES.rest).replace('{here}', here);
+    if (id === 'rehearse') {
+      var half = Object.assign({}, A, { skill: A.skill * Q.rehearse.skill, drumSkill: A.drumSkill * Q.rehearse.skill, polish: A.polish * Q.rehearse.skill });
+      ACT.rehearse(s, half, f, rng, d, lines);
+    } else ACT[id](s, A, f, rng, d, lines);
+    if (id === 'promote') {
+      var P = Q.promote, n = rngRound(rng.int(P.regionFans[0], P.regionFans[1]) * f * (a && a.choices.extra === 'publicist' ? 1.4 : 1), rng);
+      addRegionFans(s, a.region, n, d);
+      if (P.buzz) fx(s, { buzz: P.buzz }, d);
+    }
+    if (id === 'rest') { var t = T.ensure(s); t.homesick = U.clamp(t.homesick + Q.homesick.rest, 0, 100); d.homesick = Q.homesick.rest; }
+    return true;
+  };
+
+  /* ---- Monday cards abroad + story cards ------------------------------------------------------------------------------ */
+  function availableCard(s, c) {
+    var w = s.seenCards && s.seenCards[c.id];
+    if (w == null) return true;
+    return c.once === false && s.totalWeek - w >= (c.cooldown || 0);
+  }
+  T.forcedCard = function (s) {
+    var t = T.ensure(s), Q = cfg();
+    if (s.ended || s.totalWeek <= 1) return null;
+    // story cards first (the president and the moose come right away; the rest keep a gap)
+    for (var i = 0; i < t.queue.length; i++) {
+      var q = t.queue[i], c = T.card(q.card);
+      if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) { t.queue.splice(i--, 1); continue; }
+      if (!q.now && t.lastCard != null && s.totalWeek - t.lastCard < Q.cardGap) break;
+      t.queue.splice(i, 1);
+      t.ctx = { region: q.region || null, invite: q.invite || null, festival: q.festival || null, song: q.song || null, card: c.id };
+      t.lastCard = s.totalWeek;
+      return c;
+    }
+    if (!T.away(s)) return null;
+    var st = T.stop(s), rng = seeded(s, 'card');
+    if (!rng.chance(Q.cardChance)) return null;
+    var pool = T.cards().filter(function (c) {
+      return !c.story && availableCard(s, c) && (!c.city || c.city.indexOf(st.city) >= 0) && GG.career.gatePasses(s, c.gate);
+    });
+    if (!pool.length) return null;
+    var pick = rng.weighted(pool, function (c) { return (c.weight || 1) * (c.city ? 3 : 1); });
+    t.ctx = { region: T.regionOf(s), card: pick.id };
+    return pick;
+  };
+  T.fillText = function (s, text) {
+    if (!text || text.indexOf('{') < 0) return text;
+    var t = s && s.tour, ctx = (t && t.ctx) || {}, st = s && s.tour ? T.stop(s) : null;
+    return text.replace(/\{(region|song|festival|here)\}/g, function (all, k) {
+      if (k === 'region') { var R = T.region(ctx.region || (s && T.regionOf(s))); return R ? R.name : 'abroad'; }
+      if (k === 'song') return ctx.song || 'your song';
+      if (k === 'festival') return ctx.festival || 'A festival';
+      return st ? st.cityName : 'town';
+    });
+  };
+  T.afterCard = function (s, card, i, success, d) {
+    if (!card || !T.card(card.id)) return;
+    var t = T.ensure(s), ch = card.choices && card.choices[i], ctx = t.ctx || {}, region = ctx.region || T.regionOf(s);
+    var list = [ch && ch.effects && ch.effects.tour];
+    var br = ch && ch.roll && (success ? ch.roll.success : ch.roll.fail);
+    if (br && br.effects) list.push(br.effects.tour);
+    var accepted = false;
+    list.forEach(function (v) {
+      if (!v) return;
+      if (v.regionFans && REGION_IDS.indexOf(region) >= 0) addRegionFans(s, region, v.regionFans, d);
+      if (v.homesick) { t.homesick = U.clamp(t.homesick + v.homesick, 0, 100); d.homesick = (d.homesick || 0) + v.homesick; }
+      if (v.gift && GG.fans && GG.fans.addGift) GG.fans.addGift(s, v.gift);
+      if (v.endTour && t.active && t.active.status === 'on') t.active.endAfter = idxOf(s, t.active);
+      if (v.accept) accepted = true;
+      if (v.big && rs(s, region) && rs(s, region).big) rs(s, region).big.choice = v.big;
+    });
+    if (card.id === 'wt_invite' && ctx.invite) t.invites.forEach(function (inv) { if (inv.id === ctx.invite && inv.status === 'open') inv.status = accepted ? 'accepted' : 'declined'; });
+  };
+
+  /* ---- Weekly: hotels, homesickness, calls home, the end of a tour, unlocks, invites, big in one place, the Gong ----- */
+  function finish(s, out) {
+    var t = T.ensure(s), a = t.active, reg = rs(s, a.region);
+    fx(s, { burnout: (cfg().jetLag[a.region] || 5) });
+    a.status = 'done';
+    reg.tours++;
+    var best = a.results.reduce(function (b, r) { return !b || GRADE_ORDER.indexOf(r.grade) < GRADE_ORDER.indexOf(b) ? r.grade : b; }, null);
+    var cost = a.paid + a.cost.hotels;
+    var sum = { id: a.id, region: a.region, packageId: a.packageId, name: a.name, start: a.start, end: s.totalWeek, gigs: a.results.length,
+      festivals: a.results.filter(function (r) { return r.festival; }).length, fans: a.fans, pay: a.pay, take: a.take || 0, cost: cost, net: (a.take || 0) - cost, best: best,
+      cut: a.endAfter != null && a.endAfter < a.stops.length - 1 };
+    t.history.push(sum);
+    if (t.history.length > 20) t.history.splice(0, t.history.length - 20);
+    t.active = null;
+    chat(s, 'mom', seeded(s, 'home').pick(K().lines.home || ['Home.']), null, 'news');
+    out.home = sum;
+    GG.emit('tour:home', { summary: sum });
+  }
+  function callHome(s, rng, n) {
+    var pools = K().callHome || {}, act = rng.shuffle(activeMembers(s).filter(function (m) { return m.id !== 'kenji'; }));
+    for (var i = 0; i < Math.min(n, act.length); i++) {
+      var m = act[i], pool = (pools[m.id] && pools[m.id].length && rng.chance(0.7)) ? pools[m.id] : pools.generic;
+      if (pool && pool.length) chat(s, m.id, rng.pick(pool), null, 'home');
+    }
+  }
+  function checkBroken(s, out) {
+    REGION_IDS.forEach(function (id) {
+      var r = rs(s, id), R = T.region(id);
+      if (!r.broken && r.fans >= R.breakAt) {
+        r.broken = s.totalWeek;
+        chat(s, 'dj', fill(s, K().lines.broken || '{band} broke {region}.', { region: R.name }), null, 'news');
+        out.broken.push(id);
+        GG.emit('tour:broken', { region: id });
+      }
+    });
+  }
+  function rollBig(s, R, out) {
+    var Q = cfg().big, t = T.ensure(s);
+    if (REGION_IDS.some(function (id) { var b = rs(s, id).big; return b && s.totalWeek - b.week < 12; })) return;
+    for (var i = 0; i < REGION_IDS.length; i++) {
+      var id = REGION_IDS[i], r = rs(s, id);
+      if (r.big) continue;
+      var open = r.unlocked && r.gigs >= Q.minGigs && r.fans >= Q.minRegionFans;
+      var early = !r.unlocked && T.fit(s.genre, id) >= 0.8 && s.fans >= T.threshold(s, id) * 0.75;
+      if (!(open || early) || !R.chance(Q.chance * (open ? 1 : 0.5))) continue;
+      var songs = GG.songs && GG.songs.best ? GG.songs.best(s, 3) : [], song = songs.length ? R.pick(songs) : null;
+      if (!song) return;
+      r.big = { songId: song.id, title: song.title, week: s.totalWeek, choice: null };
+      if (!r.unlocked) T.unlock(s, id, 'big', out);
+      addRegionFans(s, id, Math.round(T.region(id).breakAt * 0.1));
+      t.queue.push({ card: 'wt_big', region: id, song: song.title });
+      chat(s, 'dj', fill(s, K().lines.big || '{song} is big in {region}.', { song: '“' + song.title + '”', region: T.region(id).name }), null, 'news');
+      out.big = { region: id, song: song.title };
+      GG.emit('tour:big', { region: id, song: r.big });
+      return;
+    }
+  }
+  function moose(s, r, d) {
+    var t = T.ensure(s), Q = cfg().moose;
+    t.moose = { week: s.totalWeek };
+    s.flags.mooseOpera = 'platinum';
+    (s.trophies || (s.trophies = [])).push({ kind: 'platinum_fi', title: 'Platinum in Finland: the moose concept album', year: s.year });
+    addRegionFans(s, 'uk_europe', Q.fans, d);
+    fx(s, { buzz: Q.buzz }, d);
+    if (r && r.lines) r.lines.push('The moose concept album went platinum in Finland tonight. The chandelier is shaped like antlers. It all makes sense now.');
+    chat(s, 'dj', K().lines.moose || 'Platinum in Finland.', null, 'news');
+    t.queue.unshift({ card: 'wt_moose', region: 'uk_europe', now: true });
+    GG.emit('tour:moose', {});
+  }
+  T.weekly = function (s, rng, wrap) {
+    var t = T.ensure(s), Q = cfg(), H = Q.homesick, out = { home: null, unlocked: [], invite: null, broken: [], big: null, gong: null, homesick: t.homesick, hotel: 0, away: false };
+    if (wrap) wrap.tour = out;
+    if (!t || t.w === s.totalWeek) return out;
+    t.w = s.totalWeek;
+    var R = seeded(s, 'week'), a = t.active;
+    if (T.away(s)) {
+      out.away = true;
+      var stay = K().stays[a.choices.stay] || { perWeek: 0, homesick: 0, mood: 0 };
+      if (stay.perWeek) { fx(s, { fund: -stay.perWeek }); a.cost.hotels += stay.perWeek; out.hotel = stay.perWeek; }
+      if (stay.mood) fx(s, { mood: { all: stay.mood } });
+      var low = activeMembers(s).filter(function (m) { return m.mood < 45; }).length;
+      t.homesick = U.clamp(t.homesick + H.perWeek + low * H.lowMood + (stay.homesick || 0), 0, H.max);
+      if (t.homesick >= H.moodAt) fx(s, { mood: { all: H.mood } });
+      if (t.homesick >= H.burnoutAt) fx(s, { burnout: H.burnout });
+      callHome(s, R, t.homesick >= 60 ? 2 : 1);
+      if (t.homesick >= H.cardAt && !t.queue.some(function (q) { return q.card === 'wt_homesick'; }) && idxOf(s, a) < a.stops.length - 1
+        && (s.seenCards.wt_homesick == null || s.totalWeek - s.seenCards.wt_homesick >= 12)) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
+      var i = idxOf(s, a);
+      if (i >= a.stops.length - 1 || (a.endAfter != null && i >= a.endAfter)) finish(s, out);
+    } else t.homesick = U.clamp(t.homesick + H.home, 0, H.max);
+    out.homesick = t.homesick;
+    t.invites.forEach(function (inv) { if ((inv.status === 'open' || inv.status === 'accepted') && inv.expires < s.totalWeek) inv.status = 'expired'; });
+    if (s.era === 'world') {
+      REGION_IDS.forEach(function (id) { if (!T.unlocked(s, id) && s.fans >= T.threshold(s, id)) T.unlock(s, id, 'fans', out); });
+      rollInvites(s, R, out);
+      rollBig(s, R, out);
+      checkBroken(s, out);
+      var GW = (K().gong || {}).week || 22;
+      if (s.week === GW - 1 && gongCase(s).nominated) chat(s, 'dj', fill(s, K().lines.gongNominated || '{band} is nominated for the Global Gong.'), null, 'news');
+      if (s.week === GW) out.gong = T.runGong(s);
+    }
+    return out;
+  };
+
+  /* ---- The rival breaks regions first ------------------------------------------------------------------------------- */
+  T.rivalWeekly = function (s, news) {
+    var t = T.ensure(s), Q = cfg().rival, rv = s.rival;
+    if (!rv || rv.cracked === 'breakup' || (rv.fans || 0) < Q.fans) return null;
+    var next = Q.order.filter(function (id) { return !t.rival[id]; })[0];
+    if (!next || !seeded(s, 'rival').chance(Q.chance)) return null;
+    t.rival[next] = s.totalWeek;
+    var r = rs(s, next), first = !r.broken;
+    if (first) r.rivalFirst = s.totalWeek;
+    var text = first ? fill(s, K().lines.rival || '{rival} broke {region} first.', { region: T.region(next).name })
+      : fill(s, '{rival} finally toured {region}. The locals asked them if they know you.', { region: T.region(next).name });
+    if (news) news(text); else chat(s, 'wraith_frontman', text, null, 'news');
+    GG.emit('tour:rival', { region: next, first: first });
+    return next;
+  };
+
+  /* ---- The Global Gong -------------------------------------------------------------------------------------------- */
+  function gongCase(s) {
+    var t = T.ensure(s), Q = cfg().gong, broken = REGION_IDS.filter(function (id) { return rs(s, id).broken; }).length;
+    var y0 = (s.year - 1) * WPY, fest = 0, recent = [];
+    t.history.forEach(function (h) { if (h.end > y0 - WPY / 2) fest += h.festivals; });
+    if (t.active) t.active.results.forEach(function (r) { if (r.festival) fest++; });
+    var bigs = REGION_IDS.filter(function (id) { return rs(s, id).big; }).length;
+    var score = Q.base + broken * Q.perBroken + Math.min(Q.fansMax, T.abroadFans(s) / Q.fansPer) + fest * Q.perFestival + bigs * Q.perBig + (t.moose ? Q.moose : 0);
+    return { nominated: broken >= Q.nominateBroken || fest > 0, score: score, broken: broken, festivals: fest };
+  }
+  T.gong = function (s) {
+    var t = T.ensure(s), G = K().gong || {}, done = t.gongs.filter(function (g) { return g.year === s.year; })[0] || null, c = gongCase(s);
+    return { name: G.name || 'The Global Gong', week: G.week || 22, city: G.city || 'Amsterdam', year: s.year, eligible: s.era === 'world',
+      nominated: c.nominated, case: c, result: done, past: t.gongs.slice() };
+  };
+  T.runGong = function (s) {
+    var t = T.ensure(s), done = t.gongs.filter(function (g) { return g.year === s.year; })[0];
+    if (done) return done;
+    if (s.era !== 'world') return null;
+    var Q = cfg().gong, G = K().gong || { nominees: [] }, c = gongCase(s), rng = seeded(s, 'gong|' + s.year, 0);
+    if (!c.nominated) { done = { year: s.year, week: s.totalWeek, nominated: false, won: false }; t.gongs.push(done); return done; }
+    var field = rng.shuffle(G.nominees).slice(0, 3).map(function (n) { return { id: n.id, name: n.name, from: n.from, score: n.strength + rng.range(-Q.noise, Q.noise) }; });
+    var rv = s.rival, rr = Object.keys(t.rival).length;
+    if (rv && rr && rv.cracked !== 'breakup') field.push({ id: rv.id, name: GG.rival ? GG.rival.name(s) : 'Tundra Wraith', from: 'Canada', rival: true, score: 50 + rr * 4 + rng.range(-Q.noise, Q.noise) });
+    var you = c.score + rng.range(-Q.noise, Q.noise), top = field.reduce(function (b, x) { return !b || x.score > b.score ? x : b; }, null);
+    var won = !top || you >= top.score;
+    done = { year: s.year, week: s.totalWeek, nominated: true, won: won, score: Math.round(you), winner: won ? 'you' : top.name,
+      against: field.map(function (x) { return { id: x.id, name: x.name, from: x.from, rival: !!x.rival, score: Math.round(x.score) }; }) };
+    t.gongs.push(done);
+    if (won) {
+      var gain = Math.min(Q.fansMax, Math.round(s.fans * Q.fans));
+      fx(s, { fund: Q.prize, fans: gain, buzz: Q.buzz });
+      (s.trophies || (s.trophies = [])).push({ kind: 'gong', title: 'The Global Gong', year: s.year });
+      done.prize = Q.prize; done.fans = gain;
+      chat(s, 'dj', fill(s, K().lines.gongWon || '{band} won the Global Gong.'), null, 'news');
+    } else chat(s, 'dj', fill(s, K().lines.gongLost || 'The Global Gong went to {venue}.', { venue: top.name }), null, 'news');
+    GG.emit('tour:gong', { result: done });
+    return done;
+  };
+
+  /* ---- Views ---------------------------------------------------------------------------------------------------------- */
+  T.map = function (s) {
+    var t = T.ensure(s);
+    return T.regions().map(function (R) {
+      var r = t.regions[R.id], thr = T.threshold(s, R.id), inv = openInvite(s, R.id), f = T.fit(s.genre, R.id);
+      return { id: R.id, name: R.name, short: R.short, icon: R.icon, blurb: R.blurb, pin: R.pin || null, unlocked: !!r.unlocked, via: r.via,
+        threshold: thr, need: Math.max(0, thr - s.fans), progress: Math.min(1, s.fans / thr), worldEra: s.era === 'world',
+        regionFans: r.fans, scene: R.scene, broken: !!r.broken, breakAt: R.breakAt, big: r.big, rivalFirst: r.rivalFirst, rivalToured: t.rival[R.id] || null,
+        invite: inv, fit: f, fitLabel: fitLabel(f), tours: r.tours, gigs: r.gigs, best: r.best, here: T.regionOf(s) === R.id,
+        season: GG.calendar && GG.calendar.seasonIn ? GG.calendar.seasonIn(R.id, s.week) : null };
+    });
+  };
+  T.regionView = function (s, region) {
+    var R = T.region(region); if (!R) return null;
+    var t = T.ensure(s), visited = {};
+    t.history.forEach(function () {});
+    (t.active ? t.active.results : []).forEach(function (r) { visited[r.city] = true; });
+    var cities = T.cities(region).map(function (c) {
+      return { id: c.id, name: c.name, x: c.x, y: c.y, site: c.site, blurb: c.blurb, venues: T.venues(region).filter(function (v) { return v.city === c.id; }).map(function (v) { return { id: v.id, name: v.name, tier: v.tier, capacity: v.capacity, festival: !!v.festival, hall: !!v.hall, weeks: v.weeks || null }; }),
+        here: T.here(s) === c.id };
+    });
+    var seasonId = GG.calendar && GG.calendar.seasonIn ? GG.calendar.seasonIn(region, s.week) : null;
+    return { region: R, state: t.regions[region], threshold: T.threshold(s, region), unlocked: T.unlocked(s, region), cities: cities,
+      packages: T.packages(s, region), vehicles: T.vehicles(region), stays: T.stays(), extras: T.extras(), season: seasonId,
+      holidays: (K().holidays || []).filter(function (h) { return h.region === region; }), invite: openInvite(s, region), fit: T.fit(s.genre, region) };
+  };
+  T.status = function (s) {
+    var t = T.ensure(s), a = t.active, st = T.stop(s), i = a ? idxOf(s, a) : -1, H = cfg().homesick;
+    return { era: s.era, worldEra: s.era === 'world', active: a, booked: !!(a && a.status === 'booked'), onTour: !!st, stop: st, index: i,
+      weeksLeft: a && st ? a.stops.length - 1 - i : null, departsIn: a && a.status === 'booked' ? a.start - s.totalWeek : null, here: st ? st.city : null,
+      region: T.regionOf(s), homesick: t.homesick, homesickLabel: t.homesick >= H.restAt ? 'Desperately homesick' : t.homesick >= H.moodAt ? 'Homesick' : t.homesick >= 20 ? 'Missing home' : 'Fine',
+      forcedRest: !!st && t.homesick >= H.restAt, blocks: T.allowedBlocks(s), last: t.history[t.history.length - 1] || null, abroadFans: T.abroadFans(s) };
+  };
+  T.summary = function (s) { var t = T.ensure(s); return t.history[t.history.length - 1] || null; };
+  // Regional charts: your best song abroad, by region fans (a view; nothing stored).
+  T.charts = function (s) {
+    var best = GG.songs && GG.songs.best ? GG.songs.best(s, 1)[0] : null;
+    return T.regions().map(function (R) {
+      var r = rs(s, R.id), share = r.fans / R.scene, big = r.big;
+      var pos = big ? Math.max(1, 3 - (big.choice === 'fly' ? 2 : big.choice === 'video' ? 1 : 0)) : r.fans < 300 ? null : Math.max(1, Math.round(60 - share * 120));
+      return { region: R.id, chart: R.chart, song: big ? big.title : best ? best.title : null, pos: pos && pos <= 50 ? pos : null };
+    });
+  };
+
+  /* ---- Bots (botTour) ------------------------------------------------------------------------------------------------- */
+  T.botWeek = function (s, style) {
+    if (s.era !== 'world' || s.ended) return null;
+    var t = T.ensure(s), B = cfg().bot;
+    if (t.active) return null;
+    var last = t.history[t.history.length - 1];
+    if (last && s.totalWeek - last.end < B.gap) return null;
+    var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
+    if (fin && s.year === fin.year && s.week >= fin.week - 8 && s.week <= fin.week) return null;   // bots stay home to prepare for the Sad Dome
+    if (s.burnout >= 60 || (style !== 'good' && !seeded(s, 'bot').chance(B.avgChance))) return null;   // tired bands stay home
+    var cushion = style === 'good' ? B.goodCushion : B.avgCushion, best = null, bestV = -Infinity;
+    REGION_IDS.forEach(function (id) {
+      if (!T.unlocked(s, id)) return;
+      K().packages.filter(function (p) { return p.region === id; }).forEach(function (p) {
+        var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
+        if (style === 'good' && rich) ch.vehicle = T.vehicles(id).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+        var c = T.canBook(s, p.id, ch);
+        if (!c.ok || s.fund < c.quote.total + cushion) return;
+        var q = c.quote, v = q.fansEst * 2.2 + q.payEst * 0.55 - q.total + (p.festival ? 1500 : 0) + (p.needs === 'moose' ? 3000 : 0);
+        if (style !== 'good') v += seeded(s, 'botpick|' + p.id).range(-1500, 1500);
+        if (v > bestV) { bestV = v; best = { id: p.id, ch: ch }; }
+      });
+    });
+    if (!best || (style === 'good' && bestV < 0)) return null;
+    var tr = T.book(s, best.id, best.ch);
+    return tr && !tr.error ? tr : null;
+  };
+  T.botTour = T.botWeek;
+  T.botPlan = function (s, style) {
+    var t = T.ensure(s), B = cfg().bot, plan = [];
+    if (t.homesick >= B.restHomesick || s.burnout >= 55) plan.push('rest');
+    plan.push('promote', 'rehearse', 'promote', 'rest');
+    if (style !== 'good' && seeded(s, 'botplan').chance(0.3)) plan.reverse();
+    return plan.slice(0, C.BLOCKS_PER_WEEK);
+  };
+
+  /* ---- Saves: v7 -> v8 (idempotent). Chained onto GG.save.migrate. ------------------------------------------------ */
+  T.migrate = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    T.ensure(s);
+    var E = econ().eras || {};
+    if (E.worldEnabled && s.era === 'signed' && s.milestones && s.milestones.worldReady) {
+      s.era = 'world';
+      (s.eraHistory = Array.isArray(s.eraHistory) ? s.eraHistory : [{ era: 'garage', week: 1 }]).push({ era: 'world', week: s.milestones.worldReady });
+    }
+    if (typeof s.v !== 'number' || s.v < 8) s.v = 8;
+    return s;
+  };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.tour) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return T.migrate(prevMigrate(s)); };
+    GG.save.migrate.tour = true;
+  }
+
+  GG.registerDebug('tour', function () {
+    var s = GG.state; if (!s) return { state: null };
+    var st = T.status(s);
+    return { era: s.era, onTour: st.onTour, booked: st.booked, here: st.here, region: st.region, homesick: st.homesick,
+      active: st.active ? { id: st.active.id, packageId: st.active.packageId, status: st.active.status, start: st.active.start, index: st.index } : null,
+      unlocked: REGION_IDS.filter(function (id) { return T.unlocked(s, id); }), abroadFans: st.abroadFans, gongs: s.tour.gongs.length, moose: !!s.tour.moose };
+  });
 })(window.GG);
 
 </script>
@@ -12379,6 +13817,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // season/holiday, listing weight + pay, weather turnout, road risk) and van drivers (content.drivers; world.driver(state)
 // → { id, name, you, def }: the band's designated driver while active, else YOU drive; world.driverMods, syncDriver).
 // Road-card gates gain driver: [ids|'you'], weather: [C.WEATHER], holiday: [holidayIds].
+// v0.7 (WORLDSIM): on tour (GG.tour.away) the board lists the region's clubs (GG.tour.listings), tour gigs (g.tour) are
+// shaped/estimated/travelled by GG.tour (region fans, the rental vehicle, no Moose Hearse wear), trips abroad come from
+// GG.tour.startTrip and road cards are the region's (gate.region); world.scene in the World era adds the fans abroad.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
@@ -12514,7 +13955,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
   world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
   // v0.5: how many fans gigs can reach in your era (the garage-era scene is Saskatchewan; Signed is national).
-  world.scene = function (state) { var K = cfg(), v = K.scene && K.scene[state && state.era]; return v || econ().gig.localScene; };
+  world.scene = function (state) { var K = cfg(), v = K.scene && K.scene[state && state.era]; return (v || econ().gig.localScene) + (GG.tour && state && state.era === 'world' ? GG.tour.abroadFans(state) : 0); };
   world.fitLabel = function (fit) {
     return fit >= 0.85 ? { id: 'great', label: 'Your crowd', icon: '🤘' } : fit >= 0.65 ? { id: 'good', label: 'Decent fit', icon: '👍' }
       : fit >= cfg().clashFit ? { id: 'meh', label: 'Tough room', icon: '😬' } : { id: 'clash', label: 'Wrong crowd: expect flying boots', icon: '👢' };
@@ -12582,6 +14023,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   // This week's board: 3–6 gigs in reach (a rebook when a venue loves you, sometimes an opening slot).
   // Pure apart from the rng (default: seeded by career seed + week, so the career RNG never moves).
   world.listings = function (state, rng) {
+    if (GG.tour && GG.tour.away(state)) return GG.tour.listings(state, rng);   // v0.7: the regional board on tour
     rng = rng || seeded(state, 'board');
     var K = cfg(), out = [], used = {};
     var pool = venues().filter(function (v) { return world.bookable(state, v); });
@@ -12656,6 +14098,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
   // A rough preview for the board and the bots: { crowd, pay, fans, net, burnout }.
   world.estimate = function (state, l) {
+    if (l && l.tour && GG.tour) return GG.tour.estimate(state, l);
     var G = econ().gig, K = cfg(), v = venueById(l.venueId) || {}, fit = l.fit != null ? l.fit : fitOf(v, state.genre);
     var crowd = Math.min(l.capacity || 0, Math.round((v.walkIns || 0) + state.fans * G.fanDraw + state.buzz * G.buzzDraw));
     var slice = l.opening ? Math.max(0, Math.min((l.capacity || 0) - crowd, Math.round(l.opening.draw * K.opening.slice))) : 0;
@@ -12689,6 +14132,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   /* ---- After the gig: opening slots, genre comedy, reputation, travel ------------------------------ */
   // Before GG.gig.applyResult: the headliner's crowd (opening slots), genre-clash comedy. Marks r.shaped.
   world.shape = function (state, g, r, rng) {
+    if (g && g.tour && GG.tour) return GG.tour.shape(state, g, r, rng);   // v0.7: abroad
     if (!g || !r || r.shaped) return r;
     var K = cfg(), G = econ().gig;
     r.shaped = true;
@@ -12752,7 +14196,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       GG.career.applyEffects(state, { fund: -r.crew }, d);
       r.lines.push('Crew, sound and lights: ' + U.fmtMoney(r.crew) + '.');
     }
-    r.travel = world.travel(state, g, rng, d);
+    r.travel = g.tour && GG.tour ? GG.tour.afterGig(state, g, r, rng, d) : world.travel(state, g, rng, d);   // v0.7: the rental abroad
     var t = r.travel;
     if (t.breakdown) r.lines.push(pickLine(state, rng, 'breakdown', 'The van broke down.') + ' (Tow: ' + U.fmtMoney(t.breakdown.cost) + ')');
     else if (t.wear && world.van(state).condition < K.van.tiredAt) r.lines.push(pickLine(state, rng, 'vanTired', 'The van is tired.'));
@@ -12889,7 +14333,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   world.drawRoad = function (state, km, season, rng, city) {
     var K = cfg().road;
     if (!rng.chance(Math.min(0.97, (km >= K.longKm ? K.chanceLong : K.chanceLocal) * (world.driverMods(state).roadChance || 1)))) return null;
-    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c); });
+    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c) && (!GG.tour || GG.tour.roadCardOk(state, c)); });
     return list.length ? rng.weighted(list, function (c) { return c.weight != null ? c.weight : 1; }) : null;
   };
   // 1–2 lines of van chatter (a bandmate or two; Kenji only ever gets a stage direction). Seeded, cosmetic.
@@ -12913,6 +14357,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (!gig) return null;
     var t = world.trip(state);
     if (t && t.venueId === gig.venueId) return t;
+    if (gig.tour && GG.tour && GG.tour.away(state)) return GG.tour.startTrip(state, gig);   // v0.7: the rental abroad
     var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
     var card = world.drawRoad(state, km, season, rng, to);
@@ -13601,6 +15046,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   shape(state, g, r, rng) (called by GG.world.shape: outdoor turnout, holiday buzz, weather lines; r.weather, r.holiday)
 //   roadMods(state, city?) { road, wear, burnout } · holidayCard(state) card|null (career.startWeek) · monday(state)
 //   migrate(s) (v6 -> v7: state.weather; sets s.v = 7)
+// v0.7 (WORLDSIM, C7 overseas): seasonIn(region, w) (Australia reversed: content.world.climates[].seasonShift) · seasonAt(state)
+//   (the season where the band is this week) · abroad (GG.tour.away) the weather uses the tour city's regional climate
+//   (content.world.climates + city temp offsets), holidays() returns the region's holidays (content.world.holidays) instead
+//   of the Canadian ones, season fit / venue seasons / road risk / the label use the local season; no Canadian news abroad.
 // Events: 'calendar:week' { totalWeek, week, month, season, weather, temp, holiday } (from monday).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -13633,6 +15082,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     return 'summer';
   };
+  // v0.7: the season in a region (Australia's are reversed) and where the band is this week.
+  cal.seasonIn = function (region, w) {
+    var cl = region && region !== 'canada' && GG.tour && GG.tour.climate ? GG.tour.climate(region) : null;
+    return cal.season(cal.woy(w) + (cl && cl.seasonShift || 0));
+  };
+  function away(state) { return !!(state && GG.tour && GG.tour.away && GG.tour.away(state)); }
+  cal.seasonAt = function (state) { return away(state) ? cal.seasonIn(GG.tour.regionOf(state), state.week) : cal.season(state.week); };
   cal.seasonInfo = function (season) {
     var s = part('seasons')[season] || DEF.seasons[season] || {};
     return { id: season, name: s.name || season, icon: s.icon || '', blurb: s.blurb || '', fx: s.fx || {} };
@@ -13641,6 +15097,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   /* ---- Holidays ---------------------------------------------------------------------------------------------- */
   cal.holidays = function (w, state) {
     w = cal.woy(w);
+    if (away(state)) {   // v0.7: abroad, the region's holidays replace the Canadian ones
+      var reg = GG.tour.regionOf(state), W = GG.content.world;
+      return ((W && W.holidays) || []).filter(function (h) { return h.region === reg && h.weeks && w >= h.weeks[0] && w <= h.weeks[1]; });
+    }
     return part('holidays').filter(function (h) {
       return h.weeks && w >= h.weeks[0] && w <= h.weeks[1] && (!h.era || !state || h.era.indexOf(state.era) >= 0);
     });
@@ -13656,6 +15116,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   cal.weatherAt = function (state, city, totalWeek) {
     var tw = totalWeek || state.totalWeek || 1, w = ((tw - 1) % WPY) + 1, season = cal.season(w);
     var rng = GG.RNG(GG.hashSeed((state.seed >>> 0) + '|weather|' + tw));
+    var wc = GG.tour && GG.tour.cityDef ? GG.tour.cityDef(city || (!totalWeek || totalWeek === state.totalWeek ? GG.tour.here(state) : null)) : null;
+    if (wc) return worldWeather(wc, tw, w, rng);   // v0.7: a city abroad
     var table = part('weather')[season] || { clear: 1 }, kinds = Object.keys(table).filter(function (k) { return C.WEATHER.indexOf(k) >= 0; });
     var total = kinds.reduce(function (t, k) { return t + table[k]; }, 0), u = rng.next() * total, kind = kinds[kinds.length - 1] || 'clear';
     for (var i = 0; i < kinds.length; i++) { u -= table[kinds[i]]; if (u < 0) { kind = kinds[i]; break; } }
@@ -13668,6 +15130,18 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (kind === 'rain' && temp < 1) temp = 1 + Math.round(rng.next() * 3);
     return { week: tw, kind: kind, temp: temp, city: c ? c.id : null };
   };
+  function worldWeather(c, tw, w, rng) {
+    var cl = GG.tour.climate(c.region) || {}, season = cal.seasonIn(c.region, w), table = (cl.weather || {})[season] || { clear: 1 };
+    var kinds = Object.keys(table).filter(function (k) { return C.WEATHER.indexOf(k) >= 0; });
+    var total = kinds.reduce(function (t, k) { return t + table[k]; }, 0), u = rng.next() * total, kind = kinds[kinds.length - 1] || 'clear';
+    for (var i = 0; i < kinds.length; i++) { u -= table[kinds[i]]; if (u < 0) { kind = kinds[i]; break; } }
+    var base = (cl.temps || [])[cal.monthIndex(w)], cold = season === 'winter' ? 2 : 1;
+    var temp = Math.round((isFinite(base) ? base : 12) + cal.kind(kind).temp * 0.5 + (rng.next() - 0.5) * 6 + (c.temp || 0) * cold);
+    if (kind === 'heat' && temp < 28) temp = 28 + Math.round(rng.next() * 8);
+    if ((kind === 'snow' || kind === 'blizzard') && temp > 1) temp = -Math.round(1 + rng.next() * 4);
+    if (kind === 'rain' && temp < 1) temp = 1 + Math.round(rng.next() * 3);
+    return { week: tw, kind: kind, temp: temp, city: c.id, region: c.region };
+  }
   cal.weather = function (state) {
     if (!state) return null;
     var w = state.weather;
@@ -13676,19 +15150,20 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
   // HUD / UI summary for this week.
   cal.label = function (state) {
-    var w = state.week, season = cal.season(w), si = cal.seasonInfo(season), wx = cal.weather(state), k = cal.kind(wx.kind);
-    var h = cal.holiday(w, state);
+    var w = state.week, season = cal.seasonAt(state), si = cal.seasonInfo(season), wx = cal.weather(state), k = cal.kind(wx.kind);
+    var h = cal.holiday(w, state), ab = away(state), tc = ab && GG.tour.cityDef(GG.tour.here(state));
     return { totalWeek: state.totalWeek, week: w, month: cal.month(w), monthName: cal.monthName(w), season: season,
+      region: ab ? GG.tour.regionOf(state) : 'canada', cityName: tc ? tc.name : state.city,
       seasonName: si.name, seasonIcon: si.icon, seasonBlurb: si.blurb, weather: wx.kind, weatherLabel: k.label, weatherIcon: k.icon,
       temp: wx.temp, holiday: h ? { id: h.id, name: h.name, icon: h.icon || '', blurb: h.blurb || '' } : null,
       fit: cal.fitLine(state),
-      text: cal.monthName(w) + ' · ' + si.name + ' · ' + k.label + ', ' + wx.temp + '°C' + (h ? ' · ' + h.name : '') };
+      text: cal.monthName(w) + ' · ' + si.name + (tc ? ' (' + tc.name + ')' : '') + ' · ' + k.label + ', ' + wx.temp + '°C' + (h ? ' · ' + h.name : '') };
   };
 
   /* ---- Genre-season fit ----------------------------------------------------------------------------------------- */
   // -1..2: how much this season suits your genre at this venue (doubled at your genre's kind of room / summer outdoors).
   cal.seasonFit = function (state, v) {
-    var season = cal.season(state.week), gs = part('genreSeason')[state.genre] || {}, f = gs[season] || 0;
+    var season = cal.seasonAt(state), gs = part('genreSeason')[state.genre] || {}, f = gs[season] || 0;
     if (!f || !v) return f;
     var kinds = part('genreKinds')[state.genre] || [];
     var home = kinds.indexOf(v.kind) >= 0 || (v.outdoor && season === 'summer' && (state.genre === 'country' || state.genre === 'punk'));
@@ -13696,13 +15171,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
   cal.fitLine = function (state) {
     var fl = part('fitLines')[state.genre] || {};
-    return fl[cal.season(state.week)] || null;
+    return fl[cal.seasonAt(state)] || null;
   };
 
   /* ---- Venues: open this week? listing weight, pay, tags ---------------------------------------------------------- */
   cal.venueOpen = function (state, v) {
     if (!v) return false;
-    var w = cal.woy(state.week), season = cal.season(w), hs = cal.holidays(w, state);
+    var w = cal.woy(state.week), season = cal.seasonAt(state), hs = cal.holidays(w, state);
     if (v.holiday && !hs.some(function (h) { return h.id === v.holiday; })) return false;
     if (v.weeks && (w < v.weeks[0] || w > v.weeks[1])) return false;
     if (v.season && v.season.indexOf(season) < 0) return false;
@@ -13793,7 +15268,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   /* ---- The road --------------------------------------------------------------------------------------------------- */
   // Breakdown risk x, van wear x and extra burnout on a drive this week (season + the weather at the destination).
   cal.roadMods = function (state, city) {
-    var fx = cal.seasonInfo(cal.season(state.week)).fx, k = cal.kind(cal.weatherAt(state, city).kind);
+    var fx = cal.seasonInfo(cal.seasonAt(state)).fx, k = cal.kind(cal.weatherAt(state, city).kind);
     return { road: (fx.road || 1) * k.road, wear: (fx.wear || 1) * k.wear, burnout: k.burnout || 0, weather: k.id };
   };
 
@@ -13821,7 +15296,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   cal.monday = function (state) {
     if (!state || state.ended) return null;
     state.weather = cal.weatherAt(state);
-    var w = state.week, news = part('news')[w], hs = cal.holidays(w, state), d = {};
+    var w = state.week, news = away(state) ? null : part('news')[w], hs = cal.holidays(w, state), d = {};   // v0.7: no Saskatoon news abroad
     hs.forEach(function (h) { if (h.news) news = h.news; });   // a holiday note beats the season flavour
     if (news && state.totalWeek > 1 && GG.career.postChat) GG.career.postChat(state, news.who, news.text, null, 'news');
     if (state.flags) {
@@ -13876,7 +15351,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //  - Fans stay ONE count (state.fans); state.fanTypes are shares { super, casual, hater } that drift weekly (superfans with
 //    chemistry and a happy fan club, haters with fame and scandals).
 //  - Named superfans (state.superfans): Dale from Warman (from day one; at every show, in the crowd and the comments),
-//    Big Wendell the jumper-cable trucker (met through a fan card), the Japanese fan-club president (reserved for v0.7).
+//    Big Wendell the jumper-cable trucker (met through a fan card), the Japanese fan-club president (v0.7: met on the first
+//    week in Japan via GG.tour; region superfans show `reserved: <region name>` until met; at Japan shows and in comments).
 //  - Scandals: a post (or a weekly roll: bandmates post on their own) queues a scandal choice card for next Monday.
 //  - Fan mail + gifts (state.gifts) arrive weekly by chance; Dale's macaroni portrait of Kenji comes through a card.
 //  - Patreeon (state.fanClub, Signed era): opened through a card or the Bandbook app; exclusive posts keep members happy;
@@ -14039,6 +15515,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var dale = F.superfanDef('dale'), trk = F.superfanDef('trucker');
     if (sf.dale && dale && (post.kind === 'gig' || post.exclusive || rng.chance(0.55))) special.push({ who: 'dale', name: dale.name, text: pickLine(dale.comments, rng, used) });
     if (sf.trucker && trk && rng.chance(0.3)) special.push({ who: 'trucker', name: trk.name, text: pickLine(trk.comments, rng, used) });
+    var jp = F.superfanDef('japan');
+    if (sf.japan && jp && jp.comments && jp.comments.length && rng.chance(0.35)) special.push({ who: 'japan', name: jp.name, text: pickLine(jp.comments, rng, used) });   // v0.7
     if (!post.exclusive && rng.chance(Math.min(0.9, t.hater * 4 + (post.viral === 'cringe' ? 0.5 : 0) + (sent === 'bad' ? 0.2 : 0)))) {
       special.push({ who: 'hater', name: handle(H.hater), text: pickLine(CM.hater, rng, used) });
     }
@@ -14333,14 +15811,21 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var lines = r.lines || (r.lines = []), cap = r.capacity || (g && g.capacity) || 1e6;
     var km = r.km != null ? r.km : (g && g.km) || 0, gcity = r.city || (g && g.city) || s.city, add = 0;
     function room() { return Math.max(0, cap - (r.crowd || 0) - add); }
-    if (km >= GK.followKm && cnt.super > 0) {
+    var abroad = !!(g && g.tour);   // v0.7: superfans don't fly; Dale watches the livestream; the president is at every Japan show
+    if (abroad && g.region === 'japan' && s.superfans.japan) {
+      var jpf = s.superfans.japan; jpf.seen = (jpf.seen || 0) + 1; jpf.mood = U.clamp((jpf.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
+      if (room() > 0) add++;
+      r.president = jpf.seen;
+      if ((L.president || []).length) lines.push(fill(s, rng.pick(L.president), { gcity: gcity }));
+    }
+    if (!abroad && km >= GK.followKm && cnt.super > 0) {
       var follow = Math.min(room(), Math.round(Math.min(cnt.super * GK.followShare, cap * GK.followCap)));
       if (follow > 0) {
         add += follow; r.superfans = follow;
         if (follow >= 2) lines.push(fill(s, rng.pick(L.follow || []), { n: follow, gcity: gcity }));
       }
     }
-    var dale = s.superfans.dale;
+    var dale = abroad ? null : s.superfans.dale;
     if (dale) {
       dale.seen = (dale.seen || 0) + 1;
       dale.mood = U.clamp((dale.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
@@ -14349,7 +15834,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       lines.push(fill(s, rng.pick((km >= 500 && L.daleFar) || L.dale || []), { n: dale.seen, gcity: gcity }));
     }
     var tr = s.superfans.trucker;
-    if (tr && km >= GK.followKm && rng.chance(GK.trucker)) {
+    if (tr && !abroad && km >= GK.followKm && rng.chance(GK.trucker)) {
       tr.seen = (tr.seen || 0) + 1; if (room() > 0) add++;
       r.trucker = true; lines.push(fill(s, rng.pick(L.trucker || []), { gcity: gcity }));
     }
@@ -14423,7 +15908,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (v.hater) { shiftShare(s, 'hater', v.hater); out.hater = v.hater; }
     if (v.super) { shiftShare(s, 'super', v.super); out.super = v.super; }
     if (v.superfan) Object.keys(v.superfan).forEach(function (id) {
-      var def = F.superfanDef(id); if (!def || def.reserved) return;
+      var def = F.superfanDef(id); if (!def || def.reserved || (def.region && !s.superfans[id])) return;
       var sf = s.superfans[id] || (s.superfans[id] = { seen: 0, mood: F.cfg().superfans.moodStart, since: s.totalWeek });
       sf.mood = U.clamp((sf.mood || 0) + (v.superfan[id] || 0), 0, 100);
       if (id === 'trucker' && !F.hasGift(s, 'cb_radio')) F.addGift(s, 'cb_radio');
@@ -14452,7 +15937,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     F.ensure(s);
     return K().superfans.map(function (d) {
       var st = s.superfans[d.id];
-      return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || null,
+      var R = d.region && !st && GG.tour ? GG.tour.region(d.region) : null;   // v0.7: region superfans wait until you get there
+      return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || (R ? R.name : null),
         active: !!st && !d.reserved, seen: st ? st.seen || 0 : 0, mood: st ? st.mood : null, since: st ? st.since : null };
     });
   };

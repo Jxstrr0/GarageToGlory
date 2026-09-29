@@ -689,6 +689,7 @@
       news(state, out, 'loonies', { n: rv.loonieWins - (rv.loonieSeen || 0) }, r);
     }
     rv.loonieSeen = rv.loonieWins;
+    if (GG.tour && state.tour) GG.tour.rivalWeekly(state, function (text) { news(state, out, 'world', null, r, text); });   // v0.7: they break regions too
     if (!out.news.length && r.chance(0.12)) news(state, out, 'filler', null, r);
     out.showdowns = (state.showdowns || []).filter(function (x) { return x.week === w; });
     out.final = out.showdowns.some(function (x) { return x.kind === 'final'; }) ? state.finalShowdown : null;
