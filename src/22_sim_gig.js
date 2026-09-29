@@ -190,11 +190,43 @@
   function active(state) { return state.members.filter(function (m) { return m.status === 'active'; }); }
 
   // Timing windows from drum skill (seconds, +/- around each note).
-  gig.windows = function (state) {
-    var c = LC(), d = (state && state.drumSkill || 10) - 10;
-    function w(x) { return Math.round(U.clamp(x[0] + d * x[1], x[2], x[3]) * 10000) / 10000; }
+  // Gig difficulty (v0.5.1 hotfix; Addendum C4 adds Expert + a settings screen). Charts are thinned by time, not by beat:
+  // each lane keeps a hit only if it's at least laneGap seconds after that lane's last kept hit, any two kept moments are
+  // at least anyGap apart, and a chord keeps at most `chord` notes (kick, then snare, win). Hard = the song exactly as
+  // written. window scales the timing windows; miss scales how much a miss hurts the crowd; look = seconds of highway.
+  gig.DIFFICULTIES = {
+    easy: { window: 1.45, miss: 0.55, look: 1.6, chord: 2, anyGap: 0.24,
+      laneGap: { kick: 0.42, snare: 0.42, hat: 0.62, cymbal: 1.6, toms: 0.5, ride: 0.62 } },
+    normal: { window: 1.15, miss: 0.8, look: 1.3, chord: 3, anyGap: 0.08,
+      laneGap: { kick: 0.16, snare: 0.16, hat: 0.22, cymbal: 0.5, toms: 0.18, ride: 0.22 } },
+    hard: { window: 1, miss: 1, look: 1.15, chord: 6, anyGap: 0, laneGap: null }
+  };
+  gig.DEFAULT_DIFFICULTY = 'easy';   // what a new player gets; the sim itself defaults to 'hard' (the chart as written)
+  function diffOf(d) { return gig.DIFFICULTIES[d] || gig.DIFFICULTIES.hard; }
+  gig.windows = function (state, difficulty) {
+    var c = LC(), d = (state && state.drumSkill || 10) - 10, k = diffOf(difficulty).window;
+    function w(x) { return Math.round(U.clamp(x[0] + d * x[1], x[2], x[3]) * k * 10000) / 10000; }
     return { perfect: w(c.perfect), good: w(c.good) };
   };
+  function thin(notes, r) {
+    var out = [], lastLane = {}, lastAt = -1e9, i = 0;
+    while (i < notes.length) {
+      var j = i; while (j < notes.length && Math.abs(notes[j].t - notes[i].t) < 0.001) j++;
+      var t = notes[i].t, chord = notes.slice(i, j).sort(function (a, b) { return a.li - b.li; }), kept = 0;
+      if (chord.some(function (n) { return n.free; })) { out.push.apply(out, chord); i = j; continue; }   // fill windows stay free-form
+      if (t - lastAt >= r.anyGap - 1e-6) {
+        chord.forEach(function (n) {
+          if (kept >= r.chord) return;
+          var g = r.laneGap[n.lane] || 0.2;
+          if (lastLane[n.lane] != null && t - lastLane[n.lane] < g - 1e-6) return;
+          out.push(n); lastLane[n.lane] = t; kept++;
+        });
+        if (kept) lastAt = t;
+      }
+      i = j;
+    }
+    return out;
+  }
   gig.levelOf = function (crowd) { return C.CROWD_LEVELS[U.clamp(Math.floor(crowd / 20), 0, C.CROWD_LEVELS.length - 1)]; };
   // Who does what on stage: the frontman spins the cape, the soloist takes the bridge, the filler sneaks in fills.
   gig.roles = function (state) {
@@ -245,6 +277,7 @@
       });
     }
     notes.sort(function (a, b) { return a.t - b.t || a.li - b.li; });
+    if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0; notes.forEach(function (n) { if (!n.free) total++; });
     return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
       duration: GG.songs.seconds(p), notes: notes, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
@@ -304,9 +337,11 @@
     if (live.attendance == null) live.attendance = gig.expectCrowd(state, g, live.started);
     if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd, cfg.crowdRange[0], cfg.crowdRange[1]));
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
-    var W = gig.windows(state), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
+    if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
+    var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
+    var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
-    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus,
+    var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff,
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
     var cur = null, tickOut = { misses: 0, crowd: 0, level: '' };
@@ -327,8 +362,9 @@
     S.startSong = function (i) {
       i = i == null ? live.index : i;
       var song = set[i]; if (!song) return null;
-      var rng = GG.RNG((seed + (i + 1) * 7919) >>> 0), diff = song.rating && song.rating.difficulty || 50;
-      var chart = gig.chart(song, { solo: !!roles.solo, extras: roles.fill && diff < cfg.fillsMaxDifficulty ? rng : null });
+      var rng = GG.RNG((seed + (i + 1) * 7919) >>> 0), sdiff = song.rating && song.rating.difficulty || 50;
+      var chart = gig.chart(song, { solo: !!roles.solo, difficulty: thinned ? diff : null,
+        extras: diff !== 'easy' && roles.fill && sdiff < cfg.fillsMaxDifficulty ? rng : null });
       var n = chart.notes, byLane = [], entryTotal = [], cues = [];
       for (var l = 0; l < C.LANES.length; l++) byLane.push([]);
       chart.sections.forEach(function () { entryTotal.push(0); });
@@ -379,7 +415,7 @@
     }
     function miss(x, t) {
       x.j = 3; S.combo = 0; cur.missStreak++;
-      crowdAdd(cfg.gain.miss * cur.dens);
+      crowdAdd(cfg.gain.miss * cur.dens * dcfg.miss);
       emit('gig:judge', { lane: x.lane, judgement: 'miss', combo: 0, crowd: S.crowd });
       if (cur.missStreak >= cfg.booStreak && S.crowd < cfg.booCrowd && ready('boo', t)) {
         moment('boo', t);
@@ -410,7 +446,7 @@
         if (got < cfg.fillCap) { cur.fillsIn[key] = got + 1; cur.fills++; crowdAdd(cfg.gain.fill); }
         out = { judgement: 'fill', note: null, combo: S.combo, crowd: S.crowd };
       } else {
-        cur.stray++; crowdAdd(cfg.gain.stray);
+        cur.stray++; crowdAdd(cfg.gain.stray * dcfg.miss);
         out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, stray: true };
       }
       emit('gig:judge', { lane: C.LANES[li], judgement: out.judgement, combo: S.combo, crowd: S.crowd });

@@ -252,4 +252,29 @@ test('band effects: cape spin, solo, sneaky fills, unhappy members; genre moment
   }
 });
 
+test('difficulty (v0.5.1): easy/normal thin the chart by time, widen windows, soften misses; hard = as written', () => {
+  const s = decent(21, 2), song = s.songs[0];
+  const hard = GG.gig.chart(song, {}), normal = GG.gig.chart(song, { difficulty: 'normal' }), easy = GG.gig.chart(song, { difficulty: 'easy' });
+  ok(easy.total < normal.total && normal.total <= hard.total, 'easy < normal <= hard notes ' + [easy.total, normal.total, hard.total]);
+  const E = GG.gig.DIFFICULTIES.easy, last = {};
+  let prevT = -1e9, chord = 0;
+  for (const n of easy.notes.filter(n => !n.free)) {
+    if (last[n.lane] != null) ok(n.t - last[n.lane] >= E.laneGap[n.lane] - 1e-6, 'easy lane gap ' + n.lane);
+    last[n.lane] = n.t;
+    if (Math.abs(n.t - prevT) < 0.001) { chord++; ok(chord < E.chord, 'easy chord cap'); } else { ok(n.t - prevT >= E.anyGap - 1e-6, 'easy any gap'); chord = 0; }
+    prevT = n.t;
+  }
+  const w = GG.gig.windows(s, 'hard'), we = GG.gig.windows(s, 'easy');
+  ok(we.perfect > w.perfect && we.good > w.good, 'easy windows wider');
+  eq(GG.gig.windows(s), w, 'no difficulty = hard windows');
+  const ses = GG.gig.session(s, legion(s), null, { emit: false, difficulty: 'easy' });
+  eq([ses.difficulty, s.liveGig.difficulty], ['easy', 'easy'], 'session keeps its difficulty for resume');
+  const s2 = decent(21, 2), hardSes = GG.gig.session(s2, legion(s2), null, { emit: false });
+  const et = ses.startSong().total, ht = hardSes.startSong().total;
+  ok(et < ht, 'the live easy chart is thinner than the hard one ' + [et, ht]);
+  const sloppy = { accuracy: 0.7, jitterMs: 75 };
+  const rh = play(decent(22, 2), sloppy, 5), re = GG.gig.botPlay(GG.gig.session(decent(22, 2), legion(decent(22, 2)), null, { emit: false, difficulty: 'easy' }), sloppy, GG.RNG(5));
+  ok(re.score > rh.score, 'a sloppy player does better on easy ' + [rh.score, re.score]);
+});
+
 done('sim_gig');
