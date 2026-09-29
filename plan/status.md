@@ -84,8 +84,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   viral chance (good or cringe); generated comedic comments (Tundra Wraith leaves a supportive one on every post);
   scandals → choice cards (Marcel's lawn is artificial turf); fan types superfans / casuals / haters (fans stay one global
   count); recurring superfans (Dale from Warman, the jumper-cable trucker, the president of your Japanese fan club); fan
-  mail + gifts in the garage (macaroni portrait of Kenji); paid fan club later in the career (parody subscription site —
-  name is OPEN).
+  mail + gifts in the garage (macaroni portrait of Kenji); paid fan club later in the career on **Patreeon** (owner pick:
+  "support your favourite band's van repairs"; tiers Drumstick / Snare / Full Kit).
 - C6 Maps in rings: Saskatchewan from day one (Saskatoon, Regina, Prince Albert, Moose Jaw, Swift Current, North
   Battleford, Yorkton, Humboldt, Gravelbourg, Estevan; Warman/Martensville stay as Saskatoon satellites since venues
   shipped there); **the West** in Local Heroes (Winnipeg, Brandon, Calgary, Edmonton, Red Deer, Lethbridge, Kelowna,
@@ -100,7 +100,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   NYE best-paying gig, St. Patrick's pub circuit, Canada Day free park shows, Halloween costume gigs, Thanksgiving dinner
   (guilt cards if you owe), Remembrance Day (no Legion gigs that week), Christmas party circuit + the label's terrible
   Christmas single, the Grey Mug halftime show (late-career moment).
-- C8 still OPEN (popups when reached): other rivals' members (v0.9), exact balance numbers, the fan-club site name.
+- C8 still OPEN (popups when reached): other rivals' members (v0.9), exact balance numbers.
 
 ## Addendum 1 — pending
 Already-shipped versions → **v0.6.1 catch-up**:
