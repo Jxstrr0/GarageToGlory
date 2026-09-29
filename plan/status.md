@@ -56,6 +56,16 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
+## Owner feedback → v0.6.2 (2026-09-29)
+- "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
+  4 notes at once".
+- **Two-thumb rule** (owner pick): on EVERY gig difficulty (Easy → Expert) charts never ask for more than 2 notes at
+  once (priority kick > snare > cymbal > toms > ride > hat). The dropped hits still SOUND (auto-played in the drum audio,
+  not judged, no miss). Hard/Expert get harder through density and speed, never 3-finger chords.
+- **Songwriter** (owner picks): **groove presets** (start each section from a named beat per genre, then tweak; one-tap
+  "More metal" / "Make it catchier"-style buttons) + a **step-by-step flow** (one thing per screen: Verse → Chorus →
+  Bridge → Tempo → Song order → Name), with the full grid editor still available as "Advanced".
+
 ## Addendum 1 (handoff Part C) — decisions (owner, 2026-09-29; locked unless marked open)
 - C1 Van: designated driver per band changes stats + road cards — Hail Damage **Kenji** (silent, perfect record, never
   uses GPS, always exactly on time; fewer breakdowns), Frost Heave **Moth** (her apartment; free maintenance, terrible
