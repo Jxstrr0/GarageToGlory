@@ -18,6 +18,11 @@
 //   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, keys);
 //   colourblind lane colours (GG.prefs.CB_COLOURS); the setlist sheet has Expert, the speaker/headphones quick switch
 //   (gig-profile-<id>) and an assists line (btn-gig-settings). opts.practice = { speed } relabels a studio-mode run as practice.
+// v0.7.2 double kicks (owner): a chart note with dbl/t2 stands for two kicks. It draws as a stacked pill with a ×2 badge;
+//   one tap (or Auto-kick) judges it, then the second kick plays itself at t2 on the heard clock (GG.audio.hit('kick',
+//   ctxTime) on a healthy clock, frame-due otherwise; never earlier than DBL_MIN after the tap, so a late tap can't flam);
+//   a missed double plays nothing extra. The kick zone flashes again + a small ring and the stage drummer's left foot
+//   kicks (GG.render.stage.kick2) when the second kick is heard. Debug gigui adds doubles, doublesPlayed.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
@@ -185,6 +190,7 @@
     if (G) teardown();
     G = { gig: gig, done: done, opts: opts || {}, mode: 'set', ses: null, chart: null, t: 0, zero: 0, offset: 0, synced: false,
       syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0], dash: [5, 4], noDash: [], ap: 0, autoN: 0, autoAt: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
+      dq: [], dp: 0, dblN: 0, k2: [-1, -1, -1, -1, -1, -1], k2i: 0, k2Last: -1e9, k2W: -1e9,
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
     readPrefs();
@@ -241,6 +247,8 @@
     resync(p, true);
     G.mode = 'count'; G.paused = false; G.restart = false; G.drawFrom = 0; G.countBeat = 99; G.popAt = -1e9;
     G.ap = 0; G.autoN = G.autoN || 0; G.autoAt = G.autoAt || [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9];
+    G.dq = []; G.dp = 0; G.k2Last = -1e9; G.k2W = -1e9; for (var q = 0; q < G.k2.length; q++) G.k2[q] = -1;   // v0.7.2 this chart's doubles
+    for (var k = 0; k < ch.notes.length; k++) if (ch.notes[k].dbl) G.dq.push(k);
     G.zero = heardAt(p) + lead; G.t = -lead;
     var wait = G.zero - G.lat - LEAD_IN - heardAt(p);
     G.startTimer = setTimeout(startAudio, Math.max(0, wait * 1000));
@@ -318,6 +326,31 @@
     }
   }
 
+  /* ---- v0.7.2 double kicks: one tap, two kicks ------------------------------------------------------------- */
+  // Once a double's first kick is judged a hit (tap or Auto-kick; the session stamps hitT), its second kick plays at
+  // max(t2, hitT + DBL_MIN): scheduled AUTO_AHEAD early at G.zero + time on a healthy clock, else on the frame it's due.
+  var DBL_MIN = 0.06, KICK = C.LANES.indexOf('kick');
+  function doubleKicks(t, p) {
+    var q = G.dq, n = G.chart.notes, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
+    var ahead = sched ? G.lat + AUTO_AHEAD : 0;
+    while (G.dp < q.length && n[q[G.dp]].d2) G.dp++;
+    for (var k = G.dp; k < q.length; k++) {
+      var x = n[q[k]];
+      if (x.t > t + 0.45) break;                        // nothing this late can have been judged yet
+      if (x.d2 || x.j === 0) continue;                  // done, or still waiting for its tap
+      if (x.j !== 1 && x.j !== 2) { x.d2 = 1; continue; }   // a missed double plays nothing extra
+      var w = Math.max(x.t2, (x.hitT != null ? x.hitT : x.t) + DBL_MIN, G.k2W + DBL_MIN);   // never two at once (a stalled frame)
+      if (w > t + ahead) continue;
+      x.d2 = 1; G.k2W = w;
+      if (w < t - 0.08 || KICK >= G.lanes) continue;    // skipped past (a resync jump): stay quiet rather than flam
+      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zero + w : undefined);
+      G.dblN++;
+      var at = p + Math.max(0, w - t) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
+      G.k2[G.k2i] = at; G.k2i = (G.k2i + 1) % G.k2.length; G.autoAt[KICK] = at;
+    }
+    for (var i = 0; i < G.k2.length; i++) if (G.k2[i] > 0 && p >= G.k2[i]) { G.k2Last = G.k2[i]; G.k2[i] = -1; stageCall('kick2'); }
+  }
+
   /* ---- The frame loop (no allocations in here) ------------------------------------------------------------ */
   function loop() { if (G && !G.raf) G.raf = requestAnimationFrame(frame); }
   function frame() {
@@ -340,6 +373,7 @@
       }
       if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
       if (t >= -0.5) autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
+      if (t >= -0.5 && G.dq.length) doubleKicks(t, p);   // v0.7.2 a double's second kick
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
     if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
@@ -397,7 +431,7 @@
     for (var k = 0; k < n.length; k++) { var d = n[k].t - last[n[k].li]; if (d > 0.001 && d < gap) gap = d; last[n[k].li] = n[k].t; }
     G.gemH = U.clamp(Math.round(speed * gap * 0.7), 8, 16);
     buildBg();
-    G.fonts = { pop: '900 26px ' + FONT, combo: '900 22px ' + FONT, small: '800 10px ' + FONT, band: '800 11px ' + FONT, icon: '20px ' + FONT };
+    G.fonts = { pop: '900 26px ' + FONT, combo: '900 22px ' + FONT, small: '800 10px ' + FONT, band: '800 11px ' + FONT, icon: '20px ' + FONT, dbl: '900 11px ' + FONT };
   }
   var FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
   function rr(x, px, py, w, h, r) {
@@ -431,8 +465,9 @@
     var x = G.x, ch = G.chart, n = ch.notes, k, l, a, y;
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.drawImage(G.bg, 0, 0);
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
-    for (l = 0; l < G.lanes; l++) {   // tap flashes
+    for (l = 0; l < G.lanes; l++) {   // tap flashes (v0.7.2: the kick zone flashes again when a double's second kick lands)
       a = 1 - (p - G.press[l]) / 140;
+      if (l === KICK) a = Math.max(a, 1 - (p - G.k2Last) / 140);
       if (a > 0) { x.globalAlpha = a * 0.45; x.fillStyle = laneColor(l); rr(x, col(l) * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); }
     }
     x.globalAlpha = 1;
@@ -464,9 +499,20 @@
       if (nt.j === 3) { x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063'; }
       else if (nt.free) { x.globalAlpha = 0.3 * a; x.fillStyle = laneColor(nt.li); }
       else { x.globalAlpha = 1; x.fillStyle = laneColor(nt.li); }
+      var dy = 0;
+      if (nt.dbl) {   // v0.7.2 double kick: a second pill stacked behind (the second kick) + a ×2 badge
+        dy = Math.round(gh * 0.6) + 3; var ga = x.globalAlpha;
+        x.globalAlpha = ga * 0.6; rr(x, gx + 4, y - gh / 2 - dy, gw - 8, gh, gr); x.fill(); x.globalAlpha = ga;
+        x.lineWidth = 2; x.strokeStyle = '#0a0e18'; rr(x, gx, y - gh / 2, gw, gh, gr); x.stroke();
+      }
       rr(x, gx, y - gh / 2, gw, gh, gr); x.fill();
       if (nt.j === 0 && !nt.free) { x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(gx + 7, y - gh / 2 + 3, gw - 14, 2); }
       if (nt.extra) { x.globalAlpha = 1; x.lineWidth = 2; x.strokeStyle = '#ffffff'; x.stroke(); }
+      if (dy && nt.j === 0) {
+        var bx = gx + gw - 12, by = y - gh / 2 - dy / 2;
+        x.globalAlpha = 1; rr(x, bx - 12, by - 8, 24, 16, 8); x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = laneColor(nt.li); x.stroke();
+        x.fillStyle = '#ffffff'; x.font = G.fonts.dbl; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('×2', bx, by + 1);
+      }
     }
     x.globalAlpha = 1;
     for (l = 0; l < G.lanes; l++) {   // v0.6.2 auto-note ticks: a small ring, no judgement pop
@@ -732,12 +778,12 @@
       var t = songTime(p);
       for (var i = 0; i < ch.notes.length && soon.length < 12; i++) {
         var n = ch.notes[i]; if (n.j !== 0 || n.free || n.li >= G.lanes) continue;
-        if (n.t > t + 0.03) soon.push({ li: n.li, t: n.t });
-        if (!next && n.t > t + 0.35) next = { lane: n.lane, li: n.li, t: n.t };
+        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : { li: n.li, t: n.t });
+        if (!next && n.t > t + 0.35) next = n.dbl ? { lane: n.lane, li: n.li, t: n.t, t2: n.t2 } : { lane: n.lane, li: n.li, t: n.t };
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };

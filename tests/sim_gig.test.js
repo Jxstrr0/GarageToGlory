@@ -131,7 +131,8 @@ test('chart: note count == pattern hits x bars; freestyle windows; solo easing; 
   songs.forEach(song => {
     const p = song.pattern, ch = GG.gig.chart(song), bars = GG.contracts.BARS_PER_SECTION;
     const want = p.arrangement.reduce((t, name) => t + hitsOf(p.sections[name]) * bars, 0);
-    eq(ch.notes.length + ch.auto.length, want, song.id + ' notes'); eq(ch.notes.length + ch.auto.length, GG.songs.toNotes(song).length);
+    // v0.7.2: a double kick is one note standing for two hits -> notes + doubles + auto = every hit of the pattern
+    eq(ch.notes.length + ch.doubles + ch.auto.length, want, song.id + ' notes'); eq(ch.notes.length + ch.doubles + ch.auto.length, GG.songs.toNotes(song).length);
     eq(ch.fills.length, p.arrangement.filter(x => x === 'bridge').length || 1, 'one freestyle window per bridge');
     eq(ch.total, ch.notes.filter(n => !n.free).length);
     ok(ch.notes.every((n, i) => i === 0 || ch.notes[i - 1].t <= n.t) && ch.notes.every(n => L[n.li] === n.lane && n.j === 0), 'sorted, lanes');
@@ -141,7 +142,7 @@ test('chart: note count == pattern hits x bars; freestyle windows; solo easing; 
     ok(solo.notes.filter(n => n.section === 'bridge' && !n.free).every(n => n.step % 4 === 0), 'solo: quarter notes only');
     ok(solo.total <= ch.total && solo.solos.length === ch.fills.length, 'solo eases');
     const ex = GG.gig.chart(song, { extras: GG.RNG(4) }), extra = ex.notes.filter(n => n.extra);
-    eq(extra.length, ex.extras); eq(ex.notes.length + ex.auto.length, ch.notes.length + ch.auto.length + ex.extras);
+    eq(extra.length, ex.extras); eq(ex.notes.length + ex.doubles + ex.auto.length, ch.notes.length + ch.doubles + ch.auto.length + ex.extras);
     extra.forEach(n => { ok(n.lane === 'snare' && n.section !== 'bridge' && n.bar === bars - 1 && n.step >= 10, 'extra spot');
       ok(!GG.songs.isHit(p.sections[n.section][1], n.step), 'extras never double a written snare'); });
   });
@@ -283,7 +284,7 @@ test('two-thumb rule (v0.6.2): no difficulty ever asks for 3+ notes at once; dro
   let chordSongs = 0, autos = 0;
   const pr = GG.gig.THUMB_PRIORITY;
   pool.forEach(song => {
-    const raw = GG.gig.chart(song, { thumbs: false, free: false }), big = {};
+    const raw = GG.gig.chart(song, { thumbs: false, free: false, doubles: false }), big = {};
     raw.notes.forEach(n => { const k = n.t.toFixed(4); big[k] = (big[k] || 0) + 1; });
     const had3 = Object.values(big).some(c => c >= 3); if (had3) chordSongs++;
     GG.contracts.GIG_DIFFICULTY.forEach(d => {
@@ -291,6 +292,9 @@ test('two-thumb rule (v0.6.2): no difficulty ever asks for 3+ notes at once; dro
         const ch = GG.gig.chart(song, Object.assign({ difficulty: d === 'hard' ? null : d }, o)), at = {};
         ch.notes.filter(n => !n.free).forEach(n => { const k = n.t.toFixed(4); (at[k] = at[k] || []).push(n.lane); });
         ok(Object.values(at).every(l => l.length <= 2), song.id + ' ' + d + ': never more than 2 judged notes at once');
+        ok(ch.auto.every(a => a.lane !== 'kick'), 'a kick is never a thumb drop');
+        // v0.7.2: a double's second kick keeps the kick's thumb slot at t2 (merged after the two-thumb rule)
+        ch.notes.filter(n => n.dbl).forEach(n => { const k = n.t2.toFixed(4); (at[k] = at[k] || []).push('kick'); });
         eq(ch.total, ch.notes.filter(n => !n.free).length, 'auto notes stay out of total');
         ok(ch.auto.every(a => a.auto && !ch.notes.includes(a)), 'auto notes are separate');
         ch.auto.forEach(a => { const kept = at[a.t.toFixed(4)] || []; ok((kept.length === 2 || GG.gig.DIFFICULTIES[d].laneGap) && kept.every(l => pr.indexOf(l) < pr.indexOf(a.lane)), 'priority kick > snare > cymbal > toms > ride > hat'); });
@@ -305,6 +309,90 @@ test('two-thumb rule (v0.6.2): no difficulty ever asks for 3+ notes at once; dro
   const ses = GG.gig.session(sesS, legion(sesS), ['chordy'], { emit: false, difficulty: 'expert' }), ch = ses.startSong();
   const r = GG.gig.botPlay(ses, { accuracy: 1, jitterMs: 0, one: true }, GG.RNG(1));
   ok(ch.auto.length > 0 && r.accuracy >= 0.99 && r.notes === ch.total && r.miss === 0, 'accuracy counts judged notes only ' + [r.accuracy, r.notes, ch.total, ch.auto.length]);
+});
+
+// ---- v0.7.2 double kicks (owner: one kick note hits twice: less compression on the highway, same pace) ---------------------
+const E16 = '................';
+const kickSong = (bpm, kick, rest) => ({ id: 'k' + bpm + kick, title: 'Kicks', quality: 60, polish: 60,
+  pattern: { bpm, lanes: 4, arrangement: ['verse', 'chorus'], sections: { verse: [kick].concat(rest || ['....x.......x...', E16, E16]),
+    chorus: [E16, E16, E16, E16], bridge: [E16, E16, E16, E16] } } });
+const kicksOf = ch => ch.notes.filter(n => n.lane === 'kick');
+test('double kicks: fast pairs merge into one note (runs pair 1+2, 3+4; odd one single), by time, before thinning', () => {
+  const G = GG.gig.DOUBLE_GAP, bars = GG.contracts.BARS_PER_SECTION;
+  ok(G >= 0.15 && G <= 0.2, 'gap threshold ~0.16-0.2 s: ' + G);
+  // 120 BPM: a 16th = 0.125 s (merges), two 16ths = 0.25 s (does not)
+  const shape = (kick, want) => {
+    const ch = GG.gig.chart(kickSong(120, kick), { free: false }), k = kicksOf(ch), per = k.length / bars, d = ch.doubles / bars;
+    eq([per, d], want, kick + ' kick notes / doubles per bar');
+    k.filter(n => n.dbl).forEach(n => ok(Math.abs(n.t2 - n.t - 0.125) < 1e-9, 'second hit one 16th later'));
+    eq(k.length + ch.doubles, (kick.match(/x/g) || []).length * bars, 'every kick accounted for');
+    return ch;
+  };
+  const pairs = shape('xx..xx..xx..xx..', [4, 4]);
+  ok(kicksOf(pairs).every(n => n.dbl && n.step % 4 === 0), 'pairs: the first hit carries the note');
+  const r3 = shape('xxx.....xxx.....', [4, 2]), r3k = kicksOf(r3);
+  eq(r3k.slice(0, 2).map(n => [n.step, !!n.dbl]), [[0, true], [2, false]], 'run of 3: 1+2 double, 3 single');
+  eq(kicksOf(shape('xxxx....xxxx....', [4, 4])).slice(0, 2).map(n => [n.step, !!n.dbl]), [[0, true], [2, true]], 'run of 4: 1+2, 3+4');
+  const r5 = shape('xxxxx...xxxxx...', [6, 4]);                   // run of 5: 1+2, 3+4, 5 single
+  eq(kicksOf(r5).slice(0, 3).map(n => [n.step, !!n.dbl]), [[0, true], [2, true], [4, false]], 'run of 5');
+  shape('xxxxxxxxxxxxxxxx', [8, 8]);                              // a double-kick run: every note a double (runs span bars)
+  shape('x...x...x...x...', [4, 0]);                              // quarters never merge
+  // the threshold is time, not steps: 8th-note kicks merge only when fast enough
+  const slow = Math.floor(30 / (G + 0.003)), fast = Math.ceil(30 / (G - 0.003)), eighths = 'x.x.x.x.x.x.x.x.';
+  eq(GG.gig.chart(kickSong(slow, eighths), { free: false }).doubles, 0, '8ths at ' + slow + ' BPM stay single');
+  eq(GG.gig.chart(kickSong(fast, eighths), { free: false }).doubles, 4 * bars, '8ths at ' + fast + ' BPM pair up');
+  GG.gig.DOUBLE_GAP = 0.1; eq(GG.gig.chart(kickSong(fast, eighths), { free: false }).doubles, 0, 'tunable'); GG.gig.DOUBLE_GAP = G;
+  eq(GG.gig.chart(kickSong(fast, eighths), { doubles: false }).doubles, 0, 'doubles: false = no merge');
+  // determinism + the pattern invariant on every genre signature and wild jams, every difficulty
+  const pool = ['metal', 'punk', 'rock', 'country'].map(g => ({ id: 'sig-' + g, title: g, pattern: GG.songs.genre(g).signature }));
+  for (let i = 1; i <= 16; i++) pool.push({ id: 'gen' + i, title: 'g' + i, pattern: GG.songs.generate(['metal', 'punk'][i % 2], GG.RNG(i), { wild: true, gear: { lanes: 4, doubleKick: i % 3 === 0 } }) });
+  let merged = 0;
+  pool.forEach(song => {
+    const hard = GG.gig.chart(song, {}), raw = GG.gig.chart(song, { doubles: false });
+    eq(JSON.stringify(GG.gig.chart(song, {})), JSON.stringify(hard), song.id + ' deterministic');
+    eq(hard.notes.length + hard.doubles + hard.auto.length, GG.songs.toNotes(song).length, song.id + ' notes + doubles + auto = pattern hits');
+    eq(hard.auto.length, raw.auto.length, 'doubles never change the two-thumb drops');
+    eq(hard.total, raw.total - hard.doubles, 'one note per double');
+    hard.notes.filter(n => n.dbl).forEach(n => ok(n.lane === 'kick' && !n.free && n.t2 > n.t && n.t2 - n.t <= GG.gig.DOUBLE_GAP + 1e-6, 'double shape'));
+    hard.fills.forEach(f => ok(hard.notes.every(n => !n.dbl || n.t2 < f.t0 - 1e-9 || n.t >= f.t1 - 1e-9), 'freestyle kicks never merge'));
+    merged += hard.doubles;
+    const byT = {}; hard.notes.filter(n => n.dbl).forEach(n => { byT[n.t.toFixed(4)] = n.t2; });
+    ['normal', 'easy'].forEach(d => {
+      const ch = GG.gig.chart(song, { difficulty: d }), E = GG.gig.DIFFICULTIES[d];
+      ok(ch.total <= hard.total, d + ' thins');
+      ch.notes.filter(n => n.dbl).forEach(n => ok(Math.abs(byT[n.t.toFixed(4)] - n.t2) < 1e-9, d + ': thinning keeps or drops a double whole'));
+      let last = null; kicksOf(ch).filter(n => !n.free).forEach(n => { if (last != null) ok(n.t - last >= E.laneGap.kick - 1e-6, d + ': a double thins like one kick note'); last = n.t; });
+    });
+  });
+  ok(merged > 50, 'fast songs have doubles: ' + merged);
+  // Easy/Normal on the metal signature (170 BPM, kick on every 8th): the kick lane halves, the song keeps every hit's sound
+  const sig = pool[0], h0 = GG.gig.chart(sig, { doubles: false, free: false }), h1 = GG.gig.chart(sig, { free: false });
+  ok(kicksOf(h1).length * 2 === kicksOf(h0).length && h1.doubles === kicksOf(h1).length, 'signature: every kick note is now a double ' + [kicksOf(h0).length, kicksOf(h1).length]);
+});
+test('double kicks in the session: tap once, one judgement; the second hit is never a miss; misses stay one miss', () => {
+  const s = decent(31, 1); s.songs.unshift(kickSong(120, 'xx..xx..xx..xx..', [E16, E16, E16]));
+  const sid = s.songs[0].id, ses = GG.gig.session(s, legion(s), [sid], { emit: false, difficulty: 'hard' }), ch = ses.startSong(), W = ses.windows;
+  const k = kicksOf(ch).filter(n => !n.free), a = k[0], b = k[1], c = k[2];
+  ok(a.dbl && b.dbl && c.dbl, 'doubles on the chart');
+  const r = ses.judge('kick', a.t + 0.01);
+  eq([r.judgement, r.note === a, ses.combo, a.hitT], ['perfect', true, 1, a.t + 0.01], 'one tap, one judgement');
+  const echo = ses.judge('kick', a.t2 + 0.005);
+  ok(echo.echo && echo.judgement === null && !echo.stray && ses.combo === 1, 'tapping the second kick too is forgiven (no stray, combo kept)');
+  ses.tick(b.t + W.good + 0.2);
+  eq([b.j, ses.stats().miss, ses.combo], [3, 1, 0], 'an untapped double is ONE miss');
+  ses.judge('kick', c.t - 0.02); ses.tick(c.t2 + 0.5);
+  eq(ses.stats().miss, 1, 'the second kick never misses');
+  const res = ses.endSong();
+  eq([res.notes, res.stray], [ch.total, 0], 'total counts a double once; echo taps are not strays');
+  // a perfect bot on a doubles song: 100%, combo = notes
+  const s2 = decent(32, 1); s2.songs.unshift(kickSong(120, 'xxxxxxxxxxxxxxxx'));
+  const rr = GG.gig.botPlay(GG.gig.session(s2, legion(s2), [s2.songs[0].id], { emit: false, difficulty: 'expert' }), PERFECT, GG.RNG(1));
+  eq([rr.accuracy, rr.miss, rr.maxCombo], [1, 0, rr.perfect], 'perfect bot');
+  // Auto-kick plays doubles (hitT set so the second kick can follow)
+  const s3 = decent(33, 1); s3.songs.unshift(kickSong(120, 'xx..xx..xx..xx..'));
+  const ak = GG.gig.session(s3, legion(s3), [s3.songs[0].id], { emit: false, autoKick: true, difficulty: 'hard' }), ch3 = ak.startSong();
+  for (let T = 0; T <= 4; T += 0.05) ak.tick(T); const d3 = kicksOf(ch3).filter(n => n.t <= 3.9);
+  ok(d3.length && d3.every(n => n.j === 2 && n.hitT >= n.t - 1e-6 && n.hitT - n.t < 0.3), 'auto-kick hits doubles');
 });
 
 // ---- v0.6.1 (Addendum C4, SETTINGS): Expert, assists, difficulty pay, calibration maths ---------------------------------

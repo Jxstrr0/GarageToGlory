@@ -28,6 +28,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 | Run length | Always ends at year 10 (or 12–13 with bonus years). Never a game over. |
 
 ## Owner decisions
+- 2026-09-30: **Double kick** (owner: "make 1 kick note hit as a double kick to create less compression on the note highway
+  while still keeping the pace quick"): two fast kicks (≤ `gig.DOUBLE_GAP` 0.18 s apart) are ONE highway note; one tap plays
+  both (the second on the audio clock at its time); every difficulty; one note for accuracy/combo. Shipped in v0.7.2.
 - 2026-09-29: Money feel = **Scrappy, but not too brutal** (always a little short; hustle matters; parents' loan is rare with decent play).
 - 2026-09-29: First storyline chain = **The Cape Saga** (Marcel's cape).
 - 2026-09-29: Owner allows auto-merging PRs into `main`; delete merged branches afterwards.
@@ -56,6 +59,26 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Owner turned on GitHub "Automatically delete head branches" (merged branches clean themselves up).
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
+
+## What's in v0.7.2 double kick (owner request 2026-09-30)
+- `22_sim_gig` chart: after the two-thumb rule and BEFORE difficulty thinning, a kick ≤ `gig.DOUBLE_GAP` (0.18 s) after the
+  previous kick merges into it: the earlier note gets `dbl: true, t2` and the later one leaves the highway. Runs pair in order
+  (1+2, 3+4, …; an odd last one stays single); freestyle kicks never merge. `chart.doubles`; `chart(song, { doubles: false })`.
+  0.18 (the lead asked ~0.16): with no pedal before v0.8 songs have no back-to-back 16th kicks, so 0.16 only reached 8th kicks
+  ≥ 188 BPM; 0.18 = 8ths from ~167 BPM (Thrash/Blast tempos, the 170 BPM metal signature) and 16th pairs from 84 BPM.
+  Session: judged on the first hit (one note for total/accuracy/combo; hit stamps `hitT`); an untapped double = one miss, the
+  second hit is never judged; tapping the second kick as well is forgiven (`echo`, no stray). Two-thumb rule unchanged (a kick
+  is never a thumb drop; the second kick keeps the kick's slot at t2, so a 3rd hit there stays auto).
+- `55_ui_gig`: double = a stacked pill + a "×2" badge in the kick lane; once the first is hit (tap or Auto-kick) the second kick
+  plays at max(t2, hit + 0.06 s) via `GG.audio.hit('kick', G.zero + t)` scheduled ahead on a healthy clock (frame-due otherwise,
+  never two at once); a missed double plays nothing extra; the kick zone flashes again + a ring when it's heard, and
+  `GG.render.stage.kick2()` kicks the drummer's left foot (`info().kick2s`). Debug gigui `doubles, doublesPlayed`, `soon/next.t2`.
+- Numbers: metal signature (170 BPM, 8th kicks) Hard/Expert 432 → 340 notes (−21%, kick lane 184 → 92, 12.8 → 10.0 notes/s),
+  Normal 322 → 230 (−29%), Easy 98 → 106 (thins by time; kicks 48 → 46); metal jams ≥ 175 BPM −23% on Hard; songs < 167 BPM
+  unchanged. Live bots (20 bands × 3 songs, before → after): perfect 90 = 90, avg/sloppy within ~1 score point on every
+  difficulty. `tools/balance.js 10 20` identical (careers auto-resolve with `gig.simulate`, which never builds charts).
+- Tests: sim_gig 22 (+2: merge rules/pairs/runs 3-4-5/threshold/determinism/difficulties/invariant notes + doubles + auto =
+  pattern hits; session tap/echo/miss/auto-kick) · pw_gig `double` (12; screenshot `tests/.cache/double.png`).
 
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
@@ -486,7 +509,8 @@ Later versions:
   hire, candidates, candidateScore, hireFillIn, dismissFillIn, quirk, traitDef, rivalBlurb, makeLook, botWeek,
   botCardChoice, botValue, migrate, cards, cfg`. Tunables `economy.drama`; content `drama.js`, `recruits.js`.
 - `GG.gig` v0.6.2: `chart(song, {solo, extras, free, difficulty, thumbs:false = raw})` → `{notes, auto, total, ...}`;
-  `THUMBS` (2), `THUMB_PRIORITY`.
+  `THUMBS` (2), `THUMB_PRIORITY`. v0.7.2: `DOUBLE_GAP`, chart `doubles` + opt `doubles: false`, NOTE `dbl, t2, hitT`
+  (CHART/NOTE shapes in 02_contracts); `GG.render.stage.kick2()`.
 - `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
   → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
   performance, gradeFor, payFor`.

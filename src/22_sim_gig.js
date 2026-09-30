@@ -8,8 +8,13 @@
 //                  songs:[titles], songIds, reactions:[{ who, text }], lines:[text], source, deltas }
 //   live extras: { live: true, tier, kind, accuracy, perfect, good, miss, maxCombo, songResults:[SONG_RESULT],
 //                  moments:[kind], setBonus: { opener, closer } }
-//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free, difficulty, thumbs }) -> {notes, auto (v0.6.2 two-thumb drops), total..} ; setSize ; defaultSetlist ;
+//   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free, difficulty, thumbs, doubles }) -> {notes, auto (v0.6.2 two-thumb drops), total..} ; setSize ; defaultSetlist ;
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
+// v0.7.2 double kicks (owner): two kick hits in quick succession (gap <= gig.DOUBLE_GAP) are ONE highway note
+//   { dbl: true, t2 } judged on the first hit; the second kick plays itself at t2 (the live gig schedules it on the audio
+//   clock) only when the first was hit (hitT = when). Runs of 3+ fast kicks pair up (1+2, 3+4, ...; an odd last one stays
+//   single). One note for accuracy / combo / total; chart.doubles = double notes on the chart. Order: two-thumb rule ->
+//   doubles -> difficulty thinning (Easy/Normal thin a double like any kick note). chart(song, { doubles: false }) = no merge.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -213,6 +218,25 @@
     }
     return { notes: keep, auto: auto };
   }
+  // v0.7.2 double kicks (owner, 2026-09-30: "make 1 kick note hit as a double kick to create less compression on the note
+  // highway while still keeping the pace quick"). A kick that comes <= DOUBLE_GAP s after the previous kick merges into it:
+  // the earlier note becomes { dbl: true, t2 } and the later one leaves the highway (played, never judged, never a miss).
+  // Pairs are taken in order along a run of fast kicks (1+2, 3+4, ...): an odd last kick stays a plain note. Freestyle
+  // kicks never merge (and break a run). 0.18 s = every 16th pair from 84 BPM and 8th-note kicks from ~167 BPM (the
+  // Thrash / Blast tempos); without the pedal (v0.8) songs have no back-to-back 16th kicks, so 8ths are what fast metal has.
+  gig.DOUBLE_GAP = 0.18;
+  function doubles(notes, gap) {
+    var out = [], open = null, n = 0;
+    for (var i = 0; i < notes.length; i++) {
+      var x = notes[i];
+      if (x.lane !== 'kick') { out.push(x); continue; }
+      if (x.free) { open = null; out.push(x); continue; }
+      var d = open ? x.t - open.t : 1e9;
+      if (d > 1e-6 && d <= gap + 1e-6) { open.dbl = true; open.t2 = x.t; open = null; n++; continue; }   // the partner: plays at t2
+      open = x; out.push(x);
+    }
+    return { notes: out, doubles: n };
+  }
   // Gig difficulty (v0.5.1 hotfix; Addendum C4 adds Expert + a settings screen). Charts are thinned by time, not by beat:
   // each lane keeps a hit only if it's at least laneGap seconds after that lane's last kept hit, any two kept moments are
   // at least anyGap apart, and a chord keeps at most `chord` notes (kick, then snare, win). Hard = the song exactly as
@@ -270,7 +294,8 @@
     return { front: front, solo: solo, fill: byRole(['rhythm guitar', 'fiddle', 'guitar', 'bass'], solo) };
   };
 
-  // A song's chart: every hit of the pattern as a timed note { t, lane, li, section, entry, bar, step, j (0 = open) }.
+  // A song's chart: every hit of the pattern as a timed note { t, lane, li, section, entry, bar, step, j (0 = open) }
+  // (+ v0.7.2 dbl, t2 on a double kick; the session adds hitT, the song time it was hit, to a hit double).
   // Freestyle windows (the last bar of each bridge entry; the last bar of the song if there's no bridge) mark their notes
   // `free` (any taps there score a show-off bonus). o.solo eases bridge bars to quarter notes; o.extras (an rng) lets the
   // filler sneak 2-3 snare notes (`extra`) into the last bar of some verses/choruses.
@@ -308,10 +333,11 @@
     notes.sort(function (a, b) { return a.t - b.t || a.li - b.li; });
     var tt = o.thumbs === false ? { notes: notes, auto: [] } : twoThumbs(notes);   // v0.6.2 two-thumb rule
     notes = tt.notes;
+    if (o.doubles !== false) notes = doubles(notes, gig.DOUBLE_GAP).notes;   // v0.7.2 double kicks
     if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
-    var total = 0; notes.forEach(function (n) { if (!n.free) total++; });
+    var total = 0, dbl = 0; notes.forEach(function (n) { if (!n.free) total++; if (n.dbl) dbl++; });
     return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
-      duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, extras: extras, fills: fills, solos: solos, sections: sections };
+      duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, doubles: dbl, extras: extras, fills: fills, solos: solos, sections: sections };
   };
 
   /* ---- Setlists ------------------------------------------------------------------------------------------ */
@@ -416,7 +442,7 @@
       });
       cues.sort(function (a, b) { return a.t - b.t; });
       var nps = chart.total / Math.max(1, chart.duration);
-      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0,
+      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1,
         perfect: 0, good: 0, stray: 0, fills: 0, fillsIn: {}, maxCombo: 0, missStreak: 0, flubs: 0, extrasHit: 0,
         entryTotal: entryTotal, entryHits: entryTotal.map(function () { return 0; }), crowdSum: 0, crowdT: 0, lastT: 0,
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
@@ -438,6 +464,7 @@
     function hit(k, kind, t) {
       var x = cur.notes[k], c = cfg.gain[kind] * cur.dens * cur.staleMul;
       x.j = kind === 'perfect' ? 1 : 2;
+      if (x.dbl) { x.hitT = t; cur.dblHit = k; }   // v0.7.2: the second kick plays at max(t2, just after this)
       if (kind === 'perfect') cur.perfect++; else cur.good++;
       if (x.extra) cur.extrasHit++;
       cur.entryHits[x.entry]++;
@@ -474,7 +501,12 @@
         var d = Math.abs(t - x.t);
         if (d <= W.good && d < bestD) { best = list[k]; bestD = d; }
       }
-      var f = fillAt(t), out;
+      var f = fillAt(t), out, dh = li === LI.kick && cur.dblHit >= 0 ? n[cur.dblHit] : null;
+      if (dh && Math.abs(t - dh.t2) <= W.good && (best < 0 || Math.abs(t - dh.t2) < bestD)) {   // v0.7.2: tapping the double's
+        out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, echo: true };      // second kick too: no stray
+        emit('gig:judge', { lane: 'kick', judgement: null, combo: S.combo, crowd: S.crowd });
+        return out;
+      }
       if (best >= 0 && (bestD <= W.perfect || !f || n[best].t < f.t0 || n[best].t >= f.t1 - 1e-6)) {   // a note outside the window wins
         var kind = bestD <= W.perfect ? 'perfect' : 'good';
         hit(best, kind, t);

@@ -6,6 +6,7 @@
 //   setup({ venue: GIG|venue|kind, crowd: attendance, members, flags, genre, player, bpm })
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
+//   v0.7.2 kick2(): a double kick's second hit (the left foot on the double pedal, the kick shell pulses); info().kick2s
 // v0.6 (RIVALUI): setup({ ..., rival: true, members: GG.rival.lineup (corpsePaint / stageShirt / defector), drummer: { look,
 //   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
 //   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
@@ -177,6 +178,7 @@
   A.setCrowdLevel = function (v, snap) { v = +v; if (!isFinite(v)) return; pending.level = clamp(v, 0, 100); if (inst) inst.level(pending.level, snap); };
   A.moment = function (kind) { return !!(inst && inst.active && inst.moment(kind)); };
   A.hit = function (lane, judgement) { if (inst && inst.active) inst.hit(laneName(lane), judgement || 'good'); };
+  A.kick2 = function () { if (inst && inst.active) inst.kick2(); };   // v0.7.2 double kick
   A.bandAction = function (id, action) { return !!(inst && inst.active && inst.bandAction(id, action)); };
   A.setFrame = function (o) {
     o = o || {};
@@ -222,7 +224,7 @@
       level: pending.level, smooth: pending.level, hype: pending.level / 100, idx: 2,
       beatLen: 0.45, beatT: 0, beats: 0, lastBeatAt: 0,
       form: { kind: null, t: 0, dur: 0 }, arms: { kind: null, t: 0, dur: 0 }, cheer: 0, kickPulse: 0, time: 0,
-      moments: 0, hits: 0, bow: 0
+      moments: 0, hits: 0, kick2s: 0, bow: 0
     };
     var BOW = 3.4;   // v0.7: clap (1.6 s), then a bow
 
@@ -939,7 +941,7 @@
       };
       for (lane in STRIKE) { st = STRIKE[lane]; if (!st) continue; solve(lane, st); if (st.alt) solve(lane + '2', st.alt); }
       K.drummer = { ch: ch, sticks: sticks, poses: poses, seat: seat / scale,
-        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, tomAlt: 0, flinch: 9 };
+        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, kick2T: 9, tomAlt: 0, flinch: 9 };
       copyPose(K.drummer.L.cur, poses.snare.up); copyPose(K.drummer.R.cur, poses.hat.up);
     }
     function copyPose(out, p) { for (var i = 0; i < 6; i++) out[i] = p[i]; }
@@ -1343,14 +1345,19 @@
       bn[B_HIPS].position.y = hy;
       bn[B_LEG_L].rotation.x = -a; bn[B_SHIN_L].rotation.x = a; bn[B_LEG_R].rotation.x = -a; bn[B_SHIN_R].rotation.x = a;
       bn[B_LEG_L].rotation.z = 0.25; bn[B_LEG_R].rotation.z = -0.25;
-      Dm.kickT += dt; Dm.flinch += dt;
-      var kp = Dm.kickT < 0.14 ? bump(Dm.kickT / 0.14) : 0;
+      Dm.kickT += dt; Dm.flinch += dt; Dm.kick2T += dt;
+      var kp = Dm.kickT < 0.14 ? bump(Dm.kickT / 0.14) : 0, k2 = Dm.kick2T < 0.14 ? bump(Dm.kick2T / 0.14) : 0;
       bn[B_LEG_R].rotation.x = -a - 0.12 * (1 - kp); bn[B_SHIN_R].rotation.x = a + 0.1 * kp;
+      if (k2) { bn[B_LEG_L].rotation.x = -a - 0.12 * k2; bn[B_SHIN_L].rotation.x = a + 0.06 * k2; }   // v0.7.2 left foot
       bn[B_HEAD].rotation.x = 0.05 + 0.14 * beat * (0.3 + h) + (Dm.flinch < 0.4 ? 0.2 * bump(Dm.flinch / 0.4) : 0);
       bn[B_HEAD].rotation.y = Dm.flinch < 0.4 ? 0.3 * Math.sin(Dm.flinch * 30) * bump(Dm.flinch / 0.4) : 0;
       bn[B_SPINE].rotation.x = 0.04;
       handPose(Dm, Dm.L, bn[B_ARM_L], bn[B_FORE_L], Dm.sticks[0], dt, 'snare');
       handPose(Dm, Dm.R, bn[B_ARM_R], bn[B_FORE_R], Dm.sticks[1], dt, 'hat');
+    }
+    function kick2() {   // v0.7.2: the second hit of a double kick, on the left foot
+      if (!K || !K.drummer) return;
+      S.kick2s++; K.drummer.kick2T = 0; K.wob.kickT = 0; S.kickPulse = 1;
     }
     function handPose(Dm, H, arm, fore, stick, dt, restKey) {
       H.t += dt;
@@ -1625,14 +1632,14 @@
     inst = {
       active: false,
       build: function () { build(); },
-      level: setLevel, moment: moment, hit: hit, bandAction: bandAction, beat: onBeat, frame: function () { if (K) frame(); },
+      level: setLevel, moment: moment, hit: hit, kick2: kick2, bandAction: bandAction, beat: onBeat, frame: function () { if (K) frame(); },
       info: function () {
         if (!K) return { built: false };
         var C = K.crowd;
         return { built: true, kind: K.D.kind, genre: K.D.genre, people: C.n, band: K.band.map(function (r) { return r.id + ':' + r.slot + ':' + r.inst; }),
           cape: K.band.some(function (r) { return r.cape; }), crowd: Math.round(S.smooth), level: LEVELS[S.idx], formation: S.form.kind, arms: S.arms.kind,
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
-          acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, moments: S.moments,
+          acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0 };
       }
