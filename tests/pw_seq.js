@@ -113,7 +113,7 @@ async function guided() {
     const n0 = await ev(() => GG.debug('seq').title);
     await tap(page, 'btn-guide-reroll');
     const n1 = await ev(() => ({ t: GG.debug('seq').title, shown: document.querySelector('[data-testid="guide-title"]').textContent }));
-    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls a French title ' + n0 + ' → ' + n1.t);
+    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls the title ' + n0 + ' → ' + n1.t);
     await page.locator(tid('guide-title-input')).fill('Le Test Guidé');
     c.ok(await ev(() => GG.debug('seq').title) === 'Le Test Guidé', 'type your own title');
     c.ok((await audit(page)).length === 0, 'name screen layout ' + (await audit(page)).join('; '));
@@ -154,7 +154,7 @@ async function seq() {
       tip: document.querySelector('[data-testid="seq-tip"]').textContent, render: GG.debug('render') && GG.debug('render').paused }));
     c.ok(d0.dbg && d0.dbg.mode === 'write' && d0.phase === 'plan', 'Go opens the sequencer before the week runs');
     c.ok(d0.pat === d0.starter, 'first-ever Write opens with starter(genre)');
-    c.ok(/Write block 1 of 1/i.test(d0.sub) && d0.dbg.title, 'header: block count + a French title: ' + d0.sub);
+    c.ok(/Write block 1 of 1/i.test(d0.sub) && d0.dbg.title, 'header: block count + a title from Marcel: ' + d0.sub);
     c.ok(/(Dana|Marcel|Jaxon):/.test(d0.tip), 'a bandmate tip on the first Write: ' + d0.tip);
     await page.waitForTimeout(250);
     const bad = await audit(page);

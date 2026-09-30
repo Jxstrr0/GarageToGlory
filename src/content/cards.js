@@ -233,8 +233,8 @@
       ] },
 
     { id: 'marcel_lawn_lyrics', type: 'drama', speaker: 'gord', title: 'Lost in Translation', gate: g({ era: GL, minFans: 40 }),
-      text: "A fan named Gord translated 'Le Tombeau Vert' on the band's fan page. It's about Marcel's lawn. All nine verses. " +
-        'Verse six is just fertilizer ratios. Marcel has not left the bathroom in an hour.',
+      text: "A fan named Gord translated the French lyrics of 'The Green Tomb (It Is the Lawn)' on the band's fan page. Everyone " +
+        "assumed the lawn part was a metaphor. It is not. All nine verses. Verse six is just fertilizer ratios. Marcel has not left the bathroom in an hour.",
       choices: [
         { label: "Lean in: we're lawn metal", effects: { buzz: 8, fans: 10, mood: { marcel: -6 } },
           outcome: "'Lawn metal' trends on a Saskatoon forum for most of a Tuesday. Marcel is furious and also secretly thrilled." },
@@ -1061,8 +1061,8 @@
     // ======================================================================
     { id: 'signed_monolith_english', type: 'drama', speaker: 'marcel', title: 'Notes from Monolith', weight: 2,
       gate: g({ era: S, flagEquals: { label: 'monolith' } }),
-      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the lawn thing. Love it. Marcel should sing in " +
-        "English.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
+      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the English titles. Love the lawn thing. Now Marcel " +
+        "should sing in English too.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
       choices: [
         { label: 'Tell Monolith "non"', effects: { mood: { marcel: 14 }, buzz: 6, fund: -400, flags: { demandEnglish: 'refused' } },
           outcome: "Marcel writes the reply himself, in French, on the back of a hail claim form. Monolith trims the promo budget by $400. Marcel frames the letter." },

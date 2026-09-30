@@ -23,8 +23,8 @@
     hail_damage: {
       id: 'hail_damage', name: 'Hail Damage', genre: 'metal', city: 'Saskatoon', region: 'canada',
       space: 'parents_garage', spaceName: "Your parents' garage",
-      starterSongs: [{ title: 'Ma Pelouse, Mon Tombeau', titleEn: 'My Lawn, My Tomb' },
-                     { title: 'Les Pissenlits Éternels', titleEn: 'The Eternal Dandelions' }],
+      starterSongs: [{ title: 'My Lawn, My Tomb', titleEn: null, fr: 'Ma Pelouse, Mon Tombeau' },
+                     { title: 'The Eternal Dandelions', titleEn: null, fr: 'Les Pissenlits Éternels' }],
       members: [
         { id: 'marcel', name: 'Marcel Fontaine', nick: 'Lord Abyssus', role: 'vocals', skill: 44, mood: 66 },
         { id: 'dana', name: 'Dana Okafor', nick: 'Sweep', role: 'lead guitar', skill: 56, mood: 64 },

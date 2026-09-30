@@ -1,14 +1,16 @@
 // content/bands.js: the four hand-made bands (you are the drummer in each) and their rivals.
 // Shapes (see CONTENT SCHEMAS in 02_contracts.js):
 //   GG.content.bands  = { <bandId>: { id, name, genre, city, region, space, spaceName, size, rival, locked, comingIn,
-//                                     blurb, coldOpen:[panel], starterSongs:[{ title, titleEn }], members:[MEMBER] } }
+//                                     blurb, coldOpen:[panel], starterSongs:[{ title, titleEn, fr? }], members:[MEMBER] } }
 //   MEMBER = { id, name, fullName, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK }
 //   GG.content.rivals = { <rivalId>: { id, name, city, genre, blurb } }
 // Notes:
 //   - `size` counts the player (the drummer): members.length + 1.
 //   - Member ids are unique across ALL bands, so lines.* can be keyed by member id alone.
 //   - `name` is the short name shown in the HUD and in effect summaries ("Marcel ↑"); `fullName` is for bios.
-//   - `titleEn` is null for songs already in English.
+//   - `titleEn` is null for songs already in English (all of them since v0.7.2). Metal starters also carry `fr`:
+//     Marcel's French original. It seeds the starter's drum pattern (unchanged since v0.1) and lets old saves that
+//     still hold the French title rename it to the English one on load (GG.songs.migrateTitles).
 //   - Only Hail Damage is playable in v0.1; the others ship with full data so the menu can tease them.
 (function (GG) {
   // LOOK helper: keeps member definitions on one line each.
@@ -33,9 +35,9 @@
       "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a drum kit.",
       "Now you have both. The truck lives on the street. The garage is yours. Hail Damage is born."
     ],
-    starterSongs: [
-      { title: 'Ma Pelouse, Mon Tombeau', titleEn: 'My Lawn, My Tomb' },
-      { title: "Les Pissenlits de l'Apocalypse", titleEn: 'Dandelions of the Apocalypse (On My Lawn)' }
+    starterSongs: [   // English titles (v0.7.2); `fr` = Marcel's original (seeds the pattern, renames old saves)
+      { title: 'My Lawn, My Tomb', titleEn: null, fr: 'Ma Pelouse, Mon Tombeau' },
+      { title: 'Dandelions of the Apocalypse (On My Lawn)', titleEn: null, fr: "Les Pissenlits de l'Apocalypse" }
     ],
     members: [
       { id: 'marcel', name: 'Marcel', fullName: 'Marcel "Lord Abyssus" Fontaine', nick: 'Lord Abyssus', role: 'vocals',

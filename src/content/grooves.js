@@ -124,8 +124,8 @@
         { role: 'guitar', text: "Faster is harder to play live. Just saying. My fingers have a union." }],
       order: [{ role: 'vocals', text: 'Short is punchy, Epic is a journey. I have stamina for either. Probably.' },
         { role: 'bass', text: 'Classic has a bridge. Crowds like a bridge. Engineers too.' }],
-      name: [{ role: 'vocals', text: 'I have titles. French ones. Nobody knows what they mean, including me.' },
-        { role: 'guitar', text: 'Name it something. Or let the singer do the French thing again.' }]
+      name: [{ role: 'vocals', text: 'I have titles. Dark ones. In English, for the radio. They are not about my lawn. Do not check.' },
+        { role: 'guitar', text: 'Name it something. Or let the singer name it, before he sneaks a French one in again.' }]
     }
   };
 })(window.GG);

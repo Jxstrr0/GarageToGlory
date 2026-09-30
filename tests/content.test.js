@@ -442,7 +442,7 @@ test('lines: every pool is present and big enough', () => {
 });
 
 test('lines: Kenji never speaks', () => {
-  const kenji = strings([K.lines.chat.kenji, K.lines.gigReactions.kenji, K.lines.tap.kenji], 'kenji');
+  const kenji = strings([K.lines.chat.kenji, K.lines.gigReactions.kenji, K.lines.tap.kenji, K.lines.songReactions.kenji], 'kenji');
   for (const [p, s] of kenji) ok(/^(…|\.|👍|\(.*\))$/u.test(s), p + ': Kenji said words: ' + s);
 });
 
@@ -479,16 +479,53 @@ test('presets: six valid drummer looks with kit colours', () => {
   eq(new Set(K.presets.map(p => p.kitColor)).size, K.presets.length, 'kit colours should differ');
 });
 
-test('song titles: ≥30 metal titles in French, all secretly about the lawn', () => {
-  const metal = K.songTitles.metal, starters = HD.starterSongs.map(s => s.title);
+// v0.7.2 (owner, 2026-09-30: "English, Marcel rarely French"): metal titles are English; each keeps Marcel's French
+// original (he sneaks one in now and then). Every French title ever handed out (v0.1–v0.7.1 pool + starters) must stay
+// in content so old saves can be renamed to English on load (GG.songs.migrateTitles matches by `fr`).
+const V071_FR = ['Le Tombeau Vert', 'Sang sur le Gazon', "L'Hiver Dévore Mon Gazon", 'Chiendent Éternel', 'La Tondeuse des Ténèbres',
+  'Arrosage Interdit', "Les Gaufres de l'Enfer", 'Engrais de la Nuit', 'Le Voisin a Coupé Trop Court', 'Pissenlit, Mon Ennemi',
+  'Rosée Mortelle', 'Brûlé par le Soleil de Juillet', 'La Clôture du Désespoir', 'Racines Profondes, Âme Sombre', 'Grêle sur la Pelouse',
+  "L'Aube du Gazon Mort", 'Sous la Neige, Mon Gazon Attend', 'Le Pacte du Semis', 'Arroseur du Chaos', 'Les Chiens du Voisin',
+  'Trèfle Maudit', 'Messe Noire pour un Gazon Vert', "Le Râteau de l'Abîme", 'Trois Centimètres ou la Mort',
+  "Le Tuyau d'Arrosage Sanglant", 'Chaume Éternel', 'Le Roi des Mauvaises Herbes', 'Gazon Synthétique: Blasphème',
+  'Rituel de la Première Tonte', 'Les Vers de Terre Sont Mes Frères', 'Invocation de la Pluie', "Les Feuilles d'Automne Doivent Mourir",
+  'Mon Gazon, Ma Reine', "L'Épouvantail de Gravelbourg", 'Tonte à Minuit', 'Le Dernier Brin', 'Bordures Tranchantes', 'Pelouse Interdite'];
+const V071_STARTERS = ['Ma Pelouse, Mon Tombeau', "Les Pissenlits de l'Apocalypse"];
+const LAWN = /lawn|grass|mow|turf|weed|dandelion|sprinkler|rake|hose|fertiliz|thatch|clover|seed|gopher|edging|dew|sod/i;
+test('song titles: ≥30 English metal titles (Marcel keeps a French original for each), all secretly about the lawn', () => {
+  const metal = K.songTitles.metal, starters = HD.starterSongs;
   ok(metal.length >= 30, 'need ≥30 metal titles, got ' + metal.length);
+  eq(new Set(metal.map(t => t.en)).size, metal.length, 'duplicate English titles');
   eq(new Set(metal.map(t => t.fr)).size, metal.length, 'duplicate French titles');
+  const taken = new Set(starters.flatMap(s => [s.title, s.fr]));
   for (const t of metal) {
-    ok(str(t.fr, 48) && str(t.en, 60), 'title shape/length: ' + t.fr);
-    ok(!starters.includes(t.fr), 'starter song duplicated in pool: ' + t.fr);
-    ok(/lawn|grass|mow|turf|weed|dandelion|sprinkler|rake|hose|fertiliz|thatch|clover|seed|gopher|edging|dew/i.test(t.en), 'English title not about the lawn: ' + t.en);
+    ok(str(t.en, 42) && str(t.fr, 42) && t.en !== t.fr, 'title shape/length (≤42: it is the headline now): ' + t.en);
+    ok(!taken.has(t.en) && !taken.has(t.fr), 'starter song duplicated in pool: ' + t.en);
+    ok(LAWN.test(t.en), 'English title not about the lawn: ' + t.en);
+    ok(!/ (II|III|IV|V|VI|VII|VIII|IX|X|\d+)$/.test(t.en) && !/ (II|III|IV|V|VI|VII|VIII|IX|X|\d+)$/.test(t.fr), 'looks like a sequel: ' + t.en);
   }
+  const fr = new Set(metal.map(t => t.fr));
+  V071_FR.forEach(f => ok(fr.has(f), 'a v0.7.1 French title left the pool (old saves could not turn English): ' + f));
+  // Hail Damage starters: English titles (titleEn null = already English) + Marcel's French original.
+  eq(starters.map(s => s.fr), V071_STARTERS, 'starters keep their French originals (pattern seeds + old-save renames)');
+  ok(starters.every(s => s.titleEn === null && str(s.title, 60) && s.title !== s.fr && LAWN.test(s.title)), 'starters are English and about the lawn');
+  eq(starters[0].title, 'My Lawn, My Tomb');
   ['punk', 'rock', 'country'].forEach(g => ok(K.songTitles[g] && K.songTitles[g].length >= 5 && K.songTitles[g].every(t => str(t, 60)), g + ' titles are plain English strings'));
+});
+
+test('v0.7.2: no content claims every song title is French; Marcel still sings in French', () => {
+  const offenders = [];
+  for (const [p, s] of strings(K, 'content')) {
+    if (/content\.albumWords/.test(p)) continue;   // album titles: one French pitch among the options (24_sim_labels)
+    if (/(A|a) French (name|title)\. I have it|French ones\. Nobody knows|do the French thing again|names? (every|each) song in French/.test(s)) offenders.push(p + ': ' + s);
+  }
+  eq(offenders, [], 'text still says titles are French');
+  const L = K.lines.songReactions;
+  ok(L.marcel.name.length >= 5 && L.marcel.nameFr.length >= 4, 'Marcel names songs (English) and insists on a French one now and then');
+  ['dana', 'jaxon', 'kenji'].forEach(id => ok(L[id].frSigh && L[id].frSigh.length >= 3, id + ' sighs about the French title'));
+  ok(L.kenji.frSigh.every(x => /^\(.*\)$/.test(x)), 'Kenji sighs without words');
+  ok(/translat/i.test(CARDS.find(c => c.id === 'marcel_lawn_lyrics').text) && /French lyrics/.test(CARDS.find(c => c.id === 'marcel_lawn_lyrics').text), 'the fan still translates the (French) lyrics');
+  ok(/screams every lyric in French/.test(HD.members.find(m => m.id === 'marcel').bio), 'Marcel still screams in French');
 });
 
 // ---- v0.3 world: venues, map, headliners, road cards, road lines -------------------------------------
