@@ -389,7 +389,9 @@
     return (c && c.province) || 'SK';
   };
   ui.superfan = function (st) {
-    st = st || GG.state; var bb = GG.content.bandbook || {}, h = bb.homeSuperfan && st && bb.homeSuperfan[st.bandId];
+    st = st || GG.state;
+    try { var hs = st && GG.fans && GG.fans.homeSuperfan ? GG.fans.homeSuperfan(st) : null; if (hs && (hs.short || hs.name)) return hs.short || String(hs.name).split(' ')[0]; } catch (e) { /* content read below */ }
+    var bb = GG.content.bandbook || {}, h = bb.homeSuperfan && st && bb.homeSuperfan[st.bandId];
     if (h && (h.short || h.name)) return h.short || String(h.name).split(' ')[0];
     var d = GG.fans && GG.fans.superfanDef ? GG.fans.superfanDef('dale') : null;
     return (d && (d.short || d.name)) || 'your number-one fan';
@@ -404,6 +406,7 @@
     return (best || fg || {}).name || 'the first house party';
   }
   function rivalFront(st) {
+    try { var fn = GG.rival && GG.rival.frontName ? GG.rival.frontName(st) : ''; if (fn) return fn; } catch (e) { /* the cast read below */ }
     var c = null; try { c = GG.rival && GG.rival.cast ? GG.rival.cast(st) : null; } catch (e) { c = null; }
     var m = c && (c.members || []).filter(function (x) { return x.id === c.frontman; })[0] || (c && c.members && c.members[0]);
     return m ? m.name || String(m.fullName || '').split(' ')[0] : 'their singer';
@@ -428,11 +431,13 @@
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);
+    var lead = text.charAt(0) === '{';   // a line that opens on a token starts with a capital, whoever resolves it
     if (vars) text = text.replace(/\{(\w+)\}/g, function (a, k) { return vars[k] != null ? String(vars[k]) : a; });
     if (st && GG.career && GG.career.fillText) { try { text = GG.career.fillText(st, text); } catch (e) { /* local tokens below */ } }
-    if (text.indexOf('{') < 0) return text;
-    var T = null, lead = text.charAt(0) === '{';
-    text = text.replace(TOKEN_RE, function (a, k) { T = T || ui.tokens(st); return T[k] != null ? String(T[k]) : a; });
+    if (text.indexOf('{') >= 0) {
+      var T = null;
+      text = text.replace(TOKEN_RE, function (a, k) { T = T || ui.tokens(st); return T[k] != null ? String(T[k]) : a; });
+    }
     return lead ? ui.cap(text) : text;   // "{space} was quiet." -> "The garage was quiet."
   };
   ui.pool = function (obj, key, st) {
@@ -445,18 +450,22 @@
   ui.bandLines = function (key, st) { st = st || GG.state; var L = GG.content.lines, bb = L && L.byBand && st && L.byBand[st.bandId]; return bb ? bb[key] : undefined; };
   // Leak net: names of every other playable band's people (and Hail Damage's world when it isn't yours).
   var foreignRe = {};
+  function esc(w) { return String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function foreign(st) {
     var id = st && st.bandId || '';
-    if (foreignRe[id] !== undefined) return foreignRe[id];
+    // (a word that is part of someone in this career's name is theirs: a recruit called Tamara in a Hail Damage career)
+    var mine = ((st && st.members) || []).map(function (m) { return [m.name, m.nick, m.fullName].filter(Boolean).join(' '); }).join(' | '), key = id + '#' + mine;
+    if (foreignRe[key] !== undefined) return foreignRe[key];
     var words = [], bands = GG.content.bands || {};
     Object.keys(bands).forEach(function (k) {
       if (k === id) return;
       (bands[k].members || []).forEach(function (m) { [m.name, m.nick, String(m.fullName || '').replace(/"[^"]*"\s*/, '')].forEach(function (w) { if (w && w.length > 2) words.push(w); }); });
     });
     if (id !== 'hail_damage') words.push('Baba', 'Moose Hearse', 'HALE DAMAGE', 'Lord Abyssus');
-    words = words.filter(function (w, i) { return words.indexOf(w) === i; }).map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
-    foreignRe[id] = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
-    return foreignRe[id];
+    words = words.filter(function (w, i) { return words.indexOf(w) === i && !new RegExp('\\b' + esc(w) + '\\b').test(mine); }).map(esc);
+    if (Object.keys(foreignRe).length > 40) foreignRe = {};   // (keyed by lineup: a long career rebuilds now and then)
+    foreignRe[key] = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
+    return foreignRe[key];
   }
   ui.ownLines = function (list, st) {
     st = st || GG.state; if (!Array.isArray(list)) return [];
@@ -477,6 +486,15 @@
     if (!own.length) own = fallback || [];
     var p = ui.pick(own);
     return p == null ? '' : ui.fill(typeof p === 'string' ? p : p.text, st);
+  };
+  // A sim-produced line (results, verdicts, awards, news) through the display-side leak net: filled when it's this
+  // band's, else `fallback` (a string or a list; filled) or null when there is none. The sim's pool/speakerOk rules keep
+  // other bands' people out at the source; this only catches what slips through before content lands.
+  ui.safeLine = function (text, fallback, st) {
+    st = st || GG.state;
+    if (text != null && ui.ownLines([String(text)], st).length) return ui.fill(text, st);
+    if (fallback == null) return null;
+    return ui.line(Array.isArray(fallback) ? fallback : [fallback], null, st) || null;
   };
 
   ui.initials = function (name) {

@@ -25,6 +25,7 @@
      The band photo (render hook: display only, never saved)
      ====================================================================================================== */
   var photos = {};   // 'seed|year' -> dataURL (this session)
+  var lastPhoto = null;   // v0.9: the last photo's lineup + room (GG.debug('recap').photo)
   var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7 };   // the one rig (40_render_core)
   var CAPES = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
   function rot(b, x, y, z) { if (b) b.rotation.set(x, y, z); }
@@ -89,6 +90,7 @@
         made.push(ch);
       });
       scene.updateMatrixWorld(true);
+      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: ui.spaceKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
       var W = 1200, H = 760;
       rt = new THREE.WebGLRenderTarget(W, H);
       // From outside the cut-away front wall; the near plane clips everything between the lens and the band (cooler, couch).
@@ -299,4 +301,5 @@
     });
     return out;
   };
+  GG.registerDebug('recapui', function () { return { photo: lastPhoto ? Object.assign({}, lastPhoto) : null }; });   // v0.9
 })(window.GG);

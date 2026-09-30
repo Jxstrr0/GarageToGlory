@@ -181,7 +181,7 @@
         el('div.grow', [el('b', r.name + (r.you ? ' (you)' : '')), el('div.tiny.dim', [r.city, r.era ? ERA[r.era] || r.era : r.genre].filter(Boolean).join(' · ') + (r.cracked ? ' · cracked' : ''))]),
         el('div.fans', [U.fmtNum(r.fans), el('span.tr' + (tr > 0 ? '.up' : tr < 0 ? '.down' : ''), tr > 0 ? ' ▲' : tr < 0 ? ' ▼' : ' ·')])]);
     }))]));
-    var news = (rv.news || []).slice(-8).reverse();
+    var news = (rv.news || []).filter(function (n) { return n && ui.safeLine(n.text, null, st); }).slice(-8).reverse();   // v0.9: the leak net
     out.push(sec('Scene news', 'scene-news', [el('div.panel.rv-news', news.length ? news.map(function (n) {
       return el('div.rv-news-row', [el('span.tiny.dim', wk(n.week)), el('div', fill(n.text))]);
     }) : el('p.small.dim', fill(copy(st, 'emptyNews'))))]));
@@ -497,6 +497,7 @@
     else mine();
   };
   ui.showVerdict = function (sd, done) { ui.show('rival-verdict', { sd: sd, done: done }); sfx(sd.won ? 'cheer' : 'boo'); };
+  var VERDICT_ANY = { won: ['The crowd picks you. {rival} take it well. Publicly.'], lost: ['The crowd picks {rival}. {grumbler} has notes. Several pages.'] };
   ui.define('rival-verdict', {
     kind: 'full', cls: 'rvverdict', sticky: true,
     build: function (s, d) {
@@ -518,7 +519,9 @@
           el('div.side.them' + (sd.won ? '' : '.win'), [rv && ui.rivalLogo ? ui.rivalLogo(rv.id, rv.name, 56, { badge: 'round', testid: 'rv-logo-them' }) : face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
         split ? el('p.small.dim.center', 'Same night, same town: the crowd split on buzz.') : el('p.small.dim.center', split ? '' : 'The crowd decides. Loudly.'),
         el('div.rv-chips', chips),
-        el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),
+        el('div.stack.tight', (sd.lines || []).map(function (t) {   // v0.9: a line about another rival's people reads neutral
+          return el('div.quote' + (sd.won ? '.rv-good' : ''), ui.safeLine(fill(t), sd.won ? VERDICT_ANY.won : VERDICT_ANY.lost, st));
+        })),
         rv ? el('div.panel', { style: 'margin-top:10px' }, [record(st), el('div', { style: 'margin-top:8px' }, heatMeter(rv.heat))]) : null,
         fin ? el('p.center.rv-forever', ui.cap(fill(copy(st, sd.won ? 'finalWin' : 'finalLose')))) : null
       ]));
@@ -545,7 +548,7 @@
     if (!x.news.length && !sds.length && !x.heatBuzz && !x.final) return out;
     var rows = [];
     sds.forEach(function (sd) { rows.push(el('div.rv-sd', [el('span.wl' + (sd.won ? '.w' : '.l'), sd.won ? 'W' : 'L'), el('div.grow', el('b', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name ? ' · ' + sd.name : '')))])); });
-    x.news.forEach(function (t) { rows.push(el('div.rv-news-row', [el('span', '📰'), el('div', fill(t))])); });
+    x.news.forEach(function (t) { var tx = ui.safeLine(fill(t), null, st); if (tx) rows.push(el('div.rv-news-row', [el('span', '📰'), el('div', tx)])); });
     if (x.heatBuzz) rows.push(el('div.tiny.dim', 'The rivalry is good for business: buzz +' + x.heatBuzz + ' (for them too).'));
     out.push(el('div.panel.rv-wrap', { testid: 'wrap-rival' }, [el('div.row', { style: 'margin-bottom:6px' }, [face('sm'), el('div.grow', el('b', RV().name(st))),
       el('span.small', { style: { color: heatColor(x.heat) } }, 'Heat ' + Math.round(x.heat) + (x.heatDelta ? ' ' + (x.heatDelta > 0 ? '▲' : '▼') + Math.abs(Math.round(x.heatDelta)) : ''))])].concat(rows)));

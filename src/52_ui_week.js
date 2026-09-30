@@ -23,6 +23,16 @@
     rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' },
     studio: { icon: '🎙️', name: 'Studio', blurb: 'Red light on. Nobody breathe.' }   // v0.5: studio weeks replace the blocks
   };
+  // v0.9: neutral block lines, shown only when a sim line names someone who isn't in this band (content lands later).
+  var ACT_LINE = {
+    rehearse: ['We ran the set until it stopped falling apart.', '{soloist} wanted it faster. {front} wanted it louder. You kept time.'],
+    write: ['{namer} brought half an idea. You brought the other half.', 'A new song, mostly. It needs a name and a bridge.'],
+    promote: ['Posters went up all over {city}. Some of them are still up.', '{front} posted about the band. Three likes. One is your mom.'],
+    book: ['Phone calls, emails, one voicemail. Something might come of it.'],
+    hustle: ['A cash gig nobody we know was at. Good money, weird crowd.'],
+    rest: ['Nobody touched an instrument. Everybody needed it.', 'A week off. {space} was very quiet.'],
+    any: ['A week in {space}. Things happened. Some of them on purpose.']
+  };
   ui.act = function (id) {
     var a = (GG.content.activities && GG.content.activities[id]) || {};
     var f = ACT_FALLBACK[id] || { icon: '❔', name: id, blurb: '' };
@@ -345,7 +355,7 @@
         el('div', [el('span.caps', 'Buzz'), el('b', U.signed(g.buzz || 0))]),
         el('div', [el('span.caps', 'Score'), el('b', g.score != null ? String(Math.round(g.score)) : '—')])
       ]),
-      (g.lines || []).filter(function (t) { return !(g.merch && ui.isMerchLine && ui.isMerchLine(t)); }).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
+      (g.lines || []).filter(function (t) { return !(g.merch && ui.isMerchLine && ui.isMerchLine(t)) && ui.safeLine(t, null); }).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
       g.merch && ui.merchResult ? ui.merchResult(g.merch) : null,   // v0.8: the merch table (sold, earned, boxes hauled)
       g.songs && g.songs.length ? el('div.small', { style: 'margin-top:6px' }, [el('span.caps', 'Setlist  '), g.songs.join(' · ')]) : null,
       (g.classics || []).map(function (id) {   // v0.2: enough great gigs make a song a classic
@@ -383,7 +393,9 @@
         var box = el('div.blk', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
         s.body.appendChild(box);
         steps.push([box, 250]);
-        (b.lines || []).forEach(function (t) { var p = el('p', fill(t)); box.appendChild(p); steps.push([p, 650]); });
+        (b.lines || []).forEach(function (t) {   // v0.9: the leak net (a line naming another band's people reads neutral)
+          var p = el('p', ui.safeLine(t, ACT_LINE[b.activity] || ACT_LINE.any, st)); box.appendChild(p); steps.push([p, 650]);
+        });
         if (b.deltas && b.deltas.song) { var sn = songNode(b.deltas.song); box.appendChild(sn); steps.push([sn, 700]); }
         var chips = ui.deltaChips(b.deltas, { emptyText: false });
         if (chips.children.length) { box.appendChild(chips); steps.push([chips, 250]); }

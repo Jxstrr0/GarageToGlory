@@ -366,6 +366,9 @@
       if (shop && tab === 'dealer') { s.body.appendChild(ui.dealerPanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
       var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {};
       var own = dr.designated && D[dr.designated] ? D[dr.designated].name || ui.who(dr.designated).short : null, ownSilent = own && ui.isSilent(dr.designated, st);
+      // v0.9: when you drive, the band's own driver's dash item stays (the same rule as the trip's dashOf)
+      var ownDash = dr.you && dr.designated && D[dr.designated] && D[dr.designated].dashboard && D[dr.designated].dashboard !== 'none' ? D[dr.designated].dashName : null;
+      var dashLine = ownDash ? ownDash + ' (still there)' : dr.def && dr.def.dashName;
       var col = van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)';
       var td = GG.shop ? GG.shop.vanTierDef(van.tier || 0) : { kind: 'Rusted minivan', blurb: 'A rusted minivan with a moose-shaped dent.' };
       var stick = GG.shop ? GG.shop.stickers(st) : [], banned = stick.filter(function (x) { return x.banned; }).length;
@@ -383,7 +386,7 @@
         el('p.dim', { style: 'margin-top:0' }, fill(td.kind + '. ' + (td.blurb || '')) + ' ' + (dr.you ? 'You drive now.' + (own ? ' The mirrors are still set for ' + own + '.' : '')
           : ui.isSilent(dr.id, st) ? dr.name + ' drives. Nobody has ever seen ' + dr.name + ' get in or out.' : dr.name + ' drives.')),
         el('div.panel', { testid: 'van-driver' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Driver: ' + dr.name), el('span.tag', (dr.def && dr.def.effect) || '')]),
-          el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dr.def && dr.def.dashName ? ' On the dash: ' + dr.def.dashName + '.' : '')
+          el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dashLine ? ' On the dash: ' + dashLine + '.' : '')
             + ' Seating: ' + (dr.you ? 'you drive, ' : dr.name + ' drives, you ride shotgun, ') + 'the band in the back, gear and merch piled behind.')]),
         el('div.panel', { style: 'margin-top:10px' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Condition: ' + W.vanLabel(van.condition)), el('b', van.condition + '%')]),
           ui.bar(van.condition, 100, { color: col }),

@@ -18,7 +18,7 @@
 // testids: world-map, world-pin-<id>, world-region-<id>, world-status, btn-world-close, btn-world-map, world-panel ·
 //   region-map, city-pin-<id>, region-city, pkg-<id>, pkg-open-<id>, btn-region-back · tour-pkg, pick-vehicle-<id>,
 //   pick-stay-<id>, pick-extra-<id>, quote-total, quote-upfront, quote-why, btn-book-tour · tour-flight, btn-flight-go ·
-//   tour-home, btn-home-ok · moose-opera, btn-moose-ok · gong-phase, btn-gong-next, btn-gong-envelope, gong-winner,
+//   tour-home, btn-home-ok · moose-opera, btn-moose-ok · tour-payoff, btn-payoff-ok (v0.9) · gong-phase, btn-gong-next, btn-gong-envelope, gong-winner,
 //   btn-gong-speech, btn-gong-done · plan-tour, plan-homesick, plan-forced · wrap-tour, wrap-homesick, wrap-callhome,
 //   wrap-unlocked, wrap-home, wrap-gong, card-region · tour-cancel.
 (function (GG) {
@@ -434,6 +434,36 @@
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
   });
 
+  /* ---- v0.9 (owner Q3): every other band's World payoff (the sim's 'tour:payoff' { packageId, flag }) ------------------
+     Frost Heave's squat anthem at Wackelstein (Berlin), Gravel Kings on Mudstonbury's main stage, the Ramblers' Australian
+     country-festival circuit. The package's payoff block may carry { head, sub, text, line, trophy }; else its name + the
+     payoff line. Same beat as the Moose Opera: a full screen after the wrap (a toast on autoplay). */
+  var payoffDue = null;
+  var PAYOFF_ICON = { punk: '🧷', rock: '🎸', country: '🤠', metal: '🤘' };
+  GG.on('tour:payoff', function (p) { payoffDue = p || {}; });
+  function payoffInfo(p) {
+    var st = S(), pkg = p && p.packageId && T() && T().pkg ? T().pkg(p.packageId) : null, P = (pkg && pkg.payoff) || {};
+    var city = P.city && T().cityDef ? T().cityDef(P.city) : null, R = pkg && T().region ? T().region(pkg.region) || {} : {};
+    return { id: (pkg && pkg.id) || 'payoff', genre: (st && st.genre) || 'rock',
+      head: fill(P.head || P.trophy || (pkg && pkg.name) || 'It happened'),
+      sub: String(fill(P.sub || [city && city.name, R.name].filter(Boolean).join(' · ') || 'Abroad')).toUpperCase(),
+      text: fill(P.text || P.line || '{band} just did the thing nobody back home is going to believe.'),
+      quip: fill(P.quip || '{front} is already calling home about it. Collect.') };
+  }
+  ui.playPayoff = function (p, done) { payoffDue = null; sfx('cheer'); return ui.show('tour-payoff', { payoff: p || {}, done: done }); };
+  ui.define('tour-payoff', {
+    kind: 'full', cls: 'tworld.moose', sticky: true,
+    build: function (s, d) {
+      var st = S(); if (!st) return;
+      var x = payoffInfo(d.payoff);
+      ui.append(s.body, [el('div.tw-head', [el('h2', [el('span.sub', x.sub), x.head])]),
+        el('div.tw-opera.po-' + x.genre, { testid: 'tour-payoff', data: { pkg: x.id } }, [el('div.tw-disc', [el('span', PAYOFF_ICON[x.genre] || '🌍')]), el('div.tw-curtain.l'), el('div.tw-curtain.r')]),
+        el('div.panel.tw-flight', [el('p.card-text', x.text), el('p.small.dim', x.quip)])]);
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-payoff-ok', onclick: function () { ui.close(s.id); } }, 'Take a bow ▸'));
+    },
+    onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
+  });
+
   /* ---- The wrap (52_ui_week) ------------------------------------------------------------------------------------------ */
   var seenHome = {};
   ui.tourWrap = function (w) {
@@ -466,6 +496,8 @@
     var chain = [];
     if (mooseDue && views()) chain.push(function (next) { ui.playMoose(next); });
     else if (mooseDue) { mooseDue = false; ui.toast('Platinum in Finland. The moose concept album did it.', { who: 'Moose Opera' }); }
+    if (payoffDue && views()) { var po = payoffDue; chain.push(function (next) { ui.playPayoff(po, next); }); }
+    else if (payoffDue) { var pi = payoffInfo(payoffDue); payoffDue = null; ui.toast(pi.head + '. ' + pi.text, { who: 'World Stage' }); }
     if (t.home && views() && !seenHome[t.home.id]) { seenHome[t.home.id] = 1; chain.push(function (next) { ui.show('tour-home', { summary: t.home, done: next }); }); }
     if (chain.length) setTimeout(function run() { var f = chain.shift(); if (f && ui.isOpen('wrap')) f(function () { setTimeout(run, 0); }); }, 400);
     return out;
@@ -608,6 +640,6 @@
   };
 
   GG.registerDebug('tourui', function () {
-    return { gong: G ? { phase: G.phase, threeD: G.threeD, result: G.result } : null, mooseDue: mooseDue, flown: Object.keys(flown) };
+    return { gong: G ? { phase: G.phase, threeD: G.threeD, result: G.result } : null, mooseDue: mooseDue, payoffDue: payoffDue, flown: Object.keys(flown) };
   });
 })(window.GG);

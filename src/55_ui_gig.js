@@ -710,7 +710,10 @@
             + (x.fills ? ' · ' + x.fills + ' fill taps' : ''))]),
           el('div.acc', Math.round(x.accuracy * 100) + '%')]);
       })));
-      (r.lines || []).forEach(function (t) { if (!(r.merch && ui.isMerchLine && ui.isMerchLine(t))) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, fill(t))); });
+      (r.lines || []).forEach(function (t) {   // v0.9: a line about another band's people is dropped (the leak net, 50_ui_core)
+        var tx = r.merch && ui.isMerchLine && ui.isMerchLine(t) ? null : ui.safeLine(t, null, S());
+        if (tx) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
+      });
       if (r.merch && ui.merchResult) s.body.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
       (r.classics || []).forEach(function (id) {
         var song = GG.songs.byId(S(), id);

@@ -30,7 +30,8 @@ const tap = (page, id) => page.locator(tid(id)).last().click();
 const quick = (page, id) => page.locator(tid(id)).last().click({ timeout: 2000 }).then(() => true, () => false);
 const screen = page => page.evaluate(() => GG.debug('ui').screen);
 const waitScreen = (page, id, timeout) => page.waitForFunction(i => GG.debug('ui').screen === i, id, { timeout: timeout || 10000 });
-const shot = (page, name) => page.screenshot({ path: path.join(CACHE, 'v09_bands_' + name + TAG + '.png') }).catch(() => {});
+// (after the layer's fade-in, so the screenshot shows the screen and not the title scene behind it)
+const shot = (page, name) => page.waitForTimeout(800).then(() => page.screenshot({ path: path.join(CACHE, 'v09_bands_' + name + TAG + '.png') })).catch(() => {});
 
 function audit(page) {
   return page.evaluate(() => {
@@ -72,11 +73,15 @@ async function runBand(bandId) {
   async function scan(where) {
     const t = await appText(page);
     const f = t.match(foreignRe) || [], h = hdRe ? t.match(hdRe) || [] : [];
-    const words = Array.from(new Set(f.concat(h)));
+    // (a word inside the name of someone in this career's lineup is theirs: e.g. a recruit called Tamara)
+    const mine = await page.evaluate(() => GG.state ? GG.state.members.map(m => [m.name, m.nick, m.fullName].filter(Boolean).join(' ')).join(' | ') : '');
+    const words = Array.from(new Set(f.concat(h))).filter(w => !new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(mine));
     if (!words.length) return;
     leaks.push(where + ': ' + words.join(', '));
-    if (bandId === 'hail_damage' || STRICT) c.ok(false, 'leak on ' + where + ': ' + words.join(', '));
-    else console.log('WARN leak ' + bandId + ' @ ' + where + ': ' + words.join(', '));
+    // (context: ~50 chars around each word, so the source line can be found; LEAK_CTX=0 hides it)
+    const ctx = process.env.LEAK_CTX === '0' ? '' : ' [' + words.map(w => { const i = t.indexOf(w); return '…' + t.slice(Math.max(0, i - 50), i + w.length + 30).replace(/\s+/g, ' ') + '…'; }).join(' | ') + ']';
+    if (bandId === 'hail_damage' || STRICT) c.ok(false, 'leak on ' + where + ': ' + words.join(', ') + ctx);
+    else console.log('WARN leak ' + bandId + ' @ ' + where + ': ' + words.join(', ') + ctx);
   }
   async function check(where) { await scan(where); const a = await audit(page); c.ok(!a.length, where + ' layout: ' + a.join('; ')); }
   try {
@@ -125,11 +130,13 @@ async function runBand(bandId) {
     c.ok(last.includes('Into ' + band.spaceShort), 'the last cold-open button walks into ' + band.spaceShort + ': ' + last);
     await tap(page, 'btn-coldopen-next');
     await page.waitForFunction(() => GG.state && (GG.debug('ui').screen === 'card' || (GG.state.phase === 'plan' && !GG.debug('ui').stack.length)), null, { timeout: 10000 });
-    const g1 = await page.evaluate(() => ({ venue: GG.state.gig && GG.state.gig.venueId, city: GG.state.city, space: GG.state.space, van: GG.state.van && GG.state.van.name, fallback: !!document.querySelector('[data-testid="fallback-garage"]') }));
+    const g1 = await page.evaluate(fg => { const v = GG.state.gig && GG.gig.venue(GG.state.gig.venueId); return { venue: GG.state.gig && GG.state.gig.venueId, vcity: v && v.city, city: GG.state.city,
+      fgExists: !!(fg && GG.gig.venue(fg)), space: GG.state.space, van: GG.state.van && GG.state.van.name, fallback: !!document.querySelector('[data-testid="fallback-garage"]') }; }, band.firstGig);
     // (the sim lane's newCareer reads band.firstGig; until its helpers land here this is a warning, not a failure)
     const simV09 = await page.evaluate(() => !!(GG.career.speakerOk && GG.career.pool));
-    const fg = !band.firstGig || g1.venue === band.firstGig || !g1.venue;
-    if (simV09) c.ok(fg, 'week 1 comes booked at the band\'s first gig (' + g1.venue + ')');
+    // (a firstGig venue the content lane hasn't added yet: the sim falls back to a venue in the home city)
+    const fg = !band.firstGig || !g1.venue || (g1.fgExists ? g1.venue === band.firstGig : String(g1.vcity || '').toLowerCase() === String(g1.city || '').toLowerCase());
+    if (simV09) c.ok(fg, 'week 1 comes booked at the band\'s first gig (' + g1.venue + (g1.fgExists ? '' : ', ' + band.firstGig + ' not in content yet: a ' + g1.city + ' venue') + ')');
     else if (!fg) console.log('WARN ' + bandId + ': week 1 is booked at ' + g1.venue + ', not ' + band.firstGig + ' (sim helpers not merged yet)');
     await check('garage');
 

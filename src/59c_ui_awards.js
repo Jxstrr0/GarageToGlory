@@ -51,6 +51,7 @@
   };
   var REACT_ROLES = { great: ['@front', '@soloist'], meh: ['@filler', '@front'], awful: ['@deadpan', '@front'] };
   // v0.9: the rival by name and id (never a hard-coded Tundra Wraith), and the rival's own awards-night lines.
+  var THANKS_ANY = ['Wow. Thank you. And thank you, {band}. You pushed us. A little.'];
   function rivalId(st) { try { if (GG.rival && st && st.rival) return GG.rival.get(st).id; } catch (e) { /* no rival sim */ } var b = ui.band(st); return (b && b.rival) || null; }
   function rivalName(st) { try { if (GG.rival && st && st.rival) return GG.rival.name(st); } catch (e) { /* no rival sim */ } var r = GG.content.rivals && GG.content.rivals[rivalId(st)]; return (r && r.name) || 'The other band'; }
   function castOf(st) { try { return GG.rival && GG.rival.cast ? GG.rival.cast(st) : null; } catch (e) { return null; } }
@@ -443,10 +444,13 @@
     card.appendChild(el('div.lo-winner' + (aw.won ? '.won' : ''), { testid: 'winner' }, [el('span.caps', 'And the Loonie goes to…'), el('b', win)]));
     if (ui.logoBroadcast) card.appendChild(ui.logoBroadcast(st, { winner: win, won: !!aw.won, category: cat.name }));   // v0.8.1: the broadcast card (5m)
     if (wraith || aw.thanks) {
-      var rt = V.awards().rivalThanks, rid2 = rivalId(st), t = Array.isArray(rt) ? rt : (rt && rt[rid2]) || (rid2 === 'tundra_wraith' ? FB.wraith : ['Wow. Thank you. And thank you, {band}. You pushed us. A little.']);
-      card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid2 || '' } }, [el('b', win + ': '), quoted(V.fill(aw.thanks || t[(L.i + (st.year || 0)) % t.length]))]));
+      var rt = V.awards().rivalThanks, rid2 = rivalId(st), t = Array.isArray(rt) ? rt : (rt && rt[rid2]) || (rid2 === 'tundra_wraith' ? FB.wraith : THANKS_ANY);
+      t = ui.ownLines(t, st).length ? ui.ownLines(t, st) : THANKS_ANY;   // v0.9: the leak net (another rival's thank-you reads neutral)
+      var th = t[(L.i + (st.year || 0)) % t.length];
+      card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid2 || '' } }, [el('b', win + ': '), quoted(aw.thanks ? ui.safeLine(aw.thanks, th, st) : V.fill(th))]));
     } else if (!aw.won) card.appendChild(el('p.small.dim', V.fill('You clap. {grumbler} claps slower. Much slower.')));
-    if (aw.won && aw.rivalLine) card.appendChild(el('p.small.dim', V.fill(aw.rivalLine)));
+    var rl = aw.won && aw.rivalLine ? ui.safeLine(aw.rivalLine, '{rival} give you a standing ovation. It looks sincere. Mostly.', st) : null;
+    if (rl) card.appendChild(el('p.small.dim', rl));
     if (aw.won && !L.speech && aw.category !== 'worst_van') {
       card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-speech', onclick: function () { openSpeech(s); } }, 'Give a speech 🎤'));
       return;
