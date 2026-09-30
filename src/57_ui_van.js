@@ -162,15 +162,23 @@
     if (v.trip.cardId && !v.trip.resolved) { if (!v.cardShown) showCard(v); return; }
     arrive(v);
   }
+  // The drive runs on wall time (like the gig clock, v0.5.1): a 0.1 s cap per frame drove in slow motion below 10 fps (a
+  // slow phone, a loaded test machine: under 40% of the drive after 26 s). Time with the app hidden doesn't count (no
+  // frames; the clock re-bases when it comes back). A long frame still stops at the road card (CARD_AT, mid-drive).
+  var CARD_AT = 0.45;
+  document.addEventListener('visibilitychange', function () { if (cur && !document.hidden) cur.last = performance.now(); });
   function frame(now) {
     var v = cur;
     if (!v || !v.alive) return;
-    var dt = Math.min(0.1, Math.max(0, (now - v.last) / 1000)); v.last = now;
+    var dt = document.hidden ? 0 : Math.max(0, (now - v.last) / 1000); v.last = now;
     if (!v.paused && !v.arrived) v.el += dt;
-    v.p = v.arrived ? 1 : Math.min(1, v.el / v.dur); dbg.p = v.p;
+    v.p = v.arrived ? 1 : Math.min(1, v.el / v.dur);
+    var cardDue = !v.cardShown && v.trip.cardId && !v.trip.resolved;
+    if (cardDue && v.p >= CARD_AT) { v.p = CARD_AT; v.el = CARD_AT * v.dur; }
+    dbg.p = v.p;
     if (v.bar) v.bar.firstChild.style.width = (v.p * 100).toFixed(1) + '%';
     if (v.kmEl) v.kmEl.textContent = Math.round(v.trip.km * v.p) + ' / ' + v.trip.km + ' km';
-    if (!v.cardShown && v.trip.cardId && !v.trip.resolved && v.p >= 0.45) showCard(v);
+    if (cardDue && v.p >= CARD_AT) showCard(v);
     if (v.banter[0] && !v.said0 && v.p >= 0.18) { v.said0 = true; say(v, v.banter[0]); }
     if (v.banter[1] && !v.said1 && v.p >= 0.66) { v.said1 = true; say(v, v.banter[1]); }
     if (v.p >= 1 && !v.arrived && (!v.trip.cardId || v.trip.resolved)) arrive(v);
