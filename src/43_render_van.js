@@ -756,11 +756,10 @@
           b.box(0.3, 0.5, 0.01, 0, 0.02, 0.076, sh(fabric, 1.3)); for (i = 0; i < 5; i++) b.box(0.28, 0.006, 0.006, 0, -0.18 + i * 0.1, 0.083, sh(fabric, 0.8));   // the stitched centre panel
           b.box(0.4, 0.2, 0.03, 0, -0.2, 0.085, sh(fabric, 0.72)); b.box(0.2, 0.13, 0.012, 0.05 * s, -0.13, 0.1, 0x1e1e24);
           b.cyl(0.012, 0.012, 0.14, 6, -0.08, 0.4, 0.0, 0xc8ccd2); b.cyl(0.012, 0.012, 0.14, 6, 0.08, 0.4, 0.0, 0xc8ccd2);
-          b.box(0.36, 0.16, 0.12, 0, 0.5, 0.02, sh(fabric, 1.12)); b.box(0.3, 0.012, 0.004, 0, 0.5, 0.082, sh(fabric, 0.7));
+          b.box(0.36, 0.16, 0.12, 0, 0.5, 0.02, sh(fabric, 1.12)); b.box(0.28, 0.1, 0.006, 0, 0.5, 0.081, sh(fabric, 1.32)); b.box(0.3, 0.012, 0.004, 0, 0.5, 0.088, sh(fabric, 0.7));   // the headrest block, a lighter face
           b.pop();
           for (var a = -1; a <= 1; a += 2) b.box(0.07, 0.07, 0.44, s * 0.55 + a * 0.33, 0.76, 0.76, sh(fabric, 1.18));
           b.cyl(0.042, 0.042, 0.02, 10, s * 0.22, 0.8, 0.86, 0x121214); b.cyl(0.036, 0.03, 0.11, 8, s * 0.22, 0.85, 0.86, s < 0 ? 0xf2efe6 : 0x9ad13a);   // cup holders, a cup / a can
-          b.box(0.34, 0.2, 0.1, s * 0.5, 1.3, 0.98, sh(fabric, 1.12)); b.box(0.26, 0.12, 0.01, s * 0.5, 1.3, 1.035, sh(fabric, 1.35));   // (the headrest, toward the aisle)
           b.box(0.34, 0.26, 3.2, s * 0.78, RY - 0.2, 1.0, sh(liner, 0.86));                      // overhead lockers
           gl.box(0.02, 0.02, 3.4, s * 0.55, RY - 0.035, 1.0, night ? 0x6ab8ff : 0xdff0ff);       // LED strips
         }
