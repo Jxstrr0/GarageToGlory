@@ -19874,12 +19874,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     whistle: function () {   // two-finger whistles: a long one, and a wolf whistle
       var NOTES = [[[[0, 2300], [0.1, 3250], [0.45, 3150], [0.72, 2650]]], [[[0, 1500], [0.22, 3000]], [[0.34, 1700], [0.54, 3100], [0.8, 1450]]]];
       var out = [];
-      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of SLICE samples
+      var WS = SLICE >> 2;   // a whistle sample costs a pow + sin + cos: quarter slices keep even an unoptimised (first-build) step small
+      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of WS samples
         var last = notes[notes.length - 1], b = stereo(last[last.length - 1][0] + 0.08), ph = 0, s = 900 + k;
         var ni = -1, pts, a, z = 0, i = 0, y1, y2, j, done = false;
         return function () {
           if (done) { out.push(norm(b, 0, 0.55)); return out; }
-          for (var m = SLICE; m > 0; m--, i++) {
+          for (var m = WS; m > 0; m--, i++) {
             while (i >= z) {   // next note
               if (++ni >= notes.length) { done = true; return MORE; }
               pts = notes[ni]; a = Math.floor(pts[0][0] * CSR); z = Math.floor(pts[pts.length - 1][0] * CSR); y1 = 0; y2 = 0; j = 0; i = a;
@@ -34247,7 +34248,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //     score, skippable), then your live set (GG.ui.playGig, v0.3), then the crowd verdict (screen 'rival-verdict', full).
 //     Any gig that resolved a showdown (a same-night split) also ends on the verdict.
 //   GG.ui.showdownViews: null (default: views on unless GG.ui.gigAutoplay) | true | false. Autoplay flows get toasts instead
-//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song.
+//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song;
+//     GG.ui.rivalHold = true freezes their set's clock (tests: hold a set open on a loaded machine; v0.8).
 //   Hooks: rivalWrap(wrap) (52 wrap), rivalBadge(st, listing) (56 board), rivalCardNote(st, card) (52 card), rivalEnd(st)
 //     (52 end), gigTarget(gig) (55 gig bar). ui.who('wraith_frontman' | 'tw_*') resolves to the rival's cast.
 // testids: laptop-tab-scene, scene-panel, scene-rival, scene-record, scene-heat, scene-next, scene-board, scene-row-<id>,
@@ -34523,7 +34525,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; document.removeEventListener('visibilitychange', onVisible); }
   function tick(now) {
     if (!V || V.ended) return;
-    var dt = document.hidden ? 0 : Math.max(0, (now - V.last) / 1000); V.last = now;
+    var dt = document.hidden || ui.rivalHold ? 0 : Math.max(0, (now - V.last) / 1000); V.last = now;   // rivalHold: tests freeze their set
     V.t += dt; V.songT += dt * 1000;
     var song = V.set.setlist[V.i], u = Math.min(1, V.songT / V.ms), api = V.stage ? stageApi() : null;
     V.scores[V.i] = Math.round(song.score * (u < 0.92 ? u / 0.92 : 1));

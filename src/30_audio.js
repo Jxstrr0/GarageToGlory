@@ -1442,12 +1442,13 @@
     whistle: function () {   // two-finger whistles: a long one, and a wolf whistle
       var NOTES = [[[[0, 2300], [0.1, 3250], [0.45, 3150], [0.72, 2650]]], [[[0, 1500], [0.22, 3000]], [[0.34, 1700], [0.54, 3100], [0.8, 1450]]]];
       var out = [];
-      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of SLICE samples
+      var WS = SLICE >> 2;   // a whistle sample costs a pow + sin + cos: quarter slices keep even an unoptimised (first-build) step small
+      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of WS samples
         var last = notes[notes.length - 1], b = stereo(last[last.length - 1][0] + 0.08), ph = 0, s = 900 + k;
         var ni = -1, pts, a, z = 0, i = 0, y1, y2, j, done = false;
         return function () {
           if (done) { out.push(norm(b, 0, 0.55)); return out; }
-          for (var m = SLICE; m > 0; m--, i++) {
+          for (var m = WS; m > 0; m--, i++) {
             while (i >= z) {   // next note
               if (++ni >= notes.length) { done = true; return MORE; }
               pts = notes[ni]; a = Math.floor(pts[0][0] * CSR); z = Math.floor(pts[pts.length - 1][0] * CSR); y1 = 0; y2 = 0; j = 0; i = a;

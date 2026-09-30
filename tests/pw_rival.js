@@ -231,11 +231,15 @@ async function final() {
     const route = await vanSeen;
     c.ok(/Calgary/.test(route) && /620/.test(route), 'the van goes to Calgary, 620 km: ' + route.slice(0, 70));
     await page.waitForFunction(() => { const e = document.querySelector('[data-testid="rs-score"]'); return e && +e.textContent > 0; }, null, { timeout: 8000 });
+    // Their set runs on wall time (v0.8): hold it open so the screenshot + skip below can't lose a race on a loaded machine.
+    await page.evaluate(() => { GG.ui.rivalHold = true; });
+    c.ok(await page.locator(tid('btn-rs-skip')).count() === 1, 'their set is still on (skip offered)');
     const fs0 = await page.evaluate(() => ({ songs: document.querySelectorAll('[data-testid^="rs-song-"]').length, info: GG.render.stage.info() }));
     c.ok(fs0.songs === 4 && fs0.info.view === 'spectator', 'their Sad Dome set: 4 songs, from the crowd');
     await shot(page, 'final_set');
     await page.evaluate(() => { GG.ui.gigAutoplay = true; });
     await tap(page, 'btn-rs-skip');
+    await page.evaluate(() => { GG.ui.rivalHold = false; });
     await waitScreen(page, 'gig-results', 30000);
     await tap(page, 'btn-gig-done');
     await waitScreen(page, 'rival-verdict');

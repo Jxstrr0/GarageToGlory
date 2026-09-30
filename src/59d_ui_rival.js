@@ -10,7 +10,8 @@
 //     score, skippable), then your live set (GG.ui.playGig, v0.3), then the crowd verdict (screen 'rival-verdict', full).
 //     Any gig that resolved a showdown (a same-night split) also ends on the verdict.
 //   GG.ui.showdownViews: null (default: views on unless GG.ui.gigAutoplay) | true | false. Autoplay flows get toasts instead
-//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song.
+//     of the announcement and skip the spectator view and the verdict (they stay fast). GG.ui.rivalSongMs = ms per rival song;
+//     GG.ui.rivalHold = true freezes their set's clock (tests: hold a set open on a loaded machine; v0.8).
 //   Hooks: rivalWrap(wrap) (52 wrap), rivalBadge(st, listing) (56 board), rivalCardNote(st, card) (52 card), rivalEnd(st)
 //     (52 end), gigTarget(gig) (55 gig bar). ui.who('wraith_frontman' | 'tw_*') resolves to the rival's cast.
 // testids: laptop-tab-scene, scene-panel, scene-rival, scene-record, scene-heat, scene-next, scene-board, scene-row-<id>,
@@ -286,7 +287,7 @@
   function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; document.removeEventListener('visibilitychange', onVisible); }
   function tick(now) {
     if (!V || V.ended) return;
-    var dt = document.hidden ? 0 : Math.max(0, (now - V.last) / 1000); V.last = now;
+    var dt = document.hidden || ui.rivalHold ? 0 : Math.max(0, (now - V.last) / 1000); V.last = now;   // rivalHold: tests freeze their set
     V.t += dt; V.songT += dt * 1000;
     var song = V.set.setlist[V.i], u = Math.min(1, V.songT / V.ms), api = V.stage ? stageApi() : null;
     V.scores[V.i] = Math.round(song.score * (u < 0.92 ? u / 0.92 : 1));
