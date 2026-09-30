@@ -170,6 +170,25 @@ h1, h2, h3, p { margin: 0; }
 .title-glow { position: absolute; left: 50%; top: 18%; width: 300px; height: 300px; margin-left: -150px; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, rgba(255, 179, 71, .22), transparent 65%); }
 .menu-list { display: flex; flex-direction: column; gap: 10px; }
+.title-head, .title-foot { display: flex; flex-direction: column; gap: 22px; }
+.title-scrim-top, .title-scrim-bot, .title-hint { display: none; }
+/* v0.7.1: the title over the live 3D garage-in-a-hailstorm (GG.render 'title'); only buttons take taps, the rest reach the scene */
+#screens > .layer.title3d-layer, .full.title3d, .full.title3d .full-body { pointer-events: none; }
+.full.title3d { background: transparent; }
+.full.title3d .menu-list, .full.title3d button { pointer-events: auto; }
+.full.title3d .title-bg, .full.title3d .title-glow { display: none; }
+.full.title3d .title-wrap { justify-content: space-between; gap: 12px; }
+.full.title3d .title-head { gap: 8px; }
+.full.title3d .title-foot { gap: 12px; }
+.full.title3d .logo { font-size: 50px; text-shadow: 0 4px 0 #05070d, 0 0 22px rgba(0, 0, 0, .75), 0 0 40px rgba(255, 179, 71, .22); }
+.full.title3d .tagline { color: #c9ccd6; text-shadow: 0 1px 6px #000; }
+.full.title3d .credit { color: #8d93a3; }
+.full.title3d .title-scrim-top { display: block; position: absolute; left: 0; right: 0; top: 0; height: 32%; pointer-events: none; background: linear-gradient(180deg, rgba(4, 6, 11, .7), rgba(4, 6, 11, 0)); }
+.full.title3d .title-scrim-bot { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 50%; pointer-events: none;
+  background: linear-gradient(0deg, rgba(6, 8, 14, .95) 0%, rgba(6, 8, 14, .8) 52%, rgba(6, 8, 14, 0)); }
+.full.title3d .title-hint { display: block; align-self: center; padding: 5px 12px; border-radius: 99px; background: rgba(13, 18, 30, .72); color: var(--dim); font-size: 12px;
+  pointer-events: none; animation: gg-hint 8s ease-in-out 1.2s both; }
+@keyframes gg-hint { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
 .slot-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line);
   background: var(--bg2); color: var(--text); text-align: left; cursor: pointer; }
 .slot-btn:active:not(:disabled) { filter: brightness(1.15); }
