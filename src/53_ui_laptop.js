@@ -49,6 +49,7 @@
         el('div.small.dim', 'Drums · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
+    if (ui.logoPanel) out.push(ui.logoPanel(st, rerender));   // v0.8.1 LOGO: the band logo + Rebrand (5m_ui_logo)
     // Song catalog: tap a song to open it read-only in the sequencer (and play it).
     var songs = st.songs || [];
     var list = el('div.panel', { testid: 'laptop-songs' }, songs.length ? songs.map(function (s) {

@@ -460,7 +460,7 @@
     function sync(st) {
       state = st;
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId];
-      banner.set((band && band.name) || 'Hail Damage');
+      banner.set((band && band.name) || 'Hail Damage', st.logo);   // v0.8.1: the band logo on the bedsheet
       trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
       decor.set(st);
@@ -468,7 +468,7 @@
       space.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
-      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '');   // v0.8: the kit look (KIT_LOOK)
+      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '') + (kl && kl.head === 'logo' && st.logo ? JSON.stringify(st.logo) : '');   // v0.8: the kit look (KIT_LOOK); v0.8.1: + the logo
       if (ksig !== kit.sig) buildKit(kc, kl, ksig);
       if (kit.mesh) kit.mesh.position.y = space.riserH();          // v0.8 polish: the studio / arena kit stands on a riser
       ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
@@ -2539,12 +2539,17 @@
       mesh.position.set(PROPS.door.x, 1.08, Z0 + 0.1);
       var self = {
         mesh: mesh, text: null,
-        set: function (name) {
-          if (name === self.text) return;
-          self.text = name;
+        set: function (name, logo) {
+          var sig = name + (logo ? '|' + JSON.stringify(logo) : '');
+          if (sig === self.sig) return;
+          self.text = name; self.sig = sig;
           var g = c.getContext('2d'), rng = GG.RNG(GG.hashSeed(name)), txt = String(name).toUpperCase(), size = 92;
           g.fillStyle = '#e8e1cf'; g.fillRect(0, 0, 512, 176);
           for (var k = 0; k < 14; k++) { g.fillStyle = 'rgba(120,100,70,' + (0.04 + rng.next() * 0.06) + ')'; g.fillRect(rng.next() * 512, rng.next() * 176, 20 + rng.next() * 90, 3 + rng.next() * 10); }
+          if (logo && GG.render.logo) {   // v0.8.1: the band logo sprayed on the sheet (the name is in it)
+            g.globalAlpha = 0.95; g.drawImage(GG.render.logo.canvas(logo, name, 176, { shape: 'wide', aspect: 2.9 }), 0, 0, 512, 176); g.globalAlpha = 1;
+            tex.needsUpdate = true; return;
+          }
           g.textAlign = 'center'; g.textBaseline = 'middle';
           do { g.font = '900 ' + size + 'px Impact, "Arial Black", "Helvetica Neue", sans-serif'; size -= 4; } while (g.measureText(txt).width > 470 && size > 24);
           g.fillStyle = '#b3141c';

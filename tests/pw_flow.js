@@ -95,6 +95,7 @@ async function flow() {
     c.ok(await page.locator(tid('genre-punk')).isDisabled(), 'punk is locked');
     await tap(page, 'genre-metal');
     await tap(page, 'btn-intro-next');
+    await waitScreen(page, 'logo'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker (5m_ui_logo)
     await waitScreen(page, 'creator');
     c.ok(await page.locator(tid('btn-create')).isDisabled(), 'create disabled until a name is typed');
     await page.fill(tid('creator-name'), 'Tanner');
@@ -281,7 +282,8 @@ async function layout() {
     await tap(page, 'btn-new'); await waitScreen(page, 'slots'); await check('slots');
     await tap(page, 'slot-1'); await waitScreen(page, 'genre'); await check('genre');
     await tap(page, 'genre-metal'); await waitScreen(page, 'intro'); await check('intro');
-    await tap(page, 'btn-intro-next'); await waitScreen(page, 'creator');
+    await tap(page, 'btn-intro-next'); await waitScreen(page, 'logo'); await check('logo', true);   // v0.8.1
+    await tap(page, 'btn-logo-done'); await waitScreen(page, 'creator');
     await page.fill(tid('creator-name'), 'Layla');
     await check('creator', true);
     await tap(page, 'btn-create'); await waitScreen(page, 'coldopen'); await check('coldopen');
