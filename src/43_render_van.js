@@ -569,13 +569,24 @@
       b.box(0.34, 0.3, 0.5, 0, 0.3, -0.35, sh(dash, 1.1));
       b.cyl(0.04, 0.03, 0.12, 8, -0.06, 0.51, -0.5, 0xc0302a); b.cyl(0.042, 0.042, 0.02, 8, -0.06, 0.575, -0.5, 0xf2f2f2);
       b.cyl(0.04, 0.03, 0.12, 8, 0.07, 0.51, -0.42, 0xc0302a); b.cyl(0.042, 0.042, 0.02, 8, 0.07, 0.575, -0.42, 0xf2f2f2);
-      // Seats: front buckets (no headrests: it's that old), middle bench, duct tape.
+      // Seats: front buckets (no headrests: it's that old), middle bench, duct tape. v0.8 polish: the seat backs you stare at
+      // the whole drive have their detail (a rolled top, seams, a map pocket with a road map / ketchup chips), the console
+      // has cup holders, the bench cushion has its belts and a set list; the 15-passenger's church bench and the sprinter's
+      // captain chairs are their own (buildTier).
       for (s = -1; s <= 1; s += 2) {
         b.box(0.56, 0.62, 0.12, s * 0.48, 0.77, -0.2, fabric, 0.12, 0, 0);
         b.box(0.56, 0.12, 0.5, s * 0.48, SEAT_Y - 0.06, -0.45, fabric);
         b.box(0.2, 0.2, 0.01, s * 0.48 + 0.1, 0.9, -0.12, 0xb8bcc2, 0.12, 0, 0.3);
+        seatBack(b, s * 0.48, 0.77, -0.2, 0.12, 0.56, 0.62, 0.06, fabric, s, s < 0 && !VT && !D.look ? 0x8a2a2a : null);
       }
-      if (!VT || VT.bench) { b.box(1.72, 0.66, 0.14, 0, 0.74, 0.98, sh(fabric, 0.9), 0.1, 0, 0); b.box(1.72, 0.12, 0.52, 0, SEAT_Y - 0.06, 0.66, sh(fabric, 0.9)); }
+      b.cyl(0.05, 0.05, 0.02, 10, -0.06, 0.452, -0.5, 0x121214); b.cyl(0.05, 0.05, 0.02, 10, 0.07, 0.452, -0.42, 0x121214);   // cup holders
+      b.box(0.3, 0.012, 0.18, 0, 0.456, -0.22, sh(dash, 0.8)); b.box(0.12, 0.02, 0.07, -0.05, 0.47, -0.24, 0x2a2a2e);      // the console lid, somebody's phone
+      if (!VT) {
+        b.box(1.72, 0.66, 0.14, 0, 0.74, 0.98, sh(fabric, 0.9), 0.1, 0, 0); b.box(1.72, 0.12, 0.52, 0, SEAT_Y - 0.06, 0.66, sh(fabric, 0.9));
+        for (s = -1; s <= 1; s += 2) { b.box(0.05, 0.02, 0.1, s * 0.22, SEAT_Y + 0.01, 0.9, 0x1e1e22); b.box(0.04, 0.012, 0.05, s * 0.22, SEAT_Y + 0.02, 0.84, 0xb8bcc2); }   // belt buckles
+        b.box(0.2, 0.004, 0.27, -0.5, SEAT_Y + 0.002, 0.62, 0xf2efe6, 0, 0.25, 0);                                             // the set list
+        for (i = 0; i < 6; i++) b.box(0.12 - (i % 3) * 0.02, 0.005, 0.012, -0.5 - 0.02 * i + 0.03, SEAT_Y + 0.004, 0.53 + i * 0.035, 0x3a3a3a, 0, 0.25, 0);
+      } else if (VT.bench) b.box(1.72, 0.12, 0.52, 0, SEAT_Y - 0.06, 0.66, sh(fabric, 0.9));
       
       b.box(1.9, 0.9, 0.06, 0, 0.45, WS.z0 + 0.3, 0x1a1a1e);                                      // firewall                        // Dana's guitar case, wedged in
       if (!VT) {   // v0.8: bigger vehicles pack the gear further back (behind the camera)
@@ -646,9 +657,9 @@
     // both sides, a table with snacks, a TV, fairy lights), the band facing each other. cam = where you sit (the camera).
     var VTIER = [null,
       { id: 'fifteen', roof: 2.02, liner: 0xd8ccb0, trim: 0x6a6a72, dash: 0x2a2b30, fabric: 0x5a6a8a, paint: 0xf2efe6, rust: 0xb8b0a0, bench: true,
-        cam: { pos: [0.0, 1.52, 1.72], look: [-0.02, 1.2, -8], bandFov: 56, minHFov: 46 } },
+        cam: { pos: [0.0, 1.66, 1.6], look: [-0.02, 1.14, -8], bandFov: 56, minHFov: 43 } },      // v0.8 polish: up + in, over the bench
       { id: 'sprinter', roof: 2.32, liner: 0xd4d6d8, trim: 0x44474e, dash: 0x26282e, fabric: 0x383c44, paint: 0xe8e8ea, rust: 0xd0d2d6, bench: false,
-        cam: { pos: [0.0, 1.52, 1.5], look: [-0.02, 1.26, -8], bandFov: 58, minHFov: 48 } },
+        cam: { pos: [0.0, 1.8, 1.95], look: [-0.02, 1.16, -8], bandFov: 58, minHFov: 44 } },     // over the captain chairs' headrests
       { id: 'bus', roof: 2.45, liner: 0x3a2a22, trim: 0x2a2a2e, dash: 0x1e1e22, fabric: 0x8a2a2a, paint: 0x1e1e22, rust: 0x2a2a2e, bench: false,
         cam: { pos: [0.0, 1.7, 2.7], look: [-0.02, 1.2, -8], bandFov: 60, minHFov: 50 } }];
     function buildTier(b, gl, D, VT, liner, trim, fabric) {
@@ -660,6 +671,21 @@
       b.box(1.9, RY - WS.y1 - 0.02, 0.1, 0, (RY + WS.y1) / 2, WS.z1 - 0.02, sh(liner, 0.9));       // header over the windshield
       b.box(1.9, 0.03, 4.3, 0, 0.055, 1.3, t === 3 ? 0x4a3526 : 0x2a2826);                        // a longer floor (over the road)
       if (t === 1) {
+        // The church bench (row 2): a tall vinyl back with headrest humps over the window seats, tuck-and-roll pleats, three seats' seams, a
+        // chrome grab rail, the belts hanging over; a toque on the middle headrest, a guitar case leaning in the corner.
+        var BF = sh(fabric, 0.9);
+        b.push(0, 0.74, 0.98, 0.1, 0, 0);
+        b.box(1.72, 0.66, 0.14, 0, 0, 0, BF);
+        for (i = 0; i < 5; i++) b.box(1.64, 0.022, 0.008, 0, -0.26 + i * 0.1, 0.074, sh(BF, 0.6));
+        b.box(0.42, 0.018, 0.018, -0.3, 0.345, 0.0, 0xd8b27a, 0, 0.08, 0); b.box(0.42, 0.018, 0.018, -0.3, 0.345, 0.03, 0xd8b27a, 0, -0.05, 0);   // on the ledge: sticks,
+        b.cyl(0.04, 0.032, 0.12, 8, 0.28, 0.39, 0.0, 0xf2efe6); b.cyl(0.042, 0.042, 0.015, 8, 0.28, 0.455, 0.0, 0xc0302a);             // a double-double,
+        b.box(0.08, 0.012, 0.15, 0.05, 0.34, 0.0, 0x1e1e22, 0, 0.3, 0); b.box(0.065, 0.004, 0.12, 0.05, 0.348, 0.0, 0x4a6a8a, 0, 0.3, 0);   // a phone
+        b.box(0.016, 0.62, 0.008, -0.29, 0, 0.074, sh(BF, 0.55)); b.box(0.016, 0.62, 0.008, 0.29, 0, 0.074, sh(BF, 0.55));
+        for (i = -1; i <= 1; i += 2) { b.box(0.4, 0.12, 0.12, i * 0.57, 0.38, -0.01, BF); b.cyl(0.06, 0.06, 0.4, 8, i * 0.57, 0.44, -0.01, sh(BF, 1.1), 0, 0, Math.PI / 2); }   // (the middle seat gets no headrest)
+        b.cyl(0.016, 0.016, 1.5, 8, 0, 0.3, 0.1, 0xc8ccd2, 0, 0, Math.PI / 2); b.box(0.03, 0.05, 0.05, -0.74, 0.3, 0.08, 0xc8ccd2); b.box(0.03, 0.05, 0.05, 0.74, 0.3, 0.08, 0xc8ccd2);
+        for (i = -1; i <= 1; i++) { b.box(0.045, 0.24, 0.008, i * 0.57 + 0.14, 0.18, 0.078, 0x1e1e22); b.box(0.055, 0.05, 0.012, i * 0.57 + 0.14, 0.05, 0.083, 0xb8bcc2); }
+        b.pop();
+        b.box(0.12, 0.95, 0.32, 0.74, 0.5, 1.2, 0x2a1c14, -0.12, 0, 0.1); b.box(0.13, 0.22, 0.18, 0.74, 0.95, 1.13, 0x2a1c14, -0.12, 0, 0.1);
         for (s = -1; s <= 1; s += 2) {                                                            // seat-back pockets with hymnals
           b.box(0.5, 0.26, 0.03, s * 0.5, 0.82, 1.07, sh(fabric, 0.7), 0.1, 0, 0);
           b.box(0.16, 0.22, 0.04, s * 0.5 - 0.08, 0.92, 1.08, 0x6a1a22, 0.1, 0, 0.08); b.box(0.16, 0.22, 0.04, s * 0.5 + 0.1, 0.9, 1.085, 0x1a3a6a, 0.1, 0, -0.05);
@@ -669,12 +695,25 @@
         b.box(0.8, 0.012, 0.16, 0, RY - 0.035, 0.6, 0xf2efe6); b.box(0.6, 0.014, 0.05, 0, RY - 0.037, 0.6, 0x3a2a70);                 // ST. VLAD'S
         b.box(0.22, 0.16, 0.02, 0.02, 1.18, -1.12, 0x8aa0b8);                                    // the trailer's reflector in the mirror (squeak)
       } else if (t === 2) {
-        for (s = -1; s <= 1; s += 2) {                                                            // captain seats, an aisle between
-          b.box(0.62, 0.7, 0.14, s * 0.55, 0.78, 0.98, fabric, 0.1, 0, 0); b.box(0.62, 0.14, 0.52, s * 0.55, SEAT_Y - 0.05, 0.66, fabric);
-          b.box(0.34, 0.2, 0.12, s * 0.55, 1.2, 1.02, sh(fabric, 0.8), 0.1, 0, 0);
+        for (s = -1; s <= 1; s += 2) {                                                            // captain chairs, an aisle between
+          // v0.8 polish: side bolsters, quilted channels, a seatback pocket with a tablet, a headrest up on chrome posts,
+          // fold-down armrests both sides.
+          b.box(0.62, 0.14, 0.52, s * 0.55, SEAT_Y - 0.05, 0.66, fabric);
+          b.push(s * 0.55, 0.78, 0.98, 0.1, 0, 0);
+          b.box(0.56, 0.7, 0.14, 0, 0, 0, fabric);
+          b.box(0.08, 0.66, 0.17, -0.28, 0, 0, sh(fabric, 1.25)); b.box(0.08, 0.66, 0.17, 0.28, 0, 0, sh(fabric, 1.25));
+          for (i = 0; i < 4; i++) b.box(0.012, 0.56, 0.006, -0.15 + i * 0.1, -0.02, 0.073, sh(fabric, 0.62));
+          b.box(0.4, 0.2, 0.03, 0, -0.2, 0.085, sh(fabric, 0.72)); b.box(0.2, 0.13, 0.012, 0.05 * s, -0.13, 0.1, 0x1e1e24);
+          b.cyl(0.012, 0.012, 0.14, 6, -0.08, 0.4, 0.0, 0xc8ccd2); b.cyl(0.012, 0.012, 0.14, 6, 0.08, 0.4, 0.0, 0xc8ccd2);
+          b.box(0.36, 0.16, 0.12, 0, 0.5, 0.02, sh(fabric, 1.12)); b.box(0.3, 0.012, 0.004, 0, 0.5, 0.082, sh(fabric, 0.7));
+          b.pop();
+          for (var a = -1; a <= 1; a += 2) b.box(0.07, 0.07, 0.44, s * 0.55 + a * 0.33, 0.76, 0.76, sh(fabric, 1.18));
           b.box(0.34, 0.26, 3.2, s * 0.78, RY - 0.2, 1.0, sh(liner, 0.86));                      // overhead lockers
           gl.box(0.02, 0.02, 3.4, s * 0.55, RY - 0.035, 1.0, night ? 0x6ab8ff : 0xdff0ff);       // LED strips
         }
+        b.box(0.3, 0.32, 0.42, 0, 0.16, 1.28, 0x2f6fd1); b.box(0.32, 0.05, 0.44, 0, 0.345, 1.28, 0xf2efe6);                 // the aisle: a cooler,
+        b.cyl(0.03, 0.03, 0.1, 8, -0.06, 0.42, 1.22, 0x9ad13a); b.cyl(0.04, 0.035, 0.18, 8, 0.07, 0.46, 1.36, 0x8a8e94);   // a can, the thermos,
+        b.box(0.34, 0.12, 0.95, 0.02, 0.07, 1.98, 0x151518, 0, 0.06, 0); b.box(0.1, 0.13, 0.3, 0.02, 0.08, 1.45, 0x151518, 0, 0.06, 0);   // a gig bag down the aisle
         gl.box(0.26, 0.15, 0.012, 0.02, 0.84, WS.z0 + 0.49, night ? 0x3a8ad8 : 0x6aaad8);       // the touchscreen
         b.box(0.3, 0.19, 0.03, 0.02, 0.84, WS.z0 + 0.475, 0x151518);
       } else if (t === 3) {
@@ -705,6 +744,26 @@
         b.box(w, 0.004, d, x, y, z, col, 0, rot, 0);
         b.box(w * 0.7, 0.005, 0.02, x, y + 0.001, z, 0x1a1a1a, 0, rot, 0);                       // the venue's name (a black bar)
         if (list[i].banned) { b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot + 0.55, 0); b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot - 0.55, 0); }
+      }
+      b.pop();
+    }
+    // v0.8 polish: a seat back's rear face (local +z at `half`): a rolled top, darker side bolsters, a lighter ribbed velour
+    // insert between two seams, a map pocket (side < 0: a road map sticking out; > 0: a bag of ketchup chips); hoodie: one
+    // draped over the top. x, y, z, tilt = the back's centre and recline.
+    function seatBack(b, x, y, z, tilt, w, h, half, fabric, side, hoodie) {
+      var seam = sh(fabric, 0.6), zf = half + 0.006, k;
+      b.push(x, y, z, tilt, 0, 0);
+      b.cyl(0.06, 0.06, w - 0.02, 8, 0, h / 2 - 0.03, 0.005, sh(fabric, 1.15), 0, 0, Math.PI / 2);
+      b.box(w * 0.2, h - 0.1, 0.012, -w * 0.4 + 0.01, -0.02, half + 0.003, sh(fabric, 0.78)); b.box(w * 0.2, h - 0.1, 0.012, w * 0.4 - 0.01, -0.02, half + 0.003, sh(fabric, 0.78));
+      b.box(w * 0.4, h - 0.2, 0.01, 0, -0.03, half + 0.003, sh(fabric, 1.32));
+      for (k = 0; k < 7; k++) b.box(w * 0.4, 0.01, 0.012, 0, -h / 2 + 0.16 + k * 0.065, zf, sh(fabric, 1.05));
+      b.box(0.014, h - 0.2, 0.014, -w * 0.21, -0.03, zf, seam); b.box(0.014, h - 0.2, 0.014, w * 0.21, -0.03, zf, seam);
+      b.box(w - 0.1, 0.2, 0.03, 0, -h / 2 + 0.14, half + 0.02, sh(fabric, 0.7)); b.box(w - 0.1, 0.02, 0.034, 0, -h / 2 + 0.245, half + 0.021, sh(fabric, 0.5));
+      if (side < 0) { b.box(0.2, 0.17, 0.012, -0.1, -h / 2 + 0.3, half + 0.03, 0xeadfb4, 0, 0, 0.14); b.box(0.16, 0.014, 0.014, -0.1, -h / 2 + 0.31, half + 0.038, 0x2f6fd1, 0, 0, 0.14); b.box(0.014, 0.12, 0.014, -0.05, -h / 2 + 0.3, half + 0.038, 0xc0302a, 0, 0, 0.14); }
+      else { b.box(0.17, 0.15, 0.035, 0.08, -h / 2 + 0.29, half + 0.03, 0xd8302a, 0, 0, -0.18); b.box(0.1, 0.035, 0.037, 0.08, -h / 2 + 0.31, half + 0.031, 0xf2d15b, 0, 0, -0.18); }
+      if (hoodie) {                                                                                   // somebody's hoodie, slung over
+        b.box(w * 0.7, 0.07, 0.22, -0.04, h / 2 + 0.02, 0.0, hoodie); b.box(0.12, 0.34, 0.03, -0.14, h / 2 - 0.16, half + 0.035, hoodie, 0, 0, 0.1);
+        b.box(0.1, 0.3, 0.03, 0.12, h / 2 - 0.14, half + 0.035, sh(hoodie, 0.85), 0, 0, -0.08); b.box(0.2, 0.04, 0.02, 0.0, h / 2 - 0.05, half + 0.04, 0xf2efe6);
       }
       b.pop();
     }
@@ -751,7 +810,7 @@
       ];
       if (D.look === 'sardine') seats = [{ x: -0.47, z: -0.47, role: 'driver' }, { x: 0.49, z: -0.47, role: 'shotgun' },   // v0.7: three abreast
         { x: -0.56, z: 0.68, role: 'middleL' }, { x: 0.56, z: 0.68, role: 'middleR' }, { x: 0, z: 0.64, role: 'back' }];
-      else if (D.tier === 1) seats[4] = { x: 0.64, z: 1.74, role: 'back' };                         // v0.8: the 15-passenger: beside you, row 3
+      else if (D.tier === 1) { seats[2].x = -0.5; seats[3].x = 0.5; seats[4] = { x: 0.64, z: 1.74, role: 'back' }; }   // v0.8: the 15-passenger: row 2 in view, beside you in row 3
       else if (D.tier === 2) { seats[2] = { x: -0.55, z: 0.72, role: 'middleL' }; seats[3] = { x: 0.55, z: 0.72, role: 'middleR' }; seats[4] = { x: -0.6, z: 2.2, role: 'back' }; }
       else if (D.tier === 3) seats = [seats[0], seats[1], { x: -0.6, z: 0.55, role: 'middleL', yaw: Math.PI / 2 },   // the bus lounge: facing each other
         { x: 0.6, z: 0.9, role: 'middleR', yaw: -Math.PI / 2 }, { x: -0.6, z: 1.3, role: 'back', yaw: Math.PI / 2 }];
@@ -788,9 +847,10 @@
 
     // ---- Camera framing ------------------------------------------------------------------------------------------
     var CAM0 = { pos: [0.0, 1.44, 0.98], look: [-0.02, 1.22, -8], bandFov: 56, minHFov: 46 }, CAM = CAM0;
+    var CAM_MINI = { pos: [0.0, 1.52, 0.98], look: [-0.02, 1.16, -8], bandFov: 56, minHFov: 42 };   // v0.8 polish: the band's own minivan: a touch up + in
     var CAM_SARDINE = { pos: [0.16, 1.7, 1.5], look: [0.0, 1.25, -8], bandFov: 58, minHFov: 50 };   // v0.7: behind the packed middle row
     function frame() {
-      CAM = K && K.D && K.D.look === 'sardine' ? CAM_SARDINE : K && K.D && K.D.tier && VTIER[K.D.tier] ? VTIER[K.D.tier].cam : CAM0;   // v0.8: vehicle tiers
+      CAM = K && K.D && K.D.look === 'sardine' ? CAM_SARDINE : K && K.D && K.D.tier && VTIER[K.D.tier] ? VTIER[K.D.tier].cam : K && K.D && K.D.tier === 0 ? CAM_MINI : CAM0;   // v0.8: vehicle tiers
       var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H * 0.3) : F.bottom, bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CAM.bandFov * Math.PI / 360), minT = Math.tan(CAM.minHFov * Math.PI / 360) * bandH / W;
@@ -1030,7 +1090,8 @@
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
           tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
-          traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length };
+          traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
+          cam: CAM.pos.slice(), hfov: CAM.minHFov };                                                          // v0.8 polish: where you sit
       }
     };
     return shell;
