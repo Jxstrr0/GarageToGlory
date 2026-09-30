@@ -115,7 +115,13 @@
      merch: { unlocked: [merchId], stock: { <merchId>: units at home }, price: { <merchId>: $ }, sold: { <merchId>: n }, earned,
        misprint: null | { merchId, week, status: 'boxed'|'collector' } }   (unsold stock at home = the visible box pile),
      player: { …, look: LOOK (everyday), stageLook: LOOK (auto for gigs / red carpet / stage scenes), kit: KIT_LOOK },
-     unlocks: { creator: [partId] }   (grown by the career; carry-over within a genre via GG.creator, localStorage 'gg.v1.unlocks.<genre>')
+     unlocks: { creator: [partId], news: [partId] (not yet announced) }   (grown by the career; carry-over within a genre via
+       GG.creator, localStorage 'gg.v1.unlocks.<genre>'). Part ids are '<cat>.<value>' (content/creator.js).
+     v0.8 also: merch.spent, merch.last (last gig's sales), merch.shirtsOrdered, misprint.status 'pending' + units;
+       rentLate (weeks behind on rent), milestones.firstMove. GIG_RESULT.merch { sold, earned, boxes, space, items, named };
+       WRAP.shop { rent, unlocks, misprint, perks, evicted, rentLate }; WRAP.creator (new looks). Content: GG.content.shop,
+       GG.content.shopCards (forced only; effects may carry a `shop` key), GG.content.creator. Events: shop:buy|unlock|move|
+       rename|sticker|misprint|merch, creator:unlocked|changed (payloads in 2a_sim_shop.js / 2b_sim_creator.js headers).
      rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
@@ -152,9 +158,11 @@
    LOOK v0.8 adds (all optional; every old LOOK stays valid and renders the same): age 'fresh'|'lived'|'grizzled',
      face: { shape, eyes, eyeColor, brows, nose, mouth }, facialHair, glasses, hairStyle (+ the Part C2 list), top, bottom, shoes,
      headwear, outfit (stage), tattoos: [ { spot, design } ], knuckles: { left: 'ABCD', right: 'EFGH' } (A–Z only), piercings: [id].
-     Part ids + unlock gates live in content/creator.js (GG.content.creator). Never a gong.
+     stageExtras: ['cape'|'wristbands'|'corpsepaint'] (stage looks only; everyday looks carry no outfit/stageExtras);
+     a tattoo at spot 'teardrop' has design 'tear'. Part ids + unlock gates live in content/creator.js. Never a gong.
    KIT_LOOK = { shell: 'wood'|'black'|'sparkle'|'flames'|'camo', color: '#rrggbb', hardware: 'chrome'|'black',
-     head: 'logo'|'face'|'moose'|'text', headText, throne: 'crate'|'stool'|'leather', sticks: '#rrggbb', extras: ['cowbell'|'fan'|'pyro'] }
+     head: 'logo'|'face'|'moose'|'text'|'plain', headText, throne: 'crate'|'stool'|'leather', sticks: '#rrggbb',
+     extras: ['cowbell'|'fan'|'pyro'] }  (shell 'paint' = the old plain colour, used for migrated saves)
      (player.kitColor stays as the legacy colour = KIT_LOOK.color; pyro is arena-only. NO GONG, ever.)
    PATTERN = { bpm, lanes: 4, sections: { verse: [laneStr x lanes], chorus: [...], bridge: [...] }, arrangement: ['verse','chorus',...] }
              laneStr = 16 chars, 'x' = hit, '.' = rest (index = step, top to bottom). Lane order = C.LANES.

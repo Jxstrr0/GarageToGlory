@@ -225,8 +225,24 @@
       tone('sine', 110, 45, t + 0.38, 0.3, 0.7, 0.002);
       hiss(t + 0.38, 0.8, 0.14, { type: 'highpass', f0: 5200 });
     }],
-    save: [2, function (t) { tone('sine', 660, 0, t, 0.14, 0.1); tone('sine', 990, 0, t + 0.11, 0.26, 0.1); }]
+    save: [2, function (t) { tone('sine', 660, 0, t, 0.14, 0.1); tone('sine', 990, 0, t + 0.11, 0.26, 0.1); }],
+    // v0.7.1 title screen: thunder rolling in over the prairie (a crack, then a long low rumble) and Dad's truck horn.
+    thunder: [3, function (t) {
+      hiss(t, 0.35, 0.22, { type: 'bandpass', f0: 2400, f1: 500, q: 0.7 }, 0.004);
+      rumble(t + 0.05, 3.2, 0.9, 190, 55); rumble(t + 0.5, 2.4, 0.5, 120, 45);
+    }],
+    honk: [4, function (t) {
+      [0, 0.32].forEach(function (d) { tone('sawtooth', 392, 0, t + d, 0.22, 0.06, 0.01); tone('sawtooth', 494, 0, t + d, 0.22, 0.05, 0.01); });
+    }]
   };
+  // Long lowpassed noise (loops the white noise buffer so it can outlast it), for thunder.
+  function rumble(t0, dur, peak, f0, f1) {
+    var src = ctx.createBufferSource(); src.buffer = (BUF && BUF.brown) || noise; src.loop = true;
+    var f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 0.8;
+    f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    src.connect(f); f.connect(env(t0, 0.09, peak, dur));
+    voice(src, t0, dur);
+  }
   var CROWD_SFX = { cheer: 1, boo: 1 };
 
   A.sfx = function (name) {
@@ -942,6 +958,26 @@
     srcs.push(bedSource(c, B.white, filterNode(c, 'bandpass', 1100, 0.5, gainNode(c, 0.02, g)), t0, 0.37));
     return { gain: g, srcs: srcs };
   }
+  // v0.7.1 title: a hailstorm on the garage roof: wind that gusts, a dense patter of stones, the odd thud on the eaves.
+  function stormBed(c, dest, t0, B) {
+    var g = bedGain(c, dest, t0), srcs = [], wind = gainNode(c, 0.05, g);
+    srcs.push(bedSource(c, B.brown, filterNode(c, 'bandpass', 380, 0.6, wind), t0));
+    var lfo = c.createOscillator(); lfo.frequency.value = 0.13; lfo.connect(gainNode(c, 0.035, wind.gain)); lfo.start(t0); srcs.push(lfo);
+    if (!B.hail) B.hail = hailBuffer(c);
+    srcs.push(bedSource(c, B.hail, filterNode(c, 'highpass', 1500, 0.7, gainNode(c, 0.22, g)), t0));
+    srcs.push(bedSource(c, B.hail, filterNode(c, 'lowpass', 700, 0.9, gainNode(c, 0.35, g)), t0, 1.3));
+    return { gain: g, srcs: srcs };
+  }
+  // Three seconds of hailstones: sparse decaying clicks of random size, looped.
+  function hailBuffer(c) {
+    var sr = c.sampleRate, n = Math.floor(sr * 3), b = c.createBuffer(1, n, sr), d = b.getChannelData(0), s = 9191, i;
+    for (var k = 0; k < 520; k++) {
+      s = lcg(s); var at = Math.floor(s / 2147483647 * (n - 800));
+      s = lcg(s); var amp = 0.15 + 0.85 * Math.pow(s / 2147483647, 3), len = 90 + Math.floor(amp * 500);
+      for (i = 0; i < len; i++) { s = lcg(s); d[at + i] += (s / 1073741823.5 - 1) * amp * Math.exp(-i / (len * 0.22)); }
+    }
+    return b;
+  }
   function crowdBed(c, dest, t0, B) {   // a room full of people talking over each other
     var g = gainNode(c, 0.0001, dest), s = bedSource(c, B.murmur, null, t0);
     s.connect(filterNode(c, 'bandpass', 750, 0.6, gainNode(c, 1, g)));
@@ -1006,6 +1042,7 @@
   function wantMode() {
     if (!ctx || suspended || A.isMuted() || ctx.state !== 'running') return 'none';
     var ui = GG.ui, st = GG.state;
+    if (ui && !st && ui.isOpen('title') && titleOnTop(ui) && sceneName() === 'title') return 'storm';   // v0.7.1 3D title
     if (!ui || !st) return 'none';
     try {
       if (ui.isOpen('gig') && st.liveGig && st.liveGig.gig) return 'gig';
@@ -1013,6 +1050,12 @@
       if (!ui.hasFull() && sceneName() === 'garage') return 'garage';
     } catch (e) { /* ignore */ }
     return 'none';
+  }
+  // The title is showing: nothing full-screen stacked over it.
+  function titleOnTop(ui) {
+    var ids = ui.stackIds(), at = ids.indexOf('title');
+    for (var i = at + 1; i < ids.length; i++) { var e = ui.get(ids[i]); if (e && e.def.kind === 'full') return false; }
+    return true;
   }
   function refresh() {
     if (!ctx) return;
@@ -1038,6 +1081,7 @@
       if (m === 'garage') startGarage(t);
       else if (m === 'van') startVan(t);
       else if (m === 'gig') startCrowd(t);
+      else if (m === 'storm') amb.bed = stormBed(ctx, ambBus, t, BUF);
     } catch (e) { /* ambience never breaks the game */ }
   }
   // The guitarist noodles in the garage (Dana in Hail Damage), in the key of your newest song.

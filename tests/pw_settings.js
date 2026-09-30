@@ -43,7 +43,9 @@ function tapCol(page, col, at) {
     const c = document.querySelector('[data-testid="gig-highway"]'), r = c.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
     while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
     while (GG.debug('gigui').songT < at) { /* spin */ }
+    window.__inTap = true;   // hits made during this dispatch are the tap's own (two-thumb auto notes play from frames)
     c.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (col + 0.5) * r.width / lanes, clientY: r.bottom - 36, pointerId: 9, pointerType: 'touch', bubbles: true, cancelable: true }));
+    window.__inTap = false;
     return GG.debug('gigui').last;
   }, [col, at]);
 }
@@ -112,10 +114,10 @@ async function settings() {
     await tap(page, 'btn-gig-start');
     await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
     c.ok(await page.evaluate(() => GG.debug('gigui').diff) === 'expert', 'the show runs on Expert');
-    await page.evaluate(() => { window.__lanes = []; const h = GG.audio.hit; GG.audio.hit = function (l) { window.__lanes.push(l); return h.apply(this, arguments); }; });
+    await page.evaluate(() => { window.__lanes = []; window.__tapLanes = []; const h = GG.audio.hit; GG.audio.hit = function (l) { window.__lanes.push(l); if (window.__inTap) window.__tapLanes.push(l); return h.apply(this, arguments); }; });
     const lanes = await page.evaluate(() => GG.debug('gigui').lanes);
     await tapCol(page, 0, (await page.evaluate(() => GG.debug('gigui').songT)) + 0.05);
-    const tapped = await page.evaluate(() => window.__lanes.filter(l => l !== 'kick'));
+    const tapped = await page.evaluate(() => window.__tapLanes);
     c.ok(tapped[0] === GG_LANE(lanes - 1), 'lefty: the leftmost column is the ' + GG_LANE(lanes - 1) + ' lane (' + tapped[0] + ')');
     await page.waitForTimeout(2500);
     const st = await page.evaluate(() => GG.debug('gigui').stats);

@@ -59,9 +59,41 @@
   }
 
   /* ---- Title -------------------------------------------------------------------------------------- */
+  // v0.7.1: the title sits over a live 3D scene (GG.render 'title': the garage in a hailstorm) when WebGL is up.
+  // The screen goes transparent (class title3d), keeps the logo on top and the menu at the bottom, and tells the scene
+  // which strips they cover so the garage is framed in the gap. Without WebGL it's the old flat title.
+  function want3d() { return !!(GG.render && GG.render.available && GG.render.title && !GG.state); }
+  var frameRaf = 0;
+  function frameTitle() {
+    if (frameRaf || typeof requestAnimationFrame === 'undefined') return;
+    frameRaf = requestAnimationFrame(function () {
+      frameRaf = 0;
+      var e = ui.get && ui.get('title');
+      if (!e || !GG.render || !GG.render.title) return;
+      var head = e.body.querySelector('.title-head'), foot = e.body.querySelector('.title-foot'), H = window.innerHeight || 844;
+      if (!head || !foot) return;
+      var hr = head.getBoundingClientRect(), fr = foot.getBoundingClientRect();
+      if (!hr.height || !fr.height) return;   // hidden under a full screen: measured again when it's uncovered
+      GG.render.title.setFrame({ top: Math.round(hr.bottom) + 6, bottom: Math.round(H - fr.top) + 6 });
+    });
+  }
+  if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
-    kind: 'full',
+    kind: 'full', live3d: true,
+    onShow: function () {
+      if (!want3d()) return;
+      try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
+      frameTitle();
+    },
+    onClose: function () {
+      if (GG.state || !GG.render || !GG.render.available) return;
+      try { if ((GG.debug('render') || {}).scene === 'title') GG.render.setScene('none'); } catch (e) { /* ignore */ }
+    },
     build: function (s) {
+      var is3d = want3d();
+      s.root.classList.toggle('title3d-layer', is3d);
+      if (s.root.firstChild) s.root.firstChild.classList.toggle('title3d', is3d);
       var info = slotInfo(), auto = info.auto;
       var kids = [];
       if (auto.exists) {
@@ -78,14 +110,20 @@
         ui.defined && ui.defined('settings') ? btn('.btn.ghost.grow', { testid: 'title-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null
       ]));
       ui.append(s.body, [
-        el('div.title-glow'), el('div.title-bg'),
+        el('div.title-glow'), el('div.title-bg'), el('div.title-scrim-top'), el('div.title-scrim-bot'),
         el('div.title-wrap', [
-          el('h1.logo', ['Garage', el('span.to', 'to'), el('span.glory', 'Glory')]),
-          el('p.tagline', "From your parents' garage to the Loonie Awards. Probably."),
-          el('div.menu-list', kids),
-          el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION)
+          el('div.title-head', [
+            el('h1.logo', ['Garage', el('span.to', 'to'), el('span.glory', 'Glory')]),
+            el('p.tagline', "From your parents' garage to the Loonie Awards. Probably.")
+          ]),
+          el('div.title-foot', [
+            is3d ? el('div.title-hint', { testid: 'title-hint' }, 'Psst: tap the kit. Or Marcel.') : null,
+            el('div.menu-list', kids),
+            el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION)
+          ])
         ])
       ]);
+      if (is3d) frameTitle();
       if (GG.save && GG.save.storageOk === false && !storageWarned) {
         storageWarned = true;
         ui.toast("This browser won't keep saves after you close the tab. Back up with a save code (☰ → Back up).", { kind: 'bad', ms: 7000 });

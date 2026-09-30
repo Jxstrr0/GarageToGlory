@@ -25,7 +25,8 @@
   function covered() {
     return ui.stackIds().some(function (id) { var e = ui.get(id); return e && e.def.kind === 'full' && !e.def.live3d; });
   }
-  function updatePause() { render('setPaused', !!(document.hidden || covered() || !GG.state)); }
+  // v0.7.1: with no career loaded the title's 3D scene (the garage in a hailstorm) still draws.
+  function updatePause() { render('setPaused', !!(document.hidden || covered() || (!GG.state && !ui.isOpen('title')))); }
   GG.on('screen:open', updatePause);
   GG.on('screen:close', updatePause);
 
