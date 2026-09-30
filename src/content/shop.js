@@ -14,7 +14,7 @@
 //   merchTiers: [{ id (C.MERCH_TIERS), era, release?: true (needs a released EP/album), minFans?, blurb }]
 //   merch: [{ id, name, tier, genre?: [..], band?: [..], cost ($/unit), price (suggested $), perBox (units per box), appeal
 //     (0.5..2, how many people want one), season?: { winter|spring|summer|fall: mult }, blurb, hidden?: true (misprint only) }]
-//   lines: { outro / solo / misprintCollector / move / van / merchUnlock: [{ who, text }] (group chat), stickersMoved }
+//   lines: { outro / solo / misprintCollector / move / van / merchUnlock / evicted: [{ who, text }] (group chat), stickersMoved }
 // } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: +/week,
 //            mood: +/week (everyone), recover: extra burnout recovery/week }
 // No gong on the drum kit, ever.
@@ -35,7 +35,7 @@
         blurb: 'From the pawn shop on 8th Street. The shells don\'t match. It sounds like a real kit, mostly.' },
       { tier: 2, id: 'pro', name: 'Maple Pro Kit', cost: 2800, era: 'local',
         blurb: 'Maple shells, fresh heads, hardware that doesn\'t slip mid-song. It punches.' },
-      { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'signed',
+      { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'world',
         blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even in the garage.' }
     ],
     sections: {
@@ -92,7 +92,7 @@
         blurb: 'Rust holds it together. Rust and faith. The side door opens from the outside only.' },
       { tier: 1, id: 'fifteen', kind: '15-passenger van + trailer', price: 3500, era: 'local', space: 6, comfort: 3, condition: 84, wear: 0.9, breakdown: 0.85,
         blurb: 'An ex-church van with a trailer whose hitch squeaks in every key. Room for the whole band and the merch.' },
-      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 9000, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
+      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 7500, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
         blurb: 'High roof. You can stand up inside. Nobody does, but you can.' },
       { tier: 3, id: 'bus', kind: 'Tour bus', price: 30000, era: 'world', space: 14, comfort: 5, condition: 96, wear: 0.65, breakdown: 0.6,
         blurb: 'Bunks, a lounge and a tiny toilet with a big sign. You made it. Kenji still drives.' }
@@ -167,6 +167,7 @@
       move: [{ who: 'marcel', text: 'A real room. With a door that locks. I will need a mirror by the door.' }],
       van: [{ who: 'jaxon', text: 'NEW VAN. baba says it is "a lot of van". she means it as a compliment' }],
       merchUnlock: [{ who: 'marcel', text: 'New merch. I have approved the designs. I have also designed the designs.' }],
+      evicted: [{ who: 'marcel', text: 'The landlord changed the locks. Three weeks behind on rent, apparently. We are moving back. My mirror is coming with us.' }],
       stickersMoved: 'Every sticker from the old van moved over, one by one, with a hair dryer.'
     }
   };

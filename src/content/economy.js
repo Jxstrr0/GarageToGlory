@@ -283,6 +283,7 @@
     // content/shop.js; these are the rates, curves, unlock rules and the bots. ------------------------------------------
     shop: {
       cardFrom: 3, cardGap: 3,                  // shop Monday cards (forced): none before week 3, at least 3 weeks apart
+      rentLateWeeks: 2,                         // this many wraps in a row with < 2 weeks' rent in the fund: evicted, one tier down
       outroSongs: 3,                            // Outro unlocks (free) once you have written this many songs (a chat moment)
       soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> Dana's card; refused -> again later
       // gear on stage and in the studio: kit quality tier 0..3 and each lane / the pedal
@@ -310,8 +311,10 @@
         misprint: { units: 50, weeks: 8, minFans: 300 }   // the HALE DAMAGE batch becomes a collector's item
       },
       bot: {
-        good: { cushion: 1200, kitCushion: 1500, vanCushion: 3000, rentWeeks: 20, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
-        avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
+        // cushions = fund kept after a buy (at least 6 weeks of bills); rentWeeks = rent x this in the fund to move up;
+        // downsize = move a tier down when the fund is under this many weeks of rent (avg: a shopping trip 30% of weeks)
+        good: { cushion: 1200, kitCushion: 1500, vanCushion: 2000, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+        avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, downsize: 5, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
       }
     },
 

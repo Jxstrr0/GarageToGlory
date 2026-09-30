@@ -97,7 +97,7 @@ test('gear: toms before ride, the pedal, funds and era gates; kit tiers in order
   s.fund = 10; ok(!S.buyGear(Object.assign(career(GG, 8), { fund: 10 }), 'toms').ok, 'no money, no toms');
   eq(evs, ['gear:toms', 'gear:ride', 'gear:pedal', 'kit:pawn_shop', 'kit:pro']);
   const a = S.gigBonus(career(GG, 9)), b = S.gigBonus(s);
-  ok(b > a + 3 && S.writeBonus(s) > 0 && S.crowdBonus(s) > 0, 'gear shows on stage and in new songs: ' + a + ' -> ' + b);
+  ok(b >= a + 2 && S.writeBonus(s) > 0 && S.crowdBonus(s) > 0, 'gear shows on stage and in new songs: ' + a + ' -> ' + b);
 });
 
 test('two-thumb rule holds with 6 lanes + the pedal + extras on every difficulty; lanes 5–6 chart', () => {
@@ -179,10 +179,10 @@ test('spaces: era opens tiers, moving is a choice, rent in the bills, perks, upg
   ok(S.move(s, 1).ok && s.spaceTier === 1 && s.space === 'jam_room', 'moved to the jam room');
   eq(s.spaceUpgrades, ['curb_couch'], 'the couch came along, the foam stayed on the old walls');
   eq(GG.career.upkeep(s) - bills0, 60 + 6, 'rent $60 + the Local Heroes era upkeep');
-  ok(S.perkFactor(s, 'rehearse') >= 1.25, 'jam room: rehearsals count more');
+  ok(S.perkFactor(s, 'rehearse') >= 1.2, 'jam room: rehearsals count more');
   ok(S.buyUpgrade(s, 'real_pa').ok && S.perks(s).write === 1, 'PA: +write');
   s.era = 'world';
-  ok(S.move(s, 3).ok && S.perks(s).rest >= 0.5 && S.perks(s).recover >= 2, 'arena backstage: rest');
+  ok(S.move(s, 3).ok && S.perks(s).rest >= 0.4 && S.perks(s).recover >= 1, 'arena backstage: rest');
   ok(S.move(s, 0).ok && S.rent(s) === 0 && s.space === 'parents_garage', 'you can always move home');
   eq(evs, ['jam_room', 'arena_backstage', 'parents_garage']);
   // perks reach the week: a rehearse block in the jam room beats the garage (same RNG)

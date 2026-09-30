@@ -1638,7 +1638,7 @@
           outcome: 'Marcel hangs the design on the garage wall anyway. It watches you rehearse.' }
       ] },
 
-    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 700 }),
+    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
         "'the guy says $650 if we take it today. the milk crate is embarrassing us.'",
       choices: [
@@ -1652,7 +1652,7 @@
         { label: 'Not yet', effects: { mood: { dana: -4 } }, outcome: 'The milk crate creaks, as if it heard.' }
       ] },
 
-    { id: 'shop_van_deal', type: 'money', speaker: 'baba', title: "Baba's Church Van", gate: g({ era: LSW, minFund: 2600 }),
+    { id: 'shop_van_deal', type: 'money', speaker: 'baba', title: "Baba's Church Van", gate: g({ era: LSW, minFund: 4000 }),
       text: "Baba's church is selling its 15-passenger van, trailer included. 'One owner,' says Baba. 'God.' $3,000 and the old van for parts. " +
         'Jaxon has already measured the trailer for the drum cases.',
       choices: [
