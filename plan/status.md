@@ -63,6 +63,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   `GG.render.defineScene`; keep the single-file build, three.js 0.149 from cdnjs, portrait phone, no USA content).
   Don't build a competing title screen meanwhile.
 
+## Queued: Addendum 2 (owner, 2026-09-30) — `plan/addendum_2_queued.md`
+- Owner: "for after you're done and before final". Its own rule: nothing starts until the version in progress (v0.8)
+  is finished, tested, built, committed, pushed and merged; don't expand v0.8 with it. Then, in order:
+  1. **D0 housekeeping:** fix this file's Version section (Current = `VERSION` on main, shipped list, Next), and from
+     then on update Current/Next at every merge; append the addendum to `plan/handoff.md` as **Part D**; record its
+     decisions + an "Addendum 2 — pending" checklist (D1–D5) under the Addendum 1 one; delete the queued file.
+  2. **v0.8.1 catch-up** (the D items tagged v0.8): D1 licensing deals, D2 band logo (new-career picker + one renderer
+     reused for kick-head art, merch, van stickers, Bandbook avatar, garage banner, Loonies card; rival logos), D3
+     year-end recap (swipeable, band photo still, compact in `history`). Popup first for D6 (licensing fees/odds).
+  3. v0.9 Genres → v1.0 Glory (+ D4 achievements) → **v1.1 Tuning** (D5, new roadmap entry; popup: the owner's top two
+     annoyances). **No share/screenshot button, ever.**
+
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
   4 notes at once".
