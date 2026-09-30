@@ -8,7 +8,7 @@
 // open the gig board (these flows book the first listing they can).
 // Run: node build.js && timeout 500 node tests/pw_flow.js
 const fs = require('fs'), path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker } = require('./_pw440_scratch');
 const CACHE = path.join(__dirname, '.cache');
 const VERSION = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);

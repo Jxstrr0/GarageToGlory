@@ -13,6 +13,7 @@
 // exactly. The backing band plays from the scheduler with drums off; your taps play the drum voice; misses are silent.
 // Pause suspends the AudioContext (without a context the song restarts on resume).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
+// v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6); the results show r.merch.
 // v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
 //   (session opts; auto kicks play the kick voice); the active calibration profile's audio offset is subtracted from every
 //   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, keys);
@@ -26,7 +27,7 @@
     return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
   }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
-  var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3 };
+  var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // v0.8: toms (lane 5) = G, ride (lane 6) = H
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   var MOMENT_TEXT = { mosh: 'Mosh pit!', lighters: 'Lighters up', boo: 'Boooo', drinks: 'Incoming drinks!', wallOfDeath: 'Wall of death!',
@@ -590,7 +591,8 @@
             + (x.fills ? ' · ' + x.fills + ' fill taps' : ''))]),
           el('div.acc', Math.round(x.accuracy * 100) + '%')]);
       })));
-      (r.lines || []).forEach(function (t) { s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, fill(t))); });
+      (r.lines || []).forEach(function (t) { if (!(r.merch && ui.isMerchLine && ui.isMerchLine(t))) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, fill(t))); });
+      if (r.merch && ui.merchResult) s.body.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
       (r.classics || []).forEach(function (id) {
         var song = GG.songs.byId(S(), id);
         if (song) s.body.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));

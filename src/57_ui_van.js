@@ -5,7 +5,9 @@
 //     GG.world.startTrip (once per week, so a reload mid-trip gets the same road card). A road card pops up mid-drive
 //     (screen 'road', resolved with GG.world.resolveRoad like a Monday card), 1–2 banter bubbles, an arrival line,
 //     then done(trip). The scene is set back to 'garage' before done (the caller may switch to 'stage').
-//   GG.ui.showVan(): screen 'van-info' (condition, space, comfort, km; Cousin Dale's repair).
+//   GG.ui.showVan(tab): screen 'van-info' (the garage door; v0.8 tabs van | space | dealer): the van (condition, merch space in
+//     boxes, comfort, km; Cousin Dale's repair) + the v0.8 shop panels from 5k_ui_shop (van side + stickers, rename, upgrades;
+//     rehearsal spaces + upgrades; the car lot).
 // v0.6.1 (Addendum 1 C1/C7): the trip passes weather, temp, holiday, driver + dashboard item to the 3D scene
 //   (setTrip { weather, driver, dashboard }); the route header shows the weather (van-weather); the 2D windshield draws
 //   the weather (rain / snow / blizzard / hail / heat shimmer) and whoever drives; van-info shows the driver (van-driver).
@@ -284,27 +286,52 @@
     }
   });
 
-  /* ---- The Moose Hearse sheet (garage door) ------------------------------------------------------------- */
+  /* ---- The garage door: the van, the rehearsal space, the car lot (v0.8 tabs) ---------------------------------- */
+  // v0.8 (SHOPUI): tabs Van (the van-side view with its venue stickers, rename, driver, condition + Cousin Dale's repair,
+  // merch space in boxes, van upgrades) · Space (GG.ui.spacePanel: rooms around town + move, this room's upgrades) ·
+  // Car lot (GG.ui.dealerPanel: bigger vehicles, quote + trade-in). Panels live in 5k_ui_shop.js.
+  var DOOR_TABS = [{ id: 'van', label: '🚐 Van' }, { id: 'space', label: '🏠 Space' }, { id: 'dealer', label: '🔑 Car lot' }];
   ui.define('van-info', {
-    kind: 'sheet', title: 'The Moose Hearse',
-    build: function (s) {
+    kind: 'sheet', tall: true, cls: 'shop',
+    title: function () { var st = S(); return (st && st.van && st.van.name) || 'The van'; },
+    build: function (s, d) {
       var st = S(); if (!st || !GG.world) return;
+      var tab = d.tab || 'van', shop = !!(GG.shop && ui.vanSide);
+      function rerender(o) { s.rerender(Object.assign({}, s.data, o || {})); }
+      var home = (st.spaceTier || 0) === 0;
+      s.setTitle(tab === 'space' && GG.shop ? GG.shop.spaceDef(st, st.spaceTier || 0).name : tab === 'dealer' ? 'Car lot' : (st.van && st.van.name) || 'The van', home ? 'THE GARAGE DOOR' : 'THE DOOR');
+      if (shop) s.body.appendChild(el('div.shop-tabs', ui.tabs(DOOR_TABS, tab, function (id) { rerender({ tab: id }); s.body.scrollTop = 0; }, 'door-tab-')));
+      if (shop && tab === 'space') { s.body.appendChild(ui.spacePanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
+      if (shop && tab === 'dealer') { s.body.appendChild(ui.dealerPanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
       var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = W.driver ? W.driver(st) : { id: 'kenji', name: 'Kenji', def: {} };
       var col = van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)';
+      var td = GG.shop ? GG.shop.vanTierDef(van.tier || 0) : { kind: 'Rusted minivan', blurb: 'A rusted minivan with a moose-shaped dent.' };
+      var stick = GG.shop ? GG.shop.stickers(st) : [], banned = stick.filter(function (x) { return x.banned; }).length;
+      var nameIn = el('input.seq-name', { testid: 'van-name-input', maxLength: 28, value: van.name || '', placeholder: (van.baseName || 'The Moose Hearse'), 'aria-label': 'Van name' });
       ui.append(s.body, [
-        el('p.dim', { style: 'margin-top:0' }, 'A rusted minivan with a moose-shaped dent. ' + (dr.you ? 'You drive now. The mirrors are still set for Kenji.'
+        shop ? ui.vanSide(st) : null,
+        shop ? el('div.small.dim.center', { testid: 'van-stickers' }, stick.length ? stick.length + ' venue sticker' + (stick.length === 1 ? '' : 's') + (banned ? ' · ' + banned + ' crossed out (banned)' : '') : 'No stickers yet. Every venue you play puts one on.') : null,
+        shop ? el('div.row', { style: 'margin:8px 0' }, [nameIn, btn('.btn.small', { testid: 'van-rename', onclick: function () {
+          var r = GG.shop.renameVan(S(), nameIn.value);
+          if (GG.main && GG.main.sync) GG.main.sync();
+          ui.toast('It is “' + r.name + '” now. Kenji will not say it out loud.', { who: 'Van' });
+          rerender();
+        } }, 'Rename')]) : null,
+        el('p.dim', { style: 'margin-top:0' }, td.kind + '. ' + (td.blurb || '') + ' ' + (dr.you ? 'You drive now. The mirrors are still set for Kenji.'
           : dr.id === 'kenji' ? 'Kenji drives. Nobody has ever seen him get in or out.' : dr.name + ' drives.')),
         el('div.panel', { testid: 'van-driver' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Driver: ' + dr.name), el('span.tag', (dr.def && dr.def.effect) || '')]),
           el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dr.def && dr.def.dashName ? ' On the dash: ' + dr.def.dashName + '.' : '')
             + ' Seating: ' + (dr.you ? 'you drive, ' : dr.name + ' drives, you ride shotgun, ') + 'the band in the back, gear and merch piled behind.')]),
-        el('div.panel', [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Condition: ' + W.vanLabel(van.condition)), el('b', van.condition + '%')]),
+        el('div.panel', { style: 'margin-top:10px' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Condition: ' + W.vanLabel(van.condition)), el('b', van.condition + '%')]),
           ui.bar(van.condition, 100, { color: col }),
           el('div.small.dim', { style: 'margin-top:6px' }, st.protected ? 'Garage era: it rattles, but it won’t break down (yet).' : 'Low condition means breakdowns on long drives.')]),
         el('div.van-stats', [
-          el('div', [el('span.caps', 'Space'), el('b', van.space + ' / 5'), el('span.small.dim', 'gear + merch')]),
+          el('div', { testid: 'van-space' }, [el('span.caps', 'Merch space'), el('b', van.space + ' box' + (van.space === 1 ? '' : 'es')), el('span.small.dim', 'hauled to every gig')]),   // v0.8: boxes, not "/ 5"
           el('div', [el('span.caps', 'Comfort'), el('b', van.comfort + ' / 5'), el('span.small.dim', 'long drives burn you out')]),
           el('div', [el('span.caps', 'Driven'), el('b', U.fmtNum(van.km) + ' km'), el('span.small.dim', (van.trips || 0) + ' trips')]),
-          el('div', [el('span.caps', 'Breakdowns'), el('b', String(van.breakdowns || 0)), el('span.small.dim', 'and counting')])])
+          el('div', [el('span.caps', 'Breakdowns'), el('b', String(van.breakdowns || 0)), el('span.small.dim', 'and counting')])]),
+        shop ? el('div.caps', { style: 'margin:14px 0 6px' }, 'Upgrades') : null,
+        shop ? ui.vanUpgradesPanel(st, rerender) : null
       ]);
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'van-repair', disabled: !q.gain || st.fund < q.cost, onclick: function () {
         var r = W.repairVan(S());
@@ -315,7 +342,7 @@
       } }, q.gain ? "Cousin Dale's Garage: +" + q.gain + ' for ' + U.fmtMoney(q.cost) : 'Nothing to fix. Dale is disappointed.'));
     }
   });
-  ui.showVan = function () { return S() && GG.world ? ui.show('van-info') : null; };
+  ui.showVan = function (tab) { return S() && GG.world ? ui.show('van-info', { tab: typeof tab === 'string' ? tab : 'van' }) : null; };
 
   GG.registerDebug('van', function () { return Object.assign({}, dbg); });
 })(window.GG);

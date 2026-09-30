@@ -18,6 +18,12 @@
 //   outback, roadhouses, termite mounds, gum trees and kangaroos; Russia birch taiga (snow in winter), izbas, onion domes
 //   and a bear. The tiny European van ('sardine') packs the band in like sardines (three abreast, gear to the roof);
 //   rails replace the road for train passes (faster). info() adds region, look.
+// v0.8 (SHOPUI): at home the band rides in its own vehicle tier (setTrip({ tier }) or state.van.tier; C.VAN_TIERS): 0 the rusted
+//   minivan (the cabin above), 1 the 15-passenger ex-church van + trailer (two bench rows ahead, hymnals, ST. VLAD'S), 2 the
+//   sprinter (high roof, captain seats, a touchscreen, LED strips, lockers), 3 the tour bus (the lounge: couches both sides, a
+//   table, a TV, fairy lights; the band faces each other). The newest 12 venue stickers (state.van.stickers or setTrip
+//   { stickers }) sit on the hood (the bus: on the dash), banned venues crossed out in red. info() adds tier, vehicle,
+//   stickers, banned. A rental abroad (look) ignores the tier.
 // Draw calls ≈ sky 1 + sun/moon 1 + stars 1 + clouds 1 + ground 1 + road 1 + poles 1 + elevators 1 + farms 1
 //   + farm lights 1 + belts 1 + bales 1 + moose 1 + sign 2 + skyline 1 + weather 1-2 + glass 1 + wipers 1
 //   + headlight pool 1 + interior 2 + bobble 1 + freshener 1 + wheel 1 + people 4 ≈ 32.
@@ -747,8 +753,8 @@
         { x: -0.56, z: 0.68, role: 'middleL' }, { x: 0.56, z: 0.68, role: 'middleR' }, { x: 0, z: 0.64, role: 'back' }];
       else if (D.tier === 1) seats[4] = { x: 0.64, z: 1.74, role: 'back' };                         // v0.8: the 15-passenger: beside you, row 3
       else if (D.tier === 2) { seats[2] = { x: -0.55, z: 0.72, role: 'middleL' }; seats[3] = { x: 0.55, z: 0.72, role: 'middleR' }; seats[4] = { x: -0.6, z: 2.2, role: 'back' }; }
-      else if (D.tier === 3) seats = [seats[0], seats[1], { x: -0.6, z: 0.8, role: 'middleL', yaw: Math.PI / 2 },   // the bus lounge: facing each other
-        { x: 0.6, z: 1.2, role: 'middleR', yaw: -Math.PI / 2 }, { x: -0.6, z: 1.72, role: 'back', yaw: Math.PI / 2 }];
+      else if (D.tier === 3) seats = [seats[0], seats[1], { x: -0.6, z: 0.55, role: 'middleL', yaw: Math.PI / 2 },   // the bus lounge: facing each other
+        { x: 0.6, z: 0.9, role: 'middleR', yaw: -Math.PI / 2 }, { x: -0.6, z: 1.3, role: 'back', yaw: Math.PI / 2 }];
       var cv = D.flags && D.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var riders = [driver].concat(driver === you ? rest.slice(0, 4) : [you].concat(rest.slice(0, 3)));
       var pm = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: new THREE.Color(D.night ? 0.45 : 0.62, D.night ? 0.45 : 0.62, D.night ? 0.5 : 0.64) }));

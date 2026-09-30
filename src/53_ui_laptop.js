@@ -7,6 +7,7 @@
 // v0.7: World (tour status, a mini world map -> the world map, charts abroad, past tours, the Global Gong).
 // v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
 // seven tabs wrap into two rows, CSS in 5g).
+// v0.8 (SHOPUI): the Money tab adds merch sold / stock bought and the rehearsal space's weekly rent.
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
@@ -79,7 +80,9 @@
         el('div', [el('span', 'Owed to your parents'), el('span' + (st.debtToParents ? '.bad' : ''), U.fmtMoney(st.debtToParents || 0))]),
         el('div', [el('span', "Parents' loans so far"), el('span', String(s.parentsLoans || 0))]),
         s.earned != null ? el('div', [el('span', 'Earned, all time'), el('span', U.fmtMoney(s.earned))]) : null,
-        el('div', [el('span', 'Gigs played'), el('span', String(s.gigs || 0))])
+        el('div', [el('span', 'Gigs played'), el('span', String(s.gigs || 0))]),
+        st.merch ? el('div', { 'data-testid': 'laptop-merch' }, [el('span', 'Merch sold, all time (stock ' + U.fmtMoney(st.merch.spent || 0) + ')'), el('span.good', U.fmtMoney(st.merch.earned || 0))]) : null,   // v0.8
+        GG.shop && GG.shop.rent(st) ? el('div', { 'data-testid': 'laptop-rent' }, [el('span', 'Rent · ' + GG.shop.spaceDef(st, st.spaceTier || 0).name), el('span.bad', '−' + U.fmtMoney(GG.shop.rent(st)) + '/wk')]) : null
       ]),
       el('div.panel', [el('div.caps', { style: 'margin-bottom:8px' }, 'Fund, last ' + hist.length + ' weeks'), bars]),
       st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures on the drum throne.') : null

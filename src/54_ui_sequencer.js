@@ -12,6 +12,12 @@
 // Bridge (pick a groove preset from content/grooves.js, optional one-tap tweak) → Tempo → Song order → Name → Save, each
 // with Play / Back / Next and a bandmate's coach line. "Advanced" jumps to the full grid (and is remembered); the Song
 // tab's "Guided steps" goes back. The kit's sketch pad always opens the grid.
+// v0.8 (SHOPUI): tabs follow the gear (GG.songs.allSections): Verse / Chorus / Bridge (+ Solo, Outro once owned) / Song. An owned
+// extra the song doesn't use yet shows "Add a Solo / an Outro" (GG.songs.addSection: the solo goes before the last chorus, the
+// outro at the end); the ⋯ tools can remove it again (removeSection). In a Solo only the on-beat steps sound and chart live
+// (Dana's spotlight), so the other cells are dimmed. The grid has as many lanes as the kit (gear.lanes, up to 6: toms, ride).
+// The arrangement cards keep the extras (withExtras); the guided flow gets a Solo / Outro step each when owned. The sketch
+// pad's 🛒 opens the drum shop (GG.ui.openGear).
 // ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
@@ -21,7 +27,34 @@
     hat: { name: 'Hats', icon: '🎩', color: '#3cd0c0' }, cymbal: { name: 'Crash', icon: '💥', color: '#b98cff' },
     toms: { name: 'Toms', icon: '🛢️', color: '#57c77a' }, ride: { name: 'Ride', icon: '🔔', color: '#4f8cff' }
   };
-  var TABS = [{ id: 'verse', label: 'Verse' }, { id: 'chorus', label: 'Chorus' }, { id: 'bridge', label: 'Bridge' }, { id: 'song', label: 'Song' }];
+  var SEC_LABEL = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', solo: 'Solo', outro: 'Outro', song: 'Song' };
+  function isExtra(name) { return name === 'solo' || name === 'outro'; }
+  function hasSec(D, name) { return !!(D.pat && D.pat.sections && D.pat.sections[name]); }
+  // v0.8: the section tabs this kit can write (read-only songs: the sections they have).
+  function tabsFor(D) {
+    var names = D.mode === 'view' ? GG.songs.sectionsOf(D.pat) : GG.songs.allSections(gear());
+    return names.map(function (n) { return { id: n, label: (isExtra(n) && !hasSec(D, n) ? '+' : '') + SEC_LABEL[n] }; }).concat([{ id: 'song', label: 'Song' }]);
+  }
+  function extraDef(name) { return ((GG.content.shop && GG.content.shop.sections) || {})[name] || { name: SEC_LABEL[name], blurb: '' }; }
+  // Arrangement presets keep the extras the song uses (a solo before the last chorus, an outro at the end).
+  function withSongExtras(D, arr) { return GG.songs.withExtras(arr.slice(), gear(), { solo: hasSec(D, 'solo'), outro: hasSec(D, 'outro') }); }
+  function baseArrangementId(p) { return GG.songs.arrangementId({ arrangement: (p.arrangement || []).filter(function (x) { return !isExtra(x); }) }); }
+  function addExtra(s, D, name) {
+    D.pat = GG.songs.addSection(D.pat, name, gear()); D.change = null;
+    changed(D); if (D.playing) restart(s, D); s.rerender();
+  }
+  function removeExtra(s, D, name) {
+    D.pat = GG.songs.removeSection(D.pat, name); D.change = null;
+    changed(D); if (D.playing) restart(s, D); s.rerender();
+  }
+  function extraPanel(s, D, name) {
+    var def = extraDef(name);
+    return el('div.seq-extra.stack', { testid: 'seq-extra-' + name }, [
+      el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? 'Dana\'s spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
+        el('p.small.dim', def.blurb),
+        el('p.small', name === 'solo' ? 'Goes in before the last chorus. Live, you only play the quarter notes: the rest is Dana\'s.' : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.')]),
+      D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
+  }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
   var BEAT_LABELS = ['1', 'e', '&', 'a'];
   var KICK_HINT = "One foot, one pedal: no two kicks in a row until you own a double kick.";
@@ -58,6 +91,7 @@
     if (!V.tip) return r;
     ui.clear(V.tip);
     if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
+    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are Dana\'s.']);
     else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
     else ui.append(V.tip, [r.notes ? el('b.amber', GG.songs.verdict(genre(), r.groove) + ' ') : null, tips.slice(0, 2).join(' ')]);
     return r;
@@ -71,8 +105,8 @@
 
   /* ---- The grid -------------------------------------------------------------------------------------------- */
   function buildGrid(s, D) {
-    var sec = D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view';
-    var grid = el('div.seq-grid' + (ro ? '.ro' : ''), { testid: 'seq-grid', style: { gridTemplateColumns: '30px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    var sec = D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
+    var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : ''), { testid: 'seq-grid', data: { lanes: String(lanes) }, style: { gridTemplateColumns: '30px repeat(' + lanes + ', minmax(0, 1fr))' } });
     grid.appendChild(el('div'));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -85,7 +119,7 @@
       var row = [];
       for (l = 0; l < lanes; l++) {
         var hit = GG.songs.isHit(sec[l], step), name = C.LANES[l];
-        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (hit ? '.on' : ''),
+        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
           { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
         c.style.setProperty('--lc', ui.LANES[name].color);
         grid.appendChild(c); row.push(c);
@@ -149,18 +183,19 @@
       p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
       styleLabel.textContent = ' · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '');
       rerate(D);
-      arrRow.querySelectorAll('[data-secs]').forEach(function (n) { n.textContent = '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: GG.songs.ARRANGEMENTS[n.dataset.secs] })) + ' s'; });
+      arrRow.querySelectorAll('[data-secs]').forEach(function (n) { n.textContent = '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: withSongExtras(D, GG.songs.ARRANGEMENTS[n.dataset.secs]) })) + ' s'; });
     });
     tempo.addEventListener('change', function () { changed(D); if (D.handle && D.handle.playing) restart(s, D); });
-    var cur = GG.songs.arrangementId(p);
+    var cur = baseArrangementId(p);
     var arrRow = el('div.seq-arr', GG.songs.ARRANGEMENT_IDS.map(function (id) {
-      var a = GG.songs.ARRANGEMENTS[id];
+      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);   // v0.8: the extras come along
       return btn('.arr' + (id === cur ? '.on' : ''), { testid: 'seq-arr-' + id, disabled: ro && id !== cur, onclick: function () {
         if (ro || id === cur) return;
         p.arrangement = a.slice(); changed(D); if (D.playing === 'song') restart(s, D); s.rerender();
       } }, [el('b', ARR_NAMES[id]), el('span.seqs', a.map(function (x) { return x.charAt(0).toUpperCase(); }).join(' ')),
         el('span.small.dim', { data: { secs: id } }, '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]);
     }));
+    var extras = ro ? [] : GG.songs.allSections(gear()).filter(isExtra);
     var r = D.rating || rerate(D);
     var parts = [
       D.mode === 'write' ? el('div.row.small.dim', [el('span.grow', 'Rather go one step at a time?'), btn('.btn.small', { testid: 'btn-seq-guided', onclick: function () {
@@ -175,8 +210,14 @@
       el('div.panel.stack.tight', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
         el('div.row.tiny.faint', [el('span.grow', G.tempo[0]), el('span', G.tempo[1])])]),
       el('div.stack.tight', [el('div.caps', 'Arrangement (each part plays ' + C.BARS_PER_SECTION + ' bars)'), arrRow]),
-      el('div.panel.small', { testid: 'seq-sections' }, ['Groove by part: ', el('b', 'Verse ' + r.sections.verse), ' · ', el('b', 'Chorus ' + r.sections.chorus),
-        ' · ', el('b', 'Bridge ' + r.sections.bridge), el('div.tiny.faint', { style: 'margin-top:4px' }, r.notes + ' hits in the whole song.')])
+      extras.length ? el('div.stack.tight', extras.map(function (name) {   // v0.8: owned extras, in or out of this song
+        var on = hasSec(D, name), def = extraDef(name);
+        return el('div.row.panel.small', { testid: 'seq-song-extra-' + name }, [el('div.grow', [el('b', def.name + (on ? ' ✓' : '')), el('div.tiny.dim', on ? (name === 'solo' ? 'Before the last chorus' : 'At the very end') : def.blurb)]),
+          btn('.btn.small' + (on ? '' : '.primary'), { testid: 'seq-song-' + (on ? 'remove-' : 'add-') + name, onclick: function () { if (on) removeExtra(s, D, name); else addExtra(s, D, name); } }, on ? 'Take out' : 'Add')]);
+      })) : null,
+      el('div.panel.small', { testid: 'seq-sections' }, ['Groove by part: '].concat(GG.songs.sectionsOf(p).map(function (n, i) {
+        return [i ? ' · ' : '', el('b', SEC_LABEL[n] + ' ' + (r.sections[n] != null ? r.sections[n] : '–'))];
+      })).concat([el('div.tiny.faint', { style: 'margin-top:4px' }, r.notes + ' hits in the whole song.')]))
     ];
     return el('div.seq-song.stack', parts);
   }
@@ -221,7 +262,7 @@
     b.style.background = on ? 'var(--amber)' : ''; b.style.color = on ? '#1d1204' : '';
   }
   function startPlay(s, D, kind) {
-    var section = kind === 'song' ? null : (D.tab === 'song' ? 'verse' : D.tab);
+    var section = kind === 'song' ? null : (D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab);
     var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, { genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }) : null;
     if (!h) { ui.toast("No sound on this device. Imagine it. It's heavy."); return; }
     D.handle = h; D.playing = kind;
@@ -234,7 +275,7 @@
     var V = D.view; if (!V) return;
     if (V.play) { V.play.textContent = D.playing ? '■ Stop' : '▶ Play'; V.play.classList.toggle('on', !!D.playing); return; }
     if (!V.loop) return;
-    var sec = D.tab === 'song' ? 'verse' : D.tab;
+    var sec = D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab;
     V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop ' + sec;
     V.song.textContent = D.playing === 'song' ? '■ Stop' : '▶ Song';
     V.loop.classList.toggle('on', D.playing === 'loop'); V.song.classList.toggle('on', D.playing === 'song');
@@ -276,18 +317,22 @@
       V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro, onclick: function () { if (!ro && !D.custom) { reroll(D); head(s, D); } } });
       var right = D.mode === 'write' ? btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () {
         if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam();
-      } }, 'Let the band jam one') : null;
-      var tools = ro || D.tab === 'song' ? null : btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'Copy or clear', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯');
+      } }, 'Let the band jam one') : D.mode === 'sketch' && ui.openGear ? btn('.btn.small.seq-jam', { testid: 'btn-kit-shop', onclick: function () {   // v0.8: the drum shop
+        stopPlay(D); ui.openGear();
+      } }, '🛒 Drum shop') : null;
+      if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
+      var present = D.tab === 'song' || hasSec(D, D.tab);
+      var tools = ro || D.tab === 'song' || !present ? null : btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'Copy or clear', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯');
       V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
       V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
       V.tip = el('div.seq-tip', { testid: 'seq-tip' });
       V.pos = el('span.seq-pos');
-      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : buildGrid(s, D));
+      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
       ui.append(s.body, [
         el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
           stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
         } }, '✕'), V.title, metroButton(), right]),
-        el('div.seq-tabs', [ui.tabs(TABS, D.tab, function (id) {
+        el('div.seq-tabs' + (tabsFor(D).length > 4 ? '.many' : ''), [ui.tabs(tabsFor(D), D.tab, function (id) {
           D.tab = id; s.rerender();
           if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);
         }, 'seq-tab-'), tools]),
@@ -318,7 +363,20 @@
 
   /* ---- v0.6.2 guided songwriter ---------------------------------------------------------------------------- */
   var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'];
-  var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', tempo: 'Tempo', order: 'Song order', name: 'Name' };
+  var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', solo: 'Solo', outro: 'Outro', tempo: 'Tempo', order: 'Song order', name: 'Name' };
+  // v0.8: an owned Solo / Outro gets its own step after the bridge.
+  function gsteps() { return GSTEPS.slice(0, 3).concat(GG.songs.allSections(gear()).filter(isExtra), GSTEPS.slice(3)); }
+  function extraStep(s, D, name) {
+    var on = hasSec(D, name), def = extraDef(name);
+    var yes = name === 'solo' ? 'Yes: Dana\'s solo before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
+    return [el('div.guide-hint', { testid: 'guide-hint' }, def.blurb),
+      el('div.guide-presets', [
+        btn('.guide-preset' + (on ? '.on' : ''), { testid: 'guide-extra-' + name + '-yes', onclick: function () { if (!on) addExtra(s, D, name); } },
+          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Live you play quarter notes while she shreds. Crowds love a solo after the first chorus.' : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
+        btn('.guide-preset' + (!on ? '.on' : ''), { testid: 'guide-extra-' + name + '-no', onclick: function () { if (on) removeExtra(s, D, name); } },
+          [el('span.gp-top', [el('b', no), !on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Dana will mention it. Gently. Twice.' : 'Like a pickup truck hitting a snowbank.')])]),
+      on ? el('div.small.dim', 'Tweak it in Advanced ⚙ if you like. It\'s already built from your ' + (name === 'solo' ? 'verse' : 'chorus') + '.') : null];
+  }
   var ORDER_BLURB = { short: 'Verse, chorus, twice. In and out before the fries get cold.',
     classic: 'Adds a bridge: the solo spot. Crowds like a bridge.', epic: 'Double verses, double bridges. Pack a lunch.' };
   function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
@@ -387,9 +445,9 @@
       el('div.small.dim', 'Faster songs are harder to play live. Slower ones feel heavier. Neither pays more.')];
   }
   function orderStep(s, D) {
-    var p = D.pat, cur = GG.songs.arrangementId(p);
+    var p = D.pat, cur = baseArrangementId(p);
     return [el('div.guide-orders', GG.songs.ARRANGEMENT_IDS.map(function (id) {
-      var a = GG.songs.ARRANGEMENTS[id];
+      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);   // v0.8: the Solo / Outro stay in
       return btn('.guide-preset' + (id === cur ? '.on' : ''), { testid: 'guide-order-' + id, onclick: function () {
         p.arrangement = a.slice(); changed(D); if (D.playing) restart(s, D); s.rerender();
       } }, [el('span.gp-top', [el('b', ARR_NAMES[id]), el('span.gp-tag' + (id === cur ? '.on' : ''), '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]),
@@ -406,31 +464,31 @@
           var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
   }
   function buildGuided(s, D) {
-    var step = GSTEPS.indexOf(D.step) >= 0 ? D.step : (D.step = 'verse'), i = GSTEPS.indexOf(step), sec = i < 3, V = D.view = {};
+    var STEPS = gsteps(), step = STEPS.indexOf(D.step) >= 0 ? D.step : (D.step = 'verse'), i = STEPS.indexOf(step), ex = isExtra(step), sec = i < 3 || (ex && hasSec(D, step)), V = D.view = {};
     D.tab = sec ? step : 'song';
     V.title = btn('.seq-title', { testid: 'seq-title', onclick: function () { if (!D.custom) { reroll(D); if (step === 'name') s.rerender(); else head(s, D); } } });
     var jam = btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () { if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam(); } }, 'Let the band jam one');
     var adv = btn('.btn.small.guide-adv', { testid: 'btn-guide-advanced', onclick: function () {
       stopPlay(D); D.guided = false; D.tab = sec ? step : 'verse'; setMode('advanced'); s.rerender();
     } }, 'Advanced ⚙');
-    var dots = el('div.guide-dots', GSTEPS.map(function (x, k) { return el('i' + (k === i ? '.on' : k < i ? '.done' : '')); }));
+    var dots = el('div.guide-dots', { style: { gridTemplateColumns: 'repeat(' + STEPS.length + ', 1fr)' } }, STEPS.map(function (x, k) { return el('i' + (k === i ? '.on' : k < i ? '.done' : '')); }));
     V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
     V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
     var c = coachFor(D, step);
-    var body = step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D) : sectionStep(s, D, step);
+    var body = step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D) : ex ? extraStep(s, D, step) : sectionStep(s, D, step);
     ui.append(s.body, [
       el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': 'Back to the planner', onclick: function () {
         stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
       } }, '✕'), V.title, jam]),
-      el('div.guide-top', [el('div.guide-prog', [el('div.caps', { testid: 'guide-step' }, 'Step ' + (i + 1) + ' of ' + GSTEPS.length + ' · ' + GNAMES[step]), dots]), adv]),
+      el('div.guide-top', [el('div.guide-prog', [el('div.caps', { testid: 'guide-step' }, 'Step ' + (i + 1) + ' of ' + STEPS.length + ' · ' + GNAMES[step]), dots]), adv]),
       el('div.seq-meters', [V.groove, V.hook, V.diff]),
       c ? el('div.guide-coach', { testid: 'guide-coach' }, [el('b', c.who ? ui.who(c.who).short + ': ' : ''), c.text]) : null,
       el('div.seq-main.guide-main', { testid: 'guide-screen-' + step }, body)
     ]);
-    function go(k) { stopPlay(D); D.step = GSTEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
+    function go(k) { stopPlay(D); D.step = STEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
     var back = btn('.btn', { testid: 'btn-guide-back', disabled: i === 0, onclick: function () { if (i > 0) go(i - 1); } }, '‹ Back');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec ? 'loop' : 'song'); } });
-    var next = i < GSTEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
+    var next = i < STEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
       : btn('.btn.primary', { testid: 'btn-guide-save', onclick: function () { save(s, D); } }, 'Save ✓');
     ui.append(s.foot, [back, V.play, next]);
     head(s, D); rerate(D); playButtons(D);
@@ -442,7 +500,7 @@
     build: function (s, d) {
       var owner = d.owner, D = owner && owner.data; if (!D) return;
       function done(fn) { fn(); ui.close(s.id); owner.rerender(); changed(D); }
-      C.SECTIONS.forEach(function (name) {
+      GG.songs.sectionsOf(D.pat).forEach(function (name) {   // v0.8: + the song's Solo / Outro
         if (name === D.tab) return;
         s.body.appendChild(btn('.btn.block', { testid: 'seq-copy-' + name, style: 'margin-bottom:8px', onclick: function () {
           done(function () { D.pat.sections[D.tab] = D.pat.sections[name].slice(); });
@@ -451,6 +509,9 @@
       s.body.appendChild(btn('.btn.danger.block', { testid: 'seq-clear', onclick: function () {
         done(function () { D.pat.sections[D.tab] = GG.songs.blankSection(D.pat.lanes); });
       } }, 'Clear ' + D.tab));
+      if (isExtra(D.tab)) s.body.appendChild(btn('.btn.danger.block', { testid: 'seq-remove-' + D.tab, style: 'margin-top:8px', onclick: function () {
+        var tab = D.tab; ui.close(s.id); D.tab = 'song'; removeExtra(owner, D, tab);
+      } }, 'Take the ' + SEC_LABEL[D.tab] + ' out of the song'));
       s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: function () { ui.close(s.id); } }, 'Cancel'));
     }
   });

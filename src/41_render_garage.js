@@ -5,7 +5,13 @@
 // Characters are blocky low-poly people built from LOOK as ONE skinned mesh each (buildCharacter is
 // exported for later scenes: stage, van, red carpet). Everything static is merged by material.
 // Draw calls ≈ room 1 + glows 1 + moon shafts 1 + dust 1 + banner 1 + bulb 3 + kit 1 + people 5 + blob shadows 1
-//              + yard (ground, weather, seasonal prop) 3 + labels 7 + walk ring 1 = 26.
+//              + yard (ground, weather, seasonal prop) 3 + labels 7 + walk ring 1 = 26
+//              + v0.8: garage-only 2 (or a rented room's lit + glow + sign 3) + upgrades ≤ 2 + disco ball 1 + box pile 1.
+// v0.8 (SHOPUI): the rehearsal space by state.spaceTier (0 = the band's own start: the parents' garage; 1 Rent-A-Riff Jam
+// Room 3; 2 Prairie Dog Sound; 3 backstage at the Potash Place) with its bought upgrades (state.spaceUpgrades) visible and
+// the unsold merch box pile (GG.shop.pile(state).boxes) growing by the merch stack; see buildSpace. debug().space =
+// { tier, green, upgrades, boxes, pile (drawn), disco, door (the door hotspot's label), garage (garage-only shown), sign }.
+// The drum kit (buildKit) is lane B's (R.kit.garage in 40_render_core). The character builder lives in 40 (R.charGeometry).
 (function (GG) {
   var R = GG.render;
   if (!R || !R.defineScene) return;
@@ -1295,9 +1301,9 @@
     // the one taped with a red X. Meshes: room lit + glow (rebuilt on a move), upgrades lit + glow (rebuilt on a purchase),
     // the disco ball, the box pile, the sign (a canvas) = up to 7 draw calls, only while shown.
     var SPACE_DOOR = { x: 1.0, w: 0.92, h: 2.08 };
-    var PILE_CELLS = [[-2.06, 1.72, 0.1], [-1.64, 1.75, -0.05], [-1.28, 1.62, 0.2], [-2.06, 1.32, -0.08], [-1.64, 1.34, 0.12]];
-    var PILE_ORDER = [[0, 0], [1, 0], [0, 1], [3, 0], [1, 1], [2, 0], [0, 2], [4, 0], [3, 1], [1, 2], [2, 1], [4, 1], [3, 2], [2, 2], [4, 2], [1, 3]];
-    var PILE_MAX = PILE_ORDER.length, BOX = { w: 0.4, h: 0.34, d: 0.36 };
+    var PILE_CELLS = [[-2.06, 1.56, 0.1], [-1.64, 1.6, -0.05], [-1.28, 1.5, 0.2], [-2.06, 1.16, -0.08], [-1.64, 1.2, 0.12]];
+    var PILE_ORDER = [[0, 0], [1, 0], [0, 1], [3, 0], [1, 1], [2, 0], [0, 2], [4, 0], [3, 1], [1, 2], [2, 1], [0, 3], [4, 1], [3, 2], [1, 3], [2, 2]];
+    var PILE_MAX = PILE_ORDER.length, BOX = { w: 0.42, h: 0.36, d: 0.38 };
     var SPACE_WALLS = [0, 0x6b4038, 0x2e3442, 0xbdb8aa];
     var SPACE_FLOORS = [0, 0x404a5c, 0x6b4a2e, 0x55595f];
     var DOOR_LABELS = ['Garage door', 'Door', 'Door', 'Door'];
@@ -1601,7 +1607,7 @@
         var b = new ctx.Builder({ jitter: 0.08, seed: 131 }), used = {}, CB = [0xb08856, 0xa87f4c, 0xc0986a, 0x9c7646];
         for (var i = 0; i < Math.min(n, PILE_MAX); i++) {
           var o = PILE_ORDER[i], cell = PILE_CELLS[o[0]], lvl = o[1], col = CB[i % CB.length];
-          var tilt = lvl === 3 ? 0.35 : ((i * 37) % 7 - 3) * 0.03, y = BOX.h / 2 + lvl * (BOX.h + 0.004);
+          var tilt = lvl === 3 ? 0.3 : ((i * 37) % 7 - 3) * 0.03, y = BOX.h / 2 + lvl * (BOX.h + 0.004);
           used[o[0]] = true;
           b.at(cell[0], 0, cell[1], cell[2] + tilt);
           b.box(BOX.w, BOX.h, BOX.d, 0, y, 0, col);

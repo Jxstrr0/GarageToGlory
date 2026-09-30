@@ -149,7 +149,7 @@ Already-shipped versions → **v0.6.1 catch-up**:
 - [x] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays — WORLD, v0.6.1
 Later versions:
 - [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
-- [ ] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers
+- [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
 - [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
 
 ## Tech
@@ -296,6 +296,39 @@ Later versions:
 - Tests: new `sim_shop.test.js` (16), sim_audio +2 (kit tiers, outro/solo), pw_seq audio +3 (tier renders clean + audible,
   a 6-lane outro/solo song); sim_career/sim_songs/sim_world expectations follow the new gear/van fields.
 
+## What's in v0.8 (shop UI) — SHOPUI, lane A stage 2 (screens + render + integration for GG.shop)
+- `src/5k_ui_shop.js` (GG.ui v0.8, API in its header; CSS block `/* v0.8 SHOP */` in 00_shell after the CREATOR block).
+  Drum shop `gear` (tall sheet; the kit's sketch pad has "🛒 Drum shop"): kit tiers 0..3 in order, toms / ride / pedal, the
+  Outro / Solo rows (how they unlock); every disabled button shows the sim's `why`; a buy plays `GG.audio.hit` on the new
+  lane (a fill round the kit for a new kit, audio follows gear.quality) and an open sequencer grows its lanes.
+- Merch table `merch` (the merch hotspot; the v0.7 "Coming in v0.8" stub is gone): van haul vs space in boxes, the box pile
+  at home, the next gig's estimate, last gig's sales, the misprint status (pending → boxed with weeks/fans progress →
+  collector); per item: on the table (toggleTable), a price stepper inside item.range ($1/$2/$5 steps + a price word),
+  "Buy N boxes" (1..10, buyStock; the first shirt order comes back misprinted → Dana's tease for Monday). The gig board
+  shows "👕 merch ~$X" per flyer and the van's tier / boxes / stickers.
+- Garage door `van-info` (57) with tabs Van / Space / Car lot: an SVG van side per tier (rusted minivan, 15-passenger +
+  trailer, sprinter, tour bus) with the name on it and a sticker per venue played (banned ones crossed out in red), rename
+  (renameVan), driver, condition + Cousin Dale, merch space in boxes (was "space / 5"), van upgrades; Space: the room now
+  (rent, perks), rooms around town (move with a confirm, move back), this room's upgrades; Car lot: vans with price −
+  trade-in = net (buyVan, confirm).
+- Monday cards: `deltas.shop` chips (50 deltaChips → `ui.shopChips`). Gig results (55) + week results (52) show `r.merch`
+  in a panel (its "Merch table:" line folds in). The wrap: rent, Outro/Solo + merch unlocks, rent arrears, eviction, the
+  collector's item; the collector moment `shop-collector` (full: the box opens, the HALE DAMAGE shirt rises, $60, RARE)
+  plays once when the misprint turns (shop:misprint 'collector' / wrap.shop.misprint; "See it again" in the wrap).
+- Sequencer (54): tabs from `songs.allSections(gear)` ("+Solo" / "+Outro" until added → addSection; ⋯ removes), off-beat
+  cells dimmed in a Solo, arrangement cards keep the extras (withExtras), the Song tab adds/removes them and lists groove
+  per part; the guided Write gets Solo / Outro steps when owned (8 steps). 5–6 lanes + 6 tabs fit 390px. Gig (55): 6 lanes
+  = 65px each on a 390px phone, keys G / H = toms / ride. Laptop Money tab: merch sold / stock bought, rent.
+- 3D: 41 draws the space by `spaceTier` (tiers 1–3 hide the garage-only meshes: drywall, sectional door, pegboard, hockey
+  stick, mower, heater, moon shafts, window snow; draw their own walls, floor, door, props + a canvas sign; the banner moves
+  beside the door; the door hotspot reads "Door"), all 16 upgrades visible (the disco ball spins, green room paints the
+  walls), the unsold box pile by the merch stack (one box per box, up to 16 + a sign; the boxed misprint taped with a red
+  X); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
+  band's vehicle tier inside (15-passenger rows + hymnals, sprinter high roof + touchscreen, tour-bus lounge) + the newest
+  12 stickers on the hood (bus: the dash); info() tier / vehicle / stickers / banned.
+- Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (22) | space (15) | van (14) + contact sheet
+  `tests/.cache/v08_shop_sheet.png`; pw_flow layout expects the merch table on the merch hotspot.
+
 ## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
 - Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy
   looks kept drawable: short / top bun / gelled spikes, library specs, horseshoe 'stache, sweatband), each `{ id: '<cat>.<value>',
@@ -331,7 +364,7 @@ Later versions:
   `tests/.cache/v08_creator_sheet.png`. `_load.js` SIM_SAFE now takes `2\w_` (2a_sim_shop, 2b_sim_creator). Green:
   node suite, pw_flow flow/layout/code, pw_garage, pw_stage, pw_label awards, pw_settings difficulty, pw_rival botb,
   pw_tour gong, pw_gig gig, pw_world van at 390×844; pw_flow flow + pw_creator creator at 440×956 (preload override).
-- Gaps: 41's old `characterGeometry`/`hairParts`/`extraParts`/`guitarParts`/`capeParts`/`CAPES` are now dead code (kept to
+- Gaps: (41's old `characterGeometry`/`hairParts`/`extraParts`/`guitarParts`/`capeParts`/`CAPES` were deleted by SHOPUI.) Formerly dead code (kept to
   avoid touching 41 beyond buildKit; the lead can delete them after the merge). Members have no stage looks of their own
   yet (they fall back to their look). The hair fan doesn't blow your hair. Look changes persist at the next autosave.
 
@@ -568,6 +601,10 @@ Later versions:
   weekly (wrap.shop), cards, card, effectText, botValue, botWeek`. Buys return `{ ok, cost, deltas }` or `{ ok: false, why }`.
   Events `shop:buy|unlock|move|rename|sticker|misprint|merch`. `GG.fans.merchMods(s, r)`; `GG.songs` extras above;
   `GG.audio.kitFor/kitQuality/qualityFor`. Debug `GG.debug('shop')`.
+- `GG.ui` v0.8 shop (header of `5k_ui_shop.js`): `openGear(), openMerch(), showVan(tab 'van'|'space'|'dealer'), vanSide(st, { tier, stickers }),
+  vanUpgradesPanel, spacePanel, dealerPanel, shopChips(deltas.shop), merchResult(r.merch), isMerchLine, shopWrap(w), shopWrapShown(w),
+  playCollector(done)`. Screens `gear`, `merch` (tall sheets), `van-info` (tabs), `shop-collector` (full). Debug `shopui`.
+  Render: `GG.render.van.setTrip({ tier, stickers })`, debug('render').space.
 - `GG.creator` (v0.8, header of `2b_sim_creator.js`): `cats, part, partsIn, partFor, parts(state, cat?), isUnlocked, gateMet,
   gateText, draftState(genre, carry), grant, checkUnlocks, check(state, source), weekly(state, wrap), knuckles, headText, isV8,
   sanitizeLook, expand, syncPerson, stageOnly, lockLook, stageLookFor(who, contentMember?), legacyKit, newKit, sanitizeKit,

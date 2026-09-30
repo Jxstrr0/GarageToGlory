@@ -1,6 +1,8 @@
 // 52_ui_week.js: the weekly loop in the garage. HUD top bar + contextual primary button (the dock), Monday card,
 // whiteboard planner, week results, week wrap, end screen, hotspot/bandmate taps, placeholder sheets for later
 // versions, and the 2D fallback garage when three.js/WebGL isn't available.
+// v0.8 (SHOPUI): the merch hotspot opens the merch table (GG.ui.openMerch); the gig result shows r.merch (GG.ui.merchResult,
+// its "Merch table:" line is folded in); the wrap shows wrap.shop (GG.ui.shopWrap) and plays the collector moment once.
 // Flow commands (start/run/end the week, save) go through GG.main; this file only reads GG.state and calls
 // GG.career for the per-screen actions (resolve a card, edit the plan, accept an offer).
 (function (GG) {
@@ -332,7 +334,8 @@
         el('div', [el('span.caps', 'Buzz'), el('b', U.signed(g.buzz || 0))]),
         el('div', [el('span.caps', 'Score'), el('b', g.score != null ? String(Math.round(g.score)) : '—')])
       ]),
-      (g.lines || []).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
+      (g.lines || []).filter(function (t) { return !(g.merch && ui.isMerchLine && ui.isMerchLine(t)); }).map(function (t) { return el('p.small', { style: 'margin:4px 0' }, fill(t)); }),
+      g.merch && ui.merchResult ? ui.merchResult(g.merch) : null,   // v0.8: the merch table (sold, earned, boxes hauled)
       g.songs && g.songs.length ? el('div.small', { style: 'margin-top:6px' }, [el('span.caps', 'Setlist  '), g.songs.join(' · ')]) : null,
       (g.classics || []).map(function (id) {   // v0.2: enough great gigs make a song a classic
         var song = S() && GG.songs.byId(S(), id);
@@ -471,6 +474,7 @@
       if (ui.labelWrap) parts.push.apply(parts, ui.labelWrap(w));   // v0.5: offers, release day, charts, certs, royalties
       if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
       if (ui.tourWrap) parts.push.apply(parts, ui.tourWrap(w));     // v0.7: on tour, calls home, unlocks, invites, the Gong, home
+      if (ui.shopWrap) parts.push.apply(parts, ui.shopWrap(w));     // v0.8: rent, Outro/Solo + merch unlocks, eviction, the collector's item
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -491,6 +495,7 @@
       ui.append(s.foot, [ind, btn('.btn.primary.big.grow', { testid: 'btn-next-week', onclick: function () { GG.main.nextWeek(); } }, w.ended ? 'The end →' : 'Next week →')]);
       if (w.deltas && w.deltas.fund > 0) sfx('cash');
     },
+    onShow: function (s) { if (ui.shopWrapShown) ui.shopWrapShown(s.data.wrap || (S() && S().wrap)); },   // v0.8: the misprint pays off
     onClose: function (s) { (s.data._off || []).forEach(function (off) { off(); }); }
   });
 
@@ -556,10 +561,9 @@
     }));
   }
   var DOOR_QUIPS = ["Dad's truck is parked outside. He has made it VERY clear it is not a tour van.", 'The garage door opener works one time in three.'];
-  var MERCH_QUIPS = ['Two boxes of shirts printed "HAIL DAMGE". The printer was very sorry.', 'Mostly just boxes of Christmas decorations.'];
   var HOT = {
     kit: function () { ui.openSketch(); },
-    merch: function () { ui.show('soon', { title: 'Merch boxes', icon: '📦', soon: 'Coming in v0.8', text: 'Merch arrives in v0.8. Shirts, stickers, possibly capes.', quip: ui.pick(MERCH_QUIPS) }); },
+    merch: function () { if (ui.openMerch) return ui.openMerch(); },   // v0.8 (SHOPUI): the merch table (5k_ui_shop)
     door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
     trophies: function () { if (ui.defined('trophies')) return ui.show('trophies'); ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
     gigboard: function () {
