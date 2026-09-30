@@ -88,13 +88,21 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (now frozen until the context runs, then snapped); two clock checks < 100 ms apart read as "unhealthy" (sent the downbeat's
   auto notes to the frame); a healthy clock > 30 ms off for two checks snaps (glitch); a band that started on a suspended
   context re-anchors both zeros; Auto-kick doubles book their second kick without waiting for the frame's judgement.
+- Review fixes: beginCount pairs the clock fresh (G.aSample = null; a sample from before the between screen / a pause read as
+  unhealthy and froze the song in classic) and, on a suspended context (Restart after a mid-song pause), holds the count-in
+  (G.mode 'hold') until ctx.resume() resolves (1 s fallback); the count-in is a whole number of beats (2-4, lead = nb * spb) and
+  a numeral only shows from G.hb0 (< 92 bpm lost hats); pause() while Resume is waking cancels the wake (stays paused, overlay
+  back) and go() never un-pauses a hidden page.
 - Calibration: the light check (visual) drives Drum sync, the click test (audio) only classic; profiles keep `vat` (light check
-  ran). Results show a Bluetooth hint (`calib-bt`) when offset + outputLatency >= 120 ms.
+  ran). Results show a Bluetooth hint (`calib-bt`) when offset + outputLatency >= 120 ms. "Light check only" on the intro
+  (`calib-visual-only`), and `calib-visual-start` after a failed click test.
 - Debug gigui adds `sync, D, K, latD, zeroBand, zero, tBand, spb, drawT, vis, dispP90 (ms), dispN, snapN, hats, hatSkip, akN,
   akSkip, waking`, `last.snap/due/disp`. songT stays game time. Ask the owner for these after a song on the iPhone.
 - Tests: `tests/sync.test.js` (helpers + a 2000-case booking property), `pw_gig.js` META_ONLY=sync (count-in hats +-2 ms,
   band start = zeroBand, perfect/late taps on the grid +-3 ms, early taps keep their offset, auto notes + Auto-kick on the
-  16th grid, classic toggle); gig/double/settings/calib sections updated.
+  16th grid, classic toggle), META_ONLY=sync2 (80 bpm count-in, measured-zero / unmeasured light check, Restart after pause,
+  suspended between screen, band started on a suspended context, same-lane booking order, dispatch p90 saved, pause while
+  waking); gig/double/settings/calib sections updated.
 - Not changed: band-voice onset compensation (country fiddle/vox 30-40 ms; defer to v0.9, which edits 30_audio vocals).
 
 ## What's in v0.7.2 double kick (owner request 2026-09-30)

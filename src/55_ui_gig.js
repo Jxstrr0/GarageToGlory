@@ -218,7 +218,7 @@
     },
     'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
   };
-  function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count')) pause(true); } else guard(); }
+  function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count' || G.mode === 'hold' || G.waking)) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
     if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
@@ -269,7 +269,7 @@
     if (!G) return;
     stopAudio();
     if (G.raf) cancelAnimationFrame(G.raf);
-    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT);
+    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT);
     listen(false);
     G = null;
   }
@@ -292,16 +292,32 @@
     if (auto()) { playAuto(); return; }
     beginCount();
   }
-  function beginCount() {
+  function beginCount(held) {
+    // v0.8.3: a suspended context (Restart right after a mid-song pause: stopAudio's resume() is async) would decide the
+    // song's timing on a clock that isn't running yet: hold the count-in until it runs (1 s at most), like resume()'s go()
+    var c0 = G.actx || (G.actx = audioCtx());
+    if (!held && c0 && c0.state !== 'running' && c0.resume && !document.hidden) {
+      var pr = null; try { pr = c0.resume(); } catch (e) { pr = null; }
+      if (pr && typeof pr.then === 'function') {
+        var tok = G.holdTok = (G.holdTok || 0) + 1;
+        G.mode = 'hold'; G.paused = false; G.restart = false;
+        var go = function () { if (!G || G.holdTok !== tok || G.mode !== 'hold' || G.paused) return; G.holdTok++; clearTimeout(G.holdT); beginCount(true); };
+        pr.then(go, go);
+        G.holdT = setTimeout(go, 1000);
+        return;
+      }
+    }
     readPrefs();   // v0.8.3: the Drum sync toggle / calibration as of this song
-    var p = performance.now(), ch = G.chart, lead = U.clamp(4 * ch.spb, 1.6, 2.6);
+    // v0.8.3: a whole number of count-in beats (2-4), so every numeral shown has its hat on the grid (< 92 bpm lost some)
+    var p = performance.now(), ch = G.chart, nb = Math.min(4, Math.max(2, Math.ceil(U.clamp(4 * ch.spb, 1.6, 2.6) / ch.spb - 1e-6))), lead = nb * ch.spb;
+    G.aSample = null;   // pair fresh: a sample from before the between screen / a pause would read the clock as unhealthy
     resync(p, true);
     G.mode = 'count'; G.paused = false; G.restart = false; G.drawFrom = 0; G.countBeat = 99; G.popAt = -1e9;
     G.ap = 0; G.autoN = G.autoN || 0; G.autoAt = G.autoAt || [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9];
     G.dq = []; G.dp = 0; G.k2Last = -1e9; G.k2W = -1e9; for (var q = 0; q < G.k2.length; q++) G.k2[q] = -1;   // v0.7.2 this chart's doubles
     for (var k = 0; k < ch.notes.length; k++) if (ch.notes[k].dbl) G.dq.push(k);
     // v0.8.3: the count-in hats (booked by the pump) and Auto-kick's kicks (the SESSION's assist, fixed for the show)
-    G.hb = -Math.min(4, Math.floor(lead / ch.spb + 1e-6)); G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
+    G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
@@ -365,13 +381,22 @@
     G.autoT = setTimeout(nextSong, 30);
   }
   function pause(interrupted) {
-    if (!G || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
+    if (G && G.paused && G.waking) {   // v0.8.3: hidden / paused while resume() waits for the context: stay frozen, try again
+      G.waking = false; clearTimeout(G.wakeT);
+      G.restart = G.restart || !!interrupted;
+      pauseShow(); return;
+    }
+    if (!G || G.paused || (G.mode !== 'play' && G.mode !== 'count' && G.mode !== 'hold')) return;
     G.paused = true; G.pauseT = G.t;
-    if (G.startTimer || G.mode === 'count' || interrupted || !G.actx || !G.handle || !G.handle.playing || G.actx.state !== 'running') {
+    if (G.mode === 'hold') { G.holdTok = (G.holdTok || 0) + 1; clearTimeout(G.holdT); }
+    if (G.startTimer || G.mode === 'count' || G.mode === 'hold' || interrupted || !G.actx || !G.handle || !G.handle.playing || G.actx.state !== 'running') {
       G.restart = true; stopAudio();
     } else {
       try { G.actx.suspend(); G.ctxPaused = true; } catch (e) { G.restart = true; stopAudio(); }
     }
+    pauseShow();
+  }
+  function pauseShow() {
     G.dom.pause.hidden = false;
     G.dom.pauseNote.textContent = G.restart ? 'The song starts over when you come back.' : 'The band is frozen mid-riff.';
   }
@@ -388,6 +413,7 @@
     function go() {
       if (!G || !G.waking) return;
       G.waking = false; clearTimeout(G.wakeT);
+      if (document.hidden) { G.restart = true; pauseShow(); return; }   // never un-pause a hidden page (the band is suspended)
       G.offset = G.zero + G.pauseT - performance.now() / 1000; G.aSample = null;
       G.paused = false;
       resync(performance.now(), true);
@@ -514,7 +540,7 @@
       G.t = t;
       if (G.mode === 'count') {
         var beat = Math.floor(t / ch.spb);
-        if (beat !== G.countBeat && beat >= -4 && beat < 0) {
+        if (beat !== G.countBeat && beat >= G.hb0 && beat < 0) {
           G.countBeat = beat; G.dom.count.textContent = String(-beat); G.dom.count.className = 'gig-count show';   // (v0.8.3: the hats are booked)
         }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }

@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2 (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -259,7 +259,7 @@ async function e2e() {
     c.ok(vm.mode === '3d' && vm.scene === 'van' && !vm.paused, 'the 3D van drives (live3d keeps it drawing) ' + JSON.stringify(vm));
     await page.waitForFunction(() => GG.debug('van').p > 0.3 || GG.debug('ui').screen === 'road', null, { timeout: 12000 });
     await shot('van');
-    await tap(page, 'btn-van-skip');
+    if (await page.evaluate(() => GG.debug('ui').screen) === 'van' && await page.locator(tid('btn-van-skip')).isVisible()) await tap(page, 'btn-van-skip');
     for (let k = 0; k < 20 && await page.evaluate(() => GG.debug('ui').screen) !== 'gig-set'; k++) {
       if (await page.evaluate(() => GG.debug('ui').screen) === 'road') { await tap(page, 'road-choice-0'); await tap(page, 'btn-road-ok'); }
       await page.waitForTimeout(250);
@@ -355,9 +355,12 @@ async function double() {
     const after = await dbg(page, 'gigui'), kh = await kicksIn(page, n.t - 0.15, n.t2 + 0.4);
     c.ok(last && /^(perfect|good)$/.test(last.judgement) && Math.abs(last.at - n.t) < 0.03, 'one tap on a double judges it ' + JSON.stringify(last));
     c.ok(after.stats.perfect + after.stats.good === before.perfect + before.good + 1, 'one judgement for two kicks ' + JSON.stringify([before.perfect + before.good, after.stats.perfect + after.stats.good]));
-    // v0.8.3 drum sync: the on-time tap's kick is booked on the band's grid at t, the second kick at t2
-    c.ok(kh.length === 2 && kh[0].w && kh[1].w && Math.abs(kh[0].at - n.t) <= 0.003 && Math.abs(kh[1].at - n.t2) <= 0.003,
-      'two kicks, both on the band grid: the tap at t, the double at t2 ' + JSON.stringify({ t: n.t, t2: n.t2, kh, snap: last.snap }));
+    // v0.8.3 drum sync: the tap's kick is booked on the band's grid at t (snapped) or at J (a stalled tap outside the
+    // snap window), the second kick the double's spacing after it
+    const k0 = last.snap ? n.t : last.at, sp0 = Math.max(n.t2 - n.t, 0.06);
+    c.ok(kh.length === 2 && kh[0].w && kh[1].w && Math.abs(kh[0].at - k0) <= 0.003 && Math.abs((kh[1].at - kh[0].at) - sp0) <= 0.003,
+      'two kicks, both on the band grid: the tap at t (or J), the double its spacing later ' + JSON.stringify({ t: n.t, t2: n.t2, kh, snap: last.snap, at: last.at }));
+    c.ok(last.snap || Math.abs(last.at - n.t) > 0.014, 'a tap inside the snap window snaps ' + JSON.stringify({ at: last.at, t: n.t, snap: last.snap }));
     const pairGap = (kh, tap, x) => kh.length === 2 ? +((kh[1].at - kh[0].at) - (x.t2 - tap.at)).toFixed(3) : null;
     c.ok(after.doublesPlayed === 1, 'doublesPlayed counts it ' + after.doublesPlayed);
     const info1 = await page.evaluate(() => GG.render.stage && GG.render.stage.info());
@@ -564,4 +567,131 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); })();
+
+// v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
+// Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
+// context, the same-lane booking order, the dispatch p90 saved at the song's end, and a pause while Resume is waking.
+async function sync2() {
+  const c = checker('sync2');
+  const { page, errors, close } = await open();
+  const tapS = (li, at) => page.evaluate(async ([li, at]) => {
+    const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+    while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
+    while (GG.debug('gigui').songT < at) { /* spin */ }
+    const x = r.left + (li + 0.5) * r.width / lanes, y = r.bottom - 36, n0 = window.__h.length;
+    window.__inTap = true;
+    try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, pointerId: 7 + li, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true })); }
+    finally { window.__inTap = false; }
+    return { last: GG.debug('gigui').last, h: window.__h.slice(n0).find(e => e.tap) || null };
+  }, [li, at]);
+  const next = () => page.waitForFunction(() => { const d = GG.debug('gigui'); return d.mode === 'play' && d.next && d.next.t < d.dur - 1.5 ? d.next : null; }, null, { timeout: 8000 }).then(h => h.jsonValue());
+  const pick = d => ({ mode: d.mode, sync: d.sync, clockOk: d.clockOk, D: d.D, paused: d.paused, waking: d.waking });
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => {
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, drumSync: true });
+      GG.main.quickStart({ seed: 8304, openCard: false });
+      const s = GG.state, E = '................'; s.card = null; s.phase = 'plan';
+      const bar = ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E];
+      const mk = t => GG.songs.create(s, { bpm: 80, lanes: 4, arrangement: ['verse', 'chorus'], sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] } }, t, { quality: 60, polish: 60 });
+      s.songs = [mk('Slow One'), mk('Slow Two')];
+      GG.prefs.set({ audioProfile: 'speaker' }); GG.prefs.setCalib('speaker', { audio: 0, visual: 0, at: 1 });   // a light check that measured 0
+      window.__h = []; const h0 = GG.audio.hit;
+      GG.audio.hit = function (l, w) {
+        const now = GG.audio.context().currentTime, d = GG.debug('gigui');
+        window.__h.push({ l, w, now, zb: d.zeroBand, tap: !!window.__inTap, snd: w != null && w > now + 0.005 && w < now + 1.005 ? w : now + 0.005 });
+        return h0.apply(this, arguments);
+      };
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = false;
+      GG.ui.closeAll(); GG.state.liveGig = null; GG.ui.playGig(s.gig, () => {});
+    });
+    await waitScreen(page, 'gig-set');
+    await page.evaluate(() => { window.__nums = [];
+      new MutationObserver(() => { const e = document.querySelector('.gig-count.show'); if (e && window.__nums[window.__nums.length - 1] !== e.textContent) window.__nums.push(e.textContent); })
+        .observe(document.body, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] }); });
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'count', null, { timeout: 5000 });
+    const d0 = await dbg(page, 'gigui');
+    c.ok(d0.sync === true && Math.abs(d0.spb - 0.75) < 1e-9 && d0.vis === 0 && d0.songs >= 2, '80 BPM, sync on, a measured light check of 0 draws at 0 (not the 30 ms guess) ' + JSON.stringify({ spb: d0.spb, vis: d0.vis, songs: d0.songs }));
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').tBand > 0.2, null, { timeout: 8000 });
+    const cnt = await page.evaluate(() => { const d = GG.debug('gigui'); return { hats: d.hats, skip: d.hatSkip, nums: window.__nums.slice(),
+      grid: window.__h.filter(e => e.l === 'hat' && !e.tap && e.snd - e.zb < -0.1).map(e => +((e.snd - e.zb) / d.spb).toFixed(3)) }; });
+    // (headless frames can stall past a numeral: the ones seen count down from 4 at most, each with its hat)
+    c.ok(cnt.hats === 4 && cnt.skip === 0 && cnt.nums.length >= 1 && cnt.nums.every((x, i) => +x >= 1 && +x <= 4 && (i === 0 || +x < +cnt.nums[i - 1])) && cnt.grid.join() === '-4,-3,-2,-1', '80 BPM count-in: 4 hats on the grid, a hat under every numeral ' + JSON.stringify(cnt));
+    // Pause mid-song (the context suspends), then Restart this song: drum sync must stay on
+    await page.waitForTimeout(500);
+    await tap(page, 'btn-gig-pause');
+    await page.waitForTimeout(1500);
+    const ps = await page.evaluate(() => ({ st: GG.audio.context().state, d: GG.debug('gigui') }));
+    await tap(page, 'btn-gig-restart');
+    await page.waitForFunction(() => ['count', 'play'].includes(GG.debug('gigui').mode), null, { timeout: 5000 });
+    const dr = await dbg(page, 'gigui');
+    c.ok(ps.st === 'suspended' && dr.sync === true && dr.clockOk === true && dr.D > 0, 'Restart this song after a pause keeps drum sync ' + JSON.stringify({ paused: ps.st, restart: pick(dr) }));
+    // same-lane booking order: a second tap whose snapped time would land before the first's booking goes after it
+    const n1 = await next();
+    const ord = await page.evaluate(async ([li, at]) => {
+      const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+      while (GG.debug('gigui').songT < at) await new Promise(res => setTimeout(res, 2));
+      const x = r.left + (li + 0.5) * r.width / lanes, y = r.bottom - 36, n0 = window.__h.length, snap0 = GG.prefs.syncSnap;
+      const ev = () => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, pointerId: 7 + li, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+      window.__inTap = true;
+      try { ev(); GG.prefs.syncSnap = J => J - 0.05; ev(); } finally { GG.prefs.syncSnap = snap0; window.__inTap = false; }
+      return window.__h.slice(n0).filter(e => e.tap).map(e => e.w);
+    }, [n1.li, n1.t]);
+    c.ok(ord.length === 2 && ord[0] != null && ord[1] > ord[0], 'same-lane taps book in time order (the lane clamp) ' + JSON.stringify(ord));
+    // touch taps feed the dispatch p90; the song's end saves it (the synthetic taps dispatch at once: it moves toward the 10 ms floor)
+    const disp0 = await page.evaluate(() => GG.prefs.get().syncDisp);
+    for (let k = 0; k < 10; k++) { const n = await next(); await tapS(n.li, n.t); }
+    const dn = await dbg(page, 'gigui');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'between', null, { timeout: 45000 }).catch(async e => { throw new Error('no between: ' + JSON.stringify(await dbg(page, 'gigui')).slice(0, 600)); });
+    const de = await page.evaluate(() => ({ d: GG.debug('gigui'), disp: GG.prefs.get().syncDisp }));
+    c.ok(dn.dispN >= 8 && de.d.dispP90 != null && de.d.dispP90 < disp0 && de.disp === de.d.dispP90 && de.disp >= 10, 'the song end blends the dispatch p90 into syncDisp ' + JSON.stringify({ n: dn.dispN, p90: de.d.dispP90, from: disp0, to: de.disp }));
+    // the between screen: the context suspended a while (the phone locked), then back: the next song still syncs
+    await page.evaluate(() => GG.audio.suspend());
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => GG.audio.resume());
+    await page.waitForTimeout(300);
+    await tap(page, 'btn-gig-next');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'count', null, { timeout: 5000 });
+    const d2 = await dbg(page, 'gigui');
+    c.ok(d2.sync === true && d2.clockOk === true, 'song 2 after a suspended between screen keeps drum sync ' + JSON.stringify(pick(d2)));
+    // the band starts on a suspended context (count-in): the pump moves both zeros onto its real start
+    await page.evaluate(() => GG.audio.context().suspend());
+    await page.waitForFunction(() => GG.debug('gigui').audio, null, { timeout: 6000 });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => GG.audio.context().resume());
+    await page.waitForTimeout(600);
+    const za = await page.evaluate(() => { const d = GG.debug('gigui'), h = GG.audio.current(); return { dz: h.start - d.zeroBand, dg: d.zeroBand - d.D - d.zero, mode: d.mode }; });
+    c.ok(Math.abs(za.dz) < 0.001 && Math.abs(za.dg) < 1e-9, 'a band started on a suspended context: zeroBand = h.start, zero = zeroBand - D ' + JSON.stringify(za));
+    // pause while Resume waits for the context, then the page hides: stays paused, overlay back, song frozen
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').tBand > 0.5, null, { timeout: 8000 });
+    await tap(page, 'btn-gig-pause');
+    await page.waitForTimeout(200);
+    await page.evaluate(() => { const c = GG.audio.context(); c.resume = () => new Promise(() => {}); });
+    await tap(page, 'btn-gig-resume');
+    const w0 = await dbg(page, 'gigui');
+    await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+    const t0 = (await dbg(page, 'gigui')).songT;
+    await page.waitForTimeout(1300);
+    const w1 = await page.evaluate(() => ({ d: GG.debug('gigui'), over: !document.querySelector('[data-testid="gig-paused"]').hidden }));
+    c.ok(w0.waking === true && w1.d.paused === true && !w1.d.waking && w1.over && Math.abs(w1.d.songT - t0) < 1e-6, 'hidden while Resume wakes: stays paused, the overlay is back, the song frozen ' + JSON.stringify({ w0: pick(w0), w1: pick(w1.d), over: w1.over, t0, t1: w1.d.songT }));
+    await page.evaluate(() => { delete GG.audio.context().resume; delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });
+    await page.waitForTimeout(300);
+    await tap(page, 'btn-gig-resume');
+    await page.waitForFunction(() => ['count', 'play'].includes(GG.debug('gigui').mode) && !GG.debug('gigui').paused, null, { timeout: 5000 });
+    const w2 = await dbg(page, 'gigui');
+    c.ok(w2.sync === true && !w2.paused, 'Resume after that restarts the song in sync ' + JSON.stringify(pick(w2)));
+    // a profile with no light check draws with the 30 ms guess
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ audioProfile: 'headphones' }); GG.state.liveGig = null; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'count', null, { timeout: 5000 });
+    const dh = await dbg(page, 'gigui');
+    c.ok(Math.abs(dh.vis - 0.03) < 1e-9, 'an unmeasured profile draws with the 30 ms guess ' + dh.vis);
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ audioProfile: 'speaker' }); GG.prefs.setCalib('speaker', { audio: 0, visual: 0 }); });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}

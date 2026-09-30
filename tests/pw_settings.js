@@ -229,6 +229,18 @@ async function calib() {
       return !!document.querySelector('[data-testid="calib-bt"]'); }));
     await page.evaluate(() => GG.ui.closeAll());
     c.ok(bt.join() === 'true,false,true', 'Bluetooth hint when offset + latency >= 120 ms ' + bt.join());
+    // v0.8.3: the light check (what Drum sync uses) is reachable without passing the click test
+    const lc = await page.evaluate(() => {
+      GG.ui.closeAll(); GG.ui.show('calib', { profile: 'speaker' });
+      const only = !!document.querySelector('[data-testid="calib-visual-only"]');
+      GG.ui.closeAll(); GG.ui.show('calib', { step: 'audioDone', profile: 'speaker', audio: { ok: false, n: 2 } });
+      const after = !!document.querySelector('[data-testid="calib-visual-start"]');
+      return { only, after };
+    });
+    await tap(page, 'calib-visual-start');
+    const vs = await page.evaluate(() => GG.debug('calib').step);
+    await tap(page, 'calib-skip');
+    c.ok(lc.only && lc.after && vs === 'visual', 'light check only from the intro, and after a failed click test ' + JSON.stringify(Object.assign(lc, { step: vs })));
     c.ok(await page.evaluate(() => GG.state.stats.gigs === 0 && !GG.state.liveGig), 'practice saves nothing');
     c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3));
   } finally { await close(); c.done(); }

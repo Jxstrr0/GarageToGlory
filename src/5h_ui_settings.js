@@ -235,6 +235,7 @@
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
+          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (Drum sync)'),
           btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, d.first ? 'Skip for now (Settings → Calibrate later)' : 'Cancel')]));
         return;
       }
@@ -258,7 +259,7 @@
         a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). Drum sync keeps your drums with the band; watch the highway rather than your ears.") : null
       ]);
       var foot = [];
-      if (step === 'audioDone' && a && a.ok) foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
+      if (step === 'audioDone') foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
       if ((a && a.ok) || (v && v.ok)) foot.push(btn('.btn' + (step === 'visualDone' ? '.primary.big' : '') + '.block', { testid: 'calib-save', onclick: function () {
         var o = { at: Date.now() };
         if (a && a.ok) o.audio = a.offset;
@@ -267,7 +268,7 @@
         ui.close(s.id);
         ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. Kenji gives a slow thumbs-up.');
       } }, 'Save calibration'));
-      foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone' && a && a.ok) startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
+      foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone') startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
       s.foot.appendChild(el('div.stack', foot));
     },
     onClose: function () { stopTest(); K = null; dbg.open = false; dbg.step = null; GG.emit('settings:changed', { keys: ['calib'] }); }
