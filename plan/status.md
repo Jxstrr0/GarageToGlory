@@ -7,7 +7,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap).
-- Next: **0.9 "Genres"** (Frost Heave, Gravel Kings, Grid Road Ramblers; popup first for the other rivals' members) → 1.0
+- Next: **0.9 "Genres"** (in progress; decisions above in "v0.9 Genres — owner decisions") → 1.0
   Glory (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -256,7 +256,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   NYE best-paying gig, St. Patrick's pub circuit, Canada Day free park shows, Halloween costume gigs, Thanksgiving dinner
   (guilt cards if you owe), Remembrance Day (no Legion gigs that week), Christmas party circuit + the label's terrible
   Christmas single, the Grey Mug halftime show (late-career moment).
-- C8 still OPEN (popups when reached): other rivals' members (v0.9), exact balance numbers.
+- C8: other rivals' members — DECIDED 2026-09-30 (see "v0.9 Genres — owner decisions"); exact balance numbers still open.
 
 ## Addendum 1 — pending
 Already-shipped versions → **v0.6.1 catch-up**:
@@ -272,6 +272,21 @@ Later versions:
 - [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
 - [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
 - [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
+
+## v0.9 "Genres" — owner decisions (popup 2026-09-30; locked)
+- **Mall Rats** (Frost Heave's rival, Toronto, manufactured TV-show punk): the "focus-group four" — talent-show
+  contestants assembled by a network exec: frontman "Blaze" (real name Kevin, from Oakville), a bassist who's never plugged
+  in, a drummer chosen for his jawline, and their stylist **Siobhan** who's the real leader; sponsor-mandated kickflips
+  every set; they throw sponsor money at everything, including you.
+- **Chartbusters** (Gravel Kings' rival, Vancouver, stadium radio rock): aging megastars — thirty years at the top;
+  frontman **Rex Glamour** wears a signature scarf in July; the drummer has been replaced four times (all named Steve);
+  the band quietly bought the radio conglomerate; every single is the same power ballad.
+- **Buckle & Boot** (the Ramblers' rival, Red Deer, bro-country duo): truck-ad cousins **Brayden and Colt**, ex-junior
+  hockey; one sings about tailgates, the other "plays" an unplugged guitar; their truck sponsor's mascot (a guy in a pickup
+  costume) is basically a third member; furious when a truck ad goes to the Ramblers (v0.8.1 licensing hook).
+- **All four bands playable from the start** (new-career screen offers all four; each with its own rival, driver, space,
+  city: Frost Heave — Regina laundromat basement (Suds-O-Rama), driver Moth; Gravel Kings — Edmonton strip-mall unit 4B,
+  driver T-Bone; the Grid Road Ramblers — Duke's uncle's Quonset outside Swift Current, driver Earl).
 
 ## Addendum 2 (handoff Part D) — decisions (owner, 2026-09-29/30; locked unless marked open)
 - Timing: queued behind v0.8 (done); never expands a version in progress. **No share/screenshot button, ever.**
