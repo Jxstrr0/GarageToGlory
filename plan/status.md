@@ -57,6 +57,17 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
+## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
+- 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
+  Hail Damage inside, Dad's hail-dented truck, the bungalow, an arena with searchlights on the horizon; instanced hail,
+  lightning + thunder; taps: kit = a real drum fill, Marcel = lightning, truck = horn + headlights, house = porch light).
+  API `GG.render.title.{setFrame, strike, tap, info}`. 51_ui_menu: title is `live3d` + transparent (`.title3d`), flat
+  title without WebGL; 60_main keeps drawing on the title with no career; 30_audio 'storm' ambience + thunder/honk sfx.
+- Lead fixes after a 3-lens review: reduced flashing / camera shake / graphics quality now apply live on the title
+  (read from the cached `R.prefs()` every frame; hail allocated at max, live count = quality); the title's framing is
+  skipped while hidden and re-measured when a screen above it closes. pw_settings lefty check made race-free (two-thumb
+  auto notes also call GG.audio.hit). Tests: `tests/pw_title.js` META_ONLY=scene|flow|prefs (15 + 10 + 7).
+
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
   4 notes at once".

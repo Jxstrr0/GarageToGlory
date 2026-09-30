@@ -22710,8 +22710,6 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     function build() {
       K = { geos: [], mats: [], texs: [], chars: [], people: [], lights: [] };
       rs = (GG.hashSeed ? GG.hashSeed('title|' + Date.now()) : 99) || 99;
-      var prefs = R.prefs ? R.prefs() : { crowdScale: 1, calm: false, shake: true };
-      K.calm = !!prefs.calm; K.shakeOk = prefs.shake !== false;
       scene.fog = new THREE.Fog(0x161d2e, 40, 260);
       buildLights();
       buildSky();
@@ -22720,10 +22718,23 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       buildKit(0xb3372f);
       buildTruck();
       buildBolt();
-      buildHail(Math.round(HAIL_MAX * (prefs.crowdScale || 1)));
+      buildHail(HAIL_MAX);   // allocate the most we'll ever draw; applyPrefs() sets how many are live
+      applyPrefs();
       buildPeople();
       buildPicks();
       T.nextStrike = 2.5 + rnd() * 2;
+    }
+
+    // Settings can change while the title is up (⚙ Settings opens over it and the scene survives), so reduced flashing,
+    // camera shake and graphics quality are re-read every frame from the cached R.prefs() (no storage read, no allocation).
+    function applyPrefs() {
+      var pf = R.prefs ? R.prefs() : null;
+      K.calm = !!(pf && pf.calm); K.shakeOk = !pf || pf.shake !== false;
+      if (!K.shakeOk) T.shake = 0;
+      if (K.hail) {
+        var n = clamp(Math.round(HAIL_MAX * ((pf && pf.crowdScale) || 1)), 60, HAIL_MAX);
+        if (n !== K.hail.n) { K.hail.n = n; K.hail.m.count = n; }
+      }
     }
 
     function buildLights() {
@@ -23283,6 +23294,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // ---- Per frame ---------------------------------------------------------------------------------------------------
     function update(dt) {
       if (!K) return;
+      applyPrefs();
       T.t += dt; T.frame++;
       var t = T.t, i;
       // Lightning
@@ -23359,7 +23371,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       tap: tap,
       info: function () {
         if (!K) return { built: false };
-        return { built: true, hail: K.hail.n, falling: K.hail.falling, resting: K.hail.resting, strikes: T.strikes, taps: { kit: T.taps.kit, marcel: T.taps.marcel, truck: T.taps.truck, house: T.taps.house },
+        return { built: true, hail: K.hail.n, calm: K.calm, shake: K.shakeOk, falling: K.hail.falling, resting: K.hail.resting, strikes: T.strikes, taps: { kit: T.taps.kit, marcel: T.taps.marcel, truck: T.taps.truck, house: T.taps.house },
           people: K.people.map(function (p) { return p.id; }), frame: T.frame, view: { top: pending.top, bottom: pending.bottom }, geos: K.geos.length, mats: K.mats.length };
       }
     };
@@ -23785,10 +23797,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (!e || !GG.render || !GG.render.title) return;
       var head = e.body.querySelector('.title-head'), foot = e.body.querySelector('.title-foot'), H = window.innerHeight || 844;
       if (!head || !foot) return;
-      GG.render.title.setFrame({ top: Math.round(head.getBoundingClientRect().bottom) + 6, bottom: Math.round(H - foot.getBoundingClientRect().top) + 6 });
+      var hr = head.getBoundingClientRect(), fr = foot.getBoundingClientRect();
+      if (!hr.height || !fr.height) return;   // hidden under a full screen: measured again when it's uncovered
+      GG.render.title.setFrame({ top: Math.round(hr.bottom) + 6, bottom: Math.round(H - fr.top) + 6 });
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
     onShow: function () {

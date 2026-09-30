@@ -69,10 +69,13 @@
       if (!e || !GG.render || !GG.render.title) return;
       var head = e.body.querySelector('.title-head'), foot = e.body.querySelector('.title-foot'), H = window.innerHeight || 844;
       if (!head || !foot) return;
-      GG.render.title.setFrame({ top: Math.round(head.getBoundingClientRect().bottom) + 6, bottom: Math.round(H - foot.getBoundingClientRect().top) + 6 });
+      var hr = head.getBoundingClientRect(), fr = foot.getBoundingClientRect();
+      if (!hr.height || !fr.height) return;   // hidden under a full screen: measured again when it's uncovered
+      GG.render.title.setFrame({ top: Math.round(hr.bottom) + 6, bottom: Math.round(H - fr.top) + 6 });
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
     onShow: function () {

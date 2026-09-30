@@ -85,8 +85,6 @@
     function build() {
       K = { geos: [], mats: [], texs: [], chars: [], people: [], lights: [] };
       rs = (GG.hashSeed ? GG.hashSeed('title|' + Date.now()) : 99) || 99;
-      var prefs = R.prefs ? R.prefs() : { crowdScale: 1, calm: false, shake: true };
-      K.calm = !!prefs.calm; K.shakeOk = prefs.shake !== false;
       scene.fog = new THREE.Fog(0x161d2e, 40, 260);
       buildLights();
       buildSky();
@@ -95,10 +93,23 @@
       buildKit(0xb3372f);
       buildTruck();
       buildBolt();
-      buildHail(Math.round(HAIL_MAX * (prefs.crowdScale || 1)));
+      buildHail(HAIL_MAX);   // allocate the most we'll ever draw; applyPrefs() sets how many are live
+      applyPrefs();
       buildPeople();
       buildPicks();
       T.nextStrike = 2.5 + rnd() * 2;
+    }
+
+    // Settings can change while the title is up (⚙ Settings opens over it and the scene survives), so reduced flashing,
+    // camera shake and graphics quality are re-read every frame from the cached R.prefs() (no storage read, no allocation).
+    function applyPrefs() {
+      var pf = R.prefs ? R.prefs() : null;
+      K.calm = !!(pf && pf.calm); K.shakeOk = !pf || pf.shake !== false;
+      if (!K.shakeOk) T.shake = 0;
+      if (K.hail) {
+        var n = clamp(Math.round(HAIL_MAX * ((pf && pf.crowdScale) || 1)), 60, HAIL_MAX);
+        if (n !== K.hail.n) { K.hail.n = n; K.hail.m.count = n; }
+      }
     }
 
     function buildLights() {
@@ -658,6 +669,7 @@
     // ---- Per frame ---------------------------------------------------------------------------------------------------
     function update(dt) {
       if (!K) return;
+      applyPrefs();
       T.t += dt; T.frame++;
       var t = T.t, i;
       // Lightning
@@ -734,7 +746,7 @@
       tap: tap,
       info: function () {
         if (!K) return { built: false };
-        return { built: true, hail: K.hail.n, falling: K.hail.falling, resting: K.hail.resting, strikes: T.strikes, taps: { kit: T.taps.kit, marcel: T.taps.marcel, truck: T.taps.truck, house: T.taps.house },
+        return { built: true, hail: K.hail.n, calm: K.calm, shake: K.shakeOk, falling: K.hail.falling, resting: K.hail.resting, strikes: T.strikes, taps: { kit: T.taps.kit, marcel: T.taps.marcel, truck: T.taps.truck, house: T.taps.house },
           people: K.people.map(function (p) { return p.id; }), frame: T.frame, view: { top: pending.top, bottom: pending.bottom }, geos: K.geos.length, mats: K.mats.length };
       }
     };

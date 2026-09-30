@@ -11,6 +11,8 @@ const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
 const tid = id => `[data-testid="${id}"]`;
 const R = page => page.evaluate(() => ({ r: GG.debug('render'), t: GG.render.title.info() }));
+// Wait until the title scene has drawn a couple more frames (headless software GL can run at a few fps under load).
+const frames = async (page, n = 2) => { const f = await page.evaluate(() => GG.render.title.info().frame); await page.waitForFunction(([f, n]) => GG.render.title.info().frame >= f + n, [f, n], { timeout: 15000 }); };
 
 async function scene() {
   const c = checker('scene');
@@ -105,7 +107,45 @@ async function flow() {
   c.done();
 }
 
+//   prefs : Settings opened over the live title — reduced flashing, camera shake and graphics quality apply to the scene
+//           at once (no rebuild), and a resize while the title is covered doesn't break its framing.
+async function prefs() {
+  const c = checker('prefs');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.waitForFunction(() => GG.render.title.info().frame > 8, null, { timeout: 15000 });
+    const a = (await R(page)).t;
+    c.ok(a.calm === false && a.shake === true && a.hail === 720, 'defaults: full storm ' + JSON.stringify([a.calm, a.shake, a.hail]));
+    await page.click(tid('title-settings'));
+    await page.waitForFunction(() => GG.debug('ui').screen === 'settings');
+    for (const id of ['set-reducedFlash', 'set-cameraShake', 'set-gfx-low']) { await page.click(tid(id)); await page.waitForTimeout(80); }
+    await page.setViewportSize({ width: 400, height: 860 });   // a resize while the title is hidden under Settings
+    await page.waitForTimeout(200);
+    await page.click(tid('set-done'));
+    await page.waitForFunction(() => GG.debug('ui').screen === 'title');
+    await frames(page);
+    const b = (await R(page)).t;
+    c.ok(b.built && b.frame > a.frame, 'same scene, still drawing (no rebuild needed)');
+    c.ok(b.calm === true && b.shake === false, 'reduced flashing + no camera shake apply live ' + JSON.stringify([b.calm, b.shake]));
+    c.ok(b.hail >= 60 && b.hail < a.hail, 'graphics Low trims the hail live: ' + a.hail + ' → ' + b.hail);
+    c.ok(b.view.top > 120 && b.view.bottom > 150 && b.view.top < 860 * 0.45, 'framing re-measured after Settings closes ' + JSON.stringify(b.view));
+    await page.click(tid('title-settings'));
+    await page.waitForFunction(() => GG.debug('ui').screen === 'settings');
+    await page.click(tid('set-gfx-high')); await page.click(tid('set-reducedFlash'));
+    await page.click(tid('set-done'));
+    await page.waitForFunction(() => GG.debug('ui').screen === 'title');
+    await frames(page);
+    const d = (await R(page)).t;
+    c.ok(d.hail === 720 && d.calm === false, 'back to High: the full storm returns ' + JSON.stringify([d.hail, d.calm]));
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'prefs threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+
 (async () => {
   if (want('scene')) await scene();
   if (want('flow')) await flow();
+  if (want('prefs')) await prefs();
 })();
