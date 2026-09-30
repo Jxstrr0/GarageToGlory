@@ -24,9 +24,9 @@
   /* ======================================================================================================
      The band photo (render hook: display only, never saved)
      ====================================================================================================== */
-  var photos = {};   // 'seed|year' -> dataURL (this session)
+  var photos = {};   // 'band|seed|year' -> dataURL (this session; per band, so a new career in the same seed gets its own room)
   var lastPhoto = null;   // v0.9: the last photo's lineup + room (GG.debug('recap').photo)
-  var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7 };   // the one rig (40_render_core)
+  var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7, PHONES: 15 };   // the one rig (40_render_core)
   var CAPES = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
   function rot(b, x, y, z) { if (b) b.rotation.set(x, y, z); }
   var POSES = {
@@ -39,12 +39,18 @@
   // v0.9: every playable band's members have a signature pose (recruits and fill-ins cycle the generic ones).
   var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips',
     rox: 'fist', benny: 'hips', moth: 'cross', chase: 'wide', lenny: 'fist', tamara: 'cross', travis: 'hips', earl: 'cross', clementine: 'hips', duke: 'wide' };
-  // The camera: the render's own rig for this room kind when it offers one (GG.render.garage.photoRig(kind) -> { fov, near,
-  // far, pos: [x, y, z], look: [x, y, z], gap?, x0?, front? }), else the v0.8.1 garage framing (cut-away front wall).
-  var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0] };
+  // The camera: the render's own rig for this room kind (GG.render.garage.photoRig(GG.render.garage.spaceKind(st)) -> { fov,
+  // near, far, pos: [x, y, z], look: [x, y, z], x (the row's centre), gap, z: [even, odd] (members' depth), player (depth) }),
+  // else the v0.8.1 garage framing (cut-away front wall).
+  var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45 };
+  function photoKind(st) {
+    if (st && (st.spaceTier | 0) > 0) return 'garage';   // the rented rooms share the garage's footprint (and its rig)
+    try { var G = GG.render && GG.render.garage; if (G && typeof G.spaceKind === 'function') return G.spaceKind(st) || ui.spaceKind(st); } catch (e) { /* fall through */ }
+    return ui.spaceKind(st);
+  }
   function photoRig(st) {
     var r = null;
-    try { var G = GG.render && GG.render.garage; r = G && typeof G.photoRig === 'function' ? G.photoRig(ui.spaceKind(st)) : null; } catch (e) { r = null; }
+    try { var G = GG.render && GG.render.garage; r = G && typeof G.photoRig === 'function' ? G.photoRig(photoKind(st)) : null; } catch (e) { r = null; }
     return r && r.pos && r.look ? Object.assign({}, RIG, r) : RIG;
   }
   function lineup(st) {
@@ -61,7 +67,7 @@
   // Renders the photo once per year (cached for the session). null when there's no 3D.
   ui.recapPhoto = function (st, year) {
     st = st || S();
-    var key = st ? (st.seed >>> 0) + '|' + (year || st.year) : null;
+    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) : null;
     if (!st) return null;
     if (photos[key]) return photos[key];
     var R = GG.render;
@@ -75,22 +81,24 @@
       var THREE = ctx.THREE; renderer = ctx.renderer;
       scene.traverse(function (o) { if ((o.isSkinnedMesh || o.isSprite) && o.visible) hidden.push(o); });
       hidden.forEach(function (o) { o.visible = false; });
-      var rig = photoRig(st), people = lineup(st), n = people.length, gap = rig.gap || 0.62, x0 = (rig.x0 != null ? rig.x0 : 0.1) - (n - 1) * gap / 2;
+      var rig = photoRig(st), people = lineup(st), n = people.length, gap = rig.gap || 0.62, x0 = (rig.x != null ? rig.x : 0.1) - (n - 1) * gap / 2;
+      var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
       people.forEach(function (p, i) {
         var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
         var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
         if (!ch) return;
-        var front = (rig.front || 0) + (p.player ? 0.45 : (i % 2 ? 0.2 : 0.34));
+        var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
         ch.root.position.set(x0 + i * gap, 0, front);
         ch.root.rotation.y = -0.06 * (x0 + i * gap);
         (POSES[p.pose] || POSES.fist)(ch.bones);
+        if (ch.bones[B.PHONES]) ch.bones[B.PHONES].scale.setScalar(0);   // the sulk headphones are a toggle bone: off for the photo
         scene.add(ch.root);
         made.push(ch);
       });
       scene.updateMatrixWorld(true);
-      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: ui.spaceKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
+      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
       var W = 1200, H = 760;
       rt = new THREE.WebGLRenderTarget(W, H);
       // From outside the cut-away front wall; the near plane clips everything between the lens and the band (cooler, couch).

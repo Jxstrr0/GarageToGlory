@@ -323,6 +323,22 @@
   };
   ui.isSilent = function (id, st) { var m = ui.memberDef(id, st); return !!(m && m.silent); };
   ui.active = function (st) { return ((st || GG.state || {}).members || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }); };
+  // v0.9: a scripted exchange ([{ who, text }]: the red carpets) without this band's members who aren't in the lineup now
+  // (quit, fired): their answer goes, and so does the question (reporter, npc, rival lines) that set it up. '@role' speakers
+  // must resolve to someone in the lineup. null when no bandmate is left to answer (the caller's neutral '@role' set).
+  ui.presentLines = function (list, st) {
+    st = st || GG.state; if (!Array.isArray(list) || !st) return null;
+    var act = {}, mine = {}, b = ui.band(st), out = [], ask = [], answered = 0;
+    ui.active(st).forEach(function (m) { act[m.id] = 1; });
+    ((b && b.members) || []).concat(st.members || []).forEach(function (m) { if (m && m.id) mine[m.id] = 1; });
+    list.forEach(function (x) {
+      var who = x && typeof x === 'object' ? x.who : null;
+      if (!who || who === 'reporter' || (!mine[who] && String(who).charAt(0) !== '@')) { ask.push(x); return; }
+      if (act[ui.speaker(who, st)]) { out = out.concat(ask, [x]); answered++; }
+      ask = [];
+    });
+    return answered ? out.concat(ask) : null;
+  };
   function asMember(st, x) { return typeof x === 'string' ? ui.active(st).filter(function (m) { return m.id === x; })[0] || null : x; }
   ui.talkers = function (st) {
     st = st || GG.state; if (!st) return [];

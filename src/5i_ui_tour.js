@@ -524,7 +524,7 @@
   ];
   function gongCarpet(st) {
     var W = (GG.content.world || {}).gongCarpet, own = W && Array.isArray(W[st.bandId]) && W[st.bandId].length ? W[st.bandId] : null;
-    return own || (st.bandId === 'hail_damage' ? GONG_CARPET : GONG_CARPET_ANY);
+    return ui.presentLines(own || (st.bandId === 'hail_damage' ? GONG_CARPET : GONG_CARPET_ANY), st) || GONG_CARPET_ANY;   // (v0.9: minus quit bandmates)
   }
   var GONG_SPEECH = { id: 'gong_speech', title: 'Say something! (in five languages)', text: 'The gong is heavier than it looks. The interpreter is waiting. Somebody in the back is already hitting it.',
     choices: [
@@ -572,7 +572,10 @@
       if (G.phase === 'carpet') {
         var GC = gongCarpet(st), i = Math.min(G.line, GC.length), shown = GC.slice(Math.max(0, i - 1), i + 1);
         if (i === 0) card.appendChild(el('p.small', 'A bronze gong on a teak stand, under a spotlight, behind a velvet rope. The one international award. Twelve countries, one carpet, a lot of flashbulbs.'));
-        shown.forEach(function (x) { card.appendChild(x.who === 'reporter' ? el('p.lo-q', [el('b', 'Reporter: '), fill(x.text)]) : el('p.lo-q', { testid: 'gong-carpet-line' }, [el('b', ui.who(ui.speaker(x.who, st)).short + ': '), fill(x.text)])); });
+        shown.forEach(function (x) {   // (a band's own npc reporter, e.g. Dolores from Speedy Creek 97, takes the reporter slot)
+          var npc = x.who && x.who !== 'reporter' && GG.content.npcs && GG.content.npcs[x.who] && !(st.members || []).some(function (m) { return m.id === x.who; }) ? GG.content.npcs[x.who] : null;
+          card.appendChild(x.who === 'reporter' || npc ? el('p.lo-q', [el('b', (npc ? npc.name : 'Reporter') + ': '), fill(x.text)]) : el('p.lo-q', { testid: 'gong-carpet-line' }, [el('b', ui.who(ui.speaker(x.who, st)).short + ': '), fill(x.text)]));
+        });
         card.appendChild(btn('.btn.primary.block', { testid: 'btn-gong-next', onclick: function () {
           if (G.line < GC.length) { G.line += 2; rc('flash', 6); s.rerender({}); gframe(s); return; }
           G.phase = 'show'; rc('setMode', 'podium'); s.rerender({}); gframe(s);

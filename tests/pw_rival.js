@@ -224,7 +224,8 @@ async function final() {
     await page.evaluate(() => { GG.ui.closeAll(); GG.main.route(); });
     await waitScreen(page, 'card');
     const eve = await page.evaluate(() => ({ id: GG.state.card && GG.state.card.id, strip: !!document.querySelector('[data-testid="card-rival"]'), who: document.querySelector('.card-head .who').textContent }));
-    c.ok(eve.id === 'rv_final_eve' && eve.strip && /Gord/.test(eve.who), 'Sad Dome eve card, Gord speaking, rival strip ' + JSON.stringify(eve));
+    // v0.9: Tundra Wraith's cards are rival variants now (rv_final_eve_tundra_wraith, content rivalry.cast); Gord still speaks
+    c.ok(/^rv_final_eve(_tundra_wraith)?$/.test(eve.id) && eve.strip && /Gord/.test(eve.who), 'Sad Dome eve card, Gord speaking, rival strip ' + JSON.stringify(eve));
     await tap(page, 'choice-0'); await tap(page, 'btn-card-ok');
     await waitScreen(page, 'showdown');
     const an = await page.evaluate(() => document.querySelector('[data-testid="sd-card"]').textContent);

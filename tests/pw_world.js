@@ -1,7 +1,7 @@
 // pw_world.js: the v0.3 gig board and the van trip on a 390x844 phone viewport (WORLD agent).
 // Sections (META_ONLY=board|van|calendar|drivers, comma-separated; default all). Each must finish inside `timeout 500`.
 //   board : quickStart → plan Book → Go opens the board in book mode (phase still plan) → listings + layout audit +
-//           screenshot tests/.cache/board_list.png → Map tab: 9 pins, tap Regina → its gigs + screenshot
+//           screenshot tests/.cache/board_list.png → Map tab: 15 Sask pins, tap Regina → its gigs + screenshot
 //           board_map.png → Book it + confirm → the week runs with that gig → corkboard hotspot = view mode (no book
 //           buttons, van + banned wall) → door hotspot = van sheet + repair → next week: ✕ goes back to the planner,
 //           "No gig this week" runs the week without a gig. No console errors.
@@ -9,8 +9,8 @@
 //           OK), arrival → done(trip); skip with no card = done fast; skip with an unresolved card shows the card
 //           first; 3D van scene used when STAGE's scene is registered (else the 2D windshield). No console errors.
 //   calendar (v0.6.1): HUD month · season · weather strip (390 + 440 wide, no overflow) + week-chip toast; garage decor by
-//           season (box fan in July, lights + window snow in December); board: calendar line, ring tabs (Sask 12 pins,
-//           the West locked + teased in the garage era, open for Local Heroes), holiday tag chips on NYE; van: weather +
+//           season (box fan in July, lights + window snow in December); board: calendar line, ring tabs (Sask 15 pins,
+//           Alberta 7 + the West 5 locked + teased in the garage era, open for Local Heroes), holiday tag chips on NYE; van: weather +
 //           driver in the header, Kenji + cactus + you riding shotgun in the 3D van, the weather on the windshield; Kenji
 //           quits -> you drive (van sheet). Screenshots tests/.cache/hud_calendar.png, board_rings.png, van_driver.png.
 //   drivers (v0.9): Moth / T-Bone / Earl drive their band's van with their own dashboard item; they quit -> you drive and the
@@ -84,8 +84,10 @@ async function board() {
     await page.waitForTimeout(400);   // let the screen fade in
     await page.screenshot({ path: path.join(CACHE, 'board_list.png') });
     await tap(page, 'board-tab-map');
-    c.ok(await count(page, 'board-map') === 1 && await page.locator('[data-testid^="pin-"]').count() === 12, 'map with 12 Sask pins (v0.6.1 ring)');
-    c.ok(await count(page, 'ring-sask') === 1 && await count(page, 'ring-west') === 1 && await count(page, 'ring-eastnorth') === 1, 'ring tabs');
+    // v0.9: the south-west Saskatchewan rooms (Maple Creek, Gull Lake, Shaunavon) put 15 cities in the home ring; Q1a's
+    // Alberta ring (7, Calgary included) sits between it and the West (5)
+    c.ok(await count(page, 'board-map') === 1 && await page.locator('[data-testid^="pin-"]').count() === 15, 'map with 15 Sask pins (v0.9 ring)');
+    c.ok(await count(page, 'ring-sask') === 1 && await count(page, 'ring-alberta') === 1 && await count(page, 'ring-west') === 1 && await count(page, 'ring-eastnorth') === 1, 'ring tabs');
     await tap(page, 'pin-regina');
     const city = await page.textContent(tid('board-city'));
     const regina = await page.evaluate(() => GG.state.listings.filter(l => l.city === 'Regina').length);
@@ -225,10 +227,14 @@ async function calendar() {
     const tags = await page.$$eval('[data-testid="board-tag"]', els => els.map(e => e.textContent));
     c.ok(tags.some(t => /New Year/.test(t)), 'NYE tag chips: ' + tags.slice(0, 3).join(' | '));
     await tap(page, 'board-tab-map');
-    c.ok(await page.locator('[data-testid^="pin-"]').count() === 12, 'Saskatchewan: 12 pins');
+    c.ok(await page.locator('[data-testid^="pin-"]').count() === 15, 'Saskatchewan: 15 pins');
+    const ringOf = () => page.evaluate(() => ({ ring: GG.debug('board').ring, pins: document.querySelectorAll('[data-testid^="pin-"]').length, lock: !!document.querySelector('[data-testid="ring-locked"]') }));
     await tap(page, 'ring-west');
-    const west = await page.evaluate(() => ({ ring: GG.debug('board').ring, pins: document.querySelectorAll('[data-testid^="pin-"]').length, lock: !!document.querySelector('[data-testid="ring-locked"]') }));
-    c.ok(west.ring === 'west' && west.pins === 9 && west.lock, 'the West: 9 pins, locked + teased in the garage era ' + JSON.stringify(west));
+    const west = await ringOf();
+    c.ok(west.ring === 'west' && west.pins === 5 && west.lock, 'the West: 5 pins, locked + teased in the garage era ' + JSON.stringify(west));
+    await tap(page, 'ring-alberta');   // v0.9 (Q1a): Alberta opens at Local Heroes for every band but Gravel Kings
+    const ab = await ringOf();
+    c.ok(ab.ring === 'alberta' && ab.pins === 7 && ab.lock, 'Alberta: 7 pins, locked + teased in the garage era ' + JSON.stringify(ab));
     await page.screenshot({ path: path.join(CACHE, 'board_rings.png') });
     const badR = await audit(page); c.ok(badR.length === 0, 'rings layout: ' + badR.join(', '));
     await tap(page, 'pin-calgary');
@@ -236,6 +242,8 @@ async function calendar() {
     await page.evaluate(() => { GG.state.era = 'local'; });
     await tap(page, 'ring-eastnorth'); await tap(page, 'ring-west');
     c.ok(await count(page, 'ring-locked') === 0, 'Local Heroes: the West opens');
+    await tap(page, 'ring-alberta');
+    c.ok(await count(page, 'ring-locked') === 0, 'Local Heroes: Alberta opens');
     await tap(page, 'ring-eastnorth');
     c.ok(await count(page, 'ring-locked') === 1 && await page.locator('[data-testid^="pin-"]').count() === 9, 'East & North: still locked until Signed');
     await tap(page, 'btn-board-close'); await page.waitForFunction(() => GG.debug('ui').stack.length === 0);

@@ -108,7 +108,7 @@
     // inside the van: dash, wheel, the driver (from their look), the bobblehead, the dash item
     c.fillStyle = '#121418'; c.fillRect(0, H * 0.8, W, H * 0.2);
     c.fillStyle = '#1b1e24'; c.fillRect(0, H * 0.78, W, H * 0.03);
-    drawDriver(c, W * 0.24, H * 0.6, H, v.look || {}, t.driver === 'you');
+    drawDriver(c, W * 0.24, H * 0.6, H, v.look || {}, t.driver === 'you', v.shades);
     drawDash(c, v.dash, W * 0.44, H * 0.78, time);
     c.strokeStyle = '#2a2d33'; c.lineWidth = 9;
     c.beginPath(); c.arc(W * 0.26, H * 0.86, 48, Math.PI * 1.1, Math.PI * 1.9); c.stroke();  // the wheel
@@ -121,9 +121,9 @@
     } else { c.fillStyle = '#c9a227'; c.fillRect(W * 0.66 - 6, H * 0.78 - 32 + bob, 20, 4); }                // a little hat
     c.strokeStyle = '#0a0b0e'; c.lineWidth = 14; c.strokeRect(0, 0, W, H);                  // windshield frame
   }
-  // v0.9: the driver's silhouette from their look (LOOK: hairStyle, extras, top). Shades only when their look has them;
-  // you (no shades) squint.
-  function drawDriver(c, x, y, H, L, you) {
+  // v0.9: the driver's silhouette from their look (LOOK: hairStyle, extras, top). Shades only for the driver whose
+  // drivers[id].shades says so (default: Kenji, like the 3D van), never for Earl or you (you squint); readers from the look.
+  function drawDriver(c, x, y, H, L, you, shades) {
     var ex = L.extras || [], hat = ex.indexOf('bighat') >= 0 ? 'big' : ex.indexOf('hat') >= 0 ? 'hat' : ex.indexOf('toque') >= 0 ? 'toque' : L.hairStyle === 'cap' ? 'cap' : null;
     c.fillStyle = '#0b0c0f';
     if (L.top === 'hoodie') { c.beginPath(); c.arc(x, y + 4, 44, Math.PI, 0); c.fill(); }                        // a hood around the head
@@ -137,7 +137,7 @@
       var bw = hat === 'big' ? 64 : 50; c.fillRect(x - 22, y - 58, 44, 30); c.fillRect(x - bw, y - 32, bw * 2, 8);
     }
     if (hat === 'cap') { c.beginPath(); c.arc(x, y - 18, 32, Math.PI, 0); c.fill(); c.fillRect(x, y - 22, 46, 7); }
-    if (ex.indexOf('sunglasses') >= 0 && !you) {
+    if (shades && !you) {
       c.fillStyle = '#000'; c.fillRect(x - 24, y - 5, 48, 9);
       c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x - 20, y - 3, 10, 2);
     } else if (ex.indexOf('glasses') >= 0) {                                                                     // readers catch the light
@@ -294,6 +294,7 @@
     var drv = ui.driverOf(st);
     v.dash = dashOf(drv);   // v0.9: when you drive, the band's own driver's item stays on the dash (their cactus / laundry / ...)
     v.look = drv.you ? (st.player && st.player.look) || {} : lookOf(st, drv.id);
+    v.shades = !drv.you && (drv.def && drv.def.shades != null ? !!drv.def.shades : drv.id === 'kenji');
     v.moose = st.bandId === 'hail_damage';
     if (v.mode === '3d') {
       var ok = safe(function () { return R().setScene('van'); });

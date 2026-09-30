@@ -12,8 +12,8 @@
 //     people on the carpet, the outfit beat only when the band has an outfit card) → the year-end recap (the band photo,
 //     the pages). Every screen: a layout audit (no overflow, 44 px buttons) and a DOM text leak scan.
 //   Leak scan: another playable band's people or Hail Damage's world (Marcel, Kenji, Baba, the Moose Hearse, Tundra Wraith,
-//     Gord, HALE DAMAGE...) in this career. Warn-only while the content lanes land (LEAK_STRICT=1 makes it fail); the
-//     inverse (another band's people in a Hail Damage career) is strict now. Q8 cameos are allow-listed (the Scene
+//     Gord, HALE DAMAGE...) in this career. Strict (LEAK_STRICT=0 turns it back to warn-only while debugging content); the
+//     inverse (another band's people in a Hail Damage career) is always strict. Q8 cameos are allow-listed (the Scene
 //     leaderboard, award nominee chips, the Maple 100). No console errors (strict).
 // Run: node build.js && META_ONLY=bands timeout 500 node tests/pw_bands.js
 const fs = require('fs'), path = require('path');
@@ -22,7 +22,7 @@ const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const BANDS = ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'];
 const want = b => !ONLY.length || ONLY.includes('bands') || ONLY.includes(b);
-const STRICT = process.env.LEAK_STRICT === '1';
+const STRICT = process.env.LEAK_STRICT !== '0';   // v0.9 integration: strict by default now the content lanes have landed
 const TAG = process.env.PW_TAG || '';
 
 const tid = id => `[data-testid="${id}"]`;
@@ -163,6 +163,9 @@ async function runBand(bandId) {
       const sc = await screen(page);
       if (sc === 'van' && !sawVan) {
         sawVan = true;
+        // autoplay goes on as soon as the van is on screen (before it, the weekend would skip the drive): a short drive can
+        // reach the gig while the van check + screenshot run, and the show then starts on the bot instead of the set sheet
+        await page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 0.92, jitterMs: 20 }; });
         const vh = await page.evaluate(() => ({ w: (document.querySelector('[data-testid="van-weather"]') || {}).textContent || '', dbg: GG.debug('van'), trip: window.__trip || null }));
         const who = drv.you ? 'You drive' : drv.name + ' drives';
         c.ok(vh.w.includes(who), 'van header: ' + vh.w);
@@ -170,10 +173,10 @@ async function runBand(bandId) {
           'the van scene gets the band\'s driver + dashboard: ' + JSON.stringify(vh.trip && { d: vh.trip.driver, dash: vh.trip.dashboard }));
         await check('van');
         await shot(page, bandId + '_van');
-        await page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 0.92, jitterMs: 20 }; });
         await quick(page, 'btn-van-skip');
       }
       if (sc === 'road') { await check('road'); await quick(page, 'road-choice-0'); await quick(page, 'btn-road-ok'); }
+      if (sc === 'gig-set') await quick(page, 'btn-gig-start');   // (the van beat the autoplay switch: start the set by hand)
       if (sc === 'gig-results' || sc === 'wrap') break;
       await page.waitForTimeout(250);
     }
@@ -210,7 +213,7 @@ async function runBand(bandId) {
       GG.rival.schedule(st, 'botb'); GG.rival.enter(st);
       GG.career.setPlan(st, ['rest', 'rest', 'rest']); GG.career.runWeek(st); GG.main.sync();   // phase 'gig': the BotB is this weekend
       GG.ui.showdownViews = true; GG.ui.gigAutoplay = { accuracy: 0.9, jitterMs: 20 }; GG.ui.rivalSongMs = 700;
-      const A = GG.audio; if (A && !A.__spy) { const f = A.play; A.play = function (p, o) { (window.__plays = window.__plays || []).push(o && o.genre); return f.apply(this, arguments); }; A.__spy = 1; }
+      const A = GG.audio; if (A && !A.__spy) { const f = A.play; A.play = function (p, o) { (window.__plays = window.__plays || []).push(o ? { genre: o.genre, style: o.style || null, rival: o.rival || null } : {}); return f.apply(this, arguments); }; A.__spy = 1; }
       window.__plays = [];
       window.__sd = null; GG.ui.playShowdown(st.gig, r => { window.__sd = r || true; });
     });
@@ -218,7 +221,9 @@ async function runBand(bandId) {
     await page.waitForTimeout(600);
     const rs = await page.evaluate(() => ({ plays: window.__plays.slice(), sil: document.querySelectorAll('[data-testid="rs-sil"] i').length, names: (document.querySelector('.rs-names') || {}).textContent || '',
       n: GG.rival.lineup(GG.state).length }));
-    c.ok(rs.plays.length === 0 || rs.plays[0] === band.rivalGenre, 'their set plays the rival\'s genre (' + band.rivalGenre + '): ' + rs.plays.join(','));
+    const p0 = rs.plays[0] || null;   // v0.9 (audio handover): their genre, their singer (rival id), Chartbusters' power ballad
+    c.ok(!p0 || (p0.genre === band.rivalGenre && p0.rival === band.rival && (band.rival === 'chartbusters' ? p0.style === 'ballad' : true)),
+      'their set plays the rival\'s genre (' + band.rivalGenre + ') as the rival: ' + JSON.stringify(p0));
     c.ok(rs.sil === Math.max(1, Math.min(6, rs.n)), 'spectator backdrop: one silhouette per rival member (' + rs.sil + '/' + rs.n + ')');
     await check('rival-set');
     await shot(page, bandId + '_rival_set');

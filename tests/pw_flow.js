@@ -128,10 +128,13 @@ async function flow(genre) {
     c.ok(/Saved/.test(savedText), 'wrap shows the Saved indicator: ' + savedText);
     await page.waitForFunction(() => GG.state.totalWeek === 2);
     c.ok(true, 'reached week 2');
+    // (let week 2's Monday settle first: a card opening under the menu mid-tap could swallow the save under load)
+    await page.waitForFunction(() => GG.debug('ui').screen === 'card' || GG.state.phase === 'plan', null, { timeout: 10000 }).catch(() => {});
     // Manual save to slot 2 from the ☰ menu (HUD stays tappable over the Monday card sheet).
     await tap(page, 'btn-menu');
     await waitScreen(page, 'menu');
     await tap(page, 'menu-save-2');
+    await page.waitForFunction(() => !!document.querySelector('[data-testid="btn-confirm-yes"]') || GG.save.list().some(r => r.slot === '2' && r.exists), null, { timeout: 5000 }).catch(() => {});
     if (await page.locator(tid('btn-confirm-yes')).count()) await tap(page, 'btn-confirm-yes');
     const slot2 = await page.evaluate(() => GG.save.list().filter(r => r.slot === '2')[0]);
     c.ok(slot2 && slot2.exists, 'slot 2 written');

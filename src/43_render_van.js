@@ -126,14 +126,15 @@
       try { wd = st && st.bandId && GG.world && GG.world.driver ? GG.world.driver(st) : null; } catch (e) { wd = null; }
       var driver = o.driver || (wd ? wd.id : kenjiOn ? 'kenji' : members.length ? 'you' : 'kenji');
       var DR = GG.content.drivers || {}, designated = (wd && wd.designated) || (DR[driver] && DR[driver].band ? driver : null) || (kenjiOn ? 'kenji' : null);
-      var dashItem = driver !== 'you' && DR[driver] ? DR[driver].dashboard : designated && DR[designated] ? DR[designated].dashboard : driver === 'kenji' || driver === 'you' ? 'cactus' : null;
+      var hdVan = !st.bandId || st.bandId === 'hail_damage';   // the tiny cactus is Hail Damage's; nobody else's dash gets it
+      var dashItem = driver !== 'you' && DR[driver] ? DR[driver].dashboard : designated && DR[designated] ? DR[designated].dashboard : driver === 'kenji' || (driver === 'you' && hdVan) ? 'cactus' : null;
       if (dashItem === 'none') dashItem = null;
       return {
         bandId: (st && st.bandId) || (band && band.id) || 'hail_damage', vanName: (st.van && st.van.name) || (GG.shop && GG.shop.vanName ? safeVanName(st) : null),
         season: season, night: !!o.night, from: o.from || st.city || 'Saskatoon', to: o.to || (gig && gig.city) || 'Regina',
         km: +o.km > 0 ? +o.km : 150, members: members, band: band, flags: st.flags || {},
         weather: WX[o.weather] ? o.weather : null, driver: driver,
-        dashboard: o.dashboard !== undefined && !(o.dashboard === 'cactus' && driver === 'you' && designated && designated !== 'kenji') ? o.dashboard : dashItem,
+        dashboard: o.dashboard !== undefined && !(o.dashboard === 'cactus' && driver !== 'kenji' && (designated ? designated !== 'kenji' : !hdVan)) ? o.dashboard : dashItem,
         playerLook: pl.look || (preset && preset.look) || null,
         region: REGION[o.region] ? o.region : null, look: o.look || null,   // v0.7: abroad
         // v0.8 (SHOPUI): the band's own vehicle tier at home (a rental abroad), and its venue stickers (banned ones crossed out)

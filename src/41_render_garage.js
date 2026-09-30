@@ -1502,6 +1502,26 @@
       pb.box(0.1, 0.12, 0.02, -0.03, 1.3, 0.03, GOLD, 0, 0, -0.9);                              // the bass body
       for (i = 0; i < 5; i++) pb.box(0.4 - i * 0.02, 0.018, 0.02, 0, 1.25 + i * 0.012 - 0.03, 0.028, i % 2 ? GOLD : DARK);   // the "frame" row
       var portrait = new THREE.Mesh(pb.build(), ctx.mats.vc); show(portrait, false); scene.add(portrait);
+      // v0.9: the other bands' home-superfan gifts (Delphine's lint portrait, Gloria's sugar-packet tray, Wilf's quilt, any
+      // homeSuperfan[bandId].gift): one generic homemade portrait in the same spot, no sunglasses and no bass (that's Kenji's).
+      var ab = new ctx.Builder({ jitter: 0.004, seed: 58 }), CR = 0xe8dcc0, ED = 0x7a6a58;
+      ab.at(X1, 0, -2.2, -Math.PI / 2);
+      ab.box(0.5, 0.6, 0.02, 0, 1.5, 0.01, 0x8a6a3a);                                          // a plain wooden frame
+      ab.box(0.42, 0.52, 0.006, 0, 1.5, 0.022, CR);                                             // the backing (lint / sugar / quilt: all cream)
+      for (i = 0; i < 16; i++) {                                                                // the face, an oval of stitches
+        a = i / 16 * Math.PI * 2;
+        ab.box(0.04, 0.018, 0.016, Math.cos(a) * 0.12, 1.55 + Math.sin(a) * 0.15, 0.03, ED, 0, 0, a + Math.PI / 2);
+      }
+      ab.box(0.025, 0.025, 0.016, -0.045, 1.58, 0.032, ED); ab.box(0.025, 0.025, 0.016, 0.045, 1.58, 0.032, ED);   // two eyes
+      ab.box(0.07, 0.016, 0.016, 0, 1.49, 0.032, ED, 0, 0, 0.12);                               // a lopsided smile
+      ab.box(0.3, 0.12, 0.016, 0, 1.3, 0.03, 0x5a7aa8);                                         // shoulders (a band shirt)
+      for (i = 0; i < 4; i++) ab.box(0.05, 0.05, 0.012, -0.16 + i * 0.105, 1.73, 0.03, [0xc0392b, 0x34a853, 0xf2d15b, 0x2f7fff][i]);   // corner patches
+      var portraitAny = new THREE.Mesh(ab.build(), ctx.mats.vc); show(portraitAny, false); scene.add(portraitAny);
+      function homeGift(id) {
+        var H = (GG.content.bandbook && GG.content.bandbook.homeSuperfan) || {};
+        for (var k in H) { var gf = H[k] && H[k].gift; if ((gf && typeof gf === 'object' ? gf.id : gf) === id) return true; }
+        return false;
+      }
       var WRAP = [[0xc0392b, 0xf2d15b], [0x2f7fff, 0xffffff], [0x34a853, 0xd23c3c], [0x9b6bff, 0xffcc00], [0xf28c28, 0x2a2a2e], [0xe0e0e0, 0xd23c3c]];
       var SPOT = [[0, 0.11, 0, 0.26, 0.22, 0.24, 0.2], [0.24, 0.08, 0.05, 0.2, 0.16, 0.18, -0.3], [-0.2, 0.07, 0.08, 0.18, 0.14, 0.2, 0.5],
         [0.05, 0.3, 0.02, 0.18, 0.16, 0.16, -0.15], [0.12, 0.1, 0.26, 0.16, 0.2, 0.14, 0.1], [-0.12, 0.28, 0.06, 0.12, 0.12, 0.12, 0.7]];
@@ -1528,13 +1548,14 @@
       var cur = { portrait: false, gifts: 0, mail: false };
       return {
         set: function (st) {
-          var list = st.gifts || [], g = 0, m = 0, mac = false;
+          var list = st.gifts || [], g = 0, m = 0, mac = false, other = false;
           for (var j = 0; j < list.length; j++) {
             if (list[j].id === 'macaroni_kenji') mac = true;
+            else if (list[j].id && homeGift(list[j].id)) other = true;
             else if (list[j].kind === 'mail') m++; else g++;
           }
-          cur.portrait = mac; cur.mail = m > 0; cur.gifts = g >= 5 ? 6 : g >= 3 ? 3 : g >= 1 ? 1 : 0;
-          show(portrait, mac); show(mail, cur.mail);
+          cur.portrait = mac ? 'kenji' : other ? 'fan' : false; cur.mail = m > 0; cur.gifts = g >= 5 ? 6 : g >= 3 ? 3 : g >= 1 ? 1 : 0;
+          show(portrait, mac); show(portraitAny, !mac && other); show(mail, cur.mail);
           for (var k in piles) show(piles[k], +k === cur.gifts);
         },
         state: function () { return { portrait: cur.portrait, gifts: cur.gifts, mail: cur.mail }; }
@@ -2839,7 +2860,7 @@
         var nx = Math.round(w / 0.1), ny = Math.round(h / 0.1);
         for (var i = 0; i < nx; i++) for (var j = 0; j < ny; j++) if ((i + j) % 2 === 0) b.box(0.07, 0.07, 0.035, x - w / 2 + 0.05 + i * 0.1, y - h / 2 + 0.05 + j * 0.1, z + 0.02, 0x86727c);
       }
-      function buildUps(list, tier) {
+      function buildUps(list, tier, ri) {
         var b = new ctx.Builder({ jitter: 0.04, seed: 101 }), g = new ctx.Builder({ jitter: 0, seed: 102 }), i, k, has = function (id) { return list.indexOf(id) >= 0; };
         upObs.length = 0;
         if (has('curb_couch')) {                                                            // floral loveseat, from the curb, facing the kit
@@ -2869,7 +2890,8 @@
           b.box(1.72, 0.008, 0.008, 0, 1.95, 0.06, 0x1a3a1a);
         }
         if (has('egg_foam')) {                                                              // stapled to every wall
-          b.at(0, 0, Z0, 0); eggFoam(b, 1.0, 0.9, -0.45, 1.72, 0.07);
+          // (Unit 4B's back wall is the shop window left of x 1.52: its patch goes on the bit of drywall right of the door)
+          b.at(0, 0, Z0, 0); if (ri === 5) eggFoam(b, 0.6, 0.9, 1.91, 1.72, 0.07); else eggFoam(b, 1.0, 0.9, -0.45, 1.72, 0.07);
           b.at(X1, 0, 0, -Math.PI / 2); eggFoam(b, 0.4, 1.3, 2.42, 1.65, 0.03);
         }
         if (has('leather_couch')) {                                                         // one cushion is leather, the rest are hope
@@ -3063,8 +3085,8 @@
           cur.room = roomSig; cur.tier = tier; cur.ri = ri; cur.green = green; cur.city = city;
           buildRoom(ri, green, band, catering, D); hideGarage(ri, band);
         }
-        var upSig = tier + '|' + list.join(',');
-        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier); }
+        var upSig = tier + '|' + ri + '|' + list.join(',');
+        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier, ri); }
         var p = st && GG.shop && GG.shop.pile && st.merch ? GG.shop.pile(st) : { boxes: 0, items: [] };
         var mis = (p.items || []).some(function (x) { return x.misprint; }), shown = Math.min(p.boxes, PILE_MAX + 1);
         var pileSig = shown + '|' + mis;

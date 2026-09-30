@@ -219,17 +219,20 @@ function fixtureCasts() {
           const line = cast.members, drum = line.filter(m => /drum/i.test(m.role || ''))[0];
           GG.render.setScene('stage');
           GG.render.stage.setup({ venue: { kind: 'club', name: 'Showdown' }, crowd: 120, genre: def.genre, rival: true, view: 'spectator', banner: def.name, sub: def.city, flags: {}, player: GG.state.player,
-            members: line.filter(m => m !== drum).map(m => ({ id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint !== false, stageShirt: m.stageShirt })),   // (as 59d passes it today: paint unless false)
+            members: line.filter(m => m !== drum).map(m => ({ id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint !== false, stageShirt: m.stageShirt })),   // (the old 59d shape, paint unless false: the render must still refuse paint the cast doesn't ask for)
             drummer: drum ? { id: drum.id, look: drum.look, corpsePaint: drum.corpsePaint !== false, stageShirt: drum.stageShirt } : null });
           GG.render.stage.setCrowdLevel(75, true);
-          return { rid, info: GG.render.stage.info(), kick: rid === 'mall_rats' ? GG.render.stage.bandAction(null, 'kickflip') : null };
+          const cd = cast.drummer && typeof cast.drummer === 'object' ? cast.drummer.id : cast.drummer || null;
+          return { rid, cd, info: GG.render.stage.info(), kick: rid === 'mall_rats' ? GG.render.stage.bandAction(null, 'kickflip') : null };
         });
         await advance(page, 4);
         const i = r.info;
         c.ok(i.rival && i.rivalId === r.rid && i.bannerLogo, b + ': ' + r.rid + ' on stage under its own logo');
         c.ok(r.rid === 'tundra_wraith' ? i.painted >= 4 : i.painted === 0, b + ': ' + r.rid + ' corpse paint ' + i.painted);
         c.ok(i.drummer !== 'player', b + ': their drummer is theirs (' + i.drummer + (i.session ? ', the session guy' : '') + ')');
-        if (r.rid === 'buckle_and_boot') c.ok(i.session && i.props.some(p => /truck/.test(p)), 'Buckle & Boot: the session drummer + the truck mascot ' + i.props.join(','));
+        // (the real cast lists its session guy in members as the drummer (cast.drummer 'bb_session'); a cast without one gets the
+        // stage's own session seat)
+        if (r.rid === 'buckle_and_boot') c.ok((i.session || (r.cd && i.drummer === r.cd)) && i.props.some(p => /truck/.test(p)), 'Buckle & Boot: the session drummer (' + i.drummer + (i.session ? ', seated by the stage' : '') + ') + the truck mascot ' + i.props.join(','));
         if (r.rid === 'mall_rats') c.ok(r.kick === true && i.props.some(p => /skateboard/.test(p)), 'Mall Rats: the sponsor-mandated kickflip (with a skateboard)');
         if (r.rid === 'chartbusters') c.ok(i.props.some(p => /scarf/.test(p)), 'Chartbusters: Rex wears the scarf');
         if (b !== 'hail_damage') { await advance(page, 6); tiles.push({ label: r.rid + ' — rival set', img: await shot(page, { x: 0, y: 40, width: 390, height: 380 }) }); }
