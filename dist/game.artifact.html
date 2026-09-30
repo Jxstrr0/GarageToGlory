@@ -760,6 +760,57 @@ html.gg-calm .tw-disc, html.gg-calm .tw-pin.invite .ic { animation: none; }
 .lo-back.gong.carpet { background: linear-gradient(180deg, transparent 58%, #7a0f18 58%, #9c1420 100%), repeating-linear-gradient(45deg, #1d2a3a 0 38px, #243446 38px 76px); }
 .lo-back.gong.stage { background: radial-gradient(40% 30% at 50% 38%, #c8923a 0 45%, #6a4a1a 46% 52%, transparent 53%), repeating-linear-gradient(90deg, #1a2a3a 0 18px, #22364a 18px 36px); }
 /* ==== end v0.7 ==== */
+/* ==== v0.8 CREATOR (5j_ui_creator: the full creator 'look' with its live 3D preview; 51 creator: customise + carry-over) ==== */
+.full.lookx .full-body { display: flex; flex-direction: column; gap: 8px; overflow: hidden; padding-top: calc(var(--safe-top) + 10px); padding-bottom: 0; }
+.lk-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.lk-title { font: 900 20px/1.1 var(--display); }
+.lk-stagewrap { position: relative; flex: 0 0 auto; height: 34vh; min-height: 190px; max-height: 330px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #141a2a; }
+.lk-preview { position: absolute; inset: 0; touch-action: none; }
+.lk-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.lk-nopreview { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: 14px; padding: 16px; text-align: center; }
+.lk-views { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 6px; }
+.lk-view, .lk-viewnote { min-height: 44px; min-width: 52px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(13, 18, 30, .82); color: var(--dim); font: 800 12px var(--font); cursor: pointer; }
+.lk-viewnote { display: inline-flex; align-items: center; cursor: default; }
+.lk-view.on { color: #1d1204; background: var(--amber); border-color: var(--amber); }
+.lk-which { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); flex: 0 0 auto; }
+.lk-seg { flex: 1 1 0; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--dim); font: 800 13px var(--font); cursor: pointer; }
+.lk-seg.on { background: var(--panel2); color: var(--text); box-shadow: inset 0 -2px 0 var(--amber); }
+.lk-seg:disabled { opacity: .45; }
+.lk-tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; flex: 0 0 auto; }
+.lk-tab { min-height: 48px; padding: 3px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg2); color: var(--dim); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; font: 800 10.5px var(--font); cursor: pointer; overflow: hidden; }
+.lk-tab .i { font-size: 17px; line-height: 1; }
+.lk-tab.on { color: var(--text); background: var(--panel2); border-color: var(--amber); }
+.lk-panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 12px; display: flex; flex-direction: column; gap: 12px; }
+.lk-sec { display: flex; flex-direction: column; gap: 6px; }
+.lk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lk-sec > div > .lk-chip + .lk-chips { margin-top: 6px; }
+.lk-chip { min-height: 44px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg2); color: var(--text); font: 700 13px var(--font);
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.lk-chip.on { background: var(--amber); color: #1d1204; border-color: var(--amber); }
+.lk-chip.locked { color: var(--faint); border-style: dashed; background: transparent; }
+.lk-chip .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35); display: inline-block; }
+.lk-swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+.lk-sw { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); padding: 0; cursor: pointer; }
+.lk-sw.on { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 179, 71, .35); }
+.lk-rangerow { display: flex; align-items: center; gap: 8px; }
+.lk-range { flex: 1 1 auto; min-width: 0; accent-color: var(--amber); min-height: 36px; }
+.lk-rangelab { min-width: 78px; text-align: right; font: 800 13px var(--font); color: var(--amber); }
+.lk-krow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lk-kfield { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lk-knuckle, .lk-text { width: 100%; min-height: 48px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  font: 900 22px/1 var(--display); letter-spacing: .3em; text-transform: uppercase; box-sizing: border-box; -webkit-user-select: text; user-select: text; }
+.lk-text { font-size: 18px; letter-spacing: .08em; }
+.lk-knuckle:focus, .lk-text:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 179, 71, .18); }
+.lk-knuckle:disabled { opacity: .5; }
+.lk-note { margin: 0; }
+.lk-lock { position: absolute; left: 8px; right: 8px; top: 8px; padding: 8px 12px; border-radius: 12px; background: rgba(12, 16, 27, .92); border: 1px solid var(--line);
+  border-left: 4px solid var(--amber); color: var(--text); font: 700 13px/1.3 var(--font); opacity: 0; transform: translateY(-6px); transition: opacity .18s, transform .18s; pointer-events: none; }
+.lk-lock.on { opacity: 1; transform: none; }
+.cr-custom { border-style: dashed; }
+.cr-carry { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--dim); min-height: 40px; }
+.cr-carry input { width: 22px; height: 22px; accent-color: var(--amber); flex: 0 0 auto; margin: 0; }
+/* ==== end v0.8 CREATOR ==== */
 /* v0.6.1 (Addendum C4, SETTINGS): bigger text, reduced flashing, faster animations (classes on , 5h_ui_settings) */
 html.gg-big body { font-size: 18px; }
 html.gg-big .small { font-size: 15px; } html.gg-big .tiny { font-size: 13px; } html.gg-big .caps { font-size: 12.5px; }
@@ -4235,6 +4286,171 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Stay where we are', effects: { mood: { marcel: -5 } }, outcome: 'Marcel paints a star on the old door himself. It is crooked. He loves it.' }
       ] }
   ];
+})(window.GG);
+
+</script>
+<script>/* content/creator.js */
+// content/creator.js (v0.8 "Kit", Addendum 1 C2): the full character creator's part lists and kit looks, each with an
+// unlock gate. Pure data. The sim (src/2b_sim_creator.js, GG.creator) reads it; the renderer (40_render_core
+// R.charGeometry, the kit builders) draws every value listed here; the UI (5j_ui_creator.js) builds its tabs from it.
+// Shape: GG.content.creator = {
+//   cats: { <cat>: { label, field, group: 'person'|'clothes'|'stage'|'ink'|'kit' } }   field = where the value lives
+//          (LOOK key, 'face.<key>', or 'kit.<key>'); person fields are shared by the everyday and the stage look.
+//   parts: [ { id: '<cat>.<value>', cat, value, name, gate?: GATE, hint?, color? } ]   no gate = unlocked from the start;
+//          color = the swatch for colour parts (hairColor, sticks)
+//   GATE = { era: 'local'|'signed'|'world' } | { fans: n } | { milestone: key } | { award: trophy kind } | { gigs: n },
+//          optional genreStart: [genre] (unlocked from day one in those genres). Never a gong on the kit.
+//   swatches: { skin, eyes, clothes, kit } ([ '#rrggbb' ], always unlocked) ; hair / sticks are parts (dyes are gated).
+//   builds: { <build value>: LOOK.build number } ; knuckleMax: 4 (letters per hand, A–Z only)
+// }
+(function (GG) {
+  var parts = [];
+  function P(cat, value, name, gate, hint) {
+    var p = { id: cat + '.' + value, cat: cat, value: value, name: name };
+    if (gate) p.gate = gate;
+    if (hint && /^#[0-9a-f]{6}$/i.test(hint)) p.color = hint; else if (hint) p.hint = hint;   // colour parts (hair dyes, sticks)
+    parts.push(p);
+  }
+  var FIRST_GIG = { milestone: 'firstGig' }, FIRST_SONG = { milestone: 'firstSong' };
+  var LOCAL = { era: 'local' }, SIGNED = { era: 'signed' }, WORLD = { era: 'world' };
+
+  // ---- Body ----------------------------------------------------------------------------------------------
+  P('build', 'slim', 'Beanpole'); P('build', 'average', 'Average Joe'); P('build', 'stocky', 'Stocky'); P('build', 'big', 'Big unit');
+  P('age', 'fresh', 'Fresh-faced'); P('age', 'lived', 'Lived-in'); P('age', 'grizzled', 'Grizzled', null, 'Forty winters in Saskatoon.');
+
+  // ---- Face ----------------------------------------------------------------------------------------------
+  P('shape', 'classic', 'Classic'); P('shape', 'round', 'Round'); P('shape', 'square', 'Square jaw'); P('shape', 'long', 'Long face');
+  P('eyes', 'dot', 'Beady'); P('eyes', 'wide', 'Wide awake'); P('eyes', 'narrow', 'Squinty'); P('eyes', 'big', 'Puppy eyes'); P('eyes', 'sleepy', 'Half-asleep');
+  P('brows', 'straight', 'Straight'); P('brows', 'thick', 'Bushy'); P('brows', 'angry', 'Furious'); P('brows', 'raised', 'Skeptical'); P('brows', 'unibrow', 'Unibrow');
+  P('nose', 'button', 'Button'); P('nose', 'big', 'Honker'); P('nose', 'long', 'Long'); P('nose', 'pointy', 'Pointy'); P('nose', 'broken', 'Broken (beer league)');
+  P('mouth', 'flat', 'Deadpan'); P('mouth', 'grin', 'Big grin'); P('mouth', 'smirk', 'Smirk'); P('mouth', 'frown', 'Frown'); P('mouth', 'scream', 'Mid-scream');
+  P('facialHair', 'clean', 'Clean-shaven'); P('facialHair', 'stubble', 'Stubble'); P('facialHair', 'goatee', 'Goatee');
+  P('facialHair', 'full', 'Full beard'); P('facialHair', 'horseshoe', "Horseshoe 'stache");
+  P('facialHair', 'handlebar', 'Handlebar moustache', { fans: 100 });
+  P('facialHair', 'chops', 'Mutton chops', FIRST_GIG);
+  P('facialHair', 'viking', 'Braided Viking beard', { era: 'local', genreStart: ['metal'] });
+  P('glasses', 'none', 'No glasses'); P('glasses', 'specs', 'Library specs'); P('glasses', 'round', 'Round specs');
+  P('glasses', 'shades', 'Kenji shades', null, 'Indoors. At night. Always.');
+  P('glasses', 'aviators', 'Aviators', { fans: 500 });
+
+  // ---- Hair (styles + colours) ------------------------------------------------------------------------------
+  P('hairStyle', 'buzz', 'Buzz cut'); P('hairStyle', 'mop', 'Mop top'); P('hairStyle', 'short', 'Short'); P('hairStyle', 'mullet', 'Mullet');
+  P('hairStyle', 'long', 'Long metal hair'); P('hairStyle', 'curly', 'Curly'); P('hairStyle', 'shaggy', 'Shaggy');
+  P('hairStyle', 'bun', 'Top bun'); P('hairStyle', 'manbun', 'Man bun'); P('hairStyle', 'spiky', 'Gelled spikes');
+  P('hairStyle', 'hathair', 'Hat hair', null, 'Pairs with any hat.'); P('hairStyle', 'bald', 'Bald');
+  P('hairStyle', 'dreads', 'Dreadlocks', { fans: 100 });
+  P('hairStyle', 'braids', 'Braids', { fans: 100 });
+  P('hairStyle', 'mohawk', 'Mohawk', { milestone: 'firstGig', genreStart: ['punk'] });
+  P('hairStyle', 'spikes', 'Liberty spikes', { fans: 250, genreStart: ['punk'] });
+  P('hairStyle', 'slick', 'Slicked back', { era: 'signed', genreStart: ['rock'] });
+  P('hairColor', 'black', 'Black', null, '#15110f'); P('hairColor', 'dark', 'Dark brown', null, '#2b1d14');
+  P('hairColor', 'brown', 'Brown', null, '#5c3a22'); P('hairColor', 'chestnut', 'Chestnut', null, '#7a4b2a');
+  P('hairColor', 'auburn', 'Auburn', null, '#8a3a1e'); P('hairColor', 'ginger', 'Ginger', null, '#c0622a');
+  P('hairColor', 'sandy', 'Sandy', null, '#b89a5a'); P('hairColor', 'blonde', 'Blonde', null, '#d9c27a');
+  P('hairColor', 'grey', 'Grey', null, '#8a8a8a'); P('hairColor', 'white', 'White', null, '#e6e2da');
+  P('hairColor', 'bleach', 'Bleached', FIRST_SONG, '#f2ead0');
+  P('hairColor', 'blue', 'Blue', { fans: 100 }, '#3f7fe0');
+  P('hairColor', 'green', 'Green', { fans: 250, genreStart: ['punk'] }, '#3fbf4a');
+  P('hairColor', 'pink', 'Pink', LOCAL, '#f06aa8');
+
+  // ---- Everyday clothes -------------------------------------------------------------------------------------
+  P('top', 'tee', 'Band tee'); P('top', 'longsleeve', 'Longsleeve'); P('top', 'flannel', 'Flannel'); P('top', 'hoodie', 'Hoodie');
+  P('top', 'jacket', 'Bomber jacket'); P('top', 'tank', 'Tank top');
+  P('top', 'denim', 'Denim jacket', FIRST_GIG);
+  P('top', 'jersey', 'Hockey jersey', { fans: 500 }, 'The Saskatoon Gophers. Nobody has ever won anything in it.');
+  P('bottom', 'jeans', 'Jeans'); P('bottom', 'cargo', 'Cargo shorts', null, 'Worn through January.'); P('bottom', 'sweats', 'Sweatpants');
+  P('bottom', 'kilt', 'Kilt', { fans: 1000 });
+  P('shoes', 'sneakers', 'Beater sneakers'); P('shoes', 'skate', 'Skate shoes'); P('shoes', 'workboots', 'Work boots'); P('shoes', 'crocs', 'Crocs');
+  P('shoes', 'cowboy', 'Cowboy boots', { era: 'local', genreStart: ['country'] });
+  P('headwear', 'none', 'Nothing'); P('headwear', 'toque', 'Toque'); P('headwear', 'trucker', 'Trucker hat'); P('headwear', 'backcap', 'Backwards cap');
+  P('headwear', 'headband', 'Sweatband');
+  P('headwear', 'bandana', 'Bandana', FIRST_GIG);
+  P('headwear', 'cowboy', 'Cowboy hat', { fans: 250, genreStart: ['country'] });
+
+  // ---- Stage outfits (the stage look only) -------------------------------------------------------------------------
+  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Drummers run hot.');
+  P('outfit', 'battlejacket', 'Battle jacket', { milestone: 'firstGig', genreStart: ['metal'] }, 'Denim vest, forty patches, never washed.');
+  P('outfit', 'leathervest', 'Leather vest', { fans: 250 });
+  P('outfit', 'cdntux', 'Canadian tuxedo', { era: 'local', genreStart: ['rock'] }, 'Denim on denim. Formal wear.');
+  P('outfit', 'spandex', 'Spandex', { fans: 1000 });
+  P('outfit', 'rhinestone', 'Rhinestone suit', { era: 'signed', genreStart: ['country'] });
+  P('stageExtra', 'wristbands', 'Studded wristbands', { fans: 100 });
+  P('stageExtra', 'corpsepaint', 'Corpse paint', { era: 'local', genreStart: ['metal'] });
+  P('stageExtra', 'cape', 'A cape of your own', { award: 'loonie' }, "Marcel will have opinions.");
+
+  // ---- Ink + piercings ---------------------------------------------------------------------------------------------
+  P('tatSpot', 'halfL', 'Left forearm'); P('tatSpot', 'halfR', 'Right forearm'); P('tatSpot', 'chest', 'Chest');
+  P('tatSpot', 'sleeveL', 'Full left sleeve', { fans: 250 }); P('tatSpot', 'sleeveR', 'Full right sleeve', { fans: 250 });
+  P('tatSpot', 'neck', 'Neck', LOCAL);
+  P('tatSpot', 'teardrop', 'Face teardrop', SIGNED);
+  P('tatSpot', 'knuckles', 'Knuckles', FIRST_GIG, 'Four letters per hand.');
+  P('tatDesign', 'skull', 'Skull'); P('tatDesign', 'maple', 'Maple leaf'); P('tatDesign', 'wheat', 'Wheat sheaf');
+  P('tatDesign', 'mom', '"MOM" heart'); P('tatDesign', 'flames', 'Flames');
+  P('tatDesign', 'regerts', 'One misspelled word', FIRST_GIG, 'It says REGERTS. You meant it.');
+  P('tatDesign', 'moose', 'Moose', { fans: 500 });
+  P('tatDesign', 'logo', 'Band logo', LOCAL);
+  P('piercing', 'studs', 'Ear studs'); P('piercing', 'hoops', 'Hoops');
+  P('piercing', 'nosering', 'Nose ring', { fans: 50 }); P('piercing', 'eyebrow', 'Eyebrow', { fans: 250 });
+  P('piercing', 'lip', 'Lip ring', LOCAL); P('piercing', 'septum', 'Septum', { fans: 1000 });
+  P('piercing', 'gauges', 'Gauges', SIGNED);
+
+  // ---- The kit (KIT_LOOK). No gong, ever. ----------------------------------------------------------------------------
+  P('shell', 'paint', 'Painted'); P('shell', 'wood', 'Natural wood'); P('shell', 'black', 'Black');
+  P('shell', 'camo', 'Camo', { fans: 500 }); P('shell', 'sparkle', 'Sparkle', LOCAL); P('shell', 'flames', 'Hot-rod flames', { fans: 1000 });
+  P('hardware', 'chrome', 'Chrome'); P('hardware', 'black', 'Blacked out', SIGNED);
+  P('head', 'plain', 'Plain head'); P('head', 'logo', 'Band logo'); P('head', 'text', 'Custom text');
+  P('head', 'moose', 'A moose', { fans: 500 }); P('head', 'face', 'Your face', { award: 'platinum' }, 'Go platinum and it goes on the kick.');
+  P('throne', 'crate', 'Milk crate', null, 'Two of them, zip-tied.'); P('throne', 'stool', 'Throne stool', { fans: 100 });
+  P('throne', 'leather', 'Leather saddle', SIGNED);
+  P('sticks', 'wood', 'Hickory', null, '#d8b27a'); P('sticks', 'black', 'Black', null, '#1c1c20'); P('sticks', 'white', 'White', null, '#f0ece4');
+  P('sticks', 'red', 'Red', FIRST_GIG, '#c0392b'); P('sticks', 'gold', 'Gold', { award: 'gold' }, '#e0b640');
+  P('sticks', 'glow', 'Glow-in-the-dark', WORLD, '#9aff5a');
+  P('kitExtra', 'cowbell', 'More cowbell', { fans: 250, genreStart: ['country'] });
+  P('kitExtra', 'fan', 'Hair fan', SIGNED, 'For that wind-tunnel headbang.');
+  P('kitExtra', 'pyro', 'Pyro', WORLD, 'Arena shows only. The fire marshal insists.');
+
+  GG.content.creator = {
+    cats: {
+      build: { label: 'Build', field: 'build', group: 'person' },
+      age: { label: 'Age look', field: 'age', group: 'person' },
+      shape: { label: 'Face shape', field: 'face.shape', group: 'person' },
+      eyes: { label: 'Eyes', field: 'face.eyes', group: 'person' },
+      brows: { label: 'Eyebrows', field: 'face.brows', group: 'person' },
+      nose: { label: 'Nose', field: 'face.nose', group: 'person' },
+      mouth: { label: 'Mouth', field: 'face.mouth', group: 'person' },
+      facialHair: { label: 'Facial hair', field: 'facialHair', group: 'person' },
+      glasses: { label: 'Glasses', field: 'glasses', group: 'person' },
+      hairStyle: { label: 'Hair', field: 'hairStyle', group: 'person' },
+      hairColor: { label: 'Hair colour', field: 'hair', group: 'person' },
+      top: { label: 'Top', field: 'top', group: 'clothes' },
+      bottom: { label: 'Bottoms', field: 'bottom', group: 'clothes' },
+      shoes: { label: 'Shoes', field: 'shoes', group: 'clothes' },
+      headwear: { label: 'Headwear', field: 'headwear', group: 'clothes' },
+      outfit: { label: 'Stage outfit', field: 'outfit', group: 'stage' },
+      stageExtra: { label: 'Stage extras', field: 'stageExtras', group: 'stage' },
+      tatSpot: { label: 'Tattoo spots', field: 'tattoos', group: 'ink' },
+      tatDesign: { label: 'Tattoo designs', field: 'tattoos', group: 'ink' },
+      piercing: { label: 'Piercings', field: 'piercings', group: 'ink' },
+      shell: { label: 'Shell finish', field: 'kit.shell', group: 'kit' },
+      hardware: { label: 'Hardware', field: 'kit.hardware', group: 'kit' },
+      head: { label: 'Kick-drum head', field: 'kit.head', group: 'kit' },
+      throne: { label: 'Throne', field: 'kit.throne', group: 'kit' },
+      sticks: { label: 'Sticks', field: 'kit.sticks', group: 'kit' },
+      kitExtra: { label: 'Extras', field: 'kit.extras', group: 'kit' }
+    },
+    parts: parts,
+    builds: { slim: 0.9, average: 1.0, stocky: 1.1, big: 1.2 },
+    knuckleMax: 4,
+    swatches: {
+      skin: ['#f6dcc6', '#f1d0b1', '#e9c39b', '#e0b08a', '#d8a67c', '#c68c5f', '#b07a50', '#8d5a3b', '#7a4a2c', '#5e3a22', '#4a2c1a', '#3a2216'],
+      eyes: ['#5a3a22', '#241812', '#3a78c8', '#3f8a4a', '#7a8a96', '#8a6a2a'],
+      clothes: ['#141418', '#2c2c34', '#e8e4dc', '#8a8e96', '#b3262b', '#6e1f28', '#d96a1e', '#d9a520', '#1f6f43', '#5f6b2e',
+        '#1f7a7a', '#233a66', '#3f5f8f', '#34507a', '#5a2a7a', '#d45a8a', '#6b4a2e', '#a89060'],
+      kit: ['#b3262b', '#2f5aa8', '#1f8a4c', '#6a2a8a', '#d9a520', '#9aa2ad', '#141418', '#e8e4dc', '#d96a1e', '#d45a8a', '#1f7a7a', '#4a2c1a']
+    },
+    // The misspelled word, the band-logo fallback and the custom-text rules (the kit's kick head).
+    words: { regerts: 'REGERTS', headTextMax: 14 }
+  };
 })(window.GG);
 
 </script>
@@ -17481,6 +17697,414 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* 2b_sim_creator.js */
+// 2b_sim_creator.js (v0.8 "Kit", Addendum 1 C2): the full character creator's rules. DOM-free and deterministic (no RNG in
+// the career path; unlocks are pure functions of state). Content: GG.content.creator (content/creator.js).
+// State (02_contracts v0.8): player.look (everyday LOOK), player.stageLook (LOOK: gigs, the red carpet, stage scenes),
+// player.kit (KIT_LOOK; player.kitColor mirrors kit.color), unlocks: { creator: [partId], news: [partId] (unannounced) }.
+// API (GG.creator):
+//   Parts   cats() ; part(id) ; partsIn(cat) ; partFor(cat, value) ; parts(state, cat?) -> [{ id, cat, value, name, color?, hint?,
+//           locked, why }] ; isUnlocked(state, id) ; gateMet(state, gate) ; gateText(gate) ; draftState(genre, carry) (the
+//           new-career screen has no state yet)
+//   Unlocks grant(state, id) ; checkUnlocks(state) -> [newly unlocked ids] ; weekly(state, wrap) (the week-end hook: a wrap
+//           milestone line + wrap.creator { unlocked }) ; check(state, source) (event hook: 'creator:unlocked')
+//   Looks   sanitizeLook(look) (valid ids/colours; knuckles A–Z, 4 per hand; a legacy LOOK stays legacy) ; knuckles(text) ;
+//           expand(look) (legacy -> every v0.8 field, drawn the same where a match exists) ; lockLook(state, look) /
+//           lockKit(state, kit) (locked parts -> defaults) ; syncPerson(from, to) (body/face/hair/ink are shared) ; stageOnly(look)
+//           stageLookFor(who, contentMember?) (player | member -> the LOOK for stage scenes) ; isV8(look)
+//   Kit     sanitizeKit(kit, fallbackColor) ; kitLook(player) (normalised; legacy players get the v0.7 kit) ; legacyKit(color) ;
+//           newKit(color) ; isArena(venue|gig) (pyro only there) ; headText(text)
+//   Career  init(state, opts) ('career:new' consumes prepare()) ; prepare({ look, stageLook, kit, carry }) ; migrate(state)
+//           (chained onto GG.save.migrate: fills player.stageLook / player.kit / unlocks only when missing; never state.v) ;
+//           apply(state, { look, stageLook, kit }) -> { look, stageLook, kit } (sanitised + lock-checked; 'creator:changed')
+//   Carry   carry.key(genre) ; carry.read(genre) -> [ids] ; carry.write(state) ; carry.count(genre)   (localStorage
+//           'gg.v1.unlocks.<genre>', every access wrapped; unlocks carry over within the same genre)
+// Events: 'creator:unlocked' { ids, names, source: 'week'|'event' } ; 'creator:changed' { state }.
+// No gong on the drum kit, ever (KIT_LOOK extras are cowbell / fan / pyro).
+(function (GG) {
+  var C = GG.creator = {};
+  var CT = GG.contracts, U = GG.util;
+  var HEX = /^#[0-9a-f]{6}$/i;
+  var LEGACY_HAIR = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
+  var LEGACY_EXTRAS = (CT.LOOK_EXTRAS || []).concat(['cowboy']);
+  var LEGACY_TOPS = ['tee', 'longsleeve', 'flannel', 'hoodie', 'jacket'];
+  // Fields that make a LOOK a v0.8 look (the renderer's v0.8 path). A LOOK without any of them renders exactly as in v0.7.
+  var V8_KEYS = ['age', 'face', 'facialHair', 'glasses', 'bottom', 'shoes', 'headwear', 'outfit', 'stageExtras', 'tattoos', 'knuckles', 'piercings'];
+  var PERSON = ['skin', 'hair', 'hairStyle', 'height', 'build', 'age', 'face', 'facialHair', 'glasses', 'tattoos', 'knuckles', 'piercings'];
+  var FACE_KEYS = ['shape', 'eyes', 'brows', 'nose', 'mouth'];
+  var DEF = { age: 'fresh', facialHair: 'clean', glasses: 'none', top: 'tee', bottom: 'jeans', shoes: 'sneakers', headwear: 'none', outfit: 'none',
+    face: { shape: 'classic', eyes: 'dot', eyeColor: '#5a3a22', brows: 'straight', nose: 'button', mouth: 'flat' } };
+  var KIT_DEF = { shell: 'paint', hardware: 'chrome', head: 'plain', throne: 'stool', sticks: '#d8b27a' };
+  var ARM = { halfL: 'L', sleeveL: 'L', halfR: 'R', sleeveR: 'R' };
+  var ERA_TEXT = { garage: 'Start', local: 'Reach Local Heroes', signed: 'Get signed (a label or a DIY album)', world: 'Reach the World Stage' };
+  var MILESTONE_TEXT = { firstGig: 'Play your first gig', firstSong: 'Write your first song', localHeroes: 'Reach Local Heroes', signed: 'Get signed' };
+  var AWARD_TEXT = { gold: 'Go gold', platinum: 'Go platinum', loonie: 'Win a Loonie', gong: 'Win the Global Gong', greymug: 'Play the Grey Mug halftime show' };
+  var pending = null;
+
+  function content() { return GG.content.creator || { cats: {}, parts: [], swatches: {}, builds: {} }; }
+  var index = null, byCat = null;
+  function build() {
+    if (index && index.src === content().parts) return;
+    index = { src: content().parts }; byCat = {};
+    content().parts.forEach(function (p) { index[p.id] = p; (byCat[p.cat] = byCat[p.cat] || []).push(p); });
+  }
+  C.cats = function () { return content().cats; };
+  C.part = function (id) { build(); return index[id] || null; };
+  C.partsIn = function (cat) { build(); return (byCat[cat] || []).slice(); };
+  C.partFor = function (cat, value) { return C.part(cat + '.' + value); };
+  function values(cat) { return C.partsIn(cat).map(function (p) { return p.value; }); }
+  function valid(cat, v) { return typeof v === 'string' && !!C.partFor(cat, v); }
+  function clone(o) { return U.clone(o); }
+
+  /* ---- Gates + unlocks ---------------------------------------------------------------------------------------------- */
+  function trophyKinds(state) { return (state.trophies || []).map(function (t) { return t && t.kind; }); }
+  C.gateMet = function (state, gate) {
+    if (!gate) return true;
+    state = state || {};
+    if (gate.genreStart && gate.genreStart.indexOf(state.genre) >= 0) return true;
+    if (gate.era) return CT.ERAS.indexOf(state.era || 'garage') >= CT.ERAS.indexOf(gate.era);
+    if (gate.fans != null) return (state.fans || 0) >= gate.fans;
+    if (gate.milestone) return !!(state.milestones && state.milestones[gate.milestone]);
+    if (gate.gigs != null) return ((state.stats && state.stats.gigs) || 0) >= gate.gigs;
+    if (gate.award) {
+      var k = trophyKinds(state), want = gate.award;
+      var any = want === 'gold' ? ['gold', 'platinum', 'platinum_fi'] : want === 'platinum' ? ['platinum', 'platinum_fi'] : [want];
+      return k.some(function (x) { return any.indexOf(x) >= 0; });
+    }
+    return false;
+  };
+  C.gateText = function (gate) {
+    if (!gate) return 'Unlocked from the start';
+    if (gate.era) return ERA_TEXT[gate.era] || gate.era;
+    if (gate.fans != null) return 'Reach ' + U.fmtNum(gate.fans) + ' fans';
+    if (gate.milestone) return MILESTONE_TEXT[gate.milestone] || gate.milestone;
+    if (gate.gigs != null) return 'Play ' + gate.gigs + ' gigs';
+    if (gate.award) return AWARD_TEXT[gate.award] || 'Win ' + gate.award;
+    return 'Keep going';
+  };
+  function list(state) {
+    var u = state && state.unlocks;
+    return u && Array.isArray(u.creator) ? u.creator : [];
+  }
+  C.isUnlocked = function (state, id) {
+    var p = C.part(id);
+    if (!p) return false;
+    if (!p.gate) return true;
+    if (p.gate.genreStart && state && p.gate.genreStart.indexOf(state.genre) >= 0) return true;
+    return list(state).indexOf(id) >= 0;
+  };
+  C.parts = function (state, cat) {
+    build();
+    var src = cat ? (byCat[cat] || []) : content().parts;
+    return src.map(function (p) {
+      var locked = !C.isUnlocked(state, p.id);
+      var o = { id: p.id, cat: p.cat, value: p.value, name: p.name, locked: locked, why: locked ? C.gateText(p.gate) : '' };
+      if (p.color) o.color = p.color;
+      if (p.hint) o.hint = p.hint;
+      return o;
+    });
+  };
+  function ensureUnlocks(state) {
+    if (!state.unlocks || typeof state.unlocks !== 'object' || Array.isArray(state.unlocks)) state.unlocks = {};
+    if (!Array.isArray(state.unlocks.creator)) state.unlocks.creator = [];
+    if (!Array.isArray(state.unlocks.news)) state.unlocks.news = [];
+    return state.unlocks;
+  }
+  C.grant = function (state, id) {
+    var p = C.part(id);
+    if (!p || !p.gate) return false;
+    var u = ensureUnlocks(state);
+    if (u.creator.indexOf(id) >= 0) return false;
+    u.creator.push(id);
+    return true;
+  };
+  // Adds every gated part whose gate is met now. Returns the newly unlocked ids (content order).
+  C.checkUnlocks = function (state) {
+    if (!state) return [];
+    build();
+    var out = [];
+    content().parts.forEach(function (p) {
+      if (!p.gate || C.isUnlocked(state, p.id)) return;
+      if (C.gateMet(state, p.gate) && C.grant(state, p.id)) out.push(p.id);
+    });
+    return out;
+  };
+  function names(ids) { return ids.map(function (id) { var p = C.part(id); return p ? p.name : id; }); }
+  // Event hook (a Loonie, a gold record, the Gong mid-week): unlock now, remember it for the wrap, tell the UI.
+  C.check = function (state, source) {
+    var ids = C.checkUnlocks(state);
+    if (!ids.length) return ids;
+    var u = ensureUnlocks(state);
+    ids.forEach(function (id) { if (u.news.indexOf(id) < 0) u.news.push(id); });
+    C.carry.write(state);
+    GG.emit('creator:unlocked', { ids: ids, names: names(ids), source: source || 'event' });
+    return ids;
+  };
+  // Week-end hook: everything unlocked this week (incl. mid-week events) becomes one wrap milestone line.
+  C.weekly = function (state, wrap) {
+    var fresh = C.checkUnlocks(state), u = ensureUnlocks(state);
+    var all = u.news.concat(fresh.filter(function (id) { return u.news.indexOf(id) < 0; }));
+    u.news = [];
+    if (!all.length) return [];
+    C.carry.write(state);
+    if (wrap) {
+      var n = names(all);
+      wrap.milestones = (wrap.milestones || []).concat(['New look unlocked: ' + (n.length > 4 ? n.slice(0, 4).join(', ') + ' + ' + (n.length - 4) + ' more' : n.join(', ')) + ' (☰ → Look).']);
+      wrap.creator = { unlocked: all };
+    }
+    if (fresh.length) GG.emit('creator:unlocked', { ids: fresh, names: names(fresh), source: 'week' });
+    return all;
+  };
+  // The new-career screen's stand-in state: nothing earned yet, plus the carried-over unlocks for this genre.
+  C.draftState = function (genre, carry) {
+    return { genre: genre || 'metal', era: 'garage', fans: 0, milestones: {}, trophies: [], stats: { gigs: 0 },
+      unlocks: { creator: carry ? C.carry.read(genre || 'metal') : [], news: [] } };
+  };
+
+  /* ---- Looks -------------------------------------------------------------------------------------------------------- */
+  C.knuckles = function (text) { return String(text == null ? '' : text).toUpperCase().replace(/[^A-Z]/g, '').slice(0, content().knuckleMax || 4); };
+  C.headText = function (text) {
+    return String(text == null ? '' : text).replace(/[^A-Za-z0-9 !?&'.\-#]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
+      .slice(0, (content().words || {}).headTextMax || 14).trim();
+  };
+  C.isV8 = function (look) {
+    if (!look || typeof look !== 'object') return false;
+    for (var i = 0; i < V8_KEYS.length; i++) if (look[V8_KEYS[i]] !== undefined) return true;
+    return !!((valid('top', look.top) && LEGACY_TOPS.indexOf(look.top) < 0) || (valid('hairStyle', look.hairStyle) && LEGACY_HAIR.indexOf(look.hairStyle) < 0));
+  };
+  function col(v, d) { return typeof v === 'string' && HEX.test(v) ? v.toLowerCase() : d; }
+  function num(v, lo, hi, d) { return typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; }
+  function uniq(a) { var o = []; a.forEach(function (x) { if (o.indexOf(x) < 0) o.push(x); }); return o; }
+  // A clean LOOK. Legacy fields always; v0.8 fields only when the input has them (a v0.7 LOOK stays a v0.7 LOOK).
+  C.sanitizeLook = function (look) {
+    look = look && typeof look === 'object' ? look : {};
+    var hairOk = values('hairStyle').concat(LEGACY_HAIR);
+    var o = {
+      skin: col(look.skin, '#f0c9a4'), hair: col(look.hair, '#5c3a22'),
+      hairStyle: hairOk.indexOf(look.hairStyle) >= 0 ? look.hairStyle : 'short',
+      shirt: col(look.shirt, '#e1a236'), pants: col(look.pants, '#34405e'),
+      height: num(look.height, 0.85, 1.15, 1), build: num(look.build, 0.85, 1.25, 1),
+      extras: Array.isArray(look.extras) ? uniq(look.extras.filter(function (x) { return LEGACY_EXTRAS.indexOf(x) >= 0; })).slice(0, 6) : []
+    };
+    if (look.top !== undefined) o.top = valid('top', look.top) ? look.top : 'tee';
+    if (look.capColor !== undefined && HEX.test(look.capColor)) o.capColor = look.capColor.toLowerCase();
+    if (look.age !== undefined) o.age = valid('age', look.age) ? look.age : DEF.age;
+    if (look.face !== undefined) {
+      var f = look.face && typeof look.face === 'object' ? look.face : {};
+      o.face = {};
+      FACE_KEYS.forEach(function (k) { o.face[k] = valid(k, f[k]) ? f[k] : DEF.face[k]; });
+      o.face.eyeColor = col(f.eyeColor, DEF.face.eyeColor);
+    }
+    ['facialHair', 'glasses', 'bottom', 'shoes', 'headwear', 'outfit'].forEach(function (k) {
+      if (look[k] !== undefined) o[k] = valid(k, look[k]) ? look[k] : DEF[k];
+    });
+    if (look.stageExtras !== undefined) o.stageExtras = Array.isArray(look.stageExtras) ? uniq(look.stageExtras.filter(function (x) { return valid('stageExtra', x); })) : [];
+    if (look.piercings !== undefined) o.piercings = Array.isArray(look.piercings) ? uniq(look.piercings.filter(function (x) { return valid('piercing', x); })) : [];
+    if (look.tattoos !== undefined) {
+      var seen = {}, arms = {};
+      var ts = (Array.isArray(look.tattoos) ? look.tattoos : []).filter(function (t) {
+        return t && valid('tatSpot', t.spot) && t.spot !== 'knuckles' && (t.spot === 'teardrop' || valid('tatDesign', t.design));
+      });
+      ts.forEach(function (t) { if (ARM[t.spot] && /^sleeve/.test(t.spot)) arms[ARM[t.spot]] = true; });   // a full sleeve wins over a half
+      o.tattoos = [];
+      ts.forEach(function (t) {
+        if (seen[t.spot] || (ARM[t.spot] && /^half/.test(t.spot) && arms[ARM[t.spot]])) return;
+        seen[t.spot] = true;
+        o.tattoos.push({ spot: t.spot, design: t.spot === 'teardrop' ? 'tear' : t.design });
+      });
+    }
+    if (look.knuckles !== undefined) {
+      var k = look.knuckles && typeof look.knuckles === 'object' ? look.knuckles : {};
+      o.knuckles = { left: C.knuckles(k.left), right: C.knuckles(k.right) };
+    }
+    return o;
+  };
+  // Every v0.8 field filled; legacy extras/hair map onto the matching v0.8 parts (drawn the same way).
+  C.expand = function (look) {
+    var L = C.sanitizeLook(look), ex = L.extras || [];
+    var has = function (x) { return ex.indexOf(x) >= 0; };
+    var o = clone(L);
+    o.extras = [];
+    if (o.hairStyle === 'cap') { o.hairStyle = 'short'; if (L.headwear === undefined) o.headwear = 'backcap'; }
+    if (o.age === undefined) o.age = DEF.age;
+    if (o.face === undefined) o.face = clone(DEF.face);
+    if (o.facialHair === undefined) o.facialHair = has('beard') ? 'full' : has('moustache') ? 'horseshoe' : 'clean';
+    if (o.glasses === undefined) o.glasses = has('sunglasses') ? 'shades' : has('glasses') ? 'specs' : 'none';
+    if (o.headwear === undefined) o.headwear = has('hat') ? 'toque' : has('cowboy') ? 'cowboy' : has('bandana') ? 'bandana' : has('headband') ? 'headband' : 'none';
+    if (o.top === undefined) o.top = 'tee';
+    ['bottom', 'shoes', 'outfit'].forEach(function (k) { if (o[k] === undefined) o[k] = DEF[k]; });
+    if (o.stageExtras === undefined) o.stageExtras = [];
+    if (o.tattoos === undefined) o.tattoos = has('tattoos') ? [{ spot: 'halfL', design: 'flames' }, { spot: 'halfR', design: 'skull' }] : [];
+    if (o.knuckles === undefined) o.knuckles = { left: '', right: '' };
+    if (o.piercings === undefined) o.piercings = [];
+    return o;
+  };
+  // The person (body, face, hair, ink) is the same on stage and off: copy those fields from one look to the other.
+  C.syncPerson = function (from, to) {
+    PERSON.forEach(function (k) { if (from[k] !== undefined) to[k] = clone(from[k]); else delete to[k]; });
+    return to;
+  };
+  C.stageOnly = function (look) { var o = clone(look); delete o.outfit; delete o.stageExtras; return o; };
+  function firstFree(state, cat) {
+    var l = C.partsIn(cat);
+    for (var i = 0; i < l.length; i++) if (C.isUnlocked(state, l[i].id)) return l[i].value;
+    return l.length ? l[0].value : null;
+  }
+  // Locked parts fall back to the first unlocked part of their category (arrays drop them).
+  C.lockLook = function (state, look) {
+    var o = clone(look);
+    var fix = function (cat, key) { if (o[key] !== undefined && C.partFor(cat, o[key]) && !C.isUnlocked(state, cat + '.' + o[key])) o[key] = DEF[key] && C.isUnlocked(state, cat + '.' + DEF[key]) ? DEF[key] : firstFree(state, cat); };
+    fix('hairStyle', 'hairStyle'); fix('age', 'age'); fix('facialHair', 'facialHair'); fix('glasses', 'glasses');
+    fix('top', 'top'); fix('bottom', 'bottom'); fix('shoes', 'shoes'); fix('headwear', 'headwear'); fix('outfit', 'outfit');
+    if (o.face) FACE_KEYS.forEach(function (k) { if (C.partFor(k, o.face[k]) && !C.isUnlocked(state, k + '.' + o.face[k])) o.face[k] = DEF.face[k]; });
+    var dye = C.partsIn('hairColor').filter(function (p) { return p.color && p.color.toLowerCase() === String(o.hair).toLowerCase(); })[0];
+    if (dye && !C.isUnlocked(state, dye.id)) o.hair = C.partFor('hairColor', 'brown').color;
+    if (o.stageExtras) o.stageExtras = o.stageExtras.filter(function (x) { return C.isUnlocked(state, 'stageExtra.' + x); });
+    if (o.piercings) o.piercings = o.piercings.filter(function (x) { return C.isUnlocked(state, 'piercing.' + x); });
+    if (o.tattoos) o.tattoos = o.tattoos.filter(function (t) { return C.isUnlocked(state, 'tatSpot.' + t.spot) && (t.spot === 'teardrop' || C.isUnlocked(state, 'tatDesign.' + t.design)); });
+    if (o.knuckles && !C.isUnlocked(state, 'tatSpot.knuckles')) o.knuckles = { left: '', right: '' };
+    return o;
+  };
+  // Stage scenes (gigs, the red carpet, the Gong, rival sets): the stage look when there is one, else the everyday look.
+  C.stageLookFor = function (who, cm) {
+    if (!who && !cm) return null;
+    who = who || {};
+    return who.stageLook || (cm && cm.stageLook) || who.look || (cm && cm.look) || null;
+  };
+
+  /* ---- Kit ---------------------------------------------------------------------------------------------------------- */
+  C.legacyKit = function (color) {   // what every kit looked like before v0.8 (migrated saves keep it until the player changes it)
+    return { shell: 'paint', color: col(color, '#b3262b'), hardware: 'chrome', head: 'plain', headText: '', throne: 'stool', sticks: KIT_DEF.sticks, extras: [] };
+  };
+  C.newKit = function (color) {      // a new career: the milk-crate era, your band's name on the kick
+    return { shell: 'paint', color: col(color, '#b3262b'), hardware: 'chrome', head: 'logo', headText: '', throne: 'crate', sticks: KIT_DEF.sticks, extras: [] };
+  };
+  C.sanitizeKit = function (k, fallbackColor) {
+    k = k && typeof k === 'object' ? k : {};
+    var o = {};
+    ['shell', 'hardware', 'head', 'throne'].forEach(function (key) { o[key] = valid(key, k[key]) ? k[key] : KIT_DEF[key]; });
+    o.color = col(k.color, col(fallbackColor, '#b3262b'));
+    o.headText = C.headText(k.headText);
+    o.sticks = col(k.sticks, KIT_DEF.sticks);
+    o.extras = Array.isArray(k.extras) ? uniq(k.extras.filter(function (x) { return valid('kitExtra', x); })) : [];   // cowbell | fan | pyro. No gong.
+    return o;
+  };
+  C.lockKit = function (state, k) {
+    var o = clone(k);
+    ['shell', 'hardware', 'head', 'throne'].forEach(function (key) {
+      if (!C.isUnlocked(state, key + '.' + o[key])) o[key] = key === 'throne' ? 'crate' : key === 'head' ? 'plain' : firstFree(state, key);
+    });
+    var st = C.partsIn('sticks').filter(function (p) { return p.color && p.color.toLowerCase() === String(o.sticks).toLowerCase(); })[0];
+    if (st && !C.isUnlocked(state, st.id)) o.sticks = KIT_DEF.sticks;
+    o.extras = (o.extras || []).filter(function (x) { return C.isUnlocked(state, 'kitExtra.' + x); });
+    return o;
+  };
+  function findPreset(id) { var l = GG.content.presets || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+  C.kitLook = function (pl) {
+    pl = pl || {};
+    var pre = findPreset(pl.presetId), fallback = pl.kitColor || (pre && pre.kitColor) || '#b3262b';
+    return pl.kit && typeof pl.kit === 'object' ? C.sanitizeKit(pl.kit, fallback) : C.legacyKit(fallback);
+  };
+  C.isArena = function (v) {
+    if (!v || typeof v !== 'object') return false;
+    return !!(v.dome || v.arena || (v.capacity || 0) >= 5000 || (v.tier || 0) >= 4);
+  };
+
+  /* ---- Career: new, migrate, apply ------------------------------------------------------------------------------------ */
+  C.prepare = function (o) { pending = o ? clone(o) : null; return pending; };
+  C.pending = function () { return pending; };
+  C.init = function (state, opts) {
+    opts = opts || {};
+    var pl = state.player = state.player || {};
+    ensureUnlocks(state);
+    if (opts.carry) C.carry.read(state.genre).forEach(function (id) { C.grant(state, id); });
+    C.checkUnlocks(state);
+    state.unlocks.news = [];
+    if (opts.look) pl.look = C.lockLook(state, C.stageOnly(C.sanitizeLook(opts.look)));
+    pl.stageLook = C.lockLook(state, C.sanitizeLook(opts.stageLook || pl.look));
+    if (opts.stageLook) C.syncPerson(pl.look, pl.stageLook);
+    pl.kit = C.lockKit(state, C.sanitizeKit(opts.kit || C.newKit(pl.kitColor), pl.kitColor));
+    pl.kitColor = pl.kit.color;
+    return state;
+  };
+  // Old saves: the stage look = the everyday look, the v0.7 kit, and whatever the career has already earned (quietly).
+  C.migrate = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    var pl = s.player;
+    if (pl && typeof pl === 'object') {
+      if (!pl.stageLook || typeof pl.stageLook !== 'object') pl.stageLook = clone(pl.look || null);
+      if (!pl.kit || typeof pl.kit !== 'object') {
+        var pre = findPreset(pl.presetId);
+        pl.kit = C.legacyKit(pl.kitColor || (pre && pre.kitColor));
+      }
+    }
+    if (!s.unlocks || typeof s.unlocks !== 'object' || !Array.isArray(s.unlocks.creator)) {
+      ensureUnlocks(s);
+      if (pl && pl.kit && pl.kit.throne === 'stool') C.grant(s, 'throne.stool');   // the v0.7 throne stays yours
+      C.checkUnlocks(s);
+    }
+    ensureUnlocks(s);
+    return s;
+  };
+  C.apply = function (state, o) {
+    o = o || {};
+    var pl = state.player = state.player || {};
+    var look = C.lockLook(state, C.stageOnly(C.sanitizeLook(o.look || pl.look)));
+    var stage = C.lockLook(state, C.sanitizeLook(o.stageLook || pl.stageLook || look));
+    C.syncPerson(look, stage);
+    var kit = C.lockKit(state, C.sanitizeKit(o.kit || pl.kit || C.kitLook(pl), pl.kitColor));
+    pl.look = look; pl.stageLook = stage; pl.kit = kit; pl.kitColor = kit.color;
+    GG.emit('creator:changed', { state: state });
+    return { look: look, stageLook: stage, kit: kit };
+  };
+
+  /* ---- Carry-over (per genre, this device) ------------------------------------------------------------------------------ */
+  function store() { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; } }
+  C.carry = {
+    key: function (genre) { return 'gg.v1.unlocks.' + (genre || 'metal'); },
+    read: function (genre) {
+      var raw = null, s = store();
+      try { raw = s ? s.getItem(C.carry.key(genre)) : null; } catch (e) { raw = null; }
+      var ids = [];
+      try { var o = raw ? JSON.parse(raw) : null; ids = o && Array.isArray(o.ids) ? o.ids : []; } catch (e) { ids = []; }
+      return uniq(ids.filter(function (id) { var p = C.part(id); return p && p.gate; }));
+    },
+    write: function (state) {
+      if (!state || !state.genre) return false;
+      var ids = uniq(C.carry.read(state.genre).concat(list(state).filter(function (id) { var p = C.part(id); return p && p.gate; })));
+      var s = store();
+      try { if (!s) return false; s.setItem(C.carry.key(state.genre), JSON.stringify({ ids: ids })); return true; } catch (e) { return false; }
+    },
+    count: function (genre) { return C.carry.read(genre).length; }
+  };
+
+  /* ---- Hooks ------------------------------------------------------------------------------------------------------------ */
+  GG.on('career:new', function (p) {
+    if (!p || !p.state) return;
+    var o = pending; pending = null;
+    C.init(p.state, o || {});
+  });
+  GG.on('week:wrap', function (p) {
+    var st = GG.state;
+    if (st && p && p.wrap && st.wrap === p.wrap) C.weekly(st, p.wrap);
+  });
+  ['loonies:result', 'cert', 'tour:gong', 'gig:done'].forEach(function (ev) {
+    GG.on(ev, function () { if (GG.state && GG.state.unlocks) C.check(GG.state, 'event'); });
+  });
+  if (GG.save && GG.save.migrate && !GG.save.migrate.creator) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return C.migrate(prevMigrate(s)); };
+    GG.save.migrate.creator = true;
+  }
+
+  GG.registerDebug('creator', function () {
+    var st = GG.state, pl = st && st.player;
+    return { unlocked: st ? list(st).length : 0, parts: content().parts.length, pending: !!pending,
+      v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null };
+  });
+})(window.GG);
+
+</script>
 <script>/* 30_audio.js */
 // 30_audio.js: every sound in the game, synthesized with Web Audio (no files).
 // The AudioContext is created lazily on the first user gesture (GG.audio.unlock, wired in 60_main).
@@ -18699,6 +19323,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // loop (skipped while paused), resize/orientation, tap raycasting (labels, then hotspots/members, then the
 // floor), the walk-target ring, label sprites and a mesh builder that merges primitives into one draw call.
 // init() never throws: without THREE (offline) or WebGL it returns false and GG.render.available stays false.
+// v0.8 (CREATOR): the one character-geometry builder lives here (R.charGeometry: the v0.7 builder verbatim for legacy LOOKs,
+// every Part C2 part for v0.8 LOOKs; 41_render_garage makeCharacter / R.buildCharacter call it), plus R.kit (kit looks:
+// shell finishes, hardware, thrones, cowbell / hair fan / pyro, kick-head art, R.kit.garage = the garage kit geometry)
+// and R.pixelFont (the 3x5 font for knuckle tattoos). See "People (v0.8)" and "Kit looks (v0.8)" below.
 //
 // A scene factory receives `ctx` (see makeCtx) and returns:
 //   { scene: THREE.Scene,                       required
@@ -19315,6 +19943,1092 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     currentScene: function () { return cur && cur.scene; }   // debugging aid (dev console, close-up renders)
   };
 
+  // ---- People (v0.8 "Kit": the full character creator) ------------------------------------------------------------
+  // R.charGeometry(ctx, L, o, raw) -> skinned BufferGeometry. 41_render_garage.js normalises the legacy fields
+  // (L = normLook(raw)) and calls this for every person (the garage, R.buildCharacter for stage / van / red carpet).
+  //   * raw without any v0.8 field (members, rivals, recruits, fill-ins, old saves): legacyGeometry, the v0.7 builder
+  //     moved here verbatim (same parts, same order, same jitter), so every old LOOK renders exactly as before.
+  //   * a v0.8 LOOK (GG.creator.isV8): charV8 draws every Part C2 part (content/creator.js): build, height, age, face
+  //     shape / eyes (+ colour) / brows / nose / mouth, facial hair, glasses, 17 hair styles under or without hats,
+  //     tops / bottoms / shoes / headwear, stage outfits (shirtless, battle jacket, leather vest, Canadian tuxedo,
+  //     spandex, rhinestone suit) + stage extras (cape, studded wristbands, corpse paint), tattoos (pixel-art designs
+  //     on forearms / sleeves / neck / chest, the teardrop) and knuckle letters (3x5 pixel font, readable up close),
+  //     piercings. o.sticks may be a colour (the kit's stick colour).
+  // Bone indices match 41_render_garage.js (one rig for everyone).
+  var B_HIPS = 1, B_SPINE = 2, B_HEAD = 3, B_ARM_L = 4, B_FORE_L = 5, B_ARM_R = 6, B_FORE_R = 7,
+    B_LEG_L = 8, B_SHIN_L = 9, B_LEG_R = 10, B_SHIN_R = 11, B_CAPE1 = 12, B_CAPE2 = 13,
+    B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17;
+  var CAPES = {
+    velvet: { out: 0x4a1d6e, lining: 0x9b1b2a, trim: 0xd4a940, collar: true, clasp: true },
+    curtain: { out: 0xd6a53c, lining: 0xc99a36, dots: [0xc85a78, 0x5f8f45], rings: true },
+    charred: { out: 0x1e1a18, lining: 0x2b2522, jagged: true, embers: true },
+    fireproof: { out: 0xc3c8d0, lining: 0xb4bac4, bands: 0xd8e84a, collar: true },
+    player: { out: 0x17171c, lining: 0x8a1420, trim: 0xb8bcc6, collar: true }        // v0.8: a cape of your own (stage extra)
+  };
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  // The v0.7 builder, verbatim (was characterGeometry in 41_render_garage.js).
+  function legacyGeometry(ctx, L, o) {
+    var b = new ctx.Builder({ skinned: true, jitter: 0.03, seed: ctx.hash(o.id || 'someone') });
+    var sh = ctx.shade, bw = L.build, sx = 0.25 * bw + 0.075, hx = 0.11 * bw, fz = 0.135 * bw + 0.004;
+    var top = L.top, sleeve = top === 'tee' ? L.skin : L.shirt, shoe = 0x1f1b18, dark = sh(L.shirt, 0.55);
+    var i, s;
+    // Legs: thighs on the leg bones, shins + shoes on the shin bones.
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      b.bone = i ? B_SHIN_R : B_SHIN_L;
+      b.box(0.15, 0.37, 0.17, s * hx, 0.265, 0, L.pants);
+      b.box(0.165, 0.085, 0.28, s * hx, 0.043, 0.035, shoe);
+      b.bone = i ? B_LEG_R : B_LEG_L;
+      b.box(0.17, 0.41, 0.19, s * hx, 0.645, 0, L.pants);
+    }
+    b.bone = B_HIPS;
+    b.box(0.4 * bw, 0.17, 0.24 * bw, 0, 0.87, 0, L.pants);
+    b.box(0.41 * bw, 0.04, 0.25 * bw, 0, 0.945, 0, 0x2a211b);                   // belt
+    // Torso: waist + broader chest.
+    b.bone = B_SPINE;
+    b.box(0.4 * bw, 0.22, 0.24 * bw, 0, 1.06, 0, L.shirt);
+    b.box(0.47 * bw, 0.3, 0.27 * bw, 0, 1.3, 0, L.shirt);
+    if (top === 'tee') b.box(0.17 * bw, 0.13, 0.01, 0, 1.29, fz, teePrint(ctx, L.shirt));
+    else if (top === 'flannel') {
+      b.box(0.475 * bw, 0.035, 0.275 * bw, 0, 1.34, 0, dark); b.box(0.405 * bw, 0.035, 0.245 * bw, 0, 1.1, 0, dark);
+      b.box(0.035, 0.3, 0.275 * bw, 0.1 * bw, 1.3, 0, dark); b.box(0.035, 0.3, 0.275 * bw, -0.1 * bw, 1.3, 0, dark);
+      b.box(0.035, 0.22, 0.245 * bw, 0.1 * bw, 1.06, 0, dark); b.box(0.035, 0.22, 0.245 * bw, -0.1 * bw, 1.06, 0, dark);
+      b.box(0.24, 0.05, 0.05, 0, 1.445, 0.11 * bw, dark);                       // collar
+    } else if (top === 'hoodie') {
+      b.box(0.36 * bw, 0.17, 0.13, 0, 1.44, -0.165 * bw, sh(L.shirt, 0.9));        // hood
+      b.box(0.3 * bw, 0.11, 0.012, 0, 1.07, 0.12 * bw + 0.006, sh(L.shirt, 0.84)); // pouch pocket
+      b.box(0.016, 0.13, 0.012, 0.05, 1.36, fz + 0.004, 0xe8e4da); b.box(0.016, 0.13, 0.012, -0.05, 1.36, fz + 0.004, 0xe8e4da);
+    } else if (top === 'jacket') {
+      var inner = luminance(L.shirt) < 0.2 ? 0x3b3b41 : 0xe6e1d6;
+      b.box(0.1, 0.28, 0.008, 0, 1.28, fz - 0.001, inner);
+      b.box(0.07, 0.3, 0.012, 0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, -0.28);
+      b.box(0.07, 0.3, 0.012, -0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, 0.28);
+      b.box(0.42 * bw, 0.05, 0.255 * bw, 0, 0.965, 0, sh(L.shirt, 0.8));        // hem
+    }
+    // Neck, head, face.
+    b.bone = B_HEAD;
+    b.box(0.13, 0.1, 0.13, 0, 1.47, 0, L.skin);
+    b.box(0.34, 0.37, 0.32, 0, 1.69, 0, L.skin);
+    b.box(0.04, 0.08, 0.06, 0.185, 1.69, 0, sh(L.skin, 0.92)); b.box(0.04, 0.08, 0.06, -0.185, 1.69, 0, sh(L.skin, 0.92));
+    b.box(0.05, 0.07, 0.05, 0, 1.655, 0.175, sh(L.skin, 0.9));                   // nose
+    b.box(0.09, 0.018, 0.012, 0, 1.585, 0.162, sh(L.skin, 0.6));                 // mouth
+    b.box(0.05, 0.065, 0.02, 0.075, 1.715, 0.163, 0x16120f); b.box(0.05, 0.065, 0.02, -0.075, 1.715, 0.163, 0x16120f);
+    b.box(0.085, 0.022, 0.02, 0.075, 1.772, 0.163, sh(L.hair, 0.85)); b.box(0.085, 0.022, 0.02, -0.075, 1.772, 0.163, sh(L.hair, 0.85));
+    hairParts(b, L, sh);
+    extraParts(b, L, sh, sx, top);
+    // Arms: tees show skin below the sleeve; everything else is sleeved to the wrist.
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      b.bone = i ? B_ARM_R : B_ARM_L;
+      if (top === 'tee') { b.box(0.145, 0.16, 0.155, s * sx, 1.3, 0, L.shirt); b.box(0.12, 0.16, 0.13, s * sx, 1.15, 0, L.skin); }
+      else b.box(0.135, 0.31, 0.145, s * sx, 1.225, 0, L.shirt);
+      if (top === 'flannel') b.box(0.14, 0.03, 0.15, s * sx, 1.2, 0, dark);
+      b.bone = i ? B_FORE_R : B_FORE_L;
+      b.box(0.12, 0.25, 0.13, s * sx, 0.955, 0, sleeve);
+      if (top === 'flannel') b.box(0.125, 0.03, 0.135, s * sx, 0.95, 0, dark);
+      if (top === 'tee' && L.extras.indexOf('tattoos') >= 0) b.box(0.125, 0.1, 0.135, s * sx, 0.99, 0, 0x2f5a6a);
+      b.box(0.11, 0.1, 0.12, s * sx, 0.78, 0.005, L.skin);                      // hand
+      if (o.sticks) b.box(0.024, 0.024, 0.42, s * sx, 0.77, 0.15, hexOf(o.sticks, 0xd8b27a), 0.25);   // v0.8: the kit's stick colour
+    }
+    if (o.gear === 'guitar') guitarParts(b);
+    if (o.held === 'sandwich') {
+      b.bone = B_HELD;
+      b.box(0.15, 0.03, 0.11, -sx, 0.72, 0.1, 0xe3c38a); b.box(0.155, 0.018, 0.115, -sx, 0.742, 0.1, 0xe58a8e);
+      b.box(0.165, 0.012, 0.12, -sx, 0.756, 0.1, 0x7cc251); b.box(0.15, 0.03, 0.11, -sx, 0.775, 0.1, 0xe3c38a);
+    } else if (o.held === 'phone') {
+      b.bone = B_HELD; b.box(0.075, 0.14, 0.014, -sx, 0.8, 0.075, 0x1d1d22);
+    }
+    if (o.floorProp === 'lunchbox') {
+      b.bone = B_FLOOR;
+      b.box(0.3, 0.19, 0.17, 0.44, 0.095, 0.25, 0xc0392b); b.box(0.305, 0.02, 0.175, 0.44, 0.16, 0.25, 0x8a2a20);
+      b.box(0.12, 0.03, 0.03, 0.44, 0.205, 0.25, 0x222222); b.cyl(0.04, 0.04, 0.2, 8, 0.66, 0.1, 0.16, 0x3f7fbf);
+    }
+    // Headphones (shown while sulking).
+    b.bone = B_PHONES;
+    b.box(0.38, 0.045, 0.07, 0, 1.915, 0, 0x202024);
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      b.box(0.03, 0.18, 0.05, s * 0.195, 1.83, 0, 0x202024); b.box(0.07, 0.13, 0.13, s * 0.2, 1.69, 0, 0x2a2a30);
+      b.box(0.012, 0.08, 0.08, s * 0.237, 1.69, 0, 0xd23c3c);
+    }
+    if (o.cape && CAPES[o.cape]) capeParts(b, CAPES[o.cape], bw, ctx);
+    return b.build();
+  }
+  function luminance(c) { var k = new THREE.Color(c); return k.r * 0.3 + k.g * 0.59 + k.b * 0.11; }
+  function teePrint(ctx, c) { return luminance(c) < 0.35 ? 0xd9d4c8 : ctx.shade(c, 0.6); }
+
+  function hairParts(b, L, sh) {
+    var h = L.hair, st = L.hairStyle, i;
+    var cap = function (t) { b.box(0.36, t || 0.07, 0.34, 0, 1.895, -0.005, h); };
+    var fringe = function () { b.box(0.34, 0.05, 0.04, 0, 1.855, 0.16, h); };
+    var sides = function (len) { b.box(0.03, len, 0.2, 0.18, 1.86 - len / 2, -0.05, h); b.box(0.03, len, 0.2, -0.18, 1.86 - len / 2, -0.05, h); };
+    switch (st) {
+      case 'bald': b.box(0.12, 0.012, 0.1, 0.03, 1.877, 0.02, sh(L.skin, 1.12)); break;
+      case 'long':
+        cap(); fringe(); b.box(0.38, 0.62, 0.08, 0, 1.6, -0.17, h);
+        b.box(0.05, 0.45, 0.27, 0.19, 1.67, -0.02, h); b.box(0.05, 0.45, 0.27, -0.19, 1.67, -0.02, h); break;
+      case 'mohawk': b.box(0.08, 0.17, 0.38, 0, 1.96, -0.01, h); b.box(0.345, 0.02, 0.325, 0, 1.876, 0, sh(L.skin, 0.85)); break;
+      case 'bun': cap(); fringe(); sides(0.12); b.box(0.36, 0.2, 0.06, 0, 1.79, -0.16, h); b.box(0.13, 0.11, 0.1, 0, 1.86, -0.22, h); break;
+      case 'mullet': cap(); fringe(); sides(0.12); b.box(0.34, 0.5, 0.07, 0, 1.64, -0.17, h); break;
+      case 'spiky':
+        cap(0.05);
+        var SP = [[0, 0.02], [0.1, 0.06], [-0.1, 0.06], [0.09, -0.09], [-0.09, -0.09], [0, -0.12], [0, 0.12]];
+        for (i = 0; i < SP.length; i++) b.cyl(0, 0.06, 0.16, 4, SP[i][0], 1.98, SP[i][1], h, SP[i][1] * 2.5, 0, -SP[i][0] * 2.5);
+        break;
+      case 'cap':                                  // backwards baseball cap
+        var c = L.capColor;
+        sides(0.1); b.box(0.34, 0.1, 0.05, 0, 1.745, -0.16, h);
+        b.box(0.37, 0.12, 0.35, 0, 1.92, 0, c); b.box(0.3, 0.05, 0.28, 0, 2.0, 0, c);
+        b.box(0.3, 0.025, 0.17, 0, 1.875, -0.245, c); b.box(0.04, 0.03, 0.04, 0, 2.035, 0, sh(c, 0.75));
+        b.box(0.1, 0.045, 0.01, 0, 1.9, 0.177, sh(c, 0.6)); break;
+      default: cap(); fringe(); sides(0.13); b.box(0.36, 0.25, 0.06, 0, 1.76, -0.16, h);  // 'short'
+    }
+  }
+
+  function extraParts(b, L, sh, sx, top) {
+    var ex = L.extras, h = L.hair, i;
+    for (i = 0; i < ex.length; i++) {
+      switch (ex[i]) {
+        case 'sunglasses':
+          b.box(0.33, 0.075, 0.03, 0, 1.712, 0.174, 0x0c0c0e); b.box(0.06, 0.014, 0.005, -0.09, 1.728, 0.19, 0x5a6a80);
+          b.box(0.012, 0.025, 0.2, 0.173, 1.72, 0.07, 0x0c0c0e); b.box(0.012, 0.025, 0.2, -0.173, 1.72, 0.07, 0x0c0c0e); break;
+        case 'glasses':
+          b.box(0.1, 0.08, 0.015, 0.075, 1.713, 0.172, 0x2a2a2a); b.box(0.1, 0.08, 0.015, -0.075, 1.713, 0.172, 0x2a2a2a);
+          b.box(0.075, 0.055, 0.01, 0.075, 1.713, 0.178, 0xbcd0e0); b.box(0.075, 0.055, 0.01, -0.075, 1.713, 0.178, 0xbcd0e0);
+          b.box(0.035, 0.045, 0.01, 0.075, 1.713, 0.184, 0x16120f); b.box(0.035, 0.045, 0.01, -0.075, 1.713, 0.184, 0x16120f); break;
+        case 'beard':
+          b.box(0.34, 0.15, 0.07, 0, 1.57, 0.14, h); b.box(0.22, 0.08, 0.1, 0, 1.49, 0.12, h);
+          b.box(0.04, 0.16, 0.2, 0.17, 1.6, 0.05, h); b.box(0.04, 0.16, 0.2, -0.17, 1.6, 0.05, h); break;
+        case 'moustache':
+          b.box(0.17, 0.035, 0.035, 0, 1.617, 0.178, h); b.box(0.035, 0.06, 0.03, 0.095, 1.597, 0.176, h); b.box(0.035, 0.06, 0.03, -0.095, 1.597, 0.176, h); break;
+        case 'headband': b.box(0.365, 0.05, 0.345, 0, 1.81, 0, 0xd23c3c); break;
+        case 'bandana': b.box(0.365, 0.08, 0.345, 0, 1.845, 0, 0x2f5fb3); b.box(0.08, 0.06, 0.06, 0, 1.83, -0.19, 0x2f5fb3); break;
+        case 'hat':
+        case 'cowboy':
+          b.box(0.54, 0.03, 0.5, 0, 1.885, 0, 0x6b4a2e); b.box(0.34, 0.17, 0.32, 0, 1.975, 0, 0x6b4a2e); b.box(0.35, 0.04, 0.33, 0, 1.915, 0, 0x2a1d14); break;
+        case 'tattoos':
+          if (top === 'tee') { b.bone = B_ARM_L; b.box(0.125, 0.07, 0.135, sx, 1.13, 0, 0x2f5a6a); b.bone = B_ARM_R; b.box(0.125, 0.07, 0.135, -sx, 1.13, 0, 0x2f5a6a); b.bone = B_HEAD; }
+          break;
+      }
+    }
+  }
+
+  // Dana's pointy white V (on the gear bone = spine frame, hidden while sulking). +x runs up the neck.
+  function guitarParts(b) {
+    var white = 0xe9e5dc, black = 0x151515;
+    b.bone = B_GEAR;
+    b.box(0.05, 0.64, 0.02, 0.02, 1.2, 0.15, 0x1c1714, 0, 0, 0.62);           // strap across the chest
+    b.push(-0.08, 1.02, 0.21, 0, 0, 0.42);
+    b.box(0.46, 0.1, 0.05, -0.19, 0.085, 0, white, 0, 0, -0.36);
+    b.box(0.46, 0.1, 0.05, -0.19, -0.085, 0, white, 0, 0, 0.36);
+    b.box(0.16, 0.14, 0.05, 0, 0, 0, white);
+    b.box(0.05, 0.06, 0.012, -0.08, 0, 0.03, black); b.box(0.05, 0.06, 0.012, -0.17, 0, 0.03, black);
+    b.box(0.6, 0.05, 0.03, 0.37, 0, 0.012, 0x2a1a10);
+    b.box(0.15, 0.075, 0.03, 0.72, 0.015, 0.012, black, 0, 0, -0.25);
+    b.pop();
+  }
+
+  // Marcel's cape: two hinged panels (cape bones) so it can sway and flare; variant from state.flags.cape.
+  // Each panel is a strip curved around his back (edges closer to the body than the middle).
+  function capeParts(b, C, bw, ctx) {
+    var z = -0.15 * bw - 0.012, ht = 0.27 * bw, hm = 0.36 * bw, hb = 0.46 * bw, yb = 0.3, i;
+    var bend = function (u) { var k = 2 * u - 1; return -0.07 * (1 - k * k); };        // extra depth at the middle
+    var strip = function (bone, yt, wt, ybot, wb, jag) {
+      b.bone = bone;
+      for (var i = 0; i < 6; i++) {
+        var u0 = i / 6, u1 = (i + 1) / 6, z0 = z + bend(u0), z1 = z + bend(u1);
+        var j0 = jag ? ((i % 2) ? 0.12 : 0.02) : 0, j1 = jag ? (((i + 1) % 2) ? 0.12 : 0.02) : 0;
+        var tx0 = -wt + 2 * wt * u0, tx1 = -wt + 2 * wt * u1, bx0 = -wb + 2 * wb * u0, bx1 = -wb + 2 * wb * u1;
+        b.quad([tx0, yt, z0 - 0.01], [tx1, yt, z1 - 0.01], [bx1, ybot + j1, z1 - 0.01], [bx0, ybot + j0, z0 - 0.01], C.out);
+        b.quad([bx0, ybot + j0, z0], [bx1, ybot + j1, z1], [tx1, yt, z1], [tx0, yt, z0], C.lining);
+      }
+    };
+    strip(B_CAPE1, 1.42, ht, 0.9, hm, false);
+    strip(B_CAPE2, 0.9, hm, yb, hb, C.jagged);
+    // Trim, bands and dots go on both faces (from the front we mostly see the inner side), following
+    // the curve: each decoration is cut into short segments placed at the cape's depth there.
+    var depth = function (x, y) {
+      var w = y >= 0.9 ? hm + (ht - hm) * (y - 0.9) / 0.52 : hb + (hm - hb) * (y - yb) / 0.6;
+      return z + bend(clamp((x + w) / (2 * w), 0, 1));
+    };
+    var deco = function (bone, x0, y0, x1, y1, color) {
+      b.bone = bone;
+      var n = Math.max(1, Math.ceil((x1 - x0) / 0.1));
+      for (var k = 0; k < n; k++) {
+        var a = x0 + (x1 - x0) * k / n, c = x0 + (x1 - x0) * (k + 1) / n, dz = depth((a + c) / 2, (y0 + y1) / 2);
+        b.quad([a, y1, dz - 0.016], [c, y1, dz - 0.016], [c, y0, dz - 0.016], [a, y0, dz - 0.016], color);
+        b.quad([a, y0, dz + 0.006], [c, y0, dz + 0.006], [c, y1, dz + 0.006], [a, y1, dz + 0.006], color);
+      }
+    };
+    if (C.trim) deco(B_CAPE2, -hb, yb, hb, yb + 0.05, C.trim);
+    if (C.bands) { deco(B_CAPE1, -0.3 * bw, 1.07, 0.3 * bw, 1.12, C.bands); deco(B_CAPE2, -0.4 * bw, 0.52, 0.4 * bw, 0.58, C.bands); }
+    if (C.dots || C.embers) {
+      var rows = [[1.3, B_CAPE1], [1.08, B_CAPE1], [0.8, B_CAPE2], [0.58, B_CAPE2], [0.4, B_CAPE2]], d = 0.028;
+      for (i = 0; i < rows.length; i++) {
+        for (var k = 0; k < 5; k++) {
+          if (C.embers && (i + k) % 3) continue;
+          var x = -0.24 + k * 0.12 + (i % 2) * 0.06, y = rows[i][0];
+          deco(rows[i][1], x - d, y - d, x + d, y + d, C.embers ? 0xff6a2a : C.dots[(i + k) % 2]);
+        }
+      }
+    }
+    b.bone = B_SPINE;
+    if (C.rings) for (i = 0; i < 5; i++) b.box(0.035, 0.035, 0.035, -ht + i * ht / 2, 1.43, z - 0.005, 0x9a9a9a);
+    if (C.collar) {
+      b.box(0.16, 0.26, 0.02, 0.12, 1.53, -0.16 * bw, C.out, -0.3, 0, -0.35);
+      b.box(0.16, 0.26, 0.02, -0.12, 1.53, -0.16 * bw, C.out, -0.3, 0, 0.35);
+    }
+    if (C.clasp) b.box(0.28, 0.022, 0.012, 0, 1.41, 0.14 * bw, 0xd4a940);
+  }
+
+  // ---- v0.8 builder ------------------------------------------------------------------------------------------------
+  var INK = 0x1c2433, INK2 = 0x2f5a6a, METAL = 0xd8dde4, DENIM = 0x4a6a9a, LEATHER = 0x19191d, PAINT = 0xecebe6, TEETH = 0xf2efe6;
+  var TOP_Y = 1.875;              // the crown: every face shape keeps it, so hair and hats fit them all
+  var FACES = {                   // head half-width / half-depth / centre / half-height, mouth height (+ chin / jaw blocks)
+    classic: { hw: 0.17, hd: 0.16, cy: 1.69, hh: 0.185, mouth: 1.585 },
+    round: { hw: 0.185, hd: 0.165, cy: 1.7, hh: 0.175, mouth: 1.592, chin: [0.27, 0.05, 0.29, 1.51] },
+    square: { hw: 0.18, hd: 0.16, cy: 1.69, hh: 0.185, mouth: 1.585, jaw: [0.38, 0.09, 0.3, 1.545] },
+    long: { hw: 0.16, hd: 0.155, cy: 1.67, hh: 0.205, mouth: 1.56 }
+  };
+  // 3x5 pixel font (knuckles, the misspelled word, band initials, jersey numbers). Rows top to bottom, '#' = ink.
+  var FONT = {
+    A: '.#.|#.#|###|#.#|#.#', B: '##.|#.#|##.|#.#|##.', C: '.##|#..|#..|#..|.##', D: '##.|#.#|#.#|#.#|##.', E: '###|#..|##.|#..|###',
+    F: '###|#..|##.|#..|#..', G: '.##|#..|#.#|#.#|.##', H: '#.#|#.#|###|#.#|#.#', I: '###|.#.|.#.|.#.|###', J: '..#|..#|..#|#.#|.#.',
+    K: '#.#|#.#|##.|#.#|#.#', L: '#..|#..|#..|#..|###', M: '#.#|###|###|#.#|#.#', N: '##.|#.#|#.#|#.#|#.#', O: '.#.|#.#|#.#|#.#|.#.',
+    P: '##.|#.#|##.|#..|#..', Q: '.#.|#.#|#.#|##.|.##', R: '##.|#.#|##.|#.#|#.#', S: '.##|#..|.#.|..#|##.', T: '###|.#.|.#.|.#.|.#.',
+    U: '#.#|#.#|#.#|#.#|###', V: '#.#|#.#|#.#|#.#|.#.', W: '#.#|#.#|###|###|#.#', X: '#.#|#.#|.#.|#.#|#.#', Y: '#.#|#.#|.#.|.#.|.#.',
+    Z: '###|..#|.#.|#..|###', 0: '###|#.#|#.#|#.#|###', 1: '.#.|##.|.#.|.#.|###', 2: '##.|..#|.#.|#..|###', 3: '##.|..#|.#.|..#|##.',
+    4: '#.#|#.#|###|..#|..#', 5: '###|#..|##.|..#|##.', 6: '.##|#..|###|#.#|###', 7: '###|..#|.#.|.#.|.#.', 8: '###|#.#|###|#.#|###',
+    9: '###|#.#|###|..#|##.'
+  };
+  // Tattoo designs as pixel art (palette keys below). ' ' / '.' = skin.
+  var MOTIFS = {
+    skull: [' WWWWW ', 'WWWWWWW', 'WKKWKKW', 'WKKWKKW', 'WWWKWWW', ' WWWWW ', ' W W W '],
+    maple: ['   R   ', 'R RRR R', 'RRRRRRR', ' RRRRR ', 'RRRRRRR', '  RRR  ', '   B   '],
+    wheat: ['G G G', 'GGGGG', ' GGG ', ' BBB ', ' GGG ', 'G G G', 'G   G'],
+    mom: ['  RR   RR  ', ' RRRR RRRR ', 'RRRRRRRRRRR', 'RRRRRRRRRRR', ' RRRRRRRRR ', '  RRRRRRR  ', '   RRRRR   ', '    RRR    ', '     R     '],
+    moose: ['A A     A A', 'AAA     AAA', ' AAANNNAAA ', '    NNN    ', '    NKN    ', '    NNN    ', '     N     '],
+    flames: ['   Y   ', '  YO Y ', ' YOOYO ', ' OOROO ', 'OORRROO', 'ORRRRRO', ' RRRRR '],
+    tear: ['K', 'K']
+  };
+  var PAL = { W: 0xe8e4dc, K: INK, R: 0xc0392b, G: 0xd9a520, B: 0x6b4a2e, N: 0x5a3a22, A: 0xc8a878, Y: 0xf2d24a, O: 0xe8782a, '#': INK };
+  function textGrid(str) {
+    var rows = ['', '', '', '', ''], s = String(str || '').toUpperCase(), first = true;
+    for (var i = 0; i < s.length; i++) {
+      var g = FONT[s.charAt(i)];
+      if (!g) continue;
+      var r = g.split('|');
+      for (var k = 0; k < 5; k++) rows[k] += (first ? '' : '.') + r[k];
+      first = false;
+    }
+    return rows[0] ? rows : null;
+  }
+  function rotGrid(grid) {         // 90° clockwise: text that runs down a forearm
+    var out = [], h = grid.length, w = grid[0].length;
+    for (var c = 0; c < w; c++) { var row = ''; for (var r = h - 1; r >= 0; r--) row += grid[r].charAt(c); out.push(row); }
+    return out;
+  }
+  // Pixel art on an axis-aligned face: centre c, u = image right, v = image down, n = outward normal (unit axis vectors),
+  // px = pixel size, t = thickness. Runs of one colour in a row merge into one box.
+  function pixels(b, grid, px, c, u, v, n, t, pal, col) {
+    var rows = grid.length, cols = 0, r, i;
+    for (r = 0; r < rows; r++) cols = Math.max(cols, grid[r].length);
+    for (r = 0; r < rows; r++) {
+      var row = grid[r];
+      for (i = 0; i < row.length;) {
+        var ch = row.charAt(i);
+        if (ch === ' ' || ch === '.') { i++; continue; }
+        var j = i; while (j < row.length && row.charAt(j) === ch) j++;
+        var len = j - i, cu = (i + (len - 1) / 2 - (cols - 1) / 2) * px, cv = (r - (rows - 1) / 2) * px, color = col != null ? col : (pal || PAL)[ch];
+        var sz = [0, 0, 0], p = [0, 0, 0];
+        for (var a = 0; a < 3; a++) {
+          sz[a] = Math.abs(u[a]) * len * px + Math.abs(v[a]) * px + Math.abs(n[a]) * t;
+          p[a] = c[a] + u[a] * cu + v[a] * cv + n[a] * t / 2;
+        }
+        b.box(sz[0], sz[1], sz[2], p[0], p[1], p[2], color == null ? INK : color);
+        i = j;
+      }
+    }
+  }
+  function mix(a, bb, f) { var x = new THREE.Color(a), y = new THREE.Color(bb); return x.lerp(y, f).getHex(); }
+  function hexOf(v, d) { return typeof v === 'number' ? v : typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : d; }
+  function hatColor(L, V) { return V.capColor || L.capColor || '#c0392b'; }
+  function bandInitials() {
+    var st = GG.state, band = st && GG.content && GG.content.bands && GG.content.bands[st.bandId];
+    var name = (band && band.name) || 'Hail Damage', w = name.replace(/^the\s+/i, '').split(/\s+/);
+    return (w.length > 1 ? w[0].charAt(0) + w[1].charAt(0) : w[0].slice(0, 2)).toUpperCase();
+  }
+  function designGrid(design) {
+    if (design === 'regerts') return rotGrid(textGrid((GG.content.creator && GG.content.creator.words && GG.content.creator.words.regerts) || 'REGERTS'));
+    if (design === 'logo') { var t = textGrid(bandInitials()); return t ? ['K.K.K.K'.slice(0, t[0].length)].concat(t) : null; }
+    return MOTIFS[design] || null;
+  }
+  function has(a, x) { return !!a && a.indexOf(x) >= 0; }
+
+  // Where the clothes are: torso colour/kind, how bare the arms are, what the legs wear.
+  function garment(L, V) {
+    var o = V.outfit || 'none', G = { top: L.top || 'tee', torso: L.shirt, arms: 'long', sleeve: L.shirt, legs: V.bottom || 'jeans',
+      pants: L.pants, skinTorso: false, vest: null, suit: false };
+    if (G.top === 'tee') G.arms = 'short';
+    else if (G.top === 'tank') G.arms = 'none';
+    else if (G.top === 'denim') G.sleeve = DENIM;
+    if (o === 'shirtless') { G.top = 'skin'; G.skinTorso = true; G.arms = 'none'; }
+    else if (o === 'leathervest') { G.top = 'skin'; G.skinTorso = true; G.arms = 'none'; G.vest = LEATHER; }
+    else if (o === 'battlejacket') { G.top = 'tee'; G.torso = L.shirt; G.arms = 'short'; G.vest = DENIM; G.patches = true; }
+    else if (o === 'cdntux') { G.top = 'denim'; G.arms = 'long'; G.sleeve = DENIM; G.legs = 'jeans'; G.pants = 0x34507a; }
+    else if (o === 'spandex') { G.top = 'tank'; G.arms = 'none'; G.legs = 'spandex'; }
+    else if (o === 'rhinestone') { G.top = 'suit'; G.arms = 'long'; G.sleeve = L.shirt; G.legs = 'suit'; G.pants = L.shirt; G.suit = true; }
+    if (G.top === 'denim') G.torso = DENIM;
+    return G;
+  }
+
+  function charV8(ctx, L, o, V) {
+    var b = new ctx.Builder({ skinned: true, jitter: 0.03, seed: ctx.hash(o.id || 'someone') });
+    var sh = ctx.shade, bw = L.build, sx = 0.25 * bw + 0.075, hx = 0.11 * bw, fz = 0.135 * bw + 0.004;
+    var G = garment(L, V), skin = L.skin, i, s;
+    var paint = has(V.stageExtras, 'corpsepaint'), face = paint ? PAINT : skin;
+    var F = FACES[(V.face && V.face.shape) || 'classic'] || FACES.classic;
+    var hair = L.hair, grey = V.age === 'grizzled';
+    // ---- Legs + shoes
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      var lx = s * hx;
+      b.bone = i ? B_SHIN_R : B_SHIN_L;
+      legLower(b, G, L, lx, sh, skin);
+      shoe(b, V.shoes || 'sneakers', lx, sh);
+      b.bone = i ? B_LEG_R : B_LEG_L;
+      legUpper(b, G, L, lx, sh, skin);
+    }
+    b.bone = B_HIPS;
+    if (G.legs === 'kilt') {
+      var tart = G.pants;
+      b.box(0.44 * bw, 0.34, 0.29 * bw, 0, 0.75, 0, tart);
+      b.box(0.445 * bw, 0.035, 0.295 * bw, 0, 0.78, 0, sh(tart, 0.55)); b.box(0.445 * bw, 0.02, 0.295 * bw, 0, 0.66, 0, sh(tart, 1.35));
+      b.box(0.03, 0.34, 0.3 * bw, 0.08, 0.75, 0, sh(tart, 0.55)); b.box(0.03, 0.34, 0.3 * bw, -0.08, 0.75, 0, sh(tart, 0.55));
+      b.box(0.08, 0.1, 0.02, 0, 0.72, 0.15 * bw, 0xe8e4dc);                        // sporran
+      b.box(0.41 * bw, 0.04, 0.25 * bw, 0, 0.945, 0, 0x2a211b);
+    } else {
+      b.box(0.4 * bw, 0.17, 0.24 * bw, 0, 0.87, 0, G.pants);
+      if (G.legs !== 'spandex' && G.legs !== 'sweats') b.box(0.41 * bw, 0.04, 0.25 * bw, 0, 0.945, 0, G.suit ? 0xe8e4dc : 0x2a211b);   // belt
+      if (G.suit) b.box(0.06, 0.05, 0.02, 0, 0.945, 0.125 * bw + 0.004, 0xd4a940);   // the buckle
+    }
+    // ---- Torso
+    b.bone = B_SPINE;
+    torso(b, G, L, V, bw, fz, sh, skin);
+    // ---- Head
+    b.bone = B_HEAD;
+    head(b, L, V, F, face, skin, hair, grey, paint, sh);
+    // ---- Arms
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      arm(b, G, L, V, s, i, sx, bw, sh, skin, o);
+    }
+    // ---- Held things, gear, headphones, capes (same as v0.7)
+    if (o.gear === 'guitar') guitarParts(b);
+    if (o.held === 'sandwich') {
+      b.bone = B_HELD;
+      b.box(0.15, 0.03, 0.11, -sx, 0.72, 0.1, 0xe3c38a); b.box(0.155, 0.018, 0.115, -sx, 0.742, 0.1, 0xe58a8e);
+      b.box(0.165, 0.012, 0.12, -sx, 0.756, 0.1, 0x7cc251); b.box(0.15, 0.03, 0.11, -sx, 0.775, 0.1, 0xe3c38a);
+    } else if (o.held === 'phone') {
+      b.bone = B_HELD; b.box(0.075, 0.14, 0.014, -sx, 0.8, 0.075, 0x1d1d22);
+    }
+    if (o.floorProp === 'lunchbox') {
+      b.bone = B_FLOOR;
+      b.box(0.3, 0.19, 0.17, 0.44, 0.095, 0.25, 0xc0392b); b.box(0.305, 0.02, 0.175, 0.44, 0.16, 0.25, 0x8a2a20);
+      b.box(0.12, 0.03, 0.03, 0.44, 0.205, 0.25, 0x222222); b.cyl(0.04, 0.04, 0.2, 8, 0.66, 0.1, 0.16, 0x3f7fbf);
+    }
+    b.bone = B_PHONES;
+    b.box(F.hw * 2 + 0.04, 0.045, 0.07, 0, 1.915, 0, 0x202024);
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      b.box(0.03, 0.18, 0.05, s * (F.hw + 0.025), 1.83, 0, 0x202024); b.box(0.07, 0.13, 0.13, s * (F.hw + 0.03), 1.69, 0, 0x2a2a30);
+      b.box(0.012, 0.08, 0.08, s * (F.hw + 0.067), 1.69, 0, 0xd23c3c);
+    }
+    var cape = o.cape && CAPES[o.cape] ? CAPES[o.cape] : has(V.stageExtras, 'cape') ? CAPES.player : null;
+    if (cape) capeParts(b, cape, bw, ctx);
+    return b.build();
+  }
+
+  function legLower(b, G, L, lx, sh, skin) {
+    var p = G.pants;
+    switch (G.legs) {
+      case 'cargo': b.box(0.135, 0.37, 0.15, lx, 0.265, 0, skin); b.box(0.14, 0.09, 0.155, lx, 0.13, 0, 0xe8e4dc); break;   // shins + tube socks
+      case 'kilt': b.box(0.135, 0.12, 0.15, lx, 0.39, 0, skin); b.box(0.15, 0.26, 0.165, lx, 0.19, 0, 0xe0dccf); b.box(0.155, 0.03, 0.17, lx, 0.31, 0, 0xc0392b); break;
+      case 'sweats': b.box(0.16, 0.37, 0.18, lx, 0.27, 0, p); b.box(0.15, 0.05, 0.17, lx, 0.1, 0, sh(p, 0.75)); b.box(0.01, 0.34, 0.03, lx + (lx > 0 ? 0.08 : -0.08), 0.28, 0, 0xe8e4dc); break;
+      case 'spandex': b.box(0.135, 0.37, 0.155, lx, 0.265, 0, p); b.box(0.137, 0.03, 0.157, lx, 0.3, 0, sh(p, 1.4)); b.box(0.137, 0.03, 0.157, lx, 0.18, 0, sh(p, 1.4)); break;
+      case 'suit': b.box(0.15, 0.37, 0.17, lx, 0.265, 0, p); rhinestones(b, lx + (lx > 0 ? 0.076 : -0.076), 0.265, 0, 'x', 3, 0.32); break;
+      default: b.box(0.15, 0.37, 0.17, lx, 0.265, 0, p);                         // jeans (the v0.7 pants)
+    }
+  }
+  function legUpper(b, G, L, lx, sh, skin) {
+    var p = G.pants;
+    switch (G.legs) {
+      case 'cargo':
+        b.box(0.18, 0.28, 0.2, lx, 0.7, 0, p); b.box(0.14, 0.14, 0.16, lx, 0.5, 0, skin);
+        b.box(0.02, 0.09, 0.09, lx + (lx > 0 ? 0.091 : -0.091), 0.66, 0, sh(p, 0.8)); break;
+      case 'kilt': b.box(0.15, 0.41, 0.17, lx, 0.645, 0, skin); break;
+      case 'sweats': b.box(0.18, 0.41, 0.2, lx, 0.645, 0, p); b.box(0.01, 0.4, 0.03, lx + (lx > 0 ? 0.091 : -0.091), 0.645, 0, 0xe8e4dc); break;
+      case 'spandex': b.box(0.16, 0.41, 0.175, lx, 0.645, 0, p); b.box(0.162, 0.03, 0.177, lx, 0.7, 0, sh(p, 1.4)); b.box(0.162, 0.03, 0.177, lx, 0.56, 0, sh(p, 1.4)); break;
+      case 'suit': b.box(0.17, 0.41, 0.19, lx, 0.645, 0, p); rhinestones(b, lx + (lx > 0 ? 0.086 : -0.086), 0.645, 0, 'x', 3, 0.36); break;
+      default: b.box(0.17, 0.41, 0.19, lx, 0.645, 0, p);
+    }
+  }
+  function shoe(b, kind, lx, sh) {
+    switch (kind) {
+      case 'skate': b.box(0.18, 0.08, 0.29, lx, 0.05, 0.035, 0x1e1e24); b.box(0.185, 0.03, 0.295, lx, 0.015, 0.035, 0xf0ece4); b.box(0.184, 0.02, 0.1, lx, 0.06, 0.02, 0xf0ece4); break;
+      case 'workboots': b.box(0.175, 0.16, 0.2, lx, 0.08, 0, 0x8a5a2a); b.box(0.175, 0.09, 0.3, lx, 0.045, 0.04, 0x8a5a2a); b.box(0.18, 0.025, 0.305, lx, 0.012, 0.04, 0x2a1f16); b.box(0.06, 0.1, 0.01, lx, 0.1, 0.101, 0xd9c27a); break;
+      case 'cowboy':
+        b.box(0.165, 0.22, 0.18, lx, 0.12, -0.01, 0x6b3a1e); b.box(0.15, 0.08, 0.27, lx, 0.04, 0.05, 0x6b3a1e); b.box(0.09, 0.06, 0.08, lx, 0.035, 0.2, 0x6b3a1e);
+        b.box(0.17, 0.02, 0.19, lx, 0.225, -0.01, 0x4a2612); b.box(0.12, 0.045, 0.07, lx, 0.022, -0.06, 0x2a1f16); break;
+      case 'crocs':
+        b.box(0.18, 0.1, 0.29, lx, 0.05, 0.035, 0x3fbf4a);
+        for (var k = 0; k < 3; k++) b.box(0.03, 0.008, 0.03, lx + (k - 1) * 0.05, 0.102, 0.1, 0x2a8a34);
+        b.box(0.19, 0.03, 0.03, lx, 0.07, -0.08, 0x2a8a34); break;
+      default: b.box(0.165, 0.085, 0.28, lx, 0.043, 0.035, 0x1f1b18);                // the v0.7 sneakers
+    }
+  }
+  function rhinestones(b, x, y, z, axis, n, span) {       // a row of sparkles along y on a side face (axis 'x') or the front ('z')
+    for (var k = 0; k < n; k++) {
+      var yy = y - span / 2 + span * (k + 0.5) / n;
+      if (axis === 'x') b.box(0.008, 0.018, 0.018, x, yy, z, 0xfff4c8); else b.box(0.018, 0.018, 0.008, x, yy, z, 0xfff4c8);
+    }
+  }
+
+  function torso(b, G, L, V, bw, fz, sh, skin) {
+    var c = G.skinTorso ? skin : G.torso, dark = sh(L.shirt, 0.55);
+    b.box(0.4 * bw, 0.22, 0.24 * bw, 0, 1.06, 0, c);
+    b.box(0.47 * bw, 0.3, 0.27 * bw, 0, 1.3, 0, c);
+    if (bw >= 1.15) b.box(0.34 * bw, 0.18, 0.06, 0, 1.06, 0.12 * bw + 0.02, c);    // the big unit's belly
+    var bz = bw >= 1.15 ? 0.12 * bw + 0.05 : fz;
+    switch (G.top) {
+      case 'tee': b.box(0.17 * bw, 0.13, 0.01, 0, 1.29, fz, teePrint({ shade: sh }, L.shirt)); break;
+      case 'flannel':
+        b.box(0.475 * bw, 0.035, 0.275 * bw, 0, 1.34, 0, dark); b.box(0.405 * bw, 0.035, 0.245 * bw, 0, 1.1, 0, dark);
+        b.box(0.035, 0.3, 0.275 * bw, 0.1 * bw, 1.3, 0, dark); b.box(0.035, 0.3, 0.275 * bw, -0.1 * bw, 1.3, 0, dark);
+        b.box(0.24, 0.05, 0.05, 0, 1.445, 0.11 * bw, dark); break;
+      case 'hoodie':
+        b.box(0.36 * bw, 0.17, 0.13, 0, 1.44, -0.165 * bw, sh(L.shirt, 0.9));
+        b.box(0.3 * bw, 0.11, 0.012, 0, 1.07, 0.12 * bw + 0.006, sh(L.shirt, 0.84));
+        b.box(0.016, 0.13, 0.012, 0.05, 1.36, fz + 0.004, 0xe8e4da); b.box(0.016, 0.13, 0.012, -0.05, 1.36, fz + 0.004, 0xe8e4da); break;
+      case 'jacket':
+        var inner = luminance(L.shirt) < 0.2 ? 0x3b3b41 : 0xe6e1d6;
+        b.box(0.1, 0.28, 0.008, 0, 1.28, fz - 0.001, inner);
+        b.box(0.07, 0.3, 0.012, 0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, -0.28);
+        b.box(0.07, 0.3, 0.012, -0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, 0.28);
+        b.box(0.42 * bw, 0.05, 0.255 * bw, 0, 0.965, 0, sh(L.shirt, 0.8)); break;
+      case 'tank':
+        b.box(0.14 * bw, 0.08, 0.01, 0, 1.415, fz, skin);                                  // scoop neck
+        b.box(0.1 * bw, 0.06, 0.28 * bw, 0.19 * bw, 1.42, 0, skin); b.box(0.1 * bw, 0.06, 0.28 * bw, -0.19 * bw, 1.42, 0, skin); break;
+      case 'jersey':
+        var stripe = luminance(L.shirt) > 0.6 ? 0xb3262b : 0xf0ece4;
+        b.box(0.405 * bw, 0.04, 0.245 * bw, 0, 1.0, 0, stripe); b.box(0.405 * bw, 0.02, 0.245 * bw, 0, 1.045, 0, sh(stripe, 0.8));
+        b.box(0.26, 0.05, 0.05, 0, 1.445, 0.1 * bw, stripe);                               // lace-up collar
+        b.box(0.13, 0.12, 0.01, 0, 1.28, fz, stripe);                                      // the crest: a gopher-ish maple
+        pixels(b, MOTIFS.maple, 0.013, [0, 1.285, fz + 0.005], [1, 0, 0], [0, -1, 0], [0, 0, 1], 0.003, null, L.shirt);
+        var num = textGrid('19');
+        if (num) pixels(b, num, 0.03, [0, 1.25, -0.135 * bw - 0.004], [-1, 0, 0], [0, -1, 0], [0, 0, -1], 0.003, null, stripe);
+        break;
+      case 'denim':
+        b.box(0.12, 0.28, 0.008, 0, 1.28, fz - 0.001, G.skinTorso ? skin : (V.outfit === 'cdntux' ? 0xe8e4dc : L.shirt));   // inner tee
+        b.box(0.075, 0.3, 0.012, 0.08, 1.29, fz + 0.002, sh(DENIM, 1.12), 0, 0, -0.2); b.box(0.075, 0.3, 0.012, -0.08, 1.29, fz + 0.002, sh(DENIM, 1.12), 0, 0, 0.2);
+        b.box(0.3, 0.05, 0.06, 0, 1.445, 0.1 * bw, sh(DENIM, 0.9));                       // collar
+        b.box(0.07, 0.05, 0.008, 0.12 * bw, 1.33, fz + 0.004, sh(DENIM, 0.85)); b.box(0.07, 0.05, 0.008, -0.12 * bw, 1.33, fz + 0.004, sh(DENIM, 0.85));   // pockets
+        b.box(0.42 * bw, 0.04, 0.255 * bw, 0, 0.965, 0, sh(DENIM, 0.85)); break;
+      case 'suit':                                                                          // the rhinestone suit (a Nudie)
+        var yoke = sh(L.shirt, 0.72);
+        b.box(0.475 * bw, 0.07, 0.275 * bw, 0, 1.415, 0, yoke);
+        b.box(0.1, 0.28, 0.008, 0, 1.28, fz - 0.001, 0xf0ece4); b.box(0.02, 0.12, 0.01, 0, 1.33, fz + 0.004, 0x2a211b);   // shirt + bolo tie
+        b.box(0.03, 0.03, 0.012, 0, 1.4, fz + 0.006, 0xd4a940);
+        b.box(0.07, 0.3, 0.012, 0.075, 1.29, fz + 0.002, yoke, 0, 0, -0.28); b.box(0.07, 0.3, 0.012, -0.075, 1.29, fz + 0.002, yoke, 0, 0, 0.28);
+        for (var k = 0; k < 5; k++) { b.box(0.016, 0.016, 0.006, 0.15 * bw, 1.38 - k * 0.07, fz + 0.004, 0xfff4c8); b.box(0.016, 0.016, 0.006, -0.15 * bw, 1.38 - k * 0.07, fz + 0.004, 0xfff4c8); }
+        b.box(0.42 * bw, 0.05, 0.255 * bw, 0, 0.965, 0, yoke); break;
+      case 'skin':
+        b.box(0.12 * bw, 0.012, 0.008, 0.07 * bw, 1.25, fz - 0.002, sh(skin, 0.82)); b.box(0.12 * bw, 0.012, 0.008, -0.07 * bw, 1.25, fz - 0.002, sh(skin, 0.82));   // pecs
+        b.box(0.012, 0.012, 0.006, 0, 1.02, bz, sh(skin, 0.7));                          // belly button
+        break;
+    }
+    if (G.vest) {                                                                          // leather vest / battle vest: open front, full back
+      var vc = G.vest, vw = 0.13 * bw;
+      b.box(vw, 0.46, 0.012, 0.17 * bw, 1.2, fz + 0.002, vc); b.box(vw, 0.46, 0.012, -0.17 * bw, 1.2, fz + 0.002, vc);
+      b.box(0.49 * bw, 0.5, 0.012, 0, 1.2, -0.135 * bw - 0.004, vc);
+      b.box(0.012, 0.5, 0.28 * bw, 0.237 * bw, 1.2, 0, vc); b.box(0.012, 0.5, 0.28 * bw, -0.237 * bw, 1.2, 0, vc);
+      if (G.patches) {
+        var PATCH = [0xb3262b, 0xe8e4dc, 0xd9a520, 0x141418, 0x3f7fe0];
+        b.box(0.05, 0.04, 0.006, 0.19 * bw, 1.34, fz + 0.01, PATCH[0]); b.box(0.045, 0.06, 0.006, 0.15 * bw, 1.2, fz + 0.01, PATCH[1]);
+        b.box(0.05, 0.035, 0.006, -0.19 * bw, 1.3, fz + 0.01, PATCH[2]); b.box(0.04, 0.05, 0.006, -0.15 * bw, 1.12, fz + 0.01, PATCH[4]);
+        b.box(0.3 * bw, 0.2, 0.006, 0, 1.25, -0.135 * bw - 0.012, PATCH[3]);             // the back patch
+        var ini = textGrid(bandInitials());
+        if (ini) pixels(b, ini, 0.022, [0, 1.25, -0.135 * bw - 0.015], [-1, 0, 0], [0, -1, 0], [0, 0, -1], 0.003, null, 0xe8e4dc);
+      } else {
+        for (var st = 0; st < 5; st++) { b.box(0.014, 0.014, 0.008, 0.115 * bw, 1.4 - st * 0.09, fz + 0.01, METAL); b.box(0.014, 0.014, 0.008, -0.115 * bw, 1.4 - st * 0.09, fz + 0.01, METAL); }
+      }
+    }
+    // Chest tattoo (shows with a bare torso).
+    var chest = tat(V, 'chest');
+    if (chest && G.skinTorso) {
+      var cg = designGrid(chest.design);
+      if (cg) pixels(b, cg, Math.min(0.016, 0.16 / Math.max(cg.length, cg[0].length)), [0, 1.3, fz - 0.002], [1, 0, 0], [0, -1, 0], [0, 0, 1], 0.004);
+    }
+  }
+  function tat(V, spot) { var l = V.tattoos || []; for (var i = 0; i < l.length; i++) if (l[i].spot === spot) return l[i]; return null; }
+
+  function arm(b, G, L, V, s, i, sx, bw, sh, skin, o) {
+    var side = s > 0 ? 'L' : 'R', full = tat(V, 'sleeve' + side), half = tat(V, 'half' + side), ink = full || half;
+    var ox = s * sx;
+    b.bone = i ? B_ARM_R : B_ARM_L;
+    if (G.arms === 'short') { b.box(0.145, 0.16, 0.155, ox, 1.3, 0, G.torso); b.box(0.12, 0.16, 0.13, ox, 1.15, 0, skin); }
+    else if (G.arms === 'none') { b.box(0.125, 0.33, 0.135, ox, 1.215, 0, skin); }
+    else b.box(0.135, 0.31, 0.145, ox, 1.225, 0, G.sleeve);
+    if (G.top === 'flannel' && G.arms === 'long') b.box(0.14, 0.03, 0.15, ox, 1.2, 0, sh(L.shirt, 0.55));
+    if (G.top === 'jersey' && G.arms === 'long') b.box(0.14, 0.04, 0.15, ox, 1.12, 0, luminance(L.shirt) > 0.6 ? 0xb3262b : 0xf0ece4);
+    if (G.suit) { b.box(0.14, 0.05, 0.15, ox, 1.34, 0, sh(L.shirt, 0.72)); rhinestones(b, s * (sx + 0.07), 1.22, 0, 'x', 3, 0.2); }
+    if (full && G.arms !== 'long') {                                   // a full sleeve shows on the bare upper arm
+      var ux = s * (sx + (G.arms === 'none' ? 0.0625 : 0.06)), uy = G.arms === 'none' ? 1.2 : 1.15, ug = designGrid(full.design);
+      if (ug) pixels(b, ug, Math.min(0.0085, 0.12 / Math.max(ug.length, ug[0].length)), [ux, uy, 0], [0, 0, -s], [0, -1, 0], [s, 0, 0], 0.003);
+      swirls(b, ox, uy, G.arms === 'none' ? 0.0625 : 0.06, 0.068, G.arms === 'none' ? 0.1 : 0.05, i + 7);
+    }
+    b.bone = i ? B_FORE_R : B_FORE_L;
+    var bare = G.arms !== 'long';
+    b.box(0.12, 0.25, 0.13, ox, 0.955, 0, bare ? skin : G.sleeve);
+    if (G.top === 'flannel' && G.arms === 'long') b.box(0.125, 0.03, 0.135, ox, 0.95, 0, sh(L.shirt, 0.55));
+    if ((G.top === 'denim' || G.top === 'suit') && G.arms === 'long') b.box(0.126, 0.04, 0.136, ox, 0.845, 0, G.suit ? sh(L.shirt, 0.72) : sh(DENIM, 0.85));
+    if (G.top === 'jersey' && G.arms === 'long') b.box(0.125, 0.035, 0.135, ox, 0.9, 0, luminance(L.shirt) > 0.6 ? 0xb3262b : 0xf0ece4);
+    if (ink && bare) {
+      var fg = designGrid(ink.design);
+      if (fg) pixels(b, fg, Math.min(0.0085, 0.2 / Math.max(fg.length, fg[0].length * 1.6)), [s * (sx + 0.06), 0.96, 0], [0, 0, -s], [0, -1, 0], [s, 0, 0], 0.003);
+      if (full) swirls(b, ox, 0.96, 0.06, 0.065, 0.09, i + 3);
+    }
+    if (has(V.stageExtras, 'wristbands')) {
+      b.box(0.132, 0.05, 0.142, ox, 0.86, 0, LEATHER);
+      for (var k = -1; k <= 1; k++) { b.box(0.008, 0.014, 0.014, s * (sx + 0.068), 0.86, k * 0.04, METAL); b.box(0.014, 0.014, 0.008, ox + k * 0.035, 0.86, 0.073, METAL); }
+    }
+    b.box(0.11, 0.1, 0.12, ox, 0.78, 0.005, skin);                                        // hand
+    var kn = V.knuckles && (s > 0 ? V.knuckles.left : V.knuckles.right);
+    if (kn) {
+      var kg = textGrid(kn);
+      if (kg) pixels(b, kg, 0.0062, [s * (sx + 0.055), 0.768, 0.005], [0, 0, -s], [0, -1, 0], [s, 0, 0], 0.003);
+    }
+    if (o.sticks) b.box(0.024, 0.024, 0.42, ox, 0.77, 0.15, hexOf(o.sticks, 0xd8b27a), 0.25);
+  }
+  // Sleeve filler: little ink strokes around the front, back and inside of a limb segment (deterministic).
+  function swirls(b, ox, y, hwx, hwz, span, seed) {
+    for (var k = 0; k < 7; k++) {
+      var h = ((seed * 7 + k * 13) % 11) / 11, yy = y - span / 2 + span * (k + 0.5) / 7, c = k % 2 ? INK : INK2;
+      if (k % 3 === 0) b.box(0.05, 0.012, 0.004, ox + (h - 0.5) * 0.05, yy, hwz + 0.002, c);
+      else if (k % 3 === 1) b.box(0.05, 0.012, 0.004, ox + (h - 0.5) * 0.05, yy, -hwz - 0.002, c);
+      else b.box(0.004, 0.012, 0.05, ox - (ox > 0 ? 1 : -1) * (hwx + 0.002), yy, (h - 0.5) * 0.05, c);
+    }
+  }
+
+  function head(b, L, V, F, face, skin, hair, grey, paint, sh) {
+    var hw = F.hw, hd = F.hd, fzz = hd, my = F.mouth, fc = V.face || {}, i, s;
+    b.box(0.13, 0.1, 0.13, 0, 1.47, 0, paint ? face : skin);                                  // neck
+    var nt = tat(V, 'neck');
+    if (nt) { var ng = designGrid(nt.design); if (ng) pixels(b, ng, Math.min(0.007, 0.075 / Math.max(ng.length, ng[0].length)), [0.066, 1.47, 0], [0, 0, -1], [0, -1, 0], [1, 0, 0], 0.003); }
+    b.box(hw * 2, F.hh * 2, hd * 2, 0, F.cy, 0, face);
+    if (F.chin) b.box(F.chin[0], F.chin[1], F.chin[2], 0, F.chin[3], 0, face);
+    if (F.jaw) b.box(F.jaw[0], F.jaw[1], F.jaw[2], 0, F.jaw[3], 0, face);
+    b.box(0.04, 0.08, 0.06, hw + 0.015, 1.69, 0, sh(face, 0.92)); b.box(0.04, 0.08, 0.06, -hw - 0.015, 1.69, 0, sh(face, 0.92));
+    if (paint) corpsePaintParts(b, hd, my);
+    // Nose
+    var nc = sh(face, 0.9);
+    switch (fc.nose) {
+      case 'big': b.box(0.075, 0.085, 0.07, 0, 1.65, hd + 0.025, nc); break;
+      case 'long': b.box(0.045, 0.1, 0.055, 0, 1.643, hd + 0.02, nc); break;
+      case 'pointy': b.cyl(0, 0.036, 0.075, 4, 0, 1.655, hd + 0.03, nc, Math.PI / 2, Math.PI / 4, 0); break;
+      case 'broken': b.box(0.05, 0.075, 0.05, 0.008, 1.655, hd + 0.015, nc, 0, 0, 0.22); b.box(0.03, 0.02, 0.03, 0.012, 1.676, hd + 0.03, sh(face, 0.84)); break;
+      default: b.box(0.05, 0.07, 0.05, 0, 1.655, hd + 0.015, nc);
+    }
+    // Mouth
+    var mz = hd + 0.002, lip = sh(face, 0.6);
+    switch (fc.mouth) {
+      case 'grin': b.box(0.12, 0.034, 0.012, 0, my, mz, 0x3a1a1a); b.box(0.1, 0.012, 0.01, 0, my + 0.008, mz + 0.004, TEETH); break;
+      case 'smirk': b.box(0.08, 0.018, 0.012, 0.012, my + 0.004, mz, lip, 0, 0, 0.22); break;
+      case 'frown': b.box(0.05, 0.016, 0.012, 0.022, my - 0.004, mz, lip, 0, 0, -0.35); b.box(0.05, 0.016, 0.012, -0.022, my - 0.004, mz, lip, 0, 0, 0.35); break;
+      case 'scream': b.box(0.085, 0.07, 0.012, 0, my - 0.012, mz, 0x2a0e0e); b.box(0.075, 0.014, 0.01, 0, my + 0.016, mz + 0.004, TEETH); b.box(0.05, 0.02, 0.01, 0, my - 0.036, mz + 0.004, 0xc0484a); break;
+      default: b.box(0.09, 0.018, 0.012, 0, my, mz, lip);
+    }
+    // Eyes
+    for (i = 0; i < 2; i++) {
+      s = i ? -1 : 1;
+      var ex = s * 0.075, ez = hd + 0.003, ec = fc.eyeColor || '#5a3a22';
+      switch (fc.eyes) {
+        case 'wide': b.box(0.07, 0.055, 0.012, ex, 1.715, ez, 0xf2efe8); b.box(0.034, 0.044, 0.012, ex, 1.713, ez + 0.004, ec); b.box(0.016, 0.02, 0.01, ex, 1.713, ez + 0.008, 0x0c0c0e); break;
+        case 'narrow': b.box(0.07, 0.026, 0.012, ex, 1.713, ez, 0xf2efe8); b.box(0.03, 0.026, 0.012, ex, 1.713, ez + 0.004, ec); b.box(0.076, 0.01, 0.012, ex, 1.73, ez + 0.004, 0x16120f); break;
+        case 'big': b.box(0.075, 0.085, 0.012, ex, 1.715, ez, 0xf2efe8); b.box(0.045, 0.06, 0.012, ex, 1.71, ez + 0.004, ec); b.box(0.022, 0.03, 0.01, ex, 1.71, ez + 0.008, 0x0c0c0e); b.box(0.012, 0.012, 0.008, ex + 0.012, 1.724, ez + 0.012, 0xffffff); break;
+        case 'sleepy': b.box(0.068, 0.04, 0.012, ex, 1.71, ez, 0xf2efe8); b.box(0.032, 0.034, 0.012, ex, 1.707, ez + 0.004, ec); b.box(0.016, 0.018, 0.01, ex, 1.707, ez + 0.008, 0x0c0c0e); b.box(0.074, 0.022, 0.014, ex, 1.724, ez + 0.007, sh(face, 0.88)); break;
+        default: b.box(0.05, 0.065, 0.02, ex, 1.715, ez, 0x16120f);
+      }
+    }
+    // Brows
+    var bc = sh(grey ? mix(hair, 0xb8b8b8, 0.5) : hair, 0.85), bz = hd + 0.003;
+    switch (fc.brows) {
+      case 'thick': b.box(0.095, 0.036, 0.02, 0.075, 1.775, bz, bc); b.box(0.095, 0.036, 0.02, -0.075, 1.775, bz, bc); break;
+      case 'angry': b.box(0.09, 0.026, 0.02, 0.075, 1.766, bz, bc, 0, 0, 0.35); b.box(0.09, 0.026, 0.02, -0.075, 1.766, bz, bc, 0, 0, -0.35); break;
+      case 'raised': b.box(0.085, 0.022, 0.02, 0.075, 1.795, bz, bc, 0, 0, 0.15); b.box(0.085, 0.022, 0.02, -0.075, 1.772, bz, bc); break;
+      case 'unibrow': b.box(0.25, 0.03, 0.02, 0, 1.774, bz, bc); break;
+      default: b.box(0.085, 0.022, 0.02, 0.075, 1.772, bz, bc); b.box(0.085, 0.022, 0.02, -0.075, 1.772, bz, bc);
+    }
+    // Age
+    if (V.age === 'lived' || V.age === 'grizzled') {
+      var wr = sh(face, 0.8);
+      b.box(0.05, 0.008, 0.004, 0.075, 1.668, hd + 0.001, wr); b.box(0.05, 0.008, 0.004, -0.075, 1.668, hd + 0.001, wr);
+      b.box(0.008, 0.05, 0.004, 0.068, my + 0.03, hd + 0.001, wr); b.box(0.008, 0.05, 0.004, -0.068, my + 0.03, hd + 0.001, wr);
+      if (grey) { b.box(0.16, 0.007, 0.004, 0, 1.815, hd + 0.001, wr); b.box(0.12, 0.007, 0.004, 0, 1.835, hd + 0.001, wr); }
+    }
+    var tearT = tat(V, 'teardrop');
+    if (tearT) pixels(b, MOTIFS.tear, 0.011, [-0.085, 1.662, hd + 0.001], [1, 0, 0], [0, -1, 0], [0, 0, 1], 0.004, null, 0x1f2c5a);
+    // Facial hair
+    var hc = grey ? mix(hair, 0xc4c4c4, 0.45) : hair;
+    facialHair(b, V.facialHair, F, hc, face, my);
+    // Glasses
+    glassesParts(b, V.glasses, F, my);
+    // Piercings
+    (V.piercings || []).forEach(function (p) { piercing(b, p, F, my); });
+    // Hair + headwear
+    var hwr = V.headwear && V.headwear !== 'none' ? V.headwear : null, style = L.hairStyle;
+    if (style === 'cap') { style = 'short'; if (!hwr) hwr = 'backcap'; }
+    var hatted = hwr === 'toque' || hwr === 'trucker' || hwr === 'backcap' || hwr === 'cowboy' || hwr === 'bandana';
+    hairV8(b, style, F, hair, skin, sh, hatted, grey);
+    if (hwr) headwear(b, hwr, F, hatColor(L, V), sh);
+  }
+  function corpsePaintParts(b, hd, my) {
+    var z = hd + 0.0015, blk = 0x0b0b0d;
+    b.box(0.1, 0.12, 0.004, 0.075, 1.71, z, blk); b.box(0.1, 0.12, 0.004, -0.075, 1.71, z, blk);
+    b.box(0.03, 0.08, 0.004, 0.09, 1.8, z, blk, 0, 0, -0.35); b.box(0.03, 0.08, 0.004, -0.09, 1.8, z, blk, 0, 0, 0.35);
+    b.box(0.02, 0.07, 0.004, 0.075, 1.61, z, blk); b.box(0.02, 0.07, 0.004, -0.075, 1.61, z, blk);
+    b.box(0.02, 0.09, 0.004, 0.03, my - 0.02, z, blk); b.box(0.02, 0.09, 0.004, -0.03, my - 0.02, z, blk);
+  }
+  function facialHair(b, kind, F, hc, face, my) {
+    var dy = my - 1.585, zf = F.hd - 0.16, wf = F.hw / 0.17, hd = F.hd;
+    switch (kind) {
+      case 'stubble':
+        var st = mix(face, hc, 0.42);
+        b.box(0.13, 0.024, 0.004, 0, my + 0.024, hd + 0.001, st); b.box(0.22 * wf, 0.07, 0.004, 0, my - 0.05, hd + 0.001, st);
+        b.box(0.006, 0.13, 0.2, F.hw + 0.001, 1.6 + dy * 0.5, 0.02, st); b.box(0.006, 0.13, 0.2, -F.hw - 0.001, 1.6 + dy * 0.5, 0.02, st); break;
+      case 'goatee':
+        b.box(0.11, 0.09, 0.05, 0, my - 0.055, 0.15 + zf, hc); b.box(0.13, 0.025, 0.03, 0, my + 0.032, 0.178 + zf, hc);
+        b.box(0.022, 0.07, 0.03, 0.06, my - 0.005, 0.17 + zf, hc); b.box(0.022, 0.07, 0.03, -0.06, my - 0.005, 0.17 + zf, hc); break;
+      case 'full': case 'viking':
+        b.box(0.34 * wf, 0.15, 0.07, 0, 1.57 + dy, 0.14 + zf, hc); b.box(0.22 * wf, 0.08, 0.1, 0, 1.49 + dy, 0.12 + zf, hc);
+        b.box(0.04, 0.16, 0.2, 0.17 * wf, 1.6 + dy * 0.5, 0.05 + zf, hc); b.box(0.04, 0.16, 0.2, -0.17 * wf, 1.6 + dy * 0.5, 0.05 + zf, hc);
+        b.box(0.1, 0.012, 0.012, 0, my, hd + 0.075, 0x2a0e0e);                           // a mouth in the beard
+        if (kind === 'viking') {
+          for (var s = -1; s <= 1; s += 2) {
+            for (var k = 0; k < 4; k++) b.box(0.045, 0.06, 0.045, s * 0.05, 1.42 + dy - k * 0.058, 0.15 + zf - k * 0.008, k % 2 ? hc : mix(hc, 0x000000, 0.2));
+            b.box(0.05, 0.02, 0.05, s * 0.05, 1.42 + dy - 4 * 0.058 + 0.03, 0.12 + zf, METAL);
+          }
+        }
+        break;
+      case 'horseshoe':                                                                    // the v0.7 moustache
+        b.box(0.17, 0.035, 0.035, 0, 1.617 + dy, 0.178 + zf, hc); b.box(0.035, 0.06, 0.03, 0.095, 1.597 + dy, 0.176 + zf, hc); b.box(0.035, 0.06, 0.03, -0.095, 1.597 + dy, 0.176 + zf, hc); break;
+      case 'handlebar':
+        b.box(0.15, 0.03, 0.035, 0, 1.617 + dy, 0.178 + zf, hc);
+        b.box(0.05, 0.022, 0.03, 0.095, 1.625 + dy, 0.176 + zf, hc, 0, 0, 0.5); b.box(0.05, 0.022, 0.03, -0.095, 1.625 + dy, 0.176 + zf, hc, 0, 0, -0.5);
+        b.box(0.02, 0.035, 0.025, 0.122, 1.648 + dy, 0.172 + zf, hc); b.box(0.02, 0.035, 0.025, -0.122, 1.648 + dy, 0.172 + zf, hc); break;
+      case 'chops':
+        b.box(0.07, 0.2, 0.2, F.hw - 0.01, 1.6 + dy * 0.5, 0.06 + zf, hc); b.box(0.07, 0.2, 0.2, -F.hw + 0.01, 1.6 + dy * 0.5, 0.06 + zf, hc);
+        b.box(0.17, 0.03, 0.035, 0, 1.617 + dy, 0.178 + zf, hc); break;
+    }
+  }
+  function glassesParts(b, kind, F, my) {
+    var z = F.hd + 0.012, ax = F.hw + 0.003, i, s;
+    switch (kind) {
+      case 'shades':                                                                        // the v0.7 sunglasses
+        b.box(0.33, 0.075, 0.03, 0, 1.712, z + 0.002, 0x0c0c0e); b.box(0.06, 0.014, 0.005, -0.09, 1.728, z + 0.018, 0x5a6a80);
+        b.box(0.012, 0.025, 0.2, ax, 1.72, 0.07, 0x0c0c0e); b.box(0.012, 0.025, 0.2, -ax, 1.72, 0.07, 0x0c0c0e); break;
+      case 'specs':                                                                         // the v0.7 glasses
+        for (i = 0; i < 2; i++) {
+          s = i ? -1 : 1;
+          b.box(0.1, 0.08, 0.015, s * 0.075, 1.713, z, 0x2a2a2a); b.box(0.075, 0.055, 0.01, s * 0.075, 1.713, z + 0.006, 0xbcd0e0);
+          b.box(0.035, 0.045, 0.01, s * 0.075, 1.713, z + 0.012, 0x16120f);
+        }
+        break;
+      case 'round':
+        for (i = 0; i < 2; i++) {
+          s = i ? -1 : 1;
+          b.cyl(0.044, 0.044, 0.01, 8, s * 0.075, 1.713, z, 0x2a2a2a, Math.PI / 2);
+          b.cyl(0.035, 0.035, 0.01, 8, s * 0.075, 1.713, z + 0.004, 0xbcd0e0, Math.PI / 2);
+          b.box(0.03, 0.036, 0.01, s * 0.075, 1.713, z + 0.009, 0x16120f);
+          b.box(0.012, 0.022, 0.19, s * ax, 1.72, 0.07, 0x2a2a2a);
+        }
+        b.box(0.035, 0.01, 0.01, 0, 1.722, z, 0x2a2a2a); break;
+      case 'aviators':
+        for (i = 0; i < 2; i++) {
+          s = i ? -1 : 1;
+          b.box(0.104, 0.086, 0.01, s * 0.078, 1.708, z, 0xc9a23a, 0, 0, s * 0.12);
+          b.box(0.088, 0.07, 0.012, s * 0.078, 1.708, z + 0.004, 0x3a2c22, 0, 0, s * 0.12);
+          b.box(0.03, 0.012, 0.006, s * 0.06, 1.728, z + 0.011, 0x8a7a6a);
+          b.box(0.01, 0.018, 0.19, s * ax, 1.73, 0.07, 0xc9a23a);
+        }
+        b.box(0.05, 0.008, 0.008, 0, 1.748, z, 0xc9a23a); b.box(0.04, 0.008, 0.008, 0, 1.726, z, 0xc9a23a); break;
+    }
+  }
+  function piercing(b, kind, F, my) {
+    var hw = F.hw, hd = F.hd, ex = hw + 0.037, s, i;
+    switch (kind) {
+      case 'studs': b.box(0.008, 0.02, 0.02, ex, 1.662, 0.012, METAL); b.box(0.008, 0.02, 0.02, -ex, 1.662, 0.012, METAL); break;
+      case 'hoops':
+        for (i = 0; i < 2; i++) {
+          s = i ? -1 : 1;
+          b.box(0.006, 0.026, 0.006, s * (ex + 0.002), 1.628, 0.022, METAL, 0.6); b.box(0.006, 0.026, 0.006, s * (ex + 0.002), 1.628, 0.002, METAL, -0.6);
+          b.box(0.006, 0.006, 0.02, s * (ex + 0.002), 1.614, 0.012, METAL);
+        }
+        break;
+      case 'gauges':
+        b.cyl(0.024, 0.024, 0.012, 8, ex - 0.004, 1.655, 0.012, 0x121214, 0, 0, Math.PI / 2); b.cyl(0.024, 0.024, 0.012, 8, -ex + 0.004, 1.655, 0.012, 0x121214, 0, 0, Math.PI / 2);
+        b.box(0.004, 0.05, 0.05, ex + 0.003, 1.655, 0.012, METAL); b.box(0.004, 0.05, 0.05, -ex - 0.003, 1.655, 0.012, METAL); break;
+      case 'nosering': b.box(0.006, 0.02, 0.006, 0.03, 1.63, hd + 0.03, METAL); b.box(0.018, 0.006, 0.006, 0.037, 1.62, hd + 0.03, METAL); break;
+      case 'septum': b.box(0.03, 0.007, 0.008, 0, 1.612, hd + 0.03, METAL); b.box(0.007, 0.018, 0.008, 0.015, 1.62, hd + 0.03, METAL); b.box(0.007, 0.018, 0.008, -0.015, 1.62, hd + 0.03, METAL); break;
+      case 'eyebrow': b.box(0.013, 0.013, 0.012, 0.12, 1.79, hd + 0.006, METAL); b.box(0.013, 0.013, 0.012, 0.124, 1.755, hd + 0.006, METAL); break;
+      case 'lip': b.box(0.006, 0.02, 0.008, 0.028, my - 0.016, hd + 0.01, METAL); b.box(0.016, 0.006, 0.008, 0.033, my - 0.026, hd + 0.01, METAL); break;
+    }
+  }
+  // Hair in every style, sized to the face. hatted: only what shows under a hat (sides, back, long lengths).
+  function hairV8(b, st, F, h, skin, sh, hatted, grey) {
+    var hw = F.hw, hd = F.hd, T = TOP_Y, W = 2 * hw + 0.02, D = 2 * hd + 0.02, k, s;
+    var cap = function (t, col) { if (!hatted) b.box(W, t || 0.07, D, 0, T + 0.02, -0.005, col == null ? h : col); };
+    var fringe = function (len) { if (!hatted) b.box(2 * hw, len || 0.05, 0.04, 0, T - 0.02 - ((len || 0.05) - 0.05) / 2, hd, h); };
+    var sides = function (len, col) { b.box(0.03, len, 0.2, hw + 0.01, T - 0.015 - len / 2, -0.05, col == null ? h : col); b.box(0.03, len, 0.2, -hw - 0.01, T - 0.015 - len / 2, -0.05, col == null ? h : col); };
+    var back = function (w, len, y) { b.box(w, len, 0.06, 0, y, -hd, h); };
+    var shaved = function () { b.box(2 * hw + 0.005, 0.02, 2 * hd + 0.005, 0, T + 0.001, 0, sh(skin, 0.85)); };
+    switch (st) {
+      case 'bald':
+        b.box(0.12, 0.012, 0.1, 0.03, T + 0.002, 0.02, sh(skin, 1.12));
+        if (grey) { sides(0.1, 0x9a9a9a); b.box(2 * hw, 0.1, 0.03, 0, 1.73, -hd - 0.005, 0x9a9a9a); }
+        return;
+      case 'buzz':
+        var hb = mix(h, skin, 0.3);
+        if (!hatted) b.box(W - 0.012, 0.022, D - 0.012, 0, T + 0.006, -0.005, hb);
+        b.box(0.012, 0.14, 0.24, hw + 0.002, 1.8, -0.03, hb); b.box(0.012, 0.14, 0.24, -hw - 0.002, 1.8, -0.03, hb);
+        b.box(2 * hw, 0.16, 0.012, 0, 1.79, -hd - 0.002, hb); break;
+      case 'long': cap(); fringe(); b.box(W + 0.02, 0.62, 0.08, 0, 1.6, -hd - 0.01, h);
+        b.box(0.05, 0.45, 0.27, hw + 0.02, 1.67, -0.02, h); b.box(0.05, 0.45, 0.27, -hw - 0.02, 1.67, -0.02, h); break;
+      case 'mullet': cap(); fringe(); sides(0.12); b.box(2 * hw, 0.5, 0.07, 0, 1.64, -hd - 0.01, h); break;
+      case 'bun': cap(); fringe(); sides(0.12); back(W, 0.2, 1.79); if (!hatted) b.box(0.13, 0.11, 0.1, 0, 1.86, -hd - 0.06, h); break;
+      case 'mohawk': if (!hatted) b.box(0.08, 0.17, 2 * hd + 0.06, 0, T + 0.085, -0.01, h); shaved(); break;
+      case 'spiky':
+        cap(0.05); if (hatted) { sides(0.08); break; }
+        var SP = [[0, 0.02], [0.1, 0.06], [-0.1, 0.06], [0.09, -0.09], [-0.09, -0.09], [0, -0.12], [0, 0.12]];
+        for (k = 0; k < SP.length; k++) b.cyl(0, 0.06, 0.16, 4, SP[k][0], T + 0.105, SP[k][1], h, SP[k][1] * 2.5, 0, -SP[k][0] * 2.5);
+        break;
+      case 'mop': cap(0.09); fringe(0.09); sides(0.2); back(W, 0.3, 1.74); break;
+      case 'curly':
+        cap(0.06);
+        for (k = 0; k < 16; k++) {
+          var a = k / 16 * Math.PI * 2, top = k < 8, cz = Math.cos(a) * (top ? hd - 0.03 : hd + 0.015), cx = Math.sin(a) * (top ? hw - 0.03 : hw + 0.015);
+          if (top && hatted) continue;
+          if (!top && cz > hd * 0.35) continue;                                          // keep the face clear
+          b.box(0.08, 0.08, 0.08, cx, top ? T + 0.05 : T - 0.07, cz, k % 2 ? h : sh(h, 0.82));
+        }
+        for (k = 0; k < 5; k++) b.box(0.08, 0.08, 0.08, (k - 2) * 0.075, T - 0.17, -hd - 0.02, k % 2 ? sh(h, 0.82) : h);
+        break;
+      case 'shaggy':
+        cap(0.07);
+        if (!hatted) { b.box(0.11, 0.09, 0.04, -0.11, T - 0.04, hd, h); b.box(0.12, 0.07, 0.04, 0, T - 0.03, hd, sh(h, 0.9)); b.box(0.11, 0.1, 0.04, 0.11, T - 0.045, hd, h); }
+        sides(0.22); b.box(0.035, 0.1, 0.12, hw + 0.02, 1.62, -0.08, sh(h, 0.88)); b.box(0.035, 0.1, 0.12, -hw - 0.02, 1.62, -0.08, sh(h, 0.88));
+        back(W, 0.36, 1.7); break;
+      case 'manbun':
+        cap(0.045); sides(0.08); back(W, 0.14, 1.8);
+        if (!hatted) { b.box(0.12, 0.1, 0.11, 0, T + 0.06, -hd + 0.02, h); b.box(0.125, 0.02, 0.115, 0, T + 0.015, -hd + 0.02, 0x2a2a2e); }
+        break;
+      case 'hathair':
+        if (!hatted) { b.box(W, 0.05, D, 0, T + 0.01, -0.005, h); b.box(W + 0.004, 0.012, D + 0.004, 0, T - 0.01, -0.005, sh(h, 0.8)); }
+        sides(0.12); back(W, 0.22, 1.77); break;
+      case 'dreads':
+        cap(0.06);
+        for (k = 0; k < 12; k++) {
+          var th = (-110 + 220 * k / 11) * Math.PI / 180, len = 0.36 + 0.06 * ((k * 7) % 3);
+          b.box(0.05, len, 0.05, Math.sin(th) * (hw + 0.02), T - 0.04 - len / 2, -Math.cos(th) * (hd + 0.02), k % 2 ? h : sh(h, 0.8));
+        }
+        b.box(0.045, 0.3, 0.045, hw + 0.015, T - 0.19, 0.07, sh(h, 0.9)); b.box(0.045, 0.3, 0.045, -hw - 0.015, T - 0.19, 0.07, h);
+        break;
+      case 'braids':
+        cap(0.06); sides(0.1); back(W, 0.14, 1.8);
+        for (s = -1; s <= 1; s += 2) {
+          for (k = 0; k < 6; k++) b.box(0.05, 0.065, 0.05, s * (hw - 0.01), 1.74 - k * 0.06, -0.12 - k * 0.012, k % 2 ? h : sh(h, 0.84));
+          b.box(0.055, 0.02, 0.055, s * (hw - 0.01), 1.37, -0.19, 0xd23c3c);
+        }
+        break;
+      case 'spikes':
+        shaved();
+        if (hatted) break;
+        b.box(0.08, 0.03, 2 * hd, 0, T + 0.01, 0, h);
+        for (k = 0; k < 5; k++) b.cyl(0, 0.045, 0.26, 4, 0, T + 0.13, hd - 0.04 - k * (2 * hd - 0.08) / 4, k % 2 ? h : sh(h, 1.15), -0.3 + k * 0.15, Math.PI / 4, 0);
+        break;
+      case 'slick':
+        if (!hatted) { b.box(W, 0.05, D, 0, T + 0.012, -0.005, sh(h, 1.12)); b.box(2 * hw - 0.04, 0.06, 0.09, 0, T + 0.035, hd - 0.06, sh(h, 1.2)); }
+        sides(0.1); b.box(W, 0.2, 0.06, 0, 1.78, -hd, h); break;
+      default:                                                                              // 'short'
+        if (hatted) { sides(0.1); b.box(2 * hw, 0.1, 0.05, 0, 1.745, -hd, h); break; }
+        cap(); fringe(); sides(0.13); back(W, 0.25, 1.76);
+    }
+    if (grey && st !== 'bald') { b.box(0.034, 0.08, 0.1, hw + 0.012, 1.77, 0.02, 0xb4b4b4); b.box(0.034, 0.08, 0.1, -hw - 0.012, 1.77, 0.02, 0xb4b4b4); }
+  }
+  function headwear(b, kind, F, c, sh) {
+    var hw = F.hw, hd = F.hd, T = TOP_Y, W = 2 * hw, D = 2 * hd;
+    switch (kind) {
+      case 'backcap':                                                                       // the v0.7 backwards cap
+        b.box(W + 0.03, 0.12, D + 0.03, 0, 1.92, 0, c); b.box(0.3, 0.05, 0.28, 0, 2.0, 0, c);
+        b.box(0.3, 0.025, 0.17, 0, 1.875, -hd - 0.085, c); b.box(0.04, 0.03, 0.04, 0, 2.035, 0, sh(c, 0.75));
+        b.box(0.1, 0.045, 0.01, 0, 1.9, hd + 0.017, sh(c, 0.6)); break;
+      case 'cowboy':
+        b.box(0.54, 0.03, 0.5, 0, 1.885, 0, 0x6b4a2e); b.box(W, 0.17, D, 0, 1.975, 0, 0x6b4a2e); b.box(W + 0.01, 0.04, D + 0.01, 0, 1.915, 0, 0x2a1d14);
+        b.box(0.08, 0.025, 0.46, 0.29, 1.905, 0, 0x6b4a2e, 0, 0, 0.55); b.box(0.08, 0.025, 0.46, -0.29, 1.905, 0, 0x6b4a2e, 0, 0, -0.55);
+        b.box(0.06, 0.03, D - 0.04, 0, 2.06, 0, sh(0x6b4a2e, 0.85)); break;
+      case 'bandana': b.box(W + 0.025, 0.08, D + 0.025, 0, 1.845, 0, 0x2f5fb3); b.box(0.08, 0.06, 0.06, 0, 1.83, -hd - 0.03, 0x2f5fb3); break;
+      case 'headband': b.box(W + 0.025, 0.05, D + 0.025, 0, 1.81, 0, 0xd23c3c); break;
+      case 'toque':
+        b.box(W + 0.045, 0.14, D + 0.045, 0, T - 0.005, -0.005, c); b.box(W + 0.055, 0.05, D + 0.055, 0, T - 0.075, -0.005, sh(c, 0.78));
+        b.box(W - 0.03, 0.05, D - 0.03, 0, T + 0.085, -0.005, c); b.box(0.08, 0.08, 0.08, 0, T + 0.14, -0.005, 0xe8e4dc); break;
+      case 'trucker':
+        b.box(W + 0.03, 0.13, 0.13, 0, T + 0.02, hd - 0.05, 0xe8e4dc); b.box(W + 0.03, 0.12, D - 0.1, 0, T + 0.015, -0.07, c);
+        b.box(W - 0.04, 0.04, D - 0.04, 0, T + 0.09, -0.01, c); b.box(0.3, 0.022, 0.16, 0, T - 0.035, hd + 0.075, c, -0.12);
+        b.box(0.035, 0.025, 0.035, 0, T + 0.115, -0.01, sh(c, 0.75));
+        b.box(0.11, 0.055, 0.008, 0, T + 0.025, hd + 0.017, c);
+        for (var k = -1; k <= 1; k++) b.box(0.01, 0.036, 0.004, k * 0.018, T + 0.025, hd + 0.022, 0xd9a520, 0, 0, k * 0.3);
+        break;
+    }
+  }
+
+  // Public (valid after init()): the one character-geometry builder. 41_render_garage.js makeCharacter calls it.
+  R.charGeometry = function (ctx, L, o, raw) {
+    var C8 = GG.creator;
+    if (raw && C8 && C8.isV8 && C8.isV8(raw)) {
+      var V = C8.expand(raw);
+      L = Object.assign({}, L, { hairStyle: V.hairStyle, top: V.top || L.top });
+      return charV8(ctx, L, o || {}, V);
+    }
+    return legacyGeometry(ctx, L, o || {});
+  };
+  R.pixelFont = FONT;
+
+  // ---- Kit looks (v0.8): shared by the garage kit (41 buildKit), the stage kit (42) and the creator preview (45) ------
+  // R.kit.norm(kitLook|null, fallbackColor) -> KIT_LOOK (GG.creator.sanitizeKit, or the v0.7 kit) ; hardware(K) -> colour ;
+  // shell(b, K, r, h, segs, x, y, z, rx, ry, rz) a drum shell with its finish ('paint' = exactly the v0.7 cylinder) ;
+  // throne(b, K, x, z, chrome) crate | leather ('stool' stays each builder's own v0.7 code) ; cowbell(b, K, x, y, z) ;
+  // fan(b, K, x, z, yaw, blades) the hair fan (blades: static blades too) ; fanBlades(ctx) -> geometry (spins on stage) ;
+  // headArt(K, { r, band, genre, look }) -> Mesh|null (a lit disc with a CanvasTexture: band logo / your face / a moose /
+  // custom text; 'plain' -> null; dispose with R.kit.disposeArt(mesh)) ; sticks(K) -> colour. No gong on any kit, ever.
+  var WOOD = 0x9a6a3a, CAMO = [0x5f6b2e, 0x3d4a22, 0x8a7a4a, 0x2a2a1e];
+  function h01(i, salt) { var x = Math.imul((i + 1) ^ Math.imul(salt + 11, 0x9e3779b1), 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16; return (x >>> 0) / 4294967296; }
+  R.kit = {
+    norm: function (k, fallback) {
+      if (k && GG.creator) return GG.creator.sanitizeKit(k, fallback);
+      return GG.creator ? GG.creator.legacyKit(fallback) : { shell: 'paint', color: fallback || '#b3262b', hardware: 'chrome', head: 'plain', headText: '', throne: 'stool', sticks: '#d8b27a', extras: [] };
+    },
+    hardware: function (K) { return K && K.hardware === 'black' ? 0x2a2a2e : 0xb9bec6; },
+    sticks: function (K) { return (K && K.sticks) || 0xd8b27a; },
+    has: function (K, x) { return !!(K && K.extras && K.extras.indexOf(x) >= 0); },
+    shell: function (b, K, r, h, segs, x, y, z, rx, ry, rz) {
+      var f = K.shell, c = K.color;
+      var base = f === 'black' ? 0x16161a : f === 'wood' ? mix(WOOD, c, 0.18) : f === 'camo' ? CAMO[0] : c;
+      b.cyl(r, r, h, segs, x, y, z, base, rx, ry, rz);
+      if (f === 'paint' || f === 'black' || !f) return;
+      b.push(x || 0, y || 0, z || 0, rx, ry, rz);
+      var k, a, n, R2 = r + 0.003;
+      if (f === 'wood') {
+        for (k = 0; k < segs; k += 2) { a = (k + 0.5) / segs * Math.PI * 2; b.box(0.012, h * 0.94, 0.004, R2 * Math.sin(a), 0, R2 * Math.cos(a), mix(WOOD, 0x3a2412, 0.45), 0, a, 0); }
+      } else if (f === 'sparkle') {
+        n = Math.round(10 + r * 60);
+        for (k = 0; k < n; k++) { a = h01(k, 3) * Math.PI * 2; b.box(0.016, 0.016, 0.004, R2 * Math.sin(a), (h01(k, 5) - 0.5) * h * 0.9, R2 * Math.cos(a), ctxShade(c, 1.7), 0, a, 0.7); }
+      } else if (f === 'camo') {
+        n = Math.round(8 + r * 30);
+        for (k = 0; k < n; k++) { a = h01(k, 7) * Math.PI * 2; b.box(0.05 + h01(k, 9) * 0.06, 0.03 + h01(k, 11) * h * 0.4, 0.004, R2 * Math.sin(a), (h01(k, 13) - 0.5) * h * 0.8, R2 * Math.cos(a), CAMO[1 + (k % 3)], 0, a, 0); }
+      } else if (f === 'flames') {
+        n = Math.max(6, Math.round(segs * 0.75));
+        var fw = Math.PI * R2 / n * 1.1;
+        for (k = 0; k < n; k++) {
+          a = (k + 0.5) / n * Math.PI * 2;
+          var len = h * (0.55 + 0.35 * h01(k, 17)), y0 = -h / 2 + 0.004;
+          b.push(R2 * Math.sin(a), 0, R2 * Math.cos(a), 0, a, 0);
+          b.triC([-fw, y0, 0], [fw, y0, 0], [fw * 0.15, y0 + len, 0], 0xd8321e, 0xd8321e, 0xf2d24a);
+          b.triC([-fw * 0.55, y0, 0.001], [fw * 0.55, y0, 0.001], [-fw * 0.1, y0 + len * 0.6, 0.001], 0xe8782a, 0xe8782a, 0xf6e27a);
+          b.pop();
+        }
+      }
+      b.pop();
+    },
+    throne: function (b, K, x, z, chrome) {
+      var k;
+      if (K.throne === 'leather') {
+        b.box(0.04, 0.45, 0.04, x, 0.23, z, chrome);
+        for (k = 0; k < 3; k++) { var a = k * 2.1; b.box(0.02, 0.02, 0.3, x + 0.13 * Math.sin(a), 0.03, z + 0.13 * Math.cos(a), chrome, 0, a); }
+        b.cyl(0.2, 0.17, 0.1, 12, x, 0.5, z, 0x2a1810); b.cyl(0.19, 0.2, 0.02, 12, x, 0.555, z, 0x3a2216);
+        for (k = 0; k < 4; k++) b.box(0.018, 0.012, 0.018, x + (k % 2 ? 0.07 : -0.07), 0.567, z + (k < 2 ? 0.07 : -0.07), 0x1a0e08);
+        b.box(0.03, 0.26, 0.03, x, 0.62, z - 0.19, chrome); b.box(0.3, 0.2, 0.06, x, 0.78, z - 0.2, 0x2a1810);
+        b.box(0.26, 0.012, 0.064, x, 0.78, z - 0.2, 0x1a0e08);
+        return;
+      }
+      // Milk crates (two, zip-tied, a folded towel on top): the garage era.
+      var cols = [0xc0392b, 0x2f5fb3];
+      for (k = 0; k < 2; k++) {
+        var c = cols[k], y0 = k * 0.27, dk = ctxShade(c, 0.5);
+        b.box(0.34, 0.26, 0.34, x, y0 + 0.13, z, c);
+        b.box(0.35, 0.03, 0.35, x, y0 + 0.255, z, ctxShade(c, 1.12));
+        for (var sI = -1; sI <= 1; sI++) {
+          b.box(0.06, 0.13, 0.004, x + sI * 0.1, y0 + 0.13, z + 0.172, dk); b.box(0.06, 0.13, 0.004, x + sI * 0.1, y0 + 0.13, z - 0.172, dk);
+          b.box(0.004, 0.13, 0.06, x + 0.172, y0 + 0.13, z + sI * 0.1, dk); b.box(0.004, 0.13, 0.06, x - 0.172, y0 + 0.13, z + sI * 0.1, dk);
+        }
+      }
+      b.box(0.3, 0.03, 0.26, x, 0.545, z, 0xe8e4dc); b.box(0.3, 0.012, 0.03, x, 0.55, z + 0.1, 0xd23c3c);
+      b.box(0.012, 0.3, 0.012, x + 0.17, 0.27, z + 0.17, 0x111111);                     // the zip tie
+    },
+    cowbell: function (b, K, x, y, z) {
+      b.box(0.018, 0.2, 0.018, x, y - 0.1, z - 0.02, R.kit.hardware(K));
+      b.cyl(0.03, 0.05, 0.13, 4, x, y + 0.05, z + 0.02, 0x8a8e94, -0.35, Math.PI / 4, 0);
+      b.box(0.05, 0.02, 0.02, x, y + 0.12, z + 0.05, 0x222226);
+    },
+    fan: function (b, K, x, z, yaw, blades) {
+      var hwc = R.kit.hardware(K);
+      b.push(x, 0, z, 0, yaw || 0, 0);
+      b.cyl(0.14, 0.16, 0.04, 10, 0, 0.02, 0, 0x222226); b.box(0.03, 1.0, 0.03, 0, 0.52, 0, hwc);
+      b.box(0.34, 0.34, 0.08, 0, 1.12, 0, 0x2a2a30); b.box(0.28, 0.28, 0.02, 0, 1.12, 0.045, 0x121216);
+      for (var k = 0; k < 4; k++) b.box(0.29, 0.012, 0.012, 0, 1.0 + k * 0.08, 0.06, hwc);
+      if (blades) { for (k = 0; k < 3; k++) b.box(0.24, 0.05, 0.01, 0, 1.12, 0.05, 0xd8dde4, 0, 0, k * Math.PI / 3); }
+      b.pop();
+    },
+    fanBlades: function (ctx) {
+      var bb = new ctx.Builder({ jitter: 0 });
+      for (var k = 0; k < 3; k++) bb.box(0.24, 0.05, 0.01, 0, 0, 0, 0xd8dde4, 0, 0, k * Math.PI / 3);
+      return bb.build();
+    },
+    // One pyro flame (origin at the nozzle, ~1.3 m tall): a yellow fireball at the base, an orange body, red tongues.
+    flame: function (b, x, y, z, k) {
+      k = k || 1;
+      b.shape(new THREE.IcosahedronGeometry(0.2, 0), x, y + 0.16 * k, z, k, k, k, 0xfff07a);
+      b.cyl(0, 0.19 * k, 0.95 * k, 7, x, y + 0.52 * k, z, 0xff8a2a);
+      for (var i = 0; i < 3; i++) { var a = i * 2.1 + 0.4; b.cyl(0, 0.07 * k, 0.55 * k, 5, x + Math.cos(a) * 0.09 * k, y + 0.78 * k, z + Math.sin(a) * 0.09 * k, 0xe0401e, Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); }
+      b.cyl(0, 0.05 * k, 0.4 * k, 5, x, y + 1.12 * k, z, 0xd8321e);
+    },
+    pyroBase: function (b, x, y, z) {
+      b.box(0.26, 0.16, 0.26, x, y + 0.08, z, 0x1a1a1e); b.cyl(0.05, 0.07, 0.12, 8, x, y + 0.22, z, 0x3a3a40);
+      b.box(0.2, 0.02, 0.02, x, y + 0.14, z + 0.131, 0xf2d24a);
+    },
+    headArt: function (K, o) {
+      if (!K || !K.head || K.head === 'plain' || typeof document === 'undefined') return null;
+      o = o || {};
+      var c = document.createElement('canvas'); c.width = c.height = 256;
+      var g = c.getContext('2d');
+      drawHead(g, K, o);
+      var tex = new THREE.CanvasTexture(c);
+      var mat = new THREE.MeshLambertMaterial({ map: tex });
+      var m = new THREE.Mesh(new THREE.CircleGeometry(o.r || 0.25, 28), mat);
+      m.userData.kitArt = K.head;
+      return m;
+    },
+    disposeArt: function (m) {
+      if (!m) return;
+      if (m.parent) m.parent.remove(m);
+      m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose();
+    }
+  };
+  // The garage kit (and the creator preview's): the v0.7 geometry (was buildKit in 41_render_garage.js) with the look
+  // applied. Kit-local frame: the drummer sits at z = -0.72 facing +z. Returns { geo, art: Mesh|null } (the art is a
+  // child for the kit mesh). A legacy look (C.legacyKit) gives the v0.7 kit box for box.
+  R.kit.garage = function (ctx, K, o) {
+    o = o || {};
+    var color = K.color, S = R.kit.shell, plain = !K.head || K.head === 'plain';
+    var b = new ctx.Builder({ jitter: 0.03, seed: 5 }), head = 0xefe9dc, chrome = R.kit.hardware(K), dark = 0x26262a, bronze = 0xd2a43c, rim = shade(color, 0.55);
+    var i, a;
+    b.push(0, 0.3, 0.12, Math.PI / 2, 0, 0);                                   // kick drum on its side (kit-local frame)
+    S(b, K, 0.28, 0.4, 16, 0, 0, 0);
+    b.cyl(0.29, 0.29, 0.035, 16, 0, 0.2, 0, chrome); b.cyl(0.29, 0.29, 0.035, 16, 0, -0.2, 0, chrome);
+    b.cyl(0.265, 0.265, 0.012, 16, 0, 0.214, 0, head);
+    if (plain) { b.cyl(0.14, 0.14, 0.014, 14, 0, 0.221, 0, rim); b.cyl(0.1, 0.1, 0.016, 12, 0, 0.223, 0, head); }
+    b.pop();
+    b.box(0.02, 0.22, 0.02, 0.25, 0.08, 0.28, chrome, 0, 0, 0.45); b.box(0.02, 0.22, 0.02, -0.25, 0.08, 0.28, chrome, 0, 0, -0.45);
+    b.box(0.03, 0.22, 0.03, 0, 0.63, 0.06, chrome);
+    for (var s = -1; s <= 1; s += 2) {                                            // rack toms tilted at the drummer
+      b.push(s * 0.15, 0.73, 0.03, -0.45, 0, -s * 0.15);
+      S(b, K, 0.12, 0.15, 12, 0, 0, 0); b.cyl(0.125, 0.125, 0.02, 12, 0, 0.075, 0, chrome); b.cyl(0.117, 0.117, 0.01, 12, 0, 0.083, 0, head);
+      b.pop();
+    }
+    S(b, K, 0.18, 0.3, 14, 0.46, 0.45, -0.22);                                   // floor tom
+    b.cyl(0.185, 0.185, 0.02, 14, 0.46, 0.6, -0.22, chrome); b.cyl(0.175, 0.175, 0.01, 14, 0.46, 0.607, -0.22, head);
+    for (i = 0; i < 3; i++) { a = i * 2.1 + 0.4; b.box(0.02, 0.32, 0.02, 0.46 + 0.2 * Math.cos(a), 0.16, -0.22 + 0.2 * Math.sin(a), chrome); }
+    var stick = R.kit.sticks(K);
+    b.box(0.02, 0.02, 0.36, 0.44, 0.615, -0.2, stick, 0, 0.3); b.box(0.02, 0.02, 0.36, 0.49, 0.617, -0.24, stick, 0, 0.5);   // spare sticks
+    b.push(-0.36, 0.56, -0.25, -0.12, 0, 0.1);                                    // snare
+    S(b, K, 0.16, 0.12, 14, 0, 0, 0); b.cyl(0.165, 0.165, 0.02, 14, 0, 0.06, 0, chrome); b.cyl(0.155, 0.155, 0.01, 14, 0, 0.066, 0, 0xf6f2ea);
+    b.pop();
+    b.box(0.025, 0.5, 0.025, -0.36, 0.25, -0.25, chrome);
+    b.box(0.022, 0.9, 0.022, -0.63, 0.45, -0.08, chrome);                            // hi-hat
+    b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.87, -0.08, bronze); b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.845, -0.08, shade(bronze, 0.85));
+    b.box(0.1, 0.025, 0.24, -0.63, 0.015, -0.2, dark);
+    b.box(0.022, 1.12, 0.022, -0.5, 0.56, 0.3, chrome, 0, 0, 0.06);                 // crash
+    b.cyl(0.22, 0.22, 0.014, 16, -0.54, 1.13, 0.3, bronze, 0.28, 0, 0.22); b.cyl(0.05, 0.05, 0.03, 8, -0.54, 1.14, 0.3, bronze, 0.28, 0, 0.22);
+    b.box(0.022, 1.02, 0.022, 0.64, 0.51, 0.18, chrome);                            // ride
+    b.cyl(0.25, 0.25, 0.014, 16, 0.64, 1.03, 0.18, bronze, 0.2, 0, -0.25); b.cyl(0.05, 0.05, 0.03, 8, 0.64, 1.04, 0.18, bronze, 0.2, 0, -0.25);
+    b.box(0.09, 0.03, 0.22, 0, 0.02, -0.17, dark);                                 // kick pedal
+    if (!K.throne || K.throne === 'stool') {
+      b.cyl(0.17, 0.16, 0.09, 12, 0, 0.5, -0.72, 0x1c1c1c); b.box(0.04, 0.45, 0.04, 0, 0.23, -0.72, chrome);   // throne
+      for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, -0.72 + 0.12 * Math.cos(a), chrome, 0, a); }
+    } else R.kit.throne(b, K, 0, -0.72, chrome);
+    if (R.kit.has(K, 'cowbell')) R.kit.cowbell(b, K, -0.02, 0.9, 0.22);
+    if (R.kit.has(K, 'fan')) R.kit.fan(b, K, 0.78, 0.5, Math.atan2(-0.78, -1.22), true);
+    if (o.preview && R.kit.has(K, 'pyro')) { R.kit.pyroBase(b, -0.95, 0, 0.55); R.kit.pyroBase(b, 0.95, 0, 0.55); }   // pyro only shows on arena stages (and in the creator)
+    var art = plain ? null : R.kit.headArt(K, { r: 0.255, band: o.band, genre: o.genre, look: o.look });
+    if (art) art.position.set(0, 0.3, 0.12 + 0.2215);
+    return { geo: b.build(), art: art };
+  };
+  function ctxShade(hex, f) { return shade(hex, f); }
+  function css(hex) { return typeof hex === 'number' ? '#' + ('000000' + hex.toString(16)).slice(-6) : hex; }
+  // Kick-drum front head art on a 256px canvas (circle). Band logo by genre, your face (from your look), a moose, custom text.
+  function drawHead(g, K, o) {
+    var dark = K.head === 'logo' && o.genre === 'metal';
+    g.fillStyle = dark ? '#121214' : '#efe9dc'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = dark ? '#3a3a42' : '#cfc6b2'; g.lineWidth = 8; g.beginPath(); g.arc(128, 128, 122, 0, Math.PI * 2); g.stroke();
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    var fit = function (txt, max, font, size) { do { g.font = font.replace('#', size); size -= 3; } while (g.measureText(txt).width > max && size > 12); };
+    if (K.head === 'logo' || K.head === 'text') {
+      var name = K.head === 'text' ? (K.headText || 'SASKATOON') : String(o.band || 'Hail Damage').toUpperCase();
+      var words = name.split(' '), lines = words.length > 1 && name.length > 9 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [name];
+      var gen = K.head === 'text' ? 'rock' : o.genre, font, fill, stroke;
+      if (gen === 'metal') { font = '900 #px Georgia, "Times New Roman", serif'; fill = '#f4f4f8'; stroke = '#9fb8ff'; }
+      else if (gen === 'punk') { font = '900 #px Impact, "Arial Black", sans-serif'; fill = '#141418'; stroke = '#f06aa8'; }
+      else if (gen === 'country') { font = 'italic 800 #px Georgia, serif'; fill = '#6b3a1e'; stroke = '#d9a520'; }
+      else { font = '900 #px Impact, "Arial Black", sans-serif'; fill = css(K.color); stroke = '#141418'; }
+      lines.forEach(function (ln, i) {
+        fit(ln, 200, font, lines.length > 1 ? 58 : 70);
+        var y = lines.length > 1 ? 98 + i * 64 : 128;
+        g.lineWidth = 6; g.strokeStyle = stroke; g.strokeText(ln, 128, y); g.fillStyle = fill; g.fillText(ln, 128, y);
+      });
+      if (gen === 'metal') { g.fillStyle = '#f4f4f8'; for (var k = 0; k < 9; k++) g.fillRect(52 + k * 18, lines.length > 1 ? 58 : 88, 3, 14 + (k % 3) * 6); }
+      if (gen === 'country') { g.fillStyle = '#d9a520'; [[60, 60], [196, 60], [60, 196], [196, 196]].forEach(function (p) { star(g, p[0], p[1], 10); }); }
+    } else if (K.head === 'moose') {
+      g.fillStyle = '#5a3a22';
+      g.beginPath(); g.ellipse(128, 150, 42, 58, 0, 0, Math.PI * 2); g.fill();                  // head
+      g.beginPath(); g.ellipse(128, 196, 34, 26, 0, 0, Math.PI * 2); g.fill();                  // snout
+      [-1, 1].forEach(function (s) {                                                           // palmate antlers
+        g.fillStyle = '#c8a878';
+        g.beginPath(); g.moveTo(128 + s * 30, 108); g.lineTo(128 + s * 100, 60); g.lineTo(128 + s * 108, 92); g.lineTo(128 + s * 92, 110);
+        g.lineTo(128 + s * 110, 118); g.lineTo(128 + s * 84, 128); g.lineTo(128 + s * 44, 124); g.closePath(); g.fill();
+        g.fillStyle = '#5a3a22'; g.beginPath(); g.ellipse(128 + s * 44, 120, 14, 8, s * 0.5, 0, Math.PI * 2); g.fill();   // ears
+        g.fillStyle = '#141414'; g.beginPath(); g.arc(128 + s * 18, 140, 6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#2a1a10'; g.beginPath(); g.arc(128 + s * 12, 200, 5, 0, Math.PI * 2); g.fill();
+      });
+    } else if (K.head === 'face') {
+      var L = o.look || {}, skin = L.skin || '#f0c9a4', hair = L.hair || '#5c3a22';
+      g.fillStyle = hair; g.beginPath(); g.arc(128, 112, 78, Math.PI, 0); g.fill();
+      g.fillStyle = skin; g.beginPath(); g.ellipse(128, 134, 66, 76, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = hair; g.fillRect(62, 70, 132, 26);
+      var ex = L.extras || [], shades = L.glasses === 'shades' || L.glasses === 'aviators' || ex.indexOf('sunglasses') >= 0;
+      g.fillStyle = '#141414';
+      if (shades) { g.fillRect(78, 116, 42, 22); g.fillRect(136, 116, 42, 22); g.fillRect(118, 120, 20, 5); }
+      else { g.beginPath(); g.arc(104, 126, 8, 0, Math.PI * 2); g.arc(152, 126, 8, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = '#7a1e1e'; g.beginPath(); g.arc(128, 168, 30, 0, Math.PI); g.fill();       // the big grin
+      g.fillStyle = '#f2efe6'; g.fillRect(104, 168, 48, 8);
+      if (L.facialHair === 'full' || L.facialHair === 'viking' || ex.indexOf('beard') >= 0) { g.fillStyle = hair; g.beginPath(); g.ellipse(128, 196, 58, 28, 0, 0, Math.PI); g.fill(); }
+    }
+  }
+  function star(g, x, y, r) {
+    g.beginPath();
+    for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; g.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+    g.closePath(); g.fill();
+  }
+
   // ---- Debug --------------------------------------------------------------------------------------------------
   // 41_render_garage.js adds scene fields through the scene's debug(); only this module registers 'render'.
   GG.registerDebug('render', function () {
@@ -19687,7 +21401,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   // Build a character: { root (Group, scaled by height), mesh (SkinnedMesh), bones[], dispose() }.
   function makeCharacter(ctx, look, o) {
     var L = normLook(look, o.id);
-    var geo = characterGeometry(ctx, L, o), lay = jointLayout(L.build), bones = [], i;
+    var geo = R.charGeometry ? R.charGeometry(ctx, L, o, look) : characterGeometry(ctx, L, o), lay = jointLayout(L.build), bones = [], i;   // v0.8: 40_render_core
     for (i = 0; i < lay.length; i++) {
       var bn = new THREE.Bone(), p = lay[i][0];
       if (p >= 0) { bn.position.set(lay[i][1] - lay[p][1], lay[i][2] - lay[p][2], lay[i][3] - lay[p][3]); bones[p].add(bn); }
@@ -19897,8 +21611,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // v0.5: the trophy wall (gold/platinum records, loonie trophies, banned-venue photos), rebuilt when state changes.
     var trophyWall = buildTrophyWall(); scene.add(trophyWall.mesh);
 
-    // ---- Drum kit (own mesh: rebuilt when state.player.kitColor changes) ----
-    var kit = { mesh: null, color: null };
+    // ---- Drum kit (own mesh: rebuilt when state.player.kitColor / player.kit (v0.8 KIT_LOOK) changes) ----
+    var kit = { mesh: null, color: null, sig: null, art: null };
     var throne = rotLocal(KIT, 0, -0.72 * KIT_SCALE);
     HOTSPOTS[4].stand = [throne.x, throne.z];
 
@@ -19976,8 +21690,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       fanMail.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
-      if (kc !== kit.color) buildKit(kc);
-      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: true });
+      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '');   // v0.8: the kit look (KIT_LOOK)
+      if (ksig !== kit.sig) buildKit(kc, kl, ksig);
+      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
       if (!player.p.placed) { player.p.placed = true; placePlayer(); }
 
       var flags = st.flags || {}, cv = flags.cape;
@@ -20929,44 +22644,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       return self;
     }
 
-    function buildKit(color) {
+    // v0.8: the geometry lives in 40_render_core (R.kit.garage: shell finish, hardware, kick-head art, throne, cowbell, hair
+    // fan; the v0.7 kit box for box when the look is the legacy one), shared with the creator's preview.
+    function buildKit(color, K, sig) {
       if (kit.mesh) { scene.remove(kit.mesh); kit.mesh.geometry.dispose(); }
-      kit.color = color;
-      var b = new ctx.Builder({ jitter: 0.03, seed: 5 }), shell = color, head = 0xefe9dc, chrome = 0xb9bec6, dark = 0x26262a, bronze = 0xd2a43c, rim = sh(color, 0.55);
-      var i, a;
-      b.push(0, 0.3, 0.12, Math.PI / 2, 0, 0);                                   // kick drum on its side (kit-local frame)
-      b.cyl(0.28, 0.28, 0.4, 16, 0, 0, 0, shell);
-      b.cyl(0.29, 0.29, 0.035, 16, 0, 0.2, 0, chrome); b.cyl(0.29, 0.29, 0.035, 16, 0, -0.2, 0, chrome);
-      b.cyl(0.265, 0.265, 0.012, 16, 0, 0.214, 0, head);
-      b.cyl(0.14, 0.14, 0.014, 14, 0, 0.221, 0, rim); b.cyl(0.1, 0.1, 0.016, 12, 0, 0.223, 0, head);
-      b.pop();
-      b.box(0.02, 0.22, 0.02, 0.25, 0.08, 0.28, chrome, 0, 0, 0.45); b.box(0.02, 0.22, 0.02, -0.25, 0.08, 0.28, chrome, 0, 0, -0.45);
-      b.box(0.03, 0.22, 0.03, 0, 0.63, 0.06, chrome);
-      for (var s = -1; s <= 1; s += 2) {                                            // rack toms tilted at the drummer
-        b.push(s * 0.15, 0.73, 0.03, -0.45, 0, -s * 0.15);
-        b.cyl(0.12, 0.12, 0.15, 12, 0, 0, 0, shell); b.cyl(0.125, 0.125, 0.02, 12, 0, 0.075, 0, chrome); b.cyl(0.117, 0.117, 0.01, 12, 0, 0.083, 0, head);
-        b.pop();
-      }
-      b.cyl(0.18, 0.18, 0.3, 14, 0.46, 0.45, -0.22, shell);                          // floor tom
-      b.cyl(0.185, 0.185, 0.02, 14, 0.46, 0.6, -0.22, chrome); b.cyl(0.175, 0.175, 0.01, 14, 0.46, 0.607, -0.22, head);
-      for (i = 0; i < 3; i++) { a = i * 2.1 + 0.4; b.box(0.02, 0.32, 0.02, 0.46 + 0.2 * Math.cos(a), 0.16, -0.22 + 0.2 * Math.sin(a), chrome); }
-      b.box(0.02, 0.02, 0.36, 0.44, 0.615, -0.2, 0xd8b27a, 0, 0.3); b.box(0.02, 0.02, 0.36, 0.49, 0.617, -0.24, 0xd8b27a, 0, 0.5);   // spare sticks
-      b.push(-0.36, 0.56, -0.25, -0.12, 0, 0.1);                                    // snare
-      b.cyl(0.16, 0.16, 0.12, 14, 0, 0, 0, shell); b.cyl(0.165, 0.165, 0.02, 14, 0, 0.06, 0, chrome); b.cyl(0.155, 0.155, 0.01, 14, 0, 0.066, 0, 0xf6f2ea);
-      b.pop();
-      b.box(0.025, 0.5, 0.025, -0.36, 0.25, -0.25, chrome);
-      b.box(0.022, 0.9, 0.022, -0.63, 0.45, -0.08, chrome);                            // hi-hat
-      b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.87, -0.08, bronze); b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.845, -0.08, sh(bronze, 0.85));
-      b.box(0.1, 0.025, 0.24, -0.63, 0.015, -0.2, dark);
-      b.box(0.022, 1.12, 0.022, -0.5, 0.56, 0.3, chrome, 0, 0, 0.06);                 // crash
-      b.cyl(0.22, 0.22, 0.014, 16, -0.54, 1.13, 0.3, bronze, 0.28, 0, 0.22); b.cyl(0.05, 0.05, 0.03, 8, -0.54, 1.14, 0.3, bronze, 0.28, 0, 0.22);
-      b.box(0.022, 1.02, 0.022, 0.64, 0.51, 0.18, chrome);                            // ride
-      b.cyl(0.25, 0.25, 0.014, 16, 0.64, 1.03, 0.18, bronze, 0.2, 0, -0.25); b.cyl(0.05, 0.05, 0.03, 8, 0.64, 1.04, 0.18, bronze, 0.2, 0, -0.25);
-      b.box(0.09, 0.03, 0.22, 0, 0.02, -0.17, dark);                                 // kick pedal
-      b.cyl(0.17, 0.16, 0.09, 12, 0, 0.5, -0.72, 0x1c1c1c); b.box(0.04, 0.45, 0.04, 0, 0.23, -0.72, chrome);   // throne
-      for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, -0.72 + 0.12 * Math.cos(a), chrome, 0, a); }
-      kit.mesh = new THREE.Mesh(b.build(), ctx.mats.vc);
+      if (kit.art) { R.kit.disposeArt(kit.art); kit.art = null; }
+      kit.color = color; kit.sig = sig || color;
+      var band = state && GG.content.bands && GG.content.bands[state.bandId];
+      var built = R.kit.garage(ctx, K || R.kit.norm(null, color), { band: band && band.name, genre: state && state.genre, look: state && state.player && state.player.look });
+      kit.mesh = new THREE.Mesh(built.geo, ctx.mats.vc);
       kit.mesh.position.set(KIT.x, 0, KIT.z); kit.mesh.rotation.y = KIT.yaw; kit.mesh.scale.setScalar(KIT_SCALE);
+      if (built.art) { kit.art = built.art; kit.mesh.add(kit.art); }
       scene.add(kit.mesh);
     }
 
@@ -21072,6 +22760,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     kick: [0, 0.3, 0.1], snare: [0.24, 0.6, -0.2], hat: [0.5, 0.86, -0.08], tomL: [0.13, 0.74, 0.02], tomR: [-0.13, 0.74, 0.02],
     floor: [-0.4, 0.58, -0.18], crash: [0.44, 1.14, 0.22], ride: [-0.55, 1.02, 0.12], throne: [0, 0.5, -THRONE_Z]
   };
+  var FAN = { x: 0.75, z: 0.55, yaw: Math.atan2(-0.75, -0.55 - THRONE_Z) };   // v0.8: the hair fan (kit space), aimed at the throne
   // Which hand plays which lane, and where the stick tip lands (kit space).
   var STRIKE = {
     kick: null,
@@ -21224,7 +22913,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
-        banner: cfg.banner || '', bannerSub: cfg.sub || ''
+        banner: cfg.banner || '', bannerSub: cfg.sub || '',
+        venue: venue && typeof venue === 'object' ? venue : null   // v0.8: the kit look (pyro only at arena shows)
       };
     }
 
@@ -21267,7 +22957,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       buildRoom(lit, glow, V, D);
       buildDeck(lit, glow, V, D);
       buildDressing(lit, glow, D);
-      buildKitStatic(lit, hs, kitColor(D));
+      buildKitStatic(lit, hs, kitLook(D));
       buildBackline(lit, glow, V, D);
       if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       mesh(lit.build(), ctx.mats.vc);
@@ -21298,6 +22988,12 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var pl = D.player || {}, pre = findPreset(pl.presetId);
       return pl.kitColor || (pre && pre.kitColor) || '#b3262b';
     }
+    // v0.8: the player's KIT_LOOK (shell finish, hardware, kick-head art, throne, sticks, cowbell / hair fan / pyro).
+    function kitLook(D) {
+      if (!K.kitLook) K.kitLook = R.kit ? R.kit.norm((D.player || {}).kit, kitColor(D)) : { shell: 'paint', color: kitColor(D), hardware: 'chrome', head: 'plain', throne: 'stool', sticks: '#d8b27a', extras: [] };
+      return K.kitLook;
+    }
+    function isArena(D) { return !!(GG.creator && GG.creator.isArena(D.venue)) || D.kind === 'festival' || D.kind === 'hall'; }
     function kitW(p, hs, out) { out[0] = -p[0]; out[1] = hs + p[1]; out[2] = KZ - p[2]; return out; }
 
     // ---- Room ------------------------------------------------------------------------------------------
@@ -21716,16 +23412,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
 
     // ---- The kit ---------------------------------------------------------------------------------------
-    function buildKitStatic(b, hs, color) {
-      var shell = color, head = 0xefe9dc, chrome = 0xb9bec6, dark = 0x26262a, i, a, p;
+    function buildKitStatic(b, hs, KL) {
+      var shell = KL.color, head = 0xefe9dc, chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, dark = 0x26262a, i, a, p;
+      var S = function (r, h, segs, x, y, z) { if (R.kit) R.kit.shell(b, KL, r, h, segs, x, y, z); else b.cyl(r, r, h, segs, x, y, z, shell); };   // v0.8: shell finish
       b.at(0, hs, KZ, Math.PI);
-      p = KIT.tomL; b.push(p[0], p[1], p[2], -0.45, 0, -0.15); b.cyl(0.11, 0.11, 0.14, 12, 0, 0, 0, shell); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
-      p = KIT.tomR; b.push(p[0], p[1], p[2], -0.45, 0, 0.15); b.cyl(0.11, 0.11, 0.14, 12, 0, 0, 0, shell); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
+      p = KIT.tomL; b.push(p[0], p[1], p[2], -0.45, 0, -0.15); S(0.11, 0.14, 12, 0, 0, 0); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
+      p = KIT.tomR; b.push(p[0], p[1], p[2], -0.45, 0, 0.15); S(0.11, 0.14, 12, 0, 0, 0); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
       b.box(0.03, 0.2, 0.03, 0, 0.6, 0.06, chrome);
-      p = KIT.floor; b.cyl(0.16, 0.16, 0.28, 14, p[0], p[1] - 0.14, p[2], shell); b.cyl(0.165, 0.165, 0.02, 14, p[0], p[1], p[2], chrome); b.cyl(0.157, 0.157, 0.01, 14, p[0], p[1] + 0.007, p[2], head);
+      p = KIT.floor; S(0.16, 0.28, 14, p[0], p[1] - 0.14, p[2]); b.cyl(0.165, 0.165, 0.02, 14, p[0], p[1], p[2], chrome); b.cyl(0.157, 0.157, 0.01, 14, p[0], p[1] + 0.007, p[2], head);
       for (i = 0; i < 3; i++) { a = i * 2.1 + 0.4; b.box(0.02, 0.3, 0.02, p[0] + 0.18 * Math.cos(a), 0.15, p[2] + 0.18 * Math.sin(a), chrome); }
       p = KIT.snare; b.push(p[0], p[1] - 0.05, p[2], -0.12, 0, -0.1);
-      b.cyl(0.15, 0.15, 0.11, 14, 0, 0, 0, shell); b.cyl(0.155, 0.155, 0.02, 14, 0, 0.055, 0, chrome); b.cyl(0.145, 0.145, 0.01, 14, 0, 0.061, 0, 0xf6f2ea);
+      S(0.15, 0.11, 14, 0, 0, 0); b.cyl(0.155, 0.155, 0.02, 14, 0, 0.055, 0, chrome); b.cyl(0.145, 0.145, 0.01, 14, 0, 0.061, 0, 0xf6f2ea);
       b.pop();
       b.box(0.025, p[1] - 0.1, 0.025, p[0], (p[1] - 0.1) / 2, p[2], chrome);
       p = KIT.hat; b.box(0.022, p[1], 0.022, p[0], p[1] / 2, p[2], chrome); b.cyl(0.15, 0.15, 0.014, 16, p[0], p[1] - 0.03, p[2], sh(0xd2a43c, 0.85));
@@ -21733,20 +23430,34 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       p = KIT.crash; b.box(0.022, p[1] - 0.02, 0.022, p[0] + 0.04, (p[1] - 0.02) / 2, p[2], chrome, 0, 0, 0.05);
       p = KIT.ride; b.box(0.022, p[1] - 0.02, 0.022, p[0], (p[1] - 0.02) / 2, p[2], chrome);
       b.box(0.09, 0.03, 0.22, 0, 0.02, -0.12, dark);                                                   // kick pedal
-      p = KIT.throne; b.cyl(0.16, 0.15, 0.09, 12, p[0], p[1], p[2], 0x1c1c1c); b.box(0.04, 0.45, 0.04, p[0], 0.23, p[2], chrome);
-      for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, p[2] + 0.12 * Math.cos(a), chrome, 0, a); }
+      p = KIT.throne;
+      if (!KL.throne || KL.throne === 'stool' || !R.kit) {
+        b.cyl(0.16, 0.15, 0.09, 12, p[0], p[1], p[2], 0x1c1c1c); b.box(0.04, 0.45, 0.04, p[0], 0.23, p[2], chrome);
+        for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, p[2] + 0.12 * Math.cos(a), chrome, 0, a); }
+      } else R.kit.throne(b, KL, p[0], p[2], chrome);                                  // v0.8: milk crates / leather saddle
+      if (R.kit && R.kit.has(KL, 'cowbell')) R.kit.cowbell(b, KL, 0, 0.9, 0.16);
+      if (R.kit && R.kit.has(KL, 'fan')) R.kit.fan(b, KL, FAN.x, FAN.z, FAN.yaw, false);
       b.box(0.9, 0.012, 0.9, 0, 0.006, -0.2, 0x3a2e4a);                                                // drum rug
       b.at(0, 0, 0, 0);
+      if (R.kit && R.kit.has(KL, 'pyro') && isArena(K.D)) {                          // v0.8: pyro, arena shows only
+        var px = Math.min(K.V.sw - 0.35, 1.1), pz = (K.V.front || DEFAULT_FRONT) + 0.3;
+        R.kit.pyroBase(b, px, hs, pz); R.kit.pyroBase(b, -px, hs, pz);
+      }
     }
     // Moving kit parts: kick shell (pulses), hi-hat top, crash, ride (wobble). World-placed meshes.
     function buildKitParts(hs) {
-      var chrome = 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = kitColor(K.D), w = [0, 0, 0];
-      var kb = new ctx.Builder({ jitter: 0.03, seed: 9 });
-      kb.cyl(0.26, 0.26, 0.36, 16, 0, 0, 0, shell, Math.PI / 2, 0, 0);
+      var KL = kitLook(K.D), chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = KL.color, w = [0, 0, 0];
+      var kb = new ctx.Builder({ jitter: 0.03, seed: 9 }), art = R.kit ? R.kit.headArt(KL, kickInfo(K.D)) : null;
+      if (R.kit) R.kit.shell(kb, KL, 0.26, 0.36, 16, 0, 0, 0, Math.PI / 2, 0, 0); else kb.cyl(0.26, 0.26, 0.36, 16, 0, 0, 0, shell, Math.PI / 2, 0, 0);
       kb.cyl(0.27, 0.27, 0.035, 16, 0, 0, 0.18, chrome, Math.PI / 2, 0, 0); kb.cyl(0.27, 0.27, 0.035, 16, 0, 0, -0.18, chrome, Math.PI / 2, 0, 0);
       kb.cyl(0.25, 0.25, 0.012, 16, 0, 0, 0.194, head, Math.PI / 2, 0, 0); kb.cyl(0.25, 0.25, 0.012, 16, 0, 0, -0.194, head, Math.PI / 2, 0, 0);
-      kb.cyl(0.1, 0.1, 0.014, 12, 0, 0, -0.2, sh(shell, 0.5), Math.PI / 2, 0, 0);
+      if (!art) kb.cyl(0.1, 0.1, 0.014, 12, 0, 0, -0.2, sh(shell, 0.5), Math.PI / 2, 0, 0);
       K.kick = mesh(kb.build(), ctx.mats.vc); kitW(KIT.kick, hs, w); K.kick.position.set(w[0], w[1], w[2]);
+      if (art) {                                                                     // v0.8: kick-head art faces the crowd
+        art.position.set(0, 0, -0.2015); art.rotation.y = Math.PI; K.kick.add(art);
+        K.geos.push(art.geometry); K.mats.push(art.material); if (art.material.map) K.texs.push(art.material.map); K.kickArt = art;
+      }
+      buildKitExtras(hs, KL);
       var cym = function (r, tiltX, tiltZ) {
         var b = new ctx.Builder({ jitter: 0.02, seed: 13 });
         b.cyl(r, r * 0.97, 0.014, 18, 0, 0, 0, bronze); b.cyl(0.045, 0.05, 0.03, 8, 0, 0.012, 0, sh(bronze, 1.1));
@@ -21758,6 +23469,32 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       K.ride = cym(0.24, 0.18, 0.25); kitW(KIT.ride, hs, w); K.ride.position.set(w[0], w[1], w[2]);
       K.wob = { hat: 0, crash: 0, ride: 0, hatT: 9, crashT: 9, rideT: 9, kickT: 9 };
     }
+
+    function kickInfo(D) {
+      var pl = D.player || {};
+      return { r: 0.245, band: D.band && D.band.name, genre: D.genre, look: pl.look };
+    }
+    // v0.8: the moving kit extras: hair-fan blades (spin) and the pyro flames (arena shows only; burst on moments and big beats).
+    function buildKitExtras(hs, KL) {
+      if (!R.kit) return;
+      var w = [0, 0, 0];
+      if (R.kit.has(KL, 'fan')) {
+        var fb = mesh(R.kit.fanBlades(ctx), ctx.mats.vc);
+        kitW([FAN.x + Math.sin(FAN.yaw) * 0.06, 1.12, FAN.z + Math.cos(FAN.yaw) * 0.06], hs, w); fb.position.set(w[0], w[1], w[2]);
+        fb.rotation.y = FAN.yaw + Math.PI; K.fanBlades = fb;
+      }
+      if (R.kit.has(KL, 'pyro') && isArena(K.D)) {
+        var px = Math.min(K.V.sw - 0.35, 1.1), pz = (K.V.front || DEFAULT_FRONT) + 0.3, flames = [];
+        for (var i = 0; i < 2; i++) {
+          var fbld = new ctx.Builder({ jitter: 0 });
+          R.kit.flame(fbld, 0, 0, 0, 1.25);
+          var fm = mesh(fbld.build(), ctx.mats.unlit);
+          fm.position.set(i ? -px : px, hs + 0.28, pz); fm.visible = false; flames.push(fm);
+        }
+        K.pyro = { flames: flames, t: 9, beat: -1, bursts: 0 };
+      }
+    }
+    function pyroBurst() { if (K && K.pyro && K.pyro.t > 0.5) { K.pyro.t = 0; K.pyro.bursts++; } }
 
     // ---- Band ------------------------------------------------------------------------------------------
     // Spots by role (world; yaw 0 faces the camera, PI faces the crowd).
@@ -21805,7 +23542,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         var ins = o.slot === 'vocals' && !/guitar/.test(o.role) ? 'mic' : instFor(o.role || (cm && cm.role));
         if (o.slot === 'bass') ins = 'bass';
         var cape = o.m.id === capeId ? capeVariant : null;
-        var lk = o.m.look || (cm && cm.look) || null;
+        var lk = (GG.creator ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
         if (o.m.corpsePaint) lk = paintLook(lk, o.m.stageShirt);   // v0.6: the rival's lineup (and your defectors) in corpse paint
         var ch = R.buildCharacter(lk, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
         if (!ch) continue;
@@ -21891,17 +23628,19 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
     // ---- Drummer (you) with IK sticks -------------------------------------------------------------------
     function buildDrummer(D) {
-      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = pl.look || (pre && pre.look) || null;
+      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
       if (D.drummer && D.drummer.corpsePaint) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer on your throne
+      K.drummerLook = dl;
       var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
       if (D.drummer && D.drummer.corpsePaint) corpsePaint(ch, 3);
       ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_GEAR].scale.setScalar(0);
       ch.root.position.set(0, K.hs, KZ + THRONE_Z); ch.root.rotation.y = Math.PI;
+      if (dl && dl.stageExtras && dl.stageExtras.indexOf('cape') >= 0) { ch.bones[B_CAPE1].rotation.x = 0.55; ch.bones[B_CAPE2].rotation.x = 0.35; }   // v0.8: drape it off the throne
       K.root.add(ch.root);
       var sb = new ctx.Builder({ jitter: 0 });
-      sb.box(0.024, 0.024, 0.42, 0, 0, 0.14, 0xd8b27a); sb.box(0.03, 0.03, 0.05, 0, 0, 0.34, 0xefe0c0);
+      sb.box(0.024, 0.024, 0.42, 0, 0, 0.14, D.drummer || !R.kit ? 0xd8b27a : R.kit.sticks(kitLook(D))); sb.box(0.03, 0.03, 0.05, 0, 0, 0.34, 0xefe0c0);   // v0.8: stick colour
       var sg = sb.build(); K.geos.push(sg);
       var sticks = [new THREE.Mesh(sg, ctx.mats.vc), new THREE.Mesh(sg, ctx.mats.vc)];
       ch.bones[B_FORE_L].add(sticks[0]); ch.bones[B_FORE_R].add(sticks[1]);
@@ -22117,6 +23856,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     function moment(kind) {
       if (!K) return false;
       S.moments++;
+      if (kind !== 'boo' && kind !== 'drinks' && !(kind === 'applause' && K.D.silent)) pyroBurst();   // v0.8: pyro (arena shows)
       if (FORMATIONS[kind]) { S.form.kind = kind; S.form.t = 0; S.form.dur = DUR[kind]; if (kind === 'wallOfDeath') bandAct(frontman(), 'part', 3); return true; }
       if (kind === 'lighters' || kind === 'boo') {
         S.arms.kind = kind; S.arms.t = 0; S.arms.dur = DUR[kind];
@@ -22355,6 +24095,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       K.ride.rotation.x = K.ride.userData.rx + 0.1 * e * Math.sin(W.rideT * 25);
       var kp = W.kickT < 0.15 ? 1 + 0.06 * bump(W.kickT / 0.15) : 1;
       K.kick.scale.set(kp, kp, 1);
+      if (K.fanBlades) K.fanBlades.rotation.z += dt * 14;                              // v0.8: the hair fan
+      if (K.pyro) {                                                                    // v0.8: pyro bursts (arena shows)
+        var P = K.pyro;
+        if (S.idx >= 3 && S.beats > 0 && S.beats % 16 === 0 && S.beats !== P.beat) { P.beat = S.beats; pyroBurst(); }   // every 16 beats when the crowd is hyped
+        P.t += dt;
+        var pe = P.t < 0.12 ? P.t / 0.12 : P.t < 0.9 ? 1 - (P.t - 0.12) / 0.78 : 0, fl = rprefs().calm ? 1 : 1 + 0.12 * Math.sin(P.t * 47);
+        for (var pi = 0; pi < P.flames.length; pi++) { var fm = P.flames[pi]; fm.visible = pe > 0.01; if (fm.visible) fm.scale.set(0.7 + 0.4 * pe, pe * fl, 0.7 + 0.4 * pe); }
+      }
       // Flashes
       var F = K.flash, cam = ctx.camera;
       for (var i = 0; i < N_FLASH; i++) {
@@ -22612,7 +24360,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0 };
+          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0,
+          kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
+            fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
       }
     };
     return shell;
@@ -23835,13 +25586,16 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null };
       var mem = (o.members || st.members || (band && band.members) || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }).slice(0, 5);
       var pl = o.player || st.player || {}, preset = GG.content && GG.content.presets && pl.presetId ? GG.content.presets.filter(function (x) { return x.id === pl.presetId; })[0] : null;
-      var roster = [{ id: 'player', look: pl.look || (preset && preset.look) || null }].concat(mem);
+      var stageLook = function (m, cm) { return GG.creator ? GG.creator.stageLookFor(m, cm) : null; };   // v0.8: stage looks on the carpet
+      var pLook = stageLook(pl) || pl.look || (preset && preset.look) || null;
+      if (pLook && pLook.outfit && outfit && outfit !== 'cape') { pLook = copyLook(pLook); delete pLook.outfit; }   // the band's outfit card wins
+      var roster = [{ id: 'player', look: pLook }].concat(mem);
       var capeId = null;
       for (var i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';
       if (!capeId) for (i = 0; i < roster.length; i++) if (/vocal/i.test(roster[i].role || '')) { capeId = roster[i].id; break; }
       var n = roster.length, spread = n > 5 ? 0.68 : 0.76;
       for (i = 0; i < n; i++) {
-        var m = roster[i], cm = contentMember(band, m.id), look = outfitLook(m.look || (cm && cm.look) || null, outfit, i);
+        var m = roster[i], cm = contentMember(band, m.id), look = outfitLook((m.id !== 'player' && stageLook(m, cm)) || m.look || (cm && cm.look) || null, outfit, i);
         var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null }, 'band', i);
         if (!rec) continue;
         rec.cx = -3.05 + i * spread; rec.cz = 0.2 - (i % 2) * 0.28;
@@ -24043,6 +25797,172 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     };
     return shell;
   });
+})(window.GG);
+
+</script>
+<script>/* 45_render_creator.js */
+// 45_render_creator.js (v0.8 "Kit", lane CREATOR): the character creator's live 3D preview. A small WebGLRenderer of its
+// own on a canvas inside the creator screen: the main loop is paused under full screens and has no career during a new
+// career, so the preview never touches it. It reuses the one character builder (R.buildCharacter -> R.charGeometry) and
+// the garage kit builder (R.kit.garage), so what you see here is what the garage, the stage and the carpet draw.
+// API (GG.render.preview), safe before GG.render.init() (mount returns false without WebGL):
+//   mount(el) -> bool ; set({ look, kit, mode: 'char'|'kit', view: 'full'|'face'|'hands', band, genre }) ; turn(dx) ;
+//   unmount() ; info() -> { mounted, mode, view, frames, v8, kit, art, calls, pose }
+// Views: 'full' (turntable, drag to turn), 'face' (close-up), 'hands' (fists to the camera: the knuckle letters read left
+// to right, right hand first). Kit mode: the garage kit on a rug, pyro bases + flames shown (they only fire at arena shows).
+(function (GG) {
+  var R = GG.render;
+  if (!R) return;
+  var B_ARM_L = 4, B_FORE_L = 5, B_ARM_R = 6, B_FORE_R = 7, B_HEAD = 3, B_SPINE = 2, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17, B_CAPE1 = 12, B_CAPE2 = 13;
+  var P = R.preview = {};
+  var V = null;              // live view: { THREE, renderer, scene, camera, host, canvas, ch, kit, art, raf, ... }
+  var want = { look: null, kit: null, mode: 'char', view: 'full', band: '', genre: 'metal' };
+  var CAMS = {
+    full: { pos: [0, 1.1, 4.3], at: [0, 1.0, 0] },
+    face: { pos: [0, 1.76, 1.75], at: [0, 1.73, 0] },
+    hands: { pos: [0, 1.0, 1.85], at: [0, 0.88, 0] },
+    kit: { pos: [0.7, 1.95, 4.3], at: [0, 0.62, -0.1] }
+  };
+
+  P.mount = function (el) {
+    P.unmount();
+    var ctx = R.util && R.util.ctx && R.util.ctx();
+    if (!el || !ctx || !window.THREE) return false;
+    var THREE = window.THREE, canvas = document.createElement('canvas'), renderer;
+    canvas.className = 'lk-canvas';
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'low-power' }); }
+    catch (e) { return false; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    el.appendChild(canvas);
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x141a2a);
+    scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x3b2d22, 0.95));
+    var key = new THREE.DirectionalLight(0xfff2dc, 0.85); key.position.set(-2.2, 3.4, 3.2); scene.add(key);
+    var rim = new THREE.DirectionalLight(0x8fb0ff, 0.35); rim.position.set(2.5, 2.2, -2.5); scene.add(rim);
+    var fb = new ctx.Builder({ jitter: 0.02, seed: 3 });
+    fb.cyl(1.25, 1.3, 0.06, 28, 0, -0.03, 0, 0x2a3350); fb.cyl(1.0, 1.0, 0.012, 28, 0, 0.004, 0, 0x34426a);
+    var floor = new THREE.Mesh(fb.build(), ctx.mats.vc); scene.add(floor);
+    var camera = new THREE.PerspectiveCamera(30, 1, 0.05, 40);
+    V = { THREE: THREE, ctx: ctx, renderer: renderer, scene: scene, camera: camera, host: el, canvas: canvas, floor: floor,
+      ch: null, kit: null, art: null, flames: null, yaw: 0.42, sig: '', frames: 0, t: 0, last: 0, drag: null, raf: 0, w: 0, h: 0 };
+    bindDrag(canvas);
+    apply();
+    V.raf = requestAnimationFrame(frame);
+    return true;
+  };
+  P.unmount = function () {
+    if (!V) return;
+    cancelAnimationFrame(V.raf);
+    clearChar(); clearKit();
+    V.floor.geometry.dispose();
+    try { V.renderer.dispose(); if (V.renderer.forceContextLoss) V.renderer.forceContextLoss(); } catch (e) {}
+    if (V.canvas.parentNode) V.canvas.parentNode.removeChild(V.canvas);
+    V = null;
+  };
+  P.set = function (o) {
+    o = o || {};
+    for (var k in o) if (o[k] !== undefined) want[k] = o[k];
+    if (V) apply();
+  };
+  P.turn = function (dx) { if (V) V.yaw += dx; };
+  P.info = function () {
+    return { mounted: !!V, mode: want.mode, view: want.view, frames: V ? V.frames : 0, v8: !!(GG.creator && GG.creator.isV8(want.look)),
+      kit: !!(V && V.kit), art: !!(V && V.art), calls: V ? V.renderer.info.render.calls : 0, pose: V && V.ch ? V.pose : null };
+  };
+
+  function clearChar() { if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearKit() {
+    if (!V) return;
+    if (V.kit) { V.scene.remove(V.kit); V.kit.geometry.dispose(); V.kit = null; }
+    if (V.art) { R.kit.disposeArt(V.art); V.art = null; }
+    if (V.flames) { V.scene.remove(V.flames); V.flames.geometry.dispose(); V.flames = null; }
+  }
+  // Rebuilds only what changed (look -> character, kit look -> kit).
+  function apply() {
+    var THREE = V.THREE, kitMode = want.mode === 'kit';
+    var sig = JSON.stringify([want.look, want.view === 'hands']);
+    if (!kitMode && (sig !== V.sig || !V.ch)) {
+      clearChar();
+      V.sig = sig;
+      V.ch = R.buildCharacter(want.look, { id: 'player' });
+      if (V.ch) {
+        var bn = V.ch.bones;
+        bn[B_GEAR].scale.setScalar(0); bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
+        V.scene.add(V.ch.root);
+      }
+    }
+    if (V.ch) V.ch.root.visible = !kitMode;
+    var ksig = kitMode ? JSON.stringify([want.kit, want.band, want.genre, want.look && want.look.skin]) : '';
+    if (kitMode && ksig !== V.ksig) {
+      clearKit();
+      V.ksig = ksig;
+      var K = R.kit.norm(want.kit, (want.kit && want.kit.color) || '#b3262b');
+      var built = R.kit.garage(V.ctx, K, { preview: true, band: want.band, genre: want.genre, look: want.look });
+      V.kit = new THREE.Mesh(built.geo, V.ctx.mats.vc);
+      V.kit.rotation.y = 0.35;
+      if (built.art) { V.art = built.art; V.kit.add(V.art); }
+      V.scene.add(V.kit);
+      if (R.kit.has(K, 'pyro')) {                                                  // a frozen burst so you can see it
+        var b = new V.ctx.Builder({ jitter: 0 });
+        [-0.95, 0.95].forEach(function (x) { R.kit.flame(b, x, 0.28, 0.55, 0.85); });
+        V.flames = new THREE.Mesh(b.build(), V.ctx.mats.unlit); V.flames.rotation.y = 0.35; V.scene.add(V.flames);
+      }
+    }
+    if (!kitMode) { clearKit(); V.ksig = ''; }
+  }
+
+  function bindDrag(c) {
+    c.addEventListener('pointerdown', function (e) { if (V) { V.drag = { x: e.clientX, id: e.pointerId }; try { c.setPointerCapture(e.pointerId); } catch (x) {} } });
+    c.addEventListener('pointermove', function (e) { if (V && V.drag && V.drag.id === e.pointerId) { V.yaw += (e.clientX - V.drag.x) * 0.012; V.drag.x = e.clientX; } });
+    var up = function () { if (V) V.drag = null; };
+    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+  }
+
+  function resize() {
+    var w = Math.max(1, V.host.clientWidth | 0), h = Math.max(1, V.host.clientHeight | 0);
+    if (w === V.w && h === V.h) return;
+    V.w = w; V.h = h;
+    V.renderer.setSize(w, h, false);
+    V.canvas.style.width = w + 'px'; V.canvas.style.height = h + 'px';
+    V.camera.aspect = w / h; V.camera.updateProjectionMatrix();
+  }
+  function frame(ts) {
+    if (!V) return;
+    V.raf = requestAnimationFrame(frame);
+    if (document.hidden) return;
+    var dt = V.last ? Math.min(0.05, (ts - V.last) / 1000) : 0.016;
+    V.last = ts; V.t += dt;
+    resize();
+    var kitMode = want.mode === 'kit', view = kitMode ? 'kit' : (want.view || 'full');
+    var s = V.ch ? V.ch.root.scale.y : 1, cam = CAMS[view] || CAMS.full, lift = view === 'kit' ? 1 : s;
+    var fit = Math.max(1, 0.8 / Math.max(0.3, V.camera.aspect));                      // a narrow preview backs the camera off
+    V.camera.position.set(cam.pos[0], cam.pos[1] * lift, cam.pos[2] * (view === 'full' || view === 'kit' ? fit : 1));
+    V.camera.lookAt(cam.at[0], cam.at[1] * lift, cam.at[2]);
+    if (V.ch && !kitMode) pose(V.ch, view, V.t);
+    if (V.kit) { V.kit.rotation.y = 0.35 + (V.yaw - 0.42); if (V.flames) { V.flames.rotation.y = V.kit.rotation.y; V.flames.scale.y = 0.9 + 0.1 * Math.sin(V.t * 30); } }
+    V.renderer.render(V.scene, V.camera);
+    V.frames++;
+  }
+  // Idle / fists poses. 'hands': the arms turn so the backs of the hands (the knuckles) face the camera.
+  function pose(ch, view, t) {
+    var bn = ch.bones, i;
+    for (i = 1; i < bn.length; i++) bn[i].rotation.set(0, 0, 0);
+    ch.root.rotation.y = view === 'hands' ? 0 : view === 'face' ? V.yaw * 0.6 : V.yaw;
+    var br = Math.sin(t * 1.8);
+    bn[B_SPINE].rotation.x = 0.015 * br;
+    if (view === 'hands') {
+      bn[B_ARM_L].rotation.set(-0.15, -Math.PI / 2, 0.02); bn[B_ARM_R].rotation.set(-0.15, Math.PI / 2, -0.02);
+      bn[B_FORE_L].rotation.set(0, 0, 0.35); bn[B_FORE_R].rotation.set(0, 0, -0.35);   // elbows bend forward (local z = world ∓x here)
+      V.pose = 'fists';
+    } else {
+      bn[B_ARM_L].rotation.z = 0.1; bn[B_ARM_R].rotation.z = -0.1;
+      bn[B_FORE_L].rotation.x = -0.12; bn[B_FORE_R].rotation.x = -0.12;
+      bn[B_HEAD].rotation.y = 0.12 * Math.sin(t * 0.5);
+      V.pose = 'idle';
+    }
+    var cape = want.look && want.look.stageExtras && want.look.stageExtras.indexOf('cape') >= 0;
+    bn[B_CAPE1].rotation.x = cape ? 0.08 + 0.03 * Math.sin(t * 1.3) : 0; bn[B_CAPE2].rotation.x = cape ? 0.04 + 0.03 * Math.sin(t * 1.7 + 1) : 0;
+  }
 })(window.GG);
 
 </script>
@@ -24396,6 +26316,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // character creator → cold open), the in-game ☰ menu, and save-code backup/restore.
 // v0.6.1 (Addendum C4): ⚙ Settings from the title (title-settings) and the menu (menu-settings); the creator picks the
 // career difficulty (diff-chill|normal|brutal, locked for that career) and passes it to GG.main.newCareer.
+// v0.8 (CREATOR): the creator opens the full creator ('look', 5j_ui_creator: btn-customize; a 'preset-custom' card once
+// customised), a carry-over toggle (carry-toggle: unlocks from past careers in this genre, GG.creator.carry) and hands both
+// to GG.creator.prepare() right before GG.main.newCareer; the ☰ menu has "Look" (menu-look) mid-career.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -24606,10 +26529,30 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var nick = el('input', { testid: 'creator-nick', id: 'cr-nick', type: 'text', maxLength: 16, placeholder: 'e.g. Thunderwrist (optional)', autocomplete: 'off', value: draft.nick || '',
         oninput: function () { draft.nick = nick.value; } });
       var grid = el('div.presets');
+      if (draft.custom) {                                   // v0.8: the full creator's result
+        var cu = draft.useCustom;
+        grid.appendChild(btn('.preset' + (cu ? '.on' : ''), { testid: 'preset-custom', 'aria-pressed': cu ? 'true' : 'false',
+          onclick: function () { draft.useCustom = true; s.rerender(); } }, [figure({ look: draft.custom.look, kitColor: draft.custom.kit.color }), el('div.pn', 'Your custom look'), el('div.pb', 'Tap ✂ below to keep tweaking.')]));
+      }
       list.forEach(function (p) {
-        grid.appendChild(btn('.preset' + (p.id === draft.presetId ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': p.id === draft.presetId ? 'true' : 'false',
-          onclick: function () { draft.presetId = p.id; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
+        var on = !(draft.custom && draft.useCustom) && p.id === draft.presetId;
+        grid.appendChild(btn('.preset' + (on ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': on ? 'true' : 'false',
+          onclick: function () { draft.presetId = p.id; draft.useCustom = false; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
       });
+      var genre = draft.genre || 'metal', carryN = GG.creator ? GG.creator.carry.count(genre) : 0;
+      if (draft.carry == null) draft.carry = carryN > 0;
+      var customize = btn('.btn.block.cr-custom', { testid: 'btn-customize', disabled: !GG.creator || !ui.openLook, onclick: function () {
+        var pre = list.filter(function (p) { return p.id === draft.presetId; })[0] || list[0], c = draft.useCustom && draft.custom;
+        var band = (GG.content.bands || {})[draft.bandId];
+        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, carry: !!draft.carry,
+          look: c ? c.look : pre.look, stageLook: c ? c.stageLook : null, kit: c ? c.kit : GG.creator.newKit(pre.kitColor),
+          onDone: function (out) { draft.custom = out; draft.useCustom = true; var cr = ui.get('creator'); if (cr) cr.rerender(); } });
+      } }, draft.custom && draft.useCustom ? '✂ Keep tweaking your look' : '✂ Customize: face, hair, ink, stage outfit, kit');
+      var carryBox = el('input', { type: 'checkbox', testid: 'carry-toggle', checked: !!draft.carry && carryN > 0, disabled: !carryN,
+        onchange: function () { draft.carry = carryBox.checked; } });
+      var carry = el('label.cr-carry', { htmlFor: 'cr-carry' }, [carryBox, el('span', carryN ? 'Carry over ' + carryN + ' unlock' + (carryN === 1 ? '' : 's') + ' from past ' + genre + ' careers'
+        : 'Unlocks from past ' + genre + ' careers carry over here (none yet)')]);
+      carryBox.id = 'cr-carry';
       var DL = GG.difficulty ? GG.difficulty.LEVELS : ['normal'];
       if (DL.indexOf(draft.careerDifficulty) < 0) draft.careerDifficulty = 'normal';
       var diffPick = el('div.diff-pick', { testid: 'diff-pick' }, DL.map(function (d) {
@@ -24621,8 +26564,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         var n = (name.value || '').trim().slice(0, 16);
         if (!n) { err.textContent = 'Even drummers need a name.'; return; }
         create.disabled = true;
+        var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
+        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
         GG.main.newCareer({ slot: draft.slot || '1', bandId: draft.bandId || 'hail_damage',
-          player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId },
+          player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
           careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
         ui.closeAll();
         ui.show('coldopen');
@@ -24635,6 +26580,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           el('div.field', [el('label', { htmlFor: 'cr-nick' }, 'Stage nickname'), nick]),
           el('div.caps', 'Pick a look'),
           grid,
+          customize,
+          carry,
           el('div.caps', 'Career difficulty · locked for this career'),
           diffPick,
           el('p.small.dim', { testid: 'diff-blurb' }, GG.difficulty ? GG.difficulty.text(draft.careerDifficulty).blurb : '')
@@ -24695,6 +26642,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           btn('.btn.grow', { testid: 'menu-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
         ]),
         el('div.sep'),
+        ui.openLook && st ? btn('.btn.block', { testid: 'menu-look', onclick: function () { ui.close(s.id); ui.openLook({ mode: 'career' }); } }, '👕 Look: everyday, stage, ink, kit') : null,   // v0.8
         ui.defined && ui.defined('settings') ? btn('.btn.block', { testid: 'menu-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null,
         el('div.row', [
           btn('.btn.grow', { testid: 'menu-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
@@ -30676,6 +32624,314 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
   GG.registerDebug('tourui', function () {
     return { gong: G ? { phase: G.phase, threeD: G.threeD, result: G.result } : null, mooseDue: mooseDue, flown: Object.keys(flown) };
+  });
+})(window.GG);
+
+</script>
+<script>/* 5j_ui_creator.js */
+// 5j_ui_creator.js (v0.8 "Kit", lane CREATOR): the full character creator. Screen 'look' (full): a live 3D preview
+// (GG.render.preview, 45_render_creator), an Everyday ↔ Stage toggle, tabs Body / Face / Hair / Clothes / Stage / Ink / Kit,
+// locked parts greyed with what unlocks them, knuckle-tattoo letters (4 per hand, A–Z), the kit look.
+// The person (body, face, hair, ink, piercings) is shared by both looks; Clothes edits the look the toggle shows; Stage
+// edits the stage look's outfit + extras. Rules and unlocks: GG.creator (2b_sim_creator.js).
+// API: GG.ui.openLook({ mode: 'new'|'career', look, stageLook, kit, genre, band, carry, onDone({ look, stageLook, kit }) })
+//   'new' (the new-career flow, 51_ui_menu 'creator'): unlocks from GG.creator.draftState(genre, carry); onDone gets the result.
+//   'career' (☰ menu → Look): edits GG.state.player; Done = GG.creator.apply + GG.main.sync().
+// testids: lk-cancel, lk-done, lk-random, lk-which-everyday|stage, lk-tab-<tab>, lk-view-full|face|hands, lk-opt-<cat>-<value>,
+//   lk-sw-<field>-<i>, lk-height, lk-knuckles-right|left, lk-headtext, lk-arm-L|R-<none|half|full>, lk-count, lk-lock (why a part
+//   is locked, over the preview). Debug 'creator-ui'.
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn;
+  var TABS = [
+    { id: 'body', label: 'Body', icon: '🧍' }, { id: 'face', label: 'Face', icon: '🙂' }, { id: 'hair', label: 'Hair', icon: '💇' },
+    { id: 'clothes', label: 'Clothes', icon: '👕' }, { id: 'stage', label: 'Stage', icon: '🎤' }, { id: 'ink', label: 'Ink', icon: '🖋️' },
+    { id: 'kit', label: 'Kit', icon: '🥁' }
+  ];
+  var E = null;            // the open editor: { mode, st, look, stage, kit, which, tab, view, genre, band, onDone, s, panel, tabs, ... }
+  function C() { return GG.creator; }
+  function content() { return GG.content.creator || { swatches: {} }; }
+  function cur() { return E.which === 'stage' ? E.stage : E.look; }
+  function clone(o) { return GG.util.clone(o); }
+
+  ui.openLook = function (o) { init(o); return ui.show('look'); };
+  function init(o) {
+    o = o || {};
+    var st = o.mode === 'career' ? GG.state : null, pl = st ? st.player || {} : {};
+    var genre = o.genre || (st && st.genre) || 'metal';
+    E = {
+      mode: o.mode === 'career' ? 'career' : 'new', onDone: o.onDone || null, genre: genre,
+      band: o.band || bandName(st), st: st || C().draftState(genre, !!o.carry),
+      look: C().expand(o.look || pl.look || null), stage: C().expand(o.stageLook || pl.stageLook || o.look || pl.look || null),
+      kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b'))),
+      which: 'everyday', tab: 'body', view: 'full'
+    };
+    delete E.look.outfit; E.look.stageExtras = [];
+    C().syncPerson(E.look, E.stage);
+  }
+  function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'Hail Damage'; }
+
+  /* ---- Screen ------------------------------------------------------------------------------------------------------ */
+  ui.define('look', {
+    kind: 'full', cls: 'lookx',
+    build: function (s) {
+      if (!E) init({ mode: GG.state ? 'career' : 'new' });
+      E.s = s;
+      var total = C().parts(E.st).length, open = C().parts(E.st).filter(function (p) { return !p.locked; }).length;
+      var host = el('div.lk-preview', { testid: 'lk-preview' });
+      E.host = host;
+      E.viewBar = el('div.lk-views');
+      E.whichBar = el('div.lk-which', { role: 'tablist' });
+      E.tabs = el('div.lk-tabs', { role: 'tablist' });
+      E.panel = el('div.lk-panel', { testid: 'lk-panel' });
+      E.note = el('div.lk-lock', { testid: 'lk-lock', role: 'status', 'aria-live': 'polite' });
+      ui.append(s.body, [
+        el('div.lk-head', [
+          btn('.icon-btn', { testid: 'lk-cancel', 'aria-label': 'Back', onclick: cancel }, '←'),
+          el('div.grow', [el('div.caps', E.mode === 'new' ? 'New career · your look' : 'Your look'), el('div.lk-title', 'Who’s on drums?')]),
+          el('span.tag', { testid: 'lk-count', title: 'Parts unlocked' }, '🔓 ' + open + '/' + total)
+        ]),
+        el('div.lk-stagewrap', [host, E.viewBar, E.note]),
+        E.whichBar, E.tabs, E.panel
+      ]);
+      ui.append(s.foot, el('div.row', [
+        btn('.btn.grow', { testid: 'lk-random', onclick: surprise }, '🎲 Surprise'),
+        btn('.btn.primary.grow', { testid: 'lk-done', onclick: done }, E.mode === 'new' ? 'Looks good' : 'Done')
+      ]));
+      var ok = GG.render && GG.render.preview && GG.render.preview.mount(host);
+      if (!ok) host.appendChild(el('div.lk-nopreview', 'No 3D here, but the garage will show it.'));
+      refresh();
+    },
+    onClose: function () { if (GG.render && GG.render.preview) GG.render.preview.unmount(); if (E) clearTimeout(E.noteT); E = null; }
+  });
+
+  // Locked parts explain themselves in one line over the preview (one at a time, never a stack of toasts).
+  function lockNote(text) {
+    if (!E || !E.note) return;
+    E.note.textContent = text; E.note.classList.add('on');
+    clearTimeout(E.noteT); E.noteT = setTimeout(function () { if (E && E.note) E.note.classList.remove('on'); }, 3200);
+  }
+  function cancel() { ui.close('look'); }
+  function done() {
+    var out = { look: C().stageOnly(E.look), stageLook: clone(E.stage), kit: clone(E.kit) };
+    if (E.mode === 'career' && GG.state) {
+      var res = C().apply(GG.state, out);
+      if (GG.main && GG.main.sync) GG.main.sync();
+      ui.close('look');
+      ui.toast(res.stageLook.outfit && res.stageLook.outfit !== 'none' ? 'Looking sharp. The stage look comes out at gigs.' : 'Looking sharp.', { kind: 'good' });
+      return;
+    }
+    var cb = E.onDone;
+    ui.close('look');
+    if (cb) cb(out);
+  }
+  function surprise() {
+    var r = ui.rng, pick = function (cat) { var l = C().parts(E.st, cat).filter(function (p) { return !p.locked; }); return l.length ? l[Math.floor(r.next() * l.length)] : null; };
+    var val = function (cat) { var p = pick(cat); return p ? p.value : undefined; };
+    var sw = content().swatches, any = function (a) { return a[Math.floor(r.next() * a.length)]; };
+    var L = E.look;
+    L.build = content().builds[val('build')] || 1; L.height = Math.round((0.92 + r.next() * 0.16) * 100) / 100; L.skin = any(sw.skin); L.age = val('age');
+    L.face = { shape: val('shape'), eyes: val('eyes'), eyeColor: any(sw.eyes), brows: val('brows'), nose: val('nose'), mouth: val('mouth') };
+    L.facialHair = r.next() < 0.5 ? 'clean' : val('facialHair'); L.glasses = r.next() < 0.6 ? 'none' : val('glasses');
+    L.hairStyle = val('hairStyle'); var hc = pick('hairColor'); if (hc) L.hair = hc.color;
+    L.top = val('top'); L.bottom = val('bottom'); L.shoes = val('shoes'); L.headwear = r.next() < 0.5 ? 'none' : val('headwear');
+    L.shirt = any(sw.clothes); L.pants = any(sw.clothes);
+    E.stage.outfit = val('outfit');
+    C().syncPerson(L, E.stage);
+    refresh();
+  }
+
+  /* ---- Rendering the editor ------------------------------------------------------------------------------------------ */
+  function refresh() {
+    if (!E || !E.s || E.busy) return;
+    E.busy = true;
+    try { bars(); panel(); preview(); } finally { E.busy = false; }
+  }
+  function preview() {
+    if (GG.render && GG.render.preview) GG.render.preview.set({ look: cur(), kit: E.kit, mode: E.tab === 'kit' ? 'kit' : 'char', view: E.view, band: E.band, genre: E.genre });
+  }
+  function panel() {
+    var keep = E.panel.scrollTop;
+    ui.clear(E.panel);
+    PANELS[E.tab]();
+    E.panel.scrollTop = keep;
+  }
+  function bars() {
+    var kitMode = E.tab === 'kit';
+    ui.clear(E.whichBar);
+    ui.append(E.whichBar, [['everyday', '👟 Everyday'], ['stage', '🎤 Stage']].map(function (w) {
+      return btn('.lk-seg' + (E.which === w[0] ? '.on' : ''), { testid: 'lk-which-' + w[0], role: 'tab', 'aria-selected': E.which === w[0] ? 'true' : 'false',
+        disabled: kitMode, onclick: function () { E.which = w[0]; if (w[0] === 'everyday' && E.tab === 'stage') E.tab = 'clothes'; refresh(); } }, w[1]);
+    }));
+    ui.clear(E.tabs);
+    ui.append(E.tabs, TABS.map(function (t) {
+      return btn('.lk-tab' + (E.tab === t.id ? '.on' : ''), { testid: 'lk-tab-' + t.id, role: 'tab', 'aria-selected': E.tab === t.id ? 'true' : 'false',
+        onclick: function () { E.tab = t.id; if (t.id === 'stage') E.which = 'stage'; if (t.id === 'face' && E.view === 'full') E.view = 'face'; if (t.id !== 'face' && t.id !== 'ink' && E.view !== 'full') E.view = 'full'; refresh(); } },
+        [el('span.i', t.icon), el('span.l', t.label)]);
+    }));
+    ui.clear(E.viewBar);
+    if (!kitMode) ui.append(E.viewBar, [['full', 'Full'], ['face', 'Face'], ['hands', 'Hands']].map(function (v) {
+      return btn('.lk-view' + (E.view === v[0] ? '.on' : ''), { testid: 'lk-view-' + v[0], onclick: function () { E.view = v[0]; refresh(); } }, v[1]);
+    }));
+    else ui.append(E.viewBar, el('span.lk-viewnote', 'Your kit'));
+  }
+  function section(title, kids, note) {
+    E.panel.appendChild(el('div.lk-sec', [el('div.caps', title), note ? el('div.small.dim', note) : null, kids]));
+  }
+  // A row of option chips for one category. get() -> current value ; set(value). multi: toggles (arrays).
+  function chips(cat, get, set, o) {
+    o = o || {};
+    var cur = get();
+    return el('div.lk-chips', C().parts(E.st, cat).filter(function (p) { return !o.only || o.only(p); }).map(function (p) {
+      var on = o.multi ? (cur || []).indexOf(p.value) >= 0 : cur === p.value;
+      return btn('.lk-chip' + (on ? '.on' : '') + (p.locked ? '.locked' : ''), { testid: 'lk-opt-' + cat + '-' + p.value, 'aria-pressed': on ? 'true' : 'false',
+        title: p.locked ? 'Locked: ' + p.why : p.hint || p.name,
+        onclick: function () {
+          if (p.locked) { lockNote('🔒 ' + p.name + ': ' + p.why + '.'); return; }
+          if (o.multi) { var a = (get() || []).slice(), i = a.indexOf(p.value); if (i >= 0) a.splice(i, 1); else a.push(p.value); set(a); }
+          else set(p.value);
+          refresh();
+        } }, [p.color ? el('i.dot', { style: { background: p.color } }) : null, p.locked ? '🔒 ' : '', p.name]);
+    }));
+  }
+  function swatches(field, list, get, set) {
+    var v = String(get() || '').toLowerCase();
+    return el('div.lk-swatches', list.map(function (c, i) {
+      return btn('.lk-sw' + (v === c.toLowerCase() ? '.on' : ''), { testid: 'lk-sw-' + field + '-' + i, 'aria-label': field + ' ' + c, style: { background: c },
+        onclick: function () { set(c); refresh(); } });
+    }));
+  }
+  // Person fields go to both looks; clothes to the look being edited.
+  function person(fn) { fn(E.look); C().syncPerson(E.look, E.stage); }
+  function face(k) { return function () { return (E.look.face || {})[k]; }; }
+  function setFace(k) { return function (v) { person(function (L) { L.face = Object.assign({}, L.face, (function () { var o = {}; o[k] = v; return o; })()); }); }; }
+
+  var PANELS = {
+    body: function () {
+      var builds = content().builds, bNow = E.look.build, near = null, d = 9;
+      for (var k in builds) if (Math.abs(builds[k] - bNow) < d) { d = Math.abs(builds[k] - bNow); near = k; }
+      section('Build', chips('build', function () { return near; }, function (v) { person(function (L) { L.build = builds[v]; }); }));
+      var h = el('input.lk-range', { testid: 'lk-height', type: 'range', min: '0.9', max: '1.1', step: '0.01', value: String(E.look.height || 1),
+        oninput: function () { person(function (L) { L.height = +h.value; }); lab.textContent = heightLabel(+h.value); preview(); } });
+      var lab = el('span.lk-rangelab', heightLabel(E.look.height || 1));
+      section('Height', el('div.lk-rangerow', [el('span.small.dim', 'Short'), h, el('span.small.dim', 'Tall'), lab]));
+      section('Skin', swatches('skin', content().swatches.skin, function () { return E.look.skin; }, function (c) { person(function (L) { L.skin = c; }); }));
+      section('Age look', chips('age', function () { return E.look.age; }, function (v) { person(function (L) { L.age = v; }); }));
+    },
+    face: function () {
+      ['shape', 'eyes', 'brows', 'nose', 'mouth'].forEach(function (k) {
+        section(C().cats()[k].label, chips(k, face(k), setFace(k)));
+        if (k === 'eyes') section('Eye colour', swatches('eyeColor', content().swatches.eyes, face('eyeColor'), setFace('eyeColor')), '(shows on every eye shape but Beady)');
+      });
+      section('Facial hair', chips('facialHair', function () { return E.look.facialHair; }, function (v) { person(function (L) { L.facialHair = v; }); }));
+      section('Glasses', chips('glasses', function () { return E.look.glasses; }, function (v) { person(function (L) { L.glasses = v; }); }));
+    },
+    hair: function () {
+      section('Style', chips('hairStyle', function () { return E.look.hairStyle; }, function (v) { person(function (L) { L.hairStyle = v; }); }));
+      var hc = String(E.look.hair).toLowerCase();
+      section('Colour', chips('hairColor', function () { var p = C().partsIn('hairColor').filter(function (x) { return x.color.toLowerCase() === hc; })[0]; return p ? p.value : null; },
+        function (v) { person(function (L) { L.hair = C().partFor('hairColor', v).color; }); }), 'Dyes unlock as the band grows.');
+    },
+    clothes: function () {
+      var L = cur(), stage = E.which === 'stage';
+      var set = function (k) { return function (v) { cur()[k] = v; }; };
+      if (stage) E.panel.appendChild(el('p.small.dim.lk-note', 'Stage clothes: what you wear under (or instead of) the stage outfit.'));
+      section('Top', chips('top', function () { return L.top; }, set('top')));
+      section('Shirt colour', swatches('shirt', content().swatches.clothes, function () { return L.shirt; }, set('shirt')));
+      section('Bottoms', chips('bottom', function () { return L.bottom; }, set('bottom')));
+      section('Pants colour', swatches('pants', content().swatches.clothes, function () { return L.pants; }, set('pants')));
+      section('Shoes', chips('shoes', function () { return L.shoes; }, set('shoes')));
+      section('Headwear', chips('headwear', function () { return L.headwear; }, set('headwear')));
+      section('Hat colour', swatches('capColor', content().swatches.clothes, function () { return L.capColor; }, set('capColor')), 'Toques, trucker hats and caps.');
+    },
+    stage: function () {
+      E.panel.appendChild(el('p.small.dim.lk-note', 'Your stage look switches on by itself at gigs, on the red carpet and on stage.'));
+      section('Stage outfit', chips('outfit', function () { return E.stage.outfit; }, function (v) { E.stage.outfit = v; }));
+      section('Stage extras', chips('stageExtra', function () { return E.stage.stageExtras; }, function (a) { E.stage.stageExtras = a; }, { multi: true }));
+      section('Outfit colour', swatches('shirt', content().swatches.clothes, function () { return E.stage.shirt; }, function (c) { E.stage.shirt = c; }), 'Tints the suit, the shirt under a vest, the tank.');
+      section('Spandex / pants colour', swatches('pants', content().swatches.clothes, function () { return E.stage.pants; }, function (c) { E.stage.pants = c; }));
+    },
+    ink: function () {
+      var tats = function () { return E.look.tattoos || []; };
+      var tat = function (spot) { return tats().filter(function (t) { return t.spot === spot; })[0] || null; };
+      var setTat = function (spot, design) { person(function (L) { L.tattoos = (L.tattoos || []).filter(function (t) { return t.spot !== spot; }); if (design) L.tattoos.push({ spot: spot, design: design }); }); };
+      ['L', 'R'].forEach(function (side) {
+        var half = tat('half' + side), full = tat('sleeve' + side), now = full ? 'full' : half ? 'half' : 'none', d = (full || half || {}).design || 'maple';
+        var fullOk = C().isUnlocked(E.st, 'tatSpot.sleeve' + side), halfOk = C().isUnlocked(E.st, 'tatSpot.half' + side);
+        var cov = el('div.lk-chips', [['none', 'None'], ['half', 'Forearm'], ['full', 'Full sleeve']].map(function (c) {
+          var locked = (c[0] === 'full' && !fullOk) || (c[0] === 'half' && !halfOk);
+          return btn('.lk-chip' + (now === c[0] ? '.on' : '') + (locked ? '.locked' : ''), { testid: 'lk-arm-' + side + '-' + c[0], onclick: function () {
+            if (locked) { lockNote('🔒 ' + C().part('tatSpot.' + (c[0] === 'full' ? 'sleeve' : 'half') + side).name + ': ' + C().gateText(C().part('tatSpot.' + (c[0] === 'full' ? 'sleeve' : 'half') + side).gate) + '.'); return; }
+            setTat('half' + side, null); setTat('sleeve' + side, null);
+            if (c[0] !== 'none') setTat((c[0] === 'full' ? 'sleeve' : 'half') + side, d);
+            refresh();
+          } }, [locked ? '🔒 ' : '', c[1]]);
+        }));
+        var kids = [cov];
+        if (now !== 'none') kids.push(chips('tatDesign', function () { return d; }, function (v) { setTat((now === 'full' ? 'sleeve' : 'half') + side, v); }));
+        section(side === 'L' ? 'Left arm' : 'Right arm', kids);
+      });
+      ['chest', 'neck'].forEach(function (spot) {
+        var ok = C().isUnlocked(E.st, 'tatSpot.' + spot), t = tat(spot);
+        if (!ok) { section(C().part('tatSpot.' + spot).name, el('div.small.dim', '🔒 ' + C().gateText(C().part('tatSpot.' + spot).gate))); return; }
+        section(spot === 'chest' ? 'Chest (shows shirtless)' : 'Neck', el('div', [
+          btn('.lk-chip' + (!t ? '.on' : ''), { testid: 'lk-opt-' + spot + '-none', onclick: function () { setTat(spot, null); refresh(); } }, 'None'),
+          chips('tatDesign', function () { return t && t.design; }, function (v) { setTat(spot, v); })
+        ]));
+      });
+      var tearOk = C().isUnlocked(E.st, 'tatSpot.teardrop'), tear = !!tat('teardrop');
+      section('Face', btn('.lk-chip' + (tear ? '.on' : '') + (tearOk ? '' : '.locked'), { testid: 'lk-opt-teardrop', onclick: function () {
+        if (!tearOk) { lockNote('🔒 Face teardrop: ' + C().gateText(C().part('tatSpot.teardrop').gate) + '.'); return; }
+        setTat('teardrop', tear ? null : 'tear'); refresh();
+      } }, [tearOk ? '' : '🔒 ', 'Teardrop']));
+      // Knuckles: four letters per hand, A–Z only. The right hand reads first (it's on the left as you face them).
+      var kOk = C().isUnlocked(E.st, 'tatSpot.knuckles'), kn = E.look.knuckles || { left: '', right: '' };
+      var inp = function (hand) {
+        var i = el('input.lk-knuckle', { testid: 'lk-knuckles-' + hand, type: 'text', maxLength: 8, value: kn[hand] || '', placeholder: hand === 'right' ? 'LOVE' : 'HATE',
+          autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', disabled: !kOk, 'aria-label': (hand === 'right' ? 'Right' : 'Left') + ' hand knuckles',
+          oninput: function () {
+            var v = C().knuckles(i.value);
+            if (i.value !== v) i.value = v;
+            person(function (L) { L.knuckles = Object.assign({ left: '', right: '' }, L.knuckles); L.knuckles[hand] = v; });
+            if (E.view !== 'hands') { E.view = 'hands'; bars(); }   // keep the panel (and the keyboard) where it is
+            preview();
+          } });
+        return el('label.lk-kfield', [el('span.caps', hand === 'right' ? 'Right hand' : 'Left hand'), i]);
+      };
+      section('Knuckles', kOk ? el('div.lk-krow', [inp('right'), inp('left')]) : el('div.small.dim', '🔒 ' + C().gateText(C().part('tatSpot.knuckles').gate)),
+        kOk ? 'Four letters per hand, A to Z. Tap Hands above to read them up close.' : null);
+      section('Piercings', chips('piercing', function () { return E.look.piercings; }, function (a) { person(function (L) { L.piercings = a; }); }, { multi: true }));
+    },
+    kit: function () {
+      var K = E.kit, set = function (k) { return function (v) { K[k] = v; }; };
+      section('Shell finish', chips('shell', function () { return K.shell; }, set('shell')));
+      section('Shell colour', swatches('kitColor', content().swatches.kit, function () { return K.color; }, set('color')));
+      section('Hardware', chips('hardware', function () { return K.hardware; }, set('hardware')));
+      section('Kick-drum head', chips('head', function () { return K.head; }, set('head')));
+      if (K.head === 'text') {
+        var t = el('input.lk-text', { testid: 'lk-headtext', type: 'text', maxLength: 20, value: K.headText || '', placeholder: 'SASKATOON', autocomplete: 'off',
+          oninput: function () { K.headText = C().headText(t.value); preview(); },
+          onchange: function () { K.headText = C().headText(t.value); t.value = K.headText; preview(); } });
+        section('Your text', t, 'Up to 14 letters, numbers or ! ? & \' . - #');
+      }
+      section('Throne', chips('throne', function () { return K.throne; }, set('throne')));
+      var sk = String(K.sticks).toLowerCase();
+      section('Sticks', chips('sticks', function () { var p = C().partsIn('sticks').filter(function (x) { return x.color.toLowerCase() === sk; })[0]; return p ? p.value : null; },
+        function (v) { K.sticks = C().partFor('sticks', v).color; }));
+      section('Extras', chips('kitExtra', function () { return K.extras; }, function (a) { K.extras = a; }, { multi: true }), 'Pyro only fires at arena shows. There is no gong. There will never be a gong.');
+    }
+  };
+  function heightLabel(h) { return h < 0.95 ? 'Compact' : h < 1.0 ? 'Average-ish' : h < 1.05 ? 'Average' : 'Tall'; }
+
+  // Mid-week unlocks (a Loonie, a gold record, the Gong, a big gig): a toast; the week's wrap lists them too.
+  GG.on('creator:unlocked', function (p) {
+    if (!p || p.source === 'week' || !GG.state || !p.names || !p.names.length) return;
+    ui.toast('New look unlocked: ' + p.names.slice(0, 3).join(', ') + (p.names.length > 3 ? '…' : '') + ' (☰ → Look)', { kind: 'good', ms: 4200 });
+  });
+
+  GG.registerDebug('creator-ui', function () {
+    if (!E) return { open: false };
+    return { open: true, mode: E.mode, which: E.which, tab: E.tab, view: E.view, look: clone(E.look), stage: clone(E.stage), kit: clone(E.kit),
+      preview: GG.render && GG.render.preview ? GG.render.preview.info() : null };
   });
 })(window.GG);
 

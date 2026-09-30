@@ -358,7 +358,7 @@
   // Build a character: { root (Group, scaled by height), mesh (SkinnedMesh), bones[], dispose() }.
   function makeCharacter(ctx, look, o) {
     var L = normLook(look, o.id);
-    var geo = characterGeometry(ctx, L, o), lay = jointLayout(L.build), bones = [], i;
+    var geo = R.charGeometry ? R.charGeometry(ctx, L, o, look) : characterGeometry(ctx, L, o), lay = jointLayout(L.build), bones = [], i;   // v0.8: 40_render_core
     for (i = 0; i < lay.length; i++) {
       var bn = new THREE.Bone(), p = lay[i][0];
       if (p >= 0) { bn.position.set(lay[i][1] - lay[p][1], lay[i][2] - lay[p][2], lay[i][3] - lay[p][3]); bones[p].add(bn); }
@@ -568,8 +568,8 @@
     // v0.5: the trophy wall (gold/platinum records, loonie trophies, banned-venue photos), rebuilt when state changes.
     var trophyWall = buildTrophyWall(); scene.add(trophyWall.mesh);
 
-    // ---- Drum kit (own mesh: rebuilt when state.player.kitColor changes) ----
-    var kit = { mesh: null, color: null };
+    // ---- Drum kit (own mesh: rebuilt when state.player.kitColor / player.kit (v0.8 KIT_LOOK) changes) ----
+    var kit = { mesh: null, color: null, sig: null, art: null };
     var throne = rotLocal(KIT, 0, -0.72 * KIT_SCALE);
     HOTSPOTS[4].stand = [throne.x, throne.z];
 
@@ -647,8 +647,9 @@
       fanMail.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
-      if (kc !== kit.color) buildKit(kc);
-      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: true });
+      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '');   // v0.8: the kit look (KIT_LOOK)
+      if (ksig !== kit.sig) buildKit(kc, kl, ksig);
+      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
       if (!player.p.placed) { player.p.placed = true; placePlayer(); }
 
       var flags = st.flags || {}, cv = flags.cape;
@@ -1600,44 +1601,17 @@
       return self;
     }
 
-    function buildKit(color) {
+    // v0.8: the geometry lives in 40_render_core (R.kit.garage: shell finish, hardware, kick-head art, throne, cowbell, hair
+    // fan; the v0.7 kit box for box when the look is the legacy one), shared with the creator's preview.
+    function buildKit(color, K, sig) {
       if (kit.mesh) { scene.remove(kit.mesh); kit.mesh.geometry.dispose(); }
-      kit.color = color;
-      var b = new ctx.Builder({ jitter: 0.03, seed: 5 }), shell = color, head = 0xefe9dc, chrome = 0xb9bec6, dark = 0x26262a, bronze = 0xd2a43c, rim = sh(color, 0.55);
-      var i, a;
-      b.push(0, 0.3, 0.12, Math.PI / 2, 0, 0);                                   // kick drum on its side (kit-local frame)
-      b.cyl(0.28, 0.28, 0.4, 16, 0, 0, 0, shell);
-      b.cyl(0.29, 0.29, 0.035, 16, 0, 0.2, 0, chrome); b.cyl(0.29, 0.29, 0.035, 16, 0, -0.2, 0, chrome);
-      b.cyl(0.265, 0.265, 0.012, 16, 0, 0.214, 0, head);
-      b.cyl(0.14, 0.14, 0.014, 14, 0, 0.221, 0, rim); b.cyl(0.1, 0.1, 0.016, 12, 0, 0.223, 0, head);
-      b.pop();
-      b.box(0.02, 0.22, 0.02, 0.25, 0.08, 0.28, chrome, 0, 0, 0.45); b.box(0.02, 0.22, 0.02, -0.25, 0.08, 0.28, chrome, 0, 0, -0.45);
-      b.box(0.03, 0.22, 0.03, 0, 0.63, 0.06, chrome);
-      for (var s = -1; s <= 1; s += 2) {                                            // rack toms tilted at the drummer
-        b.push(s * 0.15, 0.73, 0.03, -0.45, 0, -s * 0.15);
-        b.cyl(0.12, 0.12, 0.15, 12, 0, 0, 0, shell); b.cyl(0.125, 0.125, 0.02, 12, 0, 0.075, 0, chrome); b.cyl(0.117, 0.117, 0.01, 12, 0, 0.083, 0, head);
-        b.pop();
-      }
-      b.cyl(0.18, 0.18, 0.3, 14, 0.46, 0.45, -0.22, shell);                          // floor tom
-      b.cyl(0.185, 0.185, 0.02, 14, 0.46, 0.6, -0.22, chrome); b.cyl(0.175, 0.175, 0.01, 14, 0.46, 0.607, -0.22, head);
-      for (i = 0; i < 3; i++) { a = i * 2.1 + 0.4; b.box(0.02, 0.32, 0.02, 0.46 + 0.2 * Math.cos(a), 0.16, -0.22 + 0.2 * Math.sin(a), chrome); }
-      b.box(0.02, 0.02, 0.36, 0.44, 0.615, -0.2, 0xd8b27a, 0, 0.3); b.box(0.02, 0.02, 0.36, 0.49, 0.617, -0.24, 0xd8b27a, 0, 0.5);   // spare sticks
-      b.push(-0.36, 0.56, -0.25, -0.12, 0, 0.1);                                    // snare
-      b.cyl(0.16, 0.16, 0.12, 14, 0, 0, 0, shell); b.cyl(0.165, 0.165, 0.02, 14, 0, 0.06, 0, chrome); b.cyl(0.155, 0.155, 0.01, 14, 0, 0.066, 0, 0xf6f2ea);
-      b.pop();
-      b.box(0.025, 0.5, 0.025, -0.36, 0.25, -0.25, chrome);
-      b.box(0.022, 0.9, 0.022, -0.63, 0.45, -0.08, chrome);                            // hi-hat
-      b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.87, -0.08, bronze); b.cyl(0.17, 0.17, 0.014, 16, -0.63, 0.845, -0.08, sh(bronze, 0.85));
-      b.box(0.1, 0.025, 0.24, -0.63, 0.015, -0.2, dark);
-      b.box(0.022, 1.12, 0.022, -0.5, 0.56, 0.3, chrome, 0, 0, 0.06);                 // crash
-      b.cyl(0.22, 0.22, 0.014, 16, -0.54, 1.13, 0.3, bronze, 0.28, 0, 0.22); b.cyl(0.05, 0.05, 0.03, 8, -0.54, 1.14, 0.3, bronze, 0.28, 0, 0.22);
-      b.box(0.022, 1.02, 0.022, 0.64, 0.51, 0.18, chrome);                            // ride
-      b.cyl(0.25, 0.25, 0.014, 16, 0.64, 1.03, 0.18, bronze, 0.2, 0, -0.25); b.cyl(0.05, 0.05, 0.03, 8, 0.64, 1.04, 0.18, bronze, 0.2, 0, -0.25);
-      b.box(0.09, 0.03, 0.22, 0, 0.02, -0.17, dark);                                 // kick pedal
-      b.cyl(0.17, 0.16, 0.09, 12, 0, 0.5, -0.72, 0x1c1c1c); b.box(0.04, 0.45, 0.04, 0, 0.23, -0.72, chrome);   // throne
-      for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, -0.72 + 0.12 * Math.cos(a), chrome, 0, a); }
-      kit.mesh = new THREE.Mesh(b.build(), ctx.mats.vc);
+      if (kit.art) { R.kit.disposeArt(kit.art); kit.art = null; }
+      kit.color = color; kit.sig = sig || color;
+      var band = state && GG.content.bands && GG.content.bands[state.bandId];
+      var built = R.kit.garage(ctx, K || R.kit.norm(null, color), { band: band && band.name, genre: state && state.genre, look: state && state.player && state.player.look });
+      kit.mesh = new THREE.Mesh(built.geo, ctx.mats.vc);
       kit.mesh.position.set(KIT.x, 0, KIT.z); kit.mesh.rotation.y = KIT.yaw; kit.mesh.scale.setScalar(KIT_SCALE);
+      if (built.art) { kit.art = built.art; kit.mesh.add(kit.art); }
       scene.add(kit.mesh);
     }
 
