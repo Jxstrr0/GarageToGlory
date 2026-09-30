@@ -1092,7 +1092,8 @@
     var tl = A.timeline(pattern, opts), spb = 60 / tl.bpm, port = makePort(r), timers = [];
     var i = 0, pass = 0, lastBeat = -1;
     var h = { playing: true, loop: loop, section: opts.section || null, bpm: tl.bpm, beats: tl.beats, style: tl.style, key: tl.key,
-      genre: opts.genre || 'metal', start: c.currentTime + LEAD_IN, timeline: tl, radio: !!R.quiet };
+      genre: opts.genre || 'metal', timeline: tl, radio: !!R.quiet,   // v0.8.3 opts.at: start on the gig's count-in grid
+      start: opts.at > c.currentTime + LEAD_IN && opts.at < c.currentTime + 3 ? opts.at : c.currentTime + LEAD_IN };
     function at(ev) { return h.start + (pass * tl.beats + ev.beat) * spb; }
     function pump() {
       if (!h.playing) return;
@@ -1153,7 +1154,8 @@
   // Plays a pattern (one section on loop, or the whole arrangement). Emits 'audio:step' { section, bar, step, time,
   // entry, role } for every 16th, fired by short timeouts aligned to the scheduled AudioContext times. One song at a time.
   // opts: { genre, section|null, loop (default: true for a section, false for the song), backing (default true), drums,
-  //         vocals, songId (the key seed), metronome (true = click quarter notes while settings.metronome is on) }
+  //         vocals, songId (the key seed), metronome (true = click quarter notes while settings.metronome is on),
+  //         at (v0.8.3: the AudioContext start time, honoured 60 ms..3 s ahead; else now + 60 ms) }
   A.play = function (pattern, opts) {
     opts = opts || {};
     if (!A.unlock() || !ctx) return null;

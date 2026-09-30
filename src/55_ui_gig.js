@@ -12,6 +12,12 @@
 // else currentTime - outputLatency), kept as an offset from performance.now() so a pointer event's timeStamp maps onto it
 // exactly. The backing band plays from the scheduler with drums off; your taps play the drum voice; misses are silent.
 // Pause suspends the AudioContext (without a context the song restarts on resume).
+// v0.8.3 drum sync (default; settings.drumSync): the band keeps its grid (zeroBand = the handle's start); the highway and
+//   the judgement run D = output latency + K earlier (G.zero = zeroBand - D), and every drum sound is BOOKED on the band's
+//   clock: a tap judged J sounds at zeroBand + J (a hit within [-15, +15] ms snaps to its note), and the count-in hats,
+//   Auto-kick, auto notes and second kicks go out on the band grid from the pump. The calibration's audio offset is not
+//   used (the highway draws + the visual offset only). Off = classic timing (0.8.2: judged minus the audio offset, taps
+//   sound 'now'; the count-in / Auto-kick / auto notes stay on the band grid). See the "drum sync" block below.
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
 // v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6); the results show r.merch.
 // v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
@@ -33,7 +39,7 @@
 //   backing band's own look-ahead scheduler (30_audio: setInterval, not rAF), so the drums are as steady as the band.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
-  var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
+  var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06, PRE = 0.25, LAT_N = 9, COUNT_AHEAD = 0.1;
   function difficulty() {
     var d = GG.save && GG.save.settings ? GG.save.settings().gigDifficulty : null;
     return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
@@ -89,21 +95,47 @@
     // Health check (v0.5.1): phones can stall or suspend the audio clock (iOS silent switch, screen recording, Control
     // Centre) and headless browsers advance it in bursts. Only a running clock that kept pace with performance.now()
     // since the last check may steer the game clock; otherwise the game free-runs on performance.now().
-    var prev = G.aSample, healthy = c.state === 'running' && prev && (p - prev.p) > 100 &&
-      Math.abs((c.currentTime - prev.a) / ((p - prev.p) / 1000) - 1) < 0.08;
-    G.aSample = { a: c.currentTime, p: p };
+    // v0.8.3: a check < 100 ms after the last one (startAudio's snap right after a pump) keeps the last verdict; it read
+    // as unhealthy and sent the downbeat's auto notes to the frame
+    var prev = G.aSample, near = !!(prev && c.state === 'running' && (p - prev.p) <= 100);
+    var healthy = near ? !!G.clockOk : c.state === 'running' && prev && Math.abs((c.currentTime - prev.a) / ((p - prev.p) / 1000) - 1) < 0.08;
+    if (!near) G.aSample = { a: c.currentTime, p: p };
     G.clockOk = c.state === 'running' && (healthy || !prev);
     if (c.state !== 'running') return;
     var lat = c.outputLatency > 0 ? c.outputLatency : c.baseLatency > 0 ? c.baseLatency : DEFAULT_LAT;
     if (h < 0 || Math.abs(c.currentTime - h - lat) > 0.3) h = c.currentTime - Math.min(lat, 0.3);
     G.lat = U.clamp(c.currentTime - h, 0, 0.3);
+    G.lats.push(G.lat); if (G.lats.length > LAT_N) G.lats.shift();
     off = h - p / 1000;
-    if (snap || !G.synced) { G.offset = off; G.synced = true; }
+    // v0.8.3: a healthy clock that stays > 30 ms off for two checks in a row glitched (an output hiccup): snap, don't crawl 16 ms/s
+    G.bigOff = healthy && Math.abs(off - G.offset) > 0.03 ? (G.bigOff || 0) + 1 : 0;
+    if (snap || !G.synced || G.bigOff >= 2) { G.offset = off; G.synced = true; G.bigOff = 0; }
     else if (healthy) G.offset += U.clamp(off - G.offset, -0.004, 0.004);   // drift correction only, never a jump
+  }
+  function latMedian() {
+    var a = G.lats; if (!a.length) return G.lat;
+    var b = a.slice().sort(function (x, y) { return x - y; });
+    return b[b.length >> 1];
   }
   function heardAt(p) { return p / 1000 + G.offset; }
   function heardNow() { return heardAt(performance.now()); }
   function songTime(p) { return heardAt(p) - G.zero; }
+  /* ---- v0.8.3 drum sync -------------------------------------------------------------------------------------- */
+  // Three clocks, all AudioContext seconds on the heard axis:
+  //   zeroBand = the band's start (h.start; opts.at makes it the count-in's zero). Band time tBand = heard - zeroBand.
+  //   G.zero   = zeroBand - D: the game clock (highway + judgement), tGame = tBand + D. songTime() / G.t are game time.
+  //   D = latD + K, frozen at beginCount: latD = the median modelled output latency (G.lat, last LAT_N resyncs, never less
+  //   than the current one), K = GG.prefs.syncLead(dispatch p90) = p90 + 5 ms (GG.audio.hit's 'now') + M 15 ms.
+  // A tap at stamp S is judged J = heardAt(S) - G.zero (no audio offset) and its sound is booked at ctx time
+  //   max(now + 5 ms, zeroBand + J'), J' = GG.prefs.syncSnap(J, note.t, hit): a hit within [-15, +15] ms of its note sounds
+  //   exactly on the band's grid; anything else sounds at J (early stays early, late stays late). Since heard(S) = ctx(S) -
+  //   lat, zeroBand + J = ctx(S) + K + (latD - lat): the modelled latency cancels, and unmodelled latency (Bluetooth, the
+  //   rig's compressors) delays band and drums alike. Cost: every tap sounds ~K after the touch (0.8.2: dispatch + 5 ms)
+  //   and the highway leads the heard band by ~K + latency (a by-ear player should turn Drum sync off).
+  // The count-in hats, Auto-kick, two-thumb auto notes and second kicks are booked on the band grid (zeroBand + t) by the
+  //   pump in both modes. The dispatch p90 (performance.now() - ev.timeStamp of touch taps) blends into settings.syncDisp
+  //   after each finished song (per device). Classic (drumSync off, no Web Audio, or a clock not running/healthy at the
+  //   count-in): D = 0, judged minus the audio offset, taps sound 'now'.
 
   /* ---- Stage (GG.render.stage from the STAGE agent; a 2D backdrop without it) ----------------------------- */
   function stageApi() { var R = GG.render; return G && G.stageOn && R && R.stage ? R.stage : null; }
@@ -182,11 +214,11 @@
       // slow and G.t still lags; otherwise judge against the song time now, not the last frame's.
       if (p.natural) return;
       var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
-      if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) < G.chart.duration - 0.1) pause(true);
+      if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) - G.D < G.chart.duration - 0.1) pause(true);
     },
     'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
   };
-  function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count')) pause(true); } else guard(); }
+  function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count' || G.mode === 'hold' || G.waking)) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
     if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
@@ -203,6 +235,8 @@
     G = { gig: gig, done: done, opts: opts || {}, mode: 'set', ses: null, chart: null, t: 0, zero: 0, offset: 0, synced: false,
       syncAt: -1e9, lat: DEFAULT_LAT, actx: null, handle: null, paused: false, restart: false, raf: 0, burst: [0, 0, 0, 0, 0, 0], dash: [5, 4], noDash: [], ap: 0, autoN: 0, autoAt: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       dq: [], dp: 0, dblN: 0, k2: [-1, -1, -1, -1, -1, -1], k2i: 0, k2Last: -1e9, k2W: -1e9,
+      zeroBand: 0, D: 0, K: 0, latD: 0, sync: false, lats: [], disp: [], dispP90: null, drawOff: 0, visM: false, waking: false,
+      hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
     readPrefs();
@@ -218,6 +252,8 @@
   };
   function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
     var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
+    var cp = pf.calib && pf.calib[pf.audioProfile];
+    G.visM = !!(cp && cp.vat > 0);   // v0.8.3: the light check ran for this profile
     G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
   }
   function startSession(ids) {
@@ -233,7 +269,7 @@
     if (!G) return;
     stopAudio();
     if (G.raf) cancelAnimationFrame(G.raf);
-    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT);
+    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT);
     listen(false);
     G = null;
   }
@@ -256,16 +292,46 @@
     if (auto()) { playAuto(); return; }
     beginCount();
   }
-  function beginCount() {
-    var p = performance.now(), ch = G.chart, lead = U.clamp(4 * ch.spb, 1.6, 2.6);
+  function beginCount(held) {
+    // v0.8.3: a suspended context (Restart right after a mid-song pause: stopAudio's resume() is async) would decide the
+    // song's timing on a clock that isn't running yet: hold the count-in until it runs (1 s at most), like resume()'s go()
+    var c0 = G.actx || (G.actx = audioCtx());
+    if (!held && c0 && c0.state !== 'running' && c0.resume && !document.hidden) {
+      var pr = null; try { pr = c0.resume(); } catch (e) { pr = null; }
+      if (pr && typeof pr.then === 'function') {
+        var tok = G.holdTok = (G.holdTok || 0) + 1;
+        G.mode = 'hold'; G.paused = false; G.restart = false;
+        var go = function () { if (!G || G.holdTok !== tok || G.mode !== 'hold' || G.paused) return; G.holdTok++; clearTimeout(G.holdT); beginCount(true); };
+        pr.then(go, go);
+        G.holdT = setTimeout(go, 1000);
+        return;
+      }
+    }
+    readPrefs();   // v0.8.3: the Drum sync toggle / calibration as of this song
+    // v0.8.3: a whole number of count-in beats (2-4), so every numeral shown has its hat on the grid (< 92 bpm lost some)
+    var p = performance.now(), ch = G.chart, nb = Math.min(4, Math.max(2, Math.ceil(U.clamp(4 * ch.spb, 1.6, 2.6) / ch.spb - 1e-6))), lead = nb * ch.spb;
+    G.aSample = null;   // pair fresh: a sample from before the between screen / a pause would read the clock as unhealthy
     resync(p, true);
     G.mode = 'count'; G.paused = false; G.restart = false; G.drawFrom = 0; G.countBeat = 99; G.popAt = -1e9;
     G.ap = 0; G.autoN = G.autoN || 0; G.autoAt = G.autoAt || [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9];
     G.dq = []; G.dp = 0; G.k2Last = -1e9; G.k2W = -1e9; for (var q = 0; q < G.k2.length; q++) G.k2[q] = -1;   // v0.7.2 this chart's doubles
     for (var k = 0; k < ch.notes.length; k++) if (ch.notes[k].dbl) G.dq.push(k);
-    G.zero = heardAt(p) + lead; G.t = -lead;
-    var wait = G.zero - G.lat - LEAD_IN - heardAt(p);
+    // v0.8.3: the count-in hats (booked by the pump) and Auto-kick's kicks (the SESSION's assist, fixed for the show)
+    G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
+    for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
+    if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
+    var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
+    G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
+    G.K = G.sync ? GG.prefs.syncLead(G.dispP90 != null ? G.dispP90 : G.pf.syncDisp / 1000) : 0;
+    G.latD = G.sync ? Math.max(latMedian(), G.lat) : 0;
+    G.D = G.sync ? G.latD + G.K : 0;   // frozen for the song (never recomputed on a resync)
+    G.drawOff = G.sync ? GG.prefs.syncVisual(G.off, G.visM) : (G.off ? G.off.visual - G.off.audio : 0);
+    G.disp = [];
+    // the first hat is heard COUNT_AHEAD + latency from now, so it can still be booked ahead on the audio clock
+    G.zeroBand = heardAt(p) + G.lat + COUNT_AHEAD + lead; G.zero = G.zeroBand - G.D; G.t = songTime(p);
+    var wait = G.zeroBand - G.lat - PRE - heardAt(p);   // the band is built PRE early and told to start at zeroBand (opts.at)
     G.startTimer = setTimeout(startAudio, Math.max(0, wait * 1000));
+    book(G.t, p);   // the first hat goes out now
     if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
     loop();
@@ -274,15 +340,16 @@
     if (!G) return;
     G.startTimer = 0;
     var song = G.ses.song(), p = performance.now(), h = null;
-    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, { genre: S().genre, section: null, loop: false, backing: true, drums: false }) : null; }
+    var at = G.actx && G.actx.state === 'running' ? G.zeroBand : undefined;   // v0.8.3: start on the count-in's grid
+    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at }) : null; }
     catch (e) { console.error('[gig] audio.play failed', e); }
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
     if (!G.actx) G.actx = audioCtx();
     // resync pairs performance.now() with the audio clock read NOW, so it gets a fresh now: play() builds the whole song and
     // can take tens of ms on a slow phone (the stale p put the song clock that far ahead of the band for seconds).
-    if (G.actx && G.actx.state === 'running') { resync(performance.now(), true); G.zero = h.start; pump(); }   // pump: the downbeat's auto notes go out with the band's first notes
-    else if (!G.actx) { G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000; G.zero = h.start; }   // no accessor: anchor on the handle
+    if (G.actx && G.actx.state === 'running') { resync(performance.now(), true); G.zeroBand = h.start; G.zero = h.start - G.D; pump(); }   // (normally h.start === zeroBand: no jump) pump: the downbeat's auto notes go out with the band's first notes
+    else if (!G.actx) { G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000; G.D = 0; G.sync = false; G.drawOff = G.off ? G.off.visual - G.off.audio : 0; G.zeroBand = G.zero = h.start; }   // no accessor: anchor on the handle
     else wake();   // a suspended/interrupted context: keep the count-in's performance-clock zero so notes still flow
   }
   function restartSong() {
@@ -292,6 +359,12 @@
   }
   function endSong() {
     stopAudio();
+    var q = GG.prefs && GG.prefs.syncP90 ? GG.prefs.syncP90(G.disp) : null;   // v0.8.3: this device's touch dispatch p90
+    if (q != null) {
+      G.dispP90 = GG.prefs.syncBlend(G.dispP90 != null ? G.dispP90 : G.pf.syncDisp / 1000, q);
+      var ms = Math.round(G.dispP90 * 1000);
+      if (Math.abs(ms - G.pf.syncDisp) >= 2) { G.pf.syncDisp = ms; GG.prefs.set({ syncDisp: ms }); }
+    }
     var r = G.ses.endSong();
     G.mode = 'between';
     showBetween(r);
@@ -308,13 +381,22 @@
     G.autoT = setTimeout(nextSong, 30);
   }
   function pause(interrupted) {
-    if (!G || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
+    if (G && G.paused && G.waking) {   // v0.8.3: hidden / paused while resume() waits for the context: stay frozen, try again
+      G.waking = false; clearTimeout(G.wakeT);
+      G.restart = G.restart || !!interrupted;
+      pauseShow(); return;
+    }
+    if (!G || G.paused || (G.mode !== 'play' && G.mode !== 'count' && G.mode !== 'hold')) return;
     G.paused = true; G.pauseT = G.t;
-    if (G.startTimer || G.mode === 'count' || interrupted || !G.actx || !G.handle || !G.handle.playing || G.actx.state !== 'running') {
+    if (G.mode === 'hold') { G.holdTok = (G.holdTok || 0) + 1; clearTimeout(G.holdT); }
+    if (G.startTimer || G.mode === 'count' || G.mode === 'hold' || interrupted || !G.actx || !G.handle || !G.handle.playing || G.actx.state !== 'running') {
       G.restart = true; stopAudio();
     } else {
       try { G.actx.suspend(); G.ctxPaused = true; } catch (e) { G.restart = true; stopAudio(); }
     }
+    pauseShow();
+  }
+  function pauseShow() {
     G.dom.pause.hidden = false;
     G.dom.pauseNote.textContent = G.restart ? 'The song starts over when you come back.' : 'The band is frozen mid-riff.';
   }
@@ -323,9 +405,23 @@
     G.dom.pause.hidden = true;
     if (restart || G.restart) { G.paused = false; restartSong(); return; }
     G.ctxPaused = false;
-    try { G.actx.resume(); } catch (e) { /* ignore */ }
-    G.paused = false;
-    resync(performance.now(), true);
+    var c = G.actx, pr = null;
+    try { pr = c.resume(); } catch (e) { /* ignore */ }
+    // v0.8.3: resume() is async (the state still reads 'suspended'): stay frozen until the clock runs, then snap the game
+    // clock to it (before, the stale pairing ran the game ahead of the band by the whole pause). A context that never
+    // comes back within a second: carry on from the pause point on performance.now().
+    function go() {
+      if (!G || !G.waking) return;
+      G.waking = false; clearTimeout(G.wakeT);
+      if (document.hidden) { G.restart = true; pauseShow(); return; }   // never un-pause a hidden page (the band is suspended)
+      G.offset = G.zero + G.pauseT - performance.now() / 1000; G.aSample = null;
+      G.paused = false;
+      resync(performance.now(), true);
+    }
+    G.waking = true;
+    if (c.state === 'running' || !pr || typeof pr.then !== 'function') { go(); return; }
+    pr.then(go, go);
+    G.wakeT = setTimeout(go, 1000);
   }
 
   /* ---- v0.6.2 two-thumb auto notes: the hits a third thumb would need play themselves on the audio clock ---- */
@@ -335,17 +431,20 @@
   // the game clock only drifts toward it (v0.5.1), so after an audio hiccup the two can disagree for a while, and a hit
   // booked by the game clock would land up to that far early (> 1 s: GG.audio.hit plays it now) or late.
   var AUTO_AHEAD = 0.15;
-  function heardSong(c, sched, t) { return sched ? c.currentTime - G.lat - G.zero : t; }
+  // v0.8.3: how far ahead (band seconds) to book. Before the downbeat PRE more: the band is built PRE early and a phone's
+  // main thread can stall right after (the stage's first frames), so the count-in and the first notes go out early.
+  function aheadOf(sched, now) { return sched ? G.lat + AUTO_AHEAD + (now < 0 ? PRE : 0) : 0; }
+  function heardSong(c, sched, t) { return sched ? c.currentTime - G.lat - G.zeroBand : t - G.D; }   // band time (v0.8.3)
   function autoNotes(t, p) {
     var a = G.chart.auto, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
     if (!a) return;
     var now = heardSong(c, sched, t);
-    while (G.ap < a.length && a[G.ap].t <= now + (sched ? G.lat + AUTO_AHEAD : 0)) {   // heard clock + output latency = context time
+    while (G.ap < a.length && a[G.ap].t <= now + aheadOf(sched, now)) {   // heard clock + output latency = context time
       var n = a[G.ap++];
       if (n.li >= G.lanes) continue;
       if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zero + n.t : undefined);
-      G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - t) * 1000;   // the ring shows when it's heard
+      if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
+      G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - (t - G.D)) * 1000;   // the ring shows when it's heard
     }
   }
 
@@ -356,23 +455,52 @@
   // its spacing on every headset: scheduled AUTO_AHEAD early at G.zero + time on a healthy clock, else on the frame it's due.
   // A second kick skipped past (a stalled frame / resync jump) is marked d2 = 2 so an echo tap may stand in for it.
   var DBL_MIN = 0.06, HIT_LEAD = 0.005, KICK = C.LANES.indexOf('kick');   // HIT_LEAD: GG.audio.hit plays 'now' at ctx now + 5 ms
+  // v0.8.3: the count-in hats and Auto-kick's kicks are booked the same way (they played on frames: 40-500 ms late).
+  function countHats(t, p) {
+    var c = G.actx, sched = !!(G.clockOk && c && c.state === 'running');   // opts.at makes zeroBand the band's start before it plays
+    var now = heardSong(c, sched, t), ahead = aheadOf(sched, now);
+    while (G.hb < 0) {
+      var at = G.hb * G.chart.spb; if (at > now + ahead) break;
+      G.hb++;
+      if (at < now - 0.08) { G.hatSkip++; continue; }
+      if (GG.audio && GG.audio.hit) GG.audio.hit('hat', sched ? G.zeroBand + at : undefined);
+      G.hatN++;
+    }
+  }
+  function autoKicks(t, p) {
+    var q = G.kq, n = G.chart.notes, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
+    var now = heardSong(c, sched, t), ahead = aheadOf(sched, now);
+    while (G.kp < q.length) {
+      var x = n[q[G.kp]];
+      if (x.t > now + ahead) break;
+      G.kp++;
+      if (x.free) continue;
+      if (x.t < now - 0.08) { G.akSkip++; continue; }   // skipped past (a resync jump): stay quiet rather than flam
+      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + x.t : undefined);
+      G.akN++;
+    }
+  }
   function doubleKicks(t, p) {
     var q = G.dq, n = G.chart.notes, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
-    var ahead = sched ? G.lat + AUTO_AHEAD : 0, now = heardSong(c, sched, t);
+    var now = heardSong(c, sched, t), ahead = aheadOf(sched, now);
     while (G.dp < q.length && n[q[G.dp]].d2) G.dp++;
     for (var k = G.dp; k < q.length; k++) {
       var x = n[q[k]];
       if (x.t > t + 0.45) break;                        // nothing this late can have been judged yet
-      if (x.d2 || x.j === 0) continue;                  // done, or still waiting for its tap
-      if (x.j !== 1 && x.j !== 2) { x.d2 = 1; continue; }   // a missed double plays nothing extra
-      var h1 = x.hitT != null ? x.hitT : x.t, k1 = x.k1 != null ? x.k1 : h1 + G.lat + HIT_LEAD;   // the first kick, heard
-      var w = Math.max(k1 + Math.max(x.t2 - h1, DBL_MIN), G.k2W + DBL_MIN);   // the pair's spacing; never two at once (a stalled frame)
+      var ak = G.kq.length && !x.free;                  // v0.8.3: Auto-kick hits every kick note: don't wait for the frame's judgement
+      if (x.d2 || (x.j === 0 && !ak)) continue;         // done, or still waiting for its tap
+      if (x.j !== 0 && x.j !== 1 && x.j !== 2) { x.d2 = 1; continue; }   // a missed double plays nothing extra
+      // v0.8.3: band time of the first kick's sound + the spacing (a tap stamps both; Auto-kick's kick is booked on the grid)
+      var k1, sp;
+      if (x.k1 != null) { k1 = x.k1; sp = x.sp; }
+      else { k1 = x.t; sp = Math.max(x.t2 - x.t, DBL_MIN); }
+      var w = Math.max(k1 + sp, G.k2W + DBL_MIN);   // the pair's spacing; never two at once (a stalled frame)
       if (w > now + ahead) continue;
       x.d2 = 1; G.k2W = w;
       if (w < now - 0.08 || KICK >= G.lanes) { x.d2 = 2; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zero + w : undefined);
+      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + w : undefined);
       G.dblN++;
-      var at = p + Math.max(0, w - t) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
+      var at = p + Math.max(0, w - (t - G.D)) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
       G.k2[G.k2i] = at; G.k2i = (G.k2i + 1) % G.k2.length; G.autoAt[KICK] = at;
     }
     for (var i = 0; i < G.k2.length; i++) if (G.k2[i] > 0 && p >= G.k2[i]) { G.k2Last = G.k2[i]; G.k2[i] = -1; stageCall('kick2'); }
@@ -383,14 +511,18 @@
   // only on frames let a late frame book a hit in the past (it then plays late). The frame loop still books too.
   var PUMP_MS = 25;
   function book(t, p) {
+    if (G.hb < 0) countHats(t, p);   // v0.8.3 the count-in
     if (t < -0.5) return;
     autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
+    if (G.kq.length) autoKicks(t, p);   // v0.8.3 Auto-kick
     if (G.dq.length) doubleKicks(t, p);   // v0.7.2 a double's second kick
   }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
-    var p = performance.now();
+    var p = performance.now(), c = G.actx, h = G.handle;
     if (p - G.syncAt > 250) resync(p, false);
+    // v0.8.3: a band that started late (the context was suspended at its start): move both zeros onto it
+    if (h && c && c.state === 'running' && Math.abs(h.start - G.zeroBand) > 0.005) { resync(p, true); G.zeroBand = h.start; G.zero = h.start - G.D; }
     book(songTime(p), p);
   }
 
@@ -408,17 +540,16 @@
       G.t = t;
       if (G.mode === 'count') {
         var beat = Math.floor(t / ch.spb);
-        if (beat !== G.countBeat && beat >= -4 && beat < 0) {
-          G.countBeat = beat; G.dom.count.textContent = String(-beat); G.dom.count.className = 'gig-count show';
-          if (GG.audio && GG.audio.hit) GG.audio.hit('hat');
+        if (beat !== G.countBeat && beat >= G.hb0 && beat < 0) {
+          G.countBeat = beat; G.dom.count.textContent = String(-beat); G.dom.count.className = 'gig-count show';   // (v0.8.3: the hats are booked)
         }
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
-      if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
+      if (t >= 0) G.ses.tick(t);   // v0.6.1 Auto-kick judges here; v0.8.3: its kicks are booked (autoKicks)
       book(t, p);   // auto notes + second kicks (the pump books them between frames)
-      if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
+      if (G.mode === 'play' && t - G.D >= ch.duration + 0.5) { endSong(); }
     }
-    if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
+    if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + G.drawOff, p);   // v0.6.1 calibration (v0.8.3: G.drawOff)
     if (G && G.ses) {
       var c = Math.round(G.ses.crowd);
       if (c !== G.crowdN) { G.crowdN = c; G.dom.meter.style.width = c + '%'; stageCall('setCrowdLevel', G.ses.crowd); }
@@ -437,26 +568,48 @@
     if (ev.cancelable) ev.preventDefault();
     wake();
     var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
-    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp);
+    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp, true);
   }
   function onKey(ev) {
     if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
     ev.preventDefault();
-    tap(col(li), ev.timeStamp);
+    tap(col(li), ev.timeStamp, false);
   }
-  function tap(li, stamp) {
-    var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
-    var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero - (G.off ? G.off.audio : 0);   // v0.6.1: calibration
-    var snd = GG.audio && GG.audio.hit, r;
-    G.press[li] = performance.now();
-    if (at < -0.4) { if (snd) GG.audio.hit(C.LANES[li]); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
+  function tap(li, stamp, touch) {
+    var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, s0 = ok ? stamp : now, r;   // some browsers stamp events on another time base: trust it only if it's recent
+    if (ok && touch && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
+    var at = heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);   // v0.6.1: calibration (classic only, v0.8.3)
+    G.press[li] = now;
+    if (at < -0.4) { playTap(li, at, null); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
-    if (r) r.at = at;
+    if (r) { r.at = at; r.disp = ok ? now - stamp : null; }
     if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
-    if (snd) GG.audio.hit(C.LANES[li]);
-    if (r && r.note && r.note.dbl) r.note.k1 = songTime(performance.now()) + G.lat + HIT_LEAD;   // when this kick is heard (song clock)
+    var due = playTap(li, at, r && r.echo ? null : r);   // (a dropped 2nd kick's echo sounds at its own time, no snap)
+    if (r && r.note && r.note.dbl) {   // the second kick follows this kick's sound (band time) by the chart's spacing
+      if (G.sync) { r.note.k1 = due; r.note.sp = Math.max(r.note.t2 - r.note.t, DBL_MIN); }
+      else { var h1 = r.note.hitT != null ? r.note.hitT : at; r.note.k1 = songTime(performance.now()) + G.lat + HIT_LEAD; r.note.sp = Math.max(r.note.t2 - h1, DBL_MIN); }   // classic: as 0.8.2
+    }
+  }
+  // v0.8.3: plays a tap's drum and returns the band time it sounds at. Drum sync books it on the band's clock (snapped to
+  // its note inside [-15, +15] ms), never before the lane's last booked tap (A.hit's choke expects time order); classic
+  // (or a clock that isn't running) plays it 'now'.
+  function playTap(li, J, r) {
+    var lane = C.LANES[li], c = G.actx;
+    if (!GG.audio || !GG.audio.hit) return J;
+    if (!G.sync || !G.clockOk || !c || c.state !== 'running') {
+      GG.audio.hit(lane); if (r) r.snap = false;
+      return c ? c.currentTime + HIT_LEAD - G.zeroBand : J;
+    }
+    var hit = !!(r && r.note && r.judgement && r.judgement !== 'miss');
+    var Jp = GG.prefs.syncSnap(J, hit ? r.note.t : null, hit);
+    var when = Math.max(GG.prefs.syncWhen(Jp, G.zeroBand, c.currentTime), G.lastBook[li] + 0.001);
+    G.lastBook[li] = when;
+    GG.audio.hit(lane, when);
+    if (Jp !== J) G.snapN++;
+    if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
+    return when - G.zeroBand;
   }
 
   /* ---- Highway drawing ------------------------------------------------------------------------------------ */
@@ -832,6 +985,10 @@
       songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, dur: ch ? ch.duration : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at, echo: !!G.lastTap.echo,
-        offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
+        offset: G.lastTap.offset, snap: G.lastTap.snap, due: G.lastTap.due, disp: G.lastTap.disp } : null,
+      sync: G.sync, D: G.D, K: G.K, latD: G.latD, zeroBand: G.zeroBand, zero: G.zero, spb: ch ? ch.spb : null, vis: G.drawOff,   // v0.8.3 drum sync
+      tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
+      dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, hats: G.hatN, hatSkip: G.hatSkip,
+      akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
   });
 })(window.GG);

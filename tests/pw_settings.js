@@ -8,8 +8,9 @@
 //               kicks play themselves → skip van scenes. No console errors.
 //   calib     : first launch (?calib=1) opens the calibration over the title, skippable, never again after → Settings →
 //               Calibrate: eight clicks tapped 60 ms late → ~60 ms; the light check tapped ~90 ms late → saved on the
-//               headphones profile only → screenshot tests/.cache/calib.png → a practice run judges a tap 60 ms late as
-//               on time (offset applied within the v0.5.1 clock). No console errors.
+//               headphones profile only → screenshot tests/.cache/calib.png → with Drum sync off (classic) a practice run
+//               judges a tap 60 ms late as on time (offset applied within the v0.5.1 clock); with Drum sync on (v0.8.3)
+//               the same tap is ~60 ms late; the Bluetooth hint (offset + latency >= 120 ms). No console errors.
 //   difficulty: new career → creator shows Chill / Normal / Brutal (screenshot tests/.cache/difficulty.png) → Brutal locks
 //               (state, start fund, survives a reload) → laptop → Practice a song at 50% (half tempo, nothing saved, no
 //               crowd) → the kit's sketch pad links to practice. No console errors.
@@ -24,6 +25,7 @@ const tid = id => `[data-testid="${id}"]`;
 const tap = (page, id) => page.locator(tid(id)).last().click();
 const waitScreen = (page, id, timeout) => page.waitForFunction(i => GG.debug('ui').screen === i, id, { timeout: timeout || 10000 });
 const pf = page => page.evaluate(() => GG.prefs.get());
+const dbg = (page, k) => page.evaluate(k => GG.debug(k), k);
 
 function audit(page) {
   return page.evaluate(() => {
@@ -57,7 +59,7 @@ async function settings() {
     await page.waitForSelector(tid('title-settings'));
     c.ok(await page.evaluate(() => GG.debug('ui').screen) === 'title', 'no calibration popup under automation');
     await tap(page, 'title-settings'); await waitScreen(page, 'settings');
-    for (const id of ['set-career-diff', 'set-gigdiff-expert', 'set-speed-140', 'set-noFail', 'set-autoKick', 'set-lefty', 'set-profile-headphones', 'set-calibrate',
+    for (const id of ['set-career-diff', 'set-gigdiff-expert', 'set-speed-140', 'set-noFail', 'set-autoKick', 'set-lefty', 'set-drumSync', 'set-profile-headphones', 'set-calibrate',
       'set-gfx-low', 'set-colourblind', 'set-bigText', 'set-reducedFlash', 'set-cameraShake', 'set-skipVan', 'set-fastAnim', 'set-save-load', 'set-save-restore'])
       c.ok(await page.locator(tid(id)).count() === 1, 'has ' + id);
     c.ok(/new career/i.test(await page.locator(tid('set-career-diff')).innerText()), 'career difficulty explained on the title');
@@ -83,6 +85,11 @@ async function settings() {
     await tap(page, 'set-gigdiff-expert'); await tap(page, 'set-speed-140'); await tap(page, 'set-noFail'); await tap(page, 'set-autoKick'); await tap(page, 'set-lefty');
     let p = await pf(page);
     c.ok(p.gigDifficulty === 'expert' && p.noteSpeed === 1.4 && p.noFail && p.autoKick && p.lefty && p.colourblind, 'play settings saved ' + JSON.stringify([p.gigDifficulty, p.noteSpeed]));
+    // v0.8.3 Drum sync: on by default, the toggle flips it
+    const ds0 = p.drumSync, dsOn = await page.locator(tid('set-drumSync')).innerText();
+    await tap(page, 'set-drumSync'); const ds1 = (await pf(page)).drumSync;
+    await tap(page, 'set-drumSync'); const ds2 = (await pf(page)).drumSync;
+    c.ok(ds0 === true && /on/i.test(dsOn) && ds1 === false && ds2 === true, 'Drum sync defaults on and toggles ' + JSON.stringify([ds0, dsOn, ds1, ds2]));
     await page.locator(tid('set-mix-crowd')).fill('40');
     c.ok(Math.abs(await page.evaluate(() => GG.audio.getVolume('crowd')) - 0.4) < 0.01, 'crowd slider sets the crowd bus');
     const m0 = await page.evaluate(() => GG.audio.metronome()); await tap(page, 'set-metronome');
@@ -165,6 +172,7 @@ async function calib() {
     const ra = await page.evaluate(() => GG.debug('calib').audio);
     c.ok(ra.ok && Math.abs(ra.offset - 60) <= 15, 'tap test measures ~60 ms late: ' + JSON.stringify(ra));
     c.ok(/60|5\d|6\d|7\d/.test(await page.locator(tid('calib-result')).innerText()), 'result shown');
+    c.ok(await page.locator(tid('calib-bt')).count() === 0 && ra.lat >= 0 && ra.offset + ra.lat < 120, 'no Bluetooth hint for a ~60 ms tap lag ' + JSON.stringify(ra));
     await tap(page, 'calib-visual-start');
     await page.evaluate(async () => {
       const light = document.querySelector('[data-testid="calib-light"]');
@@ -186,8 +194,8 @@ async function calib() {
     await tap(page, 'set-profile-headphones');
     c.ok(/late/.test(await page.locator(tid('set-calibrate')).locator('xpath=..').innerText()), 'settings show the profile calibration');
     await tap(page, 'set-done');
-    // Offset applied to judgement: exact 60 ms calibration, a practice run, a tap 60 ms after a note = on time
-    await page.evaluate(() => { GG.prefs.setCalib('headphones', { audio: 60, visual: 60, at: 1 }); GG.prefs.set({ gigDifficulty: 'hard', autoKick: false }); GG.main.quickStart({ seed: 5, slot: '1', openCard: false }); GG.ui.closeAll(); GG.ui.gigAutoplay = false;
+    // Offset applied to judgement (classic timing, Drum sync off): exact 60 ms calibration, a practice run, a tap 60 ms after a note = on time
+    await page.evaluate(() => { GG.prefs.setCalib('headphones', { audio: 60, visual: 60, at: 1 }); GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, drumSync: false }); GG.main.quickStart({ seed: 5, slot: '1', openCard: false }); GG.ui.closeAll(); GG.ui.gigAutoplay = false;
       GG.ui.practice(GG.state.songs[0].id, 1); });
     await page.waitForSelector(tid('btn-gig-next')); await tap(page, 'btn-gig-next');
     await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').next, null, { timeout: 8000 });
@@ -200,7 +208,39 @@ async function calib() {
       if (last && last.offset != null) offs.push(last.offset);
     }
     const mean = offs.reduce((t, x) => t + x, 0) / Math.max(1, offs.length);
-    c.ok(offs.length >= 3 && Math.abs(mean) < 0.03, 'taps 60 ms late judge as on time with the 60 ms profile: ' + offs.map(x => Math.round(x * 1000)).join(' '));
+    c.ok(offs.length >= 3 && Math.abs(mean) < 0.03, 'classic: taps 60 ms late judge as on time with the 60 ms profile: ' + offs.map(x => Math.round(x * 1000)).join(' '));
+    // v0.8.3 Drum sync (default): the audio offset is not subtracted, the same taps are ~60 ms late
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ drumSync: true }); GG.ui.practice(GG.state.songs[0].id, 1); });
+    await page.waitForSelector(tid('btn-gig-next')); await tap(page, 'btn-gig-next');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').next, null, { timeout: 8000 });
+    const offs2 = [];
+    for (let i = 0; i < 4; i++) {
+      const n = await page.evaluate(() => GG.debug('gigui').next);
+      if (!n) break;
+      const last = await tapCol(page, n.li, n.t + 0.06);
+      if (last && last.at != null) offs2.push(last.at - n.t);
+    }
+    const mean2 = offs2.reduce((t, x) => t + x, 0) / Math.max(1, offs2.length);
+    c.ok(offs2.length >= 3 && Math.abs(mean2 - 0.06) < 0.02 && (await dbg(page, 'gigui')).sync === true, 'drum sync: the same taps are judged ~60 ms late (audio offset unused): ' + offs2.map(x => Math.round(x * 1000)).join(' '));
+    await page.evaluate(() => GG.ui.closeAll());
+    // the Bluetooth hint: a raw click lag (offset + output latency) of 120 ms or more
+    const bt = await page.evaluate(() => [[130, 0], [60, 30], [90, 40]].map(([o, l]) => {
+      GG.ui.closeAll(); GG.ui.show('calib', { step: 'audioDone', profile: 'speaker', audio: { ok: true, offset: o, n: 8, spread: 5, lat: l } });
+      return !!document.querySelector('[data-testid="calib-bt"]'); }));
+    await page.evaluate(() => GG.ui.closeAll());
+    c.ok(bt.join() === 'true,false,true', 'Bluetooth hint when offset + latency >= 120 ms ' + bt.join());
+    // v0.8.3: the light check (what Drum sync uses) is reachable without passing the click test
+    const lc = await page.evaluate(() => {
+      GG.ui.closeAll(); GG.ui.show('calib', { profile: 'speaker' });
+      const only = !!document.querySelector('[data-testid="calib-visual-only"]');
+      GG.ui.closeAll(); GG.ui.show('calib', { step: 'audioDone', profile: 'speaker', audio: { ok: false, n: 2 } });
+      const after = !!document.querySelector('[data-testid="calib-visual-start"]');
+      return { only, after };
+    });
+    await tap(page, 'calib-visual-start');
+    const vs = await page.evaluate(() => GG.debug('calib').step);
+    await tap(page, 'calib-skip');
+    c.ok(lc.only && lc.after && vs === 'visual', 'light check only from the intro, and after a failed click test ' + JSON.stringify(Object.assign(lc, { step: vs })));
     c.ok(await page.evaluate(() => GG.state.stats.gigs === 0 && !GG.state.liveGig), 'practice saves nothing');
     c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3));
   } finally { await close(); c.done(); }

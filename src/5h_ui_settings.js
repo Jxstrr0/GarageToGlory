@@ -6,7 +6,10 @@
 //   Practice is reachable from the laptop song list (53) and from the drum kit (a button added under the sketch pad).
 //   First launch: the title opens 'calib' once while settings.calibSeen is false (not under automation unless ?calib=1).
 //   <html> classes: gg-big (bigger text), gg-calm (reduced flashing), gg-fast (faster animations).
-//   testids: set-<key> toggles, set-gigdiff-<d>, set-speed-<n>, set-profile-<p>, set-gfx-<q>, set-mix-<bus>, set-metronome,
+//   v0.8.3: 'Drum sync' toggle (set-drumSync, settings.drumSync); the calibration's light check drives the highway under
+//   Drum sync, the click test only classic timing; a big raw click lag (offset + output latency >= 120 ms) shows a
+//   Bluetooth hint on the results (calib-bt).
+//   testids: set-<key> toggles (set-drumSync), set-gigdiff-<d>, set-speed-<n>, set-profile-<p>, set-gfx-<q>, set-mix-<bus>, set-metronome,
 //   set-muted, set-calibrate, set-practice, set-career-diff, set-save-load|backup|restore ; calib-profile-<p>, calib-start,
 //   calib-pad, calib-light, calib-result, calib-visual-start, calib-retry, calib-save, calib-skip ; practice-speed-<pct>,
 //   practice-song-<id>, laptop-practice, kit-practice. Debug: GG.debug('settings'), GG.debug('calib').
@@ -76,6 +79,7 @@
       s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
       s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
       s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', 'Mirrors the lanes: kick on the right.'));
+      s.body.appendChild(toggle(s, 'drumSync', 'Drum sync', "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
       if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song'));
 
       // Audio
@@ -164,6 +168,7 @@
     if (c && c.state !== 'running' && c.resume) { try { c.resume(); } catch (e) { /* ignore */ } }
     if (c && c.state === 'running') {
       var a0 = c.currentTime, lat = U.clamp(c.outputLatency > 0 ? c.outputLatency : c.baseLatency > 0 ? c.baseLatency : 0.025, 0, 0.3);
+      K.lat = Math.round(lat * 1000);   // v0.8.3: the raw lag (offset + this) is what a Bluetooth headset adds
       for (i = 0; i < N_CLICKS; i++) { var at = a0 + (LEAD + i * GAP) / 1000; try { beep(c, at, i % 4 === 0); } catch (e) { /* ignore */ } K.clicks.push(p0 + LEAD + i * GAP + lat * 1000); }
       dbg.clock = 'audio';
     } else {
@@ -197,6 +202,7 @@
     if (!K) return;
     var kind = K.kind, r = P.calibCompute(K.clicks.filter(function (x) { return x != null; }), K.taps, { interval: GAP });
     stopTest();
+    if (kind === 'audio') r.lat = K.lat || 0;
     dbg[kind] = r;
     var d = { profile: s.data.profile, first: s.data.first, audio: s.data.audio, visual: s.data.visual };
     d[kind] = r; d.step = kind + 'Done';
@@ -220,7 +226,7 @@
         el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
       if (step === 'intro') {
         ui.append(s.body, [
-          el('p.screen-sub', "Phones are late. Bluetooth is later. Tap along once and the game will judge your hits the way you actually hear them."),
+          el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (Drum sync); the click test is for classic timing."),
           el('div.caps.set-sec', 'Calibrating for'),
           el('div.set-seg', P.PROFILES.map(function (p) {
             return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
@@ -229,6 +235,7 @@
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
+          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (Drum sync)'),
           btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, d.first ? 'Skip for now (Settings → Calibrate later)' : 'Cancel')]));
         return;
       }
@@ -248,10 +255,11 @@
       function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
       ui.append(s.body, [
         el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
-        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, a light check keeps the highway in line with what you see.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.')
+        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: Drum sync lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
+        a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). Drum sync keeps your drums with the band; watch the highway rather than your ears.") : null
       ]);
       var foot = [];
-      if (step === 'audioDone' && a && a.ok) foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
+      if (step === 'audioDone') foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
       if ((a && a.ok) || (v && v.ok)) foot.push(btn('.btn' + (step === 'visualDone' ? '.primary.big' : '') + '.block', { testid: 'calib-save', onclick: function () {
         var o = { at: Date.now() };
         if (a && a.ok) o.audio = a.offset;
@@ -260,7 +268,7 @@
         ui.close(s.id);
         ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. Kenji gives a slow thumbs-up.');
       } }, 'Save calibration'));
-      foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone' && a && a.ok) startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
+      foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone') startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
       s.foot.appendChild(el('div.stack', foot));
     },
     onClose: function () { stopTest(); K = null; dbg.open = false; dbg.step = null; GG.emit('settings:changed', { keys: ['calib'] }); }
