@@ -13,9 +13,7 @@
 // defensively (the base lane builds the v0.9 shapes in parallel); nothing in a base pool is removed; a per-band key never
 // replaces another band's. The one exception is lic_fury (plan §5 A1 item 10): its text and choices are rewritten in place.
 //
-// DORMANT ON A PRE-v0.9 BASE: the pack installs only once the §4.1 content layer exists (lines.byBand, created by the base
-// lane). On the v0.8 base (HD-only test whitelists, no {front}/{driver} tokens, no speaker guard) it is a no-op, so the
-// Hail Damage baseline and the old suites are untouched until the base lane merges.
+// The pack installs unconditionally (v0.9 integration) onto the §4.1 base content (neutral flat pools + byBand layers).
 //
 // Q2 storyline "Travis Lee's First Truck" (chain 'truck', 6 steps, 11 cards):
 //   1 grr_truck_1_classified ── band chips in ──> 2 grr_truck_2_gus (Honest Gus's lot, Gull Lake) ─┐
@@ -43,8 +41,6 @@
 (function (GG) {
   var K = GG.content = GG.content || {};
   var B = 'grid_road_ramblers', RIVAL = 'buckle_and_boot', GENRE = 'country';
-  // §4.1 base present? (the base lane moves Hail Damage's lines into lines.byBand.hail_damage and adds the v0.9 shapes)
-  if (!(K.lines && K.lines.byBand && typeof K.lines.byBand === 'object')) return;
 
   var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LS = ['local', 'signed'], L = ['local'], S = ['signed'];
   var ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'], SW = ['signed', 'world'], W = ['world'];
@@ -359,6 +355,14 @@
         ] }
     ]
   });
+  // cast.drummer / cast.mascot are the member objects themselves ({ id, look, corpsePaint:false, ... }): the sims index them
+  // by .id, the rival screen and the stage read .id / .name / .look (a bare id string reads as nobody).
+  (function (c) {
+    var find = function (id) { return (c.members || []).filter(function (m) { return m && m.id === id; })[0] || null; };
+    if (typeof c.drummer === 'string') c.drummer = find(c.drummer);
+    if (typeof c.mascot === 'string') c.mascot = find(c.mascot);
+    if (c.mascot) c.mascot.mascot = true;
+  })(cast[RIVAL]);
 
   // The Loonies: Buckle & Boot win and thank you; you beat them and they are gracious about it (on a tailgate).
   var AW = obj(K, 'awards');
@@ -1957,7 +1961,7 @@
         changed: 'Back from Lethbridge with a finished memoir. Now tells the stories in chapter order, with page numbers.',
         backLine: { who: 'earl', text: "Book's done. Turns out I'd rather play on it than write about it. Pass me the atlas. We're on page 42." }
       },
-      epilogue: 'Earl plays his last session at ninety, on a record by a kid from Swift Current. On the liner notes: "Earl Nakamura-Pike played on the original."'
+      epilogue: 'At ninety, Earl plays his last session, for a kid from Swift Current. The liner notes say: "Earl Nakamura-Pike played on the original."'
     },
     clementine: {
       wants: [
@@ -2597,7 +2601,7 @@
     }
   });
   perBand(WO, 'gongCarpet', [
-    { who: 'grr_dolores', text: 'Dolores, Speedy Creek 97, live from Amsterdam! Who are you wearing?' },
+    { who: 'reporter', text: 'Dolores, Speedy Creek 97, live from Amsterdam! Who are you wearing?' },
     { who: 'duke', text: 'The hat. And a shirt. Mostly the hat.' },
     { who: 'grr_dolores', text: 'Is it true the Gong is a real gong?' }, { who: 'earl', text: 'I played one in 1979. Hit it once. Heard it for a week.' }
   ]);
@@ -3021,9 +3025,9 @@
         outcome: 'Travis Lee takes the mic and blames forty years of gravel. Every rural municipality in the province issues a statement. Defensive.' }
     ] });
   perBand(AW, 'carpet', [
-    { who: 'grr_dolores', text: 'Dolores, Speedy Creek 97, on the carpet. Who are you wearing tonight?' },
+    { who: 'reporter', text: 'Dolores, Speedy Creek 97, on the carpet. Who are you wearing tonight?' },
     { who: 'duke', text: 'The hat. The rest is a formality.' },
-    { who: 'grr_dolores', text: 'Any predictions?' },
+    { who: 'reporter', text: 'Any predictions?' },
     { who: 'earl', text: 'I was nominated in 1979. We lost to a yodeller. I have a good feeling about tonight.' }
   ]);
   merge(band(AW), {
@@ -3458,7 +3462,7 @@
         'Earl handed out flyers at every historical marker between here and Herbert. Nobody was at the markers.',
         'We put a sign on Loretta\'s tailgate and parked her at the Co-op. Free promo, one parking ticket.',
         'Duke wore the hat to the auction mart. Lloyd announced the gig between lots.'],
-      book: ['We called every hall in {city} from Vern\'s kitchen phone. Vern took messages. He underlined "NO" twice.',
+      book: ['Earl drove to every hall in the southwest at twenty under the limit. It took all week. Two said yes. One gave him pie.', 'We called every hall in {city} from Vern\'s kitchen phone. Vern took messages. He underlined "NO" twice.',
         'We pinned our number to the Co-op corkboard, under a litter of heeler pups. The pups got more calls.',
         'Earl called a booker he knew in 1979. The booker is retired. His daughter books now. She said yes.',
         'We emailed every Legion within two hundred kilometres. One replied "who is this". One replied "yes".',

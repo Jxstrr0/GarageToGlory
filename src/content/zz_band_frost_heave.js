@@ -30,19 +30,15 @@
 //   squatPlan, squatCall, squatAnthem, squatAnthemPayoff (tour), demandEnglish / demandRadio / demandImage / demandShowcase.
 // npcs (band- or rival-scoped): fh_delphine, fh_irma, fh_pomeroy, fh_janice (Frost Heave); mr_blaze (frontman), mr_siobhan,
 //   mr_preston (Mall Rats). Cast member ids mr_blaze / mr_siobhan / mr_dex / mr_brody (the npc ids double as cast ids).
-//   The Mall Rats' label is the rival-only 'network_nine' (Network Nine Music, the record arm of the TV network; base labels).
+//   The Mall Rats' label is the base's rival-only label for them ('muchloud', named Network Nine Music), found by rivalOnly + rival.
 // First-match lists (a holiday's cards, licenseScandals): the band's own entries go in front of the shared ones, so the
 //   shared cards stay the fallback. Every string is <= the content limits; tokens are §4.2's.
 // No USA content, no gong on the kit, no real brands (MegaBulk, Shredwood, Riot Juice and Network Nine are parodies).
 (function (GG) {
   var K = GG.content = GG.content || {};
   var B = 'frost_heave', RIVAL = 'mall_rats';
-  // Activation. The pack is written against the v0.9 base content (plan_contract_0.9 §4.1: neutral flat pools, Hail Damage's
-  // voice moved to lines.byBand.hail_damage, lane A2) and read through the v0.9 sims (tokens, variants, the speaker guard,
-  // lane B). On a pre-v0.9 base the flat pools still speak for Hail Damage and the v0.8 content tests pin every card to it
-  // (HD_IDS speakers, metal-only gates, lord_abyssus as the only week-one card), so the pack waits for that base.
-  // Lead: this one line can go at integration once A2's base is in (then the pack is unconditional).
-  if (!(K.lines && K.lines.byBand && K.lines.byBand.hail_damage)) return;
+  // The pack installs unconditionally (v0.9 integration): it is written against the v0.9 base content (plan_contract_0.9
+  // §4.1: neutral flat pools, Hail Damage's voice in lines.byBand.hail_damage) and read through the v0.9 sims.
   var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LS = ['local', 'signed'], L = ['local'], S = ['signed'];
   var ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'], SW = ['signed', 'world'], W = ['world'];
 
@@ -124,7 +120,7 @@
   var RV = obj(K, 'rivalry');
   var cast = obj(RV, 'cast');
   cast[RIVAL] = assign(cast[RIVAL] || {}, {
-    id: RIVAL, frontman: 'mr_blaze', label: 'network_nine', faceStyle: 'cap', actions: ['kickflip'],
+    id: RIVAL, frontman: 'mr_blaze', faceStyle: 'cap', actions: ['kickflip'],
     vehicle: 'a tour bus wrapped in a photo of their own faces, sponsored by Shredwood Skateboards',
     minivan: 'a tour bus wrapped in a photo of their own faces, sponsored by Shredwood Skateboards',
     members: [
@@ -331,12 +327,17 @@
     ]
   });
 
-  // Their label is the base's rival-only 'network_nine' (gap #8); written here only if the base has not got it yet, so the
-  // cast never points at a label that does not exist.
-  var LBS = K.labels && K.labels.labels ? K.labels.labels : obj(K, 'labels');
-  if (!LBS.network_nine) LBS.network_nine = { id: 'network_nine', name: 'Network Nine Music', rivalOnly: true, rival: RIVAL,
-    blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
-    rep: { name: 'Preston from the Network', blurb: 'VP of Youth Content. Headset, mood board, a focus group on speed dial.' } };
+  // Their label: the base's rival-only label for this rival (labels[id].rivalOnly, rival: mall_rats; 'muchloud', named
+  // Network Nine Music), found by rivalOnly + rival so a rival never ends up with two labels; our own only if the base has none.
+  var LBS = obj(K, 'labels'), mrLabel = null;
+  Object.keys(LBS).forEach(function (id) { var l = LBS[id]; if (!mrLabel && l && l.rivalOnly && l.rival === RIVAL) mrLabel = id; });
+  if (!mrLabel) {
+    mrLabel = 'network_nine';
+    LBS.network_nine = { id: 'network_nine', name: 'Network Nine Music', rivalOnly: true, rival: RIVAL,
+      blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
+      rep: { name: 'Preston from the Network', blurb: 'VP of Youth Content. Headset, mood board, a focus group on speed dial.' } };
+  }
+  cast[RIVAL].label = mrLabel;
 
   // The Loonies: the Mall Rats win and thank you; you beat them and they are gracious about it (on camera).
   var AW = obj(K, 'awards');
@@ -3348,7 +3349,7 @@
       "Somebody's knee is on my pillow. Remove the knee."
     ]);
   }
-  // The take-over line: drivers.you.takeOverBy[bandId] (the base's per-band slot) and the §4.1 byBand layer on drivers.you.
+  // The take-over line: the §4.1 byBand layer on drivers.you (career.pool(state, drivers.you, 'takeOver')).
   var TAKE = "You drive now. Moth's laundry still hangs from the mirror. Her rules are taped to the dash. The first rule is KNOCK.";
-  if (DRV.you) { obj(DRV.you, 'takeOverBy')[B] = TAKE; band(DRV.you).takeOver = TAKE; }
+  if (DRV.you) band(DRV.you).takeOver = TAKE;
 })(window.GG);

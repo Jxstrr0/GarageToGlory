@@ -602,8 +602,9 @@
   //   { <memberId>: { id, band, name, dashboard (the dash item the van scene shows), dashName, blurb, effect,
   //     mods: { breakdown x, wear x, burnout x, comfort ±, repair x (0 = free), chemistry + per long drive, roadChance x },
   //     back (group-chat line when they take the wheel back) } } + you (the founder, when the driver quits).
+  //   shades: true = the van scene draws the driver in sunglasses (Kenji; Earl keeps his own glasses).
   GG.content.drivers = {
-    kenji: { id: 'kenji', band: 'hail_damage', name: 'Kenji', dashboard: 'cactus', dashName: 'a single tiny cactus',
+    kenji: { id: 'kenji', band: 'hail_damage', name: 'Kenji', dashboard: 'cactus', dashName: 'a single tiny cactus', shades: true,
       blurb: 'Silent. Perfect record. Never uses GPS, always exactly on time. Nobody knows if he has a licence.',
       effect: 'Fewer breakdowns', mods: { breakdown: 0.5 },
       back: 'Kenji is back in the driver\'s seat. Nobody saw him get in. The tiny cactus has been watered.' },

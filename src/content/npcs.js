@@ -76,15 +76,7 @@
       blurb: 'Morning show, farm report, obituaries and the trading post. Plays your song between the hog prices.' },
     { id: 'rodeo_chair', name: 'Marlene from the rodeo committee', band: GRR,
       blurb: 'Runs the Stampede with a clipboard and a whistle. Books the beer-gardens bands. Has opinions about your boots.' },
-
-    // ---- v0.9 the other rivals' frontmen: who posts for them (GG.rival.frontSpeaker). The ids double as the cast
-    //      frontman ids the band packs use (rivalry.cast[rid].frontman); a pack's own npc of the same id is skipped. ----
-    { id: 'mr_blaze', name: 'Blaze', rival: 'mall_rats', frontman: true,
-      blurb: 'Real name Kevin, from Oakville. Found on a TV talent show. Kickflips when the sponsor says so. Calls everything "sick".' },
-    { id: 'cb_rex', name: 'Rex Glamour', rival: 'chartbusters', frontman: true,
-      blurb: 'Thirty years at the top. Wears a scarf in July. Every single is the same power ballad. Owns the radio, probably.' },
-    { id: 'bb_brayden', name: 'Brayden', rival: 'buckle_and_boot', frontman: true,
-      blurb: 'Ex-junior hockey. Sings about tailgates. His cousin Colt "plays" an unplugged guitar beside him. The truck mascot waves.' },
+    // v0.9: the other rivals' frontman npcs (mr_blaze, cb_rex, bb_brayden: rival-scoped, frontman:true) live in their band packs.
 
     // v0.7 (WORLDSIM): the world stage cast
     { id: 'nigel', name: 'Nigel the promoter',

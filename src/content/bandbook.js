@@ -319,6 +319,11 @@
     // ---- v0.9: Hail Damage's own Bandbook voice (on top of the neutral pools; packs add the other bands) ----
     byBand: {
       hail_damage: {
+        // Dale's Patreeon lines (v0.8): read once the fan sim pools club chat (career.pool over bandbook, 'club.payoutChat')
+        club: {
+          payoutChat: ['Patreeon payout: {money} from {n} members. Dale is on the Full Kit tier. Of course he is.'],
+          grumbleChat: ['Patreeon members are asking where the exclusives went. One of them is Dale. He is being very polite about it.']
+        },
         // the v0.8 lines, so flat + these = the old pools exactly (same length; the cringe list in its old order)
         posts: {
           rehearsal: ['Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is Dad\'s deep freeze.',

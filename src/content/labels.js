@@ -76,9 +76,9 @@
 
     // ---- v0.9 rival-only labels (gap #8): a rival cast's label, never offered to the player ----
     muchloud: {
-      id: 'muchloud', name: 'MuchLoud Records', rivalOnly: true, rival: 'mall_rats',
+      id: 'muchloud', name: 'Network Nine Music', rivalOnly: true, rival: 'mall_rats',
       blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
-      rep: { name: 'The network exec', blurb: 'Never seen without a headset. Has focus-grouped the word "rebel" eleven times.' }
+      rep: { name: 'Preston from the Network', blurb: 'VP of Youth Content. Headset, mood board, a focus group on speed dial. Has focus-grouped the word "rebel".' }
     },
     maplewave_media: {
       id: 'maplewave_media', name: 'MapleWave Media Group', rivalOnly: true, rival: 'chartbusters',
