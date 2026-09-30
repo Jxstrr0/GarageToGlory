@@ -7,7 +7,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit.
-- Next: **0.8.1 "Addendum 2 catch-up"** (D1 licensing, D2 band logo, D3 year-end recap) → 0.9 Genres → 1.0 Glory
+- Next: **0.8.1 "Addendum 2 catch-up"** (in progress, contract `plan/plan_contract_0.8.1.md`) (D1 licensing, D2 band logo, D3 year-end recap) → 0.9 Genres → 1.0 Glory
   (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -283,8 +283,9 @@ Later versions:
   sellout weight). Choices: Take it (lump sum + buzz + streams for that song) / Decline (small superfan loyalty bump) /
   Counter (better fee, chance the offer is withdrawn; odds improve with fans + label clout). Taking it: the song gets
   an "in a commercial" tag that bumps staleness; sellout weight nudges haters up and can trigger a Bandbook scandal card;
-  recoupable labels take their cut. Achievement "Sold Out" (D4). **OPEN (D6): exact fee ranges + offer odds — propose
-  numbers in the v0.8.1 contract and confirm with one popup.**
+  recoupable labels take their cut. Achievement "Sold Out" (D4). **Money (owner popup 2026-09-30: "Nice bonus"): $1,500–
+  $6,000 per offer (hockey package low, truck commercial high), 2–4 offers per career, Counter +40% with ~30% walk-away
+  (~15% with lots of fans or a label).**
 - D2 Band logo (v0.8.1): picked on the new-career flow after the band intro, before the creator; editable later on the
   laptop for a fee ("Rebrand": small cost + a little buzz). Three taps: emblem (skull, wheat sheaf, lightning bolt, moose,
   maple leaf, gopher, anvil, hailstone, grain elevator, cowboy hat, safety pin, flaming tire), lettering style (spiky
