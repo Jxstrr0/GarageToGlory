@@ -11,9 +11,7 @@
 //   - rivalry.cast.chartbusters with the full §4.1 cast shape.
 // Every object is created defensively, so the pack never throws when a base structure is missing or not yet reshaped.
 //
-// Install guard: the pack installs only onto v0.9-shaped base content (lines.byBand, from Lane A2), because the v0.8
-// validators in tests/content.test.js are Hail-Damage-only (speakers, metal gates, tokens) until A2 generalises them.
-// GG.packs.gravel_kings.install() installs it by hand (idempotent); GG.PACKS_FORCE = true forces it at load.
+// Install: the pack installs unconditionally at load (v0.9 integration). GG.packs.gravel_kings.install() is idempotent.
 // Tokens: the career ones + plan_contract_0.9 §4.2 ({front} {soloist} {filler} {bassist} {namer} {grumbler} {deadpan}
 // {driver} {van} {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront}) and each file's own tokens.
 // Tone: comedic prairie-Canadian parody. No USA content. No gong on the drum kit, ever. No share button, ever.
@@ -59,31 +57,31 @@
   // NPCs (the Edmonton cast + Chartbusters' frontman). Added only when the base npcs.js has no entry with that id.
   // ======================================================================================================================
   P.npcs = [
-    { id: 'gk_landlord', name: 'Mr. Petrenko',
+    { id: 'gk_landlord', name: 'Mr. Petrenko', band: [B],
       blurb: 'Owns Westgate Plaza. Rents Unit 4B to the band "until a real business wants it". No real business has wanted it since 1991.' },
-    { id: 'gk_nails', name: 'Linh from Tip Top Nails',
+    { id: 'gk_nails', name: 'Trinh from Nails by Trinh', band: [B],
       blurb: 'Runs the nail salon on the left of Unit 4B. Can hear every snare hit through the wall. Charges Chase for cuticle work anyway.' },
-    { id: 'gk_vacuum', name: "Gus from Gus's Vacuum Hospital",
+    { id: 'gk_vacuum', name: "Gus from Gus's Vacuum Hospital", band: [B],
       blurb: 'The vacuum repair on the right. Tests every machine at full volume. Tunes his old uprights to B flat, out of spite.' },
-    { id: 'gk_lawyer', name: 'Bryce Pruitt, Esq.',
+    { id: 'gk_lawyer', name: 'Bryce Pruitt, Esq.', band: [B],
       blurb: 'Of Pruitt, Pruitt & Pruitt, entertainment law. Has left Lenny 212 voicemails. Hums the riff in question while he waits.' },
-    { id: 'gk_reporter', name: 'Kyle from the Capital Courier',
+    { id: 'gk_reporter', name: 'Kyle from the Capital Courier', band: [B],
       blurb: "Edmonton's arts reporter. Also covers pothole season, the river valley and every mullet contest in the capital region." },
-    { id: 'gk_dj', name: 'Rhonda on The Freeze 88.5',
+    { id: 'gk_dj', name: 'Rhonda on The Freeze 88.5', band: [B],
       blurb: 'Hosts the overnight rock show on the campus station. Plays anything that has not been bought by a conglomerate. Yet.' },
-    { id: 'gk_dentist', name: 'Dr. Bhullar',
+    { id: 'gk_dentist', name: 'Dr. Bhullar', band: [B],
       blurb: "Tamara's boss at the Sherwood Park Smile Centre. Approves her gig days if she brings back floss-usage data." },
-    { id: 'gloria_mallwalk', name: 'Gloria from the Mall-Walkers',
+    { id: 'gloria_mallwalk', name: 'Gloria from the Mall-Walkers', band: [B],
       blurb: 'Laps the Mega-Mall at 7 a.m. with the Early Birds Walking Club. Seventy-one. Front row at every show, in orthopaedic runners.' },
-    { id: 'rex_glamour', name: 'Rex Glamour',
+    { id: 'cb_rex', name: 'Rex Glamour', rival: RV, frontman: true,
       blurb: "Chartbusters' frontman for thirty years. Wears a silk scarf in July. Calls every band 'kid'. Owns, through a numbered company, your radio." }
   ];
 
   // ======================================================================================================================
-  // RIVAL: Chartbusters (rivalry.cast.chartbusters, §4.1 cast shape). Frontman npc: rex_glamour.
+  // RIVAL: Chartbusters (rivalry.cast.chartbusters, §4.1 cast shape). Frontman npc: cb_rex (the cast frontman id, rival-scoped).
   // ======================================================================================================================
   P.cast = {
-    id: RV, frontman: 'cb_rex', label: 'airwave_dominion', drummer: 'cb_steve',
+    id: RV, frontman: 'cb_rex', label: 'airwave_dominion', faceStyle: 'scarf',   // Steve #5 is in members (role drums): no hired drummer
     vehicle: 'a silver 1994 tour bus called "The Ballad", towing a trailer full of scarves and a portable wind machine',
     minivan: 'a silver 1994 tour bus called "The Ballad", towing a trailer full of scarves and a portable wind machine',
     legacy: 'Thirty years at the top. Forty-one million records. One song.',
@@ -95,7 +93,7 @@
           'Signs every autograph "Rex Glamour, Legend", then the date, then "you\'re welcome".',
           'Has a wind machine clause in every contract, including his lease.',
           'Owns, through a numbered company, the station playing your song. Or not playing it.'],
-        look: look('#e9c4a0', '#e8d9a8', 'mullet', '#d8d2e6', '#1c1c24', 1.04, 0.95, ['sunglasses'], 'jacket'), corpsePaint: false, stageShirt: '#f2efe6' },
+        look: look('#e9c4a0', '#e8d9a8', 'mullet', '#d8d2e6', '#1c1c24', 1.04, 0.95, ['sunglasses'], 'jacket'), corpsePaint: false, scarf: true, stageShirt: '#f2efe6' },
       { id: 'cb_dusty', name: 'Dusty', fullName: 'Dusty Van Kamp', nick: 'The Solo', role: 'guitar', lane: 'left',
         dayJob: 'Plays the same guitar solo, nightly, since 1994',
         bio: 'Has played one solo for three decades. It is a very good solo. He plays it on his knees, then needs help up.',
@@ -215,8 +213,14 @@
       pass: 'Chartbusters sent a scarf. It means "we noticed".',
       finalWin: 'You headline the Sad Dome. Rex Glamour opens for you, forever, in the scarf.',
       finalLose: 'Chartbusters headline the Sad Dome. You open for the ballad. Forever.',
-      crack: { breakup: 'Chartbusters are on hiatus "to protect the catalogue".', rebrand: 'Chartbusters rebranded: same song, new font.',
-        opener: 'Chartbusters offered to open for you. Rex says it is "a legacy move".' }
+      emptyAlbums: 'No album this year. The label is remastering the ballad again.',
+      solo: 'Dusty Van Kamp: the ballad solo, note for note, the same as 1991.',
+      finish: '{rival} finish on the key change. Rex holds the scarf up to the wind machine. Your turn.',
+      crack: {
+        breakup: ['They are on hiatus.', 'Chartbusters are on hiatus "to protect the catalogue". The ballad stays on the radio anyway.'],
+        rebrand: ['They rebranded.', 'Chartbusters rebranded: same song, new font, a new scarf for Rex.'],
+        opener: ['They want to open for you.', 'Chartbusters offered to open for you. Rex says it is "a legacy move". Moira has the paperwork.']
+      }
     },
     carpet: { intro: 'Chartbusters arrive by stretch limousine, one scarf each, waving like they own the network. They do.', wave: 'scarf', count: 4 },
     defector: { line: 'Your old bandmate is in Chartbusters now, wearing a scarf in July and playing the ballad.', look: 'denim' },
@@ -231,7 +235,7 @@
 
   // Rival Monday cards: variants of the base rv_* ids (career.variant tries '<id>_<rivalId>' first).
   P.rivalCards = [
-    card('rv_poach_chartbusters', 'drama', 'rex_glamour', 'A Scarf for {recruit}', {},
+    card('rv_poach_chartbusters', 'drama', 'cb_rex', 'A Scarf for {recruit}', {},
       "A courier delivers a silk scarf addressed to {recruit}, not the band. The card: 'Kid. Steve #5 is wobbling. Dental, a pension, " +
       "a tour bus with a wind machine. Call me. — Rex.' {recruit} is already wearing the scarf.",
       [ch('Match it: a loyalty bonus', { fund: -150, mood: { recruit: 16 } },
@@ -242,7 +246,7 @@
         { mood: { recruit: 6 }, buzz: 2 }, '{recruit} stays, out of spite. The scarf becomes a mic-stand decoration.',
         { member: { id: 'recruit', act: 'poach' } }, '{recruit} takes the job. The welcome photo: four scarves, a cake shaped like a radio tower. You got tagged.')],
       { once: false, cooldown: 12 }),
-    card('rv_crack_breakup_chartbusters', 'scene', 'rex_glamour', 'Chartbusters on Hiatus', {},
+    card('rv_crack_breakup_chartbusters', 'scene', 'cb_rex', 'Chartbusters on Hiatus', {},
       "A press release on heavy paper: Chartbusters are 'stepping back to protect the catalogue'. The catalogue is one song. Rex calls you " +
       "himself. 'You beat us, kid. Fair and square. Moira ran the numbers.'",
       [ch('Send Rex a scarf', { fund: -60, buzz: 6, chemistry: 3 },
@@ -250,7 +254,7 @@
        ch('Victory lap on the radio', { buzz: 12, fans: 40, mood: { all: -3 } },
         'You call in to The Freeze and play your single back-to-back with theirs. The difference is audible. Rex calls in too. It gets awkward.', 'Buzz now, karma later')],
       { once: true }),
-    card('rv_crack_rebrand_chartbusters', 'scene', 'rex_glamour', 'The Chartbusters Rebrand', {},
+    card('rv_crack_rebrand_chartbusters', 'scene', 'cb_rex', 'The Chartbusters Rebrand', {},
       'Chartbusters are now {rival}. Same four people, same bus, same ballad. The rebrand deck has 44 slides; slide 30 is a photo of Chase ' +
       "labelled 'the competition (1985)'.",
       [ch('Congratulate them, sincerely', { chemistry: 3, buzz: 3 },
@@ -258,7 +262,7 @@
        ch('Keep calling them Chartbusters', { buzz: 8, mood: { all: 3 } },
         'Every interview, the old name. Every interview, Rex corrects it in a letter. Chase frames the letters.', 'Petty, and fun')],
       { once: true }),
-    card('rv_crack_opener_chartbusters', 'scene', 'rex_glamour', 'Can We Open for You, Kid?', {},
+    card('rv_crack_opener_chartbusters', 'scene', 'cb_rex', 'Can We Open for You, Kid?', {},
       "Rex calls, which he has never done. 'Kid. Moira ran the numbers. You're the bigger draw now. We'd consider opening. Legacy move.' " +
       'Behind him, Steve #5 is nodding very fast.',
       [ch("Sure. You're opening.", { buzz: 6, fans: 30, chemistry: 2 },
@@ -266,7 +270,7 @@
        ch('Make them send a demo', { buzz: 10, mood: { all: 3 }, chemistry: -2 },
         'They send a demo. It is the ballad. With a note: "You know this one." Chase writes back: "We do."', 'A little payback')],
       { once: true }),
-    card('rv_final_eve_chartbusters', 'scene', 'rex_glamour', 'Sad Dome Eve', {},
+    card('rv_final_eve_chartbusters', 'scene', 'cb_rex', 'Sad Dome Eve', {},
       "This weekend: the Sad Dome, Calgary. {rival} and {band}, one headliner. Rex texts from a landline: 'Break a leg, kid. " +
       "Not literally. Dusty already did that.'",
       [ch('Rehearse until your hands bleed', { chemistry: 4, burnout: 8, drumSkill: 1 },
@@ -307,12 +311,12 @@
        ch('Negotiate the loading dock', { buzz: 3, mood: { chase: 6, tamara: -4 } },
         'The loading dock is officially "backstage" from 6 p.m. to 10 p.m. Chase installs a door sign. Tamara installs a clock.')]),
     card('gk_early_nail_salon', 'scene', 'gk_nails', 'The Wall Is Thin', g({ minWeek: 2, maxWeek: 12 }),
-      'Linh from Tip Top Nails knocks on the shared wall during a pedicure appointment. Then she comes around. "Your snare is in my ' +
+      'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your snare is in my ' +
       "customer's toes. She is tapping along. It is ruining the polish.\"",
       [ch('Rehearse after salon hours', { burnout: 4, chemistry: 3 },
-        'Rehearsals start at 8 p.m. now. Linh leaves a thank-you note and a coupon. Chase uses the coupon. His cuticles have never looked better.'),
+        'Rehearsals start at 8 p.m. now. Trinh leaves a thank-you note and a coupon. Chase uses the coupon. His cuticles have never looked better.'),
        ch('Play something slower', { mood: { lenny: 3 }, buzz: 2 },
-        'Lenny plays a slow riff. The customer stops tapping and starts crying. Linh says it sounds "familiar". Lenny says nothing.'),
+        'Lenny plays a slow riff. The customer stops tapping and starts crying. Trinh says it sounds "familiar". Lenny says nothing.'),
        ch('Invite the salon to a show', { fans: 6, mood: { chase: 3 } },
         'Six nail technicians and three customers in toe separators come to your next gig. They are the loudest people there.')]),
     card('gk_early_vacuum', 'weird', 'gk_vacuum', 'The Vacuum Hospital', g({ minWeek: 3, maxWeek: 14 }),
@@ -444,10 +448,10 @@
        ch('Return the wind machine', { fund: 40, mood: { chase: -6 } },
         'You get the deposit back. Chase stands on the bridge alone anyway, in the real wind, for eleven minutes. Someone films it.')]),
     card('gk_fog_alarm', 'weird', 'tamara', 'Fog Alarm', g({ era: GLS, minWeek: 6 }),
-      "Chase's new fog machine set off the smoke alarm in Tip Top Nails. Linh evacuated four customers mid-manicure. They are standing " +
+      "Chase's new fog machine set off the smoke alarm in Nails by Trinh. Trinh evacuated four customers mid-manicure. They are standing " +
       'in the parking lot with wet nails. Tamara is holding the fog machine like evidence.',
       [ch('Free manicures on the band', { fund: -80, chemistry: 3 },
-        'You pay for four redos. The customers stay for rehearsal. One of them books you for her anniversary. Linh forgives you, mostly.'),
+        'You pay for four redos. The customers stay for rehearsal. One of them books you for her anniversary. Trinh forgives you, mostly.'),
        ch('Blame the vacuum shop', { mood: { chase: 4, tamara: -5 } },
         'Gus denies everything with his whole chest. The feud between the salon and the vacuum shop begins. You are now neutral territory.'),
        ch('Fog only on stage from now on', { mood: { tamara: 4, chase: -3 } },
@@ -502,7 +506,7 @@
       "Kyle from the Capital Courier wants to profile 'the strip-mall band'. He wants a photo in front of Westgate Plaza, next to the " +
       "vacuum repair sign. Headline pitched: 'Stuck in 1985, and Fine With It'.",
       [ch('Pose with the vacuum sign', { buzz: 6, fans: 12 },
-        'Gus gets in the photo. Linh gets in the photo. The profile runs with the headline "The Pride of Westgate Plaza". Petrenko frames it.'),
+        'Gus gets in the photo. Trinh gets in the photo. The profile runs with the headline "The Pride of Westgate Plaza". Petrenko frames it.'),
        ch('Pose in Unit 4B', { buzz: 5, chemistry: 3 },
         'The photo shows the kit where the till used to be. Readers ask if the band is for sale. Chase says "only our souls".'),
        ch('Chase does the interview solo', { buzz: 8, mood: { chase: 6, lenny: -4 } },
@@ -630,7 +634,7 @@
       "Mr. Petrenko will knock a month of 'goodwill' off if you write a jingle for Westgate Plaza. 'Something catchy. With the " +
       "vacuum shop in it. And the nails. And the discount store. And the parking.'",
       [ch('Write the jingle', { fund: 120, burnout: 4 },
-        'Twenty-eight seconds, four businesses and one power chord. It plays on The Freeze at 3 a.m. Linh gets two new customers.'),
+        'Twenty-eight seconds, four businesses and one power chord. It plays on The Freeze at 3 a.m. Trinh gets two new customers.'),
        ch('Let Lenny write it', { fund: 120, mood: { lenny: 5 } },
         'It is catchy. It is very catchy. It is exactly as catchy as a famous jingle from 1989. Petrenko loves it. The lawyers love it too.'),
        ch('We are artists, sir', { mood: { chase: 5 }, chemistry: 2 },
@@ -748,7 +752,7 @@
         'You film a special set in Unit 4B, with shout-outs to the night shift. The camp plays it at every shift change for a month.'),
        ch('Too far', { burnout: -5, mood: { lenny: -3 } },
         'You stay home. Lenny had relatives at the camp. They send a photo of the empty cafeteria stage, captioned "nice".')]),
-    card('gk_l_rex_scarf', 'scene', 'rex_glamour', 'A Scarf in the Mail', g({ era: LS, minFans: 350 }),
+    card('gk_l_rex_scarf', 'scene', 'cb_rex', 'A Scarf in the Mail', g({ era: LS, minFans: 350 }),
       "A package from Vancouver: a silk scarf and a card. 'Heard you on the campus radio. Cute. Remember whose airwaves those are. " +
       "Stay warm, kid. — Rex Glamour.' It is thirty degrees out. Chase is already wearing the scarf.",
       [ch('Wear it on stage, ironically', { buzz: 10, mood: { chase: 6 } },
@@ -768,7 +772,7 @@
         'Tamara drives around it for three weeks with perfect precision. The duck watches you go. It does not wave.')]),
 
     // ---- Signed (S, SW) --------------------------------------------------------------------------------------------------
-    card('gk_s_video', 'fame', 'chase', 'The Music Video', g({ era: SW }),
+    card('gk_s_video', 'fame', 'chase', 'The Music Video', g({ era: S }),
       "The label budget covers a real music video. Chase wants 1985: a wind machine, a rented sports hatchback, a smoke-filled " +
       'warehouse and a slow-motion knee slide through a wall of sparks. Tamara wants a helmet on him.',
       [ch('All of it', { fund: -900, buzz: 18, fans: 250, mood: { chase: 12 } },
@@ -776,8 +780,8 @@
        ch('Half the sparks, all the helmet', { fund: -500, buzz: 12, mood: { tamara: 6 } },
         'Chase slides through sparks in a helmet painted to look like his hair. It somehow works. The helmet becomes merch.'),
        ch('Film it in Unit 4B', { fund: -150, buzz: 8, chemistry: 5 },
-        'The whole plaza is in it. Linh does the nails, Gus does the wind, Petrenko plays "man with clipboard". It is beloved.')]),
-    card('gk_s_pyro_slide', 'drama', 'chase', 'The Pyro Knee Slide', g({ era: SW, minFans: 2000 }),
+        'The whole plaza is in it. Trinh does the nails, Gus does the wind, Petrenko plays "man with clipboard". It is beloved.')]),
+    card('gk_s_pyro_slide', 'drama', 'chase', 'The Pyro Knee Slide', g({ era: S, minFans: 2000 }),
       "Chase wants pyro for the knee slide: two flame columns at the end of the stage, timed to his arrival. The venue's fire marshal " +
       "has asked for 'a plan'. Chase's plan is 'confidence'.",
       [ch('Hire a real pyro tech', { fund: -800, buzz: 14, fans: 200 },
@@ -787,7 +791,7 @@
         { buzz: 6, burnout: 10, mood: { chase: -10 } }, 'He slides a metre short. The flames go up anyway. Tamara extinguishes his hair. It grows back.'),
        ch('No pyro. Just the slide.', { chemistry: 5, mood: { chase: -8 } },
         'The slide alone is still the best thing in the show. Chase says the flames were "in his heart". Tamara says that is where they stay.')]),
-    card('gk_s_royalty_audit', 'money', 'tamara', 'Tamara Audits the Label', g({ era: SW, minWeek: 30 }),
+    card('gk_s_royalty_audit', 'money', 'tamara', 'Tamara Audits the Label', g({ era: S, minWeek: 30 }),
       'Tamara has read the royalty statement. All forty pages. With a ruler. She has found a column that does not add up, a charge ' +
       "for 'catering (scarves)', and a line item called 'Rex'. She wants a meeting.",
       [ch('Send Tamara to the meeting', { fund: 900, mood: { tamara: 12 } },
@@ -796,7 +800,7 @@
         'Tamara lets it go. She does not let it go. She sends one polite email a week for a year. They pay eventually, to make it stop.'),
        ch('Go public', { buzz: 12, fund: 300, fans: 100 },
         'Kyle from the Courier runs the story: "Hygienist Finds Scarf Charge on Rock Band\'s Bill". The label pays. Rex issues a denial.')]),
-    card('gk_s_signature_guitar', 'drama', 'lenny', 'The Lenny Szabo Model', g({ era: SW, minFans: 3000 }),
+    card('gk_s_signature_guitar', 'drama', 'lenny', 'The Lenny Szabo Model', g({ era: S, minFans: 3000 }),
       "A guitar maker wants a Lenny Szabo signature model. Lenny is overjoyed. Then he sees the headstock design. It looks exactly like " +
       "a famous headstock. The guitar maker says 'it's an homage'. Tamara says 'it's evidence'.",
       [ch('Redesign the headstock', { fund: 600, mood: { lenny: 10 } },
@@ -805,7 +809,7 @@
         'The guitar ships. The letter ships a week later. Tamara adds a new tab to the binder: LETTERS (HEADSTOCK).'),
        ch('Turn it down', { skill: { lenny: 2 }, chemistry: 4 },
         '"I will have a signature guitar when I have a signature sound," Lenny says. The band applauds. Lenny practises all night.')]),
-    card('gk_s_morning_tv', 'fame', 'gk_reporter', 'Good Morning Alberta', g({ era: SW }),
+    card('gk_s_morning_tv', 'fame', 'gk_reporter', 'Good Morning Alberta', g({ era: S }),
       'Good Morning Alberta wants the band live at 6:40 a.m. on the patio set, between the weather and a segment about ' +
       'pickling. It is minus 25. Chase is already in the leather. He slept in it.',
       [ch('Play the single', { fans: 200, buzz: 10 },
@@ -814,7 +818,7 @@
         'Chase reads the forecast like a power ballad. The weather lady lets him finish. Viewers request him for the long weekend forecast.'),
        ch('Tamara plugs flossing', { fans: 120, mood: { tamara: 8 } },
         'Tamara uses her ninety seconds on gum health. The host is moved. The dental association sends the band a fruit basket.')]),
-    card('gk_s_goal_song', 'fame', 'chase', 'The Goal Song', g({ era: SW, minFans: 4000 }),
+    card('gk_s_goal_song', 'fame', 'chase', 'The Goal Song', g({ era: S, minFans: 4000 }),
       "The Oilcans want a goal song. They want yours. Every goal, eighteen thousand people will hear the chorus of 'Leather Pants at " +
       "Forty Below'. Lenny is worried about the riff. The riff is the part they want.",
       [ch('Yes. Goal song.', { fund: 800, fans: 400, buzz: 12 },
@@ -823,7 +827,7 @@
         'Lenny writes a brand-new riff for it. Nobody has heard it before. Not even the lawyers. It becomes the city\'s riff.'),
        ch('Keep it for the fans', { chemistry: 5, buzz: 6 },
         'You say no. The team picks a Chartbusters song. They lose eleven straight. The city blames Rex. Chase says nothing. Loudly.')]),
-    card('gk_s_rider', 'money', 'tamara', "Tamara's Rider", g({ era: SW, minFans: 1200 }),
+    card('gk_s_rider', 'money', 'tamara', "Tamara's Rider", g({ era: S, minFans: 1200 }),
       "The band has a rider now. Chase wants hairspray, a mirror and a fog machine. Lenny wants a lawyer's phone number, just in case. " +
       "Tamara wants fruit, water, floss and a sign-up sheet for bedtime.",
       [ch("Tamara's rider, as written", { burnout: -8, chemistry: 4 },
@@ -832,7 +836,7 @@
         'Every green room has a full-length mirror and four cans of hairspray. One promoter adds a wind machine "just in case".'),
        ch('Split the difference', { mood: { all: 3 }, fund: -150 },
         'Fruit, floss, one mirror, one fog machine. The phone number is a real lawyer. Lenny calls her twice, just to say hi.')]),
-    card('gk_s_junket', 'fame', 'lenny', 'Press Day', g({ era: SW }),
+    card('gk_s_junket', 'fame', 'lenny', 'Press Day', g({ era: S }),
       'A press junket in a hotel conference room: twelve interviews in six hours. Every interviewer asks Lenny about the lawsuit. Every ' +
       "interviewer hums the riff while they ask. Lenny has run out of ways to say 'no comment'.",
       [ch('Lenny tells the whole story', { buzz: 12, mood: { lenny: 6 } },
@@ -841,7 +845,7 @@
         'Every answer is about 1985. By interview eight nobody asks about the lawsuit. They ask about the pants. Mission accomplished.'),
        ch('Tamara hands out a fact sheet', { fans: 150, chemistry: 4 },
         "A one-page fact sheet, colour-coded, with 'NO COMMENT' in bold. Journalists love it. Two of them ask Tamara to do their taxes.")]),
-    card('gk_s_part_time', 'drama', 'tamara', 'Part-Time Hygienist', g({ era: SW, minWeek: 40 }),
+    card('gk_s_part_time', 'drama', 'tamara', 'Part-Time Hygienist', g({ era: S, minWeek: 40 }),
       "Tamara has been doing cleanings at 7 a.m. and gigs at 11 p.m. for years. Dr. Bhullar offers her part-time: Tuesdays and " +
       "Thursdays. 'But the patients will ask for you.' Tamara has never not been needed.",
       [ch('Go part-time', { burnout: -12, mood: { tamara: 10 } },
@@ -850,7 +854,7 @@
         'She keeps both lives. She falls asleep once, in the van, sitting upright, both hands on the wheel. The van was parked. Everyone is scared.'),
        ch('The band pays her a salary', { fund: -600, chemistry: 6, mood: { tamara: 12 } },
         'Tamara becomes the band\'s full-time manager, accountant and bassist. She makes a spreadsheet for it. The spreadsheet has a spreadsheet.')]),
-    card('gk_s_leaving_4b', 'drama', 'chase', 'Leaving Unit 4B?', g({ era: SW, minWeek: 48 }),
+    card('gk_s_leaving_4b', 'drama', 'chase', 'Leaving Unit 4B?', g({ era: S, minWeek: 48 }),
       "A proper rehearsal studio is available downtown. Chase will not leave Unit 4B. 'It's 1985 in here. It's 2020-something out there. " +
       "I have seen it.' Mr. Petrenko has a real business interested in the unit: a vape shop.",
       [ch('Keep Unit 4B forever', { fund: -500, chemistry: 6, mood: { chase: 12 } },
@@ -858,8 +862,8 @@
        ch('Move, but take the till', { mood: { chase: -6 }, fund: -200, buzz: 6 },
         'The drum kit moves downtown, onto the old till counter. Chase says 1985 lives wherever the counter goes. He may be right.'),
        ch('Rehearse in both', { fund: -400, burnout: 6, chemistry: 4 },
-        'Weeknights downtown, weekends at Westgate. Linh and Gus throw a "welcome back" party every Saturday. It never gets old.')]),
-    card('gk_s_radio_owned', 'scene', 'rex_glamour', 'Every Station, One Song', g({ era: SW, minFans: 2500 }),
+        'Weeknights downtown, weekends at Westgate. Trinh and Gus throw a "welcome back" party every Saturday. It never gets old.')]),
+    card('gk_s_radio_owned', 'scene', 'cb_rex', 'Every Station, One Song', g({ era: S, minFans: 2500 }),
       'Your single is climbing. Then it vanishes from every Airwave Dominion station at once. The playlists now go: ballad, ad, ballad, ' +
       "weather, ballad. Rex sends a voice memo: 'Radio's a family business, kid.'",
       [ch('Go around the radio', { fans: 300, buzz: 12 },
@@ -868,7 +872,7 @@
         'You buy thirty seconds on their own network. They have to play it. The ad is just the chorus. Rex hears it in his car. He changes the channel. It is the same network.'),
        ch('Rex, we need to talk', { chemistry: 4, buzz: 6 },
         'Rex agrees to one spin a week "for the kids". It airs at 3:14 a.m. on Sundays. You all stay up. It is worth it.')]),
-    card('gk_s_fan_tattoo', 'fame', 'gk_reporter', 'The Tattoo', g({ era: SW, minFans: 1500 }),
+    card('gk_s_fan_tattoo', 'fame', 'gk_reporter', 'The Tattoo', g({ era: S, minFans: 1500 }),
       "Kyle from the Courier found a fan with a tattoo of Chase's mullet on his calf. Business in the front of the calf, party in the " +
       'back. He wants a photo with the real mullet. Kyle wants the photo for the front page.',
       [ch('Photo with the real mullet', { fans: 150, buzz: 10, mood: { chase: 8 } },
@@ -877,7 +881,7 @@
         'Chase signs next to the mullet. The fan gets it tattooed over. Now the calf has a signature. Chase has never felt more immortal.'),
        ch('Tamara checks it for infection', { fans: 100, mood: { tamara: 6 } },
         'Tamara inspects the tattoo and recommends a better ointment. The fan is overwhelmed with care. He names his dog T-Bone.')]),
-    card('gk_s_hot_tub', 'weird', 'chase', 'The Hotel Hot Tub', g({ era: SW }),
+    card('gk_s_hot_tub', 'weird', 'chase', 'The Hotel Hot Tub', g({ era: S }),
       "The hotel has a hot tub on the roof, open until ten. It is eleven-thirty. Chase is in it, in the leather pants, with a boom box. " +
       "Security is here. Tamara is here. Security is deferring to Tamara.",
       [ch('Tamara negotiates', { chemistry: 4, burnout: -5 },
@@ -886,7 +890,7 @@
         'The fine includes "leather in pool water" as a line item. Tamara keeps the receipt. It goes in the shoebox of legends.'),
        ch('Everyone out, now', { mood: { chase: -6 }, burnout: -4 },
         'Chase exits the hot tub like a man leaving his homeland. The pants take two days to dry. They are stiff now. He calls it "armour".')]),
-    card('gk_s_farewell_tour', 'scene', 'rex_glamour', "Chartbusters' Farewell Tour", g({ era: SW, minFans: 3000 }),
+    card('gk_s_farewell_tour', 'scene', 'cb_rex', "Chartbusters' Farewell Tour", g({ era: S, minFans: 3000 }),
       "Chartbusters announce their fourth farewell tour. Rex calls personally: they want {band} to open three dates in the prairies. " +
       "'Exposure, kid. Our fans are your fans. Well. Our fans' kids.'",
       [ch('Open for them', { fans: 350, buzz: 8, mood: { chase: -6 } },
@@ -897,16 +901,16 @@
         'Chase declines on a payphone replica, just for the drama. Rex hangs up first. The feud is on the front page of the Courier.')]),
 
     // ---- Label cards (flagEquals label) ----------------------------------------------------------------------------------
-    card('gk_label_gopherwood_bbq', 'scene', 'tamara', 'The Feed Store Barbecue', g({ era: SW, flagEquals: { label: 'gopherwood' } }),
+    card('gk_label_gopherwood_bbq', 'scene', 'tamara', 'The Feed Store Barbecue', g({ era: S, flagEquals: { label: 'gopherwood' } }),
       "Gopherwood Records' annual label barbecue is behind the feed store in Humboldt. Every band on the label is there. The label van " +
       "has a gopher on it. Chase has brought a cassette of the label's own sampler, to be sure.",
       [ch('Play the barbecue', { fans: 120, chemistry: 5 },
         'You play on a hay wagon. The label owner flips burgers in time. A punk band and a polka trio join you for the last song.'),
        ch('Bring the plaza', { fund: -150, buzz: 10 },
-        'Linh, Gus and Petrenko carpool to Humboldt. Linh does nails at the barbecue. Gus fixes the feed store vacuum. The label is thrilled.'),
+        'Trinh, Gus and Petrenko carpool to Humboldt. Trinh does nails at the barbecue. Gus fixes the feed store vacuum. The label is thrilled.'),
        ch('Talk shop with the owner', { mood: { tamara: 8 }, fund: 200 },
         'Tamara and the label owner discuss distribution for three hours over a picnic table. You leave with a better deal and a pie.')]),
-    card('gk_label_gopherwood_van', 'money', 'lenny', 'The Label Van', g({ era: SW, flagEquals: { label: 'gopherwood' } }),
+    card('gk_label_gopherwood_van', 'money', 'lenny', 'The Label Van', g({ era: S, flagEquals: { label: 'gopherwood' } }),
       "Gopherwood lends its bands the label van for tours. It has a gopher painted on it, 180,000 km on it and a tape deck. " +
       "Chase has seen the tape deck. Tamara has seen the tires.",
       [ch('Borrow it', { fund: 250, mood: { chase: 8, tamara: -4 } },
@@ -915,7 +919,7 @@
         'Tamara thanks them politely and keeps her own van, her own tires and her own mirrors. The gopher waves goodbye.'),
        ch('Borrow it, new tires first', { fund: -300, mood: { all: 4 } },
         'Four new tires on the label van. The owner is so moved he names a gopher on the next sampler cover after Tamara.')]),
-    card('gk_label_monolith_hair', 'drama', 'chase', 'Notes on the Hair', g({ era: SW, flagEquals: { label: 'monolith' } }),
+    card('gk_label_monolith_hair', 'drama', 'chase', 'Notes on the Hair', g({ era: S, flagEquals: { label: 'monolith' } }),
       "Monolith's A&R guy has notes. 'Love the energy. Love the pants. Love the lawsuits, honestly. The mullet, though. Focus groups say " +
       "it reads as 1985.' Chase stands up. 'It IS 1985.'",
       [ch('The mullet stays', { buzz: 12, mood: { chase: 15 }, fund: -400 },
@@ -924,7 +928,7 @@
         'A stylist gives Chase a "contemporary mullet". It is the same mullet, with product. Chase is quietly relieved. He will not admit it.'),
        ch('Let the focus group meet Chase', { buzz: 14, fans: 150 },
         'Chase meets the focus group in person. He explains 1985. By the end, the focus group has mullets. Monolith changes its notes.')]),
-    card('gk_label_monolith_lawyers', 'money', 'lenny', 'The Legal Department', g({ era: SW, flagEquals: { label: 'monolith' } }),
+    card('gk_label_monolith_lawyers', 'money', 'lenny', 'The Legal Department', g({ era: S, flagEquals: { label: 'monolith' } }),
       "Monolith's legal department has 60 lawyers. One of them has been assigned to Lenny full-time. She has a desk in the label " +
       "office with a sign: LENNY. She wants to hear every riff before anyone else does.",
       [ch('Every riff goes through her', { skill: { lenny: 2 }, mood: { lenny: -6 } },
@@ -933,7 +937,7 @@
         'The best riff goes around her. It is also the most famous-sounding. Monolith pays the settlement. It comes out of the advance.'),
        ch('Lenny and the lawyer write together', { fans: 200, chemistry: 5 },
         'Turns out she played guitar in law school. Their co-written riff is original, catchy and legally bulletproof. They become friends.')]),
-    card('gk_label_diy_tapes', 'money', 'chase', 'The Cassette Mail-Out', g({ era: SW, flagEquals: { label: 'diy' } }),
+    card('gk_label_diy_tapes', 'money', 'chase', 'The Cassette Mail-Out', g({ era: S, flagEquals: { label: 'diy' } }),
       "DIY means the band mails its own records. Chase insists on cassettes, hand-labelled. Tamara has a mailer list, a postage " +
       'scale and a label maker. Lenny has a hockey bag full of blank tapes.',
       [ch('Cassettes and zines, by hand', { fund: 400, fans: 150, burnout: 10 },
@@ -942,7 +946,7 @@
         'An assembly line on the till counter. Tamara times each step. You mail 700 in a week. Canada Post sends a thank-you card.'),
        ch('Crowdfund a pressing', { fund: 800, buzz: 8, fans: 100 },
         'The crowdfund hits its goal in a day, mostly thanks to the Mall-Walkers. Gloria pledged at the "hug from Chase" tier.')]),
-    card('gk_label_diy_warehouse', 'money', 'tamara', 'Unit 4B, Warehouse', g({ era: SW, flagEquals: { label: 'diy' } }),
+    card('gk_label_diy_warehouse', 'money', 'tamara', 'Unit 4B, Warehouse', g({ era: S, flagEquals: { label: 'diy' } }),
       "DIY distribution means boxes. Unit 4B is now half rehearsal space, half warehouse. The kit is still where the till was. The boxes " +
       "are where everything else was. Mr. Petrenko wants to know if you need a forklift permit.",
       [ch('Rent the unit next door', { fund: -500, chemistry: 4, burnout: -6 },
@@ -963,7 +967,7 @@
        ch('Let it ring in E', { buzz: 3, mood: { lenny: 4 } },
         'The phone rings through the whole rehearsal. It is in tune. You play along. It is the tightest the band has ever sounded.')],
       { once: false, cooldown: 10 }),
-    card('gk_rep_floss_check', 'drama', 'tamara', 'Floss Check', g({ era: GLSW, minWeek: 3 }),
+    card('gk_rep_floss_check', 'drama', 'tamara', 'Floss Check', g({ era: GLS, minWeek: 3 }),
       "Random floss check. Tamara is at the door of the rehearsal room with a flashlight and a clipboard. Chase says he flossed. " +
       "Tamara says 'show me'. Chase has spinach in his teeth from Tuesday.",
       [ch('Everyone passes', { chemistry: 3, mood: { tamara: 5 } },
@@ -973,7 +977,7 @@
        ch('Skip it this week', { mood: { tamara: -5 }, burnout: -3 },
         'Tamara lets it go. She is visibly unhappy about letting it go. The next check is twice as thorough.')],
       { once: false, cooldown: 8 }),
-    card('gk_rep_payphone', 'weird', 'chase', 'Chase Calls Collect', g({ era: GLSW, minWeek: 5 }),
+    card('gk_rep_payphone', 'weird', 'chase', 'Chase Calls Collect', g({ era: GLS, minWeek: 5 }),
       "Chase is calling collect from a payphone somewhere, which should be impossible. He will not say where he found a payphone. " +
       "'The important thing is I found one.' He wants a ride.",
       [ch('Accept the charges', { fund: -15, mood: { chase: 5 } },
@@ -994,16 +998,47 @@
         'He pays you $40 to push vacuums around the shop. Chase does it in slow motion. Gus calls it "the best test day ever".')],
       { once: false, cooldown: 8 }),
     card('gk_rep_nails', 'scene', 'gk_nails', 'Quiet Hours', g({ era: GLS }),
-      "Linh from Tip Top Nails has a bridal party booked all evening. Eight bridesmaids, one bride, one very nervous mother. She asks " +
+      "Trinh from Nails by Trinh has a bridal party booked all evening. Eight bridesmaids, one bride, one very nervous mother. She asks " +
       "for quiet. She says it with the look she uses on cuticles.",
       [ch('Unplugged rehearsal', { skill: { lenny: 1 }, chemistry: 2 },
         'An acoustic run-through. The bridesmaids ask for requests through the wall. You play three. The bride books you for the reception.'),
        ch('Play them a song first', { fans: 8, buzz: 3 },
-        'One song for the bridal party, then silence. The mother of the bride cries. Linh gives the band a group discount on cuticles.'),
+        'One song for the bridal party, then silence. The mother of the bride cries. Trinh gives the band a group discount on cuticles.'),
        ch('Rehearse at full volume', { mood: { chase: 3 }, buzz: -2 },
-        'Linh cuts the power to the shared outlet. You find out there is a shared outlet. The feud with the salon lasts a week.')],
+        'Trinh cuts the power to the shared outlet. You find out there is a shared outlet. The feud with the salon lasts a week.')],
       { once: false, cooldown: 10 }),
-    card('gk_rep_minus_forty', 'weird', 'chase', 'Minus Forty (Both Scales)', g({ era: GLSW, weekOfYear: [11, 16] }),
+    card('gk_rep_hairspray', 'weird', 'chase', 'Hairspray Shortage', g({ era: GLS }),
+      "The drugstore in the plaza is out of Chase's hairspray, the one in the gold can that was discontinued in 1991. He has " +
+      "half a can left. He is rationing it. He has made a chart. Tamara is proud of the chart and nothing else.",
+      [ch('Road trip for hairspray', { burnout: 3, mood: { chase: 5 } },
+        'Four drugstores and a beauty-supply shop in Leduc. The last one has a dusty case of it. Chase buys all of it. And the case.'),
+       ch('Try a new brand', { buzz: 3, mood: { chase: -3 } },
+        'The new brand holds for exactly one song. By the encore the mullet has gone flat. The crowd thinks it is a costume change.'),
+       ch('Rehearse with flat hair', { skill: { chase: 1 }, chemistry: 2 },
+        'Without the hair Chase has to sing it. He sings it. Lenny looks at Tamara. Tamara writes it down.')],
+      { once: false, cooldown: 9 }),
+    card('gk_rep_lot_show', 'scene', 'tamara', 'Parking Lot Show', g({ era: GLS, minWeek: 6 }),
+      "Westgate Plaza is having a customer appreciation day: a bouncy castle, a hot dog stand, and a flatbed in the parking lot " +
+      "with nobody on it. Mr. Petrenko asks if the band 'does daytime'. Chase is already carrying an amp.",
+      [ch('Play the flatbed', { buzz: 4, book: 'westgate_parking_lot' },
+        'Mr. Petrenko paints LIVE ROCK SATURDAY on the plaza sign. Gloria from the Mall-Walkers says she will walk over. Chase stretches his knees.',
+        'Books this weekend (if free) · Buzz ↑'),
+       ch('Run the hot dog stand', { fund: 60, chemistry: 2 },
+        'Tamara runs the stand with a cash float and a spreadsheet. You sell out by two. Chase puts mustard on his knee pads somehow.'),
+       ch('Stay in and rehearse', { skill: { lenny: 1 }, burnout: -3 },
+        'The bouncy castle thumps through the wall all afternoon. It is roughly in time. Lenny writes a riff to it. It is legal.')],
+      { once: false, cooldown: 10 }),
+    card('gk_rep_rhonda_call', 'scene', 'gk_dj', 'Rhonda Takes Requests', g({ era: GLS, minFans: 40 }),
+      "Rhonda's overnight rock show takes requests from 2 to 3 a.m. She says if enough people call in for {band} she will play the " +
+      "demo. The band has one phone between them that works. Tamara's.",
+      [ch('Everybody call. All night.', { buzz: 5, burnout: 3 },
+        'Chase does eleven voices. Lenny does one, badly. Rhonda plays the demo at 2:58 a.m. and says "some very excited callers".'),
+       ch('One honest request', { fans: 6, chemistry: 2 },
+        'Tamara calls once, says who she is and asks politely. Rhonda plays it and says "that is how you do it". Chase sulks.'),
+       ch('Sleep. It is 2 a.m.', { burnout: -4 },
+        'You sleep. Rhonda plays the demo anyway, at 2:40, because Gloria called in. Gloria calls in every night.')],
+      { once: false, cooldown: 9 }),
+    card('gk_rep_minus_forty', 'weird', 'chase', 'Minus Forty (Both Scales)', g({ era: GLS, weekOfYear: [11, 16] }),
       'Minus forty. The van will not start. Chase will not wear a toque because of the hair. Lenny has lost feeling in his picking hand. ' +
       "Tamara has plugged in the block heater, the van and, somehow, Chase.",
       [ch('Rehearse in parkas', { chemistry: 4, burnout: 5 },
@@ -1013,7 +1048,7 @@
        ch('Chase finally wears a toque', { mood: { chase: -6 }, chemistry: 3 },
         'He wears it over the mullet. Only the back sticks out. He calls it a "winter mullet". It trends locally for a week.')],
       { once: false, cooldown: 20 }),
-    card('gk_rep_mixtape', 'drama', 'chase', 'The Mixtape', g({ era: GLSW }),
+    card('gk_rep_mixtape', 'drama', 'chase', 'The Mixtape', g({ era: GLS }),
       "Chase has made the band a mixtape for 'morale'. It is ninety minutes long. Side A is 1985. Side B is also 1985. The case has " +
       "a hand-drawn cover of the band as panthers.",
       [ch('Play it at rehearsal', { chemistry: 4, mood: { chase: 6 } },
@@ -1023,7 +1058,7 @@
        ch('Make him one back', { chemistry: 5, fund: -10 },
         'You make Chase a mixtape of songs from after 1985. He listens to it once, in private, with the door closed. He never mentions it.')],
       { once: false, cooldown: 8 }),
-    card('gk_rep_receipts', 'money', 'tamara', 'Receipt Day', g({ era: GLSW }),
+    card('gk_rep_receipts', 'money', 'tamara', 'Receipt Day', g({ era: GLS }),
       "Tamara's monthly receipt day. The shoebox is full. The second shoebox (CHASE) has one receipt in it, for a comb, from 1998. " +
       "Lenny has a receipt for a lawyer's lunch. He did not eat it. He paid for it.",
       [ch('Sort them properly', { fund: 60, burnout: 3 },
@@ -1039,7 +1074,7 @@
       [ch('Sell merch on the sidewalk', { fund: 80, fans: 5 },
         'You sell shirts next to a table of discounted vacuum bags. Gus throws in a bag with every shirt. Customers are confused but happy.'),
        ch('Play the sale', { fans: 15, buzz: 4 },
-        'A set in the parking lot. Shoppers stop. Linh does free nail art in band colours. It is the best sidewalk sale in plaza history.'),
+        'A set in the parking lot. Shoppers stop. Trinh does free nail art in band colours. It is the best sidewalk sale in plaza history.'),
        ch('Stay inside', { burnout: -4, chemistry: 2 },
         'You watch the sale through the window like a band in an aquarium. People wave. You wave back. It is weirdly nice.')],
       { once: false, cooldown: 20 }),
@@ -1054,7 +1089,7 @@
        ch('Stay home', { burnout: -3 },
         'Lenny stays home and names riffs on the radio alone. He gets them all. He tells nobody. It is enough.')],
       { once: false, cooldown: 12 }),
-    card('gk_rep_wedding_social', 'money', 'tamara', 'Another Wedding Social', g({ era: GLSW }),
+    card('gk_rep_wedding_social', 'money', 'tamara', 'Another Wedding Social', g({ era: GLS }),
       "Tamara's cousin's friend's wedding social in Sherwood Park. $200, a hall, a cash bar and a dance floor that has seen things. " +
       "They want the chicken dance. Chase wants a power ballad. You can probably do both.",
       [ch('Chicken dance, rock version', { fund: 160, buzz: 3 },
@@ -1064,7 +1099,7 @@
        ch('Tamara runs the social', { fund: 200, mood: { tamara: 4 }, burnout: 5 },
         'Tamara runs the door, the float and the playlist. The social makes record money. The couple asks her to do their taxes.')],
       { once: false, cooldown: 8 }),
-    card('gk_rep_construction', 'road', 'lenny', 'Construction Season', g({ era: GLSW, weekOfYear: [19, 24] }),
+    card('gk_rep_construction', 'road', 'lenny', 'Construction Season', g({ era: GLS, weekOfYear: [19, 24] }),
       "Edmonton has two seasons, and this is the other one. Every road between Unit 4B and anywhere has orange cones on it. The " +
       "detour has a detour. Tamara has a paper map. Chase has a theory about shortcuts.",
       [ch("Follow Tamara's map", { burnout: 3, chemistry: 2 },
@@ -1099,7 +1134,7 @@
       { once: false, cooldown: 10 }),
 
     // ---- Holidays (calendar.holidays[*].cards; yearly) --------------------------------------------------------------------
-    card('holiday_canada_day_gravel_kings', 'scene', 'chase', 'Canada Day', g({ era: GLSW, weekOfYear: [1, 1] }),
+    card('holiday_canada_day_gravel_kings', 'scene', 'chase', 'Canada Day', g({ era: GLS, weekOfYear: [1, 1] }),
       "Canada Day at the Legislature grounds. Free stages, a hundred thousand people, fireworks over the river valley. Chase has " +
       "a leather jacket with a maple leaf on the back. It is thirty degrees. He is wearing it.",
       [ch('Flyer the grounds all day', { buzz: 8, fans: 12, burnout: 5 },
@@ -1109,7 +1144,7 @@
        ch('Fireworks from the High Level', { chemistry: 6, mood: { all: 4 } },
         'You watch the fireworks from the bridge. Nobody talks. Lenny hums something original. Tamara notices. She says nothing. Yet.')],
       { once: false, cooldown: 20 }),
-    card('holiday_thanksgiving_guilt_gravel_kings', 'money', 'mom', 'Thanksgiving Dinner', g({ era: GLSW, weekOfYear: [7, 7], flags: ['parentsLoan'] }),
+    card('holiday_thanksgiving_guilt_gravel_kings', 'money', 'mom', 'Thanksgiving Dinner', g({ era: GLS, weekOfYear: [7, 7], flags: ['parentsLoan'] }),
       "Thanksgiving at your parents'. Turkey, stuffing, and Mom has invited Tamara 'as a good influence'. Tamara brought pie and a " +
       "repayment schedule. Mom is delighted by both.",
       [ch('Pay back $100 over pie', { repay: 100, chemistry: 2 },
@@ -1119,8 +1154,8 @@
        ch('Eat fast, leave early', { burnout: -3 },
         'You leave before the pie. Mom sends the pie after you, by Tamara. The loan is mentioned on the card.')],
       { once: false, cooldown: 20 }),
-    card('holiday_thanksgiving_gravel_kings', 'scene', 'tamara', 'Thanksgiving', g({ era: GLSW, weekOfYear: [7, 7], notFlags: ['parentsLoan'] }),
-      "Thanksgiving in Unit 4B. Tamara has organized a band potluck on the till counter. Linh brought spring rolls, Gus brought a " +
+    card('holiday_thanksgiving_gravel_kings', 'scene', 'tamara', 'Thanksgiving', g({ era: GLS, weekOfYear: [7, 7], notFlags: ['parentsLoan'] }),
+      "Thanksgiving in Unit 4B. Tamara has organized a band potluck on the till counter. Trinh brought spring rolls, Gus brought a " +
       "turkey he cooked in a vacuum-repair oven, and Chase brought a cassette.",
       [ch('Invite the whole plaza', { chemistry: 5, fans: 8 },
         'Twenty people in Unit 4B. Mr. Petrenko carves. Darrell with the clipboard says grace. It is the best Thanksgiving of your life.'),
@@ -1129,7 +1164,7 @@
        ch('Play a Thanksgiving show', { fund: 120, buzz: 4 },
         'A holiday gig at a pub on Whyte. The turkey is served on stage. Chase uses a drumstick as a mic. You tip the chef.')],
       { once: false, cooldown: 20 }),
-    card('holiday_halloween_gravel_kings', 'fame', 'chase', 'Halloween Costume Gigs', g({ era: GLSW, weekOfYear: [8, 8] }),
+    card('holiday_halloween_gravel_kings', 'fame', 'chase', 'Halloween Costume Gigs', g({ era: GLS, weekOfYear: [8, 8] }),
       "Halloween: every bar wants costume bands, and the rule is you dress as ANOTHER band. Chase has a proposal, a glue gun and four " +
       'silk scarves.',
       [ch('Go as Chartbusters', { buzz: 6, flags: { costume: 'Chartbusters (four scarves, one ballad)' } },
@@ -1140,7 +1175,7 @@
        ch('We ARE the costume', { chemistry: 3, flags: { costume: 'Gravel Kings (nobody noticed)' } },
         'You go as yourselves. Four people say "great eighties costumes". Chase says "thank you" with enormous dignity.')],
       { once: false, cooldown: 20 }),
-    card('holiday_grey_mug_gravel_kings', 'fame', 'gk_dj', 'The Grey Mug Halftime Show', g({ era: SW, weekOfYear: [10, 10], minFans: 20000, minYear: 4 }),
+    card('holiday_grey_mug_gravel_kings', 'fame', 'gk_dj', 'The Grey Mug Halftime Show', g({ era: S, weekOfYear: [10, 10], minFans: 20000, minYear: 4 }),
       "The Grey Mug final is in Edmonton this year and the league wants a hometown band for halftime. Twelve minutes, three songs, " +
       "four million viewers, and a stage on wheels that has to be off the field in ninety seconds.",
       [ch('Three hits, twelve minutes', { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
@@ -1149,17 +1184,17 @@
         { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, 'The flames hit on the downbeat. Chase lands between them. Four million people scream.',
         { fans: 250, buzz: 12, mood: { chase: -8 }, flags: { greyMug: 'played' } }, 'The pyro goes a bar early and singes the goalposts. It is a meme by Monday.')],
       { once: true }),
-    card('holiday_xmas_single_gravel_kings', 'fame', 'gk_dj', 'The Christmas Single', g({ era: SW, weekOfYear: [11, 12], flags: ['label'] }),
+    card('holiday_xmas_single_gravel_kings', 'fame', 'gk_dj', 'The Christmas Single', g({ era: S, weekOfYear: [11, 12], flags: ['label'] }),
       "Rhonda heard the pitch first: a Christmas power ballad. Chase wants sleigh bells and a key change. Lenny's riff sounds like a " +
       "famous Christmas song. All Christmas songs sound like famous Christmas songs. That is the point, he says.",
       [ch('Record the ballad', { fund: 600, fans: 200, mood: { chase: 10 } },
         '"Leather Pants Under the Mistletoe" goes into holiday rotation on every station Chartbusters do not own. There are three.'),
        ch('Record it with the plaza', { fans: 150, buzz: 10, chemistry: 5 },
-        'Linh sings harmony, Gus plays a vacuum solo, Petrenko rings the sleigh bells. It is chaos. It is Christmas. It charts.'),
+        'Trinh sings harmony, Gus plays a vacuum solo, Petrenko rings the sleigh bells. It is chaos. It is Christmas. It charts.'),
        ch("No Christmas single", { mood: { chase: -6 }, chemistry: 3 },
         'Chase records one alone, on cassette, and mails it to the band. It is beautiful. It is about Unit 4B. You all cry.')],
       { once: false, cooldown: 20 }),
-    card('holiday_xmas_parties_gravel_kings', 'money', 'tamara', 'Christmas Party Season', g({ era: GLSW, weekOfYear: [11, 12] }),
+    card('holiday_xmas_parties_gravel_kings', 'money', 'tamara', 'Christmas Party Season', g({ era: GLS, weekOfYear: [11, 12] }),
       "Christmas party season: every office, clinic and oil-services company in the capital region wants a band. The Sherwood Park Smile " +
       "Centre wants you on the 19th. Dr. Bhullar has requested 'the one about floss'.",
       [ch('Play every party', { fund: 200, burnout: 8 },
@@ -1169,7 +1204,7 @@
        ch('Take the week off', { burnout: -6, chemistry: 3 },
         'A week off. Tamara bakes. Lenny writes. Chase watches a 1985 Christmas special on a VCR he found. It is a good week.')],
       { once: false, cooldown: 20 }),
-    card('holiday_st_paddys_gravel_kings', 'weird', 'lenny', "St. Paddy's on Whyte", g({ era: GLSW, weekOfYear: [18, 18] }),
+    card('holiday_st_paddys_gravel_kings', 'weird', 'lenny', "St. Paddy's on Whyte", g({ era: GLS, weekOfYear: [18, 18] }),
       "St. Patrick's Day on Whyte Avenue. Every pub wants a band, green beer is flowing, and one bar will pay double for a band that " +
       "can play a jig. Lenny can play a jig. It sounds like a famous jig.",
       [ch('Play the jig', { fund: 150, buzz: 4 },
@@ -1181,7 +1216,7 @@
       { once: false, cooldown: 20 }),
 
     // ---- Signed demand cards (labels.<id>.demandsByBand.gravel_kings) -----------------------------------------------------
-    card('signed_monolith_radio_gravel_kings', 'drama', 'lenny', 'The Radio Edit', g({ era: SW, flagEquals: { label: 'monolith' } }),
+    card('signed_monolith_radio_gravel_kings', 'drama', 'lenny', 'The Radio Edit', g({ era: S, flagEquals: { label: 'monolith' } }),
       "Monolith wants a 3:30 radio edit. The single is 6:50, and two minutes of it is Chase's knee slide, which is silent on record. " +
       "Also, the edit has to get past Airwave Dominion. Which means it should sound less like rock.",
       [ch('Cut it to 3:30', { fans: 200, buzz: 6, mood: { chase: -10 }, flags: { demandRadio: 'met' } },
@@ -1190,7 +1225,7 @@
         'Monolith accepts 4:50 with a sigh you can hear through the email. Some stations fade it early. Chase counts the seconds.'),
        ch('Send the full version', { buzz: 8, mood: { chase: 10, lenny: 5 }, fund: -300, flags: { demandRadio: 'refused' } },
         "Monolith cuts the promo budget. The campus stations play all 6:50. Rhonda calls it 'a knee slide you can hear'.")]),
-    card('signed_monolith_image_gravel_kings', 'drama', 'chase', 'The Image Consultant', g({ era: SW, flagEquals: { label: 'monolith' } }),
+    card('signed_monolith_image_gravel_kings', 'drama', 'chase', 'The Image Consultant', g({ era: S, flagEquals: { label: 'monolith' } }),
       "Monolith has sent an image consultant to 'bring the band into the present'. She has a mood board. It has no leather on it. " +
       'Chase has read the mood board and is now lying on the floor of Unit 4B.',
       [ch('Full makeover', { fans: 250, mood: { chase: -14 }, flags: { demandImage: 'met' } },
@@ -1199,7 +1234,7 @@
         "A compromise: new denim jackets over the leather pants. The consultant calls it 'retro-forward'. Chase calls it 'survivable'."),
        ch('Chase makes HER over', { buzz: 12, mood: { chase: 12 }, flags: { demandImage: 'refused' } },
         'By the end of the day the consultant has a mullet. She quits Monolith and starts a vintage leather shop. Monolith is not amused.')]),
-    card('signed_monolith_clearance_gravel_kings', 'drama', 'gk_lawyer', 'Clearance', g({ era: SW, flagEquals: { label: 'monolith' } }),
+    card('signed_monolith_clearance_gravel_kings', 'drama', 'gk_lawyer', 'Clearance', g({ era: S, flagEquals: { label: 'monolith' } }),
       "Monolith's legal department wants every riff on the album cleared before release. Every riff. There are fourteen. Bryce Pruitt, " +
       'Esq., has somehow been hired as outside counsel. He waves at Lenny through the boardroom glass.',
       [ch('Clear all fourteen', { skill: { lenny: 2 }, burnout: 10, flags: { demandClearance: 'met' } },
@@ -1208,7 +1243,7 @@
         'The singles are cleared. The deep cuts are "at your own risk". Bryce sends a card: "Looking forward to the deep cuts!"'),
        ch("They're our riffs", { buzz: 10, fund: -800, mood: { lenny: 8 }, flags: { demandClearance: 'refused' } },
         'You release it uncleared. Two settlements come out of the advance. Lenny says it was worth it. Tamara has a new binder.')]),
-    card('signed_gopherwood_showcase_gravel_kings', 'scene', 'tamara', 'The Feed Store Showcase', g({ era: SW, flagEquals: { label: 'gopherwood' } }),
+    card('signed_gopherwood_showcase_gravel_kings', 'scene', 'tamara', 'The Feed Store Showcase', g({ era: S, flagEquals: { label: 'gopherwood' } }),
       "Gopherwood wants the band at its Christmas showcase in Humboldt, like every band on the label, every year, forever. It is a " +
       "five-hour drive. Tamara has already booked the motel. Chase has already packed the good leather.",
       [ch('Play the showcase', { fans: 150, burnout: 8, flags: { demandShowcase: 'met' } },
@@ -1219,10 +1254,10 @@
         'The label docks you a promo budget and sends a sad Christmas card with a gopher in a toque on it. Tamara frames it anyway.')]),
 
     // ---- THE RIFF (chain 'riff'; Q2 storyline). Flags: riff = 'settled' | 'scrapped' | 'original'. ------------------------
-    //   1 gk_riff_1_letter ── fight ─> 2 gk_riff_2_fight ── lawyer / Chase / Tamara ─> 3 gk_riff_3_court ── any ─> 4 gk_riff_4_original ─> end (original)
-    //                      ── tweak ─> 2 gk_riff_2_tweak ── court (riffPlan fight) ──┘                    └─ settle ─> end (settled)
-    //                      ── settle ─> end (settled)          └─ scrap ─> end (scrapped)
-    //   Helper flags riffPlan / riffCourt are cleared (false) when the chain ends.
+    //   1 gk_riff_1_letter ── fight ─> 2 gk_riff_2_fight ── lawyer / Chase ─> 3 gk_riff_3_court ── won ─> 4 gk_riff_4_won ──┐
+    //                      ── tweak ─> 2 gk_riff_2_tweak ── court (riffPlan fight) ──┘       ├─ lost ─> 4 gk_riff_4_fine ─┴─> 5 gk_riff_5_original ─> end (original)
+    //                      ── settle ─> end (settled)          └─ scrap ─> end (scrapped)   └─ settle ─> end (settled)
+    //   Helper flags riffPlan / riffCourt / riffVerdict are cleared (false) when the chain ends.
     card('gk_riff_1_letter', 'drama', 'gk_lawyer', 'Cease and Desist', g({ era: GLS, minWeek: 8, minFans: 60 }),
       "A courier delivers a letter on heavy paper to Unit 4B. Airwave Dominion Music Publishing, a Chartbusters company, says Lenny's " +
       "'Legally Distinct Riff' infringes 'Everything Tonight'. Cease and desist. Lenny reads it twice and puts on sunglasses.",
@@ -1255,27 +1290,43 @@
       "The Law Courts, downtown Edmonton. Airwave Dominion sent three lawyers and Rex Glamour's scarf, on its own chair. Lenny has " +
       "his guitar. The judge has agreed to hear both riffs. 'Play,' she says.",
       [bet('Lenny plays both riffs', 'the judge has ears', 'Lenny plays "Everything Tonight", then his riff. The room is silent.', 0.55, 'chemistry',
-        { buzz: 10, mood: { lenny: 10 }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules the riffs are "cousins, not twins". Case dismissed. Lenny walks out into the snow and laughs.',
-        { fund: -200, mood: { lenny: -6 }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules against you, gently, with a small fine. "It is very catchy," she adds. Lenny goes home and does not sleep.'),
-       ch("Tamara's spreadsheet", { mood: { tamara: 8 }, buzz: 6, chain: { riff: { step: 4, delay: 2 } } },
+        { buzz: 10, mood: { lenny: 10 }, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules the riffs are "cousins, not twins". Case dismissed. Lenny walks out into the snow and laughs.',
+        { fund: -200, mood: { lenny: -6 }, flags: { riffVerdict: 'lost' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules against you, gently, with a small fine. "It is very catchy," she adds. Lenny goes home and does not sleep.'),
+       ch("Tamara's spreadsheet", { mood: { tamara: 8 }, buzz: 6, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } },
         'Tamara submits a spreadsheet of every Chartbusters single since 1994. They are all the same song. The case is dismissed "with a smile".'),
        ch('Settle on the courthouse steps', { fund: -150, mood: { lenny: -8 }, flags: { riff: 'settled', riffPlan: false, riffCourt: false }, chain: { riff: { step: 'end' } } },
         "You settle on the steps. Rex's lawyer shakes your hand in a scarf. Lenny watches the snow for a long time.")],
       { chain: 'riff', step: 3 }),
-    card('gk_riff_4_original', 'drama', 'lenny', 'The Original', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
+    card('gk_riff_4_won', 'fame', 'chase', 'The Victory Lap', g({ era: GLS, flagEquals: { riffPlan: 'fight', riffVerdict: 'won' } }),
+      "Case dismissed. The paper runs it on page three: LOCAL RIFF 'LEGALLY DISTINCT', JUDGE SAYS. Then every Airwave Dominion " +
+      "station drops the band. Lenny hasn't played a note since. 'What if the next one is famous too?'",
+      [ch('Victory lap round the plaza', { buzz: 6, mood: { chase: 6 }, chain: { riff: { step: 5, delay: 2 } } },
+        'Chase drives the Mullet Wagon round the Westgate lot eleven times with the windows down. Trinh from the nail salon honks along.'),
+       ch('Let Lenny be quiet a while', { chemistry: 3, mood: { lenny: 6 }, chain: { riff: { step: 5, delay: 3 } } },
+        'Nobody asks Lenny for a riff. Tamara leaves his guitar on the couch, tuned. Every morning it has moved a little.')],
+      { chain: 'riff', step: 4 }),
+    card('gk_riff_4_fine', 'drama', 'tamara', 'The Fine Print', g({ era: GLS, flagEquals: { riffPlan: 'fight', riffVerdict: 'lost' } }),
+      "The fine is small. The ruling is not: Lenny may never play the riff in public again. He has stopped playing anything. " +
+      "Tamara found him in the plaza food court, staring at a pretzel, for an hour.",
+      [ch('The band pays the fine together', { fund: -100, chemistry: 4, chain: { riff: { step: 5, delay: 2 } } },
+        'Everybody puts in. Chase pays in quarters from the arcade. The clerk counts them all. Lenny watches and almost smiles.'),
+       ch('Lenny takes a week off', { mood: { lenny: 5 }, chain: { riff: { step: 5, delay: 3 } } },
+        'Lenny spends a week at his mom\'s in Leduc. He calls once, to say he is fine. In the background, someone is playing guitar.')],
+      { chain: 'riff', step: 4 }),
+    card('gk_riff_5_original', 'drama', 'lenny', 'The Original', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
       "Three a.m. in Unit 4B. Lenny calls the band down in their pyjamas. He plays a riff. It sounds like nothing anyone has ever heard. " +
       "It is weird, and great, and his. Nobody's phone rings. 'Is it mine?' he whispers. It is his.",
-      [ch('Record it tonight', { buzz: 10, skill: { lenny: 2 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false }, chain: { riff: { step: 'end' } } },
+      [ch('Record it tonight', { buzz: 10, skill: { lenny: 2 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false, riffVerdict: false }, chain: { riff: { step: 'end' } } },
         'You record it in one take on Tamara\'s phone at 3:40 a.m. Chase names it "Lenny\'s Riff". It is the first song nobody can sue.'),
-       ch('Chase screams over it', { buzz: 8, mood: { chase: 8, lenny: 6 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false }, chain: { riff: { step: 'end' } } },
+       ch('Chase screams over it', { buzz: 8, mood: { chase: 8, lenny: 6 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false, riffVerdict: false }, chain: { riff: { step: 'end' } } },
         'Chase screams something wordless and perfect over it. Gus bangs on the wall. Not in anger. In time. It is the new set closer.'),
-       ch('Play it for the lawyer', { chemistry: 5, mood: { lenny: 10 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false }, chain: { riff: { step: 'end' } } },
+       ch('Play it for the lawyer', { chemistry: 5, mood: { lenny: 10 }, flags: { riff: 'original', riffOriginal: true, riffPlan: false, riffCourt: false, riffVerdict: false }, chain: { riff: { step: 'end' } } },
         'Lenny calls Bryce Pruitt at 4 a.m. and plays it down the phone. Long silence. "I have never heard that before," Bryce says. Lenny cries.')],
-      { chain: 'riff', step: 4 }),
+      { chain: 'riff', step: 5 }),
 
     // ---- MUDSTONBURY (chain 'mudstonbury'; Q3 World payoff). Sets flags.mudHeadline = true, which opens the package
     //      gk_mudstonbury_headline (world.packages, needs { flag: 'mudHeadline' }); wt_gk_mud_headline pays it off.
-    card('gk_mud_1_call', 'fame', 'nigel', 'A Call from Mudstonbury', g({ era: SW, minFans: 6000 }),
+    card('gk_mud_1_call', 'fame', 'nigel', 'A Call from Mudstonbury', g({ era: S, minFans: 6000 }),
       "Nigel the promoter calls from England. 'Mudstonbury, my friend. The main stage headliner pulled out. Chartbusters. Rex wanted " +
       "a heated scarf tent. We want a rock band. Sixty thousand in a field. You in?'",
       [ch('We are in', { buzz: 10, mood: { chase: 12 }, flags: { mudPlan: 'yes' }, chain: { mudstonbury: { step: 2, delay: 2 } } },
@@ -1285,7 +1336,7 @@
        ch("We're not ready", { chemistry: 3, mood: { chase: -10 }, flags: { mudstonbury: 'declined' }, chain: { mudstonbury: { step: 'end' } } },
         'You pass. Nigel books a Swedish band with a lot of fringe. Chase watches the stream alone, in the dark, in the leather.')],
       { chain: 'mudstonbury', step: 1, weight: 3 }),
-    card('gk_mud_2_rex', 'scene', 'rex_glamour', 'Rex Wants It Back', g({ era: SW, flags: ['mudPlan'] }),
+    card('gk_mud_2_rex', 'scene', 'cb_rex', 'Rex Wants It Back', g({ era: S, flags: ['mudPlan'] }),
       "Rex Glamour calls. He has changed his mind about the scarf tent. He wants the Mudstonbury headline back. 'Tell you what, kid. " +
       "You can open. I'll lend you a scarf. That's a legacy move, for you.'",
       [ch("No, Rex. It's ours.", { buzz: 12, mood: { chase: 8 }, chain: { mudstonbury: { step: 3, delay: 2 } } },
@@ -1295,7 +1346,7 @@
        ch('Give it back', { chemistry: 3, mood: { chase: -12 }, flags: { mudstonbury: 'gaveback', mudPlan: false }, chain: { mudstonbury: { step: 'end' } } },
         'You give it back. Rex sends a scarf. Chase burns the scarf in the plaza parking lot. Darrell with the clipboard writes him a ticket.')],
       { chain: 'mudstonbury', step: 2 }),
-    card('gk_mud_3_wellies', 'money', 'tamara', 'Welly Boots and Leather Pants', g({ era: SW, flags: ['mudPlan'] }),
+    card('gk_mud_3_wellies', 'money', 'tamara', 'Welly Boots and Leather Pants', g({ era: S, flags: ['mudPlan'] }),
       "The forecast for Mudstonbury: rain, then more rain, then mud. Tamara has bought four pairs of welly boots. Chase will wear " +
       "the leather pants. 'Leather is waterproof.' Leather is not waterproof. Tamara has a plan for that too.",
       [ch('Leather pants, into the mud', { buzz: 10, mood: { chase: 10 }, flags: { mudHeadline: true, mudPlan: false }, chain: { mudstonbury: { step: 'end' } } },
@@ -1362,7 +1413,7 @@
       "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $60 a week, and no nail salon on the other side " +
       "of the wall. Mr. Petrenko says Unit 4B 'will always be here'. He means it as a threat and a comfort.",
       [ch('Move in ($60/week)', { mood: { all: 4 }, shop: { move: 1 } },
-        "One van trip and three trips for Chase's mirrors. Linh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $60/wk · rehearsals count more'),
+        "One van trip and three trips for Chase's mirrors. Trinh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $60/wk · rehearsals count more'),
        ch('Stay in Unit 4B for now', { chemistry: 2, mood: { chase: 3 } },
         "Chase is relieved. It stays 1985 in here. Gus brings over a space heater he 'fixed'. It works. It hums in B flat.", 'Free · move later from the shop door')]),
     card('shop_space_2_gravel_kings', 'money', 'tamara', 'A Studio of Our Own', g({ era: SW }),
@@ -1554,7 +1605,7 @@
        ch('Fully modern', { production: 4, mood: { chase: -8 } },
         'Polished, pristine, radio-ready. It sounds like everyone. Chase refuses to listen to the playback. He waits in the van.')],
       { once: false, cooldown: 10 }),
-    card('studio_gk_radio_call', 'scene', 'rex_glamour', 'A Call to the Studio', gb({}),
+    card('studio_gk_radio_call', 'scene', 'cb_rex', 'A Call to the Studio', gb({}),
       "The studio phone rings. It is Rex Glamour. 'Heard you're recording, kid. My stations will need a clean edit, no swearing, no " +
       "songs about radio, no leather. You know. Standards.' He hangs up before anyone can answer.",
       [ch('Write a song about radio', { production: 2, buzz: 6, mood: { chase: 6 } },
@@ -1781,7 +1832,7 @@
     [ch('Thank your mom', { fans: 120, chemistry: 6, mood: { all: 6 }, chat: { who: 'mom', text: 'I was the one crying in row M. Tamara gave me a tissue.' } },
       "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'."),
      ch('Thank Westgate Plaza', { buzz: 14, fans: 80 },
-      "'And most of all: Unit 4B. Linh. Gus. Mr. Petrenko. Darrell.' Silence. Then someone yells 'WESTGATE!' and the arena chants it."),
+      "'And most of all: Unit 4B. Trinh. Gus. Mr. Petrenko. Darrell.' Silence. Then someone yells 'WESTGATE!' and the arena chants it."),
      bet('Take a shot at Chartbusters', 'roast, or roasted', 'You lean into the mic and find their table. The scarves.', 0.55, 'buzz',
       { buzz: 16, fans: 200, flags: { rivalFeud: true } }, "'Rex, buddy: nice scarf. It's July somewhere.' The room explodes. Rex laughs hardest. Moira takes a note.",
       { buzz: -6, mood: { all: -4 }, flags: { rivalFeud: true } }, 'It lands wrong. Rex stands and applauds you, magnanimously. Now you are the villain. A scarf is waiting at the hotel.')]);
@@ -1794,10 +1845,11 @@
       'You thank {van} by name. A mechanic in the crowd yells "THE TRANSMISSION, THOUGH". Tamara nods grimly. She knows.'),
      ch('Chase accepts, somehow', { fans: 120, mood: { chase: 6, tamara: -4 } },
       "Chase, who has never been allowed to drive it, gives a nine-minute speech about 'his' van. Tamara takes the trophy back in the lobby.")]);
+  // (role aliases, so whoever is in the band that year walks the carpet: Chase, T-Bone and Lenny while they're in it)
   P.carpet = [
-    { who: 'reporter', text: 'Who are you wearing tonight?' }, { who: 'chase', text: 'Leather. 1985 leather. The leather is wearing the year.' },
-    { who: 'reporter', text: 'Any predictions?' }, { who: 'tamara', text: 'We lose to the scarves, we get home by midnight. I have planned for both.' },
-    { who: 'reporter', text: 'And the riff?' }, { who: 'lenny', text: 'No comment. My lawyer is in row twelve. Hi, Bryce.' }
+    { who: 'reporter', text: 'Who are you wearing tonight?' }, { who: '@front', text: 'Leather. 1985 leather. The leather is wearing the year.' },
+    { who: 'reporter', text: 'Any predictions?' }, { who: '@deadpan', text: 'We lose to the scarves, we get home by midnight. I have planned for both.' },
+    { who: 'reporter', text: 'And the riff?' }, { who: '@soloist', text: 'No comment on the riff. Our lawyer is in row twelve. Hi, Bryce.' }
   ];
   P.awardWin = ['Chase is already on stage. He knee-slid there. Nobody saw him move.',
     'Tamara hugs the trophy, then checks it for chips. Lenny calls his lawyer from the stage, just to share.',
@@ -1974,11 +2026,11 @@
     },
     labelReact: {
       chase: { monolith: ['A major label! A real one! With a lobby! Is the lobby from 1985?'], gopherwood: ['Their office has a tape deck. I trust them completely.'],
-        diy: ['We are our own label. Like the punks. But in leather.'] },
+        diy: ['We are our own label. Like the punks. But in leather.'], signed: ['We are signed! Somebody call 1985. Tell them we made it.'] },
       lenny: { monolith: ['They have sixty lawyers. Sixty. Maybe one will be on my side.'], gopherwood: ['Small advance, but they said the riff "sounds like you". Nobody ever said that.'],
-        diy: ['No label means no label lawyers. Just the other lawyers.'] },
+        diy: ['No label means no label lawyers. Just the other lawyers.'], signed: ['Signed. I read clause 12 four times. It says the riffs are my problem.'] },
       tamara: { monolith: ['I read the contract. All of it. Page 38 is a problem. I have highlighted it.'], gopherwood: ['Half of every sale is ours. I did the math twice. Sign it.'],
-        diy: ['I can run a label. I run this band. Same spreadsheet, more tabs.'] }
+        diy: ['I can run a label. I run this band. Same spreadsheet, more tabs.'], signed: ['Signed. I have a new folder. It is labelled LABEL.'] }
     },
     reviewReact: {
       chase: { great: ['They said we sound like 1985. That is the highest praise in the language.'], meh: ['Mixed. Like a good cassette. Some songs chewed.'],
@@ -2018,7 +2070,7 @@
         'Tamara mailed our demo to every campus station in Alberta with a tidy cover letter and a floss sample.',
         'Chase did a "mysterious" photoshoot on the High Level Bridge. A cyclist asked if he needed help.',
         "Lenny went on The Freeze and told the lawsuit story. The phone lines lit up. One of the calls was a lawyer."],
-      book: ['We called every bar in {city} from the payphone replica. It does not work. We used Tamara\'s phone.',
+      book: ['Tamara drove the Mullet Wagon to every bar on Whyte Ave with a clipboard. Two said yes. One said "is that a mullet".', 'We called every bar in {city} from the payphone replica. It does not work. We used Tamara\'s phone.',
         'We pinned our number to the music-store corkboard, next to a lost cat and a used drum throne.',
         "Tamara emailed every venue in {city} with a PDF press kit. Formatted. Paginated. They replied out of respect.",
         'Chase booked a gig by walking into a bar in leather pants and saying "we rock". It worked. It was a pub.',
@@ -2039,7 +2091,7 @@
       "Nothing happens. Lenny's phone rings. He lets it ring. It rings in E.", 'A slow week. Tamara balanced the books. They balanced. It was the event of the week.',
       'Gus tested a vacuum at 7 a.m. That was the news.', "The group chat is silent. Even Chase. Especially Chase. He's growing his hair out. Further.",
       'Quiet week in {city}. Construction on every road. Nobody can get anywhere. Nobody tries.',
-      'Linh from Tip Top Nails gave Chase a manicure. He wore black polish to rehearsal. Nobody mentioned it.',
+      'Trinh from Nails by Trinh gave Chase a manicure. He wore black polish to rehearsal. Nobody mentioned it.',
       'Mr. Petrenko walked past Unit 4B three times. He waved each time. That is a lot of waving for him.',
       "Darrell with the clipboard ticketed a car that wasn't yours. Chase sent him a thank-you card anyway.",
       'The mall-walkers passed the shop window at 7 a.m. and waved. Nobody was there to see it. It still counts.'],
@@ -2165,12 +2217,17 @@
        ch("Lenny's riff opens the set", { buzz: 16, fans: 300, mood: { lenny: 12 }, flags: { mudstonbury: 'headlined' }, tour: { regionFans: 2500 } },
         "Lenny opens alone, on the riff nobody can sue. Sixty thousand people hear it for the first time at once. He will never recover.", 'Region fans ↑↑ · Lenny ↑↑'),
        ch('Dedicate it to Westgate', { chemistry: 8, fans: 250, flags: { mudstonbury: 'headlined' }, tour: { regionFans: 2000, homesick: -15 } },
-        'Chase dedicates the set to Unit 4B, Linh, Gus and Mr. Petrenko. Back home the whole plaza watches on the vacuum-shop TV. They cry.', 'Chemistry ↑↑ · Homesick ↓')],
+        'Chase dedicates the set to Unit 4B, Trinh, Gus and Mr. Petrenko. Back home the whole plaza watches on the vacuum-shop TV. They cry.', 'Chemistry ↑↑ · Homesick ↓')],
       { story: true, city: ['mudstonbury'] })
   ];
   P.packages = [
     { id: 'gk_mudstonbury_headline', region: 'uk_europe', name: 'Mudstonbury: Main Stage', festival: true, band: [B],
-      needs: { flag: 'mudHeadline' }, payoff: { flag: 'mudHeadline', venue: 'mudstonbury_fest', card: 'wt_gk_mud_headline' },
+      needs: { flag: 'mudHeadline', band: [B] }, needsText: 'Mudstonbury still needs a headliner. Nigel has not called yet.',
+      // the payoff fires at the Mudstonbury gig (not the last stop): trophy, a line in the gig result, the story card
+      payoff: { city: 'mudstonbury', flag: 'mudHeadlinePayoff', value: 'mudstonbury', trophy: 'Mudstonbury: the main stage', trophyKind: 'payoff',
+        line: 'Sixty thousand people in knee-deep mud sing the power chorus back at {band}. Chase is in the leather pants. The mud is winning.',
+        chat: '{band} headlined Mudstonbury: sixty thousand in the mud, one knee slide, zero scarves. Westgate Plaza watched on the vacuum-shop TV.',
+        card: 'wt_gk_mud_headline' },
       blurb: 'The headline slot Chartbusters walked away from: a London warm-up, then the main stage at Mudstonbury, in the mud, in leather.',
       stops: [{ city: 'london', venue: 'hammersmyth_odium' }, { city: 'mudstonbury', venue: 'mudstonbury_fest' }, { city: 'manchester', venue: 'drizzle_factory' }] }
   ];
@@ -2325,7 +2382,7 @@
       'Gloria made it again ({n} shows). She knows every word. She walked here. From the mall.',
       'Gloria holds up a sign: "GLORIA ♥ {band}". New sign every show. This is sign {n}.',
       'Gloria is here. She logged eleven thousand steps just dancing. She will tell you the exact number later.'],
-    farLines: ['Gloria from the Mall-Walkers is in the front row in {gcity}. She took the bus. It took two days. Show number {n}.',
+    gigLinesFar: ['Gloria from the Mall-Walkers is in the front row in {gcity}. She took the bus. It took two days. Show number {n}.',
       'Gloria made it to {gcity}. First time she has walked a mall this far from home. She reports it is "adequate".'],
     comments: ["Gloria from the Mall-Walkers here. I'll be there Saturday. Front row. Runners laced.",
       'Great post. Printed it out. It is on the fridge next to my grandson and my step count.',
@@ -2540,7 +2597,7 @@
     3: { name: 'Backstage at the Oilcans Arena', blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.' } };
   P.upgradesBySpace = {
     curb_couch: { name: 'The plaza couch', blurb: 'Rescued from behind the discount store. Smells like 1997. Comes with you if you move.' },
-    egg_foam: { name: 'Egg-crate foam', blurb: 'Stapled to the wall you share with the nail salon. Linh stops knocking. Mostly.' },
+    egg_foam: { name: 'Egg-crate foam', blurb: 'Stapled to the wall you share with the nail salon. Trinh stops knocking. Mostly.' },
     beer_fridge: { name: "The old till-counter fridge", blurb: 'A drink cooler from when Unit 4B was a convenience store. It still hums. Tamara stocks it with water.' },
     xmas_lights: { name: 'Neon beer signs', blurb: 'Two neon signs from a closed bar. One says OPEN. Chase says it means the heart.' }
   };
@@ -2587,7 +2644,7 @@
       advance: [0, 0], royalty: 0, albums: 0, deadlineWeeks: 0, demands: [], offerMinFans: 1e9, offerMinBuzz: 101, dropOnFlop: 0,
       rep: { name: 'Moira Chance', blurb: 'Chair of the board. Also the bassist. Never offers anyone anything.' },
       offer: 'Airwave Dominion does not sign other bands.', perks: [], catches: [] };
-    addCards(arr(RY, 'cards'), P.rivalCards);
+    addCards(arr(cast[RV], 'cards'), P.rivalCards);   // the rv_*_chartbusters variants live on the cast (like cast.tundra_wraith.cards)
     var scene = arr(RY, 'scene');
     scene.forEach(function (row) { if (row && row.id === 'chartbusters_scene' && !row.rivalId) row.rivalId = RV; });
 
@@ -2603,12 +2660,12 @@
       var gb2 = obj(obj(h.gig, 'byBand'), B);
       if (!gb2.lines) gb2.lines = P.holidayLines[h.id];
     });
-    fill(obj(obj(obj(cal, 'news'), 'byBand'), B), P.news);
+    fill(obj(obj(obj(cal, 'byBand'), B), 'news'), P.news);   // calendar.byBand.gravel_kings.news[week] (replaces the flat week)
 
     // ---- shop cards + shop content ----
     addCards(arr(K, 'shopCards'), P.shopCards);
     var shop = obj(K, 'shop');
-    fill(obj(obj(obj(shop, 'lines'), 'byBand'), B), P.shopLines);
+    fill(obj(obj(obj(shop, 'byBand'), B), 'lines'), P.shopLines);   // shop.byBand.gravel_kings.lines
     var merch = arr(shop, 'merch'), mp = byId(merch, 'misprint');
     if (mp) { var mb = obj(mp, 'byBand'); if (!mb[B]) mb[B] = P.misprint; }
     addCards(merch, P.merch);
@@ -2627,11 +2684,11 @@
     addUnique(arr(bb, 'scandals'), P.scandals);
     var hs = obj(bb, 'homeSuperfan'); if (!hs[B]) hs[B] = P.homeSuperfan;
     fill(obj(bb, 'scriptedGifts'), P.scriptedGifts);
-    fill(obj(obj(obj(bb, 'posts'), 'byBand'), B), P.posts);
-    fill(obj(obj(obj(bb, 'viral'), 'byBand'), B), P.viral);
-    fill(obj(obj(obj(bb, 'comments'), 'byBand'), B), P.comments);
-    fill(obj(obj(obj(bb, 'handles'), 'byBand'), B), P.handles);
-    var bbb = obj(obj(bb, 'byBand'), B);   // band-only mail + gifts (pool rule: flat + byBand), never in other careers
+    var bbb = obj(obj(bb, 'byBand'), B);   // bandbook.byBand.gravel_kings: posts, viral, comments, handles, mail, gifts
+    fill(obj(bbb, 'posts'), P.posts);
+    fill(obj(bbb, 'viral'), P.viral);
+    fill(obj(bbb, 'comments'), P.comments);
+    fill(obj(bbb, 'handles'), P.handles);
     addUnique(arr(bbb, 'mail'), P.mail);
     addUnique(arr(bbb, 'gifts'), P.gifts);
 
@@ -2679,8 +2736,7 @@
     // ---- road ----
     addCards(arr(K, 'roadCards'), P.roadCards);
     var drv = obj(K, 'drivers');
-    if (drv.tamara && !drv.tamara.takeOver) drv.tamara.takeOver = P.takeOver;
-    var you = obj(drv, 'you'), tob = obj(you, 'takeOverByBand'); if (!tob[B]) tob[B] = P.takeOver;
+    var you = obj(drv, 'you'), tob = obj(obj(you, 'byBand'), B); if (!tob.takeOver) tob.takeOver = P.takeOver;   // career.pool(state, drivers.you, 'takeOver')
 
     // ---- reviews ----
     var outlets = obj(obj(K, 'reviews'), 'outlets');
@@ -2702,8 +2758,10 @@
 
     // ---- recap, logo lines ----
     var RC = obj(K, 'recap');
-    var gy = keyed(RC, 'goodYear'); if (!gy[B]) gy[B] = P.goodYear;
-    fill(obj(obj(obj(RC, 'headlines'), 'byBand'), B), P.recapHeadlines);
+    var rcb = obj(obj(RC, 'byBand'), B);   // recap.byBand.gravel_kings: goodYear (the flat list stays Hail Damage's) + headlines
+    if (Array.isArray(RC.goodYear) || RC.goodYear == null) { if (!rcb.goodYear) rcb.goodYear = P.goodYear; }
+    else if (!RC.goodYear[B]) RC.goodYear[B] = P.goodYear;
+    fill(obj(rcb, 'headlines'), P.recapHeadlines);
     var LG = obj(obj(K, 'logo'), 'lines');
     ['picked', 'rebrand'].forEach(function (kind) {
       var src = P.logoLines[kind];
@@ -2720,6 +2778,5 @@
   };
 
   (GG.packs = GG.packs || {})[B] = PACK;   // on GG, not GG.content: the content validators walk GG.content
-  // Auto-install onto v0.9-shaped base content (see the header), or when forced.
-  if ((K.lines && K.lines.byBand) || GG.PACKS_FORCE) PACK.install();
+  PACK.install();
 })(window.GG);

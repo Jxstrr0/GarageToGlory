@@ -92,20 +92,20 @@
     ],
     members: [
       { id: 'rox', name: 'Rox', fullName: 'Rox Delorme', nick: 'Rox', role: 'vocals/guitar',
-        hometown: 'Regina', skill: 47, mood: 62,
+        hometown: 'Regina', skill: 52, mood: 66,
         wants: 'A seat on city council, to burn it down from the inside.',
         bio: 'Screams exclusively about city council. Banned from every warehouse club in the province. ' +
           'Has attended 212 consecutive council meetings, all as a heckler.',
         idle: 'pace',
         look: look('#f0c9a4', '#d23b62', 'mohawk', '#232323', '#2c2c34', 0.98, 0.95, ['tattoos']) },
       { id: 'benny', name: 'Benny', fullName: 'Benny "Two Chords" Mahon', nick: 'Two Chords', role: 'guitar',
-        hometown: 'Moose Jaw', skill: 34, mood: 70,
+        hometown: 'Moose Jaw', skill: 46, mood: 70,
         wants: 'To never, ever learn a third chord.',
         bio: 'Knows two chords and refuses to learn a third on principle. The principle is unclear. He will fight you about it.',
-        idle: 'phone',
+        idle: 'noodle',
         look: look('#e2b48c', '#e8d36a', 'spiky', '#4a6a3a', '#2a3550', 1.0, 1.05, ['bandana']) },
       { id: 'moth', name: 'Moth', fullName: 'Moth', nick: 'Moth', role: 'bass',
-        hometown: 'The van (formerly Estevan)', skill: 44, mood: 58,
+        hometown: 'The van (formerly Estevan)', skill: 56, mood: 64,
         wants: 'Permission to stay in the van. Forever.',
         bio: "Lives in the van full-time. You need permission to go in. Moth's mailing address is a parking spot.",
         idle: 'corner',
@@ -137,14 +137,14 @@
         idle: 'mirror',
         look: look('#ecc7a0', '#d9b25a', 'mullet', '#b9b9c2', '#1a1a1a', 1.04, 0.95, ['headband']) },
       { id: 'lenny', name: 'Lenny', fullName: 'Lenny Szabo', nick: 'Lawsuit', role: 'guitar',
-        hometown: 'Leduc', skill: 55, mood: 60,
+        hometown: 'Leduc', skill: 55, mood: 65,
         wants: "One riff the lawyers don't call about.",
         bio: 'Every riff sounds a little too much like a famous one. The lawyers keep calling. ' +
           'He lets them go to voicemail, in the key of E.',
         idle: 'noodle',
         look: look('#dcae86', '#3b2a1e', 'long', '#2f4f6f', '#2a2a30', 1.0, 1.0, ['moustache']) },
       { id: 'tamara', name: 'Tamara', fullName: 'Tamara "T-Bone" Ruiz', nick: 'T-Bone', role: 'bass',
-        hometown: 'Sherwood Park', skill: 52, mood: 66,
+        hometown: 'Sherwood Park', skill: 52, mood: 68,
         wants: 'Everyone home by midnight, teeth flossed.',
         bio: 'The only functioning adult. A dental hygienist who flosses backstage and does the band taxes for fun.',
         idle: 'phone',
@@ -176,19 +176,19 @@
         idle: 'noodle',
         look: look('#f0cda8', '#7a5230', 'short', '#8a5a3a', '#3b4f6b', 1.02, 0.95, ['hat']) },
       { id: 'earl', name: 'Earl', fullName: 'Earl Nakamura-Pike', nick: 'Earl', role: 'lead guitar',
-        hometown: 'Lethbridge', skill: 60, mood: 64,
+        hometown: 'Lethbridge', skill: 60, mood: 66,
         wants: 'Someone to hear the whole story about the 1979 session.',
         bio: 'Seventy-year-old session legend who has played with everyone and will tell you about it, song by song, during your song.',
         idle: 'pace',
         look: look('#d9b894', '#cfcfcf', 'bald', '#4d6b4a', '#57504a', 0.95, 1.0, ['beard', 'glasses']) },
       { id: 'clementine', name: 'Clementine', fullName: 'Clementine Beaudry', nick: 'Clem', role: 'fiddle',
-        hometown: 'Montréal', skill: 58, mood: 60,
+        hometown: 'Montréal', skill: 58, mood: 64,
         wants: 'To never be caught enjoying this.',
         bio: "Classically trained violinist 'slumming it'. Secretly loves every second. Keeps sheet music for Bach in her case in case anyone's watching.",
         idle: 'noodle',
         look: look('#f3d6be', '#b0452a', 'bun', '#2d3e66', '#1f1f28', 1.0, 0.95, []) },
       { id: 'duke', name: 'Duke', fullName: 'Duke Harlan', nick: 'Duke', role: 'bass',
-        hometown: 'Maple Creek', skill: 32, mood: 74,
+        hometown: 'Maple Creek', skill: 42, mood: 74,
         wants: 'A bigger hat.',
         bio: 'Huge hat, modest bass skills. The hat is the character. The hat has more fans than the band.',
         idle: 'lunch',
@@ -227,6 +227,10 @@
       spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
   };
   // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
+  // idle 'noodle' (set on the member above: Dana, Benny, Lenny, Travis) = the garage noodler with an instrument; the audio
+  // garage noodle follows the first one (Benny's two chords, Lenny's riff), then Clementine's 'fiddle' idle.
+  // v0.9 integration: the member skill / mood numbers above follow the sims lane's balance proposal (Frost Heave, Gravel
+  // Kings and the Ramblers were well below Hail Damage's average gig score with the same bot).
   var V09_MEMBERS = {
     marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
     dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },

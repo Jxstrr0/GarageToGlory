@@ -13,9 +13,7 @@
 // defensively (the base lane builds the v0.9 shapes in parallel); nothing in a base pool is removed; a per-band key never
 // replaces another band's. The one exception is lic_fury (plan §5 A1 item 10): its text and choices are rewritten in place.
 //
-// DORMANT ON A PRE-v0.9 BASE: the pack installs only once the §4.1 content layer exists (lines.byBand, created by the base
-// lane). On the v0.8 base (HD-only test whitelists, no {front}/{driver} tokens, no speaker guard) it is a no-op, so the
-// Hail Damage baseline and the old suites are untouched until the base lane merges.
+// The pack installs unconditionally (v0.9 integration) onto the §4.1 base content (neutral flat pools + byBand layers).
 //
 // Q2 storyline "Travis Lee's First Truck" (chain 'truck', 6 steps, 11 cards):
 //   1 grr_truck_1_classified ── band chips in ──> 2 grr_truck_2_gus (Honest Gus's lot, Gull Lake) ─┐
@@ -38,13 +36,12 @@
 // New flags (cards set them, cards/tour read them): truckStory, truckPlan, truckDrive, truckAd, truckWar, outback, outbackPlan,
 //   outbackCall, outbackPayoff (tour), hatInsured, demandRadio / demandImage / demandFeature / demandShowcase.
 // npcs (band- or rival-scoped): grr_vern, grr_wilf, grr_lloyd, grr_dolores, grr_gus (the Ramblers); bb_sheldon (Buckle & Boot's
-//   sponsor). Cast member ids bb_brayden / bb_colt / bb_titan_tim / bb_session (the frontman and the mascot double as npcs).
+//   sponsor). Cast member ids bb_brayden / bb_colt / bb_titan_tim (the frontman and the mascot double as npcs); the hired
+//   session drummer bb_session is cast.drummer, not a member.
 // No USA content, no gong on the kit, no real brands (Prairie Titan, Prairie Pedigree and the Southwest Bugle are parodies).
 (function (GG) {
   var K = GG.content = GG.content || {};
   var B = 'grid_road_ramblers', RIVAL = 'buckle_and_boot', GENRE = 'country';
-  // §4.1 base present? (the base lane moves Hail Damage's lines into lines.byBand.hail_damage and adds the v0.9 shapes)
-  if (!(K.lines && K.lines.byBand && typeof K.lines.byBand === 'object')) return;
 
   var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LS = ['local', 'signed'], L = ['local'], S = ['signed'];
   var ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'], SW = ['signed', 'world'], W = ['world'];
@@ -147,7 +144,7 @@
   var RV = obj(K, 'rivalry');
   var cast = obj(RV, 'cast');
   cast[RIVAL] = assign(cast[RIVAL] || {}, {
-    id: RIVAL, frontman: 'bb_brayden', label: bbLabel, faceStyle: 'hat', furyBrand: 'truck', drummer: 'bb_session', mascot: 'bb_titan_tim',
+    id: RIVAL, frontman: 'bb_brayden', label: bbLabel, faceStyle: 'hat', furyBrand: 'truck', mascot: 'bb_titan_tim',
     vehicle: 'a lifted Prairie Titan crew cab with both their faces on the tailgate, towing a flatbed for Titan Tim',
     minivan: 'a lifted Prairie Titan crew cab with both their faces on the tailgate, towing a flatbed for Titan Tim',
     members: [
@@ -168,14 +165,16 @@
         bio: 'A man named Tim in a foam pickup-truck costume. On stage at every show. Waves with a side mirror. Has more fans than Colt. Possibly more talent.',
         gags: ['The costume has working headlights. Tim flashes them on the chorus.', 'Nobody has seen Tim\'s face. There are theories.',
           'Signs autographs with a tire tread stamp.', 'Once got stuck in a Legion doorway for forty minutes. Stayed in character.'],
-        look: look('#d8a47a', '#3a2a1a', 'cap', '#c0392b', '#2a2a30', 1.1, 1.2, [], 'hoodie'), corpsePaint: false, stageShirt: '#c0392b' },
-      { id: 'bb_session', name: 'The Session Guy', short: 'Session guy', fullName: 'The Session Guy', nick: 'The Session Guy', role: 'drums', lane: 'back',
+        look: look('#d8a47a', '#3a2a1a', 'cap', '#c0392b', '#2a2a30', 1.1, 1.2, [], 'hoodie'), corpsePaint: false, stageShirt: '#c0392b' }
+    ],
+    // the session guy: a hired drummer, not a member (owner default): the rival set seats him on their throne (59d passes
+    // cast.drummer when the lineup has no drummer; the stage's session path uses his id + look), never the player.
+    drummer: { id: 'bb_session', hired: true, name: 'The Session Guy', short: 'Session guy', fullName: 'The Session Guy', nick: 'The Session Guy', role: 'drums', lane: 'back',
         dayJob: 'Session drummer, by the hour',
         bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, drummer to drummer.',
         gags: ['Leaves at exactly the end of the booked hour. Mid-song, if needed.', 'Invoices Buckle & Boot for the encore separately.',
           'The only member of the band who can read music. Does not bring it up.'],
-        look: look('#c68b5e', '#1c1c1c', 'bald', '#4a4a52', '#222228', 1.0, 1.05, ['beard'], 'tee'), corpsePaint: false, stageShirt: '#4a4a52' }
-    ],
+        look: look('#c68b5e', '#1c1c1c', 'bald', '#4a4a52', '#222228', 1.0, 1.05, ['beard'], 'tee'), corpsePaint: false, stageShirt: '#4a4a52' },
     songs: ['Tailgate Down (Heart Up)', 'Tailgate Nation', 'Four-Wheel Feelings', 'Mud on the Tailgate, Love in the Cab', 'Truck Yeah, Red Deer',
       'She Likes My Towing Capacity', 'Crew Cab Kisses', 'Tailgate Sunset (Sponsored)', 'Hitch It to My Heart', 'Built Titan Tough',
       'Penalty Box Blues', 'Lift Kit Love', 'Tailgate (Acoustic, Colt Unplugged)', 'Half-Ton of Heartache', 'Tailgate Again'],
@@ -359,6 +358,14 @@
         ] }
     ]
   });
+  // cast.mascot is the member object itself ({ id, look, corpsePaint:false, ... }; cast.drummer is the hired session guy,
+  // an object too): the rival screen, the stage and the carpet read .id / .name / .look (a bare id string reads as nobody).
+  (function (c) {
+    var find = function (id) { return (c.members || []).filter(function (m) { return m && m.id === id; })[0] || null; };
+    if (typeof c.drummer === 'string') c.drummer = find(c.drummer);
+    if (typeof c.mascot === 'string') c.mascot = find(c.mascot);
+    if (c.mascot) c.mascot.mascot = true;
+  })(cast[RIVAL]);
 
   // The Loonies: Buckle & Boot win and thank you; you beat them and they are gracious about it (on a tailgate).
   var AW = obj(K, 'awards');
@@ -728,7 +735,7 @@
         { label: 'Ask Lloyd for a job', hint: 'Gamble: auctioneers need rhythm',
           outcome: 'You ask Lloyd if the auction needs a drummer.',
           roll: { chance: 0.45,
-            success: { effects: { fund: 60, drumSkill: 1 }, outcome: 'You keep time on a feed pail for four hours. Lloyd sells at 150 BPM. Record auction. $60 and a free lunch.' },
+            success: { effects: { fund: 60, drumSkill: 1, book: 'auction_mart_stage' }, outcome: 'You keep time on a feed pail. Lloyd sells at 150 BPM. Record auction. $60, lunch, and Saturday in his sale ring.' },
             fail: { effects: { burnout: 4 }, outcome: 'Lloyd says the auction has a rhythm and it is Lloyd. You go home with the mystery wrenches.' } } }
       ] },
     { id: 'grr_earl_hearing_aid', type: 'weird', speaker: 'earl', title: 'Earl Is Receiving', gate: g({ era: GLS }),
@@ -1957,7 +1964,7 @@
         changed: 'Back from Lethbridge with a finished memoir. Now tells the stories in chapter order, with page numbers.',
         backLine: { who: 'earl', text: "Book's done. Turns out I'd rather play on it than write about it. Pass me the atlas. We're on page 42." }
       },
-      epilogue: 'Earl plays his last session at ninety, on a record by a kid from Swift Current. On the liner notes: "Earl Nakamura-Pike played on the original."'
+      epilogue: 'At ninety, Earl plays his last session, for a kid from Swift Current. The liner notes say: "Earl Nakamura-Pike played on the original."'
     },
     clementine: {
       wants: [
@@ -2474,19 +2481,10 @@
   else ['type', 'speaker', 'title', 'text', 'choices'].forEach(function (k) { LC[furyAt][k] = FURY[k]; });
 
   /* ======================================================================================================================
-     The World (25_sim_tour): the Q3 payoff (Tumbleworth, the Australian country circuit: city + festival venue if the base
-     world doesn't have them yet), region cards, the homesick variant, calls home, lines through byBand, the gong carpet.
+     The World (25_sim_tour): the Q3 payoff (Tumbleworth, the Australian country circuit; the town and its festival venue are
+     places, so they live in the base world.js), region cards, the homesick variant, calls home, lines through byBand, the gong carpet.
      ====================================================================================================================== */
   var WO = obj(K, 'world');
-  var WC = obj(WO, 'cities');
-  if (!WC.tumbleworth) WC.tumbleworth = { id: 'tumbleworth', name: 'Tumbleworth', region: 'australia', x: 84, y: 56, country: 'Australia', temp: 3,
-    blurb: 'A country town in New South Wales that becomes the country-music capital of the southern hemisphere every January.', site: true };
-  var WV = list(WO, 'venues');
-  if (!WV.some(function (v) { return v && v.id === 'tumbleworth_fest'; })) WV.push({
-    id: 'tumbleworth_fest', name: 'Tumbleworth Country Music Festival', city: 'tumbleworth', region: 'australia', tier: 4, kind: 'club',
-    capacity: 45000, pay: [5500, 9000], setSize: 5, festival: true, outdoor: true, weeks: [13, 14],
-    genreFit: { metal: 0.45, punk: 0.55, rock: 0.85, country: 1 },
-    quirk: 'Forty-five thousand people in hats on a riverbank in January. Utes parked for kilometres. Somebody is always yodelling.' });
   add(list(WO, 'packages'), WO.packages.some(function (p) { return p && p.id === 'au_country_circuit'; }) ? [] : [
     { id: 'au_country_circuit', region: 'australia', name: 'The Country Circuit', festival: true,
       needs: { flag: 'outback', is: ['tumbleworth'], band: [B] },
@@ -2597,7 +2595,7 @@
     }
   });
   perBand(WO, 'gongCarpet', [
-    { who: 'grr_dolores', text: 'Dolores, Speedy Creek 97, live from Amsterdam! Who are you wearing?' },
+    { who: 'reporter', text: 'Dolores, Speedy Creek 97, live from Amsterdam! Who are you wearing?' },
     { who: 'duke', text: 'The hat. And a shirt. Mostly the hat.' },
     { who: 'grr_dolores', text: 'Is it true the Gong is a real gong?' }, { who: 'earl', text: 'I played one in 1979. Hit it once. Heard it for a week.' }
   ]);
@@ -3020,11 +3018,12 @@
       { label: 'Blame the grid roads', effects: { fans: 120, mood: { travis: 5 } },
         outcome: 'Travis Lee takes the mic and blames forty years of gravel. Every rural municipality in the province issues a statement. Defensive.' }
     ] });
+  // (role aliases, so whoever is in the band that year walks the carpet: Duke and Earl while they're in it)
   perBand(AW, 'carpet', [
-    { who: 'grr_dolores', text: 'Dolores, Speedy Creek 97, on the carpet. Who are you wearing tonight?' },
-    { who: 'duke', text: 'The hat. The rest is a formality.' },
-    { who: 'grr_dolores', text: 'Any predictions?' },
-    { who: 'earl', text: 'I was nominated in 1979. We lost to a yodeller. I have a good feeling about tonight.' }
+    { who: 'reporter', text: 'Dolores, Speedy Creek 97, on the carpet. Who are you wearing tonight?' },
+    { who: '@bassist', text: 'The hat. The rest is a formality.' },
+    { who: 'reporter', text: 'Any predictions?' },
+    { who: '@grumbler', text: 'I was nominated once before. We lost to a yodeller. I have a good feeling about tonight.' }
   ]);
   merge(band(AW), {
     win: ['Travis Lee is on stage before the envelope is fully open. He is crying. He has a speech. It is about a truck.',
@@ -3458,7 +3457,7 @@
         'Earl handed out flyers at every historical marker between here and Herbert. Nobody was at the markers.',
         'We put a sign on Loretta\'s tailgate and parked her at the Co-op. Free promo, one parking ticket.',
         'Duke wore the hat to the auction mart. Lloyd announced the gig between lots.'],
-      book: ['We called every hall in {city} from Vern\'s kitchen phone. Vern took messages. He underlined "NO" twice.',
+      book: ['Earl drove to every hall in the southwest at twenty under the limit. It took all week. Two said yes. One gave him pie.', 'We called every hall in {city} from Vern\'s kitchen phone. Vern took messages. He underlined "NO" twice.',
         'We pinned our number to the Co-op corkboard, under a litter of heeler pups. The pups got more calls.',
         'Earl called a booker he knew in 1979. The booker is retired. His daughter books now. She said yes.',
         'We emailed every Legion within two hundred kilometres. One replied "who is this". One replied "yes".',

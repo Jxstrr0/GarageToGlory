@@ -261,8 +261,9 @@
       cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' },
       // v0.7 (WORLDSIM): gifts from Japanese fans (added by GG.tour: region cards, the fan-club president)
       jp_towel: { from: 'the Japanese fan club', text: 'A concert towel with the band name in katakana. It lives on the drum riser now.' },
-      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. The van has never looked so protected.' },
-      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Everyone has enormous eyes and wind in their hair. Accurate.' }
+      // v0.9: tokens give each band its own van and quiet one (Hail Damage: the Moose Hearse, Kenji as the silhouette)
+      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. {van} has never looked so protected.' },
+      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Enormous eyes, wind in everyone\'s hair. {deadpan} is a mysterious silhouette. Accurate.' }
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
@@ -319,6 +320,11 @@
     // ---- v0.9: Hail Damage's own Bandbook voice (on top of the neutral pools; packs add the other bands) ----
     byBand: {
       hail_damage: {
+        // Dale's Patreeon lines (v0.8): read once the fan sim pools club chat (career.pool over bandbook, 'club.payoutChat')
+        club: {
+          payoutChat: ['Patreeon payout: {money} from {n} members. Dale is on the Full Kit tier. Of course he is.'],
+          grumbleChat: ['Patreeon members are asking where the exclusives went. One of them is Dale. He is being very polite about it.']
+        },
         // the v0.8 lines, so flat + these = the old pools exactly (same length; the cringe list in its old order)
         posts: {
           rehearsal: ['Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is Dad\'s deep freeze.',
