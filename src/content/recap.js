@@ -8,6 +8,10 @@
 //               [{ topic: fans|songs|gigs|loans|chemistry, who: [preferred speaker ids] (first one in the band; else any
 //               bandmate but Kenji), target, good, bad }]. {n} = this year's number, {target} = the bar.
 //   intro / outro : lines for the first and last page.
+// v0.9 "Genres" (plan_contract_0.9 §4.1): headlines are neutral (+ {space}); recap.byBand[bandId] = { headlines: { <event>:
+//   [text] }, goodYear: [entries] } adds a band's own (career.pool). The flat goodYear list is Hail Damage's set (its
+//   speakers are Hail Damage's, so GG.recap skips the entries in other bands' careers); each pack adds its band's full set
+//   in recap.byBand[bandId].goodYear (same topics: fans, songs, gigs, loans, chemistry).
 (function (GG) {
   GG.content.recap = {
     masthead: 'Rolling Scone',
@@ -18,20 +22,20 @@
       loonie: ['{band} Win {award} at the Loonies; Speech Runs Long', 'Loonie for {band}; {rival} Clap Politely'],
       cert: ['"{album}" Goes {cert}; {band} Buy a Second Couch', '{band} Hang a {cert} Record Where the Dartboard Was'],
       world: ['{band} Go Global; The Van Stays Home', 'World Stage Calls; {band} Answer From a Payphone'],
-      signed: ['{band} Sign With {label}; Mom Reads the Contract Twice', '{label} Signs {band}; Lawyers Learn What a Cape Is'],
-      chart_top: ['"{album}" Hits No. {n} on the Maple 100', '{band} Crack the Maple 100 Top Ten; Garage Declared a Landmark'],
+      signed: ['{band} Sign With {label}; Mom Reads the Contract Twice', '{label} Signs {band}; Lawyers Learn What a Drummer Is'],
+      chart_top: ['"{album}" Hits No. {n} on the Maple 100', '{band} Crack the Maple 100 Top Ten; {space} Declared a Landmark'],
       charted: ['"{album}" Debuts on the Maple 100; {band} Refresh the Page All Night', '{band} Chart at No. {n}; Relatives Suddenly Call'],
       crack: ['{rival} Crack; {band} Pretend Not to Gloat', 'Scene Shaken as {rival} Fall Apart'],
       license: ['{band} Sell "{song}" to {brand}; Fans Divided', '"{song}" Now Plays in a {brand} Ad; {band} Can\'t Watch TV'],
-      region: ['{band} Conquer {region}; Customs Confused by Cape', '{band} Big in {region}, Allegedly'],
+      region: ['{band} Conquer {region}; Customs Confused by the Gear', '{band} Big in {region}, Allegedly'],
       quit: ['{name} Quits {band}; Group Chat Goes Quiet', '{band} Down a Member; {name} "Needs Space"'],
       back: ['{name} Returns to {band}; Nobody Mentions It', 'The Prodigal {name} Comes Home to {band}'],
       best_s: ['{band} Level {venue}; Venue Still Standing, Barely', '{band} Melt Faces at {venue}; Faces Recovering'],
       banned: ['{band} Banned From {n} Venues; Call It a Tour', '{band} Wear Out Their Welcome at {n} Venues'],
-      loans: ['{band} Borrow From Parents Again; Night School Brochures Multiply', 'Parents of {band} Refinance the Garage'],
+      loans: ['{band} Borrow From Parents Again; Night School Brochures Multiply', 'Parents of {band} Refinance the House'],
       fans: ['{band} Add {n} Fans; Mom Counts Herself Twice', '{n} New Fans for {band}; Most of Them Real'],
       survive_van: ['{band} Survive Year {nth}; {van} Does Not', 'Year {nth} Done; {band} Fine, {van} Less So'],
-      survive: ['{band} Survive Year {nth}', '{band} Complete Year {nth}; Garage Still Standing']
+      survive: ['{band} Survive Year {nth}', '{band} Complete Year {nth}; {space} Still Standing']
     },
     quotes: {
       S: ['I saw the face of God. He was in the mosh pit.', 'We didn\'t play that gig. That gig played us.'],
@@ -58,6 +62,18 @@
         bad: '(Kenji looks at the band for a long time. No nod.)' }
     ],
     intro: 'Year {nth}. Swipe through it.',
-    outro: 'On to year {next}.'
+    outro: 'On to year {next}.',
+    // v0.9: Hail Damage's own headlines (packs add the other bands' headlines + goodYear sets)
+    byBand: {
+      hail_damage: {
+        headlines: {
+          signed: ['{label} Signs {band}; Lawyers Learn What a Cape Is'],
+          chart_top: ['{band} Crack the Maple 100 Top Ten; Garage Declared a Landmark'],
+          region: ['{band} Conquer {region}; Customs Confused by Cape'],
+          loans: ['Parents of {band} Refinance the Garage'],
+          survive: ['{band} Complete Year {nth}; Garage Still Standing']
+        }
+      }
+    }
   };
 })(window.GG);

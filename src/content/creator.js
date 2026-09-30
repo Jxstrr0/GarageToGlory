@@ -24,7 +24,7 @@
 
   // ---- Body ----------------------------------------------------------------------------------------------
   P('build', 'slim', 'Beanpole'); P('build', 'average', 'Average Joe'); P('build', 'stocky', 'Stocky'); P('build', 'big', 'Big unit');
-  P('age', 'fresh', 'Fresh-faced'); P('age', 'lived', 'Lived-in'); P('age', 'grizzled', 'Grizzled', null, 'Forty winters in Saskatoon.');
+  P('age', 'fresh', 'Fresh-faced'); P('age', 'lived', 'Lived-in'); P('age', 'grizzled', 'Grizzled', null, 'Forty prairie winters.');
 
   // ---- Face ----------------------------------------------------------------------------------------------
   P('shape', 'classic', 'Classic'); P('shape', 'round', 'Round'); P('shape', 'square', 'Square jaw'); P('shape', 'long', 'Long face');
@@ -38,8 +38,8 @@
   P('facialHair', 'chops', 'Mutton chops', FIRST_GIG);
   P('facialHair', 'viking', 'Braided Viking beard', { era: 'local', genreStart: ['metal'] });
   P('glasses', 'none', 'No glasses'); P('glasses', 'specs', 'Library specs'); P('glasses', 'round', 'Round specs');
-  P('glasses', 'shades', 'Kenji shades', null, 'Indoors. At night. Always.');
-  P('glasses', 'aviators', 'Aviators', { fans: 500 });
+  P('glasses', 'shades', 'Mystery shades', null, 'Indoors. At night. Always.');
+  P('glasses', 'aviators', 'Aviators', { fans: 500, genreStart: ['rock'] });
 
   // ---- Hair (styles + colours) ------------------------------------------------------------------------------
   P('hairStyle', 'buzz', 'Buzz cut'); P('hairStyle', 'mop', 'Mop top'); P('hairStyle', 'short', 'Short'); P('hairStyle', 'mullet', 'Mullet');
@@ -65,7 +65,7 @@
   P('top', 'tee', 'Band tee'); P('top', 'longsleeve', 'Longsleeve'); P('top', 'flannel', 'Flannel'); P('top', 'hoodie', 'Hoodie');
   P('top', 'jacket', 'Bomber jacket'); P('top', 'tank', 'Tank top');
   P('top', 'denim', 'Denim jacket', FIRST_GIG);
-  P('top', 'jersey', 'Hockey jersey', { fans: 500 }, 'The Saskatoon Gophers. Nobody has ever won anything in it.');
+  P('top', 'jersey', 'Hockey jersey', { fans: 500 }, 'The hometown junior team. Nobody has ever won anything in it.');
   P('bottom', 'jeans', 'Jeans'); P('bottom', 'cargo', 'Cargo shorts', null, 'Worn through January.'); P('bottom', 'sweats', 'Sweatpants');
   P('bottom', 'kilt', 'Kilt', { fans: 1000 });
   P('shoes', 'sneakers', 'Beater sneakers'); P('shoes', 'skate', 'Skate shoes'); P('shoes', 'workboots', 'Work boots'); P('shoes', 'crocs', 'Crocs');
@@ -80,11 +80,11 @@
   P('outfit', 'battlejacket', 'Battle jacket', { milestone: 'firstGig', genreStart: ['metal'] }, 'Denim vest, forty patches, never washed.');
   P('outfit', 'leathervest', 'Leather vest', { fans: 250 });
   P('outfit', 'cdntux', 'Canadian tuxedo', { era: 'local', genreStart: ['rock'] }, 'Denim on denim. Formal wear.');
-  P('outfit', 'spandex', 'Spandex', { fans: 1000 });
+  P('outfit', 'spandex', 'Spandex', { fans: 1000, genreStart: ['rock'] }, 'It is 1985 somewhere. Specifically, on you.');
   P('outfit', 'rhinestone', 'Rhinestone suit', { era: 'signed', genreStart: ['country'] });
   P('stageExtra', 'wristbands', 'Studded wristbands', { fans: 100 });
   P('stageExtra', 'corpsepaint', 'Corpse paint', { era: 'local', genreStart: ['metal'] });
-  P('stageExtra', 'cape', 'A cape of your own', { award: 'loonie' }, "Marcel will have opinions.");
+  P('stageExtra', 'cape', 'A cape of your own', { award: 'loonie' }, 'Your singer will have opinions.');
 
   // ---- Ink + piercings ---------------------------------------------------------------------------------------------
   P('tatSpot', 'halfL', 'Left forearm'); P('tatSpot', 'halfR', 'Right forearm'); P('tatSpot', 'chest', 'Chest');
@@ -110,6 +110,9 @@
   P('head', 'moose', 'A moose', { fans: 500 }); P('head', 'face', 'Your face', { award: 'platinum' }, 'Go platinum and it goes on the kick.');
   P('throne', 'crate', 'Milk crate', null, 'Two of them, zip-tied.'); P('throne', 'stool', 'Throne stool', { fans: 100 });
   P('throne', 'leather', 'Leather saddle', SIGNED);
+  // v0.9: the other bands' first thrones (bands.js throne): a laundromat pail and a Quonset hay bale.
+  P('throne', 'bucket', 'Upturned bucket', { fans: 50, genreStart: ['punk'] }, 'A five-gallon pail. Punk-rock ergonomics.');
+  P('throne', 'haybale', 'Hay bale', { fans: 50, genreStart: ['country'] }, 'Scratchy. Stable. Smells like August.');
   P('sticks', 'wood', 'Hickory', null, '#d8b27a'); P('sticks', 'black', 'Black', null, '#1c1c20'); P('sticks', 'white', 'White', null, '#f0ece4');
   P('sticks', 'red', 'Red', FIRST_GIG, '#c0392b'); P('sticks', 'gold', 'Gold', { award: 'gold' }, '#e0b640');
   P('sticks', 'glow', 'Glow-in-the-dark', WORLD, '#9aff5a');

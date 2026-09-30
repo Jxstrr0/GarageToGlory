@@ -15,8 +15,62 @@
 //   cards            : fan cards (Monday schema; forced only, never drawn): scandals + superfans + the fan club.
 //                      Extra effect key: fan: { hater|super: ±share, superfan: { id: ±mood }, gift: id, club: 'open',
 //                      clubHappy: ±n } (GG.fans.apply).
+// v0.9 "Genres" (plan_contract_0.9 §4.1): the flat pools are neutral (no Hail Damage people or places); a band's own lines
+//   sit in bandbook.byBand[bandId] (posts, viral, comments, handles, gigLines, chat, mail, gifts) and genre flavour in
+//   bandbook.byGenre[genre] (comments, handles): GG.fans pools flat + byGenre + byBand. mail / gifts items may carry
+//   band: [bandIds] (only that band gets them). The rival's comments come from rivalry.cast[rivalId].comments /
+//   commentsExclusive (Tundra Wraith's live there now); comments.rival / rivalExclusive are the neutral fallback.
+//   homeSuperfan[bandId] = { name, short, from, blurb, gigLines, gigLinesFar, comments, gift } is the band's own superfan in
+//   the 'dale' state slot (owner Q5); superfans[0] (Dale from Warman) is the fallback and Hail Damage's home superfan.
+//   Hail Damage's pools keep their exact v0.8 length and order (flat + byGenre.metal + byBand.hail_damage = the old list):
+//   the fans RNG path depends on it (post-text index retries, comment and handle retries, the cringe pick), and the balance
+//   baseline must hold. So the flat pools hold only the lines that were already neutral, Hail Damage's own lines moved to
+//   byBand.hail_damage, and the neutral stand-ins written for them (STAND_IN below) go on top for the other genres.
 (function (GG) {
   var HD = { band: ['hail_damage'] };
+  // Neutral stand-ins for the Hail Damage lines (the other genres get them via byGenre, merged at the bottom of this file).
+  var STAND_IN = {
+    posts: {
+      rehearsal: [
+        'Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is a shoebox.',
+        'Rehearsal, 40 seconds. A neighbour walks through the shot with a laundry basket at 0:22. She is now the most-liked part.',
+        'Practice footage: {who} and {player} lock in so tight the door rattles along in time.'
+      ],
+      meme: ['Meme: "Things I\'d do for a gig": drive six hours with my own extension cord and a borrowed amp.'],
+      exclusive: [
+        'Members only: forty minutes of {who} tuning. Members call it "meditative". Nobody looks up once.',
+        'Exclusive: {who}\'s family recipe, retyped, with one typo.',
+        'Members-only livestream from rehearsal. 31 viewers. One requests the same song six times. You play it six times.'
+      ]
+    },
+    viral: {
+      good: [
+        'VIRAL: a dog in the front row howls on pitch through the whole chorus. {views} views.',
+        'VIRAL: the power goes out mid-song and the crowd keeps singing in the dark. {views} views.'
+      ],
+      cringe: [
+        { who: '@front', text: 'Wrong kind of viral: {who}\'s dance tutorial for "our signature move". {views} views, mostly laughing ones.' },
+        { who: '@soloist', text: 'Wrong kind of viral: {who}\'s eleven-minute unboxing of one guitar pick. {views} views.' },
+        { who: '@filler', text: 'Wrong kind of viral: {who}\'s "how to look cool at a wedding", filmed at a real wedding. {views} views.' },
+        { who: 'any', text: 'Wrong kind of viral: {who} tried to crowd-surf at a coffee shop. There was no crowd. {views} views.' }
+      ]
+    },
+    comments: {
+      good: ['BEST BAND ON THE PRAIRIES 🔥🔥🔥'],
+      mixed: ['why is there a shop vac in the background of every video'],
+      bad: ['sounds like a raccoon fell into a drum kit. 3 stars'],
+      hater: ['ratio + you play the Legion + your van has a name', 'this is why the prairies have no mountains. they left',
+        'I have heard better music from a grain auger. the auger has range']
+    },
+    handles: { fan: ['PrairieGal88', 'FlatlandFrank', 'SnowbankSteve', 'PotholePatti'], hater: ['NotAFan1987'] },
+    // mail + gifts for the other bands (Hail Damage's flat list stays the v0.8 one: every flat gift can reach it)
+    mail: [{ id: 'mail_van_poem', from: 'a poet in Biggar', text: 'A 12-page poem about your van. It rhymes "transmission" with "our mission". Twice.' }],
+    gifts: [
+      { id: 'mitts', from: 'a knitting circle', text: 'Mitts in band colours, one pair each plus a spare. The spare is for the drummer. Drummers lose mitts.' },
+      { id: 'crochet_band', from: 'a crocheter in Kindersley', text: 'The whole band, crocheted, four inches tall. The drummer is the only one with arms. Accurate.' },
+      { id: 'jam_jar', from: 'a fan at the farmers\' market', text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' }
+    ]
+  };
   GG.content.bandbook = {
     name: 'Bandbook',
     tagline: 'Where bands post. Where uncles comment.',
@@ -27,11 +81,8 @@
     },
     posts: {
       rehearsal: [
-        'Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is Dad\'s deep freeze.',
-        'Garage rehearsal, 40 seconds. Mom walks through the shot with a laundry basket at 0:22. She is now the most-liked part.',
         'Full run-through of “{song}”. The furnace kicks in during the quiet part. It\'s in the band now.',
-        'Rehearsal clip: {player} counts in, drops a stick, counts in again. Nobody edits anything. Authentic.',
-        'Practice footage: {who} and {player} lock in so tight the garage door rattles along in time.'
+        'Rehearsal clip: {player} counts in, drops a stick, counts in again. Nobody edits anything. Authentic.'
       ],
       gig: [
         'THIS SATURDAY: {band} at {venue}, {gcity}. Doors at 8. Parking is a field. Bring a toque.',
@@ -48,7 +99,6 @@
       meme: [
         'Meme: a photo of a frozen van captioned "tour support". That\'s it. That\'s the post.',
         'Which member of {band} are you, based on your favourite perogy filling? Wrong answers only.',
-        'Meme: "Things I\'d do for a gig": drive six hours to Gravelbourg with my own extension cord.',
         'POLL: is a Saskatoon berry a berry? {who} has been arguing about it since Tuesday.',
         'Meme: our van parked next to a gopher. Caption: "the whole crew". The gopher did not consent.'
       ],
@@ -60,25 +110,19 @@
         'Behind the scenes: {player} practising on pillows at 2 a.m. so Mom can sleep. Mom cannot sleep.'
       ],
       exclusive: [
-        'Members only: forty minutes of Kenji tuning his bass. Members call it "meditative". He does not look up once.',
         'Exclusive: the demo of “{song}” with the wrong lyrics. The wrong lyrics are better.',
-        'Members only: a guided tour of the van. Featuring: the smell.',
-        'Exclusive: {who}\'s perogy recipe. It\'s Baba\'s recipe, retyped, with one typo.',
-        'Members-only livestream from the garage. 31 viewers. Dale requests the same song six times. You play it six times.'
+        'Members only: a guided tour of the van. Featuring: the smell.'
       ]
     },
     viral: {
       good: [
         'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
-        'VIRAL: a moose wanders past the garage window during the breakdown and appears to headbang. It\'s eating. {views} views.',
-        'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.',
-        'VIRAL: the garage door opens by itself mid-song and reveals Dad holding a leaf blower. {views} views.'
+        'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
+      // who: a member id, a role alias ('@front') or 'any'. GG.fans reads pool('viral') as one object, so a layer's cringe
+      // list REPLACES this one: Hail Damage's five keep their exact order (byBand), the other genres get STAND_IN, a pack
+      // may bring its own. This neutral line is what a band with no layer (or a pre-v0.9 sim) falls back on.
       cringe: [
-        { who: 'marcel', text: 'Wrong kind of viral: Marcel\'s dance tutorial, "The Abyssal Two-Step". {views} views, mostly laughing ones.' },
-        { who: 'marcel', text: 'Wrong kind of viral: Marcel reads his poetry over a smoke machine that will not stop. {views} views.' },
-        { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one guitar pick. {views} views.' },
-        { who: 'jaxon', text: 'Wrong kind of viral: Jaxon\'s "how to look metal at a wedding", filmed at a real wedding. {views} views.' },
         { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
       ]
     },
@@ -87,7 +131,6 @@
         'saw them at a Legion hall, 12 people and a dog, I was the dog',
         'my mom and I both like this. first thing we\'ve agreed on since the flood',
         'played this in the combine. harvest went 20% faster',
-        'BEST BAND IN THE 306 🔥🔥🔥',
         'drove in from Kindersley for the last show. worth the gas. mostly',
         'absolutely shredding. my dog left the room. respect',
         'my curling team warms up to this now. we are 0 and 6 but we are LOUD',
@@ -98,40 +141,48 @@
         'is this the band from the grain elevator poster? the one that fell down?',
         'decent. my cousin\'s band is louder but they only know one song',
         'turn the vocals up. no, down. no, up. I\'ll get back to you',
-        'saw them at the Legion. the perogies were great. the band was also there',
-        'why is there a lawn mower in the background of every video'
+        'saw them at the Legion. the perogies were great. the band was also there'
       ],
       bad: [
         'they were better before anyone knew about them (last week)',
-        'sounds like a hailstorm in a coffee can. 3 stars',
         'unfollowed. refollowed. I don\'t know what I want',
         'who let them near a microphone. who. I want names'
       ],
       hater: [
         'overrated. never heard them. still overrated',
         'my uncle could drum like that and he\'s a snowplow',
-        'fake metal. real metal is cold. these guys have a space heater',
-        'only here to hate-watch. 14th time this week. don\'t read into it',
-        'ratio + you play the Legion + your van is a hearse',
-        'this is why Saskatchewan has no mountains. they left'
+        'only here to hate-watch. 14th time this week. don\'t read into it'
       ],
+      // neutral fallback for any rival; each cast's own lines are rivalry.cast[rivalId].comments / commentsExclusive
       rival: [
-        'So proud of you guys. Genuinely. We remember playing rooms that size! 🤘',
-        'Love this!! Great hustle. Come see how it\'s done Saturday (kidding!!) (not kidding)',
-        'Supportive comment! Keep going! We are rooting for you from the big stage.',
-        'Honestly inspiring. Our intern showed us. We had to ask who you were. Love that for you.',
-        'Great energy. A few notes: louder, tighter, more like us. But great energy!',
-        'Can\'t wait to see where you guys end up. Probably opening for us! 😊'
+        'Saw this. We see everything. Great work, guys! 👀',
+        'Cute! We remember when we had this many views. Honestly, a fun time.',
+        'Big fans of your hustle. Huge. We have people who hustle for us now, but still.',
+        'Our team flagged this as "one to watch". We are watching. Warmly.',
+        'Loving the energy! See you at the next awards night. We will be the ones with the trophy.',
+        'Great post. Our post today did a little better, but great post!'
       ],
       rivalExclusive: [
-        'Subscribed at the Drumstick tier to support you guys! Every bit helps, right? 🤘',
+        'Joined your fan club to show support! Every little bit helps, right?',
         'Members-only content, wow! We had members-only content once. Now we have a building.'
       ]
     },
     handles: {
-      fan: ['PrairieDoom88', 'GopherGrl', 'WheatKing306', 'CombineCarl', 'BerryPieBarb', 'CurlingKev', 'PotashPete', 'SloughQueen',
-        'ToqueLord', 'CanolaChris', 'BunnockBev', 'GrainElevatorGuy', 'ZamboniZoe', 'MooseJawMel', 'HailYeahHelen', 'PerogyPrince'],
-      hater: ['realmetal_only', 'OverratedOlaf', 'BootFromRegina', 'unfollow_ursula', 'HaterTad', 'ActuallyItsKevin']
+      fan: ['GopherGrl', 'CombineCarl', 'BerryPieBarb', 'CurlingKev', 'SloughQueen', 'ToqueLord', 'CanolaChris', 'BunnockBev',
+        'GrainElevatorGuy', 'ZamboniZoe', 'PerogyPrince'],
+      hater: ['OverratedOlaf', 'unfollow_ursula', 'HaterTad', 'ActuallyItsKevin']
+    },
+    // v0.9: genre flavour on top of the flat comments + handles (GG.fans pools flat + byGenre[genre] + byBand[bandId]).
+    // metal holds only the two old metal lines (Hail Damage's pool length stays the v0.8 one); the other genres also get
+    // STAND_IN (merged below).
+    byGenre: {
+      metal: { comments: { hater: ['fake metal. real metal is cold. these guys have a space heater'] }, handles: { hater: ['realmetal_only'] } },
+      punk: { comments: { good: ['FINALLY a band that is mad about the right things (parking)', 'saw them at an all-ages show. my ears and my politics are ringing'],
+        hater: ['sold out. they learned a chord'] }, handles: { fan: ['SafetyPinSue', 'DIYDave'], hater: ['PosersPatrol'] } },
+      rock: { comments: { good: ['my dad says this is "real music". my dad is right for once', 'LEATHER PANTS NATION RISE UP'],
+        hater: ['my uncle has this exact riff on a cassette from 1986'] }, handles: { fan: ['AirGuitarAl', 'ClassicRockCora'], hater: ['ItWasBetterIn85'] } },
+      country: { comments: { good: ['cried in my truck. twice. once on purpose', 'my horse likes this one. my horse does not like anything'],
+        hater: ['real country has a tractor in it. this has a tractor in it. ok fine'] }, handles: { fan: ['TwoStepTammy', 'GravelRoadGreg'], hater: ['NotACowboyCal'] } }
     },
     superfans: [
       { id: 'dale', name: 'Dale from Warman', short: 'Dale', icon: '🧢', start: true,
@@ -163,7 +214,7 @@
     gigLines: {
       president: [   // v0.7: Japan shows (GG.fans.gigShape)
         'Emiko, president of the fan club, is in the front row with a laminated banner. She bows after every song. So does the row behind her.',
-        'The fan-club president hands the crew a gift bag for each member. Kenji\'s has a tiny cactus in it. How did she know.',
+        'The fan-club president hands the crew a gift bag for each member. The drummer\'s has drumsticks in it. How did she know.',
         'Emiko has organized the crowd: towels up on the chorus, towels down on the verse. It looks like a flag waving.'
       ],
       dale: [
@@ -178,7 +229,7 @@
       ],
       follow: [
         '{n} superfans followed you to {gcity}. One brought a banner. One brought a stick to hold up the banner.',
-        '{n} superfans made the drive to {gcity}. They know the setlist better than Marcel does.'
+        '{n} superfans made the drive to {gcity}. They know the setlist better than the band does.'
       ],
       trucker: [
         'Big Wendell parks the rig across six stalls and watches from the cab with the door open. Two honks after every song.',
@@ -192,15 +243,15 @@
     mail: [
       { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
       { id: 'mail_nan', from: 'someone\'s nan in Melfort', text: '"Too loud. Lovely kids. Enclosed: a doughnut-hole coupon from 1998." It\'s expired. It\'s perfect.' },
-      { id: 'mail_poem', from: 'a poet in Biggar', text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
+      { id: 'mail_poem', from: 'a poet in Biggar', band: ['hail_damage'], text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
       { id: 'mail_teacher', from: 'a music teacher in Unity', text: '"My students now play everything at double speed. Thank you. I think."' },
       { id: 'mail_farmer', from: 'a farmer near Rosetown', text: '"Your song got my cows to come in on time. Please write one for the chickens."' },
       { id: 'mail_hater', from: 'a hater in Regina', text: 'Four pages on why you\'re overrated. Handwritten. Double-sided. Signed "a fan (not a fan)".' }
     ],
     gifts: [
-      { id: 'toque', from: 'a fan in Humboldt', text: 'A hand-knit toque in band colours. It says HALE DAMAGE. It\'s the thought.' },
-      { id: 'jam', from: 'Barb from the curling rink', text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' },
-      { id: 'abyssus_doll', from: 'a crocheter in Kindersley', text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
+      { id: 'toque', from: 'a fan in Humboldt', band: ['hail_damage'], text: 'A hand-knit toque in band colours. It says HALE DAMAGE. It\'s the thought.' },
+      { id: 'jam', from: 'Barb from the curling rink', band: ['hail_damage'], text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' },
+      { id: 'abyssus_doll', from: 'a crocheter in Kindersley', band: ['hail_damage'], text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
       { id: 'pizza_art', from: 'an art student in Regina', text: 'Fan art on a pizza box: the band as gophers. It\'s accurate.' },
       { id: 'casserole', from: 'somebody\'s grandma', text: 'A frozen casserole with no note. Just "EAT" in marker on the foil.' },
       { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
@@ -210,24 +261,24 @@
       cb_radio: { from: 'Big Wendell', text: 'An old CB radio. Channel 19. Wendell is always on it.' },
       // v0.7 (WORLDSIM): gifts from Japanese fans (added by GG.tour: region cards, the fan-club president)
       jp_towel: { from: 'the Japanese fan club', text: 'A concert towel with the band name in katakana. It lives on the drum riser now.' },
-      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. The Moose Hearse has never looked so protected.' },
-      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Kenji is a mysterious silhouette. Accurate.' }
+      jp_omamori: { from: 'Emiko Tanabe, fan-club president', text: 'A good-luck charm for the van. The van has never looked so protected.' },
+      jp_portrait: { from: 'the Japanese fan club', text: 'A hand-drawn manga portrait of the band. Everyone has enormous eyes and wind in their hair. Accurate.' }
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
       { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly garage livestream.' },
-      { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a thank-you note from Kenji (a drawing of a bass).' }
+      { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a handwritten thank-you note from the band (mostly doodles).' }
     ],
     club: {
       name: 'Patreeon', pitch: 'Support your favourite band\'s van repairs.',
       locked: 'Patreeon opens in the Signed era. Until then, your superfans support you the old way: yelling.',
       payoutChat: [
-        'Patreeon payout: {money} from {n} members. Dale is on the Full Kit tier. Of course he is.',
+        'Patreeon payout: {money} from {n} members. Our very first superfan is on the Full Kit tier. Of course.',
         'Patreeon paid {money} this month. {n} members. One of them is our mom, at the Drumstick tier.',
         'Patreeon: {money} from {n} members. As promised, some of it went to the van. The heater works now. Mostly.'
       ],
       grumbleChat: [
-        'Patreeon members are asking where the exclusives went. One of them is Dale. He is being very polite about it.',
+        'Patreeon members are asking where the exclusives went. One is our very first superfan. Being very polite about it.',
         'A Patreeon member posted "am I paying for a van repair I\'ll never see". Fair question.'
       ]
     },
@@ -241,6 +292,68 @@
         'I\'m logging off forever. (Back in 20 minutes.)'
       ]
     },
+    // ---- v0.9 (owner Q5): each band's home superfan in the 'dale' slot; packs add frost_heave / gravel_kings / grid_road_ramblers ----
+    homeSuperfan: {
+      hail_damage: { name: 'Dale from Warman', short: 'Dale', from: 'Warman', icon: '🧢',
+        blurb: 'At every show. Front row. Lawn chair. No relation to Cousin Dale, and he would like that on the record.',
+        gigLines: [
+          'Dale from Warman is in the front row. Lawn chair, thermos, a homemade shirt. Show number {n}.',
+          'Dale from Warman made it again ({n} shows). He knows every word. Some of them are the real words.',
+          'Dale from Warman holds up a sign: "DALE ♥ {band}". New sign every show. This is sign {n}.',
+          'Dale from Warman is here. He drove the whole way at exactly the speed limit, he wants you to know.'
+        ],
+        gigLinesFar: [
+          'Dale from Warman is in the front row in {gcity}. He took the bus. It took two days. Show number {n}.',
+          'Dale from Warman made it to {gcity}. First time this far from Warman. He brought his own lawn chair on the bus.'
+        ],
+        comments: [
+          'Dale from Warman here. I\'ll be there Saturday. Front row. Lawn chair. You know the drill.',
+          'Great post. Printed it out. It\'s on the fridge next to my grandson.',
+          'Dale again. Haven\'t missed a show since the first one. Not planning to start.',
+          'Dale from Warman: I have liked this 40 times. The app only counts one. I\'ve written to them.',
+          'Played this at my brother\'s retirement party. He retired again. Early.'
+        ],
+        gift: 'macaroni_kenji' }
+    },
+
+    // ---- v0.9: Hail Damage's own Bandbook voice (on top of the neutral pools; packs add the other bands) ----
+    byBand: {
+      hail_damage: {
+        // the v0.8 lines, so flat + these = the old pools exactly (same length; the cringe list in its old order)
+        posts: {
+          rehearsal: ['Rehearsal clip: {who} nails the bridge on take 14. Takes 1 to 13 are in the vault. The vault is Dad\'s deep freeze.',
+            'Garage rehearsal, 40 seconds. Mom walks through the shot with a laundry basket at 0:22. She is now the most-liked part.',
+            'Practice footage: {who} and {player} lock in so tight the garage door rattles along in time.'],
+          meme: ['Meme: "Things I\'d do for a gig": drive six hours to Gravelbourg with my own extension cord.'],
+          exclusive: ['Members only: forty minutes of Kenji tuning his bass. Members call it "meditative". He does not look up once.',
+            'Exclusive: {who}\'s perogy recipe. It\'s Baba\'s recipe, retyped, with one typo.',
+            'Members-only livestream from the garage. 31 viewers. Dale requests the same song six times. You play it six times.']
+        },
+        viral: {
+          good: ['VIRAL: a moose wanders past the garage window during the breakdown and appears to headbang. It\'s eating. {views} views.',
+            'VIRAL: the garage door opens by itself mid-song and reveals Dad holding a leaf blower. {views} views.'],
+          cringe: [
+            { who: 'marcel', text: 'Wrong kind of viral: Marcel\'s dance tutorial, "The Abyssal Two-Step". {views} views, mostly laughing ones.' },
+            { who: 'marcel', text: 'Wrong kind of viral: Marcel reads his poetry over a smoke machine that will not stop. {views} views.' },
+            { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one guitar pick. {views} views.' },
+            { who: 'jaxon', text: 'Wrong kind of viral: Jaxon\'s "how to look metal at a wedding", filmed at a real wedding. {views} views.' },
+            { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
+          ]
+        },
+        comments: {
+          good: ['BEST BAND IN THE 306 🔥🔥🔥'],
+          mixed: ['why is there a lawn mower in the background of every video'],
+          bad: ['sounds like a hailstorm in a coffee can. 3 stars'],
+          hater: ['ratio + you play the Legion + your van is a hearse', 'this is why Saskatchewan has no mountains. they left']
+        },
+        handles: { fan: ['PrairieDoom88', 'WheatKing306', 'PotashPete', 'MooseJawMel', 'HailYeahHelen'], hater: ['BootFromRegina'] },
+        gigLines: {
+          president: ['The fan-club president hands the crew a gift bag for each member. Kenji\'s has a tiny cactus in it. How did she know.'],
+          follow: ['{n} superfans made the drive to {gcity}. They know the setlist better than Marcel does.']
+        }
+      }
+    },
+
     // scandal card -> who posted the dumb thing (must be an active member for the card to come up)
     scandals: [
       { card: 'scandal_turf', who: 'marcel' }, { card: 'scandal_cover', who: 'dana' },
@@ -389,4 +502,16 @@
         ] }
     ]
   };
+
+  // STAND_IN on top of the other genres' byGenre layer (arrays concatenate; see the note at the top of the file).
+  (function mergeStandIn() {
+    function into(dst, src) {
+      Object.keys(src).forEach(function (k) {
+        if (Array.isArray(src[k])) dst[k] = (dst[k] || []).concat(src[k]);
+        else { dst[k] = dst[k] || {}; into(dst[k], src[k]); }
+      });
+    }
+    var BG = GG.content.bandbook.byGenre;
+    ['punk', 'rock', 'country'].forEach(function (g) { BG[g] = BG[g] || {}; into(BG[g], STAND_IN); });
+  })();
 })(window.GG);

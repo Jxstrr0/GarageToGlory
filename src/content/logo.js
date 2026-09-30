@@ -80,7 +80,19 @@
       block_heaters: { emblem: 'curling_stone', style: 'rock', palette: 'rider' },
       mall_rats_scene: { same: 'mall_rats' },
       chartbusters_scene: { same: 'chartbusters' },
-      buckle_boot_scene: { same: 'buckle_and_boot' }
+      buckle_boot_scene: { same: 'buckle_and_boot' },
+      // v0.9: Tundra Wraith's scene row, the playable bands' cameo rows (owner Q8: their default logos) and the new locals
+      tundra_wraith_scene: { same: 'tundra_wraith' },
+      hail_damage_scene: { emblem: 'hailstone', style: 'metal', palette: 'frost' },
+      frost_heave_scene: { emblem: 'safety_pin', style: 'punk', palette: 'hazard' },
+      gravel_kings_scene: { emblem: 'bolt', style: 'rock', palette: 'chrome' },
+      grid_road_ramblers_scene: { emblem: 'cowboy_hat', style: 'country', palette: 'sunset' },
+      pumpjacks: { emblem: 'anvil', style: 'rock', palette: 'rust' },
+      chinook_arch_angels: { emblem: 'cowboy_hat', style: 'country', palette: 'denim' },
+      coulee_crows: { emblem: 'mosquito', style: 'punk', palette: 'pink' },
+      deerfoot_rush: { emblem: 'flaming_tire', style: 'metal', palette: 'blood' },
+      cypress_hills_drifters: { emblem: 'wheat', style: 'country', palette: 'sunset' },
+      gull_lake_gulls: { emblem: 'toque', style: 'punk', palette: 'rider' }
     },
     rebrand: { cost: { garage: 150, local: 300, signed: 600, world: 900 }, buzz: 3 },
     lines: {

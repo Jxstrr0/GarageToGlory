@@ -58,7 +58,7 @@
       { en: 'Where the Dandelions Scream', fr: 'Là Où Crient les Pissenlits' }
     ],
     punk: [
-      'Bylaw 4471', 'Minutes of the Last Meeting', 'Snow Route Parking Ban',
+      'Bylaw 4471', 'Minutes of the Last Meeting', 'Towed on Snow Route Day',
       'Two Chords and a Grudge', 'Laundromat Riot', 'Transit Fare Hike (Must Die)',
       'The Mayor Owes Me a Bus', 'Banned from the Warehouse Club'
     ],

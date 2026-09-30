@@ -73,7 +73,7 @@
     ]
   };
 
-  // ---- Punk: Frost Heave ------------------------------
+  // ---- Punk: Frost Heave (playable, v0.9) --------------------------
   bands.frost_heave = {
     id: 'frost_heave', name: 'Frost Heave', genre: 'punk', city: 'Regina', region: 'canada',
     space: 'laundromat_basement', spaceName: 'The basement under the Suds-O-Rama', size: 4, rival: 'mall_rats',
@@ -113,7 +113,7 @@
     ]
   };
 
-  // ---- Rock: Gravel Kings ------------------------------
+  // ---- Rock: Gravel Kings (playable, v0.9) --------------------------
   bands.gravel_kings = {
     id: 'gravel_kings', name: 'Gravel Kings', genre: 'rock', city: 'Edmonton', region: 'canada',
     space: 'strip_mall_unit', spaceName: 'Unit 4B, Westgate Plaza', size: 4, rival: 'chartbusters',
@@ -152,7 +152,7 @@
     ]
   };
 
-  // ---- Country: The Grid Road Ramblers ------------------------------
+  // ---- Country: The Grid Road Ramblers (playable, v0.9) --------------------------
   bands.grid_road_ramblers = {
     id: 'grid_road_ramblers', name: 'The Grid Road Ramblers', genre: 'country', city: 'Swift Current', region: 'canada',
     space: 'quonset', spaceName: "Duke's uncle's Quonset", size: 5, rival: 'buckle_and_boot',
@@ -197,19 +197,21 @@
   };
 
   // ---- Rivals ------------------------------------------------------------
-  // v0.6: Tundra Wraith's lineup (Gord "Grimnir" Penner + three accountants) lives in content/rivals.js; the other rivals'
-  // members are designed in v0.9 (refer to them by role only until then).
+  // v0.6: Tundra Wraith's lineup (Gord "Grimnir" Penner + three accountants) lives in content/rivals.js; v0.9 (owner
+  // decisions 2026-09-30): the other three rivals' casts come from the band packs (content/zz_band_*.js, rivalry.cast).
   var rivals = {
     tundra_wraith: { id: 'tundra_wraith', name: 'Tundra Wraith', city: 'Winnipeg', genre: 'metal',
       blurb: "Corpse paint on stage; off stage, four chartered accountants who are unbearably polite. Frontman Gord 'Grimnir' " +
         "Penner calls you 'buddy', sends fruit baskets, and wins every award you're up for." },
     mall_rats: { id: 'mall_rats', name: 'Mall Rats', city: 'Toronto', genre: 'punk',
-      blurb: 'Manufactured punk from a TV talent show. Skateboard sponsor, stylist, pre-ripped jeans. ' +
-        'They throw sponsor money at everything, including you.' },
+      blurb: "TV-talent-show punk: frontman 'Blaze' (Kevin, from Oakville), a bassist who has never plugged in, a drummer picked " +
+        'for his jawline, and Siobhan the stylist, who really runs it. Sponsored kickflips. Sponsor money for everyone.' },
     chartbusters: { id: 'chartbusters', name: 'Chartbusters', city: 'Vancouver', genre: 'rock',
-      blurb: 'The stadium band every station plays and everyone claims to hate. They own the radio. They may literally own the radio.' },
+      blurb: "Thirty years at the top. Rex Glamour wears a scarf in July. Four drummers, all named Steve. They quietly bought the " +
+        'radio conglomerate. Every single is the same power ballad.' },
     buckle_and_boot: { id: 'buckle_and_boot', name: 'Buckle & Boot', city: 'Red Deer', genre: 'country',
-      blurb: "Bro-country duo sponsored by a truck brand. Every song is about tailgates. They're in every truck commercial, sometimes as the truck." }
+      blurb: "Truck-ad cousins Brayden and Colt, ex-junior hockey. One sings about tailgates, the other 'plays' an unplugged guitar. " +
+        "Their sponsor's mascot, a guy in a pickup costume, is basically the third member." }
   };
 
   // ---- v0.9 "Genres": band + member fields (stage 0, lead; Lane A owns this file from here) ----------------------

@@ -10,6 +10,11 @@
 //   payRange { flat: [lo, hi] $ guarantee, door: [lo, hi] $ per head } (exposure always pays 0).
 //   deal + pay = the default deal for GG.gig.makeGig (card bookings, v0.1); gas = v0.1 round-trip $ from Saskatoon
 //   (the board computes gas from road km instead).
+// v0.9 "Genres": every home has starter rooms: Regina (Craig's Basement, an all-ages skate park), Edmonton + St. Albert,
+//   Sherwood Park and Leduc (Alberta ring; the Mill Woods basement party is Gravel Kings' first gig), south-west
+//   Saskatchewan (the Quonset yard party, halls, a rink, a rodeo, a harvest dance; Maple Creek, Gull Lake, Shaunavon).
+//   Quirks and catches are tokenised ({front} {filler} {rival}) instead of naming Hail Damage. Card-only rooms per home
+//   (minFans 99999, booked by the band packs' cards): city_hall_steps, westgate_parking_lot, auction_mart_stage.
 (function (GG) {
   var FIT = {   // genre-fit presets: [metal, punk, rock, country]
     loud: [1, 0.9, 0.9, 0.6], diy: [0.8, 1, 0.9, 0.7], hall: [0.4, 0.5, 0.8, 1], church: [0.3, 0.4, 0.7, 0.9],
@@ -72,7 +77,7 @@
       capacity: 25, deal: 'exposure', pay: 0, minFans: 0, walkIns: 10, gas: 120, setSize: 2,
       deals: ['exposure'], payRange: {},
       genreFit: fit('diy'),
-      quirk: 'The ceiling is five foot eleven. Marcel is six foot one.',
+      quirk: 'The ceiling is five foot eleven. {front} is six foot one, in boots.',
       catch: "Craig's roommate works nights and is asleep directly above you." },
 
     { id: 'leaning_silo_openmic', name: 'The Leaning Silo — Open Stage', city: 'Regina', region: 'canada', tier: 1, kind: 'openmic',
@@ -88,6 +93,143 @@
       genreFit: fit('skate'),
       quirk: 'The bowl echoes. Every snare hit comes back twice, slightly late.',
       catch: 'Wind gusts to seventy. Hold on to the cymbals.' },
+
+    // ---- v0.9: Regina's all-ages skate park, and the first rooms around the new homes ----
+    // Board balance (Hail Damage baseline): the Regina skate park is a summer series (punk season) and the Quonset yard party
+    // is card-only after the Ramblers' forced first gig, so a Saskatoon band's garage board is not diluted by far rooms it
+    // should not play (measured: 6 years x 40 seeds, HD within noise of plan/balance_baseline_v09_hd.txt).
+    { id: 'queen_city_skate_park', name: 'Queen City All-Ages Skate Park', city: 'Regina', region: 'canada', tier: 1, kind: 'skatepark', outdoor: true,
+      season: ['summer'], capacity: 80, deal: 'exposure', pay: 0, minFans: 15, walkIns: 22, gas: 120, setSize: 3,
+      deals: ['exposure'], payRange: {},
+      genreFit: fit('skate'),
+      quirk: 'Behind the rec centre. The bowl is the pit. A kid on a scooter will absolutely try to jump the kick drum.',
+      catch: 'Generator power. The city shuts it off at nine sharp, mid-song or not.' },
+
+    { id: 'mill_woods_basement_party', name: 'Mill Woods Basement Party', city: 'Edmonton', region: 'canada', tier: 1, kind: 'house',
+      capacity: 20, deal: 'exposure', pay: 0, minFans: 0, walkIns: 9, gas: 265, setSize: 2,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.8, punk: 0.9, rock: 1, country: 0.7 },
+      quirk: 'A split-level in Mill Woods. Wood panelling, a bar made from a door and a signed hockey stick nobody can explain.',
+      catch: "Somebody's parents are upstairs watching the game. Every goal, the ceiling shakes." },
+
+    { id: 'whyte_noise_open_stage', name: 'The Whyte Noise — Open Stage', city: 'Edmonton', region: 'canada', tier: 1, kind: 'openmic',
+      capacity: 45, deal: 'exposure', pay: 0, minFans: 0, walkIns: 14, gas: 265, setSize: 2,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.6, punk: 0.8, rock: 1, country: 0.8 },
+      quirk: 'The host plays harmonica between acts. He does not stop for the acts.',
+      catch: 'Sign-up at seven. You go on after a man who only plays theremin covers.' },
+
+    { id: 'northside_bingo_barn', name: 'Northside Bingo Barn', city: 'Edmonton', region: 'canada', tier: 1, kind: 'bingo',
+      capacity: 90, deal: 'flat', pay: 100, minFans: 80, walkIns: 22, gas: 265, setSize: 3,
+      deals: ['flat'], payRange: { flat: [80, 120] },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.8, country: 0.9 },
+      quirk: 'The caller has a mullet and a headset mic. He is the real rock star here.',
+      catch: 'Every time someone yells BINGO, the set stops. Tuesdays are double-card nights.' },
+
+    { id: 'st_albert_legion', name: 'St. Albert Legion, Branch 271', city: 'St. Albert', region: 'canada', tier: 1, kind: 'legion',
+      capacity: 70, deal: 'flat', pay: 80, minFans: 30, walkIns: 14, gas: 270, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [60, 100], door: [1, 2] },
+      genreFit: fit('hall'),
+      quirk: 'The dartboard is two metres from the kick drum. The darts league does not pause.',
+      catch: 'Volume limit enforced by a retired sergeant with a decibel app.' },
+
+    { id: 'earnest_bean_cafe', name: 'The Earnest Bean Folk Café', city: 'St. Albert', region: 'canada', tier: 1, kind: 'openmic',
+      capacity: 35, deal: 'exposure', pay: 0, minFans: 10, walkIns: 10, gas: 270, setSize: 2,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.2, punk: 0.4, rock: 0.4, country: 0.9 },   // the rock clash room: acoustic nights only
+      quirk: 'Acoustic nights only. The sign says NO AMPLIFIERS in calligraphy. The owner reads it aloud when you walk in.',
+      catch: 'The regulars snap instead of clapping. A guitar solo gets exactly one snap.' },
+
+    { id: 'sherwood_park_curling', name: 'Sherwood Park Curling Club Lounge', city: 'Sherwood Park', region: 'canada', tier: 1, kind: 'curling',
+      capacity: 55, deal: 'flat', pay: 100, minFans: 45, walkIns: 15, gas: 270, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [80, 120] },
+      genreFit: { metal: 0.5, punk: 0.5, rock: 0.9, country: 1 },
+      quirk: 'The lounge overlooks four sheets. Every time a rock hits the house, the whole room goes "ooh".',
+      catch: 'You play after the mixed league finishes. The mixed league never finishes on time.' },
+
+    { id: 'leduc_community_hall', name: 'Leduc Oil Patch Community Hall', city: 'Leduc', region: 'canada', tier: 1, kind: 'church',
+      capacity: 100, deal: 'flat', pay: 90, minFans: 55, walkIns: 20, gas: 280, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 0.9 },
+      quirk: 'A pumpjack statue out front, a wedding social inside. You play between the speeches and the midnight lunch.',
+      catch: 'The DJ gets paid more than you. The DJ has a smoke machine.' },
+
+    { id: 'bow_river_basement', name: 'The Bow River Basement', city: 'Calgary', region: 'canada', tier: 1, kind: 'house',
+      capacity: 30, deal: 'exposure', pay: 0, minFans: 20, walkIns: 12, gas: 310, setSize: 2,
+      deals: ['exposure'], payRange: {},
+      genreFit: fit('diy'),
+      quirk: 'A student house near the university. Nine roommates, one bathroom, a chinook blowing through the front door.',
+      catch: 'Quiet hours start at eleven. Nobody has ever observed quiet hours.' },
+
+    { id: 'gasoline_alley_lounge', name: 'Gasoline Alley Truck Stop Lounge', city: 'Red Deer', region: 'canada', tier: 1, kind: 'bar',
+      capacity: 80, deal: 'flat', pay: 90, minFans: 70, walkIns: 20, gas: 340, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
+      genreFit: { metal: 0.7, punk: 0.6, rock: 0.9, country: 0.9 },
+      quirk: 'Between the car wash and the diesel pumps. Truckers drift in, eat pie and stay for three songs.',
+      catch: 'The pie case gets the best seat in the house.' },
+
+    { id: 'coulee_view_legion', name: 'Coulee View Legion', city: 'Lethbridge', region: 'canada', tier: 1, kind: 'legion',
+      capacity: 70, deal: 'flat', pay: 90, minFans: 60, walkIns: 16, gas: 318, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
+      genreFit: fit('hall'),
+      quirk: 'Picture windows onto the coulees and the High Level Bridge. A train crosses during every ballad.',
+      catch: 'The wind holds the door shut. Load-in is a two-person job.' },
+
+    { id: 'quonset_yard_party', name: 'Quonset Yard Party', city: 'Swift Current', region: 'canada', tier: 1, kind: 'house',
+      capacity: 35, deal: 'exposure', pay: 0, minFans: 99999, walkIns: 15, gas: 122, setSize: 2,   // card-only: the Ramblers' forced first gig + C.CARD_BOOKABLE cards
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 1 },
+      quirk: 'A yard light, a bonfire, twelve pickups parked in a circle and a tailgate for a stage.',
+      catch: 'Somebody always backs a truck into the fire pit. Somebody always helps.' },
+
+    { id: 'speedy_creek_ag_hall', name: 'Speedy Creek Ag Society Hall', city: 'Swift Current', region: 'canada', tier: 1, kind: 'church',
+      capacity: 100, deal: 'flat', pay: 90, minFans: 40, walkIns: 20, gas: 122, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
+      genreFit: fit('hall'),
+      quirk: 'Home of the fall supper, the 4-H show and, tonight, you. The stage still smells faintly of calves.',
+      catch: 'The 4-H club has the hall at nine a.m. Load out tonight, or they will.' },
+
+    { id: 'gull_lake_rink_canteen', name: 'Gull Lake Rink Canteen', city: 'Gull Lake', region: 'canada', tier: 1, kind: 'curling',
+      capacity: 60, deal: 'flat', pay: 70, minFans: 20, walkIns: 18, gas: 150, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [55, 90] },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.8, country: 1 },
+      quirk: 'You play on the canteen counter. The fries are better than the sound. The fries are very good.',
+      catch: 'Minor hockey ends at eight. Forty kids in skates are your front row.' },
+
+    { id: 'shaunavon_legion', name: 'Shaunavon Legion, Branch 88', city: 'Shaunavon', region: 'canada', tier: 1, kind: 'legion',
+      capacity: 70, deal: 'flat', pay: 80, minFans: 30, walkIns: 14, gas: 160, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [60, 100], door: [1, 2] },
+      genreFit: fit('hall'),
+      quirk: 'The Legion pours from the spring-water tap and brags about it. The wall of fame has a spot waiting.',
+      catch: 'Bingo Wednesday, meat draw Friday, you on Saturday. Know your place in the order.' },
+
+    { id: 'cypress_harvest_hall', name: 'Cypress Hills Harvest Dance Hall', city: 'Maple Creek', region: 'canada', tier: 1, kind: 'church',
+      season: ['fall'],
+      capacity: 120, deal: 'flat', pay: 110, minFans: 40, walkIns: 28, gas: 170, setSize: 3,
+      deals: ['flat', 'door'], payRange: { flat: [90, 140], door: [1, 2] },
+      genreFit: { metal: 0.3, punk: 0.4, rock: 0.7, country: 1 },
+      quirk: 'Harvest dance season: combines parked outside, a sawdust floor and lunch at midnight.',
+      catch: 'The old-timers waltz to everything. Even the fast ones. Especially the fast ones.' },
+
+    // ---- v0.9 card-only rooms (minFans 99999): the band packs' cards book them ----
+    { id: 'city_hall_steps', name: 'The City Hall Steps (A Rally)', city: 'Regina', region: 'canada', tier: 1, kind: 'skatepark', outdoor: true,
+      capacity: 120, deal: 'exposure', pay: 0, minFans: 99999, walkIns: 40, gas: 120, setSize: 3,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.6, punk: 1, rock: 0.8, country: 0.5 },
+      quirk: 'A rally about potholes. A generator, a flatbed and a megaphone. The council chamber windows are open.',
+      catch: 'A bylaw officer is timing you. So is a news crew.' },
+    { id: 'westgate_parking_lot', name: 'Westgate Plaza Parking Lot Show', city: 'Edmonton', region: 'canada', tier: 1, kind: 'skatepark', outdoor: true,
+      capacity: 100, deal: 'exposure', pay: 0, minFans: 99999, walkIns: 35, gas: 265, setSize: 3,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.7, punk: 0.8, rock: 1, country: 0.6 },
+      quirk: 'A stage on two pallets between the nail salon and the vacuum repair. The landlord charges the crowd for parking.',
+      catch: 'The vacuum repair runs a sale during your set. The vacuums are louder.' },
+    { id: 'auction_mart_stage', name: 'The Auction Mart Sale Ring', city: 'Swift Current', region: 'canada', tier: 1, kind: 'church',
+      capacity: 120, deal: 'flat', pay: 100, minFans: 99999, walkIns: 40, gas: 122, setSize: 3,
+      deals: ['flat'], payRange: { flat: [100, 100] },
+      genreFit: { metal: 0.3, punk: 0.4, rock: 0.7, country: 1 },
+      quirk: 'You play in the sale ring between lots. The auctioneer sells your merch table between songs. It goes for eighty dollars.',
+      catch: 'Cattle sale at nine a.m. The stage must be hosed down by then.' },
 
     { id: 'st_olgas_hall', name: "St. Olga's Parish Hall", city: 'Prince Albert', region: 'canada', tier: 1, kind: 'church',
       capacity: 80, deal: 'flat', pay: 80, minFans: 60, walkIns: 15, gas: 70, setSize: 3,
@@ -150,7 +292,7 @@
       capacity: 120, deal: 'door', pay: 2, minFans: 260, walkIns: 20, gas: 110, setSize: 4,
       deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [120, 170] },
       genreFit: { metal: 0.8, punk: 0.9, rock: 1, country: 0.7 },
-      quirk: "The ceiling is so low Marcel's cape has caught fire twice. Both times during the chorus.",
+      quirk: "The ceiling is so low {front}'s hair has touched the light fixture twice. Both times during the chorus.",
       catch: 'The stage is underground. No phones work down here. Not even yours.' },
 
     { id: 'speedy_creek_saloon', name: 'Speedy Creek Saloon', city: 'Swift Current', region: 'canada', tier: 2, kind: 'bar',
@@ -186,7 +328,7 @@
       capacity: 550, deal: 'door', pay: 1.5, minFans: 1500, walkIns: 60, gas: 5, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [1.2, 1.8], flat: [600, 850] },
       genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.8 },
-      quirk: 'The velvet seats are older than your parents. Marcel has asked to wear one.',
+      quirk: 'The velvet seats are older than your parents. {front} has asked to wear one.',
       catch: 'A seated show. The ushers shush the mosh pit.' },
 
     { id: 'crescent_moose_theatre', name: 'The Crescent Moose Theatre', city: 'Moose Jaw', region: 'canada', tier: 3, kind: 'club', theatre: true,
@@ -228,7 +370,7 @@
       capacity: 2000, deal: 'door', pay: 0.9, minFans: 8000, walkIns: 160, gas: 5, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [0.7, 1.1], flat: [1400, 1900] },
       genreFit: fit('any'),
-      quirk: 'There is an orchestra pit. Someone will fall in. It is usually Jaxon.',
+      quirk: 'There is an orchestra pit. Someone will fall in. It is usually {filler}.',
       catch: 'Your mom bought forty tickets and will be introducing you.' },
 
     /* ---- v0.6.1 (Addendum 1 C6 + C7): the rest of Saskatchewan, seasonal + holiday rooms, the West, the East & North ----
@@ -253,7 +395,7 @@
       capacity: 45, deal: 'exposure', pay: 0, minFans: 20, walkIns: 16, gas: 440, setSize: 2,
       deals: ['exposure'], payRange: {},
       genreFit: { metal: 0.9, punk: 0.8, rock: 0.8, country: 0.7 },
-      quirk: 'A French-only open mic. Marcel finally has an audience for his lyrics. They have follow-up questions.',
+      quirk: 'A French-only open mic. {front} tries a song in French. The audience has follow-up questions.',
       catch: 'The host introduces every act with a ten-minute history of the cathedral.' },
 
     { id: 'derrick_lounge', name: 'The Derrick Lounge', city: 'Estevan', region: 'canada', tier: 2, kind: 'bar',
@@ -262,6 +404,22 @@
       genreFit: { metal: 0.9, punk: 0.7, rock: 1, country: 0.9 },
       quirk: 'The crowd works rigs. They come in coveralls, they tip in cash and they mosh like a shift change.',
       catch: 'Shift change is at eleven. Half the crowd leaves at once. Play the hit before then.' },
+
+    // ---- v0.9: the rooms a bigger band plays around the new homes ----
+    { id: 'neon_pony_saloon', name: 'The Neon Pony Saloon', city: 'Edmonton', region: 'canada', tier: 2, kind: 'bar',
+      capacity: 200, deal: 'door', pay: 2, minFans: 180, walkIns: 30, gas: 265, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [150, 220] },
+      genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.7 },
+      quirk: 'Neon everywhere, a mechanical pony in the corner and a jukebox that only plays 1985.',
+      catch: "The owner's cover band has Saturdays. You get Thursday. Thursday is fine." },
+
+    { id: 'maple_creek_rodeo_tent', name: 'Maple Creek Rodeo Beer Tent', city: 'Maple Creek', region: 'canada', tier: 2, kind: 'bar',
+      outdoor: true, season: ['summer'],
+      capacity: 300, deal: 'flat', pay: 180, minFans: 120, walkIns: 40, gas: 170, setSize: 4,
+      deals: ['flat', 'door'], payRange: { flat: [150, 220], door: [1.5, 2.5] },
+      genreFit: { metal: 0.3, punk: 0.5, rock: 0.8, country: 1 },
+      quirk: 'Rodeo weekend: chuckwagons, bull riders and a beer tent with a flatbed for a stage.',
+      catch: 'Wrong genre and the bull riders boo. Right genre and they buy you a round.' },
 
     { id: 'riverside_canada_day_stage', name: 'Riverside Park Canada Day Bandshell', city: 'Saskatoon', region: 'canada', tier: 2, kind: 'skatepark',
       outdoor: true, holiday: 'canada_day',
@@ -316,7 +474,7 @@
       capacity: 180, deal: 'flat', pay: 280, minFans: 150, walkIns: 60, gas: 5, setSize: 4,
       deals: ['flat'], payRange: { flat: [240, 340] },
       genreFit: { metal: 0.35, punk: 0.4, rock: 0.9, country: 0.9 },
-      quirk: 'Ugly sweaters, a cash bar, a regional manager doing the worm. They booked a metal band by accident.',
+      quirk: 'Ugly sweaters, a cash bar, a regional manager doing the worm. They booked a loud band by accident.',
       catch: 'Play "Jingle Bell Rock" or the payroll lady cries. She has done it before. It worked.' },
 
     { id: 'bassborough_ballroom', name: 'The Bassborough Hotel Ballroom', city: 'Saskatoon', region: 'canada', tier: 2, kind: 'club',
@@ -340,7 +498,7 @@
       deals: ['door', 'flat'], payRange: { door: [1.8, 2.8], flat: [240, 380] },
       genreFit: fit('loud'),
       quirk: 'Two blocks from the coldest corner on earth. The coat check is bigger than the stage.',
-      catch: 'Tundra Wraith drink here. Gord will come up after and say "great set, buddy". He will mean it.' },
+      catch: '{rival} drink here when they are in town. They will come up after and say "great set". They will mean it.' },
 
     { id: 'portage_main_event', name: 'The Portage & Main Event Theatre', city: 'Winnipeg', region: 'canada', tier: 3, kind: 'club', theatre: true,
       capacity: 1400, deal: 'door', pay: 1.3, minFans: 4500, walkIns: 120, gas: 280, setSize: 5,
@@ -423,7 +581,7 @@
       capacity: 150, deal: 'flat', pay: 320, minFans: 700, walkIns: 25, gas: 960, setSize: 4,
       deals: ['flat', 'door'], payRange: { flat: [280, 420], door: [2, 3] },
       genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 0.8 },
-      quirk: 'High tea until nine, then metal until one. The scones stay out. Marcel eats eleven.',
+      quirk: 'High tea until nine, then loud music until one. The scones stay out. {front} eats eleven.',
       catch: 'The last ferry back leaves at 11. You will miss it. Everyone misses it.' },
 
     /* ---- The East & North (Signed era) ---- */
@@ -460,7 +618,7 @@
       deals: ['door', 'flat'], payRange: { door: [3, 4.5], flat: [650, 950] },
       genreFit: fit('loud'),
       quirk: 'The loudest metal crowd in the country. They sing the guitar riffs. In French. In harmony.',
-      catch: 'Marcel announces every song in French. The crowd corrects his grammar. Lovingly.' },
+      catch: '{front} announces every song in French. The crowd corrects the grammar. Lovingly.' },
 
     { id: 'le_megalopolis', name: 'Le Mégalopolis', city: 'Montréal', region: 'canada', tier: 3, kind: 'club', theatre: true,
       capacity: 1900, deal: 'door', pay: 1.7, minFans: 10000, walkIns: 180, gas: 1500, setSize: 5,
@@ -488,13 +646,13 @@
       deals: ['flat', 'door'], payRange: { flat: [600, 850], door: [3, 4.5] },
       genreFit: { metal: 0.8, punk: 1, rock: 1, country: 0.9 },
       quirk: 'After the set you get screeched in: a shot, a rhyme and a cod to kiss. The cod is non-negotiable.',
-      catch: 'The fog is so thick the load-in is by feel. Marcel walked into the harbour once. He is fine.' },
+      catch: 'The fog is so thick the load-in is by feel. {front} walked into the harbour once. Everyone is fine.' },
 
     { id: 'sourtoe_saloon', name: 'The Sourtoe Saloon', city: 'Whitehorse', region: 'canada', tier: 2, kind: 'legion',
       capacity: 140, deal: 'flat', pay: 750, minFans: 1600, walkIns: 45, gas: 1850, setSize: 4,
       deals: ['flat', 'door'], payRange: { flat: [650, 900], door: [3, 4] },
       genreFit: { metal: 0.9, punk: 0.9, rock: 1, country: 1 },
-      quirk: 'A Gold Rush hall with a famous cocktail. There is a toe in it. A real one. Jaxon wants to try.',
+      quirk: 'A Gold Rush hall with a famous cocktail. There is a toe in it. A real one. {filler} wants to try.',
       catch: 'In June the sun never sets. You will play at 1 a.m. in broad daylight and it will break your brain.' },
 
     { id: 'ice_road_tavern', name: 'The Ice Road Tavern', city: 'Yellowknife', region: 'canada', tier: 2, kind: 'bar',
