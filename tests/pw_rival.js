@@ -61,10 +61,15 @@ async function toPlan(page) {
 // Plan three rest blocks → Go → results → Load the van → drive (skip) → returns once `until` is the top screen.
 async function weekend(page, until) {
   await page.evaluate(() => GG.ui.closeAll());
-  await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
-  for (let i = 2; i >= 0; i--) if (await page.locator(tid('plan-slot-' + i) + '.filled').count()) await tap(page, 'plan-slot-' + i);
-  for (const a of ['rest', 'rest', 'rest']) await tap(page, 'act-' + a);
-  await tap(page, 'btn-go');
+  await tap(page, 'btn-primary');
+  // A bot-run career can be mid-session: a studio week replaces the three blocks (record, then the weekend as usual).
+  await page.waitForFunction(() => ['plan', 'studio'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
+  if (await screen(page) === 'studio') await tap(page, 'btn-studio-go');
+  else {
+    for (let i = 2; i >= 0; i--) if (await page.locator(tid('plan-slot-' + i) + '.filled').count()) await tap(page, 'plan-slot-' + i);
+    for (const a of ['rest', 'rest', 'rest']) await tap(page, 'act-' + a);
+    await tap(page, 'btn-go');
+  }
   await waitScreen(page, 'results');
   if (await page.locator(tid('btn-results-skip')).last().isVisible()) await tap(page, 'btn-results-skip');
   await tap(page, 'btn-results-ok');

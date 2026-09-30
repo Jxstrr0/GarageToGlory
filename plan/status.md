@@ -3,12 +3,12 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current (on `main`): **0.8.0.0 "Kit"** (merged 2026-09-30, PR #11). **Update Current/Next at every merge** (Addendum 2 D0).
+- Current (on `main`): **0.8.1.0 "Addendum 2 catch-up"** (merged 2026-09-30, PR #14). **Update Current/Next at every merge** (Addendum 2 D0).
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
-  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit.
-- Next: **0.8.1 "Addendum 2 catch-up"** (in progress, contract `plan/plan_contract_0.8.1.md`) (D1 licensing, D2 band logo, D3 year-end recap) → 0.9 Genres → 1.0 Glory
-  (+ D4 achievements) → 1.1 Tuning (D5).
+  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap).
+- Next: **0.9 "Genres"** (Frost Heave, Gravel Kings, Grid Road Ramblers; popup first for the other rivals' members) → 1.0
+  Glory (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
