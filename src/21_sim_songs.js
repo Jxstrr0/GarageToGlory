@@ -3,7 +3,14 @@
 // Difficulty. create() turns a pattern into a SONG whose quality also depends on the band; jam()/generate() let the
 // band write one without you. Gigs age songs (stale) and great gigs make classics.
 // Pure and deterministic: no DOM, no audio; randomness only from the rng passed in. Genre data: content/genres.js.
-//   PATTERN = { bpm, lanes, sections: { verse|chorus|bridge: [laneStr x lanes] }, arrangement: [section..] }
+//   PATTERN = { bpm, lanes, sections: { verse|chorus|bridge: [laneStr x lanes] (+ v0.8 outro|solo when owned) }, arrangement: [section..] }
+// v0.8 (KITSIM): extra sections C.EXTRA_SECTIONS (outro, solo) live in PATTERN.sections only when the gear owns them
+// (gear.sections) and are used; sanitize/validate/rate/generate/toNotes/arrangement know them. Outro = a proper ending (hook
+// bonus when the song ends on it; the gig gives its last bar as a big-finish fill, the audio lets the last chord ring);
+// Solo = Dana's section (you lay back on a stripped kit: the gig chart keeps quarter notes only; hook bonus; Dana stops
+// asking for a solo). Jams use owned gear: tom fills (lane 5), a ride chorus (lane 6), double-kick runs, an outro, a solo.
+//   sectionsOf(p) -> [names present] ; allSections(gear) ; addSection(p, name, gear) ; removeSection(p, name) ;
+//   withExtras(arrangement, gear, opts) ; extraBar(p, name) (the derived default bar)
 //   SONG    = { id, title, titleEn, written, pattern, rating: { groove, hook, difficulty }, quality, polish,
 //               plays, lastPlayed, stale, hits, classic, auto }
 (function (GG) {
@@ -28,9 +35,23 @@
     return null;
   };
   songs.DEFAULT_GEAR = { lanes: 4, doubleKick: false };
+  var EXTRAS = C.EXTRA_SECTIONS || ['outro', 'solo'];
+  songs.EXTRA_SECTIONS = EXTRAS;
 
   function E() { return GG.content.economy.songs; }
-  function gearOf(g) { return { lanes: g && g.lanes >= 1 ? Math.min(g.lanes, C.LANES.length) : 4, doubleKick: !!(g && g.doubleKick) }; }
+  function SH() { var e = GG.content.economy.shop; return e || { songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 }, jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 } }; }
+  function gearOf(g) {
+    var o = { lanes: g && g.lanes >= 1 ? Math.min(g.lanes, C.LANES.length) : 4, doubleKick: !!(g && g.doubleKick) };
+    o.sections = g && Array.isArray(g.sections) ? EXTRAS.filter(function (x) { return g.sections.indexOf(x) >= 0; }) : [];
+    return o;
+  }
+  // Every section name a pattern can use with this gear, in tab order: verse, chorus, bridge (+ solo, outro when owned).
+  songs.allSections = function (gear) { var g = gearOf(gear); return SECTIONS.concat(['solo', 'outro'].filter(function (x) { return g.sections.indexOf(x) >= 0; })); };
+  // The sections a pattern actually has (the three + any extra it carries), in tab order.
+  songs.sectionsOf = function (p) {
+    var sec = p && p.sections || {};
+    return SECTIONS.concat(['solo', 'outro'].filter(function (x) { return Array.isArray(sec[x]) || (p && Array.isArray(p.arrangement) && p.arrangement.indexOf(x) >= 0); }));
+  };
   songs.genre = function (genre) { var G = GG.content.genres || {}; return G[genre] || G.metal; };
 
   /* ---- Pattern helpers ------------------------------------------------------------------------------ */
@@ -91,7 +112,8 @@
     f.snareOdd = sOdd;
     f.snare8 = s8 / 8; f.hat8 = t8 / 8; f.hat16 = t16 / 8;
     f.odd = kOdd + sOdd;
-    f.sync = f.odd / Math.max(1, count(k) + f.snare);
+    // v0.8: with the double-kick pedal, kicks on the in-between 16ths are a run (both feet, locked), not syncopation.
+    f.sync = (gearOf(gear).doubleKick ? sOdd : f.odd) / Math.max(1, count(k) + f.snare);
     f.steady = halves(sec, lanes);
     return f;
   }
@@ -139,25 +161,40 @@
     return (0.45 * contrast + 0.3 * rep + 0.15 * accent + 0.1 * lift) * Math.min(1, ch / 8);
   }
 
+  // v0.8 hook extras (0..~0.16): a tom fill into the chorus (lane 5), a ride/china chorus over a hat verse (lane 6), a song
+  // that ends on an outro, a solo after the first chorus. Patterns with 4 lanes and no extras score exactly as before.
+  function extrasHook(p, lanes, X) {
+    var h = 0, arr = p.arrangement, c = p.sections.chorus, v = p.sections.verse;
+    if (lanes > TOMS) {
+      var tomsFill = [p.sections.verse, p.sections.bridge].some(function (sec) { var t = lane(sec, TOMS); for (var i = 12; i < STEPS; i++) if (on(t, i)) return true; return false; });
+      if (tomsFill) h += X.fillHook / 100;
+    }
+    if (lanes > RIDE && count(lane(c, RIDE)) >= 4 && count(lane(v, RIDE)) < count(lane(c, RIDE))) h += X.rideHook / 100;
+    if (arr.length > 1 && arr[arr.length - 1] === 'outro' && arr.indexOf('outro') === arr.length - 1) h += X.outroHook / 100;
+    var solo = arr.indexOf('solo');
+    if (solo > 0 && arr.slice(0, solo).indexOf('chorus') >= 0) h += X.soloHook / 100;
+    return h;
+  }
+
   // Rates a pattern for a genre. Pure and deterministic (same pattern => same numbers, node or browser).
   // -> { groove, hook, difficulty (0..100 ints), notes (hits in the whole song), tips: [1-2 plain hints], sections }
   songs.rate = function (pattern, genre, gear) {
-    var G = songs.genre(genre), g = gearOf(gear), p = songs.sanitize(pattern, g, null, true), lanes = p.lanes;
-    var tips = {}, per = {}, feats = {};
-    SECTIONS.forEach(function (name) { feats[name] = features(p.sections[name], lanes, p.bpm, g); });
+    var G = songs.genre(genre), g = gearOf(gear), p = songs.sanitize(pattern, g, null, true), lanes = p.lanes, X = SH().songs;
+    var tips = {}, per = {}, feats = {}, names = songs.sectionsOf(p);
+    names.forEach(function (name) { feats[name] = features(p.sections[name], lanes, p.bpm, g); });
     var sumG = 0, sumW = 0, effort = 0, odd = 0, notes = 0;
-    p.arrangement.forEach(function (name) {   // bridges (breakdowns, solo spots) count half toward the groove
-      var w = name === 'bridge' ? 0.5 : 1, f = feats[name];
+    p.arrangement.forEach(function (name) {   // bridges (breakdowns, solo spots), v0.8 outros and solos count half toward the groove
+      var w = name === 'bridge' ? 0.5 : name === 'outro' ? X.outroWeight : name === 'solo' ? X.soloWeight : 1, f = feats[name];
       per[name] = barGroove(G, f, g, tips, w);
       sumG += per[name] * w; sumW += w;
-      effort += f.effort; odd += f.odd; notes += f.hits * BARS;
+      effort += name === 'solo' ? f.effort / 2 : f.effort; odd += f.odd; notes += f.hits * BARS;   // a solo: you lay back
     });
     var n = p.arrangement.length || 1;
     var raw = (effort / n + 0.6 * odd / n) * p.bpm / 120;
-    var hook = hookOf(p, lanes, tips);
+    var hook = Math.min(1, hookOf(p, lanes, tips) + extrasHook(p, lanes, X));
     var list = Object.keys(tips).sort(function (a, b) { return tips[b] - tips[a] || (a < b ? -1 : 1); });
     var sections = {};
-    SECTIONS.forEach(function (name) { sections[name] = Math.round(100 * (per[name] != null ? per[name] : barGroove(G, feats[name], g, {}, 0))); });
+    names.forEach(function (name) { sections[name] = Math.round(100 * (per[name] != null ? per[name] : barGroove(G, feats[name], g, {}, 0))); });
     return { groove: Math.round(100 * (sumW ? sumG / sumW : 0)), hook: Math.round(100 * hook),
       difficulty: Math.round(100 * (1 - Math.exp(-raw / 28))), notes: notes, tips: list.slice(0, 2), sections: sections };
   };
@@ -174,8 +211,13 @@
     if (!p || typeof p !== 'object') return ['not a pattern'];
     if (!(p.bpm >= 30 && p.bpm <= 300)) errs.push('tempo out of range');
     if (!(p.lanes >= 1 && p.lanes <= g.lanes)) errs.push('the kit has ' + g.lanes + ' lanes');
-    if (!Array.isArray(p.arrangement) || !p.arrangement.length || p.arrangement.some(function (s) { return SECTIONS.indexOf(s) < 0; })) errs.push('bad arrangement');
-    SECTIONS.forEach(function (name) {
+    var allowed = songs.allSections(g);
+    if (!Array.isArray(p.arrangement) || !p.arrangement.length || p.arrangement.some(function (s) { return allowed.indexOf(s) < 0; })) errs.push('bad arrangement');
+    EXTRAS.forEach(function (name) {
+      var used = (p.sections && p.sections[name] != null) || (Array.isArray(p.arrangement) && p.arrangement.indexOf(name) >= 0);
+      if (used && g.sections.indexOf(name) < 0) errs.push(name + ': not unlocked yet');
+    });
+    SECTIONS.concat(EXTRAS.filter(function (x) { return g.sections.indexOf(x) >= 0 && ((p.sections && p.sections[x] != null) || (Array.isArray(p.arrangement) && p.arrangement.indexOf(x) >= 0)); })).forEach(function (name) {
       var sec = p.sections && p.sections[name];
       if (!Array.isArray(sec) || sec.length !== p.lanes || sec.some(function (s) { return !/^[x.]{16}$/.test(s); })) { errs.push(name + ': bad lanes'); return; }
       if (!g.doubleKick && kickPairs(sec[KICK])) errs.push(name + ': two kicks in a row need a double-kick pedal');
@@ -190,7 +232,12 @@
     var bpm = Math.round(U.clamp(Number(src.bpm) || (genre ? range[2] : 120), range[0], range[1]));
     var lanes = loose ? Math.max(1, Math.min(C.LANES.length, src.lanes || g.lanes)) : g.lanes;
     var out = { bpm: bpm, lanes: lanes, sections: {}, arrangement: [] };
-    SECTIONS.forEach(function (name) {
+    var srcArr = Array.isArray(src.arrangement) ? src.arrangement : [];
+    // v0.8: an extra section survives when it's used (in sections or the arrangement) and owned (loose: always).
+    var extras = EXTRAS.filter(function (x) {
+      return (loose || g.sections.indexOf(x) >= 0) && ((src.sections && Array.isArray(src.sections[x])) || srcArr.indexOf(x) >= 0);
+    });
+    SECTIONS.concat(extras).forEach(function (name) {
       var sec = src.sections && src.sections[name], clean = [];
       for (var l = 0; l < lanes; l++) {
         var s = sec && typeof sec[l] === 'string' ? sec[l].replace(/[^x]/g, '.').slice(0, STEPS) : '';
@@ -199,7 +246,8 @@
       }
       out.sections[name] = clean;
     });
-    var arr = Array.isArray(src.arrangement) ? src.arrangement.filter(function (s) { return SECTIONS.indexOf(s) >= 0; }) : [];
+    var ok = SECTIONS.concat(extras);
+    var arr = srcArr.filter(function (s) { return ok.indexOf(s) >= 0; });
     out.arrangement = arr.length ? arr.slice(0, 16) : songs.ARRANGEMENTS.classic.slice();
     return out;
   };
@@ -227,7 +275,80 @@
       mutate(bar, rng, wild);
       p.sections[name] = bar;
     });
+    if (g.lanes > TOMS || g.doubleKick || g.sections.length) jamGear(p, g, rng, genre);   // v0.8: only with new gear (old RNG draws unchanged)
     return songs.sanitize(p, g, genre);
+  };
+  // v0.8: a band jam uses the gear you bought: a tom fill into the chorus, the ride on the chorus, a double-kick run (for
+  // genres whose groove asks for more kick with the pedal), an outro at the end, Dana's solo before the last chorus.
+  function jamGear(p, g, rng, genre) {
+    var J = SH().jam;
+    if (g.lanes > TOMS && rng.chance(J.tomFill)) {
+      var sec = rng.chance(0.5) ? 'verse' : 'bridge', t = p.sections[sec][TOMS];
+      [12, 13, 14, 15].forEach(function (i) { if (i % 2 === 0 || rng.chance(0.5)) t = set(t, i, true); });
+      p.sections[sec][TOMS] = t;
+    }
+    if (g.lanes > RIDE && rng.chance(J.ride)) {
+      var c = p.sections.chorus, hat = c[HAT];
+      c[RIDE] = count(hat) >= 4 ? hat : 'x.x.x.x.x.x.x.x.';
+      c[HAT] = BLANK;
+    }
+    var rule = (songs.genre(genre).groove || []).filter(function (r) { return r.f === 'kick' && r.loDK != null; })[0];
+    if (g.doubleKick && rule) SECTIONS.forEach(function (name) {   // the genre wants more kick once you own the pedal
+      if (count(p.sections[name][KICK]) < rule.loDK && rng.chance(J.pedalRun)) p.sections[name][KICK] = rng.chance(0.5) ? 'xxxxxxxxxxxxxxxx' : 'x.xxx.xxx.xxx.xx';
+    });
+    var arr = p.arrangement;
+    if (g.sections.indexOf('solo') >= 0 && rng.chance(J.solo)) {
+      p.sections.solo = songs.extraBar(p, 'solo');
+      var last = arr.lastIndexOf('chorus');
+      if (last > 0) arr.splice(last, 0, 'solo'); else arr.push('solo');
+    }
+    if (g.sections.indexOf('outro') >= 0 && rng.chance(J.outro)) { p.sections.outro = songs.extraBar(p, 'outro'); arr.push('outro'); }
+  }
+  // The default bar for a new extra section, derived from the song: an outro = the chorus with hats on the beat and a crash
+  // on the one (the last chord rings); a solo = a stripped kit under the lead (the verse's kick, snare 2 + 4, time on the
+  // beat, a crash on the one). Live, the solo's chart keeps only quarter notes anyway (Dana has the spotlight).
+  songs.extraBar = function (p, name) {
+    var lanes = p.lanes || 4, src = name === 'outro' ? p.sections.chorus : p.sections.verse, bar = [];
+    for (var l = 0; l < lanes; l++) {
+      var s = lane(src, l);
+      if (name === 'outro') {
+        if (l === HAT || l === RIDE) { var th = ''; for (var i = 0; i < STEPS; i++) th += on(s, i) && i % 4 === 0 ? 'x' : '.'; s = th; }
+        if (l === CYM) s = set(BLANK, 0, true);
+      } else {
+        s = l === KICK ? (count(s) ? s : 'x.......x.......') : l === SNARE ? '....x.......x...' : l === CYM ? set(BLANK, 0, true)
+          : (l === HAT || l === RIDE) && count(s) ? 'x...x...x...x...' : BLANK;
+      }
+      bar.push(s);
+    }
+    return bar;
+  };
+  // Adds an owned extra section (its derived bar, unless the pattern has one) and places it in the song: a solo before the
+  // last chorus, an outro at the end. Pure: returns a new sanitized PATTERN.
+  songs.addSection = function (p, name, gear) {
+    var g = gearOf(gear), out = songs.sanitize(U.clone(p), g);
+    if (EXTRAS.indexOf(name) < 0 || g.sections.indexOf(name) < 0) return out;
+    if (!out.sections[name]) out.sections[name] = songs.extraBar(out, name);
+    if (out.arrangement.indexOf(name) < 0) out.arrangement = songs.withExtras(out.arrangement, g, name === 'solo' ? { solo: true } : { outro: true });
+    return songs.sanitize(out, g);
+  };
+  songs.removeSection = function (p, name) {
+    var out = U.clone(p);
+    if (EXTRAS.indexOf(name) < 0) return out;
+    if (out.sections) delete out.sections[name];
+    out.arrangement = (out.arrangement || []).filter(function (x) { return x !== name; });
+    if (!out.arrangement.length) out.arrangement = songs.ARRANGEMENTS.classic.slice();
+    return out;
+  };
+  // An arrangement plus the owned extras: opts { solo: true, outro: true } (default: both when owned). Pure.
+  songs.withExtras = function (arr, gear, opts) {
+    var g = gearOf(gear), out = (arr || []).filter(function (x) { return SECTIONS.indexOf(x) >= 0 || g.sections.indexOf(x) >= 0; });
+    opts = opts || { solo: true, outro: true };
+    if (opts.solo && g.sections.indexOf('solo') >= 0 && out.indexOf('solo') < 0) {
+      var last = out.lastIndexOf('chorus');
+      if (last > 0) out.splice(last, 0, 'solo'); else out.push('solo');
+    }
+    if (opts.outro && g.sections.indexOf('outro') >= 0 && out.indexOf('outro') < 0) out.push('outro');
+    return out.slice(0, 16);
   };
   // The fixed teaching pattern for the first Write (a plain beat the tips improve on).
   songs.starter = function (genre, gear) { return songs.sanitize(U.clone(songs.genre(genre).starter), gear, genre); };
@@ -335,7 +456,8 @@
     var over = Math.max(0, r.difficulty - songs.ability(state));
     var craft = 0.6 * r.groove + 0.3 * r.hook + 0.1 * r.difficulty;
     var q = opts.quality != null ? opts.quality
-      : bandPart(state) + (craft - e.craftPivot) * e.craftWeight - over * e.overPenalty - (1 - f) * A.repeatPenalty + (opts.noise || 0);
+      : bandPart(state) + (craft - e.craftPivot) * e.craftWeight - over * e.overPenalty - (1 - f) * A.repeatPenalty + (opts.noise || 0)
+        + (GG.shop ? GG.shop.writeBonus(state) : 0);   // v0.8: kit quality, the pro studio, the Christmas lights
     var polish = opts.polish != null ? opts.polish : rng.int(A.polish[0], A.polish[1]) - over * e.overPolish;
     var song = { id: nextId(state), title: t.title, titleEn: t.titleEn, written: opts.written != null ? opts.written : state.totalWeek,
       pattern: p, rating: { groove: r.groove, hook: r.hook, difficulty: r.difficulty },
@@ -401,7 +523,7 @@
   // Band reactions to a new song (career RNG; lines in content/lines.js songReactions): Marcel names it in French,
   // Dana wants room for a solo, Jaxon sneaks fills into simple parts, Kenji nods at a great one.
   var FALLBACK_REACT = { name: ['I have named it:'], noSolo: ['Where does my solo go?'], fills: ['i added a fill. you will not notice'],
-    great: ['(A nod.)'] };
+    great: ['(A nod.)'], solo: ['A solo section. In a song. You have made me very happy.', 'Eight bars. I will make them count. All of them. At once.'] };
   songs.reactions = function (state, song, rng) {
     var L = (GG.content.lines && GG.content.lines.songReactions) || {}, out = [];
     function active(id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); }
@@ -413,7 +535,8 @@
     var p = song.pattern, r = song.rating;
     var bridge = p.arrangement.indexOf('bridge') >= 0 ? hitsIn(p.sections.bridge, p.lanes) : -1;
     if (active('marcel')) { say('marcel', 'name'); out[out.length - 1].text += ' “' + song.title + '”.'; }
-    if (bridge < 0 || bridge >= 22) say('dana', 'noSolo');
+    if (p.arrangement.indexOf('solo') >= 0) say('dana', 'solo');   // v0.8: a real solo section
+    else if (bridge < 0 || bridge >= 22) say('dana', 'noSolo');
     if (r.difficulty < 40) say('jaxon', 'fills');
     if (song.quality >= 60 || (r.groove >= 85 && r.hook >= 70)) say('kenji', 'great');
     return out;
@@ -439,7 +562,7 @@
   songs.applyPreset = function (p, section, id, gear, genre) {
     var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), pr = null;
     songs.grooves(genre || (GG.state && GG.state.genre) || 'metal').presets.forEach(function (x) { if (x.id === id) pr = x; });
-    if (pr && SECTIONS.indexOf(section) >= 0) out.sections[section] = padBar(presetBar(pr, g), out.lanes).slice(0, out.lanes);
+    if (pr && (SECTIONS.indexOf(section) >= 0 || out.sections[section])) out.sections[section] = padBar(presetBar(pr, g), out.lanes).slice(0, out.lanes);
     return out;
   };
   songs.presetOf = function (p, section, genre, gear) {
@@ -469,7 +592,7 @@
     var g = gearOf(gear), out = songs.sanitize(U.clone(p), g), mod = null;
     songs.grooves(genre).mods.forEach(function (m) { if (m.id === modId) mod = m; });
     var before = songs.rate(out, genre, g);
-    if (mod && SECTIONS.indexOf(section) >= 0) {
+    if (mod && (SECTIONS.indexOf(section) >= 0 || out.sections[section])) {
       var bar = out.sections[section].slice();
       mod.ops.forEach(function (op) { applyOp(bar, op, g, out, genre); });
       out.sections[section] = bar;

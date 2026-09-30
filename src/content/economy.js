@@ -279,6 +279,42 @@
       bot: { avgExclusive: 0.35, goodHappyBelow: 60, goodBurnoutBelow: 85 }
     },
 
+    // ---- The shop (2a_sim_shop.js, v0.8 "Kit"): gear, kit quality, spaces, vans, the merch table. Catalogue + prices in
+    // content/shop.js; these are the rates, curves, unlock rules and the bots. ------------------------------------------
+    shop: {
+      cardFrom: 3, cardGap: 3,                  // shop Monday cards (forced): none before week 3, at least 3 weeks apart
+      outroSongs: 3,                            // Outro unlocks (free) once you have written this many songs (a chat moment)
+      soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> Dana's card; refused -> again later
+      // gear on stage and in the studio: kit quality tier 0..3 and each lane / the pedal
+      gigBonus: { quality: [0, 0.5, 1.5, 2.5], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
+      writeBonus: [0, 0.5, 1, 2],                 // + quality of a new song by kit tier (the demo sounds like a band)
+      recordBonus: [0, 0.25, 0.5, 1],            // + session production per studio week by kit tier
+      crowdBonus: [0, 0.5, 1, 2],                 // + live crowd start by kit tier (it sounds big from the first hit)
+      songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
+      jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 },   // band jams use owned gear this often (pedalRun: per section, when the genre wants more kick)
+      soloCrowd: 3,                             // live: Dana's solo section lifts the crowd
+      tradeIn: 0.3, tradeInMin: 150,            // your old van is worth this share of its price (x condition), at least $150
+      stickersMax: 160,
+      merch: {
+        buyRate: 0.032,                         // buyers per (effective) head at a B gig (appeal 1, suggested prices)
+        crowdRef: 50, crowdExp: 0.65,           // effective crowd = crowd up to 50, then 50 x (crowd / 50)^0.65 (big rooms buy less per head)
+        variety: 0.1, varietyMax: 5,           // buyers x (1 + variety x (items on the table - 1)); they split by appeal x price curve
+        grade: { S: 1.3, A: 1.15, B: 1, C: 0.75, D: 0.45 },
+        fit: [0.6, 0.4],                        // x (fit[0] + fit[1] * genre fit)
+        elasticity: 1.6, curveMax: 2.2,         // price curve: exp(-elasticity * (price / suggested - 1)), capped
+        noise: [0.85, 1.15],
+        superfan: 1.5, superfanRef: 0.06,       // x (1 + superfan * (superfan share - ref)): superfans buy merch
+        opening: 0.6,                           // the headliner's crowd buys yours at this rate
+        flyBoxes: 2,                            // boxes you check as luggage abroad
+        priceRange: [0.5, 3],                   // settable price, as a share of the suggested price (min $1)
+        misprint: { units: 50, weeks: 8, minFans: 300 }   // the HALE DAMAGE batch becomes a collector's item
+      },
+      bot: {
+        good: { cushion: 1200, kitCushion: 1500, vanCushion: 3000, rentWeeks: 20, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+        avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
+      }
+    },
+
     // ---- Career difficulty (v0.6.1, Addendum C4; read only through GG.difficulty.mul/add, 11_settings.js) ------------
     // Picked on the new-career screen and locked for that career; old saves = normal. Multipliers (rivalSkill = + points).
     difficulty: {

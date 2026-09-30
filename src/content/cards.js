@@ -413,18 +413,6 @@
           outcome: 'Marcel screams in French over an acoustic guitar. A toddler screams back. They share a moment. Several parents film it.' }
       ] },
 
-    { id: 'money_merch_misprint', type: 'money', speaker: 'dana', title: 'HALE DAMAGE', gate: g({ era: GL, minFans: 60 }),
-      text: "Your first box of band shirts is back from the print shop in Martensville. All fifty say 'HALE DAMAGE'. " +
-        "The shop says 'that's what you wrote'. Dana has the order form. It's what you wrote.",
-      choices: [
-        { label: 'Sell them as collectibles', effects: { fund: 120, buzz: 4 },
-          outcome: "They sell out in two shows. A collector from Moose Jaw buys six. 'Hale Damage' now has its own fan page." },
-        { label: 'Pay for a reprint ($100)', effects: { fund: -100, mood: { marcel: 5 } },
-          outcome: "The reprint says HAIL DAMAGE, correctly, in a font Marcel describes as 'ancient'. It's a free font." },
-        { label: 'Wear them to rehearsal', effects: { chemistry: 5, mood: { all: 3 } },
-          outcome: 'Hale Damage becomes the band\'s secret name. Kenji is seen in one exactly once. Unconfirmed, but everyone saw it.' }
-      ] },
-
     { id: 'money_garage_sale', type: 'money', speaker: 'mom', title: 'Garage Sale Saturday', once: false, cooldown: 12,
       gate: g({ era: GLS, minWeek: 2, weekOfYear: [2, 8] }),
       text: "Your mom is having a garage sale. In the garage. Your rehearsal space. Saturday. 'Just move the drums a bit, honey. " +
@@ -1615,6 +1603,108 @@
           outcome: 'Marcel is already designing the wristbands.' },
         { label: 'Train. Next year is ours.', hint: 'Skill ↑', effects: { skill: { all: 1 }, chemistry: 2 },
           outcome: 'You print the lineups and tape them to the garage wall. Every rehearsal, Jaxon throws a dart at them.' }
+      ] }
+  ];
+  // ======================================================================
+  // v0.8 "Kit" (KITSIM): shop cards. FORCED ONLY (GG.shop.forcedCard picks them on a Monday; never drawn from the deck
+  // above). Same CARD schema; a choice's effects may carry `shop` (applied by GG.shop.afterCard): { move: spaceTier,
+  // kit: kitTier, van: vanTier, gear: id, section: 'outro'|'solo', stock: { merchId: boxes }, misprint: 'boxed'|'reprint'|
+  // 'wear' }. Money is always the card's own `fund` effect. money_merch_misprint (v0.1) moved here: it now fires after
+  // your first shirt order and the boxed batch becomes a collector's item later (GG.shop.weekly).
+  // ======================================================================
+  var ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'];
+  GG.content.shopCards = [
+    { id: 'money_merch_misprint', type: 'money', speaker: 'dana', title: 'HALE DAMAGE', gate: g({ era: ALL }),
+      text: "Your first box of band shirts is back from the print shop in Martensville. Every one says 'HALE DAMAGE'. " +
+        "The shop says 'that's what you wrote'. Dana has the order form. It's what you wrote.",
+      choices: [
+        { label: 'Box them up. Someday.', hint: 'Keep the misprints · maybe worth $$$ later', effects: { mood: { dana: 3 }, shop: { misprint: 'boxed' } },
+          outcome: "The box goes under the workbench with HALE written on it in Sharpie. Dana says misprints are worth money someday. Nobody believes her." },
+        { label: 'Pay for a reprint ($100)', effects: { fund: -100, mood: { marcel: 5 }, shop: { misprint: 'reprint' } },
+          outcome: "The reprint says HAIL DAMAGE, correctly, in a font Marcel describes as 'ancient'. It's a free font." },
+        { label: 'Wear them to rehearsal', effects: { chemistry: 5, mood: { all: 3 }, shop: { misprint: 'wear' } },
+          outcome: 'Hale Damage becomes the band\'s secret name. Kenji is seen in one exactly once. Unconfirmed, but everyone saw it.' }
+      ] },
+
+    { id: 'shop_merch_start', type: 'money', speaker: 'marcel', title: 'The Merch Table', gate: g({ era: ['garage', 'local'], minWeek: 4 }),
+      text: 'Marcel has designed a shirt: the logo, huge, plus a moose, plus his own face. Dana points out that bands pay for the van with merch. ' +
+        'Kenji is already wearing a band shirt. Not yours.',
+      choices: [
+        { label: 'Order a box of shirts', hint: '−$192 · 24 shirts for the merch table', effects: { fund: -192, shop: { stock: { shirt: 1 } } },
+          outcome: "Twenty-four shirts, logo only. Marcel's face is 'saved for the deluxe edition'." },
+        { label: 'Stickers first', hint: '−$80 · 200 stickers', effects: { fund: -80, shop: { stock: { sticker: 1 } } },
+          outcome: "Two hundred stickers. Jaxon puts one on Baba's car. She leaves it there, which is love." },
+        { label: 'Not yet', effects: { mood: { marcel: -4 } },
+          outcome: 'Marcel hangs the design on the garage wall anyway. It watches you rehearse.' }
+      ] },
+
+    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 700 }),
+      text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
+        "'the guy says $650 if we take it today. the milk crate is embarrassing us.'",
+      choices: [
+        { label: 'Buy it today ($650)', hint: '−$650 · a real kit: better sound', effects: { fund: -650, shop: { kit: 1 } },
+          outcome: 'Three trips to carry it home. The first rehearsal sounds like a real band. The milk crate becomes a merch stand.' },
+        { label: 'Haggle', hint: 'Gamble: haggle him down',
+          roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fund: -520, shop: { kit: 1 } }, outcome: 'Dana speaks only in gear specs until he gives in. $520, and he throws in a cowbell. No gong.' },
+            fail: { effects: { mood: { dana: -5 } }, outcome: 'He sells it to a youth pastor while you haggle. Dana does not speak to you until Thursday.' } },
+          outcome: 'Dana cracks her knuckles.' },
+        { label: 'Not yet', effects: { mood: { dana: -4 } }, outcome: 'The milk crate creaks, as if it heard.' }
+      ] },
+
+    { id: 'shop_van_deal', type: 'money', speaker: 'baba', title: "Baba's Church Van", gate: g({ era: LSW, minFund: 2600 }),
+      text: "Baba's church is selling its 15-passenger van, trailer included. 'One owner,' says Baba. 'God.' $3,000 and the old van for parts. " +
+        'Jaxon has already measured the trailer for the drum cases.',
+      choices: [
+        { label: 'Buy the church van', hint: '−$3,000 · 15-passenger van + trailer', effects: { fund: -3000, shop: { van: 1 } },
+          outcome: 'It smells like hymnals and casserole. The trailer squeaks in every key. Kenji adjusts the mirrors and nods.' },
+        { label: 'Let Baba haggle', hint: 'Gamble: Baba vs the church',
+          roll: { chance: 0.4,
+            success: { effects: { fund: -2500, shop: { van: 1 } }, outcome: 'Baba haggles with her own church until the minister gives in to end it. $2,500.' },
+            fail: { effects: { mood: { jaxon: -4 } }, outcome: 'Baba decides you insulted the church. Jaxon eats his lunch in the old van for a week.' } },
+          outcome: 'Jaxon calls Baba.' },
+        { label: 'Keep the old van', effects: { chemistry: 2 },
+          outcome: "A curling team buys it. You see it at every bonspiel for a year. The old van feels loved, briefly." }
+      ] },
+
+    { id: 'shop_solo', type: 'drama', speaker: 'dana', title: 'Dana Insists', gate: g({ era: LSW }),
+      text: 'Dana has written a solo. It is eleven minutes long. She will cut it to one bar if she gets a real solo section, in every song that ' +
+        'wants one. She is holding your sticks hostage.',
+      choices: [
+        { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Dana ↑', effects: { mood: { dana: 8 }, shop: { section: 'solo' } },
+          outcome: 'Dana hands back your sticks and plays you the one-bar version. It is still somehow three minutes long.' },
+        { label: 'Only with a cape spin', hint: 'Solo unlocked · Dana ↑ · Marcel ↑', effects: { mood: { dana: 5, marcel: 5 }, chemistry: -2, shop: { section: 'solo' } },
+          outcome: 'Her solo, his spin, the same eight bars. Nobody can see her fingers behind the cape. Everyone is happy, loudly.' },
+        { label: 'No solos in this band', hint: 'Dana ↓↓', effects: { mood: { dana: -10 } },
+          outcome: 'Dana returns your sticks. She plays the solo anyway, alone, in the driveway, facing the street.' }
+      ] },
+
+    { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),
+      text: 'Rent-A-Riff has a jam room free: carpet on the walls, a door that locks, $60 a week. Your mom has already measured the garage for ' +
+        'the car. Dad is pretending not to listen. Dad is listening.',
+      choices: [
+        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+          outcome: 'One van trip and three couch trips. Mom parks the car in the garage and sits in it for a while.' },
+        { label: 'Stay home for now', hint: 'Free · move later from the garage door', effects: { chemistry: 2, mood: { marcel: -3 } },
+          outcome: 'The garage it is. Dad brings out a space heater without a word, like a peace treaty.' }
+      ] },
+
+    { id: 'shop_space_2', type: 'money', speaker: 'dana', title: 'Prairie Dog Sound', gate: g({ era: ['signed', 'world'] }),
+      text: 'Gwen at Prairie Dog Sound has a room: rehearsal space, an isolation booth, a coffee machine that works. $150 a week. ' +
+        'Dana has toured the booth twice. Marcel has toured the mirror.',
+      choices: [
+        { label: 'Move in ($150/week)', hint: 'Rent $150/wk · write + record better', effects: { mood: { all: 4 }, shop: { move: 2 } },
+          outcome: "A real studio. Gwen hands out keys and a list of rules. Rule one is 'no capes near the console'." },
+        { label: 'Not yet', effects: { mood: { dana: -3 } }, outcome: 'Dana keeps the brochure on the fridge. It is a threat.' }
+      ] },
+
+    { id: 'shop_space_3', type: 'money', speaker: 'marcel', title: 'Backstage, Forever', gate: g({ era: ['world'] }),
+      text: "The Potash Place offers a permanent room under the arena: a star on the door, showers, the hockey team's laundry next door. " +
+        '$300 a week. Marcel has chosen his corner. It has a mirror.',
+      choices: [
+        { label: 'Move in ($300/week)', hint: 'Rent $300/wk · rest like royalty', effects: { mood: { all: 5 }, shop: { move: 3 } },
+          outcome: 'You rehearse where the arena bands rehearse. The Zamboni driver brings coffee. He has requests.' },
+        { label: 'Stay where we are', effects: { mood: { marcel: -5 } }, outcome: 'Marcel paints a star on the old door himself. It is crooked. He loves it.' }
       ] }
   ];
 })(window.GG);

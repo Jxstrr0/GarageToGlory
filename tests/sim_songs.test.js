@@ -201,7 +201,7 @@ test('v0.1 save fixture migrates to v2: patterns for every song, deterministic, 
   eq(m.v, C.SAVE_SCHEMA);
   eq(JSON.stringify(m), JSON.stringify(m2), 'deterministic');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
-  eq([m.gear, m.pendingSongs, m.draft], [{ lanes: 4, doubleKick: false }, [], null], 'v0.2 defaults');
+  eq([m.gear, m.pendingSongs, m.draft], [{ lanes: 4, doubleKick: false, owned: [], sections: [], quality: 0 }, [], null], 'v0.2 defaults (+ v0.8 gear fields)');
   m.songs.forEach((x, i) => {
     eq(S.validate(x.pattern, m.gear), [], x.id + ' valid pattern');
     const old = rec.state.songs[i];

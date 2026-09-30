@@ -25,6 +25,12 @@
 //   Mixer (v0.6.1): setVolume(bus, 0..1) ; getVolume(bus) ; volumes() for C.MIX_BUSES (settings.mix)
 //   Metronome: metronome() ; setMetronome(bool) ; toggleMetronome() (settings.metronome; honoured by play(.., {metronome}))
 //   applySettings() re-reads settings (mix, metronome, brushes, muted) ; ambience() ; room() ; refreshAmbience()
+// v0.8 (KITSIM, Addendum C3): kit quality tiers (state.gear.quality, C.KIT_QUALITY milk crate -> pawn shop -> pro -> arena)
+//   change the synth: body (tone level + pitch), sustain (decays), saturation (a soft drive on the kit), a box resonance /
+//   low cut / high cut (thin and cheap -> full and punchy) and the reverb send. kitQuality() ; qualityFor(tier) ; kitFor(genre,
+//   tier) (the derived kit, pure) ; renderOffline({ quality }) (default: the live career's tier, else 2 = the v0.6.1 reference).
+//   Extra sections: an 'outro' plays full then its last bar rings (one held chord past the end; the song's tail waits for
+//   it); a 'solo' is Dana's (role 'solo' for every bar: the genre's lead over the band, no vocal hits).
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -247,6 +253,14 @@
     for (var i = 0; i < n; i++) { var x = i * 2 / (n - 1) - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
     return (curves[k] = c);
   }
+  // v0.8 kit saturation: y = tanh(k x) / tanh(k), unity at full scale, never above 1 (k = 0: a straight line).
+  var sats = {};
+  function satCurve(k) {
+    if (sats[k]) return sats[k];
+    var n = 1024, c = new Float32Array(n), t = k > 0 ? Math.tanh(k) : 1;
+    for (var i = 0; i < n; i++) { var x = i * 2 / (n - 1) - 1; c[i] = k > 0 ? Math.tanh(k * x) / t : x; }
+    return (sats[k] = c);
+  }
   // Rooms: impulse length (s), wet level, tail brightness (one-pole), a discrete echo (s) for halls and arenas.
   // The convolver normalises its impulse (about -58 dB per sample), so reverb energy grows with the room's length; wet
   // sets the direct-to-reverb ratio at a full send: dry ~ -15 dB, room ~ -8, hall ~ -3, arena ~ 0.
@@ -273,7 +287,36 @@
     kick: { f0: 165, f1: 50, glide: 0.07, dec: 0.42, body: 1, click: 0.4, clickHp: 2600 },
     snare: { f0: 230, f1: 170, body: 0.55, bodyDec: 0.11, noise: 0.75, hp: 1400, dec: 0.22 },
     hat: { hp: 7800, dec: 0.055, lv: 0.4 }, cymbal: { hp: 9000, f1: 4800, dec: 1.3, lv: 0.42 }, toms: [200, 160, 125], tomDec: 0.36 };
-  function kitFor(genre) { var G = GG.songs && GG.songs.genre ? GG.songs.genre(genre) : null; return (G && G.kit) || DEFAULT_KIT; }
+  function baseKit(genre) { var G = GG.songs && GG.songs.genre ? GG.songs.genre(genre) : null; return (G && G.kit) || DEFAULT_KIT; }
+  // v0.8 kit quality (C3). body: tone level (and a milk-crate kick that can't reach the low end: pitch x lowPitch), sustain:
+  // decays, drive: soft saturation on the kit (0 = clean), box: dB of cardboard resonance at 480 Hz, low/high: the kit's
+  // band limits (Hz), send: reverb send, trim: level. Tier 2 is the v0.6.1 voice plus a little glue.
+  var QUALITY = [
+    { id: 'milk_crate', body: 0.6, sustain: 0.55, lowPitch: 1.3, snarePitch: 1.15, drive: 0, box: 5, low: 170, high: 6000, send: 0.55, trim: 1.1 },
+    { id: 'pawn_shop', body: 0.8, sustain: 0.78, lowPitch: 1.12, snarePitch: 1.06, drive: 0.5, box: 2.5, low: 95, high: 9000, send: 0.8, trim: 1.03 },
+    { id: 'pro', body: 1, sustain: 1, lowPitch: 1, snarePitch: 1, drive: 0.9, box: 0, low: 40, high: 14000, send: 1, trim: 0.97 },
+    { id: 'arena', body: 1.2, sustain: 1.25, lowPitch: 0.94, snarePitch: 0.97, drive: 1.5, box: -2, low: 28, high: 18000, send: 1.3, trim: 0.92 }
+  ];
+  var REF_QUALITY = 2;
+  A.qualityFor = function (tier) { return QUALITY[Math.max(0, Math.min(QUALITY.length - 1, tier | 0))]; };
+  // The kit tier the career owns (state.gear.quality); REF_QUALITY outside a career.
+  A.kitQuality = function () { var g = GG.state && GG.state.gear; return g && isFinite(g.quality) ? Math.max(0, Math.min(QUALITY.length - 1, g.quality | 0)) : REF_QUALITY; };
+  var derived = {};
+  // The genre kit (content/genres.js) played on kit tier `tier`: pure, cached.
+  A.kitFor = function (genre, tier) {
+    tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
+    var key = (genre || 'metal') + '|' + tier, b = baseKit(genre);
+    if (derived[key] && derived[key].src === b) return derived[key].kit;
+    var q = QUALITY[tier], k = JSON.parse(JSON.stringify(b));
+    k.kick.body = (k.kick.body || 1) * q.body; k.kick.dec *= q.sustain; k.kick.f1 = (k.kick.f1 || 50) * q.lowPitch; k.kick.f0 *= Math.sqrt(q.lowPitch);
+    k.snare.body *= q.body; k.snare.bodyDec *= q.sustain; k.snare.dec *= q.sustain; k.snare.f0 *= q.snarePitch; k.snare.f1 *= q.snarePitch;
+    k.hat.dec *= Math.sqrt(q.sustain); k.cymbal.dec *= q.sustain; k.cymbal.lv *= Math.sqrt(q.body);
+    k.tomDec = (k.tomDec || 0.36) * q.sustain; k.toms = (k.toms || DEFAULT_KIT.toms).map(function (f) { return f * Math.sqrt(q.lowPitch); });
+    k.q = { tier: tier, id: q.id, body: q.body, sustain: q.sustain };
+    derived[key] = { src: b, kit: k };
+    return k;
+  };
+  function kitFor(genre, tier) { return A.kitFor(genre, tier); }
   // o: { mix: 'live' (bus gains follow the mixer) | 'static' (current mix, offline) | false (unity: the radio),
   //      verb (default true), voices, bandVoices, level, clickDest }
   function makeRig(c, dest, nz, o) {
@@ -289,7 +332,12 @@
     r.glue = glue;
     function bus(name) { return o.mix === 'live' ? mixNode(name, 1, glue) : gainNode(c, o.mix === false ? 1 : busGain(name), glue); }
     r.busDrums = bus('drums'); r.busBand = bus('band');
-    r.drums = gainNode(c, 0.8, r.busDrums);
+    // v0.8 kit quality chain: drive -> box resonance -> low cut -> high cut -> the drum bus (setKit tunes it per tier).
+    r.qHigh = filterNode(c, 'lowpass', 14000, 0.7, r.busDrums);
+    r.qLow = filterNode(c, 'highpass', 40, 0.7, r.qHigh);
+    r.qBox = c.createBiquadFilter(); r.qBox.type = 'peaking'; r.qBox.frequency.value = 480; r.qBox.Q.value = 1.1; r.qBox.gain.value = 0; r.qBox.connect(r.qLow);
+    r.qDrive = c.createWaveShaper(); r.qDrive.curve = satCurve(0); r.qDrive.oversample = '2x'; r.qDrive.connect(r.qBox);
+    r.drums = gainNode(c, 0.8, r.qDrive);
     r.click = gainNode(c, 0.8, o.clickDest || glue);
     var shaper = c.createWaveShaper(); shaper.curve = driveCurve(18); shaper.oversample = '2x';
     shaper.connect(filterNode(c, 'lowpass', 3600, 0.9, filterNode(c, 'highpass', 90, 0.7, gainNode(c, 0.09, r.busBand))));
@@ -308,14 +356,17 @@
     }
     return r;
   }
-  function setKit(r, genre) {
+  function setKit(r, genre, tier) {
     genre = genre || 'metal';
-    if (r.genre === genre && r.kit) return;
-    r.genre = genre; r.kit = kitFor(genre);
-    var t = r.ctx.currentTime, k = r.kit;
-    r.drums.gain.setValueAtTime(0.8 * (k.level || 1), t);
+    tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
+    if (r.genre === genre && r.kit && r.tier === tier) return;
+    r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
+    var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
+    r.drums.gain.setValueAtTime(0.8 * (k.level || 1) * q.trim, t);
+    r.qDrive.curve = satCurve(q.drive);
+    r.qBox.gain.setValueAtTime(q.box, t); r.qLow.frequency.setValueAtTime(q.low, t); r.qHigh.frequency.setValueAtTime(q.high, t);
     var send = 0.35 + 0.65 * (k.verb || 0);   // the room always speaks; the kit decides how much (rock lots, country little)
-    if (r.send) { r.drumSend.gain.setValueAtTime(send, t); r.bandSend.gain.setValueAtTime(send * 0.45, t); }
+    if (r.send) { r.drumSend.gain.setValueAtTime(send * q.send, t); r.bandSend.gain.setValueAtTime(send * 0.45, t); }
   }
   // Swap the room: a fresh convolver fades in, the old tail rings out.
   function setRoom(r, cls) {
@@ -437,9 +488,9 @@
     } },
     toms: { n: 1, len: function (k) { return k.tomDec || 0.36; }, play: function (r, p, t, d, k, v) {
       var f = (k.toms || DEFAULT_KIT.toms)[v || 0] || 200;
-      osc(r, 'sine', f, f * 0.55, 0.2, t, d, decay(r.ctx, t, 0.002, 0.85, d, p.drums));
+      osc(r, 'sine', f, f * 0.55, 0.2, t, d, decay(r.ctx, t, 0.002, 0.85 * Math.min(1.1, k.q ? k.q.body : 1), d, p.drums));
     } },
-    ride: { n: 2, len: function (k) { return k.six === 'china' ? 0.9 : 0.5; }, play: function (r, p, t, d, k) {
+    ride: { n: 2, len: function (k) { return (k.six === 'china' ? 0.9 : 0.5) * (k.q ? k.q.sustain : 1); }, play: function (r, p, t, d, k) {
       var c = r.ctx;
       if (k.six === 'china') {   // trashy: mid-heavy noise and an inharmonic clang
         noiseHit(r, t, d, decay(c, t, 0.001, 0.36, d, p.drums), 'bandpass', 3300, 0.7, 2200);
@@ -512,7 +563,7 @@
     var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), o, g;
     if (ev.kind === 'bass') {
       if (!book(r, t, dur, 1, true)) return;
-      osc(r, 'sawtooth', f, 0, 0, t, dur, ev.len <= 0.5 ? decay(c, t, 0.004, 0.55, dur, p.bass) : held(c, t, 0.4, dur, p.bass));
+      osc(r, 'sawtooth', f, 0, 0, t, dur, ev.len <= 0.5 || ev.ring ? decay(c, t, 0.004, 0.55, dur, p.bass) : held(c, t, 0.4, dur, p.bass));
       return;
     }
     if (ev.kind === 'lead' || ev.kind === 'fiddle' || ev.kind === 'twang') {
@@ -539,7 +590,7 @@
     var n = ev.power ? 2 : 1, dest = ev.kind === 'clean' ? p.clean : p.gtr;
     if (!book(r, t, dur, n, true)) return;
     var tn = filterNode(c, 'lowpass', ev.mute ? 700 : 3200, ev.mute ? 1.2 : 0.7, dest);
-    g = ev.mute || ev.kind === 'clean' ? decay(c, t, 0.003, ev.kind === 'clean' ? 0.35 : 0.9, dur, tn) : held(c, t, 0.55, dur, tn);
+    g = ev.mute || ev.kind === 'clean' || ev.ring ? decay(c, t, 0.003, ev.kind === 'clean' ? 0.35 : 0.9, dur, tn) : held(c, t, 0.55, dur, tn);   // v0.8: the outro chord rings out
     var type = ev.kind === 'clean' ? 'triangle' : 'sawtooth';
     osc(r, type, f, 0, 0, t, dur, g, -7);
     if (ev.power) osc(r, type, f * 1.4983, 0, 0, t, dur, g, 7);
@@ -567,7 +618,8 @@
   };
   function sig(p) {
     var s = p && p.sections || {};
-    return (p && p.bpm) + '|' + ((p && p.arrangement) || []).join(',') + '|' + C.SECTIONS.map(function (n) { return (s[n] || []).join(''); }).join('/');
+    return (p && p.bpm) + '|' + ((p && p.arrangement) || []).join(',') + '|' + C.SECTIONS.map(function (n) { return (s[n] || []).join(''); }).join('/')
+      + (C.EXTRA_SECTIONS || []).map(function (n) { return s[n] ? '/' + n + ':' + s[n].join('') : ''; }).join('');   // v0.8 outro/solo
   }
   // The song a pattern belongs to (the gig passes song.pattern): a SONG, the same object in the catalog, the same
   // notes in the catalog, else a hash of the notes.
@@ -679,6 +731,14 @@
     }
   };
   var KIND_RANK = { step: 0, drum: 1, vox: 2, gtr: 3, bass: 4, gtr2: 5, lead: 6, fiddle: 7, clean: 8, twang: 9 };
+  // v0.8 extra sections: default roles when the genre's backing doesn't name them. 'ring' = the song's last chord, held.
+  var EXTRA_ROLES = { outro: ['full', 'full', 'full', 'ring'], solo: ['solo', 'solo', 'solo', 'solo'] };
+  var RING_BEATS = 2.5;   // how long the last chord rings past the end of an outro
+  function ringBar(o, w, genre) {
+    var len = 16 + RING_BEATS * 4;
+    if (genre === 'country') { w.note('clean', 0, len, o.key + 12, { strum: [0, 4, 7], ring: true }); w.bass(0, len, o.key).ring = true; return; }
+    w.gtr(0, len, { power: true, midi: o.key, ring: true }); w.bass(0, len, o.key).ring = true;
+  }
   // Song (or one section) -> { bpm, beats, style, styleLabel, key: { tonic, name, ... }, events: [{ beat, kind: 'step'|
   //   'drum'|'vox'|'gtr'|'gtr2'|'bass'|'lead'|'fiddle'|'clean'|'twang', lane?, v? (drum variant), midi?, voc?, len (beats),
   //   gap (beats to the next event of the same voice, wrapping), section, role, entry, bar, step? }] }
@@ -692,9 +752,9 @@
     var style = opts.style ? { id: opts.style, label: opts.style } : A.styleFor(genre, p.bpm);
     var key = A.keyFor(opts.songId != null ? opts.songId : songIdOf(pattern), genre), band = BANDS[genre] || BANDS.metal;
     var V = opts.vocals === false ? null : B.vox, R = B.roles || {};
-    var order = opts.section ? [opts.section] : p.arrangement, events = [], beat = 0, bars = 0, maxBars = opts.bars || Infinity;
+    var order = opts.section ? [opts.section] : p.arrangement, events = [], beat = 0, bars = 0, maxBars = opts.bars || Infinity, tail = 0;
     for (var e = 0; e < order.length && bars < maxBars; e++) {
-      var name = order[e], sec = p.sections[name], prog = progression(B, sec, name), riff = riffFor(B, sec), roles = R[name] || ['full'];
+      var name = order[e], sec = p.sections[name], prog = progression(B, sec, name), riff = riffFor(B, sec), roles = R[name] || EXTRA_ROLES[name] || ['full'];
       for (var bar = 0; bar < C.BARS_PER_SECTION && bars < maxBars; bar++, bars++, beat += 4) {
         var role = roles[bar % roles.length], tomAt = -9, ti = 0;
         for (var step = 0; step < C.STEPS; step++) {
@@ -714,6 +774,7 @@
         var o = { out: events, style: style.id, sec: sec, root: root, next: key.tonic + prog[(bar + 1) % prog.length], key: key.tonic,
           riff: riff, beat: beat, name: name, bar: bar, role: role, bpm: p.bpm, B: B, rng: GG.RNG(GG.hashSeed(key.seed + '|' + name + '|' + bar)) };
         var w = writer(o);
+        if (role === 'ring') { if (e === order.length - 1) { ringBar(o, w, genre); tail = RING_BEATS; } else band(Object.assign(o, { role: 'full' }), w); continue; }   // v0.8 outro
         band(o, w);
         if (!V) continue;
         if (name === 'chorus' && V.hits) V.hits.forEach(function (h) { if (h[0] === o.bar) w.vox(h[1], h[2], o.root + h[3], h[4]); });
@@ -732,8 +793,9 @@
     }
     events.forEach(function (x) {
       if (x.gap === Infinity) { var k = x.kind === 'drum' ? x.lane : x.kind; x.gap = beat - x.beat + next[k]; }
+      if (x.ring) x.gap = Math.max(x.gap, x.len);   // v0.8: the outro's last chord rings over the end
     });
-    return { bpm: p.bpm, beats: beat, style: style.id, styleLabel: style.label, key: key, events: events };
+    return { bpm: p.bpm, beats: beat, tail: tail, style: style.id, styleLabel: style.label, key: key, events: events };
   };
 
   /* ---- Playback: the look-ahead scheduler --------------------------------------------------------------- */
@@ -754,7 +816,7 @@
       var now = c.currentTime, horizon = now + LOOKAHEAD;
       for (;;) {
         if (i >= tl.events.length) {
-          if (!loop) { if (now > h.start + tl.beats * spb + 0.2) h.stop(true); return; }
+          if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true); return; }   // v0.8: an outro rings out
           i = 0; pass++; lastBeat = -1;
         }
         var ev = tl.events[i], t = at(ev);
@@ -813,7 +875,7 @@
     if (!A.unlock() || !ctx) return null;
     A.stop(); stopRadio();
     if (ctx.state === 'suspended') { suspended = false; try { ctx.resume(); } catch (e) { /* ignore */ } }
-    setKit(rig, opts.genre || 'metal'); applyRoom();
+    setKit(rig, opts.genre || 'metal', opts.quality); applyRoom();   // v0.8: the career's kit tier unless opts.quality
     return player(pattern, opts, { rig: rig });
   };
   A.stop = function () { if (current) current.stop(); };
@@ -825,7 +887,7 @@
     if (!previewPort) previewPort = makePort(rig);
     var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
     if (when > t && when < t + 1) t = when;
-    if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
+    if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');   // (the career's kit tier)
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {
       var step = playing ? ((Math.round(current.beatAt(t) * 4) % 16) + 16) % 16 : 4;
@@ -1081,8 +1143,8 @@
   A.ambience = function () { return amb.mode; };
   A.refreshAmbience = function () { refresh(); return amb.mode; };
 
-  /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, nan, seconds, counts, key }> ------------------- */
-  // spec: { lane, variant } one drum hit | { pattern (default the genre's signature), genre, bpm, songId, section (default
+  /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, tail, nan, seconds, counts, key }> ------------- */
+  // spec: { lane, variant, quality (v0.8 kit tier 0..3) } one drum hit | { pattern (default the genre's signature), genre, bpm, songId, section (default
   //         'verse'), full (whole arrangement), bars (default 2), backing: styleId (that style alone) | true | false,
   //         drums (default: !styleId), vocals, metronome, room (default the kit's) }
   //       | { ambience: 'garage' | 'van' | 'crowd' | 'radio', level (crowd 0..100), seconds, genre, pattern }
@@ -1111,7 +1173,7 @@
       var radio = amb === 'radio', r = makeRig(oc, radio ? radioChain(oc, gainNode(oc, 0.3 * busGain('sfx'), dest)) : dest, null,
         radio ? { mix: false, verb: false, voices: 8, bandVoices: 6, level: 0.9 } : { mix: 'static' });
       var port = makePort(r);
-      setKit(r, genre); setRoom(r, spec.room || r.kit.room || 'room');
+      setKit(r, genre, spec.quality); setRoom(r, spec.room || r.kit.room || 'room');   // v0.8: spec.quality 0..3 (default: the career's tier)
       if (spec.lane) drumHit(r, port, spec.lane, 0.05, 2, spec.variant);
       else {
         tl = A.timeline(pat, { genre: genre, section: spec.full || radio ? null : (spec.section || 'verse'), bars: bars, style: style,
@@ -1125,9 +1187,10 @@
       }
     }
     return oc.startRendering().then(function (buf) {
-      var d = buf.getChannelData(0), peak = 0, sum = 0, nan = false;
-      for (var i = 0; i < d.length; i++) { var v = d[i]; if (v !== v) nan = true; else { var a = Math.abs(v); if (a > peak) peak = a; sum += v * v; } }
-      return { peak: peak, rms: Math.sqrt(sum / d.length), nan: nan, seconds: seconds, counts: tally, key: tl ? tl.key : null };
+      var d = buf.getChannelData(0), peak = 0, sum = 0, nan = false, from = Math.floor(0.3 * sr), late = 0;
+      for (var i = 0; i < d.length; i++) { var v = d[i]; if (v !== v) nan = true; else { var a = Math.abs(v); if (a > peak) peak = a; sum += v * v; if (i >= from) late += v * v; } }
+      // tail: rms after the first 0.3 s (a single hit's sustain / ring; v0.8 kit quality tiers)
+      return { peak: peak, rms: Math.sqrt(sum / d.length), tail: Math.sqrt(late / Math.max(1, d.length - from)), nan: nan, seconds: seconds, counts: tally, key: tl ? tl.key : null };
     });
   };
 

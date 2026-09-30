@@ -240,7 +240,7 @@ test('migration v2 -> v3: defaults for old saves, idempotent, schema bumped', ()
   const m = GG.save.migrate(JSON.parse(JSON.stringify(s)));
   eq(m.v, GG.contracts.SAVE_SCHEMA); ok(GG.contracts.SAVE_SCHEMA >= 3, 'SAVE_SCHEMA is 3 in this build');
   eq([m.listings, m.listingsWeek, m.bookPick, m.venueRep, m.venueLast, m.banned, m.trip, m.liveGig], [[], 0, null, {}, {}, [], null, null]);
-  eq(m.van, GG.world.defaultVan());
+  eq(m.van, Object.assign(GG.world.defaultVan(), { tier: 0, baseName: 'The Moose Hearse', upgrades: [], stickers: [] }), 'v0.3 van + v0.8 tier/name/stickers');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
   const bad = JSON.parse(JSON.stringify(m));
   Object.assign(bad, { venueRep: { a: 9, b: 'x', c: -1 }, banned: ['a', 3], van: { condition: 180, name: 7 }, phase: 'gig', gig: null });

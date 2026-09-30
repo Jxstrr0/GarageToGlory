@@ -125,7 +125,11 @@
         if (x && typeof x === 'object' && !x.pattern) { x.pattern = GG.songs.patternFor(s, x.id); x.auto = true; }
       });
       return s;
-    }
+    },
+    // v0.7 -> v0.8 (schema 8 -> 9, lane A "Kit"): gear { owned, sections, quality }, spaceTier + spaceUpgrades, the van's
+    // tier / baseName / name / stickers (the venues you already played) / upgrades, and state.merch. Only missing fields
+    // are filled (GG.shop.ensure, idempotent; it also runs on every load below). Lane B (creator) chains its own fill.
+    8: function (s) { return GG.shop && GG.shop.migrate ? GG.shop.migrate(s) : s; }
   };
   function def(o, k, v) { if (o[k] === undefined || o[k] === null && v !== null) o[k] = v; }
   save.migrate = function (s) {
@@ -173,7 +177,7 @@
       if (!x.rating) { var r = GG.songs.rate(x.pattern, s.genre, s.gear); x.rating = { groove: r.groove, hook: r.hook, difficulty: r.difficulty }; }
     });
     if (!isFinite(s.rng)) s.rng = s.seed;
-    return s;
+    return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
 
   /* ---- Save codes: UTF-8 -> LZW (9..16-bit codes) -> base64url ------------------ */
