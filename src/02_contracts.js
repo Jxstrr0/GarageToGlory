@@ -73,7 +73,8 @@
     'door', 'province', 'homeVenue', 'superfan', 'rivalFront'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
   C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge',   // venue ids cards may `book`
-    'craigs_basement', 'mill_woods_basement_party', 'quonset_yard_party'];   // v0.9 home first gigs (Lane A adds more)
+    'craigs_basement', 'mill_woods_basement_party', 'quonset_yard_party',   // v0.9 home first gigs
+    'city_hall_steps', 'westgate_parking_lot', 'auction_mart_stage'];   // v0.9 card-only rooms (minFans 99999)
   C.SIM_FLAGS = ['parentsLoan', 'label'];   // label = label id | 'diy' (set by the labels sim)   // flags the sim sets that cards may gate on
   // Seasons by week of year (week 1 = early July): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
 
@@ -242,6 +243,11 @@
      furyBrand?); per-band packs src/content/zz_band_<bandId>.js load after the base content files.
      Pools may carry byBand at any level of the path and an optional byGenre layer (career.pool strips both keys).
      card.cameo:true  = a Q8 cameo card that may voice another band's member (bypasses career.cardOk).
+     v0.9 card-set flags (packs): council, councilPlan, councilDebate, councilOdds, councilResult, roxDive, squatPlan, squatCall,
+       squatAnthem, squatAnthemPayoff (Frost Heave); riff ('settled'|'scrapped'|'original'), riffOriginal, riffPlan, riffCourt,
+       mudPlan, mudRex, mudHeadline, mudstonbury ('declined'|'gaveback'|'headlined') (Gravel Kings); truckStory, truckPlan,
+       truckDrive, truckAd, truckWar, outback, outbackPlan, outbackCall, outbackPayoff, hatInsured (Ramblers); shared: rivalFeud
+       (was wraithFeud), greyMug, costume, loonieOutfit, demandClearance (new demand kind; demandFx falls back to 'other').
      npcs[id].band:[bandIds] / .rival:rivalId scope an npc; .frontman:true marks a rival's poster (GG.rival.frontSpeaker).
      rivalry.cast[rid] also: openingSlot:[text], commentsExclusive, actions, style, furyBrand (economy.rival.byRival
        overrides the fair-fight numbers: curve, buzz, eras, chartBias, legacy, style, actions, furyBrand).
