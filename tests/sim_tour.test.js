@@ -361,7 +361,7 @@ test('save migration v7 -> v8: state.tour filled, a world-ready signed save ente
   const GG = fresh(), s = world(GG, 37, 130);
   const old = JSON.parse(JSON.stringify(s)); old.v = 7; delete old.tour; old.era = 'signed'; old.eraHistory = old.eraHistory.filter(e => e.era !== 'world');
   const m = GG.save.migrate(JSON.parse(JSON.stringify(old)));
-  eq(m.v, 8); eq(m.era, 'world'); eq(m.eraHistory[m.eraHistory.length - 1], { era: 'world', week: 100 });
+  eq(m.v, GG.contracts.SAVE_SCHEMA); eq(m.era, 'world'); eq(m.eraHistory[m.eraHistory.length - 1], { era: 'world', week: 100 });
   ok(m.tour && REGIONS.every(r => m.tour.regions[r] && m.tour.regions[r].fans === 0) && m.tour.active === null && m.tour.homesick === 0, 'tour state');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
   const young = JSON.parse(JSON.stringify(old)); delete young.milestones.worldReady; eq(GG.save.migrate(young).era, 'signed', 'not world-ready: stays signed');
