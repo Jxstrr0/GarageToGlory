@@ -22,6 +22,9 @@
 // v0.7 (WORLDSIM): on tour (GG.tour.away) the board lists the region's clubs (GG.tour.listings), tour gigs (g.tour) are
 // shaped/estimated/travelled by GG.tour (region fans, the rental vehicle, no Moose Hearse wear), trips abroad come from
 // GG.tour.startTrip and road cards are the region's (gate.region); world.scene in the World era adds the fans abroad.
+// v0.8 (KITSIM): the van has a tier (GG.shop: minivan -> 15-passenger + trailer -> sprinter -> tour bus) whose wear and
+// breakdown factors (x upgrades: winter tires, block heater) scale travel; a tape deck adds chemistry on long drives;
+// van.space = merch boxes hauled (GG.shop.hauling); a banned venue's sticker on the van gets crossed out.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
@@ -382,6 +385,7 @@
     (state.venueLast || (state.venueLast = {}))[id] = state.totalWeek;
     var banned = after <= K.banAt && !world.isBanned(state, id);
     if (banned) state.banned.push(id);
+    if (banned && GG.shop) GG.shop.banSticker(state, id);   // v0.8: their sticker on the van gets crossed out
     r.rep = after - before; r.repAfter = after; r.banned = banned;
     r.lines = r.lines || [];
     if (banned) r.lines.push(pickLine(state, rng, 'venueBanned', 'Banned. Your photo goes on the wall.'));
@@ -419,18 +423,21 @@
     if (state.protected) return 0;   // garage era: nothing breaks down (condition still drops)
     var road = GG.calendar ? GG.calendar.roadMods(state, city).road : 1;   // v0.6.1: icy roads, whiteouts, hail
     var kmRisk = Math.min(km, K.breakdownKmCap || 400);   // v0.6.1: a 1,400 km run isn't 4x riskier than a 350 km one
-    return U.clamp(Math.pow(1 - van.condition / 100, 2) * (0.2 + kmRisk / 300) * K.breakdownK * road * (world.driverMods(state).breakdown || 1), 0, 0.5);
+    var vm = GG.shop && state.van ? GG.shop.vanMods(state).breakdown : 1;   // v0.8: newer vehicles, winter tires, the block heater
+    return U.clamp(Math.pow(1 - van.condition / 100, 2) * (0.2 + kmRisk / 300) * K.breakdownK * road * (world.driverMods(state).breakdown || 1) * vm, 0, 0.5);
   };
   // One round trip to gig g: wear, burnout from long drives, maybe a breakdown (never while state.protected).
   world.travel = function (state, g, rng, d) {
     var K = cfg().van, van = world.van(state);
     var km = g.km != null ? g.km : world.km(world.home(state), g.city), driven = km * 2;
     var before = van.condition, dm = world.driverMods(state), rm = GG.calendar ? GG.calendar.roadMods(state, g.city) : { wear: 1 };
-    van.condition = U.clamp(van.condition - rngRound((driven * K.wearPerKm + K.wearBase) * rm.wear * (dm.wear || 1), rng), 0, 100);   // v0.6.1: potholes, hail
+    var vm = GG.shop ? GG.shop.vanMods(state) : { wear: 1, chemistry: 0 };   // v0.8: the vehicle tier + upgrades
+    van.condition = U.clamp(van.condition - rngRound((driven * K.wearPerKm + K.wearBase) * rm.wear * (dm.wear || 1) * vm.wear, rng), 0, 100);   // v0.6.1: potholes, hail
     van.km += driven; van.trips = (van.trips || 0) + 1;
     var burn = tripBurnout(state, km, g.city);
     if (burn) GG.career.applyEffects(state, { burnout: burn }, d);
     if (dm.chemistry && km >= K.burnoutFromKm) GG.career.applyEffects(state, { chemistry: dm.chemistry }, d);   // Earl's road stories
+    if (vm.chemistry && km >= K.burnoutFromKm) GG.career.applyEffects(state, { chemistry: vm.chemistry }, d);   // v0.8: a tape deck that works
     var out = { km: km, driven: driven, wear: before - van.condition, burnout: burn, breakdown: null, driver: world.driver(state).id };
     if (rng.chance(world.breakdownChance(state, km, g.city))) {
       var cost = rng.int(K.towCost[0], K.towCost[1]);

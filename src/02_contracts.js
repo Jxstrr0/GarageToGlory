@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 8;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 9;             // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -21,6 +21,13 @@
   C.LANES = ['kick', 'snare', 'hat', 'cymbal', 'toms', 'ride'];
   C.STEPS = 16;                  // steps per bar; steps run top-to-bottom like the note highway
   C.SECTIONS = ['verse', 'chorus', 'bridge'];          // v0.8 unlocks 'outro', 'solo'
+  C.EXTRA_SECTIONS = ['outro', 'solo'];                // v0.8: owned ones live in state.gear.sections (Outro early, Solo later)
+  // v0.8 Kit. Kit quality tier (state.gear.quality) changes the synth: body, sustain, saturation, reverb send.
+  C.KIT_QUALITY = ['milk_crate', 'pawn_shop', 'pro', 'arena'];
+  C.VAN_TIERS = ['minivan', 'fifteen', 'sprinter', 'bus'];   // rusted minivan → 15-passenger + trailer → sprinter → tour bus
+  // Rehearsal spaces by era (index = tier). Tier 0 is the band's own start (garage / laundromat basement / strip-mall unit / Quonset).
+  C.SPACE_TIERS = ['start', 'jam_room', 'pro_studio', 'arena_backstage'];
+  C.MERCH_TIERS = ['basics', 'warm', 'vinyl', 'limited'];     // stickers/shirts → hoodies/toques → vinyl → silly limited editions
   C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
@@ -100,6 +107,21 @@
      happiness, tier }, gifts: [ { id, week, from, text } ],   (v0.6.1; van gains driver)
      tour: { regions: { <id>: { unlocked, via, fans, gigs, tours, broken, big, rivalFirst, best } }, invites: [INVITE],
        active: TOUR|null, history, homesick 0..100, gongs, president, moose, queue, ... }   (v0.7; full doc in 25_sim_tour.js)
+     v0.8 KIT (defaults filled by the v8→v9 migration):
+     gear: { lanes 4..6, doubleKick, sections: ['outro'|'solo'] (owned extra sections), quality 0..3 (C.KIT_QUALITY), owned: [gearItemId] },
+     spaceTier 0..3 (C.SPACE_TIERS; `space` keeps the id), spaceUpgrades: [upgradeId] (couch, egg-crate foam, beer fridge, lights, …),
+     van (+ tier 0..3 (C.VAN_TIERS), baseName (preset per band per tier), name (renamable), stickers: [ { venueId, name, week, banned } ],
+       upgrades: [vanUpgradeId]),
+     merch: { unlocked: [merchId], stock: { <merchId>: units at home }, price: { <merchId>: $ }, sold: { <merchId>: n }, earned,
+       misprint: null | { merchId, week, status: 'boxed'|'collector' } }   (unsold stock at home = the visible box pile),
+     player: { …, look: LOOK (everyday), stageLook: LOOK (auto for gigs / red carpet / stage scenes), kit: KIT_LOOK },
+     unlocks: { creator: [partId], news: [partId] (not yet announced) }   (grown by the career; carry-over within a genre via
+       GG.creator, localStorage 'gg.v1.unlocks.<genre>'). Part ids are '<cat>.<value>' (content/creator.js).
+     v0.8 also: merch.spent, merch.last (last gig's sales), merch.shirtsOrdered, misprint.status 'pending' + units;
+       rentLate (weeks behind on rent), milestones.firstMove. GIG_RESULT.merch { sold, earned, boxes, space, items, named };
+       WRAP.shop { rent, unlocks, misprint, perks, evicted, rentLate }; WRAP.creator (new looks). Content: GG.content.shop,
+       GG.content.shopCards (forced only; effects may carry a `shop` key), GG.content.creator. Events: shop:buy|unlock|move|
+       rename|sticker|misprint|merch, creator:unlocked|changed (payloads in 2a_sim_shop.js / 2b_sim_creator.js headers).
      rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
@@ -133,6 +155,15 @@
    LOOK = { skin:'#rrggbb', hair:'#rrggbb', hairStyle:'short'|'long'|'mohawk'|'bald'|'bun'|'mullet'|'spiky'|'cap',
             shirt:'#rrggbb', pants:'#rrggbb', height: 0.9..1.1, build: 0.9..1.2,
             extras: ['sunglasses'|'beard'|'moustache'|'glasses'|'headband'|'tattoos'|'hat'|'bandana'] }
+   LOOK v0.8 adds (all optional; every old LOOK stays valid and renders the same): age 'fresh'|'lived'|'grizzled',
+     face: { shape, eyes, eyeColor, brows, nose, mouth }, facialHair, glasses, hairStyle (+ the Part C2 list), top, bottom, shoes,
+     headwear, outfit (stage), tattoos: [ { spot, design } ], knuckles: { left: 'ABCD', right: 'EFGH' } (A–Z only), piercings: [id].
+     stageExtras: ['cape'|'wristbands'|'corpsepaint'] (stage looks only; everyday looks carry no outfit/stageExtras);
+     a tattoo at spot 'teardrop' has design 'tear'. Part ids + unlock gates live in content/creator.js. Never a gong.
+   KIT_LOOK = { shell: 'wood'|'black'|'sparkle'|'flames'|'camo', color: '#rrggbb', hardware: 'chrome'|'black',
+     head: 'logo'|'face'|'moose'|'text'|'plain', headText, throne: 'crate'|'stool'|'leather', sticks: '#rrggbb',
+     extras: ['cowbell'|'fan'|'pyro'] }  (shell 'paint' = the old plain colour, used for migrated saves)
+     (player.kitColor stays as the legacy colour = KIT_LOOK.color; pyro is arena-only. NO GONG, ever.)
    PATTERN = { bpm, lanes: 4, sections: { verse: [laneStr x lanes], chorus: [...], bridge: [...] }, arrangement: ['verse','chorus',...] }
              laneStr = 16 chars, 'x' = hit, '.' = rest (index = step, top to bottom). Lane order = C.LANES.
    SONG = { id, title, titleEn, written, pattern: PATTERN, rating: { groove, hook, difficulty }, quality, polish,
@@ -222,7 +253,7 @@
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
    'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
-   'audio:end'      { handle }                          a song finished (or the app hid)
+   'audio:end'      { handle, natural }                          a song finished (or the app hid)
    'member:stage'   { id, stage }             drama, when a member's grievance stage changes
    'member:quit'    { id }  'member:return' { id }  'recruit:hired' { member }  'protection:ended' {}   (v0.4 drama)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot

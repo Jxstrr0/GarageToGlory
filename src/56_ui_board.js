@@ -9,6 +9,8 @@
 // v0.6.1 (Addendum 1 C6/C7): the map is Canada in rings: ring tabs (ring-<id>; Saskatchewan, the West from Local Heroes,
 //   the East & North from Signed); a locked ring is teased (dimmed pins + ring-locked note). Listings carry tag chips
 //   (holiday, outdoor weather, 'your season'; testid board-tag) and the head shows month · season · weather.
+// v0.8 (SHOPUI): each flyer shows the merch table's estimate there (board-merch); the van strip shows the vehicle, its merch
+//   space in boxes and the sticker count.
 // v0.7 (WORLDUI): on tour (GG.ui.tourBoard from 5i_ui_tour) the board is the region's: its listings (GG.tour.listings via
 //   world.board), the regional map with city pins (city-pin-<id>, board-map data-region) and the rental instead of the van.
 (function (GG) {
@@ -113,12 +115,22 @@
       el('div.gb-chips', chips.concat((l.tags || []).map(function (t) { return el('span.gb-chip.tag', { testid: 'board-tag' }, t.icon + ' ' + t.text); }))),
       l.catch ? el('div.gb-catch', [el('b', 'The catch: '), fill(l.catch)]) : null,
       el('div.gb-est', '~' + e.crowd + ' people · ' + (e.pay ? '~' + U.fmtMoney(e.pay) : 'no pay') + ' · ~' + e.fans + ' new fans' + (e.burnout ? ' · long drive' : '')),
+      merchEst(st, l),   // v0.8: what the merch table might make there
       marcel
     ];
     if (mode === 'book' && onPick) {
       kids.push(btn('.btn.primary.small.block', { testid: 'book-' + l.id, disabled: !can, onclick: function () { onPick(l); } }, can ? 'Book it' : taken ? 'Taken by ' + l.stolen.by : 'Not enough fans yet'));
     } else if (booked) kids.push(el('div.gb-open', 'Booked this weekend'));
     return el('div.gb-card' + (booked ? '.booked' : ''), { testid: 'board-listing', data: { id: l.id } }, kids);
+  }
+
+  // v0.8 (SHOPUI): the merch table's estimate for a listing (GG.shop.estimate: the van's haul, this crowd, a B night).
+  function merchEst(st, l) {
+    if (!GG.shop || !st.merch) return null;
+    var m = null;
+    try { m = GG.shop.estimate(st, l); } catch (e) { m = null; }
+    if (!m || !m.haul || !m.haul.boxes) return null;
+    return el('div.gb-est', { testid: 'board-merch' }, '👕 merch ~' + U.fmtMoney(m.earned) + ' (' + m.haul.boxes + ' box' + (m.haul.boxes === 1 ? '' : 'es') + ' in the van)');
   }
 
   /* ---- The map ---------------------------------------------------------------------------------------- */
@@ -188,6 +200,7 @@
     var van = W().van(st);
     return el('div.panel', [el('div.gb-van', [el('span', { style: 'font-size:22px' }, '🚐'), el('div.grow', [
       el('div', { style: 'font-weight:800' }, van.name + ' · ' + W().vanLabel(van.condition)),
+      GG.shop ? el('div.small.dim', GG.shop.vanTierDef(van.tier || 0).kind + ' · hauls ' + van.space + ' merch boxes · ' + (GG.shop.stickers(st).length) + ' stickers') : null,   // v0.8
       ui.bar(van.condition, 100, { color: van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)' }),
       el('div.small.dim', U.fmtNum(van.km) + ' km driven · ' + driverLine(st))])])]);
   }

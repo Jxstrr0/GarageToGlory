@@ -4,7 +4,7 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const { ORDER } = require('../build.js');
 const SRC = path.join(__dirname, '..', 'src');
 const VERSION = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
-const SIM_SAFE = /^(0[12]_|1\d_|2\d_|content\/)/;
+const SIM_SAFE = /^(0[12]_|1\d_|2[\da-z]_|content\/)/;   // v0.8: 2a_sim_shop, 2b_sim_creator
 
 function fakeStorage(opts) {
   const m = new Map(), o = opts || {};

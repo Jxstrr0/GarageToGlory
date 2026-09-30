@@ -15,6 +15,7 @@
 //           beats and in key; a key per song id; choruses fuller than verses; breakdowns stripped (growl on the drop);
 //           metal chugs on every kick; venue rooms; crowd/garage/van/radio beds; the mixer API + metronome; live:
 //           garage hum + noodling, van road noise + radio for a charted song, the gig's room + crowd reactions.
+//           v0.8: kit quality tiers 0..3 per lane (clean, never clipping, fuller + longer each tier) + an outro/solo song.
 //   heavy : v0.7.2 (owner: "heavier" metal, a better crowd). Objective metrics from OfflineAudioContext renders, recorded
 //           against the v0.7.1 numbers (measured on the v0.7.1 build with the same method): every genre's song peak < 1 and
 //           RMS sane; metal band-only energy below 150 Hz and at 2-6 kHz up, mids kept, lower fundamentals (drop tuning), a
@@ -443,6 +444,29 @@ async function audio() {
     });
     c.ok(mix.buses === 'drums,band,crowd,sfx' && mix.bad === null && mix.saved === 0 && mix.get === 0 && mix.bandOff < 0.001 && mix.bandOn > 0.02 &&
       mix.half < mix.full * 0.7 && mix.clamped === 1 && mix.reload.band === 1 && mix.reload.drums === 1, 'mixer: setVolume/getVolume, saved in settings.mix ' + JSON.stringify(mix));
+    // ---- v0.8 kit quality tiers (C3): audible (energy + sustain grow tier by tier), never clipping; outro/solo songs ----
+    const tiers = await page.evaluate(async () => {
+      const out = { lanes: {}, songs: {} }, e = r => r.rms * r.rms * r.seconds;
+      for (const g of ['metal', 'rock', 'country']) for (const l of ['kick', 'snare', 'toms', 'cymbal']) {
+        out.lanes[g + ' ' + l] = [];
+        for (let q = 0; q < 4; q++) { const r = await GG.audio.renderOffline({ genre: g, lane: l, quality: q }); out.lanes[g + ' ' + l].push({ peak: r.peak, e: e(r), tail: r.tail, nan: r.nan }); }
+      }
+      const S = GG.songs, gear = { lanes: 6, doubleKick: true, sections: ['outro', 'solo'] };
+      for (const q of [0, 3]) {
+        const p = S.addSection(S.addSection(S.generate('metal', GG.RNG(4), { gear }), 'solo', gear), 'outro', gear);
+        const r = await GG.audio.renderOffline({ genre: 'metal', pattern: p, full: true, bars: 40, songId: 's1', quality: q });
+        out.songs['q' + q] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan };
+      }
+      return out;
+    });
+    const tierBad = [], tierFlat = [];
+    for (const [k, list] of Object.entries(tiers.lanes)) {
+      if (list.some(r => r.nan || !(r.peak > 0.02 && r.peak < 1))) tierBad.push(k);
+      if (!list.every((r, i) => !i || (r.e > list[i - 1].e && r.tail > list[i - 1].tail)) || !(list[3].e > list[0].e * 2)) tierFlat.push(k);
+    }
+    c.ok(tierBad.length === 0, 'kit tiers render clean, no clipping (' + Object.keys(tiers.lanes).length * 4 + ' renders) ' + tierBad.join());
+    c.ok(tierFlat.length === 0, 'kit tiers audible: fuller + longer each tier, arena > 2x the milk crate ' + tierFlat.join());
+    c.ok(Object.values(tiers.songs).every(r => !r.nan && r.peak < 1 && r.rms > 0.01) && tiers.songs.q3.rms > tiers.songs.q0.rms, 'a 6-lane outro/solo song renders clean on the milk crate and the arena kit ' + JSON.stringify(tiers.songs));
 
     // Live ambience (bus events + state): garage hum + noodling, van road + radio, the gig's room and crowd.
     await page.evaluate(() => { GG.main.quickStart({ seed: 5, openCard: false }); GG.ui.closeAll(); });

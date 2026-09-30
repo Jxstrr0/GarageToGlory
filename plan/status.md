@@ -91,6 +91,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
   +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
 
+## Queued: Addendum 2 (owner, 2026-09-30) — `plan/addendum_2_queued.md`
+- Owner: "for after you're done and before final". Its own rule: nothing starts until the version in progress (v0.8)
+  is finished, tested, built, committed, pushed and merged; don't expand v0.8 with it. Then, in order:
+  1. **D0 housekeeping:** fix this file's Version section (Current = `VERSION` on main, shipped list, Next), and from
+     then on update Current/Next at every merge; append the addendum to `plan/handoff.md` as **Part D**; record its
+     decisions + an "Addendum 2 — pending" checklist (D1–D5) under the Addendum 1 one; delete the queued file.
+  2. **v0.8.1 catch-up** (the D items tagged v0.8): D1 licensing deals, D2 band logo (new-career picker + one renderer
+     reused for kick-head art, merch, van stickers, Bandbook avatar, garage banner, Loonies card; rival logos), D3
+     year-end recap (swipeable, band photo still, compact in `history`). Popup first for D6 (licensing fees/odds).
+  3. v0.9 Genres → v1.0 Glory (+ D4 achievements) → **v1.1 Tuning** (D5, new roadmap entry; popup: the owner's top two
+     annoyances). **No share/screenshot button, ever.**
+
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
   Hail Damage inside, Dad's hail-dented truck, the bungalow, an arena with searchlights on the horizon; instanced hail,
@@ -145,12 +157,40 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   pw_seq audio 39 (growls from the drop, live crowd ready + ≤ 18 song voices, every tap sounds over a full metal band) +
   new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
   WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
+- Gaps: nobody has listened on a phone yet (tuned by numbers). The pw_gig "setlist layout" hscroll was a real bug, not
+  load: long English titles (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }`.
+- pw_gig `gig` flakes, root-caused with CDP CPU throttling ×6 (headless rAF gaps 250 ms–5 s while a 25 ms timer keeps
+  pace; the main thread is mostly idle, frames wait on the GPU) — all real bugs a GPU-bound or slow phone would hit:
+  (1) auto notes / second kicks were booked only in the frame loop, so a late frame booked them in the past (played up to
+  110 ms late) or skipped them; now a 25 ms booking pump (`55_ui_gig` pump/book, like the band's setInterval scheduler)
+  books them too, and the booking horizon reads the audio clock (`heardSong`) so a game clock still drifting after an
+  audio hiccup can't book them ~0.7 s early (≥ 1 s = played at once). (2) "gig layout hscroll": the count-in numeral
+  (`.gig-count`, full-width box, `scale(1.35)` keyframe) stuck 68 px past the edge during every count-in, and Chrome kept
+  the 458 px scroll width into the song when frames were slow; the box is now 120 px, centred. (3) "song clock = AudioContext
+  time" (−35..−83 ms under load): `startAudio` resynced with a `performance.now()` taken BEFORE `GG.audio.play()` (slow on
+  a slow CPU), so the song clock ran ahead of the band by play()'s duration; it now resyncs with a fresh now.
+  Tests: pw_gig gig 31 (+2: count-in never widens the screen; rAF slowed to 600 ms → auto notes still ahead, none skipped;
+  debug gigui `autoSkipped`). Still frame-bound: Auto-kick's own kick (`ses.tick` in the frame) plays on the frame it's due.
+  Residual only under extreme load (3 parallel ×6-throttled runs): "song clock started" (< 2 s) when a rAF gap is > 2 s.
 - Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" is flaky under
   machine load (headless rAF gaps of 100-600 ms with software WebGL; HEAD and the fix both fail it ~half the time at
   load avg 7-14; green when quiet). The pw_gig "setlist layout" hscroll was a real bug, not load: long English titles
   (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
   ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
   (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
+- pw_rival `botb` "btn-rs-go" 12 s timeout under load was a real bug, not load: the rival's set (59d `tick`) capped each
+  frame at 0.1 s, so below 10 fps their set played in slow motion (a 4.5 s set took 18-27 s at 300-1000 ms frames; their
+  drummer also drifted off the audio after any hitch). Their set now runs on wall time like the gig clock (v0.5.1); time
+  with the app hidden doesn't count (visibilitychange re-bases). Debug `rivalui.clock`; pw_rival botb +1 check (a 1 s
+  stall advances their set ~1 s; the old clock gave +0.2 s). Repro: CDP `Emulation.setCPUThrottlingRate` 6.
+  Same cap in the van (57 `frame`), the other botb timeout under load (the weekend's 8 s wait): the skip click missed its
+  2 s actionability wait, the helper never retried, and the drive crawled (39% after 26 s). The drive now runs on wall
+  time too (a long frame still stops at the road card, 45%), and pw_rival `weekend()` retries the skip until it lands.
+- Seen while reproducing (not fixed): with the song left to play to its end, the gig's `audio:end` handler compares the
+  last frame's `G.t` with the chart and can read the natural end as "stopped under us" → pause(true) (the song restarts
+  on resume). Headless audio runs ~0.5-1 s ahead of the gig clock by the end of an 18 s song, so it pauses every time
+  there; on a phone it needs a > ~0.27 s frame at that moment (or ~0.3 s output latency). pw_rival botb only hits it when
+  its screenshot outlasts song 1 (~18 s, 6x throttle + parallel runs).
 
 ## v0.7.2 titles (hotfix, TITLES agent)
 - `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,
@@ -242,7 +282,7 @@ Already-shipped versions → **v0.6.1 catch-up**:
 - [x] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays — WORLD, v0.6.1
 Later versions:
 - [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
-- [ ] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers
+- [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
 - [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
 
 ## Tech
@@ -341,6 +381,216 @@ Later versions:
 - UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
+
+## v0.8 integration (lead, 2026-09-30)
+- Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
+  garage / Rent-A-Riff Jam Space 7 / Prairie Dog Sound / backstage at the Potash Place; van cabins with real seat backs;
+  art-critic loop) + main (v0.7.1 3D title, v0.7.2 English titles / layered crowd / heavier metal / double kick).
+- Timing root-causes (repro'd with CDP CPU throttling, fixed in the game, not the tests): gig auto notes + second kicks
+  booked by a 25 ms timer (not only per frame) against the audio clock; count-in numeral box no longer widens the page;
+  fresh timestamp at song start; rival BOTB set + van drive run on wall time (a slow phone played them in slow motion);
+  the van clock starts on its first drawn frame; `audio:end` carries `natural` so a song that played out never pauses the
+  gig (drift used to pause it at the very end and resume restarted the song) — pw_gig `songend`. Still open: Auto-kick
+  plays its own kick on the frame it comes due (can be late on a slow phone).
+
+## What's in v0.8 (sim) — KITSIM, lane A stage 1 (UI = stage 2, SHOPUI; creator = lane B)
+- `GG.shop` (`src/2a_sim_shop.js`, API in its header; catalogue `content/shop.js`; numbers `economy.shop`; forced cards
+  `GG.content.shopCards` at the bottom of `content/cards.js`). Save schema 9: `10_save` MIGRATIONS[8] + a chained
+  `GG.shop.ensure` on every load (fills only missing lane-A fields; old gear.lanes/doubleKick -> gear.owned; the venues in
+  `venueLast` become van stickers, banned ones crossed out).
+- Gear: toms $450 (lane 5), ride/china $350 (lane 6, needs the toms), double-kick pedal $300; kit quality 0..3 (milk
+  crate -> pawn shop $800 -> pro $2,800 Local Heroes -> arena $9,000 World). Gear shows on stage (performance +0..2 by
+  tier, +0.25 per lane/pedal), live crowd start (+0..2), new songs (+0..1.5 quality) and studio production (+0..1/week).
+- Songs (`21`): extra sections C.EXTRA_SECTIONS live in PATTERN.sections only when owned + used (sanitize/validate/rate/
+  generate/toNotes; `sectionsOf, allSections, addSection, removeSection, withExtras, extraBar`). Outro unlocks free after
+  3 songs written (Jaxon/Dana chat at the wrap); Solo via Dana's card in Local Heroes (4+ songs; refused -> again in 10
+  weeks; auto after 16 weeks without her). rate(): outro/solo count half toward groove, hook +3..4 for a tom fill / ride
+  chorus / ending on an outro / a solo after the first chorus (4-lane patterns rate exactly as before). With the pedal, kicks
+  on the in-between 16ths are a run, not syncopation (the pedal no longer lowers metal groove). Jams use owned gear.
+  Dana's reaction: a solo section makes her happy.
+- Gig (`22`): merch sells in applyResult (`r.merch = { sold, earned, boxes, space, items: { id: { hauled, sold, price,
+  earned } }, named }`, joins the gig's fund change), a sticker per venue (ban -> crossed out, in `26` afterGig); chart:
+  a 'solo' section is Dana's (quarter notes only + the solo cue + crowd +3), an 'outro' ends on a fill window; the two-thumb
+  rule holds with 6 lanes + the pedal on every difficulty (tested).
+- Spaces: tier by era (jam room Local $60/wk rehearse +8%; pro studio Signed $150/wk + write +1, record +1; arena backstage
+  World $300/wk + rest +20%, recover 1); offer card per new tier (`shop_space_1..3`) or `GG.shop.move` any time; rent is in
+  `career.upkeep`; 2 wraps with < 2 weeks' rent -> evicted one tier down (`wrap.shop.evicted`). 16 upgrades (4 per tier;
+  the curb couch + beer fridge move with you; chemistry/mood perks land every other week).
+- Van: minivan -> 15-passenger + trailer $3,500 (Local) -> sprinter $6,500 (Signed) -> tour bus $30,000 (World), 30% trade-in
+  x condition (min $150); Part C1 names per band per tier, `renameVan` (28 chars, no markup); space = merch boxes (3/6/9/14),
+  comfort 2..5 (trip burnout), wear/breakdown factors (`world.travel`); 7 upgrades (roof rack, cushions, winter tires, block
+  heater, tape deck +1 chemistry on long drives, bunks, merch pod).
+- Merch: tiers basics (stickers, shirts + genre: metal patches/longsleeves, punk patches/DIY tapes, country trucker hats) ->
+  warm in Local (hoodies, toques (winter x1.6), rock tour shirts) -> vinyl (Local + a record out) -> limited (Signed + 5k fans:
+  the Lord Abyssus bobblehead, capes; per-band items). Pick the table + prices (0.5..3x suggested), buy boxes up front; the
+  van hauls `van.space` boxes round-robin down the table (2 boxes abroad); sales = buyers (crowd^0.65 above 50 x 0.032 x grade
+  x fit x superfans x variety) split by appeal x season x price curve e^(-1.6 (p/suggested - 1)); Dale/Wendell/the president
+  buy one each (`GG.fans.merchMods`). Unsold stock = the garage box pile (`GG.shop.pile`). The first shirt order comes back
+  misprinted (`money_merch_misprint`, moved out of the deck): box it (-> collector's item after 8 weeks + 300 fans: $60,
+  appeal 2.5), reprint ($100) or wear them. Other shop cards: the merch table intro, the pawn-shop kit, Baba's church van.
+- Audio (`30`): kit quality tiers per C3 (body, sustain, saturation, box/low/high cut, reverb send; peaks < 0.55, arena ~2-6x
+  the energy of the milk crate), `kitFor(genre, tier)`, `kitQuality()`, `renderOffline({ quality, .. })` (+ `tail`); the
+  outro's last chord rings 2.5 beats past the end (the song waits for it), a solo is the genre's lead over a stripped kit.
+- Bots: gear/kit/van/space/upgrades/merch with cushions (big buys keep 8 weeks of bills, never mid-session), shop cards
+  answered by value, downsizing when rent bites. Rival set strength cap 87 -> 90 (they buy gear too).
+- Balance (10y x 20, before -> after): avg local/offer/signed/world wk 20/39/46/158 -> 22/43/47/155, y10 fans 42.9k -> 43.4k,
+  fund $11.1k -> $8.5k, loans after y1 0.10 -> 0.10, quits/yr 0.63 -> 0.53, Sad Dome 8/20 -> 13/20, merch 44% of gig pay
+  (net 26%), 6 lanes + pedal wk 67; good 15/27/28/103 -> 16/27/28/101, fans 63.7k -> 67.1k, fund $21.8k -> $19.5k, loans 0,
+  Sad Dome 20/20, 6 lanes + pedal wk 34 (y2), sprinter wk 100 (the World era wk 101), merch 38% (net 23%); invariants OK.
+- Tests: new `sim_shop.test.js` (16), sim_audio +2 (kit tiers, outro/solo), pw_seq audio +3 (tier renders clean + audible,
+  a 6-lane outro/solo song); sim_career/sim_songs/sim_world expectations follow the new gear/van fields.
+
+## What's in v0.8 (shop UI) — SHOPUI, lane A stage 2 (screens + render + integration for GG.shop)
+- `src/5k_ui_shop.js` (GG.ui v0.8, API in its header; CSS block `/* v0.8 SHOP */` in 00_shell after the CREATOR block).
+  Drum shop `gear` (tall sheet; the kit's sketch pad has "🛒 Drum shop"): kit tiers 0..3 in order, toms / ride / pedal, the
+  Outro / Solo rows (how they unlock); every disabled button shows the sim's `why`; a buy plays `GG.audio.hit` on the new
+  lane (a fill round the kit for a new kit, audio follows gear.quality) and an open sequencer grows its lanes.
+- Merch table `merch` (the merch hotspot; the v0.7 "Coming in v0.8" stub is gone): van haul vs space in boxes, the box pile
+  at home, the next gig's estimate, last gig's sales, the misprint status (pending → boxed with weeks/fans progress →
+  collector); per item: on the table (toggleTable), a price stepper inside item.range ($1/$2/$5 steps + a price word),
+  "Buy N boxes" (1..10, buyStock; the first shirt order comes back misprinted → Dana's tease for Monday). The gig board
+  shows "👕 merch ~$X" per flyer and the van's tier / boxes / stickers.
+- Garage door `van-info` (57) with tabs Van / Space / Car lot: an SVG van side per tier (rusted minivan, 15-passenger +
+  trailer, sprinter, tour bus) with the name on it and a sticker per venue played (banned ones crossed out in red), rename
+  (renameVan), driver, condition + Cousin Dale, merch space in boxes (was "space / 5"), van upgrades; Space: the room now
+  (rent, perks), rooms around town (move with a confirm, move back), this room's upgrades; Car lot: vans with price −
+  trade-in = net (buyVan, confirm).
+- Monday cards: `deltas.shop` chips (50 deltaChips → `ui.shopChips`). Gig results (55) + week results (52) show `r.merch`
+  in a panel (its "Merch table:" line folds in). The wrap: rent, Outro/Solo + merch unlocks, rent arrears, eviction, the
+  collector's item; the collector moment `shop-collector` (full: the box opens, the HALE DAMAGE shirt rises, $60, RARE)
+  plays once when the misprint turns (shop:misprint 'collector' / wrap.shop.misprint; "See it again" in the wrap).
+- Sequencer (54): tabs from `songs.allSections(gear)` ("+Solo" / "+Outro" until added → addSection; ⋯ removes), off-beat
+  cells dimmed in a Solo, arrangement cards keep the extras (withExtras), the Song tab adds/removes them and lists groove
+  per part; the guided Write gets Solo / Outro steps when owned (8 steps). 5–6 lanes + 6 tabs fit 390px. Gig (55): 6 lanes
+  = 65px each on a 390px phone, keys G / H = toms / ride. Laptop Money tab: merch sold / stock bought, rent.
+- 3D: 41 draws the space by `spaceTier` (tiers 1–3 hide the garage-only meshes: drywall, sectional door, pegboard, hockey
+  stick, mower, heater, moon shafts, window snow; draw their own walls, floor, door, props + a canvas sign; the banner moves
+  beside the door; the door hotspot reads "Door"), all 16 upgrades visible (the disco ball spins, green room paints the
+  walls), the unsold box pile (one box per box; the boxed misprint taped with a red X; since SPACES: back-left corner,
+  up to 15 + a MERCH sign); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
+  band's vehicle tier inside (15-passenger rows + hymnals, sprinter high roof + touchscreen, tour-bus lounge) + the newest
+  12 stickers on the hood (bus: over the driver's doorway, on the lounge partition); info() tier / vehicle / stickers / banned.
+- Review fixes (after SHOPUI): merch cards keep catalogue order (locked last; on the table = the amber .on style only) and a
+  second "Buy" tap on the same card within 400 ms is ignored (a double tap bought twice / the wrong item); the catering
+  table's walk footprint matches the table; the curb couch is a floral loveseat (0.8 m) and, while it's in the room, the
+  laptop / merch stand points step aside (`space.stand(action)`); the MERCH overflow sign stands behind the box pile (tall,
+  with a footprint); the backstage BAND ROOM sign follows the loaded band (debug space.signText, space.obstacles); the
+  eviction week's wrap rent names the room they left; van side: the name ink suits the paint (light on the minivan / bus),
+  7+ letter sticker labels squeeze to the sticker, "+N more" takes the last slot, the car lot paints each vehicle's own
+  name (`vanSide(st, { name })`); a long van name wraps in the sheet title; locked shop rows dim all but the why / how;
+  the garage-door tabs stick flush to the sheet top.
+- Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (24) | space (21) | van (20) + contact sheet
+  `tests/.cache/v08_shop_sheet.png`; pw_flow layout expects the merch table on the merch hotspot.
+- v0.8 polish SPACES (lead's contact-sheet finding: every rented tier read as the same garage). 41: each tier is its own place
+  from the fixed camera, hotspot layout + walk floor unchanged. The garage's signature bits (string lights, wooden top plates,
+  baseboards, gravel edge, corner trim, the beat-up couch, the red rug) moved into the garage-only meshes; a rented room hides
+  the yard (lawn, weather, lawn chair; the season is still tracked) and re-lights the scene (`MOODS`: hemisphere, key, fill,
+  bulb colour + flicker, accent light, background, dust). Tier 1 Rent-A-Riff, Jam Space 7 (strip-mall rehearsal complex):
+  painted cinder block (blue band, grey above), grey carpet tiles with stains, egg-crate foam patches (one orange), a buzzing
+  wall-mounted fluorescent strip (its own flicker material), a red steel door with a stencilled 7 + wired-glass lite, NO DRUMS
+  AFTER 11 PM across the top, other bands' stickers + marker graffiti, plastic chairs, an orange corduroy couch, the kit on a
+  grubby mat with neon spike tape; out front the corridor (VCT tiles, bilingual WET FLOOR, the next band's gear, lost + found).
+  Tier 2 Prairie Dog Sound: charcoal fabric panels, a wooden QRD diffuser, co-op timber beams (the name on the beam), warm
+  planks, the control-room window with the desk / meters / Gwen glowing behind the glass, track lights washing the walls, a
+  gear rack, the house gold record ('Curling Night in Canada', 1987), a chesterfield, the kit on a carpeted riser (people step
+  up: `space.floorAt`); out front the lobby (the organ + Leslie, a fern, the logo rug). Tier 3 backstage at the Potash Place:
+  navy painted block + gold stripe under bare concrete (form-tie holes), BAND ROOM — <band> stencilled, a cable tray, caged
+  work lights, stencilled road cases, a monitor showing the empty arena, the bulb mirror, a sad catering table (celery, water)
+  until hot catering is bought, a black leather couch, the kit on a black deck with hazard tape; out front the service
+  corridor (yellow lines, LOADING DOCK →, NO SKATES, cable ramps, the forklift, the home team's laundry, a cone). The bedsheet
+  banner hangs only at home and in the jam room. Every word/picture is one canvas atlas (2048 x 1024 since the review) (decals lit + glow, the corridor
+  floor faded out at its edges); light pools are one additive mesh. Seasons: window snow only at home; December lights are
+  the tier's own (the jam room's sad strand with dead bulbs, fairy lights on the control-room window, a strand round the road
+  cases); the box fan only at home + in the jam room. The box pile moved to the back-left corner behind Marcel's mirror by
+  Kenji's crate (three stacks, a staircase up to 15, a MERCH sign rising out of it past that) — clear of every label.
+  debug().space adds kind, wall, floor, bg, fixture, hall, hallProps, decals, riser, yard, banner, pileBox, pileSign; debug().labelAt.
+  43: the seat backs you stare at got detail (rolled top, bolsters, a ribbed velour insert, seams, a map pocket with a road
+  map / ketchup chips, a hoodie slung over the minivan's driver seat, cup holders, the minivan bench's belts + a set list);
+  the 15-passenger's church bench (headrest humps over the window seats, pleats, a grab rail, belts, sticks + a phone + a
+  double-double on the ledge, a ribbed rubber floor mat), the sprinter's captain chairs (bolsters, quilted channels, a
+  seatback pocket with a tablet, headrests on posts, armrests both sides, a cooler + gig bag in the aisle, a vinyl-plank
+  floor); each own vehicle's camera sits a touch higher / zoomed in (minivan CAM_MINI, 15-passenger over the bench with row 2
+  pulled into view, sprinter over the headrests); the tour bus is unchanged. info() adds cam, hfov. Content: the jam room is
+  'Rent-A-Riff, Jam Space 7' (blurb + offer card: cinder block, egg-crate foam).
+  Tests: pw_shop META_ONLY=spaces (17: four different room signatures, the kit on the deck, 10 boxes drawn on screen under no
+  label on every tier, December in a rented room, draw calls < 60, every cabin's lower third not one flat colour) + sheet
+  `tests/.cache/v08_spaces_sheet.png`; van +3 (tiers 0–2: the lower third's top colour ≤ 30%); space: the MERCH sign found
+  via debug space.pileSign.
+- SPACES review (visual critic on `v08_spaces_sheet.png`): every tier keeps the front-left corridor clear of the merch stack
+  (the jam room's next-band gear sits mid-corridor by WET FLOOR, the studio's organ + Leslie stand right of the logo rug, the
+  backstage cable ramps stop short and the laundry cart became the band's black drum case, white corners, HAIL DAMAGE / DRUMS);
+  the box pile is a staircase along the open left edge growing toward the camera (4 cells + a second column at the front, ≤ 3
+  high, white tape band on every box; the misprint's red X on the side we see), Marcel's mirror + his spot moved a step
+  forward-right so nothing stands in front of it; near-black clothes in the garage scene lift to #33333d (o.lift) so figures
+  with their backs to us keep their shape. Jam room: a wide two-tube fixture high in the middle of the back wall (cool bloom),
+  NO DRUMS / AFTER 11 PM big + condensed (canvas-squeezed lettering, no fine print) under the smaller banner, chunky die-cut
+  band stickers on the door and over the sign's corners, a GRAVEL KINGS spray tag right of the door; the corridor tiles 35%
+  darker + drab, fading out sooner, ending at a low cut wall with the neighbours' steel doors 6 and 8 and a lit EXIT → SORTIE;
+  the sad December strand droops over the sign. Studio: bevelled panels (charcoal / slate / burgundy, dark gaps; the right
+  wall's run covers the band poster), a stepped skyline diffuser in pale wood under a track light, the gold record on walnut
+  (#d4af37 disc, groove ring, label, brass plate), the control-room window a deep reveal (sill, lit jamb, mullion, a glare
+  streak) onto a dim blue-grey room with the console's meters + fader caps glowing over the sill and Gwen's silhouette (the
+  beam plaque is gone), pale oak planks with thin seams, key/fill/bulb ~30% less saturated, a cool control-room accent, the
+  lobby on charcoal carpet. Backstage: BAND ROOM → stencilled between the labels, the band's name big on a placard on its door
+  (the star moved up), the arena monitor bigger + brighter on an arm turned to the camera (seating rings, the lit stage, LIVE),
+  the forklift's pallet up on its forks with a shrink-wrapped stack. The laptop desk is per tier (cooler / walnut side desk /
+  stencilled flight case; the garage's cooler is garage-only) and without the curb loveseat the studio has a black office
+  chair, backstage a director's chair. The decal atlas is 2048 x 1024 with a best-fit guillotine packer (the shelf packer ran
+  out). Vans (43): every own cabin's headliner is broken up (overhead console + map lights, a CD wallet on the driver's visor,
+  a set list in the other, headliner seams; the minivan's sagging bit held up with thumbtacks), front seats get headrests on
+  posts + pocket elastic/stitching; minivan: buckets a touch inboard, a backpack slumped on the console, ketchup chips on the
+  bench, the hoodie is gone (it read as the driver's torso); 15-passenger: the bench back is three piped cushions with gaps +
+  two buckles, thin crossed tapered sticks on the ledge (only the bench's top lip in frame), grab handles; sprinter: a cab
+  shelf over the windshield (toque, set lists, gaff tape, laminates), lighter stitched centre panels, cup holders on the
+  armrests. Cameras tighter (hfov minivan 42 → 38, 15-passenger 43 → 37, sprinter 44 → 38 and 0.2 forward; look a touch
+  higher); the tour bus unchanged. pw_shop spaces: the sheet adds December in the jam room and backstage (spaces_dec_1/3).
+- Gaps (shop UI / spaces): the other bands' tier-0 starts (laundromat basement, strip-mall unit, Quonset) still draw the
+  parents' garage; the corridor props out front are static (no passers-by, no hockey players); the control-room window is a
+  painted picture (no parallax); sticker / graffiti text is only legible zoomed in (colour + shape read at phone size);
+  the wall-mounted tube is the jam room's only fluorescent (no ceiling fixture: the camera looks down); the band banner is
+  not shown in the studio (no bedsheets at Prairie Dog Sound) or backstage (the door placard names the band); the right wall is
+  seen edge-on, so most signature pieces live on the back wall and the floor; the neighbours' doors 6 + 8 are drawn on the
+  face of the corridor's cut wall we see (a diorama cheat); the curb loveseat (a bought upgrade that moves with the band)
+  still sits by the laptop in the rented rooms; with the tighter minivan camera the buckets' outer halves are off-frame.
+
+## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
+- Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy
+  looks kept drawable: short / top bun / gelled spikes, library specs, horseshoe 'stache, sweatband), each `{ id: '<cat>.<value>',
+  cat, value, name, gate?, hint?, color? }`; gates `era | fans | milestone | award | gigs` (+ `genreStart`: metal starts with the
+  battle jacket, corpse paint, the Viking beard; punk the mohawk, liberty spikes, green dye; rock the Canadian tuxedo, slicked
+  back; country the cowboy hat + boots, rhinestone suit, cowbell). Pyro = World era, your own cape = a Loonie, gold sticks =
+  a gold record, your face on the kick = platinum. Swatches: 12 skins, eyes, 18 clothes, 12 kit colours. No gong, ever.
+- Sim `2b_sim_creator.js` (`GG.creator`, DOM-free, no RNG): unlocks are pure functions of state (week-end hook on
+  'week:wrap' → one wrap milestone line "New look unlocked: … (☰ → Look)" + `wrap.creator`; events loonies:result / cert /
+  tour:gong / gig:done unlock now → 'creator:unlocked' (UI toast) and the next wrap lists them). New careers: stage look =
+  everyday look, `newKit` (milk crates, band logo on the kick); `prepare()` hands the creator's look/stage/kit + carry-over to
+  the 'career:new' hook. Carry-over per genre in `gg.v1.unlocks.<genre>` (wrapped storage). Save: chained onto
+  `GG.save.migrate` in this module (not 10_save): fills player.stageLook (= look), player.kit (`legacyKit`: the v0.7 kit),
+  unlocks (earned quietly + the stool throne) only when missing; never touches `state.v`.
+- Render: the character builder moved into `40_render_core.js` (`R.charGeometry`; 41 `makeCharacter` calls it). Legacy LOOKs
+  take the verbatim v0.7 path: 1,220 member/rival/recruit/preset/combo geometries hash-identical to v0.7, and the garage +
+  stage scenes are hash-identical for a v0.7 player. v0.8 LOOKs draw build/height/age, 4 face shapes, eyes (+ colour), brows,
+  noses, mouths, 8 facial hair, 5 glasses, 17 hair styles (hat-aware), 8 tops / 4 bottoms / 5 shoes / 7 headwear, stage
+  outfits + extras (cape, studded wristbands, corpse paint), pixel-art tattoos (forearms, sleeves, neck, chest, teardrop,
+  REGERTS down the forearm) and knuckle letters (3x5 font, readable in the Hands view), piercings. `R.kit`: shell finishes
+  (paint = v0.7, wood, black, sparkle, flames, camo), black hardware, thrones (crates, leather saddle), cowbell, hair fan
+  (spins on stage), pyro (arena shows only: capacity ≥ 5,000 / tier 4 / dome / festival / hall; bursts on moments and every
+  16 beats when hyped), kick-head art (CanvasTexture: band logo by genre, your face, a moose, custom text), stick colour.
+  41 `buildKit` = `R.kit.garage`; 42 kit builders + stage-look selection (drummer + members via `GG.creator.stageLookFor`),
+  `info().kit` / `drummerV8`; 44 the carpet uses stage looks (a band outfit card drops your stage outfit).
+- Preview `45_render_creator.js` (`GG.render.preview`): its own small WebGLRenderer inside the creator (the main loop is
+  paused / has no career there); views full (drag to turn) / face / hands (fists to the camera) / kit.
+- UI `5j_ui_creator.js`: screen `look` (full): preview, Everyday ↔ Stage toggle, tabs Body / Face / Hair / Clothes / Stage /
+  Ink / Kit, locked parts dashed with a one-line "what unlocks it" note over the preview, knuckle inputs (A–Z, 4 per hand),
+  🎲 Surprise. 51: the creator has "✂ Customize" (+ a "Your custom look" card) and the carry-over toggle; ☰ menu → Look.
+  CSS block `/* v0.8 CREATOR */` after the v0.7 block.
+- Tests: `sim_creator.test.js` 13 (new); `pw_creator.js` META_ONLY=creator (34) | kit (8) | stage (6) + contact sheet
+  `tests/.cache/v08_creator_sheet.png`. `_load.js` SIM_SAFE now takes `2\w_` (2a_sim_shop, 2b_sim_creator). Green:
+  node suite, pw_flow flow/layout/code, pw_garage, pw_stage, pw_label awards, pw_settings difficulty, pw_rival botb,
+  pw_tour gong, pw_gig gig, pw_world van at 390×844; pw_flow flow + pw_creator creator at 440×956 (preload override).
+- Gaps: (41's old `characterGeometry`/`hairParts`/`extraParts`/`guitarParts`/`capeParts`/`CAPES` were deleted by SHOPUI.) Formerly dead code (kept to
+  avoid touching 41 beyond buildKit; the lead can delete them after the merge). Members have no stage looks of their own
+  yet (they fall back to their look). The hair fan doesn't blow your hair. Look changes persist at the next autosave.
 
 ## What's in v0.7 (sim) — WORLDSIM stage 1 (UI = stage 2, WORLDUI)
 - World era ON (`economy.eras.worldEnabled`) at the Steady threshold (25k fans + a charting record; labels.weekly). Home
@@ -565,6 +815,28 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- `GG.shop` (v0.8, header of `2a_sim_shop.js`): `cfg, content, init, ensure, migrate`; gear `gearItems, gearDef, gearName,
+  ownsGear, canBuyGear, buyGear, kitTiers, kitDef, canBuyKit, buyKit, ownsSection, unlockSection, gigBonus, writeBonus,
+  crowdBonus`; spaces `spaces, spaceDef, availableTier, canMove, move, rent, perks, perkFactor, upgrades, upgradeDef,
+  canBuyUpgrade, buyUpgrade`; van `vans, vanTierDef, vanName, vanQuote, canBuyVan, buyVan, renameVan, vanUpgrades,
+  vanUpgradeDef, canBuyVanUpgrade, buyVanUpgrade, vanMods, stickers, sticker, banSticker`; merch `merchDef, merchItems,
+  merchView, tierUnlocked, unlockMerch, setTable, toggleTable, setPrice, priceOf, priceRange, stockCost, canBuyStock,
+  buyStock, pile, hauling, priceCurve, sales, demand, estimate, gigMerch, misprint`; week `forcedCard, afterCard, apply,
+  weekly (wrap.shop), cards, card, effectText, botValue, botWeek`. Buys return `{ ok, cost, deltas }` or `{ ok: false, why }`.
+  Events `shop:buy|unlock|move|rename|sticker|misprint|merch`. `GG.fans.merchMods(s, r)`; `GG.songs` extras above;
+  `GG.audio.kitFor/kitQuality/qualityFor`. Debug `GG.debug('shop')`.
+- `GG.ui` v0.8 shop (header of `5k_ui_shop.js`): `openGear(), openMerch(), showVan(tab 'van'|'space'|'dealer'), vanSide(st, { tier, stickers }),
+  vanUpgradesPanel, spacePanel, dealerPanel, shopChips(deltas.shop), merchResult(r.merch), isMerchLine, shopWrap(w), shopWrapShown(w),
+  playCollector(done)`. Screens `gear`, `merch` (tall sheets), `van-info` (tabs), `shop-collector` (full). Debug `shopui`.
+  Render: `GG.render.van.setTrip({ tier, stickers })`, debug('render').space.
+- `GG.creator` (v0.8, header of `2b_sim_creator.js`): `cats, part, partsIn, partFor, parts(state, cat?), isUnlocked, gateMet,
+  gateText, draftState(genre, carry), grant, checkUnlocks, check(state, source), weekly(state, wrap), knuckles, headText, isV8,
+  sanitizeLook, expand, syncPerson, stageOnly, lockLook, stageLookFor(who, contentMember?), legacyKit, newKit, sanitizeKit,
+  lockKit, kitLook(player), isArena(venue|gig), prepare, pending, init, migrate, apply(state, { look, stageLook, kit })`,
+  `carry.{key, read, write, count}`. Events 'creator:unlocked' { ids, names, source }, 'creator:changed' { state }.
+  Render: `R.charGeometry(ctx, L, o, raw)`, `R.kit.{norm, hardware, sticks, has, shell, throne, cowbell, fan, fanBlades, flame,
+  pyroBase, headArt, disposeArt, garage}`, `R.pixelFont`, `GG.render.preview.{mount, set, turn, unmount, info}`.
+  UI: `GG.ui.openLook({ mode: 'new'|'career', look, stageLook, kit, genre, band, carry, onDone })`; debug 'creator', 'creator-ui'.
 - `GG.tour` (v0.7, header of `25_sim_tour.js`): lookups `regions, region, cityDef, cities, venue, venues, vehicles, stays,
   extras, climate, fit, pkg, departWindow, legKm`; state `init, ensure, migrate, threshold, unlocked, unlock, invite`;
   views `map, regionView, status, summary, charts, gong, packages`; booking `quote, canBook, book, cancel`; the week `active,

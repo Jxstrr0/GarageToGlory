@@ -283,6 +283,7 @@
       else if (k === 'member' && v && GG.drama) parts.push(GG.drama.memberSummary(state, v));
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
       else if (k === 'fan' && v && GG.fans) { var ft = GG.fans.effectText(v); if (ft) parts.push(ft); }   // v0.6.1 fan cards
+      else if (k === 'shop' && v && GG.shop) { var sx = GG.shop.effectText(v); if (sx) parts.push(sx); }   // v0.8 shop cards
     });
     return parts.join(' · ');
   };
@@ -333,7 +334,7 @@
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
     var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
-      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : []);   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour)
+      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : [], GG.shop ? GG.shop.cards() : []);   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour) ; v0.8: shop cards (forced by GG.shop)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -477,6 +478,7 @@
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
     if (GG.tour) GG.tour.init(state);     // v0.7: state.tour (regions, invites, the active tour, homesickness, the Gong)
+    if (GG.shop) GG.shop.init(state);     // v0.8: gear (owned, sections, kit quality), spaceTier + upgrades, van tier/name/stickers, merch
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -517,7 +519,8 @@
     var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
     var tourCard = !forced && !studio && GG.tour ? GG.tour.forcedCard(state) : null;   // v0.7: region cards abroad, invites, big in one place
     var fan = !forced && !studio && !tourCard && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (fan && fan.card) || (away ? null : drawCard(state, rng));
+    var shopCard = !forced && !studio && !tourCard && !holiday && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
     if (card) state.seenCards[card.id] = state.totalWeek;
@@ -552,6 +555,7 @@
     if (GG.rival) GG.rival.afterCard(state, card);   // v0.6: a resolved poach card is a showdown
     if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
     if (GG.tour) GG.tour.afterCard(state, card, i, success, d);   // v0.7: world cards' 'tour' effects (region fans, homesick, invites)
+    if (GG.shop) GG.shop.afterCard(state, card, i, success, d);   // v0.8: shop cards' 'shop' effects (move, kit, van, sections, stock, the misprint)
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -658,6 +662,7 @@
   };
   function runActivity(state, id, nth, rng) {
     var E = econ(), f = E.repeatFactor[Math.min(nth, E.repeatFactor.length) - 1], d = {}, lines = [];
+    if (GG.shop && !(GG.tour && GG.tour.away(state))) f *= GG.shop.perkFactor(state, id);   // v0.8: the jam room / couch / green room at home
     lines.push(activityLine(state, rng, id));
     if (!(GG.tour && GG.tour.block(state, id, GG.content.activities[id], f, rng, d, lines, ACT))) ACT[id](state, GG.content.activities[id], f, rng, d, lines);   // v0.7: on tour
     return { activity: id, lines: lines, deltas: d };
@@ -736,10 +741,11 @@
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
-  // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep).
+  // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep) + v0.8 the
+  // rehearsal space's rent (GG.shop.rent; tier 0 is free).
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
-    return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
+    return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0) + (GG.shop ? GG.shop.rent(state) : 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
   };
   function decayBuzz(state) {
     if (state.buzz <= 0) return 0;
@@ -864,6 +870,7 @@
     if (GG.rival) GG.rival.weekly(state, rng, wrap);    // v0.6: the rival's career, heat, forfeits, cracking (wrap.rival)
     if (GG.fans) GG.fans.weekly(state, wrap);           // v0.6.1: fan types, mail + gifts, Patreeon payouts (wrap.fans; own RNG)
     if (GG.tour) GG.tour.weekly(state, rng, wrap);      // v0.7: hotels, homesickness, tour end, unlocks, invites, the Gong (wrap.tour; own RNG)
+    if (GG.shop) GG.shop.weekly(state, rng, wrap);      // v0.8: Outro/Solo + merch unlocks, space perks, the misprint (wrap.shop; rent is in upkeep)
     driftChemistry(state);
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
@@ -901,6 +908,7 @@
     if (fx.book && !state.gig) v += W.book;
     if (fx.member && GG.drama) v += GG.drama.botValue(state, fx.member);
     if (fx.fan && GG.fans) v += GG.fans.botValue(state, fx.fan);   // v0.6.1
+    if (fx.shop && GG.shop) v += GG.shop.botValue(state, fx.shop);   // v0.8
     if (fx.payCut) v -= fx.payCut * 60;
     if (fx.repay) v += 2 - Math.min(fx.repay, state.debtToParents || 0) * W.fund;
     return v;
@@ -923,7 +931,7 @@
     }
     var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
     if (dc != null) return dc;
-    if (style === 'good') return best;
+    if (style === 'good' || (GG.shop && GG.shop.card(card.id))) return best;   // v0.8: shop cards show the price/rent on the button: bots read it
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
   };
@@ -980,6 +988,7 @@
     if (GG.labels) GG.labels.botWeek(state, style);  // v0.5: demands, offers (sign), studio (record), release
     if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
     if (GG.tour) GG.tour.botWeek(state, style);      // v0.7: botTour: book a tour package (departs next week)
+    if (GG.shop) GG.shop.botWeek(state, style);      // v0.8: gear, the kit, the van, a bigger space, upgrades, merch stock
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough

@@ -154,6 +154,39 @@ test('venue rooms by size', () => {
   eq([G.rock.kit.verb > G.metal.kit.verb, G.country.kit.verb < G.punk.kit.verb, G.country.kit.train, G.metal.kit.six, G.rock.kit.six], [true, true, true, 'china', 'ride']);
 });
 
+test('v0.8 kit quality tiers: milk crate thin and short -> arena full and long (pure kit params)', () => {
+  eq(C.KIT_QUALITY.map((id, i) => A.qualityFor(i).id), C.KIT_QUALITY);
+  for (const g of C.GENRES) {
+    const k = [0, 1, 2, 3].map(q => A.kitFor(g, q));
+    ok(k.every((x, i) => !i || (x.kick.body > k[i - 1].kick.body && x.kick.dec > k[i - 1].kick.dec && x.snare.dec > k[i - 1].snare.dec && x.cymbal.dec > k[i - 1].cymbal.dec && x.tomDec > k[i - 1].tomDec)),
+      g + ': body + sustain grow with the tier');
+    ok(k[0].kick.f1 > k[3].kick.f1 && k[0].snare.f0 > k[3].snare.f0, g + ': the cheap kit cannot reach the low end');
+    eq(k.map(x => x.q.tier), [0, 1, 2, 3]);
+    eq(G[g].kit.kick.body, G[g].kit.kick.body, g + ': content untouched');
+  }
+  ok([0, 1, 2, 3].every(q => A.qualityFor(q).drive >= (q ? A.qualityFor(q - 1).drive : 0) && A.qualityFor(q).send >= (q ? A.qualityFor(q - 1).send : 0)), 'saturation + reverb send grow');
+  GG.state = null; eq(A.kitQuality(), 2, 'outside a career: the reference kit');
+  GG.state = { gear: { quality: 0 } }; eq(A.kitQuality(), 0); eq(A.kitFor('metal').q.tier, 0, 'default = the career\'s tier');
+  GG.state = null;
+});
+
+test('v0.8 Outro rings out, Solo is Dana\'s over a stripped kit', () => {
+  const gear = { lanes: 4, sections: ['outro', 'solo'] };
+  for (const g of C.GENRES) {
+    const p = GG.songs.addSection(GG.songs.addSection(GG.songs.signature(g, gear), 'solo', gear), 'outro', gear);
+    const t = A.timeline(p, { genre: g, songId: 's2' }), ring = t.events.filter(e => e.ring);
+    ok(t.tail > 0 && ring.length >= 2 && ring.every(e => e.section === 'outro' && e.gap >= e.len && e.beat + e.len > t.beats), g + ': the last chord rings past the end');
+    const soloDrums = t.events.filter(e => e.kind === 'drum' && e.section === 'solo'), soloBand = band(t).filter(e => e.section === 'solo');
+    ok(soloDrums.length > 0 && soloDrums.every(e => (e.beat * 4) % 4 === 0), g + ': stripped kit (on the beat only)');
+    ok(soloBand.every(e => e.role === 'solo' && e.kind !== 'vox'), g + ': solo role, no vocal hits');
+    if (g !== 'punk') ok(soloBand.some(e => e.kind === 'lead' || e.kind === 'fiddle'), g + ': a lead takes the solo');
+    const loop = A.timeline(p, { genre: g, section: 'outro' });
+    ok(loop.events.some(e => e.section === 'outro'), g + ': outro loops in the sequencer');
+  }
+  const plain = A.timeline(song('metal'), { genre: 'metal' });
+  ok(plain.tail === 0 && !plain.events.some(e => e.ring), 'no outro: no ring');
+});
+
 test('mixer + metronome: settings.mix / settings.metronome, clamped, unknown bus refused', () => {
   eq(Object.keys(A.volumes()), C.MIX_BUSES);
   ok(C.MIX_BUSES.every(b => A.getVolume(b) === 1), 'defaults 1');

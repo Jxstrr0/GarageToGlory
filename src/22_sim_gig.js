@@ -10,6 +10,11 @@
 //                  moments:[kind], setBonus: { opener, closer } }
 //   gig.windows(state) -> { perfect, good } s ; chart(song, { solo, extras: rng, free, difficulty, thumbs, doubles }) -> {notes, auto (v0.6.2 two-thumb drops), total..} ; setSize ; defaultSetlist ;
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
+// v0.8 (KITSIM): gear on stage (GG.shop.gigBonus in performance, crowdBonus at the live start); the merch table sells in
+// applyResult (GIG_RESULT.merch = { sold, earned, boxes, space, items, named }; the earnings join the fund change) and every
+// venue played puts a sticker on the van; charts: a 'solo' section is Dana's (quarter notes only, the solo cue + a crowd
+// lift, the bridge is then a normal bridge) and an 'outro' ends on a big-finish fill window (its last bar). 5–6 lanes chart
+// like the rest: the two-thumb rule still caps every moment at 2 judged notes on every difficulty.
 // v0.7.2 double kicks (owner): two kick hits in quick succession (gap <= gig.DOUBLE_GAP) are ONE highway note
 //   { dbl: true, t2 } judged on the first hit; the second kick plays itself at t2 (the live gig schedules it on the audio
 //   clock) only when the first was hit (hitT = when). A tap near t2 is an 'echo' (no stray); if it was also inside the next
@@ -85,7 +90,8 @@
     var g = G(), w = g.weights;
     var songAvg = set.length ? set.reduce(function (t, s) { return t + GG.songs.score(s); }, 0) / set.length : 0;
     var raw = g.base + avgSkill(state) * w.skill + state.drumSkill * w.drum + state.chemistry * w.chemistry
-      + songAvg * w.songs - Math.max(0, state.burnout - g.burnoutFrom) * g.burnoutPenalty;
+      + songAvg * w.songs - Math.max(0, state.burnout - g.burnoutFrom) * g.burnoutPenalty
+      + (GG.shop && state.gear ? GG.shop.gigBonus(state) : 0);   // v0.8: a better kit, toms, ride, the pedal
     return raw * (g.fitFloor + (1 - g.fitFloor) * fit) + mods(state).score;
   };
   gig.gradeFor = function (score) {
@@ -146,12 +152,14 @@
     if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
-    var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas, fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
+    if (GG.shop && state.merch && !r.merch) GG.shop.gigMerch(state, state.gig, r);   // v0.8: the merch table (r.merch; own seeded RNG)
+    var cfg = G(), fx = { fund: r.pay - r.cut - r.fillInCost - r.gas + (r.merch ? r.merch.earned : 0), fans: r.fans, buzz: r.buzz, chemistry: cfg.chemistry[r.grade],
       burnout: cfg.burnout, mood: { all: cfg.mood[r.grade] } };
     r.deltas = GG.career.applyEffects(state, fx, {});
     r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
     state.stats.gigs++;
     state.stats.earned += r.pay;
+    if (GG.shop && state.van) GG.shop.sticker(state, state.gig || r);   // v0.8: a sticker on the van for every venue played
     var best = state.stats.bestGrade;
     if (!best || C.GRADES.indexOf(r.grade) < C.GRADES.indexOf(best)) state.stats.bestGrade = r.grade;
     state.lastGig = r;
@@ -306,24 +314,29 @@
     var p = GG.songs.sanitize(song && song.pattern || song, null, null, true), spb = 60 / p.bpm, barLen = 4 * spb;
     var entryLen = C.BARS_PER_SECTION * barLen, last = C.BARS_PER_SECTION - 1, arr = p.arrangement;
     var sections = [], fills = [], solos = [], hasBridge = arr.indexOf('bridge') >= 0, free = o.free !== false;
+    // v0.8: a real 'solo' section is Dana's (always eased: you lay back); without one the soloist takes the bridge (v0.3).
+    // An 'outro' ends on a fill window (the big finish). Free-bar rule: bridges, outros, else the song's last bar.
+    var soloSec = arr.indexOf('solo') >= 0 ? 'solo' : 'bridge', hasOutro = arr.indexOf('outro') >= 0;
+    function freeEntry(name, e) { return name === 'bridge' || name === 'outro' || (!hasBridge && !hasOutro && e === arr.length - 1); }
+    function eased(name) { return name === 'solo' || (o.solo && name === soloSec); }
     arr.forEach(function (name, e) {
-      var t0 = e * entryLen;
+      var t0 = e * entryLen, fr = free && freeEntry(name, e) && name !== 'solo';
       sections.push({ name: name, entry: e, t0: t0, t1: t0 + entryLen });
-      if (free && (name === 'bridge' || (!hasBridge && e === arr.length - 1))) fills.push({ entry: e, t0: t0 + last * barLen, t1: t0 + entryLen });
-      if (o.solo && name === 'bridge') solos.push({ entry: e, t0: t0, t1: t0 + (free ? last : C.BARS_PER_SECTION) * barLen });
+      if (fr) fills.push({ entry: e, t0: t0 + last * barLen, t1: t0 + entryLen });
+      if (o.solo && name === soloSec) solos.push({ entry: e, t0: t0, t1: t0 + (fr ? last : C.BARS_PER_SECTION) * barLen });
     });
-    function isFree(n) { return free && (n.section === 'bridge' || (!hasBridge && n.entry === arr.length - 1)) && n.bar === last; }
+    function isFree(n) { return free && n.section !== 'solo' && freeEntry(n.section, n.entry) && n.bar === last; }
     var notes = [], extras = 0;
     GG.songs.toNotes(p).forEach(function (n) {
       var f = isFree(n);
-      if (o.solo && n.section === 'bridge' && !f && n.step % LIVE.soloStep !== 0) return;
+      if (eased(n.section) && !f && n.step % LIVE.soloStep !== 0) return;
       var x = { t: n.beat * spb, lane: n.lane, li: LI[n.lane], section: n.section, entry: n.entry, bar: n.bar, step: n.step, j: 0 };
       if (f) x.free = true;
       notes.push(x);
     });
     if (o.extras && p.lanes >= 2) {
       arr.forEach(function (name, e) {
-        if (name === 'bridge' || isFree({ section: name, entry: e, bar: last }) || !o.extras.chance(LC().fillsChance)) return;
+        if (name === 'bridge' || name === 'solo' || name === 'outro' || isFree({ section: name, entry: e, bar: last }) || !o.extras.chance(LC().fillsChance)) return;
         var snare = p.sections[name][1], open = [];
         for (var s = 10; s < C.STEPS; s++) if (!GG.songs.isHit(snare, s)) open.push(s);
         o.extras.shuffle(open).slice(0, o.extras.int(2, 3)).forEach(function (s) {
@@ -394,13 +407,15 @@
     var v = gig.venue(g.venueId) || { capacity: g.capacity, walkIns: 0 }, fit = gig.fit(v, state.genre);
     var seed = GG.hashSeed([state.seed, live.started, g.venueId, live.setlist.join(',')].join('|'));
     if (live.attendance == null) live.attendance = gig.expectCrowd(state, g, live.started);
-    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd, cfg.crowdRange[0], cfg.crowdRange[1]));
+    if (live.crowd == null) live.crowd = Math.round(U.clamp(cfg.crowdStart + (fit - 0.5) * cfg.crowdFit + state.buzz * cfg.crowdBuzz + mods(state).crowd
+      + (GG.shop && state.gear ? GG.shop.crowdBonus(state) : 0), cfg.crowdRange[0], cfg.crowdRange[1]));   // v0.8: the kit sounds big
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
     if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
     var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
     var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
+    var soloLift = (GG.content.economy.shop && GG.content.economy.shop.soloCrowd) || 3;
     var S = { state: state, gig: g, live: live, setlist: set, windows: W, roles: roles, fit: fit, bonus: bonus, difficulty: diff, assists: assists,
       attendance: live.attendance, crowd: live.crowd, level: gig.levelOf(live.crowd), combo: 0, index: live.index,
       done: live.index >= set.length, chart: null, t: 0, emit: opts.emit !== false, playing: false };
@@ -434,7 +449,7 @@
       for (var l = 0; l < C.LANES.length; l++) byLane.push([]);
       chart.sections.forEach(function () { entryTotal.push(0); });
       n.forEach(function (x, k) { byLane[x.li].push(k); if (!x.free) entryTotal[x.entry]++; });
-      chart.solos.forEach(function (s) { cues.push({ t: s.t0, kind: 'solo' }); });
+      chart.solos.forEach(function (s) { cues.push({ t: s.t0, kind: 'solo', section: chart.sections[s.entry] ? chart.sections[s.entry].name : null }); });
       var seen = {};
       n.forEach(function (x) { if (x.extra && !seen[x.entry]) { seen[x.entry] = 1; cues.push({ t: Math.max(0, x.t - 0.8), kind: 'fill' }); } });
       chart.sections.forEach(function (s) { if (s.name === 'chorus') cues.push({ t: s.t1, kind: 'chorus', entry: s.entry }); });
@@ -527,7 +542,7 @@
       return out;
     };
     function cue(c, t) {
-      if (c.kind === 'solo') { moment('solo', t); band(roles.solo, 'solo'); }
+      if (c.kind === 'solo') { moment('solo', t); band(roles.solo, 'solo'); if (c.section === 'solo') crowdAdd(soloLift); }   // v0.8: Dana's own section
       else if (c.kind === 'fill') band(roles.fill, 'fill');
       else if (c.kind === 'flub') { cur.flubs++; crowdAdd(-cfg.flub); band(c.who, 'miss'); }
       else if (c.kind === 'chorus') {

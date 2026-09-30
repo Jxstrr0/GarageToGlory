@@ -19,6 +19,8 @@
 //   cfg() · content() · init(s) · ensure(s) · migrate(s) · shares(s) · counts(s) {total, super, casual, hater} · sentiment(s)
 //   post(s, { f, d, lines, kind }) POST · exclusive(s, { d, lines }) POST|null · canExclusive(s) · feed(s, n)
 //   gigShape(s, g, r) (GG.gig.applyResult: superfans follow on tour, Dale, Wendell, hecklers; crowd/buzz only)
+//   merchMods(s, r?) -> { share (superfan share: they buy more merch, GG.shop.gigMerch), named: [superfan ids at this gig who
+//     each buy one: 'dale' (every home show), 'trucker', 'president'] }   (v0.8)
 //   weekly(s, wrap) (career.endWeek; wrap.fans) · forcedCard(s) {card}|null (career.startWeek) · afterCard(s, card, i, success, d)
 //   apply(s, v, d) (fan cards' 'fan' effect, applied by afterCard) · effectText(v) · cards() · card(id) · openClub(s) · club(s) view · tiers(s)
 //   superfanList(s) · superfanDef(id) · gifts(s) · addGift(s, id) · kindInfo(kind) · botValue(s, v) · botWeek(s, style)
@@ -460,7 +462,7 @@
     return out;
   };
 
-  /* ---- Gigs: superfans follow on tour, Dale at every show (crowd + buzz only; merch is v0.8) ---------------------- */
+  /* ---- Gigs: superfans follow on tour, Dale at every show (crowd + buzz; v0.8: they also buy merch, F.merchMods) ---- */
   F.gigShape = function (s, g, r) {
     if (!r || r.fansShaped) return r;
     F.ensure(s);
@@ -503,6 +505,16 @@
     }
     if ((r.superfans || 0) >= GK.buzzAt) r.buzz = (r.buzz || 0) + 1;
     return r;
+  };
+
+  // v0.8: superfans buy merch. The superfan share lifts every item's sales (GG.shop.gigMerch); the named ones at this gig
+  // (r.dale / r.trucker / r.president set by gigShape) each buy one of the best thing on the table.
+  F.merchMods = function (s, r) {
+    var named = [];
+    if (r && r.dale) named.push('dale');
+    if (r && r.trucker) named.push('trucker');
+    if (r && r.president) named.push('president');
+    return { share: s && s.fanTypes ? F.shares(s).super : F.cfg().shares.start.super, named: named };
   };
 
   /* ---- Fan cards (forced only; never drawn) ------------------------------------------------------------------- */

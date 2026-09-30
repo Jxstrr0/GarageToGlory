@@ -4,7 +4,8 @@
 //           the rival, news, lineup, records) → a stolen slot + a festival clash on the gig board (badges, "Taken" button)
 //           → a same-night announcement (the split bar). Layout audits. No console errors.
 //   botb  : a forced Battle of the Bands → the Monday announcement (Enter) → plan → results → van → the rival's set (3D stage
-//           from the crowd, their lineup in corpse paint, ticking score, to the end) → your set (score to beat) → results →
+//           from the crowd, their lineup in corpse paint, ticking score on wall time (a 1 s frame counts in full), to the
+//           end) → your set (score to beat) → results →
 //           the crowd verdict → the wrap's rival panel. The showdown is stored and the fans/prize swing applied.
 //   final : a full bot career to year 10 week 21 → Sad Dome eve card (rival strip) → the Sad Dome announcement → the van to
 //           Calgary → their 4-song set (skipped) → your set (autoplay) → "You headline/open. Forever." → finalShowdown stored
@@ -67,11 +68,12 @@ async function weekend(page, until) {
   await waitScreen(page, 'results');
   if (await page.locator(tid('btn-results-skip')).last().isVisible()) await tap(page, 'btn-results-skip');
   await tap(page, 'btn-results-ok');
-  const quick = id => page.locator(tid(id)).last().click({ timeout: 2000 }).catch(() => {});
+  // true once the click landed (slow frames can outlast the 2 s actionability wait: try again next pass).
+  const quick = id => page.locator(tid(id)).last().click({ timeout: 2000 }).then(() => true, () => false);
   let skipped = false;
   for (let k = 0; k < 80 && await screen(page) !== until; k++) {
     const sc = await screen(page);
-    if (sc === 'van' && !skipped) { await page.waitForTimeout(400); await quick('btn-van-skip'); skipped = true; }
+    if (sc === 'van' && !skipped) { await page.waitForTimeout(400); skipped = await quick('btn-van-skip'); }
     if (sc === 'road') { await quick('road-choice-0'); await quick('btn-road-ok'); }
     await page.waitForTimeout(200);
   }
@@ -163,6 +165,16 @@ async function botb() {
     c.ok(w.r.scene === 'stage' && !w.r.paused && w.info.view === 'spectator' && w.info.rival, 'spectator view: the 3D stage from the crowd ' + JSON.stringify({ scene: w.r.scene, paused: w.r.paused, view: w.info.view }));
     c.ok(w.info.painted >= 4 && w.info.band.some(b => /^tw_gord/.test(b)) && !w.info.band.some(b => /^tw_lorne/.test(b)), 'their lineup in corpse paint (drummer on the throne): ' + w.info.band.join(','));
     c.ok(w.score > 0 && w.r.drawCalls < 90, 'ticking score ' + w.score + ', ' + w.r.drawCalls + ' draw calls');
+    // A slow phone's long frame (a 1 s main-thread stall) counts in full: their set runs on wall time, not frames (a 0.1 s
+    // cap per frame made the set 4-6x longer under load, and the btn-rs-go wait below timed out).
+    const clk = await page.evaluate(async () => {
+      const c0 = GG.debug('rivalui').clock, t0 = performance.now();
+      while (performance.now() - t0 < 1000) { /* one long frame */ }
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const d = GG.debug('rivalui');
+      return { adv: +(d.clock - c0).toFixed(2), ended: d.ended };
+    });
+    c.ok(clk.adv >= 0.95 || clk.ended, 'a 1 s frame advances their set by ~1 s (wall time): ' + JSON.stringify(clk));
     await page.waitForTimeout(700);
     const a2 = await audit(page); c.ok(!a2.length, 'spectator layout: ' + a2.join(', '));
     await shot(page, 'rival_set');
@@ -219,11 +231,15 @@ async function final() {
     const route = await vanSeen;
     c.ok(/Calgary/.test(route) && /620/.test(route), 'the van goes to Calgary, 620 km: ' + route.slice(0, 70));
     await page.waitForFunction(() => { const e = document.querySelector('[data-testid="rs-score"]'); return e && +e.textContent > 0; }, null, { timeout: 8000 });
+    // Their set runs on wall time (v0.8): hold it open so the screenshot + skip below can't lose a race on a loaded machine.
+    await page.evaluate(() => { GG.ui.rivalHold = true; });
+    c.ok(await page.locator(tid('btn-rs-skip')).count() === 1, 'their set is still on (skip offered)');
     const fs0 = await page.evaluate(() => ({ songs: document.querySelectorAll('[data-testid^="rs-song-"]').length, info: GG.render.stage.info() }));
     c.ok(fs0.songs === 4 && fs0.info.view === 'spectator', 'their Sad Dome set: 4 songs, from the crowd');
     await shot(page, 'final_set');
     await page.evaluate(() => { GG.ui.gigAutoplay = true; });
     await tap(page, 'btn-rs-skip');
+    await page.evaluate(() => { GG.ui.rivalHold = false; });
     await waitScreen(page, 'gig-results', 30000);
     await tap(page, 'btn-gig-done');
     await waitScreen(page, 'rival-verdict');

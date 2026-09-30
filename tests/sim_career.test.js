@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path');
 
 function fresh(cards) {
   const GG = load({ localStorage: load.fakeStorage() });
-  if (cards) GG.content.cards = cards;
+  if (cards) { GG.content.cards = cards; GG.content.shopCards = []; }   // a stub deck: no forced v0.8 shop cards either
   return GG;
 }
 const AUTO = { autoGig: true };   // v0.3: play booked gigs automatically (no rhythm game in node)
@@ -70,7 +70,7 @@ test('newCareer: garage start, fallback roster, week one pre-booked at Buddy\'s'
   const E = GG.content.economy;
   eq([s.fund, s.fans, s.buzz, s.chemistry, s.burnout, s.drumSkill], [E.startFund, E.startFans, E.startBuzz, E.startChemistry, E.startBurnout, E.startDrumSkill]);
   ok(s.songs.length >= 2 && s.songs.every(x => GG.songs.validate(x.pattern, s.gear).length === 0 && x.rating && x.title && x.plays === 0), 'starter songs');
-  eq([s.pendingSongs, s.draft, s.gear], [[], null, { lanes: 4, doubleKick: false }], 'v0.2 fields');
+  eq([s.pendingSongs, s.draft, s.gear], [[], null, { lanes: 4, doubleKick: false, owned: [], sections: [], quality: 0 }], 'v0.2 fields (+ v0.8 owned/sections/quality)');
   eq([s.gig.venueId, s.gig.source, s.gig.deal, s.gig.capacity], ['buddys_house_party', 'forced', 'exposure', 15]);
   ok(s.player.look && s.player.kitColor && s.player.name === 'Pat');
   const t = GG.career.newCareer({ player: { name: 'Pat' } });

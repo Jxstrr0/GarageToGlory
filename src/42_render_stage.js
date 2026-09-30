@@ -95,6 +95,7 @@
     kick: [0, 0.3, 0.1], snare: [0.24, 0.6, -0.2], hat: [0.5, 0.86, -0.08], tomL: [0.13, 0.74, 0.02], tomR: [-0.13, 0.74, 0.02],
     floor: [-0.4, 0.58, -0.18], crash: [0.44, 1.14, 0.22], ride: [-0.55, 1.02, 0.12], throne: [0, 0.5, -THRONE_Z]
   };
+  var FAN = { x: 0.75, z: 0.55, yaw: Math.atan2(-0.75, -0.55 - THRONE_Z) };   // v0.8: the hair fan (kit space), aimed at the throne
   // Which hand plays which lane, and where the stick tip lands (kit space).
   var STRIKE = {
     kick: null,
@@ -248,7 +249,8 @@
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
-        banner: cfg.banner || '', bannerSub: cfg.sub || ''
+        banner: cfg.banner || '', bannerSub: cfg.sub || '',
+        venue: venue && typeof venue === 'object' ? venue : null   // v0.8: the kit look (pyro only at arena shows)
       };
     }
 
@@ -291,7 +293,7 @@
       buildRoom(lit, glow, V, D);
       buildDeck(lit, glow, V, D);
       buildDressing(lit, glow, D);
-      buildKitStatic(lit, hs, kitColor(D));
+      buildKitStatic(lit, hs, kitLook(D));
       buildBackline(lit, glow, V, D);
       if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       mesh(lit.build(), ctx.mats.vc);
@@ -322,6 +324,12 @@
       var pl = D.player || {}, pre = findPreset(pl.presetId);
       return pl.kitColor || (pre && pre.kitColor) || '#b3262b';
     }
+    // v0.8: the player's KIT_LOOK (shell finish, hardware, kick-head art, throne, sticks, cowbell / hair fan / pyro).
+    function kitLook(D) {
+      if (!K.kitLook) K.kitLook = R.kit ? R.kit.norm((D.player || {}).kit, kitColor(D)) : { shell: 'paint', color: kitColor(D), hardware: 'chrome', head: 'plain', throne: 'stool', sticks: '#d8b27a', extras: [] };
+      return K.kitLook;
+    }
+    function isArena(D) { return !!(GG.creator && GG.creator.isArena(D.venue)) || D.kind === 'festival' || D.kind === 'hall'; }
     function kitW(p, hs, out) { out[0] = -p[0]; out[1] = hs + p[1]; out[2] = KZ - p[2]; return out; }
 
     // ---- Room ------------------------------------------------------------------------------------------
@@ -740,16 +748,17 @@
     }
 
     // ---- The kit ---------------------------------------------------------------------------------------
-    function buildKitStatic(b, hs, color) {
-      var shell = color, head = 0xefe9dc, chrome = 0xb9bec6, dark = 0x26262a, i, a, p;
+    function buildKitStatic(b, hs, KL) {
+      var shell = KL.color, head = 0xefe9dc, chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, dark = 0x26262a, i, a, p;
+      var S = function (r, h, segs, x, y, z) { if (R.kit) R.kit.shell(b, KL, r, h, segs, x, y, z); else b.cyl(r, r, h, segs, x, y, z, shell); };   // v0.8: shell finish
       b.at(0, hs, KZ, Math.PI);
-      p = KIT.tomL; b.push(p[0], p[1], p[2], -0.45, 0, -0.15); b.cyl(0.11, 0.11, 0.14, 12, 0, 0, 0, shell); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
-      p = KIT.tomR; b.push(p[0], p[1], p[2], -0.45, 0, 0.15); b.cyl(0.11, 0.11, 0.14, 12, 0, 0, 0, shell); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
+      p = KIT.tomL; b.push(p[0], p[1], p[2], -0.45, 0, -0.15); S(0.11, 0.14, 12, 0, 0, 0); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
+      p = KIT.tomR; b.push(p[0], p[1], p[2], -0.45, 0, 0.15); S(0.11, 0.14, 12, 0, 0, 0); b.cyl(0.115, 0.115, 0.02, 12, 0, 0.07, 0, chrome); b.cyl(0.107, 0.107, 0.01, 12, 0, 0.078, 0, head); b.pop();
       b.box(0.03, 0.2, 0.03, 0, 0.6, 0.06, chrome);
-      p = KIT.floor; b.cyl(0.16, 0.16, 0.28, 14, p[0], p[1] - 0.14, p[2], shell); b.cyl(0.165, 0.165, 0.02, 14, p[0], p[1], p[2], chrome); b.cyl(0.157, 0.157, 0.01, 14, p[0], p[1] + 0.007, p[2], head);
+      p = KIT.floor; S(0.16, 0.28, 14, p[0], p[1] - 0.14, p[2]); b.cyl(0.165, 0.165, 0.02, 14, p[0], p[1], p[2], chrome); b.cyl(0.157, 0.157, 0.01, 14, p[0], p[1] + 0.007, p[2], head);
       for (i = 0; i < 3; i++) { a = i * 2.1 + 0.4; b.box(0.02, 0.3, 0.02, p[0] + 0.18 * Math.cos(a), 0.15, p[2] + 0.18 * Math.sin(a), chrome); }
       p = KIT.snare; b.push(p[0], p[1] - 0.05, p[2], -0.12, 0, -0.1);
-      b.cyl(0.15, 0.15, 0.11, 14, 0, 0, 0, shell); b.cyl(0.155, 0.155, 0.02, 14, 0, 0.055, 0, chrome); b.cyl(0.145, 0.145, 0.01, 14, 0, 0.061, 0, 0xf6f2ea);
+      S(0.15, 0.11, 14, 0, 0, 0); b.cyl(0.155, 0.155, 0.02, 14, 0, 0.055, 0, chrome); b.cyl(0.145, 0.145, 0.01, 14, 0, 0.061, 0, 0xf6f2ea);
       b.pop();
       b.box(0.025, p[1] - 0.1, 0.025, p[0], (p[1] - 0.1) / 2, p[2], chrome);
       p = KIT.hat; b.box(0.022, p[1], 0.022, p[0], p[1] / 2, p[2], chrome); b.cyl(0.15, 0.15, 0.014, 16, p[0], p[1] - 0.03, p[2], sh(0xd2a43c, 0.85));
@@ -757,20 +766,34 @@
       p = KIT.crash; b.box(0.022, p[1] - 0.02, 0.022, p[0] + 0.04, (p[1] - 0.02) / 2, p[2], chrome, 0, 0, 0.05);
       p = KIT.ride; b.box(0.022, p[1] - 0.02, 0.022, p[0], (p[1] - 0.02) / 2, p[2], chrome);
       b.box(0.09, 0.03, 0.22, 0, 0.02, -0.12, dark);                                                   // kick pedal
-      p = KIT.throne; b.cyl(0.16, 0.15, 0.09, 12, p[0], p[1], p[2], 0x1c1c1c); b.box(0.04, 0.45, 0.04, p[0], 0.23, p[2], chrome);
-      for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, p[2] + 0.12 * Math.cos(a), chrome, 0, a); }
+      p = KIT.throne;
+      if (!KL.throne || KL.throne === 'stool' || !R.kit) {
+        b.cyl(0.16, 0.15, 0.09, 12, p[0], p[1], p[2], 0x1c1c1c); b.box(0.04, 0.45, 0.04, p[0], 0.23, p[2], chrome);
+        for (i = 0; i < 3; i++) { a = i * 2.1; b.box(0.02, 0.02, 0.28, 0.12 * Math.sin(a), 0.03, p[2] + 0.12 * Math.cos(a), chrome, 0, a); }
+      } else R.kit.throne(b, KL, p[0], p[2], chrome);                                  // v0.8: milk crates / leather saddle
+      if (R.kit && R.kit.has(KL, 'cowbell')) R.kit.cowbell(b, KL, 0, 0.9, 0.16);
+      if (R.kit && R.kit.has(KL, 'fan')) R.kit.fan(b, KL, FAN.x, FAN.z, FAN.yaw, false);
       b.box(0.9, 0.012, 0.9, 0, 0.006, -0.2, 0x3a2e4a);                                                // drum rug
       b.at(0, 0, 0, 0);
+      if (R.kit && R.kit.has(KL, 'pyro') && isArena(K.D)) {                          // v0.8: pyro, arena shows only
+        var px = Math.min(K.V.sw - 0.35, 1.1), pz = (K.V.front || DEFAULT_FRONT) + 0.3;
+        R.kit.pyroBase(b, px, hs, pz); R.kit.pyroBase(b, -px, hs, pz);
+      }
     }
     // Moving kit parts: kick shell (pulses), hi-hat top, crash, ride (wobble). World-placed meshes.
     function buildKitParts(hs) {
-      var chrome = 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = kitColor(K.D), w = [0, 0, 0];
-      var kb = new ctx.Builder({ jitter: 0.03, seed: 9 });
-      kb.cyl(0.26, 0.26, 0.36, 16, 0, 0, 0, shell, Math.PI / 2, 0, 0);
+      var KL = kitLook(K.D), chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = KL.color, w = [0, 0, 0];
+      var kb = new ctx.Builder({ jitter: 0.03, seed: 9 }), art = R.kit ? R.kit.headArt(KL, kickInfo(K.D)) : null;
+      if (R.kit) R.kit.shell(kb, KL, 0.26, 0.36, 16, 0, 0, 0, Math.PI / 2, 0, 0); else kb.cyl(0.26, 0.26, 0.36, 16, 0, 0, 0, shell, Math.PI / 2, 0, 0);
       kb.cyl(0.27, 0.27, 0.035, 16, 0, 0, 0.18, chrome, Math.PI / 2, 0, 0); kb.cyl(0.27, 0.27, 0.035, 16, 0, 0, -0.18, chrome, Math.PI / 2, 0, 0);
       kb.cyl(0.25, 0.25, 0.012, 16, 0, 0, 0.194, head, Math.PI / 2, 0, 0); kb.cyl(0.25, 0.25, 0.012, 16, 0, 0, -0.194, head, Math.PI / 2, 0, 0);
-      kb.cyl(0.1, 0.1, 0.014, 12, 0, 0, -0.2, sh(shell, 0.5), Math.PI / 2, 0, 0);
+      if (!art) kb.cyl(0.1, 0.1, 0.014, 12, 0, 0, -0.2, sh(shell, 0.5), Math.PI / 2, 0, 0);
       K.kick = mesh(kb.build(), ctx.mats.vc); kitW(KIT.kick, hs, w); K.kick.position.set(w[0], w[1], w[2]);
+      if (art) {                                                                     // v0.8: kick-head art faces the crowd
+        art.position.set(0, 0, -0.2015); art.rotation.y = Math.PI; K.kick.add(art);
+        K.geos.push(art.geometry); K.mats.push(art.material); if (art.material.map) K.texs.push(art.material.map); K.kickArt = art;
+      }
+      buildKitExtras(hs, KL);
       var cym = function (r, tiltX, tiltZ) {
         var b = new ctx.Builder({ jitter: 0.02, seed: 13 });
         b.cyl(r, r * 0.97, 0.014, 18, 0, 0, 0, bronze); b.cyl(0.045, 0.05, 0.03, 8, 0, 0.012, 0, sh(bronze, 1.1));
@@ -782,6 +805,32 @@
       K.ride = cym(0.24, 0.18, 0.25); kitW(KIT.ride, hs, w); K.ride.position.set(w[0], w[1], w[2]);
       K.wob = { hat: 0, crash: 0, ride: 0, hatT: 9, crashT: 9, rideT: 9, kickT: 9 };
     }
+
+    function kickInfo(D) {
+      var pl = D.player || {};
+      return { r: 0.245, band: D.band && D.band.name, genre: D.genre, look: pl.look };
+    }
+    // v0.8: the moving kit extras: hair-fan blades (spin) and the pyro flames (arena shows only; burst on moments and big beats).
+    function buildKitExtras(hs, KL) {
+      if (!R.kit) return;
+      var w = [0, 0, 0];
+      if (R.kit.has(KL, 'fan')) {
+        var fb = mesh(R.kit.fanBlades(ctx), ctx.mats.vc);
+        kitW([FAN.x + Math.sin(FAN.yaw) * 0.06, 1.12, FAN.z + Math.cos(FAN.yaw) * 0.06], hs, w); fb.position.set(w[0], w[1], w[2]);
+        fb.rotation.y = FAN.yaw + Math.PI; K.fanBlades = fb;
+      }
+      if (R.kit.has(KL, 'pyro') && isArena(K.D)) {
+        var px = Math.min(K.V.sw - 0.35, 1.1), pz = (K.V.front || DEFAULT_FRONT) + 0.3, flames = [];
+        for (var i = 0; i < 2; i++) {
+          var fbld = new ctx.Builder({ jitter: 0 });
+          R.kit.flame(fbld, 0, 0, 0, 1.25);
+          var fm = mesh(fbld.build(), ctx.mats.unlit);
+          fm.position.set(i ? -px : px, hs + 0.28, pz); fm.visible = false; flames.push(fm);
+        }
+        K.pyro = { flames: flames, t: 9, beat: -1, bursts: 0 };
+      }
+    }
+    function pyroBurst() { if (K && K.pyro && K.pyro.t > 0.5) { K.pyro.t = 0; K.pyro.bursts++; } }
 
     // ---- Band ------------------------------------------------------------------------------------------
     // Spots by role (world; yaw 0 faces the camera, PI faces the crowd).
@@ -829,7 +878,7 @@
         var ins = o.slot === 'vocals' && !/guitar/.test(o.role) ? 'mic' : instFor(o.role || (cm && cm.role));
         if (o.slot === 'bass') ins = 'bass';
         var cape = o.m.id === capeId ? capeVariant : null;
-        var lk = o.m.look || (cm && cm.look) || null;
+        var lk = (GG.creator ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
         if (o.m.corpsePaint) lk = paintLook(lk, o.m.stageShirt);   // v0.6: the rival's lineup (and your defectors) in corpse paint
         var ch = R.buildCharacter(lk, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
         if (!ch) continue;
@@ -915,17 +964,19 @@
 
     // ---- Drummer (you) with IK sticks -------------------------------------------------------------------
     function buildDrummer(D) {
-      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = pl.look || (pre && pre.look) || null;
+      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
       if (D.drummer && D.drummer.corpsePaint) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer on your throne
+      K.drummerLook = dl;
       var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
       if (D.drummer && D.drummer.corpsePaint) corpsePaint(ch, 3);
       ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_GEAR].scale.setScalar(0);
       ch.root.position.set(0, K.hs, KZ + THRONE_Z); ch.root.rotation.y = Math.PI;
+      if (dl && dl.stageExtras && dl.stageExtras.indexOf('cape') >= 0) { ch.bones[B_CAPE1].rotation.x = 0.55; ch.bones[B_CAPE2].rotation.x = 0.35; }   // v0.8: drape it off the throne
       K.root.add(ch.root);
       var sb = new ctx.Builder({ jitter: 0 });
-      sb.box(0.024, 0.024, 0.42, 0, 0, 0.14, 0xd8b27a); sb.box(0.03, 0.03, 0.05, 0, 0, 0.34, 0xefe0c0);
+      sb.box(0.024, 0.024, 0.42, 0, 0, 0.14, D.drummer || !R.kit ? 0xd8b27a : R.kit.sticks(kitLook(D))); sb.box(0.03, 0.03, 0.05, 0, 0, 0.34, 0xefe0c0);   // v0.8: stick colour
       var sg = sb.build(); K.geos.push(sg);
       var sticks = [new THREE.Mesh(sg, ctx.mats.vc), new THREE.Mesh(sg, ctx.mats.vc)];
       ch.bones[B_FORE_L].add(sticks[0]); ch.bones[B_FORE_R].add(sticks[1]);
@@ -1141,6 +1192,7 @@
     function moment(kind) {
       if (!K) return false;
       S.moments++;
+      if (kind !== 'boo' && kind !== 'drinks' && !(kind === 'applause' && K.D.silent)) pyroBurst();   // v0.8: pyro (arena shows)
       if (FORMATIONS[kind]) { S.form.kind = kind; S.form.t = 0; S.form.dur = DUR[kind]; if (kind === 'wallOfDeath') bandAct(frontman(), 'part', 3); return true; }
       if (kind === 'lighters' || kind === 'boo') {
         S.arms.kind = kind; S.arms.t = 0; S.arms.dur = DUR[kind];
@@ -1384,6 +1436,14 @@
       K.ride.rotation.x = K.ride.userData.rx + 0.1 * e * Math.sin(W.rideT * 25);
       var kp = W.kickT < 0.15 ? 1 + 0.06 * bump(W.kickT / 0.15) : 1;
       K.kick.scale.set(kp, kp, 1);
+      if (K.fanBlades) K.fanBlades.rotation.z += dt * 14;                              // v0.8: the hair fan
+      if (K.pyro) {                                                                    // v0.8: pyro bursts (arena shows)
+        var P = K.pyro;
+        if (S.idx >= 3 && S.beats > 0 && S.beats % 16 === 0 && S.beats !== P.beat) { P.beat = S.beats; pyroBurst(); }   // every 16 beats when the crowd is hyped
+        P.t += dt;
+        var pe = P.t < 0.12 ? P.t / 0.12 : P.t < 0.9 ? 1 - (P.t - 0.12) / 0.78 : 0, fl = rprefs().calm ? 1 : 1 + 0.12 * Math.sin(P.t * 47);
+        for (var pi = 0; pi < P.flames.length; pi++) { var fm = P.flames[pi]; fm.visible = pe > 0.01; if (fm.visible) fm.scale.set(0.7 + 0.4 * pe, pe * fl, 0.7 + 0.4 * pe); }
+      }
       // Flashes
       var F = K.flash, cam = ctx.camera;
       for (var i = 0; i < N_FLASH; i++) {
@@ -1641,7 +1701,10 @@
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0 };
+          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0,
+          kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
+            fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
       }
     };
     return shell;

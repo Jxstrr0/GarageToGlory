@@ -317,7 +317,7 @@ async function layout() {
     }
     fs.renameSync(path.join(CACHE, 'ui_laptop-band.png'), path.join(CACHE, 'ui_laptop.png'));
     shots[shots.indexOf('laptop-band')] = 'laptop';
-    const SPOT = { kit: ['seq', 'btn-seq-close'], gigboard: ['board', 'btn-board-close'], door: ['van-info', 'btn-close'], trophies: ['trophies', 'btn-close'] };   // v0.5: the real trophy shelf
+    const SPOT = { kit: ['seq', 'btn-seq-close'], gigboard: ['board', 'btn-board-close'], door: ['van-info', 'btn-close'], trophies: ['trophies', 'btn-close'], merch: ['merch', 'btn-close'] };   // v0.5: the real trophy shelf; v0.8: the merch table
     for (const spot of ['kit', 'gigboard', 'merch', 'trophies', 'door']) {
       const [scr, close] = SPOT[spot] || ['soon', 'btn-close'];
       await page.evaluate(a => GG.emit('hotspot', { action: a }), spot);

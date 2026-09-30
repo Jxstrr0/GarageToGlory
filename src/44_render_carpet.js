@@ -259,13 +259,16 @@
       P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null };
       var mem = (o.members || st.members || (band && band.members) || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }).slice(0, 5);
       var pl = o.player || st.player || {}, preset = GG.content && GG.content.presets && pl.presetId ? GG.content.presets.filter(function (x) { return x.id === pl.presetId; })[0] : null;
-      var roster = [{ id: 'player', look: pl.look || (preset && preset.look) || null }].concat(mem);
+      var stageLook = function (m, cm) { return GG.creator ? GG.creator.stageLookFor(m, cm) : null; };   // v0.8: stage looks on the carpet
+      var pLook = stageLook(pl) || pl.look || (preset && preset.look) || null;
+      if (pLook && pLook.outfit && outfit && outfit !== 'cape') { pLook = copyLook(pLook); delete pLook.outfit; }   // the band's outfit card wins
+      var roster = [{ id: 'player', look: pLook }].concat(mem);
       var capeId = null;
       for (var i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';
       if (!capeId) for (i = 0; i < roster.length; i++) if (/vocal/i.test(roster[i].role || '')) { capeId = roster[i].id; break; }
       var n = roster.length, spread = n > 5 ? 0.68 : 0.76;
       for (i = 0; i < n; i++) {
-        var m = roster[i], cm = contentMember(band, m.id), look = outfitLook(m.look || (cm && cm.look) || null, outfit, i);
+        var m = roster[i], cm = contentMember(band, m.id), look = outfitLook((m.id !== 'player' && stageLook(m, cm)) || m.look || (cm && cm.look) || null, outfit, i);
         var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null }, 'band', i);
         if (!rec) continue;
         rec.cx = -3.05 + i * spread; rec.cz = 0.2 - (i % 2) * 0.28;
