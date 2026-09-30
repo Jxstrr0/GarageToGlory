@@ -17,6 +17,12 @@
 //   lines: { outro / solo / misprintCollector / move / van / merchUnlock / evicted: [{ who, text }] (group chat), stickersMoved }
 // } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: + every
 //            other week, mood: + every other week (everyone), recover: extra burnout recovery/week }
+// v0.9 "Genres" (plan_contract_0.9 §4.1): flavour text is neutral; per band / space / city:
+//   spaces[tier].byCity[<city name>] = { name, blurb }   (owner Q7: rented rooms keep their geometry, local names)
+//   upgrades[i].bySpace[<band.space id>] = { name, blurb } (the tier-0 room is the band's own; state.space keeps that id,
+//     so bySpace.parents_garage is also Hail Damage's wording for the later rooms' upgrades)
+//   merch 'misprint'.byBand[bandId] = { typo, find, replace, stash } (owner Q6); shop.merch.misprint is the same item
+//   byBand[bandId].lines[key] = [{ who, text }] added to the neutral lines (who may be a role alias: '@front', ...)
 // No gong on the drum kit, ever.
 (function (GG) {
   GG.content.shop = {
@@ -32,60 +38,119 @@
       { tier: 0, id: 'milk_crate', name: 'The Milk Crate Special', cost: 0, era: 'garage',
         blurb: 'A kick with a pillow in it, a snare, one hi-hat, a cracked crash. The throne is a milk crate.' },
       { tier: 1, id: 'pawn_shop', name: 'Pawn Shop Five-Piece', cost: 800, era: 'garage',
-        blurb: 'From the pawn shop on 8th Street. The shells don\'t match. It sounds like a real kit, mostly.' },
+        blurb: 'From the pawn shop downtown. The shells don\'t match. It sounds like a real kit, mostly.' },
       { tier: 2, id: 'pro', name: 'Maple Pro Kit', cost: 2800, era: 'local',
         blurb: 'Maple shells, fresh heads, hardware that doesn\'t slip mid-song. It punches.' },
       { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'world',
-        blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even in the garage.' }
+        blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even at rehearsal.' }
     ],
     sections: {
       outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.' },
-      solo: { name: 'Solo', blurb: 'Dana\'s spotlight: you lay back on a stripped kit while the lead guitar shreds.' }
+      solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.' }
     },
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
         blurb: 'Where it all started. Free, cold, and the neighbours have opinions.' },
       { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Space 7', rent: 60, era: 'local', perk: { rehearse: 0.08 },
-        blurb: 'A cinder-block room in a strip mall, next to the vacuum repair. Egg-crate foam, a light that buzzes, a sign that says NO DRUMS AFTER 11.' },
+        blurb: 'A cinder-block room in a strip mall, next to a tire shop. Egg-crate foam, a light that buzzes, a sign that says NO DRUMS AFTER 11.',
+        byCity: {
+          Saskatoon: { name: 'Rent-A-Riff, Jam Space 7',
+            blurb: 'A cinder-block room in a Saskatoon strip mall, next to the tire shop on 8th. Egg-crate foam, a buzzing light, NO DRUMS AFTER 11.' },
+          Regina: { name: 'The Queen City Jam Hut, Room B',
+            blurb: 'A rehearsal room above a bingo supply store on Dewdney. The dabbers smell like cherry. The heat works on odd days.' },
+          Edmonton: { name: 'Riff Raff Rehearsal, Bay 12',
+            blurb: 'An industrial bay off the Yellowhead, between a transmission shop and a broom wholesaler. A loading dock. No windows. Perfect.' },
+          'Swift Current': { name: 'The Speedy Creek Practice Shed',
+            blurb: 'A heated shed behind the feed store. The owner sits in on tambourine. Nobody asked. Nobody minds.' }
+        } },
       { tier: 2, id: 'pro_studio', name: 'Prairie Dog Sound', rent: 150, era: 'signed', perk: { rehearse: 0.08, write: 1, record: 1 },
-        blurb: 'Rehearsal and recording in an old grain co-op. An isolation booth, and an engineer named Gwen who has heard it all.' },
-      { tier: 3, id: 'arena_backstage', name: 'Backstage at the Potash Place', rent: 300, era: 'world',
+        blurb: 'Rehearsal and recording in an old grain co-op. An isolation booth, and an engineer named Gwen who has heard it all.',
+        byCity: {
+          Saskatoon: { name: 'Prairie Dog Sound',
+            blurb: 'Rehearsal and recording in an old grain co-op. An isolation booth, and an engineer named Gwen who has heard it all.' },
+          Regina: { name: 'Pile o\' Bones Sound',
+            blurb: 'A converted fire hall near the rail yards. The pole is still there. The engineer slides down it to start every session.' },
+          Edmonton: { name: 'Refinery Row Studios',
+            blurb: 'A studio in an old machine shop on the south side. The live room used to hold a boiler. It still smells like one, nicely.' },
+          'Swift Current': { name: 'Grid Road Recorders',
+            blurb: 'A recording barn a mile down the grid road. Hay-bale baffles, a vintage console and a barn cat who approves takes.' }
+        } },
+      { tier: 3, id: 'arena_backstage', name: 'Backstage at the Civic Arena', rent: 300, era: 'world',
         perk: { rehearse: 0.08, write: 1, record: 1, rest: 0.2, recover: 1 },
-        blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.' }
+        blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.',
+        byCity: {
+          Saskatoon: { name: 'Backstage at the Potash Place',
+            blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.' },
+          Regina: { name: 'Backstage at the Queen City Coliseum',
+            blurb: 'A room under the big arena by the fairgrounds. A star on the door. The football team\'s helmets dry in the hallway.' },
+          Edmonton: { name: 'Backstage at the Oil Can Arena',
+            blurb: 'A room under the downtown arena. A star on the door, a Zamboni down the hall and a very loud mall across the street.' },
+          'Swift Current': { name: 'Backstage at the Speedy Creek Plex',
+            blurb: 'The best room under the rink: a star on the door, the junior team\'s skate sharpener and a view of the ice.' }
+        } }
     ],
     upgrades: [
       { id: 'curb_couch', tier: 0, name: 'The curb couch', cost: 40, perk: { rest: 0.05 }, moves: true,
-        blurb: 'Free from the curb on garbage day, plus $40 to get it home. Smells like 1997. Comes with you if you move.' },
+        blurb: 'Free from the curb on garbage day, plus $40 to get it home. Smells like 1997. Comes with you if you move.',
+        bySpace: {
+          parents_garage: { name: 'The curb couch', blurb: 'Free from the curb on garbage day, plus $40 to get it home. Smells like 1997. Comes with you if you move.' },
+          laundromat_basement: { name: 'The laundromat couch', blurb: 'Rescued from upstairs when the Suds-O-Rama got new chairs. Smells like fabric softener. Comes with you if you move.' },
+          strip_mall_unit: { name: 'The waiting-room couch', blurb: 'The nail salon next door redecorated. Their old waiting-room couch is yours for $40. Comes with you if you move.' },
+          quonset: { name: 'The tailgate bench', blurb: 'An old truck bench seat on two hay bales. Surprisingly comfy. Comes with you if you move.' }
+        } },
       { id: 'egg_foam', tier: 0, name: 'Egg-crate foam', cost: 80, perk: { rehearse: 0.03 },
-        blurb: 'Stapled to every wall. The neighbours stop calling the city. Mostly.' },
-      { id: 'beer_fridge', tier: 0, name: 'Dad\'s old beer fridge', cost: 120, perk: { chemistry: 1 }, moves: true,
-        blurb: 'Hums in E flat. Holds pop, perogies and one mystery jar. Everyone hangs around it.' },
+        blurb: 'Stapled to every wall. The neighbours stop calling the city. Mostly.',
+        bySpace: {
+          parents_garage: { name: 'Egg-crate foam', blurb: 'Stapled to every wall. The neighbours stop calling the city. Mostly.' },
+          laundromat_basement: { name: 'Dryer-lint insulation', blurb: 'Bags of lint from upstairs, stapled to the block walls. It works. It is also a fire hazard. Mostly it works.' },
+          strip_mall_unit: { name: 'Drop-ceiling foam tiles', blurb: 'Foam tiles in the drop ceiling. The vacuum repair next door stops banging on the wall. Mostly.' },
+          quonset: { name: 'Hay-bale baffles', blurb: 'Hay bales stacked along the steel walls. The echo is gone. The mice are thrilled.' }
+        } },
+      { id: 'beer_fridge', tier: 0, name: 'An old beer fridge', cost: 120, perk: { chemistry: 1 }, moves: true,
+        blurb: 'Hums in E flat. Holds pop, snacks and one mystery jar. Everyone hangs around it.',
+        bySpace: {
+          parents_garage: { name: 'Dad\'s old beer fridge', blurb: 'Hums in E flat. Holds pop, perogies and one mystery jar. Everyone hangs around it.' },
+          laundromat_basement: { name: 'The pop machine', blurb: 'Out of order since 1994. One good kick and it takes loonies and gives you whatever it wants. Everyone hangs around it.' },
+          strip_mall_unit: { name: 'The salon mini-fridge', blurb: 'A mini-fridge from the nail salon. Hums in E. Faintly smells of acetone. Everyone hangs around it anyway.' },
+          quonset: { name: 'The chest freezer', blurb: 'Half band snacks, half a side of beef. Do not mix them up. Everyone hangs around it.' }
+        } },
       { id: 'xmas_lights', tier: 0, name: 'Christmas lights', cost: 30, perk: { write: 1 },
-        blurb: 'Up all year. Marcel says they are for the vibe. They are.' },
+        blurb: 'Up all year. Somebody says they are for the vibe. They are.',
+        bySpace: {
+          parents_garage: { name: 'Christmas lights', blurb: 'Up all year. Marcel says they are for the vibe. They are.' },
+          laundromat_basement: { name: 'Christmas lights', blurb: 'Strung along the pipes. When a dryer upstairs kicks on, they flicker in time. Inspiring.' },
+          strip_mall_unit: { name: 'The neon OPEN sign', blurb: 'Left behind by the last tenant. It says OPEN in pink. It is always open now. Very 1985.' },
+          quonset: { name: 'Yard lights', blurb: 'Two farm yard lights bolted to the arch. The moths come to every rehearsal.' }
+        } },
       { id: 'leather_couch', tier: 1, name: 'A leather-ish couch', cost: 250, perk: { rest: 0.08 },
         blurb: 'One cushion is leather. The rest are hope.' },
       { id: 'acoustic_panels', tier: 1, name: 'Acoustic panels', cost: 300, perk: { rehearse: 0.03 },
         blurb: 'Real ones, not egg crates. The vacuum repair man next door sends a thank-you card.' },
       { id: 'real_pa', tier: 1, name: 'A real PA', cost: 600, perk: { rehearse: 0.03, write: 1 },
-        blurb: 'You can finally hear Marcel at rehearsal. Mixed blessing.' },
+        blurb: 'You can finally hear the singer at rehearsal. Mixed blessing.',
+        bySpace: { parents_garage: { name: 'A real PA', blurb: 'You can finally hear Marcel at rehearsal. Mixed blessing.' } } },
       { id: 'disco_ball', tier: 1, name: 'Disco ball', cost: 90, perk: { mood: 1 },
         blurb: 'Nobody admits who bought it. Everybody looks up when it turns.' },
       { id: 'iso_booth', tier: 2, name: 'Isolation booth', cost: 1200, perk: { record: 1 },
-        blurb: 'A soundproof box for vocals. Marcel treats it as a dressing room.' },
+        blurb: 'A soundproof box for vocals. The singer treats it as a dressing room.',
+        bySpace: { parents_garage: { name: 'Isolation booth', blurb: 'A soundproof box for vocals. Marcel treats it as a dressing room.' } } },
       { id: 'band_lounge', tier: 2, name: 'Band lounge', cost: 900, perk: { rest: 0.08 },
         blurb: 'Couches, a lamp, a board game with half the pieces. Burnout melts.' },
       { id: 'espresso', tier: 2, name: 'Espresso machine', cost: 500, perk: { write: 1 },
         blurb: 'Songs get written at 2 a.m. now. Some of them are good.' },
       { id: 'mood_leds', tier: 2, name: 'Mood lighting', cost: 350, perk: { mood: 1 },
-        blurb: 'Purple for metal, red for anger, blue for Kenji.' },
+        blurb: 'Purple for moody, red for angry, blue for the quiet one.',
+        bySpace: { parents_garage: { name: 'Mood lighting', blurb: 'Purple for metal, red for anger, blue for Kenji.' } } },
       { id: 'catering', tier: 3, name: 'Hot catering', cost: 2000, perk: { mood: 1 },
-        blurb: 'Perogies, hot, every day. Baba inspects the kitchen and approves. Once.' },
+        blurb: 'Perogies, hot, every day. Somebody\'s grandma inspects the kitchen and approves. Once.',
+        bySpace: { parents_garage: { name: 'Hot catering', blurb: 'Perogies, hot, every day. Baba inspects the kitchen and approves. Once.' } } },
       { id: 'green_room', tier: 3, name: 'A green room that is green', cost: 1500, perk: { rest: 0.08 },
         blurb: 'Someone finally painted it. The band rests like royalty.' },
       { id: 'hot_tub', tier: 3, name: 'A hot tub', cost: 4000, perk: { recover: 1 },
         blurb: 'Under the arena, next to the Zamboni. Nobody asks how.' },
       { id: 'star_door', tier: 3, name: 'A star on the door', cost: 600, perk: { write: 1 },
-        blurb: 'A gold star with the band name on it. Marcel polishes it before every show.' }
+        blurb: 'A gold star with the band name on it. The singer polishes it before every show.',
+        bySpace: { parents_garage: { name: 'A star on the door', blurb: 'A gold star with the band name on it. Marcel polishes it before every show.' } } }
     ],
     vanTiers: [
       { tier: 0, id: 'minivan', kind: 'Rusted minivan', price: 0, era: 'garage', space: 3, comfort: 2, condition: 72, wear: 1, breakdown: 1,
@@ -95,7 +160,7 @@
       { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 6500, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
         blurb: 'High roof. You can stand up inside. Nobody does, but you can.' },
       { tier: 3, id: 'bus', kind: 'Tour bus', price: 30000, era: 'world', space: 14, comfort: 5, condition: 96, wear: 0.65, breakdown: 0.6,
-        blurb: 'Bunks, a lounge and a tiny toilet with a big sign. You made it. Kenji still drives.' }
+        blurb: 'Bunks, a lounge and a tiny toilet with a big sign. You made it. Somebody still has to drive it.' }
     ],
     vanNames: {
       hail_damage: ['The Moose Hearse', 'The Claim Adjuster', 'Black Ice', 'Doom Coach'],
@@ -109,15 +174,15 @@
       { id: 'cushions', name: 'Seat cushions', cost: 120, tiers: [0, 1, 2], comfort: 1,
         blurb: 'Memory foam. Your back remembers Moose Jaw a little less.' },
       { id: 'winter_tires', name: 'Winter tires', cost: 400, tiers: [0, 1, 2, 3], breakdown: 0.85, wear: 0.9,
-        blurb: 'Real ones. The ditch outside Davidson misses you already.' },
+        blurb: 'Real ones. The ditch outside town misses you already.' },
       { id: 'block_heater', name: 'Block heater cord', cost: 90, tiers: [0, 1, 2], breakdown: 0.9,
-        blurb: 'Plugged into every Legion outlet from here to Yorkton. It starts at minus forty.' },
+        blurb: 'Plugged into every Legion outlet from here to the next province. It starts at minus forty.' },
       { id: 'tape_deck', name: 'A tape deck that works', cost: 80, tiers: [0, 1], chemistry: 1,
         blurb: 'Road trips get sing-alongs. Long drives build the band (+1 chemistry).' },
       { id: 'bunks', name: 'Bunks', cost: 2000, tiers: [2, 3], comfort: 1,
-        blurb: 'Sleep lying down between cities. Dana sleeps with her guitar.' },
+        blurb: 'Sleep lying down between cities. Somebody sleeps with a guitar. Every band has one.' },
       { id: 'merch_pod', name: 'Merch pod', cost: 1500, tiers: [2, 3], space: 2,
-        blurb: 'A roof pod just for merch boxes. Marcel wants it painted like a coffin.' }
+        blurb: 'A roof pod just for merch boxes. Somebody wants it painted with flames. Somebody always does.' }
     ],
     merchTiers: [
       { id: 'basics', era: 'garage', blurb: 'Stickers and shirts.' },
@@ -138,6 +203,19 @@
         blurb: 'Dubbed one at a time on a boom box. Hand-cut covers.' },
       { id: 'trucker', name: 'Trucker hats', tier: 'basics', genre: ['country'], cost: 5, price: 22, perBox: 36, appeal: 1.1,
         blurb: 'Mesh back, logo front. Every farmer in the room already owns six. They buy a seventh.' },
+      // v0.9: one or two more genre items for punk, rock and country (metal keeps its two)
+      { id: 'zine', name: 'Photocopied zines', tier: 'basics', genre: ['punk'], cost: 1, price: 5, perBox: 80, appeal: 0.9,
+        blurb: 'Twelve stapled pages of lyrics, rants and a map of every pothole in town. Printed after hours at the library.' },
+      { id: 'buttons', name: 'Buttons', tier: 'basics', genre: ['punk'], cost: 0.5, price: 3, perBox: 150, appeal: 1.2,
+        blurb: 'One-inch buttons. They end up on jean jackets, backpacks and one city councillor\'s lanyard.' },
+      { id: 'lighter', name: 'Band lighters', tier: 'basics', genre: ['rock'], cost: 1.5, price: 8, perBox: 100, appeal: 1,
+        blurb: 'For the ballad. Nobody smokes. Everybody buys one for the ballad.' },
+      { id: 'bandana', name: 'Bandanas', tier: 'basics', genre: ['rock'], cost: 3, price: 15, perBox: 60, appeal: 0.9,
+        blurb: 'Logo bandanas. Worn on the head, the wrist or the mic stand. Never on the nose.' },
+      { id: 'koozie', name: 'Can koozies', tier: 'basics', genre: ['country'], cost: 1, price: 6, perBox: 120, appeal: 1.2,
+        blurb: 'Foam, logo on the side. Keeps a can cold through a whole two-step.' },
+      { id: 'belt_buckle', name: 'Belt buckles', tier: 'warm', genre: ['country'], cost: 12, price: 35, perBox: 20, appeal: 0.8,
+        blurb: 'Big, shiny and heavy enough to anchor a canoe. Every buckle ships with a free argument about who wore it first.' },
       { id: 'tourshirt', name: 'Tour shirts (dates on the back)', tier: 'warm', genre: ['rock'], cost: 10, price: 28, perBox: 24, appeal: 1.1,
         blurb: 'Every city on the back, even the ones that got cancelled.' },
       { id: 'hoodie', name: 'Hoodies', tier: 'warm', cost: 22, price: 50, perBox: 12, appeal: 0.8,
@@ -156,19 +234,44 @@
         blurb: 'Tiny leather pants. For your keys. At minus forty.' },
       { id: 'duke_hat', name: 'Duke\'s Hat (replica)', tier: 'limited', band: ['grid_road_ramblers'], cost: 30, price: 80, perBox: 8, appeal: 0.6,
         blurb: 'The hat is the character. Now it can be yours.' },
-      { id: 'misprint', name: 'HALE DAMAGE shirts (misprint)', tier: 'limited', hidden: true, cost: 8, price: 60, perBox: 50, appeal: 2.5,
-        blurb: 'The first batch, misspelled. Now a collector\'s item. There will never be more.' }
+      { id: 'misprint', name: 'Misprinted band shirts', tier: 'limited', hidden: true, cost: 8, price: 60, perBox: 50, appeal: 2.5,
+        blurb: 'The first batch, misspelled. Now a collector\'s item. There will never be more.',
+        // v0.9 (owner Q6): every band gets its own misprint
+        byBand: {
+          hail_damage: { typo: 'HALE DAMAGE', find: 'HAIL DAMAGE', replace: 'HALE DAMAGE', stash: 'the box under the workbench' },
+          frost_heave: { typo: 'FROST HEAVY', find: 'FROST HEAVE', replace: 'FROST HEAVY', stash: 'the box behind the dryers' },
+          gravel_kings: { typo: 'GRAVY KINGS', find: 'GRAVEL KINGS', replace: 'GRAVY KINGS', stash: 'the box under the old till counter' },
+          grid_road_ramblers: { typo: 'THE GRID ROAD RUMBLERS', find: 'THE GRID ROAD RAMBLERS', replace: 'THE GRID ROAD RUMBLERS',
+            stash: 'the box behind the hay bales' }
+        } }
     ],
     lines: {
-      outro: [{ who: 'jaxon', text: 'what if the song... ended. like on purpose. with a big finish' },
-        { who: 'dana', text: 'An outro. I have been waiting for someone to say it. Let the last chord ring.' }],
-      solo: [{ who: 'dana', text: 'Solo section unlocked. You play quarter notes. I play everything else.' }],
-      misprintCollector: [{ who: 'dana', text: 'There is a fan page for HALE DAMAGE shirts now. People want the misprint. The box under the workbench is worth money.' }],
-      move: [{ who: 'marcel', text: 'A real room. With a door that locks. I will need a mirror by the door.' }],
-      van: [{ who: 'jaxon', text: 'NEW VAN. baba says it is "a lot of van". she means it as a compliment' }],
-      merchUnlock: [{ who: 'marcel', text: 'New merch. I have approved the designs. I have also designed the designs.' }],
-      evicted: [{ who: 'marcel', text: 'The landlord changed the locks. Three weeks behind on rent, apparently. We are moving back. My mirror is coming with us.' }],
+      outro: [{ who: '@filler', text: 'What if the song ended on purpose? With a big finish? Asking for the song.' },
+        { who: '@soloist', text: 'An outro. Finally. Let the last chord ring.' }],
+      solo: [{ who: '@soloist', text: 'Solo section unlocked. You keep time. I take the spotlight. Everybody wins, mostly me.' }],
+      misprintCollector: [{ who: '@soloist', text: 'There is a fan page for our misprinted shirts now. People want them. The box of misprints is worth money.' }],
+      move: [{ who: '@front', text: 'A real room. With a door that locks. I call the spot by the mirror.' }],
+      van: [{ who: '@filler', text: 'NEW VAN. It is a lot of van. I mean that as a compliment.' }],
+      merchUnlock: [{ who: '@front', text: 'New merch. I approved the designs. I also designed the designs.' }],
+      evicted: [{ who: '@grumbler', text: 'The landlord changed the locks. Three weeks behind on rent, apparently. Everything is coming home with us.' }],
       stickersMoved: 'Every sticker from the old van moved over, one by one, with a hair dryer.'
+    },
+    // v0.9: Hail Damage's own group-chat lines (packs add frost_heave / gravel_kings / grid_road_ramblers)
+    byBand: {
+      hail_damage: {
+        lines: {
+          outro: [{ who: 'jaxon', text: 'what if the song... ended. like on purpose. with a big finish' },
+            { who: 'dana', text: 'An outro. I have been waiting for someone to say it. Let the last chord ring.' }],
+          solo: [{ who: 'dana', text: 'Solo section unlocked. You play quarter notes. I play everything else.' }],
+          misprintCollector: [{ who: 'dana', text: 'There is a fan page for HALE DAMAGE shirts now. People want the misprint. The box under the workbench is worth money.' }],
+          move: [{ who: 'marcel', text: 'A real room. With a door that locks. I will need a mirror by the door.' }],
+          van: [{ who: 'jaxon', text: 'NEW VAN. baba says it is "a lot of van". she means it as a compliment' }],
+          merchUnlock: [{ who: 'marcel', text: 'New merch. I have approved the designs. I have also designed the designs.' }],
+          evicted: [{ who: 'marcel', text: 'The landlord changed the locks. Three weeks behind on rent, apparently. We are moving back. My mirror is coming with us.' }]
+        }
+      }
     }
   };
+  // The contract path shop.merch.misprint.byBand[bandId] (packs may write it) is the same object as the 'misprint' item.
+  GG.content.shop.merch.misprint = GG.content.shop.merch.filter(function (m) { return m.id === 'misprint'; })[0];
 })(window.GG);

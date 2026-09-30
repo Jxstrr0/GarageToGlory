@@ -12,7 +12,14 @@
 //   holidays: [ { id, name, icon, weeks: [lo, hi], blurb, cards?: [cardId], closed?: [venue kinds], pay?: { all|<kind>: x },
 //               weight?: { <kind>: x }, gig?: { crowd, buzz, fans (x), lines: [] }, era?: [eras that see it], news? } ]
 //   news:     { <weekOfYear>: { who, text } } a group-chat line posted on that week's Monday (season flavour)
-//   lines:    gig-result lines by weather kind (+ hailBand: Hail Damage in a hailstorm), costume bands for Halloween
+//   lines:    gig-result lines by weather kind (+ hailBand: Hail Damage in a hailstorm; a band whose bands.js
+//             weather { kind, crowd, lines } names a key here gets those), costume bands for Halloween
+// v0.9 "Genres" (plan_contract_0.9 §4.1): flat news / lines / costumes / holiday gig lines are neutral and tokenised;
+//   calendar.byBand[bandId] = { news: { <week>: { who, text } } (replaces that week), lines, costumes (added),
+//   holidayLines: { <holidayId>: [text] } (added to that holiday's gig lines) } ; holidays[].byBand[bandId].news replaces
+//   the holiday's note. Holiday card lists (first card whose gate passes wins): Hail Damage's cards, then the shared
+//   cards for the other three bands (cards.js o(): holiday_*_park/_loan/_table/_swap/_halftime/_jingle/_staff_parties/
+//   _green). A pack's own holiday card must go in FRONT of the shared one: h.cards.unshift('holiday_x_<bandId>').
 (function (GG) {
   GG.content.calendar = {
     months: { Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December',
@@ -65,40 +72,41 @@
     holidays: [
       { id: 'canada_day', name: 'Canada Day', icon: '🍁', weeks: [1, 1],
         blurb: 'Free outdoor park shows. Huge buzz, zero pay, fireworks you will absolutely miss.',
-        cards: ['holiday_canada_day'], weight: { outdoor: 8 },
+        cards: ['holiday_canada_day', 'holiday_canada_day_park'], weight: { outdoor: 8 },
         gig: { crowd: 6, buzz: 4, fans: 1.15, lines: ['Canada Day. Four thousand people in red and white, one of them conducting with a sparkler.',
-          'Somebody starts "O Canada" between songs. You play along. Marcel sings it in French. Twice.'] } },
+          'Somebody starts "O Canada" between songs. You play along. {front} takes the high note. Everybody regrets it.'] } },
       { id: 'thanksgiving', name: 'Thanksgiving', icon: '🦃', weeks: [7, 7],
         blurb: "Dinner at your parents' place. If you owe them money, it comes up. Over pie.",
-        cards: ['holiday_thanksgiving_guilt', 'holiday_thanksgiving'] },
+        cards: ['holiday_thanksgiving_guilt', 'holiday_thanksgiving_loan', 'holiday_thanksgiving', 'holiday_thanksgiving_table'] },
       { id: 'halloween', name: 'Halloween', icon: '🎃', weeks: [8, 8],
-        blurb: 'Costume gigs: every band dresses up as another band.', cards: ['holiday_halloween'],
+        blurb: 'Costume gigs: every band dresses up as another band.', cards: ['holiday_halloween', 'holiday_halloween_swap'],
         gig: { crowd: 5, buzz: 2, lines: ['Halloween: the band plays dressed as {costume}. Nobody can tell the difference. That is the problem.',
-          'Costume night. The crowd came as you. There are six Marcels in the front row, all in capes.'] } },
+          'Costume night. You play dressed as {costume}. The crowd came dressed as you. It is a lot of mirrors.'] } },
       { id: 'remembrance', name: 'Remembrance Day', icon: '🌺', weeks: [9, 9], closed: ['legion'],
         blurb: 'Legion halls are closed for Remembrance Day. No Legion gigs this week. Poppies on.',
-        news: { who: 'doreen', text: 'Legion is closed this week for Remembrance Day. Wear your poppies. Lunch after the service, egg salad.' } },
+        news: { who: 'dad', text: "Legion's closed this week for Remembrance Day. Wear your poppy. I'm going to the service. So are you." },
+        byBand: { hail_damage: { news: { who: 'doreen', text: 'Legion is closed this week for Remembrance Day. Wear your poppies. Lunch after the service, egg salad.' } } } },
       { id: 'grey_mug', name: 'The Grey Mug', icon: '🏈', weeks: [10, 10],
-        blurb: "The big football final. Somebody plays the halftime show. One day, it's you.", cards: ['holiday_grey_mug'] },
+        blurb: "The big football final. Somebody plays the halftime show. One day, it's you.", cards: ['holiday_grey_mug', 'holiday_grey_mug_halftime'] },
       { id: 'christmas', name: 'Christmas', icon: '🎄', weeks: [11, 12],
         blurb: 'Holiday party circuit: every office, curling club and potash mine wants a band. The label wants a Christmas single.',
-        cards: ['holiday_xmas_single', 'holiday_xmas_parties'], pay: { bar: 1.2, curling: 1.25, legion: 1.2, church: 1.2, club: 1.15 },
+        cards: ['holiday_xmas_single', 'holiday_xmas_jingle', 'holiday_xmas_parties', 'holiday_xmas_staff_parties'], pay: { bar: 1.2, curling: 1.25, legion: 1.2, church: 1.2, club: 1.15 },
         gig: { crowd: 3, lines: ['Christmas party circuit: an ugly-sweater crowd, a cash bar and a boss doing the worm.'] } },
       { id: 'nye', name: "New Year's Eve", icon: '🎆', weeks: [12, 12],
         blurb: "The best-paying gig of the year. Everyone's out, everyone's loud, everyone counts down wrong.",
         pay: { all: 2 }, gig: { crowd: 8, buzz: 2, lines: ["New Year's Eve. You count the crowd down to midnight at 11:58. Nobody minds.",
-          "Midnight hits mid-song. Jaxon kisses his guitar. It was that kind of night."] } },
+          "Midnight hits mid-song. {soloist} kisses the guitar. It was that kind of night."] } },
       { id: 'st_patricks', name: "St. Patrick's Day", icon: '☘️', weeks: [18, 18],
-        blurb: 'Pub gig circuit: every bar in the province turns green and books a band.', cards: ['holiday_st_paddys'], weight: { bar: 2.5 }, pay: { bar: 1.3 },
+        blurb: 'Pub gig circuit: every bar in the province turns green and books a band.', cards: ['holiday_st_paddys', 'holiday_st_paddys_green'], weight: { bar: 2.5 }, pay: { bar: 1.3 },
         gig: { crowd: 4, lines: ["St. Paddy's: green beer, a guy in a leprechaun hat, and a mosh pit that is mostly a jig."] } },
-      { id: 'loonies', name: 'The Loonies', icon: '🏆', weeks: [20, 20], blurb: "Canada's music awards. Tuxedos, a moose-shaped trophy, Gord crying." }
+      { id: 'loonies', name: 'The Loonies', icon: '🏆', weeks: [20, 20], blurb: "Canada's music awards. Tuxedos, a moose-shaped trophy, somebody's rival crying on purpose." }
     ],
     news: {
-      5: { who: 'jaxon', text: 'Frosh week! The campus bowl books bands all week. Every student has a lanyard and no money.' },
-      9: { who: 'baba', text: 'Harvest dance season. Every rural hall wants a band. Country bands, mostly. Bring perogies anyway.' },
-      13: { who: 'dana', text: 'Minus 38 with the wind. The van would not start. Dad says "plug it in next time". Plug WHAT in?' },
-      17: { who: 'marcel', text: 'The summer festival lineups are out. We are not on them. I have written a strongly worded poem.' },
-      23: { who: 'jaxon', text: 'Mosquito season. I have been bitten 41 times. I counted. Kenji has not been bitten once.' }
+      5: { who: '@filler', text: 'Frosh week! The campus stages book bands all week. Every student has a lanyard and no money.' },
+      9: { who: 'mom', text: 'Harvest dance season. Every rural hall wants a band. Country bands, mostly. Bring a casserole anyway.' },
+      13: { who: '@soloist', text: 'Minus 38 with the wind. The van would not start. Dad says "plug it in next time". Plug WHAT in?' },
+      17: { who: '@front', text: 'The summer festival lineups are out. We are not on them. I have written a strongly worded letter.' },
+      23: { who: '@any', text: 'Mosquito season. I have been bitten 41 times. I counted. {deadpan} has not been bitten once.' }
     },
     lines: {
       rain: ['It rained. The outdoor crowd huddled under a tarp and cheered anyway.', 'Rain on the tin roof, perfectly in time with the hi-hat.'],
@@ -110,7 +118,26 @@
       clearOutdoor: ['Clear skies, a sunset over the elevators, a crowd on lawn chairs. Perfect.'],
       outdoorBad: ['Half the outdoor crowd went home when the weather turned.']
     },
-    costumes: ['Tundra Wraith (veggie tray included)', 'Maple Syrup Riot', 'the Bunnock Kings', 'Combine Harvester of Sorrow',
-      'a moose (all four of you, one costume)', 'Kayla & the Kettle Chips', 'the Stubble Burners']
+    costumes: ['{rival} (the whole band, one costume)', 'Maple Syrup Riot', 'the Bunnock Kings', 'Combine Harvester of Sorrow',
+      'a moose (all of you, one costume)', 'Kayla & the Kettle Chips', 'the Stubble Burners'],
+
+    // ---- v0.9: per-band extras (packs add frost_heave / gravel_kings / grid_road_ramblers) ----
+    byBand: {
+      hail_damage: {
+        news: {
+          5: { who: 'jaxon', text: 'Frosh week! The campus bowl books bands all week. Every student has a lanyard and no money.' },
+          9: { who: 'baba', text: 'Harvest dance season. Every rural hall wants a band. Country bands, mostly. Bring perogies anyway.' },
+          13: { who: 'dana', text: 'Minus 38 with the wind. The van would not start. Dad says "plug it in next time". Plug WHAT in?' },
+          17: { who: 'marcel', text: 'The summer festival lineups are out. We are not on them. I have written a strongly worded poem.' },
+          23: { who: 'jaxon', text: 'Mosquito season. I have been bitten 41 times. I counted. Kenji has not been bitten once.' }
+        },
+        costumes: ['Tundra Wraith (veggie tray included)'],
+        holidayLines: {
+          canada_day: ['Somebody starts "O Canada" between songs. You play along. Marcel sings it in French. Twice.'],
+          halloween: ['Costume night. The crowd came as you. There are six Marcels in the front row, all in capes.'],
+          nye: ['Midnight hits mid-song. Jaxon kisses his guitar. It was that kind of night.']
+        }
+      }
+    }
   };
 })(window.GG);

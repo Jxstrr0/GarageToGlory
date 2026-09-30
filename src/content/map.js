@@ -8,21 +8,31 @@
 //           x/y = pin position in its ring's 0..1 box (0,0 = top-left, north up; stylized, not to scale)
 //   roads:  [ [cityA, cityB, km, highway] ]  real-ish road distances; 26_sim_world finds shortest paths
 //   rivers / lakes: decorative polylines / ellipses in the Saskatchewan box (ring 'sask')
+// v0.9 "Genres" (owner Q1a): a fourth ring, 'alberta' (Edmonton + St. Albert, Sherwood Park, Leduc, Red Deer, Calgary,
+//   Lethbridge), moved out of the West. bands.js homeRing is open from day one for that band (Gravel Kings: Alberta);
+//   every other ring opens no earlier than Local Heroes for them (26_sim_world ringEra). ring.home is the "rings you know"
+//   box for a Saskatchewan-home band, ring.home.labels[homeRing] renames it and ring.homeBy[homeRing] moves it (56_ui_board).
+//   South-west Saskatchewan (the Ramblers' country) gains Maple Creek, Gull Lake and Shaunavon.
 (function (GG) {
   GG.content.map = {
     id: 'canada_rings', name: 'Canada', sub: 'Flat, wide, and full of gigs. It gets wider.',
     rings: [
-      { id: 'sask', name: 'Saskatchewan', short: 'Sask', era: 'garage', sub: 'Home. Flat, wide, and full of gigs.' },
-      { id: 'west', name: 'The West', short: 'West', era: 'local', sub: 'Mountains, oil money and a ferry.',
-        lock: 'Opens when you are Local Heroes (250 fans). Kenji has already checked the tire pressure.',
-        home: { x: 0.52, y: 0.2, w: 0.22, h: 0.6, label: 'Saskatchewan' } },
+      { id: 'sask', name: 'Saskatchewan', short: 'Sask', era: 'garage', sub: 'Flat, wide, and full of gigs.',
+        lock: 'Opens when you are Local Heroes (250 fans). The Trans-Canada is waiting.',
+        homeBy: { alberta: { x: 0.0, y: 0.12, w: 0.06, h: 0.6, label: 'Alberta' } } },
+      { id: 'alberta', name: 'Alberta', short: 'Alberta', era: 'local', sub: 'Oil money, chinooks and a mall with a wave pool.',
+        lock: 'Opens when you are Local Heroes (250 fans). Somebody has already checked the tire pressure.',
+        home: { x: 0.78, y: 0.15, w: 0.2, h: 0.7, label: 'Saskatchewan' } },
+      { id: 'west', name: 'The West', short: 'West', era: 'local', sub: 'Mountains, a lake monster and a ferry.',
+        lock: 'Opens when you are Local Heroes (250 fans). The mountains are not going anywhere.',
+        home: { x: 0.32, y: 0.2, w: 0.44, h: 0.6, label: 'Alberta & Saskatchewan', labels: { sask: 'Alberta & Saskatchewan', alberta: 'Alberta & Saskatchewan' } } },
       { id: 'eastnorth', name: 'The East & North', short: 'East & North', era: 'signed', sub: 'Big cities, ferries, ice roads.',
         lock: 'Opens once you are Signed. Toronto has heard of you. Toronto has not listened yet.',
         home: { x: 0.03, y: 0.5, w: 0.24, h: 0.3, label: 'The Prairies & the West' } }
     ],
     cities: {
       /* ---- Saskatchewan (from day one) ---- */
-      saskatoon: { id: 'saskatoon', ring: 'sask', name: 'Saskatoon', x: 0.3, y: 0.42, blurb: 'Home. Eight bridges, one garage.' },
+      saskatoon: { id: 'saskatoon', ring: 'sask', name: 'Saskatoon', x: 0.3, y: 0.42, blurb: 'Eight bridges, a river valley and a lot of garages.' },
       martensville: { id: 'martensville', ring: 'sask', name: 'Martensville', x: 0.24, y: 0.28, label: 'above', blurb: 'Ten minutes north. Has a skatepark and opinions.' },
       warman: { id: 'warman', ring: 'sask', name: 'Warman', x: 0.4, y: 0.28, label: 'right', blurb: 'Curling capital of the immediate area.' },
       prince_albert: { id: 'prince_albert', ring: 'sask', name: 'Prince Albert', x: 0.47, y: 0.1, label: 'right', blurb: 'Gateway to the North. Bring bug spray.' },
@@ -32,18 +42,26 @@
       regina: { id: 'regina', ring: 'sask', name: 'Regina', x: 0.64, y: 0.74, label: 'right', blurb: 'The Queen City. Flatter than a drum skin.' },
       moose_jaw: { id: 'moose_jaw', ring: 'sask', name: 'Moose Jaw', x: 0.47, y: 0.79, blurb: 'Tunnels, a giant moose, questionable history.' },
       swift_current: { id: 'swift_current', ring: 'sask', name: 'Swift Current', x: 0.15, y: 0.84, blurb: "Speedy Creek. It isn't speedy." },
-      gravelbourg: { id: 'gravelbourg', ring: 'sask', name: 'Gravelbourg', x: 0.36, y: 0.95, label: 'right', blurb: 'A cathedral on the bald prairie. Marcel says bonjour.' },
+      gravelbourg: { id: 'gravelbourg', ring: 'sask', name: 'Gravelbourg', x: 0.36, y: 0.95, label: 'right', blurb: 'A cathedral on the bald prairie. Bonjour, tout le monde.' },
+      // v0.9: south-west Saskatchewan (the Grid Road Ramblers' country)
+      maple_creek: { id: 'maple_creek', ring: 'sask', name: 'Maple Creek', x: 0.02, y: 0.9, label: 'right', blurb: 'An old cow town under the Cypress Hills. Real boots, real wind.' },
+      gull_lake: { id: 'gull_lake', ring: 'sask', name: 'Gull Lake', x: 0.08, y: 0.77, label: 'above', blurb: 'A grain elevator, a rink and one very ambitious community hall.' },
+      shaunavon: { id: 'shaunavon', ring: 'sask', name: 'Shaunavon', x: 0.12, y: 0.97, label: 'right', blurb: 'The Boom Town of the southwest. Spring water and a rodeo every summer.' },
       estevan: { id: 'estevan', ring: 'sask', name: 'Estevan', x: 0.8, y: 0.95, label: 'left', blurb: 'Energy City. Sunniest place in Canada, allegedly.' },
+      /* ---- Alberta (v0.9, owner Q1a: Gravel Kings' home ring; Local Heroes for everyone else) ---- */
+      edmonton: { id: 'edmonton', ring: 'alberta', name: 'Edmonton', x: 0.5, y: 0.18, label: 'right', blurb: 'A mall with a city attached. Festival City, too.' },
+      st_albert: { id: 'st_albert', ring: 'alberta', name: 'St. Albert', x: 0.36, y: 0.09, label: 'left', blurb: 'Just north of Edmonton. The biggest outdoor farmers\' market around.' },
+      sherwood_park: { id: 'sherwood_park', ring: 'alberta', name: 'Sherwood Park', x: 0.66, y: 0.12, label: 'right', blurb: 'A hamlet of seventy thousand people. It insists it is not a city.' },
+      leduc: { id: 'leduc', ring: 'alberta', name: 'Leduc', x: 0.5, y: 0.3, label: 'right', blurb: 'Where the oil boom started. Pumpjacks, a reservoir and the airport.' },
+      red_deer: { id: 'red_deer', ring: 'alberta', name: 'Red Deer', x: 0.46, y: 0.5, label: 'left', blurb: 'Exactly halfway to everything. It knows.' },
+      calgary: { id: 'calgary', ring: 'alberta', name: 'Calgary', x: 0.4, y: 0.7, label: 'left', blurb: 'Cowtown. Home of the Sad Dome.' },
+      lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your cymbals.' },
       /* ---- The West (Local Heroes) ---- */
-      edmonton: { id: 'edmonton', ring: 'west', name: 'Edmonton', x: 0.4, y: 0.08, label: 'right', blurb: 'A mall with a city attached. Festival City, too.' },
-      red_deer: { id: 'red_deer', ring: 'west', name: 'Red Deer', x: 0.38, y: 0.3, label: 'left', blurb: 'Exactly halfway to everything. It knows.' },
-      calgary: { id: 'calgary', ring: 'west', name: 'Calgary', x: 0.37, y: 0.52, label: 'left', blurb: 'Cowtown. Home of the Sad Dome.' },
-      lethbridge: { id: 'lethbridge', ring: 'west', name: 'Lethbridge', x: 0.44, y: 0.76, label: 'right', blurb: 'The wind never stops. Hold on to your cymbals.' },
       kelowna: { id: 'kelowna', ring: 'west', name: 'Kelowna', x: 0.2, y: 0.66, label: 'above', blurb: 'Wineries, a lake monster and your cousin\'s boat.' },
       vancouver: { id: 'vancouver', ring: 'west', name: 'Vancouver', x: 0.1, y: 0.8, label: 'right', blurb: 'It is raining. It was raining. It will be raining.', climate: 'coast' },
       victoria: { id: 'victoria', ring: 'west', name: 'Victoria', x: 0.05, y: 0.93, label: 'right', blurb: 'Tea, gardens and a ferry you will miss.', climate: 'coast' },
       brandon: { id: 'brandon', ring: 'west', name: 'Brandon', x: 0.84, y: 0.7, label: 'left', blurb: 'The Wheat City. Manitoba says hello, politely.' },
-      winnipeg: { id: 'winnipeg', ring: 'west', name: 'Winnipeg', x: 0.94, y: 0.56, label: 'left', blurb: 'Portage and Main, coldest corner on earth. Tundra Wraith live here.' },
+      winnipeg: { id: 'winnipeg', ring: 'west', name: 'Winnipeg', x: 0.94, y: 0.56, label: 'left', blurb: 'Portage and Main, coldest corner on earth. The politest metal scene in Canada.' },
       /* ---- The East & North (Signed) ---- */
       whitehorse: { id: 'whitehorse', ring: 'eastnorth', name: 'Whitehorse', x: 0.08, y: 0.12, label: 'right', blurb: 'Midnight sun in June, no sun in December.', climate: 'north' },
       yellowknife: { id: 'yellowknife', ring: 'eastnorth', name: 'Yellowknife', x: 0.3, y: 0.18, label: 'right', blurb: 'Ice roads, northern lights, a very long drive.', climate: 'north' },
@@ -75,6 +93,16 @@
       ['moose_jaw', 'gravelbourg', 115, 'Hwy 2 / Hwy 43'],
       ['swift_current', 'gravelbourg', 135, 'Hwy 4 / Hwy 43'],
       ['regina', 'estevan', 200, 'Hwy 39'],
+      ['swift_current', 'gull_lake', 55, 'Trans-Canada (Hwy 1)'],
+      ['gull_lake', 'maple_creek', 70, 'Trans-Canada (Hwy 1)'],
+      ['gull_lake', 'shaunavon', 72, 'Hwy 37'],
+      ['swift_current', 'shaunavon', 118, 'Hwy 4 / Hwy 13'],
+      /* Alberta (v0.9) */
+      ['edmonton', 'st_albert', 16, 'St. Albert Trail'],
+      ['edmonton', 'sherwood_park', 20, 'Sherwood Park Freeway'],
+      ['st_albert', 'sherwood_park', 32, 'Anthony Henday Drive'],
+      ['edmonton', 'leduc', 33, 'QEII (Hwy 2)'],
+      ['leduc', 'red_deer', 118, 'QEII (Hwy 2)'],
       /* The West */
       ['north_battleford', 'edmonton', 390, 'Yellowhead (Hwy 16)'],
       ['saskatoon', 'calgary', 620, 'Hwy 7'],

@@ -47,7 +47,7 @@
             'Forty-one years reviewing records. I wept at {single}. My wife came in to check on me. She wept too. Then she asked who it was.',
             '{album} is a classic. I say that about once a decade, usually about a record from 1972.',
             'Put it on the turntable, pour a rye, call your kids. Tell them this is what music sounded like back when it mattered, which is now, somehow.',
-            'I have seen the future of prairie music and it is {band}, and it wears a cape, and it is louder than my doctor would like.'
+            'I have seen the future of prairie music and it is {band}, and it wears whatever it likes, and it is louder than my doctor would like.'
           ]
         },
         byBand: {
@@ -101,7 +101,7 @@
           great: [
             "STOP EVERYTHING! {album} is the best thing to come out of the prairies since the prairies! Call your nan! Call your MP!",
             '{single} is a national anthem for people who shovel their own driveways! Which is all of us! GLORIOUS!',
-            "We have listened to {album} eleven times on the train from Saskatoon to Jasper and cried at every elevator we passed! Masterpiece!"
+            "We have listened to {album} eleven times on the train across the prairies and cried at every grain elevator we passed! Masterpiece!"
           ]
         },
         byBand: {
