@@ -151,6 +151,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
   ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
   (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
+- pw_rival `botb` "btn-rs-go" 12 s timeout under load was a real bug, not load: the rival's set (59d `tick`) capped each
+  frame at 0.1 s, so below 10 fps their set played in slow motion (a 4.5 s set took 18-27 s at 300-1000 ms frames; their
+  drummer also drifted off the audio after any hitch). Their set now runs on wall time like the gig clock (v0.5.1); time
+  with the app hidden doesn't count (visibilitychange re-bases). Debug `rivalui.clock`; pw_rival botb +1 check (a 1 s
+  stall advances their set ~1 s; the old clock gave +0.2 s). Repro: CDP `Emulation.setCPUThrottlingRate` 6.
+  Same cap in the van (57 `frame`), the other botb timeout under load (the weekend's 8 s wait): the skip click missed its
+  2 s actionability wait, the helper never retried, and the drive crawled (39% after 26 s). The drive now runs on wall
+  time too (a long frame still stops at the road card, 45%), and pw_rival `weekend()` retries the skip until it lands.
+- Seen while reproducing (not fixed): with the song left to play to its end, the gig's `audio:end` handler compares the
+  last frame's `G.t` with the chart and can read the natural end as "stopped under us" → pause(true) (the song restarts
+  on resume). Headless audio runs ~0.5-1 s ahead of the gig clock by the end of an 18 s song, so it pauses every time
+  there; on a phone it needs a > ~0.27 s frame at that moment (or ~0.3 s output latency). pw_rival botb only hits it when
+  its screenshot outlasts song 1 (~18 s, 6x throttle + parallel runs).
 
 ## v0.7.2 titles (hotfix, TITLES agent)
 - `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,

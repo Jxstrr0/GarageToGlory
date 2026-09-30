@@ -253,8 +253,14 @@
     frameStage();
     startSong(0);
     V.last = performance.now();
+    document.addEventListener('visibilitychange', onVisible);
     V.raf = requestAnimationFrame(tick);
   };
+  // Their set runs on wall time, like the gig clock (v0.5.1): every frame counts in full, so each song lasts V.ms and their
+  // drummer stays on the audio at any frame rate (a 0.1 s cap per frame played the set in slow motion below 10 fps: a
+  // 4.5 s set took 20 s+ at ~3 fps). Time away doesn't count: no frames and the audio is suspended while the app is
+  // hidden, and the clock re-bases when it comes back. V.t = seconds of their set played (debug 'rivalui' clock).
+  function onVisible() { if (V && !V.ended && !document.hidden) V.last = performance.now(); }
   function frameStage() {
     requestAnimationFrame(function () {
       if (!V || !V.stage || !V.dom || !stageApi()) return;
@@ -277,11 +283,11 @@
     banner(fill(pick(pool, st.totalWeek + i * 3), vars()));
   }
   function stopAudio() { if (V && V.handle) { try { if (V.handle.playing) V.handle.stop(); } catch (e) { /* ignore */ } V.handle = null; } }
-  function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; }
+  function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; document.removeEventListener('visibilitychange', onVisible); }
   function tick(now) {
     if (!V || V.ended) return;
-    var dt = Math.min(0.1, Math.max(0, (now - V.last) / 1000)); V.last = now;
-    V.songT += dt * 1000;
+    var dt = document.hidden ? 0 : Math.max(0, (now - V.last) / 1000); V.last = now;
+    V.t += dt; V.songT += dt * 1000;
     var song = V.set.setlist[V.i], u = Math.min(1, V.songT / V.ms), api = V.stage ? stageApi() : null;
     V.scores[V.i] = Math.round(song.score * (u < 0.92 ? u / 0.92 : 1));
     if (api) {
@@ -450,6 +456,6 @@
   };
 
   GG.registerDebug('rivalui', function () {
-    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, announced: Object.keys(announced) };
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, announced: Object.keys(announced) };
   });
 })(window.GG);
