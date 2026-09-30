@@ -1099,7 +1099,7 @@
       var now = c.currentTime, horizon = now + LOOKAHEAD;
       for (;;) {
         if (i >= tl.events.length) {
-          if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true); return; }   // v0.8: an outro rings out
+          if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true, true); return; }   // v0.8: an outro rings out
           i = 0; pass++; lastBeat = -1;
         }
         var ev = tl.events[i], t = at(ev);
@@ -1134,15 +1134,16 @@
     };
     // Song position in beats for an AudioContext time (v0.3: where the note highway is).
     h.beatAt = function (time) { var b = (time - h.start) / spb; return loop ? ((b % tl.beats) + tl.beats) % tl.beats : b; };
-    // ended = the song finished by itself (or the app went to the background): emits 'audio:end' { handle }.
-    h.stop = function (ended) {
+    // ended = the song finished by itself (or the app went to the background): emits 'audio:end' { handle, natural }
+    // (natural = it played to its end; false = cut off by the app going to the background).
+    h.stop = function (ended, natural) {
       if (!h.playing) return;
       h.playing = false;
       clearInterval(h.timer);
       timers.forEach(function (x) { clearTimeout(x.id); });
       closePort(r, port);
       if (current === h) current = null;
-      if (ended === true && !R.quiet) GG.emit('audio:end', { handle: h });
+      if (ended === true && !R.quiet) GG.emit('audio:end', { handle: h, natural: natural === true });
     };
     h.timer = setInterval(pump, TICK_MS);
     if (!R.quiet) current = h;

@@ -1279,7 +1279,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
    'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
-   'audio:end'      { handle }                          a song finished (or the app hid)
+   'audio:end'      { handle, natural }                          a song finished (or the app hid)
    'member:stage'   { id, stage }             drama, when a member's grievance stage changes
    'member:quit'    { id }  'member:return' { id }  'recruit:hired' { member }  'protection:ended' {}   (v0.4 drama)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot
@@ -19531,7 +19531,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var now = c.currentTime, horizon = now + LOOKAHEAD;
       for (;;) {
         if (i >= tl.events.length) {
-          if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true); return; }   // v0.8: an outro rings out
+          if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true, true); return; }   // v0.8: an outro rings out
           i = 0; pass++; lastBeat = -1;
         }
         var ev = tl.events[i], t = at(ev);
@@ -19566,15 +19566,16 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     };
     // Song position in beats for an AudioContext time (v0.3: where the note highway is).
     h.beatAt = function (time) { var b = (time - h.start) / spb; return loop ? ((b % tl.beats) + tl.beats) % tl.beats : b; };
-    // ended = the song finished by itself (or the app went to the background): emits 'audio:end' { handle }.
-    h.stop = function (ended) {
+    // ended = the song finished by itself (or the app went to the background): emits 'audio:end' { handle, natural }
+    // (natural = it played to its end; false = cut off by the app going to the background).
+    h.stop = function (ended, natural) {
       if (!h.playing) return;
       h.playing = false;
       clearInterval(h.timer);
       timers.forEach(function (x) { clearTimeout(x.id); });
       closePort(r, port);
       if (current === h) current = null;
-      if (ended === true && !R.quiet) GG.emit('audio:end', { handle: h });
+      if (ended === true && !R.quiet) GG.emit('audio:end', { handle: h, natural: natural === true });
     };
     h.timer = setInterval(pump, TICK_MS);
     if (!R.quiet) current = h;
@@ -31194,7 +31195,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     'audio:end': function (p) {   // the song stopped under us (app hidden, another screen): pause, restart on resume
       if (!G || !G.handle || p.handle !== G.handle) return;
       G.handle = null;
-      if ((G.mode === 'play' || G.mode === 'count') && G.chart && G.t < G.chart.duration - 0.1) pause(true);
+      // v0.8: a song that played to its end is no interruption (the gig clock finishes it), even when the last frame was
+      // slow and G.t still lags; otherwise judge against the song time now, not the last frame's.
+      if (p.natural) return;
+      var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
+      if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) < G.chart.duration - 0.1) pause(true);
     },
     'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
   };
@@ -31841,7 +31846,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, dur: ch ? ch.duration : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at, echo: !!G.lastTap.echo,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
@@ -32325,7 +32330,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function frame(now) {
     var v = cur;
     if (!v || !v.alive) return;
-    var dt = document.hidden ? 0 : Math.max(0, (now - v.last) / 1000); v.last = now;
+    // The first drawn frame only starts the clock: building the 3D van scene (a slow first frame) isn't driving time.
+    var dt = document.hidden || v.last == null ? 0 : Math.max(0, (now - v.last) / 1000); v.last = now;
     if (!v.paused && !v.arrived) v.el += dt;
     v.p = v.arrived ? 1 : Math.min(1, v.el / v.dur);
     var cardDue = !v.cardShown && v.trip.cardId && !v.trip.resolved;
@@ -32373,7 +32379,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         v.ctx = v.cv.getContext('2d');
         if (v.ctx) v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-      v.last = (typeof performance !== 'undefined' ? performance.now() : 0);
+      v.last = null;   // set by the first frame
       v.raf = requestAnimationFrame(frame);
       if (vprefs().skipVan) setTimeout(function () { if (cur === v && v.alive && !v.skipping && !v.arrived) skip(v); }, 60);
     },

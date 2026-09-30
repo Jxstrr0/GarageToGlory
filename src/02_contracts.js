@@ -253,7 +253,7 @@
    'stats:changed'  { state }                 career (any stat change) -> HUD refresh
    'song:written'   { song, reactions:[{who,text}] }   career.runWeek (Write block)
    'audio:step'     { section, entry, bar, step, time } audio playback (UI playhead)
-   'audio:end'      { handle }                          a song finished (or the app hid)
+   'audio:end'      { handle, natural }                          a song finished (or the app hid)
    'member:stage'   { id, stage }             drama, when a member's grievance stage changes
    'member:quit'    { id }  'member:return' { id }  'recruit:hired' { member }  'protection:ended' {}   (v0.4 drama)
    'hotspot'        { action }                render, when the player reaches a tapped hotspot

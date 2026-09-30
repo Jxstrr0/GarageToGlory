@@ -404,4 +404,44 @@ async function double() {
   c.done();
 }
 
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); })();
+// v0.8: a song that plays to its end must never pause the gig, even when the frames are slow (the audio module's
+// 'audio:end' carries natural:true; before, a frame over ~0.27 s at the end paused it and resume restarted the song).
+async function songend() {
+  const c = checker('songend');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => { GG.main.quickStart({ seed: 5, slot: '1', openCard: false }); GG.ui.closeAll(); GG.ui.gigAutoplay = false; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    // The audio clock can finish a song a little before the gig's own clock does (drift, a hiccup): its natural end
+    // must not read as an interruption. Deliver one as if the audio had drifted a whole song ahead (the gig at ~2 s).
+    await page.waitForFunction(() => GG.debug('gigui').songT > 2, null, { timeout: 10000 });
+    const early = await page.evaluate(() => { const h = GG.audio.current(); GG.emit('audio:end', { handle: h, natural: true }); return { paused: GG.debug('gigui').paused, t: GG.debug('gigui').songT }; });
+    c.ok(early.paused === false, 'a natural end from an audio clock that ran ahead does not pause the gig ' + JSON.stringify(early));
+    await page.evaluate(() => { window.__ends = []; GG.on('audio:end', p => window.__ends.push({ natural: p.natural, paused: GG.debug('gigui').paused })); });
+    // Near the song's end, slow the FRAMES to one every 0.6 s while timers keep running (a GPU-bound phone: the audio's
+    // own timer ends the song while the gig's last frame is up to 0.6 s old).
+    const slowed = await page.evaluate(async () => {
+      for (;;) {
+        const d = GG.debug('gigui');
+        if (d.mode !== 'play' || window.__ends.length) return null;
+        if (d.dur && d.songT > d.dur - 1.2) break;
+        await new Promise(r => setTimeout(r, 20));
+      }
+      const raf = window.requestAnimationFrame.bind(window);
+      window.__raf = raf; window.requestAnimationFrame = cb => setTimeout(() => raf(cb), 600);
+      return GG.debug('gigui').songT;
+    });
+    c.ok(slowed != null, 'frames slowed to 1 per 0.6 s from songT ' + slowed);
+    await page.waitForFunction(() => window.__ends.length > 0, null, { timeout: 45000 });
+    const ends = await page.evaluate(() => { if (window.__raf) window.requestAnimationFrame = window.__raf; return window.__ends; });
+    c.ok(ends[0].natural === true, 'a song that plays out reports natural:true ' + JSON.stringify(ends));
+    await page.waitForFunction(() => ['between', 'results'].includes(GG.debug('gigui').mode), null, { timeout: 15000 });
+    const d = await page.evaluate(() => GG.debug('gigui'));
+    c.ok(!d.paused && ['between', 'results'].includes(d.mode), 'the gig moves on after the song (no pause, no restart): ' + d.mode + ' paused=' + d.paused);
+    c.ok(!errors.length, 'no console errors ' + errors.slice(0, 2));
+  } finally { await close(); c.done(); }
+}
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); })();

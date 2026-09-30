@@ -170,7 +170,8 @@
   function frame(now) {
     var v = cur;
     if (!v || !v.alive) return;
-    var dt = document.hidden ? 0 : Math.max(0, (now - v.last) / 1000); v.last = now;
+    // The first drawn frame only starts the clock: building the 3D van scene (a slow first frame) isn't driving time.
+    var dt = document.hidden || v.last == null ? 0 : Math.max(0, (now - v.last) / 1000); v.last = now;
     if (!v.paused && !v.arrived) v.el += dt;
     v.p = v.arrived ? 1 : Math.min(1, v.el / v.dur);
     var cardDue = !v.cardShown && v.trip.cardId && !v.trip.resolved;
@@ -218,7 +219,7 @@
         v.ctx = v.cv.getContext('2d');
         if (v.ctx) v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-      v.last = (typeof performance !== 'undefined' ? performance.now() : 0);
+      v.last = null;   // set by the first frame
       v.raf = requestAnimationFrame(frame);
       if (vprefs().skipVan) setTimeout(function () { if (cur === v && v.alive && !v.skipping && !v.arrived) skip(v); }, 60);
     },

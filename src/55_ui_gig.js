@@ -178,7 +178,11 @@
     'audio:end': function (p) {   // the song stopped under us (app hidden, another screen): pause, restart on resume
       if (!G || !G.handle || p.handle !== G.handle) return;
       G.handle = null;
-      if ((G.mode === 'play' || G.mode === 'count') && G.chart && G.t < G.chart.duration - 0.1) pause(true);
+      // v0.8: a song that played to its end is no interruption (the gig clock finishes it), even when the last frame was
+      // slow and G.t still lags; otherwise judge against the song time now, not the last frame's.
+      if (p.natural) return;
+      var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
+      if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) < G.chart.duration - 0.1) pause(true);
     },
     'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
   };
@@ -825,7 +829,7 @@
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, dur: ch ? ch.duration : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at, echo: !!G.lastTap.echo,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
