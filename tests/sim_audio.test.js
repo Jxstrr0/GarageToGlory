@@ -166,4 +166,35 @@ test('mixer + metronome: settings.mix / settings.metronome, clamped, unknown bus
   eq([s.mix.band, s.mix.drums, s.metronome, A.getVolume('band')], [0.4, 1, true, 0.4]);
 });
 
+test('v0.7.2 crowd pre-render: resumable steps, each only a few ms; slicing never changes the audio', () => {
+  // A second copy of the module in a fresh GG, with its (private) crowd builder handed out for this test only.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', '30_audio.js'), 'utf8')
+    .replace(/\}\)\(window\.GG\);\s*$/, 'GG.__crowd = { build: CROWD_BUILD, more: MORE, parts: CROWD_PARTS, speak: speak, stereo: stereo, talkSegs: talkSegs };\n})(window.GG);');
+  const G2 = load({ localStorage: load.fakeStorage() });
+  new Function('window', src)({ GG: G2 });
+  const X = G2.__crowd, now = () => { const t = process.hrtime(); return t[0] * 1e3 + t[1] / 1e6; };
+  ok(X && X.parts.length === 7, 'crowd builder reachable');
+  const run = k => {   // one build of part k, step by step: [times per call, output]
+    const steps = X.build[k](), times = []; let out;
+    for (let i = 0; i < steps.length;) { const t0 = now(); out = steps[i](); times.push(now() - t0); if (out !== X.more) i++; }
+    return [times, out];
+  };
+  const sig = out => out.map(b => { let h = 0; for (let i = 0; i < b.n; i++) h = (h * 31 + Math.round(b.L[i] * 1e7) * 3 + Math.round(b.R[i] * 1e7)) | 0; return b.n + ':' + h; }).join();
+  for (const k of X.parts) {
+    const runs = [run(k), run(k), run(k)];   // min over 3 runs per call: machine load can't fake a slow step
+    ok(runs.every(r => sig(r[1]) === sig(runs[0][1])), k + ': deterministic');
+    const worst = Math.max(...runs[0][0].map((_, i) => Math.min(runs[0][0][i], runs[1][0][i], runs[2][0][i])));
+    ok(runs[0][0].length >= 2 && worst < 3, k + ': ' + runs[0][0].length + ' steps, slowest ' + worst.toFixed(2) + ' ms (warm)');
+  }
+  // A voice rendered in one go = the same voice rendered in slices of any size (the resumable state is complete).
+  const voice = slice => {
+    const b = X.stereo(2), rng = G2.RNG(7), job = X.speak(b, { f0: 140, pan: 0.3, lv: 0.8, dull: 0.4, seed: 99 }, X.talkSegs(rng, 2));
+    if (slice) { let n = 0; while (!job(slice)) n++; ok(n > 1, 'rendered in ' + n + ' slices of ' + slice); } else ok(job() === true);
+    return sig([b]);
+  };
+  const whole = voice(0);
+  ok(!/:0$/.test(whole), 'the voice is not silent');
+  [4096, 1000, 31, 7].forEach(sl => eq(voice(sl), whole, 'slices of ' + sl + ' = one pass'));
+});
+
 done('sim_audio');

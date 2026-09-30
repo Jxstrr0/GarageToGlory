@@ -513,6 +513,14 @@ test('song titles: ≥30 English metal titles (Marcel keeps a French original fo
   ['punk', 'rock', 'country'].forEach(g => ok(K.songTitles[g] && K.songTitles[g].length >= 5 && K.songTitles[g].every(t => str(t, 60)), g + ' titles are plain English strings'));
 });
 
+test('v0.7.2: cards and lines name songs by their English titles (no old French starter/pool title left in text)', () => {
+  const fr = new Set(K.songTitles.metal.map(t => t.fr));
+  Object.values(K.bands).forEach(b => (b.starterSongs || []).forEach(s => s.fr && fr.add(s.fr)));
+  const offenders = [];
+  for (const [p, s] of strings({ cards: K.cards, lines: K.lines }, 'content')) for (const f of fr) if (s.includes(f)) offenders.push(p + ': ' + f);
+  eq(offenders, [], 'a card or line still uses a French title the player never sees');
+});
+
 test('v0.7.2: no content claims every song title is French; Marcel still sings in French', () => {
   const offenders = [];
   for (const [p, s] of strings(K, 'content')) {

@@ -86,7 +86,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   bar 2), both on the beat grid and in key, on their own channel; the guitars' presence band dips −9 dB under them.
 - Crowd (all genres): pre-rendered once per page in plain seeded JS (22.05 kHz stereo; babble of 14 formant voices,
   roar of 12 shouting voices, applause for big and small rooms, on-beat clap hits, 4 "woo/yeah/hey"s, 2 whistles, a
-  boo), built in ≤ 8 ms steps after unlock (paused during songs; the crowd fades in when ready, never stalls a gig).
+  boo), built after unlock in ~8 ms ticks of resumable steps (a voice renders 4096 samples a step, noise/gain loops
+  16384, applause a clapper, clap-along 10 hands: < 1 ms warm, ~4-6 ms cold; output bit-identical to the one-pass build),
+  paused during songs; the crowd fades in when ready, never stalls a gig.
   Live: babble louder between songs than during; roar follows 'crowd:level'; claps on the beat when hot (every beat,
   2 and 4 from 150 BPM, never in breakdowns); fans woo/whistle when hot; a grumble of boos when the meter is under 22;
   cheers/boos on 'crowd:moment'; a song-end reaction on 'gig:song' scaled by score; Japan's silent crowds hush during
@@ -105,11 +107,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   - Crowd: bed 0.027 / 0.031 / 0.043 RMS at meter 15/50/90 (0.014–0.043 during songs, 0.002 silent), events peak ≤ 0.72,
     metal + a roaring crowd peak 0.84. v0.7.1's murmur was ~ −36 dBFS: effectively inaudible under the band.
   - CPU: a full metal song (arena reverb + crowd) renders 2.1× real time headless (v0.7.1 metal ~6×, before the crowd).
-- Tests: sim_audio 11 (new metal tuning/riffs/tremolo/solo/scream test); pw_seq audio 38 (growls from the drop, live crowd
-  ready + ≤ 12 voices) + new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
+- Live taps (fix, pre-existing since v0.6.1): `hit` cuts off the lane's previous tap (lanes monophonic, like the timeline;
+  a gain per tap, its sources stopped) and SONG_VOICES = 18 = band 8 + the whole kit 10, so a metal chorus on Hard
+  (8th kick + 8th crash, snare 2/4) no longer loses snares to the cap (was ~half on Hard). `counts.tapDrops` (debug).
+- Tests: sim_audio 12 (new metal tuning/riffs/tremolo/solo/scream test; crowd build steps < 3 ms warm + slices = one pass);
+  pw_seq audio 39 (growls from the drop, live crowd ready + ≤ 18 song voices, every tap sounds over a full metal band) +
+  new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
   WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
-- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" + layout
-  hscroll are flaky under machine load (the v0.7.1 build fails them 3/4 at load avg 11; all green when quiet).
+- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" is flaky under
+  machine load (headless rAF gaps of 100-600 ms with software WebGL; HEAD and the fix both fail it ~half the time at
+  load avg 7-14; green when quiet). The pw_gig "setlist layout" hscroll was a real bug, not load: long English titles
+  (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
+  ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
+  (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
 
 ## v0.7.2 titles (hotfix, TITLES agent)
 - `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,
@@ -128,7 +138,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   queues `entry.fr` for Marcel's French titles; reroll button "🎲 Another title from Marcel". Content rewording: coach name
   tips, Marcel's name lines, the Gord card ("translated the French lyrics of 'The Green Tomb'"), Monolith's English demand
   ("Love the English titles… Now Marcel should sing in English too."). Album titles keep one French pitch (labels, unchanged).
-- Tests: content 48 (English pool + v0.7.1 fr coverage + no "titles are French" text), sim_songs 15 (picks/rate/seed,
+- Cards name songs by their English titles ('My Lawn, My Tomb', 'The Green Tomb (It Is the Lawn)'): 9 common cards fixed.
+- Tests: content 49 (English pool + v0.7.1 fr coverage + no "titles are French" text + no pool/starter `fr` in cards/lines), sim_songs 15 (picks/rate/seed,
   reactions, old-save rename everywhere + idempotent + fr kept).
 
 ## Owner feedback → v0.6.2 (2026-09-29)

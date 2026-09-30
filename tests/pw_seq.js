@@ -332,7 +332,29 @@ async function audio() {
       h.stop();
       return { max, steps, style, state: GG.debug('audio').state, playing: GG.audio.isPlaying() };
     });
-    c.ok(cap.max > 0 && cap.max <= 12 && cap.steps > 10 && cap.style === 'tremolo' && !cap.playing, 'live: ≤ 12 song voices ' + JSON.stringify(cap));
+    c.ok(cap.max > 0 && cap.max <= 18 && cap.steps > 10 && cap.style === 'tremolo' && !cap.playing, 'live: ≤ 18 song voices ' + JSON.stringify(cap));
+    // v0.7.2 fix: a perfectly played metal chorus on Hard (8th kick + 8th crash, snare on 2 and 4 @140) over the full band
+    // never loses a tap to the voice cap (taps cut off the lane's last tap; the cap has room for the kit on top of the band).
+    const taps = await page.evaluate(async () => {
+      const p = JSON.parse(JSON.stringify(GG.songs.signature('metal'))); p.bpm = 140;
+      const d0 = GG.debug('audio').counts.tapDrops, h = GG.audio.play(p, { genre: 'metal', section: 'chorus', loop: true, backing: true, drums: false });
+      const ac = GG.audio.context(), e = 60 / 140 / 2, t0 = ac.currentTime + 0.3;
+      let i = 0, n = 0, max = 0;
+      while (i < 48) {   // 6 bars of 8ths, scheduled ahead on the audio clock like the gig's auto notes
+        const now = ac.currentTime;
+        for (; i < 48 && t0 + i * e < now + 0.25; i++) {
+          const t = Math.max(t0 + i * e, now + 0.02);
+          GG.audio.hit('kick', t); GG.audio.hit('cymbal', t); n += 2;
+          if (i % 4 === 2) { GG.audio.hit('snare', t); n++; }
+        }
+        max = Math.max(max, GG.debug('audio').songVoices);
+        await new Promise(r => setTimeout(r, 40));
+      }
+      await new Promise(r => setTimeout(r, 300));
+      h.stop();
+      return { taps: n, dropped: GG.debug('audio').counts.tapDrops - d0, max };
+    });
+    c.ok(taps.taps === 108 && taps.dropped === 0 && taps.max <= 18, 'live: every tap sounds over a full metal band ' + JSON.stringify(taps));
     const tl = await page.evaluate(() => {
       const s = GG.songs.signature('metal'), t = GG.audio.timeline(s, { genre: 'metal', backing: false });
       const drums = t.events.filter(e => e.kind === 'drum').length, notes = GG.songs.toNotes(s).length;

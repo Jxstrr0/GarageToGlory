@@ -476,6 +476,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   justify-content: center; font: 900 13px var(--display); color: var(--text); }
 .set-song.on .num { background: var(--amber); color: #1d1204; }
 .set-song .chips { flex: 0 1 auto; justify-content: flex-end; }
+.set-song > .row { min-width: 0; }
 .icon-btn.sm { width: 44px; height: 44px; flex: 0 0 44px; font-size: 15px; } .icon-btn:disabled { opacity: .3; cursor: default; }
 .full.gigres { background: radial-gradient(120% 60% at 50% 0%, #3a2a1a 0%, var(--bg) 65%); }
 .gigres-head { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
@@ -2611,7 +2612,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       choices: [
         { label: "Wear it as-is. It's metal.",
           effects: { flags: { cape: 'velvet' }, mood: { marcel: 6 }, burnout: 3, chain: { cape: { step: 3, delay: 1 } } },
-          outcome: "He trips on it twice during 'Ma Pelouse, Mon Tombeau' and calls it 'the choreography'. Honestly? It's working." },
+          outcome: "He trips on it twice during 'My Lawn, My Tomb' and calls it 'the choreography'. Honestly? It's working." },
         { label: 'Get Baba to hem it',
           effects: { flags: { cape: 'velvet' }, mood: { jaxon: 6 }, chemistry: 4, chain: { cape: { step: 3, delay: 2 } } },
           outcome: "Jaxon's baba hems it in one evening and sews in a secret pocket 'for perogies, in case'. Marcel weeps quietly into the velvet." },
@@ -2711,7 +2712,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Eat together, thank Baba', effects: { chemistry: 4, burnout: -5, mood: { all: 4 } },
           outcome: 'Forty-eight perogies, sour cream, fried onions. Kenji eats nine without removing his sunglasses. The band has never felt closer.' },
         { label: 'Invite Baba to rehearsal', effects: { chemistry: 3, mood: { jaxon: -5 }, skill: { jaxon: 1 } },
-          outcome: "Baba rates each song out of ten from a lawn chair. 'Ma Pelouse, Mon Tombeau' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
+          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
         { label: 'Rehearse past 10 anyway', effects: { skill: { all: 1 }, mood: { jaxon: -8 }, flags: { babaMad: true } },
           outcome: "Jaxon's phone rings at 10:01. And 10:02. And 10:03. He leaves at 10:04, head down. The riffs are tighter. Baba is not." }
       ] },
@@ -2752,7 +2753,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         'like nobody noticed. Everybody noticed. Dana noticed the most.',
       choices: [
         { label: 'Give him a solo spot', effects: { mood: { jaxon: 10, dana: -6 }, skill: { jaxon: 2 } },
-          outcome: "Jaxon gets eight bars in 'Le Tombeau Vert'. He uses them, and some of the next song's. Dana starts practising eleven hours a day." },
+          outcome: "Jaxon gets eight bars in 'The Green Tomb (It Is the Lawn)'. He uses them, and some of the next song's. Dana starts practising eleven hours a day." },
         { label: 'Keep it simple, Rip.', effects: { mood: { jaxon: -6 }, chemistry: 3 },
           outcome: 'Jaxon plays it straight for exactly one rehearsal. Then the fills come back, quieter, like raccoons.' },
         { label: "Pretend you didn't hear", effects: { skill: { jaxon: 1 }, mood: { jaxon: 3 } },
@@ -2772,7 +2773,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       ] },
 
     { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ era: GL, minFans: 40 }),
-      text: "Dana's solo in 'Le Tombeau Vert' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
+      text: "Dana's solo in 'The Green Tomb (It Is the Lawn)' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
         'but somehow she makes it work. Marcel has started bringing a book.',
       choices: [
         { label: 'Let it rip', effects: { mood: { dana: 10 }, burnout: 6, buzz: 3 },
@@ -2802,7 +2803,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 
     { id: 'drama_setlist_fight', type: 'drama', speaker: 'marcel', title: 'The Opener', once: false, cooldown: 8,
       gate: g({ era: GLS, minWeek: 8 }),
-      text: "The group chat is on fire: should the set open with 'Ma Pelouse, Mon Tombeau' or Dana's new instrumental? " +
+      text: "The group chat is on fire: should the set open with 'My Lawn, My Tomb' or Dana's new instrumental? " +
         'Marcel has sent fourteen voice memos. Dana has sent one spreadsheet.',
       choices: [
         { label: "Marcel's song opens", effects: { mood: { marcel: 8, dana: -6 } },
@@ -2894,7 +2895,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Metal Chicken Dance', effects: { fund: 150, buzz: 3, mood: { marcel: -6 } },
           outcome: 'The metal Chicken Dance destroys. A great-aunt headbangs. Marcel refuses to sing in English, so he screams it in French. Nobody minds.' },
         { label: 'Only our originals', effects: { fund: 60, fans: 6, mood: { marcel: 6 } },
-          outcome: "'Ma Pelouse, Mon Tombeau' becomes the first dance. The bride weeps, possibly the good way. They dock you $90 for 'the yelling'." },
+          outcome: "'My Lawn, My Tomb' becomes the first dance. The bride weeps, possibly the good way. They dock you $90 for 'the yelling'." },
         { label: 'Politely decline', effects: { burnout: -4 },
           outcome: "Your mom tells her cousin you're 'on tour'. You're in the garage. The DJ is replaced by a nephew with a phone." }
       ] },
@@ -3237,8 +3238,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // Weird
     // ======================================================================
     { id: 'weird_moose', type: 'weird', speaker: 'marcel', title: 'The Moose', gate: g({ era: GLS, minWeek: 6 }),
-      text: "A moose is standing in the driveway. It's been there since 6 a.m. It seems to like the riff from 'Ma Pelouse, " +
-        "Mon Tombeau'. Marcel is convinced it's a sign. Dad is convinced it's after the truck.",
+      text: "A moose is standing in the driveway. It's been there since 6 a.m. It seems to like the riff from 'My Lawn, " +
+        "My Tomb'. Marcel is convinced it's a sign. Dad is convinced it's after the truck.",
       choices: [
         { label: 'Play the riff for it', hint: 'Gamble: moose are unpredictable',
           outcome: "You open the garage door and count it in. The moose's ears go up.",
@@ -3406,7 +3407,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           outcome: "'I'm his cousin. Rip's cousin. Pip.' The kid is devastated, then delighted. Now there's a rumour about a sixth member called Pip." }
       ] },
     { id: 'local_goal_song', type: 'fame', speaker: 'reporter', title: 'The Goal Song', gate: g({ era: L, minFans: 300 }),
-      text: 'The Saskatoon Blizzard, the junior hockey team, want the riff from "Ma Pelouse, Mon Tombeau" as their goal song. ' +
+      text: 'The Saskatoon Blizzard, the junior hockey team, want the riff from "My Lawn, My Tomb" as their goal song. ' +
         "Brent from the Star-Pheasant is covering it. Four thousand people will hear it every time a seventeen-year-old scores.",
       choices: [
         { label: 'Free, for the city', effects: { fans: 60, buzz: 10 },
@@ -3431,7 +3432,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           outcome: "Dad writes a stern cease-and-desist on letterhead he had printed for this. Their moms write back. Nobody wins. Hail Damage Jr. become Hail Damage II." }
       ] },
     { id: 'local_gord_wedding', type: 'money', speaker: 'gord', title: "Gord's Wedding", gate: g({ era: LS, minFans: 300 }),
-      text: "Gord, your first superfan, is getting married at the Ukrainian hall in Saskatoon. First dance: 'Ma Pelouse, Mon Tombeau'. " +
+      text: "Gord, your first superfan, is getting married at the Ukrainian hall in Saskatoon. First dance: 'My Lawn, My Tomb'. " +
         "The bride has agreed. The bride's grandmother has not been told.",
       choices: [
         { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
@@ -16278,8 +16279,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //        crowd layers + one-shots -> crowdBus(crowd) (+ a small send into the room) ──────────┤
 //        song ports -> kit -> busDrums(drums) ┐                                                 ├> master (mute) -> ceiling -> out
 //                   band/vocals -> busBand(band) ┴(+ room send -> convolver)-> glue -> limiter -> songOut ┘
-// Song voices are capped at SONG_VOICES (the band at BAND_VOICES of them, so taps always sound): each lane/voice is
-// monophonic (a hit chokes the previous one of its lane at the next hit's time) and the scheduler books every source.
+// Song voices are capped at SONG_VOICES (the band at BAND_VOICES of them): each lane/voice is monophonic (a hit chokes
+// the previous one of its lane at the next hit's time) and the scheduler books every source. Live taps (hit) are cut
+// off per lane the same way, and the cap leaves room for the whole kit (10 voices) on top of a full band, so taps
+// always sound.
 //   GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; isMuted() ; toggleMuted() ; suspend() ; resume()
 //   play(pattern, { genre, section|null, loop, backing, drums, vocals, songId, metronome })
 //     -> handle { stop(), update(pattern), beatAt(time), playing, start, bpm, key }
@@ -16293,13 +16296,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
-  var MAX_VOICES = 8, SFX_VOLUME = 0.32, SONG_VOLUME = 0.62, SONG_VOICES = 12, BAND_VOICES = 8, CROWD_VOICES = 12, AMB_VOICES = 6;
+  var MAX_VOICES = 8, SFX_VOLUME = 0.32, SONG_VOLUME = 0.62, SONG_VOICES = 18, BAND_VOICES = 8, CROWD_VOICES = 12, AMB_VOICES = 6;
   var LOOKAHEAD = 0.12, TICK_MS = 25, LEAD_IN = 0.06;   // seconds scheduled ahead, scheduler period, start delay
   var BUSES = (C && C.MIX_BUSES) || ['drums', 'band', 'crowd', 'sfx'];
   var ctx = null, master = null, sfxBus = null, ambBus = null, crowdBus = null, noise = null, rig = null, BUF = null;
   var voices = 0, muted = null, suspended = false, current = null, stepCount = 0, lastStep = null;
   var prefs = null, mixNodes = [], live = { amb: 0, crowd: 0 };
-  var counts = { clicks: 0, noodles: 0, thumps: 0, cheers: 0, boos: 0, vox: 0, claps: 0, woos: 0, whistles: 0, applause: 0, dropped: 0 };
+  var counts = { clicks: 0, noodles: 0, thumps: 0, cheers: 0, boos: 0, vox: 0, claps: 0, woos: 0, whistles: 0, applause: 0, dropped: 0, tapDrops: 0 };
 
   function settings() {
     try { return (GG.save && GG.save.settings && GG.save.settings()) || {}; } catch (e) { return {}; }
@@ -16722,7 +16725,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     for (var i = 0; i < n; i++) { r.busy.push(t + dur); if (band) r.band.push(t + dur); }
     return true;
   }
-  function run(r, node, t, dur) { node.start(t); node.stop(t + dur); }
+  function run(r, node, t, dur) { node.start(t); node.stop(t + dur); if (r.collect) r.collect.push(node); }
   // Envelope gain: attack to peak, then an exponential decay to silence at t + dur (a choke shortens dur).
   function decay(c, t, attack, peak, dur, dest) {
     var g = c.createGain();
@@ -16821,9 +16824,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var D = DRUMS[lane]; if (!D) return false;
     var k = r.kit || DEFAULT_KIT, n = typeof D.n === 'function' ? D.n(k, v) : D.n;
     var d = Math.max(0.012, Math.min(D.len(k, v), cap));
-    if (!book(r, t, d, n)) return false;
+    if (!book(r, t, d, n)) return null;
     D.play(r, p, t, d, k, v);
-    return true;
+    return { t: t, end: t + d, n: n };   // the booking (live taps cut it off at the lane's next tap)
   }
   // Country train beat: rim clicks on the backbeat in verses, brushes (or ghost notes) in between.
   function snareVariant(step, role) {
@@ -17355,7 +17358,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
-  var previewPort = null;
+  var previewPort = null, taps = {};
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
   A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
@@ -17368,7 +17371,16 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var step = playing ? ((Math.round(current.beatAt(t) * 4) % 16) + 16) % 16 : 4;
       v = snareVariant(step, lastStep && playing ? lastStep.role : 'full');
     }
-    drumHit(rig, previewPort, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v);
+    var last = taps[lane];
+    if (last && last.t < t && last.end > t) {   // lanes are monophonic, as in the timeline: this tap cuts off the last one
+      last.g.gain.setTargetAtTime(0, t, 0.006);
+      last.src.forEach(function (s) { try { s.stop(Math.min(last.end, t + 0.05)); } catch (e) { /* old Safari: one stop() only */ } });
+      for (var k = 0; k < last.n; k++) { var j = rig.busy.indexOf(last.end); if (j >= 0) rig.busy[j] = t; }
+      taps[lane] = null;
+    }
+    var g = gainNode(ctx, 1, previewPort.drums), src = rig.collect = [], b;   // drum voices only use port.drums: a gain per tap is its port
+    try { b = drumHit(rig, { drums: g }, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v); } finally { rig.collect = null; }
+    if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
   };
   A.isPlaying = function () { return !!(current && current.playing); };
@@ -17440,18 +17452,31 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   var FORM = { a: [800, 1150, 2800], e: [480, 1750, 2600], i: [300, 2200, 2950], o: [520, 880, 2500], u: [330, 800, 2400], ae: [700, 1600, 2600] };
   var TALK = ['a', 'e', 'i', 'o', 'u', 'ae', 'e', 'a'], FG = [1, 0.6, 0.32];
   function stereo(secs) { var n = Math.ceil(secs * CSR); return { L: new Float32Array(n), R: new Float32Array(n), n: n }; }
+  // Build steps: a step that returns MORE runs again. SLICE = samples of a voice per step, BIG = samples of a cheap loop
+  // (noise, gain) per step: each step stays a few ms even in cold JS on an old phone.
+  var SLICE = 4096, BIG = 16384, MORE = {};
+  function sliced(b, body, fin) {   // body(i0, i1) over [0, b.n) (read at the first call), BIG samples per step; then fin(b)
+    var i = 0;
+    return function () { var e = Math.min(b.n, i + BIG); body(i, e); i = e; return i < b.n ? MORE : fin ? fin(b) : undefined; };
+  }
+  function runSteps(steps) { var out; for (var j = 0; j < steps.length;) { out = steps[j](); if (out !== MORE) j++; } return out; }
   // One voice into a stereo buffer: a softened buzz + breath noise through three formant resonators gliding between
   // vowels. v: { f0, pan, lv, dull (0 near .. 0.85 far: duller), shift (formant scale), bw [3], seed };
   // segs: [{ t0, t1 (s), v0, v1 (vowels), p0, p1 (pitch multipliers), amp, att, rel (s), br (breath 0..1) }].
+  // Resumable: returns job(max) that renders up to `max` more samples (all when omitted); true = the voice is done.
   function speak(b, v, segs) {
     var L = b.L, R = b.R, a0 = (v.pan + 1) * Math.PI / 4, gl = Math.cos(a0) * v.lv, gr = Math.sin(a0) * v.lv;
     var s = (v.seed % 2147483646) + 1, ph = 0, soft = 0, dull = 0, dk = v.dull || 0, x1 = 0, x2 = 0, k;
     var y1 = [0, 0, 0], y2 = [0, 0, 0], c0 = [0, 0, 0], c1 = [0, 0, 0], c2 = [0, 0, 0], bw = v.bw || [90, 120, 170], sh = v.shift || 1;
-    for (var q = 0; q < segs.length; q++) {
-      var g = segs[q], a = Math.max(0, Math.floor(g.t0 * CSR)), len = Math.min(b.n, Math.floor(g.t1 * CSR)) - a;
-      if (len < 32) continue;
-      var A0 = FORM[g.v0], B0 = FORM[g.v1], att = Math.max(1, g.att * CSR), rel = Math.max(1, g.rel * CSR), inc = 0, br = g.br;
-      for (var i = 0; i < len; i++) {
+    var q = -1, i = 0, len = 0, g, a, A0, B0, att, rel, inc, br;
+    return function (max) {
+      for (var m = max == null ? Infinity : max; m > 0; m--, i++) {
+        while (i >= len) {   // next segment (skip the ones too short to hear)
+          if (++q >= segs.length) return true;
+          g = segs[q]; a = Math.max(0, Math.floor(g.t0 * CSR)); len = Math.min(b.n, Math.floor(g.t1 * CSR)) - a; i = 0;
+          if (len < 32) { len = 0; continue; }
+          A0 = FORM[g.v0]; B0 = FORM[g.v1]; att = Math.max(1, g.att * CSR); rel = Math.max(1, g.rel * CSR); inc = 0; br = g.br;
+        }
         if ((i & 31) === 0) {   // glide the formants and the pitch
           var u = i / len, w = u * u * (3 - 2 * u);
           for (k = 0; k < 3; k++) {
@@ -17470,7 +17495,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         var e = g.amp * Math.min(1, i / att, (len - i) / rel);
         L[a + i] += dull * e * gl; R[a + i] += dull * e * gr;
       }
-    }
+      return false;
+    };
   }
   function talkSegs(rng, secs) {   // phrases of syllables and pauses, the odd laugh
     var segs = [], t = rng.range(0, 0.9);
@@ -17495,10 +17521,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     return segs;
   }
-  function hubbub(b, seed, lv, a) {   // feet, chairs, bodies: low-passed noise, different per side
-    [b.L, b.R].forEach(function (d, ch) {
+  function hubbub(b, seed, lv, a) {   // feet, chairs, bodies: low-passed noise, different per side (steps, a side at a time)
+    return [0, 1].map(function (ch) {
       var s = seed + ch * 7919, lp = 0, lp2 = 0;
-      for (var i = 0; i < b.n; i++) { s = lcg(s); lp += (s / 1073741823.5 - 1 - lp) * a; lp2 += (lp - lp2) * a; d[i] += lp2 * lv; }
+      return sliced(b, function (i0, i1) {
+        var d = ch ? b.R : b.L;
+        for (var i = i0; i < i1; i++) { s = lcg(s); lp += (s / 1073741823.5 - 1 - lp) * a; lp2 += (lp - lp2) * a; d[i] += lp2 * lv; }
+      });
     });
   }
   // One hand clap: three quick slaps then a short resonant body (every clapper rings at its own pitch).
@@ -17517,15 +17546,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (j >= 0) { var o = yy * 2.2 + x * 0.35; b.L[j] += o * gl; b.R[j] += o * gr; }
     }
   }
-  function applauseSteps(seed, people, secs, into) {   // everybody clapping at their own pace, looped (steps of 6 people)
+  function applauseSteps(seed, people, secs, into) {   // everybody clapping at their own pace, looped (a step per person)
     var rng = GG.RNG(seed), b = stereo(secs + 0.3), steps = [];
     function clapper() {
       var rate = rng.range(3.3, 5.4), pan = rng.range(-0.95, 0.95), lv = rng.range(0.35, 1), t = rng.range(0, 1 / rate);
       while (t < secs + 0.25) { clapInto(b, t, lv * rng.range(0.7, 1), pan, rng); t += rng.range(0.9, 1.1) / rate; }
     }
-    for (var p = 0; p < people; p += 6) steps.push(function (n) { return function () { for (var k = 0; k < n; k++) clapper(); }; }(Math.min(6, people - p)));
-    steps.push(function () { into.push(norm(loopSeam(b, secs), 0.2)); return into; });
-    return steps;
+    for (var p = 0; p < people; p++) steps.push(clapper);   // a clapper per step (they draw from rng in order)
+    return steps.concat(function () { loopSeam(b, secs); }, normSteps(b, 0.2, 0, function (x) { into.push(x); return into; }));
   }
   function loopSeam(b, keep) {   // crossfade the tail over the head: the loop has no seam
     var n = Math.floor(keep * CSR), m = b.n - n;
@@ -17533,41 +17561,52 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     b.n = n; b.L = b.L.subarray(0, n); b.R = b.R.subarray(0, n);
     return b;
   }
-  function norm(b, rms, peak) {   // loops to an RMS, one-shots to a peak; never above 0.95
-    var sum = 0, pk = 0, i;
-    for (i = 0; i < b.n; i++) { sum += b.L[i] * b.L[i] + b.R[i] * b.R[i]; pk = Math.max(pk, Math.abs(b.L[i]), Math.abs(b.R[i])); }
-    var k = rms ? rms / Math.max(1e-9, Math.sqrt(sum / (2 * b.n))) : peak / Math.max(1e-9, pk);
-    k = Math.min(k, 0.95 / Math.max(1e-9, pk));
-    for (i = 0; i < b.n; i++) { b.L[i] *= k; b.R[i] *= k; }
-    return b;
+  // Loops to an RMS, one-shots to a peak; never above 0.95. normSteps: as steps (b.n read when they run, so after a
+  // loopSeam step), the last returns fin(b); norm: all at once.
+  function normSteps(b, rms, peak, fin) {
+    var sum = 0, pk = 0, k;
+    return [sliced(b, function (i0, i1) {
+      for (var i = i0; i < i1; i++) { sum += b.L[i] * b.L[i] + b.R[i] * b.R[i]; pk = Math.max(pk, Math.abs(b.L[i]), Math.abs(b.R[i])); }
+    }), sliced(b, function (i0, i1) {
+      if (!i0) { k = rms ? rms / Math.max(1e-9, Math.sqrt(sum / (2 * b.n))) : peak / Math.max(1e-9, pk); k = Math.min(k, 0.95 / Math.max(1e-9, pk)); }
+      for (var i = i0; i < i1; i++) { b.L[i] *= k; b.R[i] *= k; }
+    }, fin)];
   }
-  // name -> recipe (seeded, so every crowd sounds the same run to run). A recipe returns its audio [{ L, R, n }] or, for
-  // the heavy ones, a list of steps (a voice or a few clappers each; crowdRun spreads them over ticks) whose last step
-  // returns the audio.
-  function repeat(n, fn) { var a = []; for (var i = 0; i < n; i++) a.push(fn); return a; }
+  function norm(b, rms, peak) { return runSteps(normSteps(b, rms, peak, function (x) { return x; })); }
+  // name -> recipe (seeded, so every crowd sounds the same run to run): a list of steps (a slice of a voice, a clapper,
+  // a slice of the hubbub...; crowdRun spreads them over ticks) whose last step returns the audio [{ L, R, n }].
+  // A step that returns MORE runs again (a voice renders SLICE samples per step), so no step outlasts the tick's budget.
+  function speakers(n, mk) {   // n steps; each draws one voice (mk() -> speak job) when it first runs, then renders it in slices
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(function () { var job = null; return function () { if (!job) job = mk(); return job(SLICE) ? undefined : MORE; }; }());
+    return a;
+  }
   var CROWD_BUILD = {
     babble: function () {   // a room talking over itself: 14 voices near and far + feet and chairs, 5 s looped
       var rng = GG.RNG(4401), b = stereo(5.35);
-      return repeat(14, function () {
+      return speakers(14, function () {
         var fem = rng.chance(0.5);
-        speak(b, { f0: fem ? rng.range(175, 250) : rng.range(95, 145), pan: rng.range(-0.9, 0.9), lv: rng.range(0.45, 1), dull: rng.range(0, 0.7),
+        return speak(b, { f0: fem ? rng.range(175, 250) : rng.range(95, 145), pan: rng.range(-0.9, 0.9), lv: rng.range(0.45, 1), dull: rng.range(0, 0.7),
           shift: fem ? 1.12 : 1, seed: rng.int(1, 1e9) }, talkSegs(rng, 5.35));
-      }).concat(function () { hubbub(b, 4411, 0.25, 0.06); return [norm(loopSeam(b, 5), 0.2)]; });
+      }).concat(hubbub(b, 4411, 0.25, 0.06), function () { loopSeam(b, 5); }, normSteps(b, 0.2, 0, function (x) { return [x]; }));
     },
     roar: function () {   // a crowd yelling: 12 shouting voices + breath, 4 s looped (it follows the meter)
       var rng = GG.RNG(4402), b = stereo(4.4);
-      return repeat(12, function () {
-        speak(b, { f0: rng.range(150, 360), pan: rng.range(-0.95, 0.95), lv: rng.range(0.5, 1), dull: rng.range(0, 0.5), shift: rng.range(1.05, 1.2),
+      return speakers(12, function () {
+        return speak(b, { f0: rng.range(150, 360), pan: rng.range(-0.95, 0.95), lv: rng.range(0.5, 1), dull: rng.range(0, 0.5), shift: rng.range(1.05, 1.2),
           bw: [140, 170, 230], seed: rng.int(1, 1e9) }, shoutSegs(rng, 4.4));
-      }).concat(function () { hubbub(b, 4412, 0.6, 0.1); return [norm(loopSeam(b, 4), 0.22)]; });
+      }).concat(hubbub(b, 4412, 0.6, 0.1), function () { loopSeam(b, 4); }, normSteps(b, 0.22, 0, function (x) { return [x]; }));
     },
     applause: function () { var out = []; return applauseSteps(4405, 26, 3, out).concat(applauseSteps(4406, 7, 3, out)); },   // big room, small room
-    clap: function () {   // the crowd clapping along: ~30 hands on one beat, a little ragged (two takes to alternate)
-      return [4407, 4408].map(function (seed) {
+    clap: function () {   // the crowd clapping along: ~30 hands on one beat, a little ragged (two takes to alternate, 10 hands a step)
+      var out = [];
+      return [].concat.apply([], [4407, 4408].map(function (seed) {
         var rng = GG.RNG(seed), b = stereo(0.3);
-        for (var p = 0; p < 30; p++) clapInto(b, 0.03 + (rng.next() + rng.next() + rng.next() - 1.5) * 0.014, rng.range(0.3, 1), rng.range(-0.95, 0.95), rng);
-        return norm(b, 0, 0.6);
-      });
+        return [0, 1, 2].map(function (q) { return function () {
+          for (var p = 0; p < 10; p++) clapInto(b, 0.03 + (rng.next() + rng.next() + rng.next() - 1.5) * 0.014, rng.range(0.3, 1), rng.range(-0.95, 0.95), rng);
+          if (q === 2) { out.push(norm(b, 0, 0.6)); return out; }
+        }; });
+      }));
     },
     woo: function () {   // single fans: "WOOO!", "YEAH!", "WOO-HOO!", "HEY!"
       var S = [
@@ -17576,20 +17615,27 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         [360, [[0.02, 0.24, 'u', 'u', 1, 1.25, 0.04, 0.05], [0.3, 0.72, 'u', 'o', 1.4, 1.05, 0.04, 0.2]]],
         [250, [[0.02, 0.3, 'e', 'e', 1.12, 1, 0.02, 0.12]]]
       ];
-      return S.map(function (x, k) {
-        var b = stereo(0.8);
-        speak(b, { f0: x[0], pan: 0, lv: 1, shift: 1.1, bw: [120, 150, 200], seed: 77 + k },
+      var out = [];
+      return S.map(function (x, k) {   // a fan per step, in slices
+        var b = stereo(0.8), job = speak(b, { f0: x[0], pan: 0, lv: 1, shift: 1.1, bw: [120, 150, 200], seed: 77 + k },
           x[1].map(function (g) { return { t0: g[0], t1: g[1], v0: g[2], v1: g[3], p0: g[4], p1: g[5], amp: 1, att: g[6], rel: g[7], br: 0.25 }; }));
-        return norm(b, 0, 0.7);
+        var done = false;
+        return function () { if (!done) { done = job(SLICE); return MORE; } out.push(norm(b, 0, 0.7)); return out; };
       });
     },
     whistle: function () {   // two-finger whistles: a long one, and a wolf whistle
       var NOTES = [[[[0, 2300], [0.1, 3250], [0.45, 3150], [0.72, 2650]]], [[[0, 1500], [0.22, 3000]], [[0.34, 1700], [0.54, 3100], [0.8, 1450]]]];
-      return NOTES.map(function (notes, k) {
+      var out = [];
+      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of SLICE samples
         var last = notes[notes.length - 1], b = stereo(last[last.length - 1][0] + 0.08), ph = 0, s = 900 + k;
-        notes.forEach(function (pts) {
-          var a = Math.floor(pts[0][0] * CSR), z = Math.floor(pts[pts.length - 1][0] * CSR), y1 = 0, y2 = 0, j = 0;
-          for (var i = a; i < z; i++) {
+        var ni = -1, pts, a, z = 0, i = 0, y1, y2, j, done = false;
+        return function () {
+          if (done) { out.push(norm(b, 0, 0.55)); return out; }
+          for (var m = SLICE; m > 0; m--, i++) {
+            while (i >= z) {   // next note
+              if (++ni >= notes.length) { done = true; return MORE; }
+              pts = notes[ni]; a = Math.floor(pts[0][0] * CSR); z = Math.floor(pts[pts.length - 1][0] * CSR); y1 = 0; y2 = 0; j = 0; i = a;
+            }
             var tt = i / CSR; while (j < pts.length - 2 && tt > pts[j + 1][0]) j++;
             var u = (tt - pts[j][0]) / (pts[j + 1][0] - pts[j][0]), f = pts[j][1] * Math.pow(pts[j + 1][1] / pts[j][1], u) * (1 + 0.008 * Math.sin(2 * Math.PI * 6 * tt));
             ph += f / CSR; if (ph >= 1) ph -= 1;
@@ -17597,17 +17643,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
             var x = (Math.sin(2 * Math.PI * ph) * 0.8 + yy * 3) * Math.min(1, (i - a) / (0.03 * CSR), (z - i) / (0.06 * CSR));
             b.L[i] += x * 0.7; b.R[i] += x * 0.7;
           }
-        });
-        return norm(b, 0, 0.55);
+          return MORE;
+        };
       });
     },
     boo: function () {   // "BOOOO": 11 low voices on 'oo', falling, staggered
       var rng = GG.RNG(4403), b = stereo(2.4);
-      return repeat(11, function () {
+      return speakers(11, function () {
         var t0 = rng.range(0, 0.45), d = rng.range(1, 1.8), p = rng.range(1, 1.08);
-        speak(b, { f0: rng.range(85, 165), pan: rng.range(-0.9, 0.9), lv: rng.range(0.5, 1), dull: rng.range(0.1, 0.6), bw: [110, 140, 200], seed: rng.int(1, 1e9) },
+        return speak(b, { f0: rng.range(85, 165), pan: rng.range(-0.9, 0.9), lv: rng.range(0.5, 1), dull: rng.range(0.1, 0.6), bw: [110, 140, 200], seed: rng.int(1, 1e9) },
           [{ t0: t0, t1: t0 + d, v0: 'u', v1: rng.chance(0.5) ? 'o' : 'u', p0: p, p1: p * rng.range(0.78, 0.9), amp: 1, att: 0.12, rel: 0.35, br: 0.15 }]);
-      }).concat(function () { return [norm(b, 0, 0.7)]; });
+      }).concat(normSteps(b, 0, 0.7, function (x) { return [x]; }));
     }
   };
   var CROWD_PARTS = ['babble', 'roar', 'applause', 'clap', 'woo', 'whistle', 'boo'], CROWD_RAW = {}, CROWD_JOB = {};
@@ -17615,10 +17661,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function crowdRun(k, budget) {
     if (CROWD_RAW[k]) return true;
     var J = CROWD_JOB[k], t0 = Date.now();
-    if (!J) { var r = CROWD_BUILD[k](); J = CROWD_JOB[k] = { steps: typeof r[0] === 'function' ? r : [function () { return r; }], i: 0 }; }
+    if (!J) J = CROWD_JOB[k] = { steps: CROWD_BUILD[k](), i: 0 };
     while (J.i < J.steps.length) {
-      var out = J.steps[J.i++]();
-      if (J.i === J.steps.length) { CROWD_RAW[k] = out; delete CROWD_JOB[k]; return true; }
+      var out = J.steps[J.i]();
+      if (out !== MORE && ++J.i === J.steps.length) { CROWD_RAW[k] = out; delete CROWD_JOB[k]; return true; }
       if (budget != null && Date.now() - t0 >= budget) return false;
     }
     return false;
@@ -17914,7 +17960,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     crowdReact(crowd.bed, crowd, 'end', ctx.currentTime + 0.05, (p.result.score || 0) / 100);
   });
   // Crowd buffers get built in the background (a part per tick, after unlock), so the first gig doesn't wait for them.
-  // A few ms of work per tick (a voice or a few clappers at a time), so the title and the setlist never hitch; paused
+  // ~8 ms of work per tick (steps of a voice slice, a clapper, a slice of noise), so the title and the setlist never hitch; paused
   // while a song plays (the gig's clock and taps come first). The crowd waits for it (crowd.waiting) and fades in.
   function warmCrowd() {
     if (!ctx || warmTimer || crowdReady(CB)) return;
