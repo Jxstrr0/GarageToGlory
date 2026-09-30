@@ -30,6 +30,9 @@
 //          fx: { buzz, fans }, comments: [{ who: 'fan'|'hater'|'rival'|'dale'|'trucker', name, text }] }
 // Events: 'fans:post' { post } · 'fans:viral' { post, kind } · 'fans:scandal' { card, who } · 'fans:gift' { gift }
 //         · 'fans:club' { action: 'open'|'exclusive'|'payout', club }
+// v0.9: homeSuperfan(s) (owner Q5: bandbook.homeSuperfan[bandId] in the 'dale' slot; superfanDef('dale', s)) ; pool(s, path,
+//   fallback) (bandbook pools + byBand; items with gate / band: [ids] are filtered) ; rival comments from rivalry.cast ;
+//   talkers instead of 'kenji' ; fan cards through '<id>_<bandId>' variants.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var F = GG.fans = GG.fans || {};
@@ -69,6 +72,20 @@
     superfans: [], gigLines: {}, mail: [], gifts: [], scriptedGifts: {}, tiers: [], club: {}, chat: {}, scandals: [], cards: [] };
   F.content = function () { return GG.content.bandbook || EMPTY; };
   function K() { return F.content(); }
+  // v0.9: a bandbook pool for this career: flat (neutral) + byBand[bandId] (career.pool), e.g. ['posts', 'meme'],
+  // ['comments', 'good'], ['handles', 'fan'], ['chat', 'viral'], 'mail', 'gifts'. Items may carry a gate (card gate) or
+  // band: [ids]; those that don't fit the band are left out.
+  function fits(s, x) {
+    if (!x || typeof x !== 'object') return true;
+    if (x.band && [].concat(x.band).indexOf(s.bandId) < 0) return false;
+    return !x.gate || !GG.career || GG.career.gatePasses(s, x.gate);
+  }
+  function bpool(s, path, fallback) {
+    var v = s && GG.career && GG.career.pool ? GG.career.pool(s, K(), path) : null;
+    if (v == null) { v = K(); [].concat(path).forEach(function (k) { v = v != null ? v[k] : v; }); }
+    return Array.isArray(v) ? v.filter(function (x) { return fits(s, x); }) : v != null ? v : fallback;
+  }
+  F.pool = bpool;
 
   /* ---- Small helpers ------------------------------------------------------------------------------------------ */
   function rngOf(s, salt) {
@@ -192,7 +209,9 @@
   }
   var POOL_MIX = { good: [0.7, 0.25, 0.05], mixed: [0.35, 0.5, 0.15], bad: [0.15, 0.4, 0.45] };
   function comments(s, post, rng) {
-    var CM = K().comments || {}, H = K().handles || EMPTY.handles, t = F.shares(s), sf = s.superfans || {};
+    var CM = {}, H = {}, t = F.shares(s), sf = s.superfans || {};   // v0.9: + byBand (bpool)
+    ['good', 'mixed', 'bad', 'hater', 'rival', 'rivalExclusive'].forEach(function (k) { CM[k] = bpool(s, ['comments', k], []); });
+    ['fan', 'hater'].forEach(function (k) { var h = bpool(s, ['handles', k], null); H[k] = h && h.length ? h : EMPTY.handles[k]; });
     var sent = F.sentiment(s), used = {}, names = {}, special = [], out = [];
     function handle(list) { for (var i = 0; i < 6; i++) { var h = rng.pick(list); if (!names[h]) { names[h] = 1; return h; } } return rng.pick(list); }
     var dale = F.superfanDef('dale', s), trk = F.superfanDef('trucker', s);
@@ -230,7 +249,7 @@
     return rng.weighted(KINDS, function (k) { return w[k]; }) || 'meme';
   }
   function pickText(s, kind, rng) {
-    var pool = (K().posts || {})[kind] || [], recent = {};
+    var pool = bpool(s, ['posts', kind], []), recent = {};   // v0.9: + byBand
     s.bandbook.posts.slice(-6).forEach(function (p) { if (p.kind === kind) recent[p.t] = 1; });
     var idx = rng.int(0, Math.max(0, pool.length - 1));
     for (var i = 0; i < 4 && recent[idx]; i++) idx = rng.int(0, Math.max(0, pool.length - 1));
@@ -253,7 +272,7 @@
     var b = s.bandbook, list = (K().scandals || []).filter(function (x) {
       var c = F.card(x.card), seen = s.seenCards && s.seenCards[x.card];
       return c && isActive(s, x.who) && (!GG.career || GG.career.gatePasses(s, c.gate)) && !(seen && s.totalWeek - seen < 30)
-        && (!GG.career.speakerOk || GG.career.speakerOk(s, c.speaker));   // v0.9 speaker guard
+        && (!GG.career.cardOk || GG.career.cardOk(s, c));   // v0.9 speaker / card guard
     });
     if (!list.length) return null;
     var x = rng.pick(list);
@@ -324,7 +343,7 @@
     }
     if (viral) {
       var speaker = viral === 'cringe' ? cringeWho : speakerFor(s, ['marcel', 'dana', 'jaxon'], ['@front', '@soloist', '@filler']);
-      if (speaker) chat(s, speaker, rng.pick((K().chat || {})[viral === 'cringe' ? 'cringe' : 'viral'] || []), d);
+      if (speaker) chat(s, speaker, rng.pick(bpool(s, ['chat', viral === 'cringe' ? 'cringe' : 'viral'], [])), d);
       GG.emit('fans:viral', { post: post, kind: viral });
     }
     // bandmates post dumb things: a scandal card next Monday
@@ -434,8 +453,8 @@
   F.addGift = function (s, id, kind) {
     F.ensure(s);
     var G = K(), def = (G.scriptedGifts || {})[id], isMail = false;
-    if (!def) def = (G.gifts || []).filter(function (g) { return g.id === id; })[0];
-    if (!def) { def = (G.mail || []).filter(function (g) { return g.id === id; })[0]; isMail = !!def; }
+    if (!def) def = bpool(s, ['gifts'], []).filter(function (g) { return g.id === id; })[0] || (G.gifts || []).filter(function (g) { return g.id === id; })[0];
+    if (!def) { def = bpool(s, ['mail'], []).filter(function (g) { return g.id === id; })[0] || (G.mail || []).filter(function (g) { return g.id === id; })[0]; isMail = !!def; }
     if (!def || (!isMail && F.hasGift(s, id))) return null;
     var g = { id: id, week: s.totalWeek, from: def.from, text: fill(s, def.text), kind: kind || (isMail ? 'mail' : 'gift') };
     s.gifts.push(g);
@@ -453,11 +472,11 @@
     if (!((s.stats && s.stats.gigs >= 1) || (s.fans || 0) >= 20)) return;
     if (rng.chance(Math.min(Q.mail.max, Q.mail.chance + sup * Q.mail.perSuper))) {
       var recent = {}; s.gifts.slice(-4).forEach(function (g) { recent[g.id] = 1; });
-      var pool = (K().mail || []).filter(function (m) { return !recent[m.id]; }), m = rng.pick(pool);
+      var pool = bpool(s, ['mail'], []).filter(function (m) { return !recent[m.id]; }), m = rng.pick(pool);   // v0.9: band gates + byBand
       if (m) { var e = F.addGift(s, m.id, 'mail'); if (e) out.mail.push(e); }
     }
     if (rng.chance(Math.min(Q.gift.max, Q.gift.chance + sup * Q.gift.perSuper))) {
-      var left = (K().gifts || []).filter(function (g) { return !F.hasGift(s, g.id); }), gi = rng.pick(left);
+      var left = bpool(s, ['gifts'], []).filter(function (g) { return !F.hasGift(s, g.id); }), gi = rng.pick(left);
       if (gi) {
         var e2 = F.addGift(s, gi.id, 'gift');
         if (e2) { out.gifts.push(e2); chat(s, 'mom', 'A parcel came for the band, from ' + e2.from + '. I didn\'t open it. I shook it a little.'); }
@@ -563,7 +582,7 @@
   function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
   function seenAt(s, id) { return s.seenCards && s.seenCards[id] != null ? s.seenCards[id] : null; }
   // v0.9: '<base>_<bandId>' first (content packs), else the base card; gate + speaker must fit the band.
-  function speakOk(s, c) { return !c || !GG.career || !GG.career.speakerOk || GG.career.speakerOk(s, c.speaker); }
+  function speakOk(s, c) { return !c || !GG.career || !GG.career.cardOk || GG.career.cardOk(s, c); }
   function variantCard(s, base) {
     var v = F.card(base + '_' + s.bandId);
     if (v && gateOk(s, v) && speakOk(s, v)) return v;

@@ -26,6 +26,13 @@
 //   SETUP   = { kind, week, title, text, icon, venue, prize, score (their set, final), expected, setlist: [{ title, score,
 //               bpm, seconds }], rival: { id, name, city, heat, record, members }, stakes }
 //   SHOWDOWN (contracts) + { id, name, rival, lines: [text], crowdLost?, bonusFans?, who? }
+// v0.9 "Genres": cfg(state) merges economy.rival.byRival[rivalId] (owner Q4 fair fight: curve, buzz, eras, awards, chartBias,
+//   legacy, actions, style, furyBrand) ; id(state) ; frontName(state) ({rivalFront}) ; frontId(state) ; frontSpeaker(state)
+//   (who posts for them) ; defectorLook(state) (cast.defector.look) ; setActions(state, kind, n) -> [{ song, at, action, who }]
+//   (C.RIVAL_ACTIONS: Mall Rats' kickflip, once per set; SETUP.actions; the UI emits gig:band) ; SETUP.rival + genre, style,
+//   legacy. News / showdown texts / cards / songs / albums / label / rebrands come from rivalry.cast[rivalId] first (the flat
+//   rivalry.* is the neutral {rival} fallback); card variants '<id>_<rivalId>' through career.variant; BPM from the rival's
+//   genre (genres[g].tempo); scene rows with rivalId === your rival (or bandId === your band, Q8 cameos) are skipped.
 // Events: 'rival:news' { text, week } ; 'heat:changed' { heat, delta, why } ; 'showdown:scheduled' { showdown: PENDING } ;
 //   'showdown:done' { showdown } ; 'rival:cracked' { kind, name, formerName } ; 'rival:poach' { who, name } ; 'final:done' { final }
 (function (GG) {
@@ -114,6 +121,15 @@
     return f ? (f.short || String(f.name || '').split(' ')[0]) : '';
   };
   R.frontId = function (state) { var c = R.cast(state); return c && typeof c.frontman === 'string' ? c.frontman : null; };
+  // v0.9: who posts for the rival in your group chat: their frontman npc (npcs[id].rival === rivalId, frontman: true; Tundra
+  // Wraith: 'wraith_frontman'), else the cast's frontman id (ui.who resolves cast ids), else the DJ.
+  var FRONT_NPC = { tundra_wraith: 'wraith_frontman' };
+  R.frontSpeaker = function (state) {
+    var rid = rivalId(state), N = GG.content.npcs || {}, id;
+    if (FRONT_NPC[rid] && N[FRONT_NPC[rid]]) return FRONT_NPC[rid];
+    for (id in N) if (N[id] && N[id].rival === rid && N[id].frontman) return id;
+    return R.frontId(state) || 'dj';
+  };
   R.venue = function (id) { return (content().venues || []).filter(function (v) { return v.id === id; })[0] || null; };
   function seeded(state, tag, w) { return GG.RNG(GG.hashSeed((state.seed >>> 0) + '|rival|' + tag + '|' + (w != null ? w : state.totalWeek))); }
   function rngRound(x, rng) { var f = Math.floor(x); return f + (rng.chance(x - f) ? 1 : 0); }
@@ -170,7 +186,7 @@
       pending: null, cool: {}, last: 0, loonieWins: 0, breakthroughWon: false, past: [], w: 0, crackCard: null,
       milestone: 0, lead: null, heatWas: k.heat.start, finalNews: false, eveDealt: false };
   };
-  var FIELD_DEFAULTS = { wins: 0, losses: 0, form: 0, loonieWins: 0, last: 0, w: 0, milestone: 0 };
+  var FIELD_DEFAULTS = { wins: 0, losses: 0, form: 0, loonieWins: 0, last: 0, w: 0, milestone: 0, legacy: 0 };   // v0.9: legacy (fame as flavour)
   R.get = function (state) {
     if (!state.rival || typeof state.rival !== 'object' || Array.isArray(state.rival)) R.migrate(state);
     return state.rival;

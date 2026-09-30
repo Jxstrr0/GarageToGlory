@@ -24,6 +24,7 @@
 // gig, genre-moment rate from a live bot gig each year, rival lineup size, the World payoff flag), then a cross-band
 // comparison (avg bot and good bot, one row per band). Without BAND the output is exactly the v0.8.1 Hail Damage report.
 //   TUNE='rox.skill=51,benny.mood=70' overrides member numbers in-process (to try a bands.js rebalance before editing it).
+//   DECK=synthetic|none: every band on the synthetic role-alias deck / no Monday deck (the economy without content).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
@@ -60,10 +61,14 @@ function syntheticDeck() {
   }));
   return cards;
 }
-const real = GG.content.cards && GG.content.cards.length;
-if (!real) GG.content.cards = syntheticDeck();
+// DECK=synthetic plays every band on the synthetic (role-alias) deck, DECK=none on no Monday deck at all: the cross-band
+// comparison then isolates the economy + member numbers from how much content each band has (v0.9).
+const DECK = process.env.DECK || '';
+const real = DECK ? 0 : GG.content.cards && GG.content.cards.length;
+if (DECK === 'none') GG.content.cards = [];
+else if (!real) GG.content.cards = syntheticDeck();
 if (process.env.WIDE_GATES) GG.content.cards.forEach(c => { if (c.gate && Array.isArray(c.gate.era) && c.gate.era.length === 1 && c.gate.era[0] === 'garage') c.gate.era = C.ERAS.slice(); });
-const deckLabel = real ? 'real deck (' + GG.content.cards.length + ' cards)' : 'synthetic deck (' + GG.content.cards.length + ' cards; no content/cards.js)';
+const deckLabel = DECK === 'none' ? 'no Monday deck (DECK=none)' : real ? 'real deck (' + GG.content.cards.length + ' cards)' : 'synthetic deck (' + GG.content.cards.length + ' cards; ' + (DECK ? 'DECK=' + DECK : 'no content/cards.js') + ')';
 
 // ---- Invariants ----------------------------------------------------------------------------------------
 const problems = [];
@@ -249,6 +254,27 @@ if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_co
         ' | ' + pad2(x.local, 4) + ' ' + pad2(x.offer, 4) + ' ' + pad2(x.signed, 4) + ' ' + pad2(x.world, 4) + ' | ' + pad2(x.sgn3.toFixed(1), 3) +
         ' | ' + pad2(x.cards.toFixed(0), 4) + ' ' + pad2(Math.round(x.noCard * 100) + '%', 4) + ' | ' + pad2(x.board.toFixed(1), 4) + ' @' + pad2(Math.round(x.boardKm), 4) +
         ' | ' + pad2(Math.round(x.kmGig), 4) + ' | ' + pad2(Math.round(x.peak * 100) + '%', 4) + ' | ' + pad2(x.lineup.toFixed(1), 3) + ' | ' + x.payoff);
+    });
+    // §5 B4 targets against Hail Damage (avg bot is the one that counts): ok / MISS per target
+    const hd = (summary.find(b => b.id === 'hail_damage') || {}).per;
+    if (!hd || !hd[style]) return;
+    const H = hd[style], mark = (c) => c ? 'ok' : 'MISS';
+    summary.filter(b => b.id !== 'hail_damage').forEach(b => {
+      const x = b.per[style]; if (!x) return;
+      const t = [
+        'local wk ' + x.local + ' ' + mark(x.local != null && Math.abs(x.local - 24) <= 4),
+        'fans ' + Math.round(100 * x.fans3 / Math.max(1, H.fans3)) + '% ' + mark(Math.abs(x.fans3 / Math.max(1, H.fans3) - 1) <= 0.2),
+        'fund ' + Math.round(100 * x.fund3 / Math.max(1, H.fund3)) + '% ' + mark(Math.abs(x.fund3 / Math.max(1, H.fund3) - 1) <= 0.25),
+        'loans ' + x.loans13.toFixed(1) + ' ' + mark(x.loans13 <= H.loans13 + 1),
+        'signed@3 ' + x.sgn3.toFixed(1) + ' ' + mark(x.sgn3 >= H.sgn3 - 0.15),
+        'world ' + (x.world || '-') + ' ' + mark(x.world != null && H.world != null ? Math.abs(x.world - H.world) <= WPY : x.world == null && H.world == null),
+        'cards ' + Math.round(100 * x.cards / Math.max(1, H.cards)) + '% ' + mark(x.cards >= 0.85 * H.cards),
+        'no-card +' + Math.round(100 * (x.noCard - H.noCard)) + 'pt ' + mark(x.noCard <= H.noCard + 0.10),
+        'board ' + x.board.toFixed(1) + '@' + Math.round(x.boardKm) + ' ' + mark(x.board >= 3 && x.boardKm <= 300),
+        'km/gig ' + (x.kmGig / Math.max(1, H.kmGig)).toFixed(2) + 'x ' + mark(x.kmGig <= 1.25 * H.kmGig),
+        'quits ' + x.quits.toFixed(2) + '/yr rets ' + (x.quits ? Math.round(100 * x.rets / x.quits) : 0) + '% ' + mark(x.quits <= 1 && (x.quits === 0 || x.rets / x.quits >= 0.4))
+      ];
+      console.log('  targets ' + pad2(b.id, 18) + ' ' + t.join(' | '));
     });
   });
 }

@@ -60,6 +60,9 @@
 //   trophies, loonies (LOONIES|null), liveYear { gigs, score }; flags.label = labelId | 'diy'. WRAP gains
 //   `labels: { news: [{ kind, text, albumId?, offerId? }], royalties, recouped, costs }`. Stats gain releases, units,
 //   royalties, certs, loonieWins, drops, offers, deals.
+// v0.9: labelList() drops rivalOnly labels ; demandsFor(state, label) (flat + demandsByBand[bandId]) ; cardNeverPasses(state,
+//   id) (a carded demand that can't be dealt settles 'half') ; studioCity ('{city}' studios) ; speech / worst-van / outfit
+//   cards respect gate + speaker (awards.speech may be { <bandId>: card }) ; {rival} fallbacks ; nominees per genre.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var L = GG.labels = GG.labels || {};
@@ -188,7 +191,7 @@
     var g = c.gate || {};
     if (g.band && !has(g.band, state.bandId)) return true;
     if (g.genre && !has(g.genre, state.genre)) return true;
-    return GG.career.speakerOk ? !GG.career.speakerOk(state, c.speaker) : false;
+    return GG.career.cardOk ? !GG.career.cardOk(state, c) : false;
   }
   L.cardNeverPasses = cardNeverPasses;
   function listFrom(key, fallback) {
@@ -591,7 +594,7 @@
     Object.keys(gate).forEach(function (k) { if (k !== 'studio' && k !== 'producer' && k !== 'style') rest[k] = gate[k]; });
     var seen = state.seenCards[ev.id];
     if (seen != null && (ev.once !== false || state.totalWeek - seen <= (ev.cooldown || 0))) return false;
-    if (GG.career.speakerOk && !GG.career.speakerOk(state, ev.speaker)) return false;   // v0.9: another band's member never speaks
+    if (GG.career.cardOk && !GG.career.cardOk(state, ev)) return false;   // v0.9: another band's member never speaks (speaker + effects)
     return GG.career.gatePasses(state, rest);
   }
   L.studioEvent = function (state, rng) {

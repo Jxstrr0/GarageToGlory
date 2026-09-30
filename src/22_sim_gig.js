@@ -22,6 +22,9 @@
 //   kicks pair up (1+2, 3+4, ...; an odd last one stays single). One note for accuracy / combo / total; chart.doubles =
 //   double notes on the chart. Order: two-thumb rule -> doubles -> difficulty thinning (Easy/Normal thin a double like any
 //   kick note). chart(song, { doubles: false }) = no merge.
+// v0.9: moments(genre) -> { combo, chorus, peak } (§4.4; economy.gig.moments overrides) ; signatures(state) -> [{ id, action,
+//   combo, crowd, flag }] (bands.js member.signature, once per gig: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
+//   fallback; content lines.live[memberId].{solo, fill, signature, flub} and lines.moments[kind] win).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -115,12 +118,17 @@
     var f = Math.floor(x);
     return f + (rng.chance(x - f) ? 1 : 0);
   }
+  // v0.9: a silent member (bands.js silent) without their own stage directions says nothing.
   function reactions(state, grade, rng) {
-    var tier = REACTION_TIER[grade];
+    var tier = REACTION_TIER[grade], K = GG.career;
     return state.members.filter(function (m) { return m.status === 'active'; }).map(function (m) {
-      var pool = GG.career.contentLines('gigReactions', m.id, tier);
-      return { who: m.id, text: GG.career.pickLine(state, rng, pool, FALLBACK_REACTIONS[tier]) };
-    });
+      var pool = K.contentLines('gigReactions', m.id, tier);
+      if (!pool && K.isSilent && K.isSilent(state, m.id)) return null;
+      return { who: m.id, text: K.pickLine(state, rng, pool, FALLBACK_REACTIONS[tier]) };
+    }).filter(Boolean);
+  }
+  function gradeLines(state, grade) {   // v0.9: lines.gigGrade[grade] + lines.byBand[bandId].gigGrade[grade]
+    return (GG.career.linePool ? GG.career.linePool(state, ['gigGrade', grade]) : GG.career.contentLines('gigGrade', grade)) || GRADE_LINES[grade];
   }
 
   // Computes a GIG_RESULT for gig g without changing state (only the rng advances).
@@ -132,14 +140,14 @@
     var perf = gig.performance(state, top.slice(0, cfg.scoreSongs), fit);   // scored on your best songs
     var score = U.clamp(Math.round(perf + rng.range(-cfg.noise, cfg.noise)), 0, 100);
     var grade = gig.gradeFor(score), crowd = crowdFor(state, g, v, rng);
-    var gradeLines = (GG.career.contentLines('gigGrade', grade)) || GRADE_LINES[grade];
+    var gLines = gradeLines(state, grade);
     return {
       venueId: g.venueId, name: g.name, city: g.city, deal: g.deal, source: g.source,
       crowd: crowd, capacity: g.capacity, score: score, grade: grade,
       pay: gig.payFor(g, crowd), gas: g.gas || 0, fans: newFans(state, g, crowd, grade, fit, rng), buzz: cfg.buzz[grade],
       songs: set.map(function (s) { return s.title; }), songIds: set.map(function (s) { return s.id; }),
       reactions: reactions(state, grade, rng),
-      lines: [GG.career.fillText(state, g.quirk), GG.career.pickLine(state, rng, gradeLines, GRADE_LINES[grade])]
+      lines: [GG.career.fillText(state, g.quirk), GG.career.pickLine(state, rng, gLines, GRADE_LINES[grade])]
         .filter(Boolean),
       deltas: null
     };
@@ -688,8 +696,7 @@
     var sum = function (k) { return res.reduce(function (t, r) { return t + (r[k] || 0); }, 0); };
     var perfect = sum('perfect'), good = sum('good'), miss = sum('miss'), notes = sum('notes');
     var peak = peakMoment(state.genre), genreHit = moments.indexOf(peak) >= 0 && score >= 50;
-    var gradeLines = (GG.career.contentLines('gigGrade', grade)) || GRADE_LINES[grade];
-    var lines = [GG.career.fillText(state, g.quirk), GG.career.pickLine(state, rng, gradeLines, GRADE_LINES[grade])];
+    var lines = [GG.career.fillText(state, g.quirk), GG.career.pickLine(state, rng, gradeLines(state, grade), GRADE_LINES[grade])];
     if (opener) lines.push('Opening with “' + played[0].title + '” grabbed them by the collar.');
     if (closer) lines.push('Closing on “' + played[played.length - 1].title + '” brought the house down.');
     if (genreHit) {

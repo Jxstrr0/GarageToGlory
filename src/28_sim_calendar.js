@@ -237,8 +237,10 @@
       var h = hs[hs.length - 1];
       r.holiday = h.id;
       if (h.gig.buzz) { r.buzz = (r.buzz || 0) + h.gig.buzz; }
-      var extra = GG.content.calendar && GG.content.calendar.byBand && GG.content.calendar.byBand[state.bandId];   // v0.9: + byBand.holidayLines[id]
-      var hl = (h.gig.lines || []).concat((extra && extra.holidayLines && extra.holidayLines[h.id]) || []);
+      // v0.9: h.gig.lines + h.gig.byBand[bandId].lines (career.pool) + calendar.byBand[bandId].holidayLines[holidayId]
+      var extra = GG.content.calendar && GG.content.calendar.byBand && GG.content.calendar.byBand[state.bandId];
+      var own = GG.career.pool ? GG.career.pool(state, h.gig, 'lines') : h.gig.lines;
+      var hl = (Array.isArray(own) ? own : []).concat((extra && extra.holidayLines && extra.holidayLines[h.id]) || []);
       if (hl.length) {
         var cos = bandPart(state, 'costumes');
         var costume = (state.flags && typeof state.flags.costume === 'string' && state.flags.costume) || rng.pick(Array.isArray(cos) && cos.length ? cos : DEF.costumes);
@@ -270,7 +272,7 @@
     for (var i = 0; i < ids.length; i++) {
       var c = GG.career.cardById(ids[i]);
       if (c && c.forceWeek == null && availableCard(state, c) && GG.career.gatePasses(state, c.gate)
-        && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker))) return c;   // v0.9 speaker guard
+        && (!GG.career.cardOk || GG.career.cardOk(state, c))) return c;   // v0.9 speaker / card guard
     }
     return null;
   };
@@ -281,7 +283,10 @@
     if (!state || state.ended) return null;
     state.weather = cal.weatherAt(state);
     var w = state.week, news = away(state) ? null : (bandPart(state, 'news') || {})[w], hs = cal.holidays(w, state), d = {};   // v0.7: no home news abroad; v0.9: byBand news replaces the flat week
-    hs.forEach(function (h) { if (h.news) news = h.news; });   // a holiday note beats the season flavour
+    hs.forEach(function (h) {   // a holiday note beats the season flavour (v0.9: h.byBand[bandId].news wins over h.news)
+      var hn = GG.career.pool ? GG.career.pool(state, h, 'news') : h.news;
+      if (hn && hn.text) news = hn;
+    });
     if (news && state.totalWeek > 1 && GG.career.postChat) GG.career.postChat(state, news.who, news.text, null, 'news');
     if (state.flags) {
       if (state.flags.costume && !cal.isHoliday(state, 'halloween')) delete state.flags.costume;   // costumes off after Halloween

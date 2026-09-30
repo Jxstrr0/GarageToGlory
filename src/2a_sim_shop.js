@@ -33,6 +33,9 @@
 //   Week: forcedCard(s) · afterCard(s, card, i, success, d) · apply(s, shopEffect, d) · weekly(s, rng, wrap) (wrap.shop =
 //         { rent, unlocks: [{ kind, id|ids }], misprint, perks, evicted, rentLate }) · cards() · card(id)
 //         effectText(v) · botValue(s, v) · botWeek(s, style)
+//   v0.9: spaceDef localises rented rooms (spaces[tier].byCity[city] = { name, blurb }, owner Q7) · upgradeView(s, id)
+//         (upgrades[id].bySpace[spaceId] = { name, blurb }) · misprintInfo(s) -> { typo, find, replace, stash, name } (owner
+//         Q6) · lineList(s, key) (shop.lines + byBand) · variantCard(s, id) ('<id>_<bandId>' first; gate + speaker)
 //   Every buy returns { ok: true, cost, deltas } or { ok: false, why } (why: plain words for the UI).
 // Events: 'shop:buy' { kind: 'gear'|'kit'|'upgrade'|'van'|'vanUpgrade'|'stock', id, cost } · 'shop:unlock' { kind:
 //   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier, evicted? } · 'shop:rename' { name } · 'shop:sticker' { venueId,
@@ -241,13 +244,21 @@
   S.crowdBonus = function (s) { return Q().crowdBonus[s.gear ? s.gear.quality || 0 : 0] || 0; };
 
   /* ---- Spaces: tiers by era, rent, perks, upgrades --------------------------------------------------------------- */
+  // v0.9 (owner Q7): a rented room keeps its geometry but gets a local name + blurb: spaces[tier].byCity[<city name | city
+  // id>] = { name, blurb }. Tier 0 is the band's own space (bands.js spaceName).
+  function localOf(s, by) {
+    if (!by || !s || !s.city) return null;
+    var cid = GG.world && GG.world.cityId ? GG.world.cityId(s.city) : null;
+    return by[s.city] || (cid && by[cid]) || by[String(s.city).toLowerCase()] || null;
+  }
   S.spaceDef = function (s, tier) {
     var list = K().spaces, def = null;
     for (var i = 0; i < list.length; i++) if (list[i].tier === tier) def = list[i];
     def = def || list[0] || EMPTY.spaces[0];
-    if (tier !== 0) return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier] });
+    var loc = localOf(s, def.byCity) || {};
+    if (tier !== 0) return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier], name: loc.name || def.name, blurb: loc.blurb || def.blurb });
     var b = GG.career && GG.career.band ? GG.career.band(s) : null;
-    return Object.assign({}, def, { id: (b && b.space) || 'parents_garage', name: (b && b.spaceName) || def.name });
+    return Object.assign({}, def, { id: (b && b.space) || 'parents_garage', name: (b && b.spaceName) || loc.name || def.name, blurb: loc.blurb || def.blurb });
   };
   // The biggest space tier your era has opened (garage 0, Local Heroes 1, Signed 2, World 3).
   S.availableTier = function (s) {
@@ -302,10 +313,19 @@
     changed(s);
     return { ok: true, cost: u.cost, deltas: d };
   };
+  // v0.9: an upgrade's name + blurb for this band's space: upgrades[id].bySpace[<space id>] = { name, blurb } (the tier-0
+  // space is the band's own: the garage's beer fridge is the laundromat's pop machine).
+  S.upgradeView = function (s, id) {
+    var u = S.upgradeDef(id);
+    if (!u) return null;
+    var b = GG.career && GG.career.band && s ? GG.career.band(s) : null, by = u.bySpace || null;
+    var x = by && ((s && s.space && by[s.space]) || (b && b.space && by[b.space])) || null;
+    return x ? Object.assign({}, u, { name: x.name || u.name, blurb: x.blurb || u.blurb }) : u;
+  };
   // The upgrades for this space (+ the ones that moved in with you).
   S.upgrades = function (s) {
-    return K().upgrades.filter(function (u) { return u.tier === (s.spaceTier || 0) || has(s.spaceUpgrades, u.id); }).map(function (u) {
-      var c = S.canBuyUpgrade(s, u.id), own = has(s.spaceUpgrades, u.id);
+    return K().upgrades.filter(function (u) { return u.tier === (s.spaceTier || 0) || has(s.spaceUpgrades, u.id); }).map(function (u0) {
+      var u = S.upgradeView(s, u0.id) || u0, c = S.canBuyUpgrade(s, u.id), own = has(s.spaceUpgrades, u.id);
       return { id: u.id, name: u.name, blurb: u.blurb, cost: u.cost, perk: U.clone(u.perk || {}), moves: !!u.moves, owned: own, can: c.ok, why: c.ok || own ? '' : c.why };
     });
   };
@@ -699,7 +719,7 @@
     if (!c) return false;
     var sp = c.speaker;
     if (/^shop_solo(_|$)/.test(c.id) && (s.members || []).some(function (m) { return m.id === sp; })) return isActive(s, sp);
-    return !GG.career || !GG.career.speakerOk || GG.career.speakerOk(s, sp);
+    return !GG.career || !GG.career.cardOk || GG.career.cardOk(s, c);
   }
   // '<id>_<bandId>' first (content packs), else the base card; the gate passes and the speaker is here.
   function variantCard(s, id) {

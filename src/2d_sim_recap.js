@@ -15,6 +15,8 @@
 //   recruit who left is gone from state.members, so an id would not resolve later). photo stays null (the screen renders
 //   the band photo live; it is never saved).
 // Events: 'recap:built' { recap }.
+// v0.9: goodYearList(s) (flat + byBand, or { <bandId>: [..] }) ; a goodYear entry voiced only by another band's members is
+//   skipped ; headlines + byBand ; the gig quote never comes from a silent member.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var R = GG.recap = GG.recap || {};
@@ -179,13 +181,22 @@
   };
 
   /* ---- Year one: what a good year looks like ------------------------------------------------------------------ */
+  // v0.9: an npc speaks only when it may in this career (career.speakerOk: Baba is Hail Damage's).
   function speaker(s, prefer) {
-    var npcs = GG.content.npcs || {};
+    var npcs = GG.content.npcs || {}, ok = GG.career && GG.career.speakerOk;
     for (var i = 0; i < (prefer || []).length; i++) {
       var id = prefer[i];
-      if (npcs[id] || (s.members || []).some(function (m) { return m.id === id && m.status === 'active'; })) return id;
+      if (!id) continue;
+      if ((s.members || []).some(function (m) { return m.id === id && m.status === 'active'; })) return id;
+      if (npcs[id] && (!ok || GG.career.speakerOk(s, id))) return id;
     }
     return null;
+  }
+  // v0.9: an entry voiced only by another band's members (or npcs this career never hears from) is theirs, not ours.
+  function foreignVoice(s, prefer) {
+    var K2 = GG.career;
+    if (!prefer || !prefer.length || !K2 || !K2.speakerOk) return false;
+    return prefer.every(function (id) { return !K2.isAlias(id) && !K2.speakerOk(s, id); });
   }
   // v0.9: recap.goodYear = [..] (flat, + byBand[bandId].goodYear) or { <bandId>: [..], default?: [..] }.
   R.goodYearList = function (s) {
@@ -197,8 +208,9 @@
     if (!rec || rec.y !== 1) return [];
     var val = { fans: rec.fans, songs: rec.songs, gigs: rec.gigs, loans: rec.loans, chemistry: rec.chem };
     return R.goodYearList(s).map(function (g) {
+      if (foreignVoice(s, g.who)) return null;   // v0.9: Marcel's line stays in Marcel's career
       var who = speaker(s, (g.who || []).map(function (id) { return GG.career && GG.career.isAlias && GG.career.isAlias(id) ? GG.career.roleOf(s, id) : id; }));
-      if (!who && g.topic !== 'chemistry') {   // another band (v0.9): the first bandmate who talks says it
+      if (!who && g.topic !== 'chemistry') {   // a neutral line (or an alias nobody holds): the first bandmate who talks says it
         var m = GG.career && GG.career.talkers ? GG.career.talkers(s)[0] : (s.members || []).filter(function (x) { return x.status === 'active'; })[0];
         who = m ? m.id : null;
       }

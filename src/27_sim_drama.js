@@ -11,6 +11,10 @@
 //   member (v0.4): stage 0..4, stageWeek, ultimatum (week the card is due), gripe, want, exit, changed, returns,
 //                  recruit: { trait, quirk, hometown, askingCut, stars, chemistry }, look
 //   RECRUIT (candidate) = { name, nick, hometown, stars 1..5, skill, trait, quirk, askingCut, chemistry 0..100, look }
+// v0.9: rules (RULES by id: + council, twoChords, van, eighties, lawsuit, adulting, truck, stories, secretJoy, hat) ; spotlight
+//   counts any member.signature ; mysteryDrift (was kenjiDrift) ; an original without a content exit takes a generic break and
+//   comes back through ret_original (variant '<id>_<bandId>') ; fillPool(role) (role normalisation) ; recruits by genre
+//   (traits/quirks genres: [..]) and hometownsByCity.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var drama = GG.drama = GG.drama || {};

@@ -129,7 +129,10 @@
       scene: { garage: 6000, local: 6000, signed: 40000, world: 40000 },   // fans a band can reach through gigs at home (v0.7: Canada saturates; abroad = content.world.regions[].scene, added on top)
       theatreFans: 0.4,          // new-fan factor at theatres: most of that crowd already knows you
       commission: { garage: 0, local: 0, signed: 0.15, world: 0.15 },  // management + booking agent, off the top of gig pay
-      crew: { 3: 150 }           // $ per show by venue tier: sound, lights and a merch person (theatres)
+      crew: { 3: 150 },          // $ per show by venue tier: sound, lights and a merch person (theatres)
+      // v0.9 (owner Q1): the band's home ring is open from week 1, every other ring from Local Heroes. A home ring with fewer
+      // than `min` small rooms (tier <= `tier`, minFans <= `minFans`) can't carry a garage band: the garage-era rings open too.
+      homeRooms: { min: 3, tier: 1, minFans: 60 }
     },
 
     // ---- Touring abroad (25_sim_tour.js, v0.7; merged over its DEFAULTS) --------------------------------------------

@@ -21,6 +21,7 @@
 //           'gg.v1.unlocks.<genre>', every access wrapped; unlocks carry over within the same genre)
 // Events: 'creator:unlocked' { ids, names, source: 'week'|'event' } ; 'creator:changed' { state }.
 // No gong on the drum kit, ever (KIT_LOOK extras are cowbell / fan / pyro).
+// v0.9: newKit(color, bandId) / lockKit use the band's tier-0 throne (bands.js throne: crate / bucket / haybale) ; bandThrone(id).
 (function (GG) {
   var C = GG.creator = {};
   var CT = GG.contracts, U = GG.util;

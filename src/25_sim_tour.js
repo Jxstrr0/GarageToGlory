@@ -36,6 +36,10 @@
 // Events: 'tour:unlocked' { region, via } · 'tour:invite' { invite } · 'tour:booked' { tour } · 'tour:depart' { tour } ·
 //   'tour:week' { tour, stop, index } · 'tour:home' { summary } · 'tour:broken' { region } · 'tour:big' { region, song } ·
 //   'tour:rival' { region } · 'tour:president' {} · 'tour:moose' {} · 'tour:gong' { result } · 'tour:homesick' { value }
+// v0.9: needsMet(s, pkg) (package.needs: 'moose' | flag | { flag, is?, band? }) ; payoffDone(s) ; package.payoff { city?, flag?,
+//   value?, trophy?, line?, chat?, card?, fans?, buzz? } fires once at its gig (t.payoffs[pkgId]) and counts for the Gong like
+//   the Moose Opera (owner Q3) ; pickText(s, rng, path, fallback) (world content pools + byBand) ; story cards through
+//   '<id>_<bandId>' variants (wt_homesick: speaker 'recruit' = the grumpiest talker) ; callHome never uses a silent member.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var T = GG.tour = GG.tour || {};
@@ -564,10 +568,10 @@
   // band and its speaker is ok (wt_homesick's speaker 'recruit' = a talker, set as ctx.who).
   function queuedCard(s, id) {
     var v = GG.career.cardById ? GG.career.cardById(id + '_' + s.bandId) : null;
-    if (v && T.card(v.id) && GG.career.gatePasses(s, v.gate) && GG.career.speakerOk(s, v.speaker)) return v;
+    if (v && T.card(v.id) && GG.career.gatePasses(s, v.gate) && GG.career.cardOk(s, v)) return v;
     var c = T.card(id);
     if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) return null;
-    return !GG.career.speakerOk || GG.career.speakerOk(s, c.speaker) ? c : null;
+    return !GG.career.cardOk || GG.career.cardOk(s, c) ? c : null;
   }
   // Content text: a pool path over GG.content.world (+ byBand); string or [strings] (seeded pick).
   function pickText(s, rng, path, fallback) {
@@ -603,7 +607,7 @@
     if (!rng.chance(Q.cardChance)) return null;
     var pool = T.cards().filter(function (c) {
       return !c.story && availableCard(s, c) && (!c.city || c.city.indexOf(st.city) >= 0) && GG.career.gatePasses(s, c.gate)
-        && (!GG.career.speakerOk || GG.career.speakerOk(s, c.speaker)) && !(GG.career.isVariantId && GG.career.isVariantId(c.id));   // v0.9 speaker guard
+        && (!GG.career.cardOk || GG.career.cardOk(s, c)) && !(GG.career.isVariantId && GG.career.isVariantId(c.id));   // v0.9 speaker / card guard
     });
     if (!pool.length) return null;
     var pick = rng.weighted(pool, function (c) { return (c.weight || 1) * (c.city ? 3 : 1); });
@@ -756,7 +760,7 @@
     if (first) r.rivalFirst = s.totalWeek;
     var text = first ? fill(s, pickText(s, seeded(s, 'line|rival'), ['lines', 'rival'], '{rival} broke {region} first.'), { region: T.region(next).name })
       : fill(s, '{rival} finally toured {region}. The locals asked them if they know you.', { region: T.region(next).name });
-    if (news) news(text); else chat(s, (GG.rival && GG.rival.frontId && GG.rival.frontId(s)) || 'dj', text, null, 'news');
+    if (news) news(text); else chat(s, (GG.rival && GG.rival.frontSpeaker && GG.rival.frontSpeaker(s)) || 'dj', text, null, 'news');   // v0.9: the rival's own frontman
     GG.emit('tour:rival', { region: next, first: first });
     return next;
   };

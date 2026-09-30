@@ -10,6 +10,13 @@
 // v0.8.1 (LICRECAP): GG.licensing (offer cards on Mondays, their answers in resolveCard, the weekly roll in endWeek, bots;
 // tokens {brand} {ad*} in fillText) and GG.recap (the year's fund inflow in addStat, best/worst gig in settleGig, the
 // year-start snapshot, the RECAP at the week-24 wrap: wrap.recap, state.recaps).
+// v0.9 "Genres" (plan_contract_0.9 §4.2-4.3): tokens {front} {soloist} {filler} {bassist} {namer} {grumbler} {deadpan}
+//   {driver} {van} {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront} ({rival} -> 'the other band',
+//   {city} -> the career's city) ; pool(state, obj, key) ; linePool ; variant(state, baseId) ; speakerOk(state, who) ;
+//   cardOk(state, card) ; talkers(state) ; roleOf(state, role) ; isAlias ; resolveWho ; cardRoles ; memberDef ; isSilent ;
+//   homeVenue ; tokenValue ; firstGigVenue ; rivalId ; migrateBand (wraps GG.save.migrate: a save's band defaults). Role
+//   aliases (C.ROLE_ALIASES) work as card.speaker, chat.who and mood/skill/member keys (resolved at the draw: state.card.roles).
+//   The week-one gig is band.firstGig; activity / quietWeek / yearEnd / guilt / milestones lines are pools (+ byBand).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
@@ -112,13 +119,24 @@
     var d = m && contentDef(m.id);
     return d && d.name && d.name === m.name ? m.name : firstName(m && m.name);
   }
+  // v0.9: a rival cast member ({name:<castId>} in rival cards and news): rivalry.cast[rid].members[] (+ drummer / mascot).
+  function castPerson(id) {
+    var cast = (GG.content.rivalry && GG.content.rivalry.cast) || {};
+    for (var rid in cast) {
+      var c = cast[rid] || {}, list = (c.members || []).concat(c.drummer ? [c.drummer] : [], c.mascot ? [c.mascot] : []);
+      for (var i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
+    }
+    return null;
+  }
   career.memberName = function (state, id) {
     var m = memberInfo(state, id); if (m) return shortName(m) || capital(id);
-    var p = npc(id); return p ? p.name : capital(id);
+    var p = npc(id); if (p) return p.name;
+    var c = castPerson(id); return c ? (c.short || firstName(c.name) || capital(id)) : capital(id);
   };
   function memberNick(state, id) {
     var m = memberInfo(state, id); if (m) return m.nick || shortName(m);
-    var p = npc(id); return p ? p.name : capital(id);
+    var p = npc(id); if (p) return p.name;
+    var c = castPerson(id); return c ? (c.nick || c.short || firstName(c.name) || capital(id)) : capital(id);
   }
 
   /* ======================================================================
@@ -130,11 +148,15 @@
        isAlias(who) ; resolveWho(state, who) -> a role alias resolved (the current card's draw-time roles first), else who
        cardRoles(state, card)    -> { '@front': id, ... } for every alias the card uses (stored as state.card.roles on a draw)
        speakerOk(state, who)     -> false for a speaker from another band / another rival's cast / a band- or rival-scoped npc
+       cardOk(state, card)       -> speakerOk(card.speaker) and no effect (mood/skill keys, member ids, chat speakers) aimed
+                                    at another band's member; a Q8 cameo card (cameo: true) always passes
        pool(state, obj, key)     -> obj[key] + obj.byBand[bandId][key] (arrays concat; objects merge, the band's keys win;
                                     other values: the band's replaces the flat one). key may be 'a.b' or ['a', 'b'].
+                                    byBand may sit on any object along the path (world.lines.byBand[b].depart);
+                                    obj.byGenre[genre][key] sits between the flat and the band layer when content has it.
        linePool(state, key)      -> pool over GG.content.lines as a non-empty array, else null
        variant(state, baseId)    -> '<base>_<bandId>', then '<base>_<rivalId>' (rv_*), then '<base>': the first whose gate
-                                    passes and whose speaker is ok, else null
+                                    passes and that is cardOk, else null
        homeVenue(state) -> { id, name } | null ; tokenValue(state, key) (the §4.2 tokens, used by fillText)
      ====================================================================== */
   var ALIAS = {};
@@ -263,16 +285,66 @@
     return true;
   };
 
+  // v0.9: the card-level guard. speakerOk(card.speaker), and no effect aimed at another band's member (mood / skill keys,
+  // member ids, chat speakers in any choice or roll branch: a card that moves Marcel's mood is Hail Damage's card).
+  // A Q8 cross-band cameo card sets cameo: true and passes (it may name or voice another playable band's member).
+  var refCache = {};
+  function memberRefs(card) {
+    var hit = refCache[card.id];
+    if (hit && hit.card === card) return hit.refs;
+    var refs = {};
+    function who(v) { if (typeof v === 'string') refs[v] = 1; }
+    function fx(e) {
+      if (!e || typeof e !== 'object') return;
+      ['mood', 'skill'].forEach(function (k) { if (e[k] && typeof e[k] === 'object') Object.keys(e[k]).forEach(who); });
+      [].concat(e.member || []).forEach(function (m) { if (m) who(m.id); });
+      [].concat(e.chat || []).forEach(function (c) { if (c) who(c.who); });
+    }
+    (card.choices || []).forEach(function (ch) {
+      if (!ch) return;
+      fx(ch.effects);
+      if (ch.roll) { fx(ch.roll.success && ch.roll.success.effects); fx(ch.roll.fail && ch.roll.fail.effects); }
+    });
+    var list = Object.keys(refs).filter(function (id) { return !!membersIndex()[id]; });
+    refCache[card.id] = { card: card, refs: list };
+    return list;
+  }
+  career.cardOk = function (state, card) {
+    if (!card) return false;
+    if (card.cameo === true) return true;
+    if (!career.speakerOk(state, card.speaker)) return false;
+    var refs = memberRefs(card);
+    if (!refs.length) return true;
+    var b = career.band(state), own = {};
+    ((b && b.members) || []).forEach(function (m) { own[m.id] = 1; });
+    return refs.every(function (id) { return own[id] || !!findMember(state, id); });
+  };
+
   // Content pools: flat (neutral) + byBand[bandId] extras.
   function dig(o, path) { for (var i = 0; o != null && i < path.length; i++) o = o[path[i]]; return o; }
   function plainObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+  function layer(acc, x) {
+    if (x === undefined) return acc;
+    if (acc === undefined) return x;
+    if (Array.isArray(acc) || Array.isArray(x)) return (Array.isArray(acc) ? acc : []).concat(Array.isArray(x) ? x : []);
+    if (plainObj(acc) && plainObj(x)) return Object.assign({}, acc, x);
+    return x;
+  }
+  // The byBand (and optional byGenre) layers may sit on the file object or on any object along the path:
+  // world.byBand[b].lines.depart and world.lines.byBand[b].depart both add to world.lines.depart. Order: flat, genre, band.
   career.pool = function (state, obj, key) {
     if (!obj) return undefined;
     var path = Array.isArray(key) ? key : String(key).split('.');
-    var flat = dig(obj, path), bb = obj.byBand && state && state.bandId ? obj.byBand[state.bandId] : null, extra = bb ? dig(bb, path) : undefined;
-    if (Array.isArray(flat) || Array.isArray(extra)) return (Array.isArray(flat) ? flat : []).concat(Array.isArray(extra) ? extra : []);
-    if (plainObj(flat) && plainObj(extra)) return Object.assign({}, flat, extra);
-    return extra !== undefined ? extra : flat;
+    var bid = state && state.bandId, gen = state && state.genre, out = dig(obj, path), gl = [], bl = [], node = obj, i;
+    for (i = 0; i <= path.length && plainObj(node); i++) {   // i === path.length: the pool object's own byBand (news by week)
+      var rest = path.slice(i);
+      if (gen && node.byGenre && node.byGenre[gen]) gl.push(dig(node.byGenre[gen], rest));
+      if (bid && node.byBand && node.byBand[bid]) bl.push(dig(node.byBand[bid], rest));
+      node = i < path.length ? node[path[i]] : null;
+    }
+    gl.concat(bl).forEach(function (x) { out = layer(out, x); });
+    if (plainObj(out) && (out.byBand || out.byGenre)) { out = Object.assign({}, out); delete out.byBand; delete out.byGenre; }
+    return Array.isArray(out) ? out.slice() : out;
   };
   career.linePool = function (state, key) {
     var v = career.pool(state, GG.content.lines, key);
@@ -291,7 +363,7 @@
     ids.push(baseId);
     for (var i = 0; i < ids.length; i++) {
       var c = career.cardById(ids[i]);
-      if (c && career.gatePasses(state, c.gate) && career.speakerOk(state, c.speaker)) return c;
+      if (c && career.gatePasses(state, c.gate) && career.cardOk(state, c)) return c;
     }
     return null;
   };
@@ -613,18 +685,18 @@
     if (card.forceWeek != null) return false;                          // forced cards only show on their week
     if (card.chain && (card.step !== 1 || state.chains[card.chain])) return false;
     if (career.isVariantId(card.id)) return false;                     // v0.9: a forced card's band variant is never drawn
-    return available(state, card) && career.gatePasses(state, card.gate) && career.speakerOk(state, card.speaker);
+    return available(state, card) && career.gatePasses(state, card.gate) && career.cardOk(state, card);
   }
   // Draw order: forced card > due chain card > quiet week > a weighted normal card. v0.9: every step skips a card whose
-  // speaker isn't this band's (career.speakerOk).
+  // speaker or effects aren't this band's (career.cardOk).
   function drawCard(state, rng) {
     var cards = GG.content.cards || [], t = state.totalWeek, E = econ(), i;
     for (i = 0; i < cards.length; i++) {
       var f = cards[i];
-      if (f.forceWeek === t && state.seenCards[f.id] == null && career.gatePasses(state, f.gate) && career.speakerOk(state, f.speaker)) return f;
+      if (f.forceWeek === t && state.seenCards[f.id] == null && career.gatePasses(state, f.gate) && career.cardOk(state, f)) return f;
     }
     var due = cards.filter(function (c) {
-      return c.chain && chainDue(state, c) && available(state, c) && career.gatePasses(state, c.gate) && career.speakerOk(state, c.speaker);
+      return c.chain && chainDue(state, c) && available(state, c) && career.gatePasses(state, c.gate) && career.cardOk(state, c);
     });
     if (due.length) return rng.weighted(due, weightOf);
     if (t > E.quietFreeWeeks && rng.chance(E.quietWeekChance)) return null;
@@ -795,7 +867,7 @@
     var fan = !forced && !studio && !tourCard && !holiday && !lic && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
     var shopCard = !forced && !studio && !tourCard && !holiday && !lic && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
     var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (lic && lic.card) || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
-    if (card && !forced && !career.speakerOk(state, card.speaker)) card = away || studio ? null : drawCard(state, rng);   // v0.9: the speaker guard (a forced card from another band's cast)
+    if (card && !forced && !career.cardOk(state, card)) card = away || studio ? null : drawCard(state, rng);   // v0.9: the speaker / card guard (a card from another band's cast)
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = shortName(findMember(state, forced.who) || {}); }
     var cr = card ? career.cardRoles(state, card) : null;   // v0.9: role aliases resolve once, at the draw

@@ -15,6 +15,7 @@
 //   Carry    carry.key(genre) (GG.creator.carry.key(genre) + '.logo') ; carry.read(genre) -> logo | null ; carry.write(state)
 //            (this device remembers the last logo per genre, like the creator's unlocks: the picker starts from it)
 // Events: 'logo:changed' { state, logo, source: 'new'|'rebrand' }.
+// v0.9: logo lines may be [{ who, text }] or { <memberId>: [text] }.
 (function (GG) {
   var L = GG.logo = {};
   var CT = GG.contracts;

@@ -26,6 +26,8 @@
 //   LICENSE_OFFER (+ shown: the Monday card has been drawn); SONG.ad; stats.licensed ($ net); milestones.soldOut.
 //   WRAP.licensing = { offer: LICENSE_OFFER|null, expired: [LICENSE_OFFER] }.
 // Events: 'license:offer' { offer } · 'license:answer' { offer, result } · 'license:expired' { offer } · 'license:fury' { brandId }.
+// v0.9: furyBrand(s) (rivalry.cast[rid].furyBrand / economy.rival.byRival[rid].furyBrand) ; brand.band filter ; talkers ;
+//   'lic_fury_<bandId>' variant first.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var L = GG.licensing = GG.licensing || {};
@@ -199,7 +201,7 @@
       var sc = (GG.content.licenseScandals || []).filter(function (x) {
         var c = L.card(x.card);
         return c && (x.who === 'band' || x.who === 'player' || active(s, x.who)) && (!GG.career || GG.career.gatePasses(s, c.gate))
-          && (!GG.career.speakerOk || GG.career.speakerOk(s, c.speaker));
+          && (!GG.career.cardOk || GG.career.cardOk(s, c));
       })[0];
       if (sc) GG.fans.queue(s, sc.card, sc.who, 'license');
     }

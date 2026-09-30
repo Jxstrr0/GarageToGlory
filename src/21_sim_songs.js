@@ -16,6 +16,9 @@
 // v0.7.2 titles: English by default; pickTitle lets Marcel sneak in the French original ~1 in 8 (FR_CHANCE, seeded per
 // career + song slot, never drawing from the career RNG). englishFor/isFrench/frenchTitles; migrateTitles (chained onto
 // GG.save.migrate, no schema bump) renames old saves' French titles to English everywhere a song title is stored.
+// v0.9: reactions(state, song, rng) by role (band.roles.namer names it, gig.roles solo/fill, band.roles.deadpan nods) +
+//   lines.songReactions[id].custom [{ when: 'difficultyHigh'|'similarityHigh'|'any', text }] ; namerFr(state) (the French
+//   title gag only when the namer has French titles).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};

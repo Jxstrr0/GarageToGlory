@@ -25,6 +25,10 @@
 // v0.8 (KITSIM): the van has a tier (GG.shop: minivan -> 15-passenger + trailer -> sprinter -> tour bus) whose wear and
 // breakdown factors (x upgrades: winter tires, block heater) scale travel; a tape deck adds chemistry on long drives;
 // van.space = merch boxes hauled (GG.shop.hauling); a banned venue's sticker on the van gets crossed out.
+// v0.9: homeRing(state) (bands.js homeRing, else the home city's ring) ; ringEra(state, ringId) ; ringsFor(state) (home first) ;
+//   homeRooms(state) (small rooms in the home ring; too few = the garage rings open too) ; nearRing(state, ringId) ;
+//   highwayOut(state) ; far listings are relative to home (owner Q1) ; defaultVan uses shop.vanName (id 'van') ; banter skips silent members (their own stage
+//   directions only) + the driver's own pool ; the returning driver posts the syncDriver line ; state.venuePlays ({homeVenue}).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
@@ -46,6 +50,7 @@
                slice: 0.45, fanShare: 0.5, rivalChance: 0.08, rivalMinFans: 60, rivalDraw: 260 },
     road: { chanceLocal: 0.2, chanceLong: 0.9, longKm: 100 },
     farListings: 1,              // v0.6.1: at most this many gigs a week from outside your home ring (a weekend run out West)
+    homeRooms: { min: 3, tier: 1, minFans: 60 },   // v0.9: fewer small rooms than this in the home ring = the garage rings open too
     // v0.5: tier by era (theatres open in the Signed era), the fan scene per era, new-fan factor at theatres
     eraTier: { garage: 2, local: 2, signed: 3, world: 3 },
     scene: { garage: 6000, local: 6000, signed: 40000, world: 250000 },
@@ -146,11 +151,30 @@
     if (hr && ringDef(hr)) return hr;
     return world.ring(world.home(state)) || (world.rings()[0] || {}).id || 'sask';
   };
+  // A home ring with too few small rooms for a garage band (economy.world.homeRooms: tier <= 1, low minFans) can't carry a
+  // career on its own (map content missing, e.g. no Alberta ring yet): then the garage-era rings open with it, as before v0.9.
+  var thinCache = {};
+  world.homeRooms = function (state) {
+    var home = world.homeRing(state), V = venues(), key = home + '|' + V.length;
+    var hit = thinCache[key];
+    if (hit && hit.v === V && hit.m === map()) return hit.n;
+    var K = cfg().homeRooms || { tier: 1, minFans: 60 };
+    var n = V.filter(function (v) { return v && v.minFans < 99999 && (v.tier || 0) <= K.tier && (v.minFans || 0) <= K.minFans && world.ring(v.city) === home; }).length;
+    thinCache[key] = { v: V, m: map(), n: n };
+    return n;
+  };
   world.ringEra = function (state, ringId) {
     var r = ringDef(ringId);
     if (!r || ringId === world.homeRing(state)) return 'garage';
     var e = r.era || 'garage';
+    if (e === 'garage' && world.homeRooms(state) < ((cfg().homeRooms || {}).min || 3)) return 'garage';
     return C.ERAS.indexOf(e) < C.ERAS.indexOf('local') ? 'local' : e;
+  };
+  // A ring that counts as home on the board: the home ring, or a garage-era ring standing in for a thin home ring.
+  world.nearRing = function (state, ringId) {
+    if (ringId === world.homeRing(state)) return true;
+    var r = ringDef(ringId);
+    return !!r && (r.era || 'garage') === 'garage' && world.homeRooms(state) < ((cfg().homeRooms || {}).min || 3);
   };
   world.ringOpen = function (state, ringId) {
     if (!ringDef(ringId)) return true;
@@ -271,8 +295,8 @@
       var h = room ? headliner(state, room, rng) : null;
       if (h) add(room, { opening: h });
     }
-    var homeRing = world.homeRing(state);   // v0.9: far = outside the band's home ring
-    function far(v) { var r = world.ring(v.city); return !!r && r !== homeRing; }
+    var homeRing = world.homeRing(state);   // v0.9: far = outside the band's home ring (+ the garage rings when home is thin)
+    function far(v) { var r = world.ring(v.city); return !!r && r !== homeRing && !world.nearRing(state, r); }
     while (out.length < n) {
       var farN = out.filter(function (g) { return far(g); }).length;
       var left = pool.filter(function (v) { return !used[v.id] && (farN < K.farListings || !far(v)); });
@@ -579,7 +603,8 @@
   world.drawRoad = function (state, km, season, rng, city) {
     var K = cfg().road;
     if (!rng.chance(Math.min(0.97, (km >= K.longKm ? K.chanceLong : K.chanceLocal) * (world.driverMods(state).roadChance || 1)))) return null;
-    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c) && (!GG.tour || GG.tour.roadCardOk(state, c)); });
+    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c) && (!GG.tour || GG.tour.roadCardOk(state, c))
+      && (!GG.career.cardOk || GG.career.cardOk(state, c)); });   // v0.9: no other band's speaker / member effects on the road
     return list.length ? rng.weighted(list, function (c) { return c.weight != null ? c.weight : 1; }) : null;
   };
   // 1–2 lines of van chatter (a bandmate or two; a silent member only ever gets a stage direction). Seeded, cosmetic.

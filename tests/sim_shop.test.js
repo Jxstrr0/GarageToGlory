@@ -376,7 +376,9 @@ test('v0.9: every band\'s van, misprint (Q6) and forced cards through their band
   if (shirt && shirt.unlocked) {
     eq(S.buyStock(fh, 'shirt', 1).misprint, false, 'no misprint card for this band: a normal order');
     const base = S.card('money_merch_misprint');
-    GG.content.shopCards.push(Object.assign({}, base, { id: 'money_merch_misprint_frost_heave', speaker: 'rox', gate: { band: ['frost_heave'] } }));
+    // a band variant voices and moves its own band (Hail Damage mood keys -> role aliases; career.cardOk rejects others')
+    const own = JSON.parse(JSON.stringify(base.choices).replace(/"(marcel|dana|jaxon|kenji)":/g, '"@front":'));
+    GG.content.shopCards.push(Object.assign({}, base, { id: 'money_merch_misprint_frost_heave', speaker: 'rox', gate: { band: ['frost_heave'] }, choices: own }));
     try {
       const f2 = GG.career.newCareer({ seed: 4, bandId: 'frost_heave' }); f2.fund = 5000; S.unlockMerch(f2, true);
       eq(S.buyStock(f2, 'shirt', 1).misprint, true, 'the band variant misprints the first order');

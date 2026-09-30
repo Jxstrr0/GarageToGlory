@@ -11,7 +11,8 @@ const { test, ok, eq, done } = require('./_t');
 
 const GG = load({ localStorage: load.fakeStorage() });
 const C = GG.contracts, K = GG.content, WPY = C.WEEKS_PER_YEAR;
-const STRICT = !!process.env.LEAK_STRICT;
+const LEAK_STRICT = false;   // the lead flips this to true once Lane A's content has merged (or run with LEAK_STRICT=1)
+const STRICT = LEAK_STRICT || !!process.env.LEAK_STRICT;
 const BANDS = Object.keys(K.bands);
 const HD_LEAK = /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE/;
 // Other bands' own names (members, bands, rivals) in a Hail Damage career. Short member names use word boundaries.
@@ -28,7 +29,7 @@ function otherNames() {
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const INVERSE = new RegExp('\\b(' + otherNames().map(esc).join('|') + ')\\b');
 const warnings = [];
-function warn(msg) { if (warnings.length < 400) warnings.push(msg); }
+function warn(msg) { if (warnings.length < 400 && warnings.indexOf(msg) < 0) warnings.push(msg); }
 
 /* ---- the §4.2 / §4.3 helpers ------------------------------------------------------------------------------------- */
 test('helpers: talkers, roleOf, role aliases, tokens per band', () => {
@@ -115,6 +116,60 @@ test('helpers: pool (flat + byBand), variant (band > rival > base, gate + speake
   } finally { K.shopCards.length = 0; saved.forEach(c => K.shopCards.push(c)); K.rivalry.cards.pop(); }
 });
 
+test('helpers: cardOk (speaker + effects aimed at another band), Q8 cameo cards, pool byGenre layer', () => {
+  const fh = GG.career.newCareer({ seed: 8, bandId: 'frost_heave' }), hd = GG.career.newCareer({ seed: 8 });
+  const mk = (id, fx, extra) => Object.assign({ id: id, title: 't', text: 'x', choices: [{ label: 'a', effects: fx, outcome: 'o' }] }, extra || {});
+  const marcelMood = mk('t_marcel_mood', { mood: { marcel: 3 } }), roxMood = mk('t_rox_mood', { mood: { rox: 3 } });
+  const rollKenji = mk('t_roll', { fund: 5 }); rollKenji.choices[0].roll = { chance: 0.5, success: { effects: { skill: { kenji: 1 } } }, fail: { effects: {} } };
+  const chatDana = mk('t_chat', { chat: { who: 'dana', text: 'hi' } }), memberJ = mk('t_member', { member: { id: 'jaxon', act: 'settle' } });
+  ok(!GG.career.cardOk(fh, marcelMood) && GG.career.cardOk(hd, marcelMood), 'a card that moves Marcel is Hail Damage\'s');
+  ok(GG.career.cardOk(fh, roxMood) && !GG.career.cardOk(hd, roxMood), 'and the inverse');
+  ok(!GG.career.cardOk(fh, rollKenji) && !GG.career.cardOk(fh, chatDana) && !GG.career.cardOk(fh, memberJ), 'roll branches, chat speakers, member ids');
+  ok(GG.career.cardOk(fh, mk('t_alias', { mood: { '@front': 2, all: 1 }, member: { id: 'recruit', act: 'settle' } })), 'aliases, all, recruit are fine');
+  ok(!GG.career.cardOk(fh, mk('t_sp', {}, { speaker: 'marcel' })), 'the speaker guard is part of it');
+  ok(GG.career.cardOk(fh, mk('t_cameo', { mood: { marcel: 1 } }, { speaker: 'marcel', cameo: true })), 'a Q8 cameo card passes');
+  const obj = { a: ['x'], byGenre: { punk: { a: ['g'] } }, byBand: { frost_heave: { a: ['b'] } } };
+  eq(GG.career.pool(fh, obj, 'a'), ['x', 'g', 'b'], 'flat + genre + band');
+  eq(GG.career.pool(hd, obj, 'a'), ['x'], 'metal: flat only');
+  const nested = { lines: { depart: { japan: ['flat'] }, byBand: { frost_heave: { depart: { japan: ['mid'] } } } }, byBand: { frost_heave: { lines: { depart: { japan: ['top'] } } } } };
+  eq(GG.career.pool(fh, nested, ['lines', 'depart', 'japan']), ['flat', 'top', 'mid'], 'byBand at any level along the path');
+  const news = { news: { 3: { who: 'dj', text: 'flat' }, 4: { who: 'dj', text: 'four' }, byBand: { frost_heave: { 3: { who: 'rox', text: 'band' } } } } };
+  eq(GG.career.pool(fh, news, 'news'), { 3: { who: 'rox', text: 'band' }, 4: { who: 'dj', text: 'four' } }, 'the pool object\'s own byBand (news by week)');
+  eq(GG.career.pool(hd, news, 'news'), { 3: { who: 'dj', text: 'flat' }, 4: { who: 'dj', text: 'four' } }, 'meta keys stripped');
+});
+
+test('content keying reads (§4.1): shop spaces byCity (Q7) + upgrades bySpace, bandbook pools and gates, goodYear voices, holiday byBand', () => {
+  const S = GG.shop, K2 = K.shop, fh = GG.career.newCareer({ seed: 12, bandId: 'frost_heave' }), hd = GG.career.newCareer({ seed: 12 });
+  const sp1 = K2.spaces.find(x => x.tier === 1), up0 = K2.upgrades.find(x => x.tier === 0);
+  const keep = { by: sp1.byCity, ub: up0.bySpace };
+  try {
+    sp1.byCity = Object.assign({}, sp1.byCity || {}, { Regina: { name: 'The Rink Annex', blurb: 'Behind the Brandt Centre.' } });
+    up0.bySpace = Object.assign({}, up0.bySpace || {}, { laundromat_basement: { name: 'The pop machine', blurb: 'Coins only.' } });
+    eq([S.spaceDef(fh, 1).name, S.spaceDef(fh, 1).blurb], ['The Rink Annex', 'Behind the Brandt Centre.'], 'Regina gets its own room name');
+    eq(S.spaceDef(hd, 1).name, keep.by && keep.by.Saskatoon ? keep.by.Saskatoon.name : K2.spaces.find(x => x.tier === 1).name, 'Saskatoon keeps its own');
+    eq(S.spaceDef(fh, 0).name, K.bands.frost_heave.spaceName, 'tier 0 is the band\'s own space');
+    eq(S.upgrades(fh).find(u => u.id === up0.id).name, 'The pop machine', 'tier-0 upgrade per start space');
+    eq(S.upgrades(hd).find(u => u.id === up0.id).name, keep.ub && keep.ub.parents_garage ? keep.ub.parents_garage.name : up0.name, 'the garage keeps its fridge');
+  } finally { sp1.byCity = keep.by; up0.bySpace = keep.ub; if (keep.by === undefined) delete sp1.byCity; if (keep.ub === undefined) delete up0.bySpace; }
+  // bandbook: posts + byBand, mail/gifts with band gates
+  const B = K.bandbook, bb0 = B.byBand;
+  try {
+    B.byBand = Object.assign({}, bb0 || {}, { frost_heave: { posts: { meme: ['FH_ONLY_POST'] }, mail: [{ id: 'fh_mail', from: 'x', text: 'FH mail' }] } });
+    const P = GG.fans.pool;
+    ok(P(fh, ['posts', 'meme'], []).indexOf('FH_ONLY_POST') >= 0 && P(hd, ['posts', 'meme'], []).indexOf('FH_ONLY_POST') < 0, 'posts + byBand');
+    ok(P(fh, ['mail'], []).some(m => m.id === 'fh_mail') && !P(hd, ['mail'], []).some(m => m.id === 'fh_mail'), 'mail + byBand');
+    const gated = [{ id: 'g1', gate: { band: ['hail_damage'] } }, { id: 'g2', band: ['frost_heave'] }, { id: 'g3' }];
+    B.byBand.frost_heave.gifts = gated;
+    eq(P(fh, ['gifts'], []).filter(g => /^g\d$/.test(g.id)).map(g => g.id), ['g2', 'g3'], 'gift gates (gate or band)');
+  } finally { if (bb0 === undefined) delete B.byBand; else B.byBand = bb0; }
+  // recap goodYear: a line voiced only by another band's members is theirs
+  const rec = { y: 1, fans: 100, songs: 3, gigs: 4, loans: 0, chem: 60 };
+  const gy = GG.recap.goodYear(fh, rec);
+  ok(gy.every(g => GG.career.speakerOk(fh, g.who)), 'every goodYear speaker belongs here: ' + gy.map(g => g.who));
+  ok(!gy.some(g => /Baba|Marcel|Kenji|Dana|Jaxon/.test(g.text)), 'no Hail Damage voices: ' + gy.map(g => g.text).join(' | '));
+  eq(GG.recap.goodYear(hd, rec).length, GG.recap.goodYearList(hd).length, 'Hail Damage keeps all of its lines');
+});
+
 test('home rings (Q1): the home ring is open from day one; other rings from Local Heroes; far = outside home', () => {
   const W = GG.world, rings = W.rings().map(r => r.id);
   BANDS.forEach(id => {
@@ -122,11 +177,36 @@ test('home rings (Q1): the home ring is open from day one; other rings from Loca
     ok(rings.indexOf(home) >= 0, id + ' home ring exists: ' + home);
     eq(home, rings.indexOf(b.homeRing) >= 0 ? b.homeRing : W.ring(W.home(s)), id + ' home ring (band.homeRing, else the home city\'s ring)');
     ok(W.ringOpen(s, home) && W.cityOpen(s, s.city), id + ' home open in the garage era');
-    W.rings().forEach(r => { if (r.id !== home) ok(!W.ringOpen(s, r.id), id + ' ' + r.id + ' closed in the garage era'); });
+    const thin = W.homeRooms(s) < W.cfg().homeRooms.min;   // no rooms at home yet (map/venue content missing): garage rings open too
+    if (thin) warn(id + ': home ring ' + home + ' has ' + W.homeRooms(s) + ' small rooms; the garage-era rings stay open');
+    W.rings().forEach(r => {
+      if (r.id === home) return;
+      if (thin && (r.era || 'garage') === 'garage') ok(W.ringOpen(s, r.id), id + ' ' + r.id + ' open (thin home ring)');
+      else ok(!W.ringOpen(s, r.id), id + ' ' + r.id + ' closed in the garage era');
+    });
     s.era = 'local';
     W.rings().forEach(r => { if (r.id !== home && (r.era || 'garage') !== 'signed' && (r.era || 'garage') !== 'world') ok(W.ringOpen(s, r.id), id + ' ' + r.id + ' open at Local Heroes'); });
     eq(W.ringsFor(s)[0].id, home, id + ' ring order starts at home');
   });
+});
+
+test('home rings (Q1) with an Alberta ring on the map: Gravel Kings home = alberta, Saskatchewan + West at Local; others: Alberta at Local', () => {
+  const W = GG.world, M = K.map, V = K.venues, ed = M.cities.edmonton, was = ed.ring;
+  const rooms = [0, 1, 2].map(i => ({ id: 't_ab_room' + i, name: 'Test Room ' + i, city: 'Edmonton', tier: 1, minFans: 0, capacity: 80, kind: 'bar', pay: 50, deal: 'door' }));
+  try {
+    M.rings.push({ id: 'alberta', name: 'Alberta', era: 'local' }); ed.ring = 'alberta'; rooms.forEach(v => V.push(v));
+    const gk = GG.career.newCareer({ seed: 2, bandId: 'gravel_kings' }), hd = GG.career.newCareer({ seed: 2 });
+    eq(W.homeRing(gk), 'alberta', 'band.homeRing');
+    ok(W.homeRooms(gk) >= 3, 'rooms at home');
+    ok(W.ringOpen(gk, 'alberta') && !W.ringOpen(gk, 'sask') && !W.ringOpen(gk, 'west'), 'garage era: Alberta only');
+    eq(W.ringsFor(gk).map(r => r.id).slice(0, 3), ['alberta', 'sask', 'west'], 'home first, then the Local rings');
+    gk.era = 'local';
+    ok(W.ringOpen(gk, 'sask') && W.ringOpen(gk, 'west'), 'Local Heroes: Saskatchewan + the West');
+    ok(W.ringOpen(hd, 'sask') && !W.ringOpen(hd, 'alberta'), 'Hail Damage: Alberta is closed in the garage era');
+    hd.era = 'local'; ok(W.ringOpen(hd, 'alberta'), 'and opens at Local Heroes');
+  } finally {
+    M.rings.pop(); ed.ring = was; rooms.forEach(() => V.pop());
+  }
 });
 
 test('gig moments (§4.4) and band signatures', () => {
@@ -187,6 +267,7 @@ function collector(s) {
   function add(src, t) { if (t != null && t !== '') out.push({ src: src, t: String(t) }); }
   function card(src, c) {
     if (!c || seenCard[c.id + src]) return; seenCard[c.id + src] = 1;
+    if (c.cameo) src = 'cameo:' + src;   // Q8 cross-band cameo cards may name another band (allow-listed below)
     add(src + ':' + c.id, GG.career.fillText(s, c.title)); add(src + ':' + c.id, GG.career.fillText(s, c.text));
     (c.choices || []).forEach(ch => { add(src + ':' + c.id, GG.career.fillText(s, ch.label)); add(src + ':' + c.id, GG.career.choiceHint(s, ch)); });
   }
@@ -198,7 +279,7 @@ function collector(s) {
   }
   const offs = [
     GG.on('week:start', e => { if (e.card) card('monday', GG.career.cardById(e.card)); add('quiet', e.quiet); }),
-    GG.on('card:resolved', e => add('outcome:' + e.cardId, e.outcome)),
+    GG.on('card:resolved', e => { const c = GG.career.cardById(e.cardId); add((c && c.cameo ? 'cameo:' : '') + 'outcome:' + e.cardId, e.outcome); }),
     GG.on('week:wrap', e => strings('wrap', e.wrap, 0)),
     GG.on('gig:done', e => { strings('gig', { lines: e.result.lines, reactions: (e.result.reactions || []).map(r => r.text) }, 0); }),
     GG.on('song:written', e => strings('song', (e.reactions || []).map(r => r.text), 0)),
@@ -313,6 +394,10 @@ test('Hail Damage keeps its flavour (the baseline band)', () => {
   const sd = GG.rival.showdown(s, 'botb');
   ok(sd.rival.name === 'Tundra Wraith' && sd.setlist.length === 3, 'Tundra Wraith');
   ok(GG.songs.namerFr(s), 'Marcel still names songs in French now and then');
+  eq(GG.rival.frontSpeaker(s), 'wraith_frontman', 'Gord still posts as the frontman npc');
+  const fh = GG.career.newCareer({ seed: 1, bandId: 'frost_heave' }), fs = GG.rival.frontSpeaker(fh);
+  ok(fs !== 'wraith_frontman' && GG.career.speakerOk(fh, fs), 'another rival posts as its own frontman (or the DJ): ' + fs);
+  eq(GG.world.nearRing(s, 'west'), false, 'the West is far from Saskatoon');
 });
 
 done('sim_bands');
