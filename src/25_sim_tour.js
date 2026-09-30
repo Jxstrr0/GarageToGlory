@@ -63,6 +63,7 @@
     rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
     gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
     moose: { fans: 3000, buzz: 12 },
+    payoffFlags: { mooseOpera: 'platinum', squatAnthemPayoff: true, mudstonbury: 'headlined', outbackPayoff: true },   // v0.9: Gong payoff
     cardGap: 3, cardChance: 0.75,
     bot: { goodCushion: 2500, avgCushion: 3500, gap: 10, avgChance: 0.35, restHomesick: 55 }
   };
@@ -322,14 +323,26 @@
     var v = s.flags && n.flag ? s.flags[n.flag] : null, is = n.is || (n.value != null ? [n.value] : null);
     return is ? [].concat(is).indexOf(v) >= 0 : !!v;
   };
-  T.payoffDone = function (s) { var t = T.ensure(s); return !!(t.moose || Object.keys(t.payoffs || {}).length); };
+  // Every band's World payoff counts for the Gong like the Moose Opera: a fired package payoff (t.payoffs), or the flag its
+  // storyline leaves behind (cfg().payoffFlags: { flag: true (any value) | value | [values] }), e.g. a payoff card's own flag.
+  T.payoffDone = function (s) {
+    var t = T.ensure(s), F = cfg().payoffFlags || {}, f = s.flags || {};
+    if (t.moose || Object.keys(t.payoffs || {}).length) return true;
+    return Object.keys(F).some(function (k) {
+      var want = F[k], v = f[k];
+      if (v == null || v === false) return false;
+      return want === true || [].concat(want).indexOf(v) >= 0;
+    });
+  };
+  // The payoff gig: payoff.venue (a stop's venue id), else payoff.city, else the package's last stop.
   function payoffAt(s, g) {
     var a = T.active(s), p = a && T.pkg(a.packageId), P = p && p.payoff;
     if (!p || !p.needs || p.needs === 'moose' || !P || T.ensure(s).payoffs[p.id]) return null;
+    if (P.venue) return g.venueId === P.venue || g.id === P.venue ? p : null;
     var last = a.stops[a.stops.length - 1] || {}, city = P.city || last.city;
     return g.cityId === city || g.city === city || (T.cityDef(city) && T.cityDef(city).name === g.city) ? p : null;
   }
-  function payoff(s, p, r, d) {
+  function payoff(s, p, r, d, g) {
     var t = T.ensure(s), P = p.payoff || {}, Q = cfg().moose, flag = P.flag || (typeof p.needs === 'string' ? p.needs + 'Payoff' : p.needs && p.needs.flag ? p.needs.flag + 'Payoff' : 'worldPayoff');
     t.payoffs[p.id] = { week: s.totalWeek, flag: flag };
     s.flags[flag] = P.value != null ? P.value : true;
@@ -339,7 +352,7 @@
     if (r && r.lines && P.line) r.lines.push(GG.career.fillText(s, P.line));
     if (P.chat) chat(s, 'dj', P.chat, null, 'news');
     if (P.card) t.queue.unshift({ card: P.card, region: p.region, now: true });
-    GG.emit('tour:payoff', { packageId: p.id, flag: flag });
+    GG.emit('tour:payoff', { packageId: p.id, flag: flag, venueId: (g && g.venueId) || null });
   };
   T.book = function (s, pkgId, choices) {
     var c = T.canBook(s, pkgId, choices);
@@ -460,7 +473,7 @@
     }
     if (g.cityId === 'helsinki' && s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland') && !t.moose) moose(s, r, d);
     var po = payoffAt(s, g);   // v0.9: another band's World payoff
-    if (po) payoff(s, po, r, d);
+    if (po) payoff(s, po, r, d, g);
     return T.travel(s, g, rng, d);
   };
   T.travel = function (s, g, rng, d) {

@@ -63,12 +63,16 @@ test('content: four regions (no Canada, no USA), the C6 cities with map pins, ve
 test('content: world cards (region + story) and region road cards are valid; Kenji never speaks', () => {
   const GG = fresh(), K = GG.content, C = GG.contracts, W = K.world;
   const ids = new Set((K.cards || []).map(c => c.id).concat(K.roadCards.map(c => c.id), GG.drama.cards().map(c => c.id), GG.labels.cards().map(c => c.id), GG.rival.cards().map(c => c.id), GG.fans.cards().map(c => c.id)));
-  const speakers = Object.keys(K.npcs).concat(K.bands.hail_damage.members.map(m => m.id));
+  // v0.9: a world card is voiced by an npc, a role alias, the recruit slot, or a talking member of the band(s) its gate names (packs);
+  // an ungated card may not name any band's member. Silent members (Kenji) never speak.
+  const npcs = Object.keys(K.npcs).concat(C.ROLE_ALIASES || [], ['recruit']);
+  const talk = bid => ((K.bands[bid] && K.bands[bid].members) || []).filter(m => !m.silent).map(m => m.id);
+  const speakersOf = c => npcs.concat(...((c.gate && c.gate.band) || []).map(talk));
   const TOUR_KEYS = ['regionFans', 'homesick', 'gift', 'endTour', 'accept', 'big'];
   W.cards.forEach(c => {
     const w = 'world card ' + c.id;
     ok(/^wt_[a-z0-9_]+$/.test(c.id) && !ids.has(c.id), w + ': id'); ids.add(c.id);
-    ok(C.CARD_TYPES.includes(c.type) && speakers.includes(c.speaker) && c.speaker !== 'kenji', w + ': type/speaker');
+    ok(C.CARD_TYPES.includes(c.type) && speakersOf(c).includes(c.speaker) && c.speaker !== 'kenji', w + ': type/speaker ' + c.speaker);
     ok(c.title.length <= 32 && c.text.length <= 280, w + ': lengths');
     Object.keys(c.gate).forEach(k => ok(C.GATE_KEYS.includes(k), w + ': gate ' + k));
     eq(c.gate.era, ['world'], w + ': World era');
@@ -375,6 +379,45 @@ test('v0.9 (Q3): a generic World payoff: package needs { flag }, payoff at its c
     const hd = world(GG, 45); hd.flags.squatAnthem = 'ready';
     ok(!T.needsMet(hd, pkg), 'band-scoped needs');
   } finally { W.packages.pop(); }
+});
+
+test('v0.9 (Q3): every band pack\'s payoff fires at its own gig and counts for the Gong; the storyline flags count too', () => {
+  const GG = fresh(), T = GG.tour;
+  const cases = [
+    ['frost_heave', 'eu_squat_anthem_tour', { squatAnthem: 'berlin' }, 'wackelstein_fest', 'squatAnthemPayoff'],
+    ['gravel_kings', 'gk_mudstonbury_headline', { mudHeadline: true }, 'mudstonbury_fest', 'mudHeadline'],
+    ['grid_road_ramblers', 'au_country_circuit', { outback: 'tumbleworth' }, 'tumbleworth_fest', 'outbackPayoff']];
+  cases.forEach(([bid, pid, flags, venue, flag], i) => {
+    const pkg = T.pkg(pid);
+    ok(pkg && pkg.needs && pkg.payoff, bid + ': package ' + pid);
+    const s = GG.career.newCareer({ seed: 60 + i, bandId: bid, player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 90000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    T.unlock(s, pkg.region);
+    ok(!T.payoffDone(s), bid + ': no payoff yet');
+    Object.assign(s.flags, flags);
+    // a festival stop only runs in its weeks: move to the package's departure window
+    const win = T.departWindow(pkg); if (win && win.length) at(s, 5 * 24 + win[0]);
+    Object.assign(s, { phase: 'monday', gig: null, weekStart: null });
+    const why = T.canBook(s, pid); ok(why.ok, bid + ': bookable: ' + why.why);
+    if (!why.ok) return;
+    const ev = []; GG.on('tour:payoff', e => { if (e.packageId === pid) ev.push({ where: e.venueId }); });
+    T.book(s, pid); s.phase = 'wrap'; GG.career.endWeek(s);
+    playTour(GG, s);
+    const po = s.tour.payoffs[pid];
+    ok(po && po.flag === flag && s.flags[flag] != null, bid + ': the payoff fired ' + JSON.stringify(s.tour.payoffs));
+    ok(ev.length === 1 && ev[0].where === venue, bid + ': at ' + venue + ' (got ' + (ev[0] && ev[0].where) + ')');
+    ok(T.payoffDone(s), bid + ': Gong credit');
+  });
+  // the payoff lands at the venue it names (Mudstonbury, not the Manchester stop after it)
+  const s = GG.career.newCareer({ seed: 70, bandId: 'gravel_kings', player: { name: 'T' } });
+  ok(!T.payoffDone(s), 'fresh');
+  s.flags.mudstonbury = 'declined'; ok(!T.payoffDone(s), 'a declined headline does not count');
+  s.flags.mudstonbury = 'headlined'; ok(T.payoffDone(s), 'the headline card\'s flag counts');
+  const r = GG.career.newCareer({ seed: 71, bandId: 'grid_road_ramblers', player: { name: 'T' } });
+  r.flags.outbackPayoff = 'tumbleworth'; ok(T.payoffDone(r), 'outbackPayoff counts');
+  const f = GG.career.newCareer({ seed: 72, bandId: 'frost_heave', player: { name: 'T' } });
+  f.flags.squatAnthemPayoff = 'wackelstein'; ok(T.payoffDone(f), 'squatAnthemPayoff counts');
 });
 
 test('Abbot Lane Studios (London) unlocks in the World era; the World era switches on at the Steady threshold', () => {

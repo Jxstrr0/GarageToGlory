@@ -16,7 +16,12 @@ function monday(GG, s, tw) { s.totalWeek = tw; s.week = (tw - 1) % 24 + 1; s.yea
 
 test('content: five parody brands, the owner\'s fee ranges ($1.5k–$6k: hockey low, truck high), genre fit, lines', () => {
   const GG = fresh(), K = GG.content.licensing, C = GG.contracts;
-  eq(K.brands.map(b => b.id), ['truck', 'energy', 'hockey', 'insurance', 'game']);
+  // v0.9: the five base brands (insurance is Marcel's employer, so it is Hail Damage's own), plus one "employer" brand
+  // per new band from the packs; every employer brand is gated with brand.band to exactly one band.
+  eq(K.brands.slice(0, 5).map(b => b.id), ['truck', 'energy', 'hockey', 'insurance', 'game']);
+  eq(K.brands.filter(b => !b.band).map(b => b.id), ['truck', 'energy', 'hockey', 'game'], 'open brands');
+  const gated = {}; K.brands.filter(b => b.band).forEach(b => { eq([].concat(b.band).length, 1, b.id + ': one band'); gated[[].concat(b.band)[0]] = b.id; });
+  eq(gated, { hail_damage: 'insurance', frost_heave: 'fh_city_psa', gravel_kings: 'smile_centre', grid_road_ramblers: 'seed_dealer' }, 'band-gated employer brands');
   K.brands.forEach(b => {
     ok(b.name && b.what && b.blurb && b.title && b.offer && b.take && b.decline && b.counterWin && b.counterWalk && b.expire, b.id + ': text');
     ok(b.fee[0] >= 1500 && b.fee[1] <= 6000 && b.fee[0] < b.fee[1], b.id + ': fee ' + b.fee);
@@ -77,6 +82,14 @@ test('offers: fee in the brand range by fame (rounded to $100), genre-weighted b
   const GG2 = fresh(), c = {};
   for (let i = 0; i < 200; i++) { const s = career(GG2, 12, SIGNED, 'grid_road_ramblers'); const o = GG2.licensing.makeOffer(s, GG2.RNG(i + 7)); if (o) c[o.brandId] = (c[o.brandId] || 0) + 1; }
   ok((c.truck || 0) > (c.energy || 0) && !c.insurance || (c.truck || 0) > 3 * (c.insurance || 0), 'country: the truck ad: ' + JSON.stringify(c));
+  // v0.9: brand.band — an employer brand is only ever offered to its own band.
+  ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].forEach(bid => {
+    const seen = {};
+    for (let i = 0; i < 120; i++) { const s = career(GG2, 30 + i, SIGNED, bid), o = GG2.licensing.makeOffer(s, GG2.RNG(i + 99)); if (o) seen[o.brandId] = 1; }
+    Object.keys(seen).forEach(id => { const b = GG2.licensing.brand(id); ok(!b.band || [].concat(b.band).indexOf(bid) >= 0, bid + ' never gets ' + id); });
+    const own = GG2.content.licensing.brands.filter(b => b.band && [].concat(b.band).indexOf(bid) >= 0);
+    ok(own.every(b => seen[b.id]), bid + ': its own employer brand does come up: ' + JSON.stringify(seen));
+  });
   const s = career(GG, 13, SIGNED); s.songs.forEach(x => { x.ad = { brandId: 'game', week: 1 }; });
   ok(L.makeOffer(s, GG.RNG(2)) === null, 'no song left that is not already in an ad');
   const a = career(GG, 14, Object.assign({}, SIGNED, { fans: 1200 })), b = career(GG, 14, Object.assign({}, SIGNED, { fans: 30000 }));

@@ -3,17 +3,18 @@
 // invariants, the band's own driver / van / space / city / first gig (week-1 km <= 60), a band-gated week-one card, a save
 // that round-trips, loans that can be repaid, an original who comes back, and a LEAK SCAN over every piece of
 // player-visible text the sims produce (chat, cards, outcomes, wraps, news, comments, recaps, reviews, awards, licensing,
-// road cards). Hail Damage names in another band's career are reported (warnings) until LEAK_STRICT=1 (the lead sets it
-// once Lane A's content has landed); other bands' names in a Hail Damage career fail right away (the inverse check).
-// Rival lineups warn until LEAK_STRICT as well (they come with the casts).
+// road cards). Strict since the v0.9 integration: Hail Damage names in another band's career, another new band's names
+// in a new band's career (Q8 cameo cards with cameo: true excepted) and other bands' names in a Hail Damage career all
+// fail; missing rival lineups fail too. LEAK_STRICT=0 turns the non-Hail-Damage checks back into warnings.
 const load = require('./_load');
 const { test, ok, eq, done } = require('./_t');
 
 const GG = load({ localStorage: load.fakeStorage() });
 const C = GG.contracts, K = GG.content, WPY = C.WEEKS_PER_YEAR;
-const LEAK_STRICT = false;   // the lead flips this to true once Lane A's content has merged (or run with LEAK_STRICT=1)
-const STRICT = LEAK_STRICT || !!process.env.LEAK_STRICT;
+const LEAK_STRICT = true;   // v0.9 integration: Lane A's content has merged; LEAK_STRICT=0 reports leaks as warnings instead
+const STRICT = process.env.LEAK_STRICT === '0' ? false : LEAK_STRICT || !!process.env.LEAK_STRICT;
 const BANDS = Object.keys(K.bands);
+const LEAK_YEARS = Math.max(1, parseInt(process.env.LEAK_YEARS, 10) || 3);   // LEAK_YEARS=10: a full-career scan (slow)
 const HD_LEAK = /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE/;
 // Other bands' own names (members, bands, rivals) in a Hail Damage career. Short member names use word boundaries.
 function otherNames() {
@@ -28,6 +29,20 @@ function otherNames() {
 }
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const INVERSE = new RegExp('\\b(' + otherNames().map(esc).join('|') + ')\\b');
+// v0.9 strict: in a non-Hail-Damage career, the other two new bands' names (members, band, rival) never show up either
+// (Q8 cameo sources excepted).
+function crossNames(id) {
+  const names = [];
+  BANDS.filter(x => x !== id && x !== 'hail_damage').forEach(x => {
+    const b = K.bands[x];
+    names.push(b.name);
+    b.members.forEach(m => { names.push(m.name); if (m.fullName) names.push(m.fullName); });
+    const r = K.rivals[b.rival]; if (r) names.push(r.name);
+  });
+  return names.filter(Boolean);
+}
+const CROSS = {};
+BANDS.filter(id => id !== 'hail_damage').forEach(id => { CROSS[id] = new RegExp('\\b(' + crossNames(id).map(esc).join('|') + ')\\b'); });
 const warnings = [];
 function warn(msg) { if (warnings.length < 400 && warnings.indexOf(msg) < 0) warnings.push(msg); }
 
@@ -192,9 +207,12 @@ test('home rings (Q1): the home ring is open from day one; other rings from Loca
 
 test('home rings (Q1) with an Alberta ring on the map: Gravel Kings home = alberta, Saskatchewan + West at Local; others: Alberta at Local', () => {
   const W = GG.world, M = K.map, V = K.venues, ed = M.cities.edmonton, was = ed.ring;
-  const rooms = [0, 1, 2].map(i => ({ id: 't_ab_room' + i, name: 'Test Room ' + i, city: 'Edmonton', tier: 1, minFans: 0, capacity: 80, kind: 'bar', pay: 50, deal: 'door' }));
+  // The mock ring is injected only when the map has none (v0.9 content ships the real Alberta ring).
+  const mock = !M.rings.some(r => r.id === 'alberta');
+  const rooms = mock ? [0, 1, 2].map(i => ({ id: 't_ab_room' + i, name: 'Test Room ' + i, city: 'Edmonton', tier: 1, minFans: 0, capacity: 80, kind: 'bar', pay: 50, deal: 'door' })) : [];
   try {
-    M.rings.push({ id: 'alberta', name: 'Alberta', era: 'local' }); ed.ring = 'alberta'; rooms.forEach(v => V.push(v));
+    if (mock) { M.rings.push({ id: 'alberta', name: 'Alberta', era: 'local' }); ed.ring = 'alberta'; }
+    rooms.forEach(v => V.push(v));
     const gk = GG.career.newCareer({ seed: 2, bandId: 'gravel_kings' }), hd = GG.career.newCareer({ seed: 2 });
     eq(W.homeRing(gk), 'alberta', 'band.homeRing');
     ok(W.homeRooms(gk) >= 3, 'rooms at home');
@@ -205,7 +223,7 @@ test('home rings (Q1) with an Alberta ring on the map: Gravel Kings home = alber
     ok(W.ringOpen(hd, 'sask') && !W.ringOpen(hd, 'alberta'), 'Hail Damage: Alberta is closed in the garage era');
     hd.era = 'local'; ok(W.ringOpen(hd, 'alberta'), 'and opens at Local Heroes');
   } finally {
-    M.rings.pop(); ed.ring = was; rooms.forEach(() => V.pop());
+    if (mock) { M.rings.pop(); ed.ring = was; } rooms.forEach(() => V.pop());
   }
 });
 
@@ -293,7 +311,7 @@ function collector(s) {
       offs.forEach(f => f());
       (s.chat || []).forEach(m => add('chat:' + m.who, m.text));
       (s.albums || []).forEach(a => (a.reviews || []).forEach(r => add('review', r.quote)));
-      if (s.loonies) strings('loonies', (s.loonies.results || []).map(r => [r.thanks, r.rivalLine]), 0);
+      if (s.loonies) strings('loonies', (s.loonies.results || []).map(r => [r.thanks, r.rivalLine, r.bandLine]), 0);
       if (GG.labels) { card('speech', GG.labels.speechCard(s)); card('outfit', GG.labels.outfitCard(s)); }
       (s.recaps || []).forEach(r => { add('recap', r.headline); strings('recap', GG.recap.goodYear(s, r), 0); });
       (s.rival && s.rival.news || []).forEach(n => add('rivalNews', n.text));
@@ -333,7 +351,7 @@ BANDS.forEach(id => {
         const col = collector(s); recruitNames = [];
         let week1 = null;
         const off = GG.on('week:start', e => { if (e.totalWeek === 1) week1 = e.card; });
-        for (let w = 0; w < 3 * WPY && !s.ended; w++) { GG.career.botWeek(s, style); invariants(s, tag + ' w' + s.totalWeek); }
+        for (let w = 0; w < LEAK_YEARS * WPY && !s.ended; w++) { GG.career.botWeek(s, style); invariants(s, tag + ' w' + s.totalWeek); }
         off();
         const c1 = week1 && GG.career.cardById(week1);
         if (c1 && c1.forceWeek === 1) ok(c1.gate && c1.gate.band && c1.gate.band.indexOf(id) >= 0, tag + ' the forced week-one card is band-gated: ' + c1.id);
@@ -343,6 +361,7 @@ BANDS.forEach(id => {
           if (CAMEO_SRC.test(x.src)) return;
           const t = scrub(s, x.t);
           if (id !== 'hail_damage' && HD_LEAK.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
+          if (id !== 'hail_damage' && CROSS[id].test(t)) leaks.push(x.src + ' [' + t.match(CROSS[id])[0] + ']: ' + t.slice(0, 140));
           if (id === 'hail_damage' && INVERSE.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
         });
         // a save round-trips (slot + code)
@@ -354,7 +373,7 @@ BANDS.forEach(id => {
     }
     const uniq = Array.from(new Set(leaks));
     if (id === 'hail_damage') ok(!uniq.length, 'another band leaked into a Hail Damage career:\n  ' + uniq.slice(0, 12).join('\n  '));
-    else if (STRICT) ok(!uniq.length, id + ' Hail Damage leaks:\n  ' + uniq.slice(0, 12).join('\n  '));
+    else if (STRICT) ok(!uniq.length, id + ' leaks (Hail Damage or another band):\n  ' + uniq.slice(0, 30).join('\n  '));
     else if (uniq.length) warn(id + ': ' + uniq.length + ' Hail Damage leak(s), e.g. ' + uniq.slice(0, 3).join(' || '));
   });
 });

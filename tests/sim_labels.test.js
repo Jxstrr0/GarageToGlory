@@ -439,4 +439,30 @@ test('v0.9: demandsByBand, a demand whose card can never be dealt settles half, 
   try { eq(L.interest(fh, 'monolith_tv'), 0, 'never offered'); } finally { delete src2.monolith_tv; }
 });
 
+test('v0.9: a band line after each envelope (awards.win / lose + byBand), own voices only, the outcome unchanged', () => {
+  const lines = {};
+  ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].forEach(b => {
+    const run = withLine => {
+      const GG = load({ localStorage: load.fakeStorage() });
+      const s = GG.career.newCareer({ seed: 12, bandId: b, player: { name: 'T' } });
+      if (!withLine) { GG.content.awards.win = []; GG.content.awards.lose = []; delete GG.content.awards.byBand; }
+      s.loonies = { year: s.year, week: 20, nominations: [
+        { category: 'album', name: 'Album', what: 'x', nominees: ['Us', s.rival.name, 'X'], strength: 99, rival: 1 },
+        { category: 'live', name: 'Live', what: 'x', nominees: ['Us', s.rival.name, 'X'], strength: 1, rival: 99 }], invited: true, results: null, done: false };
+      return { s, GG, res: GG.labels.runLoonies(s) };
+    };
+    const a = run(true), z = run(false);
+    eq(a.res.map(r => [r.won, r.winner, r.you, r.them]), z.res.map(r => [r.won, r.winner, r.you, r.them]), b + ': same envelopes with or without the lines');
+    ok(z.res.every(r => r.bandLine === null), b + ': no lines, no band line');
+    const own = a.GG.content.bands[b].members.map(m => m.name.split(' ')[0]);
+    const other = [].concat(...Object.keys(a.GG.content.bands).filter(x => x !== b).map(x => a.GG.content.bands[x].members.map(m => m.name.split(' ')[0])));
+    a.res.forEach(r => {
+      ok(typeof r.bandLine === 'string' && r.bandLine.length > 10 && !/\{/.test(r.bandLine), b + ': a filled line ' + r.bandLine);
+      ok(!other.some(n => new RegExp('\\b' + n + '\\b').test(r.bandLine) && !own.includes(n)), b + ': no other band named: ' + r.bandLine);
+    });
+    lines[b] = a.res.map(r => r.bandLine).join(' ');
+  });
+  ok(/Kenji|Marcel|Dana|Jaxon/.test(lines.hail_damage) && /Rox|Benny|Moth/.test(lines.frost_heave), 'each band in its own voice');
+});
+
 done('sim_labels');

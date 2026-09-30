@@ -199,10 +199,23 @@
     return prefer.every(function (id) { return !K2.isAlias(id) && !K2.speakerOk(s, id); });
   }
   // v0.9: recap.goodYear = [..] (flat, + byBand[bandId].goodYear) or { <bandId>: [..], default?: [..] }.
+  // Both shapes also read recap.byBand[bandId].goodYear (a pack may write either). One line per topic: the band's own
+  // entry wins over the flat one (so a pack's set doesn't double the flat Mom 'loans' line), in first-seen topic order.
   R.goodYearList = function (s) {
-    var G = K().goodYear;
-    if (Array.isArray(G)) { var p = GG.career && GG.career.pool ? GG.career.pool(s, K(), 'goodYear') : G; return Array.isArray(p) ? p : G; }
-    return (G && (G[s.bandId] || G['default'])) || [];
+    var G = K().goodYear, list;
+    if (Array.isArray(G)) { var p = GG.career && GG.career.pool ? GG.career.pool(s, K(), 'goodYear') : G; list = Array.isArray(p) ? p : G; }
+    else {
+      var bb = K().byBand && s && K().byBand[s.bandId], own = (bb && Array.isArray(bb.goodYear)) ? bb.goodYear : [];
+      list = ((G && (G[s.bandId] || (own.length ? null : G['default']))) || []).concat(own);
+    }
+    var order = [], by = {};
+    list.forEach(function (g, i) {
+      if (!g) return;
+      var k = g.topic || ('#' + i);
+      if (!(k in by)) order.push(k);
+      by[k] = g;
+    });
+    return order.map(function (k) { return by[k]; });
   };
   R.goodYear = function (s, rec) {
     if (!rec || rec.y !== 1) return [];
