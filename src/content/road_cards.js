@@ -603,6 +603,7 @@
   //     mods: { breakdown x, wear x, burnout x, comfort ±, repair x (0 = free), chemistry + per long drive, roadChance x },
   //     back (group-chat line when they take the wheel back) } } + you (the founder, when the driver quits).
   //   shades: true = the van scene draws the driver in sunglasses (Kenji; Earl keeps his own glasses).
+  //   dock / load (optional): the week screen's van lines for this driver (52_ui_week vanLine); Kenji uses the silent default.
   GG.content.drivers = {
     kenji: { id: 'kenji', band: 'hail_damage', name: 'Kenji', dashboard: 'cactus', dashName: 'a single tiny cactus', shades: true,
       blurb: 'Silent. Perfect record. Never uses GPS, always exactly on time. Nobody knows if he has a licence.',
@@ -611,15 +612,21 @@
     moth: { id: 'moth', band: 'frost_heave', name: 'Moth', dashboard: 'laundry', dashName: "Moth's laundry",
       blurb: 'It is her apartment. Nobody else may drive. Her stuff is everywhere.',
       effect: 'Free maintenance, terrible comfort', mods: { repair: 0, comfort: -2 },
-      back: 'Moth is back. She has re-hung her laundry from the rear-view mirror. The van is her apartment again.' },
+      back: 'Moth is back. She has re-hung her laundry from the rear-view mirror. The van is her apartment again.',
+      dock: 'The van is warming up. Moth is already in it. She lives in it.',
+      load: "Load the van. Knock first. Moth is in the driver's seat, folding laundry." },
     tamara: { id: 'tamara', band: 'gravel_kings', name: 'T-Bone', dashboard: 'cassettes', dashName: "Chase's '80s cassettes",
       blurb: "The only adult in the van. Chase begs to drive and blasts '80s cassettes. The answer is no.",
       effect: 'Safe but slow', mods: { breakdown: 0.6, burnout: 1.3 },
-      back: 'T-Bone has the keys again. Chase is in the back, sulking, with a Walkman.' },
+      back: 'T-Bone has the keys again. Chase is in the back, sulking, with headphones and one cassette.',
+      dock: 'The van is warming up. T-Bone has the keys and a checklist.',
+      load: 'Load the van. T-Bone checks the tire pressure. Chase asks to drive. The answer is no.' },
     earl: { id: 'earl', band: 'grid_road_ramblers', name: 'Earl', dashboard: 'atlas', dashName: 'a 1987 road atlas',
       blurb: 'Twenty under the limit. Stops at every historical marker and reads it aloud.',
       effect: 'Slow, but road stories boost chemistry', mods: { burnout: 1.3, chemistry: 2 },
-      back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.' },
+      back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.',
+      dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
+      load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },
     you: { id: 'you', band: null, name: 'You', dashboard: 'none', dashName: 'nothing but a fuel light',
       blurb: 'The founder, behind the wheel. You drive like you drum.',
       effect: 'More wrong turns, more gas-station arguments', mods: { breakdown: 1.15, roadChance: 1.25 },

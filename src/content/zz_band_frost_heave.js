@@ -30,7 +30,7 @@
 //   squatPlan, squatCall, squatAnthem, squatAnthemPayoff (tour), demandEnglish / demandRadio / demandImage / demandShowcase.
 // npcs (band- or rival-scoped): fh_delphine, fh_irma, fh_pomeroy, fh_janice (Frost Heave); mr_blaze (frontman), mr_siobhan,
 //   mr_preston (Mall Rats). Cast member ids mr_blaze / mr_siobhan / mr_dex / mr_brody (the npc ids double as cast ids).
-//   The Mall Rats' label is the base's rival-only label for them ('muchloud', named Network Nine Music), found by rivalOnly + rival.
+//   The Mall Rats' label is the base's rival-only label for them ('network_nine', Network Nine Music), found by rivalOnly + rival.
 // First-match lists (a holiday's cards, licenseScandals): the band's own entries go in front of the shared ones, so the
 //   shared cards stay the fallback. Every string is <= the content limits; tokens are §4.2's.
 // No USA content, no gong on the kit, no real brands (MegaBulk, Shredwood, Riot Juice and Network Nine are parodies).
@@ -129,7 +129,7 @@
         bio: 'Real name Kevin, from Oakville. Won the network\'s punk talent show with a snarl a focus group scored 8.4. Apologizes to the crowd after every insult.',
         gags: ['Signs every autograph "Stay rebellious! Blaze (Kevin)".', 'His mohawk has a personal assistant.',
           'Calls his mom from the stage during the encore. She is in the front row.', 'Has never been to a mall he did not like.'],
-        look: look('#f1d2b4', '#f4e04d', 'spiky', '#e0457b', '#1d1d24', 1.02, 0.95, ['tattoos'], 'jacket'), corpsePaint: false, stageShirt: '#e0457b' },
+        look: look('#f1d2b4', '#f4e04d', 'spiky', '#e0457b', '#1d1d24', 1.02, 0.95, ['tattoos'], 'jacket'), corpsePaint: false, skate: true, stageShirt: '#e0457b' },
       { id: 'mr_siobhan', name: 'Siobhan', short: 'Siobhan', fullName: 'Siobhan Marchetti-Kerr', nick: 'Siobhan', role: 'guitar / stylist', lane: 'left',
         dayJob: 'Stylist, band manager, sponsor liaison, the real leader',
         bio: 'Hired to style them. Now runs them. Plays rhythm guitar on stage with an earpiece in, taking calls between songs. Her amp is the only one that is on.',
@@ -327,7 +327,7 @@
     ]
   });
 
-  // Their label: the base's rival-only label for this rival (labels[id].rivalOnly, rival: mall_rats; 'muchloud', named
+  // Their label: the base's rival-only label for this rival (labels[id].rivalOnly, rival: mall_rats; 'network_nine',
   // Network Nine Music), found by rivalOnly + rival so a rival never ends up with two labels; our own only if the base has none.
   var LBS = obj(K, 'labels'), mrLabel = null;
   Object.keys(LBS).forEach(function (id) { var l = LBS[id]; if (!mrLabel && l && l.rivalOnly && l.rival === RIVAL) mrLabel = id; });
@@ -394,8 +394,8 @@
           outcome: 'Moth drives the Pothole past council chambers eleven times a day. Pomeroy files a complaint about "a van with opinions". Buzz.' },
         { label: 'Door-knock the whole ward', hint: 'Fans ↑ · Burnout ↑', effects: { burnout: 6, fans: 10, chain: NEXT('council', 3, 2) },
           outcome: 'Three hundred doors. Two hundred already know Rox from council meetings. Sixty are fans now. Forty are afraid of her.' },
-        { label: 'A two-chord campaign song', hint: 'Benny ↑ · Buzz ↑', effects: { mood: { benny: 8 }, buzz: 4, chain: NEXT('council', 3, 2) },
-          outcome: "'Ward Six Forever' is ninety seconds long and gets stuck in every head in the ward, including Pomeroy's. It is not, strictly, about policy." }
+        { label: 'A two-chord campaign song', hint: 'Benny ↑ · Buzz ↑ · a rally this weekend', effects: { mood: { benny: 8 }, buzz: 4, book: 'city_hall_steps', chain: NEXT('council', 3, 2) },
+          outcome: "'Ward Six Forever' is ninety seconds long. It debuts Saturday at a pothole rally on the city hall steps. It is not, strictly, about policy." }
       ] },
     { id: 'fh_council_2_suds', type: 'scene', speaker: 'fh_irma', title: 'Suds-O-Rama HQ', chain: 'council', step: 2,
       gate: g({ era: GLS, flagEquals: { councilPlan: 'suds' } }),

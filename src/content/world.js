@@ -98,7 +98,11 @@
     city('yekaterinburg', 'Yekaterinburg', 'russia', 34, 46, 'Russia', -3, 'Right on the line between Europe and Asia. The band takes a photo on it.'),
     city('novosibirsk', 'Novosibirsk', 'russia', 52, 56, 'Russia', -5, 'Siberia\'s big city. The opera house is bigger than most prairie airports.'),
     city('irkutsk', 'Irkutsk', 'russia', 68, 64, 'Russia', -8, 'Lake Baikal, the deepest lake on Earth, and Siberian Frostfest every January.'),
-    city('vladivostok', 'Vladivostok', 'russia', 94, 76, 'Russia', -2, 'The end of the line. Nine thousand km from Moscow and still the same country.')
+    city('vladivostok', 'Vladivostok', 'russia', 94, 76, 'Russia', -2, 'The end of the line. Nine thousand km from Moscow and still the same country.'),
+    // v0.9: the Grid Road Ramblers' Q3 payoff town (their pack's au_country_circuit package ends here). Listed last so the
+    // city order the sims iterate is the same as when the pack added it.
+    city('tumbleworth', 'Tumbleworth', 'australia', 84, 56, 'Australia', 3,
+      'A country town in New South Wales that becomes the country-music capital of the southern hemisphere every January.', true)
   ].forEach(function (c) { W.cities[c.id] = c; });
 
   function venue(id, name, cityId, tier, kind, capacity, pay, quirk, x) {
@@ -151,7 +155,11 @@
     venue('siberian_station', 'Siberian Station Club', 'novosibirsk', 2, 'club', 500, [800, 1300], 'An old railway depot. The trains out back are louder than the PA.'),
     venue('baikal_frost_hall', 'Baikal Frost Hall', 'irkutsk', 2, 'club', 400, [800, 1200], 'A wooden hall with a wood stove on stage. The stove gets a solo.'),
     venue('siberian_frostfest', 'Siberian Frostfest', 'irkutsk', 4, 'club', 15000, [5000, 8000], 'On the frozen shore of Lake Baikal in January. Minus forty. The band is unimpressed; they are from the prairies.', { festival: true, outdoor: true, weeks: [13, 14] }),
-    venue('last_stop', 'The Last Stop', 'vladivostok', 2, 'club', 450, [900, 1300], 'The end of the Trans-Siberian. The crowd has come a long way. So have you.')
+    venue('last_stop', 'The Last Stop', 'vladivostok', 2, 'club', 450, [900, 1300], 'The end of the Trans-Siberian. The crowd has come a long way. So have you.'),
+    // v0.9: the Ramblers' Q3 payoff festival (last, as above; country fits best)
+    venue('tumbleworth_fest', 'Tumbleworth Country Music Festival', 'tumbleworth', 4, 'club', 45000, [5500, 9000],
+      'Forty-five thousand people in hats on a riverbank in January. Utes parked for kilometres. Somebody is always yodelling.',
+      { festival: true, outdoor: true, weeks: [13, 14], genreFit: { metal: 0.45, punk: 0.55, rock: 0.85, country: 1 } })
   ];
 
   // Rental vehicles abroad (you fly; your driver drives whatever they give you, on whichever side of the road).

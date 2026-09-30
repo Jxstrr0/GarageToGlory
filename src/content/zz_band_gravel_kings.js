@@ -81,7 +81,7 @@
   // RIVAL: Chartbusters (rivalry.cast.chartbusters, §4.1 cast shape). Frontman npc: cb_rex (the cast frontman id, rival-scoped).
   // ======================================================================================================================
   P.cast = {
-    id: RV, frontman: 'cb_rex', label: 'airwave_dominion',   // Steve #5 is in members (role drums): no hired drummer
+    id: RV, frontman: 'cb_rex', label: 'airwave_dominion', faceStyle: 'scarf',   // Steve #5 is in members (role drums): no hired drummer
     vehicle: 'a silver 1994 tour bus called "The Ballad", towing a trailer full of scarves and a portable wind machine',
     minivan: 'a silver 1994 tour bus called "The Ballad", towing a trailer full of scarves and a portable wind machine',
     legacy: 'Thirty years at the top. Forty-one million records. One song.',
@@ -93,7 +93,7 @@
           'Signs every autograph "Rex Glamour, Legend", then the date, then "you\'re welcome".',
           'Has a wind machine clause in every contract, including his lease.',
           'Owns, through a numbered company, the station playing your song. Or not playing it.'],
-        look: look('#e9c4a0', '#e8d9a8', 'mullet', '#d8d2e6', '#1c1c24', 1.04, 0.95, ['sunglasses'], 'jacket'), corpsePaint: false, stageShirt: '#f2efe6' },
+        look: look('#e9c4a0', '#e8d9a8', 'mullet', '#d8d2e6', '#1c1c24', 1.04, 0.95, ['sunglasses'], 'jacket'), corpsePaint: false, scarf: true, stageShirt: '#f2efe6' },
       { id: 'cb_dusty', name: 'Dusty', fullName: 'Dusty Van Kamp', nick: 'The Solo', role: 'guitar', lane: 'left',
         dayJob: 'Plays the same guitar solo, nightly, since 1994',
         bio: 'Has played one solo for three decades. It is a very good solo. He plays it on his knees, then needs help up.',
@@ -1020,8 +1020,9 @@
     card('gk_rep_lot_show', 'scene', 'tamara', 'Parking Lot Show', g({ era: GLS, minWeek: 6 }),
       "Westgate Plaza is having a customer appreciation day: a bouncy castle, a hot dog stand, and a flatbed in the parking lot " +
       "with nobody on it. Mr. Petrenko asks if the band 'does daytime'. Chase is already carrying an amp.",
-      [ch('Play the flatbed', { fans: 12, buzz: 4, burnout: 3 },
-        'Forty shoppers, six kids in the bouncy castle and Gloria from the Mall-Walkers, who walked over. Chase knee-slides off the flatbed.'),
+      [ch('Play the flatbed', { buzz: 4, book: 'westgate_parking_lot' },
+        'Mr. Petrenko paints LIVE ROCK SATURDAY on the plaza sign. Gloria from the Mall-Walkers says she will walk over. Chase stretches his knees.',
+        'Books this weekend (if free) · Buzz ↑'),
        ch('Run the hot dog stand', { fund: 60, chemistry: 2 },
         'Tamara runs the stand with a cash float and a spreadsheet. You sell out by two. Chase puts mustard on his knee pads somehow.'),
        ch('Stay in and rehearse', { skill: { lenny: 1 }, burnout: -3 },
@@ -1844,10 +1845,11 @@
       'You thank {van} by name. A mechanic in the crowd yells "THE TRANSMISSION, THOUGH". Tamara nods grimly. She knows.'),
      ch('Chase accepts, somehow', { fans: 120, mood: { chase: 6, tamara: -4 } },
       "Chase, who has never been allowed to drive it, gives a nine-minute speech about 'his' van. Tamara takes the trophy back in the lobby.")]);
+  // (role aliases, so whoever is in the band that year walks the carpet: Chase, T-Bone and Lenny while they're in it)
   P.carpet = [
-    { who: 'reporter', text: 'Who are you wearing tonight?' }, { who: 'chase', text: 'Leather. 1985 leather. The leather is wearing the year.' },
-    { who: 'reporter', text: 'Any predictions?' }, { who: 'tamara', text: 'We lose to the scarves, we get home by midnight. I have planned for both.' },
-    { who: 'reporter', text: 'And the riff?' }, { who: 'lenny', text: 'No comment. My lawyer is in row twelve. Hi, Bryce.' }
+    { who: 'reporter', text: 'Who are you wearing tonight?' }, { who: '@front', text: 'Leather. 1985 leather. The leather is wearing the year.' },
+    { who: 'reporter', text: 'Any predictions?' }, { who: '@deadpan', text: 'We lose to the scarves, we get home by midnight. I have planned for both.' },
+    { who: 'reporter', text: 'And the riff?' }, { who: '@soloist', text: 'No comment on the riff. Our lawyer is in row twelve. Hi, Bryce.' }
   ];
   P.awardWin = ['Chase is already on stage. He knee-slid there. Nobody saw him move.',
     'Tamara hugs the trophy, then checks it for chips. Lenny calls his lawyer from the stage, just to share.',
@@ -2220,7 +2222,12 @@
   ];
   P.packages = [
     { id: 'gk_mudstonbury_headline', region: 'uk_europe', name: 'Mudstonbury: Main Stage', festival: true, band: [B],
-      needs: { flag: 'mudHeadline' }, payoff: { flag: 'mudHeadline', venue: 'mudstonbury_fest', card: 'wt_gk_mud_headline' },
+      needs: { flag: 'mudHeadline', band: [B] }, needsText: 'Mudstonbury still needs a headliner. Nigel has not called yet.',
+      // the payoff fires at the Mudstonbury gig (not the last stop): trophy, a line in the gig result, the story card
+      payoff: { city: 'mudstonbury', flag: 'mudHeadlinePayoff', value: 'mudstonbury', trophy: 'Mudstonbury: the main stage', trophyKind: 'payoff',
+        line: 'Sixty thousand people in knee-deep mud sing the power chorus back at {band}. Chase is in the leather pants. The mud is winning.',
+        chat: '{band} headlined Mudstonbury: sixty thousand in the mud, one knee slide, zero scarves. Westgate Plaza watched on the vacuum-shop TV.',
+        card: 'wt_gk_mud_headline' },
       blurb: 'The headline slot Chartbusters walked away from: a London warm-up, then the main stage at Mudstonbury, in the mud, in leather.',
       stops: [{ city: 'london', venue: 'hammersmyth_odium' }, { city: 'mudstonbury', venue: 'mudstonbury_fest' }, { city: 'manchester', venue: 'drizzle_factory' }] }
   ];

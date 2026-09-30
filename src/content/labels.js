@@ -74,21 +74,22 @@
       catches: ['You pay for the studio, the producer and the promo', 'No advance, no safety net', 'Distribution is a hockey bag']
     },
 
-    // ---- v0.9 rival-only labels (gap #8): a rival cast's label, never offered to the player ----
-    muchloud: {
-      id: 'muchloud', name: 'Network Nine Music', rivalOnly: true, rival: 'mall_rats',
+    // ---- v0.9 rival-only labels (gap #8): a rival cast's label, never offered to the player. One per rival; the band packs
+    //      find it by rivalOnly + rival (their text names these labels: Network Nine, Airwave Dominion, Prairie Titan) ----
+    network_nine: {
+      id: 'network_nine', name: 'Network Nine Music', rivalOnly: true, rival: 'mall_rats',
       blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
       rep: { name: 'Preston from the Network', blurb: 'VP of Youth Content. Headset, mood board, a focus group on speed dial. Has focus-grouped the word "rebel".' }
     },
-    maplewave_media: {
-      id: 'maplewave_media', name: 'MapleWave Media Group', rivalOnly: true, rival: 'chartbusters',
-      blurb: 'The radio conglomerate the Chartbusters quietly bought. It owns the label, the stations and, allegedly, the charts.',
-      rep: { name: 'The programming director', blurb: 'Decides what every station in the country plays. It is the same power ballad.' }
+    airwave_dominion: {
+      id: 'airwave_dominion', name: 'Airwave Dominion Records', rivalOnly: true, rival: 'chartbusters',
+      blurb: 'The label arm of the radio conglomerate the Chartbusters quietly bought. It owns the stations and, allegedly, the charts.',
+      rep: { name: 'Moira Chance', blurb: 'Chair of the board. Also the bassist. Decides what every station plays. It is the same power ballad.' }
     },
-    tailgate_music: {
-      id: 'tailgate_music', name: 'Tailgate Music Co.', rivalOnly: true, rival: 'buckle_and_boot',
-      blurb: 'A country label owned by a truck brand. The contract has a towing-capacity clause. Nobody has read it.',
-      rep: { name: 'The regional sales manager', blurb: 'Hands out keychains shaped like pickups. Calls every song "a product launch".' }
+    titan_records: {
+      id: 'titan_records', name: 'Prairie Titan Records', rivalOnly: true, rival: 'buckle_and_boot',
+      blurb: 'The record label of a truck company. The contract has a towing-capacity clause. Every album ships with a floor mat.',
+      rep: { name: 'Sheldon from Prairie Titan', blurb: 'Hands out keychains shaped like pickups. Chews a toothpick. Calls every song "a product launch".' }
     }
   };
 

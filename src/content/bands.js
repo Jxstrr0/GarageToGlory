@@ -102,7 +102,7 @@
         hometown: 'Moose Jaw', skill: 46, mood: 70,
         wants: 'To never, ever learn a third chord.',
         bio: 'Knows two chords and refuses to learn a third on principle. The principle is unclear. He will fight you about it.',
-        idle: 'phone',
+        idle: 'noodle',
         look: look('#e2b48c', '#e8d36a', 'spiky', '#4a6a3a', '#2a3550', 1.0, 1.05, ['bandana']) },
       { id: 'moth', name: 'Moth', fullName: 'Moth', nick: 'Moth', role: 'bass',
         hometown: 'The van (formerly Estevan)', skill: 56, mood: 64,
@@ -227,17 +227,18 @@
       spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
   };
   // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
-  // idle 'noodle' = the garage noodler, who the audio garage noodle follows (Benny's two chords, Lenny's riff).
+  // idle 'noodle' (set on the member above: Dana, Benny, Lenny, Travis) = the garage noodler with an instrument; the audio
+  // garage noodle follows the first one (Benny's two chords, Lenny's riff), then Clementine's 'fiddle' idle.
   // v0.9 integration: the member skill / mood numbers above follow the sims lane's balance proposal (Frost Heave, Gravel
   // Kings and the Ramblers were well below Hail Damage's average gig score with the same bot).
   var V09_MEMBERS = {
     marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
     dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },
     rox: { gear: 'sg', top: 'jacket', signature: { action: 'stageDive', combo: 40, crowd: 8 } },
-    benny: { gear: 'sg', top: 'tee', idle: 'noodle' },
+    benny: { gear: 'sg', top: 'tee' },
     moth: { gear: 'bass', top: 'hoodie', swapExtra: ['hat', 'toque'] },
     chase: { top: 'jacket', signature: { action: 'kneeSlide', combo: 40, crowd: 8 } },
-    lenny: { gear: 'strat', top: 'tee', idle: 'noodle' }, tamara: { gear: 'bass', top: 'tee' },
+    lenny: { gear: 'strat', top: 'tee' }, tamara: { gear: 'bass', top: 'tee' },
     travis: { gear: 'acoustic', top: 'flannel' }, earl: { gear: 'tele', top: 'flannel' },
     clementine: { gear: 'fiddle', top: 'jacket', idle: 'fiddle' },
     duke: { gear: 'bass', top: 'flannel', swapExtra: ['hat', 'bighat'], signature: { action: 'hatTip', combo: 40, crowd: 8 } }
