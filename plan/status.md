@@ -145,12 +145,21 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   pw_seq audio 39 (growls from the drop, live crowd ready + ≤ 18 song voices, every tap sounds over a full metal band) +
   new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
   WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
-- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" is flaky under
-  machine load (headless rAF gaps of 100-600 ms with software WebGL; HEAD and the fix both fail it ~half the time at
-  load avg 7-14; green when quiet). The pw_gig "setlist layout" hscroll was a real bug, not load: long English titles
-  (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
-  ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
-  (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
+- Gaps: nobody has listened on a phone yet (tuned by numbers). The pw_gig "setlist layout" hscroll was a real bug, not
+  load: long English titles (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }`.
+- pw_gig `gig` flakes, root-caused with CDP CPU throttling ×6 (headless rAF gaps 250 ms–5 s while a 25 ms timer keeps
+  pace; the main thread is mostly idle, frames wait on the GPU) — all real bugs a GPU-bound or slow phone would hit:
+  (1) auto notes / second kicks were booked only in the frame loop, so a late frame booked them in the past (played up to
+  110 ms late) or skipped them; now a 25 ms booking pump (`55_ui_gig` pump/book, like the band's setInterval scheduler)
+  books them too, and the booking horizon reads the audio clock (`heardSong`) so a game clock still drifting after an
+  audio hiccup can't book them ~0.7 s early (≥ 1 s = played at once). (2) "gig layout hscroll": the count-in numeral
+  (`.gig-count`, full-width box, `scale(1.35)` keyframe) stuck 68 px past the edge during every count-in, and Chrome kept
+  the 458 px scroll width into the song when frames were slow; the box is now 120 px, centred. (3) "song clock = AudioContext
+  time" (−35..−83 ms under load): `startAudio` resynced with a `performance.now()` taken BEFORE `GG.audio.play()` (slow on
+  a slow CPU), so the song clock ran ahead of the band by play()'s duration; it now resyncs with a fresh now.
+  Tests: pw_gig gig 31 (+2: count-in never widens the screen; rAF slowed to 600 ms → auto notes still ahead, none skipped;
+  debug gigui `autoSkipped`). Still frame-bound: Auto-kick's own kick (`ses.tick` in the frame) plays on the frame it's due.
+  Residual only under extreme load (3 parallel ×6-throttled runs): "song clock started" (< 2 s) when a rAF gap is > 2 s.
 
 ## v0.7.2 titles (hotfix, TITLES agent)
 - `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,

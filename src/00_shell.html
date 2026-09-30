@@ -444,7 +444,8 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .gig-banner.show { opacity: 1; transform: scale(1); }
 .gig-banner.bad { color: #ffb3aa; text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 24px rgba(255, 90, 80, .6); }
 .gig-banner.band { font-size: 19px; color: #c8f7d6; }
-.gig-count { position: absolute; left: 0; right: 0; top: 22%; text-align: center; font: 900 72px/1 var(--display); color: #fff; opacity: 0; pointer-events: none; }
+/* the count-in numeral pops from 1.35x: its box is sized to the digit (not the full width, which put it 68 px past the edge) */
+.gig-count { position: absolute; left: 50%; width: 120px; margin-left: -60px; top: 22%; text-align: center; font: 900 72px/1 var(--display); color: #fff; opacity: 0; pointer-events: none; }
 .gig-count.show { animation: gg-count .5s ease-out forwards; }
 @keyframes gg-count { 0% { opacity: 1; transform: scale(1.35); } 100% { opacity: 0; transform: scale(.9); } }
 .gig-mid { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 12px; }

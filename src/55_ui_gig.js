@@ -26,6 +26,10 @@
 //   kick is that hit) unless its kick was dropped. Hits scheduled ahead are cancelled by stopAudio (GG.audio.hitCancel).
 //   The kick zone flashes again + a small ring and the stage drummer's left foot kicks (GG.render.stage.kick2) when the
 //   second kick is heard. Debug gigui adds doubles, doublesPlayed.
+// v0.7.2 fix (booking pump): auto notes and second kicks are booked from a 25 ms timer as well as the frame loop. A GPU-bound
+//   phone (the 3D stage, a hitch) can go 150+ ms between frames while the main thread is free; booking only on frames
+//   meant a late frame booked them in the past (GG.audio.hit plays a past time now = a late drum). Same pattern as the
+//   backing band's own look-ahead scheduler (30_audio: setInterval, not rAF), so the drums are as steady as the band.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
@@ -231,6 +235,7 @@
   function stopAudio() {
     if (!G) return;
     clearTimeout(G.startTimer); G.startTimer = 0;
+    clearInterval(G.pumpT); G.pumpT = 0;
     var h = G.handle; G.handle = null;
     if (h && h.playing) h.stop();
     if (GG.audio && GG.audio.hitCancel) GG.audio.hitCancel();   // v0.7.2: auto notes / second kicks already scheduled ahead
@@ -256,6 +261,7 @@
     G.zero = heardAt(p) + lead; G.t = -lead;
     var wait = G.zero - G.lat - LEAD_IN - heardAt(p);
     G.startTimer = setTimeout(startAudio, Math.max(0, wait * 1000));
+    if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
     loop();
   }
@@ -268,7 +274,9 @@
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
     if (!G.actx) G.actx = audioCtx();
-    if (G.actx && G.actx.state === 'running') { resync(p, true); G.zero = h.start; }
+    // resync pairs performance.now() with the audio clock read NOW, so it gets a fresh now: play() builds the whole song and
+    // can take tens of ms on a slow phone (the stale p put the song clock that far ahead of the band for seconds).
+    if (G.actx && G.actx.state === 'running') { resync(performance.now(), true); G.zero = h.start; pump(); }   // pump: the downbeat's auto notes go out with the band's first notes
     else if (!G.actx) { G.offset = h.start - LEAD_IN - DEFAULT_LAT - p / 1000; G.zero = h.start; }   // no accessor: anchor on the handle
     else wake();   // a suspended/interrupted context: keep the count-in's performance-clock zero so notes still flow
   }
@@ -318,13 +326,19 @@
   /* ---- v0.6.2 two-thumb auto notes: the hits a third thumb would need play themselves on the audio clock ---- */
   // A healthy running clock schedules each one AUTO_AHEAD early at its exact context time (G.zero + t, same heard-clock
   // pairing as the backing band); a stalled/free-running clock plays it on the frame it comes due. Never judged.
+  // Booking ahead reads the song time off the audio clock itself (heard = currentTime - lat), like the band's scheduler:
+  // the game clock only drifts toward it (v0.5.1), so after an audio hiccup the two can disagree for a while, and a hit
+  // booked by the game clock would land up to that far early (> 1 s: GG.audio.hit plays it now) or late.
   var AUTO_AHEAD = 0.15;
+  function heardSong(c, sched, t) { return sched ? c.currentTime - G.lat - G.zero : t; }
   function autoNotes(t, p) {
     var a = G.chart.auto, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
     if (!a) return;
-    while (G.ap < a.length && a[G.ap].t <= t + (sched ? G.lat + AUTO_AHEAD : 0)) {   // heard clock + output latency = context time
+    var now = heardSong(c, sched, t);
+    while (G.ap < a.length && a[G.ap].t <= now + (sched ? G.lat + AUTO_AHEAD : 0)) {   // heard clock + output latency = context time
       var n = a[G.ap++];
-      if (n.t < t - 0.08 || n.li >= G.lanes) continue;   // skipped past (a resync jump): stay quiet rather than flam
+      if (n.li >= G.lanes) continue;
+      if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
       if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zero + n.t : undefined);
       G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - t) * 1000;   // the ring shows when it's heard
     }
@@ -339,7 +353,7 @@
   var DBL_MIN = 0.06, HIT_LEAD = 0.005, KICK = C.LANES.indexOf('kick');   // HIT_LEAD: GG.audio.hit plays 'now' at ctx now + 5 ms
   function doubleKicks(t, p) {
     var q = G.dq, n = G.chart.notes, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
-    var ahead = sched ? G.lat + AUTO_AHEAD : 0;
+    var ahead = sched ? G.lat + AUTO_AHEAD : 0, now = heardSong(c, sched, t);
     while (G.dp < q.length && n[q[G.dp]].d2) G.dp++;
     for (var k = G.dp; k < q.length; k++) {
       var x = n[q[k]];
@@ -348,15 +362,31 @@
       if (x.j !== 1 && x.j !== 2) { x.d2 = 1; continue; }   // a missed double plays nothing extra
       var h1 = x.hitT != null ? x.hitT : x.t, k1 = x.k1 != null ? x.k1 : h1 + G.lat + HIT_LEAD;   // the first kick, heard
       var w = Math.max(k1 + Math.max(x.t2 - h1, DBL_MIN), G.k2W + DBL_MIN);   // the pair's spacing; never two at once (a stalled frame)
-      if (w > t + ahead) continue;
+      if (w > now + ahead) continue;
       x.d2 = 1; G.k2W = w;
-      if (w < t - 0.08 || KICK >= G.lanes) { x.d2 = 2; continue; }   // skipped past (a resync jump): stay quiet rather than flam
+      if (w < now - 0.08 || KICK >= G.lanes) { x.d2 = 2; continue; }   // skipped past (a resync jump): stay quiet rather than flam
       if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zero + w : undefined);
       G.dblN++;
       var at = p + Math.max(0, w - t) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
       G.k2[G.k2i] = at; G.k2i = (G.k2i + 1) % G.k2.length; G.autoAt[KICK] = at;
     }
     for (var i = 0; i < G.k2.length; i++) if (G.k2[i] > 0 && p >= G.k2[i]) { G.k2Last = G.k2[i]; G.k2[i] = -1; stageCall('kick2'); }
+  }
+
+  /* ---- Booking pump: auto notes + second kicks, on a timer like the backing band's scheduler ---------- */
+  // rAF waits on the GPU (a phone drawing the 3D stage, a hitch): 150+ ms gaps while the main thread is idle. Booking
+  // only on frames let a late frame book a hit in the past (it then plays late). The frame loop still books too.
+  var PUMP_MS = 25;
+  function book(t, p) {
+    if (t < -0.5) return;
+    autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
+    if (G.dq.length) doubleKicks(t, p);   // v0.7.2 a double's second kick
+  }
+  function pump() {
+    if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
+    var p = performance.now();
+    if (p - G.syncAt > 250) resync(p, false);
+    book(songTime(p), p);
   }
 
   /* ---- The frame loop (no allocations in here) ------------------------------------------------------------ */
@@ -380,8 +410,7 @@
         if (t >= 0) { G.mode = 'play'; G.dom.count.className = 'gig-count'; }
       }
       if (t >= 0) { var to = G.ses.tick(t); if (to && to.autoHits && GG.audio && GG.audio.hit) GG.audio.hit('kick'); }   // v0.6.1 Auto-kick
-      if (t >= -0.5) autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
-      if (t >= -0.5 && G.dq.length) doubleKicks(t, p);   // v0.7.2 a double's second kick
+      book(t, p);   // auto notes + second kicks (the pump books them between frames)
       if (G.mode === 'play' && t >= ch.duration + 0.5) { endSong(); }
     }
     if (G && G.chart && G.x) draw((G.paused ? G.pauseT : G.t) + (G.off ? G.off.visual - G.off.audio : 0), p);   // v0.6.1 calibration
@@ -794,7 +823,7 @@
       }
     }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
-      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
+      songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, autoSkipped: G.autoSkip || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
       stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at, echo: !!G.lastTap.echo,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
