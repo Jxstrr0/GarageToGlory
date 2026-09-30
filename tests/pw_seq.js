@@ -1,5 +1,6 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+//   genres, voices: v0.9 (see the functions: genre amps, styles, solos, beds, crowd one-shots, in-career songs; singers).
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
 //           → laptop catalog lists it and opens its pattern read-only; kit sketch pad queues a song; in-page
@@ -400,8 +401,8 @@ async function audio() {
         out.layers[g] = [kinds('verse'), kinds('chorus')];
         const brk = band.filter(e => e.role === 'break'), solo = band.filter(e => e.role === 'solo');
         if (brk.some(e => !['gtr', 'bass', 'vox'].includes(e.kind))) out.breakOk = false;
-        if (solo.length && !solo.some(e => e.kind === 'lead' || e.kind === 'fiddle')) out.soloOk = false;
-        out.drops[g] = brk.filter(e => e.kind === 'vox').map(e => e.voc).join();
+        if (solo.length && !solo.some(e => e.kind === 'lead' || e.kind === 'fiddle' || e.kind === 'twang')) out.soloOk = false;   // v0.9: Earl's Tele
+        out.drops[g] = brk.filter(e => e.kind === 'vox').map(e => A.vocFamily(e.voc)).join();   // v0.9: growl, guttural, fry = the growl family
         if (g === 'metal') {
           const kicks = t.events.filter(e => e.kind === 'drum' && e.lane === 'kick' && e.section === 'verse');
           out.chugOk = t.style === 'chug' && kicks.length > 0 && kicks.every(k => band.some(e => e.kind === 'gtr' && e.beat === k.beat));
@@ -594,7 +595,7 @@ async function heavy() {
         const tl = A.timeline(q, o), spb = 60 / tl.bpm, hits = tl.events.filter(e => e.kind === 'vox');
         let V = 0, B = 0;
         for (const e of hits) for (let i = Math.floor((0.05 + e.beat * spb) * 44100), z = i + Math.floor(0.45 * 44100); i < z; i++) { V += ((n1[i] - n2[i]) / 2) ** 2; B += ((n1[i] + n2[i]) / 2) ** 2; }
-        out.vox[sec] = { hits: hits.map(e => e.voc).join(), onGrid: hits.every(e => e.beat % 1 === 0), VA: +(10 * Math.log10(V / B)).toFixed(2) };
+        out.vox[sec] = { hits: hits.map(e => e.voc).join(), fam: hits.map(e => A.vocFamily(e.voc)).join(), onGrid: hits.every(e => e.beat % 1 === 0), VA: +(10 * Math.log10(V / B)).toFixed(2) };
       }
       // CPU: a whole metal song (full arrangement, arena reverb, the crowd on top) renders faster than real time.
       const t0 = performance.now(), full = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 99, songId: 's7', room: 'arena', crowd: { level: 95, moments: [[4, 'mosh'], [20, 'end', 0.9]], clapBpm: 170 } });
@@ -626,7 +627,7 @@ async function heavy() {
     c.ok(Object.values(B).every(b => b.gtrHz < 80 && b.bassHz < 42) && b140.gtrHz < V071.gtrHz * 0.8, 'drop tuning: lowest guitar ' + Object.values(B).map(b => b.style + ' ' + b.gtrHz + ' Hz').join(', ') + ' (v0.7.1 ' + V071.gtrHz + ' Hz)');
     c.ok(B[80].gtrHz < B[140].gtrHz && B[140].gtrHz < B[200].gtrHz, 'tuning by tempo band: doom lowest, tremolo highest');
     c.ok(res.probe.thd > V071.thd * 1.3 && res.probe.harmonics > V071.harmonics * 2, 'more harmonics on one guitar note: THD ' + res.probe.thd + ' vs ' + V071.thd + ', energy ' + res.probe.harmonics + ' vs ' + V071.harmonics);
-    c.ok(res.vox.chorus.hits.split(',').every(v => v === 'scream') && res.vox.bridge.hits.split(',').every(v => v === 'growl') && res.vox.chorus.onGrid && res.vox.bridge.onGrid, 'screams on the chorus, growls on the breakdown, on the beat grid ' + JSON.stringify(res.vox));
+    c.ok(res.vox.chorus.fam.split(',').every(v => v === 'scream') && res.vox.bridge.fam.split(',').every(v => v === 'growl') && res.vox.chorus.onGrid && res.vox.bridge.onGrid, 'screams on the chorus, growls on the breakdown (v0.9: of several kinds), on the beat grid ' + JSON.stringify(res.vox));
     c.ok(res.vox.chorus.VA >= V071.voxChorusVA + 2.5 && res.vox.bridge.VA >= 5, 'vocals louder against the band: screams ' + res.vox.chorus.VA + ' dB (v0.7.1 shouts ' + V071.voxChorusVA + '), growls ' + res.vox.bridge.VA + ' dB over the heavier breakdown');
     c.ok(res.cpu.xRT > 1 && res.cpu.peak < 1 && !res.cpu.nan, 'a full metal song (arena + crowd) renders faster than real time ' + JSON.stringify(res.cpu));
     const C = res.crowd;
@@ -644,7 +645,194 @@ async function heavy() {
   c.done();
 }
 
+// v0.9 extra helpers: f0 by autocorrelation (60..1000 Hz) and the spectral centroid of a window; slap = energy ratio.
+function pageHelpers09() {
+  const mono = b => { const n = b.length, m = new Float32Array(n); for (let ch = 0; ch < b.numberOfChannels; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < n; i++) m[i] += d[i] / b.numberOfChannels; } return m; };
+  window.__f0 = function (buf, from, to) {
+    const sr = buf.sampleRate, m = mono(buf), a = Math.floor(from * sr), n = Math.floor(to * sr) - a;
+    let best = 0, lagB = 0, e0 = 0; for (let i = 0; i < n; i++) e0 += m[a + i] * m[a + i];
+    for (let lag = Math.floor(sr / 1000); lag <= Math.floor(sr / 60); lag++) { let s = 0; for (let i = 0; i < n - lag; i++) s += m[a + i] * m[a + i + lag]; s /= e0 || 1; if (s > best) { best = s; lagB = lag; } }
+    return lagB ? +(sr / lagB).toFixed(1) : 0;
+  };
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a);
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k = 0; k < len / 2; k++) { const p = i + k, q = p + len / 2, br = re[q] * cr - im[q] * ci, bi = re[q] * ci + im[q] * cr; re[q] = re[p] - br; im[q] = im[p] - bi; re[p] += br; im[p] += bi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } }
+    }
+  }
+  window.__centroid = function (buf, from, to) {   // power-weighted mean frequency, 80 Hz .. 8 kHz
+    const sr = buf.sampleRate, m = mono(buf), N = 4096; let num = 0, den = 0;
+    for (let s = Math.floor(from * sr); s + N <= Math.floor(to * sr); s += N / 2) {
+      const re = new Float64Array(N), im = new Float64Array(N);
+      for (let i = 0; i < N; i++) re[i] = m[s + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
+      fft(re, im);
+      for (let k = 1; k < N / 2; k++) { const f = k * sr / N; if (f < 80 || f > 8000) continue; const p = re[k] * re[k] + im[k] * im[k]; num += p * f; den += p; }
+    }
+    return den ? Math.round(num / den) : 0;
+  };
+  window.__energy = function (buf, from, to) { const sr = buf.sampleRate, m = mono(buf); let e = 0; for (let i = Math.floor(from * sr); i < Math.floor(to * sr); i++) e += m[i] * m[i]; return e / Math.max(1, Math.floor(to * sr) - Math.floor(from * sr)); };
+}
+
+// v0.9 "Genres" (plan_contract_0.9 §5 D): genre amps (stereo width, country slapback), tempo styles, solos by the soloist,
+// no metal rig in a non-metal render, a tier-0 bed + noodle per band (offline and live, in-career), crowd one-shots per
+// moment kind (+ the crowd answering the band's gang shouts), one in-career song per genre. Writes tests/.cache/v09_*.wav.
+async function genres() {
+  const c = checker('genres');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(pageHelpers); await page.evaluate(pageHelpers09);
+    const res = await page.evaluate(async () => {
+      const A = GG.audio, out = { songs: {}, band: {}, styles: {}, solos: {}, beds: {}, crowd: {}, wav: {} };
+      const sig = g => { const p = JSON.parse(JSON.stringify(GG.songs.signature(g))); p.arrangement = ['verse', 'chorus', 'bridge', 'chorus']; return p; };
+      for (const g of GG.contracts.GENRES) {
+        const t0 = performance.now(), r = await A.renderOffline({ genre: g, pattern: sig(g), full: true, bars: 16, songId: 'g9' }), wall = (performance.now() - t0) / 1000;
+        out.songs[g] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan, xRT: +(r.seconds / wall).toFixed(2), rigs: r.rigs, kinds: Object.keys(r.counts).sort().join(), solo: r.solo, width: __bands(r.buffer).width };
+        out.wav[g] = __wav(r.buffer);
+        const b = await A.renderOffline({ genre: g, pattern: sig(g), section: 'chorus', bars: 2, songId: 'g9', drums: false, vocals: false });
+        out.band[g] = { width: __bands(b.buffer).width, peak: +b.peak.toFixed(3) };
+      }
+      for (const [g, st] of [['punk', 'skate'], ['punk', 'hardcore'], ['rock', 'ballad'], ['rock', 'drive'], ['country', 'twostep'], ['country', 'train']]) {
+        const r = await A.renderOffline({ genre: g, backing: st, section: 'chorus', bars: 2, songId: 'st' });
+        out.styles[g + ' ' + st] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan, kinds: Object.keys(r.counts).sort().join() };
+        if (st === 'ballad' || st === 'train') out.wav['style_' + st] = __wav(r.buffer);
+      }
+      const gear = { lanes: 4, sections: ['solo'] };
+      for (const g of ['punk', 'rock', 'country']) {
+        const p = GG.songs.addSection(GG.songs.signature(g, gear), 'solo', gear), r = await A.renderOffline({ genre: g, pattern: p, section: 'solo', bars: 2, songId: 'so' });
+        out.solos[g] = { solo: r.solo, kinds: Object.keys(r.counts).sort().join(), peak: +r.peak.toFixed(3), nan: r.nan };
+      }
+      // Country slapback: a muted Tele pluck, then its echo ~110 ms later (vs the gap just before it).
+      const tw = await A.renderOffline({ probe: 'twang', genre: 'country', midi: 67, mute: true, seconds: 0.9 }), sl = GG.content.genres.country.backing.amp.slap;
+      out.slap = { gap: __energy(tw.buffer, 0.05 + sl - 0.012, 0.05 + sl - 0.002), echo: __energy(tw.buffer, 0.05 + sl + 0.004, 0.05 + sl + 0.05), peak: tw.peak };
+      for (const [kind, season] of [['garage'], ['laundromat'], ['stripmall'], ['quonset', 'summer'], ['quonset', 'spring']]) {
+        const r = await A.renderOffline({ ambience: 'garage', space: kind, season, noodle: { garage: 'pluck', laundromat: 'twochord', stripmall: 'riff', quonset: season === 'spring' ? 'bach' : 'strum' }[kind], seconds: 3 });
+        out.beds[kind + (season ? ' ' + season : '')] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan, bed: r.bed };
+        out.wav['bed_' + kind + (season ? '_' + season : '')] = __wav(r.buffer);
+      }
+      for (const kind of ['headbang', 'wallOfDeath', 'pogo', 'gangShout', 'circlePit', 'fistPump', 'singAlong', 'lighters', 'clapAlong', 'lineDance', 'yeehaw']) {
+        const r = await A.renderOffline({ ambience: 'crowd', level: 90, song: true, seconds: 3.2, bpm: 120, tonic: 45, moments: [[0.2, kind]] });
+        out.crowd[kind] = Object.assign({ peak: +r.peak.toFixed(3), nan: r.nan }, r.crowd);
+        if (['gangShout', 'singAlong', 'lineDance', 'wallOfDeath'].includes(kind)) out.wav['crowd_' + kind] = __wav(r.buffer);
+      }
+      const ans = async lv => (await A.renderOffline({ genre: 'punk', pattern: sig('punk'), section: 'chorus', bars: 4, songId: 'g9', crowd: { level: lv } })).crowd.chants;
+      out.chants = { hot: await ans(90), cold: await ans(40) };
+      return out;
+    });
+    fs.mkdirSync(CACHE, { recursive: true });
+    for (const [k, b64] of Object.entries(res.wav)) fs.writeFileSync(path.join(CACHE, 'v09_' + k + '.wav'), Buffer.from(b64, 'base64'));
+    delete res.wav;
+    console.log('v0.9 genre metrics ' + JSON.stringify(res));
+    const S = res.songs;
+    for (const [g, r] of Object.entries(S)) c.ok(!r.nan && r.peak < 1 && r.rms > 0.05 && r.rms < 0.25, g + ' song: peak < 1, RMS sane ' + JSON.stringify(r));
+    c.ok(Object.entries(S).every(([g, r]) => g === 'metal' ? r.rigs.metal && !r.rigs.amps.length : !r.rigs.metal && r.rigs.amps.join() === g), 'each genre builds its own amp only (no metal rig outside metal) ' + JSON.stringify(Object.values(S).map(r => r.rigs)));
+    c.ok(['punk', 'rock', 'country'].every(g => S[g].xRT > 1), 'punk, rock + country (the new amps) render faster than real time (metal: the heavy section) ' + Object.entries(S).map(([g, r]) => g + ' ' + r.xRT).join(', '));
+    c.ok(res.band.punk.width > 0.05 && res.band.rock.width > 0.05 && res.band.punk.width > res.band.country.width, 'punk + rock guitars double-tracked L/R (band-only width) ' + JSON.stringify(res.band));
+    c.ok(S.country.width < S.metal.width, 'country stays narrower than metal ' + S.country.width + ' < ' + S.metal.width);
+    c.ok(res.slap.echo > res.slap.gap * 3 && res.slap.peak < 1, 'country: slapback ~' + GG_ms(res) + ' after the pluck ' + JSON.stringify(res.slap));
+    c.ok(Object.values(res.styles).every(r => !r.nan && r.peak < 1 && r.rms > 0.005), 'tempo styles render clean ' + JSON.stringify(res.styles));
+    c.ok(res.solos.punk.solo === 'twochord' && /lead/.test(res.solos.punk.kinds) && res.solos.rock.solo === 'lead' && res.solos.country.solo === 'twang' && /twang/.test(res.solos.country.kinds) &&
+      Object.values(res.solos).every(r => !r.nan && r.peak < 1), 'solos: Benny\'s two chords, a rock lead, Earl\'s Tele ' + JSON.stringify(res.solos));
+    const B = res.beds;
+    c.ok(Object.values(B).every(r => !r.nan && r.peak < 1 && r.peak > 0.005 && r.bed.noodles > 0), 'every tier-0 bed + its noodle renders clean ' + JSON.stringify(B));
+    c.ok(B.laundromat.bed.events.dryer >= 3 && B.laundromat.bed.events.buzzer >= 1 && B.stripmall.bed.events.vacuum >= 1 && B['quonset summer'].bed.events.crickets >= 1 &&
+      B['quonset spring'].bed.events.meadowlark >= 1 && B['quonset spring'].bed.layers.join() === 'wind,steel', 'dryers + buzzer, the vacuum next door, wind on steel + crickets / a meadowlark');
+    const CR = res.crowd, has = (k, f) => CR[k][f] > 0;
+    c.ok(Object.values(CR).every(r => !r.nan && r.peak < 1 && r.cheers >= 1), 'every genre moment cheers, never clips ' + Object.entries(CR).map(([k, r]) => k + ' ' + r.peak).join(', '));
+    c.ok(has('headbang', 'roars') && has('wallOfDeath', 'roars') && has('pogo', 'chants') && has('gangShout', 'chants') && CR.gangShout.chants >= 3 && has('fistPump', 'chants') &&
+      has('singAlong', 'whoas') && has('lighters', 'whoas') && has('clapAlong', 'clapAlongs') && CR.lineDance.claps >= 6 && has('lineDance', 'yeehaws') && has('yeehaw', 'yeehaws'),
+      'one-shots per kind: metal roar, gang HEY/OI, whoa-oh, clap-along on 2 and 4 + yee-haws ' + JSON.stringify(CR));
+    c.ok(res.chants.hot >= 2 && res.chants.cold === 0, 'a hot crowd answers the band\'s gang shouts, a cold one does not ' + JSON.stringify(res.chants));
+    // In-career: each band's room + noodle live, and one song through the live rig (no metal amp in a non-metal career).
+    const KIND = { frost_heave: 'laundromat', gravel_kings: 'stripmall', grid_road_ramblers: 'quonset', hail_damage: 'garage' };   // (metal last: rigs persist per page)
+    await page.mouse.click(200, 400);   // a user gesture unlocks the AudioContext
+    await page.waitForFunction(() => GG.audio.context() && GG.audio.context().state === 'running', null, { timeout: 8000 });
+    for (const bandId of Object.keys(KIND)) {
+      await page.evaluate(b => { GG.audio.stop(); GG.main.quickStart({ seed: 21, bandId: b, openCard: false }); GG.ui.closeAll(); }, bandId);
+      await page.waitForFunction(() => GG.audio.refreshAmbience() === 'garage', null, { timeout: 8000 });
+      await page.waitForFunction(() => GG.debug('audio').counts.noodles > 0, null, { timeout: 12000 }).catch(() => {});
+      const n0 = await page.evaluate(() => ({ n: GG.debug('audio').counts.noodles, b: GG.debug('audio').counts.bed || 0 }));
+      await page.waitForFunction(o => GG.debug('audio').counts.noodles > o.n && (GG.debug('audio').bed.events.length === 0 || (GG.debug('audio').counts.bed || 0) > o.b), n0, { timeout: 12000 }).catch(() => {});
+      const live = await page.evaluate(async () => {
+        const d0 = GG.debug('audio'), st = GG.state, song = st.songs[0] || { id: 'x', pattern: GG.songs.signature(st.genre) };
+        const h = GG.audio.play(song.pattern, { genre: st.genre, songId: song.id });
+        await new Promise(r => setTimeout(r, 1800));
+        const d = GG.debug('audio'); GG.audio.stop();
+        return { genre: st.genre, bed: d0.bed, noodle: d0.noodle, noodles: d0.counts.noodles, bedShots: d0.counts.bed || 0, amb: d0.ambVoices, playing: !!h, steps: d.steps - d0.steps,
+          rigs: d.rigs, voice: d.voice, solo: d.solo, vox: d.counts.vox - d0.counts.vox, band: d.bandVoices };
+      });
+      const want = KIND[bandId];
+      c.ok(live.bed && live.bed.kind === want && live.noodles > 0 && (live.bed.events.length === 0 || live.bedShots > 0) && live.amb <= 6, bandId + ': the ' + want + ' bed + ' + (live.noodle && live.noodle.who) + '\'s ' + (live.noodle && live.noodle.style) + ' ' + JSON.stringify(live));
+      c.ok(live.playing && live.steps > 10 && live.rigs && (live.genre === 'metal' || !live.rigs.metal && live.rigs.amps.includes(live.genre)) && live.band <= 8,
+        bandId + ': an in-career song through its own amp, under the voice cap ' + JSON.stringify({ rigs: live.rigs, voice: live.voice, solo: live.solo, band: live.band }));
+    }
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'genres threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+function GG_ms(res) { return Math.round(1000 * 0.11) + ' ms'; }
+
+// v0.9 vocal diversity (owner popup 2026-09-30): every singer measurably different (f0 + spectral centroid of the same
+// shout), >= 4 vocal types rendered across a metal set, words vary per genre, nothing clips. Writes tests/.cache/
+// v09_voice_<singer>.wav (their chorus, vocals only) and v09_voice_<singer>_hey.wav (the probe).
+async function voices() {
+  const c = checker('voices');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(pageHelpers); await page.evaluate(pageHelpers09);
+    const res = await page.evaluate(async () => {
+      const A = GG.audio, out = { singers: {}, wav: {}, set: {}, words: {} };
+      const SING = [['marcel', 'metal'], ['rox', 'punk'], ['chase', 'rock'], ['travis', 'country'], ['tw_gord', 'metal'], ['blaze', 'punk', 'mall_rats'], ['rex', 'rock', 'chartbusters'], ['brayden', 'country', 'buckle_and_boot']];
+      for (const [id, g, rival] of SING) {
+        const who = rival ? { rival } : { singer: id };
+        const p = await A.renderOffline(Object.assign({ probe: 'vox', voc: 'shout', word: 'YEAH', genre: g, midi: 60, seconds: 1 }, who));
+        const song = await A.renderOffline(Object.assign({ genre: g, pattern: GG.songs.signature(g), section: 'chorus', bars: 4, songId: 'v' + id, vocalsOnly: true }, who));
+        out.singers[id] = { voice: p.voice, midi: p.midi, f0: __f0(p.buffer, 0.2, 0.5), centroid: __centroid(p.buffer, 0.1, 0.55), peak: +p.peak.toFixed(3), nan: p.nan,
+          songPeak: +song.peak.toFixed(3), songRms: +song.rms.toFixed(4), songNan: song.nan };
+        out.wav[id + '_hey'] = __wav(p.buffer); out.wav[id] = __wav(song.buffer);
+      }
+      // A metal set, vocals only: the types that actually rendered.
+      const v0 = Object.assign({}, GG.debug('audio').vocTypes), peaks = [];
+      for (let i = 1; i <= 6; i++) { const r = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 24, songId: 'set' + i, singer: 'marcel', vocalsOnly: true, bpm: [90, 140, 190][i % 3] }); peaks.push(+r.peak.toFixed(3)); }
+      const v1 = GG.debug('audio').vocTypes;
+      out.set = { types: Object.keys(v1).filter(k => (v1[k] || 0) > (v0[k] || 0)), peaks };
+      for (const g of GG.contracts.GENRES) {
+        const w = new Set(); for (let i = 1; i <= 6; i++) A.timeline(GG.songs.signature(g), { genre: g, songId: 'w' + i }).events.forEach(e => { if (e.word) w.add(e.word); });
+        out.words[g] = w.size;
+      }
+      const full = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 24, songId: 'set1', singer: 'tw_gord' });
+      out.gordSong = { peak: +full.peak.toFixed(3), nan: full.nan };
+      return out;
+    });
+    fs.mkdirSync(CACHE, { recursive: true });
+    for (const [k, b64] of Object.entries(res.wav)) fs.writeFileSync(path.join(CACHE, 'v09_voice_' + k + '.wav'), Buffer.from(b64, 'base64'));
+    delete res.wav;
+    console.log('v0.9 voice metrics ' + JSON.stringify(res));
+    const S = Object.entries(res.singers), bad = [];
+    c.ok(S.every(([, s]) => !s.nan && !s.songNan && s.peak < 1 && s.songPeak < 1 && s.peak > 0.02 && s.songRms > 0.002), 'every singer renders clean, never clips ' + S.map(([k, s]) => k + ' ' + s.peak + '/' + s.songPeak).join(', '));
+    c.ok(S.every(([, s]) => s.f0 > 60 && s.centroid > 300), 'pitch + formants measurable ' + S.map(([k, s]) => k + ' ' + s.f0 + ' Hz, ' + s.centroid + ' Hz').join('; '));
+    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) {
+      const a = S[i][1], b = S[j][1], semis = Math.abs(12 * Math.log2(a.f0 / b.f0)), cen = Math.abs(a.centroid / b.centroid - 1);
+      if (semis < 0.8 && cen < 0.08) bad.push(S[i][0] + '~' + S[j][0] + ' (' + semis.toFixed(2) + ' st, ' + (cen * 100).toFixed(1) + '%)');
+    }
+    c.ok(bad.length === 0, 'every pair of singers differs (>= 0.8 semitone or >= 8% in formant centroid) ' + bad.join(', '));
+    c.ok(res.singers.tw_gord.f0 < res.singers.marcel.f0 && res.singers.rex.f0 > res.singers.brayden.f0, 'Gord under Marcel; Rex Glamour over Brayden');
+    c.ok(res.set.types.length >= 4 && res.set.peaks.every(p => p < 1), 'a metal set sings >= 4 vocal types, never clipping: ' + res.set.types.join(',') + ' ' + res.set.peaks);
+    c.ok(Object.values(res.words).every(n => n >= 8), 'word variety per genre ' + JSON.stringify(res.words));
+    c.ok(!res.gordSong.nan && res.gordSong.peak < 1, 'a full metal song sung by Gord: no clipping ' + JSON.stringify(res.gordSong));
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'voices threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+
 (async () => {
+  if (want('genres')) await genres();
+  if (want('voices')) await voices();
   if (want('seq')) await seq();
   if (want('seq') || want('guided')) await guided();
   if (want('audio')) await audio();
