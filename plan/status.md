@@ -354,7 +354,7 @@ Later versions:
   work lights, stencilled road cases, a monitor showing the empty arena, the bulb mirror, a sad catering table (celery, water)
   until hot catering is bought, a black leather couch, the kit on a black deck with hazard tape; out front the service
   corridor (yellow lines, LOADING DOCK →, NO SKATES, cable ramps, the forklift, the home team's laundry, a cone). The bedsheet
-  banner hangs only at home and in the jam room. Every word/picture is one 1024² canvas atlas (decals lit + glow, the corridor
+  banner hangs only at home and in the jam room. Every word/picture is one canvas atlas (2048 x 1024 since the review) (decals lit + glow, the corridor
   floor faded out at its edges); light pools are one additive mesh. Seasons: window snow only at home; December lights are
   the tier's own (the jam room's sad strand with dead bulbs, fairy lights on the control-room window, a strand round the road
   cases); the box fan only at home + in the jam room. The box pile moved to the back-left corner behind Marcel's mirror by
@@ -372,12 +372,42 @@ Later versions:
   label on every tier, December in a rented room, draw calls < 60, every cabin's lower third not one flat colour) + sheet
   `tests/.cache/v08_spaces_sheet.png`; van +3 (tiers 0–2: the lower third's top colour ≤ 30%); space: the MERCH sign found
   via debug space.pileSign.
+- SPACES review (visual critic on `v08_spaces_sheet.png`): every tier keeps the front-left corridor clear of the merch stack
+  (the jam room's next-band gear sits mid-corridor by WET FLOOR, the studio's organ + Leslie stand right of the logo rug, the
+  backstage cable ramps stop short and the laundry cart became the band's black drum case, white corners, HAIL DAMAGE / DRUMS);
+  the box pile is a staircase along the open left edge growing toward the camera (4 cells + a second column at the front, ≤ 3
+  high, white tape band on every box; the misprint's red X on the side we see), Marcel's mirror + his spot moved a step
+  forward-right so nothing stands in front of it; near-black clothes in the garage scene lift to #33333d (o.lift) so figures
+  with their backs to us keep their shape. Jam room: a wide two-tube fixture high in the middle of the back wall (cool bloom),
+  NO DRUMS / AFTER 11 PM big + condensed (canvas-squeezed lettering, no fine print) under the smaller banner, chunky die-cut
+  band stickers on the door and over the sign's corners, a GRAVEL KINGS spray tag right of the door; the corridor tiles 35%
+  darker + drab, fading out sooner, ending at a low cut wall with the neighbours' steel doors 6 and 8 and a lit EXIT → SORTIE;
+  the sad December strand droops over the sign. Studio: bevelled panels (charcoal / slate / burgundy, dark gaps; the right
+  wall's run covers the band poster), a stepped skyline diffuser in pale wood under a track light, the gold record on walnut
+  (#d4af37 disc, groove ring, label, brass plate), the control-room window a deep reveal (sill, lit jamb, mullion, a glare
+  streak) onto a dim blue-grey room with the console's meters + fader caps glowing over the sill and Gwen's silhouette (the
+  beam plaque is gone), pale oak planks with thin seams, key/fill/bulb ~30% less saturated, a cool control-room accent, the
+  lobby on charcoal carpet. Backstage: BAND ROOM → stencilled between the labels, the band's name big on a placard on its door
+  (the star moved up), the arena monitor bigger + brighter on an arm turned to the camera (seating rings, the lit stage, LIVE),
+  the forklift's pallet up on its forks with a shrink-wrapped stack. The laptop desk is per tier (cooler / walnut side desk /
+  stencilled flight case; the garage's cooler is garage-only) and without the curb loveseat the studio has a black office
+  chair, backstage a director's chair. The decal atlas is 2048 x 1024 with a best-fit guillotine packer (the shelf packer ran
+  out). Vans (43): every own cabin's headliner is broken up (overhead console + map lights, a CD wallet on the driver's visor,
+  a set list in the other, headliner seams; the minivan's sagging bit held up with thumbtacks), front seats get headrests on
+  posts + pocket elastic/stitching; minivan: buckets a touch inboard, a backpack slumped on the console, ketchup chips on the
+  bench, the hoodie is gone (it read as the driver's torso); 15-passenger: the bench back is three piped cushions with gaps +
+  two buckles, thin crossed tapered sticks on the ledge (only the bench's top lip in frame), grab handles; sprinter: a cab
+  shelf over the windshield (toque, set lists, gaff tape, laminates), lighter stitched centre panels, cup holders on the
+  armrests. Cameras tighter (hfov minivan 42 → 38, 15-passenger 43 → 37, sprinter 44 → 38 and 0.2 forward; look a touch
+  higher); the tour bus unchanged. pw_shop spaces: the sheet adds December in the jam room and backstage (spaces_dec_1/3).
 - Gaps (shop UI / spaces): the other bands' tier-0 starts (laundromat basement, strip-mall unit, Quonset) still draw the
   parents' garage; the corridor props out front are static (no passers-by, no hockey players); the control-room window is a
   painted picture (no parallax); sticker / graffiti text is only legible zoomed in (colour + shape read at phone size);
   the wall-mounted tube is the jam room's only fluorescent (no ceiling fixture: the camera looks down); the band banner is
-  not shown in the studio (no bedsheets at Prairie Dog Sound) or backstage (the stencil names the band); the right wall is
-  seen edge-on, so most signature pieces live on the back wall and the floor.
+  not shown in the studio (no bedsheets at Prairie Dog Sound) or backstage (the door placard names the band); the right wall is
+  seen edge-on, so most signature pieces live on the back wall and the floor; the neighbours' doors 6 + 8 are drawn on the
+  face of the corridor's cut wall we see (a diorama cheat); the curb loveseat (a bought upgrade that moves with the band)
+  still sits by the laptop in the rented rooms; with the tighter minivan camera the buckets' outer halves are off-frame.
 
 ## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
 - Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy

@@ -23,8 +23,8 @@
 //          merch): every tier's room signature differs (kind, wall, floor, background, light fixture; the garage alone keeps
 //          the yard + garage-only meshes; rented rooms have decals + a corridor out front; studio/arena risers lift the kit),
 //          the box pile is on screen and clear of every hotspot label; the minivan / 15-passenger / sprinter / bus cabins
-//          (the lower third is not one flat slab). Screenshots spaces_<0..3>.png, spaces_van_<0..3>.png, tiled into
-//          tests/.cache/v08_spaces_sheet.png.
+//          (the lower third is not one flat slab); December in the jam room + backstage. Screenshots spaces_<0..3>.png,
+//          spaces_van_<0..3>.png, spaces_dec_<1,3>.png, tiled into tests/.cache/v08_spaces_sheet.png.
 //   sheet: tiles the screenshots into tests/.cache/v08_shop_sheet.png.
 // Run: node build.js && META_ONLY=gear timeout 500 node tests/pw_shop.js
 const path = require('path'), fs = require('fs');
@@ -525,11 +525,14 @@ async function spaces() {
     const dc = await page.evaluate(() => GG.debug('render').drawCalls);
     c.ok(dc > 0 && dc < 60, 'draw calls in a rented room < 60 (' + dc + ')');
     // Seasons in a rented room: no window snow backstage; December lights are the tier's own (a sad strand in the jam room).
-    const dec = await page.evaluate(() => {
-      const s = GG.state, out = {}, w0 = s.week;
-      for (const t of [1, 3]) { s.spaceTier = t; s.space = GG.shop.spaceDef(s, t).id; s.week = 12; s.totalWeek = 12; s.weather = GG.calendar.weatherAt(s); GG.main.sync(); out[t] = GG.debug('render').decor; }
-      s.week = w0; GG.main.sync(); return out;
-    });
+    // (SPACES review: both December rooms are screenshotted for the sheet: spaces_dec_1.png, spaces_dec_3.png.)
+    const w0 = await page.evaluate(() => [GG.state.week, GG.state.totalWeek]), dec = {};
+    for (const t of [1, 3]) {
+      dec[t] = await page.evaluate(([t, ups]) => { const s = GG.state; s.spaceTier = t; s.space = GG.shop.spaceDef(s, t).id; s.spaceUpgrades = ups; s.week = 12; s.totalWeek = 12; s.weather = GG.calendar.weatherAt(s); GG.main.sync(); return GG.debug('render').decor; }, [t, SPACE_UPS[t]]);
+      await page.waitForTimeout(900);
+      await bareUi(page, true); await shot(page, 'spaces_dec_' + t + '.png'); await bareUi(page, false);
+    }
+    await page.evaluate(w => { GG.state.week = w[0]; GG.state.totalWeek = w[1]; GG.main.sync(); }, w0);
     c.ok(dec[1].lights && dec[1].where === 'sad strand' && !dec[1].snow && dec[3].lights && !dec[3].snow && !dec[3].fan, 'December in a rented room: the jam room\'s sad strand, no window snow backstage ' + JSON.stringify(dec));
     // The cabins, as the trip shows them (default frame).
     for (const t of [0, 1, 2, 3]) {
@@ -548,7 +551,8 @@ async function spaces() {
   } catch (e) { c.ok(false, 'spaces threw: ' + (e.stack || e)); }
   await close(); c.done();
   await tile('v08_spaces_sheet', [['spaces_0', 'Garage (tier 0): the parents\' garage'], ['spaces_1', 'Tier 1: Rent-A-Riff, Jam Space 7'], ['spaces_2', 'Tier 2: Prairie Dog Sound'], ['spaces_3', 'Tier 3: backstage, Potash Place'],
-    ['spaces_van_0', 'Minivan'], ['spaces_van_1', '15-passenger + trailer'], ['spaces_van_2', 'Sprinter'], ['spaces_van_3', 'Tour bus']], 4);
+    ['spaces_dec_1', 'December (wk 12): the jam room'], ['spaces_van_0', 'Minivan'], ['spaces_van_1', '15-passenger + trailer'], ['spaces_van_2', 'Sprinter'], ['spaces_van_3', 'Tour bus'],
+    ['spaces_dec_3', 'December (wk 12): backstage']], 5);
 }
 
 // A Playwright page of <img>s screenshotted into tests/.cache/<name>.png (no PIL).
