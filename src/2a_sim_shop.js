@@ -20,20 +20,23 @@
 //         kitTiers(s) · kitDef(tier) · canBuyKit(s, tier) · buyKit(s, tier) · ownsSection(s, id) · unlockSection(s, id, why)
 //         gigBonus(s) · writeBonus(s) · crowdBonus(s)
 //   Spaces: spaces(s) · spaceDef(s, tier) · availableTier(s) · canMove(s, tier) · move(s, tier) · rent(s) · perks(s)
-//         perkFactor(s, activity) · upgrades(s) · canBuyUpgrade(s, id) · buyUpgrade(s, id)
+//         perkFactor(s, activity) · upgrades(s) · upgradeDef(id) · canBuyUpgrade(s, id) · buyUpgrade(s, id)
+//         (2 wraps in a row with < 2 weeks' rent in the fund: evicted one tier down, wrap.shop.evicted, state.rentLate)
 //   Van: vans(s) · vanTierDef(tier) · vanName(bandId, tier) · vanQuote(s, tier) · canBuyVan(s, tier) · buyVan(s, tier)
-//         renameVan(s, name) · vanUpgrades(s) · canBuyVanUpgrade(s, id) · buyVanUpgrade(s, id) · vanMods(s) · stickers(s)
+//         renameVan(s, name) · vanUpgrades(s) · vanUpgradeDef(id) · canBuyVanUpgrade(s, id) · buyVanUpgrade(s, id) · vanMods(s) · stickers(s)
 //         sticker(s, gigOrResult) · banSticker(s, venueId)
 //   Merch: merchDef(id) · merchItems(s) · merchView(s) · tierUnlocked(s, tierId) · unlockMerch(s) · setTable(s, ids)
-//         toggleTable(s, id, on) · setPrice(s, id, $) · priceRange(s, id) · stockCost(s, id, boxes) · canBuyStock(s, id, boxes)
-//         buyStock(s, id, boxes) · pile(s) · hauling(s, g) · priceCurve(ratio) · demand(s, id, o) · estimate(s, g)
+//         toggleTable(s, id, on) · setPrice(s, id, $) · priceOf(s, id) · priceRange(s, id) · stockCost(s, id, boxes)
+//         canBuyStock(s, id, boxes) · buyStock(s, id, boxes) · pile(s) · hauling(s, g) · priceCurve(ratio) · sales(s, ids, o)
+//         demand(s, id, o) · estimate(s, g)
 //         gigMerch(s, g, r) (GG.gig.applyResult -> r.merch) · misprint(s)
-//   Week: forcedCard(s) · afterCard(s, card, i, success, d) · weekly(s, rng, wrap) (wrap.shop) · cards() · card(id)
+//   Week: forcedCard(s) · afterCard(s, card, i, success, d) · apply(s, shopEffect, d) · weekly(s, rng, wrap) (wrap.shop =
+//         { rent, unlocks: [{ kind, id|ids }], misprint, perks, evicted, rentLate }) · cards() · card(id)
 //         effectText(v) · botValue(s, v) · botWeek(s, style)
 //   Every buy returns { ok: true, cost, deltas } or { ok: false, why } (why: plain words for the UI).
 // Events: 'shop:buy' { kind: 'gear'|'kit'|'upgrade'|'van'|'vanUpgrade'|'stock', id, cost } · 'shop:unlock' { kind:
-//   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier } · 'shop:rename' { name } · 'shop:sticker' { venueId,
-//   name, banned } · 'shop:misprint' { status, units } · 'shop:merch' { venueId, sold, earned } (after every gig).
+//   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier, evicted? } · 'shop:rename' { name } · 'shop:sticker' { venueId,
+//   name, banned } · 'shop:misprint' { status: boxed|reprint|wear|collector, units } · 'shop:merch' { venueId, sold, earned } (every gig).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var S = GG.shop = GG.shop || {};

@@ -244,6 +244,53 @@ Later versions:
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## What's in v0.8 (sim) — KITSIM, lane A stage 1 (UI = stage 2, SHOPUI; creator = lane B)
+- `GG.shop` (`src/2a_sim_shop.js`, API in its header; catalogue `content/shop.js`; numbers `economy.shop`; forced cards
+  `GG.content.shopCards` at the bottom of `content/cards.js`). Save schema 9: `10_save` MIGRATIONS[8] + a chained
+  `GG.shop.ensure` on every load (fills only missing lane-A fields; old gear.lanes/doubleKick -> gear.owned; the venues in
+  `venueLast` become van stickers, banned ones crossed out).
+- Gear: toms $450 (lane 5), ride/china $350 (lane 6, needs the toms), double-kick pedal $300; kit quality 0..3 (milk
+  crate -> pawn shop $800 -> pro $2,800 Local Heroes -> arena $9,000 World). Gear shows on stage (performance +0..2 by
+  tier, +0.25 per lane/pedal), live crowd start (+0..2), new songs (+0..1.5 quality) and studio production (+0..1/week).
+- Songs (`21`): extra sections C.EXTRA_SECTIONS live in PATTERN.sections only when owned + used (sanitize/validate/rate/
+  generate/toNotes; `sectionsOf, allSections, addSection, removeSection, withExtras, extraBar`). Outro unlocks free after
+  3 songs written (Jaxon/Dana chat at the wrap); Solo via Dana's card in Local Heroes (4+ songs; refused -> again in 10
+  weeks; auto after 16 weeks without her). rate(): outro/solo count half toward groove, hook +3..4 for a tom fill / ride
+  chorus / ending on an outro / a solo after the first chorus (4-lane patterns rate exactly as before). With the pedal, kicks
+  on the in-between 16ths are a run, not syncopation (the pedal no longer lowers metal groove). Jams use owned gear.
+  Dana's reaction: a solo section makes her happy.
+- Gig (`22`): merch sells in applyResult (`r.merch = { sold, earned, boxes, space, items: { id: { hauled, sold, price,
+  earned } }, named }`, joins the gig's fund change), a sticker per venue (ban -> crossed out, in `26` afterGig); chart:
+  a 'solo' section is Dana's (quarter notes only + the solo cue + crowd +3), an 'outro' ends on a fill window; the two-thumb
+  rule holds with 6 lanes + the pedal on every difficulty (tested).
+- Spaces: tier by era (jam room Local $60/wk rehearse +8%; pro studio Signed $150/wk + write +1, record +1; arena backstage
+  World $300/wk + rest +20%, recover 1); offer card per new tier (`shop_space_1..3`) or `GG.shop.move` any time; rent is in
+  `career.upkeep`; 2 wraps with < 2 weeks' rent -> evicted one tier down (`wrap.shop.evicted`). 16 upgrades (4 per tier;
+  the curb couch + beer fridge move with you; chemistry/mood perks land every other week).
+- Van: minivan -> 15-passenger + trailer $3,500 (Local) -> sprinter $6,500 (Signed) -> tour bus $30,000 (World), 30% trade-in
+  x condition (min $150); Part C1 names per band per tier, `renameVan` (28 chars, no markup); space = merch boxes (3/6/9/14),
+  comfort 2..5 (trip burnout), wear/breakdown factors (`world.travel`); 7 upgrades (roof rack, cushions, winter tires, block
+  heater, tape deck +1 chemistry on long drives, bunks, merch pod).
+- Merch: tiers basics (stickers, shirts + genre: metal patches/longsleeves, punk patches/DIY tapes, country trucker hats) ->
+  warm in Local (hoodies, toques (winter x1.6), rock tour shirts) -> vinyl (Local + a record out) -> limited (Signed + 5k fans:
+  the Lord Abyssus bobblehead, capes; per-band items). Pick the table + prices (0.5..3x suggested), buy boxes up front; the
+  van hauls `van.space` boxes round-robin down the table (2 boxes abroad); sales = buyers (crowd^0.65 above 50 x 0.032 x grade
+  x fit x superfans x variety) split by appeal x season x price curve e^(-1.6 (p/suggested - 1)); Dale/Wendell/the president
+  buy one each (`GG.fans.merchMods`). Unsold stock = the garage box pile (`GG.shop.pile`). The first shirt order comes back
+  misprinted (`money_merch_misprint`, moved out of the deck): box it (-> collector's item after 8 weeks + 300 fans: $60,
+  appeal 2.5), reprint ($100) or wear them. Other shop cards: the merch table intro, the pawn-shop kit, Baba's church van.
+- Audio (`30`): kit quality tiers per C3 (body, sustain, saturation, box/low/high cut, reverb send; peaks < 0.55, arena ~2-6x
+  the energy of the milk crate), `kitFor(genre, tier)`, `kitQuality()`, `renderOffline({ quality, .. })` (+ `tail`); the
+  outro's last chord rings 2.5 beats past the end (the song waits for it), a solo is the genre's lead over a stripped kit.
+- Bots: gear/kit/van/space/upgrades/merch with cushions (big buys keep 8 weeks of bills, never mid-session), shop cards
+  answered by value, downsizing when rent bites. Rival set strength cap 87 -> 90 (they buy gear too).
+- Balance (10y x 20, before -> after): avg local/offer/signed/world wk 20/39/46/158 -> 22/43/47/155, y10 fans 42.9k -> 43.4k,
+  fund $11.1k -> $8.5k, loans after y1 0.10 -> 0.10, quits/yr 0.63 -> 0.53, Sad Dome 8/20 -> 13/20, merch 44% of gig pay
+  (net 26%), 6 lanes + pedal wk 67; good 15/27/28/103 -> 16/27/28/101, fans 63.7k -> 67.1k, fund $21.8k -> $19.5k, loans 0,
+  Sad Dome 20/20, 6 lanes + pedal wk 34 (y2), sprinter wk 100 (the World era wk 101), merch 38% (net 23%); invariants OK.
+- Tests: new `sim_shop.test.js` (16), sim_audio +2 (kit tiers, outro/solo), pw_seq audio +3 (tier renders clean + audible,
+  a 6-lane outro/solo song); sim_career/sim_songs/sim_world expectations follow the new gear/van fields.
+
 ## What's in v0.7 (sim) — WORLDSIM stage 1 (UI = stage 2, WORLDUI)
 - World era ON (`economy.eras.worldEnabled`) at the Steady threshold (25k fans + a charting record; labels.weekly). Home
   scene stays 40k in World (Canada saturates); each region has its own scene (`world.scene` adds fans abroad).
@@ -467,6 +514,16 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- `GG.shop` (v0.8, header of `2a_sim_shop.js`): `cfg, content, init, ensure, migrate`; gear `gearItems, gearDef, gearName,
+  ownsGear, canBuyGear, buyGear, kitTiers, kitDef, canBuyKit, buyKit, ownsSection, unlockSection, gigBonus, writeBonus,
+  crowdBonus`; spaces `spaces, spaceDef, availableTier, canMove, move, rent, perks, perkFactor, upgrades, upgradeDef,
+  canBuyUpgrade, buyUpgrade`; van `vans, vanTierDef, vanName, vanQuote, canBuyVan, buyVan, renameVan, vanUpgrades,
+  vanUpgradeDef, canBuyVanUpgrade, buyVanUpgrade, vanMods, stickers, sticker, banSticker`; merch `merchDef, merchItems,
+  merchView, tierUnlocked, unlockMerch, setTable, toggleTable, setPrice, priceOf, priceRange, stockCost, canBuyStock,
+  buyStock, pile, hauling, priceCurve, sales, demand, estimate, gigMerch, misprint`; week `forcedCard, afterCard, apply,
+  weekly (wrap.shop), cards, card, effectText, botValue, botWeek`. Buys return `{ ok, cost, deltas }` or `{ ok: false, why }`.
+  Events `shop:buy|unlock|move|rename|sticker|misprint|merch`. `GG.fans.merchMods(s, r)`; `GG.songs` extras above;
+  `GG.audio.kitFor/kitQuality/qualityFor`. Debug `GG.debug('shop')`.
 - `GG.tour` (v0.7, header of `25_sim_tour.js`): lookups `regions, region, cityDef, cities, venue, venues, vehicles, stays,
   extras, climate, fit, pkg, departWindow, legKm`; state `init, ensure, migrate, threshold, unlocked, unlock, invite`;
   views `map, regionView, status, summary, charts, gong, packages`; booking `quote, canBook, book, cancel`; the week `active,

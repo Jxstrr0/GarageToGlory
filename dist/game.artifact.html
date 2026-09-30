@@ -7366,8 +7366,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   merch: [{ id, name, tier, genre?: [..], band?: [..], cost ($/unit), price (suggested $), perBox (units per box), appeal
 //     (0.5..2, how many people want one), season?: { winter|spring|summer|fall: mult }, blurb, hidden?: true (misprint only) }]
 //   lines: { outro / solo / misprintCollector / move / van / merchUnlock / evicted: [{ who, text }] (group chat), stickersMoved }
-// } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: +/week,
-//            mood: +/week (everyone), recover: extra burnout recovery/week }
+// } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: + every
+//            other week, mood: + every other week (everyone), recover: extra burnout recovery/week }
 // No gong on the drum kit, ever.
 (function (GG) {
   GG.content.shop = {
@@ -16581,20 +16581,23 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //         kitTiers(s) · kitDef(tier) · canBuyKit(s, tier) · buyKit(s, tier) · ownsSection(s, id) · unlockSection(s, id, why)
 //         gigBonus(s) · writeBonus(s) · crowdBonus(s)
 //   Spaces: spaces(s) · spaceDef(s, tier) · availableTier(s) · canMove(s, tier) · move(s, tier) · rent(s) · perks(s)
-//         perkFactor(s, activity) · upgrades(s) · canBuyUpgrade(s, id) · buyUpgrade(s, id)
+//         perkFactor(s, activity) · upgrades(s) · upgradeDef(id) · canBuyUpgrade(s, id) · buyUpgrade(s, id)
+//         (2 wraps in a row with < 2 weeks' rent in the fund: evicted one tier down, wrap.shop.evicted, state.rentLate)
 //   Van: vans(s) · vanTierDef(tier) · vanName(bandId, tier) · vanQuote(s, tier) · canBuyVan(s, tier) · buyVan(s, tier)
-//         renameVan(s, name) · vanUpgrades(s) · canBuyVanUpgrade(s, id) · buyVanUpgrade(s, id) · vanMods(s) · stickers(s)
+//         renameVan(s, name) · vanUpgrades(s) · vanUpgradeDef(id) · canBuyVanUpgrade(s, id) · buyVanUpgrade(s, id) · vanMods(s) · stickers(s)
 //         sticker(s, gigOrResult) · banSticker(s, venueId)
 //   Merch: merchDef(id) · merchItems(s) · merchView(s) · tierUnlocked(s, tierId) · unlockMerch(s) · setTable(s, ids)
-//         toggleTable(s, id, on) · setPrice(s, id, $) · priceRange(s, id) · stockCost(s, id, boxes) · canBuyStock(s, id, boxes)
-//         buyStock(s, id, boxes) · pile(s) · hauling(s, g) · priceCurve(ratio) · demand(s, id, o) · estimate(s, g)
+//         toggleTable(s, id, on) · setPrice(s, id, $) · priceOf(s, id) · priceRange(s, id) · stockCost(s, id, boxes)
+//         canBuyStock(s, id, boxes) · buyStock(s, id, boxes) · pile(s) · hauling(s, g) · priceCurve(ratio) · sales(s, ids, o)
+//         demand(s, id, o) · estimate(s, g)
 //         gigMerch(s, g, r) (GG.gig.applyResult -> r.merch) · misprint(s)
-//   Week: forcedCard(s) · afterCard(s, card, i, success, d) · weekly(s, rng, wrap) (wrap.shop) · cards() · card(id)
+//   Week: forcedCard(s) · afterCard(s, card, i, success, d) · apply(s, shopEffect, d) · weekly(s, rng, wrap) (wrap.shop =
+//         { rent, unlocks: [{ kind, id|ids }], misprint, perks, evicted, rentLate }) · cards() · card(id)
 //         effectText(v) · botValue(s, v) · botWeek(s, style)
 //   Every buy returns { ok: true, cost, deltas } or { ok: false, why } (why: plain words for the UI).
 // Events: 'shop:buy' { kind: 'gear'|'kit'|'upgrade'|'van'|'vanUpgrade'|'stock', id, cost } · 'shop:unlock' { kind:
-//   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier } · 'shop:rename' { name } · 'shop:sticker' { venueId,
-//   name, banned } · 'shop:misprint' { status, units } · 'shop:merch' { venueId, sold, earned } (after every gig).
+//   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier, evicted? } · 'shop:rename' { name } · 'shop:sticker' { venueId,
+//   name, banned } · 'shop:misprint' { status: boxed|reprint|wear|collector, units } · 'shop:merch' { venueId, sold, earned } (every gig).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var S = GG.shop = GG.shop || {};
@@ -17366,9 +17369,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var ids = S.unlockMerch(s, false);
     if (ids.length) out.unlocks.push({ kind: 'merch', ids: ids });
     var away = !!(GG.tour && GG.tour.away(s)), p = S.perks(s);
-    if (!away) {
-      if (p.chemistry) GG.career.applyEffects(s, { chemistry: p.chemistry }, d);
-      if (p.mood) GG.career.applyEffects(s, { mood: { all: p.mood } }, d);
+    if (!away) {   // chemistry / mood perks land every other week (a fridge is nice, not a therapist)
+      if (p.chemistry && s.totalWeek % 2 === 0) GG.career.applyEffects(s, { chemistry: p.chemistry }, d);
+      if (p.mood && s.totalWeek % 2 === 1) GG.career.applyEffects(s, { mood: { all: p.mood } }, d);
       if (p.recover) GG.career.applyEffects(s, { burnout: -p.recover }, d);
     }
     var rec = (p.record || 0) + (R.recordBonus[s.gear.quality] || 0);
