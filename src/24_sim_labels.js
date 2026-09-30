@@ -1247,6 +1247,28 @@
     }
     return state.loonies;
   };
+  // v0.9: a band line after each envelope: awards.win / lose (neutral, tokenised) + awards.byBand[bandId].{win, lose}
+  // (career.pool). The band's own lines win when it has them. A line naming a member who is not in the band right now is
+  // skipped. Seeded on its own (not the ceremony rng), so the envelopes' outcomes never move.
+  function bandLine(state, key, cat) {
+    var A = awardsContent(), all = GG.career.pool ? GG.career.pool(state, A, key) : A[key];
+    var bb = A.byBand && A.byBand[state.bandId], own = bb && Array.isArray(bb[key]) ? bb[key] : [];
+    var pool = (own.length ? own : all || []).filter(function (t) { return typeof t === 'string' && !foreignName(state, t); });
+    if (!pool.length) return null;
+    var r = GG.RNG(GG.hashSeed((state.seed >>> 0) + '|loonieLine|' + state.year + '|' + cat + '|' + key));
+    return fill(state, r.pick(pool));
+  }
+  // True when the text names a member of any band who isn't active in this career (a quit member, another band's).
+  function foreignName(state, text) {
+    var B = GG.content.bands || {}, act = {};
+    (state.members || []).forEach(function (m) { if (m.status === 'active') act[m.id] = 1; });
+    return Object.keys(B).some(function (bid) {
+      return ((B[bid] && B[bid].members) || []).some(function (m) {
+        var nm = String(m.name || '').split(' ')[0];
+        return !act[m.id] && nm.length > 2 && new RegExp('\\b' + nm + '\\b').test(text);
+      });
+    });
+  }
   // The envelopes. Idempotent per year. Returns [{ category, name, won, winner, rivalWon, thanks }].
   L.runLoonies = function (state, rng) {
     var lo = state.loonies;
@@ -1267,6 +1289,7 @@
       var line = function (key, fb) { return fill(state, String(GG.career.pickLine(state, rng, rivalLines(state, key, fb), fb[0])).replace(/\{category\}/g, n.name)); };
       if (rivalWon) res.thanks = line('rivalThanks', FALLBACK_THANKS);
       else if (won && rivalIn) res.rivalLine = line('rivalLoses', FALLBACK_LOSES);
+      res.bandLine = bandLine(state, won ? 'win' : 'lose', n.category);   // v0.9: awards.{win, lose} + byBand (own rng: no stream shift)
       state.awards.push({ year: state.year, category: n.category, nominated: true, won: won, against: n.nominees.slice(1), winner: best });
       if (won) {
         var d = {}, cr = (categoryOf(n.category) || {}).reward || {};

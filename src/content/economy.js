@@ -277,7 +277,9 @@
       // their set (Chartbusters: every single is the same power ballad). Tundra Wraith keeps the defaults above.
       byRival: {
         mall_rats: { fansCurve: [40, 400, 1550, 3900, 7500, 11400, 15300, 19200, 22800, 26200, 29000, 31500, 33500],
-                     buzz: { start: 24, perYear: 6, max: 66 }, actions: ['kickflip'] },
+                     // TV buzz is flavour (news, cast text), not a stat: at 24/6/66 their buzz fed heat -> more showdowns ->
+                     // more buzz, and the good bot cracked them 1-4/10 vs Tundra Wraith 10/10. Same buzz as Tundra Wraith.
+                     buzz: { start: 15, perYear: 5, max: 60 }, actions: ['kickflip'] },
         chartbusters: { fansCurve: [40, 380, 1500, 3800, 7300, 11000, 14800, 18400, 21800, 24800, 27400, 29600, 31400],
                         buzz: { start: 18, perYear: 4 }, chartBias: 1.8, legacy: 31000000, style: 'ballad',
                         awards: { bonus: 15, breakup: 0.75 }, eras: { local: 250, signed: 700 } },

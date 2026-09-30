@@ -476,7 +476,8 @@
       var act = (state.members || []).filter(function (m) { return m.status === 'active'; }).sort(function (a, b) { return a.mood - b.mood; });
       var m = who ? act.filter(function (x) { return x.id === who; })[0] : act[0];
       if (!m || (state.card && !state.card.resolved)) return null;
-      state.card = { id: 'rv_poach', resolved: false, who: m.id, whoName: first(m.name) };
+      var pc = cardFor(state, 'rv_poach');   // v0.9: the band's / rival's variant (rv_poach_tundra_wraith, ...)
+      state.card = { id: pc ? pc.id : 'rv_poach', resolved: false, who: m.id, whoName: first(m.name) };
       state.phase = 'monday';
       GG.emit('rival:poach', { who: m.id, name: first(m.name) });
       return schedulePending(state, { kind: 'poach', week: w, id: 'SD' + w + '-poach', status: 'card', who: m.id, name: first(m.name) });

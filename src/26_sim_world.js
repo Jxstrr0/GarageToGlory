@@ -549,13 +549,24 @@
   };
   // Keeps state.van.driver in step with the lineup (the driver quit -> you drive; they're back -> they drive).
   // Returns { from, to } when it changed (and posts one group-chat line), else null.
+  // v0.9: the "you drive now" line: drivers.you.byBand[bandId].takeOver (career.pool), or a pack's per-band map
+  // (takeOverBy / takeOverByBand [bandId]), else the neutral drivers.you.takeOver.
+  function takeOverLine(state, you) {
+    if (!you) return null;
+    var b = state && state.bandId, own = (you.byBand && you.byBand[b] && you.byBand[b].takeOver) || (you.takeOverBy && you.takeOverBy[b])
+      || (you.takeOverByBand && you.takeOverByBand[b]);
+    if (own) return own;
+    var v = GG.career && GG.career.pool ? GG.career.pool(state, you, 'takeOver') : you.takeOver;
+    return typeof v === 'string' ? v : you.takeOver || null;
+  }
+  world.takeOverLine = function (state) { return takeOverLine(state, drivers().you); };
   world.syncDriver = function (state, quiet) {
     if (!state) return null;
     var van = world.van(state), cur = world.driver(state).id, was = van.driver;
     if (was === cur) return null;
     van.driver = cur;
     if (!was || quiet || !GG.career || !GG.career.postChat) return { from: was || null, to: cur };
-    var D = drivers(), text = cur === 'you' ? (D.you && D.you.takeOver) || 'You drive now. The seat is still warm. The mirrors are set for someone taller.'
+    var D = drivers(), text = cur === 'you' ? takeOverLine(state, D.you) || 'You drive now. The seat is still warm. The mirrors are set for someone taller.'
       : (D[cur] && D[cur].back) || D[cur] && D[cur].name + ' is back behind the wheel.';
     // v0.9: the returning driver says it themselves; when you take over, the first bandmate who talks (else Mom)
     var tk = GG.career.talkers ? GG.career.talkers(state)[0] : state.members.filter(function (m) { return m.status === 'active'; })[0];

@@ -255,8 +255,8 @@ test('migration v2 -> v3: defaults for old saves, idempotent, schema bumped', ()
 test('rings: Saskatchewan from day one, the West in Local Heroes, the East & North once Signed; one far gig a week', () => {
   const GG = fresh(), W = GG.world, V = id => GG.gig.venue(id);
   const s = career(GG, 61, 20000);
-  eq([W.ring('Saskatoon'), W.ring('Humboldt'), W.ring('Calgary'), W.ring('Winnipeg'), W.ring('Toronto'), W.ring('Yellowknife')], ['sask', 'sask', 'west', 'west', 'eastnorth', 'eastnorth']);
-  ok(W.ringOpen(s, 'sask') && !W.ringOpen(s, 'west') && !W.ringOpen(s, 'eastnorth'), 'garage: Saskatchewan only');
+  eq([W.ring('Saskatoon'), W.ring('Humboldt'), W.ring('Calgary'), W.ring('Winnipeg'), W.ring('Toronto'), W.ring('Yellowknife')], ['sask', 'sask', 'alberta', 'west', 'eastnorth', 'eastnorth']);   // v0.9 Q1a: Calgary sits in the Alberta ring
+  ok(W.ringOpen(s, 'sask') && !W.ringOpen(s, 'alberta') && !W.ringOpen(s, 'west') && !W.ringOpen(s, 'eastnorth'), 'garage: Saskatchewan only');
   ok(!W.bookable(s, V('cowtown_saloon')) && W.bookable(s, V('derrick_lounge')), 'Calgary locked in the garage, Estevan open');
   s.era = 'local'; ok(W.bookable(s, V('cowtown_saloon')) && !W.bookable(s, V('the_hoofprint')), 'Local Heroes: the West');
   s.era = 'signed'; ok(W.bookable(s, V('the_hoofprint')) && W.bookable(s, V('commandant_ballroom')), 'Signed: the East & North (+ theatres)');
@@ -325,6 +325,26 @@ test('trips carry the weather, the holiday and the driver; road cards gate on we
 test('sim purity: 26_sim_world has no Math.random / Date / DOM', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', '26_sim_world.js'), 'utf8');
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), 'pure');
+});
+
+test('v0.9: "you drive now" is the band\'s own line (byBand / a pack map), never the cactus outside Hail Damage', () => {
+  const GG = fresh(), W = GG.world;
+  const lines = {};
+  Object.keys(GG.content.bands).forEach(b => {
+    const s = GG.career.newCareer({ seed: 5, bandId: b, player: { name: 'T' } });
+    const drv = W.driver(s).id, m = s.members.find(x => x.id === drv);
+    ok(m, b + ': a bandmate drives at the start');
+    const chats = [];
+    const post = GG.career.postChat;
+    GG.career.postChat = function (st, who, text) { chats.push({ who, text }); return post.apply(GG.career, arguments); };
+    try { m.status = 'quit'; const r = W.syncDriver(s); ok(r && r.to === 'you', b + ': you drive'); } finally { GG.career.postChat = post; }
+    lines[b] = W.takeOverLine(s);
+    ok(chats.some(c => c.text === lines[b]), b + ': posted ' + JSON.stringify(chats));
+    ok(typeof lines[b] === 'string' && lines[b].length > 10, b + ': a line');
+    if (b !== 'hail_damage') ok(!/cactus/i.test(lines[b]), b + ': no cactus');
+  });
+  ok(/cactus/.test(lines.hail_damage), 'Hail Damage keeps the tiny cactus');
+  eq(new Set(Object.values(lines)).size, Object.keys(lines).length, 'one line per band');
 });
 
 done('sim_world');
