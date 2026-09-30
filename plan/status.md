@@ -57,6 +57,12 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 
+## Incoming: 3D start screen (owner, 2026-09-30)
+- A 3D start/title screen is being built in a **parallel session that won't push to GitHub**. The owner will paste it
+  into this session; the lead works it in (title screen = `src/51_ui_menu.js` + a render scene via
+  `GG.render.defineScene`; keep the single-file build, three.js 0.149 from cdnjs, portrait phone, no USA content).
+  Don't build a competing title screen meanwhile.
+
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
   4 notes at once".
