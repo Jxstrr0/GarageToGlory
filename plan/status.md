@@ -382,6 +382,17 @@ Later versions:
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## v0.8 integration (lead, 2026-09-30)
+- Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
+  garage / Rent-A-Riff Jam Space 7 / Prairie Dog Sound / backstage at the Potash Place; van cabins with real seat backs;
+  art-critic loop) + main (v0.7.1 3D title, v0.7.2 English titles / layered crowd / heavier metal / double kick).
+- Timing root-causes (repro'd with CDP CPU throttling, fixed in the game, not the tests): gig auto notes + second kicks
+  booked by a 25 ms timer (not only per frame) against the audio clock; count-in numeral box no longer widens the page;
+  fresh timestamp at song start; rival BOTB set + van drive run on wall time (a slow phone played them in slow motion);
+  the van clock starts on its first drawn frame; `audio:end` carries `natural` so a song that played out never pauses the
+  gig (drift used to pause it at the very end and resume restarted the song) — pw_gig `songend`. Still open: Auto-kick
+  plays its own kick on the frame it comes due (can be late on a slow phone).
+
 ## What's in v0.8 (sim) — KITSIM, lane A stage 1 (UI = stage 2, SHOPUI; creator = lane B)
 - `GG.shop` (`src/2a_sim_shop.js`, API in its header; catalogue `content/shop.js`; numbers `economy.shop`; forced cards
   `GG.content.shopCards` at the bottom of `content/cards.js`). Save schema 9: `10_save` MIGRATIONS[8] + a chained
