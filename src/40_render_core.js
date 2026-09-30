@@ -785,6 +785,10 @@
           b.box(0.17, 0.035, 0.035, 0, 1.617, 0.178, h); b.box(0.035, 0.06, 0.03, 0.095, 1.597, 0.176, h); b.box(0.035, 0.06, 0.03, -0.095, 1.597, 0.176, h); break;
         case 'headband': b.box(0.365, 0.05, 0.345, 0, 1.81, 0, 0xd23c3c); break;
         case 'bandana': b.box(0.365, 0.08, 0.345, 0, 1.845, 0, 0x2f5fb3); b.box(0.08, 0.06, 0.06, 0, 1.83, -0.19, 0x2f5fb3); break;
+        case 'toque':   // v0.9 (Moth): a knit toque, rolled brim
+          b.box(0.37, 0.07, 0.35, 0, 1.83, 0, 0x3b4a5c); b.box(0.33, 0.14, 0.31, 0, 1.92, 0, 0x4a5d73); b.box(0.09, 0.07, 0.09, 0, 2.02, 0, 0xd8d2c4); break;
+        case 'bighat':   // v0.9 (Duke): the hat is the character — a wide-brimmed ten-gallon
+          b.box(0.74, 0.03, 0.66, 0, 1.885, 0, 0xe8dcc0); b.box(0.36, 0.24, 0.33, 0, 2.01, 0, 0xe8dcc0); b.box(0.37, 0.045, 0.34, 0, 1.915, 0, 0x4a3522); break;
         case 'hat':
         case 'cowboy':
           b.box(0.54, 0.03, 0.5, 0, 1.885, 0, 0x6b4a2e); b.box(0.34, 0.17, 0.32, 0, 1.975, 0, 0x6b4a2e); b.box(0.35, 0.04, 0.33, 0, 1.915, 0, 0x2a1d14); break;

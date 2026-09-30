@@ -284,6 +284,11 @@ Later versions:
 - **Buckle & Boot** (the Ramblers' rival, Red Deer, bro-country duo): truck-ad cousins **Brayden and Colt**, ex-junior
   hockey; one sings about tailgates, the other "plays" an unplugged guitar; their truck sponsor's mascot (a guy in a pickup
   costume) is basically a third member; furious when a truck ad goes to the Ramblers (v0.8.1 licensing hook).
+- Plan answers (popups 2026-09-30, all the recommended picks; details in plan/plan_contract_0.9.md §0): Q1 an **Alberta** home
+  ring for Gravel Kings (open day one; Sask + West at Local); Q2 storylines **Rox for City Council / The Riff / Travis Lee's First
+  Truck**; Q3 **one World payoff per band** (Berlin squat anthem / Mudstonbury headline / Aussie country circuit; Gong credit);
+  Q4 **fair-fight** underdog rivals (fame = flavour); Q5 a **home superfan per band**; Q6 a **misprint per band**; Q7 **localised
+  rented-room names**; Q8 **cross-band cameos**.
 - **All four bands playable from the start** (new-career screen offers all four; each with its own rival, driver, space,
   city: Frost Heave — Regina laundromat basement (Suds-O-Rama), driver Moth; Gravel Kings — Edmonton strip-mall unit 4B,
   driver T-Bone; the Grid Road Ramblers — Duke's uncle's Quonset outside Swift Current, driver Earl).

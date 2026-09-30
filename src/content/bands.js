@@ -11,7 +11,9 @@
 //   - `titleEn` is null for songs already in English (all of them since v0.7.2). Metal starters also carry `fr`:
 //     Marcel's French original. It seeds the starter's drum pattern (unchanged since v0.1) and lets old saves that
 //     still hold the French title rename it to the English one on load (GG.songs.migrateTitles).
-//   - Only Hail Damage is playable in v0.1; the others ship with full data so the menu can tease them.
+//   - All four bands are playable from the start (owner, v0.9). v0.9 band fields (roles, firstGig, homeRing, spaceShort, door,
+//     province, coldOpenFx, throne) and member fields (gear, silent, cape, signature, look.top) are applied by the table at
+//     the bottom of this file (see CONTENT SCHEMAS in 02_contracts.js and plan/plan_contract_0.9.md §3-4).
 (function (GG) {
   // LOOK helper: keeps member definitions on one line each.
   function look(skin, hair, hairStyle, shirt, pants, height, build, extras) {
@@ -75,7 +77,7 @@
   bands.frost_heave = {
     id: 'frost_heave', name: 'Frost Heave', genre: 'punk', city: 'Regina', region: 'canada',
     space: 'laundromat_basement', spaceName: 'The basement under the Suds-O-Rama', size: 4, rival: 'mall_rats',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: 'Punk. A four-piece out of a laundromat basement in Regina. Every song is about city council. ' +
       'The dryers are the rhythm section.',
     coldOpen: [
@@ -115,7 +117,7 @@
   bands.gravel_kings = {
     id: 'gravel_kings', name: 'Gravel Kings', genre: 'rock', city: 'Edmonton', region: 'canada',
     space: 'strip_mall_unit', spaceName: 'Unit 4B, Westgate Plaza', size: 4, rival: 'chartbusters',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: "Rock. A four-piece in an empty strip-mall unit in Edmonton. It's 1985 in there. It will always be 1985 in there.",
     coldOpen: [
       'Edmonton. Minus forty. A man in leather pants is jogging past a strip mall.',
@@ -154,7 +156,7 @@
   bands.grid_road_ramblers = {
     id: 'grid_road_ramblers', name: 'The Grid Road Ramblers', genre: 'country', city: 'Swift Current', region: 'canada',
     space: 'quonset', spaceName: "Duke's uncle's Quonset", size: 5, rival: 'buckle_and_boot',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: 'Country. A five-piece in a Quonset outside Swift Current. Heartbreak, trucks, a fiddle and a very large hat.',
     coldOpen: [
       'Outside Swift Current. A Quonset, a grid road, and a sunset the colour of canola.',
@@ -209,6 +211,46 @@
     buckle_and_boot: { id: 'buckle_and_boot', name: 'Buckle & Boot', city: 'Red Deer', genre: 'country',
       blurb: "Bro-country duo sponsored by a truck brand. Every song is about tailgates. They're in every truck commercial, sometimes as the truck." }
   };
+
+  // ---- v0.9 "Genres": band + member fields (stage 0, lead; Lane A owns this file from here) ----------------------
+  // roles: who plays which text role when shared content uses {namer} / {grumbler} / {deadpan} (see C.TOKENS).
+  var V09_BANDS = {
+    hail_damage: { roles: { namer: 'marcel', grumbler: 'marcel', deadpan: 'kenji' }, firstGig: 'buddys_house_party', homeRing: 'sask',
+      spaceShort: 'the garage', door: 'the garage door', province: 'SK', coldOpenFx: 'hail', throne: 'crate' },
+    frost_heave: { roles: { namer: 'rox', grumbler: 'benny', deadpan: 'moth' }, firstGig: 'craigs_basement', homeRing: 'sask',
+      spaceShort: 'the basement', door: 'the basement stairs', province: 'SK', coldOpenFx: 'snow', throne: 'bucket' },
+    gravel_kings: { roles: { namer: 'chase', grumbler: 'chase', deadpan: 'tamara' }, firstGig: 'mill_woods_basement_party', homeRing: 'alberta',
+      spaceShort: 'Unit 4B', door: 'the shop door', province: 'AB', coldOpenFx: 'neon', throne: 'crate' },
+    grid_road_ramblers: { roles: { namer: 'travis', grumbler: 'earl', deadpan: 'clementine' }, firstGig: 'quonset_yard_party', homeRing: 'sask',
+      spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
+  };
+  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
+  var V09_MEMBERS = {
+    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+    dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },
+    rox: { gear: 'sg', top: 'jacket', signature: { action: 'stageDive', combo: 40, crowd: 8 } },
+    benny: { gear: 'sg', top: 'tee' },
+    moth: { gear: 'bass', top: 'hoodie', swapExtra: ['hat', 'toque'] },
+    chase: { top: 'jacket', signature: { action: 'kneeSlide', combo: 40, crowd: 8 } },
+    lenny: { gear: 'strat', top: 'tee' }, tamara: { gear: 'bass', top: 'tee' },
+    travis: { gear: 'acoustic', top: 'flannel' }, earl: { gear: 'tele', top: 'flannel' },
+    clementine: { gear: 'fiddle', top: 'jacket', idle: 'fiddle' },
+    duke: { gear: 'bass', top: 'flannel', swapExtra: ['hat', 'bighat'], signature: { action: 'hatTip', combo: 40, crowd: 8 } }
+  };
+  Object.keys(V09_BANDS).forEach(function (id) {
+    var b = bands[id], f = V09_BANDS[id];
+    Object.keys(f).forEach(function (k) { b[k] = f[k]; });
+    b.members.forEach(function (m) {
+      var x = V09_MEMBERS[m.id]; if (!x) return;
+      if (x.gear) m.gear = x.gear;
+      if (x.silent) m.silent = true;
+      if (x.cape) m.cape = true;
+      if (x.signature) m.signature = x.signature;
+      if (x.idle) m.idle = x.idle;
+      if (x.top && m.look) m.look.top = x.top;
+      if (x.swapExtra && m.look) m.look.extras = m.look.extras.map(function (e) { return e === x.swapExtra[0] ? x.swapExtra[1] : e; });
+    });
+  });
 
   GG.content.bands = bands;
   GG.content.rivals = rivals;
