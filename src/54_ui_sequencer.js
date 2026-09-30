@@ -398,8 +398,8 @@
   function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
   function setMode(m) { try { if (GG.prefs && prefMode() !== m) GG.prefs.set({ songwriterMode: m }); } catch (e) { /* storage off */ } }
   // One line from whoever fits the screen (role match on the active lineup). (The first-ever Write's hint is about the grid.)
-  // v0.9: coach lines per genre (content grooves.coach[genre][step], Lane D); the flat v0.6.2 set is metal's, so other genres
-  // fall back to COACH (neutral, tokenised) until theirs exist. Speakers who don't talk (Kenji) are skipped.
+  // v0.9: coach lines per genre (content grooves.coach[genre][step], Lane D), else the neutral flat grooves.coach[step],
+  // else COACH (neutral, tokenised). Speakers who don't talk (Kenji) are skipped.
   var COACH = {
     verse: [{ role: 'guitar|fiddle', text: 'Start with the kick and the snare. Keep it steady; I will do the fancy stuff.' }, { role: 'vocals', text: 'Give me room to sing. Steady is good. Steady is great.' }],
     chorus: [{ role: 'vocals', text: 'The chorus should hit harder than the verse. A crash on the one. Trust me.' }, { role: 'guitar|fiddle', text: 'Bigger than the verse. More cymbal, more everything.' }],
@@ -409,15 +409,19 @@
     name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }]
   };
   function coachFor(D, step) {
-    var CO = (GG.content.grooves || {}).coach || {}, g = genre(), set = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : g === 'metal' ? CO : COACH;
-    var lines = set[step] || COACH[step] || [], state = st();
+    // (coach[genre] || {})[step] || coach[step] (the neutral flat set), then the UI's own COACH; the first set with a talker wins
+    var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
+    var sets = [mine[step], CO[step], COACH[step]].filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
     var act = ui.talkers(state);
-    for (var k = 0; k < lines.length; k++) {
-      var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
-      if (!ui.ownLines([ln.text], state).length) continue;
-      for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+    for (var q = 0; q < sets.length; q++) {
+      var lines = sets[q];
+      for (var k = 0; k < lines.length; k++) {
+        var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
+        if (!ui.ownLines([ln.text], state).length) continue;
+        for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+      }
     }
-    var own = ui.ownLines(lines, state);
+    var own = sets.length ? ui.ownLines(sets[0], state) : [];
     return own[0] ? { who: null, text: ui.fill(own[0].text, state) } : null;
   }
   function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }

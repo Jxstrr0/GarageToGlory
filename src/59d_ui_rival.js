@@ -336,6 +336,10 @@
       scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false,
       genre: rivalGenre(st), style: c0.style || (rid0 === 'chartbusters' ? 'ballad' : null), singer: c0.frontman || null, rid: rid0,
       actions: (c0.actions || (rid0 === 'mall_rats' ? ['kickflip'] : [])).filter(function (a) { return (C.RIVAL_ACTIONS || []).indexOf(a) >= 0; }), acted: false };
+    // v0.9 (§4.4): the sim's showdown(kind).actions [{ song, at (0..1), action, who }] say when; else once in their first song
+    V.acts = (Array.isArray(set.actions) && set.actions.length ? set.actions : V.actions.map(function (a) { return { song: 0, at: 0.55, action: a, who: null }; }))
+      .filter(function (a) { return a && (C.RIVAL_ACTIONS || []).indexOf(a.action) >= 0; })
+      .map(function (a) { return { song: Math.min(Math.max(0, a.song | 0), set.setlist.length - 1), at: +a.at || 0.55, action: a.action, who: a.who || null, done: false }; });
     ui.show('rival-set', {});
     var api = stageApi();
     if (api) {
@@ -371,7 +375,8 @@
     var song = V.set.setlist[i];
     V.pattern = songPattern(song, i);
     if (GG.audio && GG.audio.play && V.pattern) {   // v0.9: their genre (+ style, e.g. the power ballad) and their singer (the audio's vocal voice)
-      var ao = { genre: V.genre, loop: true, singer: V.singer, band: V.rid };
+      // rival: their singer and the genre's own solo (never the player's soloist, even in the same genre)
+      var ao = { genre: V.genre, loop: true, singer: V.singer, rival: V.rid, band: V.rid };
       if (V.style) ao.style = V.style;
       try { V.handle = GG.audio.play(V.pattern, ao); } catch (e) { V.handle = null; }
     }
@@ -398,10 +403,14 @@
       }
       if (!V.moment && u > 0.5) { V.moment = true; api.moment(song.score >= 55 ? 'lighters' : 'drinks'); }   // no pits: they'd run through the riser camera
       if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner(fill(copy(S(), 'solo'), { soloist: rivalSoloist(S()) })); }
-      if (V.actions.length && !V.acted && V.i === 0 && u > 0.55) {   // v0.9 (§4.4): Mall Rats' sponsor-mandated kickflip, once a set
-        V.acted = true;
-        try { api.bandAction(V.singer, V.actions[0]); } catch (e) { /* the stage may not know it yet */ }
-        banner(ui.cap(fill('{rivalFront} kickflips. The sponsor is watching.')));
+      for (var ai = 0; ai < V.acts.length; ai++) {   // v0.9 (§4.4): Mall Rats' sponsor-mandated kickflip, where the sim put it
+        var act = V.acts[ai];
+        if (act.done || V.i !== act.song || u <= act.at) continue;
+        act.done = true; V.acted = true;
+        var aw = act.who || V.singer;
+        try { api.bandAction(aw, act.action); } catch (e) { /* the stage may not know it yet */ }
+        GG.emit('gig:band', { id: aw, who: aw, action: act.action, rival: V.rid });
+        banner(ui.cap(fill(act.action === 'kickflip' ? '{rivalFront} kickflips. The sponsor is watching.' : '{rivalFront} goes big.')));
       }
     }
     updateScores();
