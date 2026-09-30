@@ -19,6 +19,9 @@
 // season/holiday, listing weight + pay, weather turnout, road risk) and van drivers (content.drivers; world.driver(state)
 // → { id, name, you, def }: the band's designated driver while active, else YOU drive; world.driverMods, syncDriver).
 // Road-card gates gain driver: [ids|'you'], weather: [C.WEATHER], holiday: [holidayIds].
+// v0.7 (WORLDSIM): on tour (GG.tour.away) the board lists the region's clubs (GG.tour.listings), tour gigs (g.tour) are
+// shaped/estimated/travelled by GG.tour (region fans, the rental vehicle, no Moose Hearse wear), trips abroad come from
+// GG.tour.startTrip and road cards are the region's (gate.region); world.scene in the World era adds the fans abroad.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
@@ -154,7 +157,7 @@
   // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
   world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
   // v0.5: how many fans gigs can reach in your era (the garage-era scene is Saskatchewan; Signed is national).
-  world.scene = function (state) { var K = cfg(), v = K.scene && K.scene[state && state.era]; return v || econ().gig.localScene; };
+  world.scene = function (state) { var K = cfg(), v = K.scene && K.scene[state && state.era]; return (v || econ().gig.localScene) + (GG.tour && state && state.era === 'world' ? GG.tour.abroadFans(state) : 0); };
   world.fitLabel = function (fit) {
     return fit >= 0.85 ? { id: 'great', label: 'Your crowd', icon: '🤘' } : fit >= 0.65 ? { id: 'good', label: 'Decent fit', icon: '👍' }
       : fit >= cfg().clashFit ? { id: 'meh', label: 'Tough room', icon: '😬' } : { id: 'clash', label: 'Wrong crowd: expect flying boots', icon: '👢' };
@@ -222,6 +225,7 @@
   // This week's board: 3–6 gigs in reach (a rebook when a venue loves you, sometimes an opening slot).
   // Pure apart from the rng (default: seeded by career seed + week, so the career RNG never moves).
   world.listings = function (state, rng) {
+    if (GG.tour && GG.tour.away(state)) return GG.tour.listings(state, rng);   // v0.7: the regional board on tour
     rng = rng || seeded(state, 'board');
     var K = cfg(), out = [], used = {};
     var pool = venues().filter(function (v) { return world.bookable(state, v); });
@@ -296,6 +300,7 @@
   };
   // A rough preview for the board and the bots: { crowd, pay, fans, net, burnout }.
   world.estimate = function (state, l) {
+    if (l && l.tour && GG.tour) return GG.tour.estimate(state, l);
     var G = econ().gig, K = cfg(), v = venueById(l.venueId) || {}, fit = l.fit != null ? l.fit : fitOf(v, state.genre);
     var crowd = Math.min(l.capacity || 0, Math.round((v.walkIns || 0) + state.fans * G.fanDraw + state.buzz * G.buzzDraw));
     var slice = l.opening ? Math.max(0, Math.min((l.capacity || 0) - crowd, Math.round(l.opening.draw * K.opening.slice))) : 0;
@@ -329,6 +334,7 @@
   /* ---- After the gig: opening slots, genre comedy, reputation, travel ------------------------------ */
   // Before GG.gig.applyResult: the headliner's crowd (opening slots), genre-clash comedy. Marks r.shaped.
   world.shape = function (state, g, r, rng) {
+    if (g && g.tour && GG.tour) return GG.tour.shape(state, g, r, rng);   // v0.7: abroad
     if (!g || !r || r.shaped) return r;
     var K = cfg(), G = econ().gig;
     r.shaped = true;
@@ -392,7 +398,7 @@
       GG.career.applyEffects(state, { fund: -r.crew }, d);
       r.lines.push('Crew, sound and lights: ' + U.fmtMoney(r.crew) + '.');
     }
-    r.travel = world.travel(state, g, rng, d);
+    r.travel = g.tour && GG.tour ? GG.tour.afterGig(state, g, r, rng, d) : world.travel(state, g, rng, d);   // v0.7: the rental abroad
     var t = r.travel;
     if (t.breakdown) r.lines.push(pickLine(state, rng, 'breakdown', 'The van broke down.') + ' (Tow: ' + U.fmtMoney(t.breakdown.cost) + ')');
     else if (t.wear && world.van(state).condition < K.van.tiredAt) r.lines.push(pickLine(state, rng, 'vanTired', 'The van is tired.'));
@@ -529,7 +535,7 @@
   world.drawRoad = function (state, km, season, rng, city) {
     var K = cfg().road;
     if (!rng.chance(Math.min(0.97, (km >= K.longKm ? K.chanceLong : K.chanceLocal) * (world.driverMods(state).roadChance || 1)))) return null;
-    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c); });
+    var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c) && (!GG.tour || GG.tour.roadCardOk(state, c)); });
     return list.length ? rng.weighted(list, function (c) { return c.weight != null ? c.weight : 1; }) : null;
   };
   // 1–2 lines of van chatter (a bandmate or two; Kenji only ever gets a stage direction). Seeded, cosmetic.
@@ -553,6 +559,7 @@
     if (!gig) return null;
     var t = world.trip(state);
     if (t && t.venueId === gig.venueId) return t;
+    if (gig.tour && GG.tour && GG.tour.away(state)) return GG.tour.startTrip(state, gig);   // v0.7: the rental abroad
     var rng = GG.rngFor(state), from = world.home(state), toId = world.cityId(gig.city), to = toId || from;   // v0.6: Calgary is off the map
     var km = gig.km != null ? gig.km : world.km(from, to), season = world.season(state.week);
     var card = world.drawRoad(state, km, season, rng, to);

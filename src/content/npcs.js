@@ -33,7 +33,20 @@
     { id: 'dale_warman', name: 'Dale from Warman',
       blurb: 'Your first superfan. At every show, front row, lawn chair. No relation to Cousin Dale; he wants that on the record.' },
     { id: 'wendell', name: 'Big Wendell',
-      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' }
+      blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' },
+    // v0.7 (WORLDSIM): the world stage cast
+    { id: 'nigel', name: 'Nigel the promoter',
+      blurb: 'Books every pub from London to Glasgow. Pays in drink tickets. Calls everyone "my friend" in a tone that means the opposite.' },
+    { id: 'klaus', name: 'Klaus from the festival',
+      blurb: 'Stage manager at Wackelstein Open Air. Clipboard, headset, knee-high boots, zero tolerance for lateness or clean shoes.' },
+    { id: 'kato', name: 'Mr. Kato',
+      blurb: 'Your Japanese promoter. Immaculate suit, immaculate schedule. Has never been late. Has never seen a band this late.' },
+    { id: 'emiko', name: 'Emiko Tanabe',
+      blurb: 'President of your Japanese fan club. Member number one. Laminates everything. Knows your birthdays better than your mom.' },
+    { id: 'shazza', name: 'Shazza',
+      blurb: 'Your Australian promoter. Tells tall tales about drop bears with a completely straight face. Drives a ute with a snake in the glovebox.' },
+    { id: 'dmitri', name: 'Dmitri',
+      blurb: 'Runs Siberian Frostfest. Apologizes for the cold. The band finds this very funny. Owns a banya and a bus with a past.' }
   ];
 
   var npcs = {};

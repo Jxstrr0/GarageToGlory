@@ -4,7 +4,7 @@
 // right, the STAGE (curtains, a giant loonie, a lectern with a presenter holding the envelope, the band stage-left, the
 // rival stage-right, confetti when you win). Built on enter()/setup(), everything disposed on exit().
 // API (GG.render.carpet): setup({ members:[{id,look,role}], player, flags, outfit:'cape'|'tux'|'jumpsuit'|null, rival:{name},
-//   genre, year }) ; setMode('carpet'|'podium') ; flash(n) ; envelope(true|false|null) (won / lost / reset) ;
+//   genre, year, sign? (v0.7: the marquee text, default 'The Loonies'; the Global Gong uses 'The Global Gong') }) ; setMode('carpet'|'podium') ; flash(n) ; envelope(true|false|null) (won / lost / reset) ;
 //   setFrame({ top, bottom }) ; info().
 // Draw calls ≈ set 1 + glow 1 + wall 1 + photographers 1 + flashes 1 + confetti 1 + band ≤6 + rival 4 + paint 4
 //   + presenter 1 + envelope 1 ≈ 22. Per frame: numbers only (preallocated dummies, typed arrays), no allocation.
@@ -99,17 +99,27 @@
       K.texs.push(tex);
       return tex;
     }
-    function signTexture() {
-      var c = document.createElement('canvas'); c.width = 1024; c.height = 154;
-      var g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 154);
+    function drawSign(g, text) {
+      var gr = g.createLinearGradient(0, 0, 0, 154);
       gr.addColorStop(0, '#2a1606'); gr.addColorStop(1, '#120a04'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 154);
-      g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'italic 900 92px Georgia, "Times New Roman", serif';
-      g.lineWidth = 8; g.strokeStyle = '#6a4a10'; g.strokeText('The Loonies', 512, 80);
-      g.fillStyle = '#ffd24a'; g.fillText('The Loonies', 512, 80);
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'italic 900 ' + (text.length > 12 ? 76 : 92) + 'px Georgia, "Times New Roman", serif';
+      g.lineWidth = 8; g.strokeStyle = '#6a4a10'; g.strokeText(text, 512, 80);
+      g.fillStyle = '#ffd24a'; g.fillText(text, 512, 80);
       g.fillStyle = '#ffd24a'; g.beginPath(); g.arc(140, 78, 34, 0, Math.PI * 2); g.arc(884, 78, 34, 0, Math.PI * 2); g.fill();
       g.fillStyle = '#2a1606'; g.font = '900 36px Georgia, serif'; g.fillText('1', 140, 80); g.fillText('1', 884, 80);
+    }
+    function signTexture() {
+      var c = document.createElement('canvas'); c.width = 1024; c.height = 154;
+      var g = c.getContext('2d'), text = pending.o.sign || 'The Loonies';
+      drawSign(g, text);
       var tex = new THREE.CanvasTexture(c); K.texs.push(tex);
+      K.sign = { g: g, tex: tex, text: text };
       return tex;
+    }
+    function resign() {   // v0.7: setup({ sign }) after the set is built redraws the marquee
+      var text = pending.o.sign || 'The Loonies';
+      if (!K || !K.sign || K.sign.text === text) return;
+      drawSign(K.sign.g, text); K.sign.text = text; K.sign.tex.needsUpdate = true;
     }
     function buildSet() {
       var b = new ctx.Builder({ seed: 5 }), gl = new ctx.Builder({ seed: 6, jitter: 0 }), i, k;
@@ -444,7 +454,7 @@
     };
     inst = {
       active: false,
-      people: function () { if (K) { buildPeople(); placeAll(true); } },
+      people: function () { if (K) { resign(); buildPeople(); placeAll(true); } },
       mode: function () { if (K) applyMode(false); },
       flash: flash, envelope: envelope,
       frame: function (snap) { if (K) frame(!!snap); },
@@ -452,7 +462,7 @@
         if (!K) return { built: false };
         return { built: true, mode: T.mode, band: P ? P.band.map(function (r) { return r.id; }) : [], rival: P ? P.rival.length : 0, host: !!(P && P.host),
           cape: !!(P && P.band.some(function (r) { return r.cape; })), walking: P ? P.band.filter(function (r) { return !r.arrived; }).length : 0,
-          envelope: T.envelope, confetti: K.conf.visible, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length };
+          envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length };
       }
     };
     return shell;

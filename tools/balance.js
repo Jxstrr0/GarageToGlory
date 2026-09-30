@@ -11,6 +11,8 @@
 // Then era timing (week of Local Heroes, first offer, Signed era, world-ready threshold), loans after year 1.
 // v0.6: sd = showdowns with the rival that year, sdW = share you won, heat = average rivalry heat, rvF = rival fans at year
 // end; per career: cracks (kind@year), the Sad Dome final (you headline / they headline), poach defections.
+// v0.7: tr = tours that left that year, abr = fans abroad at year end, hs = average homesickness; per career: the World era
+// week, regions unlocked (fans/invite/big) and broken, Global Gong wins, the Moose Opera payoff, the Japanese president.
 //   WIDE_GATES=1 treats garage-only Monday cards as all-era (approximates the CONTENT agent widening gates).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
@@ -72,11 +74,12 @@ function run(style) {
     for (let w = 0; w < years * WPY && !s.ended; w++) {
       if (s.week === 1) y = { fundMin: Infinity, buzz: 0, burn: 0, mood: 0, n: 0, loans0: s.stats.parentsLoans, songs0: s.stats.songsWritten, gigs0: s.stats.gigs,
         rel0: s.stats.releases || 0, roy0: s.stats.royalties || 0, cert0: s.stats.certs || 0, loon0: s.stats.loonieWins || 0,
-        quits0: s.stats.quits || 0, ults0: s.stats.ultimatums || 0, rets0: s.stats.returns || 0, prot: s.protected, heat: 0 };
+        quits0: s.stats.quits || 0, ults0: s.stats.ultimatums || 0, rets0: s.stats.returns || 0, prot: s.protected, heat: 0, hs: 0,
+        tours0: s.tour ? s.tour.history.length + (s.tour.active ? 1 : 0) : 0 };
       const yearIdx = s.year - 1;
       GG.career.botWeek(s, style);
       check(s, style + '#' + seed);
-      y.fundMin = Math.min(y.fundMin, s.fund); y.buzz += s.buzz; y.burn += s.burnout; y.n++; y.heat += s.rival ? s.rival.heat : 0;
+      y.fundMin = Math.min(y.fundMin, s.fund); y.buzz += s.buzz; y.burn += s.burnout; y.n++; y.heat += s.rival ? s.rival.heat : 0; y.hs += s.tour ? s.tour.homesick : 0;
       y.mood += s.members.reduce((t, m) => t + m.mood, 0) / s.members.length;
       if (s.week === 1 || s.ended) {   // endWeek just rolled into a new year (or the career ended)
         (rows[yearIdx] = rows[yearIdx] || []).push({
@@ -88,6 +91,7 @@ function run(style) {
           sgn: s.label ? 1 : 0, rel: (s.stats.releases || 0) - y.rel0, roy: (s.stats.royalties || 0) - y.roy0,
           cert: (s.stats.certs || 0) - y.cert0, loon: (s.stats.loonieWins || 0) - y.loon0,
           peak: (s.albums || []).filter(a => a.released > s.totalWeek - WPY - 1 && a.chart && a.chart.peak).reduce((m, a) => Math.min(m, a.chart.peak), 999),
+          tr: s.tour ? s.tour.history.length + (s.tour.active ? 1 : 0) - y.tours0 : 0, abr: GG.tour ? GG.tour.abroadFans(s) : 0, hs: y.hs / y.n,
           ...(() => { const sds = (s.showdowns || []).filter(x => x.week > yearIdx * WPY && x.week <= (yearIdx + 1) * WPY);
             return { sd: sds.length, sdWon: sds.filter(x => x.won).length, heat: y.heat / y.n, rvF: s.rival ? s.rival.fans : 0 }; })() });
       }
@@ -99,7 +103,12 @@ function run(style) {
       drops: s.stats.drops || 0, units: s.stats.units || 0,
       crack: s.rival && s.rival.cracked ? s.rival.cracked + '@y' + (Math.floor((s.rival.crackWeek - 1) / WPY) + 1) : null,
       final: s.finalShowdown ? s.finalShowdown.headliner : null,
-      poached: (s.showdowns || []).filter(x => x.kind === 'poach' && !x.won).length });
+      poached: (s.showdowns || []).filter(x => x.kind === 'poach' && !x.won).length,
+      worldEra: eraWeek('world'), tours: s.tour ? s.tour.history.length : 0,
+      unl: s.tour ? Object.values(s.tour.regions).filter(r => r.unlocked).length : 0, inv: s.tour ? Object.values(s.tour.regions).filter(r => r.via === 'invite' || r.via === 'big').length : 0,
+      brk: s.tour ? Object.values(s.tour.regions).filter(r => r.broken).length : 0, gong: s.tour ? s.tour.gongs.filter(g => g.won).length : 0,
+      gongN: s.tour ? s.tour.gongs.filter(g => g.nominated).length : 0, moose: !!(s.tour && s.tour.moose), pres: !!(s.tour && s.tour.president),
+      net: s.tour ? s.tour.history.reduce((t, h) => t + (h.net || 0), 0) : 0 });
   }
   return rows;
 }
@@ -108,7 +117,7 @@ const peakAvg = a => { const v = a.map(r => r.peak).filter(p => p < 999); return
 const pad = (v, n, d) => { const s = typeof v === 'number' ? v.toFixed(d || 0) : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
 function table(style, rows) {
   const out = [style.toUpperCase() + ' bot',
-    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF'];
+    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs'];
   rows.forEach((a, i) => {
     const fans = a.map(r => r.fans);
     out.push(pad(i + 1, 3) + ' | ' + pad(avg(a, 'fundMin'), 7) + ' ' + pad(avg(a, 'fundEnd'), 7) + ' | ' +
@@ -119,9 +128,12 @@ function table(style, rows) {
       pad(avg(a, 'gigs'), 4, 1) + ' | ' + pad(avg(a, 'mood'), 4) + ' | ' + pad(avg(a, 'van'), 3) + ' | ' + pad(avg(a, 'bans'), 4, 1) + ' | ' +
       pad(avg(a, 'sgn'), 3, 1) + ' ' + pad(avg(a, 'rel'), 4, 1) + ' ' + pad(peakAvg(a), 4) + ' ' + pad(avg(a, 'roy'), 5) + ' ' + pad(avg(a, 'cert'), 4, 1) + ' ' + pad(avg(a, 'loon'), 4, 1) + ' | ' +
       pad(avg(a, 'sd'), 3, 1) + ' ' + pad(a.reduce((t, r) => t + r.sd, 0) ? Math.round(100 * a.reduce((t, r) => t + r.sdWon, 0) / a.reduce((t, r) => t + r.sd, 0)) + '%' : '-', 3) + ' ' +
-      pad(avg(a, 'heat'), 4) + ' ' + pad(avg(a, 'rvF'), 5));
+      pad(avg(a, 'heat'), 4) + ' ' + pad(avg(a, 'rvF'), 5) + ' | ' + pad(avg(a, 'tr'), 3, 1) + ' ' + pad(avg(a, 'abr'), 5) + ' ' + pad(avg(a, 'hs'), 3));
   });
   const T = timing[style], wk = (k) => { const v = T.map(t => t[k]).filter(x => x != null); return v.length ? 'wk ' + Math.round(v.reduce((a, b) => a + b, 0) / v.length) + ' (y' + (Math.floor((v.reduce((a, b) => a + b, 0) / v.length - 1) / WPY) + 1) + ', ' + v.length + '/' + T.length + ', ' + Math.min(...v) + '-' + Math.max(...v) + ')' : 'never'; };
+  const per = k => (T.reduce((t, x) => t + (+x[k] || 0), 0) / T.length);
+  out.push('world: era ' + wk('worldEra') + ' | tours ' + per('tours').toFixed(1) + '/career (net ' + Math.round(per('net')) + ' $/career) | regions open ' + per('unl').toFixed(1) +
+    ' (invite/big ' + per('inv').toFixed(1) + ') broken ' + per('brk').toFixed(1) + ' | Gong won ' + per('gong').toFixed(1) + ' of ' + per('gongN').toFixed(1) + ' nominations | moose ' + T.filter(t => t.moose).length + '/' + T.length + ' | JP president ' + T.filter(t => t.pres).length + '/' + T.length);
   out.push('eras: local ' + wk('local') + ' | first offer ' + wk('offer') + ' | first deal ' + wk('deal') + ' | signed era ' + wk('signedEra') + ' | world-ready ' + wk('world'));
   const late = rows.slice(1).reduce((t, a) => t + a.reduce((u, r) => u + r.loans, 0), 0) / T.length;
   out.push('loans after year 1 (per career): ' + late.toFixed(2) + ' | releases ' + (T.reduce((t, x) => t + x.albums, 0) / T.length).toFixed(1) + ' | drops ' + (T.reduce((t, x) => t + x.drops, 0) / T.length).toFixed(1) + ' | units sold ' + Math.round(T.reduce((t, x) => t + x.units, 0) / T.length));

@@ -84,7 +84,7 @@ async function bandbook() {
     // the laptop: seven tabs in two rows, each a full thumb target
     await openBandbook(page);
     const tabs = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="laptop-tab-"]')].map(e => { const r = e.getBoundingClientRect(); return { h: r.height, w: r.width, top: Math.round(r.top), right: r.right }; }));
-    c.ok(tabs.length === 7 && tabs.every(t => t.h >= 44 && t.w >= 60 && t.right <= 390.5) && new Set(tabs.map(t => t.top)).size === 2, 'laptop: 7 tabs, 2 rows, ≥44px ' + JSON.stringify(tabs.map(t => [Math.round(t.w), t.h])));
+    c.ok(tabs.length === 8 && tabs.every(t => t.h >= 44 && t.w >= 60 && t.right <= 390.5) && new Set(tabs.map(t => t.top)).size === 2, 'laptop: 8 tabs (v0.7: + World), 2 rows, ≥44px ' + JSON.stringify(tabs.map(t => [Math.round(t.w), t.h])));
     // a good viral + a cringe post (the dice loaded through the economy tunables)
     await page.evaluate(() => {
       const E = GG.content.economy, keep = E.fans, s = GG.state;
@@ -113,7 +113,7 @@ async function bandbook() {
       gifts: document.querySelectorAll('[data-testid="bb-gift"]').length, mac: !!document.querySelector('[data-testid="bb-gift"][data-id="macaroni_kenji"]') }));
     c.ok(fans.types === 3, 'superfans / casuals / haters bars');
     c.ok(/Dale from Warman/.test(fans.dale) && /Shows: 1/.test(fans.dale), 'Dale: met, 1 show');
-    c.ok(/locked/.test(fans.trk) && /v0\.7/.test(fans.jp), 'Wendell not met yet; the Japanese president waits for v0.7');
+    c.ok(/locked/.test(fans.trk) && /Japan/.test(fans.jp), 'Wendell not met yet; the Japanese president waits for Japan (v0.7)');
     c.ok(fans.gifts === 4 && fans.mac, 'fan mail + gifts, incl. the macaroni Kenji');
     const bad2 = await audit(page); c.ok(bad2.length === 0, 'fans layout: ' + bad2.join(', '));
     const fm = await page.evaluate(() => { if (!GG.main.renderOk) return null; GG.render.syncState(GG.state); return GG.debug('render').fanMail; });

@@ -9,7 +9,8 @@
 //  - Fans stay ONE count (state.fans); state.fanTypes are shares { super, casual, hater } that drift weekly (superfans with
 //    chemistry and a happy fan club, haters with fame and scandals).
 //  - Named superfans (state.superfans): Dale from Warman (from day one; at every show, in the crowd and the comments),
-//    Big Wendell the jumper-cable trucker (met through a fan card), the Japanese fan-club president (reserved for v0.7).
+//    Big Wendell the jumper-cable trucker (met through a fan card), the Japanese fan-club president (v0.7: met on the first
+//    week in Japan via GG.tour; region superfans show `reserved: <region name>` until met; at Japan shows and in comments).
 //  - Scandals: a post (or a weekly roll: bandmates post on their own) queues a scandal choice card for next Monday.
 //  - Fan mail + gifts (state.gifts) arrive weekly by chance; Dale's macaroni portrait of Kenji comes through a card.
 //  - Patreeon (state.fanClub, Signed era): opened through a card or the Bandbook app; exclusive posts keep members happy;
@@ -172,6 +173,8 @@
     var dale = F.superfanDef('dale'), trk = F.superfanDef('trucker');
     if (sf.dale && dale && (post.kind === 'gig' || post.exclusive || rng.chance(0.55))) special.push({ who: 'dale', name: dale.name, text: pickLine(dale.comments, rng, used) });
     if (sf.trucker && trk && rng.chance(0.3)) special.push({ who: 'trucker', name: trk.name, text: pickLine(trk.comments, rng, used) });
+    var jp = F.superfanDef('japan');
+    if (sf.japan && jp && jp.comments && jp.comments.length && rng.chance(0.35)) special.push({ who: 'japan', name: jp.name, text: pickLine(jp.comments, rng, used) });   // v0.7
     if (!post.exclusive && rng.chance(Math.min(0.9, t.hater * 4 + (post.viral === 'cringe' ? 0.5 : 0) + (sent === 'bad' ? 0.2 : 0)))) {
       special.push({ who: 'hater', name: handle(H.hater), text: pickLine(CM.hater, rng, used) });
     }
@@ -466,14 +469,21 @@
     var lines = r.lines || (r.lines = []), cap = r.capacity || (g && g.capacity) || 1e6;
     var km = r.km != null ? r.km : (g && g.km) || 0, gcity = r.city || (g && g.city) || s.city, add = 0;
     function room() { return Math.max(0, cap - (r.crowd || 0) - add); }
-    if (km >= GK.followKm && cnt.super > 0) {
+    var abroad = !!(g && g.tour);   // v0.7: superfans don't fly; Dale watches the livestream; the president is at every Japan show
+    if (abroad && g.region === 'japan' && s.superfans.japan) {
+      var jpf = s.superfans.japan; jpf.seen = (jpf.seen || 0) + 1; jpf.mood = U.clamp((jpf.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
+      if (room() > 0) add++;
+      r.president = jpf.seen;
+      if ((L.president || []).length) lines.push(fill(s, rng.pick(L.president), { gcity: gcity }));
+    }
+    if (!abroad && km >= GK.followKm && cnt.super > 0) {
       var follow = Math.min(room(), Math.round(Math.min(cnt.super * GK.followShare, cap * GK.followCap)));
       if (follow > 0) {
         add += follow; r.superfans = follow;
         if (follow >= 2) lines.push(fill(s, rng.pick(L.follow || []), { n: follow, gcity: gcity }));
       }
     }
-    var dale = s.superfans.dale;
+    var dale = abroad ? null : s.superfans.dale;
     if (dale) {
       dale.seen = (dale.seen || 0) + 1;
       dale.mood = U.clamp((dale.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
@@ -482,7 +492,7 @@
       lines.push(fill(s, rng.pick((km >= 500 && L.daleFar) || L.dale || []), { n: dale.seen, gcity: gcity }));
     }
     var tr = s.superfans.trucker;
-    if (tr && km >= GK.followKm && rng.chance(GK.trucker)) {
+    if (tr && !abroad && km >= GK.followKm && rng.chance(GK.trucker)) {
       tr.seen = (tr.seen || 0) + 1; if (room() > 0) add++;
       r.trucker = true; lines.push(fill(s, rng.pick(L.trucker || []), { gcity: gcity }));
     }
@@ -556,7 +566,7 @@
     if (v.hater) { shiftShare(s, 'hater', v.hater); out.hater = v.hater; }
     if (v.super) { shiftShare(s, 'super', v.super); out.super = v.super; }
     if (v.superfan) Object.keys(v.superfan).forEach(function (id) {
-      var def = F.superfanDef(id); if (!def || def.reserved) return;
+      var def = F.superfanDef(id); if (!def || def.reserved || (def.region && !s.superfans[id])) return;
       var sf = s.superfans[id] || (s.superfans[id] = { seen: 0, mood: F.cfg().superfans.moodStart, since: s.totalWeek });
       sf.mood = U.clamp((sf.mood || 0) + (v.superfan[id] || 0), 0, 100);
       if (id === 'trucker' && !F.hasGift(s, 'cb_radio')) F.addGift(s, 'cb_radio');
@@ -585,7 +595,8 @@
     F.ensure(s);
     return K().superfans.map(function (d) {
       var st = s.superfans[d.id];
-      return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || null,
+      var R = d.region && !st && GG.tour ? GG.tour.region(d.region) : null;   // v0.7: region superfans wait until you get there
+      return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || (R ? R.name : null),
         active: !!st && !d.reserved, seen: st ? st.seen || 0 : 0, mood: st ? st.mood : null, since: st ? st.since : null };
     });
   };

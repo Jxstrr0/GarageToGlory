@@ -157,7 +157,7 @@
         return;
       }
       ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
-        ui.rivalCardNote ? ui.rivalCardNote(st, card) : null]);   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
+        ui.rivalCardNote ? ui.rivalCardNote(st, card) : null, ui.tourCardNote ? ui.tourCardNote(st, card) : null]);   // v0.7: region strip   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
           s.body.appendChild(btn('.choice', { testid: 'choice-' + i, onclick: function () {
@@ -235,7 +235,9 @@
     if (GG.labels && GG.labels.inSession && GG.labels.inSession(st) && ui.openStudio) { ui.openStudio(); return; }   // v0.5: studio week
     plan = (st.plan || []).slice(0, C.BLOCKS_PER_WEEK);
     while (plan.length < C.BLOCKS_PER_WEEK) plan.push(null);
-    plan = plan.map(function (a) { return a || null; });
+    var allowed = ui.tourBlocks ? ui.tourBlocks(st) : null;   // v0.7: on tour the planner shrinks (rest / promote / rehearse)
+    plan = plan.map(function (a) { return a && (!allowed || allowed.indexOf(a) >= 0) ? a : null; });
+    if (ui.tourForced && ui.tourForced(st)) { plan[0] = 'rest'; commitPlan(); }   // v0.7: too homesick: the first block is a rest
     sel = Math.max(0, plan.indexOf(null));
     ui.show('plan');
   };
@@ -252,6 +254,8 @@
   // Book it -> the pick is stored for the Book block; "No gig" -> 'skip'; ✕ -> back to the planner (nothing runs).
   function bookFirst(next) {
     var st = S();
+    var od = st && ui.tourOpenDate ? ui.tourOpenDate(st, next) : null;   // v0.7: an open date on tour picks from the regional board
+    if (od) return od;
     if (!st || st.gig || plan.indexOf('book') < 0 || !ui.openBoard) return next;
     return function () { ui.openBoard({ mode: 'book', onBook: next, onSkip: next }); };
   }
@@ -269,16 +273,17 @@
     build: function (s) {
       var st = S(); if (!st) return;
       s.setTitle('Plan the week', 'THE WHITEBOARD · WEEK ' + st.week);
-      var slots = el('div.slots');
+      var slots = el('div.slots'), act = ui.tourAct ? function (id) { return ui.tourAct(id, st); } : ui.act;   // v0.7: tour names
+      var forced = ui.tourForced ? ui.tourForced(st) : false;
       C.BLOCK_LABELS.forEach(function (label, i) {
-        var a = plan[i] && ui.act(plan[i]);
-        slots.appendChild(btn('.slot' + (a ? '.filled' : '') + (i === sel ? '.sel' : ''), { testid: 'plan-slot-' + i,
-          onclick: function () { if (plan[i]) { plan[i] = null; commitPlan(); } sel = i; s.rerender(); } },
-          [el('span.sl', label), el('span.si', a ? a.icon : '＋'), el('span.sn', a ? a.name : 'Empty'), a ? el('span.x', '✕') : null]));
+        var a = plan[i] && act(plan[i]), lock = forced && i === 0;
+        slots.appendChild(btn('.slot' + (a ? '.filled' : '') + (i === sel ? '.sel' : '') + (lock ? '.locked' : ''), { testid: 'plan-slot-' + i,
+          onclick: function () { if (lock) { ui.toast('Too homesick to do anything else. Rest first.'); return; } if (plan[i]) { plan[i] = null; commitPlan(); } sel = i; s.rerender(); } },
+          [el('span.sl', label), el('span.si', a ? a.icon : '＋'), el('span.sn', a ? a.name : 'Empty'), a ? el('span.x', lock ? '🔒' : '✕') : null]));
       });
       var acts = el('div.acts');
-      C.ACTIVITIES.forEach(function (id) {
-        var a = ui.act(id), n = plan.filter(function (p) { return p === id; }).length;
+      ((ui.tourBlocks && ui.tourBlocks(st)) || C.ACTIVITIES).forEach(function (id) {
+        var a = act(id), n = plan.filter(function (p) { return p === id; }).length;
         acts.appendChild(btn('.act', { testid: 'act-' + id, onclick: function () {
           var i = plan[sel] == null ? sel : plan.indexOf(null);
           if (i < 0) { ui.toast('All three blocks are full. Tap one to clear it.'); return; }
@@ -288,6 +293,7 @@
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
       ui.append(s.body, [el('div.stack', [
+        ui.tourPlanHead ? ui.tourPlanHead(st) : null,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
         gigBox(st, true, function () { s.rerender(); }),
         slots,
         acts,
@@ -301,7 +307,7 @@
 
   function studioBtn(st) {   // v0.5: book a session from the whiteboard once you can record (it takes over this week)
     var can = GG.labels && GG.labels.canRecord && ui.openStudioBooking ? GG.labels.canRecord(st) : null;
-    if (!can || !(can.ep || can.album) || st.session && GG.labels.inSession(st)) return null;
+    if (!can || !(can.ep || can.album) || st.session && GG.labels.inSession(st) || GG.tour && GG.tour.away(st)) return null;   // v0.7: not from a hotel room
     return btn('.btn.ghost.block', { testid: 'btn-plan-studio', onclick: function () { ui.close('plan'); ui.openStudioBooking(); } }, 'Book the studio instead 🎙');
   }
 
@@ -464,6 +470,7 @@
       if (ui.dramaWrap) parts.push.apply(parts, ui.dramaWrap(w));   // v0.4: protection ended, warnings, storyline news
       if (ui.labelWrap) parts.push.apply(parts, ui.labelWrap(w));   // v0.5: offers, release day, charts, certs, royalties
       if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
+      if (ui.tourWrap) parts.push.apply(parts, ui.tourWrap(w));     // v0.7: on tour, calls home, unlocks, invites, the Gong, home
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {

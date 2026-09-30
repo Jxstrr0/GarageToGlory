@@ -189,7 +189,7 @@ test('migration v6 -> v7: weather filled in, v = 7, idempotent, save code round-
   GG.career.startWeek(s);
   const old = JSON.parse(JSON.stringify(s)); old.v = 6; delete old.weather; delete old.van.driver;
   const m = GG.save.migrate(JSON.parse(JSON.stringify(old)));
-  eq(m.v, 7); eq(GG.contracts.SAVE_SCHEMA, 7);
+  eq(m.v, GG.contracts.SAVE_SCHEMA); ok(GG.contracts.SAVE_SCHEMA >= 7);
   eq(m.weather, GG.calendar.weatherAt(m)); eq(m.van.driver, 'kenji');
   eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
   const bad = JSON.parse(JSON.stringify(m)); bad.weather = { kind: 'tornado' };

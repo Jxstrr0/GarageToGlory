@@ -175,6 +175,7 @@
     var st = GG.state; if (!st || st.phase === 'ended') return;
     var res = GG.career.startWeek(st) || {};
     M.sync();
+    if (ui.flightDue && ui.flightDue(st)) { ui.playFlight(function () { if (GG.state === st) M.beginWeek(); }); return; }   // v0.7: departure day
     if (st.card && !st.card.resolved) { ui.show('card'); return; }   // offers show up on the whiteboard
     if (ui.announceShowdown && ui.announceShowdown(st)) return;      // v0.6: this week's rival showdown
     var q = typeof st.quiet === 'string' ? st.quiet : ui.pick(GG.content.lines && GG.content.lines.quietWeek);
@@ -202,6 +203,12 @@
     if (st.phase === 'wrap' && ui.loonieDue && ui.loonieDue(st) && ui.playLoonies && !ui.gigAutoplay && !ui.isOpen('loonies')) {
       ui.close('results');
       ui.playLoonies(function () { if (GG.state === st) M.wrapWeek(); });
+      return;
+    }
+    // v0.7: the Global Gong ceremony (week 22, World era, nominated) runs before endWeek too (autoplay: endWeek resolves it).
+    if (ui.gongDue && ui.gongDue(st) && ui.playGong && !ui.isOpen('gong')) {
+      ui.close('results');
+      ui.playGong(function () { if (GG.state === st) M.wrapWeek(); });
       return;
     }
     var wrap = st.wrap;

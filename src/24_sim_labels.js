@@ -176,7 +176,7 @@
   L.studio = function (id) { return allStudios().filter(function (s) { return s.id === id; })[0] || null; };
   L.producer = function (id) { return id ? allProducers().filter(function (p) { return p.id === id; })[0] || null : null; };
   function availability(state, x) {
-    var why = x.locked ? 'World era' : state && !eraAtLeast(state, x.era || 'local') ? capital(x.era || 'local') + ' era' : '';
+    var why = x.locked && !(state && state.era === 'world') ? 'World era' : state && !eraAtLeast(state, x.era || 'local') ? capital(x.era || 'local') + ' era' : '';   // v0.7: Abbot Lane opens in the World era
     return { available: !why, why: why, locked: !!why, lockedWhy: why };
   }
   L.studios = function (state) { return allStudios().map(function (s) { return Object.assign({}, s, availability(state, s)); }); };
@@ -405,6 +405,7 @@
     var rule = kindRule(kind);
     if (!eraAtLeast(state, rule.era)) return { ok: false, why: 'Become local heroes first (' + ((econ().eras || {}).localFans || 250) + ' fans).' };
     if (state.session) return { ok: false, why: 'You are already in the studio.' };
+    if (GG.tour && GG.tour.active(state)) return { ok: false, why: 'You are on tour (or about to be). Record when you get home.' };   // v0.7
     if (L.pending(state)) return { ok: false, why: 'Release the record you already made first.' };
     if (L.freshSongs(state).length < rule.tracks[0]) return { ok: false, why: 'You need ' + rule.tracks[0] + ' unreleased songs.' };
     return { ok: true, why: '' };
@@ -1080,7 +1081,7 @@
     // world stage threshold (the era itself arrives in v0.7)
     if (!state.milestones.worldReady && L.worldReady(state)) {
       state.milestones.worldReady = state.totalWeek;
-      news(out, 'world', 'The world is calling: ' + U.fmtNum(state.fans) + ' fans and a charting record.' + ((econ().eras || {}).worldEnabled ? '' : ' (World tours arrive in a later version.)'));
+      news(out, 'world', 'The world is calling: ' + U.fmtNum(state.fans) + ' fans and a charting record.' + ((econ().eras || {}).worldEnabled ? ' The World stage: tour packages abroad are on the laptop, and Abbot Lane Studios in London will take your call.' : ' (World tours arrive in a later version.)'));
       if ((econ().eras || {}).worldEnabled && GG.career.setEra) GG.career.setEra(state, 'world', 'fans');
     }
     return out;

@@ -457,6 +457,7 @@ test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {r
         || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
         || (/^content\.rivalry\./.test(p) && ['rival', 'album', 'pos', 'fans', 'venue', 'name', 'prize', 'n'].includes(t))   // v0.6
         || (/^content\.calendar\.holidays/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band
+        || (/^content\.world\./.test(p) && ['region', 'song', 'festival', 'here', 'rival', 'venue'].includes(t))   // v0.7: GG.tour tokens
         || (/^content\.bandbook\./.test(p) && ['who', 'song', 'venue', 'gcity', 'views', 'n', 'money', 'rival'].includes(t))   // v0.6.1: GG.fans tokens
         || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
@@ -1061,13 +1062,13 @@ test('bandbook: post kinds, comments, handles, lengths; Kenji never speaks; no s
   ok(B.gigLines.dale.every(t => /Dale from Warman/.test(t) && /\{n\}|speed limit/.test(t)), 'Dale at every show');
 });
 
-test('bandbook: superfans (Dale from start, the trucker by story, the Japanese president reserved for v0.7)', () => {
+test('bandbook: superfans (Dale from start, the trucker by story, the Japanese president met in Japan, v0.7)', () => {
   const S = K.bandbook.superfans, ids = S.map(x => x.id);
   eq(ids, ['dale', 'trucker', 'japan']);
   const [dale, trk, jp] = S;
   ok(dale.start && dale.name === 'Dale from Warman' && /every show/.test(dale.blurb), 'Dale from Warman, at every show');
   ok(trk.story && /jumper cables/.test(trk.blurb), 'the trucker from the jumper-cable story');
-  ok(jp.reserved === 'v0.7' && !jp.start && !jp.story, 'Japanese fan-club president reserved for v0.7');
+  ok(!jp.reserved && !jp.start && jp.story && jp.region === 'japan' && jp.comments.length >= 4, 'Japanese fan-club president: met in Japan (v0.7)');
   S.forEach(x => ok(str(x.name, 44) && str(x.short, 16) && str(x.icon, 4) && str(x.blurb, 140) && Array.isArray(x.comments) && (x.reserved || x.comments.length >= 4) && x.comments.every(t => str(t, 120)), 'superfan ' + x.id));
   ok(K.npcs.dale_warman && K.npcs.wendell, 'npcs for the superfan cards');
 });

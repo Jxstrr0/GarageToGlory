@@ -99,7 +99,7 @@ async function scene() {
     c.ok(/Rivalry heat/.test(v.heat) && /Sad Dome/.test(v.next) && /odds/.test(v.next), 'heat meter, Sad Dome countdown, showdown odds');
     c.ok(v.you && v.rival && v.rows >= 10, 'leaderboard: you, the rival and the scene (' + v.rows + ' rows)');
     c.ok(v.newsN > 0 && v.news === Math.min(8, v.newsN) && v.lineup >= 4 && v.albums === v.albumsN && v.albumsN >= 1, 'news ' + v.news + ', lineup ' + v.lineup + ', records ' + v.albums);
-    c.ok(v.tabs === 7, 'seven laptop tabs (v0.6.1: + Bandbook)');
+    c.ok(v.tabs === 8, 'eight laptop tabs (v0.6.1: + Bandbook, v0.7: + World)');
     const a1 = await audit(page); c.ok(!a1.length, 'scene tab layout: ' + a1.join(', '));
     await shot(page, 'scene');
     await page.evaluate(() => { const b = document.querySelector('[data-testid="scene-board"]'); b.scrollIntoView({ block: 'start' }); });
