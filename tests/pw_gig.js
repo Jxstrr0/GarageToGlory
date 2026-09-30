@@ -10,8 +10,9 @@
 //         resumes at song 2 → autoplay → results (rep) → Wrap up → wrap; contact sheet tests/.cache/v03_sheet.png
 //   double (v0.7.2): a 176 BPM song with 8th-note kicks on Hard → the highway shows double-kick notes (screenshot
 //         tests/.cache/double.png) → ONE on-time tap on a double = one judgement and two kicks heard (the tap's, then the
-//         second at ~t2 on the audio clock via GG.audio.hit), the drummer's left foot kicks; an untapped double plays no
-//         extra kick; Auto-kick plays both kicks of every double.
+//         second t2 - hitT after the tap's heard kick on the audio clock via GG.audio.hit), the drummer's left foot kicks;
+//         an untapped double plays no extra kick; tapping both kicks = a silent echo (still 2 kicks); headphones calibrated
+//         +200 ms keep the pair spaced; closing cancels scheduled hits; Auto-kick plays both kicks of every double.
 // Run: node build.js && timeout 500 node tests/pw_gig.js
 const path = require('path');
 const { open, checker } = require('./_pw');
@@ -297,12 +298,13 @@ async function double() {
       const song = GG.songs.create(s, { bpm: 176, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus'], sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] } },
         'Double Trouble', { quality: 60, polish: 60 });
       s.songs = [song];
-      window.__kh = []; const h0 = GG.audio.hit;
-      GG.audio.hit = function (l, w) {
-        if (l === 'kick') { const d = GG.debug('gigui'), cx = GG.audio.context();
-          window.__kh.push({ w: w != null, at: d.songT + (w != null ? w - cx.currentTime + d.lat : 0) }); }
+      window.__kh = []; window.__hc = 0; const h0 = GG.audio.hit, c0 = GG.audio.hitCancel;
+      GG.audio.hit = function (l, w) {   // heard song time: ctx time (a past `when` plays at ctx now + 5 ms) + output latency
+        if (l === 'kick') { const d = GG.debug('gigui'), cx = GG.audio.context(), dt = w != null ? w - cx.currentTime : 0;
+          window.__kh.push({ w: w != null, at: d.songT + d.lat + (dt > 0.005 && dt < 1.005 ? dt : 0.005) }); }
         return h0.apply(this, arguments);
       };
+      GG.audio.hitCancel = function () { window.__hc++; return c0.apply(this, arguments); };
       s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = false;
       GG.ui.playGig(s.gig, () => {});
       const ch = GG.gig.chart(song, { difficulty: 'hard' });
@@ -322,12 +324,15 @@ async function double() {
     const before = (await dbg(page, 'gigui')).stats, info0 = await page.evaluate(() => GG.render.stage && GG.render.stage.info());
     const last = await tapAt(page, n.li, n.t);
     await page.waitForTimeout(700);
-    const after = await dbg(page, 'gigui'), kh = await kicksIn(page, n.t - 0.15, n.t2 + 0.3);
+    const after = await dbg(page, 'gigui'), kh = await kicksIn(page, n.t - 0.15, n.t2 + 0.4);
     c.ok(last && /^(perfect|good)$/.test(last.judgement) && Math.abs(last.at - n.t) < 0.03, 'one tap on a double judges it ' + JSON.stringify(last));
     c.ok(after.stats.perfect + after.stats.good === before.perfect + before.good + 1, 'one judgement for two kicks ' + JSON.stringify([before.perfect + before.good, after.stats.perfect + after.stats.good]));
-    const second = kh.filter(h => h.at > n.t + 0.05);
-    c.ok(kh.length === 2 && second.length === 1, 'two kicks heard: the tap and the double ' + JSON.stringify({ t: n.t, t2: n.t2, kh }));
-    c.ok(second.length === 1 && second[0].at - n.t2 > -0.04 && second[0].at - n.t2 < 0.06, 'the second kick lands at ~t2 on the audio clock ' + JSON.stringify(second.map(h => [h.w, (h.at - n.t2).toFixed(3)])));
+    c.ok(kh.length === 2 && !kh[0].w, 'two kicks heard: the tap and the double ' + JSON.stringify({ t: n.t, t2: n.t2, kh }));
+    // the pair keeps its spacing from the tap's HEARD kick (t2 - hitT; frame-due adds up to a frame), so it lands ~t2 + latency
+    const pairGap = (kh, tap, x) => kh.length === 2 ? +((kh[1].at - kh[0].at) - (x.t2 - tap.at)).toFixed(3) : null;
+    const g1 = pairGap(kh, last, n);
+    c.ok(g1 != null && g1 > -0.02 && g1 < 0.06 && kh[1].at - n.t2 > -0.02 && kh[1].at - n.t2 < after.lat + 0.07,
+      'the second kick follows the tap\'s kick by t2 - hitT on the audio clock ' + JSON.stringify({ g1, sched: kh[1] && kh[1].w, vsT2: kh[1] && +(kh[1].at - n.t2).toFixed(3), lat: after.lat }));
     c.ok(after.doublesPlayed === 1, 'doublesPlayed counts it ' + after.doublesPlayed);
     const info1 = await page.evaluate(() => GG.render.stage && GG.render.stage.info());
     c.ok(!(info0 && info0.built) || info1.kick2s === info0.kick2s + 1, "the drummer's left foot kicks the second hit " + JSON.stringify([info0 && info0.kick2s, info1 && info1.kick2s]));
@@ -336,6 +341,30 @@ async function double() {
     await page.waitForFunction(t => GG.debug('gigui').songT > t, m.t2 + 0.5, { timeout: 5000 });
     const km = await kicksIn(page, m.t - 0.15, m.t2 + 0.3), dm = await dbg(page, 'gigui');
     c.ok(km.length === 0 && dm.doublesPlayed === 1, 'a missed double: no extra kick ' + JSON.stringify({ km, played: dm.doublesPlayed }));
+    // tapping BOTH kicks: the echo tap is forgiven and silent (the scheduled second kick is that hit: no flam, no third kick)
+    const e = await nextDouble(page), e0 = (await dbg(page, 'gigui')).stats;
+    const eFirst = await tapAt(page, e.li, e.t), eEcho = await tapAt(page, e.li, e.t2);
+    await page.waitForTimeout(600);
+    const ke = await kicksIn(page, e.t - 0.15, e.t2 + 0.4), de = await dbg(page, 'gigui');
+    c.ok(/^(perfect|good)$/.test(eFirst.judgement) && eEcho && eEcho.echo && de.stats.perfect + de.stats.good === e0.perfect + e0.good + 1,
+      'the echo tap: forgiven, one judgement ' + JSON.stringify({ eFirst, eEcho, e0, s: de.stats }));
+    // (a frame stalled > 80 ms past the second kick drops it: then only the tap's kick; never a third one)
+    c.ok(ke.length === 1 + de.doublesPlayed - dm.doublesPlayed && ke.length >= 1 && !ke[0].w, 'the echo tap plays no kick of its own (tap + second kick only) ' + JSON.stringify({ ke, played: de.doublesPlayed }));
+    // Bluetooth headphones calibrated +200 ms: an on-time (to the player) tap still gets a spaced double, never a flam/silence
+    await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; GG.prefs.set({ audioProfile: 'headphones' }); GG.prefs.setCalib('headphones', { audio: 200 });
+      window.__kh = []; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    const b = await nextDouble(page), bTap = await tapAt(page, b.li, b.t + 0.2);
+    await page.waitForTimeout(800);
+    const kb = await kicksIn(page, b.t + 0.05, b.t2 + 0.7), gb = pairGap(kb, bTap, b);
+    c.ok(bTap && /^(perfect|good)$/.test(bTap.judgement) && Math.abs(bTap.at - b.t) < 0.03, 'calibrated +200 ms: a tap 200 ms after the note is on time ' + JSON.stringify(bTap));
+    c.ok(kb.length === 2 && gb > -0.02 && gb < 0.06 && kb[1].at - kb[0].at >= 0.06,
+      'calibrated +200 ms: two kicks, spaced t2 - t (no flam, no silent drop) ' + JSON.stringify({ gb, gap: kb.length === 2 && +(kb[1].at - kb[0].at).toFixed(3), want: +(b.t2 - b.t).toFixed(3), kb }));
+    const hc0 = await page.evaluate(() => window.__hc);
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.setCalib('headphones', { audio: 0 }); GG.prefs.set({ audioProfile: 'speaker' }); });
+    c.ok(await page.evaluate(() => window.__hc) > hc0, 'closing the gig cancels hits scheduled ahead (GG.audio.hitCancel)');
     // Auto-kick plays both kicks of every double
     await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; GG.prefs.set({ autoKick: true }); window.__kh = []; GG.ui.playGig(GG.state.gig, () => {}); });
     await waitScreen(page, 'gig-set');

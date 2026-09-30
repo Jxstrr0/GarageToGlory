@@ -10191,9 +10191,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
 // v0.7.2 double kicks (owner): two kick hits in quick succession (gap <= gig.DOUBLE_GAP) are ONE highway note
 //   { dbl: true, t2 } judged on the first hit; the second kick plays itself at t2 (the live gig schedules it on the audio
-//   clock) only when the first was hit (hitT = when). Runs of 3+ fast kicks pair up (1+2, 3+4, ...; an odd last one stays
-//   single). One note for accuracy / combo / total; chart.doubles = double notes on the chart. Order: two-thumb rule ->
-//   doubles -> difficulty thinning (Easy/Normal thin a double like any kick note). chart(song, { doubles: false }) = no merge.
+//   clock) only when the first was hit (hitT = when). A tap near t2 is an 'echo' (no stray); if it was also inside the next
+//   kick note's window and that note is never tapped, the note is credited with it instead of missed. Runs of 3+ fast
+//   kicks pair up (1+2, 3+4, ...; an odd last one stays single). One note for accuracy / combo / total; chart.doubles =
+//   double notes on the chart. Order: two-thumb rule -> doubles -> difficulty thinning (Easy/Normal thin a double like any
+//   kick note). chart(song, { doubles: false }) = no merge.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -10621,7 +10623,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       });
       cues.sort(function (a, b) { return a.t - b.t; });
       var nps = chart.total / Math.max(1, chart.duration);
-      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1,
+      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1, echoFor: null,
         perfect: 0, good: 0, stray: 0, fills: 0, fillsIn: {}, maxCombo: 0, missStreak: 0, flubs: 0, extrasHit: 0,
         entryTotal: entryTotal, entryHits: entryTotal.map(function () { return 0; }), crowdSum: 0, crowdT: 0, lastT: 0,
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
@@ -10682,7 +10684,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       }
       var f = fillAt(t), out, dh = li === LI.kick && cur.dblHit >= 0 ? n[cur.dblHit] : null;
       if (dh && Math.abs(t - dh.t2) <= W.good && (best < 0 || Math.abs(t - dh.t2) < bestD)) {   // v0.7.2: tapping the double's
-        out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, echo: true };      // second kick too: no stray
+        // second kick too: no stray. A note this tap also reached keeps it: never tapped later, it's a hit, not a miss
+        if (best >= 0) cur.echoFor = { k: best, kind: bestD <= W.perfect ? 'perfect' : 'good', t: t };   // (an early tap for it)
+        out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, echo: true, dbl: dh };
         emit('gig:judge', { lane: 'kick', judgement: null, combo: S.combo, crowd: S.crowd });
         return out;
       }
@@ -10729,7 +10733,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];
-        if (x.j === 0) { if (x.free) x.j = 4; else { miss(x, t); misses++; } }
+        if (x.j === 0) {
+          var ef = cur.echoFor;
+          if (x.free) x.j = 4;
+          else if (ef && ef.k === cur.mp - 1) {   // v0.7.2: an early tap read as a double's echo was this note's: credit it
+            cur.echoFor = null; hit(ef.k, ef.kind, ef.t);
+            emit('gig:judge', { lane: x.lane, judgement: ef.kind, combo: S.combo, crowd: S.crowd });
+          } else { miss(x, t); misses++; }
+        }
       }
       if (dt > 0) { var rc = real(); crowdAdd(-rc * cfg.decay * dt); cur.crowdSum += real() * dt; cur.crowdT += dt; }
       if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
@@ -16952,21 +16963,31 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
-  var previewPort = null;
+  var previewPort = null, schedPort = null;
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
+  // v0.7.2: hits scheduled ahead go through their own port so A.hitCancel() can silence them (a gig restart / hidden app).
   A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
     if (!previewPort) previewPort = makePort(rig);
-    var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
-    if (when > t && when < t + 1) t = when;
+    var playing = current && current.playing, t = ctx.currentTime + 0.005, v, port = previewPort;
+    if (when > t && when < t + 1) { t = when; port = schedPort || (schedPort = makePort(rig)); }
     if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {
       var step = playing ? ((Math.round(current.beatAt(t) * 4) % 16) + 16) % 16 : 4;
       v = snareVariant(step, lastStep && playing ? lastStep.role : 'full');
     }
-    drumHit(rig, previewPort, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v);
+    drumHit(rig, port, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v);
     return true;
+  };
+  A.hitCancel = function () {   // v0.7.2: drops every hit still scheduled ahead (a 5 ms fade, then the port is cut)
+    var p = schedPort; schedPort = null;
+    if (!p || !ctx) return;
+    var t = ctx.currentTime;
+    Object.keys(p).forEach(function (k) {
+      try { var g = p[k].gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.005); } catch (e) { /* ignore */ }
+      setTimeout(function () { try { p[k].disconnect(); } catch (e) { /* ignore */ } }, 60);
+    });
   };
   A.isPlaying = function () { return !!(current && current.playing); };
   A.context = function () { return ctx; };   // v0.3 gig clock + pause (null before unlock); read-only use
@@ -25456,10 +25477,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   colourblind lane colours (GG.prefs.CB_COLOURS); the setlist sheet has Expert, the speaker/headphones quick switch
 //   (gig-profile-<id>) and an assists line (btn-gig-settings). opts.practice = { speed } relabels a studio-mode run as practice.
 // v0.7.2 double kicks (owner): a chart note with dbl/t2 stands for two kicks. It draws as a stacked pill with a ×2 badge;
-//   one tap (or Auto-kick) judges it, then the second kick plays itself at t2 on the heard clock (GG.audio.hit('kick',
-//   ctxTime) on a healthy clock, frame-due otherwise; never earlier than DBL_MIN after the tap, so a late tap can't flam);
-//   a missed double plays nothing extra. The kick zone flashes again + a small ring and the stage drummer's left foot
-//   kicks (GG.render.stage.kick2) when the second kick is heard. Debug gigui adds doubles, doublesPlayed.
+//   one tap (or Auto-kick) judges it, then the second kick plays itself (GG.audio.hit('kick', ctxTime) on a healthy clock,
+//   frame-due otherwise) t2 - hitT after the first kick is HEARD (the tap's own sound, stamped k1 on the song clock: it
+//   carries the calibration offset + output latency), never within DBL_MIN of it, so no offset or late tap can flam;
+//   a missed double plays nothing extra. Tapping the second kick too (an 'echo') makes no sound of its own (the scheduled
+//   kick is that hit) unless its kick was dropped. Hits scheduled ahead are cancelled by stopAudio (GG.audio.hitCancel).
+//   The kick zone flashes again + a small ring and the stage drummer's left foot kicks (GG.render.stage.kick2) when the
+//   second kick is heard. Debug gigui adds doubles, doublesPlayed.
 (function (GG) {
   var ui = GG.ui, C = GG.contracts, U = GG.util, el = ui.el;
   var LOOK = 1.15, ZONE = 66, DEFAULT_LAT = 0.025, LEAD_IN = 0.06;
@@ -25667,6 +25691,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     clearTimeout(G.startTimer); G.startTimer = 0;
     var h = G.handle; G.handle = null;
     if (h && h.playing) h.stop();
+    if (GG.audio && GG.audio.hitCancel) GG.audio.hitCancel();   // v0.7.2: auto notes / second kicks already scheduled ahead
     if (G.ctxPaused && G.actx) { G.ctxPaused = false; try { G.actx.resume(); } catch (e) { /* ignore */ } }
   }
 
@@ -25764,9 +25789,12 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   }
 
   /* ---- v0.7.2 double kicks: one tap, two kicks ------------------------------------------------------------- */
-  // Once a double's first kick is judged a hit (tap or Auto-kick; the session stamps hitT), its second kick plays at
-  // max(t2, hitT + DBL_MIN): scheduled AUTO_AHEAD early at G.zero + time on a healthy clock, else on the frame it's due.
-  var DBL_MIN = 0.06, KICK = C.LANES.indexOf('kick');
+  // Once a double's first kick is judged a hit (tap or Auto-kick; the session stamps hitT), its second kick plays
+  // max(t2 - hitT, DBL_MIN) after the first kick is HEARD (k1, song clock: a tap stamps it; Auto-kick's hit sounds at its
+  // frame + output latency). A tap is judged on the calibrated clock but sounds (offset + latency) later, so the pair keeps
+  // its spacing on every headset: scheduled AUTO_AHEAD early at G.zero + time on a healthy clock, else on the frame it's due.
+  // A second kick skipped past (a stalled frame / resync jump) is marked d2 = 2 so an echo tap may stand in for it.
+  var DBL_MIN = 0.06, HIT_LEAD = 0.005, KICK = C.LANES.indexOf('kick');   // HIT_LEAD: GG.audio.hit plays 'now' at ctx now + 5 ms
   function doubleKicks(t, p) {
     var q = G.dq, n = G.chart.notes, c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running';
     var ahead = sched ? G.lat + AUTO_AHEAD : 0;
@@ -25776,10 +25804,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (x.t > t + 0.45) break;                        // nothing this late can have been judged yet
       if (x.d2 || x.j === 0) continue;                  // done, or still waiting for its tap
       if (x.j !== 1 && x.j !== 2) { x.d2 = 1; continue; }   // a missed double plays nothing extra
-      var w = Math.max(x.t2, (x.hitT != null ? x.hitT : x.t) + DBL_MIN, G.k2W + DBL_MIN);   // never two at once (a stalled frame)
+      var h1 = x.hitT != null ? x.hitT : x.t, k1 = x.k1 != null ? x.k1 : h1 + G.lat + HIT_LEAD;   // the first kick, heard
+      var w = Math.max(k1 + Math.max(x.t2 - h1, DBL_MIN), G.k2W + DBL_MIN);   // the pair's spacing; never two at once (a stalled frame)
       if (w > t + ahead) continue;
       x.d2 = 1; G.k2W = w;
-      if (w < t - 0.08 || KICK >= G.lanes) continue;    // skipped past (a resync jump): stay quiet rather than flam
+      if (w < t - 0.08 || KICK >= G.lanes) { x.d2 = 2; continue; }   // skipped past (a resync jump): stay quiet rather than flam
       if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zero + w : undefined);
       G.dblN++;
       var at = p + Math.max(0, w - t) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
@@ -25844,11 +25873,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function tap(li, stamp) {
     var now = performance.now();   // some browsers stamp events on another time base: trust it only if it's recent
     var at = heardAt(stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now) - G.zero - (G.off ? G.off.audio : 0);   // v0.6.1: calibration
-    if (GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[li]);
+    var snd = GG.audio && GG.audio.hit, r;
     G.press[li] = performance.now();
-    if (at < -0.4) { stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
-    G.lastTap = G.ses.judge(li, at);
-    if (G.lastTap) G.lastTap.at = at;
+    if (at < -0.4) { if (snd) GG.audio.hit(C.LANES[li]); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
+    r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
+    if (r) r.at = at;
+    if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
+    if (snd) GG.audio.hit(C.LANES[li]);
+    if (r && r.note && r.note.dbl) r.note.k1 = songTime(performance.now()) + G.lat + HIT_LEAD;   // when this kick is heard (song clock)
   }
 
   /* ---- Highway drawing ------------------------------------------------------------------------------------ */
@@ -26222,7 +26254,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     return { open: true, mode: G.mode, paused: G.paused, diff: G.diff, clockOk: G.clockOk, index: ses ? ses.index : null, songs: ses ? ses.setlist.length : null,
       songT: ch ? (G.paused ? G.pauseT : songTime(p)) : null, auto: ch && ch.auto ? ch.auto.length : 0, autoPlayed: G.autoN || 0, doubles: ch ? ch.doubles || 0 : 0, doublesPlayed: G.dblN || 0, next: next, soon: soon, lanes: G.lanes, stage: !!G.stageOn, audio: !!G.handle,
       ctx: !!G.actx, lat: G.lat, combo: ses ? ses.combo : 0, crowd: ses ? Math.round(ses.crowd) : null, level: ses ? ses.level : null,
-      stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at,
+      stats: ses && ses.stats ? ses.stats() : null, last: G.lastTap ? { judgement: G.lastTap.judgement, at: G.lastTap.at, echo: !!G.lastTap.echo,
         offset: G.lastTap.offset } : null, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
   });
 })(window.GG);

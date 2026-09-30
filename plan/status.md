@@ -79,6 +79,14 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   difficulty. `tools/balance.js 10 20` identical (careers auto-resolve with `gig.simulate`, which never builds charts).
 - Tests: sim_gig 22 (+2: merge rules/pairs/runs 3-4-5/threshold/determinism/difficulties/invariant notes + doubles + auto =
   pattern hits; session tap/echo/miss/auto-kick) · pw_gig `double` (12; screenshot `tests/.cache/double.png`).
+- Review fixes: the second kick is placed `max(t2 - hitT, 0.06)` after the tap's HEARD kick (tap stamps `note.k1` on the song
+  clock = songTime + lat + 5 ms; Auto-kick: hitT + lat), so calibrated headphones (+200 ms) and output latency keep the
+  pair's spacing (was: flam at ~+150 ms, silent at ≥ ~+240 ms). tap() judges first; an echo tap plays no sound (the
+  scheduled kick is that hit) unless its second kick was dropped (`d2 = 2`). An echo tap that was also inside the next
+  kick note's window credits that note (`cur.echoFor`) if it's never tapped (was: an early tap for the next note → miss).
+  `GG.audio.hitCancel()` (scheduled hits use their own port) runs in stopAudio: no stray kick/auto note after a restart
+  or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
+  +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
 
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,

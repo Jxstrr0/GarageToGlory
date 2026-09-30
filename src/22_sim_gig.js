@@ -12,9 +12,11 @@
 //   setlistBonuses ; levelOf(crowd) ; session(state, gig, setlist, opts) ; botPlay(session, { accuracy, jitterMs, one }, rng)
 // v0.7.2 double kicks (owner): two kick hits in quick succession (gap <= gig.DOUBLE_GAP) are ONE highway note
 //   { dbl: true, t2 } judged on the first hit; the second kick plays itself at t2 (the live gig schedules it on the audio
-//   clock) only when the first was hit (hitT = when). Runs of 3+ fast kicks pair up (1+2, 3+4, ...; an odd last one stays
-//   single). One note for accuracy / combo / total; chart.doubles = double notes on the chart. Order: two-thumb rule ->
-//   doubles -> difficulty thinning (Easy/Normal thin a double like any kick note). chart(song, { doubles: false }) = no merge.
+//   clock) only when the first was hit (hitT = when). A tap near t2 is an 'echo' (no stray); if it was also inside the next
+//   kick note's window and that note is never tapped, the note is credited with it instead of missed. Runs of 3+ fast
+//   kicks pair up (1+2, 3+4, ...; an odd last one stays single). One note for accuracy / combo / total; chart.doubles =
+//   double notes on the chart. Order: two-thumb rule -> doubles -> difficulty thinning (Easy/Normal thin a double like any
+//   kick note). chart(song, { doubles: false }) = no merge.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -442,7 +444,7 @@
       });
       cues.sort(function (a, b) { return a.t - b.t; });
       var nps = chart.total / Math.max(1, chart.duration);
-      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1,
+      cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1, echoFor: null,
         perfect: 0, good: 0, stray: 0, fills: 0, fillsIn: {}, maxCombo: 0, missStreak: 0, flubs: 0, extrasHit: 0,
         entryTotal: entryTotal, entryHits: entryTotal.map(function () { return 0; }), crowdSum: 0, crowdT: 0, lastT: 0,
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
@@ -503,7 +505,9 @@
       }
       var f = fillAt(t), out, dh = li === LI.kick && cur.dblHit >= 0 ? n[cur.dblHit] : null;
       if (dh && Math.abs(t - dh.t2) <= W.good && (best < 0 || Math.abs(t - dh.t2) < bestD)) {   // v0.7.2: tapping the double's
-        out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, echo: true };      // second kick too: no stray
+        // second kick too: no stray. A note this tap also reached keeps it: never tapped later, it's a hit, not a miss
+        if (best >= 0) cur.echoFor = { k: best, kind: bestD <= W.perfect ? 'perfect' : 'good', t: t };   // (an early tap for it)
+        out = { judgement: null, note: null, combo: S.combo, crowd: S.crowd, echo: true, dbl: dh };
         emit('gig:judge', { lane: 'kick', judgement: null, combo: S.combo, crowd: S.crowd });
         return out;
       }
@@ -550,7 +554,14 @@
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];
-        if (x.j === 0) { if (x.free) x.j = 4; else { miss(x, t); misses++; } }
+        if (x.j === 0) {
+          var ef = cur.echoFor;
+          if (x.free) x.j = 4;
+          else if (ef && ef.k === cur.mp - 1) {   // v0.7.2: an early tap read as a double's echo was this note's: credit it
+            cur.echoFor = null; hit(ef.k, ef.kind, ef.t);
+            emit('gig:judge', { lane: x.lane, judgement: ef.kind, combo: S.combo, crowd: S.crowd });
+          } else { miss(x, t); misses++; }
+        }
       }
       if (dt > 0) { var rc = real(); crowdAdd(-rc * cfg.decay * dt); cur.crowdSum += real() * dt; cur.crowdT += dt; }
       if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }

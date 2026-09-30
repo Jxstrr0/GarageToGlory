@@ -394,6 +394,29 @@ test('double kicks in the session: tap once, one judgement; the second hit is ne
   for (let T = 0; T <= 4; T += 0.05) ak.tick(T); const d3 = kicksOf(ch3).filter(n => n.t <= 3.9);
   ok(d3.length && d3.every(n => n.j === 2 && n.hitT >= n.t - 1e-6 && n.hitT - n.t < 0.3), 'auto-kick hits doubles');
 });
+test('double kicks: an early tap for the next kick note is never stolen by the echo rule (credited, not missed)', () => {
+  ['hard', 'normal'].forEach((d, i) => {
+    const s = decent(34 + i, 1); s.songs.unshift(kickSong(170, 'x.x.x.x.x.x.x.x.', [E16, E16, E16]));
+    const ses = GG.gig.session(s, legion(s), [s.songs[0].id], { emit: false, difficulty: d }), ch = ses.startSong(), W = ses.windows;
+    const k = kicksOf(ch).filter(n => !n.free && n.dbl), [a, b, c, e] = k;
+    ok(b.t - a.t < 0.4 && Math.abs(b.t - 0.1 - a.t2) < 0.1, d + ': doubles back to back ' + [a.t, a.t2, b.t].map(x => x.toFixed(3)));
+    eq(ses.judge('kick', a.t).judgement, 'perfect', d + ': A hit');
+    const r = ses.judge('kick', b.t - 0.1);                           // 100 ms early for B: nearer A's second kick
+    ok(r.echo && r.dbl === a && b.t - 0.1 - b.t >= -W.good, d + ': read as A\'s echo (inside B\'s window too)');
+    ses.tick(b.t + W.good + 0.3);
+    eq([b.j, ses.combo, ses.stats().miss], [2, 2, 0], d + ': B credited Good with that tap, combo kept');
+    ok(Math.abs(b.hitT - (b.t - 0.1)) < 1e-9, d + ': B hit at the tap');
+    // a both-kick tapper on the next pair: C, C's second kick (late 20 ms), D on time
+    eq(ses.judge('kick', c.t).judgement, 'perfect', d + ': C');
+    const ec = ses.judge('kick', c.t2 + 0.02);
+    ok(ec.echo && ec.dbl === c, d + ': C\'s second kick = echo');
+    eq(ses.judge('kick', e.t).judgement, 'perfect', d + ': D perfect (not eaten by C\'s echo)');
+    ses.tick(e.t + W.good + 0.3);
+    eq([ses.stats().miss, ses.combo], [0, 4], d + ': no misses');
+    const res = ses.endSong();
+    eq(res.stray, 0, d + ': no strays');
+  });
+});
 
 // ---- v0.6.1 (Addendum C4, SETTINGS): Expert, assists, difficulty pay, calibration maths ---------------------------------
 test('Expert: every hit as written, tighter windows than Hard, a sloppy player scores lower', () => {
