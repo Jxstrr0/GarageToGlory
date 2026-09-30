@@ -983,6 +983,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
      careerDifficulty: 'chill'|'normal'|'brutal', weather: { week, kind, temp }, fanTypes: { super, casual, hater } (0..1),
      bandbook: { posts: [ POST ], viral, scandals }, superfans: { <id>: { seen, mood } }, fanClub: null | { since, members,
      happiness, tier }, gifts: [ { id, week, from, text } ],   (v0.6.1; van gains driver)
+     tour: { regions: { <id>: { unlocked, via, fans, gigs, tours, broken, big, rivalFirst, best } }, invites: [INVITE],
+       active: TOUR|null, history, homesick 0..100, gongs, president, moose, queue, ... }   (v0.7; full doc in 25_sim_tour.js)
      rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
@@ -1112,6 +1114,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
    'save:done'      { slot }  'save:failed' { slot, error }                         save / main
+   'tour:unlocked' { region, via } 'tour:invite' 'tour:booked' 'tour:depart' 'tour:week' 'tour:home' 'tour:broken'
+     'tour:big' 'tour:rival' 'tour:president' 'tour:moose' 'tour:gong' 'tour:homesick'   (v0.7 tour; payloads in 25_sim_tour.js)
   ====================================================================== */
 
   /* ======================================================================
@@ -19608,7 +19612,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   // Venue kind from a GIG / venue record / kind string; old v0.1 kinds map by id or name.
   function kindOf(v) {
     var k = typeof v === 'string' ? v : v && v.kind;
-    if (k && KIND[k]) return k;
+    if (k && KIND[k] && k !== 'festival' && k !== 'hall') return k;   // v0.7: the world stages come only from dressOf (a v0.1 'hall' is a legacy kind)
     var s = ((v && typeof v === 'object' ? (v.venueId || v.id || '') + ' ' + (v.name || '') : '') + ' ' + (k || '')).toLowerCase();
     if (/bingo/.test(s)) return 'bingo';
     if (/legion/.test(s)) return 'legion';
@@ -19728,7 +19732,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (!isFinite(crowd)) crowd = 30;
       return {
         kind: kind, V: kind === 'festival' ? Object.assign({}, KIND.festival, GROUND[dress[1]] || GROUND.sun) : KIND[kind], genre: genre,
-        dress: dress ? dress[1] : null, silent: !!(cfg.silent != null ? cfg.silent : venue && typeof venue === 'object' && venue.silent),   // v0.7 G: GENRE[genre], band: band, members: members, flags: flags, player: player,
+        dress: dress ? dress[1] : null, silent: !!(cfg.silent != null ? cfg.silent : venue && typeof venue === 'object' && venue.silent),   // v0.7
+        G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
@@ -21704,7 +21709,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       b.box(0.4, 0.26, 0.3, 0.45, 0.6, 1.6, 0xc8a870); b.box(0.36, 0.22, 0.3, 0.1, 0.7, 1.65, 0xd8b880);
       b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
       if (D.look === 'sardine') {                                   // v0.7: the tiny European van: gear to the roof, laps full
-        b.box(1.7, 0.5, 0.45, 0, 1.25, 1.35, 0x1e1e22); b.box(1.5, 0.35, 0.4, 0.05, 1.68, 1.35, 0x2a2a30); b.box(0.9, 0.18, 0.3, -0.3, 1.86, 1.1, 0xc8a870);
+        b.box(1.7, 0.5, 0.45, 0, 1.25, 1.85, 0x1e1e22); b.box(1.5, 0.35, 0.4, 0.05, 1.68, 1.85, 0x2a2a30); b.box(0.9, 0.18, 0.3, -0.3, 1.9, 1.75, 0xc8a870);
         b.box(1.5, 0.12, 0.3, 0, 0.72, 0.5, 0x3a2a1e, 0, 0.15, 0); b.box(1.4, 0.1, 0.26, 0, 0.84, 0.46, 0x5a3a22, 0, -0.1, 0);   // guitar cases across the laps
         b.cyl(0.2, 0.2, 0.18, 10, 0.5, 0.72, -0.28, 0x8a2a2a, Math.PI / 2, 0, 0); b.box(0.3, 0.3, 0.3, -0.05, 0.42, -0.62, 0x26262c);   // a snare on your lap, an amp between the seats
       }
@@ -21831,8 +21836,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
 
     // ---- Camera framing ------------------------------------------------------------------------------------------
-    var CAM = { pos: [0.0, 1.44, 0.98], look: [-0.02, 1.22, -8], bandFov: 56, minHFov: 46 };
+    var CAM0 = { pos: [0.0, 1.44, 0.98], look: [-0.02, 1.22, -8], bandFov: 56, minHFov: 46 }, CAM = CAM0;
+    var CAM_SARDINE = { pos: [0.16, 1.7, 1.5], look: [0.0, 1.25, -8], bandFov: 58, minHFov: 50 };   // v0.7: behind the packed middle row
     function frame() {
+      CAM = K && K.D && K.D.look === 'sardine' ? CAM_SARDINE : CAM0;
       var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H * 0.3) : F.bottom, bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CAM.bandFov * Math.PI / 360), minT = Math.tan(CAM.minHFov * Math.PI / 360) * bandH / W;
@@ -28627,6 +28634,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function num(n) { return U.fmtNum(Math.round(n || 0)); }
   function views() { return !ui.gigAutoplay; }
   function bandName(st) { var b = GG.career && GG.career.band(st || S()); return (b && b.name) || 'The band'; }
+  function drv(st) { var d = GG.world && GG.world.driver ? GG.world.driver(st || S()) : null; return d || { id: 'you', name: 'You', you: true }; }
   function wk(w) { return 'Y' + (Math.floor((w - 1) / WPY) + 1) + ' W' + ((w - 1) % WPY + 1); }
   function seasonChip(season) {
     if (!season || !GG.calendar || !GG.calendar.seasonInfo) return null;
@@ -28672,7 +28680,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       lakes: [[70, 60, 2.2, 7, -35]] }
   };
   // Label nudges for crowded pins [dx, dy] (default: below the dot).
-  var LBL = { kyoto: [0, -3.2], nagoya: [4, 4.6], osaka: [-3, 4.6], mudstonbury: [-6, 4.6], london: [4, -2.6], manchester: [5, 1], glasgow: [-5, -2.6],
+  var LBL = { kyoto: [0, -3.2], nagoya: [4, 4.6], osaka: [-3, 4.6], mudstonbury: [-6, 4.6], london: [4, -2.6], manchester: [6, -2.2], glasgow: [-5, -2.6],
     wackelstein: [0, -3.2], amsterdam: [4, 4.6], prague: [4, 4.6], berlin: [4, -2.6], sydney: [-6, 1], hobart: [0, -3.4], tokyo: [4, 4.6], helsinki: [-2, 4.6] };
   function land(s, shapes, fillC, edge) {
     shapes.forEach(function (p) { s.appendChild(svg('polygon', { points: pts(p), fill: fillC, stroke: edge, 'stroke-width': 0.6, 'stroke-linejoin': 'round' })); });
@@ -28701,7 +28709,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     box.appendChild(el('div.tw-home', { style: { left: pct(cp[0]), top: pct(cp[1]) } }, [el('i'), el('span', '🍁 Home')]));
     view.forEach(function (r) {
       if (!r.pin) return;
-      var tag = r.here ? 'On tour' : r.unlocked ? (r.broken ? 'Broken' : 'Open') : r.invite ? 'Invite!' : '🔒 ' + num(r.need);
+      var tag = r.here ? 'On tour' : r.unlocked ? (r.broken ? 'Broken' : 'Open') : r.invite ? 'Invite!' : r.need > 0 ? '🔒 ' + num(r.need) : 'Soon';
       box.appendChild(btn('.tw-pin' + (r.unlocked ? '.open' : '.locked') + (r.here ? '.here' : '') + (r.invite && !r.unlocked ? '.invite' : ''),
         { testid: 'world-pin-' + r.id, 'aria-label': r.name + ', ' + tag, style: { left: pct(r.pin[0]), top: pct(r.pin[1]) }, onclick: function () { if (o.onPin) o.onPin(r.id); } },
         [el('span.ic', r.icon || '🌍'), el('span.nm', [el('b', r.short || r.name), el('small', tag)])]));
@@ -28710,7 +28718,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   }
   function regionCard(st, r, onOpen) {
     var status = r.here ? 'On tour here now' : r.unlocked ? (r.via === 'invite' ? 'Open (an invite got you in)' : r.via === 'big' ? 'Open (a song blew up here)' : 'Open')
-      : !r.worldEra ? 'Opens in the World stage era' : r.invite ? 'Invite waiting' : num(r.need) + ' more fans, or an invite';
+      : !r.worldEra ? 'Opens in the World stage era' : r.invite ? 'Invite waiting' : r.need > 0 ? num(r.need) + ' more fans, or an invite' : 'Enough fans: it opens at the end of the week';
     var scene = Math.max(1, r.scene || 1);
     return el('div.tw-rcard' + (r.unlocked ? '.open' : '.locked'), { testid: 'world-region-' + r.id, data: { unlocked: r.unlocked ? '1' : '0' } }, [
       el('div.tw-rtop', [el('span.tw-ric', r.icon || '🌍'), el('div.grow', [el('b', r.name), el('div.small.dim', status)]),
@@ -28932,7 +28940,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var a = T().active(st), v = a && T().content().vehicles[a.choices.vehicle];
       return el('div.panel', { testid: 'board-rental' }, [el('div.gb-van', [el('span', { style: 'font-size:22px' }, v && v.look === 'train' ? '🚄' : '🚐'), el('div.grow', [
         el('div', { style: 'font-weight:800' }, (v ? v.name : 'A rental') + ' · comfort ' + (v ? v.comfort : 1) + '/5'),
-        el('div.small.dim', fill((v && v.blurb) || 'Kenji drives whatever they give you, on whichever side of the road.'))])])]);
+        el('div.small.dim', fill((v && v.blurb) || (drv(st).you ? 'You drive' : drv(st).name + ' drives') + ' whatever they give you, on whichever side of the road.'))])])]);
     }
   };
 
@@ -28971,7 +28979,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       s.body.appendChild(el('div.panel.tw-flight', [el('p.card-text', fill(((K.lines || {}).depart || {})[a.region] || 'Wheels up.')),
         el('p.small', 'Landed in ' + (home.name || 'the airport') + '. Jet lag: burnout +' + jet + '. ' + (veh.name ? veh.name + ' is waiting in the car park' + (veh.look === 'sardine' ? '. Five people and a drum kit. It will be cosy.' : '.') : '')),
         el('p.small.dim', a.stops.map(function (x) { return x.cityName; }).join(' → ') + (stay.name ? ' · ' + stay.name : '')),
-        el('p.small.dim', 'Kenji collects the rental keys without a word. He has already adjusted the mirrors.')]));
+        el('p.small.dim', drv(st).you ? 'You collect the rental keys. Nobody else wants to drive on this side of the road.' : drv(st).name + ' collects the rental keys and adjusts every mirror before anyone gets in.')]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-flight-go', onclick: function () { ui.close(s.id); } }, 'Grab the gear ▸'));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
@@ -28994,7 +29002,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           el('div.kv2', [el('span', 'Flights, rental, hotels'), el('b.bad', '−' + money(sum.cost))]),
           el('div.kv2.tot', [el('span', 'Net'), el('b' + (sum.net >= 0 ? '.good' : '.bad'), (sum.net >= 0 ? '+' : '−') + money(Math.abs(sum.net)))])]),
         sum.cut ? el('p.small.dim', 'You flew home early. Nobody talks about it. Everybody talks about it.') : null,
-        el('p.small.dim', 'Kenji is at arrivals with the Moose Hearse. He is holding a sign with the band name spelled correctly. First time ever.')]);
+        el('p.small.dim', (drv(S()).you ? 'The Moose Hearse is exactly where you left it in long-term parking. It starts on the third try.' : drv(S()).name + ' is at arrivals with the Moose Hearse, holding a sign with the band name spelled correctly. First time ever.'))]);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-home-ok', onclick: function () { ui.close(s.id); } }, 'Home sweet garage'));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }

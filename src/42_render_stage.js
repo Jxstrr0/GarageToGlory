@@ -121,7 +121,7 @@
   // Venue kind from a GIG / venue record / kind string; old v0.1 kinds map by id or name.
   function kindOf(v) {
     var k = typeof v === 'string' ? v : v && v.kind;
-    if (k && KIND[k]) return k;
+    if (k && KIND[k] && k !== 'festival' && k !== 'hall') return k;   // v0.7: the world stages come only from dressOf (a v0.1 'hall' is a legacy kind)
     var s = ((v && typeof v === 'object' ? (v.venueId || v.id || '') + ' ' + (v.name || '') : '') + ' ' + (k || '')).toLowerCase();
     if (/bingo/.test(s)) return 'bingo';
     if (/legion/.test(s)) return 'legion';
@@ -241,7 +241,8 @@
       if (!isFinite(crowd)) crowd = 30;
       return {
         kind: kind, V: kind === 'festival' ? Object.assign({}, KIND.festival, GROUND[dress[1]] || GROUND.sun) : KIND[kind], genre: genre,
-        dress: dress ? dress[1] : null, silent: !!(cfg.silent != null ? cfg.silent : venue && typeof venue === 'object' && venue.silent),   // v0.7 G: GENRE[genre], band: band, members: members, flags: flags, player: player,
+        dress: dress ? dress[1] : null, silent: !!(cfg.silent != null ? cfg.silent : venue && typeof venue === 'object' && venue.silent),   // v0.7
+        G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6

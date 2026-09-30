@@ -98,6 +98,8 @@
      careerDifficulty: 'chill'|'normal'|'brutal', weather: { week, kind, temp }, fanTypes: { super, casual, hater } (0..1),
      bandbook: { posts: [ POST ], viral, scandals }, superfans: { <id>: { seen, mood } }, fanClub: null | { since, members,
      happiness, tier }, gifts: [ { id, week, from, text } ],   (v0.6.1; van gains driver)
+     tour: { regions: { <id>: { unlocked, via, fans, gigs, tours, broken, big, rivalFirst, best } }, invites: [INVITE],
+       active: TOUR|null, history, homesick 0..100, gongs, president, moose, queue, ... }   (v0.7; full doc in 25_sim_tour.js)
      rival: RIVAL, showdowns: [ SHOWDOWN ], finalShowdown: null | { week, won, headliner: 'you'|'rival', score, rivalScore },
      fund, fans, buzz, chemistry, burnout, drumSkill, debtToParents,
      payCut: 0.3 (share of gig pay to members, 0..0.6), fillIns: { <role>: { name, costPerGig } },
@@ -227,6 +229,8 @@
    'member:tap'     { id }                    render, when a bandmate is tapped
    'screen:open'    { id }  'screen:close' { id }                                   ui
    'save:done'      { slot }  'save:failed' { slot, error }                         save / main
+   'tour:unlocked' { region, via } 'tour:invite' 'tour:booked' 'tour:depart' 'tour:week' 'tour:home' 'tour:broken'
+     'tour:big' 'tour:rival' 'tour:president' 'tour:moose' 'tour:gong' 'tour:homesick'   (v0.7 tour; payloads in 25_sim_tour.js)
   ====================================================================== */
 
   /* ======================================================================

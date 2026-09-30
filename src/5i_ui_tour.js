@@ -33,6 +33,7 @@
   function num(n) { return U.fmtNum(Math.round(n || 0)); }
   function views() { return !ui.gigAutoplay; }
   function bandName(st) { var b = GG.career && GG.career.band(st || S()); return (b && b.name) || 'The band'; }
+  function drv(st) { var d = GG.world && GG.world.driver ? GG.world.driver(st || S()) : null; return d || { id: 'you', name: 'You', you: true }; }
   function wk(w) { return 'Y' + (Math.floor((w - 1) / WPY) + 1) + ' W' + ((w - 1) % WPY + 1); }
   function seasonChip(season) {
     if (!season || !GG.calendar || !GG.calendar.seasonInfo) return null;
@@ -78,7 +79,7 @@
       lakes: [[70, 60, 2.2, 7, -35]] }
   };
   // Label nudges for crowded pins [dx, dy] (default: below the dot).
-  var LBL = { kyoto: [0, -3.2], nagoya: [4, 4.6], osaka: [-3, 4.6], mudstonbury: [-6, 4.6], london: [4, -2.6], manchester: [5, 1], glasgow: [-5, -2.6],
+  var LBL = { kyoto: [0, -3.2], nagoya: [4, 4.6], osaka: [-3, 4.6], mudstonbury: [-6, 4.6], london: [4, -2.6], manchester: [6, -2.2], glasgow: [-5, -2.6],
     wackelstein: [0, -3.2], amsterdam: [4, 4.6], prague: [4, 4.6], berlin: [4, -2.6], sydney: [-6, 1], hobart: [0, -3.4], tokyo: [4, 4.6], helsinki: [-2, 4.6] };
   function land(s, shapes, fillC, edge) {
     shapes.forEach(function (p) { s.appendChild(svg('polygon', { points: pts(p), fill: fillC, stroke: edge, 'stroke-width': 0.6, 'stroke-linejoin': 'round' })); });
@@ -107,7 +108,7 @@
     box.appendChild(el('div.tw-home', { style: { left: pct(cp[0]), top: pct(cp[1]) } }, [el('i'), el('span', '🍁 Home')]));
     view.forEach(function (r) {
       if (!r.pin) return;
-      var tag = r.here ? 'On tour' : r.unlocked ? (r.broken ? 'Broken' : 'Open') : r.invite ? 'Invite!' : '🔒 ' + num(r.need);
+      var tag = r.here ? 'On tour' : r.unlocked ? (r.broken ? 'Broken' : 'Open') : r.invite ? 'Invite!' : r.need > 0 ? '🔒 ' + num(r.need) : 'Soon';
       box.appendChild(btn('.tw-pin' + (r.unlocked ? '.open' : '.locked') + (r.here ? '.here' : '') + (r.invite && !r.unlocked ? '.invite' : ''),
         { testid: 'world-pin-' + r.id, 'aria-label': r.name + ', ' + tag, style: { left: pct(r.pin[0]), top: pct(r.pin[1]) }, onclick: function () { if (o.onPin) o.onPin(r.id); } },
         [el('span.ic', r.icon || '🌍'), el('span.nm', [el('b', r.short || r.name), el('small', tag)])]));
@@ -116,7 +117,7 @@
   }
   function regionCard(st, r, onOpen) {
     var status = r.here ? 'On tour here now' : r.unlocked ? (r.via === 'invite' ? 'Open (an invite got you in)' : r.via === 'big' ? 'Open (a song blew up here)' : 'Open')
-      : !r.worldEra ? 'Opens in the World stage era' : r.invite ? 'Invite waiting' : num(r.need) + ' more fans, or an invite';
+      : !r.worldEra ? 'Opens in the World stage era' : r.invite ? 'Invite waiting' : r.need > 0 ? num(r.need) + ' more fans, or an invite' : 'Enough fans: it opens at the end of the week';
     var scene = Math.max(1, r.scene || 1);
     return el('div.tw-rcard' + (r.unlocked ? '.open' : '.locked'), { testid: 'world-region-' + r.id, data: { unlocked: r.unlocked ? '1' : '0' } }, [
       el('div.tw-rtop', [el('span.tw-ric', r.icon || '🌍'), el('div.grow', [el('b', r.name), el('div.small.dim', status)]),
@@ -338,7 +339,7 @@
       var a = T().active(st), v = a && T().content().vehicles[a.choices.vehicle];
       return el('div.panel', { testid: 'board-rental' }, [el('div.gb-van', [el('span', { style: 'font-size:22px' }, v && v.look === 'train' ? '🚄' : '🚐'), el('div.grow', [
         el('div', { style: 'font-weight:800' }, (v ? v.name : 'A rental') + ' · comfort ' + (v ? v.comfort : 1) + '/5'),
-        el('div.small.dim', fill((v && v.blurb) || 'Kenji drives whatever they give you, on whichever side of the road.'))])])]);
+        el('div.small.dim', fill((v && v.blurb) || (drv(st).you ? 'You drive' : drv(st).name + ' drives') + ' whatever they give you, on whichever side of the road.'))])])]);
     }
   };
 
@@ -377,7 +378,7 @@
       s.body.appendChild(el('div.panel.tw-flight', [el('p.card-text', fill(((K.lines || {}).depart || {})[a.region] || 'Wheels up.')),
         el('p.small', 'Landed in ' + (home.name || 'the airport') + '. Jet lag: burnout +' + jet + '. ' + (veh.name ? veh.name + ' is waiting in the car park' + (veh.look === 'sardine' ? '. Five people and a drum kit. It will be cosy.' : '.') : '')),
         el('p.small.dim', a.stops.map(function (x) { return x.cityName; }).join(' → ') + (stay.name ? ' · ' + stay.name : '')),
-        el('p.small.dim', 'Kenji collects the rental keys without a word. He has already adjusted the mirrors.')]));
+        el('p.small.dim', drv(st).you ? 'You collect the rental keys. Nobody else wants to drive on this side of the road.' : drv(st).name + ' collects the rental keys and adjusts every mirror before anyone gets in.')]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-flight-go', onclick: function () { ui.close(s.id); } }, 'Grab the gear ▸'));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
@@ -400,7 +401,7 @@
           el('div.kv2', [el('span', 'Flights, rental, hotels'), el('b.bad', '−' + money(sum.cost))]),
           el('div.kv2.tot', [el('span', 'Net'), el('b' + (sum.net >= 0 ? '.good' : '.bad'), (sum.net >= 0 ? '+' : '−') + money(Math.abs(sum.net)))])]),
         sum.cut ? el('p.small.dim', 'You flew home early. Nobody talks about it. Everybody talks about it.') : null,
-        el('p.small.dim', 'Kenji is at arrivals with the Moose Hearse. He is holding a sign with the band name spelled correctly. First time ever.')]);
+        el('p.small.dim', (drv(S()).you ? 'The Moose Hearse is exactly where you left it in long-term parking. It starts on the third try.' : drv(S()).name + ' is at arrivals with the Moose Hearse, holding a sign with the band name spelled correctly. First time ever.'))]);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-home-ok', onclick: function () { ui.close(s.id); } }, 'Home sweet garage'));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }

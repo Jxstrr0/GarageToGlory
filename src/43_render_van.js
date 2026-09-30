@@ -573,7 +573,7 @@
       b.box(0.4, 0.26, 0.3, 0.45, 0.6, 1.6, 0xc8a870); b.box(0.36, 0.22, 0.3, 0.1, 0.7, 1.65, 0xd8b880);
       b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
       if (D.look === 'sardine') {                                   // v0.7: the tiny European van: gear to the roof, laps full
-        b.box(1.7, 0.5, 0.45, 0, 1.25, 1.35, 0x1e1e22); b.box(1.5, 0.35, 0.4, 0.05, 1.68, 1.35, 0x2a2a30); b.box(0.9, 0.18, 0.3, -0.3, 1.86, 1.1, 0xc8a870);
+        b.box(1.7, 0.5, 0.45, 0, 1.25, 1.85, 0x1e1e22); b.box(1.5, 0.35, 0.4, 0.05, 1.68, 1.85, 0x2a2a30); b.box(0.9, 0.18, 0.3, -0.3, 1.9, 1.75, 0xc8a870);
         b.box(1.5, 0.12, 0.3, 0, 0.72, 0.5, 0x3a2a1e, 0, 0.15, 0); b.box(1.4, 0.1, 0.26, 0, 0.84, 0.46, 0x5a3a22, 0, -0.1, 0);   // guitar cases across the laps
         b.cyl(0.2, 0.2, 0.18, 10, 0.5, 0.72, -0.28, 0x8a2a2a, Math.PI / 2, 0, 0); b.box(0.3, 0.3, 0.3, -0.05, 0.42, -0.62, 0x26262c);   // a snare on your lap, an amp between the seats
       }
@@ -700,8 +700,10 @@
     }
 
     // ---- Camera framing ------------------------------------------------------------------------------------------
-    var CAM = { pos: [0.0, 1.44, 0.98], look: [-0.02, 1.22, -8], bandFov: 56, minHFov: 46 };
+    var CAM0 = { pos: [0.0, 1.44, 0.98], look: [-0.02, 1.22, -8], bandFov: 56, minHFov: 46 }, CAM = CAM0;
+    var CAM_SARDINE = { pos: [0.16, 1.7, 1.5], look: [0.0, 1.25, -8], bandFov: 58, minHFov: 50 };   // v0.7: behind the packed middle row
     function frame() {
+      CAM = K && K.D && K.D.look === 'sardine' ? CAM_SARDINE : CAM0;
       var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H * 0.3) : F.bottom, bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CAM.bandFov * Math.PI / 360), minT = Math.tan(CAM.minHFov * Math.PI / 360) * bandH / W;
