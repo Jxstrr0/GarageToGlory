@@ -73,7 +73,7 @@
     ]
   };
 
-  // ---- Punk: Frost Heave (locked until v0.9) ------------------------------
+  // ---- Punk: Frost Heave ------------------------------
   bands.frost_heave = {
     id: 'frost_heave', name: 'Frost Heave', genre: 'punk', city: 'Regina', region: 'canada',
     space: 'laundromat_basement', spaceName: 'The basement under the Suds-O-Rama', size: 4, rival: 'mall_rats',
@@ -113,7 +113,7 @@
     ]
   };
 
-  // ---- Rock: Gravel Kings (locked until v0.9) -----------------------------
+  // ---- Rock: Gravel Kings ------------------------------
   bands.gravel_kings = {
     id: 'gravel_kings', name: 'Gravel Kings', genre: 'rock', city: 'Edmonton', region: 'canada',
     space: 'strip_mall_unit', spaceName: 'Unit 4B, Westgate Plaza', size: 4, rival: 'chartbusters',
@@ -152,7 +152,7 @@
     ]
   };
 
-  // ---- Country: The Grid Road Ramblers (locked until v0.9) ----------------
+  // ---- Country: The Grid Road Ramblers ------------------------------
   bands.grid_road_ramblers = {
     id: 'grid_road_ramblers', name: 'The Grid Road Ramblers', genre: 'country', city: 'Swift Current', region: 'canada',
     space: 'quonset', spaceName: "Duke's uncle's Quonset", size: 5, rival: 'buckle_and_boot',
