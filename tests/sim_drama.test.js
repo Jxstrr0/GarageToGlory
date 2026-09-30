@@ -304,4 +304,47 @@ test('migration v3 -> v4: drama defaults for old saves, idempotent; save codes r
   eq(JSON.stringify(back.recruitAd), JSON.stringify(t.recruitAd)); eq(back.members.find(x => x.id === 'dana').exit, t.members.find(x => x.id === 'dana').exit);
 });
 
+test('v0.9 want rules for the new bands (+1 met / 0 / -1 unmet), the spotlight reads any signature', () => {
+  const GG = fresh(), R = GG.drama.rules, rng = GG.RNG(1);
+  ['council', 'twoChords', 'van', 'eighties', 'lawsuit', 'adulting', 'truck', 'stories', 'secretJoy', 'hat', 'spotlight', 'mystery']
+    .forEach(k => ok(typeof R[k] === 'function', 'rule ' + k));
+  const fh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave' }), home = { city: fh.city, venueId: 'craigs_basement', grade: 'B', km: 0 };
+  eq([R.council(fh, ['promote'], null), R.council(fh, ['rest'], home), R.council(fh, ['rest'], { city: 'Moose Jaw', grade: 'B' }), R.council(fh, ['rest'], null)], [1, 1, 0, -1]);
+  fh.van.condition = 80; eq(R.van(fh), 1); fh.van.condition = 20; eq(R.van(fh), -1);
+  fh.van.condition = 80; fh.members.find(m => m.id === 'moth').status = 'quit'; eq(R.van(fh), -1, 'someone else drives');
+  const gk = GG.career.newCareer({ seed: 5, bandId: 'gravel_kings' });
+  gk.burnout = 20; gk.fund = 500; eq(R.adulting(gk, [], { km: 50 }), 1); eq(R.adulting(gk, [], { km: 400 }), -1);
+  gk.buzz = 50; eq(R.eighties(gk, [], null), 1); gk.buzz = 5; eq(R.eighties(gk, [], null), -1);
+  const gr = GG.career.newCareer({ seed: 5, bandId: 'grid_road_ramblers' });
+  eq([R.stories(gr, [], { km: 300 }), R.stories(gr, [], { km: 10 }), R.stories(gr, [], null)], [1, 0, -1]);
+  eq([R.secretJoy(gr, [], { score: 85, grade: 'S' }), R.secretJoy(gr, [], { score: 20, grade: 'D' }), R.secretJoy(gr, [], null)], [1, -1, 0]);
+  gr.buzz = 40; eq(R.hat(gr, [], null), 1); gr.buzz = 5; eq(R.hat(gr, [], { merch: { sold: 3 } }), 1); eq(R.hat(gr, [], null), -1);
+  eq(R.truck(gr, [], { venueId: 'legion_63', grade: 'B' }), GG.gig.venue('legion_63') && GG.gig.venue('legion_63').kind === 'legion' ? 1 : 0);
+  eq(R.spotlight(fh, [], { grade: 'C', moments: ['stageDive'] }), 1, 'Rox\'s stage dive is the spotlight');
+  eq(R.spotlight(fh, [], { grade: 'C', moments: [] }), 0);
+  [R.twoChords(fh, [], null), R.lawsuit(gk, [], null)].forEach(v => ok(v === 0, 'no song, no opinion'));
+  ok([-1, 0, 1].indexOf(R.twoChords(fh, [], { songIds: fh.songs.map(x => x.id), grade: 'B' })) >= 0, 'twoChords reads the set');
+  ok(Math.abs(R.mystery(fh, [], null, rng)) <= 1);
+});
+
+test('v0.9: an original with no exit storyline takes a generic break and returns through the generic card', () => {
+  const GG = fresh(true), s = GG.career.newCareer({ seed: 8, bandId: 'frost_heave' });
+  const saved = GG.content.drama.members; GG.content.drama.members = {};   // no content storylines at all
+  try {
+    s.protected = false; s.totalWeek = 30; s.fans = 400;
+    GG.drama.applyMember(s, { id: 'benny', act: 'quit' });
+    const b = s.members.find(m => m.id === 'benny');
+    ok(b.status === 'quit' && b.exit.storyline === 'break' && b.exit.returnDue > 30, 'a generic break ' + JSON.stringify(b.exit));
+    ok(s.chat.some(m => m.who === 'benny'), 'a quit line from Benny himself');
+    s.totalWeek = b.exit.returnDue;
+    const fc = GG.drama.forcedCard(s, GG.rngFor(s));
+    eq([fc.card.id, fc.who], ['ret_original', 'benny']);
+    s.card = { id: fc.card.id, resolved: false, who: fc.who };
+    GG.career.resolveCard(s, 0);
+    eq(b.status, 'active'); ok(/Benny is back in the basement/.test(s.card.outcome), s.card.outcome);
+    eq(GG.drama.fillPool('vocals/guitar'), GG.content.drama.fillIns.vocals, 'fill-ins: vocals/guitar -> vocals');
+    eq(GG.drama.fillPool('fiddle'), GG.content.drama.fillIns.fiddle || GG.content.drama.fillIns['lead guitar'], 'fiddle -> lead guitar until content has fiddlers');
+  } finally { GG.content.drama.members = saved; }
+});
+
 done('sim_drama');

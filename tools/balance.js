@@ -19,6 +19,11 @@
 // v0.8.1: lic = licensing income that year ($ net of a label's cut); per career: offers made / deals taken / countered /
 // walked, and the median career licensing total (target: 2–4 offers, a median of roughly $5k–15k).
 //   WIDE_GATES=1 treats garage-only Monday cards as all-era (approximates the CONTENT agent widening gates).
+// v0.9 "Genres": BAND=<bandId>|all plays that band's careers (all = the four bands one after another): per-band tables
+// (as above) + a band line per style (cards drawn, weeks with no card, garage-era board size + average km, average km per
+// gig, genre-moment rate from a live bot gig each year, rival lineup size, the World payoff flag), then a cross-band
+// comparison (avg bot and good bot, one row per band). Without BAND the output is exactly the v0.8.1 Hail Damage report.
+//   TUNE='rox.skill=51,benny.mood=70' overrides member numbers in-process (to try a bands.js rebalance before editing it).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
@@ -32,22 +37,23 @@ if (process.env.NO_DRAMA) { GG.drama = null; GG.content.economy.weeklyUpkeep = 3
 // 12 templates x 2 = 24 once-only cards, like the garage-era brief: most choices cost $20-150,
 // fans 0..30, buzz/chemistry/mood trades, one gamble.
 function syntheticDeck() {
+  // v0.9: role aliases instead of Hail Damage ids, so the synthetic deck fits every band
   const T = [
-    [{ fund: -150, skill: { dana: 3 }, mood: { dana: 10 } }, { mood: { dana: -8 } }],
-    [{ fund: -120, buzz: 6, mood: { marcel: 12 } }, { fund: -20, mood: { marcel: 3 }, buzz: 2 }, { mood: { marcel: -10 } }],
+    [{ fund: -150, skill: { '@soloist': 3 }, mood: { '@soloist': 10 } }, { mood: { '@soloist': -8 } }],
+    [{ fund: -120, buzz: 6, mood: { '@front': 12 } }, { fund: -20, mood: { '@front': 3 }, buzz: 2 }, { mood: { '@front': -10 } }],
     [{ fans: 20, buzz: 8, burnout: 5 }, { buzz: -2 }],
     [{ fund: -80, chemistry: 4 }, { mood: { all: -4 } }],
-    [{ fund: 150, burnout: 8, mood: { marcel: -6 } }, { buzz: 2 }],
+    [{ fund: 150, burnout: 8, mood: { '@front': -6 } }, { buzz: 2 }],
     [{ chemistry: 4, mood: { all: 3 } }, { buzz: 4, chemistry: -3 }],
     [{ roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005, success: { effects: { fans: 25, buzz: 10 } }, fail: { effects: { fund: -100 } } } }, { mood: { all: -2 } }],
     [{ fund: -40, fans: 15, buzz: 6 }, { buzz: 2 }],
-    [{ chemistry: -5 }, { fund: -60, mood: { kenji: 10 } }],
-    [{ mood: { jaxon: 8 }, chemistry: 3 }, { fund: 30, mood: { jaxon: -6 } }],
+    [{ chemistry: -5 }, { fund: -60, mood: { '@bassist': 10 } }],
+    [{ mood: { '@filler': 8 }, chemistry: 3 }, { fund: 30, mood: { '@filler': -6 } }],
     [{ fund: -60, burnout: -10 }, { burnout: 6, fans: 5 }],
     [{ fund: -100, fans: 10, buzz: 10 }, { fund: -30, buzz: 4 }, { mood: { all: -3 } }]
   ];
   const cards = [{ id: 'syn_force', type: 'drama', title: 'Week one', text: '', forceWeek: 1,
-    choices: [{ effects: { mood: { marcel: 10 } }, outcome: '.' }, { effects: { mood: { marcel: -5 } }, outcome: '.' }] }];
+    choices: [{ effects: { mood: { '@front': 10 } }, outcome: '.' }, { effects: { mood: { '@front': -5 } }, outcome: '.' }] }];
   for (let r = 0; r < 2; r++) T.forEach((ch, i) => cards.push({
     id: 'syn_' + r + '_' + i, type: C.CARD_TYPES[i % 6], title: 'Synthetic ' + i, text: '',
     choices: ch.map(c => { const roll = c.roll; const fx = Object.assign({}, c); delete fx.roll; return roll ? { effects: fx, roll, outcome: '.' } : { effects: fx, outcome: '.' }; })
@@ -70,14 +76,39 @@ function check(s, tag) {
 }
 
 // ---- Run ---------------------------------------------------------------------------------------------------
-const timing = { avg: [], good: [] };   // per seed: weeks of eras / first offer / world-ready, loans after year 1
+let timing = { avg: [], good: [] };   // per seed: weeks of eras / first offer / world-ready, loans after year 1
 let gigPay = 0;   // v0.8: gig pay this year (the merch share compares against it)
 GG.on('gig:done', e => { gigPay += (e.result && e.result.pay) || 0; });
-function run(style) {
+// v0.9 band stats (BAND=): Monday cards, the garage-era board, km per gig, genre moments from a live bot gig per year
+const BAND = process.env.BAND || '';
+// TUNE='rox.skill=51,benny.mood=70' tries member numbers (bands.js) in-process before the lead edits the content.
+(process.env.TUNE || '').split(',').filter(Boolean).forEach(kv => {
+  const m = /^(\w+)\.(skill|mood)=(\d+)$/.exec(kv.trim());
+  if (!m) { console.log('TUNE: skipped ' + kv); return; }
+  Object.keys(GG.content.bands).forEach(b => GG.content.bands[b].members.forEach(x => { if (x.id === m[1]) x[m[2]] = +m[3]; }));
+});
+let bs = null;   // per run: { weeks, noCard, board: [n, km], gigs, km, live: { gigs, combo, chorus, peak }, lineup, payoff, moraleSeeds }
+GG.on('week:start', e => { if (bs) { bs.weeks++; if (!e.card) bs.noCard++; } });
+GG.on('gig:done', e => { if (bs && e.result) { bs.gigs++; bs.km += e.result.km || (e.result.travel && e.result.travel.km) || 0; } });
+function liveProbe(s) {   // a live bot gig at a local room, on a copy of the career (never touches the run)
+  if (!bs || !GG.gig || !GG.gig.session) return;
+  const c = JSON.parse(JSON.stringify(s)), home = GG.world ? GG.world.home(c) : null;
+  const v = (GG.content.venues || []).filter(x => x.minFans < 99999 && x.tier <= 2 && (!home || GG.world.cityId(x.city) === home)).sort((a, b) => a.tier - b.tier)[0]
+    || (GG.content.venues || []).find(x => x.minFans < 99999 && x.tier <= 2);
+  if (!v || !c.songs.length) return;
+  c.liveGig = null;
+  const g = GG.gig.makeGig(c, v.id, 'book'), M = GG.gig.moments ? GG.gig.moments(c.genre) : { combo: 'mosh', chorus: 'headbang', peak: 'wallOfDeath' };
+  const r = GG.gig.botPlay(GG.gig.session(c, g, null, { emit: false }), { accuracy: 0.93, jitterMs: 25 }, GG.RNG(c.seed + c.totalWeek));
+  bs.live.gigs++;
+  (r.songResults || []).forEach(x => { bs.live.songs++; if (x.moments.indexOf(M.combo) >= 0) bs.live.combo++; if (x.moments.indexOf(M.chorus) >= 0) bs.live.chorus++; if (x.moments.indexOf(M.peak) >= 0) bs.live.peak++; });
+  if (GG.gig.signatures(c).length && (r.moments || []).some(k => GG.gig.signatures(c).some(sg => sg.action === k))) bs.live.sig++;
+}
+function run(style, bandId) {
   const rows = [];   // rows[year] = array of per-seed year stats
   for (let seed = 1; seed <= seeds; seed++) {
-    const s = GG.career.newCareer({ seed: seed * 7919, player: { name: 'Bot' } });
+    const s = GG.career.newCareer(bandId ? { seed: seed * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: seed * 7919, player: { name: 'Bot' } });
     let y = null, full = null, sprinter = null;
+    if (bs) { bs.firstKm.push(s.gig && s.gig.km != null ? s.gig.km : (s.gig ? 0 : null)); bs.firstGig.push(s.gig ? s.gig.venueId : null); }
     for (let w = 0; w < years * WPY && !s.ended; w++) {
       if (s.week === 1) y = { fundMin: Infinity, buzz: 0, burn: 0, mood: 0, n: 0, loans0: s.stats.parentsLoans, songs0: s.stats.songsWritten, gigs0: s.stats.gigs,
         rel0: s.stats.releases || 0, roy0: s.stats.royalties || 0, cert0: s.stats.certs || 0, loon0: s.stats.loonieWins || 0,
@@ -85,8 +116,10 @@ function run(style) {
         tours0: s.tour ? s.tour.history.length + (s.tour.active ? 1 : 0) : 0, mer0: s.merch ? s.merch.earned : 0, spent0: s.merch ? s.merch.spent : 0 };
       if (s.week === 1) gigPay = 0;
       const yearIdx = s.year - 1;
+      if (bs && s.era === 'garage' && s.phase === 'monday') { const L = GG.world ? GG.world.refresh(s) : []; bs.board[0] += 1; bs.board[1] += L.length; L.forEach(l => { bs.board[2] += l.km || 0; bs.board[3]++; }); }
       GG.career.botWeek(s, style);
-      check(s, style + '#' + seed);
+      check(s, (bandId ? bandId + ':' : '') + style + '#' + seed);
+      if (bs && s.week === 1) liveProbe(s);
       if (full == null && s.gear && s.gear.lanes >= 6 && s.gear.doubleKick) full = s.totalWeek - 1;
       if (sprinter == null && s.van && s.van.tier >= 2) sprinter = s.totalWeek - 1;
       y.fundMin = Math.min(y.fundMin, s.fund); y.buzz += s.buzz; y.burn += s.burnout; y.n++; y.heat += s.rival ? s.rival.heat : 0; y.hs += s.tour ? s.tour.homesick : 0;
@@ -109,6 +142,7 @@ function run(style) {
             return { sd: sds.length, sdWon: sds.filter(x => x.won).length, heat: y.heat / y.n, rvF: s.rival ? s.rival.fans : 0 }; })() });
       }
     }
+    if (bs) { bs.lineup += s.rival && s.rival.members ? s.rival.members.length : 0; bs.payoff += s.tour && (s.tour.moose || Object.keys(s.tour.payoffs || {}).length) ? 1 : 0; bs.cards += s.stats.cards || 0; bs.careers++; }
     const eraWeek = e => { const h = (s.eraHistory || []).find(x => x.era === e); return h ? h.week : null; };
     timing[style].push({ local: eraWeek('local'), offer: s.milestones.firstOffer || null, signedEra: eraWeek('signed'),
       deal: s.milestones.signed || null, world: s.milestones.worldReady || null, fans: s.fans,
@@ -169,8 +203,54 @@ function table(style, rows) {
   if (after.length) out.push('quits/year after protection: ' + avg(after, 'quits').toFixed(2) + ' (ultimatums ' + avg(after, 'ults').toFixed(2) + ', returns ' + avg(after, 'rets').toFixed(2) + ', over ' + after.length + ' seed-years)');
   return out.join('\n');
 }
-const results = ['avg', 'good'].map(style => table(style, run(style)));
-console.log('Garage to Glory balance: ' + years + ' year(s) x ' + seeds + ' seed(s), ' + deckLabel + ', averages over seeds');
-console.log(results.join('\n\n'));
+function newStats() { return { weeks: 0, noCard: 0, board: [0, 0, 0, 0], gigs: 0, km: 0, live: { gigs: 0, songs: 0, combo: 0, chorus: 0, peak: 0, sig: 0 }, lineup: 0, payoff: 0, cards: 0, careers: 0, firstKm: [], firstGig: [] }; }
+function bandLine(style, st) {
+  const pct = (a, b) => b ? Math.round(100 * a / b) + '%' : '-';
+  return style.toUpperCase() + ' band: cards ' + (st.cards / Math.max(1, st.careers)).toFixed(1) + '/career, no-card weeks ' + pct(st.noCard, st.weeks) +
+    ' | garage board ' + (st.board[1] / Math.max(1, st.board[0])).toFixed(1) + ' listings @ ' + Math.round(st.board[2] / Math.max(1, st.board[3])) + ' km' +
+    ' | km/gig ' + Math.round(st.km / Math.max(1, st.gigs)) + ' | live moments per song: combo ' + pct(st.live.combo, st.live.songs) + ' chorus ' + pct(st.live.chorus, st.live.songs) +
+    ' peak ' + pct(st.live.peak, st.live.songs) + ', signature gigs ' + pct(st.live.sig, st.live.gigs) +
+    ' | rival lineup ' + (st.lineup / Math.max(1, st.careers)).toFixed(1) + ' | payoff ' + st.payoff + '/' + st.careers +
+    ' | week-1 gig ' + (st.firstGig[0] || 'none') + ' (' + st.firstKm.filter(x => x != null).map(x => Math.round(x)).slice(0, 3).join('/') + ' km)';
+}
+const bandIds = BAND === 'all' ? Object.keys(GG.content.bands || { hail_damage: 1 }) : BAND ? [BAND] : [null];
+const summary = [];
+console.log('Garage to Glory balance: ' + years + ' year(s) x ' + seeds + ' seed(s), ' + deckLabel + ', averages over seeds' + (BAND ? ', BAND=' + BAND : ''));
+bandIds.forEach(bandId => {
+  timing = { avg: [], good: [] };
+  const out = [], per = {};
+  ['avg', 'good'].forEach(style => {
+    bs = bandId ? newStats() : null;
+    const rows = run(style, bandId);
+    out.push(table(style, rows));
+    if (bs) {
+      out.push(bandLine(style, bs));
+      const last = rows[Math.min(rows.length, 3) - 1] || [], all = rows.reduce((t, a) => t.concat(a), []), T = timing[style];
+      const mean = (a, k) => a.length ? a.reduce((t, r) => t + r[k], 0) / a.length : 0, wk = k => { const v = T.map(t => t[k]).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+      const y13 = rows.slice(0, 3).reduce((t, a) => t.concat(a), []), post = all.filter(r => !r.prot);
+      per[style] = { fans3: Math.round(mean(last, 'fans')), fund3: Math.round(mean(last, 'fundEnd')), loans13: y13.reduce((t, r) => t + r.loans, 0) / T.length,
+        quits: post.length ? mean(post, 'quits') : 0, rets: post.length ? mean(post, 'rets') : 0, local: wk('local'), offer: wk('offer'), signed: wk('signedEra'),
+        world: wk('worldEra'), sgn3: mean(last, 'sgn'), cards: bs.cards / Math.max(1, bs.careers), noCard: bs.weeks ? bs.noCard / bs.weeks : 0,
+        board: bs.board[1] / Math.max(1, bs.board[0]), boardKm: bs.board[2] / Math.max(1, bs.board[3]), kmGig: bs.km / Math.max(1, bs.gigs),
+        peak: bs.live.songs ? bs.live.peak / bs.live.songs : 0, lineup: bs.lineup / Math.max(1, bs.careers), payoff: bs.payoff };
+    }
+  });
+  if (bandId) { console.log('\n=== ' + ((GG.content.bands[bandId] || {}).name || bandId) + ' (' + bandId + ') ==='); summary.push({ id: bandId, per: per }); }
+  console.log(out.join('\n\n'));
+});
+if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_contract_0.9 §5 B4, measured against Hail Damage)
+  const pad2 = (v, n) => { const s = v == null ? '-' : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
+  ['avg', 'good'].forEach(style => {
+    console.log('\nCROSS-BAND (' + style + ' bot): fans@y' + Math.min(3, years) + ' fund@y' + Math.min(3, years) + ' | loans y1-3 | quits/yr rets/yr | local wk, 1st offer wk, signed wk, world wk | signed@y' + Math.min(3, years) +
+      ' | cards/career no-card% | board n @km | km/gig | peak moment/song | rival lineup | payoff');
+    summary.forEach(b => {
+      const x = b.per[style]; if (!x) return;
+      console.log(pad2(b.id, 18) + ' ' + pad2(x.fans3, 6) + ' ' + pad2(x.fund3, 6) + ' | ' + pad2(x.loans13.toFixed(1), 4) + ' | ' + pad2(x.quits.toFixed(2), 5) + ' ' + pad2(x.rets.toFixed(2), 5) +
+        ' | ' + pad2(x.local, 4) + ' ' + pad2(x.offer, 4) + ' ' + pad2(x.signed, 4) + ' ' + pad2(x.world, 4) + ' | ' + pad2(x.sgn3.toFixed(1), 3) +
+        ' | ' + pad2(x.cards.toFixed(0), 4) + ' ' + pad2(Math.round(x.noCard * 100) + '%', 4) + ' | ' + pad2(x.board.toFixed(1), 4) + ' @' + pad2(Math.round(x.boardKm), 4) +
+        ' | ' + pad2(Math.round(x.kmGig), 4) + ' | ' + pad2(Math.round(x.peak * 100) + '%', 4) + ' | ' + pad2(x.lineup.toFixed(1), 3) + ' | ' + x.payoff);
+    });
+  });
+}
 console.log(problems.length ? 'INVARIANT PROBLEMS:\n  ' + problems.join('\n  ') : 'invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 100k)');
 console.log('done in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');

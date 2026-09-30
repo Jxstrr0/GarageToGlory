@@ -193,14 +193,42 @@
     settle: [0.75, 45],       // between songs the crowd drifts a quarter of the way to 45
     opener: 7, closer: 8, classicCheer: 10,
     fillCap: 8,               // scored fill taps per freestyle window
-    moshCombo: 30, moshCrowd: 60, capeCombo: 40, capeCrowd: 8, genreCrowd: 85,
+    moshCombo: 30, moshCrowd: 60, capeCombo: 40, capeCrowd: 8, genreCrowd: 85, chorusCrowd: 70,
     booStreak: 5, booCrowd: 35, drinksCrowd: 15, momentGap: 6, lightersRate: 0.85, lightersCrowd: 55,
     unhappy: 30, flub: 6,     // members below this mood miss cues; each flub drags the crowd
     soloStep: 4, fillsMaxDifficulty: 45, fillsChance: 0.5,
     songNotes: 0.7, songCrowd: 0.3, stalePenalty: 0.15, classicScore: 3, fillScore: 3, genreScore: 2,
     liveWeight: 0.72, setOpener: 2, setCloser: 3   // gig score = live x w + v0.1 band performance x (1 - w) + set bonuses
   };
+  // v0.9 (plan_contract_0.9 §4.4): per-genre crowd moments. combo = at every moshCombo-th hit in a row with the crowd at
+  // moshCrowd+ (replaces the old metal-for-everyone 'mosh'); chorus = the first chorus downbeat of a song with the crowd at
+  // chorusCrowd+ (once per song, cosmetic); peak = the crowd reaches genreCrowd (once per song; scores genreScore).
+  // economy.gig.moments[genre] may override any row.
+  var MOMENTS = {
+    metal: { combo: 'mosh', chorus: 'headbang', peak: 'wallOfDeath' },
+    punk: { combo: 'pogo', chorus: 'gangShout', peak: 'circlePit' },
+    rock: { combo: 'fistPump', chorus: 'singAlong', peak: 'lighters' },
+    country: { combo: 'clapAlong', chorus: 'yeehaw', peak: 'lineDance' }
+  };
+  gig.moments = function (genre) {
+    var o = (GG.content.economy && GG.content.economy.gig && GG.content.economy.gig.moments) || {};
+    return Object.assign({}, MOMENTS[genre] || MOMENTS.metal, o[genre] || {});
+  };
   var GENRE_MOMENT = { metal: 'wallOfDeath', punk: 'circlePit', rock: 'lighters', country: 'lineDance' };
+  function peakMoment(genre) { return gig.moments(genre).peak || GENRE_MOMENT[genre]; }
+  // v0.9: band signature actions (bands.js member.signature { action, combo, crowd, flag? }): once per gig at combo >=
+  // combo (and only while its flag is set: Marcel's cape). -> [{ id, action, combo, crowd, flag }]
+  function flagOn(state, f) { var v = state.flags && state.flags[f]; return !!v && v !== 'none'; }
+  gig.signatures = function (state) {
+    var out = [];
+    active(state).forEach(function (m) {
+      var d = GG.career.memberDef ? GG.career.memberDef(state, m.id) : null, sg = (d && m.original !== false && d.signature) || m.signature;
+      if (!sg || !sg.action) return;
+      if (sg.flag === 'cape' ? !capeOn(state) : sg.flag && !flagOn(state, sg.flag)) return;
+      out.push({ id: m.id, action: sg.action, combo: sg.combo || 40, crowd: sg.crowd != null ? sg.crowd : 8, flag: sg.flag || null });
+    });
+    return out;
+  };
   var LI = {}; C.LANES.forEach(function (l, i) { LI[l] = i; });
   function LC() { var o = G().live; return o ? Object.assign({}, LIVE, o) : LIVE; }
   function capeOn(state) { var c = state.flags && state.flags.cape; return !!c && c !== 'none' && C.CAPE_VALUES.indexOf(c) >= 0; }
@@ -412,7 +440,8 @@
     var set = live.setlist.map(function (id) { return GG.songs.byId(state, id); }).filter(Boolean);
     if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
-    var W = gig.windows(state, diff), roles = gig.roles(state), cape = capeOn(state) && roles.front, genre = state.genre;
+    var W = gig.windows(state, diff), roles = gig.roles(state), genre = state.genre, MT = gig.moments(genre);
+    var sigs = gig.signatures(state);   // v0.9: once per gig (live.sigDone survives a save between songs)
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
     var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
     var soloLift = (GG.content.economy.shop && GG.content.economy.shop.soloCrowd) || 3;
@@ -453,6 +482,8 @@
       var seen = {};
       n.forEach(function (x) { if (x.extra && !seen[x.entry]) { seen[x.entry] = 1; cues.push({ t: Math.max(0, x.t - 0.8), kind: 'fill' }); } });
       chart.sections.forEach(function (s) { if (s.name === 'chorus') cues.push({ t: s.t1, kind: 'chorus', entry: s.entry }); });
+      var ch1 = chart.sections.filter(function (s) { return s.name === 'chorus'; })[0];
+      if (ch1 && MT.chorus) cues.push({ t: ch1.t0, kind: 'chorusIn' });   // v0.9: the genre's chorus moment on the first chorus downbeat
       unhappy.forEach(function (m) {
         var k = m.mood < cfg.unhappy / 2 ? 2 : 1;
         rng.shuffle(chart.sections).slice(0, k).forEach(function (s) { cues.push({ t: s.t0 + 4 * chart.spb, kind: 'flub', who: m.id }); });
@@ -489,9 +520,13 @@
       if (S.combo > cur.maxCombo) cur.maxCombo = S.combo;
       crowdAdd(c * (1.15 - real() / 200));
       if (S.combo % cfg.comboStep === 0) crowdAdd(cfg.comboBonus);
-      if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready('mosh', t)) moment('mosh', t);
-      if (cape && !cur.capeDone && S.combo >= cfg.capeCombo) {
-        cur.capeDone = true; crowdAdd(cfg.capeCrowd); moment('capeSpin', t); band(cape, 'capeSpin');
+      var cm = MT.combo || 'mosh';   // v0.9: the genre's combo moment (metal: mosh)
+      if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready(cm, t)) moment(cm, t);
+      for (var si = 0; si < sigs.length; si++) {   // v0.9: band signatures (Marcel's cape spin, Rox's stage dive, ...), once per gig
+        var sg = sigs[si], done = live.sigDone || (live.sigDone = {});
+        if (done[sg.id] || S.combo < (sg.action === 'capeSpin' ? cfg.capeCombo : sg.combo)) continue;
+        done[sg.id] = true; if (sg.action === 'capeSpin') cur.capeDone = true;
+        crowdAdd(sg.action === 'capeSpin' ? cfg.capeCrowd : sg.crowd); moment(sg.action, t); band(sg.id, sg.action);
       }
     }
     function miss(x, t) {
@@ -547,7 +582,9 @@
       else if (c.kind === 'flub') { cur.flubs++; crowdAdd(-cfg.flub); band(c.who, 'miss'); }
       else if (c.kind === 'chorus') {
         var tot = cur.entryTotal[c.entry];
-        if (tot && cur.entryHits[c.entry] / tot >= cfg.lightersRate && S.crowd >= cfg.lightersCrowd && ready('lighters', t)) moment('lighters', t);
+        if (MT.peak !== 'lighters' && tot && cur.entryHits[c.entry] / tot >= cfg.lightersRate && S.crowd >= cfg.lightersCrowd && ready('lighters', t)) moment('lighters', t);
+      } else if (c.kind === 'chorusIn') {
+        if (!silent && !cur.chorusDone && S.crowd >= cfg.chorusCrowd) { cur.chorusDone = true; moment(MT.chorus, t); }
       }
     }
     S.tick = function (t) {
@@ -579,7 +616,7 @@
         }
       }
       if (dt > 0) { var rc = real(); crowdAdd(-rc * cfg.decay * dt); cur.crowdSum += real() * dt; cur.crowdT += dt; }
-      if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && GENRE_MOMENT[genre]) { cur.genreDone = true; moment(GENRE_MOMENT[genre], t); }
+      if (!silent && !cur.genreDone && S.crowd >= cfg.genreCrowd && MT.peak) { cur.genreDone = true; moment(MT.peak, t); }
       tickOut.misses = misses; tickOut.crowd = S.crowd; tickOut.level = S.level;
       return tickOut;
     };
@@ -622,15 +659,22 @@
     return S;
   };
 
-  // Reaction lines for what happened on stage (content lines win when a later version adds them).
+  // Reaction lines for what happened on stage. v0.9: content first: lines.live[memberId].{solo, fill, signature, flub}
+  // (member-keyed) and lines.moments[kind] (crowd moments; + byBand); these neutral lines are the fallback.
   var LIVE_LINES = {
-    capeSpin: ['Did everyone see the cape? Everyone saw the cape.', 'The cape and I were one tonight.'],
-    solo: ['That solo? Mine. You are welcome.', 'I closed my eyes during the solo and saw Norway.'],
-    fill: ['i did a fill. you kept up. respect', 'did you notice the fill. be honest'],
+    signature: { capeSpin: ['Did everyone see the cape? Everyone saw the cape.', 'The cape and I were one tonight.'],
+      any: ['Did everyone see that? Everyone saw that.', 'I am going to be feeling that tomorrow. Worth it.'] },
+    solo: ['That solo? Mine. You are welcome.', 'Nobody breathe. I think I just peaked.'],
+    fill: ['Did you catch that fill? Be honest.', 'Snuck a fill in. You kept up. Respect.'],
     flub: ['I missed a cue. The monitor looked at me funny.', 'That wrong note was a choice. A bad one.'],
     genre: { metal: "A wall of death broke out in {city}. Somebody's mom was in it.", punk: 'The circle pit took out the merch table. Worth it.',
       rock: 'Lighters. Actual lighters. Someone used a phone and got booed.', country: 'They line danced. Somebody brought a lasso.' }
   };
+  gig.LIVE_LINES = LIVE_LINES;
+  function liveLines(state, id, key, fallback) {
+    var L = GG.content.lines && GG.content.lines.live, own = L && L[id] && L[id][key];
+    return own && own.length ? own : fallback;
+  }
   function finishLive(S, seed) {
     var state = S.state, g = S.gig, live = S.live, cfg = LC(), cg = G(), res = live.songs.filter(Boolean);
     var played = res.map(function (r) { return GG.songs.byId(state, r.songId); }).filter(Boolean);
@@ -643,18 +687,24 @@
     res.forEach(function (r) { r.moments.forEach(function (m) { if (moments.indexOf(m) < 0) moments.push(m); }); });
     var sum = function (k) { return res.reduce(function (t, r) { return t + (r[k] || 0); }, 0); };
     var perfect = sum('perfect'), good = sum('good'), miss = sum('miss'), notes = sum('notes');
-    var genreHit = moments.indexOf(GENRE_MOMENT[state.genre]) >= 0 && score >= 50;
+    var peak = peakMoment(state.genre), genreHit = moments.indexOf(peak) >= 0 && score >= 50;
     var gradeLines = (GG.career.contentLines('gigGrade', grade)) || GRADE_LINES[grade];
     var lines = [GG.career.fillText(state, g.quirk), GG.career.pickLine(state, rng, gradeLines, GRADE_LINES[grade])];
     if (opener) lines.push('Opening with “' + played[0].title + '” grabbed them by the collar.');
     if (closer) lines.push('Closing on “' + played[played.length - 1].title + '” brought the house down.');
-    if (genreHit) lines.push(GG.career.fillText(state, LIVE_LINES.genre[state.genre] || ''));
-    var roles = S.roles, special = {};
-    if (moments.indexOf('capeSpin') >= 0 && roles.front) special[roles.front] = LIVE_LINES.capeSpin;
-    if (moments.indexOf('solo') >= 0 && roles.solo && score >= 50) special[roles.solo] = LIVE_LINES.solo;
-    if (sum('extrasHit') > 0 && roles.fill) special[roles.fill] = LIVE_LINES.fill;
+    if (genreHit) {
+      var mp = GG.career.linePool ? GG.career.linePool(state, ['moments', peak]) : null;
+      lines.push(mp ? GG.career.pickLine(state, rng, mp) : GG.career.fillText(state, LIVE_LINES.genre[state.genre] || ''));
+    }
+    var roles = S.roles, special = {}, sigAll = gig.signatures(state);
+    Object.keys(live.sigDone || {}).forEach(function (id) {   // v0.9: whoever pulled their signature move
+      var sg = sigAll.filter(function (x) { return x.id === id; })[0] || {};
+      special[id] = liveLines(state, id, 'signature', LIVE_LINES.signature[sg.action] || LIVE_LINES.signature.any);
+    });
+    if (moments.indexOf('solo') >= 0 && roles.solo && score >= 50) special[roles.solo] = liveLines(state, roles.solo, 'solo', LIVE_LINES.solo);
+    if (sum('extrasHit') > 0 && roles.fill) special[roles.fill] = liveLines(state, roles.fill, 'fill', LIVE_LINES.fill);
     var reacts = reactions(state, grade, rng);
-    if (sum('flubs') > 0) active(state).forEach(function (m) { if (m.mood < cfg.unhappy) special[m.id] = LIVE_LINES.flub; });
+    if (sum('flubs') > 0) active(state).forEach(function (m) { if (m.mood < cfg.unhappy) special[m.id] = liveLines(state, m.id, 'flub', LIVE_LINES.flub); });
     reacts.forEach(function (r) { if (special[r.who]) r.text = GG.career.pickLine(state, rng, special[r.who]); });
     return {
       venueId: g.venueId, name: g.name, city: g.city, deal: g.deal, source: g.source, tier: g.tier, kind: g.kind,

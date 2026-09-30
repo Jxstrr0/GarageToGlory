@@ -19,7 +19,7 @@
     protectFans: 250, payCut: 0.3, payCutMax: 0.6, expectCut: 0.25, expectCutPerFan: 0.00002, expectCutMax: 0.1,
     moneyUp: 16, moneyUpMax: 3, moneyDown: 30, paidBonus: 0.5, burnoutFrom: 55, burnoutScale: 0.12,
     trendWeeks: 4, trendGrow: 0.03, stall: 1, growBonus: 0.5, gradeMood: { S: 1, A: 0.5, B: 0, C: -1, D: -2 },
-    wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, kenjiDrift: 2.5, stageAt: [44, 34, 26], recover: 6, grumbleChat: 0.7,
+    wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, mysteryDrift: 2.5, stageAt: [44, 34, 26], recover: 6, grumbleChat: 0.7,
     returnAfter: [16, 30], laterWeeks: 8, returnMood: 72, returnSkill: 5, quirkChance: 0.1, quirkCooldown: 12,
     adCost: 30, repostCost: 20, fillInCost: 40, fillInSkill: 38, fillInChem: 1, holePenalty: 14, fillInPenalty: 4, holeCrowd: 10,
     recruitStars: [30, 35, 22, 10, 3], hireChemPull: 0.25,
@@ -39,14 +39,32 @@
       3: '{who} has an ultimatum for you. Monday.' },
     gripes: { money: 'money', burnout: 'being overworked', losing: 'the band going nowhere', want: 'something', mystery: 'nobody knows what' },
     grumble: ['Just saying. Some of us have rent.'], passive: ['No, it’s fine. Everything is fine. 🙂'],
-    names: { first: ['Dale', 'Shawna', 'Kyle', 'Brenda', 'Travis', 'Crystal'], last: ['Friesen', 'Tkachuk', 'Olson', 'Lavoie'], nicks: ['Moose', 'Gravel', 'Tank'] },
+    names: { first: ['Dale', 'Shawna', 'Kyle', 'Brenda', 'Dwight', 'Crystal'], last: ['Friesen', 'Tkachuk', 'Olson', 'Lavoie'], nicks: ['Moose', 'Gravel', 'Tank'] },
     traits: [{ id: 'reliable', name: 'Reliable', effect: 'Shows up. Never gets past passive-aggressive.' }],
     fillIns: ['Dwayne from the music store']
   };
   function D() { return GG.content.drama || {}; }
   function R() { return GG.content.recruits || {}; }
   function mdef(id) { var m = D().members; return m && m[id] || null; }
-  function exitDef(m) { var d = m && m.original ? mdef(m.id) : null; return d && d.exit || null; }
+  // v0.9: an original without a content exit storyline takes a generic break and comes back through the generic return card.
+  function genericExit(m) {
+    var who = '{name:' + m.id + '}';
+    return { id: 'break', generic: true, status: 'Taking a break from the band. Says it is not personal. It is a little personal.',
+      quitLine: { who: m.id, text: "I need some time away from the band. It's not you. It's a little bit you." },
+      beats: [{ at: 6, who: 'mom', text: 'Ran into ' + who + ' at the grocery store. Asked about you. Bought the same cereal as always.' }],
+      backLine: { who: m.id, text: "Back. Did I miss anything? Don't answer that." },
+      changed: 'Back from a break. Quieter about the small stuff. Louder on stage.' };
+  }
+  function exitDef(m) { var d = m && m.original ? mdef(m.id) : null; return (d && d.exit) || (m && m.original ? genericExit(m) : null); }
+  var GENERIC_RETURN = { id: 'ret_original', type: 'drama', speaker: 'recruit', title: 'Knock Knock',
+    text: "{recruit} is at {door} with coffee for everyone. 'So. I've had some time to think.'",
+    choices: [
+      { label: 'Welcome back', effects: { member: { id: 'recruit', act: 'return' }, chemistry: 3 },
+        outcome: '{recruit} is back in {space}. Everyone pretends not to be happy about it. Everyone is.' },
+      { label: 'Not yet', effects: { member: { id: 'recruit', act: 'later' } },
+        outcome: "'Fair,' says {recruit}. 'I'll check back.' The coffee stays." },
+      { label: 'We moved on', effects: { member: { id: 'recruit', act: 'rival' } },
+        outcome: '{recruit} nods and leaves. A week later {rival} post a photo of their newest member. You recognise the jacket.' }] };
   function list(state) { return state.members || []; }
   function active(state) { return list(state).filter(function (m) { return m.status === 'active'; }); }
   function find(state, id) {
@@ -127,9 +145,79 @@
   };
   function count(a, id) { return a.filter(function (x) { return x === id; }).length; }
   function moment(g, k) { return !!(g && g.moments && g.moments.indexOf(k) >= 0); }
+  // v0.9: any band member's signature move (bands.js member.signature.action) counts as the spotlight.
+  function signatureMoment(s, g) {
+    if (moment(g, 'capeSpin')) return true;
+    if (!g || !g.moments) return false;
+    return active(s).some(function (m) { var d = GG.career.memberDef && GG.career.memberDef(s, m.id); return !!(d && d.signature && moment(g, d.signature.action)); });
+  }
+  function newestSong(s) { return s.songs && s.songs.length ? s.songs[s.songs.length - 1] : null; }
+  function wrote(s) { var w = s.lastWeek; return !!(w && (w.blocks || []).some(function (b) { return b.deltas && b.deltas.song; })); }
+  function playedDifficulty(s, g) {
+    var ids = (g && g.songIds) || [], n = 0, t = 0;
+    ids.forEach(function (id) { var x = GG.songs.byId(s, id); if (x && x.rating) { t += x.rating.difficulty; n++; } });
+    return n ? t / n : null;
+  }
+  function tripKm(g) { return g ? (g.travel && g.travel.km) || g.km || 0 : 0; }
+  function venueOf(g) { return g && GG.gig && GG.gig.venue ? GG.gig.venue(g.venueId) : null; }
+  function homeGig(s, g) { return !!g && String(g.city || '').toLowerCase() === String(s.city || '').toLowerCase(); }
+  var RURAL = { legion: 1, curling: 1, bingo: 1, house: 1, church: 1 };
   // Each rule: +1 met, 0 neutral, -1 unmet, from this week's blocks (a) and gig result (g).
+  // v0.9 rules for the three new bands (content drama.members[id].wants[].rule): council (Rox), twoChords (Benny), van
+  // (Moth), eighties (Chase), lawsuit (Lenny), adulting (Tamara), truck (Travis), stories (Earl), secretJoy (Clementine),
+  // hat (Duke).
   var RULES = {
-    spotlight: function (s, a, g) { return moment(g, 'capeSpin') || a.indexOf('promote') >= 0 || (g && /[SA]/.test(g.grade)) ? 1 : g ? 0 : -1; },
+    spotlight: function (s, a, g) { return signatureMoment(s, g) || a.indexOf('promote') >= 0 || (g && /[SA]/.test(g.grade)) ? 1 : g ? 0 : -1; },
+    // Rox: city council. Promo blocks (posters on council's lamp posts) and shows in her own city; a week of neither stings.
+    council: function (s, a, g) { return a.indexOf('promote') >= 0 || homeGig(s, g) ? 1 : g ? 0 : -1; },
+    // Benny: two chords, no more. Easy songs make him happy; hard ones get the lecture.
+    twoChords: function (s, a, g) {
+      var d = wrote(s) && newestSong(s) ? newestSong(s).rating.difficulty : playedDifficulty(s, g);
+      return d == null ? 0 : d < 45 ? 1 : d > 65 ? -1 : 0;
+    },
+    // Moth: the van is her apartment. Good condition + she drives = home; a wreck, a rental abroad or someone else driving = no.
+    van: function (s) {
+      var v = s.van || {}, d = GG.world && GG.world.driver ? GG.world.driver(s) : null, abroad = GG.tour && GG.tour.away && GG.tour.away(s);
+      if (abroad || (v.condition != null && v.condition < 35) || (d && d.you)) return -1;
+      return v.condition != null && v.condition >= 60 ? 1 : 0;
+    },
+    // Chase: it's 1985. Rock rooms and a buzzing band; a dead week is 2026 again.
+    eighties: function (s, a, g) {
+      var v = venueOf(g), rocks = v && GG.gig.fit(v, 'rock') >= 0.9;
+      return rocks || s.buzz >= 40 ? 1 : s.buzz < 15 && !g ? -1 : 0;
+    },
+    // Lenny: one riff the lawyers don't call about. A new song too close to an old one (similarity >= 0.8) = the call.
+    lawsuit: function (s) {
+      if (!wrote(s)) return 0;
+      var n = newestSong(s), sim = 0;
+      (s.songs || []).forEach(function (x) { if (x !== n) sim = Math.max(sim, GG.songs.similarity(n, x)); });
+      return sim >= 0.8 ? -1 : sim < 0.5 ? 1 : 0;
+    },
+    // Tamara: everyone home by midnight, teeth flossed, taxes filed. Low burnout, short drives, money in the fund.
+    adulting: function (s, a, g) {
+      var km = tripKm(g);
+      if (s.burnout >= 60 || km >= 300 || s.fund < 50) return -1;
+      return s.burnout < 40 && km < 150 && s.fund >= 300 ? 1 : 0;
+    },
+    // Travis Lee: a real truck. Rural rooms, a truck ad; downtown clubs remind him of the condo.
+    truck: function (s, a, g) {
+      var v = venueOf(g), lic = s.licensing && Array.isArray(s.licensing.deals) && s.licensing.deals.some(function (d) { return d.brandId === 'truck'; });
+      if ((g && v && RURAL[v.kind]) || lic || (s.flags && s.flags.truck)) return 1;
+      return g && v && (v.kind === 'club' || v.kind === 'bar') && (v.tier || 0) >= 2 ? -1 : 0;
+    },
+    // Earl: somebody to hear the whole story. Long drives are an audience; a week at home is not.
+    stories: function (s, a, g) { var km = tripKm(g); return km >= 150 ? 1 : g ? 0 : -1; },
+    // Clementine: never caught enjoying this. A roaring crowd is the secret joy; a flop proves her right, which she hates.
+    secretJoy: function (s, a, g) {
+      if (!g) return 0;
+      var hot = (g.songResults || []).some(function (r) { return (r.crowdEnd || 0) >= 80; }) || g.score >= 80;
+      return hot ? 1 : g.grade === 'D' ? -1 : 0;
+    },
+    // Duke: a bigger hat. Merch moving and buzz (the hat has fans); a quiet band means a small hat.
+    hat: function (s, a, g) {
+      var sold = g && g.merch && g.merch.sold > 0;
+      return sold || s.buzz >= 35 ? 1 : s.buzz < 12 ? -1 : 0;
+    },
     cape: function (s) { var c = s.flags && s.flags.cape; return c && c !== 'none' ? (c === 'charred' ? 0 : 1) : -1; },
     solos: function (s, a, g) { return !g ? 0 : moment(g, 'solo') || (!g.live && /[SA]/.test(g.grade)) ? 1 : /[CD]/.test(g.grade) ? -1 : 0; },
     practice: function (s, a) { return a.indexOf('rehearse') >= 0 ? 1 : -1; },
@@ -137,6 +225,7 @@
     baba: function (s, a, g) { return s.flags && s.flags.babaMad ? -1 : a.indexOf('rest') >= 0 || (g && /legion|church|bingo/.test(g.kind || '')) ? 1 : 0; },
     mystery: function (s, a, g, rng) { return rng.range(-1, 1); }
   };
+  drama.rules = RULES;   // v0.9: rule ids for content (drama.members[id].wants[].rule) + tests
 
   /* ---- The week (endWeek) ------------------------------------------------------------------------------ */
   function moodWeek(state, m, acts, gig, rng) {
@@ -155,7 +244,8 @@
     m.want = w ? w.id : null;
     if (w && RULES[w.rule]) {
       var sc = RULES[w.rule](state, acts, gig, rng);
-      add(w.rule === 'mystery' ? 'mystery' : 'want', w.rule === 'mystery' ? sc * E.kenjiDrift : sc > 0 ? sc * E.wantMet : sc * E.wantUnmet);
+      var drift = E.mysteryDrift != null ? E.mysteryDrift : E.kenjiDrift != null ? E.kenjiDrift : 2.5;   // v0.9: kenjiDrift -> mysteryDrift
+      add(w.rule === 'mystery' ? 'mystery' : 'want', w.rule === 'mystery' ? sc * drift : sc > 0 ? sc * E.wantMet : sc * E.wantUnmet);
     }
     var total = 0, worst = null, wv = -0.5, touchy = GG.difficulty ? GG.difficulty.mul(state, 'moodLoss') : 1;   // v0.6.1 C4
     for (var k in parts) {
@@ -180,7 +270,8 @@
   };
   function stagePool(m, key) {
     var d = m.original ? mdef(m.id) : null;
-    return (d && d[key]) || (D().recruit && D().recruit[key]) || FALLBACK[key];
+    if (m.original) return (d && d[key]) || FALLBACK[key];   // v0.9: an original never speaks in the recruits' Kijiji voice
+    return (D().recruit && D().recruit[key]) || FALLBACK[key];
   }
   function stepStage(state, m, rng, wrap) {
     var E = cfg(), T = E.stageAt, s = m.stage || 0, old = s;
@@ -249,10 +340,18 @@
 
   /* ---- Monday: forced drama cards ------------------------------------------------------------------------ */
   function card(id) { return id ? GG.career.cardById(id) : null; }
-  function cardFor(m, kind) {
+  // v0.9: the recruit ultimatum and the generic return go through career.variant ('<id>_<bandId>' first).
+  function cardFor(m, kind, state) {
     var d = m.original ? mdef(m.id) : null;
     if (d && d[kind]) return card(d[kind]);
-    return kind === 'ultimatum' ? card(D().recruit && D().recruit.ultimatum) : null;
+    if (kind === 'ultimatum') {
+      var base = D().recruit && D().recruit.ultimatum;
+      return (state && base && GG.career.variant ? GG.career.variant(state, base) : null) || card(base);
+    }
+    if ((kind === 'return' || kind === 'returnFilled') && m.original && exitDef(m) && exitDef(m).generic) {
+      return (state && GG.career.variant ? GG.career.variant(state, 'ret_original') : null) || GENERIC_RETURN;
+    }
+    return null;
   }
   drama.quirk = function (id) { return (R().quirks || []).filter(function (q) { return q.id === id; })[0] || null; };
   drama.traitDef = function (id) { return (R().traits || FALLBACK.traits).filter(function (t) { return t.id === id; })[0] || null; };
@@ -263,7 +362,7 @@
     var E = cfg(), act = active(state), i, m, c;
     for (i = 0; i < act.length; i++) {
       m = act[i];
-      if (m.stage >= 3 && (m.ultimatum || 0) <= state.totalWeek && (c = cardFor(m, 'ultimatum'))) return { card: c, who: m.id };
+      if (m.stage >= 3 && (m.ultimatum || 0) <= state.totalWeek && (c = cardFor(m, 'ultimatum', state))) return { card: c, who: m.id };
     }
     var gone = list(state).filter(function (x) {
       return x.status !== 'active' && x.exit && x.exit.storyline !== 'rival' && x.exit.returnDue != null && state.totalWeek >= x.exit.returnDue;
@@ -273,7 +372,7 @@
       var ex = exitDef(m), holder = drama.holder(state, m.role);
       if (ex && ex.needBuzz && state.buzz < ex.needBuzz) continue;
       if (m.status === 'away' && !holder) continue;                     // walks back in on his own at the wrap
-      if ((c = cardFor(m, holder ? 'returnFilled' : 'return'))) return { card: c, who: holder ? holder.id : m.id };
+      if ((c = cardFor(m, holder ? 'returnFilled' : 'return', state))) return { card: c, who: holder && !ex.generic ? holder.id : m.id };
     }
     var rv = GG.rival && GG.rival.forcedCard ? GG.rival.forcedCard(state) : null;   // v0.6: crack / Sad Dome eve / poach cards
     if (rv) return rv;
@@ -292,13 +391,14 @@
   // Every drama card (for career.cardById): ultimatums, returns, recruit quirk cards.
   drama.cards = function () {
     var out = (GG.content.dramaCards || []).slice();
+    if (!out.some(function (c) { return c.id === GENERIC_RETURN.id; })) out.push(GENERIC_RETURN);   // v0.9 fallback return card
     (R().quirks || []).forEach(function (q) { (q.cards || []).forEach(function (c) { out.push(c); }); });
     return out;
   };
   // Safety net after a card resolves: an ultimatum card that didn't settle or quit its member settles it.
   drama.afterCard = function (state, c) {
     var m = state.card && state.card.who ? find(state, state.card.who) : null;
-    if (m && m.status === 'active' && m.stage >= 3 && c && cardFor(m, 'ultimatum') === c) { m.stage = 2; m.ultimatum = null; m.stageWeek = state.totalWeek; }
+    if (m && m.status === 'active' && m.stage >= 3 && c && cardFor(m, 'ultimatum', state) === c) { m.stage = 2; m.ultimatum = null; m.stageWeek = state.totalWeek; }
   };
 
   /* ---- Quit, return, defect (the 'member' effect) --------------------------------------------------------- */
@@ -394,14 +494,18 @@
     if (x != null) used[key + (x && x.id || x)] = true;
     return x;
   }
+  // v0.9: traits and quirks may carry genres: [..] (only those genres' recruits have them).
+  function forGenre(state, x) { return !x || !x.genres || x.genres.indexOf(state.genre) >= 0; }
   function candidate(state, role, rng, used) {
     var E = cfg(), Rc = R(), names = (Rc.names && (Rc.names[state.genre] || Rc.names.metal)) || FALLBACK.names;
     var fn = fresh(rng, names.first, used, 'f'), ln = rng.pick(names.last), nick = fresh(rng, names.nicks, used, 'n');
-    var towns = (Rc.hometowns && (Rc.hometowns[state.region] || Rc.hometowns.canada)) || [state.city || 'Saskatoon'];
+    var byCity = Rc.hometownsByCity && Rc.hometownsByCity[state.city];   // v0.9: recruits come from around the band's own city
+    var towns = (byCity && byCity.length && byCity) || (Rc.hometowns && (Rc.hometowns[state.region] || Rc.hometowns.canada)) || [state.city || 'town'];
     var hometown = rng.pick(towns), boost = Math.max(0, C.ERAS.indexOf(state.era)) + Math.min(2, (state.fans || 0) / 1500);
     var stars = 1 + rng.weighted([0, 1, 2, 3, 4], function (i) { return E.recruitStars[i] * (1 + boost * i * 0.35); });
-    var tr = fresh(rng, Rc.traits || FALLBACK.traits, used, 't') || FALLBACK.traits[0];
-    var q = fresh(rng, (Rc.quirks || []).filter(function (x) { return !active(state).some(function (m) { return m.recruit && m.recruit.quirk === x.id; }); }), used, 'q');
+    var traits = (Rc.traits || FALLBACK.traits).filter(function (x) { return forGenre(state, x); });
+    var tr = fresh(rng, traits.length ? traits : (Rc.traits || FALLBACK.traits), used, 't') || FALLBACK.traits[0];
+    var q = fresh(rng, (Rc.quirks || []).filter(function (x) { return forGenre(state, x) && !active(state).some(function (m) { return m.recruit && m.recruit.quirk === x.id; }); }), used, 'q');
     var ask = tr.id === 'frugal' ? 0.1 : U.clamp(Math.round((0.12 + stars * 0.035 + rng.range(-0.04, 0.04)) * 20) / 20, 0.1, 0.45);
     var chem = U.clamp(Math.round(50 + (tr.chem || 0) + (q && q.chem || 0) + (hometown === state.city ? 8 : 0)
       + (state.chemistry - 50) * 0.3 + rng.int(-20, 20)), 5, 95);
@@ -461,13 +565,23 @@
   drama.hireFillIn = function (state, role) {
     if (drama.holes(state).indexOf(role) < 0) return null;
     var rng = GG.RNG(GG.hashSeed(state.seed + '|fill|' + role + '|' + state.totalWeek));   // cosmetic: not the career RNG
-    var F = D().fillIns || {}, pool = F[role] || F.any || FALLBACK.fillIns;
+    var F = D().fillIns || {}, pool = fillPool(F, role) || F.any || FALLBACK.fillIns;
     state.fillIns = state.fillIns || {};
     state.fillIns[role] = { name: rng.pick(pool), costPerGig: cfg().fillInCost, look: makeLook(rng, state.genre) };
     changed(state);
     return state.fillIns[role];
   };
   drama.dismissFillIn = function (state, role) { if (state.fillIns) delete state.fillIns[role]; changed(state); };
+  // v0.9: role normalisation for fill-ins: 'vocals/guitar' -> 'vocals/guitar', then 'vocals', then 'guitar' (-> lead guitar);
+  // 'acoustic' -> rhythm guitar; 'fiddle' -> its own pool, else lead guitar.
+  var ROLE_ALIAS = { guitar: ['guitar', 'lead guitar', 'rhythm guitar'], acoustic: ['acoustic', 'rhythm guitar'], fiddle: ['fiddle', 'lead guitar'] };
+  function fillPool(F, role) {
+    var r = String(role || '').toLowerCase(), tries = [r];
+    r.split('/').forEach(function (p) { p = p.trim(); tries = tries.concat(ROLE_ALIAS[p] || [p]); });
+    for (var i = 0; i < tries.length; i++) if (F[tries[i]] && F[tries[i]].length) return F[tries[i]];
+    return null;
+  }
+  drama.fillPool = function (role) { return fillPool(D().fillIns || {}, role); };
 
   /* ---- Rival ----------------------------------------------------------------------------------------------- */
   drama.rivalBlurb = function (state) {

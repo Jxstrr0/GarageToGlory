@@ -440,7 +440,16 @@
     return m && Object.prototype.hasOwnProperty.call(map, m[1]) ? map[m[1]] + ' ' + m[2] : null;
   };
   songs.isFrench = function (title) { return songs.englishFor(title) != null; };
-  function marcelIn(state) { return (state.members || []).some(function (m) { return m.id === 'marcel' && m.status === 'active'; }); }
+  // v0.9: the French-title gag runs only when the band's namer (band.roles.namer, active) has French titles: nameFr lines in
+  // lines.songReactions, or `frTitles: true` on the content member (Marcel).
+  function namerFr(state) {
+    var id = GG.career && GG.career.roleOf ? GG.career.roleOf(state, '@namer') : null;
+    if (!id) return false;
+    var L = (GG.content.lines && GG.content.lines.songReactions) || {}, d = GG.career.memberDef ? GG.career.memberDef(state, id) : null;
+    return !!((L[id] && L[id].nameFr && L[id].nameFr.length) || (d && d.frTitles));
+  }
+  songs.namerFr = namerFr;
+  function marcelIn(state) { return namerFr(state); }
   // English by default; now and then Marcel insists on the French original (title = fr, titleEn = en, fr: true).
   // The roll is seeded by career seed + song slot + title, so it never moves the career RNG (balance replays the same).
   function withSuffix(state, t, sfx, slot) {
@@ -576,40 +585,76 @@
     state.songs.forEach(function (s) { if (s.stale > 0 && s.lastPlayed !== state.totalWeek) s.stale = Math.max(0, s.stale - e.staleDecay); });
   };
 
-  // Band reactions to a new song (career RNG; lines in content/lines.js songReactions): Marcel names it, Dana wants
-  // room for a solo (v0.8: or thanks you for a real one), Jaxon sneaks fills into simple parts, Kenji nods at a great one.
-  // v0.7.2: when Marcel snuck in a French title (song.fr) he insists on it (marcel.nameFr) and a bandmate sighs right after
-  // (<id>.frSigh; preferring one who has nothing else to say). The sigh rolls on its own seed (career seed + song id).
+  // Band reactions to a new song (career RNG; lines in content/lines.js songReactions). v0.9 by role: the namer
+  // (band.roles.namer) names it, the soloist (gig.roles.solo) wants room for a solo (v0.8: or thanks you for a real one),
+  // the filler sneaks fills into simple parts, the deadpan (band.roles.deadpan) nods at a great one. Only originals (and
+  // members with their own lines) react; recruits stay quiet. v0.7.2: when the namer snuck in a French title (song.fr) he
+  // insists on it (<namer>.nameFr) and a bandmate sighs right after (<id>.frSigh; preferring one who has nothing else to say;
+  // its own seed: career seed + song id). v0.9 custom lines: songReactions[id].custom = [{ when: 'difficultyHigh' |
+  // 'similarityHigh' | 'any', text }] (at most one per song, rolled on its own seed so the career RNG never moves for it).
   var FALLBACK_REACT = { name: ['I have named it:'], nameFr: ['Non. This one is French:'], noSolo: ['Where does my solo go?'],
     fills: ['i added a fill. you will not notice'], great: ['(A nod.)'], frSigh: ['(A long sigh.)'],
     solo: ['A solo section. In a song. You have made me very happy.', 'Eight bars. I will make them count. All of them. At once.'] };
+  var CUSTOM = { difficultyHigh: 60, similarityHigh: 0.8, anyChance: 0.3 };
   songs.reactions = function (state, song, rng) {
-    var L = (GG.content.lines && GG.content.lines.songReactions) || {}, out = [];
-    function active(id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); }
+    var L = (GG.content.lines && GG.content.lines.songReactions) || {}, out = [], K = GG.career;
+    function mem(id) { return id ? state.members.filter(function (m) { return m.id === id && m.status === 'active'; })[0] || null : null; }
+    function voiced(id) { var m = mem(id); return !!m && (!!L[id] || !!(K.memberDef && m.original !== false && K.memberDef(state, id))); }
     function say(id, key) {
-      if (!active(id)) return;
+      if (!voiced(id)) return false;
       var pool = L[id] && L[id][key];
-      out.push({ who: id, text: GG.career.pickLine(state, rng, pool && pool.length ? pool : null, FALLBACK_REACT[key]) });
+      if (!(pool && pool.length) && K.isSilent && K.isSilent(state, id)) return false;   // a silent member only has their own stage directions
+      out.push({ who: id, text: K.pickLine(state, rng, pool && pool.length ? pool : null, FALLBACK_REACT[key]) });
+      return true;
     }
     var p = song.pattern, r = song.rating;
     var bridge = p.arrangement.indexOf('bridge') >= 0 ? hitsIn(p.sections.bridge, p.lanes) : -1;
     var hasSolo = p.arrangement.indexOf('solo') >= 0, noSolo = !hasSolo && (bridge < 0 || bridge >= 22), fills = r.difficulty < 40, great = song.quality >= 60 || (r.groove >= 85 && r.hook >= 70);
-    if (active('marcel')) {
-      say('marcel', song.fr ? 'nameFr' : 'name'); out[out.length - 1].text += ' “' + song.title + '”.';
+    var g = GG.gig && GG.gig.roles ? GG.gig.roles(state) : {};
+    var BR = ((K.band && K.band(state)) || {}).roles || {};
+    var namer = mem(BR.namer) ? BR.namer : g.front || null, soloist = g.solo || null, filler = g.fill || null;
+    var deadpan = mem(BR.deadpan) ? BR.deadpan : BR.deadpan ? null : K.roleOf ? K.roleOf(state, '@deadpan') : null;
+    if (namer && say(namer, song.fr ? 'nameFr' : 'name')) {
+      out[out.length - 1].text += ' “' + song.title + '”.';
       if (song.fr) {
-        var others = ['dana', 'jaxon', 'kenji'].filter(active), busy = { dana: hasSolo || noSolo, jaxon: fills, kenji: great };
+        var busy = {};
+        if (soloist) busy[soloist] = hasSolo || noSolo;
+        if (filler) busy[filler] = busy[filler] || fills;
+        if (deadpan) busy[deadpan] = busy[deadpan] || great;
+        var others = state.members.filter(function (m) { return m.status === 'active' && m.id !== namer && voiced(m.id); }).map(function (m) { return m.id; });
         var quiet = others.filter(function (id) { return !busy[id]; });
         if (others.length) {
           var sr = GG.RNG(GG.hashSeed((state.seed || 1) + '|frsigh|' + song.id)), who = sr.pick(quiet.length ? quiet : others);
           var pool = L[who] && L[who].frSigh;
-          out.push({ who: who, text: GG.career.pickLine(state, sr, pool && pool.length ? pool : null, FALLBACK_REACT.frSigh) });
+          out.push({ who: who, text: K.pickLine(state, sr, pool && pool.length ? pool : null, FALLBACK_REACT.frSigh) });
         }
       }
     }
-    if (hasSolo) say('dana', 'solo');   // v0.8: a real solo section
-    else if (noSolo) say('dana', 'noSolo');
-    if (fills) say('jaxon', 'fills');
-    if (great) say('kenji', 'great');
+    if (hasSolo) say(soloist, 'solo');   // v0.8: a real solo section
+    else if (noSolo) say(soloist, 'noSolo');
+    if (fills) say(filler, 'fills');
+    if (great) say(deadpan, 'great');
+    // v0.9 custom triggers (Benny and the third chord, Lenny's famous riff, Earl's original)
+    var cands = [];
+    state.members.forEach(function (m) {
+      if (m.status !== 'active' || !L[m.id] || !Array.isArray(L[m.id].custom)) return;
+      L[m.id].custom.forEach(function (c) { if (c && c.text) cands.push({ who: m.id, when: c.when || 'any', text: c.text }); });
+    });
+    if (cands.length) {
+      var cr = GG.RNG(GG.hashSeed((state.seed || 1) + '|custom|' + song.id)), sim = null;
+      var hit = cands.filter(function (c) {
+        if (c.when === 'difficultyHigh') return r.difficulty >= CUSTOM.difficultyHigh;
+        if (c.when === 'similarityHigh') {
+          if (sim == null) sim = state.songs.filter(function (x) { return x && x.id !== song.id; })
+            .reduce(function (mx, x) { return Math.max(mx, songs.similarity(song, x)); }, 0);
+          return sim >= CUSTOM.similarityHigh;
+        }
+        return c.when === 'any';
+      });
+      var strong = hit.filter(function (c) { return c.when !== 'any'; });
+      var pickFrom = strong.length ? strong : hit.length && cr.chance(CUSTOM.anyChance) ? hit : [];
+      if (pickFrom.length) { var c0 = cr.pick(pickFrom); out.push({ who: c0.who, text: K.fillText(state, c0.text), custom: c0.when }); }
+    }
     return out;
   };
 

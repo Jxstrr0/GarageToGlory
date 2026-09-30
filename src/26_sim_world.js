@@ -70,8 +70,12 @@
   function econ() { return GG.content.economy; }
   function rngRound(x, rng) { var f = Math.floor(x); return f + (rng.chance(x - f) ? 1 : 0); }
   function seeded(state, tag) { return GG.RNG(GG.hashSeed((state.seed >>> 0) + '|' + tag + '|' + state.totalWeek)); }
-  function lines(key) { return (GG.content.lines && GG.content.lines[key]) || null; }
-  function pickLine(state, rng, key, fallback) { return GG.career.pickLine(state, rng, lines(key), fallback); }
+  // v0.9: content lines through career.pool (flat neutral + lines.byBand[bandId]).
+  function lines(key, state) {
+    if (state && GG.career.pool) { var v = GG.career.pool(state, GG.content.lines, key); if (v != null && (!Array.isArray(v) || v.length)) return v; }
+    return (GG.content.lines && GG.content.lines[key]) || null;
+  }
+  function pickLine(state, rng, key, fallback) { return GG.career.pickLine(state, rng, lines(key, state), fallback); }
 
   /* ---- Map: cities, road km (shortest paths), gas, seasons ---------------------------------------- */
   function map() { return GG.content.map || { cities: {}, roads: [] }; }
@@ -133,12 +137,34 @@
   // v0.6.1 rings: which ring a city is in, and whether your era has opened it.
   world.rings = function () { return map().rings || [{ id: 'sask', era: 'garage' }]; };
   world.ring = function (x) { var c = world.city(x); return c ? c.ring || 'sask' : null; };
+  function ringDef(id) { return world.rings().filter(function (x) { return x.id === id; })[0] || null; }
+  // v0.9 (owner Q1): the band's home ring (bands.js homeRing when the map has it, else the home city's ring) is open from day
+  // one; every other ring opens no earlier than Local Heroes (Saskatchewan for Gravel Kings, Alberta for the others), later
+  // rings at their own era. "Far" listings are relative to home.
+  world.homeRing = function (state) {
+    var b = GG.career && GG.career.band ? GG.career.band(state) : null, hr = b && b.homeRing;
+    if (hr && ringDef(hr)) return hr;
+    return world.ring(world.home(state)) || (world.rings()[0] || {}).id || 'sask';
+  };
+  world.ringEra = function (state, ringId) {
+    var r = ringDef(ringId);
+    if (!r || ringId === world.homeRing(state)) return 'garage';
+    var e = r.era || 'garage';
+    return C.ERAS.indexOf(e) < C.ERAS.indexOf('local') ? 'local' : e;
+  };
   world.ringOpen = function (state, ringId) {
-    var r = world.rings().filter(function (x) { return x.id === ringId; })[0];
-    if (!r) return true;
-    return C.ERAS.indexOf(state && state.era || 'garage') >= C.ERAS.indexOf(r.era || 'garage');
+    if (!ringDef(ringId)) return true;
+    return C.ERAS.indexOf(state && state.era || 'garage') >= C.ERAS.indexOf(world.ringEra(state, ringId));
   };
   world.cityOpen = function (state, x) { var r = world.ring(x); return !r || world.ringOpen(state, r); };
+  // The rings in this career's order (home first, then by the era they open) with { era (for this band), open, home }.
+  world.ringsFor = function (state) {
+    var list = world.rings(), home = world.homeRing(state);
+    return list.map(function (r, i) {
+      var e = world.ringEra(state, r.id);
+      return Object.assign({}, r, { era: e, baseEra: r.era || 'garage', open: world.ringOpen(state, r.id), home: r.id === home, order: i });
+    }).sort(function (a, b) { return (b.home - a.home) || (C.ERAS.indexOf(a.era) - C.ERAS.indexOf(b.era)) || (a.order - b.order); });
+  };
 
   /* ---- Venues: reputation, bans, genre fit ------------------------------------------------------- */
   function venues() { return GG.content.venues || []; }
@@ -245,7 +271,7 @@
       var h = room ? headliner(state, room, rng) : null;
       if (h) add(room, { opening: h });
     }
-    var homeRing = world.ring(world.home(state)) || 'sask';
+    var homeRing = world.homeRing(state);   // v0.9: far = outside the band's home ring
     function far(v) { var r = world.ring(v.city); return !!r && r !== homeRing; }
     while (out.length < n) {
       var farN = out.filter(function (g) { return far(g); }).length;
@@ -360,7 +386,11 @@
       r.fans = (r.fans || 0) + rngRound(x, rng);
       if (g.deal === 'door' && GG.gig && GG.gig.payFor) r.pay = GG.gig.payFor(g, r.crowd);
       r.lines.push('Opening for ' + g.opening.name + '. ' + pickLine(state, rng, 'openingSlot', 'You stole a few of their fans.'));
-      if (g.opening.rival) r.lines.push("Afterwards " + g.opening.name + "'s frontman shakes your hand and calls you 'buddy'. Twice.");
+      if (g.opening.rival) {   // v0.9: the rival's own line (cast.openingSlot), else a neutral one; its own seed
+        var rc = GG.rival && GG.rival.cast ? GG.rival.cast(state) : null, op = rc && (rc.openingSlot || (rc.banter && rc.banter.opening));
+        var od = OPENING_LINE[GG.rival && GG.rival.id ? GG.rival.id(state) : ''] || 'Afterwards {rivalFront} shakes your hand. It lasts a beat too long.';
+        r.lines.push(GG.career.fillText(state, Array.isArray(op) && op.length ? seeded(state, 'openline').pick(op) : typeof op === 'string' && op ? op : od));
+      }
     }
     if (g.clash) r.lines.push(pickLine(state, rng, 'genreClash', 'Wrong crowd. The boots came out. You still got paid.'));
     var fresh = world.freshness(state, g.venueId);
@@ -370,6 +400,7 @@
     }
     return r;
   };
+  var OPENING_LINE = { tundra_wraith: "Afterwards {rivalFront}, their frontman, shakes your hand and calls you 'buddy'. Twice." };   // until the cast has its own
   // After GG.gig.applyResult: venue rep (+ rebook / ban), van wear, long-drive burnout, breakdowns.
   // Adds r.rep (the rep change, a number), r.repAfter (-3..3), r.banned (bool) and
   // r.travel = { km, driven, wear, burnout, breakdown: null|{ cost } }. Once per result.
@@ -383,6 +414,8 @@
     var after = U.clamp(before + delta, K.repRange[0], K.repRange[1]);
     state.venueRep[id] = after;
     (state.venueLast || (state.venueLast = {}))[id] = state.totalWeek;
+    var vp = state.venuePlays || (state.venuePlays = {});   // v0.9: plays per venue ({homeVenue})
+    vp[id] = (vp[id] || 0) + 1;
     var banned = after <= K.banAt && !world.isBanned(state, id);
     if (banned) state.banned.push(id);
     if (banned && GG.shop) GG.shop.banSticker(state, id);   // v0.8: their sticker on the van gets crossed out
@@ -450,10 +483,12 @@
   };
 
   /* ---- The van ---------------------------------------------------------------------------------------- */
+  // v0.9: a neutral id; the name is the band's tier-0 vehicle (shop.vanName: The Moose Hearse, The Pothole, ...).
   world.defaultVan = function (state) {
-    var K = cfg().van;
-    return { id: 'moose_hearse', name: 'The Moose Hearse', condition: K.condition, space: K.space, comfort: K.comfort, km: 0, trips: 0, breakdowns: 0,
-      driver: world.driverFor(state && state.bandId || 'hail_damage') || 'you' };
+    var K = cfg().van, bandId = state && state.bandId || 'hail_damage';
+    var name = GG.shop && GG.shop.vanName ? GG.shop.vanName(bandId, 0) : 'The Van';
+    return { id: 'van', name: name, condition: K.condition, space: K.space, comfort: K.comfort, km: 0, trips: 0, breakdowns: 0,
+      driver: world.driverFor(bandId) || 'you' };
   };
   world.van = function (state) { if (!state.van || typeof state.van !== 'object') state.van = world.defaultVan(); return state.van; };
   world.vanLabel = function (condition) {
@@ -475,7 +510,7 @@
   world.driverFor = function (bandId) {
     var D = drivers();
     for (var id in D) if (D[id].band === bandId) return id;
-    return bandId === 'hail_damage' ? 'kenji' : null;
+    return null;   // v0.9: no designated driver in content = you drive
   };
   // The one behind the wheel this week: the band's designated driver while active, otherwise you.
   world.driver = function (state) {
@@ -498,7 +533,9 @@
     if (!was || quiet || !GG.career || !GG.career.postChat) return { from: was || null, to: cur };
     var D = drivers(), text = cur === 'you' ? (D.you && D.you.takeOver) || 'You drive now. The seat is still warm. The mirrors are set for someone taller.'
       : (D[cur] && D[cur].back) || D[cur] && D[cur].name + ' is back behind the wheel.';
-    GG.career.postChat(state, cur === 'you' ? (state.members.filter(function (m) { return m.status === 'active'; })[0] || {}).id || 'mom' : 'jaxon', text, null, 'news');
+    // v0.9: the returning driver says it themselves; when you take over, the first bandmate who talks (else Mom)
+    var tk = GG.career.talkers ? GG.career.talkers(state)[0] : state.members.filter(function (m) { return m.status === 'active'; })[0];
+    GG.career.postChat(state, cur === 'you' ? (tk && tk.id) || 'mom' : cur, text, null, 'news');
     GG.emit('van:driver', { from: was, to: cur });
     return { from: was, to: cur };
   };
@@ -545,18 +582,33 @@
     var list = (GG.content.roadCards || []).filter(function (c) { return world.roadGatePasses(state, c.gate, km, season, city) && roadAvailable(state, c) && (!GG.tour || GG.tour.roadCardOk(state, c)); });
     return list.length ? rng.weighted(list, function (c) { return c.weight != null ? c.weight : 1; }) : null;
   };
-  // 1–2 lines of van chatter (a bandmate or two; Kenji only ever gets a stage direction). Seeded, cosmetic.
+  // 1–2 lines of van chatter (a bandmate or two; a silent member only ever gets a stage direction). Seeded, cosmetic.
+  // v0.9: talkers = active members without `silent` who have lines.vanBanter; a silent member's stage directions are their own
+  // lines.vanBanter[id] (Kenji: lines.vanKenji); the driver's own pool (content.drivers[id].banter) can add a line.
   world.banter = function (state, n) {
-    var rng = seeded(state, 'banter'), pools = lines('vanBanter') || {}, out = [];
-    var talkers = rng.shuffle(state.members.filter(function (m) { return m.status === 'active' && pools[m.id] && pools[m.id].length; }));
-    var kenji = (lines('vanKenji') || []).length && state.members.some(function (m) { return m.id === 'kenji' && m.status === 'active'; });
+    var rng = seeded(state, 'banter'), pools = lines('vanBanter') || {}, out = [], K = GG.career;
+    function silent(m) { return K.isSilent ? K.isSilent(state, m.id) : m.id === 'kenji'; }
+    var talkers = rng.shuffle(state.members.filter(function (m) { return m.status === 'active' && !silent(m) && pools[m.id] && pools[m.id].length; }));
+    var quiet = state.members.filter(function (m) { return m.status === 'active' && silent(m); }).map(function (m) {
+      var p = (pools[m.id] && pools[m.id].length ? pools[m.id] : null) || (m.id === 'kenji' ? lines('vanKenji') : null);
+      return p && p.length ? { id: m.id, pool: p } : null;
+    }).filter(Boolean)[0] || null;
     n = n || 2;
     for (var i = 0; i < talkers.length && out.length < n; i++) {
-      if (out.length && kenji && rng.chance(0.4)) break;   // sometimes the second line is Kenji, not talking
+      if (out.length && quiet && rng.chance(0.4)) break;   // sometimes the second line is the quiet one, not talking
       out.push({ who: talkers[i].id, text: GG.career.fillText(state, rng.pick(pools[talkers[i].id])) });
     }
-    if (out.length < n && kenji) out.push({ who: 'kenji', text: rng.pick(lines('vanKenji')) });
+    if (out.length < n && quiet) out.push({ who: quiet.id, text: rng.pick(quiet.pool) });
+    var d = world.driver(state), dp = d && !d.you && d.def && d.def.banter;
+    if (out.length < n && Array.isArray(dp) && dp.length && !out.some(function (x) { return x.who === d.id; })) out.push({ who: d.id, text: GG.career.fillText(state, rng.pick(dp)) });
     return out;
+  };
+  // v0.9: the highway out of town when the destination is off the map (per home city; content map city `highway` wins).
+  var HOME_HWY = { saskatoon: 'Hwy 7 · the Trans-Canada', regina: 'Hwy 1 · the Trans-Canada', swift_current: 'Hwy 1 · the Trans-Canada',
+    edmonton: 'Hwy 2 · the QEII', calgary: 'Hwy 2 · the QEII' };
+  world.highwayOut = function (state) {
+    var h = world.home(state), c = world.city(h);
+    return (c && c.highway) || HOME_HWY[h] || 'the Trans-Canada';
   };
   world.trip = function (state) { return state.trip && state.trip.w === state.totalWeek ? state.trip : null; };
   // Starts (or returns) this week's trip to the booked gig: route, km, season, night, a road card, banter.
@@ -574,7 +626,7 @@
     var fc = world.city(from), tc = world.city(to);
     var wx = GG.calendar ? GG.calendar.weatherAt(state, to) : { kind: 'clear', temp: 20 }, hol = GG.calendar ? GG.calendar.holiday(state.week, state) : null;
     t = state.trip = { w: state.totalWeek, venueId: gig.venueId, from: from, to: to,
-      fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : 'Hwy 7 · the Trans-Canada',
+      fromName: fc ? fc.name : state.city, toName: toId && tc ? tc.name : gig.city, km: km, highway: toId ? world.highway(from, to) : world.highwayOut(state),
       season: season, night: km >= 180 || season === 'winter', cardId: card ? card.id : null, resolved: !card,
       choice: null, outcome: null, deltas: null, success: null, banter: world.banter(state, 2),
       weather: wx.kind, temp: wx.temp, holiday: hol ? hol.id : null, driver: world.driver(state).id };
@@ -636,6 +688,7 @@
       if (!isFinite(v)) delete s.venueRep[k]; else if (v < R[0] || v > R[1] || v !== Math.round(v)) s.venueRep[k] = U.clamp(Math.round(v), R[0], R[1]);
     });
     if (!s.venueLast || typeof s.venueLast !== 'object' || Array.isArray(s.venueLast)) s.venueLast = {};
+    if (s.venuePlays !== undefined && (!s.venuePlays || typeof s.venuePlays !== 'object' || Array.isArray(s.venuePlays))) s.venuePlays = {};   // v0.9 (lazy; {homeVenue})
     if (!Array.isArray(s.banned)) s.banned = [];
     else if (s.banned.some(function (x) { return typeof x !== 'string'; })) s.banned = s.banned.filter(function (x) { return typeof x === 'string'; });
     var dv = world.defaultVan(s);

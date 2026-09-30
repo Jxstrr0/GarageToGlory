@@ -75,20 +75,19 @@
   function eraAtLeast(state, era) { return L.eraIndex(state.era) >= L.eraIndex(era || 'garage'); }
 
   var FALLBACK_LABELS = {
-    gopherwood: { id: 'gopherwood', name: 'Gopherwood Records', blurb: 'Indie out of a Saskatoon basement. Small cheques, big hearts.',
+    gopherwood: { id: 'gopherwood', name: 'Gopherwood Records', blurb: 'Indie out of a prairie basement. Small cheques, big hearts.',
       advance: [1000, 3000], royalty: 0.3, albums: 2, deadlineWeeks: 40, demands: [], offerMinFans: 450, offerMinBuzz: 18, dropOnFlop: false },
     monolith: { id: 'monolith', name: 'Monolith Records', blurb: 'A major. A glass tower in Toronto. Opinions.',
       advance: [5000, 12000], royalty: 0.14, albums: 3, deadlineWeeks: 34, offerMinFans: 3000, offerMinBuzz: 30, dropOnFlop: true,
       demands: [{ kind: 'radio_single', text: 'Cut the single down to 3:10 for radio.' },
-                { kind: 'image', text: 'New look. Less cape, more leather.' },
-                { kind: 'english', text: 'Marcel should sing in English.' }] },
+                { kind: 'image', text: 'New look. More leather. Less whatever this is.' }] },
     diy: { id: 'diy', name: 'DIY', blurb: 'No label. Keep everything. Pay for everything.',
       advance: [0, 0], royalty: 0.7, albums: 0, deadlineWeeks: 0, demands: [], offerMinFans: 0, offerMinBuzz: 0, dropOnFlop: false }
   };
   var FALLBACK_STUDIOS = [
-    { id: 'moms_basement', name: "Mom's Basement", city: 'Saskatoon', blurb: 'Free. Carpet on the walls. The dryer is always running.',
+    { id: 'moms_basement', name: "Mom's Basement", city: '{city}', blurb: 'Free. Carpet on the walls. The dryer is always running.',
       costPerWeek: 0, quality: 28, reverb: 0.1, era: 'local', quirk: 'The dryer buzzes through every quiet part.' },
-    { id: 'strip_mall_sound', name: 'Strip Mall Sound', city: 'Saskatoon', blurb: 'Between a vape shop and a tax office.',
+    { id: 'strip_mall_sound', name: 'Strip Mall Sound', city: '{city}', blurb: 'Between a vape shop and a tax office.',
       costPerWeek: 220, quality: 48, reverb: 0.3, era: 'local', quirk: 'The engineer is the landlord. He mentions rent between takes.' },
     { id: 'grain_silo', name: 'Grain Silo Studios', city: 'Yorkton', blurb: 'A converted grain elevator. Seven storeys of natural reverb.',
       costPerWeek: 650, quality: 70, reverb: 0.95, era: 'local', quirk: 'Every snare hit comes back four seconds later.' },
@@ -100,7 +99,7 @@
       style: 'loud', production: 5, polish: 0, hook: 2, weird: 0.2, era: 'local' },
     { id: 'moss_lindqvist', name: 'Moss Lindqvist', blurb: 'Records in a cabin in the woods. Bears are part of the process.', costPerWeek: 350,
       style: 'cabin', production: 4, polish: 8, hook: 0, weird: 0.5, era: 'local' },
-    { id: 'gord_quietly', name: 'Gord Quietly', blurb: 'Says nothing. Quietly fixes Marcel\'s pitch.', costPerWeek: 600,
+    { id: 'gord_quietly', name: 'Gord Quietly', blurb: 'Says nothing. Quietly fixes the singer\'s pitch.', costPerWeek: 600,
       style: 'pitch', production: 8, polish: 4, hook: 6, weird: 0.1, era: 'local' }
   ];
   var FALLBACK_OUTLETS = [
@@ -114,7 +113,7 @@
     awful: ['"{album}" is an album. Technically.', 'We listened to {album} so you do not have to.'],
     meh: ['{band} have made a record. Parts of it are good.', '"{single}" is fine. The rest is also there.'],
     good: ['{band} sound like a real band now. Scary.', '"{single}" will be stuck in your head for a week.'],
-    great: ['{album} is the sound of Saskatchewan exploding.', 'The best thing to come out of a garage since the lawnmower.']
+    great: ['{album} is the sound of the prairies exploding.', 'The best thing to come out of {space} since the lawnmower.']
   };
   var FALLBACK_WORDS = {
     metal: { adj: ['Frozen', 'Eternal', 'Cursed', 'Howling', 'Grim', 'Endless', 'Wretched', 'Infinite'],
@@ -140,15 +139,22 @@
   var FALLBACK_SPEECHES = [
     { id: 'mom', label: 'Thank your mom', text: 'You thank your mom. She stands up in the balcony and waves a tea towel.',
       effects: { mood: { all: 3 }, chemistry: 2 } },
-    { id: 'moose', label: 'Thank the moose', text: 'You thank the moose. Nobody knows which moose. Marcel weeps openly.',
-      effects: { buzz: 6, flags: { mooseMuse: true } } },
-    { id: 'rival', label: 'Take a shot at the rival', text: 'You thank Tundra Wraith "for showing us what not to do". The room gasps.',
-      effects: { buzz: 10, chemistry: 3, mood: { all: -1 } } }
+    { id: 'band', label: 'Thank the band', text: 'You thank the band one by one. {front} weeps openly. {deadpan} checks the time.',
+      effects: { buzz: 6, chemistry: 2 } },
+    { id: 'rival', label: 'Take a shot at the rival', text: 'You thank {rival} "for showing us what not to do". The room gasps.',
+      effects: { buzz: 10, chemistry: 3, mood: { all: -1 }, flags: { rivalFeud: true } } }
   ];
-  var FALLBACK_THANKS = ['Tundra Wraith win. Their singer walks past your table, grips your hand and says, "Thank you. Truly. We could not have done it without you losing."',
-    'Tundra Wraith thank "our dear friends from Saskatoon, for making this so easy."'];
+  // v0.9: neutral {rival} fallbacks (awards.rivalThanks / rivalLoses [rivalId] are the rivals' own lines)
+  var FALLBACK_THANKS = ['{rival} win. Their singer walks past your table, grips your hand and says, "Thank you. Truly. We could not have done it without you losing."',
+    '{rival} thank "our dear friends from {city}, for making this so easy."'];
+  var FALLBACK_LOSES = ['{rival} give you a standing ovation. They mean it. That is the worst part.'];
   var FALLBACK_OTHERS = ['The Hoarfrosts', 'Combine Harvester of Sorrow', 'Slough Monster', 'The Bunnock Kings', 'Stubble Burners',
     'Rural Municipality 344', 'The Gopher Derby', 'Winnipeg Mosquito Choir', 'The Chinook Arches'];
+  // v0.9: per-genre nominee fallbacks (content awards.nominees[genre] wins)
+  var FALLBACK_NOMINEES = { metal: FALLBACK_OTHERS,
+    punk: ['The Slush Fund', 'Bus Pass Riot', 'Snow Route', 'The Transfer Slips', 'Mayor McCheese Grater', 'Pothole Patrol'],
+    rock: ['Northern Exposure Unit', 'The Block Heaters', 'Highway 16 Revisited', 'Chinook Thunder', 'The Oil Change'],
+    country: ['Tractor Pull Hearts', 'The Swather Brothers', 'Canola Sweetheart', 'Two-Step Tanya', 'Grain Bin Gospel'] };
   var STUDIO_LINES = {
     take: ['Take {n} of "{song}". Everyone holds their breath.', '"{song}": nailed it on take {n}. Probably.', '"{song}" goes down in {n} takes.'],
     mix: ['The engineer turns every knob to the right and nods.', 'Somebody asks for more cowbell. Nobody laughs.', 'You listen back in the parking lot on the van stereo.']
@@ -166,7 +172,25 @@
     ['royalty', 'albums', 'deadlineWeeks', 'offerMinFans', 'offerMinBuzz'].forEach(function (k) { if (!isFinite(out[k])) out[k] = f[k]; });
     return out;
   };
-  L.labelList = function () { return C.LABELS.map(L.label).filter(Boolean); };
+  L.labelList = function () { return C.LABELS.map(L.label).filter(function (l) { return l && !l.rivalOnly; }); };   // v0.9: never a rival's own label
+  // v0.9: a label's demands for this band: the flat (neutral) list + labels[id].demandsByBand[bandId] (same kind: the band's wins).
+  L.demandsFor = function (state, lab) {
+    if (!lab) return [];
+    var own = (lab.demandsByBand && state && lab.demandsByBand[state.bandId]) || [], kinds = {};
+    own.forEach(function (x) { kinds[x.kind || x] = true; });
+    return (lab.demands || []).filter(function (x) { return !kinds[x.kind || x]; }).concat(own);
+  };
+  // v0.9: a carded demand whose card can never be dealt in this career (gated to another band / genre, missing, or voiced by
+  // someone else's cast) settles 'half' instead of hanging forever.
+  function cardNeverPasses(state, id) {
+    var c = GG.career.cardById(id);
+    if (!c) return true;
+    var g = c.gate || {};
+    if (g.band && !has(g.band, state.bandId)) return true;
+    if (g.genre && !has(g.genre, state.genre)) return true;
+    return GG.career.speakerOk ? !GG.career.speakerOk(state, c.speaker) : false;
+  }
+  L.cardNeverPasses = cardNeverPasses;
   function listFrom(key, fallback) {
     var c = GG.content.labels, list = (c && Array.isArray(c[key]) && c[key]) || (Array.isArray(GG.content[key]) && GG.content[key]);
     return list && list.length ? list : fallback;
@@ -179,7 +203,10 @@
     var why = x.locked && !(state && state.era === 'world') ? 'World era' : state && !eraAtLeast(state, x.era || 'local') ? capital(x.era || 'local') + ' era' : '';   // v0.7: Abbot Lane opens in the World era
     return { available: !why, why: why, locked: !!why, lockedWhy: why };
   }
-  L.studios = function (state) { return allStudios().map(function (s) { return Object.assign({}, s, availability(state, s)); }); };
+  // v0.9: a studio's city may be '{city}' (the band's home basement studios).
+  function cityOf(state, s) { return s && s.city && state ? GG.career.fillText(state, s.city) : s && s.city; }
+  L.studioCity = cityOf;
+  L.studios = function (state) { return allStudios().map(function (s) { return Object.assign({}, s, availability(state, s), s.city ? { city: cityOf(state, s) } : {}); }); };
   L.producers = function (state) { return allProducers().map(function (p) { return Object.assign({}, p, availability(state, p)); }); };
   // content/reviews.js: GG.content.reviews = [outlet] | { outlets: [outlet] | { id: outlet }, quotes } | { id: outlet }.
   L.outlets = function () {
@@ -241,7 +268,7 @@
   // The weekly chance that `labelId` makes an offer (0 when the band isn't on its radar yet).
   L.interest = function (state, labelId) {
     var K = cfg().offers || {}, lab = L.label(labelId);
-    if (!lab || labelId === 'diy' || L.deal(state) || !eraAtLeast(state, K.minEra || 'local')) return 0;
+    if (!lab || lab.rivalOnly || labelId === 'diy' || L.deal(state) || !eraAtLeast(state, K.minEra || 'local')) return 0;
     if (state.fans < lab.offerMinFans || state.buzz < lab.offerMinBuzz) return 0;
     var br = bestRelease(state), need = K.needRelease && K.needRelease[labelId];
     var charted = L.released(state).some(function (a) { return a.chart && a.chart.peak; });
@@ -261,7 +288,7 @@
       advance: Math.round(U.clamp(adv, lab.advance[0], lab.advance[1]) * (GG.difficulty ? GG.difficulty.mul(state, 'advance') : 1) / 100) * 100,
       royalty: Math.round(Math.min(0.9, lab.royalty + (br && br.critic >= 75 ? (K.royaltyBonus || 0.02) : 0)) * 100) / 100,
       albums: lab.albums, deadlineWeeks: lab.deadlineWeeks,
-      demands: (lab.demands || []).map(function (x) { return x.kind || x; }),
+      demands: L.demandsFor(state, lab).map(function (x) { return x.kind || x; }),
       made: state.totalWeek, expires: state.totalWeek + (K.expires || 4) };
     return offer;
   };
@@ -281,7 +308,7 @@
       advance: o.advance, recouped: 0, costs: 0, royalty: o.royalty, albumsOwed: o.albums, albumsDelivered: 0,
       deadline: state.totalWeek + o.deadlineWeeks, goodwill: K.goodwill || 60, salesMult: 1, dropped: false,
       demands: (o.demands || []).map(function (kind, i) {
-        var src = (lab.demands || []).filter(function (x) { return (x.kind || x) === kind; })[0];
+        var src = L.demandsFor(state, lab).filter(function (x) { return (x.kind || x) === kind; })[0];
         return { kind: kind, text: (src && src.text) || kind, card: (src && src.card) || null,
           due: state.totalWeek + (K.demandEvery || 8) * (i + 1), answered: null };
       }) };
@@ -564,6 +591,7 @@
     Object.keys(gate).forEach(function (k) { if (k !== 'studio' && k !== 'producer' && k !== 'style') rest[k] = gate[k]; });
     var seen = state.seenCards[ev.id];
     if (seen != null && (ev.once !== false || state.totalWeek - seen <= (ev.cooldown || 0))) return false;
+    if (GG.career.speakerOk && !GG.career.speakerOk(state, ev.speaker)) return false;   // v0.9: another band's member never speaks
     return GG.career.gatePasses(state, rest);
   }
   L.studioEvent = function (state, rng) {
@@ -904,7 +932,7 @@
     state.trophies.push({ kind: cert, title: album.title, year: state.year, albumId: album.id });
     state.stats.certs = (state.stats.certs || 0) + 1;
     fx(state, (cfg().certFx || {})[cert] || { buzz: 8 });
-    news(out, 'cert', '"' + album.title + '" goes ' + cert + '! ' + (cert === 'gold' ? 'A gold record for the garage wall.' : 'Platinum. Your mom frames it next to your grade 3 spelling bee ribbon.'), { albumId: album.id });
+    news(out, 'cert', '"' + album.title + '" goes ' + cert + '! ' + (cert === 'gold' ? GG.career.fillText(state, 'A gold record for the wall in {space}.') : 'Platinum. Your mom frames it next to your grade 3 spelling bee ribbon.'), { albumId: album.id });
     GG.emit('cert', { album: album, cert: cert });
   }
   function chartWeek(state, album, units, rng, out) {
@@ -1051,7 +1079,7 @@
         if (dm.answered != null || !L.deal(state)) return;
         var f = state.flags[demandFlag(dm.kind)];
         if (f === 'met' || f === 'half' || f === 'refused') settleDemand(state, deal, dm, f, false);
-        else if (!dm.card && dm.due + G < state.totalWeek) { settleDemand(state, deal, dm, 'half', true); news(out, 'demand', (deal.name || 'The label') + ' took your silence as a maybe.'); }
+        else if ((!dm.card || cardNeverPasses(state, dm.card)) && dm.due + G < state.totalWeek) { settleDemand(state, deal, dm, 'half', true); news(out, 'demand', (deal.name || 'The label') + ' took your silence as a maybe.'); }
       });
       if (!L.deal(state)) news(out, 'dropped', deal.name + ' dropped you. They got tired of hearing "no".');
       deal = L.deal(state);
@@ -1161,12 +1189,12 @@
   };
   function rivalName(state) {
     if (GG.rival && state && state.rival) return GG.rival.name(state);   // v0.6: follows a rebrand
-    var b = GG.career.band(state.bandId), r = b && b.rival && GG.content.rivals && GG.content.rivals[b.rival]; return r ? r.name : 'Tundra Wraith';
+    var b = GG.career.band(state.bandId), r = b && b.rival && GG.content.rivals && GG.content.rivals[b.rival]; return r ? r.name : 'the other band';
   }
   function otherNominees(state, rng, n, cat) {
     var pool = (GG.content.headliners || []).filter(function (h) { return cat !== 'album' || h.genre === state.genre; }).map(function (h) { return h.name; });
-    var extra = awardsContent().nominees || FALLBACK_OTHERS;
-    pool = pool.concat(Array.isArray(extra) ? extra : (extra[state.genre] || FALLBACK_OTHERS)).filter(function (x, i, a) { return a.indexOf(x) === i && x !== rivalName(state); });
+    var extra = awardsContent().nominees || FALLBACK_OTHERS, fb = FALLBACK_NOMINEES[state.genre] || FALLBACK_OTHERS;
+    pool = pool.concat(Array.isArray(extra) ? extra : (extra[state.genre] || fb)).filter(function (x, i, a) { return a.indexOf(x) === i && x !== rivalName(state); });
     return rng.shuffle(pool).slice(0, n);
   }
   function whatFor(state, cat) {
@@ -1235,7 +1263,7 @@
         rivalIn: rivalIn, you: Math.round(vals[n.nominees[0]]), them: rivalIn ? Math.round(vals[rname]) : null };   // v0.6: the rivalry
       var line = function (key, fb) { return fill(state, String(GG.career.pickLine(state, rng, rivalLines(state, key, fb), fb[0])).replace(/\{category\}/g, n.name)); };
       if (rivalWon) res.thanks = line('rivalThanks', FALLBACK_THANKS);
-      else if (won && rivalIn) res.rivalLine = line('rivalLoses', ['Tundra Wraith give you a standing ovation. They mean it. That is the worst part.']);
+      else if (won && rivalIn) res.rivalLine = line('rivalLoses', FALLBACK_LOSES);
       state.awards.push({ year: state.year, category: n.category, nominated: true, won: won, against: n.nominees.slice(1), winner: best });
       if (won) {
         var d = {}, cr = (categoryOf(n.category) || {}).reward || {};
@@ -1260,18 +1288,24 @@
     return results;
   };
   // The acceptance speech card (content awards.speech; awards.speechWorstVan when Worst Van is the only win).
+  // v0.9: awards.speech / speechWorstVan may be one card or { <bandId>: card }; a card is used only when its gate passes and
+  // its speaker belongs to the band (else the neutral fallback speech).
+  function bandCard(state, x) {
+    var c = x && x.choices ? x : x && state ? x[state.bandId] : null;
+    return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker)) ? c : null;
+  }
   L.speechCard = function (state) {
     var A = awardsContent(), r = state && state.loonies && state.loonies.results || [], won = r.filter(function (x) { return x.won; });
     var vanOnly = won.length && won.every(function (x) { return x.category === 'worst_van'; });
-    var c = vanOnly && A.speechWorstVan ? A.speechWorstVan : A.speech;
-    return c && c.choices ? c : { id: 'loonie_speech', title: 'The Speech', text: '', choices: FALLBACK_SPEECHES.map(function (x) { return { label: x.label, effects: x.effects, outcome: x.text }; }) };
+    var c = (vanOnly && bandCard(state, A.speechWorstVan)) || bandCard(state, A.speech);
+    return c || { id: 'loonie_speech', title: 'The Speech', text: '', choices: FALLBACK_SPEECHES.map(function (x) { return { label: x.label, effects: x.effects, outcome: x.text }; }) };
   };
   L.speechChoices = function (state) { return L.speechCard(state).choices; };
   // One acceptance speech per ceremony, only after a win. -> { cardId, choice, outcome, deltas, success }
   L.speech = function (state, i, cardId) {
-    var lo = state.loonies, A = awardsContent(), card = L.speechCard(state);
-    if (cardId && A.speechWorstVan && A.speechWorstVan.id === cardId) card = A.speechWorstVan;
-    else if (cardId && A.speech && A.speech.id === cardId) card = A.speech;
+    var lo = state.loonies, A = awardsContent(), card = L.speechCard(state), wv = bandCard(state, A.speechWorstVan), sp = bandCard(state, A.speech);
+    if (cardId && wv && wv.id === cardId) card = wv;
+    else if (cardId && sp && sp.id === cardId) card = sp;
     if (!lo || !lo.done || lo.speech != null || !(lo.results || []).some(function (r) { return r.won; })) return null;
     var res = playCard(state, card, i, GG.rngFor(state));
     if (res) lo.speech = i;
@@ -1279,7 +1313,9 @@
   };
   // The red-carpet outfit card (content awards.outfitCards; cape-aware gates: the first card whose gate passes).
   L.outfitCard = function (state) {
-    return (awardsContent().outfitCards || []).filter(function (c) { return c && c.choices && GG.career.gatePasses(state, c.gate); })[0] || null;
+    return (awardsContent().outfitCards || []).filter(function (c) {
+      return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker));   // v0.9: null when none fits the band
+    })[0] || null;
   };
   L.outfit = function (state, i, cardId) {
     var lo = state.loonies, card = (cardId && (awardsContent().outfitCards || []).filter(function (c) { return c.id === cardId; })[0]) || L.outfitCard(state);

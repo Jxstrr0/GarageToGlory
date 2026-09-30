@@ -68,7 +68,16 @@
       buzz: { S: 6, A: 4, B: 2, C: 1, D: -2 },
       mood: { S: 3, A: 2, B: 1, C: -1, D: -3 },
       chemistry: { S: 3, A: 2, B: 1, C: 0, D: -2 },
-      burnout: 4
+      burnout: 4,
+      // v0.9 (plan_contract_0.9 §4.4): the live gig's crowd moments per genre. combo: every 30-hit combo with the crowd at 60+;
+      // chorus: the first chorus downbeat with the crowd at 70+ (once per song); peak: the crowd hits 85 (once per song).
+      // Thresholds live in gig.live (moshCombo, moshCrowd, chorusCrowd, genreCrowd; 22_sim_gig LIVE defaults).
+      moments: {
+        metal: { combo: 'mosh', chorus: 'headbang', peak: 'wallOfDeath' },
+        punk: { combo: 'pogo', chorus: 'gangShout', peak: 'circlePit' },
+        rock: { combo: 'fistPump', chorus: 'singAlong', peak: 'lighters' },
+        country: { combo: 'clapAlong', chorus: 'yeehaw', peak: 'lineDance' }
+      }
     },
 
     // ---- Songs (21_sim_songs; the Write activity numbers are in activities.js) ----
@@ -94,7 +103,7 @@
       burnoutFrom: 55, burnoutScale: 0.12,  // overworked: mood push per burnout point over the line
       trendWeeks: 4, trendGrow: 0.03, stall: 1, growBonus: 0.5,   // band success: fans trend over 4 weeks
       gradeMood: { S: 1, A: 0.5, B: 0, C: -1, D: -2 },
-      wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, kenjiDrift: 2.5,  // personal wants (content/drama.js)
+      wantMet: 2, wantUnmet: 1.5, wantWeeks: 8, mysteryDrift: 2.5,  // personal wants (content/drama.js); mystery = a member nobody can read
       stageAt: [48, 41, 35], recover: 6,   // mood below -> grumbling / passive-aggressive / ultimatum; +recover to step back
       grumbleChat: 0.7,
       returnAfter: [16, 30], laterWeeks: 8, returnMood: 72, returnSkill: 5,
@@ -190,7 +199,7 @@
       tracklist: { base: 50, opener: 15, closer: 15, single: 10, frontSingle: 5, weak: 10, adjacent: 8, adjacentAt: 0.9 },
       release: { minLead: 2, maxLead: 12, promoEach: 0.08, promoCap: 6, labelPromo: { gopherwood: 1, monolith: 4, diy: 0 },
                  packages: [{ id: 'posters', name: 'Posters on every pole', cost: 150, promo: 1,
-                              blurb: 'Every lamp post from Warman to Moose Jaw. The staple gun is Baba\'s.' },
+                              blurb: 'Every lamp post from one end of the province to the other. The staple gun is borrowed.' },
                             { id: 'radio', name: 'Campus + community radio push', cost: 900, promo: 2,
                               blurb: 'Nine stations, three of them heard beyond the parking lot.' },
                             { id: 'tv', name: 'Late-night TV spot', cost: 3000, promo: 3,
@@ -256,7 +265,22 @@
       crack: { net: 7, minWins: 9, heat: 30, fromYear: 2 },
       awards: { bonus: 12, breakup: 0.75 },   // Loonie strength: award-show darlings (fruit baskets for every voter)
       opener: { chance: 0.2, crowd: [20, 80], fans: 0.3 },
-      bot: { avgEnter: 0.75 }
+      bot: { avgEnter: 0.75 },
+      // v0.9 (owner Q4 "fair fight"): per-rival overrides, merged over everything above for that career's rival only. The
+      // three new rivals run an underdog curve (~40 fans at the start, ~400 by the end of year 1) so showdowns stay winnable;
+      // fame is flavour: Chartbusters' `legacy` (a display number, never in a showdown) + chartBias (they own the radio:
+      // their records chart as if they sold this many times more) + a Loonie bonus; Mall Rats' TV buzz; Buckle & Boot's
+      // sponsor buzz. actions (C.RIVAL_ACTIONS): once-per-set stage moves (Mall Rats' kickflip). style: the audio style of
+      // their set (Chartbusters: every single is the same power ballad). Tundra Wraith keeps the defaults above.
+      byRival: {
+        mall_rats: { fansCurve: [40, 400, 1550, 3900, 7500, 11400, 15300, 19200, 22800, 26200, 29000, 31500, 33500],
+                     buzz: { start: 24, perYear: 6, max: 66 }, actions: ['kickflip'] },
+        chartbusters: { fansCurve: [40, 380, 1500, 3800, 7300, 11000, 14800, 18400, 21800, 24800, 27400, 29600, 31400],
+                        buzz: { start: 18, perYear: 4 }, chartBias: 1.8, legacy: 31000000, style: 'ballad',
+                        awards: { bonus: 15, breakup: 0.75 }, eras: { local: 250, signed: 700 } },
+        buckle_and_boot: { fansCurve: [40, 420, 1600, 4000, 7700, 11700, 15800, 19800, 23400, 26800, 29800, 32200, 34200],
+                           buzz: { start: 20, perYear: 5 }, furyBrand: 'truck' }   // a truck ad for your band = their fury (licensing)
+      }
     },
 
     // ---- Fans (29_sim_fans.js, v0.6.1: Bandbook posts, virality, fan types, superfans, mail + gifts, Patreeon) --------
@@ -285,7 +309,7 @@
       cardFrom: 3, cardGap: 3,                  // shop Monday cards (forced): none before week 3, at least 3 weeks apart
       rentLateWeeks: 2,                         // this many wraps in a row with < 2 weeks' rent in the fund: evicted, one tier down
       outroSongs: 3,                            // Outro unlocks (free) once you have written this many songs (a chat moment)
-      soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> Dana's card; refused -> again later
+      soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> the soloist's card; refused -> again later
       // gear on stage and in the studio: kit quality tier 0..3 and each lane / the pedal
       gigBonus: { quality: [0, 0.5, 1, 2], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
       writeBonus: [0, 0.5, 1, 1.5],                 // + quality of a new song by kit tier (the demo sounds like a band)
@@ -293,7 +317,7 @@
       crowdBonus: [0, 0.5, 1, 2],                 // + live crowd start by kit tier (it sounds big from the first hit)
       songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
       jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 },   // band jams use owned gear this often (pedalRun: per section, when the genre wants more kick)
-      soloCrowd: 3,                             // live: Dana's solo section lifts the crowd
+      soloCrowd: 3,                             // live: the soloist's solo section lifts the crowd
       tradeIn: 0.3, tradeInMin: 150,            // your old van is worth this share of its price (x condition), at least $150
       stickersMax: 160,
       merch: {
@@ -308,7 +332,7 @@
         opening: 0.6,                           // the headliner's crowd buys yours at this rate
         flyBoxes: 2,                            // boxes you check as luggage abroad
         priceRange: [0.5, 3],                   // settable price, as a share of the suggested price (min $1)
-        misprint: { units: 50, weeks: 8, minFans: 300 }   // the HALE DAMAGE batch becomes a collector's item
+        misprint: { units: 50, weeks: 8, minFans: 300 }   // the misprinted batch (shop.merch.misprint.byBand) becomes a collector's item
       },
       bot: {
         // cushions = fund kept after a buy (at least 6 weeks of bills); rentWeeks = rent x this in the fund to move up;

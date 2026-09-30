@@ -216,4 +216,23 @@ test('sim purity: 28_sim_calendar has no Math.random / Date / DOM', () => {
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), 'pure');
 });
 
+test('v0.9: season news byBand replaces the flat week and speaks through the band; weather affinity per band', () => {
+  const GG = fresh(), Cal = GG.content.calendar, fh = GG.career.newCareer({ seed: 12, bandId: 'frost_heave' });
+  const saved = Cal.byBand;
+  Cal.byBand = Object.assign({}, saved || {}, { frost_heave: { news: { 3: { who: 'rox', text: 'Council meets Tuesday. Bring a sign.' } } } });
+  try {
+    fh.totalWeek = 3; fh.week = 3;
+    GG.calendar.monday(fh);
+    ok(fh.chat.some(m => m.who === 'rox' && /Council meets/.test(m.text)), 'the band\'s own news');
+    const fh2 = GG.career.newCareer({ seed: 12, bandId: 'frost_heave' });
+    delete Cal.byBand.frost_heave;
+    const flat = (Cal.news || {})[5];
+    fh2.totalWeek = 5; fh2.week = 5;
+    GG.calendar.monday(fh2);
+    if (flat && !GG.career.speakerOk(fh2, flat.who)) ok(!fh2.chat.some(m => m.who === flat.who), 'a Hail Damage speaker never posts in Frost Heave\'s chat');
+  } finally { Cal.byBand = saved; if (saved === undefined) delete Cal.byBand; }
+  eq(GG.calendar.bandWeather(GG.career.newCareer({ seed: 1 })).kind, 'hail', 'Hail Damage and the hail');
+  eq(GG.calendar.bandWeather(fh), null, 'no affinity unless bands.js says so');
+});
+
 done('sim_calendar');

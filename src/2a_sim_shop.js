@@ -82,13 +82,23 @@
   function isActive(s, id) { return active(s).some(function (m) { return m.id === id; }); }
   function seeded(s, tag) { return GG.RNG(GG.hashSeed((s.seed >>> 0) + '|shop|' + tag + '|' + s.totalWeek)); }
   function upkeepMul(s) { return GG.difficulty ? GG.difficulty.mul(s, 'upkeep') : 1; }
-  // Group-chat lines from content (who falls back to the first active member when that person isn't in the band).
+  // Group-chat lines from content: shop.lines[key] + shop.byBand[bandId].lines[key] (v0.9). A role alias resolves; a line
+  // whose speaker isn't an active bandmate (or an npc/cast the band may hear from) is skipped.
+  function lineList(s, key) {
+    var v = GG.career && GG.career.pool ? GG.career.pool(s, K(), ['lines', key]) : (K().lines || {})[key];
+    return Array.isArray(v) ? v : [];
+  }
+  S.lineList = lineList;
   function chat(s, list, d) {
     if (!GG.career || !GG.career.postChat) return [];
     return (list || []).map(function (x) {
-      var who = isActive(s, x.who) ? x.who : ((active(s)[0] || {}).id || 'mom');
+      if (!x || !x.text) return null;
+      var who = GG.career.isAlias && GG.career.isAlias(x.who) ? GG.career.roleOf(s, x.who) : x.who;
+      if (!who) return null;
+      var member = (s.members || []).some(function (m) { return m.id === who; });
+      if (member ? !isActive(s, who) : GG.career.speakerOk && !GG.career.speakerOk(s, who)) return null;
       return GG.career.postChat(s, who, x.text, d || null);
-    });
+    }).filter(Boolean);
   }
 
   /* ---- State ----------------------------------------------------------------------------------------------------- */
@@ -261,7 +271,7 @@
     s.spaceTier = tier; s.space = def.id;
     s.spaceUpgrades = s.spaceUpgrades.filter(function (id) { var u = find(K().upgrades, id); return u && u.moves; });
     if (s.milestones && first && tier > 0) s.milestones.firstMove = s.totalWeek;
-    if (first && tier > 0) chat(s, K().lines.move);
+    if (first && tier > 0) chat(s, lineList(s, 'move'));
     GG.emit('shop:move', { from: from, to: def.id, tier: tier });
     changed(s);
     return { ok: true, cost: 0, rent: def.rent || 0, deltas: {} };
@@ -317,8 +327,8 @@
   /* ---- The van: tiers, names, upgrades, stickers ----------------------------------------------------------------- */
   S.vanTierDef = function (tier) { var t = K().vanTiers; for (var i = 0; i < t.length; i++) if (t[i].tier === tier) return t[i]; return t[0] || EMPTY.vanTiers[0]; };
   S.vanName = function (bandId, tier) {
-    var n = K().vanNames[bandId || 'hail_damage'] || K().vanNames.hail_damage || [];
-    return n[tier] || (tier === 0 ? 'The Moose Hearse' : S.vanTierDef(tier).kind);
+    var V = K().vanNames || {}, n = V[bandId || 'hail_damage'] || [];
+    return n[tier] || (tier === 0 ? 'The Van' : S.vanTierDef(tier).kind);   // v0.9: no borrowed Moose Hearse
   };
   S.vanUpgradeDef = function (id) { return find(K().vanUpgrades, id); };
   // The van's space and comfort follow its tier + upgrades (world.travel / the burnout math read van.comfort).
@@ -360,7 +370,7 @@
     v.baseName = S.vanName(s.bandId, tier); v.name = v.baseName;
     v.condition = def.condition; v.upgrades = [];
     syncVan(s);
-    chat(s, K().lines.van);
+    chat(s, lineList(s, 'van'));
     GG.emit('shop:buy', { kind: 'van', id: def.id, tier: tier, cost: c.cost, tradeIn: c.quote.tradeIn });
     changed(s);
     return { ok: true, cost: c.cost, tradeIn: c.quote.tradeIn, deltas: d };
@@ -451,7 +461,7 @@
     });
     if (out.length && !quiet) {
       GG.emit('shop:unlock', { kind: 'merch', ids: out });
-      if (s.totalWeek > 1) chat(s, K().lines.merchUnlock);
+      if (s.totalWeek > 1) chat(s, lineList(s, 'merchUnlock'));
     }
     return out;
   };
@@ -495,11 +505,21 @@
     if (s.fund < cost) return fail('Not enough in the fund (' + money(cost) + ').');
     return { ok: true, cost: cost, units: boxes * def.perBox };
   };
-  // The first shirt order of a band whose misprint card exists (Hail Damage: HALE DAMAGE) comes back misprinted.
+  // The first shirt order of a band whose misprint card exists (v0.9: money_merch_misprint_<bandId>, else the base card when
+  // it fits the band) comes back misprinted: HALE DAMAGE, FROST HEAVY, GRAVY KINGS, THE GRID ROAD RUMBLERS (owner Q6).
   function misprintDue(s) {
-    var m = s.merch, c = S.card('money_merch_misprint');
-    return !!c && !m.misprint && !m.shirtsOrdered && (!s.seenCards || s.seenCards.money_merch_misprint == null) && gateOk(s, c);
+    var m = s.merch, c = variantCard(s, 'money_merch_misprint');
+    return !!c && !m.misprint && !m.shirtsOrdered && seen(s, c.id) == null;
   }
+  var MISPRINT = { hail_damage: 'HALE DAMAGE', frost_heave: 'FROST HEAVY', gravel_kings: 'GRAVY KINGS', grid_road_ramblers: 'THE GRID ROAD RUMBLERS' };
+  // v0.9: the band's misprint: shop merch 'misprint'.byBand[bandId] (or shop.misprint.byBand) = { typo, find, replace, stash }.
+  S.misprintInfo = function (s) {
+    var def = S.merchDef('misprint') || {}, M = K().merch, alt = (M && M.misprint) || K().misprint || {};
+    var by = (def.byBand && def.byBand[s && s.bandId]) || (alt.byBand && alt.byBand[s && s.bandId]) || null;
+    var b = GG.career && GG.career.band ? GG.career.band(s) : null, typo = (by && by.typo) || MISPRINT[s && s.bandId] || ((b && b.name) || 'THE BAND').toUpperCase();
+    return { typo: typo, find: (by && by.find) || ((b && b.name) || '').toUpperCase(), replace: (by && by.replace) || typo, stash: (by && by.stash) || null,
+      name: typo + ' shirts (misprint)' };
+  };
   // Buys `boxes` boxes of an item (paid up front). The item goes on the table if it wasn't. The very first shirt
   // order comes back misprinted (HALE DAMAGE): the batch waits for next Monday's card.
   S.buyStock = function (s, id, boxes) {
@@ -639,7 +659,8 @@
     r.merch = out;
     if (out.sold > 0) {
       r.lines = r.lines || [];
-      r.lines.push('Merch table: ' + out.sold + ' sold, ' + money(out.earned) + (out.named.indexOf('dale') >= 0 ? ' (Dale bought one, as always).' : '.'));
+      var hs = out.named.indexOf('dale') >= 0 && GG.fans && GG.fans.homeSuperfan ? GG.fans.homeSuperfan(s) : null;   // v0.9: the band's home superfan
+      r.lines.push('Merch table: ' + out.sold + ' sold, ' + money(out.earned) + (out.named.indexOf('dale') >= 0 ? ' (' + ((hs && (hs.short || hs.name)) || 'Your first superfan') + ' bought one, as always).' : '.'));
     }
     GG.emit('shop:merch', { venueId: r.venueId || null, sold: out.sold, earned: out.earned });
     return out;
@@ -649,7 +670,7 @@
     var m = s.merch;
     return K().merch.filter(function (def) { return forBand(s, def) && (!def.hidden || has(m.unlocked, def.id)); }).map(function (def) {
       var n = m.stock[def.id] || 0, un = has(m.unlocked, def.id), t = find(K().merchTiers, def.tier) || {};
-      return { id: def.id, name: def.name, blurb: def.blurb, tier: def.tier, cost: def.cost, suggested: def.price, price: S.priceOf(s, def.id),
+      return { id: def.id, name: def.id === 'misprint' ? S.misprintInfo(s).name : def.name, blurb: def.blurb, tier: def.tier, cost: def.cost, suggested: def.price, price: S.priceOf(s, def.id),
         range: S.priceRange(s, def.id), perBox: def.perBox, boxCost: S.stockCost(s, def.id, 1), appeal: def.appeal, stock: n,
         boxes: Math.ceil(n / def.perBox), onTable: has(m.table, def.id), sold: m.sold[def.id] || 0, unlocked: un,
         why: un ? '' : 'Unlocks in ' + eraName(t.era) + (t.release ? ', with a record out' : '') + (t.minFans ? ', at ' + U.fmtNum(t.minFans) + ' fans' : '') + '.' };
@@ -672,12 +693,29 @@
     return w;
   }
   function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
-  function due(s, id, again) {   // unseen (or seen `again`+ weeks ago) and its gate passes
-    var c = S.card(id), w = seen(s, id);
-    return c && gateOk(s, c) && (w == null || (again && s.totalWeek - w >= again)) ? c : null;
+  // v0.9: the speaker must belong to this band (career.speakerOk); the solo card's speaker must be in the band right now
+  // (Hail Damage's is Dana's).
+  function speakerHere(s, c) {
+    if (!c) return false;
+    var sp = c.speaker;
+    if (/^shop_solo(_|$)/.test(c.id) && (s.members || []).some(function (m) { return m.id === sp; })) return isActive(s, sp);
+    return !GG.career || !GG.career.speakerOk || GG.career.speakerOk(s, sp);
   }
+  // '<id>_<bandId>' first (content packs), else the base card; the gate passes and the speaker is here.
+  function variantCard(s, id) {
+    var v = S.card(id + '_' + s.bandId);
+    if (v && gateOk(s, v) && speakerHere(s, v)) return v;
+    var c = S.card(id);
+    return c && gateOk(s, c) && speakerHere(s, c) ? c : null;
+  }
+  S.variantCard = variantCard;
+  function due(s, id, again) {   // unseen (or seen `again`+ weeks ago) and its gate passes
+    var c = variantCard(s, id), w = c ? seen(s, c.id) : null;
+    return c && (w == null || (again && s.totalWeek - w >= again)) ? c : null;
+  }
+  function soloist(s) { return GG.gig && GG.gig.roles ? GG.gig.roles(s).solo : null; }   // v0.9: whoever takes the solos
   // This Monday's shop card, or null: the misprint (after the first shirt order), the space offer for the newest tier
-  // your era opened, Dana's solo, the first merch order, the pawn-shop kit, a used-van deal. At most one every cardGap weeks.
+  // your era opened, the soloist's solo, the first merch order, the pawn-shop kit, a used-van deal. At most one every cardGap weeks.
   S.forcedCard = function (s) {
     var R = Q(), w = s.totalWeek, c;
     if (w < R.cardFrom || w - lastShopCard(s) < R.cardGap || (GG.tour && GG.tour.away(s))) return null;
@@ -685,7 +723,7 @@
     if (m.misprint && m.misprint.status === 'pending' && (c = due(s, 'money_merch_misprint'))) return c;
     var avail = S.availableTier(s);
     if (avail > (s.spaceTier || 0) && (c = due(s, 'shop_space_' + avail))) return c;
-    if (!S.ownsSection(s, 'solo') && eraOk(s, 'local') && s.stats && s.stats.songsWritten >= R.soloSongs && isActive(s, 'dana')
+    if (!S.ownsSection(s, 'solo') && eraOk(s, 'local') && s.stats && s.stats.songsWritten >= R.soloSongs && soloist(s)
       && (c = due(s, 'shop_solo', R.soloRetry))) return c;
     if (!m.spent && !m.shirtsOrdered && (c = due(s, 'shop_merch_start'))) return c;
     if ((s.gear.quality || 0) === 0 && (c = due(s, 'shop_pawn_kit'))) return c;
@@ -729,7 +767,7 @@
     }
     if (v.section && S.unlockSection(s, v.section, 'card')) {
       out.section = v.section;
-      if (v.section === 'solo') chat(s, K().lines.solo, null);
+      if (v.section === 'solo') chat(s, lineList(s, 'solo'), null);
     }
     if (v.stock) Object.keys(v.stock).forEach(function (id) {
       var def = S.merchDef(id);
@@ -796,14 +834,14 @@
     var R = Q(), out = { rent: S.rent(s), unlocks: [], misprint: null, perks: null, evicted: null, rentLate: 0 }, d = {};
     if (!S.ownsSection(s, 'outro') && s.stats && s.stats.songsWritten >= R.outroSongs && S.unlockSection(s, 'outro', 'songs')) {
       out.unlocks.push({ kind: 'section', id: 'outro' });
-      chat(s, K().lines.outro, null);
+      chat(s, lineList(s, 'outro'), null);
     }
-    // No Dana (or not Hail Damage): the solo section still arrives a while into Local Heroes.
+    // No solo card for this band (or no soloist): the solo section still arrives a while into Local Heroes.
     var local = (s.eraHistory || []).filter(function (x) { return x.era === 'local'; })[0];
-    if (!S.ownsSection(s, 'solo') && local && s.totalWeek - local.week >= R.soloAutoWeeks && !(isActive(s, 'dana') && S.card('shop_solo') && gateOk(s, S.card('shop_solo')))
+    if (!S.ownsSection(s, 'solo') && local && s.totalWeek - local.week >= R.soloAutoWeeks && !(soloist(s) && variantCard(s, 'shop_solo'))
       && S.unlockSection(s, 'solo', 'auto')) {
       out.unlocks.push({ kind: 'section', id: 'solo' });
-      chat(s, K().lines.solo, null);
+      chat(s, lineList(s, 'solo'), null);
     }
     var ids = S.unlockMerch(s, false);
     if (ids.length) out.unlocks.push({ kind: 'merch', ids: ids });
@@ -826,19 +864,19 @@
         s.spaceTier -= 1; s.space = down.id; s.rentLate = 0;
         s.spaceUpgrades = s.spaceUpgrades.filter(function (id) { var u = S.upgradeDef(id); return u && u.moves; });
         out.evicted = { from: from, to: down.id };
-        chat(s, K().lines.evicted, null);
+        chat(s, lineList(s, 'evicted'), null);
         GG.emit('shop:move', { from: from, to: down.id, tier: s.spaceTier, evicted: true });
       }
     } else s.rentLate = 0;
     var m = s.merch, mp = m.misprint, MP = R.merch.misprint;
-    if (mp && mp.status === 'pending' && (!S.card('money_merch_misprint') || s.totalWeek - mp.week > 6)) mp.status = 'boxed';   // no card came: into the box
+    if (mp && mp.status === 'pending' && (!variantCard(s, 'money_merch_misprint') || s.totalWeek - mp.week > 6)) mp.status = 'boxed';   // no card came: into the box
     if (mp && mp.status === 'boxed' && s.totalWeek - mp.week >= MP.weeks && s.fans >= MP.minFans) {
       mp.status = 'collector';
       if (!has(m.unlocked, 'misprint')) m.unlocked.push('misprint');
       m.stock.misprint = (m.stock.misprint || 0) + mp.units;
       if (m.table.indexOf('misprint') < 0) m.table.unshift('misprint');
       out.misprint = 'collector';
-      chat(s, K().lines.misprintCollector, null);
+      chat(s, lineList(s, 'misprintCollector'), null);
       GG.emit('shop:misprint', { status: 'collector', units: mp.units });
     }
     S.stickers(s);

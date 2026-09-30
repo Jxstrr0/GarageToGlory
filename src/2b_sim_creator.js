@@ -276,8 +276,14 @@
   C.legacyKit = function (color) {   // what every kit looked like before v0.8 (migrated saves keep it until the player changes it)
     return { shell: 'paint', color: col(color, '#b3262b'), hardware: 'chrome', head: 'plain', headText: '', throne: 'stool', sticks: KIT_DEF.sticks, extras: [] };
   };
-  C.newKit = function (color) {      // a new career: the milk-crate era, your band's name on the kick
-    return { shell: 'paint', color: col(color, '#b3262b'), hardware: 'chrome', head: 'logo', headText: '', throne: 'crate', sticks: KIT_DEF.sticks, extras: [] };
+  // v0.9: the band's own tier-0 throne (bands.js throne: crate / bucket / haybale) when the creator content has that part.
+  function bandThrone(bandId) {
+    var b = bandId && GG.career && GG.career.band ? GG.career.band(bandId) : null;
+    return b && b.throne && valid('throne', b.throne) ? b.throne : 'crate';
+  }
+  C.bandThrone = bandThrone;
+  C.newKit = function (color, bandId) {      // a new career: the milk-crate era (a bucket, a hay bale), your band's name on the kick
+    return { shell: 'paint', color: col(color, '#b3262b'), hardware: 'chrome', head: 'logo', headText: '', throne: bandThrone(bandId), sticks: KIT_DEF.sticks, extras: [] };
   };
   C.sanitizeKit = function (k, fallbackColor) {
     k = k && typeof k === 'object' ? k : {};
@@ -291,8 +297,10 @@
   };
   C.lockKit = function (state, k) {
     var o = clone(k);
+    var own = bandThrone(state && state.bandId);   // v0.9: the band's starting throne is always yours
     ['shell', 'hardware', 'head', 'throne'].forEach(function (key) {
-      if (!C.isUnlocked(state, key + '.' + o[key])) o[key] = key === 'throne' ? 'crate' : key === 'head' ? 'plain' : firstFree(state, key);
+      if (key === 'throne' && o[key] === own) return;
+      if (!C.isUnlocked(state, key + '.' + o[key])) o[key] = key === 'throne' ? own : key === 'head' ? 'plain' : firstFree(state, key);
     });
     var st = C.partsIn('sticks').filter(function (p) { return p.color && p.color.toLowerCase() === String(o.sticks).toLowerCase(); })[0];
     if (st && !C.isUnlocked(state, st.id)) o.sticks = KIT_DEF.sticks;
@@ -323,7 +331,7 @@
     if (opts.look) pl.look = C.lockLook(state, C.stageOnly(C.sanitizeLook(opts.look)));
     pl.stageLook = C.lockLook(state, C.sanitizeLook(opts.stageLook || pl.look));
     if (opts.stageLook) C.syncPerson(pl.look, pl.stageLook);
-    pl.kit = C.lockKit(state, C.sanitizeKit(opts.kit || C.newKit(pl.kitColor), pl.kitColor));
+    pl.kit = C.lockKit(state, C.sanitizeKit(opts.kit || C.newKit(pl.kitColor, state.bandId), pl.kitColor));
     pl.kitColor = pl.kit.color;
     return state;
   };

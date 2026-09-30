@@ -60,7 +60,7 @@
     var ys = s && s.yearStart; if (!ys || !r) return;
     var q = null;
     (r.reactions || []).some(function (x) {
-      if (!x || !x.text || x.who === 'kenji') return false;
+      if (!x || !x.text || (GG.career && GG.career.isSilent ? GG.career.isSilent(s, x.who) : x.who === 'kenji')) return false;   // v0.9: never a silent member
       var who = GG.career && GG.career.memberName ? GG.career.memberName(s, x.who) : x.who;
       q = '“' + short(GG.career ? GG.career.fillText(s, x.text) : x.text, 90) + '” — ' + who;
       return true;
@@ -167,7 +167,7 @@
   R.headline = function (s, rec) {
     var H = K().headlines || {}, ev = R.events(s, rec), rng = rngFor(s, rec.y, 'headline');
     for (var i = 0; i < ev.length; i++) {
-      var pool = H[ev[i].key];
+      var pool = GG.career && GG.career.pool ? GG.career.pool(s, K(), ['headlines', ev[i].key]) : H[ev[i].key];   // v0.9: + byBand
       if (!pool || !pool.length) continue;
       var t = ev[i].tokens, text = rng.pick(pool).replace(/\{(nth|n|name|award|album|cert|label|region|venue|brand|song|van)\}/g, function (all, k) {
         if (k === 'nth') return R.nth(rec.y);
@@ -187,13 +187,19 @@
     }
     return null;
   }
+  // v0.9: recap.goodYear = [..] (flat, + byBand[bandId].goodYear) or { <bandId>: [..], default?: [..] }.
+  R.goodYearList = function (s) {
+    var G = K().goodYear;
+    if (Array.isArray(G)) { var p = GG.career && GG.career.pool ? GG.career.pool(s, K(), 'goodYear') : G; return Array.isArray(p) ? p : G; }
+    return (G && (G[s.bandId] || G['default'])) || [];
+  };
   R.goodYear = function (s, rec) {
     if (!rec || rec.y !== 1) return [];
     var val = { fans: rec.fans, songs: rec.songs, gigs: rec.gigs, loans: rec.loans, chemistry: rec.chem };
-    return (K().goodYear || []).map(function (g) {
-      var who = speaker(s, g.who);
-      if (!who && g.topic !== 'chemistry') {   // another band (v0.9): any bandmate but Kenji says it
-        var m = (s.members || []).filter(function (x) { return x.status === 'active' && x.id !== 'kenji'; })[0];
+    return R.goodYearList(s).map(function (g) {
+      var who = speaker(s, (g.who || []).map(function (id) { return GG.career && GG.career.isAlias && GG.career.isAlias(id) ? GG.career.roleOf(s, id) : id; }));
+      if (!who && g.topic !== 'chemistry') {   // another band (v0.9): the first bandmate who talks says it
+        var m = GG.career && GG.career.talkers ? GG.career.talkers(s)[0] : (s.members || []).filter(function (x) { return x.status === 'active'; })[0];
         who = m ? m.id : null;
       }
       if (!who) return null;

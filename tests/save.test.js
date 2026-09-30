@@ -118,4 +118,22 @@ test('migrate fills defaults and is idempotent', () => {
   eq(m.totalWeek, 31);
 });
 
+test('v0.9: every band saves and loads (slot, code, migrate); a partial save takes its band\'s defaults', () => {
+  const GG = load({ localStorage: load.fakeStorage() });
+  Object.keys(GG.content.bands).forEach(id => {
+    const s = GG.career.newCareer({ seed: 99, bandId: id, slot: '1', player: { name: 'Bot' } });
+    for (let i = 0; i < 30; i++) GG.career.botWeek(s, 'avg');
+    eq(GG.save.write('1', s), true, id + ' written');
+    ok(same(GG.save.read('1'), s), id + ' read back identical');
+    ok(same(GG.save.fromCode(GG.save.toCode(s)), s), id + ' save code');
+    ok(same(GG.save.migrate(JSON.parse(JSON.stringify(s))), s), id + ' migrate leaves a current save alone');
+    const b = GG.content.bands[id], part = JSON.parse(JSON.stringify(s));
+    ['genre', 'region', 'city', 'space'].forEach(k => delete part[k]);
+    const m = GG.save.migrate(part);
+    eq([m.genre, m.region, m.city, m.space], [b.genre, b.region, b.city, b.space], id + ' band defaults, not Hail Damage\'s');
+    GG.career.startWeek(m); GG.career.setPlan(m, ['rest', 'book', 'write']); GG.career.runWeek(m, { autoGig: true }); GG.career.endWeek(m);
+    eq(m.totalWeek, 32, id + ' keeps playing');
+  });
+});
+
 done('save');

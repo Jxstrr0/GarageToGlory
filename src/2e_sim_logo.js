@@ -103,7 +103,16 @@
     if ((state.fund || 0) < c.fund) return fail('Not enough in the fund (' + GG.util.fmtMoney(c.fund) + ').');
     return { ok: true, cost: c.fund, buzz: c.buzz };
   };
+  // v0.9: lines may be [{ who, text }] or { <memberId>: [text] } (logo.lines.picked / rebrand keyed by member).
+  function asList(x) {
+    if (Array.isArray(x)) return x;
+    if (!x || typeof x !== 'object') return [];
+    var out = [];
+    Object.keys(x).forEach(function (id) { [].concat(x[id] || []).forEach(function (t) { if (typeof t === 'string') out.push({ who: id, text: t }); }); });
+    return out;
+  }
   function chat(state, list, d) {
+    list = asList(list);
     if (!GG.career || !GG.career.postChat || !list || !list.length) return null;
     var act = (state.members || []).filter(function (m) { return m && m.status === 'active'; });
     var mine = list.filter(function (x) { return act.some(function (m) { return m.id === x.who; }); });

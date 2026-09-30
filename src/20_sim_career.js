@@ -25,14 +25,17 @@
   var FALLBACK_BANDS = {
     hail_damage: {
       id: 'hail_damage', name: 'Hail Damage', genre: 'metal', city: 'Saskatoon', region: 'canada',
-      space: 'parents_garage', spaceName: "Your parents' garage",
+      space: 'parents_garage', spaceName: "Your parents' garage", rival: 'tundra_wraith',
+      roles: { namer: 'marcel', grumbler: 'marcel', deadpan: 'kenji' }, firstGig: 'buddys_house_party', homeRing: 'sask',
+      spaceShort: 'the garage', door: 'the garage door', province: 'SK',
       starterSongs: [{ title: 'My Lawn, My Tomb', titleEn: null, fr: 'Ma Pelouse, Mon Tombeau' },
                      { title: 'The Eternal Dandelions', titleEn: null, fr: 'Les Pissenlits Éternels' }],
       members: [
-        { id: 'marcel', name: 'Marcel Fontaine', nick: 'Lord Abyssus', role: 'vocals', skill: 44, mood: 66 },
+        { id: 'marcel', name: 'Marcel Fontaine', nick: 'Lord Abyssus', role: 'vocals', skill: 44, mood: 66, cape: true,
+          signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
         { id: 'dana', name: 'Dana Okafor', nick: 'Sweep', role: 'lead guitar', skill: 56, mood: 64 },
         { id: 'jaxon', name: 'Jaxon Kowalchuk', nick: 'Rip', role: 'rhythm guitar', skill: 50, mood: 70 },
-        { id: 'kenji', name: 'Kenji Blackbird', nick: 'Kenji', role: 'bass', skill: 54, mood: 60 }]
+        { id: 'kenji', name: 'Kenji Blackbird', nick: 'Kenji', role: 'bass', skill: 54, mood: 60, silent: true }]
     }
   };
   var GENERIC_MEMBERS = [
@@ -47,13 +50,13 @@
       promote: ['Flyers on every lamp post between here and the river.'],
       book: ['We worked the phones. Mostly voicemail.'],
       hustle: ['A wedding social. We played the Chicken Dance four times.'],
-      rest: ['Nobody touched an instrument. The garage smelled of popcorn.']
+      rest: ['Nobody touched an instrument. {space} smelled of popcorn.']
     },
     chat: { happy: ['Good week. Same time Tuesday?', 'We are getting TIGHT.'],
             ok: ['k', 'Who has the extension cord?'],
             grumpy: ['Are we ever going to get paid?', 'Cool. Cool cool cool.'] },
     guilt: ["Your mom asks if you've thought about night school."],
-    yearEnd: ['Another year in the garage. The car still lives in the driveway.'],
+    yearEnd: ['Another year in {space}. Somehow everyone is still here.'],
     quietWeek: ['A quiet Monday. Suspiciously quiet.']
   };
   var MILESTONES = {   // key -> default text (override with GG.content.lines.milestones[key])
@@ -61,7 +64,7 @@
     firstSong: 'First original song. Nobody knows what it is about yet.',
     fans50: '50 fans. More than your mom’s book club.',
     fans100: '100 fans. Someone you have never met wore your shirt.',
-    fans250: '250 fans. The Gopher Hole knows your name.',
+    fans250: '250 fans. {homeVenue} knows your name.',
     fans500: '500 fans. People sing along. Mostly the wrong words.',
     fans1000: '1,000 fans. {city} is starting to notice.',
     fund1000: 'First $1,000 in the band fund. Nobody touch it.',
@@ -104,29 +107,254 @@
   function firstName(name) { return String(name || '').split(' ')[0]; }
   function capital(id) { id = String(id || ''); return id.charAt(0).toUpperCase() + id.slice(1); }
   function npc(id) { var n = GG.content.npcs; return n && n[id] || null; }
+  // v0.9: a content (bands.js) member keeps its short name ('Travis Lee'); recruits and the fallback roster show a first name.
+  function shortName(m) {
+    var d = m && contentDef(m.id);
+    return d && d.name && d.name === m.name ? m.name : firstName(m && m.name);
+  }
   career.memberName = function (state, id) {
-    var m = memberInfo(state, id); if (m) return firstName(m.name) || capital(id);
+    var m = memberInfo(state, id); if (m) return shortName(m) || capital(id);
     var p = npc(id); return p ? p.name : capital(id);
   };
   function memberNick(state, id) {
-    var m = memberInfo(state, id); if (m) return m.nick || firstName(m.name);
+    var m = memberInfo(state, id); if (m) return m.nick || shortName(m);
     var p = npc(id); return p ? p.name : capital(id);
   }
+
+  /* ======================================================================
+     v0.9 "Genres" helpers (plan_contract_0.9 §4.2-4.3; every lane codes against these)
+       memberDef(state, id)      -> the content MEMBER (bands.js; the career's band first, then any band, then the fallback)
+       isSilent(state, id) ; talkers(state) -> active members who talk (no `silent`; replaces every hard-coded 'kenji')
+       roleOf(state, role)       -> member id for a role ('front'|'soloist'|'filler'|'bassist'|'namer'|'grumbler'|'deadpan'|
+                                    'driver'|'any', with or without the '@'), or null ('@driver' is null when you drive)
+       isAlias(who) ; resolveWho(state, who) -> a role alias resolved (the current card's draw-time roles first), else who
+       cardRoles(state, card)    -> { '@front': id, ... } for every alias the card uses (stored as state.card.roles on a draw)
+       speakerOk(state, who)     -> false for a speaker from another band / another rival's cast / a band- or rival-scoped npc
+       pool(state, obj, key)     -> obj[key] + obj.byBand[bandId][key] (arrays concat; objects merge, the band's keys win;
+                                    other values: the band's replaces the flat one). key may be 'a.b' or ['a', 'b'].
+       linePool(state, key)      -> pool over GG.content.lines as a non-empty array, else null
+       variant(state, baseId)    -> '<base>_<bandId>', then '<base>_<rivalId>' (rv_*), then '<base>': the first whose gate
+                                    passes and whose speaker is ok, else null
+       homeVenue(state) -> { id, name } | null ; tokenValue(state, key) (the §4.2 tokens, used by fillText)
+     ====================================================================== */
+  var ALIAS = {};
+  (C.ROLE_ALIASES || ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any'])
+    .forEach(function (a) { ALIAS[a] = true; });
+  career.isAlias = function (who) { return typeof who === 'string' && ALIAS[who] === true; };
+  // Content member index (every band in bands.js + the fallback roster): member id -> { def, bandId }.
+  var memberIx = null, memberIxOf = null;
+  function membersIndex() {
+    var B = GG.content.bands || {};
+    if (memberIx && memberIxOf === B) return memberIx;
+    memberIx = {}; memberIxOf = B;
+    [FALLBACK_BANDS, B].forEach(function (src) {
+      Object.keys(src).forEach(function (bid) {
+        (src[bid].members || []).forEach(function (m) { memberIx[m.id] = { def: m, bandId: bid }; });
+      });
+    });
+    return memberIx;
+  }
+  function contentDef(id) { var x = membersIndex()[id]; return x ? x.def : null; }
+  career.memberDef = function (state, id) {
+    var b = career.band(state), list = (b && b.members) || [], i;
+    for (i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return contentDef(id);
+  };
+  career.isSilent = function (state, id) {
+    var m = findMember(state, id), d = career.memberDef(state, id);
+    return !!((m && m.silent) || (d && d.silent));
+  };
+  career.talkers = function (state) {
+    return activeMembers(state).filter(function (m) { return !career.isSilent(state, m.id); });
+  };
+  function activeIds(state) { return activeMembers(state).map(function (m) { return m.id; }); }
+  // A stable per-week pick (never the career RNG): '@any' stays the same all week.
+  function weekPick(state, tag, list) {
+    if (!list.length) return null;
+    var r = GG.RNG(GG.hashSeed((state.seed >>> 0) + '|role|' + tag + '|' + (state.totalWeek || 1)));
+    return r.pick(list);
+  }
+  career.roleOf = function (state, role) {
+    if (!state || !Array.isArray(state.members)) return null;
+    var r = String(role || '').replace(/^@/, ''), b = career.band(state) || {}, R = b.roles || {}, act = activeIds(state);
+    var g = GG.gig && GG.gig.roles ? GG.gig.roles(state) : {}, talk = career.talkers(state).map(function (m) { return m.id; });
+    function on(id) { return !!id && act.indexOf(id) >= 0; }
+    var front = g.front || talk[0] || act[0] || null;
+    switch (r) {
+      case 'front': case 'singer': return front;
+      case 'soloist': case 'solo': return g.solo || null;
+      case 'filler': case 'fill': return g.fill || null;
+      case 'bassist': case 'bass': {
+        var bm = activeMembers(state).filter(function (m) { return /bass/.test(m.role || ''); })[0];
+        return bm ? bm.id : null;
+      }
+      case 'namer': case 'grumbler': return on(R[r]) ? R[r] : front;
+      case 'deadpan': {
+        if (on(R.deadpan)) return R.deadpan;
+        var quiet = talk.filter(function (id) { return id !== front; });
+        return quiet[0] || talk[0] || null;
+      }
+      case 'driver': {
+        if (!GG.world || !GG.world.driver) return null;
+        var d = GG.world.driver(state);
+        return d && !d.you && on(d.id) ? d.id : null;
+      }
+      case 'any': return weekPick(state, 'any', talk.length ? talk : act);
+    }
+    return null;
+  };
+  career.resolveWho = function (state, who) {
+    if (!career.isAlias(who)) return who;
+    var cr = state && state.card && state.card.roles;
+    if (cr && Object.prototype.hasOwnProperty.call(cr, who)) return cr[who];
+    return career.roleOf(state, who);
+  };
+  var ALIAS_RE = /@(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any)\b/g;
+  career.cardRoles = function (state, card) {
+    if (!card) return null;
+    var out = null, seen = {}, m, txt;
+    try { txt = JSON.stringify(card); } catch (e) { return null; }
+    ALIAS_RE.lastIndex = 0;
+    while ((m = ALIAS_RE.exec(txt))) {
+      var a = '@' + m[1];
+      if (seen[a]) continue;
+      seen[a] = true;
+      (out = out || {})[a] = career.roleOf(state, a);
+    }
+    return out;
+  };
+
+  // Speaker guard. Rival casts (members + frontman) belong to their rival; npcs may carry band: [ids] / rival: id
+  // (content), with these defaults for the Hail Damage cast that predates the fields.
+  var NPC_SCOPE = { baba: { band: ['hail_damage'] }, gord: { band: ['hail_damage'] }, dale_warman: { band: ['hail_damage'] },
+    wraith_frontman: { rival: 'tundra_wraith' } };
+  var castIx = null, castIxOf = null, castIxN = -1;
+  function castIndex() {
+    var RV = GG.content.rivalry || {}, cast = RV.cast || {}, keys = Object.keys(cast);
+    if (castIx && castIxOf === cast && castIxN === keys.length) return castIx;
+    castIx = {}; castIxOf = cast; castIxN = keys.length;
+    keys.forEach(function (rid) {
+      var c = cast[rid] || {};
+      (c.members || []).forEach(function (m) { if (m && m.id) castIx[m.id] = rid; });
+      if (typeof c.frontman === 'string') castIx[c.frontman] = rid;
+      if (c.drummer && c.drummer.id) castIx[c.drummer.id] = rid;
+      if (c.mascot && c.mascot.id) castIx[c.mascot.id] = rid;
+    });
+    return castIx;
+  }
+  function rivalIdOf(state) { var b = career.band(state); return (state && state.rival && state.rival.id) || (b && b.rival) || null; }
+  career.rivalId = rivalIdOf;
+  function listHas(v, x) { return Array.isArray(v) ? v.indexOf(x) >= 0 : v === x; }
+  career.speakerOk = function (state, who) {
+    if (who == null || who === '' || who === 'player' || who === 'you' || who === 'recruit') return true;
+    if (typeof who !== 'string') return false;
+    if (career.isAlias(who)) return who === '@driver' || career.resolveWho(state, who) != null;
+    if (who === 'rival_frontman') { var cf = GG.rival && GG.rival.cast ? GG.rival.cast(state) : null; return !!(cf && cf.frontman); }
+    if (findMember(state, who) || /^fill_/.test(who)) return true;
+    var mi = membersIndex()[who];
+    if (mi) { var b = career.band(state); return !!(b && b.members && b.members.some(function (m) { return m.id === who; })); }
+    var ci = castIndex()[who];
+    if (ci) return ci === rivalIdOf(state);
+    var p = npc(who);
+    if (!p) return false;
+    var sc = (p.band || p.rival) ? p : NPC_SCOPE[who];
+    if (sc && sc.band && !listHas(sc.band, state && state.bandId)) return false;
+    if (sc && sc.rival && !listHas(sc.rival, rivalIdOf(state))) return false;
+    return true;
+  };
+
+  // Content pools: flat (neutral) + byBand[bandId] extras.
+  function dig(o, path) { for (var i = 0; o != null && i < path.length; i++) o = o[path[i]]; return o; }
+  function plainObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+  career.pool = function (state, obj, key) {
+    if (!obj) return undefined;
+    var path = Array.isArray(key) ? key : String(key).split('.');
+    var flat = dig(obj, path), bb = obj.byBand && state && state.bandId ? obj.byBand[state.bandId] : null, extra = bb ? dig(bb, path) : undefined;
+    if (Array.isArray(flat) || Array.isArray(extra)) return (Array.isArray(flat) ? flat : []).concat(Array.isArray(extra) ? extra : []);
+    if (plainObj(flat) && plainObj(extra)) return Object.assign({}, flat, extra);
+    return extra !== undefined ? extra : flat;
+  };
+  career.linePool = function (state, key) {
+    var v = career.pool(state, GG.content.lines, key);
+    return Array.isArray(v) && v.length ? v : null;
+  };
+  // Card variants. Monday-deck guard: a variant of a forced-only card never joins the normal draw.
+  var FORCED_BASES = ['shop_space_1', 'shop_space_2', 'shop_space_3', 'shop_solo', 'shop_merch_start', 'shop_pawn_kit', 'shop_van_deal',
+    'money_merch_misprint', 'fans_dale_hello', 'fans_macaroni', 'fans_patreeon', 'fans_hater_page', 'fans_club_grumble', 'wt_homesick',
+    'rv_poach', 'rv_crack_breakup', 'rv_crack_rebrand', 'rv_crack_opener', 'rv_opener', 'rv_final_eve', 'ult_recruit'];
+  var FORCED_RE = new RegExp('^(' + FORCED_BASES.join('|') + ')_');
+  career.isVariantId = function (id) { return FORCED_RE.test(String(id || '')); };
+  career.variant = function (state, baseId) {
+    if (!baseId || !state) return null;
+    var ids = [baseId + '_' + state.bandId], rid = rivalIdOf(state);
+    if (/^rv_/.test(baseId) && rid) ids.push(baseId + '_' + rid);
+    ids.push(baseId);
+    for (var i = 0; i < ids.length; i++) {
+      var c = career.cardById(ids[i]);
+      if (c && career.gatePasses(state, c.gate) && career.speakerOk(state, c.speaker)) return c;
+    }
+    return null;
+  };
+
+  // {homeVenue}: the home-city venue you have played most (state.venuePlays, v0.9), else the band's first gig.
+  career.homeVenue = function (state) {
+    if (!GG.gig || !GG.gig.venue || !state) return null;
+    var plays = state.venuePlays || {}, best = null, bn = 0, home = String(state.city || '').toLowerCase();
+    Object.keys(plays).forEach(function (id) {
+      var v = GG.gig.venue(id);
+      if (v && String(v.city || '').toLowerCase() === home && plays[id] > bn) { best = v; bn = plays[id]; }
+    });
+    if (!best) { var fg = career.firstGigVenue ? career.firstGigVenue(state, career.band(state) || {}) : null; best = fg ? GG.gig.venue(fg) : null; }
+    return best ? { id: best.id, name: best.name } : null;
+  };
+  function nameOr(state, id, fallback) { return id ? career.memberName(state, id) : fallback; }
+  function roleToken(state, alias) {
+    var cr = state.card && state.card.roles;
+    return cr && Object.prototype.hasOwnProperty.call(cr, alias) ? cr[alias] : career.roleOf(state, alias);
+  }
+  var TOKEN_FALLBACK = { front: 'the singer', soloist: 'the guitarist', filler: 'the bassist', bassist: 'the bassist',
+    namer: 'the singer', grumbler: 'the singer', deadpan: 'the quiet one' };
+  career.tokenValue = function (state, key) {
+    state = state || {};
+    var b = career.band(state) || {};
+    switch (key) {
+      case 'front': case 'soloist': case 'filler': case 'bassist': case 'namer': case 'grumbler': case 'deadpan':
+        return Array.isArray(state.members) ? nameOr(state, roleToken(state, '@' + key), TOKEN_FALLBACK[key]) : TOKEN_FALLBACK[key];
+      case 'driver': {
+        var d = GG.world && GG.world.driver && Array.isArray(state.members) ? GG.world.driver(state) : null;
+        return d && !d.you ? (career.memberName(state, d.id) || d.name) : 'you';
+      }
+      case 'van': return (state.van && state.van.name) || (GG.shop && GG.shop.vanName && state.bandId ? GG.shop.vanName(state.bandId, 0) : '') || 'the van';
+      case 'space': return b.spaceShort || 'the jam space';
+      case 'spaceName': return b.spaceName || b.spaceShort || 'the jam space';
+      case 'door': return b.door || 'the door';
+      case 'province': return b.province || 'SK';
+      case 'homeVenue': { var hv = career.homeVenue(state); return hv ? hv.name : 'the local bar'; }
+      case 'superfan': { var sf = GG.fans && GG.fans.homeSuperfan && state.bandId ? GG.fans.homeSuperfan(state) : null; return (sf && sf.name) || 'your first superfan'; }
+      case 'rivalFront': return (GG.rival && GG.rival.frontName && state.bandId ? GG.rival.frontName(state) : '') || 'their singer';
+    }
+    return null;
+  };
 
   // Replaces {player} {band} {city} {nick:<id>} {name:<id>} ({name} = first name; npc ids work too).
   // v0.4: {recruit} = the member the current drama card is about (state.card.who; a recruit or a returning original).
   // v0.6: {rival} = the rival band's current name (GG.rival.name; follows a rebrand).
+  // v0.9: the C.TOKENS role/band tokens ({front} {soloist} {filler} {bassist} {namer} {grumbler} {deadpan} {driver} {van}
+  // {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront}); {rival} falls back to 'the other band',
+  // {city} to the career's city.
+  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan)(?::([\w-]+))?\}/g;
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
     if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
-    return String(text).replace(/\{(player|band|city|nick|name|recruit|rival)(?::([\w-]+))?\}/g, function (all, key, id) {
-      if (key === 'rival') return GG.rival ? GG.rival.name(state) : 'Tundra Wraith';   // v0.6: the rival's current name
+    return String(text).replace(TOKEN_RE, function (all, key, id) {
+      if (key === 'rival') return (GG.rival && (state.rival || state.bandId) ? GG.rival.name(state) : '') || 'the other band';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
-      if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? firstName(r.name) : (state.card && state.card.whoName) || 'the new one'; }
+      if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? shortName(r) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
-      if (key === 'city') return state.city || 'Saskatoon';
+      if (key === 'city') { var hb = career.band(state); return state.city || (hb && hb.city) || 'town'; }
+      if (key !== 'name' && key !== 'nick') { if (id) return all; var tv = career.tokenValue(state, key); return tv == null ? all : tv; }
       if (!id) return all;
       return key === 'nick' ? memberNick(state, id) : career.memberName(state, id);
     });
@@ -180,7 +408,10 @@
     }
   }
   // tone (v0.4): 'grumble' | 'pa' (passive-aggressive) | 'news' (drama storylines); plain chat has none.
+  // v0.9: a role alias resolves to the member; a speaker from another band (or rival, or a scoped npc) posts nothing (null).
   function postChat(state, who, text, d, tone) {
+    if (career.isAlias(who)) { who = career.resolveWho(state, who); if (!who) return null; }
+    if (!career.speakerOk(state, who)) return null;
     var msg = { week: state.totalWeek, who: who, text: career.fillText(state, text) };
     if (tone) msg.tone = tone;
     state.chat.push(msg);
@@ -191,8 +422,20 @@
   }
   career.postChat = postChat;
   function numeric(key) { return function (state, v, d) { addStat(state, key, v, d); }; }
+  // v0.9: keys may be role aliases ('@front': 3); an alias nobody holds is skipped.
   function perMember(stat) {
-    return function (state, map, d) { for (var id in map) addMemberStat(state, stat, id, map[id], d); };
+    return function (state, map, d) {
+      for (var id in map) {
+        var t = career.isAlias(id) ? career.resolveWho(state, id) : id;
+        if (t) addMemberStat(state, stat, t, map[id], d);
+      }
+    };
+  }
+  function resolveMemberSpec(state, v) {
+    if (Array.isArray(v)) return v.map(function (x) { return resolveMemberSpec(state, x); }).filter(Boolean);
+    if (!v || !career.isAlias(v.id)) return v;
+    var id = career.resolveWho(state, v.id);
+    return id ? Object.assign({}, v, { id: id }) : null;
   }
   var APPLY = {
     fund: numeric('fund'), fans: numeric('fans'), buzz: numeric('buzz'), chemistry: numeric('chemistry'),
@@ -224,7 +467,7 @@
       for (var i = 0; i < list.length; i++) if (list[i] && list[i].text) postChat(state, list[i].who, list[i].text, d);
     },
     // v0.4 (drama). member: { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (see 27_sim_drama).
-    member: function (state, v, d) { if (GG.drama) GG.drama.applyMember(state, v, d); },
+    member: function (state, v, d) { v = resolveMemberSpec(state, v); if (GG.drama && v && (!Array.isArray(v) || v.length)) GG.drama.applyMember(state, v, d); },
     // payCut: +/- change to the pay-the-band share (0..payCutMax).  repay: pay your parents back up to $n from the fund.
     payCut: function (state, v, d) {
       if (!GG.drama || !v) return;
@@ -279,7 +522,9 @@
       else if ((k === 'mood' || k === 'skill') && v) {
         Object.keys(v).forEach(function (id) {
           if (!v[id]) return;
-          var who = id === 'all' ? (k === 'mood' ? 'Everyone' : 'Band') : career.memberName(state, id);
+          var rid = career.isAlias(id) ? (state ? career.resolveWho(state, id) : null) : id;   // v0.9 role aliases
+          if (!rid) return;
+          var who = id === 'all' ? (k === 'mood' ? 'Everyone' : 'Band') : career.memberName(state, rid);
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });
       } else if (k === 'book' && v) parts.push('Gig booked');
@@ -305,7 +550,7 @@
      Card gates and the Monday draw
      ====================================================================== */
   function has(list, v) { return Array.isArray(list) && list.indexOf(v) >= 0; }
-  function moodOf(state, id) { var m = findMember(state, id); return m ? m.mood : null; }
+  function moodOf(state, id) { var m = findMember(state, career.isAlias(id) ? career.resolveWho(state, id) : id); return m ? m.mood : null; }
   var GATE = {
     era: function (s, v) { return has(v, s.era); },
     genre: function (s, v) { return has(v, s.genre); },
@@ -367,17 +612,19 @@
   function eligibleNormal(state, card) {
     if (card.forceWeek != null) return false;                          // forced cards only show on their week
     if (card.chain && (card.step !== 1 || state.chains[card.chain])) return false;
-    return available(state, card) && career.gatePasses(state, card.gate);
+    if (career.isVariantId(card.id)) return false;                     // v0.9: a forced card's band variant is never drawn
+    return available(state, card) && career.gatePasses(state, card.gate) && career.speakerOk(state, card.speaker);
   }
-  // Draw order: forced card > due chain card > quiet week > a weighted normal card.
+  // Draw order: forced card > due chain card > quiet week > a weighted normal card. v0.9: every step skips a card whose
+  // speaker isn't this band's (career.speakerOk).
   function drawCard(state, rng) {
     var cards = GG.content.cards || [], t = state.totalWeek, E = econ(), i;
     for (i = 0; i < cards.length; i++) {
       var f = cards[i];
-      if (f.forceWeek === t && state.seenCards[f.id] == null && career.gatePasses(state, f.gate)) return f;
+      if (f.forceWeek === t && state.seenCards[f.id] == null && career.gatePasses(state, f.gate) && career.speakerOk(state, f.speaker)) return f;
     }
     var due = cards.filter(function (c) {
-      return c.chain && chainDue(state, c) && available(state, c) && career.gatePasses(state, c.gate);
+      return c.chain && chainDue(state, c) && available(state, c) && career.gatePasses(state, c.gate) && career.speakerOk(state, c.speaker);
     });
     if (due.length) return rng.weighted(due, weightOf);
     if (t > E.quietFreeWeeks && rng.chance(E.quietWeekChance)) return null;
@@ -449,6 +696,22 @@
     return true;
   };
 
+  // v0.9: the week-one gig: band.firstGig when the venue exists, else the lowest-tier venue in the home city, else the
+  // nearest small room (tier <= 1) by road km. null = no forced gig.
+  career.firstGigVenue = function (state, band) {
+    if (!GG.gig || !GG.gig.venue) return null;
+    band = band || career.band(state) || {};
+    if (band.firstGig && GG.gig.venue(band.firstGig)) return band.firstGig;
+    var list = (GG.content.venues || []).filter(function (v) { return v && (v.minFans || 0) < 99999; }), city = String(state.city || band.city || '');
+    function rank(a, b) { return (a.tier || 0) - (b.tier || 0) || (a.minFans || 0) - (b.minFans || 0) || (a.capacity || 0) - (b.capacity || 0); }
+    var home = list.filter(function (v) { return v.city === city; }).sort(rank);
+    if (home.length) return home[0].id;
+    if (!GG.world) return null;
+    var from = GG.world.home(state), near = list.filter(function (v) { return (v.tier || 0) <= 1; })
+      .sort(function (a, b) { return GG.world.km(from, a.city) - GG.world.km(from, b.city) || rank(a, b); });
+    return near.length ? near[0].id : null;
+  };
+
   career.newCareer = function (args) {
     args = args || {};
     var E = econ(), p = args.player || {}, bandId = args.bandId || 'hail_damage';
@@ -493,7 +756,8 @@
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
     state.history.push(Object.assign(historyPoint(state), { w: 0 }));   // week 0 baseline for charts
     snapshotYear(state);
-    if (GG.gig) state.gig = GG.gig.makeGig(state, 'buddys_house_party', 'forced');
+    var fg = GG.gig ? career.firstGigVenue(state, band) : null;   // v0.9: band.firstGig (Buddy's for Hail Damage)
+    if (fg) state.gig = GG.gig.makeGig(state, fg, 'forced');
     if (GG.world && state.gig) GG.world.decorate(state, state.gig);
     if (GG.calendar) state.weather = GG.calendar.weatherAt(state);
     GG.emit('career:new', { state: state });
@@ -531,11 +795,21 @@
     var fan = !forced && !studio && !tourCard && !holiday && !lic && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
     var shopCard = !forced && !studio && !tourCard && !holiday && !lic && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
     var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (lic && lic.card) || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
+    if (card && !forced && !career.speakerOk(state, card.speaker)) card = away || studio ? null : drawCard(state, rng);   // v0.9: the speaker guard (a forced card from another band's cast)
     state.card = card ? { id: card.id, resolved: false } : null;
-    if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
+    if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = shortName(findMember(state, forced.who) || {}); }
+    var cr = card ? career.cardRoles(state, card) : null;   // v0.9: role aliases resolve once, at the draw
+    if (cr) {
+      state.card.roles = cr;
+      if (career.isAlias(card.speaker) && !state.card.who && cr[card.speaker]) { state.card.who = cr[card.speaker]; state.card.whoName = career.memberName(state, cr[card.speaker]); }
+    }
     if (lic && lic.who && card === lic.card) state.card.who = lic.who;   // v0.8.1: who brings the offer (speaker 'recruit')
+    var tctx = state.tour && state.tour.ctx;   // v0.9: a story card abroad voiced by 'recruit' (wt_homesick: the homesick bandmate)
+    if (card && tourCard === card && tctx && tctx.who && tctx.card === card.id && !state.card.who) {
+      state.card.who = tctx.who; state.card.whoName = shortName(findMember(state, tctx.who) || {});
+    }
     if (card) state.seenCards[card.id] = state.totalWeek;
-    state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
+    state.quiet = card ? null : career.pickLine(state, rng, career.linePool(state, 'quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
     state.bookPick = null; state.trip = null;
     if (GG.world) GG.world.refresh(state, true);   // this week's gig board (own seeded RNG)
@@ -570,9 +844,10 @@
     var lr = GG.licensing ? GG.licensing.afterCard(state, card, i, success, d) : null;   // v0.8.1: answer the offer (take / counter / decline)
     if (lr) { outcome = lr.outcome || outcome; if (lr.success != null) success = lr.success; }
     outcome = career.fillText(state, outcome);
-    var who = state.card.who, whoName = state.card.whoName;
+    var who = state.card.who, whoName = state.card.whoName, roles = state.card.roles;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
     if (who) { state.card.who = who; state.card.whoName = whoName; }
+    if (roles) state.card.roles = roles;
     state.stats.cards++;
     state.phase = 'plan';
     var res = { cardId: card.id, choice: i, outcome: outcome, deltas: d, success: success };
@@ -606,7 +881,7 @@
      The week: three activity blocks, then the weekend gig
      ====================================================================== */
   function activityLine(state, rng, id) {
-    return career.pickLine(state, rng, contentLines('activity', id), FALLBACK_LINES.activity[id]);
+    return career.pickLine(state, rng, career.linePool(state, ['activity', id]), FALLBACK_LINES.activity[id]);
   }
   // Each handler: (state, A = activity numbers, f = repeat factor, rng, d = deltas, lines)
   var ACT = {
@@ -665,7 +940,9 @@
       addStat(state, 'fund', cash, d);
       state.stats.earned += cash; state.stats.hustles++;
       addStat(state, 'burnout', A.burnout, d);
-      var grumbler = findMember(state, A.grumbler) || activeMembers(state)[0];
+      // v0.9: band.roles.grumbler (activities.hustle.grumbler may be a member id or a role alias), else the first member
+      var bR = (career.band(state) || {}).roles || {}, gA = career.isAlias(A.grumbler) ? career.roleOf(state, A.grumbler) : A.grumbler;
+      var grumbler = findMember(state, bR.grumbler) || findMember(state, gA) || activeMembers(state)[0];
       if (grumbler) addMemberStat(state, 'mood', grumbler.id, A.grumble, d);
     },
     rest: function (state, A, f, rng, d) {
@@ -793,8 +1070,10 @@
       for (var i = 0; i < n; i++) {
         var pool = contentLines('chat', m.id, label) || contentLines('chat', m.id, bucket)
           || (m.recruit && GG.content.recruits && GG.content.recruits.chat && GG.content.recruits.chat[bucket]);
+        if (!pool && career.isSilent(state, m.id)) continue;   // v0.9: a silent member without their own lines stays silent
         var text = career.pickLine(state, rng, pool, FALLBACK_LINES.chat[bucket]);
-        if (text) out.push(postChat(state, m.id, text, null));
+        var msg = text ? postChat(state, m.id, text, null) : null;
+        if (msg) out.push(msg);
       }
     });
     return out;
@@ -808,14 +1087,15 @@
     state.stats.parentsLoans++;
     state.flags.parentsLoan = true;
     wrap.parentsLoan = loan;
-    wrap.guilt = career.pickLine(state, rng, contentLines('guilt'), FALLBACK_LINES.guilt);
+    wrap.guilt = career.pickLine(state, rng, career.linePool(state, 'guilt'), FALLBACK_LINES.guilt);
   }
   function checkMilestones(state) {
     var E = econ(), hits = [];
     function hit(key, cond) {
       if (!cond || state.milestones[key]) return;
       state.milestones[key] = state.totalWeek;
-      var custom = GG.content.lines && GG.content.lines.milestones && GG.content.lines.milestones[key];
+      var ms = career.pool(state, GG.content.lines, 'milestones'), custom = ms && ms[key];   // v0.9: lines.milestones + byBand
+      if (Array.isArray(custom)) custom = custom.length ? custom[state.totalWeek % custom.length] : null;
       hits.push(career.fillText(state, custom || MILESTONES[key] || key));
     }
     hit('firstGig', state.stats.gigs >= 1);
@@ -850,7 +1130,7 @@
       parentsLoans: state.stats.parentsLoans - (ys.parentsLoans || 0), earned: state.stats.earned - (ys.earned || 0),
       bestGrade: state.stats.bestGrade, era: state.era,
       releases: (state.stats.releases || 0) - (ys.releases || 0), royalties: (state.stats.royalties || 0) - (ys.royalties || 0),
-      line: career.pickLine(state, rng, contentLines('yearEnd'), FALLBACK_LINES.yearEnd)
+      line: career.pickLine(state, rng, career.linePool(state, 'yearEnd'), FALLBACK_LINES.yearEnd)
     };
     if (GG.recap) wrap.recap = GG.recap.build(state);   // v0.8.1: the year-end recap (compact, kept in state.recaps)
   }
@@ -1017,6 +1297,24 @@
     career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);
   };
+
+  // v0.9: a save that names its band but lacks genre / region / city / space gets them from that band (bands.js) BEFORE the
+  // base migrate's Hail Damage defaults (metal, Saskatoon, the garage) would fill them. Wraps GG.save.migrate (pre-step).
+  career.migrateBand = function (s) {
+    if (!s || typeof s !== 'object' || Array.isArray(s) || typeof s.bandId !== 'string') return s;
+    var b = career.band(s.bandId);
+    if (!b) return s;
+    [['genre', b.genre], ['region', b.region], ['city', b.city], ['space', b.space]].forEach(function (kv) {
+      if ((s[kv[0]] === undefined || s[kv[0]] === null) && kv[1]) s[kv[0]] = kv[1];
+    });
+    return s;
+  };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.band) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return prevMigrate(career.migrateBand(s)); };
+    Object.keys(prevMigrate).forEach(function (k) { if (GG.save.migrate[k] === undefined) GG.save.migrate[k] = prevMigrate[k]; });
+    GG.save.migrate.band = true;
+  }
 
   GG.registerDebug('career', function () {
     var s = GG.state;
