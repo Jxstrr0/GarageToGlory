@@ -42,10 +42,25 @@
   var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // v0.8: toms (lane 5) = G, ride (lane 6) = H
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
+  // v0.9: every §4.4 genre moment and band action has a banner (content lines.moments[kind].label may rename one); an
+  // unknown kind reads as words ('fistPump' -> 'Fist pump!'), never a raw id.
   var MOMENT_TEXT = { mosh: 'Mosh pit!', lighters: 'Lighters up', boo: 'Boooo', drinks: 'Incoming drinks!', wallOfDeath: 'Wall of death!',
-    circlePit: 'Circle pit!', lineDance: 'Line dance!', capeSpin: 'Cape spin!', solo: 'Solo time', applause: 'Polite applause 🙇' };   // v0.7: a silent (Japanese) crowd between songs
-  var BAND_TEXT = { solo: "{n}'s solo: keep it simple", fill: '{n} sneaks in a fill!', miss: '{n} missed a cue', capeSpin: '{n} spins the cape!' };
+    circlePit: 'Circle pit!', lineDance: 'Line dance!', capeSpin: 'Cape spin!', solo: 'Solo time', applause: 'Polite applause 🙇',   // v0.7: a silent (Japanese) crowd between songs
+    pogo: 'Pogo!', fistPump: 'Fists up!', clapAlong: 'Clap along!', headbang: 'Headbang!', gangShout: 'Gang shout: HEY!', singAlong: 'Sing-along!',
+    yeehaw: 'YEEHAW!', stageDive: 'Stage dive!', kneeSlide: 'Knee slide!', hatTip: 'Hat tip!', kickflip: 'Kickflip!' };
+  var BAND_TEXT = { solo: "{n}'s solo: keep it simple", fill: '{n} sneaks in a fill!', miss: '{n} missed a cue', capeSpin: '{n} spins the cape!',
+    stageDive: '{n} stage-dives!', kneeSlide: '{n} knee-slides to the edge!', hatTip: '{n} tips the hat!', kickflip: '{n} kickflips (sponsored)',
+    headbang: '{n} headbangs!', pogo: '{n} pogoes!', fistPump: '{n} pumps a fist!', yeehaw: '{n} lets out a yeehaw!' };
   var LEVEL_TEXT = { hostile: 'Hostile', bored: 'Bored', warm: 'Warm', hyped: 'Hyped', wild: 'Wild' };
+  function words(kind) { return String(kind || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^\w/, function (c) { return c.toUpperCase(); }); }
+  function momentText(kind) {
+    var M = GG.content.lines && GG.content.lines.moments, m = M && M[kind];
+    return (m && typeof m === 'object' && !Array.isArray(m) && m.label) || MOMENT_TEXT[kind] || words(kind) + '!';
+  }
+  ui.momentText = momentText;
+  function bandText(action) { return BAND_TEXT[action] || (MOMENT_TEXT[action] ? '{n}: ' + MOMENT_TEXT[action] : '{n} goes big: ' + words(action).toLowerCase() + '!'); }
+  // Between-song banter: content first (lines.banter[memberId], + lines.banter.any / lines.byBand[bandId].banter), these
+  // member-keyed lines as the fallback (member ids are unique, so they never leak), then a neutral pool.
   var BANTER = {
     marcel: ['Merci, {city}! This next one is about my lawn.', 'Please do not touch the cape. The cape touches you.'],
     dana: ['Somebody turn me up. No, more.', 'That was in tune. Mostly.'],
@@ -54,14 +69,24 @@
     rox: ['This one goes out to the parking authority.'], benny: ['I broke a string. I have eleven more. Go.'],
     moth: ['(Moth tunes a string that was already in tune.)'], chase: ['Make some noise for the bartender!'],
     lenny: ['Is anyone else hot? It is so hot up here.'], tamara: ['Next one is faster. Sorry, {player}.'],
+    travis: ['This next one is about a truck. They are all about a truck.'],
     earl: ['Y’all still with us?'], clementine: ['This fiddle has been in the family four generations. Stand back.'],
     duke: ['(Duke adjusts his hat. Somebody whoops.)'],
     any: ['Thank you, {city}! We are {band}!', 'Anybody here drive in from out of town? Nobody? Okay.', 'Drink some water. Or whatever. Next one!']
   };
+  var BANTER_GENRE = { punk: ['This one is about city council. They are all about city council.', 'Two minutes, four chords, no refunds!'],
+    rock: ['Are you ready to ROCK, {city}?! Sorry. Are you ready to rock, {city}?', 'This one goes out to anybody who owns leather pants.'],
+    country: ['How y’all doin’ tonight, {city}?', 'This next one is a slow one. Grab somebody. Or a hay bale.'],
+    metal: ['This next one is heavy. They are all heavy.'] };
+  function banterPool(st, id) {
+    var L = GG.content.lines || {}, B = L.banter || {}, own = id && Array.isArray(B[id]) && B[id].length ? B[id] : id && BANTER[id];
+    var any = ui.pool(B, 'any', st).concat(ui.ownLines(ui.bandLines('banter', st) || [], st));
+    return { own: own || null, any: ui.ownLines(any, st).length ? any : BANTER.any.concat(BANTER_GENRE[st.genre] || []) };
+  }
 
   var G = null;   // the show in progress (one at a time)
   function S() { return GG.state; }
-  function fill(t) { return t && S() && GG.career.fillText ? GG.career.fillText(S(), t) : t; }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : t; }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function auto() { return !!ui.gigAutoplay; }
   function lanesOf(state) { var n = state && state.gear && state.gear.lanes; return n >= 1 ? Math.min(n, C.LANES.length) : 4; }
@@ -167,13 +192,14 @@
     'crowd:level': function (p) { if (G && G.dom) { G.dom.level.textContent = LEVEL_TEXT[p.level] || p.level; G.dom.crowd.dataset.level = p.level; G.dom.back.dataset.level = p.level; } },
     'crowd:moment': function (p) {
       if (!G || G.opts.studio) return;
-      if (p.kind !== 'solo') banner(MOMENT_TEXT[p.kind] || p.kind, p.kind === 'boo' || p.kind === 'drinks' ? 'bad' : '');
+      if (p.kind !== 'solo') banner(momentText(p.kind), p.kind === 'boo' || p.kind === 'drinks' ? 'bad' : '');
       if (p.kind === 'boo') sfx('boo'); else if (p.kind !== 'solo' && p.kind !== 'drinks') sfx('cheer');
     },
     'gig:band': function (p) {
       if (!G) return;
-      stageCall('bandAction', p.who, p.action);
-      var t = BAND_TEXT[p.action]; if (t) banner(t.replace('{n}', ui.who(p.who).short), p.action === 'miss' ? 'bad' : 'band');
+      var who = p.who || p.id;   // v0.9 contract names it id; the v0.3 sim sends who
+      stageCall('bandAction', who, p.action);
+      if (p.action) banner(bandText(p.action).replace('{n}', who ? ui.who(who).short : 'The band'), p.action === 'miss' ? 'bad' : 'band');
     },
     'audio:end': function (p) {   // the song stopped under us (app hidden, another screen): pause, restart on resume
       if (!G || !G.handle || p.handle !== G.handle) return;
@@ -274,7 +300,8 @@
     if (!G) return;
     G.startTimer = 0;
     var song = G.ses.song(), p = performance.now(), h = null;
-    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, { genre: S().genre, section: null, loop: false, backing: true, drums: false }) : null; }
+    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, { genre: S().genre, section: null, loop: false, backing: true, drums: false,
+      singer: ui.roleOf('front', S()), band: S().bandId }) : null; }   // v0.9: who sings (for the audio's per-singer vocal voice)
     catch (e) { console.error('[gig] audio.play failed', e); }
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
@@ -601,8 +628,10 @@
   function banterLine() {
     var st = S(), act = st.members.filter(function (m) { return m.status === 'active'; });
     var m = act.length ? act[Math.floor(ui.rng.next() * act.length)] : null;
-    var pool = m && BANTER[m.id] && ui.rng.next() < 0.75 ? BANTER[m.id] : BANTER.any;
-    return { who: m ? m.id : null, text: fill(ui.pick(pool)) };
+    var P = banterPool(st, m && m.id), silent = m && ui.isSilent(m.id, st);
+    var pool = P.own && (silent || ui.rng.next() < 0.75) ? P.own : P.any;   // a silent member never says the shared lines
+    if (silent && pool === P.any) { var t = ui.talkers(st); m = t.length ? t[Math.floor(ui.rng.next() * t.length)] : null; }
+    return { who: m ? m.id : null, text: ui.line(pool, BANTER.any, st) };
   }
   function showBetween(r) {
     var d = G.dom, n = G.ses.setlist.length, i = G.ses.index;   // i = songs played so far
@@ -615,7 +644,7 @@
       r ? el('div.gig-song-res', [
         el('b', '“' + r.title + '”'),
         el('div.small', Math.round(r.accuracy * 100) + '% hit · best combo ' + r.maxCombo + ' · ' + r.perfect + ' perfect / ' + r.good + ' good / ' + r.miss + ' missed'),
-        r.moments.length ? el('div.small.amber', r.moments.map(function (k) { return MOMENT_TEXT[k] || k; }).join(' · ')) : null
+        r.moments.length ? el('div.small.amber', r.moments.map(momentText).join(' · ')) : null
       ]) : null,
       b.who ? el('div.react', [ui.avatar(b.who, 'sm'), el('div.t', [el('b', ui.who(b.who).short + ': '), b.text])]) : el('p.small', b.text),
       next ? el('div.small.dim', 'Up next: “' + next.title + '”' + (next.classic ? ' (a classic)' : '')) : null,
@@ -709,7 +738,9 @@
       if (!G) return;
       var g = G.gig, d = G.dom = {};
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
-      d.back = el('div.gig-back', { data: { level: 'warm' } }, [el('div.lights'), el('div.band', [el('i'), el('i'), el('i'), el('i')]),
+      var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
+      d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),
+        el('div.band', { testid: 'gig-back-band' }, Array.apply(null, Array(Math.max(1, Math.min(6, lineupN)))).map(function () { return el('i'); })),
         el('div.floor'), el('div.crowd')]);
       d.back.hidden = !!G.stageOn;
       d.title = el('b', g.name);
@@ -759,7 +790,7 @@
       s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
-        : 'Expert: every hit as written, a razor-thin window, and misses sting. Kenji nods, once.'));
+        : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
         s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',

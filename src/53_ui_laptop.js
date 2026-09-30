@@ -15,11 +15,14 @@
   var ui = GG.ui, el = ui.el, U = GG.util;
   var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }, { id: 'years', label: 'Years' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
   var lastTab = 'chat';
-  function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
+  function fill(t) { return GG.state ? ui.fill(t, GG.state) : t; }
+  // v0.9: empty states per band (content lines.byBand[bandId].empty { chat, catalog }), else neutral + tokens.
+  var EMPTY = { chat: 'No messages yet. {deadpan} has read everything anyway.', catalog: 'No songs yet. {namer} is "workshopping".' };
+  function empty(key) { var e = ui.bandLines('empty'), t = e && e[key]; return fill(Array.isArray(t) ? ui.pick(t) : t || EMPTY[key]); }
 
   function chatTab(st) {
-    var msgs = st.chat || [];
-    if (!msgs.length) return el('p.dim.center', { style: 'padding:30px 0' }, 'No messages yet. Kenji has read everything.');
+    var msgs = (st.chat || []).filter(function (m) { return ui.chatOk(m, st); });   // v0.9: never another band's people
+    if (!msgs.length) return el('p.dim.center', { testid: 'laptop-chat-empty', style: 'padding:30px 0' }, empty('chat'));
     var out = [], week = null;
     msgs.forEach(function (m) {
       if (m.week !== week) { week = m.week; out.push(el('div.day-sep', 'Week ' + (((week - 1) % GG.contracts.WEEKS_PER_YEAR) + 1) + ' · Year ' + (Math.floor((week - 1) / GG.contracts.WEEKS_PER_YEAR) + 1))); }
@@ -62,7 +65,7 @@
         el('div.grow', [el('div.fr', s.title), s.titleEn && s.titleEn !== s.title ? el('div.en', s.titleEn) : null,
           el('div.tiny.dim', ['Groove ' + (r.groove || 0) + ' · Hook ' + (r.hook || 0) + ' · Diff ' + (r.difficulty || 0) + ' ', tags])]),
         el('div.small.dim', { style: 'text-align:right;white-space:nowrap' }, ['Q ' + Math.round(s.quality || 0), el('br'), 'Polish ' + Math.round(s.polish || 0) + ' · ▶' + (s.plays || 0)])]);
-    }) : el('p.dim', 'No songs yet. Marcel is "workshopping".'));
+    }) : el('p.dim', { testid: 'laptop-songs-empty' }, empty('catalog')));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
     if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
       onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
@@ -85,7 +88,7 @@
         s.earned != null ? el('div', [el('span', 'Earned, all time'), el('span', U.fmtMoney(s.earned))]) : null,
         el('div', [el('span', 'Gigs played'), el('span', String(s.gigs || 0))]),
         st.merch ? el('div', { 'data-testid': 'laptop-merch' }, [el('span', 'Merch sold, all time (stock ' + U.fmtMoney(st.merch.spent || 0) + ')'), el('span.good', U.fmtMoney(st.merch.earned || 0))]) : null,   // v0.8
-        GG.shop && GG.shop.rent(st) ? el('div', { 'data-testid': 'laptop-rent' }, [el('span', 'Rent · ' + GG.shop.spaceDef(st, st.spaceTier || 0).name), el('span.bad', '−' + U.fmtMoney(GG.shop.rent(st)) + '/wk')]) : null
+        GG.shop && GG.shop.rent(st) ? el('div', { 'data-testid': 'laptop-rent' }, [el('span', 'Rent · ' + ui.spaceName(st)), el('span.bad', '−' + U.fmtMoney(GG.shop.rent(st)) + '/wk')]) : null
       ]),
       el('div.panel', [el('div.caps', { style: 'margin-bottom:8px' }, 'Fund, last ' + hist.length + ' weeks'), bars]),
       st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures on the drum throne.') : null

@@ -43,11 +43,17 @@
   /* ======================================================================================================
      Reviews
      ====================================================================================================== */
+  // Defaults for content lines.reviewReact (read first, V.reactPool); speakers by role (v0.9).
   var BAND_REACT = {
     great: { marcel: ['Pitchspork understood the cape. Finally, the press is ready.'], dana: ['They called my solo "unhinged". I am framing it.'], any: ['We are CRITICALLY ACCLAIMED. Someone tell my guidance counsellor.'] },
     meh: { marcel: ['Mixed. Like a good poutine. I choose to be flattered.'], jaxon: ['My baba read them all. She says the critics are "soft in the head".'], any: ['Some liked it! Some were wrong!'] },
     awful: { marcel: ['I will be writing letters. In French. Long ones.'], kenji: ['(Kenji prints the worst review and pins it to the wall. Motivation.)'], any: ['At least they spelled the band name right. Mostly.'] }
   };
+  var REACT_ROLES = { great: ['@front', '@soloist'], meh: ['@filler', '@front'], awful: ['@deadpan', '@front'] };
+  // v0.9: the rival by name and id (never a hard-coded Tundra Wraith), and the rival's own awards-night lines.
+  function rivalId(st) { try { if (GG.rival && st && st.rival) return GG.rival.get(st).id; } catch (e) { /* no rival sim */ } var b = ui.band(st); return (b && b.rival) || null; }
+  function rivalName(st) { try { if (GG.rival && st && st.rival) return GG.rival.name(st); } catch (e) { /* no rival sim */ } var r = GG.content.rivals && GG.content.rivals[rivalId(st)]; return (r && r.name) || 'The other band'; }
+  function castOf(st) { try { return GG.rival && GG.rival.cast ? GG.rival.cast(st) : null; } catch (e) { return null; } }
   ui.showReviews = function (albumId, done) {
     var a = album(albumId); if (!a || !(a.reviews || []).length) { if (done) setTimeout(done, 0); return null; }
     return ui.show('reviews', { albumId: a.id, shown: 1, done: done });
@@ -74,7 +80,7 @@
       }
       var avg = revs.length ? sum / revs.length : 0, band = avg >= 0.7 ? 'great' : avg >= 0.45 ? 'meh' : 'awful';
       s.body.appendChild(el('div.panel.warm', { style: 'margin-top:4px' }, [el('div.row', [el('span.grow.caps', 'Critics’ average'), el('b.big-num', { style: 'font-size:24px' }, Math.round(avg * 100) + '%')]),
-        V.react(V.memberLine(band === 'great' ? ['marcel', 'dana'] : band === 'meh' ? ['jaxon', 'marcel'] : ['kenji', 'marcel'], BAND_REACT[band]))]));
+        V.react(V.memberLine(REACT_ROLES[band], V.reactPool('reviewReact', band, BAND_REACT[band])))]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-reviews-done', onclick: function () { ui.close(s.id); } }, a.chart && a.chart.pos ? 'Check the Maple 100 ▸' : 'Back to it'));
     },
     onClose: function (s) {
@@ -151,7 +157,7 @@
       ui.append(s.body, [
         el('div.cert-disc.' + (plat ? 'platinum' : 'gold'), { testid: 'cert-disc' }, [el('div.cert-label', thumb(a, 160, 'label-art'))]),
         el('p.center', [el('b', '“' + a.title + '”'),  ' is certified ' + (plat ? 'PLATINUM' : 'GOLD') + ': ' + num(plat ? C.CERT.platinum : C.CERT.gold) + ' units in Canada.']),
-        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at Costco.' : 'Marcel wants to wear it. As a medallion. He is measuring the chain.')
+        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at Costco.' : V.fill('{front} wants to wear it. As a medallion. The chain is being measured.'))
       ]);
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'btn-cert-ok', onclick: function () { ui.close(s.id); } }, 'Hang it on the wall'));
     },
@@ -163,8 +169,9 @@
     build: function (s) {
       var st = S(); if (!st) return;
       var list = (st.trophies || []).slice(), banned = (st.banned || []).slice();
-      s.setTitle('Trophy shelf', (list.length + banned.length) + ' THINGS · 1 BOWLING TROPHY (NOT YOURS)');
-      if (!list.length && !banned.length) s.body.appendChild(el('p.dim', { style: 'padding:10px 0 20px' }, 'A bowling trophy (not yours), a participation ribbon and a lot of dust. Room to grow.'));
+      var dads = ui.spaceKind(st) === 'garage' && (st.spaceTier || 0) === 0;   // v0.9: Dad's bowling trophy lives in the parents' garage only
+      s.setTitle('Trophy shelf', (list.length + banned.length) + ' THINGS' + (dads ? ' · 1 BOWLING TROPHY (NOT YOURS)' : ''));
+      if (!list.length && !banned.length) s.body.appendChild(el('p.dim', { style: 'padding:10px 0 20px' }, (dads ? 'A bowling trophy (not yours), a' : 'A') + ' participation ribbon and a lot of dust. Room to grow.'));
       list.forEach(function (t, i) {
         s.body.appendChild(el('div.trophy-row', { testid: 'trophy-' + i }, [el('span.ti', TROPHY_ICON[t.kind] || '🏆'), el('div.grow', [el('b', V.fill(t.title || t.kind)), el('div.tiny.dim', (t.kind || '') + (t.year ? ' · year ' + t.year : ''))])]));
       });
@@ -183,7 +190,7 @@
     else out.push(btn('.btn.block' + (can.ep || can.album ? '.primary' : ''), { testid: 'btn-book-studio', onclick: function () { ui.openStudioBooking(); } }, can.ep || can.album ? 'Book a studio 🎙' : 'Studio (locked)'));
     var albums = (st.albums || []).slice().reverse();
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Discography (' + albums.length + ')'));
-    if (!albums.length) out.push(el('p.dim.small', 'No releases yet. The demo on Jaxon’s phone does not count, no matter what he says.'));
+    if (!albums.length) out.push(el('p.dim.small', V.fill('No releases yet. The demo on {filler}’s phone does not count, no matter what anybody says.')));
     var pend = V.call('pending', st);
     if (pend && pend.status === 'recorded' && !V.call('inSession', st)) out.push(
       btn('.btn.primary.block', { testid: 'btn-plan-release', style: 'margin-top:8px', onclick: function () { ui.openRelease(); } }, 'Plan the release 💿'));
@@ -231,6 +238,8 @@
       'First, we want to thank {band}, who deserved this just as much. Okay, a little less. But still! Love you guys!'],
     carpet: [{ who: 'reporter', text: 'Who are you wearing tonight?' }, { who: 'marcel', text: 'The cape. The cape is wearing me.' },
       { who: 'reporter', text: 'Any predictions?' }, { who: 'jaxon', text: 'My baba predicts we lose to the corpse-paint guys. She is usually right.' }],
+    carpetAny: [{ who: 'reporter', text: 'Who are you wearing tonight?' }, { who: '@front', text: 'Whatever was clean. It was a close call.' },
+      { who: 'reporter', text: 'Any predictions?' }, { who: '@soloist', text: 'We lose to {rival}. We are here for the free shrimp.' }],
     outfit: { id: 'loonie_outfit', title: 'What Is Marcel Wearing?', speaker: 'marcel',
       text: 'Marcel emerges from the van in something. The photographers are already pointing. He asks your opinion, and he will not accept it.',
       textCape: 'Marcel has had the cape dry-cleaned, starched and ironed into a shape. It stands up by itself. He asks what you think.',
@@ -241,10 +250,37 @@
       ] },
     speech: [
       { label: 'Thank your mom', hint: 'Classic. Safe. Moms cry.', effects: { fans: 40, mood: { all: 3 } }, outcome: 'Your mom stands up in row 40 and waves with both arms. The whole room waves back.' },
-      { label: 'Thank the moose', hint: 'Marcel will love it', effects: { buzz: 8, mood: { marcel: 5 } }, outcome: '"And the moose. Without the moose, none of this." Silence. Then a standing ovation from Manitoba.' },
-      { label: 'Take a shot at Tundra Wraith', hint: 'Gamble: the room might turn', effects: { buzz: 12, fans: -20 }, outcome: 'You go for it. Tundra Wraith laugh the loudest and send you a fruit basket before you leave the stage.' }
+      { label: 'Thank {city}', hint: 'The hometown will love it', effects: { buzz: 8, mood: { all: 2 } }, outcome: '"And {city}. Without {city}, none of this." A cheer from the back. Somebody drove in.' },
+      { label: 'Take a shot at {rival}', hint: 'Gamble: the room might turn', effects: { buzz: 12, fans: -20 }, outcome: 'You go for it. {rival} laugh the loudest. Nobody is sure who won that.' }
     ]
   };
+  // v0.9: the carpet is the band's (content awards.carpet[bandId]); Hail Damage's lines stay as its default, other bands
+  // without content get neutral lines spoken by their own singer + guitarist ('@front' / '@soloist').
+  function carpetLines(st) {
+    var cp = V.awards().carpet, own = cp && !Array.isArray(cp) && Array.isArray(cp[st.bandId]) && cp[st.bandId].length ? cp[st.bandId] : null;
+    if (!own && Array.isArray(cp) && cp.length && ui.ownLines(cp, st).length === cp.length) own = cp;
+    return own || (st.bandId === 'hail_damage' ? FB.carpet : FB.carpetAny);
+  }
+  function carpetIntro(st) {
+    var c = castOf(st), t = c && c.carpet && c.carpet.intro;
+    return t || (rivalId(st) === 'tundra_wraith' ? 'Tundra Wraith, in full corpse paint, hold the door for a seat-filler.' : '{rival} work the other end of the carpet like they own it.');
+  }
+  // The speech card: the sim's (per band), only if its gate lets this band have it; else the neutral one.
+  function speechCard(st) {
+    var c = V.call('speechCard', st);
+    if (c && !c.choices && c[st.bandId]) c = c[st.bandId];
+    if (c && c.choices && c.gate && GG.career && GG.career.gatePasses && !GG.career.gatePasses(st, c.gate)) c = null;
+    return c && c.choices ? c : { title: 'Say something!', text: 'The mic is warm. The teleprompter says "THANK PEOPLE". Five seconds until the orchestra plays you off.', choices: lines('speeches', FB.speech) };
+  }
+  // The outfit card: the sim's, else a content card whose gate passes; Hail Damage's cape card is its own fallback. Other
+  // bands with none skip the outfit beat (no stranger called Marcel on their carpet).
+  function outfitFor(st) {
+    var c = V.call('outfitCard', st);
+    if (c && c.choices) return c;
+    var list = V.awards().outfitCards;
+    c = Array.isArray(list) ? list.filter(function (x) { return x && x.choices && (!GG.career || !GG.career.gatePasses || GG.career.gatePasses(st, x.gate)); })[0] : null;
+    return c || (st.bandId === 'hail_damage' ? outfitCard(st) : null);
+  }
   function nominations(st) {
     var x = V.call('loonies', st);
     var list = x && Array.isArray(x.noms) ? x.noms : Array.isArray(x) ? x : (st.awards || []).filter(function (a) { return a && a.year === st.year && a.nominated; });
@@ -253,8 +289,8 @@
   function winnerOf(aw, st) {
     if (aw.won) return V.bandName(st);
     if (aw.winner) return aw.winner;
-    var ag = aw.against || [];
-    return ag.indexOf('Tundra Wraith') >= 0 ? 'Tundra Wraith' : ag[0] || 'Tundra Wraith';
+    var ag = aw.against || [], rn = rivalName(st);
+    return ag.indexOf(rn) >= 0 ? rn : ag[0] || rn;
   }
   function snapshot(st) { return { fund: st.fund, fans: st.fans, buzz: st.buzz, chemistry: st.chemistry, burnout: st.burnout }; }
   function diff(a, b) { var d = {}; for (var k in a) if (typeof a[k] === 'number' && typeof b[k] === 'number' && b[k] !== a[k]) d[k] = b[k] - a[k]; return d; }
@@ -314,19 +350,22 @@
     }
   });
   function buildCarpet(s, st, card) {
-    var seq = lines('carpet', FB.carpet), i = Math.min(L.line, seq.length);
+    var seq = carpetLines(st), i = Math.min(L.line, seq.length), rid = rivalId(st);
     var shown = seq.slice(Math.max(0, i - 1), i + 1);
     ui.append(card, shown.map(function (x, k) {
       var who = typeof x === 'string' ? null : x.who, txt = V.fill(typeof x === 'string' ? x : x.text);
       if (who === 'reporter' || !who) return el('p.lo-q' + (k === shown.length - 1 ? '.rv' : ''), [el('b', 'Red-carpet reporter: '), txt]);
-      if (who === 'wraith' || who === 'tundra_wraith') return el('p.lo-q.wraith', { testid: 'wraith-thanks' }, [el('b', 'Tundra Wraith: '), txt]);
-      return V.react({ who: who, text: txt });
+      if (who === 'wraith' || who === 'rival' || who === rid) return el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid || '' } }, [el('b', rivalName(st) + ': '), txt]);
+      return V.react({ who: ui.speaker(who, st), text: txt });
     }));
     var cer = V.awards().ceremony;
     if (i === 0 && cer && cer.venue) card.appendChild(el('p.small', 'Live from ' + cer.venue + '. Host: ' + ((cer.host && cer.host.name) || 'a former weatherman') + '.'));
-    if (i === 0) card.appendChild(el('p.small.dim', 'Flashbulbs. A step-and-repeat covered in sponsors nobody has heard of. Tundra Wraith, in full corpse paint, hold the door for a seat-filler.'));
+    if (i === 0) card.appendChild(el('p.small.dim', { testid: 'carpet-intro' }, 'Flashbulbs. A step-and-repeat covered in sponsors nobody has heard of. ' + V.fill(carpetIntro(st))));
+    var oc = !L.outfit && i >= seq.length ? outfitFor(st) : null;
+    if (i >= seq.length && !L.outfit && !oc) L.outfit = 'none';   // v0.9: no outfit card for this band: straight inside
     if (i < seq.length) card.appendChild(btn('.btn.primary.block', { testid: 'btn-carpet-next', onclick: function () { L.line += 2; rc('flash', 6); s.rerender({}); frame(s); } }, i === 0 ? 'Walk the carpet 📸' : 'Keep walking ▸'));
-    else if (!L.outfit) card.appendChild(btn('.btn.primary.block', { testid: 'btn-outfit', onclick: function () { openOutfit(s); } }, 'Marcel has a question…'));
+    else if (!L.outfit) card.appendChild(btn('.btn.primary.block', { testid: 'btn-outfit', onclick: function () { openOutfit(s, oc); } },
+      (oc.speaker ? ui.who(ui.speaker(oc.speaker, st)).short : 'Somebody') + ' has a question…'));
     else card.appendChild(btn('.btn.primary.block', { testid: 'btn-head-inside', onclick: function () { rc('setMode', 'podium'); toPhase(s, L.noms.length ? 'show' : 'summary'); } }, 'Head inside ▸'));
   }
   function outfitCard(st) {
@@ -336,8 +375,9 @@
     var c = ok[0] || list[0];
     return Object.assign({}, c, { text: cape && c.textCape ? c.textCape : c.text });
   }
-  function openOutfit(s) {
-    var st = S(), c = V.call('outfitCard', st) || outfitCard(st);
+  function openOutfit(s, card) {
+    var st = S(), c = card || outfitFor(st);
+    if (!c) { L.outfit = 'none'; s.rerender({}); frame(s); return; }
     ui.show('loonie-card', { card: c, kind: 'outfit', onPick: function (i) {
       var ch = c.choices[i], res = V.call('outfit', S(), i, c.id);   // the sim applies the effects itself
       if (res === undefined && ch.effects && GG.career && GG.career.applyEffects) GG.career.applyEffects(S(), ch.effects);
@@ -399,26 +439,30 @@
       } }, '✉ Open the envelope'));
       return;
     }
-    var win = winnerOf(aw, st), wraith = !aw.won && /tundra wraith/i.test(win);
+    var win = winnerOf(aw, st), wraith = !aw.won && String(win).toLowerCase() === String(rivalName(st)).toLowerCase();   // v0.9: the rival, by name
     card.appendChild(el('div.lo-winner' + (aw.won ? '.won' : ''), { testid: 'winner' }, [el('span.caps', 'And the Loonie goes to…'), el('b', win)]));
     if (ui.logoBroadcast) card.appendChild(ui.logoBroadcast(st, { winner: win, won: !!aw.won, category: cat.name }));   // v0.8.1: the broadcast card (5m)
     if (wraith || aw.thanks) {
-      var rt = V.awards().rivalThanks, t = Array.isArray(rt) ? rt : (rt && rt.tundra_wraith) || FB.wraith;
-      card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks' }, [el('b', win + ': '), quoted(V.fill(aw.thanks || t[(L.i + (st.year || 0)) % t.length]))]));
-    } else if (!aw.won) card.appendChild(el('p.small.dim', 'You clap. Marcel claps slower. Much slower.'));
+      var rt = V.awards().rivalThanks, rid2 = rivalId(st), t = Array.isArray(rt) ? rt : (rt && rt[rid2]) || (rid2 === 'tundra_wraith' ? FB.wraith : ['Wow. Thank you. And thank you, {band}. You pushed us. A little.']);
+      card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid2 || '' } }, [el('b', win + ': '), quoted(V.fill(aw.thanks || t[(L.i + (st.year || 0)) % t.length]))]));
+    } else if (!aw.won) card.appendChild(el('p.small.dim', V.fill('You clap. {grumbler} claps slower. Much slower.')));
     if (aw.won && aw.rivalLine) card.appendChild(el('p.small.dim', V.fill(aw.rivalLine)));
     if (aw.won && !L.speech && aw.category !== 'worst_van') {
       card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-speech', onclick: function () { openSpeech(s); } }, 'Give a speech 🎤'));
       return;
     }
-    if (aw.won && aw.category === 'worst_van') card.appendChild(el('p.small', 'Kenji accepts the award in silence. The Moose Hearse honks from the parking lot. Nobody knows how.'));
+    if (aw.won && aw.category === 'worst_van') {   // v0.9: the band's driver accepts; the van honks by name
+      var dv = ui.driverOf(st);
+      card.appendChild(el('p.small', { testid: 'worst-van' }, V.fill((dv.you ? 'You accept the award' : dv.name + ' accepts the award' + (ui.isSilent(dv.id, st) ? ' in silence' : ''))
+        + '. {van} honks from the parking lot. Nobody knows how.')));
+    }
     card.appendChild(btn('.btn.primary.block', { testid: 'btn-award-next', onclick: function () {
       L.i++; L.opened = false; if (L.i >= L.noms.length) { toPhase(s, 'summary'); return; }
       rc('envelope', null); s.rerender({}); frame(s);
     } }, L.i + 1 < L.noms.length ? 'Next award ▸' : 'To the after-party ▸'));
   }
   function openSpeech(s) {
-    var c = V.call('speechCard', S()) || { title: 'Say something!', text: 'The mic is warm. The teleprompter says "THANK PEOPLE". Five seconds until the orchestra plays you off.', choices: lines('speeches', FB.speech) };
+    var c = speechCard(S());
     ui.show('loonie-card', { card: c, kind: 'speech', onPick: function (i) {
       var ch = c.choices[i], res = V.call('speech', S(), i, c.id);   // the sim applies the effects itself
       if (res === undefined && ch.effects && GG.career && GG.career.applyEffects) GG.career.applyEffects(S(), ch.effects);
@@ -430,10 +474,12 @@
     var d = diff(L.start, snapshot(st)), n = L.wins.length;
     card.appendChild(el('div', { testid: 'loonies-summary' }, [
       el('h3.lo-cat', n ? n + ' Loonie' + (n > 1 ? 's' : '') + '!' : L.noms.length ? 'No Loonies this year.' : 'Not nominated.'),
-      el('p.small', n ? 'The trophy is heavier than it looks, and it looks like a giant coin with a bird on it. It is going on the shelf.' : L.noms.length ? 'Tundra Wraith sent a fruit basket to your table. It had a card. It said "next year, buddy!"' : 'You came for the free shrimp. The shrimp was excellent.'),
+      el('p.small', n ? 'The trophy is heavier than it looks, and it looks like a giant coin with a bird on it. It is going on the shelf.' : L.noms.length
+        ? V.fill(rivalId(st) === 'tundra_wraith' ? '{rival} sent a fruit basket to your table. It had a card. It said "next year, buddy!"' : '{rival} took a victory lap past your table. Next year.')
+        : 'You came for the free shrimp. The shrimp was excellent.'),
       ui.deltaChips(d, { emptyText: 'Free shrimp' })
     ]));
-    card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-loonies-done', style: 'margin-top:10px', onclick: function () { ui.close(s.id); } }, 'Back to the garage'));
+    card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-loonies-done', style: 'margin-top:10px', onclick: function () { ui.close(s.id); } }, 'Back to ' + ui.space(st)));
   }
 
   /* ======================================================================================================

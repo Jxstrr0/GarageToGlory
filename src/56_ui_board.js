@@ -17,7 +17,12 @@
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
   function W() { return GG.world; }
-  function fill(t) { return t && GG.career && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : (t || ''); }
+  // v0.9: exposure deals are the singer's pitch (content lines.byBand[bandId].exposure, else {front}'s neutral line).
+  function exposure(st, key) {
+    var e = ui.bandLines('exposure', st), t = e && (Array.isArray(e) ? e[key === 'toast' ? 1 % e.length : 0] : e[key] || e.pitch);
+    return fill(t || (key === 'toast' ? 'Exposure! We are going to be SO exposed.' : '{front}: "Exposure is basically money. Say yes."'));
+  }
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
 
   var CSS = [
@@ -106,7 +111,7 @@
       el('span.gb-chip' + (fit.id === 'clash' ? '.bad' : fit.id === 'great' ? '.good' : ''), fit.icon + ' ' + fit.label)
     ];
     var where = [l.city, l.km ? l.km + ' km' : 'across town', 'gas ' + U.fmtMoney(l.gas || 0)].join(' · ');
-    var marcel = l.deal === 'exposure' && mode === 'book' ? el('div.gb-est', 'Marcel: "Exposure is basically money. Say yes."') : null;
+    var marcel = l.deal === 'exposure' && mode === 'book' ? el('div.gb-est', { testid: 'board-exposure' }, exposure(st, 'pitch')) : null;
     var kids = [
       el('div.gb-top', [el('span.gb-ico', l.showdown && l.showdown.kind === 'festival' ? '🎪' : ui.venueIcon(l.kind)), el('div.grow', [el('div.gb-name', l.name), el('div.gb-where', where)]), repBadge(l.repLevel)]),
       l.opening ? el('span.gb-open' + (l.opening.rival ? '.rival' : ''), (l.opening.rival ? 'Your rival! ' : '') + 'Opening for ' + l.opening.name) : null,
@@ -139,16 +144,36 @@
   function pts(list) { return list.map(function (p) { return (p[0] * 100).toFixed(1) + ',' + (p[1] * 100 * AR).toFixed(1); }).join(' '); }
   // v0.6.1: one ring at a time. Roads that leave the ring run to the "home" box (the rings you already know).
   function ringOf(c) { return c.ring || 'sask'; }
+  function bandShort(st) { var b = ui.band(st); return (b && b.name) || 'The band'; }
+  // v0.9: the home ring (band.homeRing, else the home city's ring) is always open and comes first in the tabs; the other
+  // rings' "home" box names it (content ring.home.labels[homeRing] | ring.homeBy[homeRing] (a whole box), else its name).
+  function homeRing(st) {
+    var b = ui.band(st), id = b && b.homeRing;
+    if (id && W().rings().some(function (r) { return r.id === id; })) return id;
+    return W().ring(W().home(st)) || 'sask';
+  }
+  function ringOpen(st, id) { return id === homeRing(st) || W().ringOpen(st, id); }
+  function orderedRings(st) {
+    var h = homeRing(st), R = W().rings();
+    return R.filter(function (r) { return r.id === h; }).concat(R.filter(function (r) { return r.id !== h; }));
+  }
+  function homeBox(st, ring) {
+    var h = homeRing(st), by = ring.homeBy && ring.homeBy[h], hb = by || ring.home || null;
+    if (!hb) return null;
+    if (ring.id === h) return hb;   // your own ring: the box stands for the rest of the Prairies, as content labels it
+    var home = W().rings().filter(function (r) { return r.id === h; })[0], lab = (hb.labels && hb.labels[h]) || (h === 'sask' ? hb.label : home && home.name) || hb.label;
+    return Object.assign({}, hb, { label: lab });
+  }
   function mapView(st, list, sel, onSel, ringId) {
-    var M = W().map(), home = W().home(st), ring = (W().rings().filter(function (r) { return r.id === ringId; })[0]) || W().rings()[0];
-    var open = W().ringOpen(st, ring.id), hb = ring.home || null;
+    var M = W().map(), home = W().home(st), ring = (W().rings().filter(function (r) { return r.id === ringId; })[0]) || orderedRings(st)[0];
+    var open = ringOpen(st, ring.id), hb = homeBox(st, ring);
     var box = el('div.gb-map' + (open ? '' : '.locked'), { testid: 'board-map', data: { ring: ring.id } });
     var s = svg('svg', { viewBox: '0 0 100 ' + (100 * AR), preserveAspectRatio: 'none' });
     for (var gx = 0; gx <= 100; gx += 8) s.appendChild(svg('line', { x1: gx, y1: 0, x2: gx, y2: 100 * AR, stroke: '#2a3a22', 'stroke-width': 0.3 }));   // grid roads
     for (var gy = 0; gy <= 100 * AR; gy += 8) s.appendChild(svg('line', { x1: 0, y1: gy, x2: 100, y2: gy, stroke: '#2a3a22', 'stroke-width': 0.3 }));
-    if (ring.id === 'sask') {
-      (M.lakes || []).forEach(function (l) { s.appendChild(svg('ellipse', { cx: l.x * 100, cy: l.y * 100 * AR, rx: l.rx * 100, ry: l.ry * 100 * AR, fill: '#2d5a86' })); });
-      (M.rivers || []).forEach(function (r) { s.appendChild(svg('polyline', { points: pts(r), fill: 'none', stroke: '#3a6f9e', 'stroke-width': 0.9, 'stroke-linejoin': 'round' })); });
+    if (ring.id === 'sask' || ring.lakes || ring.rivers) {
+      (ring.lakes || M.lakes || []).forEach(function (l) { s.appendChild(svg('ellipse', { cx: l.x * 100, cy: l.y * 100 * AR, rx: l.rx * 100, ry: l.ry * 100 * AR, fill: '#2d5a86' })); });
+      (ring.rivers || M.rivers || []).forEach(function (r) { s.appendChild(svg('polyline', { points: pts(r), fill: 'none', stroke: '#3a6f9e', 'stroke-width': 0.9, 'stroke-linejoin': 'round' })); });
     }
     if (hb) {
       s.appendChild(svg('rect', { x: hb.x * 100, y: hb.y * 100 * AR, width: hb.w * 100, height: hb.h * 100 * AR, rx: 2, fill: '#2c3a26', stroke: '#6f8f5a', 'stroke-width': 0.5, 'stroke-dasharray': '1.5 1' }));
@@ -180,10 +205,11 @@
     return box;
   }
   function ringTabs(st, list, cur, onRing) {
-    return el('div.gb-rings', W().rings().map(function (r) {
-      var open = W().ringOpen(st, r.id), n = list.filter(function (l) { return W().ring(l.city) === r.id; }).length;
-      return btn('.gb-ring' + (r.id === cur ? '.sel' : '') + (open ? '' : '.locked'), { testid: 'ring-' + r.id, 'aria-pressed': r.id === cur ? 'true' : 'false', onclick: function () { onRing(r.id); } },
-        [(open ? '' : '🔒 ') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[r.era] || r.era)]);
+    var h = homeRing(st);
+    return el('div.gb-rings', orderedRings(st).map(function (r) {
+      var open = ringOpen(st, r.id), n = list.filter(function (l) { return W().ring(l.city) === r.id; }).length;
+      return btn('.gb-ring' + (r.id === cur ? '.sel' : '') + (open ? '' : '.locked'), { testid: 'ring-' + r.id, 'aria-pressed': r.id === cur ? 'true' : 'false', data: { home: r.id === h ? '1' : '' }, onclick: function () { onRing(r.id); } },
+        [(open ? '' : '🔒 ') + (r.id === h ? '🏠 ' : '') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[(r.eraBy && r.eraBy[h]) || r.era] || r.era)]);
     }));
   }
   var ERA_NAME = { garage: 'Garage', local: 'Local Heroes', signed: 'Signed', world: 'World Stage' };
@@ -204,14 +230,15 @@
       ui.bar(van.condition, 100, { color: van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)' }),
       el('div.small.dim', U.fmtNum(van.km) + ' km driven · ' + driverLine(st))])])]);
   }
-  function driverLine(st) {   // v0.6.1: the designated driver (or you, when they're gone)
-    var d = W().driver ? W().driver(st) : { id: 'kenji', name: 'Kenji' };
-    return d.you ? 'You drive now. ' + ((d.def && d.def.effect) || '') : d.id === 'kenji' ? 'Kenji drives. Kenji always drives.' : d.name + ' drives. ' + ((d.def && d.def.effect) || '');
+  function driverLine(st) {   // v0.6.1: the designated driver (or you, when they're gone); v0.9: any band's driver def
+    var d = ui.driverOf(st), def = d.def || {};
+    if (def.boardLine) return fill(def.boardLine);
+    return d.you ? 'You drive now. ' + (def.effect || '') : ui.isSilent(d.id, st) ? d.name + ' drives. ' + d.name + ' always drives.' : d.name + ' drives. ' + (def.effect || '');
   }
   function bannedWall(st) {
-    var list = (st.banned || []).map(function (id) { return GG.gig.venue(id); }).filter(Boolean);
+    var list = (st.banned || []).map(function (id) { return GG.gig.venue(id); }).filter(Boolean), icon = ui.genreIcon(st.genre);   // v0.9: the band's genre
     return [el('div.caps.gb-sec', 'The banned wall'), list.length ? el('div.gb-wall', { testid: 'banned-wall' }, list.map(function (v) {
-      return el('div.gb-polaroid', [el('div.ph', '🤘'), el('div.st', 'BANNED'), el('div', v.name)]);
+      return el('div.gb-polaroid', [el('div.ph', icon), el('div.st', 'BANNED'), el('div', v.name)]);
     })) : el('p.small.dim', 'No bans yet. Give it time.')];
   }
   function booked(st) {
@@ -245,7 +272,7 @@
           tm.here.length ? el('div.gb-list', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No open dates in ' + (tm.city ? tm.city.name : tm.sel) + ' this week.')]));
       } else if (tab === 'map') {
-        var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || 'sask';
+        var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || homeRing(st);
         if (W().ring(sel) !== ringId) sel = Object.keys(W().map().cities).filter(function (id) { return W().ring(id) === ringId; })[0] || sel;
         dbg.ring = ringId; dbg.city = sel;
         s.body.appendChild(ringTabs(st, list, ringId, function (r) { s.rerender(Object.assign({}, s.data, { ring: r, city: null })); }));
@@ -262,7 +289,7 @@
       }
       if (mode === 'view') ui.append(s.body, TB ? [el('div.caps.gb-sec', 'The rental'), TB.strip(st)] : [el('div.caps.gb-sec', 'The van'), vanStrip(st)].concat(bannedWall(st)));
       if (mode === 'book') s.foot.appendChild(btn('.btn.block', { testid: 'board-skip', onclick: function () { GG.career.pickListing(S(), 'skip'); close(s, 'skip'); } }, 'No gig this week'));
-      else s.foot.appendChild(btn('.btn.block', { testid: 'board-done', onclick: function () { close(s, 'cancel'); } }, 'Back to the garage'));
+      else s.foot.appendChild(btn('.btn.block', { testid: 'board-done', onclick: function () { close(s, 'cancel'); } }, 'Back to ' + ui.space(st)));
     },
     onShow: function () { dbg.open = true; sfx('tap'); },
     onClose: function (s) {
@@ -284,7 +311,7 @@
       var g = GG.career.pickListing(S(), l.id);
       if (!g) return;
       sfx('cash');
-      if (l.deal === 'exposure') ui.toast('Exposure! We are going to be SO exposed.', { who: 'Marcel' });
+      if (l.deal === 'exposure') { var fr = ui.roleOf('front', st); ui.toast(exposure(st, 'toast'), { who: fr ? ui.who(fr).short : bandShort(st) }); }
       close(s, 'book', g);
     });
   }

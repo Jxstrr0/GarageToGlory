@@ -12,13 +12,30 @@
   var draft = {};                  // new-career choices in progress: { slot, bandId }
   var storageWarned = false;
 
-  // Shown when content is missing a band (and for the genre card icons).
+  // The genre cards (labels + icons; names/spaces/cities only when content is missing a band, which then can't be picked).
+  // v0.9: all four bands are playable (content.bands[*].locked:false); a band missing from content shows 'Locked'.
   var GENRES = [
     { genre: 'metal', icon: '🤘', label: 'Metal', band: 'Hail Damage', space: "Your parents' garage", city: 'Saskatoon' },
-    { genre: 'punk', icon: '🧷', label: 'Punk', band: 'Frost Heave', space: 'A laundromat basement', city: '' },
-    { genre: 'rock', icon: '🎸', label: 'Rock', band: 'Gravel Kings', space: 'An empty strip-mall unit', city: '' },
-    { genre: 'country', icon: '🤠', label: 'Country', band: 'The Grid Road Ramblers', space: 'A Quonset on a farm', city: '' }
+    { genre: 'punk', icon: '🧷', label: 'Punk', band: 'Frost Heave', space: 'A laundromat basement', city: 'Regina' },
+    { genre: 'rock', icon: '🎸', label: 'Rock', band: 'Gravel Kings', space: 'An empty strip-mall unit', city: 'Edmonton' },
+    { genre: 'country', icon: '🤠', label: 'Country', band: 'The Grid Road Ramblers', space: 'A Quonset on a farm', city: 'Swift Current' }
   ];
+  function genreRow(genre) {
+    return GENRES.filter(function (x) { return x.genre === genre; })[0]
+      || { genre: genre, icon: ui.genreIcon(genre), label: ui.cap(genre || 'band'), band: 'The band', space: 'A rehearsal space', city: '' };
+  }
+  // The draft's band (the genre card picked it); null only if content lost it.
+  function draftBand() { return (GG.content.bands || {})[draft.bandId] || (draft.genre ? bandFor(draft.genre) : null); }
+  var SPACE_ICON = { garage: '🏠', laundromat: '🧺', stripmall: '🏬', quonset: '🌾' };
+  function spaceKindOf(band) { var K = GG.contracts.SPACE_KINDS || {}; return (band && K[band.space]) || 'garage'; }
+  // v0.9 (gap #5): a peek at the starting space on the genre card: the same 2D room art as the no-WebGL garage (00_shell
+  // v0.9 GENRES block), or a still from the render when it offers one (GG.render.garage.peek(kind) -> dataURL, optional).
+  function peek(kind, icon) {
+    var url = null;
+    try { var G = GG.render && GG.render.garage; url = G && typeof G.peek === 'function' ? G.peek(kind) : null; } catch (e) { url = null; }
+    return el('span.ico.peek.spx.sp-' + kind, { testid: 'peek-' + kind, data: { space: kind } },
+      url ? [el('img', { src: url, alt: '' }), el('b', icon)] : [el('i.door'), el('i.bulb'), el('i.stain'), el('b', icon)]);
+  }
   var FALLBACK_PRESETS = [
     { id: 'denim_tux', name: 'Denim Tuxedo', blurb: 'Formal. Ish.', kitColor: '#3b6fd8', look: { skin: '#e0b08a', hair: '#4a2f1b', shirt: '#3d5a8a', pants: '#2c4468' } },
     { id: 'toque_flannel', name: 'Toque & Flannel', blurb: 'Dressed for minus forty.', kitColor: '#c0392b', look: { skin: '#c68e62', hair: '#1c1c1c', shirt: '#a3342c', pants: '#2b2b33' } }
@@ -181,16 +198,16 @@
       var list = el('div.stack', { style: 'margin-top:18px' });
       GENRES.forEach(function (g) {
         var band = bandFor(g.genre);
-        var locked = band ? !!band.locked : g.genre !== 'metal';
+        var locked = !band || !!band.locked;   // v0.9: every band in content is playable; no content, no career
         var name = band ? band.name : g.band;
         var where = band ? (band.spaceName || g.space) + (band.city ? ', ' + band.city : '') : g.space + (g.city ? ', ' + g.city : '');
         list.appendChild(btn('.genre-card' + (locked ? '' : '.live'), {
-          testid: 'genre-' + g.genre, disabled: locked,
-          onclick: function () { draft.bandId = band ? band.id : 'hail_damage'; draft.genre = g.genre; ui.show('intro'); }
+          testid: 'genre-' + g.genre, disabled: locked, data: { band: band ? band.id : '' },
+          onclick: function () { if (!band) return; draft.bandId = band.id; draft.genre = band.genre || g.genre; ui.show('intro'); }
         }, [
-          el('span.ico', g.icon),
+          peek(spaceKindOf(band), g.icon),
           el('span.grow', [el('div.g', g.label), el('div.b', name), el('div.c', where)]),
-          locked ? el('span.tag', 'Coming in ' + ((band && band.comingIn) || 'v0.9')) : el('span.tag.amber', 'Playable')
+          locked ? el('span.tag', 'Locked') : el('span.tag.amber', 'Playable')
         ]));
       });
       ui.append(s.body, [backRow(s, 'Pick your poison', 'New career · slot ' + (draft.slot || '1')),
@@ -202,8 +219,8 @@
   ui.define('intro', {
     kind: 'full',
     build: function (s) {
-      var band = (GG.content.bands || {})[draft.bandId] || bandFor(draft.genre || 'metal');
-      var g = GENRES.filter(function (x) { return x.genre === (draft.genre || 'metal'); })[0];
+      var band = draftBand();
+      var g = genreRow((band && band.genre) || draft.genre);
       var name = band ? band.name : g.band;
       var home = (band && band.spaceName) || g.space;
       var city = (band && band.city) || g.city;
@@ -220,13 +237,14 @@
         backRow(s, name, g.label + (city ? ' · ' + city : '')),
         el('div.stack', { style: 'margin-top:16px' }, [
           band && band.blurb ? el('p', { style: 'font-size:16px' }, band.blurb) : null,
-          el('div.panel.warm.row', [el('span', { style: 'font-size:28px' }, '🏠'), el('div.grow', [el('div.caps', 'Home base'),
+          el('div.panel.warm.row', { testid: 'intro-home' }, [el('span', { style: 'font-size:28px' }, SPACE_ICON[spaceKindOf(band)] || '🏠'), el('div.grow', [el('div.caps', 'Home base'),
             el('div', { style: 'font-weight:800' }, home.charAt(0).toUpperCase() + home.slice(1) + (city ? ', ' + city : ''))])]),
           mates.children.length ? el('div.panel', [el('div.caps', { style: 'margin-bottom:4px' }, 'The band (plus you, on drums)'), mates]) : null
         ])
       ]);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () {   // v0.8.1: the logo picker first (5m)
-        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: draft.bandId || 'hail_damage', genre: draft.genre || 'metal', band: name, onDone: function () { ui.show('creator'); } });
+        if (!band) return;
+        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: band.id, genre: band.genre || draft.genre, band: name, onDone: function () { ui.show('creator'); } });
         else ui.show('creator');
       } }, "That's my band →"));
     }
@@ -267,12 +285,12 @@
         grid.appendChild(btn('.preset' + (on ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': on ? 'true' : 'false',
           onclick: function () { draft.presetId = p.id; draft.useCustom = false; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
       });
-      var genre = draft.genre || 'metal', carryN = GG.creator ? GG.creator.carry.count(genre) : 0;
+      var dband = draftBand(), genre = (dband && dband.genre) || draft.genre || 'metal', carryN = GG.creator ? GG.creator.carry.count(genre) : 0;
       if (draft.carry == null) draft.carry = carryN > 0;
       var customize = btn('.btn.block.cr-custom', { testid: 'btn-customize', disabled: !GG.creator || !ui.openLook, onclick: function () {
         var pre = list.filter(function (p) { return p.id === draft.presetId; })[0] || list[0], c = draft.useCustom && draft.custom;
-        var band = (GG.content.bands || {})[draft.bandId];
-        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, carry: !!draft.carry,
+        var band = draftBand();
+        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, bandId: band && band.id, carry: !!draft.carry,
           look: c ? c.look : pre.look, stageLook: c ? c.stageLook : null, kit: c ? c.kit : GG.creator.newKit(pre.kitColor),
           onDone: function (out) { draft.custom = out; draft.useCustom = true; var cr = ui.get('creator'); if (cr) cr.rerender(); } });
       } }, draft.custom && draft.useCustom ? '✂ Keep tweaking your look' : '✂ Customize: face, hair, ink, stage outfit, kit');
@@ -294,7 +312,7 @@
         create.disabled = true;
         var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
         if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
-        GG.main.newCareer({ slot: draft.slot || '1', bandId: draft.bandId || 'hail_damage',
+        GG.main.newCareer({ slot: draft.slot || '1', bandId: (dband && dband.id) || draft.bandId,
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
           careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
         ui.closeAll();
@@ -320,27 +338,29 @@
   });
 
   /* ---- New career: cold open ------------------------------------------------------------------------------ */
+  // v0.9: the panels are band.coldOpen; the weather over them is band.coldOpenFx ('hail' | 'snow' | 'neon' | 'dust',
+  // CSS in the 00_shell v0.9 GENRES block); the last button walks into the band's own space ({space}).
   var COLD_FALLBACK = [
-    'Saskatoon. A Tuesday in July. The sky turns the colour of a bruise.',
-    "Hail the size of golf balls totals your dad's truck in about four minutes.",
-    'The insurance adjuster writes two words on the claim form: HAIL DAMAGE.',
-    "That night, in your parents' garage, you start a band. You already have a name."
+    '{city}. A band needs a drummer. It has found one.',
+    'You bring the kit. Somebody brings an extension cord. Nobody brings a plan.',
+    '{band} is born in {space}. The neighbours have been warned.'
   ];
+  var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
     kind: 'full',
     build: function (s, d) {
-      var band = GG.state && (GG.content.bands || {})[GG.state.bandId];
+      var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
       var i = U.clamp(d.i || 0, 0, panels.length - 1), last = i === panels.length - 1;
       function finish() { ui.close(s.id); GG.main.enterGarage(); }
       function next() { if (last) return finish(); if (GG.audio) GG.audio.sfx('whoosh'); s.rerender({ i: i + 1 }); }
       var dots = el('div.dots', panels.map(function (_, k) { return el('i' + (k === i ? '.on' : '')); }));
-      s.body.appendChild(el('div.cold', { onclick: next }, [
-        el('div.hail'),
-        el('div.cold-top', [el('span.caps', (band ? band.name : 'Hail Damage') + ' · ' + (i + 1) + '/' + panels.length),
+      s.body.appendChild(el('div.cold.fx-' + fx, { onclick: next, testid: 'coldopen', data: { fx: fx } }, [
+        el('div.' + fx + '.cold-fx', { testid: 'coldopen-fx' }),
+        el('div.cold-top', [el('span.caps', (band ? band.name : 'The band') + ' · ' + (i + 1) + '/' + panels.length),
           btn('.btn.ghost.small', { testid: 'btn-coldopen-skip', onclick: function (e) { e.stopPropagation(); finish(); } }, 'Skip')]),
-        el('div.cold-text', GG.career && GG.state ? GG.career.fillText(GG.state, panels[i]) : panels[i]),
-        el('div.cold-foot', [dots, btn('.btn.primary.big.block', { testid: 'btn-coldopen-next' }, last ? 'Into the garage →' : 'Next')])
+        el('div.cold-text', ui.fill(panels[i])),
+        el('div.cold-foot', [dots, btn('.btn.primary.big.block', { testid: 'btn-coldopen-next' }, last ? 'Into ' + ui.space() + ' →' : 'Next')])
       ]));
     }
   });

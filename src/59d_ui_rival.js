@@ -18,16 +18,23 @@
 //   scene-news, scene-showdowns, scene-lineup, scene-albums · sd-card, btn-sd-enter, btn-sd-pass, btn-sd-ok, btn-sd-board ·
 //   rival-set, rs-score, rs-song-<i>, rs-banner, btn-rs-skip, btn-rs-go · rival-verdict, rv-verdict-head, btn-verdict-done ·
 //   wrap-rival, wrap-crack, board-stolen, board-defended, board-festival, card-rival, gig-target, end-final.
+// v0.9 (GENRES): every rival (Tundra Wraith, Mall Rats, Chartbusters, Buckle & Boot). Their copy comes from the cast
+//   (content rivalry.cast[rid]: ui { heatLabels[5], vehicleLine, emptyNews, emptyAlbums, pass, enter, finalWin, finalLose,
+//   solo, finish, crack { breakup|rebrand|opener: text | [head, text] } }, banter { open, mid, final }, style?, actions?,
+//   drummer?, faceStyle?), else Tundra Wraith's v0.6 lines (TW_UI, only for Tundra Wraith) or neutral {rival} lines.
+//   ui.who resolves any cast id and 'rival_frontman' / 'wraith_frontman'; faces are drawn per rival (corpse paint only when
+//   the cast says so: .rv-face.corpse|cap|scarf|hat|plain, CSS in 00_shell); the spectator set plays the rival's genre
+//   (and style, e.g. Chartbusters' 'ballad'), with one silhouette per member; Mall Rats kickflip once a set.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts;
   var WPY = C.WEEKS_PER_YEAR;
   function S() { return GG.state; }
   function RV() { return GG.rival; }
   function on(st) { st = st || S(); return !!(RV() && st && st.rival); }
-  function fill(t, vars) {
+  function fill(t, vars) {   // vars first ({city} {venue} {rival} {name} {soloist}...), then the career + v0.9 tokens (ui.fill)
     var st = S(); if (!t) return '';
-    t = String(t).replace(/\{(city|venue|rival|name)\}/g, function (a, k) { return vars && vars[k] != null ? String(vars[k]) : k === 'rival' && st && RV() ? RV().name(st) : a; });
-    return st && GG.career && GG.career.fillText ? GG.career.fillText(st, t) : t;
+    t = String(t).replace(/\{(\w+)\}/g, function (a, k) { return vars && vars[k] != null ? String(vars[k]) : k === 'rival' && st && RV() ? RV().name(st) : a; });
+    return st ? ui.fill(t, st) : t;
   }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function views() { return ui.showdownViews != null ? !!ui.showdownViews : !ui.gigAutoplay; }
@@ -42,7 +49,57 @@
   function icon(kind) { return texts(kind).icon || '⚔️'; }
 
   /* ---- Heat, faces, people ------------------------------------------------------------------------------------ */
-  function heatLabel(h) { return h < 20 ? 'Polite' : h < 40 ? 'Frosty' : h < 60 ? 'Heated' : h < 80 ? 'Boiling (politely)' : 'Blood feud, with fruit baskets'; }
+  // Tundra Wraith's v0.6 copy (the default for their cast until content carries it) and the neutral set for any rival.
+  var TW_UI = {
+    heatLabels: ['Polite', 'Frosty', 'Heated', 'Boiling (politely)', 'Blood feud, with fruit baskets'],
+    emptyNews: 'Nothing yet. Gord is drafting a press release about how excited he is to meet you.',
+    emptyAlbums: 'No records yet. They are "finalizing the liner-note footnotes".',
+    pass: 'You sit this one out. {rival} send a card: "Next time, buddy!"',
+    finalWin: 'The Sad Dome is yours. Gord already sent a fruit basket the size of a Zamboni.',
+    finalLose: 'Gord hugs you in the loading bay. "You were great, buddy. Really." He means it. That is the worst part.',
+    solo: 'Sheila "Hexenfrost" Wiebe: a solo. She apologizes to her amp after.',
+    finish: '{rival} finish. Gord thanks the sound tech by name. Your turn.',
+    crack: { breakup: ['They broke up.', 'An indefinite hiatus "to focus on tax season". Gord called you personally. He was crying.'],
+      rebrand: ['They rebranded.', 'Same four accountants, same minivan, new name: {rival}. There is a forty-slide deck.'],
+      opener: ['They want to open for you.', 'Gord ran the numbers: you are the bigger draw. They will bring the veggie tray.'] },
+    banter: {
+      open: ['Gord: "Good evening, {city}! Please note the fire exits. Now: ETERNAL WINTER."', 'Gord: "Hello {city}! We are {rival}. Hydrate, buddies."'],
+      mid: ['Gord: "Give it up for {band}, eh? Real good kids."', 'Sheila apologizes to her amp for the last song.', 'Darryl hands the front row tax-tip pamphlets.',
+        'Lorne checks the metronome app. 3% fast. Unacceptable.', 'Gord: "This one is about the wind chill. Dress in layers."'],
+      final: ['Gord: "Calgary! We brought a veggie tray for all nineteen thousand of you."'] }
+  };
+  var ANY_UI = {
+    heatLabels: ['Polite', 'Frosty', 'Heated', 'Boiling', 'Blood feud'],
+    emptyNews: 'Nothing yet. {rival} are "working on something big".',
+    emptyAlbums: 'No records yet. {rival} are "in the studio". Allegedly.',
+    pass: 'You sit this one out. {rival} post about it anyway.',
+    finalWin: 'The Sad Dome is yours. {rival} open for you. Forever.',
+    finalLose: '{rivalFront} waves at you from the headliner’s side of the stage. You open. Forever.',
+    solo: '{soloist}: a solo.',
+    finish: '{rival} finish. Your turn.',
+    crack: { breakup: ['They broke up.', '{rival} split "to pursue other projects". Their fans need a new band.'],
+      rebrand: ['They rebranded.', 'Same people, new name: {rival}. The press release has a font.'],
+      opener: ['They want to open for you.', 'You are the bigger draw now. {rival} will open. Politely.'] },
+    banter: { open: ['{rivalFront}: "Hello {city}! We are {rival}!"'], mid: ['{rivalFront}: "Give it up for {band}! Real nice kids."', '{rivalFront} points at the crowd. The crowd points back.'],
+      final: ['{rivalFront}: "Calgary! This one is for everybody in the cheap seats."'] }
+  };
+  function castOf(st) { try { return RV() && st ? RV().cast(st) : null; } catch (e) { return null; } }
+  function rid(st) { var rv = st && on(st) ? RV().get(st) : null, b = st ? GG.career.band(st) : null; return (rv && rv.id) || (b && b.rival) || null; }
+  // One piece of the rival's UI copy: cast.ui[key] (or cast[key] for banter), else Tundra Wraith's default, else neutral.
+  function copy(st, key) {
+    var c = castOf(st), u = c && c.ui, v = u && u[key] != null ? u[key] : key === 'banter' && c && c.banter ? c.banter : null;
+    if (v != null) return v;
+    return (rid(st) === 'tundra_wraith' ? TW_UI : ANY_UI)[key];
+  }
+  // Tokens the rival copy uses on top of ui.fill: {soloist} = the rival's soloist, full name.
+  function rivalSoloist(st) {
+    var line = on(st) ? RV().lineup(st) : [], m = line.filter(function (x) { return /lead|guitar|fiddle/i.test(x.role || ''); })[0] || line[1] || line[0];
+    return m ? (m.fullName || m.name) : 'Their guitarist';
+  }
+  function heatLabel(h) {
+    var L = copy(S(), 'heatLabels'); L = Array.isArray(L) && L.length >= 5 ? L : ANY_UI.heatLabels;
+    return L[h < 20 ? 0 : h < 40 ? 1 : h < 60 ? 2 : h < 80 ? 3 : 4];
+  }
   function heatColor(h) { return h < 20 ? '#6fb3ff' : h < 40 ? '#9ec8ff' : h < 60 ? '#ffb347' : h < 80 ? '#ff7a3c' : '#ff4a4a'; }
   function heatMeter(h, delta, testid) {
     return el('div.rv-heat', { testid: testid || null }, [
@@ -50,20 +107,36 @@
         + (delta ? ' ' + (delta > 0 ? '▲' : '▼') + Math.abs(Math.round(delta)) : ''))]),
       el('div.rv-heat-bar', el('i', { style: { width: U.clamp(h, 0, 100) + '%' } }))]);
   }
-  // A little corpse-paint face (white, black sockets): the rival's avatar everywhere.
-  function face(size, label) { return el('div.rv-face' + (size ? '.' + size : ''), { 'aria-hidden': 'true' }, [el('i'), el('i'), label ? el('span', label) : null]); }
+  // The rival's avatar: a little face per rival style (Tundra Wraith: corpse paint; Mall Rats: a sponsor cap; Chartbusters:
+  // aviators + the scarf; Buckle & Boot: a cowboy hat). cast.faceStyle overrides; a member without corpse paint in a
+  // corpse-paint band (none yet) gets a plain face.
+  var FACE_STYLE = { tundra_wraith: 'corpse', mall_rats: 'cap', chartbusters: 'scarf', buckle_and_boot: 'hat' };
+  function faceStyle(st, m) {
+    var c = castOf(st), s = (c && c.faceStyle) || FACE_STYLE[rid(st)] || 'plain';
+    if (m && m.corpsePaint) return 'corpse';
+    if (m && s === 'corpse' && m.corpsePaint === false) return 'plain';
+    return s;
+  }
+  function face(size, label, m) { return el('div.rv-face.' + faceStyle(S(), m) + (size ? '.' + size : ''), { 'aria-hidden': 'true' }, [el('i'), el('i'), label ? el('span', label) : null]); }
   function castMember(st, id) {
-    var c = RV() && st ? RV().cast(st) : null;
+    var c = castOf(st);
     return c && (c.members || []).filter(function (m) { return m.id === id; })[0] || null;
   }
-  // ui.who knows the rival's people: 'wraith_frontman' (the Monday cards' speaker) is Gord, 'tw_*' are the accountants.
+  // ui.who knows the rival's people: 'rival_frontman' / 'wraith_frontman' (the Monday cards' speaker) is the frontman, and
+  // any cast member id (tw_*, mr_*, cb_*, bb_*, ...) resolves with the rival's name, the member's role and day job.
   var baseWho = ui.who;
   ui.who = function (id, state) {
     var st = state || S();
-    if (st && on(st) && (id === 'wraith_frontman' || /^tw_/.test(String(id || '')))) {
-      var c = RV().cast(st), m = castMember(st, id === 'wraith_frontman' ? c && c.frontman : id);
-      if (m) return { id: id, name: m.fullName.split(' ')[0] + ' "' + m.nick + '" ' + m.fullName.split(' ').slice(1).join(' '), short: m.name, nick: m.nick,
-        color: '#ecebe6', text: '#ecebe6', full: m.fullName, role: RV().name(st) + ' · ' + m.role + (m.dayJob ? ' · ' + m.dayJob.replace(/\s*\(.*\)$/, '').toLowerCase() : '') };
+    if (st && id && on(st)) {
+      var c = castOf(st), fm = id === 'rival_frontman' || id === 'wraith_frontman', m = c ? castMember(st, fm ? c.frontman : id) : null;
+      if (m) {
+        var full = m.fullName || m.name, parts = String(full).split(' ');
+        var col = m.corpsePaint ? '#ecebe6' : (m.stageShirt && m.stageShirt !== '#101014' ? m.stageShirt : m.look && m.look.shirt) || '#c9a0ff';
+        var who = { id: id, name: m.nick ? parts[0] + ' "' + m.nick + '" ' + parts.slice(1).join(' ') : full, short: m.name || parts[0], nick: m.nick || '',
+          color: col, full: full, role: RV().name(st) + ' · ' + (m.role || '') + (m.dayJob ? ' · ' + m.dayJob.replace(/\s*\(.*\)$/, '').toLowerCase() : '') };
+        who.text = m.corpsePaint ? '#ecebe6' : ui.readable ? ui.readable(who.color) : who.color;
+        return who;
+      }
     }
     return baseWho(id, state);
   };
@@ -97,7 +170,7 @@
       el('div.stat-grid', [el('div', [el('span.caps', 'Fans'), el('b', U.fmtNum(rv.fans))]), el('div', [el('span.caps', 'Buzz'), el('b', String(Math.round(rv.buzz)))]),
         el('div', [el('span.caps', 'Set'), el('b', '~' + R.skill(st))])]),
       record(st),
-      c.minivan ? el('p.tiny.dim', { style: 'margin:8px 0 0' }, 'Gord drives ' + c.minivan + '.') : null]));
+      vehicleLine(st, c) ? el('p.tiny.dim', { testid: 'scene-vehicle', style: 'margin:8px 0 0' }, vehicleLine(st, c)) : null]));
     out.push(el('div.panel', { style: 'margin-top:10px' }, heatMeter(R.heat(st), 0, 'scene-heat')));
     out.push(el('div', { style: 'margin-top:10px' }, nextPanel(st)));
     var board = R.leaderboard(st, 10);
@@ -111,7 +184,7 @@
     var news = (rv.news || []).slice(-8).reverse();
     out.push(sec('Scene news', 'scene-news', [el('div.panel.rv-news', news.length ? news.map(function (n) {
       return el('div.rv-news-row', [el('span.tiny.dim', wk(n.week)), el('div', fill(n.text))]);
-    }) : el('p.small.dim', 'Nothing yet. Gord is drafting a press release about how excited he is to meet you.'))]));
+    }) : el('p.small.dim', fill(copy(st, 'emptyNews'))))]));
     var sds = (st.showdowns || []).slice(-6).reverse();
     if (sds.length) out.push(sec('Showdowns', 'scene-showdowns', [el('div.panel', sds.map(function (x) {
       return el('div.rv-sd', [el('span.wl' + (x.won ? '.w' : '.l'), x.won ? 'W' : 'L'), el('div.grow', [el('b', icon(x.kind) + ' ' + title(x.kind)),
@@ -119,7 +192,7 @@
     }))]));
     out.push(sec('Lineup', 'scene-lineup', [el('div.panel', R.lineup(st).map(function (m) {
       var cm = castMember(st, m.id);
-      return el('div.rv-mem', [face('sm'), el('div.grow', [el('b', (m.fullName || m.name) + (m.nick ? ' "' + m.nick + '"' : '')),
+      return el('div.rv-mem', [face('sm', null, m), el('div.grow', [el('b', (m.fullName || m.name) + (m.nick ? ' "' + m.nick + '"' : '')),
         el('div.tiny.dim', [m.role, cm && cm.dayJob].filter(Boolean).join(' · ')),
         cm && cm.gags && cm.gags.length ? el('div.tiny', { style: 'margin-top:2px' }, cm.gags[(st.totalWeek + m.id.length) % cm.gags.length]) : null]),
         m.defector ? el('span.tag.rv-crack', 'ex-yours') : null]);
@@ -128,9 +201,22 @@
     out.push(sec('Their records', 'scene-albums', [el('div.panel', albums.length ? albums.map(function (a) {
       return el('div.rv-alb', [el('span', '💿'), el('div.grow', [el('b', a.title), el('div.tiny.dim', wk(a.released) + (a.critic ? ' · critics ' + a.critic : ''))]),
         el('span.small', a.peak ? '#' + a.peak : '—')]);
-    }) : el('p.small.dim', 'No records yet. They are "finalizing the liner-note footnotes".'))]));
+    }) : el('p.small.dim', fill(copy(st, 'emptyAlbums'))))]));
     return el('div', { testid: 'scene-panel' }, out);
   };
+  function vehicleLine(st, c) {
+    var u = c && c.ui && c.ui.vehicleLine;
+    if (u) return fill(u);
+    var v = c && (c.minivan || c.vehicle);
+    return v ? fill('{rivalFront} drives ' + v + '.') : null;
+  }
+  // v0.9: the Sad Dome is in Calgary: the drive is from your home (Regina ~760 km, Edmonton ~300, Swift Current ~390).
+  function sadDomeLine(st) {
+    var W = GG.world, km = null;
+    try { km = W && W.km ? W.km(W.home(st), 'calgary') : null; } catch (e) { km = null; }
+    var d = ui.driverOf(st), who = d.you ? 'You have the keys.' : d.name + (ui.isSilent(d.id, st) ? ' is already in the van.' : ' is warming up the van.');
+    return 'Booked for Saturday: ' + (km ? U.fmtNum(km) + ' km to Calgary. ' : 'Calgary. ') + who;
+  }
 
   /* ======================================================================================================
      Monday: the showdown announcement
@@ -175,17 +261,17 @@
       var done = kind === 'stolenSlot' ? thisWeeks(st, 'stolenSlot') : null;
       if (done) body.push(el('div.quote' + (done.won ? '.rv-good' : ''), fill((done.lines || [])[0] || (done.won ? 'The booker kept you.' : 'They took it.'))));
       if (kind === 'festival') body.push(el('p.small.dim', 'It\'s on the gig board this week. Book it with a Book block.'));
-      if (kind === 'final') body.push(el('p.small.dim', 'Booked for Saturday: 620 km of Trans-Canada to Calgary. Kenji is already in the van.'));
+      if (kind === 'final') body.push(el('p.small.dim', { testid: 'sd-final-drive' }, sadDomeLine(st)));
       ui.append(s.body, body);
       function close() { ui.close(s.id); GG.main.sync(); }
       if (kind === 'botb' && p && p.status === 'offered' && st.offer && st.offer.showdown) {
         ui.append(s.foot, el('div.row', [
-          btn('.btn.grow', { testid: 'btn-sd-pass', onclick: function () { R.pass(S()); ui.toast('You sit this one out. ' + rv.name + ' send a card: "Next time, buddy!"'); close(); } }, set.pass || 'Sit this one out'),
-          btn('.btn.primary.grow', { testid: 'btn-sd-enter', onclick: function () { if (R.enter(S())) { sfx('card'); ui.toast('Entered. The whiteboard says: BATTLE. Marcel has underlined it four times.'); } close(); } }, set.enter || 'Enter the battle')]));
+          btn('.btn.grow', { testid: 'btn-sd-pass', onclick: function () { R.pass(S()); ui.toast(fill(copy(st, 'pass'))); close(); } }, set.pass || 'Sit this one out'),
+          btn('.btn.primary.grow', { testid: 'btn-sd-enter', onclick: function () { if (R.enter(S())) { sfx('card'); ui.toast(fill('Entered. The whiteboard says: BATTLE. {front} has underlined it four times.')); } close(); } }, set.enter || 'Enter the battle')]));
         return;
       }
       if (kind === 'festival' && ui.openBoard) s.foot.appendChild(btn('.btn.block', { testid: 'btn-sd-board', onclick: function () { close(); ui.openBoard({ mode: 'view' }); } }, 'See the gig board'));
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-sd-ok', onclick: close }, kind === 'final' ? 'Load the minivan. Er, the Hearse.' : 'Noted'));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-sd-ok', onclick: close }, kind === 'final' ? fill('Load {van}') : 'Noted'));
     },
     onShow: function () { sfx('card'); }
   });
@@ -215,27 +301,28 @@
   /* ======================================================================================================
      The rival's set (spectator view)
      ====================================================================================================== */
-  var BANTER = {
-    open: ['Gord: "Good evening, {city}! Please note the fire exits. Now: ETERNAL WINTER."', 'Gord: "Hello {city}! We are {rival}. Hydrate, buddies."'],
-    mid: ['Gord: "Give it up for {band}, eh? Real good kids."', 'Sheila apologizes to her amp for the last song.', 'Darryl hands the front row tax-tip pamphlets.',
-      'Lorne checks the metronome app. 3% fast. Unacceptable.', 'Gord: "This one is about the wind chill. Dress in layers."'],
-    final: ['Gord: "Calgary! We brought a veggie tray for all nineteen thousand of you."']
-  };
+  function banterPool(st, key) {
+    var b = copy(st, 'banter') || {}, a = Array.isArray(b[key]) && b[key].length ? b[key] : (rid(st) === 'tundra_wraith' ? TW_UI : ANY_UI).banter[key];
+    return a && a.length ? a : ANY_UI.banter[key];
+  }
   function pick(a, i) { return a[Math.abs(i) % a.length]; }
+  function rivalGenre(st) { var rv = RV().get(st), d = GG.content.rivals && GG.content.rivals[rv.id]; return rv.genre || (d && d.genre) || 'metal'; }
   function rivalStage(st, gig) {
-    var R = RV(), rv = R.get(st), line = R.lineup(st), drum = line.filter(function (m) { return /drum/i.test(m.role || ''); })[0];
+    var R = RV(), rv = R.get(st), line = R.lineup(st), drum = line.filter(function (m) { return /drum/i.test(m.role || ''); })[0], c = castOf(st) || {};
+    var hired = !drum && c.drummer ? c.drummer : null;   // v0.9: Buckle & Boot's session guy (never the player)
     return { venue: Object.assign({}, GG.gig.venue(gig.venueId) || {}, gig), crowd: GG.gig.expectCrowd ? GG.gig.expectCrowd(st, gig) : gig.capacity, capacity: gig.capacity,
-      genre: rv.genre || 'metal', flags: {}, player: st.player, rival: true, view: 'spectator', banner: rv.name, sub: rv.city,
+      genre: rivalGenre(st), flags: {}, player: st.player, rival: true, rivalId: rv.id, view: 'spectator', banner: rv.name, sub: rv.city,
       members: line.filter(function (m) { return m !== drum; }).map(function (m) {
-        return { id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint !== false, stageShirt: m.stageShirt };
+        return { id: m.id, name: m.name, role: m.role, mood: 85, look: m.look, corpsePaint: m.corpsePaint === true, stageShirt: m.stageShirt };   // v0.9: paint only when the cast says so
       }),
-      drummer: drum ? { id: drum.id, look: drum.look, corpsePaint: drum.corpsePaint !== false, stageShirt: drum.stageShirt } : null };
+      drummer: drum ? { id: drum.id, look: drum.look, corpsePaint: drum.corpsePaint === true, stageShirt: drum.stageShirt }
+        : hired ? { id: hired.id || 'session_drummer', name: hired.name || 'the session guy', look: hired.look || null, corpsePaint: false, stageShirt: hired.stageShirt, hired: true } : null };
   }
   function stageApi() { var R = GG.render; return GG.main && GG.main.renderOk && R && R.available && R.stage && typeof R.stage.setup === 'function' ? R.stage : null; }
   var V = null;   // the spectator session
   function songPattern(song, i) {
     try {
-      var p = GG.songs.generate('metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});
+      var p = GG.songs.generate(V.genre || 'metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});   // v0.9: the rival's genre
       if (p) p.bpm = U.clamp(song.bpm || p.bpm, 60, 240);
       return p;
     } catch (e) { return null; }
@@ -244,8 +331,11 @@
     var st = S(); if (!st || !on(st)) { next(); return; }
     var kind = gig.showdown && gig.showdown.kind || 'botb', set = RV().showdown(st, kind);
     if (V) stopWatch();
+    var c0 = castOf(st) || {}, rid0 = rid(st);
     V = { gig: gig, set: set, kind: kind, next: next, i: -1, t: 0, songT: 0, ms: ui.rivalSongMs || 5200, raf: 0, last: 0, step: -1, handle: null,
-      scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false };
+      scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false,
+      genre: rivalGenre(st), style: c0.style || (rid0 === 'chartbusters' ? 'ballad' : null), singer: c0.frontman || null, rid: rid0,
+      actions: (c0.actions || (rid0 === 'mall_rats' ? ['kickflip'] : [])).filter(function (a) { return (C.RIVAL_ACTIONS || []).indexOf(a) >= 0; }), acted: false };
     ui.show('rival-set', {});
     var api = stageApi();
     if (api) {
@@ -280,9 +370,13 @@
     V.i = i; V.songT = 0; V.moment = false; V.step = -1;
     var song = V.set.setlist[i];
     V.pattern = songPattern(song, i);
-    if (GG.audio && GG.audio.play && V.pattern) { try { V.handle = GG.audio.play(V.pattern, { genre: 'metal', loop: true }); } catch (e) { V.handle = null; } }
-    var st = S(), pool = i === 0 ? (V.kind === 'final' ? BANTER.final : BANTER.open) : BANTER.mid;
-    banner(fill(pick(pool, st.totalWeek + i * 3), vars()));
+    if (GG.audio && GG.audio.play && V.pattern) {   // v0.9: their genre (+ style, e.g. the power ballad) and their singer (the audio's vocal voice)
+      var ao = { genre: V.genre, loop: true, singer: V.singer, band: V.rid };
+      if (V.style) ao.style = V.style;
+      try { V.handle = GG.audio.play(V.pattern, ao); } catch (e) { V.handle = null; }
+    }
+    var st = S(), pool = banterPool(st, i === 0 ? (V.kind === 'final' ? 'final' : 'open') : 'mid');
+    banner(ui.cap(fill(pick(pool, st.totalWeek + i * 3), vars())));
   }
   function stopAudio() { if (V && V.handle) { try { if (V.handle.playing) V.handle.stop(); } catch (e) { /* ignore */ } V.handle = null; } }
   function stopWatch() { if (!V) return; stopAudio(); if (V.raf) cancelAnimationFrame(V.raf); clearTimeout(V.bannerT); V.raf = 0; document.removeEventListener('visibilitychange', onVisible); }
@@ -303,7 +397,12 @@
         }
       }
       if (!V.moment && u > 0.5) { V.moment = true; api.moment(song.score >= 55 ? 'lighters' : 'drinks'); }   // no pits: they'd run through the riser camera
-      if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner('Sheila "Hexenfrost" Wiebe: a solo. She apologizes to her amp after.'); }
+      if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner(fill(copy(S(), 'solo'), { soloist: rivalSoloist(S()) })); }
+      if (V.actions.length && !V.acted && V.i === 0 && u > 0.55) {   // v0.9 (§4.4): Mall Rats' sponsor-mandated kickflip, once a set
+        V.acted = true;
+        try { api.bandAction(V.singer, V.actions[0]); } catch (e) { /* the stage may not know it yet */ }
+        banner(ui.cap(fill('{rivalFront} kickflips. The sponsor is watching.')));
+      }
     }
     updateScores();
     if (V.songT >= V.ms) {
@@ -335,7 +434,7 @@
     updateScores();
     if (skipped) { goYourSet(); return; }
     render();
-    banner(fill('{rival} finish. Gord thanks the sound tech by name. Your turn.', vars()));
+    banner(fill(copy(S(), 'finish'), vars()));
   }
   function goYourSet() {
     if (!V) return;
@@ -350,7 +449,9 @@
     build: function (s) {
       if (!V) return;
       var set = V.set, d = V.dom = { rows: [] }, st = S();
-      d.back = el('div.rs-back', [el('div.rs-sil', [el('i'), el('i'), el('i'), el('i')])]);
+      var sil = set.rival.members || [], paint = sil.filter(function (m) { return m.corpsePaint; }).length * 2 > sil.length;   // v0.9: one per member, paint only if they wear it
+      d.back = el('div.rs-back', [el('div.rs-sil.' + (paint ? 'corpse' : faceStyle(st)), { testid: 'rs-sil', data: { n: String(sil.length) } },
+        Array.apply(null, Array(Math.max(1, Math.min(6, sil.length)))).map(function () { return el('i'); }))]);
       d.back.hidden = !!V.stage;
       d.score = el('b', { testid: 'rs-score' }, '0');
       d.bar = el('div.rs-bar', [ui.rivalLogo ? ui.rivalLogo(set.rival.id, set.rival.name, 44, { badge: 'round', testid: 'rs-logo' }) : null, el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
@@ -419,7 +520,7 @@
         el('div.rv-chips', chips),
         el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),
         rv ? el('div.panel', { style: 'margin-top:10px' }, [record(st), el('div', { style: 'margin-top:8px' }, heatMeter(rv.heat))]) : null,
-        fin ? el('p.center.rv-forever', sd.won ? 'The Sad Dome is yours. Gord already sent a fruit basket the size of a Zamboni.' : 'Gord hugs you in the loading bay. "You were great, buddy. Really." He means it. That is the worst part.') : null
+        fin ? el('p.center.rv-forever', ui.cap(fill(copy(st, sd.won ? 'finalWin' : 'finalLose')))) : null
       ]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-verdict-done', onclick: function () { var cb = d.done; ui.close(s.id); if (cb) cb(); } }, 'Wrap up the week'));
     }
@@ -428,15 +529,16 @@
   /* ======================================================================================================
      Wrap, end
      ====================================================================================================== */
-  var CRACK = { breakup: ['They broke up.', 'An indefinite hiatus "to focus on tax season". Gord called you personally. He was crying.'],
-    rebrand: ['They rebranded.', 'Same four accountants, same minivan, new name: {rival}. There is a forty-slide deck.'],
-    opener: ['They want to open for you.', 'Gord ran the numbers: you are the bigger draw. They will bring the veggie tray.'] };
+  function crackText(st, kind) {
+    var C0 = copy(st, 'crack') || {}, v = C0[kind], d = (rid(st) === 'tundra_wraith' ? TW_UI : ANY_UI).crack[kind] || ['They cracked.', ''];
+    return Array.isArray(v) ? v : typeof v === 'string' ? [d[0], v] : d;
+  }
   ui.rivalWrap = function (w) {
     var st = S(), x = w && w.rival;
     if (!x || !on(st)) return [];
     var out = [], sds = x.showdowns || [];
     if (x.cracked) {
-      var cr = CRACK[x.cracked] || ['They cracked.', ''];
+      var cr = crackText(st, x.cracked);
       out.push(el('div.panel.rv-crackpanel', { testid: 'wrap-crack' }, [el('div.row', [face('lg'), el('div.grow', [el('div.caps', RV().get(st).formerName || RV().name(st)),
         el('div.display.rv-cr', cr[0]), el('div.small', fill(cr[1]))])])]));
     }

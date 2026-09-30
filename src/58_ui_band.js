@@ -10,7 +10,7 @@
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
   function Dr() { return GG.drama; }
-  function fill(t) { return t && GG.career && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : (t || ''); }
   function slug(r) { return String(r).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
   function pct(v) { return Math.round((v || 0) * 100) + '%'; }
   function first(n) { return String(n || '').split(' ')[0]; }
@@ -113,10 +113,16 @@
     } }, 'Hire a fill-in (' + U.fmtMoney(E.fillInCost) + ' a gig)'));
     return el('div.hole-card', { testid: 'hole-' + sl }, kids);
   }
+  // v0.9: a member who defected gets the rival's own line (content rivalry.cast[rid].defector.line), else a neutral one.
+  function defectorLine(st) {
+    var c = null; try { c = GG.rival && GG.rival.cast ? GG.rival.cast(st) : null; } catch (e) { c = null; }
+    if (c && c.defector && c.defector.line) return c.defector.line;
+    var b = GG.career.band(st), rid = b && b.rival;
+    return rid === 'tundra_wraith' ? 'Joined {rival}. Sends a polite card at Christmas.' : 'Joined {rival}. Their new headshot is everywhere.';
+  }
   function goneCard(st, m) {
     var x = m.exit || {}, dd = GG.content.drama && GG.content.drama.members && GG.content.drama.members[m.id], who = ui.who(m.id);
-    var rv = GG.content.rivals && GG.career.band(st) && GG.content.rivals[GG.career.band(st).rival];
-    var text = x.storyline === 'rival' ? 'Joined ' + (rv ? rv.name : 'your rival') + '. Sends a polite card at Christmas.'
+    var text = x.storyline === 'rival' ? defectorLine(st)
       : (dd && dd.exit && dd.exit.status) || 'Gone. No forwarding address.';
     var since = x.since ? ' · gone since week ' + ((x.since - 1) % GG.contracts.WEEKS_PER_YEAR + 1) + ', year ' + (Math.floor((x.since - 1) / GG.contracts.WEEKS_PER_YEAR) + 1) : '';
     return el('div.gone-card', { testid: 'gone-' + m.id }, [el('div.row', [ui.avatar(who, 'sm'), el('div.grow', [
@@ -152,10 +158,14 @@
         GG.main.sync();
         ui.close(s.id);
         if (ui.isOpen('laptop')) ui.show('laptop', { tab: 'band' });
-        ui.toast(first(m.name) + ' is in. Welcome to the garage.', { who: 'Hail to the new ' + m.role, kind: 'good' });
+        var st2 = S();
+        ui.toast(first(m.name) + ' is in. Welcome to ' + ui.space(st2) + '.', { who: (st2 && st2.bandId === 'hail_damage' ? 'Hail to the new ' : 'Welcome, new ') + m.role, kind: 'good' });
       } }, 'Hire ' + first(c.name))
     ]);
   }
+  // v0.9: the ad sells the band's own room (content lines.byBand[bandId].recruitAd overrides).
+  var AD_PERKS = { garage: 'Garage. Snacks. Sometimes heat.', laundromat: 'Laundromat basement. Free dryer sheets. Always warm.',
+    stripmall: 'Strip-mall unit. Free parking. Loud neighbours (vacuums).', quonset: 'Quonset. Mind the combine. Bring a hat.' };
   ui.define('recruit', {
     kind: 'sheet', tall: true,
     build: function (s) {
@@ -163,9 +173,9 @@
       s.setTitle('Kijiji + the corkboard', ad ? 'WANTED: ' + String(ad.role).toUpperCase() + ' · POST #' + ad.posts : 'NO AD POSTED');
       if (!ad) { s.body.appendChild(el('p.dim', 'No ad up right now.')); }
       else {
-        var genre = st.genre || 'metal';
-        s.body.appendChild(el('div.rc-ad', "'" + genre.charAt(0).toUpperCase() + genre.slice(1) + ' band seeks ' + ad.role + '. Garage. Snacks. Sometimes heat. No drama (lol).' +
-          "' Three replies came in:"));
+        var genre = st.genre || 'metal', ra = ui.bandLines('recruitAd', st);
+        s.body.appendChild(el('div.rc-ad', { testid: 'recruit-ad' }, "'" + genre.charAt(0).toUpperCase() + genre.slice(1) + ' band seeks ' + ad.role + '. ' +
+          fill((Array.isArray(ra) ? ra[0] : ra) || AD_PERKS[ui.spaceKind(st)] || AD_PERKS.garage) + ' No drama (lol).' + "' Three replies came in:"));
         ad.candidates.forEach(function (c, i) { s.body.appendChild(candidateCard(st, c, i, s)); });
       }
       var E = D.cfg();

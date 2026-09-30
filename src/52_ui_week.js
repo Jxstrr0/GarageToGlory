@@ -10,13 +10,13 @@
   var hud = null, dock = null, fallback = null;
 
   function S() { return GG.state; }
-  function fill(text) { return text && GG.career && GG.career.fillText && S() ? GG.career.fillText(S(), text) : (text || ''); }
+  function fill(text) { return text && S() ? ui.fill(text, S()) : (text || ''); }   // v0.9: + the role/space tokens (50_ui_core)
   function lines(key) { return (GG.content.lines && GG.content.lines[key]) || null; }
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
 
   var ACT_FALLBACK = {
     rehearse: { icon: '🥁', name: 'Rehearse', blurb: 'Tighter band, sorer wrists.' },
-    write: { icon: '✍️', name: 'Write', blurb: 'A new song. Probably about a lawn.' },
+    write: { icon: '✍️', name: 'Write', blurb: 'A new song. Nobody knows what it is about yet.' },
     promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facebook." },
     book: { icon: '📅', name: 'Book', blurb: 'Find somewhere that will have you.' },
     hustle: { icon: '💵', name: 'Hustle', blurb: 'Weddings, busking, bingo. Cash.' },
@@ -34,7 +34,7 @@
      ====================================================================================================== */
   var STAT_HELP = {
     week: 'The calendar. 24 weeks a year, ten years to glory. Every week: a Monday card, three blocks, maybe a gig.',
-    fund: 'Band fund: the one shared wallet. Gigs and Hustle fill it; upkeep, gas and capes drain it. Hit zero and your parents "help".',
+    fund: 'Band fund: the one shared wallet. Gigs and Hustle fill it; upkeep, gas and gear drain it. Hit zero and your parents "help".',
     fans: 'Fans: people who would admit to liking you. Gigs and buzz grow them, and they never leave. Your mom counts.',
     buzz: 'Buzz: how hard people are talking about you right now. Promote and play gigs to pump it; it fades every week.',
     chem: 'Chemistry: how well the band gels. Rehearsing and good gigs help; drama, burnout and grumpy members hurt.'
@@ -95,10 +95,21 @@
     else if (st.phase === 'ended') ui.show('end');
   }
   function dockHint(st) {
-    if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in the garage to use it.';
+    if (st.phase === 'plan' && st.totalWeek <= 2) return GG.main.renderOk ? 'Tap the floor to walk. Tap stuff to use it.' : 'Tap a spot in ' + ui.space(st) + ' to use it.';
     if (st.phase === 'monday') return 'New week. Somebody has news.';
-    if (st.phase === 'gig') return 'The van is warming up. Kenji is already in it.';
+    if (st.phase === 'gig') return vanLine(st, 'dock');
     return '';
+  }
+  // v0.9: whoever drives this week (GG.world.driver): the band's driver, or you once they're gone. A driver def may carry
+  // its own lines (content.drivers[id].dock / .load); else the silent one is already in the van, the others have the keys.
+  function vanLine(st, kind) {
+    var d = ui.driverOf(st), def = d.def || {};
+    if (def[kind]) return fill(def[kind]);
+    if (kind === 'dock') return d.you ? 'The van is warming up. You have the keys. Apparently.'
+      : ui.isSilent(d.id, st) ? 'The van is warming up. ' + d.name + ' is already in it.' : 'The van is warming up. ' + d.name + ' has the keys.';
+    return d.you ? 'Load the van. You drive now. The mirrors are still set for someone else.'
+      : ui.isSilent(d.id, st) ? 'Load the van. ' + d.name + ' is already in the driver’s seat. Nobody saw ' + d.name + ' get in.'
+      : 'Load the van. ' + d.name + ' is warming it up' + (def.dashName ? ', ' + def.dashName + ' on the dash.' : '.');
   }
 
   ui.refreshHud = function () {
@@ -385,7 +396,7 @@
         var pg = st.gig, up = el('div.gig-res', { testid: 'gig-pending' }, [el('div.row', [el('span', { style: 'font-size:30px' }, '🚐'),
           el('div.grow', [el('div.caps', 'This weekend'), el('div', { style: 'font-weight:800;font-size:17px' }, pg.name),
             el('div.small.dim', [pg.city, dealText(pg)].filter(Boolean).join(' · '))])]),
-          el('p.small', { style: 'margin:8px 0 0' }, 'Load the van. Kenji is already in the driver’s seat. Nobody saw him get in.')]);
+          el('p.small', { testid: 'gig-pending-driver', style: 'margin:8px 0 0' }, vanLine(st, 'load'))]);
         s.body.appendChild(up); steps.push([up, 600]);
       } else {
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
@@ -426,18 +437,19 @@
   /* ======================================================================================================
      Week wrap
      ====================================================================================================== */
+  var YEAR_FALLBACK = ['Another year in {space}. Everybody is still here. Mostly.', 'Year done. {front} wants a group photo. {deadpan} is already in it.'];
   var SUMMARY_LABELS = [['fans', 'Fans', U.fmtNum], ['fansGained', 'New fans', U.signed], ['fund', 'Fund', U.fmtMoney], ['earned', 'Earned', U.fmtMoney],
     ['gigs', 'Gigs', String], ['songsWritten', 'Songs written', String], ['parentsLoans', "Parents' loans", String], ['bestGrade', 'Best gig', String]];
   function yearPanel(w) {
     var ys = w.yearSummary || {};
     var grid = el('div.stat-grid');
     SUMMARY_LABELS.forEach(function (x) { if (ys[x[0]] != null) grid.appendChild(el('div', [el('span.caps', x[1]), el('b', x[2](ys[x[0]]))])); });
-    var line = ys.line || ui.pick(lines('yearEnd'));
+    var line = ys.line && ui.ownLines([ys.line]).length ? ys.line : ui.line(ui.lines('yearEnd'), YEAR_FALLBACK);   // v0.9: the band's pool
     return el('div.year-end', { testid: 'year-end' }, [el('div.yh', 'Year ' + (ys.year || w.year) + ' in the books'),
       line ? el('p', { style: 'margin-top:6px' }, fill(line)) : null, grid]);
   }
   function chatList(msgs) {
-    return el('div', msgs.map(function (m) {
+    return el('div', msgs.filter(function (m) { return ui.chatOk(m); }).map(function (m) {
       if (ui.chatMsg) return ui.chatMsg(m);
       var who = ui.who(m.who);
       return el('div.msg', [el('span.w', { style: { color: who.text } }, who.short),
@@ -487,7 +499,7 @@
       }
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
-      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', 'Ten years. One garage. Let\'s see how it went.')]));
+      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', 'Ten years. One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));
       ui.append(s.body, el('div.stack', parts));
       var t = savedText();
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
@@ -518,7 +530,7 @@
       ].map(function (x) { return el('div', [el('span.caps', x[0]), el('b', String(x[1]))]); }));
       ui.append(s.body, el('div.title-wrap', [
         el('h1.logo', { style: 'font-size:44px' }, ["That's a", el('span.glory', ' career')]),
-        el('p.tagline', (band ? band.name : 'The band') + ' played their last garage show. Your mom kept every flyer.'),
+        el('p.tagline', (band ? band.name : 'The band') + ' played their last show in ' + ui.space(st) + '. Your mom kept every flyer.'),
         el('div.panel', grid), ui.rivalEnd ? ui.rivalEnd(st) : null
       ]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-end-title', onclick: function () { GG.main.quitToTitle(); } }, 'Back to title'));
@@ -560,16 +572,15 @@
   }
   function trophyTop(st) {
     var list = milestonesReached(st);
-    if (!list.length) return el('p.center.dim', 'The shelf is empty. Dad keeps his bowling trophy here "for now".');
+    if (!list.length) return el('p.center.dim', 'The shelf is empty. Room to grow.');
     return el('div.panel', list.map(function (m) {
       return el('div.row', { style: 'padding:6px 0' }, [el('span', '🏆'), el('span.grow', m.text), m.week ? el('span.small.faint', 'week ' + m.week) : null]);
     }));
   }
-  var DOOR_QUIPS = ["Dad's truck is parked outside. He has made it VERY clear it is not a tour van.", 'The garage door opener works one time in three.'];
   var HOT = {
     kit: function () { ui.openSketch(); },
     merch: function () { if (ui.openMerch) return ui.openMerch(); },   // v0.8 (SHOPUI): the merch table (5k_ui_shop)
-    door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: 'Garage door', icon: '🚐', soon: 'Coming in v0.3', text: 'Van & travel arrive in v0.3. The Moose Hearse awaits.', quip: ui.pick(DOOR_QUIPS) }); },
+    door: function () { if (ui.showVan) return ui.showVan(); ui.show('soon', { title: ui.cap(ui.tokens().door), icon: '🚐', text: 'The van lives out here. It is not going anywhere today.' }); },
     trophies: function () { if (ui.defined('trophies')) return ui.show('trophies'); ui.show('soon', { title: 'Trophy shelf', icon: '🏆', top: trophyTop(S()), text: 'Real trophies (and gold records, and banned-venue photos) later.' }); },
     gigboard: function () {
       if (ui.openBoard) return ui.openBoard({ mode: 'view' });
@@ -587,10 +598,11 @@
   GG.on('hotspot', function (p) { if (p) ui.hotspot(p.action); });
 
   var TAP_FALLBACK = ['…', 'Hey.', "Can't talk, busy being in a band.", 'Did you move my stuff?'];
+  var TAP_SILENT = ['…', '(A nod. Maybe.)', '(Looks at you. Looks away. That was a whole conversation.)'];
   GG.on('member:tap', function (p) {
     var st = S(); if (!st || !p || ui.stackIds().length) return;
-    var pool = (lines('tap') || {})[p.id];
-    var text = fill(ui.pick(pool && pool.length ? pool : TAP_FALLBACK));
+    var pool = (lines('tap') || {})[p.id];   // member-keyed (ids are unique across bands); silent members get stage directions
+    var text = fill(ui.pick(pool && pool.length ? pool : ui.isSilent(p.id, st) ? TAP_SILENT : TAP_FALLBACK));
     var pos = null;
     try { pos = GG.render && GG.render.memberScreenPos ? GG.render.memberScreenPos(p.id) : null; } catch (e) { pos = null; }
     ui.bubble(text, pos, ui.who(p.id).short, p.id);
@@ -601,10 +613,17 @@
      ====================================================================================================== */
   var SPOTS = [['plan', '📋', 'Whiteboard'], ['laptop', '💻', 'Laptop'], ['kit', '🥁', 'Drum kit'], ['gigboard', '📌', 'Gig board'],
     ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door']];
+  // v0.9: the backdrop is the band's own tier-0 room (sp-garage | sp-laundromat | sp-stripmall | sp-quonset, CSS in the
+  // 00_shell v0.9 GENRES block): a garage door, a row of dryers, a shop window + till, a corrugated arch.
   function refreshFallback() {
     if (!fallback) return;
-    var st = S();
+    var st = S(), kind = st ? ui.spaceKind(st) : 'garage';
     fallback.classList.toggle('hidden', !st);
+    if (fallback.dataset.space !== kind) {
+      fallback.className = fallback.className.replace(/\bsp-\w+/g, '').trim() + ' sp-' + kind;
+      fallback.dataset.space = kind;
+      if (fallback.noteEl) fallback.noteEl.textContent = 'The 3D ' + ui.space(st).replace(/^the /i, '') + " couldn't start on this device, so here's the budget version.";
+    }
     ui.clear(fallback.mates);
     ((st && st.members) || []).forEach(function (m) {
       var who = ui.who(m.id);
@@ -616,8 +635,9 @@
     var spots = el('div.spots', SPOTS.map(function (x) {
       return btn('', { testid: 'hs-' + x[0], onclick: function () { GG.emit('hotspot', { action: x[0] }); } }, [el('span', x[1]), x[2]]);
     }));
-    fallback = el('div.fallback', [el('div.bulb'), el('div.door'), el('div.stain'),
+    fallback = el('div.fallback.spx', { testid: 'fallback-garage' }, [el('div.bulb'), el('div.door'), el('div.stain'),
       el('div.note', "The 3D garage couldn't start on this device, so here's the budget version."), spots]);
+    fallback.noteEl = fallback.querySelector('.note');
     fallback.mates = el('div.mates');
     fallback.appendChild(fallback.mates);
     sceneEl.appendChild(fallback);
