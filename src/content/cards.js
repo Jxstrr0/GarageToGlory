@@ -1707,4 +1707,58 @@
         { label: 'Stay where we are', effects: { mood: { marcel: -5 } }, outcome: 'Marcel paints a star on the old door himself. It is crooked. He loves it.' }
       ] }
   ];
+
+  // ======================================================================
+  // v0.8.1 (LICRECAP, handoff D1): licensing. FORCED ONLY (GG.licensing.forcedCard / GG.fans for the scandals).
+  //  - licenseChoices: the four buttons on every offer card (GG.licensing builds one card per brand from
+  //    content/licensing.js: its title, offer text and outcome lines). `lic` = C.LICENSE_CHOICES + 'later' (it waits on the
+  //    laptop under Offers). Tokens: {adtake} {adcounter} {adodds} {adleft} (GG.licensing.fillText).
+  //  - licenseCards: lic_fury (Buckle & Boot are furious when a truck ad goes to the Grid Road Ramblers; content ready
+  //    for v0.9; choice effect `lic: { heat: ±n }` = rival heat, applied by GG.licensing.afterCard) and the sellout
+  //    scandals (queued through GG.fans like any Bandbook scandal: `fan` effects, the scandal count).
+  // ======================================================================
+  GG.content.licenseChoices = [
+    { lic: 'take', label: 'Take it', hint: '{adtake} · Buzz ↑ · Haters ↑' },
+    { lic: 'counter', label: 'Counter: ask {adcounter}', hint: 'Gamble: {adodds} chance they walk' },
+    { lic: 'decline', label: 'Decline', hint: 'No money · Superfans ↑' },
+    { lic: 'later', label: 'Sleep on it', hint: 'Answer on the laptop · {adleft} left' }
+  ];
+  GG.content.licenseScandals = [
+    { card: 'lic_scandal_moose', who: 'marcel' }, { card: 'lic_scandal_sellout', who: 'band' }
+  ];
+  GG.content.licenseCards = [
+    { id: 'lic_fury', type: 'drama', speaker: 'travis', title: 'Buckle & Boot Are Furious', gate: { band: ['grid_road_ramblers'] },
+      text: 'Buckle & Boot saw the {brand} ad. They have played truck-stop openings for nine years waiting for that call. ' +
+        'Their fiddler posted a video of himself throwing a boot at a TV. It has more views than their last single.',
+      choices: [
+        { label: 'Rub it in', hint: 'Buzz ↑ · Rival heat ↑↑', effects: { buzz: 6, lic: { heat: 10 } },
+          outcome: 'You post a photo leaning on a Prairie Titan with a straw hat tipped low. Buckle & Boot have unfollowed you twice.' },
+        { label: 'Send a fruit basket', hint: 'Rival heat ↓ · a little cash', effects: { fund: -60, lic: { heat: -8 } },
+          outcome: 'Pears, a card, a tiny toy truck. They eat the pears. The toy truck comes back, run over.' },
+        { label: 'Say nothing', hint: 'Chemistry ↑', effects: { chemistry: 3 },
+          outcome: 'Travis Lee says "a gentleman never gloats" and then gloats quietly in the Quonset for an hour.' }
+      ] },
+    { id: 'lic_scandal_moose', type: 'fame', speaker: 'marcel', title: 'Lord Abyssus Sold the Moose', gate: { band: ['hail_damage'] },
+      text: 'A metal forum thread: "LORD ABYSSUS SOLD THE MOOSE TO {brand}". Someone made a meme of Marcel in a business suit ' +
+        'with a price tag on his cape. It is everywhere. Marcel has read every comment. Twice.',
+      choices: [
+        { label: 'Marcel explains on camera', hint: 'Haters ↓ · Marcel ↓', effects: { buzz: 2, mood: { marcel: -6 }, fan: { hater: -0.02 } },
+          outcome: 'Fourteen minutes, in French, subtitled by Gord. It is about the price of capes. Most people forgive him.' },
+        { label: '"The moose got paid"', hint: 'Buzz ↑ · Haters ↑', effects: { buzz: 7, mood: { marcel: 4 }, fan: { hater: 0.02 } },
+          outcome: 'Marcel prints it on a shirt. It sells out. The forum is furious that it sold out. It sells out again.' },
+        { label: 'Donate some to the curling rink', hint: 'Fund ↓ · Superfans ↑', effects: { fund: -250, chemistry: 3, fan: { super: 0.01 } },
+          outcome: 'The Warman rink gets new rocks. Barb names a sheet after the band. The forum moves on to a polka band.' }
+      ] },
+    { id: 'lic_scandal_sellout', type: 'fame', speaker: 'mom', title: 'Sellouts!', gate: {},
+      text: 'Someone spliced the {brand} ad with the band\'s first basement demo and captioned it "they used to be real". ' +
+        'It is on every feed. Mom has printed the comments to "discuss them" at supper.',
+      choices: [
+        { label: 'Post the basement demo, proudly', hint: 'Superfans ↑ · Buzz ↑', effects: { buzz: 4, fan: { super: 0.01 } },
+          outcome: 'The old demo gets more plays than it ever did. The real ones remember. The rest learn.' },
+        { label: 'Ignore it', hint: 'Haters ↑ a little', effects: { chemistry: 2, fan: { hater: 0.01 } },
+          outcome: 'It blows over in a week. Mom keeps the printout on the fridge, next to your report cards.' },
+        { label: 'Play a free show at the Legion', hint: 'Haters ↓ · Burnout ↑', effects: { burnout: 6, fans: 20, fan: { hater: -0.02 } },
+          outcome: 'Doreen allows exactly one mosh pit and no speeches. It is the best show of the month. Nobody says sellout at the meat draw.' }
+      ] }
+  ];
 })(window.GG);

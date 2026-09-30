@@ -901,6 +901,43 @@ html.gg-calm .tw-disc, html.gg-calm .tw-pin.invite .ic { animation: none; }
 @keyframes gg-col-stamp { from { transform: rotate(14deg) scale(2.4); opacity: 0; } to { transform: rotate(14deg) scale(1); opacity: 1; } }
 .gg-calm .col-title, .gg-calm .col-stamp, .gg-calm .col-shirt, .gg-calm .col-flap { animation: none; }
 /* ==== end v0.8 SHOP ==== */
+/* ==== v0.8.1 RECAP (5l_ui_recap: the year-end recap, the band photo, licensing offers; 53 laptop Offers line + Years tab) ==== */
+.full-body.rc-body { padding-left: 0; padding-right: 0; overflow: hidden; display: flex; flex-direction: column; }
+.rc-track { flex: 1 1 auto; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+.rc-track::-webkit-scrollbar { display: none; }
+.rc-page { flex: 0 0 100%; width: 100%; scroll-snap-align: start; scroll-snap-stop: always; overflow-y: auto; padding: 4px var(--gutter) 12px; display: flex; flex-direction: column; gap: 12px; }
+.rc-page + .rc-page > :first-child { margin-top: auto; } .rc-page + .rc-page > :last-child { margin-bottom: auto; }   /* inner pages sit mid-screen (safe centring) */
+.rc-mast { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 3px double var(--amber); padding-bottom: 4px; }
+.rc-mast > span:first-child { font: italic 900 26px/1 Georgia, 'Times New Roman', serif; color: var(--amber); letter-spacing: -.01em; }
+.rc-mast .tiny { color: var(--dim); letter-spacing: .08em; text-align: right; }
+.rc-head { font: 900 23px/1.15 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.rc-photo { margin: 0; padding: 8px 8px 6px; background: #f3efe6; border-radius: 6px; transform: rotate(-1.2deg); box-shadow: 0 10px 26px rgba(0, 0, 0, .5); }
+.rc-photo .rc-img { display: block; width: 100%; aspect-ratio: 60 / 38; object-fit: cover; border-radius: 2px; background: #1b2336; }
+.rc-photo .rc-stand { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 10px; }
+.rc-photo figcaption { color: #3a3226; font: 700 13px/1.3 'Comic Sans MS', 'Marker Felt', cursive, var(--font); text-align: center; padding-top: 5px; }
+.rc-kicker { color: var(--amber); font-size: 12px; }
+.rc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rc-stat { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.rc-stat b { display: block; font: 900 22px/1.15 var(--display); overflow-wrap: anywhere; } .rc-stat .caps { display: block; }
+.rc-gig { border-radius: 14px; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.rc-gig.best { border-left: 4px solid var(--good); } .rc-gig.worst { border-left: 4px solid var(--bad); }
+.rc-venue { font-weight: 800; font-size: 17px; } .rc-quote { font-style: italic; color: var(--dim); }
+.rc-grade { min-width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font: 900 22px var(--display); background: var(--panel2); }
+.rc-grade.g-S { background: #ffd35a; color: #241802; } .rc-grade.g-A { background: var(--good); color: #0c1f12; } .rc-grade.g-D { background: var(--bad); color: #2a0806; }
+.rc-awards { display: flex; flex-wrap: wrap; gap: 6px; } .rc-award { padding: 6px 10px; border-radius: 999px; background: #2e2716; border: 1px solid #6a5424; font-weight: 700; font-size: 14px; }
+.rc-line { font-size: 15px; }
+.rc-say { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: var(--bg2); border: 1px solid var(--line); font-size: 15px; }
+.rc-say.ok { border-color: #3d6b4c; } .rc-say b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.rc-dots { display: flex; justify-content: center; gap: 8px; } .rc-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
+.rc-dots span.on { background: var(--amber); transform: scale(1.3); }
+.rc-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 8px 12px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); text-align: left; cursor: pointer; }
+.rc-yr { font: 900 18px var(--display); color: var(--amber); min-width: 36px; } .rc-row-head { font-weight: 800; font-size: 14px; line-height: 1.25; }
+.lic-line { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 8px 12px; border-radius: 12px; text-align: left; cursor: pointer;
+  background: linear-gradient(160deg, #2a2330, #1d2033); border: 1px solid #5a4a3c; }
+.lic-card { margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+.tabs.tabs:has(> .tab:nth-child(9)) > .tab.tab { flex: 1 0 calc(20% - 4px); font-size: 11px; letter-spacing: 0; }   /* the laptop's nine tabs: 5 + 4 */
+.lic-line > .amber { white-space: nowrap; font-weight: 800; }
+/* ==== end v0.8.1 RECAP ==== */
 /* v0.6.1 (Addendum C4, SETTINGS): bigger text, reduced flashing, faster animations (classes on <html>, 5h_ui_settings) */
 html.gg-big body { font-size: 18px; }
 html.gg-big .small { font-size: 15px; } html.gg-big .tiny { font-size: 13px; } html.gg-big .caps { font-size: 12.5px; }
@@ -4404,6 +4441,60 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Stay where we are', effects: { mood: { marcel: -5 } }, outcome: 'Marcel paints a star on the old door himself. It is crooked. He loves it.' }
       ] }
   ];
+
+  // ======================================================================
+  // v0.8.1 (LICRECAP, handoff D1): licensing. FORCED ONLY (GG.licensing.forcedCard / GG.fans for the scandals).
+  //  - licenseChoices: the four buttons on every offer card (GG.licensing builds one card per brand from
+  //    content/licensing.js: its title, offer text and outcome lines). `lic` = C.LICENSE_CHOICES + 'later' (it waits on the
+  //    laptop under Offers). Tokens: {adtake} {adcounter} {adodds} {adleft} (GG.licensing.fillText).
+  //  - licenseCards: lic_fury (Buckle & Boot are furious when a truck ad goes to the Grid Road Ramblers; content ready
+  //    for v0.9; choice effect `lic: { heat: ±n }` = rival heat, applied by GG.licensing.afterCard) and the sellout
+  //    scandals (queued through GG.fans like any Bandbook scandal: `fan` effects, the scandal count).
+  // ======================================================================
+  GG.content.licenseChoices = [
+    { lic: 'take', label: 'Take it', hint: '{adtake} · Buzz ↑ · Haters ↑' },
+    { lic: 'counter', label: 'Counter: ask {adcounter}', hint: 'Gamble: {adodds} chance they walk' },
+    { lic: 'decline', label: 'Decline', hint: 'No money · Superfans ↑' },
+    { lic: 'later', label: 'Sleep on it', hint: 'Answer on the laptop · {adleft} left' }
+  ];
+  GG.content.licenseScandals = [
+    { card: 'lic_scandal_moose', who: 'marcel' }, { card: 'lic_scandal_sellout', who: 'band' }
+  ];
+  GG.content.licenseCards = [
+    { id: 'lic_fury', type: 'drama', speaker: 'travis', title: 'Buckle & Boot Are Furious', gate: { band: ['grid_road_ramblers'] },
+      text: 'Buckle & Boot saw the {brand} ad. They have played truck-stop openings for nine years waiting for that call. ' +
+        'Their fiddler posted a video of himself throwing a boot at a TV. It has more views than their last single.',
+      choices: [
+        { label: 'Rub it in', hint: 'Buzz ↑ · Rival heat ↑↑', effects: { buzz: 6, lic: { heat: 10 } },
+          outcome: 'You post a photo leaning on a Prairie Titan with a straw hat tipped low. Buckle & Boot have unfollowed you twice.' },
+        { label: 'Send a fruit basket', hint: 'Rival heat ↓ · a little cash', effects: { fund: -60, lic: { heat: -8 } },
+          outcome: 'Pears, a card, a tiny toy truck. They eat the pears. The toy truck comes back, run over.' },
+        { label: 'Say nothing', hint: 'Chemistry ↑', effects: { chemistry: 3 },
+          outcome: 'Travis Lee says "a gentleman never gloats" and then gloats quietly in the Quonset for an hour.' }
+      ] },
+    { id: 'lic_scandal_moose', type: 'fame', speaker: 'marcel', title: 'Lord Abyssus Sold the Moose', gate: { band: ['hail_damage'] },
+      text: 'A metal forum thread: "LORD ABYSSUS SOLD THE MOOSE TO {brand}". Someone made a meme of Marcel in a business suit ' +
+        'with a price tag on his cape. It is everywhere. Marcel has read every comment. Twice.',
+      choices: [
+        { label: 'Marcel explains on camera', hint: 'Haters ↓ · Marcel ↓', effects: { buzz: 2, mood: { marcel: -6 }, fan: { hater: -0.02 } },
+          outcome: 'Fourteen minutes, in French, subtitled by Gord. It is about the price of capes. Most people forgive him.' },
+        { label: '"The moose got paid"', hint: 'Buzz ↑ · Haters ↑', effects: { buzz: 7, mood: { marcel: 4 }, fan: { hater: 0.02 } },
+          outcome: 'Marcel prints it on a shirt. It sells out. The forum is furious that it sold out. It sells out again.' },
+        { label: 'Donate some to the curling rink', hint: 'Fund ↓ · Superfans ↑', effects: { fund: -250, chemistry: 3, fan: { super: 0.01 } },
+          outcome: 'The Warman rink gets new rocks. Barb names a sheet after the band. The forum moves on to a polka band.' }
+      ] },
+    { id: 'lic_scandal_sellout', type: 'fame', speaker: 'mom', title: 'Sellouts!', gate: {},
+      text: 'Someone spliced the {brand} ad with the band\'s first basement demo and captioned it "they used to be real". ' +
+        'It is on every feed. Mom has printed the comments to "discuss them" at supper.',
+      choices: [
+        { label: 'Post the basement demo, proudly', hint: 'Superfans ↑ · Buzz ↑', effects: { buzz: 4, fan: { super: 0.01 } },
+          outcome: 'The old demo gets more plays than it ever did. The real ones remember. The rest learn.' },
+        { label: 'Ignore it', hint: 'Haters ↑ a little', effects: { chemistry: 2, fan: { hater: 0.01 } },
+          outcome: 'It blows over in a week. Mom keeps the printout on the fridge, next to your report cards.' },
+        { label: 'Play a free show at the Legion', hint: 'Haters ↓ · Burnout ↑', effects: { burnout: 6, fans: 20, fan: { hater: -0.02 } },
+          outcome: 'Doreen allows exactly one mosh pit and no speeches. It is the best show of the month. Nobody says sellout at the meat draw.' }
+      ] }
+  ];
 })(window.GG);
 
 </script>
@@ -5693,6 +5784,109 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* content/licensing.js */
+// content/licensing.js (v0.8.1 "Addendum 2", LICRECAP; handoff D1): parody brands that want to put your song in an ad.
+// Pure data. The sim is 2c_sim_licensing.js (GG.licensing); the Monday card choices + the fury / scandal cards are in
+// content/cards.js (GG.content.licenseChoices, GG.content.licenseCards). Owner money (popup 2026-09-30, "Nice bonus"):
+// $1,500–$6,000 per offer (the hockey package low, the truck commercial high), 2–4 offers a career (more with fame),
+// Counter = +40% with a ~30% walk-away (~15% with lots of fans or a label behind you).
+// Shapes:
+//   tune   : the numbers (GG.licensing.cfg() merges these over its defaults)
+//   brands : [{ id, name, what (short: 'truck commercial'), blurb, fee: [lo, hi] $, genres: { metal|punk|rock|country: weight },
+//             sellout 0..1 (haters + scandal odds), buzz, reach (share of fans gained, capped), speaker (member or npc id; falls
+//             back to 'mom' when that member isn't in your band), takeFx? (EFFECT_KEYS, e.g. a mortified Marcel),
+//             title, offer (card text), take, decline, counterWin, counterWalk, expire (chat lines; tokens below) }]
+//   lines  : { later, walkChat, takeChat, declineChat } shared lines.
+// Tokens (GG.licensing.fillText, plus the usual career ones): {brand} {adwhat} {adsong} {adfee} {adcounter} {adtake}
+//   {adodds} {adleft}. Every brand is a parody: no real companies, no USA.
+(function (GG) {
+  GG.content.licensing = {
+    tune: {
+      minFans: 400,          // below this nobody is licensing anything, viral or not
+      base: 0.012,           // weekly offer chance once eligible (plus fame below)
+      fame: 0.014,           // + this x fame (0 at 1,000 fans .. 1 at 30,000)
+      fameLo: 1000, fameHi: 30000,
+      gap: 14,               // weeks between offers at least
+      cap: [3, 4, 5],        // career cap on offers: base, fame >= 0.6, fame >= 0.9
+      expires: 3,            // weeks to answer after the Monday it lands
+      counter: 0.4,          // Counter asks +40%
+      walk: 0.3, walkMin: 0.15, walkFansLo: 5000, walkFansHi: 30000,   // walk-away odds: 30% -> 15% with fans or a label
+      labelCut: [0.15, 0.4], // a label's cut: (1 - royalty) / 2, clamped (Gopherwood 25%, Monolith 40%); counts toward recoup
+      noise: 0.1,            // fee noise +-10%
+      adStale: 25, adFloor: 20, adWeeks: 10,   // "in a commercial": stale bump, then kept at least this stale for a while
+      streams: 0.6, streamsMin: 1500,          // album stream-rate bump (x fans) when the song is on a released record
+      fansMax: 400, haters: 0.04, scandal: 0.5,   // fans cap, hater share x sellout, scandal odds x sellout
+      loyalty: 0.004, daleMood: 4,             // decline: superfan share + Dale's mood
+      fury: 20                                 // rival heat when a truck ad goes to the Ramblers
+    },
+    brands: [
+      { id: 'truck', name: 'Prairie Titan Trucks', what: 'truck commercial',
+        blurb: 'Half-ton pickups for people who say "half-ton" out loud. The ad is a truck jumping a coulee in slow motion.',
+        fee: [3500, 6000], genres: { country: 3, rock: 3, metal: 0.6, punk: 0.3 }, sellout: 0.7, buzz: 8, reach: 0.015, speaker: 'dad',
+        title: 'Built Grid Road Tough',
+        offer: 'Prairie Titan Trucks wants "{adsong}" for a commercial: a pickup jumping a coulee in slow motion while a farmer nods. ' +
+          'They offer {adfee}. Dad has already asked if the band gets a discount.',
+        take: 'The ad airs during the hockey game. The truck jumps the coulee to your chorus forty times a weekend. Dad watches every one.',
+        decline: 'You pass. Prairie Titan uses a banjo instead. Dad takes it personally and parks his truck facing the garage, sulking.',
+        counterWin: '"Fine," says the marketing guy, chewing a toothpick. "Your chorus better be as loud as that engine." It is.',
+        counterWalk: 'Prairie Titan goes with a jingle a guy in Estevan made on his phone. Dad does not bring it up. Dad brings it up daily.',
+        expire: 'Prairie Titan stopped calling. The coulee jump now plays to a banjo. Dad sighs every time.' },
+      { id: 'energy', name: 'Riot Juice', what: 'energy drink ad',
+        blurb: 'An energy drink that tastes like a battery licked a Slurpee. Sponsors dirt bikes, snowmobiles and bad decisions.',
+        fee: [2500, 4500], genres: { metal: 3, punk: 3, rock: 1, country: 0.3 }, sellout: 0.6, buzz: 7, reach: 0.02, speaker: 'mom',
+        title: 'Now With 40% More Moose',
+        offer: 'Riot Juice (tagline: "Now With 40% More Moose") wants "{adsong}" behind a snowmobile doing a backflip over a grain bin. ' +
+          '{adfee}. Mom took the message. She wrote "RIOT JUICE??" and underlined it three times.',
+        take: 'Twenty-nine seconds of snowmobile backflips to your song. The band gets a pallet of Riot Juice. Nobody sleeps for a week.',
+        decline: 'You pass. The superfans notice. Dale from Warman posts "they said NO to the moose juice" with eleven flexing emojis.',
+        counterWin: 'Riot Juice agrees before you finish the sentence. Their marketing guy is on his fourth can. He agrees to everything.',
+        counterWalk: 'Riot Juice hangs up mid-sentence. Word is they signed a polka-core band from Gimli. Their backflips are worse.',
+        expire: 'Riot Juice stopped calling. The pallet of free samples never came. Jaxon checks the porch anyway.' },
+      { id: 'hockey', name: 'Saturday Night Puck', what: 'hockey highlight package',
+        blurb: 'The highlight package on Sportsnut: glove saves, line brawls and a Zamboni at sunset, cut to a song.',
+        fee: [1500, 2500], genres: { metal: 2, punk: 2, rock: 2, country: 2 }, sellout: 0.2, buzz: 6, reach: 0.012, speaker: 'neighbour',
+        title: 'Glove Save, Big Riff',
+        offer: 'Sportsnut wants "{adsong}" under the Saturday Night Puck highlight package: glove saves, line brawls, a Zamboni at sunset. ' +
+          '{adfee}. Mr. Lindqvist from next door heard first. He is weirdly emotional about it.',
+        take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Mr. Lindqvist cries a little.',
+        decline: 'You pass. Sportsnut uses stock music called "Hockey Rock 7". Mr. Lindqvist will not look at you.',
+        counterWin: 'Sportsnut ups it. "For the playoffs," says a producer with a whistle around his neck. He blows it when you say yes.',
+        counterWalk: 'Sportsnut goes with "Hockey Rock 7". It is fine. It is so, so fine. Mr. Lindqvist mows his lawn angrily.',
+        expire: 'Saturday Night Puck went with "Hockey Rock 7". Mr. Lindqvist mutters about it over the fence.' },
+      { id: 'insurance', name: 'Prairie Mutual Hail & Hardship', what: 'insurance ad',
+        blurb: 'The regional insurer. Covers hail, grasshoppers and "acts of Saskatchewan". Marcel adjusts claims for them. Marcel is mortified.',
+        fee: [2000, 3500], genres: { metal: 3, country: 0.5, rock: 0.3, punk: 0.1 }, sellout: 0.9, buzz: 4, reach: 0.01, speaker: 'marcel',
+        takeFx: { mood: { marcel: -6 } },
+        title: 'Your Employer Is Calling',
+        offer: 'Prairie Mutual Hail & Hardship wants "{adsong}" for a regional ad: hail smashing a truck, then a calm adjuster with a clipboard. ' +
+          '{adfee}. The adjuster in the storyboard is Marcel. He did not know. He is pale.',
+        take: 'The ad runs on regional TV. Marcel\'s boss calls him "our little rock star" at the staff meeting. Marcel wants to be swallowed by hail.',
+        decline: 'You pass. Marcel hugs everyone, one by one. His boss gives the spot to a harp player. Marcel sends her flowers.',
+        counterWin: 'Prairie Mutual pays up. The regional manager calls it "a claim we are happy to settle". Marcel screams into a pillow.',
+        counterWalk: 'Prairie Mutual pulls out. Marcel is so relieved he adjusts three claims in a row in favour of the policyholder.',
+        expire: 'Prairie Mutual went with a harp. Marcel has never been happier at work.' },
+      { id: 'game', name: 'Moosefall IV: Antler Protocol', what: 'video game trailer',
+        blurb: 'A game about a cyborg moose defending a grain elevator from robots. Made by Gopherbyte, a studio above a vape shop in Montréal.',
+        fee: [2000, 4000], genres: { metal: 2.5, punk: 2, rock: 2, country: 1 }, sellout: 0.3, buzz: 9, reach: 0.025, speaker: 'dj',
+        title: 'The Moose Has Lasers',
+        offer: 'Gopherbyte wants "{adsong}" for the Moosefall IV: Antler Protocol trailer: a cyborg moose defending a grain elevator from robots. ' +
+          '{adfee}. Deb from CRUD 90.5 passed on the email. She says it is "very brutal, in a gentle way".',
+        take: 'The trailer drops. A cyborg moose headbutts a robot on your downbeat. Millions of views. The comments are about the moose, and you.',
+        decline: 'You pass. The trailer uses a synth track. The comments ask "where is the guitar??" for a week. You feel seen.',
+        counterWin: 'Gopherbyte says yes and asks if the band wants to be playable characters. Kenji nods before anyone else can answer.',
+        counterWalk: 'Gopherbyte goes quiet, then posts the trailer with a synth track. The moose looks disappointed. So does Dana.',
+        expire: 'Moosefall IV shipped its trailer with a synth track. The moose deserved better.' }
+    ],
+    lines: {
+      later: 'You tell them you need to "talk to the band". The offer sits on the laptop, under Offers, for {adleft}.',
+      takeChat: 'Our song is in the {brand} ad. My cousin already texted. Twice.',
+      walkChat: '{brand} walked. Maybe we should not have asked for {adcounter}.',
+      declineChat: 'Real ones noticed we turned down {brand}. The comments are very proud of us.'
+    }
+  };
+})(window.GG);
+
+</script>
 <script>/* content/lines.js */
 // content/lines.js: flavour text pools the sim picks from with the career RNG.
 // Shape (CONTENT SCHEMAS in 02_contracts.js):
@@ -6474,6 +6668,72 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         height: 0.95, build: 1.0, extras: ['glasses'] },
       kitColor: '#9aa2ad' }
   ];
+})(window.GG);
+
+</script>
+<script>/* content/recap.js */
+// content/recap.js (v0.8.1 "Addendum 2", LICRECAP; handoff D3): words for the year-end recap. Pure data; the sim is
+// 2d_sim_recap.js (GG.recap), the screen 5l_ui_recap.js.
+//   headlines : { <event>: [text] } Rolling Scone headlines, one event per year (the biggest one wins; see GG.recap.events).
+//               Tokens: {band} {rival} {nth} (year number as a word) {n} {name} {award} {album} {cert} {label} {region}
+//               {venue} {brand} {song} {van}.
+//   quotes    : { S|A|B|C|D: [text] } the one-line quote under the best / worst gig when the band had nothing to say.
+//   goodYear  : year one only (the tutorial tie-in): the bandmates explain what "a good year" looks like, one topic each.
+//               [{ topic: fans|songs|gigs|loans|chemistry, who: [preferred speaker ids] (first one in the band; else any
+//               bandmate but Kenji), target, good, bad }]. {n} = this year's number, {target} = the bar.
+//   intro / outro : lines for the first and last page.
+(function (GG) {
+  GG.content.recap = {
+    masthead: 'Rolling Scone',
+    headlines: {
+      final_won: ['{band} Headline the Sad Dome Forever; {rival} Asked to Carry Amps', '{band} Win the Sad Dome; Dome Slightly Less Sad'],
+      final_lost: ['{rival} Take the Sad Dome; {band} Take It Personally'],
+      gong: ['{band} Bang the Global Gong; Neighbours File Noise Complaint', 'Gong! {band} Are the World\'s Problem Now'],
+      loonie: ['{band} Win {award} at the Loonies; Speech Runs Long', 'Loonie for {band}; {rival} Clap Politely'],
+      cert: ['"{album}" Goes {cert}; {band} Buy a Second Couch', '{band} Hang a {cert} Record Where the Dartboard Was'],
+      world: ['{band} Go Global; The Van Stays Home', 'World Stage Calls; {band} Answer From a Payphone'],
+      signed: ['{band} Sign With {label}; Mom Reads the Contract Twice', '{label} Signs {band}; Lawyers Learn What a Cape Is'],
+      chart_top: ['"{album}" Hits No. {n} on the Maple 100', '{band} Crack the Maple 100 Top Ten; Garage Declared a Landmark'],
+      charted: ['"{album}" Debuts on the Maple 100; {band} Refresh the Page All Night', '{band} Chart at No. {n}; Relatives Suddenly Call'],
+      crack: ['{rival} Crack; {band} Pretend Not to Gloat', 'Scene Shaken as {rival} Fall Apart'],
+      license: ['{band} Sell "{song}" to {brand}; Fans Divided', '"{song}" Now Plays in a {brand} Ad; {band} Can\'t Watch TV'],
+      region: ['{band} Conquer {region}; Customs Confused by Cape', '{band} Big in {region}, Allegedly'],
+      quit: ['{name} Quits {band}; Group Chat Goes Quiet', '{band} Down a Member; {name} "Needs Space"'],
+      back: ['{name} Returns to {band}; Nobody Mentions It', 'The Prodigal {name} Comes Home to {band}'],
+      best_s: ['{band} Level {venue}; Venue Still Standing, Barely', '{band} Melt Faces at {venue}; Faces Recovering'],
+      banned: ['{band} Banned From {n} Venues; Call It a Tour', '{band} Wear Out Their Welcome at {n} Venues'],
+      loans: ['{band} Borrow From Parents Again; Night School Brochures Multiply', 'Parents of {band} Refinance the Garage'],
+      fans: ['{band} Add {n} Fans; Mom Counts Herself Twice', '{n} New Fans for {band}; Most of Them Real'],
+      survive_van: ['{band} Survive Year {nth}; {van} Does Not', 'Year {nth} Done; {band} Fine, {van} Less So'],
+      survive: ['{band} Survive Year {nth}', '{band} Complete Year {nth}; Garage Still Standing']
+    },
+    quotes: {
+      S: ['I saw the face of God. He was in the mosh pit.', 'We didn\'t play that gig. That gig played us.'],
+      A: ['Tight. Loud. Nobody fell off the stage.', 'Best night of the year and I didn\'t even trip on a cable.'],
+      B: ['Solid. The sound guy nodded once. That counts.', 'A good, honest, sweaty night.'],
+      C: ['The crowd was there. Physically.', 'We have played worse. We have also played better.'],
+      D: ['Let\'s never speak of it.', 'The bingo caller was louder than us. And better.']
+    },
+    goodYear: [
+      { topic: 'fans', who: ['marcel'], target: 250,
+        good: 'A good year? {target} new fans. We got {n}. The spotlight has found us.',
+        bad: 'A good year is {target} new fans. We got {n}. The spotlight is... warming up.' },
+      { topic: 'songs', who: ['dana'], target: 6,
+        good: '{target} new songs makes a year. We wrote {n}. Now we need longer solos.',
+        bad: 'A good year is {target} songs. We wrote {n}. My solos can only fill so much.' },
+      { topic: 'gigs', who: ['jaxon'], target: 10,
+        good: 'Ten gigs is a real year. We played {n}! Baba came to two.',
+        bad: 'Baba says a real band plays {target} gigs a year. We played {n}. She\'s not mad. She\'s disappointed.' },
+      { topic: 'loans', who: ['mom'], target: 0,
+        good: 'A good year is one where you don\'t borrow from us. You didn\'t! I\'m framing the bank statement.',
+        bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your kit.' },
+      { topic: 'chemistry', who: ['kenji'], target: 60,
+        good: '(Kenji gives the year one slow, silent nod.)',
+        bad: '(Kenji looks at the band for a long time. No nod.)' }
+    ],
+    intro: 'Year {nth}. Swipe through it.',
+    outro: 'On to year {next}.'
+  };
 })(window.GG);
 
 </script>
@@ -9381,6 +9641,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // 'local'; GG.labels moves you to 'signed'. Hooks into GG.labels: studio weeks replace the blocks (runWeek), studio event
 // cards on session Mondays (startWeek), promo for a scheduled release (Promote), weekly offers/releases/charts/Loonies
 // (endWeek, wrap.labels), afterGig, bots (botWeek). Effect key `production`; era upkeep economy.eraUpkeep.
+// v0.8.1 (LICRECAP): GG.licensing (offer cards on Mondays, their answers in resolveCard, the weekly roll in endWeek, bots;
+// tokens {brand} {ad*} in fillText) and GG.recap (the year's fund inflow in addStat, best/worst gig in settleGig, the
+// year-start snapshot, the RECAP at the week-24 wrap: wrap.recap, state.recaps).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
@@ -9490,6 +9753,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
+    if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
     return String(text).replace(/\{(player|band|city|nick|name|recruit|rival)(?::([\w-]+))?\}/g, function (all, key, id) {
       if (key === 'rival') return GG.rival ? GG.rival.name(state) : 'Tundra Wraith';   // v0.6: the rival's current name
@@ -9535,6 +9799,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     state[key] = after;
     var diff = after - before;
     if (diff && d) d[key] = (d[key] || 0) + diff;
+    if (key === 'fund' && diff > 0 && state.yearStart) state.yearStart.fin = (state.yearStart.fin || 0) + diff;   // v0.8.1: the recap's "money in"
     return diff;
   }
   // Same for a member stat ('mood'|'skill'); target is a member id or 'all' (active members).
@@ -9658,6 +9923,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
       else if (k === 'fan' && v && GG.fans) { var ft = GG.fans.effectText(v); if (ft) parts.push(ft); }   // v0.6.1 fan cards
       else if (k === 'shop' && v && GG.shop) { var sx = GG.shop.effectText(v); if (sx) parts.push(sx); }   // v0.8 shop cards
+      else if (k === 'lic' && v && GG.licensing) { var lx = GG.licensing.effectText(v); if (lx) parts.push(lx); }   // v0.8.1 the fury card
     });
     return parts.join(' · ');
   };
@@ -9708,7 +9974,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
     var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
-      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : [], GG.shop ? GG.shop.cards() : []);   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour) ; v0.8: shop cards (forced by GG.shop)
+      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : [], GG.shop ? GG.shop.cards() : [], GG.licensing ? GG.licensing.cards() : []);   // v0.8.1: licensing (forced by GG.licensing / GG.fans)   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour) ; v0.8: shop cards (forced by GG.shop)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -9781,6 +10047,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     state.yearStart = { year: state.year, fans: state.fans, fund: state.fund, gigs: state.stats.gigs,
       songsWritten: state.stats.songsWritten, parentsLoans: state.stats.parentsLoans, earned: state.stats.earned,
       releases: state.stats.releases || 0, royalties: state.stats.royalties || 0 };
+    if (GG.recap) GG.recap.startYear(state);   // v0.8.1: money in, the lineup, the scene rank, best/worst gig so far
   }
   function historyPoint(state) {
     return { w: state.totalWeek, fund: state.fund, fans: state.fans, buzz: state.buzz, chemistry: state.chemistry };
@@ -9853,6 +10120,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
     if (GG.tour) GG.tour.init(state);     // v0.7: state.tour (regions, invites, the active tour, homesickness, the Gong)
     if (GG.shop) GG.shop.init(state);     // v0.8: gear (owned, sections, kit quality), spaceTier + upgrades, van tier/name/stickers, merch
+    if (GG.licensing) GG.licensing.init(state);   // v0.8.1: state.licensing (offers, deals)
+    if (GG.recap) GG.recap.init(state);           // v0.8.1: state.recaps
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -9892,11 +10161,13 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
     var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
     var tourCard = !forced && !studio && GG.tour ? GG.tour.forcedCard(state) : null;   // v0.7: region cards abroad, invites, big in one place
-    var fan = !forced && !studio && !tourCard && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
-    var shopCard = !forced && !studio && !tourCard && !holiday && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
+    var lic = !forced && !studio && !tourCard && !holiday && GG.licensing ? GG.licensing.forcedCard(state) : null;   // v0.8.1: a licensing offer (or Buckle & Boot's fury)
+    var fan = !forced && !studio && !tourCard && !holiday && !lic && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
+    var shopCard = !forced && !studio && !tourCard && !holiday && !lic && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (lic && lic.card) || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
+    if (lic && lic.who && card === lic.card) state.card.who = lic.who;   // v0.8.1: who brings the offer (speaker 'recruit')
     if (card) state.seenCards[card.id] = state.totalWeek;
     state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
@@ -9930,6 +10201,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
     if (GG.tour) GG.tour.afterCard(state, card, i, success, d);   // v0.7: world cards' 'tour' effects (region fans, homesick, invites)
     if (GG.shop) GG.shop.afterCard(state, card, i, success, d);   // v0.8: shop cards' 'shop' effects (move, kit, van, sections, stock, the misprint)
+    var lr = GG.licensing ? GG.licensing.afterCard(state, card, i, success, d) : null;   // v0.8.1: answer the offer (take / counter / decline)
+    if (lr) { outcome = lr.outcome || outcome; if (lr.success != null) success = lr.success; }
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -10093,6 +10366,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     GG.gig.applyResult(state, r);
     if (GG.world) GG.world.afterGig(state, g, r, rng);
     if (GG.labels) GG.labels.afterGig(state, r);   // v0.5: the Best Live Act case for the Loonies
+    if (GG.recap) GG.recap.gig(state, r);          // v0.8.1: the year's best / worst gig
     state.liveGig = null;
     GG.emit('gig:done', { result: r });
     changed(state);
@@ -10163,6 +10437,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (state.fund >= 0) return;
     var loan = econ().parentsCushion - state.fund;
     addStat(state, 'fund', loan, null);
+    if (state.yearStart) state.yearStart.fin = (state.yearStart.fin || 0) - loan;   // v0.8.1: a loan isn't income
     state.debtToParents += loan;
     state.stats.parentsLoans++;
     state.flags.parentsLoan = true;
@@ -10211,6 +10486,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       releases: (state.stats.releases || 0) - (ys.releases || 0), royalties: (state.stats.royalties || 0) - (ys.royalties || 0),
       line: career.pickLine(state, rng, contentLines('yearEnd'), FALLBACK_LINES.yearEnd)
     };
+    if (GG.recap) wrap.recap = GG.recap.build(state);   // v0.8.1: the year-end recap (compact, kept in state.recaps)
   }
   function advance(state, wrap) {
     state.offer = null; state.card = null; state.quiet = null;
@@ -10249,6 +10525,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
     GG.songs.weekly(state);
+    if (GG.licensing) GG.licensing.weekly(state, rng, wrap);   // v0.8.1: offers expire, ad songs stay stale, a new offer (wrap.licensing; own RNG)
     wrap.milestones = checkMilestones(state);
     state.history.push(historyPoint(state));
     if (state.history.length > E.historyMax) state.history.splice(0, state.history.length - E.historyMax);
@@ -10305,6 +10582,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
     if (dc != null) return dc;
+    var lc = GG.licensing ? GG.licensing.botChoice(state, card, style) : null;   // v0.8.1: take / counter / decline an offer
+    if (lc != null) return lc;
     if (style === 'good' || (GG.shop && GG.shop.card(card.id))) return best;   // v0.8: shop cards show the price/rent on the button: bots read it
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
@@ -10363,6 +10642,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
     if (GG.tour) GG.tour.botWeek(state, style);      // v0.7: botTour: book a tour package (departs next week)
     if (GG.shop) GG.shop.botWeek(state, style);      // v0.8: gear, the kit, the van, a bigger space, upgrades, merch stock
+    if (GG.licensing) GG.licensing.botWeek(state, style);   // v0.8.1: an offer whose card never came up, answered on the laptop
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
@@ -16481,6 +16761,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   weekly(s, wrap) (career.endWeek; wrap.fans) · forcedCard(s) {card}|null (career.startWeek) · afterCard(s, card, i, success, d)
 //   apply(s, v, d) (fan cards' 'fan' effect, applied by afterCard) · effectText(v) · cards() · card(id) · openClub(s) · club(s) view · tiers(s)
 //   superfanList(s) · superfanDef(id) · gifts(s) · addGift(s, id) · kindInfo(kind) · botValue(s, v) · botWeek(s, style)
+//   v0.8.1 (LICRECAP): queue(s, cardId, who, source) (a licensing scandal; hater nudge + loyalty bump go through apply);
+//   cards() also lists GG.licensing.fanCards(); isScandal knows the licensing scandals.
 // POST = { id, w, kind, who, text, likes, shares, plays, viral: null|'good'|'cringe', exclusive, streams,
 //          fx: { buzz, fans }, comments: [{ who: 'fan'|'hater'|'rival'|'dale'|'trucker', name, text }] }
 // Events: 'fans:post' { post } · 'fans:viral' { post, kind } · 'fans:scandal' { card, who } · 'fans:gift' { gift }
@@ -16975,7 +17257,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   };
 
   /* ---- Fan cards (forced only; never drawn) ------------------------------------------------------------------- */
-  F.cards = function () { return K().cards || []; };
+  var fanCardsCache = { a: null, x: null, all: [] };
+  // v0.8.1 (LICRECAP): the licensing sellout scandals (GG.licensing.fanCards) come up like any Bandbook scandal.
+  F.cards = function () {
+    var a = K().cards || [], x = GG.licensing && GG.licensing.fanCards ? GG.licensing.fanCards() : null;
+    if (!x || !x.length) return a;
+    if (fanCardsCache.a !== a || fanCardsCache.x !== x) fanCardsCache = { a: a, x: x, all: a.concat(x) };
+    return fanCardsCache.all;
+  };
   F.card = function (id) { return F.cards().filter(function (c) { return c.id === id; })[0] || null; };
   function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
   function seenAt(s, id) { return s.seenCards && s.seenCards[id] != null ? s.seenCards[id] : null; }
@@ -17010,7 +17299,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     b.lastCard = w;
     return { card: pick };
   };
-  F.isScandal = function (id) { return (K().scandals || []).some(function (x) { return x.card === id; }); };
+  F.isScandal = function (id) { return (K().scandals || []).some(function (x) { return x.card === id; }) || !!(GG.licensing && GG.licensing.isScandal && GG.licensing.isScandal(id)); };
+  // v0.8.1 (LICRECAP): queue a specific scandal card for next Monday (a licensing deal: "sold the moose"). Only when nothing
+  // else is pending; the usual card gap still applies. Returns the pending entry or null.
+  F.queue = function (s, cardId, who, source) {
+    F.ensure(s);
+    var b = s.bandbook;
+    if (b.pending || !F.card(cardId)) return null;
+    b.pending = { card: cardId, who: who || 'band', week: s.totalWeek, source: source || 'queue' };
+    GG.emit('fans:scandal', { card: cardId, who: b.pending.who });
+    return b.pending;
+  };
   // career.resolveCard (after the choice's normal effects): applies the choice's 'fan' effects (and the roll branch's),
   // then the bookkeeping (scandal count, a declined Patreeon). 'fan' is not in C.EFFECT_KEYS: only fan cards use it.
   F.afterCard = function (s, card, i, success, d) {
@@ -18437,6 +18736,634 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var st = GG.state, pl = st && st.player;
     return { unlocked: st ? list(st).length : 0, parts: content().parts.length, pending: !!pending,
       v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null };
+  });
+})(window.GG);
+
+</script>
+<script>/* 2c_sim_licensing.js */
+// 2c_sim_licensing.js (v0.8.1 "Addendum 2", LICRECAP; handoff D1): your songs get licensed for money once you're worth
+// licensing. Pure sim: no DOM, no audio. Every roll uses its own RNG seeded by career seed + a salt + the week (+ offer id),
+// so licensing never shifts the career RNG. Content: content/licensing.js (brands, numbers, lines); the offer card
+// buttons, the fury card and the sellout scandals: content/cards.js (licenseChoices, licenseCards, licenseScandals).
+//  - Offers roll at the week wrap from the Signed era on, or earlier once a record charted on the Maple 100 or a post went
+//    viral on Bandbook (and you have tune.minFans). Rare: a small weekly chance growing with fame, a gap between offers and
+//    a career cap (3, more with fame): 2–4 a career. Brands are genre-weighted (a used brand weighs less). The fee sits in
+//    the brand's range by fame (+-10%), rounded to $100. An offer lands as a Monday card and waits on the laptop
+//    ("Offers") until answered or it expires (tune.expires weeks).
+//  - Take: the fee to the fund (an active label deal takes its cut, (1 - royalty) / 2 clamped 15–40%, counted toward the
+//    recoup), buzz, a few fans, streams for the song's record, SONG.ad = { brandId, week } (stale bump + a stale floor for a
+//    while), haters up by sellout weight and maybe a Bandbook scandal card; Buckle & Boot fury when a truck ad goes to the
+//    Grid Road Ramblers (rival heat + a card; content ready for v0.9); milestones.soldOut (D4 "Sold Out").
+//    Decline: a small superfan loyalty bump (share + Dale). Counter: +40% or the brand walks (30%, down to 15% with fans
+//    or a label behind you); a counter that lands is taken at the higher fee.
+// API (GG.licensing):
+//   cfg() · content() · brands() · brand(id) · init(s) · ensure(s) · migrate(s) · fame(s) 0..1 · eligible(s) · chance(s)
+//   cap(s) · open(s) -> [LICENSE_OFFER] · offer(s, id) · current(s) · quote(s, offer, counter?) -> { fee, cut, net, label }
+//   walkChance(s) · makeOffer(s, rng) · answer(s, id, 'take'|'decline'|'counter', d?) -> RESULT · weekly(s, rng, wrap)
+//   forcedCard(s) -> { card, who }|null · afterCard(s, card, i, success, d) -> { outcome, success }|null · cards() · card(id)
+//   fanCards() · isScandal(id) · isOffer(card) · fillText(s, text) · income(s, fromWeek?, toWeek?) · botChoice(s, card, style)
+//   botWeek(s, style)
+//   RESULT = { ok, why?, id, brandId, choice, status, fee, cut, net, countered, success, outcome, deltas }
+// State: licensing = { offers: [LICENSE_OFFER], deals: [{ brandId, songId, fee, cut, week, countered }], declined, lastOfferWeek,
+//   made (offers so far), cur (offer id the card/laptop is showing), fury (pending fury card: brandId|null) };
+//   LICENSE_OFFER (+ shown: the Monday card has been drawn); SONG.ad; stats.licensed ($ net); milestones.soldOut.
+//   WRAP.licensing = { offer: LICENSE_OFFER|null, expired: [LICENSE_OFFER] }.
+// Events: 'license:offer' { offer } · 'license:answer' { offer, result } · 'license:expired' { offer } · 'license:fury' { brandId }.
+(function (GG) {
+  var C = GG.contracts, U = GG.util;
+  var L = GG.licensing = GG.licensing || {};
+
+  var DEF = {
+    minFans: 400, base: 0.012, fame: 0.014, fameLo: 1000, fameHi: 30000, gap: 14, cap: [3, 4, 5], expires: 3,
+    counter: 0.4, walk: 0.3, walkMin: 0.15, walkFansLo: 5000, walkFansHi: 30000, labelCut: [0.15, 0.4], noise: 0.1,
+    adStale: 25, adFloor: 20, adWeeks: 10, streams: 0.6, streamsMin: 1500, fansMax: 400, haters: 0.04, scandal: 0.5,
+    loyalty: 0.004, daleMood: 4, fury: 20, keep: 6
+  };
+  var cache = { src: null, val: DEF };
+  L.cfg = function () {
+    var t = GG.content.licensing && GG.content.licensing.tune;
+    if (!t) return DEF;
+    if (cache.src !== t) { var o = {}, k; for (k in DEF) o[k] = DEF[k]; for (k in t) o[k] = t[k]; cache = { src: t, val: o }; }
+    return cache.val;
+  };
+  var EMPTY = { brands: [], lines: {} };
+  L.content = function () { return GG.content.licensing || EMPTY; };
+  L.brands = function () { return L.content().brands || []; };
+  L.brand = function (id) { var b = L.brands(); for (var i = 0; i < b.length; i++) if (b[i].id === id) return b[i]; return null; };
+  function Q() { return L.cfg(); }
+  function lines() { return L.content().lines || {}; }
+  function rngOf(s, salt) { return GG.RNG(GG.hashSeed((s.seed >>> 0) + '|lic|' + salt + '|' + s.totalWeek)); }
+  function changed(s) { GG.emit('stats:changed', { state: s }); }
+  function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
+  function money(n) { return U.fmtMoney(n); }
+  function active(s, id) { return (s.members || []).some(function (m) { return m.id === id && m.status === 'active'; }); }
+  function chat(s, who, text, d) { if (GG.career && GG.career.postChat && text) GG.career.postChat(s, who, L.fillText(s, text), d || null); }
+  function speakerFor(s) {   // a bandmate who talks (never Kenji), else the player
+    var m = (s.members || []).filter(function (x) { return x.status === 'active' && x.id !== 'kenji'; })[0];
+    return m ? m.id : 'player';
+  }
+
+  /* ---- State ------------------------------------------------------------------------------------------------ */
+  L.ensure = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    if (!isObj(s.licensing)) s.licensing = {};
+    var l = s.licensing;
+    if (!Array.isArray(l.offers)) l.offers = [];
+    if (!Array.isArray(l.deals)) l.deals = [];
+    if (!isFinite(l.declined)) l.declined = 0;
+    if (!isFinite(l.lastOfferWeek)) l.lastOfferWeek = 0;
+    if (!isFinite(l.made)) l.made = l.offers.length;
+    if (l.cur === undefined) l.cur = null;
+    if (l.fury === undefined) l.fury = null;
+    return s;
+  };
+  L.init = function (s) { return L.ensure(s); };
+  L.migrate = function (s) { if (!s || typeof s !== 'object' || !isFinite(s.totalWeek)) return s; return L.ensure(s); };
+
+  /* ---- When offers come -------------------------------------------------------------------------------------- */
+  L.fame = function (s) {
+    var R = Q(), f = Math.max(1, s.fans || 0);
+    return U.clamp(Math.log(f / R.fameLo) / Math.log(R.fameHi / R.fameLo), 0, 1);
+  };
+  function charted(s) { return (s.albums || []).some(function (a) { return a.status === 'released' && a.chart && a.chart.peak; }); }
+  function viral(s) { return !!(s.bandbook && s.bandbook.viral > 0); }
+  L.eligible = function (s) {
+    if (!s || s.ended || (s.fans || 0) < Q().minFans) return false;
+    return s.era === 'signed' || s.era === 'world' || charted(s) || viral(s);
+  };
+  L.cap = function (s) { var c = Q().cap, f = L.fame(s); return f >= 0.9 ? c[2] : f >= 0.6 ? c[1] : c[0]; };
+  L.open = function (s) {
+    L.ensure(s);
+    return s.licensing.offers.filter(function (o) { return o.status === 'open' && o.expires >= s.totalWeek; });
+  };
+  L.offer = function (s, id) {
+    L.ensure(s);
+    var list = s.licensing.offers;
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  };
+  // The weekly chance of a new offer (0 when not eligible, one is open, the gap hasn't passed or the cap is reached).
+  L.chance = function (s) {
+    L.ensure(s);
+    var R = Q(), l = s.licensing;
+    if (!L.eligible(s) || L.open(s).length || l.made >= L.cap(s)) return 0;
+    if (l.lastOfferWeek && s.totalWeek - l.lastOfferWeek < R.gap) return 0;
+    return R.base + R.fame * L.fame(s);
+  };
+  // The song they want: charted singles first, then your best song that isn't in an ad already.
+  function pickSong(s) {
+    var singles = {};
+    (s.albums || []).forEach(function (a) { if (a.status === 'released' && a.single && a.chart && a.chart.peak) singles[a.single] = true; });
+    var best = null, bestV = -1;
+    (s.songs || []).forEach(function (x) {
+      if (x.ad) return;
+      var v = (x.quality || 0) + (x.classic ? 10 : 0) + (singles[x.id] ? 25 : 0) + (x.hits || 0);
+      if (v > bestV) { bestV = v; best = x; }
+    });
+    return best;
+  }
+  L.makeOffer = function (s, rng) {
+    L.ensure(s);
+    var R = Q(), l = s.licensing, song = pickSong(s);
+    if (!song) return null;
+    var used = {};
+    l.deals.forEach(function (x) { used[x.brandId] = 1; });
+    l.offers.forEach(function (x) { used[x.brandId] = 1; });
+    var pool = L.brands().filter(function (b) { return (b.genres || {})[s.genre] > 0; });
+    var b = rng.weighted(pool, function (x) { return (x.genres[s.genre] || 0) * (used[x.id] ? 0.2 : 1); });
+    if (!b) return null;
+    var f = L.fame(s), fee = (b.fee[0] + (b.fee[1] - b.fee[0]) * f) * rng.range(1 - R.noise, 1 + R.noise);
+    fee = U.clamp(Math.round(fee / 100) * 100, b.fee[0], b.fee[1]);
+    l.made++;
+    var o = { id: 'lic' + l.made, brandId: b.id, songId: song.id, fee: fee, week: s.totalWeek, expires: s.totalWeek + R.expires,
+      countered: false, status: 'open', shown: false };
+    l.offers.push(o);
+    l.lastOfferWeek = s.totalWeek;
+    while (l.offers.length > R.keep) {   // keep the save small: the oldest closed offer goes first
+      var i = -1;
+      for (var j = 0; j < l.offers.length; j++) if (l.offers[j].status !== 'open') { i = j; break; }
+      if (i < 0) break;
+      l.offers.splice(i, 1);
+    }
+    GG.emit('license:offer', { offer: o });
+    return o;
+  };
+
+  /* ---- Money ------------------------------------------------------------------------------------------------ */
+  L.walkChance = function (s) {
+    var R = Q(), deal = GG.labels && GG.labels.deal ? GG.labels.deal(s) : null;
+    var t = Math.max(U.clamp(((s.fans || 0) - R.walkFansLo) / (R.walkFansHi - R.walkFansLo), 0, 1), deal ? 1 : 0);
+    return Math.round((R.walk - (R.walk - R.walkMin) * t) * 100) / 100;
+  };
+  // What you'd get: the label's cut (an active deal: (1 - royalty) / 2, clamped) comes off the top.
+  L.quote = function (s, o, counter) {
+    var R = Q(), fee = o ? (counter ? Math.round(o.fee * (1 + R.counter) / 100) * 100 : o.fee) : 0;
+    var deal = GG.labels && GG.labels.deal ? GG.labels.deal(s) : null, share = 0;
+    if (deal) share = U.clamp((1 - (deal.royalty != null ? deal.royalty : 0.5)) / 2, R.labelCut[0], R.labelCut[1]);
+    var cut = Math.round(fee * share);
+    return { fee: fee, cut: cut, net: fee - cut, label: deal ? deal.name : null, share: share };
+  };
+  // Net licensing income between two weeks (inclusive; defaults: the whole career).
+  L.income = function (s, from, to) {
+    L.ensure(s);
+    from = from || 0; to = to == null ? 1e9 : to;
+    return s.licensing.deals.reduce(function (t, x) { return x.week >= from && x.week <= to ? t + (x.fee - (x.cut || 0)) : t; }, 0);
+  };
+
+  /* ---- Answers ----------------------------------------------------------------------------------------------- */
+  function albumOf(s, songId) {
+    var rel = (s.albums || []).filter(function (a) { return a.status === 'released' && (a.tracks || a.tracklist || []).indexOf(songId) >= 0; });
+    return rel.length ? rel[rel.length - 1] : null;
+  }
+  function take(s, o, counter, d) {
+    var R = Q(), b = L.brand(o.brandId) || { id: o.brandId, name: o.brandId, buzz: 5, reach: 0.01, sellout: 0.5 };
+    var q = L.quote(s, o, counter), deal = GG.labels && GG.labels.deal ? GG.labels.deal(s) : null;
+    if (deal && q.cut && GG.labels.recoupLeft) deal.recouped = Math.round(((deal.recouped || 0) + Math.min(q.cut, GG.labels.recoupLeft(deal))) * 100) / 100;
+    var fans = Math.min(R.fansMax, Math.round((s.fans || 0) * (b.reach || 0.01)));
+    GG.career.applyEffects(s, { fund: q.net, buzz: b.buzz || 5, fans: fans }, d);
+    if (b.takeFx) GG.career.applyEffects(s, b.takeFx, d);
+    var song = GG.songs && GG.songs.byId ? GG.songs.byId(s, o.songId) : null;
+    if (song) {
+      song.ad = { brandId: b.id, week: s.totalWeek };
+      song.stale = U.clamp((song.stale || 0) + R.adStale, 0, 100);
+    }
+    var album = albumOf(s, o.songId);
+    if (album && album.streamRate >= 0) {
+      var add = Math.max(R.streamsMin, Math.round((s.fans || 0) * R.streams));
+      album.streamRate += add; d.streams = (d.streams || 0) + add;
+    }
+    if (GG.fans && GG.fans.apply) GG.fans.apply(s, { hater: Math.round(R.haters * (b.sellout || 0) * 10000) / 10000 }, d);
+    if (GG.fans && GG.fans.queue && rngOf(s, 'scandal|' + o.id).chance(R.scandal * (b.sellout || 0))) {
+      var sc = (GG.content.licenseScandals || []).filter(function (x) {
+        var c = L.card(x.card);
+        return c && (x.who === 'band' || x.who === 'player' || active(s, x.who)) && (!GG.career || GG.career.gatePasses(s, c.gate));
+      })[0];
+      if (sc) GG.fans.queue(s, sc.card, sc.who, 'license');
+    }
+    if (b.id === 'truck' && s.bandId === 'grid_road_ramblers') {   // Buckle & Boot wanted that ad
+      if (GG.rival && GG.rival.addHeat) GG.rival.addHeat(s, R.fury, 'license');
+      s.licensing.fury = b.id;
+      GG.emit('license:fury', { brandId: b.id });
+    }
+    s.licensing.deals.push({ brandId: b.id, songId: o.songId, fee: q.fee, cut: q.cut, week: s.totalWeek, countered: !!counter });
+    o.status = 'taken'; o.countered = !!counter; o.fee = q.fee;
+    s.stats = s.stats || {};
+    s.stats.licensed = (s.stats.licensed || 0) + q.net;
+    if (s.milestones && !s.milestones.soldOut) s.milestones.soldOut = s.totalWeek;   // D4 "Sold Out"
+    chat(s, speakerFor(s), lines().takeChat, d);
+    return q;
+  }
+  // Answers an open offer. choice: 'take' | 'decline' | 'counter'. d: a deltas object to add to (optional).
+  L.answer = function (s, id, choice, d) {
+    L.ensure(s);
+    d = d || {};
+    var o = L.offer(s, id);
+    if (!o || o.status !== 'open' || o.expires < s.totalWeek || s.ended) return { ok: false, why: 'That offer is gone.', id: id };
+    if (C.LICENSE_CHOICES.indexOf(choice) < 0) return { ok: false, why: 'Take it, decline or counter.', id: id };
+    var b = L.brand(o.brandId) || {}, R = Q(), res = { ok: true, id: o.id, brandId: o.brandId, choice: choice, status: null, fee: 0, cut: 0, net: 0,
+      countered: choice === 'counter', success: null, outcome: '', deltas: d };
+    s.licensing.cur = o.id;
+    if (choice === 'take' || choice === 'counter') {
+      var walk = choice === 'counter' && rngOf(s, 'counter|' + o.id).chance(L.walkChance(s));
+      if (choice === 'counter') res.success = !walk;
+      if (walk) {
+        o.status = 'withdrawn'; o.countered = true;
+        res.outcome = L.fillText(s, b.counterWalk || '{brand} walked.');
+        chat(s, speakerFor(s), lines().walkChat, d);
+      } else {
+        var q = take(s, o, choice === 'counter', d);
+        res.fee = q.fee; res.cut = q.cut; res.net = q.net;
+        res.outcome = L.fillText(s, (choice === 'counter' ? b.counterWin + ' ' : '') + (b.take || ''));
+      }
+    } else {
+      o.status = 'declined';
+      s.licensing.declined++;
+      if (GG.fans && GG.fans.apply) GG.fans.apply(s, { super: R.loyalty, superfan: { dale: R.daleMood } }, d);
+      res.outcome = L.fillText(s, b.decline || 'You pass.');
+      chat(s, speakerFor(s), lines().declineChat, d);
+    }
+    res.status = o.status;
+    GG.emit('license:answer', { offer: o, result: res });
+    changed(s);
+    return res;
+  };
+
+  /* ---- The week wrap -------------------------------------------------------------------------------------------- */
+  // career.endWeek (after the songs' weekly decay): offers expire, ad songs stay stale for a while, maybe a new offer.
+  L.weekly = function (s, rng, wrap) {
+    L.ensure(s);
+    var R = Q(), out = { offer: null, expired: [] };
+    s.licensing.offers.forEach(function (o) {
+      if (o.status === 'open' && s.totalWeek >= o.expires) {
+        o.status = 'expired'; out.expired.push(o);
+        var b = L.brand(o.brandId);
+        if (b && b.expire) chat(s, speakerFor(s), b.expire, null);
+        GG.emit('license:expired', { offer: o });
+      }
+    });
+    (s.songs || []).forEach(function (x) {
+      if (x.ad && s.totalWeek - x.ad.week <= R.adWeeks) x.stale = Math.max(x.stale || 0, R.adFloor);
+    });
+    var r = rngOf(s, 'roll'), p = L.chance(s);
+    if (p > 0 && r.chance(p)) out.offer = L.makeOffer(s, r);
+    if (wrap) wrap.licensing = out;
+    return out;
+  };
+
+  /* ---- Cards ------------------------------------------------------------------------------------------------ */
+  var built = { src: null, ch: null, list: [] };
+  // One offer card per brand (content/licensing.js text + content/cards.js licenseChoices), the fury card, the scandals.
+  L.cards = function () {
+    var src = L.content(), ch = GG.content.licenseChoices || [];
+    if (built.src === src && built.ch === ch && built.extra === GG.content.licenseCards) return built.list;
+    var list = L.brands().map(function (b) {
+      return { id: 'lic_' + b.id, type: 'money', speaker: 'recruit', brand: b.id, title: b.title || b.name, text: b.offer || '',
+        choices: ch.map(function (c) {
+          var out = { lic: c.lic, label: c.label, hint: c.hint, effects: {} };
+          out.outcome = c.lic === 'take' ? b.take : c.lic === 'decline' ? b.decline : c.lic === 'later' ? (lines().later || '') : '';
+          return out;
+        }) };
+    }).concat(GG.content.licenseCards || []);
+    built = { src: src, ch: ch, extra: GG.content.licenseCards, list: list };
+    return list;
+  };
+  L.card = function (id) { var c = L.cards(); for (var i = 0; i < c.length; i++) if (c[i].id === id) return c[i]; return null; };
+  L.isOffer = function (card) { return !!(card && card.brand && /^lic_/.test(card.id)); };
+  var scandalCache = { src: null, list: [] };
+  // The sellout scandal cards (29_sim_fans lists them with its own fan cards so a queued one comes up like any scandal).
+  L.fanCards = function () {
+    var src = GG.content.licenseScandals;
+    if (scandalCache.src !== src) scandalCache = { src: src, list: (src || []).map(function (x) { return L.card(x.card); }).filter(Boolean) };
+    return scandalCache.list;
+  };
+  L.isScandal = function (id) { return (GG.content.licenseScandals || []).some(function (x) { return x.card === id; }); };
+  // This Monday's licensing card: the fury card (queued by a truck ad for the Ramblers), else an offer that hasn't been
+  // shown yet (it keeps waiting on the laptop either way).
+  L.forcedCard = function (s) {
+    L.ensure(s);
+    var l = s.licensing, c;
+    if (l.fury) {
+      c = L.card('lic_fury');
+      l.fury = null;
+      if (c && GG.career.gatePasses(s, c.gate)) return { card: c, who: null };
+    }
+    var o = L.open(s).filter(function (x) { return !x.shown; })[0];
+    if (!o) return null;
+    c = L.card('lic_' + o.brandId);
+    if (!c) return null;
+    o.shown = true; l.cur = o.id;
+    var b = L.brand(o.brandId), who = b && b.speaker;
+    if (!who || (!(GG.content.npcs || {})[who] && !active(s, who))) who = 'mom';
+    return { card: c, who: who };
+  };
+  // career.resolveCard: an offer card answers the current offer ('later' leaves it on the laptop); the fury card moves
+  // the rival heat (`lic: { heat }`). Returns { outcome, success } to replace the card's outcome, or null.
+  L.afterCard = function (s, card, i, success, d) {
+    if (!card || !/^lic_/.test(card.id)) return null;
+    var ch = card.choices && card.choices[i];
+    if (!ch) return null;
+    if (ch.effects && ch.effects.lic && ch.effects.lic.heat && GG.rival && GG.rival.addHeat) GG.rival.addHeat(s, ch.effects.lic.heat, 'license');
+    if (!L.isOffer(card)) return null;
+    if (ch.lic === 'later' || !ch.lic) return { outcome: L.fillText(s, ch.outcome || ''), success: null };
+    var res = L.answer(s, s.licensing.cur, ch.lic, d);
+    return res.ok ? { outcome: res.outcome, success: res.success } : { outcome: res.why, success: null };
+  };
+  // career.effectSummary never sees `lic`; this keeps a hint for the fury card honest when content has none.
+  L.effectText = function (v) { return v && v.heat ? 'Rival heat ' + (v.heat > 0 ? '↑' : '↓') : ''; };
+
+  /* ---- Text tokens ------------------------------------------------------------------------------------------- */
+  L.current = function (s) {
+    if (!s || !s.licensing) return null;
+    var l = s.licensing, o = l.cur ? L.offer(s, l.cur) : null;
+    if (!o) o = L.open(s)[0] || null;
+    return o;
+  };
+  // {brand} {adwhat} {adsong} {adfee} {adcounter} {adtake} {adodds} {adleft}, from the current offer (the card's, else the
+  // newest open one); {brand} falls back to the last deal (the fury and scandal cards).
+  L.fillText = function (s, text) {
+    if (text == null || !/\{(brand|ad[a-z]+)\}/.test(text)) return text;
+    var o = L.current(s), l = s && s.licensing;
+    var last = l && l.deals.length ? l.deals[l.deals.length - 1] : null;
+    var b = L.brand(o ? o.brandId : last ? last.brandId : null);
+    var song = o && GG.songs && GG.songs.byId ? GG.songs.byId(s, o.songId) : null;
+    if (!song && last && GG.songs && GG.songs.byId) song = GG.songs.byId(s, last.songId);
+    return String(text).replace(/\{(brand|adwhat|adsong|adfee|adcounter|adtake|adodds|adleft)\}/g, function (all, k) {
+      if (k === 'brand') return b ? b.name : 'the sponsor';
+      if (k === 'adwhat') return b ? b.what : 'commercial';
+      if (k === 'adsong') return song ? song.title : 'your song';
+      if (!o) return k === 'adodds' ? Math.round(L.walkChance(s) * 100) + '%' : '';
+      var q = L.quote(s, o, false);
+      if (k === 'adfee') return money(o.fee);
+      if (k === 'adcounter') return money(L.quote(s, o, true).fee);
+      if (k === 'adtake') return '+' + money(q.net) + (q.cut ? ' after ' + q.label + "'s cut" : '');
+      if (k === 'adodds') return Math.round(L.walkChance(s) * 100) + '%';
+      var left = Math.max(0, o.expires - s.totalWeek) + 1;
+      return left + ' week' + (left === 1 ? '' : 's');
+    });
+  };
+
+  /* ---- Bots --------------------------------------------------------------------------------------------------- */
+  function botPick(s, o, style) {
+    var b = L.brand(o.brandId) || {}, walk = L.walkChance(s);
+    if (style === 'good') {
+      var haters = s.fanTypes ? s.fanTypes.hater : 0;
+      if ((b.sellout || 0) >= 0.8 && haters >= 0.12) return 'decline';
+      return walk <= 0.2 ? 'counter' : 'take';
+    }
+    var x = rngOf(s, 'bot|' + o.id).next();
+    return x < 0.7 ? 'take' : x < 0.85 ? 'counter' : 'decline';
+  }
+  // career.botChoice: which button a bot taps on an offer card (null = not a licensing offer card).
+  L.botChoice = function (s, card, style) {
+    if (!L.isOffer(card)) return null;
+    var o = L.current(s);
+    if (!o) return 0;
+    var want = botPick(s, o, style);
+    for (var i = 0; i < card.choices.length; i++) if (card.choices[i].lic === want) return i;
+    return 0;
+  };
+  // An offer whose card never came up (other cards had the Mondays) gets answered from the laptop.
+  L.botWeek = function (s, style) {
+    L.open(s).forEach(function (o) {
+      if (!o.shown && s.totalWeek >= o.week + 2) L.answer(s, o.id, botPick(s, o, style));
+    });
+  };
+
+  // Saves: fill the licensing fields when missing (no schema bump of our own). Chained onto GG.save.migrate.
+  if (GG.save && GG.save.migrate && !GG.save.migrate.licensing) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return L.migrate(prevMigrate(s)); };
+    Object.keys(prevMigrate).forEach(function (k) { if (GG.save.migrate[k] === undefined) GG.save.migrate[k] = prevMigrate[k]; });
+    GG.save.migrate.licensing = true;
+  }
+
+  GG.registerDebug('licensing', function () {
+    var s = GG.state; if (!s) return { state: null };
+    L.ensure(s);
+    return { open: L.open(s), deals: s.licensing.deals.slice(), made: s.licensing.made, cap: L.cap(s), chance: L.chance(s),
+      eligible: L.eligible(s), walk: L.walkChance(s), income: L.income(s) };
+  });
+})(window.GG);
+
+</script>
+<script>/* 2d_sim_recap.js */
+// 2d_sim_recap.js (v0.8.1 "Addendum 2", LICRECAP; handoff D3): the year-end recap. At the week-24 wrap career.endWeek
+// builds one RECAP from the year's data and keeps it in state.recaps (compact: small numbers + short strings, so the save
+// code stays small; v1.0's Hall of Fame shows a career as a strip of them). Pure sim: no DOM; the headline variant rolls
+// its own RNG (career seed + year), never the career RNG. Words: content/recap.js. Screen: 5l_ui_recap.js.
+// What it tracks during the year (on state.yearStart, reset by career's snapshotYear -> startYear): fin (money in: every
+// positive fund change except a parents' loan; career.addStat), act (the lineup at the start), ret (returns so far), rank /
+// vs (your and the rival's scene rank), bans, best / worst gig ({ v, n, g, s, q }, career settleGig -> gig).
+// API (GG.recap):
+//   init(s) · ensure(s) · migrate(s) · startYear(s) · gig(s, GIG_RESULT) · build(s) -> RECAP (also stored; wrap.recap)
+//   list(s) -> [RECAP] (oldest first) · get(s, year) · events(s, rec) -> [{ key, score, tokens }] (biggest first)
+//   headline(s, rec) -> text · goodYear(s, rec) -> [{ who, text, good }] (year one only; [] otherwise) · nth(n) -> 'Two'
+//   awardName(cat) · regionName(id)
+// RECAP = contracts RECAP + { gigs, loans, lic ($ licensing net), chem (chemistry at the wrap), era (new era this year | null),
+//   noms (award nominations that didn't win) }; best/worst = { venueId, name, grade, quote }; quit/back hold first names (a
+//   recruit who left is gone from state.members, so an id would not resolve later). photo stays null (the screen renders
+//   the band photo live; it is never saved).
+// Events: 'recap:built' { recap }.
+(function (GG) {
+  var C = GG.contracts, U = GG.util;
+  var R = GG.recap = GG.recap || {};
+  var WPY = C.WEEKS_PER_YEAR;
+  var NTH = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen'];
+  var EMPTY = { headlines: {}, quotes: {}, goodYear: [], masthead: 'Rolling Scone' };
+  function K() { return GG.content.recap || EMPTY; }
+  function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
+  function firstName(n) { return String(n || '').split(' ')[0]; }
+  function short(t, n) { t = String(t || ''); return t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : t; }
+  R.nth = function (n) { return NTH[n] || String(n); };
+
+  /* ---- State ------------------------------------------------------------------------------------------------ */
+  R.ensure = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    if (!Array.isArray(s.recaps)) s.recaps = [];
+    return s;
+  };
+  R.init = function (s) { return R.ensure(s); };
+  R.migrate = function (s) { if (!s || typeof s !== 'object' || !isFinite(s.totalWeek)) return s; return R.ensure(s); };
+  function scene(s) {
+    if (!GG.rival || !GG.rival.leaderboard || !s.rival) return null;
+    try {
+      var rows = GG.rival.leaderboard(s), you = null, them = null;
+      rows.forEach(function (r) { if (r.you) you = r.rank; if (r.rival) them = r.rank; });
+      return { rank: you, vs: them };
+    } catch (e) { return null; }
+  }
+  // career.snapshotYear: the start-of-year marks the recap compares against.
+  R.startYear = function (s) {
+    var ys = s.yearStart; if (!ys) return;
+    ys.fin = 0;
+    ys.act = (s.members || []).filter(function (m) { return m.status === 'active'; }).map(function (m) { return [m.id, firstName(m.name)]; });
+    ys.ret = {};
+    (s.members || []).forEach(function (m) { if (m.returns) ys.ret[m.id] = m.returns; });
+    var sc = scene(s);
+    ys.rank = sc ? sc.rank : null; ys.vs = sc ? sc.vs : null;
+    ys.bans = (s.banned || []).length;
+    ys.best = null; ys.worst = null;
+  };
+  // career.settleGig: keeps the year's best and worst gig (score), with a line from the band about it.
+  R.gig = function (s, r) {
+    var ys = s && s.yearStart; if (!ys || !r) return;
+    var q = null;
+    (r.reactions || []).some(function (x) {
+      if (!x || !x.text || x.who === 'kenji') return false;
+      var who = GG.career && GG.career.memberName ? GG.career.memberName(s, x.who) : x.who;
+      q = '“' + short(GG.career ? GG.career.fillText(s, x.text) : x.text, 90) + '” — ' + who;
+      return true;
+    });
+    var e = { v: r.venueId || null, n: short(r.name || 'a gig', 40), g: r.grade || 'C', s: Math.round(r.score || 0), q: q };
+    if (!ys.best || e.s > ys.best.s) ys.best = e;
+    if (!ys.worst || e.s < ys.worst.s) ys.worst = e;
+  };
+
+  /* ---- Building the recap ------------------------------------------------------------------------------------ */
+  function rngFor(s, y, salt) { return GG.RNG(GG.hashSeed((s.seed >>> 0) + '|recap|' + y + '|' + (salt || ''))); }
+  R.awardName = function (cat, genre) {
+    var c = GG.content.awards && GG.content.awards.categories && GG.content.awards.categories[cat];
+    return c ? (c.genreNames && c.genreNames[genre]) || c.name || c.short : String(cat);
+  };
+  R.regionName = function (id) { var r = GG.tour && GG.tour.region ? GG.tour.region(id) : null; return r ? r.name : String(id); };
+  function gigOut(s, e, rng) {
+    if (!e) return null;
+    var q = e.q;
+    if (!q) { var pool = (K().quotes || {})[e.g] || (K().quotes || {}).C || []; q = pool.length ? '“' + rng.pick(pool) + '”' : null; }
+    return { venueId: e.v, name: e.n, grade: e.g, quote: q };
+  }
+  // Builds (or rebuilds) this year's RECAP at the week-24 wrap and stores it in state.recaps (one per year).
+  R.build = function (s) {
+    R.ensure(s);
+    var ys = s.yearStart || {}, y = s.year, w0 = (y - 1) * WPY + 1, w1 = s.totalWeek, rng = rngFor(s, y, 'gig');
+    var inW = function (w) { return w != null && w >= w0 && w <= w1; };
+    var net = (s.fund || 0) - (ys.fund != null ? ys.fund : s.fund), fin = Math.max(0, Math.round(ys.fin || 0));
+    var awards = [], noms = 0;
+    (s.awards || []).forEach(function (a) { if (a.year === y) { if (a.won) awards.push(R.awardName(a.category, s.genre)); else if (a.nominated) noms++; } });
+    var gong = s.tour && (s.tour.gongs || []).filter(function (g) { return g.year === y; })[0];
+    if (gong && gong.won) awards.push('Global Gong'); else if (gong && gong.nominated) noms++;
+    var now = {}, quit = [], back = [];
+    (s.members || []).forEach(function (m) { if (m.status === 'active') now[m.id] = 1; });
+    (ys.act || []).forEach(function (a) { if (!now[a[0]]) quit.push(a[1]); });
+    (s.members || []).forEach(function (m) {
+      if (m.status === 'active' && (m.returns || 0) > ((ys.ret || {})[m.id] || 0)) back.push(firstName(m.name));
+    });
+    var sc = scene(s), rival = sc && sc.rank ? { rank: sc.rank, delta: ys.rank ? ys.rank - sc.rank : 0, vs: sc.vs } : null;
+    var regions = [];
+    if (s.tour && s.tour.regions) Object.keys(s.tour.regions).forEach(function (id) {
+      var r = s.tour.regions[id];
+      if (id !== s.region && r && inW(r.unlocked)) regions.push(id);
+    });
+    var era = null;
+    (s.eraHistory || []).forEach(function (h) { if (h.week > 1 && inW(h.week)) era = h.era; });
+    var rec = {
+      y: y, fundIn: fin, fundOut: Math.max(0, fin - net), fans: (s.fans || 0) - (ys.fans || 0),
+      best: gigOut(s, ys.best, rng), worst: ys.worst && ys.best && ys.worst.s < ys.best.s ? gigOut(s, ys.worst, rng) : null,
+      songs: (s.songs || []).filter(function (x) { return inW(x.written); }).length,
+      albums: (s.albums || []).filter(function (a) { return a.status === 'released' && inW(a.released); }).length,
+      awards: awards, noms: noms, quit: quit, back: back, rival: rival, regions: regions,
+      gigs: (s.stats && s.stats.gigs || 0) - (ys.gigs || 0), loans: (s.stats && s.stats.parentsLoans || 0) - (ys.parentsLoans || 0),
+      lic: GG.licensing ? GG.licensing.income(s, w0, w1) : 0, chem: Math.round(s.chemistry || 0), era: era,
+      headline: '', photo: null
+    };
+    rec.headline = R.headline(s, rec);
+    s.recaps = s.recaps.filter(function (x) { return x.y !== y; });
+    s.recaps.push(rec);
+    GG.emit('recap:built', { recap: rec });
+    return rec;
+  };
+  R.list = function (s) { R.ensure(s); return s.recaps.slice(); };
+  R.get = function (s, y) { R.ensure(s); return s.recaps.filter(function (x) { return x.y === y; })[0] || null; };
+
+  /* ---- The Rolling Scone headline ------------------------------------------------------------------------------- */
+  // Everything that happened this year that could lead the paper, biggest first.
+  R.events = function (s, rec) {
+    var y = rec.y, w0 = (y - 1) * WPY + 1, w1 = y * WPY, out = [], ys = s.yearStart || {};
+    var inW = function (w) { return w != null && w >= w0 && w <= w1; };
+    function add(key, score, tokens) { out.push({ key: key, score: score, tokens: tokens || {} }); }
+    var fin = s.finalShowdown;
+    if (fin && inW(fin.week)) add(fin.headliner === 'you' || fin.won ? 'final_won' : 'final_lost', 100);
+    if (rec.awards.indexOf('Global Gong') >= 0) add('gong', 95);
+    var loonies = rec.awards.filter(function (a) { return a !== 'Global Gong'; });
+    if (loonies.length) add('loonie', 80 + loonies.length, { award: loonies[0] });
+    (s.trophies || []).forEach(function (t) {
+      if (t.year === y && (t.kind === 'gold' || t.kind === 'platinum')) add('cert', t.kind === 'platinum' ? 78 : 75, { album: t.title, cert: t.kind === 'platinum' ? 'Platinum' : 'Gold' });
+    });
+    if (rec.era === 'world') add('world', 72);
+    if (rec.era === 'signed' && s.label && !s.label.dropped) add('signed', 70, { label: s.label.name });
+    (s.albums || []).forEach(function (a) {
+      if (a.status === 'released' && inW(a.released) && a.chart && a.chart.peak) add(a.chart.peak <= 10 ? 'chart_top' : 'charted', a.chart.peak <= 10 ? 66 : 50, { album: a.title, n: a.chart.peak });
+    });
+    if (s.rival && s.rival.cracked && inW(s.rival.crackWeek)) add('crack', 62);
+    if (GG.licensing && s.licensing) s.licensing.deals.forEach(function (d) {
+      if (!inW(d.week)) return;
+      var b = GG.licensing.brand(d.brandId), song = GG.songs && GG.songs.byId ? GG.songs.byId(s, d.songId) : null;
+      add('license', 60, { brand: b ? b.name : 'a sponsor', song: song ? song.title : 'a song' });
+    });
+    if (rec.regions.length) add('region', 58, { region: R.regionName(rec.regions[0]) });
+    if (rec.quit.length) add('quit', 55, { name: rec.quit[0] });
+    if (rec.back.length) add('back', 50, { name: rec.back[0] });
+    if (rec.best && rec.best.grade === 'S') add('best_s', 40, { venue: rec.best.name });
+    var bans = (s.banned || []).length - (ys.bans || 0);
+    if (bans >= 2) add('banned', 35, { n: bans });
+    if (rec.loans >= 2) add('loans', 30, { n: rec.loans });
+    if (rec.fans >= 500) add('fans', 25, { n: U.fmtNum(rec.fans) });
+    if (s.van && s.van.condition != null && s.van.condition < 30) add('survive_van', 12, { van: s.van.name || 'the van' });
+    add('survive', 10);
+    out.sort(function (a, b) { return b.score - a.score; });
+    return out;
+  };
+  R.headline = function (s, rec) {
+    var H = K().headlines || {}, ev = R.events(s, rec), rng = rngFor(s, rec.y, 'headline');
+    for (var i = 0; i < ev.length; i++) {
+      var pool = H[ev[i].key];
+      if (!pool || !pool.length) continue;
+      var t = ev[i].tokens, text = rng.pick(pool).replace(/\{(nth|n|name|award|album|cert|label|region|venue|brand|song|van)\}/g, function (all, k) {
+        if (k === 'nth') return R.nth(rec.y);
+        return t[k] != null ? String(t[k]) : all;
+      });
+      return short(GG.career ? GG.career.fillText(s, text) : text, 110);
+    }
+    return 'Year ' + R.nth(rec.y) + ' in the Books';
+  };
+
+  /* ---- Year one: what a good year looks like ------------------------------------------------------------------ */
+  function speaker(s, prefer) {
+    var npcs = GG.content.npcs || {};
+    for (var i = 0; i < (prefer || []).length; i++) {
+      var id = prefer[i];
+      if (npcs[id] || (s.members || []).some(function (m) { return m.id === id && m.status === 'active'; })) return id;
+    }
+    return null;
+  }
+  R.goodYear = function (s, rec) {
+    if (!rec || rec.y !== 1) return [];
+    var val = { fans: rec.fans, songs: rec.songs, gigs: rec.gigs, loans: rec.loans, chemistry: rec.chem };
+    return (K().goodYear || []).map(function (g) {
+      var who = speaker(s, g.who);
+      if (!who && g.topic !== 'chemistry') {   // another band (v0.9): any bandmate but Kenji says it
+        var m = (s.members || []).filter(function (x) { return x.status === 'active' && x.id !== 'kenji'; })[0];
+        who = m ? m.id : null;
+      }
+      if (!who) return null;
+      var n = val[g.topic] || 0, good = g.topic === 'loans' ? n <= g.target : n >= g.target;
+      var text = (good ? g.good : g.bad).replace(/\{n\}/g, String(n)).replace(/\{target\}/g, String(g.target));
+      return { who: who, text: GG.career ? GG.career.fillText(s, text) : text, good: good };
+    }).filter(Boolean);
+  };
+
+  // Saves: fill state.recaps when missing. Chained onto GG.save.migrate.
+  if (GG.save && GG.save.migrate && !GG.save.migrate.recap) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return R.migrate(prevMigrate(s)); };
+    Object.keys(prevMigrate).forEach(function (k) { if (GG.save.migrate[k] === undefined) GG.save.migrate[k] = prevMigrate[k]; });
+    GG.save.migrate.recap = true;
+  }
+
+  GG.registerDebug('recap', function () {
+    var s = GG.state; if (!s) return { state: null };
+    return { recaps: (s.recaps || []).length, last: (s.recaps || [])[(s.recaps || []).length - 1] || null,
+      yearStart: s.yearStart ? { fin: s.yearStart.fin, rank: s.yearStart.rank, best: s.yearStart.best, worst: s.yearStart.worst } : null };
   });
 })(window.GG);
 
@@ -30172,6 +31099,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
       if (ui.tourWrap) parts.push.apply(parts, ui.tourWrap(w));     // v0.7: on tour, calls home, unlocks, invites, the Gong, home
       if (ui.shopWrap) parts.push.apply(parts, ui.shopWrap(w));     // v0.8: rent, Outro/Solo + merch unlocks, eviction, the collector's item
+      if (ui.licenseWrap) parts.push.apply(parts, ui.licenseWrap(w));   // v0.8.1: a licensing offer came in, offers that expired
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -30189,7 +31117,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
       s.data._off = [GG.on('save:done', function () { ind.textContent = '✓ Saved'; ind.className = 'saved ok'; }),
         GG.on('save:failed', function () { var x = savedText(); ind.textContent = x[0]; ind.className = 'saved fail'; })];
-      ui.append(s.foot, [ind, btn('.btn.primary.big.grow', { testid: 'btn-next-week', onclick: function () { GG.main.nextWeek(); } }, w.ended ? 'The end →' : 'Next week →')]);
+      var recap = w.yearEnd && w.recap && ui.openRecap;   // v0.8.1: the year-end recap comes first, then the next year (or the end)
+      ui.append(s.foot, [ind, btn('.btn.primary.big.grow', { testid: 'btn-next-week', onclick: function () {
+        if (recap && !s.data._recapSeen) { s.data._recapSeen = true; ui.openRecap(w.recap.y, function () { GG.main.nextWeek(); }); }
+        else GG.main.nextWeek();
+      } }, recap ? 'Year in review →' : w.ended ? 'The end →' : 'Next week →')]);
       if (w.deltas && w.deltas.fund > 0) sfx('cash');
     },
     onShow: function (s) { if (ui.shopWrapShown) ui.shopWrapShown(s.data.wrap || (S() && S().wrap)); },   // v0.8: the misprint pays off
@@ -30339,10 +31271,12 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
 // seven tabs wrap into two rows, CSS in 5g).
 // v0.8 (SHOPUI): the Money tab adds merch sold / stock bought and the rehearsal space's weekly rent.
+// v0.8.1 (LICRECAP): an "Offers" line above the tabs while a licensing offer is open (GG.ui.offersLine -> the offer sheet)
+// and a Years tab (past year-end recaps: GG.ui.recapPanel in 5l_ui_recap; nine tabs wrap 5 + 4).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }, { id: 'years', label: 'Years' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -30433,9 +31367,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.'))   // v0.6
         : tab === 'world' ? (ui.worldPanel ? ui.worldPanel(st) : el('p.dim', 'No passport yet.'))   // v0.7
         : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
+        : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
-        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
+        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')),
+        ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
@@ -36622,6 +37558,298 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     return Object.assign({}, dbg, { collectorPending: collector.pending, screen: ui.top(),
       pile: st && SH() && st.merch ? SH().pile(st).boxes : null, table: st && st.merch ? st.merch.table.slice() : null });
   });
+})(window.GG);
+
+</script>
+<script>/* 5l_ui_recap.js */
+// 5l_ui_recap.js (v0.8.1 "Addendum 2", LICRECAP): the year-end recap screen (D3) and the licensing offers UI (D1).
+//  - 'recap' (full screen): one swipeable strip of pages (native horizontal scroll-snap; dots + Next): the cover (Rolling
+//    Scone headline + the band photo), money + fans, best / worst gig, songs + records + awards, the band + the scene
+//    (quits, returns, rank vs the rival, regions unlocked), and year one's "what a good year looks like" (the bandmates
+//    explain it; the tutorial tie-in). Shown at the week-24 wrap (52_ui_week: the wrap's button opens it before the next
+//    year) and again any time from the laptop's Years tab. Display only: no share, no download, no screenshot button.
+//  - The band photo: a still of the current lineup posed in the current space, rendered from the garage scene with a
+//    small render hook that lives here (GG.ui.recapPhoto): the garage's own people and labels are hidden for one frame,
+//    posed figures (GG.render.buildCharacter) stand in front of the kit, one render into an offscreen target, pixels to a
+//    2D canvas, everything restored. Kept in memory for the session (never saved); a drawn stand-in without WebGL.
+//  - 'offer' (sheet): one licensing offer (brand, song, fee, the label's cut, weeks left) with Take / Counter / Decline,
+//    then the outcome. The laptop shows an "Offers" line above its tabs while any offer is open (GG.ui.offersLine) and a
+//    Years tab (GG.ui.recapPanel). The week wrap lists licensing news (GG.ui.licenseWrap).
+// API: GG.ui.openRecap(year, then?) · recapPhoto(state) -> dataURL|null · openOffer(id) · offersLine(st, rerender) ·
+//      recapPanel(st) · licenseWrap(wrap) -> [nodes]
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
+  function S() { return GG.state; }
+  function fill(t) { return t && GG.career && GG.career.fillText && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
+  function money(n) { return U.fmtMoney(n); }
+  function band(st) { var b = GG.content.bands && GG.content.bands[st.bandId]; return b ? b.name : 'The band'; }
+
+  /* ======================================================================================================
+     The band photo (render hook: display only, never saved)
+     ====================================================================================================== */
+  var photos = {};   // 'seed|year' -> dataURL (this session)
+  var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7 };   // the one rig (40_render_core)
+  var CAPES = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
+  function rot(b, x, y, z) { if (b) b.rotation.set(x, y, z); }
+  var POSES = {
+    fist: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.1); rot(bn[B.ARM_R], 0, 0, -2.5); rot(bn[B.FORE_R], 0, 0, -0.35); rot(bn[B.HEAD], -0.12, 0, 0); },
+    cross: function (bn) { rot(bn[B.ARM_L], -0.25, 0, 0.12); rot(bn[B.FORE_L], -1.5, 0, -1.25); rot(bn[B.ARM_R], -0.3, 0, -0.12); rot(bn[B.FORE_R], -1.62, 0, 1.25); },
+    wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
+    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 2.55); rot(bn[B.ARM_R], 0, 0, -2.55); rot(bn[B.FORE_L], 0, 0, 0.5); rot(bn[B.FORE_R], 0, 0, -0.5); },
+    hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
+  };
+  var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips' };
+  function lineup(st) {
+    var b = GG.content.bands && GG.content.bands[st.bandId], cm = {};
+    ((b && b.members) || []).forEach(function (m) { cm[m.id] = m; });
+    var list = (st.members || []).filter(function (m) { return m.status === 'active'; }).map(function (m, i) {
+      return { id: m.id, look: m.look || (cm[m.id] && cm[m.id].look) || null, pose: POSE_OF[m.id] || ['fist', 'hips', 'cross'][i % 3] };
+    });
+    var p = st.player || {}, preset = (GG.content.presets || []).filter(function (x) { return x.id === p.presetId; })[0];
+    var mid = Math.floor(list.length / 2);
+    list.splice(mid, 0, { id: 'player', look: p.look || (preset && preset.look) || null, pose: 'sticks', player: true });
+    return list.slice(0, 7);
+  }
+  // Renders the photo once per year (cached for the session). null when there's no 3D.
+  ui.recapPhoto = function (st, year) {
+    st = st || S();
+    var key = st ? (st.seed >>> 0) + '|' + (year || st.year) : null;
+    if (!st) return null;
+    if (photos[key]) return photos[key];
+    var R = GG.render;
+    if (!R || !R.available || !R.util || !R.buildCharacter || typeof document === 'undefined') return null;
+    var made = [], hidden = [], rt = null, renderer = null;
+    try {
+      if ((GG.debug('render') || {}).scene !== 'garage') R.setScene('garage');
+      R.syncState(st);
+      var ctx = R.util.ctx(), scene = R.util.currentScene();
+      if (!ctx || !scene || !ctx.THREE) return null;
+      var THREE = ctx.THREE; renderer = ctx.renderer;
+      scene.traverse(function (o) { if ((o.isSkinnedMesh || o.isSprite) && o.visible) hidden.push(o); });
+      hidden.forEach(function (o) { o.visible = false; });
+      var people = lineup(st), n = people.length, gap = 0.62, x0 = 0.1 - (n - 1) * gap / 2;
+      var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
+      var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
+      people.forEach(function (p, i) {
+        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: p.id === 'marcel' ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
+        if (!ch) return;
+        var front = p.player ? 0.45 : (i % 2 ? 0.2 : 0.34);
+        ch.root.position.set(x0 + i * gap, 0, front);
+        ch.root.rotation.y = -0.06 * (x0 + i * gap);
+        (POSES[p.pose] || POSES.fist)(ch.bones);
+        scene.add(ch.root);
+        made.push(ch);
+      });
+      scene.updateMatrixWorld(true);
+      var W = 1200, H = 760;
+      rt = new THREE.WebGLRenderTarget(W, H);
+      // From outside the cut-away front wall; the near plane clips everything between the lens and the band (cooler, couch).
+      var cam = new THREE.PerspectiveCamera(35, W / H, 4.7, 40);
+      cam.position.set(0.25, 1.6, 5.75); cam.lookAt(0.05, 1.18, 0); cam.updateMatrixWorld(true);
+      renderer.setRenderTarget(rt);
+      renderer.clear();
+      renderer.render(scene, cam);
+      var px = new Uint8Array(W * H * 4);
+      renderer.readRenderTargetPixels(rt, 0, 0, W, H, px);
+      renderer.setRenderTarget(null);
+      var full = document.createElement('canvas'); full.width = W; full.height = H;
+      var fx = full.getContext('2d'), img = fx.createImageData(W, H), row = W * 4;
+      for (var y = 0; y < H; y++) img.data.set(px.subarray((H - 1 - y) * row, (H - y) * row), y * row);   // GL rows are bottom-up
+      fx.putImageData(img, 0, 0);
+      var out = document.createElement('canvas'); out.width = W / 2; out.height = H / 2;   // 2x supersampled, drawn down
+      var ox = out.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(full, 0, 0, W / 2, H / 2);
+      photos[key] = out.toDataURL('image/jpeg', 0.86);
+    } catch (e) {
+      console.warn('[recap] band photo failed', e);
+      photos[key] = null;
+    } finally {
+      try { if (renderer) renderer.setRenderTarget(null); } catch (e2) { /* ignore */ }
+      made.forEach(function (ch) { try { ch.dispose(); } catch (e3) { /* ignore */ } });
+      hidden.forEach(function (o) { o.visible = true; });
+      if (rt) rt.dispose();
+    }
+    return photos[key] || null;
+  };
+  function photoNode(st, rec) {
+    var url = ui.recapPhoto(st, rec.y);   // an older year re-opened in a new session: today's lineup stands in
+    var cap = band(st) + ' · ' + (GG.shop && GG.shop.spaceDef ? GG.shop.spaceDef(st, st.spaceTier || 0).name : 'the garage');
+    var pic = url ? el('img.rc-img', { src: url, alt: 'The band, year ' + rec.y, draggable: 'false' })
+      : el('div.rc-img.rc-stand', lineup(st).map(function (p) { return ui.avatar(ui.who(p.id), 'lg'); }));
+    return el('figure.rc-photo', { testid: 'recap-photo' }, [pic, el('figcaption', cap)]);
+  }
+
+  /* ======================================================================================================
+     The recap screen
+     ====================================================================================================== */
+  function stat(label, value, cls) { return el('div.rc-stat', [el('span.caps', label), el('b' + (cls ? '.' + cls : ''), value)]); }
+  function gigCard(label, g, cls) {
+    if (!g) return null;
+    return el('div.rc-gig.' + cls, [el('div.row', [el('span.caps.grow', label), el('span.rc-grade.g-' + g.grade, g.grade)]),
+      el('div.rc-venue', g.name), g.quote ? el('div.rc-quote', fill(g.quote)) : null]);
+  }
+  function names(list) { return list.join(', '); }
+  function pages(st, rec) {
+    var R = GG.recap, net = rec.fundIn - rec.fundOut, out = [];
+    out.push(el('div.rc-page', [
+      el('div.rc-mast', [el('span', (GG.content.recap && GG.content.recap.masthead) || 'Rolling Scone'), el('span.tiny', 'YEAR-END ISSUE · YEAR ' + rec.y)]),
+      el('h2.rc-head', { testid: 'recap-headline' }, rec.headline), photoNode(st, rec),
+      el('p.small.dim.center', fill((GG.content.recap && GG.content.recap.intro || '').replace(/\{nth\}/g, R.nth(rec.y))))]));
+    out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'The money'),
+      el('div.rc-grid', [stat('Money in', '+' + money(rec.fundIn), 'good'), stat('Money out', '−' + money(rec.fundOut), 'bad'),
+        stat('Net', (net >= 0 ? '+' : '') + money(net), net >= 0 ? 'good' : 'bad'), stat('New fans', U.signed(rec.fans), rec.fans >= 0 ? 'good' : 'bad')]),
+      el('div.rc-grid', [stat('Gigs played', String(rec.gigs || 0)), stat("Parents' loans", String(rec.loans || 0), rec.loans ? 'bad' : ''),
+        rec.lic ? stat('Licensing', '+' + money(rec.lic), 'good') : null]),
+      el('p.small.dim', rec.loans ? 'Mom has opinions about the loans.' : net >= 0 ? 'The fund grew. Nobody touch it.' : 'More went out than came in. The van ate some of it.')]));
+    out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'On stage'),
+      gigCard('Best gig', rec.best, 'best') || el('p.dim', 'No gigs this year. The garage was very quiet.'),
+      gigCard('Worst gig', rec.worst, 'worst')]));
+    out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'In the studio'),
+      el('div.rc-grid', [stat('Songs written', String(rec.songs)), stat('Records out', String(rec.albums))]),
+      el('div.caps', { style: 'margin-top:6px' }, 'Awards'),
+      rec.awards.length ? el('div.rc-awards', rec.awards.map(function (a) { return el('span.rc-award', '🏆 ' + a); }))
+        : el('p.small.dim', rec.noms ? 'Nominated ' + rec.noms + ' time' + (rec.noms > 1 ? 's' : '') + '. Robbed, probably.' : 'No trophies yet. The shelf waits.'),
+      rec.awards.length && rec.noms ? el('p.small.dim', '+ ' + rec.noms + ' more nomination' + (rec.noms > 1 ? 's' : '')) : null]));
+    var rv = rec.rival, moves = [];
+    if (rec.quit.length) moves.push(el('div.rc-line', ['👋 Left: ', el('b', names(rec.quit))]));
+    if (rec.back.length) moves.push(el('div.rc-line', ['🔁 Came back: ', el('b', names(rec.back))]));
+    if (!moves.length) moves.push(el('div.rc-line.dim', 'Same lineup all year. A small miracle.'));
+    out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'The band & the scene'), el('div.stack.tight', moves),
+      rv ? el('div.rc-grid', [stat('Scene rank', '#' + rv.rank + (rv.delta ? (rv.delta > 0 ? ' ▲' : ' ▼') + Math.abs(rv.delta) : ''), rv.delta > 0 ? 'good' : rv.delta < 0 ? 'bad' : ''),
+        stat(GG.rival ? GG.rival.name(st) : 'The rival', rv.vs ? '#' + rv.vs : '—', rv.vs && rv.vs < rv.rank ? 'bad' : 'good')]) : null,
+      rec.regions.length ? el('div.rc-line', ['🌍 Unlocked: ', el('b', names(rec.regions.map(R.regionName)))]) : null]));
+    var gy = R.goodYear(st, rec);
+    if (gy.length) {
+      out.push(el('div.rc-page.rc-good', [el('div.caps.rc-kicker', 'What a good year looks like'),
+        el('div.stack.tight', gy.map(function (g) {
+          var who = ui.who(g.who);
+          return el('div.rc-say' + (g.good ? '.ok' : ''), [ui.avatar(who), el('div.grow', [el('b', { style: { color: who.text } }, who.short), el('div', g.text)])]);
+        }))]));
+    }
+    return out;
+  }
+  ui.define('recap', {
+    kind: 'full', sticky: true,
+    build: function (s, d) {
+      var st = S(); if (!st || !GG.recap) return;
+      var rec = GG.recap.get(st, d.year) || GG.recap.list(st).slice(-1)[0];
+      if (!rec) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'recap-done', onclick: done }, 'OK')); return; }
+      var list = pages(st, rec), track = el('div.rc-track', { testid: 'recap' }, list.map(function (p, i) { p.setAttribute('data-testid', 'recap-page-' + i); return p; }));
+      var dots = el('div.rc-dots', list.map(function (p, i) { return el('span' + (i ? '' : '.on')); }));
+      var cur = 0, last = list.length - 1;
+      var nextBtn = btn('.btn.primary.big.grow', { testid: 'recap-next', onclick: function () { if (cur < last) go(cur + 1); else done(); } }, 'Next ›');
+      function label() {
+        nextBtn.textContent = cur < last ? 'Next ›' : d.then ? (st.ended ? 'See how it ended →' : 'Start year ' + (rec.y + 1) + ' →') : 'Done';
+        nextBtn.setAttribute('data-testid', cur < last ? 'recap-next' : 'recap-done');
+        Array.prototype.forEach.call(dots.children, function (x, i) { x.classList.toggle('on', i === cur); });
+      }
+      function go(i) { cur = Math.max(0, Math.min(last, i)); track.scrollTo({ left: cur * track.clientWidth, behavior: 'smooth' }); label(); }
+      track.addEventListener('scroll', function () {
+        var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+        if (i !== cur) { cur = Math.max(0, Math.min(last, i)); label(); }
+      }, { passive: true });
+      function done() { var then = d.then; ui.close(s.id); if (then) then(); }
+      s.data._go = go;
+      s.body.classList.add('rc-body');
+      ui.append(s.body, track);
+      ui.append(s.foot, [dots, el('div.row', [d.then ? null : btn('.btn.ghost', { testid: 'recap-close', onclick: done }, 'Close'), nextBtn])]);
+      label();
+    },
+    onShow: function () { sfx('cheer'); }
+  });
+  // Opens the recap for `year` (default: the newest). then(): called when the player is done (the week flow continues).
+  ui.openRecap = function (year, then) {
+    var st = S(); if (!st || !GG.recap) { if (then) then(); return false; }
+    var rec = year ? GG.recap.get(st, year) : GG.recap.list(st).slice(-1)[0];
+    if (!rec) { if (then) then(); return false; }
+    ui.recapPhoto(st, rec.y);   // render the still before the full screen pauses the scene
+    ui.show('recap', { year: rec.y, then: then || null });
+    return true;
+  };
+  // The laptop's Years tab: every recap so far, newest first.
+  ui.recapPanel = function (st) {
+    var list = GG.recap ? GG.recap.list(st).slice().reverse() : [];
+    if (!list.length) return el('p.dim.center', { style: 'padding:30px 0' }, 'No years in the books yet. Ask again after week 24.');
+    return el('div.stack.tight', { testid: 'laptop-years' }, list.map(function (r) {
+      return btn('.rc-row', { testid: 'recap-open-' + r.y, onclick: function () { ui.openRecap(r.y); } }, [
+        el('span.rc-yr', 'Y' + r.y), el('div.grow', [el('div.rc-row-head', r.headline), el('div.tiny.dim', U.signed(r.fans) + ' fans · ' + money(r.fundIn - r.fundOut) + ' net · ' + r.songs + ' songs')]), el('span.dim', '›')]);
+    }));
+  };
+
+  /* ======================================================================================================
+     Licensing offers: the laptop line, the offer sheet, the wrap news
+     ====================================================================================================== */
+  function offerView(st, o) {
+    var L = GG.licensing, b = L.brand(o.brandId) || { name: o.brandId, what: 'ad' }, song = GG.songs.byId(st, o.songId);
+    var left = Math.max(0, o.expires - st.totalWeek) + 1;
+    return { brand: b, song: song, left: left, q: L.quote(st, o, false), qc: L.quote(st, o, true), walk: L.walkChance(st) };
+  }
+  ui.offersLine = function (st, rerender) {
+    if (!GG.licensing || !st) return null;
+    var open = GG.licensing.open(st);
+    if (!open.length) return null;
+    return el('div.stack.tight', { style: 'margin-bottom:10px' }, open.map(function (o) {
+      var v = offerView(st, o);
+      return btn('.lic-line', { testid: 'laptop-offer-' + o.id, onclick: function () { ui.openOffer(o.id, rerender); } }, [
+        el('span', { style: 'font-size:22px' }, '📨'),
+        el('div.grow', [el('div', [el('b', 'Offer: '), v.brand.name]), el('div.tiny.dim', '“' + (v.song ? v.song.title : 'a song') + '” · ' + money(o.fee) + ' · ' + v.left + ' week' + (v.left > 1 ? 's' : '') + ' left')]),
+        el('span.amber', 'Answer ›')]);
+    }));
+  };
+  ui.define('offer', {
+    kind: 'sheet',
+    build: function (s, d) {
+      var st = S(), L = GG.licensing; if (!st || !L) return;
+      var o = L.offer(st, d.id);
+      s.setTitle('Licensing offer', 'THE LAPTOP · OFFERS');
+      if (d.result) {
+        var r = d.result;
+        ui.append(s.body, [el('div.you', ['You picked: ', el('b', { take: 'Take it', counter: 'Counter', decline: 'Decline' }[r.choice] || r.choice)]),
+          r.success === true ? el('span.tag.amber', { style: 'margin-bottom:8px' }, 'They said yes!') : r.success === false ? el('span.tag', { style: 'margin-bottom:8px;color:var(--bad)' }, 'They walked.') : null,
+          el('div.quote', { testid: 'lic-outcome' }, r.outcome || r.why || ''),
+          el('div', { style: 'margin-top:12px' }, ui.deltaChips(r.deltas, { emptyText: 'Nothing changed.' }))]);
+        s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'lic-ok', onclick: function () { ui.close(s.id); if (d.after) d.after(); } }, 'OK'));
+        return;
+      }
+      if (!o || o.status !== 'open') { s.body.appendChild(el('p.dim', 'That offer is gone.')); return; }
+      var v = offerView(st, o);
+      L.ensure(st); st.licensing.cur = o.id;
+      function answer(choice) {
+        var cur = S(); if (!cur || !L.offer(cur, o.id) || L.offer(cur, o.id).status !== 'open') return;
+        var r = L.answer(cur, o.id, choice);
+        if (r && r.net > 0) sfx('cash');
+        if (GG.main && GG.main.sync) GG.main.sync();
+        s.rerender({ id: o.id, result: r, after: d.after });
+      }
+      ui.append(s.body, [
+        el('div.lic-card', [el('div.caps', v.brand.what), el('h3.card-title', v.brand.name), el('p.small.dim', v.brand.blurb || ''),
+          el('div.line-list', [
+            el('div', [el('span', 'The song'), el('b', '“' + (v.song ? v.song.title : 'a song') + '”')]),
+            el('div', [el('span', 'Their offer'), el('b.good', money(o.fee))]),
+            v.q.cut ? el('div', [el('span', v.q.label + "'s cut"), el('span.bad', '−' + money(v.q.cut))]) : null,
+            el('div', [el('span', 'Answer within'), el('span', v.left + ' week' + (v.left > 1 ? 's' : ''))])])]),
+        btn('.choice', { testid: 'lic-take', onclick: function () { answer('take'); } }, [el('span.cl', 'Take it'), el('span.ch', '+' + money(v.q.net) + ' · Buzz ↑ · Haters ↑ · the song gets stale')]),
+        btn('.choice', { testid: 'lic-counter', onclick: function () { answer('counter'); } }, [el('span.cl', 'Counter: ask ' + money(v.qc.fee)), el('span.ch', 'Gamble: ' + Math.round(v.walk * 100) + '% chance they walk')]),
+        btn('.choice', { testid: 'lic-decline', onclick: function () { answer('decline'); } }, [el('span.cl', 'Decline'), el('span.ch', 'No money · Superfans ↑')])
+      ]);
+    }
+  });
+  ui.openOffer = function (id, after) { ui.show('offer', { id: id, after: after || null }); };
+  // The wrap's licensing news: a new offer (answer on Monday or on the laptop), offers that expired.
+  ui.licenseWrap = function (w) {
+    var L = w && w.licensing, st = S(), out = [];
+    if (!L || !GG.licensing || !st) return out;
+    if (L.offer) {
+      var b = GG.licensing.brand(L.offer.brandId);
+      out.push(el('div.panel.warm.row', { testid: 'wrap-license' }, [el('span', { style: 'font-size:24px' }, '📨'),
+        el('div.grow', [el('div', { style: 'font-weight:800' }, (b ? b.name : 'A brand') + ' wants one of your songs'), el('div.small.dim', 'A licensing offer. You\'ll hear about it Monday.')])]));
+    }
+    (L.expired || []).forEach(function (o) {
+      var b = GG.licensing.brand(o.brandId);
+      out.push(el('div.panel.row', [el('span', { style: 'font-size:20px' }, '📭'), el('div.grow.small.dim', (b ? b.name : 'A brand') + ' stopped waiting for an answer.')]));
+    });
+    return out;
+  };
 })(window.GG);
 
 </script>

@@ -475,6 +475,7 @@
       if (ui.rivalWrap) parts.push.apply(parts, ui.rivalWrap(w));   // v0.6: rival news, showdowns, heat, cracks
       if (ui.tourWrap) parts.push.apply(parts, ui.tourWrap(w));     // v0.7: on tour, calls home, unlocks, invites, the Gong, home
       if (ui.shopWrap) parts.push.apply(parts, ui.shopWrap(w));     // v0.8: rent, Outro/Solo + merch unlocks, eviction, the collector's item
+      if (ui.licenseWrap) parts.push.apply(parts, ui.licenseWrap(w));   // v0.8.1: a licensing offer came in, offers that expired
       if (w.members && w.members.length) {
         var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
@@ -492,7 +493,11 @@
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
       s.data._off = [GG.on('save:done', function () { ind.textContent = '✓ Saved'; ind.className = 'saved ok'; }),
         GG.on('save:failed', function () { var x = savedText(); ind.textContent = x[0]; ind.className = 'saved fail'; })];
-      ui.append(s.foot, [ind, btn('.btn.primary.big.grow', { testid: 'btn-next-week', onclick: function () { GG.main.nextWeek(); } }, w.ended ? 'The end →' : 'Next week →')]);
+      var recap = w.yearEnd && w.recap && ui.openRecap;   // v0.8.1: the year-end recap comes first, then the next year (or the end)
+      ui.append(s.foot, [ind, btn('.btn.primary.big.grow', { testid: 'btn-next-week', onclick: function () {
+        if (recap && !s.data._recapSeen) { s.data._recapSeen = true; ui.openRecap(w.recap.y, function () { GG.main.nextWeek(); }); }
+        else GG.main.nextWeek();
+      } }, recap ? 'Year in review →' : w.ended ? 'The end →' : 'Next week →')]);
       if (w.deltas && w.deltas.fund > 0) sfx('cash');
     },
     onShow: function (s) { if (ui.shopWrapShown) ui.shopWrapShown(s.data.wrap || (S() && S().wrap)); },   // v0.8: the misprint pays off

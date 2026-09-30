@@ -459,6 +459,8 @@ test('text tokens are only {player} {band} {city} {nick:id} {name:id} (+ v0.4 {r
         || (/^content\.calendar\.holidays/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band
         || (/^content\.world\./.test(p) && ['region', 'song', 'festival', 'here', 'rival', 'venue'].includes(t))   // v0.7: GG.tour tokens
         || (/^content\.bandbook\./.test(p) && ['who', 'song', 'venue', 'gcity', 'views', 'n', 'money', 'rival'].includes(t))   // v0.6.1: GG.fans tokens
+        || (/^content\.(licensing|licenseChoices|licenseCards)\b/.test(p) && ['brand', 'adwhat', 'adsong', 'adfee', 'adcounter', 'adtake', 'adodds', 'adleft'].includes(t))   // v0.8.1: GG.licensing tokens
+        || (/^content\.recap\./.test(p) && ['rival', 'nth', 'next', 'n', 'target', 'name', 'award', 'album', 'cert', 'label', 'region', 'venue', 'brand', 'song', 'van'].includes(t))   // v0.8.1: GG.recap tokens
         || (parts.length === 2 && ['nick', 'name'].includes(parts[0]) && ALL_MEMBER_IDS.includes(parts[1]));
       if (!good) bad.push(p + ': {' + t + '}');
     }

@@ -8,10 +8,12 @@
 // v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
 // seven tabs wrap into two rows, CSS in 5g).
 // v0.8 (SHOPUI): the Money tab adds merch sold / stock bought and the rehearsal space's weekly rent.
+// v0.8.1 (LICRECAP): an "Offers" line above the tabs while a licensing offer is open (GG.ui.offersLine -> the offer sheet)
+// and a Years tab (past year-end recaps: GG.ui.recapPanel in 5l_ui_recap; nine tabs wrap 5 + 4).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }, { id: 'years', label: 'Years' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -102,9 +104,11 @@
         : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.'))   // v0.6
         : tab === 'world' ? (ui.worldPanel ? ui.worldPanel(st) : el('p.dim', 'No passport yet.'))   // v0.7
         : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
+        : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
-        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')), body]);
+        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')),
+        ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });

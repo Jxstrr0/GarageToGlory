@@ -314,9 +314,9 @@ Later versions:
 ## Addendum 2 — pending
 - [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
       + this checklist recorded, queued file retired — lead, 2026-09-30
-- [ ] D1 licensing deals — v0.8.1 (popup: fee ranges + odds)
+- [x] D1 licensing deals — v0.8.1 (popup: fee ranges + odds → "Nice bonus") — LICRECAP, 2026-09-30
 - [ ] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1
-- [ ] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1
+- [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
 - [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
 - [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
 
@@ -416,6 +416,47 @@ Later versions:
 - UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
+
+## What's in v0.8.1 (licensing + recap) — LICRECAP (handoff D1 + D3; contract `plan/plan_contract_0.8.1.md`)
+- **Licensing (D1)** `GG.licensing` (`src/2c_sim_licensing.js`, API in its header; brands + numbers `content/licensing.js`
+  `tune`; the card buttons, fury + scandal cards `content/cards.js` `licenseChoices` / `licenseCards` / `licenseScandals`).
+  Offers roll at the week wrap (own seeded RNG, never the career RNG) from the Signed era, or earlier once a record charted
+  or a Bandbook post went viral (≥ 400 fans): weekly 1.2% + 1.4% × fame (fame 0 at 1k fans .. 1 at 30k), a 14-week gap,
+  a career cap 3 / 4 (fame ≥ 0.6) / 5 (≥ 0.9). Five parody brands, genre-weighted (a used brand weighs 0.2): Prairie Titan
+  Trucks ($3.5k–6k, country/rock), Riot Juice energy drink ($2.5k–4.5k, metal/punk), Saturday Night Puck on Sportsnut
+  ($1.5k–2.5k, any), Prairie Mutual Hail & Hardship (Marcel's employer; $2k–3.5k, metal; Marcel mood −6), Moosefall IV
+  game trailer ($2k–4k, any). Fee = brand range by fame ±10%, to $100. The offer is a Monday card (speaker per brand,
+  `state.card.who`) with Take it / Counter / Decline / Sleep on it (waits on the laptop's Offers line; expires after 3
+  weeks, a chat line + wrap news). Take: fee to the fund (an active label deal takes (1 − royalty)/2 clamped 15–40%:
+  Gopherwood 25%, Monolith 40%, counted toward the recoup), buzz, fans (reach × fans, ≤ 400), +max(1.5k, 0.6 × fans)
+  stream rate on the song's record, `SONG.ad` (+25 stale, kept ≥ 20 stale for 10 weeks), haters +0.04 × sellout, a
+  sellout scandal (odds 0.5 × sellout) queued through Bandbook (`GG.fans.queue`), Buckle & Boot fury for the Ramblers
+  (rival heat +20 + `lic_fury`; content ready for v0.9), `milestones.soldOut` (D4). Decline: superfans +0.004, Dale +4.
+  Counter: +40% (to $100) or they walk: 30% → 15% with fans (5k → 30k) or any label deal. Bots: the good bot counters when
+  the odds are ≤ 20%, declines a ≥ 0.8 sellout with haters ≥ 12%; the avg bot takes 70% / counters 15% / declines 15%.
+  Balance (`node tools/balance.js 10 5`, column `lic` + a licensing line): avg bot 3.0 offers (2–4), median $7.5k a
+  career; good bot 3.8 (3–5), median $12.6k. Earlier targets hold (loans after y1 0, quits/yr 0.38, World y7 / y5).
+- **Year-end recap (D3)** `GG.recap` (`src/2d_sim_recap.js`; words `content/recap.js`). At the week-24 wrap `endWeek`
+  builds a RECAP (`wrap.recap`, one per year in `state.recaps`; ~640 chars; 10 years grow the save code ~3.4%): money in
+  (every positive fund change but a parents' loan) vs out, fans, best / worst gig (a bandmate's reaction as the quote,
+  else a grade line), songs, records, awards won (Loonies by full name, Global Gong) + nominations, who left / came back
+  (first names), scene rank ▲▼ vs the rival's, regions unlocked, licensing income, a Rolling Scone headline from the
+  year's biggest event (final > Gong > Loonie > cert > World > signed > top-10 chart > crack > licensing > region > quit >
+  return > an S gig > bans > loans > fans > "survive; the van does not"). Year one: Marcel / Dana / Jaxon / Mom explain
+  what a good year looks like against the real numbers (Kenji nods, or doesn't).
+- **UI** `src/5l_ui_recap.js`: the wrap's button becomes "Year in review →" at week 24 → `recap` (full, swipeable
+  scroll-snap pages + dots + Next; the cover has the band photo) → Start year N+1 (or the end). The band photo: a render
+  hook in 5l (no 40/41 edits): the garage's own people + labels hidden for one render, the lineup (`R.buildCharacter`, the
+  player centre with sticks up, Marcel with his cape, Kenji arms crossed) in front of the kit, an offscreen target at 2x,
+  pixels → JPEG data URL, cached per session, never saved; a row of avatars without WebGL. Laptop: an "Offers" line above
+  the tabs (→ the `offer` sheet: Take / Counter / Decline → outcome + chips) and a 9th tab **Years** (tabs wrap 5 + 4) that
+  re-opens any recap. Wrap news: a new offer, offers that expired. No share / screenshot / download button anywhere.
+- Hooks: `20_sim_career` (fillText tokens, addStat money-in, cardById, startWeek licensing card before fan/shop cards,
+  resolveCard answer + outcome, settleGig best/worst, snapshotYear → `GG.recap.startYear`, endWeek licensing weekly + the
+  recap, bots), `29_sim_fans` (`queue`, licensing scandals in `cards()` / `isScandal`), `52_ui_week`, `53_ui_laptop`,
+  shell CSS `/* v0.8.1 RECAP */`. Saves: both modules chain onto `GG.save.migrate` (fill when missing; no `state.v`).
+- Tests: `sim_licensing` 9, `sim_recap` 6 (content 49 whitelists the new tokens); `pw_recap.js` META_ONLY=offer (13) |
+  recap (19), also run at 440×956; pw_rival scene expects nine laptop tabs. Screenshots `tests/.cache/recap_*.png`.
 
 ## v0.8 integration (lead, 2026-09-30)
 - Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
@@ -938,6 +979,17 @@ Later versions:
   META_ONLY=flow|year|code|layout (flows jam their Write blocks) · `pw_garage.js` META_ONLY=garage (48) ·
   `pw_seq.js` META_ONLY=seq (34, screenshot `tests/.cache/seq.png`; also runs guided)|guided (23)|audio (38).
 
+- v0.8.1 `GG.licensing` (2c): `cfg, content, brands, brand(id), init/ensure/migrate, fame, eligible, chance, cap, open,
+  offer(id), current, quote(s, o, counter?) → {fee, cut, net, label, share}, walkChance, makeOffer(s, rng),
+  answer(s, id, take|decline|counter, d?) → {ok, why?, id, brandId, choice, status, fee, cut, net, countered, success,
+  outcome, deltas}, weekly(s, rng, wrap) → wrap.licensing {offer, expired}, forcedCard → {card, who}, afterCard, cards,
+  card, fanCards, isScandal, isOffer, effectText, fillText ({brand} {adwhat} {adsong} {adfee} {adcounter} {adtake} {adodds}
+  {adleft}), income(s, from?, to?), botChoice, botWeek`. Events `license:offer {offer}`, `license:answer {offer, result}`,
+  `license:expired {offer}`, `license:fury {brandId}`. `GG.recap` (2d): `init/ensure/migrate, startYear, gig(s, r),
+  build(s) → RECAP, list, get(s, y), events(s, rec), headline, goodYear(s, rec) → [{who, text, good}], nth, awardName,
+  regionName`; event `recap:built {recap}`. `GG.fans.queue(s, cardId, who, source)`. UI (5l): `GG.ui.openRecap(year,
+  then?), recapPhoto(state, year) → dataURL|null, openOffer(id, after?), offersLine(st, rerender), recapPanel(st),
+  licenseWrap(wrap)`; screens `recap` (full), `offer` (sheet).
 
 ## v0.5.1 hotfix (owner phone report: "the playing mini game is broken, it's also quite difficult")
 - Gig clock now free-runs on performance.now() and only drifts toward the audio clock while it's healthy (running, ~1x);

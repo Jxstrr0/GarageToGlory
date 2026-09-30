@@ -16,6 +16,8 @@
 // v0.8: kit = kit quality tier, gr = gear owned (toms, ride, pedal: 0..3), vt = van tier, sp = space tier (all at year end),
 // mer = merch earned that year ($), mNet = merch earned - stock bought that year, pay = gig pay that year; per career: when
 // the bot owned 6 lanes + the pedal, when it bought a sprinter (vs the World era), merch as a share of gig pay.
+// v0.8.1: lic = licensing income that year ($ net of a label's cut); per career: offers made / deals taken / countered /
+// walked, and the median career licensing total (target: 2–4 offers, a median of roughly $5k–15k).
 //   WIDE_GATES=1 treats garage-only Monday cards as all-era (approximates the CONTENT agent widening gates).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
@@ -102,6 +104,7 @@ function run(style) {
           tr: s.tour ? s.tour.history.length + (s.tour.active ? 1 : 0) - y.tours0 : 0, abr: GG.tour ? GG.tour.abroadFans(s) : 0, hs: y.hs / y.n,
           kit: s.gear ? s.gear.quality || 0 : 0, gr: s.gear && s.gear.owned ? s.gear.owned.length : 0, vt: s.van ? s.van.tier || 0 : 0, sp: s.spaceTier || 0,
           mer: s.merch ? s.merch.earned - y.mer0 : 0, mNet: s.merch ? (s.merch.earned - y.mer0) - (s.merch.spent - y.spent0) : 0, pay: gigPay,
+          lic: GG.licensing ? GG.licensing.income(s, yearIdx * WPY + 1, (yearIdx + 1) * WPY) : 0,
           ...(() => { const sds = (s.showdowns || []).filter(x => x.week > yearIdx * WPY && x.week <= (yearIdx + 1) * WPY);
             return { sd: sds.length, sdWon: sds.filter(x => x.won).length, heat: y.heat / y.n, rvF: s.rival ? s.rival.fans : 0 }; })() });
       }
@@ -120,7 +123,9 @@ function run(style) {
       gongN: s.tour ? s.tour.gongs.filter(g => g.nominated).length : 0, moose: !!(s.tour && s.tour.moose), pres: !!(s.tour && s.tour.president),
       net: s.tour ? s.tour.history.reduce((t, h) => t + (h.net || 0), 0) : 0,
       full, sprinter, kit: s.gear ? s.gear.quality : 0, vt: s.van ? s.van.tier : 0, sp: s.spaceTier || 0,
-      merEarned: s.merch ? s.merch.earned : 0, merSpent: s.merch ? s.merch.spent : 0 });
+      merEarned: s.merch ? s.merch.earned : 0, merSpent: s.merch ? s.merch.spent : 0,
+      licMade: s.licensing ? s.licensing.made : 0, licDeals: s.licensing ? s.licensing.deals.length : 0, licIncome: GG.licensing ? GG.licensing.income(s) : 0,
+      licCounter: s.licensing ? s.licensing.deals.filter(d => d.countered).length : 0, licWalked: s.licensing ? s.licensing.offers.filter(o => o.status === 'withdrawn').length : 0 });
   }
   return rows;
 }
@@ -129,7 +134,7 @@ const peakAvg = a => { const v = a.map(r => r.peak).filter(p => p < 999); return
 const pad = (v, n, d) => { const s = typeof v === 'number' ? v.toFixed(d || 0) : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
 function table(style, rows) {
   const out = [style.toUpperCase() + ' bot',
-    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay'];
+    ' yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic'];
   rows.forEach((a, i) => {
     const fans = a.map(r => r.fans);
     out.push(pad(i + 1, 3) + ' | ' + pad(avg(a, 'fundMin'), 7) + ' ' + pad(avg(a, 'fundEnd'), 7) + ' | ' +
@@ -141,7 +146,7 @@ function table(style, rows) {
       pad(avg(a, 'sgn'), 3, 1) + ' ' + pad(avg(a, 'rel'), 4, 1) + ' ' + pad(peakAvg(a), 4) + ' ' + pad(avg(a, 'roy'), 5) + ' ' + pad(avg(a, 'cert'), 4, 1) + ' ' + pad(avg(a, 'loon'), 4, 1) + ' | ' +
       pad(avg(a, 'sd'), 3, 1) + ' ' + pad(a.reduce((t, r) => t + r.sd, 0) ? Math.round(100 * a.reduce((t, r) => t + r.sdWon, 0) / a.reduce((t, r) => t + r.sd, 0)) + '%' : '-', 3) + ' ' +
       pad(avg(a, 'heat'), 4) + ' ' + pad(avg(a, 'rvF'), 5) + ' | ' + pad(avg(a, 'tr'), 3, 1) + ' ' + pad(avg(a, 'abr'), 5) + ' ' + pad(avg(a, 'hs'), 3) + ' | ' +
-      pad(avg(a, 'kit'), 3, 1) + ' ' + pad(avg(a, 'gr'), 3, 1) + ' ' + pad(avg(a, 'vt'), 3, 1) + ' ' + pad(avg(a, 'sp'), 3, 1) + ' ' + pad(avg(a, 'mer'), 5) + ' ' + pad(avg(a, 'mNet'), 5) + ' ' + pad(avg(a, 'pay'), 5));
+      pad(avg(a, 'kit'), 3, 1) + ' ' + pad(avg(a, 'gr'), 3, 1) + ' ' + pad(avg(a, 'vt'), 3, 1) + ' ' + pad(avg(a, 'sp'), 3, 1) + ' ' + pad(avg(a, 'mer'), 5) + ' ' + pad(avg(a, 'mNet'), 5) + ' ' + pad(avg(a, 'pay'), 5) + ' | ' + pad(avg(a, 'lic'), 5));
   });
   const T = timing[style], wk = (k) => { const v = T.map(t => t[k]).filter(x => x != null); return v.length ? 'wk ' + Math.round(v.reduce((a, b) => a + b, 0) / v.length) + ' (y' + (Math.floor((v.reduce((a, b) => a + b, 0) / v.length - 1) / WPY) + 1) + ', ' + v.length + '/' + T.length + ', ' + Math.min(...v) + '-' + Math.max(...v) + ')' : 'never'; };
   const per = k => (T.reduce((t, x) => t + (+x[k] || 0), 0) / T.length);
@@ -151,6 +156,9 @@ function table(style, rows) {
   const allRows = rows.reduce((t, a) => t.concat(a), []), pay = allRows.reduce((t, r) => t + r.pay, 0), mer = allRows.reduce((t, r) => t + r.mer, 0), mNet = allRows.reduce((t, r) => t + r.mNet, 0);
   out.push('shop: 6 lanes + pedal ' + wk('full') + ' | sprinter ' + wk('sprinter') + ' | merch ' + Math.round(100 * mer / Math.max(1, pay)) + '% of gig pay (net ' +
     Math.round(100 * mNet / Math.max(1, pay)) + '%, $' + Math.round(mNet / T.length) + '/career) | at the end: kit ' + per('kit').toFixed(1) + ', van tier ' + per('vt').toFixed(1) + ', space tier ' + per('sp').toFixed(1));
+  const licT = T.map(t => t.licIncome).sort((a, b) => a - b);
+  out.push('licensing: offers ' + per('licMade').toFixed(1) + '/career (' + Math.min(...T.map(t => t.licMade)) + '-' + Math.max(...T.map(t => t.licMade)) + '), taken ' + per('licDeals').toFixed(1) +
+    ' (countered ' + per('licCounter').toFixed(1) + ', walked ' + per('licWalked').toFixed(1) + ') | career total median $' + licT[Math.floor(licT.length / 2)] + ' (' + licT[0] + '-' + licT[licT.length - 1] + ')');
   const late = rows.slice(1).reduce((t, a) => t + a.reduce((u, r) => u + r.loans, 0), 0) / T.length;
   out.push('loans after year 1 (per career): ' + late.toFixed(2) + ' | releases ' + (T.reduce((t, x) => t + x.albums, 0) / T.length).toFixed(1) + ' | drops ' + (T.reduce((t, x) => t + x.drops, 0) / T.length).toFixed(1) + ' | units sold ' + Math.round(T.reduce((t, x) => t + x.units, 0) / T.length));
   const cr = T.filter(t => t.crack), fin = T.filter(t => t.final);
