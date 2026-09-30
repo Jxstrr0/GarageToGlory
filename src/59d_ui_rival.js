@@ -104,6 +104,7 @@
     out.push(sec('The scene · by fans', 'scene-board', [el('div.panel.rv-board', board.map(function (r) {
       var tr = r.trend || 0;
       return el('div.rv-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: 'scene-row-' + r.id }, [el('span.rk', '#' + r.rank),
+        ui.rivalLogo ? ui.rivalLogo(r.you ? 'you' : r.id, r.name, 34, { badge: 'round', testid: 'scene-logo-' + r.id }) : null,   // v0.8.1: every band's logo
         el('div.grow', [el('b', r.name + (r.you ? ' (you)' : '')), el('div.tiny.dim', [r.city, r.era ? ERA[r.era] || r.era : r.genre].filter(Boolean).join(' · ') + (r.cracked ? ' · cracked' : ''))]),
         el('div.fans', [U.fmtNum(r.fans), el('span.tr' + (tr > 0 ? '.up' : tr < 0 ? '.down' : ''), tr > 0 ? ' ▲' : tr < 0 ? ' ▼' : ' ·')])]);
     }))]));
@@ -158,8 +159,8 @@
       var st = S(); if (!on(st)) return;
       var R = RV(), p = R.pending(st), kind = p ? p.kind : 'botb', set = R.showdown(st, kind), rv = R.get(st);
       s.setTitle(set.title, 'YEAR ' + st.year + ' · WEEK ' + st.week + ' · ' + rv.name.toUpperCase());
-      var body = [el('div.rv-sd-head', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
-        el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];
+      var body = [el('div.rv-sd-head', [ui.rivalLogo ? ui.rivalLogo(rv.id, rv.name, 64, { badge: 'round', testid: 'sd-logo-them' }) : face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
+        ui.bandLogo ? ui.bandLogo(st, 64, { badge: 'round', testid: 'sd-logo-you' }) : el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];   // v0.8.1: both logos
       if (set.stakes && kind !== 'stolenSlot') body.push(el('div.rv-stakes', [el('span.caps', 'Stakes'), el('b', set.stakes)]));
       if (SET_KINDS[kind]) body.push(el('div.line-list.panel', [
         el('div', [el('span', 'Their set strength'), el('span', '~' + set.expected)]),
@@ -352,7 +353,7 @@
       d.back = el('div.rs-back', [el('div.rs-sil', [el('i'), el('i'), el('i'), el('i')])]);
       d.back.hidden = !!V.stage;
       d.score = el('b', { testid: 'rs-score' }, '0');
-      d.bar = el('div.rs-bar', [el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
+      d.bar = el('div.rs-bar', [ui.rivalLogo ? ui.rivalLogo(set.rival.id, set.rival.name, 44, { badge: 'round', testid: 'rs-logo' }) : null, el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
         el('b.rs-who', set.rival.name + (V.ended ? ' are done' : ' are on'))]), el('div.rs-score', [el('span.caps', 'Their set'), d.score])]);
       d.banner = el('div.rs-banner', { testid: 'rs-banner' });
       var rows = set.setlist.map(function (song, i) {
@@ -411,9 +412,9 @@
         el('div.caps.center', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name && sd.name !== title(sd.kind) ? ' · ' + String(sd.name).replace(/^Battle of the Bands @ /, '') : '')),
         el('h1.display.rv-vh', { testid: 'rv-verdict-head' }, head),
         el('div.rv-board2', [
-          el('div.side.you' + (sd.won ? '.win' : ''), [el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),
+          el('div.side.you' + (sd.won ? '.win' : ''), [st && ui.bandLogo ? ui.bandLogo(st, 56, { badge: 'round', testid: 'rv-logo-you' }) : null, el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),   // v0.8.1: logos
           el('span.vs', 'vs'),
-          el('div.side.them' + (sd.won ? '' : '.win'), [face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
+          el('div.side.them' + (sd.won ? '' : '.win'), [rv && ui.rivalLogo ? ui.rivalLogo(rv.id, rv.name, 56, { badge: 'round', testid: 'rv-logo-them' }) : face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
         split ? el('p.small.dim.center', 'Same night, same town: the crowd split on buzz.') : el('p.small.dim.center', split ? '' : 'The crowd decides. Loudly.'),
         el('div.rv-chips', chips),
         el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),

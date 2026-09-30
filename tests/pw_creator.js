@@ -64,7 +64,7 @@ async function creator() {
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => { localStorage.removeItem('gg.v1.unlocks.punk'); localStorage.setItem('gg.v1.unlocks.metal', JSON.stringify({ ids: ['tatSpot.knuckles', 'outfit.leathervest', 'hairStyle.mohawk'] })); });
-    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker
     await waitScreen(page, 'creator');
     const carry = await page.evaluate(() => { const b = document.querySelector('[data-testid="carry-toggle"]'); return { on: b.checked, dis: b.disabled, t: b.parentNode.textContent }; });
     c.ok(carry.on && !carry.dis && /3 unlocks from past metal careers/.test(carry.t), 'carry-over toggle offered + on: ' + JSON.stringify(carry));

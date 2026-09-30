@@ -169,7 +169,7 @@
     var body = sub === 'fans' ? fansTab(st) : sub === 'club' ? clubTab(st, redo) : feedTab(st);
     return el('div', { testid: 'bandbook-panel' }, [
       el('div.bb-head', [el('span.bb-logo', ['band', el('i', 'book')]), el('span.bb-tag', (F().content().tagline) || '')]),
-      el('div.bb-page', { testid: 'bb-page' }, [el('div.bb-pic', name.charAt(0)), el('div.grow', [el('b', name),
+      el('div.bb-page', { testid: 'bb-page' }, [ui.bandLogo ? ui.bandLogo(st, 44, { badge: 'round', testid: 'bb-logo' }) : el('div.bb-pic', name.charAt(0)), el('div.grow', [el('b', name),   // v0.8.1: the band logo
         el('span', U.fmtNum(c.total) + ' fans · ' + b.posts.length + ' posts · 🚀 ' + b.viral + ' viral' + (st.fanClub ? ' · Patreeon ' + st.fanClub.members : ''))])]),
       el('div.bb-sub', ui.tabs(SUBS, sub, function (id) { sub = id; redo(); }, 'bb-tab-')),
       body

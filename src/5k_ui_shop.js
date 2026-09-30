@@ -154,7 +154,7 @@
     var n = buyN[it.id] || 1, cost = SH().stockCost(st, it.id, n), can = SH().canBuyStock(st, it.id, n), pw = priceWord(it.price, it.suggested);
     function setP(p) { var r = SH().setPrice(S(), it.id, p); if (r && r.ok === false) return nope(r); sync(); s.rerender(); }
     return el('div.merch-item' + (onTable ? '.on' : ''), { testid: 'merch-item-' + it.id }, [
-      el('div.row', [el('div.grow', [el('b', it.name), it.id === 'misprint' ? el('span.tag.amber', { style: 'margin-left:6px' }, 'Rare') : null]),
+      el('div.row', [ui.logoMerch ? ui.logoMerch(st, it.id, 48) : null, el('div.grow', [el('b', it.name), it.id === 'misprint' ? el('span.tag.amber', { style: 'margin-left:6px' }, 'Rare') : null]),   // v0.8.1: the logo on it
         btn('.btn.small.merch-toggle' + (onTable ? '.on' : ''), { testid: 'merch-toggle-' + it.id, 'aria-pressed': onTable ? 'true' : 'false', onclick: function () {
           SH().toggleTable(S(), it.id); sync(); s.rerender();
         } }, onTable ? '✓ On the table' : 'Put it out')]),
@@ -264,6 +264,11 @@
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 17, fill: '#151518', stroke: '#0c0e14', 'stroke-width': 2 }));
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 7, fill: '#9aa0a8' }));
     });
+    if (GG.render && GG.render.logo && GG.logo && st.bandId) {   // v0.8.1 LOGO: the band's logo decal (the bus: a big one over the windows)
+      var lz = B.bus ? 58 : 34, lx = B.bus ? x0 + B.w * 0.72 : x0 + 6, ly = B.bus ? y0 + 4 : y0 + B.h * 0.66 - lz - 2;
+      var band = GG.content.bands && GG.content.bands[st.bandId];
+      kids.push(svg('image', { href: GG.render.logo.dataURL(GG.logo.get(st), (band && band.name) || 'The Band', 128), x: lx, y: ly, width: lz, height: lz, testid: 'van-logo' }));
+    }
     // stickers: a grid along the lower body, newest last; banned venues get a red X
     // (more than fit: the last slot of row 2 is a "+N more" tag instead of a sticker)
     var cols = Math.floor((B.w - 20) / 44), shown = list.length > cols * 2 ? list.slice(-(cols * 2 - 1)) : list.slice();

@@ -3,12 +3,12 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
-- Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
-- Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
-- Also shipped: **0.6.2.0** two-thumb chords + guided songwriter (merged 2026-09-29)
-- Hotfix: **0.7.2.0** audio (heavier metal, a layered crowd; see "v0.7.2 audio")
-- Next: **0.7.0 "World"**
+- Current (on `main`): **0.8.1.0 "Addendum 2 catch-up"** (merged 2026-09-30, PR #14). **Update Current/Next at every merge** (Addendum 2 D0).
+- Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
+  (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
+  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap).
+- Next: **0.9 "Genres"** (Frost Heave, Gravel Kings, Grid Road Ramblers; popup first for the other rivals' members) → 1.0
+  Glory (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -90,18 +90,6 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   `GG.audio.hitCancel()` (scheduled hits use their own port) runs in stopAudio: no stray kick/auto note after a restart
   or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
   +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
-
-## Queued: Addendum 2 (owner, 2026-09-30) — `plan/addendum_2_queued.md`
-- Owner: "for after you're done and before final". Its own rule: nothing starts until the version in progress (v0.8)
-  is finished, tested, built, committed, pushed and merged; don't expand v0.8 with it. Then, in order:
-  1. **D0 housekeeping:** fix this file's Version section (Current = `VERSION` on main, shipped list, Next), and from
-     then on update Current/Next at every merge; append the addendum to `plan/handoff.md` as **Part D**; record its
-     decisions + an "Addendum 2 — pending" checklist (D1–D5) under the Addendum 1 one; delete the queued file.
-  2. **v0.8.1 catch-up** (the D items tagged v0.8): D1 licensing deals, D2 band logo (new-career picker + one renderer
-     reused for kick-head art, merch, van stickers, Bandbook avatar, garage banner, Loonies card; rival logos), D3
-     year-end recap (swipeable, band photo still, compact in `history`). Popup first for D6 (licensing fees/odds).
-  3. v0.9 Genres → v1.0 Glory (+ D4 achievements) → **v1.1 Tuning** (D5, new roadmap entry; popup: the owner's top two
-     annoyances). **No share/screenshot button, ever.**
 
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
@@ -285,6 +273,53 @@ Later versions:
 - [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
 - [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
 
+## Addendum 2 (handoff Part D) — decisions (owner, 2026-09-29/30; locked unless marked open)
+- Timing: queued behind v0.8 (done); never expands a version in progress. **No share/screenshot button, ever.**
+- D1 Licensing deals (v0.8.1): offers from the Signed era, or earlier if a song charts on the Maple 100 or goes viral on
+  Bandbook; rare (~2–4 per career, more with fame); a Monday card that sits on the laptop ("Offers") for a few weeks.
+  Parody brands, genre-weighted: truck commercial (country/rock — Buckle & Boot furious when it goes to the Ramblers:
+  rival heat + a card), energy drink (metal/punk), hockey highlight package (any), regional insurance ad (metal — Marcel's
+  employer, mortified), video game trailer (any). Content `src/content/licensing.js` (brand, blurb, fee range, genre fit,
+  sellout weight). Choices: Take it (lump sum + buzz + streams for that song) / Decline (small superfan loyalty bump) /
+  Counter (better fee, chance the offer is withdrawn; odds improve with fans + label clout). Taking it: the song gets
+  an "in a commercial" tag that bumps staleness; sellout weight nudges haters up and can trigger a Bandbook scandal card;
+  recoupable labels take their cut. Achievement "Sold Out" (D4). **Money (owner popup 2026-09-30: "Nice bonus"): $1,500–
+  $6,000 per offer (hockey package low, truck commercial high), 2–4 offers per career, Counter +40% with ~30% walk-away
+  (~15% with lots of fans or a label).**
+- D2 Band logo (v0.8.1): picked on the new-career flow after the band intro, before the creator; editable later on the
+  laptop for a fee ("Rebrand": small cost + a little buzz). Three taps: emblem (skull, wheat sheaf, lightning bolt, moose,
+  maple leaf, gopher, anvil, hailstone, grain elevator, cowboy hat, safety pin, flaming tire), lettering style (spiky
+  unreadable metal, cut-out ransom punk, chrome '80s rock, western slab country — any genre may use any; default = the
+  band's), colour pair (~10 curated). Drawn procedurally to a cached canvas texture, reused everywhere: kick-drum head
+  art, merch, van stickers, Bandbook avatar, garage banner, Loonies broadcast card, Hall of Fame entry. No image files.
+  Save: `logo: { emblem, style, palette }`; carry-over follows the cosmetics rule. Rival bands get fixed logos from content
+  (same renderer) on the Scene leaderboard + BOTB screens. **OPEN (D6): final emblem + palette lists (add, don't shrink).**
+- D3 Year-end recap (v0.8.1): at the week-24 wrap, before the next year: one swipeable screen — fund change (in vs out),
+  fans gained, best/worst gig (venue, grade, one-line quote), songs written + albums released, awards (Loonies, Global
+  Gong), who quit / came back, rival standing (leaderboard delta), regions unlocked, a Rolling Scone headline generated
+  from the year's biggest event; a band photo (the current lineup posed in the current space, a 3D still — not a share
+  image). Stored compactly in `history` (don't bloat the save code) so v1.0's Hall of Fame can show a career as a strip of
+  yearly recaps. Year 1's recap is where the bandmates explain what "a good year" looks like (tutorial tie-in).
+- D4 Achievements (v1.0, with Hall of Fame + meta unlocks): cross-career, meta storage, laptop "Trophies" + a toast on
+  unlock; ~30 as content (`src/content/achievements.js`: id, name, blurb, condition); never gate content. Seed list in
+  handoff Part D4 (Twelve People and a Dog, The Wall, Ma Pelouse, The Original Five, Kijiji All-Stars, Sold Out, Worst Van,
+  Block Heater, Buddy, Big in Japan, Frostbite, Chugging Along, Grey Mug, Night School, Sad Dome). **OPEN: extras (cheap +
+  funny, add freely).**
+- D5 **v1.1 "Tuning"** (new roadmap entry after v1.0): no new features; owner playtests years 3–6 on his phone → numbered
+  items in this file → small v1.1.x patches, `tools/balance.js` before/after each; bot probes (fund by year incl. the late
+  plateau, fans vs Steady targets, quits ≈ 1 per 1–2 years, rival gap, World ≈ year 5–6, bonus-year rate); back-burner
+  sweep (fix cheap, close the rest with a reason); phone QA at 390×844 (every screen, two-thumb on Hard/Expert, Bluetooth
+  calibration, save-code size, battery on a full gig). Start v1.1 with a popup: the owner's two biggest annoyances.
+
+## Addendum 2 — pending
+- [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
+      + this checklist recorded, queued file retired — lead, 2026-09-30
+- [x] D1 licensing deals — v0.8.1 (popup: fee ranges + odds → "Nice bonus") — LICRECAP, 2026-09-30
+- [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
+- [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
+- [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
+- [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
+
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
 - Build: `node build.js` → dist/. ORDER rule: 01_ns, 02_contracts, content/*.js, then other src/*.js by name.
@@ -381,6 +416,84 @@ Later versions:
 - UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
+
+## What's in v0.8.1 (licensing + recap) — LICRECAP (handoff D1 + D3; contract `plan/plan_contract_0.8.1.md`)
+- **Licensing (D1)** `GG.licensing` (`src/2c_sim_licensing.js`, API in its header; brands + numbers `content/licensing.js`
+  `tune`; the card buttons, fury + scandal cards `content/cards.js` `licenseChoices` / `licenseCards` / `licenseScandals`).
+  Offers roll at the week wrap (own seeded RNG, never the career RNG) from the Signed era, or earlier once a record charted
+  or a Bandbook post went viral (≥ 400 fans): weekly 1.2% + 1.4% × fame (fame 0 at 1k fans .. 1 at 30k), a 14-week gap,
+  a career cap 3 / 4 (fame ≥ 0.6) / 5 (≥ 0.9). Five parody brands, genre-weighted (a used brand weighs 0.2): Prairie Titan
+  Trucks ($3.5k–6k, country/rock), Riot Juice energy drink ($2.5k–4.5k, metal/punk), Saturday Night Puck on Sportsnut
+  ($1.5k–2.5k, any), Prairie Mutual Hail & Hardship (Marcel's employer; $2k–3.5k, metal; Marcel mood −6), Moosefall IV
+  game trailer ($2k–4k, any). Fee = brand range by fame ±10%, to $100. The offer is a Monday card (speaker per brand,
+  `state.card.who`) with Take it / Counter / Decline / Sleep on it (waits on the laptop's Offers line; expires after 3
+  weeks, a chat line + wrap news). Take: fee to the fund (an active label deal takes (1 − royalty)/2 clamped 15–40%:
+  Gopherwood 25%, Monolith 40%, counted toward the recoup), buzz, fans (reach × fans, ≤ 400), +max(1.5k, 0.6 × fans)
+  stream rate on the song's record, `SONG.ad` (+25 stale, kept ≥ 20 stale for 10 weeks), haters +0.04 × sellout, a
+  sellout scandal (odds 0.5 × sellout) queued through Bandbook (`GG.fans.queue`), Buckle & Boot fury for the Ramblers
+  (rival heat +20 + `lic_fury`; content ready for v0.9), `milestones.soldOut` (D4). Decline: superfans +0.004, Dale +4.
+  Counter: +40% (to $100) or they walk: 30% → 15% with fans (5k → 30k) or any label deal. Bots: the good bot counters when
+  the odds are ≤ 20%, declines a ≥ 0.8 sellout with haters ≥ 12%; the avg bot takes 70% / counters 15% / declines 15%.
+  Balance (`node tools/balance.js 10 5`, column `lic` + a licensing line): avg bot 3.0 offers (2–4), median $7.5k a
+  career; good bot 3.8 (3–5), median $12.6k. Earlier targets hold (loans after y1 0, quits/yr 0.38, World y7 / y5).
+- **Year-end recap (D3)** `GG.recap` (`src/2d_sim_recap.js`; words `content/recap.js`). At the week-24 wrap `endWeek`
+  builds a RECAP (`wrap.recap`, one per year in `state.recaps`; ~640 chars; 10 years grow the save code ~3.4%): money in
+  (every positive fund change but a parents' loan) vs out, fans, best / worst gig (a bandmate's reaction as the quote,
+  else a grade line), songs, records, awards won (Loonies by full name, Global Gong) + nominations, who left / came back
+  (first names), scene rank ▲▼ vs the rival's, regions unlocked, licensing income, a Rolling Scone headline from the
+  year's biggest event (final > Gong > Loonie > cert > World > signed > top-10 chart > crack > licensing > region > quit >
+  return > an S gig > bans > loans > fans > "survive; the van does not"). Year one: Marcel / Dana / Jaxon / Mom explain
+  what a good year looks like against the real numbers (Kenji nods, or doesn't).
+- **UI** `src/5l_ui_recap.js`: the wrap's button becomes "Year in review →" at week 24 → `recap` (full, swipeable
+  scroll-snap pages + dots + Next; the cover has the band photo) → Start year N+1 (or the end). The band photo: a render
+  hook in 5l (no 40/41 edits): the garage's own people + labels hidden for one render, the lineup (`R.buildCharacter`, the
+  player centre with sticks up, Marcel with his cape, Kenji arms crossed) in front of the kit, an offscreen target at 2x,
+  pixels → JPEG data URL, cached per session, never saved; a row of avatars without WebGL. Laptop: an "Offers" line above
+  the tabs (→ the `offer` sheet: Take / Counter / Decline → outcome + chips) and a 9th tab **Years** (tabs wrap 5 + 4) that
+  re-opens any recap. Wrap news: a new offer, offers that expired. No share / screenshot / download button anywhere.
+- Hooks: `20_sim_career` (fillText tokens, addStat money-in, cardById, startWeek licensing card before fan/shop cards,
+  resolveCard answer + outcome, settleGig best/worst, snapshotYear → `GG.recap.startYear`, endWeek licensing weekly + the
+  recap, bots), `29_sim_fans` (`queue`, licensing scandals in `cards()` / `isScandal`), `52_ui_week`, `53_ui_laptop`,
+  shell CSS `/* v0.8.1 RECAP */`. Saves: both modules chain onto `GG.save.migrate` (fill when missing; no `state.v`).
+- Tests: `sim_licensing` 9, `sim_recap` 6 (content 49 whitelists the new tokens); `pw_recap.js` META_ONLY=offer (13) |
+  recap (19), also run at 440×956; pw_rival scene expects nine laptop tabs. Screenshots `tests/.cache/recap_*.png`.
+
+## What's in v0.8.1 (logo) — Addendum 2 D2, LOGO agent (worktree branch, merged by the lead)
+- Content `content/logo.js` (`GG.content.logo`): 15 emblems (the owner's twelve in C.LOGO_EMBLEMS order + curling stone,
+  mosquito, toque; each with art params scale/dy/spin), the 4 lettering styles (Spiky / Ransom note / Chrome '80s / Western
+  slab, any genre may use any), 14 curated colour pairs `{ fg (letters), em (emblem), ground (outlines + badges) }`, a default
+  per band (Hail Damage hailstone·metal·Frostbite, Frost Heave safety pin·punk·Hazard tape, Gravel Kings bolt·rock·Chrome &
+  neon, Grid Road Ramblers cowboy hat·country·Prairie sunset), a fixed logo for every rival + every scene band (scene copies
+  alias the big rivals with `{ same }`), Rebrand price (garage $150 / local $300 / signed $600 / world $900 + 3 buzz), chat lines.
+- Sim `2e_sim_logo.js` (`GG.logo`, DOM-free, no career RNG): sanitize/defaults/rival logos, `prepare` (the picker's pick) →
+  'career:new' sets `state.logo` (band default otherwise), Rebrand, carry-over (this phone remembers the last logo per genre in
+  `gg.v1.unlocks.<genre>.logo`, next to the creator's carry key; the picker starts from it), migrate chained onto
+  GG.save.migrate (fills `state.logo` only when missing/broken; never `state.v`). Event 'logo:changed' { state, logo, source }.
+- Render `46_render_logo.js` (`GG.render.logo`): procedural canvas (no image files, cached LRU 72): the emblem (vector paths,
+  one ground-coloured outline round the union) under the name in its lettering — metal: serif caps growing symmetric seeded
+  spikes/roots/barbs from the glyph edges; punk: seeded ransom letters on torn paper patches with hard shadows; rock: skewed
+  italic with a block extrude, chrome gradient + sparkle; country: fattened slab caps on an arch, hard em-coloured drop shadow,
+  stars. "The" becomes a small prefix; long names split in two lines. Below 72 px it draws the emblem + initials (mini).
+  Options square/wide (+aspect), badge circle/round, plain (emblem only), textOnly. `head()` = kick-head art, `merch()` = the
+  item with the logo on it (the misprint prints crooked, as HALE DAMAGE).
+- UI `5m_ui_logo.js`: screen `logo` (full): sticky live preview (big + kick / shirt / Bandbook minis), 1 · emblem (5-col grid),
+  2 · lettering (the band's name in each style), 3 · colours (swatches), ↺ Band default, 🎲 Surprise me. New-career flow:
+  band intro → `logo` → creator (51; Back from the creator keeps the pick). Laptop Band tab: "The logo" card + ✏ Rebrand (same
+  screen in rebrand mode: cost + why, "Rebrand · $X"). No share/screenshot/download button.
+- Reuse (small hooks in shared files): kick-drum head 'logo' art (40 drawHead → `GG.render.logo.head`; 41's kit signature
+  includes the logo so a Rebrand rebuilds it; stage + creator preview get it for free), garage bedsheet banner (41, the wide
+  logo sprayed on the sheet; banner only), merch item art (5k itemCard), van side SVG decal (5k vanSide; the tour bus gets a big
+  one) + a windshield sticker in the 3D van (43, own vehicles, not the bus; `van.info().logo`), Bandbook avatar (5g), Loonies
+  broadcast card (59c: a TV lower third with the winner's logo; rival winners resolved by name), Scene leaderboard (a logo on
+  every row) + BotB announcement (both logos), rival-set bar and verdict (59d). CSS block `/* v0.8.1 LOGO */` (end of shell).
+- Tests: `tests/sim_logo.test.js` (7) · `tests/pw_logo.js` META_ONLY=picker (23) | reuse (14) + contact sheet
+  `tests/.cache/v081_logo_sheet.png`. pw_flow/pw_creator/pw_settings tap `btn-logo-done` after the band intro (pw_flow layout
+  audits + shoots the picker). Green at 390x844: node suite, pw_logo, pw_flow flow/layout, pw_garage, pw_shop merch/van,
+  pw_creator creator/kit, pw_label awards, pw_rival scene/botb, pw_settings difficulty; pw_logo picker/reuse at 440x956.
+- Gaps: the Hall of Fame entry (v1.0) will call `GG.render.logo.forState`; lettering uses system fonts (Georgia / Arial Black /
+  Rockwell fall back per device, so the exact look varies a little by phone); the kick head in the picker's mini preview and
+  avatars under 72 px show initials, not the name; rival kits on stage don't show the rival's logo; the 3D tour bus has no
+  interior logo (it's on the SVG side view).
 
 ## v0.8 integration (lead, 2026-09-30)
 - Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
@@ -825,6 +938,14 @@ Later versions:
   weekly (wrap.shop), cards, card, effectText, botValue, botWeek`. Buys return `{ ok, cost, deltas }` or `{ ok: false, why }`.
   Events `shop:buy|unlock|move|rename|sticker|misprint|merch`. `GG.fans.merchMods(s, r)`; `GG.songs` extras above;
   `GG.audio.kitFor/kitQuality/qualityFor`. Debug `GG.debug('shop')`.
+- `GG.logo` (v0.8.1, header of `2e_sim_logo.js`): `content, emblems, styles, palettes, emblem, style, palette, key, same,
+  defaultFor(bandId|genre), sanitize(logo, bandId?), get(state), ensure(state), rival(id, genre?), findRival(name), rebrandCost,
+  canRebrand, rebrand(state, logo) -> { ok, cost, buzz, logo, deltas } | { ok: false, why }, prepare(logo, bandId), pending(bandId?),
+  init, migrate, carry.{key, read, write}`. Event 'logo:changed'. Debug 'logo'. `GG.render.logo` (46): `canvas(logo, name, size,
+  { shape, aspect, badge, mini, plain, textOnly }), texture, dataURL, forState, forRival, nameOf, head(g, o), merch(logo, name,
+  itemId, size), palette, split, emblemIds, info` (debug 'render-logo'). `GG.ui` (5m): `openLogo({ mode: 'new'|'rebrand', bandId,
+  genre, band, logo, onDone }), logoImg(logo, name, size, opts), bandLogo(st, size, opts), rivalLogo(id|'you', name, size, opts),
+  logoPanel(st, rerender), logoMerch(st, itemId, size), logoBroadcast(st, { winner, won, category })`; screen 'logo'; debug 'logo-ui'.
 - `GG.ui` v0.8 shop (header of `5k_ui_shop.js`): `openGear(), openMerch(), showVan(tab 'van'|'space'|'dealer'), vanSide(st, { tier, stickers }),
   vanUpgradesPanel, spacePanel, dealerPanel, shopChips(deltas.shop), merchResult(r.merch), isMerchLine, shopWrap(w), shopWrapShown(w),
   playCollector(done)`. Screens `gear`, `merch` (tall sheets), `van-info` (tabs), `shop-collector` (full). Debug `shopui`.
@@ -903,6 +1024,17 @@ Later versions:
   META_ONLY=flow|year|code|layout (flows jam their Write blocks) · `pw_garage.js` META_ONLY=garage (48) ·
   `pw_seq.js` META_ONLY=seq (34, screenshot `tests/.cache/seq.png`; also runs guided)|guided (23)|audio (38).
 
+- v0.8.1 `GG.licensing` (2c): `cfg, content, brands, brand(id), init/ensure/migrate, fame, eligible, chance, cap, open,
+  offer(id), current, quote(s, o, counter?) → {fee, cut, net, label, share}, walkChance, makeOffer(s, rng),
+  answer(s, id, take|decline|counter, d?) → {ok, why?, id, brandId, choice, status, fee, cut, net, countered, success,
+  outcome, deltas}, weekly(s, rng, wrap) → wrap.licensing {offer, expired}, forcedCard → {card, who}, afterCard, cards,
+  card, fanCards, isScandal, isOffer, effectText, fillText ({brand} {adwhat} {adsong} {adfee} {adcounter} {adtake} {adodds}
+  {adleft}), income(s, from?, to?), botChoice, botWeek`. Events `license:offer {offer}`, `license:answer {offer, result}`,
+  `license:expired {offer}`, `license:fury {brandId}`. `GG.recap` (2d): `init/ensure/migrate, startYear, gig(s, r),
+  build(s) → RECAP, list, get(s, y), events(s, rec), headline, goodYear(s, rec) → [{who, text, good}], nth, awardName,
+  regionName`; event `recap:built {recap}`. `GG.fans.queue(s, cardId, who, source)`. UI (5l): `GG.ui.openRecap(year,
+  then?), recapPhoto(state, year) → dataURL|null, openOffer(id, after?), offersLine(st, rerender), recapPanel(st),
+  licenseWrap(wrap)`; screens `recap` (full), `offer` (sheet).
 
 ## v0.5.1 hotfix (owner phone report: "the playing mini game is broken, it's also quite difficult")
 - Gig clock now free-runs on performance.now() and only drifts toward the audio clock while it's healthy (running, ~1x);

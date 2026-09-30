@@ -3,7 +3,7 @@
 (function (GG) {
   var C = GG.contracts = {};
 
-  C.SAVE_SCHEMA = 9;             // state.v; bump + add a migration in 10_save.js when the shape changes
+  C.SAVE_SCHEMA = 10;            // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
   C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
@@ -28,6 +28,10 @@
   // Rehearsal spaces by era (index = tier). Tier 0 is the band's own start (garage / laundromat basement / strip-mall unit / Quonset).
   C.SPACE_TIERS = ['start', 'jam_room', 'pro_studio', 'arena_backstage'];
   C.MERCH_TIERS = ['basics', 'warm', 'vinyl', 'limited'];     // stickers/shirts → hoodies/toques → vinyl → silly limited editions
+  // v0.8.1 (Addendum 2): band logo (D2) + licensing (D1). Lists are starting sets (add, don't shrink); palettes in content/logo.js.
+  C.LOGO_EMBLEMS = ['skull', 'wheat', 'bolt', 'moose', 'maple', 'gopher', 'anvil', 'hailstone', 'elevator', 'cowboy_hat', 'safety_pin', 'flaming_tire'];
+  C.LOGO_STYLES = ['metal', 'punk', 'rock', 'country'];   // spiky unreadable / cut-out ransom / chrome '80s / western slab (any genre may use any)
+  C.LICENSE_CHOICES = ['take', 'decline', 'counter'];
   C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
   C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
   C.SLOTS = ['auto', '1', '2', '3'];
@@ -115,6 +119,14 @@
      merch: { unlocked: [merchId], stock: { <merchId>: units at home }, price: { <merchId>: $ }, sold: { <merchId>: n }, earned,
        misprint: null | { merchId, week, status: 'boxed'|'collector' } }   (unsold stock at home = the visible box pile),
      player: { …, look: LOOK (everyday), stageLook: LOOK (auto for gigs / red carpet / stage scenes), kit: KIT_LOOK },
+     v0.8.1 ADDENDUM 2 (each module fills its own fields when missing, chained onto GG.save.migrate; SAVE_SCHEMA 10):
+     logo: { emblem: C.LOGO_EMBLEMS, style: C.LOGO_STYLES, palette: paletteId } (D2; default per band from content/logo.js),
+     licensing: { offers: [ LICENSE_OFFER ], deals: [ { brandId, songId, fee, week, countered } ], declined, lastOfferWeek } (D1),
+     SONG.ad: null | { brandId, week } ("in a commercial": staleness bump), recaps: [ RECAP ] (D3, compact, one per year).
+   LICENSE_OFFER = { id, brandId, songId, fee, week, expires (totalWeek), countered: bool, status: 'open'|'taken'|'declined'|'withdrawn'|'expired' }
+   RECAP = { y, fundIn, fundOut, fans (gained), best: { venueId, name, grade, quote } | null, worst: same | null, songs, albums,
+     awards: [ short text ], quit: [memberId], back: [memberId], rival: { rank, delta } | null, regions: [regionId],
+     headline: text, photo: null } (small numbers + short strings only: the save code stays small)
      unlocks: { creator: [partId], news: [partId] (not yet announced) }   (grown by the career; carry-over within a genre via
        GG.creator, localStorage 'gg.v1.unlocks.<genre>'). Part ids are '<cat>.<value>' (content/creator.js).
      v0.8 also: merch.spent, merch.last (last gig's sales), merch.shirtsOrdered, misprint.status 'pending' + units;

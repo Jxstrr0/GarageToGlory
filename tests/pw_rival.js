@@ -61,10 +61,15 @@ async function toPlan(page) {
 // Plan three rest blocks → Go → results → Load the van → drive (skip) → returns once `until` is the top screen.
 async function weekend(page, until) {
   await page.evaluate(() => GG.ui.closeAll());
-  await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
-  for (let i = 2; i >= 0; i--) if (await page.locator(tid('plan-slot-' + i) + '.filled').count()) await tap(page, 'plan-slot-' + i);
-  for (const a of ['rest', 'rest', 'rest']) await tap(page, 'act-' + a);
-  await tap(page, 'btn-go');
+  await tap(page, 'btn-primary');
+  // A bot-run career can be mid-session: a studio week replaces the three blocks (record, then the weekend as usual).
+  await page.waitForFunction(() => ['plan', 'studio'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
+  if (await screen(page) === 'studio') await tap(page, 'btn-studio-go');
+  else {
+    for (let i = 2; i >= 0; i--) if (await page.locator(tid('plan-slot-' + i) + '.filled').count()) await tap(page, 'plan-slot-' + i);
+    for (const a of ['rest', 'rest', 'rest']) await tap(page, 'act-' + a);
+    await tap(page, 'btn-go');
+  }
   await waitScreen(page, 'results');
   if (await page.locator(tid('btn-results-skip')).last().isVisible()) await tap(page, 'btn-results-skip');
   await tap(page, 'btn-results-ok');
@@ -101,7 +106,7 @@ async function scene() {
     c.ok(/Rivalry heat/.test(v.heat) && /Sad Dome/.test(v.next) && /odds/.test(v.next), 'heat meter, Sad Dome countdown, showdown odds');
     c.ok(v.you && v.rival && v.rows >= 10, 'leaderboard: you, the rival and the scene (' + v.rows + ' rows)');
     c.ok(v.newsN > 0 && v.news === Math.min(8, v.newsN) && v.lineup >= 4 && v.albums === v.albumsN && v.albumsN >= 1, 'news ' + v.news + ', lineup ' + v.lineup + ', records ' + v.albums);
-    c.ok(v.tabs === 8, 'eight laptop tabs (v0.6.1: + Bandbook, v0.7: + World)');
+    c.ok(v.tabs === 9, 'nine laptop tabs (v0.6.1: + Bandbook, v0.7: + World, v0.8.1: + Years)');
     const a1 = await audit(page); c.ok(!a1.length, 'scene tab layout: ' + a1.join(', '));
     await shot(page, 'scene');
     await page.evaluate(() => { const b = document.querySelector('[data-testid="scene-board"]'); b.scrollIntoView({ block: 'start' }); });

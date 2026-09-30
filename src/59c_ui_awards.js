@@ -401,6 +401,7 @@
     }
     var win = winnerOf(aw, st), wraith = !aw.won && /tundra wraith/i.test(win);
     card.appendChild(el('div.lo-winner' + (aw.won ? '.won' : ''), { testid: 'winner' }, [el('span.caps', 'And the Loonie goes to…'), el('b', win)]));
+    if (ui.logoBroadcast) card.appendChild(ui.logoBroadcast(st, { winner: win, won: !!aw.won, category: cat.name }));   // v0.8.1: the broadcast card (5m)
     if (wraith || aw.thanks) {
       var rt = V.awards().rivalThanks, t = Array.isArray(rt) ? rt : (rt && rt.tundra_wraith) || FB.wraith;
       card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks' }, [el('b', win + ': '), quoted(V.fill(aw.thanks || t[(L.i + (st.year || 0)) % t.length]))]));

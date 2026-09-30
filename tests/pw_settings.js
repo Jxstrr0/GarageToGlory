@@ -211,7 +211,7 @@ async function difficulty() {
   const { page, errors, close, url } = await open();
   try {
     await page.waitForSelector(tid('btn-new'));
-    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker
     await waitScreen(page, 'creator');
     for (const d of ['chill', 'normal', 'brutal']) c.ok(await page.locator(tid('diff-' + d)).isVisible(), d + ' offered');
     c.ok(/primary/.test(await page.locator(tid('diff-normal')).getAttribute('class')), 'Normal by default');

@@ -7,6 +7,9 @@
 // 'local'; GG.labels moves you to 'signed'. Hooks into GG.labels: studio weeks replace the blocks (runWeek), studio event
 // cards on session Mondays (startWeek), promo for a scheduled release (Promote), weekly offers/releases/charts/Loonies
 // (endWeek, wrap.labels), afterGig, bots (botWeek). Effect key `production`; era upkeep economy.eraUpkeep.
+// v0.8.1 (LICRECAP): GG.licensing (offer cards on Mondays, their answers in resolveCard, the weekly roll in endWeek, bots;
+// tokens {brand} {ad*} in fillText) and GG.recap (the year's fund inflow in addStat, best/worst gig in settleGig, the
+// year-start snapshot, the RECAP at the week-24 wrap: wrap.recap, state.recaps).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
@@ -116,6 +119,7 @@
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
+    if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
     return String(text).replace(/\{(player|band|city|nick|name|recruit|rival)(?::([\w-]+))?\}/g, function (all, key, id) {
       if (key === 'rival') return GG.rival ? GG.rival.name(state) : 'Tundra Wraith';   // v0.6: the rival's current name
@@ -161,6 +165,7 @@
     state[key] = after;
     var diff = after - before;
     if (diff && d) d[key] = (d[key] || 0) + diff;
+    if (key === 'fund' && diff > 0 && state.yearStart) state.yearStart.fin = (state.yearStart.fin || 0) + diff;   // v0.8.1: the recap's "money in"
     return diff;
   }
   // Same for a member stat ('mood'|'skill'); target is a member id or 'all' (active members).
@@ -284,6 +289,7 @@
       else if (k === 'van' && v && v.condition) parts.push('Van ' + arrows(v.condition, 5));
       else if (k === 'fan' && v && GG.fans) { var ft = GG.fans.effectText(v); if (ft) parts.push(ft); }   // v0.6.1 fan cards
       else if (k === 'shop' && v && GG.shop) { var sx = GG.shop.effectText(v); if (sx) parts.push(sx); }   // v0.8 shop cards
+      else if (k === 'lic' && v && GG.licensing) { var lx = GG.licensing.effectText(v); if (lx) parts.push(lx); }   // v0.8.1 the fury card
     });
     return parts.join(' · ');
   };
@@ -334,7 +340,7 @@
   var cardIndex = {}, indexedList = null, indexedLen = -1, indexedDrama = -1;
   career.cardById = function (id) {
     var list = GG.content.cards || [], extra = (GG.drama ? GG.drama.cards() : []).concat(GG.labels ? GG.labels.cards() : [], GG.rival ? GG.rival.cards() : [],
-      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : [], GG.shop ? GG.shop.cards() : []);   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour) ; v0.8: shop cards (forced by GG.shop)
+      GG.fans ? GG.fans.cards() : [], GG.tour ? GG.tour.cards() : [], GG.shop ? GG.shop.cards() : [], GG.licensing ? GG.licensing.cards() : []);   // v0.8.1: licensing (forced by GG.licensing / GG.fans)   // v0.6.1: fan cards (forced by GG.fans, never drawn) ; v0.7: world cards (forced by GG.tour) ; v0.8: shop cards (forced by GG.shop)
     if (list !== indexedList || list.length !== indexedLen || extra.length !== indexedDrama) {
       cardIndex = {}; indexedList = list; indexedLen = list.length; indexedDrama = extra.length;
       for (var j = 0; j < extra.length; j++) cardIndex[extra[j].id] = extra[j];
@@ -407,6 +413,7 @@
     state.yearStart = { year: state.year, fans: state.fans, fund: state.fund, gigs: state.stats.gigs,
       songsWritten: state.stats.songsWritten, parentsLoans: state.stats.parentsLoans, earned: state.stats.earned,
       releases: state.stats.releases || 0, royalties: state.stats.royalties || 0 };
+    if (GG.recap) GG.recap.startYear(state);   // v0.8.1: money in, the lineup, the scene rank, best/worst gig so far
   }
   function historyPoint(state) {
     return { w: state.totalWeek, fund: state.fund, fans: state.fans, buzz: state.buzz, chemistry: state.chemistry };
@@ -479,6 +486,8 @@
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
     if (GG.tour) GG.tour.init(state);     // v0.7: state.tour (regions, invites, the active tour, homesickness, the Gong)
     if (GG.shop) GG.shop.init(state);     // v0.8: gear (owned, sections, kit quality), spaceTier + upgrades, van tier/name/stickers, merch
+    if (GG.licensing) GG.licensing.init(state);   // v0.8.1: state.licensing (offers, deals)
+    if (GG.recap) GG.recap.init(state);           // v0.8.1: state.recaps
     state.members.forEach(function (m) { m.stage = 0; m.want = null; m.exit = null; });
     var rng = GG.rngFor(state);
     (band.starterSongs || []).forEach(function (t) { GG.songs.addStarter(state, t, rng); });
@@ -518,11 +527,13 @@
     var studio = !forced && GG.labels && GG.labels.inSession(state);   // v0.5: studio weeks draw a studio event instead
     var holiday = !forced && !studio && GG.calendar ? GG.calendar.holidayCard(state) : null;   // v0.6.1: holiday Monday cards
     var tourCard = !forced && !studio && GG.tour ? GG.tour.forcedCard(state) : null;   // v0.7: region cards abroad, invites, big in one place
-    var fan = !forced && !studio && !tourCard && !holiday && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
-    var shopCard = !forced && !studio && !tourCard && !holiday && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
-    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
+    var lic = !forced && !studio && !tourCard && !holiday && GG.licensing ? GG.licensing.forcedCard(state) : null;   // v0.8.1: a licensing offer (or Buckle & Boot's fury)
+    var fan = !forced && !studio && !tourCard && !holiday && !lic && GG.fans ? GG.fans.forcedCard(state) : null;   // v0.6.1: scandals, superfans, Patreeon
+    var shopCard = !forced && !studio && !tourCard && !holiday && !lic && !(fan && fan.card) && GG.shop ? GG.shop.forcedCard(state) : null;   // v0.8: space offers, the misprint, Dana's solo, gear/van/merch deals
+    var card = forced ? forced.card : studio ? GG.labels.studioEvent(state, rng) : tourCard || holiday || (lic && lic.card) || (fan && fan.card) || shopCard || (away ? null : drawCard(state, rng));
     state.card = card ? { id: card.id, resolved: false } : null;
     if (forced && forced.who) { state.card.who = forced.who; state.card.whoName = firstName((findMember(state, forced.who) || {}).name); }
+    if (lic && lic.who && card === lic.card) state.card.who = lic.who;   // v0.8.1: who brings the offer (speaker 'recruit')
     if (card) state.seenCards[card.id] = state.totalWeek;
     state.quiet = card ? null : career.pickLine(state, rng, contentLines('quietWeek'), FALLBACK_LINES.quietWeek);
     maybeOffer(state, rng);
@@ -556,6 +567,8 @@
     if (GG.fans) GG.fans.afterCard(state, card, i, success, d);   // v0.6.1: fan cards' 'fan' effects + bookkeeping
     if (GG.tour) GG.tour.afterCard(state, card, i, success, d);   // v0.7: world cards' 'tour' effects (region fans, homesick, invites)
     if (GG.shop) GG.shop.afterCard(state, card, i, success, d);   // v0.8: shop cards' 'shop' effects (move, kit, van, sections, stock, the misprint)
+    var lr = GG.licensing ? GG.licensing.afterCard(state, card, i, success, d) : null;   // v0.8.1: answer the offer (take / counter / decline)
+    if (lr) { outcome = lr.outcome || outcome; if (lr.success != null) success = lr.success; }
     outcome = career.fillText(state, outcome);
     var who = state.card.who, whoName = state.card.whoName;
     state.card = { id: card.id, resolved: true, choice: i, outcome: outcome, deltas: d, success: success };
@@ -719,6 +732,7 @@
     GG.gig.applyResult(state, r);
     if (GG.world) GG.world.afterGig(state, g, r, rng);
     if (GG.labels) GG.labels.afterGig(state, r);   // v0.5: the Best Live Act case for the Loonies
+    if (GG.recap) GG.recap.gig(state, r);          // v0.8.1: the year's best / worst gig
     state.liveGig = null;
     GG.emit('gig:done', { result: r });
     changed(state);
@@ -789,6 +803,7 @@
     if (state.fund >= 0) return;
     var loan = econ().parentsCushion - state.fund;
     addStat(state, 'fund', loan, null);
+    if (state.yearStart) state.yearStart.fin = (state.yearStart.fin || 0) - loan;   // v0.8.1: a loan isn't income
     state.debtToParents += loan;
     state.stats.parentsLoans++;
     state.flags.parentsLoan = true;
@@ -837,6 +852,7 @@
       releases: (state.stats.releases || 0) - (ys.releases || 0), royalties: (state.stats.royalties || 0) - (ys.royalties || 0),
       line: career.pickLine(state, rng, contentLines('yearEnd'), FALLBACK_LINES.yearEnd)
     };
+    if (GG.recap) wrap.recap = GG.recap.build(state);   // v0.8.1: the year-end recap (compact, kept in state.recaps)
   }
   function advance(state, wrap) {
     state.offer = null; state.card = null; state.quiet = null;
@@ -875,6 +891,7 @@
     wrap.chat = wrap.chat.concat(postWeeklyChat(state, rng));
     parentsLoan(state, rng, wrap);
     GG.songs.weekly(state);
+    if (GG.licensing) GG.licensing.weekly(state, rng, wrap);   // v0.8.1: offers expire, ad songs stay stale, a new offer (wrap.licensing; own RNG)
     wrap.milestones = checkMilestones(state);
     state.history.push(historyPoint(state));
     if (state.history.length > E.historyMax) state.history.splice(0, state.history.length - E.historyMax);
@@ -931,6 +948,8 @@
     }
     var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
     if (dc != null) return dc;
+    var lc = GG.licensing ? GG.licensing.botChoice(state, card, style) : null;   // v0.8.1: take / counter / decline an offer
+    if (lc != null) return lc;
     if (style === 'good' || (GG.shop && GG.shop.card(card.id))) return best;   // v0.8: shop cards show the price/rent on the button: bots read it
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
@@ -989,6 +1008,7 @@
     if (GG.fans) GG.fans.botWeek(state, style);      // v0.6.1: a Patreeon exclusive now and then
     if (GG.tour) GG.tour.botWeek(state, style);      // v0.7: botTour: book a tour package (departs next week)
     if (GG.shop) GG.shop.botWeek(state, style);      // v0.8: gear, the kit, the van, a bigger space, upgrades, merch stock
+    if (GG.licensing) GG.licensing.botWeek(state, style);   // v0.8.1: an offer whose card never came up, answered on the laptop
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough

@@ -654,6 +654,7 @@
       gl.box(0.12, 0.05, 0.004, 0.0, 1.73, WS.z1 + 0.107, 0xd8b08a);
       gl.box(0.13, 0.022, 0.004, 0.0, 1.738, WS.z1 + 0.109, 0x0c0c0e);
       mesh(b.build(), im); mesh(gl.build(), ctx.mats.unlit);
+      if (!D.look) logoDecal(D, dim);                                                        // v0.8.1 LOGO: the band logo windshield sticker
       // Bobble head (spring), air freshener (pendulum), steering wheel (steers).
       var hb = new ctx.Builder({ jitter: 0.04, seed: 31 });
       hb.box(0.075, 0.07, 0.1, 0, 0.03, 0.03, 0x6a4424); hb.box(0.05, 0.045, 0.05, 0, 0.02, 0.1, 0x4a2c16);
@@ -807,6 +808,17 @@
         if (list[i].banned) { b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot + 0.55, 0); b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot - 0.55, 0); }
       }
       b.pop();
+    }
+    // v0.8.1 (LOGO): the band's logo as a sticker on the windshield, up on the passenger side (the tour bus: on the outside).
+    function logoDecal(D, dim) {
+      var st = lastState || GG.state || {}, lg = (pending.trip && pending.trip.logo) || st.logo;
+      if (!lg || !GG.render.logo || D.tier === 3) return;
+      var tex = GG.render.logo.texture(lg, (D.band && D.band.name) || 'The Band', 256); if (!tex) return;
+      K.texs.push(tex);
+      var k = Math.min(1, dim * 1.6), mat = ownMat(new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.08, color: new THREE.Color(k, k, k) }));
+      var t = 0.8, m = mesh(new THREE.PlaneGeometry(0.24, 0.24), mat);   // stuck on the inside of the windshield, up in the passenger-side corner
+      m.position.set(0.42, WS.y0 + (WS.y1 - WS.y0) * t, WS.z0 + (WS.z1 - WS.z0) * t + 0.012); m.rotation.x = Math.atan2(WS.z1 - WS.z0, WS.y1 - WS.y0);
+      K.logo = m;
     }
     // v0.8 polish: a seat back's rear face (local +z at `half`): a rolled top, darker side bolsters, a lighter ribbed velour
     // insert between two seams, a map pocket (side < 0: a road map sticking out; > 0: a bag of ketchup chips); hoodie: one
@@ -1155,7 +1167,7 @@
         if (!K) return { built: false };
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
-          tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
+          tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, logo: !!K.logo, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           cam: CAM.pos.slice(), hfov: CAM.minHFov };                                                          // v0.8 polish: where you sit

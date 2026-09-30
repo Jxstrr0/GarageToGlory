@@ -24,6 +24,8 @@
 //   weekly(s, wrap) (career.endWeek; wrap.fans) · forcedCard(s) {card}|null (career.startWeek) · afterCard(s, card, i, success, d)
 //   apply(s, v, d) (fan cards' 'fan' effect, applied by afterCard) · effectText(v) · cards() · card(id) · openClub(s) · club(s) view · tiers(s)
 //   superfanList(s) · superfanDef(id) · gifts(s) · addGift(s, id) · kindInfo(kind) · botValue(s, v) · botWeek(s, style)
+//   v0.8.1 (LICRECAP): queue(s, cardId, who, source) (a licensing scandal; hater nudge + loyalty bump go through apply);
+//   cards() also lists GG.licensing.fanCards(); isScandal knows the licensing scandals.
 // POST = { id, w, kind, who, text, likes, shares, plays, viral: null|'good'|'cringe', exclusive, streams,
 //          fx: { buzz, fans }, comments: [{ who: 'fan'|'hater'|'rival'|'dale'|'trucker', name, text }] }
 // Events: 'fans:post' { post } · 'fans:viral' { post, kind } · 'fans:scandal' { card, who } · 'fans:gift' { gift }
@@ -518,7 +520,14 @@
   };
 
   /* ---- Fan cards (forced only; never drawn) ------------------------------------------------------------------- */
-  F.cards = function () { return K().cards || []; };
+  var fanCardsCache = { a: null, x: null, all: [] };
+  // v0.8.1 (LICRECAP): the licensing sellout scandals (GG.licensing.fanCards) come up like any Bandbook scandal.
+  F.cards = function () {
+    var a = K().cards || [], x = GG.licensing && GG.licensing.fanCards ? GG.licensing.fanCards() : null;
+    if (!x || !x.length) return a;
+    if (fanCardsCache.a !== a || fanCardsCache.x !== x) fanCardsCache = { a: a, x: x, all: a.concat(x) };
+    return fanCardsCache.all;
+  };
   F.card = function (id) { return F.cards().filter(function (c) { return c.id === id; })[0] || null; };
   function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
   function seenAt(s, id) { return s.seenCards && s.seenCards[id] != null ? s.seenCards[id] : null; }
@@ -553,7 +562,17 @@
     b.lastCard = w;
     return { card: pick };
   };
-  F.isScandal = function (id) { return (K().scandals || []).some(function (x) { return x.card === id; }); };
+  F.isScandal = function (id) { return (K().scandals || []).some(function (x) { return x.card === id; }) || !!(GG.licensing && GG.licensing.isScandal && GG.licensing.isScandal(id)); };
+  // v0.8.1 (LICRECAP): queue a specific scandal card for next Monday (a licensing deal: "sold the moose"). Only when nothing
+  // else is pending; the usual card gap still applies. Returns the pending entry or null.
+  F.queue = function (s, cardId, who, source) {
+    F.ensure(s);
+    var b = s.bandbook;
+    if (b.pending || !F.card(cardId)) return null;
+    b.pending = { card: cardId, who: who || 'band', week: s.totalWeek, source: source || 'queue' };
+    GG.emit('fans:scandal', { card: cardId, who: b.pending.who });
+    return b.pending;
+  };
   // career.resolveCard (after the choice's normal effects): applies the choice's 'fan' effects (and the roll branch's),
   // then the bookkeeping (scandal count, a declined Patreeon). 'fan' is not in C.EFFECT_KEYS: only fan cards use it.
   F.afterCard = function (s, card, i, success, d) {
