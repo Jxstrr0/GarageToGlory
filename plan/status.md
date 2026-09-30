@@ -226,6 +226,45 @@ Later versions:
 - Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
   (`META_ONLY=label,studio,awards,sheet`).
 
+## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
+- Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy
+  looks kept drawable: short / top bun / gelled spikes, library specs, horseshoe 'stache, sweatband), each `{ id: '<cat>.<value>',
+  cat, value, name, gate?, hint?, color? }`; gates `era | fans | milestone | award | gigs` (+ `genreStart`: metal starts with the
+  battle jacket, corpse paint, the Viking beard; punk the mohawk, liberty spikes, green dye; rock the Canadian tuxedo, slicked
+  back; country the cowboy hat + boots, rhinestone suit, cowbell). Pyro = World era, your own cape = a Loonie, gold sticks =
+  a gold record, your face on the kick = platinum. Swatches: 12 skins, eyes, 18 clothes, 12 kit colours. No gong, ever.
+- Sim `2b_sim_creator.js` (`GG.creator`, DOM-free, no RNG): unlocks are pure functions of state (week-end hook on
+  'week:wrap' → one wrap milestone line "New look unlocked: … (☰ → Look)" + `wrap.creator`; events loonies:result / cert /
+  tour:gong / gig:done unlock now → 'creator:unlocked' (UI toast) and the next wrap lists them). New careers: stage look =
+  everyday look, `newKit` (milk crates, band logo on the kick); `prepare()` hands the creator's look/stage/kit + carry-over to
+  the 'career:new' hook. Carry-over per genre in `gg.v1.unlocks.<genre>` (wrapped storage). Save: chained onto
+  `GG.save.migrate` in this module (not 10_save): fills player.stageLook (= look), player.kit (`legacyKit`: the v0.7 kit),
+  unlocks (earned quietly + the stool throne) only when missing; never touches `state.v`.
+- Render: the character builder moved into `40_render_core.js` (`R.charGeometry`; 41 `makeCharacter` calls it). Legacy LOOKs
+  take the verbatim v0.7 path: 1,220 member/rival/recruit/preset/combo geometries hash-identical to v0.7, and the garage +
+  stage scenes are hash-identical for a v0.7 player. v0.8 LOOKs draw build/height/age, 4 face shapes, eyes (+ colour), brows,
+  noses, mouths, 8 facial hair, 5 glasses, 17 hair styles (hat-aware), 8 tops / 4 bottoms / 5 shoes / 7 headwear, stage
+  outfits + extras (cape, studded wristbands, corpse paint), pixel-art tattoos (forearms, sleeves, neck, chest, teardrop,
+  REGERTS down the forearm) and knuckle letters (3x5 font, readable in the Hands view), piercings. `R.kit`: shell finishes
+  (paint = v0.7, wood, black, sparkle, flames, camo), black hardware, thrones (crates, leather saddle), cowbell, hair fan
+  (spins on stage), pyro (arena shows only: capacity ≥ 5,000 / tier 4 / dome / festival / hall; bursts on moments and every
+  16 beats when hyped), kick-head art (CanvasTexture: band logo by genre, your face, a moose, custom text), stick colour.
+  41 `buildKit` = `R.kit.garage`; 42 kit builders + stage-look selection (drummer + members via `GG.creator.stageLookFor`),
+  `info().kit` / `drummerV8`; 44 the carpet uses stage looks (a band outfit card drops your stage outfit).
+- Preview `45_render_creator.js` (`GG.render.preview`): its own small WebGLRenderer inside the creator (the main loop is
+  paused / has no career there); views full (drag to turn) / face / hands (fists to the camera) / kit.
+- UI `5j_ui_creator.js`: screen `look` (full): preview, Everyday ↔ Stage toggle, tabs Body / Face / Hair / Clothes / Stage /
+  Ink / Kit, locked parts dashed with a one-line "what unlocks it" note over the preview, knuckle inputs (A–Z, 4 per hand),
+  🎲 Surprise. 51: the creator has "✂ Customize" (+ a "Your custom look" card) and the carry-over toggle; ☰ menu → Look.
+  CSS block `/* v0.8 CREATOR */` after the v0.7 block.
+- Tests: `sim_creator.test.js` 13 (new); `pw_creator.js` META_ONLY=creator (34) | kit (8) | stage (6) + contact sheet
+  `tests/.cache/v08_creator_sheet.png`. `_load.js` SIM_SAFE now takes `2\w_` (2a_sim_shop, 2b_sim_creator). Green:
+  node suite, pw_flow flow/layout/code, pw_garage, pw_stage, pw_label awards, pw_settings difficulty, pw_rival botb,
+  pw_tour gong, pw_gig gig, pw_world van at 390×844; pw_flow flow + pw_creator creator at 440×956 (preload override).
+- Gaps: 41's old `characterGeometry`/`hairParts`/`extraParts`/`guitarParts`/`capeParts`/`CAPES` are now dead code (kept to
+  avoid touching 41 beyond buildKit; the lead can delete them after the merge). Members have no stage looks of their own
+  yet (they fall back to their look). The hair fan doesn't blow your hair. Look changes persist at the next autosave.
+
 ## What's in v0.7 (sim) — WORLDSIM stage 1 (UI = stage 2, WORLDUI)
 - World era ON (`economy.eras.worldEnabled`) at the Steady threshold (25k fans + a charting record; labels.weekly). Home
   scene stays 40k in World (Canada saturates); each region has its own scene (`world.scene` adds fans abroad).
@@ -449,6 +488,14 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- `GG.creator` (v0.8, header of `2b_sim_creator.js`): `cats, part, partsIn, partFor, parts(state, cat?), isUnlocked, gateMet,
+  gateText, draftState(genre, carry), grant, checkUnlocks, check(state, source), weekly(state, wrap), knuckles, headText, isV8,
+  sanitizeLook, expand, syncPerson, stageOnly, lockLook, stageLookFor(who, contentMember?), legacyKit, newKit, sanitizeKit,
+  lockKit, kitLook(player), isArena(venue|gig), prepare, pending, init, migrate, apply(state, { look, stageLook, kit })`,
+  `carry.{key, read, write, count}`. Events 'creator:unlocked' { ids, names, source }, 'creator:changed' { state }.
+  Render: `R.charGeometry(ctx, L, o, raw)`, `R.kit.{norm, hardware, sticks, has, shell, throne, cowbell, fan, fanBlades, flame,
+  pyroBase, headArt, disposeArt, garage}`, `R.pixelFont`, `GG.render.preview.{mount, set, turn, unmount, info}`.
+  UI: `GG.ui.openLook({ mode: 'new'|'career', look, stageLook, kit, genre, band, carry, onDone })`; debug 'creator', 'creator-ui'.
 - `GG.tour` (v0.7, header of `25_sim_tour.js`): lookups `regions, region, cityDef, cities, venue, venues, vehicles, stays,
   extras, climate, fit, pkg, departWindow, legKm`; state `init, ensure, migrate, threshold, unlocked, unlock, invite`;
   views `map, regionView, status, summary, charts, gong, packages`; booking `quote, canBook, book, cancel`; the week `active,

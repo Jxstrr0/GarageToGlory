@@ -2,6 +2,9 @@
 // character creator → cold open), the in-game ☰ menu, and save-code backup/restore.
 // v0.6.1 (Addendum C4): ⚙ Settings from the title (title-settings) and the menu (menu-settings); the creator picks the
 // career difficulty (diff-chill|normal|brutal, locked for that career) and passes it to GG.main.newCareer.
+// v0.8 (CREATOR): the creator opens the full creator ('look', 5j_ui_creator: btn-customize; a 'preset-custom' card once
+// customised), a carry-over toggle (carry-toggle: unlocks from past careers in this genre, GG.creator.carry) and hands both
+// to GG.creator.prepare() right before GG.main.newCareer; the ☰ menu has "Look" (menu-look) mid-career.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -212,10 +215,30 @@
       var nick = el('input', { testid: 'creator-nick', id: 'cr-nick', type: 'text', maxLength: 16, placeholder: 'e.g. Thunderwrist (optional)', autocomplete: 'off', value: draft.nick || '',
         oninput: function () { draft.nick = nick.value; } });
       var grid = el('div.presets');
+      if (draft.custom) {                                   // v0.8: the full creator's result
+        var cu = draft.useCustom;
+        grid.appendChild(btn('.preset' + (cu ? '.on' : ''), { testid: 'preset-custom', 'aria-pressed': cu ? 'true' : 'false',
+          onclick: function () { draft.useCustom = true; s.rerender(); } }, [figure({ look: draft.custom.look, kitColor: draft.custom.kit.color }), el('div.pn', 'Your custom look'), el('div.pb', 'Tap ✂ below to keep tweaking.')]));
+      }
       list.forEach(function (p) {
-        grid.appendChild(btn('.preset' + (p.id === draft.presetId ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': p.id === draft.presetId ? 'true' : 'false',
-          onclick: function () { draft.presetId = p.id; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
+        var on = !(draft.custom && draft.useCustom) && p.id === draft.presetId;
+        grid.appendChild(btn('.preset' + (on ? '.on' : ''), { testid: 'preset-' + p.id, 'aria-pressed': on ? 'true' : 'false',
+          onclick: function () { draft.presetId = p.id; draft.useCustom = false; s.rerender(); } }, [figure(p), el('div.pn', p.name), el('div.pb', p.blurb || '')]));
       });
+      var genre = draft.genre || 'metal', carryN = GG.creator ? GG.creator.carry.count(genre) : 0;
+      if (draft.carry == null) draft.carry = carryN > 0;
+      var customize = btn('.btn.block.cr-custom', { testid: 'btn-customize', disabled: !GG.creator || !ui.openLook, onclick: function () {
+        var pre = list.filter(function (p) { return p.id === draft.presetId; })[0] || list[0], c = draft.useCustom && draft.custom;
+        var band = (GG.content.bands || {})[draft.bandId];
+        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, carry: !!draft.carry,
+          look: c ? c.look : pre.look, stageLook: c ? c.stageLook : null, kit: c ? c.kit : GG.creator.newKit(pre.kitColor),
+          onDone: function (out) { draft.custom = out; draft.useCustom = true; var cr = ui.get('creator'); if (cr) cr.rerender(); } });
+      } }, draft.custom && draft.useCustom ? '✂ Keep tweaking your look' : '✂ Customize: face, hair, ink, stage outfit, kit');
+      var carryBox = el('input', { type: 'checkbox', testid: 'carry-toggle', checked: !!draft.carry && carryN > 0, disabled: !carryN,
+        onchange: function () { draft.carry = carryBox.checked; } });
+      var carry = el('label.cr-carry', { htmlFor: 'cr-carry' }, [carryBox, el('span', carryN ? 'Carry over ' + carryN + ' unlock' + (carryN === 1 ? '' : 's') + ' from past ' + genre + ' careers'
+        : 'Unlocks from past ' + genre + ' careers carry over here (none yet)')]);
+      carryBox.id = 'cr-carry';
       var DL = GG.difficulty ? GG.difficulty.LEVELS : ['normal'];
       if (DL.indexOf(draft.careerDifficulty) < 0) draft.careerDifficulty = 'normal';
       var diffPick = el('div.diff-pick', { testid: 'diff-pick' }, DL.map(function (d) {
@@ -227,8 +250,10 @@
         var n = (name.value || '').trim().slice(0, 16);
         if (!n) { err.textContent = 'Even drummers need a name.'; return; }
         create.disabled = true;
+        var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
+        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
         GG.main.newCareer({ slot: draft.slot || '1', bandId: draft.bandId || 'hail_damage',
-          player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId },
+          player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
           careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
         ui.closeAll();
         ui.show('coldopen');
@@ -241,6 +266,8 @@
           el('div.field', [el('label', { htmlFor: 'cr-nick' }, 'Stage nickname'), nick]),
           el('div.caps', 'Pick a look'),
           grid,
+          customize,
+          carry,
           el('div.caps', 'Career difficulty · locked for this career'),
           diffPick,
           el('p.small.dim', { testid: 'diff-blurb' }, GG.difficulty ? GG.difficulty.text(draft.careerDifficulty).blurb : '')
@@ -301,6 +328,7 @@
           btn('.btn.grow', { testid: 'menu-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
         ]),
         el('div.sep'),
+        ui.openLook && st ? btn('.btn.block', { testid: 'menu-look', onclick: function () { ui.close(s.id); ui.openLook({ mode: 'career' }); } }, '👕 Look: everyday, stage, ink, kit') : null,   // v0.8
         ui.defined && ui.defined('settings') ? btn('.btn.block', { testid: 'menu-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null,
         el('div.row', [
           btn('.btn.grow', { testid: 'menu-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
