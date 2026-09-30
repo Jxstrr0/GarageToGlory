@@ -7,33 +7,43 @@
 //          AudioContext.currentTime (never rAF time). timeline() turns a song into timed events; the gig reuses play().
 //   rooms: a convolver per room class; the venue decides it during gigs (basements dry, Legion halls echo, arenas huge),
 //          the genre kit otherwise (rock roomy, country dry).
-//   ambience (bus events + state only): crowd bed + cheers/boos in gigs, garage hum with the guitarist noodling, van
-//          road noise + the van radio (your best-charting song, quietly).
+//   ambience (bus events + state only): the crowd in gigs, garage hum with the guitarist noodling, van road noise + the
+//          van radio (your best-charting song, quietly).
+//   v0.7.2 metal (owner: "heavier"): two rhythm guitars (double-tracked, panned L/R) through a high-gain amp each (pre-EQ ->
+//          asymmetric clipper at 4x oversampling -> cab sim), drop tuning by tempo band, tight gated palm mutes, a sub +
+//          driven bass, darker riffs (phrygian, b2/tritone stabs, chromatic runs, breakdown drops), growls + screams.
+//   v0.7.2 crowd (all genres): a layered crowd pre-rendered once into AudioBuffers (plain seeded JS DSP): a babble bed of
+//          formant voices, a roar that follows the meter, applause + on-beat clapping when hot, whistles, "woo"s, big
+//          cheers at song ends and great moments, boos when it goes badly; a little of it goes to the venue's reverb.
 // Graph: sfx -> sfxBus(sfx) ─────────────────────────────────────────────────────────────────┐
 //        ambience (garage, road, radio) -> ambBus(sfx) ───────────────────────────────────────┤
-//        crowd bed, cheers, boos -> crowdBus(crowd) ──────────────────────────────────────────┤
+//        crowd layers + one-shots -> crowdBus(crowd) (+ a small send into the room) ──────────┤
 //        song ports -> kit -> busDrums(drums) ┐                                                 ├> master (mute) -> ceiling -> out
 //                   band/vocals -> busBand(band) ┴(+ room send -> convolver)-> glue -> limiter -> songOut ┘
-// Song voices are capped at SONG_VOICES (the band at BAND_VOICES of them, so taps always sound): each lane/voice is
-// monophonic (a hit chokes the previous one of its lane at the next hit's time) and the scheduler books every source.
+// Song voices are capped at SONG_VOICES (the band at BAND_VOICES of them): each lane/voice is monophonic (a hit chokes
+// the previous one of its lane at the next hit's time) and the scheduler books every source. Live taps (hit) are cut
+// off per lane the same way, and the cap leaves room for the whole kit (10 voices) on top of a full band, so taps
+// always sound.
 //   GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; isMuted() ; toggleMuted() ; suspend() ; resume()
 //   play(pattern, { genre, section|null, loop, backing, drums, vocals, songId, metronome })
 //     -> handle { stop(), update(pattern), beatAt(time), playing, start, bpm, key }
 //     emits 'audio:step' { section, bar, step, time, entry } per 16th and 'audio:end' { handle } when a song finishes
 //   hit(lane) (one drum hit now) ; stop() ; isPlaying() ; current() ; context()
-//   timeline(pattern, opts) ; styleFor(genre, bpm) ; keyFor(seed, genre) ; roomFor(gig) ; renderOffline(spec) (tests)
+//   timeline(pattern, opts) ; styleFor(genre, bpm) ; keyFor(seed, genre, bpm?) (v0.7.2: bpm picks the metal tuning band)
+//   roomFor(gig) ; renderOffline(spec) (tests; v0.7.2 stereo, + probe / crowd specs, result.buffer)
 //   Mixer (v0.6.1): setVolume(bus, 0..1) ; getVolume(bus) ; volumes() for C.MIX_BUSES (settings.mix)
 //   Metronome: metronome() ; setMetronome(bool) ; toggleMetronome() (settings.metronome; honoured by play(.., {metronome}))
 //   applySettings() re-reads settings (mix, metronome, brushes, muted) ; ambience() ; room() ; refreshAmbience()
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
-  var MAX_VOICES = 8, SFX_VOLUME = 0.32, SONG_VOLUME = 0.62, SONG_VOICES = 12, BAND_VOICES = 8, CROWD_VOICES = 8, AMB_VOICES = 6;
+  var MAX_VOICES = 8, SFX_VOLUME = 0.32, SONG_VOLUME = 0.62, SONG_VOICES = 18, BAND_VOICES = 8, CROWD_VOICES = 12, AMB_VOICES = 6;
   var LOOKAHEAD = 0.12, TICK_MS = 25, LEAD_IN = 0.06;   // seconds scheduled ahead, scheduler period, start delay
   var BUSES = (C && C.MIX_BUSES) || ['drums', 'band', 'crowd', 'sfx'];
   var ctx = null, master = null, sfxBus = null, ambBus = null, crowdBus = null, noise = null, rig = null, BUF = null;
   var voices = 0, muted = null, suspended = false, current = null, stepCount = 0, lastStep = null;
-  var prefs = null, mixNodes = [], counts = { clicks: 0, noodles: 0, thumps: 0, cheers: 0, boos: 0, vox: 0 }, live = { amb: 0, crowd: 0 };
+  var prefs = null, mixNodes = [], live = { amb: 0, crowd: 0 };
+  var counts = { clicks: 0, noodles: 0, thumps: 0, cheers: 0, boos: 0, vox: 0, claps: 0, woos: 0, whistles: 0, applause: 0, dropped: 0, tapDrops: 0 };
 
   function settings() {
     try { return (GG.save && GG.save.settings && GG.save.settings()) || {}; } catch (e) { return {}; }
@@ -96,9 +106,11 @@
       crowdBus = mixNode('crowd', 1, master);
       noise = noiseBuffer(ctx);
       rig = makeRig(ctx, master, noise, { mix: 'live', clickDest: sfxBus });
+      if (rig.send) crowdBus.connect(gainNode(ctx, 0.15, rig.send));   // v0.7.2: the crowd is in the room too
       setKit(rig, (GG.state && GG.state.genre) || 'metal');
       applyRoom();
       setInterval(refresh, 1000);   // the garage scene can change without a screen event
+      setTimeout(warmCrowd, 400);
       refreshSoon();
     }
     if (ctx.state === 'suspended' && !suspended) { try { ctx.resume(); } catch (e) { /* ignore */ } }
@@ -203,11 +215,14 @@
       tone('triangle', 1320, 0, t + 0.02, 0.08, 0.12);
       tone('triangle', 1760, 0, t + 0.1, 0.22, 0.12);
     }],
-    cheer: [2, function (t) {
+    // v0.7.2: the crowd's own recordings once they're built (awards, the studio, the Moose Opera), else the old synth.
+    cheer: [3, function (t) {
+      if (crowdReady(CB)) { crowdSfx(t, false); return; }
       hiss(t, 1.1, 0.16, { type: 'bandpass', f0: 900, f1: 1600, q: 0.6 }, 0.25);
       hiss(t + 0.1, 0.9, 0.08, { type: 'bandpass', f0: 2600, f1: 2000, q: 2 }, 0.2);
     }],
     boo: [2, function (t) {
+      if (crowdReady(CB)) { crowdSfx(t, true); return; }
       tone('sawtooth', 190, 120, t, 0.6, 0.05, 0.08);
       tone('sawtooth', 196, 116, t + 0.02, 0.6, 0.04, 0.08);
     }],
@@ -228,6 +243,20 @@
       [0, 0.32].forEach(function (d) { tone('sawtooth', 392, 0, t + d, 0.22, 0.06, 0.01); tone('sawtooth', 494, 0, t + d, 0.22, 0.05, 0.01); });
     }]
   };
+  // A short crowd cheer (the roar swelling, applause, a "woo") or boo from the crowd buffers, as a counted sfx.
+  function crowdSfx(t, isBoo) {
+    function play(buf, at, gain, pan, off, dur, swell) {
+      var s = ctx.createBufferSource(); s.buffer = buf;
+      var g = gainNode(ctx, swell ? 0 : gain, panNode(ctx, pan, sfxDest || sfxBus)); s.connect(g);
+      if (swell) { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(gain, at + 0.25); g.gain.setTargetAtTime(0, at + dur * 0.45, dur * 0.18); }
+      voices++; s.onended = function () { voices = Math.max(0, voices - 1); };
+      s.start(at, off); s.stop(at + dur);
+    }
+    if (isBoo) { play(CB.boo[0], t, 0.6, 0, 0, 2.4); return; }
+    play(CB.roar[0], t, 0.45, 0, 0.9, 2.6, true);
+    play(CB.applause[0], t + 0.1, 0.5, 0, 0.3, 2.8, true);
+    play(CB.woo[0], t + 0.35, 0.3, -0.4, 0, 0.8);
+  }
   // Long lowpassed noise (loops the white noise buffer so it can outlast it), for thunder.
   function rumble(t0, dur, peak, f0, f1) {
     var src = ctx.createBufferSource(); src.buffer = (BUF && BUF.brown) || noise; src.loop = true;
@@ -255,6 +284,14 @@
      ====================================================================================================== */
   function gainNode(c, v, dest) { var g = c.createGain(); g.gain.value = v; if (dest) g.connect(dest); return g; }
   function filterNode(c, type, f, q, dest) { var n = c.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q || 0.7; if (dest) n.connect(dest); return n; }
+  function eqNode(c, type, f, q, db, dest) { var n = filterNode(c, type, f, q, dest); n.gain.value = db; return n; }   // peaking / shelves
+  // Stereo placement (-1 left .. 1 right); a plain gain where StereoPanner is missing (old iOS): mono, never silent.
+  function panNode(c, pan, dest) {
+    var n = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
+    if (n.pan) n.pan.value = Math.max(-1, Math.min(1, pan || 0));
+    if (dest) n.connect(dest);
+    return n;
+  }
   // Soft clipper: y = (1+k)x / (1+k|x|), always inside -1..1.
   var curves = {};
   function driveCurve(k) {
@@ -262,6 +299,17 @@
     var n = 1024, c = new Float32Array(n);
     for (var i = 0; i < n; i++) { var x = i * 2 / (n - 1) - 1; c[i] = (1 + k) * x / (1 + k * Math.abs(x)); }
     return (curves[k] = c);
+  }
+  // v0.7.2 high-gain clipper: gain g, then a soft (tanh) top and a harder bottom that knees into -0.92. The asymmetry adds
+  // even harmonics to the clipping's odd ones (a DC offset the cab's high-pass removes).
+  function asymCurve(g) {
+    var key = 'a' + g; if (curves[key]) return curves[key];
+    var n = 4096, c = new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var x = (i * 2 / (n - 1) - 1) * g;
+      c[i] = x >= 0 ? Math.tanh(x) : x > -0.6 ? x : -0.6 - 0.32 * Math.tanh((-x - 0.6) / 0.32);
+    }
+    return (curves[key] = c);
   }
   // Rooms: impulse length (s), wet level, tail brightness (one-pole), a discrete echo (s) for halls and arenas.
   // The convolver normalises its impulse (about -58 dB per sample), so reverb energy grows with the room's length; wet
@@ -348,6 +396,52 @@
     }
     r.verb = { conv: conv, wet: wet }; r.room = cls;
   }
+  // v0.7.2 metal amp, built on a rig the first time metal plays on it. Two rhythm guitars, Jaxon left and Dana right
+  // (double-tracked: every riff is played twice, a few cents and milliseconds apart), each through its own chain:
+  //   open | palm-mute input (low-passed: the chunk) -> pre-EQ (tight low cut, mid push) -> asymmetric clipper (4x
+  //   oversampling) -> cab sim (80 Hz high-pass, low thump, mid scoop, presence, two low-passes near 5.5 kHz) -> pan.
+  // The bass: one saw split into a clean sub (low-passed) and a driven grind layer. Metal vocals get a fuller channel with
+  // a presence lift, and the guitars' presence band dips (carve, dB) while a growl or scream sings, so it cuts through.
+  // Tuned by numbers (tests/pw_seq audio): the mids match v0.7.1, the sub and the grind are up, the limiter holds peaks.
+  var AMP = { gain: 26, level: 0.13, pan: 0.72, preHp: 110, bassSub: 0.3, bassGrind: 0.14, vox: 0.24, carve: -6 };
+  function metalRig(r) {
+    if (r.metal) return r.metal;
+    var c = r.ctx, M = r.metal = { open: [], mute: [], pres: [] };
+    [-AMP.pan, AMP.pan].forEach(function (pan, side) {
+      M.pres[side] = eqNode(c, 'peaking', 2600, 1.2, 3, filterNode(c, 'lowpass', 5400, 0.9, filterNode(c, 'lowpass', 6800, 0.6,
+        gainNode(c, AMP.level, panNode(c, pan, r.busBand)))));
+      var cab = eqNode(c, 'lowshelf', 140, 0.7, 3, eqNode(c, 'peaking', 520, 1, -5, M.pres[side]));
+      var sh = c.createWaveShaper(); sh.curve = asymCurve(AMP.gain); sh.oversample = '4x';
+      sh.connect(filterNode(c, 'highpass', 78, 0.7, cab));
+      var pre = filterNode(c, 'highpass', AMP.preHp, 0.6, eqNode(c, 'peaking', 900, 0.7, 7, sh));
+      M.open[side] = gainNode(c, 1, pre);
+      M.mute[side] = gainNode(c, 1.25, filterNode(c, 'lowpass', 480, 1.1, pre));
+    });
+    var sub = filterNode(c, 'highpass', 30, 0.7, filterNode(c, 'lowpass', 150, 0.8, gainNode(c, AMP.bassSub, r.busBand)));
+    var gsh = c.createWaveShaper(); gsh.curve = asymCurve(6); gsh.oversample = '2x';
+    gsh.connect(filterNode(c, 'lowpass', 2200, 0.8, eqNode(c, 'peaking', 1000, 1, 4, gainNode(c, AMP.bassGrind, r.busBand))));
+    M.bass = gainNode(c, 1, null); M.bass.connect(sub); M.bass.connect(filterNode(c, 'highpass', 260, 0.7, gsh));
+    M.vox = gainNode(c, AMP.vox, filterNode(c, 'highpass', 60, 0.7, eqNode(c, 'peaking', 2400, 0.8, 7, r.busBand)));
+    return M;
+  }
+  // The metal inputs of a playback port (made on first use; closePort() silences them with the rest).
+  function metalPort(r, p) {
+    if (!p.mOpenL) {
+      var M = metalRig(r), c = r.ctx;
+      p.mOpenL = gainNode(c, 1, M.open[0]); p.mOpenR = gainNode(c, 1, M.open[1]);
+      p.mMuteL = gainNode(c, 1, M.mute[0]); p.mMuteR = gainNode(c, 1, M.mute[1]);
+      p.mBass = gainNode(c, 1, M.bass); p.mVox = gainNode(c, 1, M.vox);
+    }
+    return p;
+  }
+  // A power chord in one oscillator: a wave at half the root whose even harmonics are the root's saw, the multiples of 3
+  // the fifth's and the multiples of 4 the octave's (just intonation). Half the sources of two oscillators.
+  function powerWave(r) {
+    if (r.pwave) return r.pwave;
+    var N = 96, re = new Float32Array(N), im = new Float32Array(N);
+    for (var n = 1; n < N; n++) im[n] = (n % 2 ? 0 : 2 / n) + (n % 3 ? 0 : 0.85 * 3 / n) + (n % 4 ? 0 : 0.35 * 4 / n);
+    return (r.pwave = r.ctx.createPeriodicWave(re, im));
+  }
   // Per-playback inputs into the rig; stop() ramps them to silence and disconnects them.
   var PORTS = ['drums', 'gtr', 'dlead', 'clean', 'lead', 'bass', 'vox'];
   function makePort(r) {
@@ -365,13 +459,14 @@
   // Books `n` sources from t to t + dur against the voice cap (band notes also against the band's share).
   // false = no room (the hit is dropped).
   function book(r, t, dur, n, band) {
-    r.busy = r.busy.filter(function (end) { return end > t; });
-    if (band) { r.band = r.band.filter(function (end) { return end > t; }); if (r.band.length + n > r.bandCap) return false; }
-    if (r.busy.length + n > r.cap) return false;
+    var t1 = t + 1e-4;   // a note that ends as the next one starts (float rounding) frees its voice in time
+    r.busy = r.busy.filter(function (end) { return end > t1; });
+    if (band) { r.band = r.band.filter(function (end) { return end > t1; }); if (r.band.length + n > r.bandCap) { counts.dropped++; return false; } }
+    if (r.busy.length + n > r.cap) { counts.dropped++; return false; }
     for (var i = 0; i < n; i++) { r.busy.push(t + dur); if (band) r.band.push(t + dur); }
     return true;
   }
-  function run(r, node, t, dur) { node.start(t); node.stop(t + dur); }
+  function run(r, node, t, dur) { node.start(t); node.stop(t + dur); if (r.collect) r.collect.push(node); }
   // Envelope gain: attack to peak, then an exponential decay to silence at t + dur (a choke shortens dur).
   function decay(c, t, attack, peak, dur, dest) {
     var g = c.createGain();
@@ -470,9 +565,9 @@
     var D = DRUMS[lane]; if (!D) return false;
     var k = r.kit || DEFAULT_KIT, n = typeof D.n === 'function' ? D.n(k, v) : D.n;
     var d = Math.max(0.012, Math.min(D.len(k, v), cap));
-    if (!book(r, t, d, n)) return false;
+    if (!book(r, t, d, n)) return null;
     D.play(r, p, t, d, k, v);
-    return true;
+    return { t: t, end: t + d, n: n };   // the booking (live taps cut it off at the lane's next tap)
   }
   // Country train beat: rim clicks on the backbeat in verses, brushes (or ghost notes) in between.
   function snareVariant(step, role) {
@@ -485,13 +580,73 @@
   var VOX = {
     hey: { vw: ['e', 'e'], len: 0.3, steps: 2, breath: 0.05, bend: -3, peak: 0.9 },
     shout: { vw: ['a', 'o'], len: 0.5, steps: 4, breath: 0.04, bend: -4, peak: 0.85, drive: 3 },
-    growl: { vw: ['o', 'u'], len: 1.0, steps: 8, rough: 0.07, peak: 0.9, drive: 6 },
+    growl: { len: 1.0, steps: 8, peak: 1.8, metal: 'growl' },     // v0.7.2: metalVox
+    scream: { len: 0.55, steps: 4, peak: 1.1, metal: 'scream' },  // v0.7.2: metalVox
     yeah: { vw: ['e', 'a'], len: 0.6, steps: 4, bend: -1, peak: 0.7, vib: 0.012 },
     yeehaw: { vw: ['i', 'a'], len: 0.8, steps: 6, yodel: true, peak: 0.75 },
     ooh: { vw: ['u', 'o'], len: 1.0, steps: 8, peak: 0.6, vib: 0.01 }
   };
+  // v0.7.2 metal vocals, still on the beat grid and pitched to the song (the timeline puts them there):
+  //   growl (breakdowns): a jittered buzz + a subharmonic an octave down + low formant noise, rattled (false-cord flutter),
+  //     driven hard, through wide low formants ('o' -> 'u') plus a chest path, falling a tone at the end.
+  //   scream (chorus downbeats): a buzz scooped up into the note (+ a double a few cents off) + bright rasp noise, driven,
+  //     through high open formants ('a' -> 'e').
+  var MVOX = {
+    growl: { f: [[460, 780, 2450], [340, 640, 2300]], q: [3, 5, 8], lv: [2.4, 2.2, 1.6], drive: 9, rattle: [34, 0.55], noise: ['bandpass', 1300, 0.6, 1.4], jit: 0.05, scoop: 0, fall: -2 },
+    scream: { f: [[920, 1450, 2950], [640, 1950, 3100]], q: [3.5, 5, 7], lv: [3.6, 2.8, 1.8], drive: 14, rattle: [47, 0.3], noise: ['highpass', 1700, 0.7, 0.7], jit: 0.035, scoop: -3, fall: -1 }
+  };
+  // A gain curve of irregular dips at ~rate Hz (depth 0..1): the growl's rattle, the scream's grit.
+  function rattle(dur, rate, depth, seed) {
+    var n = Math.max(2, Math.ceil(dur * 480)), a = new Float32Array(n), s = (seed % 2147483646) + 1, ph = 0;
+    for (var i = 0; i < n; i++) {
+      s = lcg(s); ph += rate * (0.8 + 0.4 * s / 2147483647) / 480;
+      a[i] = 1 - depth * (0.5 + 0.5 * Math.sin(2 * Math.PI * ph));
+    }
+    return a;
+  }
+  // Pitch curve: scoop up from `scoop` semitones, jitter, and fall `fall` semitones over the last 30%.
+  function contour(f, dur, scoop, fall, amt, seed) {
+    var n = Math.max(2, Math.ceil(dur * 90)), a = new Float32Array(n), s = (seed % 2147483646) + 1;
+    for (var i = 0; i < n; i++) {
+      var tt = i / 90, u = i / (n - 1), semis = scoop * Math.max(0, 1 - tt / 0.07) + fall * Math.max(0, (u - 0.7) / 0.3);
+      s = lcg(s); a[i] = f * Math.pow(2, semis / 12) * (1 + amt * (s / 1073741823.5 - 1));
+    }
+    return a;
+  }
+  function metalVox(r, p, ev, t, dur, V) {
+    var c = r.ctx, X = MVOX[V.metal], growl = V.metal === 'growl', n = 3;   // buzz + (sub | double) + noise
+    if (!book(r, t, dur, n, true)) return;
+    counts.vox++;
+    metalPort(r, p);
+    var f = mtof(ev.midi), seed = ev.midi * 131 + Math.round(t * 1000);
+    r.metal.pres.forEach(function (pr) {   // the guitars clear the voice's band while it sings (a dynamic EQ dip)
+      pr.gain.setTargetAtTime(AMP.carve, t, 0.012); pr.gain.setTargetAtTime(3, t + dur * 0.8, 0.1);
+    });
+    var out = held(c, t, V.peak, dur, p.mVox, growl ? 0.03 : 0.012);
+    var sh = c.createWaveShaper(); sh.curve = asymCurve(X.drive); sh.oversample = '2x';
+    X.f[0].forEach(function (f0, k) {
+      var bp = filterNode(c, 'bandpass', f0, X.q[k], gainNode(c, X.lv[k], out));
+      bp.frequency.setValueAtTime(f0, t); bp.frequency.linearRampToValueAtTime(X.f[1][k], t + dur * 0.75);
+      sh.connect(bp);
+    });
+    if (growl) sh.connect(filterNode(c, 'lowpass', 260, 0.8, gainNode(c, 0.9, out)));   // chest
+    var am = c.createGain(); am.gain.setValueCurveAtTime(rattle(dur, X.rattle[0], X.rattle[1], seed), t, dur);
+    am.connect(sh);
+    var into = gainNode(c, growl ? 0.7 : 0.55, am);
+    var o = c.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueCurveAtTime(contour(f, dur, X.scoop, X.fall, X.jit, seed), t, dur);
+    o.connect(into); run(r, o, t, dur);
+    var o2 = c.createOscillator();   // growl: the subharmonic (square, an octave down); scream: the double
+    if (growl) { o2.type = 'square'; o2.frequency.setValueCurveAtTime(contour(f / 2, dur, 0, X.fall, X.jit * 1.5, seed + 7), t, dur); o2.connect(gainNode(c, 0.55, into)); }
+    else { o2.type = 'sawtooth'; o2.detune.value = ev.gang ? -1200 : 22; o2.frequency.setValueCurveAtTime(contour(f, dur, X.scoop, X.fall, X.jit, seed + 3), t, dur); o2.connect(gainNode(c, ev.gang ? 0.6 : 0.45, into)); }
+    run(r, o2, t + (growl ? 0 : 0.012), dur - (growl ? 0 : 0.012));
+    var s = c.createBufferSource(); s.buffer = r.noise; s.loop = true;
+    s.connect(filterNode(c, X.noise[0], X.noise[1], X.noise[2], gainNode(c, X.noise[3], into)));
+    run(r, s, t, dur);
+  }
   function voxHit(r, p, ev, t, spb) {
     var c = r.ctx, V = VOX[ev.voc] || VOX.hey, dur = Math.max(0.1, Math.min(V.len, ev.len * spb, ev.gap * spb));
+    if (V.metal) { metalVox(r, p, ev, t, dur, V); return; }
     var gang = ev.gang ? 2 : 1, nz = V.breath || V.rough ? 1 : 0;
     if (!book(r, t, dur, gang + nz, true)) return;
     counts.vox++;
@@ -523,8 +678,53 @@
 
   // Band notes: 'gtr'/'gtr2' (distorted; power: root+fifth, mute: palm-muted), 'lead' (Dana's amp, bend), 'fiddle'
   // (vibrato), 'twang' (bent clean licks), 'clean' (strum: [intervals] staggered), 'bass', 'vox' (vocal hits).
+  // v0.7.2 metal guitars + bass through the metal amp. Flags from the timeline: power (root+fifth+octave wave), mute (palm
+  // mute: a short gated note into the low-passed input), trem (tremolo picking: tight 16ths), sag (doom: the chord
+  // droops as it rings). gtr = both guitars (L + R, detuned, R a hair late); gtr2 = one ringing voice into both amps.
+  var METAL_KINDS = { gtr: 1, gtr2: 1, bass: 1 };
+  function metalNote(r, p, ev, t, spb) {
+    var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), h = (ev.midi * 7 + Math.round(ev.beat * 4)) % 5;
+    metalPort(r, p);
+    if (ev.kind === 'bass') {
+      if (!book(r, t, dur, 1, true)) return;
+      var b = c.createOscillator(); b.type = 'sawtooth';
+      b.frequency.setValueAtTime(f * 1.006, t); b.frequency.exponentialRampToValueAtTime(f, t + 0.03);   // the string settles
+      b.connect(ev.mute || ev.trem || ev.len <= 0.5 ? gate(c, t, 0.002, 0.8, dur, ev.mute ? 0.5 : 0.7, p.mBass) : held(c, t, 0.65, dur, p.mBass));
+      run(r, b, t, dur);
+      return;
+    }
+    var ring = ev.kind === 'gtr2', n = ring ? 1 : 2;
+    if (!book(r, t, dur, n, true)) return;
+    var wave = ev.power ? powerWave(r) : null, base = wave ? f / 2 : f;
+    for (var side = 0; side < n; side++) {
+      var tt = t + (side ? 0.006 + 0.002 * h / 4 : 0), dd = Math.max(0.02, dur - (tt - t));
+      var o = c.createOscillator();
+      if (wave) o.setPeriodicWave(wave); else o.type = 'sawtooth';
+      o.detune.value = ring ? 0 : side ? 6 + h : -5 - h;
+      o.frequency.setValueAtTime(base * 1.007, tt); o.frequency.exponentialRampToValueAtTime(base, tt + 0.025);   // pick bloom
+      if (ev.sag && dd > 0.4) { o.frequency.setValueAtTime(base, tt + dd * 0.55); o.frequency.exponentialRampToValueAtTime(base * 0.985, tt + dd); }
+      var g;
+      if (ring) { g = held(c, tt, 0.22, dd, p.mOpenL, 0.02); g.connect(p.mOpenR); }
+      else if (ev.mute) g = gate(c, tt, 0.0015, 0.62, dd, 0.4, side ? p.mMuteR : p.mMuteL);
+      else if (ev.trem) g = gate(c, tt, 0.002, 0.5, dd * 0.9, 0.7, side ? p.mOpenR : p.mOpenL);
+      else g = held(c, tt, 0.48, dd, side ? p.mOpenR : p.mOpenL, 0.003);
+      o.connect(g); run(r, o, tt, dd);
+    }
+  }
+  // Gated note: attack to peak, decay to peak*sustain by the end, then shut within 12 ms (tight: the amp's gain would
+  // otherwise hold a slow decay up and smear the chugs together).
+  function gate(c, t, attack, peak, dur, sustain, dest) {
+    var g = c.createGain(), end = Math.max(dur, attack + 0.02), rel = Math.min(0.012, end * 0.25);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * sustain), t + end - rel);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + end);
+    g.connect(dest);
+    return g;
+  }
   function playNote(r, p, ev, t, spb) {
     if (ev.kind === 'vox') { voxHit(r, p, ev, t, spb); return; }
+    if (r.genre === 'metal' && METAL_KINDS[ev.kind]) { metalNote(r, p, ev, t, spb); return; }
     var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), o, g;
     if (ev.kind === 'bass') {
       if (!book(r, t, dur, 1, true)) return;
@@ -575,11 +775,14 @@
   };
   // Each song gets its own key, seeded by its id, inside the genre's range (backing.keys around backing.root).
   var NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
-  A.keyFor = function (seed, genre) {
+  // v0.7.2: with a bpm, the genre's tuning for that tempo band shifts it (metal: doom a semitone down toward drop B, tremolo
+  // a semitone up): tonic = root + offset + tune. Without a bpm, tune = 0.
+  A.keyFor = function (seed, genre, bpm) {
     genre = genre || 'metal';
     var B = GG.songs.genre(genre).backing || {}, range = B.keys || [0, 0], mode = B.mode || 'minor';
-    var off = GG.RNG(GG.hashSeed('key|' + genre + '|' + seed)).int(range[0], range[1]), tonic = (B.root || 40) + off;
-    return { seed: String(seed), offset: off, tonic: tonic, mode: mode, name: NOTE[tonic % 12] + ' ' + mode };
+    var tune = bpm && B.tune ? B.tune[A.styleFor(genre, bpm).id] || 0 : 0;
+    var off = GG.RNG(GG.hashSeed('key|' + genre + '|' + seed)).int(range[0], range[1]), tonic = (B.root || 40) + off + tune;
+    return { seed: String(seed), offset: off, tune: tune, tonic: tonic, mode: mode, name: NOTE[tonic % 12] + ' ' + mode };
   };
   function sig(p) {
     var s = p && p.sections || {};
@@ -624,7 +827,11 @@
     return {
       gtr: function (s, len, e) { return push('gtr', s, len, Object.assign({ midi: o.root }, e)); },
       gtr2: function (s, len, e) { return push('gtr2', s, len, Object.assign({ midi: o.root + 12 }, e)); },
-      bass: function (s, len, midi) { return push('bass', s, len, { midi: (midi != null ? midi : o.root) - 12 }); },
+      bass: function (s, len, midi, e) {   // an octave under the guitar (never under the genre's bassFloor)
+        var m = (midi != null ? midi : o.root) - 12;
+        if (o.B.bassFloor && m < o.B.bassFloor) m += 12;
+        return push('bass', s, len, Object.assign({ midi: m }, e));
+      },
       note: function (kind, s, len, midi, e) { return push(kind, s, len, Object.assign({ midi: midi }, e)); },
       vox: function (s, voc, midi, gang) { return push('vox', s, (VOX[voc] || VOX.hey).steps, { voc: voc, midi: inKey(midi, o.key, o.B.scale), gang: !!gang }); }
     };
@@ -640,19 +847,75 @@
     }
     if (!any) for (i = 0; i < 16; i += o.role === 'break' ? 4 : 2) { w.gtr(i, 1.5, { power: true, mute: true }); w.bass(i, 1.5); }
   }
-  var ARP = [0, 3, 7, 12, 15, 12, 7, 3];
+  // v0.7.2 metal, darker (owner: "heavier guitars, darker riffs"). The low string is the key's tonic (drop tuning); the
+  // bar's chord (o.root) comes from the progression. Every hit is doubled by the bass.
+  var METAL = {
+    // Doom sludge (slow): the chord rings and droops, a palm-muted push, a b2 / tritone / minor-third answer, then a
+    // chromatic step into the next chord.
+    doom: function (o, w) {
+      var dark = o.root + o.rng.pick(o.B.stabs || [1, 6]), step = o.next + (o.next > o.key ? -1 : 1);
+      w.gtr(0, 6, { power: true, sag: true }); w.bass(0, 6);
+      if (o.role !== 'sparse' || o.bar % 2 === 1) { w.gtr(6, 1, { power: true, mute: true, midi: o.key }); w.bass(6, 1, o.key); w.gtr(7, 1, { power: true, mute: true, midi: o.key }); }
+      w.gtr(8, 6, { power: true, sag: true, midi: dark }); w.bass(8, 6, dark);
+      w.gtr(14, 2, { power: true, mute: true, midi: step }); w.bass(14, 2, step);
+    },
+    // Palm-muted chugs locked to the kick (the owner's rule): verses pedal on the open low string with the bar's chord
+    // struck on the first hit; choruses chug the chord; the last late kick of every other bar is a b2 / tritone stab.
+    chug: function (o, w) {
+      var kick = o.sec[0] || '', cym = o.sec[3] || '', hits = [], i;
+      for (i = 0; i < 16; i++) if (kick.charCodeAt(i) === HIT) hits.push(i);
+      if (!hits.length) for (i = 0; i < 16; i += 2) hits.push(i);
+      var last = hits[hits.length - 1], pedal = o.role === 'full' ? o.root : o.key;
+      hits.forEach(function (s, n) {
+        if (n === 0) {
+          var open = o.role === 'full' || cym.charCodeAt(s) === HIT;
+          w.gtr(s, open ? 4 : 1.5, { power: true, mute: !open }); w.bass(s, open ? 4 : 1.5);
+        } else if (s === last && s >= 12 && o.bar % 2 === 1) {
+          var st = o.key + o.rng.pick(o.B.stabs || [1, 6]);
+          w.gtr(s, 16 - s, { power: true, midi: st }); w.bass(s, 16 - s, st);
+        } else { w.gtr(s, 1.5, { power: true, mute: true, midi: pedal }); w.bass(s, 1.5, pedal); }
+      });
+    },
+    // Tremolo riffs (fast): each riff pitch tremolo-picked as two 16ths (power chords in the chorus: the blast riff),
+    // the bass on the 8ths; every other bar ends in a chromatic run into the next chord.
+    tremolo: function (o, w) {
+      var run = o.bar % 2 === 1 && o.role !== 'solo', up = o.next - 4 >= o.key;
+      for (var i = 0; i < 16; i++) {
+        var m = o.root + o.riff[(i >> 1) % o.riff.length];
+        if (run && i >= 12) m = up ? o.next - 4 + (i - 12) : o.next + 4 - (i - 12);
+        w.gtr(i, 1, { midi: m, trem: true, power: o.role === 'full' });
+        if (i % 2 === 0) w.bass(i, 2, m, { trem: true });
+      }
+    },
+    // Breakdown (any tempo): the drop is one open low-string hit with space around it, a muted pair, a b2 stab; the bars
+    // after chug half-time on the kicks that land on a 3-3-2 grid (or that grid itself) with a b2 / tritone at the end.
+    brk: function (o, w) {
+      var kick = o.sec[0] || '', hits = [], i;
+      if (o.brk === 0) {
+        w.gtr(0, 8, { power: true, midi: o.key }); w.bass(0, 8, o.key);
+        [10, 11].forEach(function (s) { w.gtr(s, 1, { power: true, mute: true, midi: o.key }); w.bass(s, 1, o.key); });
+        w.gtr(14, 2, { power: true, midi: o.key + 1 }); w.bass(14, 2, o.key + 1);
+        return;
+      }
+      for (i = 0; i < 16; i++) if (kick.charCodeAt(i) === HIT && [0, 3, 6].indexOf(i % 8) >= 0) hits.push(i);
+      if (hits.length < 2) hits = [0, 3, 6, 8, 11, 14];
+      hits.forEach(function (s) {
+        var open = s % 8 === 0, m = s >= 14 ? o.key + o.rng.pick([1, 6]) : o.key, len = open ? 2.5 : 1.25;
+        w.gtr(s, len, { power: true, mute: !open, midi: m }); w.bass(s, len, m);
+      });
+    }
+  };
   // One bar of band per genre. o: { style, sec, root (this bar's chord), next (next chord), key (tonic), riff, bar,
-  // role: sparse | full | break | solo, bpm, B (genre backing), rng (seeded per song + section + bar) }.
+  // role: sparse | full | break | solo, brk (bars of breakdown before this one), bpm, B (genre backing), rng (seeded per
+  // song + section + bar) }.
   var BANDS = {
     metal: function (o, w) {
-      var i, style = o.role === 'break' ? 'chug' : o.style;
-      if (style === 'doom') { w.gtr(0, 8, { power: true }); w.bass(0, 8); w.gtr(8, 8, { power: true }); w.bass(8, 8); }
-      else if (style === 'chug') chugs(o, w, o.role !== 'break');
-      else for (i = 0; i < 16; i++) { var m = o.root + o.riff[i % o.riff.length]; w.gtr(i, 1, { midi: m }); w.bass(i, 1, m); }
-      if (o.role === 'full') w.gtr2(0, 16);                     // Jaxon lets a chord ring over the chugs
-      if (o.role === 'solo') {                                  // Dana's solo: fast arpeggios on the bar's chord
-        var every = o.bpm > 190 ? 2 : 1;
-        for (i = 0; i < 16; i += every) w.note('lead', i, every, o.root + 24 + ARP[(i / every) % ARP.length]);
+      if (o.role === 'break') { METAL.brk(o, w); return; }
+      (METAL[o.style] || METAL.chug)(o, w);
+      if (o.role === 'full') w.gtr2(0, 16, { power: true });   // Jaxon lets a chord ring an octave up over it all
+      if (o.role === 'solo') {                                  // Dana's solo: fast arpeggios, dark ones, in the scale
+        var every = o.bpm > 190 ? 2 : 1, arp = o.rng.pick(o.B.arps || [[0, 3, 7, 12, 15, 12, 7, 3]]);
+        for (var i = 0; i < 16; i += every) w.note('lead', i, every, inKey(o.root + 24 + arp[(i / every) % arp.length], o.key, o.B.scale));
       }
     },
     punk: function (o, w) {
@@ -706,7 +969,7 @@
     var p = GG.songs.sanitize(pattern && pattern.pattern || pattern, null, null, true), genre = opts.genre || 'metal';
     var G = GG.songs.genre(genre), B = G.backing || {}, kit = G.kit || DEFAULT_KIT;
     var style = opts.style ? { id: opts.style, label: opts.style } : A.styleFor(genre, p.bpm);
-    var key = A.keyFor(opts.songId != null ? opts.songId : songIdOf(pattern), genre), band = BANDS[genre] || BANDS.metal;
+    var key = A.keyFor(opts.songId != null ? opts.songId : songIdOf(pattern), genre, p.bpm), band = BANDS[genre] || BANDS.metal;
     var V = opts.vocals === false ? null : B.vox, R = B.roles || {};
     var order = opts.section ? [opts.section] : p.arrangement, events = [], beat = 0, bars = 0, maxBars = opts.bars || Infinity;
     for (var e = 0; e < order.length && bars < maxBars; e++) {
@@ -726,14 +989,16 @@
           }
         }
         if (opts.backing === false) continue;
-        var root = role === 'break' ? key.tonic : key.tonic + prog[bar % prog.length];
+        var root = role === 'break' ? key.tonic : key.tonic + prog[bar % prog.length], brk = 0;
+        for (var j = bar - 1; role === 'break' && j >= 0 && roles[j % roles.length] === 'break'; j--) brk++;
         var o = { out: events, style: style.id, sec: sec, root: root, next: key.tonic + prog[(bar + 1) % prog.length], key: key.tonic,
-          riff: riff, beat: beat, name: name, bar: bar, role: role, bpm: p.bpm, B: B, rng: GG.RNG(GG.hashSeed(key.seed + '|' + name + '|' + bar)) };
+          riff: riff, beat: beat, name: name, bar: bar, role: role, brk: brk, bpm: p.bpm, B: B, rng: GG.RNG(GG.hashSeed(key.seed + '|' + name + '|' + bar)) };
         var w = writer(o);
         band(o, w);
         if (!V) continue;
         if (name === 'chorus' && V.hits) V.hits.forEach(function (h) { if (h[0] === o.bar) w.vox(h[1], h[2], o.root + h[3], h[4]); });
-        if (role === 'break' && V.drop && (bar === 0 || roles[(bar - 1) % roles.length] !== 'break')) w.vox(0, V.drop[0], key.tonic + V.drop[1]);   // the drop
+        if (role === 'break' && V.drop && brk === 0) w.vox(0, V.drop[0], key.tonic + V.drop[1]);   // the drop
+        if (role === 'break' && V.brk) V.brk.forEach(function (h) { if (h[0] === brk) w.vox(h[1], h[2], key.tonic + h[3]); });   // v0.7.2 growls
       }
     }
     events.sort(function (a, b) { return a.beat - b.beat || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.li || 0) - (b.li || 0); });
@@ -834,21 +1099,40 @@
   };
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
-  var previewPort = null;
+  var previewPort = null, schedPort = null, taps = {};
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
+  // v0.7.2: hits scheduled ahead go through their own port so A.hitCancel() can silence them (a gig restart / hidden app).
   A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
     if (!previewPort) previewPort = makePort(rig);
-    var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
-    if (when > t && when < t + 1) t = when;
+    var playing = current && current.playing, t = ctx.currentTime + 0.005, v, port = previewPort;
+    if (when > t && when < t + 1) { t = when; port = schedPort || (schedPort = makePort(rig)); }
     if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {
       var step = playing ? ((Math.round(current.beatAt(t) * 4) % 16) + 16) % 16 : 4;
       v = snareVariant(step, lastStep && playing ? lastStep.role : 'full');
     }
-    drumHit(rig, previewPort, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v);
+    var last = taps[lane];
+    if (last && last.t < t && last.end > t) {   // lanes are monophonic, as in the timeline: this tap cuts off the last one
+      last.g.gain.setTargetAtTime(0, t, 0.006);
+      last.src.forEach(function (s) { try { s.stop(Math.min(last.end, t + 0.05)); } catch (e) { /* old Safari: one stop() only */ } });
+      for (var k = 0; k < last.n; k++) { var j = rig.busy.indexOf(last.end); if (j >= 0) rig.busy[j] = t; }
+      taps[lane] = null;
+    }
+    var g = gainNode(ctx, 1, port.drums), src = rig.collect = [], b;   // drum voices only use port.drums: a gain per tap is its port
+    try { b = drumHit(rig, { drums: g }, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v); } finally { rig.collect = null; }
+    if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
+  };
+  A.hitCancel = function () {   // v0.7.2: drops every hit still scheduled ahead (a 5 ms fade, then the port is cut)
+    var p = schedPort; schedPort = null;
+    if (!p || !ctx) return;
+    var t = ctx.currentTime;
+    Object.keys(p).forEach(function (k) {
+      try { var g = p[k].gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.005); } catch (e) { /* ignore */ }
+      setTimeout(function () { try { p[k].disconnect(); } catch (e) { /* ignore */ } }, 60);
+    });
   };
   A.isPlaying = function () { return !!(current && current.playing); };
   A.context = function () { return ctx; };   // v0.3 gig clock + pause (null before unlock); read-only use
@@ -914,11 +1198,300 @@
     }
     return b;
   }
-  function crowdBed(c, dest, t0, B) {   // a room full of people talking over each other
-    var g = gainNode(c, 0.0001, dest), s = bedSource(c, B.murmur, null, t0);
-    s.connect(filterNode(c, 'bandpass', 750, 0.6, gainNode(c, 1, g)));
-    s.connect(filterNode(c, 'bandpass', 2100, 1.4, gainNode(c, 0.35, g)));
-    return { gain: g, srcs: [s] };
+  /* ---- v0.7.2 crowd: rendered once per page (plain seeded JS DSP, 22.05 kHz stereo), then only played back ---------- */
+  var CSR = 22050;
+  var FORM = { a: [800, 1150, 2800], e: [480, 1750, 2600], i: [300, 2200, 2950], o: [520, 880, 2500], u: [330, 800, 2400], ae: [700, 1600, 2600] };
+  var TALK = ['a', 'e', 'i', 'o', 'u', 'ae', 'e', 'a'], FG = [1, 0.6, 0.32];
+  function stereo(secs) { var n = Math.ceil(secs * CSR); return { L: new Float32Array(n), R: new Float32Array(n), n: n }; }
+  // Build steps: a step that returns MORE runs again. SLICE = samples of a voice per step, BIG = samples of a cheap loop
+  // (noise, gain) per step: each step stays a few ms even in cold JS on an old phone.
+  var SLICE = 4096, BIG = 16384, MORE = {};
+  function sliced(b, body, fin) {   // body(i0, i1) over [0, b.n) (read at the first call), BIG samples per step; then fin(b)
+    var i = 0;
+    return function () { var e = Math.min(b.n, i + BIG); body(i, e); i = e; return i < b.n ? MORE : fin ? fin(b) : undefined; };
+  }
+  function runSteps(steps) { var out; for (var j = 0; j < steps.length;) { out = steps[j](); if (out !== MORE) j++; } return out; }
+  // One voice into a stereo buffer: a softened buzz + breath noise through three formant resonators gliding between
+  // vowels. v: { f0, pan, lv, dull (0 near .. 0.85 far: duller), shift (formant scale), bw [3], seed };
+  // segs: [{ t0, t1 (s), v0, v1 (vowels), p0, p1 (pitch multipliers), amp, att, rel (s), br (breath 0..1) }].
+  // Resumable: returns job(max) that renders up to `max` more samples (all when omitted); true = the voice is done.
+  function speak(b, v, segs) {
+    var L = b.L, R = b.R, a0 = (v.pan + 1) * Math.PI / 4, gl = Math.cos(a0) * v.lv, gr = Math.sin(a0) * v.lv;
+    var s = (v.seed % 2147483646) + 1, ph = 0, soft = 0, dull = 0, dk = v.dull || 0, x1 = 0, x2 = 0, k;
+    var y1 = [0, 0, 0], y2 = [0, 0, 0], c0 = [0, 0, 0], c1 = [0, 0, 0], c2 = [0, 0, 0], bw = v.bw || [90, 120, 170], sh = v.shift || 1;
+    var q = -1, i = 0, len = 0, g, a, A0, B0, att, rel, inc, br;
+    return function (max) {
+      for (var m = max == null ? Infinity : max; m > 0; m--, i++) {
+        while (i >= len) {   // next segment (skip the ones too short to hear)
+          if (++q >= segs.length) return true;
+          g = segs[q]; a = Math.max(0, Math.floor(g.t0 * CSR)); len = Math.min(b.n, Math.floor(g.t1 * CSR)) - a; i = 0;
+          if (len < 32) { len = 0; continue; }
+          A0 = FORM[g.v0]; B0 = FORM[g.v1]; att = Math.max(1, g.att * CSR); rel = Math.max(1, g.rel * CSR); inc = 0; br = g.br;
+        }
+        if ((i & 31) === 0) {   // glide the formants and the pitch
+          var u = i / len, w = u * u * (3 - 2 * u);
+          for (k = 0; k < 3; k++) {
+            var f = (A0[k] + (B0[k] - A0[k]) * w) * sh, rr = Math.exp(-Math.PI * bw[k] / CSR);
+            c1[k] = -2 * rr * Math.cos(2 * Math.PI * f / CSR); c2[k] = rr * rr; c0[k] = (1 - rr * rr) * FG[k];
+          }
+          inc = v.f0 * (g.p0 + (g.p1 - g.p0) * u) / CSR;
+        }
+        s = lcg(s); var nz = s / 1073741823.5 - 1;
+        ph += inc * (1 + 0.03 * nz); if (ph >= 1) ph -= 1;
+        soft += (2 * ph - 1 - soft) * 0.3;
+        var x = soft * (1 - br) + nz * br * 0.6, o = 0;
+        for (k = 0; k < 3; k++) { var yy = c0[k] * (x - x2) - c1[k] * y1[k] - c2[k] * y2[k]; y2[k] = y1[k]; y1[k] = yy; o += yy; }
+        x2 = x1; x1 = x;
+        dull += (o - dull) * (1 - dk);
+        var e = g.amp * Math.min(1, i / att, (len - i) / rel);
+        L[a + i] += dull * e * gl; R[a + i] += dull * e * gr;
+      }
+      return false;
+    };
+  }
+  function talkSegs(rng, secs) {   // phrases of syllables and pauses, the odd laugh
+    var segs = [], t = rng.range(0, 0.9);
+    while (t < secs) {
+      var n = rng.int(3, 10), laugh = rng.chance(0.1);
+      for (var k = 0; k < n && t < secs; k++) {
+        var d = laugh ? rng.range(0.08, 0.12) : rng.range(0.1, 0.24), p = laugh ? 1.35 - 0.04 * k : 1.12 - 0.24 * k / n + rng.range(-0.06, 0.08);
+        segs.push({ t0: t, t1: t + d, v0: laugh ? 'a' : rng.pick(TALK), v1: laugh ? 'a' : rng.pick(TALK), p0: p, p1: p * rng.range(0.93, 1.05),
+          amp: rng.range(0.5, 1), att: 0.015, rel: 0.03, br: laugh ? 0.45 : rng.chance(0.25) ? 0.55 : 0.08 });
+        t += d + rng.range(0, 0.04);
+      }
+      t += rng.range(0.2, 1.2);
+    }
+    return segs;
+  }
+  function shoutSegs(rng, secs) {   // held yells: WOAH, YEAH, HEY, WOO, AAH
+    var segs = [], t = rng.range(0, 0.5), SH = [['o', 'a'], ['e', 'a'], ['ae', 'e'], ['u', 'o'], ['a', 'a']];
+    while (t < secs) {
+      var d = rng.range(0.45, 1.5), vw = rng.pick(SH), p = rng.range(0.92, 1.05);
+      segs.push({ t0: t, t1: t + d, v0: vw[0], v1: vw[1], p0: p, p1: p * rng.range(0.88, 1.2), amp: rng.range(0.6, 1), att: 0.08, rel: 0.2, br: rng.range(0.25, 0.45) });
+      t += d + rng.range(0.05, 0.5);
+    }
+    return segs;
+  }
+  function hubbub(b, seed, lv, a) {   // feet, chairs, bodies: low-passed noise, different per side (steps, a side at a time)
+    return [0, 1].map(function (ch) {
+      var s = seed + ch * 7919, lp = 0, lp2 = 0;
+      return sliced(b, function (i0, i1) {
+        var d = ch ? b.R : b.L;
+        for (var i = i0; i < i1; i++) { s = lcg(s); lp += (s / 1073741823.5 - 1 - lp) * a; lp2 += (lp - lp2) * a; d[i] += lp2 * lv; }
+      });
+    });
+  }
+  // One hand clap: three quick slaps then a short resonant body (every clapper rings at its own pitch).
+  function clapInto(b, at, lv, pan, rng) {
+    var a0 = (pan + 1) * Math.PI / 4, gl = Math.cos(a0) * lv, gr = Math.sin(a0) * lv, f = rng.range(900, 2100), rr = Math.exp(-Math.PI * rng.range(500, 1100) / CSR);
+    var c1 = -2 * rr * Math.cos(2 * Math.PI * f / CSR), c2 = rr * rr, c0 = 1 - rr * rr, st = Math.floor(at * CSR), len = Math.floor(0.06 * CSR);
+    var taps = [0, Math.floor(rng.range(0.002, 0.004) * CSR), Math.floor(rng.range(0.006, 0.009) * CSR)], tk = Math.exp(-1 / (0.0008 * CSR)), bk = Math.exp(-1 / (rng.range(0.006, 0.012) * CSR));
+    var s = rng.int(1, 1e9), y1 = 0, y2 = 0, x1 = 0, x2 = 0, ex = 0, body = 0;
+    for (var i = 0; i < len; i++) {
+      var j = st + i; if (j >= b.n) break;
+      if (i === taps[0] || i === taps[1]) ex += 0.6;
+      if (i === taps[2]) { ex += 1; body = 0.8; }
+      s = lcg(s); var x = (s / 1073741823.5 - 1) * (ex + body);
+      var yy = c0 * (x - x2) - c1 * y1 - c2 * y2; y2 = y1; y1 = yy; x2 = x1; x1 = x;
+      ex *= tk; body *= bk;
+      if (j >= 0) { var o = yy * 2.2 + x * 0.35; b.L[j] += o * gl; b.R[j] += o * gr; }
+    }
+  }
+  function applauseSteps(seed, people, secs, into) {   // everybody clapping at their own pace, looped (a step per person)
+    var rng = GG.RNG(seed), b = stereo(secs + 0.3), steps = [];
+    function clapper() {
+      var rate = rng.range(3.3, 5.4), pan = rng.range(-0.95, 0.95), lv = rng.range(0.35, 1), t = rng.range(0, 1 / rate);
+      while (t < secs + 0.25) { clapInto(b, t, lv * rng.range(0.7, 1), pan, rng); t += rng.range(0.9, 1.1) / rate; }
+    }
+    for (var p = 0; p < people; p++) steps.push(clapper);   // a clapper per step (they draw from rng in order)
+    return steps.concat(function () { loopSeam(b, secs); }, normSteps(b, 0.2, 0, function (x) { into.push(x); return into; }));
+  }
+  function loopSeam(b, keep) {   // crossfade the tail over the head: the loop has no seam
+    var n = Math.floor(keep * CSR), m = b.n - n;
+    [b.L, b.R].forEach(function (d) { for (var i = 0; i < m; i++) { var w = i / m; d[i] = d[i] * w + d[n + i] * (1 - w); } });
+    b.n = n; b.L = b.L.subarray(0, n); b.R = b.R.subarray(0, n);
+    return b;
+  }
+  // Loops to an RMS, one-shots to a peak; never above 0.95. normSteps: as steps (b.n read when they run, so after a
+  // loopSeam step), the last returns fin(b); norm: all at once.
+  function normSteps(b, rms, peak, fin) {
+    var sum = 0, pk = 0, k;
+    return [sliced(b, function (i0, i1) {
+      for (var i = i0; i < i1; i++) { sum += b.L[i] * b.L[i] + b.R[i] * b.R[i]; pk = Math.max(pk, Math.abs(b.L[i]), Math.abs(b.R[i])); }
+    }), sliced(b, function (i0, i1) {
+      if (!i0) { k = rms ? rms / Math.max(1e-9, Math.sqrt(sum / (2 * b.n))) : peak / Math.max(1e-9, pk); k = Math.min(k, 0.95 / Math.max(1e-9, pk)); }
+      for (var i = i0; i < i1; i++) { b.L[i] *= k; b.R[i] *= k; }
+    }, fin)];
+  }
+  function norm(b, rms, peak) { return runSteps(normSteps(b, rms, peak, function (x) { return x; })); }
+  // name -> recipe (seeded, so every crowd sounds the same run to run): a list of steps (a slice of a voice, a clapper,
+  // a slice of the hubbub...; crowdRun spreads them over ticks) whose last step returns the audio [{ L, R, n }].
+  // A step that returns MORE runs again (a voice renders SLICE samples per step), so no step outlasts the tick's budget.
+  function speakers(n, mk) {   // n steps; each draws one voice (mk() -> speak job) when it first runs, then renders it in slices
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(function () { var job = null; return function () { if (!job) job = mk(); return job(SLICE) ? undefined : MORE; }; }());
+    return a;
+  }
+  var CROWD_BUILD = {
+    babble: function () {   // a room talking over itself: 14 voices near and far + feet and chairs, 5 s looped
+      var rng = GG.RNG(4401), b = stereo(5.35);
+      return speakers(14, function () {
+        var fem = rng.chance(0.5);
+        return speak(b, { f0: fem ? rng.range(175, 250) : rng.range(95, 145), pan: rng.range(-0.9, 0.9), lv: rng.range(0.45, 1), dull: rng.range(0, 0.7),
+          shift: fem ? 1.12 : 1, seed: rng.int(1, 1e9) }, talkSegs(rng, 5.35));
+      }).concat(hubbub(b, 4411, 0.25, 0.06), function () { loopSeam(b, 5); }, normSteps(b, 0.2, 0, function (x) { return [x]; }));
+    },
+    roar: function () {   // a crowd yelling: 12 shouting voices + breath, 4 s looped (it follows the meter)
+      var rng = GG.RNG(4402), b = stereo(4.4);
+      return speakers(12, function () {
+        return speak(b, { f0: rng.range(150, 360), pan: rng.range(-0.95, 0.95), lv: rng.range(0.5, 1), dull: rng.range(0, 0.5), shift: rng.range(1.05, 1.2),
+          bw: [140, 170, 230], seed: rng.int(1, 1e9) }, shoutSegs(rng, 4.4));
+      }).concat(hubbub(b, 4412, 0.6, 0.1), function () { loopSeam(b, 4); }, normSteps(b, 0.22, 0, function (x) { return [x]; }));
+    },
+    applause: function () { var out = []; return applauseSteps(4405, 26, 3, out).concat(applauseSteps(4406, 7, 3, out)); },   // big room, small room
+    clap: function () {   // the crowd clapping along: ~30 hands on one beat, a little ragged (two takes to alternate, 10 hands a step)
+      var out = [];
+      return [].concat.apply([], [4407, 4408].map(function (seed) {
+        var rng = GG.RNG(seed), b = stereo(0.3);
+        return [0, 1, 2].map(function (q) { return function () {
+          for (var p = 0; p < 10; p++) clapInto(b, 0.03 + (rng.next() + rng.next() + rng.next() - 1.5) * 0.014, rng.range(0.3, 1), rng.range(-0.95, 0.95), rng);
+          if (q === 2) { out.push(norm(b, 0, 0.6)); return out; }
+        }; });
+      }));
+    },
+    woo: function () {   // single fans: "WOOO!", "YEAH!", "WOO-HOO!", "HEY!"
+      var S = [
+        [300, [[0.02, 0.2, 'u', 'u', 0.82, 1.3, 0.05, 0.004], [0.2, 0.72, 'u', 'o', 1.3, 1, 0.004, 0.2]]],
+        [330, [[0.02, 0.16, 'i', 'e', 1.15, 1.25, 0.03, 0.004], [0.16, 0.6, 'e', 'ae', 1.25, 0.92, 0.004, 0.18]]],
+        [360, [[0.02, 0.24, 'u', 'u', 1, 1.25, 0.04, 0.05], [0.3, 0.72, 'u', 'o', 1.4, 1.05, 0.04, 0.2]]],
+        [250, [[0.02, 0.3, 'e', 'e', 1.12, 1, 0.02, 0.12]]]
+      ];
+      var out = [];
+      return S.map(function (x, k) {   // a fan per step, in slices
+        var b = stereo(0.8), job = speak(b, { f0: x[0], pan: 0, lv: 1, shift: 1.1, bw: [120, 150, 200], seed: 77 + k },
+          x[1].map(function (g) { return { t0: g[0], t1: g[1], v0: g[2], v1: g[3], p0: g[4], p1: g[5], amp: 1, att: g[6], rel: g[7], br: 0.25 }; }));
+        var done = false;
+        return function () { if (!done) { done = job(SLICE); return MORE; } out.push(norm(b, 0, 0.7)); return out; };
+      });
+    },
+    whistle: function () {   // two-finger whistles: a long one, and a wolf whistle
+      var NOTES = [[[[0, 2300], [0.1, 3250], [0.45, 3150], [0.72, 2650]]], [[[0, 1500], [0.22, 3000]], [[0.34, 1700], [0.54, 3100], [0.8, 1450]]]];
+      var out = [];
+      return NOTES.map(function (notes, k) {   // a whistle per step, in slices of SLICE samples
+        var last = notes[notes.length - 1], b = stereo(last[last.length - 1][0] + 0.08), ph = 0, s = 900 + k;
+        var ni = -1, pts, a, z = 0, i = 0, y1, y2, j, done = false;
+        return function () {
+          if (done) { out.push(norm(b, 0, 0.55)); return out; }
+          for (var m = SLICE; m > 0; m--, i++) {
+            while (i >= z) {   // next note
+              if (++ni >= notes.length) { done = true; return MORE; }
+              pts = notes[ni]; a = Math.floor(pts[0][0] * CSR); z = Math.floor(pts[pts.length - 1][0] * CSR); y1 = 0; y2 = 0; j = 0; i = a;
+            }
+            var tt = i / CSR; while (j < pts.length - 2 && tt > pts[j + 1][0]) j++;
+            var u = (tt - pts[j][0]) / (pts[j + 1][0] - pts[j][0]), f = pts[j][1] * Math.pow(pts[j + 1][1] / pts[j][1], u) * (1 + 0.008 * Math.sin(2 * Math.PI * 6 * tt));
+            ph += f / CSR; if (ph >= 1) ph -= 1;
+            s = lcg(s); var rr = 0.985, c1 = -2 * rr * Math.cos(2 * Math.PI * f / CSR), yy = (1 - rr * rr) * (s / 1073741823.5 - 1) - c1 * y1 - rr * rr * y2; y2 = y1; y1 = yy;
+            var x = (Math.sin(2 * Math.PI * ph) * 0.8 + yy * 3) * Math.min(1, (i - a) / (0.03 * CSR), (z - i) / (0.06 * CSR));
+            b.L[i] += x * 0.7; b.R[i] += x * 0.7;
+          }
+          return MORE;
+        };
+      });
+    },
+    boo: function () {   // "BOOOO": 11 low voices on 'oo', falling, staggered
+      var rng = GG.RNG(4403), b = stereo(2.4);
+      return speakers(11, function () {
+        var t0 = rng.range(0, 0.45), d = rng.range(1, 1.8), p = rng.range(1, 1.08);
+        return speak(b, { f0: rng.range(85, 165), pan: rng.range(-0.9, 0.9), lv: rng.range(0.5, 1), dull: rng.range(0.1, 0.6), bw: [110, 140, 200], seed: rng.int(1, 1e9) },
+          [{ t0: t0, t1: t0 + d, v0: 'u', v1: rng.chance(0.5) ? 'o' : 'u', p0: p, p1: p * rng.range(0.78, 0.9), amp: 1, att: 0.12, rel: 0.35, br: 0.15 }]);
+      }).concat(normSteps(b, 0, 0.7, function (x) { return [x]; }));
+    }
+  };
+  var CROWD_PARTS = ['babble', 'roar', 'applause', 'clap', 'woo', 'whistle', 'boo'], CROWD_RAW = {}, CROWD_JOB = {};
+  // Renders part k's raw audio (once per page): all of it, or steps until `budget` ms are spent. true = ready.
+  function crowdRun(k, budget) {
+    if (CROWD_RAW[k]) return true;
+    var J = CROWD_JOB[k], t0 = Date.now();
+    if (!J) J = CROWD_JOB[k] = { steps: CROWD_BUILD[k](), i: 0 };
+    while (J.i < J.steps.length) {
+      var out = J.steps[J.i]();
+      if (out !== MORE && ++J.i === J.steps.length) { CROWD_RAW[k] = out; delete CROWD_JOB[k]; return true; }
+      if (budget != null && Date.now() - t0 >= budget) return false;
+    }
+    return false;
+  }
+  function crowdPart(c, CB, k) {   // AudioBuffers for this context
+    if (CB[k]) return CB[k];
+    crowdRun(k);
+    var raw = CROWD_RAW[k];
+    return (CB[k] = raw.map(function (b) { var buf = c.createBuffer(2, b.n, CSR); buf.getChannelData(0).set(b.L); buf.getChannelData(1).set(b.R); return buf; }));
+  }
+  function crowdBufs(c, CB) { CB = CB || {}; CROWD_PARTS.forEach(function (k) { crowdPart(c, CB, k); }); return CB; }
+  function crowdReady(CB) { return !!CB && CROWD_PARTS.every(function (k) { return CB[k]; }); }
+
+  // The crowd at one gig: three looping layers (babble, roar, applause) under one fader, one-shots on top.
+  // B: { c, CB, gain (the fader), babble|roar|clap: { g, s }, srcs, live (count one-shots against CROWD_VOICES) }
+  function crowdRig(c, dest, CB, t0, small) {
+    var g = gainNode(c, 0.0001, dest);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(1, t0 + 0.8);
+    function layer(buf, off) { var lg = gainNode(c, 0, g); return { g: lg, s: bedSource(c, buf, lg, t0, off) }; }
+    var B = { c: c, CB: CB, gain: g, babble: layer(CB.babble[0], 0), roar: layer(CB.roar[0], 1.3), clap: layer(CB.applause[small ? 1 : 0], 0.7) };
+    B.srcs = [B.babble.s, B.roar.s, B.clap.s];
+    return B;
+  }
+  // Layer levels from the crowd state st: { level 0..100, size, song (a song is playing), silent (Japan: hush during songs) }.
+  // People talk between songs, listen (and yell, when it's hot) during them.
+  function crowdLevels(B, st, t, tau) {
+    var lv = st.level / 100, hot = Math.max(0, (lv - 0.35) / 0.65), hush = st.silent && st.song, sz = st.size;
+    B.babble.g.gain.setTargetAtTime((hush ? 0.015 : st.song ? 0.1 + 0.05 * lv : 0.2 + 0.08 * lv) * sz, t, tau);
+    B.roar.g.gain.setTargetAtTime((hush ? 0 : Math.pow(hot, 1.3) * (st.song ? 0.32 : 0.2)) * sz, t, tau);
+  }
+  function applaud(B, t, amt, hold) {   // the applause layer swells, holds, dies away
+    var p = B.clap.g.gain;
+    if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else p.cancelScheduledValues(t);
+    p.setTargetAtTime(amt, t, 0.1); p.setTargetAtTime(0, t + hold, 0.6);
+  }
+  // A one-shot on the crowd fader (stereo placed, slightly re-pitched), counted against CROWD_VOICES when live.
+  function shot(B, buf, t, gain, pan, rate, off, dur) {
+    if (!buf || (B.live && live.crowd >= CROWD_VOICES)) return null;
+    var c = B.c, s = c.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate || 1;
+    var g = gainNode(c, gain, panNode(c, pan, B.gain)); s.connect(g);
+    s.start(t, off || 0); if (dur) s.stop(t + dur);
+    if (B.live) track([s], 'crowd');
+    return g;
+  }
+  // Crowd reactions (live and offline). kind: a C.MOMENTS kind | 'applause' (polite) | 'end' (a song finished; amt = its
+  // score 0..1) | 'clap' (one on-beat clap, amt = strength) | 'woo' | 'whistle' | 'grumble' (a few boos). st.tally counts.
+  function crowdReact(B, st, kind, t, amt) {
+    var CB = B.CB, rng = st.rng, sz = st.size, T = st.tally, g;
+    if (kind === 'end') {
+      if (amt < 0.35) { crowdReact(B, st, 'boo', t); applaud(B, t + 0.5, 0.05 * sz, 1.2); return; }
+      if (amt < 0.55) { applaud(B, t, 0.14 * sz, 2); T.applause++; return; }
+      amt = amt >= 0.78 ? 1 : 0.6;
+    }
+    if (kind === 'boo' || kind === 'grumble') {
+      var big = kind === 'boo';
+      if (shot(B, CB.boo[0], t, (big ? 0.34 : 0.14) * sz, rng.range(-0.3, 0.3), rng.range(0.94, 1.06))) T.boos++;
+      if (big && sz > 0.8) shot(B, CB.boo[0], t + 0.2, 0.16 * sz, rng.range(-0.6, 0.6), rng.range(0.85, 0.9));
+      return;
+    }
+    if (kind === 'clap') { if (shot(B, CB.clap[T.claps % 2], t, 0.35 * amt * sz, rng.range(-0.1, 0.1), rng.range(0.97, 1.03))) T.claps++; return; }
+    if (kind === 'applause') { applaud(B, t, 0.18 * sz * (amt || 1), 1.6); T.applause++; return; }
+    if (kind === 'woo') { if (shot(B, rng.pick(CB.woo), t, 0.14 * sz, rng.range(-0.85, 0.85), rng.range(0.9, 1.12))) T.woos++; return; }
+    if (kind === 'whistle') { if (shot(B, rng.pick(CB.whistle), t, 0.09 * sz, rng.range(-0.85, 0.85), rng.range(0.94, 1.06))) T.whistles++; return; }
+    if (kind === 'solo') { crowdReact(B, st, 'woo', t + 0.05); crowdReact(B, st, 'whistle', t + rng.range(0.2, 0.6)); T.cheers++; return; }
+    // A cheer (mosh, lighters, wall of death, circle pit, line dance, cape spin, a great song end): the roar swells, the
+    // applause comes up, a few woos and whistles on top. amt 0..1 = how big.
+    amt = amt == null ? 1 : amt;
+    g = shot(B, CB.roar[0], t, 0, rng.range(-0.2, 0.2), rng.range(0.96, 1.04), rng.range(0, 1.5), 3.6);
+    if (!g) return;
+    T.cheers++;
+    var pk = (0.12 + 0.2 * amt) * sz, hold = 0.6 + 0.9 * amt;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk, t + 0.25); g.gain.setTargetAtTime(0, t + hold, 0.5);
+    applaud(B, t + 0.15, (0.1 + 0.2 * amt) * sz, 1 + 2.5 * amt);
+    for (var k = Math.round(1 + 2 * amt); k > 0; k--) crowdReact(B, st, 'woo', t + rng.range(0.05, 0.9));
+    if (amt > 0.5) crowdReact(B, st, 'whistle', t + rng.range(0.1, 0.7));
+    if (amt > 0.85) crowdReact(B, st, 'whistle', t + rng.range(0.6, 1.4));
   }
   function fadeOut(b, t) {
     var p = b.gain.gain;
@@ -941,32 +1514,15 @@
     var s = c.createBufferSource(); s.buffer = nz; s.connect(filterNode(c, 'lowpass', 320, 0.8, decay(c, t, 0.002, 0.25, 0.06, dest))); s.start(t); s.stop(t + 0.08);
     return [o, s];
   }
-  function cheer(c, dest, t, size, nz) {   // a roar that swells, a whistle, a "woo"
-    var s = c.createBufferSource(); s.buffer = nz; s.loop = true;
-    var f = filterNode(c, 'bandpass', 800, 0.5, decay(c, t, 0.25, 0.45 * size, 1.7, dest));
-    f.frequency.setValueAtTime(800, t); f.frequency.exponentialRampToValueAtTime(1500, t + 0.6);
-    s.connect(f); s.start(t); s.stop(t + 1.8);
-    var w = c.createOscillator(); w.frequency.setValueAtTime(2100, t + 0.15); w.frequency.exponentialRampToValueAtTime(2900, t + 0.45);
-    w.frequency.exponentialRampToValueAtTime(2400, t + 0.7); w.connect(decay(c, t + 0.15, 0.03, 0.05 * size, 0.6, dest)); w.start(t + 0.15); w.stop(t + 0.8);
-    var o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(330, t + 0.05); o.frequency.exponentialRampToValueAtTime(520, t + 0.45);
-    o.connect(filterNode(c, 'bandpass', 850, 5, decay(c, t + 0.05, 0.08, 0.3 * size, 0.9, dest))); o.start(t + 0.05); o.stop(t + 1);
-    return [s, w, o];
-  }
-  function boo(c, dest, t, size) {   // "booo", in three flat voices
-    var out = filterNode(c, 'lowpass', 600, 1, decay(c, t, 0.15, 0.2 * size, 1.3, dest));
-    return [150, 157, 143].map(function (f) {
-      var o = c.createOscillator(); o.type = 'sawtooth';
-      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.85, t + 1.3);
-      o.connect(out); o.start(t); o.stop(t + 1.4);
-      return o;
-    });
-  }
   function track(srcs, pool) {
     srcs.forEach(function (s) { live[pool]++; s.onended = function () { live[pool] = Math.max(0, live[pool] - 1); }; });
   }
 
   var amb = { mode: 'none', bed: null, timer: 0, noodle: null, road: null, radio: null, radioSong: null };
-  var crowd = { on: false, level: 50, size: 1, bed: null, last: -9 };
+  // The live crowd (st for crowdLevels/crowdReact): tally = the debug counts; handle = the song it claps along to.
+  var crowd = { on: false, level: 50, size: 1, bed: null, last: -9, song: false, silent: false, rng: null, tally: counts, timer: 0,
+    handle: null, beat: -1, clapping: false, grumble: -9 };
+  var CB = null, warmTimer = 0;   // this context's crowd buffers (built a part per tick after unlock, or on demand)
   var radioRig = null, refreshTimer = 0;
   function sceneName() {
     var R = GG.render;
@@ -1007,12 +1563,13 @@
     var t = ctx.currentTime, prev = amb.mode;
     if (amb.bed) fadeOut(amb.bed, t);
     if (crowd.bed) fadeOut(crowd.bed, t);
-    amb.bed = crowd.bed = null; crowd.on = false;
+    amb.bed = crowd.bed = null; crowd.on = false; crowd.waiting = false;
     if (amb.timer) { clearInterval(amb.timer); amb.timer = 0; }
+    if (crowd.timer) { clearInterval(crowd.timer); crowd.timer = 0; }
     stopRadio();
     amb.mode = m;
     if (m === 'gig' || prev === 'gig') { gigRoom = m === 'gig' ? A.roomFor(GG.state.liveGig.gig) : null; applyRoom(); }
-    if (m !== 'none' && !BUF) BUF = { brown: loopBuffer(ctx, 'brown'), murmur: loopBuffer(ctx, 'murmur'), white: noise };
+    if (m !== 'none' && !BUF) BUF = { brown: loopBuffer(ctx, 'brown'), white: noise };
     try {
       if (m === 'garage') startGarage(t);
       else if (m === 'van') startVan(t);
@@ -1096,41 +1653,96 @@
     amb.radioSong = null;
     if (radioRig && ctx) radioRig.fader.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.1);
   }
-  // The crowd: a bed that swells with the meter, cheers and boos on crowd moments (bigger rooms, bigger crowds).
+  // The crowd (v0.7.2): babble + roar following the meter and whether a song is on, claps along on the beat when it's hot,
+  // fans yelling, a grumble of boos when it goes badly, cheers/boos on crowd moments and at every song's end. Bigger rooms,
+  // bigger crowds; a small room gets the small applause. Japan's silent crowds hush during songs and applaud politely.
   function startCrowd(t) {
     var lg = GG.state.liveGig, att = +(lg.attendance || lg.gig.capacity || 80);
-    crowd.on = true; crowd.last = -9;
+    crowd.on = true; crowd.last = -9; crowd.song = false; crowd.handle = null; crowd.beat = -1; crowd.clapping = false; crowd.grumble = -9;
     crowd.size = Math.max(0.5, Math.min(1.4, 0.5 + 0.3 * Math.log(Math.max(10, att)) / Math.LN10));
-    crowd.bed = crowdBed(ctx, crowdBus, t, BUF);
-    setCrowd(typeof lg.crowd === 'number' ? lg.crowd : 40);
+    crowd.silent = !!(GG.tour && GG.tour.silentCrowd && GG.tour.silentCrowd(lg.gig));
+    crowd.rng = GG.RNG(GG.hashSeed('crowd|' + (lg.gig.venueId || '') + '|' + (lg.started || 0) + '|' + (lg.index || 0)));
+    crowd.small = att < 150;
+    crowd.level = typeof lg.crowd === 'number' ? lg.crowd : 40;
+    crowd.timer = setInterval(crowdTick, 100);
+    if (crowdReady(CB)) crowdStart(); else { crowd.waiting = true; warmCrowd(); }   // never stall the gig: fade in when built
+  }
+  function crowdStart() {
+    crowd.waiting = false;
+    if (!crowd.on || crowd.bed || !ctx) return;
+    crowd.bed = crowdRig(ctx, crowdBus, CB, ctx.currentTime, crowd.small); crowd.bed.live = true;
+    setCrowd(crowd.level);
   }
   function setCrowd(v) {
     if (typeof v !== 'number' || v !== v) return;
     crowd.level = Math.max(0, Math.min(100, v));
-    if (crowd.bed && ctx) crowd.bed.gain.gain.setTargetAtTime((0.04 + 0.26 * crowd.level / 100) * crowd.size, ctx.currentTime, 0.5);
+    if (crowd.bed && ctx) crowdLevels(crowd.bed, crowd, ctx.currentTime, 0.5);
   }
+  function crowdTick() {
+    if (!ctx || !crowd.on || !crowd.bed || ctx.state !== 'running') return;
+    var h = current && current.playing && !current.radio ? current : null, now = ctx.currentTime;
+    if (!!h !== crowd.song) { crowd.song = !!h; crowdLevels(crowd.bed, crowd, now, 0.6); }
+    if (h !== crowd.handle) { crowd.handle = h; crowd.beat = -1; crowd.clapping = false; }
+    if (!h || crowd.silent) return;
+    var spb = 60 / h.bpm, lv = crowd.level, role = lastStep && lastStep.role, b;
+    // On-beat claps when hot: decided every 4 bars; every beat (2 and 4 from 150 BPM up); never in a breakdown.
+    for (b = Math.max(crowd.beat + 1, Math.ceil((now - h.start) / spb)); h.start + b * spb < now + 0.3; b++) {
+      crowd.beat = b;
+      if (b < 0 || b >= h.beats) continue;
+      if (b % 16 === 0) crowd.clapping = lv >= 70 && crowd.rng.chance(Math.min(0.9, (lv - 55) / 40));
+      if (crowd.clapping && role !== 'break' && (h.bpm < 150 || b % 2 === 1)) {
+        crowdReact(crowd.bed, crowd, 'clap', Math.max(now + 0.005, h.start + b * spb - 0.03 + crowd.rng.range(0.004, 0.02)), 0.3 + 0.35 * (lv - 70) / 30);
+      }
+    }
+    if (lv >= 62 && crowd.rng.chance(0.05 * (lv - 60) / 40)) crowdReact(crowd.bed, crowd, crowd.rng.chance(0.7) ? 'woo' : 'whistle', now + 0.05);
+    if (lv < 22 && now - crowd.grumble > 6 && crowd.rng.chance(0.015)) { crowd.grumble = now; crowdReact(crowd.bed, crowd, 'grumble', now + 0.05); }
+  }
+  function crowdLive() { return crowd.on && crowd.bed && ctx && ctx.state === 'running' && !A.isMuted(); }
   GG.on('crowd:level', function (p) { if (crowd.on && p) setCrowd(p.crowd); });
   GG.on('gig:judge', function (p) { if (crowd.on && p) setCrowd(p.crowd); });
   GG.on('crowd:moment', function (p) {
-    if (!crowd.on || !p || !ctx || ctx.state !== 'running' || A.isMuted() || p.kind === 'drinks') return;
-    var t = ctx.currentTime + 0.02;
+    if (!p || !crowdLive() || p.kind === 'drinks') return;
     crowd.last = ctx.currentTime;
-    if (live.crowd + 3 > CROWD_VOICES) return;
-    if (p.kind === 'boo') { track(boo(ctx, crowdBus, t, crowd.size), 'crowd'); counts.boos++; }
-    else { track(cheer(ctx, crowdBus, t, crowd.size * (p.kind === 'solo' ? 0.6 : 1), noise), 'crowd'); counts.cheers++; }
+    crowdReact(crowd.bed, crowd, p.kind, ctx.currentTime + 0.02, p.kind === 'lighters' || p.kind === 'lineDance' ? 0.6 : 0.9);
   });
+  GG.on('gig:song', function (p) {   // a song ends: the crowd tells you how it went (silent crowds: the sim's 'applause')
+    if (!p || !p.result || !crowdLive() || crowd.silent) return;
+    crowd.last = ctx.currentTime;
+    crowdReact(crowd.bed, crowd, 'end', ctx.currentTime + 0.05, (p.result.score || 0) / 100);
+  });
+  // Crowd buffers get built in the background (a part per tick, after unlock), so the first gig doesn't wait for them.
+  // ~8 ms of work per tick (steps of a voice slice, a clapper, a slice of noise), so the title and the setlist never hitch; paused
+  // while a song plays (the gig's clock and taps come first). The crowd waits for it (crowd.waiting) and fades in.
+  function warmCrowd() {
+    if (!ctx || warmTimer || crowdReady(CB)) return;
+    warmTimer = setTimeout(function () {
+      warmTimer = 0;
+      if (current && current.playing && !current.radio) { warmTimer = setTimeout(function () { warmTimer = 0; warmCrowd(); }, 500); return; }   // never mid-song
+      CB = CB || {};
+      var k = CROWD_PARTS.filter(function (x) { return !CB[x]; })[0];
+      try { if (k && crowdRun(k, 8)) crowdPart(ctx, CB, k); } catch (e) { return; }
+      if (crowdReady(CB)) { if (crowd.waiting) crowdStart(); } else warmCrowd();
+    }, 25);
+  }
   GG.on('screen:open', refreshSoon);
   GG.on('screen:close', refreshSoon);
   GG.on('ui:stack', refreshSoon);
   A.ambience = function () { return amb.mode; };
   A.refreshAmbience = function () { refresh(); return amb.mode; };
 
-  /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, nan, seconds, counts, key }> ------------------- */
+  /* ---- Offline render (tests, mixing): -> Promise<{ peak, rms, nan, seconds, counts, key, crowd, buffer }> --------- */
   // spec: { lane, variant } one drum hit | { pattern (default the genre's signature), genre, bpm, songId, section (default
   //         'verse'), full (whole arrangement), bars (default 2), backing: styleId (that style alone) | true | false,
-  //         drums (default: !styleId), vocals, metronome, room (default the kit's) }
+  //         drums (default: !styleId), vocals, metronome, room (default the kit's), crowd: { level, moments } (v0.7.2: the
+  //         crowd mixed in, as at a gig) }
   //       | { ambience: 'garage' | 'van' | 'crowd' | 'radio', level (crowd 0..100), seconds, genre, pattern }
-  // Mixer levels apply (static), so setVolume(bus, 0) silences that bus here too.
+  //         crowd (v0.7.2): { song (a song is on: the babble drops), silent, small, size, moments: [[t, kind, amt?]] (default
+  //         a mosh cheer at 0.3 s and a boo at 1.1 s), clapBpm (clap along from 0.25 s) }
+  //       | v0.7.2 { probe: 'gtr' | 'bass' | 'growl' | 'scream', genre, midi, power, mute, seconds }: one sustained note
+  //         through the genre's rig (metal: the metal amp), for harmonic analysis. voxInvert (tests): vocal hits in
+  //         inverted polarity, so (normal - inverted) / 2 isolates the voice in the mix and (normal + inverted) / 2 the band.
+  // Stereo (v0.7.2). peak/rms over both channels; buffer = the rendered AudioBuffer. Mixer levels apply (static), so
+  // setVolume(bus, 0) silences that bus here too.
   A.renderOffline = function (spec) {
     spec = spec || {};
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
@@ -1139,25 +1751,35 @@
     var pat = GG.songs.sanitize(spec.pattern || GG.songs.genre(genre).signature, null, null, true);
     if (spec.bpm) pat.bpm = spec.bpm;
     var sr = 44100, spb = 60 / pat.bpm, amb = spec.ambience, tail = spec.room ? ROOMS[spec.room].len : 0;
-    var seconds = spec.seconds || (amb ? 2.6 : spec.lane ? 1.6 + tail : bars * 4 * spb + 1.4 + tail);
-    var oc = new OAC(1, Math.ceil(sr * seconds), sr), dest = oc.destination, tally = {}, tl = null;
+    var seconds = spec.seconds || (amb ? 2.6 : spec.lane || spec.probe ? 1.6 + tail : bars * 4 * spb + 1.4 + tail);
+    var oc = new OAC(2, Math.ceil(sr * seconds), sr), dest = oc.destination, tally = {}, tl = null;
+    var ct = { cheers: 0, boos: 0, claps: 0, woos: 0, whistles: 0, applause: 0 };
+    function crowdIn(out, cs, t0) {   // the crowd layers + reactions into `out`
+      var Bo = crowdRig(oc, out, crowdBufs(oc, {}), t0, !!cs.small), lv = cs.level != null ? cs.level : 70;
+      var st = { level: lv, size: cs.size || 1, song: !!cs.song, silent: !!cs.silent, rng: GG.RNG(GG.hashSeed('offline-crowd|' + lv)), tally: ct };
+      crowdLevels(Bo, st, t0, 0.05);
+      (cs.moments || [[0.3, 'mosh'], [1.1, 'boo']]).forEach(function (m) { crowdReact(Bo, st, m[1], t0 + 0.05 + m[0], m[2]); });
+      if (cs.clapBpm) for (var cb = 0.25; cb < seconds - 0.3; cb += 60 / cs.clapBpm) crowdReact(Bo, st, 'clap', t0 + cb, 0.6);
+      return Bo;
+    }
     if (amb && amb !== 'radio') {
-      var nz = noiseBuffer(oc), Bf = { brown: loopBuffer(oc, 'brown'), murmur: loopBuffer(oc, 'murmur'), white: nz };
+      var nz = noiseBuffer(oc), Bf = { brown: loopBuffer(oc, 'brown'), white: nz };
       var sfxOut = gainNode(oc, busGain('sfx'), dest), crowdOut = gainNode(oc, busGain('crowd'), dest);
       if (amb === 'garage') { var gb = garageBed(oc, sfxOut, 0, Bf); [0.4, 0.64, 0.88, 1.5].forEach(function (t, k) { pluck(oc, gb.gain, t, 64 + [0, 3, 5, 7][k], 0.035); }); }
       else if (amb === 'van') { roadBed(oc, sfxOut, 0, Bf); thump(oc, sfxOut, 0.5, nz); thump(oc, sfxOut, 1.7, nz); }
-      else if (amb === 'crowd') {
-        var cb = crowdBed(oc, crowdOut, 0, Bf), lv = spec.level != null ? spec.level : 70;
-        cb.gain.gain.setTargetAtTime(0.04 + 0.26 * lv / 100, 0, 0.2);
-        cheer(oc, crowdOut, 0.3, 1.2, nz); boo(oc, crowdOut, 1.1, 1.2);
-      }
+      else if (amb === 'crowd') crowdIn(crowdOut, { level: spec.level, song: spec.song, silent: spec.silent, small: spec.small, size: spec.size, moments: spec.moments, clapBpm: spec.clapBpm }, 0);
     } else {
       var radio = amb === 'radio', r = makeRig(oc, radio ? radioChain(oc, gainNode(oc, 0.3 * busGain('sfx'), dest)) : dest, null,
         radio ? { mix: false, verb: false, voices: 8, bandVoices: 6, level: 0.9 } : { mix: 'static' });
       var port = makePort(r);
       setKit(r, genre); setRoom(r, spec.room || r.kit.room || 'room');
+      if (spec.voxInvert) { r.vox.gain.value *= -1; if (genre === 'metal') metalRig(r).vox.gain.value *= -1; }   // tests: V/A split
       if (spec.lane) drumHit(r, port, spec.lane, 0.05, 2, spec.variant);
-      else {
+      else if (spec.probe) {
+        var voc = spec.probe === 'growl' || spec.probe === 'scream', len = seconds - 0.3;
+        var ev = { beat: 0, kind: voc ? 'vox' : spec.probe, voc: voc ? spec.probe : null, midi: spec.midi || 36, len: 4, gap: 4, power: !!spec.power, mute: !!spec.mute };
+        if (voc) metalVox(r, port, ev, 0.05, len, VOX[spec.probe]); else playNote(r, port, ev, 0.05, len / 4);
+      } else {
         tl = A.timeline(pat, { genre: genre, section: spec.full || radio ? null : (spec.section || 'verse'), bars: bars, style: style,
           drums: spec.drums != null ? spec.drums : !style, backing: spec.backing !== false, vocals: spec.vocals, songId: spec.songId });
         tl.events.forEach(function (ev) {
@@ -1166,14 +1788,24 @@
           tally[ev.kind] = (tally[ev.kind] || 0) + 1;
           schedule(r, port, ev, t, spb);
         });
+        if (spec.crowd) {
+          var cOut = gainNode(oc, busGain('crowd'), dest);
+          if (r.send) cOut.connect(gainNode(oc, 0.15, r.send));
+          crowdIn(cOut, Object.assign({ song: true, moments: [] }, spec.crowd), 0);
+        }
       }
     }
     return oc.startRendering().then(function (buf) {
-      var d = buf.getChannelData(0), peak = 0, sum = 0, nan = false;
-      for (var i = 0; i < d.length; i++) { var v = d[i]; if (v !== v) nan = true; else { var a = Math.abs(v); if (a > peak) peak = a; sum += v * v; } }
-      return { peak: peak, rms: Math.sqrt(sum / d.length), nan: nan, seconds: seconds, counts: tally, key: tl ? tl.key : null };
+      var peak = 0, sum = 0, nan = false, n = 0;
+      for (var ch = 0; ch < buf.numberOfChannels; ch++) {
+        var d = buf.getChannelData(ch);
+        for (var i = 0; i < d.length; i++) { var v = d[i]; if (v !== v) nan = true; else { var a = Math.abs(v); if (a > peak) peak = a; sum += v * v; } }
+        n += d.length;
+      }
+      return { peak: peak, rms: Math.sqrt(sum / n), nan: nan, seconds: seconds, counts: tally, key: tl ? tl.key : null, crowd: ct, buffer: buf };
     });
   };
+  A.renderOffline.probe = true;   // v0.7.2 feature flag (spec.probe, spec.crowd, stereo)
 
   GG.registerDebug('audio', function () {
     return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), voices: voices, playing: A.isPlaying(),
@@ -1181,7 +1813,8 @@
       bandVoices: rig ? rig.band.filter(function (e) { return e > ctx.currentTime; }).length : 0,
       steps: stepCount, lastStep: lastStep, style: current ? current.style : null, key: current && current.key ? current.key.name : null,
       genre: rig ? rig.genre : null, room: rig ? rig.room : null, ambience: amb.mode, radio: amb.radioSong,
-      crowd: { on: crowd.on, level: Math.round(crowd.level), size: Math.round(crowd.size * 100) / 100 },
+      crowd: { on: crowd.on, level: Math.round(crowd.level), size: Math.round(crowd.size * 100) / 100, song: crowd.song, silent: crowd.silent,
+        clapping: crowd.clapping, ready: crowdReady(CB), waiting: !!crowd.waiting },
       mix: A.volumes(), metronome: P().metronome, counts: Object.assign({}, counts), ambVoices: live.amb, crowdVoices: live.crowd };
   });
 })(window.GG);

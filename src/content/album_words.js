@@ -2,7 +2,8 @@
 //   GG.content.albumWords = {
 //     titles: { <genre>: { forms: [text with {slot}], <slot>: [word], ..., fr?: [ { fr, en } ] } }
 //       Generate: pick a form, replace each {slot} with rng.pick(pools[slot]). Slots are adj | noun | place.
-//       metal.fr = ready-made French titles for Hail Damage (Marcel names everything in French; all secretly about the lawn).
+//       metal.fr = ready-made French titles for Hail Damage (songs are titled in English since v0.7.2, but Marcel always
+//       pitches one French album title; all secretly about the lawn).
 //       Suggested 3 options: one fr title (metal) + two generated forms; the player may also type their own.
 //     covers: { motifs: [ { id, name, desc, genres } ], palettes: [ { id, name, colors: [bg, fg, accent] (#rrggbb), genres } ],
 //               fonts: [ { id, name, css (a system font stack, no downloads), weight, caps, genres } ] }

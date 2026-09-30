@@ -84,7 +84,7 @@
       choices: [
         { label: "Wear it as-is. It's metal.",
           effects: { flags: { cape: 'velvet' }, mood: { marcel: 6 }, burnout: 3, chain: { cape: { step: 3, delay: 1 } } },
-          outcome: "He trips on it twice during 'Ma Pelouse, Mon Tombeau' and calls it 'the choreography'. Honestly? It's working." },
+          outcome: "He trips on it twice during 'My Lawn, My Tomb' and calls it 'the choreography'. Honestly? It's working." },
         { label: 'Get Baba to hem it',
           effects: { flags: { cape: 'velvet' }, mood: { jaxon: 6 }, chemistry: 4, chain: { cape: { step: 3, delay: 2 } } },
           outcome: "Jaxon's baba hems it in one evening and sews in a secret pocket 'for perogies, in case'. Marcel weeps quietly into the velvet." },
@@ -184,7 +184,7 @@
         { label: 'Eat together, thank Baba', effects: { chemistry: 4, burnout: -5, mood: { all: 4 } },
           outcome: 'Forty-eight perogies, sour cream, fried onions. Kenji eats nine without removing his sunglasses. The band has never felt closer.' },
         { label: 'Invite Baba to rehearsal', effects: { chemistry: 3, mood: { jaxon: -5 }, skill: { jaxon: 1 } },
-          outcome: "Baba rates each song out of ten from a lawn chair. 'Ma Pelouse, Mon Tombeau' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
+          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
         { label: 'Rehearse past 10 anyway', effects: { skill: { all: 1 }, mood: { jaxon: -8 }, flags: { babaMad: true } },
           outcome: "Jaxon's phone rings at 10:01. And 10:02. And 10:03. He leaves at 10:04, head down. The riffs are tighter. Baba is not." }
       ] },
@@ -225,7 +225,7 @@
         'like nobody noticed. Everybody noticed. Dana noticed the most.',
       choices: [
         { label: 'Give him a solo spot', effects: { mood: { jaxon: 10, dana: -6 }, skill: { jaxon: 2 } },
-          outcome: "Jaxon gets eight bars in 'Le Tombeau Vert'. He uses them, and some of the next song's. Dana starts practising eleven hours a day." },
+          outcome: "Jaxon gets eight bars in 'The Green Tomb (It Is the Lawn)'. He uses them, and some of the next song's. Dana starts practising eleven hours a day." },
         { label: 'Keep it simple, Rip.', effects: { mood: { jaxon: -6 }, chemistry: 3 },
           outcome: 'Jaxon plays it straight for exactly one rehearsal. Then the fills come back, quieter, like raccoons.' },
         { label: "Pretend you didn't hear", effects: { skill: { jaxon: 1 }, mood: { jaxon: 3 } },
@@ -233,8 +233,8 @@
       ] },
 
     { id: 'marcel_lawn_lyrics', type: 'drama', speaker: 'gord', title: 'Lost in Translation', gate: g({ era: GL, minFans: 40 }),
-      text: "A fan named Gord translated 'Le Tombeau Vert' on the band's fan page. It's about Marcel's lawn. All nine verses. " +
-        'Verse six is just fertilizer ratios. Marcel has not left the bathroom in an hour.',
+      text: "A fan named Gord translated the French lyrics of 'The Green Tomb (It Is the Lawn)' on the band's fan page. Everyone " +
+        "assumed the lawn part was a metaphor. It is not. All nine verses. Verse six is just fertilizer ratios. Marcel has not left the bathroom in an hour.",
       choices: [
         { label: "Lean in: we're lawn metal", effects: { buzz: 8, fans: 10, mood: { marcel: -6 } },
           outcome: "'Lawn metal' trends on a Saskatoon forum for most of a Tuesday. Marcel is furious and also secretly thrilled." },
@@ -245,7 +245,7 @@
       ] },
 
     { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ era: GL, minFans: 40 }),
-      text: "Dana's solo in 'Le Tombeau Vert' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
+      text: "Dana's solo in 'The Green Tomb (It Is the Lawn)' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
         'but somehow she makes it work. Marcel has started bringing a book.',
       choices: [
         { label: 'Let it rip', effects: { mood: { dana: 10 }, burnout: 6, buzz: 3 },
@@ -275,7 +275,7 @@
 
     { id: 'drama_setlist_fight', type: 'drama', speaker: 'marcel', title: 'The Opener', once: false, cooldown: 8,
       gate: g({ era: GLS, minWeek: 8 }),
-      text: "The group chat is on fire: should the set open with 'Ma Pelouse, Mon Tombeau' or Dana's new instrumental? " +
+      text: "The group chat is on fire: should the set open with 'My Lawn, My Tomb' or Dana's new instrumental? " +
         'Marcel has sent fourteen voice memos. Dana has sent one spreadsheet.',
       choices: [
         { label: "Marcel's song opens", effects: { mood: { marcel: 8, dana: -6 } },
@@ -367,7 +367,7 @@
         { label: 'Metal Chicken Dance', effects: { fund: 150, buzz: 3, mood: { marcel: -6 } },
           outcome: 'The metal Chicken Dance destroys. A great-aunt headbangs. Marcel refuses to sing in English, so he screams it in French. Nobody minds.' },
         { label: 'Only our originals', effects: { fund: 60, fans: 6, mood: { marcel: 6 } },
-          outcome: "'Ma Pelouse, Mon Tombeau' becomes the first dance. The bride weeps, possibly the good way. They dock you $90 for 'the yelling'." },
+          outcome: "'My Lawn, My Tomb' becomes the first dance. The bride weeps, possibly the good way. They dock you $90 for 'the yelling'." },
         { label: 'Politely decline', effects: { burnout: -4 },
           outcome: "Your mom tells her cousin you're 'on tour'. You're in the garage. The DJ is replaced by a nephew with a phone." }
       ] },
@@ -710,8 +710,8 @@
     // Weird
     // ======================================================================
     { id: 'weird_moose', type: 'weird', speaker: 'marcel', title: 'The Moose', gate: g({ era: GLS, minWeek: 6 }),
-      text: "A moose is standing in the driveway. It's been there since 6 a.m. It seems to like the riff from 'Ma Pelouse, " +
-        "Mon Tombeau'. Marcel is convinced it's a sign. Dad is convinced it's after the truck.",
+      text: "A moose is standing in the driveway. It's been there since 6 a.m. It seems to like the riff from 'My Lawn, " +
+        "My Tomb'. Marcel is convinced it's a sign. Dad is convinced it's after the truck.",
       choices: [
         { label: 'Play the riff for it', hint: 'Gamble: moose are unpredictable',
           outcome: "You open the garage door and count it in. The moose's ears go up.",
@@ -879,7 +879,7 @@
           outcome: "'I'm his cousin. Rip's cousin. Pip.' The kid is devastated, then delighted. Now there's a rumour about a sixth member called Pip." }
       ] },
     { id: 'local_goal_song', type: 'fame', speaker: 'reporter', title: 'The Goal Song', gate: g({ era: L, minFans: 300 }),
-      text: 'The Saskatoon Blizzard, the junior hockey team, want the riff from "Ma Pelouse, Mon Tombeau" as their goal song. ' +
+      text: 'The Saskatoon Blizzard, the junior hockey team, want the riff from "My Lawn, My Tomb" as their goal song. ' +
         "Brent from the Star-Pheasant is covering it. Four thousand people will hear it every time a seventeen-year-old scores.",
       choices: [
         { label: 'Free, for the city', effects: { fans: 60, buzz: 10 },
@@ -904,7 +904,7 @@
           outcome: "Dad writes a stern cease-and-desist on letterhead he had printed for this. Their moms write back. Nobody wins. Hail Damage Jr. become Hail Damage II." }
       ] },
     { id: 'local_gord_wedding', type: 'money', speaker: 'gord', title: "Gord's Wedding", gate: g({ era: LS, minFans: 300 }),
-      text: "Gord, your first superfan, is getting married at the Ukrainian hall in Saskatoon. First dance: 'Ma Pelouse, Mon Tombeau'. " +
+      text: "Gord, your first superfan, is getting married at the Ukrainian hall in Saskatoon. First dance: 'My Lawn, My Tomb'. " +
         "The bride has agreed. The bride's grandmother has not been told.",
       choices: [
         { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
@@ -1061,8 +1061,8 @@
     // ======================================================================
     { id: 'signed_monolith_english', type: 'drama', speaker: 'marcel', title: 'Notes from Monolith', weight: 2,
       gate: g({ era: S, flagEquals: { label: 'monolith' } }),
-      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the lawn thing. Love it. Marcel should sing in " +
-        "English.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
+      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the English titles. Love the lawn thing. Now Marcel " +
+        "should sing in English too.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
       choices: [
         { label: 'Tell Monolith "non"', effects: { mood: { marcel: 14 }, buzz: 6, fund: -400, flags: { demandEnglish: 'refused' } },
           outcome: "Marcel writes the reply himself, in French, on the back of a hail claim form. Monolith trims the promo budget by $400. Marcel frames the letter." },
