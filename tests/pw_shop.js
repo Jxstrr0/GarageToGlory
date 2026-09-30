@@ -306,7 +306,7 @@ async function space() {
     await tap(page, 'door-tab-space');
     const s0 = await page.evaluate(() => { const q = s => document.querySelector('[data-testid="' + s + '"]'); return { now: q('space-now').textContent, m1: q('space-move-1') && !q('space-move-1').disabled, m2: q('space-move-2') && q('space-move-2').disabled, m2why: q('space-2').textContent }; });
     c.ok(/garage/i.test(s0.now) && s0.m1 && s0.m2 && /Signed/.test(s0.m2why), 'Space tab: the garage now, the jam room open, the pro studio waits for Signed ' + JSON.stringify(s0));
-    const whyOp = await page.evaluate(() => { let e = document.querySelector('[data-testid="space-2"] .tiny.bad'), o = 1; for (; e; e = e.parentElement) o *= +getComputedStyle(e).opacity; return o; });
+    const whyOp = await page.evaluate(() => { let e = document.querySelector('[data-testid="space-2"] .tiny.bad'), o = 1; for (; e; e = e.parentElement) { o *= +getComputedStyle(e).opacity; if (e.classList.contains('shop-row')) break; } return o; });   // the row and what's in it (not the sheet's fade-in)
     c.ok(whyOp === 1, 'a locked row keeps its why at full strength (opacity ' + whyOp + ')');
     await tap(page, 'space-up-egg_foam');
     c.ok(await page.evaluate(() => GG.state.spaceUpgrades.includes('egg_foam') && GG.debug('render').space.upgrades.includes('egg_foam')), 'egg-crate foam bought and on the wall (render)');

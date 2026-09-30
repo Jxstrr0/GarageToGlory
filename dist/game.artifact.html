@@ -21193,7 +21193,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // v0.8 (SHOPUI): the rehearsal space by state.spaceTier (0 = the band's own start: the parents' garage; 1 Rent-A-Riff Jam
 // Room 3; 2 Prairie Dog Sound; 3 backstage at the Potash Place) with its bought upgrades (state.spaceUpgrades) visible and
 // the unsold merch box pile (GG.shop.pile(state).boxes) growing by the merch stack; see buildSpace. debug().space =
-// { tier, green, upgrades, boxes, pile (drawn), disco, door (the door hotspot's label), garage (garage-only shown), sign }.
+// { tier, green, upgrades, boxes, pile (drawn), disco, door (the door hotspot's label), garage (garage-only shown), sign, signText, obstacles }.
 // The drum kit (buildKit) is lane B's (R.kit.garage in 40_render_core). The character builder lives in 40 (R.charGeometry).
 (function (GG) {
   var R = GG.render;
@@ -22477,7 +22477,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // Potash Place (cinder block in arena blue, a steel door, EXIT, road cases, the hockey team's laundry, mirror bulbs).
     // A rented space hides the garage-only meshes (walls, sectional door, pegboard, stick, mower, heater, moon shafts) and
     // draws its own walls, floor, door and props; the band banner moves onto the wall beside the door. The upgrades the band
-    // bought (state.spaceUpgrades; content/shop.js upgrades) are visible where they'd stand: the curb couch (front edge, it
+    // bought (state.spaceUpgrades; content/shop.js upgrades) are visible where they'd stand: the curb loveseat (front edge, it
     // moves with you), Dad's beer fridge (by the outlet, moves), egg-crate foam, Christmas lights round the whiteboard, a
     // leather-ish couch, acoustic panels, a real PA, a disco ball (spins), the iso booth, the band lounge, the espresso cart,
     // mood LEDs, hot catering, green walls, a hot tub, a star on the door. The unsold merch boxes (GG.shop.pile(state).boxes)
