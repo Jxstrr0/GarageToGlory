@@ -205,11 +205,13 @@ test('v0.1 save fixture migrates to v2: patterns for every song, deterministic, 
   m.songs.forEach((x, i) => {
     eq(S.validate(x.pattern, m.gear), [], x.id + ' valid pattern');
     const old = rec.state.songs[i];
-    eq([x.quality, x.polish, x.plays, x.title], [old.quality, old.polish, old.plays, old.title], x.id + ' keeps v0.1 numbers');
+    eq([x.quality, x.polish, x.plays], [old.quality, old.polish, old.plays], x.id + ' keeps v0.1 numbers');
+    eq([x.title, x.titleEn, x.fr], [S.englishFor(old.title), S.englishFor(old.title), undefined], x.id + ' v0.7.2: the French title turns English');
     eq(x.rating, (r => ({ groove: r.groove, hook: r.hook, difficulty: r.difficulty }))(S.rate(x.pattern, m.genre, m.gear)), x.id + ' rated');
     ok(x.auto && x.stale === 0 && x.classic === false, x.id + ' v0.2 fields');
   });
   eq(m.rng, rec.state.rng, 'the career RNG is untouched');
+  eq(m.lastGig.songs, rec.state.lastGig.songs.map(t => S.englishFor(t)), 'v0.7.2: last gig setlist follows the renames');
   // Through the storage path too.
   const store = load.fakeStorage(); const G2 = load({ localStorage: store });
   G2.save.init(store); store.setItem(G2.save.KEYS.slot('2'), raw.trim());
@@ -219,6 +221,124 @@ test('v0.1 save fixture migrates to v2: patterns for every song, deterministic, 
   for (let i = 0; i < 6; i++) GG.career.botWeek(m, 'good');
   eq(m.totalWeek, tw + 6, 'a migrated save keeps playing');
   ok(m.songs.every(x => S.validate(x.pattern, m.gear).length === 0), 'all songs still valid');
+});
+
+// ---- v0.7.2: English titles, Marcel rarely French (owner, 2026-09-30) --------------------------------------------
+test('v0.7.2 titles: English by default; Marcel sneaks in a French one ~1 in 8 (seeded, career RNG untouched)', () => {
+  const s = GG.career.newCareer({ seed: 41 });
+  eq(s.songs.map(x => [x.title, x.titleEn, x.fr]), [['My Lawn, My Tomb', 'My Lawn, My Tomb', undefined],
+    ['Dandelions of the Apocalypse (On My Lawn)', 'Dandelions of the Apocalypse (On My Lawn)', undefined]], 'starters are English (titleEn = title)');
+  const pool = GG.content.songTitles.metal, byEn = new Map(pool.map(t => [t.en, t])), byFr = new Map(pool.map(t => [t.fr, t]));
+  let fr = 0, n = 0;
+  for (let seed = 1; seed <= 300; seed++) {
+    const c = GG.career.newCareer({ seed });
+    for (let k = 0; k < 4; k++) {
+      const t = S.pickTitle(c, GG.RNG(seed * 13 + k)), again = S.pickTitle(c, GG.RNG(seed * 13 + k));
+      eq(JSON.stringify(again), JSON.stringify(t), 'deterministic for the same career + rng');
+      n++;
+      if (t.fr) { fr++; ok(byFr.has(t.title) && byFr.get(t.title).en === t.titleEn, 'French pick = fr + its English: ' + t.title); }
+      else ok(byEn.has(t.title) && t.titleEn === t.title && !('fr' in t), 'English pick: ' + t.title);
+    }
+  }
+  ok(fr / n > 0.07 && fr / n < 0.19, 'Marcel rarely goes French: ' + fr + '/' + n);
+  // One rng draw per pick, as before v0.7.2 (the French roll has its own seed): the career RNG sequence is unchanged.
+  const r1 = GG.RNG(99), r2 = GG.RNG(99); S.pickTitle(s, r1); r2.next();
+  eq(r1.next(), r2.next(), 'pickTitle draws exactly once');
+  // No Marcel, no French.
+  const q = GG.career.newCareer({ seed: 42 }); q.members.find(m => m.id === 'marcel').status = 'quit';
+  let any = false; for (let k = 0; k < 400; k++) any = any || !!S.pickTitle(q, GG.RNG(k), ['x' + k]).fr;
+  ok(!any, 'with Marcel gone every title is English');
+  // An entry is taken if either of its titles is: no "The Green Tomb" next to "Le Tombeau Vert".
+  const u = GG.career.newCareer({ seed: 43 });
+  pool.slice(1).forEach(t => S.create(u, S.signature('metal'), t.en));
+  S.create(u, S.signature('metal'), pool[0].fr);
+  const next = S.pickTitle(u, GG.RNG(5));
+  ok(/ II$/.test(next.title), 'pool used up (Le Tombeau Vert counts for The Green Tomb): sequel ' + next.title);
+});
+
+test('v0.7.2 titles: a French song is flagged fr, Marcel insists and a bandmate sighs', () => {
+  const s = GG.career.newCareer({ seed: 44 }), L = GG.content.lines.songReactions, pool = GG.content.songTitles.metal;
+  let song = null;
+  for (let k = 0; k < 400 && !song; k++) {
+    const t = GG.career.newCareer({ seed: 1000 + k }), x = S.jam(t, GG.RNG(k));
+    if (x.fr) song = { st: t, x };
+  }
+  ok(song, 'a jam eventually comes out French');
+  const { st, x } = song, entry = pool.find(t => t.fr === x.title);
+  ok(entry && x.fr === true && x.titleEn === entry.en, 'jam: title = fr, titleEn = en, fr: true (' + x.title + ')');
+  const rs = S.reactions(st, x, GG.RNG(3));
+  ok(rs[0].who === 'marcel' && L.marcel.nameFr.some(l => rs[0].text.startsWith(l)) && rs[0].text.includes('“' + x.title + '”'), 'Marcel insists: ' + rs[0].text);
+  ok(['dana', 'jaxon', 'kenji'].includes(rs[1].who) && L[rs[1].who].frSigh.includes(rs[1].text), 'then someone sighs: ' + rs[1].who + ': ' + rs[1].text);
+  eq(JSON.stringify(S.reactions(st, x, GG.RNG(3))), JSON.stringify(rs), 'reactions are deterministic');
+  const r1 = GG.RNG(8), r2 = GG.RNG(8); S.reactions(st, x, r1);
+  const en = S.create(st, S.signature('metal'), 'Plain English'), r3 = GG.RNG(8); S.reactions(st, en, r3);
+  eq(r1.next(), r3.next(), 'the sigh does not draw from the career RNG');
+  const er = S.reactions(st, en, GG.RNG(3));
+  ok(L.marcel.name.some(l => er[0].text.startsWith(l)) && !er.some(r => Object.values(L).some(p => (p.frSigh || []).includes(r.text))), 'an English song: no insisting, no sighing');
+  ok(!('fr' in en) && en.titleEn === en.title, 'English songs carry no fr flag');
+  // A queued / typed title that is one of Marcel's French ones counts as French (its English shows as titleEn).
+  const typed = S.create(s, S.signature('metal'), 'Trèfle Maudit');
+  ok(typed.fr === true && typed.titleEn === 'Cursed Clover', 'typed French title: fr + its English');
+  const custom = S.create(s, S.signature('metal'), 'Mon Premier', { titleEn: 'My First' });
+  ok(!custom.fr && custom.titleEn === 'My First', 'a French title that is not Marcel\'s stays as typed, unflagged');
+  ok(!S.isFrench('My Lawn, My Tomb') && S.isFrench('Ma Pelouse, Mon Tombeau') && S.englishFor('Mon Gazon, Ma Reine III') === 'My Lawn, My Queen III', 'englishFor: starters + sequels');
+});
+
+test('v0.7.2 titles: old saves turn English on load, everywhere the title is stored; idempotent; fr:true stays French', () => {
+  const s = GG.career.newCareer({ seed: 45 });
+  const base = s.songs.length, pool = GG.content.songTitles.metal;
+  // An old (v0.7.1) career: French starters + pool songs (title = fr, titleEn = the old gloss), a sequel, one of v0.7.2's
+  // deliberate French songs, and a custom English one.
+  s.songs[0].title = 'Ma Pelouse, Mon Tombeau'; s.songs[0].titleEn = 'My Lawn, My Tomb';
+  s.songs[1].title = "Les Pissenlits de l'Apocalypse"; s.songs[1].titleEn = 'Dandelions of the Apocalypse (On My Lawn)';
+  const tomb = S.create(s, S.signature('metal'), 'Le Tombeau Vert', { titleEn: 'The Green Tomb (It Is the Lawn)', fr: false });
+  const reine = S.create(s, S.signature('metal'), 'Mon Gazon, Ma Reine II', { titleEn: 'My Lawn, My Queen II', fr: false });
+  const keep = S.create(s, S.signature('metal'), 'Trèfle Maudit');      // fr: true (Marcel insisted, v0.7.2)
+  const mine = S.create(s, S.signature('metal'), 'Garage Door Blues');
+  ok(keep.fr === true && !('fr' in tomb), 'setup');
+  s.pendingSongs = [Object.assign(S.signature('metal'), { title: 'Tonte à Minuit', titleEn: 'Midnight Mow' }),
+    Object.assign(S.signature('metal'), { title: 'Chaume Éternel', titleEn: 'Eternal Thatch', fr: true })];
+  s.liveGig = { gig: { venueId: 'x' }, setlist: [tomb.id, keep.id], index: 2, songs: [{ songId: tomb.id, title: 'Le Tombeau Vert', score: 80 },
+    { songId: keep.id, title: 'Trèfle Maudit', score: 70 }], crowd: 50, started: s.totalWeek, attendance: 60 };
+  s.lastGig = { songs: ['Le Tombeau Vert', 'Ma Pelouse, Mon Tombeau', 'Garage Door Blues'], songIds: [tomb.id, s.songs[0].id, mine.id],
+    songResults: [{ songId: tomb.id, title: 'Le Tombeau Vert' }], lines: ['Opening with “Le Tombeau Vert” grabbed them by the collar.'] };
+  s.lastWeek = { blocks: [{ activity: 'write', lines: ['New song: “Mon Gazon, Ma Reine II” (My Lawn, My Queen II).'],
+    deltas: { song: { id: reine.id, title: 'Mon Gazon, Ma Reine II', titleEn: 'My Lawn, My Queen II', reactions: [] } } }], gig: null };
+  s.tour = s.tour || {}; s.tour.regions = s.tour.regions || {};
+  s.tour.regions.japan = Object.assign(s.tour.regions.japan || {}, { big: { songId: tomb.id, title: 'Le Tombeau Vert', week: 3, choice: null } });
+  s.tour.queue = [{ card: 'wt_big', region: 'japan', song: 'Le Tombeau Vert' }];
+  s.loonies = { year: 1, week: 20, nominations: [{ category: 'single', name: 'Single', what: '"Mon Gazon, Ma Reine II"', nominees: ['x'] },
+    { category: 'album', name: 'Album', what: '"Le Tombeau Vert"', nominees: ['x'] }], results: null };
+  s.chat.push({ week: 1, who: 'marcel', text: 'Le Tombeau Vert is my masterpiece.' });
+  const raw = JSON.stringify(s), v = s.v;
+
+  const m = GG.save.migrate(JSON.parse(raw));
+  const title = id => m.songs.find(x => x.id === id);
+  eq([m.songs[0].title, m.songs[0].titleEn, m.songs[1].title], ['My Lawn, My Tomb', 'My Lawn, My Tomb', 'Dandelions of the Apocalypse (On My Lawn)'], 'starters');
+  eq([title(tomb.id).title, title(tomb.id).titleEn], ['The Green Tomb (It Is the Lawn)', 'The Green Tomb (It Is the Lawn)'], 'pool song');
+  eq(title(reine.id).title, 'My Lawn, My Queen II', 'sequel');
+  eq([title(keep.id).title, title(keep.id).titleEn, title(keep.id).fr], ['Trèfle Maudit', 'Cursed Clover', true], 'fr:true keeps its French title');
+  eq(title(mine.id).title, 'Garage Door Blues', 'custom title untouched');
+  eq(m.pendingSongs.map(x => [x.title, x.titleEn]), [['Midnight Mow', 'Midnight Mow'], ['Chaume Éternel', 'Eternal Thatch']], 'queued songs (fr:true kept)');
+  eq(m.liveGig.songs.map(x => x.title), ['The Green Tomb (It Is the Lawn)', 'Trèfle Maudit'], 'live gig song results');
+  eq(m.lastGig.songs, ['The Green Tomb (It Is the Lawn)', 'My Lawn, My Tomb', 'Garage Door Blues'], 'last gig setlist');
+  eq(m.lastGig.songResults[0].title, 'The Green Tomb (It Is the Lawn)', 'last gig song results');
+  eq(m.lastGig.lines[0], 'Opening with “Le Tombeau Vert” grabbed them by the collar.', 'written lines are history');
+  eq([m.lastWeek.blocks[0].deltas.song.title, m.lastWeek.blocks[0].deltas.song.titleEn], ['My Lawn, My Queen II', 'My Lawn, My Queen II'], 'the new-song delta');
+  eq([m.tour.regions.japan.big.title, m.tour.queue[0].song], ['The Green Tomb (It Is the Lawn)', 'The Green Tomb (It Is the Lawn)'], 'big in Japan');
+  eq(m.loonies.nominations.map(x => x.what), ['"My Lawn, My Queen II"', '"Le Tombeau Vert"'], 'the single nomination (album titles are not songs)');
+  eq(m.chat[m.chat.length - 1].text, 'Le Tombeau Vert is my masterpiece.', 'chat is history');
+  eq(m.v, v, 'no schema bump');
+  eq(m.v, C.SAVE_SCHEMA, 'schema stays current');
+  eq(JSON.stringify(GG.save.migrate(JSON.parse(JSON.stringify(m)))), JSON.stringify(m), 'idempotent');
+  // The pool never hands out a renamed title twice.
+  const t = S.pickTitle(m, GG.RNG(1), pool.filter(x => x.en !== 'Midnight Mow').map(x => x.en));
+  ok(t.title !== 'Midnight Mow' && t.title !== 'Tonte à Minuit', 'renamed titles count as used: ' + t.title);
+  // Through the storage path too.
+  const store = load.fakeStorage(); const G2 = load({ localStorage: store });
+  G2.save.init(store); store.setItem(G2.save.KEYS.slot('3'), JSON.stringify({ state: JSON.parse(raw) }));
+  const back = G2.save.read('3');
+  ok(back && back.songs[0].title === 'My Lawn, My Tomb' && back.songs.find(x => x.id === keep.id).title === 'Trèfle Maudit', 'save.read renames too');
 });
 
 done('sim_songs');

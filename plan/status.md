@@ -57,6 +57,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Owner turned on GitHub "Automatically delete head branches" (merged branches clean themselves up).
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
+- 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
+  still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
@@ -108,6 +110,26 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
 - Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" + layout
   hscroll are flaky under machine load (the v0.7.1 build fails them 3/4 at load avg 11; all green when quiet).
+
+## v0.7.2 titles (hotfix, TITLES agent)
+- `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,
+  always about the lawn: "Reign of Sod", "Requiem for a Lawn Mowed Too Short"); Hail Damage starters = "My Lawn, My Tomb" +
+  "Dandelions of the Apocalypse (On My Lawn)" (`titleEn: null`, `fr` = the old French title, which still seeds their patterns).
+- `GG.songs.pickTitle` → `{ title, titleEn, fr? }`: English (titleEn = title) or, ~1 in 8 (`songs.FR_CHANCE`, override
+  `economy.songs.frChance`), Marcel's French one (title = fr, titleEn = en, `fr: true`); only while Marcel is active; the
+  roll is seeded by career seed + song slot + fr (never the career RNG: balance/bot careers replay identically, verified).
+  An entry is used if its en OR fr is. `create` flags `song.fr` (a picked French title, or any title in `englishFor`).
+  Reactions: `lines.songReactions.marcel.nameFr` (he insists) + one `<dana|jaxon|kenji>.frSigh` right after (own seed).
+- Old saves: `GG.songs.migrateTitles` chained onto `GG.save.migrate` (no SAVE_SCHEMA bump): songs / pendingSongs whose title
+  is an old French title (`englishFor`, sequels too) and not `fr: true` become English (title = titleEn = en); follows into
+  liveGig song results, lastGig + lastWeek (setlist, songResults, new-song delta), wrap.tour.big, tour big/queue/ctx, the
+  Loonies single nomination. Chat/news/reviews/result lines/posts are history (unchanged). Idempotent.
+- API adds: `songs.englishFor(title)`, `isFrench(title)`, `frenchTitles()`, `migrateTitles(state)`, `FR_CHANCE`. Sequencer
+  queues `entry.fr` for Marcel's French titles; reroll button "🎲 Another title from Marcel". Content rewording: coach name
+  tips, Marcel's name lines, the Gord card ("translated the French lyrics of 'The Green Tomb'"), Monolith's English demand
+  ("Love the English titles… Now Marcel should sing in English too."). Album titles keep one French pitch (labels, unchanged).
+- Tests: content 48 (English pool + v0.7.1 fr coverage + no "titles are French" text), sim_songs 15 (picks/rate/seed,
+  reactions, old-save rename everywhere + idempotent + fr kept).
 
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or

@@ -5,7 +5,10 @@
 // Pure and deterministic: no DOM, no audio; randomness only from the rng passed in. Genre data: content/genres.js.
 //   PATTERN = { bpm, lanes, sections: { verse|chorus|bridge: [laneStr x lanes] }, arrangement: [section..] }
 //   SONG    = { id, title, titleEn, written, pattern, rating: { groove, hook, difficulty }, quality, polish,
-//               plays, lastPlayed, stale, hits, classic, auto }
+//               plays, lastPlayed, stale, hits, classic, auto, fr? (true = Marcel snuck in a French title; v0.7.2) }
+// v0.7.2 titles: English by default; pickTitle lets Marcel sneak in the French original ~1 in 8 (FR_CHANCE, seeded per
+// career + song slot, never drawing from the career RNG). englishFor/isFrench/frenchTitles; migrateTitles (chained onto
+// GG.save.migrate, no schema bump) renames old saves' French titles to English everywhere a song title is stored.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};
@@ -267,33 +270,80 @@
   /* ---- Titles ------------------------------------------------------------------------------------------ */
   // Used only when content/song_titles.js is missing.
   var FALLBACK_TITLES = {
-    metal: [{ fr: 'Ma Pelouse, Mon Tombeau', en: 'My Lawn, My Tomb' }, { fr: 'Arrosage Interdit', en: 'Watering Ban' },
-      { fr: 'Chiendent Sanglant', en: 'Bloody Crabgrass' }],
+    metal: [{ en: 'Watering Ban (My Lawn Is Thirsty)', fr: 'Arrosage Interdit' }, { en: 'Bloody Crabgrass', fr: 'Chiendent Sanglant' },
+      { en: 'The Lawnmower of Darkness', fr: 'La Tondeuse des Ténèbres' }],
     punk: ['Council Meeting (Is a Lie)'], rock: ['Leather Pants at Minus Forty'], country: ['My Truck Is in the Condo Lot']
   };
+  // Starter songs that once shipped with French titles (content/bands.js + the 20_sim_career fallback band).
+  var LEGACY_STARTERS = [{ title: 'My Lawn, My Tomb', fr: 'Ma Pelouse, Mon Tombeau' },
+    { title: 'Dandelions of the Apocalypse (On My Lawn)', fr: "Les Pissenlits de l'Apocalypse" },
+    { title: 'The Eternal Dandelions', fr: 'Les Pissenlits Éternels' }];
   var ROMAN = ['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-  // Content entries may be { fr, en }, { title, titleEn } or plain strings.
+  var SEQUEL = /^(.+) (II|III|IV|V|VI|VII|VIII|IX|X|\d+)$/;
+  // How often Marcel sneaks the French original in instead of the English title (owner: "Marcel rarely French").
+  songs.FR_CHANCE = 1 / 8;
+  // Content entries may be { en, fr } (the pool: English title + Marcel's French original), { title, titleEn, fr? }
+  // (starter songs) or plain strings. -> { title, titleEn, fr: French original | null }.
   function norm(t) {
-    if (typeof t === 'string') return { title: t, titleEn: t };
-    return { title: t.fr || t.title || '???', titleEn: t.en || t.titleEn || t.fr || t.title || '???' };
+    if (typeof t === 'string') return { title: t, titleEn: t, fr: null };
+    var title = t.title || t.en || t.fr || '???';
+    return { title: title, titleEn: t.titleEn || title, fr: t.fr && t.fr !== title ? t.fr : null };
   }
   function titlePool(genre) {
     var st = GG.content.songTitles, list = st && st[genre] && st[genre].length ? st[genre] : FALLBACK_TITLES[genre];
     return (list || FALLBACK_TITLES.metal).map(norm);
   }
-  // A fresh title from the genre pool; once every title is used, sequels: "Ma Pelouse, Mon Tombeau II".
-  // `taken` (optional) = extra titles to avoid, e.g. songs queued in the UI.
+  // { <French title>: <English title> } for every French title the game has ever handed out (the pools and the
+  // starter songs, content + fallbacks). Built once per content object.
+  var frCache = null, frKey = [];
+  songs.frenchTitles = function () {
+    var K = GG.content || {};
+    if (frCache && frKey[0] === K.songTitles && frKey[1] === K.bands) return frCache;
+    var map = {};
+    function add(t) { var n = t && typeof t === 'object' ? norm(t) : null; if (n && n.fr && !map[n.fr]) map[n.fr] = n.title; }
+    var st = K.songTitles || {}, B = K.bands || {};
+    Object.keys(st).forEach(function (g) { if (Array.isArray(st[g])) st[g].forEach(add); });
+    Object.keys(B).forEach(function (id) { (B[id].starterSongs || []).forEach(add); });
+    Object.keys(FALLBACK_TITLES).forEach(function (g) { FALLBACK_TITLES[g].forEach(add); });
+    LEGACY_STARTERS.forEach(add);
+    frCache = map; frKey = [K.songTitles, K.bands];
+    return map;
+  };
+  // The English title for one of Marcel's French titles (sequels too: "Le Tombeau Vert II" -> "The Green Tomb ... II"),
+  // or null when `title` isn't one of them (English, or typed by the player).
+  songs.englishFor = function (title) {
+    if (typeof title !== 'string' || !title) return null;
+    var map = songs.frenchTitles();
+    if (Object.prototype.hasOwnProperty.call(map, title)) return map[title];
+    var m = SEQUEL.exec(title);
+    return m && Object.prototype.hasOwnProperty.call(map, m[1]) ? map[m[1]] + ' ' + m[2] : null;
+  };
+  songs.isFrench = function (title) { return songs.englishFor(title) != null; };
+  function marcelIn(state) { return (state.members || []).some(function (m) { return m.id === 'marcel' && m.status === 'active'; }); }
+  // English by default; now and then Marcel insists on the French original (title = fr, titleEn = en, fr: true).
+  // The roll is seeded by career seed + song slot + title, so it never moves the career RNG (balance replays the same).
+  function withSuffix(state, t, sfx, slot) {
+    var out = { title: t.title + sfx, titleEn: t.titleEn + sfx };
+    var E0 = GG.content.economy && GG.content.economy.songs, p = E0 && E0.frChance != null ? E0.frChance : songs.FR_CHANCE;
+    if (t.fr && marcelIn(state) && GG.RNG(GG.hashSeed((state.seed || 1) + '|fr|' + slot + '|' + t.fr)).chance(p)) {
+      out.title = t.fr + sfx; out.fr = true;
+    }
+    return out;
+  }
+  // A fresh title from the genre pool (an entry counts as used if either its English or its French title is taken);
+  // once every title is used, sequels: "My Lawn, My Queen II". `taken` (optional) = extra titles to avoid, e.g. songs
+  // queued in the UI. -> { title, titleEn, fr? }
   songs.pickTitle = function (state, rng, taken) {
     var used = {}, pool = titlePool(state.genre);
     state.songs.concat(state.pendingSongs || []).forEach(function (s) { if (s && s.title) used[s.title] = true; });
     (taken || []).forEach(function (t) { used[t] = true; });
-    var fresh = pool.filter(function (t) { return !used[t.title]; });
-    if (fresh.length) return rng.pick(fresh);
+    function free(t, sfx) { return !used[t.title + sfx] && !(t.fr && used[t.fr + sfx]); }
+    var slot = state.songs.length + (state.pendingSongs || []).length + (taken || []).length;
+    var fresh = pool.filter(function (t) { return free(t, ''); });
+    if (fresh.length) return withSuffix(state, rng.pick(fresh), '', slot);
     var base = rng.pick(pool);
-    for (var i = 0; i < ROMAN.length; i++) {
-      if (!used[base.title + ' ' + ROMAN[i]]) return { title: base.title + ' ' + ROMAN[i], titleEn: base.titleEn + ' ' + ROMAN[i] };
-    }
-    return { title: base.title + ' ' + (state.songs.length + 1), titleEn: base.titleEn + ' ' + (state.songs.length + 1) };
+    for (var i = 0; i < ROMAN.length; i++) if (free(base, ' ' + ROMAN[i])) return withSuffix(state, base, ' ' + ROMAN[i], slot);
+    return withSuffix(state, base, ' ' + (state.songs.length + 1), slot);
   };
 
   /* ---- Songs in the career --------------------------------------------------------------------------- */
@@ -324,13 +374,17 @@
 
   // Adds a song built from `pattern` to the catalog. quality = band part + craft (groove, hook, a little flash)
   // - a penalty when it's harder than the band can play (it also starts rougher) - the same-week repeat penalty.
-  // opts: { rng, titleEn, auto, repeatFactor, noise, polish, quality (keep this quality), written }
+  // opts: { rng, titleEn, fr, auto, repeatFactor, noise, polish, quality (keep this quality), written }
+  // fr (v0.7.2): true = one of Marcel's French titles on purpose (kept French on load). Default: a picked title's own
+  // flag, or any title that is one of Marcel's French titles (a queued/typed one; its English then shows as titleEn).
   songs.create = function (state, pattern, title, opts) {
     opts = opts || {};
     var e = E(), A = GG.content.activities.write, gear = gearOf(state.gear);
     var rng = opts.rng || GG.RNG(GG.hashSeed((state.seed || 1) + '|song|' + state.songs.length));
     var p = songs.sanitize(pattern, gear, state.genre), r = songs.rate(p, state.genre, gear);
     var t = title ? { title: String(title).slice(0, 60), titleEn: String(opts.titleEn || title).slice(0, 80) } : songs.pickTitle(state, rng);
+    var fr = opts.fr != null ? !!opts.fr : !!(t.fr || songs.isFrench(t.title));
+    if (fr && t.titleEn === t.title) t.titleEn = String(songs.englishFor(t.title) || t.title).slice(0, 80);
     var f = opts.repeatFactor != null ? opts.repeatFactor : 1;
     var over = Math.max(0, r.difficulty - songs.ability(state));
     var craft = 0.6 * r.groove + 0.3 * r.hook + 0.1 * r.difficulty;
@@ -341,6 +395,7 @@
       pattern: p, rating: { groove: r.groove, hook: r.hook, difficulty: r.difficulty },
       quality: U.clamp(Math.round(q), 1, 100), polish: U.clamp(Math.round(polish), 0, 100),
       plays: 0, lastPlayed: null, stale: 0, hits: 0, classic: false, auto: !!opts.auto };
+    if (fr) song.fr = true;
     state.songs.push(song);
     return song;
   };
@@ -353,11 +408,12 @@
     state.stats.songsWritten++;
     return song;
   };
-  // Starter songs that come with the band (newCareer). t = { title, titleEn } (or { fr, en }). Their patterns are
-  // seeded by the title so the career RNG sequence (and v0.1 balance) is unchanged.
+  // Starter songs that come with the band (newCareer). t = { title, titleEn, fr? } (or { en, fr }). Their patterns are
+  // seeded by the original title (Marcel's French one when there is one, as before v0.7.2) so the career RNG sequence
+  // and the starter patterns (and v0.1 balance) are unchanged.
   songs.addStarter = function (state, t, rng) {
     var Ec = GG.content.economy, n = norm(t);
-    return songs.create(state, songs.patternFor(state, n.title), n.title, { titleEn: n.titleEn, auto: true, written: 0,
+    return songs.create(state, songs.patternFor(state, n.fr || n.title), n.title, { titleEn: n.titleEn, fr: false, auto: true, written: 0,
       quality: rng.int(Ec.starterSongQuality[0], Ec.starterSongQuality[1]), polish: Ec.starterSongPolish });
   };
 
@@ -398,10 +454,12 @@
     state.songs.forEach(function (s) { if (s.stale > 0 && s.lastPlayed !== state.totalWeek) s.stale = Math.max(0, s.stale - e.staleDecay); });
   };
 
-  // Band reactions to a new song (career RNG; lines in content/lines.js songReactions): Marcel names it in French,
-  // Dana wants room for a solo, Jaxon sneaks fills into simple parts, Kenji nods at a great one.
-  var FALLBACK_REACT = { name: ['I have named it:'], noSolo: ['Where does my solo go?'], fills: ['i added a fill. you will not notice'],
-    great: ['(A nod.)'] };
+  // Band reactions to a new song (career RNG; lines in content/lines.js songReactions): Marcel names it, Dana wants
+  // room for a solo, Jaxon sneaks fills into simple parts, Kenji nods at a great one. v0.7.2: when Marcel snuck in a
+  // French title (song.fr) he insists on it (marcel.nameFr) and a bandmate sighs right after (<id>.frSigh; preferring
+  // one who has nothing else to say). The sigh rolls on its own seed (career seed + song id), not the career RNG.
+  var FALLBACK_REACT = { name: ['I have named it:'], nameFr: ['Non. This one is French:'], noSolo: ['Where does my solo go?'],
+    fills: ['i added a fill. you will not notice'], great: ['(A nod.)'], frSigh: ['(A long sigh.)'] };
   songs.reactions = function (state, song, rng) {
     var L = (GG.content.lines && GG.content.lines.songReactions) || {}, out = [];
     function active(id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); }
@@ -412,10 +470,22 @@
     }
     var p = song.pattern, r = song.rating;
     var bridge = p.arrangement.indexOf('bridge') >= 0 ? hitsIn(p.sections.bridge, p.lanes) : -1;
-    if (active('marcel')) { say('marcel', 'name'); out[out.length - 1].text += ' “' + song.title + '”.'; }
-    if (bridge < 0 || bridge >= 22) say('dana', 'noSolo');
-    if (r.difficulty < 40) say('jaxon', 'fills');
-    if (song.quality >= 60 || (r.groove >= 85 && r.hook >= 70)) say('kenji', 'great');
+    var noSolo = bridge < 0 || bridge >= 22, fills = r.difficulty < 40, great = song.quality >= 60 || (r.groove >= 85 && r.hook >= 70);
+    if (active('marcel')) {
+      say('marcel', song.fr ? 'nameFr' : 'name'); out[out.length - 1].text += ' “' + song.title + '”.';
+      if (song.fr) {
+        var others = ['dana', 'jaxon', 'kenji'].filter(active), busy = { dana: noSolo, jaxon: fills, kenji: great };
+        var quiet = others.filter(function (id) { return !busy[id]; });
+        if (others.length) {
+          var sr = GG.RNG(GG.hashSeed((state.seed || 1) + '|frsigh|' + song.id)), who = sr.pick(quiet.length ? quiet : others);
+          var pool = L[who] && L[who].frSigh;
+          out.push({ who: who, text: GG.career.pickLine(state, sr, pool && pool.length ? pool : null, FALLBACK_REACT.frSigh) });
+        }
+      }
+    }
+    if (noSolo) say('dana', 'noSolo');
+    if (fills) say('jaxon', 'fills');
+    if (great) say('kenji', 'great');
     return out;
   };
 
@@ -482,6 +552,60 @@
     t.forEach(function (x) { if (bpm >= x[0]) lab = x[1]; });
     return lab;
   };
+
+  /* ---- v0.7.2: old saves' French titles become English on load (idempotent; SAVE_SCHEMA unchanged) ----------------- */
+  // Renames every SONG and queued entry (pendingSongs, draft) whose title is one of Marcel's French titles (englishFor,
+  // sequels too) unless it is flagged fr: true (snuck in on purpose since v0.7.2), then follows each renamed title
+  // wherever a song title is stored as data: the live gig's song results, lastGig / lastWeek (setlist, song results,
+  // the new-song delta), the wrap's big-in-one-place song, the tour's big song + its queued/current card, and this
+  // year's Loonie nomination for the single. Text already written (chat, news, reviews, result lines, Bandbook posts)
+  // is history and keeps the title it had at the time. A second pass finds nothing to rename.
+  songs.migrateTitles = function (s) {
+    if (!s || typeof s !== 'object' || !Array.isArray(s.songs)) return s;
+    var map = {}, n = 0, has = Object.prototype.hasOwnProperty;
+    function fix(x) {
+      if (!x || typeof x !== 'object' || x.fr || typeof x.title !== 'string') return;
+      var en = songs.englishFor(x.title);
+      if (en == null) return;
+      map[x.title] = en; x.title = en; x.titleEn = en; n++;
+    }
+    s.songs.forEach(fix);
+    if (Array.isArray(s.pendingSongs)) s.pendingSongs.forEach(fix);
+    fix(s.draft);
+    if (!n) return s;
+    function swap(o, k) { if (o && typeof o === 'object' && typeof o[k] === 'string' && has.call(map, o[k])) o[k] = map[o[k]]; }
+    function each(list, k) { if (Array.isArray(list)) list.forEach(function (o) { swap(o, k); }); }
+    function gigRes(g) {
+      if (!g || typeof g !== 'object') return;
+      if (Array.isArray(g.songs)) g.songs = g.songs.map(function (t) { return typeof t === 'string' && has.call(map, t) ? map[t] : t; });
+      each(g.songResults, 'title');
+    }
+    if (s.liveGig && typeof s.liveGig === 'object') each(s.liveGig.songs, 'title');
+    gigRes(s.lastGig);
+    if (s.lastWeek && typeof s.lastWeek === 'object') {
+      (s.lastWeek.blocks || []).forEach(function (b) {
+        var d = b && b.deltas && b.deltas.song;
+        if (d && typeof d === 'object' && has.call(map, d.title)) { d.titleEn = map[d.title]; d.title = map[d.title]; }
+      });
+      gigRes(s.lastWeek.gig);
+    }
+    if (s.wrap && s.wrap.tour) swap(s.wrap.tour.big, 'song');
+    var t = s.tour;
+    if (t && typeof t === 'object') {
+      Object.keys(t.regions || {}).forEach(function (id) { swap(t.regions[id] && t.regions[id].big, 'title'); });
+      each(t.queue, 'song'); swap(t.ctx, 'song');
+    }
+    if (s.loonies && Array.isArray(s.loonies.nominations)) s.loonies.nominations.forEach(function (x) {
+      var m = x && x.category === 'single' && typeof x.what === 'string' && /^"(.*)"$/.exec(x.what);   // albums have their own titles
+      if (m && has.call(map, m[1])) x.what = '"' + map[m[1]] + '"';
+    });
+    return s;
+  };
+  if (GG.save && GG.save.migrate && !GG.save.migrate.titles) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return songs.migrateTitles(prevMigrate(s)); };
+    GG.save.migrate.titles = true;
+  }
 
   GG.registerDebug('songs', function () {
     var s = GG.state; if (!s) return { songs: 0 };
