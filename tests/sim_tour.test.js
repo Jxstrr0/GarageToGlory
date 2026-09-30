@@ -350,6 +350,33 @@ test('the Moose Opera: a ready moose album → the Nordic Moose Run → platinum
   ok(!T.canBook(s, 'eu_moose_run').ok, 'once');
 });
 
+test('v0.9 (Q3): a generic World payoff: package needs { flag }, payoff at its city, counts toward the Gong like the moose', () => {
+  const GG = fresh(), T = GG.tour, W = GG.content.world, base = W.packages.find(p => p.id === 'eu_moose_run');
+  const pkg = Object.assign({}, base, { id: 'eu_squat_anthem', name: 'The Squat Anthem Tour', needs: { flag: 'squatAnthem', is: ['ready'], band: ['frost_heave'] },
+    payoff: { city: base.stops[base.stops.length - 1].city, flag: 'squatAnthemBig', trophy: 'Big in Berlin: {band}', line: '{front} crowd-surfs to the soundboard.', fans: 2500, buzz: 10 } });
+  W.packages.push(pkg);
+  try {
+    const s = GG.career.newCareer({ seed: 44, bandId: 'frost_heave', player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 60000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    T.unlock(s, 'uk_europe');
+    ok(!T.packages(s, 'uk_europe').some(p => p.id === pkg.id) && !T.canBook(s, pkg.id).ok, 'hidden until the storyline flag');
+    ok(!T.packages(s, 'uk_europe').some(p => p.id === 'eu_moose_run'), 'no Moose Run for Frost Heave');
+    s.flags.squatAnthem = 'ready';
+    ok(T.canBook(s, pkg.id).ok, 'on: ' + T.canBook(s, pkg.id).why);
+    const g0 = GG.tour.gong(s).case.score;
+    T.book(s, pkg.id); s.phase = 'wrap'; GG.career.endWeek(s);
+    const ev = []; GG.on('tour:payoff', e => ev.push(e.packageId));
+    playTour(GG, s);
+    ok(s.tour.payoffs[pkg.id] && s.flags.squatAnthemBig === true && ev.length === 1, 'the payoff fired once ' + JSON.stringify(s.tour.payoffs));
+    ok(s.trophies.some(t => t.title === 'Big in Berlin: Frost Heave'), 'trophy with tokens');
+    ok(T.payoffDone(s) && GG.tour.gong(s).case.score >= g0 + GG.tour.cfg().gong.moose, 'Gong credit like the moose');
+    ok(!T.canBook(s, pkg.id).ok, 'once');
+    const hd = world(GG, 45); hd.flags.squatAnthem = 'ready';
+    ok(!T.needsMet(hd, pkg), 'band-scoped needs');
+  } finally { W.packages.pop(); }
+});
+
 test('Abbot Lane Studios (London) unlocks in the World era; the World era switches on at the Steady threshold', () => {
   const GG = fresh(), s = world(GG, 31);
   ok(GG.labels.studios(s).find(x => x.id === 'abbot_lane').available, 'Abbot Lane in World');

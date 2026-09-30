@@ -26,6 +26,8 @@
 //   LICENSE_OFFER (+ shown: the Monday card has been drawn); SONG.ad; stats.licensed ($ net); milestones.soldOut.
 //   WRAP.licensing = { offer: LICENSE_OFFER|null, expired: [LICENSE_OFFER] }.
 // Events: 'license:offer' { offer } · 'license:answer' { offer, result } · 'license:expired' { offer } · 'license:fury' { brandId }.
+// v0.9: furyBrand(s) (rivalry.cast[rid].furyBrand / economy.rival.byRival[rid].furyBrand) ; brand.band filter ; talkers ;
+//   'lic_fury_<bandId>' variant first.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var L = GG.licensing = GG.licensing || {};
@@ -55,10 +57,15 @@
   function money(n) { return U.fmtMoney(n); }
   function active(s, id) { return (s.members || []).some(function (m) { return m.id === id && m.status === 'active'; }); }
   function chat(s, who, text, d) { if (GG.career && GG.career.postChat && text) GG.career.postChat(s, who, L.fillText(s, text), d || null); }
-  function speakerFor(s) {   // a bandmate who talks (never Kenji), else the player
-    var m = (s.members || []).filter(function (x) { return x.status === 'active' && x.id !== 'kenji'; })[0];
+  function speakerFor(s) {   // a bandmate who talks (v0.9: career.talkers; never a silent one), else the player
+    var m = GG.career && GG.career.talkers ? GG.career.talkers(s)[0] : (s.members || []).filter(function (x) { return x.status === 'active'; })[0];
     return m ? m.id : 'player';
   }
+  // v0.9: the brand that makes this career's rival furious (rivalry.cast[rid].furyBrand, else economy.rival.byRival[rid].furyBrand).
+  L.furyBrand = function (s) {
+    var c = GG.rival && GG.rival.cast ? GG.rival.cast(s) : null, k = GG.rival && GG.rival.cfg ? GG.rival.cfg(s) : null;
+    return (c && c.furyBrand) || (k && k.furyBrand) || null;
+  };
 
   /* ---- State ------------------------------------------------------------------------------------------------ */
   L.ensure = function (s) {
@@ -126,7 +133,7 @@
     var used = {};
     l.deals.forEach(function (x) { used[x.brandId] = 1; });
     l.offers.forEach(function (x) { used[x.brandId] = 1; });
-    var pool = L.brands().filter(function (b) { return (b.genres || {})[s.genre] > 0; });
+    var pool = L.brands().filter(function (b) { return (b.genres || {})[s.genre] > 0 && (!b.band || [].concat(b.band).indexOf(s.bandId) >= 0); });   // v0.9: brand.band
     var b = rng.weighted(pool, function (x) { return (x.genres[s.genre] || 0) * (used[x.id] ? 0.2 : 1); });
     if (!b) return null;
     var f = L.fame(s), fee = (b.fee[0] + (b.fee[1] - b.fee[0]) * f) * rng.range(1 - R.noise, 1 + R.noise);
@@ -193,11 +200,13 @@
     if (GG.fans && GG.fans.queue && rngOf(s, 'scandal|' + o.id).chance(R.scandal * (b.sellout || 0))) {
       var sc = (GG.content.licenseScandals || []).filter(function (x) {
         var c = L.card(x.card);
-        return c && (x.who === 'band' || x.who === 'player' || active(s, x.who)) && (!GG.career || GG.career.gatePasses(s, c.gate));
+        return c && (x.who === 'band' || x.who === 'player' || active(s, x.who)) && (!GG.career || GG.career.gatePasses(s, c.gate))
+          && (!GG.career.cardOk || GG.career.cardOk(s, c));
       })[0];
       if (sc) GG.fans.queue(s, sc.card, sc.who, 'license');
     }
-    if (b.id === 'truck' && s.bandId === 'grid_road_ramblers') {   // Buckle & Boot wanted that ad
+    var fb = L.furyBrand(s);
+    if (fb ? b.id === fb : b.id === 'truck' && s.bandId === 'grid_road_ramblers') {   // Buckle & Boot wanted that ad (v0.9: any rival's furyBrand)
       if (GG.rival && GG.rival.addHeat) GG.rival.addHeat(s, R.fury, 'license');
       s.licensing.fury = b.id;
       GG.emit('license:fury', { brandId: b.id });
@@ -300,7 +309,7 @@
     L.ensure(s);
     var l = s.licensing, c;
     if (l.fury) {
-      c = L.card('lic_fury');
+      c = (GG.career.variant && GG.career.variant(s, 'lic_fury')) || L.card('lic_fury');   // v0.9: 'lic_fury_<bandId>' first
       l.fury = null;
       if (c && GG.career.gatePasses(s, c.gate)) return { card: c, who: null };
     }
@@ -310,7 +319,8 @@
     if (!c) return null;
     o.shown = true; l.cur = o.id;
     var b = L.brand(o.brandId), who = b && b.speaker;
-    if (!who || (!(GG.content.npcs || {})[who] && !active(s, who))) who = 'mom';
+    if (who && GG.career.isAlias && GG.career.isAlias(who)) who = GG.career.roleOf(s, who);   // v0.9 role alias
+    if (!who || (!(GG.content.npcs || {})[who] && !active(s, who)) || (GG.career.speakerOk && !GG.career.speakerOk(s, who))) who = 'mom';
     return { card: c, who: who };
   };
   // career.resolveCard: an offer card answers the current offer ('later' leaves it on the laptop); the fury card moves

@@ -30,6 +30,9 @@
 //          fx: { buzz, fans }, comments: [{ who: 'fan'|'hater'|'rival'|'dale'|'trucker', name, text }] }
 // Events: 'fans:post' { post } · 'fans:viral' { post, kind } · 'fans:scandal' { card, who } · 'fans:gift' { gift }
 //         · 'fans:club' { action: 'open'|'exclusive'|'payout', club }
+// v0.9: homeSuperfan(s) (owner Q5: bandbook.homeSuperfan[bandId] in the 'dale' slot; superfanDef('dale', s)) ; pool(s, path,
+//   fallback) (bandbook pools + byBand; items with gate / band: [ids] are filtered) ; rival comments from rivalry.cast ;
+//   talkers instead of 'kenji' ; fan cards through '<id>_<bandId>' variants.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var F = GG.fans = GG.fans || {};
@@ -69,6 +72,20 @@
     superfans: [], gigLines: {}, mail: [], gifts: [], scriptedGifts: {}, tiers: [], club: {}, chat: {}, scandals: [], cards: [] };
   F.content = function () { return GG.content.bandbook || EMPTY; };
   function K() { return F.content(); }
+  // v0.9: a bandbook pool for this career: flat (neutral) + byBand[bandId] (career.pool), e.g. ['posts', 'meme'],
+  // ['comments', 'good'], ['handles', 'fan'], ['chat', 'viral'], 'mail', 'gifts'. Items may carry a gate (card gate) or
+  // band: [ids]; those that don't fit the band are left out.
+  function fits(s, x) {
+    if (!x || typeof x !== 'object') return true;
+    if (x.band && [].concat(x.band).indexOf(s.bandId) < 0) return false;
+    return !x.gate || !GG.career || GG.career.gatePasses(s, x.gate);
+  }
+  function bpool(s, path, fallback) {
+    var v = s && GG.career && GG.career.pool ? GG.career.pool(s, K(), path) : null;
+    if (v == null) { v = K(); [].concat(path).forEach(function (k) { v = v != null ? v[k] : v; }); }
+    return Array.isArray(v) ? v.filter(function (x) { return fits(s, x); }) : v != null ? v : fallback;
+  }
+  F.pool = bpool;
 
   /* ---- Small helpers ------------------------------------------------------------------------------------------ */
   function rngOf(s, salt) {
@@ -91,15 +108,15 @@
     for (var i = 0; i < l.length; i++) if (!best || (l[i].written || 0) >= (best.written || 0)) best = l[i];
     return best;
   }
-  function rivalName(s) { return GG.rival && GG.rival.name ? GG.rival.name(s) : 'Tundra Wraith'; }
+  function rivalName(s) { return (GG.rival && GG.rival.name ? GG.rival.name(s) : '') || 'the other band'; }
   // Bandbook tokens, then the career tokens.
   function fill(s, text, ctx) {
     ctx = ctx || {};
     var t = String(text == null ? '' : text).replace(/\{(who|song|venue|gcity|views|n|money)\}/g, function (all, k) {
       if (k === 'who') return ctx.who ? nameOf(s, ctx.who) : 'the band';
       if (k === 'song') { var sg = newestSong(s); return ctx.song || (sg && sg.title) || 'the new one'; }
-      if (k === 'venue') return ctx.venue || (s.gig && s.gig.name) || 'the Legion';
-      if (k === 'gcity') return ctx.gcity || (s.gig && s.gig.city) || s.city || 'Saskatoon';
+      if (k === 'venue') return ctx.venue || (s.gig && s.gig.name) || 'the show';
+      if (k === 'gcity') return ctx.gcity || (s.gig && s.gig.city) || s.city || 'town';
       if (k === 'views') return U.fmtNum(ctx.views || 0);
       if (k === 'n') return String(ctx.n != null ? ctx.n : '');
       return U.fmtMoney(ctx.money || 0);
@@ -112,11 +129,28 @@
   }
   function round4(x) { return Math.round(x * 10000) / 10000; }
   function chat(s, who, text, d) { if (GG.career && GG.career.postChat && text) GG.career.postChat(s, who, text, d || null); }
-  function speakerFor(s, prefer) {
-    for (var i = 0; i < prefer.length; i++) if (isActive(s, prefer[i]) && prefer[i] !== 'kenji') return prefer[i];
-    var a = active(s).filter(function (m) { return m.id !== 'kenji'; });
+  // v0.9: never a silent member; the preferred ids (Hail Damage), then role aliases, then the first bandmate who talks.
+  function silent(s, id) { return GG.career && GG.career.isSilent ? GG.career.isSilent(s, id) : id === 'kenji'; }
+  function talkers(s) { return GG.career && GG.career.talkers ? GG.career.talkers(s) : active(s).filter(function (m) { return !silent(s, m.id); }); }
+  function speakerFor(s, prefer, roles) {
+    for (var i = 0; i < prefer.length; i++) if (isActive(s, prefer[i]) && !silent(s, prefer[i])) return prefer[i];
+    for (var j = 0; roles && j < roles.length; j++) {
+      var r = GG.career && GG.career.roleOf ? GG.career.roleOf(s, roles[j]) : null;
+      if (r && isActive(s, r) && !silent(s, r)) return r;
+    }
+    var a = talkers(s);
     return a.length ? a[0].id : null;
   }
+  // v0.9 (owner Q5): the band's home superfan lives in the 'dale' state slot: bandbook.homeSuperfan[bandId] = { name, short?,
+  // from, blurb, gigLines[], gigLinesFar?[], comments[], gift }, merged over superfans.dale (the fallback, Dale from Warman).
+  F.homeSuperfan = function (s) {
+    var base = (K().superfans || []).filter(function (d) { return d.id === 'dale'; })[0] || null;
+    var hs = s && K().homeSuperfan && K().homeSuperfan[s.bandId];
+    if (!hs) return base;
+    var out = Object.assign({}, base || {}, hs, { id: 'dale', start: true });
+    if (!hs.short) out.short = String(hs.name || '').split(' ')[0] || (base && base.short) || 'Superfan';
+    return out;
+  };
 
   /* ---- State ------------------------------------------------------------------------------------------------ */
   // Fills every fan field that is missing (idempotent; never overwrites a valid value).
@@ -161,7 +195,11 @@
     return x >= 0.35 ? 'good' : x >= 0.12 ? 'mixed' : 'bad';
   };
   F.kindInfo = function (kind) { var k = K().kinds[kind] || {}; return { id: kind, label: k.label || kind, icon: k.icon || '📘' }; };
-  F.superfanDef = function (id) { return K().superfans.filter(function (d) { return d.id === id; })[0] || null; };
+  F.superfanDef = function (id, s) {
+    s = s || GG.state || null;
+    if (id === 'dale' && s && s.bandId) return F.homeSuperfan(s);   // v0.9: the band's own home superfan
+    return K().superfans.filter(function (d) { return d.id === id; })[0] || null;
+  };
 
   /* ---- Comments --------------------------------------------------------------------------------------------- */
   function pickLine(pool, rng, used) {
@@ -171,10 +209,12 @@
   }
   var POOL_MIX = { good: [0.7, 0.25, 0.05], mixed: [0.35, 0.5, 0.15], bad: [0.15, 0.4, 0.45] };
   function comments(s, post, rng) {
-    var CM = K().comments || {}, H = K().handles || EMPTY.handles, t = F.shares(s), sf = s.superfans || {};
+    var CM = {}, H = {}, t = F.shares(s), sf = s.superfans || {};   // v0.9: + byBand (bpool)
+    ['good', 'mixed', 'bad', 'hater', 'rival', 'rivalExclusive'].forEach(function (k) { CM[k] = bpool(s, ['comments', k], []); });
+    ['fan', 'hater'].forEach(function (k) { var h = bpool(s, ['handles', k], null); H[k] = h && h.length ? h : EMPTY.handles[k]; });
     var sent = F.sentiment(s), used = {}, names = {}, special = [], out = [];
     function handle(list) { for (var i = 0; i < 6; i++) { var h = rng.pick(list); if (!names[h]) { names[h] = 1; return h; } } return rng.pick(list); }
-    var dale = F.superfanDef('dale'), trk = F.superfanDef('trucker');
+    var dale = F.superfanDef('dale', s), trk = F.superfanDef('trucker', s);
     if (sf.dale && dale && (post.kind === 'gig' || post.exclusive || rng.chance(0.55))) special.push({ who: 'dale', name: dale.name, text: pickLine(dale.comments, rng, used) });
     if (sf.trucker && trk && rng.chance(0.3)) special.push({ who: 'trucker', name: trk.name, text: pickLine(trk.comments, rng, used) });
     var jp = F.superfanDef('japan');
@@ -190,7 +230,10 @@
       out.push({ who: 'fan', name: handle(H.fan), text: pickLine(CM[pool], rng, used) });
     }
     out = rng.shuffle(out);
-    out.push({ who: 'rival', name: rivalName(s), text: pickLine(post.exclusive ? CM.rivalExclusive : CM.rival, rng, used) });   // on EVERY post
+    var rc = GG.rival && GG.rival.cast ? GG.rival.cast(s) : null;   // v0.9: the rival's own comments (cast.comments), else the neutral pool
+    var rpool = post.exclusive ? ((rc && rc.commentsExclusive && rc.commentsExclusive.length && rc.commentsExclusive) || CM.rivalExclusive)
+      : ((rc && rc.comments && rc.comments.length && rc.comments) || CM.rival);
+    out.push({ who: 'rival', name: rivalName(s), text: pickLine(rpool, rng, used) });   // on EVERY post
     return out.map(function (c) { return { who: c.who, name: c.name, text: fill(s, c.text, { who: post.who }) }; });
   }
 
@@ -206,7 +249,7 @@
     return rng.weighted(KINDS, function (k) { return w[k]; }) || 'meme';
   }
   function pickText(s, kind, rng) {
-    var pool = (K().posts || {})[kind] || [], recent = {};
+    var pool = bpool(s, ['posts', kind], []), recent = {};   // v0.9: + byBand
     s.bandbook.posts.slice(-6).forEach(function (p) { if (p.kind === kind) recent[p.t] = 1; });
     var idx = rng.int(0, Math.max(0, pool.length - 1));
     for (var i = 0; i < 4 && recent[idx]; i++) idx = rng.int(0, Math.max(0, pool.length - 1));
@@ -228,7 +271,8 @@
   function queueScandal(s, rng, source) {
     var b = s.bandbook, list = (K().scandals || []).filter(function (x) {
       var c = F.card(x.card), seen = s.seenCards && s.seenCards[x.card];
-      return c && isActive(s, x.who) && (!GG.career || GG.career.gatePasses(s, c.gate)) && !(seen && s.totalWeek - seen < 30);
+      return c && isActive(s, x.who) && (!GG.career || GG.career.gatePasses(s, c.gate)) && !(seen && s.totalWeek - seen < 30)
+        && (!GG.career.cardOk || GG.career.cardOk(s, c));   // v0.9 speaker / card guard
     });
     if (!list.length) return null;
     var x = rng.pick(list);
@@ -257,15 +301,19 @@
     var viral = rng.chance(Math.min(V.max, vp)) ? (rng.chance(Math.min(Math.max(0.6, V.cringe), V.cringe + F.shares(s).hater)) ? 'cringe' : 'good') : null;
     var cringeWho = null, text = pt.text;
     if (viral === 'cringe') {
-      var cr = (K().viral.cringe || []).filter(function (c) { return c.who === 'any' ? crew.some(function (m) { return m.id !== 'kenji'; }) : isActive(s, c.who) && c.who !== 'kenji'; });
+      var cwho = function (c) { return GG.career && GG.career.isAlias && GG.career.isAlias(c.who) ? GG.career.roleOf(s, c.who) : c.who; };   // v0.9: '@front' etc.
+      var tk = talkers(s);
+      var vg = GG.career && GG.career.pool ? GG.career.pool(s, K(), 'viral') : K().viral;   // + byBand
+      var cr = ((vg && vg.cringe) || []).filter(function (c) { var w = cwho(c); return c.who === 'any' ? tk.length > 0 : !!w && isActive(s, w) && !silent(s, w); });
       if (!cr.length) viral = 'good';
       else {
         var c = rng.pick(cr);
-        cringeWho = c.who === 'any' ? rng.pick(crew.filter(function (m) { return m.id !== 'kenji'; })).id : c.who;
+        cringeWho = c.who === 'any' ? rng.pick(tk).id : cwho(c);
         text = c.text; who = cringeWho;
       }
     }
-    if (viral === 'good') { text = rng.pick(K().viral.good) || text; if (who === 'kenji') who = speakerFor(s, ['dana', 'marcel', 'jaxon']) || 'player'; }
+    if (viral === 'good') { var vgood = (GG.career && GG.career.pool ? GG.career.pool(s, K(), 'viral.good') : K().viral.good) || [];
+      text = rng.pick(vgood) || text; if (silent(s, who)) who = speakerFor(s, ['dana', 'marcel', 'jaxon'], ['@soloist', '@front', '@filler']) || 'player'; }
     var likes = Math.round(((s.fans || 0) * P.likes + 6) * mult * rng.range(0.7, 1.3));
     var shares = Math.round(likes * rng.range(0.05, 0.15)), plays = Math.round(likes * rng.range(4, 8));
     if (viral) { var boost = rng.range(25, 60); likes = Math.round(likes * boost); shares = Math.round(shares * boost * 1.5); plays = Math.round(plays * boost); }
@@ -294,8 +342,8 @@
       if (viral) lines.push((viral === 'good' ? '🚀 ' : '😬 ') + post.text);
     }
     if (viral) {
-      var speaker = viral === 'cringe' ? cringeWho : speakerFor(s, ['marcel', 'dana', 'jaxon']);
-      if (speaker) chat(s, speaker, rng.pick((K().chat || {})[viral === 'cringe' ? 'cringe' : 'viral'] || []), d);
+      var speaker = viral === 'cringe' ? cringeWho : speakerFor(s, ['marcel', 'dana', 'jaxon'], ['@front', '@soloist', '@filler']);
+      if (speaker) chat(s, speaker, rng.pick(bpool(s, ['chat', viral === 'cringe' ? 'cringe' : 'viral'], [])), d);
       GG.emit('fans:viral', { post: post, kind: viral });
     }
     // bandmates post dumb things: a scandal card next Monday
@@ -392,7 +440,7 @@
     }
     if (s.van && isFinite(s.van.condition) && Q.van) s.van.condition = Math.min(100, s.van.condition + Q.van);   // "your favourite band's van repairs"
     c.earned += net; c.lastPayout = net; c.paid = s.totalWeek;
-    var who = speakerFor(s, ['jaxon', 'dana', 'marcel']);
+    var who = speakerFor(s, ['jaxon', 'dana', 'marcel'], ['@filler', '@soloist', '@front']);
     if (who && net > 0) chat(s, who, fill(s, rng.pick((K().club || {}).payoutChat || []), { money: net, n: c.members }));
     out.club = { paid: net, members: c.members, happiness: c.happiness, tier: c.tier };
     GG.emit('fans:club', { action: 'payout', club: c, paid: net });
@@ -405,8 +453,8 @@
   F.addGift = function (s, id, kind) {
     F.ensure(s);
     var G = K(), def = (G.scriptedGifts || {})[id], isMail = false;
-    if (!def) def = (G.gifts || []).filter(function (g) { return g.id === id; })[0];
-    if (!def) { def = (G.mail || []).filter(function (g) { return g.id === id; })[0]; isMail = !!def; }
+    if (!def) def = bpool(s, ['gifts'], []).filter(function (g) { return g.id === id; })[0] || (G.gifts || []).filter(function (g) { return g.id === id; })[0];
+    if (!def) { def = bpool(s, ['mail'], []).filter(function (g) { return g.id === id; })[0] || (G.mail || []).filter(function (g) { return g.id === id; })[0]; isMail = !!def; }
     if (!def || (!isMail && F.hasGift(s, id))) return null;
     var g = { id: id, week: s.totalWeek, from: def.from, text: fill(s, def.text), kind: kind || (isMail ? 'mail' : 'gift') };
     s.gifts.push(g);
@@ -424,11 +472,11 @@
     if (!((s.stats && s.stats.gigs >= 1) || (s.fans || 0) >= 20)) return;
     if (rng.chance(Math.min(Q.mail.max, Q.mail.chance + sup * Q.mail.perSuper))) {
       var recent = {}; s.gifts.slice(-4).forEach(function (g) { recent[g.id] = 1; });
-      var pool = (K().mail || []).filter(function (m) { return !recent[m.id]; }), m = rng.pick(pool);
+      var pool = bpool(s, ['mail'], []).filter(function (m) { return !recent[m.id]; }), m = rng.pick(pool);   // v0.9: band gates + byBand
       if (m) { var e = F.addGift(s, m.id, 'mail'); if (e) out.mail.push(e); }
     }
     if (rng.chance(Math.min(Q.gift.max, Q.gift.chance + sup * Q.gift.perSuper))) {
-      var left = (K().gifts || []).filter(function (g) { return !F.hasGift(s, g.id); }), gi = rng.pick(left);
+      var left = bpool(s, ['gifts'], []).filter(function (g) { return !F.hasGift(s, g.id); }), gi = rng.pick(left);
       if (gi) {
         var e2 = F.addGift(s, gi.id, 'gift');
         if (e2) { out.gifts.push(e2); chat(s, 'mom', 'A parcel came for the band, from ' + e2.from + '. I didn\'t open it. I shook it a little.'); }
@@ -493,7 +541,9 @@
       dale.mood = U.clamp((dale.mood || 0) + (GK.dale[r.grade] || 0), 0, 100);
       if (room() > 0) add++;
       r.dale = dale.seen;
-      lines.push(fill(s, rng.pick((km >= 500 && L.daleFar) || L.dale || []), { n: dale.seen, gcity: gcity }));
+      var hs = K().homeSuperfan && K().homeSuperfan[s.bandId];   // v0.9: the band's own home superfan's lines
+      var near = hs && hs.gigLines && hs.gigLines.length ? hs.gigLines : L.dale, far = hs ? (hs.gigLinesFar && hs.gigLinesFar.length ? hs.gigLinesFar : near) : L.daleFar;
+      lines.push(fill(s, rng.pick((km >= 500 && far) || near || []), { n: dale.seen, gcity: gcity }));
     }
     var tr = s.superfans.trucker;
     if (tr && !abroad && km >= GK.followKm && rng.chance(GK.trucker)) {
@@ -531,17 +581,26 @@
   F.card = function (id) { return F.cards().filter(function (c) { return c.id === id; })[0] || null; };
   function gateOk(s, c) { return !!c && (!GG.career || GG.career.gatePasses(s, c.gate)); }
   function seenAt(s, id) { return s.seenCards && s.seenCards[id] != null ? s.seenCards[id] : null; }
+  // v0.9: '<base>_<bandId>' first (content packs), else the base card; gate + speaker must fit the band.
+  function speakOk(s, c) { return !c || !GG.career || !GG.career.cardOk || GG.career.cardOk(s, c); }
+  function variantCard(s, base) {
+    var v = F.card(base + '_' + s.bandId);
+    if (v && gateOk(s, v) && speakOk(s, v)) return v;
+    var c0 = F.card(base);
+    return c0 && gateOk(s, c0) && speakOk(s, c0) ? c0 : null;
+  }
   function superfanCard(s) {
     var Q = F.cfg(), sf = s.superfans, b = s.bandbook, w = s.totalWeek, c;
-    function once(id) { c = F.card(id); return gateOk(s, c) && seenAt(s, id) == null; }
-    if (sf.dale && sf.dale.seen >= 2 && once('fans_dale_hello')) return c;   // the second show: same guy, same lawn chair
+    function once(id) { c = variantCard(s, id); return !!c && seenAt(s, c.id) == null; }
+    if (sf.dale && sf.dale.seen >= 2 && once('fans_dale_hello')) return c;   // the second show: same face, same spot
     if (!sf.trucker && (s.stats && s.stats.gigs) >= Q.superfans.truckerAfterGigs && s.lastGig && (s.lastGig.km || 0) >= Q.superfans.truckerKm && once('fans_trucker')) return c;
-    if (sf.dale && sf.dale.seen >= Q.superfans.daleGiftAfter && !F.hasGift(s, 'macaroni_kenji') && isActive(s, 'kenji') && once('fans_macaroni')) return c;
-    c = F.card('fans_patreeon');
-    if (!s.fanClub && F.clubUnlocked(s) && gateOk(s, c) && (b.clubDeclined == null || w - b.clubDeclined >= Q.club.redecline)) return c;
-    c = F.card('fans_club_grumble');
-    var gs = seenAt(s, 'fans_club_grumble');
-    if (s.fanClub && s.fanClub.happiness < Q.club.grumbleBelow && gateOk(s, c) && (gs == null || w - gs >= Q.club.grumbleGap)) return c;
+    var hs = F.homeSuperfan(s), gift = (hs && hs.gift && (hs.gift.id || hs.gift)) || 'macaroni_kenji';   // v0.9: the home superfan's gift
+    if (sf.dale && sf.dale.seen >= Q.superfans.daleGiftAfter && !F.hasGift(s, gift) && once('fans_macaroni') && (c.id !== 'fans_macaroni' || isActive(s, 'kenji'))) return c;
+    c = variantCard(s, 'fans_patreeon');
+    if (!s.fanClub && F.clubUnlocked(s) && c && (b.clubDeclined == null || w - b.clubDeclined >= Q.club.redecline)) return c;
+    c = variantCard(s, 'fans_club_grumble');
+    var gs = c ? seenAt(s, c.id) : null;
+    if (s.fanClub && s.fanClub.happiness < Q.club.grumbleBelow && c && (gs == null || w - gs >= Q.club.grumbleGap)) return c;
     if (F.shares(s).hater >= 0.12 && once('fans_hater_page')) return c;
     return null;
   }
@@ -554,7 +613,7 @@
     var pick = null, P = b.pending;
     if (P) {
       var c = F.card(P.card);
-      if (c && gateOk(s, c) && isActive(s, P.who)) pick = c;
+      if (c && gateOk(s, c) && isActive(s, P.who) && speakOk(s, c)) pick = c;
       b.pending = null;
     }
     if (!pick) pick = superfanCard(s);
@@ -585,7 +644,7 @@
       if (br && br.effects && br.effects.fan) F.apply(s, br.effects.fan, d);
     }
     if (F.isScandal(card.id)) { b.scandals++; b.lastScandal = s.totalWeek; }
-    if (card.id === 'fans_patreeon' && !s.fanClub) b.clubDeclined = s.totalWeek;
+    if (/^fans_patreeon(_|$)/.test(card.id) && !s.fanClub) b.clubDeclined = s.totalWeek;
   };
 
   /* ---- The 'fan' effect key ---------------------------------------------------------------------------------- */
@@ -597,7 +656,7 @@
     if (v.hater) { shiftShare(s, 'hater', v.hater); out.hater = v.hater; }
     if (v.super) { shiftShare(s, 'super', v.super); out.super = v.super; }
     if (v.superfan) Object.keys(v.superfan).forEach(function (id) {
-      var def = F.superfanDef(id); if (!def || def.reserved || (def.region && !s.superfans[id])) return;
+      var def = F.superfanDef(id, s); if (!def || def.reserved || (def.region && !s.superfans[id])) return;
       var sf = s.superfans[id] || (s.superfans[id] = { seen: 0, mood: F.cfg().superfans.moodStart, since: s.totalWeek });
       sf.mood = U.clamp((sf.mood || 0) + (v.superfan[id] || 0), 0, 100);
       if (id === 'trucker' && !F.hasGift(s, 'cb_radio')) F.addGift(s, 'cb_radio');
@@ -614,7 +673,7 @@
     var p = [];
     if (v.hater) p.push('Haters ' + arrow(v.hater));
     if (v.super) p.push('Superfans ' + arrow(v.super));
-    if (v.superfan) Object.keys(v.superfan).forEach(function (id) { var d = F.superfanDef(id); if (d && v.superfan[id]) p.push(d.short + ' ' + arrow(v.superfan[id])); });
+    if (v.superfan) Object.keys(v.superfan).forEach(function (id) { var d = F.superfanDef(id, GG.state); if (d && v.superfan[id]) p.push(d.short + ' ' + arrow(v.superfan[id])); });
     if (v.gift) p.push('A gift');
     if (v.club === 'open') p.push('Patreeon opens');
     if (v.clubHappy) p.push('Members ' + arrow(v.clubHappy));
@@ -625,6 +684,7 @@
   F.superfanList = function (s) {
     F.ensure(s);
     return K().superfans.map(function (d) {
+      if (d.id === 'dale') d = F.homeSuperfan(s) || d;   // v0.9: the band's own home superfan
       var st = s.superfans[d.id];
       var R = d.region && !st && GG.tour ? GG.tour.region(d.region) : null;   // v0.7: region superfans wait until you get there
       return { id: d.id, name: d.name, short: d.short, icon: d.icon, blurb: d.blurb, reserved: d.reserved || (R ? R.name : null),

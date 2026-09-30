@@ -14,7 +14,7 @@
     },
     write: {
       id: 'write', name: 'Write', icon: '✍️',
-      blurb: 'Find a beat, let the singer scream over it. You get a new song.',
+      blurb: 'Find a beat, let the band build a song on top of it. You get a new song.',
       // quality = base + avg skill * skill + drum skill * drum + chemistry * chem + noise, minus the repeat penalty
       qualityBase: 8, qualitySkill: 0.55, qualityDrum: 0.2, qualityChem: 0.15, qualityNoise: [-8, 12],
       repeatPenalty: 20,   // quality lost on a same-week repeat, times (1 - repeat factor)
@@ -38,7 +38,7 @@
       id: 'hustle', name: 'Hustle', icon: '💵',
       blurb: 'Weddings, busking, bingo-hall covers. Cash in the fund, a little less art in your soul.',
       cash: [50, 100], burnout: 7,
-      grumbler: 'marcel', grumble: -3   // this member hates playing the Chicken Dance at wedding socials (falls back to the first member)
+      grumbler: '@grumbler', grumble: -3   // v0.9: the band's grumbler (bands.js roles.grumbler) hates the wedding-social Chicken Dance
     },
     rest: {
       id: 'rest', name: 'Rest', icon: '🛋️',

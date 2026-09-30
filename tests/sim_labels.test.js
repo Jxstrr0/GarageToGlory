@@ -410,4 +410,33 @@ test('bots: sign, record, release over a career; deterministic per seed; no DOM/
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '24_sim_labels.js is pure');
 });
 
+test('v0.9: demandsByBand, a demand whose card can never be dealt settles half, rival-only labels never offer', () => {
+  const GG = fresh({ cards: [{ id: 'dm_hd_only', type: 'money', speaker: 'marcel', title: 't', text: 't', gate: { band: ['hail_damage'] }, choices: [{ label: 'a', outcome: 'o' }] }] });
+  const L = GG.labels, lab = L.label('monolith');
+  const fh = GG.career.newCareer({ seed: 9, bandId: 'frost_heave' });
+  const own = { monolith: [{ kind: 'image', text: 'Less council, more cardio.' }, { kind: 'council', text: 'Stop suing city hall.' }] };
+  const saved = lab.demandsByBand;
+  const LS = GG.content.labels && (GG.content.labels.labels || GG.content.labels), src = LS && LS.monolith || {};
+  src.demandsByBand = { frost_heave: own.monolith };
+  try {
+    const d = L.demandsFor(fh, L.label('monolith')).map(x => x.kind || x);
+    ok(d.indexOf('council') >= 0 && d.filter(k => k === 'image').length === 1, 'band demands on top, same kind replaced ' + d);
+    eq(L.demandsFor(fh, L.label('monolith')).find(x => x.kind === 'image').text, 'Less council, more cardio.');
+  } finally { if (saved === undefined) delete src.demandsByBand; else src.demandsByBand = saved; }
+  const hdOnly = GG.content.cards[0];
+  ok(L.cardNeverPasses(fh, hdOnly.id) && !L.cardNeverPasses(GG.career.newCareer({ seed: 9 }), hdOnly.id), 'gated to another band = never');
+  ok(L.cardNeverPasses(fh, 'no_such_card'), 'missing = never');
+  // a deal whose carded demand can never come up settles 'half' after the grace instead of hanging
+  fh.era = 'signed'; fh.fans = 5000; fh.label = { id: 'x', labelId: 'monolith', name: 'Monolith', signed: 1, advance: 0, recouped: 0, costs: 0, royalty: 0.1,
+    albumsOwed: 3, albumsDelivered: 0, deadline: 999, goodwill: 60, salesMult: 1, dropped: false,
+    demands: [{ kind: 'english', text: '-', card: hdOnly.id, due: 2, answered: null }] };
+  fh.totalWeek = 10;
+  L.weekly(fh, GG.rngFor(fh), { chat: [] });
+  eq(fh.label.demands[0].answered, 'half', 'settled');
+  // rival-only labels
+  const src2 = LS, add = { id: 'monolith_tv', name: 'Monolith TV', rivalOnly: true, advance: [1, 2], royalty: 0.1, albums: 1, deadlineWeeks: 10, offerMinFans: 0, offerMinBuzz: 0, demands: [] };
+  src2.monolith_tv = add;
+  try { eq(L.interest(fh, 'monolith_tv'), 0, 'never offered'); } finally { delete src2.monolith_tv; }
+});
+
 done('sim_labels');

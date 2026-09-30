@@ -135,7 +135,7 @@ test('freshness: the same room next week brings fewer new fans', () => {
 
 test('van: wear per km, burnout on long drives, no breakdowns while protected', () => {
   const GG = fresh(), W = GG.world, s = career(GG, 6, 100);
-  eq([s.van.id, s.van.name, s.van.condition, s.van.km], ['moose_hearse', 'The Moose Hearse', 72, 0]);
+  eq([s.van.id, s.van.name, s.van.condition, s.van.km], ['van', 'The Moose Hearse', 72, 0]);   // v0.9: a neutral id, the band's van name
   eq(W.km('Saskatoon', 'Regina'), 239); eq(W.km('regina', 'saskatoon'), 239);
   eq(W.km('Swift Current', 'Yorkton'), 174 + 71 + 187, 'shortest path through Moose Jaw and Regina');
   eq(W.route('saskatoon', 'swift_current'), ['saskatoon', 'swift_current']);

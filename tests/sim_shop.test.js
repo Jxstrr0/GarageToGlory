@@ -359,4 +359,42 @@ test('bots shop sensibly and careers stay deterministic', () => {
   ok(a.fund >= 0 && a.merch && isFinite(a.merch.earned), 'avg bot fine');
 });
 
+test('v0.9: every band\'s van, misprint (Q6) and forced cards through their band variants', () => {
+  const GG = fresh(), S = GG.shop, K = GG.content.shop;
+  Object.keys(GG.content.bands).forEach(id => {
+    const s = GG.career.newCareer({ seed: 3, bandId: id });
+    eq(s.van.name, (K.vanNames[id] || [])[0] || 'The Van', id + ' tier-0 van');
+    ok(S.misprintInfo(s).typo && S.misprintInfo(s).name.indexOf(S.misprintInfo(s).typo) === 0, id + ' misprint ' + S.misprintInfo(s).typo);
+  });
+  eq(['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].map(id => S.misprintInfo({ bandId: id }).typo),
+    ['HALE DAMAGE', 'FROST HEAVY', 'GRAVY KINGS', 'THE GRID ROAD RUMBLERS'], 'owner Q6');
+  eq(S.vanName('no_such_band', 0), 'The Van', 'no borrowed Moose Hearse');
+  // Frost Heave: the Hail Damage misprint card never fits; a band variant does
+  const fh = GG.career.newCareer({ seed: 3, bandId: 'frost_heave' });
+  fh.fund = 5000; S.unlockMerch(fh, true);
+  const shirt = S.merchItems(fh).find(x => x.id === 'shirt');
+  if (shirt && shirt.unlocked) {
+    eq(S.buyStock(fh, 'shirt', 1).misprint, false, 'no misprint card for this band: a normal order');
+    const base = S.card('money_merch_misprint');
+    // a band variant voices and moves its own band (Hail Damage mood keys -> role aliases; career.cardOk rejects others')
+    const own = JSON.parse(JSON.stringify(base.choices).replace(/"(marcel|dana|jaxon|kenji)":/g, '"@front":'));
+    GG.content.shopCards.push(Object.assign({}, base, { id: 'money_merch_misprint_frost_heave', speaker: 'rox', gate: { band: ['frost_heave'] }, choices: own }));
+    try {
+      const f2 = GG.career.newCareer({ seed: 4, bandId: 'frost_heave' }); f2.fund = 5000; S.unlockMerch(f2, true);
+      eq(S.buyStock(f2, 'shirt', 1).misprint, true, 'the band variant misprints the first order');
+      f2.totalWeek = 10;
+      const c = S.forcedCard(f2);
+      eq(c && c.id, 'money_merch_misprint_frost_heave', 'the variant is dealt');
+      eq(S.merchItems(f2).find(x => x.id === 'misprint') ? S.merchItems(f2).find(x => x.id === 'misprint').name : S.misprintInfo(f2).name, 'FROST HEAVY shirts (misprint)');
+    } finally { GG.content.shopCards.pop(); }
+  }
+  // the solo card is the soloist's: Hail Damage's (Dana's) never goes to another band; the auto path still unlocks it
+  const gk = GG.career.newCareer({ seed: 5, bandId: 'gravel_kings' });
+  gk.era = 'local'; gk.eraHistory.push({ era: 'local', week: 2 }); gk.stats.songsWritten = 9; gk.totalWeek = 30;
+  ok(!S.forcedCard(gk) || !/^shop_solo/.test(S.forcedCard(gk).id), 'no Dana card for Gravel Kings');
+  gk.totalWeek = 2 + GG.content.economy.shop.soloAutoWeeks + 1;
+  S.weekly(gk, GG.rngFor(gk), {});
+  ok(S.ownsSection(gk, 'solo'), 'the solo arrives on its own');
+});
+
 done('sim_shop');
