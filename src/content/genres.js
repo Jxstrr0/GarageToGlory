@@ -10,7 +10,10 @@
 //              roles: { verse|chorus|bridge: [role x 4 bars] } role = sparse | full | break (strip to the heavy parts) | solo,
 //              vox: { hits: [[bar, step, voc, semis above the bar's chord, gang?]] (chorus only), drop: [voc, semis] | null,
 //                     brk?: [[bar of the breakdown run, step, voc, semis above the tonic]] },
-//              v0.7.2 (metal): tune { style: semitones } (tuning per tempo band), bassFloor (lowest bass midi), stabs, arps },
+//              v0.7.2 (metal): tune { style: semitones } (tuning per tempo band), bassFloor (lowest bass midi), stabs, arps,
+//              v0.9: amp (punk/rock: gain, level, pan, preHp, mid/presence [Hz, Q, dB], lp, detune, lag, ring; country: the
+//                    Tele's gain, bright, slap, slapFb, slapLv, slapPan), fiddle { body, bow, vib, pan }, acoustic { body,
+//                    sparkle, spread, level }, twoChords (punk), vox += resp, held, count, whoa (see the punk entry) },
 //   kit: { room, verb, level, six: 'ride'|'china', train (country rim/brush snare), kick, snare, hat, cymbal, toms, tomDec }
 //        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | scream | yeah | yeehaw | ooh),
 //   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
@@ -83,7 +86,10 @@
         keys: [-2, 2], mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         // brk: [[bar of the breakdown run, step, voc, semis above the tonic]] (growls after the drop)
-        vox: { hits: [[0, 0, 'scream', 24], [2, 0, 'scream', 24], [3, 8, 'scream', 19, true]], drop: ['growl', 12], brk: [[1, 8, 'growl', 7]] }
+        // v0.9 vocal diversity: 'scream' / 'growl' here are slots; each song (seeded by its id) and each chorus / breakdown
+        // picks its own scream type from GG.content.voices.types (shriek, mid scream, squeal, gang; growl, guttural, fry).
+        vox: { hits: [[0, 0, 'scream', 24], [2, 0, 'scream', 24], [3, 8, 'scream', 19, true]], drop: ['growl', 12], brk: [[1, 8, 'growl', 7]],
+          resp: [[1, 8, 'gang', 19]], held: [3, 8, 'held', 19, 8], count: ['shout', 12], whoa: [] }
       },
       // Tight, clicky kick and a high, sharp snare: built for double-kick runs. China on lane 6.
       kit: { room: 'room', verb: 0.3, level: 1, six: 'china',
@@ -127,11 +133,18 @@
           ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
         ]
       },
-      backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths']],
+      // v0.9: tempo decides (downstrokes, a skate-punk gallop, hardcore thrash with a half-time mosh chorus); Benny's
+      // two-chord "solo" takes the bridge; crunchy L/R double-tracked amps (amp), mid-forward, far less gain than metal.
+      backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths'], [200, 'skate', 'Skate-punk gallop'], [220, 'hardcore', 'Hardcore thrash']],
         progressions: { verse: [[0, 5, 7, 5], [0, 0, 5, 7], [0, 3, 5, 7]], chorus: [[5, 7, 0, 0], [3, 5, 7, 7], [7, 5, 0, 0]], bridge: [[5, 5, 7, 7], [3, 3, 5, 7]] },
         riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
-        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'full', 'full'] },
-        vox: { hits: [[1, 0, 'hey', 12, true], [3, 0, 'hey', 12, true], [3, 8, 'hey', 12, true]], drop: ['shout', 12] } },
+        roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
+        twoChords: [0, 5],   // Benny's entire vocabulary, relative to the bar's chord (I and IV)
+        amp: { gain: 9, level: 0.085, pan: 0.62, preHp: 120, mid: [1100, 0.9, 5], presence: [3000, 1.1, 2], lp: 5200, detune: 6, lag: 0.009 },
+        // hits: the singer's calls; resp: the band's gang answer (the crowd joins in when it's hot); held: the yell that
+        // closes a chorus; count: the first downbeat of a song. whoa: [[bar, step, steps]] backing whoa-ohs (+ a harmony).
+        vox: { hits: [[1, 0, 'hey', 12, true], [3, 0, 'hey', 12, true], [3, 8, 'hey', 12, true]], drop: ['shout', 12],
+          resp: [[0, 8, 'hey', 12], [2, 8, 'hey', 12]], held: [3, 8, 'yell', 12, 8], count: ['shout', 12], whoa: [] } },
       // Loose, trashy and bright: sloshy hats, a ringy snare, a china that sounds like a garbage-can lid.
       kit: { room: 'room', verb: 0.45, level: 1, six: 'china',
         kick: { f0: 150, f1: 48, glide: 0.08, dec: 0.36, body: 0.95, click: 0.35, clickHp: 2400 },
@@ -175,11 +188,15 @@
           ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
         ]
       },
-      backing: { root: 45, styles: [[0, 'rock', 'Big open chords']],
+      // v0.9: a power ballad under 90 BPM (also the Chartbusters' forced style 'ballad': every single they have), big open
+      // chords, driving 8ths from 140. Crunch amps double-tracked L/R; the open chords ring (amp.ring) over the chorus.
+      backing: { root: 45, styles: [[0, 'ballad', 'Power ballad'], [90, 'rock', 'Big open chords'], [140, 'drive', 'Driving 8ths']],
         progressions: { verse: [[0, 0, 5, 7], [0, 10, 5, 0], [0, 7, 5, 5]], chorus: [[5, 7, 0, 0], [0, 5, 7, 5], [10, 5, 0, 7]], bridge: [[3, 5, 7, 7], [9, 7, 5, 7]] },
         riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
-        vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null } },
+        amp: { gain: 5.5, level: 0.09, pan: 0.45, preHp: 90, mid: [800, 0.8, 3], presence: [2800, 1, 3], lp: 6000, detune: 4, lag: 0.012, ring: 0.2 },
+        vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null,
+          resp: [[1, 8, 'hey', 12]], held: [3, 8, 'wail', 19, 8], count: ['shout', 12], whoa: [[1, 0, 6], [3, 0, 6]] } },
       // Big, roomy kick and snare with lots of reverb (the strip-mall unit is all concrete). Ride bell on lane 6.
       kit: { room: 'hall', verb: 0.8, level: 1, six: 'ride',
         kick: { f0: 135, f1: 44, glide: 0.1, dec: 0.55, body: 1, click: 0.22, clickHp: 2000 },
@@ -222,11 +239,18 @@
           ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
         ]
       },
-      backing: { root: 43, styles: [[0, 'boomchick', 'Boom-chick']],
+      // v0.9: the two-step (boom-chick) and, from 108 BPM, the train beat (a walking bass, chicka strums). Earl takes the
+      // solo on a clean Tele with slapback (amp); Clementine's fiddle takes the fills and the outro (fiddle: body
+      // formants [Hz, Q, level] + bow noise); Travis strums a fuller acoustic (acoustic: body, sparkle, stereo spread).
+      backing: { root: 43, styles: [[0, 'twostep', 'Two-step'], [108, 'train', 'Train beat']],
         progressions: { verse: [[0, 0, 5, 7], [0, 5, 0, 7], [0, 7, 5, 0]], chorus: [[5, 0, 7, 0], [5, 5, 0, 7], [0, 5, 7, 7]], bridge: [[9, 5, 7, 7], [2, 7, 0, 0]] },
         riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
-        vox: { hits: [[0, 0, 'yeehaw', 19], [2, 0, 'ooh', 16]], drop: null } },
+        amp: { gain: 1.6, level: 0.2, pan: 0.3, bright: [2800, 1.2, 6], lp: 7000, slap: 0.11, slapFb: 0.18, slapLv: 0.5, slapPan: -0.35 },
+        fiddle: { body: [[290, 4, 1.3], [520, 3.5, 1], [1150, 3, 0.8], [2700, 2.5, 0.55]], bow: 0.22, vib: [5.6, 0.009], pan: -0.35 },
+        acoustic: { body: [110, 1.2, 6], sparkle: [3600, 0.8, 4], spread: 0.35, level: 0.42 },
+        vox: { hits: [[0, 0, 'yeehaw', 19], [2, 0, 'ooh', 16]], drop: null,
+          resp: [[1, 8, 'yeah', 12]], held: [3, 8, 'holler', 16, 8], count: ['yeehaw', 19], whoa: [[1, 0, 6], [3, 0, 6]] } },
       // Soft and dry: rim clicks on the train beat's backbeats, brushes on the rest (settings.brushes, default on).
       kit: { room: 'dry', verb: 0.2, level: 0.8, six: 'ride', train: true,
         kick: { f0: 115, f1: 52, glide: 0.08, dec: 0.28, body: 0.8, click: 0.06, clickHp: 1800 },
@@ -234,6 +258,80 @@
         hat: { hp: 7200, dec: 0.04, lv: 0.28 }, cymbal: { hp: 7600, f1: 4800, dec: 1.0, lv: 0.3 },
         toms: [175, 145, 118], tomDec: 0.3 },
       reactions: { great: 'Boot-scootin’.', good: 'Two-steppable.', meh: 'Lost the train.', bad: 'Derailed.' }
+    }
+  };
+
+  // v0.9 vocal diversity (owner popup 2026-09-30): who sings how, and what they shout. Played by 30_audio on the beat grid,
+  // in the song's key, under the voice caps. Nothing here is free-running: the timeline places every hit.
+  //   types[genre]: { chorus: [scream slot types], brk: [breakdown types], held: [section-end types] } (metal only; the
+  //     other genres keep their content voc and vary the words). A song picks its own pair (seeded by its id), and each
+  //     chorus entry / breakdown alternates between them, weighted by the singer's `screams`.
+  //   words[genre]: shouted words, count[genre]: count-in yells; a singer's own `words` come in at `wordChance`.
+  //   lex: word -> phonemes (vowels a e i o u ae oe ue; consonants h p t k b d g s z f v n m l r w y).
+  //   defaults[genre] / profiles[memberId] / rivals[rivalId]: a voice profile. pitch (semitones, then back into the key),
+  //     range [lo, hi] midi (octave-folded into it), formant (vowel-space scale: < 1 bigger throat), vowels (swaps: the
+  //     French ones), rasp 0..1 (grit + pitch jitter), drive (extra distortion), vib [rate Hz, depth], twang (dB of nasal
+  //     'ng' ring near 2 kHz), breath 0..1, scoop (semitones up into the note), screams { type: weight }, pan.
+  GG.content.voices = {
+    types: {
+      metal: { chorus: ['scream', 'shriek', 'squeal', 'gang'], brk: ['growl', 'guttural', 'fry'], held: ['held', 'shriekHeld'] }
+    },
+    words: {
+      metal: ['HAIL', 'DOOM', 'RISE', 'BURN', 'FROST', 'NIGHT', 'STORM', 'NO', 'SLEET', 'COLD'],
+      punk: ['HEY', 'OI', 'GO', 'NO', 'OUT', 'NOW', 'HO', 'YEAH', 'RIOT', 'LETS GO'],
+      rock: ['YEAH', 'WHOA', 'HEY', 'OW', 'ALRIGHT', 'TONIGHT', 'BABY', 'OH', 'COME ON', 'ROCK'],
+      country: ['YEEHAW', 'WHOO', 'HEY', 'YEP', 'LORD', 'HOWDY', 'OH', 'YEAH', 'GIDDYUP', 'HOME']
+    },
+    count: {
+      metal: ['HAIL', 'RISE', 'ONE TWO'], punk: ['ONE TWO', 'LETS GO', 'OI', 'GO'], rock: ['ALRIGHT', 'OW', 'HELLO'],
+      country: ['YEEHAW', 'HOWDY', 'ONE TWO']
+    },
+    lex: {
+      HEY: 'h e i', OI: 'o i', GO: 'g o u', NO: 'n o u', OUT: 'ae u t', NOW: 'n ae u', HO: 'h o u', YEAH: 'y e ae', RIOT: 'r a i o t',
+      'LETS GO': 'l e t s g o u', WHOA: 'w o o', OW: 'a u', ALRIGHT: 'a l r a i t', TONIGHT: 't u n a i t', BABY: 'b e i b i',
+      OH: 'o u', 'COME ON': 'k a m o n', ROCK: 'r o k', YEEHAW: 'y i h a', WHOO: 'w u u', YEP: 'y e p', LORD: 'l o r d',
+      HOWDY: 'h a u d i', GIDDYUP: 'g i d i a p', HOME: 'h o u m', HAIL: 'h e i l', DOOM: 'd u m', RISE: 'r a i z',
+      BURN: 'b oe r n', FROST: 'f r o s t', NIGHT: 'n a i t', STORM: 's t o r m', SLEET: 's l i t', COLD: 'k o u l d',
+      'ONE TWO': 'w a n t u', HELLO: 'h e l o u',
+      // Marcel's (the odd French word)
+      ALLEZ: 'a l e', NON: 'n o n', PELOUSE: 'p e l u z', ENCORE: 'a n k o r', OUI: 'w i', MERCI: 'm e r s i', 'MA PELOUSE': 'm a p e l u z',
+      // Rox, Chase, Travis Lee, the rivals
+      COUNCIL: 'k a u n s i l', VOTE: 'v o u t', COSTCO: 'k o s t k o', RECALL: 'r i k a l', LEATHER: 'l e d e r', FOREVER: 'f o r e v e r',
+      TRUCK: 't r a k', MAMA: 'm a m a', GRAVEL: 'g r a v e l', BUDDY: 'b a d i', WINTER: 'w i n t e r', OKAY: 'o u k e i',
+      TAILGATE: 't e i l g e i t', SPONSOR: 's p o n s e r'
+    },
+    defaults: {
+      metal: { pitch: 0, range: [50, 76], formant: 1, rasp: 0.3, screams: { scream: 2, shriek: 1, squeal: 1, gang: 1, growl: 2, guttural: 1, fry: 1, held: 1, shriekHeld: 1 } },
+      punk: { pitch: 0, range: [55, 74], formant: 1.05, rasp: 0.45, drive: 2, breath: 0.2 },
+      rock: { pitch: 2, range: [57, 79], formant: 1.03, rasp: 0.15, vib: [5.4, 0.018] },
+      country: { pitch: -2, range: [50, 71], formant: 1, twang: 4, vib: [5, 0.008], breath: 0.12 }
+    },
+    profiles: {
+      // Marcel: theatrical French-flavoured shrieks (front-rounded vowels, a wide fast vibrato on the held notes).
+      marcel: { pitch: 2, range: [55, 79], formant: 1.12, vowels: { u: 'ue', o: 'oe' }, rasp: 0.35, vib: [6.4, 0.014], scoop: -4,
+        screams: { shriek: 4, scream: 2, squeal: 1, gang: 1, growl: 1, guttural: 0.3, fry: 1, held: 1, shriekHeld: 3 },
+        words: ['ALLEZ', 'NON', 'PELOUSE', 'ENCORE', 'OUI', 'MERCI', 'MA PELOUSE'], wordChance: 0.3, count: ['ALLEZ'] },
+      // Rox: hoarse punk yells about city council.
+      rox: { pitch: -1, range: [53, 72], formant: 1.08, rasp: 0.75, drive: 5, breath: 0.35,
+        words: ['COUNCIL', 'VOTE', 'RECALL', 'COSTCO'], wordChance: 0.2, count: ['ONE TWO'] },
+      // Chase: it is still 1985. High tenor wails, wide vibrato, a scoop into every note.
+      chase: { pitch: 5, range: [60, 81], formant: 1.06, rasp: 0.18, vib: [5.6, 0.032], scoop: -3,
+        words: ['BABY', 'TONIGHT', 'LEATHER', 'FOREVER'], wordChance: 0.25, count: ['HELLO'] },
+      // Travis Lee: condo-raised country twang, a yodel flip, low and nasal.
+      travis: { pitch: -3, range: [48, 69], formant: 0.98, twang: 8, vib: [5, 0.01], breath: 0.15, yodel: true,
+        words: ['TRUCK', 'MAMA', 'GRAVEL', 'LORD'], wordChance: 0.25, count: ['HOWDY'] },
+      // The rivals' singers (their cast frontmen; 59d passes { rival } or { singer })
+      tw_gord: { pitch: -7, range: [40, 64], formant: 0.84, rasp: 0.55, screams: { guttural: 4, growl: 3, fry: 1, scream: 1, gang: 1, held: 1 },
+        words: ['BUDDY', 'WINTER', 'HAIL'], wordChance: 0.25, count: ['HAIL'] }
+    },
+    rivals: {
+      tundra_wraith: 'tw_gord',
+      // Blaze (really Kevin, from Oakville): a nasal, sponsor-approved pop-punk sneer, no grit at all.
+      mall_rats: { pitch: 3, range: [57, 76], formant: 1.14, twang: 5, rasp: 0.05, breath: 0.1, words: ['OKAY', 'SPONSOR', 'WHOA'], wordChance: 0.3 },
+      // Rex Glamour: a stadium falsetto in a July scarf; the same power ballad every single.
+      chartbusters: { pitch: 7, range: [62, 84], formant: 1.12, vib: [5.9, 0.038], breath: 0.3, scoop: -3, words: ['FOREVER', 'BABY', 'TONIGHT'], wordChance: 0.35 },
+      // Brayden: bro-country, dead-flat pitch (the truck brand paid for the tuning), every song about tailgates.
+      buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
     }
   };
 })(window.GG);
