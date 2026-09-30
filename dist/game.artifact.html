@@ -25278,11 +25278,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // both sides, a table with snacks, a TV, fairy lights), the band facing each other. cam = where you sit (the camera).
     var VTIER = [null,
       { id: 'fifteen', roof: 2.02, liner: 0xd8ccb0, trim: 0x6a6a72, dash: 0x2a2b30, fabric: 0x5a6a8a, paint: 0xf2efe6, rust: 0xb8b0a0, bench: true,
-        cam: { pos: [0.0, 1.48, 1.86], look: [-0.02, 1.2, -8], bandFov: 56, minHFov: 46 } },
+        cam: { pos: [0.0, 1.52, 1.72], look: [-0.02, 1.2, -8], bandFov: 56, minHFov: 46 } },
       { id: 'sprinter', roof: 2.32, liner: 0xd4d6d8, trim: 0x44474e, dash: 0x26282e, fabric: 0x383c44, paint: 0xe8e8ea, rust: 0xd0d2d6, bench: false,
         cam: { pos: [0.0, 1.52, 1.5], look: [-0.02, 1.26, -8], bandFov: 58, minHFov: 48 } },
       { id: 'bus', roof: 2.45, liner: 0x3a2a22, trim: 0x2a2a2e, dash: 0x1e1e22, fabric: 0x8a2a2a, paint: 0x1e1e22, rust: 0x2a2a2e, bench: false,
-        cam: { pos: [0.0, 1.62, 2.55], look: [-0.02, 1.24, -8], bandFov: 60, minHFov: 50 } }];
+        cam: { pos: [0.0, 1.7, 2.7], look: [-0.02, 1.2, -8], bandFov: 60, minHFov: 50 } }];
     function buildTier(b, gl, D, VT, liner, trim, fabric) {
       var t = D.tier, RY = VT.roof, s, i, night = D.night;
       for (s = -1; s <= 1; s += 2) {                                                              // walls up to the (higher) roof
@@ -25290,9 +25290,14 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         b.box(0.1, 0.95, 2.4, s * 0.9, 0.475, 2.4, trim);
       }
       b.box(1.9, RY - WS.y1 - 0.02, 0.1, 0, (RY + WS.y1) / 2, WS.z1 - 0.02, sh(liner, 0.9));       // header over the windshield
+      b.box(1.9, 0.03, 4.3, 0, 0.055, 1.3, t === 3 ? 0x4a3526 : 0x2a2826);                        // a longer floor (over the road)
       if (t === 1) {
-        b.box(1.72, 0.66, 0.14, 0, 0.74, 2.08, sh(fabric, 0.9), 0.1, 0, 0); b.box(1.72, 0.12, 0.52, 0, SEAT_Y - 0.06, 1.76, sh(fabric, 0.9));   // your row
-        for (s = -1; s <= 1; s += 2) { b.box(0.22, 0.28, 0.03, s * 0.5, 0.6, 1.07, 0x6a1a22); b.box(0.18, 0.04, 0.025, s * 0.5, 0.76, 1.07, 0xc9a24a); }   // hymnals
+        for (s = -1; s <= 1; s += 2) {                                                            // seat-back pockets with hymnals
+          b.box(0.5, 0.26, 0.03, s * 0.5, 0.82, 1.07, sh(fabric, 0.7), 0.1, 0, 0);
+          b.box(0.16, 0.22, 0.04, s * 0.5 - 0.08, 0.92, 1.08, 0x6a1a22, 0.1, 0, 0.08); b.box(0.16, 0.22, 0.04, s * 0.5 + 0.1, 0.9, 1.085, 0x1a3a6a, 0.1, 0, -0.05);
+          b.box(0.1, 0.03, 0.045, s * 0.5 - 0.08, 0.98, 1.085, 0xc9a24a, 0.1, 0, 0.08);
+        }
+        b.box(0.02, 0.6, 0.02, 0, 0.74, 1.06, sh(fabric, 0.6), 0.1, 0, 0);                        // the bench's seam
         b.box(0.8, 0.012, 0.16, 0, RY - 0.035, 0.6, 0xf2efe6); b.box(0.6, 0.014, 0.05, 0, RY - 0.037, 0.6, 0x3a2a70);                 // ST. VLAD'S
         b.box(0.22, 0.16, 0.02, 0.02, 1.18, -1.12, 0x8aa0b8);                                    // the trailer's reflector in the mirror (squeak)
       } else if (t === 2) {
@@ -25310,8 +25315,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           b.box(0.06, 0.4, 2.2, s * 0.94, 1.35, 1.3, 0x121418);                                  // dark side windows
           for (i = 0; i < 12; i++) gl.box(0.03, 0.03, 0.03, s * 0.9, RY - 0.08, -0.2 + i * 0.3, [0xffd46a, 0xff8a6a, 0x9ad0ff][i % 3]);   // fairy lights
         }
-        b.box(0.5, 0.05, 0.9, 0, 0.72, 1.3, 0x5a3d25); b.box(0.08, 0.7, 0.08, 0, 0.36, 1.3, 0x2a2a2e);   // the table
-        b.box(0.22, 0.03, 0.16, -0.08, 0.76, 1.1, 0xd8b030); b.cyl(0.035, 0.035, 0.12, 8, 0.12, 0.8, 1.45, 0x9ad13a); b.cyl(0.035, 0.035, 0.12, 8, -0.1, 0.8, 1.55, 0xc0302a);
+        b.box(0.4, 0.05, 0.7, 0, 0.62, 1.2, 0x5a3d25); b.box(0.08, 0.6, 0.08, 0, 0.31, 1.2, 0x2a2a2e);   // the table
+        b.box(0.18, 0.03, 0.13, -0.06, 0.66, 1.05, 0xd8b030); b.cyl(0.03, 0.03, 0.1, 8, 0.1, 0.7, 1.32, 0x9ad13a); b.cyl(0.03, 0.03, 0.1, 8, -0.08, 0.7, 1.4, 0xc0302a);
         b.box(0.64, 0.4, 0.05, 0.62, 1.55, 0.35, 0x151518, 0, -0.5, 0); gl.box(0.56, 0.32, 0.01, 0.6, 1.55, 0.37, night ? 0x2a5a9a : 0x4a8ac8, 0, -0.5, 0);   // the TV
         for (s = -1; s <= 1; s += 2) b.box(0.24, RY - 0.1, 0.06, s * 0.83, (RY - 0.1) / 2, 0.05, sh(liner, 0.8));   // the driver's partition: a wide doorway
         b.box(1.9, RY - 1.95, 0.06, 0, (RY + 1.95) / 2, 0.05, sh(liner, 0.8));
@@ -25327,7 +25332,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       else b.push(0, WS.y0 - 0.04, WS.z0 - 0.5, 0.14, 0, 0);
       for (i = 0; i < list.length; i++) {
         var h = GG.hashSeed ? GG.hashSeed(list[i].name) : i * 7, col = STICK_COLS[h % STICK_COLS.length];
-        var x = -0.72 + (i % 6) * 0.29 + ((h >>> 4) % 5 - 2) * 0.012, z = (bus ? -0.12 : -0.3) + Math.floor(i / 6) * (bus ? 0.16 : 0.26), rot = ((h >>> 8) % 9 - 4) * 0.08;
+        var x = -0.72 + (i % 6) * 0.29 + ((h >>> 4) % 5 - 2) * 0.012, z = (bus ? -0.12 : -0.42) + Math.floor(i / 6) * (bus ? 0.16 : 0.2), rot = ((h >>> 8) % 9 - 4) * 0.08;
         var w = 0.18 + ((h >>> 12) % 3) * 0.02, d = bus ? 0.1 : 0.12, y = bus ? 0.004 : 0.046;
         b.box(w, 0.004, d, x, y, z, col, 0, rot, 0);
         b.box(w * 0.7, 0.005, 0.02, x, y + 0.001, z, 0x1a1a1a, 0, rot, 0);                       // the venue's name (a black bar)
