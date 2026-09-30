@@ -22,7 +22,7 @@
 //   minivan (the cabin above), 1 the 15-passenger ex-church van + trailer (two bench rows ahead, hymnals, ST. VLAD'S), 2 the
 //   sprinter (high roof, captain seats, a touchscreen, LED strips, lockers), 3 the tour bus (the lounge: couches both sides, a
 //   table, a TV, fairy lights; the band faces each other). The newest 12 venue stickers (state.van.stickers or setTrip
-//   { stickers }) sit on the hood (the bus: on the dash), banned venues crossed out in red. info() adds tier, vehicle,
+//   { stickers }) sit on the hood (the bus: over the driver's doorway), banned venues crossed out in red. info() adds tier, vehicle,
 //   stickers, banned. A rental abroad (look) ignores the tier.
 // Draw calls ≈ sky 1 + sun/moon 1 + stars 1 + clouds 1 + ground 1 + road 1 + poles 1 + elevators 1 + farms 1
 //   + farm lights 1 + belts 1 + bales 1 + moose 1 + sign 2 + skyline 1 + weather 1-2 + glass 1 + wipers 1
@@ -600,7 +600,7 @@
       for (i = -1; i <= 1; i += 2) { b.box(0.05, 0.22, 0.05, i * 0.1, 0.13, -0.45, 0xd8c8a0, 0, 0, i * 0.4); b.box(0.2, 0.04, 0.05, i * 0.2, 0.25, -0.45, 0xd8c8a0, 0, 0, i * 0.3); }
       b.pop();
       if (VT) buildTier(b, gl, D, VT, liner, trim, fabric);                                     // v0.8: 15-passenger / sprinter / tour bus
-      if (!D.look) buildStickers(b, D);                                                        // v0.8: venue stickers on the hood (the bus: the dash)
+      if (!D.look) buildStickers(b, D);                                                        // v0.8: venue stickers on the hood (the bus: over the doorway)
       // Rear-view mirror: Kenji's sunglasses, the only part of his face anyone ever sees.
       b.box(0.03, 0.08, 0.03, 0.02, 1.8, WS.z1 + 0.06, 0x1e1e22);
       b.box(0.3, 0.09, 0.04, 0.02, 1.73, WS.z1 + 0.08, 0x1e1e22);
@@ -691,12 +691,12 @@
       }
     }
     // Venue stickers (state.van.stickers, newest 12) on the hood; banned venues crossed out in red. The bus has no hood: they
-    // go on the dash (moved over one by one, with a hair dryer).
+    // go over the driver's doorway in the lounge partition, facing the band (moved over one by one, with a hair dryer).
     var STICK_COLS = [0xf2d15b, 0xe86a9a, 0x4fb8e8, 0x6fe39a, 0xf28c28, 0xf2efe6, 0xb98cff, 0xd23c3c];
     function buildStickers(b, D) {
       var list = D.stickers || [], bus = D.tier === 3, i;
       if (!list.length) return;
-      if (bus) b.push(0, WS.y0 - 0.02 + 0.03, WS.z0 + 0.2, 0, 0, 0);
+      if (bus) b.push(0, 2.21, 0.08, Math.PI / 2, 0, 0);                                       // the partition header's face (z 0.08), rows go down
       else b.push(0, WS.y0 - 0.04, WS.z0 - 0.5, 0.14, 0, 0);
       for (i = 0; i < list.length; i++) {
         var h = GG.hashSeed ? GG.hashSeed(list[i].name) : i * 7, col = STICK_COLS[h % STICK_COLS.length];

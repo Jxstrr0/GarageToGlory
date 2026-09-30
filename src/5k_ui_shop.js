@@ -18,7 +18,7 @@
 // plays the collector moment once), ui.openGear(), ui.openMerch(), ui.playCollector(done).
 // testids: gear-kit-<tier>, gear-buy-<id>, gear-why-<id>, gear-section-<id>; merch-haul, merch-pile, merch-est, merch-last,
 // merch-misprint, merch-item-<id>, merch-toggle-<id>, merch-price-<id>, merch-price-down|up-<id>, merch-n-<id>,
-// merch-n-down|up-<id>, merch-buy-<id>; van-side, van-sticker (data-banned), van-name-input, van-rename, van-up-<id>,
+// merch-n-down|up-<id>, merch-buy-<id>; van-side, van-side-name, van-sticker (data-banned), van-sticker-more, van-name-input, van-rename, van-up-<id>,
 // space-move-<tier>, space-up-<id>, van-buy-<tier>; wrap-shop-*, btn-collector-ok. Debug: GG.debug('shopui').
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -121,6 +121,7 @@
      The merch table
      ====================================================================================================== */
   var buyN = {};   // boxes to buy per item (UI only)
+  var lastBuyAt = {};   // item id -> ms of the last "Buy N boxes" tap (double-tap guard)
   function step(p) { return p < 10 ? 1 : p < 40 ? 2 : 5; }
   function priceWord(price, sug) {
     var r = price / (sug || 1);
@@ -172,6 +173,9 @@
           el('b.val', { testid: 'merch-n-' + it.id }, n + ' box' + (n === 1 ? '' : 'es')),
           btn('.step', { testid: 'merch-n-up-' + it.id, 'aria-label': 'More boxes', disabled: n >= 10, onclick: function () { buyN[it.id] = Math.min(10, n + 1); s.rerender(); } }, '+')]),
         btn('.btn.small.grow' + (can.ok ? '.primary' : ''), { testid: 'merch-buy-' + it.id, disabled: !can.ok, onclick: function () {
+          var now = Date.now();
+          if (lastBuyAt[it.id] && now - lastBuyAt[it.id] < 400) return;   // a double tap buys once
+          lastBuyAt[it.id] = now;
           var r = SH().buyStock(S(), it.id, n);
           if (!r.ok) return nope(r);
           bought('stock', it.id, r); dbg.stock++;
@@ -199,7 +203,9 @@
         el('div.row', { testid: 'merch-est' }, [el('span.grow', ['🧮 Next gig, if it goes okay: ~', el('b', est.sold + ' sold'), ' · ~', el('b', money(est.earned))]), el('span.small.dim', '~' + est.crowd + ' people')]),
         el('div.tiny.dim', 'Made ' + money(v.earned) + ' so far · spent ' + money(v.spent) + ' on stock')
       ]);
-      var items = v.items.slice().sort(function (a, b) { return (b.unlocked - a.unlocked) || (table.indexOf(a.id) >= 0 ? -1 : 0) - (table.indexOf(b.id) >= 0 ? -1 : 0); });
+      // A fixed order (catalogue order, locked items last; sort is stable): "Put it out" / a buy never moves a card, so a
+      // quick second tap can't land on another item's button. On-table shows by the .on style only.
+      var items = v.items.slice().sort(function (a, b) { return b.unlocked - a.unlocked; });
       ui.append(s.body, el('div.stack', [status, misprintPanel(v.misprint), lastPanel(v.last),
         el('div.caps', 'Your merch · ' + table.length + ' on the table'),
         el('div.stack.tight', items.map(function (it) { return itemCard(s, st, it, table.indexOf(it.id) >= 0); })),
@@ -221,16 +227,18 @@
   }
   function txt(x, y, s, attrs) { var t = svg('text', Object.assign({ x: x, y: y }, attrs || {})); t.textContent = s; return t; }
   var BODY = [
-    { w: 250, h: 92, roof: 18, paint: '#7a2a2a', rust: true, windows: 3, wheels: [52, 200] },                          // rusted minivan
-    { w: 250, h: 104, roof: 10, paint: '#f2efe6', trailer: true, windows: 4, wheels: [48, 206], stripe: '#3a2a70' },  // 15-passenger + trailer
-    { w: 262, h: 122, roof: 6, paint: '#e8e8ea', windows: 3, wheels: [50, 214], stripe: '#2f6fd1' },                  // sprinter
-    { w: 300, h: 118, roof: 4, paint: '#1e1e22', windows: 6, wheels: [58, 238], stripe: '#b3141c', bus: true }         // tour bus
-  ];
+    { w: 250, h: 92, roof: 18, paint: '#7a2a2a', ink: '#f2efe6', rust: true, windows: 3, wheels: [52, 200] },                          // rusted minivan
+    { w: 250, h: 104, roof: 10, paint: '#f2efe6', ink: '#1a1a1a', trailer: true, windows: 4, wheels: [48, 206], stripe: '#3a2a70' },  // 15-passenger + trailer
+    { w: 262, h: 122, roof: 6, paint: '#e8e8ea', ink: '#1a1a1a', windows: 3, wheels: [50, 214], stripe: '#2f6fd1' },                  // sprinter
+    { w: 300, h: 118, roof: 4, paint: '#1e1e22', ink: '#f2d15b', windows: 6, wheels: [58, 238], stripe: '#b3141c', bus: true }         // tour bus
+  ];   // ink: the name on the door, readable on that paint (light on the dark minivan / bus, dark on the white vans)
   var ST_COLS = ['#f2d15b', '#e86a9a', '#4fb8e8', '#6fe39a', '#f28c28', '#f2efe6', '#b98cff', '#ff8a7a'];
   function short(name) { var w = String(name || '').replace(/^The /, '').split(/\s+/); return (w[0] || '').slice(0, 9).toUpperCase(); }
+  // A label that fits its 38px sticker: 7+ letters are squeezed to 34px (textLength) instead of running into the next one.
+  function fit(t, attrs) { if (t.length > 6) { attrs.textLength = 34; attrs.lengthAdjust = 'spacingAndGlyphs'; } return attrs; }
   ui.vanSide = function (st, o) {
     o = o || {};
-    var van = st.van || {}, tier = U.clamp(isFinite(o.tier) ? o.tier : van.tier || 0, 0, 3), B = BODY[tier];
+    var van = st.van || {}, tier = U.clamp(isFinite(o.tier) ? o.tier : van.tier || 0, 0, 3), B = BODY[tier], name = o.name || van.name || 'The van';
     var list = o.stickers || (SH() ? SH().stickers(st) : van.stickers || []);
     var W = 330, H = 170, x0 = 14, y0 = 150 - B.h - 22, kids = [];
     kids.push(svg('rect', { x: 0, y: 150, width: W, height: 20, fill: '#2a2d36' }));                                       // the road
@@ -251,25 +259,30 @@
     for (var i = 0; i < B.windows; i++) kids.push(svg('rect', { x: x0 + 12 + i * ww, y: y0 + 10, width: ww - 8, height: B.h * 0.28, rx: 3, fill: '#2a3a52', stroke: '#0c0e14', 'stroke-width': 1.5 }));
     if (!B.bus) kids.push(svg('path', { d: 'M' + (x0 + B.w - 64) + ',' + (y0 + 10) + ' H' + (x0 + B.w - 26) + ' L' + (x0 + B.w - 14) + ',' + (y0 + B.h * 0.38) + ' H' + (x0 + B.w - 64) + ' Z', fill: '#3a5070', stroke: '#0c0e14', 'stroke-width': 1.5 }));
     if (B.rust) [[40, 0.8], [150, 0.9], [210, 0.75]].forEach(function (r) { kids.push(svg('ellipse', { cx: x0 + r[0], cy: y0 + B.h * r[1], rx: 12, ry: 6, fill: '#9a5a2a', opacity: 0.85 })); });
-    kids.push(txt(x0 + B.w / 2 - (B.bus ? 0 : 20), y0 + B.h * 0.56, van.name || 'The van', { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 900, fill: B.bus ? '#f2d15b' : '#1a1a1a', 'font-style': 'italic', testid: 'van-side-name' }));
+    kids.push(txt(x0 + B.w / 2 - (B.bus ? 0 : 20), y0 + B.h * 0.56, name, { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 900, fill: B.ink, 'font-style': 'italic', testid: 'van-side-name' }));
     B.wheels.forEach(function (wx) {
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 17, fill: '#151518', stroke: '#0c0e14', 'stroke-width': 2 }));
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 7, fill: '#9aa0a8' }));
     });
     // stickers: a grid along the lower body, newest last; banned venues get a red X
-    var cols = Math.floor((B.w - 20) / 44), shown = list.slice(-cols * 2);
+    // (more than fit: the last slot of row 2 is a "+N more" tag instead of a sticker)
+    var cols = Math.floor((B.w - 20) / 44), shown = list.length > cols * 2 ? list.slice(-(cols * 2 - 1)) : list.slice();
     shown.forEach(function (x, k) {
       var h = GG.hashSeed ? GG.hashSeed(x.name || x.venueId || String(k)) : k, row = Math.floor(k / cols), c = k % cols;
       var sx = x0 + 14 + c * 44 + (h % 5), sy = y0 + B.h * 0.66 + row * 17 + ((h >>> 3) % 3), rot = ((h >>> 5) % 13) - 6;
       var g = svg('g', { transform: 'rotate(' + rot + ' ' + (sx + 19) + ' ' + (sy + 7) + ')', testid: 'van-sticker', 'data-banned': x.banned ? '1' : '0', 'data-venue': x.venueId || '' }, [
         svg('rect', { x: sx, y: sy, width: 38, height: 14, rx: 3, fill: ST_COLS[h % ST_COLS.length], stroke: '#0c0e14', 'stroke-width': 1 }),
-        txt(sx + 19, sy + 10, short(x.name), { 'text-anchor': 'middle', 'font-size': 7, 'font-weight': 900, fill: '#1a1a1a' }),
+        txt(sx + 19, sy + 10, short(x.name), fit(short(x.name), { 'text-anchor': 'middle', 'font-size': 7, 'font-weight': 900, fill: '#1a1a1a' })),
         x.banned ? svg('path', { d: 'M' + (sx - 2) + ',' + (sy - 2) + ' L' + (sx + 40) + ',' + (sy + 16) + ' M' + (sx + 40) + ',' + (sy - 2) + ' L' + (sx - 2) + ',' + (sy + 16), stroke: '#e0201a', 'stroke-width': 3, 'stroke-linecap': 'round' }) : null
       ]);
       kids.push(g);
     });
-    if (list.length > shown.length) kids.push(txt(x0 + B.w - 6, y0 + B.h - 4, '+' + (list.length - shown.length) + ' more', { 'text-anchor': 'end', 'font-size': 8, 'font-weight': 800, fill: B.bus ? '#f2efe6' : '#1a1a1a' }));
-    return el('div.van-side', { testid: 'van-side', data: { tier: String(tier) } }, [svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': (van.name || 'The van') + ', ' + list.length + ' stickers' }, kids)]);
+    if (list.length > shown.length) {
+      var mx = x0 + 14 + (cols - 1) * 44, my = y0 + B.h * 0.66 + 17, more = '+' + (list.length - shown.length) + ' more';
+      kids.push(svg('g', { testid: 'van-sticker-more' }, [svg('rect', { x: mx, y: my, width: 38, height: 14, rx: 3, fill: '#1a1a1a', stroke: '#f2efe6', 'stroke-width': 1 }),
+        txt(mx + 19, my + 10, more, fit(more, { 'text-anchor': 'middle', 'font-size': 7.5, 'font-weight': 800, fill: '#f2efe6' }))]));
+    }
+    return el('div.van-side', { testid: 'van-side', data: { tier: String(tier) } }, [svg('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': name + ', ' + list.length + ' sticker' + (list.length === 1 ? '' : 's') }, kids)]);
   };
   function perkText(p) {
     var out = [];
@@ -340,7 +353,7 @@
         return el('div.shop-row.dealer' + (v.current ? '.own' : !v.can ? '.locked' : ''), { testid: 'van-tier-' + v.tier }, [
           el('div.grow', [el('div.row', [el('b.grow', v.kind), el('span.tag', ERA[v.era] || v.era)]),
             el('div.small', [el('i', '“' + v.name + '”'), ' · hauls ' + v.space + ' boxes · comfort ' + v.comfort + '/5']),
-            ui.vanSide(st, { tier: v.tier, stickers: [] }),
+            ui.vanSide(st, { tier: v.tier, stickers: [], name: v.current ? st.van && st.van.name : v.name }),   // each vehicle's own name on its door
             el('div.small.dim', v.blurb),
             v.current ? null : el('div.small', { testid: 'van-quote-' + v.tier }, money(q.price) + ' − trade-in ' + money(q.tradeIn) + ' = ' + money(q.net)),
             !v.current && !v.can && v.why ? el('div.tiny.bad', v.why) : null,
@@ -398,7 +411,9 @@
     } else if (sh.rentLate) {
       out.push(el('div.panel.alert.small', { testid: 'wrap-rent-late' }, '⚠ Behind on rent: less than two weeks\' rent in the fund. Another week like this and the locks change.'));
     }
-    if (sh.rent) out.push(el('div.line-list.panel', { testid: 'wrap-rent' }, [el('div', [el('span', 'Rent · ' + SH().spaceDef(st, st.spaceTier || 0).name + ' (in upkeep)'), el('span.bad', '−' + money(sh.rent))])]));
+    // (evicted this week: the rent was for the room they just left, one tier up)
+    var rentRoom = SH().spaceDef(st, (st.spaceTier || 0) + (sh.evicted ? 1 : 0)).name;
+    if (sh.rent) out.push(el('div.line-list.panel', { testid: 'wrap-rent' }, [el('div', [el('span', 'Rent · ' + rentRoom + ' (in upkeep)'), el('span.bad', '−' + money(sh.rent))])]));
     (sh.unlocks || []).forEach(function (u) {
       if (u.kind === 'section') {
         var sd = (content().sections || {})[u.id] || { name: u.id, blurb: '' };

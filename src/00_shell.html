@@ -832,11 +832,14 @@ html.gg-calm .tw-disc, html.gg-calm .tw-pin.invite .ic { animation: none; }
 /* ==== end v0.8 CREATOR ==== */
 /* ==== v0.8 SHOP (5k_ui_shop: drum shop, merch table, garage door tabs, the collector moment; 54 six lanes + Solo/Outro) ==== */
 .sheet.shop .sheet-body { padding-top: 4px; }
-.shop-tabs { position: sticky; top: 0; z-index: 2; padding: 2px 0 10px; background: var(--panel); }
+.sheet.shop .sheet-head h2 { min-width: 0; overflow-wrap: anywhere; }   /* a 28-letter van name with no spaces wraps; ✕ stays on screen */
+/* sticky from the scrollport's edge (the body's 4px padding would leave a strip of scrolled content above the tabs) */
+.shop-tabs { position: sticky; top: -4px; margin-top: -4px; z-index: 2; padding: 6px 0 10px; background: var(--panel); }
 .shop-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); }
 .shop-row b { font-size: 15px; }
 .shop-row.own { border-color: #6a5a3a; background: linear-gradient(160deg, #2a2330, #1d2033); }
-.shop-row.locked { opacity: .72; }
+/* a locked row dims all but the why / how (.tiny.bad, .tiny.amber stay full strength: the only explanation) */
+.shop-row.locked > :not(.grow), .shop-row.locked > .grow > :not(.bad):not(.amber) { opacity: .72; }
 .shop-row > .btn, .shop-row > .tag { flex: 0 0 auto; }
 .shop-row .btn.small { min-width: 76px; padding: 0 10px; }
 .shop-row.dealer { align-items: flex-start; }

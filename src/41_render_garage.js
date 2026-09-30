@@ -10,7 +10,7 @@
 // v0.8 (SHOPUI): the rehearsal space by state.spaceTier (0 = the band's own start: the parents' garage; 1 Rent-A-Riff Jam
 // Room 3; 2 Prairie Dog Sound; 3 backstage at the Potash Place) with its bought upgrades (state.spaceUpgrades) visible and
 // the unsold merch box pile (GG.shop.pile(state).boxes) growing by the merch stack; see buildSpace. debug().space =
-// { tier, green, upgrades, boxes, pile (drawn), disco, door (the door hotspot's label), garage (garage-only shown), sign }.
+// { tier, green, upgrades, boxes, pile (drawn), disco, door (the door hotspot's label), garage (garage-only shown), sign, signText, obstacles }.
 // The drum kit (buildKit) is lane B's (R.kit.garage in 40_render_core). The character builder lives in 40 (R.charGeometry).
 (function (GG) {
   var R = GG.render;
@@ -574,11 +574,12 @@
     function walkToHotspot(action) {
       var h = hs[action];
       if (!h || !state || !player.p) return false;
-      var st = h.def.stand;
+      var st = standOf(h.def);
       player.pending = action; player.faceT = 0; player.faceYaw = h.def.face;
       startWalk(st[0], st[1]);
       return true;
     }
+    function standOf(def) { return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch)
     function clampX(x) { return clamp(x, ROOM.x0 + WALK.margin, ROOM.x1 - WALK.margin); }
     function clampZ(z) { return clamp(z, ROOM.z0 + WALK.margin, ROOM.z1 - WALK.margin); }
     function pushOut(x, z) {
@@ -767,7 +768,7 @@
 
       // Hotspot labels breathe; the one the player is heading for grows, the one he is using fades.
       for (i = 0; i < hsList.length; i++) {
-        var h = hsList[i], k = h.i * 0.9, big = player.pending === h.def.action ? 1.12 : 1, st = h.def.stand;
+        var h = hsList[i], k = h.i * 0.9, big = player.pending === h.def.action ? 1.12 : 1, st = standOf(h.def);
         var here = !player.walking && Math.abs(player.x - st[0]) < 0.3 && Math.abs(player.z - st[1]) < 0.3;
         h.fade += ((here ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));
         h.label.material.opacity = h.fade;
@@ -1293,7 +1294,7 @@
     // Potash Place (cinder block in arena blue, a steel door, EXIT, road cases, the hockey team's laundry, mirror bulbs).
     // A rented space hides the garage-only meshes (walls, sectional door, pegboard, stick, mower, heater, moon shafts) and
     // draws its own walls, floor, door and props; the band banner moves onto the wall beside the door. The upgrades the band
-    // bought (state.spaceUpgrades; content/shop.js upgrades) are visible where they'd stand: the curb couch (front edge, it
+    // bought (state.spaceUpgrades; content/shop.js upgrades) are visible where they'd stand: the curb loveseat (front edge, it
     // moves with you), Dad's beer fridge (by the outlet, moves), egg-crate foam, Christmas lights round the whiteboard, a
     // leather-ish couch, acoustic panels, a real PA, a disco ball (spins), the iso booth, the band lounge, the espresso cart,
     // mood LEDs, hot catering, green walls, a hot tub, a star on the door. The unsold merch boxes (GG.shop.pile(state).boxes)
@@ -1320,7 +1321,7 @@
       var stex = new THREE.CanvasTexture(sc);
       var sign = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshLambertMaterial({ map: stex }));
       sign.visible = false; scene.add(sign);
-      var cur = { tier: -1, room: '', ups: '', pile: '', boxes: 0, shown: 0, list: [], green: false, door: 'Garage door' };
+      var cur = { tier: -1, room: '', ups: '', pile: '', boxes: 0, shown: 0, list: [], green: false, door: 'Garage door', signText: '', couch: false };
       var tierObs = [], upObs = [], pileObs = [];
       var self = { obstacles: [] };
       function swap(mesh, b) {
@@ -1344,7 +1345,7 @@
         g.fillStyle = S.fg; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.font = '900 44px Impact, "Arial Black", sans-serif'; g.fillText(S.top, W / 2, 50, W - 30);
         g.font = '800 20px "Arial Black", Arial, sans-serif'; g.fillText(S.bot, W / 2, 96, W - 30);
-        stex.needsUpdate = true;
+        stex.needsUpdate = true; cur.signText = S.top + ' / ' + S.bot;
       }
 
       /* ---- the room, per tier ---------------------------------------------------------------------------- */
@@ -1485,15 +1486,15 @@
       function buildUps(list, tier) {
         var b = new ctx.Builder({ jitter: 0.04, seed: 101 }), g = new ctx.Builder({ jitter: 0, seed: 102 }), i, k, has = function (id) { return list.indexOf(id) >= 0; };
         upObs.length = 0;
-        if (has('curb_couch')) {                                                            // floral, from the curb, facing the kit
-          b.at(-0.55, 0, 2.42, Math.PI);
+        if (has('curb_couch')) {                                                            // floral loveseat, from the curb, facing the kit
+          b.at(-0.55, 0, 2.42, Math.PI);                                                    // (between the merch + laptop stands: see stand())
           var FB = 0xb08a3a;
-          b.box(1.02, 0.22, 0.56, 0, 0.26, 0, FB); b.box(1.02, 0.46, 0.14, 0, 0.58, -0.22, sh(FB, 0.92), -0.08);
-          b.box(0.13, 0.32, 0.58, 0.51, 0.44, 0, sh(FB, 0.85)); b.box(0.13, 0.32, 0.58, -0.51, 0.44, 0, sh(FB, 0.85));
-          for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.44 : -0.44), 0.07, (k < 2 ? 0.22 : -0.22), 0x3a2410);
-          for (k = 0; k < 9; k++) b.box(0.06, 0.06, 0.012, -0.38 + (k % 5) * 0.19 + (k > 4 ? 0.09 : 0), 0.46 + (k > 4 ? 0.2 : 0), -0.14, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
-          b.box(0.3, 0.02, 0.2, 0.18, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);                 // a stain shaped like Manitoba
-          obs(upObs, -0.55, 2.42, 1.1, 0.6, 0);
+          b.box(0.7, 0.22, 0.54, 0, 0.26, 0, FB); b.box(0.7, 0.46, 0.14, 0, 0.58, -0.21, sh(FB, 0.92), -0.08);
+          b.box(0.1, 0.32, 0.56, 0.35, 0.44, 0, sh(FB, 0.85)); b.box(0.1, 0.32, 0.56, -0.35, 0.44, 0, sh(FB, 0.85));
+          for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.3 : -0.3), 0.07, (k < 2 ? 0.21 : -0.21), 0x3a2410);
+          for (k = 0; k < 7; k++) b.box(0.06, 0.06, 0.012, -0.24 + (k % 4) * 0.16 + (k > 3 ? 0.08 : 0), 0.46 + (k > 3 ? 0.2 : 0), -0.13, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
+          b.box(0.24, 0.02, 0.18, 0.12, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);               // a stain shaped like Manitoba
+          obs(upObs, -0.55, 2.42, 0.8, 0.58, 0);
         }
         if (has('beer_fridge')) {                                                           // Dad's fridge, plugged into the outlet
           b.at(X1 - 0.25, 0, -0.45, -Math.PI / 2); g.at(X1 - 0.25, 0, -0.45, -Math.PI / 2);
@@ -1580,7 +1581,7 @@
             g.box(0.2, 0.02, 0.02, -0.32 + k * 0.32, 0.765, 0.105, 0x2f7fff);
           }
           for (k = 0; k < 5; k++) b.box(0.05, 0.02, 0.035, -0.1 + k * 0.05, 0.795, 0.1, 0xf0dca0);
-          obs(upObs, X1 - 0.3, -1.2, 0.5, 1.0, -Math.PI / 2);
+          obs(upObs, X1 - 0.3, -1.2, 1.0, 0.5, -Math.PI / 2);   // local sizes (1.0 wide, 0.5 deep), like the fridge
         }
         if (has('hot_tub')) {                                                               // next to the Zamboni; nobody asks how
           b.at(0.95, 0, 2.2, 0); g.at(0.95, 0, 2.2, 0);
@@ -1598,6 +1599,7 @@
         }
         swap(ups, b); swap(upsGlow, g);
         ball.visible = has('disco_ball');
+        cur.couch = has('curb_couch');
       }
 
       /* ---- the box pile ------------------------------------------------------------------------------------ */
@@ -1619,9 +1621,10 @@
             b.box(BOX.w * 1.1, 0.03, 0.006, 0, y, BOX.d / 2 + 0.004, 0xd0201a, 0, 0, -0.7);
           }
         }
-        if (n > PILE_MAX) {                                                                     // past the pile: a sign on a stick
-          b.at(-1.3, 0, 1.95, 0.5);
-          b.box(0.02, 0.9, 0.02, 0, 0.45, 0, 0x6b4a2e); b.box(0.42, 0.24, 0.02, 0, 0.95, 0, 0xf2efe6); b.box(0.32, 0.05, 0.004, 0, 0.99, 0.012, 0xb3141c); b.box(0.24, 0.03, 0.004, 0, 0.91, 0.012, 0x1a1a1a);
+        if (n > PILE_MAX) {                                                                     // past the pile: a sign on a stick, behind it
+          b.at(-2.0, 0, 0.84, 0.35);                                                            // (tall enough to show over the stack)
+          b.box(0.025, 1.62, 0.025, 0, 0.81, 0, 0x6b4a2e); b.box(0.42, 0.24, 0.02, 0, 1.62, 0, 0xf2efe6); b.box(0.32, 0.05, 0.004, 0, 1.66, 0.012, 0xb3141c); b.box(0.24, 0.03, 0.004, 0, 1.58, 0.012, 0x1a1a1a);
+          pileObs.push([-2.12, 0.74, -1.88, 0.94]);
         }
         var x0 = 9, z0 = 9, x1 = -9, z1 = -9;
         Object.keys(used).forEach(function (k) { var c = PILE_CELLS[k]; x0 = Math.min(x0, c[0] - 0.22); x1 = Math.max(x1, c[0] + 0.22); z0 = Math.min(z0, c[1] - 0.2); z1 = Math.max(z1, c[1] + 0.2); });
@@ -1652,7 +1655,7 @@
         var tier = st && isFinite(st.spaceTier) ? Math.max(0, Math.min(3, st.spaceTier | 0)) : 0;
         var list = st && Array.isArray(st.spaceUpgrades) ? st.spaceUpgrades.slice().sort() : [];
         var green = tier === 3 && list.indexOf('green_room') >= 0, band = GG.content.bands && GG.content.bands[st && st.bandId];
-        var roomSig = tier + '|' + green;
+        var roomSig = tier + '|' + green + '|' + (band ? band.name : '');   // the backstage sign names the band (a loaded save may differ)
         if (roomSig !== cur.room) {
           cur.room = roomSig; cur.tier = tier; cur.green = green;
           buildRoom(tier, green, band && band.name); hideGarage(tier);
@@ -1672,12 +1675,16 @@
         for (i = 0; i < upObs.length; i++) self.obstacles.push(upObs[i]);
         for (i = 0; i < pileObs.length; i++) self.obstacles.push(pileObs[i]);
       };
+      // Where the player stands at a hotspot in this space (null = the hotspot's own spot). The curb loveseat sits between the
+      // merch stack and the laptop, so with it in the room he stands a step wider of it at both.
+      var COUCH_STANDS = { laptop: [0.2, 2.38], merch: [-1.3, 2.2] };
+      self.stand = function (action) { return cur.couch && COUCH_STANDS[action] || null; };
       self.update = function (t) {
         if (ball.visible) { ball.rotation.y = t * 0.8; ball.position.y = 2.1 + 0.01 * Math.sin(t * 1.3); }
       };
       self.state = function () {
         return { tier: cur.tier, green: cur.green, upgrades: cur.list.slice(), boxes: cur.boxes, pile: cur.shown, disco: ball.visible, door: cur.door,
-          garage: garageOnly[0].visible, sign: sign.visible };
+          garage: garageOnly[0].visible, sign: sign.visible, signText: sign.visible ? cur.signText : '', obstacles: self.obstacles.map(function (o) { return o.slice(); }) };
       };
       return self;
     }

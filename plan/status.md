@@ -325,8 +325,17 @@ Later versions:
   walls), the unsold box pile by the merch stack (one box per box, up to 16 + a sign; the boxed misprint taped with a red
   X); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
   band's vehicle tier inside (15-passenger rows + hymnals, sprinter high roof + touchscreen, tour-bus lounge) + the newest
-  12 stickers on the hood (bus: the dash); info() tier / vehicle / stickers / banned.
-- Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (22) | space (15) | van (14) + contact sheet
+  12 stickers on the hood (bus: over the driver's doorway, on the lounge partition); info() tier / vehicle / stickers / banned.
+- Review fixes (after SHOPUI): merch cards keep catalogue order (locked last; on the table = the amber .on style only) and a
+  second "Buy" tap on the same card within 400 ms is ignored (a double tap bought twice / the wrong item); the catering
+  table's walk footprint matches the table; the curb couch is a floral loveseat (0.8 m) and, while it's in the room, the
+  laptop / merch stand points step aside (`space.stand(action)`); the MERCH overflow sign stands behind the box pile (tall,
+  with a footprint); the backstage BAND ROOM sign follows the loaded band (debug space.signText, space.obstacles); the
+  eviction week's wrap rent names the room they left; van side: the name ink suits the paint (light on the minivan / bus),
+  7+ letter sticker labels squeeze to the sticker, "+N more" takes the last slot, the car lot paints each vehicle's own
+  name (`vanSide(st, { name })`); a long van name wraps in the sheet title; locked shop rows dim all but the why / how;
+  the garage-door tabs stick flush to the sheet top.
+- Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (24) | space (21) | van (20) + contact sheet
   `tests/.cache/v08_shop_sheet.png`; pw_flow layout expects the merch table on the merch hotspot.
 
 ## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)

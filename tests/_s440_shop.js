@@ -21,7 +21,7 @@
 //   sheet: tiles the screenshots into tests/.cache/v08_shop_sheet.png.
 // Run: node build.js && META_ONLY=gear timeout 500 node tests/pw_shop.js
 const path = require('path'), fs = require('fs');
-const { open, checker } = require('./_pw');
+const { open, checker } = require('./_pw440');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
