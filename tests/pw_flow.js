@@ -92,7 +92,7 @@ async function flow() {
     await tap(page, 'btn-new');
     await tap(page, 'slot-1');
     await waitScreen(page, 'genre');
-    c.ok(!(await page.locator(tid('genre-punk')).isDisabled()), 'punk is playable (v0.9)');
+    c.ok(await page.locator(tid('genre-punk')).isDisabled(), 'punk is locked (until v0.9 ships)');
     await tap(page, 'genre-metal');
     await tap(page, 'btn-intro-next');
     await waitScreen(page, 'logo'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker (5m_ui_logo)

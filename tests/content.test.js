@@ -121,8 +121,8 @@ test('bands: four bands, one per genre, full schema', () => {
     eq(b.size, b.members.length + 1, w + ': size counts the player');
     ok(Array.isArray(b.coldOpen) && b.coldOpen.length >= 3 && b.coldOpen.length <= 5 && b.coldOpen.every(p => str(p, 160)), w + ': coldOpen 3–5 panels ≤160');
     ok(b.starterSongs.length === 2 && b.starterSongs.every(s => str(s.title, 60) && (s.titleEn === null || str(s.titleEn, 60))), w + ': 2 starter songs');
-    eq(b.locked, false, w + ' playable (v0.9: all four bands from the start)'); eq(b.comingIn, null, w + ' comingIn');
-    if (b.id === 'hail_damage') eq(b.space, 'parents_garage');
+    if (b.id === 'hail_damage') { eq(b.locked, false, w + ' playable'); eq(b.space, 'parents_garage'); }
+    else { eq(b.locked, true, w + ' locked until v0.9 ships'); eq(b.comingIn, 'v0.9', w + ' comingIn'); }
     ok(b.roles && b.homeRing && b.spaceShort && b.province && b.coldOpenFx && b.throne && b.firstGig, w + ': v0.9 band fields');
     for (const m of b.members) {
       const mw = w + ' member ' + m.id;
