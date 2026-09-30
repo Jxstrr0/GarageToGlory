@@ -44,6 +44,7 @@
   // else the v0.8.1 garage framing (cut-away front wall).
   var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45 };
   function photoKind(st) {
+    if (st && (st.spaceTier | 0) > 0) return 'garage';   // the rented rooms share the garage's footprint (and its rig)
     try { var G = GG.render && GG.render.garage; if (G && typeof G.spaceKind === 'function') return G.spaceKind(st) || ui.spaceKind(st); } catch (e) { /* fall through */ }
     return ui.spaceKind(st);
   }

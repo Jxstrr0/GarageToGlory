@@ -260,7 +260,8 @@
   function carpetLines(st) {
     var cp = V.awards().carpet, own = cp && !Array.isArray(cp) && Array.isArray(cp[st.bandId]) && cp[st.bandId].length ? cp[st.bandId] : null;
     if (!own && Array.isArray(cp) && cp.length && ui.ownLines(cp, st).length === cp.length) own = cp;
-    return own || (st.bandId === 'hail_damage' ? FB.carpet : FB.carpetAny);
+    // (lines by a bandmate who has since quit drop out with their question; nobody left -> the neutral '@role' set)
+    return ui.presentLines(own || (st.bandId === 'hail_damage' ? FB.carpet : FB.carpetAny), st) || FB.carpetAny;
   }
   function carpetIntro(st) {
     var c = castOf(st), t = c && c.carpet && c.carpet.intro;
@@ -356,6 +357,9 @@
     ui.append(card, shown.map(function (x, k) {
       var who = typeof x === 'string' ? null : x.who, txt = V.fill(typeof x === 'string' ? x : x.text);
       if (who === 'reporter' || !who) return el('p.lo-q' + (k === shown.length - 1 ? '.rv' : ''), [el('b', 'Red-carpet reporter: '), txt]);
+      // v0.9: a band's own local reporter (an npc, e.g. the Ramblers' Dolores from Speedy Creek 97) holds the mic in the reporter slot
+      var npc = GG.content.npcs && GG.content.npcs[who], mem = (st.members || []).some(function (m) { return m.id === who; });
+      if (npc && !mem && who !== rid) return el('p.lo-q' + (k === shown.length - 1 ? '.rv' : ''), { data: { who: who } }, [el('b', (npc.name || 'Red-carpet reporter') + ': '), txt]);
       if (who === 'wraith' || who === 'rival' || who === rid) return el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid || '' } }, [el('b', rivalName(st) + ': '), txt]);
       return V.react({ who: ui.speaker(who, st), text: txt });
     }));

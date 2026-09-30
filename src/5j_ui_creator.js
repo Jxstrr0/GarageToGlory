@@ -33,7 +33,7 @@
       spaceShort: (bandDef && bandDef.spaceShort) || 'the garage',
       band: o.band || bandName(st), st: st || C().draftState(genre, !!o.carry),
       look: C().expand(o.look || pl.look || null), stage: C().expand(o.stageLook || pl.stageLook || o.look || pl.look || null),
-      kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b'))),
+      kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b', bandDef && bandDef.id))),
       which: 'everyday', tab: 'body', view: 'full'
     };
     delete E.look.outfit; E.look.stageExtras = [];

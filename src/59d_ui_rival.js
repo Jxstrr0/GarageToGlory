@@ -309,7 +309,9 @@
   function rivalGenre(st) { var rv = RV().get(st), d = GG.content.rivals && GG.content.rivals[rv.id]; return rv.genre || (d && d.genre) || 'metal'; }
   function rivalStage(st, gig) {
     var R = RV(), rv = R.get(st), line = R.lineup(st), drum = line.filter(function (m) { return /drum/i.test(m.role || ''); })[0], c = castOf(st) || {};
-    var hired = !drum && c.drummer ? c.drummer : null;   // v0.9: Buckle & Boot's session guy (never the player)
+    // v0.9: a cast drummer who isn't in the lineup (Buckle & Boot's session guy, cast.drummer: an id or { id, name, look })
+    // is hired for the night; none at all -> drummer: null and the stage seats its own session drummer (never the player)
+    var hired = !drum && c.drummer ? (typeof c.drummer === 'string' ? (c.members || []).filter(function (m) { return m.id === c.drummer; })[0] || { id: c.drummer } : c.drummer) : null;
     return { venue: Object.assign({}, GG.gig.venue(gig.venueId) || {}, gig), crowd: GG.gig.expectCrowd ? GG.gig.expectCrowd(st, gig) : gig.capacity, capacity: gig.capacity,
       genre: rivalGenre(st), flags: {}, player: st.player, rival: true, rivalId: rv.id, view: 'spectator', banner: rv.name, sub: rv.city,
       members: line.filter(function (m) { return m !== drum; }).map(function (m) {
@@ -334,7 +336,10 @@
     var c0 = castOf(st) || {}, rid0 = rid(st);
     V = { gig: gig, set: set, kind: kind, next: next, i: -1, t: 0, songT: 0, ms: ui.rivalSongMs || 5200, raf: 0, last: 0, step: -1, handle: null,
       scores: set.setlist.map(function () { return null; }), shown: 0, moment: false, solo: false, stage: false, dom: null, ended: false,
-      genre: rivalGenre(st), style: c0.style || (rid0 === 'chartbusters' ? 'ballad' : null), singer: c0.frontman || null, rid: rid0,
+      // their genre + style from the showdown's rival (the sim: Chartbusters -> 'ballad'), else the cast; the cast's soloist
+      // (key present, even null = nobody solos) goes to the audio, else the genre's own solo
+      genre: (set.rival && set.rival.genre) || rivalGenre(st), style: (set.rival && set.rival.style) || c0.style || (rid0 === 'chartbusters' ? 'ballad' : null),
+      singer: c0.frontman || null, rid: rid0, soloist: Object.prototype.hasOwnProperty.call(c0, 'soloist') ? c0.soloist || null : undefined,
       actions: (c0.actions || (rid0 === 'mall_rats' ? ['kickflip'] : [])).filter(function (a) { return (C.RIVAL_ACTIONS || []).indexOf(a) >= 0; }), acted: false };
     // v0.9 (§4.4): the sim's showdown(kind).actions [{ song, at (0..1), action, who }] say when; else once in their first song
     V.acts = (Array.isArray(set.actions) && set.actions.length ? set.actions : V.actions.map(function (a) { return { song: 0, at: 0.55, action: a, who: null }; }))
@@ -378,6 +383,7 @@
       // rival: their singer and the genre's own solo (never the player's soloist, even in the same genre)
       var ao = { genre: V.genre, loop: true, singer: V.singer, rival: V.rid, band: V.rid };
       if (V.style) ao.style = V.style;
+      if (V.soloist !== undefined) ao.soloist = V.soloist;
       try { V.handle = GG.audio.play(V.pattern, ao); } catch (e) { V.handle = null; }
     }
     var st = S(), pool = banterPool(st, i === 0 ? (V.kind === 'final' ? 'final' : 'open') : 'mid');
