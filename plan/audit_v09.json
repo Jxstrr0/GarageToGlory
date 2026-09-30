@@ -1,0 +1,2647 @@
+[
+ {
+  "area": "sims",
+  "works": [
+   "Scope note: read-only audit of src/10_save.js, src/11_settings.js, src/20-2e sim files and tools/balance.js on branch v0.9-genres. No repo files were edited. I also ran bot careers from a scratchpad script through tests/_load: 3 seeds x 3 years for each band, avg bot. All four bands start, run and pass the balance invariants with no crashes. The evidence figures quoted in the findings come from that probe.",
+   "career.band() / newCareer (src/20_sim_career.js) builds everything from content/bands.js: members, genre, region, city and tier-0 space. Starter songs get genre-correct drum patterns, seeded by title. Choosing a band on the new-career screen only needs the UI to pass bandId.",
+   "The card gate system already supports band and genre gates (career.gatePasses GATE.band / GATE.genre). The Monday deck, holiday cards, tour cards, fan cards, shop cards, licensing cards, studio events (labels eventFits) and road cards (world.roadGatePasses) all use it. Per-band content therefore only needs gates, not new code.",
+   "Songs (src/21_sim_songs.js) handle all four genres: rate, generate, starter, signature, groove presets and mods, and tempo labels. content/genres.js and content/grooves.js cover all four. pickTitle uses the state.genre pool. Album title words and cover motifs, palettes and fonts are filtered by genre in labels.",
+   "Gig sim (src/22_sim_gig.js) is generic: venue genreFit exists for all 4 genres, GENRE_MOMENT plus its result line exists for all 4 (wallOfDeath / circlePit / lighters / lineDance), and charts, the two-thumb rule, doubles, difficulty, pay, fans and performance are genre-agnostic.",
+   "gig.roles() already finds front, solo and fill for every lineup: Frost Heave rox/benny/moth, Gravel Kings chase/lenny/tamara, Ramblers travis/earl/clementine. Solo and fill cues and chart easing work for all bands. Lineup sizes (3 or 4 bandmates) work in drama.roles, holes, split and avgSkill.",
+   "Van drivers are data-driven. content/road_cards.js GG.content.drivers has all four drivers (kenji, moth, tamara='T-Bone', earl) with mods. world.driver, driverMods, syncDriver, the 'you drive' fallback and road-card driver gates all work. Earl's chemistry mod and Moth's free repair are applied in world.travel and repairQuote.",
+   "world.home() = state.city resolves Regina, Swift Current and Edmonton on content/map.js. Gas, km and routes work from any home.",
+   "Shop (src/2a_sim_shop.js): the tier-0 space comes from band.space/spaceName (laundromat_basement, strip_mall_unit, quonset). vanNames exist per band per tier in content/shop.js and shop.init renames the van for a new career. Merch honours def.band and def.genre, and every band has its own limited item. Gear names are per genre (china vs ride).",
+   "Drama machinery is generic: roles and holes, fill-ins, recruit ads, candidates, hire, pay cut and split, grievance stages and protection. Recruit names and shirt palettes per genre already exist in content/recruits.js.",
+   "Rival sim (src/23_sim_rival.js) is generic apart from content: rival id comes from band.rival; the parallel career, heat, scheduling of botb/sameNight/stolenSlot/festival/poach, resolve, crack, the Sad Dome final and Loonie strength all work; name, city and genre come from content.rivals. content/logo.js has fixed logos for all 4 rivals.",
+   "Labels (src/24_sim_labels.js) are generic: offers, deals, studio sessions, releases, reviews with genre outlet weights, charts, royalties, certs and Loonies. The album category is genre-prefixed. rivalLines already reads awards.rivalThanks[rivalId] and rivalLoses[rivalId]; only the content is missing.",
+   "Tour (src/25_sim_tour.js) is generic: the region fit table covers all four genres, and region unlocks, invites, big-in-one-place, homesickness, the Gong, packages and bots work. Band-gated queued story cards are dropped cleanly.",
+   "Calendar (src/28_sim_calendar.js): genreSeason and genreKinds cover all four genres; weather comes from city climate; holidays and the Grey Mug are generic.",
+   "Fans (src/29_sim_fans.js): posts, virality, fan types, fan club, mail and gifts, and scandal machinery are generic. Scandals are filtered by isActive(who), so other bands get no bad member-specific scandal, only none.",
+   "Creator (src/2b_sim_creator.js) is fully generic: genreStart gates and per-genre carry-over. Logo (src/2e_sim_logo.js) is generic: per-band defaults in content, per-genre carry, rebrand; chat simply skips lines when no member matches.",
+   "Licensing (src/2c_sim_licensing.js): brands are genre-weighted, and the Buckle & Boot fury hook plus the lic_fury card (gated to the Ramblers, speaker travis) are already wired. Recap (src/2d_sim_recap.js) numbers and headline events are generic; headlines use {band}.",
+   "Save and settings (src/10_save.js, src/11_settings.js): slots, codes, the migration chain and summary are band-agnostic; the summary uses band.name."
+  ],
+  "findings": [
+   {
+    "file": "/home/user/GarageToGlory/src/26_sim_world.js",
+    "line": 141,
+    "assumes": "Canada rings open by era with Saskatchewan open from day one (cityOpen/ringOpen). farListings (L248-252) treats any ring other than the home ring as 'far'. For Gravel Kings the home city Edmonton is in ring 'west', which is closed in the garage era. Probe: the Gravel Kings garage-era board averages 1.0 listing at an average of 618 km; over 3 years the band averages 15.5 parents' loans (Hail Damage 0.5) and 424 km per gig.",
+    "needs": "Code: open the band's home ring from week 1. Define 'far' relative to home (Saskatchewan becomes the far ring for Gravel Kings). Possibly add a per-band ring order in bands.js. Content: tier-1 and tier-2 Edmonton-area venues. Edmonton has only mega_mall_food_court (tier 2) and oilfield_orpheum (tier 3). Consider Alberta satellites (St. Albert, Sherwood Park, Leduc are the members' hometowns). Rebalance world.scene for a non-Saskatchewan home.",
+    "size": "M",
+    "couples": [
+     "src/content/map.js",
+     "src/content/venues.js",
+     "src/content/economy.js (world.scene/farListings)",
+     "src/23_sim_rival.js botbVenue/sameNight",
+     "src/56_ui_board.js (ring map)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 496,
+    "assumes": "The forced week-1 gig is always buddys_house_party (Saskatoon). Probe: Frost Heave drives 239 km ($120 gas), Gravel Kings 528 km ($264), the Ramblers 245 km. The forced week-1 card is 'lord_abyssus' (Hail Damage only, cards.js L49), so the other bands get no week-1 card.",
+    "needs": "A band.firstGig field in bands.js, read by newCareer. Frost Heave can use craigs_basement (Regina). The Ramblers can use speedy_creek_skate_bowl or a new farm/Quonset party venue. Gravel Kings needs a new Edmonton house party. Also one forced week-1 intro card per band.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js",
+     "src/content/venues.js",
+     "src/content/cards.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 121,
+    "assumes": "fillText supports only fixed-id tokens ({name:<id>}, {nick:<id>}). Fallbacks are {rival} -> 'Tundra Wraith' (L125) and {city} -> 'Saskatoon' (L129). Shared content therefore hard-codes Hail Damage names. Probe: other bands see venue quirks like 'Marcel is six foot one', breakdown lines like 'The Moose Hearse died... Kenji', and calendar lines like 'six Marcels'.",
+    "needs": "Add role and band tokens so shared text can be band-agnostic: {front}, {lead}, {bassist}, {fill}, {driver}, {van}, {space}, {homeVenue}, {superfan}, {rivalFront}. They resolve from gig.roles, world.driver, van.name, band.spaceName and the rival cast. Neutral fallbacks for {rival} and {city}. Then sweep content to use them.",
+    "size": "M",
+    "couples": [
+     "src/content/lines.js",
+     "src/content/venues.js (quirks)",
+     "src/content/calendar.js",
+     "src/content/road_cards.js",
+     "src/content/world.js",
+     "src/content/bandbook.js",
+     "src/29_sim_fans.js fill (gcity 'Saskatoon', venue 'the Legion' fallbacks L99-104)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 608,
+    "assumes": "Activity block lines (contentLines('activity', id)) are one global pool of Hail Damage text. Weekly chat (postWeeklyChat L788-798) is keyed by member id; only marcel, dana, jaxon and kenji exist, so new members fall back to the generic 3-line FALLBACK_LINES.chat. gigReactions (22_sim_gig L118-124) behave the same way. Probe: 'Kenji stood perfectly still', 'We ran My Lawn, My Tomb eleven times' and 'Baba sent perogies' appear in Frost Heave, Gravel Kings and Ramblers block lines.",
+    "needs": "Code: a band-scoped content resolver, e.g. lines.bands[bandId][key] before lines[key], or a per-line band tag; use it in contentLines/pickLine so every sim benefits. Content: activity lines per band. chat, gigReactions and songReactions for the 10 new members (rox, benny, moth, chase, lenny, tamara, travis, earl, clementine, duke).",
+    "size": "L",
+    "couples": [
+     "src/content/lines.js",
+     "src/22_sim_gig.js reactions()",
+     "src/26_sim_world.js pickLine",
+     "src/52_ui_week.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 372,
+    "assumes": "The Monday deck is driven by content, and every g() card in cards.js is gated to hail_damage + metal. Probe (8 seeds x 3 yrs): other bands draw 10-15 cards against 67 for Hail Damage, with about 60 of 72 weeks having no card. They get about half the fans (Frost Heave 1418, Ramblers 1722, Gravel Kings 2098 against Hail Damage 3152) and less money.",
+    "needs": "A Monday deck per band: drama, money, scene, weird, guilt, local and signed cards plus one storyline chain each (the Cape Saga equivalent), or generic cards written with role tokens. After that, rerun balance for each band.",
+    "size": "L",
+    "couples": [
+     "src/content/cards.js",
+     "tools/balance.js",
+     "src/content/economy.js (quietWeekChance)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 668,
+    "assumes": "The hustle grumbler is activities.js grumbler 'marcel'. It silently falls back to the first member (Rox, Chase, Travis).",
+    "needs": "A per-band grumbler, either a member flag in bands.js or a map in activities keyed by bandId.",
+    "size": "S",
+    "couples": [
+     "src/content/activities.js",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 64,
+    "assumes": "The hard-coded MILESTONES text fans250 is 'The Gopher Hole knows your name', a Saskatoon venue. localHeroes says 'the garage era is over'. FALLBACK yearEnd says 'Another year in the garage'. lines.milestones does not exist in content, so every band sees these.",
+    "needs": "Neutral or tokenised milestone text ({homeVenue}, {space}), or per-band lines.milestones in content.",
+    "size": "S",
+    "couples": [
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/21_sim_songs.js",
+    "line": 586,
+    "assumes": "songs.reactions hard-codes marcel (names the song), dana (solo), jaxon (fills) and kenji (nod), plus the French-title sigh. Probe: 100% of songs written by Frost Heave, Gravel Kings and the Ramblers get no reactions.",
+    "needs": "Reactions by role (namer = gig.roles.front, solo wanter = roles.solo, fill sneaker = roles.fill, quiet/nod = a 'silent' member flag), or a per-band reaction table with per-band triggers. Examples: Benny refuses a third chord when difficulty is high; Lenny says 'sounds like a famous riff' when songs.similarity is high; Earl 'played on the original'; Duke's hat. Content for 10 members.",
+    "size": "M",
+    "couples": [
+     "src/content/lines.js songReactions",
+     "src/54_ui_sequencer.js",
+     "src/52_ui_week.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/21_sim_songs.js",
+    "line": 446,
+    "assumes": "The title gag (withSuffix/marcelIn L443) is Marcel-only French. The punk, rock and country pools in content/song_titles.js have 8 titles each against 46 for metal. Bots write about 30 songs in 3 years, so non-metal bands hit 'II'/'III' sequels after about 8 songs. 'Snow Route Parking Ban' duplicates a Tundra Wraith song.",
+    "needs": "Content: about 40 titles per genre. Optional per-band title quirk hook (e.g. Lenny's '(Legally Distinct)'). The sequencer's reroll label 'Another title from Marcel' needs a band-neutral version.",
+    "size": "M",
+    "couples": [
+     "src/content/song_titles.js",
+     "src/54_ui_sequencer.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/22_sim_gig.js",
+    "line": 493,
+    "assumes": "The only frontman stage moment is capeSpin (capeOn L206, cfg capeCombo L196, reaction lines L653). It needs flags.cape from the Hail Damage Cape Saga, so other bands have no frontman moment. The drama spotlight RULE (27_sim_drama L132) keys off capeSpin as well.",
+    "needs": "A per-band signature moment defined in content (bands.js member.signature {id, combo, flag?, lines}). Examples: Rox's council rant, Chase's knee slide or leather pants, Duke's hat toss. Generalise session, finishLive, the RULES spotlight and gig:band actions to use it.",
+    "size": "M",
+    "couples": [
+     "src/27_sim_drama.js RULES",
+     "src/55_ui_gig.js",
+     "src/42_render_stage.js",
+     "src/30_audio.js crowd:moment",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/22_sim_gig.js",
+    "line": 626,
+    "assumes": "LIVE_LINES are hard-coded in Hail Damage voices: the solo line 'saw Norway' (Dana), the fill line 'i did a fill. you kept up' (Jaxon's lowercase voice), and capeSpin. Other bands' solo and fill players (Benny, Lenny, Earl, Moth, Tamara, Clementine) get these lines.",
+    "needs": "Move them to content per band or role (lines.live[bandId]) and give each soloist and filler their own lines.",
+    "size": "S",
+    "couples": [
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/22_sim_gig.js",
+    "line": 492,
+    "assumes": "The 'mosh' crowd moment fires for every genre at combo 30. There is only one genre moment per genre (GENRE_MOMENT L203, at crowd >= 85). The v0.9 roadmap item 'genre moments' is not built.",
+    "needs": "A per-genre moment table from content: punk stage dive or circle pit, rock lighters and encore, country two-step and yeehaw. Each needs thresholds, crowd deltas, result lines and a genre variant of the mosh moment.",
+    "size": "M",
+    "couples": [
+     "src/content/genres.js",
+     "src/55_ui_gig.js",
+     "src/42_render_stage.js",
+     "src/30_audio.js (crowd:moment kinds)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 118,
+    "assumes": "Only tundra_wraith has a cast. castMembers defaults corpsePaint to true and stageShirt to black (L122). syncLineup always puts defectors in corpse paint (L178). Probe: rival.members is empty for Mall Rats, Chartbusters and Buckle & Boot, so the Battle of the Bands rival set has no band on stage.",
+    "needs": "Content casts per the owner decisions: Mall Rats (Blaze/Kevin from Oakville, the bassist who never plugs in, the jawline drummer, Siobhan the stylist), Chartbusters (Rex Glamour with the July scarf, drummer Steve #5, etc.), Buckle & Boot (Brayden, Colt, the pickup-costume mascot). Each cast needs members, looks, songs, albums, rebrands, label and vehicle. Code: default corpsePaint to false and add a per-cast defector look (corpse / stylist makeover / rhinestones).",
+    "size": "L",
+    "couples": [
+     "src/content/rivals.js",
+     "src/59d_ui_rival.js",
+     "src/42_render_stage.js",
+     "src/content/npcs.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 105,
+    "assumes": "lines(key) reads one global news pool, and it is all Tundra Wraith flavour (Gord, veggie trays, Winnipeg, 'pals from Saskatoon'). Probe: 'Mall Rats passed 1,000 fans. Gord posted...' and 'Buckle & Boot... fruit basket'.",
+    "needs": "Per-rival news (cast[rivalId].news[key] or news[rivalId][key], falling back to neutral) and news content for the 3 rivals.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 493,
+    "assumes": "texts(kind) reads one global showdowns pool (botb, sameNight, stolenSlot, festival, loonies, poach, final), full of Gord and 'buddy'. Probe: 'Most of the scene picked your show. Chartbusters texted... buddy'.",
+    "needs": "showdowns[rivalId][kind] with a neutral fallback, plus content for 3 rivals.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js",
+     "src/59d_ui_rival.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 444,
+    "assumes": "Rival cards use fixed ids: rv_poach (L444), rv_crack_<kind> (L631) and rv_final_eve. Their text is Gord and Tundra Wraith ('Tundra Wraith Break Up', speaker wraith_frontman) and they are dealt to every band (probe: 'Buddy!' rv_poach for Frost Heave, Gravel Kings and the Ramblers).",
+    "needs": "Resolve the card id per rival (cast.cards map or '<id>_<rivalId>', falling back to the base id), a frontman npc per rival in npcs.js, and 3 x 5 cards.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js",
+     "src/content/npcs.js",
+     "src/20_sim_career.js cardById"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 499,
+    "assumes": "The showdown setlist falls back to ['Eternal Winter'] (probe: 'Eternal Winter' x3 for all 3 new rivals). BPM is rng.int(150,220) for every genre (L504). Album release falls back to 'Eternal Winter' (L225); probe: Mall Rats release 'Eternal Winter (Deluxe)'. The label falls back to 'monolith' (L210).",
+    "needs": "Cast songs, albums and label for each rival. Set BPM from GG.content.genres[rival.genre].tempo.",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js",
+     "src/content/genres.js",
+     "src/59d_ui_rival.js",
+     "src/30_audio.js (rival set)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 715,
+    "assumes": "The scene leaderboard adds every filler row, including mall_rats_scene, chartbusters_scene and buckle_boot_scene. When one of those is your rival it is listed twice (probe: 2 rows with the rival's name). Tundra Wraith has no filler row, so it disappears for other bands. All filler bands are in Saskatchewan or Winnipeg.",
+    "needs": "Skip scene rows that match the current rival (by name or logo.same). Add a tundra_wraith_scene filler. Consider Alberta filler bands for Gravel Kings.",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js scene",
+     "src/content/logo.js rivals",
+     "src/2d_sim_recap.js scene rank",
+     "src/59d_ui_rival.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/23_sim_rival.js",
+    "line": 336,
+    "assumes": "SCHEDULE.festival uses the rivalry festival venues from content. Their catch text literally says 'Tundra Wraith headline...', and genreFit FIT is metal-weighted (country 0.6). All festivals are in Saskatchewan and one is 'Queen City Mosh-Fest', even for country or rock rivals. Separately, world.shape (26_sim_world L363) adds 'frontman... calls you buddy. Twice.' when you open for any rival.",
+    "needs": "Use {rival} in catch text, set per-genre fit, add an Alberta festival for Gravel Kings, give festivals genre variety, and move the opening line into the rival cast.",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js venues",
+     "src/26_sim_world.js",
+     "src/56_ui_board.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/24_sim_labels.js",
+    "line": 1263,
+    "assumes": "speechCard/speech ignore the card's gate {band:['hail_damage']}. Every band gets Marcel's speech (speaker marcel, 'Thank the moose', 'Take a shot at Tundra Wraith'; probe confirms 'loonie_speech/marcel' for all four). speechWorstVan (Kenji, Moose Hearse) behaves the same. FALLBACK_SPEECHES (L140) are moose/Tundra too. The wraithFeud flag feeds rival heat (23_sim_rival L733).",
+    "needs": "Check gatePasses. Support per-band speech and worst-van cards (awards.speech as a list or bandId map). Write content for 3 bands. Use a generic rivalFeud flag.",
+    "size": "S",
+    "couples": [
+     "src/content/awards.js",
+     "src/59c_ui_awards.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/24_sim_labels.js",
+    "line": 1281,
+    "assumes": "All outfitCards are gated to hail_damage (cape-aware), so outfitCard returns null for other bands. They get no red-carpet moment, silently.",
+    "needs": "Per-band red-carpet outfit cards (Rox, Chase's leather pants, Duke's hat, etc.). The UI must tolerate null in the meantime.",
+    "size": "M",
+    "couples": [
+     "src/content/awards.js",
+     "src/59c_ui_awards.js",
+     "src/44_render_carpet.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/24_sim_labels.js",
+    "line": 148,
+    "assumes": "rivalThanks/rivalLoses are keyed by rival id, but only tundra_wraith has content. Other rivals fall back to FALLBACK_THANKS ('Tundra Wraith win...', L148) and a literal 'Tundra Wraith give you a standing ovation' (L1238). otherNominees (L1166) falls back to FALLBACK_OTHERS, metal and prairie joke bands, for every genre.",
+    "needs": "Neutral {rival} fallbacks, rivalThanks and rivalLoses content for the 3 rivals, and awards.nominees per genre (the {genre:[...]} shape is already supported).",
+    "size": "S",
+    "couples": [
+     "src/content/awards.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/24_sim_labels.js",
+    "line": 283,
+    "assumes": "Label demands copy lab.demands with no band or genre filter. Monolith's 'english' demand is 'Marcel should sing in English', and image/radio carry cards gated to hail_damage; Gopherwood's showcase card has speaker baba. For other bands the carded demand never settles: the weekly check at L1049-1055 only auto-settles demands with no card, and pendingDemand skips carded ones. Those demands hang forever.",
+    "needs": "A band/genre filter on demands or per-band variants. Settle 'half' when a demand's card can never pass its gate. Write signed_* cards for 3 bands.",
+    "size": "S",
+    "couples": [
+     "src/content/labels.js",
+     "src/content/cards.js signed_*",
+     "src/59_ui_label.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/24_sim_labels.js",
+    "line": 569,
+    "assumes": "studioEvent draws from albumWords.studioEvents. Many of these have Hail Damage member speakers (dana, jaxon, marcel, kenji, baba) and no band gate. Probe: Gravel Kings got studio_dana_take_41 and studio_nail_salon. The studios moms_basement and strip_mall_sound are fixed to Saskatoon.",
+    "needs": "Band gates on member studio events and per-band studio events. A generic sim guard that rejects any card whose speaker is a member id missing from the band. Set studio city to {city} or per band.",
+    "size": "M",
+    "couples": [
+     "src/content/album_words.js",
+     "src/content/labels.js studios",
+     "src/59b_ui_studio.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/25_sim_tour.js",
+    "line": 601,
+    "assumes": "callHome excludes 'kenji' by id. Its pools are keyed by member id (Hail Damage only), and the generic pool says 'It's 4 a.m. in Saskatoon'. Tour chat lines are also Hail Damage: lines.depart.japan (Marcel's cape) and .russia (Jaxon, Baba) at L467; lines.home ('Moose Hearse', 'Back in Saskatoon') at L597; lines.rival ('Tall accountant? Veggie tray?') at L696. The Paris roses line at L405 is Marcel-only.",
+    "needs": "callHome for the 10 new members, and {city}/{van}/{rival} tokens in the depart, home and rival lines (or per-band variants). Optional per-band city moments, e.g. Clementine in Montr\u00e9al or Paris.",
+    "size": "M",
+    "couples": [
+     "src/content/world.js",
+     "src/5i_ui_tour.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/25_sim_tour.js",
+    "line": 668,
+    "assumes": "wt_homesick is force-queued for every band. Its speaker is dana and it has no gate, so Dana speaks in Frost Heave, Gravel Kings and Ramblers careers. The world cards wt_uk_rain ('the cape is wet') and wt_au_spider (both speaker dana) are also ungated.",
+    "needs": "Queue wt_homesick with q.who set to a talking member and use speaker 'recruit', or add per-band variants. Band-gate the member-voiced world cards and write region cards for 3 bands.",
+    "size": "S",
+    "couples": [
+     "src/content/world.js cards"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/25_sim_tour.js",
+    "line": 640,
+    "assumes": "The World-era payoff is the Moose Opera: the Helsinki package with needs 'moose' (L293/303), moose() (L640), and the Gong 'moose' bonus (L710). All of it requires flags.mooseAlbum from Marcel's moose chain, so other bands have no World payoff and a weaker Gong case.",
+    "needs": "A per-band World payoff: package.needs keyed to a band flag, plus a storyline chain and cards for each band. Otherwise, rebalance the Gong without the moose bonus.",
+    "size": "M",
+    "couples": [
+     "src/content/world.js packages/cards",
+     "src/content/cards.js chains",
+     "src/5i_ui_tour.js",
+     "tools/balance.js (moose stat)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/26_sim_world.js",
+    "line": 501,
+    "assumes": "When the designated driver returns, syncDriver posts the 'back behind the wheel' chat as 'jaxon', hard-coded. Probe: jaxon appears in the Frost Heave, Gravel Kings and Ramblers group chats.",
+    "needs": "Post the line as the returning driver (cur). The per-driver back and takeOver lines already exist in content.drivers.",
+    "size": "S",
+    "couples": [
+     "src/content/road_cards.js drivers"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/26_sim_world.js",
+    "line": 453,
+    "assumes": "defaultVan uses id 'moose_hearse' and name 'The Moose Hearse' for every band. driverFor falls back to 'kenji' for hail_damage (L478). 25_sim_tour L428/451 also falls back to 'kenji'. shop.vanName falls back to 'The Moose Hearse' (2a L319-322). shop.init renames the van for new careers, but world.migrate and defaultVan still produce the Hail Damage name and id.",
+    "needs": "defaultVan should use GG.shop.vanName(bandId, 0) and a neutral id, and drop the 'kenji' fallbacks.",
+    "size": "S",
+    "couples": [
+     "src/2a_sim_shop.js",
+     "src/43_render_van.js",
+     "src/content/shop.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/26_sim_world.js",
+    "line": 549,
+    "assumes": "Van banter pools are keyed by member id (Hail Damage only), and the silent-bassist gag is hard-wired to the 'kenji' id (L552, L558). Other bands get no van banter. The afterGig pickLine keys (breakdown, vanTired, genreClash, sameCrowd, venueBanned; L336 and on) are content lines with 'Moose Hearse' and 'Kenji' in them. The highway fallback 'Hwy 7 \u00b7 the Trans-Canada' (L577) is the Saskatoon-to-Calgary route, which is wrong from Edmonton.",
+    "needs": "vanBanter for 10 members, a 'silent' member flag in bands.js instead of the id, {van}/{driver} tokens in the road lines, and a per-home highway for off-map venues.",
+    "size": "M",
+    "couples": [
+     "src/content/lines.js",
+     "src/content/bands.js",
+     "src/57_ui_van.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/26_sim_world.js",
+    "line": 336,
+    "assumes": "Road cards are drawn through gates, but many Hail Damage-voiced road cards have no band gate. Probe: road_cape_door, road_babas_lunch, road_mosquitoes, road_lead_foot, road_gas_argument, road_fowl_supper, road_banjo_hitchhiker and road_wrong_turn all appeared for other bands.",
+    "needs": "Gate those cards to hail_damage. Add per-band road cards (Moth's apartment, T-Bone versus Chase's cassettes, Earl's historical markers) and you-drive cards.",
+    "size": "M",
+    "couples": [
+     "src/content/road_cards.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/27_sim_drama.js",
+    "line": 131,
+    "assumes": "The want RULES are Hail Damage only: spotlight (capeSpin), cape, solos, practice, freedom, baba, and mystery (weighted by kenjiDrift, L22/L158). content drama.members defines only marcel, dana, jaxon and kenji, so new members have no wants and no personal mood driver. Grumble and passive lines (stagePool L181) fall back to the generic recruit pool.",
+    "needs": "New rules plus drama.members content for the 10 members. Examples: Rox council (promote/buzz), Benny two chords (easy songs), Moth van (van condition, no rentals), Chase 1985, Lenny lawsuits (song similarity), Tamara curfew (low burnout, short drives), Travis truck, Earl stories (long drives), Clementine never caught enjoying it, Duke hat (merch/buzz). Rename kenjiDrift to mysteryDrift.",
+    "size": "L",
+    "couples": [
+     "src/content/drama.js",
+     "src/58_ui_band.js",
+     "src/content/economy.js drama"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/27_sim_drama.js",
+    "line": 311,
+    "assumes": "When an original member has no exit definition, quit() marks them 'gone' with returnDue null and they never return. The ultimatum card falls back to ult_recruit. Probe (8 seeds x 3 yrs): other bands average 3.8-4.8 quits and 0 returns, against 2.8 quits and 1.0 returns for Hail Damage. In one Ramblers seed all four originals were gone by year 3.",
+    "needs": "Exit storylines per member: quitLine, beats, backLine, away, needBuzz, returnAfter, plus ultimatum, return and returnFilled cards in dramaCards. Then rebalance quit rates for each band.",
+    "size": "L",
+    "couples": [
+     "src/content/drama.js",
+     "src/content/cards.js dramaCards",
+     "tools/balance.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/27_sim_drama.js",
+    "line": 464,
+    "assumes": "hireFillIn looks up fill-ins by exact role string. The roles 'vocals/guitar', 'guitar', 'vocals/acoustic' and 'fiddle' fall back to F.any ('Dwayne from the music store', 'Cousin Dale, somehow').",
+    "needs": "Normalise roles (split on '/', map 'guitar' to lead guitar) and add fiddle and acoustic fill-in pools, flavoured by genre.",
+    "size": "S",
+    "couples": [
+     "src/content/drama.js fillIns"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/27_sim_drama.js",
+    "line": 403,
+    "assumes": "Recruit candidates draw traits and quirks from one pool with no genre filter; the quirks include metal and Baba-flavoured ones such as polka-metal. Names and shirt colours per genre already work.",
+    "needs": "A genre/band filter on traits and quirks ({genres:[...]}) and genre-flavoured quirk content for punk, rock and country. This is the roadmap item 'genre-flavoured recruit pools'.",
+    "size": "S",
+    "couples": [
+     "src/content/recruits.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/28_sim_calendar.js",
+    "line": 263,
+    "assumes": "cal.monday posts calendar.news[week] as its 'who' (jaxon, dana, marcel, baba) for every band. Probe: jaxon, dana and marcel lines in other bands' chat. Calendar result lines are Hail Damage too: the Halloween costume line 'six Marcels', NYE 'Jaxon kisses his guitar', and clearOutdoor 'lawn chairs'.",
+    "needs": "Per-band season news (news[bandId][week]), or skip lines whose who is not in the band or an npc. Tokenise or split the holiday and weather lines.",
+    "size": "S",
+    "couples": [
+     "src/content/calendar.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/28_sim_calendar.js",
+    "line": 200,
+    "assumes": "Weather affinity is hard-coded: when it hails, bandId === 'hail_damage' gets +5 crowd and the hailBand lines (L219).",
+    "needs": "A per-band weather affinity from content (e.g. bands.js weather: {kind, crowd, lines}), such as Frost Heave with snow or spring thaw potholes. Optional.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js",
+     "src/content/calendar.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/29_sim_fans.js",
+    "line": 193,
+    "assumes": "The rival leaves a comment on every Bandbook post, drawn from the single CM.rival / rivalExclusive pool, which is supportive Tundra Wraith 'buddy' text. rivalName falls back to 'Tundra Wraith' (L94).",
+    "needs": "comments.rival[rivalId] with a fallback, and content for Mall Rats (sponsor spam), Chartbusters (PR copy) and Buckle & Boot (truck emoji).",
+    "size": "S",
+    "couples": [
+     "src/content/bandbook.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/29_sim_fans.js",
+    "line": 116,
+    "assumes": "'kenji' is hard-coded as the silent member in many places: fans speakerFor (L116-117), cringe and viral (L260-268, with the HD preference lists at L268, L297 and L395), 2c_sim_licensing speakerFor (L59), 2d_sim_recap gig quote (L63) and goodYear (L196), 25_sim_tour callHome (L602), and 26_sim_world banter (L552). The cringe pool 'who' ids and the scandals list (L228) are Hail Damage members only.",
+    "needs": "A single band-content flag (member.silent) and a helper such as GG.career.talkers(state) used by every sim. Per-band cringe, viral and scandal content and cards.",
+    "size": "M",
+    "couples": [
+     "src/content/bands.js",
+     "src/content/bandbook.js",
+     "src/content/cards.js scandal_*",
+     "src/2c_sim_licensing.js",
+     "src/2d_sim_recap.js",
+     "src/25_sim_tour.js",
+     "src/26_sim_world.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/29_sim_fans.js",
+    "line": 490,
+    "assumes": "'Dale from Warman' (a Saskatoon satellite) is the start superfan for every band, with the fixed id 'dale'. He is in the gig lines (L490-497), comments (L178), superfan cards fans_dale_hello and fans_macaroni (L537-539; macaroni_kenji needs kenji), and the shop merch line 'Dale bought one' (2a L642). Probe: 'Dale from Warman made it to Regina'.",
+    "needs": "A per-band home superfan: keep the state slot 'dale' but resolve name, lines, comments and gifts from the band (e.g. a Regina local for Frost Heave), plus per-band gift cards.",
+    "size": "M",
+    "couples": [
+     "src/content/bandbook.js superfans/gifts/cards",
+     "src/2a_sim_shop.js L642",
+     "src/41_render_garage.js (gifts)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/2a_sim_shop.js",
+    "line": 86,
+    "assumes": "The shop chat() helper posts the same Hail Damage line from the first active member when the scripted 'who' is not in the band. So Rox says 'My mirror is coming with us' and talks about 'HALE DAMAGE shirts'. This covers the lines outro, solo, misprintCollector, move, van, merchUnlock and evicted. content/shop.js sections.solo is described as 'Dana's spotlight'.",
+    "needs": "Per-band lines (lines[bandId] falling back to lines), or skip the line when the who is missing. Write the content for 3 bands.",
+    "size": "S",
+    "couples": [
+     "src/content/shop.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/2a_sim_shop.js",
+    "line": 681,
+    "assumes": "The forced shop cards use fixed ids (shop_space_N, shop_solo, shop_merch_start, shop_pawn_kit, shop_van_deal, money_merch_misprint), all gated to Hail Damage through cards.js g(). shop_solo also requires isActive 'dana' (L688; also L803). Other bands therefore get no space offers, no merch start, no used-van deal and no misprint gag (misprintDue L499); solo only arrives through the soloAutoWeeks path.",
+    "needs": "Look cards up per band (card(id+'_'+bandId) || card(id)), replace 'dana' with gig.roles(s).solo, and give each band a misprint (e.g. 'FORST HEAVE'). Write the card content.",
+    "size": "M",
+    "couples": [
+     "src/content/cards.js shopCards",
+     "src/5k_ui_shop.js",
+     "src/content/shop.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/2c_sim_licensing.js",
+    "line": 129,
+    "assumes": "makeOffer filters brands by genre only. The 'insurance' brand is Marcel's employer (speaker marcel, all its text is about Marcel), but its country, rock and punk weights are above 0, so the Ramblers, Gravel Kings and Frost Heave can receive it. The energy and game brand texts mention Jaxon, Kenji and Dana. The fury hook hard-codes brand 'truck' and grid_road_ramblers (L200-204). It works, but it is not data-driven.",
+    "needs": "A band filter on brands (brand.band) or per-band brand text; e.g. a Regina transit ad for Frost Heave or a floss ad for Gravel Kings. Move the fury brand to the rival cast (furyBrand).",
+    "size": "S",
+    "couples": [
+     "src/content/licensing.js",
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/2d_sim_recap.js",
+    "line": 190,
+    "assumes": "goodYear prefers marcel, dana, jaxon, kenji and mom as speakers. For other bands the fallback gives the same Hail Damage-voiced text to the first non-kenji member ('Ten gigs is a real year... Baba came to two'). Recap headlines mention the Cape and the Garage.",
+    "needs": "Per-band goodYear sets, and a {space} token or per-band variants in the headlines.",
+    "size": "S",
+    "couples": [
+     "src/content/recap.js",
+     "src/5l_ui_recap.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/2e_sim_logo.js",
+    "line": 107,
+    "assumes": "Logo picked and rebrand chat lines are Hail Damage members only. chat() skips when no member matches, so other bands get no reaction, silently.",
+    "needs": "Picked and rebrand lines for the 10 new members.",
+    "size": "S",
+    "couples": [
+     "src/content/logo.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/10_save.js",
+    "line": 141,
+    "assumes": "migrate fills missing genre, city and space with 'metal', 'Saskatoon' and 'parents_garage' whatever the bandId. That is safe for old saves (all Hail Damage), but a partial non-Hail Damage save code would be relabelled as metal from Saskatoon. newCareer (20_sim_career L454-460) likewise defaults to hail_damage, metal and Saskatoon when bandId is missing.",
+    "needs": "Derive the defaults from GG.career.band(s.bandId), falling back to the current values.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js",
+     "tests/save.test.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tools/balance.js",
+    "line": 83,
+    "assumes": "newCareer is called without bandId, so only Hail Damage is ever balanced. The synthetic deck (L34-50) uses marcel, dana, jaxon and kenji ids. The summary reports the moose payoff. Content numbers also differ: Frost Heave's average member skill is 41.7 against 51.5 for Hail Damage, which lowers gig scores.",
+    "needs": "A BAND=<id>|all option that prints per-band tables and a cross-band comparison: fans, fund, loans, quits, returns, cards drawn, weeks with no card, board size, average km, genre-moment rate and rival lineup. Remove the Hail Damage ids from the synthetic deck and make the payoff stat per band.",
+    "size": "M",
+    "couples": [
+     "tests/_load.js",
+     "src/content/economy.js",
+     "src/content/bands.js (member skills)"
+    ]
+   }
+  ]
+ },
+ {
+  "area": "content",
+  "works": [
+   "bands.js: all four bands are fully defined (id, name, genre, city, region, space id + spaceName, size = members + 1: HD 5 / FH 4 / GK 4 / GRR 5, rival id, blurb, coldOpen panels, 2 starter songs, members with id/name/fullName/nick/role/hometown/skill/mood/wants/bio/idle/look). Member ids are unique across bands. newCareer already copies city, region, genre and space from the band (20_sim_career.js:455-461).",
+   "Card gating is generic: career.gatePasses handles band and genre keys, and unknown keys fail closed. Forced-week, chain, cooldown and once mechanics are band-agnostic, so a per-band deck only needs gates (a per-band g()).",
+   "road_cards.js:519-539 GG.content.drivers already lists all four drivers (Kenji, Moth, T-Bone keyed 'tamara', Earl) plus 'you', with dashboard items, effect text, mods and back lines. world.driverFor/driver/driverMods/syncDriver resolve by bandId, the road gate 'driver' accepts any member id, and extra gate keys such as band pass through gatePasses.",
+   "shop.js:100-105 vanNames per band per tier match the handoff C1 table verbatim. The tier-0 space name and id come from bands.space/spaceName (2a_sim_shop.js:240). gear.names is per genre. merch supports genre/band filters: patch and longsleeve (metal), tape (punk), trucker hat (country), tour shirt (rock), and one limited item per band (council pins, leather-pants keychain, Duke's hat, the HD bobblehead and cape).",
+   "logo.js: default logo per band, fixed logos for all four rivals and every scene filler, and group-chat lines that only use active speakers (2e_sim_logo.js:106-113). This is the model the other line pools should copy.",
+   "genres.js: tempo, groove rules, signature, starter, parts, backing and kit tuning for all four genres (C3 kit tuning is done). grooves.js: presets, mods and tempo labels per genre. Genre crowd moments (wallOfDeath / circlePit / lighters / lineDance) already exist in 22_sim_gig.js:203 with lines.",
+   "song_titles.js and album_words.js already have punk/rock/country pools (thin). Album cover motifs, palettes and fonts are genre-tagged.",
+   "reviews.js: every outlet has genre weights, and the sim merges byBand[bandId] into the quote pool, so the other bands only need byBand entries. Generic quotes are clean except one cape line.",
+   "awards.js: the album category has genreNames per genre. rivalThanks/rivalLoses are already keyed by rival id (24_sim_labels.js rivalLines). The sim already reads awards.nominees[genre] (24_sim_labels.js:1168). outfitCards pick the first card whose gate passes, so band-gated cards can simply be added.",
+   "licensing.js: brand genre weights work. The lic_fury card (truck ad goes to the Ramblers, Buckle & Boot heat) is wired. licenseScandals are filtered by gate plus active speaker, which is generic.",
+   "world.js:46-51: genre-region fit for all four genres. Region cards already support band gates (10 HD-gated ones prove it).",
+   "calendar.js: genreSeason, genreKinds, fitLines and fitFx for every genre. holidays[].cards is a priority list where the first card whose gate passes wins, so band variants just get appended.",
+   "creator.js: genreStart unlocks exist for metal, punk, rock and country.",
+   "recruits.js: name pools and shirt colours per genre. Traits are generic.",
+   "rivals: rivalry.cast is keyed by rival id (R.cast/castMembers are generic). bands.js rivals has city and genre for all four rivals. Rebrand names come from the cast. Scene fillers span all genres.",
+   "venues.js: every venue has genreFit. Regina has tier 1\u20133 venues. Regina, Swift Current and Edmonton all exist in map.js with roads.",
+   "27_sim_drama: roles and holes come from band content, so lineup sizes per genre already work. Unknown originals fall back to generic recruit grumble/passive, generic chat (20_sim_career.js:794), generic gig reactions and TAP_FALLBACK, with no crash.",
+   "bandbook.scandals and licenseScandals are filtered by gate plus active member, so adding entries is enough.",
+   "economy.js and activities.js numbers are genre-agnostic."
+  ],
+  "findings": [
+   {
+    "file": "src/content/bands.js",
+    "line": 78,
+    "assumes": "frost_heave (78), gravel_kings (118) and grid_road_ramblers (157) are locked:true with comingIn:'v0.9'. The line 14 comment says only HD is playable.",
+    "needs": "Set locked:false and comingIn:null on all three and update the comment.",
+    "size": "S",
+    "couples": [
+     "src/51_ui_menu.js:184-193",
+     "tests/content.test.js:124-125"
+    ]
+   },
+   {
+    "file": "src/content/bands.js",
+    "line": 22,
+    "assumes": "No per-band role or config fields, because code hard-codes HD ids: songs are named by marcel, the solo is dana, fills are jaxon, the great-song nod is kenji, the hustle grumbler is marcel, the first gig is buddys_house_party (Saskatoon), and bandbook speakers are marcel/dana/jaxon.",
+    "needs": "Add band fields such as roles:{namer, soloist, filler, nodder, grumbler, showpiece}, firstGig:venueId, homeRing, week1Card, plus schema docs. Then generalize the code that reads HD ids.",
+    "size": "M",
+    "couples": [
+     "src/21_sim_songs.js:587-615",
+     "src/20_sim_career.js:496",
+     "src/2a_sim_shop.js:688,803",
+     "src/29_sim_fans.js:116,268,297,395",
+     "src/26_sim_world.js:501",
+     "src/content/activities.js:41",
+     "src/02_contracts.js:219-222"
+    ]
+   },
+   {
+    "file": "src/content/bands.js",
+    "line": 198,
+    "assumes": "The rival blurbs for mall_rats, chartbusters and buckle_and_boot predate the owner decisions. The comment says to refer to them by role only.",
+    "needs": "Rewrite the blurbs with the decided casts: Blaze (Kevin from Oakville) plus Siobhan the stylist who really leads, sponsor kickflips; Rex Glamour's July scarf, four drummers all named Steve, they bought the radio conglomerate; Brayden and Colt, ex-junior hockey, the pickup-costume mascot.",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js",
+     "src/content/npcs.js"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 35,
+    "assumes": "g() forces every Monday card to {genre:['metal'], band:['hail_damage']}: 112 cards (8 garage, 37 GLS, 20 GL, 12 LS, 7 L, 28 S). For the other bands the normal deck is empty, so every Monday is a quiet week using HD quietWeek lines.",
+    "needs": "A full Monday deck per band (roughly 60-110 each): member signature cards, money/road/scene/fame/weird cards, Local and Signed era cards, label-flag cards for gopherwood/monolith/diy, and about 12 repeatables. Each band needs its own g() gate. Tests must stop asserting that every card is metal, and the 240-week no-dry-year draw must run per band.",
+    "size": "L",
+    "couples": [
+     "tests/content.test.js:203-215",
+     "src/20_sim_career.js:538",
+     "src/content/lines.js:375"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 49,
+    "assumes": "lord_abyssus is the only forceWeek:1 card (week-one tutorial beat, Marcel).",
+    "needs": "A forced week-1 card per band with an in-character intro: Rox and the council, Chase and it being 1985, Travis Lee and the truck he doesn't own.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js (forced draw)"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 25,
+    "assumes": "The only storyline chains are HD: the Cape Saga (lines 61-163, flags cape/capePlan/capeSpin) and the Moose Album (1375-1437, flags mooseMuse/mooseAlbum). Their payoffs are wired into awards outfits, the Helsinki Moose Opera tour, the Gong moose bonus and the cape render.",
+    "needs": "At least one chain per band with its own flags and payoffs. Examples: Rox runs for city council; Lenny's lawsuit and the riff that finally isn't stolen; Travis Lee buys a real truck, or Duke's hat. Hook them into awards, tour and ending payoffs the way the moose album is.",
+    "size": "L",
+    "couples": [
+     "src/content/awards.js:82-162",
+     "src/content/world.js:197",
+     "src/25_sim_tour.js:647",
+     "src/content/economy.js:143-144",
+     "src/42_render_stage.js"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 783,
+    "assumes": "The guilt cards (guilt_*, money_* with flags.parentsLoan) are HD-gated and mention Kenji, Marcel, Jaxon, Baba and Saskatoon. Loans can only be repaid through the card effect 'repay', so the other bands can never pay back their parents and flags.parentsLoan sticks forever.",
+    "needs": "Band-agnostic guilt cards: drop the band/genre gate and use {name:} tokens, or add per-band variants. Each band needs at least 5 with repay choices.",
+    "size": "M",
+    "couples": [
+     "src/20_sim_career.js:234-240,802-811",
+     "tests/content.test.js:744"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 1439,
+    "assumes": "All holiday_* cards (Canada Day, Thanksgiving plus guilt, Halloween costume, Grey Mug, Christmas single and parties, St. Paddy's and others) use g(), so they are HD-only. The other bands get no holiday cards.",
+    "needs": "Per-band variants of each holiday card, appended to that holiday's cards list in calendar.js.",
+    "size": "M",
+    "couples": [
+     "src/content/calendar.js:66-94",
+     "src/28_sim_calendar.js:250-256",
+     "tests/content.test.js:1057"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 1046,
+    "assumes": "The label cards are HD-gated. The carded demands (signed_gopherwood_showcase, signed_monolith_english/radio/image) never fire for other bands. pendingDemand skips carded demands, so those demands are never answered or settled and stay pending forever.",
+    "needs": "Per-band demand cards, or labels.js demands keyed by genre or band, plus code that resolves the demand card per band. At minimum, a fallback so a carded demand becomes a laptop demand when its card can't pass its gate.",
+    "size": "M",
+    "couples": [
+     "src/content/labels.js:31-50",
+     "src/24_sim_labels.js:264,283,354-360,1047-1054",
+     "src/content/economy.js:163-170"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 1614,
+    "assumes": "All shopCards use g() and are HD-gated (misprint, merch start, pawn kit, church van, Dana's solo, spaces 1-3). GG.shop.forcedCard looks cards up by fixed id, so other bands never get space, kit or van offers or the misprint gag. Solo only auto-unlocks after 16 Local weeks, with Dana's chat line.",
+    "needs": "Per-band shop cards: an employer/space landlord offer, a kit deal, a van deal, the soloist's card (Lenny, Earl or Clementine) and a band misprint. The shop code must look up id+'_'+bandId, or equivalent.",
+    "size": "M",
+    "couples": [
+     "src/2a_sim_shop.js:500-501,675-694,803",
+     "src/content/shop.js:159-172",
+     "src/content/economy.js:311"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 1730,
+    "assumes": "lic_fury says Buckle & Boot's 'fiddler posted a video'. That is pre-decision: they are a duo (Brayden and Colt) plus the truck mascot.",
+    "needs": "Rewrite with the cast names and the mascot.",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js",
+     "src/2c_sim_licensing.js:200-203"
+    ]
+   },
+   {
+    "file": "src/content/cards.js",
+    "line": 1726,
+    "assumes": "licenseScandals has only lic_scandal_moose (Marcel) and the generic sellout scandal.",
+    "needs": "A sellout scandal card per band (who = a new member), e.g. Rox in a council PSA or Chase in a leather-pants truck ad.",
+    "size": "S",
+    "couples": [
+     "src/2c_sim_licensing.js:193-197"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 20,
+    "assumes": "activity.rehearse/write/promote/book/hustle/rest are single flat pools, all HD ('My Lawn, My Tomb', Kenji, Baba, Broadway Ave, HAIL DAMAGE chalk, {nick:marcel}). Every band reads them, and since the pools are non-empty the code fallback never applies. {nick:marcel} resolves through any band's content, so Frost Heave gets 'Lord Abyssus'.",
+    "needs": "Per-band activity pools (e.g. activity[bandId][id]) about 6 lines x 6 activities x 3 bands, plus code keying in activityLine.",
+    "size": "M",
+    "couples": [
+     "src/20_sim_career.js:91-102,607-610"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 71,
+    "assumes": "chat only has marcel, dana, jaxon and kenji. The 10 new members fall back to generic FALLBACK_LINES.chat: nothing leaks, but they have no character.",
+    "needs": "chat {happy, ok, grumpy, sulking} x about 4 lines for rox, benny, moth, chase, lenny, tamara, travis, earl, clementine and duke.",
+    "size": "M",
+    "couples": [
+     "src/20_sim_career.js:788-797"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 179,
+    "assumes": "gigReactions exist only for the 4 HD members. The only per-member stage moment is capeSpin (Marcel), in code LIVE_LINES. There is no content lines.live.",
+    "needs": "gigReactions great/ok/bad for the 10 new members. Optionally a per-band signature stage moment and lines (the capeSpin equivalents for Rox, Chase and Duke's hat), which also needs gig-sim and render work.",
+    "size": "M",
+    "couples": [
+     "src/22_sim_gig.js:117-123,203,492-495,625-633",
+     "src/42_render_stage.js"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 250,
+    "assumes": "tap lines exist only for the HD members. Others get TAP_FALLBACK.",
+    "needs": "About 6 tap lines each for the 10 new members.",
+    "size": "S",
+    "couples": [
+     "src/52_ui_week.js:589-593"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 285,
+    "assumes": "guilt includes 'Dad parks the new truck... stares at the garage' (the HD cold open). Every yearEnd line is HD (Marcel's toast, Dana's hours, Baba, Kenji's nod). Both pools are global.",
+    "needs": "Keep guilt generic. Add per-band yearEnd pools plus keying.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js:811,853"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 305,
+    "assumes": "songReactions are keyed by marcel (name/nameFr), dana (noSolo/frSigh), jaxon (fills) and kenji (great), and 21_sim_songs.reactions hard-codes those ids. Other bands get no reactions after a Write, and nobody announces the song name.",
+    "needs": "Reaction pools per new member (namer: Rox, Chase, Travis Lee; soloist: Lenny, Earl, Clementine; fill-sneaker; the nod-equivalent), plus the band role map and code generalization.",
+    "size": "M",
+    "couples": [
+     "src/21_sim_songs.js:583-615",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 369,
+    "assumes": "writeTips exist only for dana, marcel and jaxon and are metal-specific ('Metal wants it busy'). Other bands get no first-Write tip.",
+    "needs": "Genre-correct tips per new member: punk fast snare above 170 BPM, rock backbeat, country train beat.",
+    "size": "S",
+    "couples": [
+     "src/54_ui_sequencer.js:546-551"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 375,
+    "assumes": "quietWeek is a single global HD pool (Marcel mowing, Kenji's lime, Mr. Lindqvist, Baba's soup). With an empty deck the other bands see it every week.",
+    "needs": "Per-band quiet-week pools plus keying.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js:538"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 386,
+    "assumes": "vanBanter covers only marcel/dana/jaxon. vanKenji is the only driver pool, hard-wired to 'kenji' in world.banter. vanArrive names Kenji and the Moose Hearse.",
+    "needs": "Banter for the 10 new members. Per-driver pools: Moth (it's her apartment), T-Bone (Chase begging to drive, '80s cassettes), Earl (historical markers and road stories; he talks, unlike Kenji). Generic vanArrive using {van}/{driver} tokens.",
+    "size": "M",
+    "couples": [
+     "src/26_sim_world.js:549-560",
+     "src/57_ui_van.js:151",
+     "src/20_sim_career.js:119-133"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 425,
+    "assumes": "genreClash assumes a loud band in a country room ('Marcel growled', boots, cowboy hat). venueUp and venueBanned mention Marcel. vanTired and breakdown hard-code 'The Moose Hearse' and Kenji.",
+    "needs": "genreClash per genre (country in a metal bar is the reverse joke) and {van}/{driver}/{name:front} tokens.",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js:365,391-408",
+     "src/20_sim_career.js:119-133"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 468,
+    "assumes": "eraLocal, eraSigned, labelOffer, offerExpired, labelDropped, studioWeek, releaseDay, chartDebut/Climb/Drop, recouped, cert and loonies are all HD (Saskatoon, the cape, Baba, Kenji, Tundra Wraith). No src module reads them today (only tests), so they would leak the moment they are wired.",
+    "needs": "Per-band variants, or keep them unread and mark them HD.",
+    "size": "S",
+    "couples": [
+     "tests/content.test.js"
+    ]
+   },
+   {
+    "file": "src/content/lines.js",
+    "line": 16,
+    "assumes": "The token set is only {player} {band} {city} {nick:id} {name:id} {recruit} {rival}. {nick/name:<HD id>} resolves across all bands' content, and there are no {van}, {driver}, {space} or role tokens, so shared content hard-codes the Moose Hearse, Kenji, the garage and Marcel everywhere.",
+    "needs": "New fillText tokens ({van}, {driver}, {space}, {front}/{lead}/{bassist}) so shared lines, venues, road cards and quirks can be written once. Then rewrite the shared pools to use them.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js:91-133"
+    ]
+   },
+   {
+    "file": "src/content/drama.js",
+    "line": 27,
+    "assumes": "drama.members only has marcel, dana, jaxon and kenji. For the 10 new originals mdef() returns null, so an original founder gets ult_recruit ('I answered a Kijiji ad'), has no wants, no exit storyline or beats, no return or returnFilled card (an original who quits never comes back), and no epilogue.",
+    "needs": "Full drama entries for all 10: wants, grumble, passive, ultimatum/return/returnFilled card ids, exit {id, returnAfter, status, quitLine, beats, changed, backLine} and epilogue, following handoff A3 (Rox, Benny's third chord, Moth's van, Chase's 1985, Lenny's lawyers, Tamara the adult, Travis Lee, Earl's 1979 session, Clementine, Duke's hat).",
+    "size": "L",
+    "couples": [
+     "src/27_sim_drama.js:46-58,120-127,171-183,249-291"
+    ]
+   },
+   {
+    "file": "src/content/drama.js",
+    "line": 30,
+    "assumes": "The want rules (spotlight, cape, solos, practice, freedom, baba, mystery) are shaped around HD. cape reads flags.cape and baba reads flags.babaMad.",
+    "needs": "New rules and content for the new members, e.g. council (promote / city gigs), van (Moth: condition, only she drives), 1985 (rock venues), lawsuit (song similarity), adulting (burnout), truck, story (long drives), secret joy, hat (merch/buzz).",
+    "size": "M",
+    "couples": [
+     "src/27_sim_drama.js:131-139"
+    ]
+   },
+   {
+    "file": "src/content/drama.js",
+    "line": 170,
+    "assumes": "dramaCards only cover HD ult/ret/ret_filled. The 'rival' outcomes name Tundra Wraith literally (lines 247, 265, 283, 291).",
+    "needs": "ult_, ret_ and ret_*_filled cards for the 10 new members, using {rival} or per-rival defection text.",
+    "size": "L",
+    "couples": [
+     "src/27_sim_drama.js:249-291"
+    ]
+   },
+   {
+    "file": "src/content/drama.js",
+    "line": 161,
+    "assumes": "fillIns are keyed by 'vocals', 'lead guitar', 'rhythm guitar' and 'bass'. The new roles ('vocals/guitar', 'guitar', 'vocals/acoustic', 'fiddle') fall back to 'any'. The recruit ultimatum and the protection toast assume a garage.",
+    "needs": "Fill-in pools for the new roles (a fiddler, an acoustic singer) and {space}-neutral recruit text.",
+    "size": "S",
+    "couples": [
+     "src/27_sim_drama.js:464-465"
+    ]
+   },
+   {
+    "file": "src/content/recruits.js",
+    "line": 42,
+    "assumes": "hometowns are keyed by region only, and 'canada' means Saskatchewan towns. Gravel Kings (Edmonton) recruit from Saskatchewan, and the +8 chemistry bonus for hometown === city never fires for Edmonton.",
+    "needs": "Home-keyed pools (Alberta for GK, SW Saskatchewan for GRR, Regina area for FH) plus code that picks them by band.",
+    "size": "S",
+    "couples": [
+     "src/27_sim_drama.js:397-401"
+    ]
+   },
+   {
+    "file": "src/content/recruits.js",
+    "line": 64,
+    "assumes": "Quirks are genre-agnostic, and their cards leak HD: ferret (Marcel, Kenji's case), wraith_roadie (Tundra Wraith), sasquatch (Kenji slows down), crokinole (Kenji seeded), harvest (Marcel in eyeliner), horoscope (Kenji), accordion (Marcel/Dana/Baba), famous_album (Dana).",
+    "needs": "Rewrite with tokens, or gate the HD ones. Add genre-flavoured quirks and a genre field, plus a filter in candidate().",
+    "size": "M",
+    "couples": [
+     "src/27_sim_drama.js:397-409"
+    ]
+   },
+   {
+    "file": "src/content/recruits.js",
+    "line": 161,
+    "assumes": "Recruit chat says 'The garage feels like home'. The country name pool has 'Colt' (Buckle & Boot's Colt), and the metal pool has 'Tamara' and 'Travis'.",
+    "needs": "Neutral {space} text and de-duplicated names.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "src/content/npcs.js",
+    "line": 5,
+    "assumes": "The supporting cast is Saskatoon/HD: dad's hail-insurance truck, Baba (Jaxon's), Mr. Lindqvist, Deb Wiebe of CRUD 90.5, the Star-Pheasant reporter, Gord the superfan who translates Marcel, Deci-Hell ('Kenji might'), Lorraine, Barb from Warman, Doreen (Legion 63), Dale from Warman.",
+    "needs": "Per-band local casts. Regina: Suds-O-Rama owner, a city councillor or clerk, a Regina paper and campus DJ. Edmonton: Westgate Plaza landlord, nail-salon and vacuum-repair neighbours, the lawyers, local media. Swift Current: Duke's uncle (owns the Quonset), coffee-row regulars, auction mart, local radio. Plus generic mom/dad blurbs.",
+    "size": "M",
+    "couples": [
+     "src/content/cards.js",
+     "src/content/licensing.js",
+     "src/content/calendar.js:96-102",
+     "tests/content.test.js (NPC_IDS)"
+    ]
+   },
+   {
+    "file": "src/content/npcs.js",
+    "line": 16,
+    "assumes": "The only rival speaker is 'wraith_frontman', and the header still calls rival members an open decision.",
+    "needs": "Speaker NPCs for Mall Rats (Siobhan, Blaze), Chartbusters (Rex Glamour) and Buckle & Boot (Brayden, Colt, the truck mascot).",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js:151-213",
+     "src/59d_ui_rival.js"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 24,
+    "assumes": "rivalry.cast only has tundra_wraith. For the other rivals R.cast returns null, so rival.members is [] (no BOTB figures, no names, nobody to defect to). castMembers defaults corpsePaint to true.",
+    "needs": "Hand-made casts for mall_rats (Blaze/Kevin, a bassist who's never plugged in, a drummer picked for his jawline, Siobhan), chartbusters (Rex Glamour, the fourth Steve and two more) and buckle_and_boot (Brayden, Colt, the pickup mascot), each with frontman, label, vehicle, members {lane, dayJob, bio, gags, look, corpsePaint:false, stageShirt}, songs, albums and rebrands.",
+    "size": "L",
+    "couples": [
+     "src/23_sim_rival.js:88,116-130",
+     "src/42_render_stage.js",
+     "src/59d_ui_rival.js",
+     "src/content/logo.js:64-68"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 73,
+    "assumes": "news is one global pool, all Tundra Wraith (Gord, veggie trays, Winnipeg, Deci-Hell, 'our pals from Saskatoon'). crack_breakup and crack_rebrand name Tundra Wraith literally.",
+    "needs": "news keyed by rival for every key (filler, local, signed, album, fans, heat, forfeit, opener, poached, loonies, crack_*, finalSoon, reunion), plus a code lookup by rival id.",
+    "size": "L",
+    "couples": [
+     "src/23_sim_rival.js:105,188"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 116,
+    "assumes": "Showdown texts and win/lose verdicts are Tundra Wraith (Gord hugs you, Lorne's tempo report, the veggie tray, 'buddies from Saskatoon').",
+    "needs": "Showdown text per rival: Mall Rats kickflips and sponsor money, Chartbusters' same power ballad, Buckle & Boot's tailgates.",
+    "size": "M",
+    "couples": [
+     "src/23_sim_rival.js:493"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 151,
+    "assumes": "The rival cards (rv_poach with fruit basket, Gord, dental; rv_crack_breakup titled 'Tundra Wraith Break Up'; rebrand; opener; rv_final_eve with 'Kenji nods once') all use speaker wraith_frontman and are fetched by fixed id.",
+    "needs": "Per-rival variants (Mall Rats poach with sponsor cash, Chartbusters needing 'a new Steve', a Buckle & Boot truck deal) plus code that looks cards up by rival id.",
+    "size": "M",
+    "couples": [
+     "src/23_sim_rival.js:89-90,419-457,631"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 216,
+    "assumes": "The scene includes mall_rats_scene, chartbusters_scene and buckle_boot_scene, so whichever one is your rival shows up twice on the leaderboard (not filtered). Non-metal bands get no Tundra Wraith filler. Every filler is in Saskatchewan, so Gravel Kings in Edmonton see a Saskatchewan scene.",
+    "needs": "A rival-id/skip flag on scene entries, a tundra_wraith_scene entry, and Alberta and SW-Saskatchewan fillers selected by home region, with logos.",
+    "size": "S",
+    "couples": [
+     "src/23_sim_rival.js:710-722",
+     "src/content/logo.js"
+    ]
+   },
+   {
+    "file": "src/content/rivals.js",
+    "line": 21,
+    "assumes": "The festival grounds and the Sad Dome use genreFit FIT {metal 1, punk 0.85, rock 0.9, country 0.6}. The catch text says 'Tundra Wraith headline'. There are no festivals near Edmonton, and the Queen City Mosh-Fest is offered to a country band. The Ramblers would play their year-10 final and every festival clash at 0.6 fit.",
+    "needs": "Neutral fit for the Sad Dome (1 for everyone), per-genre festival fit, {rival} catch text, and genre festivals (a rodeo or fair for country, an all-ages punk fest, an Edmonton rock fest).",
+    "size": "S",
+    "couples": [
+     "src/23_sim_rival.js:348",
+     "src/22_sim_gig.js (fit)"
+    ]
+   },
+   {
+    "file": "src/content/economy.js",
+    "line": 227,
+    "assumes": "rival tunables are one profile. fansCurve starts at 40 fans, which fits Tundra Wraith but not 30-year megastars (Chartbusters) or a TV-show band (Mall Rats). The awards bonus comment is about fruit baskets, and loonies.rival.bias is single.",
+    "needs": "Per-rival overrides: curve, eras, buzz, award and chart bias (Chartbusters own the radio; Mall Rats sponsor buzz).",
+    "size": "M",
+    "couples": [
+     "src/23_sim_rival.js cfg()/R.create 124-130",
+     "src/24_sim_labels.js (loonies rival strength)"
+    ]
+   },
+   {
+    "file": "src/content/awards.js",
+    "line": 19,
+    "assumes": "outfitCards are gated to band hail_damage plus flags.cape (Marcel's cape), so other bands get no red-carpet card.",
+    "needs": "A set of outfit cards per band for the frontman (Rox, Chase's leather pants, Travis Lee or Duke's hat), each with its own flag. Relax the test that requires the cape gate.",
+    "size": "M",
+    "couples": [
+     "src/24_sim_labels.js:1280-1285",
+     "src/59c_ui_awards.js",
+     "src/44_render_carpet.js",
+     "tests/content.test.js:915-925"
+    ]
+   },
+   {
+    "file": "src/content/awards.js",
+    "line": 164,
+    "assumes": "L.speechCard ignores gates, so every band gets Marcel's speech ('Marcel hands you the microphone', 'Take a shot at Tundra Wraith', thank the moose \u2192 mooseMuse). speechWorstVan is Kenji accepting for the Moose Hearse.",
+    "needs": "speech and speechWorstVan per band (Moth, T-Bone and Earl accept Worst Van) plus code that picks them by band.",
+    "size": "M",
+    "couples": [
+     "src/24_sim_labels.js:1263-1278",
+     "src/59c_ui_awards.js:410-425"
+    ]
+   },
+   {
+    "file": "src/content/awards.js",
+    "line": 67,
+    "assumes": "The win and lose lines after the envelopes are all HD (Marcel, Dana, Jaxon's Baba, Kenji).",
+    "needs": "Per-band pools plus keying.",
+    "size": "S",
+    "couples": [
+     "src/59c_ui_awards.js"
+    ]
+   },
+   {
+    "file": "src/content/awards.js",
+    "line": 193,
+    "assumes": "rivalThanks and rivalLoses only have tundra_wraith. The fallback is 'Tundra Wraith win...', and the UI hard-codes .tundra_wraith.",
+    "needs": "Pools for mall_rats, chartbusters and buckle_and_boot, plus fixes to the code fallbacks.",
+    "size": "S",
+    "couples": [
+     "src/24_sim_labels.js:148-149,1106-1110,1237-1238",
+     "src/59c_ui_awards.js:406",
+     "tests/content.test.js:935"
+    ]
+   },
+   {
+    "file": "src/content/awards.js",
+    "line": 26,
+    "assumes": "awards.nominees is missing, so every genre gets FALLBACK_OTHERS (metal-ish names like Combine Harvester of Sorrow and Slough Monster). Presenter Deb Wiebe is billed as 'your first radio play' (HD's DJ).",
+    "needs": "Parody nominee pools per genre in awards.nominees, and a neutral presenter blurb.",
+    "size": "S",
+    "couples": [
+     "src/24_sim_labels.js:150,1168-1169"
+    ]
+   },
+   {
+    "file": "src/content/labels.js",
+    "line": 31,
+    "assumes": "Monolith's demands are 'Marcel should sing in English' (card signed_monolith_english), a radio edit because 'the solo is not 3:30', and an image consultant. Rep Brayden 'wears sunglasses indoors, like Kenji' and shares a name with Buckle & Boot's Brayden. The DIY perk says 'Nobody tells Marcel what language to sing in', and the Gopherwood perk mentions the cape.",
+    "needs": "Demand sets per genre or band (e.g. punk: tone down the council songs; rock: legal clearance for the riff; country: more trucks), each with a card and demandFx entries. Neutral perks and a renamed rep.",
+    "size": "M",
+    "couples": [
+     "src/content/cards.js:1046-1180",
+     "src/24_sim_labels.js:264,283",
+     "src/content/economy.js:163-170"
+    ]
+   },
+   {
+    "file": "src/content/labels.js",
+    "line": 60,
+    "assumes": "Studios are all around Saskatoon (Mom's Basement, Strip Mall Sound, Grain Silo). Strip Mall Sound ('between a nail salon and vacuum repair') repeats Gravel Kings' own Unit 4B joke. Producer Pierre fixes Marcel's pitch, and Chad calls Kenji 'the tall one'.",
+    "needs": "Tokenised or neutral studio and producer text, or per-band studio variants (Mom's Basement city = the band's city).",
+    "size": "S",
+    "couples": [
+     "src/content/album_words.js:97-330"
+    ]
+   },
+   {
+    "file": "src/content/album_words.js",
+    "line": 97,
+    "assumes": "None of the 19 studioEvents has a band gate. Speakers are marcel/dana/jaxon/kenji/baba (Kenji's one take, Dana's take 41, Baba rates the mix, Marcel's candles), and they are drawn for every band.",
+    "needs": "Band gates on the HD events, plus per-band studio events (Rox won't do take two, the engineer flags Lenny's riff, Earl's 1979 story, Duke's hat on the mic).",
+    "size": "M",
+    "couples": [
+     "src/24_sim_labels.js:553-575",
+     "tests/content.test.js:964"
+    ]
+   },
+   {
+    "file": "src/content/song_titles.js",
+    "line": 60,
+    "assumes": "punk, rock and country have 8 titles each (metal has 46), so titles repeat with roman numerals after 8 songs. 'Snow Route Parking Ban' duplicates a Tundra Wraith song.",
+    "needs": "About 40 titles per genre in the band's voice (council for Rox, 1985 for Chase, trucks and farms for Travis Lee).",
+    "size": "S",
+    "couples": [
+     "src/21_sim_songs.js:457-468"
+    ]
+   },
+   {
+    "file": "src/content/genres.js",
+    "line": 176,
+    "assumes": "Backing for punk, rock and country is one style, one riff and a few progressions, with no tempo-banded styles, stabs, arps or brk. Metal has 3 styles, 5 riffs, tune, bassFloor, stabs, arps ('Dana's solos') and breakdown growls.",
+    "needs": "Genre audio parity for v0.9: tempo styles (punk d-beat and skate; rock driving, shuffle and power ballad; country train, two-step and waltz), more riffs and progressions, lead arps for Lenny, Earl and Clementine's fiddle solos, and breakdown vocals.",
+    "size": "M",
+    "couples": [
+     "src/30_audio.js:779,909-1019",
+     "src/content/grooves.js",
+     "tests/sim_audio.test.js"
+    ]
+   },
+   {
+    "file": "src/content/grooves.js",
+    "line": 116,
+    "assumes": "Coach lines are global rather than per genre or band. The 'name' coach assumes Marcel ('not about my lawn', 'before he sneaks a French one in').",
+    "needs": "Coach lines per genre or band, and keying in coachFor.",
+    "size": "S",
+    "couples": [
+     "src/54_ui_sequencer.js:386-390"
+    ]
+   },
+   {
+    "file": "src/content/road_cards.js",
+    "line": 12,
+    "assumes": "Home road cards: 13 are gated to driver 'kenji' (safe, but other bands lose them). The 4 driver:'you' cards and 14 ungated cards are all written for HD (Marcel's cape and moose, Dana, Jaxon and Baba's perogies, 'the five of you', the Moose Hearse, 'Hail Damage takes hail personally', 'Kenji never missed a turn'). The ungated ones fire for any band.",
+    "needs": "Band gates on the HD cards and neutral rewrites with {driver}/{van}/{name:} tokens. Per-driver pools for Moth (her apartment, her laundry, free fixes), T-Bone (safe and slow, Chase begging to drive, cassettes) and Earl (20 under, historical markers, road stories that build chemistry). A 'you' pool per band, and per-band versions of the C1 events (shotgun fight with Chase; the cape-in-door card stays HD). Tests must allow the new speakers.",
+    "size": "L",
+    "couples": [
+     "src/26_sim_world.js:523-547",
+     "tests/content.test.js:616-625"
+    ]
+   },
+   {
+    "file": "src/content/road_cards.js",
+    "line": 435,
+    "assumes": "Abroad road cards are ungated except the driver:'kenji' ones, and mention Jaxon, the cape at the border and the moose album, Marcel naming kangaroos, and 'the block heater they brought from Saskatoon'.",
+    "needs": "Tokenised or neutral rewrites, or band variants.",
+    "size": "M",
+    "couples": [
+     "src/25_sim_tour.js (roadCardOk)"
+    ]
+   },
+   {
+    "file": "src/content/road_cards.js",
+    "line": 536,
+    "assumes": "drivers.you.takeOver says 'The tiny cactus stays on the dash', which only fits Kenji. The code posts a driver's return line as 'jaxon'.",
+    "needs": "takeOver lines per band driver (Moth's laundry, the cassette pile, Earl's 1987 atlas left on the dash) and code that uses a band member as the poster.",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js:492-503"
+    ]
+   },
+   {
+    "file": "src/content/shop.js",
+    "line": 162,
+    "assumes": "shop.lines (outro, solo, misprintCollector, move, van, merchUnlock, evicted) use HD speakers and details (Baba, Marcel's mirror, HALE DAMAGE), and sections.solo says 'Dana's spotlight' (line 43). chat() hands the line to the first active member, so Rox would say Marcel's 'My mirror is coming with us'.",
+    "needs": "Line sets per band, or who-filtered lists like logo.js, and a neutral solo blurb.",
+    "size": "S",
+    "couples": [
+     "src/2a_sim_shop.js:86-92,264,363,454,732,799-841"
+    ]
+   },
+   {
+    "file": "src/content/shop.js",
+    "line": 45,
+    "assumes": "Space tiers 1-3 are shared across bands. Rent-A-Riff sits 'next to the vacuum repair', repeating GK's start, and the Potash Place is Saskatoon's arena. Tier-0 upgrades belong to a garage: Dad's beer fridge, the curb couch, Christmas lights ('Marcel says'), a PA to 'hear Marcel', an iso booth for Marcel, 'blue for Kenji', catering Baba approves, a star door Marcel polishes.",
+    "needs": "Tier-0 upgrades per start space (Suds-O-Rama basement, Unit 4B, the Quonset) and tier 1-3 names and blurbs per city (Regina, Edmonton and Swift Current venues), e.g. names/blurbs keyed by band.",
+    "size": "M",
+    "couples": [
+     "src/2a_sim_shop.js:236-241",
+     "src/41_render_garage.js",
+     "src/content/cards.js:1682-1709"
+    ]
+   },
+   {
+    "file": "src/content/shop.js",
+    "line": 128,
+    "assumes": "Each non-metal genre has only one genre merch item. The only misprint is 'HALE DAMAGE shirts', with the matching misprint card and economy note.",
+    "needs": "One or two more items per genre (punk zine or patch set, rock lighter or bandana, country belt buckle or koozie) and a misprint per band ('FROST HEAVY', 'GRAVEL KINDS', ...).",
+    "size": "S",
+    "couples": [
+     "src/2a_sim_shop.js:497-515,826-834",
+     "src/content/economy.js:311"
+    ]
+   },
+   {
+    "file": "src/content/shop.js",
+    "line": 31,
+    "assumes": "Flavour text is tied to Saskatoon and HD: the pawn shop 'on 8th Street', the bus blurb 'Kenji still drives', bunks 'Dana sleeps with her guitar', the merch pod 'Marcel wants... coffin', the ditch near Davidson, the block heater 'to Yorkton'.",
+    "needs": "Neutral or tokenised text.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "src/content/bandbook.js",
+    "line": 28,
+    "assumes": "posts and viral pools are global and HD (Dad's deep freeze, Mom with the laundry, the garage door, Baba's recipe, a Kenji exclusive, a moose at the garage window). viral.cringe covers only marcel, dana and jaxon.",
+    "needs": "Post and viral pools per band plus keying. The code's speakerFor prefer list is HD ids.",
+    "size": "M",
+    "couples": [
+     "src/29_sim_fans.js:110-118,255-300,395"
+    ]
+   },
+   {
+    "file": "src/content/bandbook.js",
+    "line": 85,
+    "assumes": "Comments and handles are metal/Saskatoon ('fake metal', 'BEST BAND IN THE 306' \u2014 Edmonton is 780, lawn mower, hailstorm, 'your van is a hearse', realmetal_only, HailYeahHelen). The rival comment pool is one voice, Tundra Wraith's sincere support, used for every rival.",
+    "needs": "Comment and handle pools per genre, and per-rival comment pools (Mall Rats sponsor-speak, Chartbusters' condescension, Buckle & Boot bro talk).",
+    "size": "M",
+    "couples": [
+     "src/29_sim_fans.js:170-195"
+    ]
+   },
+   {
+    "file": "src/content/bandbook.js",
+    "line": 136,
+    "assumes": "Superfans Dale from Warman (start:true for every band) and Big Wendell (Davidson) are from the Saskatoon area. gigLines include 'better than Marcel does' and a president's gift of 'Kenji's tiny cactus'.",
+    "needs": "An owner decision on whether Dale is universal, or a first superfan per band (keep the id 'dale' mechanics with per-band name, blurb and comments). Neutral gigLines.",
+    "size": "M",
+    "couples": [
+     "src/29_sim_fans.js:136-178,467-490",
+     "src/content/economy.js:273-275",
+     "src/content/licensing.js (daleMood)",
+     "src/content/npcs.js:45-47",
+     "src/2a_sim_shop.js:642"
+    ]
+   },
+   {
+    "file": "src/content/bandbook.js",
+    "line": 192,
+    "assumes": "Random mail and gifts include a 'HALE DAMAGE' toque, a crocheted Lord Abyssus and a Moose Hearse poem. Scripted gifts include macaroni Kenji, jp_omamori (Moose Hearse) and jp_portrait (Kenji). The Full Kit tier perk (line 216) is a note from Kenji. All of these reach every band.",
+    "needs": "Band gates or tokens, a scripted gift per band, and a neutral tier perk.",
+    "size": "S",
+    "couples": [
+     "src/29_sim_fans.js (mail/gifts)",
+     "src/25_sim_tour.js (jp gifts)"
+    ]
+   },
+   {
+    "file": "src/content/bandbook.js",
+    "line": 250,
+    "assumes": "Every scandal and fan card is gated with HD (scandal_turf/cover/chips/jazz/essay/curling, fans_dale_hello, trucker, macaroni, hater_page, patreeon, club_grumble). Other bands get no Bandbook scandals, no superfan cards and no Patreeon offer card; the club only opens from the laptop.",
+    "needs": "Scandal cards per band (who = the new members) and per-band or neutral superfan and Patreeon cards. superfanCard uses fixed ids, so it needs a lookup per band.",
+    "size": "M",
+    "couples": [
+     "src/29_sim_fans.js:225-235,534-547"
+    ]
+   },
+   {
+    "file": "src/content/world.js",
+    "line": 282,
+    "assumes": "callHome is keyed to marcel/dana/jaxon, and the generic line says '4 a.m. in Saskatoon'. W.lines depart (Marcel's cape, Jaxon and Baba's toques), home (the Moose Hearse, back in Saskatoon), rival ('Tall accountant? Veggie tray?'), moose and gong (Marcel) are all HD.",
+    "needs": "callHome lines for the 10 new members, and neutral or tokenised depart/home/gong lines with rival lines per rival.",
+    "size": "M",
+    "couples": [
+     "src/25_sim_tour.js:467,597,681,696,737"
+    ]
+   },
+   {
+    "file": "src/content/world.js",
+    "line": 331,
+    "assumes": "Several region cards are ungated and leak HD: wt_uk_rain (Dana, the cape), wt_au_spider (Dana), wt_ru_minus40 ('spring in Saskatoon', Marcel), wt_ru_banya (Marcel), wt_invite (Marcel measures the cape) and the forced story card wt_homesick (Dana).",
+    "needs": "Rewrite these, and add region cards per band (e.g. country is huge in Australia: rodeo; punk: a UK squat gig).",
+    "size": "M",
+    "couples": [
+     "src/25_sim_tour.js (card draw / forced story cards)"
+    ]
+   },
+   {
+    "file": "src/content/world.js",
+    "line": 62,
+    "assumes": "City blurbs (Paris loves Marcel, Berlin is Dana, the Helsinki moose), rental blurbs (a cape, 'Kenji drives on the left', Marcel's cape in the overhead rack), package blurbs (Paris 'where they love Marcel', eu_moose_run needs 'moose' which only HD can earn, 'Escape the Saskatchewan winter') and venue quirks (petit_chaos, sauna_inferno) are all HD. The code also hard-codes a Paris + Marcel line.",
+    "needs": "Neutral text, and optionally a special tour per band to mirror the Moose Run.",
+    "size": "M",
+    "couples": [
+     "src/25_sim_tour.js:405,647"
+    ]
+   },
+   {
+    "file": "src/content/calendar.js",
+    "line": 96,
+    "assumes": "Season news is posted as jaxon, baba, dana and marcel (the Kenji line too) through postChat with no active check, so Jaxon, Dana and Marcel post in Frost Heave's chat.",
+    "needs": "News lines per band, or neutral speakers, plus an active-speaker check.",
+    "size": "S",
+    "couples": [
+     "src/28_sim_calendar.js:266-268",
+     "src/20_sim_career.js:183-191"
+    ]
+   },
+   {
+    "file": "src/content/calendar.js",
+    "line": 66,
+    "assumes": "Holiday gig lines say 'Marcel sings it in French', 'six Marcels... in capes' and 'Jaxon kisses his guitar'. costumes has Tundra Wraith but not your actual rival. hailBand is HD-only (code checks bandId).",
+    "needs": "Tokenised lines ({name:front}), costumes that include {rival}, and optionally flavour weather lines per band.",
+    "size": "S",
+    "couples": [
+     "src/28_sim_calendar.js:200,219-229"
+    ]
+   },
+   {
+    "file": "src/content/map.js",
+    "line": 16,
+    "assumes": "Edmonton (Gravel Kings' start) is in ring 'west' with era 'local', so their home city is locked until Local Heroes. The home box label is 'Saskatchewan', and farListings treats their home as 'far'.",
+    "needs": "A home ring per band (band.homeRing, an Alberta home ring, or ring eras that depend on the band) and lock teasers per band.",
+    "size": "M",
+    "couples": [
+     "src/26_sim_world.js:122,133-141,248-249",
+     "src/56_ui_board.js",
+     "tests/content.test.js:552"
+    ]
+   },
+   {
+    "file": "src/content/map.js",
+    "line": 17,
+    "assumes": "Map text is HD: the West lock says 'Kenji has already checked the tire pressure', Saskatoon is 'Home. Eight bridges, one garage.', the Sask ring is 'Home.', and Gravelbourg says 'Marcel says bonjour'.",
+    "needs": "Neutral or per-band text.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "src/content/venues.js",
+    "line": 373,
+    "assumes": "Edmonton has only 2 venues (tier 2 and tier 3) and no tier 1, so Gravel Kings have no starter gigs at home. Swift Current has one tier-1 venue (the skate bowl) and two tier 2. Regina is fine.",
+    "needs": "About 6-8 tier 1/2 venues around Edmonton, adding St. Albert, Sherwood Park and Leduc (the members' hometowns) as map cities. About 5 SW Saskatchewan country venues (halls, rinks, a rodeo, and Maple Creek, Gull Lake, Shaunavon) with roads.",
+    "size": "L",
+    "couples": [
+     "src/content/map.js cities/roads",
+     "src/26_sim_world.js (listings)"
+    ]
+   },
+   {
+    "file": "src/content/venues.js",
+    "line": 22,
+    "assumes": "Every band's forced first gig is buddys_house_party (Saskatoon). C.CARD_BOOKABLE only lists Saskatoon venues.",
+    "needs": "A first-gig house party per band (Regina's craigs_basement exists; add one in Edmonton and a Quonset or farm-yard party), a band.firstGig field, and more CARD_BOOKABLE ids.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js:496",
+     "src/02_contracts.js:62"
+    ]
+   },
+   {
+    "file": "src/content/venues.js",
+    "line": 75,
+    "assumes": "Venue quirks and catches name HD members or Tundra Wraith: craigs_basement ('Marcel is six foot one'; this is likely Frost Heave's first gig), rum_runners_tunnel, broadway_bijou, riverbend_auditorium, petit_salon_fransaskois, emptress_tea_room, club_poutine_sonore, screech_in_room, sourtoe_saloon, and frostbite_lounge ('Tundra Wraith drink here. Gord...').",
+    "needs": "{name:front} / {rival} tokens or neutral text.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js:119-133"
+    ]
+   },
+   {
+    "file": "src/content/economy.js",
+    "line": 192,
+    "assumes": "Some economy text is HD: the posters promo blurb ('Warman to Moose Jaw... Baba's staple gun'), soloCrowd ('Dana's solo'), the misprint note ('HALE DAMAGE') and kenjiDrift.",
+    "needs": "Neutral text (the numbers are fine).",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "src/content/licensing.js",
+    "line": 69,
+    "assumes": "The insurance brand is Marcel's employer (speaker marcel, takeFx on Marcel's mood, the storyboard adjuster is Marcel), but its weights are country 0.5, rock 0.3 and punk 0.1. Other bands can get an offer about Marcel, with the speaker falling back to 'mom'.",
+    "needs": "A band gate on the brand, and an 'employer' brand per band (Tamara's dental clinic for GK, a city-hall PSA for Frost Heave, a seed or implement dealer for the Ramblers). Needs a band filter in brand picking.",
+    "size": "S",
+    "couples": [
+     "src/2c_sim_licensing.js:129-130,310-314"
+    ]
+   },
+   {
+    "file": "src/content/licensing.js",
+    "line": 36,
+    "assumes": "Brand text assumes the HD household: truck (Dad; 'Dad parks his truck facing the garage'), energy drink ('Jaxon checks the porch', Dale), hockey (speaker Mr. Lindqvist), game (Deb of CRUD 90.5, 'Kenji nods', 'So does Dana').",
+    "needs": "Neutral or tokenised text, or speakers per band.",
+    "size": "S",
+    "couples": [
+     "src/2c_sim_licensing.js:310-314"
+    ]
+   },
+   {
+    "file": "src/content/recap.js",
+    "line": 43,
+    "assumes": "goodYear speakers are marcel, dana, jaxon, mom and kenji. The v0.9 fallback hands their lines to any non-Kenji member, so Rox says 'My solos can only fill so much' and 'Baba came to two', and the chemistry topic is dropped.",
+    "needs": "A goodYear set per band.",
+    "size": "S",
+    "couples": [
+     "src/2d_sim_recap.js:190-203"
+    ]
+   },
+   {
+    "file": "src/content/recap.js",
+    "line": 14,
+    "assumes": "Headlines are HD: 'Customs Confused by Cape', 'Lawyers Learn What a Cape Is', 'Garage Declared a Landmark / Still Standing', 'Refinance the Garage'.",
+    "needs": "Neutral headlines or {space}.",
+    "size": "S",
+    "couples": [
+     "src/2d_sim_recap.js"
+    ]
+   },
+   {
+    "file": "src/content/activities.js",
+    "line": 41,
+    "assumes": "hustle.grumbler is 'marcel' and falls back to the first member. The write blurb says 'let the singer scream over it'.",
+    "needs": "A grumbler per band (bands.roles) and neutral blurbs.",
+    "size": "S",
+    "couples": [
+     "src/20_sim_career.js (hustle handler)"
+    ]
+   },
+   {
+    "file": "src/content/creator.js",
+    "line": 41,
+    "assumes": "Creator text is HD or Saskatoon: 'Kenji shades', 'Forty winters in Saskatoon' (27), 'The Saskatoon Gophers' jersey (68), the cape hint 'Marcel will have opinions' (87). Rock has only 2 genreStart unlocks.",
+    "needs": "Neutral names and hints, and optionally more rock genreStart parts.",
+    "size": "S",
+    "couples": [
+     "src/5j_ui_creator.js"
+    ]
+   }
+  ]
+ },
+ {
+  "area": "ui",
+  "works": [
+   "Repo root for all couples paths: /home/user/GarageToGlory. This was a read-only pass; no files were edited.",
+   "src/50_ui_core.js is fully generic. ui.who resolves any member id from state.members or content.bands[bandId].members (names, nicks, colours from the shirt, roles), then npcs, then a title-cased raw id. The pieces built on it are generic too: ui.avatar, ui.deltaChips (per-member mood/skill chips), toasts, bubbles, tabs and the screen stack.",
+   "51 genre screen is data-driven. Each card reads content.bands (bandFor(genre)): name, spaceName, city, and whether it is locked via band.locked / comingIn. Setting locked:false and comingIn:null in src/content/bands.js makes the Frost Heave, Gravel Kings and Grid Road Ramblers cards playable with no UI change.",
+   "51 band intro is generic. It lists band.members (fullName, role, bio) with avatars and shows band.blurb and the spaceName + city home base. It works for 3 or 4 members and any role strings, including fiddle and vocals/acoustic.",
+   "51 cold open reads band.coldOpen, and all four bands have one, run through GG.career.fillText. The logo picker gets bandId and genre. Creator carry-over is per genre (GG.creator.carry.count(genre)). GG.main.newCareer passes draft.bandId. Player look presets (content/presets.js) are genre-neutral.",
+   "52 is generic across the week screens: HUD, calendar strip (genre-season fit comes from GG.calendar), planner, results, wrap and end screen. Wrap member moods iterate w.members. The 2D fallback bandmate buttons come from state.members. Member taps read lines.tap[id] and fall back to generic lines rather than Marcel's.",
+   "53 laptop tabs are generic. The Band tab delegates to 58 bandPanel. Money, song catalog and practice entry are band-agnostic.",
+   "54 sequencer genre plumbing is already four-genre. Lanes follow gear. GG.songs.presets, grooves(genre).mods, tempoLabel, verdict and genre tempo ranges exist for metal, punk, rock and country (content/grooves.js, content/genres.js), and GG.audio.styleFor(genre, bpm) is genre-aware. coachFor matches coach lines by role regex against the active lineup ('lead guitar|guitar|fiddle', 'vocals' also matches 'vocals/guitar' and 'vocals/acoustic'). Save/sanitize pass genre(), and the isFrench/fr flag only fires on French titles.",
+   "55 gig is genre-aware: audio plays with S().genre. MOMENT_TEXT already covers all four genre moments (wallOfDeath, circlePit, lighters, lineDance, from 22_sim_gig GENRE_MOMENT). stageData passes genre plus the active lineup including fill-ins, with roles and looks from content. BANTER already has lines for rox, benny, moth, chase, lenny, tamara, earl, clementine and duke, plus a generic {band}/{city} pool. Highway, lanes, difficulty, calibration and results are band-agnostic.",
+   "56 gig board is generic: listings, fit labels, tags and estimates come from GG.world, and the home pin uses W().home(st), which is state.city. driverLine already uses d.name + def.effect for non-Kenji drivers. The van strip shows state.van.name, which comes from the per-band vanNames in content/shop.js.",
+   "57 van trip is mostly generic. It passes GG.world.driver(st) (id and dashboard) and the weather to the 3D van scene, and the header shows '<driver> drives'. The van-info sheet shows driver name, effect, blurb and dashName, plus seating copy ('<name> drives, you ride shotgun'). Rename and van names per band per tier work through GG.shop.vanName(bandId, tier).",
+   "58 drama UI is generic: pay slider, member cards (wants from GG.drama.want), holes by role (a 'fiddle' hole slugs fine), fill-ins, the recruit screen (the ad uses st.genre and ad.role), tone-aware chat and the fill-in ui.who override.",
+   "59 label: V.memberLine falls back to the first active member and the 'any' pool, so no Marcel lines leak to other bands, although they only get generic lines. Offer, deal, recoup, demands and DIY flows are band-agnostic. V.bandName reads content.",
+   "59b studio: the sim supplies coverOptions and titleOptions, and content/album_words.js motifs, palettes and fonts are genre-tagged. The MOTIF drawer covers every content motif (mower, aurora, lightning, crown, highway included). GENRE_FONT and drawLogo pick metal vs honest type per genre. Booking, session and release flows are generic.",
+   "59c awards: reviews, chart (sim chartView), cert, trophies and albums are generic. catDef fills '{genre} Album of the Year'. tailgate_weekly scores in \ud83e\udd20 hats. carpetSetup passes the band's lineup and band.rival to the carpet render.",
+   "59d rival UI reads GG.rival (get, cast, lineup, leaderboard, showdown, record, heat), content.rivalry showdown texts and ui.rivalLogo per rival id. The verdict, record, heat meter, board badges and gigTarget are rival-agnostic, and {rival} fills from GG.rival.name(st).",
+   "5m logo: defaults exist for all four bands and all four rivals (content/logo.js defaults and rivals). ui.bandLogo and ui.rivalLogo work for any id. The picker receives bandId and genre, and carry-over is per genre.",
+   "5g Bandbook, 5h settings/calibration/practice, 5l recap pages and licensing UI (headline, goodYear, licensing offers and text come from sim/content) and 5j creator (draftState(genre), carry-over) are structurally generic. 5k tier-0 space already uses band.spaceName through GG.shop.spaceDef, and van names, dealer, upgrades and merch are data-driven.",
+   "60_main is generic: newCareer passes bandId, setState and route are phase-based, and the week-1 teach toast speaks as st.members[0] (Rox, Chase or Travis Lee automatically). The Loonies and Gong routing is band-agnostic."
+  ],
+  "findings": [
+   {
+    "file": "/home/user/GarageToGlory/src/20_sim_career.js",
+    "line": 124,
+    "assumes": "Cross-cutting enabler; the file is outside the UI area, but most UI findings below depend on it. fillText only knows {player, band, city, rival, recruit, name:id, nick:id}, and {city} falls back to 'Saskatoon'. So UI copy hard-codes Marcel (singer and namer), Dana (soloist), Kenji (driver), 'the garage' (space) and 'the Moose Hearse' (van).",
+    "needs": "Add role tokens: {singer}, {soloist}, {namer}, {quiet} (the silent or deadpan member), {driver} (falls back to 'you'), {van} (state.van.name), {space} / {spaceShort} (garage / basement / Unit 4B / Quonset), {door}, {province}, {rivalFrontman}. Also add a small per-band 'ui' flavour block in src/content/bands.js with role ids, spaceShort, doorName, city street, province, count-in line and empty-state lines. With these, roughly 40 of the S findings below become one-line token swaps.",
+    "size": "M",
+    "couples": [
+     "src/content/bands.js",
+     "src/26_sim_world.js",
+     "src/2a_sim_shop.js",
+     "all src/5*_ui_*.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/51_ui_menu.js",
+    "line": 184,
+    "assumes": "Genre cards fall back to 'locked unless metal' when the content band is missing, and show a 'Coming in v0.9' tag. The GENRES fallback (L16-21) has empty cities for punk, rock and country and 'Your parents' garage' for metal.",
+    "needs": "Flip locked:false and comingIn:null in bands.js; the UI then works. Remove the `g.genre !== 'metal'` default and the 'Coming in' branch, and fill the fallback cities (Regina, Edmonton, Swift Current) or drop the fallback.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/51_ui_menu.js",
+    "line": 339,
+    "assumes": "The cold open always renders el('div.hail'), the hail animation, over every band's cold open: Frost Heave in a January pothole in Regina, Gravel Kings at minus 40 in Edmonton, the Ramblers at a canola sunset.",
+    "needs": "A per-band cold-open effect (e.g. band.coldOpenFx: 'hail' | 'snow' | 'neon' | 'dust') with matching CSS.",
+    "size": "S",
+    "couples": [
+     "src/00_shell.html (.hail L239)",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/51_ui_menu.js",
+    "line": 343,
+    "assumes": "The last cold-open button says 'Into the garage \u2192'. The fallback label is 'Hail Damage' (L340) and COLD_FALLBACK (L323-328) is Hail Damage's Saskatoon hail story. Several fallbacks default to 'hail_damage' / 'metal' (L189, 205-206, 229, 270, 297), which would silently hide a lookup bug.",
+    "needs": "Use the space noun: 'Into the basement \u2192', 'Into Unit 4B \u2192', 'Into the Quonset \u2192'. Make the fallbacks generic, or assert instead of defaulting.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/51_ui_menu.js",
+    "line": 121,
+    "assumes": "The title screen is Hail Damage's: the 3D scene is the parents' garage in a hailstorm with Marcel, the hint says 'Psst: tap the kit. Or Marcel.', and the tagline is \"From your parents' garage\u2026\".",
+    "needs": "Owner call. Keeping Hail Damage as the title 'cover band' is fine (it is the game's name). The alternative is rotating the title scene and hint by the last-played band.",
+    "size": "S",
+    "couples": [
+     "src/45_render_title.js",
+     "src/60_main.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/52_ui_week.js",
+    "line": 100,
+    "assumes": "The driver is Kenji. The gig dock hint says 'The van is warming up. Kenji is already in it.' and the results pending line (L388) says 'Kenji is already in the driver\u2019s seat. Nobody saw him get in.' This shows for every band, and even after Kenji quits.",
+    "needs": "A driver-aware line from GG.world.driver(st): the name, or a 'you drive' variant. Add a per-driver flavour line (Moth unlocks 'her apartment', T-Bone checks tire pressure twice, Earl opens the 1987 atlas).",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js",
+     "GG.content.drivers"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/52_ui_week.js",
+    "line": 37,
+    "assumes": "The fund help text says '\u2026upkeep, gas and capes drain it' (Marcel's cape). ACT_FALLBACK write (L19) says 'Probably about a lawn.' Content activities write says 'let the singer scream over it' (metal).",
+    "needs": "Neutral or genre-keyed help and activity blurbs.",
+    "size": "S",
+    "couples": [
+     "src/content/activities.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/52_ui_week.js",
+    "line": 98,
+    "assumes": "Home is a garage: 'Tap a spot in the garage' (L98), 'Ten years. One garage.' (L490), 'played their last garage show. Your mom kept every flyer.' (L521), and \"The 3D garage couldn't start\" (L620). The 2D fallback backdrop (.fallback .door/.bulb/.stain) is a garage door.",
+    "needs": "The {space} noun in copy, and a per-space 2D fallback backdrop: laundromat dryers, strip-mall till, Quonset arch.",
+    "size": "S",
+    "couples": [
+     "src/00_shell.html (.fallback L410-422)",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/52_ui_week.js",
+    "line": 568,
+    "assumes": "Dead Hail Damage fallbacks: DOOR_QUIPS (\"Dad's truck\u2026\", 'garage door opener'), 'The Moose Hearse awaits.' (L572) and the trophy shelf \"Dad keeps his bowling trophy\" (L563). They are only reached if 57 or 59c are missing.",
+    "needs": "Delete them or make them generic.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/52_ui_week.js",
+    "line": 592,
+    "assumes": "Member taps read lines.tap[memberId], which only exists for marcel, dana, jaxon and kenji. The other 10 members silently get TAP_FALLBACK ('\u2026', 'Hey.'). The year-end panel (L435) picks from the flat lines.yearEnd pool, which is Hail Damage flavour, with no band filter.",
+    "needs": "Tap lines for rox, benny, moth, chase, lenny, tamara, travis, earl, clementine and duke. yearEnd needs to be band-keyed, or pick with a band gate.",
+    "size": "M",
+    "couples": [
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/53_ui_laptop.js",
+    "line": 22,
+    "assumes": "The empty chat says 'Kenji has read everything.' and the empty catalog (L65) says 'Marcel is \"workshopping\".'",
+    "needs": "Band-flavoured empty states ({quiet}, {singer}).",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/54_ui_sequencer.js",
+    "line": 53,
+    "assumes": "The soloist is Dana. \"Dana's spotlight\" appears at L53, 'the rest is Dana's' at L55 and L94, \"Dana's solo before the last chorus\" at L372, 'while she shreds' at L376, and 'Dana will mention it. Gently. Twice.' at L378. Frost Heave has no lead guitarist, and the Ramblers' soloist could be Earl or Clementine on fiddle.",
+    "needs": "A soloist resolver: the active member matching role 'lead guitar' > 'guitar' > 'fiddle', with name and pronoun, plus a per-band 'no solo' gag. The sim sides must use the same resolver.",
+    "size": "M",
+    "couples": [
+     "src/22_sim_gig.js (roles.solo)",
+     "src/21_sim_songs.js L609 say('dana','solo')",
+     "src/2a_sim_shop.js L688/L803 (solo unlock gated on isActive 'dana')",
+     "src/content/shop.js L43 solo blurb",
+     "src/5k_ui_shop.js L64"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/54_ui_sequencer.js",
+    "line": 206,
+    "assumes": "Marcel names the songs: 'Type your own, or let Marcel' (L206), aria 'New title from Marcel' (L208), '\ud83c\udfb2 Another title from Marcel' (L461), and the placeholder 'Crabgrass of the Damned' (L463, a lawn/metal title).",
+    "needs": "The band's namer ({singer}: Rox, Chase, Travis Lee) and a per-genre placeholder title.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js",
+     "src/content/song_titles.js",
+     "src/21_sim_songs.js pickTitle"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/54_ui_sequencer.js",
+    "line": 255,
+    "assumes": "The metronome toast says 'Marcel counts you in: \"one, two, uh, the other ones.\"' The no-audio toast (L267) says \"Imagine it. It's heavy.\" (metal).",
+    "needs": "A per-band count-in line and a genre-neutral no-audio toast.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/54_ui_sequencer.js",
+    "line": 386,
+    "assumes": "coachFor matches by role, but the coach texts in content/grooves.js are Marcel/metal: the name step says 'They are not about my lawn. Do not check.' and 'before he sneaks a French one in again', and the tempo step says 'Trust your neck'. Rox, Chase or Travis Lee would say the lawn lines.",
+    "needs": "Per-genre or per-band coach sets: coach[genre][step], falling back to a neutral set. The UI change is a one-line lookup by genre().",
+    "size": "S",
+    "couples": [
+     "src/content/grooves.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/54_ui_sequencer.js",
+    "line": 547,
+    "assumes": "firstTip reads lines.writeTips keyed by dana, marcel and jaxon only, so the other bands silently get no first-Write tip. The existing tips also teach the metal beat ('kick on every 8th is the metal thing').",
+    "needs": "writeTips for the other bands' members with genre-correct beats: punk skank, rock backbeat, country train beat.",
+    "size": "S",
+    "couples": [
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/55_ui_gig.js",
+    "line": 49,
+    "assumes": "Between-song BANTER is hard-coded in the UI. Hail Damage members have 2 lines each, the others 1. 'travis' (Travis Lee) is missing entirely, so he always gets the generic pool, and so do recruits. The generic pool has no genre voice.",
+    "needs": "Move banter to content/lines.js keyed by member id, with 2-3 lines for all 14 members, plus genre 'any' pools (country \"Y'all\", punk council rants).",
+    "size": "S",
+    "couples": [
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/55_ui_gig.js",
+    "line": 47,
+    "assumes": "The only band action with flavour is capeSpin ('{n} spins the cape!', MOMENT_TEXT 'Cape spin!'). Unknown moment or action kinds render the raw id (MOMENT_TEXT[p.kind] || p.kind).",
+    "needs": "MOMENT_TEXT/BAND_TEXT entries for new v0.9 genre band moments, e.g. Duke's hat tip, Clementine's fiddle break, Benny breaking a string, Chase's high kick, Earl's 1979 story.",
+    "size": "S",
+    "couples": [
+     "src/22_sim_gig.js (moment/band emitters)",
+     "src/42_render_stage.js (bandAction)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/55_ui_gig.js",
+    "line": 712,
+    "assumes": "The 2D stage backdrop (no WebGL) always draws 4 band silhouettes, one for each of Hail Damage's other members. Frost Heave and Gravel Kings have 3 others; the Ramblers have 4.",
+    "needs": "Render N <i> elements, N = active lineup length.",
+    "size": "S",
+    "couples": [
+     "src/00_shell.html (.gig-back .band L461-463)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/55_ui_gig.js",
+    "line": 762,
+    "assumes": "The Expert difficulty blurb ends 'Kenji nods, once.'",
+    "needs": "Neutral text, or {quiet}.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/56_ui_board.js",
+    "line": 109,
+    "assumes": "Marcel is the voice of exposure deals: 'Marcel: \"Exposure is basically money. Say yes.\"' (L109) and a toast from 'Marcel' saying 'We are going to be SO exposed.' (L287). It fires for every band, and even after Marcel quits.",
+    "needs": "Use the {singer} name and a per-band line.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/56_ui_board.js",
+    "line": 208,
+    "assumes": "driverLine falls back to {id:'kenji', name:'Kenji'} and special-cases 'Kenji drives. Kenji always drives.' The banned-wall polaroid icon is '\ud83e\udd18' metal horns (L214). The footer button says 'Back to the garage' (L265).",
+    "needs": "A per-driver flavour line from the driver def, a genre icon map for the polaroids, and the {space} noun.",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js",
+     "GG.content.drivers"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/56_ui_board.js",
+    "line": 248,
+    "assumes": "The map defaults to the 'sask' ring and the home city's ring, and ring tabs always start with Saskatchewan. Gravel Kings' home, Edmonton, is in the West ring, which world.ringOpen keeps locked until Local Heroes. So the map opens on a locked ring with the home pin dimmed, and the West ring's 'home' box is labelled 'Saskatchewan'.",
+    "needs": "The home ring is always open, handled in the sim. Order ring tabs from the home ring, and give each band its own home-box label, or let the ring box follow the band.",
+    "size": "M",
+    "couples": [
+     "src/26_sim_world.js (ringOpen/home/cityOpen)",
+     "src/content/map.js (rings[].home)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/57_ui_van.js",
+    "line": 104,
+    "assumes": "The 2D windshield draws the driver with Kenji's sunglasses whenever the driver isn't you. The only dashboard item it can draw is Kenji's 'cactus', so Moth's laundry, Chase's cassettes and Earl's 1987 atlas never render. The bobblehead is a moose.",
+    "needs": "Per-driver 2D silhouettes (Earl's hat, Moth's hood, T-Bone without sunglasses) and 2D drawings of laundry, cassettes and the atlas.",
+    "size": "M",
+    "couples": [
+     "src/43_render_van.js (dashboard ids)",
+     "GG.content.drivers"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/57_ui_van.js",
+    "line": 244,
+    "assumes": "'The cactus stays on the dash when you drive', including the fallbacks at L249 and L251. When Moth, T-Bone or Earl quits, Kenji's cactus appears on the other band's dashboard.",
+    "needs": "When you drive, keep the band's own designated driver's dashboard item (or none).",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js (driver())"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/57_ui_van.js",
+    "line": 311,
+    "assumes": "The van-info subtitle is 'THE GARAGE DOOR' at space tier 0. The rename placeholder falls back to 'The Moose Hearse' (L319). Kenji lines: 'Kenji will not say it out loud.' (L326), 'The mirrors are still set for Kenji.' and 'Kenji drives. Nobody has ever seen him get in or out.' (L329-330), plus the fallback dr = Kenji (L315).",
+    "needs": "The band's door name, the placeholder from GG.shop.vanName(bandId, tier), and the designated driver's name in the 'you drive' and rename copy.",
+    "size": "S",
+    "couples": [
+     "src/2a_sim_shop.js (vanName)",
+     "src/content/shop.js (vanNames)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/58_ui_band.js",
+    "line": 119,
+    "assumes": "A member who defected to the rival 'Sends a polite card at Christmas.' That is Tundra Wraith's politeness, applied to every rival.",
+    "needs": "A per-rival defector line (Mall Rats sponsored post, Chartbusters signed headshot, Buckle & Boot truck-ad cameo).",
+    "size": "S",
+    "couples": [
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/58_ui_band.js",
+    "line": 155,
+    "assumes": "The hire toast's speaker is 'Hail to the new <role>' (a Hail Damage pun) with 'Welcome to the garage.' The recruit ad (L167) says 'Garage. Snacks. Sometimes heat.'",
+    "needs": "Band- and space-flavoured toast and ad copy (the laundromat offers 'free dryer sheets', the Quonset 'mind the combine').",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59_ui_label.js",
+    "line": 101,
+    "assumes": "The REACT pools for label offers only have marcel, dana, jaxon and kenji lines. The preferred speakers are ['marcel','kenji'] / ['dana','jaxon'] (L148) and ['marcel','dana'] for the signing reaction (L221). Other bands only ever get the generic 'any' lines.",
+    "needs": "Per-member reactions for all members, or move them to content keyed by member id. Choose preferred speakers by role (singer, guitar).",
+    "size": "M",
+    "couples": [
+     "src/content/labels.js or src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59_ui_label.js",
+    "line": 171,
+    "assumes": "Hail Damage names in label copy: 'Marcel is already practising his autograph.' (L171), 'Jaxon has offered to \"do the website\".' (L186), 'The fax machine is Kenji.' (L191, L262), the contract's cape clause '(and Marcel, respectively)' (L209), and 'The label is thrilled. Marcel is not.' (L299).",
+    "needs": "Token or per-band text ({singer}, {quiet}). The contract clause needs a per-band signature prop (Duke's hat, Chase's leather pants).",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59_ui_label.js",
+    "line": 213,
+    "assumes": "The contract party line is `(st.city || 'Saskatoon') + ', SK.'`, a hard-coded province. Gravel Kings (Edmonton) are AB. The LABEL_FALLBACK blurb (L35) says 'Saskatoon basement'.",
+    "needs": "A province per city (content/map.js city.province) or per band.",
+    "size": "S",
+    "couples": [
+     "src/content/map.js",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59b_ui_studio.js",
+    "line": 620,
+    "assumes": "The album-title option hints are a hard-coded list: ['Marcel likes it','Dana would like to discuss','Jaxon\u2019s baba approves','Kenji: \ud83d\udc4d'].",
+    "needs": "Pick from active lineup names with a per-member reaction phrase.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59b_ui_studio.js",
+    "line": 17,
+    "assumes": "Studio copy names Marcel: 'Marcel wants a gatefold.' (L17), the no-producer option 'Marcel will ask for more reverb every four minutes.' (L438) and the release toast 'Marcel has already ordered a cape to match the cover.' (L666). Also the studio-take city fallback 'Saskatoon' (L500), 'Back to the garage' (L550), and promo fallbacks 'Jaxon tells his cousins' / 'Billboard on Circle Drive' (L561-562, fallback only, since the sim has promoOptions).",
+    "needs": "{singer}, {city} and {space} tokens. Check the sim promoOptions text is band-neutral.",
+    "size": "S",
+    "couples": [
+     "src/24_sim_labels.js (promoOptions)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59c_ui_awards.js",
+    "line": 317,
+    "assumes": "The red carpet uses lines('carpet', FB.carpet), but content/awards.js has no 'carpet' key. So the Hail Damage fallback always runs: Marcel ('The cape is wearing me') and Jaxon ('My baba predicts we lose to the corpse-paint guys') speak on every band's carpet, and ui.who('marcel') becomes a stranger called 'Marcel' for other bands.",
+    "needs": "awards.carpet keyed by band (or genre) in content, looked up by bandId in the UI.",
+    "size": "M",
+    "couples": [
+     "src/content/awards.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59c_ui_awards.js",
+    "line": 329,
+    "assumes": "The outfit beat is Marcel's cape: the button says 'Marcel has a question\u2026', outfitCard falls back to FB.outfit ('What Is Marcel Wearing?', L234-241), and the outfit ids are cape/tux/jumpsuit (L345). The sim's outfitCard gates on cape flags, so for other bands it returns null and the UI falls back to Marcel's card.",
+    "needs": "Per-band frontman outfit cards (Rox, Chase's leather pants, Travis Lee or Duke's hat), with the button label taken from the card speaker and outfit ids the carpet render understands.",
+    "size": "M",
+    "couples": [
+     "src/content/awards.js (outfitCards)",
+     "src/24_sim_labels.js (outfitCard)",
+     "src/44_render_carpet.js (outfit ids, cape)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59c_ui_awards.js",
+    "line": 421,
+    "assumes": "The speech card comes from the sim, which returns awards.speech (speaker marcel, gate {band:['hail_damage']}) without checking the gate. The FB.speech fallback (L242-246) is 'Thank the moose' / 'Marcel will love it' / 'Take a shot at Tundra Wraith'. Other bands get Marcel's speech.",
+    "needs": "Per-band speeches, and a speech-card lookup that respects the gate. Use {rival} in the jab option.",
+    "size": "M",
+    "couples": [
+     "src/24_sim_labels.js L1263 speechCard",
+     "src/content/awards.js (speech, speechWorstVan)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59c_ui_awards.js",
+    "line": 402,
+    "assumes": "The rival is Tundra Wraith. The thank-you check is `/tundra wraith/i.test(win)`, the lookup uses rt.tundra_wraith (L406), winnerOf falls back to 'Tundra Wraith' (L257), the carpet speaker 'wraith' is labelled 'Tundra Wraith:' (L322), the carpet intro says 'Tundra Wraith, in full corpse paint, hold the door' (L327), and the no-win summary has the fruit basket 'next year, buddy!' (L433).",
+    "needs": "Compare the winner to GG.rival.name(st) and look up rivalThanks and rivalLoses by rival id. Add a per-rival carpet cameo and summary line.",
+    "size": "M",
+    "couples": [
+     "src/content/awards.js (rivalThanks/rivalLoses: add mall_rats, chartbusters, buckle_and_boot)",
+     "src/23_sim_rival.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59c_ui_awards.js",
+    "line": 46,
+    "assumes": "The review reactions (BAND_REACT) have Hail Damage members only, with preferred ids (L77). Other Hail Damage names in awards copy: 'Marcel wants to wear it. As a medallion.' (L154), 'The demo on Jaxon\u2019s phone' (L186), 'Marcel claps slower.' (L408), and the worst-van win 'Kenji accepts\u2026 The Moose Hearse honks' (L414). The trophy shelf header '1 BOWLING TROPHY (NOT YOURS)' (L166-167) is Dad's trophy in the parents' garage. 'Back to the garage' (L436).",
+    "needs": "Per-member review lines, and {singer}, {driver}, {van} and {space} tokens. The worst-van line should use the driver and van name.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 61,
+    "assumes": "The ui.who hook only resolves 'wraith_frontman' and /^tw_/ ids, with corpse-paint white colour #ecebe6. Monday cards and chat speakers for the Mall Rats (Blaze/Kevin, Siobhan), Chartbusters (Rex Glamour and the Steves) and Buckle & Boot (Brayden, Colt, the pickup mascot) won't resolve.",
+    "needs": "Generic resolution: a 'rival_frontman' alias plus any id in RV().cast(st).members (per-rival prefixes such as mr_, cb_, bb_), with a per-rival colour. The content card speakers should use the alias.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js (casts for mall_rats, chartbusters, buckle_and_boot)",
+     "src/content/cards.js (speaker 'wraith_frontman')",
+     "src/23_sim_rival.js (cast)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 238,
+    "assumes": "The rival's spectator set generates songs with GG.songs.generate('metal') and plays them with GG.audio.play({genre:'metal'}) (L283). Every rival's set sounds like metal.",
+    "needs": "Use rv.genre (punk, rock or country).",
+    "size": "S",
+    "couples": [
+     "src/21_sim_songs.js (generate)",
+     "src/30_audio.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 54,
+    "assumes": "face() draws a corpse-paint avatar for every rival (scene hero, lineup rows, card note, wrap, crack panel). The 2D spectator backdrop (L353) shows 4 corpse-paint heads, although Buckle & Boot are a duo plus a mascot. rivalStage defaults corpsePaint to true (`m.corpsePaint !== false`, L230) and genre to 'metal'.",
+    "needs": "A per-rival face style (sponsor cap, aviators and scarf, cowboy hats), or ui.rivalLogo instead. Silhouette count = lineup length. New casts set corpsePaint:false, or the default comes from the rival.",
+    "size": "M",
+    "couples": [
+     "src/00_shell.html (.rv-face L623-629, .rs-sil L670-672)",
+     "src/content/rivals.js",
+     "src/42_render_stage.js (corpsePaint)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 218,
+    "assumes": "The spectator-view text is Tundra Wraith's cast: BANTER with Gord, Sheila, Darryl and Lorne (ETERNAL WINTER, the veggie tray), the solo banner 'Sheila \"Hexenfrost\" Wiebe: a solo\u2026' (L306), and 'Gord thanks the sound tech by name.' (L338).",
+    "needs": "Per-rival banter pools in content (cast.banter {open, mid, final}) and the soloist name taken from the cast.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 431,
+    "assumes": "Tundra Wraith copy throughout the rival panels: the CRACK texts (tax season, 'four accountants, same minivan', veggie tray), heat labels 'Boiling (politely)' / 'Blood feud, with fruit baskets' (L45), 'Gord drives ' + c.minivan (L100), 'Gord is drafting a press release' (L114), 'finalizing the liner-note footnotes' (L131), the pass toast '\"Next time, buddy!\"' (L183), and the Sad Dome lines about Gord's fruit basket and hug (L422).",
+    "needs": "A per-rival 'ui' text block in content/rivals.js: heat labels, vehicle with the frontman's name, empty news, pass line, final win and lose lines, and crack breakup/rebrand/opener lines. Read it via RV().cast(st).",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 178,
+    "assumes": "The Sad Dome final says '620 km of Trans-Canada to Calgary. Kenji is already in the van.' 620 km is the distance from Saskatoon. Also 'Marcel has underlined it four times.' (L184) and 'Load the minivan. Er, the Hearse.' (L188).",
+    "needs": "Distance from W().km(home, 'calgary') (Regina ~760, Edmonton ~300, Swift Current ~390), plus {driver}, {van} and {singer} tokens.",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js (km, driver)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5g_ui_bandbook.js",
+    "line": 69,
+    "assumes": "The rival comment tag is 'Rival \ud83e\udd18' (metal horns). Also 'The mail comes to the garage.' (L118), 'Kenji is looking at it.' (L164), and 'First member: Dale' (L138; Dale is a superfan from Warman, near Saskatoon, for every band).",
+    "needs": "A genre icon, the {space} and {quiet} tokens, and an owner or content call on whether superfans' hometowns follow the band's city.",
+    "size": "S",
+    "couples": [
+     "src/29_sim_fans.js",
+     "src/content/bandbook.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5h_ui_settings.js",
+    "line": 261,
+    "assumes": "'Kenji gives a slow thumbs-up.' (calibration, which can run on first launch before any band exists), 'Kenji holds the click.' (practice, L302), and practice city 'The garage' (L289).",
+    "needs": "Neutral text, or {quiet} when a career is loaded. The practice city should use {space}.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5i_ui_tour.js",
+    "line": 474,
+    "assumes": "The Gong red carpet (GONG_CARPET) is Marcel ('The cape. It has its own passport now.') and Jaxon. The speech outcome says 'You thank Saskatoon.' (L480). The lost-Gong line says 'Tundra Wraith accept in corpse paint\u2026' / 'Marcel claps slower\u2026 In Dutch' (L546). The summary says 'Jaxon took forty.' (L557).",
+    "needs": "Per-band Gong carpet lines, and {city}, {rival} and member-name tokens.",
+    "size": "M",
+    "couples": [
+     "src/content/world.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5i_ui_tour.js",
+    "line": 379,
+    "assumes": "The arrival line says 'Five people and a drum kit. It will be cosy.', assuming a five-piece. Frost Heave and Gravel Kings are four.",
+    "needs": "Use the lineup count.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5i_ui_tour.js",
+    "line": 404,
+    "assumes": "The homecoming names 'the Moose Hearse' in both branches. The fallback line says 'Home. The garage smells exactly the same.' (L395), the button says 'Home sweet garage' (L405), and the cancel and booked toasts say 'Marcel has already packed.' (L151) and 'Marcel is packing the cape.' (L285).",
+    "needs": "{van} (st.van.name), {space} and {singer} tokens.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5i_ui_tour.js",
+    "line": 410,
+    "assumes": "The Moose Opera in Helsinki (the 'tour:moose' platinum moment) is framed as Marcel's moose concept album: 'Marcel has already written a sequel.' (L422).",
+    "needs": "Owner call: keep the moose album as a universal gag for every band (change only the Marcel line), or give each genre its own platinum-abroad moment.",
+    "size": "S",
+    "couples": [
+     "src/25_sim_tour.js ('tour:moose')",
+     "src/content/world.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5j_ui_creator.js",
+    "line": 280,
+    "assumes": "The kick-head text placeholder is 'SASKATOON'. bandName falls back to 'Hail Damage' (L40). The no-preview note says 'the garage will show it' (L70).",
+    "needs": "Placeholder = the band's city in upper case, a generic fallback name, and the {space} noun.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5k_ui_shop.js",
+    "line": 463,
+    "assumes": "The misprint and collector moment is hard-coded to HALE DAMAGE: the panel text (L134, L136), the wrap (L435), the collector screen art (L463 col-hale 'HALE' / col-dmg 'DAMAGE', and the box stamp 'HALE'), and 'Under the workbench' (L465).",
+    "needs": "Owner call: each band gets its own misprint (e.g. FROST HEAVY, GRAVY KINGS, GRID ROAD RAMBLRES), or it stays Hail Damage only. Either way, the UI should read the printed words and the stash spot from data.",
+    "size": "M",
+    "couples": [
+     "src/content/shop.js L159-166 (misprint item + lines)",
+     "src/2a_sim_shop.js L498-504",
+     "src/content/cards.js (misprint card)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5k_ui_shop.js",
+    "line": 64,
+    "assumes": "Solo and outro unlock hints say 'Jaxon will have an idea.' / 'Dana will insist. She is holding your sticks hostage.' The kit-bought toast speaker is 'Dana' (L92). The misprint tease speaker is 'Dana', with 'printer in Martensville' (L182; Martensville is next to Saskatoon).",
+    "needs": "The {soloist} or guitarist speaker and the band's city/satellite. Solo gating must follow the soloist resolver.",
+    "size": "S",
+    "couples": [
+     "src/2a_sim_shop.js (solo unlock on 'dana')"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5k_ui_shop.js",
+    "line": 74,
+    "assumes": "The drum shop subtitle is 'PAWN SHOP ROW \u00b7 8TH STREET', a Saskatoon street (the content kit blurb also says 8th Street). Van toasts: 'Kenji nods once.' (L313) and 'Kenji adjusts the mirrors and nods.' (L371). The tier-0 space chip says 'Free (thanks, Mom)' (L321), although the Suds-O-Rama basement, Unit 4B and the uncle's Quonset aren't Mom's. The unlock wrap says 'merch boxes in the garage' (L430).",
+    "needs": "A per-band shop street, {driver}, a per-band tier-0 benefactor line, and {space}.",
+    "size": "S",
+    "couples": [
+     "src/content/shop.js",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5l_ui_recap.js",
+    "line": 38,
+    "assumes": "Band photo: POSE_OF only has Hail Damage ids (the other 10 members get cycled generic poses), and the cape is only drawn on 'marcel' (L71). The camera (L84-85) is tuned to the garage room ('cut-away front wall; cooler, couch'), and setScene('garage') (L60) assumes the home scene is the garage. 'The garage was very quiet.' (L141).",
+    "needs": "Signature poses and props for the other members (Duke's hat, Clementine's fiddle, T-Bone's floss, Chase's rock pose), a per-space photo camera supplied by the garage render, and the {space} token.",
+    "size": "M",
+    "couples": [
+     "src/41_render_garage.js (per-space layout)",
+     "src/40_render_core.js (buildCharacter props)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/5m_ui_logo.js",
+    "line": 52,
+    "assumes": "The Loonies broadcast card says 'Kenji is already carrying it to the van.' The picker subtitle says '\u2026the van and the garage door' (L134). bandId and genre fall back to 'hail_damage' / 'metal' (L73-74).",
+    "needs": "{driver} and {door} tokens and a generic fallback.",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/60_main.js",
+    "line": 182,
+    "assumes": "The quiet-week toast picks from the flat lines.quietWeek pool (Marcel mowing, Kenji buying a lime at the Co-op, Mr. Lindqvist's lawn) with no band filter. The same applies to 52's yearEnd pool.",
+    "needs": "Band-keyed pools (lines.quietWeek[bandId]) or gate filtering in the pick, plus content for the three new bands.",
+    "size": "M",
+    "couples": [
+     "src/content/lines.js",
+     "src/20_sim_career.js (st.quiet)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/60_main.js",
+    "line": 57,
+    "assumes": "The home scene id is always 'garage' (setState, and restoreScene in 55/59c/5i/5l). The UI relies on 41_render_garage to build tier 0 from band.space (laundromat_basement, strip_mall_unit, quonset).",
+    "needs": "No UI change if the render builds by band.space; otherwise pass a per-band home scene. The UI-side cost is small, but the 3D space art itself is large and belongs to the render area.",
+    "size": "S",
+    "couples": [
+     "src/41_render_garage.js",
+     "src/55_ui_gig.js L149",
+     "src/59c_ui_awards.js L312",
+     "src/5i_ui_tour.js L565",
+     "src/5l_ui_recap.js L60"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/60_main.js",
+    "line": 261,
+    "assumes": "?quick=1 and quickStart never pass a band, so they default to hail_damage (L102, L114). Dev and test flows can't quick-start the other three bands.",
+    "needs": "A q.band / o.bandId passthrough (?quick=1&band=frost_heave) so flows can cover all four bands.",
+    "size": "S",
+    "couples": [
+     "tools/ tests"
+    ]
+   }
+  ]
+ },
+ {
+  "area": "render_audio",
+  "works": [
+   "Stage crowd is already per genre: the GENRE table in src/42_render_stage.js:76-90 sets wash colours, head-bang and jump amounts, hair styles, shirt palettes and default bpm for metal, punk, rock and country. Every genre moment renders and is tested in pw_stage: wallOfDeath, circlePit, lighters, lineDance, plus mosh, boo and drinks.",
+   "Stage band placement already works from roles. buildBand (42:854) matches role regexes to the slots (vocals, lead, rhythm, bass, extra), takes looks from content or GG.creator.stageLookFor, scales energy by mood, and recolours rhythm and bass guitars. bandAction(memberId, action) targets whichever member id the sim sends.",
+   "Kick-drum head art is already per genre (40:1659-1690). The logo renderer (46) has all four lettering styles and draws default logos for all four bands, fixed logos for every rival (content/logo.js) via LG.forRival, and band-specific merch icons (council_pins, duke_hat; pants_keychain, bobblehead and cape_replica fall back to the generic tag).",
+   "Garage features that already read the band: the bedsheet banner takes band.name and state.logo; the kit is built from player.kit with band name and genre; the backstage placard and road-case stencils use band.name. Space tiers 1-3, bought upgrades, the merch box pile, seasons, weather and decor, the trophy wall, fill-ins, sulking, hotspots, member taps and genericLook are all band-independent. Members are placed by their content idle (41:562), and the recap band photo (5l_ui_recap) reuses the garage scene, so it will follow a per-band room automatically.",
+   "Van driver and dashboard pipeline already works: content.drivers has all four drivers with dashboard items, world.driver(state) handles the 'you' fallback, and 57_ui_van passes { driver, dashboard } to setTrip. buildDash already draws all four items (cactus, laundry, cassettes, atlas). The driver seat is found by id, so moth, tamara and earl work. Seating is driver, you on shotgun, then the vocalist first; 4 or 5 riders fit on every vehicle tier and the sardine rental. Vehicle tiers 0-3, venue stickers, the band-logo windshield decal, weather, regions and rentals are band-independent.",
+   "The red carpet band roster already comes from state.members for any band (player plus up to 5), including outfit cards, the cape from flags, the host and the sponsor wall.",
+   "Audio already has a band generator for every genre (src/30_audio.js BANDS at 964-1012): punk downstroke power-chord 8ths with root bass; rock riff, big open chords, walking bass and a bluesy solo; country boom-chick strum, root-fifth bass, twang licks and fiddle; metal at v0.7.2. The vocal-hit table VOX has hey, shout, growl, scream, yeah, yeehaw and ooh, placed per genre from content/genres.js backing.vox (punk gang HEY plus a shout drop, rock yeah, country yeehaw and ooh).",
+   "Kit tuning per genre (content/genres.js kit, with room, verb, six, the country train beat's rim/brush/ghost snares) plus kit quality tiers already exist. So do per-genre key ranges (keyFor), venue rooms, the van road bed, the van radio (uses the career genre), and live taps using the career genre's kit.",
+   "Every piece of metal-only v0.7.2 code is gated, so it cannot leak into other genres. metalNote only runs when r.genre === 'metal' (30:779). metalVox only runs for the growl and scream voices, which only metal content uses. backing.tune and bassFloor exist only in metal content. voxInvert is guarded. metalRig is built lazily. The `genre || 'metal'` defaults are fallbacks only, used when state.genre is missing.",
+   "The title scene (45_render_title.js:522 reads content.bands.hail_damage) and its storm bed are Hail Damage by design and only show while there is no career state. No change needed.",
+   "Tests already covering all genres: sim_audio timeline, key, density and outro tests loop over every genre. pw_seq audio renders every genre's kit lanes and songs offline. pw_stage runs every crowd moment. pw_logo and sim_logo cover all four bands' names and default logos. sim_licensing covers the Grid Road Ramblers fury."
+  ],
+  "findings": [
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 1384,
+    "assumes": "Tier 0 is always the parents' garage. The space tier alone picks the room (MOODS[0] kind 'garage', DOOR_LABELS[0] 'Garage door' at 1401 and 64, buildRoom/applyMood/hideGarage/self.set at 2154, 2354-2372, 2389). Every band starts in the static drywall garage with Dad's pegboard, mower and heater, the sectional door, the hanging bulb, moon shafts through the door windows, and the lawn/yard outside.",
+    "needs": "A tier-0 room per band, keyed on band.space and built like jamRoom/studioRoom: (1) laundromat_basement under the Suds-O-Rama: low ceiling with pipes, painted block, a window well, stairs up as the door, dryer vents and lint, coin-op signs, detergent jugs, a laundry cart. (2) strip_mall_unit, Unit 4B Westgate Plaza: drop ceiling with a fluorescent tube, the old till counter where the kit sits (cold open), a shop-front window onto the parking lot, nail-salon and vacuum-repair neighbours, 1985 posters. (3) quonset, Duke's uncle's: arched corrugated steel, hay bales (the hay-bale throne), farm tools, a tractor tire, a big sliding door, a farmyard outside with the grid road and canola or snow. Each room needs a MOODS entry (light, fixture, background, hall/yard), a door label, banner placement, exterior (keep the yard only for the garage and quonset), a garage-only visibility rule, and debug space.kind for tests.",
+    "size": "L",
+    "couples": [
+     "src/content/bands.js (space ids)",
+     "src/content/shop.js (spaces tier 0 'Home'; tier-0 upgrades curb_couch/egg_foam/beer_fridge 'Dad's'/xmas_lights must fit each room)",
+     "src/5l_ui_recap.js (band photo uses the garage scene)",
+     "src/30_audio.js garageBed",
+     "tests/pw_garage.js",
+     "tests/pw_shop.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 1217,
+    "assumes": "Seasonal decor is placed on the garage door and only shown at tier 0 (`!tier`): frost and snow on the garage-door windows, Christmas lights across the door header, the box fan by the couch. Moon shafts (1105) come through the garage-door windows.",
+    "needs": "Placements per tier-0 room: snow in the basement window well, lights over the laundromat stairs, the strip-mall shop window or the Quonset door. Key the decor on room kind, not on tier === 0.",
+    "size": "S",
+    "couples": [
+     "src/41_render_garage.js buildSpace (tier-0 kinds)",
+     "src/28_sim_calendar.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 73,
+    "assumes": "The idle SPOTS (73-81) and their seat props are Hail Damage's garage props, drawn in every room for every band: Marcel's standing mirror (1048), Kenji's milk crate as the 'corner' seat and Jaxon's paint bucket as the 'lunch' seat (1084), Kenji's bass leaning on the back wall (966).",
+    "needs": "Seat props and spots per room: detergent jugs or a laundry basket for Moth, the salon mirror for Chase, a hay bale for Duke, a leaning instrument that fits the band (a fiddle case, an acoustic). The spots can stay the same if the rooms keep the ROOM footprint.",
+    "size": "M",
+    "couples": [
+     "src/content/bands.js (member idle)",
+     "src/41_render_garage.js buildSpace"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 490,
+    "assumes": "Props come from the idle type: 'noodle' gives gear 'guitar' (Dana's white V), 'lunch' gives baba's sandwich plus the red lunchbox, 'phone' gives a phone. So Lenny, Travis (acoustic) and Clementine (fiddle) all hold a white V, and Duke eats Jaxon's lunch. Travis and Clementine both idle 'noodle', so usedSpots (499-500) sends Clementine to 'stand' at a SPARE spot with the V still hanging on her.",
+    "needs": "An instrument per member, from a content field such as gear: 'v'|'sg'|'strat'|'tele'|'acoustic'|'fiddle'|'bass'. A new 'fiddle' bowing idle. Per-member held props (Duke's hat idle or his own lunch; optionally Tamara flossing). Unique idles within each band.",
+    "size": "M",
+    "couples": [
+     "src/content/bands.js (idle, new gear field)",
+     "src/40_render_core.js guitarParts variants",
+     "src/42_render_stage.js instFor"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 86,
+    "assumes": "DEFAULT_LOOKS, STYLE_HINTS (top: tee/flannel/hoodie/jacket) and DEFAULT_IDLE (86-98) exist only for marcel, dana, jaxon and kenji. All 10 other members fall back to top 'tee'. Recruits and fill-ins with no idle fall back to 'pace', even a lead guitarist.",
+    "needs": "A `top` on the other bands' content looks (or STYLE_HINTS entries for them). A default idle chosen by role (guitar \u2192 noodle, bass \u2192 corner, vocals \u2192 mirror/pace, fiddle \u2192 fiddle) for recruits and fill-ins.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js looks",
+     "src/content/recruits.js",
+     "src/27_sim_drama.js fillInFigures"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 190,
+    "assumes": "MIRROR_POSES are metal (horns to the heavens, double biceps, the Dracula cape swirl). Every 'mirror' idler uses them, including Chase (Gravel Kings).",
+    "needs": "Pose sets per genre or member: '80s rock for Chase (hair flip, air-guitar windmill, scissor kick, finger point).",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js idle"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 481,
+    "assumes": "The cape goes to member id 'marcel', else the first 'mirror' idler (Chase would inherit flags.cape). The same pattern is repeated in 42:859-861 (marcel else first vocalist), 43:907 (marcel else the player on shotgun), 44:266-268 and 5l_ui_recap. It is dormant today because the Cape Saga is gated to Hail Damage (content/cards.js:36).",
+    "needs": "Take the cape owner from content (e.g. member.cape: true on Marcel) in the garage, stage, van, carpet and recap, instead of the id plus inconsistent fallbacks.",
+    "size": "S",
+    "couples": [
+     "src/42_render_stage.js",
+     "src/43_render_van.js",
+     "src/44_render_carpet.js",
+     "src/5l_ui_recap.js",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 1804,
+    "assumes": "The jam room's neighbour stickers include 'FROST HEAVE' (1804 and on the corridor door at 1850) and a 'GRAVEL KINGS' spray tag (1814), treated as other bands. The player's own band sticker is added separately. A Frost Heave player sees their own name as a stranger's sticker twice; a Gravel Kings player sees their own name as someone else's tag; Hail Damage never shows up as a neighbour.",
+    "needs": "Build the neighbour sticker/tag list from the three playable bands other than state.bandId (plus the filler names), so Hail Damage appears as a neighbour for the other bands.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js names",
+     "tests/pw_shop.js spaces screenshots"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 1996,
+    "assumes": "Tiers 2 and 3 are painted with Saskatoon names for every band: PRAIRIE DOG SOUND and Gwen (1896, 1933, 1969, 2143), POTASH PLACE (1996). A Regina, Edmonton or Swift Current band rents a Saskatoon studio and plays under a Saskatoon arena.",
+    "needs": "Owner decision: keep shared tier names or localise them per city. If localised, read the painted names from content/shop.js spaces for the band's city.",
+    "size": "S",
+    "couples": [
+     "src/content/shop.js spaces",
+     "src/content/cards.js shop_space_1..3"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 1297,
+    "assumes": "buildFanMail hardcodes gift 'macaroni_kenji' and draws Kenji's features (sunglasses, straight mouth, a bass). The gift and card are Hail Damage-gated today (bandbook.js:346, 29_sim_fans.js:539), so other bands get no portrait art.",
+    "needs": "If bandbook adds a Dale-style gift for each band (Duke's hat, Moth, Chase's mullet), a portrait builder keyed on the gift id and the member's look instead of hardcoded Kenji geometry.",
+    "size": "S",
+    "couples": [
+     "src/content/bandbook.js gifts",
+     "src/29_sim_fans.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/41_render_garage.js",
+    "line": 2264,
+    "assumes": "Mood LEDs are 'purple for metal, blue for Kenji' for every band.",
+    "needs": "Optional LED palette per genre (punk green/pink, rock amber/blue, country gold).",
+    "size": "S",
+    "couples": []
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/40_render_core.js",
+    "line": 799,
+    "assumes": "guitarParts is the only instrument ('Dana's pointy white V' on the gear bone). The garage and stage use it for every guitarist, bassist (stretched black V), fiddler and acoustic player.",
+    "needs": "Gear geometry variants selected by o.gear: an acoustic dreadnought with a sound hole (Travis); a fiddle under the chin plus a bow in the right hand on B_HELD or the forearm (Clementine); a 4-string bass body with a long neck (Kenji, Moth, T-Bone, Duke); optional band guitars (Rox/Benny SG or LP Jr, Lenny strat, Earl tele). Keep 'guitar' as the V for Dana and Jaxon.",
+    "size": "M",
+    "couples": [
+     "src/41_render_garage.js opts.gear",
+     "src/42_render_stage.js instFor/recolorGear",
+     "src/content/bands.js gear field"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/40_render_core.js",
+    "line": 788,
+    "assumes": "The legacy LOOK extras 'hat' and 'cowboy' draw the same brown cowboy hat, so Moth's 'hat' (bands.js) becomes a cowboy hat. Duke's hat is normal-sized even though 'the hat is the character'. The legacy builder has no toque.",
+    "needs": "'toque'/'beanie' and 'bighat' legacy extras (or move these members to v0.8 LOOKs with headwear), and content changes (Moth 'toque', Duke 'bighat').",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js looks",
+     "src/content/creator.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/40_render_core.js",
+    "line": 938,
+    "assumes": "bandInitials() reads GG.state and falls back to 'Hail Damage' when there is no state. In the new-career creator preview (no state yet), a carried-over 'logo' tattoo shows 'HD' for a Frost Heave player. drawHead (1668) also defaults headText to 'SASKATOON' and the logo name to 'Hail Damage'.",
+    "needs": "Pass the band name (and city for the 'text' head default) through the charGeometry and headArt options from the preview, and use the band city instead of SASKATOON.",
+    "size": "S",
+    "couples": [
+     "src/45_render_creator.js",
+     "src/5j_ui_creator.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/40_render_core.js",
+    "line": 1561,
+    "assumes": "Every new career starts on the milk-crate throne (R.kit.throne 'crate'; 2b_sim_creator newKit). The Ramblers cold open says 'You drag a hay bale over as a drum throne'.",
+    "needs": "Optional per-band starting throne (e.g. 'haybale' for the Ramblers, a detergent bucket for Frost Heave), drawn in R.kit.throne.",
+    "size": "S",
+    "couples": [
+     "src/2b_sim_creator.js newKit",
+     "src/content/creator.js throne",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/42_render_stage.js",
+    "line": 847,
+    "assumes": "Role-to-instrument mapping: 'vocals/acoustic' (Travis) takes the vocals slot and `!/guitar/` makes him 'mic' (878), so no acoustic guitar. 'fiddle' is treated as 'guitar', so Clementine holds a red V at the rhythm slot (887). 'vocals/guitar' (Rox) holds a white V but gets no mic stand, because micStand (896) only runs for 'mic'. updateBand (1336-1349) only animates mic, guitar and bass.",
+    "needs": "Instrument per member from content (acoustic, fiddle, bass, guitar types). A mic stand for every vocals slot, including singing guitarists. Fiddle bowing and acoustic strum poses in updateBand. info().band strings for tests (e.g. 'travis:vocals:acoustic').",
+    "size": "M",
+    "couples": [
+     "src/40_render_core.js gear variants",
+     "src/content/bands.js roles/gear",
+     "src/22_sim_gig.js roles",
+     "tests/pw_stage.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/42_render_stage.js",
+    "line": 837,
+    "assumes": "Five fixed slots: vocals centre, lead stage-left, rhythm stage-right front, bass back-right, extra back-left. Frost Heave and Gravel Kings (vocals, guitar, bass) leave the stage-right front empty, so the stage looks lopsided.",
+    "needs": "Layouts by frontline count: 3 players = guitar SL, vocals C, bass SR; 4 players = + fiddle or rhythm. Must also work when holes or fill-ins change the count.",
+    "size": "S",
+    "couples": [
+     "src/27_sim_drama.js lineup",
+     "tests/pw_stage.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/42_render_stage.js",
+    "line": 1214,
+    "assumes": "Band actions are only capeSpin, solo, fill and miss (plus flinch and part), all designed for Hail Damage (Marcel's cape, Dana's solo, Jaxon's fills). The frontman mic pose (1337-1341) is one generic raised arm for every genre.",
+    "needs": "New actions and poses for any per-band band effects v0.9 adds in the sim (Rox's stage dive or council rant, Chase's high kick, Duke's hat tip, Earl's mid-song story, Mall Rats' sponsor-mandated kickflips), plus frontman gestures per genre.",
+    "size": "M",
+    "couples": [
+     "src/22_sim_gig.js band effects/roles",
+     "src/55_ui_gig.js BAND_TEXT",
+     "src/content/lines.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/42_render_stage.js",
+    "line": 947,
+    "assumes": "The rival banner uses Tundra Wraith styling (Georgia serif, frost spikes, #9fb8ff glow) whatever the rival.",
+    "needs": "Draw the rival's fixed logo with GG.render.logo.forRival(id, name) (content/logo.js has logos for mall_rats, chartbusters and buckle_and_boot) or style the banner by rival genre.",
+    "size": "S",
+    "couples": [
+     "src/46_render_logo.js forRival",
+     "src/59d_ui_rival.js rivalStage"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/42_render_stage.js",
+    "line": 966,
+    "assumes": "Rival sets assume a corpse-painted four-piece with a drummer. paintLook/corpsePaint (924-945) apply whenever m.corpsePaint is set, and 59d_ui_rival.js:230 sets `corpsePaint !== false`, i.e. true for every rival. buildDrummer takes D.drummer || D.player, so a rival with no drummer (the Buckle & Boot duo) puts YOU on their throne. Extra members default to a guitar (instFor).",
+    "needs": "Per-rival stage styling from their content casts: Mall Rats (stylist ripped jeans, a skateboard prop plus a kickflip action), Chartbusters (Rex's scarf in July, stadium look, drummer 'Steve'), Buckle & Boot (denim and caps, one unplugged guitar, the pickup-truck-costume mascot as new costume geometry). A no-drummer path (empty kit or backing track). Corpse paint only for Tundra Wraith.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js casts (mall_rats/chartbusters/buckle_and_boot have none yet)",
+     "src/59d_ui_rival.js",
+     "src/23_sim_rival.js lineup",
+     "src/40_render_core.js charGeometry extras",
+     "tests/pw_rival.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 122,
+    "assumes": "resolve(): when setTrip gets no driver, it defaults to Kenji if active, else 'you'. The dashboard defaults to 'cactus' when the driver is kenji OR you. The in-game UI passes world.driver ids, so only direct or default use is wrong.",
+    "needs": "Default to GG.world.driver(state) (moth, tamara, earl) and that driver's dashboard. When you drive, keep the absent driver's item or none, not Kenji's cactus.",
+    "size": "S",
+    "couples": [
+     "src/26_sim_world.js driver",
+     "src/content/road_cards.js drivers",
+     "src/57_ui_van.js:244-251"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 901,
+    "assumes": "Any non-player driver is forced into sunglasses and has 'glasses' stripped ('sunglasses, whatever the look says', Kenji's gag). Earl loses his glasses; Moth and T-Bone drive in shades.",
+    "needs": "A per-driver flag in content (e.g. drivers.kenji.shades: true) and the driver's own look otherwise.",
+    "size": "S",
+    "couples": [
+     "src/content/road_cards.js drivers"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 650,
+    "assumes": "The rear-view mirror always shows Kenji's skin and sunglasses, whoever drives (you, Moth, T-Bone, Earl).",
+    "needs": "Draw the actual driver's skin and eyes in the mirror (Earl's glasses, no shades unless the driver wears them).",
+    "size": "S",
+    "couples": [
+     "src/43_render_van.js buildPeople"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 1140,
+    "assumes": "talk() refuses the driver for everyone ('Kenji never talks') and the driver pose (1109-1113) never gestures. Earl's road stories (his chemistry perk) and Moth's or T-Bone's banter can't animate.",
+    "needs": "A `silent` flag for Kenji only, plus a talking-driver pose (one hand off the wheel, head turn). pw_stage currently asserts 'Kenji never talks' generically.",
+    "size": "S",
+    "couples": [
+     "src/content/road_cards.js drivers + banter who",
+     "src/26_sim_world.js banter",
+     "tests/pw_stage.js:223"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 585,
+    "assumes": "The tier-0 minivan is dressed as Hail Damage's Moose Hearse for every band: moose bobblehead (587-590, 669-673), plastic antlers zip-tied to the hood (641-647), the 'Moose Hearse' glovebox sticker (585), rust-red paint. The 2D fallback windshield in 57_ui_van.js:104-110 draws Kenji's sunglasses for any driver who isn't you.",
+    "needs": "Tier-0 ornaments and paint per band matching the vanNames: The Pothole (Moth's apartment: curtains, a sleeping bag in back, a laundry line), The Mullet Wagon ('80s: tape deck, fuzzy dice, wood-grain), Grandpa's Suburban (bench seat, CB radio, a hat on the dash). Keep the per-driver dashboard item.",
+    "size": "M",
+    "couples": [
+     "src/content/shop.js vanNames/vanTiers",
+     "src/57_ui_van.js 2D fallback",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/43_render_van.js",
+    "line": 906,
+    "assumes": "In the van only member id 'jaxon' gets a sandwich (everyone else a phone), and the cape goes to 'marcel' or the player on shotgun.",
+    "needs": "Take held props from the member's content (e.g. Duke's hat on his lap, Clementine's fiddle case) and the cape owner from content (see the garage cape finding).",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/44_render_carpet.js",
+    "line": 206,
+    "assumes": "The red carpet and podium rival is always four hardcoded Tundra Wraith looks (WRAITH_LOOKS 206-211) in corpse paint doing the 'polite' wave (279-287, 368-378). setup's rival {id, name} is ignored, although 59c_ui_awards.js:270 passes the band's rival.",
+    "needs": "The rival cast from content (content.rivalry.cast[rivalId] or GG.rival.lineup) with a variable count (the Buckle & Boot duo plus the truck mascot; Mall Rats with Siobhan; Chartbusters with Rex's scarf), corpse paint only when the cast says so, and per-rival carpet behaviour.",
+    "size": "M",
+    "couples": [
+     "src/content/rivals.js casts",
+     "src/23_sim_rival.js",
+     "src/59c_ui_awards.js",
+     "tests/pw_label.js:289 (asserts 4 rivals)"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/46_render_logo.js",
+    "line": 493,
+    "assumes": "The misprint merch typo is only /hail/i \u2192 'Hale'. For other bands the misprint is just printed crooked, and content/shop.js:159 names it 'HALE DAMAGE shirts (misprint)' for every band. lines.misprintCollector (the fan-page chat line) is spoken by Dana.",
+    "needs": "A typo per band from content (e.g. FROST HEAVEN, GRAVEL KINKS, GRID ROAD RUMBLERS) read by LG.merch, plus a per-band merch name and collector line.",
+    "size": "S",
+    "couples": [
+     "src/content/shop.js merch + lines",
+     "src/content/bands.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 1646,
+    "assumes": "guitarist() picks id 'dana' first, then /lead guitar/, then any /guitar/. For Frost Heave that is Rox ('vocals/guitar'), not Benny. The noodle is one pluck() timbre (1570, 'an unplugged electric') for every band.",
+    "needs": "A noodle per band: Benny's two chords strummed back and forth, Lenny's 'legally distinct' riff, Earl's twang licks or Clementine's fiddle scales (Bach), Travis's acoustic strum. The noodler must match who the garage shows noodling (a content field).",
+    "size": "M",
+    "couples": [
+     "src/content/bands.js (noodler/idle)",
+     "src/41_render_garage.js idles"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 1232,
+    "assumes": "garageBed is one bed (mains hum, room tone, the beer fridge) for every band and every space tier.",
+    "needs": "Beds per tier-0 space: laundromat dryers thumping in 4/4 (cold open: 'The dryers are the rhythm section') plus the end-of-cycle buzzer; strip-mall fluorescent buzz plus the vacuum repair next door; Quonset wind on corrugated steel plus crickets or a meadowlark by season. Rented tiers are optional.",
+    "size": "M",
+    "couples": [
+     "src/41_render_garage.js space kind (state.space/spaceTier)",
+     "src/content/bands.js space",
+     "src/28_sim_calendar.js season"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 409,
+    "assumes": "Punk and rock guitars share one v0.6.1 mono chain in makeRig (409-417: driveCurve(18) into a 3.6 kHz low-pass). Country uses a raw sawtooth fiddle and twang (786-796) and triangle strums (799-805). Only metal got the v0.7.2 double-tracked amps, cab and drop tuning (459-560, gated at 779). Per status.md, punk, rock and country are 'identical except stereo reverb' since v0.7.2.",
+    "needs": "B4 'genre audio styles': amp voicing and stereo double-tracking per genre. Punk: crunchy L/R downstrokes, mid-forward, less gain than metal. Rock: crunch with ringing open chords. Country: clean Tele twang with slapback, a bowed fiddle with body formants and bow noise, a fuller acoustic strum. Add a numeric check per genre like pw_seq 'heavy'.",
+    "size": "L",
+    "couples": [
+     "src/content/genres.js backing (amp preset per genre)",
+     "tests/sim_audio.test.js",
+     "tests/pw_seq.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 974,
+    "assumes": "BANDS.punk ignores role 'solo' (plain 8ths), and the v0.8 solo section strips the kit (1044). Meanwhile gig.roles.solo is Benny (22_sim_gig.js:303) and the stage walks him forward to solo, so you see a solo and hear none.",
+    "needs": "A punk solo (Benny's two-chord 'solo', or a noise break) or a rule that punk has no solos, applied the same way in the sim, audio and stage.",
+    "size": "S",
+    "couples": [
+     "src/22_sim_gig.js roles/chart solo",
+     "src/content/genres.js punk roles",
+     "src/42_render_stage.js 'solo'"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 1008,
+    "assumes": "The country solo is played on the fiddle, but gig.roles.solo = Earl (lead guitar; 22_sim_gig.js:303) and the stage shows Earl soloing, so audio and visuals disagree.",
+    "needs": "Decide who solos. Either Earl's twang lead in audio, or the sim picks the fiddle (Clementine) for the country solo.",
+    "size": "S",
+    "couples": [
+     "src/22_sim_gig.js roles",
+     "src/42_render_stage.js bandAction"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 823,
+    "assumes": "styleFor gives punk, rock and country one backing style each ('eighths', 'rock', 'boomchick'); only metal changes style with tempo (doom/chug/tremolo).",
+    "needs": "Optional tempo styles per genre: punk skate or hardcore 16ths at high bpm; rock power ballad under ~90 bpm (fits the Chartbusters gag); country two-step vs the train beat.",
+    "size": "M",
+    "couples": [
+     "src/content/genres.js backing.styles",
+     "src/54_ui_sequencer.js style label"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/30_audio.js",
+    "line": 1331,
+    "assumes": "The v0.7.2 crowd is pre-rendered and genre-neutral (babble, roar, applause, woos, whistles, boos). Genre moments (circlePit, lighters, lineDance) and 'crowd:moment' only trigger generic cheers. Claps (1754) follow the meter, not the genre.",
+    "needs": "Crowd one-shots per genre: punk gang 'HEY!/OI!' chants in the pit, country clap-along on 2 and 4 plus yeehaws during a line dance, a rock lighters sing-along 'whoa-oh', the metal roar.",
+    "size": "M",
+    "couples": [
+     "src/22_sim_gig.js GENRE_MOMENT emits",
+     "tests/pw_seq.js crowd"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/src/59d_ui_rival.js",
+    "line": 283,
+    "assumes": "The rival set is played with GG.audio.play(V.pattern, { genre: 'metal' }) hardcoded (audio coupling; UI file), so Mall Rats, Chartbusters and Buckle & Boot all sound metal.",
+    "needs": "Use rv.genre (and the rival's own songs/patterns) for the rival set audio.",
+    "size": "S",
+    "couples": [
+     "src/30_audio.js play",
+     "src/23_sim_rival.js",
+     "src/content/rivals.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/content.test.js",
+    "line": 124,
+    "assumes": "Asserts that only hail_damage is playable and the other three are locked with comingIn 'v0.9'. Most content checks key on Hail Damage (Marcel/Kenji lines).",
+    "needs": "Flip the lock assertion. Add checks per band: a content.drivers entry, vanNames for tiers 0-3, a space id the renderer knows, idles unique within the band and valid garage IDLES keys, gear in the supported list, valid looks, rival casts for all four rivals, a misprint typo.",
+    "size": "S",
+    "couples": [
+     "src/content/bands.js",
+     "src/content/rivals.js",
+     "src/content/road_cards.js",
+     "src/content/shop.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_flow.js",
+    "line": 95,
+    "assumes": "Asserts that the punk genre card is locked, and the new-career flow is only walked for metal (also at 284).",
+    "needs": "All four genre cards live. A new-career flow for each genre (intro, logo, creator, garage) with no console errors and the right band, space and city.",
+    "size": "M",
+    "couples": [
+     "src/51_ui_menu.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_garage.js",
+    "line": 16,
+    "assumes": "The fixture is Hail Damage only (bandId hail_damage, marcel/dana/jaxon/kenji, space parents_garage). Cape variants, sulking and hotspots are only checked in the garage.",
+    "needs": "Run the suite for each of the four bands: debug space.kind per band (garage/laundromat/stripmall/quonset), the door label, members at distinct spots with the right gear (expose gear in debug members), no white V on a fiddler or acoustic player, draw-call budget per room, a screenshot per band. Add a leak check: no 'Hail Damage', Marcel or Kenji in banner text, signs or van people for the other bands.",
+    "size": "M",
+    "couples": [
+     "src/41_render_garage.js debug"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_stage.js",
+    "line": 59,
+    "assumes": "Stage checks use Hail Damage's lineup ('marcel:vocals:mic', 'kenji:bass:bass', jaxon:fill). Van checks assert 'Kenji drives' (190, 212) and 'Kenji never talks' (223).",
+    "needs": "Stage lineup checks per band: travis:vocals:acoustic with a mic stand, clementine fiddle, rox guitar with a mic stand, a symmetric 3-player layout. Van checks per band: moth, tamara and earl drive with their dashboard item; Earl keeps his glasses; the mirror matches the driver; a talking driver animates.",
+    "size": "M",
+    "couples": [
+     "src/42_render_stage.js info",
+     "src/43_render_van.js info"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_world.js",
+    "line": 241,
+    "assumes": "The van driver section (241-269) is Hail Damage only: Kenji plus the cactus with you on shotgun; Kenji quits and you drive.",
+    "needs": "Per-band van header ('Moth drives', 'T-Bone drives', 'Earl drives'), each band's dashboard item, and the fallback to you when that driver quits.",
+    "size": "S",
+    "couples": [
+     "src/57_ui_van.js",
+     "src/26_sim_world.js driver"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_label.js",
+    "line": 289,
+    "assumes": "The carpet check asserts ci.rival === 4 corpse-painted Tundra Wraith members.",
+    "needs": "The rival cast per band on the carpet: count from content, corpse paint only for Tundra Wraith.",
+    "size": "S",
+    "couples": [
+     "src/44_render_carpet.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_rival.js",
+    "line": 1,
+    "assumes": "Battle of the Bands and the rival set only exercise Tundra Wraith (corpse paint, metal audio, Gord and Sheila banners).",
+    "needs": "Each rival's set for its band: banner uses the rival logo, no corpse paint for non-Tundra rivals, the Buckle & Boot duo without a drummer never seats the player on their throne, audio genre matches the rival.",
+    "size": "M",
+    "couples": [
+     "src/59d_ui_rival.js",
+     "src/42_render_stage.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_shop.js",
+    "line": 22,
+    "assumes": "The 'spaces' section puts Hail Damage in each rehearsal space; tier 0 is only ever the parents' garage.",
+    "needs": "Tier 0 for each band, with the tier-0 upgrades (curb couch, egg foam, fridge, lights) placed without overlapping labels in each room, and jam-room neighbour stickers that exclude the player's band.",
+    "size": "S",
+    "couples": [
+     "src/41_render_garage.js buildSpace/buildUps"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/pw_recap.js",
+    "line": 167,
+    "assumes": "The band photo is only checked for the default (Hail Damage) career in the parents' garage.",
+    "needs": "A photo for a 4-piece band (Frost Heave or Gravel Kings) in its own tier-0 room: not blank, lineup count correct.",
+    "size": "S",
+    "couples": [
+     "src/5l_ui_recap.js",
+     "src/41_render_garage.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/sim_audio.test.js",
+    "line": 92,
+    "assumes": "v0.7.2 depth tests (92-130, 173 'Solo is Dana's') and pw_seq 'heavy' (570-620) are metal-only. pw_seq and pw_gig play songs only inside a Hail Damage career (GG.state.genre metal).",
+    "needs": "New checks: no metal rig or amp nodes in a non-metal career (debug); per-genre amp numbers if the genre amp voicing work lands; punk and country solo roles match gig.roles; garage noodler and bed per band/space; crowd flavour per genre; one in-career song and tap check per genre (GG.state.genre punk/rock/country).",
+    "size": "M",
+    "couples": [
+     "src/30_audio.js debug",
+     "tests/pw_seq.js"
+    ]
+   },
+   {
+    "file": "/home/user/GarageToGlory/tests/sim_career.test.js",
+    "line": 64,
+    "assumes": "Nearly every sim suite builds careers with GG.career.newCareer({ seed }), which defaults to Hail Damage: sim_career, sim_drama (Marcel/Dana storylines), sim_recap, sim_rival (Tundra Wraith), sim_songs (metal titles, French), sim_world (Kenji driver), sim_fans and save.test. Not my area, listed because the task covers tests/*.js.",
+    "needs": "At least one bot year or full career per band (newCareer({ bandId })) covering drama exits and returns, rival sim with casts, recap names, songs and titles, van driver, licensing, and save round-trip per band. Also tools/balance.js per band.",
+    "size": "M",
+    "couples": [
+     "src/20_sim_career.js newCareer",
+     "tools/balance.js"
+    ]
+   }
+  ]
+ }
+]

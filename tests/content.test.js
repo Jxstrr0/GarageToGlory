@@ -8,8 +8,8 @@ const C = GG.contracts, K = GG.content;
 
 // ---- Local constants (LOOK enums live only in a 02_contracts.js comment; see report "contract additions") ----
 const HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
-const LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana'];
-const IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
+const LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana', 'toque', 'bighat'];
+const IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone', 'fiddle'];
 const BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge'];
 const SIM_FLAGS = ['parentsLoan', 'label'];         // flags the sim sets that cards may gate on (v0.5: label = labelId)
 const SIM_FLAG_VALUES = { parentsLoan: [true], label: C.LABELS };
@@ -121,8 +121,9 @@ test('bands: four bands, one per genre, full schema', () => {
     eq(b.size, b.members.length + 1, w + ': size counts the player');
     ok(Array.isArray(b.coldOpen) && b.coldOpen.length >= 3 && b.coldOpen.length <= 5 && b.coldOpen.every(p => str(p, 160)), w + ': coldOpen 3–5 panels ≤160');
     ok(b.starterSongs.length === 2 && b.starterSongs.every(s => str(s.title, 60) && (s.titleEn === null || str(s.titleEn, 60))), w + ': 2 starter songs');
-    if (b.id === 'hail_damage') { eq(b.locked, false, w + ' playable'); eq(b.space, 'parents_garage'); }
-    else { eq(b.locked, true, w + ' locked'); eq(b.comingIn, 'v0.9', w + ' comingIn'); }
+    eq(b.locked, false, w + ' playable (v0.9: all four bands from the start)'); eq(b.comingIn, null, w + ' comingIn');
+    if (b.id === 'hail_damage') eq(b.space, 'parents_garage');
+    ok(b.roles && b.homeRing && b.spaceShort && b.province && b.coldOpenFx && b.throne && b.firstGig, w + ': v0.9 band fields');
     for (const m of b.members) {
       const mw = w + ' member ' + m.id;
       ok(/^[a-z][a-z0-9_]*$/.test(m.id) && !seen.has(m.id), mw + ': id must be unique across all bands');

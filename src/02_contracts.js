@@ -53,13 +53,26 @@
   C.LOONIE_CATEGORIES = ['breakthrough', 'album', 'single', 'live', 'fan_choice', 'worst_van'];
   C.JUDGEMENTS = ['perfect', 'good', 'miss'];
   C.CROWD_LEVELS = ['hostile', 'bored', 'warm', 'hyped', 'wild'];   // crowd meter 0..100 bands
-  C.MOMENTS = ['mosh', 'lighters', 'boo', 'drinks', 'wallOfDeath', 'circlePit', 'lineDance', 'capeSpin', 'solo'];
+  C.MOMENTS = ['mosh', 'lighters', 'boo', 'drinks', 'wallOfDeath', 'circlePit', 'lineDance', 'capeSpin', 'solo',
+    // v0.9 genre moments (combo / chorus per genre, see plan_contract_0.9 §4.4) + band signature actions
+    'pogo', 'fistPump', 'clapAlong', 'headbang', 'gangShout', 'singAlong', 'yeehaw', 'stageDive', 'kneeSlide', 'hatTip'];
+  C.RIVAL_ACTIONS = ['kickflip'];   // v0.9: Mall Rats' sponsor-mandated kickflip, once per rival set
   C.VENUE_KINDS = ['house', 'legion', 'bingo', 'openmic', 'church', 'curling', 'skatepark', 'bar', 'club'];
   C.HAIR_STYLES = ['short', 'long', 'mohawk', 'bald', 'bun', 'mullet', 'spiky', 'cap'];
-  C.LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana'];
-  C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone'];
+  C.LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana', 'toque', 'bighat'];
+  C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone', 'fiddle'];
+  C.GEAR = ['v', 'bass', 'sg', 'strat', 'tele', 'acoustic', 'fiddle'];   // v0.9 MEMBER.gear (none = mic only)
+  // v0.9: role aliases usable as card.speaker / chat.who / mood|skill|member effect keys (resolve at draw time).
+  C.ROLE_ALIASES = ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any'];
+  // v0.9: the four tier-0 rooms (band.space -> render room kind).
+  C.SPACE_KINDS = { parents_garage: 'garage', laundromat_basement: 'laundromat', strip_mall_unit: 'stripmall', quonset: 'quonset' };
+  // v0.9 fillText tokens (career.fillText; fallbacks in plan_contract_0.9 §4.2). Existing: {player} {band} {city} {rival}
+  // {recruit} {name:id} {nick:id}; {rival} falls back to 'the other band', {city} to state.city.
+  C.TOKENS = ['front', 'soloist', 'filler', 'bassist', 'namer', 'grumbler', 'deadpan', 'driver', 'van', 'space', 'spaceName',
+    'door', 'province', 'homeVenue', 'superfan', 'rivalFront'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
-  C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge']; // venue ids cards may `book`
+  C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge',   // venue ids cards may `book`
+    'craigs_basement', 'mill_woods_basement_party', 'quonset_yard_party'];   // v0.9 home first gigs (Lane A adds more)
   C.SIM_FLAGS = ['parentsLoan', 'label'];   // label = label id | 'diy' (set by the labels sim)   // flags the sim sets that cards may gate on
   // Seasons by week of year (week 1 = early July): summer 1–6, fall 7–10, winter 11–18, spring 19–22, early summer 23–24.
 
@@ -217,8 +230,15 @@
   /* ======================================================================
    CONTENT SCHEMAS (src/content/*.js, attach to GG.content)
    bands:  { <bandId>: { id, name, genre, city, region, space, spaceName, size, rival, locked, comingIn,
+                         (v0.9) roles: { namer, grumbler, deadpan }, firstGig, homeRing, spaceShort, door, province,
+                         coldOpenFx: 'hail'|'snow'|'neon'|'dust', throne,
                          blurb, coldOpen: [panel text..], starterSongs: [ { title, titleEn } ],
                          members: [ { id, name, fullName, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
+           MEMBER (v0.9) + gear (C.GEAR), silent, cape, signature { action, combo, crowd, flag? }; look.top.
+   v0.9 content keying (plan_contract_0.9 §4.1): flat pools neutral + tokenised, band extras in <file>.byBand[bandId];
+     member-keyed pools by member id; card variants '<baseId>_<bandId>' / '_<rivalId>' (career.variant); rivalry.cast[rid]
+     (members, news, showdowns, banter, ui, carpet, defector, comments, songs, albums, rebrands, label, vehicle, drummer?,
+     furyBrand?); per-band packs src/content/zz_band_<bandId>.js load after the base content files.
            idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'  (garage idle animation)
    rivals: { <rivalId>: { id, name, city, genre, blurb } }
    npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
