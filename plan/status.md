@@ -7,6 +7,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
 - Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
 - Also shipped: **0.6.2.0** two-thumb chords + guided songwriter (merged 2026-09-29)
+- Hotfix: **0.7.2.0** audio (heavier metal, a layered crowd; see "v0.7.2 audio")
 - Next: **0.7.0 "World"**
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -67,6 +68,46 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (read from the cached `R.prefs()` every frame; hail allocated at max, live count = quality); the title's framing is
   skipped while hidden and re-measured when a screen above it closes. pw_settings lefty check made race-free (two-thumb
   auto notes also call GG.audio.hit). Tests: `tests/pw_title.js` META_ONLY=scene|flow|prefs (15 + 10 + 7).
+
+## v0.7.2 audio (hotfix; owner 2026-09-30: "make the crowd sound better", metal: "heavier guitars, growls and screams, darker riffs")
+- Metal only (punk/rock/country untouched): two rhythm guitars (Jaxon L, Dana R: double-tracked, detuned, R 6-8 ms late)
+  each through a high-gain amp (pre-EQ: 110 Hz high-pass + 900 Hz push → asymmetric soft/hard clipper, oversample 4x →
+  cab: 78 Hz high-pass, 140 Hz shelf, 520 Hz scoop, 2.6 kHz presence, 5.4 + 6.8 kHz low-passes → pan); power chords as
+  one PeriodicWave oscillator (root + fifth + octave), so the voice count stays as before; gated palm mutes through a
+  480 Hz low-passed input; bass = one saw split into a clean sub + a driven grind (floor B0, `backing.bassFloor`).
+  Drop tuning by tempo band: root C2, `backing.tune` doom −1 / chug 0 / tremolo +1 (`keyFor(seed, genre, bpm)`;
+  no bpm = no shift). Riffs: phrygian; doom = ringing, drooping chords + b2/tritone answers + a chromatic step; chug =
+  kick-locked chugs (pedal on the low string in verses, the chord in choruses, a b2/tritone stab every other bar);
+  tremolo = each riff pitch picked twice (16ths), chromatic runs, power-chord blast riffs in choruses; breakdown = one
+  open low-string drop with space, a muted pair, a b2 stab, then 3-3-2 half-time chugs. Dana's solos: dark arpeggios,
+  quantized to the scale. Vocals: `scream` on chorus downbeats (+ a gang scream), `growl`s on the breakdown (the drop +
+  bar 2), both on the beat grid and in key, on their own channel; the guitars' presence band dips −9 dB under them.
+- Crowd (all genres): pre-rendered once per page in plain seeded JS (22.05 kHz stereo; babble of 14 formant voices,
+  roar of 12 shouting voices, applause for big and small rooms, on-beat clap hits, 4 "woo/yeah/hey"s, 2 whistles, a
+  boo), built in ≤ 8 ms steps after unlock (paused during songs; the crowd fades in when ready, never stalls a gig).
+  Live: babble louder between songs than during; roar follows 'crowd:level'; claps on the beat when hot (every beat,
+  2 and 4 from 150 BPM, never in breakdowns); fans woo/whistle when hot; a grumble of boos when the meter is under 22;
+  cheers/boos on 'crowd:moment'; a song-end reaction on 'gig:song' scaled by score; Japan's silent crowds hush during
+  songs; ≤ 12 crowd one-shots; a 0.15 send into the venue reverb. SFX 'cheer'/'boo' (awards, studio) use the buffers.
+- `renderOffline` is stereo now (+ `buffer`, `crowd` tally; specs `probe`, `crowd`, `voxInvert`, crowd `song/silent/
+  small/moments/clapBpm`). Debug audio: `counts.claps/woos/whistles/applause/dropped`, `crowd.song/silent/clapping/ready`.
+- Numbers (OfflineAudioContext, same method on the v0.7.1 build; metal signature, verse/chorus/bridge, song s3):
+  - Metal band-only @140: energy < 150 Hz −27.4 → −21.1 dB (share 0.19 → 0.52); 150–500 Hz −22.7 → −24.3; 500 Hz–2 kHz
+    −26.5 → −26.6; 2–6 kHz −36.0 → −29.4; stereo side/mid 0 → 0.15; RMS 0.099 → 0.131, peak 0.52 → 0.56 (limiter).
+  - Lowest guitar 98 Hz (G2) → 65 / 69 / 73 Hz (doom/chug/tremolo); bass 49 → 33–37 Hz.
+  - One guitar note through the amp: THD 0.37 → 0.63, harmonic energy (re fundamental) 0.13 → 0.39. Odd harmonics
+    are *not* up relative to the fundamental (the asymmetric clipper and the tight pre-high-pass favour even ones).
+  - Vocal/band inside the hit windows (polarity split): chorus shouts +1.0 dB → screams +4.6 dB; breakdown growls
+    +7.4 dB over the (much heavier) breakdown (v0.7.1's lone growl was +10.4 over near-silent muted chugs).
+  - Every genre's song peak < 0.61 (limiter), RMS 0.10–0.15; punk/rock/country identical except stereo reverb now counts.
+  - Crowd: bed 0.027 / 0.031 / 0.043 RMS at meter 15/50/90 (0.014–0.043 during songs, 0.002 silent), events peak ≤ 0.72,
+    metal + a roaring crowd peak 0.84. v0.7.1's murmur was ~ −36 dBFS: effectively inaudible under the band.
+  - CPU: a full metal song (arena reverb + crowd) renders 2.1× real time headless (v0.7.1 metal ~6×, before the crowd).
+- Tests: sim_audio 11 (new metal tuning/riffs/tremolo/solo/scream test); pw_seq audio 38 (growls from the drop, live crowd
+  ready + ≤ 12 voices) + new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
+  WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
+- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" + layout
+  hscroll are flaky under machine load (the v0.7.1 build fails them 3/4 at load avg 11; all green when quiet).
 
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or

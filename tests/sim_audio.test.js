@@ -52,7 +52,7 @@ test('the timeline is deterministic and drums still match toNotes', () => {
 
 test('each genre has its band; vocal hits land on whole beats, in key, and only where they belong', () => {
   const PARTS = { metal: ['gtr', 'gtr2', 'bass', 'lead'], punk: ['gtr', 'bass'], rock: ['gtr', 'bass', 'lead'], country: ['bass', 'clean', 'fiddle', 'twang'] };
-  const CHORUS = { metal: 'shout', punk: 'hey', rock: 'yeah', country: 'yeehaw' };
+  const CHORUS = { metal: 'scream', punk: 'hey', rock: 'yeah', country: 'yeehaw' };
   for (const g of C.GENRES) {
     const t = A.timeline(song(g), { genre: g, songId: 's1' }), b = band(t), B = G[g].backing, kinds = new Set(b.map(e => e.kind));
     ok(PARTS[g].every(k => kinds.has(k)), g + ' parts ' + [...kinds]);
@@ -78,10 +78,47 @@ test('sections change density: sparse verses, full choruses, stripped breakdowns
     ok(brk.every(e => ['gtr', 'bass', 'vox'].includes(e.kind)), g + ' breakdown: heavy parts only');
     if (solo.length) ok(solo.some(e => e.kind === 'lead' || e.kind === 'fiddle'), g + ' solo');
   }
-  const metal = band(A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' }));
-  eq(metal.filter(e => e.role === 'break' && e.kind === 'vox').map(e => e.voc), ['growl'], 'metal: a growl where the breakdown drops');
-  ok(metal.filter(e => e.role === 'break' && e.kind === 'gtr').every(e => e.mute), 'metal breakdown: palm-muted');
+  const mt = A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' }), metal = band(mt), tonic = mt.key.tonic;
+  const growls = metal.filter(e => e.role === 'break' && e.kind === 'vox');
+  ok(growls.length >= 2 && growls.every(e => e.voc === 'growl'), 'metal: growls on the breakdown ' + growls.map(e => e.voc));
+  const brk = metal.filter(e => e.role === 'break' && e.kind === 'gtr'), b0 = brk[0].beat;
+  ok(growls[0].beat === b0, 'the first growl lands on the drop');
+  ok(brk[0].power && !brk[0].mute && brk[0].len >= 2 && brk[0].midi === tonic, 'the drop: one open low-string hit ' + JSON.stringify(brk[0]));
+  ok(!brk.some(e => e.beat > b0 && e.beat < b0 + 2.5), 'the drop leaves space after the hit');
+  ok(brk.every(e => [0, 1, 6].includes(e.midi - tonic)) && brk.some(e => e.mute), 'breakdown: the low string (+ b2 / tritone), muted chugs');
   ok(metal.filter(e => e.kind === 'lead').every(e => e.role === 'solo'), 'Dana solos in the bridge only');
+});
+
+test('metal v0.7.2: drop tuning by tempo band, darker riffs, tremolo picking, dark arpeggios in the scale', () => {
+  const B = G.metal.backing, lows = {}, low = (t, k) => Math.min(...t.events.filter(e => e.kind === k).map(e => e.midi));
+  for (const bpm of [80, 140, 200]) {
+    const t = A.timeline(song('metal', bpm), { genre: 'metal', songId: 's3' });
+    lows[t.style] = { tonic: t.key.tonic, gtr: low(t, 'gtr'), bass: low(t, 'bass') };
+    eq(t.key.tonic, A.keyFor('s3', 'metal', bpm).tonic, 'timeline key = keyFor with the bpm');
+    ok(t.key.tonic === B.root + t.key.offset + (B.tune[t.style] || 0), 'tonic = root + offset + tune');
+    ok(lows[t.style].gtr === t.key.tonic && lows[t.style].gtr <= 39, t.style + ': lowest guitar is the (drop) low string ' + JSON.stringify(lows[t.style]));
+    ok(lows[t.style].bass >= B.bassFloor && lows[t.style].bass <= lows[t.style].gtr, t.style + ': bass under the guitars, above the floor');
+  }
+  ok(lows.doom.tonic < lows.chug.tonic && lows.chug.tonic < lows.tremolo.tonic, 'doom tunes lowest, tremolo highest ' + JSON.stringify(lows));
+  for (let i = 1; i <= 12; i++) ok(A.keyFor('s' + i, 'metal', 140).tonic <= 38, 'every metal song sits in drop C territory');
+  eq(A.keyFor('s1', 'punk', 190).tonic, A.keyFor('s1', 'punk').tonic, 'other genres: no tuning shift');
+  // Darker vocabulary: b2 and tritone above the low string show up across songs; chromatic runs in tremolo bars.
+  const ivs = new Set();
+  for (let i = 1; i <= 6; i++) for (const bpm of [80, 140, 200]) {
+    const t = A.timeline(song('metal', bpm), { genre: 'metal', songId: 'd' + i });
+    band(t).filter(e => e.kind === 'gtr').forEach(e => ivs.add(((e.midi - t.key.tonic) % 12 + 12) % 12));
+  }
+  ok(ivs.has(1) && ivs.has(6), 'b2 + tritone in the riffs ' + [...ivs]);
+  const tr = A.timeline(song('metal', 200), { genre: 'metal', songId: 's5' }), bar = band(tr).filter(e => e.section === 'verse' && e.beat < 4);
+  const g16 = bar.filter(e => e.kind === 'gtr'), b8 = bar.filter(e => e.kind === 'bass');
+  ok(g16.length === 16 && g16.every(e => e.trem) && b8.length === 8, 'tremolo: 16 picks a bar, bass on the 8ths ' + g16.length + '/' + b8.length);
+  ok(g16.every((e, k) => k % 2 === 0 || e.midi === g16[k - 1].midi), 'each riff pitch is picked twice');
+  const bar2 = band(tr).filter(e => e.section === 'verse' && e.beat >= 7 && e.beat < 8 && e.kind === 'gtr').map(e => e.midi);
+  ok(bar2.length === 4 && bar2.every((m, k) => !k || Math.abs(m - bar2[k - 1]) === 1), 'bar 2 ends in a chromatic run ' + bar2);
+  const solo = band(A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' })).filter(e => e.kind === 'lead'), tk = A.keyFor('s6', 'metal', 140).tonic;
+  ok(solo.length >= 16 && solo.every(e => B.scale.includes(((e.midi - tk) % 12 + 12) % 12)), 'Dana: fast arpeggios, all in the phrygian scale');
+  const ch = A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' });
+  ok(band(ch).filter(e => e.kind === 'vox' && e.section === 'chorus').every(e => e.voc === 'scream'), 'screams on the chorus');
 });
 
 test('metal: chugs on every kick hit, bass doubling; tempo still decides the style', () => {
