@@ -133,6 +133,13 @@
       quirk: 'The dartboard is two metres from the kick drum. The darts league does not pause.',
       catch: 'Volume limit enforced by a retired sergeant with a decibel app.' },
 
+    { id: 'earnest_bean_cafe', name: 'The Earnest Bean Folk Café', city: 'St. Albert', region: 'canada', tier: 1, kind: 'openmic',
+      capacity: 35, deal: 'exposure', pay: 0, minFans: 10, walkIns: 10, gas: 270, setSize: 2,
+      deals: ['exposure'], payRange: {},
+      genreFit: { metal: 0.2, punk: 0.4, rock: 0.4, country: 0.9 },   // the rock clash room: acoustic nights only
+      quirk: 'Acoustic nights only. The sign says NO AMPLIFIERS in calligraphy. The owner reads it aloud when you walk in.',
+      catch: 'The regulars snap instead of clapping. A guitar solo gets exactly one snap.' },
+
     { id: 'sherwood_park_curling', name: 'Sherwood Park Curling Club Lounge', city: 'Sherwood Park', region: 'canada', tier: 1, kind: 'curling',
       capacity: 55, deal: 'flat', pay: 100, minFans: 45, walkIns: 15, gas: 270, setSize: 3,
       deals: ['flat', 'exposure'], payRange: { flat: [80, 120] },

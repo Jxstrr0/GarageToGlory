@@ -52,7 +52,7 @@
         { who: '@front', text: 'Wrong kind of viral: {who}\'s dance tutorial for "our signature move". {views} views, mostly laughing ones.' },
         { who: '@soloist', text: 'Wrong kind of viral: {who}\'s eleven-minute unboxing of one guitar pick. {views} views.' },
         { who: '@filler', text: 'Wrong kind of viral: {who}\'s "how to look cool at a wedding", filmed at a real wedding. {views} views.' },
-        { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
+        { who: 'any', text: 'Wrong kind of viral: {who} tried to crowd-surf at a coffee shop. There was no crowd. {views} views.' }
       ]
     },
     comments: {
@@ -119,9 +119,12 @@
         'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
         'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
-      // who: a member id, a role alias ('@front') or 'any'. Flat is empty: Hail Damage's five keep their exact order
-      // (byBand), the other genres get STAND_IN.viral.cringe, the packs add their own.
-      cringe: []
+      // who: a member id, a role alias ('@front') or 'any'. GG.fans reads pool('viral') as one object, so a layer's cringe
+      // list REPLACES this one: Hail Damage's five keep their exact order (byBand), the other genres get STAND_IN, a pack
+      // may bring its own. This neutral line is what a band with no layer (or a pre-v0.9 sim) falls back on.
+      cringe: [
+        { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
+      ]
     },
     comments: {
       good: [

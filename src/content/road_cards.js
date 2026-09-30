@@ -597,8 +597,8 @@
   ];
 
   // v0.6.1 (Addendum 1 C1): the designated driver per band. v0.9: every band plays, so every driver drives.
-  //   you.takeOver is the neutral line (no cactus: it is not always Kenji's van); you.takeOverBy[bandId] is the band's own
-  //   version (Hail Damage keeps its tiny cactus; the packs add theirs).
+  //   you.takeOver is the neutral line (no cactus: it is not always Kenji's van); you.byBand[bandId].takeOver is the band's
+  //   own version, read as career.pool(state, drivers.you, 'takeOver') (Hail Damage keeps its tiny cactus; packs add theirs).
   //   { <memberId>: { id, band, name, dashboard (the dash item the van scene shows), dashName, blurb, effect,
   //     mods: { breakdown x, wear x, burnout x, comfort ±, repair x (0 = free), chemistry + per long drive, roadChance x },
   //     back (group-chat line when they take the wheel back) } } + you (the founder, when the driver quits).
@@ -623,6 +623,6 @@
       blurb: 'The founder, behind the wheel. You drive like you drum.',
       effect: 'More wrong turns, more gas-station arguments', mods: { breakdown: 1.15, roadChance: 1.25 },
       takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. Nobody touches the stuff on the dash.',
-      takeOverBy: { hail_damage: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' } }
+      byBand: { hail_damage: { takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' } } }
   };
 })(window.GG);

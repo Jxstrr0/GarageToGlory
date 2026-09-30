@@ -641,7 +641,8 @@
       dana: ['Somebody turn me up. No, more.', 'That was in tune. Mostly.'],
       jaxon: ['(counts to four under his breath)', 'is the fog machine supposed to smell like that'],
       kenji: ['(Kenji nods once. The crowd nods back.)'],
-      any: ['Thank you, {city}! We are {band}!', 'Anybody here drive in from out of town? Nobody? Okay.', 'Drink some water. Or whatever. Next one!']
+      any: ['Thank you, {city}! We are {band}!', 'Anybody here drive in from out of town? Nobody? Okay.', 'Drink some water. Or whatever. Next one!',
+        'Tip your bartender. Tip the sound guy. Do not tip the van, it is barely standing.', 'We have shirts at the back. One size. It fits nobody.']
     },
     labelReact: {
       any: {
@@ -721,18 +722,13 @@
             'Dana wrote a press release. It is mostly the specs of her amp.'
           ],
           book: [
-            "We called every hall in {city} from the kitchen phone. Mom took messages. She underlined 'NO' twice.",
-            'We pinned our number to the corkboard at the music store, just under a lost cat.',
             'Marcel negotiated with a Legion manager in French. She speaks English. It took an hour.',
-            "We emailed every bar in {city} with 'Hole' or 'Tavern' in the name. One replied 'who is this'.",
             'Jaxon asked Baba to ask the church ladies. The church ladies are asking around.'
           ],
           hustle: [
             'We played a wedding social in Humboldt. The Chicken Dance, with blast beats. Cash and a pan of lasagna.',
             'We shovelled driveways on our street. {nick:marcel} refused, then critiqued our technique from the step.',
-            'We busked outside the farmers\' market and made gas money plus a jar of Saskatoon berry jam.',
             'We helped Cousin Dale move. There was a piano. There is always a piano.',
-            'We returned bottles, pop cans and one cracked cymbal. The cymbal was worth more.',
             "Marcel did a hail inspection in full eyeliner. He is grumbling about 'selling out to the Man'. The Man is his boss."
           ],
           rest: [

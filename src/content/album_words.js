@@ -432,6 +432,42 @@
           outcome: "It's flawless. The engineer frames the session printout. Everyone else now feels slow." },
         { label: 'Use the spare days', effects: { production: 2, skill: { all: 1 }, burnout: -3 },
           outcome: 'With one part done early, the band spends two days on everything else. It shows.' }
+      ] },
+    { id: 'studio_any_take_41', type: 'drama', speaker: '@soloist', title: 'Take Forty-One', once: false, cooldown: 12, gate: { band: OTHERS },
+      text: "{soloist} is on take forty-one of the big part. Takes nine, twenty-two and thirty-five were perfect. {soloist} 'heard " +
+        "something' in take thirty-eight. The engineer's wife has texted twice to ask when he is coming home.",
+      choices: [
+        { label: 'Take forty-two', effects: { burnout: 6, production: 3, mood: { '@soloist': 5 } },
+          outcome: 'Take forty-two is the one. It sounds exactly like take nine. {soloist} says it is completely different. Nobody argues.' },
+        { label: 'Comp the best bits', effects: { production: 4, mood: { '@soloist': -4 } },
+          outcome: 'The engineer stitches nine, twenty-two and thirty-five together. It is perfect. {soloist} calls it "a Frankenstein".' },
+        { label: 'Hide the pick', effects: { chemistry: 3, burnout: -4, mood: { '@soloist': -5 } },
+          outcome: 'Take forty-two gets played with a coin. It is amazing. {soloist} will never forgive you, and will use a coin again.' }
+      ] },
+    { id: 'studio_any_mom_mix', type: 'scene', speaker: 'mom', title: 'Mom Rates the Mix', once: false, cooldown: 12, gate: { band: OTHERS },
+      text: "Mom drops by the studio with a tray of squares and asks to hear 'the mix'. She sits at the desk, listens to one song in " +
+        'total silence, and moves one fader. Down.',
+      choices: [
+        { label: "Keep Mom's fader", effects: { production: 4, chemistry: 2 },
+          outcome: 'It was the guitars. They were too loud. They are now correct. The engineer asks Mom if she takes clients. She does not.' },
+        { label: 'Credit her on the album', effects: { buzz: 3, chemistry: 4 },
+          outcome: "'Additional mixing: Mom.' She asks for her full name. Then asks you to take it off. Then asks for it back." },
+        { label: 'Eat, then decide', effects: { burnout: -5, mood: { all: 4 } },
+          outcome: 'Everyone eats squares on the studio floor. Nobody decides anything. The mix is fine. The squares are perfect.' }
+      ] },
+    { id: 'studio_any_vocal_booth', type: 'weird', speaker: '@front', title: 'The Vocal Booth', once: false, cooldown: 12, gate: { band: OTHERS },
+      text: "For the vocals {front} requires: the lights off, a lava lamp, a bowl of dill pickle chips and 'the right energy'. The " +
+        'engineer has agreed to all of it except the energy, which he says is not his department.',
+      choices: [
+        { label: 'Give them the full ritual', hint: 'Gamble: a legendary take, or chaos',
+          outcome: 'Lava lamp. Chips. Darkness. Record.',
+          roll: { chance: 0.5,
+            success: { effects: { production: 5, mood: { '@front': 8 } }, outcome: '{front} walks out having sung the take of a lifetime. Nobody discusses it. The chips are gone.' },
+            fail: { effects: { fund: -150, burnout: 5 }, outcome: 'The lava lamp tips into the mic cable. Sparks, a smell, a new cable. $150.' } } },
+        { label: 'Chips only', effects: { production: 2, mood: { '@front': -3 } },
+          outcome: 'A perfectly good take, crunched between lines. You can hear one chip on the record, if you listen. Everyone listens.' },
+        { label: 'Lights off, nothing else', effects: { production: 3, mood: { '@front': 3 } },
+          outcome: '{front} sings like a person possessed and walks into the door on the way out. Take one. Keeper.' }
       ] }
   ];
 })(window.GG);

@@ -75,8 +75,8 @@
     },
 
     // ---- v0.9 rival-only labels (gap #8): a rival cast's label, never offered to the player ----
-    network_nine: {
-      id: 'network_nine', name: 'Network Nine Music', rivalOnly: true, rival: 'mall_rats',
+    muchloud: {
+      id: 'muchloud', name: 'MuchLoud Records', rivalOnly: true, rival: 'mall_rats',
       blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
       rep: { name: 'The network exec', blurb: 'Never seen without a headset. Has focus-grouped the word "rebel" eleven times.' }
     },

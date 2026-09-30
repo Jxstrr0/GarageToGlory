@@ -198,7 +198,7 @@
         { label: 'Tell her to go to Calgary', effects: fx({ chemistry: -4 }, 'dana', 'quit'),
           outcome: "She packs Gwendolyn and a pedalboard the size of a door. 'It's in 13/8,' she says. 'You wouldn't understand.' You wouldn't." }
       ] },
-    { id: 'ult_jaxon', type: 'drama', speaker: 'baba', title: 'Baba Has Spoken',
+    { id: 'ult_jaxon', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Baba Has Spoken',
       text: "Baba Kowalchuk is in your garage with a roaster of perogies and a clipboard. 'Jaxon is tired. Jaxon is thin. Jaxon comes home at " +
         "one in the morning. Explain.' Jaxon stands behind her, holding his guitar like a shield.",
       choices: [
@@ -271,7 +271,7 @@
         { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'dana', 'rival'),
           outcome: 'Dana leaves without a word, which is new. {rival} post a photo of their new lead guitarist. They tag you. Politely.' }
       ] },
-    { id: 'ret_jaxon', type: 'drama', speaker: 'baba', title: 'Heard You on the Radio',
+    { id: 'ret_jaxon', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Heard You on the Radio',
       text: "Baba is at the side door. 'I heard you on the radio,' she says. 'Deb Wiebe played the loud one. Olga called me.' Behind her, Jaxon is already holding his guitar.",
       choices: [
         { label: 'Welcome back, Rip', effects: fx({ chemistry: 4 }, 'jaxon', 'return'),
@@ -281,7 +281,7 @@
         { label: 'Not yet', effects: fx({ mood: { jaxon: -5 } }, 'jaxon', 'later'),
           outcome: 'Baba narrows her eyes at you. Jaxon waves sadly from the car. You receive no perogies for several weeks.' }
       ] },
-    { id: 'ret_jaxon_filled', type: 'drama', speaker: 'baba', title: 'Who Is This',
+    { id: 'ret_jaxon_filled', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Who Is This',
       text: "Baba has heard you on the radio and brought Jaxon back. She sees {recruit} holding a rhythm guitar. 'Who is this,' she says. It is not a question.",
       choices: [
         { label: 'Take Jaxon back', effects: ret('jaxon'),

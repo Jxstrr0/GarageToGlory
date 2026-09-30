@@ -1,5 +1,9 @@
 // content.test.js: validates src/content (bands, rivals, npcs, cards, lines, presets, song titles) against GG.contracts.
 // Also: walks every branch of every card chain (the Cape Saga) and runs a 240-week draw to prove no year runs dry.
+// v0.9 "Genres": band-aware (gap #9): a speaker / effect key must belong to the band(s) the content is gated to (members,
+// role aliases, band- or rival-scoped npcs, 'rival_frontman'), pools are read as the sims read them (flat + byGenre +
+// byBand), and nothing another band can see names Hail Damage's people. The per-band pack minimums are in
+// tests/content_bands.test.js.
 // Run: node tests/content.test.js   (or node tests/run.js content)
 const { test, ok, eq, done } = require('./_t');
 const load = require('./_load');
@@ -32,7 +36,8 @@ const MAG_BY_ERA = {
 MAG_BY_ERA.world = MAG_BY_ERA.signed;
 const earliestEra = gate => C.ERAS.find(e => !gate || !gate.era || gate.era.includes(e)) || 'garage';
 const magFor = gate => MAG_BY_ERA[earliestEra(gate)];
-const CARD_KEYS = ['id', 'type', 'speaker', 'title', 'text', 'gate', 'weight', 'once', 'cooldown', 'chain', 'step', 'forceWeek', 'choices'];
+const CARD_KEYS = ['id', 'type', 'speaker', 'title', 'text', 'gate', 'weight', 'once', 'cooldown', 'chain', 'step', 'forceWeek', 'choices',
+  'cameo'];   // v0.9 (owner Q8): cameo: true = a cross-band cameo card (it may name another playable band; career.cardOk passes it)
 const CHOICE_KEYS = ['label', 'hint', 'effects', 'outcome', 'roll'];
 const ROLL_KEYS = ['chance', 'stat', 'statScale', 'success', 'fail'];
 
@@ -237,6 +242,7 @@ test('cards: ids, types, keys, speakers, lengths', () => {
     const w = 'card ' + c.id;
     ok(/^[a-z][a-z0-9_]*$/.test(c.id) && !ids.has(c.id), w + ': id bad or duplicate'); ids.add(c.id);
     Object.keys(c).forEach(k => ok(CARD_KEYS.includes(k), w + ': unknown key ' + k));
+    if ('cameo' in c) ok(c.cameo === true && c.gate && c.gate.band && c.gate.band.length === 1, w + ': a cameo card is cameo: true and belongs to one band');
     ok(C.CARD_TYPES.includes(c.type), w + ': type');
     ok(speakerFits(c.speaker, impliedBands(c)), w + ': speaker ' + c.speaker + ' for ' + impliedBands(c));
     ok(str(c.title, LIMIT.title), w + ': title ≤' + LIMIT.title);
@@ -533,7 +539,7 @@ test('text tokens are only {player} {band} {city} {rival} {nick:id} {name:id} + 
         || (/^content\.reviews\./.test(p) && ['album', 'single'].includes(t)) || (/^content\.awards\./.test(p) && t === 'category')
         || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
         || (/^content\.rivalry\./.test(p) && ['rival', 'album', 'pos', 'fans', 'venue', 'name', 'prize', 'n'].includes(t))   // v0.6
-        || (/^content\.calendar\.holidays/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band
+        || (/^content\.calendar\.(holidays|byBand)/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band (v0.9: + byBand holidayLines)
         || (/^content\.world\./.test(p) && ['region', 'song', 'festival', 'here', 'rival', 'venue'].includes(t))   // v0.7: GG.tour tokens
         || (/^content\.bandbook\./.test(p) && ['who', 'song', 'venue', 'gcity', 'views', 'n', 'money', 'rival'].includes(t))   // v0.6.1: GG.fans tokens
         || (/^content\.(licensing|licenseChoices|licenseCards)\b/.test(p) && ['brand', 'adwhat', 'adsong', 'adfee', 'adcounter', 'adtake', 'adodds', 'adleft'].includes(t))   // v0.8.1: GG.licensing tokens
@@ -774,7 +780,7 @@ test('lines: van banter (Kenji silent), road + venue pools', () => {
   const L = K.lines;
   ['marcel', 'dana', 'jaxon'].forEach(id => ok(L.vanBanter[id] && L.vanBanter[id].length >= 5, 'vanBanter.' + id));
   ok(!L.vanBanter.kenji, 'Kenji has no banter');
-  Object.keys(L.vanBanter).forEach(id => ok(HD_IDS.includes(id), 'vanBanter member ' + id));
+  Object.keys(L.vanBanter).forEach(id => ok(ALL_MEMBER_IDS.includes(id), 'vanBanter member ' + id));   // v0.9: any band's member (gap #9)
   ok(L.vanKenji.length >= 4 && L.vanKenji.every(s => /^\(.*\)$/.test(s)), 'Kenji only gets stage directions');
   ['vanArrive', 'genreClash', 'venueUp', 'venueDown', 'venueBanned', 'vanTired', 'breakdown', 'openingSlot', 'sameCrowd']
     .forEach(k => ok(Array.isArray(L[k]) && L[k].length >= 3, 'lines.' + k + ' ≥3'));
@@ -782,7 +788,9 @@ test('lines: van banter (Kenji silent), road + venue pools', () => {
 
 // ---- v0.4 drama + recruits --------------------------------------------------
 const DRAMA_CARDS = (K.dramaCards || []).concat(...((K.recruits && K.recruits.quirks) || []).map(q => q.cards || []));
-const RULES = ['spotlight', 'cape', 'solos', 'practice', 'freedom', 'baba', 'mystery'];
+// v0.9: + the new members' rules (plan_contract_0.9 §5 B2, 27_sim_drama RULES)
+const RULES = ['spotlight', 'cape', 'solos', 'practice', 'freedom', 'baba', 'mystery', 'council', 'twoChords', 'van', 'eighties', 'lawsuit',
+  'adulting', 'truck', 'stories', 'secretJoy', 'hat'];
 const ACTS = ['settle', 'quit', 'return', 'later', 'rival'];
 test('drama cards: schema, ids unique across all cards, speakers, lengths, effects (incl. member/payCut/repay)', () => {
   const ids = new Set(CARDS.map(c => c.id));
@@ -817,16 +825,18 @@ test('drama cards: schema, ids unique across all cards, speakers, lengths, effec
 test('drama: every original has wants (valid rules), 3 grumble + 3 passive lines, an ultimatum, returns and an exit storyline', () => {
   const D = K.drama, byId = id => DRAMA_CARDS.find(c => c.id === id);
   ok(D && D.members && D.recruit && D.fillIns && D.stageText && D.gripes, 'drama content present');
-  for (const id of HD_IDS) {
-    const m = D.members[id], w = 'drama.' + id;
-    ok(m, w + ' missing');
+  HD_IDS.forEach(id => ok(D.members[id], 'drama.' + id + ' missing'));
+  // v0.9: every member in drama.members (Hail Damage's here, the packs add theirs) is a band member with the full shape
+  for (const id of Object.keys(D.members)) {
+    const m = D.members[id], w = 'drama.' + id, mine = MEMBERS_OF(BAND_OF_MEMBER(id));
+    ok(ALL_MEMBER_IDS.includes(id), w + ': a band member');
     ok(m.wants.length >= 1 && m.wants.every(x => str(x.text, LIMIT.line) && str(x.gripe, 40) && RULES.includes(x.rule)), w + ': wants');
     ok(m.grumble.length >= 2 && m.passive.length >= 2 && m.grumble.concat(m.passive).every(t => str(t, LIMIT.chat)), w + ': stage lines');
     const u = byId(m.ultimatum);
     ok(u && u.choices.some(ch => ch.effects.member.act === 'quit') && u.choices.filter(ch => ch.effects.member.act === 'settle').length >= 1, w + ': ultimatum settles or quits');
     const x = m.exit;
     ok(x && str(x.status, LIMIT.line) && x.returnAfter[0] >= 6 && x.returnAfter[1] <= 40 && x.beats.length >= 2 && str(x.changed, LIMIT.line), w + ': exit storyline');
-    ok(x.beats.every(b => isInt(b.at) && str(b.text, LIMIT.chat) && (HD_IDS.includes(b.who) || NPC_IDS.includes(b.who))), w + ': beats');
+    ok(x.beats.every(b => isInt(b.at) && str(b.text, LIMIT.chat) && (mine.includes(b.who) || NPC_IDS.includes(b.who))), w + ': beats');
     ok(str(x.backLine.text, LIMIT.chat) && str(x.quitLine.text, LIMIT.chat) && str(m.epilogue, LIMIT.line), w + ': quit/back/epilogue');
     const rf = byId(m.returnFilled);
     ok(rf && ['return', 'rival'].every(a => rf.choices.some(ch => ch.effects.member.act === a && ch.effects.member.id === id)), w + ': keep-vs-original card');
@@ -1055,7 +1065,8 @@ test('awards: Loonie categories, cape-aware outfit cards, the speech, Tundra Wra
   const probs = [];
   for (const c of A.outfitCards) {
     probs.push(...cardProblems(c, { mag }));
-    ok(Object.keys(c.gate).every(k => ['band', 'flags', 'notFlags', 'flagEquals'].includes(k)) && c.gate.band.includes('hail_damage'), c.id + ': gates on band + cape only');
+    // v0.9: every band's outfit cards gate on one band + flags only (Hail Damage's on the cape, the packs' on their storylines)
+    ok(Object.keys(c.gate).every(k => ['band', 'flags', 'notFlags', 'flagEquals'].includes(k)) && c.gate.band.length === 1 && K.bands[c.gate.band[0]], c.id + ': gates on one band + flags only');
     c.choices.forEach((ch, i) => {
       const branches = ch.roll ? [ch.roll.success.effects, ch.roll.fail.effects].map(fx => Object.assign({}, ch.effects, fx, { flags: Object.assign({}, (ch.effects || {}).flags, (fx || {}).flags) })) : [ch.effects];
       branches.forEach(fx => ok(fx && fx.flags && outfitIds.includes(fx.flags.loonieOutfit), c.id + '#' + i + ': sets flags.loonieOutfit'));
@@ -1251,8 +1262,8 @@ test('drivers: all four bands defined (C1) + you; dashboard items; Kenji never s
   ok(you.length >= 3 && you.some(c => /wrong turn/i.test(c.title)) && you.some(c => /gas station/i.test(c.title)), 'the you-drive pool: wrong turns, gas-station arguments');
   BAND_IDS.forEach(b => { const y = you.filter(c => impliedBands(c).includes(b)); ok(y.some(c => /wrong turn/i.test(c.title)) && y.some(c => /gas station/i.test(c.title)), b + ': a wrong turn and a gas-station fight'); });
   ok(str(D.you.takeOver, 140) && !/cactus|Kenji/.test(D.you.takeOver), 'v0.9: the neutral take-over line has no cactus');
-  Object.keys(D.you.takeOverBy || {}).forEach(b => ok(K.bands[b] && str(D.you.takeOverBy[b], 140), 'takeOverBy.' + b));
-  ok(/cactus/.test((D.you.takeOverBy || {}).hail_damage || ''), 'Hail Damage keeps its tiny cactus');
+  Object.keys(D.you.byBand || {}).forEach(b => ok(K.bands[b] && str(D.you.byBand[b].takeOver, 140), 'you.byBand.' + b + '.takeOver'));
+  ok(/cactus/.test(((D.you.byBand || {}).hail_damage || {}).takeOver || '') && !/cactus/.test(D.you.takeOver), 'Hail Damage keeps its tiny cactus (the neutral line has none)');
   const all = strings(K.roadCards, 'road').map(x => x[1]).join(' ');
   ok(/deer/i.test(all) && /Yellowhead/.test(all) && /Whiteout on the Trans-Canada/.test(all) && /shotgun/i.test(all) && /cape/i.test(all) && /sliding door/i.test(all), 'C1 road events');
 });
@@ -1264,6 +1275,7 @@ test('bandbook: post kinds, comments, handles, lengths; Kenji never speaks; no s
   const B = K.bandbook;
   ok(B && B.name === 'Bandbook', 'one parody social app: Bandbook');
   eq(Object.keys(B.kinds).sort(), ['bts', 'exclusive', 'gig', 'meme', 'rehearsal', 'teaser']);
+  for (const k of Object.keys(B.kinds)) ok(str(B.kinds[k].label, 24) && str(B.kinds[k].icon, 4), 'kind ' + k);
   // v0.9: every band reads flat + byGenre + byBand (GG.fans pools); each band's pool is big enough and repeats nothing
   for (const b of BAND_IDS) {
     for (const k of Object.keys(B.kinds)) {
@@ -1303,7 +1315,7 @@ test('bandbook: superfans (Dale from start, the trucker by story, the Japanese p
   const HS = K.bandbook.homeSuperfan || {};
   Object.keys(HS).forEach(b => {
     const x = HS[b], w = 'homeSuperfan.' + b;
-    ok(K.bands[b] && str(x.name, 44) && str(x.short, 16) && str(x.from, 30) && str(x.blurb, 140), w + ': shape');
+    ok(K.bands[b] && str(x.name, 44) && str(x.short, 16) && str(x.from, 60) && str(x.blurb, 160), w + ': shape');
     ok(x.gigLines.length >= 3 && x.gigLinesFar.length >= 2 && x.comments.length >= 4 && [].concat(x.gigLines, x.gigLinesFar, x.comments).every(t => str(t, 140)), w + ': lines');
     ok(!x.gift || K.bandbook.scriptedGifts[x.gift], w + ': gift');
   });
@@ -1313,7 +1325,9 @@ test('bandbook: superfans (Dale from start, the trucker by story, the Japanese p
 test('bandbook: mail, gifts (macaroni Kenji), Patreeon tiers', () => {
   const B = K.bandbook, ids = new Set();
   const layers = o => [].concat(...Object.values(o || {}).map(x => [].concat(x.mail || [], x.gifts || [])));
-  [].concat(B.mail, B.gifts, layers(B.byGenre), layers(B.byBand)).forEach(g => { ok(/^[a-z][a-z0-9_]*$/.test(g.id) && !ids.has(g.id) && str(g.from, 44) && str(g.text, 140), 'gift/mail ' + g.id); ids.add(g.id); });
+  [].concat(B.mail, B.gifts, layers(B.byGenre), layers(B.byBand)).forEach(g => { ok(/^[a-z][a-z0-9_]*$/.test(g.id) && str(g.from, 44) && str(g.text, 140), 'gift/mail ' + g.id); ids.add(g.id); });
+  // ids are unique in every band's own mail + gifts (flat + byGenre + byBand; a genre layer may reuse a stand-in's id)
+  BAND_IDS.forEach(b => { const own = poolFor(B, ['mail'], b).concat(poolFor(B, ['gifts'], b)).map(g => g.id); eq(own.length, new Set(own).size, b + ': mail/gift ids unique'); });
   ok(B.mail.length >= 5 && B.gifts.length >= 5, 'enough mail + gifts');
   // v0.9: every band gets ≥5 of each (band-gated items only reach their band)
   const fits = (x, b) => !x.band || x.band.includes(b);
@@ -1371,11 +1385,14 @@ function othersSee(v, path, out, skip) {
   if (typeof v === 'string') { out.push([path, v]); return out; }
   if (!v || typeof v !== 'object') return out;
   const onlyHD = x => x && typeof x === 'object' && ((x.band && ![].concat(x.band).some(b => b !== 'hail_damage'))
-    || (x.gate && x.gate.band && !x.gate.band.some(b => b !== 'hail_damage')) || x.rivalId === 'tundra_wraith' || x.bandId === 'hail_damage');
-  if (onlyHD(v)) return out;
+    || (x.gate && x.gate.band && !x.gate.band.some(b => b !== 'hail_damage')) || x.rivalId === 'tundra_wraith' || x.bandId === 'hail_damage'
+    || (Array.isArray(x.genres) && x.genres.length && x.genres.every(g => g === 'metal')));   // (a metal-only recruit quirk)
+  if (onlyHD(v) || v.cameo === true) return out;   // (a Q8 cameo card may name Hail Damage's people: that is the joke)
   if (!Array.isArray(v) && v.speaker && BAND_OF_MEMBER(v.speaker) === 'hail_damage' && !(v.gate && v.gate.band)) return out;   // a member's own card
   for (const k in v) {
-    if (k === 'byBand' || ALL_MEMBER_IDS.includes(k) || (skip || []).includes(k)) continue;
+    // byBand layers, member-keyed pools, band-keyed maps (vanNames.hail_damage, demandsByBand.hail_damage, ...) and
+    // Hail Damage's own start space (upgrades[].bySpace.parents_garage) are that band's alone
+    if (k === 'byBand' || k === 'hail_damage' || k === HD.space || ALL_MEMBER_IDS.includes(k) || (skip || []).includes(k)) continue;
     othersSee(v[k], path + '.' + k, out, skip);
   }
   return out;
@@ -1397,8 +1414,10 @@ test('v0.9: lines keyed for every band (§4.1, UI ports): byBand shape, moments 
   const L = K.lines, LB = L.byBand || {};
   Object.keys(LB).forEach(b => ok(K.bands[b], 'lines.byBand.' + b));
   const hd = LB.hail_damage;
-  ok(hd && str(hd.countIn, 60) && hd.empty && str(hd.empty.chat, LIMIT.line) && str(hd.empty.catalog, LIMIT.line) && str(hd.noSolo, LIMIT.line), 'Hail Damage: countIn, empty{chat,catalog}, noSolo');
-  ok(hd.exposure && str(hd.exposure.pitch, LIMIT.line) && str(hd.exposure.toast, LIMIT.line) && str(hd.recruitAd, LIMIT.line), 'Hail Damage: exposure{pitch,toast}, recruitAd');
+  // (the UI reads a string or a list for countIn / noSolo / recruitAd / banter: 54, 56, 58, 55)
+  const strs = (v, max) => [].concat(v == null ? [] : v).length > 0 && [].concat(v).every(t => str(t, max));
+  ok(hd && strs(hd.countIn, 60) && hd.empty && str(hd.empty.chat, LIMIT.line) && str(hd.empty.catalog, LIMIT.line) && strs(hd.noSolo, LIMIT.line), 'Hail Damage: countIn, empty{chat,catalog}, noSolo');
+  ok(hd.exposure && str(hd.exposure.pitch, LIMIT.line) && str(hd.exposure.toast, LIMIT.line) && strs(hd.recruitAd, LIMIT.line), 'Hail Damage: exposure{pitch,toast}, recruitAd');
   // gig moments: every genre moment has lines (+ a label for the UI); band signatures have labels
   const GENRE_MOMENTS = ['mosh', 'headbang', 'wallOfDeath', 'pogo', 'gangShout', 'circlePit', 'fistPump', 'singAlong', 'lighters', 'clapAlong', 'yeehaw', 'lineDance'];
   GENRE_MOMENTS.forEach(m => ok(Array.isArray(L.moments[m]) && L.moments[m].length >= 2 && L.moments[m].every(t => str(t, LIMIT.line)), 'moments.' + m));
@@ -1416,7 +1435,7 @@ test('v0.9: lines keyed for every band (§4.1, UI ports): byBand shape, moments 
 
 test('v0.9: rivalry cast (Tundra Wraith in cast.tundra_wraith), scene rows owned by rival / band (Q8), festivals by genre', () => {
   const R = K.rivalry, tw = R.cast && R.cast.tundra_wraith;
-  ok(tw && tw.frontman && Array.isArray(tw.members) && tw.members.length === 4 && tw.news && tw.news.length >= 5, 'Tundra Wraith: frontman, the four accountants, news');
+  ok(tw && tw.frontman && Array.isArray(tw.members) && tw.members.length === 4 && tw.news && Object.keys(R.news).every(k => Array.isArray(tw.news[k]) && tw.news[k].length), 'Tundra Wraith: frontman, the four accountants, news for every key');
   ok(Array.isArray(tw.cards) && tw.cards.every(c => /^rv_[a-z_]+_tundra_wraith$/.test(c.id) && (R.cards || []).some(x => c.id === x.id + '_tundra_wraith')), 'Tundra Wraith\'s cards are variants of the neutral rv_* cards');
   ok((R.cards || []).every(c => !HD_LEAK.test(JSON.stringify(c)) && speakerFits(c.speaker, BAND_IDS)), 'the neutral rival cards speak for any rival');
   Object.keys(R.cast).forEach(r => ok(K.rivals[r], 'cast.' + r));
@@ -1429,8 +1448,9 @@ test('v0.9: rivalry cast (Tundra Wraith in cast.tundra_wraith), scene rows owned
 
 test('v0.9: shop spaces by city (Q7), upgrades by space, misprints by band; world ring + gong carpet; recap and awards per band', () => {
   const S = K.shop;
-  ok(S.spaces && S.spaces.byCity && Object.values(K.bands).every(b => S.spaces.byCity[b.city] || S.spaces.byCity[b.city.toLowerCase().replace(/ /g, '_')]), 'rented spaces for every home city');
-  ok(S.upgrades && S.upgrades.bySpace && Object.values(K.bands).every(b => S.upgrades.bySpace[b.space]), 'upgrades for every band\'s tier-0 space');
+  ok(S.spaces.filter(x => x.tier > 0).every(x => x.byCity && Object.values(K.bands).every(b => x.byCity[b.city] && str(x.byCity[b.city].name, 40) && str(x.byCity[b.city].blurb, 160))), 'rented spaces for every home city (spaces[tier].byCity)');
+  ok(S.upgrades.filter(u => u.tier === 0).every(u => u.bySpace && Object.values(K.bands).every(b => u.bySpace[b.space] && str(u.bySpace[b.space].name, 40) && str(u.bySpace[b.space].blurb, 160))), 'tier-0 upgrades for every band\'s start space (upgrades[].bySpace)');
+  S.upgrades.forEach(u => Object.keys(u.bySpace || {}).forEach(sp => ok(Object.values(K.bands).some(b => b.space === sp), u.id + '.bySpace.' + sp + ': a band\'s start space')));
   const mis = (S.merch || []).find(m => m.id === 'misprint') || (S.merch && S.merch.misprint);
   ok(mis && mis.byBand && BAND_IDS.every(b => mis.byBand[b]), 'a misprint for every band');
   ok(K.world.gongCarpet && K.world.gongCarpet.hail_damage && K.world.gongCarpet.hail_damage.length >= 3, 'the Global Gong carpet (Hail Damage)');

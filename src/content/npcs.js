@@ -38,7 +38,7 @@
     // v0.6.1 (FANS agent): recurring named superfans (content/bandbook.js superfans)
     { id: 'dale_warman', name: 'Dale from Warman', band: HD,
       blurb: 'Your first superfan. At every show, front row, lawn chair. No relation to Cousin Dale; he wants that on the record.' },
-    { id: 'wendell', name: 'Big Wendell', band: HD,
+    { id: 'wendell', name: 'Big Wendell',   // (every band's: the trucker superfan is not a home superfan)
       blurb: 'Long-haul trucker. Boosted the van at 2 a.m. in Davidson and never left. Follows the band on the CB.' },
 
     // ---- v0.9 Regina: Frost Heave's people ----
@@ -77,12 +77,13 @@
     { id: 'rodeo_chair', name: 'Marlene from the rodeo committee', band: GRR,
       blurb: 'Runs the Stampede with a clipboard and a whistle. Books the beer-gardens bands. Has opinions about your boots.' },
 
-    // ---- v0.9 the other rivals' frontmen (who posts for them; their casts are in the band packs) ----
-    { id: 'mallrats_frontman', name: 'Blaze from the Mall Rats', rival: 'mall_rats', frontman: true,
+    // ---- v0.9 the other rivals' frontmen: who posts for them (GG.rival.frontSpeaker). The ids double as the cast
+    //      frontman ids the band packs use (rivalry.cast[rid].frontman); a pack's own npc of the same id is skipped. ----
+    { id: 'mr_blaze', name: 'Blaze', rival: 'mall_rats', frontman: true,
       blurb: 'Real name Kevin, from Oakville. Found on a TV talent show. Kickflips when the sponsor says so. Calls everything "sick".' },
-    { id: 'chartbusters_frontman', name: 'Rex Glamour of the Chartbusters', rival: 'chartbusters', frontman: true,
+    { id: 'cb_rex', name: 'Rex Glamour', rival: 'chartbusters', frontman: true,
       blurb: 'Thirty years at the top. Wears a scarf in July. Every single is the same power ballad. Owns the radio, probably.' },
-    { id: 'buckleboot_frontman', name: 'Brayden from Buckle & Boot', rival: 'buckle_and_boot', frontman: true,
+    { id: 'bb_brayden', name: 'Brayden', rival: 'buckle_and_boot', frontman: true,
       blurb: 'Ex-junior hockey. Sings about tailgates. His cousin Colt "plays" an unplugged guitar beside him. The truck mascot waves.' },
 
     // v0.7 (WORLDSIM): the world stage cast
