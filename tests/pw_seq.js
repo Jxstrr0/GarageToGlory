@@ -1,5 +1,5 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
 //           → laptop catalog lists it and opens its pattern read-only; kit sketch pad queues a song; in-page
@@ -16,6 +16,14 @@
 //           metal chugs on every kick; venue rooms; crowd/garage/van/radio beds; the mixer API + metronome; live:
 //           garage hum + noodling, van road noise + radio for a charted song, the gig's room + crowd reactions.
 //           v0.8: kit quality tiers 0..3 per lane (clean, never clipping, fuller + longer each tier) + an outro/solo song.
+//   heavy : v0.7.2 (owner: "heavier" metal, a better crowd). Objective metrics from OfflineAudioContext renders, recorded
+//           against the v0.7.1 numbers (measured on the v0.7.1 build with the same method): every genre's song peak < 1 and
+//           RMS sane; metal band-only energy below 150 Hz and at 2-6 kHz up, mids kept, lower fundamentals (drop tuning), a
+//           wider stereo image (double-tracked guitars), more harmonic content on one guitar note (THD), screams/growls
+//           louder against the band (voice/accompaniment split by a polarity-inverted render); a full metal song renders
+//           faster than real time; the crowd: babble/roar rise with the meter, hush in silent venues, cheers/boos/claps/
+//           woos/whistles, song-end reactions scale with the score, nothing clips with the crowd on top of a song.
+//           Writes tests/.cache/v072_<genre>.wav and v072_crowd.wav (not committed).
 // Run: node build.js && timeout 500 node tests/pw_seq.js
 const fs = require('fs'), path = require('path');
 const { open, checker } = require('./_pw');
@@ -114,7 +122,7 @@ async function guided() {
     const n0 = await ev(() => GG.debug('seq').title);
     await tap(page, 'btn-guide-reroll');
     const n1 = await ev(() => ({ t: GG.debug('seq').title, shown: document.querySelector('[data-testid="guide-title"]').textContent }));
-    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls a French title ' + n0 + ' → ' + n1.t);
+    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls the title ' + n0 + ' → ' + n1.t);
     await page.locator(tid('guide-title-input')).fill('Le Test Guidé');
     c.ok(await ev(() => GG.debug('seq').title) === 'Le Test Guidé', 'type your own title');
     c.ok((await audit(page)).length === 0, 'name screen layout ' + (await audit(page)).join('; '));
@@ -155,7 +163,7 @@ async function seq() {
       tip: document.querySelector('[data-testid="seq-tip"]').textContent, render: GG.debug('render') && GG.debug('render').paused }));
     c.ok(d0.dbg && d0.dbg.mode === 'write' && d0.phase === 'plan', 'Go opens the sequencer before the week runs');
     c.ok(d0.pat === d0.starter, 'first-ever Write opens with starter(genre)');
-    c.ok(/Write block 1 of 1/i.test(d0.sub) && d0.dbg.title, 'header: block count + a French title: ' + d0.sub);
+    c.ok(/Write block 1 of 1/i.test(d0.sub) && d0.dbg.title, 'header: block count + a title from Marcel: ' + d0.sub);
     c.ok(/(Dana|Marcel|Jaxon):/.test(d0.tip), 'a bandmate tip on the first Write: ' + d0.tip);
     await page.waitForTimeout(250);
     const bad = await audit(page);
@@ -325,7 +333,29 @@ async function audio() {
       h.stop();
       return { max, steps, style, state: GG.debug('audio').state, playing: GG.audio.isPlaying() };
     });
-    c.ok(cap.max > 0 && cap.max <= 12 && cap.steps > 10 && cap.style === 'tremolo' && !cap.playing, 'live: ≤ 12 song voices ' + JSON.stringify(cap));
+    c.ok(cap.max > 0 && cap.max <= 18 && cap.steps > 10 && cap.style === 'tremolo' && !cap.playing, 'live: ≤ 18 song voices ' + JSON.stringify(cap));
+    // v0.7.2 fix: a perfectly played metal chorus on Hard (8th kick + 8th crash, snare on 2 and 4 @140) over the full band
+    // never loses a tap to the voice cap (taps cut off the lane's last tap; the cap has room for the kit on top of the band).
+    const taps = await page.evaluate(async () => {
+      const p = JSON.parse(JSON.stringify(GG.songs.signature('metal'))); p.bpm = 140;
+      const d0 = GG.debug('audio').counts.tapDrops, h = GG.audio.play(p, { genre: 'metal', section: 'chorus', loop: true, backing: true, drums: false });
+      const ac = GG.audio.context(), e = 60 / 140 / 2, t0 = ac.currentTime + 0.3;
+      let i = 0, n = 0, max = 0;
+      while (i < 48) {   // 6 bars of 8ths, scheduled ahead on the audio clock like the gig's auto notes
+        const now = ac.currentTime;
+        for (; i < 48 && t0 + i * e < now + 0.25; i++) {
+          const t = Math.max(t0 + i * e, now + 0.02);
+          GG.audio.hit('kick', t); GG.audio.hit('cymbal', t); n += 2;
+          if (i % 4 === 2) { GG.audio.hit('snare', t); n++; }
+        }
+        max = Math.max(max, GG.debug('audio').songVoices);
+        await new Promise(r => setTimeout(r, 40));
+      }
+      await new Promise(r => setTimeout(r, 300));
+      h.stop();
+      return { taps: n, dropped: GG.debug('audio').counts.tapDrops - d0, max };
+    });
+    c.ok(taps.taps === 108 && taps.dropped === 0 && taps.max <= 18, 'live: every tap sounds over a full metal band ' + JSON.stringify(taps));
     const tl = await page.evaluate(() => {
       const s = GG.songs.signature('metal'), t = GG.audio.timeline(s, { genre: 'metal', backing: false });
       const drums = t.events.filter(e => e.kind === 'drum').length, notes = GG.songs.toNotes(s).length;
@@ -382,7 +412,7 @@ async function audio() {
     c.ok(shape.vox > 8 && shape.offGrid === 0 && shape.offKey === 0, 'vocal hits: ' + shape.vox + ', all on whole beats and in key');
     c.ok(shape.same && shape.range && Object.values(shape.keys).every(n => n >= 3), 'a new key per song (seeded by id, in range) ' + JSON.stringify(shape.keys));
     c.ok(Object.values(shape.layers).every(([v, ch]) => ch > v), 'choruses fuller than verses ' + JSON.stringify(shape.layers));
-    c.ok(shape.breakOk && shape.soloOk && shape.drops.metal === 'growl', 'breakdowns strip to the heavy parts (growl on the drop), solos lead ' + JSON.stringify(shape.drops));
+    c.ok(shape.breakOk && shape.soloOk && /^growl(,growl)*$/.test(shape.drops.metal), 'breakdowns strip to the heavy parts (growls from the drop), solos lead ' + JSON.stringify(shape.drops));
     c.ok(shape.chugOk, 'metal: palm-muted chugs on every kick hit');
     const rooms = await page.evaluate(async () => {
       const f = GG.audio.roomFor, e = r => r.rms * r.rms * r.seconds;
@@ -471,8 +501,8 @@ async function audio() {
       const d = GG.debug('audio');
       return { room: d.room, want, level, crowd: d.crowd, cheers: d.counts.cheers - d0.counts.cheers, boos: d.counts.boos - d0.counts.boos, key: d.key, playing: d.playing, cv: d.crowdVoices };
     });
-    c.ok(radioOff === null && gg.room === gg.want && gg.crowd.on && gg.level === 92 && gg.cheers === 1 && gg.boos === 1 && gg.playing && !!gg.key,
-      'gig: venue room, crowd bed follows the meter, cheers + boos ' + JSON.stringify(gg));
+    c.ok(radioOff === null && gg.room === gg.want && gg.crowd.on && gg.crowd.ready && gg.level === 92 && gg.cheers === 1 && gg.boos === 1 && gg.playing && !!gg.key && gg.cv <= 12,
+      'gig: venue room, the crowd (v0.7.2 layers built) follows the meter, cheers + boos, ≤ 12 crowd voices ' + JSON.stringify(gg));
     await page.evaluate(() => GG.ui.closeAll());
     await page.waitForFunction(() => GG.debug('audio').ambience !== 'gig', null, { timeout: 4000 });
     const after = await page.evaluate(() => ({ room: GG.debug('audio').room, crowd: GG.debug('audio').crowd.on }));
@@ -483,8 +513,140 @@ async function audio() {
   c.done();
 }
 
+// In-page helpers for the v0.7.2 metrics: FFT band energies, harmonic amplitudes (Goertzel), stereo width, WAV bytes.
+function pageHelpers() {
+  const mono = b => { const n = b.length, m = new Float32Array(n); for (let ch = 0; ch < b.numberOfChannels; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < n; i++) m[i] += d[i] / b.numberOfChannels; } return m; };
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a);
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let k = 0; k < len / 2; k++) { const p = i + k, q = p + len / 2, br = re[q] * cr - im[q] * ci, bi = re[q] * ci + im[q] * cr; re[q] = re[p] - br; im[q] = im[p] - bi; re[p] += br; im[p] += bi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } }
+    }
+  }
+  // Absolute band energies (dB re full scale) below 150 Hz, 150-500, 500-2k, 2-6k, above 6k; stereo side/mid energy.
+  window.__bands = function (buf) {
+    const sr = buf.sampleRate, N = 8192, m = mono(buf), E = [0, 0, 0, 0, 0], edges = [150, 500, 2000, 6000];
+    let tot = 0, frames = 0; const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    for (let s = 0; s + N <= m.length; s += N / 2) {
+      const re = new Float64Array(N), im = new Float64Array(N); for (let i = 0; i < N; i++) re[i] = m[s + i] * w[i];
+      fft(re, im); frames++;
+      for (let k = 1; k < N / 2; k++) { const f = k * sr / N, p = re[k] * re[k] + im[k] * im[k]; let j = 0; while (j < 4 && f >= edges[j]) j++; E[j] += p; tot += p; }
+    }
+    let ms = 0; for (let i = 0; i < m.length; i++) ms += m[i] * m[i]; ms /= m.length;
+    let side = 0, mid = 0; if (buf.numberOfChannels > 1) { const L = buf.getChannelData(0), R = buf.getChannelData(1); for (let i = 0; i < L.length; i++) { mid += (L[i] + R[i]) ** 2; side += (L[i] - R[i]) ** 2; } }
+    return { dB: E.map(e => +(10 * Math.log10(ms * e / tot + 1e-12)).toFixed(1)), low150: +(E[0] / tot).toFixed(3), width: mid ? +(side / mid).toFixed(3) : 0 };
+  };
+  // THD and harmonic energy (re the fundamental, harmonics 2..16) of a steady tone; f0 refined within +-2 %.
+  window.__harm = function (buf, f0, from, to) {
+    const sr = buf.sampleRate, m = mono(buf), a = Math.floor(from * sr), n = Math.floor(to * sr) - a;
+    const g = f => { let re = 0, im = 0; for (let i = 0; i < n; i++) { const x = m[a + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1))), ph = 2 * Math.PI * f * i / sr; re += x * Math.cos(ph); im -= x * Math.sin(ph); } return Math.sqrt(re * re + im * im); };
+    let best = f0, bv = -1; for (let f = f0 * 0.98; f <= f0 * 1.02; f += f0 * 0.001) { const v = g(f) + g(2 * f) + g(3 * f); if (v > bv) { bv = v; best = f; } }
+    const A = []; for (let h = 1; h <= 16; h++) A.push(g(best * h));
+    const hs = A.slice(1).reduce((s, x) => s + x * x, 0) / (A[0] * A[0]);
+    return { f0: +best.toFixed(1), thd: +Math.sqrt(hs).toFixed(3), harmonics: +hs.toFixed(3), strong: A.filter(x => x > A[0] * 0.1).length };
+  };
+  window.__wav = function (buf) {
+    const ch = buf.numberOfChannels, n = buf.length, sr = buf.sampleRate, bytes = 44 + n * ch * 2, v = new DataView(new ArrayBuffer(bytes));
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, bytes - 8, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, ch, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * ch * 2, true); v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * ch * 2, true);
+    const d = []; for (let c = 0; c < ch; c++) d.push(buf.getChannelData(c));
+    let o = 44; for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const s = Math.max(-1, Math.min(1, d[c][i])); v.setInt16(o, s < 0 ? s * 32768 : s * 32767, true); o += 2; }
+    const u = new Uint8Array(v.buffer); let bin = ''; for (let i = 0; i < u.length; i += 32768) bin += String.fromCharCode.apply(null, u.subarray(i, i + 32768));
+    return btoa(bin);
+  };
+}
+
+// v0.7.1 reference numbers (same renders + metrics on the v0.7.1 build, 2026-09-30): metal band-only at 140 BPM, song s3.
+const V071 = { lowDb: -27.4, midDb: -22.7, grindDb: -36.0, low150: 0.186, gtrHz: 98, thd: 0.367, harmonics: 0.134, voxChorusVA: 1.05, voxBridgeVA: 10.42 };
+
+async function heavy() {
+  const c = checker('heavy');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(pageHelpers);
+    const res = await page.evaluate(async () => {
+      const A = GG.audio, out = { genres: {}, wav: {} };
+      const sig = (g, bpm) => { const p = JSON.parse(JSON.stringify(GG.songs.signature(g))); p.arrangement = ['verse', 'chorus', 'bridge']; if (bpm) p.bpm = bpm; return p; };
+      for (const g of GG.contracts.GENRES) {
+        const r = await A.renderOffline({ genre: g, pattern: sig(g), full: true, bars: 12, songId: 's3' });
+        const b = __bands(r.buffer);
+        out.genres[g] = { peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), nan: r.nan, width: b.width, low150: b.low150 };
+        out.wav[g] = __wav(r.buffer);
+      }
+      const band = {};
+      for (const bpm of [80, 140, 200]) {
+        const p = sig('metal', bpm), r = await A.renderOffline({ genre: 'metal', pattern: p, full: true, bars: 12, songId: 's3', drums: false }), b = __bands(r.buffer);
+        const tl = A.timeline(p, { genre: 'metal', songId: 's3' }), low = k => Math.min(...tl.events.filter(e => e.kind === k).map(e => e.midi));
+        const hz = m => +(440 * Math.pow(2, (m - 69) / 12)).toFixed(1);
+        band[bpm] = { style: tl.style, key: tl.key.name, peak: +r.peak.toFixed(3), rms: +r.rms.toFixed(4), dB: b.dB, low150: b.low150, width: b.width, gtrHz: hz(low('gtr')), bassHz: hz(low('bass')) };
+      }
+      out.band = band;
+      const key = A.keyFor('s3', 'metal', 140), pr = await A.renderOffline({ probe: 'gtr', genre: 'metal', midi: key.tonic, seconds: 1.6 });
+      out.probe = __harm(pr.buffer, 440 * Math.pow(2, (key.tonic - 69) / 12), 0.4, 1.4);
+      // Voice vs band inside the vocal-hit windows: (normal -/+ polarity-inverted vocals) / 2.
+      out.vox = {};
+      for (const sec of ['chorus', 'bridge']) {
+        const q = sig('metal', 140), o = { genre: 'metal', pattern: q, section: sec, bars: 4, songId: 's3', drums: false };
+        const n1 = (await A.renderOffline(o)).buffer.getChannelData(0), n2 = (await A.renderOffline(Object.assign({ voxInvert: true }, o))).buffer.getChannelData(0);
+        const tl = A.timeline(q, o), spb = 60 / tl.bpm, hits = tl.events.filter(e => e.kind === 'vox');
+        let V = 0, B = 0;
+        for (const e of hits) for (let i = Math.floor((0.05 + e.beat * spb) * 44100), z = i + Math.floor(0.45 * 44100); i < z; i++) { V += ((n1[i] - n2[i]) / 2) ** 2; B += ((n1[i] + n2[i]) / 2) ** 2; }
+        out.vox[sec] = { hits: hits.map(e => e.voc).join(), onGrid: hits.every(e => e.beat % 1 === 0), VA: +(10 * Math.log10(V / B)).toFixed(2) };
+      }
+      // CPU: a whole metal song (full arrangement, arena reverb, the crowd on top) renders faster than real time.
+      const t0 = performance.now(), full = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 99, songId: 's7', room: 'arena', crowd: { level: 95, moments: [[4, 'mosh'], [20, 'end', 0.9]], clapBpm: 170 } });
+      const wall = (performance.now() - t0) / 1000;
+      out.cpu = { seconds: +full.seconds.toFixed(1), wall: +wall.toFixed(2), xRT: +(full.seconds / wall).toFixed(2), peak: +full.peak.toFixed(3), nan: full.nan };
+      // The crowd.
+      const crowd = {}, cr = async o => { const r = await A.renderOffline(Object.assign({ ambience: 'crowd', seconds: 4, moments: [] }, o)); return { rms: +r.rms.toFixed(4), peak: +r.peak.toFixed(3), nan: r.nan, width: __bands(r.buffer).width, n: r.crowd, buf: r.buffer }; };
+      for (const lv of [15, 50, 90]) { crowd['talk' + lv] = await cr({ level: lv }); crowd['song' + lv] = await cr({ level: lv, song: true }); }
+      crowd.silent = await cr({ level: 90, song: true, silent: true });
+      crowd.events = await cr({ level: 100, seconds: 5, moments: [[0.2, 'end', 1], [0.5, 'boo'], [0.8, 'wallOfDeath'], [1.2, 'solo'], [1.6, 'applause'], [2, 'grumble']], clapBpm: 120 });
+      for (const [k, a] of [['end100', 1], ['end60', 0.6], ['end45', 0.45]]) crowd[k] = await cr({ level: 50, moments: [[0.1, 'end', a]] });
+      out.wav.crowd = __wav(crowd.events.buf);
+      Object.values(crowd).forEach(x => delete x.buf);
+      out.crowd = crowd;
+      const mix = await A.renderOffline({ genre: 'metal', pattern: sig('metal', 140), full: true, bars: 12, songId: 's3', crowd: { level: 100, moments: [[1, 'mosh'], [3, 'end', 1], [5, 'boo']], clapBpm: 140 } });
+      out.mix = { peak: +mix.peak.toFixed(3), rms: +mix.rms.toFixed(4), nan: mix.nan };
+      return out;
+    });
+    fs.mkdirSync(CACHE, { recursive: true });
+    for (const [k, b64] of Object.entries(res.wav)) fs.writeFileSync(path.join(CACHE, 'v072_' + k + '.wav'), Buffer.from(b64, 'base64'));
+    delete res.wav;
+    console.log('v0.7.2 metrics ' + JSON.stringify(res));
+    const G = res.genres, B = res.band, b140 = B[140];
+    for (const [g, r] of Object.entries(G)) c.ok(!r.nan && r.peak < 1 && r.rms > 0.05 && r.rms < 0.25, g + ' song: peak < 1, RMS sane ' + JSON.stringify(r));
+    c.ok(G.metal.width > 0.03 && G.country.width < G.metal.width, 'metal is wide (double-tracked guitars L/R) ' + G.metal.width);
+    c.ok(Object.values(B).every(b => b.peak < 1), 'metal band renders under the limiter');
+    c.ok(b140.dB[0] >= V071.lowDb + 5 && b140.low150 > V071.low150 * 2, 'heavier: energy below 150 Hz up ' + b140.dB[0] + ' dB vs ' + V071.lowDb + ' (share ' + b140.low150 + ' vs ' + V071.low150 + ')');
+    c.ok(b140.dB[3] >= V071.grindDb + 2 && b140.dB[1] >= V071.midDb - 2, 'grind (2-6 kHz) up, mids kept ' + b140.dB.join(' / '));
+    c.ok(Object.values(B).every(b => b.gtrHz < 80 && b.bassHz < 42) && b140.gtrHz < V071.gtrHz * 0.8, 'drop tuning: lowest guitar ' + Object.values(B).map(b => b.style + ' ' + b.gtrHz + ' Hz').join(', ') + ' (v0.7.1 ' + V071.gtrHz + ' Hz)');
+    c.ok(B[80].gtrHz < B[140].gtrHz && B[140].gtrHz < B[200].gtrHz, 'tuning by tempo band: doom lowest, tremolo highest');
+    c.ok(res.probe.thd > V071.thd * 1.3 && res.probe.harmonics > V071.harmonics * 2, 'more harmonics on one guitar note: THD ' + res.probe.thd + ' vs ' + V071.thd + ', energy ' + res.probe.harmonics + ' vs ' + V071.harmonics);
+    c.ok(res.vox.chorus.hits.split(',').every(v => v === 'scream') && res.vox.bridge.hits.split(',').every(v => v === 'growl') && res.vox.chorus.onGrid && res.vox.bridge.onGrid, 'screams on the chorus, growls on the breakdown, on the beat grid ' + JSON.stringify(res.vox));
+    c.ok(res.vox.chorus.VA >= V071.voxChorusVA + 2.5 && res.vox.bridge.VA >= 5, 'vocals louder against the band: screams ' + res.vox.chorus.VA + ' dB (v0.7.1 shouts ' + V071.voxChorusVA + '), growls ' + res.vox.bridge.VA + ' dB over the heavier breakdown');
+    c.ok(res.cpu.xRT > 1 && res.cpu.peak < 1 && !res.cpu.nan, 'a full metal song (arena + crowd) renders faster than real time ' + JSON.stringify(res.cpu));
+    const C = res.crowd;
+    c.ok(Object.values(C).every(x => !x.nan && x.peak < 1), 'crowd renders never clip ' + Object.entries(C).map(([k, x]) => k + ' ' + x.peak).join(', '));
+    c.ok(C.talk15.rms < C.talk50.rms && C.talk50.rms < C.talk90.rms && C.song15.rms < C.song90.rms && C.talk15.rms > 0.01, 'babble + roar rise with the meter ' + [C.talk15.rms, C.talk50.rms, C.talk90.rms, C.song90.rms].join(' / '));
+    c.ok(C.song15.rms < C.talk15.rms && C.silent.rms < C.song90.rms * 0.3, 'people listen during songs; silent crowds hush ' + C.song15.rms + ' ' + C.silent.rms);
+    c.ok(C.talk50.width > 0.05, 'the crowd is spread in stereo ' + C.talk50.width);
+    const n = C.events.n;
+    c.ok(n.cheers >= 2 && n.boos >= 2 && n.claps >= 6 && n.woos >= 3 && n.whistles >= 2 && n.applause >= 1, 'cheers, boos, claps, woos, whistles, applause ' + JSON.stringify(n));
+    c.ok(C.end100.rms > C.end60.rms && C.end60.rms > C.end45.rms, 'song-end reactions scale with the score ' + [C.end100.rms, C.end60.rms, C.end45.rms].join(' > '));
+    c.ok(!res.mix.nan && res.mix.peak < 1, 'metal + a roaring crowd on top: no clipping ' + JSON.stringify(res.mix));
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'heavy threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+
 (async () => {
   if (want('seq')) await seq();
   if (want('seq') || want('guided')) await guided();
   if (want('audio')) await audio();
+  if (want('heavy')) await heavy();
 })();

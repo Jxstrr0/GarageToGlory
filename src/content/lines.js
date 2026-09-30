@@ -5,8 +5,10 @@
 //   gigReactions: { <memberId>: { great, ok, bad } }          one per member after a gig
 //   tap:          { <memberId>: [text] }                       tapping a bandmate in the garage
 //   guilt: [text] (parents' loan)   yearEnd: [text]   quietWeek: [text] (Mondays without a card)
-//   songReactions: { marcel: { name }, dana: { noSolo }, jaxon: { fills }, kenji: { great } }   after a Write block
-//                  (marcel.name lines end with a colon: the sim appends the song's French title)
+//   songReactions: { marcel: { name, nameFr }, dana: { noSolo, frSigh }, jaxon: { fills, frSigh }, kenji: { great, frSigh } }
+//                  after a Write block (marcel.name / nameFr lines end with a colon or "is called": the sim appends the
+//                  song's title). v0.7.2: titles are English; nameFr = Marcel snuck in a French one and insists; frSigh =
+//                  the bandmate who sighs about it right after (Kenji's are stage directions).
 //   writeTips:     { <memberId>: [text] }   one in-character hint when the sequencer opens for the first-ever Write
 // v0.5 (Signed): eraLocal [text] · eraSigned { <labelId>: [text] } · labelOffer { gopherwood|monolith: [text] } ·
 //   offerExpired · labelDropped · studioWeek { <memberId>: [chat] } · releaseDay · chartDebut · chartClimb · chartDrop ·
@@ -17,7 +19,7 @@
   GG.content.lines = {
     activity: {
       rehearse: [
-        "We ran 'Ma Pelouse, Mon Tombeau' eleven times. On the twelfth, Dad's lawnmower started by itself.",
+        "We ran 'My Lawn, My Tomb' eleven times. On the twelfth, Dad's lawnmower started by itself.",
         '{nick:marcel} made us run the breakdown until the garage door rattled in time.',
         'Door open, full volume. Three kids on bikes stopped to headbang, then rode off to be normal again.',
         'Dana counted in at 240 bpm. We are not a 240 bpm band. We are now.',
@@ -303,12 +305,21 @@
     songReactions: {
       marcel: {
         name: [
-          'It needs a name. A French name. I have it:',
-          'I will call it, and you will not ask what it means:',
+          'It needs a name. Something dark. Something that is definitely not about my yard:',
+          'I will call it, and you will not ask what it is about:',
           'This one speaks to me of darkness. And of my yard. Its name is',
           'I have written the lyrics in the time it took you to count in. It is called',
           'Silence. Lord Abyssus names it:',
-          'The neighbours will weep when they hear it. It is called'
+          'The neighbours will weep when they hear it. It is called',
+          'In English, for the radio. I hate it. It is called'
+        ],
+        nameFr: [
+          'Non. This one is French. It was always French. It is called',
+          'English is for the other songs. This one is',
+          'Do not look at me like that. Some songs are born French. This one is',
+          'One French title. Just one. For my grand-mère in Gravelbourg:',
+          'I have translated it back into French, where it belongs:',
+          'The radio can learn. Lord Abyssus names it, in the language of the ancients:'
         ]
       },
       dana: {
@@ -318,6 +329,12 @@
           "You filled every gap. I'll just solo over the top of it. Loudly.",
           'Great song. No room for a solo. I will be taking this up with management.',
           "I needed eight bars. You gave me zero. I'm writing that down."
+        ],
+        frSigh: [
+          '(Dana sighs.) Fine. I will text Gord. He will have it translated before the chorus.',
+          'Every setlist I print now needs a footnote. Cool. Cool cool cool.',
+          "I'm writing the English on my pedalboard in Sharpie. Again.",
+          'Marcel. We TALKED about this. (She sighs into her tuner.)'
         ]
       },
       jaxon: {
@@ -327,6 +344,11 @@
           'i played the simple part. then i got bored. then there was a fill. sorry',
           "don't listen to bar 12 too closely. or do. it's my best work",
           'the verse had room so i put a little bass run there. like a surprise'
+        ],
+        frSigh: [
+          'baba is going to ask what it means. i will say "lawn". it is always lawn',
+          'ok i will learn to say it. do not expect the accent',
+          '*sigh* i cannot spell that on the setlist. i will draw a lawn'
         ]
       },
       kenji: {
@@ -335,6 +357,11 @@
           '(Kenji lowers his sunglasses one centimetre. Then raises them again.)',
           '(Kenji taps his foot. Everyone stops playing to stare.)',
           '👍'
+        ],
+        frSigh: [
+          '(Kenji sighs. It is the loudest sound anyone has ever heard him make.)',
+          "(Kenji writes the English title on a sticky note and presses it to Marcel's forehead.)",
+          '(Kenji exhales through his nose. The garage goes quiet.)'
         ]
       }
     },

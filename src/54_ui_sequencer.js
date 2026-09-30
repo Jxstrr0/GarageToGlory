@@ -205,7 +205,7 @@
         : el('div.row', [
           el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let Marcel',
             oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D); } }),
-          btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New French title', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
+          btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New title from Marcel', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
         ]), D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
       el('div.panel.stack.tight', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
         el('div.row.tiny.faint', [el('span.grow', G.tempo[0]), el('span', G.tempo[1])])]),
@@ -301,6 +301,7 @@
     D.done = true; stopPlay(D);
     var entry = GG.songs.sanitize(D.pat, gear(), genre());
     entry.title = D.title; entry.titleEn = D.titleEn || D.title;
+    if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;   // v0.7.2: Marcel's French one stays French on load
     if (D.onSave) D.onSave(entry);
   }
 
@@ -457,9 +458,9 @@
   function nameStep(s, D) {
     return [el('div.guide-name', [el('div.caps', 'Your song'), el('div.fr', { testid: 'guide-title' }, D.title || 'Untitled'),
         D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
-      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another French title'),
+      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another title from Marcel'),
       el('div.caps', { style: 'margin-top:6px' }, 'Or type your own'),
-      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Mon Beau Sapin de Doom',
+      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Crabgrass of the Damned',
         oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D);
           var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
   }
@@ -560,6 +561,7 @@
     D.done = true; stopPlay(D);
     var entry = GG.songs.sanitize(D.pat, gear(), genre());
     entry.title = D.title; entry.titleEn = D.titleEn || D.title;
+    if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;
     state.pendingSongs = (state.pendingSongs || []).concat([entry]);
     state.draft = null;
     ui.close(s.id);

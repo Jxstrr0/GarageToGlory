@@ -7,6 +7,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
 - Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
 - Also shipped: **0.6.2.0** two-thumb chords + guided songwriter (merged 2026-09-29)
+- Hotfix: **0.7.2.0** audio (heavier metal, a layered crowd; see "v0.7.2 audio")
 - Next: **0.7.0 "World"**
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -28,6 +29,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 | Run length | Always ends at year 10 (or 12–13 with bonus years). Never a game over. |
 
 ## Owner decisions
+- 2026-09-30: **Double kick** (owner: "make 1 kick note hit as a double kick to create less compression on the note highway
+  while still keeping the pace quick"): two fast kicks (≤ `gig.DOUBLE_GAP` 0.18 s apart) are ONE highway note; one tap plays
+  both (the second on the audio clock at its time); every difficulty; one note for accuracy/combo. Shipped in v0.7.2.
 - 2026-09-29: Money feel = **Scrappy, but not too brutal** (always a little short; hustle matters; parents' loan is rare with decent play).
 - 2026-09-29: First storyline chain = **The Cape Saga** (Marcel's cape).
 - 2026-09-29: Owner allows auto-merging PRs into `main`; delete merged branches afterwards.
@@ -56,6 +60,36 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-29: Owner turned on GitHub "Automatically delete head branches" (merged branches clean themselves up).
 - 2026-09-29 (for v0.2): drum palette = **punchy real-ish synth kit**; metal backing = **tempo decides**
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
+- 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
+  still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v0.7.2 double kick (owner request 2026-09-30)
+- `22_sim_gig` chart: after the two-thumb rule and BEFORE difficulty thinning, a kick ≤ `gig.DOUBLE_GAP` (0.18 s) after the
+  previous kick merges into it: the earlier note gets `dbl: true, t2` and the later one leaves the highway. Runs pair in order
+  (1+2, 3+4, …; an odd last one stays single); freestyle kicks never merge. `chart.doubles`; `chart(song, { doubles: false })`.
+  0.18 (the lead asked ~0.16): with no pedal before v0.8 songs have no back-to-back 16th kicks, so 0.16 only reached 8th kicks
+  ≥ 188 BPM; 0.18 = 8ths from ~167 BPM (Thrash/Blast tempos, the 170 BPM metal signature) and 16th pairs from 84 BPM.
+  Session: judged on the first hit (one note for total/accuracy/combo; hit stamps `hitT`); an untapped double = one miss, the
+  second hit is never judged; tapping the second kick as well is forgiven (`echo`, no stray). Two-thumb rule unchanged (a kick
+  is never a thumb drop; the second kick keeps the kick's slot at t2, so a 3rd hit there stays auto).
+- `55_ui_gig`: double = a stacked pill + a "×2" badge in the kick lane; once the first is hit (tap or Auto-kick) the second kick
+  plays at max(t2, hit + 0.06 s) via `GG.audio.hit('kick', G.zero + t)` scheduled ahead on a healthy clock (frame-due otherwise,
+  never two at once); a missed double plays nothing extra; the kick zone flashes again + a ring when it's heard, and
+  `GG.render.stage.kick2()` kicks the drummer's left foot (`info().kick2s`). Debug gigui `doubles, doublesPlayed`, `soon/next.t2`.
+- Numbers: metal signature (170 BPM, 8th kicks) Hard/Expert 432 → 340 notes (−21%, kick lane 184 → 92, 12.8 → 10.0 notes/s),
+  Normal 322 → 230 (−29%), Easy 98 → 106 (thins by time; kicks 48 → 46); metal jams ≥ 175 BPM −23% on Hard; songs < 167 BPM
+  unchanged. Live bots (20 bands × 3 songs, before → after): perfect 90 = 90, avg/sloppy within ~1 score point on every
+  difficulty. `tools/balance.js 10 20` identical (careers auto-resolve with `gig.simulate`, which never builds charts).
+- Tests: sim_gig 22 (+2: merge rules/pairs/runs 3-4-5/threshold/determinism/difficulties/invariant notes + doubles + auto =
+  pattern hits; session tap/echo/miss/auto-kick) · pw_gig `double` (12; screenshot `tests/.cache/double.png`).
+- Review fixes: the second kick is placed `max(t2 - hitT, 0.06)` after the tap's HEARD kick (tap stamps `note.k1` on the song
+  clock = songTime + lat + 5 ms; Auto-kick: hitT + lat), so calibrated headphones (+200 ms) and output latency keep the
+  pair's spacing (was: flam at ~+150 ms, silent at ≥ ~+240 ms). tap() judges first; an echo tap plays no sound (the
+  scheduled kick is that hit) unless its second kick was dropped (`d2 = 2`). An echo tap that was also inside the next
+  kick note's window credits that note (`cur.echoFor`) if it's never tapped (was: an early tap for the next note → miss).
+  `GG.audio.hitCancel()` (scheduled hits use their own port) runs in stopAudio: no stray kick/auto note after a restart
+  or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
+  +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
 
 ## Queued: Addendum 2 (owner, 2026-09-30) — `plan/addendum_2_queued.md`
 - Owner: "for after you're done and before final". Its own rule: nothing starts until the version in progress (v0.8)
@@ -79,6 +113,77 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (read from the cached `R.prefs()` every frame; hail allocated at max, live count = quality); the title's framing is
   skipped while hidden and re-measured when a screen above it closes. pw_settings lefty check made race-free (two-thumb
   auto notes also call GG.audio.hit). Tests: `tests/pw_title.js` META_ONLY=scene|flow|prefs (15 + 10 + 7).
+
+## v0.7.2 audio (hotfix; owner 2026-09-30: "make the crowd sound better", metal: "heavier guitars, growls and screams, darker riffs")
+- Metal only (punk/rock/country untouched): two rhythm guitars (Jaxon L, Dana R: double-tracked, detuned, R 6-8 ms late)
+  each through a high-gain amp (pre-EQ: 110 Hz high-pass + 900 Hz push → asymmetric soft/hard clipper, oversample 4x →
+  cab: 78 Hz high-pass, 140 Hz shelf, 520 Hz scoop, 2.6 kHz presence, 5.4 + 6.8 kHz low-passes → pan); power chords as
+  one PeriodicWave oscillator (root + fifth + octave), so the voice count stays as before; gated palm mutes through a
+  480 Hz low-passed input; bass = one saw split into a clean sub + a driven grind (floor B0, `backing.bassFloor`).
+  Drop tuning by tempo band: root C2, `backing.tune` doom −1 / chug 0 / tremolo +1 (`keyFor(seed, genre, bpm)`;
+  no bpm = no shift). Riffs: phrygian; doom = ringing, drooping chords + b2/tritone answers + a chromatic step; chug =
+  kick-locked chugs (pedal on the low string in verses, the chord in choruses, a b2/tritone stab every other bar);
+  tremolo = each riff pitch picked twice (16ths), chromatic runs, power-chord blast riffs in choruses; breakdown = one
+  open low-string drop with space, a muted pair, a b2 stab, then 3-3-2 half-time chugs. Dana's solos: dark arpeggios,
+  quantized to the scale. Vocals: `scream` on chorus downbeats (+ a gang scream), `growl`s on the breakdown (the drop +
+  bar 2), both on the beat grid and in key, on their own channel; the guitars' presence band dips −9 dB under them.
+- Crowd (all genres): pre-rendered once per page in plain seeded JS (22.05 kHz stereo; babble of 14 formant voices,
+  roar of 12 shouting voices, applause for big and small rooms, on-beat clap hits, 4 "woo/yeah/hey"s, 2 whistles, a
+  boo), built after unlock in ~8 ms ticks of resumable steps (a voice renders 4096 samples a step, noise/gain loops
+  16384, applause a clapper, clap-along 10 hands: < 1 ms warm, ~4-6 ms cold; output bit-identical to the one-pass build),
+  paused during songs; the crowd fades in when ready, never stalls a gig.
+  Live: babble louder between songs than during; roar follows 'crowd:level'; claps on the beat when hot (every beat,
+  2 and 4 from 150 BPM, never in breakdowns); fans woo/whistle when hot; a grumble of boos when the meter is under 22;
+  cheers/boos on 'crowd:moment'; a song-end reaction on 'gig:song' scaled by score; Japan's silent crowds hush during
+  songs; ≤ 12 crowd one-shots; a 0.15 send into the venue reverb. SFX 'cheer'/'boo' (awards, studio) use the buffers.
+- `renderOffline` is stereo now (+ `buffer`, `crowd` tally; specs `probe`, `crowd`, `voxInvert`, crowd `song/silent/
+  small/moments/clapBpm`). Debug audio: `counts.claps/woos/whistles/applause/dropped`, `crowd.song/silent/clapping/ready`.
+- Numbers (OfflineAudioContext, same method on the v0.7.1 build; metal signature, verse/chorus/bridge, song s3):
+  - Metal band-only @140: energy < 150 Hz −27.4 → −21.1 dB (share 0.19 → 0.52); 150–500 Hz −22.7 → −24.3; 500 Hz–2 kHz
+    −26.5 → −26.6; 2–6 kHz −36.0 → −29.4; stereo side/mid 0 → 0.15; RMS 0.099 → 0.131, peak 0.52 → 0.56 (limiter).
+  - Lowest guitar 98 Hz (G2) → 65 / 69 / 73 Hz (doom/chug/tremolo); bass 49 → 33–37 Hz.
+  - One guitar note through the amp: THD 0.37 → 0.63, harmonic energy (re fundamental) 0.13 → 0.39. Odd harmonics
+    are *not* up relative to the fundamental (the asymmetric clipper and the tight pre-high-pass favour even ones).
+  - Vocal/band inside the hit windows (polarity split): chorus shouts +1.0 dB → screams +4.6 dB; breakdown growls
+    +7.4 dB over the (much heavier) breakdown (v0.7.1's lone growl was +10.4 over near-silent muted chugs).
+  - Every genre's song peak < 0.61 (limiter), RMS 0.10–0.15; punk/rock/country identical except stereo reverb now counts.
+  - Crowd: bed 0.027 / 0.031 / 0.043 RMS at meter 15/50/90 (0.014–0.043 during songs, 0.002 silent), events peak ≤ 0.72,
+    metal + a roaring crowd peak 0.84. v0.7.1's murmur was ~ −36 dBFS: effectively inaudible under the band.
+  - CPU: a full metal song (arena reverb + crowd) renders 2.1× real time headless (v0.7.1 metal ~6×, before the crowd).
+- Live taps (fix, pre-existing since v0.6.1): `hit` cuts off the lane's previous tap (lanes monophonic, like the timeline;
+  a gain per tap, its sources stopped) and SONG_VOICES = 18 = band 8 + the whole kit 10, so a metal chorus on Hard
+  (8th kick + 8th crash, snare 2/4) no longer loses snares to the cap (was ~half on Hard). `counts.tapDrops` (debug).
+- Tests: sim_audio 12 (new metal tuning/riffs/tremolo/solo/scream test; crowd build steps < 3 ms warm + slices = one pass);
+  pw_seq audio 39 (growls from the drop, live crowd ready + ≤ 18 song voices, every tap sounds over a full metal band) +
+  new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
+  WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
+- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" is flaky under
+  machine load (headless rAF gaps of 100-600 ms with software WebGL; HEAD and the fix both fail it ~half the time at
+  load avg 7-14; green when quiet). The pw_gig "setlist layout" hscroll was a real bug, not load: long English titles
+  (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
+  ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
+  (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
+
+## v0.7.2 titles (hotfix, TITLES agent)
+- `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,
+  always about the lawn: "Reign of Sod", "Requiem for a Lawn Mowed Too Short"); Hail Damage starters = "My Lawn, My Tomb" +
+  "Dandelions of the Apocalypse (On My Lawn)" (`titleEn: null`, `fr` = the old French title, which still seeds their patterns).
+- `GG.songs.pickTitle` → `{ title, titleEn, fr? }`: English (titleEn = title) or, ~1 in 8 (`songs.FR_CHANCE`, override
+  `economy.songs.frChance`), Marcel's French one (title = fr, titleEn = en, `fr: true`); only while Marcel is active; the
+  roll is seeded by career seed + song slot + fr (never the career RNG: balance/bot careers replay identically, verified).
+  An entry is used if its en OR fr is. `create` flags `song.fr` (a picked French title, or any title in `englishFor`).
+  Reactions: `lines.songReactions.marcel.nameFr` (he insists) + one `<dana|jaxon|kenji>.frSigh` right after (own seed).
+- Old saves: `GG.songs.migrateTitles` chained onto `GG.save.migrate` (no SAVE_SCHEMA bump): songs / pendingSongs whose title
+  is an old French title (`englishFor`, sequels too) and not `fr: true` become English (title = titleEn = en); follows into
+  liveGig song results, lastGig + lastWeek (setlist, songResults, new-song delta), wrap.tour.big, tour big/queue/ctx, the
+  Loonies single nomination. Chat/news/reviews/result lines/posts are history (unchanged). Idempotent.
+- API adds: `songs.englishFor(title)`, `isFrench(title)`, `frenchTitles()`, `migrateTitles(state)`, `FR_CHANCE`. Sequencer
+  queues `entry.fr` for Marcel's French titles; reroll button "🎲 Another title from Marcel". Content rewording: coach name
+  tips, Marcel's name lines, the Gord card ("translated the French lyrics of 'The Green Tomb'"), Monolith's English demand
+  ("Love the English titles… Now Marcel should sing in English too."). Album titles keep one French pitch (labels, unchanged).
+- Cards name songs by their English titles ('My Lawn, My Tomb', 'The Green Tomb (It Is the Lawn)'): 9 common cards fixed.
+- Tests: content 49 (English pool + v0.7.1 fr coverage + no "titles are French" text + no pool/starter `fr` in cards/lines), sim_songs 15 (picks/rate/seed,
+  reactions, old-save rename everywhere + idempotent + fr kept).
 
 ## Owner feedback → v0.6.2 (2026-09-29)
 - "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
@@ -719,7 +824,8 @@ Later versions:
   hire, candidates, candidateScore, hireFillIn, dismissFillIn, quirk, traitDef, rivalBlurb, makeLook, botWeek,
   botCardChoice, botValue, migrate, cards, cfg`. Tunables `economy.drama`; content `drama.js`, `recruits.js`.
 - `GG.gig` v0.6.2: `chart(song, {solo, extras, free, difficulty, thumbs:false = raw})` → `{notes, auto, total, ...}`;
-  `THUMBS` (2), `THUMB_PRIORITY`.
+  `THUMBS` (2), `THUMB_PRIORITY`. v0.7.2: `DOUBLE_GAP`, chart `doubles` + opt `doubles: false`, NOTE `dbl, t2, hitT`
+  (CHART/NOTE shapes in 02_contracts); `GG.render.stage.kick2()`.
 - `GG.gig`: `makeGig, randomOffer, autoResolve` = `simulate(state, gig, rng)` (pure) + `applyResult(state, result)`
   → v0.3 replaces `simulate` with the rhythm game and keeps `applyResult`. Also `bookLocal, venue, fit, qualifying,
   performance, gradeFor, payFor`.

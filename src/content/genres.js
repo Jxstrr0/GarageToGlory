@@ -8,9 +8,11 @@
 //   backing: { root: midi, styles: [[bpmFrom, style, label]], progressions: { verse|chorus|bridge: [[semitones x 4 bars]] }, riffs,
 //              keys: [lo, hi] (semitones around root: each song gets its own key, seeded by its id), mode, scale (lead notes),
 //              roles: { verse|chorus|bridge: [role x 4 bars] } role = sparse | full | break (strip to the heavy parts) | solo,
-//              vox: { hits: [[bar, step, voc, semis above the bar's chord, gang?]] (chorus only), drop: [voc, semis] | null } },
+//              vox: { hits: [[bar, step, voc, semis above the bar's chord, gang?]] (chorus only), drop: [voc, semis] | null,
+//                     brk?: [[bar of the breakdown run, step, voc, semis above the tonic]] },
+//              v0.7.2 (metal): tune { style: semitones } (tuning per tempo band), bassFloor (lowest bass midi), stabs, arps },
 //   kit: { room, verb, level, six: 'ride'|'china', train (country rim/brush snare), kick, snare, hat, cymbal, toms, tomDec }
-//        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | yeah | yeehaw | ooh),
+//        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | scream | yeah | yeehaw | ooh),
 //   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
 // RULE = { f: feature, lo, hi, soft, w, tip, loDK? (lo when the double-kick pedal is owned), any?: [RULE] (best of) }
 //   A feature inside [lo, hi] scores 1 and falls to 0 at `soft` beyond the range. Features (per bar, see 21_sim_songs):
@@ -60,18 +62,28 @@
         ]
       },
       // Owner call: tempo decides. Slow = doom sludge, mid = palm-muted chugs locked to the kick, fast = tremolo riffs.
+      // v0.7.2 "heavier" (owner): drop tuning (C2 = drop C; doom sinks a semitone toward drop B, tremolo rises one so
+      // fast riffs stay tight), phrygian riffs with b2 / tritone accents and chromatic runs, breakdown drops, screams on
+      // chorus downbeats and growls on the breakdowns. 30_audio plays metal through its own high-gain amp (two guitars).
       backing: {
-        root: 40,   // E2, drop-anything tuning
+        root: 36,   // C2: drop C
+        tune: { doom: -1, chug: 0, tremolo: 1 },   // semitones per tempo band (keyFor(seed, genre, bpm))
+        bassFloor: 23,   // B0, a five-string's low B: lower bass notes stay up with the guitars
         styles: [[0, 'doom', 'Doom sludge'], [100, 'chug', 'Palm-muted chugs'], [171, 'tremolo', 'Tremolo riffs']],
         progressions: {
-          verse: [[0, 0, 1, 0], [0, 3, 5, 3], [0, 0, 8, 7], [0, 5, 3, 1], [0, 1, 0, 6]],
-          chorus: [[5, 3, 0, 0], [8, 7, 5, 3], [0, 8, 5, 7], [3, 5, 7, 5], [10, 8, 7, 0]],
+          verse: [[0, 0, 1, 0], [0, 0, 6, 5], [0, 1, 0, 8], [0, 3, 1, 0], [0, 1, 0, 6]],
+          chorus: [[0, 8, 5, 1], [8, 7, 5, 6], [0, 1, 8, 7], [3, 1, 0, 6], [10, 8, 6, 1]],
           bridge: [[1, 1, 0, 0], [6, 5, 6, 7], [0, 1, 3, 1], [8, 8, 7, 6]]
         },
-        riffs: [[0, 0, 12, 0, 7, 0, 5, 0], [0, 1, 0, 3, 0, 5, 3, 1], [0, 12, 10, 7, 0, 5, 7, 8], [0, 0, 3, 0, 5, 0, 6, 5]],
-        keys: [-2, 5], mode: 'minor', scale: [0, 1, 3, 5, 7, 8, 10],
+        // Tremolo riffs: 8 pitches over the bar's chord, each tremolo-picked for an 8th (b2 pedals, tritones, chromatic
+        // descents, a phrygian-dominant major third).
+        riffs: [[0, 1, 0, 3, 0, 1, 0, 6], [0, 12, 11, 10, 9, 8, 7, 6], [0, 1, 4, 1, 0, 1, 6, 5], [0, 0, 3, 1, 0, 0, 6, 7], [7, 6, 5, 6, 0, 1, 0, 1]],
+        stabs: [1, 6, 1, 3],        // chug accents / doom answers above the low string: b2, tritone, minor third
+        arps: [[0, 3, 7, 12, 15, 12, 7, 3], [1, 5, 8, 13, 17, 13, 8, 5], [0, 3, 5, 8, 12, 8, 5, 3], [0, 3, 7, 10, 12, 10, 7, 3]],   // Dana's solos
+        keys: [-2, 2], mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
-        vox: { hits: [[0, 0, 'shout', 12], [2, 0, 'shout', 12]], drop: ['growl', 12] }
+        // brk: [[bar of the breakdown run, step, voc, semis above the tonic]] (growls after the drop)
+        vox: { hits: [[0, 0, 'scream', 24], [2, 0, 'scream', 24], [3, 8, 'scream', 19, true]], drop: ['growl', 12], brk: [[1, 8, 'growl', 7]] }
       },
       // Tight, clicky kick and a high, sharp snare: built for double-kick runs. China on lane 6.
       kit: { room: 'room', verb: 0.3, level: 1, six: 'china',

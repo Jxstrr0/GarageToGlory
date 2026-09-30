@@ -277,6 +277,11 @@
    GG.career.finishGig(state, result)    -> applies a live GIG_RESULT (+ venue rep, van wear) ; phase -> 'wrap'
    GG.career.pickListing(state, id|'skip') ; GG.world.* (listings, rep, van, trips, road cards: see 26_sim_world.js header)
    GG.gig.windows / chart / session / botPlay / setSize / defaultSetlist (see 22_sim_gig.js header) ; GG.audio.context()
+   CHART = { songId, title, bpm, spb, lanes, duration, notes: [NOTE], auto: [NOTE + auto: true] (v0.6.2 two-thumb drops,
+     played, never judged), total (judged notes), doubles (v0.7.2 double-kick notes), extras, fills, solos, sections }
+   NOTE = { t (s from the first beat), lane, li, section, entry, bar, step, j (0 open | 1 perfect | 2 good | 3 miss | 4 free
+     done), free?, extra?, dbl? + t2 (v0.7.2 double kick: one note, two kicks; the second plays at t2 once the first is
+     hit; the session stamps hitT = the song time it was hit) }. gig.DOUBLE_GAP = the widest kick pair that merges (s).
    GG.ui.playGig(gig, done) / gigAutoplay ; openBoard({ mode, onBook, onSkip, onCancel }) ; playVan(gig, done) ; showVan()
    Content (v0.3): map { cities }, roadCards (Monday-card schema + effect key `van`, gate keys minKm/maxKm/season),
    headliners; venue fields deals, payRange, catch, kind (C.VENUE_KINDS), setSize.
