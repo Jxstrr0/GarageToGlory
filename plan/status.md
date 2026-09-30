@@ -3,11 +3,13 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current (on `main`): **0.8.2.0** = 0.8.1 + the v0.9 stage-0 plumbing (PR #15, merged early by the owner) with Frost Heave,
-  Gravel Kings and the Ramblers re-locked ("Coming in v0.9") until v0.9 ships (owner, 2026-09-30). **Update Current/Next at every merge.**
+- Current (on `main`): **0.8.3.0 drum sync hotfix** = 0.8.2 (0.8.1 + the v0.9 stage-0 plumbing, PR #15, merged early by the owner, with
+  Frost Heave, Gravel Kings and the Ramblers re-locked ("Coming in v0.9") until v0.9 ships (owner, 2026-09-30)) + "v0.8.3 drum sync"
+  below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
-  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap).
+  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
+  0.8.3 drum sync).
 - Next: **0.9 "Genres"** (in progress; decisions above in "v0.9 Genres — owner decisions") → 1.0
   Glory (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -63,6 +65,37 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## v0.8.3 drum sync (hotfix; owner 2026-09-30: "audible song notes and the played drum notes seem a touch off and not in time")
+- Cause (measured headless, see the lead's MEASURE_GRID/MEASURE_TAP runs): the backing band sits exactly on the chart grid; every
+  drum sound fired "now" was late. A tap judged PERFECT sounded calib.audio + G.lat + dispatch + 5 ms after the band's beat
+  (+75 ms p50 headless, iPhone model +25..115 ms); Auto-kick and the count-in hats played on frames (+40..570 ms); second kicks
+  inherited the tap's lag; the two-thumb auto notes were on the grid, so they flammed ahead of the tapped notes.
+- Model (`55_ui_gig.js` "drum sync" block): zeroBand = the band's start (A.play `opts.at` = the count-in's zero, so it never
+  moves); the game clock (highway + judgement) G.zero = zeroBand - D, D = latD + K frozen per song: latD = max(median of the last
+  9 G.lat, G.lat), K = `GG.prefs.syncLead(dispP90)` = clamp(dispatch p90, 10..40 ms) + 5 ms + M 15 ms. A tap at stamp S is
+  judged J = heard(S) - G.zero (no audio offset) and its drum is booked at ctx max(now + 5 ms, zeroBand + J'), J' =
+  `syncSnap(J, note.t)`: a hit within [-15, +15] ms snaps to its note (exactly on the band's grid), anything else sounds at J.
+  zeroBand + J = ctx(S) + K + (latD - lat), so the modelled latency cancels and unmodelled latency (Bluetooth, the rig's
+  compressors) delays band and drums alike. The highway draws game time + the light check's visual offset (30 ms if never
+  measured). Count-in hats, Auto-kick's kicks (the session's assist), auto notes and second kicks (chart spacing from the first
+  kick's booked time) are booked on the band grid by the 25 ms pump in both modes (up to PRE 250 ms further ahead before the
+  downbeat). The touch dispatch p90 (performance.now() - ev.timeStamp) blends into settings.syncDisp after each song.
+- Cost: every tap sounds ~K (30..60 ms) after the touch (0.8.2: dispatch + 5 ms); the highway leads the heard band by ~K +
+  latency; by-ear players are judged ~K + latency late: Settings → Play → "Drum sync" Off = classic 0.8.2 timing (judged minus
+  the click test's audio offset, taps sound "now"; the count-in / Auto-kick / auto notes stay on the grid).
+- Also fixed on the way: resume() snapped nothing (ctx.resume() is async) so the game ran the pause length ahead of the band
+  (now frozen until the context runs, then snapped); two clock checks < 100 ms apart read as "unhealthy" (sent the downbeat's
+  auto notes to the frame); a healthy clock > 30 ms off for two checks snaps (glitch); a band that started on a suspended
+  context re-anchors both zeros; Auto-kick doubles book their second kick without waiting for the frame's judgement.
+- Calibration: the light check (visual) drives Drum sync, the click test (audio) only classic; profiles keep `vat` (light check
+  ran). Results show a Bluetooth hint (`calib-bt`) when offset + outputLatency >= 120 ms.
+- Debug gigui adds `sync, D, K, latD, zeroBand, zero, tBand, spb, drawT, vis, dispP90 (ms), dispN, snapN, hats, hatSkip, akN,
+  akSkip, waking`, `last.snap/due/disp`. songT stays game time. Ask the owner for these after a song on the iPhone.
+- Tests: `tests/sync.test.js` (helpers + a 2000-case booking property), `pw_gig.js` META_ONLY=sync (count-in hats +-2 ms,
+  band start = zeroBand, perfect/late taps on the grid +-3 ms, early taps keep their offset, auto notes + Auto-kick on the
+  16th grid, classic toggle); gig/double/settings/calib sections updated.
+- Not changed: band-voice onset compensation (country fiddle/vox 30-40 ms; defer to v0.9, which edits 30_audio vocals).
 
 ## What's in v0.7.2 double kick (owner request 2026-09-30)
 - `22_sim_gig` chart: after the two-thumb rule and BEFORE difficulty thinning, a kick ≤ `gig.DOUBLE_GAP` (0.18 s) after the
@@ -956,6 +989,10 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- v0.8.3 drum sync (`11_settings.js`): settings `drumSync` (default true), `syncDisp` (ms 10..40, default 25), calib profile
+  `vat`; `GG.prefs.SYNC { M, LEAD, DISP0, DISP_MIN, DISP_MAX, SNAP_EARLY, VIS0, MIN_N }`, `syncLead(disp)`, `syncSnap(J, noteT,
+  hit)`, `syncWhen(J', zeroBand, ctxNow)`, `syncP90(samples)`, `syncBlend(prev, p90)`, `syncVisual(off, measured)` (pure,
+  seconds). `GG.audio.play(pattern, { at })` starts the song at that AudioContext time (60 ms..3 s ahead). testid `set-drumSync`.
 - `GG.shop` (v0.8, header of `2a_sim_shop.js`): `cfg, content, init, ensure, migrate`; gear `gearItems, gearDef, gearName,
   ownsGear, canBuyGear, buyGear, kitTiers, kitDef, canBuyKit, buyKit, ownsSection, unlockSection, gigBonus, writeBonus,
   crowdBonus`; spaces `spaces, spaceDef, availableTier, canMove, move, rent, perks, perkFactor, upgrades, upgradeDef,
