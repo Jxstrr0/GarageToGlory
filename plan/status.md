@@ -3,12 +3,12 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **0.6.0.0 "Rivals"** (merged to main 2026-09-29) · 0.5 Signed, 0.4 Drama, 0.3 Stage, 0.2 Sequencer, 0.1 Garage merged earlier
-- Hotfix: **0.5.1.0** (gig clock + taps + difficulty; merged to main 2026-09-29)
-- Also shipped: **0.6.1.0** Addendum 1 catch-up (merged 2026-09-29)
-- Also shipped: **0.6.2.0** two-thumb chords + guided songwriter (merged 2026-09-29)
-- Hotfix: **0.7.2.0** audio (heavier metal, a layered crowd; see "v0.7.2 audio")
-- Next: **0.7.0 "World"**
+- Current (on `main`): **0.8.0.0 "Kit"** (merged 2026-09-30, PR #11). **Update Current/Next at every merge** (Addendum 2 D0).
+- Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
+  (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
+  English titles, layered crowd, heavier metal, double kick) · 0.8 Kit.
+- Next: **0.8.1 "Addendum 2 catch-up"** (D1 licensing, D2 band logo, D3 year-end recap) → 0.9 Genres → 1.0 Glory
+  (+ D4 achievements) → 1.1 Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -90,18 +90,6 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   `GG.audio.hitCancel()` (scheduled hits use their own port) runs in stopAudio: no stray kick/auto note after a restart
   or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
   +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
-
-## Queued: Addendum 2 (owner, 2026-09-30) — `plan/addendum_2_queued.md`
-- Owner: "for after you're done and before final". Its own rule: nothing starts until the version in progress (v0.8)
-  is finished, tested, built, committed, pushed and merged; don't expand v0.8 with it. Then, in order:
-  1. **D0 housekeeping:** fix this file's Version section (Current = `VERSION` on main, shipped list, Next), and from
-     then on update Current/Next at every merge; append the addendum to `plan/handoff.md` as **Part D**; record its
-     decisions + an "Addendum 2 — pending" checklist (D1–D5) under the Addendum 1 one; delete the queued file.
-  2. **v0.8.1 catch-up** (the D items tagged v0.8): D1 licensing deals, D2 band logo (new-career picker + one renderer
-     reused for kick-head art, merch, van stickers, Bandbook avatar, garage banner, Loonies card; rival logos), D3
-     year-end recap (swipeable, band photo still, compact in `history`). Popup first for D6 (licensing fees/odds).
-  3. v0.9 Genres → v1.0 Glory (+ D4 achievements) → **v1.1 Tuning** (D5, new roadmap entry; popup: the owner's top two
-     annoyances). **No share/screenshot button, ever.**
 
 ## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
 - 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
@@ -284,6 +272,52 @@ Later versions:
 - [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
 - [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
 - [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
+
+## Addendum 2 (handoff Part D) — decisions (owner, 2026-09-29/30; locked unless marked open)
+- Timing: queued behind v0.8 (done); never expands a version in progress. **No share/screenshot button, ever.**
+- D1 Licensing deals (v0.8.1): offers from the Signed era, or earlier if a song charts on the Maple 100 or goes viral on
+  Bandbook; rare (~2–4 per career, more with fame); a Monday card that sits on the laptop ("Offers") for a few weeks.
+  Parody brands, genre-weighted: truck commercial (country/rock — Buckle & Boot furious when it goes to the Ramblers:
+  rival heat + a card), energy drink (metal/punk), hockey highlight package (any), regional insurance ad (metal — Marcel's
+  employer, mortified), video game trailer (any). Content `src/content/licensing.js` (brand, blurb, fee range, genre fit,
+  sellout weight). Choices: Take it (lump sum + buzz + streams for that song) / Decline (small superfan loyalty bump) /
+  Counter (better fee, chance the offer is withdrawn; odds improve with fans + label clout). Taking it: the song gets
+  an "in a commercial" tag that bumps staleness; sellout weight nudges haters up and can trigger a Bandbook scandal card;
+  recoupable labels take their cut. Achievement "Sold Out" (D4). **OPEN (D6): exact fee ranges + offer odds — propose
+  numbers in the v0.8.1 contract and confirm with one popup.**
+- D2 Band logo (v0.8.1): picked on the new-career flow after the band intro, before the creator; editable later on the
+  laptop for a fee ("Rebrand": small cost + a little buzz). Three taps: emblem (skull, wheat sheaf, lightning bolt, moose,
+  maple leaf, gopher, anvil, hailstone, grain elevator, cowboy hat, safety pin, flaming tire), lettering style (spiky
+  unreadable metal, cut-out ransom punk, chrome '80s rock, western slab country — any genre may use any; default = the
+  band's), colour pair (~10 curated). Drawn procedurally to a cached canvas texture, reused everywhere: kick-drum head
+  art, merch, van stickers, Bandbook avatar, garage banner, Loonies broadcast card, Hall of Fame entry. No image files.
+  Save: `logo: { emblem, style, palette }`; carry-over follows the cosmetics rule. Rival bands get fixed logos from content
+  (same renderer) on the Scene leaderboard + BOTB screens. **OPEN (D6): final emblem + palette lists (add, don't shrink).**
+- D3 Year-end recap (v0.8.1): at the week-24 wrap, before the next year: one swipeable screen — fund change (in vs out),
+  fans gained, best/worst gig (venue, grade, one-line quote), songs written + albums released, awards (Loonies, Global
+  Gong), who quit / came back, rival standing (leaderboard delta), regions unlocked, a Rolling Scone headline generated
+  from the year's biggest event; a band photo (the current lineup posed in the current space, a 3D still — not a share
+  image). Stored compactly in `history` (don't bloat the save code) so v1.0's Hall of Fame can show a career as a strip of
+  yearly recaps. Year 1's recap is where the bandmates explain what "a good year" looks like (tutorial tie-in).
+- D4 Achievements (v1.0, with Hall of Fame + meta unlocks): cross-career, meta storage, laptop "Trophies" + a toast on
+  unlock; ~30 as content (`src/content/achievements.js`: id, name, blurb, condition); never gate content. Seed list in
+  handoff Part D4 (Twelve People and a Dog, The Wall, Ma Pelouse, The Original Five, Kijiji All-Stars, Sold Out, Worst Van,
+  Block Heater, Buddy, Big in Japan, Frostbite, Chugging Along, Grey Mug, Night School, Sad Dome). **OPEN: extras (cheap +
+  funny, add freely).**
+- D5 **v1.1 "Tuning"** (new roadmap entry after v1.0): no new features; owner playtests years 3–6 on his phone → numbered
+  items in this file → small v1.1.x patches, `tools/balance.js` before/after each; bot probes (fund by year incl. the late
+  plateau, fans vs Steady targets, quits ≈ 1 per 1–2 years, rival gap, World ≈ year 5–6, bonus-year rate); back-burner
+  sweep (fix cheap, close the rest with a reason); phone QA at 390×844 (every screen, two-thumb on Hard/Expert, Bluetooth
+  calibration, save-code size, battery on a full gig). Start v1.1 with a popup: the owner's two biggest annoyances.
+
+## Addendum 2 — pending
+- [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
+      + this checklist recorded, queued file retired — lead, 2026-09-30
+- [ ] D1 licensing deals — v0.8.1 (popup: fee ranges + odds)
+- [ ] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1
+- [ ] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1
+- [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
+- [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
