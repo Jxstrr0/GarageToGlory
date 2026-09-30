@@ -67,7 +67,8 @@
   // v0.9: the four tier-0 rooms (band.space -> render room kind).
   C.SPACE_KINDS = { parents_garage: 'garage', laundromat_basement: 'laundromat', strip_mall_unit: 'stripmall', quonset: 'quonset' };
   // v0.9 fillText tokens (career.fillText; fallbacks in plan_contract_0.9 §4.2). Existing: {player} {band} {city} {rival}
-  // {recruit} {name:id} {nick:id}; {rival} falls back to 'the other band', {city} to state.city.
+  // {recruit} {name:id} {nick:id} ({name:<castId>} also resolves rival cast members). Fallbacks: {rival} 'the other band',
+  // {city} state.city, {bassist}/{filler} 'the bassist', {front} 'the singer', {driver} 'you'.
   C.TOKENS = ['front', 'soloist', 'filler', 'bassist', 'namer', 'grumbler', 'deadpan', 'driver', 'van', 'space', 'spaceName',
     'door', 'province', 'homeVenue', 'superfan', 'rivalFront'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
@@ -209,7 +210,7 @@
    schema + gate keys studio/producer + effect key production). Tokens {album} {single} (reviews), {category} (awards),
    {adj} {noun} {place} (title forms). Card-set flags: demandEnglish/Radio/Image/Feature/Showcase, loonieOutfit,
    babaManager, wraithFeud, moosePlan, mooseCall, mooseAlbum ('shelved'|'song'|'ready'|'finland' → v0.7 payoff).
-   VAN  = { id: 'moose_hearse', name: 'The Moose Hearse', condition 0..100, space, comfort, km }
+   VAN  = { id: 'van' (pre-v0.9 saves: 'moose_hearse'), name (v0.9: shop.vanName(bandId, tier)), condition 0..100, space, comfort, km }
    LIVE_GIG = { gig: GIG, setlist: [songId], index (next song to play), songs: [SONG_RESULT], crowd 0..100, started, attendance }
    GIG (v0.3 adds) id, km, catch, minFans, fit, setSize, repLevel, rebook, clash, opening
    GIG_RESULT (live, v0.3 adds) live, tier, kind, accuracy, perfect, good, miss, maxCombo, songResults, moments, setBonus,
@@ -239,6 +240,21 @@
      member-keyed pools by member id; card variants '<baseId>_<bandId>' / '_<rivalId>' (career.variant); rivalry.cast[rid]
      (members, news, showdowns, banter, ui, carpet, defector, comments, songs, albums, rebrands, label, vehicle, drummer?,
      furyBrand?); per-band packs src/content/zz_band_<bandId>.js load after the base content files.
+     Pools may carry byBand at any level of the path and an optional byGenre layer (career.pool strips both keys).
+     card.cameo:true  = a Q8 cameo card that may voice another band's member (bypasses career.cardOk).
+     npcs[id].band:[bandIds] / .rival:rivalId scope an npc; .frontman:true marks a rival's poster (GG.rival.frontSpeaker).
+     rivalry.cast[rid] also: openingSlot:[text], commentsExclusive, actions, style, furyBrand (economy.rival.byRival
+       overrides the fair-fight numbers: curve, buzz, eras, chartBias, legacy, style, actions, furyBrand).
+     tour package.needs:{ flag, is?, band? }, payoff:{ city?, flag?, value?, trophy?, line?, chat?, card?, fans?, buzz?,
+       head?, sub?, text?, quip? } (bus 'tour:payoff' { packageId, flag }); world.cityLines[cityId].
+     calendar: byBand[b].holidayLines[holidayId], holiday.byBand[b].news, holiday.gig.byBand[b].lines.
+     bandbook items: gate or band:[bandIds] (fans.pool filters). shop.spaces[tier].byCity (city name or id);
+       shop.upgrades[id].bySpace (shop.upgradeView). band.weather { kind, crowd, lines }; member.frTitles.
+     economy.world.homeRooms { min, tier, minFans }. recap.goodYear: [..] (+ byBand) or { bandId: [..] }.
+     UI-read keys (all optional): lines.byBand[b].{ countIn, empty{chat,catalog}, noSolo, exposure, recruitAd, banter },
+       lines.moments[kind].label, lines.banter[memberId|any], lines.labelReact, lines.reviewReact, awards.carpet[bandId],
+       awards.outfitCards, world.gongCarpet[bandId], rivalry.cast[rid].ui/banter/faceStyle/carpet.intro/defector.line,
+       drivers[id].{ dock, load, boardLine }.
            idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'  (garage idle animation)
    rivals: { <rivalId>: { id, name, city, genre, blurb } }
    npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
