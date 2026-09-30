@@ -39,7 +39,14 @@
   var KZ = 1.0, THRONE_Z = 0.62;                  // kit centre z; the drummer sits THRONE_Z behind it
   var STAGE_BACK = 2.6;
   var CAPE_OK = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
-  var DUR = { mosh: 6, circlePit: 7, wallOfDeath: 8.5, lineDance: 9.5, lighters: 8, boo: 4.5, capeSpin: 1.8, solo: 6, fill: 1.3, miss: 1.1, flinch: 0.7, cheer: 1.4 };
+  var DUR = { mosh: 6, circlePit: 7, wallOfDeath: 8.5, lineDance: 9.5, lighters: 8, boo: 4.5, capeSpin: 1.8, solo: 6, fill: 1.3, miss: 1.1, flinch: 0.7, cheer: 1.4,
+    // v0.9 (§4.4): the genre combo / chorus moments (crowd arm modes) and the band signatures + the rival's kickflip.
+    pogo: 6, fistPump: 6, clapAlong: 7, headbang: 6, gangShout: 4.5, singAlong: 7, yeehaw: 5,
+    stageDive: 4.2, kneeSlide: 2.2, hatTip: 1.8, kickflip: 1.6, crowdMic: 2.6 };
+  var ARM_MODES = { lighters: 1, boo: 1, pogo: 1, fistPump: 1, clapAlong: 1, headbang: 1, gangShout: 1, singAlong: 1, yeehaw: 1 };
+  var BAND_ACTS = { capeSpin: 1, solo: 1, fill: 1, miss: 1, stageDive: 1, kneeSlide: 1, hatTip: 1, kickflip: 1 };
+  // The frontman answers the chorus moments: the mic out to the crowd (the sing-along / gang shout), the hat off (yeehaw).
+  var CHORUS_GESTURE = { gangShout: 'crowdMic', singAlong: 'crowdMic', yeehaw: 'hatTip', headbang: null };
   var FORMATIONS = { mosh: 1, circlePit: 1, wallOfDeath: 1, lineDance: 1 };
 
   // ---- Venue kinds (C.VENUE_KINDS). hs = stage height, sw = stage half-width, w = room half-width. ----
@@ -249,6 +256,7 @@
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
+        rivalId: cfg.rivalId || (cfg.rival ? (st.rival && st.rival.id) || (band && band.rival) || null : null),         // v0.9: the rival's cast
         banner: cfg.banner || '', bannerSub: cfg.sub || '',
         venue: venue && typeof venue === 'object' ? venue : null   // v0.8: the kit look (pyro only at arena shows)
       };
@@ -284,7 +292,7 @@
       var D = resolve(), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
       if (V.ceil && V.ceil < hs + CAM.pos[1] + 0.55) V.ceil = hs + CAM.pos[1] + 0.55;   // keep the camera under the roof
       K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front, painted: 0,
-        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1 };
+        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1, mics: [], rivalProps: [], layout: 0, session: false, crowdMic: 0 };
       scene.add(K.root);
       scene.background.setHex(V.bg);
       S.beatLen = 60 / clamp(D.bpm, 60, 240);
@@ -833,9 +841,18 @@
     function pyroBurst() { if (K && K.pyro && K.pyro.t > 0.5) { K.pyro.t = 0; K.pyro.bursts++; } }
 
     // ---- Band ------------------------------------------------------------------------------------------
-    // Spots by role (world; yaw 0 faces the camera, PI faces the crowd).
-    function spots(V) {
+    // Spots by role (world; yaw 0 faces the camera, PI faces the crowd). v0.9: layouts by frontline count. Three players (a
+    // power trio + you: Frost Heave, Gravel Kings) stand symmetric: guitar stage-left, vocals centre, bass stage-right; four
+    // or more keep the v0.3 five-slot layout (the fiddle / rhythm guitar stage-right front, the bass back by the kit).
+    function spots(V, n) {
       var k = Math.min(1, V.sw / 2.8), front = V.front || DEFAULT_FRONT;
+      if (n <= 3) return {
+        vocals: { x: 0, z: front + 0.95, yaw: Math.PI },
+        lead: { x: -1.55 * k, z: front + 1.12, yaw: Math.PI - 0.42 },
+        bass: { x: 1.55 * k, z: front + 1.12, yaw: Math.PI + 0.42 },
+        rhythm: { x: 1.55 * k, z: front + 1.12, yaw: Math.PI + 0.42 },
+        extra: { x: -1.45 * k, z: KZ - 0.45, yaw: 0.95 }
+      };
       return {
         vocals: { x: -0.45 * k, z: front + 0.95, yaw: Math.PI + 0.1 },
         lead: { x: -1.5 * k, z: front + 1.3, yaw: Math.PI - 0.6 },
@@ -846,19 +863,41 @@
     }
     function instFor(role) {
       role = String(role || '').toLowerCase();
+      if (/mascot/.test(role)) return 'mascot';
       if (/bass/.test(role)) return 'bass';
-      if (/guitar|acoustic|fiddle|banjo/.test(role)) return 'guitar';
+      if (/fiddle|violin/.test(role)) return 'fiddle';
+      if (/acoustic|banjo/.test(role)) return 'acoustic';
+      if (/guitar/.test(role)) return 'guitar';
       if (/vocal/.test(role)) return 'mic';
       return 'guitar';
     }
+    // The instrument label (info) from the gear kind: 'guitar' for any electric (v / sg / strat / tele).
+    function instOfGear(g) { return !g ? 'mic' : g === 'bass' ? 'bass' : g === 'fiddle' ? 'fiddle' : g === 'acoustic' ? 'acoustic' : 'guitar'; }
+    // v0.9: the rival's cast (content.rivalry.cast[rid]): member look fields, corpse paint (only when the cast says so), the
+    // frontman's scarf, the skater's board, the mascot costume, the session drummer.
+    function castOf(D) { var rv = GG.content && GG.content.rivalry, rid = D.rivalId; return rid && rv && rv.cast && rv.cast[rid] || null; }
+    function castMember(D, id) { var c = castOf(D), l = c && c.members || []; for (var i = 0; i < l.length; i++) if (l[i] && l[i].id === id) return l[i]; return null; }
+    // Corpse paint: the member asks for it AND the cast agrees (a cast member's own corpsePaint:true; a defector only in a
+    // corpse-paint band: Tundra Wraith, or a cast whose defector.look is 'corpse'). Your own band never paints.
+    function paints(D, m) {
+      if (!m || !m.corpsePaint) return false;
+      if (!D.rival) return !!m.corpsePaint;
+      var cm = castMember(D, m.id), c = castOf(D);
+      if (cm) return cm.corpsePaint === true;
+      if (c && c.defector && c.defector.look) return c.defector.look === 'corpse';
+      return D.rivalId === 'tundra_wraith' || !D.rivalId;
+    }
+    function isMascot(m, cm) { return /mascot/i.test(String((m && m.role) || (cm && cm.role) || '')) || !!((m && m.mascot) || (cm && cm.mascot)); }
     function buildBand(D) {
-      var list = D.members || [], sp = spots(D.V), used = {}, cv = D.flags && D.flags.cape, i, m;
+      var list = D.members || [], used = {}, cv = D.flags && D.flags.cape, i, m;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var active = [];
       for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active') && !/drum/i.test(String(m.role || ''))) active.push(m); }
+      var sp = spots(D.V, active.length);
+      K.layout = active.length <= 3 ? 3 : Math.min(5, active.length);
       var capeId = null;
-      for (i = 0; i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';
-      for (i = 0; !capeId && i < active.length; i++) if (/vocal/.test(String(active[i].role || roleOf(D, active[i].id)))) capeId = active[i].id;
+      for (i = 0; i < active.length && !D.rival; i++) { var cmc = contentMember(D.band, active[i].id); if (active[i].cape || (cmc && cmc.cape)) capeId = active[i].id; }
+      for (i = 0; !capeId && !D.rival && i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';   // (older content)
       // Assign slots: vocals, lead, rhythm, bass, extra.
       var order = [];
       for (i = 0; i < active.length; i++) {
@@ -867,31 +906,78 @@
         if (/vocal/.test(role) && !used.vocals) slot = 'vocals';
         else if (/bass/.test(role) && !used.bass) slot = 'bass';
         else if (/lead/.test(role) && !used.lead) slot = 'lead';
+        else if (/fiddle|violin/.test(role) && !used.rhythm) slot = 'rhythm';
         else if (/guitar|acoustic|fiddle|banjo/.test(role)) slot = !used.lead ? 'lead' : !used.rhythm ? 'rhythm' : null;
         if (!slot) slot = !used.extra ? 'extra' : !used.rhythm ? 'rhythm' : !used.lead ? 'lead' : !used.vocals ? 'vocals' : !used.bass ? 'bass' : null;
         if (!slot) continue;                                                          // more than five: they watch from the side
         used[slot] = true;
         order.push({ m: m, slot: slot, role: role });
       }
+      var genre = D.genre;
       for (i = 0; i < order.length; i++) {
-        var o = order[i], cm = contentMember(D.band, o.m.id), sp0 = sp[o.slot];
-        var ins = o.slot === 'vocals' && !/guitar/.test(o.role) ? 'mic' : instFor(o.role || (cm && cm.role));
-        if (o.slot === 'bass') ins = 'bass';
+        var o = order[i], cm = D.rival ? castMember(D, o.m.id) : contentMember(D.band, o.m.id), sp0 = sp[o.slot];
+        var mascot = isMascot(o.m, cm);
+        var gear = mascot ? null : R.gearOf ? R.gearOf(o.m, cm, genre) : (/vocal/.test(o.role) && !/guitar/.test(o.role) ? null : 'v');
+        if (o.slot === 'bass' && !mascot) gear = 'bass';
+        if (o.slot === 'vocals' && gear && !/guitar|acoustic|fiddle|banjo|bass/.test(o.role) && !(o.m.gear || (cm && cm.gear))) gear = null;   // a singer holds the mic
+        var ins = mascot ? 'mascot' : instOfGear(gear);
         var cape = o.m.id === capeId ? capeVariant : null;
-        var lk = (GG.creator ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
-        if (o.m.corpsePaint) lk = paintLook(lk, o.m.stageShirt);   // v0.6: the rival's lineup (and your defectors) in corpse paint
-        var ch = R.buildCharacter(lk, { id: o.m.id, gear: ins === 'mic' ? null : 'guitar', cape: cape });
+        var lk = (GG.creator && !D.rival ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
+        var painted = paints(D, o.m);
+        if (painted) lk = paintLook(lk, o.m.stageShirt);   // v0.6: Tundra Wraith (and their defectors) in corpse paint
+        else if (D.rival && o.m.defector) lk = defectorLook(lk, D);
+        var ch = R.buildCharacter(lk, { id: o.m.id, gear: gear, cape: cape, band: D.rival ? D.banner : D.band && D.band.name });
         if (!ch) continue;
         K.chars.push(ch);
-        if (o.m.corpsePaint) corpsePaint(ch, i);
-        if (ins !== 'mic') recolorGear(ch, ins === 'bass' ? 0x1d1d22 : o.slot === 'rhythm' ? 0xb8322a : o.slot === 'extra' ? 0x8a4a22 : null, ins === 'bass');
-        ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0);
+        if (painted) corpsePaint(ch, i);
+        if (gear === 'v') recolorGear(ch, o.slot === 'rhythm' ? 0xb8322a : o.slot === 'extra' ? 0x8a4a22 : null, false);   // (the V keeps its v0.3 paint jobs)
+        ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0);
+        if (gear !== 'fiddle') ch.bones[B_HELD].scale.setScalar(0);                   // (the fiddle's bow rides on the held bone)
         ch.root.position.set(sp0.x, K.hs, sp0.z); ch.root.rotation.y = sp0.yaw;
         K.root.add(ch.root);
         var mood = typeof o.m.mood === 'number' ? o.m.mood : 60;
-        K.band.push({ id: o.m.id, slot: o.slot, inst: ins, ch: ch, cape: !!cape, x: sp0.x, z: sp0.z, yaw: sp0.yaw, bx: sp0.x, bz: sp0.z, byaw: sp0.yaw,
-          mood: mood, energy: mood < 30 ? 0.45 : mood < 50 ? 0.8 : 1, ph: hash01(i, 31), act: null, actT: 0, actDur: 0 });
-        if (ins === 'mic') micStand(sp0.x, sp0.z, sp0.yaw);
+        var sig = (cm && cm.signature && cm.signature.action) || (o.m.signature && o.m.signature.action) || null;
+        var rec = { id: o.m.id, slot: o.slot, inst: ins, gear: gear, ch: ch, cape: !!cape, x: sp0.x, z: sp0.z, yaw: sp0.yaw, bx: sp0.x, bz: sp0.z, byaw: sp0.yaw,
+          mood: mood, energy: mood < 30 ? 0.45 : mood < 50 ? 0.8 : 1, ph: hash01(i, 31), act: null, actT: 0, actDur: 0, sig: sig, mic: false, prop: null, hatBig: false };
+        var ex = (lk && lk.extras) || [];
+        rec.hatBig = ex.indexOf('bighat') >= 0 || ex.indexOf('hat') >= 0 || ex.indexOf('cowboy') >= 0;
+        K.band.push(rec);
+        // Every vocalist gets a mic stand, singing guitarists too (set back a step so the guitar fits).
+        if (o.slot === 'vocals' && !mascot) { micStand(sp0.x, sp0.z, sp0.yaw, ins === 'mic' ? 0.36 : 0.5); rec.mic = true; K.mics.push(o.m.id); }
+        if (D.rival) rivalProps(D, rec, o.m, cm, i);
+      }
+    }
+    // v0.9: a defector in a band without corpse paint takes the cast's look: the stylist's ripped jeans (Mall Rats), a
+    // rhinestone jacket (Chartbusters), head-to-toe denim (Buckle & Boot).
+    function defectorLook(l, D) {
+      var c = castOf(D), kind = c && c.defector && c.defector.look || ({ mall_rats: 'stylist', chartbusters: 'rhinestone', buckle_and_boot: 'denim' })[D.rivalId] || null, o = {}, k;
+      l = l || {}; for (k in l) o[k] = l[k];
+      if (kind === 'stylist') { o.shirt = '#e8408a'; o.pants = '#6a8ab8'; o.top = 'tee'; }
+      else if (kind === 'rhinestone') { o.shirt = '#d8d8e8'; o.pants = '#1a1a22'; o.top = 'jacket'; }
+      else if (kind === 'denim') { o.shirt = '#4a6a9a'; o.pants = '#34507a'; o.top = 'jacket'; }
+      return o;
+    }
+    // The rival's stage props, by cast: the skateboard (the kickflip), the frontman's scarf (Rex, in July), the pickup-truck
+    // mascot costume (Buckle & Boot's third member). Cast flags win (member.skate / scarf / mascot); the rival id is the fallback.
+    function rivalProps(D, rec, m, cm, i) {
+      var c = castOf(D), front = c && c.frontman ? c.frontman === m.id : rec.slot === 'vocals', bn = rec.ch.bones;
+      var skate = (cm && cm.skate) || (!cm || cm.skate == null) && D.rivalId === 'mall_rats' && front;
+      var scarf = (cm && cm.scarf) || (!cm || cm.scarf == null) && D.rivalId === 'chartbusters' && front;
+      if (isMascot(m, cm)) {                                                         // a guy in a pickup-truck costume
+        var mm = new THREE.Mesh(R.costume.truck(ctx), ctx.mats.vc); bn[B_SPINE].add(mm); mm.position.set(0, 0.25, 0);
+        K.geos.push(mm.geometry); rec.prop = 'truck'; K.rivalProps.push(m.id + ':truck');
+      }
+      if (scarf) {                                                                   // Rex Glamour's signature scarf (in July)
+        var sm = new THREE.Mesh(R.costume.scarf(ctx), ctx.mats.vc); bn[B_SPINE].add(sm); sm.position.set(0, 0.5, 0);
+        K.geos.push(sm.geometry); rec.prop = rec.prop || 'scarf'; K.rivalProps.push(m.id + ':scarf');
+      }
+      if (skate) {                                                                   // the sponsor's skateboard, under the kickflipper's feet
+        var kb = new ctx.Builder({ jitter: 0, seed: 65 });
+        kb.box(0.22, 0.025, 0.78, 0, 0, 0, 0x2a2a30); kb.box(0.2, 0.004, 0.7, 0, 0.014, 0, 0x39e05a);
+        for (var k = 0; k < 4; k++) kb.cyl(0.035, 0.035, 0.04, 8, (k % 2 ? 0.09 : -0.09), -0.04, (k < 2 ? 0.26 : -0.26), 0xf2efe6, 0, 0, Math.PI / 2);
+        kb.box(0.18, 0.02, 0.04, 0, -0.02, 0.26, 0xb8bcc2); kb.box(0.18, 0.02, 0.04, 0, -0.02, -0.26, 0xb8bcc2);
+        var board = mesh(kb.build(), ctx.mats.vc); board.position.set(rec.bx + 0.45, K.hs + 0.06, rec.bz); board.rotation.y = rec.byaw + Math.PI / 2;
+        rec.board = board; rec.prop = rec.prop || 'skateboard'; K.rivalProps.push(m.id + ':skateboard');
       }
     }
     function roleOf(D, id) { var cm = contentMember(D.band, id); return cm && cm.role; }
@@ -909,8 +995,8 @@
         ch.bones[B_GEAR].scale.set(1.12, 1.05, 1);
       }
     }
-    function micStand(x, z, yaw) {
-      var b = new ctx.Builder({ jitter: 0 }), fx = Math.sin(yaw), fz = Math.cos(yaw), d = 0.36;
+    function micStand(x, z, yaw, dist) {
+      var b = new ctx.Builder({ jitter: 0 }), fx = Math.sin(yaw), fz = Math.cos(yaw), d = dist || 0.36;
       b.at(x + fx * d, K.hs, z + fz * d, yaw);
       for (var i = 0; i < 3; i++) { var a = i * 2.1; b.box(0.02, 0.02, 0.3, 0.12 * Math.sin(a), 0.03, 0.12 * Math.cos(a), 0x1a1a1a, 0, a); }
       b.box(0.025, 1.45, 0.025, 0, 0.73, 0, 0x1a1a1a);
@@ -947,6 +1033,18 @@
     function buildBanner(D) {
       var c = document.createElement('canvas'); c.width = 1024; c.height = 256;
       var g = c.getContext('2d'), title = String(D.banner).toUpperCase(), size = 132;
+      // v0.9: the rival's own logo (46_render_logo: GG.render.logo.forRival) on a backdrop in its palette; Tundra Wraith's frost
+      // lettering stays the fallback when there's no logo.
+      var LG = GG.render.logo, lc = null;
+      try { if (LG && LG.forRival && D.rivalId && GG.logo && GG.logo.rival && GG.logo.rival(D.rivalId)) lc = LG.forRival(D.rivalId, D.banner, 256, { shape: 'wide', aspect: 4 }); } catch (e) { lc = null; }
+      if (lc) {
+        var P = LG.palette ? LG.palette(GG.logo.rival(D.rivalId)) : null;
+        g.fillStyle = (P && P.ground) || '#060608'; g.fillRect(0, 0, 1024, 256);
+        g.drawImage(lc, 0, 0, 1024, 256);
+        if (D.bannerSub) { g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 214, 1024, 42); g.fillStyle = '#e8e8f0'; g.font = '800 30px system-ui, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(D.bannerSub).toUpperCase(), 512, 236); }
+        K.bannerLogo = true;
+        return bannerMesh(c, D);
+      }
       g.fillStyle = '#060608'; g.fillRect(0, 0, 1024, 256);
       g.strokeStyle = '#3a3a44'; g.lineWidth = 6; g.strokeRect(10, 10, 1004, 236);
       g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -956,21 +1054,33 @@
       g.shadowColor = '#9fb8ff'; g.shadowBlur = 16; g.fillStyle = '#f4f4f8'; g.fillText(title, 512, D.bannerSub ? 112 : 128);
       for (var i = 0; i < 14; i++) { var x = 70 + i * 68 + hash01(i, 5) * 20; g.fillRect(x, 40 + hash01(i, 9) * 12, 3, 18 + hash01(i, 11) * 22); }   // frost spikes
       if (D.bannerSub) { g.shadowBlur = 0; g.fillStyle = '#9aa0b4'; g.font = '800 34px system-ui, Arial, sans-serif'; g.fillText(String(D.bannerSub).toUpperCase(), 512, 206); }
+      return bannerMesh(c, D);
+    }
+    function bannerMesh(c, D) {
       var tex = new THREE.CanvasTexture(c); K.texs.push(tex);
       var mat = ownMat(new THREE.MeshBasicMaterial({ map: tex, fog: false }));
       var wd = Math.min(2 * D.V.sw - 0.4, 5.2), m = mesh(new THREE.PlaneGeometry(wd, wd / 4), mat);
       m.position.set(0, D.V.hs + 2.72, STAGE_BACK - 0.02); m.rotation.y = Math.PI;
+      return m;
     }
 
     // ---- Drummer (you) with IK sticks -------------------------------------------------------------------
+    // v0.9: a rival set with no drummer in its lineup (Buckle & Boot are a duo) gets the session guy (the cast's drummer look
+    // if it has one): never you on their throne.
+    var SESSION_LOOK = { skin: '#d8b08a', hair: '#3a2a1c', hairStyle: 'cap', capColor: '#2a2a30', shirt: '#2a2a30', pants: '#1e2230', height: 1.0, build: 1.05, extras: ['beard'], top: 'tee' };
     function buildDrummer(D) {
+      if (D.rival && !D.drummer) {
+        var cd = castOf(D) && castOf(D).drummer;
+        D.drummer = { id: (cd && cd.id) || 'session_drummer', look: (cd && cd.look) || SESSION_LOOK, corpsePaint: false, session: true };
+        K.session = true;
+      }
       var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
-      if (D.drummer && D.drummer.corpsePaint) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer on your throne
+      if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer (Tundra Wraith: painted)
       K.drummerLook = dl;
       var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
-      if (D.drummer && D.drummer.corpsePaint) corpsePaint(ch, 3);
+      if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) corpsePaint(ch, 3);
       ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_GEAR].scale.setScalar(0);
       ch.root.position.set(0, K.hs, KZ + THRONE_Z); ch.root.rotation.y = Math.PI;
       if (dl && dl.stageExtras && dl.stageExtras.indexOf('cape') >= 0) { ch.bones[B_CAPE1].rotation.x = 0.55; ch.bones[B_CAPE2].rotation.x = 0.35; }   // v0.8: drape it off the throne
@@ -1194,16 +1304,27 @@
       S.moments++;
       if (kind !== 'boo' && kind !== 'drinks' && !(kind === 'applause' && K.D.silent)) pyroBurst();   // v0.8: pyro (arena shows)
       if (FORMATIONS[kind]) { S.form.kind = kind; S.form.t = 0; S.form.dur = DUR[kind]; if (kind === 'wallOfDeath') bandAct(frontman(), 'part', 3); return true; }
-      if (kind === 'lighters' || kind === 'boo') {
+      if (ARM_MODES[kind]) {
         S.arms.kind = kind; S.arms.t = 0; S.arms.dur = DUR[kind];
         if (kind === 'boo') { spawnBoos(); throwCups(2); }
+        var gst = CHORUS_GESTURE[kind], fm = gst && frontman();
+        if (fm && !fm.act && !(gst === 'hatTip' && !fm.hatBig)) bandAct(fm, gst === 'hatTip' ? 'hatTip' : 'crowdMic', DUR[gst]);
         return true;
       }
       if (kind === 'drinks') { throwCups(7); return true; }
       if (kind === 'applause') { if (K.D.silent) S.bow = BOW; else S.cheer = 1.4; return true; }   // v0.7: the song ends, the silence breaks
       if (kind === 'capeSpin') return bandAction(null, 'capeSpin');
       if (kind === 'solo') return bandAction(null, 'solo');
+      if (kind === 'stageDive' || kind === 'kneeSlide' || kind === 'hatTip' || kind === 'kickflip') return bandAction(null, kind);   // v0.9 signatures
       return false;
+    }
+    // v0.9: who does a signature when the event names nobody: the member whose content signature it is, else the frontman
+    // (the kickflip: whoever has the board).
+    function bySig(action) {
+      for (var i = 0; i < K.band.length; i++) if (K.band[i].sig === action) return K.band[i];
+      if (action === 'kickflip') for (i = 0; i < K.band.length; i++) if (K.band[i].board) return K.band[i];
+      if (action === 'hatTip') for (i = 0; i < K.band.length; i++) if (K.band[i].hatBig) return K.band[i];
+      return frontman();
     }
     function frontman() {
       for (var i = 0; i < K.band.length; i++) if (K.band[i].cape) return K.band[i];
@@ -1217,13 +1338,15 @@
       if (id) for (i = 0; i < K.band.length; i++) if (K.band[i].id === id) r = K.band[i];
       if (!r) {
         if (action === 'capeSpin') r = frontman();
+        else if (action === 'stageDive' || action === 'kneeSlide' || action === 'hatTip' || action === 'kickflip') r = bySig(action);
         else if (action === 'solo') r = bySlot('lead') || bySlot('rhythm') || K.band[0];
         else if (action === 'fill') r = bySlot('rhythm') || bySlot('lead') || K.band[0];
         else r = K.band[Math.floor(hash01(S.moments++, 51) * K.band.length)];
       }
-      if (!r || !DUR[action]) return false;
+      if (!r || !DUR[action] || !BAND_ACTS[action]) return false;
       bandAct(r, action, DUR[action]);
-      if (action === 'capeSpin' || action === 'solo') S.cheer = DUR.cheer;
+      if (action === 'capeSpin' || action === 'solo' || action === 'stageDive' || action === 'kneeSlide' || action === 'hatTip' || action === 'kickflip') S.cheer = DUR.cheer;
+      if (action === 'stageDive') S.dive = { r: r, t: 0 };
       return true;
     }
     function bandAct(r, action, dur) { if (!r) return; r.act = action; r.actT = 0; r.actDur = dur; }
@@ -1334,18 +1457,38 @@
         bn[B_SHIN_L].rotation.x = 0.08 * bob * e; bn[B_SHIN_R].rotation.x = 0.08 * bob * e;
         bn[B_SPINE].rotation.x = 0.06 + 0.12 * bang * bob;
         bn[B_HEAD].rotation.x = (r.mood < 30 ? 0.35 : 0.05) + 0.55 * bang * bob + 0.12 * (1 - bang) * beat * e;
-        var x = r.bx, z = r.bz, yaw = r.byaw, a = r.act, u = a ? r.actT / r.actDur : 0;
+        var x = r.bx, z = r.bz, yaw = r.byaw, a = r.act, u = a ? r.actT / r.actDur : 0, y = K.hs, tilt = 0;
         if (r.inst === 'mic') {
           rot(bn[B_ARM_R], -1.05, 0, 0.18); rot(bn[B_FORE_R], -0.95, 0, 0.2);
-          if (h > 0.55) { rot(bn[B_ARM_L], -2.3 - 0.5 * beat, 0, 0.25); rot(bn[B_FORE_L], -0.2, 0, 0); }
+          if (K.D.genre === 'punk') {                                             // v0.9: both hands on the mic, hunched, bouncing
+            rot(bn[B_ARM_L], -1.0, 0, -0.1); rot(bn[B_FORE_L], -1.0, 0, -0.35);
+            bn[B_SPINE].rotation.x = 0.22 + 0.1 * beat * h; bn[B_HIPS].position.y += 0.05 * beat * h;
+          } else if (K.D.genre === 'rock') {                                      // an arm out to the back row, a fist pump when it's loud
+            if (h > 0.55) { rot(bn[B_ARM_L], -2.5 - 0.35 * beat, 0, 0.35); rot(bn[B_FORE_L], -0.3, 0, 0); }
+            else { rot(bn[B_ARM_L], -1.45, 0, 0.55 + 0.25 * Math.sin(t * 0.9 + ph)); rot(bn[B_FORE_L], -0.1, 0, 0); }
+          } else if (K.D.genre === 'country') {                                   // thumb in the belt loop; a wave now and then
+            if (h > 0.6 && Math.sin(t * 0.7 + ph) > 0.3) { rot(bn[B_ARM_L], -2.2, 0, 0.5 + 0.3 * Math.sin(t * 5)); rot(bn[B_FORE_L], -0.4, 0, 0); }
+            else { rot(bn[B_ARM_L], 0.1, 0, 0.35); rot(bn[B_FORE_L], -0.9, 0, -1.2); }
+          } else if (h > 0.55) { rot(bn[B_ARM_L], -2.3 - 0.5 * beat, 0, 0.25); rot(bn[B_FORE_L], -0.2, 0, 0); }
           else { rot(bn[B_ARM_L], -0.3 - 0.25 * Math.sin(t * 1.7 + ph), 0, 0.2); rot(bn[B_FORE_L], -0.6, 0, 0); }
           bn[B_HEAD].rotation.x -= 0.15;
+        } else if (r.inst === 'fiddle') {                                         // v0.9: under the chin, sawing the bow on the beat
+          var bw2 = Math.sin((total * 2 + ph) * Math.PI) * (0.25 + 0.15 * h) * e;
+          rot(bn[B_ARM_L], -1.25, 0.25, 0.55); rot(bn[B_FORE_L], -0.95, 0, -0.35);
+          rot(bn[B_ARM_R], -0.75, 0, -0.35 - bw2); rot(bn[B_FORE_R], -1.05 + 0.3 * bw2, 0, 0.25);
+          bn[B_HEAD].rotation.z = 0.28; bn[B_SPINE].rotation.z = 0.05 * Math.sin(t * 1.3 + ph);
+        } else if (r.inst === 'mascot') {                                         // the truck costume bounces, arms waving over the cab
+          bn[B_HIPS].position.y += 0.06 * beat;
+          rot(bn[B_ARM_L], -2.4 + 0.3 * Math.sin(t * 4 + ph), 0, 0.6); rot(bn[B_ARM_R], -2.4 + 0.3 * Math.sin(t * 4 + ph + 2), 0, -0.6);
+          yaw = r.byaw + 0.25 * Math.sin(t * 1.6 + ph);
         } else {
-          var rate = r.inst === 'bass' ? 2 : 4, amp = r.inst === 'bass' ? 0.12 : 0.18;
+          var rate = r.inst === 'bass' || r.inst === 'acoustic' ? 2 : 4, amp = r.inst === 'bass' ? 0.12 : r.inst === 'acoustic' ? 0.26 : 0.18;
           var strum = Math.sin((total * rate) * Math.PI) * amp * e;
           rot(bn[B_ARM_L], 0.1, 0, 0.14); rot(bn[B_FORE_L], -2.05, 0, 0.1 + 0.06 * Math.sin(t * 2 + ph * 5));
           rot(bn[B_ARM_R], -0.35, 0, 0.12); rot(bn[B_FORE_R], -0.95 + strum, 0, 0.45);
+          if (r.inst === 'acoustic') { rot(bn[B_ARM_L], -0.05, 0, 0.2); bn[B_FORE_R].rotation.z = 0.6; }   // (strummed high on the chest)
           if (r.slot === 'bass') { bn[B_HEAD].rotation.x = 0.05 + (hash01(Math.floor(t / 6), 81) < 0.35 && frac(t / 6) < 0.12 ? 0.3 * bump(frac(t / 6) / 0.12) : 0); bn[B_SPINE].rotation.x = 0.02; }
+          if (r.mic) { bn[B_SPINE].rotation.x = 0.1; bn[B_HEAD].rotation.x = 0.02 + 0.1 * beat * h; }   // a singing guitarist leans into the stand
         }
         // Actions
         if (a === 'capeSpin') {
@@ -1375,6 +1518,42 @@
         } else if (a === 'part') {
           var pf = bump(u);
           rot(bn[B_ARM_L], -1.2 * pf, 0, 1.2 * pf); rot(bn[B_ARM_R], -1.2 * pf, 0, -1.2 * pf); rot(bn[B_FORE_L], 0, 0, 0); rot(bn[B_FORE_R], 0, 0, 0);
+        } else if (a === 'stageDive') {                                           // v0.9 (Rox): run, leap, surf the crowd, climb back up
+          var T = r.actT, edge = K.front + 0.25, far = K.front - 2.2;
+          if (T < 0.8) { var q = ease(T / 0.8); x = r.bx * (1 - q); z = r.bz + (edge - r.bz) * q; yaw = Math.PI; walkPose(bn, T * 14, 1); }
+          else if (T < 1.3) { var lq = (T - 0.8) / 0.5; x = 0; z = edge - 1.0 * lq; y = K.hs + 0.9 * bump(lq * 0.6) + (1.55 - K.hs) * ease(lq); tilt = -1.45 * ease(lq); yaw = Math.PI; rot(bn[B_ARM_L], -2.8, 0, 0.3); rot(bn[B_ARM_R], -2.8, 0, -0.3); }
+          else if (T < 3.4) { var sq = (T - 1.3) / 2.1; x = 0.5 * Math.sin(sq * Math.PI * 2); z = edge - 1.0 + (far - edge + 1.0) * bump(sq); y = 1.55 + 0.05 * Math.sin(T * 9); tilt = -1.45; yaw = Math.PI + 0.3 * Math.sin(T * 2); rot(bn[B_ARM_L], 0, 0, 1.4); rot(bn[B_ARM_R], 0, 0, -1.4); bn[B_LEG_L].rotation.x = 0.1 * Math.sin(T * 7); }
+          else { var bq = ease((T - 3.4) / 0.8); x = r.bx * bq; z = edge - 1.0 + (r.bz - edge + 1.0) * bq; y = 1.55 + (K.hs - 1.55) * bq; tilt = -1.45 * (1 - bq); yaw = Math.PI + (r.byaw - Math.PI) * bq; }
+        } else if (a === 'kneeSlide') {                                           // v0.9 (Chase): a run, then down on the knees to the lip of the stage
+          var T2 = r.actT, kx = r.bx * 0.3, kz = K.front + 0.35;
+          if (T2 < 0.35) { var r1 = ease(T2 / 0.35); x = r.bx + (kx - r.bx) * r1 * 0.4; z = r.bz + (kz - r.bz) * r1 * 0.4; walkPose(bn, T2 * 16, 1); }
+          else if (T2 < 1.7) {
+            var sl = ease((T2 - 0.35) / 0.6); x = r.bx + (kx - r.bx) * (0.4 + 0.6 * sl); z = r.bz + (kz - r.bz) * (0.4 + 0.6 * sl);
+            bn[B_HIPS].position.y = 0.5; bn[B_LEG_L].rotation.x = -0.2; bn[B_LEG_R].rotation.x = -0.2; bn[B_SHIN_L].rotation.x = 1.55; bn[B_SHIN_R].rotation.x = 1.55;
+            bn[B_SPINE].rotation.x = -0.55; bn[B_HEAD].rotation.x = -0.4;
+            if (r.inst === 'mic') { rot(bn[B_ARM_L], -2.6, 0, 0.4); rot(bn[B_FORE_L], -0.2, 0, 0); } else bn[B_FORE_R].rotation.x = -0.95 + Math.sin(t * 40) * 0.2;
+          } else { var rb = ease((T2 - 1.7) / 0.5); x = kx + (r.bx - kx) * rb; z = kz + (r.bz - kz) * rb; walkPose(bn, T2 * 14, 1 - rb); }
+          yaw = Math.PI;
+        } else if (a === 'hatTip') {                                              // v0.9 (Duke): a hand to the brim, a slow nod, a little bow
+          var ht = bump(u);
+          rot(bn[B_ARM_R], -2.55 * ht, 0, -0.35 * ht); rot(bn[B_FORE_R], -1.25 * ht, 0, 0.35 * ht);
+          bn[B_HEAD].rotation.x = 0.35 * ht; bn[B_SPINE].rotation.x = 0.25 * ht;
+          yaw = r.byaw + (Math.PI - r.byaw) * ht;
+        } else if (a === 'kickflip') {                                            // v0.9 (the Mall Rats): on the board, pop, the board flips, land
+          var kfu = ease(Math.min(1, r.actT / 0.3)), air = bump(clamp((r.actT - 0.3) / 0.8, 0, 1));
+          if (r.board) { x = r.bx + 0.45 * kfu; z = r.bz; }
+          y = K.hs + 0.08 * kfu + 0.55 * air;
+          bn[B_LEG_L].rotation.x = -0.9 * air; bn[B_SHIN_L].rotation.x = 1.3 * air; bn[B_LEG_R].rotation.x = -0.6 * air; bn[B_SHIN_R].rotation.x = 1.0 * air;
+          rot(bn[B_ARM_L], -0.4, 0, 1.2 * air + 0.2); rot(bn[B_ARM_R], -0.4, 0, -1.2 * air - 0.2);
+        } else if (a === 'crowdMic') {                                            // v0.9: the mic out to the crowd for the chorus
+          var cm2 = bump(u);
+          rot(bn[B_ARM_R], -1.6 * cm2 - 1.05 * (1 - cm2), 0, 0.3); rot(bn[B_FORE_R], -0.1 * cm2 - 0.95 * (1 - cm2), 0, 0);
+          rot(bn[B_ARM_L], -2.6 * cm2, 0, 0.4); bn[B_SPINE].rotation.x = -0.15 * cm2; bn[B_HEAD].rotation.x = -0.3 * cm2;
+        }
+        if (r.board) {                                                            // the board: parked, or under the kickflip
+          var kf = a === 'kickflip' ? r.actT : -1, bu = kf >= 0 ? clamp((kf - 0.3) / 0.8, 0, 1) : 0;
+          r.board.position.set(r.bx + 0.45, K.hs + 0.06 + (kf >= 0 ? 0.08 + 0.5 * bump(bu) : 0), r.bz);
+          r.board.rotation.set(0, r.byaw + Math.PI / 2, kf >= 0 ? bu * Math.PI * 2 : 0);
         }
         // Cape
         if (r.cape) {
@@ -1383,9 +1562,14 @@
           bn[B_CAPE2].rotation.x = 0.05 + flare * 0.55 + 0.04 * Math.sin(t * 1.7 + 1);
           bn[B_CAPE1].rotation.z = a === 'capeSpin' ? 0.3 * Math.sin(r.actT * 12) : 0;
         }
-        r.x = x; r.z = z; r.yaw = yaw;
-        r.ch.root.position.set(x, K.hs, z); r.ch.root.rotation.y = yaw;
+        r.x = x; r.z = z; r.yaw = yaw; r.y = y; r.tilt = tilt;
+        r.ch.root.position.set(x, y, z); r.ch.root.rotation.set(tilt, yaw, 0, 'YXZ');
       }
+    }
+    function walkPose(bn, ph, amp) {                                                // a quick run cycle for the signatures
+      var s = Math.sin(ph);
+      bn[B_LEG_L].rotation.x = s * 0.6 * amp; bn[B_LEG_R].rotation.x = -s * 0.6 * amp;
+      bn[B_SHIN_L].rotation.x = Math.max(0, -Math.cos(ph)) * 0.9 * amp; bn[B_SHIN_R].rotation.x = Math.max(0, Math.cos(ph)) * 0.9 * amp;
     }
 
     function updateDrummer(dt, t) {
@@ -1551,6 +1735,18 @@
           if (ph < 0.5) { aLx += (-1.25 - aLx) * amIn; aLz += (-0.95 - aLz) * amIn; aRx += (-1.2 - aRx) * amIn; aRz += (0.95 - aRz) * amIn; }
           else { aRx += (-0.9 - aRx) * amIn; aRz += (-0.1 - aRz) * amIn; aLx += (-0.9 - aLx) * amIn; }
           hp += 0.15 * amIn; ty *= 1 - amIn;
+        } else if (AM) {                                                          // v0.9 (§4.4): the genre moments
+          var pb = bump(frac(total + ph * 0.04)), wA = amIn, gl0 = aLx, gr0 = aRx;
+          var tLx = aLx, tLz = aLz, tRx = aRx, tRz = aRz, tTy = ty, tHp = hp;
+          if (AM === 'pogo') { tTy = 0.4 * pb * (0.8 + 0.4 * en); tLx = 0.15; tRx = 0.15; tLz = 0.15; tRz = -0.15; tHp = 0.1 * pb; }
+          else if (AM === 'fistPump') { tRx = -2.2 - 0.6 * pb; tRz = -0.1; tLx = ph < 0.4 ? -2.2 - 0.6 * pb : 0.1; tTy = 0.08 * pb; tHp = -0.1; }
+          else if (AM === 'clapAlong') { var op = Math.abs(Math.sin(total * Math.PI / 2)); tLx = -1.9; tRx = -1.9; tLz = -0.28 - 0.3 * op; tRz = 0.28 + 0.3 * op; tTy = 0.03 * pb; }
+          else if (AM === 'headbang') { tHp = 0.75 * pb - 0.1; tRx = ph < 0.5 ? -2.6 : 0.1; tRz = -0.2; tTy = 0.05 * pb; }
+          else if (AM === 'gangShout') { tLx = -2.75 - 0.15 * pb; tRx = -2.75 - 0.15 * pb; tLz = 0.25; tRz = -0.25; tHp = -0.3; tTy = 0.12 * pb; tz += 0.25 * wA; }
+          else if (AM === 'singAlong') { var sw2 = Math.sin(total * Math.PI / 2 + (hx > 0 ? 0 : 0.2)); tLx = -0.25; tRx = -0.25; tLz = 1.35; tRz = -1.35; tHp = -0.3; tx += 0.14 * sw2 * wA; tyaw += 0.1 * sw2 * wA; tTy = 0; }
+          else if (AM === 'yeehaw') { tRx = -2.8; tRz = -0.1 + 0.5 * Math.sin(t * 9 + ph * 6); tLx = ph < 0.3 ? -2.6 : 0.2; tTy = 0.16 * pb; tHp = -0.2; }
+          aLx = gl0 + (tLx - gl0) * wA; aRx = gr0 + (tRx - gr0) * wA; aLz += (tLz - aLz) * wA; aRz += (tRz - aRz) * wA;
+          ty += (tTy - ty) * wA; hp += (tHp - hp) * wA;
         }
         var lean = 0;
         if (silent) {   // v0.7: a polite crowd: still while the song plays; claps, then bows, when it ends
@@ -1702,6 +1898,10 @@
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0,
+          mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
+          props: K.rivalProps.slice(), session: K.session, drummer: K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
+          xs: K.band.map(function (r) { return +r.bx.toFixed(2); }),
+          at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
             fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
           drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8

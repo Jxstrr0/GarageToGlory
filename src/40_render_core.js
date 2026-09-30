@@ -712,18 +712,26 @@
       b.box(0.11, 0.1, 0.12, s * sx, 0.78, 0.005, L.skin);                      // hand
       if (o.sticks) b.box(0.024, 0.024, 0.42, s * sx, 0.77, 0.15, hexOf(o.sticks, 0xd8b27a), 0.25);   // v0.8: the kit's stick colour
     }
-    if (o.gear === 'guitar') guitarParts(b);
-    if (o.held === 'sandwich') {
+    if (o.gear) gearParts(b, o.gear, sx);
+    if (o.gear === 'fiddle') { /* the bow is the held thing */ } else if (o.held === 'sandwich') {
       b.bone = B_HELD;
       b.box(0.15, 0.03, 0.11, -sx, 0.72, 0.1, 0xe3c38a); b.box(0.155, 0.018, 0.115, -sx, 0.742, 0.1, 0xe58a8e);
       b.box(0.165, 0.012, 0.12, -sx, 0.756, 0.1, 0x7cc251); b.box(0.15, 0.03, 0.11, -sx, 0.775, 0.1, 0xe3c38a);
     } else if (o.held === 'phone') {
       b.bone = B_HELD; b.box(0.075, 0.14, 0.014, -sx, 0.8, 0.075, 0x1d1d22);
+    } else if (o.held === 'floss') {                                          // v0.9: T-Bone's floss (always)
+      b.bone = B_HELD; b.box(0.05, 0.05, 0.025, -sx, 0.79, 0.08, 0x6ad0c8); b.box(0.004, 0.2, 0.004, -sx + 0.04, 0.86, 0.1, 0xf2f2f2, 0, 0, -0.4);
+    } else if (o.held === 'coffee') {                                         // v0.9: a double-double
+      b.bone = B_HELD; b.cyl(0.035, 0.028, 0.11, 8, -sx, 0.8, 0.08, 0xf2efe6); b.cyl(0.037, 0.037, 0.015, 8, -sx, 0.86, 0.08, 0xc0302a);
     }
     if (o.floorProp === 'lunchbox') {
       b.bone = B_FLOOR;
       b.box(0.3, 0.19, 0.17, 0.44, 0.095, 0.25, 0xc0392b); b.box(0.305, 0.02, 0.175, 0.44, 0.16, 0.25, 0x8a2a20);
       b.box(0.12, 0.03, 0.03, 0.44, 0.205, 0.25, 0x222222); b.cyl(0.04, 0.04, 0.2, 8, 0.66, 0.1, 0.16, 0x3f7fbf);
+    } else if (o.floorProp === 'lunchpail') {                                 // v0.9: Duke packs his own: a black pail + a thermos
+      b.bone = B_FLOOR;
+      b.box(0.3, 0.17, 0.18, 0.44, 0.085, 0.25, 0x1e1e22); b.cyl(0.09, 0.09, 0.3, 10, 0.44, 0.17, 0.25, 0x26262a, 0, 0, Math.PI / 2);
+      b.box(0.14, 0.012, 0.012, 0.44, 0.28, 0.25, 0x9aa0a8); b.cyl(0.045, 0.045, 0.26, 8, 0.68, 0.13, 0.16, 0x2f6a3a); b.cyl(0.05, 0.05, 0.05, 8, 0.68, 0.28, 0.16, 0x9aa0a8);
     }
     // Headphones (shown while sulking).
     b.bone = B_PHONES;
@@ -785,10 +793,20 @@
           b.box(0.17, 0.035, 0.035, 0, 1.617, 0.178, h); b.box(0.035, 0.06, 0.03, 0.095, 1.597, 0.176, h); b.box(0.035, 0.06, 0.03, -0.095, 1.597, 0.176, h); break;
         case 'headband': b.box(0.365, 0.05, 0.345, 0, 1.81, 0, 0xd23c3c); break;
         case 'bandana': b.box(0.365, 0.08, 0.345, 0, 1.845, 0, 0x2f5fb3); b.box(0.08, 0.06, 0.06, 0, 1.83, -0.19, 0x2f5fb3); break;
-        case 'toque':   // v0.9 (Moth): a knit toque, rolled brim
-          b.box(0.37, 0.07, 0.35, 0, 1.83, 0, 0x3b4a5c); b.box(0.33, 0.14, 0.31, 0, 1.92, 0, 0x4a5d73); b.box(0.09, 0.07, 0.09, 0, 2.02, 0, 0xd8d2c4); break;
-        case 'bighat':   // v0.9 (Duke): the hat is the character — a wide-brimmed ten-gallon
-          b.box(0.74, 0.03, 0.66, 0, 1.885, 0, 0xe8dcc0); b.box(0.36, 0.24, 0.33, 0, 2.01, 0, 0xe8dcc0); b.box(0.37, 0.045, 0.34, 0, 1.915, 0, 0x4a3522); break;
+        case 'toque':   // v0.9 (Moth): a knit toque, a ribbed rolled brim, a crooked pompom
+          b.box(0.375, 0.085, 0.355, 0, 1.835, -0.005, 0x3b4a5c);
+          for (var rb = -3; rb <= 3; rb++) b.box(0.012, 0.075, 0.36, rb * 0.05, 1.835, -0.005, 0x2e3a4a);
+          b.box(0.345, 0.12, 0.325, 0, 1.935, -0.01, 0x4a5d73); b.box(0.27, 0.06, 0.25, 0, 2.02, -0.015, 0x4a5d73);
+          b.box(0.1, 0.09, 0.1, 0.03, 2.08, -0.02, 0xd8d2c4, 0, 0, 0.3); break;
+        case 'bighat': {  // v0.9 (Duke): the hat is the character — a tan ten-gallon, wide brim curled up at the sides, pinched crown
+          var HT = 0xc89a5e, HD = sh(HT, 0.82);
+          b.box(0.52, 0.03, 0.62, 0, 1.885, 0, HT);
+          b.box(0.17, 0.03, 0.6, 0.32, 1.92, 0, HT, 0, 0, 0.5); b.box(0.17, 0.03, 0.6, -0.32, 1.92, 0, HT, 0, 0, -0.5);
+          b.box(0.34, 0.2, 0.33, 0, 2.0, 0, HT); b.box(0.3, 0.07, 0.26, 0, 2.125, -0.02, HT);
+          b.box(0.06, 0.05, 0.2, 0, 2.15, -0.02, HD);                                                             // the crease
+          b.box(0.08, 0.12, 0.05, 0.13, 2.07, 0.15, HD, 0, 0, 0.25); b.box(0.08, 0.12, 0.05, -0.13, 2.07, 0.15, HD, 0, 0, -0.25);   // the pinch
+          b.box(0.35, 0.045, 0.34, 0, 1.925, 0, 0x3a2414); b.box(0.04, 0.04, 0.02, 0.1, 1.925, 0.172, 0xd4a940); break;   // band + a little buckle
+        }
         case 'hat':
         case 'cowboy':
           b.box(0.54, 0.03, 0.5, 0, 1.885, 0, 0x6b4a2e); b.box(0.34, 0.17, 0.32, 0, 1.975, 0, 0x6b4a2e); b.box(0.35, 0.04, 0.33, 0, 1.915, 0, 0x2a1d14); break;
@@ -813,6 +831,92 @@
     b.box(0.15, 0.075, 0.03, 0.72, 0.015, 0.012, black, 0, 0, -0.25);
     b.pop();
   }
+
+  // v0.9 "Genres": every instrument in C.GEAR (member.gear). 'v' (and the legacy 'guitar') = Dana's white V above;
+  // 'sg' a cherry double-cut, 'strat' a sunburst with a white guard, 'tele' a butterscotch single-cut, 'bass' a long-necked
+  // 4-string, 'acoustic' a dreadnought with a sound hole (all on the gear bone, strap across the chest); 'fiddle' sits under
+  // the chin on the left shoulder (gear bone) with the bow in the right hand (held bone). sx = shoulder x (the bow's hand).
+  var GEAR_ALIAS = { guitar: 'v' };
+  function gearParts(b, kind, sx) {
+    kind = GEAR_ALIAS[kind] || kind;
+    if (kind === 'v') { guitarParts(b); return; }
+    var black = 0x151515, i;
+    b.bone = B_GEAR;
+    if (kind === 'fiddle') {                                                   // under the chin, scroll out front-left
+      b.push(0.1, 1.4, 0.13, 0.25, 0.75, -0.15);
+      var FW = 0x8a3c16, FD = 0x5a2408;
+      b.box(0.12, 0.05, 0.1, 0, 0, -0.06, FW); b.box(0.09, 0.05, 0.06, 0, 0, 0.02, sh0(FW, 0.9)); b.box(0.12, 0.05, 0.09, 0, 0, 0.08, FW);   // lower bout, waist, upper bout
+      b.box(0.1, 0.012, 0.2, 0, 0.028, 0.0, FD);                                                          // the top's darker varnish
+      b.box(0.03, 0.02, 0.2, 0, 0.04, 0.2, black);                                                        // fingerboard
+      b.box(0.022, 0.03, 0.06, 0, 0.03, 0.32, FD); b.cyl(0.018, 0.018, 0.02, 6, 0, 0.035, 0.36, FD, 0, 0, Math.PI / 2);   // pegbox + scroll
+      b.box(0.05, 0.02, 0.05, 0.02, -0.03, -0.1, black);                                                  // chin rest
+      b.pop();
+      b.bone = B_HELD;                                                        // the bow: along the right hand, hair side out
+      b.box(0.012, 0.012, 0.62, -sx, 0.78, 0.2, 0x3a2410); b.box(0.004, 0.02, 0.58, -sx, 0.765, 0.2, 0xefe8d8);
+      b.box(0.02, 0.035, 0.04, -sx, 0.775, -0.08, black);
+      return;
+    }
+    b.box(0.05, 0.64, 0.02, 0.02, 1.2, 0.15, 0x1c1714, 0, 0, 0.62);                                     // strap across the chest
+    if (kind === 'acoustic') {                                                 // a dreadnought, played high on the chest
+      b.push(-0.06, 1.04, 0.22, 0, 0, 0.35);
+      var AW = 0xd8a860, AE = 0x6a3a1a;
+      b.box(0.24, 0.4, 0.1, -0.16, 0, 0, AE); b.box(0.22, 0.38, 0.012, -0.16, 0, 0.051, AW);                 // lower bout
+      b.box(0.2, 0.32, 0.1, 0.03, 0, 0, AE); b.box(0.18, 0.3, 0.012, 0.03, 0, 0.051, AW);                    // upper bout
+      b.cyl(0.055, 0.055, 0.012, 12, 0.0, 0, 0.056, 0x1a120c, Math.PI / 2);                                 // the sound hole
+      b.cyl(0.066, 0.066, 0.008, 12, 0.0, 0, 0.054, 0x3a2a1a, Math.PI / 2);                                  // rosette
+      b.box(0.03, 0.16, 0.02, -0.2, 0, 0.06, 0x2a1a0e);                                                    // bridge
+      b.box(0.1, 0.1, 0.006, -0.04, -0.1, 0.058, 0x5a2a12);                                                 // pickguard
+      b.box(0.5, 0.05, 0.03, 0.37, 0, 0.03, 0x3a2414); b.box(0.13, 0.07, 0.025, 0.68, 0.0, 0.03, 0x2a1a10);  // neck, headstock
+      for (i = 0; i < 3; i++) { b.box(0.02, 0.02, 0.02, 0.64 + i * 0.035, 0.045, 0.03, 0xc8c8c0); b.box(0.02, 0.02, 0.02, 0.64 + i * 0.035, -0.045, 0.03, 0xc8c8c0); }
+      b.pop();
+      return;
+    }
+    var bass = kind === 'bass';
+    b.push(-0.08, 1.02, 0.21, 0, 0, bass ? 0.36 : 0.42);
+    var body, guard = 0xe9e5dc, hw = 0xc9ccd2;
+    if (kind === 'sg') {                                                       // cherry double-cut with devil horns
+      body = 0x8a1a1a;
+      b.box(0.3, 0.24, 0.045, -0.12, 0, 0, body);
+      b.box(0.12, 0.06, 0.045, 0.06, 0.1, 0, body, 0, 0, 0.5); b.box(0.12, 0.06, 0.045, 0.06, -0.1, 0, body, 0, 0, -0.5);
+      b.box(0.16, 0.12, 0.006, -0.06, -0.04, 0.025, 0x141414);
+      b.box(0.03, 0.08, 0.008, -0.06, 0.05, 0.028, hw); b.box(0.03, 0.08, 0.008, -0.16, 0.05, 0.028, hw);
+    } else if (kind === 'strat') {                                             // sunburst, white guard, three single coils
+      body = 0x3a1a0a;
+      b.box(0.34, 0.28, 0.045, -0.13, 0, 0, body); b.box(0.24, 0.18, 0.006, -0.13, 0, 0.024, 0xd88a2a);
+      b.box(0.14, 0.06, 0.045, 0.05, 0.11, 0, body, 0, 0, 0.35); b.box(0.1, 0.05, 0.045, 0.04, -0.12, 0, body, 0, 0, -0.35);
+      b.box(0.18, 0.16, 0.006, -0.08, -0.02, 0.028, guard);
+      for (i = 0; i < 3; i++) b.box(0.022, 0.07, 0.008, -0.02 - i * 0.06, 0.03, 0.032, 0xf2efe6);
+    } else if (kind === 'tele') {                                              // butterscotch single-cut, black guard, chrome plate
+      body = 0xd9a64a;
+      b.box(0.34, 0.27, 0.045, -0.13, 0, 0, body); b.box(0.12, 0.07, 0.045, 0.06, -0.1, 0, body);
+      b.box(0.16, 0.14, 0.006, -0.06, 0.04, 0.025, 0x141414);
+      b.box(0.05, 0.12, 0.008, -0.23, -0.02, 0.026, hw); b.box(0.04, 0.06, 0.008, -0.2, 0.08, 0.026, hw, 0, 0, 0.3);
+    } else {                                                                   // 'bass': a long neck, four big tuners
+      body = 0x16161a;
+      b.box(0.38, 0.28, 0.05, -0.16, 0, 0, body);
+      b.box(0.16, 0.07, 0.05, 0.06, 0.12, 0, body, 0, 0, 0.4); b.box(0.12, 0.06, 0.05, 0.04, -0.13, 0, body, 0, 0, -0.4);
+      b.box(0.2, 0.16, 0.006, -0.1, -0.02, 0.027, 0x2a2a2e);
+      b.box(0.03, 0.09, 0.008, -0.06, 0.03, 0.031, 0x0c0c0c); b.box(0.03, 0.09, 0.008, -0.2, 0.0, 0.031, 0x0c0c0c);
+    }
+    var nl = bass ? 0.82 : 0.6, hx = 0.07 + nl;
+    b.box(nl, bass ? 0.045 : 0.05, 0.03, 0.07 + nl / 2, 0, 0.012, 0x2a1a10);                              // neck
+    b.box(0.14, 0.075, 0.03, hx + 0.06, 0.012, 0.012, bass ? body : kind === 'sg' ? 0x141414 : 0x2a1a10, 0, 0, -0.12);   // headstock
+    for (i = 0; i < (bass ? 4 : 3); i++) b.box(0.02, 0.025, 0.03, hx + 0.02 + i * 0.035, 0.05, 0.02, hw);
+    b.pop();
+  }
+  function sh0(c, f) { return shade(c, f); }
+  // What a member plays: member.gear (C.GEAR), else by role (bass / fiddle / acoustic / guitar by genre), null = mic only.
+  var GENRE_GUITAR = { metal: 'v', punk: 'sg', rock: 'strat', country: 'tele' };
+  R.gearOf = function (m, cm, genre) {
+    var g = (m && m.gear) || (cm && cm.gear);
+    if (g) return GEAR_ALIAS[g] || g;
+    var role = String((m && m.role) || (cm && cm.role) || '').toLowerCase();
+    if (/bass/.test(role)) return 'bass';
+    if (/fiddle|violin/.test(role)) return 'fiddle';
+    if (/acoustic|banjo/.test(role)) return 'acoustic';
+    if (/guitar/.test(role)) return GENRE_GUITAR[genre] || 'v';
+    return null;
+  };
 
   // Marcel's cape: two hinged panels (cape bones) so it can sway and flare; variant from state.flags.cape.
   // Each panel is a strip curved around his back (edges closer to the body than the middle).
@@ -939,9 +1043,11 @@
   function mix(a, bb, f) { var x = new THREE.Color(a), y = new THREE.Color(bb); return x.lerp(y, f).getHex(); }
   function hexOf(v, d) { return typeof v === 'number' ? v : typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : d; }
   function hatColor(L, V) { return V.capColor || L.capColor || '#c0392b'; }
+  // v0.9: the band's name comes from the build options (the new-career creator preview has no state yet), else the state.
+  var BAND_NAME = null;
   function bandInitials() {
     var st = GG.state, band = st && GG.content && GG.content.bands && GG.content.bands[st.bandId];
-    var name = (band && band.name) || 'Hail Damage', w = name.replace(/^the\s+/i, '').split(/\s+/);
+    var name = BAND_NAME || (band && band.name) || 'Hail Damage', w = name.replace(/^the\s+/i, '').split(/\s+/);
     return (w.length > 1 ? w[0].charAt(0) + w[1].charAt(0) : w[0].slice(0, 2)).toUpperCase();
   }
   function designGrid(design) {
@@ -1010,18 +1116,26 @@
       arm(b, G, L, V, s, i, sx, bw, sh, skin, o);
     }
     // ---- Held things, gear, headphones, capes (same as v0.7)
-    if (o.gear === 'guitar') guitarParts(b);
-    if (o.held === 'sandwich') {
+    if (o.gear) gearParts(b, o.gear, sx);
+    if (o.gear === 'fiddle') { /* the bow is the held thing */ } else if (o.held === 'sandwich') {
       b.bone = B_HELD;
       b.box(0.15, 0.03, 0.11, -sx, 0.72, 0.1, 0xe3c38a); b.box(0.155, 0.018, 0.115, -sx, 0.742, 0.1, 0xe58a8e);
       b.box(0.165, 0.012, 0.12, -sx, 0.756, 0.1, 0x7cc251); b.box(0.15, 0.03, 0.11, -sx, 0.775, 0.1, 0xe3c38a);
     } else if (o.held === 'phone') {
       b.bone = B_HELD; b.box(0.075, 0.14, 0.014, -sx, 0.8, 0.075, 0x1d1d22);
+    } else if (o.held === 'floss') {                                          // v0.9: T-Bone's floss (always)
+      b.bone = B_HELD; b.box(0.05, 0.05, 0.025, -sx, 0.79, 0.08, 0x6ad0c8); b.box(0.004, 0.2, 0.004, -sx + 0.04, 0.86, 0.1, 0xf2f2f2, 0, 0, -0.4);
+    } else if (o.held === 'coffee') {                                         // v0.9: a double-double
+      b.bone = B_HELD; b.cyl(0.035, 0.028, 0.11, 8, -sx, 0.8, 0.08, 0xf2efe6); b.cyl(0.037, 0.037, 0.015, 8, -sx, 0.86, 0.08, 0xc0302a);
     }
     if (o.floorProp === 'lunchbox') {
       b.bone = B_FLOOR;
       b.box(0.3, 0.19, 0.17, 0.44, 0.095, 0.25, 0xc0392b); b.box(0.305, 0.02, 0.175, 0.44, 0.16, 0.25, 0x8a2a20);
       b.box(0.12, 0.03, 0.03, 0.44, 0.205, 0.25, 0x222222); b.cyl(0.04, 0.04, 0.2, 8, 0.66, 0.1, 0.16, 0x3f7fbf);
+    } else if (o.floorProp === 'lunchpail') {                                 // v0.9: Duke packs his own: a black pail + a thermos
+      b.bone = B_FLOOR;
+      b.box(0.3, 0.17, 0.18, 0.44, 0.085, 0.25, 0x1e1e22); b.cyl(0.09, 0.09, 0.3, 10, 0.44, 0.17, 0.25, 0x26262a, 0, 0, Math.PI / 2);
+      b.box(0.14, 0.012, 0.012, 0.44, 0.28, 0.25, 0x9aa0a8); b.cyl(0.045, 0.045, 0.26, 8, 0.68, 0.13, 0.16, 0x2f6a3a); b.cyl(0.05, 0.05, 0.05, 8, 0.68, 0.28, 0.16, 0x9aa0a8);
     }
     b.bone = B_PHONES;
     b.box(F.hw * 2 + 0.04, 0.045, 0.07, 0, 1.915, 0, 0x202024);
@@ -1480,6 +1594,7 @@
   // Public (valid after init()): the one character-geometry builder. 41_render_garage.js makeCharacter calls it.
   R.charGeometry = function (ctx, L, o, raw) {
     var C8 = GG.creator;
+    BAND_NAME = (o && o.band) || null;
     if (raw && C8 && C8.isV8 && C8.isV8(raw)) {
       var V = C8.expand(raw);
       L = Object.assign({}, L, { hairStyle: V.hairStyle, top: V.top || L.top });
@@ -1544,6 +1659,22 @@
         for (k = 0; k < 4; k++) b.box(0.018, 0.012, 0.018, x + (k % 2 ? 0.07 : -0.07), 0.567, z + (k < 2 ? 0.07 : -0.07), 0x1a0e08);
         b.box(0.03, 0.26, 0.03, x, 0.62, z - 0.19, chrome); b.box(0.3, 0.2, 0.06, x, 0.78, z - 0.2, 0x2a1810);
         b.box(0.26, 0.012, 0.064, x, 0.78, z - 0.2, 0x1a0e08);
+        return;
+      }
+      if (K.throne === 'haybale') {                                               // v0.9 (the Ramblers): a small square bale, two strings of twine
+        b.box(0.5, 0.36, 0.38, x, 0.18, z, 0xd8b860);
+        for (k = 0; k < 6; k++) b.box(0.505, 0.012, 0.02, x, 0.04 + k * 0.058, z + 0.19, k % 2 ? 0xc8a448 : 0xe6c878);   // straw layers (front)
+        for (k = -1; k <= 1; k += 2) { b.box(0.016, 0.37, 0.39, x + k * 0.13, 0.18, z, 0x8a5a2a); b.box(0.016, 0.012, 0.39, x + k * 0.13, 0.365, z, 0x8a5a2a); }   // twine
+        b.box(0.08, 0.04, 0.02, x + 0.2, 0.37, z + 0.1, 0xe6c878, 0, 0.6, 0.4); b.box(0.06, 0.03, 0.02, x - 0.18, 0.37, z - 0.08, 0xe6c878, 0, -0.4, 0.3);   // stray straws
+        b.box(0.32, 0.03, 0.26, x, 0.39, z, 0x6a4a8a);                            // a folded saddle blanket
+        return;
+      }
+      if (K.throne === 'bucket') {                                                // v0.9 (Frost Heave): an upside-down detergent bucket from upstairs
+        b.cyl(0.19, 0.16, 0.46, 12, x, 0.23, z, 0xe8702a); b.cyl(0.195, 0.195, 0.03, 12, x, 0.03, z, 0xd05a1e);
+        b.box(0.18, 0.12, 0.01, x, 0.26, z + 0.172, 0xf2efe6); b.box(0.12, 0.03, 0.012, x, 0.28, z + 0.176, 0x2f6fd1);   // the SUDS label
+        b.box(0.02, 0.2, 0.02, x + 0.17, 0.3, z, 0x9aa0a8, 0, 0, 0.2);             // the handle, hanging
+        b.cyl(0.17, 0.17, 0.04, 12, x, 0.48, z, 0x2a2a30);                         // a seat cushion, duct-taped on
+        b.box(0.36, 0.012, 0.05, x, 0.5, z, 0xb9bdc4);
         return;
       }
       // Milk crates (two, zip-tied, a folded towel on top): the garage era.
@@ -1669,7 +1800,7 @@
     g.textAlign = 'center'; g.textBaseline = 'middle';
     var fit = function (txt, max, font, size) { do { g.font = font.replace('#', size); size -= 3; } while (g.measureText(txt).width > max && size > 12); };
     if (K.head === 'logo' || K.head === 'text') {
-      var name = K.head === 'text' ? (K.headText || 'SASKATOON') : String(o.band || 'Hail Damage').toUpperCase();
+      var name = K.head === 'text' ? (K.headText || String(o.city || cityOf(o.band) || 'SASKATOON').toUpperCase()) : String(o.band || stateBandName() || 'Hail Damage').toUpperCase();
       var words = name.split(' '), lines = words.length > 1 && name.length > 9 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : [name];
       var gen = K.head === 'text' ? 'rock' : o.genre, font, fill, stroke;
       if (gen === 'metal') { font = '900 #px Georgia, "Times New Roman", serif'; fill = '#f4f4f8'; stroke = '#9fb8ff'; }
@@ -1709,11 +1840,40 @@
       if (L.facialHair === 'full' || L.facialHair === 'viking' || ex.indexOf('beard') >= 0) { g.fillStyle = hair; g.beginPath(); g.ellipse(128, 196, 58, 28, 0, 0, Math.PI); g.fill(); }
     }
   }
+  // v0.9: the kick head's defaults follow the band (the city under 'text', the name under 'logo'), not Saskatoon / Hail Damage.
+  function stateBandName() { var st = GG.state, b = st && GG.content && GG.content.bands && GG.content.bands[st.bandId]; return b && b.name; }
+  function cityOf(name) {
+    var bs = GG.content && GG.content.bands, k;
+    if (name && bs) for (k in bs) if (bs[k] && bs[k].name === name) return bs[k].city;
+    return (GG.state && GG.state.city) || null;
+  }
   function star(g, x, y, r) {
     g.beginPath();
     for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; g.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
     g.closePath(); g.fill();
   }
+
+  // v0.9: rival costumes shared by the stage (42) and the red carpet (44). Geometry in the spine bone's frame (add the mesh to
+  // bones[B_SPINE]; truck at y +0.25, scarf at y +0.5). The truck: Buckle & Boot's sponsor mascot, a guy in a pickup costume
+  // (the cab around his chest, the bed behind, a grille, headlights, four wheels, the sponsor plate). The scarf: Rex Glamour's,
+  // in July.
+  R.costume = {
+    truck: function (ctx) {
+      var b = new ctx.Builder({ jitter: 0.02, seed: 61 }), RED = 0xb8262a, CH = 0xc8ccd2, k;
+      b.box(0.62, 0.5, 0.9, 0, -0.18, 0.05, RED); b.box(0.58, 0.28, 0.4, 0, 0.2, -0.08, RED);
+      b.box(0.5, 0.16, 0.02, 0, 0.2, 0.12, 0x9ab8d8);
+      b.box(0.6, 0.18, 0.04, 0, -0.26, 0.5, CH); for (k = -2; k <= 2; k++) b.box(0.02, 0.14, 0.05, k * 0.1, -0.26, 0.52, 0x2a2a2e);
+      b.box(0.1, 0.07, 0.03, 0.22, -0.12, 0.51, 0xfff4c0); b.box(0.1, 0.07, 0.03, -0.22, -0.12, 0.51, 0xfff4c0);
+      for (k = 0; k < 4; k++) b.cyl(0.13, 0.13, 0.08, 10, (k % 2 ? 0.33 : -0.33), -0.42, (k < 2 ? 0.34 : -0.3), 0x151518, 0, 0, Math.PI / 2);
+      b.box(0.3, 0.06, 0.02, 0, -0.06, 0.505, 0xf2efe6);
+      return b.build();
+    },
+    scarf: function (ctx) {
+      var sb = new ctx.Builder({ jitter: 0.01, seed: 63 });
+      sb.box(0.36, 0.08, 0.3, 0, 0.02, 0, 0xd02a6a); sb.box(0.1, 0.42, 0.04, 0.12, -0.22, 0.14, 0xd02a6a, 0.1, 0, 0.1); sb.box(0.1, 0.34, 0.04, -0.1, -0.2, -0.16, 0xe8b040, -0.2, 0, -0.1);
+      return sb.build();
+    }
+  };
 
   // ---- Debug --------------------------------------------------------------------------------------------------
   // 41_render_garage.js adds scene fields through the scene's debug(); only this module registers 'render'.

@@ -77,11 +77,11 @@
   // Rebuilds only what changed (look -> character, kit look -> kit).
   function apply() {
     var THREE = V.THREE, kitMode = want.mode === 'kit';
-    var sig = JSON.stringify([want.look, want.view === 'hands']);
+    var sig = JSON.stringify([want.look, want.view === 'hands', want.band]);
     if (!kitMode && (sig !== V.sig || !V.ch)) {
       clearChar();
       V.sig = sig;
-      V.ch = R.buildCharacter(want.look, { id: 'player' });
+      V.ch = R.buildCharacter(want.look, { id: 'player', band: want.band || null });   // v0.9: the 'logo' tattoo shows the new band's initials
       if (V.ch) {
         var bn = V.ch.bones;
         bn[B_GEAR].scale.setScalar(0); bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
