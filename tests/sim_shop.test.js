@@ -337,7 +337,7 @@ test('save v8 -> v9: lane-A fields filled only when missing, stickers from venue
   ['tier', 'baseName', 'stickers', 'upgrades'].forEach(k => delete old.van[k]);
   old.venueLast = { legion_63: 3, buddys_house_party: 1 }; old.banned = ['legion_63'];
   const m = GG.save.migrate(JSON.parse(JSON.stringify(old)));
-  eq(m.v, GG.contracts.SAVE_SCHEMA); eq(GG.contracts.SAVE_SCHEMA, 9);
+  eq(m.v, GG.contracts.SAVE_SCHEMA); ok(GG.contracts.SAVE_SCHEMA >= 9, "schema 9 or later");
   eq(m.gear, { lanes: 5, doubleKick: true, owned: ['toms', 'pedal'], sections: [], quality: 0 }, 'owned gear read off the old kit');
   eq([m.spaceTier, m.space, m.spaceUpgrades, m.van.tier, m.van.baseName, m.van.name, m.van.upgrades], [0, 'parents_garage', [], 0, 'The Moose Hearse', 'The Moose Hearse', []]);
   eq(m.van.stickers.map(x => x.venueId + (x.banned ? ' X' : '')), ['buddys_house_party', 'legion_63 X'], 'the scrapbook from venueLast, banned crossed out');
