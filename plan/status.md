@@ -289,6 +289,13 @@ Later versions:
   Truck**; Q3 **one World payoff per band** (Berlin squat anthem / Mudstonbury headline / Aussie country circuit; Gong credit);
   Q4 **fair-fight** underdog rivals (fame = flavour); Q5 a **home superfan per band**; Q6 a **misprint per band**; Q7 **localised
   rented-room names**; Q8 **cross-band cameos**.
+- **Vocal diversity (owner popup 2026-09-30, all four picked; v0.9 follow-up on top of the audio lane):** (1) more scream types —
+  high shrieks, mid screams, vocal fry, deep guttural growls, pig-squeal-style squeals, gang screams, varied per song + section;
+  (2) each singer sounds different — Marcel's French-flavoured shrieks, Rox's hoarse punk yells, Chase's '80s rock wails, Travis
+  Lee's country twang, plus the rivals' singers (Gord's growl, Blaze, Rex Glamour, Brayden); (3) more vocal moments —
+  call-and-response, long held screams at section ends, backing 'whoa-oh's + harmonies, a count-in yell, crowd-answered chants;
+  (4) more words + vowels — a varied shouted-word set per genre (the odd French word from Marcel) so no two choruses match.
+  Always on the beat grid, in key, under the voice caps; never free-running.
 - **All four bands playable from the start** (new-career screen offers all four; each with its own rival, driver, space,
   city: Frost Heave — Regina laundromat basement (Suds-O-Rama), driver Moth; Gravel Kings — Edmonton strip-mall unit 4B,
   driver T-Bone; the Grid Road Ramblers — Duke's uncle's Quonset outside Swift Current, driver Earl).
