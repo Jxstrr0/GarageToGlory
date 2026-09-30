@@ -1073,6 +1073,9 @@
         var cd = castOf(D) && castOf(D).drummer;
         D.drummer = { id: (cd && cd.id) || 'session_drummer', look: (cd && cd.look) || SESSION_LOOK, corpsePaint: false, session: true };
         K.session = true;
+      } else if (D.rival && D.drummer && D.drummer.hired) {   // v0.9: the UI hired the cast's session guy for the night (59d)
+        if (!D.drummer.look) D.drummer = Object.assign({}, D.drummer, { look: SESSION_LOOK });
+        K.session = true;
       }
       var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
       if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer (Tundra Wraith: painted)

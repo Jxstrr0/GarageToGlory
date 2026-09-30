@@ -259,4 +259,22 @@ test('v0.9 (Q5): the home superfan per band in the dale slot; rival comments fro
   } finally { if (had) cast.mall_rats = had; else delete cast.mall_rats; }
 });
 
+test('v0.9: Patreeon chat pools the band layer (Dale\'s lines for Hail Damage only); an unhappy club grumbles instead', () => {
+  const GG = fresh();
+  const hd = GG.career.newCareer({ seed: 5, bandId: 'hail_damage', player: { name: 'T' } });
+  const fh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'T' } });
+  ok(GG.fans.pool(hd, ['club', 'payoutChat'], []).some(t => /Dale/.test(t)), 'Hail Damage: Dale on the Full Kit tier');
+  ok(!GG.fans.pool(fh, ['club', 'payoutChat'], []).some(t => /Dale/.test(t)), 'Frost Heave: no Dale');
+  const month = (s, happy) => {
+    at(s, 2, 3); s.era = 'signed'; GG.fans.ensure(s);
+    s.fanClub = { members: 12, happiness: happy, tier: 'snare', earned: 0, lastExclusive: -1, exclusives: 0, paid: 0 };
+    const n = s.chat.length; GG.fans.weekly(s);
+    return s.chat.slice(n).map(m => m.text).filter(t => /Patreeon/.test(t));
+  };
+  const happy = month(GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } }), 90);
+  const sad = month(GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } }), 10);
+  ok(happy.length === 1 && GG.content.bandbook.club.payoutChat.some(t => happy[0].startsWith(t.split('{')[0])), 'a happy month: payout line ' + happy);
+  ok(sad.length === 1 && GG.content.bandbook.club.grumbleChat.includes(sad[0]) && !sad.some(t => /Patreeon payout|Patreeon paid|Patreeon: /.test(t)), 'an unhappy month: no cheerful payout line ' + sad);
+});
+
 done('sim_fans');

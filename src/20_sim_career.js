@@ -14,7 +14,7 @@
 //   {driver} {van} {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront} ({rival} -> 'the other band',
 //   {city} -> the career's city) ; pool(state, obj, key) ; linePool ; variant(state, baseId) ; speakerOk(state, who) ;
 //   cardOk(state, card) ; talkers(state) ; roleOf(state, role) ; isAlias ; resolveWho ; cardRoles ; memberDef ; isSilent ;
-//   homeVenue ; tokenValue ; firstGigVenue ; rivalId ; migrateBand (wraps GG.save.migrate: a save's band defaults). Role
+//   homeVenue ; tokenValue ; firstGigVenue ; rivalId ; migrateBand (a save's band defaults; save.migrate applies them). Role
 //   aliases (C.ROLE_ALIASES) work as card.speaker, chat.who and mood/skill/member keys (resolved at the draw: state.card.roles).
 //   The week-one gig is band.firstGig; activity / quietWeek / yearEnd / guilt / milestones lines are pools (+ byBand).
 (function (GG) {
@@ -1370,8 +1370,8 @@
     return career.endWeek(state);
   };
 
-  // v0.9: a save that names its band but lacks genre / region / city / space gets them from that band (bands.js) BEFORE the
-  // base migrate's Hail Damage defaults (metal, Saskatoon, the garage) would fill them. Wraps GG.save.migrate (pre-step).
+  // v0.9: a save that names its band but lacks genre / region / city / space gets them from that band (bands.js). GG.save.migrate
+  // does this itself now (folded in at integration); this helper stays for callers that want only the band defaults.
   career.migrateBand = function (s) {
     if (!s || typeof s !== 'object' || Array.isArray(s) || typeof s.bandId !== 'string') return s;
     var b = career.band(s.bandId);
@@ -1381,12 +1381,6 @@
     });
     return s;
   };
-  if (GG.save && GG.save.migrate && !GG.save.migrate.band) {
-    var prevMigrate = GG.save.migrate;
-    GG.save.migrate = function (s) { return prevMigrate(career.migrateBand(s)); };
-    Object.keys(prevMigrate).forEach(function (k) { if (GG.save.migrate[k] === undefined) GG.save.migrate[k] = prevMigrate[k]; });
-    GG.save.migrate.band = true;
-  }
 
   GG.registerDebug('career', function () {
     var s = GG.state;

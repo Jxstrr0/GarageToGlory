@@ -385,7 +385,7 @@ test('v0.9 (Q3): every band pack\'s payoff fires at its own gig and counts for t
   const GG = fresh(), T = GG.tour;
   const cases = [
     ['frost_heave', 'eu_squat_anthem_tour', { squatAnthem: 'berlin' }, 'wackelstein_fest', 'squatAnthemPayoff'],
-    ['gravel_kings', 'gk_mudstonbury_headline', { mudHeadline: true }, 'mudstonbury_fest', 'mudHeadline'],
+    ['gravel_kings', 'gk_mudstonbury_headline', { mudHeadline: true }, 'mudstonbury_fest', 'mudHeadlinePayoff'],
     ['grid_road_ramblers', 'au_country_circuit', { outback: 'tumbleworth' }, 'tumbleworth_fest', 'outbackPayoff']];
   cases.forEach(([bid, pid, flags, venue, flag], i) => {
     const pkg = T.pkg(pid);
@@ -414,6 +414,8 @@ test('v0.9 (Q3): every band pack\'s payoff fires at its own gig and counts for t
   ok(!T.payoffDone(s), 'fresh');
   s.flags.mudstonbury = 'declined'; ok(!T.payoffDone(s), 'a declined headline does not count');
   s.flags.mudstonbury = 'headlined'; ok(T.payoffDone(s), 'the headline card\'s flag counts');
+  const m = GG.career.newCareer({ seed: 73, bandId: 'gravel_kings', player: { name: 'T' } });
+  m.flags.mudHeadlinePayoff = 'mudstonbury'; ok(T.payoffDone(m), 'mudHeadlinePayoff (the package payoff flag) counts');
   const r = GG.career.newCareer({ seed: 71, bandId: 'grid_road_ramblers', player: { name: 'T' } });
   r.flags.outbackPayoff = 'tumbleworth'; ok(T.payoffDone(r), 'outbackPayoff counts');
   const f = GG.career.newCareer({ seed: 72, bandId: 'frost_heave', player: { name: 'T' } });

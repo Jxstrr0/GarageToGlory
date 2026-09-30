@@ -452,9 +452,13 @@
       t = ui.ownLines(t, st).length ? ui.ownLines(t, st) : THANKS_ANY;   // v0.9: the leak net (another rival's thank-you reads neutral)
       var th = t[(L.i + (st.year || 0)) % t.length];
       card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks', data: { rival: rid2 || '' } }, [el('b', win + ': '), quoted(aw.thanks ? ui.safeLine(aw.thanks, th, st) : V.fill(th))]));
-    } else if (!aw.won) card.appendChild(el('p.small.dim', V.fill('You clap. {grumbler} claps slower. Much slower.')));
+    }
     var rl = aw.won && aw.rivalLine ? ui.safeLine(aw.rivalLine, '{rival} give you a standing ovation. It looks sincere. Mostly.', st) : null;
     if (rl) card.appendChild(el('p.small.dim', rl));
+    // v0.9: the band's own line after the envelope (sim: awards.win / lose + byBand, result.bandLine); the neutral clap otherwise
+    var bl = aw.bandLine ? ui.safeLine(aw.bandLine, null, st) : null;
+    if (bl) card.appendChild(el('p.small.lo-band', { testid: 'band-line' }, bl));
+    else if (!aw.won && !(wraith || aw.thanks)) card.appendChild(el('p.small.dim', V.fill('You clap. {grumbler} claps slower. Much slower.')));
     if (aw.won && !L.speech && aw.category !== 'worst_van') {
       card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-speech', onclick: function () { openSpeech(s); } }, 'Give a speech 🎤'));
       return;

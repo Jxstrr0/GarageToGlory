@@ -82,10 +82,11 @@
       '{deadpan}\'s expression does not change. Somehow you feel better.'
     ],
     // v0.9: the red-carpet chat per band (was 59c's FB.carpet); speakers may be role aliases. Packs add their bands.
-    //   Role aliases, so whoever is in the band that year walks the carpet (@namer = Marcel, @filler = Jaxon while they're in it).
+    //   A line voiced by a member id drops out (with its question) when that member has quit (ui.presentLines); nobody left ->
+    //   the UI's neutral @role set. Hail Damage's cape and baba lines are Marcel's and Jaxon's own (a fill-in never inherits them).
     carpet: {
-      hail_damage: [{ who: 'reporter', text: 'Who are you wearing tonight?' }, { who: '@namer', text: 'The cape. The cape is wearing me.' },
-        { who: 'reporter', text: 'Any predictions?' }, { who: '@filler', text: 'My baba predicts we lose to the corpse-paint guys. She is usually right.' }]
+      hail_damage: [{ who: 'reporter', text: 'Who are you wearing tonight?' }, { who: 'marcel', text: 'The cape. The cape is wearing me.' },
+        { who: 'reporter', text: 'Any predictions?' }, { who: 'jaxon', text: 'My baba predicts we lose to the corpse-paint guys. She is usually right.' }]
     },
     // v0.9: parody co-nominees per genre (metal = the pre-v0.9 list; packs add punk, rock and country)
     nominees: {

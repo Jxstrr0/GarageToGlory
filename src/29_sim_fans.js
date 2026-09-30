@@ -441,7 +441,11 @@
     if (s.van && isFinite(s.van.condition) && Q.van) s.van.condition = Math.min(100, s.van.condition + Q.van);   // "your favourite band's van repairs"
     c.earned += net; c.lastPayout = net; c.paid = s.totalWeek;
     var who = speakerFor(s, ['jaxon', 'dana', 'marcel'], ['@filler', '@soloist', '@front']);
-    if (who && net > 0) chat(s, who, fill(s, rng.pick((K().club || {}).payoutChat || []), { money: net, n: c.members }));
+    // v0.9: club chat via the pool (neutral + bandbook.byBand[bandId].club); an unhappy club's month posts a grumble line instead
+    // (same single draw, so the rng stream doesn't move)
+    var cl = c.happiness < Q.grumbleBelow ? bpool(s, ['club', 'grumbleChat'], []) : [];
+    if (!cl.length) cl = bpool(s, ['club', 'payoutChat'], (K().club || {}).payoutChat || []);
+    if (who && net > 0) chat(s, who, fill(s, rng.pick(cl), { money: net, n: c.members }));
     out.club = { paid: net, members: c.members, happiness: c.happiness, tier: c.tier };
     GG.emit('fans:club', { action: 'payout', club: c, paid: net });
   }

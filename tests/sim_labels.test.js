@@ -460,6 +460,8 @@ test('v0.9: a band line after each envelope (awards.win / lose + byBand), own vo
       ok(typeof r.bandLine === 'string' && r.bandLine.length > 10 && !/\{/.test(r.bandLine), b + ': a filled line ' + r.bandLine);
       ok(!other.some(n => new RegExp('\\b' + n + '\\b').test(r.bandLine) && !own.includes(n)), b + ': no other band named: ' + r.bandLine);
     });
+    const env = a.GG.labels.openEnvelope(a.s, 'album');   // the UI's per-envelope call carries it too (59c shows it)
+    eq(env && env.bandLine, a.res[0].bandLine, b + ': openEnvelope returns the band line');
     lines[b] = a.res.map(r => r.bandLine).join(' ');
   });
   ok(/Kenji|Marcel|Dana|Jaxon/.test(lines.hail_damage) && /Rox|Benny|Moth/.test(lines.frost_heave), 'each band in its own voice');

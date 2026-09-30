@@ -1769,7 +1769,7 @@
       ] },
 
     // ---- Q8 cross-band cameos (they name another playable band) -------------------------------------------------------
-    { id: 'grr_cameo_frost_heave', type: 'scene', speaker: 'earl', title: 'A Van Called the Pothole', gate: g({ era: LS, minFans: 300 }),
+    { id: 'grr_cameo_frost_heave', cameo: true, type: 'scene', speaker: 'earl', title: 'A Van Called the Pothole', gate: g({ era: LS, minFans: 300 }),
       text: "A punk band from Regina has broken down on the Trans-Canada outside Swift Current. It is Frost Heave. Their bassist lives in the " +
         "van and will not let anyone touch it. Their singer is at the Co-op with a megaphone, complaining about the highway.",
       choices: [
@@ -1780,7 +1780,7 @@
         { label: 'Let them sort it out', hint: 'Burnout ↓', effects: { burnout: -5 },
           outcome: 'They get towed to Moose Jaw. Their singer shouts about the tow fees from the tow truck. Duke tips his hat. It feels historic.' }
       ] },
-    { id: 'grr_cameo_gravel_kings', type: 'weird', speaker: 'duke', title: "It's 1985 at the Rodeo", gate: g({ era: LS, weekOfYear: [1, 4] }),
+    { id: 'grr_cameo_gravel_kings', cameo: true, type: 'weird', speaker: 'duke', title: "It's 1985 at the Rodeo", gate: g({ era: LS, weekOfYear: [1, 4] }),
       text: "At the Maple Creek rodeo a man in leather pants is asking to ride a bull. It is Chase from Gravel Kings, the Edmonton rock band, in " +
         "town for a show. He believes it is 1985. He would like to borrow Duke's hat 'for the ride'.",
       choices: [
@@ -1794,7 +1794,7 @@
             success: { effects: { fans: 30, buzz: 8 }, outcome: 'A power ballad with a fiddle solo. Chase and Travis sing into the same mic. The rodeo clowns cry.' },
             fail: { effects: { burnout: 5, mood: { earl: -4 } }, outcome: 'Chase plays a nine-minute solo on Earl\'s guitar. Earl says he played with a guy like that in 1985. It did not end well.' } } }
       ] },
-    { id: 'grr_cameo_hail_damage', type: 'scene', speaker: 'grr_wilf', title: 'Metal at the Co-op', gate: g({ era: LS, minFans: 500 }),
+    { id: 'grr_cameo_hail_damage', cameo: true, type: 'scene', speaker: 'grr_wilf', title: 'Metal at the Co-op', gate: g({ era: LS, minFans: 500 }),
       text: "Wilf reports that a metal band from Saskatoon, Hail Damage, stopped at the Co-op in a dented minivan with a moose painted on it. " +
         "Their singer was in a cape. At 6:40 a.m. Coffee row has been discussing the cape for two days.",
       choices: [

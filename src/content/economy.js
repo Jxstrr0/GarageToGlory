@@ -178,6 +178,7 @@
         image: { met: { salesMult: 1.05, goodwill: 5 }, half: {}, refused: { goodwill: -15 } },
         feature: { met: { salesMult: 1.08, goodwill: 5 }, half: { salesMult: 1.03 }, refused: { goodwill: -15 } },
         showcase: { met: { goodwill: 10 }, half: {}, refused: { goodwill: -10 } },
+        clearance: { met: { salesMult: 1.04, goodwill: 5 }, half: {}, refused: { goodwill: -15 } },   // v0.9: Gravel Kings' riff clearance (Monolith)
         other: { met: { goodwill: 5, effects: { mood: { all: -2 } } }, half: {}, refused: { goodwill: -10 } }
       },
       // flop: bad reviews (critic < 45) cost goodwill; the label's sales test (content dropOnFlop = units in the first

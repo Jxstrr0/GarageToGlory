@@ -407,7 +407,10 @@
           for (var l = 0; l < sec.length; l++) if (sec[l] && sec[l][s16] === 'x') api.hit(l, 'perfect');
         }
       }
-      if (!V.moment && u > 0.5) { V.moment = true; api.moment(song.score >= 55 ? 'lighters' : 'drinks'); }   // no pits: they'd run through the riser camera
+      if (!V.moment && u > 0.5) {   // no pits: they'd run through the riser camera. v0.9: a good song gets their genre's chorus moment
+        var cm = GG.gig && GG.gig.moments ? GG.gig.moments(rivalGenre(S())).chorus : null;
+        V.moment = song.score >= 55 ? cm || 'lighters' : 'drinks'; api.moment(V.moment);
+      }
       if (!V.solo && V.i === 1 && u > 0.3) { V.solo = true; api.bandAction(null, 'solo'); banner(fill(copy(S(), 'solo'), { soloist: rivalSoloist(S()) })); }
       for (var ai = 0; ai < V.acts.length; ai++) {   // v0.9 (§4.4): Mall Rats' sponsor-mandated kickflip, where the sim put it
         var act = V.acts[ai];
@@ -578,6 +581,6 @@
   };
 
   GG.registerDebug('rivalui', function () {
-    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, announced: Object.keys(announced) };
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, moment: V ? V.moment || null : null, announced: Object.keys(announced) };
   });
 })(window.GG);

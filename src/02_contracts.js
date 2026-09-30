@@ -188,7 +188,7 @@
      stageExtras: ['cape'|'wristbands'|'corpsepaint'] (stage looks only; everyday looks carry no outfit/stageExtras);
      a tattoo at spot 'teardrop' has design 'tear'. Part ids + unlock gates live in content/creator.js. Never a gong.
    KIT_LOOK = { shell: 'wood'|'black'|'sparkle'|'flames'|'camo', color: '#rrggbb', hardware: 'chrome'|'black',
-     head: 'logo'|'face'|'moose'|'text'|'plain', headText, throne: 'crate'|'stool'|'leather', sticks: '#rrggbb',
+     head: 'logo'|'face'|'moose'|'text'|'plain', headText, throne: 'crate'|'stool'|'leather'|'bucket'|'haybale', sticks: '#rrggbb',
      extras: ['cowbell'|'fan'|'pyro'] }  (shell 'paint' = the old plain colour, used for migrated saves)
      (player.kitColor stays as the legacy colour = KIT_LOOK.color; pyro is arena-only. NO GONG, ever.)
    PATTERN = { bpm, lanes: 4, sections: { verse: [laneStr x lanes], chorus: [...], bridge: [...] }, arrangement: ['verse','chorus',...] }
@@ -245,14 +245,17 @@
      card.cameo:true  = a Q8 cameo card that may voice another band's member (bypasses career.cardOk).
      v0.9 card-set flags (packs): council, councilPlan, councilDebate, councilOdds, councilResult, roxDive, squatPlan, squatCall,
        squatAnthem, squatAnthemPayoff (Frost Heave); riff ('settled'|'scrapped'|'original'), riffOriginal, riffPlan, riffCourt,
-       mudPlan, mudRex, mudHeadline, mudstonbury ('declined'|'gaveback'|'headlined') (Gravel Kings); truckStory, truckPlan,
+       mudPlan, mudRex, mudHeadline, mudstonbury ('declined'|'gaveback'|'headlined'), mudHeadlinePayoff (set by the package
+       payoff) (Gravel Kings); truckStory, truckPlan,
        truckDrive, truckAd, truckWar, outback, outbackPlan, outbackCall, outbackPayoff, hatInsured (Ramblers); shared: rivalFeud
-       (was wraithFeud), greyMug, costume, loonieOutfit, demandClearance (new demand kind; demandFx falls back to 'other').
+       (was wraithFeud), greyMug, costume, loonieOutfit, demandClearance (demand kind 'clearance': economy.labels.demandFx.clearance).
      npcs[id].band:[bandIds] / .rival:rivalId scope an npc; .frontman:true marks a rival's poster (GG.rival.frontSpeaker).
      rivalry.cast[rid] also: openingSlot:[text], commentsExclusive, actions, style, furyBrand (economy.rival.byRival
        overrides the fair-fight numbers: curve, buzz, eras, chartBias, legacy, style, actions, furyBrand).
-     tour package.needs:{ flag, is?, band? }, payoff:{ city?, flag?, value?, trophy?, line?, chat?, card?, fans?, buzz?,
-       head?, sub?, text?, quip? } (bus 'tour:payoff' { packageId, flag }); world.cityLines[cityId].
+     tour package.needs:{ flag, is?, band? }, needsText?, payoff:{ venue? (a stop's venue id: the payoff gig), city?, flag?, value?,
+       trophy?, trophyKind?, line?, chat?, card?, fans?, buzz?, head?, sub?, text?, quip? } (bus 'tour:payoff' { packageId, flag,
+       venueId }); the Gong counts a fired payoff or any economy.tour.payoffFlags { flag: true | value | [values] } (defaults:
+       mooseOpera 'platinum', squatAnthemPayoff, mudstonbury 'headlined', mudHeadlinePayoff, outbackPayoff); world.cityLines[cityId].
      calendar: byBand[b].holidayLines[holidayId], holiday.byBand[b].news, holiday.gig.byBand[b].lines.
      bandbook items: gate or band:[bandIds] (fans.pool filters). shop.spaces[tier].byCity (city name or id);
        shop.upgrades[id].bySpace (shop.upgradeView). band.weather { kind, crowd, lines }; member.frTitles.
@@ -260,8 +263,18 @@
      UI-read keys (all optional): lines.byBand[b].{ countIn, empty{chat,catalog}, noSolo, exposure, recruitAd, banter },
        lines.moments[kind].label, lines.banter[memberId|any], lines.labelReact, lines.reviewReact, awards.carpet[bandId],
        awards.outfitCards, world.gongCarpet[bandId], rivalry.cast[rid].ui/banter/faceStyle/carpet.intro/defector.line,
-       drivers[id].{ dock, load, boardLine }.
-           idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'  (garage idle animation)
+       drivers[id].{ dock, load, boardLine, shades? } (dock / load: the van lines when that member drives; shades: the render's
+       sunglasses, Kenji's by default). drivers.you.takeOver (neutral) + drivers.you.byBand[bandId].takeOver (world.takeOverLine).
+     awards.win / lose [text] + awards.byBand[bandId].{ win, lose }: a band line after each Loonie envelope (runLoonies /
+       openEnvelope result.bandLine; a line naming a member who isn't active is skipped). awards.outfits += 'leather',
+       'courtsuit', 'chain', 'sash', 'jacket' (the carpet falls back to the stage look for ids it has no model for).
+     rivalry.cast[rid].drummer: a member id (Steve #5) or a hired object { id, hired: true, name, look?, stageShirt? } that is
+       NOT in members (Buckle & Boot's session guy: 59d seats him, render info().session). Cast member flags: skate (the
+       Mall Rats' board), scarf (Rex), role:'mascot' | mascot:true (the Buckle & Boot truck); cast.mascot, cast.faceStyle
+       ('corpse'|'cap'|'scarf'|'hat'|'plain'), cast.legacy (Chartbusters' fame text).
+     bandbook.homeSuperfan[bandId] = { name, short, from, icon, blurb, gigLines[], gigLinesFar?[], comments[], gift } (the
+       'dale' state slot); bandbook.byBand[bandId].club.{ payoutChat, grumbleChat } (fans.pool).
+           idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'|'fiddle'  (garage idle animation)
    rivals: { <rivalId>: { id, name, city, genre, blurb } }
    npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
    cards:  [ CARD ]
@@ -295,8 +308,11 @@
    'gig:song'       { index, result: SONG_RESULT }   gig session, after each song (main saves here)
    'gig:judge'      { lane, judgement, combo, crowd } gig session, every hit/miss (render + UI react)
    'crowd:level'    { level, crowd }          gig session, when the crowd band changes
-   'crowd:moment'   { kind }                  gig session (mosh, lighters, boo, genre moments, band effects)
-   'gig:band'       { who, action }           gig session: 'solo' | 'fill' | 'miss' | 'capeSpin'
+   'crowd:moment'   { kind }                  gig session (mosh, lighters, boo, genre moments, band effects; v0.9 §4.4 combo /
+                                              chorus / peak kinds per genre, C.MOMENTS)
+   'gig:band'       { who, action }           gig session: 'solo' | 'fill' | 'miss' | 'capeSpin' | v0.9 member.signature actions
+                                              (stageDive, kneeSlide, hatTip); 59d emits the rival's 'kickflip' (C.RIVAL_ACTIONS)
+   'tour:payoff'    { packageId, flag, venueId }   tour sim, a band's World payoff gig (v0.9; the UI plays the payoff screen)
    'road:resolved'  { card, choice, deltas }  world, after a road card on a van trip
    'era:changed' {era}  'label:offer'  'label:signed'  'label:dropped' {reason}  'label:fulfilled'  'session:week'
    'album:released'  'album:reviews'  'chart:week'  'cert'  'loonies:nominations'  'loonies:result'   (v0.5 labels sim)

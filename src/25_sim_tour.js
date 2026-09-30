@@ -63,7 +63,7 @@
     rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
     gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
     moose: { fans: 3000, buzz: 12 },
-    payoffFlags: { mooseOpera: 'platinum', squatAnthemPayoff: true, mudstonbury: 'headlined', outbackPayoff: true },   // v0.9: Gong payoff
+    payoffFlags: { mooseOpera: 'platinum', squatAnthemPayoff: true, mudstonbury: 'headlined', mudHeadlinePayoff: true, outbackPayoff: true },   // v0.9: Gong payoff
     cardGap: 3, cardChance: 0.75,
     bot: { goodCushion: 2500, avgCushion: 3500, gap: 10, avgChance: 0.35, restHomesick: 55 }
   };

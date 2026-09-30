@@ -686,7 +686,8 @@
        ch('Push the truck', { buzz: 10, mood: { chase: 6 }, chemistry: -3 },
         'Chase and Lenny push the mascot six feet to the left. He keeps honking the whole way. A video goes around. Two bands now hate you.'),
        ch('Play the other tent', { chemistry: 4, burnout: 4 },
-        'You move everything to the craft-beer tent. It is smaller. It is louder. The mascot visits, alone, during the encore.')]),
+        'You move everything to the craft-beer tent. It is smaller. It is louder. The mascot visits, alone, during the encore.')],
+      { cameo: true }),
     card('gk_l_hail_damage', 'scene', 'lenny', 'The Band from Saskatoon', g({ era: LS, minFans: 450 }),
       'A double bill in Lloydminster with Hail Damage, a metal band from Saskatoon. Their singer has a cape. Their bassist has not said ' +
       "a word in four hours. Their drummer asks yours about double-kick pedals. Lenny is intimidated.",
@@ -696,7 +697,7 @@
         'Their singer blesses the pizza in French. Chase blesses it in 1985. The bassist nods at Lenny once. Lenny will talk about it for years.'),
        ch('Outplay them', { buzz: 10, burnout: 6 },
         'You play the set of your lives. So do they. Lloydminster has never been this loud. Both provinces can hear it, technically.')],
-      {}),
+      { cameo: true }),
     card('gk_l_frost_heave', 'scene', 'tamara', 'The Van in Our Lot', g({ era: LS, minFans: 380 }),
       "A punk band from Regina called Frost Heave broke down in the Westgate parking lot. Their bassist lives in the van. She has " +
       "asked, very politely, for permission to park 'for a few days'. Darrell with the clipboard is circling.",
@@ -705,7 +706,8 @@
        ch('Book them an opening slot', { buzz: 8, fans: 25 },
         'They open for you. Their guitarist plays two chords, all night. The crowd goes feral. Lenny asks how. He will never know.'),
        ch('Call a tow truck (for them)', { fund: -60, mood: { tamara: 4 } },
-        'Tamara pays for a tow to the shop on 99th Street. They send a thank-you postcard from Regina. It is about city council.')]),
+        'Tamara pays for a tow to the shop on 99th Street. They send a thank-you postcard from Regina. It is about city council.')],
+      { cameo: true }),
     card('gk_l_anthem', 'fame', 'chase', 'The Anthem at the Rink', g({ era: LS, minFans: 500 }),
       "The Edmonton Oilcans want a local singer for the anthem. Chase has been asked. He wants to wear the leather pants and do " +
       "one small knee slide on the red line. 'Tasteful,' he says.",

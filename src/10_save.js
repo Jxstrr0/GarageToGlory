@@ -134,6 +134,10 @@
   function def(o, k, v) { if (o[k] === undefined || o[k] === null && v !== null) o[k] = v; }
   save.migrate = function (s) {
     if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error('Not a career');
+    // v0.9: a save that names its band takes that band's genre / region / city / space (bands.js) before the steps below and
+    // the Hail Damage defaults (metal, Saskatoon, the garage) fill them (was the career.migrateBand wrapper)
+    var bd = typeof s.bandId === 'string' && GG.content && GG.content.bands ? GG.content.bands[s.bandId] : null;
+    if (bd) [['genre', bd.genre], ['region', bd.region], ['city', bd.city], ['space', bd.space]].forEach(function (kv) { if (kv[1]) def(s, kv[0], kv[1]); });
     var v = typeof s.v === 'number' ? s.v : 1;
     while (v < C.SAVE_SCHEMA) { if (MIGRATIONS[v]) s = MIGRATIONS[v](s); v++; }
     s.v = Math.max(v, C.SAVE_SCHEMA);

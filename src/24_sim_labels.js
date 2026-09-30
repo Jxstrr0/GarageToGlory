@@ -1219,7 +1219,7 @@
     }) });
   };
   // One envelope: resolves the whole ceremony on the first call (deterministic), then returns that category's AWARD
-  // + { thanks (the rival won and thanks you), rivalLine (you beat the rival), deltas }.
+  // + { thanks (the rival won and thanks you), rivalLine (you beat the rival), bandLine (v0.9: the band's own line), deltas }.
   L.openEnvelope = function (state, category) {
     var lo = state.loonies;
     if (!lo || !lo.invited) return null;
@@ -1227,7 +1227,7 @@
     var r = (lo.results || []).filter(function (x) { return x.category === category; })[0];
     if (!r) return null;
     var aw = (state.awards || []).filter(function (x) { return x.year === lo.year && x.category === category; })[0] || {};
-    return Object.assign({}, aw, { name: r.name, won: r.won, winner: r.winner, thanks: r.thanks, rivalLine: r.rivalLine, deltas: r.deltas || null });
+    return Object.assign({}, aw, { name: r.name, won: r.won, winner: r.winner, thanks: r.thanks, rivalLine: r.rivalLine, bandLine: r.bandLine || null, deltas: r.deltas || null });
   };
   L.nominate = function (state, rng, out) {
     var K = lcfg(), noms = [];
