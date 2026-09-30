@@ -39,7 +39,7 @@
   songs.EXTRA_SECTIONS = EXTRAS;
 
   function E() { return GG.content.economy.songs; }
-  function SH() { var e = GG.content.economy.shop; return e || { songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 }, jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 } }; }
+  function SH() { var e = GG.content.economy.shop; return e || { songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 }, jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 } }; }
   function gearOf(g) {
     var o = { lanes: g && g.lanes >= 1 ? Math.min(g.lanes, C.LANES.length) : 4, doubleKick: !!(g && g.doubleKick) };
     o.sections = g && Array.isArray(g.sections) ? EXTRAS.filter(function (x) { return g.sections.indexOf(x) >= 0; }) : [];

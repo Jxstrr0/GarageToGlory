@@ -30,7 +30,8 @@
 //   low cut / high cut (thin and cheap -> full and punchy) and the reverb send. kitQuality() ; qualityFor(tier) ; kitFor(genre,
 //   tier) (the derived kit, pure) ; renderOffline({ quality }) (default: the live career's tier, else 2 = the v0.6.1 reference).
 //   Extra sections: an 'outro' plays full then its last bar rings (one held chord past the end; the song's tail waits for
-//   it); a 'solo' is Dana's (role 'solo' for every bar: the genre's lead over the band, no vocal hits).
+//   it); a 'solo' is Dana's (role 'solo' for every bar: the genre's lead over the band, no vocal hits) over a stripped kit
+//   (only the drum hits on the beat play, exactly what the gig chart asks for).
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -761,6 +762,7 @@
           var at = beat + step / 4;
           events.push({ beat: at, kind: 'step', section: name, entry: e, bar: bar, step: step, role: role });
           if (opts.drums === false) continue;
+          if (name === 'solo' && step % 4) continue;   // v0.8: Dana's solo: you lay back on a stripped kit (the beat only, like the gig chart)
           for (var l = 0; l < p.lanes; l++) {
             if (sec[l].charCodeAt(step) !== HIT) continue;
             var ev = { beat: at, kind: 'drum', lane: C.LANES[l], li: l, section: name };

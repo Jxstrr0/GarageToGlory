@@ -229,7 +229,7 @@
       // their career: fans chase this curve (fans at the start of each year, geometric in between) x momentum
       fansCurve: [40, 450, 1700, 4300, 8200, 12500, 17000, 21500, 25500, 29000, 32000, 34500, 36500],
       pull: 0.18, momentumPer: 0.02, momentum: [0.7, 1.25],
-      skill: { start: 50, cap: 87, tau: 66, rebrand: -4, breakup: -6, opener: -3 },   // set strength = cap - (cap - start) * e^(-week / tau)
+      skill: { start: 50, cap: 90, tau: 66, rebrand: -4, breakup: -6, opener: -3 },   // set strength = cap - (cap - start) * e^(-week / tau); v0.8: cap 87 -> 90, they buy gear too
       buzz: { start: 15, perYear: 5, max: 60, heat: 0.2, drift: 0.25, win: 5, loss: -3 },
       form: { win: 1.5, loss: -1.5, decay: 0.9, max: 6 },
       eras: { local: 250, signed: 1100 },
@@ -287,11 +287,11 @@
       outroSongs: 3,                            // Outro unlocks (free) once you have written this many songs (a chat moment)
       soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> Dana's card; refused -> again later
       // gear on stage and in the studio: kit quality tier 0..3 and each lane / the pedal
-      gigBonus: { quality: [0, 0.5, 1.5, 2.5], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
-      writeBonus: [0, 0.5, 1, 2],                 // + quality of a new song by kit tier (the demo sounds like a band)
+      gigBonus: { quality: [0, 0.5, 1, 2], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
+      writeBonus: [0, 0.5, 1, 1.5],                 // + quality of a new song by kit tier (the demo sounds like a band)
       recordBonus: [0, 0.25, 0.5, 1],            // + session production per studio week by kit tier
       crowdBonus: [0, 0.5, 1, 2],                 // + live crowd start by kit tier (it sounds big from the first hit)
-      songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
+      songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
       jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 },   // band jams use owned gear this often (pedalRun: per section, when the genre wants more kick)
       soloCrowd: 3,                             // live: Dana's solo section lifts the crowd
       tradeIn: 0.3, tradeInMin: 150,            // your old van is worth this share of its price (x condition), at least $150
@@ -313,7 +313,7 @@
       bot: {
         // cushions = fund kept after a buy (at least 6 weeks of bills); rentWeeks = rent x this in the fund to move up;
         // downsize = move a tier down when the fund is under this many weeks of rent (avg: a shopping trip 30% of weeks)
-        good: { cushion: 1200, kitCushion: 1500, vanCushion: 2000, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+        good: { cushion: 1200, kitCushion: 1500, vanCushion: 1500, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
         avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, downsize: 5, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
       }
     },

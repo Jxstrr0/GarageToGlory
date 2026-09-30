@@ -97,7 +97,7 @@ test('gear: toms before ride, the pedal, funds and era gates; kit tiers in order
   s.fund = 10; ok(!S.buyGear(Object.assign(career(GG, 8), { fund: 10 }), 'toms').ok, 'no money, no toms');
   eq(evs, ['gear:toms', 'gear:ride', 'gear:pedal', 'kit:pawn_shop', 'kit:pro']);
   const a = S.gigBonus(career(GG, 9)), b = S.gigBonus(s);
-  ok(b >= a + 2 && S.writeBonus(s) > 0 && S.crowdBonus(s) > 0, 'gear shows on stage and in new songs: ' + a + ' -> ' + b);
+  ok(b >= a + 1.5 && S.writeBonus(s) > 0 && S.crowdBonus(s) > 0, 'gear shows on stage and in new songs: ' + a + ' -> ' + b);
 });
 
 test('two-thumb rule holds with 6 lanes + the pedal + extras on every difficulty; lanes 5–6 chart', () => {
@@ -172,17 +172,17 @@ test('spaces: era opens tiers, moving is a choice, rent in the bills, perks, upg
   const bills0 = GG.career.upkeep(s);
   ok(S.buyUpgrade(s, 'curb_couch').ok && S.buyUpgrade(s, 'egg_foam').ok && !S.buyUpgrade(s, 'curb_couch').ok, 'upgrades once');
   ok(!S.canBuyUpgrade(s, 'real_pa').ok, 'jam-room upgrades wait for the jam room');
-  eq([S.perkFactor(s, 'rest'), S.perkFactor(s, 'rehearse')], [1.1, 1.1]);
+  eq([S.perkFactor(s, 'rest'), S.perkFactor(s, 'rehearse')], [1.05, 1.03]);
   s.era = 'local';
   eq(S.availableTier(s), 1);
   const evs = []; GG.on('shop:move', e => evs.push(e.to));
   ok(S.move(s, 1).ok && s.spaceTier === 1 && s.space === 'jam_room', 'moved to the jam room');
   eq(s.spaceUpgrades, ['curb_couch'], 'the couch came along, the foam stayed on the old walls');
   eq(GG.career.upkeep(s) - bills0, 60 + 6, 'rent $60 + the Local Heroes era upkeep');
-  ok(S.perkFactor(s, 'rehearse') >= 1.2, 'jam room: rehearsals count more');
+  ok(S.perkFactor(s, 'rehearse') >= 1.08, 'jam room: rehearsals count more');
   ok(S.buyUpgrade(s, 'real_pa').ok && S.perks(s).write === 1, 'PA: +write');
   s.era = 'world';
-  ok(S.move(s, 3).ok && S.perks(s).rest >= 0.4 && S.perks(s).recover >= 1, 'arena backstage: rest');
+  ok(S.move(s, 3).ok && S.perks(s).rest >= 0.2 && S.perks(s).recover >= 1, 'arena backstage: rest');
   ok(S.move(s, 0).ok && S.rent(s) === 0 && s.space === 'parents_garage', 'you can always move home');
   eq(evs, ['jam_room', 'arena_backstage', 'parents_garage']);
   // perks reach the week: a rehearse block in the jam room beats the garage (same RNG)
@@ -254,6 +254,9 @@ test('merch: unlock tiers, stock + table + prices, van space caps hauling, sales
   s.albums = [{ status: 'released' }]; S.unlockMerch(s); ok(s.merch.unlocked.includes('vinyl'), 'vinyl with a record out');
   s.era = 'signed'; s.fans = 6000; S.unlockMerch(s); ok(s.merch.unlocked.includes('bobblehead') && !s.merch.unlocked.includes('duke_hat'), 'limited: this band only');
   const v = S.merchView(s); ok(v.items.length >= 9 && v.space === 3 && v.pile.boxes > 0 && v.estimate.crowd > 0, 'merch view');
+  const t = career(GG, 72), evs = []; GG.on('shop:unlock', e => evs.push(e.kind + ':' + (e.ids || []).join('+')));
+  t.era = 'local'; week(GG, t, ['rest', 'rest', 'rest']);
+  ok(t.wrap.shop.unlocks.some(u => u.kind === 'merch' && u.ids.includes('hoodie')) && evs.includes('merch:hoodie+toque'), 'a new merch tier arrives at the wrap, with news');
 });
 
 test('merch sales follow crowd, grade, price and superfans; deterministic; earnings reach the fund', () => {
@@ -310,13 +313,15 @@ test('forced shop cards: space offer per new tier, merch intro, pawn kit, church
   s.seenCards.shop_merch_start = 5;
   eq(S.forcedCard(s), null, 'cardGap');
   s.totalWeek = 9; s.fund = 900;
+  eq(S.forcedCard(s), null, 'the pawn kit waits for money to spare');
+  s.fund = 1200;
   eq(S.forcedCard(s).id, 'shop_pawn_kit');
   const d = {}; S.afterCard(s, S.card('shop_pawn_kit'), 0, null, d);
   eq([s.gear.quality, d.shop], [1, { kit: 1 }]);
   s.seenCards.shop_pawn_kit = 9; s.totalWeek = 20; s.era = 'signed'; s.fund = 4000;
   eq(S.forcedCard(s).id, 'shop_space_2', 'signed era: the pro studio offer (newest tier)');
   S.afterCard(s, S.card('shop_space_2'), 0, null, {}); eq(s.spaceTier, 2);
-  s.seenCards.shop_space_2 = 20; s.totalWeek = 24;
+  s.seenCards.shop_space_2 = 20; s.totalWeek = 24; s.fund = 4500;
   eq(S.forcedCard(s).id, 'shop_van_deal');
   S.afterCard(s, S.card('shop_van_deal'), 0, null, {}); eq([s.van.tier, s.van.name], [1, 'The Claim Adjuster']);
   ok(/Move in/.test(GG.career.effectSummary(S.card('shop_space_1').choices[0].effects, s)), 'hint text for shop effects');

@@ -40,13 +40,13 @@
 
   var DEF = {
     cardFrom: 3, cardGap: 3, outroSongs: 3, soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16, rentLateWeeks: 2,
-    gigBonus: { quality: [0, 0.5, 1.5, 2.5], lane: 0.25, pedal: 0.25 }, writeBonus: [0, 0.5, 1, 2], recordBonus: [0, 0.25, 0.5, 1],
-    crowdBonus: [0, 0.5, 1, 2], songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 },
+    gigBonus: { quality: [0, 0.5, 1, 2], lane: 0.25, pedal: 0.25 }, writeBonus: [0, 0.5, 1, 1.5], recordBonus: [0, 0.25, 0.5, 1],
+    crowdBonus: [0, 0.5, 1, 2], songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 },
     jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 }, soloCrowd: 3, tradeIn: 0.3, tradeInMin: 150, stickersMax: 160,
     merch: { buyRate: 0.04, crowdRef: 50, crowdExp: 0.7, variety: 0.1, varietyMax: 5, grade: { S: 1.5, A: 1.25, B: 1, C: 0.75, D: 0.45 },
       fit: [0.6, 0.4], elasticity: 1.6, curveMax: 2.2, noise: [0.85, 1.15], superfan: 1.5, superfanRef: 0.06, opening: 0.6, flyBoxes: 2, priceRange: [0.5, 3],
       misprint: { units: 50, weeks: 8, minFans: 300 } },
-    bot: { good: { cushion: 1200, kitCushion: 1500, vanCushion: 2000, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+    bot: { good: { cushion: 1200, kitCushion: 1500, vanCushion: 1500, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
       avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, downsize: 5, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 } }
   };
   function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
@@ -130,6 +130,7 @@
       });
     }
     syncVan(s);
+    var freshMerch = !s.merch || typeof s.merch !== 'object' || !Array.isArray(s.merch.unlocked) || !s.merch.unlocked.length;
     if (!s.merch || typeof s.merch !== 'object' || Array.isArray(s.merch)) s.merch = defaultMerch(s);
     var m = s.merch, dm = defaultMerch(s);
     Object.keys(dm).forEach(function (k) {
@@ -139,10 +140,15 @@
       else if (typeof dm[k] === 'number') { if (!isFinite(m[k])) m[k] = 0; }
       else if (!isObj(m[k])) m[k] = {};
     });
-    S.unlockMerch(s, true);
+    if (freshMerch) S.unlockMerch(s, true);   // a new career / an old save: everything its era has opened, quietly (later: weekly, with news)
     return s;
   };
-  S.init = function (s) { return S.ensure(s); };
+  // A new career: the band's own tier-0 vehicle name (world.defaultVan names every van The Moose Hearse).
+  S.init = function (s) {
+    S.ensure(s);
+    if (s.van && !s.van.tier) { s.van.baseName = S.vanName(s.bandId, 0); s.van.name = s.van.baseName; }
+    return s;
+  };
   S.migrate = function (s) { return S.ensure(s); };
 
   /* ---- Gear: lanes, the pedal, kit quality, extra sections ------------------------------------------------------- */
@@ -486,6 +492,11 @@
     if (s.fund < cost) return fail('Not enough in the fund (' + money(cost) + ').');
     return { ok: true, cost: cost, units: boxes * def.perBox };
   };
+  // The first shirt order of a band whose misprint card exists (Hail Damage: HALE DAMAGE) comes back misprinted.
+  function misprintDue(s) {
+    var m = s.merch, c = S.card('money_merch_misprint');
+    return !!c && !m.misprint && !m.shirtsOrdered && (!s.seenCards || s.seenCards.money_merch_misprint == null) && gateOk(s, c);
+  }
   // Buys `boxes` boxes of an item (paid up front). The item goes on the table if it wasn't. The very first shirt
   // order comes back misprinted (HALE DAMAGE): the batch waits for next Monday's card.
   S.buyStock = function (s, id, boxes) {
@@ -493,7 +504,7 @@
     if (!q.ok) return q;
     var m = s.merch, d = spend(s, q.cost), misprint = null;
     m.spent += q.cost;
-    if (id === 'shirt' && !m.misprint && !m.shirtsOrdered && (!s.seenCards || s.seenCards.money_merch_misprint == null) && S.card('money_merch_misprint')) {
+    if (id === 'shirt' && misprintDue(s)) {
       var n = Math.min(q.units, Q().merch.misprint.units);
       m.misprint = misprint = { merchId: 'shirt', week: s.totalWeek, status: 'pending', units: n };
       m.stock.shirt = (m.stock.shirt || 0) + q.units - n;
@@ -721,7 +732,7 @@
       var def = S.merchDef(id);
       if (!def || !has(m.unlocked, id)) return;
       var units = v.stock[id] * def.perBox;
-      if (id === 'shirt' && !m.misprint && !m.shirtsOrdered && seen(s, 'money_merch_misprint') == null && S.card('money_merch_misprint')) {
+      if (id === 'shirt' && misprintDue(s)) {
         var n = Math.min(units, Q().merch.misprint.units);
         m.misprint = { merchId: 'shirt', week: s.totalWeek, status: 'pending', units: n };
         m.stock.shirt = (m.stock.shirt || 0) + units - n;
@@ -794,13 +805,13 @@
     var ids = S.unlockMerch(s, false);
     if (ids.length) out.unlocks.push({ kind: 'merch', ids: ids });
     var away = !!(GG.tour && GG.tour.away(s)), p = S.perks(s);
-    if (!away) {
-      if (p.chemistry) GG.career.applyEffects(s, { chemistry: p.chemistry }, d);
-      if (p.mood) GG.career.applyEffects(s, { mood: { all: p.mood } }, d);
+    if (!away) {   // chemistry / mood perks land every other week (a fridge is nice, not a therapist)
+      if (p.chemistry && s.totalWeek % 2 === 0) GG.career.applyEffects(s, { chemistry: p.chemistry }, d);
+      if (p.mood && s.totalWeek % 2 === 1) GG.career.applyEffects(s, { mood: { all: p.mood } }, d);
       if (p.recover) GG.career.applyEffects(s, { burnout: -p.recover }, d);
     }
     var rec = (p.record || 0) + (R.recordBonus[s.gear.quality] || 0);
-    if (rec && GG.labels && GG.labels.inSession && s.session && GG.labels.applyProduction) GG.labels.applyProduction(s, rec, d);
+    if (rec && GG.labels && GG.labels.inSession && GG.labels.inSession(s) && GG.labels.applyProduction) GG.labels.applyProduction(s, rec, d);   // the studio perk + your kit on the takes
     out.perks = d;
     // Rent arrears: `rentLateWeeks` weeks in a row with less than two weeks' rent in the fund and the landlord changes the
     // locks: the band moves down a tier (the couch comes along). Keeps a bad move from snowballing into parents' loans.
@@ -835,10 +846,9 @@
 
   /* ---- Bots (tools/balance.js, tests) ----------------------------------------------------------------------------- */
   function cushion(s, base) { return Math.max(base, GG.career && GG.career.upkeep ? GG.career.upkeep(s) * 6 : base); }
-  // Big buys (a van, a kit) keep 12 weeks of bills and wait while a studio session or a tour is on the books.
+  // Big buys (a van, a kit) keep 8 weeks of bills and wait while a studio session is running (it bills every week).
   function bigCushion(s, base) {
-    var busy = !!(s.session || (GG.tour && GG.tour.active && GG.tour.active(s)));
-    return busy ? Infinity : Math.max(cushion(s, base), GG.career && GG.career.upkeep ? GG.career.upkeep(s) * 12 : base);
+    return s.session ? Infinity : Math.max(cushion(s, base), GG.career && GG.career.upkeep ? GG.career.upkeep(s) * 8 : base);
   }
   // The merch the bot wants on the table: the best money-makers per box of van space.
   function botTable(s) {
@@ -878,9 +888,8 @@
     }
     var vt = (s.van.tier || 0) + 1, vq = S.vanTierDef(vt);   // a bigger van first (merch space, comfort, fewer breakdowns)...
     if (vt < C.VAN_TIERS.length && vq.tier === vt && S.canBuyVan(s, vt).ok && s.fund - S.vanQuote(s, vt).net >= bigCushion(s, B.vanCushion)) S.buyVan(s, vt);
-    var next = S.kitDef((s.gear.quality || 0) + 1);   // ...then the kit, unless a van the era allows is still waiting
-    var vanWait = vt < C.VAN_TIERS.length && vq.tier === vt && eraOk(s, vq.era);
-    if (next && S.canBuyKit(s, next.tier).ok && s.fund - next.cost >= bigCushion(s, B.kitCushion) + (vanWait ? S.vanQuote(s, vt).net : 0)) S.buyKit(s, next.tier);
+    var next = S.kitDef((s.gear.quality || 0) + 1);   // ...then the kit
+    if (next && S.canBuyKit(s, next.tier).ok && s.fund - next.cost >= bigCushion(s, B.kitCushion)) S.buyKit(s, next.tier);
     var avail = S.availableTier(s), sd = S.spaceDef(s, avail);
     if ((s.spaceTier || 0) > 0 && s.fund < S.rent(s) * B.downsize) S.move(s, s.spaceTier - 1);   // a sensible band downsizes before the landlord does
     else if (avail > (s.spaceTier || 0) && s.fund >= (sd.rent || 0) * B.rentWeeks + cushion(s, B.cushion)) S.move(s, avail);

@@ -4166,7 +4166,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           outcome: 'Marcel hangs the design on the garage wall anyway. It watches you rehearse.' }
       ] },
 
-    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 700 }),
+    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
         "'the guy says $650 if we take it today. the milk crate is embarrassing us.'",
       choices: [
@@ -4180,7 +4180,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         { label: 'Not yet', effects: { mood: { dana: -4 } }, outcome: 'The milk crate creaks, as if it heard.' }
       ] },
 
-    { id: 'shop_van_deal', type: 'money', speaker: 'baba', title: "Baba's Church Van", gate: g({ era: LSW, minFund: 2600 }),
+    { id: 'shop_van_deal', type: 'money', speaker: 'baba', title: "Baba's Church Van", gate: g({ era: LSW, minFund: 4000 }),
       text: "Baba's church is selling its 15-passenger van, trailer included. 'One owner,' says Baba. 'God.' $3,000 and the old van for parts. " +
         'Jaxon has already measured the trailer for the drum cases.',
       choices: [
@@ -4767,7 +4767,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       // their career: fans chase this curve (fans at the start of each year, geometric in between) x momentum
       fansCurve: [40, 450, 1700, 4300, 8200, 12500, 17000, 21500, 25500, 29000, 32000, 34500, 36500],
       pull: 0.18, momentumPer: 0.02, momentum: [0.7, 1.25],
-      skill: { start: 50, cap: 87, tau: 66, rebrand: -4, breakup: -6, opener: -3 },   // set strength = cap - (cap - start) * e^(-week / tau)
+      skill: { start: 50, cap: 90, tau: 66, rebrand: -4, breakup: -6, opener: -3 },   // set strength = cap - (cap - start) * e^(-week / tau); v0.8: cap 87 -> 90, they buy gear too
       buzz: { start: 15, perYear: 5, max: 60, heat: 0.2, drift: 0.25, win: 5, loss: -3 },
       form: { win: 1.5, loss: -1.5, decay: 0.9, max: 6 },
       eras: { local: 250, signed: 1100 },
@@ -4821,14 +4821,15 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     // content/shop.js; these are the rates, curves, unlock rules and the bots. ------------------------------------------
     shop: {
       cardFrom: 3, cardGap: 3,                  // shop Monday cards (forced): none before week 3, at least 3 weeks apart
+      rentLateWeeks: 2,                         // this many wraps in a row with < 2 weeks' rent in the fund: evicted, one tier down
       outroSongs: 3,                            // Outro unlocks (free) once you have written this many songs (a chat moment)
       soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,   // Solo: Local Heroes + songs written -> Dana's card; refused -> again later
       // gear on stage and in the studio: kit quality tier 0..3 and each lane / the pedal
-      gigBonus: { quality: [0, 0.5, 1.5, 2.5], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
-      writeBonus: [0, 0.5, 1, 2],                 // + quality of a new song by kit tier (the demo sounds like a band)
+      gigBonus: { quality: [0, 0.5, 1, 2], lane: 0.25, pedal: 0.25 },   // + gig performance (the band's score before noise)
+      writeBonus: [0, 0.5, 1, 1.5],                 // + quality of a new song by kit tier (the demo sounds like a band)
       recordBonus: [0, 0.25, 0.5, 1],            // + session production per studio week by kit tier
       crowdBonus: [0, 0.5, 1, 2],                 // + live crowd start by kit tier (it sounds big from the first hit)
-      songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
+      songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 },   // rate() extras (hook points)
       jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 },   // band jams use owned gear this often (pedalRun: per section, when the genre wants more kick)
       soloCrowd: 3,                             // live: Dana's solo section lifts the crowd
       tradeIn: 0.3, tradeInMin: 150,            // your old van is worth this share of its price (x condition), at least $150
@@ -4848,8 +4849,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         misprint: { units: 50, weeks: 8, minFans: 300 }   // the HALE DAMAGE batch becomes a collector's item
       },
       bot: {
-        good: { cushion: 1200, kitCushion: 1500, vanCushion: 3000, rentWeeks: 20, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
-        avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
+        // cushions = fund kept after a buy (at least 6 weeks of bills); rentWeeks = rent x this in the fund to move up;
+        // downsize = move a tier down when the fund is under this many weeks of rent (avg: a shopping trip 30% of weeks)
+        good: { cushion: 1200, kitCushion: 1500, vanCushion: 1500, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+        avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, downsize: 5, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 }
       }
     },
 
@@ -7362,7 +7365,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   merchTiers: [{ id (C.MERCH_TIERS), era, release?: true (needs a released EP/album), minFans?, blurb }]
 //   merch: [{ id, name, tier, genre?: [..], band?: [..], cost ($/unit), price (suggested $), perBox (units per box), appeal
 //     (0.5..2, how many people want one), season?: { winter|spring|summer|fall: mult }, blurb, hidden?: true (misprint only) }]
-//   lines: { outro / solo / misprintCollector / move / van / merchUnlock: [{ who, text }] (group chat), stickersMoved }
+//   lines: { outro / solo / misprintCollector / move / van / merchUnlock / evicted: [{ who, text }] (group chat), stickersMoved }
 // } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: +/week,
 //            mood: +/week (everyone), recover: extra burnout recovery/week }
 // No gong on the drum kit, ever.
@@ -7383,7 +7386,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         blurb: 'From the pawn shop on 8th Street. The shells don\'t match. It sounds like a real kit, mostly.' },
       { tier: 2, id: 'pro', name: 'Maple Pro Kit', cost: 2800, era: 'local',
         blurb: 'Maple shells, fresh heads, hardware that doesn\'t slip mid-song. It punches.' },
-      { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'signed',
+      { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'world',
         blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even in the garage.' }
     ],
     sections: {
@@ -7393,34 +7396,34 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
         blurb: 'Where it all started. Free, cold, and the neighbours have opinions.' },
-      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Room 3', rent: 60, era: 'local', perk: { rehearse: 0.2 },
+      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Room 3', rent: 60, era: 'local', perk: { rehearse: 0.08 },
         blurb: 'A windowless room above a vacuum repair shop. Carpet on the walls, a sign that says NO DRUMS AFTER 11.' },
-      { tier: 2, id: 'pro_studio', name: 'Prairie Dog Sound', rent: 150, era: 'signed', perk: { rehearse: 0.2, write: 2, record: 1 },
+      { tier: 2, id: 'pro_studio', name: 'Prairie Dog Sound', rent: 150, era: 'signed', perk: { rehearse: 0.08, write: 1, record: 1 },
         blurb: 'Rehearsal and recording in an old grain co-op. An isolation booth, and an engineer named Gwen who has heard it all.' },
       { tier: 3, id: 'arena_backstage', name: 'Backstage at the Potash Place', rent: 300, era: 'world',
-        perk: { rehearse: 0.2, write: 2, record: 1, rest: 0.4, recover: 1 },
+        perk: { rehearse: 0.08, write: 1, record: 1, rest: 0.2, recover: 1 },
         blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.' }
     ],
     upgrades: [
-      { id: 'curb_couch', tier: 0, name: 'The curb couch', cost: 40, perk: { rest: 0.1 }, moves: true,
+      { id: 'curb_couch', tier: 0, name: 'The curb couch', cost: 40, perk: { rest: 0.05 }, moves: true,
         blurb: 'Free from the curb on garbage day, plus $40 to get it home. Smells like 1997. Comes with you if you move.' },
-      { id: 'egg_foam', tier: 0, name: 'Egg-crate foam', cost: 80, perk: { rehearse: 0.1 },
+      { id: 'egg_foam', tier: 0, name: 'Egg-crate foam', cost: 80, perk: { rehearse: 0.03 },
         blurb: 'Stapled to every wall. The neighbours stop calling the city. Mostly.' },
       { id: 'beer_fridge', tier: 0, name: 'Dad\'s old beer fridge', cost: 120, perk: { chemistry: 1 }, moves: true,
         blurb: 'Hums in E flat. Holds pop, perogies and one mystery jar. Everyone hangs around it.' },
       { id: 'xmas_lights', tier: 0, name: 'Christmas lights', cost: 30, perk: { write: 1 },
         blurb: 'Up all year. Marcel says they are for the vibe. They are.' },
-      { id: 'leather_couch', tier: 1, name: 'A leather-ish couch', cost: 250, perk: { rest: 0.15 },
+      { id: 'leather_couch', tier: 1, name: 'A leather-ish couch', cost: 250, perk: { rest: 0.08 },
         blurb: 'One cushion is leather. The rest are hope.' },
-      { id: 'acoustic_panels', tier: 1, name: 'Acoustic panels', cost: 300, perk: { rehearse: 0.1 },
+      { id: 'acoustic_panels', tier: 1, name: 'Acoustic panels', cost: 300, perk: { rehearse: 0.03 },
         blurb: 'Real ones, not egg crates. The vacuum repair man downstairs sends a thank-you card.' },
-      { id: 'real_pa', tier: 1, name: 'A real PA', cost: 600, perk: { rehearse: 0.1, write: 1 },
+      { id: 'real_pa', tier: 1, name: 'A real PA', cost: 600, perk: { rehearse: 0.03, write: 1 },
         blurb: 'You can finally hear Marcel at rehearsal. Mixed blessing.' },
       { id: 'disco_ball', tier: 1, name: 'Disco ball', cost: 90, perk: { mood: 1 },
         blurb: 'Nobody admits who bought it. Everybody looks up when it turns.' },
       { id: 'iso_booth', tier: 2, name: 'Isolation booth', cost: 1200, perk: { record: 1 },
         blurb: 'A soundproof box for vocals. Marcel treats it as a dressing room.' },
-      { id: 'band_lounge', tier: 2, name: 'Band lounge', cost: 900, perk: { rest: 0.15 },
+      { id: 'band_lounge', tier: 2, name: 'Band lounge', cost: 900, perk: { rest: 0.08 },
         blurb: 'Couches, a lamp, a board game with half the pieces. Burnout melts.' },
       { id: 'espresso', tier: 2, name: 'Espresso machine', cost: 500, perk: { write: 1 },
         blurb: 'Songs get written at 2 a.m. now. Some of them are good.' },
@@ -7428,7 +7431,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         blurb: 'Purple for metal, red for anger, blue for Kenji.' },
       { id: 'catering', tier: 3, name: 'Hot catering', cost: 2000, perk: { mood: 1 },
         blurb: 'Perogies, hot, every day. Baba inspects the kitchen and approves. Once.' },
-      { id: 'green_room', tier: 3, name: 'A green room that is green', cost: 1500, perk: { rest: 0.15 },
+      { id: 'green_room', tier: 3, name: 'A green room that is green', cost: 1500, perk: { rest: 0.08 },
         blurb: 'Someone finally painted it. The band rests like royalty.' },
       { id: 'hot_tub', tier: 3, name: 'A hot tub', cost: 4000, perk: { recover: 1 },
         blurb: 'Under the arena, next to the Zamboni. Nobody asks how.' },
@@ -7440,7 +7443,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         blurb: 'Rust holds it together. Rust and faith. The side door opens from the outside only.' },
       { tier: 1, id: 'fifteen', kind: '15-passenger van + trailer', price: 3500, era: 'local', space: 6, comfort: 3, condition: 84, wear: 0.9, breakdown: 0.85,
         blurb: 'An ex-church van with a trailer whose hitch squeaks in every key. Room for the whole band and the merch.' },
-      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 9000, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
+      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 6500, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
         blurb: 'High roof. You can stand up inside. Nobody does, but you can.' },
       { tier: 3, id: 'bus', kind: 'Tour bus', price: 30000, era: 'world', space: 14, comfort: 5, condition: 96, wear: 0.65, breakdown: 0.6,
         blurb: 'Bunks, a lounge and a tiny toilet with a big sign. You made it. Kenji still drives.' }
@@ -7515,6 +7518,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       move: [{ who: 'marcel', text: 'A real room. With a door that locks. I will need a mirror by the door.' }],
       van: [{ who: 'jaxon', text: 'NEW VAN. baba says it is "a lot of van". she means it as a compliment' }],
       merchUnlock: [{ who: 'marcel', text: 'New merch. I have approved the designs. I have also designed the designs.' }],
+      evicted: [{ who: 'marcel', text: 'The landlord changed the locks. Three weeks behind on rent, apparently. We are moving back. My mirror is coming with us.' }],
       stickersMoved: 'Every sticker from the old van moved over, one by one, with a hair dryer.'
     }
   };
@@ -9917,7 +9921,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     var dc = GG.drama ? GG.drama.botCardChoice(state, card, style) : null;   // v0.4: the avg bot sometimes refuses an ultimatum
     if (dc != null) return dc;
-    if (style === 'good') return best;
+    if (style === 'good' || (GG.shop && GG.shop.card(card.id))) return best;   // v0.8: shop cards show the price/rent on the button: bots read it
     var rng = GG.rngFor(state);
     return rng.chance(econ().bot.avgSmart) ? best : rng.int(0, card.choices.length - 1);
   };
@@ -10037,7 +10041,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   songs.EXTRA_SECTIONS = EXTRAS;
 
   function E() { return GG.content.economy.songs; }
-  function SH() { var e = GG.content.economy.shop; return e || { songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 }, jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 } }; }
+  function SH() { var e = GG.content.economy.shop; return e || { songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 }, jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 } }; }
   function gearOf(g) {
     var o = { lanes: g && g.lanes >= 1 ? Math.min(g.lanes, C.LANES.length) : 4, doubleKick: !!(g && g.doubleKick) };
     o.sections = g && Array.isArray(g.sections) ? EXTRAS.filter(function (x) { return g.sections.indexOf(x) >= 0; }) : [];
@@ -16596,15 +16600,15 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   var S = GG.shop = GG.shop || {};
 
   var DEF = {
-    cardFrom: 3, cardGap: 3, outroSongs: 3, soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16,
-    gigBonus: { quality: [0, 0.5, 1.5, 2.5], lane: 0.25, pedal: 0.25 }, writeBonus: [0, 0.5, 1, 2], recordBonus: [0, 0.25, 0.5, 1],
-    crowdBonus: [0, 0.5, 1, 2], songs: { fillHook: 4, rideHook: 3, outroHook: 5, soloHook: 4, soloWeight: 0.5, outroWeight: 0.5 },
+    cardFrom: 3, cardGap: 3, outroSongs: 3, soloSongs: 4, soloRetry: 10, soloAutoWeeks: 16, rentLateWeeks: 2,
+    gigBonus: { quality: [0, 0.5, 1, 2], lane: 0.25, pedal: 0.25 }, writeBonus: [0, 0.5, 1, 1.5], recordBonus: [0, 0.25, 0.5, 1],
+    crowdBonus: [0, 0.5, 1, 2], songs: { fillHook: 3, rideHook: 2, outroHook: 4, soloHook: 3, soloWeight: 0.5, outroWeight: 0.5 },
     jam: { outro: 0.6, solo: 0.5, tomFill: 0.6, ride: 0.5, pedalRun: 0.85 }, soloCrowd: 3, tradeIn: 0.3, tradeInMin: 150, stickersMax: 160,
     merch: { buyRate: 0.04, crowdRef: 50, crowdExp: 0.7, variety: 0.1, varietyMax: 5, grade: { S: 1.5, A: 1.25, B: 1, C: 0.75, D: 0.45 },
       fit: [0.6, 0.4], elasticity: 1.6, curveMax: 2.2, noise: [0.85, 1.15], superfan: 1.5, superfanRef: 0.06, opening: 0.6, flyBoxes: 2, priceRange: [0.5, 3],
       misprint: { units: 50, weeks: 8, minFans: 300 } },
-    bot: { good: { cushion: 1200, kitCushion: 1500, vanCushion: 3000, rentWeeks: 20, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
-      avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 } }
+    bot: { good: { cushion: 1200, kitCushion: 1500, vanCushion: 1500, rentWeeks: 20, downsize: 8, upgradeCushion: 1500, merchCushion: 400, merchGigs: 3 },
+      avg: { chance: 0.3, cushion: 900, kitCushion: 2500, vanCushion: 6000, rentWeeks: 40, downsize: 5, upgradeCushion: 3000, merchCushion: 700, merchGigs: 2 } }
   };
   function isObj(o) { return o && typeof o === 'object' && !Array.isArray(o); }
   function merge(a, b) { var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = isObj(a[k]) && isObj(b[k]) ? merge(a[k], b[k]) : b[k]; return o; }
@@ -16687,6 +16691,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       });
     }
     syncVan(s);
+    var freshMerch = !s.merch || typeof s.merch !== 'object' || !Array.isArray(s.merch.unlocked) || !s.merch.unlocked.length;
     if (!s.merch || typeof s.merch !== 'object' || Array.isArray(s.merch)) s.merch = defaultMerch(s);
     var m = s.merch, dm = defaultMerch(s);
     Object.keys(dm).forEach(function (k) {
@@ -16696,10 +16701,15 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       else if (typeof dm[k] === 'number') { if (!isFinite(m[k])) m[k] = 0; }
       else if (!isObj(m[k])) m[k] = {};
     });
-    S.unlockMerch(s, true);
+    if (freshMerch) S.unlockMerch(s, true);   // a new career / an old save: everything its era has opened, quietly (later: weekly, with news)
     return s;
   };
-  S.init = function (s) { return S.ensure(s); };
+  // A new career: the band's own tier-0 vehicle name (world.defaultVan names every van The Moose Hearse).
+  S.init = function (s) {
+    S.ensure(s);
+    if (s.van && !s.van.tier) { s.van.baseName = S.vanName(s.bandId, 0); s.van.name = s.van.baseName; }
+    return s;
+  };
   S.migrate = function (s) { return S.ensure(s); };
 
   /* ---- Gear: lanes, the pedal, kit quality, extra sections ------------------------------------------------------- */
@@ -17043,6 +17053,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (s.fund < cost) return fail('Not enough in the fund (' + money(cost) + ').');
     return { ok: true, cost: cost, units: boxes * def.perBox };
   };
+  // The first shirt order of a band whose misprint card exists (Hail Damage: HALE DAMAGE) comes back misprinted.
+  function misprintDue(s) {
+    var m = s.merch, c = S.card('money_merch_misprint');
+    return !!c && !m.misprint && !m.shirtsOrdered && (!s.seenCards || s.seenCards.money_merch_misprint == null) && gateOk(s, c);
+  }
   // Buys `boxes` boxes of an item (paid up front). The item goes on the table if it wasn't. The very first shirt
   // order comes back misprinted (HALE DAMAGE): the batch waits for next Monday's card.
   S.buyStock = function (s, id, boxes) {
@@ -17050,7 +17065,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     if (!q.ok) return q;
     var m = s.merch, d = spend(s, q.cost), misprint = null;
     m.spent += q.cost;
-    if (id === 'shirt' && !m.misprint && !m.shirtsOrdered && (!s.seenCards || s.seenCards.money_merch_misprint == null) && S.card('money_merch_misprint')) {
+    if (id === 'shirt' && misprintDue(s)) {
       var n = Math.min(q.units, Q().merch.misprint.units);
       m.misprint = misprint = { merchId: 'shirt', week: s.totalWeek, status: 'pending', units: n };
       m.stock.shirt = (m.stock.shirt || 0) + q.units - n;
@@ -17278,7 +17293,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var def = S.merchDef(id);
       if (!def || !has(m.unlocked, id)) return;
       var units = v.stock[id] * def.perBox;
-      if (id === 'shirt' && !m.misprint && !m.shirtsOrdered && seen(s, 'money_merch_misprint') == null && S.card('money_merch_misprint')) {
+      if (id === 'shirt' && misprintDue(s)) {
         var n = Math.min(units, Q().merch.misprint.units);
         m.misprint = { merchId: 'shirt', week: s.totalWeek, status: 'pending', units: n };
         m.stock.shirt = (m.stock.shirt || 0) + units - n;
@@ -17317,7 +17332,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   S.botValue = function (s, v) {
     if (!v) return 0;
     var val = 0, W = GG.content.economy.bot.value;
-    if (v.move != null) { var rent = S.spaceDef(s, v.move).rent || 0; val += s.fund > rent * 24 ? 6 : -4; }
+    if (v.move != null) {   // a move is only worth it when the rent is comfortably covered
+      var rent = S.spaceDef(s, v.move).rent || 0, bills = GG.career && GG.career.upkeep ? GG.career.upkeep(s) : 0;
+      val += s.fund > rent * 24 + bills * 4 ? 6 : -20;
+    }
     if (v.kit != null) val += 8;
     if (v.van != null) val += 10;
     if (v.gear) val += 5;
@@ -17333,7 +17351,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   // the misprint turning collectable, stickers crossed out. -> wrap.shop = { rent, unlocks: [{ kind, id|ids }], misprint }
   S.weekly = function (s, rng, wrap) {
     S.ensure(s);
-    var R = Q(), out = { rent: S.rent(s), unlocks: [], misprint: null, perks: null }, d = {};
+    var R = Q(), out = { rent: S.rent(s), unlocks: [], misprint: null, perks: null, evicted: null, rentLate: 0 }, d = {};
     if (!S.ownsSection(s, 'outro') && s.stats && s.stats.songsWritten >= R.outroSongs && S.unlockSection(s, 'outro', 'songs')) {
       out.unlocks.push({ kind: 'section', id: 'outro' });
       chat(s, K().lines.outro, null);
@@ -17354,8 +17372,22 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       if (p.recover) GG.career.applyEffects(s, { burnout: -p.recover }, d);
     }
     var rec = (p.record || 0) + (R.recordBonus[s.gear.quality] || 0);
-    if (rec && GG.labels && GG.labels.inSession && s.session && GG.labels.applyProduction) GG.labels.applyProduction(s, rec, d);
+    if (rec && GG.labels && GG.labels.inSession && GG.labels.inSession(s) && GG.labels.applyProduction) GG.labels.applyProduction(s, rec, d);   // the studio perk + your kit on the takes
     out.perks = d;
+    // Rent arrears: `rentLateWeeks` weeks in a row with less than two weeks' rent in the fund and the landlord changes the
+    // locks: the band moves down a tier (the couch comes along). Keeps a bad move from snowballing into parents' loans.
+    if ((s.spaceTier || 0) > 0) {
+      var rent = S.rent(s);
+      s.rentLate = s.fund < rent * 2 ? (s.rentLate || 0) + 1 : 0;
+      if (s.rentLate >= R.rentLateWeeks) {
+        var from = s.space, down = S.spaceDef(s, s.spaceTier - 1);
+        s.spaceTier -= 1; s.space = down.id; s.rentLate = 0;
+        s.spaceUpgrades = s.spaceUpgrades.filter(function (id) { var u = S.upgradeDef(id); return u && u.moves; });
+        out.evicted = { from: from, to: down.id };
+        chat(s, K().lines.evicted, null);
+        GG.emit('shop:move', { from: from, to: down.id, tier: s.spaceTier, evicted: true });
+      }
+    } else s.rentLate = 0;
     var m = s.merch, mp = m.misprint, MP = R.merch.misprint;
     if (mp && mp.status === 'pending' && (!S.card('money_merch_misprint') || s.totalWeek - mp.week > 6)) mp.status = 'boxed';   // no card came: into the box
     if (mp && mp.status === 'boxed' && s.totalWeek - mp.week >= MP.weeks && s.fans >= MP.minFans) {
@@ -17368,12 +17400,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       GG.emit('shop:misprint', { status: 'collector', units: mp.units });
     }
     S.stickers(s);
+    out.rentLate = s.rentLate || 0;
     if (wrap) wrap.shop = out;
     return out;
   };
 
   /* ---- Bots (tools/balance.js, tests) ----------------------------------------------------------------------------- */
   function cushion(s, base) { return Math.max(base, GG.career && GG.career.upkeep ? GG.career.upkeep(s) * 6 : base); }
+  // Big buys (a van, a kit) keep 8 weeks of bills and wait while a studio session is running (it bills every week).
+  function bigCushion(s, base) {
+    return s.session ? Infinity : Math.max(cushion(s, base), GG.career && GG.career.upkeep ? GG.career.upkeep(s) * 8 : base);
+  }
   // The merch the bot wants on the table: the best money-makers per box of van space.
   function botTable(s) {
     var m = s.merch, crowd = crowdGuess(s, null);
@@ -17403,18 +17440,20 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   S.botWeek = function (s, style) {
     S.ensure(s);
     var B = Q().bot[style === 'good' ? 'good' : 'avg'], rng = seeded(s, 'bot');
+    if ((s.spaceTier || 0) > 0 && s.fund < S.rent(s) * B.downsize) S.move(s, s.spaceTier - 1);   // broke: downsize (every week)
     if (style !== 'good' && !rng.chance(B.chance)) return;
     var order = s.genre === 'metal' ? ['pedal', 'toms', 'ride'] : ['toms', 'ride', 'pedal'];
     for (var i = 0; i < order.length; i++) {
       var g = S.gearDef(order[i]);
       if (g && S.canBuyGear(s, g.id).ok && s.fund - g.cost >= cushion(s, B.cushion)) { S.buyGear(s, g.id); break; }
     }
-    var next = S.kitDef((s.gear.quality || 0) + 1);
-    if (next && S.canBuyKit(s, next.tier).ok && s.fund - next.cost >= cushion(s, B.kitCushion)) S.buyKit(s, next.tier);
-    var vt = (s.van.tier || 0) + 1, vq = S.vanTierDef(vt);
-    if (vt < C.VAN_TIERS.length && vq.tier === vt && S.canBuyVan(s, vt).ok && s.fund - S.vanQuote(s, vt).net >= cushion(s, B.vanCushion)) S.buyVan(s, vt);
+    var vt = (s.van.tier || 0) + 1, vq = S.vanTierDef(vt);   // a bigger van first (merch space, comfort, fewer breakdowns)...
+    if (vt < C.VAN_TIERS.length && vq.tier === vt && S.canBuyVan(s, vt).ok && s.fund - S.vanQuote(s, vt).net >= bigCushion(s, B.vanCushion)) S.buyVan(s, vt);
+    var next = S.kitDef((s.gear.quality || 0) + 1);   // ...then the kit
+    if (next && S.canBuyKit(s, next.tier).ok && s.fund - next.cost >= bigCushion(s, B.kitCushion)) S.buyKit(s, next.tier);
     var avail = S.availableTier(s), sd = S.spaceDef(s, avail);
-    if (avail > (s.spaceTier || 0) && s.fund >= (sd.rent || 0) * B.rentWeeks + cushion(s, B.cushion)) S.move(s, avail);
+    if ((s.spaceTier || 0) > 0 && s.fund < S.rent(s) * B.downsize) S.move(s, s.spaceTier - 1);   // a sensible band downsizes before the landlord does
+    else if (avail > (s.spaceTier || 0) && s.fund >= (sd.rent || 0) * B.rentWeeks + cushion(s, B.cushion)) S.move(s, avail);
     var ups = S.upgrades(s).filter(function (u) { return !u.owned && u.can; }).sort(function (a, b) { return a.cost - b.cost; });
     if (ups.length && s.fund - ups[0].cost >= cushion(s, B.upgradeCushion)) S.buyUpgrade(s, ups[0].id);
     botMerch(s, B);
@@ -17472,7 +17511,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 //   low cut / high cut (thin and cheap -> full and punchy) and the reverb send. kitQuality() ; qualityFor(tier) ; kitFor(genre,
 //   tier) (the derived kit, pure) ; renderOffline({ quality }) (default: the live career's tier, else 2 = the v0.6.1 reference).
 //   Extra sections: an 'outro' plays full then its last bar rings (one held chord past the end; the song's tail waits for
-//   it); a 'solo' is Dana's (role 'solo' for every bar: the genre's lead over the band, no vocal hits).
+//   it); a 'solo' is Dana's (role 'solo' for every bar: the genre's lead over the band, no vocal hits) over a stripped kit
+//   (only the drum hits on the beat play, exactly what the gig chart asks for).
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -18203,6 +18243,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           var at = beat + step / 4;
           events.push({ beat: at, kind: 'step', section: name, entry: e, bar: bar, step: step, role: role });
           if (opts.drums === false) continue;
+          if (name === 'solo' && step % 4) continue;   // v0.8: Dana's solo: you lay back on a stripped kit (the beat only, like the gig chart)
           for (var l = 0; l < p.lanes; l++) {
             if (sec[l].charCodeAt(step) !== HIT) continue;
             var ev = { beat: at, kind: 'drum', lane: C.LANES[l], li: l, section: name };

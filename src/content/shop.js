@@ -15,8 +15,8 @@
 //   merch: [{ id, name, tier, genre?: [..], band?: [..], cost ($/unit), price (suggested $), perBox (units per box), appeal
 //     (0.5..2, how many people want one), season?: { winter|spring|summer|fall: mult }, blurb, hidden?: true (misprint only) }]
 //   lines: { outro / solo / misprintCollector / move / van / merchUnlock / evicted: [{ who, text }] (group chat), stickersMoved }
-// } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: +/week,
-//            mood: +/week (everyone), recover: extra burnout recovery/week }
+// } PERK = { rehearse: +x (gain mult), rest: +x, write: +quality, record: +production per studio week, chemistry: + every
+//            other week, mood: + every other week (everyone), recover: extra burnout recovery/week }
 // No gong on the drum kit, ever.
 (function (GG) {
   GG.content.shop = {
@@ -45,34 +45,34 @@
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
         blurb: 'Where it all started. Free, cold, and the neighbours have opinions.' },
-      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Room 3', rent: 60, era: 'local', perk: { rehearse: 0.2 },
+      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Room 3', rent: 60, era: 'local', perk: { rehearse: 0.08 },
         blurb: 'A windowless room above a vacuum repair shop. Carpet on the walls, a sign that says NO DRUMS AFTER 11.' },
-      { tier: 2, id: 'pro_studio', name: 'Prairie Dog Sound', rent: 150, era: 'signed', perk: { rehearse: 0.2, write: 2, record: 1 },
+      { tier: 2, id: 'pro_studio', name: 'Prairie Dog Sound', rent: 150, era: 'signed', perk: { rehearse: 0.08, write: 1, record: 1 },
         blurb: 'Rehearsal and recording in an old grain co-op. An isolation booth, and an engineer named Gwen who has heard it all.' },
       { tier: 3, id: 'arena_backstage', name: 'Backstage at the Potash Place', rent: 300, era: 'world',
-        perk: { rehearse: 0.2, write: 2, record: 1, rest: 0.4, recover: 1 },
+        perk: { rehearse: 0.08, write: 1, record: 1, rest: 0.2, recover: 1 },
         blurb: 'Your own room under the arena. A star on the door. The hockey team\'s laundry is next door.' }
     ],
     upgrades: [
-      { id: 'curb_couch', tier: 0, name: 'The curb couch', cost: 40, perk: { rest: 0.1 }, moves: true,
+      { id: 'curb_couch', tier: 0, name: 'The curb couch', cost: 40, perk: { rest: 0.05 }, moves: true,
         blurb: 'Free from the curb on garbage day, plus $40 to get it home. Smells like 1997. Comes with you if you move.' },
-      { id: 'egg_foam', tier: 0, name: 'Egg-crate foam', cost: 80, perk: { rehearse: 0.1 },
+      { id: 'egg_foam', tier: 0, name: 'Egg-crate foam', cost: 80, perk: { rehearse: 0.03 },
         blurb: 'Stapled to every wall. The neighbours stop calling the city. Mostly.' },
       { id: 'beer_fridge', tier: 0, name: 'Dad\'s old beer fridge', cost: 120, perk: { chemistry: 1 }, moves: true,
         blurb: 'Hums in E flat. Holds pop, perogies and one mystery jar. Everyone hangs around it.' },
       { id: 'xmas_lights', tier: 0, name: 'Christmas lights', cost: 30, perk: { write: 1 },
         blurb: 'Up all year. Marcel says they are for the vibe. They are.' },
-      { id: 'leather_couch', tier: 1, name: 'A leather-ish couch', cost: 250, perk: { rest: 0.15 },
+      { id: 'leather_couch', tier: 1, name: 'A leather-ish couch', cost: 250, perk: { rest: 0.08 },
         blurb: 'One cushion is leather. The rest are hope.' },
-      { id: 'acoustic_panels', tier: 1, name: 'Acoustic panels', cost: 300, perk: { rehearse: 0.1 },
+      { id: 'acoustic_panels', tier: 1, name: 'Acoustic panels', cost: 300, perk: { rehearse: 0.03 },
         blurb: 'Real ones, not egg crates. The vacuum repair man downstairs sends a thank-you card.' },
-      { id: 'real_pa', tier: 1, name: 'A real PA', cost: 600, perk: { rehearse: 0.1, write: 1 },
+      { id: 'real_pa', tier: 1, name: 'A real PA', cost: 600, perk: { rehearse: 0.03, write: 1 },
         blurb: 'You can finally hear Marcel at rehearsal. Mixed blessing.' },
       { id: 'disco_ball', tier: 1, name: 'Disco ball', cost: 90, perk: { mood: 1 },
         blurb: 'Nobody admits who bought it. Everybody looks up when it turns.' },
       { id: 'iso_booth', tier: 2, name: 'Isolation booth', cost: 1200, perk: { record: 1 },
         blurb: 'A soundproof box for vocals. Marcel treats it as a dressing room.' },
-      { id: 'band_lounge', tier: 2, name: 'Band lounge', cost: 900, perk: { rest: 0.15 },
+      { id: 'band_lounge', tier: 2, name: 'Band lounge', cost: 900, perk: { rest: 0.08 },
         blurb: 'Couches, a lamp, a board game with half the pieces. Burnout melts.' },
       { id: 'espresso', tier: 2, name: 'Espresso machine', cost: 500, perk: { write: 1 },
         blurb: 'Songs get written at 2 a.m. now. Some of them are good.' },
@@ -80,7 +80,7 @@
         blurb: 'Purple for metal, red for anger, blue for Kenji.' },
       { id: 'catering', tier: 3, name: 'Hot catering', cost: 2000, perk: { mood: 1 },
         blurb: 'Perogies, hot, every day. Baba inspects the kitchen and approves. Once.' },
-      { id: 'green_room', tier: 3, name: 'A green room that is green', cost: 1500, perk: { rest: 0.15 },
+      { id: 'green_room', tier: 3, name: 'A green room that is green', cost: 1500, perk: { rest: 0.08 },
         blurb: 'Someone finally painted it. The band rests like royalty.' },
       { id: 'hot_tub', tier: 3, name: 'A hot tub', cost: 4000, perk: { recover: 1 },
         blurb: 'Under the arena, next to the Zamboni. Nobody asks how.' },
@@ -92,7 +92,7 @@
         blurb: 'Rust holds it together. Rust and faith. The side door opens from the outside only.' },
       { tier: 1, id: 'fifteen', kind: '15-passenger van + trailer', price: 3500, era: 'local', space: 6, comfort: 3, condition: 84, wear: 0.9, breakdown: 0.85,
         blurb: 'An ex-church van with a trailer whose hitch squeaks in every key. Room for the whole band and the merch.' },
-      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 7500, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
+      { tier: 2, id: 'sprinter', kind: 'Sprinter', price: 6500, era: 'signed', space: 9, comfort: 4, condition: 92, wear: 0.75, breakdown: 0.7,
         blurb: 'High roof. You can stand up inside. Nobody does, but you can.' },
       { tier: 3, id: 'bus', kind: 'Tour bus', price: 30000, era: 'world', space: 14, comfort: 5, condition: 96, wear: 0.65, breakdown: 0.6,
         blurb: 'Bunks, a lounge and a tiny toilet with a big sign. You made it. Kenji still drives.' }
