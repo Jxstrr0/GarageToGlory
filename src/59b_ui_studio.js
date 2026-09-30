@@ -14,7 +14,15 @@
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts, V = ui.v5;
   function S() { return GG.state; }
-  var KIND = { ep: { name: 'EP', range: [4, 5], blurb: '4–5 songs. A calling card. Cheap to press.' }, album: { name: 'Album', range: [8, 10], blurb: '8–10 songs. A statement. Marcel wants a gatefold.' } };
+  var KIND = { ep: { name: 'EP', range: [4, 5], blurb: '4–5 songs. A calling card. Cheap to press.' }, album: { name: 'Album', range: [8, 10], blurb: '8–10 songs. A statement. {front} wants a gatefold.' } };
+  // v0.9: the title ideas' reactions come from the lineup (the silent one gives a thumbs-up).
+  var TITLE_REACT = ['{n} likes it', '{n} would like to discuss', '{n} approves', '{n} is already making the shirt'];
+  function titleReact(t) {
+    var st = S(), act = st ? ui.active(st) : [], h = GG.hashSeed(t) >>> 0, m = act.length ? act[h % act.length] : null;
+    if (!m) return 'The band approves';
+    var n = ui.who(m.id).short;
+    return ui.isSilent(m.id, st) ? n + ': 👍' : TITLE_REACT[(h >>> 3) % TITLE_REACT.length].replace('{n}', n);
+  }
 
   /* ======================================================================================================
      Procedural covers
@@ -66,7 +74,7 @@
   var TITLE_FALLBACK = {
     metal: { a: ['Hail', 'Frost', 'Wheat', 'Moose', 'Blizzard', 'Gravel', 'Prairie', 'Tundra', 'Canola', 'Pothole', 'Slush', 'Grain'],
       b: ['Apocalypse', 'Dominion', 'Reckoning', 'Requiem', 'Eternal Winter', 'Abyss', 'Throne', 'Warlord', 'Oblivion', 'Crusade'],
-      forms: ['{a} {b}', 'The {b} of {a}', '{b} Over Saskatoon', 'Ride the {a}', '{a} of the {b}', 'Songs for a {a} {b}'] },
+      forms: ['{a} {b}', 'The {b} of {a}', '{b} Over {city}', 'Ride the {a}', '{a} of the {b}', 'Songs for a {a} {b}'] },
     punk: { a: ['Parking', 'Laundromat', 'Slush', 'Bus Pass', 'Transit', 'Landlord', 'Pothole', 'Minimum'], b: ['Riot', 'Tickets', 'Wage', 'Problems', 'Nation', 'Blues', 'Attack'],
       forms: ['{a} {b}', 'No More {a}', '{a} {b} (Live in a Basement)', 'Everything Is {a}'] },
     rock: { a: ['Highway', 'Gravel', 'Neon', 'Northern', 'Midnight', 'Prairie', 'Truck Stop'], b: ['Kings', 'Nights', 'Lights', 'Hearts', 'Radio', 'Thunder', 'Horizon'],
@@ -421,7 +429,7 @@
       s.body.appendChild(el('div.kind-row', ['ep', 'album'].map(function (k) {
         return btn('.pick-card' + (k === kind ? '.on' : ''), { testid: 'kind-' + k, disabled: !can[k], onclick: function () {
           if (k === kind) return; var r = KIND[k].range; set({ kind: k, tracks: best.slice(0, Math.min(r[1], best.length)) });
-        } }, [el('b', KIND[k].name), el('span.tiny', can[k] ? KIND[k].blurb : k === 'album' ? 'Needs a label deal (or DIY) and 8 songs.' : KIND[k].blurb)]);
+        } }, [el('b', KIND[k].name), el('span.tiny', can[k] ? V.fill(KIND[k].blurb) : k === 'album' ? 'Needs a label deal (or DIY) and 8 songs.' : V.fill(KIND[k].blurb))]);
       })));
       // 2 studio
       s.body.appendChild(el('div.caps.step-h', '2 · Where?'));
@@ -435,7 +443,7 @@
       }) : el('p.dim.small', 'No studios in the phone book. (Content missing.)')));
       // 3 producer
       s.body.appendChild(el('div.caps.step-h', '3 · Who is producing?'));
-      var plist = [{ id: null, name: 'Nobody (you produce it)', blurb: 'Free. Marcel will ask for more reverb every four minutes.', costPerWeek: 0 }].concat(producers);
+      var plist = [{ id: null, name: 'Nobody (you produce it)', blurb: 'Free. {front} will ask for more reverb every four minutes.', costPerWeek: 0 }].concat(producers);
       s.body.appendChild(el('div.stack.tight', plist.map(function (x) {
         var bon = [x.production ? 'Production +' + x.production : null, x.polish ? 'Polish +' + x.polish : null, x.hook ? 'Hook +' + x.hook : null].filter(Boolean);
         return btn('.pick-card.wide' + (x.id === pid ? '.on' : '') + (x.locked ? '.locked' : ''), { testid: 'producer-' + (x.id || 'none'), disabled: !!x.locked, onclick: function () { if (!x.locked) set({ producerId: x.id }); } }, [
@@ -497,7 +505,7 @@
     if (!st || !song || !ui.playGig || !GG.gig || !GG.gig.session) { if (done) done(null); return false; }
     var ses = st.session || {}, sd = V.studioDef(ses.studioId);
     var shadow = Object.assign({}, st, { liveGig: null });
-    var gig = { venueId: 'studio:' + (sd.id || 'x'), name: sd.name || 'The studio', city: sd.city || st.city || 'Saskatoon', tier: 1, kind: 'studio',
+    var gig = { venueId: 'studio:' + (sd.id || 'x'), name: sd.name || 'The studio', city: V.fill(sd.city || st.city || 'town'), tier: 1, kind: 'studio',
       capacity: 1, deal: 'flat', pay: 0, gas: 0, quirk: '', source: 'studio', setSize: 1 };
     return ui.playGig(gig, function (r) {
       var score = r ? takeScore(r) : null;
@@ -547,7 +555,7 @@
       if (weekGo && ui.runStudioWeek) ui.append(s.foot, [btn('.btn.ghost', { testid: 'btn-studio-close', onclick: function () { ui.close(s.id); } }, 'Later'),
         btn('.btn.primary.big.grow', { testid: 'btn-studio-go', onclick: function () { ui.runStudioWeek(); } }, 'Record this week 🎙')]);
       else if (done && (!rec || rec.status === 'recorded')) s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-mix', onclick: function () { ui.close(s.id); ui.openRelease(); } }, 'Mix it & plan the release'));
-      else s.foot.appendChild(btn('.btn.block', { testid: 'btn-studio-close', onclick: function () { ui.close(s.id); } }, 'Back to the garage'));
+      else s.foot.appendChild(btn('.btn.block', { testid: 'btn-studio-close', onclick: function () { ui.close(s.id); } }, 'Back to ' + ui.space(st)));
     }
   });
 
@@ -558,8 +566,8 @@
   function promoOptions(st) {
     var x = V.call('promoOptions', st);
     if (Array.isArray(x) && x.length) return x;
-    return [{ id: 0, name: 'Word of mouth', cost: 0, blurb: 'Jaxon tells his cousins.' }, { id: 1, name: 'Posters on every pole', cost: 60, blurb: 'Staples: 4,000. Poles: 3.' },
-      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'Billboard on Circle Drive', cost: 450, blurb: 'Visible from the Tim Hortons drive-thru.' }];
+    return [{ id: 0, name: 'Word of mouth', cost: 0, blurb: '{filler} tells some cousins.' }, { id: 1, name: 'Posters on every pole', cost: 60, blurb: 'Staples: 4,000. Poles: 3.' },
+      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'A billboard in {city}', cost: 450, blurb: 'Visible from the Tim Hortons drive-thru.' }];
   }
   function releaseWeeks(st) {
     var x = V.call('releaseWeeks', st);
@@ -617,7 +625,7 @@
         s.body.appendChild(el('p.small.dim', { style: 'margin-bottom:8px' }, 'Three ideas from the band chat. Or type your own.'));
         D.titles.forEach(function (t, i) {
           s.body.appendChild(btn('.choice' + (!D.custom && D.titleIdx === i ? '.on' : ''), { testid: 'title-opt-' + i, onclick: function () { D.titleIdx = i; D.custom = ''; s.rerender(d); } },
-            [el('span.cl', t), el('span.ch', ['Marcel likes it', 'Dana would like to discuss', 'Jaxon’s baba approves', 'Kenji: 👍'][(GG.hashSeed(t) >>> 0) % 4])]));
+            [el('span.cl', t), el('span.ch', titleReact(t))]));
         });
         var inp = el('input.text-in', { testid: 'title-input', type: 'text', maxLength: 40, placeholder: 'Type your own title…', value: D.custom || '' });
         inp.addEventListener('input', function () { D.custom = inp.value; var h = s.body.querySelector('.rel-head h2'); if (h) h.textContent = titleOf(D); });
@@ -645,7 +653,7 @@
           var id = p.id != null ? p.id : p.level, on = D.promo.indexOf(id) >= 0, pays = p.labelPays != null ? p.labelPays : label;
           return btn('.pick-card.wide' + (on ? '.on' : ''), { testid: 'promo-' + id, disabled: p.bought || (p.affordable === false && !on), onclick: function () {
             var i = D.promo.indexOf(id); if (i >= 0) D.promo.splice(i, 1); else D.promo.push(id); s.rerender(d);
-          } }, [el('div.row', [el('span.ck', on || p.bought ? '✓' : ''), el('b.grow', p.name), el('span.tag' + (p.cost ? '' : '.amber'), p.bought ? 'bought' : p.cost ? (pays ? 'label pays' : U.fmtMoney(p.cost)) : 'free')]),
+          } }, [el('div.row', [el('span.ck', on || p.bought ? '✓' : ''), el('b.grow', V.fill(p.name)), el('span.tag' + (p.cost ? '' : '.amber'), p.bought ? 'bought' : p.cost ? (pays ? 'label pays' : U.fmtMoney(p.cost)) : 'free')]),
             el('span.tiny.dim', V.fill(p.blurb || (p.promo ? 'Hype +' + p.promo : '')))]);
         })));
         var cov = D.covers[D.coverIdx];
@@ -663,7 +671,7 @@
         if (!album || album.error) { ui.toast(album && album.error ? V.fill(album.error) : 'The pressing plant lost the masters. Try again.', { kind: 'bad' }); return; }
         V.sfx('cheer'); V.sync();
         ui.close(s.id);
-        ui.toast('“' + title + '” comes out ' + V.weekLabel(D.week) + '. Marcel has already ordered a cape to match the cover.', { kind: 'good' });
+        ui.toast('“' + title + '” comes out ' + V.weekLabel(D.week) + '. ' + V.fill('{front} has already ordered an outfit to match the cover.'), { kind: 'good' });
         if (d.done) setTimeout(function () { d.done(album); }, 0);
       } }, 'Release it! 💿'));
     }

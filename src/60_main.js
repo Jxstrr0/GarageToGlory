@@ -3,7 +3,7 @@
 //   GG.main.newCareer({ slot, bandId, player, seed }) ; quickStart({ seed, slot, name, openCard }) ; load(slot)
 //   loadState(state, { slot }) ; enterGarage() ; route() ; beginWeek() ; afterCard() ; wrapWeek() ; nextWeek()
 //   saveTo(slot) ; quitToTitle() ; sync()
-// URL: ?quick=1&seed=N skips the menus (tests/dev).
+// URL: ?quick=1&seed=N skips the menus (tests/dev); v0.9: &band=<bandId> quick-starts that band (default Hail Damage).
 (function (GG) {
   var M = GG.main = GG.main || {};
   var ui = GG.ui;
@@ -17,7 +17,7 @@
     try { return R[fn].apply(R, Array.prototype.slice.call(arguments, 1)); }
     catch (e) { console.error('[main] render.' + fn + ' failed', e); return undefined; }
   }
-  function fill(t) { return t && GG.state && GG.career.fillText ? GG.career.fillText(GG.state, t) : t; }
+  function fill(t) { return t && GG.state ? ui.fill(t, GG.state) : t; }
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
 
   // Pause the 3D loop while a full screen hides it, while the tab is hidden, or when no career is loaded.
@@ -97,9 +97,11 @@
   };
 
   /* ---- Careers ------------------------------------------------------------------------------------- */
+  // v0.9: an unknown band id falls back to Hail Damage (a typo in ?band= must not start a bandless career).
+  function bandIdOk(id) { return id && GG.content.bands && GG.content.bands[id] ? id : 'hail_damage'; }
   M.newCareer = function (o) {
     o = o || {};
-    var st = GG.career.newCareer({ seed: o.seed, bandId: o.bandId || 'hail_damage', slot: String(o.slot || '1'), player: o.player || { name: 'You' },
+    var st = GG.career.newCareer({ seed: o.seed, bandId: bandIdOk(o.bandId), slot: String(o.slot || '1'), player: o.player || { name: 'You' },
       careerDifficulty: o.careerDifficulty });   // v0.6.1 C4: chill | normal | brutal, locked for the career
     setState(st);
     write(st.slot, st); write('auto', st);   // the slot is claimed right away, so Continue works from week 1
@@ -179,8 +181,9 @@
     if (ui.flightDue && ui.flightDue(st)) { ui.playFlight(function () { if (GG.state === st) M.beginWeek(); }); return; }   // v0.7: departure day
     if (st.card && !st.card.resolved) { ui.show('card'); return; }   // offers show up on the whiteboard
     if (ui.announceShowdown && ui.announceShowdown(st)) return;      // v0.6: this week's rival showdown
-    var q = typeof st.quiet === 'string' ? st.quiet : ui.pick(GG.content.lines && GG.content.lines.quietWeek);
-    ui.toast(fill(q) || 'Quiet week. Suspiciously quiet.', { who: 'Quiet week' });
+    // v0.9: the sim's own pick (state.quiet), else the band's pool (flat + byBand, never another band's people)
+    var q = typeof st.quiet === 'string' && ui.ownLines([st.quiet], st).length ? fill(st.quiet) : ui.line(ui.lines('quietWeek', st), null, st);
+    ui.toast(q || 'Quiet week. Suspiciously quiet.', { who: 'Quiet week' });
     if (res.offer) ui.toast('📨 A gig offer came in for this weekend. Check the whiteboard.');
   };
   // After the Monday card: week one teaches the garage, in character.
@@ -189,7 +192,7 @@
     var st = GG.state;
     if (st && st.totalWeek === 1 && !M._taught) {
       M._taught = true;
-      var mate = st.members && st.members[0] ? ui.who(st.members[0].id) : null;
+      var t0 = ui.talkers(st)[0] || (st.members && st.members[0]), mate = t0 ? ui.who(t0.id) : null;   // v0.9: a member who talks
       var who = mate ? (mate.nick || mate.short) : 'The band';
       ui.toast(M.renderOk ? 'Tap the floor to walk around. Tap the whiteboard (or the big button) to plan the week.'
         : 'Tap the whiteboard (or the big button) to plan the week.', { who: who, ms: 6500 });
@@ -258,7 +261,7 @@
     document.addEventListener('visibilitychange', onVisibility);
     updatePause();
     var q = query();
-    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester' });
+    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester', bandId: q.band });
     else ui.show('title');
   };
 

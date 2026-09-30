@@ -247,11 +247,17 @@
     return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (c) { return ('0' + Math.round(c + (255 - c) * t).toString(16)).slice(-2); }).join('');
   }
   function withText(w) { w.text = readable(w.color); return w; }
+  ui.readable = readable;
   function bandOf(state) { var b = GG.content.bands; return b && state && b[state.bandId] || null; }
   // Resolves a speaker/chat id to { id, name, short, nick, color, text, role } (text: colour readable on dark panels). Works for members, npcs, 'player' and raw names.
   ui.who = function (id, state) {
     state = state || GG.state;
     if (!id) return withText({ id: '', name: '???', short: '???', color: '#6f7a96', role: '' });
+    if (id === 'recruit' || String(id).charAt(0) === '@') {   // v0.9 role aliases ('@front', ...) and the drama card's member
+      var rid = ui.speaker(id, state);
+      if (rid && rid !== id) return ui.who(rid, state);
+      if (id !== 'recruit') return withText({ id: id, name: 'The band', short: 'The band', color: '#6f7a96', role: '' });
+    }
     var band = bandOf(state), i, m;
     if (id === 'player' || id === 'you') {
       var p = state && state.player || {};
@@ -270,9 +276,227 @@
     }
     var npc = GG.content.npcs && GG.content.npcs[id];
     if (npc) return withText({ id: id, name: npc.name, short: npc.name, color: npc.color || PALETTE[GG.hashSeed(id) % PALETTE.length], role: npc.role || '' });
+    // v0.9 leak net: another playable band's member never speaks in this career (the sim's speakerOk rule, UI side).
+    if (state && state.bandId && ui.foreignMember(id, state)) return withText({ id: id, name: 'The band', short: 'The band', color: '#6f7a96', role: '' });
     var nice = String(id).replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     return withText({ id: id, name: nice, short: nice, color: PALETTE[GG.hashSeed(id) % PALETTE.length], role: '' });
   };
+  /* ======================================================================================================
+     v0.9 GENRES: band-aware helpers for every screen (plan_contract_0.9 §4.2-4.3). The sim (20_sim_career) owns the real
+     resolvers (fillText's role tokens, career.roleOf / talkers / pool); these call them when they exist and otherwise
+     follow the same rules, so UI copy never shows a raw {token}, a Hail Damage name in another band's career, or a speaker
+     who isn't in this band. Pure reads of GG.state + content; UI randomness only (ui.rng).
+       ui.band(st) · ui.memberDef(id, st) · ui.isSilent(id, st) · ui.active(st) · ui.talkers(st)
+       ui.roleOf(role, st) -> member id|null   (front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any; '@' optional)
+       ui.speaker(id, st) -> a real id ('recruit' and '@role' aliases resolved)
+       ui.tokens(st) -> { front, soloist, ..., space, door, province, homeVenue, superfan, rivalFront, ... } (C.TOKENS)
+       ui.fill(text, st?, vars?) -> career.fillText + any v0.9 token the sim didn't resolve (vars: extra {key}s first)
+       ui.pool(obj, key, st?) -> obj[key] + obj.byBand[bandId][key]   (career.pool when present)
+       ui.lines(key, st?) = ui.pool(content.lines, key) · ui.bandLines(key, st?) = content.lines.byBand[bandId][key]
+       ui.ownLines(list, st?) -> the lines that don't name another band's people (a leak net for flat pools)
+       ui.line(list, fallback, st?) -> one filled line from own lines (else from fallback)
+       ui.space(st, cap?) · ui.spaceKind(st) · ui.genreIcon(genre) · ui.driverOf(st) · ui.superfan(st) · ui.province(st)
+     ====================================================================================================== */
+  var GENRE_ICON = { metal: '🤘', punk: '🧷', rock: '🎸', country: '🤠' };
+  ui.genreIcon = function (genre) { return GENRE_ICON[genre] || '🎵'; };
+  ui.cap = function (s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+  ui.band = function (st) {
+    st = st || GG.state; if (!st) return null;
+    try { if (GG.career && GG.career.band) return GG.career.band(st); } catch (e) { /* fall through */ }
+    return bandOf(st);
+  };
+  ui.memberDef = function (id, st) {
+    var b = ui.band(st || GG.state);
+    return b && b.members ? b.members.filter(function (m) { return m.id === id; })[0] || null : null;
+  };
+  // true for a member id of another playable band who isn't (and never was) in this career's lineup.
+  var memberBand = null;
+  ui.foreignMember = function (id, st) {
+    st = st || GG.state; if (!id || !st || !st.bandId) return false;
+    if ((st.members || []).some(function (m) { return m.id === id; })) return false;
+    if (!memberBand) {
+      memberBand = {};
+      var B = GG.content.bands || {};
+      Object.keys(B).forEach(function (k) { (B[k].members || []).forEach(function (m) { memberBand[m.id] = k; }); });
+    }
+    return !!memberBand[id] && memberBand[id] !== st.bandId;
+  };
+  ui.isSilent = function (id, st) { var m = ui.memberDef(id, st); return !!(m && m.silent); };
+  ui.active = function (st) { return ((st || GG.state || {}).members || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }); };
+  function asMember(st, x) { return typeof x === 'string' ? ui.active(st).filter(function (m) { return m.id === x; })[0] || null : x; }
+  ui.talkers = function (st) {
+    st = st || GG.state; if (!st) return [];
+    if (GG.career && GG.career.talkers) {
+      try { var t = GG.career.talkers(st); if (Array.isArray(t)) return t.map(function (x) { return asMember(st, x); }).filter(Boolean); } catch (e) { /* local rule */ }
+    }
+    return ui.active(st).filter(function (m) { return !m.silent && !ui.isSilent(m.id, st); });
+  };
+  function has(st, id) { return id && ui.active(st).some(function (m) { return m.id === id; }) ? id : null; }
+  function gigRoles(st) {
+    try { if (GG.gig && GG.gig.roles) return GG.gig.roles(st) || {}; } catch (e) { /* local rule */ }
+    var act = ui.active(st), front = null, solo = null, fill = null, i;
+    for (i = 0; i < act.length && !front; i++) if (/vocals/.test(act[i].role || '')) front = act[i].id;
+    ['lead guitar', 'guitar', 'fiddle'].forEach(function (r) { act.forEach(function (m) { if (!solo && m.role === r) solo = m.id; }); });
+    ['rhythm guitar', 'fiddle', 'guitar', 'bass'].forEach(function (r) { act.forEach(function (m) { if (!fill && m.role === r && m.id !== solo) fill = m.id; }); });
+    return { front: front, solo: solo, fill: fill };
+  }
+  ui.roleOf = function (role, st) {
+    st = st || GG.state; if (!st) return null;
+    role = String(role || '').replace(/^@/, '');
+    if (GG.career && GG.career.roleOf) {
+      try { var r = GG.career.roleOf(st, role); if (r) return typeof r === 'string' ? r : r.id || null; } catch (e) { /* local rule */ }
+    }
+    var b = ui.band(st) || {}, R = b.roles || {}, talk = ui.talkers(st);
+    switch (role) {
+      case 'front': case 'singer': return gigRoles(st).front || null;
+      case 'soloist': case 'solo': return gigRoles(st).solo || null;
+      case 'filler': case 'fill': return gigRoles(st).fill || null;
+      case 'bassist': return (ui.active(st).filter(function (m) { return /bass/.test(m.role || ''); })[0] || {}).id || null;
+      case 'namer': case 'grumbler': return has(st, R[role]) || gigRoles(st).front || (talk[0] && talk[0].id) || null;
+      case 'deadpan': return has(st, R.deadpan) || (talk.length ? talk[talk.length - 1].id : null);
+      case 'driver': var d = ui.driverOf(st); return d && !d.you ? d.id : null;
+      case 'any': var p = ui.pick(talk); return p ? p.id : null;
+    }
+    return null;
+  };
+  // 'recruit' (the drama card's member) and '@role' aliases -> a member id (the sim writes state.card.roles at draw time).
+  ui.speaker = function (id, st) {
+    st = st || GG.state; if (!id || !st) return id;
+    if (id === 'recruit') return (st.card && st.card.who) || id;
+    if (String(id).charAt(0) !== '@') return id;
+    var map = st.card && st.card.roles, m = map && (map[id] || map[id.slice(1)]);
+    return m || ui.roleOf(id, st) || id;
+  };
+  ui.driverOf = function (st) {
+    st = st || GG.state;
+    try { if (st && GG.world && GG.world.driver) return GG.world.driver(st); } catch (e) { /* no world */ }
+    return { id: 'you', name: 'You', you: true, def: {}, dashboard: null };
+  };
+  ui.spaceKind = function (st) { var b = ui.band(st || GG.state), K = GG.contracts.SPACE_KINDS || {}; return (b && K[b.space]) || 'garage'; };
+  // The band's home-space noun: 'the garage' | 'the basement' | 'Unit 4B' | 'the Quonset' (cap: sentence case).
+  ui.space = function (st, capital) { var b = ui.band(st || GG.state), s = (b && b.spaceShort) || 'the garage'; return capital ? ui.cap(s) : s; };
+  // The room you rehearse in right now (tier 0 = the band's space; rented rooms localised per city by 5k's ui.spaceLocal).
+  ui.spaceName = function (st) {
+    st = st || GG.state; if (!st) return ui.space(st, true);
+    var d = null; try { d = GG.shop && GG.shop.spaceDef ? GG.shop.spaceDef(st, st.spaceTier || 0) : null; } catch (e) { d = null; }
+    if (d && ui.spaceLocal) d = ui.spaceLocal(st, d);
+    return (d && d.name) || ui.space(st, true);
+  };
+  ui.province = function (st) {
+    st = st || GG.state; var b = ui.band(st);
+    if (b && b.province) return b.province;
+    var c = GG.world && GG.world.city && st ? GG.world.city(st.city) : null;
+    return (c && c.province) || 'SK';
+  };
+  ui.superfan = function (st) {
+    st = st || GG.state;
+    try { var hs = st && GG.fans && GG.fans.homeSuperfan ? GG.fans.homeSuperfan(st) : null; if (hs && (hs.short || hs.name)) return hs.short || String(hs.name).split(' ')[0]; } catch (e) { /* content read below */ }
+    var bb = GG.content.bandbook || {}, h = bb.homeSuperfan && st && bb.homeSuperfan[st.bandId];
+    if (h && (h.short || h.name)) return h.short || String(h.name).split(' ')[0];
+    var d = GG.fans && GG.fans.superfanDef ? GG.fans.superfanDef('dale') : null;
+    return (d && (d.short || d.name)) || 'your number-one fan';
+  };
+  function homeVenue(st) {
+    var best = null, n = -1, V = GG.gig && GG.gig.venue;
+    Object.keys(st.venueLast || {}).forEach(function (id) {
+      var v = V ? V(id) : null, r = (st.venueRep || {})[id] || 0;
+      if (v && v.city === st.city && r > n) { best = v; n = r; }
+    });
+    var b = ui.band(st), fg = !best && b && b.firstGig && V ? V(b.firstGig) : null;
+    return (best || fg || {}).name || 'the first house party';
+  }
+  function rivalFront(st) {
+    try { var fn = GG.rival && GG.rival.frontName ? GG.rival.frontName(st) : ''; if (fn) return fn; } catch (e) { /* the cast read below */ }
+    var c = null; try { c = GG.rival && GG.rival.cast ? GG.rival.cast(st) : null; } catch (e) { c = null; }
+    var m = c && (c.members || []).filter(function (x) { return x.id === c.frontman; })[0] || (c && c.members && c.members[0]);
+    return m ? m.name || String(m.fullName || '').split(' ')[0] : 'their singer';
+  }
+  // Every C.TOKENS value for this career (plan_contract_0.9 §4.2 fallbacks). Lazy per call site; cheap.
+  ui.tokens = function (st) {
+    st = st || GG.state;
+    var b = ui.band(st) || {}, nm = function (role, fb) { var id = st ? ui.roleOf(role, st) : null; return id ? ui.who(id, st).short : fb; };
+    var d = st ? ui.driverOf(st) : null;
+    return {
+      front: nm('front', 'the singer'), soloist: nm('soloist', 'the guitarist'), filler: nm('filler', 'somebody'), bassist: nm('bassist', 'the bassist'),
+      namer: nm('namer', 'the singer'), grumbler: nm('grumbler', 'somebody'), deadpan: nm('deadpan', 'somebody'),
+      driver: d && !d.you ? d.name : 'you',
+      van: (st && st.van && st.van.name) || (GG.shop && GG.shop.vanName && st ? GG.shop.vanName(st.bandId, 0) : 'the van'),
+      space: ui.space(st), spaceName: b.spaceName || ui.space(st), door: b.door || 'the door', province: ui.province(st),
+      homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
+      city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
+      band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you'
+    };
+  };
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player)\}/g;
+  ui.fill = function (text, st, vars) {
+    if (text == null) return '';
+    st = st || GG.state; text = String(text);
+    var lead = text.charAt(0) === '{';   // a line that opens on a token starts with a capital, whoever resolves it
+    if (vars) text = text.replace(/\{(\w+)\}/g, function (a, k) { return vars[k] != null ? String(vars[k]) : a; });
+    if (st && GG.career && GG.career.fillText) { try { text = GG.career.fillText(st, text); } catch (e) { /* local tokens below */ } }
+    if (text.indexOf('{') >= 0) {
+      var T = null;
+      text = text.replace(TOKEN_RE, function (a, k) { T = T || ui.tokens(st); return T[k] != null ? String(T[k]) : a; });
+    }
+    return lead ? ui.cap(text) : text;   // "{space} was quiet." -> "The garage was quiet."
+  };
+  ui.pool = function (obj, key, st) {
+    st = st || GG.state; if (!obj) return [];
+    if (st && GG.career && GG.career.pool) { try { var p = GG.career.pool(st, obj, key); if (Array.isArray(p)) return p; } catch (e) { /* local rule */ } }
+    var a = obj[key], bb = obj.byBand && st && obj.byBand[st.bandId], x = bb && bb[key];
+    return (Array.isArray(a) ? a : []).concat(Array.isArray(x) ? x : []);
+  };
+  ui.lines = function (key, st) { return ui.pool(GG.content.lines, key, st); };
+  ui.bandLines = function (key, st) { st = st || GG.state; var L = GG.content.lines, bb = L && L.byBand && st && L.byBand[st.bandId]; return bb ? bb[key] : undefined; };
+  // Leak net: names of every other playable band's people (and Hail Damage's world when it isn't yours).
+  var foreignRe = {};
+  function esc(w) { return String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function foreign(st) {
+    var id = st && st.bandId || '';
+    // (a word that is part of someone in this career's name is theirs: a recruit called Tamara in a Hail Damage career)
+    var mine = ((st && st.members) || []).map(function (m) { return [m.name, m.nick, m.fullName].filter(Boolean).join(' '); }).join(' | '), key = id + '#' + mine;
+    if (foreignRe[key] !== undefined) return foreignRe[key];
+    var words = [], bands = GG.content.bands || {};
+    Object.keys(bands).forEach(function (k) {
+      if (k === id) return;
+      (bands[k].members || []).forEach(function (m) { [m.name, m.nick, String(m.fullName || '').replace(/"[^"]*"\s*/, '')].forEach(function (w) { if (w && w.length > 2) words.push(w); }); });
+    });
+    if (id !== 'hail_damage') words.push('Baba', 'Moose Hearse', 'HALE DAMAGE', 'Lord Abyssus');
+    words = words.filter(function (w, i) { return words.indexOf(w) === i && !new RegExp('\\b' + esc(w) + '\\b').test(mine); }).map(esc);
+    if (Object.keys(foreignRe).length > 40) foreignRe = {};   // (keyed by lineup: a long career rebuilds now and then)
+    foreignRe[key] = words.length ? new RegExp('\\b(' + words.join('|') + ')\\b') : null;
+    return foreignRe[key];
+  }
+  ui.ownLines = function (list, st) {
+    st = st || GG.state; if (!Array.isArray(list)) return [];
+    var re = foreign(st), b = ui.band(st), notTW = !!(b && b.rival && b.rival !== 'tundra_wraith');   // (by id: a rebrand keeps them)
+    return list.filter(function (x) {
+      var t = typeof x === 'string' ? x : x && x.text; if (!t) return false;
+      if (re && re.test(t)) return false;
+      return !(notTW && /Tundra Wraith|Gord\b|Grimnir/.test(t));
+    });
+  };
+  // A group-chat message this career may show: not from (or about) another band's people. The sim's speakerOk guard
+  // (20_sim_career) keeps them out at the source; this is the display-side net.
+  ui.chatOk = function (m, st) { st = st || GG.state; return !!m && !ui.foreignMember(m.who, st) && ui.ownLines([String(m.text || '')], st).length > 0; };
+  ui.line = function (list, fallback, st) {
+    st = st || GG.state;
+    var own = ui.ownLines(list, st);
+    if (!own.length) own = ui.ownLines(fallback, st);
+    if (!own.length) own = fallback || [];
+    var p = ui.pick(own);
+    return p == null ? '' : ui.fill(typeof p === 'string' ? p : p.text, st);
+  };
+  // A sim-produced line (results, verdicts, awards, news) through the display-side leak net: filled when it's this
+  // band's, else `fallback` (a string or a list; filled) or null when there is none. The sim's pool/speakerOk rules keep
+  // other bands' people out at the source; this only catches what slips through before content lands.
+  ui.safeLine = function (text, fallback, st) {
+    st = st || GG.state;
+    if (text != null && ui.ownLines([String(text)], st).length) return ui.fill(text, st);
+    if (fallback == null) return null;
+    return ui.line(Array.isArray(fallback) ? fallback : [fallback], null, st) || null;
+  };
+
   ui.initials = function (name) {
     var w = String(name || '?').replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).filter(Boolean);
     if (!w.length) return '?';

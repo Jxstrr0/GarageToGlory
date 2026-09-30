@@ -13,11 +13,15 @@
 //   the weather (rain / snow / blizzard / hail / heat shimmer) and whoever drives; van-info shows the driver (van-driver).
 // v0.7 (WORLDUI): abroad (trip.abroad) the rental goes to setTrip { region, look } and the header names it (van-rental).
 //   testids: van-route, van-progress, btn-van-skip, van-say, van-arrive, road-choice-<i>, btn-road-ok, van-repair.
+// v0.9 (GENRES): every band's driver (GG.world.driver: Kenji, Moth, T-Bone, Earl, or you). The 2D windshield draws the
+//   driver from their look (shades, glasses, a toque or a hat, a bun, a beard; you squint) and their dashboard item
+//   (cactus | laundry | cassettes | atlas); when you drive, the band's own driver's item stays on the dash. The van-info
+//   subtitle is the band's door (band.door), the rename placeholder the band's tier name (GG.shop.vanName).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
   function R() { return GG.render; }
-  function fill(t) { return t && GG.career && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : (t || ''); }
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
   function lines(k) { return (GG.content.lines && GG.content.lines[k]) || []; }
 
@@ -34,8 +38,8 @@
     '.van-says { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }',
     '.van-say { align-self: flex-start; max-width: 88%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: rgba(243, 239, 230, .96); color: #1d1204; font-size: 14px; line-height: 1.35; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); animation: gg-fade .2s ease-out; }',
     '.van-say b { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8a5a1a; }',
-    '.van-say.kenji { font-style: italic; background: rgba(12, 16, 27, .88); color: var(--dim); border: 1px solid var(--line); }',
-    '.van-say.kenji b { color: var(--faint); }',
+    '.van-say.kenji, .van-say.silent { font-style: italic; background: rgba(12, 16, 27, .88); color: var(--dim); border: 1px solid var(--line); }',
+    '.van-say.kenji b, .van-say.silent b { color: var(--faint); }',
     '.van-arrive { position: relative; z-index: 2; margin-top: auto; padding: 12px 14px; border-radius: 14px; background: rgba(12, 16, 27, .9); border: 1px solid var(--amber); font-weight: 700; line-height: 1.35; }',
     '.van-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }',
     '.van-stats > div { padding: 8px 10px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); }',
@@ -101,28 +105,64 @@
         if (wx === 'rain') c.fillRect(fx, fy, 1, 9); else c.fillRect(fx, fy, wx === 'hail' ? 3 : 2, wx === 'hail' ? 3 : 2);
       }
     }
-    // inside the Moose Hearse: dash, wheel, the driver (Kenji in sunglasses, or you), the bobblehead, the dash item
+    // inside the van: dash, wheel, the driver (from their look), the bobblehead, the dash item
     c.fillStyle = '#121418'; c.fillRect(0, H * 0.8, W, H * 0.2);
     c.fillStyle = '#1b1e24'; c.fillRect(0, H * 0.78, W, H * 0.03);
-    c.fillStyle = '#0b0c0f';
-    c.beginPath(); c.arc(W * 0.24, H * 0.6, 34, 0, Math.PI * 2); c.fill();                  // Kenji's head
-    c.fillRect(W * 0.24 - 46, H * 0.64, 92, H * 0.2);                                     // shoulders
-    if (t.driver !== 'you') {                                                           // Kenji's sunglasses (you squint)
-      c.fillStyle = '#000'; c.fillRect(W * 0.24 - 24, H * 0.595, 48, 9);
-      c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(W * 0.24 - 20, H * 0.597, 10, 2);
-    }
-    if (v.dash === 'cactus') {                                                     // Kenji's single tiny cactus
-      c.fillStyle = '#8a4a2a'; c.fillRect(W * 0.44, H * 0.78 - 8, 10, 8);
-      c.fillStyle = '#3f8a3a'; c.fillRect(W * 0.44 + 3, H * 0.78 - 20, 4, 12); c.fillRect(W * 0.44, H * 0.78 - 16, 3, 5);
-    }
+    drawDriver(c, W * 0.24, H * 0.6, H, v.look || {}, t.driver === 'you');
+    drawDash(c, v.dash, W * 0.44, H * 0.78, time);
     c.strokeStyle = '#2a2d33'; c.lineWidth = 9;
     c.beginPath(); c.arc(W * 0.26, H * 0.86, 48, Math.PI * 1.1, Math.PI * 1.9); c.stroke();  // the wheel
     var bob = Math.sin(time / 110) * 4;
-    c.fillStyle = '#6b4a2b'; c.fillRect(W * 0.66, H * 0.78 - 14, 8, 14);                  // bobblehead (a moose, obviously)
+    c.fillStyle = '#6b4a2b'; c.fillRect(W * 0.66, H * 0.78 - 14, 8, 14);                  // bobblehead (Hail Damage's is a moose, obviously)
     c.beginPath(); c.arc(W * 0.66 + 4, H * 0.78 - 20 + bob, 9, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = '#6b4a2b'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(W * 0.66 - 4, H * 0.78 - 26 + bob); c.lineTo(W * 0.66 - 12, H * 0.78 - 34 + bob); c.moveTo(W * 0.66 + 12, H * 0.78 - 26 + bob); c.lineTo(W * 0.66 + 20, H * 0.78 - 34 + bob); c.stroke();
+    if (v.moose) {
+      c.strokeStyle = '#6b4a2b'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(W * 0.66 - 4, H * 0.78 - 26 + bob); c.lineTo(W * 0.66 - 12, H * 0.78 - 34 + bob); c.moveTo(W * 0.66 + 12, H * 0.78 - 26 + bob); c.lineTo(W * 0.66 + 20, H * 0.78 - 34 + bob); c.stroke();
+    } else { c.fillStyle = '#c9a227'; c.fillRect(W * 0.66 - 6, H * 0.78 - 32 + bob, 20, 4); }                // a little hat
     c.strokeStyle = '#0a0b0e'; c.lineWidth = 14; c.strokeRect(0, 0, W, H);                  // windshield frame
+  }
+  // v0.9: the driver's silhouette from their look (LOOK: hairStyle, extras, top). Shades only when their look has them;
+  // you (no shades) squint.
+  function drawDriver(c, x, y, H, L, you) {
+    var ex = L.extras || [], hat = ex.indexOf('bighat') >= 0 ? 'big' : ex.indexOf('hat') >= 0 ? 'hat' : ex.indexOf('toque') >= 0 ? 'toque' : L.hairStyle === 'cap' ? 'cap' : null;
+    c.fillStyle = '#0b0c0f';
+    if (L.top === 'hoodie') { c.beginPath(); c.arc(x, y + 4, 44, Math.PI, 0); c.fill(); }                        // a hood around the head
+    if (L.hairStyle === 'long' || L.hairStyle === 'mullet') c.fillRect(x - 36, y - 6, 72, 46);
+    c.beginPath(); c.arc(x, y, 34, 0, Math.PI * 2); c.fill();                                                    // head
+    c.fillRect(x - 46, y + H * 0.04, 92, H * 0.2);                                                               // shoulders
+    if (L.hairStyle === 'bun') { c.beginPath(); c.arc(x, y - 38, 12, 0, Math.PI * 2); c.fill(); }
+    if (L.hairStyle === 'mohawk' || L.hairStyle === 'spiky') for (var k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * 9 - 5, y - 30); c.lineTo(x + k * 9, y - 48); c.lineTo(x + k * 9 + 5, y - 30); c.fill(); }
+    if (hat === 'toque') { c.beginPath(); c.arc(x, y - 16, 30, Math.PI, 0); c.fill(); c.beginPath(); c.arc(x, y - 50, 7, 0, Math.PI * 2); c.fill(); }
+    if (hat === 'hat' || hat === 'big') {                                                                        // a cowboy hat: crown + brim
+      var bw = hat === 'big' ? 64 : 50; c.fillRect(x - 22, y - 58, 44, 30); c.fillRect(x - bw, y - 32, bw * 2, 8);
+    }
+    if (hat === 'cap') { c.beginPath(); c.arc(x, y - 18, 32, Math.PI, 0); c.fill(); c.fillRect(x, y - 22, 46, 7); }
+    if (ex.indexOf('sunglasses') >= 0 && !you) {
+      c.fillStyle = '#000'; c.fillRect(x - 24, y - 5, 48, 9);
+      c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x - 20, y - 3, 10, 2);
+    } else if (ex.indexOf('glasses') >= 0) {                                                                     // readers catch the light
+      c.strokeStyle = 'rgba(210,220,235,.55)'; c.lineWidth = 2;
+      c.beginPath(); c.arc(x - 11, y, 8, 0, Math.PI * 2); c.moveTo(x + 19, y); c.arc(x + 11, y, 8, 0, Math.PI * 2); c.stroke();
+    }
+  }
+  // The dash item: Kenji's cactus, Moth's laundry, Chase's '80s cassettes, Earl's 1987 atlas.
+  function drawDash(c, kind, x, y, time) {
+    if (kind === 'cactus') {
+      c.fillStyle = '#8a4a2a'; c.fillRect(x, y - 8, 10, 8);
+      c.fillStyle = '#3f8a3a'; c.fillRect(x + 3, y - 20, 4, 12); c.fillRect(x, y - 16, 3, 5);
+    } else if (kind === 'laundry') {                                                                             // socks + a shirt on a string
+      var sw = Math.sin(time / 300) * 2;
+      c.strokeStyle = '#9a9aa4'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 30, y - 70); c.lineTo(x + 50, y - 64); c.stroke();
+      c.fillStyle = '#c0392b'; c.fillRect(x - 20 + sw, y - 69, 8, 16);
+      c.fillStyle = '#e8e4d8'; c.fillRect(x + 2 + sw, y - 68, 20, 18);
+      c.fillStyle = '#4f8cff'; c.fillRect(x + 32 + sw, y - 66, 8, 15);
+    } else if (kind === 'cassettes') {
+      ['#e0603a', '#3cc1c8', '#ffb347'].forEach(function (col, i) { c.fillStyle = col; c.fillRect(x + i * 3, y - 8 - i * 7, 26, 7); c.fillStyle = '#111'; c.fillRect(x + 7 + i * 3, y - 6 - i * 7, 12, 3); });
+    } else if (kind === 'atlas') {
+      c.fillStyle = '#2d5a86'; c.fillRect(x - 2, y - 9, 34, 9);
+      c.fillStyle = '#f3efe6'; c.fillRect(x + 1, y - 8, 28, 2);
+      c.fillStyle = '#e0b040'; c.font = '700 7px sans-serif'; c.fillText('1987', x + 6, y - 2);
+    }
   }
 
   /* ---- The trip screen -------------------------------------------------------------------------------- */
@@ -137,7 +177,8 @@
   function say(v, b) {
     if (!b || !v.says) return;
     var who = ui.who(b.who);
-    v.says.appendChild(el('div.van-say' + (b.who === 'kenji' ? '.kenji' : ''), { testid: 'van-say' }, [el('b', who.short || who.name), fill(b.text)]));
+    var quiet = b.who === 'kenji' || ui.isSilent(b.who);   // v0.9: whoever doesn't talk gets stage directions, in italics
+    v.says.appendChild(el('div.van-say' + (quiet ? '.silent' + (b.who === 'kenji' ? '.kenji' : '') : ''), { testid: 'van-say', data: { who: b.who || '' } }, [el('b', who.short || who.name), fill(b.text)]));
     while (v.says.children.length > 2) v.says.removeChild(v.says.firstChild);
   }
   function showCard(v) {
@@ -148,7 +189,7 @@
   function arrive(v) {
     if (v.arrived || !v.alive) return;
     v.arrived = true; v.p = 1; dbg.arrived = true;
-    var line = fill(ui.pick(lines('vanArrive')) || 'You made it.');
+    var line = ui.line(ui.lines('vanArrive'), ['You made it. {driver} parks. Everybody unfolds.']) || 'You made it.';
     if (v.arriveEl) { v.arriveEl.hidden = false; v.arriveEl.textContent = line; }
     if (v.skipBtn) v.skipBtn.textContent = 'Load in ▸';
     v.doneTimer = setTimeout(function () { finish(v); }, v.skipping ? 500 : 1300);
@@ -234,21 +275,32 @@
     }
   });
 
+  function dashOf(d) {
+    if (d.dashboard && d.dashboard !== 'none') return d.dashboard;
+    if (!d.you) return null;
+    var D = GG.content.drivers || {}, own = d.designated && D[d.designated];
+    return own && own.dashboard && own.dashboard !== 'none' ? own.dashboard : null;
+  }
+  function lookOf(st, id) {
+    var m = (st.members || []).filter(function (x) { return x.id === id; })[0], def = ui.memberDef(id, st);
+    return (m && m.look) || (def && def.look) || {};
+  }
   // The trip to `gig` (default: the booked gig). done(trip) runs after arrival (or right away when there's no gig).
   ui.playVan = function (gig, done, opts) {
     var st = S(); gig = gig || (st && st.gig);
     if (!st || !gig || !GG.world) { if (done) setTimeout(function () { done(null); }, 0); return null; }
     var trip = GG.world.startTrip(st, gig);
     var v = { trip: trip, mode: has3D() ? '3d' : '2d', dur: tripDur(trip.km), el: 0, p: 0, banter: trip.banter || [] };
-    var drv = GG.world.driver ? GG.world.driver(st) : null;
-    v.dash = drv ? drv.dashboard || (drv.you ? 'cactus' : null) : 'cactus';   // the cactus stays on the dash when you drive
+    var drv = ui.driverOf(st);
+    v.dash = dashOf(drv);   // v0.9: when you drive, the band's own driver's item stays on the dash (their cactus / laundry / ...)
+    v.look = drv.you ? (st.player && st.player.look) || {} : lookOf(st, drv.id);
+    v.moose = st.bandId === 'hail_damage';
     if (v.mode === '3d') {
       var ok = safe(function () { return R().setScene('van'); });
       if (ok === false || ok === null) v.mode = '2d';
       else safe(function () {
-        var dr = GG.world.driver ? GG.world.driver(st) : { id: 'kenji', dashboard: 'cactus' };
         R().van.setTrip({ from: trip.fromName, to: trip.toName, km: trip.km, season: trip.season, night: trip.night, highway: trip.highway,
-          weather: trip.weather, driver: dr.id, dashboard: dr.dashboard || (dr.you ? 'cactus' : null),
+          weather: trip.weather, driver: drv.id, dashboard: v.dash,
           region: trip.abroad ? trip.region : null, look: trip.abroad ? trip.vehicleLook : null });   // v0.7: the rental + regional scenery
         R().van.setProgress(0);
       });
@@ -264,7 +316,7 @@
       var st = S(), card = st && GG.world.roadCard(st), t = st && GG.world.trip(st);
       if (!card || !t) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-road-ok', onclick: function () { ui.close(s.id); } }, 'Back on the road')); return; }
       s.setTitle('On the road', (t.highway || 'THE HIGHWAY').toUpperCase() + ' · ' + t.km + ' KM');
-      var who = ui.who(card.speaker);
+      var who = ui.who(ui.speaker(card.speaker, st));   // v0.9: '@driver', '@front', ... resolve to this band's people
       ui.append(s.body, [el('div.card-head', [ui.avatar(who, 'lg'), el('div.grow', [el('div.who', who.name), el('div.role', who.role || '')]), el('span.tag', 'road')]),
         el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text))]);
       if (!t.resolved) {
@@ -308,28 +360,33 @@
       var tab = d.tab || 'van', shop = !!(GG.shop && ui.vanSide);
       function rerender(o) { s.rerender(Object.assign({}, s.data, o || {})); }
       var home = (st.spaceTier || 0) === 0;
-      s.setTitle(tab === 'space' && GG.shop ? GG.shop.spaceDef(st, st.spaceTier || 0).name : tab === 'dealer' ? 'Car lot' : (st.van && st.van.name) || 'The van', home ? 'THE GARAGE DOOR' : 'THE DOOR');
+      s.setTitle(tab === 'space' && GG.shop ? ui.spaceName(st) : tab === 'dealer' ? 'Car lot' : (st.van && st.van.name) || 'The van', home ? String(ui.tokens(st).door).toUpperCase() : 'THE DOOR');
       if (shop) s.body.appendChild(el('div.shop-tabs', ui.tabs(DOOR_TABS, tab, function (id) { rerender({ tab: id }); s.body.scrollTop = 0; }, 'door-tab-')));
       if (shop && tab === 'space') { s.body.appendChild(ui.spacePanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
       if (shop && tab === 'dealer') { s.body.appendChild(ui.dealerPanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
-      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = W.driver ? W.driver(st) : { id: 'kenji', name: 'Kenji', def: {} };
+      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {};
+      var own = dr.designated && D[dr.designated] ? D[dr.designated].name || ui.who(dr.designated).short : null, ownSilent = own && ui.isSilent(dr.designated, st);
+      // v0.9: when you drive, the band's own driver's dash item stays (the same rule as the trip's dashOf)
+      var ownDash = dr.you && dr.designated && D[dr.designated] && D[dr.designated].dashboard && D[dr.designated].dashboard !== 'none' ? D[dr.designated].dashName : null;
+      var dashLine = ownDash ? ownDash + ' (still there)' : dr.def && dr.def.dashName;
       var col = van.condition >= 60 ? 'var(--good)' : van.condition >= 30 ? 'var(--amber)' : 'var(--bad)';
       var td = GG.shop ? GG.shop.vanTierDef(van.tier || 0) : { kind: 'Rusted minivan', blurb: 'A rusted minivan with a moose-shaped dent.' };
       var stick = GG.shop ? GG.shop.stickers(st) : [], banned = stick.filter(function (x) { return x.banned; }).length;
-      var nameIn = el('input.seq-name', { testid: 'van-name-input', maxLength: 28, value: van.name || '', placeholder: (van.baseName || 'The Moose Hearse'), 'aria-label': 'Van name' });
+      var nameIn = el('input.seq-name', { testid: 'van-name-input', maxLength: 28, value: van.name || '', 'aria-label': 'Van name',
+        placeholder: van.baseName || (GG.shop && GG.shop.vanName ? GG.shop.vanName(st.bandId, van.tier || 0) : 'The van') });
       ui.append(s.body, [
         shop ? ui.vanSide(st) : null,
         shop ? el('div.small.dim.center', { testid: 'van-stickers' }, stick.length ? stick.length + ' venue sticker' + (stick.length === 1 ? '' : 's') + (banned ? ' · ' + banned + ' crossed out (banned)' : '') : 'No stickers yet. Every venue you play puts one on.') : null,
         shop ? el('div.row', { style: 'margin:8px 0' }, [nameIn, btn('.btn.small', { testid: 'van-rename', onclick: function () {
           var r = GG.shop.renameVan(S(), nameIn.value);
           if (GG.main && GG.main.sync) GG.main.sync();
-          ui.toast('It is “' + r.name + '” now. Kenji will not say it out loud.', { who: 'Van' });
+          ui.toast('It is “' + r.name + '” now. ' + (!own ? 'It is growing on everyone.' : ownSilent ? own + ' will not say it out loud.' : own + ' is already calling it something else.'), { who: 'Van' });
           rerender();
         } }, 'Rename')]) : null,
-        el('p.dim', { style: 'margin-top:0' }, td.kind + '. ' + (td.blurb || '') + ' ' + (dr.you ? 'You drive now. The mirrors are still set for Kenji.'
-          : dr.id === 'kenji' ? 'Kenji drives. Nobody has ever seen him get in or out.' : dr.name + ' drives.')),
+        el('p.dim', { style: 'margin-top:0' }, fill(td.kind + '. ' + (td.blurb || '')) + ' ' + (dr.you ? 'You drive now.' + (own ? ' The mirrors are still set for ' + own + '.' : '')
+          : ui.isSilent(dr.id, st) ? dr.name + ' drives. Nobody has ever seen ' + dr.name + ' get in or out.' : dr.name + ' drives.')),
         el('div.panel', { testid: 'van-driver' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Driver: ' + dr.name), el('span.tag', (dr.def && dr.def.effect) || '')]),
-          el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dr.def && dr.def.dashName ? ' On the dash: ' + dr.def.dashName + '.' : '')
+          el('div.small.dim', { style: 'margin-top:4px' }, ((dr.def && dr.def.blurb) || '') + (dashLine ? ' On the dash: ' + dashLine + '.' : '')
             + ' Seating: ' + (dr.you ? 'you drive, ' : dr.name + ' drives, you ride shotgun, ') + 'the band in the back, gear and merch piled behind.')]),
         el('div.panel', { style: 'margin-top:10px' }, [el('div.row', [el('span.grow', { style: 'font-weight:800' }, 'Condition: ' + W.vanLabel(van.condition)), el('b', van.condition + '%')]),
           ui.bar(van.condition, 100, { color: col }),

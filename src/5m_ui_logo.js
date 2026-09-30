@@ -49,9 +49,14 @@
     var art = id ? ui.rivalLogo(id, win, 56, { badge: 'round' }) : el('div.lg-cast-blank', '🏆');
     return el('div.lg-cast' + (you ? '.you' : ''), { testid: 'logo-cast', data: { who: id || 'other' } }, [
       el('div.lg-cast-live', [el('i'), 'LIVE']), art,
-      el('div.grow', [el('div.lg-cast-cat', o.category || 'The Loonies'), el('b', win), el('div.lg-cast-sub', you ? 'wins. Kenji is already carrying it to the van.' : 'wins. Polite applause from table 9.')]),
+      el('div.grow', [el('div.lg-cast-cat', o.category || 'The Loonies'), el('b', win), el('div.lg-cast-sub', you ? carrier(st) : 'wins. Polite applause from table 9.')]),
       el('div.lg-cast-bug', 'LOONIES')]);
   };
+  // v0.9: whoever drives the band's van carries the trophy out to it.
+  function carrier(st) {
+    var d = st ? ui.driverOf(st) : null, van = st ? ui.tokens(st).van : 'the van';
+    return !d || d.you ? 'wins. You are already carrying it to ' + van + '.' : 'wins. ' + d.name + ' is already carrying it to ' + van + '.';
+  }
   // The laptop's Band tab: your logo + Rebrand.
   ui.logoPanel = function (st, rerender) {
     if (!L() || !st) return null;
@@ -70,11 +75,12 @@
     o = o || {};
     var st = GG.state, rebrand = o.mode === 'rebrand';
     if (!L() || (rebrand && !st)) { if (o.onDone) o.onDone(null); return null; }
-    var bandId = rebrand ? st.bandId : (o.bandId || 'hail_damage'), band = (GG.content.bands || {})[bandId];
+    var bandId = rebrand ? st.bandId : (o.bandId || (st && st.bandId) || null), band = (GG.content.bands || {})[bandId] || null;   // v0.9: no silent Hail Damage default
     var genre = rebrand ? st.genre : (o.genre || (band && band.genre) || 'metal'), carried = rebrand ? null : L().carry.read(genre);
     var start = o.logo || (rebrand ? L().get(st) : (L().pending(bandId) || carried || L().defaultFor(bandId)));
     E = { mode: rebrand ? 'rebrand' : 'new', bandId: bandId, genre: genre, name: o.band || (band && band.name) || (st && nameOf(st)) || 'The Band',
-      logo: L().sanitize(start, bandId), was: rebrand ? L().get(st) : null, carried: !!(carried && !o.logo && !L().pending(bandId) && L().same(carried, start)), onDone: o.onDone || null };
+      logo: L().sanitize(start, bandId), was: rebrand ? L().get(st) : null, carried: !!(carried && !o.logo && !L().pending(bandId) && L().same(carried, start)), onDone: o.onDone || null,
+      door: (band && band.door) || 'the door' };
     dbg.opened++; dbg.mode = E.mode;
     return ui.show('logo', {});
   };
@@ -131,7 +137,7 @@
         E.carried ? el('span.tiny.dim', 'Your last ' + E.genre + ' logo (this phone remembers it)') : null]);
       ui.append(s.body, el('div', { testid: 'logo-screen', data: { mode: E.mode } }, [head,
         el('p.screen-sub', rebrand ? 'New logo, same band. Costs a bit, and the scene will take a week to stop calling you "the band with the old logo".'
-          : 'Three taps. It goes on the kick drum, the merch, the van and the garage door. Any genre can use any lettering.'),
+          : 'Three taps. It goes on the kick drum, the merch, the van and ' + E.door + '. Any genre can use any lettering.'),
         stage, tools,
         section(1, 'Emblem', em.name, emblems, 'logo-sec-emblem'),
         section(2, 'Lettering', sty.blurb, styles, 'logo-sec-style'),

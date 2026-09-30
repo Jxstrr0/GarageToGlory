@@ -1,5 +1,5 @@
 // pw_world.js: the v0.3 gig board and the van trip on a 390x844 phone viewport (WORLD agent).
-// Sections (META_ONLY=board|van, comma-separated; default both). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=board|van|calendar|drivers, comma-separated; default all). Each must finish inside `timeout 500`.
 //   board : quickStart → plan Book → Go opens the board in book mode (phase still plan) → listings + layout audit +
 //           screenshot tests/.cache/board_list.png → Map tab: 9 pins, tap Regina → its gigs + screenshot
 //           board_map.png → Book it + confirm → the week runs with that gig → corkboard hotspot = view mode (no book
@@ -13,6 +13,8 @@
 //           the West locked + teased in the garage era, open for Local Heroes), holiday tag chips on NYE; van: weather +
 //           driver in the header, Kenji + cactus + you riding shotgun in the 3D van, the weather on the windshield; Kenji
 //           quits -> you drive (van sheet). Screenshots tests/.cache/hud_calendar.png, board_rings.png, van_driver.png.
+//   drivers (v0.9): Moth / T-Bone / Earl drive their band's van with their own dashboard item; they quit -> you drive and the
+//           item stays (see drivers() below).
 // Run: node build.js && META_ONLY=board timeout 500 node tests/pw_world.js
 const path = require('path');
 const { open, checker } = require('./_pw');
@@ -273,8 +275,68 @@ async function calendar() {
   c.done();
 }
 
+/* ---- drivers (v0.9): every band's designated driver in the van, and the fallback to you when they quit ----------------
+   Frost Heave (Moth + her laundry), Gravel Kings (T-Bone + Chase's cassettes), the Ramblers (Earl + the 1987 atlas): the van
+   header, the trip's driver, the 3D van's driver + dashboard item (or the 2D windshield); the driver quits → the van sheet
+   says you drive (the mirrors are still set for them), the header says "You drive", and their dashboard item stays on the
+   dash (never Kenji's cactus). Screenshots tests/.cache/van_driver_<band>.png. */
+async function drivers() {
+  const c = checker('drivers');
+  for (const bandId of ['frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+    const { page, errors, close } = await open();
+    try {
+      await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+      const d = await page.evaluate(b => {
+        GG.main.quickStart({ seed: 5151, bandId: b, openCard: false }); GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'plan'; GG.main.sync();
+        const drv = GG.world.driver(s), def = GG.content.drivers[drv.designated] || {};
+        return { band: s.bandId, id: drv.id, name: drv.name, you: drv.you, designated: drv.designated, dash: def.dashboard, cactus: drv.dashboard === 'cactus' };
+      }, bandId);
+      c.ok(d.band === bandId && !d.you && d.id === d.designated && d.dash && d.dash !== 'cactus', bandId + ': ' + d.name + ' drives, dashboard ' + d.dash);
+      const trip = async (label) => {
+        await page.evaluate(() => {
+          // (a venue out of town: a long enough drive that the van hasn't arrived by the time the test looks)
+          const s = GG.state, W = GG.world, v = GG.content.venues.filter(x => x.city !== s.city && x.region === 'canada' && x.tier <= 2)[0] || GG.content.venues[0];
+          s.gig = W.makeListing(s, v, GG.RNG(3), {}); s.trip = null;
+          const t = W.startTrip(s); t.cardId = null; t.resolved = true; t.banter = [];
+          window.__vanDone = null; GG.ui.playVan(s.gig, () => { window.__vanDone = 'yes'; });
+        });
+        await waitScreen(page, 'van');
+        await page.waitForTimeout(500);
+        const r = await page.evaluate(() => ({ head: document.querySelector('[data-testid="van-weather"]').textContent, t: GG.world.trip(GG.state), mode: GG.debug('van').mode,
+          info: GG.render.van && GG.render.van.info ? GG.render.van.info() : null }));
+        await page.screenshot({ path: path.join(CACHE, 'van_driver_' + bandId + label + '.png') });
+        // skip (or "Load in" if the van already arrived; the button re-renders on arrival, so retry briefly)
+        for (let k = 0; k < 24 && !(await page.evaluate(() => window.__vanDone === 'yes')); k++) {
+          await page.locator(tid('btn-van-skip')).last().click({ timeout: 1500 }).catch(() => {});
+          await page.waitForTimeout(250);
+        }
+        await page.waitForFunction(() => window.__vanDone === 'yes', null, { timeout: 8000 });
+        return r;
+      };
+      const a = await trip('');
+      c.ok(a.head.includes(d.name + ' drives') && a.t.driver === d.id, bandId + ': van header + trip: ' + a.head);
+      if (a.info && a.info.built) c.ok(a.info.driver === d.id && a.info.dashboard === d.dash, bandId + ': the 3D van: ' + a.info.driver + ' + ' + a.info.dashboard);
+      else c.ok(a.mode === '2d', bandId + ': the 2D windshield (no 3D van)');
+      // the driver quits: you drive, their dashboard item stays
+      await page.evaluate(id => { GG.drama.applyMember(GG.state, { id, act: 'quit' }, {}); GG.main.sync(); GG.emit('hotspot', { action: 'door' }); }, d.id);
+      await waitScreen(page, 'van-info');
+      const sheet = await page.evaluate(() => ({ drv: document.querySelector('[data-testid="van-driver"]').textContent, all: document.querySelector('#screens').textContent }));
+      c.ok(/Driver: You/.test(sheet.drv) && sheet.all.includes('mirrors are still set for ' + d.name) && !/Kenji|cactus/i.test(sheet.all), bandId + ': the van sheet: you drive now, the mirrors are set for ' + d.name);
+      await tap(page, 'btn-close'); await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
+      const b = await trip('_you');
+      c.ok(b.head.includes('You drive') && b.t.driver === 'you', bandId + ': after the quit: ' + b.head);
+      if (b.info && b.info.built) c.ok(b.info.driver === 'you' && b.info.people[0] === 'player:driver' && b.info.dashboard === d.dash, bandId + ': you drive, ' + d.name + '\'s ' + d.dash + ' stays on the dash: ' + b.info.dashboard);
+      c.ok(errors.length === 0, bandId + ': no console errors ' + errors.join(' | '));
+    } catch (e) { c.ok(false, bandId + ' threw: ' + (e.stack || e)); }
+    await close();
+  }
+  c.done();
+}
+
 (async () => {
   if (want('board')) await board();
   if (want('van')) await van();
   if (want('calendar')) await calendar();
+  if (want('drivers')) await drivers();   // v0.9
 })();
