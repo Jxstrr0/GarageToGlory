@@ -1,6 +1,7 @@
 // pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
-//         → Start → count-in → backing plays on the audio clock → timed in-page taps on lane zones judge Perfect/Good →
+//         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
+//         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
 //         pause suspends the AudioContext and freezes the song, resume continues → screenshot tests/.cache/gig.png →
 //         autoplay bot hook finishes the set ('gig:song' per song, state.liveGig) → results (grade, reactions) → applied →
 //         Wrap up → done(result); a perfect autoplay gig scores S; a half-played liveGig resumes at its next song;
@@ -80,10 +81,19 @@ async function gig() {
     await tap(page, 'btn-gig-auto');
     c.ok(await page.evaluate(() => document.querySelectorAll('.set-slot:not(.empty)').length) === 4, 'auto-pick refills');
     c.ok((await audit(page)).length === 0, 'setlist layout ' + (await audit(page)).join('; '));
+    await page.evaluate(() => {   // samples the count-in: the numeral pops from 1.35x (was a full-width box, 68 px past the edge)
+      const W = document.documentElement.clientWidth, cin = window.__cin = { n: 0, bad: [] };
+      const id = setInterval(() => { const m = GG.debug('gigui').mode; if (m !== 'set' && m !== 'count') { clearInterval(id); return; } if (m !== 'count') return;
+        cin.n++;
+        for (const sc of document.querySelectorAll('.full-body')) if (sc.scrollWidth > sc.clientWidth + 1) cin.bad.push('hscroll ' + sc.scrollWidth);
+        const r = document.querySelector('.gig-count').getBoundingClientRect(); if (r.width && (r.right > W + 1 || r.left < -1)) cin.bad.push('count ' + Math.round(r.left) + '..' + Math.round(r.right)); }, 16);
+    });
     await tap(page, 'btn-gig-start');
     await page.waitForFunction(() => GG.debug('gigui').mode === 'count', null, { timeout: 5000 });
     c.ok(await page.evaluate(() => GG.state.liveGig && GG.state.liveGig.setlist.length === 4 && GG.state.liveGig.index === 0), 'state.liveGig holds the set');
     await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    const cin = await page.evaluate(() => window.__cin);
+    c.ok(cin.n >= 5 && cin.bad.length === 0, 'count-in layout: the numeral pops without widening the screen ' + JSON.stringify({ n: cin.n, bad: cin.bad.slice(0, 3) }));
     const a0 = await page.evaluate(() => ({ g: GG.debug('gigui'), a: GG.debug('audio') }));
     c.ok(a0.g.audio && a0.g.ctx && a0.a.state === 'running' && a0.a.playing, 'backing plays on a running AudioContext ' + JSON.stringify({ a: a0.a.state, g: a0.g.audio }));
     c.ok(a0.g.songT >= 0 && a0.g.songT < 2 && a0.g.lat >= 0 && a0.g.lat < 0.3, 'song clock started ' + a0.g.songT);
@@ -107,6 +117,18 @@ async function gig() {
     const au = await page.evaluate(() => ({ auto: GG.debug('gigui').auto, played: GG.debug('gigui').autoPlayed, lead: window.__ah.slice(0, 20) }));
     c.ok(au.auto > 0 && au.played > 0, 'two-thumb auto notes play themselves ' + JSON.stringify(au));
     c.ok(au.lead.length > 0 && au.lead.filter(x => x > -0.01).length >= au.lead.length * 0.6 && au.lead.every(x => x < 0.35), 'auto notes are scheduled ahead on the audio clock (headless clock is bursty) ' + au.lead.map(x => x.toFixed(3)));
+    // A GPU-bound phone: frames 600 ms apart while the main thread is free (headless software GL does this under load).
+    // Auto notes are booked by a timer, not the frame loop: every one still lands ahead on the audio clock, none skipped.
+    const slow = await page.evaluate(async () => {
+      const raf0 = window.requestAnimationFrame, d0 = GG.debug('gigui'), n0 = window.__ah.length, t0 = performance.now();
+      window.requestAnimationFrame = cb => setTimeout(() => raf0.call(window, cb), 600);
+      try { while (window.__ah.length - n0 < 4 && GG.debug('gigui').autoSkipped - d0.autoSkipped < 4 && performance.now() - t0 < 9000) await new Promise(r => setTimeout(r, 30)); }
+      finally { window.requestAnimationFrame = raf0; }
+      const d1 = GG.debug('gigui');
+      return { lead: window.__ah.slice(n0), played: d1.autoPlayed - d0.autoPlayed, skipped: d1.autoSkipped - d0.autoSkipped, mode: d1.mode };
+    });
+    c.ok(slow.mode === 'play' && slow.played >= 4 && slow.skipped === 0 && slow.lead.length >= 4 && slow.lead.every(x => x > -0.01 && x < 0.35),
+      'frames 600 ms apart: auto notes still booked ahead, none skipped ' + JSON.stringify({ played: slow.played, skipped: slow.skipped, lead: slow.lead.map(x => +x.toFixed(3)) }));
     const meter = await page.evaluate(() => ({ w: document.querySelector('.gig-crowd .bar > i').style.width, lv: document.querySelector('.gig-crowd .lv').textContent,
       px: (() => { const cv = document.querySelector('[data-testid="gig-highway"]'), d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
         let lit = 0; for (let i = 0; i < d.length; i += 4 * 97) if (d[i] + d[i + 1] + d[i + 2] > 120) lit++; return lit; })() }));
