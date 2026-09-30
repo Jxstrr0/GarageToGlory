@@ -962,6 +962,47 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 .calib-pad.hit { border-color: var(--amber); color: var(--amber); }
 .diff-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .diff-pick .btn { flex-direction: column; min-height: 64px; padding: 6px; }
+/* ==== v0.8.1 LOGO (5m_ui_logo: the logo picker 'logo', logo widgets; 46_render_logo draws the pixels) ==== */
+img.logo-img { display: block; flex: 0 0 auto; object-fit: contain; -webkit-user-drag: none; }
+.full.logox .full-body { padding-bottom: 12px; }
+.lg-stage { position: sticky; top: calc(-1 * var(--safe-top) - 12px); z-index: 3; margin: 12px 0 8px; padding: 10px 10px 8px; border-radius: 16px; border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 50% 38%, #3a4058 0%, #1a1f30 62%, #10141f 100%); display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: 0 8px 18px rgba(0, 0, 0, .35); }
+.lg-prev { display: flex; justify-content: center; }
+.lg-mini-row { display: flex; gap: 14px; justify-content: center; align-items: flex-end; }
+.lg-mini { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 700 10px var(--font); color: var(--dim); }
+.lg-kick { width: 64px; height: 64px; border-radius: 50%; padding: 3px; background: #9aa0a8; box-shadow: inset 0 0 0 2px #5d636c; }
+.lg-caption { font-size: 12px; color: var(--dim); text-align: center; } .lg-caption b { color: var(--text); }
+.lg-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+.lg-sec { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.lg-sec-h { display: flex; align-items: baseline; gap: 8px; } .lg-sec-h .tiny { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-n { width: 22px; height: 22px; border-radius: 50%; background: var(--amber); color: #1d1204; font: 900 12px/22px var(--font); text-align: center; flex: 0 0 22px; }
+.lg-emb { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.lg-embtn, .lg-stbtn, .lg-pal { min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); color: var(--dim); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px; font: 700 10px/1.1 var(--font); overflow: hidden; }
+.lg-embtn span, .lg-pal .pn { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-embtn.on, .lg-stbtn.on, .lg-pal.on { border-color: var(--amber); background: var(--panel2); color: var(--text); box-shadow: inset 0 0 0 1px var(--amber); }
+.lg-styles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.lg-stbtn { min-height: 76px; font-size: 12px; }
+.lg-stbtn img.logo-img { max-width: 100%; }
+.lg-pals { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.lg-pal .sw { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; gap: 2px; border: 1px solid rgba(255, 255, 255, .25); }
+.lg-pal .sw i { width: 12px; height: 20px; border-radius: 3px; display: block; }
+.lg-panel .row { align-items: center; gap: 12px; }
+.lg-cast { position: relative; display: flex; align-items: center; gap: 10px; margin: 8px 0; padding: 8px 10px 8px 8px; border-radius: 8px; overflow: hidden;
+  background: linear-gradient(90deg, #0d1426 0%, #1c2a52 70%, #2a3a70 100%); border-left: 5px solid #ffd24a; box-shadow: 0 6px 16px rgba(0, 0, 0, .4); }
+.lg-cast.you { border-left-color: var(--amber); background: linear-gradient(90deg, #2a1606 0%, #5a3208 70%, #7a4a10 100%); }
+.lg-cast .grow { min-width: 0; } .lg-cast b { display: block; font: 900 17px/1.15 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-cast-cat { font: 800 10px var(--font); letter-spacing: .08em; text-transform: uppercase; color: #ffd24a; }
+.lg-cast-sub { font-size: 11px; color: var(--dim); }
+.lg-cast-live { position: absolute; left: 8px; top: 4px; display: none; }
+.lg-cast-bug { position: absolute; right: 6px; top: 4px; font: 900 8px var(--font); letter-spacing: .12em; color: rgba(255, 255, 255, .45); }
+.lg-cast-blank { width: 56px; height: 56px; border-radius: 10px; background: #1a1f30; display: flex; align-items: center; justify-content: center; font-size: 26px; flex: 0 0 56px; }
+img.merch-art { flex: 0 0 auto; border-radius: 10px; background: rgba(255, 255, 255, .04); }
+.merch-item .row img.merch-art { margin-right: 2px; }
+.rv-row img.logo-img { border-radius: 6px; }
+.rs-bar img.logo-img { border-radius: 6px; }
+.bb-page img.logo-img { border-radius: 12px; }
+/* ==== end v0.8.1 LOGO ==== */
 </style>
 </head>
 <body>
@@ -6452,6 +6493,111 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       snubbed: [
         "No Loonie nominations this year. Marcel says awards are 'for the dead'. Then watches the whole broadcast anyway.",
         'Not nominated. Tundra Wraith were. They called to say "you were robbed, buddy". You were not robbed. It still stung.'
+      ]
+    }
+  };
+})(window.GG);
+
+</script>
+<script>/* content/logo.js */
+// content/logo.js (v0.8.1, Addendum 2 D2, LOGO): the band logo. Emblems, lettering styles, curated colour pairs, each band's
+// default logo, a fixed logo for every rival + scene band, the Rebrand price and the group-chat lines. Pure data: GG.logo
+// (src/2e_sim_logo.js) reads it, GG.render.logo (src/46_render_logo.js) draws it (procedurally; no image files).
+// Shape: GG.content.logo = {
+//   emblems: [{ id (C.LOGO_EMBLEMS + additions), name, art: { scale, dy, spin } }]   art = how the renderer places the emblem
+//     (scale 0.6..1.1 of the logo's box, dy = shift in box units, spin = tilt in radians). The list only grows (D6: add, don't
+//     shrink); the first twelve are the owner's starting set in C.LOGO_EMBLEMS order.
+//   styles: [{ id (C.LOGO_STYLES), name, blurb, genre }]   metal = spiky unreadable, punk = cut-out ransom, rock = chrome '80s,
+//     country = western slab. Any genre may use any style; the band's default is its genre's.
+//   palettes: [{ id, name, fg (the lettering), em (the emblem), ground (outlines + badge backgrounds; dark or light) }]
+//   bands: { <bandId>: { emblem, style, palette } }   (the four playable bands' default logos)
+//   rivals: { <rivalId | scene band id>: { emblem, style, palette } | { same: <rivalId> } }   (fixed; the renderer is the same)
+//   rebrand: { cost: { <era>: $ }, buzz }   ("small fee + a little buzz")
+//   lines: { picked: [{ who, text }], rebrand: [{ who, text }] }   (group chat; who falls back to the first active member)
+// }
+(function (GG) {
+  GG.content.logo = {
+    emblems: [
+      { id: 'skull', name: 'Skull', art: { scale: 0.9, dy: 0 } },
+      { id: 'wheat', name: 'Wheat sheaf', art: { scale: 0.95, dy: 0 } },
+      { id: 'bolt', name: 'Lightning bolt', art: { scale: 0.95, dy: 0, spin: 0.08 } },
+      { id: 'moose', name: 'Moose', art: { scale: 1, dy: 0.02 } },
+      { id: 'maple', name: 'Maple leaf', art: { scale: 0.95, dy: 0 } },
+      { id: 'gopher', name: 'Gopher', art: { scale: 0.95, dy: 0 } },
+      { id: 'anvil', name: 'Anvil', art: { scale: 1, dy: 0.04 } },
+      { id: 'hailstone', name: 'Hailstone', art: { scale: 0.95, dy: 0 } },
+      { id: 'elevator', name: 'Grain elevator', art: { scale: 0.95, dy: 0 } },
+      { id: 'cowboy_hat', name: 'Cowboy hat', art: { scale: 1.05, dy: 0 } },
+      { id: 'safety_pin', name: 'Safety pin', art: { scale: 1, dy: 0, spin: -0.5 } },
+      { id: 'flaming_tire', name: 'Flaming tire', art: { scale: 0.95, dy: 0.02 } },
+      // v0.8.1 additions (D6: the list grows)
+      { id: 'curling_stone', name: 'Curling stone', art: { scale: 0.95, dy: 0.02 } },
+      { id: 'mosquito', name: 'Mosquito', art: { scale: 1, dy: 0 } },
+      { id: 'toque', name: 'Toque', art: { scale: 0.95, dy: 0 } }
+    ],
+    styles: [
+      { id: 'metal', name: 'Spiky', blurb: 'Unreadable. Perfect. Looks like a root system in a blizzard.', genre: 'metal' },
+      { id: 'punk', name: 'Ransom note', blurb: 'Cut out of flyers and a church bulletin, one letter at a time.', genre: 'punk' },
+      { id: 'rock', name: "Chrome '80s", blurb: 'Airbrushed chrome. A lens flare. Leather pants implied.', genre: 'rock' },
+      { id: 'country', name: 'Western slab', blurb: 'Big slab letters on an arch, like a feed-store sign.', genre: 'country' }
+    ],
+    palettes: [
+      { id: 'frost', name: 'Frostbite', fg: '#e6f6ff', em: '#3b8fd9', ground: '#0b1422' },
+      { id: 'blood', name: 'Blood & bone', fg: '#f2ead8', em: '#b3141c', ground: '#130b0b' },
+      { id: 'canola', name: 'Canola field', fg: '#ffd400', em: '#3f8a2e', ground: '#0f1d0c' },
+      { id: 'rider', name: 'Rider green', fg: '#ffffff', em: '#1f8a3a', ground: '#0a2212' },
+      { id: 'chrome', name: 'Chrome & neon', fg: '#eef3fa', em: '#ff3aa6', ground: '#170619' },
+      { id: 'rust', name: 'Rust bucket', fg: '#f6c894', em: '#b24a1c', ground: '#1e1108' },
+      { id: 'hazard', name: 'Hazard tape', fg: '#161616', em: '#f5c400', ground: '#f6efd8' },
+      { id: 'denim', name: 'Denim & rhinestone', fg: '#f5f6fb', em: '#4a72b8', ground: '#0d1628' },
+      { id: 'sunset', name: 'Prairie sunset', fg: '#ffd27a', em: '#e0521e', ground: '#2a0c12' },
+      { id: 'ice', name: 'Black ice', fg: '#d8e0e8', em: '#6b7784', ground: '#08090d' },
+      { id: 'pink', name: 'Punk pink', fg: '#16161a', em: '#f0609f', ground: '#fbe9f1' },
+      { id: 'gold', name: 'Gold record', fg: '#ffd84a', em: '#9a7420', ground: '#140f04' },
+      { id: 'maple', name: 'Maple red', fg: '#ffffff', em: '#d8281c', ground: '#2a0707' },
+      { id: 'slime', name: 'Slough slime', fg: '#b8ff3c', em: '#7a34b0', ground: '#130a1c' }
+    ],
+    bands: {
+      hail_damage: { emblem: 'hailstone', style: 'metal', palette: 'frost' },
+      frost_heave: { emblem: 'safety_pin', style: 'punk', palette: 'hazard' },
+      gravel_kings: { emblem: 'bolt', style: 'rock', palette: 'chrome' },
+      grid_road_ramblers: { emblem: 'cowboy_hat', style: 'country', palette: 'sunset' }
+    },
+    rivals: {
+      tundra_wraith: { emblem: 'skull', style: 'metal', palette: 'ice' },
+      mall_rats: { emblem: 'safety_pin', style: 'punk', palette: 'slime' },
+      chartbusters: { emblem: 'bolt', style: 'rock', palette: 'gold' },
+      buckle_and_boot: { emblem: 'flaming_tire', style: 'country', palette: 'rust' },
+      // the scene leaderboard's filler bands (content.rivalry.scene)
+      snowplows: { emblem: 'toque', style: 'punk', palette: 'frost' },
+      maple_syrup_riot: { emblem: 'maple', style: 'punk', palette: 'maple' },
+      kettle_chips: { emblem: 'wheat', style: 'country', palette: 'canola' },
+      dj_poutine: { emblem: 'bolt', style: 'rock', palette: 'slime' },
+      grain_elevator_gods: { emblem: 'elevator', style: 'metal', palette: 'sunset' },
+      pothole_prophets: { emblem: 'flaming_tire', style: 'rock', palette: 'hazard' },
+      canola_coven: { emblem: 'wheat', style: 'metal', palette: 'canola' },
+      the_gophers: { emblem: 'gopher', style: 'metal', palette: 'blood' },
+      prairie_oysters: { emblem: 'cowboy_hat', style: 'country', palette: 'gold' },
+      hoarfrost: { emblem: 'moose', style: 'metal', palette: 'frost' },
+      block_heaters: { emblem: 'curling_stone', style: 'rock', palette: 'rider' },
+      mall_rats_scene: { same: 'mall_rats' },
+      chartbusters_scene: { same: 'chartbusters' },
+      buckle_boot_scene: { same: 'buckle_and_boot' }
+    },
+    rebrand: { cost: { garage: 150, local: 300, signed: 600, world: 900 }, buzz: 3 },
+    lines: {
+      picked: [
+        { who: 'marcel', text: 'The logo is final. I have already practised signing it. It takes eleven minutes.' },
+        { who: 'rox', text: 'Logo is done. Photocopied it 400 times at the library. The librarian is now a fan.' },
+        { who: 'chase', text: 'That logo is going on a jacket. My jacket. Maybe an airbrushed van. Dream big.' },
+        { who: 'travis', text: 'Logo looks like it belongs on a feed-store sign. That is the highest compliment I know.' }
+      ],
+      rebrand: [
+        { who: 'marcel', text: 'A new logo. The old one will live on in my heart, and on the 200 stickers in my trunk.' },
+        { who: 'dana', text: 'New logo. I will be re-drawing it on every set list by hand. Worth it.' },
+        { who: 'rox', text: 'Rebranded. Selling out, or buying in? Either way the old stickers are going on the fridge.' },
+        { who: 'chase', text: 'New look, new us. I have told three radio stations. None of them asked.' },
+        { who: 'travis', text: 'New logo. Mama says the old one was fine. Mama is not wrong, but here we are.' }
       ]
     }
   };
@@ -19368,6 +19514,187 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* 2e_sim_logo.js */
+// 2e_sim_logo.js (v0.8.1, Addendum 2 D2, LOGO): the band logo's rules. DOM-free, no career RNG (a logo never rolls dice).
+// State: state.logo = { emblem, style, palette } (three ids; 02_contracts v0.8.1). Content: GG.content.logo (content/logo.js).
+// API (GG.logo):
+//   Lists    content() ; emblems() / styles() / palettes() (content order; emblems = C.LOGO_EMBLEMS + additions) ;
+//            emblem(id) / style(id) / palette(id) -> def | null
+//   Logos    sanitize(logo, bandIdOrGenre?) -> a valid { emblem, style, palette } (bad ids fall back to the band's default) ;
+//            defaultFor(bandIdOrGenre) ; get(state) (sanitised, never writes) ; ensure(state) (fills state.logo) ;
+//            same(a, b) ; rival(id, genre?) (the fixed logo of a rival / scene band; unknown ids get a stable hashed one) ;
+//            findRival(name) -> id | null (by a band's current name, for the Loonies' winners) ; key(logo) ('emblem.style.palette')
+//   Rebrand  rebrandCost(state) -> { fund, buzz } ; canRebrand(state, logo) -> { ok, cost, buzz } | { ok: false, why } ;
+//            rebrand(state, logo) -> { ok, cost, logo, deltas } | { ok: false, why } (fund − cost, buzz − a little, a chat line)
+//   Career   prepare(logo, bandId) (the new-career picker hands its pick over; 'career:new' consumes it) ; pending() ;
+//            init(state) ; migrate(state) (chained onto GG.save.migrate: fills state.logo only when missing or broken; never
+//            touches state.v)
+//   Carry    carry.key(genre) (GG.creator.carry.key(genre) + '.logo') ; carry.read(genre) -> logo | null ; carry.write(state)
+//            (this device remembers the last logo per genre, like the creator's unlocks: the picker starts from it)
+// Events: 'logo:changed' { state, logo, source: 'new'|'rebrand' }.
+(function (GG) {
+  var L = GG.logo = {};
+  var CT = GG.contracts;
+  var FIELDS = ['emblem', 'style', 'palette'];
+  var pendingPick = null;
+
+  function K() { return GG.content.logo || { emblems: [], styles: [], palettes: [], bands: {}, rivals: {}, rebrand: {}, lines: {} }; }
+  function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  L.content = K;
+  L.emblems = function () {
+    var out = K().emblems.slice();
+    (CT.LOGO_EMBLEMS || []).forEach(function (id) { if (!byId(out, id)) out.push({ id: id, name: id, art: {} }); });
+    return out;
+  };
+  L.styles = function () { return K().styles.slice(); };
+  L.palettes = function () { return K().palettes.slice(); };
+  L.emblem = function (id) { return byId(L.emblems(), id); };
+  L.style = function (id) { return byId(K().styles, id); };
+  L.palette = function (id) { return byId(K().palettes, id); };
+  L.key = function (lg) { lg = lg || {}; return lg.emblem + '.' + lg.style + '.' + lg.palette; };
+  L.same = function (a, b) { return !!(a && b) && FIELDS.every(function (f) { return a[f] === b[f]; }); };
+
+  function bandDef(id) { return (GG.content.bands || {})[id] || null; }
+  function genreOf(x) {
+    var b = bandDef(x);
+    if (b) return b.genre;
+    return (CT.LOGO_STYLES || []).indexOf(x) >= 0 ? x : 'metal';
+  }
+  // The band's own default; a genre (or an unknown band) gets its genre's band's logo.
+  L.defaultFor = function (x) {
+    var bands = K().bands, d = bands[x];
+    if (!d) {
+      var g = genreOf(x), all = GG.content.bands || {};
+      for (var id in all) if (all[id] && all[id].genre === g && bands[id]) { d = bands[id]; break; }
+    }
+    d = d || { emblem: 'skull', style: genreOf(x), palette: (K().palettes[0] || {}).id || 'frost' };
+    return { emblem: d.emblem, style: d.style, palette: d.palette };
+  };
+  L.sanitize = function (lg, x) {
+    var def = L.defaultFor(x || 'hail_damage'), o = lg && typeof lg === 'object' ? lg : {};
+    return {
+      emblem: L.emblem(o.emblem) ? o.emblem : def.emblem,
+      style: L.style(o.style) ? o.style : def.style,
+      palette: L.palette(o.palette) ? o.palette : def.palette
+    };
+  };
+  L.get = function (state) { return L.sanitize(state && state.logo, state && state.bandId); };
+  L.ensure = function (state) {
+    if (!state || typeof state !== 'object') return null;
+    var ok = state.logo && typeof state.logo === 'object' && L.same(state.logo, L.sanitize(state.logo, state.bandId));
+    if (!ok) state.logo = L.get(state);
+    return state.logo;
+  };
+
+  // Rivals: fixed logos from content ({ same } aliases the scene copies of the big rivals); anything else hashes its id.
+  L.rival = function (id, genre) {
+    var r = K().rivals || {}, d = r[id], n = 0;
+    while (d && d.same && n++ < 4) d = r[d.same];
+    if (d && d.emblem) return { emblem: d.emblem, style: d.style, palette: d.palette };
+    var h = GG.hashSeed('logo|' + id), em = L.emblems(), pa = K().palettes;
+    return { emblem: em.length ? em[h % em.length].id : 'skull', style: (CT.LOGO_STYLES || []).indexOf(genre) >= 0 ? genre : (CT.LOGO_STYLES || ['metal'])[(h >>> 8) % 4],
+      palette: pa.length ? pa[(h >>> 12) % pa.length].id : 'frost' };
+  };
+  L.findRival = function (name) {
+    if (!name) return null;
+    var n = String(name).toLowerCase(), rv = GG.state && GG.state.rival;
+    if (rv && (String(rv.name || '').toLowerCase() === n || String(rv.formerName || '').toLowerCase() === n)) return rv.id;
+    var all = GG.content.rivals || {};
+    for (var id in all) if (all[id] && String(all[id].name).toLowerCase() === n) return id;
+    var sc = (GG.content.rivalry && GG.content.rivalry.scene) || [];
+    for (var i = 0; i < sc.length; i++) if (String(sc[i].name).toLowerCase() === n) return sc[i].id;
+    return null;
+  };
+
+  /* ---- Rebrand (the laptop): a small fee + a little buzz ------------------------------------------------------------ */
+  L.rebrandCost = function (state) {
+    var rb = K().rebrand || {}, c = rb.cost || {};
+    var fund = c[state && state.era] != null ? c[state.era] : (c.garage != null ? c.garage : 150);
+    return { fund: Math.round(fund), buzz: Math.round(rb.buzz != null ? rb.buzz : 3) };
+  };
+  function fail(why) { return { ok: false, why: why }; }
+  L.canRebrand = function (state, lg) {
+    if (!state) return fail('No band yet.');
+    var cur = L.get(state), next = L.sanitize(lg, state.bandId), c = L.rebrandCost(state);
+    if (L.same(cur, next)) return fail('That is the logo you already have.');
+    if ((state.fund || 0) < c.fund) return fail('Not enough in the fund (' + GG.util.fmtMoney(c.fund) + ').');
+    return { ok: true, cost: c.fund, buzz: c.buzz };
+  };
+  function chat(state, list, d) {
+    if (!GG.career || !GG.career.postChat || !list || !list.length) return null;
+    var act = (state.members || []).filter(function (m) { return m && m.status === 'active'; });
+    var mine = list.filter(function (x) { return act.some(function (m) { return m.id === x.who; }); });
+    var line = mine.length ? mine[(state.totalWeek || 0) % mine.length] : null;
+    if (!line) return null;   // nobody in this band says any of these lines
+    return GG.career.postChat(state, line.who, line.text, d || null);
+  }
+  L.rebrand = function (state, lg) {
+    var c = L.canRebrand(state, lg);
+    if (!c.ok) return c;
+    var d = {}, next = L.sanitize(lg, state.bandId);
+    if (GG.career && GG.career.applyEffects) GG.career.applyEffects(state, { fund: -c.cost, buzz: -c.buzz }, d);
+    else { state.fund -= c.cost; state.buzz = Math.max(0, (state.buzz || 0) - c.buzz); }
+    state.logo = next;
+    chat(state, (K().lines || {}).rebrand, d);
+    L.carry.write(state);
+    GG.emit('logo:changed', { state: state, logo: next, source: 'rebrand' });
+    GG.emit('stats:changed', { state: state });
+    return { ok: true, cost: c.cost, buzz: c.buzz, logo: next, deltas: d };
+  };
+
+  /* ---- New careers ---------------------------------------------------------------------------------------------------- */
+  L.prepare = function (lg, bandId) { pendingPick = lg ? { logo: L.sanitize(lg, bandId), bandId: bandId || null } : null; return pendingPick; };
+  L.pending = function (bandId) { return pendingPick && (!bandId || !pendingPick.bandId || pendingPick.bandId === bandId) ? pendingPick.logo : null; };
+  L.init = function (state) {
+    var p = pendingPick; pendingPick = null;
+    var picked = p && (!p.bandId || p.bandId === state.bandId);
+    state.logo = picked ? L.sanitize(p.logo, state.bandId) : L.defaultFor(state.bandId);
+    if (picked) { chat(state, (K().lines || {}).picked, null); L.carry.write(state); }
+    GG.emit('logo:changed', { state: state, logo: state.logo, source: 'new' });
+    return state.logo;
+  };
+  L.migrate = function (s) {
+    if (!s || typeof s !== 'object') return s;
+    L.ensure(s);
+    return s;
+  };
+
+  /* ---- Carry-over (this device, per genre; the cosmetics rule, next to the creator's unlocks) --------------------------- */
+  function store() { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; } }
+  L.carry = {
+    key: function (genre) { return (GG.creator && GG.creator.carry ? GG.creator.carry.key(genre) : 'gg.v1.unlocks.' + (genre || 'metal')) + '.logo'; },
+    read: function (genre) {
+      var s = store(), raw = null;
+      try { raw = s ? s.getItem(L.carry.key(genre)) : null; } catch (e) { raw = null; }
+      var o = null;
+      try { o = raw ? JSON.parse(raw) : null; } catch (e) { o = null; }
+      if (!o || typeof o !== 'object' || !L.emblem(o.emblem) || !L.style(o.style) || !L.palette(o.palette)) return null;
+      return { emblem: o.emblem, style: o.style, palette: o.palette };
+    },
+    write: function (state) {
+      if (!state || !state.genre || !state.logo) return false;
+      var s = store();
+      try { if (!s) return false; s.setItem(L.carry.key(state.genre), JSON.stringify(L.get(state))); return true; } catch (e) { return false; }
+    }
+  };
+
+  /* ---- Hooks ------------------------------------------------------------------------------------------------------------ */
+  GG.on('career:new', function (p) { if (p && p.state) L.init(p.state); });
+  if (GG.save && GG.save.migrate && !GG.save.migrate.logo) {
+    var prevMigrate = GG.save.migrate;
+    GG.save.migrate = function (s) { return L.migrate(prevMigrate(s)); };
+    Object.keys(prevMigrate).forEach(function (k) { if (GG.save.migrate[k] === undefined) GG.save.migrate[k] = prevMigrate[k]; });   // keep earlier wrappers' flags
+    GG.save.migrate.logo = true;
+  }
+
+  GG.registerDebug('logo', function () {
+    var st = GG.state;
+    return { logo: st ? L.get(st) : null, key: st ? L.key(L.get(st)) : null, pending: pendingPick ? L.key(pendingPick.logo) : null,
+      emblems: L.emblems().length, styles: K().styles.length, palettes: K().palettes.length, cost: st ? L.rebrandCost(st) : null };
+  });
+})(window.GG);
+
+</script>
 <script>/* 30_audio.js */
 // 30_audio.js: every sound in the game, synthesized with Web Audio (no files).
 // The AudioContext is created lazily on the first user gesture (GG.audio.unlock, wired in 60_main).
@@ -22919,6 +23246,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
   function css(hex) { return typeof hex === 'number' ? '#' + ('000000' + hex.toString(16)).slice(-6) : hex; }
   // Kick-drum front head art on a 256px canvas (circle). Band logo by genre, your face (from your look), a moose, custom text.
   function drawHead(g, K, o) {
+    if (K.head === 'logo' && GG.render.logo && GG.render.logo.head(g, o)) return;   // v0.8.1: the band's own logo (46_render_logo)
     var dark = K.head === 'logo' && o.genre === 'metal';
     g.fillStyle = dark ? '#121214' : '#efe9dc'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
     g.strokeStyle = dark ? '#3a3a42' : '#cfc6b2'; g.lineWidth = 8; g.beginPath(); g.arc(128, 128, 122, 0, Math.PI * 2); g.stroke();
@@ -23445,7 +23773,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     function sync(st) {
       state = st;
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId];
-      banner.set((band && band.name) || 'Hail Damage');
+      banner.set((band && band.name) || 'Hail Damage', st.logo);   // v0.8.1: the band logo on the bedsheet
       trophyWall.set(st.trophies, st.banned);
       yard.set(seasonOf(st.week || 1));
       decor.set(st);
@@ -23453,7 +23781,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       space.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
-      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '');   // v0.8: the kit look (KIT_LOOK)
+      var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '') + (kl && kl.head === 'logo' && st.logo ? JSON.stringify(st.logo) : '');   // v0.8: the kit look (KIT_LOOK); v0.8.1: + the logo
       if (ksig !== kit.sig) buildKit(kc, kl, ksig);
       if (kit.mesh) kit.mesh.position.y = space.riserH();          // v0.8 polish: the studio / arena kit stands on a riser
       ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
@@ -25524,12 +25852,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       mesh.position.set(PROPS.door.x, 1.08, Z0 + 0.1);
       var self = {
         mesh: mesh, text: null,
-        set: function (name) {
-          if (name === self.text) return;
-          self.text = name;
+        set: function (name, logo) {
+          var sig = name + (logo ? '|' + JSON.stringify(logo) : '');
+          if (sig === self.sig) return;
+          self.text = name; self.sig = sig;
           var g = c.getContext('2d'), rng = GG.RNG(GG.hashSeed(name)), txt = String(name).toUpperCase(), size = 92;
           g.fillStyle = '#e8e1cf'; g.fillRect(0, 0, 512, 176);
           for (var k = 0; k < 14; k++) { g.fillStyle = 'rgba(120,100,70,' + (0.04 + rng.next() * 0.06) + ')'; g.fillRect(rng.next() * 512, rng.next() * 176, 20 + rng.next() * 90, 3 + rng.next() * 10); }
+          if (logo && GG.render.logo) {   // v0.8.1: the band logo sprayed on the sheet (the name is in it)
+            g.globalAlpha = 0.95; g.drawImage(GG.render.logo.canvas(logo, name, 176, { shape: 'wide', aspect: 2.9 }), 0, 0, 512, 176); g.globalAlpha = 1;
+            tex.needsUpdate = true; return;
+          }
           g.textAlign = 'center'; g.textBaseline = 'middle';
           do { g.font = '900 ' + size + 'px Impact, "Arial Black", "Helvetica Neue", sans-serif'; size -= 4; } while (g.measureText(txt).width > 470 && size > 24);
           g.fillStyle = '#b3141c';
@@ -27933,6 +28266,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       gl.box(0.12, 0.05, 0.004, 0.0, 1.73, WS.z1 + 0.107, 0xd8b08a);
       gl.box(0.13, 0.022, 0.004, 0.0, 1.738, WS.z1 + 0.109, 0x0c0c0e);
       mesh(b.build(), im); mesh(gl.build(), ctx.mats.unlit);
+      if (!D.look) logoDecal(D, dim);                                                        // v0.8.1 LOGO: the band logo windshield sticker
       // Bobble head (spring), air freshener (pendulum), steering wheel (steers).
       var hb = new ctx.Builder({ jitter: 0.04, seed: 31 });
       hb.box(0.075, 0.07, 0.1, 0, 0.03, 0.03, 0x6a4424); hb.box(0.05, 0.045, 0.05, 0, 0.02, 0.1, 0x4a2c16);
@@ -28086,6 +28420,17 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         if (list[i].banned) { b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot + 0.55, 0); b.box(w * 1.15, 0.006, 0.022, x, y + 0.002, z, 0xd0201a, 0, rot - 0.55, 0); }
       }
       b.pop();
+    }
+    // v0.8.1 (LOGO): the band's logo as a sticker on the windshield, up on the passenger side (the tour bus: on the outside).
+    function logoDecal(D, dim) {
+      var st = lastState || GG.state || {}, lg = (pending.trip && pending.trip.logo) || st.logo;
+      if (!lg || !GG.render.logo || D.tier === 3) return;
+      var tex = GG.render.logo.texture(lg, (D.band && D.band.name) || 'The Band', 256); if (!tex) return;
+      K.texs.push(tex);
+      var k = Math.min(1, dim * 1.6), mat = ownMat(new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.08, color: new THREE.Color(k, k, k) }));
+      var t = 0.8, m = mesh(new THREE.PlaneGeometry(0.24, 0.24), mat);   // stuck on the inside of the windshield, up in the passenger-side corner
+      m.position.set(0.42, WS.y0 + (WS.y1 - WS.y0) * t, WS.z0 + (WS.z1 - WS.z0) * t + 0.012); m.rotation.x = Math.atan2(WS.z1 - WS.z0, WS.y1 - WS.y0);
+      K.logo = m;
     }
     // v0.8 polish: a seat back's rear face (local +z at `half`): a rolled top, darker side bolsters, a lighter ribbed velour
     // insert between two seams, a map pocket (side < 0: a road map sticking out; > 0: a bag of ketchup chips); hoodie: one
@@ -28434,7 +28779,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         if (!K) return { built: false };
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
-          tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
+          tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, logo: !!K.logo, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           cam: CAM.pos.slice(), hfov: CAM.minHFov };                                                          // v0.8 polish: where you sit
@@ -29845,6 +30190,553 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 })(window.GG);
 
 </script>
+<script>/* 46_render_logo.js */
+// 46_render_logo.js (v0.8.1, Addendum 2 D2, LOGO): draws a band logo procedurally onto a canvas (no image files): the band's
+// name in one of four lettering styles over an emblem, in a curated colour pair (content/logo.js). Every canvas is cached
+// (small LRU by logo + name + size + options), so the kick drum, the merch table, the van, Bandbook, the garage banner, the
+// Loonies and the Scene leaderboard all reuse the same pixels.
+// API (GG.render.logo):
+//   canvas(logo, bandName, size, opts?) -> HTMLCanvasElement (cached; never draw on it)
+//     opts: { shape: 'square' (default) | 'wide' (2:1, or aspect: n), badge: false | 'circle' | 'round' (a ground-coloured backing),
+//             mini: auto (size < 72: the emblem + initials; the name can't be read that small anyway),
+//             plain: the emblem alone, textOnly: the lettering alone (the picker's buttons) }
+//   texture(logo, bandName, size, opts?) -> THREE.CanvasTexture (a new texture over the cached canvas; the caller disposes it)
+//   dataURL(logo, bandName, size, opts?) -> 'data:image/png…' (cached; for <img> and SVG <image>)
+//   forState(state, size, opts?) / nameOf(state) ; forRival(id, name, size, opts?) (GG.logo.rival's fixed logo)
+//   head(g, o) -> true (the kick-drum head 'logo' art on R.kit.headArt's 256px canvas: o = { band, genre, logo? })
+//   merch(logo, bandName, itemId, size) -> canvas (the item with the logo printed on it: shirt, hoodie, sticker, patch, tape,
+//     trucker, toque, vinyl, bobblehead, cape, pins, keychain, hat, the misprint (printed crooked))
+//   palette(logo) -> { fg, em, ground, hi, lo } ; info() -> { cached, draws, hits, urls }
+// Lettering: metal = a serif name grown symmetric spikes and roots (unreadable, as tradition demands); punk = ransom-note
+// letters on torn paper patches (seeded by the name); rock = italic chrome with a block extrude and a sparkle; country = slab
+// letters on an arch with a hard drop shadow and stars. No gong anywhere, ever.
+(function (GG) {
+  var R = GG.render = GG.render || {};
+  var LG = R.logo = {};
+  var cache = [], urls = {}, MAX = 72, stat = { draws: 0, hits: 0, urls: 0 };
+
+  /* ---- Colours ------------------------------------------------------------------------------------------------------ */
+  function rgb(h) { h = String(h || '#000').replace('#', ''); if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; var n = parseInt(h, 16) || 0; return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  function hex(c) { return '#' + c.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
+  function mix(a, b, t) { var A = rgb(a), B = rgb(b); return hex([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
+  function shade(a, f) { var A = rgb(a); return hex([A[0] * f, A[1] * f, A[2] * f]); }
+  function lum(a) { var A = rgb(a); return (0.299 * A[0] + 0.587 * A[1] + 0.114 * A[2]) / 255; }
+  function rgba(a, al) { var A = rgb(a); return 'rgba(' + A[0] + ',' + A[1] + ',' + A[2] + ',' + al + ')'; }
+  function sane(lg) { return GG.logo ? GG.logo.sanitize(lg) : (lg || { emblem: 'skull', style: 'metal', palette: 'frost' }); }
+  LG.palette = function (lg) {
+    lg = sane(lg);
+    var p = (GG.logo && GG.logo.palette(lg.palette)) || { fg: '#f2efe6', em: '#b3141c', ground: '#121216' };
+    return { fg: p.fg, em: p.em, ground: p.ground, hi: mix(p.em, '#ffffff', 0.42), lo: shade(p.em, 0.58), light: lum(p.ground) > 0.5 };
+  };
+
+  /* ---- Canvas plumbing ---------------------------------------------------------------------------------------------- */
+  function mk(w, h) { var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  function tint(M, fill) {
+    var C = mk(M.width, M.height), g = C.getContext('2d');
+    g.drawImage(M, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = fill; g.fillRect(0, 0, C.width, C.height);
+    return C;
+  }
+  function ring(M, color, r) {   // M grown by r px in one colour (an outline when the fill goes on top)
+    var C = mk(M.width, M.height), g = C.getContext('2d'), T = tint(M, color), n = r > 6 ? 20 : 14;
+    for (var k = 0; k < n; k++) { var a = k / n * Math.PI * 2; g.drawImage(T, Math.cos(a) * r, Math.sin(a) * r); }
+    g.drawImage(T, 0, 0);
+    return C;
+  }
+  function union(M, dx, dy, steps) { var C = mk(M.width, M.height), g = C.getContext('2d'); for (var k = 0; k <= steps; k++) g.drawImage(M, dx * k / steps, dy * k / steps); return C; }
+
+  /* ---- Emblems (drawn in a ±50 box; outline = ground, body = em, details in hi / lo / ground) -------------------------- */
+  var OUT = 3.4;
+  function ell(g, x, y, rx, ry, rot) { g.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); }
+  function poly(g, pts) { g.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); }
+  function rrect(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function circ(g, x, y, r) { g.moveTo(x + r, y); g.arc(x, y, r, 0, Math.PI * 2); }
+  // parts: [[traceFn(g), fill]] -> one outline around the union, then the fills in order
+  function blob(g, P, parts) {
+    g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = P.ground; g.lineWidth = OUT * 2;
+    parts.forEach(function (p) { g.beginPath(); p[0](g); g.stroke(); });
+    parts.forEach(function (p) { g.beginPath(); p[0](g); g.fillStyle = p[1]; g.fill(); });
+  }
+  function lines(g, color, w, segs, outline) {   // polylines; outline: ground first
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    if (outline) { g.strokeStyle = outline; g.lineWidth = w + OUT * 2; segs.forEach(function (s) { g.beginPath(); g.moveTo(s[0][0], s[0][1]); for (var i = 1; i < s.length; i++) g.lineTo(s[i][0], s[i][1]); g.stroke(); }); }
+    g.strokeStyle = color; g.lineWidth = w;
+    segs.forEach(function (s) { g.beginPath(); g.moveTo(s[0][0], s[0][1]); for (var i = 1; i < s.length; i++) g.lineTo(s[i][0], s[i][1]); g.stroke(); });
+  }
+  function dot(g, color, x, y, rx, ry, rot) { g.beginPath(); ell(g, x, y, rx, ry || rx, rot); g.fillStyle = color; g.fill(); }
+  var EMB = {
+    skull: function (g, P) {
+      blob(g, P, [[function (g) { ell(g, 0, -8, 35, 33); }, P.em], [function (g) { rrect(g, -21, 6, 42, 32, 9); }, P.em]]);
+      g.beginPath(); g.arc(-2, -10, 26, Math.PI * 1.08, Math.PI * 1.42); g.strokeStyle = P.hi; g.lineWidth = 4; g.stroke();
+      dot(g, P.ground, -13, -3, 10, 11); dot(g, P.ground, 13, -3, 10, 11);
+      g.beginPath(); poly(g, [[0, 6], [-5.5, 16], [5.5, 16]]); g.fillStyle = P.ground; g.fill();
+      lines(g, P.ground, 2.6, [[[-19, 29], [19, 29]], [[-12, 22], [-12, 37]], [[-5, 22], [-5, 37]], [[2, 22], [2, 37]], [[9, 22], [9, 37]], [[15, 23], [15, 36]]]);
+      lines(g, P.ground, 2, [[[9, -40], [4, -32], [10, -26], [6, -19]]]);
+    },
+    wheat: function (g, P) {
+      var parts = [], A = [-0.42, 0, 0.42];
+      [-18, -9, 0, 9, 18].forEach(function (x) { parts.push([function (g) { poly(g, [[-1.8, 14], [1.8, 14], [x + 1.8, 46], [x - 1.8, 46]]); }, P.lo]); });
+      A.forEach(function (a) {
+        var tx = Math.sin(a) * 50, ty = 14 - Math.cos(a) * 50, nx = Math.cos(a), ny = Math.sin(a);
+        parts.push([function (g) { poly(g, [[-1.8 * nx, 14 - 1.8 * ny], [1.8 * nx, 14 + 1.8 * ny], [tx + 1.8 * nx, ty + 1.8 * ny], [tx - 1.8 * nx, ty - 1.8 * ny]]); }, P.lo]);
+        for (var k = 0; k < 5; k++) {
+          var t = 0.5 + k * 0.1, cx = tx * t, cy = 14 + (ty - 14) * t;
+          [-1, 1].forEach(function (sd) { var ex = cx + sd * 4.2 * nx, ey = cy + sd * 4.2 * ny; parts.push([function (g) { ell(g, ex, ey, 3.8, 7, a + sd * 0.45); }, P.em]); });
+        }
+        parts.push([function (g) { ell(g, tx, ty, 3.6, 7, a); }, P.em]);
+      });
+      parts.push([function (g) { rrect(g, -12, 9, 24, 9, 3); }, P.hi]);
+      blob(g, P, parts);
+      lines(g, P.lo, 1.6, [[[-11, 13.5], [11, 13.5]]]);
+    },
+    bolt: function (g, P) {
+      blob(g, P, [[function (g) { poly(g, [[14, -50], [-26, 6], [-3, 6], [-16, 50], [28, -10], [5, -10], [20, -50]]); }, P.em]]);
+      lines(g, P.hi, 3, [[[12, -44], [-18, 2]], [[-6, 12], [-11, 36]]]);
+    },
+    moose: function (g, P) {
+      var parts = [];
+      [-1, 1].forEach(function (s) {
+        parts.push([function (g) { poly(g, [[s * 10, -8], [s * 18, -27], [s * 22, -18], [s * 27, -38], [s * 31, -22], [s * 38, -40], [s * 41, -23], [s * 49, -31], [s * 48, -12], [s * 36, -5], [s * 16, -2]]); }, P.hi]);
+        parts.push([function (g) { ell(g, s * 21, -3, 9, 4.5, s * 0.45); }, P.em]);
+      });
+      parts.push([function (g) { ell(g, 0, 8, 18, 27); }, P.em], [function (g) { ell(g, 0, 33, 15, 12); }, P.lo], [function (g) { ell(g, 0, 47, 4, 6); }, P.lo]);
+      blob(g, P, parts);
+      dot(g, P.ground, -8, 4, 3.2); dot(g, P.ground, 8, 4, 3.2); dot(g, P.ground, -5, 36, 2.6, 3.2); dot(g, P.ground, 5, 36, 2.6, 3.2);
+    },
+    maple: function (g, P) {
+      blob(g, P, [[function (g) {
+        poly(g, [[0, -50], [9, -33], [18, -38], [14, -15], [30, -28], [35, -19], [47, -24], [41, -6], [49, -1], [26, 14], [30, 25], [4, 20], [4, 45], [-4, 45], [-4, 20],
+          [-30, 25], [-26, 14], [-49, -1], [-41, -6], [-47, -24], [-35, -19], [-30, -28], [-14, -15], [-18, -38], [-9, -33]]);
+      }, P.em]]);
+      lines(g, P.lo, 1.8, [[[0, 22], [0, -36]], [[0, 8], [28, -16]], [[0, 8], [-28, -16]], [[0, 16], [22, 12]], [[0, 16], [-22, 12]]]);
+    },
+    gopher: function (g, P) {
+      blob(g, P, [[function (g) { ell(g, 21, 34, 6.5, 13, 0.6); }, P.lo], [function (g) { ell(g, 0, 14, 19, 27); }, P.em], [function (g) { ell(g, 0, -22, 15, 13); }, P.em],
+        [function (g) { circ(g, -9, -32, 4.5); circ(g, 9, -32, 4.5); }, P.em], [function (g) { ell(g, -10, 41, 9, 4.5); ell(g, 10, 41, 9, 4.5); }, P.lo]]);
+      dot(g, P.hi, 0, 18, 11, 19); dot(g, P.lo, -7, -3, 5, 4); dot(g, P.lo, 7, -3, 5, 4);
+      dot(g, P.ground, -6, -24, 2.6); dot(g, P.ground, 6, -24, 2.6); dot(g, P.ground, 0, -17, 3, 2.2);
+      g.fillStyle = '#f6f2e8'; g.fillRect(-2.6, -14.5, 5.2, 4.5);
+    },
+    anvil: function (g, P) {
+      lines(g, P.hi, 3, [[[-6, -30], [-14, -44]], [[4, -31], [6, -48]], [[14, -30], [25, -43]]], P.ground);
+      blob(g, P, [[function (g) {
+        poly(g, [[-49, -16], [-20, -24], [40, -24], [40, -8], [22, -8], [13, 7], [13, 18], [30, 30], [30, 41], [-30, 41], [-30, 30], [-13, 18], [-13, 7], [-20, -6], [-30, -9]]);
+      }, P.em]]);
+      lines(g, P.hi, 3, [[[-18, -20], [37, -20]]]);
+      lines(g, P.lo, 2.4, [[[-26, 35], [26, 35]]]);
+    },
+    hailstone: function (g, P) {
+      lines(g, P.hi, 2.4, [[[22, -18], [32, -34]], [[30, -8], [42, -24]], [[-40, -40], [-34, -48]], [[40, 22], [44, 16]]], P.ground);
+      function lump(k) { return function (g) { var pts = []; for (var i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2, r = (31 + 2.6 * Math.sin(5 * a) + 1.8 * Math.sin(9 * a + 1)) * k; pts.push([2 + r * Math.cos(a), 6 + r * Math.sin(a)]); } poly(g, pts); }; }
+      blob(g, P, [[lump(1), P.em], [function (g) { circ(g, -35, -30, 7); }, P.em], [function (g) { circ(g, 36, 30, 5.5); }, P.em], [function (g) { circ(g, -38, 34, 5); }, P.em]]);
+      g.lineWidth = 2.2; g.strokeStyle = P.lo;
+      g.beginPath(); lump(0.66)(g); g.stroke(); g.beginPath(); lump(0.34)(g); g.stroke();
+      g.beginPath(); g.arc(-4, 0, 21, Math.PI * 1.05, Math.PI * 1.45); g.strokeStyle = P.hi; g.lineWidth = 4.5; g.stroke();
+    },
+    elevator: function (g, P) {
+      blob(g, P, [[function (g) { poly(g, [[18, 8], [43, 17], [43, 46], [18, 46]]); }, shade(P.em, 0.8)], [function (g) { poly(g, [[-18, -30], [18, -30], [18, 46], [-18, 46]]); }, P.em],
+        [function (g) { poly(g, [[-22, -28], [0, -44], [22, -28]]); }, P.lo], [function (g) { rrect(g, -6, -53, 12, 12, 1); }, P.em], [function (g) { poly(g, [[-9, -52], [0, -60], [9, -52]]); }, P.lo]]);
+      g.fillStyle = P.ground; g.fillRect(-18, -22, 36, 6); g.fillRect(-6, 30, 12, 16);
+      lines(g, P.lo, 1.5, [[[-9, -12], [-9, 44]], [[0, -12], [0, 28]], [[9, -12], [9, 44]], [[26, 22], [26, 44]], [[34, 25], [34, 44]]]);
+      g.fillStyle = P.hi; [-12, -3, 6].forEach(function (x) { g.fillRect(x, -21, 5, 4); });
+    },
+    cowboy_hat: function (g, P) {
+      blob(g, P, [[function (g) { g.moveTo(-25, 18); g.bezierCurveTo(-28, -4, -26, -31, -12, -31); g.quadraticCurveTo(0, -22, 12, -31); g.bezierCurveTo(26, -31, 28, -4, 25, 18); g.closePath(); }, P.em],
+        [function (g) { rrect(g, -25.5, 5, 51, 10, 2); }, P.lo],
+        [function (g) { g.moveTo(-50, -1); g.quadraticCurveTo(-34, 30, 0, 30); g.quadraticCurveTo(34, 30, 50, -1); g.quadraticCurveTo(36, 17, 0, 17); g.quadraticCurveTo(-36, 17, -50, -1); g.closePath(); }, P.em]]);
+      lines(g, P.lo, 2.4, [[[0, -22], [0, 0]]]);
+      g.fillStyle = P.hi; g.fillRect(-4, 6.5, 8, 7);
+      lines(g, P.hi, 2.2, [[[-38, 8], [-14, 21]], [[-17, -20], [-19, 0]]]);
+    },
+    safety_pin: function (g, P) {
+      var segs = [[[-32, -8], [36, -8]], [[-40, 8], [36, 8]]];
+      lines(g, P.em, 7, segs, P.ground);
+      g.beginPath(); g.arc(38, 0, 8, 0, Math.PI * 2); g.strokeStyle = P.ground; g.lineWidth = 7 + OUT * 2; g.stroke(); g.strokeStyle = P.em; g.lineWidth = 7; g.stroke();
+      blob(g, P, [[function (g) { rrect(g, -50, -14, 22, 24, 6); }, P.lo]]);
+      lines(g, P.hi, 2, [[[-22, -9.5], [30, -9.5]], [[-22, 6.5], [30, 6.5]]]);
+      g.fillStyle = P.hi; g.fillRect(-46, -10, 4, 16);
+    },
+    flaming_tire: function (g, P) {
+      var outer = [], inner = [], hot = mix(P.em, '#ffe36a', 0.6);
+      for (var k = 0; k < 7; k++) {
+        (function (k) {
+          var x = -30 + k * 10, h = 34 + ((k * 37) % 17), lean = k % 2 ? 5 : -5;
+          outer.push([function (g) { g.moveTo(x - 10, 12); g.quadraticCurveTo(x - 11, 12 - h * 0.5, x + lean, 12 - h); g.quadraticCurveTo(x + 7, 12 - h * 0.45, x + 10, 12); g.closePath(); }, P.em]);
+          inner.push([function (g) { g.moveTo(x - 5, 12); g.quadraticCurveTo(x - 5, 12 - h * 0.35, x + lean * 0.6, 12 - h * 0.68); g.quadraticCurveTo(x + 4, 12 - h * 0.3, x + 5, 12); g.closePath(); }, hot]);
+        })(k);
+      }
+      blob(g, P, outer);
+      inner.forEach(function (p) { g.beginPath(); p[0](g); g.fillStyle = p[1]; g.fill(); });
+      var rub = mix(shade(P.em, 0.3), '#26262a', 0.55);
+      blob(g, P, [[function (g) { circ(g, 0, 18, 30); }, rub]]);
+      g.fillStyle = P.hi;
+      for (var t = 0; t < 14; t++) { g.save(); g.translate(0, 18); g.rotate(t / 14 * Math.PI * 2); g.fillRect(-2.2, -30, 4.4, 5); g.restore(); }
+      g.beginPath(); circ(g, 0, 18, 14); g.fillStyle = P.hi; g.fill();
+      g.beginPath(); circ(g, 0, 18, 5); g.fillStyle = P.lo; g.fill();
+      for (t = 0; t < 5; t++) { var a = t / 5 * Math.PI * 2; dot(g, P.ground, Math.cos(a) * 9, 18 + Math.sin(a) * 9, 1.8); }
+    },
+    curling_stone: function (g, P) {
+      blob(g, P, [[function (g) { rrect(g, -41, 4, 82, 34, 15); }, shade(P.em, 0.72)], [function (g) { ell(g, 0, 8, 39, 12); }, P.em],
+        [function (g) { rrect(g, -9, -22, 11, 30, 4); }, P.hi], [function (g) { rrect(g, -9, -30, 46, 11, 5.5); }, P.hi]]);
+      g.fillStyle = P.ground; g.fillRect(-40, 20, 80, 4.5);
+      var h = 7; g.fillStyle = P.hi;
+      for (var k = 0; k < 16; k++) { h = (h * 31 + 11) % 97; g.fillRect(-34 + (h % 68), 26 + (k % 3) * 3.4, 1.8, 1.8); }
+    },
+    mosquito: function (g, P) {
+      g.beginPath(); ell(g, -18, -18, 20, 8, -0.55); ell(g, 18, -18, 20, 8, 0.55);
+      g.fillStyle = rgba(P.hi, 0.55); g.strokeStyle = P.ground; g.lineWidth = 2.2; g.fill(); g.stroke();
+      var legs = [[[-4, -2], [-24, 6], [-34, 30]], [[-4, 2], [-18, 18], [-24, 46]], [[-3, -6], [-26, -6], [-44, 6]]];
+      legs = legs.concat(legs.map(function (l) { return l.map(function (p) { return [-p[0], p[1]]; }); }));
+      lines(g, P.em, 2.4, legs, P.ground);
+      lines(g, P.lo, 2.6, [[[-2, -25], [-14, -50]]], P.ground);
+      blob(g, P, [[function (g) { ell(g, 0, 20, 7.5, 23); }, P.em], [function (g) { ell(g, 0, -5, 10, 8); }, P.em], [function (g) { circ(g, 0, -19, 6.5); }, P.em]]);
+      lines(g, P.ground, 2, [[[-6.5, 8], [6.5, 8]], [[-7, 16], [7, 16]], [[-7, 24], [7, 24]], [[-6, 32], [6, 32]]]);
+      dot(g, P.hi, -3.4, -20, 2.4, 2.8); dot(g, P.hi, 3.4, -20, 2.4, 2.8);
+    },
+    toque: function (g, P) {
+      var parts = [[function (g) { circ(g, 0, -34, 12); for (var k = 0; k < 9; k++) { var a = k / 9 * Math.PI * 2; circ(g, Math.cos(a) * 11, -34 + Math.sin(a) * 11, 5); } }, P.hi],
+        [function (g) { g.moveTo(-33, 14); g.bezierCurveTo(-33, -32, 33, -32, 33, 14); g.closePath(); }, P.em], [function (g) { rrect(g, -37, 9, 74, 24, 6); }, P.lo]];
+      blob(g, P, parts);
+      g.save(); g.beginPath(); parts[1][0](g); g.clip(); g.fillStyle = P.hi; g.fillRect(-40, -8, 80, 7); g.fillStyle = P.ground; g.fillRect(-40, 1, 80, 2); g.restore();
+      var r = []; for (var x = -30; x <= 30; x += 6) r.push([[x, 12], [x, 30]]);
+      lines(g, shade(P.lo, 0.7), 1.8, r);
+    }
+  };
+  LG.emblemIds = function () { return Object.keys(EMB); };
+  function drawEmblem(g, id, cx, cy, box, P) {
+    var def = (GG.logo && GG.logo.emblem(id)) || {}, art = def.art || {}, fn = EMB[id] || EMB.skull, k = box / 100 * (art.scale || 1);
+    g.save(); g.translate(cx, cy + (art.dy || 0) * box); g.scale(k, k); if (art.spin) g.rotate(art.spin);
+    fn(g, P);
+    g.restore();
+  }
+
+  /* ---- Lettering --------------------------------------------------------------------------------------------------- */
+  var FONTS = {
+    metal: 'bold #px "UnifrakturMaguntia", "Old English Text MT", Georgia, "DejaVu Serif", "Times New Roman", serif',
+    rock: 'italic 900 #px "Arial Black", Impact, "Helvetica Neue", "Liberation Sans", "DejaVu Sans", sans-serif',
+    country: 'bold #px Rockwell, "Rockwell Extra Bold", "Roboto Slab", "American Typewriter", "DejaVu Serif", Georgia, serif',
+    prefix: '800 #px "Helvetica Neue", "Liberation Sans", "DejaVu Sans", Arial, sans-serif'
+  };
+  var RANSOM = ['900 #px "Arial Black", "Liberation Sans", "DejaVu Sans", sans-serif', 'bold #px Georgia, "DejaVu Serif", "Liberation Serif", serif',
+    'bold #px "Courier New", "Liberation Mono", "DejaVu Sans Mono", monospace', 'italic bold #px "Times New Roman", "Liberation Serif", serif',
+    '900 #px Impact, "Liberation Sans Narrow", "DejaVu Sans Condensed", sans-serif'];
+  function font(f, s) { return f.replace('#', Math.max(4, Math.round(s))); }
+  // 'The Grid Road Ramblers' -> { prefix: 'THE', lines: ['GRID ROAD', 'RAMBLERS'] } (two lines when a long name has spaces)
+  function split(name, wide) {
+    var txt = String(name == null ? '' : name).replace(/\s+/g, ' ').trim() || 'The Band', prefix = null;
+    var m = /^the\s+(.+)$/i.exec(txt);
+    if (m && m[1].length >= 4) { prefix = 'THE'; txt = m[1]; }
+    var words = txt.split(' '), limit = wide ? 18 : 10;
+    if (txt.length <= limit || words.length < 2) return { prefix: prefix, lines: [txt] };
+    var best = null;
+    for (var i = 1; i < words.length; i++) {
+      var a = words.slice(0, i).join(' '), b = words.slice(i).join(' '), sc = Math.max(a.length, b.length);
+      if (!best || sc < best.sc) best = { sc: sc, lines: [a, b] };
+    }
+    return { prefix: prefix, lines: best.lines };
+  }
+  LG.split = split;
+  var LINE = 0.92, PRE = 0.44;
+  function measure(g, f, s, text, track) {
+    g.font = font(f, s);
+    if (!track) return g.measureText(text).width;
+    var w = 0; for (var i = 0; i < text.length; i++) w += g.measureText(text[i]).width;
+    return w + track * s * (text.length - 1);
+  }
+  // The biggest size where every line fits bw x bh.
+  function fit(g, f, sp, bw, bh, track, extraW) {
+    var n = sp.lines.length, s = bh / (n * LINE + (sp.prefix ? PRE : 0)), w100 = 0;
+    sp.lines.forEach(function (ln) { w100 = Math.max(w100, measure(g, f, 100, ln, track)); });
+    return Math.max(6, Math.min(s, bw / ((w100 / 100) + (extraW || 0))));
+  }
+  // White text on a transparent mask: { M, boxes: [{ x0, x1, yc }], s, preY }. opts: { track, arc (line 0), skew, fatten }
+  function mask(W, H, sp, f, s, o) {
+    var M = mk(W, H), g = M.getContext('2d'), n = sp.lines.length, preH = sp.prefix ? PRE * s : 0, y0 = (H - (n * LINE * s + preH)) / 2, boxes = [];
+    g.fillStyle = g.strokeStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.lineJoin = 'miter';
+    sp.lines.forEach(function (ln, i) {
+      var yc = y0 + preH + (i + 0.5) * LINE * s, lw = measure(g, f, s, ln, o.track), x = (W - lw) / 2;
+      g.font = font(f, s);
+      if (o.skew) g.setTransform(1, 0, o.skew, 1, -o.skew * yc, 0);
+      if (o.fatten) g.lineWidth = o.fatten * s;
+      var arc = o.arc && i === 0 && ln.length > 2 ? Math.max(lw * 1.25, s * 3) : 0;
+      if (!o.track && !arc) { g.fillText(ln, x, yc); if (o.fatten) g.strokeText(ln, x, yc); }
+      else {
+        var cx = W / 2;
+        for (var k = 0; k < ln.length; k++) {
+          var cw = g.measureText(ln[k]).width, mid = x + cw / 2;
+          if (arc) {
+            var a = (mid - cx) / arc, py = yc + arc * (1 - Math.cos(a)) - s * 0.06;
+            g.save(); g.translate(cx + arc * Math.sin(a), py); g.rotate(a); g.fillText(ln[k], -cw / 2, 0); if (o.fatten) g.strokeText(ln[k], -cw / 2, 0); g.restore();
+          } else { g.fillText(ln[k], x, yc); if (o.fatten) g.strokeText(ln[k], x, yc); }
+          x += cw + (o.track || 0) * s;
+        }
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      boxes.push({ x0: (W - lw) / 2, x1: (W + lw) / 2, yc: yc, arc: arc });
+    });
+    if (sp.prefix) {
+      g.font = font(o.preFont || FONTS.prefix, s * 0.34); g.textAlign = 'center';
+      if (o.skew) g.setTransform(1, 0, o.skew, 1, -o.skew * (y0 + preH / 2), 0);
+      if (o.track) { var t = sp.prefix.split('').join(String.fromCharCode(8202)); g.fillText(t, W / 2, y0 + preH / 2); } else g.fillText(sp.prefix, W / 2, y0 + preH / 2);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    return { M: M, boxes: boxes, s: s };
+  }
+  function tri(g, x, y, w, len, lean, dir) { g.beginPath(); g.moveTo(x - w / 2, y + dir * w * 0.7); g.lineTo(x + w / 2, y + dir * w * 0.7); g.lineTo(x + lean, y - dir * len); g.closePath(); g.fill(); }
+  // Metal: symmetric spikes up, roots down, barbs out the sides (seeded by the name).
+  function spikes(K, rng) {
+    var M = K.M, W = M.width, H = M.height, g = M.getContext('2d'), s = K.s, d = g.getImageData(0, 0, W, H).data;
+    function edge(x, yc, dir) {
+      x = Math.round(x); if (x < 0 || x >= W) return null;
+      var y = Math.round(yc - dir * 0.62 * s), end = Math.round(yc + dir * 0.62 * s);
+      for (; dir > 0 ? y <= end : y >= end; y += dir) { if (y >= 0 && y < H && d[(y * W + x) * 4 + 3] > 140) return y; }
+      return null;
+    }
+    g.fillStyle = '#fff';
+    K.boxes.forEach(function (b) {
+      var mid = (b.x0 + b.x1) / 2, step = Math.max(2, s * 0.1), w = Math.max(1.5, s * 0.1);
+      for (var x = b.x0 + step * 0.5; x < mid - step * 0.3; x += step) {
+        var up = rng.chance(0.68), dn = rng.chance(0.5), lu = s * rng.range(0.25, 0.95), ld = s * rng.range(0.18, 0.7), le = rng.range(-0.25, 0.25);
+        [x, 2 * mid - x].forEach(function (xx, m) {
+          var lean = m ? -le : le, yt = edge(xx, b.yc, 1), yb = edge(xx, b.yc, -1);
+          if (up && yt != null) tri(g, xx, yt + 1, w, lu, lean * lu, 1);
+          if (dn && yb != null) tri(g, xx, yb - 1, w, ld, lean * ld, -1);
+        });
+      }
+      var yt0 = edge(mid, b.yc, 1);
+      if (yt0 != null) tri(g, mid, yt0 + 1, w * 1.4, s * 0.85, 0, 1);
+      [[b.x0 + s * 0.04, -1], [b.x1 - s * 0.04, 1]].forEach(function (e) {   // barbs off the first and last letters
+        g.beginPath(); g.moveTo(e[0], b.yc - s * 0.05); g.lineTo(e[0] + e[1] * s * 0.5, b.yc + s * 0.02); g.lineTo(e[0], b.yc + s * 0.07); g.closePath(); g.fill();
+      });
+    });
+  }
+  function star(g, x, y, r, spikes4) {
+    g.beginPath();
+    var n = spikes4 ? 8 : 10;
+    for (var i = 0; i < n; i++) { var a = -Math.PI / 2 + i * Math.PI * 2 / n, rr = i % 2 ? r * (spikes4 ? 0.22 : 0.45) : r; g.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+    g.closePath(); g.fill();
+  }
+  // Draws the name into a bw x bh canvas in the style; returns it.
+  function lettering(style, name, bw, bh, P, wide) {
+    var T = mk(bw, bh), g = T.getContext('2d'), sp = split(name, wide), rng = GG.RNG(GG.hashSeed(style + '|' + name));
+    if (style === 'punk') { ransom(T, sp, P, rng); return T; }
+    if (style === 'metal') {
+      sp.lines = sp.lines.map(function (l) { return l.toUpperCase(); });
+      var s = fit(g, FONTS.metal, sp, bw * 0.84, bh * (sp.lines.length > 1 ? 0.5 : 0.4), 0), K = mask(bw, bh, sp, FONTS.metal, s, { fatten: 0.035 });
+      spikes(K, rng);
+      g.drawImage(ring(K.M, P.ground, Math.max(1.5, s * 0.075)), 0, 0); g.drawImage(tint(K.M, P.fg), 0, 0);
+      return T;
+    }
+    if (style === 'rock') {
+      sp.lines = sp.lines.map(function (l) { return l.toUpperCase(); });
+      var s2 = fit(g, FONTS.rock, sp, bw * 0.9, bh * 0.86, 0, 0.12), K2 = mask(bw, bh, sp, FONTS.rock, s2, { skew: -0.2, fatten: 0.015 });
+      var dx = s2 * 0.06, dy = s2 * 0.1, E = union(K2.M, dx, dy, Math.max(2, Math.round(s2 * 0.1)));
+      g.drawImage(ring(E, P.ground, Math.max(1.5, s2 * 0.06)), 0, 0);
+      g.drawImage(tint(E, shade(P.em, 0.5)), 0, 0);
+      g.drawImage(ring(K2.M, shade(P.em, 0.3), Math.max(1, s2 * 0.018)), 0, 0);
+      var C = mk(bw, bh), c = C.getContext('2d');
+      K2.boxes.forEach(function (b) {
+        var gr = c.createLinearGradient(0, b.yc - s2 * 0.42, 0, b.yc + s2 * 0.42);
+        gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.38, mix(P.fg, '#ffffff', 0.25)); gr.addColorStop(0.5, shade(P.em, 0.42));
+        gr.addColorStop(0.56, P.em); gr.addColorStop(0.82, mix(P.fg, P.em, 0.25)); gr.addColorStop(1, '#ffffff');
+        c.fillStyle = gr; c.fillRect(0, b.yc - s2 * 0.62, bw, s2 * 1.24);
+      });
+      c.fillStyle = P.fg; if (sp.prefix) c.fillRect(0, 0, bw, K2.boxes[0].yc - s2 * 0.6);
+      c.globalCompositeOperation = 'destination-in'; c.drawImage(K2.M, 0, 0);
+      g.drawImage(C, 0, 0);
+      var b0 = K2.boxes[0];
+      g.save(); g.fillStyle = '#ffffff'; g.shadowColor = rgba(P.fg, 0.9); g.shadowBlur = s2 * 0.2;
+      star(g, Math.min(bw - s2 * 0.2, b0.x1 - s2 * 0.12), b0.yc - s2 * 0.34, s2 * 0.26, true); g.restore();
+      return T;
+    }
+    // country: slab letters on an arch, a hard drop shadow in the emblem colour, stars at the ends
+    sp.lines = sp.lines.map(function (l) { return l.toUpperCase(); });
+    var s3 = fit(g, FONTS.country, sp, bw * 0.82, bh * 0.8, 0.07), K3 = mask(bw, bh, sp, FONTS.country, s3, { track: 0.07, arc: true, fatten: 0.07, preFont: FONTS.country });
+    var ox = s3 * 0.075, oy = s3 * 0.075, S = mk(bw, bh); S.getContext('2d').drawImage(K3.M, ox, oy);
+    var U2 = mk(bw, bh), u = U2.getContext('2d'); u.drawImage(K3.M, 0, 0); u.drawImage(S, 0, 0);
+    g.drawImage(ring(U2, P.ground, Math.max(1.5, s3 * 0.06)), 0, 0);
+    g.drawImage(tint(S, P.em), 0, 0); g.drawImage(tint(K3.M, P.fg), 0, 0);
+    var b = K3.boxes[0], sy = b.yc + (b.arc ? b.arc * (1 - Math.cos((b.x1 - b.x0) / 2 / b.arc)) : 0);
+    [[b.x0 - s3 * 0.36, 1], [b.x1 + s3 * 0.36, 1]].forEach(function (p) {
+      if (p[0] < s3 * 0.2 || p[0] > bw - s3 * 0.2) return;
+      g.fillStyle = P.ground; star(g, p[0], sy, s3 * 0.26); g.fillStyle = P.em; star(g, p[0], sy, s3 * 0.19);
+    });
+    return T;
+  }
+  // Punk: every letter cut from something else and glued on a paper patch (seeded, so a band's ransom note never changes).
+  function ransom(T, sp, P, rng) {
+    var s = 100, gap = s * 0.05, space = s * 0.34, rowsH = [], rows = [];
+    var tmp = mk(4, 4).getContext('2d');
+    var papers = [P.fg, P.em, '#f4efe2', '#161616', '#f2d15b', P.fg, '#f4efe2'];
+    function row(text, k) {
+      var items = [], w = 0;
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (ch === ' ') { w += space; items.push(null); continue; }
+        var f = rng.pick(RANSOM), sz = s * k * rng.range(0.8, 1.08), c = rng.chance(0.3) ? ch.toLowerCase() : ch.toUpperCase();
+        tmp.font = font(f, sz);
+        var cw = tmp.measureText(c).width, pw = cw + s * 0.2 * k, ph = sz * 0.98 + s * 0.12 * k, paper = rng.pick(papers);
+        items.push({ ch: c, f: f, sz: sz, pw: pw, ph: ph, paper: paper, ink: lum(paper) > 0.5 ? '#141414' : '#f7f3ea',
+          rot: rng.range(-0.15, 0.15), dy: rng.range(-0.07, 0.07) * s * k, j: [rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)] });
+        w += pw + gap;
+      }
+      return { items: items, w: w, h: s * k * 1.22 };
+    }
+    if (sp.prefix) rows.push(row(sp.prefix, 0.5));
+    sp.lines.forEach(function (l) { rows.push(row(l, 1)); });
+    var maxW = 0, totH = 0; rows.forEach(function (r) { maxW = Math.max(maxW, r.w); totH += r.h; rowsH.push(r.h); });
+    var pad = s * 0.2, Pc = mk(maxW + pad * 2, totH + pad * 2), g = Pc.getContext('2d'), y = pad;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    rows.forEach(function (r) {
+      var x = pad + (maxW - r.w) / 2, yc = y + r.h / 2;
+      r.items.forEach(function (it) {
+        if (!it) { x += space; return; }
+        var cx = x + it.pw / 2, j = it.j, hw = it.pw / 2, hh = it.ph / 2, e = s * 0.045;
+        g.save(); g.translate(cx, yc + it.dy); g.rotate(it.rot);
+        g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowOffsetX = s * 0.03; g.shadowOffsetY = s * 0.045;
+        g.beginPath(); poly(g, [[-hw + j[0] * e, -hh + j[1] * e], [hw + j[2] * e, -hh - j[0] * e], [hw - j[3] * e, hh + j[2] * e], [-hw - j[1] * e, hh - j[3] * e]]);
+        g.fillStyle = it.paper; g.fill();
+        g.shadowColor = 'transparent'; g.font = font(it.f, it.sz); g.fillStyle = it.ink; g.fillText(it.ch, 0, s * 0.03);
+        g.restore();
+        x += it.pw + gap;
+      });
+      y += r.h;
+    });
+    var k = Math.min(T.width / Pc.width, T.height / Pc.height), dw = Pc.width * k, dh = Pc.height * k;
+    T.getContext('2d').drawImage(Pc, (T.width - dw) / 2, (T.height - dh) / 2, dw, dh);
+  }
+
+  /* ---- The logo ---------------------------------------------------------------------------------------------------------- */
+  function initials(name) {
+    var w = String(name || '').replace(/^the\s+/i, '').replace(/[^A-Za-z0-9À-ÿ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return '?';
+    return (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
+  }
+  function draw(lg, name, size, o) {
+    stat.draws++;
+    var wide = o.shape === 'wide', H = Math.max(16, Math.round(size)), W = wide ? Math.round(H * (o.aspect || 2)) : H, P = LG.palette(lg);
+    var C = mk(W, H), g = C.getContext('2d'), mini = o.mini != null ? !!o.mini : H < 72, badge = o.badge;
+    if (badge) {
+      g.fillStyle = P.ground; g.beginPath();
+      if (badge === 'circle' && !wide) g.arc(W / 2, H / 2, H / 2, 0, Math.PI * 2); else rrect(g, 0, 0, W, H, H * 0.18);
+      g.fill();
+      g.strokeStyle = mix(P.ground, P.em, 0.45); g.lineWidth = Math.max(1, H * 0.035); g.beginPath();
+      if (badge === 'circle' && !wide) g.arc(W / 2, H / 2, H / 2 - g.lineWidth / 2, 0, Math.PI * 2); else rrect(g, g.lineWidth / 2, g.lineWidth / 2, W - g.lineWidth, H - g.lineWidth, H * 0.16);
+      g.stroke();
+    }
+    var eb = H * (badge ? 0.78 : 0.94) * (mini || o.plain ? 1 : (wide ? 0.96 : 0.92));
+    if (!o.textOnly) drawEmblem(g, lg.emblem, W / 2, H / 2, eb, P);
+    if (o.plain) return C;   // the emblem alone (the picker's emblem buttons)
+    if (mini && !o.textOnly) {
+      var ini = initials(name), fs = H * (ini.length > 1 ? 0.34 : 0.42);
+      g.font = '900 ' + Math.round(fs) + 'px "Arial Black", "Liberation Sans", "DejaVu Sans", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round'; g.lineWidth = Math.max(2, fs * 0.28); g.strokeStyle = P.ground; g.strokeText(ini, W / 2, H * 0.7); g.fillStyle = P.fg; g.fillText(ini, W / 2, H * 0.7);
+      return C;
+    }
+    var metal = lg.style === 'metal', bw = Math.round(W * (badge ? 0.88 : 0.96)), bh = Math.round(H * (metal ? (wide ? 0.98 : 0.84) : wide ? 0.66 : 0.54));
+    if (o.textOnly) bh = Math.round(H * (metal ? 1.3 : 0.94));   // the name alone (the picker's lettering buttons)
+    var T = lettering(lg.style, name, bw, bh, P, wide);
+    g.drawImage(T, (W - bw) / 2, H * (o.textOnly ? 0.5 : wide || metal ? 0.52 : 0.53) - bh / 2);
+    return C;
+  }
+  function keyOf(lg, name, size, o) { return [lg.emblem, lg.style, lg.palette, name, Math.round(size), o.shape || 'square', o.badge || '', o.mini == null ? '' : o.mini ? 1 : 0, o.plain ? 'p' : '', o.textOnly ? 't' : '', o.aspect || ''].join('|'); }
+  LG.canvas = function (lg, name, size, o) {
+    o = o || {}; lg = sane(lg); name = name == null ? 'The Band' : String(name);
+    var key = keyOf(lg, name, size || 256, o);
+    for (var i = 0; i < cache.length; i++) if (cache[i].k === key) { stat.hits++; var hit = cache.splice(i, 1)[0]; cache.push(hit); return hit.c; }
+    var c = draw(lg, name, size || 256, o);
+    cache.push({ k: key, c: c });
+    if (cache.length > MAX) { var old = cache.shift(); delete urls[old.k]; }
+    return c;
+  };
+  LG.dataURL = function (lg, name, size, o) {
+    o = o || {};
+    var c = LG.canvas(lg, name, size, o), key = keyOf(sane(lg), name == null ? 'The Band' : String(name), size || 256, o);
+    if (!urls[key]) { urls[key] = c.toDataURL('image/png'); stat.urls++; }
+    return urls[key];
+  };
+  LG.texture = function (lg, name, size, o) {
+    if (typeof THREE === 'undefined') return null;
+    var t = new THREE.CanvasTexture(LG.canvas(lg, name, size, o));
+    t.anisotropy = 4;
+    return t;
+  };
+  LG.nameOf = function (st) { var b = st && GG.career && GG.career.band ? GG.career.band(st) : null; return (b && b.name) || 'The Band'; };
+  LG.forState = function (st, size, o) { return LG.canvas(GG.logo ? GG.logo.get(st) : null, LG.nameOf(st), size, o); };
+  LG.forRival = function (id, name, size, o) { return LG.canvas(GG.logo ? GG.logo.rival(id) : null, name, size, o); };
+
+  // The kick-drum head (R.kit.headArt 'logo', 256px canvas): the logo on a head the colour of the palette's ground.
+  LG.head = function (g, o) {
+    o = o || {};
+    var st = GG.state, genre = o.genre || (st && st.genre) || 'metal';
+    var lg = o.logo || (!st && GG.logo && GG.logo.pending()) || (st && st.logo) || (GG.logo ? GG.logo.defaultFor(genre) : null);
+    var name = o.band || (st ? LG.nameOf(st) : 'Hail Damage'), P = LG.palette(lg);
+    g.save();
+    g.fillStyle = P.ground; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = mix(P.ground, P.em, 0.35); g.lineWidth = 8; g.beginPath(); g.arc(128, 128, 122, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.arc(128, 128, 117, 0, Math.PI * 2); g.clip();
+    g.drawImage(LG.canvas(lg, name, 232), 12, 12);
+    g.restore();
+    return true;
+  };
+
+  /* ---- Merch: the logo printed on the thing -------------------------------------------------------------------------------- */
+  var CLOTH = { shirt: 1, longsleeve: 1, tourshirt: 1, hoodie: 1, misprint: 1 };
+  LG.merch = function (lg, name, id, size) {
+    lg = sane(lg); size = Math.round(size || 96);
+    if (id === 'misprint') name = String(name || '').replace(/hail/i, 'Hale');   // the famous typo
+    var key = 'merch|' + keyOf(lg, name, size, {}) + '|' + id;
+    for (var i = 0; i < cache.length; i++) if (cache[i].k === key) { stat.hits++; return cache[i].c; }
+    stat.draws++;
+    var C = mk(size, size), g = C.getContext('2d'), P = LG.palette(lg), u = size / 100, logo = LG.canvas(lg, name, Math.max(72, size));
+    g.save(); g.scale(u, u); g.lineJoin = 'round';
+    var cloth = P.light ? '#f2efe6' : '#18181c', edge = P.light ? '#b9b2a2' : '#3a3a44';
+    function put(x, y, w, rot) { g.save(); g.translate(x, y); if (rot) g.rotate(rot); g.drawImage(logo, -w / 2, -w / 2, w, w); g.restore(); }
+    function fillStroke(fill, stroke) { g.fillStyle = fill; g.fill(); g.strokeStyle = stroke; g.lineWidth = 2.5; g.stroke(); }
+    if (CLOTH[id]) {
+      var sleeve = id === 'longsleeve' ? 44 : id === 'hoodie' ? 40 : 18;
+      g.beginPath(); g.moveTo(34, 12); g.quadraticCurveTo(50, 20, 66, 12); g.lineTo(88, 22 + (sleeve > 20 ? 0 : 0)); g.lineTo(sleeve > 20 ? 96 : 92, 22 + sleeve);
+      g.lineTo(sleeve > 20 ? 84 : 80, 26 + sleeve); g.lineTo(76, 36); g.lineTo(76, 92); g.lineTo(24, 92); g.lineTo(24, 36); g.lineTo(sleeve > 20 ? 16 : 20, 26 + sleeve);
+      g.lineTo(sleeve > 20 ? 4 : 8, 22 + sleeve); g.lineTo(12, 22); g.closePath();
+      fillStroke(id === 'tourshirt' ? '#26324a' : cloth, edge);
+      if (id === 'hoodie') { g.beginPath(); g.moveTo(36, 12); g.quadraticCurveTo(50, 36, 64, 12); g.fillStyle = shade(cloth === '#18181c' ? '#2a2a30' : cloth, 0.9); g.fill(); g.strokeStyle = edge; g.stroke(); g.fillStyle = edge; g.fillRect(44, 32, 2, 10); g.fillRect(54, 32, 2, 10); }
+      else { g.beginPath(); g.moveTo(38, 13); g.quadraticCurveTo(50, 24, 62, 13); g.strokeStyle = edge; g.stroke(); }
+      if (id === 'misprint') put(47, 56, 40, -0.35); else put(50, id === 'hoodie' ? 60 : 55, id === 'hoodie' ? 38 : 44);
+    } else if (id === 'sticker' || id === 'council_pins') {
+      g.beginPath(); circ(g, 50, 50, 42); fillStroke('#f7f3ea', '#b9b2a2');
+      g.beginPath(); circ(g, 50, 50, 36); g.fillStyle = P.ground; g.fill(); put(50, 50, 66);
+      if (id === 'council_pins') { g.fillStyle = '#d4af37'; g.beginPath(); circ(g, 50, 50, 44); g.lineWidth = 4; g.strokeStyle = '#d4af37'; g.stroke(); }
+    } else if (id === 'patch') {
+      g.beginPath(); rrect(g, 10, 22, 80, 56, 8); fillStroke(P.ground, mix(P.ground, P.em, 0.5));
+      g.setLineDash([3, 3]); g.beginPath(); rrect(g, 15, 27, 70, 46, 6); g.strokeStyle = P.em; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
+      put(50, 50, 52);
+    } else if (id === 'tape') {
+      g.beginPath(); rrect(g, 8, 22, 84, 56, 5); fillStroke('#2a2a30', '#111');
+      g.beginPath(); rrect(g, 14, 26, 72, 32, 3); g.fillStyle = '#f4efe2'; g.fill();
+      g.fillStyle = '#111'; g.beginPath(); circ(g, 34, 66, 6); circ(g, 66, 66, 6); g.fill();
+      g.save(); g.beginPath(); rrect(g, 14, 26, 72, 32, 3); g.clip(); put(50, 42, 38); g.restore();
+    } else if (id === 'trucker' || id === 'duke_hat') {
+      g.beginPath(); g.moveTo(14, 66); g.bezierCurveTo(12, 20, 88, 20, 86, 66); g.closePath(); fillStroke(id === 'duke_hat' ? '#6a4424' : '#f2efe6', '#8a8272');
+      g.beginPath(); g.moveTo(50, 66); g.lineTo(96, 66); g.quadraticCurveTo(98, 78, 70, 76); g.lineTo(50, 72); g.closePath(); fillStroke(P.em, shade(P.em, 0.5));
+      put(46, 48, 40);
+    } else if (id === 'toque') {
+      g.beginPath(); circ(g, 50, 16, 10); fillStroke(P.hi, edge);
+      g.beginPath(); g.moveTo(16, 62); g.bezierCurveTo(16, 8, 84, 8, 84, 62); g.closePath(); fillStroke(P.em, shade(P.em, 0.5));
+      g.beginPath(); rrect(g, 12, 58, 76, 26, 6); fillStroke(P.lo, shade(P.em, 0.4)); put(50, 70, 30);
+    } else if (id === 'vinyl') {
+      g.beginPath(); rrect(g, 8, 8, 84, 84, 3); fillStroke(P.ground, '#555');
+      g.beginPath(); circ(g, 70, 50, 34); g.fillStyle = '#111'; g.fill(); put(38, 50, 58);
+    } else {   // bobblehead, capes, keychains, anything new: the logo on a little swing tag
+      g.beginPath(); rrect(g, 14, 14, 72, 72, 10); fillStroke(P.ground, mix(P.ground, P.em, 0.5)); put(50, 50, 62);
+    }
+    g.restore();
+    cache.push({ k: key, c: C }); if (cache.length > MAX) cache.shift();
+    return C;
+  };
+  LG.info = function () { return { cached: cache.length, draws: stat.draws, hits: stat.hits, urls: stat.urls, emblems: Object.keys(EMB).length }; };
+  GG.registerDebug('render-logo', LG.info);
+})(window.GG);
+
+</script>
 <script>/* 50_ui_core.js */
 // 50_ui_core.js: the reusable UI toolkit. el() DOM helper, a screen stack (full screens, bottom sheets,
 // modals) with 'screen:open'/'screen:close' events, confirm dialogs, toasts, speech bubbles, tabs, meters,
@@ -30199,6 +31091,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
 // v0.8 (CREATOR): the creator opens the full creator ('look', 5j_ui_creator: btn-customize; a 'preset-custom' card once
 // customised), a carry-over toggle (carry-toggle: unlocks from past careers in this genre, GG.creator.carry) and hands both
 // to GG.creator.prepare() right before GG.main.newCareer; the ☰ menu has "Look" (menu-look) mid-career.
+// v0.8.1 (LOGO): band intro → the logo picker ('logo', 5m_ui_logo; GG.logo.prepare) → the creator.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -30418,7 +31311,10 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
           mates.children.length ? el('div.panel', [el('div.caps', { style: 'margin-bottom:4px' }, 'The band (plus you, on drums)'), mates]) : null
         ])
       ]);
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () { ui.show('creator'); } }, "That's my band →"));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () {   // v0.8.1: the logo picker first (5m)
+        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: draft.bandId || 'hail_damage', genre: draft.genre || 'metal', band: name, onDone: function () { ui.show('creator'); } });
+        else ui.show('creator');
+      } }, "That's my band →"));
     }
   });
 
@@ -31314,6 +32210,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         el('div.small.dim', 'Drums · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
+    if (ui.logoPanel) out.push(ui.logoPanel(st, rerender));   // v0.8.1 LOGO: the band logo + Rebrand (5m_ui_logo)
     // Song catalog: tap a song to open it read-only in the sequencer (and play it).
     var songs = st.songs || [];
     var list = el('div.panel', { testid: 'laptop-songs' }, songs.length ? songs.map(function (s) {
@@ -35095,6 +35992,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     }
     var win = winnerOf(aw, st), wraith = !aw.won && /tundra wraith/i.test(win);
     card.appendChild(el('div.lo-winner' + (aw.won ? '.won' : ''), { testid: 'winner' }, [el('span.caps', 'And the Loonie goes to…'), el('b', win)]));
+    if (ui.logoBroadcast) card.appendChild(ui.logoBroadcast(st, { winner: win, won: !!aw.won, category: cat.name }));   // v0.8.1: the broadcast card (5m)
     if (wraith || aw.thanks) {
       var rt = V.awards().rivalThanks, t = Array.isArray(rt) ? rt : (rt && rt.tundra_wraith) || FB.wraith;
       card.appendChild(el('p.lo-q.wraith', { testid: 'wraith-thanks' }, [el('b', win + ': '), quoted(V.fill(aw.thanks || t[(L.i + (st.year || 0)) % t.length]))]));
@@ -35290,6 +36188,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     out.push(sec('The scene · by fans', 'scene-board', [el('div.panel.rv-board', board.map(function (r) {
       var tr = r.trend || 0;
       return el('div.rv-row' + (r.you ? '.you' : '') + (r.rival ? '.rival' : ''), { testid: 'scene-row-' + r.id }, [el('span.rk', '#' + r.rank),
+        ui.rivalLogo ? ui.rivalLogo(r.you ? 'you' : r.id, r.name, 34, { badge: 'round', testid: 'scene-logo-' + r.id }) : null,   // v0.8.1: every band's logo
         el('div.grow', [el('b', r.name + (r.you ? ' (you)' : '')), el('div.tiny.dim', [r.city, r.era ? ERA[r.era] || r.era : r.genre].filter(Boolean).join(' · ') + (r.cracked ? ' · cracked' : ''))]),
         el('div.fans', [U.fmtNum(r.fans), el('span.tr' + (tr > 0 ? '.up' : tr < 0 ? '.down' : ''), tr > 0 ? ' ▲' : tr < 0 ? ' ▼' : ' ·')])]);
     }))]));
@@ -35344,8 +36243,8 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       var st = S(); if (!on(st)) return;
       var R = RV(), p = R.pending(st), kind = p ? p.kind : 'botb', set = R.showdown(st, kind), rv = R.get(st);
       s.setTitle(set.title, 'YEAR ' + st.year + ' · WEEK ' + st.week + ' · ' + rv.name.toUpperCase());
-      var body = [el('div.rv-sd-head', [face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
-        el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];
+      var body = [el('div.rv-sd-head', [ui.rivalLogo ? ui.rivalLogo(rv.id, rv.name, 64, { badge: 'round', testid: 'sd-logo-them' }) : face('lg'), el('div.grow', [el('div.rv-name', rv.name), el('div.small.dim', rv.city + ' · heat ' + Math.round(rv.heat) + ' · you ' + R.record(st).you + '–' + R.record(st).them)]),
+        ui.bandLogo ? ui.bandLogo(st, 64, { badge: 'round', testid: 'sd-logo-you' }) : el('span.rv-sd-ic', set.icon || icon(kind))]), el('p.card-text', { testid: 'sd-card' }, fill(set.text))];   // v0.8.1: both logos
       if (set.stakes && kind !== 'stolenSlot') body.push(el('div.rv-stakes', [el('span.caps', 'Stakes'), el('b', set.stakes)]));
       if (SET_KINDS[kind]) body.push(el('div.line-list.panel', [
         el('div', [el('span', 'Their set strength'), el('span', '~' + set.expected)]),
@@ -35538,7 +36437,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       d.back = el('div.rs-back', [el('div.rs-sil', [el('i'), el('i'), el('i'), el('i')])]);
       d.back.hidden = !!V.stage;
       d.score = el('b', { testid: 'rs-score' }, '0');
-      d.bar = el('div.rs-bar', [el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
+      d.bar = el('div.rs-bar', [ui.rivalLogo ? ui.rivalLogo(set.rival.id, set.rival.name, 44, { badge: 'round', testid: 'rs-logo' }) : null, el('div.grow', [el('div.caps', icon(V.kind) + ' ' + set.title + (set.venue && set.venue.name && set.venue.name !== set.title ? ' · ' + set.venue.name : '')),
         el('b.rs-who', set.rival.name + (V.ended ? ' are done' : ' are on'))]), el('div.rs-score', [el('span.caps', 'Their set'), d.score])]);
       d.banner = el('div.rs-banner', { testid: 'rs-banner' });
       var rows = set.setlist.map(function (song, i) {
@@ -35597,9 +36496,9 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
         el('div.caps.center', icon(sd.kind) + ' ' + title(sd.kind) + (sd.name && sd.name !== title(sd.kind) ? ' · ' + String(sd.name).replace(/^Battle of the Bands @ /, '') : '')),
         el('h1.display.rv-vh', { testid: 'rv-verdict-head' }, head),
         el('div.rv-board2', [
-          el('div.side.you' + (sd.won ? '.win' : ''), [el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),
+          el('div.side.you' + (sd.won ? '.win' : ''), [st && ui.bandLogo ? ui.bandLogo(st, 56, { badge: 'round', testid: 'rv-logo-you' }) : null, el('span.caps', st ? bandName(st) : 'You'), el('b', you)]),   // v0.8.1: logos
           el('span.vs', 'vs'),
-          el('div.side.them' + (sd.won ? '' : '.win'), [face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
+          el('div.side.them' + (sd.won ? '' : '.win'), [rv && ui.rivalLogo ? ui.rivalLogo(rv.id, rv.name, 56, { badge: 'round', testid: 'rv-logo-them' }) : face('sm'), el('span.caps', sd.rival || (rv && rv.name) || 'Them'), el('b', them)])]),
         split ? el('p.small.dim.center', 'Same night, same town: the crowd split on buzz.') : el('p.small.dim.center', split ? '' : 'The crowd decides. Loudly.'),
         el('div.rv-chips', chips),
         el('div.stack.tight', (sd.lines || []).map(function (t) { return el('div.quote' + (sd.won ? '.rv-good' : ''), fill(t)); })),
@@ -35820,7 +36719,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var body = sub === 'fans' ? fansTab(st) : sub === 'club' ? clubTab(st, redo) : feedTab(st);
     return el('div', { testid: 'bandbook-panel' }, [
       el('div.bb-head', [el('span.bb-logo', ['band', el('i', 'book')]), el('span.bb-tag', (F().content().tagline) || '')]),
-      el('div.bb-page', { testid: 'bb-page' }, [el('div.bb-pic', name.charAt(0)), el('div.grow', [el('b', name),
+      el('div.bb-page', { testid: 'bb-page' }, [ui.bandLogo ? ui.bandLogo(st, 44, { badge: 'round', testid: 'bb-logo' }) : el('div.bb-pic', name.charAt(0)), el('div.grow', [el('b', name),   // v0.8.1: the band logo
         el('span', U.fmtNum(c.total) + ' fans · ' + b.posts.length + ' posts · 🚀 ' + b.viral + ' viral' + (st.fanClub ? ' · Patreeon ' + st.fanClub.members : ''))])]),
       el('div.bb-sub', ui.tabs(SUBS, sub, function (id) { sub = id; redo(); }, 'bb-tab-')),
       body
@@ -37238,7 +38137,7 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     var n = buyN[it.id] || 1, cost = SH().stockCost(st, it.id, n), can = SH().canBuyStock(st, it.id, n), pw = priceWord(it.price, it.suggested);
     function setP(p) { var r = SH().setPrice(S(), it.id, p); if (r && r.ok === false) return nope(r); sync(); s.rerender(); }
     return el('div.merch-item' + (onTable ? '.on' : ''), { testid: 'merch-item-' + it.id }, [
-      el('div.row', [el('div.grow', [el('b', it.name), it.id === 'misprint' ? el('span.tag.amber', { style: 'margin-left:6px' }, 'Rare') : null]),
+      el('div.row', [ui.logoMerch ? ui.logoMerch(st, it.id, 48) : null, el('div.grow', [el('b', it.name), it.id === 'misprint' ? el('span.tag.amber', { style: 'margin-left:6px' }, 'Rare') : null]),   // v0.8.1: the logo on it
         btn('.btn.small.merch-toggle' + (onTable ? '.on' : ''), { testid: 'merch-toggle-' + it.id, 'aria-pressed': onTable ? 'true' : 'false', onclick: function () {
           SH().toggleTable(S(), it.id); sync(); s.rerender();
         } }, onTable ? '✓ On the table' : 'Put it out')]),
@@ -37348,6 +38247,11 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 17, fill: '#151518', stroke: '#0c0e14', 'stroke-width': 2 }));
       kids.push(svg('circle', { cx: x0 + wx, cy: 150, r: 7, fill: '#9aa0a8' }));
     });
+    if (GG.render && GG.render.logo && GG.logo && st.bandId) {   // v0.8.1 LOGO: the band's logo decal (the bus: a big one over the windows)
+      var lz = B.bus ? 58 : 34, lx = B.bus ? x0 + B.w * 0.72 : x0 + 6, ly = B.bus ? y0 + 4 : y0 + B.h * 0.66 - lz - 2;
+      var band = GG.content.bands && GG.content.bands[st.bandId];
+      kids.push(svg('image', { href: GG.render.logo.dataURL(GG.logo.get(st), (band && band.name) || 'The Band', 128), x: lx, y: ly, width: lz, height: lz, testid: 'van-logo' }));
+    }
     // stickers: a grid along the lower body, newest last; banned venues get a red X
     // (more than fit: the last slot of row 2 is a "+N more" tag instead of a sticker)
     var cols = Math.floor((B.w - 20) / 44), shown = list.length > cols * 2 ? list.slice(-(cols * 2 - 1)) : list.slice();
@@ -37850,6 +38754,181 @@ html.gg-calm .calib-light.on { box-shadow: none; background: #d9c36a; }
     });
     return out;
   };
+})(window.GG);
+
+</script>
+<script>/* 5m_ui_logo.js */
+// 5m_ui_logo.js (v0.8.1, Addendum 2 D2, LOGO): the band-logo picker and the little logo widgets other screens reuse.
+//   'logo' (full): three taps with a live preview: 1 · emblem, 2 · lettering, 3 · colours (+ Band default / Surprise).
+//     mode 'new' (51: after the band intro, before the creator): "That's our logo →" hands the pick to GG.logo.prepare and
+//     goes on (onDone). mode 'rebrand' (the laptop's Band tab): shows the fee + buzz; "Rebrand" calls GG.logo.rebrand.
+//   ui.openLogo({ mode, bandId, genre, band, logo, onDone }) ; ui.logoImg(logo, name, size, opts?) -> <img> (cached data URL,
+//     drawn at the device's pixel ratio; opts: { badge, shape, testid, cls, title }) ; ui.bandLogo(st, size, opts?) ;
+//     ui.rivalLogo(id, name, size, opts?) (fixed rival logos; id 'you' = your band) ; ui.logoPanel(st, rerender) (laptop:
+//     your logo + Rebrand) ; ui.logoMerch(st, itemId, size) (5k: the item with your logo on it) ; ui.logoBroadcast(st,
+//     { winner, won, category }) (59c: the Loonies' TV lower third with the winner's logo).
+// testids: logo-screen, logo-preview, logo-prev-kick|shirt|avatar, logo-emblem-<id>, logo-style-<id>, logo-pal-<id>,
+//   logo-default, logo-surprise, btn-logo-done, btn-logo-back, btn-logo-rebrand, btn-logo-cancel, logo-cost, logo-why,
+//   laptop-logo, laptop-rebrand, logo-cast. Debug: GG.debug('logo-ui'). CSS: 00_shell /* v0.8.1 LOGO */.
+// No share / screenshot / download button, ever (owner, Addendum 2).
+(function (GG) {
+  var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
+  var E = null, dbg = { opened: 0, mode: null, picks: 0, rebrands: 0, last: null };
+  function L() { return GG.logo; }
+  function RL() { return GG.render && GG.render.logo; }
+  function dpr() { return Math.min(3, Math.max(1, (typeof window !== 'undefined' && window.devicePixelRatio) || 1)); }
+  function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
+  function shirtUrl(lg, name) { var c = RL().merch(lg, name, 'shirt', Math.round(58 * dpr())); if (!c._url) c._url = c.toDataURL('image/png'); return c._url; }
+  function nameOf(st) { var b = st && GG.career && GG.career.band ? GG.career.band(st) : null; return (b && b.name) || 'The Band'; }
+
+  /* ---- Widgets ------------------------------------------------------------------------------------------------------ */
+  ui.logoImg = function (lg, name, size, o) {
+    o = o || {};
+    var px = Math.min(512, Math.round(size * dpr())), wide = o.shape === 'wide';
+    var src = RL() ? RL().dataURL(lg, name, px, { badge: o.badge || false, shape: o.shape, mini: o.mini, plain: o.plain, textOnly: o.textOnly }) : '';
+    return el('img.logo-img' + (o.cls ? '.' + o.cls : ''), { src: src, alt: o.alt != null ? o.alt : (name || '') + ' logo', width: wide ? size * 2 : size, height: size,
+      draggable: 'false', testid: o.testid || null, title: o.title || null, style: { width: (wide ? size * 2 : size) + 'px', height: size + 'px' } });
+  };
+  ui.bandLogo = function (st, size, o) { return ui.logoImg(L() ? L().get(st) : null, nameOf(st), size, o); };
+  ui.rivalLogo = function (id, name, size, o) {
+    var st = GG.state;
+    if (id === 'you' && st) return ui.bandLogo(st, size, o);
+    return ui.logoImg(L() ? L().rival(id) : null, name, size, Object.assign({ alt: (name || 'Rival') + ' logo' }, o || {}));
+  };
+  ui.logoMerch = function (st, itemId, size) {
+    if (!RL() || !st) return null;
+    var c = RL().merch(L().get(st), nameOf(st), itemId, Math.round((size || 56) * dpr()));
+    if (!c._url) c._url = c.toDataURL('image/png');   // drawn + encoded once per logo/item/size (the canvas is cached)
+    return el('img.merch-art', { src: c._url, alt: '', width: size || 56, height: size || 56, draggable: 'false', testid: 'merch-art-' + itemId });
+  };
+  // The Loonies broadcast card: a TV lower third with the winner's logo.
+  ui.logoBroadcast = function (st, o) {
+    o = o || {};
+    var you = !!o.won, win = o.winner || (you ? nameOf(st) : 'Somebody else');
+    var id = you ? 'you' : (L() && L().findRival(win));
+    var art = id ? ui.rivalLogo(id, win, 56, { badge: 'round' }) : el('div.lg-cast-blank', '🏆');
+    return el('div.lg-cast' + (you ? '.you' : ''), { testid: 'logo-cast', data: { who: id || 'other' } }, [
+      el('div.lg-cast-live', [el('i'), 'LIVE']), art,
+      el('div.grow', [el('div.lg-cast-cat', o.category || 'The Loonies'), el('b', win), el('div.lg-cast-sub', you ? 'wins. Kenji is already carrying it to the van.' : 'wins. Polite applause from table 9.')]),
+      el('div.lg-cast-bug', 'LOONIES')]);
+  };
+  // The laptop's Band tab: your logo + Rebrand.
+  ui.logoPanel = function (st, rerender) {
+    if (!L() || !st) return null;
+    var c = L().rebrandCost(st), lg = L().get(st);
+    return el('div.mem-card.lg-panel', { testid: 'laptop-logo' }, [
+      el('div.row', [ui.bandLogo(st, 76, { badge: 'round' }), el('div.grow', [el('div', { style: 'font-weight:800' }, 'The logo'),
+        el('div.small.dim', [L().emblem(lg.emblem).name, L().style(lg.style).name, L().palette(lg.palette).name].join(' · ')),
+        el('div.tiny.dim', 'On the kick drum, the merch, the van, the banner and Bandbook.')])]),
+      btn('.btn.block', { testid: 'laptop-rebrand', style: 'margin-top:8px', onclick: function () {
+        ui.openLogo({ mode: 'rebrand', onDone: function () { if (rerender) rerender(); } });
+      } }, '✏ Rebrand · ' + U.fmtMoney(c.fund)), el('div.tiny.dim.center', { style: 'margin-top:4px' }, 'Costs a little buzz too: fans need a week to recognise you.')]);
+  };
+
+  /* ---- The picker ----------------------------------------------------------------------------------------------------- */
+  ui.openLogo = function (o) {
+    o = o || {};
+    var st = GG.state, rebrand = o.mode === 'rebrand';
+    if (!L() || (rebrand && !st)) { if (o.onDone) o.onDone(null); return null; }
+    var bandId = rebrand ? st.bandId : (o.bandId || 'hail_damage'), band = (GG.content.bands || {})[bandId];
+    var genre = rebrand ? st.genre : (o.genre || (band && band.genre) || 'metal'), carried = rebrand ? null : L().carry.read(genre);
+    var start = o.logo || (rebrand ? L().get(st) : (L().pending(bandId) || carried || L().defaultFor(bandId)));
+    E = { mode: rebrand ? 'rebrand' : 'new', bandId: bandId, genre: genre, name: o.band || (band && band.name) || (st && nameOf(st)) || 'The Band',
+      logo: L().sanitize(start, bandId), was: rebrand ? L().get(st) : null, carried: !!(carried && !o.logo && !L().pending(bandId) && L().same(carried, start)), onDone: o.onDone || null };
+    dbg.opened++; dbg.mode = E.mode;
+    return ui.show('logo', {});
+  };
+  function pick(field, id) {
+    if (!E || E.logo[field] === id) return;
+    E.logo = Object.assign({}, E.logo, (function () { var x = {}; x[field] = id; return x; })());
+    E.carried = false; dbg.picks++; dbg.last = field + ':' + id;
+    sfx('tap');
+    var s = ui.get('logo'); if (s) s.rerender();
+  }
+  function section(n, title, sub, kids, testid) {
+    return el('div.lg-sec', { testid: testid }, [el('div.lg-sec-h', [el('span.lg-n', String(n)), el('b', title), sub ? el('span.tiny.dim', sub) : null]), kids]);
+  }
+  ui.define('logo', {
+    kind: 'full', cls: 'logox',
+    build: function (s) {
+      if (!E) return;
+      var lg = E.logo, rebrand = E.mode === 'rebrand', st = GG.state, name = E.name;
+      var em = L().emblem(lg.emblem), sty = L().style(lg.style), pal = L().palette(lg.palette);
+      var head = el('div', [
+        el('div.back-row', [btn('.icon-btn', { testid: 'btn-logo-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
+          el('span.caps', rebrand ? 'Laptop · Rebrand' : 'New career · the logo')]),
+        el('h1.screen-h', rebrand ? 'Rebrand?' : 'Your band logo')]);
+      var stage = el('div.lg-stage', { testid: 'logo-preview', data: { key: L().key(lg) } }, [
+        el('div.lg-prev', ui.logoImg(lg, name, 196, { alt: name + ' logo' })),
+        el('div.lg-mini-row', [
+          el('div.lg-mini', { testid: 'logo-prev-kick' }, [el('div.lg-kick', ui.logoImg(lg, name, 58, { badge: 'circle' })), el('span', 'Kick drum')]),
+          el('div.lg-mini', { testid: 'logo-prev-shirt' }, [RL() ? el('img.merch-art', { src: shirtUrl(lg, name), width: 58, height: 58, alt: '' }) : null, el('span', 'Shirt')]),
+          el('div.lg-mini', { testid: 'logo-prev-avatar' }, [ui.logoImg(lg, name, 40, { badge: 'round' }), el('span', 'Bandbook')])]),
+        el('div.lg-caption', [el('b', em.name), ' · ', sty.name, ' · ', pal.name])]);
+      var emblems = el('div.lg-emb', L().emblems().map(function (e) {
+        var on = e.id === lg.emblem;
+        return btn('.lg-embtn' + (on ? '.on' : ''), { testid: 'logo-emblem-' + e.id, 'aria-pressed': on ? 'true' : 'false', title: e.name, onclick: function () { pick('emblem', e.id); } },
+          [ui.logoImg(Object.assign({}, lg, { emblem: e.id }), name, 40, { plain: true, alt: '' }), el('span', e.name)]);
+      }));
+      var styles = el('div.lg-styles', L().styles().map(function (x) {
+        var on = x.id === lg.style;
+        return btn('.lg-stbtn' + (on ? '.on' : ''), { testid: 'logo-style-' + x.id, 'aria-pressed': on ? 'true' : 'false', onclick: function () { pick('style', x.id); } },
+          [ui.logoImg(Object.assign({}, lg, { style: x.id }), name, 62, { shape: 'wide', textOnly: true, mini: false, alt: '' }), el('span', x.name)]);
+      }));
+      var pals = el('div.lg-pals', L().palettes().map(function (p) {
+        var on = p.id === lg.palette;
+        return btn('.lg-pal' + (on ? '.on' : ''), { testid: 'logo-pal-' + p.id, 'aria-pressed': on ? 'true' : 'false', title: p.name, onclick: function () { pick('palette', p.id); } },
+          [el('span.sw', { style: { background: p.ground } }, [el('i', { style: { background: p.em } }), el('i', { style: { background: p.fg } })]), el('span.pn', p.name)]);
+      }));
+      var def = L().defaultFor(E.bandId);
+      var tools = el('div.lg-tools', [
+        btn('.lk-chip', { testid: 'logo-default', disabled: L().same(def, lg), onclick: function () { E.logo = def; E.carried = false; dbg.picks++; var x = ui.get('logo'); if (x) x.rerender(); } }, '↺ Band default'),
+        btn('.lk-chip', { testid: 'logo-surprise', onclick: function () {
+          var r = ui.rng, es = L().emblems(), ps = L().palettes(), ss = L().styles();
+          E.logo = { emblem: es[Math.floor(r.next() * es.length)].id, style: r.next() < 0.6 ? lg.style : ss[Math.floor(r.next() * ss.length)].id, palette: ps[Math.floor(r.next() * ps.length)].id };
+          E.carried = false; dbg.picks++; sfx('tap'); var x = ui.get('logo'); if (x) x.rerender();
+        } }, '🎲 Surprise me'),
+        E.carried ? el('span.tiny.dim', 'Your last ' + E.genre + ' logo (this phone remembers it)') : null]);
+      ui.append(s.body, el('div', { testid: 'logo-screen', data: { mode: E.mode } }, [head,
+        el('p.screen-sub', rebrand ? 'New logo, same band. Costs a bit, and the scene will take a week to stop calling you "the band with the old logo".'
+          : 'Three taps. It goes on the kick drum, the merch, the van and the garage door. Any genre can use any lettering.'),
+        stage, tools,
+        section(1, 'Emblem', em.name, emblems, 'logo-sec-emblem'),
+        section(2, 'Lettering', sty.blurb, styles, 'logo-sec-style'),
+        section(3, 'Colours', pal.name, pals, 'logo-sec-pal')]));
+      if (!rebrand) {
+        s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-logo-done', onclick: function () {
+          var e = E; if (!e) return;
+          L().prepare(e.logo, e.bandId);
+          sfx('ui');
+          if (e.onDone) e.onDone(e.logo); else ui.show('creator');
+        } }, "That's our logo →"));
+        return;
+      }
+      var can = L().canRebrand(st, lg), c = L().rebrandCost(st);
+      s.foot.appendChild(el('div.stack.tight', [
+        el('div.small.center' + (can.ok ? '' : '.dim'), { testid: 'logo-cost' }, 'Rebrand: ' + U.fmtMoney(c.fund) + ' from the fund · buzz −' + c.buzz + ' (fans need a week to recognise you)'),
+        can.ok ? null : el('div.tiny.center.amber', { testid: 'logo-why' }, can.why),
+        el('div.row', [btn('.btn.grow', { testid: 'btn-logo-cancel', onclick: function () { ui.close(s.id); } }, 'Keep it'),
+          btn('.btn.primary.grow', { testid: 'btn-logo-rebrand', disabled: !can.ok, onclick: function () {
+            var r = L().rebrand(GG.state, E.logo);
+            if (!r.ok) { ui.toast(r.why, { kind: 'bad' }); return; }
+            dbg.rebrands++; sfx('cash');
+            var done = E.onDone;
+            ui.close(s.id);
+            if (GG.main && GG.main.sync) GG.main.sync();
+            ui.toast('New logo. The old stickers are collector\'s items now (they are not).', { who: 'Rebrand' });
+            if (done) done(r.logo);
+          } }, 'Rebrand · ' + U.fmtMoney(c.fund))])]));
+    },
+    onClose: function () { E = null; }
+  });
+
+  GG.registerDebug('logo-ui', function () {
+    return { open: ui.isOpen ? ui.isOpen('logo') : false, mode: E ? E.mode : dbg.mode, logo: E ? E.logo : null, carried: E ? E.carried : false,
+      opened: dbg.opened, picks: dbg.picks, rebrands: dbg.rebrands, last: dbg.last,
+      imgs: typeof document !== 'undefined' ? document.querySelectorAll('img.logo-img').length : 0 };
+  });
 })(window.GG);
 
 </script>

@@ -1658,6 +1658,7 @@
   function css(hex) { return typeof hex === 'number' ? '#' + ('000000' + hex.toString(16)).slice(-6) : hex; }
   // Kick-drum front head art on a 256px canvas (circle). Band logo by genre, your face (from your look), a moose, custom text.
   function drawHead(g, K, o) {
+    if (K.head === 'logo' && GG.render.logo && GG.render.logo.head(g, o)) return;   // v0.8.1: the band's own logo (46_render_logo)
     var dark = K.head === 'logo' && o.genre === 'metal';
     g.fillStyle = dark ? '#121214' : '#efe9dc'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
     g.strokeStyle = dark ? '#3a3a42' : '#cfc6b2'; g.lineWidth = 8; g.beginPath(); g.arc(128, 128, 122, 0, Math.PI * 2); g.stroke();

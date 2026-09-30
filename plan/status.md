@@ -315,8 +315,8 @@ Later versions:
 - [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
       + this checklist recorded, queued file retired — lead, 2026-09-30
 - [x] D1 licensing deals — v0.8.1 (popup: fee ranges + odds → "Nice bonus") — LICRECAP, 2026-09-30
-- [ ] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1
 - [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
+- [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
 - [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
 - [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
 
@@ -457,6 +457,43 @@ Later versions:
   shell CSS `/* v0.8.1 RECAP */`. Saves: both modules chain onto `GG.save.migrate` (fill when missing; no `state.v`).
 - Tests: `sim_licensing` 9, `sim_recap` 6 (content 49 whitelists the new tokens); `pw_recap.js` META_ONLY=offer (13) |
   recap (19), also run at 440×956; pw_rival scene expects nine laptop tabs. Screenshots `tests/.cache/recap_*.png`.
+
+## What's in v0.8.1 (logo) — Addendum 2 D2, LOGO agent (worktree branch, merged by the lead)
+- Content `content/logo.js` (`GG.content.logo`): 15 emblems (the owner's twelve in C.LOGO_EMBLEMS order + curling stone,
+  mosquito, toque; each with art params scale/dy/spin), the 4 lettering styles (Spiky / Ransom note / Chrome '80s / Western
+  slab, any genre may use any), 14 curated colour pairs `{ fg (letters), em (emblem), ground (outlines + badges) }`, a default
+  per band (Hail Damage hailstone·metal·Frostbite, Frost Heave safety pin·punk·Hazard tape, Gravel Kings bolt·rock·Chrome &
+  neon, Grid Road Ramblers cowboy hat·country·Prairie sunset), a fixed logo for every rival + every scene band (scene copies
+  alias the big rivals with `{ same }`), Rebrand price (garage $150 / local $300 / signed $600 / world $900 + 3 buzz), chat lines.
+- Sim `2e_sim_logo.js` (`GG.logo`, DOM-free, no career RNG): sanitize/defaults/rival logos, `prepare` (the picker's pick) →
+  'career:new' sets `state.logo` (band default otherwise), Rebrand, carry-over (this phone remembers the last logo per genre in
+  `gg.v1.unlocks.<genre>.logo`, next to the creator's carry key; the picker starts from it), migrate chained onto
+  GG.save.migrate (fills `state.logo` only when missing/broken; never `state.v`). Event 'logo:changed' { state, logo, source }.
+- Render `46_render_logo.js` (`GG.render.logo`): procedural canvas (no image files, cached LRU 72): the emblem (vector paths,
+  one ground-coloured outline round the union) under the name in its lettering — metal: serif caps growing symmetric seeded
+  spikes/roots/barbs from the glyph edges; punk: seeded ransom letters on torn paper patches with hard shadows; rock: skewed
+  italic with a block extrude, chrome gradient + sparkle; country: fattened slab caps on an arch, hard em-coloured drop shadow,
+  stars. "The" becomes a small prefix; long names split in two lines. Below 72 px it draws the emblem + initials (mini).
+  Options square/wide (+aspect), badge circle/round, plain (emblem only), textOnly. `head()` = kick-head art, `merch()` = the
+  item with the logo on it (the misprint prints crooked, as HALE DAMAGE).
+- UI `5m_ui_logo.js`: screen `logo` (full): sticky live preview (big + kick / shirt / Bandbook minis), 1 · emblem (5-col grid),
+  2 · lettering (the band's name in each style), 3 · colours (swatches), ↺ Band default, 🎲 Surprise me. New-career flow:
+  band intro → `logo` → creator (51; Back from the creator keeps the pick). Laptop Band tab: "The logo" card + ✏ Rebrand (same
+  screen in rebrand mode: cost + why, "Rebrand · $X"). No share/screenshot/download button.
+- Reuse (small hooks in shared files): kick-drum head 'logo' art (40 drawHead → `GG.render.logo.head`; 41's kit signature
+  includes the logo so a Rebrand rebuilds it; stage + creator preview get it for free), garage bedsheet banner (41, the wide
+  logo sprayed on the sheet; banner only), merch item art (5k itemCard), van side SVG decal (5k vanSide; the tour bus gets a big
+  one) + a windshield sticker in the 3D van (43, own vehicles, not the bus; `van.info().logo`), Bandbook avatar (5g), Loonies
+  broadcast card (59c: a TV lower third with the winner's logo; rival winners resolved by name), Scene leaderboard (a logo on
+  every row) + BotB announcement (both logos), rival-set bar and verdict (59d). CSS block `/* v0.8.1 LOGO */` (end of shell).
+- Tests: `tests/sim_logo.test.js` (7) · `tests/pw_logo.js` META_ONLY=picker (23) | reuse (14) + contact sheet
+  `tests/.cache/v081_logo_sheet.png`. pw_flow/pw_creator/pw_settings tap `btn-logo-done` after the band intro (pw_flow layout
+  audits + shoots the picker). Green at 390x844: node suite, pw_logo, pw_flow flow/layout, pw_garage, pw_shop merch/van,
+  pw_creator creator/kit, pw_label awards, pw_rival scene/botb, pw_settings difficulty; pw_logo picker/reuse at 440x956.
+- Gaps: the Hall of Fame entry (v1.0) will call `GG.render.logo.forState`; lettering uses system fonts (Georgia / Arial Black /
+  Rockwell fall back per device, so the exact look varies a little by phone); the kick head in the picker's mini preview and
+  avatars under 72 px show initials, not the name; rival kits on stage don't show the rival's logo; the 3D tour bus has no
+  interior logo (it's on the SVG side view).
 
 ## v0.8 integration (lead, 2026-09-30)
 - Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
@@ -901,6 +938,14 @@ Later versions:
   weekly (wrap.shop), cards, card, effectText, botValue, botWeek`. Buys return `{ ok, cost, deltas }` or `{ ok: false, why }`.
   Events `shop:buy|unlock|move|rename|sticker|misprint|merch`. `GG.fans.merchMods(s, r)`; `GG.songs` extras above;
   `GG.audio.kitFor/kitQuality/qualityFor`. Debug `GG.debug('shop')`.
+- `GG.logo` (v0.8.1, header of `2e_sim_logo.js`): `content, emblems, styles, palettes, emblem, style, palette, key, same,
+  defaultFor(bandId|genre), sanitize(logo, bandId?), get(state), ensure(state), rival(id, genre?), findRival(name), rebrandCost,
+  canRebrand, rebrand(state, logo) -> { ok, cost, buzz, logo, deltas } | { ok: false, why }, prepare(logo, bandId), pending(bandId?),
+  init, migrate, carry.{key, read, write}`. Event 'logo:changed'. Debug 'logo'. `GG.render.logo` (46): `canvas(logo, name, size,
+  { shape, aspect, badge, mini, plain, textOnly }), texture, dataURL, forState, forRival, nameOf, head(g, o), merch(logo, name,
+  itemId, size), palette, split, emblemIds, info` (debug 'render-logo'). `GG.ui` (5m): `openLogo({ mode: 'new'|'rebrand', bandId,
+  genre, band, logo, onDone }), logoImg(logo, name, size, opts), bandLogo(st, size, opts), rivalLogo(id|'you', name, size, opts),
+  logoPanel(st, rerender), logoMerch(st, itemId, size), logoBroadcast(st, { winner, won, category })`; screen 'logo'; debug 'logo-ui'.
 - `GG.ui` v0.8 shop (header of `5k_ui_shop.js`): `openGear(), openMerch(), showVan(tab 'van'|'space'|'dealer'), vanSide(st, { tier, stickers }),
   vanUpgradesPanel, spacePanel, dealerPanel, shopChips(deltas.shop), merchResult(r.merch), isMerchLine, shopWrap(w), shopWrapShown(w),
   playCollector(done)`. Screens `gear`, `merch` (tall sheets), `van-info` (tabs), `shop-collector` (full). Debug `shopui`.

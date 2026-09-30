@@ -5,6 +5,7 @@
 // v0.8 (CREATOR): the creator opens the full creator ('look', 5j_ui_creator: btn-customize; a 'preset-custom' card once
 // customised), a carry-over toggle (carry-toggle: unlocks from past careers in this genre, GG.creator.carry) and hands both
 // to GG.creator.prepare() right before GG.main.newCareer; the ☰ menu has "Look" (menu-look) mid-career.
+// v0.8.1 (LOGO): band intro → the logo picker ('logo', 5m_ui_logo; GG.logo.prepare) → the creator.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -224,7 +225,10 @@
           mates.children.length ? el('div.panel', [el('div.caps', { style: 'margin-bottom:4px' }, 'The band (plus you, on drums)'), mates]) : null
         ])
       ]);
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () { ui.show('creator'); } }, "That's my band →"));
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () {   // v0.8.1: the logo picker first (5m)
+        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: draft.bandId || 'hail_damage', genre: draft.genre || 'metal', band: name, onDone: function () { ui.show('creator'); } });
+        else ui.show('creator');
+      } }, "That's my band →"));
     }
   });
 
