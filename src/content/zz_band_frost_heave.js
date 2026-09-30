@@ -18,20 +18,31 @@
 //   5 fh_council_5_good | fh_council_5_bad (flagEquals councilOdds): the count (rolls) -> councilResult won | lost | tie
 //   6 fh_council_6_won | _lost | _tie -> end with flags.council = won | lost | tie. Helper flags councilPlan / councilDebate /
 //     councilOdds / councilResult are cleared (false) at every end. flags.roxDive ('debate') is the stage dive born at the
-//     debate (feeds Rox's signature: fh_local_dive_bylaw, the carpet), flags.council feeds the outfit cards and the World.
+//     debate (the story of Rox's signature stageDive: Pomeroy's dive bylaw, fh_local_dive_bylaw); flags.council feeds the
+//     Loonies outfit cards (councillor / papers / sash), the Local cards (ward duties / committee) and the World (squat).
 // Q3 World payoff (chain 'squat', Signed era, starts once flags.council is set): the council song becomes a Berlin squat's
-//   anthem -> flags.squatAnthem = 'berlin' | 'sold' | 'no'. 'berlin' unlocks the tour package eu_squat_anthem (Berlin, then
-//   Wackelstein Open Air; payoff at Wackelstein: flags.squatAnthemPayoff, story card wt_fh_squat_anthem, Gong credit).
+//   anthem -> flags.squatAnthem = 'berlin' | 'sold' | 'no'. 'berlin' unlocks the tour package eu_squat_anthem_tour (Amsterdam,
+//   Berlin, then Wackelstein Open Air; payoff at Wackelstein: flags.squatAnthemPayoff, story card wt_fh_squat_anthem, Gong
+//   credit like the Moose Opera).
 // Q5 home superfan: Delphine from the Suds-O-Rama (bandbook.homeSuperfan.frost_heave, npc fh_delphine, gift fh_lint_portrait).
 // Q6 misprint: FROST HEAVY. Q8 cameos: fh_cameo_hail_damage, fh_cameo_gravel_kings (cameo: true).
 // New flags (cards set them, cards/tour read them): council, councilPlan, councilDebate, councilOdds, councilResult, roxDive,
 //   squatPlan, squatCall, squatAnthem, squatAnthemPayoff (tour), demandEnglish / demandRadio / demandImage / demandShowcase.
 // npcs (band- or rival-scoped): fh_delphine, fh_irma, fh_pomeroy, fh_janice (Frost Heave); mr_blaze (frontman), mr_siobhan,
 //   mr_preston (Mall Rats). Cast member ids mr_blaze / mr_siobhan / mr_dex / mr_brody (the npc ids double as cast ids).
-// No USA content, no gong on the kit, no real brands (MegaBulk, Shredwood, Riot Juice and MuchLoud are parodies).
+//   The Mall Rats' label is the rival-only 'network_nine' (Network Nine Music, the record arm of the TV network; base labels).
+// First-match lists (a holiday's cards, licenseScandals): the band's own entries go in front of the shared ones, so the
+//   shared cards stay the fallback. Every string is <= the content limits; tokens are §4.2's.
+// No USA content, no gong on the kit, no real brands (MegaBulk, Shredwood, Riot Juice and Network Nine are parodies).
 (function (GG) {
   var K = GG.content = GG.content || {};
   var B = 'frost_heave', RIVAL = 'mall_rats';
+  // Activation. The pack is written against the v0.9 base content (plan_contract_0.9 §4.1: neutral flat pools, Hail Damage's
+  // voice moved to lines.byBand.hail_damage, lane A2) and read through the v0.9 sims (tokens, variants, the speaker guard,
+  // lane B). On a pre-v0.9 base the flat pools still speak for Hail Damage and the v0.8 content tests pin every card to it
+  // (HD_IDS speakers, metal-only gates, lord_abyssus as the only week-one card), so the pack waits for that base.
+  // Lead: this one line can go at integration once A2's base is in (then the pack is unconditional).
+  if (!(K.lines && K.lines.byBand && K.lines.byBand.hail_damage)) return;
   var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LS = ['local', 'signed'], L = ['local'], S = ['signed'];
   var ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'], SW = ['signed', 'world'], W = ['world'];
 
@@ -104,7 +115,7 @@
     { id: 'mr_siobhan', name: 'Siobhan', rival: RIVAL,
       blurb: "The Mall Rats' stylist and the one who actually runs the band. Headset, clipboard, sponsor budget. Speaks only in deliverables." },
     { id: 'mr_preston', name: 'Preston from the Network', rival: RIVAL,
-      blurb: 'VP of Youth Content at MuchLoud. Built the Mall Rats from a focus group of four hundred teens and a mood board.' }
+      blurb: 'VP of Youth Content at Network Nine. Built the Mall Rats from a focus group of four hundred teens and a mood board.' }
   ].forEach(function (n) { if (!npcs[n.id]) npcs[n.id] = n; });
 
   /* ======================================================================================================================
@@ -113,7 +124,7 @@
   var RV = obj(K, 'rivalry');
   var cast = obj(RV, 'cast');
   cast[RIVAL] = assign(cast[RIVAL] || {}, {
-    id: RIVAL, frontman: 'mr_blaze', label: 'muchloud', faceStyle: 'cap', actions: ['kickflip'],
+    id: RIVAL, frontman: 'mr_blaze', label: 'network_nine', faceStyle: 'cap', actions: ['kickflip'],
     vehicle: 'a tour bus wrapped in a photo of their own faces, sponsored by Shredwood Skateboards',
     minivan: 'a tour bus wrapped in a photo of their own faces, sponsored by Shredwood Skateboards',
     members: [
@@ -174,7 +185,7 @@
         "Preston from the network called {rival} 'the most authentic product we have ever launched'."
       ],
       local: ["{rival} hit two hundred and fifty fans. The network threw a party. The fans were catered."],
-      signed: ["{rival} signed with MuchLoud Records, the network's own label. The contract was signed on camera. Twice. Better lighting."],
+      signed: ["{rival} signed with Network Nine Music, the network's own label. The contract was signed on camera. Twice. Better lighting."],
       album: ["{rival} release '{album}'. It debuts at #{pos} on the Maple 100 with a sponsored kickflip in every video.",
         "'{album}' by {rival} enters the Maple 100 at #{pos}. Each copy comes with a skateboard sticker and a survey."],
       albumNoChart: ["{rival} release '{album}'. It misses the chart. The network re-releases it as a 'director's cut' the next week."],
@@ -319,6 +330,13 @@
         ] }
     ]
   });
+
+  // Their label is the base's rival-only 'network_nine' (gap #8); written here only if the base has not got it yet, so the
+  // cast never points at a label that does not exist.
+  var LBS = K.labels && K.labels.labels ? K.labels.labels : obj(K, 'labels');
+  if (!LBS.network_nine) LBS.network_nine = { id: 'network_nine', name: 'Network Nine Music', rivalOnly: true, rival: RIVAL,
+    blurb: 'The record arm of the TV network that built the Mall Rats on a talent show. Every album ships with a reality special.',
+    rep: { name: 'Preston from the Network', blurb: 'VP of Youth Content. Headset, mood board, a focus group on speed dial.' } };
 
   // The Loonies: the Mall Rats win and thank you; you beat them and they are gracious about it (on camera).
   var AW = obj(K, 'awards');
@@ -553,7 +571,7 @@
       ] },
 
     // ---- The garage era: the basement under the Suds-O-Rama (early cards, maxWeek) ---------------------------------------
-    { id: 'fh_irma_ceiling', type: 'scene', speaker: 'fh_irma', title: 'Notes From Upstairs', gate: g({ maxWeek: 12 }),
+    { id: 'fh_irma_ceiling', type: 'scene', speaker: 'fh_irma', title: 'Notes From Upstairs', weight: 2, gate: g({ minWeek: 2, maxWeek: 12 }),
       text: "Mid-song, a mop handle thumps the ceiling three times. Irma comes down the stairs with a notepad. She has been listening " +
         "through the floor for a week. 'The bridge drags. The singer is flat. The drummer is fine. I charge $40 a month.'",
       choices: [
@@ -567,7 +585,7 @@
             success: { effects: { chemistry: 5, fans: 4 }, outcome: 'Irma screams one line about the price of quarters. It is terrifying. She tells her whole bingo group.' },
             fail: { effects: { burnout: 4 }, outcome: 'Irma sings the national anthem, slowly, in full. Nobody knows how to stop it. Nobody tries.' } } }
       ] },
-    { id: 'fh_dryer_tempo', type: 'weird', speaker: 'moth', title: 'Dryer Number Four', gate: g({ maxWeek: 14 }),
+    { id: 'fh_dryer_tempo', type: 'weird', speaker: 'moth', title: 'Dryer Number Four', weight: 2, gate: g({ minWeek: 2, maxWeek: 14 }),
       text: "Upstairs, dryer number four thumps at exactly 190 beats per minute when it has sneakers in it. Moth has noticed. " +
         "She wants to tune the whole band to dryer four. Rox wants to know who owns the sneakers.",
       choices: [
@@ -592,7 +610,7 @@
         { label: 'Frame it as a warning', hint: 'Buzz ↑', effects: { buzz: 3, mood: { benny: 3 } },
           outcome: 'The chart goes on the wall under a sign: DO NOT. Fans ask about it at every show. Benny tells them. At length.' }
       ] },
-    { id: 'fh_moth_permission', type: 'drama', speaker: 'moth', title: 'Permission to Enter', gate: g({ maxWeek: 12 }),
+    { id: 'fh_moth_permission', type: 'drama', speaker: 'moth', title: 'Permission to Enter', weight: 2, gate: g({ minWeek: 2, maxWeek: 12 }),
       text: "The cymbals are in the van. The van is Moth's apartment. Moth is asleep in it, and there is a sign on the side door: " +
         "KNOCK. WAIT. KNOCK AGAIN. It is ten minutes to rehearsal.",
       choices: [
@@ -603,7 +621,7 @@
         { label: 'Climb in the window', hint: 'Moth ↓↓', effects: { mood: { moth: -10 }, burnout: 3 },
           outcome: 'You land in her sock drawer. It is also her kitchen. Moth does not speak to you until Thursday. She changes the locks. On a van.' }
       ] },
-    { id: 'fh_first_flyer', type: 'money', speaker: 'rox', title: 'The Library Photocopier', gate: g({ maxWeek: 10 }),
+    { id: 'fh_first_flyer', type: 'money', speaker: 'rox', title: 'The Library Photocopier', weight: 2, gate: g({ minWeek: 2, maxWeek: 10 }),
       text: "Rox wants four hundred flyers for the first show, photocopied at the central library at ten cents a page. Her design is the " +
         "council chamber, on fire, with the band's name in the smoke. The librarian is looking at it very carefully.",
       choices: [
@@ -614,7 +632,7 @@
         { label: 'Hand-draw them all', hint: 'Burnout ↑ · Chemistry ↑', effects: { burnout: 6, chemistry: 4 },
           outcome: 'Four people, four nights, four hundred flyers. Benny draws his with two lines each. They are somehow the best ones.' }
       ] },
-    { id: 'fh_quarter_jar', type: 'money', speaker: 'fh_irma', title: 'The Quarter Jar', gate: g({ maxWeek: 16 }),
+    { id: 'fh_quarter_jar', type: 'money', speaker: 'fh_irma', title: 'The Quarter Jar', gate: g({ minWeek: 2, maxWeek: 16 }),
       text: "The band fund is a pickle jar of quarters from the Suds-O-Rama change machine: tips, found money, and one Rox 'liberated' " +
         "from a parking meter as a protest. Irma has noticed the jar. Irma owns the change machine.",
       choices: [
@@ -639,7 +657,7 @@
             success: { effects: { buzz: 8, fans: 10 }, outcome: 'The clip of a punk band playing ankle-deep in suds goes around Regina. Someone coins "soap-core". It sticks.' },
             fail: { effects: { burnout: 6, mood: { benny: -4 } }, outcome: "A spark, a pop, a smell. Benny's pedal is gone. He says he never needed a pedal. He did." } } }
       ] },
-    { id: 'fh_folding_duty', type: 'drama', speaker: 'rox', title: 'Part of the Rent', gate: g({ maxWeek: 12 }),
+    { id: 'fh_folding_duty', type: 'drama', speaker: 'rox', title: 'Part of the Rent', gate: g({ minWeek: 2, maxWeek: 12 }),
       text: "Part of the rent is folding. Irma has left three baskets of towels at the bottom of the basement stairs. Rox refuses to fold " +
         "'on principle'. Nobody knows which principle. Benny is already folding. Badly.",
       choices: [
@@ -650,7 +668,7 @@
         { label: 'Pay Irma $20 instead', hint: '−$20 · Rox ↑', effects: { fund: -20, mood: { rox: 5 } },
           outcome: 'Irma takes the money and says principles are expensive. Rox agrees. Rox says that is the whole point.' }
       ] },
-    { id: 'fh_first_zine', type: 'fame', speaker: 'benny', title: 'The First Zine', gate: g({ maxWeek: 16, minFans: 15 }),
+    { id: 'fh_first_zine', type: 'fame', speaker: 'benny', title: 'The First Zine', gate: g({ minWeek: 2, maxWeek: 16, minFans: 15 }),
       text: "A zine from the university called Slush Pile has reviewed your first show. The review is two sentences long. The second " +
         "sentence is 'Two chords, no mercy.' Benny has read it forty times. He wants it on a shirt.",
       choices: [
@@ -875,7 +893,7 @@
       text: "It is a normal Regina day, which means the wind is doing sixty. On Albert Street the van's side door blows open and the " +
         "merch box empties across four lanes. Shirts are wrapping themselves around lamp posts. Rox calls it 'distribution'.",
       choices: [
-        { label: 'Chase every shirt', hint: 'Burnout ↑ · Chemistry ↑', effects: { burnout: 6, chemistry: 4 },
+        { label: 'Run after every shirt', hint: 'Burnout ↑ · Chemistry ↑', effects: { burnout: 6, chemistry: 4 },
           outcome: 'You recover thirty-one shirts. Four are never found. Months later you see a man at the Legion wearing one. You let him keep it.' },
         { label: 'Let the wind have them', hint: '−$50 · Fans ↑', effects: { fund: -50, fans: 12 },
           outcome: 'Shirts land in yards all over the Heritage neighbourhood. Twelve people come to a show to "return" them. They keep them.' },
@@ -1117,7 +1135,7 @@
 
     // ---- Holidays (appended to calendar.holidays[*].cards below; once a year) ---------------------------------------------
     { id: 'holiday_canada_day_frost_heave', type: 'scene', speaker: 'rox', title: 'Canada Day', once: false, cooldown: 20,
-      gate: g({ era: GLS, weekOfYear: [1, 1] }),
+      gate: g({ era: GLS, weekOfYear: [1, 1], minWeek: 2 }),
       text: "Canada Day by the lake. The free stage has a sponsor banner, a speech from a councillor that has run twenty minutes long and " +
         "four thousand people in red. Rox is in the crowd with the megaphone. Moth has parked the van, and her kitchen, on the grass.",
       choices: [
@@ -1958,10 +1976,7 @@
           outcome: "Moth takes her curtains and her plant and walks away. Next week {rival} announce a bassist who 'lives in the tour bus'. It's Moth." }
       ] }
   ]);
-  // Fill-ins for Frost Heave's roles (the base lane owns the table; add only where it is missing).
-  var FI = obj(DR, 'fillIns');
-  if (!FI['vocals/guitar']) FI['vocals/guitar'] = ['Kelsey from the open stage', 'A guy named Dunc with a megaphone', 'Tamsin, who only knows protest songs'];
-  if (!FI.guitar) FI.guitar = ['Rowan, who knows three chords (too many)', 'Gus from the music store', 'A kid called Parking Ban'];
+  // Fill-ins stay the base table's (drama.fillIns is role-keyed, and 27_sim_drama fillPool normalises 'vocals/guitar').
 
   /* ======================================================================================================================
      Bandbook (29_sim_fans): the home superfan (Q5), posts / viral / comments / handles / mail / gifts through byBand, the
@@ -1969,7 +1984,7 @@
      ====================================================================================================================== */
   var BB = obj(K, 'bandbook');
   obj(BB, 'homeSuperfan')[B] = {
-    name: 'Delphine from the Suds-O-Rama', short: 'Delphine', icon: '🧺', from: 'Regina (the Suds-O-Rama, machine 6)',
+    name: 'Delphine from the Suds-O-Rama', short: 'Delphine', icon: '🧺', from: 'Regina (the Suds-O-Rama)',
     blurb: 'Retired school-bus driver. Thursday nights, machine 6, never leaves during a spin cycle. Heard you through the floor and never left.',
     gigLines: [
       'Delphine from the Suds-O-Rama is in the front row with a lawn chair and a laundry bag. Show number {n}. The bag is for merch.',
@@ -2026,7 +2041,10 @@
         'VIRAL: Moth fixes the van\'s alternator with a coat hanger in eleven seconds, in the rain, without a word. {views} views.',
         'VIRAL: a whole laundromat sings the chorus while the dryers keep time. {views} views.',
         'VIRAL: the band plays on top of an actual frost heave while traffic launches over it. {views} views.',
-        'VIRAL: {player} counts in so hard the drumstick flies into a dryer and keeps spinning. {views} views.'
+        'VIRAL: {player} counts in so hard the drumstick flies into a dryer and keeps spinning. {views} views.',
+        'VIRAL: Rox heckles a city council livestream from the gallery and the mayor answers her, live. {views} views.',
+        'VIRAL: Benny teaches a room of forty kids both chords in ninety seconds. The kids start a band on the spot. {views} views.',
+        'VIRAL: a news crew knocks on the van. Moth opens the curtain one inch, says "no", closes it. {views} views.'
       ],
       cringe: [
         { who: 'rox', text: 'Wrong kind of viral: Rox reads a 38-page bylaw aloud, in full, on a livestream. {views} views, most of them asleep.' },
@@ -2052,11 +2070,13 @@
     },
     mail: [
       { id: 'fh_mail_clerk', from: 'a city clerk in Regina', text: '"Please stop mailing the band\'s demo to council. We have eleven. They are good. Please stop."' },
-      { id: 'fh_mail_plow', from: 'a snowplow driver on the night shift', text: '"I play you at 4 a.m. on Victoria Avenue. The plow goes faster. Thank you."' }
+      { id: 'fh_mail_plow', from: 'a snowplow driver on the night shift', text: '"I play you at 4 a.m. on Victoria Avenue. The plow goes faster. Thank you."' },
+      { id: 'fh_mail_ward6', from: 'a retired alderman in Ward 6', text: '"Your singer reminds me of me in 1974. I lost that election too. Keep screaming."' }
     ],
     gifts: [
       { id: 'fh_gift_pothole', from: 'a fan in the Heritage neighbourhood', text: 'A chunk of asphalt from a real Regina pothole, labelled "for the band". It is the heaviest gift you own.' },
-      { id: 'fh_gift_quarters', from: 'the Thursday wash crowd', text: 'A pickle jar of quarters "for the van". There is a note: "for Moth\'s muffler". Moth cries a little.' }
+      { id: 'fh_gift_quarters', from: 'the Thursday wash crowd', text: 'A pickle jar of quarters "for the van". There is a note: "for Moth\'s muffler". Moth cries a little.' },
+      { id: 'fh_gift_toques', from: 'a knitting circle in Moose Jaw', text: 'Four hand-knit toques, one each. Benny\'s has two pom-poms. They knew.' }
     ],
     chat: {
       viral: ['We are viral. Irma saw it. Irma said "huh". That is the highest praise Irma has ever given.',
@@ -2143,9 +2163,9 @@
         { label: 'Ask what she heard', effects: { chemistry: 2, fan: { superfan: { dale: 5 } } },
           outcome: '"Everything," she says. "Since the first night. The bridge was bad. It\'s better now." She is right.' }
       ] },
-    { id: 'fans_trucker_frost_heave', type: 'road', speaker: 'wendell', title: 'The Jumper-Cable Story', gate: only({}),
+    { id: 'fans_trucker_frost_heave', type: 'road', speaker: 'moth', title: 'The Jumper-Cable Story', gate: only({}),
       text: "Driving home from a gig, the Pothole dies at the Petro-Canuck in Davidson at 2 a.m. Moth is already under the hood. A semi pulls in. " +
-        "A man named Wendell produces jumper cables longer than the van. Moth does not want help. Moth needs help.",
+        "A trucker named Wendell produces jumper cables longer than the van. Moth does not want help. Moth needs help.",
       choices: [
         { label: 'Let Wendell help Moth', effects: { fund: -12, mood: { moth: -3 }, fan: { superfan: { trucker: 10 } } },
           outcome: 'Moth holds the cables. Wendell holds the flashlight. They respect each other deeply by 2:20. Coffee is on you.' },
@@ -2205,7 +2225,7 @@
      ====================================================================================================================== */
   var LIC = obj(K, 'licensing');
   add(list(LIC, 'brands'), [
-    { id: 'city_psa', band: [B], name: 'City Hall Waste Wise', what: 'city PSA',
+    { id: 'fh_city_psa', band: [B], name: 'City Hall Waste Wise', what: 'city PSA',
       blurb: "The city's new blue-bin campaign. A public service announcement, with your song, and Rox's face on every bus bench. Next to Pomeroy's.",
       fee: [1500, 3000], genres: { punk: 3 }, sellout: 0.8, buzz: 5, reach: 0.012, speaker: 'rox', takeFx: { mood: { rox: -6 } },
       title: 'Your City Needs You (To Recycle)',
@@ -2218,13 +2238,13 @@
       expire: 'City Hall went with a ukulele. Rox has never loved a ukulele more.' }
   ]);
   add(list(K, 'licenseCards'), [
-    { id: 'lic_scandal_fh_psa', type: 'fame', speaker: 'rox', title: 'Punk Sells Out to City Hall', gate: only({}),
-      text: "The Leader-Pest's front page: 'PUNK SELLS OUT TO CITY HALL'. Someone spliced the {brand} spot with Rox screaming at council in " +
-        "2019. It is everywhere. Pomeroy has shared it. With a thumbs-up.",
+    { id: 'lic_scandal_fh_psa', type: 'fame', speaker: 'rox', title: 'Punk Sells Out', gate: only({}),
+      text: "The Leader-Pest's front page: 'PUNK SELLS OUT'. Someone spliced the {brand} spot with an old clip of Rox screaming at council " +
+        "about corporate influence. It is everywhere. Pomeroy has shared it. With a thumbs-up.",
       choices: [
         { label: 'Rox explains on camera', hint: 'Haters ↓ · Rox ↓', effects: { buzz: 2, mood: { rox: -6 }, fan: { hater: -0.02 } },
           outcome: 'Fourteen minutes about how the fee paid for the van\'s muffler. Most people forgive her. Moth forgives her the most.' },
-        { label: '"The bins got paid"', hint: 'Buzz ↑ · Haters ↑', effects: { buzz: 7, mood: { rox: 4 }, fan: { hater: 0.02 } },
+        { label: '"The van got a muffler"', hint: 'Buzz ↑ · Haters ↑', effects: { buzz: 7, mood: { rox: 4 }, fan: { hater: 0.02 } },
           outcome: 'Rox prints it on a shirt. It sells out. The comments are furious that it sold out. It sells out again.' },
         { label: 'Donate the fee to the library', hint: 'Fund ↓ · Superfans ↑', effects: { fund: -250, chemistry: 3, fan: { super: 0.01 } },
           outcome: 'The library gets a new photocopier. The one that made all your flyers. The comments move on to a ska band.' }
@@ -2239,7 +2259,7 @@
      ====================================================================================================================== */
   var WO = obj(K, 'world');
   add(list(WO, 'packages'), [
-    { id: 'eu_squat_anthem', region: 'uk_europe', name: 'The Squat Anthem Tour', festival: true,
+    { id: 'eu_squat_anthem_tour', region: 'uk_europe', name: 'The Squat Anthem Tour', festival: true,
       needs: { flag: 'squatAnthem', is: ['berlin'], band: [B] },
       needsText: 'Berlin is still waiting for its anthem.',
       blurb: 'Amsterdam, then Berlin, where a squat sings your council song every night, then the punk tent at Wackelstein Open Air.',
@@ -2292,9 +2312,9 @@
         { label: 'Just watch. Take notes.', hint: 'Chemistry ↑ · Rox ↑', effects: { chemistry: 4, mood: { rox: 8 } },
           outcome: 'Rox fills a notebook. Back in Regina she will quote it at Pomeroy for years. Pomeroy will not know how to respond.' }
       ], { type: 'scene' }),
-    wcard('wt_homesick_frost_heave', null, 'recruit', 'Homesick',
-      "Nobody has slept. Everybody has called home twice today. {recruit} says it out loud: 'Can we just go home?' Moth has been staring at a " +
-      'photo of the Pothole on her phone for an hour. Rox misses council. Benny misses both chords being in a familiar key.', [
+    wcard('wt_homesick_frost_heave', null, 'mom', 'Homesick',
+      "Mom calls. It is 4 a.m. in Regina. Nobody has slept. {soloist} says it out loud: 'can we just go home.' Moth has been staring at a " +
+      'photo of the Pothole on her phone for an hour. Rox misses council. Even the council minutes. Especially the minutes.', [
         { label: 'Fly home early', hint: 'Skip the rest of the tour', effects: { mood: { all: 8 }, tour: { endTour: true, homesick: -20 } },
           outcome: 'You change the flights. The promoter is disappointed. Moth goes straight from the airport to the van and does not come out for a day.' },
         { label: 'Finish what we started', hint: 'Moods ↓ · Burnout ↑', effects: { mood: { all: -5 }, burnout: 5, chemistry: 3 },
@@ -2325,19 +2345,21 @@
       'Called Irma to ask about the van. She said it is fine. She said it like it is not fine.',
       'Called home. Home is a van. Nobody answered. Good.']
   });
+  // world.lines.byBand.frost_heave: the tour sim (career.pool over world) and the tour screen (world.lines.byBand, ui.pool on
+  // world.lines) both read this shape; cityLines sit on world.byBand (career.pool over world).
+  merge(band(obj(WO, 'lines')), {
+    depart: { uk_europe: ['Wheels up. Moth left the Pothole with Irma and a two-page list of instructions.'],
+      japan: ['Wheels up. Thirteen hours. Rox has a pamphlet about Japanese municipal government. She is highlighting it.'],
+      australia: ['Wheels up. Twenty-two hours. Benny has asked if Australia has the same two chords. It does.'],
+      russia: ['Wheels up. Moth packed four toques. Rox packed a megaphone. Customs is going to have questions.'] },
+    home: ['Home. The basement smells exactly the same: detergent and feedback. Moth hugs the Pothole. For a while.',
+      'Back in Regina. Delphine is waiting at the airport with a sign that says MACHINE 6 MISSED YOU.'],
+    rival: ['{rival} just played {region} first. The locals keep asking if you know them. "The kickflip band? With the jaw?"'],
+    gongNominated: ['{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. Rox is drafting a speech about Regina potholes.'],
+    gongWon: ['{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Benny hits it twice. Once per chord.'],
+    gongLost: ['The Global Gong went to {venue}. The band claps politely. Rox claps like a heckle.']
+  });
   merge(band(WO), {
-    lines: {
-      depart: { uk_europe: ['Wheels up. Moth left the Pothole with Irma and a two-page list of instructions.'],
-        japan: ['Wheels up. Thirteen hours. Rox has a pamphlet about Japanese municipal government. She is highlighting it.'],
-        australia: ['Wheels up. Twenty-two hours. Benny has asked if Australia has the same two chords. It does.'],
-        russia: ['Wheels up. Moth packed four toques. Rox packed a megaphone. Customs is going to have questions.'] },
-      home: ['Home. The basement smells exactly the same: detergent and feedback. Moth hugs the Pothole. For a while.',
-        'Back in Regina. Delphine is waiting at the airport with a sign that says MACHINE 6 MISSED YOU.'],
-      rival: ['{rival} just played {region} first. The locals keep asking if you know them. "The kickflip band? With the jaw?"'],
-      gongNominated: ['{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. Rox is drafting a speech about Regina potholes.'],
-      gongWon: ['{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Benny hits it twice. Once per chord.'],
-      gongLost: ['The Global Gong went to {venue}. The band claps politely. Rox claps like a heckle.']
-    },
     cityLines: {
       berlin: ['Berlin knows the council song. Half the room sings it in German, half in English, all of it wrong. Rox cries a little.'],
       wackelstein: ['A cow field full of metalheads, and one punk tent that will not stop jumping.'],
@@ -2345,9 +2367,9 @@
     }
   });
   perBand(WO, 'gongCarpet', [
-    { who: 'fh_janice', text: 'Janice, Leader-Pest, live from Amsterdam! Who are you wearing?' },
-    { who: 'rox', text: 'A blazer from a council rummage sale. It has been to more meetings than you.' },
-    { who: 'fh_janice', text: 'Is it true the Gong is a real gong?' }, { who: 'benny', text: 'yes. it only makes one sound. i respect that.' }
+    { who: 'reporter', text: 'Janice, Leader-Pest, live from Amsterdam! I flew here on air miles to ask you this: who are you wearing?' },
+    { who: '@front', text: 'A blazer from a council rummage sale. It has been to more meetings than you.' },
+    { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: '@soloist', text: 'Yes. It only makes one sound. We respect that. It does not go on the drum kit.' }
   ]);
 
   /* ======================================================================================================================
@@ -2740,6 +2762,16 @@
         { label: 'Leave the chain at city hall', hint: 'Chemistry ↑', effects: ofx({ chemistry: 4, fans: 100 }, 'jacket'),
           outcome: 'She wears the jacket with every safety pin. The clerk sends a thank-you note. Rox frames it next to the others.' }
       ] },
+    { id: 'loonie_outfit_fh_papers', type: 'fame', speaker: 'rox', title: 'The Carpet: The Papers', once: false, cooldown: 20,
+      gate: only({ flagEquals: { council: 'never' } }),
+      text: "Rox never ran for council. She kept the torn-up nomination papers, though, and she has glued them to her jacket as a " +
+        "corsage. She calls it 'the road not taken, laminated'. Benny thinks it is beautiful. Moth thinks it is flammable.",
+      choices: [
+        { label: 'The corsage of regret', hint: 'Buzz ↑ · Rox ↑', effects: ofx({ buzz: 8, mood: { rox: 8 } }, 'jacket'),
+          outcome: "Photographers ask what it is. Rox explains ward boundaries for four minutes. The papers are the most talked-about accessory of the night." },
+        { label: 'Frame it instead', hint: 'Chemistry ↑', effects: ofx({ chemistry: 4, fans: 80 }, 'jacket'),
+          outcome: 'The papers go in a frame in the basement. Rox wears the jacket with every safety pin. She looks relieved. Mostly.' }
+      ] },
     { id: 'loonie_outfit_fh_sash', type: 'fame', speaker: 'rox', title: 'The Carpet: The Sash', once: false, cooldown: 20,
       gate: only({ flags: ['council'] }),
       text: "Rox has a campaign sash. It says VOTE ROX, WARD 6. Whatever happened with the election, she wants to wear it to the Loonies. " +
@@ -2797,10 +2829,10 @@
         outcome: 'Rox takes the mic and blames city council for the van\'s condition. Council, watching at home, issues a statement. It is defensive.' }
     ] });
   perBand(AW, 'carpet', [
-    { who: 'fh_janice', text: 'Janice, Leader-Pest, on the carpet. Who are you wearing tonight?' },
-    { who: 'rox', text: 'Safety pins. And a grudge against the parking authority.' },
-    { who: 'fh_janice', text: 'Any predictions?' },
-    { who: 'benny', text: 'two outcomes. we win or we dont. like two chords. i like our chances' }
+    { who: 'reporter', text: 'Janice, Leader-Pest, on the carpet. Who are you wearing tonight?' },
+    { who: '@front', text: 'Safety pins. And a grudge against the parking authority.' },
+    { who: 'reporter', text: 'Any predictions?' },
+    { who: '@soloist', text: 'Two outcomes: we win or we do not. Like two chords. I like our chances.' }
   ]);
   merge(band(AW), {
     win: ['Rox is on stage before the envelope is fully open. She has a speech. It has sections.',
@@ -2854,20 +2886,40 @@
       21: { who: 'rox', text: 'Frost heave season. The road outside the laundromat is a ski jump again. It is the band\'s mascot now.' },
       23: { who: 'benny', text: 'skate park all-ages shows are back. forty kids, a generator, two chords. my favourite season' }
     },
-    holidayLines: {
-      canada_day: ['Canada Day by the lake. Rox leads four thousand people in a chant about the bus schedule. It rhymes with nothing. Perfect.'],
-      halloween: ['Halloween: the band plays dressed as {costume}. Nobody can tell the difference. The Suds-O-Rama wants a photo.'],
-      christmas: ['Christmas party season: an ugly-sweater crowd, a cash bar and Irma doing the worm on a folding table.'],
-      nye: ["New Year's Eve. Rox counts down from ten as a list of council resolutions. Midnight hits on 'motion carried'."],
-      st_patricks: ["St. Paddy's: green beer, a guy in a leprechaun hat and a pit that is mostly a two-chord jig."]
-    },
     costumes: ['{rival} (the kickflips are mandatory)', 'Regina City Council (in session)', 'nine dryers and a lint trap']
   });
+  // Holiday gig lines ({costume} on Halloween) go on the holiday itself, holidays[i].gig.byBand.frost_heave.lines (career.pool);
+  // a holiday note on its Monday, holidays[i].byBand.frost_heave.news (wins over the neutral note).
+  var HOL_LINES = {
+    canada_day: ['Canada Day by the lake. Rox leads four thousand people in a chant about the bus schedule. It rhymes with nothing. Perfect.'],
+    halloween: ['Halloween: the band plays dressed as {costume}. Nobody can tell the difference. The Suds-O-Rama wants a photo.'],
+    christmas: ['Christmas party season: an ugly-sweater crowd, a cash bar and Irma doing the worm on a folding table.'],
+    nye: ["New Year's Eve. Rox counts down from ten as a list of council resolutions. Midnight hits on 'motion carried'."],
+    st_patricks: ["St. Paddy's: green beer, a guy in a leprechaun hat and a pit that is mostly a two-chord jig."]
+  };
+  var HOL_NEWS = {
+    halloween: { who: 'rox', text: 'Costume rule: we go as another band. I have a glue gun and a grudge. Benny, stop hiding.' },
+    remembrance: { who: 'moth', text: 'No gig this week. The Legion is closed for Remembrance Day. I will drive anyone to the cenotaph.' },
+    nye: { who: 'benny', text: 'new years resolution: two chords. same as last year. same as next year' }
+  };
+  // The band's own holiday cards go first in each holiday's list: the calendar deals the first card whose gate passes, so the
+  // shared cards the base lists for every new band stay the fallback (e.g. once Frost Heave's card is on its cooldown).
   var HOL = { canada_day: ['holiday_canada_day_frost_heave'],
     thanksgiving: ['holiday_thanksgiving_guilt_frost_heave', 'holiday_thanksgiving_frost_heave'],
     halloween: ['holiday_halloween_frost_heave'], grey_mug: ['holiday_grey_mug_frost_heave'],
     christmas: ['holiday_xmas_single_frost_heave', 'holiday_xmas_parties_frost_heave'], st_patricks: ['holiday_st_paddys_frost_heave'] };
-  list(CAL, 'holidays').forEach(function (h) { if (h && HOL[h.id]) addNew(list(h, 'cards'), HOL[h.id]); });
+  list(CAL, 'holidays').forEach(function (h) {
+    if (!h || !h.id) return;
+    if (HOL[h.id]) {
+      var hc = list(h, 'cards'), mine = HOL[h.id].filter(function (id) { return hc.indexOf(id) < 0; });
+      hc.splice.apply(hc, [0, 0].concat(mine));
+    }
+    if (HOL_LINES[h.id]) {
+      if (h.gig && typeof h.gig === 'object') addNew(list(band(h.gig), 'lines'), HOL_LINES[h.id]);
+      else addNew(list(obj(band(CAL), 'holidayLines'), h.id), HOL_LINES[h.id]);
+    }
+    if (HOL_NEWS[h.id]) band(h).news = HOL_NEWS[h.id];
+  });
 
   /* ======================================================================================================================
      Labels (24_sim_labels): Frost Heave's demands per label (demandsByBand; same kind = the band's version wins). Each
@@ -3197,7 +3249,8 @@
         'We pinned our number to the Suds-O-Rama corkboard, just under a lost cat. The cat got more calls.',
         'Rox negotiated with a booker using a megaphone. We got the gig. We also got a restraining order. Kidding.',
         'We emailed every bar in {city} with "Bones" or "Tavern" in the name. One replied "who is this".',
-        'Delphine asked the Thursday wash crowd. One of them books a curling rink. We are in.'],
+        'Delphine asked the Thursday wash crowd. One of them books a curling rink. We are in.',
+        'Moth drove the van to every venue in {city} and knocked. Politely. Three times each. Two bookers said yes out of respect.'],
       hustle: ['We folded towels for Irma all night. Forty dollars and a free wash. Rox folded hers into fists.',
         'We shovelled the whole block on 13th Avenue. Rox gave a speech about snow routes to each homeowner.',
         'We busked on Scarth Street and made gas money plus a sandwich from a man in a suit.',
@@ -3251,7 +3304,8 @@
       "Benny counts you in: 'one, two.' He stops at two. On principle."],
     empty: { chat: ['No messages yet. Moth has read everything anyway.', 'Quiet chat. Rox is at council.'],
       catalog: ['No songs yet. Rox is "drafting a motion".', 'No songs yet. Benny is choosing between his two chords.'] },
-    exposure: ['Rox: "Exposure is basically public comment. Say yes."', 'Exposure! Rox is drafting the speech already.'],
+    exposure: { pitch: 'Rox: "Exposure is basically public comment. Free, loud, and nobody can stop us. Say yes."',
+      toast: 'Exposure! Rox is drafting the speech already. It has sections.' },
     noSolo: ['Benny will mention it. Gently. With two chords.'],
     recruitAd: ['Rehearsals in a laundromat basement (heated by dryers). Must knock before entering the van.'],
     guilt: ['Your mom asks if Moth "has a real address yet". Then asks about the loan.',
@@ -3294,5 +3348,7 @@
       "Somebody's knee is on my pillow. Remove the knee."
     ]);
   }
-  if (DRV.you) band(DRV.you).takeOver = "You drive now. Moth's laundry still hangs from the mirror. Her rules are taped to the dash. The first rule is KNOCK.";
+  // The take-over line: drivers.you.takeOverBy[bandId] (the base's per-band slot) and the §4.1 byBand layer on drivers.you.
+  var TAKE = "You drive now. Moth's laundry still hangs from the mirror. Her rules are taped to the dash. The first rule is KNOCK.";
+  if (DRV.you) { obj(DRV.you, 'takeOverBy')[B] = TAKE; band(DRV.you).takeOver = TAKE; }
 })(window.GG);
