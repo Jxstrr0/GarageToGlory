@@ -77,7 +77,8 @@
     lunch: { x: PROPS.bucket.x, z: PROPS.bucket.z, yaw: -0.6, seat: 0.4 },
     corner: { x: PROPS.crate.x, z: PROPS.crate.z, yaw: 0.25, seat: 0.34 },
     phone: { x: 0.95, z: -0.35, yaw: -0.6 },
-    pace: { x: 0.55, z: 0.1, yaw: -0.4 }
+    pace: { x: 0.55, z: 0.1, yaw: -0.4 },
+    fiddle: { x: 1.2, z: -0.72, yaw: -0.85 }            // v0.9 (Clementine), clear of the door and gig-board stands
   };
   var SPARE = [{ x: 0.9, z: -0.1, yaw: -0.5 }, { x: -0.35, z: 0.9, yaw: -0.3 }, { x: 1.25, z: -0.75, yaw: -0.9 }, { x: 1.3, z: -0.1, yaw: -0.8 }];   // (the last one clear of the box pile)
   var COUCH_SEATS = [{ x: X1 - 0.48, z: PROPS.couch.z - 0.49, yaw: -Math.PI / 2, seat: 0.42 }, { x: X1 - 0.48, z: PROPS.couch.z, yaw: -Math.PI / 2, seat: 0.42 },
@@ -96,6 +97,31 @@
   // top: 'tee' | 'longsleeve' | 'flannel' | 'hoodie' | 'jacket'
   var STYLE_HINTS = { marcel: { top: 'tee' }, dana: { top: 'flannel' }, jaxon: { top: 'hoodie' }, kenji: { top: 'jacket' } };
   var DEFAULT_IDLE = { marcel: 'mirror', dana: 'noodle', jaxon: 'lunch', kenji: 'corner' };
+  // v0.9 "Genres": an idle by role for recruits and fill-ins with none (a lead guitarist noodles, a bassist takes the corner),
+  // and per-member held things (T-Bone flosses, Earl paces with a double-double, Duke packs his own lunch pail).
+  function idleByRole(role) {
+    role = String(role || '').toLowerCase();
+    if (/fiddle|violin/.test(role)) return 'fiddle';
+    if (/bass/.test(role)) return 'corner';
+    if (/guitar|acoustic|banjo/.test(role)) return 'noodle';
+    if (/vocal/.test(role)) return 'pace';
+    return 'pace';
+  }
+  var HELD_BY_ID = { tamara: 'floss', earl: 'coffee' };
+  var FLOOR_BY_ID = { jaxon: 'lunchbox', duke: 'lunchpail' };
+  // v0.9: the tier-0 rooms, keyed on C.SPACE_KINDS[band.space]; MOODS index for each (0 = the parents' garage; 1..3 = the
+  // rented tiers; 4..6 = the other bands' own starts).
+  var KIND_ROOM = { garage: 0, laundromat: 4, stripmall: 5, quonset: 6 };
+  function spaceKindOf(band) {
+    var K = (GG.contracts && GG.contracts.SPACE_KINDS) || {};
+    return (band && K[band.space]) || 'garage';
+  }
+  function roomIndexOf(st) {
+    var tier = st && isFinite(st.spaceTier) ? Math.max(0, Math.min(3, st.spaceTier | 0)) : 0;
+    if (tier) return tier;
+    var band = st && GG.content && GG.content.bands && GG.content.bands[st.bandId];
+    return KIND_ROOM[spaceKindOf(band)] || 0;
+  }
 
   // ---- Characters ------------------------------------------------------------------------------------------------
   // One skeleton for everyone. Toggle bones (gear, headphones, held item, floor prop) hide their parts by
@@ -194,6 +220,26 @@
     [0, 0, 0.55, -0.3, 0, -1.3, -1.45, 0, -0.1, -0.1, 0, 0, 0, 0.3, 0, 0, -0.25, 0],     // hand on hip, points at himself
     [0, 0, 0.35, 0, 0, 0, -1.35, 0, 0.75, -1.0, 0, 0, 0.05, -0.4, 0, 0.2, 0.3, 0]        // Dracula swirl (cape flares)
   ];
+  // v0.9: mirror routines per genre (Chase's is 1985: the hair flip, the air-guitar windmill, the finger point, the lean).
+  var MIRROR_SETS = {
+    metal: MIRROR_POSES,
+    rock: [
+      [0, 0, 0.3, 0, 0, 0.2, -0.4, 0, -0.5, -0.9, 0, 0, -0.35, 0, 0, -0.6, 0.2, 0],       // hair flip: head back, a hand through the mullet
+      [0, 0, 0.35, -1.6, 0, 0, -3.0, 0, -0.1, 0, 0, 0, -0.12, 0.3, 0, -0.2, 0.2, 0],      // the windmill: the right arm straight up
+      [0.2, 0, 0.3, -0.9, 0, 0, -0.9, 0, 0.5, -0.1, 0, 0, 0.15, -0.3, 0, 0.1, -0.3, 0],   // the windmill comes down across the strings
+      [-1.5, 0, 0.1, 0, 0, 0, 0, 0, -0.3, -0.2, 0, 0, 0.05, 0, 0.12, 0.1, 0, 0.15]        // the finger point: "you. yeah, you."
+    ],
+    punk: [
+      [-0.9, 0, 0.3, -1.2, 0, 0, -0.9, 0, -0.3, -1.2, 0, 0, 0.3, 0, 0, 0.35, 0, 0],       // the snarl: hunched, fists up
+      [0, 0, 1.2, -1.4, 0, 0.6, 0, 0, -1.2, -1.4, 0, -0.6, -0.1, 0, 0, -0.2, 0, 0],       // the flex
+      [0, 0, 0.2, 0, 0, 0, -2.8, 0, -0.2, 0, 0, 0, 0.1, 0, 0.15, 0.2, 0.3, 0]              // the fist in the air
+    ],
+    country: [
+      [0, 0, 0.15, 0, 0, 0, -2.2, 0, 0.3, -1.3, 0, 0, 0, 0, 0, 0.15, 0, 0],               // the hat tip
+      [-0.3, 0, 0.4, -1.7, 0, -1.2, -0.3, 0, -0.4, -1.7, 0, 1.2, 0, 0, 0, 0.1, 0, 0],       // thumbs in the belt loops
+      [0, 0, 0.2, 0, 0, 0, -1.4, 0, 0.1, -0.2, 0, 0, 0.05, -0.25, 0, 0, -0.3, 0]            // a finger gun at the mirror
+    ]
+  };
   var POSE_BONES = [B_ARM_L, B_FORE_L, B_ARM_R, B_FORE_R, B_SPINE, B_HEAD];
   function blendPose(bn, P, Q, f) {
     for (var k = 0; k < 6; k++) {
@@ -240,11 +286,12 @@
       bn[B_HEAD].rotation.y = 0.3 * Math.sin(tt * 0.3) * Math.sin(tt * 0.71);
       breathe(bn, tt, 1);
     },
-    mirror: function (p, bn, tt) {                    // cycles poses at the mirror
-      var period = 2.3, n = MIRROR_POSES.length, k = Math.floor(tt / period), u = (tt - k * period) / 0.45;
+    mirror: function (p, bn, tt) {                    // cycles poses at the mirror (v0.9: the genre's routine)
+      var P = MIRROR_SETS[p.genre] || MIRROR_POSES;
+      var period = 2.3, n = P.length, k = Math.floor(tt / period), u = (tt - k * period) / 0.45;
       var cur = ((k % n) + n) % n, prev = (cur + n - 1) % n, f = GG.render.util.smooth(u);
-      blendPose(bn, MIRROR_POSES[prev], MIRROR_POSES[cur], f);
-      var sw = cur === 3 ? f : prev === 3 ? 1 - f : 0;   // cape flare while swirling
+      blendPose(bn, P[prev], P[cur], f);
+      var sw = P === MIRROR_POSES ? (cur === 3 ? f : prev === 3 ? 1 - f : 0) : 0;   // cape flare while swirling
       capeIdle(bn, tt, 0.45 * sw);
       bn[B_CAPE1].rotation.z = 0.25 * sw;
       breathe(bn, tt, 1);
@@ -256,6 +303,14 @@
       rot(bn[B_ARM_R], -0.35, 0, 0.12); rot(bn[B_FORE_R], -0.95 + strum, 0, 0.45);
       bn[B_SPINE].rotation.x = -0.18 * solo; bn[B_SPINE].rotation.z = 0.04 * Math.sin(tt * 2.2);
       bn[B_HEAD].rotation.x = 0.18 + 0.07 * Math.sin(tt * 5.5) - 0.35 * solo;
+      breathe(bn, tt, 1);
+    },
+    fiddle: function (p, bn, tt) {                    // v0.9 (Clementine): bowing, head tilted onto the chin rest; a flourish now and then
+      var cyc = tt % 8.5, flo = cyc > 6 ? bump((cyc - 6) / 2.5) : 0, bow = Math.sin(tt * (2.2 + 2.5 * flo));
+      rot(bn[B_ARM_L], -1.25, 0.25, 0.55); rot(bn[B_FORE_L], -0.95, 0, -0.35 + 0.05 * Math.sin(tt * 3));
+      rot(bn[B_ARM_R], -0.75 - 0.15 * flo, 0, -0.35 - 0.3 * bow); rot(bn[B_FORE_R], -1.05 + 0.35 * bow, 0, 0.25);
+      bn[B_HEAD].rotation.z = 0.28; bn[B_HEAD].rotation.x = 0.12 - 0.15 * flo;
+      bn[B_SPINE].rotation.x = -0.04 - 0.12 * flo; bn[B_SPINE].rotation.z = 0.05 * Math.sin(tt * 1.1);
       breathe(bn, tt, 1);
     },
     lunch: function (p, bn, tt) {                     // seated, baba's sandwich to mouth and back
@@ -283,6 +338,10 @@
       p.x = p.spot.x + 0.55 * Math.sin(tt * 0.45);
       p.baseYaw = GG.render.util.wrapAngle(v > 0 ? Math.PI / 2 : -Math.PI / 2);
       walkCycle(bn, tt * 5.2, Math.min(1, Math.abs(v) * 0.6));
+      if (p.gear) {                                   // v0.9 (Rox): pacing with the guitar on, still playing it
+        rot(bn[B_ARM_L], 0.1, 0, 0.14); rot(bn[B_FORE_L], -2.05, 0, 0.1);
+        rot(bn[B_ARM_R], -0.35, 0, 0.12); rot(bn[B_FORE_R], -0.95 + 0.16 * Math.sin(tt * 12), 0, 0.45);
+      }
     },
     sulk: function (p, bn, tt) {                      // couch, headphones, arms crossed, head down
       sit(bn, p.seat / p.scale); armsCrossed(bn);
@@ -310,6 +369,24 @@
     bn[B_HEAD].rotation.y = -s * 0.07 * amp;
     bn[B_CAPE1].rotation.x = 0.1 + 0.3 * amp + 0.05 * Math.abs(c) * amp; bn[B_CAPE2].rotation.x = 0.05 + 0.2 * amp;
   }
+
+  // v0.9: GG.render.garage.photoRig(spaceKind) -> the camera + where the band stands for the year-end photo (5l_ui_recap), per
+  // tier-0 room (the rented tiers use the garage's rig). The camera sits outside the cut-away front wall; near clips everything
+  // between the lens and the band. kind = C.SPACE_KINDS value ('garage' | 'laundromat' | 'stripmall' | 'quonset') or a space id.
+  var PHOTO = {
+    garage: { pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], fov: 35, near: 4.7, far: 40, x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45, backdrop: 'the garage door' },
+    laundromat: { pos: [-0.1, 1.55, 5.7], look: [0.25, 1.2, 0], fov: 36, near: 4.6, far: 40, x: 0.0, gap: 0.6, z: [0.3, 0.16], player: 0.42, backdrop: 'the stairs + the SUDS-O-RAMA sign' },
+    stripmall: { pos: [-0.35, 1.6, 5.75], look: [-0.2, 1.25, 0], fov: 36, near: 4.7, far: 40, x: -0.2, gap: 0.62, z: [0.34, 0.2], player: 0.45, backdrop: 'the shop window + the parking lot' },
+    quonset: { pos: [0.3, 1.7, 5.9], look: [0.4, 1.3, 0], fov: 37, near: 4.7, far: 40, x: 0.3, gap: 0.62, z: [0.34, 0.2], player: 0.45, backdrop: 'the sliding door + the arch' }
+  };
+  R.garage = {
+    photoRig: function (kind) {
+      var K = (GG.contracts && GG.contracts.SPACE_KINDS) || {}, k = PHOTO[kind] ? kind : K[kind] || 'garage', P = PHOTO[k] || PHOTO.garage;
+      return JSON.parse(JSON.stringify(Object.assign({ kind: k }, P)));
+    },
+    spaceKind: function (st) { var b = st && GG.content && GG.content.bands && GG.content.bands[st.bandId]; return spaceKindOf(b); },
+    KINDS: Object.keys(PHOTO)
+  };
 
   // ---- The garage scene -------------------------------------------------------------------------------------------------
   R.defineScene('garage', function (ctx) {
@@ -368,6 +445,7 @@
     var decor = buildDecor();   // v0.6.1: snow at the window (winter), Christmas lights (December), a box fan (July / heat wave)
     var fanMail = buildFanMail();   // v0.6.1 (FANS): Dale's macaroni portrait of Kenji, the gift pile, the fan-mail stack
     var space = buildSpace();       // v0.8 (SHOPUI): the rehearsal space tier, its upgrades, the unsold merch box pile
+    var bandProps = buildBandProps();   // v0.9: the band's seat props + the leaning instrument
 
     // ---- Bulb on a cord (swings a little; carries the warm point light and a halo) ----
     var bulbPivot = new THREE.Group();
@@ -478,18 +556,21 @@
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_VARIANTS[cv] ? cv : 'velvet') : null;
       // v0.4: fill-ins hang out too (after the roster, so they never take a hand-made member's idle spot)
       var list = (st.members || []).concat(GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : []);
-      var seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m;
-      for (i = 0; i < list.length; i++) if (list[i] && list[i].id === 'marcel') capeId = 'marcel';
-      for (i = 0; !capeId && i < list.length; i++) { m = list[i]; if (m && memberIdle(band, m, i) === 'mirror') capeId = m.id; }
+      var seen = {}, usedSpots = {}, couch = 0, spare = 0, capeId = null, i, m, genre = st.genre || (band && band.genre) || 'metal';
+      bandProps.set(band, list, st);   // v0.9: the seat props + the leaning instrument are the band's (the mirror, the crate, the bucket, ...)
+      capeId = capeOwner(band, list);  // v0.9: member.cape (content), not "the first mirror idler"
       capeShown = 'none';
       for (i = 0; i < list.length; i++) {
         m = list[i];
         if (!m || !m.id || (m.status && m.status !== 'active')) continue;
         var cm = contentMember(band, m.id, i), idle = memberIdle(band, m, i);
         var cape = m.id === capeId ? capeVariant : null;
-        var opts = { gear: idle === 'noodle' ? 'guitar' : null, held: idle === 'lunch' ? 'sandwich' : idle === 'phone' ? 'phone' : null,
-          floorProp: idle === 'lunch' ? 'lunchbox' : null, cape: cape };
+        var held = HELD_BY_ID[m.id] || (idle === 'lunch' ? 'sandwich' : idle === 'phone' ? 'phone' : null);
+        var gear = idle === 'noodle' || idle === 'fiddle' ? (R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : 'guitar') || (idle === 'fiddle' ? 'fiddle' : 'v')
+          : idle === 'pace' && !held && R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : null;   // (a pacer with an instrument keeps it on: Rox)
+        var opts = { gear: gear, held: held, floorProp: idle === 'lunch' ? (FLOOR_BY_ID[m.id] || (band && band.id !== 'hail_damage' ? 'lunchpail' : 'lunchbox')) : null, cape: cape };
         var rec = people[m.id] || (people[m.id] = { id: m.id, p: null, x: 0, z: 0, yaw: 0, baseYaw: 0, lookT: 0, lookW: 0, hopT: 0, nodT: -1 });
+        rec.genre = genre; rec.gear = gear;
         ensurePerson(rec, m.id, m.look || (cm && cm.look) || DEFAULT_LOOKS[m.id] || genericLook(m.id), opts);
         if (cape) capeShown = cape;
         var mood = typeof m.mood === 'number' ? m.mood : 60;
@@ -520,7 +601,8 @@
 
     function ensurePerson(rec, id, look, opts) {
       opts.id = id; opts.scale = CHAR_SCALE; opts.lift = true;
-      var sig = JSON.stringify(look) + '|' + [opts.gear, opts.held, opts.floorProp, opts.cape, opts.sticks].join(',');
+      if (state) { var bd = GG.content.bands && GG.content.bands[state.bandId]; if (bd) opts.band = bd.name; }
+      var sig = JSON.stringify(look) + '|' + [opts.gear, opts.held, opts.floorProp, opts.cape, opts.sticks, opts.band].join(',');
       if (rec.p && rec.sig === sig) return;
       var placed = rec.p && rec.p.placed;
       if (rec.p) rec.p.dispose();
@@ -558,9 +640,20 @@
       for (var k = 0; k < band.members.length; k++) if (band.members[k] && band.members[k].id === id) return band.members[k];
       return band.members[i] || null;
     }
+    // (v0.9: the content member only when the id matches: a fill-in never inherits the idle of whoever sat at that index.)
     function memberIdle(band, m, i) {
       var cm = contentMember(band, m.id, i);
-      return (cm && cm.idle) || m.idle || DEFAULT_IDLE[m.id] || 'pace';
+      if (cm && cm.id !== m.id) cm = null;
+      return (cm && cm.idle) || m.idle || DEFAULT_IDLE[m.id] || idleByRole(m.role || (cm && cm.role));
+    }
+    function capeOwner(band, list) {
+      for (var k = 0; k < list.length; k++) {
+        var x = list[k]; if (!x || !x.id) continue;
+        var cm = contentMember(band, x.id, -1);
+        if (x.cape || (cm && cm.id === x.id && cm.cape)) return x.id;
+      }
+      for (k = 0; k < list.length; k++) if (list[k] && list[k].id === 'marcel') return 'marcel';   // (older content)
+      return null;
     }
     function findPreset(id) {
       var ps = GG.content && GG.content.presets;
@@ -825,14 +918,14 @@
     }
     function debug() {
       var ms = [];
-      for (var id in people) ms.push({ id: id, pose: people[id].pose, mood: people[id].mood, x: rnd(people[id].x), z: rnd(people[id].z) });
+      for (var id in people) ms.push({ id: id, pose: people[id].pose, mood: people[id].mood, x: rnd(people[id].x), z: rnd(people[id].z), gear: people[id].gear || null });
       var w = player.walking ? player.path[player.pathLen - 1] : null;
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
         hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         labelAt: hsList.map(function (h) { var p = h.label.position; return { action: h.def.action, x: rnd(p.x), y: rnd(h.y), z: rnd(p.z) }; }),   // v0.8 polish: for label/prop overlap checks
-        trophyWall: trophyWall.counts
+        trophyWall: trophyWall.counts, bandProps: bandProps.state()
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
@@ -963,13 +1056,6 @@
       b.cyl(0.07, 0.07, 0.015, 10, 0.18, 1.8, 0.02, 0x2f6fd1, Math.PI / 2); b.cyl(0.035, 0.035, 0.018, 8, 0.18, 1.8, 0.022, 0xe8c531, Math.PI / 2);
       b.box(0.04, 0.14, 0.01, 0.15, 1.68, 0.015, 0x2f6fd1, 0, 0, 0.15); b.box(0.04, 0.14, 0.01, 0.21, 1.68, 0.015, 0x2f6fd1, 0, 0, -0.15);
       b.box(0.22, 0.17, 0.025, 0.4, 1.6, 0.08, 0x3a2a1c, -0.18); b.box(0.18, 0.13, 0.01, 0.4, 1.6, 0.095, 0x8aa2b8, -0.18);
-      // Kenji's bass leaning on the back wall in his corner.
-      b.at(PROPS.bass.x, 0, Z0 + 0.1, 0.3);
-      b.push(0, 0, 0, -0.16, 0, 0);
-      b.box(0.3, 0.42, 0.07, 0, 0.3, 0, 0x111111); b.box(0.2, 0.12, 0.072, 0.06, 0.45, 0, 0x111111);
-      b.box(0.055, 0.8, 0.035, 0, 0.9, 0.01, 0x2a1a10); b.box(0.1, 0.16, 0.03, 0, 1.36, 0.01, 0x111111);
-      b.box(0.08, 0.05, 0.012, 0, 0.3, 0.04, 0xd9d4c8);
-      b.pop();
       b.at(0, 0, 0, 0); g.at(0, 0, 0, 0);
     }
 
@@ -1045,12 +1131,8 @@
       gb.box(1.54, 0.018, 1.2, 0, 0.009, -0.12, 0x7a2533); gb.box(0.52, 0.02, 0.52, 0, 0.01, -0.12, 0xc99a55, 0, Math.PI / 4);
       foot(KIT.x, KIT.z + 0.03, 1.45, 0.95, KIT.yaw);
       shadowSpots.pop(); kitShadow = shadowSpots.length; shadowSpots.push([KIT.x, KIT.z + 0.05, 1.55, 1.25, KIT.yaw]);
-      // Standing mirror (Marcel's stage): he poses into it with his back (and cape) to us.
-      P = PROPS.mirror; b.at(P.x, 0, P.z, P.yaw);
-      b.box(0.05, 1.55, 0.05, 0.32, 0.77, -0.12, 0x5a3d25, 0.12); b.box(0.05, 1.55, 0.05, -0.32, 0.77, -0.12, 0x5a3d25, 0.12);
-      b.box(0.56, 1.3, 0.05, 0, 0.95, 0, 0x5a3d25, -0.08); b.box(0.48, 1.22, 0.012, 0, 0.95, 0.03, 0x9fb3c8, -0.08);
-      b.box(0.08, 1.1, 0.004, -0.1, 0.97, 0.04, 0xd6e2ee, -0.08, 0, 0.3);                                            // sheen
-      b.box(0.5, 1.24, 0.01, 0, 0.95, -0.03, 0x4a3322, -0.08);
+      // v0.9: the mirror / crate / bucket / leaning instrument are the band's own (bandProps below); their footprints stay here.
+      P = PROPS.mirror;
       foot(P.x, P.z, 0.7, 0.35, P.yaw);
       // Cooler as a desk, laptop glowing on top (screen faces the camera side). v0.8 SPACES review: the cooler is the garage's
       // (garage-only mesh); every rented room brings its own desk at the same height (buildSpace: laptopDesk).
@@ -1081,15 +1163,8 @@
       gb.box(0.43, 0.03, 0.03, 0, 0.87, -0.7, 0x333333); gb.box(0.34, 0.24, 0.3, 0, 0.3, -0.42, 0x3f5a3a);
       gb.box(0.1, 0.004, 0.1, 0.12, 0.262, 0.1, 0xf2e27a);
       gFoot(P.x, P.z, 0.6, 0.95, P.yaw);
-      // Kenji's milk crate and Jaxon's paint bucket.
-      P = PROPS.crate; b.at(P.x, 0, P.z, P.yaw);
-      b.box(0.4, 0.32, 0.4, 0, 0.16, 0, 0x2f5fb3);
-      for (i = 0; i < 3; i++) b.box(0.402, 0.03, 0.402, 0, 0.07 + i * 0.09, 0, 0x234a8c);
-      foot(P.x, P.z, 0.4, 0.4, P.yaw);
-      P = PROPS.bucket; b.at(P.x, 0, P.z, 0);
-      b.cyl(0.17, 0.15, 0.38, 10, 0, 0.19, 0, 0xe9e4d8); b.cyl(0.175, 0.175, 0.025, 10, 0, 0.372, 0, 0xc9c4b8);
-      b.box(0.08, 0.1, 0.01, 0.0, 0.26, 0.162, 0x2f6fd1);
-      foot(P.x, P.z, 0.36, 0.36, 0);
+      P = PROPS.crate; foot(P.x, P.z, 0.4, 0.4, P.yaw);
+      P = PROPS.bucket; foot(P.x, P.z, 0.36, 0.36, 0);
       // Space heater (orange glow) and an empty pizza box.
       P = PROPS.heater; gb.at(P.x, 0, P.z, P.yaw); gGlow.at(P.x, 0, P.z, P.yaw);
       gb.box(0.3, 0.42, 0.18, 0, 0.23, 0, 0x8f8f8f); gb.box(0.36, 0.03, 0.24, 0, 0.015, 0, 0x555555);
@@ -1099,6 +1174,109 @@
       P = PROPS.pizza; b.at(P.x, 0, P.z, P.yaw);
       b.box(0.42, 0.05, 0.42, 0, 0.025, 0, 0xd8b98a); b.box(0.2, 0.004, 0.12, 0, 0.052, 0, 0xc0392b);
       b.at(0, 0, 0, 0); g.at(0, 0, 0, 0);
+    }
+
+    // v0.9 "Genres": the band's own seat props in the shared spots (one lit mesh, rebuilt when the band changes). Four slots:
+    // the mirror spot (Marcel's standing mirror / Chase's salon mirror / Frost Heave's laundry cart / the Ramblers' saddle on
+    // a sawhorse), the corner seat (Kenji's milk crate / Moth's detergent jugs / a crate with a boombox / feed sacks), the lunch
+    // seat (Jaxon's paint bucket / an orange detergent bucket / a paint can / Duke's hay bale) and the instrument leaning on
+    // the back wall (Kenji's bass / a bass in a stickered gig bag / a keytar, it is 1985 / Clementine's fiddle case).
+    var BAND_PROPS = {
+      hail_damage: { mirror: 'standing', corner: 'crate', lunch: 'bucket', lean: 'bass' },
+      frost_heave: { mirror: 'cart', corner: 'jugs', lunch: 'detergent', lean: 'gigbag' },
+      gravel_kings: { mirror: 'salon', corner: 'boombox', lunch: 'paintcan', lean: 'keytar' },
+      grid_road_ramblers: { mirror: 'saddle', corner: 'sacks', lunch: 'bale', lean: 'fiddlecase' }
+    };
+    var GENRE_PROPS = { metal: 'hail_damage', punk: 'frost_heave', rock: 'gravel_kings', country: 'grid_road_ramblers' };
+    function buildBandProps() {
+      var mesh = new THREE.Mesh(new THREE.BufferGeometry(), ctx.mats.vc); mesh.visible = false; scene.add(mesh);
+      var self = { sig: '', kinds: null };
+      self.set = function (band, list, st) {
+        var id = band && BAND_PROPS[band.id] ? band.id : GENRE_PROPS[(st && st.genre) || (band && band.genre)] || 'hail_damage';
+        if (id === self.sig) return;
+        self.sig = id; self.kinds = BAND_PROPS[id];
+        var b = new ctx.Builder({ jitter: 0.04, seed: 140 }), P, i, K = BAND_PROPS[id];
+        // -- the mirror spot
+        P = PROPS.mirror; b.at(P.x, 0, P.z, P.yaw);
+        if (K.mirror === 'standing') {                         // Marcel's standing mirror: he poses into it with his back (and cape) to us
+          b.box(0.05, 1.55, 0.05, 0.32, 0.77, -0.12, 0x5a3d25, 0.12); b.box(0.05, 1.55, 0.05, -0.32, 0.77, -0.12, 0x5a3d25, 0.12);
+          b.box(0.56, 1.3, 0.05, 0, 0.95, 0, 0x5a3d25, -0.08); b.box(0.48, 1.22, 0.012, 0, 0.95, 0.03, 0x9fb3c8, -0.08);
+          b.box(0.08, 1.1, 0.004, -0.1, 0.97, 0.04, 0xd6e2ee, -0.08, 0, 0.3); b.box(0.5, 1.24, 0.01, 0, 0.95, -0.03, 0x4a3322, -0.08);
+        } else if (K.mirror === 'salon') {                     // Chase's salon mirror (from the nail place next door): bulbs round the edge, hairspray
+          b.box(0.06, 0.8, 0.06, 0, 0.4, -0.05, 0x2a2a2e); b.box(0.5, 0.04, 0.34, 0, 0.8, 0.02, 0xe8e0d8);
+          b.box(0.64, 0.84, 0.05, 0, 1.28, -0.08, 0xd8d0c8); b.box(0.54, 0.74, 0.012, 0, 1.28, -0.05, 0xa8c0d8); b.box(0.07, 0.62, 0.004, -0.12, 1.3, -0.042, 0xe0ecf6, 0, 0, 0.3);
+          for (i = 0; i < 5; i++) { b.box(0.06, 0.06, 0.06, -0.3, 0.92 + i * 0.18, -0.06, 0xfff4d0); b.box(0.06, 0.06, 0.06, 0.3, 0.92 + i * 0.18, -0.06, 0xfff4d0); }
+          b.cyl(0.035, 0.035, 0.2, 8, 0.15, 0.92, 0.08, 0xe8408a); b.cyl(0.02, 0.02, 0.04, 6, 0.15, 1.04, 0.08, 0xd8dce4);   // the hairspray (a whole can a week)
+          b.box(0.12, 0.03, 0.06, -0.14, 0.835, 0.08, 0x1a1a1e);                                                             // a comb
+        } else if (K.mirror === 'cart') {                      // a wire laundry cart on castors, full of Moth's laundry
+          for (i = 0; i < 4; i++) b.box(0.03, 0.62, 0.03, (i % 2 ? 0.26 : -0.26), 0.36, (i < 2 ? 0.18 : -0.18), 0xb8bcc2);
+          for (i = 0; i < 4; i++) b.cyl(0.04, 0.04, 0.04, 8, (i % 2 ? 0.26 : -0.26), 0.04, (i < 2 ? 0.18 : -0.18), 0x1a1a1e, 0, 0, Math.PI / 2);
+          b.box(0.56, 0.36, 0.4, 0, 0.5, 0, 0x8a8e94); b.box(0.5, 0.3, 0.34, 0, 0.52, 0, 0x5a5e66);
+          b.shape(new THREE.IcosahedronGeometry(1, 0), 0, 0.72, 0, 0.26, 0.14, 0.18, 0x6a5a8a); b.shape(new THREE.IcosahedronGeometry(1, 0), 0.12, 0.78, 0.05, 0.14, 0.1, 0.12, 0xd8d2c4);
+          b.box(0.3, 0.02, 0.2, -0.1, 0.84, -0.05, 0xc0392b, 0.3, 0.4, 0);                                                    // a sock, on top
+          b.box(0.03, 0.03, 0.46, 0.3, 0.98, 0, 0xb8bcc2); b.box(0.03, 0.34, 0.03, 0.3, 0.82, 0.22, 0xb8bcc2); b.box(0.03, 0.34, 0.03, 0.3, 0.82, -0.22, 0xb8bcc2);   // the hanger rail
+        } else {                                               // 'saddle': an old saddle on a sawhorse, a lasso on the horn
+          for (i = 0; i < 4; i++) b.box(0.05, 0.72, 0.05, (i % 2 ? 0.26 : -0.26), 0.34, (i < 2 ? 0.1 : -0.1), 0x8a6a3a, (i < 2 ? -0.18 : 0.18), 0, (i % 2 ? -0.12 : 0.12));
+          b.box(0.64, 0.08, 0.1, 0, 0.7, 0, 0x9a7a4a);
+          b.box(0.5, 0.12, 0.44, 0, 0.8, 0, 0x6a3a1a); b.box(0.16, 0.16, 0.3, 0.2, 0.88, 0, 0x5a3014); b.box(0.12, 0.2, 0.26, -0.2, 0.9, 0, 0x5a3014);
+          b.box(0.05, 0.14, 0.05, 0.28, 0.98, 0, 0x4a2a10); b.box(0.06, 0.3, 0.2, 0, 0.62, 0.22, 0x6a3a1a); b.box(0.06, 0.3, 0.2, 0, 0.62, -0.22, 0x6a3a1a);
+          b.box(0.44, 0.02, 0.5, 0, 0.73, 0, 0x2a5a8a);                                                                      // the saddle blanket
+          b.cyl(0.12, 0.12, 0.03, 12, 0.34, 0.9, 0, 0xd8b870, 0, 0, Math.PI / 2);                                             // the lasso, coiled
+        }
+        // -- the corner seat
+        P = PROPS.crate; b.at(P.x, 0, P.z, P.yaw);
+        if (K.corner === 'crate' || K.corner === 'boombox') {  // Kenji's milk crate (Gravel Kings': with a boombox on top, beside the seat)
+          b.box(0.4, 0.32, 0.4, 0, 0.16, 0, K.corner === 'crate' ? 0x2f5fb3 : 0xc0392b);
+          for (i = 0; i < 3; i++) b.box(0.402, 0.03, 0.402, 0, 0.07 + i * 0.09, 0, K.corner === 'crate' ? 0x234a8c : 0x8a2a20);
+          if (K.corner === 'boombox') {
+            b.box(0.46, 0.2, 0.12, 0.05, 0.1, -0.33, 0x2a2a30); b.cyl(0.06, 0.06, 0.02, 10, -0.1, 0.1, -0.265, 0x141418, Math.PI / 2); b.cyl(0.06, 0.06, 0.02, 10, 0.2, 0.1, -0.265, 0x141418, Math.PI / 2);
+            b.box(0.1, 0.05, 0.01, 0.05, 0.13, -0.265, 0xb8bcc2); b.box(0.4, 0.02, 0.02, 0.05, 0.24, -0.33, 0xb8bcc2);
+          }
+        } else if (K.corner === 'jugs') {                     // Moth's seat: a laundry basket upside down on detergent jugs
+          for (i = 0; i < 4; i++) { var jx = (i % 2 ? 0.1 : -0.1), jz = (i < 2 ? 0.1 : -0.1); b.box(0.16, 0.2, 0.16, jx, 0.1, jz, [0xe8702a, 0x2f6fd1, 0xe8702a, 0x6fbf4a][i]); b.box(0.05, 0.03, 0.05, jx + 0.04, 0.215, jz, 0xf2efe6); }
+          b.box(0.46, 0.14, 0.4, 0, 0.27, 0, 0x4aa0c8); for (i = 0; i < 5; i++) b.box(0.03, 0.1, 0.402, -0.18 + i * 0.09, 0.27, 0, 0x3a88b0);
+          b.box(0.3, 0.03, 0.26, 0, 0.35, 0, 0x5b4f6e);                                                                      // a folded hoodie for a cushion
+        } else {                                               // 'sacks': feed sacks (the seat), a pail of oats
+          b.box(0.44, 0.14, 0.34, 0, 0.07, 0, 0xd8ccb0); b.box(0.44, 0.14, 0.34, 0.02, 0.2, 0.01, 0xcfc2a2, 0, 0.1, 0);
+          b.box(0.2, 0.08, 0.004, 0.02, 0.2, 0.182, 0x3a6a3a); b.box(0.42, 0.06, 0.3, 0, 0.3, 0, 0xd8ccb0);
+          b.cyl(0.1, 0.09, 0.18, 8, 0.32, 0.09, -0.12, 0x8a8e94);
+        }
+        // -- the lunch seat
+        P = PROPS.bucket; b.at(P.x, 0, P.z, 0);
+        if (K.lunch === 'bale') {                              // Duke's seat: a square bale
+          b.box(0.5, 0.36, 0.38, 0, 0.18, 0, 0xd8b860); for (i = 0; i < 5; i++) b.box(0.505, 0.012, 0.02, 0, 0.05 + i * 0.07, 0.19, i % 2 ? 0xc8a448 : 0xe6c878);
+          b.box(0.016, 0.37, 0.39, 0.13, 0.18, 0, 0x8a5a2a); b.box(0.016, 0.37, 0.39, -0.13, 0.18, 0, 0x8a5a2a);
+        } else {
+          var BC = K.lunch === 'detergent' ? 0xe8702a : K.lunch === 'paintcan' ? 0xb8bcc2 : 0xe9e4d8;
+          b.cyl(0.17, 0.15, 0.38, 10, 0, 0.19, 0, BC); b.cyl(0.175, 0.175, 0.025, 10, 0, 0.372, 0, sh(BC, 0.85));
+          b.box(0.08, 0.1, 0.01, 0.0, 0.26, 0.162, K.lunch === 'paintcan' ? 0xe8408a : 0x2f6fd1);
+          if (K.lunch === 'paintcan') b.box(0.3, 0.012, 0.02, 0, 0.26, 0.165, 0x40c8e8);                                   // (neon pink + teal: 1985)
+        }
+        // -- the instrument leaning on the back wall
+        b.at(PROPS.bass.x, 0, Z0 + 0.1, 0.3);
+        b.push(0, 0, 0, -0.16, 0, 0);
+        if (K.lean === 'bass') {                               // Kenji's black bass
+          b.box(0.3, 0.42, 0.07, 0, 0.3, 0, 0x111111); b.box(0.2, 0.12, 0.072, 0.06, 0.45, 0, 0x111111);
+          b.box(0.055, 0.8, 0.035, 0, 0.9, 0.01, 0x2a1a10); b.box(0.1, 0.16, 0.03, 0, 1.36, 0.01, 0x111111);
+          b.box(0.08, 0.05, 0.012, 0, 0.3, 0.04, 0xd9d4c8);
+        } else if (K.lean === 'gigbag') {                      // a bass in a gig bag, held together by stickers
+          b.box(0.34, 1.3, 0.1, 0, 0.66, 0, 0x1e1e22); b.box(0.36, 0.5, 0.11, 0, 0.3, 0, 0x26262a);
+          [[0.05, 0.35, 0xff4fa0], [-0.08, 0.55, 0x6fe35a], [0.06, 0.8, 0xffe23a], [-0.04, 1.05, 0xf2efe6]].forEach(function (q) { b.box(0.1, 0.07, 0.006, q[0], q[1], 0.058, q[2], 0, 0, q[0] * 3); });
+        } else if (K.lean === 'keytar') {                      // a keytar. It is 1985 in here.
+          b.push(0, 0.6, 0, 0, 0, 0.9);
+          b.box(0.9, 0.14, 0.06, 0, 0, 0, 0xf2efe6); for (i = 0; i < 12; i++) b.box(0.05, 0.08, 0.02, -0.34 + i * 0.056, -0.02, 0.035, i % 3 === 1 ? 0x141414 : 0xfafafa);
+          b.box(0.34, 0.06, 0.05, 0.56, 0.03, 0, 0x2a2a30); b.box(0.06, 0.03, 0.02, 0.5, 0.05, 0.03, 0xe8408a);
+          b.pop();
+        } else {                                               // Clementine's fiddle case (the Bach is inside, in case anyone's watching)
+          b.box(0.28, 0.72, 0.14, 0, 0.36, 0, 0x2a1e18); b.box(0.2, 0.3, 0.145, 0, 0.62, 0, 0x3a2a20);
+          b.box(0.24, 0.04, 0.02, 0, 0.36, 0.075, 0xb8a060); b.box(0.06, 0.08, 0.03, 0.05, 0.4, 0.08, 0x9a8040);
+          b.box(0.16, 0.2, 0.006, 0, 0.2, 0.074, 0xe8e4d8, 0, 0, 0.1);                                                      // a sheet-music luggage tag
+        }
+        b.pop();
+        mesh.geometry.dispose(); mesh.geometry = b.build(); mesh.visible = true;
+      };
+      self.state = function () { return self.kinds ? Object.assign({ band: self.sig }, self.kinds) : null; };
+      return self;
     }
 
     // Moon shafts: one additive mesh of light volumes from the three door windows down to the floor.
@@ -1168,20 +1346,27 @@
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       var mat = new THREE.PointsMaterial({ vertexColors: true, map: ctx.radialTexture('glow'), transparent: true, depthWrite: false });
       var pts = new THREE.Points(geo, mat); pts.frustumCulled = false; scene.add(pts);
-      var cur = null, S = null, indoor = false;
+      var cur = null, S = null, indoor = false, farm = false;
       var self = {
         season: null,
+        // v0.9: the Quonset's farmyard keeps the lawn glow + the weather but not the lawn chair / snowman (its own props are
+        // in the room: canola, bales, the grid road).
+        farm: function (on) {
+          on = !!on; if (on === farm) return;
+          farm = on;
+          for (var k in props) props[k].visible = !indoor && !farm && k === self.season;
+        },
         // v0.8 polish: a rented space is indoors: no lawn, no weather, no lawn chair (the season is still tracked).
         indoor: function (on) {
           on = !!on; if (on === indoor) return;
           indoor = on; ground.visible = pts.visible = !on;
-          for (var k in props) props[k].visible = !on && k === self.season;
+          for (var k in props) props[k].visible = !on && !farm && k === self.season;
         },
         set: function (season) {
           if (season === self.season || !SEASONS[season]) return;
           self.season = season; S = SEASONS[season];
           ground.material.color.setHex(S.ground);
-          for (var k in props) props[k].visible = !indoor && k === season;
+          for (var k in props) props[k].visible = !indoor && !farm && k === season;
           mat.color.setHex(S.color); mat.size = S.size; mat.opacity = S.opacity;
           mat.blending = S.glow ? THREE.AdditiveBlending : THREE.NormalBlending;
           geo.setDrawRange(0, S.count);
@@ -1271,23 +1456,27 @@
       for (i = 0; i < 3; i++) bb.box(0.07, 0.17, 0.01, 0, 0.09, 0, 0xb8c4cc, 0, 0, i * Math.PI * 2 / 3);
       var blades = new THREE.Mesh(bb.build(), ctx.mats.vc); blades.position.set(0, 0.27, 0.08); fan.add(blades);
       fan.position.set(X1 - 0.45, 0, PROPS.couch.z - 1.2); fan.rotation.y = -Math.PI / 2 - 0.5; show(fan, false); show(blades, false); scene.add(fan);
-      var cur = { snow: false, lights: false, fan: false, tier: 0 };
+      var cur = { snow: false, lights: false, fan: false, tier: 0, season: 'summer' };
+      // v0.9: the tier-0 rooms (room index 4..6) dress for the season in their own geometry (the window well, the shop window,
+      // the Quonset door + the farmyard): space.set reads flags() and rebuilds its room when they change.
+      var WHERE = ['garage door', 'sad strand', 'control-room window', 'road cases', 'window well + stairs', 'shop window', 'Quonset door + farmyard'];
       return {
         set: function (st) {
           var w = st.week || 1, season = seasonOf(w), month = GG.calendar ? GG.calendar.month(w) : null;
-          var wx = GG.calendar && st.seed != null ? GG.calendar.weather(st).kind : null, tier = Math.max(0, Math.min(3, (st.spaceTier | 0) || 0));
-          cur.tier = tier;
-          cur.snow = !tier && (season === 'winter' || wx === 'snow' || wx === 'blizzard');   // v0.8: only the garage door has windows
+          var wx = GG.calendar && st.seed != null ? GG.calendar.weather(st).kind : null, ri = roomIndexOf(st);
+          cur.tier = ri; cur.season = season;
+          cur.snow = (ri === 0 || ri >= 4) && (season === 'winter' || wx === 'snow' || wx === 'blizzard');   // v0.8: only rooms with windows
           cur.lights = month === 'Dec';
-          cur.fan = tier <= 1 && (month === 'Jul' || wx === 'heat');                          // v0.8 polish: the studio + arena have AC
-          show(snow, cur.snow); show(fan, cur.fan); show(blades, cur.fan);
-          for (var k = 0; k < 4; k++) show(tierLights[k], cur.lights && k === tier);
+          cur.fan = (ri <= 1 || ri >= 4) && (month === 'Jul' || wx === 'heat');                             // v0.8 polish: the studio + arena have AC
+          show(snow, cur.snow && ri === 0); show(fan, cur.fan); show(blades, cur.fan);
+          for (var k = 0; k < 4; k++) show(tierLights[k], cur.lights && k === ri);
         },
+        flags: function () { return { season: cur.season, snow: cur.snow, lights: cur.lights }; },
         update: function (t) {
           if (cur.fan) blades.rotation.z = t * 14;
           if (cur.lights) { var b = cur.tier === 2 ? 0.85 + 0.15 * Math.sin(t * 1.3) : 0.65 + 0.35 * (Math.sin(t * 2.2) > 0 ? 1 : 0.4); lm.color.setScalar(b); }
         },
-        state: function () { return { snow: cur.snow, lights: cur.lights, fan: cur.fan, where: ['garage door', 'sad strand', 'control-room window', 'road cases'][cur.tier] }; }
+        state: function () { return { snow: cur.snow, lights: cur.lights, fan: cur.fan, season: cur.season, where: WHERE[cur.tier] }; }
       };
     }
     // v0.6.1 (FANS agent; Addendum 1 C5): fan mail + gifts in the garage. Dale's macaroni portrait of Kenji (gold,
@@ -1379,6 +1568,25 @@
     // label), one box per box, up to 15 in a staircase growing toward the camera (+ a MERCH sign rising out of the pile past
     // that), each with a white tape band; the boxed misprint batch is the one with a red X on its side.
     var SPACE_DOOR = { x: 1.0, w: 0.92, h: 2.08 };
+    // v0.9 (Q7): the rented rooms keep their geometry but their painted names are the home city's (content: shop.spaces[tier]
+    // .byCity[city].name), e.g. the studio's riser stencil, rug logo and gold-record plaque; the arena's stencil.
+    var PAINT = { studio: 'PRAIRIE DOG SOUND', arena: 'POTASH PLACE', jam: 'JAM SPACE 7' };
+    function spaceByCity(tier, city) {
+      var sp = GG.content && GG.content.shop && GG.content.shop.spaces, e = null, i;
+      if (!Array.isArray(sp) || !city) return null;
+      for (i = 0; i < sp.length; i++) if (sp[i] && sp[i].tier === tier) e = sp[i];
+      var by = e && e.byCity;
+      if (!by) return null;
+      var c = String(city), k = c.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      return by[c] || by[k] || by[c.toLowerCase()] || null;
+    }
+    function paintNames(band) {
+      var st = GG.state, city = (st && st.city) || (band && band.city) || '';
+      var s2 = spaceByCity(2, city), s3 = spaceByCity(3, city), s1 = spaceByCity(1, city);
+      PAINT.studio = s2 && s2.name ? String(s2.name).toUpperCase() : 'PRAIRIE DOG SOUND';
+      PAINT.arena = s3 && s3.name ? String(s3.name).replace(/^backstage (at|in|under)\s+(the\s+)?/i, '').toUpperCase() : 'POTASH PLACE';
+      PAINT.jam = s1 && s1.name ? String(s1.name).toUpperCase() : 'JAM SPACE 7';
+    }
     // Light + palette per tier. hemi [sky, ground, i], key = the moon light's [colour, i], bulb = the point light, accent = the
     // heater light [colour, i, x, y, z] (the garage heater / the studio's control-room glow), fixture = what hangs from the ceiling.
     var MOODS = [
@@ -1389,7 +1597,16 @@
       { kind: 'studio', wall: 0x1c1d22, floor: 0xb09474, bg: 0x0b0a09, hemi: [0x847468, 0x1c1610, 0.52], key: [0xf0cca8, 0.26], fill: [0xf2dcc6, 0.3],
         bulb: [0xe8bc90, 1.45], accent: [0x8aa4c8, 0.45, -0.12, 1.5, -2.2], dust: 0xf0d0a8, fixture: 'track', hall: 'lobby' },   // (warm, ~30% less saturated)
       { kind: 'backstage', wall: 0x24457e, floor: 0x686c72, bg: 0x07090e, hemi: [0xc4d0e4, 0x3a3e46, 0.66], key: [0xf0f4ff, 0.34], fill: [0xf0f4ff, 0.3],
-        bulb: [0xf2f6ff, 1.65], accent: [0x000000, 0, 0, 0, 0], dust: 0xe8eeff, fixture: 'work lights', hall: 'service corridor' }
+        bulb: [0xf2f6ff, 1.65], accent: [0x000000, 0, 0, 0, 0], dust: 0xe8eeff, fixture: 'work lights', hall: 'service corridor' },
+      // v0.9: the other bands' own starts (tier 0). The basement under the Suds-O-Rama (a bare bulb, dryer heat glowing on the
+      // stairs), Unit 4B at Westgate Plaza (a buzzing troffer, the parking lot's sodium light through the shop window), Duke's
+      // uncle's Quonset (a bare bulb on a long cord, the yard light outside).
+      { kind: 'laundromat', wall: 0x8a9a8c, floor: 0x6a7068, bg: 0x0a0d0c, hemi: [0x9aa8a0, 0x3a3228, 0.56], key: [0xc8d8ff, 0.2], fill: [0xffe2c4, 0.28],
+        bulb: [0xffc98a, 1.5], accent: [0xff9a50, 0.5, 1.0, 1.9, -2.3], dust: 0xf0e8d8, fixture: 'bulb', hall: 'none' },
+      { kind: 'stripmall', wall: 0xd8d2c4, floor: 0xb8b4aa, bg: 0x0d0c0a, hemi: [0xd0d8e0, 0x3a3630, 0.6], key: [0xffb060, 0.36], fill: [0xf0f0ff, 0.26],
+        bulb: [0xe8f4ff, 1.45], accent: [0xff9a40, 0.6, -1.0, 1.6, -3.0], dust: 0xe8f0ff, fixture: 'fluorescent', hall: 'parking lot' },
+      { kind: 'quonset', wall: 0x9aa0a4, floor: 0x6e6254, bg: 0x0a0d18, hemi: [0x8a9cc0, 0x3a2e22, 0.58], key: [0x9fb4ff, 0.3], fill: [0xffe2c4, 0.28],
+        bulb: [0xffc27a, 1.55], accent: [0xffd070, 0.35, 1.1, 2.4, -2.9], dust: 0xffdcaa, fixture: 'bulb', hall: 'farmyard' }
     ];
     var GREEN_WALL = 0x5a9656;
     // The box pile (v0.8 SPACES review): along the open left edge between Kenji's corner and the merch stack, a staircase that
@@ -1398,7 +1615,15 @@
     var PILE_CELLS = [[-2.07, -1.1, 0.06], [-2.07, -0.7, -0.05], [-2.07, -0.3, 0.08], [-2.07, 0.1, -0.04], [-1.64, 0.1, 0.07]];
     var PILE_ORDER = [[0, 0], [1, 0], [0, 1], [2, 0], [1, 1], [0, 2], [3, 0], [2, 1], [4, 0], [1, 2], [3, 1], [2, 2], [4, 1], [3, 2], [4, 2]];
     var PILE_MAX = PILE_ORDER.length, BOX = { w: 0.4, h: 0.3, d: 0.34 };
-    var DOOR_LABELS = ['Garage door', 'Door', 'Door', 'Door'];
+    var DOOR_LABELS = ['Garage door', 'Door', 'Door', 'Door', 'Basement stairs', 'Shop door', 'Quonset door'];
+    // v0.9: the tier-0 door is the band's own (content band.door: 'the basement stairs' -> 'Basement stairs').
+    function doorLabel(ri, band) {
+      if (ri === 0 || ri >= 4) {
+        var d = band && typeof band.door === 'string' ? band.door.replace(/^the\s+/i, '') : '';
+        if (d) return d.charAt(0).toUpperCase() + d.slice(1);
+      }
+      return DOOR_LABELS[ri] || 'Door';
+    }
     // Riser (kit-local rectangle, metres): the studio's carpeted riser, the arena's black deck.
     var RISERS = [null, null, { h: 0.16, x: 0.95, z0: -1.12, z1: 0.62 }, { h: 0.2, x: 1.0, z0: -1.15, z1: 0.66 }];
     function buildSpace() {
@@ -1416,7 +1641,7 @@
       bb.shape(new THREE.IcosahedronGeometry(0.21, 1), 0, 0, 0, 1, 1, 1, 0xd8dde6);
       bb.box(0.012, 0.5, 0.012, 0, 0.45, 0, 0x8a8a8a);
       var ball = new THREE.Mesh(bb.build(), ctx.mats.unlit); ball.visible = false; ball.position.set(0.55, 2.1, 0.85); scene.add(ball);
-      var cur = { tier: -1, room: '', ups: '', pile: '', boxes: 0, shown: 0, list: [], green: false, door: 'Garage door', signText: '', couch: false, decals: 0, hallProps: 0, pileBox: null, pileSign: null };
+      var cur = { tier: -1, ri: -1, city: '', exterior: null, room: '', ups: '', pile: '', boxes: 0, shown: 0, list: [], green: false, door: 'Garage door', signText: '', couch: false, decals: 0, hallProps: 0, pileBox: null, pileSign: null };
       var tierObs = [], upObs = [], pileObs = [];
       var self = { obstacles: [], bulbI: 1.55 }, mood = null, riser = null, fixBase = 1;   // (MOODS etc. are assigned after the scene builds this)
       function swap(mesh, b) {
@@ -1717,6 +1942,16 @@
         b.at(0, 0, 0, 0);
       }
 
+      function neighbours(band) {
+        var bs = GG.content.bands || {}, me = band && band.id, out = [], k;
+        var order = ['frost_heave', 'gravel_kings', 'hail_damage', 'grid_road_ramblers'];
+        for (k = 0; k < order.length; k++) if (bs[order[k]] && order[k] !== me) out.push(String(bs[order[k]].name).toUpperCase());
+        for (k in bs) if (bs[k] && k !== me && order.indexOf(k) < 0) out.push(String(bs[k].name).toUpperCase());
+        while (out.length < 3) out.push(['PERMAFROST', 'WIND CHILL', 'THE SNOWBLOWERS'][out.length]);
+        cur.neighbours = out.slice(0, 3);
+        return out;
+      }
+
       /* ---- the rooms ---------------------------------------------------------------------------------------------------- */
       function door(b, g, tier) {
         var D = SPACE_DOOR, hw = D.w / 2;
@@ -1801,7 +2036,9 @@
         dl.add(pSign(480, 372, '#f7f4ec', '#c0141c', [['NO DRUMS', 118], ['AFTER', 118], ['11 PM', 118]], '#c0141c', 0.6), FR.back, -0.07, 1.68, 1.0, null, 0.01);
         b.box(0.08, 0.05, 0.01, -0.55, 2.05, Z0 + 0.018, 0xb9bdc4); b.box(0.08, 0.05, 0.01, 0.41, 2.06, Z0 + 0.018, 0xb9bdc4);   // duct tape
         dl.add(pStencil(['7'], '#f2efe6', 150, 210, 3), face(0, 0, Z0 + 0.06, 0), SPACE_DOOR.x - 0.12, 1.36, 0.3, null);
-        var ST = [['SLOUGH MONSTER', '#1a1a1a', '#e8d83a', 'box'], ['FROST HEAVE', '#2f6fd1', '#ffffff', 'pill'], ['TOQUE MAFIA', '#c0392b', '#ffffff', 'circle'], ['GOPHER HOLE', '#f28c28', '#1a1a1a', 'box'],
+        // v0.9 (Q8): the neighbours' stickers are the OTHER playable bands (your own band is the red one), Hail Damage included.
+        var NB = neighbours(band);
+        var ST = [['SLOUGH MONSTER', '#1a1a1a', '#e8d83a', 'box'], [NB[0], '#2f6fd1', '#ffffff', 'pill'], ['TOQUE MAFIA', '#c0392b', '#ffffff', 'circle'], ['GOPHER HOLE', '#f28c28', '#1a1a1a', 'box'],
           [String((band && band.name) || 'Hail Damage').toUpperCase(), '#1a1414', '#d8263a', 'box'], ['PERMAFROST', '#e8f4ff', '#2a4a7a', 'pill'], ['WIND CHILL', '#6fe39a', '#1a1a1a', 'circle'], ['THE SNOWBLOWERS', '#9b6bff', '#ffffff', 'pill']];
         // [x, y, rotation, where: 1 = the door, 2 = over the sign, 0 = the wall]
         var SP = [[0.74, 0.86, 0.14, 1], [1.24, 0.98, -0.12, 1], [0.8, 0.52, -0.18, 1], [1.2, 0.58, 0.2, 1], [1.02, 1.86, 0.06, 1],
@@ -1811,7 +2048,8 @@
           var s = ST[i], p = SP[i];
           dl.add(pSticker(s[0], s[1], s[2], s[3]), p[3] === 1 ? DOORF : p[3] === 2 ? OVER : FR.back, p[0], p[1], s[3] === 'circle' ? 0.2 : 0.27, null, p[2]);
         }
-        dl.add(pTag(['GRAVEL', 'KINGS'], '#ff4fa0', 440, 300, 21), FR.back, 1.92, 1.5, 0.76, null, 0.05);
+        var tw = NB[1].replace(/^THE\s+/, '').split(' '), th = Math.ceil(tw.length / 2);
+        dl.add(pTag(tw.length > 1 ? [tw.slice(0, th).join(' '), tw.slice(th).join(' ')] : [tw[0]], '#ff4fa0', 440, 300, 21), FR.back, 1.92, 1.5, 0.76, null, 0.05);
         var GR = [['GARY TUNE YOUR GUITAR', '#1a1a1a', FR.back, -1.55, 0.52, 0.03, 0.75], ['SLOUGH MONSTER WAS HERE 2019', '#1a1a1a', FR.right, -0.1, 2.3, -0.03, 0.8],
           ['rip the good mic stand', '#3a3a3a', FR.right, 1.1, 2.35, 0.04, 0.6], ['Brenda ♥ whoever plays bass', '#b3141c', FR.right, 0.25, 0.62, 0.03, 0.62],
           ['no perogies in the PA  -mgmt', '#2a4a8a', FR.back, 1.92, 1.95, 0.02, 0.62]];
@@ -1847,7 +2085,7 @@
           b.box(0.15, 0.035, 0.06, d[0] + 0.28, 0.98, FZ + 0.07, 0xc0c4ca);                                      // lever
           dl.add(pSign(150, 150, '#eceae2', '#1a1a1a', [[d[1], 130]]), face(d[0] - 0.12, 0, FZ + 0.042, 0), 0, 0.78, 0.2, 0.2);
         });
-        dl.add(pSticker('FROST HEAVE', '#2f6fd1', '#ffffff', 'pill'), face(-0.25, 0, FZ + 0.043, 0), 0.2, 0.5, 0.26, null, -0.2);
+        dl.add(pSticker(NB[2] || NB[0], '#2f6fd1', '#ffffff', 'pill'), face(-0.25, 0, FZ + 0.043, 0), 0.2, 0.5, 0.26, null, -0.2);
         b.box(0.5, 0.2, 0.06, 0.75, 0.84, FZ + 0.02, 0xe8e8e0); g.box(0.44, 0.15, 0.01, 0.75, 0.84, FZ + 0.056, 0x1fbf4a);   // EXIT
         dg.add(pSign(300, 100, '#1fbf4a', '#eaffea', [['EXIT → SORTIE', 80]], null, 0.8), face(0.75, 0, FZ + 0.062, 0), 0, 0.84, 0.42, 0.14);
         cur.hallProps = 5; cur.signText = 'NO DRUMS / AFTER 11 PM';
@@ -1893,7 +2131,7 @@
         b.cyl(0.058, 0.058, 0.008, 16, RX, RY + 0.05, 0.063, 0xb3141c, Math.PI / 2); b.cyl(0.012, 0.012, 0.01, 8, RX, RY + 0.05, 0.066, 0x1a1a1a, Math.PI / 2);
         b.box(0.36, 0.075, 0.012, RX, RY - 0.23, 0.05, 0xc49a40); b.box(0.28, 0.012, 0.004, RX, RY - 0.215, 0.058, 0x5a4214); b.box(0.2, 0.01, 0.004, RX, RY - 0.24, 0.058, 0x5a4214);
         b.at(0, 0, 0, 0);
-        dl.add(pSign(300, 90, '#c49a40', '#2a1c08', [['CURLING NIGHT IN CANADA', 30, STENCIL], ['GOLD · PRAIRIE DOG SOUND · 1987', 24, STENCIL, '#4a3410']]), face(0, 0, Z0 + 0.057, 0), RX, RY - 0.23, 0.34, null);
+        dl.add(pSign(300, 90, '#c49a40', '#2a1c08', [['CURLING NIGHT IN CANADA', 30, STENCIL], ['GOLD · ' + PAINT.studio + ' · 1987', 24, STENCIL, '#4a3410']]), face(0, 0, Z0 + 0.057, 0), RX, RY - 0.23, 0.34, null);
         // The control-room window: a deep reveal (the sill and the right jamb catch the light, the head hides the top of the view),
         // a mullion, one glare streak; the dim room behind the glass (its console glows just over the sill).
         frame(b, 'back'); frame(g, 'back');
@@ -1930,7 +2168,7 @@
           while (x < ROOM.x1) { var len = 0.9 + rng.next() * 0.9, ax = Math.max(ROOM.x0, x) + 0.003, bx2 = Math.min(ROOM.x1, x + len) - 0.003; if (bx2 > ax) b.quad([ax, 0.0065, z + 0.197], [bx2, 0.0065, z + 0.197], [bx2, 0.0065, z + 0.003], [ax, 0.0065, z + 0.003], PC[Math.floor(rng.next() * PC.length)]); x += len; }
         }
         riserParts(b, 2);
-        dl.add(pStencil(['PRAIRIE DOG SOUND'], '#b88a52', 420, 60), riserFront(2), 0, 0.08, 0.7, 0.1);
+        dl.add(pStencil([PAINT.studio], '#b88a52', 420, 60), riserFront(2), 0, 0.08, 0.7, 0.1);
         // The gear rack under the gig board: two towers of outboard, LEDs lit, a small submixer on top.
         b.at(X1 - 0.28, 0, -1.2, -Math.PI / 2); g.at(X1 - 0.28, 0, -1.2, -Math.PI / 2);
         for (k = -1; k <= 1; k += 2) {
@@ -1966,7 +2204,7 @@
         b.cyl(0.78, 0.78, 0.01, 24, -0.45, 0.004, 3.62, 0x6a1f2e); b.cyl(0.7, 0.7, 0.012, 24, -0.45, 0.005, 3.62, 0x8a3040);
         var logo = paintRugLogo();
         dl.add(logo, FR.floor, -0.45, -3.62, 1.2, 1.2); dl.add(logo, face(SPACE_DOOR.x, 0, Z0 + 0.074, 0), 0, 0.98, 0.36, 0.36);   // the rug, and the logo on the door
-        cur.hallProps = 4; cur.signText = 'PRAIRIE DOG / SOUND · EST. 1961';
+        cur.hallProps = 4; var sw = PAINT.studio.split(' '), sh2 = Math.max(1, sw.length - 1); cur.signText = sw.slice(0, sh2).join(' ') + ' / ' + sw.slice(sh2).join(' ') + ' · EST. 1961';
       }
       // Tier 3: backstage at the Potash Place. (v0.8 SPACES review: BAND ROOM stencilled in the one stretch of wall no label
       // covers, the band's name big on a placard on their door; the arena monitor is bigger, brighter, on an arm angled at the
@@ -1993,7 +2231,7 @@
         b.box(0.06, 0.002, ROOM.z1 - ROOM.z0 - 0.35, X1 - 0.35, 0.0072, 0.18, 0xe0b830);
         b.box(0.05, 0.003, 2.6, -1.35, 0.0075, 1.2, 0x151515, 0, 0.12); b.box(1.8, 0.003, 0.05, 0.4, 0.0075, -1.95, 0x151515);                 // gaffer-taped cable runs
         riserParts(b, 3);
-        dl.add(pStencil(['POTASH PLACE'], '#d8dce2', 360, 60), riserFront(3), 0, 0.06, 0.6, 0.1);
+        dl.add(pStencil([PAINT.arena], '#d8dce2', 360, 60), riserFront(3), 0, 0.06, 0.6, 0.1);
         // BAND ROOM stencilled on the concrete between the Trophies and Door labels, an arrow at the door; the band's name big on
         // a placard on the door itself.
         var name = String((band && band.name) || 'Hail Damage').toUpperCase(), words = name.split(' '), half = Math.ceil(words.length / 2);
@@ -2148,21 +2386,445 @@
         ag.strokeStyle = '#1a1a1a'; ag.lineWidth = 7; ag.beginPath(); ag.arc(cx, cy - 44, 38, Math.PI * 1.1, Math.PI * 1.9); ag.stroke();
         ag.fillStyle = '#1a1a1a'; ag.fillRect(cx - 44, cy - 50, 14, 24); ag.fillRect(cx + 30, cy - 50, 14, 24);
         ag.save(); ag.fillStyle = '#e8c070'; ag.font = font(STENCIL, 24); ag.textAlign = 'center'; ag.textBaseline = 'middle';
-        var T = 'PRAIRIE DOG SOUND · ', a0 = -Math.PI * 0.95;
+        var T = PAINT.studio + ' · ', a0 = -Math.PI * 0.95;
         for (var i = 0; i < T.length; i++) { var a = a0 + i * (Math.PI * 1.9 / T.length); ag.save(); ag.translate(cx + Math.cos(a) * 104, cy + Math.sin(a) * 104); ag.rotate(a + Math.PI / 2); ag.fillText(T[i], 0, 0); ag.restore(); }
         ag.restore();
         return r;
       }
-      function buildRoom(tier, green, band, catering) {
+      /* ---- v0.9 "Genres": the other bands' tier-0 rooms (room index 4..6). Same ROOM footprint, same seven hotspots (the door
+         hotspot is each room's own door), the couch in the couch's spot, a laptop desk at the cooler's height; D = the decor
+         flags (season, snow, lights) so the seasonal dressing lives in the room. --------------------------------------------- */
+      function tierZeroCouch(b, kind) {                           // the sulk zone: seats at the garage couch's height
+        b.at(X1 - 0.42, 0, PROPS.couch.z, -Math.PI / 2);
+        var i;
+        if (kind === 'plaid') {                                   // the basement couch: plaid, a crocheted blanket, a sleeping bag
+          var PB = 0x5a4632, PC = 0x6e5a3e;
+          b.box(1.52, 0.26, 0.82, 0, 0.2, 0, PB);
+          for (i = 0; i < 4; i++) b.box(0.06, 0.08, 0.06, (i % 2 ? 0.7 : -0.7), 0.04, (i < 2 ? 0.34 : -0.34), 0x2a1f16);
+          for (i = -1; i <= 1; i++) {
+            b.box(0.48, 0.14, 0.62, i * 0.49, 0.39, 0.06, PC); b.box(0.46, 0.38, 0.14, i * 0.49, 0.67, -0.22, PC, -0.12);
+            b.box(0.48, 0.012, 0.03, i * 0.49, 0.462, -0.05, 0x8a2a20); b.box(0.03, 0.012, 0.6, i * 0.49 - 0.1, 0.463, 0.06, 0x2a4a3a);   // the plaid
+          }
+          b.box(1.52, 0.54, 0.2, 0, 0.64, -0.33, PB); b.box(0.18, 0.5, 0.84, 0.83, 0.42, 0, PB); b.box(0.18, 0.5, 0.84, -0.83, 0.42, 0, PB);
+          b.box(0.6, 0.04, 0.5, -0.4, 0.49, 0.05, 0xd89a3a, 0.1, 0.2, 0); for (i = 0; i < 4; i++) b.box(0.1, 0.045, 0.1, -0.6 + i * 0.13, 0.5, 0.05 + (i % 2) * 0.12, [0xc0392b, 0x2f6fd1, 0x6fbf4a, 0xe8c531][i]);   // granny squares
+          b.cyl(0.13, 0.13, 0.5, 10, 0.45, 0.55, 0.05, 0x3a5a8a, 0, 0, Math.PI / 2);                       // a rolled sleeping bag
+        } else if (kind === 'salon') {                            // three joined vinyl waiting-room chairs from the nail place (chrome legs)
+          for (i = -1; i <= 1; i++) {
+            b.box(0.46, 0.08, 0.5, i * 0.5, 0.4, 0.06, 0xb0304a); b.box(0.44, 0.44, 0.08, i * 0.5, 0.7, -0.2, 0xb0304a, -0.1);
+            b.box(0.04, 0.36, 0.04, i * 0.5 - 0.19, 0.18, 0.25, 0xc8ccd2); b.box(0.04, 0.36, 0.04, i * 0.5 + 0.19, 0.18, 0.25, 0xc8ccd2);
+          }
+          b.box(1.5, 0.04, 0.06, 0, 0.35, -0.12, 0xc8ccd2); b.box(0.06, 0.2, 0.5, 0.76, 0.52, 0.06, 0xc8ccd2); b.box(0.06, 0.2, 0.5, -0.76, 0.52, 0.06, 0xc8ccd2);
+          b.box(0.12, 0.012, 0.3, 0.5, 0.445, 0.1, 0xb9bdc4, 0, 0.4, 0);                                   // duct tape on a split
+        } else {                                                  // 'bench': a bench seat out of an old grain truck, on cinder blocks
+          for (i = -1; i <= 1; i += 2) { b.box(0.4, 0.2, 0.2, i * 0.5, 0.1, 0.05, 0x8a8a84); b.box(0.12, 0.12, 0.21, i * 0.5 - 0.1, 0.1, 0.05, 0x5a5a56); b.box(0.12, 0.12, 0.21, i * 0.5 + 0.1, 0.1, 0.05, 0x5a5a56); }
+          b.box(1.5, 0.18, 0.58, 0, 0.3, 0.06, 0x7a4a2a); b.box(1.46, 0.06, 0.54, 0, 0.41, 0.06, 0x8a5a36);
+          b.box(1.5, 0.62, 0.16, 0, 0.66, -0.25, 0x7a4a2a, -0.18); for (i = 0; i < 5; i++) b.box(0.012, 0.56, 0.17, -0.6 + i * 0.3, 0.66, -0.24, 0x5a3418, -0.18);   // tuck-and-roll
+          b.box(0.3, 0.012, 0.06, 0.3, 0.447, 0.1, 0xb9bdc4, 0, 0.3, 0); b.box(0.05, 0.02, 0.1, -0.4, 0.45, 0.28, 0xb8bcc2);         // tape, a buckle
+        }
+        b.at(0, 0, 0, 0);
+      }
+      function tierZeroDesk(b, kind) {                            // the laptop's desk (the laptop is the static mesh's, 0.47 up)
+        var P = PROPS.cooler, k;
+        b.at(P.x, 0, P.z, P.yaw);
+        if (kind === 'basket') {                                  // an upside-down laundry basket, a towel on top
+          b.box(0.6, 0.42, 0.42, 0, 0.21, 0, 0xe8e4da); for (k = 0; k < 6; k++) b.box(0.05, 0.3, 0.43, -0.25 + k * 0.1, 0.2, 0, 0xc8c4b8);
+          b.box(0.62, 0.03, 0.44, 0, 0.435, 0, 0x6aa0c8);
+        } else if (kind === 'table') {                            // the nail salon's old coffee table, with 1985's magazines
+          b.box(0.7, 0.04, 0.46, 0, 0.44, 0, 0x2a2a2e); for (k = 0; k < 4; k++) b.box(0.03, 0.42, 0.03, (k % 2 ? 0.32 : -0.32), 0.21, (k < 2 ? 0.2 : -0.2), 0xc8ccd2);
+          b.box(0.2, 0.012, 0.26, 0.23, 0.466, 0.08, 0xe8408a, 0, 0.3, 0); b.box(0.2, 0.012, 0.26, 0.24, 0.478, 0.05, 0x40c8e8, 0, -0.1, 0);
+        } else {                                                  // 'tire': a tractor tire lying flat, a sheet of plywood on it
+          b.cyl(0.42, 0.42, 0.34, 14, 0, 0.17, 0, 0x1e1e20); b.cyl(0.24, 0.24, 0.35, 12, 0, 0.17, 0, 0x121214);
+          for (k = 0; k < 14; k++) { var a = k / 14 * Math.PI * 2; b.box(0.06, 0.34, 0.05, Math.cos(a) * 0.42, 0.17, Math.sin(a) * 0.42, 0x2a2a2c, 0, -a, 0.3); }   // the lugs
+          b.box(0.78, 0.03, 0.62, 0, 0.44, 0, 0xc8a870, 0, 0.1, 0);
+        }
+        b.at(0, 0, 0, 0);
+      }
+      // The window well seen through the basement window (right-wall frame, on the glass): the well's bottom by season.
+      function wellView(b, D, WZ, WY) {
+        var z = 0.062, y0 = WY - 0.16, i, rng = GG.RNG(51), s = D.snow ? 'winter' : D.season;
+        b.box(0.72, 0.1, 0.004, WZ, WY + 0.12, z, 0x8a8e94);                                                          // the corrugated liner across the top
+        for (i = 0; i < 8; i++) b.box(0.012, 0.1, 0.006, WZ - 0.33 + i * 0.095, WY + 0.12, z + 0.002, 0x6a6e74);
+        if (s === 'winter') {                                                                                         // a drift up the glass
+          b.box(0.72, 0.2, 0.004, WZ, y0 + 0.08, z, 0xeef2fa); b.box(0.4, 0.08, 0.005, WZ - 0.12, y0 + 0.21, z, 0xf6f8fc); b.box(0.2, 0.05, 0.005, WZ + 0.2, y0 + 0.19, z, 0xf6f8fc);
+        } else if (s === 'fall') {
+          b.box(0.72, 0.06, 0.004, WZ, y0 + 0.02, z, 0x5a4a2a); for (i = 0; i < 9; i++) b.box(0.05, 0.035, 0.005, WZ - 0.32 + rng.next() * 0.64, y0 + 0.05 + rng.next() * 0.04, z + 0.001, [0xd9822b, 0xc0612a, 0xe8b040][i % 3], 0, 0, rng.next() * 3);
+        } else if (s === 'spring') {
+          b.box(0.72, 0.06, 0.004, WZ, y0 + 0.02, z, 0x4a3a28); b.box(0.34, 0.025, 0.005, WZ + 0.1, y0 + 0.06, z + 0.001, 0x5a6a8a);
+          for (i = 0; i < 5; i++) b.box(0.01, 0.06, 0.005, WZ - 0.3 + i * 0.13, y0 + 0.08, z + 0.001, 0x6aa84a);
+        } else {
+          b.box(0.72, 0.05, 0.004, WZ, y0 + 0.015, z, 0x3a5a2a); for (i = 0; i < 12; i++) b.box(0.012, 0.07 + rng.next() * 0.04, 0.005, WZ - 0.33 + i * 0.06, y0 + 0.06, z + 0.001, 0x5a8a3a, 0, 0, (rng.next() - 0.5) * 0.5);
+          b.box(0.035, 0.035, 0.006, WZ - 0.1, y0 + 0.11, z + 0.002, 0xf2d24a); b.box(0.035, 0.035, 0.006, WZ + 0.18, y0 + 0.1, z + 0.002, 0xf2d24a);   // dandelions
+        }
+      }
+
+      // Room 4: the basement under the Suds-O-Rama (Frost Heave, Regina). Painted block, a paint line, joists and pipes along the
+      // wall tops, the upstairs dryers' foil vents coming down, a window well high on the right wall (grass / leaves / a snow
+      // drift / a puddle by season), the stairs up along the back wall (the door hotspot: 'Basement stairs', light spilling down
+      // from the laundromat), detergent on a shelf under the stairs, a dead dryer, coin-op signs, a floor drain, lint.
+      function laundromatRoom(b, g, fx, W, dl, dg, band, D) {
+        var H = ROOM.h, WALL = MOODS[4].wall, LOW = 0x4e6a5a, i, k;
+        walls(b, WALL);
+        for (var w = 0; w < 2; w++) { frame(b, WALLS[w][0]); b.box(WALLS[w][1], 0.9, 0.008, 0, 0.45, 0.004, LOW); b.box(WALLS[w][1], 0.03, 0.012, 0, 0.9, 0.006, 0x2e4236); }
+        blocks(b, 0, 0.9, 0x3e5648); blocks(b, 0.9, H, 0x76867a);
+        b.at(0, 0, 0, 0);
+        // Joists over the wall tops (the low ceiling), a copper run + a black drain pipe, the foil dryer vents from upstairs.
+        for (i = 0; i < 12; i++) b.box(0.05, 0.2, 0.55, -2.1 + i * 0.4, H - 0.02, Z0 + 0.27, 0x8a6a42);
+        for (i = 0; i < 14; i++) b.box(0.55, 0.2, 0.05, X1 - 0.27, H - 0.02, -2.5 + i * 0.4, 0x8a6a42);
+        b.box(ROOM.x1 - ROOM.x0, 0.045, 0.045, 0, 2.38, Z0 + 0.12, 0xc8783a); b.box(ROOM.x1 - ROOM.x0, 0.03, 0.03, 0, 2.31, Z0 + 0.18, 0xc8783a);
+        for (i = 0; i < 6; i++) b.box(0.06, 0.08, 0.06, -2.0 + i * 0.8, 2.36, Z0 + 0.15, 0x2a2a2e);                               // pipe straps
+        b.box(0.08, 0.08, ROOM.z1 - ROOM.z0, X1 - 0.12, 2.45, 0, 0x1e1e22); b.box(0.08, 2.45, 0.08, X1 - 0.12, 1.22, Z0 + 0.12, 0x1e1e22);   // the drain stack in the corner
+        b.box(0.1, 0.06, 0.1, X1 - 0.12, 0.25, Z0 + 0.12, 0x2a2a2e);                                                                 // cleanout
+        [-1.95, -0.1].forEach(function (vx) {                       // foil vents: a flex duct down from the joists to a box on the wall
+          for (var s = 0; s < 5; s++) b.cyl(0.075, 0.075, 0.1, 10, vx + s * 0.02, 2.62 - s * 0.1, Z0 + 0.3 - s * 0.02, s % 2 ? 0xc8ccd2 : 0xb0b4ba);
+          b.box(0.22, 0.16, 0.12, vx + 0.1, 2.05, Z0 + 0.08, 0xb8bcc2); b.box(0.2, 0.02, 0.1, vx + 0.1, 1.96, Z0 + 0.12, 0x9aa0a8);
+          b.box(0.16, 0.05, 0.03, vx + 0.1, 1.9, Z0 + 0.16, 0xd8d4cc, 0.3);                                                    // lint on the flap
+        });
+        // Floor: painted concrete, worn to grey in the paths, a drain, lint bunnies.
+        tiles(b, 8, 9, [0x6a7068, 0x666c64, 0x6e746c, 0x646a62], 0.004, 0);
+        b.box(ROOM.x1 - ROOM.x0, 0.002, ROOM.z1 - ROOM.z0, 0, 0.002, 0, 0x4a5048);
+        [[0.4, 0.2, 0.5, 0x7a7e76, 31], [-0.4, 1.6, 0.36, 0x767a72, 32], [1.5, -0.9, 0.3, 0x5a6058, 33]].forEach(function (p) { blob(b, p[0], p[1], p[2], p[3], p[4], 0.0068); });
+        b.cyl(0.12, 0.12, 0.012, 12, 0.35, 0.008, 1.05, 0x2a2a2e); for (i = -1; i <= 1; i++) b.box(0.18, 0.006, 0.018, 0.35, 0.016, 1.05 + i * 0.05, 0x8a8e94);   // the floor drain
+        for (i = 0; i < 6; i++) b.shape(new THREE.IcosahedronGeometry(1, 0), -1.6 + i * 0.62, 0.03, 2.0 - (i % 3) * 1.4, 0.07, 0.04, 0.06, 0xb8b4aa);   // lint bunnies
+        // A rug under the kit: an old bath mat, a SUDS-O-RAMA towel on the throne side.
+        b.at(KIT.x, 0, KIT.z, KIT.yaw);
+        b.box(1.8, 0.012, 1.5, 0, 0.008, -0.15, 0x3a6a8a); b.box(1.6, 0.013, 1.3, 0, 0.009, -0.15, 0x4a7a9a);
+        b.box(0.6, 0.014, 0.3, 0.2, 0.012, -0.85, 0xe8e4da); b.box(0.6, 0.015, 0.06, 0.2, 0.013, -0.85, 0xc0392b);
+        b.at(0, 0, 0, 0);
+        // The stairs up (door hotspot): rising along the back wall from x 0.3 to the landing in the back-right corner; an open
+        // side with a railing, the stringer, a closed-in underside with the band's banner on it (hideGarage), a shelf of detergent.
+        var SX0 = 0.32, SX1 = 2.2, SD = 0.68, n = 11, rise = 2.18 / n, run = (SX1 - SX0) / n, SZ = Z0 + SD / 2 + 0.01;
+        for (i = 0; i < n; i++) {
+          var sx = SX0 + (i + 0.5) * run, sy = (i + 1) * rise;
+          b.box(run + 0.02, 0.04, SD, sx, sy - 0.02, SZ, 0x9a7a50); b.box(0.02, rise, SD - 0.02, SX0 + i * run + 0.01, sy - rise / 2, SZ, 0x7a6040);   // tread + riser
+          b.box(run + 0.01, 0.012, 0.06, sx, sy + 0.002, SZ + SD / 2 - 0.05, 0xc8b048);                                                 // the yellow nosing strip
+        }
+        var SL = Math.sqrt((SX1 - SX0) * (SX1 - SX0) + 2.18 * 2.18), SA = Math.atan2(2.18, SX1 - SX0);
+        b.box(SL + 0.08, 0.1, 0.06, (SX0 + SX1) / 2, 1.09, Z0 + SD + 0.03, 0x6a5238, 0, 0, SA);                                          // the stringer
+        b.tri([SX0 + 0.3, 0, Z0 + SD], [SX1, 0, Z0 + SD], [SX1, 2.1, Z0 + SD], 0x6f5a3e);                                             // the closed-in underside (plywood)
+        b.tri([SX0 + 0.3, 0, Z0 + SD], [SX1, 2.1, Z0 + SD], [SX0 + 0.3, 0.33, Z0 + SD], 0x6f5a3e);
+        for (i = 0; i < 4; i++) { var px2 = SX0 + 0.9 + i * 0.3; b.box(0.02, 0.02 + (px2 - SX0) * 1.1, 0.02, px2, (px2 - SX0) * 0.55, Z0 + SD + 0.004, 0x5a4830); }   // plywood seams
+        for (i = 0; i <= 5; i++) { var rx = SX0 + 0.2 + i * (SX1 - SX0 - 0.2) / 5; b.box(0.035, 0.9, 0.035, rx, (rx - SX0) / (SX1 - SX0) * 2.18 + 0.45, Z0 + SD - 0.02, 0x3a3a3e); }   // railing posts
+        b.box(SL, 0.05, 0.05, (SX0 + SX1) / 2 + 0.1, 1.09 + 0.45 + 0.45 + 0.12, Z0 + SD - 0.02, 0x3a3a3e, 0, 0, SA);                      // the handrail
+        b.box(0.5, 0.05, SD, SX1 + 0.1, 2.16, SZ, 0x9a7a50);                                                                              // the landing
+        b.box(0.54, 0.62, 0.04, SX1 + 0.08, 2.42, Z0 + 0.02, 0x3a3226); g.box(0.46, 0.5, 0.01, SX1 + 0.08, 2.44, Z0 + 0.045, 0xffd9a0);    // the upstairs doorway, lit
+        g.box(0.4, 0.035, 0.005, SX1 + 0.08, 2.2, Z0 + 0.05, 0xffe8c0);
+        pool(W, FR.back, SX1 - 0.1, 2.2, 1.4, 1.2, 0x5a4020);                                                                             // warm spill down the stairs
+        // Under the stairs, from the front: a steel shelf of detergent (the jugs Moth doesn't sit on), bleach, dryer sheets.
+        b.at(1.72, 0, Z0 + SD + 0.2, 0);
+        for (k = 0; k < 4; k++) b.box(0.03, 0.62, 0.03, (k % 2 ? 0.32 : -0.32), 0.31, (k < 2 ? 0.14 : -0.14), 0x8a8e94);
+        for (k = 0; k < 2; k++) b.box(0.68, 0.025, 0.32, 0, 0.12 + k * 0.4, 0, 0x9aa0a8);
+        for (k = 0; k < 5; k++) b.box(0.1, 0.2, 0.1, -0.24 + k * 0.12, 0.24, 0.02, [0xe8702a, 0x2f6fd1, 0xf2efe6, 0xe8702a, 0x6fbf4a][k]);
+        for (k = 0; k < 3; k++) b.box(0.16, 0.12, 0.1, -0.2 + k * 0.2, 0.6, 0.0, [0xe8c531, 0x4aa0c8, 0xd23c3c][k]);
+        b.at(0, 0, 0, 0);
+        obs(tierObs, (SX0 + SX1) / 2 + 0.1, Z0 + SD / 2, SX1 - SX0 + 0.3, SD, 0);
+        obs(tierObs, 1.72, Z0 + SD + 0.2, 0.7, 0.34, 0);
+        // A dead dryer by the couch (OUT OF ORDER since 2009), facing the room.
+        b.at(1.02, 0, 2.38, 0.1);
+        b.box(0.6, 0.86, 0.6, 0, 0.43, 0, 0xe8e4dc); b.box(0.6, 0.14, 0.12, 0, 0.93, -0.24, 0xd8d4cc);
+        b.cyl(0.2, 0.2, 0.02, 14, 0, 0.45, 0.305, 0x9aa0a8, Math.PI / 2); b.cyl(0.15, 0.15, 0.02, 14, 0, 0.45, 0.31, 0x2a3440, Math.PI / 2);
+        b.box(0.08, 0.05, 0.02, 0.2, 0.93, -0.17, 0x2a2a2e);
+        dl.add(pSign(240, 90, '#f2e24a', '#1a1a1a', [['OUT OF ORDER', 44], ['since 2009', 30, MARKER]]), face(1.02 + 0.305 * Math.sin(0.1), 0, 2.38 + 0.305 * Math.cos(0.1), 0.1), 0, 0.72, 0.36, null, -0.05);
+        obs(tierObs, 1.02, 2.38, 0.64, 0.64, 0.1);
+        // The window well, high on the right wall (right-wall frame: local x = world z): the frame, the glass, the well's
+        // corrugated liner, and the season at the bottom of it (a snow drift when it snows).
+        var WZ = -2.15, WY = 2.3;
+        frame(b, 'right'); frame(g, 'right');
+        b.box(0.84, 0.46, 0.06, WZ, WY, 0.02, 0x5a5048); gradRect(g, 0.74, 0.36, WZ, WY + 0.02, 0.055, 0x2a3a5c, 0x141c30);
+        b.box(0.02, 0.36, 0.03, WZ, WY + 0.02, 0.06, 0x5a5048);                                                                          // the mullion
+        wellView(b, D, WZ, WY);                                                                                                          // the season in the well, seen through the glass
+        b.at(0, 0, 0, 0); g.at(0, 0, 0, 0);
+        // Christmas lights up the stair railing (December).
+        if (D.lights) {
+          var LC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xfff4e0];
+          for (i = 0; i < 16; i++) { var u = i / 15, lx = SX0 + 0.2 + u * (SX1 - SX0 - 0.2); g.box(0.04, 0.055, 0.04, lx, u * 2.18 + 0.88 - 0.06 * Math.sin(u * Math.PI * 5), Z0 + SD, LC[i % 5]); }
+        }
+        couchKindSet('plaid'); tierZeroCouch(b, 'plaid');
+        tierZeroDesk(b, 'basket');
+        sill(b, 0x55605a);
+        // Decals: the SUDS-O-RAMA tin sign over the amp, the coin-op price list, NO DYEING, the laundromat's rules.
+        dl.add(pSign(420, 150, '#c0141c', '#f7f4ec', [['SUDS-O-RAMA', 88], ['EST. 1972 · REGINA', 34]], '#f7f4ec', 0.8), FR.back, -0.45, 1.3, 0.62, null, -0.02);
+        dl.add(pSign(260, 300, '#f7f4ec', '#1a1a1a', [['WASHERS', 44], ['$2.75', 56], ['DRYERS', 44], ['$2.00 / 30 MIN', 34], ['NO CHANGE', 30]], '#1a1a1a'), FR.back, -2.02, 0.62, 0.3, null, 0.04);
+        dl.add(pSign(300, 150, '#f7f4ec', '#c0141c', [['NO DYEING', 60], ['no dying either -mgmt', 30, MARKER, '#1a1a1a']], '#c0141c'), FR.right, -2.22, 1.9, 0.44, null, 0.03);
+        dl.add(pSign(340, 120, '#2f6fd1', '#ffffff', [['ATTENDANT ON DUTY', 44], ['(NOT)', 40, MARKER, '#f2e24a']]), FR.right, 1.55, 2.2, 0.5, null, -0.02);
+        dl.add(pMarker('FROST HEAVE PRACTICE 7PM · DRYERS ARE THE RHYTHM SECTION', '#1a1a1a', 26, 700), FR.back, -1.5, 0.3, 0.9, null, 0);
+        cur.signText = 'SUDS-O-RAMA'; cur.hallProps = 0;
+        cur.exterior = 'window well: ' + (D.snow ? 'snow drift' : { summer: 'grass + dandelions', fall: 'leaves', winter: 'snow drift', spring: 'puddle' }[D.season] || D.season);
+      }
+
+      // Room 5: Unit 4B, Westgate Plaza (Gravel Kings, Edmonton). The storefront is the back wall: aluminium-framed glass (the
+      // parking lot at night through it: the sodium light, the plaza pylon with the neighbours' names and the band's, snowbanks
+      // or puddles by season), UNIT 4B in vinyl (backwards from in here), the glass shop door (the door hotspot). A drop-ceiling
+      // strip with a buzzing troffer, cream VCT with the outline where the till counter was bolted (the kit sits there now), the
+      // till itself pushed into the corner, the vacuum repair's overflow boxes, 1985 posters, the nail salon's waiting chairs.
+      function stripMallRoom(b, g, fx, W, dl, dg, band, D) {
+        var H = ROOM.h, WALL = MOODS[5].wall, i, k, x0 = ROOM.x0, w = ROOM.wall;
+        var GX0 = x0, GX1 = 1.52, GL = 0.42, GT = 2.5, ALU = 0x9aa0a8;
+        // Walls: the right wall (drywall over slatwall), the back wall only right of the storefront + over it (a transom band).
+        b.box(w, H, ROOM.z1 - ROOM.z0 + w, X1 + w / 2, H / 2, (Z0 - w + ROOM.z1) / 2, WALL);
+        b.box(X1 - GX1 + w, H, w, (GX1 + X1 + w) / 2, H / 2, Z0 - w / 2, WALL);
+        b.box(GX1 - GX0, H - GT, w, (GX0 + GX1) / 2, (H + GT) / 2, Z0 - w / 2, 0x3a3a40);                                              // the sign band over the glass
+        b.box(GX1 - GX0, GL, w, (GX0 + GX1) / 2, GL / 2, Z0 - w / 2, 0x6a6e76);                                                         // the kick panel
+        frame(b, 'right'); for (k = 0; k < 14; k++) b.box(ROOM.z1 - ROOM.z0 - 0.2, 0.012, 0.012, 0, 0.35 + k * 0.1, 0.008, 0xc4bdae); b.at(0, 0, 0, 0);   // slatwall grooves
+        caps(b, 0x8a8a86, 0.08);
+        // The storefront: mullions, transom bar, the glass door with a push bar, UNIT 4B vinyl (mirrored), the parking lot view.
+        for (i = 0; i <= 3; i++) { var mx = GX0 + 0.04 + i * (0.54 - GX0) / 3; b.box(0.06, GT - GL, 0.08, mx, (GL + GT) / 2, Z0 + 0.01, ALU); }
+        b.box(GX1 - GX0, 0.06, 0.08, (GX0 + GX1) / 2, GL, Z0 + 0.01, ALU); b.box(GX1 - GX0, 0.06, 0.08, (GX0 + GX1) / 2, GT, Z0 + 0.01, ALU); b.box(GX1 - GX0, 0.05, 0.08, (GX0 + GX1) / 2, 2.12, Z0 + 0.01, ALU);
+        b.box(0.07, GT, 0.09, 0.54, GT / 2, Z0 + 0.01, ALU); b.box(0.07, GT, 0.09, GX1, GT / 2, Z0 + 0.01, ALU);                        // the door frame
+        b.box(0.9, 0.05, 0.05, 1.03, 1.02, Z0 + 0.06, 0xc8ccd2); b.box(0.9, 0.12, 0.02, 1.03, 0.08, Z0 + 0.02, ALU);                     // push bar, kick plate
+        b.box(0.06, 0.1, 0.1, 1.42, 2.05, Z0 + 0.06, 0x3a3a3e);                                                                            // the closer
+        var view = paintLotView(D, band);
+        dg.add(view, face(0, 0, Z0 - 0.07, 0), (GX0 + GX1) / 2, (GL + GT) / 2, GX1 - GX0, GT - GL);                                      // (unlit: it's the night outside)
+        var glare = [0.05, 0.08, 0.1];
+        for (i = 0; i < 3; i++) g.box(0.03, 1.2, 0.004, -1.9 + i * 0.9, 1.4, Z0 + 0.012, 0x2a3440, 0, 0, 0.5 + glare[i]);             // glare streaks
+        dl.add(pVinyl('UNIT 4B'), face(0, 0, Z0 + 0.02, 0), 1.03, 1.72, 0.66, null);
+        dl.add(pVinyl('HRS: WHENEVER'), face(0, 0, Z0 + 0.02, 0), 1.03, 1.45, 0.5, null);
+        dl.add(pSign(220, 120, '#1a1a1a', '#ff3a5a', [['CLOSED', 80]], '#ff3a5a'), face(0, 0, Z0 + 0.03, 0), 1.03, 1.25, 0.3, null);
+        if (D.snow || D.season === 'winter') for (i = 0; i < 4; i++) dl.add(pFrost(), face(0, 0, Z0 + 0.015, 0), -2.1 + i * 0.85, GL + 0.18, 0.8, null);   // frost creeping up the glass
+        // The drop ceiling (a strip along both walls), one tile missing, one water-stained; the troffer (fixture mesh).
+        var CY = 2.64;
+        for (i = 0; i < 8; i++) { b.box(0.6, 0.02, 0.5, -2.0 + i * 0.6, CY, Z0 + 0.25, i === 5 ? 0x2a2a2e : i === 2 ? 0xc8b890 : 0xe8e6e0); b.box(0.02, 0.03, 0.5, -2.3 + i * 0.6, CY - 0.02, Z0 + 0.25, 0xb8bcc2); }
+        for (i = 0; i < 9; i++) { b.box(0.5, 0.02, 0.6, X1 - 0.25, CY, -2.1 + i * 0.6, i === 6 ? 0xc8b890 : 0xe8e6e0); b.box(0.5, 0.03, 0.02, X1 - 0.25, CY - 0.02, -2.4 + i * 0.6, 0xb8bcc2); }
+        b.box(4.6, 0.03, 0.02, 0, CY - 0.02, Z0 + 0.5, 0xb8bcc2); b.box(0.02, 0.03, 5.4, X1 - 0.5, CY - 0.02, 0, 0xb8bcc2);
+        b.box(0.62, 0.06, 0.34, 0.2, CY - 0.03, Z0 + 0.26, 0xd8dce2); fx.box(0.56, 0.02, 0.28, 0.2, CY - 0.065, Z0 + 0.26, 0xf2f8ff);
+        pool(W, FR.back, 0.2, 2.1, 2.6, 1.3, 0x3a4450); pool(W, FR.floor, 0.1, 1.6, 3.6, 2.8, 0x1c2228);
+        // Floor: cream VCT with a darker tile here and there; the lighter outline + bolt holes where the till counter stood.
+        tiles(b, 12, 14, [0xd8d2c0, 0xd2ccba, 0xdcd6c4, 0xb8b2a0, 0xd6d0be], 0.004, 0.003);
+        b.box(ROOM.x1 - ROOM.x0, 0.002, ROOM.z1 - ROOM.z0, 0, 0.002, 0, 0x8a8678);
+        b.at(KIT.x, 0, KIT.z, KIT.yaw);
+        b.box(1.9, 0.009, 1.2, 0, 0.0075, -0.2, 0xeae6da); b.box(1.9, 0.01, 0.04, 0, 0.008, 0.4, 0x6a665a); b.box(1.9, 0.01, 0.04, 0, 0.008, -0.8, 0x6a665a);
+        for (i = 0; i < 6; i++) b.cyl(0.018, 0.018, 0.012, 6, -0.85 + (i % 3) * 0.85, 0.009, i < 3 ? 0.35 : -0.75, 0x3a3a3a);
+        b.at(0, 0, 0, 0);
+        [[0.9, 0.4, 0.22, 0xa8a290, 41], [-0.3, 1.8, 0.2, 0xaaa492, 42]].forEach(function (p) { blob(b, p[0], p[1], p[2], p[3], p[4], 0.0068); });
+        // The old till counter, pushed into the back-right corner, the register still on it.
+        b.at(2.0, 0, -2.18, -0.25);
+        b.box(0.9, 0.9, 0.5, 0, 0.45, 0, 0x6a4a2e); b.box(0.94, 0.04, 0.54, 0, 0.92, 0, 0xd8d0b8); b.box(0.86, 0.04, 0.02, 0, 0.6, 0.26, 0x4a3420);
+        b.box(0.36, 0.2, 0.32, -0.1, 1.04, 0, 0xd8d0b8); b.box(0.34, 0.1, 0.2, -0.1, 1.2, -0.04, 0xc8c0a8, -0.4); g.box(0.16, 0.05, 0.01, -0.1, 1.24, 0.07, 0x6ae88a, -0.4);
+        for (i = 0; i < 9; i++) b.box(0.05, 0.02, 0.05, -0.22 + (i % 3) * 0.08, 0.95 + 0.012, 0.1 + Math.floor(i / 3) * 0.035 - 0.05, 0x2a2a2e);
+        b.cyl(0.04, 0.04, 0.08, 8, 0.25, 0.97, 0.05, 0xf2efe6, 0, 0, Math.PI / 2);                                                         // receipt roll
+        b.at(0, 0, 0, 0);
+        obs(tierObs, 2.0, -2.18, 0.94, 0.56, -0.25);
+        // The vacuum repair's overflow: boxes stacked against the right wall by the front (VAC-U-FIX RETURNS).
+        b.at(X1 - 0.35, 0, 2.52, -Math.PI / 2 + 0.1);
+        b.box(0.5, 0.4, 0.4, 0, 0.2, 0, 0xb08a5a); b.box(0.42, 0.34, 0.36, 0.02, 0.57, 0, 0xa27e52, 0, 0.12, 0); b.box(0.12, 0.6, 0.16, 0.34, 0.3, 0.08, 0x2a2a30);   // + an upright vacuum
+        b.box(0.26, 0.2, 0.3, 0.36, 0.1, -0.12, 0x9a9ea6);
+        b.at(0, 0, 0, 0);
+        // Christmas lights taped round the storefront (December).
+        if (D.lights) {
+          var LC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xfff4e0], m = 0;
+          for (i = 0; i <= 20; i++) g.box(0.04, 0.055, 0.04, GX0 + 0.1 + i * (GX1 - GX0 - 0.2) / 20, GT - 0.06 - 0.04 * Math.sin(i * 1.3), Z0 + 0.07, LC[m++ % 5]);
+          for (i = 1; i < 8; i++) { g.box(0.04, 0.055, 0.04, GX0 + 0.1, GT - i * 0.28, Z0 + 0.07, LC[m++ % 5]); g.box(0.04, 0.055, 0.04, 0.5, GT - i * 0.28, Z0 + 0.07, LC[m++ % 5]); }
+        }
+        couchKindSet('salon'); tierZeroCouch(b, 'salon');
+        tierZeroDesk(b, 'table');
+        sill(b, 0x6a6a70);
+        // 1985: posters on the right wall, the nail salon's note, a marker line on the slatwall.
+        dl.add(pPoster('LEATHER & LACE', 'LIVE AT THE COLISEUM · \'85', '#1a1030', '#ff4fa0', '#40c8e8'), FR.right, -2.2, 1.95, 0.46, null, 0.02);
+        dl.add(pPoster('HAIRSPRAY SUMMER', 'WEST EDMONTON · 1985', '#0e2a3a', '#ffd23a', '#ff6a2a'), FR.back, 1.92, 1.9, 0.42, null, -0.03);
+        dl.add(pSign(360, 150, '#fff4f8', '#b0304a', [['PLEASE KEEP IT DOWN', 44], ['— NAILS BY TRINH', 32, MARKER]], '#e8408a'), FR.right, -0.2, 2.3, 0.46, null, 0.02);
+        dl.add(pMarker('IT IS STILL 1985 IN HERE -C.', '#1a1a1a', 30, 520), FR.right, 2.25, 1.05, 0.62, null, 0.02);
+        cur.signText = 'UNIT 4B · WESTGATE PLAZA'; cur.hallProps = 2;
+        cur.exterior = 'parking lot: ' + (D.snow ? 'snowbanks' : { summer: 'dry, sodium light', fall: 'leaves', winter: 'snowbanks', spring: 'puddles' }[D.season] || D.season);
+      }
+
+      // Room 6: Duke's uncle's Quonset (the Grid Road Ramblers, outside Swift Current). The right wall is corrugated steel that
+      // curves over into the arch at the top (cut at the section); the end wall is plywood + steel with its top following the
+      // arch; the big sliding door on a track (the door hotspot), hay bales stacked in the back-right corner with a pitchfork, a
+      // tractor tire for the laptop desk, the grain-truck bench seat; outside (the yard's weather and glow stay): the farmyard, a
+      // grain bin behind, the yard light on its pole, the grid road along the front, and canola / stubble + round bales / snow /
+      // mud by season.
+      function quonsetRoom(b, g, fx, W, dl, dg, band, D) {
+        var H = ROOM.h, i, k, w = ROOM.wall, STEEL = MOODS[6].wall, PLY = 0xb8966a, x0 = ROOM.x0;
+        var HB = 2.05, top = function (x) { var c = X1 - 1.4, R2 = 1.4, u = (x - c) / R2; return x <= c ? HB + 0.8 : HB + 0.8 * Math.sqrt(Math.max(0, 1 - u * u)); };
+        // The right wall: corrugated steel to HB, then the arch curving in (four panels), cut at the section.
+        b.box(w, HB, ROOM.z1 - ROOM.z0 + w, X1 + w / 2, HB / 2, (Z0 - w + ROOM.z1) / 2, STEEL);
+        for (k = 0; k < 36; k++) b.box(0.03, HB, 0.05, X1 - 0.005, HB / 2, Z0 + 0.08 + k * 0.15, k % 2 ? 0xb0b6ba : 0x7e8488);             // the corrugation
+        var prevX = X1, prevY = HB;
+        for (i = 1; i <= 4; i++) {
+          var a = i / 4 * 0.9, cx = X1 - 1.4 + 1.4 * Math.cos(a), cy = HB + 0.8 * Math.sin(a);
+          var mx2 = (prevX + cx) / 2, my2 = (prevY + cy) / 2, len = Math.sqrt((cx - prevX) * (cx - prevX) + (cy - prevY) * (cy - prevY));
+          b.box(len + 0.02, 0.06, ROOM.z1 - ROOM.z0 + w, mx2, my2, (Z0 - w + ROOM.z1) / 2, i % 2 ? 0x8e9498 : 0x9aa0a4, 0, 0, Math.atan2(cy - prevY, cx - prevX));
+          prevX = cx; prevY = cy;
+        }
+        for (k = 0; k < 9; k++) { var rz = Z0 + 0.3 + k * 0.6; b.box(0.05, HB, 0.06, X1 - 0.04, HB / 2, rz, 0x6a6e72); }                    // steel ribs inside
+        // The end wall: plywood sheets up to 2.44, corrugated steel to the arch line; the cut shows its thickness.
+        for (i = 0; i < 23; i++) {
+          var ex = x0 + 0.1 + i * 0.2, eh = top(ex);
+          b.box(0.2, eh, w, ex, eh / 2, Z0 - w / 2, eh > 2.44 ? 0x8a9094 : STEEL);
+          b.box(0.2, Math.min(2.44, eh), 0.012, ex, Math.min(2.44, eh) / 2, Z0 + 0.006, i % 6 === 5 ? sh(PLY, 0.8) : PLY);
+          if (eh > 2.44) b.box(0.19, eh - 2.44, 0.014, ex, (eh + 2.44) / 2, Z0 + 0.007, i % 2 ? 0xa8aeb2 : 0x8e9498);
+        }
+        b.box(4.6, 0.04, 0.03, 0, 2.44, Z0 + 0.015, 0x6a5238); b.box(0.09, 2.44, 0.09, X1 - 0.045, 1.22, Z0 + 0.045, 0x6a5238);
+        // The sliding door (steel, a rail over it, two rollers, a handle, the gap underneath where the snow gets in).
+        var DX = PROPS.door.x - 0.05, DW = 1.9, DH = 2.2;
+        b.box(DW + 0.5, 0.08, 0.1, DX + 0.2, DH + 0.1, Z0 + 0.06, 0x3a3a3e);
+        for (i = -1; i <= 1; i += 2) b.cyl(0.05, 0.05, 0.04, 10, DX + i * 0.7, DH + 0.04, Z0 + 0.11, 0x2a2a2e, Math.PI / 2);
+        b.box(DW, DH - 0.04, 0.05, DX, DH / 2, Z0 + 0.06, 0x8a9094);
+        for (k = 0; k < 13; k++) b.box(0.035, DH - 0.06, 0.02, DX - DW / 2 + 0.08 + k * 0.145, DH / 2, Z0 + 0.095, k % 2 ? 0xa0a6aa : 0x767c80);
+        b.box(DW, 0.06, 0.03, DX, 1.1, Z0 + 0.1, 0x6a6e72); b.box(0.06, 0.3, 0.06, DX + DW / 2 - 0.15, 1.1, Z0 + 0.12, 0x2a2a2e);
+        g.box(DW - 0.1, 0.03, 0.01, DX, 0.02, Z0 + 0.04, 0x2a3450);                                                                          // the gap
+        if (D.snow || D.season === 'winter') { b.box(DW * 0.7, 0.07, 0.3, DX - 0.2, 0.035, Z0 + 0.25, 0xeef2fa); b.box(DW * 0.4, 0.05, 0.18, DX + 0.3, 0.025, Z0 + 0.2, 0xf6f8fc); }   // snow blown in under it
+        if (D.lights) { var LC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xfff4e0]; for (i = 0; i < 16; i++) g.box(0.04, 0.055, 0.04, DX - DW / 2 + i * DW / 15, DH + 0.2 - 0.05 * Math.sin(i * 0.9), Z0 + 0.12, LC[i % 5]); }
+        // Floor: the slab, straw everywhere, an oil stain, a tractor's tire tracks from the door.
+        tiles(b, 6, 7, [0x6e6254, 0x6a5e50, 0x726658, 0x665a4c], 0.004, 0.006);
+        b.box(ROOM.x1 - ROOM.x0, 0.002, ROOM.z1 - ROOM.z0, 0, 0.002, 0, 0x4a4034);
+        var rng = GG.RNG(61);
+        for (i = 0; i < 70; i++) b.box(0.06 + rng.next() * 0.08, 0.005, 0.012, x0 + 0.2 + rng.next() * 4.2, 0.009, Z0 + 0.2 + rng.next() * 5.1, rng.next() < 0.5 ? 0xd8b860 : 0xc8a448, 0, rng.next() * 3, 0);
+        for (i = -1; i <= 1; i += 2) for (k = 0; k < 8; k++) b.box(0.3, 0.004, 0.08, DX + i * 0.55, 0.008, Z0 + 0.3 + k * 0.28, 0x564a3c);
+        blob(b, 0.6, 0.5, 0.35, 0x3a342c, 71, 0.0068);
+        // Hay bales in the back-right corner (three, stacked), a pitchfork against them, a coil of baler twine.
+        [[2.02, 0.19, -2.35, 0], [2.02, 0.19, -1.95, 0], [2.0, 0.56, -2.15, 0.06]].forEach(function (q) {
+          b.box(0.5, 0.36, 0.38, q[0], q[1], q[2], 0xd8b860, 0, Math.PI / 2 + q[3], 0);
+          b.box(0.51, 0.012, 0.02, q[0] - 0.19, q[1] - 0.08, q[2], 0xc8a448, 0, Math.PI / 2, 0); b.box(0.51, 0.012, 0.02, q[0] - 0.19, q[1] + 0.06, q[2], 0xe6c878, 0, Math.PI / 2, 0);
+          b.box(0.39, 0.37, 0.016, q[0], q[1], q[2] - 0.13, 0x8a5a2a, 0, Math.PI / 2, 0); b.box(0.39, 0.37, 0.016, q[0], q[1], q[2] + 0.13, 0x8a5a2a, 0, Math.PI / 2, 0);
+        });
+        b.box(0.03, 1.5, 0.03, 1.72, 0.75, -1.72, 0x8a6a3a, 0.1, 0, 0.35); for (i = -1; i <= 1; i++) b.box(0.012, 0.22, 0.012, 1.46 + i * 0.03, 1.5, -1.64, 0xb8bcc2, 0.1, 0, 0.35);
+        b.cyl(0.1, 0.1, 0.08, 10, 1.72, 0.04, -2.4, 0xe8702a);
+        obs(tierObs, 2.02, -2.15, 0.46, 0.84, 0);
+        // Farm tools hung on the end wall left of the door: a shovel, a grain scoop, a coil of rope; a tractor seat on a spring stool.
+        b.at(-0.02, 0, Z0 + 0.06, 0);
+        b.box(0.03, 1.2, 0.03, -0.02, 1.35, 0, 0x8a6a3a); b.box(0.2, 0.26, 0.02, -0.02, 0.72, 0.01, 0x8a8e94);
+        b.box(0.03, 1.0, 0.03, 0.02, 1.45, 0.03, 0x8a6a3a, 0, 0, 0.2); b.box(0.3, 0.2, 0.06, 0.12, 1.98, 0.04, 0xb8bcc2, 0, 0, 0.2);
+        b.at(0, 0, 0, 0);
+        couchKindSet('bench'); tierZeroCouch(b, 'bench');
+        tierZeroDesk(b, 'tire');
+        sill(b, 0x5a5048);
+        // Outside: the grain bin behind, the yard light on its pole, the grid road along the front, the field by season.
+        buildFarmyard(b, g, D);
+        dl.add(pSign(320, 110, '#2a5a2a', '#f2efe6', [['HARLAN FARMS', 56], ['EST. 1952 · NO TRESPASSING (DUKE OK)', 22]], '#f2efe6'), face(0, 0, Z0 + 0.02, 0), -1.5, 0.62, 0.62, null, 0.02);
+        dl.add(pSign(260, 150, '#f2efe6', '#1a1a1a', [['SHUT THE DOOR', 44], ['THE CATS GET OUT', 32], ['-UNCLE RAY', 30, MARKER]], '#1a1a1a'), FR.right, -2.15, 1.35, 0.42, null, -0.02);
+        cur.signText = 'HARLAN FARMS'; cur.hallProps = 4;
+        cur.exterior = 'farmyard: ' + (D.snow ? 'snow' : { summer: 'canola', fall: 'stubble + round bales', winter: 'snow', spring: 'mud' }[D.season] || D.season);
+      }
+      function buildFarmyard(b, g, D) {
+        var s = D.snow ? 'winter' : D.season, i, k, rng = GG.RNG(83);
+        // The grain bin behind the end wall (its roof shows over the arch), the yard light, the grid road + ditch in front.
+        b.at(-1.2, 0, -4.3, 0);
+        b.cyl(1.2, 1.2, 3.3, 16, 0, 1.4, 0, 0x9aa0a6); for (k = 0; k < 10; k++) b.cyl(1.215, 1.215, 0.03, 16, 0, 0 + k * 0.33, 0, 0x7a8086);
+        b.cyl(0.12, 1.28, 0.8, 16, 0, 3.45, 0, 0xa8aeb4); b.box(0.2, 0.14, 0.2, 0, 3.9, 0, 0x8a9096);
+        b.at(-3.3, 0, 3.4, 0);
+        b.box(0.14, 5.0, 0.14, 0, 2.2, 0, 0x5a4432); b.box(1.2, 0.08, 0.08, 0, 4.5, 0, 0x5a4432); b.box(0.5, 0.06, 0.08, 0.3, 4.1, 0, 0x2a2a2e, 0, 0, -0.3);
+        g.box(0.22, 0.1, 0.22, 0.52, 3.97, 0, 0xfff0c0);
+        b.at(0, 0, 0, 0);
+        var road = s === 'winter' ? 0xd8dce4 : s === 'spring' ? 0x6a5a48 : 0x8a7a64;
+        b.box(16, 0.06, 1.3, -1.5, -0.3, 5.1, road, 0, 0.08, 0); b.box(16, 0.04, 0.6, -1.5, -0.33, 5.95, s === 'winter' ? 0xe6eaf2 : 0x3a4a2a, 0, 0.08, 0);   // the grid road, the ditch
+        for (i = 0; i < 10; i++) b.box(0.18, 0.02, 0.1, -7 + i * 1.3 + rng.next() * 0.5, -0.26, 5.0 + rng.next() * 0.6, s === 'winter' ? 0xc8ccd6 : 0x9a8a74);   // gravel
+        b.box(0.08, 1.1, 0.08, 2.9, 0.25, 4.2, 0x6a5238); b.box(0.36, 0.2, 0.2, 2.9, 0.86, 4.2, 0x2a2a2e); b.box(0.12, 0.08, 0.02, 3.06, 0.9, 4.28, 0xc0302a);   // the mailbox
+        // The field (front-left, beyond the cut) + the season.
+        var FX0 = -6.4, FX1 = -2.9, FZ0 = -3.4, FZ1 = 4.2;
+        if (s === 'summer') {                                    // canola in bloom: rows of yellow
+          for (i = 0; i < 9; i++) { b.box(0.3, 0.14, FZ1 - FZ0, FX0 + i * 0.42, -0.26, (FZ0 + FZ1) / 2, 0x3a6a2a); for (k = 0; k < 16; k++) { var ch = 0.1 + rng.next() * 0.08; b.box(0.26, ch, 0.34, FX0 + i * 0.42 + (rng.next() - 0.5) * 0.06, -0.19 + ch / 2, FZ0 + k * 0.48, rng.next() < 0.25 ? 0xd8b418 : 0xecca28); } }
+          for (i = 0; i < 12; i++) b.box(0.62, 0.12, 0.3, -2.4 + i * 0.66, -0.24, 4.35 + (i % 2) * 0.08, i % 3 ? 0xecca28 : 0xd8b418);   // the headland along the road
+        } else if (s === 'fall') {                               // stubble + round bales
+          for (i = 0; i < 9; i++) b.box(0.3, 0.06, FZ1 - FZ0, FX0 + i * 0.42, -0.27, (FZ0 + FZ1) / 2, i % 2 ? 0xb89a5a : 0xa88a4a);
+          [[-4.2, -1.2], [-5.2, 1.4], [-3.6, 2.8], [1.6, 3.8]].forEach(function (p) { b.cyl(0.55, 0.55, 0.9, 12, p[0], 0.25, p[1], 0xc8a458, 0, 0.3, Math.PI / 2); b.cyl(0.45, 0.45, 0.92, 10, p[0], 0.25, p[1], 0xb08a44, 0, 0.3, Math.PI / 2); });
+        } else if (s === 'winter') {                             // snow over everything, drifts along the Quonset's side
+          for (i = 0; i < 12; i++) b.box(0.8 + rng.next() * 0.8, 0.08 + rng.next() * 0.08, 0.7, FX0 + rng.next() * 3.6, -0.3, FZ0 + i * 0.65, 0xc8d0dc, 0, rng.next(), 0);
+          for (i = 0; i < 6; i++) b.box(1.0, 0.12, 0.5, -1.6 + i * 1.2, -0.28, 4.3, 0xd0d6e2, 0, 0.1 * i, 0);
+        } else {                                                 // spring: mud, puddles, the first green
+          for (i = 0; i < 9; i++) b.box(0.3, 0.04, FZ1 - FZ0, FX0 + i * 0.42, -0.28, (FZ0 + FZ1) / 2, i % 2 ? 0x5a4632 : 0x4e3c2a);
+          for (i = 0; i < 40; i++) b.box(0.03, 0.08, 0.03, FX0 + rng.next() * 3.6, -0.22, FZ0 + rng.next() * (FZ1 - FZ0), 0x6aa84a);
+          b.cyl(0.6, 0.6, 0.01, 12, 1.0, -0.26, 4.95, 0x3a4a6a); b.cyl(0.4, 0.4, 0.01, 10, -3.0, -0.26, 5.2, 0x3a4a6a);
+        }
+      }
+      var couchKind = null;
+      function couchKindSet(k) { couchKind = k; }
+      // Painters for the tier-0 rooms (the atlas): the storefront's night view, window vinyl, frost, a 1985 poster, the lot.
+      function paintLotView(D, band) {
+        var r = region(1000, 500), x = r.x, y = r.y, w = r.w, h = r.h, rng = GG.RNG(97), i, s = D.snow ? 'winter' : D.season;
+        var sky = ag.createLinearGradient(0, y, 0, y + h * 0.5); sky.addColorStop(0, '#05070e'); sky.addColorStop(1, '#1a1e30');
+        ag.fillStyle = sky; ag.fillRect(x, y, w, h * 0.5);
+        ag.fillStyle = '#0c0d12'; ag.fillRect(x, y + h * 0.36, w, h * 0.14);                                                         // the far side of 170 Street
+        for (i = 0; i < 14; i++) { ag.fillStyle = rng.next() < 0.5 ? '#ffcf70' : '#e8f0ff'; ag.fillRect(x + rng.next() * w, y + h * (0.38 + rng.next() * 0.08), 3, 3); }
+        ag.fillStyle = 'rgba(255,60,40,0.6)'; ag.fillRect(x + w * 0.1, y + h * 0.48, w * 0.8, 2); ag.fillStyle = 'rgba(255,240,200,0.6)'; ag.fillRect(x + w * 0.05, y + h * 0.495, w * 0.9, 2);   // traffic
+        var lot = ag.createLinearGradient(0, y + h * 0.5, 0, y + h); lot.addColorStop(0, s === 'winter' ? '#5a5e6a' : '#2a2a2e'); lot.addColorStop(1, s === 'winter' ? '#8a8e9a' : '#3e3c3a');
+        ag.fillStyle = lot; ag.fillRect(x, y + h * 0.5, w, h * 0.5);
+        ag.strokeStyle = s === 'winter' ? 'rgba(240,240,250,0.35)' : '#d8c040'; ag.lineWidth = 4;
+        for (i = -6; i <= 6; i++) { ag.beginPath(); ag.moveTo(x + w / 2 + i * 40, y + h * 0.55); ag.lineTo(x + w / 2 + i * 150, y + h); ag.stroke(); }   // stall lines in perspective
+        var lamp = ag.createRadialGradient(x + w * 0.3, y + h * 0.62, 0, x + w * 0.3, y + h * 0.62, h * 0.5);            // the sodium pool
+        lamp.addColorStop(0, 'rgba(255,170,70,0.55)'); lamp.addColorStop(1, 'rgba(255,170,70,0)'); ag.fillStyle = lamp; ag.fillRect(x, y + h * 0.3, w, h * 0.7);
+        ag.fillStyle = '#1a1a1e'; ag.fillRect(x + w * 0.3 - 3, y + h * 0.14, 6, h * 0.5); ag.fillRect(x + w * 0.3 - 2, y + h * 0.14, 50, 5);
+        ag.fillStyle = '#ffb050'; ag.fillRect(x + w * 0.3 + 34, y + h * 0.14 + 4, 24, 8);
+        // The plaza pylon: WESTGATE PLAZA, the tenants (the band on a paper sign taped over an old panel).
+        var px = x + w * 0.72, py = y + h * 0.08, pw = w * 0.18;
+        ag.fillStyle = '#2a2a30'; ag.fillRect(px + pw / 2 - 6, py + h * 0.5, 12, h * 0.1);
+        ag.fillStyle = '#3a3a44'; ag.fillRect(px, py, pw, h * 0.5);
+        ag.fillStyle = '#ff5a8a'; ag.font = font(STENCIL, 26); ag.textAlign = 'center'; ag.textBaseline = 'middle'; ag.fillText('WESTGATE', px + pw / 2, py + 22); ag.fillText('PLAZA', px + pw / 2, py + 50);
+        var ten = ['NAILS BY TRINH', 'VAC-U-FIX', 'UNIT 4B: ' + String((band && band.name) || 'THE BAND').toUpperCase(), 'FOR LEASE'];
+        for (i = 0; i < 4; i++) {
+          ag.fillStyle = i === 2 ? '#f2efe6' : '#e8e4d8'; ag.fillRect(px + 8, py + 72 + i * 44, pw - 16, 36);
+          fitText(ten[i], STENCIL, 22, pw - 26); ag.fillStyle = i === 2 ? '#c0141c' : '#1a1a1a'; ag.fillText(ten[i], px + pw / 2, py + 90 + i * 44);
+        }
+        // A parked '85 Camaro-ish coupe (Chase's), a stray cart, the season.
+        ag.fillStyle = '#5a1a1a'; ag.beginPath(); ag.moveTo(x + w * 0.42, y + h * 0.86); ag.lineTo(x + w * 0.44, y + h * 0.78); ag.lineTo(x + w * 0.5, y + h * 0.74); ag.lineTo(x + w * 0.58, y + h * 0.74); ag.lineTo(x + w * 0.62, y + h * 0.79); ag.lineTo(x + w * 0.66, y + h * 0.8); ag.lineTo(x + w * 0.66, y + h * 0.86); ag.closePath(); ag.fill();
+        ag.fillStyle = '#9ab0c8'; ag.fillRect(x + w * 0.5, y + h * 0.755, w * 0.07, h * 0.03);
+        ag.fillStyle = '#111'; ag.beginPath(); ag.arc(x + w * 0.47, y + h * 0.87, 14, 0, Math.PI * 2); ag.arc(x + w * 0.62, y + h * 0.87, 14, 0, Math.PI * 2); ag.fill();
+        ag.strokeStyle = '#8a8e94'; ag.lineWidth = 3; ag.strokeRect(x + w * 0.14, y + h * 0.8, 40, 26);
+        if (s === 'winter') { ag.fillStyle = '#e8ecf4'; for (i = 0; i < 5; i++) { ag.beginPath(); ag.ellipse(x + w * (0.05 + i * 0.07), y + h * 0.66, 60, 30 + i * 4, 0, Math.PI, 0); ag.fill(); } for (i = 0; i < 90; i++) ag.fillRect(x + rng.next() * w, y + rng.next() * h, 3, 3); }
+        else if (s === 'fall') { for (i = 0; i < 40; i++) { ag.fillStyle = ['#d9822b', '#c0612a', '#e8b040'][i % 3]; ag.fillRect(x + rng.next() * w, y + h * (0.6 + rng.next() * 0.4), 8, 5); } }
+        else if (s === 'spring') { ag.fillStyle = 'rgba(120,150,200,0.35)'; for (i = 0; i < 5; i++) { ag.beginPath(); ag.ellipse(x + rng.next() * w, y + h * (0.7 + rng.next() * 0.25), 50 + rng.next() * 40, 10, 0, 0, Math.PI * 2); ag.fill(); } }
+        return r;
+      }
+      function pVinyl(t) {                                        // white vinyl letters on glass, read backwards from inside
+        var r = region(360, 70);
+        ag.save(); ag.translate(r.x + r.w, r.y); ag.scale(-1, 1);
+        fitText(t, STENCIL, 56, r.w - 20); ag.fillStyle = '#f2efe6'; ag.textAlign = 'center'; ag.textBaseline = 'middle'; ag.fillText(t, r.w / 2, r.h / 2);
+        ag.restore();
+        return r;
+      }
+      function pFrost() {
+        var r = region(200, 90), gr = ag.createLinearGradient(0, r.y + r.h, 0, r.y);
+        gr.addColorStop(0, 'rgba(236,244,255,0.95)'); gr.addColorStop(1, 'rgba(236,244,255,0)');
+        ag.fillStyle = gr; ag.beginPath(); ag.moveTo(r.x, r.y + r.h);
+        for (var i = 0; i <= 10; i++) ag.lineTo(r.x + i * r.w / 10, r.y + r.h * (0.25 + 0.35 * Math.abs(Math.sin(i * 1.7))));
+        ag.lineTo(r.x + r.w, r.y + r.h); ag.closePath(); ag.fill();
+        return r;
+      }
+      function pPoster(t1, t2, bg, c1, c2) {                     // a 1985 gig poster: grid sun, chrome title
+        var r = region(240, 340), x = r.x, y = r.y, w = r.w, h = r.h, i;
+        ag.fillStyle = bg; ag.fillRect(x, y, w, h);
+        ag.fillStyle = c2; ag.beginPath(); ag.arc(x + w / 2, y + h * 0.5, w * 0.3, Math.PI, 0); ag.fill();
+        ag.strokeStyle = c1; ag.lineWidth = 2; for (i = 0; i < 8; i++) { ag.beginPath(); ag.moveTo(x, y + h * 0.5 + i * i * 3); ag.lineTo(x + w, y + h * 0.5 + i * i * 3); ag.stroke(); }
+        for (i = -5; i <= 5; i++) { ag.beginPath(); ag.moveTo(x + w / 2, y + h * 0.5); ag.lineTo(x + w / 2 + i * 50, y + h); ag.stroke(); }
+        text(t1, x + w / 2, y + h * 0.18, STENCIL, 40, c1, w - 20, null, 0.8);
+        text(t2, x + w / 2, y + h * 0.3, STENCIL, 22, '#f2efe6', w - 20);
+        return r;
+      }
+      // The strip mall's parking lot outside the cut walls (the hall canvas corner): asphalt, stalls, a curb, the season.
+      function paintLot(D) {
+        var R0 = { x: 0, y: 512, w: 512, h: 512 }, px = 512 / HALL.size, X = function (x) { return R0.x + (x - HALL.x0) * px; }, Y = function (z) { return R0.y + (z - HALL.z0) * px; };
+        var rng = GG.RNG(311), i, s = D.snow ? 'winter' : D.season;
+        ag.save(); ag.beginPath(); ag.rect(R0.x, R0.y, R0.w, R0.h); ag.clip();
+        ag.fillStyle = s === 'winter' ? '#5a606c' : '#34343a'; ag.fillRect(R0.x, R0.y, R0.w, R0.h);
+        for (i = 0; i < 300; i++) { ag.fillStyle = rng.next() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.12)'; ag.fillRect(R0.x + rng.next() * R0.w, R0.y + rng.next() * R0.h, 3, 3); }
+        ag.fillStyle = '#8a8680'; ag.fillRect(R0.x, Y(2.75), R0.w, 0.25 * px); ag.fillRect(X(-2.55), R0.y, 0.25 * px, R0.h);        // the sidewalk curb
+        ag.fillStyle = s === 'winter' ? 'rgba(250,250,255,0.6)' : '#d8c040';
+        for (i = 0; i < 8; i++) { ag.fillRect(X(-4.5 + i * 1.3), Y(3.4), 0.08 * px, 1.8 * px); ag.fillRect(X(-5.2), Y(-3 + i * 1.1), 1.8 * px, 0.08 * px); }
+        if (s === 'winter') { ag.fillStyle = '#c8ccd8'; ag.beginPath(); ag.ellipse(X(-4.2), Y(4.4), 1.6 * px, 0.8 * px, 0, 0, Math.PI * 2); ag.fill(); }
+        else if (s === 'fall') for (i = 0; i < 60; i++) { ag.fillStyle = ['#d9822b', '#c0612a', '#e8b040'][i % 3]; ag.fillRect(R0.x + rng.next() * R0.w, R0.y + rng.next() * R0.h, 5, 3); }
+        else if (s === 'spring') { ag.fillStyle = 'rgba(90,110,150,0.5)'; ag.beginPath(); ag.ellipse(X(-1.2), Y(4.0), 0.9 * px, 0.4 * px, 0, 0, Math.PI * 2); ag.fill(); }
+        ag.restore();
+        ag.save(); ag.beginPath(); ag.rect(R0.x, R0.y, R0.w, R0.h); ag.clip(); ag.globalCompositeOperation = 'destination-in';
+        var cx = X(-0.2), cy = Y(0.8), gr = ag.createRadialGradient(cx, cy, 0, cx, cy, 5.0 * px);
+        gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.6, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        ag.fillStyle = gr; ag.fillRect(R0.x, R0.y, R0.w, R0.h); ag.restore();
+        return R0;
+      }
+
+      function buildRoom(tier, green, band, catering, D) {   // (v0.9: tier = the room index: 1..3 rented, 4..6 the tier-0 rooms; D = decor flags)
         var b = new ctx.Builder({ jitter: 0.04, seed: 80 + tier }), g = new ctx.Builder({ jitter: 0, seed: 90 + tier }), fx = new ctx.Builder({ jitter: 0, seed: 95 + tier });
         var W = { p: [], n: [], uv: [], c: [] }, dl = new DecalSet(), dg = new DecalSet(), hl = new DecalSet();
-        tierObs.length = 0; cur.hallProps = 0; cur.signText = '';
+        tierObs.length = 0; cur.hallProps = 0; cur.signText = ''; cur.exterior = null;
         resetAtlas();
+        paintNames(band);
         if (tier) {
           if (tier === 1) jamRoom(b, g, fx, W, dl, dg, band);
           else if (tier === 2) studioRoom(b, g, fx, W, dl, dg, band);
-          else backstageRoom(b, g, fx, W, dl, dg, band, green, catering);
-          hl.add(paintHall(tier), FR.hall, HALL.x0 + HALL.size / 2, -(HALL.z0 + HALL.size / 2), HALL.size, HALL.size);
+          else if (tier === 3) backstageRoom(b, g, fx, W, dl, dg, band, green, catering);
+          else if (tier === 4) laundromatRoom(b, g, fx, W, dl, dg, band, D || {});
+          else if (tier === 5) stripMallRoom(b, g, fx, W, dl, dg, band, D || {});
+          else quonsetRoom(b, g, fx, W, dl, dg, band, D || {});
+          if (tier <= 3) hl.add(paintHall(tier), FR.hall, HALL.x0 + HALL.size / 2, -(HALL.z0 + HALL.size / 2), HALL.size, HALL.size);
+          else if (tier === 5) hl.add(paintLot(D || {}), FR.hall, HALL.x0 + HALL.size / 2, -(HALL.z0 + HALL.size / 2), HALL.size, HALL.size);
           atex.needsUpdate = true;
         }
         swap(room, tier ? b : null); swap(roomGlow, tier ? g : null); swap(fix, tier ? fx : null);
@@ -2263,8 +2925,9 @@
         }
         if (has('mood_leds')) {                                                             // purple for metal, blue for Kenji (on the beams in the studio)
           g.at(0, 0, 0, 0);
-          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 0.16, Z0 + 0.03, 0x9b5bff); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.03, 0.16, 0, 0x5b8bff);
-          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 2.5, Z0 + 0.15, 0x5b8bff); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.15, 2.5, 0, 0x9b5bff);
+          var LED = { metal: [0x9b5bff, 0x5b8bff], punk: [0x39e05a, 0xff4fb0], rock: [0xffa42e, 0x3c8cff], country: [0xffc860, 0xd9a520] }[(state && state.genre) || 'metal'] || [0x9b5bff, 0x5b8bff];   // v0.9: per genre
+          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 0.16, Z0 + 0.03, LED[0]); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.03, 0.16, 0, LED[1]);
+          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 2.5, Z0 + 0.15, LED[1]); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.15, 2.5, 0, LED[0]);
         }
         if (has('catering')) {                                                              // perogies, hot, every day
           b.at(X1 - 0.3, 0, -1.2, -Math.PI / 2); g.at(X1 - 0.3, 0, -1.2, -Math.PI / 2);
@@ -2351,7 +3014,7 @@
       }
 
       /* ---- mood: the lights, the background, the bulb / tube / spots, the yard ---------------------------------------- */
-      function applyMood(tier) {
+      function applyMood(tier) {   // (tier = the room index)
         mood = MOODS[tier] || MOODS[0]; riser = RISERS[tier] || null;
         scene.background.setHex(mood.bg);
         hemi.color.setHex(mood.hemi[0]); hemi.groundColor.setHex(mood.hemi[1]); hemi.intensity = mood.hemi[2];
@@ -2360,12 +3023,12 @@
         bulb.color.setHex(mood.bulb[0]); self.bulbI = mood.bulb[1];
         heater.color.setHex(mood.accent[0] || 0xff7a30); heater.intensity = mood.accent[1];
         if (tier) heater.position.set(mood.accent[2], mood.accent[3], mood.accent[4]); else heater.position.set(1.5, 0.45, 2.15);
-        bulbCord.visible = bulbGlass.visible = halo.visible = tier === 0;
+        bulbCord.visible = bulbGlass.visible = halo.visible = mood.fixture === 'bulb';   // (v0.9: the basement and the Quonset have bare bulbs too)
         dust.points.material.color.setHex(mood.dust);
-        yard.indoor(tier > 0);
+        yard.indoor(tier > 0 && tier !== 6); yard.farm(tier === 6);                      // (v0.9: the Quonset keeps the outdoors: a farmyard)
         if (kitShadow >= 0) { var ks = shadowSpots[kitShadow]; setShadow(kitShadow, ks[0], ks[1], ks[2], ks[3], ks[4], riser ? riser.h : 0); }
       }
-      function hideGarage(tier) {
+      function hideGarage(tier, band) {   // (tier = the room index)
         var on = tier === 0;
         for (var i = 0; i < garageOnly.length; i++) garageOnly[i].visible = on;
         shafts.visible = on;
@@ -2374,10 +3037,13 @@
         shadows.instanceMatrix.needsUpdate = true;
         // The band banner (a bedsheet): on the garage door at home, duct-taped beside the door in the jam room; the studio has
         // its window there and no bedsheets; backstage the band's name is stencilled on the wall instead.
-        banner.mesh.visible = tier <= 1; banner.mesh.rotation.set(0, 0, 0);
+        banner.mesh.visible = tier <= 1 || tier >= 4; banner.mesh.rotation.set(0, 0, 0);
         if (on) { banner.mesh.position.set(PROPS.door.x, 1.08, Z0 + 0.1); banner.mesh.scale.setScalar(1); }
         else if (tier === 1) { banner.mesh.position.set(-0.07, 2.29, Z0 + 0.06); banner.mesh.scale.setScalar(0.46); banner.mesh.rotation.z = 0.035; }   // under the tube, over NO DRUMS
-        var text = DOOR_LABELS[tier] || 'Door', h = hs.door;
+        else if (tier === 4) { banner.mesh.position.set(1.8, 1.06, Z0 + 0.7); banner.mesh.scale.setScalar(0.42); banner.mesh.rotation.z = -0.02; }  // on the plywood under the stairs
+        else if (tier === 5) { banner.mesh.position.set(-0.15, 2.28, Z0 + 0.12); banner.mesh.scale.setScalar(0.6); banner.mesh.rotation.z = 0.02; }   // hung inside the shop window
+        else if (tier === 6) { banner.mesh.position.set(PROPS.door.x, 1.3, Z0 + 0.14); banner.mesh.scale.setScalar(0.86); }                        // on the sliding door
+        var text = doorLabel(tier, band), h = hs.door;
         if (h && cur.door !== text) {                                                            // re-label the door hotspot
           var lab = ctx.makeLabel(text, { px: 20 }), old = h.label, li = labels.indexOf(old);
           lab.position.copy(old.position); lab.userData.action = 'door'; scene.add(lab);
@@ -2386,13 +3052,16 @@
         }
       }
       self.set = function (st) {
-        var tier = st && isFinite(st.spaceTier) ? Math.max(0, Math.min(3, st.spaceTier | 0)) : 0;
+        var tier = st && isFinite(st.spaceTier) ? Math.max(0, Math.min(3, st.spaceTier | 0)) : 0, ri = roomIndexOf(st);
         var list = st && Array.isArray(st.spaceUpgrades) ? st.spaceUpgrades.slice().sort() : [];
         var green = tier === 3 && list.indexOf('green_room') >= 0, catering = tier === 3 && list.indexOf('catering') >= 0, band = GG.content.bands && GG.content.bands[st && st.bandId];
-        var roomSig = tier + '|' + green + '|' + catering + '|' + (band ? band.name : '');   // the stickers + the backstage sign name the band (a loaded save may differ)
+        // v0.9: the tier-0 rooms carry their seasonal dressing (the window well's snow, the shop window's frost, the canola) in
+        // the room itself, so the season + December + the city (Q7 painted names) are part of the signature.
+        var D = ri >= 4 ? decor.flags() : null, city = (st && st.city) || (band && band.city) || '';
+        var roomSig = ri + '|' + green + '|' + catering + '|' + (band ? band.name : '') + '|' + city + (D ? '|' + D.season + '|' + D.snow + '|' + D.lights : '');
         if (roomSig !== cur.room) {
-          cur.room = roomSig; cur.tier = tier; cur.green = green;
-          buildRoom(tier, green, band, catering); hideGarage(tier);
+          cur.room = roomSig; cur.tier = tier; cur.ri = ri; cur.green = green; cur.city = city;
+          buildRoom(ri, green, band, catering, D); hideGarage(ri, band);
         }
         var upSig = tier + '|' + list.join(',');
         if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier); }
@@ -2402,7 +3071,7 @@
         cur.boxes = p.boxes;
         if (pileSig !== cur.pile) { cur.pile = pileSig; cur.shown = Math.min(p.boxes, PILE_MAX); buildPile(shown, mis); }
         self.obstacles.length = 0;
-        var src = tier ? tierObs : garageObstacles, i;
+        var src = ri ? tierObs : garageObstacles, i;
         for (i = 0; i < src.length; i++) self.obstacles.push(src[i]);
         for (i = 0; i < upObs.length; i++) self.obstacles.push(upObs[i]);
         for (i = 0; i < pileObs.length; i++) self.obstacles.push(pileObs[i]);
@@ -2420,20 +3089,21 @@
       };
       // The main light's flicker: the garage bulb's tired blink, the jam room tube's buzz (and a stutter every few seconds).
       self.flicker = function (t) {
-        if (cur.tier === 1) { var c = t % 6.7; return c < 0.32 ? (Math.sin(t * 95) > 0 ? 1 : 0.38) : 0.97 + 0.03 * Math.sin(t * 377); }
-        return cur.tier > 0 ? 1 : (t % 13) < 0.18 ? 0.72 + 0.2 * Math.sin(t * 90) : 1;
+        if (cur.ri === 1 || cur.ri === 5) { var c = t % 6.7; return c < 0.32 ? (Math.sin(t * 95) > 0 ? 1 : 0.38) : 0.97 + 0.03 * Math.sin(t * 377); }
+        return cur.ri > 0 && cur.ri < 4 ? 1 : (t % 13) < 0.18 ? 0.72 + 0.2 * Math.sin(t * 90) : 1;
       };
       self.update = function (t) {
         if (ball.visible) { ball.rotation.y = t * 0.8; ball.position.y = 2.1 + 0.01 * Math.sin(t * 1.3); }
-        if (fix.visible) { var f = cur.tier === 1 ? self.flicker(t) : 1; if (f !== fixBase) { fixBase = f; fixMat.color.setScalar(f); } }
+        if (fix.visible) { var f = cur.ri === 1 || cur.ri === 5 ? self.flicker(t) : 1; if (f !== fixBase) { fixBase = f; fixMat.color.setScalar(f); } }
       };
       function hex(c) { return '#' + ('000000' + (c >>> 0).toString(16)).slice(-6); }
       self.state = function () {
-        var m = MOODS[Math.max(0, cur.tier)] || MOODS[0];
-        return { tier: cur.tier, kind: m.kind, wall: hex(cur.green ? GREEN_WALL : m.wall), floor: hex(m.floor), bg: hex(m.bg), fixture: m.fixture, hall: m.hall, hallProps: cur.hallProps,
+        var m = MOODS[Math.max(0, cur.ri)] || MOODS[0];
+        return { tier: cur.tier, room: cur.ri, kind: m.kind, spaceKind: cur.ri >= 4 ? m.kind : cur.ri === 0 ? 'garage' : null, exterior: cur.exterior, city: cur.city, paint: PAINT.studio + ' / ' + PAINT.arena, wall: hex(cur.green ? GREEN_WALL : m.wall), floor: hex(m.floor), bg: hex(m.bg), fixture: m.fixture, hall: m.hall, hallProps: cur.hallProps,
           riser: riser ? riser.h : 0, decals: cur.decals, green: cur.green, upgrades: cur.list.slice(), boxes: cur.boxes, pile: cur.shown,
           pileBox: cur.pileBox && cur.pileBox.slice(), pileSign: cur.pileSign && cur.pileSign.slice(), disco: ball.visible, door: cur.door,
-          garage: garageOnly[0].visible, yard: cur.tier === 0, banner: banner.mesh.visible, sign: cur.tier > 0 && cur.decals > 0, signText: cur.tier > 0 ? cur.signText : '',
+          garage: garageOnly[0].visible, yard: cur.ri === 0 || cur.ri === 6, banner: banner.mesh.visible, sign: cur.ri > 0 && cur.decals > 0, signText: cur.ri > 0 ? cur.signText : '',
+          neighbours: (cur.neighbours || []).slice(), couchKind: cur.ri >= 4 ? couchKind : null,
           obstacles: self.obstacles.map(function (o) { return o.slice(); }) };
       };
       return self;

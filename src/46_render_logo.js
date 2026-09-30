@@ -487,10 +487,33 @@
   };
 
   /* ---- Merch: the logo printed on the thing -------------------------------------------------------------------------------- */
+  // v0.9 (Q6): the misprint typo per band. Content: shop.merch.misprint.byBand[bandId] = { typo, find, replace } (find: a
+  // string, matched case-insensitively; typo: the whole misprinted name). The band is the one whose name this is, else the
+  // loaded career's. Built-in fallbacks: HALE DAMAGE, FROST HEAVY, GRAVY KINGS, THE GRID ROAD RUMBLERS.
+  var MISPRINT = { hail_damage: ['hail', 'Hale'], frost_heave: ['heave', 'Heavy'], gravel_kings: ['gravel', 'Gravy'], grid_road_ramblers: ['ramblers', 'Rumblers'] };
+  LG.misprintFor = function (bandId) {
+    var sh = GG.content && GG.content.shop, M = sh && sh.merch, mp = M && M.misprint, i;
+    if (!mp && Array.isArray(M)) for (i = 0; i < M.length; i++) if (M[i] && M[i].id === 'misprint') mp = M[i];   // (the misprint item itself may carry byBand)
+    var by = mp && mp.byBand && mp.byBand[bandId];
+    if (by && (by.find || by.typo)) return { find: by.find || null, replace: by.replace || '', typo: by.typo || null };
+    var f = MISPRINT[bandId];
+    return f ? { find: f[0], replace: f[1], typo: null } : null;
+  };
+  LG.misprint = function (name, bandId) {
+    name = String(name || '');
+    var bs = GG.content && GG.content.bands, id = bandId, k;
+    if (!id && bs) for (k in bs) if (bs[k] && bs[k].name === name) id = k;
+    if (!id && GG.state) id = GG.state.bandId;
+    var m = LG.misprintFor(id || 'hail_damage');
+    if (!m) return name;
+    if (m.typo && !m.find) return m.typo;
+    var re = new RegExp(String(m.find).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return re.test(name) ? name.replace(re, function (w) { return w === w.toUpperCase() ? m.replace.toUpperCase() : m.replace; }) : (m.typo || name);
+  };
   var CLOTH = { shirt: 1, longsleeve: 1, tourshirt: 1, hoodie: 1, misprint: 1 };
   LG.merch = function (lg, name, id, size) {
     lg = sane(lg); size = Math.round(size || 96);
-    if (id === 'misprint') name = String(name || '').replace(/hail/i, 'Hale');   // the famous typo
+    if (id === 'misprint') name = LG.misprint(name);   // the famous typo (v0.9: every band its own, Q6)
     var key = 'merch|' + keyOf(lg, name, size, {}) + '|' + id;
     for (var i = 0; i < cache.length; i++) if (cache[i].k === key) { stat.hits++; return cache[i].c; }
     stat.draws++;

@@ -238,6 +238,46 @@
       return m;
     }
     function contentMember(band, id) { var l = band && band.members || []; for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+    var GENRE_RIVAL_LOOKS = {
+      punk: [{ skin: '#f0c9a4', hair: '#39e05a', hairStyle: 'spiky', shirt: '#e8408a', pants: '#6a8ab8', height: 1.0, build: 0.95, extras: [], top: 'tee' },
+        { skin: '#e2b48c', hair: '#1a1a1a', hairStyle: 'mohawk', shirt: '#1a1a1a', pants: '#2a2a30', height: 1.02, build: 1.0, extras: [], top: 'jacket' },
+        { skin: '#c99a72', hair: '#f2d24a', hairStyle: 'short', shirt: '#40c8e8', pants: '#6a8ab8', height: 1.06, build: 1.05, extras: [], top: 'tee' }],
+      rock: [{ skin: '#ecc7a0', hair: '#e8d8a0', hairStyle: 'long', shirt: '#d8d8e8', pants: '#1a1a22', height: 1.05, build: 0.95, extras: [], top: 'jacket' },
+        { skin: '#dcae86', hair: '#3b2a1e', hairStyle: 'mullet', shirt: '#1a1a22', pants: '#1a1a22', height: 1.0, build: 1.0, extras: ['sunglasses'], top: 'jacket' },
+        { skin: '#b98260', hair: '#1c1412', hairStyle: 'short', shirt: '#8a2a2a', pants: '#1a1a22', height: 1.02, build: 1.1, extras: [], top: 'tee' }],
+      country: [{ skin: '#ecc7a0', hair: '#7a5230', hairStyle: 'short', shirt: '#4a6a9a', pants: '#34507a', height: 1.05, build: 1.05, extras: ['hat'], top: 'flannel' },
+        { skin: '#e0b08a', hair: '#3a2416', hairStyle: 'cap', shirt: '#f2efe6', pants: '#34507a', height: 1.04, build: 1.1, extras: [], top: 'tee' }],
+      metal: null
+    };
+    // -> { id, wave, people: [{ id, look, paint, mascot, scarf, front }] }
+    function rivalCast(rv, st) {
+      var id = (rv && rv.id) || (st && st.rival && st.rival.id) || 'tundra_wraith', RV = GG.content && GG.content.rivalry, c = RV && RV.cast && RV.cast[id];
+      var def = GG.content && GG.content.rivals && GG.content.rivals[id], genre = (def && def.genre) || 'metal', out = [], i;
+      var WAVE = { tundra_wraith: 'polite', mall_rats: 'sponsor', chartbusters: 'scarf', buckle_and_boot: 'tailgate' };
+      if (c && Array.isArray(c.members) && c.members.length) {
+        var n = Math.max(1, Math.min(6, (c.carpet && c.carpet.count) || c.members.length));
+        for (i = 0; i < c.members.length && out.length < n; i++) {
+          var m = c.members[i];
+          out.push({ id: m.id, look: m.look || null, paint: m.corpsePaint === true, mascot: /mascot/i.test(String(m.role || '')) || !!m.mascot,
+            scarf: !!m.scarf || (m.scarf == null && id === 'chartbusters' && c.frontman === m.id), front: c.frontman ? c.frontman === m.id : i === 0 });
+        }
+        return { id: id, wave: (c.carpet && c.carpet.wave) || WAVE[id] || 'polite', people: out };
+      }
+      if (id === 'tundra_wraith' || !GENRE_RIVAL_LOOKS[genre]) {
+        for (i = 0; i < 4; i++) out.push({ id: 'wraith' + i, look: WRAITH_LOOKS[i], paint: true, front: i === 0 });
+        return { id: id, wave: 'polite', people: out };
+      }
+      var L = GENRE_RIVAL_LOOKS[genre];
+      for (i = 0; i < L.length; i++) out.push({ id: id + '_' + i, look: L[i], paint: false, front: i === 0, scarf: id === 'chartbusters' && i === 0 });
+      if (id === 'buckle_and_boot') out.push({ id: id + '_mascot', look: { skin: '#d8b08a', hair: '#3a2416', hairStyle: 'short', shirt: '#b8262a', pants: '#2a2a30', height: 1.08, build: 1.1, extras: [] }, mascot: true });
+      return { id: id, wave: WAVE[id] || 'polite', people: out };
+    }
+    function costume(ch, kind) {
+      if (!R.costume || !R.costume[kind]) return;
+      var m = new THREE.Mesh(R.costume[kind](ctx), ctx.mats.vc);
+      ch.bones[B_SPINE].add(m); m.position.set(0, kind === 'truck' ? 0.25 : 0.5, 0);
+      P.geos.push(m.geometry);
+    }
     function person(look, opts, kind, i) {
       var ch = R.buildCharacter(look, opts);
       if (!ch) return null;
@@ -256,7 +296,7 @@
       var o = pending.o || {}, st = GG.state || {}, band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
       var flags = o.flags || st.flags || {}, cv = flags.cape, outfit = o.outfit || null;
       var cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : outfit === 'cape' ? 'velvet' : null;
-      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null };
+      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null, painted: 0, wave: 'polite', rivalId: null };
       var mem = (o.members || st.members || (band && band.members) || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }).slice(0, 5);
       var pl = o.player || st.player || {}, preset = GG.content && GG.content.presets && pl.presetId ? GG.content.presets.filter(function (x) { return x.id === pl.presetId; })[0] : null;
       var stageLook = function (m, cm) { return GG.creator ? GG.creator.stageLookFor(m, cm) : null; };   // v0.8: stage looks on the carpet
@@ -264,8 +304,9 @@
       if (pLook && pLook.outfit && outfit && outfit !== 'cape') { pLook = copyLook(pLook); delete pLook.outfit; }   // the band's outfit card wins
       var roster = [{ id: 'player', look: pLook }].concat(mem);
       var capeId = null;
-      for (var i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';
-      if (!capeId) for (i = 0; i < roster.length; i++) if (/vocal/i.test(roster[i].role || '')) { capeId = roster[i].id; break; }
+      for (var i = 0; i < roster.length; i++) { var cmc = contentMember(band, roster[i].id); if (roster[i].cape || (cmc && cmc.cape)) capeId = roster[i].id; }   // v0.9: member.cape
+      if (!capeId) for (i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';
+      if (!capeId && outfit === 'cape') for (i = 0; i < roster.length; i++) if (/vocal/i.test(roster[i].role || '')) { capeId = roster[i].id; break; }   // (the cape outfit card: the singer wears it)
       var n = roster.length, spread = n > 5 ? 0.68 : 0.76;
       for (i = 0; i < n; i++) {
         var m = roster[i], cm = contentMember(band, m.id), look = outfitLook((m.id !== 'player' && stageLook(m, cm)) || m.look || (cm && cm.look) || null, outfit, i);
@@ -276,12 +317,21 @@
         rec.x0 = -6.2 - i * 0.55; rec.delay = i * 0.14;
         P.band.push(rec);
       }
-      for (i = 0; i < 4; i++) {
-        var w = person(copyLook(WRAITH_LOOKS[i]), { id: 'wraith' + i, scale: SCALE }, 'rival', i);
+      // v0.9: the rival's cast from content (content.rivalry.cast[rival.id]): its members (the carpet count caps them), corpse
+      // paint only where the cast says so (Tundra Wraith), the wave style (cast.carpet.wave: polite / sponsor / scarf /
+      // tailgate), Rex's scarf, Buckle & Boot's truck mascot. No cast: Tundra Wraith's four built-in looks, else the genre's.
+      var R0 = rivalCast(o.rival, st), nR = R0.people.length, gapR = nR > 4 ? 0.52 : 0.62;
+      P.wave = R0.wave; P.rivalId = R0.id;
+      for (i = 0; i < nR; i++) {
+        var rp = R0.people[i];
+        var w = person(copyLook(rp.look), { id: rp.id || 'rival' + i, scale: SCALE }, 'rival', i);
         if (!w) continue;
-        corpsePaint(w.ch, i);
-        w.cx = 1.45 + i * 0.62; w.cz = -0.5 + (i % 2) * 0.22;
-        w.px = STAGE_X + 1.25 + i * 0.52; w.pz = 0.3 - (i % 2) * 0.35;
+        if (rp.paint) { corpsePaint(w.ch, i); P.painted++; }
+        if (rp.mascot) costume(w.ch, 'truck');
+        if (rp.scarf) costume(w.ch, 'scarf');
+        w.front = !!rp.front; w.mascot = !!rp.mascot;
+        w.cx = 1.45 + i * gapR; w.cz = -0.5 + (i % 2) * 0.22;
+        w.px = STAGE_X + 1.25 + i * Math.min(0.52, 2.1 / Math.max(1, nR)); w.pz = 0.3 - (i % 2) * 0.35;
         w.x0 = w.cx; w.arrived = true;
         P.rival.push(w);
       }
@@ -365,9 +415,18 @@
           else if (k === 2) { aLz = 0.6; fL = -1.3; aRz = -0.6; fR = 1.3; }
           if (r.cape && T.mode === 'carpet') { r.ch.root.rotation.y = r.yaw + Math.sin(t * 1.6) * 0.9; aLz = 1.3; aRz = -1.3; }
         }
-      } else {                                                             // Tundra Wraith: polite
+      } else {                                                             // the rival, by cast.carpet.wave
+        var wv = P.wave, front = r.front != null ? r.front : r.i === 0;
         if (pod && lost) { aLz = 1.6 + 0.2 * s; aRz = -1.6 - 0.2 * s; }
-        else if (r.i === 0) { aRz = -2.3; fR = 0.5 * Math.sin(t * 7); }     // the frontman waves, buddy
+        else if (r.mascot) { aLz = 2.2 + 0.3 * Math.sin(t * 6 + r.ph); aRz = -2.2 - 0.3 * Math.sin(t * 6 + r.ph + 1); hop = Math.max(0, Math.sin(t * 5)) * 0.06; }   // the truck bounces
+        else if (wv === 'sponsor') {                                       // Mall Rats: point at the sponsor logo, thumbs up for the cameras
+          if (front) { aRz = -2.0; fR = 0.3; aLx = -1.2; fL = -1.2; } else { aLx = -1.3; aLz = -0.3; fL = -1.2; aRz = -1.6; }
+        } else if (wv === 'scarf') {                                       // Chartbusters: Rex flicks the scarf, the rest look bored and famous
+          if (front) { aRz = -2.4 + 0.4 * Math.sin(t * 3); fR = 0.6 * Math.sin(t * 3); aLz = 0.5; fL = -1.4; }
+          else { aLx = -0.25; aRx = -0.3; aLz = 0.12; aRz = -0.12; fL = -1.5; fR = -1.62; }
+        } else if (wv === 'tailgate') {                                    // Buckle & Boot: cans up, cheers
+          aRx = -1.9 - 0.2 * Math.sin(t * 2 + r.ph); fR = -0.6; aLz = 0.3; hop = Math.max(0, Math.sin(t * 2.5 + r.ph)) * 0.03;
+        } else if (front) { aRz = -2.3; fR = 0.5 * Math.sin(t * 7); }       // Tundra Wraith: the frontman waves, buddy
         else { aLx = -0.6; aRx = -0.6; aLz = -0.4; aRz = 0.4; fL = -1.1; fR = -1.1; }   // hands folded, very polite
         spine = 0.04 * s;
       }
@@ -464,6 +523,7 @@
       info: function () {
         if (!K) return { built: false };
         return { built: true, mode: T.mode, band: P ? P.band.map(function (r) { return r.id; }) : [], rival: P ? P.rival.length : 0, host: !!(P && P.host),
+          rivalId: P ? P.rivalId : null, painted: P ? P.painted : 0, wave: P ? P.wave : null, mascot: !!(P && P.rival.some(function (r) { return r.mascot; })),   // v0.9
           cape: !!(P && P.band.some(function (r) { return r.cape; })), walking: P ? P.band.filter(function (r) { return !r.arrived; }).length : 0,
           envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length };
       }

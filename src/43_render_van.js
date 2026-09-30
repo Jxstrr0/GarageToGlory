@@ -119,12 +119,21 @@
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
       var members = o.members || st.members || (band && band.members) || [], pl = st.player || {};
       var preset = (GG.content.presets || []).filter(function (x) { return x.id === pl.presetId; })[0];
+      // v0.9: the band's own driver (GG.world.driver: Kenji / Moth / T-Bone / Earl while active, else you) and that driver's
+      // dashboard item; when you drive, the absent driver's item stays on the dash (the tiny cactus, the laundry, ...).
       var kenjiOn = members.some(function (m) { return m && m.id === 'kenji' && (!m.status || m.status === 'active'); });
-      var driver = o.driver || (kenjiOn ? 'kenji' : members.length ? 'you' : 'kenji');
+      var wd = null;
+      try { wd = st && st.bandId && GG.world && GG.world.driver ? GG.world.driver(st) : null; } catch (e) { wd = null; }
+      var driver = o.driver || (wd ? wd.id : kenjiOn ? 'kenji' : members.length ? 'you' : 'kenji');
+      var DR = GG.content.drivers || {}, designated = (wd && wd.designated) || (DR[driver] && DR[driver].band ? driver : null) || (kenjiOn ? 'kenji' : null);
+      var dashItem = driver !== 'you' && DR[driver] ? DR[driver].dashboard : designated && DR[designated] ? DR[designated].dashboard : driver === 'kenji' || driver === 'you' ? 'cactus' : null;
+      if (dashItem === 'none') dashItem = null;
       return {
+        bandId: (st && st.bandId) || (band && band.id) || 'hail_damage', vanName: (st.van && st.van.name) || (GG.shop && GG.shop.vanName ? safeVanName(st) : null),
         season: season, night: !!o.night, from: o.from || st.city || 'Saskatoon', to: o.to || (gig && gig.city) || 'Regina',
         km: +o.km > 0 ? +o.km : 150, members: members, band: band, flags: st.flags || {},
-        weather: WX[o.weather] ? o.weather : null, driver: driver, dashboard: o.dashboard !== undefined ? o.dashboard : driver === 'kenji' || driver === 'you' ? 'cactus' : null,
+        weather: WX[o.weather] ? o.weather : null, driver: driver,
+        dashboard: o.dashboard !== undefined && !(o.dashboard === 'cactus' && driver === 'you' && designated && designated !== 'kenji') ? o.dashboard : dashItem,
         playerLook: pl.look || (preset && preset.look) || null,
         region: REGION[o.region] ? o.region : null, look: o.look || null,   // v0.7: abroad
         // v0.8 (SHOPUI): the band's own vehicle tier at home (a rental abroad), and its venue stickers (banned ones crossed out)
@@ -132,6 +141,7 @@
         stickers: (o.stickers || (st.van && st.van.stickers) || []).slice(-12).map(function (x) { return { name: String(x.name || x.venueId || ''), banned: !!(x.banned || (st.banned && st.banned.indexOf(x.venueId) >= 0)) }; })
       };
     }
+    function safeVanName(st) { try { return GG.shop.vanName(st.bandId, 0); } catch (e) { return null; } }
     function contentMember(band, id) {
       var list = band && band.members;
       if (!list) return null;
@@ -183,6 +193,7 @@
       buildWeather(D);
       buildInterior(D);
       buildPeople(D);
+      buildMirror(D);
       frame();
       return K;
     }
@@ -534,6 +545,11 @@
       var liner = LINERS[D.look] || 0xe6dac0, trim = 0x55565e, dash = 0x2e2f35, fabric = D.look === 'bus' ? 0x8a2a2a : 0x4f5a72, paint = D.look ? 0xe8e8e4 : 0x7a2a2a, rust = D.look ? 0xc8c8c0 : 0x9a5a2a;   // v0.7: rentals
       var VT = D.tier ? VTIER[D.tier] : null, RY = VT ? VT.roof : 1.94, dy = RY - 1.94;   // v0.8: the band's vehicle tier (roof height, palette)
       if (VT) { liner = VT.liner; trim = VT.trim; dash = VT.dash; fabric = VT.fabric; paint = VT.paint; rust = VT.rust; }
+      // v0.9: the tier-0 vehicle is each band's own (content vanNames: the Moose Hearse / The Pothole / The Mullet Wagon /
+      // Grandpa's Suburban): its paint, its hood ornament, its bobblehead, its clutter (tier0Ornaments below).
+      var T0 = !VT && !D.look ? (VAN0[D.bandId] || VAN0.hail_damage) : null;
+      if (T0) { paint = T0.paint; rust = T0.rust; }
+      K.ornaments = T0 ? T0.list.slice() : null;
       // Roof, pillars, doors
       b.box(2.0, 0.06, VT ? 4.6 : 3.4, 0, RY, VT ? 1.15 : 0.55, liner); b.box(1.9, 0.02, 0.1, 0, 1.905 + dy, -0.3, sh(liner, 0.85)); b.box(1.9, 0.02, 0.1, 0, 1.905 + dy, 0.3, sh(liner, 0.85));
       gl.box(0.22, 0.03, 0.1, 0, 1.905 + dy, 0.15, night ? 0x3a3020 : 0xf6ead0);
@@ -582,7 +598,7 @@
       gl.box(0.16, 0.035, 0.012, 0.02, 0.72, WS.z0 + 0.494, night ? 0x4ac8ff : 0x6a9a7a);
       for (i = 0; i < 2; i++) gl.cyl(0.045, 0.045, 0.01, 10, -0.5 + i * 0.16, WS.y0 - 0.05, WS.z0 + 0.47, night ? 0x7ad0ff : 0xd8dcd0, Math.PI / 2, 0, 0);
       b.box(0.4, 0.2, 0.05, 0.5, 0.72, WS.z0 + 0.46, sh(dash, 1.2));                             // glovebox
-      b.box(0.14, 0.08, 0.02, 0.5, 0.74, WS.z0 + 0.49, 0xe8d8a8, 0, 0, 0.2);                     // a "Moose Hearse" sticker
+      b.box(0.14, 0.08, 0.02, 0.5, 0.74, WS.z0 + 0.49, T0 ? T0.sticker : 0xe8d8a8, 0, 0, 0.2);   // a "Moose Hearse" sticker (v0.9: the band's van's)
       b.box(0.3, 0.05, 0.2, -0.7, WS.y0 + 0.02, WS.z0 + 0.15, 0xd8c050, 0, 0.3, 0);              // chip bag on the dash
       // Moose bobblehead: base + body (head bobs separately)
       var bx = 0.3, bz = WS.z0 + 0.18, by = WS.y0 + 0.02;
@@ -643,28 +659,46 @@
       b.box(1.95, 0.08, 1.05, 0, 0, 0, paint);
       b.box(0.3, 0.012, 0.2, -0.5, 0.045, 0.2, rust); b.box(0.18, 0.012, 0.3, 0.6, 0.045, -0.2, rust); b.box(0.12, 0.012, 0.1, 0.1, 0.045, -0.35, rust);
       b.box(1.9, 0.02, 0.02, 0, 0.05, 0.1, sh(paint, 0.8));
-      for (i = -1; i <= 1; i += 2) { b.box(0.05, 0.22, 0.05, i * 0.1, 0.13, -0.45, 0xd8c8a0, 0, 0, i * 0.4); b.box(0.2, 0.04, 0.05, i * 0.2, 0.25, -0.45, 0xd8c8a0, 0, 0, i * 0.3); }
+      if (!T0 || T0.hood === 'antlers') for (i = -1; i <= 1; i += 2) { b.box(0.05, 0.22, 0.05, i * 0.1, 0.13, -0.45, 0xd8c8a0, 0, 0, i * 0.4); b.box(0.2, 0.04, 0.05, i * 0.2, 0.25, -0.45, 0xd8c8a0, 0, 0, i * 0.3); }
+      else if (T0.hood === 'tape') { b.box(0.5, 0.012, 0.06, -0.2, 0.05, 0.0, 0xb9bdc4, 0, 0.6, 0); b.box(0.5, 0.012, 0.06, -0.2, 0.05, 0.0, 0xb9bdc4, 0, -0.6, 0); }   // duct-tape X over a dent
+      else if (T0.hood === 'scoop') { b.box(0.5, 0.08, 0.4, 0, 0.07, -0.1, sh(paint, 0.8)); b.box(0.44, 0.04, 0.02, 0, 0.09, -0.3, 0x141414); }                        // a hood scoop (it's 1985)
+      else if (T0.hood === 'guard') { for (i = -1; i <= 1; i += 2) b.box(0.05, 0.3, 0.05, i * 0.6, 0.12, -0.52, 0x2a2a2e); b.box(1.3, 0.05, 0.05, 0, 0.27, -0.52, 0x2a2a2e); b.box(0.012, 0.9, 0.012, 0.85, 0.45, -0.3, 0x1a1a1a, 0, 0, -0.1); }   // grille guard + the CB whip
       b.pop();
+      if (T0) tier0Ornaments(b, gl, T0, fabric);
       if (VT) buildTier(b, gl, D, VT, liner, trim, fabric);                                     // v0.8: 15-passenger / sprinter / tour bus
       if (!D.look) buildStickers(b, D);                                                        // v0.8: venue stickers on the hood (the bus: over the doorway)
       // Rear-view mirror: Kenji's sunglasses, the only part of his face anyone ever sees.
       b.box(0.03, 0.08, 0.03, 0.02, 1.8, WS.z1 + 0.06, 0x1e1e22);
       b.box(0.3, 0.09, 0.04, 0.02, 1.73, WS.z1 + 0.08, 0x1e1e22);
       gl.box(0.27, 0.07, 0.005, 0.02, 1.73, WS.z1 + 0.103, 0xa8b8c8);
-      gl.box(0.12, 0.05, 0.004, 0.0, 1.73, WS.z1 + 0.107, 0xd8b08a);
-      gl.box(0.13, 0.022, 0.004, 0.0, 1.738, WS.z1 + 0.109, 0x0c0c0e);
       mesh(b.build(), im); mesh(gl.build(), ctx.mats.unlit);
       if (!D.look) logoDecal(D, dim);                                                        // v0.8.1 LOGO: the band logo windshield sticker
       // Bobble head (spring), air freshener (pendulum), steering wheel (steers).
-      var hb = new ctx.Builder({ jitter: 0.04, seed: 31 });
-      hb.box(0.075, 0.07, 0.1, 0, 0.03, 0.03, 0x6a4424); hb.box(0.05, 0.045, 0.05, 0, 0.02, 0.1, 0x4a2c16);
-      for (i = -1; i <= 1; i += 2) { hb.box(0.07, 0.012, 0.035, i * 0.055, 0.075, 0.02, 0xd8c8a0, 0, 0, i * 0.3); hb.box(0.012, 0.03, 0.012, i * 0.07, 0.09, 0.02, 0xd8c8a0); }
-      hb.box(0.012, 0.012, 0.004, 0.018, 0.045, 0.081, 0x111111); hb.box(0.012, 0.012, 0.004, -0.018, 0.045, 0.081, 0x111111);
+      var hb = new ctx.Builder({ jitter: 0.04, seed: 31 }), bob = T0 ? T0.bobble : 'moose';
+      if (bob === 'skull') {                                                                         // The Pothole: a punk skull, pink mohawk
+        hb.box(0.08, 0.075, 0.08, 0, 0.03, 0.03, 0xf2efe6); hb.box(0.02, 0.05, 0.08, 0, 0.09, 0.03, 0xff4fa0);
+        hb.box(0.02, 0.02, 0.004, 0.018, 0.04, 0.071, 0x111111); hb.box(0.02, 0.02, 0.004, -0.018, 0.04, 0.071, 0x111111);
+      } else if (bob === 'rocker') {                                                                 // The Mullet Wagon: a little rocker, big blond hair
+        hb.box(0.06, 0.06, 0.06, 0, 0.03, 0.03, 0xecc7a0); hb.box(0.075, 0.035, 0.07, 0, 0.07, 0.02, 0xd9b25a); hb.box(0.07, 0.07, 0.02, 0, 0.02, -0.01, 0xd9b25a);
+        hb.box(0.065, 0.012, 0.004, 0, 0.045, 0.061, 0x141414);
+      } else if (bob === 'cow') {                                                                    // Grandpa's Suburban: a Holstein
+        hb.box(0.07, 0.065, 0.09, 0, 0.03, 0.03, 0xf2efe6); hb.box(0.03, 0.03, 0.004, 0.02, 0.04, 0.076, 0x141414); hb.box(0.05, 0.03, 0.03, 0, 0.01, 0.09, 0xe8a8a8);
+        for (i = -1; i <= 1; i += 2) hb.box(0.02, 0.02, 0.02, i * 0.045, 0.075, 0.02, 0xd8c8a0);
+      } else {
+        hb.box(0.075, 0.07, 0.1, 0, 0.03, 0.03, 0x6a4424); hb.box(0.05, 0.045, 0.05, 0, 0.02, 0.1, 0x4a2c16);
+        for (i = -1; i <= 1; i += 2) { hb.box(0.07, 0.012, 0.035, i * 0.055, 0.075, 0.02, 0xd8c8a0, 0, 0, i * 0.3); hb.box(0.012, 0.03, 0.012, i * 0.07, 0.09, 0.02, 0xd8c8a0); }
+        hb.box(0.012, 0.012, 0.004, 0.018, 0.045, 0.081, 0x111111); hb.box(0.012, 0.012, 0.004, -0.018, 0.045, 0.081, 0x111111);
+      }
       K.bobble = mesh(hb.build(), im); K.bobble.position.set(bx, by + 0.12, bz + 0.03);
       var fb = new ctx.Builder({ jitter: 0 });
-      fb.box(0.004, 0.07, 0.004, -0.02, -0.035, 0, 0xeeeeee, 0, 0, 0.25); fb.box(0.004, 0.1, 0.004, 0.02, -0.05, 0, 0xeeeeee, 0, 0, -0.2);   // fuzzy dice
-      fb.box(0.05, 0.05, 0.05, -0.04, -0.09, 0, 0xf2f0ea, 0.3, 0.4, 0); fb.box(0.05, 0.05, 0.05, 0.045, -0.12, 0.005, 0xe86a9a, 0.5, -0.3, 0.2);
-      fb.box(0.012, 0.012, 0.004, -0.04, -0.09, 0.027, 0x151515, 0.3, 0.4, 0); fb.box(0.012, 0.012, 0.004, 0.045, -0.12, 0.032, 0x151515, 0.5, -0.3, 0.2);
+      if (T0 && T0.fresh === 'tree') {                                                                // a pine-tree air freshener (long dead)
+        fb.box(0.004, 0.06, 0.004, 0, -0.03, 0, 0xeeeeee); fb.tri([0, -0.06, 0], [-0.04, -0.16, 0], [0.04, -0.16, 0], 0x2f8a3a); fb.tri([0, -0.06, 0], [0.04, -0.16, 0], [-0.04, -0.16, 0], 0x2f8a3a);
+        fb.box(0.012, 0.02, 0.004, 0, -0.17, 0, 0x6a4424);
+      } else {
+        fb.box(0.004, 0.07, 0.004, -0.02, -0.035, 0, 0xeeeeee, 0, 0, 0.25); fb.box(0.004, 0.1, 0.004, 0.02, -0.05, 0, 0xeeeeee, 0, 0, -0.2);   // fuzzy dice
+        fb.box(0.05, 0.05, 0.05, -0.04, -0.09, 0, 0xf2f0ea, 0.3, 0.4, 0); fb.box(0.05, 0.05, 0.05, 0.045, -0.12, 0.005, 0xe86a9a, 0.5, -0.3, 0.2);
+        fb.box(0.012, 0.012, 0.004, -0.04, -0.09, 0.027, 0x151515, 0.3, 0.4, 0); fb.box(0.012, 0.012, 0.004, 0.045, -0.12, 0.032, 0x151515, 0.5, -0.3, 0.2);
+      }
       K.fresh = mesh(fb.build(), im); K.fresh.position.set(0.02, 1.69, WS.z1 + 0.08);
       var wb = new ctx.Builder({ jitter: 0 });
       for (i = 0; i < 14; i++) { var a = i / 14 * Math.PI * 2; wb.box(0.1, 0.03, 0.035, Math.cos(a) * 0.19, Math.sin(a) * 0.19, 0, 0x151518, 0, 0, a + Math.PI / 2); }
@@ -868,7 +902,61 @@
       return out;
     }
 
+    // v0.9: the tier-0 vehicles, per band. paint/rust = the hood; sticker = the glovebox sticker's colour; hood = the hood
+    // ornament; bobble = the dash bobblehead; fresh = the mirror's air freshener; list = what's in there (info().ornaments).
+    var VAN0 = {
+      hail_damage: { paint: 0x7a2a2a, rust: 0x9a5a2a, sticker: 0xe8d8a8, hood: 'antlers', bobble: 'moose', fresh: 'dice', list: ['moose bobblehead', 'plastic antlers', 'Moose Hearse sticker'] },
+      frost_heave: { paint: 0x3a6a6a, rust: 0x8a6a4a, sticker: 0xff4fa0, hood: 'tape', bobble: 'skull', fresh: 'tree', list: ['curtains', 'laundry line', 'sleeping bag', 'skull bobblehead'] },
+      gravel_kings: { paint: 0x6a1e22, rust: 0x8a5a3a, sticker: 0x40c8e8, hood: 'scoop', bobble: 'rocker', fresh: 'dice', list: ['tape deck', 'fuzzy dice', 'wood-grain dash', 'rocker bobblehead'] },
+      grid_road_ramblers: { paint: 0x8a6a4a, rust: 0x6a4a2a, sticker: 0xd9a520, hood: 'guard', bobble: 'cow', fresh: 'tree', list: ['bench seat', 'CB radio', 'hat on the dash', 'cow bobblehead'] }
+    };
+    function tier0Ornaments(b, gl, T0, fabric) {
+      var i, k, night = K.D.night;
+      if (T0.bobble === 'skull') {                                                             // The Pothole: Moth's apartment
+        for (k = -1; k <= 1; k += 2) {                                                          // curtains on the side windows (tie-dye, half drawn)
+          b.box(0.02, 0.62, 0.42, k * 0.86, 1.5, 0.55, 0x8a4aa8); b.box(0.022, 0.62, 0.12, k * 0.86, 1.5, 0.3, 0xe8a030); b.box(0.03, 0.03, 0.7, k * 0.85, 1.83, 0.5, 0x2a2a2e);
+        }
+        b.box(1.7, 0.008, 0.008, 0, 1.86, -0.62, 0xd8d4cc);                                      // the laundry line across the cab, up by the visors
+        [[-0.7, 0x6a5a8a, 0.1, 0.12], [-0.56, 0xd84a4a, 0.04, 0.09], [0.62, 0xf2efe6, 0.1, 0.1], [0.74, 0x3a5a3a, 0.04, 0.09]].forEach(function (q) {
+          b.box(q[2], q[3], 0.01, q[0], 1.855 - q[3] / 2, -0.62, q[1]); b.box(0.01, 0.015, 0.015, q[0], 1.86, -0.62, 0xd8b27a);
+        });
+        b.cyl(0.14, 0.14, 0.9, 10, 0, SEAT_Y + 0.12, 1.02, 0x3a5a8a, 0, 0, Math.PI / 2);        // the sleeping bag, rolled on the bench
+        b.box(0.24, 0.16, 0.16, -0.62, SEAT_Y + 0.05, 1.35, 0x5b4f6e);                           // a pillow
+      } else if (T0.bobble === 'rocker') {                                                       // The Mullet Wagon: 1985 forever
+        b.box(1.4, 0.04, 0.02, 0, WS.y0 - 0.12, WS.z0 + 0.465, 0x8a5a2a); b.box(1.4, 0.012, 0.022, 0, WS.y0 - 0.1, WS.z0 + 0.466, 0x6a4020);   // wood-grain dash strip
+        b.box(0.22, 0.07, 0.04, 0.02, 0.56, WS.z0 + 0.5, 0x1a1a1e); gl.box(0.08, 0.03, 0.005, 0.0, 0.57, WS.z0 + 0.522, night ? 0xff8a40 : 0xd8a040);   // the tape deck
+        b.box(0.1, 0.012, 0.064, 0.08, 0.6, WS.z0 + 0.49, 0xd8b030);                             // a cassette half in
+        for (i = 0; i < 3; i++) b.box(0.1, 0.016, 0.065, -0.7 + i * 0.03, WS.y0 + 0.07 + i * 0.017, WS.z0 + 0.2, [0xe8408a, 0x40c8e8, 0x1e1e22][i], 0, i * 0.3, 0);
+      } else if (T0.bobble === 'cow') {                                                          // Grandpa's Suburban
+        b.box(0.34, 0.12, 0.5, 0, SEAT_Y - 0.06, -0.45, fabric);                                   // the front bench (the middle filled in)
+        b.box(0.34, 0.6, 0.12, 0, 0.77, -0.2, fabric, 0.12, 0, 0);
+        b.box(0.2, 0.06, 0.14, 0.3, 0.58, WS.z0 + 0.52, 0x1e1e22); gl.box(0.05, 0.02, 0.005, 0.26, 0.59, WS.z0 + 0.59, 0xff3030);   // the CB radio
+        b.box(0.05, 0.08, 0.03, 0.42, 0.52, WS.z0 + 0.6, 0x2a2a2e); for (i = 0; i < 5; i++) b.cyl(0.012, 0.012, 0.012, 6, 0.4 - i * 0.02, 0.45 - i * 0.02, WS.z0 + 0.6, 0x1a1a1a);
+        b.push(0.55, WS.y0 + 0.05, WS.z0 + 0.22, 0, 0.3, 0);                                       // a spare cowboy hat on the dash
+        b.box(0.34, 0.02, 0.28, 0, 0, 0, 0x8a5a2a); b.box(0.18, 0.1, 0.16, 0, 0.06, 0, 0x8a5a2a); b.box(0.19, 0.025, 0.17, 0, 0.025, 0, 0x2a1a10);
+        b.pop();
+      }
+    }
+    // v0.9: the rear-view mirror shows the actual driver: their skin, and their eyes (Kenji's shades, Earl's glasses, bare eyes).
+    function hexNum(c, d) { return typeof c === 'number' ? c : typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? parseInt(c.slice(1), 16) : d; }
+    function buildMirror(D) {
+      var L = K.driverLook || {}, mb = new ctx.Builder({ jitter: 0 }), z = WS.z1 + 0.107, ex = L.extras || [];
+      var shadesOn = ex.indexOf('sunglasses') >= 0, glasses = ex.indexOf('glasses') >= 0;
+      mb.box(0.12, 0.05, 0.004, 0.0, 1.73, z, hexNum(L.skin, 0xd8b08a));
+      if (shadesOn) mb.box(0.13, 0.022, 0.004, 0.0, 1.738, z + 0.002, 0x0c0c0e);
+      else {
+        for (var s = -1; s <= 1; s += 2) {
+          mb.box(0.016, 0.014, 0.004, s * 0.03, 1.738, z + 0.002, 0x16120f);
+          if (glasses) { mb.box(0.04, 0.004, 0.004, s * 0.03, 1.749, z + 0.003, 0x2a2a2a); mb.box(0.04, 0.004, 0.004, s * 0.03, 1.727, z + 0.003, 0x2a2a2a); mb.box(0.004, 0.024, 0.004, s * 0.05, 1.738, z + 0.003, 0x2a2a2a); }
+        }
+        mb.box(0.12, 0.008, 0.004, 0, 1.752, z + 0.001, hexNum(L.hair, 0x3a2416));                                   // the brows
+      }
+      mesh(mb.build(), ctx.mats.unlit);
+      K.mirror = shadesOn ? 'sunglasses' : glasses ? 'glasses' : 'eyes';
+    }
+
     // ---- The band in the van -------------------------------------------------------------------------------------
+    var HELD_VAN = { jaxon: 'sandwich', duke: 'sandwich', tamara: 'floss', earl: 'coffee' };
     function buildPeople(D) {
       var list = [], i, m;
       for (i = 0; i < D.members.length; i++) { m = D.members[i]; if (m && m.id && (!m.status || m.status === 'active')) list.push(m); }
@@ -895,16 +983,27 @@
         { x: 0.6, z: 0.9, role: 'middleR', yaw: -Math.PI / 2 }, { x: -0.6, z: 1.3, role: 'back', yaw: Math.PI / 2 }];
       var cv = D.flags && D.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var riders = [driver].concat(driver === you ? rest.slice(0, 4) : [you].concat(rest.slice(0, 3)));
+      // v0.9: the cape is member.cape's (content), never "whoever rides shotgun"; the driver keeps their own face (shades only
+      // when the driver def says so: Kenji); held things from the member (T-Bone's floss, Earl's double-double, Jaxon's lunch).
+      var capeId = null;
+      for (i = 0; i < riders.length; i++) { var cmx = contentMember(D.band, riders[i].id); if (riders[i].cape || (cmx && cmx.cape)) capeId = riders[i].id; }
+      if (!capeId) for (i = 0; i < riders.length; i++) if (riders[i].id === 'marcel') capeId = 'marcel';
+      var DR = GG.content.drivers || {}, ddef = DR[D.driver] || null;
+      var shades = ddef && ddef.shades != null ? !!ddef.shades : D.driver === 'kenji';
+      K.driverLook = null;
       var pm = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: new THREE.Color(D.night ? 0.45 : 0.62, D.night ? 0.45 : 0.62, D.night ? 0.5 : 0.64) }));
       for (i = 0; i < riders.length; i++) {
         m = riders[i]; var seat = seats[i], cm = contentMember(D.band, m.id), look = m.look || (cm && cm.look) || null;
-        if (seat.role === 'driver' && m !== you) {                                    // sunglasses, whatever the look says
+        if (seat.role === 'driver' && m !== you) {                                    // Kenji: sunglasses, whatever the look says
           look = JSON.parse(JSON.stringify(look || { skin: '#d8b28a', hair: '#0c0c0e', hairStyle: 'short', shirt: '#101014', pants: '#141418', height: 1.08, build: 1.05, extras: [] }));
-          look.extras = (look.extras || []).filter(function (e) { return e !== 'glasses'; });
-          if (look.extras.indexOf('sunglasses') < 0) look.extras.push('sunglasses');
+          if (shades) {
+            look.extras = (look.extras || []).filter(function (e) { return e !== 'glasses'; });
+            if (look.extras.indexOf('sunglasses') < 0) look.extras.push('sunglasses');
+          }
         }
-        var held = seat.role === 'middleR' ? (m.id === 'jaxon' ? 'sandwich' : 'phone') : seat.role === 'middleL' ? 'phone' : null;
-        var ch = R.buildCharacter(look, { id: m.id, held: held, cape: m.id === 'marcel' || (seat.role === 'shotgun' && !riders.some(function (r) { return r.id === 'marcel'; })) ? cape : null, scale: PEOPLE_SCALE });
+        if (seat.role === 'driver') K.driverLook = look || you.look;
+        var held = seat.role === 'middleR' || seat.role === 'middleL' ? (HELD_VAN[m.id] || 'phone') : seat.role === 'back' ? (HELD_VAN[m.id] || null) : null;
+        var ch = R.buildCharacter(look, { id: m.id, held: held, cape: m.id === capeId ? cape : null, scale: PEOPLE_SCALE });
         if (!ch) continue;
         ch.mesh.material = pm;
         K.chars.push(ch);
@@ -1106,11 +1205,15 @@
         bn[B_LEG_L].rotation.x = -a; bn[B_SHIN_L].rotation.x = a; bn[B_LEG_R].rotation.x = -a; bn[B_SHIN_R].rotation.x = a;
         var tt = t + r.ph, talking = r.talk > 0 ? 1 : 0;
         if (r.talk > 0) r.talk -= dt;
-        if (r.role === 'driver') {                                         // hands at ten and two, eyes on the road, nothing said
+        if (r.role === 'driver') {                                         // hands at ten and two, eyes on the road
           if (r.wheelL) { rot(bn[B_ARM_L], r.wheelL[0], 0, r.wheelL[1]); rot(bn[B_FORE_L], r.wheelL[2], 0, r.wheelL[3]); rot(bn[B_ARM_R], r.wheelR[0], 0, r.wheelR[1]); rot(bn[B_FORE_R], r.wheelR[2], 0, r.wheelR[3]); }
           else { rot(bn[B_ARM_L], -1.0, 0, -0.2); rot(bn[B_FORE_L], -0.6, 0, 0); rot(bn[B_ARM_R], -1.0, 0, 0.2); rot(bn[B_FORE_R], -0.6, 0, 0); }
           var nod = (tt % 23) < 0.9 ? 0.18 * bump((tt % 23) / 0.9) : 0;
           bn[B_HEAD].rotation.x = 0.02 + nod; bn[B_SPINE].rotation.x = -0.05;
+          if (talking) {                                                   // v0.9: a talking driver (Earl's road stories): the right hand off the wheel, a glance over
+            rot(bn[B_ARM_R], -0.9 - 0.25 * Math.sin(tt * 6), 0, -0.35); rot(bn[B_FORE_R], -1.3, 0, 0.3 * Math.sin(tt * 4));
+            bn[B_HEAD].rotation.y = 0.35 + 0.08 * Math.sin(tt * 3); bn[B_HEAD].rotation.x = 0.05 * Math.sin(tt * 9);
+          }
         } else if (r.role === 'shotgun') {                                   // looks out the window; waves his hands when he talks
           rot(bn[B_ARM_L], -0.5, 0, 0.05); rot(bn[B_FORE_L], -0.9, 0, 0); rot(bn[B_ARM_R], -0.35, 0, -0.35); rot(bn[B_FORE_R], -1.2, 0, 0.3);
           bn[B_HEAD].rotation.y = talking ? 0.5 + 0.1 * Math.sin(tt * 6) : -0.55 + 0.15 * Math.sin(tt * 0.3);
@@ -1132,6 +1235,12 @@
       }
     }
 
+    function silentDriver(id) {
+      var cm = contentMember(K.D.band, id), m = null;
+      for (var i = 0; i < K.D.members.length; i++) if (K.D.members[i] && K.D.members[i].id === id) m = K.D.members[i];
+      if ((m && m.silent != null) || (cm && cm.silent != null)) return !!((m && m.silent) || (cm && cm.silent));
+      return id === 'kenji';
+    }
     function moose() {
       if (!K || K.crossing) return false;
       K.crossing = { x: 9, z: -150 };
@@ -1141,7 +1250,7 @@
       if (!K) return false;
       for (var i = 0; i < K.people.length; i++) {
         var r = K.people[i];
-        if (r.id === id && r.role !== 'driver') { r.talk = +secs > 0 ? +secs : 3; return true; }   // Kenji never talks
+        if (r.id === id && !(r.role === 'driver' && silentDriver(r.id))) { r.talk = +secs > 0 ? +secs : 3; return true; }   // Kenji never talks (member.silent)
       }
       return false;
     }
@@ -1169,6 +1278,8 @@
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
           tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, logo: !!K.logo, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
+          driverExtras: K.driverLook && K.driverLook.extras ? K.driverLook.extras.slice() : [], mirror: K.mirror || null, ornaments: K.ornaments || null, bandId: K.D.bandId,   // v0.9
+          talking: K.people.filter(function (r) { return r.talk > 0; }).map(function (r) { return r.id; }),
           traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           cam: CAM.pos.slice(), hfov: CAM.minHFov };                                                          // v0.8 polish: where you sit
       }
