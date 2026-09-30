@@ -87,12 +87,6 @@
   // top: 'tee' | 'longsleeve' | 'flannel' | 'hoodie' | 'jacket'
   var STYLE_HINTS = { marcel: { top: 'tee' }, dana: { top: 'flannel' }, jaxon: { top: 'hoodie' }, kenji: { top: 'jacket' } };
   var DEFAULT_IDLE = { marcel: 'mirror', dana: 'noodle', jaxon: 'lunch', kenji: 'corner' };
-  var CAPES = {
-    velvet: { out: 0x4a1d6e, lining: 0x9b1b2a, trim: 0xd4a940, collar: true, clasp: true },
-    curtain: { out: 0xd6a53c, lining: 0xc99a36, dots: [0xc85a78, 0x5f8f45], rings: true },
-    charred: { out: 0x1e1a18, lining: 0x2b2522, jagged: true, embers: true },
-    fireproof: { out: 0xc3c8d0, lining: 0xb4bac4, bands: 0xd8e84a, collar: true }
-  };
 
   // ---- Characters ------------------------------------------------------------------------------------------------
   // One skeleton for everyone. Toggle bones (gear, headphones, held item, floor prop) hide their parts by
@@ -141,224 +135,10 @@
     };
   }
 
-  // Build the skinned geometry for a LOOK. o: { id, sticks, gear:'guitar', held:'sandwich'|'phone', floorProp:'lunchbox', cape, scale }
-  function characterGeometry(ctx, L, o) {
-    var b = new ctx.Builder({ skinned: true, jitter: 0.03, seed: ctx.hash(o.id || 'someone') });
-    var sh = ctx.shade, bw = L.build, sx = 0.25 * bw + 0.075, hx = 0.11 * bw, fz = 0.135 * bw + 0.004;
-    var top = L.top, sleeve = top === 'tee' ? L.skin : L.shirt, shoe = 0x1f1b18, dark = sh(L.shirt, 0.55);
-    var i, s;
-    // Legs: thighs on the leg bones, shins + shoes on the shin bones.
-    for (i = 0; i < 2; i++) {
-      s = i ? -1 : 1;
-      b.bone = i ? B_SHIN_R : B_SHIN_L;
-      b.box(0.15, 0.37, 0.17, s * hx, 0.265, 0, L.pants);
-      b.box(0.165, 0.085, 0.28, s * hx, 0.043, 0.035, shoe);
-      b.bone = i ? B_LEG_R : B_LEG_L;
-      b.box(0.17, 0.41, 0.19, s * hx, 0.645, 0, L.pants);
-    }
-    b.bone = B_HIPS;
-    b.box(0.4 * bw, 0.17, 0.24 * bw, 0, 0.87, 0, L.pants);
-    b.box(0.41 * bw, 0.04, 0.25 * bw, 0, 0.945, 0, 0x2a211b);                   // belt
-    // Torso: waist + broader chest.
-    b.bone = B_SPINE;
-    b.box(0.4 * bw, 0.22, 0.24 * bw, 0, 1.06, 0, L.shirt);
-    b.box(0.47 * bw, 0.3, 0.27 * bw, 0, 1.3, 0, L.shirt);
-    if (top === 'tee') b.box(0.17 * bw, 0.13, 0.01, 0, 1.29, fz, teePrint(ctx, L.shirt));
-    else if (top === 'flannel') {
-      b.box(0.475 * bw, 0.035, 0.275 * bw, 0, 1.34, 0, dark); b.box(0.405 * bw, 0.035, 0.245 * bw, 0, 1.1, 0, dark);
-      b.box(0.035, 0.3, 0.275 * bw, 0.1 * bw, 1.3, 0, dark); b.box(0.035, 0.3, 0.275 * bw, -0.1 * bw, 1.3, 0, dark);
-      b.box(0.035, 0.22, 0.245 * bw, 0.1 * bw, 1.06, 0, dark); b.box(0.035, 0.22, 0.245 * bw, -0.1 * bw, 1.06, 0, dark);
-      b.box(0.24, 0.05, 0.05, 0, 1.445, 0.11 * bw, dark);                       // collar
-    } else if (top === 'hoodie') {
-      b.box(0.36 * bw, 0.17, 0.13, 0, 1.44, -0.165 * bw, sh(L.shirt, 0.9));        // hood
-      b.box(0.3 * bw, 0.11, 0.012, 0, 1.07, 0.12 * bw + 0.006, sh(L.shirt, 0.84)); // pouch pocket
-      b.box(0.016, 0.13, 0.012, 0.05, 1.36, fz + 0.004, 0xe8e4da); b.box(0.016, 0.13, 0.012, -0.05, 1.36, fz + 0.004, 0xe8e4da);
-    } else if (top === 'jacket') {
-      var inner = luminance(L.shirt) < 0.2 ? 0x3b3b41 : 0xe6e1d6;
-      b.box(0.1, 0.28, 0.008, 0, 1.28, fz - 0.001, inner);
-      b.box(0.07, 0.3, 0.012, 0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, -0.28);
-      b.box(0.07, 0.3, 0.012, -0.075, 1.29, fz + 0.002, sh(L.shirt, 1.25), 0, 0, 0.28);
-      b.box(0.42 * bw, 0.05, 0.255 * bw, 0, 0.965, 0, sh(L.shirt, 0.8));        // hem
-    }
-    // Neck, head, face.
-    b.bone = B_HEAD;
-    b.box(0.13, 0.1, 0.13, 0, 1.47, 0, L.skin);
-    b.box(0.34, 0.37, 0.32, 0, 1.69, 0, L.skin);
-    b.box(0.04, 0.08, 0.06, 0.185, 1.69, 0, sh(L.skin, 0.92)); b.box(0.04, 0.08, 0.06, -0.185, 1.69, 0, sh(L.skin, 0.92));
-    b.box(0.05, 0.07, 0.05, 0, 1.655, 0.175, sh(L.skin, 0.9));                   // nose
-    b.box(0.09, 0.018, 0.012, 0, 1.585, 0.162, sh(L.skin, 0.6));                 // mouth
-    b.box(0.05, 0.065, 0.02, 0.075, 1.715, 0.163, 0x16120f); b.box(0.05, 0.065, 0.02, -0.075, 1.715, 0.163, 0x16120f);
-    b.box(0.085, 0.022, 0.02, 0.075, 1.772, 0.163, sh(L.hair, 0.85)); b.box(0.085, 0.022, 0.02, -0.075, 1.772, 0.163, sh(L.hair, 0.85));
-    hairParts(b, L, sh);
-    extraParts(b, L, sh, sx, top);
-    // Arms: tees show skin below the sleeve; everything else is sleeved to the wrist.
-    for (i = 0; i < 2; i++) {
-      s = i ? -1 : 1;
-      b.bone = i ? B_ARM_R : B_ARM_L;
-      if (top === 'tee') { b.box(0.145, 0.16, 0.155, s * sx, 1.3, 0, L.shirt); b.box(0.12, 0.16, 0.13, s * sx, 1.15, 0, L.skin); }
-      else b.box(0.135, 0.31, 0.145, s * sx, 1.225, 0, L.shirt);
-      if (top === 'flannel') b.box(0.14, 0.03, 0.15, s * sx, 1.2, 0, dark);
-      b.bone = i ? B_FORE_R : B_FORE_L;
-      b.box(0.12, 0.25, 0.13, s * sx, 0.955, 0, sleeve);
-      if (top === 'flannel') b.box(0.125, 0.03, 0.135, s * sx, 0.95, 0, dark);
-      if (top === 'tee' && L.extras.indexOf('tattoos') >= 0) b.box(0.125, 0.1, 0.135, s * sx, 0.99, 0, 0x2f5a6a);
-      b.box(0.11, 0.1, 0.12, s * sx, 0.78, 0.005, L.skin);                      // hand
-      if (o.sticks) b.box(0.024, 0.024, 0.42, s * sx, 0.77, 0.15, 0xd8b27a, 0.25);
-    }
-    if (o.gear === 'guitar') guitarParts(b);
-    if (o.held === 'sandwich') {
-      b.bone = B_HELD;
-      b.box(0.15, 0.03, 0.11, -sx, 0.72, 0.1, 0xe3c38a); b.box(0.155, 0.018, 0.115, -sx, 0.742, 0.1, 0xe58a8e);
-      b.box(0.165, 0.012, 0.12, -sx, 0.756, 0.1, 0x7cc251); b.box(0.15, 0.03, 0.11, -sx, 0.775, 0.1, 0xe3c38a);
-    } else if (o.held === 'phone') {
-      b.bone = B_HELD; b.box(0.075, 0.14, 0.014, -sx, 0.8, 0.075, 0x1d1d22);
-    }
-    if (o.floorProp === 'lunchbox') {
-      b.bone = B_FLOOR;
-      b.box(0.3, 0.19, 0.17, 0.44, 0.095, 0.25, 0xc0392b); b.box(0.305, 0.02, 0.175, 0.44, 0.16, 0.25, 0x8a2a20);
-      b.box(0.12, 0.03, 0.03, 0.44, 0.205, 0.25, 0x222222); b.cyl(0.04, 0.04, 0.2, 8, 0.66, 0.1, 0.16, 0x3f7fbf);
-    }
-    // Headphones (shown while sulking).
-    b.bone = B_PHONES;
-    b.box(0.38, 0.045, 0.07, 0, 1.915, 0, 0x202024);
-    for (i = 0; i < 2; i++) {
-      s = i ? -1 : 1;
-      b.box(0.03, 0.18, 0.05, s * 0.195, 1.83, 0, 0x202024); b.box(0.07, 0.13, 0.13, s * 0.2, 1.69, 0, 0x2a2a30);
-      b.box(0.012, 0.08, 0.08, s * 0.237, 1.69, 0, 0xd23c3c);
-    }
-    if (o.cape && CAPES[o.cape]) capeParts(b, CAPES[o.cape], bw, ctx);
-    return b.build();
-  }
-  function luminance(c) { var k = new THREE.Color(c); return k.r * 0.3 + k.g * 0.59 + k.b * 0.11; }
-  function teePrint(ctx, c) { return luminance(c) < 0.35 ? 0xd9d4c8 : ctx.shade(c, 0.6); }
-
-  function hairParts(b, L, sh) {
-    var h = L.hair, st = L.hairStyle, i;
-    var cap = function (t) { b.box(0.36, t || 0.07, 0.34, 0, 1.895, -0.005, h); };
-    var fringe = function () { b.box(0.34, 0.05, 0.04, 0, 1.855, 0.16, h); };
-    var sides = function (len) { b.box(0.03, len, 0.2, 0.18, 1.86 - len / 2, -0.05, h); b.box(0.03, len, 0.2, -0.18, 1.86 - len / 2, -0.05, h); };
-    switch (st) {
-      case 'bald': b.box(0.12, 0.012, 0.1, 0.03, 1.877, 0.02, sh(L.skin, 1.12)); break;
-      case 'long':
-        cap(); fringe(); b.box(0.38, 0.62, 0.08, 0, 1.6, -0.17, h);
-        b.box(0.05, 0.45, 0.27, 0.19, 1.67, -0.02, h); b.box(0.05, 0.45, 0.27, -0.19, 1.67, -0.02, h); break;
-      case 'mohawk': b.box(0.08, 0.17, 0.38, 0, 1.96, -0.01, h); b.box(0.345, 0.02, 0.325, 0, 1.876, 0, sh(L.skin, 0.85)); break;
-      case 'bun': cap(); fringe(); sides(0.12); b.box(0.36, 0.2, 0.06, 0, 1.79, -0.16, h); b.box(0.13, 0.11, 0.1, 0, 1.86, -0.22, h); break;
-      case 'mullet': cap(); fringe(); sides(0.12); b.box(0.34, 0.5, 0.07, 0, 1.64, -0.17, h); break;
-      case 'spiky':
-        cap(0.05);
-        var SP = [[0, 0.02], [0.1, 0.06], [-0.1, 0.06], [0.09, -0.09], [-0.09, -0.09], [0, -0.12], [0, 0.12]];
-        for (i = 0; i < SP.length; i++) b.cyl(0, 0.06, 0.16, 4, SP[i][0], 1.98, SP[i][1], h, SP[i][1] * 2.5, 0, -SP[i][0] * 2.5);
-        break;
-      case 'cap':                                  // backwards baseball cap
-        var c = L.capColor;
-        sides(0.1); b.box(0.34, 0.1, 0.05, 0, 1.745, -0.16, h);
-        b.box(0.37, 0.12, 0.35, 0, 1.92, 0, c); b.box(0.3, 0.05, 0.28, 0, 2.0, 0, c);
-        b.box(0.3, 0.025, 0.17, 0, 1.875, -0.245, c); b.box(0.04, 0.03, 0.04, 0, 2.035, 0, sh(c, 0.75));
-        b.box(0.1, 0.045, 0.01, 0, 1.9, 0.177, sh(c, 0.6)); break;
-      default: cap(); fringe(); sides(0.13); b.box(0.36, 0.25, 0.06, 0, 1.76, -0.16, h);  // 'short'
-    }
-  }
-
-  function extraParts(b, L, sh, sx, top) {
-    var ex = L.extras, h = L.hair, i;
-    for (i = 0; i < ex.length; i++) {
-      switch (ex[i]) {
-        case 'sunglasses':
-          b.box(0.33, 0.075, 0.03, 0, 1.712, 0.174, 0x0c0c0e); b.box(0.06, 0.014, 0.005, -0.09, 1.728, 0.19, 0x5a6a80);
-          b.box(0.012, 0.025, 0.2, 0.173, 1.72, 0.07, 0x0c0c0e); b.box(0.012, 0.025, 0.2, -0.173, 1.72, 0.07, 0x0c0c0e); break;
-        case 'glasses':
-          b.box(0.1, 0.08, 0.015, 0.075, 1.713, 0.172, 0x2a2a2a); b.box(0.1, 0.08, 0.015, -0.075, 1.713, 0.172, 0x2a2a2a);
-          b.box(0.075, 0.055, 0.01, 0.075, 1.713, 0.178, 0xbcd0e0); b.box(0.075, 0.055, 0.01, -0.075, 1.713, 0.178, 0xbcd0e0);
-          b.box(0.035, 0.045, 0.01, 0.075, 1.713, 0.184, 0x16120f); b.box(0.035, 0.045, 0.01, -0.075, 1.713, 0.184, 0x16120f); break;
-        case 'beard':
-          b.box(0.34, 0.15, 0.07, 0, 1.57, 0.14, h); b.box(0.22, 0.08, 0.1, 0, 1.49, 0.12, h);
-          b.box(0.04, 0.16, 0.2, 0.17, 1.6, 0.05, h); b.box(0.04, 0.16, 0.2, -0.17, 1.6, 0.05, h); break;
-        case 'moustache':
-          b.box(0.17, 0.035, 0.035, 0, 1.617, 0.178, h); b.box(0.035, 0.06, 0.03, 0.095, 1.597, 0.176, h); b.box(0.035, 0.06, 0.03, -0.095, 1.597, 0.176, h); break;
-        case 'headband': b.box(0.365, 0.05, 0.345, 0, 1.81, 0, 0xd23c3c); break;
-        case 'bandana': b.box(0.365, 0.08, 0.345, 0, 1.845, 0, 0x2f5fb3); b.box(0.08, 0.06, 0.06, 0, 1.83, -0.19, 0x2f5fb3); break;
-        case 'hat':
-        case 'cowboy':
-          b.box(0.54, 0.03, 0.5, 0, 1.885, 0, 0x6b4a2e); b.box(0.34, 0.17, 0.32, 0, 1.975, 0, 0x6b4a2e); b.box(0.35, 0.04, 0.33, 0, 1.915, 0, 0x2a1d14); break;
-        case 'tattoos':
-          if (top === 'tee') { b.bone = B_ARM_L; b.box(0.125, 0.07, 0.135, sx, 1.13, 0, 0x2f5a6a); b.bone = B_ARM_R; b.box(0.125, 0.07, 0.135, -sx, 1.13, 0, 0x2f5a6a); b.bone = B_HEAD; }
-          break;
-      }
-    }
-  }
-
-  // Dana's pointy white V (on the gear bone = spine frame, hidden while sulking). +x runs up the neck.
-  function guitarParts(b) {
-    var white = 0xe9e5dc, black = 0x151515;
-    b.bone = B_GEAR;
-    b.box(0.05, 0.64, 0.02, 0.02, 1.2, 0.15, 0x1c1714, 0, 0, 0.62);           // strap across the chest
-    b.push(-0.08, 1.02, 0.21, 0, 0, 0.42);
-    b.box(0.46, 0.1, 0.05, -0.19, 0.085, 0, white, 0, 0, -0.36);
-    b.box(0.46, 0.1, 0.05, -0.19, -0.085, 0, white, 0, 0, 0.36);
-    b.box(0.16, 0.14, 0.05, 0, 0, 0, white);
-    b.box(0.05, 0.06, 0.012, -0.08, 0, 0.03, black); b.box(0.05, 0.06, 0.012, -0.17, 0, 0.03, black);
-    b.box(0.6, 0.05, 0.03, 0.37, 0, 0.012, 0x2a1a10);
-    b.box(0.15, 0.075, 0.03, 0.72, 0.015, 0.012, black, 0, 0, -0.25);
-    b.pop();
-  }
-
-  // Marcel's cape: two hinged panels (cape bones) so it can sway and flare; variant from state.flags.cape.
-  // Each panel is a strip curved around his back (edges closer to the body than the middle).
-  function capeParts(b, C, bw, ctx) {
-    var z = -0.15 * bw - 0.012, ht = 0.27 * bw, hm = 0.36 * bw, hb = 0.46 * bw, yb = 0.3, i;
-    var bend = function (u) { var k = 2 * u - 1; return -0.07 * (1 - k * k); };        // extra depth at the middle
-    var strip = function (bone, yt, wt, ybot, wb, jag) {
-      b.bone = bone;
-      for (var i = 0; i < 6; i++) {
-        var u0 = i / 6, u1 = (i + 1) / 6, z0 = z + bend(u0), z1 = z + bend(u1);
-        var j0 = jag ? ((i % 2) ? 0.12 : 0.02) : 0, j1 = jag ? (((i + 1) % 2) ? 0.12 : 0.02) : 0;
-        var tx0 = -wt + 2 * wt * u0, tx1 = -wt + 2 * wt * u1, bx0 = -wb + 2 * wb * u0, bx1 = -wb + 2 * wb * u1;
-        b.quad([tx0, yt, z0 - 0.01], [tx1, yt, z1 - 0.01], [bx1, ybot + j1, z1 - 0.01], [bx0, ybot + j0, z0 - 0.01], C.out);
-        b.quad([bx0, ybot + j0, z0], [bx1, ybot + j1, z1], [tx1, yt, z1], [tx0, yt, z0], C.lining);
-      }
-    };
-    strip(B_CAPE1, 1.42, ht, 0.9, hm, false);
-    strip(B_CAPE2, 0.9, hm, yb, hb, C.jagged);
-    // Trim, bands and dots go on both faces (from the front we mostly see the inner side), following
-    // the curve: each decoration is cut into short segments placed at the cape's depth there.
-    var depth = function (x, y) {
-      var w = y >= 0.9 ? hm + (ht - hm) * (y - 0.9) / 0.52 : hb + (hm - hb) * (y - yb) / 0.6;
-      return z + bend(clamp((x + w) / (2 * w), 0, 1));
-    };
-    var deco = function (bone, x0, y0, x1, y1, color) {
-      b.bone = bone;
-      var n = Math.max(1, Math.ceil((x1 - x0) / 0.1));
-      for (var k = 0; k < n; k++) {
-        var a = x0 + (x1 - x0) * k / n, c = x0 + (x1 - x0) * (k + 1) / n, dz = depth((a + c) / 2, (y0 + y1) / 2);
-        b.quad([a, y1, dz - 0.016], [c, y1, dz - 0.016], [c, y0, dz - 0.016], [a, y0, dz - 0.016], color);
-        b.quad([a, y0, dz + 0.006], [c, y0, dz + 0.006], [c, y1, dz + 0.006], [a, y1, dz + 0.006], color);
-      }
-    };
-    if (C.trim) deco(B_CAPE2, -hb, yb, hb, yb + 0.05, C.trim);
-    if (C.bands) { deco(B_CAPE1, -0.3 * bw, 1.07, 0.3 * bw, 1.12, C.bands); deco(B_CAPE2, -0.4 * bw, 0.52, 0.4 * bw, 0.58, C.bands); }
-    if (C.dots || C.embers) {
-      var rows = [[1.3, B_CAPE1], [1.08, B_CAPE1], [0.8, B_CAPE2], [0.58, B_CAPE2], [0.4, B_CAPE2]], d = 0.028;
-      for (i = 0; i < rows.length; i++) {
-        for (var k = 0; k < 5; k++) {
-          if (C.embers && (i + k) % 3) continue;
-          var x = -0.24 + k * 0.12 + (i % 2) * 0.06, y = rows[i][0];
-          deco(rows[i][1], x - d, y - d, x + d, y + d, C.embers ? 0xff6a2a : C.dots[(i + k) % 2]);
-        }
-      }
-    }
-    b.bone = B_SPINE;
-    if (C.rings) for (i = 0; i < 5; i++) b.box(0.035, 0.035, 0.035, -ht + i * ht / 2, 1.43, z - 0.005, 0x9a9a9a);
-    if (C.collar) {
-      b.box(0.16, 0.26, 0.02, 0.12, 1.53, -0.16 * bw, C.out, -0.3, 0, -0.35);
-      b.box(0.16, 0.26, 0.02, -0.12, 1.53, -0.16 * bw, C.out, -0.3, 0, 0.35);
-    }
-    if (C.clasp) b.box(0.28, 0.022, 0.012, 0, 1.41, 0.14 * bw, 0xd4a940);
-  }
   // Build a character: { root (Group, scaled by height), mesh (SkinnedMesh), bones[], dispose() }.
   function makeCharacter(ctx, look, o) {
     var L = normLook(look, o.id);
-    var geo = R.charGeometry ? R.charGeometry(ctx, L, o, look) : characterGeometry(ctx, L, o), lay = jointLayout(L.build), bones = [], i;   // v0.8: 40_render_core
+    var geo = R.charGeometry(ctx, L, o, look), lay = jointLayout(L.build), bones = [], i;   // v0.8: the one builder lives in 40_render_core (R.charGeometry)
     for (i = 0; i < lay.length; i++) {
       var bn = new THREE.Bone(), p = lay[i][0];
       if (p >= 0) { bn.position.set(lay[i][1] - lay[p][1], lay[i][2] - lay[p][2], lay[i][3] - lay[p][3]); bones[p].add(bn); }
@@ -536,18 +316,34 @@
       staticObstacles.push([x - hx, z - hz, x + hx, z + hz]);
       shadowSpots.push([x, z, w * 1.15, d * 1.15, yaw || 0]);
     }
-    buildShell(lit, glow);
-    buildDoor(lit, glow);
-    buildBackWall(lit, glow, foot);
+    // v0.8 (SHOPUI): the parts only the parents' garage has (drywall + wainscot, the sectional door, Dad's pegboard, the
+    // hockey stick, the mower, the heater, the oil stain) go in their own pair of meshes; a rented space hides them and
+    // shows its own walls, floor, door and props instead (buildSpace below). Their footprints / blob shadows are tracked
+    // so a bigger room doesn't keep an invisible mower in the way.
+    var gLit = new ctx.Builder({ jitter: 0.045, seed: 12 }), gGlow = new ctx.Builder({ jitter: 0, seed: 4 });
+    var garageObstacles = [], garageShadows = [];
+    function gFoot(x, z, w, d, yaw) {
+      var c = Math.abs(Math.cos(yaw || 0)), s = Math.abs(Math.sin(yaw || 0));
+      var hx = (w * c + d * s) / 2, hz = (w * s + d * c) / 2;
+      garageObstacles.push([x - hx, z - hz, x + hx, z + hz]);
+      garageShadows.push(shadowSpots.length);
+      shadowSpots.push([x, z, w * 1.15, d * 1.15, yaw || 0]);
+    }
+    buildShell(lit, glow, gLit);
+    buildDoor(gLit, gGlow);
+    buildBackWall(lit, glow, foot, gLit);
     buildRightWall(lit, glow, foot);
-    buildFloorProps(lit, glow, foot);
+    buildFloorProps(lit, glow, foot, gLit, gFoot);
     scene.add(new THREE.Mesh(lit.build(), ctx.mats.vc));
     scene.add(new THREE.Mesh(glow.build(), ctx.mats.unlit));
-    scene.add(buildShafts());
+    var garageOnly = [new THREE.Mesh(gLit.build(), ctx.mats.vc), new THREE.Mesh(gGlow.build(), ctx.mats.unlit)];
+    scene.add(garageOnly[0]); scene.add(garageOnly[1]);
+    var shafts = buildShafts(); scene.add(shafts);
     var dust = buildDust(); scene.add(dust.points);
     var yard = buildYard();
     var decor = buildDecor();   // v0.6.1: snow at the window (winter), Christmas lights (December), a box fan (July / heat wave)
     var fanMail = buildFanMail();   // v0.6.1 (FANS): Dale's macaroni portrait of Kenji, the gift pile, the fan-mail stack
+    var space = buildSpace();       // v0.8 (SHOPUI): the rehearsal space tier, its upgrades, the unsold merch box pile
 
     // ---- Bulb on a cord (swings a little; carries the warm point light and a halo) ----
     var bulbPivot = new THREE.Group();
@@ -645,6 +441,7 @@
       yard.set(seasonOf(st.week || 1));
       decor.set(st);
       fanMail.set(st);
+      space.set(st);
       var pl = st.player || {}, preset = findPreset(pl.presetId);
       var kc = pl.kitColor || (preset && preset.kitColor) || DEFAULT_KIT;
       var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '');   // v0.8: the kit look (KIT_LOOK)
@@ -682,6 +479,7 @@
       for (var id in people) if (!seen[id]) { people[id].p.dispose(); delete people[id]; }
       memberHits.length = 0; obstacles.length = 0;
       for (i = 0; i < staticObstacles.length; i++) obstacles.push(staticObstacles[i]);
+      for (i = 0; i < space.obstacles.length; i++) obstacles.push(space.obstacles[i]);   // v0.8: this space's props, upgrades, the box pile
       for (id in people) {
         var r = people[id];
         memberHits.push(r.hit);
@@ -975,7 +773,7 @@
       var fl = (t % 13) < 0.18 ? 0.72 + 0.2 * Math.sin(t * 90) : 1;
       bulb.intensity = 1.55 * fl * (1 + 0.025 * Math.sin(t * 23) * Math.sin(t * 3.1));
       halo.material.opacity = 0.5 * fl;
-      dust.update(t); yard.update(t); decor.update(t);
+      dust.update(t); yard.update(t); decor.update(t); space.update(t);
       // Camera: gently follow the player.
       var k2 = 1 - Math.exp(-2.5 * dt);
       followT.x += (camT.x + (player.x - camT.x) * CAM.follow - followT.x) * k2;
@@ -1004,7 +802,7 @@
       return {
         player: { x: rnd(player.x), z: rnd(player.z), pose: player.walking ? 'walk' : player.pose },
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
-        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(),
+        hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         trophyWall: trophyWall.counts
       };
     }
@@ -1017,7 +815,7 @@
       return { x: F.x + lx * c + lz * s, z: F.z - lx * s + lz * c };
     }
 
-    function buildShell(b, g) {
+    function buildShell(b, g, gb) {                 // v0.8: gb = the garage-only builder (drywall, wainscot, stain)
       var WALL = 0xa89f8c, LOW = 0x7f8b84, BASE = 0x4f463d, WOOD = 0x6b5236, CUT = 0x3b3530;
       var x0 = ROOM.x0, x1 = ROOM.x1, z0 = ROOM.z0, z1 = ROOM.z1, w = ROOM.wall, H = ROOM.h;
       // Slab + gravel edge (the cutaway sides show it).
@@ -1033,13 +831,13 @@
       b.jit = jit;
       b.box(x1 - x0, 0.004, 0.025, (x0 + x1) / 2, 0.002, 0.3, 0x5b5853);           // expansion joints
       b.box(0.025, 0.004, z1 - z0, 0.55, 0.002, 0, 0x5b5853);
-      stain(b, 0.75, 0.15, 0.45, 0x3d3935, 21); stain(b, 0.95, 0.35, 0.18, 0x2f2c29, 5);   // where Dad's truck used to leak
+      stain(gb, 0.75, 0.15, 0.45, 0x3d3935, 21); stain(gb, 0.95, 0.35, 0.18, 0x2f2c29, 5);   // where Dad's truck used to leak
       // Walls: back (z0) and right (x1), painted drywall over a sage wainscot, wooden top plates.
-      b.box(x1 - x0 + w, H, w, (x0 + x1 + w) / 2, H / 2, z0 - w / 2, WALL);
-      b.box(w, H, z1 - z0 + w, x1 + w / 2, H / 2, (z0 - w + z1) / 2, WALL);
-      b.box(x1 - x0, 0.95, 0.01, (x0 + x1) / 2, 0.475, z0 + 0.005, LOW);
-      b.box(0.01, 0.95, z1 - z0, x1 - 0.005, 0.475, (z0 + z1) / 2, LOW);
-      b.box(x1 - x0, 0.03, 0.02, (x0 + x1) / 2, 0.965, z0 + 0.01, BASE); b.box(0.02, 0.03, z1 - z0, x1 - 0.01, 0.965, (z0 + z1) / 2, BASE);
+      gb.box(x1 - x0 + w, H, w, (x0 + x1 + w) / 2, H / 2, z0 - w / 2, WALL);
+      gb.box(w, H, z1 - z0 + w, x1 + w / 2, H / 2, (z0 - w + z1) / 2, WALL);
+      gb.box(x1 - x0, 0.95, 0.01, (x0 + x1) / 2, 0.475, z0 + 0.005, LOW);
+      gb.box(0.01, 0.95, z1 - z0, x1 - 0.005, 0.475, (z0 + z1) / 2, LOW);
+      gb.box(x1 - x0, 0.03, 0.02, (x0 + x1) / 2, 0.965, z0 + 0.01, BASE); gb.box(0.02, 0.03, z1 - z0, x1 - 0.01, 0.965, (z0 + z1) / 2, BASE);
       b.box(x1 - x0, 0.12, 0.025, (x0 + x1) / 2, 0.06, z0 + 0.012, BASE); b.box(0.025, 0.12, z1 - z0, x1 - 0.012, 0.06, (z0 + z1) / 2, BASE);
       b.box(x1 - x0 + w + 0.06, 0.1, w + 0.08, (x0 + x1 + w) / 2, H + 0.05, z0 - w / 2, WOOD);
       b.box(w + 0.08, 0.1, z1 - z0 + w, x1 + w / 2, H + 0.05, (z0 - w + z1) / 2, WOOD);
@@ -1098,19 +896,19 @@
       g.triC(a, bb, c, cBot, cBot, cTop); g.triC(a, c, d, cBot, cTop, cTop);
     }
 
-    function buildBackWall(b, g, foot) {
+    function buildBackWall(b, g, foot, gb) {        // v0.8: gb = garage-only (Dad's pegboard, the hockey stick)
       var i;
       // Pegboard with Dad's tools, above the amps.
-      b.at(PROPS.amps.x, 0, Z0, 0);
-      b.box(1.0, 0.8, 0.02, 0, 1.7, 0.012, 0x9c7a52);
-      for (var r = 0; r < 7; r++) for (var c = 0; c < 9; c++) b.rect(0.016, 0.016, -0.4 + c * 0.1, 1.37 + r * 0.11, 0.023, 0x5d4630);
-      b.box(0.03, 0.26, 0.02, -0.33, 1.72, 0.04, 0x9b6b3a); b.box(0.12, 0.045, 0.035, -0.33, 1.86, 0.04, 0x55595f);   // hammer
-      b.box(0.03, 0.24, 0.012, -0.17, 1.7, 0.035, 0x9aa0a8, 0, 0, 0.15); b.box(0.07, 0.05, 0.012, -0.19, 1.83, 0.035, 0x9aa0a8);
-      b.box(0.34, 0.1, 0.008, 0.1, 1.53, 0.03, 0xb7bcc3); b.box(0.08, 0.1, 0.02, -0.1, 1.54, 0.035, 0x8b2d22);         // saw
-      b.box(0.025, 0.12, 0.02, 0.05, 1.86, 0.035, 0xd23c3c); b.box(0.008, 0.1, 0.008, 0.05, 1.75, 0.035, 0x9aa0a8);
-      b.box(0.025, 0.12, 0.02, 0.12, 1.86, 0.035, 0xe8c531); b.box(0.008, 0.1, 0.008, 0.12, 1.75, 0.035, 0x9aa0a8);
-      b.box(0.08, 0.08, 0.04, 0.36, 1.86, 0.035, 0xe8c531);                                                           // tape measure
-      b.cyl(0.1, 0.1, 0.03, 10, 0.3, 1.64, 0.04, 0x222226, Math.PI / 2);                                               // coiled cable
+      gb.at(PROPS.amps.x, 0, Z0, 0);
+      gb.box(1.0, 0.8, 0.02, 0, 1.7, 0.012, 0x9c7a52);
+      for (var r = 0; r < 7; r++) for (var c = 0; c < 9; c++) gb.rect(0.016, 0.016, -0.4 + c * 0.1, 1.37 + r * 0.11, 0.023, 0x5d4630);
+      gb.box(0.03, 0.26, 0.02, -0.33, 1.72, 0.04, 0x9b6b3a); gb.box(0.12, 0.045, 0.035, -0.33, 1.86, 0.04, 0x55595f);   // hammer
+      gb.box(0.03, 0.24, 0.012, -0.17, 1.7, 0.035, 0x9aa0a8, 0, 0, 0.15); gb.box(0.07, 0.05, 0.012, -0.19, 1.83, 0.035, 0x9aa0a8);
+      gb.box(0.34, 0.1, 0.008, 0.1, 1.53, 0.03, 0xb7bcc3); gb.box(0.08, 0.1, 0.02, -0.1, 1.54, 0.035, 0x8b2d22);         // saw
+      gb.box(0.025, 0.12, 0.02, 0.05, 1.86, 0.035, 0xd23c3c); gb.box(0.008, 0.1, 0.008, 0.05, 1.75, 0.035, 0x9aa0a8);
+      gb.box(0.025, 0.12, 0.02, 0.12, 1.86, 0.035, 0xe8c531); gb.box(0.008, 0.1, 0.008, 0.12, 1.75, 0.035, 0x9aa0a8);
+      gb.box(0.08, 0.08, 0.04, 0.36, 1.86, 0.035, 0xe8c531);                                                           // tape measure
+      gb.cyl(0.1, 0.1, 0.03, 10, 0.3, 1.64, 0.04, 0x222226, Math.PI / 2);                                               // coiled cable
       // Half-stack amp.
       b.at(PROPS.amps.x, 0, Z0 + 0.2, 0); g.at(PROPS.amps.x, 0, Z0 + 0.2, 0);
       b.box(0.72, 0.72, 0.36, 0, 0.36, 0, 0x1b1b1d); b.box(0.64, 0.64, 0.01, 0, 0.36, 0.181, 0x2e2c2a);
@@ -1120,9 +918,9 @@
       g.box(0.03, 0.03, 0.01, 0.26, 0.8, 0.136, 0xff3b30);
       foot(PROPS.amps.x, Z0 + 0.2, 0.75, 0.4, 0);
       // Hockey stick leaning between the amps and the door (it's Saskatoon).
-      b.at(PROPS.door.x - PROPS.door.w / 2 - 0.2, 0, Z0 + 0.12, 0);
-      b.box(0.03, 1.35, 0.022, 0, 0.68, 0, 0x8b5a2b, -0.1, 0, 0.08); b.box(0.28, 0.07, 0.016, 0.1, 0.04, 0.07, 0x1a1a1a);
-      b.box(0.032, 0.12, 0.024, -0.052, 1.3, -0.065, 0x1a1a1a, -0.1, 0, 0.08);
+      gb.at(PROPS.door.x - PROPS.door.w / 2 - 0.2, 0, Z0 + 0.12, 0);
+      gb.box(0.03, 1.35, 0.022, 0, 0.68, 0, 0x8b5a2b, -0.1, 0, 0.08); gb.box(0.28, 0.07, 0.016, 0.1, 0.04, 0.07, 0x1a1a1a);
+      gb.box(0.032, 0.12, 0.024, -0.052, 1.3, -0.065, 0x1a1a1a, -0.1, 0, 0.08);
       // Trophy shelf: nearly empty (one tiny gold cup, a bowling trophy, a participation ribbon, one photo).
       b.at(PROPS.trophies.x, 0, Z0, 0);
       var GOLD = 0xd4a940;
@@ -1204,7 +1002,7 @@
       }
     }
 
-    function buildFloorProps(b, g, foot) {
+    function buildFloorProps(b, g, foot, gb, gFoot) {   // v0.8: gb/gFoot = garage-only (Dad's mower, the space heater)
       var i, P;
       // Rug under the kit (the kit itself is its own mesh; see buildKit).
       b.at(KIT.x, 0, KIT.z, KIT.yaw);
@@ -1241,13 +1039,13 @@
       b.box(0.3, 0.04, 0.26, -0.02, 0.96, 0.02, 0x17171c, 0, -0.1); b.box(0.1, 0.1, 0.005, -0.02, 0.982, 0.02, 0xd9d4c8, -Math.PI / 2, -0.1);
       foot(P.x, P.z, 0.62, 0.55, P.yaw);
       // Dad's lawnmower (with a note), parked in front of the door.
-      P = PROPS.mower; b.at(P.x, 0, P.z, P.yaw);
-      b.box(0.5, 0.18, 0.55, 0, 0.17, 0, 0xc0392b); b.cyl(0.13, 0.15, 0.18, 8, 0, 0.35, -0.02, 0x2b2b2b);
-      for (i = 0; i < 4; i++) b.cyl(0.09, 0.09, 0.05, 10, (i % 2 ? 0.27 : -0.27), 0.09, (i < 2 ? 0.2 : -0.2), 0x151515, 0, 0, Math.PI / 2);
-      b.box(0.03, 0.85, 0.03, 0.2, 0.52, -0.46, 0x333333, -0.62); b.box(0.03, 0.85, 0.03, -0.2, 0.52, -0.46, 0x333333, -0.62);
-      b.box(0.43, 0.03, 0.03, 0, 0.87, -0.7, 0x333333); b.box(0.34, 0.24, 0.3, 0, 0.3, -0.42, 0x3f5a3a);
-      b.box(0.1, 0.004, 0.1, 0.12, 0.262, 0.1, 0xf2e27a);
-      foot(P.x, P.z, 0.6, 0.95, P.yaw);
+      P = PROPS.mower; gb.at(P.x, 0, P.z, P.yaw);
+      gb.box(0.5, 0.18, 0.55, 0, 0.17, 0, 0xc0392b); gb.cyl(0.13, 0.15, 0.18, 8, 0, 0.35, -0.02, 0x2b2b2b);
+      for (i = 0; i < 4; i++) gb.cyl(0.09, 0.09, 0.05, 10, (i % 2 ? 0.27 : -0.27), 0.09, (i < 2 ? 0.2 : -0.2), 0x151515, 0, 0, Math.PI / 2);
+      gb.box(0.03, 0.85, 0.03, 0.2, 0.52, -0.46, 0x333333, -0.62); gb.box(0.03, 0.85, 0.03, -0.2, 0.52, -0.46, 0x333333, -0.62);
+      gb.box(0.43, 0.03, 0.03, 0, 0.87, -0.7, 0x333333); gb.box(0.34, 0.24, 0.3, 0, 0.3, -0.42, 0x3f5a3a);
+      gb.box(0.1, 0.004, 0.1, 0.12, 0.262, 0.1, 0xf2e27a);
+      gFoot(P.x, P.z, 0.6, 0.95, P.yaw);
       // Kenji's milk crate and Jaxon's paint bucket.
       P = PROPS.crate; b.at(P.x, 0, P.z, P.yaw);
       b.box(0.4, 0.32, 0.4, 0, 0.16, 0, 0x2f5fb3);
@@ -1258,11 +1056,11 @@
       b.box(0.08, 0.1, 0.01, 0.0, 0.26, 0.162, 0x2f6fd1);
       foot(P.x, P.z, 0.36, 0.36, 0);
       // Space heater (orange glow) and an empty pizza box.
-      P = PROPS.heater; b.at(P.x, 0, P.z, P.yaw); g.at(P.x, 0, P.z, P.yaw);
-      b.box(0.3, 0.42, 0.18, 0, 0.23, 0, 0x8f8f8f); b.box(0.36, 0.03, 0.24, 0, 0.015, 0, 0x555555);
-      g.box(0.24, 0.3, 0.01, 0, 0.25, 0.092, 0xff7a2a);
-      for (i = 0; i < 4; i++) b.box(0.24, 0.012, 0.012, 0, 0.14 + i * 0.07, 0.1, 0x5a5a5a);
-      foot(P.x, P.z, 0.34, 0.24, P.yaw);
+      P = PROPS.heater; gb.at(P.x, 0, P.z, P.yaw); gGlow.at(P.x, 0, P.z, P.yaw);
+      gb.box(0.3, 0.42, 0.18, 0, 0.23, 0, 0x8f8f8f); gb.box(0.36, 0.03, 0.24, 0, 0.015, 0, 0x555555);
+      gGlow.box(0.24, 0.3, 0.01, 0, 0.25, 0.092, 0xff7a2a);
+      for (i = 0; i < 4; i++) gb.box(0.24, 0.012, 0.012, 0, 0.14 + i * 0.07, 0.1, 0x5a5a5a);
+      gFoot(P.x, P.z, 0.34, 0.24, P.yaw);
       P = PROPS.pizza; b.at(P.x, 0, P.z, P.yaw);
       b.box(0.42, 0.05, 0.42, 0, 0.025, 0, 0xd8b98a); b.box(0.2, 0.004, 0.12, 0, 0.052, 0, 0xc0392b);
       b.at(0, 0, 0, 0); g.at(0, 0, 0, 0);
@@ -1409,7 +1207,7 @@
         set: function (st) {
           var w = st.week || 1, season = seasonOf(w), month = GG.calendar ? GG.calendar.month(w) : null;
           var wx = GG.calendar && st.seed != null ? GG.calendar.weather(st).kind : null;
-          cur.snow = season === 'winter' || wx === 'snow' || wx === 'blizzard';
+          cur.snow = !(st.spaceTier > 0) && (season === 'winter' || wx === 'snow' || wx === 'blizzard');   // v0.8: only the garage door has windows
           cur.lights = month === 'Dec';
           cur.fan = month === 'Jul' || wx === 'heat';
           show(snow, cur.snow); show(lights, cur.lights); show(fan, cur.fan); show(blades, cur.fan);
@@ -1481,6 +1279,401 @@
         },
         state: function () { return { portrait: cur.portrait, gifts: cur.gifts, mail: cur.mail }; }
       };
+    }
+    // ======================================================================================================
+    // v0.8 (SHOPUI): the rehearsal space. state.spaceTier: 0 = the band's own start (Hail Damage: the parents' garage, the
+    // static room above), 1 = Rent-A-Riff Jam Room 3 (carpet on the walls, NO DRUMS AFTER 11, above a vacuum repair shop),
+    // 2 = Prairie Dog Sound (an old grain co-op: timber beams, slat diffusers, the console, ON AIR), 3 = backstage at the
+    // Potash Place (cinder block in arena blue, a steel door, EXIT, road cases, the hockey team's laundry, mirror bulbs).
+    // A rented space hides the garage-only meshes (walls, sectional door, pegboard, stick, mower, heater, moon shafts) and
+    // draws its own walls, floor, door and props; the band banner moves onto the wall beside the door. The upgrades the band
+    // bought (state.spaceUpgrades; content/shop.js upgrades) are visible where they'd stand: the curb couch (front edge, it
+    // moves with you), Dad's beer fridge (by the outlet, moves), egg-crate foam, Christmas lights round the whiteboard, a
+    // leather-ish couch, acoustic panels, a real PA, a disco ball (spins), the iso booth, the band lounge, the espresso cart,
+    // mood LEDs, hot catering, green walls, a hot tub, a star on the door. The unsold merch boxes (GG.shop.pile(state).boxes)
+    // stack up beside the merch stack, one box per box, up to 16 (+ a MERCH sign past that); the boxed misprint batch is
+    // the one taped with a red X. Meshes: room lit + glow (rebuilt on a move), upgrades lit + glow (rebuilt on a purchase),
+    // the disco ball, the box pile, the sign (a canvas) = up to 7 draw calls, only while shown.
+    var SPACE_DOOR = { x: 1.0, w: 0.92, h: 2.08 };
+    var PILE_CELLS = [[-2.06, 1.72, 0.1], [-1.64, 1.75, -0.05], [-1.28, 1.62, 0.2], [-2.06, 1.32, -0.08], [-1.64, 1.34, 0.12]];
+    var PILE_ORDER = [[0, 0], [1, 0], [0, 1], [3, 0], [1, 1], [2, 0], [0, 2], [4, 0], [3, 1], [1, 2], [2, 1], [4, 1], [3, 2], [2, 2], [4, 2], [1, 3]];
+    var PILE_MAX = PILE_ORDER.length, BOX = { w: 0.4, h: 0.34, d: 0.36 };
+    var SPACE_WALLS = [0, 0x6b4038, 0x2e3442, 0xbdb8aa];
+    var SPACE_FLOORS = [0, 0x404a5c, 0x6b4a2e, 0x55595f];
+    var DOOR_LABELS = ['Garage door', 'Door', 'Door', 'Door'];
+    function buildSpace() {
+      function mk(mat) { var m = new THREE.Mesh(new THREE.BufferGeometry(), mat); m.visible = false; scene.add(m); return m; }
+      var room = mk(ctx.mats.vc), roomGlow = mk(ctx.mats.unlit), ups = mk(ctx.mats.vc), upsGlow = mk(ctx.mats.unlit), pile = mk(ctx.mats.vc);
+      // The disco ball: a faceted ball on a chain (own mesh so it can spin).
+      var bb = new ctx.Builder({ jitter: 0.35, seed: 71 });
+      bb.shape(new THREE.IcosahedronGeometry(0.21, 1), 0, 0, 0, 1, 1, 1, 0xd8dde6);
+      bb.box(0.012, 0.5, 0.012, 0, 0.45, 0, 0x8a8a8a);
+      var ball = new THREE.Mesh(bb.build(), ctx.mats.unlit); ball.visible = false; ball.position.set(0.55, 2.1, 0.85); scene.add(ball);
+      // One canvas sign per space (NO DRUMS AFTER 11 / PRAIRIE DOG SOUND / BAND ROOM).
+      var sc = document.createElement('canvas'); sc.width = 256; sc.height = 128;
+      var stex = new THREE.CanvasTexture(sc);
+      var sign = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshLambertMaterial({ map: stex }));
+      sign.visible = false; scene.add(sign);
+      var cur = { tier: -1, room: '', ups: '', pile: '', boxes: 0, shown: 0, list: [], green: false, door: 'Garage door' };
+      var tierObs = [], upObs = [], pileObs = [];
+      var self = { obstacles: [] };
+      function swap(mesh, b) {
+        mesh.geometry.dispose();
+        var n = b ? b.count() : 0;
+        mesh.geometry = n ? b.build() : new THREE.BufferGeometry();
+        mesh.visible = n > 0;
+      }
+      function obs(list, x, z, w, d, yaw) {
+        var c = Math.abs(Math.cos(yaw || 0)), s = Math.abs(Math.sin(yaw || 0)), hx = (w * c + d * s) / 2, hz = (w * s + d * c) / 2;
+        list.push([x - hx, z - hz, x + hx, z + hz]);
+      }
+      function drawSign(tier, bandName) {
+        var g = sc.getContext('2d'), W = 256, H = 128;
+        var S = [null, { bg: '#f2efe6', fg: '#b3141c', top: 'NO DRUMS', bot: 'AFTER 11 PM  -MGMT' },
+          { bg: '#d98a2a', fg: '#1d1204', top: 'PRAIRIE DOG', bot: 'SOUND  ·  EST. 1961' },
+          { bg: '#1d2a44', fg: '#f2d15b', top: 'BAND ROOM', bot: String(bandName || 'Hail Damage').toUpperCase() }][tier];
+        if (!S) return;
+        g.fillStyle = S.bg; g.fillRect(0, 0, W, H);
+        g.strokeStyle = S.fg; g.lineWidth = 8; g.strokeRect(6, 6, W - 12, H - 12);
+        g.fillStyle = S.fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.font = '900 44px Impact, "Arial Black", sans-serif'; g.fillText(S.top, W / 2, 50, W - 30);
+        g.font = '800 20px "Arial Black", Arial, sans-serif'; g.fillText(S.bot, W / 2, 96, W - 30);
+        stex.needsUpdate = true;
+      }
+
+      /* ---- the room, per tier ---------------------------------------------------------------------------- */
+      function walls(b, color) {
+        var x0 = ROOM.x0, x1 = ROOM.x1, z0 = ROOM.z0, z1 = ROOM.z1, w = ROOM.wall, H = ROOM.h;
+        b.box(x1 - x0 + w, H, w, (x0 + x1 + w) / 2, H / 2, z0 - w / 2, color);
+        b.box(w, H, z1 - z0 + w, x1 + w / 2, H / 2, (z0 - w + z1) / 2, color);
+      }
+      function floor(b, color) { b.box(ROOM.x1 - ROOM.x0, 0.004, ROOM.z1 - ROOM.z0, (ROOM.x0 + ROOM.x1) / 2, 0.0035, (ROOM.z0 + ROOM.z1) / 2, color); }
+      // Decals on a wall: back wall frame (local x = world x) or right wall frame (local x = world z), local z = out of the wall.
+      function backWall(b) { b.at(0, 0, Z0, 0); }
+      function rightWall(b) { b.at(X1, 0, 0, -Math.PI / 2); }
+      function door(b, g, tier) {
+        var D = SPACE_DOOR, hw = D.w / 2;
+        b.at(D.x, 0, Z0, 0); g.at(D.x, 0, Z0, 0);
+        var FR = [0, 0x4a3222, 0x22262e, 0x3a4048][tier], COL = [0, 0x7a5230, 0x3b4250, 0x6c7684][tier];
+        b.box(0.08, D.h + 0.08, 0.07, hw + 0.04, (D.h + 0.08) / 2, 0.035, FR); b.box(0.08, D.h + 0.08, 0.07, -hw - 0.04, (D.h + 0.08) / 2, 0.035, FR);
+        b.box(D.w + 0.16, 0.08, 0.07, 0, D.h + 0.04, 0.035, FR);
+        b.box(D.w, D.h, 0.045, 0, D.h / 2, 0.03, COL);
+        if (tier === 1) {                                                    // a plain wooden door, JAM ROOM 3 on a brass plate
+          b.box(0.34, 0.62, 0.01, -0.02, 1.52, 0.056, sh(COL, 0.86)); b.box(0.34, 0.62, 0.01, -0.02, 0.6, 0.056, sh(COL, 0.86));
+          b.cyl(0.035, 0.035, 0.05, 8, 0.36, 1.0, 0.07, 0xc9a24a, Math.PI / 2);
+          b.box(0.3, 0.08, 0.01, -0.02, 1.92, 0.058, 0xc9a24a); b.box(0.2, 0.02, 0.004, -0.02, 1.92, 0.064, 0x3a2a12);
+        } else if (tier === 2) {                                             // padded studio door, a porthole, ON AIR above
+          for (var r = 0; r < 4; r++) for (var c = 0; c < 3; c++) b.box(0.26, 0.4, 0.02, -0.29 + c * 0.29, 0.35 + r * 0.46, 0.058, sh(COL, 1.08));
+          b.cyl(0.13, 0.13, 0.03, 12, 0, 1.55, 0.066, 0x9aa0a8, Math.PI / 2); g.cyl(0.1, 0.1, 0.01, 12, 0, 1.55, 0.083, 0x2a4a7a, Math.PI / 2);
+          b.box(0.06, 0.34, 0.06, 0.34, 1.02, 0.09, 0xb9bec6);
+          b.box(0.42, 0.16, 0.08, 0, D.h + 0.22, 0.04, 0x1a1a1e); g.box(0.36, 0.11, 0.01, 0, D.h + 0.22, 0.085, 0xff3030);
+          g.box(0.22, 0.025, 0.004, 0, D.h + 0.22, 0.092, 0xffe0d8);
+        } else {                                                             // steel door, push bar, kick plate, EXIT above
+          b.box(0.72, 0.06, 0.08, 0, 1.0, 0.09, 0xc0c4ca); b.box(0.04, 0.06, 0.08, 0.34, 1.0, 0.07, 0x9aa0a8); b.box(0.04, 0.06, 0.08, -0.34, 1.0, 0.07, 0x9aa0a8);
+          b.box(D.w - 0.06, 0.3, 0.01, 0, 0.16, 0.056, 0xb9bec6);
+          b.box(0.28, 0.2, 0.004, 0, 1.52, 0.055, 0xf4f2ea); b.box(0.2, 0.035, 0.004, 0, 1.55, 0.058, 0x1a1a1a); b.box(0.14, 0.02, 0.004, 0, 1.49, 0.058, 0x1a1a1a);
+          b.box(0.36, 0.14, 0.06, 0, D.h + 0.24, 0.035, 0xe8e8e0); g.box(0.3, 0.09, 0.01, 0, D.h + 0.24, 0.068, 0x1fbf4a);
+          g.box(0.16, 0.022, 0.004, 0, D.h + 0.24, 0.075, 0xeaffea);
+        }
+        b.at(0, 0, 0, 0); g.at(0, 0, 0, 0);
+      }
+      function buildRoom(tier, green, bandName) {
+        var b = new ctx.Builder({ jitter: 0.04, seed: 80 + tier }), g = new ctx.Builder({ jitter: 0, seed: 90 + tier }), i, k, H = ROOM.h;
+        tierObs.length = 0;
+        if (!tier) { swap(room, null); swap(roomGlow, null); return; }
+        var WALL = tier === 3 && green ? 0x6a9a62 : SPACE_WALLS[tier];
+        walls(b, WALL); floor(b, SPACE_FLOORS[tier]);
+        if (tier === 1) {
+          backWall(b);                                                                      // carpet seams, a black rubber base
+          for (i = -2; i <= 2; i++) b.box(0.025, H - 0.25, 0.004, i * 0.8 + 0.1, H / 2, 0.004, sh(WALL, 0.78));
+          b.box(ROOM.x1 - ROOM.x0, 0.14, 0.02, 0, 0.07, 0.012, 0x1e1e20);
+          rightWall(b);
+          for (i = -2; i <= 3; i++) b.box(0.025, H - 0.25, 0.004, i * 0.8 - 0.3, H / 2, 0.004, sh(WALL, 0.78));
+          b.box(ROOM.z1 - ROOM.z0, 0.14, 0.02, 0, 0.07, 0.012, 0x1e1e20);
+          b.at(0, 0, 0, 0);
+          var FL = SPACE_FLOORS[1];                                                         // carpet blotches (spilled pop)
+          [[0.9, -1.3, 0.5, 0.3], [-1.0, 0.6, 0.35, 0.25], [1.4, 0.9, 0.3, 0.45], [-0.2, -2.2, 0.4, 0.2]].forEach(function (p) { b.box(p[2], 0.002, p[3], p[0], 0.0065, p[1], sh(FL, 0.85)); });
+          b.at(2.03, 0, -2.2, -0.4);                                                        // an upright vacuum (it's above the repair shop)
+          b.box(0.3, 0.09, 0.34, 0, 0.045, 0, 0x4a4a52); b.box(0.24, 0.5, 0.14, 0, 0.38, -0.05, 0xc0392b, -0.12);
+          b.box(0.03, 0.55, 0.03, 0, 0.88, -0.1, 0x9aa0a8, -0.12); b.box(0.2, 0.04, 0.04, 0, 1.15, -0.13, 0x1e1e20);
+          b.box(0.16, 0.2, 0.02, 0, 0.42, 0.03, 0xe8e2d4, -0.12);
+          obs(tierObs, 2.03, -2.2, 0.36, 0.4, -0.4);
+          backWall(b);                                                                      // the clock says 10:58
+          b.cyl(0.14, 0.14, 0.03, 16, 1.95, 2.3, 0.02, 0xf2efe6, Math.PI / 2); b.cyl(0.155, 0.155, 0.02, 16, 1.95, 2.3, 0.01, 0x1e1e20, Math.PI / 2);
+          b.box(0.012, 0.1, 0.006, 1.95, 2.34, 0.04, 0x1e1e20, 0, 0, 0.5); b.box(0.01, 0.07, 0.006, 1.95, 2.33, 0.045, 0x1e1e20, 0, 0, -0.1);
+        } else if (tier === 2) {
+          backWall(b);                                                                      // co-op timber beams + slat diffusers
+          b.box(ROOM.x1 - ROOM.x0, 0.16, 0.14, 0, H - 0.1, 0.07, 0x7a5a36);
+          for (i = 0; i < 6; i++) b.box(0.05, 1.0, 0.05, 1.62 + i * 0.1, 1.7, 0.035, i % 2 ? 0x9a7448 : 0x8a6440);
+          b.box(0.64, 1.06, 0.01, 1.87, 1.7, 0.005, 0x1e2230);
+          rightWall(b);
+          b.box(ROOM.z1 - ROOM.z0, 0.16, 0.14, 0, H - 0.1, 0.07, 0x7a5a36);
+          for (i = 0; i < 4; i++) b.box(0.05, 1.2, 0.05, 2.28 + i * 0.1, 1.65, 0.035, i % 2 ? 0x9a7448 : 0x8a6440);
+          b.box(0.44, 1.26, 0.01, 2.43, 1.65, 0.005, 0x1e2230);
+          b.at(0, 0, 0, 0);
+          for (i = 0; i < 15; i++) b.box(0.012, 0.002, ROOM.z1 - ROOM.z0, ROOM.x0 + 0.3 * (i + 1), 0.0062, 0, 0x4d3420);   // plank seams
+          b.at(X1 - 0.26, 0, -1.2, -Math.PI / 2); g.at(X1 - 0.26, 0, -1.2, -Math.PI / 2);   // the console under the gig board
+          b.box(0.9, 0.06, 0.5, 0, 0.72, 0, 0x2a2a30); b.box(0.05, 0.7, 0.45, 0.42, 0.35, 0, 0x1e1e22); b.box(0.05, 0.7, 0.45, -0.42, 0.35, 0, 0x1e1e22);
+          b.box(0.8, 0.07, 0.38, 0, 0.79, 0.02, 0x3a3a44, 0.18);
+          for (k = 0; k < 10; k++) { g.box(0.018, 0.008, 0.07, -0.34 + k * 0.075, 0.84, 0.06, [0x6fe39a, 0xffd23f, 0xff6b4a][k % 3]); g.box(0.02, 0.006, 0.018, -0.34 + k * 0.075, 0.845, -0.08, 0x9fd0ff); }
+          b.box(0.16, 0.24, 0.16, -0.36, 0.95, -0.12, 0x151518); b.box(0.16, 0.24, 0.16, 0.36, 0.95, -0.12, 0x151518);
+          b.cyl(0.05, 0.05, 0.01, 10, -0.36, 0.95, -0.035, 0x3a3a3a, Math.PI / 2); b.cyl(0.05, 0.05, 0.01, 10, 0.36, 0.95, -0.035, 0x3a3a3a, Math.PI / 2);
+          obs(tierObs, X1 - 0.26, -1.2, 0.5, 0.92, 0);
+          b.at(0.35, 0, -2.2, 0.4);                                                         // a mic on a boom stand
+          for (k = 0; k < 3; k++) b.box(0.3, 0.02, 0.02, 0, 0.02, 0, 0x222226, 0, k * 2.1, 0);
+          b.box(0.025, 1.45, 0.025, 0, 0.74, 0, 0x2a2a2e); b.box(0.6, 0.02, 0.02, 0.22, 1.45, 0, 0x2a2a2e, 0, 0, 0.25);
+          b.cyl(0.035, 0.03, 0.12, 8, 0.5, 1.53, 0, 0x55595f, 0, 0, -0.9);
+          b.at(0, 0, 0, 0);
+        } else {
+          backWall(b);                                                                      // cinder block, the arena stripe
+          for (k = 0; k < 13; k++) {
+            var y = 0.2 * (k + 1);
+            b.box(ROOM.x1 - ROOM.x0, 0.012, 0.004, 0, y, 0.004, sh(WALL, 0.8));
+            for (i = 0; i < 12; i++) b.box(0.012, 0.2, 0.004, ROOM.x0 + 0.4 * i + (k % 2 ? 0.2 : 0) + 0.1, y - 0.1, 0.004, sh(WALL, 0.8));
+          }
+          b.box(ROOM.x1 - ROOM.x0, 0.22, 0.008, 0, 1.1, 0.006, 0x24457e);
+          rightWall(b);
+          for (k = 0; k < 13; k++) {
+            var y2 = 0.2 * (k + 1);
+            b.box(ROOM.z1 - ROOM.z0, 0.012, 0.004, 0, y2, 0.004, sh(WALL, 0.8));
+            for (i = 0; i < 14; i++) b.box(0.012, 0.2, 0.004, ROOM.z0 + 0.4 * i + (k % 2 ? 0.2 : 0) + 0.1, y2 - 0.1, 0.004, sh(WALL, 0.8));
+          }
+          b.box(ROOM.z1 - ROOM.z0, 0.22, 0.008, 0, 1.1, 0.006, 0x24457e);
+          b.at(0, 0, 0, 0);
+          b.box(ROOM.x1 - ROOM.x0 - 0.3, 0.002, 0.06, (ROOM.x0 + ROOM.x1) / 2 - 0.15, 0.0062, Z0 + 0.35, 0xe0b830);   // safety stripes
+          b.box(0.06, 0.002, ROOM.z1 - ROOM.z0 - 0.35, X1 - 0.35, 0.0062, 0.18, 0xe0b830);
+          b.at(2.0, 0, -2.32, 0);                                                           // road cases, stencilled
+          [[0, 0.25, 0, 0.56, 0.5, 0.46], [0, 0.72, 0.02, 0.5, 0.44, 0.42], [-0.02, 1.08, 0, 0.44, 0.28, 0.38]].forEach(function (c) {
+            b.box(c[3], c[4], c[5], c[0], c[1], c[2], 0x1c1c20);
+            b.box(c[3] + 0.012, 0.03, c[5] + 0.012, c[0], c[1] - c[4] / 2 + 0.02, c[2], 0xb8bcc2); b.box(c[3] + 0.012, 0.03, c[5] + 0.012, c[0], c[1] + c[4] / 2 - 0.02, c[2], 0xb8bcc2);
+            b.box(c[3] * 0.6, 0.05, 0.004, c[0], c[1], c[2] + c[5] / 2 + 0.003, 0xf2efe6);
+          });
+          obs(tierObs, 2.0, -2.32, 0.56, 0.46, 0);
+          b.at(1.45, 0, -2.2, 0.3);                                                         // the hockey team's laundry, next door
+          b.box(0.5, 0.5, 0.42, 0, 0.33, 0, 0xd8d2c0); b.box(0.52, 0.03, 0.44, 0, 0.58, 0, 0x8a8478);
+          for (k = 0; k < 4; k++) b.cyl(0.035, 0.035, 0.06, 6, (k % 2 ? 0.2 : -0.2), 0.04, (k < 2 ? 0.17 : -0.17), 0x222222);
+          b.box(0.36, 0.14, 0.3, -0.03, 0.62, 0.02, 0xc0392b, 0.2, 0.3, 0.1); b.box(0.3, 0.1, 0.24, 0.08, 0.66, -0.06, 0xf2efe6, -0.3, 0.1, 0.2);
+          obs(tierObs, 1.45, -2.2, 0.5, 0.42, 0.3);
+          var MP = PROPS.mirror;                                                            // Marcel's mirror becomes a dressing-room mirror
+          g.at(MP.x, 0, MP.z, MP.yaw); g.push(0, 0.95, 0.035, -0.08, 0, 0);
+          for (k = 0; k < 6; k++) { g.box(0.05, 0.05, 0.03, 0.31, -0.55 + k * 0.22, 0, 0xfff1c0); g.box(0.05, 0.05, 0.03, -0.31, -0.55 + k * 0.22, 0, 0xfff1c0); }
+          for (k = 0; k < 3; k++) g.box(0.05, 0.05, 0.03, -0.18 + k * 0.18, 0.69, 0, 0xfff1c0);
+          g.pop(); g.at(0, 0, 0, 0);
+        }
+        door(b, g, tier);
+        swap(room, b); swap(roomGlow, g);
+      }
+      function placeSign(tier) {
+        sign.visible = tier > 0;
+        if (tier === 1) { sign.position.set(1.95, 1.6, Z0 + 0.02); sign.rotation.set(0, 0, 0.03); }
+        else if (tier === 2) { sign.position.set(1.87, 2.36, Z0 + 0.03); sign.rotation.set(0, 0, 0); }
+        else if (tier === 3) { sign.position.set(1.95, 1.7, Z0 + 0.02); sign.rotation.set(0, 0, 0); }
+      }
+
+      /* ---- upgrades ------------------------------------------------------------------------------------------- */
+      function eggFoam(b, w, h, x, y, z) {                                    // a foam panel of little pyramids (boxes)
+        b.box(w, h, 0.02, x, y, z, 0x6e5c64);
+        var nx = Math.round(w / 0.1), ny = Math.round(h / 0.1);
+        for (var i = 0; i < nx; i++) for (var j = 0; j < ny; j++) if ((i + j) % 2 === 0) b.box(0.07, 0.07, 0.035, x - w / 2 + 0.05 + i * 0.1, y - h / 2 + 0.05 + j * 0.1, z + 0.02, 0x86727c);
+      }
+      function buildUps(list, tier) {
+        var b = new ctx.Builder({ jitter: 0.04, seed: 101 }), g = new ctx.Builder({ jitter: 0, seed: 102 }), i, k, has = function (id) { return list.indexOf(id) >= 0; };
+        upObs.length = 0;
+        if (has('curb_couch')) {                                                            // floral, from the curb, facing the kit
+          b.at(-0.55, 0, 2.42, Math.PI);
+          var FB = 0xb08a3a;
+          b.box(1.02, 0.22, 0.56, 0, 0.26, 0, FB); b.box(1.02, 0.46, 0.14, 0, 0.58, -0.22, sh(FB, 0.92), -0.08);
+          b.box(0.13, 0.32, 0.58, 0.51, 0.44, 0, sh(FB, 0.85)); b.box(0.13, 0.32, 0.58, -0.51, 0.44, 0, sh(FB, 0.85));
+          for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.44 : -0.44), 0.07, (k < 2 ? 0.22 : -0.22), 0x3a2410);
+          for (k = 0; k < 9; k++) b.box(0.06, 0.06, 0.012, -0.38 + (k % 5) * 0.19 + (k > 4 ? 0.09 : 0), 0.46 + (k > 4 ? 0.2 : 0), -0.14, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
+          b.box(0.3, 0.02, 0.2, 0.18, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);                 // a stain shaped like Manitoba
+          obs(upObs, -0.55, 2.42, 1.1, 0.6, 0);
+        }
+        if (has('beer_fridge')) {                                                           // Dad's fridge, plugged into the outlet
+          b.at(X1 - 0.25, 0, -0.45, -Math.PI / 2); g.at(X1 - 0.25, 0, -0.45, -Math.PI / 2);
+          b.box(0.5, 0.78, 0.44, 0, 0.4, 0, 0xe6e3da); b.box(0.5, 0.012, 0.012, 0, 0.56, 0.222, 0xa8a49a);
+          b.box(0.03, 0.18, 0.04, 0.2, 0.42, 0.24, 0x9aa0a8);
+          b.box(0.12, 0.08, 0.004, -0.1, 0.66, 0.223, 0xc0392b); b.box(0.08, 0.1, 0.004, 0.08, 0.3, 0.223, 0x2f6fd1, 0, 0, 0.2); b.box(0.1, 0.06, 0.004, -0.12, 0.2, 0.223, 0xe8c531, 0, 0, -0.15);
+          b.box(0.05, 0.02, 0.05, -0.18, 0.02, 0.18, 0x222222); b.box(0.05, 0.02, 0.05, 0.18, 0.02, 0.18, 0x222222);
+          b.cyl(0.03, 0.03, 0.12, 8, -0.12, 0.85, 0, 0x9ad13a); b.cyl(0.03, 0.03, 0.12, 8, 0.02, 0.85, 0.05, 0x7a4a1a);   // cans on top
+          obs(upObs, X1 - 0.25, -0.45, 0.5, 0.44, -Math.PI / 2);
+        }
+        if (has('xmas_lights')) {                                                           // up all year, round the whiteboard
+          b.at(X1, 0, PROPS.board.z, -Math.PI / 2); g.at(X1, 0, PROPS.board.z, -Math.PI / 2);
+          var XC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xff66dd], n = 0;
+          for (k = 0; k <= 16; k++) { var u = -0.84 + k * 0.105, sag = 0.04 * Math.sin((k % 4) / 4 * Math.PI); g.box(0.04, 0.055, 0.04, u, 1.96 - sag, 0.06, XC[n++ % 5]); }
+          for (k = 1; k <= 8; k++) { g.box(0.04, 0.055, 0.04, -0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); g.box(0.04, 0.055, 0.04, 0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); }
+          b.box(1.72, 0.008, 0.008, 0, 1.95, 0.06, 0x1a3a1a);
+        }
+        if (has('egg_foam')) {                                                              // stapled to every wall
+          b.at(0, 0, Z0, 0); eggFoam(b, 1.0, 0.9, -0.45, 1.72, 0.07);
+          b.at(X1, 0, 0, -Math.PI / 2); eggFoam(b, 0.4, 1.3, 2.42, 1.65, 0.03);
+        }
+        if (has('leather_couch')) {                                                         // one cushion is leather, the rest are hope
+          b.at(X1 - 0.42, 0, PROPS.couch.z, -Math.PI / 2);
+          var LC = 0x3a2418;
+          b.box(1.54, 0.28, 0.84, 0, 0.2, 0, LC); b.box(1.54, 0.54, 0.24, 0, 0.62, -0.33, LC);
+          b.box(0.2, 0.54, 0.84, 0.83, 0.4, 0, sh(LC, 0.9)); b.box(0.2, 0.54, 0.84, -0.83, 0.4, 0, sh(LC, 0.9));
+          for (k = -1; k <= 1; k++) { b.box(0.48, 0.15, 0.64, k * 0.49, 0.41, 0.06, k ? 0x2a1c14 : 0x6a3a22); b.box(0.47, 0.38, 0.16, k * 0.49, 0.67, -0.22, k ? 0x2a1c14 : 0x6a3a22, -0.12); }
+        }
+        if (has('acoustic_panels')) {                                                       // real ones, not egg crates
+          b.at(0, 0, Z0, 0);
+          [[1.0, 2.4, 0.8, 0.32]].forEach(function (p) { b.box(p[2] + 0.04, p[3] + 0.04, 0.05, p[0], p[1], 0.03, 0x2a3040); b.box(p[2], p[3], 0.04, p[0], p[1], 0.05, 0x5a6a86); });
+          b.at(X1, 0, 0, -Math.PI / 2);
+          [[2.42, 1.65, 0.42, 1.0], [-0.5, 1.45, 0.22, 0.6]].forEach(function (p) { b.box(p[2] + 0.04, p[3] + 0.04, 0.05, p[0], p[1], 0.03, 0x2a3040); b.box(p[2], p[3], 0.04, p[0], p[1], 0.05, 0x5a6a86); });
+        }
+        if (has('real_pa')) {                                                               // two speakers on tripods, flanking the door
+          [[0.28, -2.38], [1.66, -2.42]].forEach(function (p) {
+            b.at(p[0], 0, p[1], 0.2);
+            for (k = 0; k < 3; k++) b.box(0.03, 0.02, 0.4, 0, 0.1, 0.1, 0x1e1e22, 0.45, k * 2.09, 0);
+            b.box(0.03, 1.2, 0.03, 0, 0.7, 0, 0x2a2a2e);
+            b.box(0.34, 0.5, 0.28, 0, 1.5, 0, 0x151518); b.cyl(0.12, 0.12, 0.02, 12, 0, 1.44, 0.145, 0x2e2e34, Math.PI / 2); b.cyl(0.05, 0.05, 0.02, 10, 0, 1.66, 0.145, 0x2e2e34, Math.PI / 2);
+            obs(upObs, p[0], p[1], 0.4, 0.4, 0);
+          });
+        }
+        if (has('iso_booth')) {                                                             // Marcel treats it as a dressing room
+          b.at(1.88, 0, -2.25, 0); g.at(1.88, 0, -2.25, 0);
+          var PO = 0x3a3a42, GL = 0x7fa8c8;
+          [[-0.42, 0.42], [0.42, 0.42], [-0.42, -0.42]].forEach(function (p) { b.box(0.06, 2.0, 0.06, p[0], 1.0, p[1], PO); });
+          b.box(0.9, 0.06, 0.9, 0, 2.0, 0, PO);
+          b.box(0.78, 1.5, 0.02, 0, 1.05, 0.42, GL); b.box(0.02, 1.5, 0.78, -0.42, 1.05, 0, GL);
+          b.box(0.5, 0.04, 0.004, -0.05, 1.3, 0.432, 0xe8f2fa, 0, 0, 0.7); b.box(0.004, 0.04, 0.4, -0.432, 1.2, 0.05, 0xe8f2fa, 0.7);   // glare
+          b.box(0.84, 0.25, 0.02, 0, 0.13, 0.42, PO); b.box(0.02, 0.25, 0.84, -0.42, 0.13, 0, PO);
+          b.box(0.36, 0.1, 0.02, 0, 1.9, 0.44, 0x1a1a1e); g.box(0.3, 0.06, 0.01, 0, 1.9, 0.452, 0xff3030);
+          obs(upObs, 1.88, -2.25, 0.9, 0.9, 0);
+        }
+        if (has('band_lounge')) {                                                           // couch-adjacent: a table, a game, a lamp, a beanbag
+          b.at(1.02, 0, 2.02, 0.2); g.at(1.02, 0, 2.02, 0.2);
+          b.box(0.5, 0.05, 0.72, 0, 0.36, 0, 0x5a3d25); for (k = 0; k < 4; k++) b.box(0.05, 0.34, 0.05, (k % 2 ? 0.2 : -0.2), 0.17, (k < 2 ? 0.3 : -0.3), 0x3a2410);
+          b.box(0.3, 0.02, 0.3, 0, 0.395, 0.05, 0xd8c8a0); b.box(0.05, 0.05, 0.05, 0.08, 0.43, 0.1, 0xc0392b); b.box(0.05, 0.05, 0.05, -0.06, 0.43, -0.02, 0x2f6fd1);
+          b.at(1.3, 0, 2.52, 0); g.at(1.3, 0, 2.52, 0);
+          b.cyl(0.12, 0.14, 0.03, 10, 0, 0.015, 0, 0x2a2a2e); b.box(0.03, 1.4, 0.03, 0, 0.72, 0, 0x2a2a2e); b.cyl(0.12, 0.2, 0.22, 10, 0, 1.45, 0, 0xe8d8a8);
+          g.cyl(0.1, 0.1, 0.02, 10, 0, 1.34, 0, 0xfff1c0);
+          b.at(0.5, 0, 2.35, 0);
+          b.shape(new THREE.IcosahedronGeometry(1, 1), 0, 0.2, 0, 0.32, 0.22, 0.3, 0x8a3fa0);
+          obs(upObs, 1.02, 2.02, 0.6, 0.8, 0.2);
+        }
+        if (has('espresso')) {                                                              // songs get written at 2 a.m. now
+          b.at(X1 - 0.2, 0, 0.92, -Math.PI / 2); g.at(X1 - 0.2, 0, 0.92, -Math.PI / 2);
+          b.box(0.44, 0.62, 0.36, 0, 0.31, 0, 0x5a3d25); b.box(0.46, 0.03, 0.38, 0, 0.635, 0, 0x2a2a2e);
+          b.box(0.26, 0.26, 0.2, 0, 0.78, -0.02, 0xc0c4ca); b.box(0.2, 0.04, 0.1, 0, 0.72, 0.1, 0x2a2a2e); g.box(0.04, 0.02, 0.004, 0.08, 0.85, 0.082, 0x6fe39a);
+          b.cyl(0.03, 0.025, 0.05, 8, 0, 0.68, 0.12, 0xf2efe6);
+          obs(upObs, X1 - 0.2, 0.92, 0.44, 0.36, -Math.PI / 2);
+        }
+        if (has('mood_leds')) {                                                             // purple for metal, blue for Kenji
+          g.at(0, 0, 0, 0);
+          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 0.16, Z0 + 0.03, 0x9b5bff); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.03, 0.16, 0, 0x5b8bff);
+          g.box(ROOM.x1 - ROOM.x0, 0.025, 0.02, 0, 2.5, Z0 + 0.15, 0x5b8bff); g.box(0.02, 0.025, ROOM.z1 - ROOM.z0, X1 - 0.15, 2.5, 0, 0x9b5bff);
+        }
+        if (has('catering')) {                                                              // perogies, hot, every day
+          b.at(X1 - 0.3, 0, -1.2, -Math.PI / 2); g.at(X1 - 0.3, 0, -1.2, -Math.PI / 2);
+          b.box(1.0, 0.04, 0.5, 0, 0.74, 0, 0xf2efe6); b.box(1.0, 0.5, 0.02, 0, 0.5, 0.25, 0xf2efe6);
+          for (k = 0; k < 4; k++) b.box(0.04, 0.72, 0.04, (k % 2 ? 0.45 : -0.45), 0.36, (k < 2 ? 0.2 : -0.2), 0x6a6a6a);
+          for (k = 0; k < 3; k++) {
+            b.box(0.26, 0.06, 0.2, -0.32 + k * 0.32, 0.79, 0, 0xb9bec6); b.cyl(0.13, 0.13, 0.04, 10, -0.32 + k * 0.32, 0.84, 0, 0xc9ced6, 0, 0, 0);
+            g.box(0.2, 0.02, 0.02, -0.32 + k * 0.32, 0.765, 0.105, 0x2f7fff);
+          }
+          for (k = 0; k < 5; k++) b.box(0.05, 0.02, 0.035, -0.1 + k * 0.05, 0.795, 0.1, 0xf0dca0);
+          obs(upObs, X1 - 0.3, -1.2, 0.5, 1.0, -Math.PI / 2);
+        }
+        if (has('hot_tub')) {                                                               // next to the Zamboni; nobody asks how
+          b.at(0.95, 0, 2.2, 0); g.at(0.95, 0, 2.2, 0);
+          b.cyl(0.5, 0.5, 0.5, 16, 0, 0.25, 0, 0x7a5a3a); b.cyl(0.52, 0.52, 0.04, 16, 0, 0.5, 0, 0x5a3d25);
+          g.cyl(0.44, 0.44, 0.01, 16, 0, 0.525, 0, 0x3fd0e0);
+          for (k = 0; k < 5; k++) g.box(0.05, 0.012, 0.05, Math.cos(k * 1.3) * 0.25, 0.533, Math.sin(k * 1.3) * 0.25, 0xe8fbff);
+          b.box(0.3, 0.02, 0.18, 0.62, 0.02, 0.1, 0xf2efe6, 0, 0.4, 0);                   // a towel on the floor
+          obs(upObs, 0.95, 2.2, 1.0, 1.0, 0);
+        }
+        if (has('star_door') && tier === 3) {                                               // Marcel polishes it before every show
+          b.at(SPACE_DOOR.x, 0, Z0, 0);
+          var P5 = [], cx = 0, cy = 1.72, zz = 0.066;
+          for (k = 0; k < 10; k++) { var a = Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 0.07 : 0.17; P5.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r, zz]); }
+          for (k = 0; k < 10; k++) b.tri([cx, cy, zz], P5[k], P5[(k + 1) % 10], 0xe0b63a);
+        }
+        swap(ups, b); swap(upsGlow, g);
+        ball.visible = has('disco_ball');
+      }
+
+      /* ---- the box pile ------------------------------------------------------------------------------------ */
+      function buildPile(n, misprint) {
+        pileObs.length = 0;
+        if (!n) { swap(pile, null); return; }
+        var b = new ctx.Builder({ jitter: 0.08, seed: 131 }), used = {}, CB = [0xb08856, 0xa87f4c, 0xc0986a, 0x9c7646];
+        for (var i = 0; i < Math.min(n, PILE_MAX); i++) {
+          var o = PILE_ORDER[i], cell = PILE_CELLS[o[0]], lvl = o[1], col = CB[i % CB.length];
+          var tilt = lvl === 3 ? 0.35 : ((i * 37) % 7 - 3) * 0.03, y = BOX.h / 2 + lvl * (BOX.h + 0.004);
+          used[o[0]] = true;
+          b.at(cell[0], 0, cell[1], cell[2] + tilt);
+          b.box(BOX.w, BOX.h, BOX.d, 0, y, 0, col);
+          b.box(BOX.w + 0.004, 0.012, 0.06, 0, y + BOX.h / 2, 0, 0xd9c29a);                   // tape
+          b.box(0.12, 0.12, 0.004, 0.08, y, BOX.d / 2 + 0.002, 0x1a1a1a);                       // the logo
+          b.box(0.004, 0.05, 0.18, -BOX.w / 2 - 0.002, y + 0.06, 0, 0xf2efe6);                 // a label: SHIRTS L
+          if (misprint && i === 0) {                                                            // the misprint batch: taped with a red X
+            b.box(BOX.w * 1.1, 0.03, 0.006, 0, y, BOX.d / 2 + 0.004, 0xd0201a, 0, 0, 0.7);
+            b.box(BOX.w * 1.1, 0.03, 0.006, 0, y, BOX.d / 2 + 0.004, 0xd0201a, 0, 0, -0.7);
+          }
+        }
+        if (n > PILE_MAX) {                                                                     // past the pile: a sign on a stick
+          b.at(-1.3, 0, 1.95, 0.5);
+          b.box(0.02, 0.9, 0.02, 0, 0.45, 0, 0x6b4a2e); b.box(0.42, 0.24, 0.02, 0, 0.95, 0, 0xf2efe6); b.box(0.32, 0.05, 0.004, 0, 0.99, 0.012, 0xb3141c); b.box(0.24, 0.03, 0.004, 0, 0.91, 0.012, 0x1a1a1a);
+        }
+        var x0 = 9, z0 = 9, x1 = -9, z1 = -9;
+        Object.keys(used).forEach(function (k) { var c = PILE_CELLS[k]; x0 = Math.min(x0, c[0] - 0.22); x1 = Math.max(x1, c[0] + 0.22); z0 = Math.min(z0, c[1] - 0.2); z1 = Math.max(z1, c[1] + 0.2); });
+        pileObs.push([x0, z0, x1, z1]);
+        swap(pile, b);
+      }
+
+      /* ---- set / update ------------------------------------------------------------------------------------ */
+      function hideGarage(tier) {
+        var on = tier === 0;
+        for (var i = 0; i < garageOnly.length; i++) garageOnly[i].visible = on;
+        shafts.visible = on;
+        heater.intensity = on ? 0.55 : 0;
+        for (i = 0; i < garageShadows.length; i++) { var j = garageShadows[i], p = shadowSpots[j]; if (on) setShadow(j, p[0], p[1], p[2], p[3], p[4]); else setShadow(j, 0, 0, 0, 0, 0); }
+        shadows.instanceMatrix.needsUpdate = true;
+        // The band banner: on the garage door at home, on the wall beside the door in a rented room.
+        if (on) { banner.mesh.position.set(PROPS.door.x, 1.08, Z0 + 0.1); banner.mesh.scale.setScalar(1); }
+        else { banner.mesh.position.set(-0.2, 2.08, Z0 + 0.06); banner.mesh.scale.setScalar(0.66); }
+        var text = DOOR_LABELS[tier] || 'Door', h = hs.door;
+        if (h && cur.door !== text) {                                                            // re-label the door hotspot
+          var lab = ctx.makeLabel(text, { px: 20 }), old = h.label, li = labels.indexOf(old);
+          lab.position.copy(old.position); lab.userData.action = 'door'; scene.add(lab);
+          if (li >= 0) labels[li] = lab;
+          ctx.disposeLabel(old); h.label = lab; cur.door = text;
+        }
+      }
+      self.set = function (st) {
+        var tier = st && isFinite(st.spaceTier) ? Math.max(0, Math.min(3, st.spaceTier | 0)) : 0;
+        var list = st && Array.isArray(st.spaceUpgrades) ? st.spaceUpgrades.slice().sort() : [];
+        var green = tier === 3 && list.indexOf('green_room') >= 0, band = GG.content.bands && GG.content.bands[st && st.bandId];
+        var roomSig = tier + '|' + green;
+        if (roomSig !== cur.room) {
+          cur.room = roomSig; cur.tier = tier; cur.green = green;
+          buildRoom(tier, green, band && band.name); hideGarage(tier);
+          if (tier) drawSign(tier, band && band.name);
+          placeSign(tier);
+        }
+        var upSig = tier + '|' + list.join(',');
+        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier); }
+        var p = st && GG.shop && GG.shop.pile && st.merch ? GG.shop.pile(st) : { boxes: 0, items: [] };
+        var mis = (p.items || []).some(function (x) { return x.misprint; }), shown = Math.min(p.boxes, PILE_MAX + 1);
+        var pileSig = shown + '|' + mis;
+        cur.boxes = p.boxes;
+        if (pileSig !== cur.pile) { cur.pile = pileSig; cur.shown = Math.min(p.boxes, PILE_MAX); buildPile(shown, mis); }
+        self.obstacles.length = 0;
+        var src = tier ? tierObs : garageObstacles, i;
+        for (i = 0; i < src.length; i++) self.obstacles.push(src[i]);
+        for (i = 0; i < upObs.length; i++) self.obstacles.push(upObs[i]);
+        for (i = 0; i < pileObs.length; i++) self.obstacles.push(pileObs[i]);
+      };
+      self.update = function (t) {
+        if (ball.visible) { ball.rotation.y = t * 0.8; ball.position.y = 2.1 + 0.01 * Math.sin(t * 1.3); }
+      };
+      self.state = function () {
+        return { tier: cur.tier, green: cur.green, upgrades: cur.list.slice(), boxes: cur.boxes, pile: cur.shown, disco: ball.visible, door: cur.door,
+          garage: garageOnly[0].visible, sign: sign.visible };
+      };
+      return self;
     }
     function yardProp(fill) {
       var b = new ctx.Builder({ jitter: 0.04, seed: 17 });
