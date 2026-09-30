@@ -3,7 +3,8 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current (on `main`): **0.8.1.0 "Addendum 2 catch-up"** (merged 2026-09-30, PR #14). **Update Current/Next at every merge** (Addendum 2 D0).
+- Current (on `main`): **0.8.2.0** = 0.8.1 + the v0.9 stage-0 plumbing (PR #15, merged early by the owner) with Frost Heave,
+  Gravel Kings and the Ramblers re-locked ("Coming in v0.9") until v0.9 ships (owner, 2026-09-30). **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap).

@@ -11,7 +11,8 @@
 //   - `titleEn` is null for songs already in English (all of them since v0.7.2). Metal starters also carry `fr`:
 //     Marcel's French original. It seeds the starter's drum pattern (unchanged since v0.1) and lets old saves that
 //     still hold the French title rename it to the English one on load (GG.songs.migrateTitles).
-//   - All four bands are playable from the start (owner, v0.9). v0.9 band fields (roles, firstGig, homeRing, spaceShort, door,
+//   - All four bands become playable from the start with v0.9 (owner); until it ships, the live build keeps
+//     Frost Heave / Gravel Kings / the Ramblers locked (v0.8.2 hotfix). v0.9 band fields (roles, firstGig, homeRing, spaceShort, door,
 //     province, coldOpenFx, throne) and member fields (gear, silent, cape, signature, look.top) are applied by the table at
 //     the bottom of this file (see CONTENT SCHEMAS in 02_contracts.js and plan/plan_contract_0.9.md §3-4).
 (function (GG) {
@@ -77,7 +78,7 @@
   bands.frost_heave = {
     id: 'frost_heave', name: 'Frost Heave', genre: 'punk', city: 'Regina', region: 'canada',
     space: 'laundromat_basement', spaceName: 'The basement under the Suds-O-Rama', size: 4, rival: 'mall_rats',
-    locked: false, comingIn: null,
+    locked: true, comingIn: 'v0.9',
     blurb: 'Punk. A four-piece out of a laundromat basement in Regina. Every song is about city council. ' +
       'The dryers are the rhythm section.',
     coldOpen: [
@@ -117,7 +118,7 @@
   bands.gravel_kings = {
     id: 'gravel_kings', name: 'Gravel Kings', genre: 'rock', city: 'Edmonton', region: 'canada',
     space: 'strip_mall_unit', spaceName: 'Unit 4B, Westgate Plaza', size: 4, rival: 'chartbusters',
-    locked: false, comingIn: null,
+    locked: true, comingIn: 'v0.9',
     blurb: "Rock. A four-piece in an empty strip-mall unit in Edmonton. It's 1985 in there. It will always be 1985 in there.",
     coldOpen: [
       'Edmonton. Minus forty. A man in leather pants is jogging past a strip mall.',
@@ -156,7 +157,7 @@
   bands.grid_road_ramblers = {
     id: 'grid_road_ramblers', name: 'The Grid Road Ramblers', genre: 'country', city: 'Swift Current', region: 'canada',
     space: 'quonset', spaceName: "Duke's uncle's Quonset", size: 5, rival: 'buckle_and_boot',
-    locked: false, comingIn: null,
+    locked: true, comingIn: 'v0.9',
     blurb: 'Country. A five-piece in a Quonset outside Swift Current. Heartbreak, trucks, a fiddle and a very large hat.',
     coldOpen: [
       'Outside Swift Current. A Quonset, a grid road, and a sunset the colour of canola.',
