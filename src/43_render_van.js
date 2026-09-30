@@ -658,7 +658,7 @@
     var VTIER = [null,
       { id: 'fifteen', roof: 2.02, liner: 0xd8ccb0, trim: 0x6a6a72, dash: 0x2a2b30, fabric: 0x5a6a8a, paint: 0xf2efe6, rust: 0xb8b0a0, bench: true,
         cam: { pos: [0.0, 1.66, 1.6], look: [-0.02, 1.14, -8], bandFov: 56, minHFov: 43 } },      // v0.8 polish: up + in, over the bench
-      { id: 'sprinter', roof: 2.32, liner: 0xd4d6d8, trim: 0x44474e, dash: 0x26282e, fabric: 0x383c44, paint: 0xe8e8ea, rust: 0xd0d2d6, bench: false,
+      { id: 'sprinter', roof: 2.32, liner: 0xd4d6d8, trim: 0x44474e, dash: 0x26282e, fabric: 0x4a4f5a, paint: 0xe8e8ea, rust: 0xd0d2d6, bench: false,
         cam: { pos: [0.0, 1.8, 1.95], look: [-0.02, 1.16, -8], bandFov: 58, minHFov: 44 } },     // over the captain chairs' headrests
       { id: 'bus', roof: 2.45, liner: 0x3a2a22, trim: 0x2a2a2e, dash: 0x1e1e22, fabric: 0x8a2a2a, paint: 0x1e1e22, rust: 0x2a2a2e, bench: false,
         cam: { pos: [0.0, 1.7, 2.7], look: [-0.02, 1.2, -8], bandFov: 60, minHFov: 50 } }];
@@ -669,7 +669,9 @@
         b.box(0.1, 0.95, 2.4, s * 0.9, 0.475, 2.4, trim);
       }
       b.box(1.9, RY - WS.y1 - 0.02, 0.1, 0, (RY + WS.y1) / 2, WS.z1 - 0.02, sh(liner, 0.9));       // header over the windshield
-      b.box(1.9, 0.03, 4.3, 0, 0.055, 1.3, t === 3 ? 0x4a3526 : 0x2a2826);                        // a longer floor (over the road)
+      b.box(1.9, 0.03, 4.3, 0, 0.055, 1.3, t === 3 ? 0x4a3526 : t === 2 ? 0x8a7458 : 0x2a2826);   // a longer floor (over the road)
+      if (t === 2) for (i = 0; i < 9; i++) b.box(0.012, 0.004, 4.3, -0.84 + i * 0.21, 0.071, 1.3, 0x5a4a38);   // the conversion's vinyl planks
+      if (t === 1) for (i = 0; i < 12; i++) b.box(1.8, 0.004, 0.03, 0, 0.071, -0.3 + i * 0.3, 0x1c1a18);       // ribbed rubber mat
       if (t === 1) {
         // The church bench (row 2): a tall vinyl back with headrest humps over the window seats, tuck-and-roll pleats, three seats' seams, a
         // chrome grab rail, the belts hanging over; a toque on the middle headrest, a guitar case leaning in the corner.

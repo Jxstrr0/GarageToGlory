@@ -322,8 +322,8 @@ Later versions:
 - 3D: 41 draws the space by `spaceTier` (tiers 1–3 hide the garage-only meshes: drywall, sectional door, pegboard, hockey
   stick, mower, heater, moon shafts, window snow; draw their own walls, floor, door, props + a canvas sign; the banner moves
   beside the door; the door hotspot reads "Door"), all 16 upgrades visible (the disco ball spins, green room paints the
-  walls), the unsold box pile by the merch stack (one box per box, up to 16 + a sign; the boxed misprint taped with a red
-  X); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
+  walls), the unsold box pile (one box per box; the boxed misprint taped with a red X; since SPACES: back-left corner,
+  up to 15 + a MERCH sign); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
   band's vehicle tier inside (15-passenger rows + hymnals, sprinter high roof + touchscreen, tour-bus lounge) + the newest
   12 stickers on the hood (bus: over the driver's doorway, on the lounge partition); info() tier / vehicle / stickers / banned.
 - Review fixes (after SHOPUI): merch cards keep catalogue order (locked last; on the table = the amber .on style only) and a
@@ -337,6 +337,47 @@ Later versions:
   the garage-door tabs stick flush to the sheet top.
 - Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (24) | space (21) | van (20) + contact sheet
   `tests/.cache/v08_shop_sheet.png`; pw_flow layout expects the merch table on the merch hotspot.
+- v0.8 polish SPACES (lead's contact-sheet finding: every rented tier read as the same garage). 41: each tier is its own place
+  from the fixed camera, hotspot layout + walk floor unchanged. The garage's signature bits (string lights, wooden top plates,
+  baseboards, gravel edge, corner trim, the beat-up couch, the red rug) moved into the garage-only meshes; a rented room hides
+  the yard (lawn, weather, lawn chair; the season is still tracked) and re-lights the scene (`MOODS`: hemisphere, key, fill,
+  bulb colour + flicker, accent light, background, dust). Tier 1 Rent-A-Riff, Jam Space 7 (strip-mall rehearsal complex):
+  painted cinder block (blue band, grey above), grey carpet tiles with stains, egg-crate foam patches (one orange), a buzzing
+  wall-mounted fluorescent strip (its own flicker material), a red steel door with a stencilled 7 + wired-glass lite, NO DRUMS
+  AFTER 11 PM across the top, other bands' stickers + marker graffiti, plastic chairs, an orange corduroy couch, the kit on a
+  grubby mat with neon spike tape; out front the corridor (VCT tiles, bilingual WET FLOOR, the next band's gear, lost + found).
+  Tier 2 Prairie Dog Sound: charcoal fabric panels, a wooden QRD diffuser, co-op timber beams (the name on the beam), warm
+  planks, the control-room window with the desk / meters / Gwen glowing behind the glass, track lights washing the walls, a
+  gear rack, the house gold record ('Curling Night in Canada', 1987), a chesterfield, the kit on a carpeted riser (people step
+  up: `space.floorAt`); out front the lobby (the organ + Leslie, a fern, the logo rug). Tier 3 backstage at the Potash Place:
+  navy painted block + gold stripe under bare concrete (form-tie holes), BAND ROOM — <band> stencilled, a cable tray, caged
+  work lights, stencilled road cases, a monitor showing the empty arena, the bulb mirror, a sad catering table (celery, water)
+  until hot catering is bought, a black leather couch, the kit on a black deck with hazard tape; out front the service
+  corridor (yellow lines, LOADING DOCK →, NO SKATES, cable ramps, the forklift, the home team's laundry, a cone). The bedsheet
+  banner hangs only at home and in the jam room. Every word/picture is one 1024² canvas atlas (decals lit + glow, the corridor
+  floor faded out at its edges); light pools are one additive mesh. Seasons: window snow only at home; December lights are
+  the tier's own (the jam room's sad strand with dead bulbs, fairy lights on the control-room window, a strand round the road
+  cases); the box fan only at home + in the jam room. The box pile moved to the back-left corner behind Marcel's mirror by
+  Kenji's crate (three stacks, a staircase up to 15, a MERCH sign rising out of it past that) — clear of every label.
+  debug().space adds kind, wall, floor, bg, fixture, hall, hallProps, decals, riser, yard, banner, pileBox, pileSign; debug().labelAt.
+  43: the seat backs you stare at got detail (rolled top, bolsters, a ribbed velour insert, seams, a map pocket with a road
+  map / ketchup chips, a hoodie slung over the minivan's driver seat, cup holders, the minivan bench's belts + a set list);
+  the 15-passenger's church bench (headrest humps over the window seats, pleats, a grab rail, belts, sticks + a phone + a
+  double-double on the ledge, a ribbed rubber floor mat), the sprinter's captain chairs (bolsters, quilted channels, a
+  seatback pocket with a tablet, headrests on posts, armrests both sides, a cooler + gig bag in the aisle, a vinyl-plank
+  floor); each own vehicle's camera sits a touch higher / zoomed in (minivan CAM_MINI, 15-passenger over the bench with row 2
+  pulled into view, sprinter over the headrests); the tour bus is unchanged. info() adds cam, hfov. Content: the jam room is
+  'Rent-A-Riff, Jam Space 7' (blurb + offer card: cinder block, egg-crate foam).
+  Tests: pw_shop META_ONLY=spaces (17: four different room signatures, the kit on the deck, 10 boxes drawn on screen under no
+  label on every tier, December in a rented room, draw calls < 60, every cabin's lower third not one flat colour) + sheet
+  `tests/.cache/v08_spaces_sheet.png`; van +3 (tiers 0–2: the lower third's top colour ≤ 30%); space: the MERCH sign found
+  via debug space.pileSign.
+- Gaps (shop UI / spaces): the other bands' tier-0 starts (laundromat basement, strip-mall unit, Quonset) still draw the
+  parents' garage; the corridor props out front are static (no passers-by, no hockey players); the control-room window is a
+  painted picture (no parallax); sticker / graffiti text is only legible zoomed in (colour + shape read at phone size);
+  the wall-mounted tube is the jam room's only fluorescent (no ceiling fixture: the camera looks down); the band banner is
+  not shown in the studio (no bedsheets at Prairie Dog Sound) or backstage (the stencil names the band); the right wall is
+  seen edge-on, so most signature pieces live on the back wall and the floor.
 
 ## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
 - Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy

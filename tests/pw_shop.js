@@ -1,5 +1,5 @@
 // pw_shop.js: the v0.8 "Kit" shop UI (SHOPUI, lane A stage 2) on a 390x844 phone viewport.
-// Sections (META_ONLY=gear|merch|space|van|sheet, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=gear|merch|space|van|spaces|sheet, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
 //   gear : the kit hotspot (sketch pad) → 🛒 Drum shop: kit tiers (the pro kit waits for Local Heroes, the why shows), toms →
 //          lane 5, ride → lane 6 (needs the toms first), the pedal, the pawn-shop kit (GG.audio.kitQuality 1); each buy is
 //          heard (GG.audio.hit on the new lane); the open grid grows to 6 lanes; Outro / Solo tabs ("+Solo" → Add → the
@@ -16,8 +16,15 @@
 //          laptop's rent, eviction after rent arrears (wrap-evicted). Screenshots shop_door_space.png, shop_space_<0..3>.png.
 //   van  : the garage door → Van tab: the van-side view with venue stickers (a banned one crossed out), rename, a van
 //          upgrade (+1 box), merch space in boxes; Car lot: quote + trade-in → buy the 15-passenger (the name, stickers
-//          kept); the 3D van scene per tier (minivan / 15-passenger / sprinter / tour bus) with stickers; a real trip rides in
-//          the band's tier. Screenshots shop_van.png, shop_van3d_<0..3>.png.
+//          kept); the 3D van scene per tier (minivan / 15-passenger / sprinter / tour bus) with stickers, the lower third of
+//          the cabin not one flat seat-back slab (tiers 0..2); a real trip rides in the band's tier. Screenshots shop_van.png,
+//          shop_van3d_<0..3>.png.
+//   spaces: (v0.8 polish) Hail Damage in each rehearsal space from the normal garage camera (a few upgrades, ~10 boxes of
+//          merch): every tier's room signature differs (kind, wall, floor, background, light fixture; the garage alone keeps
+//          the yard + garage-only meshes; rented rooms have decals + a corridor out front; studio/arena risers lift the kit),
+//          the box pile is on screen and clear of every hotspot label; the minivan / 15-passenger / sprinter / bus cabins
+//          (the lower third is not one flat slab). Screenshots spaces_<0..3>.png, spaces_van_<0..3>.png, tiled into
+//          tests/.cache/v08_spaces_sheet.png.
 //   sheet: tiles the screenshots into tests/.cache/v08_shop_sheet.png.
 // Run: node build.js && META_ONLY=gear timeout 500 node tests/pw_shop.js
 const path = require('path'), fs = require('fs');
@@ -44,6 +51,28 @@ function audit(page) {
     for (const sc of document.querySelectorAll('.sheet-body, .full-body, .seq-main')) if (sc.scrollWidth > sc.clientWidth + 1) bad.push('hscroll ' + sc.className);
     for (const b of document.querySelectorAll('#screens button')) { const r = vis(b); if (r && !b.closest('[hidden]') && (r.width < 43.5 || r.height < 43.5)) bad.push('small ' + name(b) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); }
     return bad.slice(0, 8);
+  });
+}
+// v0.8 polish: the share of the bottom third of a screenshot taken by its single most common colour (16 levels per channel),
+// decoded in the page (no PIL). A flat seat-back slab filling the lower third scores high.
+function flatShare(page, png) {
+  return page.evaluate(async b64 => {
+    const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+    const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+    const y0 = Math.floor(img.height * 2 / 3), d = g.getImageData(0, y0, img.width, img.height - y0).data, H = {};
+    let n = 0; for (let i = 0; i < d.length; i += 4) { const k = (d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | (d[i + 2] >> 4); H[k] = (H[k] || 0) + 1; n++; }
+    return Math.round(Math.max.apply(null, Object.values(H)) / n * 100);
+  }, png.toString('base64'));
+}
+// The box pile's screen box (from debug space.pileBox) and every hotspot label's screen box (±48 x ±13 px round its centre).
+function pileVsLabels(page) {
+  return page.evaluate(() => {
+    const d = GG.debug('render'), B = d.space.pileBox; if (!B) return null;
+    const P = []; for (const x of [B[0], B[3]]) for (const y of [B[1], B[4]]) for (const z of [B[2], B[5]]) P.push(GG.render.worldToScreen(x, y, z));
+    const bb = [Math.min(...P.map(p => p.x)), Math.min(...P.map(p => p.y)), Math.max(...P.map(p => p.x)), Math.max(...P.map(p => p.y))];
+    const L = d.labelAt.map(l => { const p = GG.render.worldToScreen(l.x, l.y, l.z); return [l.action, p.x - 48, p.y - 13, p.x + 48, p.y + 13]; });
+    const over = L.filter(l => Math.min(bb[2], l[3]) > Math.max(bb[0], l[1]) && Math.min(bb[3], l[4]) > Math.max(bb[1], l[2])).map(l => l[0]);
+    return { bb, w: bb[2] - bb[0], h: bb[3] - bb[1], over, pile: d.space.pile, boxes: d.space.boxes, W: innerWidth, H: innerHeight };
   });
 }
 async function boot(page, seed, extra) {
@@ -330,7 +359,7 @@ async function space() {
         const s = GG.state; s.spaceTier = t; s.space = GG.shop.spaceDef(s, t).id; s.spaceUpgrades = ups; s.merch.stock = { shirt: 24 * (3 + t * 2), sticker: 200 * 2 }; GG.main.sync();
         return GG.debug('render').space;
       }, [t, ALL_UPS[t]]);
-      c.ok(r.tier === t && r.garage === (t === 0) && r.upgrades.length === ALL_UPS[t].length && r.pile >= 5, 'tier ' + t + ' in 3D: ' + JSON.stringify(r));
+      c.ok(r.tier === t && r.garage === (t === 0) && r.upgrades.length === ALL_UPS[t].length && r.pile >= 5, 'tier ' + t + ' in 3D: ' + JSON.stringify(Object.assign({}, r, { obstacles: r.obstacles.length })));
       await page.waitForTimeout(900);
       await bareUi(page, true); await shot(page, 'shop_space_' + t + '.png'); await bareUi(page, false);
     }
@@ -349,7 +378,7 @@ async function space() {
       await page.waitForFunction(() => { const d = GG.debug('render'); return !d.walking; }, null, { timeout: 8000 });
       const cl = await page.evaluate(() => {
         const d = GG.debug('render'), p = d.player, O = d.space.obstacles, gap = o => Math.hypot(Math.max(o[0] - p.x, 0, p.x - o[2]), Math.max(o[1] - p.z, 0, p.z - o[3]));
-        const couch = O.find(o => Math.abs((o[0] + o[2]) / 2 + 0.55) < 0.01 && Math.abs((o[1] + o[3]) / 2 - 2.42) < 0.01), sign = O.find(o => o[0] === -2.12 && o[1] === 0.74);
+        const S = d.space.pileSign, couch = O.find(o => Math.abs((o[0] + o[2]) / 2 + 0.55) < 0.01 && Math.abs((o[1] + o[3]) / 2 - 2.42) < 0.01), sign = S && O.find(o => o[0] === S[0] && o[1] === S[1] && o[2] === S[2] && o[3] === S[3]);
         return { p, couch: couch ? Math.round(gap(couch) * 100) / 100 : null, sign: !!sign, min: Math.round(Math.min.apply(null, O.map(gap)) * 100) / 100, pile: d.space.pile, boxes: d.space.boxes };
       });
       c.ok(cl.couch >= 0.3 && cl.min >= 0.15 && cl.sign && cl.boxes > 16, 'at the ' + hs + ' the player stands clear of the curb couch + the MERCH sign ' + JSON.stringify(cl));
@@ -448,6 +477,10 @@ async function van() {
       }, t);
       c.ok(info.tier === t && info.vehicle === ['minivan', 'fifteen', 'sprinter', 'bus'][t] && info.stickers === 6 && info.banned === 1, '3D tier ' + t + ': ' + info.vehicle + ', stickers ' + info.stickers + ' (banned ' + info.banned + ')');
       await page.waitForTimeout(900);
+      if (t < 3) {                                                                  // v0.8 polish: seat backs with detail, not one flat slab
+        await bareUi(page, true); const flat = await flatShare(page, await page.screenshot()); await bareUi(page, false);
+        c.ok(flat <= 30, '3D tier ' + t + ': the lower third is not one flat slab (top colour ' + flat + '% ≤ 30%), camera ' + JSON.stringify(info.cam));
+      }
       await bareUi(page, true); await shot(page, 'shop_van3d_' + t + '.png'); await bareUi(page, false);
     }
     await page.evaluate(() => { GG.render.van.setFrame({ top: 0, bottom: -1 }); GG.render.setScene('garage'); });
@@ -461,6 +494,78 @@ async function van() {
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'van threw: ' + (e.stack || e)); }
   await close(); c.done();
+}
+
+/* ---- spaces (v0.8 polish): every rehearsal space unmistakable from the garage camera; the van cabins ------------------ */
+const SPACE_UPS = { 0: ['curb_couch', 'egg_foam', 'xmas_lights'], 1: ['beer_fridge', 'curb_couch', 'disco_ball'], 2: ['band_lounge', 'beer_fridge', 'espresso'], 3: ['curb_couch', 'hot_tub', 'star_door'] };
+async function spaces() {
+  const c = checker('spaces');
+  const { page, errors, close } = await open();
+  try {
+    await boot(page, 1010, { fund: 5000, era: 'local', fans: 300 });
+    const sig = [];
+    for (const t of [0, 1, 2, 3]) {
+      const r = await page.evaluate(([t, ups]) => {
+        const s = GG.state; s.spaceTier = t; s.space = GG.shop.spaceDef(s, t).id; s.spaceUpgrades = ups; s.merch.stock = { shirt: 24 * 8, sticker: 200 * 2 }; GG.main.sync();
+        const d = GG.debug('render'), sp = d.space; delete sp.obstacles; return sp;
+      }, [t, SPACE_UPS[t]]);
+      sig.push(r);
+      c.ok(r.tier === t && r.garage === (t === 0) && r.yard === (t === 0) && (t ? r.decals >= 5 && r.hallProps >= 3 && r.sign : r.decals === 0) && r.riser > 0 === (t >= 2),
+        'tier ' + t + ' is its own place: ' + JSON.stringify({ kind: r.kind, wall: r.wall, floor: r.floor, bg: r.bg, fixture: r.fixture, hall: r.hall, decals: r.decals, riser: r.riser, yard: r.yard }));
+      await page.waitForTimeout(900);
+      const pv = await pileVsLabels(page);
+      c.ok(pv && pv.pile === pv.boxes && pv.boxes === 10 && pv.w >= 30 && pv.h >= 60 && pv.bb[0] >= 0 && pv.bb[2] <= pv.W && pv.bb[1] >= 0 && pv.bb[3] <= pv.H && !pv.over.length,
+        'tier ' + t + ': all 10 boxes drawn, the pile on screen and under no label ' + JSON.stringify(pv));
+      await bareUi(page, true); await shot(page, 'spaces_' + t + '.png'); await bareUi(page, false);
+    }
+    const uniq = k => new Set(sig.map(r => r[k])).size;
+    c.ok(uniq('kind') === 4 && uniq('wall') === 4 && uniq('floor') === 4 && uniq('bg') === 4 && uniq('fixture') === 4 && uniq('hall') === 4, 'four different rooms (kind, wall, floor, background, fixture, outside) ' + sig.map(r => r.kind + ' ' + r.wall + '/' + r.floor).join(' | '));
+    const kit = await page.evaluate(() => { const sc = GG.render.util.currentScene(); let y = null; sc.traverse(o => { if (o.isMesh && o.scale && Math.abs(o.scale.x - 1.15) < 1e-6 && o.position.x === -0.55) y = o.position.y; }); return y; });
+    c.ok(kit === sig[3].riser && kit > 0, 'backstage: the kit stands on the deck (kit y ' + kit + ')');
+    const dc = await page.evaluate(() => GG.debug('render').drawCalls);
+    c.ok(dc > 0 && dc < 60, 'draw calls in a rented room < 60 (' + dc + ')');
+    // Seasons in a rented room: no window snow backstage; December lights are the tier's own (a sad strand in the jam room).
+    const dec = await page.evaluate(() => {
+      const s = GG.state, out = {}, w0 = s.week;
+      for (const t of [1, 3]) { s.spaceTier = t; s.space = GG.shop.spaceDef(s, t).id; s.week = 12; s.totalWeek = 12; s.weather = GG.calendar.weatherAt(s); GG.main.sync(); out[t] = GG.debug('render').decor; }
+      s.week = w0; GG.main.sync(); return out;
+    });
+    c.ok(dec[1].lights && dec[1].where === 'sad strand' && !dec[1].snow && dec[3].lights && !dec[3].snow && !dec[3].fan, 'December in a rented room: the jam room\'s sad strand, no window snow backstage ' + JSON.stringify(dec));
+    // The cabins, as the trip shows them (default frame).
+    for (const t of [0, 1, 2, 3]) {
+      const info = await page.evaluate(t => {
+        GG.render.setScene('van'); GG.render.van.setFrame({ top: 0, bottom: -1 });
+        GG.render.van.setTrip({ from: 'Saskatoon', to: 'Regina', km: 240, season: 'summer', tier: t }); GG.render.van.setProgress(0.3); GG.render.setPaused(false);
+        return GG.render.van.info();
+      }, t);
+      await page.waitForTimeout(900);
+      await bareUi(page, true); const png = await page.screenshot(); if (SHOTS) fs.writeFileSync(path.join(CACHE, 'spaces_van_' + t + '.png'), png); await bareUi(page, false);
+      const flat = await flatShare(page, png);
+      c.ok(info.tier === t && (t === 3 || flat <= 32), 'cabin ' + info.vehicle + ': lower third top colour ' + flat + '%, camera ' + JSON.stringify(info.cam) + ' hfov ' + info.hfov);
+    }
+    await page.evaluate(() => GG.render.setScene('garage'));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'spaces threw: ' + (e.stack || e)); }
+  await close(); c.done();
+  await tile('v08_spaces_sheet', [['spaces_0', 'Garage (tier 0): the parents\' garage'], ['spaces_1', 'Tier 1: Rent-A-Riff, Jam Space 7'], ['spaces_2', 'Tier 2: Prairie Dog Sound'], ['spaces_3', 'Tier 3: backstage, Potash Place'],
+    ['spaces_van_0', 'Minivan'], ['spaces_van_1', '15-passenger + trailer'], ['spaces_van_2', 'Sprinter'], ['spaces_van_3', 'Tour bus']], 4);
+}
+
+// A Playwright page of <img>s screenshotted into tests/.cache/<name>.png (no PIL).
+async function tile(name, names, cols) {
+  const have = names.filter(n => fs.existsSync(path.join(CACHE, n[0] + '.png')));
+  if (have.length < names.length) console.log(name + ': missing ' + names.filter(n => !have.includes(n)).map(n => n[0]).join(','));
+  if (!have.length) return;
+  const { page, close } = await open({ noGoto: true });
+  const rows = Math.ceil(have.length / cols);
+  await page.setViewportSize({ width: cols * 400 + 10, height: rows * 880 + 10 });
+  const html = '<body style="margin:0;background:#111;color:#eee;font:700 18px sans-serif;display:grid;grid-template-columns:repeat(' + cols + ',390px);gap:10px;padding:10px">' +
+    have.map(n => '<div><div style="padding:4px 0">' + n[1] + '</div><img style="width:390px;height:844px;display:block;object-fit:cover" src="file://' + path.join(CACHE, n[0] + '.png') + '"></div>').join('') + '</body>';
+  const f = path.join(CACHE, name + '.html'); fs.writeFileSync(f, html);
+  await page.goto('file://' + f); await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(CACHE, name + '.png'), fullPage: true });
+  console.log(name + ': tests/.cache/' + name + '.png (' + have.length + ' shots)');
+  await close();
 }
 
 /* ---- the contact sheet ------------------------------------------------------------------------------------------- */
@@ -490,5 +595,6 @@ async function sheet() {
   if (want('merch')) await merch();
   if (want('space')) await space();
   if (want('van')) await van();
+  if (want('spaces')) await spaces();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();

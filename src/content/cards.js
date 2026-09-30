@@ -1680,7 +1680,7 @@
       ] },
 
     { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),
-      text: 'Rent-A-Riff has a jam room free: carpet on the walls, a door that locks, $60 a week. Your mom has already measured the garage for ' +
+      text: 'Rent-A-Riff has a jam space free: cinder block, egg-crate foam, a door that locks, $60 a week. Your mom has already measured the garage for ' +
         'the car. Dad is pretending not to listen. Dad is listening.',
       choices: [
         { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },

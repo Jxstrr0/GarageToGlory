@@ -6,8 +6,8 @@
 // exported for later scenes: stage, van, red carpet). Everything static is merged by material.
 // Draw calls ≈ room 1 + glows 1 + moon shafts 1 + dust 1 + banner 1 + bulb 3 + kit 1 + people 5 + blob shadows 1
 //              + yard (ground, weather, seasonal prop) 3 + labels 7 + walk ring 1 = 26
-//              + v0.8: garage-only 2 (or a rented room's lit + glow + fixture + light wash + decals 2 + corridor floor 7, the
-//              yard hidden) + upgrades ≤ 2 + disco ball 1 + box pile 1.
+//              + v0.8: garage-only 2 (or a rented room's lit + glow + fixture + light wash + decals lit/glow + corridor floor
+//              = 7, with the yard's 3 hidden) + upgrades ≤ 2 + disco ball 1 + box pile 1.
 // v0.8 (SHOPUI): the rehearsal space by state.spaceTier (0 = the band's own start: the parents' garage; 1 Rent-A-Riff, Jam
 // Space 7; 2 Prairie Dog Sound; 3 backstage at the Potash Place) with its bought upgrades (state.spaceUpgrades) visible and
 // the unsold merch box pile (GG.shop.pile(state).boxes) stacked in the back-left corner; see buildSpace. v0.8 polish
