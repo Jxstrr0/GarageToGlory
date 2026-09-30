@@ -1099,13 +1099,14 @@
   };
   A.stop = function () { if (current) current.stop(); };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
-  var previewPort = null, taps = {};
+  var previewPort = null, schedPort = null, taps = {};
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
+  // v0.7.2: hits scheduled ahead go through their own port so A.hitCancel() can silence them (a gig restart / hidden app).
   A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
     if (!previewPort) previewPort = makePort(rig);
-    var playing = current && current.playing, t = ctx.currentTime + 0.005, v;
-    if (when > t && when < t + 1) t = when;
+    var playing = current && current.playing, t = ctx.currentTime + 0.005, v, port = previewPort;
+    if (when > t && when < t + 1) { t = when; port = schedPort || (schedPort = makePort(rig)); }
     if (!playing) setKit(rig, (GG.state && GG.state.genre) || rig.genre || 'metal');
     if (lane === 'toms') { var T = rig.tom; T.i = t - T.t < 0.32 ? Math.min(2, T.i + 1) : 0; T.t = t; v = T.i; }
     else if (lane === 'snare' && rig.kit && rig.kit.train) {
@@ -1119,10 +1120,19 @@
       for (var k = 0; k < last.n; k++) { var j = rig.busy.indexOf(last.end); if (j >= 0) rig.busy[j] = t; }
       taps[lane] = null;
     }
-    var g = gainNode(ctx, 1, previewPort.drums), src = rig.collect = [], b;   // drum voices only use port.drums: a gain per tap is its port
+    var g = gainNode(ctx, 1, port.drums), src = rig.collect = [], b;   // drum voices only use port.drums: a gain per tap is its port
     try { b = drumHit(rig, { drums: g }, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v); } finally { rig.collect = null; }
     if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
+  };
+  A.hitCancel = function () {   // v0.7.2: drops every hit still scheduled ahead (a 5 ms fade, then the port is cut)
+    var p = schedPort; schedPort = null;
+    if (!p || !ctx) return;
+    var t = ctx.currentTime;
+    Object.keys(p).forEach(function (k) {
+      try { var g = p[k].gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.005); } catch (e) { /* ignore */ }
+      setTimeout(function () { try { p[k].disconnect(); } catch (e) { /* ignore */ } }, 60);
+    });
   };
   A.isPlaying = function () { return !!(current && current.playing); };
   A.context = function () { return ctx; };   // v0.3 gig clock + pause (null before unlock); read-only use
