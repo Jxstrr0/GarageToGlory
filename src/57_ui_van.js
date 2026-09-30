@@ -9,6 +9,7 @@
 // v0.6.1 (Addendum 1 C1/C7): the trip passes weather, temp, holiday, driver + dashboard item to the 3D scene
 //   (setTrip { weather, driver, dashboard }); the route header shows the weather (van-weather); the 2D windshield draws
 //   the weather (rain / snow / blizzard / hail / heat shimmer) and whoever drives; van-info shows the driver (van-driver).
+// v0.7 (WORLDUI): abroad (trip.abroad) the rental goes to setTrip { region, look } and the header names it (van-rental).
 //   testids: van-route, van-progress, btn-van-skip, van-say, van-arrive, road-choice-<i>, btn-road-ok, van-repair.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -187,6 +188,7 @@
       ui.append(s.body, el('div.van-top', { testid: 'van-route' }, [
         el('div.van-route', t.fromName === t.toName ? t.toName + ', across town' : t.fromName + ' → ' + t.toName),
         el('div.van-sub', [t.highway ? t.highway + ' · ' : '', v.kmEl, ' · ', d.gig.name]),
+        t.abroad && t.vehicleName ? el('div.van-sub', { testid: 'van-rental' }, (t.vehicleLook === 'train' ? '🚄 ' : '🚐 ') + t.vehicleName + (t.vehicleLook === 'sardine' ? ', packed like sardines' : '')) : null,   // v0.7
         GG.calendar && t.weather ? el('div.van-sub', { testid: 'van-weather' }, weatherText(t)) : null,
         v.bar]));
       v.says = el('div.van-says'); s.body.appendChild(v.says);
@@ -235,7 +237,8 @@
       else safe(function () {
         var dr = GG.world.driver ? GG.world.driver(st) : { id: 'kenji', dashboard: 'cactus' };
         R().van.setTrip({ from: trip.fromName, to: trip.toName, km: trip.km, season: trip.season, night: trip.night, highway: trip.highway,
-          weather: trip.weather, driver: dr.id, dashboard: dr.dashboard || (dr.you ? 'cactus' : null) });
+          weather: trip.weather, driver: dr.id, dashboard: dr.dashboard || (dr.you ? 'cactus' : null),
+          region: trip.abroad ? trip.region : null, look: trip.abroad ? trip.vehicleLook : null });   // v0.7: the rental + regional scenery
         R().van.setProgress(0);
       });
     }

@@ -9,6 +9,8 @@
 // v0.6.1 (Addendum 1 C6/C7): the map is Canada in rings: ring tabs (ring-<id>; Saskatchewan, the West from Local Heroes,
 //   the East & North from Signed); a locked ring is teased (dimmed pins + ring-locked note). Listings carry tag chips
 //   (holiday, outdoor weather, 'your season'; testid board-tag) and the head shows month · season · weather.
+// v0.7 (WORLDUI): on tour (GG.ui.tourBoard from 5i_ui_tour) the board is the region's: its listings (GG.tour.listings via
+//   world.board), the regional map with city pins (city-pin-<id>, board-map data-region) and the rental instead of the van.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
@@ -210,9 +212,10 @@
     build: function (s, d) {
       var st = S(); if (!st || !W()) return;
       var list = W().board(st), mode = d.mode === 'book' ? 'book' : 'view', tab = d.tab || 'list';
+      var TB = ui.tourBoard && ui.tourBoard.on(st) ? ui.tourBoard : null;   // v0.7: on tour = the region's listings + its map
       dbg.mode = mode; dbg.tab = tab; dbg.city = d.city || null; dbg.count = list.length; dbg.ring = null;
       ui.append(s.body, el('div.gb-head', [
-        el('h2', [el('span.sub', 'YEAR ' + st.year + ' · WEEK ' + st.week + (mode === 'book' ? ' · PICK A GIG' : ' · THE CORKBOARD')), 'Gig board']),
+        el('h2', [el('span.sub', 'YEAR ' + st.year + ' · WEEK ' + st.week + (mode === 'book' ? ' · PICK A GIG' : ' · THE CORKBOARD')), TB ? TB.title(st) : 'Gig board']),
         btn('.icon-btn', { testid: 'btn-board-close', 'aria-label': 'Close', onclick: function () { close(s, 'cancel'); } }, '✕')]));
       ui.append(s.body, calLine(st));
       if (mode === 'view') ui.append(s.body, [booked(st), !st.gig && !st.offer ? el('p.small.dim', { style: 'margin:6px 0 0' }, 'Put Book in a slot on the whiteboard to take one of these.') : null]);
@@ -220,7 +223,15 @@
         s.rerender(Object.assign({}, s.data, { tab: t }));
       }, 'board-tab-'));
       var pick = mode === 'book' ? function (l) { confirmBook(s, l); } : null;
-      if (tab === 'map') {
+      if (tab === 'map' && TB) {
+        var tm = TB.map(st, list, d.city, function (id) { s.rerender(Object.assign({}, s.data, { city: id })); });
+        dbg.city = tm.sel; dbg.ring = 'tour';
+        s.body.appendChild(tm.map);
+        s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', tm.city ? tm.city.name : tm.sel),
+          el('div.small.dim', ((tm.city && tm.city.blurb) || '') + (tm.km ? ' · ' + U.fmtNum(tm.km) + ' km from this stop' : '')),
+          tm.here.length ? el('div.gb-list', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
+            : el('div.gb-empty', 'No open dates in ' + (tm.city ? tm.city.name : tm.sel) + ' this week.')]));
+      } else if (tab === 'map') {
         var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || 'sask';
         if (W().ring(sel) !== ringId) sel = Object.keys(W().map().cities).filter(function (id) { return W().ring(id) === ringId; })[0] || sel;
         dbg.ring = ringId; dbg.city = sel;
@@ -236,7 +247,7 @@
         s.body.appendChild(list.length ? el('div.gb-list', list.map(function (l) { return listingCard(st, l, mode, pick); }))
           : el('div.gb-empty', "Nobody's booking this week. The corkboard is just a flyer for a lost cat."));
       }
-      if (mode === 'view') ui.append(s.body, [el('div.caps.gb-sec', 'The van'), vanStrip(st)].concat(bannedWall(st)));
+      if (mode === 'view') ui.append(s.body, TB ? [el('div.caps.gb-sec', 'The rental'), TB.strip(st)] : [el('div.caps.gb-sec', 'The van'), vanStrip(st)].concat(bannedWall(st)));
       if (mode === 'book') s.foot.appendChild(btn('.btn.block', { testid: 'board-skip', onclick: function () { GG.career.pickListing(S(), 'skip'); close(s, 'skip'); } }, 'No gig this week'));
       else s.foot.appendChild(btn('.btn.block', { testid: 'board-done', onclick: function () { close(s, 'cancel'); } }, 'Back to the garage'));
     },

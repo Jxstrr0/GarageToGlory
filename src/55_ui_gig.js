@@ -30,7 +30,7 @@
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   var MOMENT_TEXT = { mosh: 'Mosh pit!', lighters: 'Lighters up', boo: 'Boooo', drinks: 'Incoming drinks!', wallOfDeath: 'Wall of death!',
-    circlePit: 'Circle pit!', lineDance: 'Line dance!', capeSpin: 'Cape spin!', solo: 'Solo time' };
+    circlePit: 'Circle pit!', lineDance: 'Line dance!', capeSpin: 'Cape spin!', solo: 'Solo time', applause: 'Polite applause 🙇' };   // v0.7: a silent (Japanese) crowd between songs
   var BAND_TEXT = { solo: "{n}'s solo: keep it simple", fill: '{n} sneaks in a fill!', miss: '{n} missed a cue', capeSpin: '{n} spins the cape!' };
   var LEVEL_TEXT = { hostile: 'Hostile', bored: 'Bored', warm: 'Warm', hyped: 'Hyped', wild: 'Wild' };
   var BANTER = {

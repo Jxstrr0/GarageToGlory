@@ -12,6 +12,12 @@
 //   'you' | a member id; default: Kenji while active, else you) and dashboard ('cactus' | 'laundry' | 'cassettes' | 'atlas').
 //   Seating: the driver up front, YOU riding shotgun as founder (or driving), the band in the back rows, gear + merch piled
 //   behind. info() adds weatherId, driver, dashboard.
+// v0.7 (WORLDUI): setTrip also takes region ('uk_europe' | 'japan' | 'australia' | 'russia'; abroad) and look (the rental:
+//   'sardine' | 'splitter' | 'kei' | 'train' | 'ute' | 'camper' | 'bus'). Abroad the fields and roadside change: UK & Europe
+//   hedgerows, sheep, cottages and castles; Japan neon shopping streets, blossom trees, vending machines; Australia red
+//   outback, roadhouses, termite mounds, gum trees and kangaroos; Russia birch taiga (snow in winter), izbas, onion domes
+//   and a bear. The tiny European van ('sardine') packs the band in like sardines (three abreast, gear to the roof);
+//   rails replace the road for train passes (faster). info() adds region, look.
 // Draw calls ≈ sky 1 + sun/moon 1 + stars 1 + clouds 1 + ground 1 + road 1 + poles 1 + elevators 1 + farms 1
 //   + farm lights 1 + belts 1 + bales 1 + moose 1 + sign 2 + skyline 1 + weather 1-2 + glass 1 + wipers 1
 //   + headlight pool 1 + interior 2 + bobble 1 + freshener 1 + wheel 1 + people 4 ≈ 32.
@@ -42,6 +48,14 @@
     spring: [0x6a5236, 0x7a603e, 0x6f8e46, 0x5e4a30, 0x86a052]
   };
   var BELTS = { summer: 0x3f6e2e, fall: 0xd88a2a, winter: 0x4a4238, spring: 0x7aa24a };
+  // v0.7: abroad. fields: non-winter patchwork (winter falls back to the snowy prairie unless `always`).
+  var REGION = {
+    uk_europe: { fields: [0x5f9a3e, 0x74a84a, 0x4e8a36, 0x88b456, 0x6a9a40, 0xc8b84a], elev: [0x9a968a, 0x8a8478, 0xa8a294] },
+    japan: { fields: [0x6aa04a, 0x7fb258, 0x8a8a86, 0x6a6a70, 0x5a9a48, 0x9a9a96], elev: [0x3a3a48, 0x4a4a5a, 0x2e3440] },
+    australia: { fields: [0xb8562a, 0xc4642e, 0xa84a22, 0xd07a3a, 0x9a4420, 0xc8883e], always: true, elev: [0xc8c8c0, 0xb0b0a8, 0xd0ccc0] },
+    russia: { fields: [0x3e5e32, 0x4a6a3a, 0x5a7a44, 0x36502c, 0x6a8a4a, 0x5a6a3a], elev: [0xf0ece0, 0xe8e0d0, 0xf4f0e8] }
+  };
+  var LINERS = { sardine: 0xe8e8e4, splitter: 0x3a3a42, kei: 0xd8dce4, train: 0x9aa6b4, ute: 0xc8b8a0, camper: 0xf0e8d0, bus: 0xb8a888 };
   var ELEV_COLS = [0xb03a2e, 0x8a2a2a, 0x3a7a4a, 0xd8b24a, 0xa8a8a0];
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -103,7 +117,8 @@
         season: season, night: !!o.night, from: o.from || st.city || 'Saskatoon', to: o.to || (gig && gig.city) || 'Regina',
         km: +o.km > 0 ? +o.km : 150, members: members, band: band, flags: st.flags || {},
         weather: WX[o.weather] ? o.weather : null, driver: driver, dashboard: o.dashboard !== undefined ? o.dashboard : driver === 'kenji' || driver === 'you' ? 'cactus' : null,
-        playerLook: pl.look || (preset && preset.look) || null
+        playerLook: pl.look || (preset && preset.look) || null,
+        region: REGION[o.region] ? o.region : null, look: o.look || null   // v0.7: abroad
       };
     }
     function contentMember(band, id) {
@@ -212,7 +227,7 @@
     // ---- Ground + road (scrolling canvas textures) ------------------------------------------------------------
     function buildGround(D) {
       var season = D.season, c = document.createElement('canvas'); c.width = c.height = 256;
-      var g = c.getContext('2d'), cols = FIELDS[season], i, j, k;
+      var RG = D.region && REGION[D.region], g = c.getContext('2d'), cols = RG && (season !== 'winter' || RG.always) ? RG.fields : FIELDS[season], i, j, k;
       for (i = 0; i < 4; i++) for (j = 0; j < 4; j++) {
         var cc = cols[Math.floor(hash01(i * 4 + j, 9) * cols.length)];
         g.fillStyle = hex(cc); g.fillRect(i * 64, j * 64, 64, 64);
@@ -231,12 +246,17 @@
       // Road: asphalt, gravel shoulders, white edges, dashed yellow centre line.
       var rc = document.createElement('canvas'); rc.width = 128; rc.height = 256;
       var r = rc.getContext('2d'), snow = season === 'winter';
-      r.fillStyle = snow ? '#e9edf3' : '#9a8e76'; r.fillRect(0, 0, 128, 256);
+      r.fillStyle = snow ? '#e9edf3' : D.region === 'australia' ? '#b0582a' : '#9a8e76'; r.fillRect(0, 0, 128, 256);
       r.fillStyle = snow ? '#7d828c' : '#3c3d42'; r.fillRect(16, 0, 96, 256);
       if (snow) { r.fillStyle = 'rgba(240,244,250,0.7)'; r.fillRect(16, 0, 8, 256); r.fillRect(104, 0, 8, 256); r.fillRect(58, 0, 12, 256); }
       r.fillStyle = 'rgba(0,0,0,0.12)'; for (k = 0; k < 40; k++) r.fillRect(16 + hash01(k, 20) * 94, hash01(k, 21) * 250, 2 + hash01(k, 22) * 4, 1 + hash01(k, 23) * 3);
       r.fillStyle = '#f2f2ea'; r.fillRect(20, 0, 3, 256); r.fillRect(105, 0, 3, 256);
-      r.fillStyle = '#f2c832'; r.fillRect(62, 0, 4, 96);
+      r.fillStyle = D.region === 'uk_europe' || D.region === 'japan' ? '#f2f2ea' : '#f2c832'; r.fillRect(62, 0, 4, 96);
+      if (D.look === 'train') {                                               // v0.7: rail passes: ballast, sleepers, two rails
+        r.fillStyle = snow ? '#c8ccd4' : '#7a746a'; r.fillRect(0, 0, 128, 256);
+        r.fillStyle = '#4a3a2a'; for (k = 0; k < 256; k += 16) r.fillRect(22, k, 84, 7);
+        r.fillStyle = '#b8bcc4'; r.fillRect(36, 0, 5, 256); r.fillRect(87, 0, 5, 256);
+      }
       var rt = new THREE.CanvasTexture(rc); rt.wrapS = rt.wrapT = THREE.RepeatWrapping; rt.anisotropy = 4; rt.repeat.set(1, 1000 / 28);
       K.texs.push(rt); K.roadTex = rt;
       var rg = new THREE.PlaneGeometry(12, 1000); rg.rotateX(-Math.PI / 2);
@@ -254,6 +274,7 @@
       var P = K.props, i, b, season = D.season, night = D.night;
       var litMat = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
       K.litMat = litMat;
+      if (D.region) { buildRegionProps(D, P, litMat); return; }   // v0.7: abroad
       // Power poles (right side) with the wire span to the next pole.
       b = new ctx.Builder({ jitter: 0.04, seed: 5 });
       b.box(0.28, 9, 0.28, 0, 4.5, 0, 0x6a4a2e); b.box(2.4, 0.18, 0.18, 0, 8.4, 0, 0x5a3e26);
@@ -313,6 +334,98 @@
       col.setHex(0xffffff);
       for (var key in P) if (P[key].m && !P[key].m.instanceColor) for (i = 0; i < P[key].m.count; i++) P[key].m.setColorAt(i, col);
       for (i = 0; i < 3; i++) { col.setHex(ELEV_COLS[i % ELEV_COLS.length]); P.elev.m.setColorAt(i, col); }
+      K.propMeshes = [P.poles.m, P.elev.m, P.farm.m, P.belt.m, P.bales.m, P.moose.m];
+    }
+
+    // v0.7: the roadside abroad. Same pools (and the same scrolling) as the prairie, new shapes, new distances.
+    function buildRegionProps(D, P, litMat) {
+      var i, k, b, season = D.season, reg = D.region, winter = season === 'winter', RG = REGION[reg];
+      function pool(bld, n, gap, extra) { return Object.assign({ m: instanced(bld.build(), litMat, n), n: n, gap: gap, speed: 1 }, extra || {}); }
+      // Poles: telegraph poles (UK, Russia), concrete poles with a transformer (Japan), fence posts + wire (Australia).
+      b = new ctx.Builder({ jitter: 0.04, seed: 5 });
+      if (reg === 'australia') { b.box(0.12, 1.2, 0.12, 0, 0.6, 0, 0x7a5a3a); for (k = 0; k < 3; k++) b.box(0.02, 0.02, 45, 0, 0.4 + k * 0.35, -22.5, 0x8a8a8a); }
+      else { b.box(0.28, 9, 0.28, 0, 4.5, 0, reg === 'japan' ? 0xa8a8a0 : 0x6a4a2e); b.box(2.4, 0.18, 0.18, 0, 8.4, 0, 0x5a3e26); if (reg === 'japan') b.cyl(0.35, 0.35, 0.8, 8, 0.4, 7.2, 0, 0x8a9098); }
+      P.poles = pool(b, 12, 45);
+      // Landmarks: a castle (UK & Europe), a neon tower (Japan), a windmill + water tank (Australia), an onion-dome church (Russia).
+      b = new ctx.Builder({ jitter: 0.04, seed: 7 });
+      if (reg === 'uk_europe') {
+        b.box(16, 7, 10, 0, 3.5, 0, 0xffffff); for (i = 0; i < 7; i++) b.box(1.2, 1.2, 10.2, -7.2 + i * 2.4, 7.6, 0, 0xffffff);
+        for (k = -1; k <= 1; k += 2) { b.cyl(2.4, 2.6, 12, 10, k * 8, 6, 0, 0xffffff); b.cyl(0, 2.9, 3.2, 10, k * 8, 13.6, 0, 0x5a4a44); }
+        b.box(3, 4, 0.4, 0, 2, 5.1, 0x3a2a1e); b.box(0.2, 3.5, 0.1, 8, 17, 0, 0x5a5a5a); b.box(1.8, 1.1, 0.05, 8.9, 18, 0, 0xc0302a);
+      } else if (reg === 'japan') {
+        b.box(9, 30, 9, 0, 15, 0, 0xffffff); b.box(9.4, 0.6, 9.4, 0, 30.3, 0, 0x777777);
+        for (k = 0; k < 6; k++) b.box(8.4, 0.3, 9.2, 0, 4 + k * 4.5, 0, 0x5a6070);
+        b.box(0.3, 6, 0.3, 3, 33.5, 3, 0x8a8a8a); b.box(6, 22, 6, -8, 11, 2, 0xdddddd);
+      } else if (reg === 'australia') {
+        b.box(0.3, 12, 0.3, 0, 6, 0, 0x8a8a8a); for (k = 0; k < 8; k++) b.box(0.4, 3.4, 0.08, 0, 12, 0.3, 0xd8d8d0, 0, 0, k * Math.PI / 4); b.box(0.4, 0.6, 3, 0, 12, -1.6, 0xc0c0b8);
+        b.cyl(3, 3, 4, 12, 7, 3.5, 0, 0xffffff); b.box(0.4, 1.6, 0.4, 5, 0.8, 1, 0x7a5a3a); b.box(0.4, 1.6, 0.4, 9, 0.8, -1, 0x7a5a3a); b.cyl(3.1, 3.1, 0.3, 12, 7, 5.6, 0, 0x9a9a92);
+      } else {
+        b.box(8, 10, 8, 0, 5, 0, 0xffffff); b.cyl(2.2, 2.2, 5, 10, 0, 12.5, 0, 0xffffff);
+        b.shape(new THREE.IcosahedronGeometry(2.6, 1), 0, 16.4, 0, 1, 1.25, 1, 0xd8a830); b.cyl(0, 0.9, 2.4, 8, 0, 19.6, 0, 0xd8a830); b.box(0.12, 1.6, 0.12, 0, 21.4, 0, 0xd8a830); b.box(0.8, 0.12, 0.12, 0, 21.6, 0, 0xd8a830);
+        for (k = -1; k <= 1; k += 2) { b.cyl(1, 1, 5, 8, k * 3.4, 12, 3.4, 0xffffff); b.shape(new THREE.IcosahedronGeometry(1.2, 1), k * 3.4, 15.2, 3.4, 1, 1.3, 1, 0x3a6ab8); }
+      }
+      P.elev = pool(b, 3, 360, { lastCycle: new Int32Array(3).fill(-99999), cols: RG.elev, x0: reg === 'japan' ? 30 : 34, xr: 40 });
+      // Buildings: cottages (UK), a neon shopping street (Japan: close to the road, lit signs), roadhouses (Australia), izbas (Russia).
+      b = new ctx.Builder({ jitter: 0.05, seed: 11 });
+      var fn = 4, fgap = 250, fx0 = 60, fxr = 90;
+      if (reg === 'uk_europe') {
+        b.box(8, 4.5, 5, 0, 2.25, 0, 0xf2eee2); b.quad([-4.3, 4.5, 2.8], [4.3, 4.5, 2.8], [4.3, 7.4, 0], [-4.3, 7.4, 0], 0x6a5a3a); b.quad([4.3, 4.5, -2.8], [-4.3, 4.5, -2.8], [-4.3, 7.4, 0], [4.3, 7.4, 0], 0x5a4a30);
+        b.box(0.8, 2.2, 0.8, 2.5, 7.8, 0, 0x8a4a3a); b.box(1, 2, 0.1, 0, 1, 2.55, 0x2a4a6a); b.box(22, 1.2, 0.8, 0, 0.6, 7, 0x8a8478);
+      } else if (reg === 'japan') {
+        fn = 10; fgap = 60; fx0 = 14; fxr = 8;
+        for (k = 0; k < 3; k++) { var hh = 8 + k * 3; b.box(9.6, hh, 8, -k * 10, hh / 2, 0, 0xe0dcd4 - k * 0x101010); b.box(9.8, 0.4, 8.2, -k * 10, hh, 0, 0x6a6a70); b.box(8.6, 2.4, 0.2, -k * 10, 1.2, 4.05, 0x2a2a30); }
+      } else if (reg === 'australia') {
+        b.box(12, 4, 8, 0, 2, 0, 0xe8e0c8); b.box(13, 0.4, 10, 0, 4.2, 1, 0x9a9a92); for (k = 0; k < 3; k++) b.box(0.3, 4, 0.3, -5 + k * 5, 2, 5.6, 0x7a5a3a);
+        b.box(0.4, 7, 0.4, 9, 3.5, 4, 0x8a8a8a); b.box(5, 2.2, 0.3, 9, 7.5, 4, 0xd83a2a); b.box(1, 2, 1, -3, 1, 8, 0xc0c0b8); b.box(1, 2, 1, 3, 1, 8, 0xc0c0b8);
+        fx0 = 30; fxr = 60;
+      } else {
+        b.box(7, 3.6, 6, 0, 1.8, 0, 0x7a5232); for (k = 0; k < 6; k++) b.box(7.1, 0.12, 6.1, 0, 0.3 + k * 0.6, 0, 0x5a3a22);
+        b.quad([-3.8, 3.6, 3.3], [3.8, 3.6, 3.3], [3.8, 6, 0], [-3.8, 6, 0], winter ? 0xf0f4fa : 0x5a4a3a); b.quad([3.8, 3.6, -3.3], [-3.8, 3.6, -3.3], [-3.8, 6, 0], [3.8, 6, 0], winter ? 0xe4e8f0 : 0x4a3a2a);
+        for (k = -1; k <= 1; k += 2) { b.box(1.1, 1.1, 0.1, k * 1.8, 2, 3.05, 0x3a6ab8); b.box(0.8, 0.8, 0.12, k * 1.8, 2, 3.07, 0xe8e0a0); }
+        b.box(0.5, 1.6, 0.5, 2, 6.2, 0, 0x6a5a4a);
+      }
+      P.farm = pool(b, fn, fgap, { x0: fx0, xr: fxr });
+      if (reg === 'japan') {                                                   // neon: vertical signs + shopfront strips (unlit, always on)
+        var NE = [0xff3a8a, 0x3af0ff, 0xffe23a, 0x8a5aff, 0x5aff8a, 0xff7a2a], lb = new ctx.Builder({ jitter: 0 });
+        for (k = 0; k < 3; k++) { var hk = 8 + k * 3; lb.box(1.2, hk * 0.55, 0.4, -k * 10 + 3.6, hk * 0.5, 4.4, NE[k * 2 % 6]); lb.box(8.4, 0.5, 0.25, -k * 10, 2.9, 4.3, NE[(k * 2 + 1) % 6]); lb.box(2.6, 0.9, 0.2, -k * 10 - 2, hk - 1.6, 4.2, NE[(k + 4) % 6]); }
+        K.farmLights = instanced(lb.build(), ctx.mats.unlit, fn);
+      } else if (D.night && reg !== 'australia') {
+        var lw = new ctx.Builder({ jitter: 0 }); lw.box(1.2, 1, 0.2, 0, 2, reg === 'uk_europe' ? 2.6 : 3.1, 0xffd070); K.farmLights = instanced(lw.build(), ctx.mats.unlit, fn);
+      }
+      // Rows: hedgerows (UK), blossom / maple trees (Japan), gum trees (Australia), birch forest (Russia).
+      b = new ctx.Builder({ jitter: 0.1, seed: 13 });
+      var bcol = BELTS[season], bn = 6, bgap = 170;
+      if (reg === 'uk_europe') { for (i = 0; i < 12; i++) b.shape(new THREE.IcosahedronGeometry(1.4, 0), 0, 1.1, -i * 2.4, 1.2, 1, 1.4, 0xffffff); bcol = winter ? 0x4a5a3a : 0x3f6e2e; bn = 8; bgap = 110; }
+      else if (reg === 'japan') { for (i = 0; i < 6; i++) { b.box(0.4, 2.4, 0.4, 0, 1.2, -i * 7, 0x4a3226); b.shape(new THREE.IcosahedronGeometry(2.2, 0), 0, 3.6, -i * 7, 1.3, 0.9, 1.3, 0xffffff); } bcol = season === 'spring' ? 0xf4b8cc : season === 'fall' ? 0xd8502a : winter ? 0xe8ecf2 : 0x4a8a3a; }
+      else if (reg === 'australia') { for (i = 0; i < 4; i++) { b.box(0.4, 5, 0.4, 0, 2.5, -i * 16, 0xe8e0d0, 0, 0, 0.1); b.shape(new THREE.IcosahedronGeometry(2.6, 0), 0.5, 5.8, -i * 16, 1.4, 0.7, 1.2, 0xffffff); } bcol = 0x7a8a6a; }
+      else {
+        for (i = 0; i < 20; i++) { var bz = -i * 2.6, bh = 7 + hash01(i, 4) * 4, bx = (hash01(i, 5) - 0.5) * 3;
+          b.box(0.28, bh, 0.28, bx, bh / 2, bz, 0xf2f0ea); b.box(0.3, 0.2, 0.3, bx, bh * 0.3, bz, 0x1a1a1a); b.box(0.3, 0.14, 0.3, bx, bh * 0.62, bz, 0x1a1a1a);
+          if (!winter) b.shape(new THREE.IcosahedronGeometry(1.3, 0), bx, bh * 0.85, bz, 0.9, 1.4, 0.9, 0xffffff); else b.box(0.9, 0.2, 0.9, bx, bh, bz, 0xf4f6fa); }
+        bcol = season === 'fall' ? 0xe0b030 : 0x6a9a3a; bn = 8; bgap = 90;
+      }
+      P.belt = pool(b, bn, bgap, { x0: reg === 'russia' ? 16 : 22, xr: reg === 'russia' ? 40 : 70 });
+      col.setHex(bcol); for (i = 0; i < bn; i++) P.belt.m.setColorAt(i, col);
+      // Small things: sheep (UK), vending machines (Japan), termite mounds (Australia), snow drifts / haystacks (Russia).
+      b = new ctx.Builder({ jitter: 0.06, seed: 17 });
+      var show = 0.5, scol = 0xffffff;
+      if (reg === 'uk_europe') { b.box(1.1, 0.7, 0.7, 0, 0.75, 0, 0xffffff); b.box(0.35, 0.4, 0.3, 0.7, 0.95, 0, 0x2a2a2a); for (k = 0; k < 4; k++) b.box(0.12, 0.45, 0.12, k < 2 ? 0.35 : -0.35, 0.22, k % 2 ? 0.2 : -0.2, 0x2a2a2a); scol = 0xf4f2ea; show = 0.6; }
+      else if (reg === 'japan') { b.box(1, 1.9, 0.8, 0, 0.95, 0, 0xffffff); b.box(0.8, 1.1, 0.05, 0, 1.2, 0.42, 0xd8e8f0); scol = 0xd83a3a; show = 0.35; }
+      else if (reg === 'australia') { b.cyl(0.2, 0.9, 2.6, 8, 0, 1.3, 0, 0xffffff); b.cyl(0.15, 0.5, 1.4, 6, 0.7, 0.7, 0.3, 0xffffff); scol = 0xb85a2a; show = 0.55; }
+      else { b.shape(new THREE.IcosahedronGeometry(1, 0), 0, 0.4, 0, 1.6, 0.6, 1.2, 0xffffff); scol = winter ? 0xf4f6fa : 0xc8a45a; show = 0.35; }
+      P.bales = pool(b, 24, 42, { show: show, x0: reg === 'japan' ? 7.6 : 12, xr: reg === 'japan' ? 1 : 50, face: reg === 'japan' });
+      col.setHex(scol); for (i = 0; i < 24; i++) P.bales.m.setColorAt(i, col);
+      // The animal: a kangaroo (Australia), a brown bear (Russia); none in the UK or Japan (the pool stays empty).
+      b = new ctx.Builder({ jitter: 0.05, seed: 19 });
+      if (reg === 'australia') { var kc = 0xa8683a; b.box(0.6, 1.1, 0.7, 0, 1.2, 0, kc, -0.35, 0, 0); b.box(0.35, 0.4, 0.5, 0, 1.95, 0.35, kc); b.box(0.1, 0.3, 0.08, 0.1, 2.25, 0.25, kc); b.box(0.1, 0.3, 0.08, -0.1, 2.25, 0.25, kc);
+        b.box(0.3, 0.7, 0.9, 0, 0.35, 0.1, kc); b.box(0.2, 0.18, 1.4, 0, 0.45, -0.95, kc, 0.3, 0, 0); b.box(0.12, 0.4, 0.12, 0.15, 1.2, 0.45, kc, 0.8, 0, 0); b.box(0.12, 0.4, 0.12, -0.15, 1.2, 0.45, kc, 0.8, 0, 0); }
+      else if (reg === 'russia') { var bc = 0x4a2e1a; b.box(1.1, 1.1, 2, 0, 1.2, 0, bc); b.box(0.7, 0.7, 0.7, 0, 1.6, 1.2, bc); b.box(0.35, 0.3, 0.3, 0, 1.45, 1.6, 0x3a2412);
+        b.box(0.18, 0.18, 0.1, 0.25, 2.0, 1.1, bc); b.box(0.18, 0.18, 0.1, -0.25, 2.0, 1.1, bc); for (k = 0; k < 4; k++) b.box(0.3, 0.8, 0.3, k % 2 ? 0.35 : -0.35, 0.4, k < 2 ? 0.7 : -0.7, bc); }
+      else b.box(0.01, 0.01, 0.01, 0, -5, 0, 0x000000);
+      P.moose = pool(b, 3, 540, { n: 2, show: reg === 'australia' ? 0.7 : reg === 'russia' ? 0.3 : 0 });
+      col.setHex(0xffffff);
+      for (var key in P) if (P[key].m && !P[key].m.instanceColor) for (i = 0; i < P[key].m.count; i++) P[key].m.setColorAt(i, col);
+      for (i = 0; i < 3; i++) { col.setHex(RG.elev[i % RG.elev.length]); P.elev.m.setColorAt(i, col); }
       K.propMeshes = [P.poles.m, P.elev.m, P.farm.m, P.belt.m, P.bales.m, P.moose.m];
     }
 
@@ -407,7 +520,7 @@
       var im = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: new THREE.Color(dim, dim, dim * 1.02) }));
       K.inMat = im;
       var b = new ctx.Builder({ jitter: 0.05, seed: 29 }), gl = new ctx.Builder({ jitter: 0, seed: 2 }), i, s;
-      var liner = 0xe6dac0, trim = 0x55565e, dash = 0x2e2f35, fabric = 0x4f5a72, paint = 0x7a2a2a, rust = 0x9a5a2a;
+      var liner = LINERS[D.look] || 0xe6dac0, trim = 0x55565e, dash = 0x2e2f35, fabric = D.look === 'bus' ? 0x8a2a2a : 0x4f5a72, paint = D.look ? 0xe8e8e4 : 0x7a2a2a, rust = D.look ? 0xc8c8c0 : 0x9a5a2a;   // v0.7: rentals
       // Roof, pillars, doors
       b.box(2.0, 0.06, 3.4, 0, 1.94, 0.55, liner); b.box(1.9, 0.02, 0.1, 0, 1.905, -0.3, sh(liner, 0.85)); b.box(1.9, 0.02, 0.1, 0, 1.905, 0.3, sh(liner, 0.85));
       gl.box(0.22, 0.03, 0.1, 0, 1.905, 0.15, night ? 0x3a3020 : 0xf6ead0);
@@ -459,6 +572,11 @@
       b.box(0.62, 0.5, 0.4, -0.45, 0.25, 1.55, 0x1e1e22); b.box(0.5, 0.36, 0.36, -0.4, 0.68, 1.55, 0x26262c); b.cyl(0.3, 0.3, 0.3, 12, 0.35, 0.3, 1.6, 0x3a2a2a, Math.PI / 2, 0, 0);
       b.box(0.4, 0.26, 0.3, 0.45, 0.6, 1.6, 0xc8a870); b.box(0.36, 0.22, 0.3, 0.1, 0.7, 1.65, 0xd8b880);
       b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
+      if (D.look === 'sardine') {                                   // v0.7: the tiny European van: gear to the roof, laps full
+        b.box(1.7, 0.5, 0.45, 0, 1.25, 1.35, 0x1e1e22); b.box(1.5, 0.35, 0.4, 0.05, 1.68, 1.35, 0x2a2a30); b.box(0.9, 0.18, 0.3, -0.3, 1.86, 1.1, 0xc8a870);
+        b.box(1.5, 0.12, 0.3, 0, 0.72, 0.5, 0x3a2a1e, 0, 0.15, 0); b.box(1.4, 0.1, 0.26, 0, 0.84, 0.46, 0x5a3a22, 0, -0.1, 0);   // guitar cases across the laps
+        b.cyl(0.2, 0.2, 0.18, 10, 0.5, 0.72, -0.28, 0x8a2a2a, Math.PI / 2, 0, 0); b.box(0.3, 0.3, 0.3, -0.05, 0.42, -0.62, 0x26262c);   // a snare on your lap, an amp between the seats
+      }
       buildDash(b, D.dashboard);
       b.box(2.0, 0.05, 3.8, 0, 0, 0.4, 0x2a2826);                                                 // floor
       // The hood (rust included) and the plastic antlers zip-tied to the front.
@@ -548,6 +666,8 @@
         { x: -0.47, z: -0.47, role: 'driver' }, { x: 0.49, z: -0.47, role: 'shotgun' },
         { x: -0.6, z: 0.72, role: 'middleL' }, { x: 0.6, z: 0.72, role: 'middleR' }, { x: 0, z: 1.3, role: 'back' }
       ];
+      if (D.look === 'sardine') seats = [{ x: -0.47, z: -0.47, role: 'driver' }, { x: 0.49, z: -0.47, role: 'shotgun' },   // v0.7: three abreast
+        { x: -0.56, z: 0.68, role: 'middleL' }, { x: 0.56, z: 0.68, role: 'middleR' }, { x: 0, z: 0.64, role: 'back' }];
       var cv = D.flags && D.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var riders = [driver].concat(driver === you ? rest.slice(0, 4) : [you].concat(rest.slice(0, 3)));
       var pm = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, color: new THREE.Color(D.night ? 0.45 : 0.62, D.night ? 0.45 : 0.62, D.night ? 0.5 : 0.64) }));
@@ -605,7 +725,7 @@
       S.t += dt;
       var cr = K.crossing, slow = cr && cr.z > -80 && cr.z < 10 ? 0.35 : 1;
       S.speedK += (slow - S.speedK) * (1 - Math.exp(-1.5 * dt));
-      var ds = SPEED * S.speedK * dt;
+      var ds = SPEED * S.speedK * dt * (K.D.look === 'train' ? 2.2 : 1);   // v0.7: rail passes are faster
       S.s += ds;
       K.roadTex.offset.y = (S.s / 28) % 1; K.groundTex.offset.y = (S.s / 220) % 1;
       scrollProps(t, dt, ds);
@@ -630,32 +750,32 @@
       for (i = 0; i < P.elev.n; i++) {
         c = cycle(P.elev, i, s, span); z = zOf(P.elev, i, s, span); h = hash01(c * 3 + i, 81);
         if (h < 0.2) { P.elev.m.setMatrixAt(i, zero); continue; }
-        x = (h < 0.6 ? -1 : 1) * (26 + hash01(c * 3 + i, 82) * 30);
+        x = (h < 0.6 ? -1 : 1) * ((P.elev.x0 || 26) + hash01(c * 3 + i, 82) * (P.elev.xr || 30));
         place(P.elev, i, x, 0, z, hash01(c, 83) < 0.5 ? 0 : Math.PI / 2, 1);
-        if (P.elev.lastCycle[i] !== c) { P.elev.lastCycle[i] = c; col.setHex(ELEV_COLS[Math.floor(hash01(c * 5 + i, 84) * ELEV_COLS.length)]); P.elev.m.setColorAt(i, col); P.elev.m.instanceColor.needsUpdate = true; }
+        if (P.elev.lastCycle[i] !== c) { P.elev.lastCycle[i] = c; var EC = P.elev.cols || ELEV_COLS; col.setHex(EC[Math.floor(hash01(c * 5 + i, 84) * EC.length)]); P.elev.m.setColorAt(i, col); P.elev.m.instanceColor.needsUpdate = true; }
       }
       span = P.farm.n * P.farm.gap;
       for (i = 0; i < P.farm.n; i++) {
         c = cycle(P.farm, i, s, span); z = zOf(P.farm, i, s, span); h = hash01(c * 4 + i, 85);
-        x = (h < 0.5 ? -1 : 1) * (60 + hash01(c * 4 + i, 86) * 90);
-        place(P.farm, i, x, 0, z, (hash01(c * 4 + i, 87) - 0.5) * 1.2 + (x > 0 ? -Math.PI / 2 : Math.PI / 2), 1);
+        x = (h < 0.5 ? -1 : 1) * ((P.farm.x0 || 60) + hash01(c * 4 + i, 86) * (P.farm.xr != null ? P.farm.xr : 90));
+        place(P.farm, i, x, 0, z, (P.farm.x0 ? 0 : (hash01(c * 4 + i, 87) - 0.5) * 1.2) + (x > 0 ? -Math.PI / 2 : Math.PI / 2), 1);
         if (K.farmLights) K.farmLights.setMatrixAt(i, dummy.matrix);
       }
       span = P.belt.n * P.belt.gap;
       for (i = 0; i < P.belt.n; i++) {
         c = cycle(P.belt, i, s, span); z = zOf(P.belt, i, s, span); h = hash01(c * 6 + i, 88);
-        place(P.belt, i, (h < 0.5 ? -1 : 1) * (32 + hash01(c * 6 + i, 89) * 80), 0, z, hash01(c * 6 + i, 90) < 0.3 ? Math.PI / 2 : 0, 1);
+        place(P.belt, i, (h < 0.5 ? -1 : 1) * ((P.belt.x0 || 32) + hash01(c * 6 + i, 89) * (P.belt.xr || 80)), 0, z, hash01(c * 6 + i, 90) < 0.3 ? Math.PI / 2 : 0, 1);
       }
       span = P.bales.n * P.bales.gap;
       for (i = 0; i < P.bales.n; i++) {
         c = cycle(P.bales, i, s, span); h = hash01(c * 24 + i, 91);
         if (h > P.bales.show) { P.bales.m.setMatrixAt(i, zero); continue; }
-        place(P.bales, i, (hash01(c * 24 + i, 92) < 0.5 ? -1 : 1) * (12 + hash01(c * 24 + i, 93) * 50), 0, zOf(P.bales, i, s, span), hash01(i, 94) * 3, 1);
+        place(P.bales, i, (hash01(c * 24 + i, 92) < 0.5 ? -1 : 1) * ((P.bales.x0 || 12) + hash01(c * 24 + i, 93) * (P.bales.xr || 50)), 0, zOf(P.bales, i, s, span), P.bales.face ? (hash01(c * 24 + i, 92) < 0.5 ? Math.PI / 2 : -Math.PI / 2) : hash01(i, 94) * 3, 1);
       }
       span = P.moose.n * P.moose.gap;
       for (i = 0; i < P.moose.n; i++) {
         c = cycle(P.moose, i, s, span); h = hash01(c * 2 + i, 95);
-        if (h > 0.55) { P.moose.m.setMatrixAt(i, zero); continue; }
+        if (h > (P.moose.show != null ? P.moose.show : 0.55)) { P.moose.m.setMatrixAt(i, zero); continue; }
         x = (h < 0.27 ? -1 : 1) * (14 + hash01(c * 2 + i, 96) * 22);
         place(P.moose, i, x, 0, zOf(P.moose, i, s, span), x > 0 ? -Math.PI / 2 + 0.3 : Math.PI / 2 - 0.3, 1);
       }
@@ -818,7 +938,7 @@
       info: function () {
         if (!K) return { built: false };
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
-          weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null,
+          weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           traveled: Math.round(S.s), skyline: K.skyline.visible, crossing: !!K.crossing, geos: K.geos.length, mats: K.mats.length, texs: K.texs.length };
       }

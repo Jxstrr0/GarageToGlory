@@ -10,6 +10,12 @@
 //   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
 //   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
 //   with their banner). view 'drummer' (default) is the v0.3 camera. info() adds { view, rival, painted }.
+// v0.7 (WORLDUI): world venues dress the stage (by venueId, else venue.festival / venue.hall): kind 'festival' (a big
+//   outdoor stage, PA towers, a daylight sky and a sea of heads to the horizon) with a ground: 'mud' (Mudstonbury,
+//   Wackelstein: puddles, tents, flags, a flying welly), 'sun' (Big Day Inn), 'beach' (Summer Sonicboom: the sea),
+//   'frost' (Siberian Frostfest: snow, pines, an ice sculpture, the frozen lake); kind 'hall' (Budokhan Hall: tiered
+//   seating, a ring of lights); 'opera' (the Moose Opera: an antler chandelier). A silent crowd (venue.silent, Japan) stands
+//   still while a song plays and claps, then bows, on 'applause' (C.MOMENTS + 'applause'). info() adds { dress, silent, bowing }.
 // Bus: 'gig:judge' -> hit + crowd meter, 'crowd:level' -> setCrowdLevel, 'crowd:moment' -> moment,
 //      'audio:step' -> beat phase (the crowd and band move on the song's beat).
 // Draw calls ≈ room 2 + sign 1 + beams 3 + kit parts 4 + sticks 2 + band 4 + drummer 1 + crowd 6 + glows 1
@@ -47,6 +53,23 @@
     bar: { hs: 0.5, sw: 2.7, w: 4.9, back: -9.6, ceil: 3.6, floor: 0x3c2819, wall: 0x4c2d1c, trim: 0x2a180e, ceilCol: 0x16100c, deck: 0x221a15, amb: [0xffb878, 0x1a1008, 0.45], key: 0.55, wash: 1.1, beams: 0.75, bg: 0x0a0705, name: 'The Gopher Hole', sub: 'COLD BEER · LIVE MUSIC' },
     club: { hs: 0.85, sw: 3.1, w: 6.2, back: -12.2, ceil: 4.8, floor: 0x1e1c23, wall: 0x17151b, trim: 0x0e0d11, ceilCol: 0x0c0b0e, deck: 0x141318, amb: [0xb898ff, 0x0c0a12, 0.4], key: 0.55, wash: 1.3, beams: 1, bg: 0x060509, name: 'The Club', sub: 'LIVE TONIGHT' }
   };
+  KIND.festival = { hs: 1.3, sw: 3.8, w: 8.5, front: -2.3, back: -16, ceil: 0, floor: 0x4a3620, wall: 0x1a1a1e, deck: 0x1c1c22, amb: [0xe8eef8, 0x4a3a28, 0.95], key: 0.9, wash: 0.7, beams: 0.5, outdoor: true, bg: 0x8aa6c8, name: 'Main Stage', sub: 'MAIN STAGE' };
+  KIND.hall = { hs: 1.0, sw: 3.4, w: 8, front: -2.2, back: -15, ceil: 9, floor: 0x3a3440, wall: 0x2a2630, trim: 0x141218, ceilCol: 0x141218, deck: 0x1a1a20, amb: [0xfff0e0, 0x1a1418, 0.6], key: 0.5, wash: 1.2, beams: 1, bg: 0x08070a, name: 'Budokhan Hall', sub: 'THE OCTAGON' };
+  // v0.7: world venues -> a dressing; grounds recolour the festival stage.
+  var DRESS = { mudstonbury_fest: ['festival', 'mud'], wackelstein_fest: ['festival', 'mud'], big_day_inn: ['festival', 'sun'], summer_sonicboom: ['festival', 'beach'],
+    siberian_frostfest: ['festival', 'frost'], budokhan: ['hall', 'hall'], moose_opera: ['church', 'opera'] };
+  var GROUND = {
+    mud: { floor: 0x4a3620, bg: 0x8aa6c8, sky: [0xb8c8dc, 0x5a7aa8], amb: [0xe8eef8, 0x4a3a28, 0.95], sub: 'MUD · WELLIES · MORE MUD' },
+    sun: { floor: 0x6a9a3a, bg: 0x5aa8f0, sky: [0xb8e0ff, 0x2a78d8], amb: [0xfff4e0, 0x6a5a3a, 1.05], sub: 'SLIP · SLOP · SLAP' },
+    beach: { floor: 0xd8c08a, bg: 0x6ab0f0, sky: [0xc8e8ff, 0x3a88e0], amb: [0xfff4e0, 0x8a7a5a, 1.05], sub: 'SEASIDE MAIN STAGE' },
+    frost: { floor: 0xe8eef6, bg: 0x9ab0c8, sky: [0xe0e8f2, 0x7a90b0], amb: [0xeef4ff, 0x8a9ab0, 1.0], key: 0.7, sub: 'MINUS FORTY · LAKE BAIKAL' }
+  };
+  function dressOf(v) {
+    if (!v || typeof v !== 'object') return null;
+    var d = DRESS[v.venueId] || DRESS[v.id];
+    if (d) return d;
+    return v.festival ? ['festival', 'sun'] : v.hall ? ['hall', 'hall'] : v.moose ? ['church', 'opera'] : null;
+  }
   var DEFAULT_FRONT = -2.05;
 
   var GENRE = {
@@ -199,14 +222,15 @@
       level: pending.level, smooth: pending.level, hype: pending.level / 100, idx: 2,
       beatLen: 0.45, beatT: 0, beats: 0, lastBeatAt: 0,
       form: { kind: null, t: 0, dur: 0 }, arms: { kind: null, t: 0, dur: 0 }, cheer: 0, kickPulse: 0, time: 0,
-      moments: 0, hits: 0
+      moments: 0, hits: 0, bow: 0
     };
+    var BOW = 3.4;   // v0.7: clap (1.6 s), then a bow
 
     // ---------------------------------------------------------------------------------------------------
     function resolve() {
       var cfg = pending.cfg || {}, st = lastState || GG.state || {};
       var venue = cfg.venue != null ? cfg.venue : (st.liveGig && st.liveGig.gig) || st.gig || null;
-      var kind = kindOf(venue || 'bar');
+      var dress = dressOf(venue), kind = dress ? dress[0] : kindOf(venue || 'bar');   // v0.7: world stages
       var genre = cfg.genre || st.genre || 'metal';
       if (!GENRE[genre]) genre = 'metal';
       var band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
@@ -216,8 +240,9 @@
       var crowd = cfg.crowd != null ? +cfg.crowd : venue && typeof venue === 'object' ? +(venue.crowd || venue.capacity || 30) : 30;
       if (!isFinite(crowd)) crowd = 30;
       return {
-        kind: kind, V: KIND[kind], genre: genre, G: GENRE[genre], band: band, members: members, flags: flags, player: player,
-        crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd,   // v0.6.1: graphics quality venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,
+        kind: kind, V: kind === 'festival' ? Object.assign({}, KIND.festival, GROUND[dress[1]] || GROUND.sun) : KIND[kind], genre: genre,
+        dress: dress ? dress[1] : null, silent: !!(cfg.silent != null ? cfg.silent : venue && typeof venue === 'object' && venue.silent),   // v0.7 G: GENRE[genre], band: band, members: members, flags: flags, player: player,
+        crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         banner: cfg.banner || '', bannerSub: cfg.sub || ''
@@ -513,7 +538,82 @@
           var ball = mesh(bb.build(), ctx.mats.vc); ball.position.set(0, V.ceil - 0.8, -6.5); K.spin.push({ m: ball, speed: 0.7 });
           B.box(0.02, 0.6, 0.02, 0, V.ceil - 0.3, -6.5, 0x444444);
           break;
+        case 'festival': buildFestival(B, G, D); break;   // v0.7
+        case 'hall': buildHall(B, G, D); break;           // v0.7
       }
+      if (D.dress === 'opera') {                           // v0.7: the Moose Opera's antler chandelier
+        var cy = V.ceil - 0.9;
+        G.cyl(0.5, 0.5, 0.05, 16, 0, cy, -5.5, 0xffe2a0); B.box(0.03, 0.8, 0.03, 0, cy + 0.45, -5.5, 0x8a6a2a);
+        for (s = -1; s <= 1; s += 2) { B.box(1.0, 0.08, 0.3, s * 0.8, cy + 0.15, -5.5, 0xd8c8a0, 0, 0, s * 0.35); for (i = 0; i < 3; i++) B.box(0.07, 0.35, 0.07, s * (0.55 + i * 0.3), cy + 0.45, -5.5 + (i - 1) * 0.1, 0xd8c8a0); }
+        for (i = 0; i < 8; i++) G.box(0.08, 0.12, 0.08, Math.cos(i * Math.PI / 4) * 0.5, cy + 0.08, -5.5 + Math.sin(i * Math.PI / 4) * 0.5, 0xfff4c8);
+      }
+    }
+    // v0.7: a sea of static heads from behind the live crowd to z1 (one merged mesh; neat rows when seated).
+    function crowdSea(B, D, z0, z1, xw, gap, seated, y0, rise) {
+      var G2 = D.G, j = 0, x, z, row = 0;
+      for (z = z0; z > z1; z -= gap, row++) for (x = -xw; x <= xw; x += gap) {
+        j++;
+        if (!seated && hash01(j, 51) < 0.1) continue;
+        var px = x + (seated ? 0 : (hash01(j, 52) - 0.5) * 0.3), pz = z + (seated ? 0 : (hash01(j, 53) - 0.5) * 0.3), yb = (y0 || 0) + row * (rise || 0);
+        var h = seated ? 0.95 : 1.45 + hash01(j, 54) * 0.3, shirt = pickOf(G2.shirts, j, 55);
+        if (D.dress === 'frost') shirt = pickOf([0xc0392b, 0x2d5fa0, 0x3a3a40, 0xe0d8c8, 0x2a6a3a], j, 56);
+        B.box(0.42, h - 0.25, 0.26, px, yb + (h - 0.25) / 2, pz, shirt);
+        B.box(0.24, 0.26, 0.24, px, yb + h - 0.1, pz, D.dress === 'frost' && hash01(j, 57) < 0.7 ? pickOf([0xc0392b, 0xf0f0f0, 0x2d5fa0], j, 58) : pickOf(SKINS, j, 59));
+        if (!seated && !D.silent && hash01(j, 60) < 0.14) B.box(0.1, 0.55, 0.1, px + 0.2, yb + h + 0.1, pz, pickOf(SKINS, j, 61));
+      }
+    }
+    function buildFestival(B, G, D) {
+      var V = D.V, gd = D.dress, front = V.front || DEFAULT_FRONT, i, s, x, z;
+      var sky = new ctx.Builder({ jitter: 0 }), zb = -38, top = 26;
+      sky.triC([-60, -1, zb], [60, -1, zb], [60, top, zb], V.sky[0], V.sky[0], V.sky[1]);
+      sky.triC([-60, -1, zb], [60, top, zb], [-60, top, zb], V.sky[0], V.sky[1], V.sky[1]);
+      for (i = 0; i < 9; i++) sky.box(4 + hash01(i, 41) * 6, 0.9 + hash01(i, 42), 0.01, (hash01(i, 43) - 0.5) * 80, 11 + hash01(i, 44) * 10, zb + 0.3, gd === 'frost' ? 0xe8eef6 : 0xf8fbff);
+      mesh(sky.build(), ctx.mats.unlit);
+      B.box(140, 0.1, 50, 0, -0.07, -34, V.floor);
+      crowdSea(B, D, front - 2.9, V.back - 2, V.w + 3.5, 0.62, false);
+      for (s = -1; s <= 1; s += 2) {
+        for (i = 0; i < 4; i++) B.box(1.3, 1.1, 1.0, s * (V.sw + 1.1), 0.55 + i * 1.12, front + 0.2, 0x141418);                 // PA towers
+        B.box(0.3, 7, 0.3, s * 6.5, 3.5, -10, 0x6a6a70); B.box(1.2, 1.6, 1, s * 6.5, 6.4, -10, 0x1a1a1e);                        // delay towers
+        B.box(0.25, 9, 0.25, s * (V.sw + 1.9), 4.5, 1.2, 0x3a3a42); B.box(0.25, 0.25, 6, s * (V.sw + 1.9), 9, -1.6, 0x3a3a42);    // roof truss legs
+      }
+      for (x = -V.w - 1; x <= V.w + 1.01; x += 1.4) B.box(0.06, 1.1, 0.06, x, 0.55, front - 0.7, 0x8a8e94);                    // crowd barrier
+      B.box(2 * V.w + 2, 0.08, 0.08, 0, 1.1, front - 0.7, 0x8a8e94);
+      for (i = 0; i < 7; i++) {                                                                                                  // flags over the crowd
+        x = (hash01(i, 71) - 0.5) * 22; z = -7 - hash01(i, 72) * 12;
+        B.box(0.06, 5.5, 0.06, x, 2.75, z, 0x5a5a5a); B.box(1.1, 0.7, 0.02, x + 0.56, 5.1, z, pickOf([0xc0392b, 0xe8c547, 0x2d6fd0, 0x2a9a4a, 0xf0f0f0], i, 73));
+      }
+      if (gd === 'mud' || gd === 'sun') for (i = 0; i < 9; i++) {                                                             // tents on the horizon
+        x = -30 + i * 7.5 + hash01(i, 74) * 2; z = -26 - hash01(i, 75) * 4;
+        B.box(3.4, 3.4, 4, x, 0, z, pickOf([0xf0f0f0, 0xc0392b, 0x2d6fd0, 0xe8c547], i, 76), 0, 0, Math.PI / 4);
+      }
+      if (gd === 'mud') {
+        for (i = 0; i < 14; i++) B.cyl(0.5 + hash01(i, 77) * 0.9, 0.5 + hash01(i, 77) * 0.9, 0.02, 12, (hash01(i, 78) - 0.5) * 16, 0.012, -3.4 - hash01(i, 79) * 10, 0x2a1e12);   // puddles
+        B.box(0.22, 0.42, 0.12, -1.6, 4.2, -6, 0x2a6a3a, 0.6, 0, 0.9); B.box(0.2, 0.1, 0.3, -1.6, 4.0, -5.85, 0x2a6a3a, 0.6, 0, 0.9);   // a welly, mid-air
+        for (i = 0; i < 5; i++) B.shape(new THREE.IcosahedronGeometry(4, 0), -28 + i * 14, -1.5, -32, 1.6, 0.6, 1, 0x4a7a3a);        // hills
+      } else if (gd === 'sun') {
+        for (i = 0; i < 5; i++) { x = (hash01(i, 80) - 0.5) * 26; z = -15 - hash01(i, 81) * 6; B.box(0.08, 2.4, 0.08, x, 1.2, z, 0xd8d8d0); B.cyl(0, 1.3, 0.5, 8, x, 2.5, z, pickOf([0xe8c547, 0xc0392b, 0x2d6fd0], i, 82)); }   // sun umbrellas
+        B.box(1.6, 3.2, 1.2, 9, 1.6, -18, 0xc07a3a); B.box(0.9, 1.1, 1.2, 9.3, 3.6, -17.6, 0xc07a3a); B.box(0.3, 0.8, 0.2, 9.2, 4.5, -17.8, 0xc07a3a); B.box(0.5, 0.5, 2.6, 9, 0.6, -19.6, 0xc07a3a, 0.4, 0, 0);   // an inflatable kangaroo
+      } else if (gd === 'beach') {
+        B.box(140, 0.06, 12, 0, 0.02, -31, 0x2a7ab8); B.box(140, 0.07, 0.4, 0, 0.03, -25.2, 0xf4f8ff);                             // the sea + surf
+        for (i = 0; i < 6; i++) { x = (hash01(i, 83) - 0.5) * 30; B.box(0.08, 2.4, 0.08, x, 1.2, -17 - i, 0xd8d8d0); B.cyl(0, 1.3, 0.5, 8, x, 2.5, -17 - i, pickOf([0xff5a8a, 0x3ac8e0, 0xe8c547], i, 84)); }
+      } else if (gd === 'frost') {
+        for (i = 0; i < 12; i++) { x = -34 + i * 6 + hash01(i, 85) * 3; z = -24 - hash01(i, 86) * 6; var ph = 5 + hash01(i, 87) * 4;   // pines
+          B.box(0.3, 1.2, 0.3, x, 0.6, z, 0x4a3a2a); B.cyl(0, 1.9, ph, 8, x, 1 + ph / 2, z, 0x2a4a3a); B.cyl(0, 1.2, ph * 0.4, 8, x, 1 + ph * 0.85, z, 0xf4f8ff); }
+        B.box(140, 0.05, 6, 0, 0.02, -30, 0xc8dcec);                                                                            // Baikal, frozen
+        for (i = 0; i < 8; i++) B.shape(new THREE.IcosahedronGeometry(1.4, 0), (hash01(i, 88) - 0.5) * 24, 0.1, -4 - hash01(i, 89) * 12, 1.6, 0.4, 1.2, 0xf4f8ff);   // snowbanks
+        B.box(1.2, 2.6, 0.8, -8.5, 1.3, -9, 0xbfe0f4); B.box(0.8, 0.8, 1.6, -8.5, 2.7, -8.8, 0xbfe0f4); B.box(0.2, 1.0, 0.2, -8.2, 3.4, -8.3, 0xbfe0f4, 0, 0, 0.5); B.box(0.2, 1.0, 0.2, -8.8, 3.4, -8.3, 0xbfe0f4, 0, 0, -0.5);   // an ice moose
+        B.box(2 * V.sw, 0.12, 2.6, 0, V.hs + 0.02, 0.3, 0xf4f8ff);                                                               // snow on the deck
+      }
+    }
+    function buildHall(B, G, D) {
+      var V = D.V, w = V.w, back = V.back, front = V.front || DEFAULT_FRONT, i, t, s;
+      crowdSea(B, D, front - 2.9, -9.2, w - 0.6, 0.6, true);                                                                     // arena floor seats
+      for (t = 0; t < 8; t++) B.box(2 * w, 0.5, 0.75, 0, 0.25 + t * 0.5, -9.8 - t * 0.7, t % 2 ? 0x5a2a2a : 0x6a3030);             // tiers at the back
+      crowdSea(B, D, -9.8, -9.8 - 8 * 0.7 + 0.1, w - 0.4, 0.7, true, 0.5, 0.5);
+      for (s = -1; s <= 1; s += 2) for (t = 0; t < 4; t++) B.box(0.8, 0.5, 7, s * (w - 0.4 - t * 0), 0.25 + t * 0.5, -5.5, 0x5a2a2a);   // side tiers
+      for (i = 0; i < 16; i++) { var a = i / 16 * Math.PI * 2; G.box(0.5, 0.12, 0.12, Math.cos(a) * 3.2, V.ceil - 0.5, -8 + Math.sin(a) * 3.2, 0xfff2d8, 0, -a, 0); }   // the ring of lights
+      B.box(6.8, 0.2, 6.8, 0, V.ceil - 0.2, -8, 0x1e1a22);
+      G.box(4.4, 0.9, 0.05, 0, V.ceil - 2.4, back + 0.2, 0xd8323a); G.box(4.0, 0.08, 0.06, 0, V.ceil - 2.4, back + 0.24, 0xfff2d8);   // the red banner
     }
     function flag(B, x, z, h) {
       B.box(0.04, 2.6 * h, 0.04, x, 1.3 * h, z, 0xc9a64a);
@@ -560,8 +660,8 @@
         fit(title, 460, 64, '900'); g.fillStyle = g.strokeStyle; g.fillText(title, 256, 96); g.fillText(title, 256, 96);
         g.shadowColor = '#3cc4ff'; g.fillStyle = '#c8f0ff'; fit(V.sub, 440, 34, '800'); g.fillText(V.sub, 256, 186); g.fillText(V.sub, 256, 186);
       } else {
-        var bgc = { house: '#efe8d8', legion: '#1d3a6a', church: '#2a2a2a', curling: '#c0392b', skatepark: '#2a2a2e' }[D.kind] || '#222';
-        var fg = { house: '#1a1a1a', legion: '#f2e6c0', church: '#f4f4f4', curling: '#ffffff', skatepark: '#39ff7a' }[D.kind] || '#fff';
+        var bgc = { house: '#efe8d8', legion: '#1d3a6a', church: '#2a2a2a', curling: '#c0392b', skatepark: '#2a2a2e', festival: D.dress === 'frost' ? '#1d3a6a' : D.dress === 'mud' ? '#2a1e12' : '#d8323a', hall: '#7a1418' }[D.kind] || '#222';
+        var fg = { house: '#1a1a1a', legion: '#f2e6c0', church: '#f4f4f4', curling: '#ffffff', skatepark: '#39ff7a', festival: '#ffe27a', hall: '#fff6e0' }[D.kind] || '#fff';
         g.fillStyle = bgc; g.fillRect(8, 8, 496, 240);
         g.strokeStyle = fg; g.lineWidth = 6; g.strokeRect(20, 20, 472, 216);
         g.fillStyle = fg; fit(title, 440, 58, '900'); g.fillText(title, 256, 100);
@@ -569,13 +669,15 @@
       }
       var tex = new THREE.CanvasTexture(c); K.texs.push(tex);
       var mat = ownMat(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
-      var wdt = D.kind === 'house' ? 2.4 : D.kind === 'bingo' ? 3.6 : 3.4;
+      var wdt = D.kind === 'house' ? 2.4 : D.kind === 'bingo' ? 3.6 : D.kind === 'festival' ? 11 : D.kind === 'hall' ? 5 : 3.4;
       var geo = new THREE.PlaneGeometry(wdt, wdt / 2);
       var m = mesh(geo, mat);
       var y = D.kind === 'house' ? 2.0 : D.kind === 'curling' ? V.ceil - 0.25 : D.kind === 'skatepark' ? 2.9 : D.kind === 'bingo' ? 2.4 : Math.min(V.ceil - 1.0, 2.9);
       m.position.set(D.kind === 'house' ? -0.3 : 0, y, V.back + 0.16);
       if (D.kind === 'curling') { m.scale.set(0.9, 0.45, 1); m.position.z = V.back + 0.23; }
       if (D.kind === 'skatepark') { m.position.z = V.back + 0.05; }
+      if (D.kind === 'festival') m.position.set(0, 8.5, V.back - 4);   // v0.7: the festival banner over the far crowd
+      if (D.kind === 'hall') m.position.set(0, V.ceil - 1.2, V.back + 0.25);
       m.renderOrder = 1;
     }
 
@@ -1043,6 +1145,7 @@
         return true;
       }
       if (kind === 'drinks') { throwCups(7); return true; }
+      if (kind === 'applause') { if (K.D.silent) S.bow = BOW; else S.cheer = 1.4; return true; }   // v0.7: the song ends, the silence breaks
       if (kind === 'capeSpin') return bandAction(null, 'capeSpin');
       if (kind === 'solo') return bandAction(null, 'solo');
       return false;
@@ -1125,6 +1228,7 @@
       if (S.form.kind) { S.form.t += dt; if (S.form.t >= S.form.dur) S.form.kind = null; }
       if (S.arms.kind) { S.arms.t += dt; if (S.arms.t >= S.arms.dur) S.arms.kind = null; }
       if (S.cheer > 0) S.cheer -= dt;
+      if (S.bow > 0) S.bow -= dt;
       S.kickPulse = Math.max(0, S.kickPulse - dt * 7);
       updateLights(dt, t);
       updateBand(dt, t);
@@ -1295,7 +1399,7 @@
       var amIn = AM ? ease(Math.min(1, at / 0.5)) * ease(Math.min(1, (ad - at) / 0.6)) : 0;
       var cheer = S.cheer > 0 ? ease(Math.min(1, S.cheer / 0.4)) : 0;
       var kPos = 1 - Math.exp(-3.2 * dt), kRun = 1 - Math.exp(-7 * dt), kArm = 1 - Math.exp(-12 * dt), kYaw = 1 - Math.exp(-5 * dt);
-      var surfOn = lvl >= 4 && !F && C.surfer >= 0;
+      var silent = K.D.silent, surfOn = lvl >= 4 && !F && C.surfer >= 0 && !silent;
       var glowOn = false, i;
       for (i = 0; i < n; i++) {
         var ph = C.ph[i], en = C.en[i], hx = C.hx[i], hz = C.hz[i];
@@ -1380,13 +1484,22 @@
           else { aRx += (-0.9 - aRx) * amIn; aRz += (-0.1 - aRz) * amIn; aLx += (-0.9 - aLx) * amIn; }
           hp += 0.15 * amIn; ty *= 1 - amIn;
         }
+        var lean = 0;
+        if (silent) {   // v0.7: a polite crowd: still while the song plays; claps, then bows, when it ends
+          tx = hx; tz = hz; ty = 0; tyaw = 0; run = 0; glow = 0; hp = 0.03 * bob; aLx = 0.06; aLz = 0.1; aRx = 0.06; aRz = -0.1;
+          if (S.bow > 0) {
+            var bt2 = BOW - S.bow;
+            if (bt2 < 1.6) { var cl = Math.sin(t * 17 + ph * 2); aLx = -1.3; aRx = -1.3; aLz = -0.45 - 0.22 * cl; aRz = 0.45 + 0.22 * cl; ty = 0.02 * Math.abs(cl); }
+            else { var bu = ease(Math.min(1, (bt2 - 1.6) / 0.35)) * ease(Math.min(1, S.bow / 0.5)); lean = 0.42 * bu; hp = 0.4 * bu; aLz = 0.05; aRz = -0.05; }
+          }
+        }
         // --- smooth + write matrices
         var kp = run ? kRun : kPos;
         C.px[i] += (tx - C.px[i]) * kp; C.pz[i] += (tz - C.pz[i]) * kp;
         C.yaw[i] += (tyaw - C.yaw[i]) * (run ? kRun : kYaw);
         C.aLx[i] += (aLx - C.aLx[i]) * kArm; C.aLz[i] += (aLz - C.aLz[i]) * kArm; C.aRx[i] += (aRx - C.aRx[i]) * kArm; C.aRz[i] += (aRz - C.aRz[i]) * kArm;
         C.hp[i] += (hp - C.hp[i]) * kArm;
-        var px = C.px[i], pz = C.pz[i], py = run ? 0.06 * Math.abs(Math.sin(t * 11 + ph * 9)) + ty : ty, rx = 0, yw = C.yaw[i], s = C.sc[i];
+        var px = C.px[i], pz = C.pz[i], py = run ? 0.06 * Math.abs(Math.sin(t * 11 + ph * 9)) + ty : ty, rx = lean, yw = C.yaw[i], s = C.sc[i];
         if (surfOn && i === C.surfer) {
           var su = frac(t * 0.08 + 0.3);
           px = C.pitX + 0.8 * Math.sin(t * 0.5); pz = C.front - 0.4 - 3.6 * bump(su); py = 1.55 + 0.05 * Math.sin(t * 4); rx = -1.45; yw = 0.3 * Math.sin(t * 0.7);
@@ -1520,7 +1633,7 @@
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted };
+          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0 };
       }
     };
     return shell;

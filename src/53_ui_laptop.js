@@ -4,12 +4,13 @@
 // v0.5: Label (deal status, recoup, deadline, offers, DIY: GG.ui.labelPanel in 59_ui_label) and Albums (studio session,
 // discography: GG.ui.albumsPanel in 59c_ui_awards) tabs.
 // v0.6: Scene (the rival, heat, the scene leaderboard, rival news: GG.ui.scenePanel in 59d_ui_rival).
+// v0.7: World (tour status, a mini world map -> the world map, charts abroad, past tours, the Global Gong).
 // v0.6.1: Bandbook (posts, comments, fan types, superfans, fan mail, Patreeon: GG.ui.bandbookPanel in 5g_ui_bandbook;
 // seven tabs wrap into two rows, CSS in 5g).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }];
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
   var lastTab = 'chat';
   function fill(t) { return GG.career && GG.career.fillText && GG.state ? GG.career.fillText(GG.state, t) : t; }
 
@@ -96,6 +97,7 @@
         : tab === 'label' ? (ui.labelPanel ? ui.labelPanel(st, function () { s.rerender({ tab: 'label' }); }) : el('p.dim', 'No label news.'))   // v0.5
         : tab === 'albums' ? (ui.albumsPanel ? ui.albumsPanel(st) : el('p.dim', 'No albums yet.'))
         : tab === 'scene' ? (ui.scenePanel ? ui.scenePanel(st) : el('p.dim', 'No rivals yet.'))   // v0.6
+        : tab === 'world' ? (ui.worldPanel ? ui.worldPanel(st) : el('p.dim', 'No passport yet.'))   // v0.7
         : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
         : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
