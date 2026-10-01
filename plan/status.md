@@ -15,6 +15,27 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
+## RESUME HERE (paused 2026-10-01 ~06:05 UTC; owner out of usage until Saturday)
+- **main = 0.9.0.0 "Genres"** (PR #18 merged; drum sync 0.8.3 = PR #17). All local wip/worktree branches deleted.
+- **v1.0 "Glory" is planned, not built.** Branch `v1.0-glory` (pushed) holds `plan/plan_contract_1.0.md`: the planner's draft
+  (audits SPEC/CODE/PERF → §0–§6). **§0 owner answers are recorded and LOCKED (all eight recommended options):** bonus years
+  = early World stage (+3 by end of y5, +2 by end of y6); Sad Dome in the career's last year (wk 21); ending tiers by Legacy
+  score only (fair middle; difficulty = badge); other bands get their own twin endings/trophies; unlocks = looks from finished
+  careers (no gameplay); Hall of Fame entry = logo, lineup, ending, score, badge, trophies, yearly headline strip (no photo);
+  tutorial = full week 1 + light weeks 2–4, skip offered after any career passes wk 4, "?" replays; graphics default "Auto"
+  (1.5× DPR, steps down on slow frames, 30 fps quiet rooms, 3D paused behind tall menus).
+- **Not done yet:** the two critiques ran (completeness + feasibility, results in workflow run `wf_67e1a673-db7` journal)
+  but the planner's **revise pass was stopped** before it wrote anything. Next session: resume that workflow
+  (`Workflow({scriptPath: <session>/workflows/scripts/v10-glory-plan-wf_67e1a673-db7.js, resumeFromRunId: 'wf_67e1a673-db7'})`
+  — audits/draft/critics replay from cache; only `planner:revise` runs) or, if the session is new, re-run the two critics
+  on the committed draft and revise. The revise must keep §0 answers as LOCKED (don't reopen them).
+- **Then:** stage 0 (lead, per §3), launch the §5 lanes (Ultracode, worktrees, commit WIP to `wip-v10-*` branches before
+  any long wait — container restarts happened twice on 2026-09-30), integrate per §6, full node + pw at 390×844 and
+  440×956, review → verify → fix, PR `v1.0-glory` → main, merge, then v1.1 "Tuning" (start with the "two biggest
+  annoyances" popup).
+- Known v1.1 items already logged: Ramblers' World payoff rarely reached (Australia ~$7k up front), Gravel Kings fund y3
+  ~20–30 % high, rock walking-bass clashes, bridge progression never varies (fix changes HD audio).
+
 ## Locked foundations (from handoff A2)
 | Call | Decision |
 |---|---|

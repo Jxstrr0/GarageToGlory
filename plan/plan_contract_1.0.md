@@ -1,4 +1,4 @@
-# v1.0 "Glory": plan contract (planner draft, reviewed by the lead; owner answers in §0)
+# v1.0 "Glory": plan contract (planner draft; owner answers in §0 are LOCKED; critique + revise still to run — see status "RESUME HERE")
 
 Repo: `/home/user/GarageToGlory`, branch `v1.0-glory` (= `main` 0.9.0.0). Stage 0 bumps VERSION to `1.0.0.0`. All paths are
 repo-relative.
@@ -11,7 +11,7 @@ come from `BAND=all node tools/balance.js 10 4` on this branch (planner scratch 
 
 ---
 
-## 0. Owner questions (OPEN, two popups of four; recommended option first; every lane builds to the answers)
+## 0. Owner questions (ANSWERED 2026-10-01: all eight recommended options; LOCKED; every lane builds to the answers)
 
 Popup text should also list the "defaults taken without a popup" below, so the owner can object in the same reply.
 
@@ -23,13 +23,13 @@ Popup text should also list the "defaults taken without a popup" below, so the o
   weeks 96–107 (+3 every time); the average bot in weeks 149–167 (usually none).
 - (b) Legacy at year 10. Decided at the year-10 wrap from the Legacy score. A surprise, but nothing can be planned past year 10.
 - (c) Any World stage. Reaching World at any point earns +2. Most careers get them.
-- Answer: ______
+- Answer: **(a) Early World stage** (owner popup 2026-10-01, LOCKED)
 
 **Q2 Sad Dome** (`sad_dome`). In a career with bonus years, when is the Sad Dome co-bill (the final showdown)?
 - **(a) In the last year (Recommended).** Week 21 of the career's final year, so the showdown stays the climax just before the
   ending (A11: "near the end of the career"). With no bonus years it is year 10 week 21, exactly as now.
 - (b) Always year 10. As locked in v0.6; the bonus years are an encore after it and the headline/open result stands.
-- Answer: ______
+- Answer: **(a) In the last year** (owner popup 2026-10-01, LOCKED)
 
 **Q3 Ending tiers** (`ending_tiers`). How harsh are the five tiers (Arena Legends → Canadian Institution → Cult Heroes →
 One-Album Wonders → Still in the Garage)?
@@ -39,7 +39,7 @@ One-Album Wonders → Still in the Garage)?
 - (b) Strict. Arena Legends also needs headlining the Sad Dome and a broken region abroad; average careers mostly end as Cult
   Heroes or One-Album Wonders.
 - (c) Difficulty counts. As (a), but Brutal adds 15 % to the score and Chill takes 15 % off.
-- Answer: ______
+- Answer: **(a) Score only, fair middle** (owner popup 2026-10-01, LOCKED)
 
 **Q4 Other bands** (`band_twins`). Some endings and trophies are Hail Damage jokes (Moose Opera, Ma Pelouse, Buddy, "The
 Original Five"). What do the other three bands get?
@@ -48,7 +48,7 @@ Original Five"). What do the other three bands get?
   running" trophy, and "The Original Four" for the four-piece bands.
 - (b) Hail Damage only. Those stay Hail Damage-only; the other bands share the generic ones (Big in Japan, Band of Strangers,
   Side Project, The Original Four/Five).
-- Answer: ______
+- Answer: **(a) Their own twins** (owner popup 2026-10-01, LOCKED)
 
 ### Popup B: meta, tutorial, phone
 
@@ -58,7 +58,7 @@ Original Five"). What do the other three bands get?
   changes gameplay.
 - (b) Only the Hall of Fame. No new unlocks; keep today's per-genre carry-over toggle and add the Hall of Fame.
 - (c) Trophies unlock looks too. As (a), plus each trophy unlocks a small cosmetic (a sticker or a palette).
-- Answer: ______
+- Answer: **(a) Looks from finished careers** (owner popup 2026-10-01, LOCKED)
 
 **Q6 Hall of Fame** (`hall_of_fame`). What does a Hall of Fame entry show for each finished career?
 - **(a) Logo, lineup, ending, years (Recommended).** Band logo, your name, the lineup as small avatars, the ending tier and
@@ -66,7 +66,7 @@ Original Five"). What do the other three bands get?
   numbers). Opens from the title screen. The save code carries it too, so a phone backup keeps it.
 - (b) Just a scoreboard. One line per career: band, ending, score, years. Smallest.
 - (c) Add a band photo. As (a), plus one small band photo per career (more phone storage; not in the save code).
-- Answer: ______
+- Answer: **(a) Logo, lineup, ending, years** (owner popup 2026-10-01, LOCKED)
 
 **Q7 Tutorial** (`tutorial`). How much teaching in a new career, and when can it be skipped?
 - **(a) Full week 1, light weeks 2–4 (Recommended).** Bandmates walk you through week one (Monday card, walking the room,
@@ -75,7 +75,7 @@ Original Five"). What do the other three bands get?
   default). A "?" button replays any lesson.
 - (b) Week one only. The week-one walkthrough; weeks 2–4 keep today's toasts. "?" still replays.
 - (c) Skippable from the start. As (a), but the skip switch is offered on the very first career too.
-- Answer: ______
+- Answer: **(a) Full week 1, light weeks 2–4** (owner popup 2026-10-01, LOCKED)
 
 **Q8 Battery** (`perf_look`). The performance pass can make gigs smoother and save battery on your iPhone. How far by default?
 - **(a) Auto sharpness (Recommended).** A new default "Auto" graphics setting: draws at 1.5× instead of 2× on your phone and
@@ -83,7 +83,7 @@ Original Five"). What do the other three bands get?
   much less heat. "High" stays one tap away in Settings.
 - (b) Keep it sharp. Keep "High" (2×) as the default; only make the changes you can't see (30 fps rooms, pausing behind
   menus, a simpler distant crowd, cheaper drum sounds).
-- Answer: ______
+- Answer: **(a) Auto sharpness** (owner popup 2026-10-01, LOCKED)
 
 ### Defaults taken without a popup (listed in the popup text so the owner can object)
 - **Big in Japan** = Japan broken and (a song blew up in Japan, or Japan holds ≥ 20 % of all fans).
