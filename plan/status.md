@@ -5,7 +5,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 ## Version
 - Current (on `main` after the v0.9 merge): **0.9.0.0 "Genres"** = 0.8.3 (drum sync) + all four bands playable, each with
   its own rival cast, storyline, World payoff, home city/ring, space, driver, superfan and misprint ("What's in v0.9" below).
-  Integrated on `v09-int` (2026-10-01). **Update Current/Next at every merge.**
+  Integrated on `v09-int`, merged 2026-10-01 (PR from `v0.9-genres`). **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
@@ -94,6 +94,8 @@ tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home sup
   per moment, room beds + noodles per space; a voice profile per singer (Marcel, Rox, Chase, Travis Lee, Gord, Blaze, Rex,
   Brayden), metal scream types per song/section, count-in yells, held notes, gang answers, whoa-ohs with harmony, varied shouted
   words per genre (Marcel's odd French word). All on the beat grid, in key, under the voice caps.
+  Owner listened to the 18-singer reel (2026-10-01): **"Voices are good for now. Easy-ish to tweak later"** — per-singer
+  profiles (content/genres.js voices) are the knobs for any later tweak; v1.1 Tuning can revisit.
 - **Drum sync:** the v0.8.3 drum-sync code is intact: `11_settings.js` is unchanged since v0.8.3, and the v0.9 edits to
   `30_audio.js` / `55_ui_gig.js` only add genre/vocal options around it (`GG.audio.play(pattern, { at, … })` still books the
   song on the band's clock; 55 now also passes `singer` + `band`). `sync.test.js` and `pw_gig` sync/sync2 stay green.
