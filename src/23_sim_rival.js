@@ -357,7 +357,7 @@
     var W = GG.world, maxTier = W ? W.maxTier(state) : 2, home = W ? W.home(state) : null;
     var list = (GG.content.venues || []).filter(function (v) {
       return v.minFans < 99999 && v.tier <= Math.min(2, maxTier) && v.capacity >= 60 && ['bar', 'club', 'legion', 'curling', 'skatepark', 'bingo'].indexOf(v.kind) >= 0
-        && !(W && W.isBanned(state, v.id)) && (!W || W.km(home, v.city) <= 300);
+        && !(W && W.isBanned(state, v.id)) && (!W || W.km(home, v.city) <= 300) && (!W || !W.inReach || W.inReach(state, v));   // v0.9: venue.reach
     });
     return list.length ? rng.weighted(list, function (v) { return Math.sqrt(v.capacity) / (1 + (W ? W.km(home, v.city) : 0) / 150); }) : null;
   }

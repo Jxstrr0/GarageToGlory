@@ -623,7 +623,7 @@
       load: 'Load the van. T-Bone checks the tire pressure. Chase asks to drive. The answer is no.' },
     earl: { id: 'earl', band: 'grid_road_ramblers', name: 'Earl', dashboard: 'atlas', dashName: 'a 1987 road atlas',
       blurb: 'Twenty under the limit. Stops at every historical marker and reads it aloud.',
-      effect: 'Slow, but road stories boost chemistry', mods: { burnout: 1.3, chemistry: 2 },
+      effect: 'Slow and gentle on the van; road stories boost chemistry', mods: { breakdown: 0.6, burnout: 1.3, chemistry: 2 },
       back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.',
       dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
       load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },

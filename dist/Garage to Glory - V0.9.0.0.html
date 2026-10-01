@@ -9838,7 +9838,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       load: 'Load the van. T-Bone checks the tire pressure. Chase asks to drive. The answer is no.' },
     earl: { id: 'earl', band: 'grid_road_ramblers', name: 'Earl', dashboard: 'atlas', dashName: 'a 1987 road atlas',
       blurb: 'Twenty under the limit. Stops at every historical marker and reads it aloud.',
-      effect: 'Slow, but road stories boost chemistry', mods: { burnout: 1.3, chemistry: 2 },
+      effect: 'Slow and gentle on the van; road stories boost chemistry', mods: { breakdown: 0.6, burnout: 1.3, chemistry: 2 },
       back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.',
       dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
       load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },
@@ -10289,14 +10289,14 @@ html.gg-calm .cold-fx { animation: none !important; }
     { id: 'craigs_basement', name: "Craig's Basement", city: 'Regina', region: 'canada', tier: 1, kind: 'house',
       capacity: 25, deal: 'exposure', pay: 0, minFans: 0, walkIns: 10, gas: 120, setSize: 2,
       deals: ['exposure'], payRange: {},
-      genreFit: fit('diy'),
+      genreFit: { metal: 0.8, punk: 0.9, rock: 0.9, country: 0.7 },
       quirk: 'The ceiling is five foot eleven. {front} is six foot one, in boots.',
       catch: "Craig's roommate works nights and is asleep directly above you." },
 
     { id: 'leaning_silo_openmic', name: 'The Leaning Silo — Open Stage', city: 'Regina', region: 'canada', tier: 1, kind: 'openmic',
       capacity: 45, deal: 'exposure', pay: 0, minFans: 20, walkIns: 10, gas: 120, setSize: 2,
       deals: ['exposure'], payRange: {},
-      genreFit: { metal: 0.5, punk: 0.8, rock: 0.9, country: 1 },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 1 },
       quirk: 'The stage leans four degrees west. So does the audience.',
       catch: "Every act gets a free pickle. It's not optional." },
 
@@ -10314,35 +10314,35 @@ html.gg-calm .cold-fx { animation: none !important; }
     { id: 'queen_city_skate_park', name: 'Queen City All-Ages Skate Park', city: 'Regina', region: 'canada', tier: 1, kind: 'skatepark', outdoor: true,
       season: ['summer'], capacity: 80, deal: 'exposure', pay: 0, minFans: 15, walkIns: 22, gas: 120, setSize: 3,
       deals: ['exposure'], payRange: {},
-      genreFit: fit('skate'),
+      genreFit: { metal: 0.9, punk: 0.9, rock: 0.8, country: 0.4 },
       quirk: 'Behind the rec centre. The bowl is the pit. A kid on a scooter will absolutely try to jump the kick drum.',
       catch: 'Generator power. The city shuts it off at nine sharp, mid-song or not.' },
 
     { id: 'mill_woods_basement_party', name: 'Mill Woods Basement Party', city: 'Edmonton', region: 'canada', tier: 1, kind: 'house',
       capacity: 20, deal: 'exposure', pay: 0, minFans: 0, walkIns: 9, gas: 265, setSize: 2,
       deals: ['exposure'], payRange: {},
-      genreFit: { metal: 0.8, punk: 0.9, rock: 1, country: 0.7 },
+      genreFit: { metal: 0.8, punk: 0.9, rock: 0.8, country: 0.7 },
       quirk: 'A split-level in Mill Woods. Wood panelling, a bar made from a door and a signed hockey stick nobody can explain.',
       catch: "Somebody's parents are upstairs watching the game. Every goal, the ceiling shakes." },
 
     { id: 'whyte_noise_open_stage', name: 'The Whyte Noise — Open Stage', city: 'Edmonton', region: 'canada', tier: 1, kind: 'openmic',
       capacity: 45, deal: 'exposure', pay: 0, minFans: 0, walkIns: 14, gas: 265, setSize: 2,
       deals: ['exposure'], payRange: {},
-      genreFit: { metal: 0.6, punk: 0.8, rock: 1, country: 0.8 },
+      genreFit: { metal: 0.6, punk: 0.8, rock: 0.7, country: 0.8 },
       quirk: 'The host plays harmonica between acts. He does not stop for the acts.',
       catch: 'Sign-up at seven. You go on after a man who only plays theremin covers.' },
 
     { id: 'northside_bingo_barn', name: 'Northside Bingo Barn', city: 'Edmonton', region: 'canada', tier: 1, kind: 'bingo',
       capacity: 90, deal: 'flat', pay: 100, minFans: 80, walkIns: 22, gas: 265, setSize: 3,
       deals: ['flat'], payRange: { flat: [80, 120] },
-      genreFit: { metal: 0.5, punk: 0.6, rock: 0.8, country: 0.9 },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.6, country: 0.9 },
       quirk: 'The caller has a mullet and a headset mic. He is the real rock star here.',
       catch: 'Every time someone yells BINGO, the set stops. Tuesdays are double-card nights.' },
 
     { id: 'st_albert_legion', name: 'St. Albert Legion, Branch 271', city: 'St. Albert', region: 'canada', tier: 1, kind: 'legion',
       capacity: 70, deal: 'flat', pay: 80, minFans: 30, walkIns: 14, gas: 270, setSize: 3,
       deals: ['flat', 'door'], payRange: { flat: [60, 100], door: [1, 2] },
-      genreFit: fit('hall'),
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.6, country: 1 },
       quirk: 'The dartboard is two metres from the kick drum. The darts league does not pause.',
       catch: 'Volume limit enforced by a retired sergeant with a decibel app.' },
 
@@ -10356,14 +10356,14 @@ html.gg-calm .cold-fx { animation: none !important; }
     { id: 'sherwood_park_curling', name: 'Sherwood Park Curling Club Lounge', city: 'Sherwood Park', region: 'canada', tier: 1, kind: 'curling',
       capacity: 55, deal: 'flat', pay: 100, minFans: 45, walkIns: 15, gas: 270, setSize: 3,
       deals: ['flat', 'exposure'], payRange: { flat: [80, 120] },
-      genreFit: { metal: 0.5, punk: 0.5, rock: 0.9, country: 1 },
+      genreFit: { metal: 0.5, punk: 0.5, rock: 0.7, country: 1 },
       quirk: 'The lounge overlooks four sheets. Every time a rock hits the house, the whole room goes "ooh".',
       catch: 'You play after the mixed league finishes. The mixed league never finishes on time.' },
 
     { id: 'leduc_community_hall', name: 'Leduc Oil Patch Community Hall', city: 'Leduc', region: 'canada', tier: 1, kind: 'church',
       capacity: 100, deal: 'flat', pay: 90, minFans: 55, walkIns: 20, gas: 280, setSize: 3,
       deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
-      genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 0.9 },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.7, country: 0.9 },
       quirk: 'A pumpjack statue out front, a wedding social inside. You play between the speeches and the midnight lunch.',
       catch: 'The DJ gets paid more than you. The DJ has a smoke machine.' },
 
@@ -10398,21 +10398,21 @@ html.gg-calm .cold-fx { animation: none !important; }
     { id: 'speedy_creek_ag_hall', name: 'Speedy Creek Ag Society Hall', city: 'Swift Current', region: 'canada', tier: 1, kind: 'church',
       capacity: 100, deal: 'flat', pay: 90, minFans: 40, walkIns: 20, gas: 122, setSize: 3,
       deals: ['flat', 'door'], payRange: { flat: [70, 110], door: [1, 2] },
-      genreFit: fit('hall'),
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.8, country: 0.7 },
       quirk: 'Home of the fall supper, the 4-H show and, tonight, you. The stage still smells faintly of calves.',
       catch: 'The 4-H club has the hall at nine a.m. Load out tonight, or they will.' },
 
     { id: 'gull_lake_rink_canteen', name: 'Gull Lake Rink Canteen', city: 'Gull Lake', region: 'canada', tier: 1, kind: 'curling',
       capacity: 60, deal: 'flat', pay: 70, minFans: 20, walkIns: 18, gas: 150, setSize: 3,
       deals: ['flat', 'exposure'], payRange: { flat: [55, 90] },
-      genreFit: { metal: 0.5, punk: 0.6, rock: 0.8, country: 1 },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.8, country: 0.6 },
       quirk: 'You play on the canteen counter. The fries are better than the sound. The fries are very good.',
       catch: 'Minor hockey ends at eight. Forty kids in skates are your front row.' },
 
     { id: 'shaunavon_legion', name: 'Shaunavon Legion, Branch 88', city: 'Shaunavon', region: 'canada', tier: 1, kind: 'legion',
       capacity: 70, deal: 'flat', pay: 80, minFans: 30, walkIns: 14, gas: 160, setSize: 3,
       deals: ['flat', 'door'], payRange: { flat: [60, 100], door: [1, 2] },
-      genreFit: fit('hall'),
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.8, country: 0.7 },
       quirk: 'The Legion pours from the spring-water tap and brags about it. The wall of fame has a spot waiting.',
       catch: 'Bingo Wednesday, meat draw Friday, you on Saturday. Know your place in the order.' },
 
@@ -10468,7 +10468,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     { id: 'queen_city_bingo', name: 'Queen City Bingo-Rama', city: 'Regina', region: 'canada', tier: 1, kind: 'bingo',
       capacity: 100, deal: 'flat', pay: 110, minFans: 110, walkIns: 20, gas: 120, setSize: 3,
       deals: ['flat'], payRange: { flat: [90, 130] },
-      genreFit: { metal: 0.4, punk: 0.5, rock: 0.8, country: 0.9 },
+      genreFit: { metal: 0.4, punk: 0.4, rock: 0.8, country: 0.9 },
       quirk: 'The caller has a louder PA than you and knows it.',
       catch: 'Intermission is the $500 blackout game. You are not the main event.' },
 
@@ -10625,6 +10625,142 @@ html.gg-calm .cold-fx { animation: none !important; }
       genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.7 },
       quirk: 'Neon everywhere, a mechanical pony in the corner and a jukebox that only plays 1985.',
       catch: "The owner's cover band has Saturdays. You get Thursday. Thursday is fine." },
+
+    // v0.9 integration (balance, plan_contract_0.9 §5 B4): Regina, Swift Current and Edmonton had too few rooms a growing band
+    // can play at home, so Frost Heave and the Ramblers drove to Saskatoon for every tier-2 gig (km/gig 1.35-1.65x Hail
+    // Damage). Existing cities only (no new map pins). reach: 150 = neighbourhood rooms that only book bands based within
+    // 150 road km (world.inReach), so a Saskatoon band's board never sees them (Hail Damage's balance does not move).
+    { id: 'cathedral_village_hall', name: 'Cathedral Village Community Hall', city: 'Regina', region: 'canada', tier: 1, kind: 'church',
+      reach: 150, capacity: 80, deal: 'flat', pay: 75, minFans: 30, walkIns: 16, gas: 120, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [60, 95] },
+      genreFit: { metal: 0.3, punk: 0.5, rock: 0.8, country: 0.9 },
+      quirk: 'Folding chairs, a bake sale and a stained-glass window of a curling rock. The squares are two for a loonie.',
+      catch: 'The arts committee reads your lyrics first. Nobody on it can read {front}\'s handwriting. You are cleared.' },
+
+    { id: 'dewdney_drop', name: 'The Dewdney Drop', city: 'Regina', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 120, deal: 'door', pay: 2, minFans: 200, walkIns: 22, gas: 120, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [110, 160] },
+      genreFit: { metal: 0.5, punk: 1, rock: 0.9, country: 0.5 },
+      quirk: 'A basement bar on the old avenue. The stage is an old shuffleboard table and the pucks are glued down. Mostly.',
+      catch: 'The bouncer is called Moose. He is not a moose. He checks every ID twice, including the band\'s.' },
+
+    { id: 'warehouse_district_loft', name: 'The Warehouse District Loft', city: 'Regina', region: 'canada', tier: 2, kind: 'club',
+      reach: 150, capacity: 220, deal: 'door', pay: 2, minFans: 220, walkIns: 30, gas: 120, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [2, 3], flat: [170, 240] },
+      genreFit: { metal: 0.5, punk: 0.9, rock: 1, country: 0.6 },
+      quirk: 'The green room is a freight elevator. It goes up while you tune. It comes down when it wants.',
+      catch: 'The landlord lives on the floor below and bills the promoter by the decibel.' },
+
+    { id: 'speedy_creek_curling_lounge', name: 'Speedy Creek Curling Club Lounge', city: 'Swift Current', region: 'canada', tier: 1, kind: 'curling',
+      reach: 150, capacity: 70, deal: 'flat', pay: 75, minFans: 25, walkIns: 16, gas: 122, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [60, 95] },
+      genreFit: { metal: 0.3, punk: 0.5, rock: 0.8, country: 0.6 },
+      quirk: 'You play between draws. The skips score your songs like ends. A ballad is a blank end.',
+      catch: 'Sweeping is louder than you think. The senior men sweep like it is the provincial final.' },
+
+    { id: 'grain_elevator_cabaret', name: 'The Grain Elevator Cabaret', city: 'Swift Current', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 140, deal: 'door', pay: 2, minFans: 200, walkIns: 24, gas: 122, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [110, 160] },
+      genreFit: { metal: 0.4, punk: 0.6, rock: 0.9, country: 1 },
+      quirk: 'A cabaret in a retired wooden elevator. The acoustics are best described as vertical.',
+      catch: 'Dust. So much dust. The fog machine is unnecessary and they run it anyway.' },
+
+    { id: 'speedy_creek_legion', name: 'Speedy Creek Legion, Branch 56', city: 'Swift Current', region: 'canada', tier: 1, kind: 'legion',
+      reach: 150, capacity: 80, deal: 'flat', pay: 80, minFans: 50, walkIns: 16, gas: 122, setSize: 3,
+      deals: ['flat'], payRange: { flat: [65, 100] },
+      genreFit: { metal: 0.3, punk: 0.4, rock: 0.8, country: 0.7 },
+      quirk: 'Meat draw at eight, you at nine. The winner of the meat draw requests a song. It is always the same song.',
+      catch: 'The Legion colour party marches through during your second set. You stop. Everyone stops.' },
+
+    { id: 'gull_lake_hotel', name: 'Gull Lake Hotel Beverage Room', city: 'Gull Lake', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 110, deal: 'door', pay: 2, minFans: 180, walkIns: 22, gas: 150, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [100, 150] },
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.8, country: 1 },
+      quirk: 'The beverage room has two doors: Ladies and Escorts, and Everyone Else. Both doors lead to the same bar.',
+      catch: 'Last call is when the owner says so. The owner is asleep by eleven.' },
+
+    { id: 'cypress_hills_lodge', name: 'Cypress Hills Lodge Lounge', city: 'Maple Creek', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 150, deal: 'door', pay: 2, minFans: 160, walkIns: 26, gas: 160, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [130, 190] },
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.8, country: 1 },
+      quirk: 'Ranchers, park wardens and a bus of birdwatchers. The birdwatchers are the loudest by far.',
+      catch: 'The highway to the hills closes when it snows. You may be staying the week.' },
+
+    // v0.9 integration (balance): the home tier-1 rooms of Regina, Edmonton and south-west Saskatchewan fit punk / rock /
+    // country about as well as Saskatoon's small rooms fit metal (~0.6-0.8), so every band reaches Local Heroes around the same
+    // week (§5 B4: week 24 +/- 4). Metal fits are unchanged (Hail Damage's balance does not move).
+    // More home rooms (v0.9 integration, reach 150): Regina, Edmonton and Swift Current get close to Saskatoon's count of
+    // garage- and local-era rooms, so their bands stop driving to Saskatoon (or across Alberta) for every second gig.
+    { id: 'queen_city_curling_lounge', name: 'Queen City Curling Club Lounge', city: 'Regina', region: 'canada', tier: 1, kind: 'curling',
+      reach: 150, capacity: 70, deal: 'flat', pay: 70, minFans: 35, walkIns: 16, gas: 120, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [55, 90] },
+      genreFit: { metal: 0.3, punk: 0.4, rock: 0.8, country: 0.9 },
+      quirk: 'The stage is at the hog line. Throw a good set and a skip will call it "a nice weight".',
+      catch: 'The bonspiel banquet is next door. Two hundred curlers, one wall, zero patience for feedback.' },
+
+    { id: 'plains_hotel_lounge', name: 'The Plains Hotel Lounge', city: 'Regina', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 180, deal: 'door', pay: 2, minFans: 300, walkIns: 28, gas: 120, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [150, 220] },
+      genreFit: { metal: 0.5, punk: 0.9, rock: 1, country: 0.6 },
+      quirk: 'A hotel bar older than the province. The carpet has seen things. The carpet will see you.',
+      catch: 'The hotel guests upstairs have been promised quiet after eleven. Nobody has told the hotel guests about you.' },
+
+    { id: 'capital_city_curling_lounge', name: 'Capital City Curling Lounge', city: 'Edmonton', region: 'canada', tier: 1, kind: 'curling',
+      reach: 150, capacity: 70, deal: 'flat', pay: 70, minFans: 30, walkIns: 16, gas: 265, setSize: 3,
+      deals: ['flat', 'exposure'], payRange: { flat: [55, 90] },
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.6, country: 0.9 },
+      quirk: 'Four sheets of ice, one bar, and a scoreboard someone has changed to say ROCK ON.',
+      catch: 'League night. The crowd is split between your set and a very tense tenth end.' },
+
+    { id: 'strathcona_station_pub', name: 'The Strathcona Station Pub', city: 'Sherwood Park', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 170, deal: 'door', pay: 2, minFans: 240, walkIns: 26, gas: 270, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [130, 190] },
+      genreFit: { metal: 0.6, punk: 0.7, rock: 0.9, country: 0.7 },
+      quirk: 'A pub in an old train station. The last train left in 1962. The regulars are still waiting for it.',
+      catch: 'The upgrader shift change empties the room at eleven. Play the loud one first.' },
+
+    { id: 'gateway_boulevard_rock_room', name: 'The Gateway Boulevard Rock Room', city: 'Edmonton', region: 'canada', tier: 2, kind: 'club',
+      reach: 150, capacity: 260, deal: 'door', pay: 2, minFans: 320, walkIns: 34, gas: 265, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [2, 3], flat: [190, 270] },
+      genreFit: { metal: 0.8, punk: 0.8, rock: 1, country: 0.5 },
+      quirk: 'A proper rock room: black walls, a real PA and a sound tech who says "sweet" about everything.',
+      catch: 'Tuesday is the tribute-band showcase. You will be asked, more than once, who you are a tribute to.' },
+
+    { id: 'speedy_creek_motor_inn', name: 'Speedy Creek Motor Inn Lounge', city: 'Swift Current', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 160, deal: 'door', pay: 2, minFans: 220, walkIns: 26, gas: 122, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [140, 200] },
+      genreFit: { metal: 0.4, punk: 0.5, rock: 0.9, country: 1 },
+      quirk: 'Truckers off the Trans-Canada, a VLT corner and a two-step crowd that knows every line of every song.',
+      catch: 'The highway crews book the whole motel in spring. Some nights the lounge is just orange vests.' },
+
+    { id: 'speedy_creek_seniors_centre', name: 'Speedy Creek Seniors\' Centre', city: 'Swift Current', region: 'canada', tier: 1, kind: 'church',
+      reach: 150, capacity: 60, deal: 'flat', pay: 60, minFans: 20, walkIns: 14, gas: 122, setSize: 2,
+      deals: ['flat', 'exposure'], payRange: { flat: [45, 75] },
+      genreFit: { metal: 0.2, punk: 0.3, rock: 0.6, country: 0.5 },
+      quirk: 'The seniors run the bar. They card you. They card everyone. They are thorough.',
+      catch: 'Whist tournament at two, you at seven. The whist players will stay and critique.' },
+
+    // The Signed-era theatres near the two homes that had none in town (tier 3; reach-limited like the rooms above).
+    { id: 'speedy_creek_centennial_arena', name: 'Speedy Creek Centennial Arena', city: 'Swift Current', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      reach: 150, capacity: 1200, deal: 'door', pay: 0.9, minFans: 4500, walkIns: 120, gas: 122, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [0.7, 1.1], flat: [1000, 1400] },
+      genreFit: { metal: 0.5, punk: 0.6, rock: 0.9, country: 1 },
+      quirk: 'The ice is under the plywood. By the encore your feet are cold and the crowd is steaming.',
+      catch: 'The junior team has practice at six a.m. The Zamboni driver will be watching your load-out closely.' },
+
+    { id: 'jubilation_auditorium', name: 'The Northern Jubilation Auditorium', city: 'Edmonton', region: 'canada', tier: 3, kind: 'club', theatre: true,
+      reach: 150, capacity: 2000, deal: 'door', pay: 1, minFans: 7000, walkIns: 160, gas: 265, setSize: 5,
+      deals: ['door', 'flat'], payRange: { door: [0.8, 1.2], flat: [1500, 2000] },
+      genreFit: { metal: 0.7, punk: 0.7, rock: 1, country: 0.9 },
+      quirk: 'Velvet seats, perfect sightlines and an usher who shushes the moshers. The moshers apologize.',
+      catch: 'The ballet has the stage at noon. Every scuff mark is on your invoice.' },
+
+    { id: 'oilcan_tavern', name: 'The Oilcan Tavern', city: 'Edmonton', region: 'canada', tier: 2, kind: 'bar',
+      reach: 150, capacity: 160, deal: 'door', pay: 2, minFans: 200, walkIns: 26, gas: 265, setSize: 4,
+      deals: ['door', 'flat'], payRange: { door: [1.5, 2.5], flat: [120, 180] },
+      genreFit: { metal: 0.6, punk: 0.8, rock: 1, country: 0.6 },
+      quirk: 'Hockey on eleven TVs. You are the twelfth screen, and the only one without a power play.',
+      catch: 'If the game goes to overtime, your set starts when it ends. Pray for regulation.' },
 
     { id: 'maple_creek_rodeo_tent', name: 'Maple Creek Rodeo Beer Tent', city: 'Maple Creek', region: 'canada', tier: 2, kind: 'bar',
       outdoor: true, season: ['summer'],
@@ -22938,7 +23074,10 @@ html.gg-calm .cold-fx { animation: none !important; }
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
-    if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
+    // v0.9: a free fix (Moth does her own maintenance) is taken whenever the van is below freeFixBelow, like a player would
+    var freeFix = GG.world && van && GG.world.repairQuote ? GG.world.repairQuote(state).cost === 0 : false;
+    if (GG.world && van && freeFix && !state.protected && van.condition < (B.freeFixBelow || 60)) GG.world.repairVan(state);
+    else if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
     else if (GG.world && style === 'avg' && van && !state.protected && van.condition < 15 && state.fund > 600) GG.world.repairVan(state);   // v0.4: breakdowns are real now
     career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);
@@ -23826,7 +23965,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
   // Venues you can be booked into: tier <= maxTier and enough fans (card-only venues use minFans 99999).
   gig.qualifying = function (state, maxTier) {
-    return venues().filter(function (v) { return v.tier <= maxTier && (v.minFans || 0) <= state.fans; });
+    return venues().filter(function (v) { return v.tier <= maxTier && (v.minFans || 0) <= state.fans && (!GG.world || !GG.world.inReach || GG.world.inReach(state, v)); });   // v0.9: venue.reach
   };
   // An unsolicited offer (tier 1-2), skewed toward better venues and better genre fit. null if nothing fits.
   gig.randomOffer = function (state, rng) {
@@ -24888,7 +25027,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     var W = GG.world, maxTier = W ? W.maxTier(state) : 2, home = W ? W.home(state) : null;
     var list = (GG.content.venues || []).filter(function (v) {
       return v.minFans < 99999 && v.tier <= Math.min(2, maxTier) && v.capacity >= 60 && ['bar', 'club', 'legion', 'curling', 'skatepark', 'bingo'].indexOf(v.kind) >= 0
-        && !(W && W.isBanned(state, v.id)) && (!W || W.km(home, v.city) <= 300);
+        && !(W && W.isBanned(state, v.id)) && (!W || W.km(home, v.city) <= 300) && (!W || !W.inReach || W.inReach(state, v));   // v0.9: venue.reach
     });
     return list.length ? rng.weighted(list, function (v) { return Math.sqrt(v.capacity) / (1 + (W ? W.km(home, v.city) : 0) / 150); }) : null;
   }
@@ -28024,9 +28163,11 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
   // A venue you could headline this week: listed venue, tier in range, enough fans, not banned, not card-only.
   // v0.6.1: + the venue's ring is open in your era, and the calendar has it on this week (season, holiday, Remembrance Day).
+  // v0.9: venue.reach (km, optional): a neighbourhood room that only books bands based within that many road km of it.
+  world.inReach = function (state, v) { return !v || !v.reach || world.km(world.home(state), v.city) <= v.reach; };
   world.bookable = function (state, v) {
     return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= world.maxTier(state) && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0)
-      && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
+      && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v)) && world.inReach(state, v);
   };
   // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
   world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
@@ -28109,7 +28250,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     if (fans.length) add(rng.weighted(fans, function (v) { return 1 + world.rep(state, v.id); }), {});
     if (state.fans >= K.opening.minFans && rng.chance(K.opening.chance)) {
       var rooms = venues().filter(function (v) {
-        return v.tier >= 2 && v.minFans < CARD_ONLY && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v)
+        return v.tier >= 2 && v.minFans < CARD_ONLY && world.inReach(state, v) && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v)
           && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
       });
       var room = rooms.length ? rng.weighted(rooms, function (v) { return listWeight(state, v); }) : null;

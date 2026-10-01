@@ -203,9 +203,11 @@
   };
   // A venue you could headline this week: listed venue, tier in range, enough fans, not banned, not card-only.
   // v0.6.1: + the venue's ring is open in your era, and the calendar has it on this week (season, holiday, Remembrance Day).
+  // v0.9: venue.reach (km, optional): a neighbourhood room that only books bands based within that many road km of it.
+  world.inReach = function (state, v) { return !v || !v.reach || world.km(world.home(state), v.city) <= v.reach; };
   world.bookable = function (state, v) {
     return !!v && (v.minFans || 0) < CARD_ONLY && v.tier <= world.maxTier(state) && !world.isBanned(state, v.id) && state.fans >= (v.minFans || 0)
-      && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
+      && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v)) && world.inReach(state, v);
   };
   // v0.5: the highest venue tier you can play in your era (tier 3 theatres from the Signed era).
   world.maxTier = function (state) { var K = cfg(), t = K.eraTier && K.eraTier[state && state.era]; return t != null ? t : K.maxTier; };
@@ -288,7 +290,7 @@
     if (fans.length) add(rng.weighted(fans, function (v) { return 1 + world.rep(state, v.id); }), {});
     if (state.fans >= K.opening.minFans && rng.chance(K.opening.chance)) {
       var rooms = venues().filter(function (v) {
-        return v.tier >= 2 && v.minFans < CARD_ONLY && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v)
+        return v.tier >= 2 && v.minFans < CARD_ONLY && world.inReach(state, v) && !world.isBanned(state, v.id) && !used[v.id] && state.fans >= openingNeed(v)
           && world.cityOpen(state, v.city) && (!GG.calendar || GG.calendar.venueOpen(state, v));
       });
       var room = rooms.length ? rng.weighted(rooms, function (v) { return listWeight(state, v); }) : null;

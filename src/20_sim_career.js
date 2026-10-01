@@ -1364,7 +1364,10 @@
     career.setPlan(state, career.botPlan(state, style));
     if (!state.gig && state.plan.indexOf('book') >= 0) state.bookPick = career.botBook(state, style);
     var B = econ().bot, van = state.van;   // the good bot sends the Moose Hearse to Cousin Dale when it's rough
-    if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
+    // v0.9: a free fix (Moth does her own maintenance) is taken whenever the van is below freeFixBelow, like a player would
+    var freeFix = GG.world && van && GG.world.repairQuote ? GG.world.repairQuote(state).cost === 0 : false;
+    if (GG.world && van && freeFix && !state.protected && van.condition < (B.freeFixBelow || 60)) GG.world.repairVan(state);
+    else if (GG.world && style === 'good' && van && van.condition < (B.repairBelow || 40) && state.fund > (B.repairAbove || 400)) GG.world.repairVan(state);
     else if (GG.world && style === 'avg' && van && !state.protected && van.condition < 15 && state.fund > 600) GG.world.repairVan(state);   // v0.4: breakdowns are real now
     career.runWeek(state, { autoGig: true, style: style });
     return career.endWeek(state);

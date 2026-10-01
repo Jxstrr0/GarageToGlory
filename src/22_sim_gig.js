@@ -65,7 +65,7 @@
   };
   // Venues you can be booked into: tier <= maxTier and enough fans (card-only venues use minFans 99999).
   gig.qualifying = function (state, maxTier) {
-    return venues().filter(function (v) { return v.tier <= maxTier && (v.minFans || 0) <= state.fans; });
+    return venues().filter(function (v) { return v.tier <= maxTier && (v.minFans || 0) <= state.fans && (!GG.world || !GG.world.inReach || GG.world.inReach(state, v)); });   // v0.9: venue.reach
   };
   // An unsolicited offer (tier 1-2), skewed toward better venues and better genre fit. null if nothing fits.
   gig.randomOffer = function (state, rng) {

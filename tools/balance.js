@@ -24,6 +24,7 @@
 // gig, genre-moment rate from a live bot gig each year, rival lineup size, the World payoff flag), then a cross-band
 // comparison (avg bot and good bot, one row per band). Without BAND the output is exactly the v0.8.1 Hail Damage report.
 //   TUNE='rox.skill=51,benny.mood=70' overrides member numbers in-process (to try a bands.js rebalance before editing it).
+//   FIT='venue_id.punk=0.6,...' overrides venue genre fits in-process (to try a venues.js rebalance before editing it).
 //   DECK=synthetic|none: every band on the synthetic role-alias deck / no Monday deck (the economy without content).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
@@ -91,6 +92,12 @@ const BAND = process.env.BAND || '';
   const m = /^(\w+)\.(skill|mood)=(\d+)$/.exec(kv.trim());
   if (!m) { console.log('TUNE: skipped ' + kv); return; }
   Object.keys(GG.content.bands).forEach(b => GG.content.bands[b].members.forEach(x => { if (x.id === m[1]) x[m[2]] = +m[3]; }));
+});
+// FIT='venue_id.genre=0.7,...' tries venue genre fits (content/venues.js) in-process, the same way (v0.9 integration).
+(process.env.FIT || '').split(',').filter(Boolean).forEach(kv => {
+  const m = /^(\w+)\.(metal|punk|rock|country)=([\d.]+)$/.exec(kv.trim()), v = m && (GG.content.venues || []).find(x => x.id === m[1]);
+  if (!v) { console.log('FIT: skipped ' + kv); return; }
+  v.genreFit = Object.assign({}, v.genreFit, { [m[2]]: +m[3] });
 });
 let bs = null;   // per run: { weeks, noCard, board: [n, km], gigs, km, live: { gigs, combo, chorus, peak }, lineup, payoff, moraleSeeds }
 GG.on('week:start', e => { if (bs) { bs.weeks++; if (!e.card) bs.noCard++; } });
@@ -262,7 +269,8 @@ if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_co
     summary.filter(b => b.id !== 'hail_damage').forEach(b => {
       const x = b.per[style]; if (!x) return;
       const t = [
-        'local wk ' + x.local + ' ' + mark(x.local != null && Math.abs(x.local - 24) <= 4),
+        // avg bot: Local Heroes by week 24 +/- 4 (§5 B4); the good bot only has to stay Hail Damage-like (its own Local week +/- 4)
+        'local wk ' + x.local + ' ' + mark(x.local != null && Math.abs(x.local - (style === 'good' ? H.local : 24)) <= 4),
         'fans ' + Math.round(100 * x.fans3 / Math.max(1, H.fans3)) + '% ' + mark(Math.abs(x.fans3 / Math.max(1, H.fans3) - 1) <= 0.2),
         'fund ' + Math.round(100 * x.fund3 / Math.max(1, H.fund3)) + '% ' + mark(Math.abs(x.fund3 / Math.max(1, H.fund3) - 1) <= 0.25),
         'loans ' + x.loans13.toFixed(1) + ' ' + mark(x.loans13 <= H.loans13 + 1),
