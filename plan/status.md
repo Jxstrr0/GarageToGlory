@@ -3,15 +3,15 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current (on `main`): **0.8.3.0 drum sync hotfix** = 0.8.2 (0.8.1 + the v0.9 stage-0 plumbing, PR #15, merged early by the owner, with
-  Frost Heave, Gravel Kings and the Ramblers re-locked ("Coming in v0.9") until v0.9 ships (owner, 2026-09-30)) + "v0.8.3 drum sync"
-  below. **Update Current/Next at every merge.**
+- Current (on `main` after the v0.9 merge): **0.9.0.0 "Genres"** = 0.8.3 (drum sync) + all four bands playable, each with
+  its own rival cast, storyline, World payoff, home city/ring, space, driver, superfan and misprint ("What's in v0.9" below).
+  Integrated on `v09-int` (2026-10-01). **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync).
-- Next: **0.9 "Genres"** (in progress; decisions above in "v0.9 Genres — owner decisions") → 1.0
-  Glory (+ D4 achievements) → 1.1 Tuning (D5).
+  0.8.3 drum sync) · 0.9 Genres.
+- Next: **1.0 "Glory"** (+ D4 achievements, Hall of Fame; v0.9 forward-compat notes in "What's in v0.9" → v1.0) → 1.1
+  Tuning (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -65,6 +65,46 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v0.9 "Genres" (contract `plan/plan_contract_0.9.md`; integrated on `v09-int`, 2026-10-01)
+All four bands are playable from the new-career screen. Each has its own rival (a fair-fight underdog curve, Q4), Q2 storyline,
+Q3 World payoff (a tour package + 3-card chain that counts for the Global Gong like the Moose Opera), first gig, home ring,
+tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home superfan (Q5), misprint (Q6) and tier-0 van.
+
+| band | rival (cast) | storyline (chain → flag) | World payoff (package → payoff flag) | first gig | home ring |
+|---|---|---|---|---|---|
+| Hail Damage (metal, Saskatoon, parents' garage; Kenji, The Moose Hearse, Dale from Warman, HALE DAMAGE) | Tundra Wraith (Gord + 3 accountants) | The Cape Saga + the moose album | Moose Opera, Finland (`eu_moose_run` → mooseOpera 'platinum') | Buddy's House Party | sask |
+| Frost Heave (punk, Regina, Suds-O-Rama laundromat basement; Moth, The Pothole, Delphine, FROST HEAVY) | Mall Rats (Blaze, Siobhan, Dex, Brody; label Network Nine; kickflip every set) | Rox for City Council (`council` → won/lost/tie/withdrew/never) | squat anthem big in Berlin (`eu_squat_anthem_tour`: Amsterdam › Berlin › Wackelstein Open Air → squatAnthemPayoff) | Craig's Basement | sask |
+| Gravel Kings (rock, Edmonton, Westgate Plaza unit 4B; T-Bone, The Mullet Wagon, Gloria from the Mall-Walkers, GRAVY KINGS) | Chartbusters (Rex Glamour + scarf, Dusty, Moira, Steve #5; Airwave Dominion; the ballad) | The Riff (`riff` → settled/scrapped/original) | Mudstonbury main stage (`gk_mudstonbury_headline`: London › Mudstonbury › Manchester → mudHeadlinePayoff; the card sets mudstonbury 'headlined') | Mill Woods Basement Party | alberta (Q1a; Sask + West open at Local) |
+| The Grid Road Ramblers (country, Swift Current, Duke's uncle's Quonset; Earl, Grandpa's Suburban, Wilf from coffee row, THE GRID ROAD RUMBLERS) | Buckle & Boot (Brayden, Colt, Titan Tim the truck mascot, a hired session drummer; Titan Records; truck-ad fury) | Travis Lee's First Truck (`truck` → never/mine/ad/famous) | the Aussie country circuit (`au_country_circuit`: Melbourne › Alice Springs › Tumbleworth → outbackPayoff) | Quonset Yard Party | sask |
+
+- **Content:** neutral tokenised flat pools + `byBand` layers (Hail Damage keeps every line); three pack files
+  `src/content/zz_band_<id>.js` (100+ Monday cards each, drama wants/exits/epilogues for all ten new members, road/studio/World
+  cards, Bandbook, reviews, songs, albums, the rival casts). Q7 rented rooms named per city, Q8 cameos (`cameo: true` cards,
+  Scene rows, jam-room stickers). Alberta ring + rooms; south-west Saskatchewan; a Regina all-ages skate park.
+- **Sims:** §4.2 tokens and role aliases (`@front` …), `career.pool/variant/speakerOk/cardOk/talkers/roleOf` (the speaker
+  guard closes cross-band leaks), §4.4 genre moments (combo / chorus / peak) + member signatures (capeSpin, stageDive,
+  kneeSlide, hatTip), rival casts + per-rival fair-fight numbers, ten new drama rules, per-band demands/speech/outfits, band
+  envelope lines at the Loonies, the generic World payoff, home rings, `venue.reach`.
+- **UI / render:** genre card with a peek at each space, cold-open fx (hail/snow/neon/dust), three new tier-0 rooms (laundromat,
+  strip mall, Quonset) with all 7 hotspots, instruments per member (SG, strat, tele, acoustic, fiddle), 3-player layouts,
+  per-driver van + dashboard, rival stage/carpet casts (session drummer, truck mascot, Rex's scarf, the skateboard).
+- **Audio + vocal diversity (owner popup):** genre amps (punk/rock double-tracked, country Tele slapback, bowed fiddle, acoustic
+  strum), tempo styles (skate/hardcore, power ballad for Chartbusters, two-step/train beat), solos by the soloist, crowd one-shots
+  per moment, room beds + noodles per space; a voice profile per singer (Marcel, Rox, Chase, Travis Lee, Gord, Blaze, Rex,
+  Brayden), metal scream types per song/section, count-in yells, held notes, gang answers, whoa-ohs with harmony, varied shouted
+  words per genre (Marcel's odd French word). All on the beat grid, in key, under the voice caps.
+- **Drum sync:** the v0.8.3 drum-sync code (`11_settings.js` prefs + `GG.prefs.SYNC`, `30_audio.js` play `{ at }`, `55_ui_gig.js`
+  start/resume) is untouched by every v0.9 lane; `sync.test.js` and `pw_gig` sync/sync2 stay green.
+- **Balance** (`BAND=all node tools/balance.js 6 10` → `plan/balance_v09_all.txt`; 30 seeds → `plan/balance_v09_all_30seeds.txt`):
+  at 30 seeds every §5 B4 avg-bot target holds for all three new bands except the Ramblers' "World inside the 6-year window"
+  (over 9 years all four bands reach World in 30/30 careers: HD wk 146, GK 153, FH 166, GRR 170 = +1 year). Hail Damage is
+  byte-identical through the v0.9 tuning; `plan/balance_baseline_v09_hd.txt` was re-recorded after the content merge (6 × 40
+  seeds within noise of the stage-0 tree: avg fans y6 −1.0 %, y3 −3.2 %, good y6 −0.2 %, Local wk 22 both).
+- **Size budget:** `dist/game.html` is 4.39 MB (4,283 KiB as `node build.js` prints it; gzip 1.34 MB). The owner-facing budget
+  is relaxed from 3.8 MB to **4.5 MB** for v0.9 (the three band packs are ≈ +0.95 MB); v1.0 should not grow it much further.
+- **v1.0 forward-compat (contract gap #11):** epilogues exist for all 14 originals; "The Original Five" must read the band size;
+  "a statue in Saskatoon" → `{city}`; the HD-flavoured achievement seeds (Ma Pelouse, Buddy) need per-band twins or `band` gates.
 
 ## v0.8.3 drum sync (hotfix; owner 2026-09-30: "audible song notes and the played drum notes seem a touch off and not in time")
 - Cause (measured headless, see the lead's MEASURE_GRID/MEASURE_TAP runs): the backing band sits exactly on the chart grid; every
@@ -298,7 +338,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   NYE best-paying gig, St. Patrick's pub circuit, Canada Day free park shows, Halloween costume gigs, Thanksgiving dinner
   (guilt cards if you owe), Remembrance Day (no Legion gigs that week), Christmas party circuit + the label's terrible
   Christmas single, the Grey Mug halftime show (late-career moment).
-- C8: other rivals' members — DECIDED 2026-09-30 (see "v0.9 Genres — owner decisions"); exact balance numbers still open.
+- C8: other rivals' members — DECIDED 2026-09-30 (see "v0.9 Genres — owner decisions"); balance numbers set in v0.9
+  (`economy.rival.byRival`, fair-fight underdog curves).
 
 ## Addendum 1 — pending
 Already-shipped versions → **v0.6.1 catch-up**:
@@ -313,7 +354,8 @@ Already-shipped versions → **v0.6.1 catch-up**:
 Later versions:
 - [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
 - [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
-- [ ] v0.9: C1 other bands' drivers in play, C6 starting cities, rivals' members (open)
+- [x] v0.9: C1 other bands' drivers in play (Moth, T-Bone, Earl + per-band dash items), C6 starting cities (Regina, Edmonton
+      + the Alberta ring, Swift Current), rivals' members (Mall Rats, Chartbusters, Buckle & Boot casts) — v0.9 lanes, 2026-10-01
 
 ## v0.9 "Genres" — owner decisions (popup 2026-09-30; locked)
 - **Mall Rats** (Frost Heave's rival, Toronto, manufactured TV-show punk): the "focus-group four" — talent-show
@@ -384,6 +426,8 @@ Later versions:
 - [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
       + this checklist recorded, queued file retired — lead, 2026-09-30
 - [x] D1 licensing deals — v0.8.1 (popup: fee ranges + odds → "Nice bonus") — LICRECAP, 2026-09-30
+      (v0.9: the Buckle & Boot fury now plays with the real cast and truck mascot; employer brands per band: a Regina city-hall
+      PSA, Tamara's dental clinic, a seed dealer)
 - [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
 - [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
 - [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
@@ -997,6 +1041,33 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v0.9 "Genres"** (shapes + content keys in `02_contracts.js` CONTENT SCHEMAS; each sim file header has a v0.9 API note):
+  - `GG.career` (20): `pool(state, obj, key|path)` (flat + `byBand[bandId]` at any level of the path + optional `byGenre`; the
+    byBand/byGenre keys are stripped), `linePool`, `variant(state, baseId)` (`<id>_<bandId>`, `<id>_<rivalId>`, else the base;
+    gate + speaker checked), `speakerOk(state, who)` (member of this band, npc in scope, 'recruit', role alias, current rival
+    cast id), `cardOk(state, card)` (speaker guard + no effect aimed at another band's member; `cameo: true` passes),
+    `talkers(state)` (active, not `silent`), `roleOf(state, role)` ('@front' … C.ROLE_ALIASES), `isAlias`, `resolveWho`,
+    `cardRoles`, `memberDef`, `isSilent`, `homeVenue`, `tokenValue`, `firstGigVenue`, `rivalId`, `migrateBand`; tokens C.TOKENS.
+  - `GG.fans.pool(s, path, fallback)` (bandbook pools + byBand, items filtered by `gate` / `band`), `homeSuperfan` (the 'dale'
+    slot per band); Patreeon chat via `club.payoutChat` / `club.grumbleChat`.
+  - `GG.rival` (23): `frontSpeaker(state)` (who posts for the rival: the npc with `frontman: true`), `frontName`, `frontId`,
+    `defectorLook`, `setActions(state, kind, n)` → `[{ song, at, action, who }]` (Mall Rats' kickflip); showdown rivals carry
+    `genre`, `style` ('ballad' for Chartbusters), `legacy`; fair-fight numbers in `economy.rival.byRival[rid]`.
+  - `GG.shop.upgradeView(state, id)` (upgrades[id].bySpace names), `spaceDef` reads `spaces[tier].byCity`, `vanName(bandId, tier)`.
+  - `GG.world` (26): `homeRing`, `homeRooms`, `nearRing`, `ringEra`, `inReach(state, venue)` (venue.reach), `takeOverLine(state)`.
+  - `GG.tour` (25): `needsMet(s, pkg)`, `payoffDone(s)` (any band's payoff, `cfg().payoffFlags`); bus `tour:payoff
+    { packageId, flag, venueId }`. `GG.labels.runLoonies` / `openEnvelope` results carry `bandLine`.
+  - `GG.gig` (22): `moments(genre)` → `{ combo, chorus, peak }` (§4.4), `signatures(state)`, `roles(state)`.
+  - `GG.audio` (30): `voiceFor(singerId)`, `vocFamily`, `soloFor(genre, soloist)`, `bedFor(spaceKind)`, `noodleFor(member)`,
+    `momentShots(kind)`; `play`/`timeline` opts `style`, `singer`, `rival`, `soloist`; voice profiles in `GG.content.voices`.
+  - `GG.render.garage.photoRig(spaceKind)` → `{ fov, near, far, pos, look, … }` (5l's band photo), `spaceKind(state)`; `peek(kind)`
+    is optional and not implemented (the genre card shows the 2D room art). `GG.render.logo.misprint/misprintFor`;
+    `R.gearOf(member, contentMember, genre)` (40); stage `info()` adds mics, layout, gear, props, session, drummer, bannerLogo.
+  - `GG.ui` (50): `presentLines(list, st)` (a scripted `{ who, text }` exchange minus the lines of bandmates not in the lineup,
+    with their set-up question; null when nobody is left to answer), `safeLine`, `ownLines`, `tokens`, `fill`, `pool`,
+    `speaker`, `talkers`, `roleOf`, `band`, `space`, `spaceKind`, `driverOf`, `superfan`, `province`, `bandLines`.
+  - Tools: `BAND=<id>|all`, `TUNE='member.skill=N'`, `FIT='venue.genre=x'`, `DECK=synthetic|none` for `tools/balance.js`;
+    `LEAK_STRICT` (on by default; `=0` warns) and `LEAK_YEARS` for `tests/sim_bands.test.js`; pw_bands is strict too.
 - v0.8.3 drum sync (`11_settings.js`): settings `drumSync` (default true), `syncDisp` (ms 10..40, default 25), calib profile
   `vat`; `GG.prefs.SYNC { M, LEAD, DISP0, DISP_MIN, DISP_MAX, SNAP_EARLY, VIS0, MIN_N }`, `syncLead(disp)`, `syncSnap(J, noteT,
   hit)`, `syncWhen(J', zeroBand, ctxNow)`, `syncP90(samples)`, `syncBlend(prev, p90)`, `syncVisual(off, measured)` (pure,
@@ -1122,10 +1193,17 @@ Later versions:
 - Tests: sim_gig difficulty test; pw_gig `touch` section (real touchscreen taps under a stray layer, stalled clock).
 
 ## Back-burner
+- v0.9 leftovers: Buckle & Boot's spectator view in a real BotB is mostly the crowd's big hats (render polish in 42's spectator
+  camera); Rock/punk leads incl. Benny's break still go through Dana's lead amp; the Chartbusters' ballad only plays when forced
+  (rock's slider floor is 90 BPM); country strums a major triad on every chord; nobody has listened to the v0.9 audio on a phone
+  yet (WAVs in tests/.cache); `GG.render.garage.peek` (genre-card still) not built; the Ramblers' fiddle sits in the rhythm
+  slot partly behind Duke from the drummer camera; small Hail Damage-only texts with no byBand reader stayed neutral
+  (licensing brand texts, the Full Kit perk, the cape venue quirk); the bots rarely see the Japan/Australia/Russia region cards
+  or the Gopherwood/DIY label cards; the 10-seed balance run is noisy (read the 30-seed file next to it).
 - v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);
   `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" in content (the UI shows Gord); heat decays emit
   'heat:changed' every week; the spectator view keeps crowd pits off (they'd run through the riser camera); rival banter
-  lines live in 59d (UI flavour, like 55's); other bands' rivals have no cast until v0.9 (the Scene tab shows an empty lineup).
+  lines live in 59d (UI flavour, like 55's).
 - v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
 - v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
   dressing); producer `weird` unused; full-career save code ≈ 65–70k chars (album reviews); balance 10×20 takes ~39 s.
