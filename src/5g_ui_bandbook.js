@@ -66,10 +66,12 @@
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
 
   /* ---- Feed ------------------------------------------------------------------------------------------------ */
-  var WHO_TAG = { rival: 'Rival 🤘', dale: 'Superfan', trucker: 'Superfan', hater: 'Hater' };
+  var WHO_TAG = { rival: 'Rival', dale: 'Superfan', trucker: 'Superfan', hater: 'Hater' };
   function comment(c) {
+    var st = GG.state, rv = c.who === 'rival' && st ? (GG.content.rivals || {})[(ui.band(st) || {}).rival] : null;   // v0.9: the rival's genre icon
+    var tag = WHO_TAG[c.who] ? WHO_TAG[c.who] + (c.who === 'rival' ? ' ' + ui.genreIcon(rv ? rv.genre : st && st.genre) : '') : null;
     return el('div.bb-c.' + c.who, { testid: 'bb-comment', data: { who: c.who } },
-      [el('b', c.name), WHO_TAG[c.who] ? el('span.tag', WHO_TAG[c.who]) : null, el('span', c.text)]);
+      [el('b', c.name), tag ? el('span.tag', tag) : null, el('span', c.text)]);
   }
   function postCard(p) {
     var info = F().kindInfo(p.kind), cls = p.exclusive ? '.excl' : p.viral === 'good' ? '.viral' : p.viral === 'cringe' ? '.cringe' : '';
@@ -115,7 +117,7 @@
       el('p.small.dim', 'Superfans follow you on tour. Casuals show up when the buzz is up. Haters grow with fame, and they comment.'),
       el('div.bb-h', 'Superfans'), el('div', sfs),
       el('div.bb-h', 'Fan mail + gifts'),
-      el('div', { testid: 'bb-gifts' }, gifts.length ? gifts : el('p.small.dim', 'Nothing yet. Play some shows. The mail comes to the garage.'))
+      el('div', { testid: 'bb-gifts' }, gifts.length ? gifts : el('p.small.dim', 'Nothing yet. Play some shows. The mail comes to ' + ui.space(st) + '.'))
     ]);
   }
 
@@ -123,9 +125,9 @@
   function happyLabel(h) { return h >= 80 ? 'Thrilled' : h >= 60 ? 'Content' : h >= 40 ? 'Restless' : h >= 25 ? 'Grumbling' : 'Cancelling'; }
   function tierRow(t, open) {
     return el('div.bb-tier' + (open && !t.unlocked ? '.off' : ''), { testid: 'bb-tier-' + t.id }, [el('div.ic', t.icon || '🥁'),
-      el('div.grow', [el('b', t.name), el('span', t.perk)]),
-      el('div.price', ['$' + t.price + '/mo', el('small', !open ? (t.minMembers ? 'opens at ' + t.minMembers : '') : t.unlocked ? t.members + (t.dale ? ' (incl. Dale)' : '') + ' members'
-        : t.dale ? 'Dale (not open yet; he pays anyway)' : 'opens at ' + t.minMembers + ' members')])]);
+      el('div.grow', [el('b', t.name), el('span', GG.state ? ui.fill(t.perk, GG.state) : t.perk)]),   // v0.9: perks carry {space}
+      el('div.price', ['$' + t.price + '/mo', el('small', !open ? (t.minMembers ? 'opens at ' + t.minMembers : '') : t.unlocked ? t.members + (t.dale ? ' (incl. ' + ui.superfan() + ')' : '') + ' members'
+        : t.dale ? ui.superfan() + ' (not open yet; pays anyway)' : 'opens at ' + t.minMembers + ' members')])]);
   }
   function clubTab(st, rerender) {
     var v = F().club(st);
@@ -135,7 +137,7 @@
     if (!v.open) return el('div', [head, el('p.small', 'Superfans pay monthly; you post exclusive stuff to keep them happy. Happy members stay (and tell their friends).'),
       btn('.btn.primary.block', { testid: 'bb-club-open', onclick: function () {
         if (!F().openClub(st)) return;
-        sfx('ui'); sync(); ui.toast('Patreeon is live. First member: Dale, Full Kit, at 12:01 a.m.'); rerender();
+        sfx('ui'); sync(); ui.toast('Patreeon is live. First member: ' + ui.superfan(st) + ', Full Kit, at 12:01 a.m.'); rerender();
       } }, 'Open the fan club'),
       el('div.bb-h', 'Tiers'), el('div', v.tiers.map(function (t) { return tierRow(t, false); }))]);
     var can = v.canExclusive, posts = F().feed(st).filter(function (p) { return p.exclusive; }).slice(0, 3);
@@ -161,7 +163,7 @@
   // st: GG.state; rerender(): redraw the host; opts.tab: 'feed'|'fans'|'club'.
   ui.bandbookPanel = function (st, rerender, opts) {
     css();
-    if (!F() || !st) return el('p.dim', 'Bandbook is down for maintenance. Kenji is looking at it.');
+    if (!F() || !st) return el('p.dim', st ? ui.fill('Bandbook is down for maintenance. {deadpan} is looking at it.', st) : 'Bandbook is down for maintenance.');
     F().ensure(st);
     if (opts && opts.tab) sub = opts.tab;
     var redo = function () { if (rerender) rerender(); };

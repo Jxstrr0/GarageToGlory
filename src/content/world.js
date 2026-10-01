@@ -17,6 +17,13 @@
 //   cards:    Monday-card schema (type, speaker, gate { region, era, band?, weekOfYear? }) + city? [cityIds] + story?
 //             (forced by the sim only). Extra effect key `tour`: { regionFans, homesick, gift, endTour, accept, big }.
 //   Tokens: {band} {player} {city} {nick:id} {name:id} + {region} {song} {n} {rival} {venue} {festival} {money}.
+// v0.9 "Genres" (plan_contract_0.9 §4.1): the flat text is neutral (no Hail Damage people); per band:
+//   world.byBand[bandId] = { lines: { depart: { <region>: text }, home, rival, moose, gongNominated, gongLost, ... },
+//     callHome: { generic: [text] }, cityLines: { <cityId>: [text] } } (added / replacing via career.pool),
+//   world.gongCarpet[bandId] = [{ who, text }] (the Global Gong red carpet, 5i_ui_tour), callHome[memberId] (member-keyed),
+//   story cards: a band's own '<id>_<bandId>' (packs) beats the base card; the bases wt_invite / wt_homesick read right for
+//   every band (tokens), so Hail Damage keeps the base ids the tour sim and its tests expect;
+//   region cards gated { band: [...] }. A band's World payoff package (owner Q3) comes from its pack: needs { flag, is?, band? }.
 (function (GG) {
   var W = GG.content.world = {};
 
@@ -59,9 +66,9 @@
     city('manchester', 'Manchester', 'uk_europe', 34, 50, 'England', -1, 'Everyone here was in a band once. It is also raining.'),
     city('glasgow', 'Glasgow', 'uk_europe', 29, 36, 'Scotland', -2, 'The loudest crowds in the UK, and they sing the guitar solos.'),
     city('dublin', 'Dublin', 'uk_europe', 18, 48, 'Ireland', 0, 'Every pub has a band. Every band has a fiddle. Even yours, eventually.'),
-    city('paris', 'Paris', 'uk_europe', 42, 72, 'France', 1, 'France loves Marcel. Nobody knows why. Marcel knows why.'),
+    city('paris', 'Paris', 'uk_europe', 42, 72, 'France', 1, 'France loves a Canadian band with an accent. Nobody knows why.'),
     city('amsterdam', 'Amsterdam', 'uk_europe', 50, 58, 'the Netherlands', 0, 'Bikes, canals and a venue in a former church.'),
-    city('berlin', 'Berlin', 'uk_europe', 64, 56, 'Germany', 0, 'The gear shops never close. Neither does Dana.'),
+    city('berlin', 'Berlin', 'uk_europe', 64, 56, 'Germany', 0, 'The gear shops never close. Neither do the guitarists.'),
     city('prague', 'Prague', 'uk_europe', 66, 66, 'Czechia', -1, 'Cobblestones, castles and the best-sounding cellar on the continent.'),
     city('madrid', 'Madrid', 'uk_europe', 22, 92, 'Spain', 6, 'Doors at midnight. Nobody arrives before one.'),
     city('oslo', 'Oslo', 'uk_europe', 56, 24, 'Norway', -4, 'Black-metal royalty buys milk at the corner store here.'),
@@ -74,7 +81,7 @@
     city('nagoya', 'Nagoya', 'japan', 58, 64, 'Japan', 0, 'Halfway between everything. The band eats miso katsu twice a day.'),
     city('kyoto', 'Kyoto', 'japan', 50, 63, 'Japan', 0, 'Temples, gardens and one very small club in an old sake warehouse.'),
     city('sendai', 'Sendai', 'japan', 76, 38, 'Japan', -2, 'Grilled beef tongue and a crowd that learned your lyrics phonetically.'),
-    city('sapporo', 'Sapporo', 'japan', 80, 10, 'Japan', -6, 'Snow festivals and a winter that makes Saskatoon nod in respect.'),
+    city('sapporo', 'Sapporo', 'japan', 80, 10, 'Japan', -6, 'Snow festivals and a winter that makes the prairies nod in respect.'),
     city('fukuoka', 'Fukuoka', 'japan', 18, 80, 'Japan', 2, 'Street-stall ramen at 2 a.m. after the show. Every show.'),
     city('hiroshima', 'Hiroshima', 'japan', 32, 72, 'Japan', 1, 'A calm, kind city with a very loud little club.'),
     city('sydney', 'Sydney', 'australia', 86, 64, 'Australia', 0, 'The harbour, the bridge, and Big Day Inn every January.'),
@@ -89,9 +96,13 @@
     city('st_petersburg', 'St. Petersburg', 'russia', 10, 30, 'Russia', 0, 'Canals, palaces and white summer nights when nobody sleeps.'),
     city('kazan', 'Kazan', 'russia', 22, 50, 'Russia', -1, 'Where the Volga meets the Kazanka and a chak-chak meets your mouth.'),
     city('yekaterinburg', 'Yekaterinburg', 'russia', 34, 46, 'Russia', -3, 'Right on the line between Europe and Asia. The band takes a photo on it.'),
-    city('novosibirsk', 'Novosibirsk', 'russia', 52, 56, 'Russia', -5, 'Siberia\'s big city. The opera house is bigger than Saskatoon\'s airport.'),
+    city('novosibirsk', 'Novosibirsk', 'russia', 52, 56, 'Russia', -5, 'Siberia\'s big city. The opera house is bigger than most prairie airports.'),
     city('irkutsk', 'Irkutsk', 'russia', 68, 64, 'Russia', -8, 'Lake Baikal, the deepest lake on Earth, and Siberian Frostfest every January.'),
-    city('vladivostok', 'Vladivostok', 'russia', 94, 76, 'Russia', -2, 'The end of the line. Nine thousand km from Moscow and still the same country.')
+    city('vladivostok', 'Vladivostok', 'russia', 94, 76, 'Russia', -2, 'The end of the line. Nine thousand km from Moscow and still the same country.'),
+    // v0.9: the Grid Road Ramblers' Q3 payoff town (their pack's au_country_circuit package ends here). Listed last so the
+    // city order the sims iterate is the same as when the pack added it.
+    city('tumbleworth', 'Tumbleworth', 'australia', 84, 56, 'Australia', 3,
+      'A country town in New South Wales that becomes the country-music capital of the southern hemisphere every January.', true)
   ].forEach(function (c) { W.cities[c.id] = c; });
 
   function venue(id, name, cityId, tier, kind, capacity, pay, quirk, x) {
@@ -107,14 +118,14 @@
     venue('drizzle_factory', 'The Drizzle Factory', 'manchester', 2, 'club', 450, [900, 1400], 'An old mill. The roof leaks onto the ride cymbal, in time.'),
     venue('barrowlads', 'The Barrowlads Ballroom', 'glasgow', 3, 'club', 1400, [2200, 3400], 'A sprung dance floor. When Glasgow jumps, the whole building bounces.'),
     venue('whelans_wake', "Whelan's Wake", 'dublin', 2, 'bar', 380, [800, 1200], 'A fiddler sits in whether you ask or not. He is quite good.'),
-    venue('petit_chaos', 'Le Petit Chaos', 'paris', 2, 'club', 520, [1000, 1600], 'Paris loves Marcel. The front row brought roses. For Marcel. Only Marcel.'),
+    venue('petit_chaos', 'Le Petit Chaos', 'paris', 2, 'club', 520, [1000, 1600], 'Paris loves a Canadian singer. The front row brought roses. For the singer. Only the singer.'),
     venue('paradiso_lost', 'Paradiso Lost', 'amsterdam', 3, 'church', 1300, [2200, 3300], 'A former church with stained glass. The reverb is holy.'),
     venue('kellerkatze', 'Klub Kellerkatze', 'berlin', 2, 'club', 650, [1100, 1700], 'A techno bunker lending its room to metal for one night. The DJ is sulking.'),
     venue('rattling_tram', 'The Rattling Tram', 'prague', 2, 'club', 420, [800, 1300], 'A cellar under a tram line. Every six minutes the floor keeps time.'),
     venue('sala_siesta', 'Sala Siesta', 'madrid', 2, 'club', 700, [1000, 1500], 'Doors at midnight, set at two, breakfast at the bar at five.'),
     venue('rockefjell', 'Rockefjell', 'oslo', 2, 'club', 800, [1200, 1800], 'A club carved into a hill. Norwegian black metal royalty is at the bar, drinking milk.'),
     venue('meatball_cellar', 'The Meatball Cellar', 'stockholm', 2, 'club', 450, [1000, 1500], 'Everyone is very tall and very polite. The pit apologizes.'),
-    venue('sauna_inferno', 'Club Sauna Inferno', 'helsinki', 2, 'club', 700, [1100, 1700], 'There is a sauna backstage. Marcel goes in in the cape.'),
+    venue('sauna_inferno', 'Club Sauna Inferno', 'helsinki', 2, 'club', 700, [1100, 1700], 'There is a sauna backstage. Somebody goes in wearing the stage clothes.'),
     venue('moose_opera', 'The Finnish National Moose Opera', 'helsinki', 3, 'church', 1350, [3000, 4500], 'A real opera house. The chandelier is shaped like antlers. Nobody can explain it.', { moose: true }),
     venue('mudstonbury_fest', 'Mudstonbury', 'mudstonbury', 4, 'club', 60000, [5500, 9000], 'The mud is knee-deep by Saturday. A welly boot sails over the crowd during the chorus.', { festival: true, outdoor: true, weeks: [23, 24] }),
     venue('wackelstein_fest', 'Wackelstein Open Air', 'wackelstein', 4, 'club', 75000, [6500, 11000], 'Seventy-five thousand metalheads in a cow field. The cows have seen worse.', { festival: true, outdoor: true, weeks: [3, 4] }),
@@ -124,7 +135,7 @@
     venue('zircon_hall', 'Nagoya Zircon Hall', 'nagoya', 3, 'club', 1000, [1900, 2800], 'Next to a department store. Shoppers wander in during soundcheck.'),
     venue('tick_tock', 'Kyoto Tick Tock', 'kyoto', 2, 'club', 260, [700, 1100], 'An old sake warehouse. Take your shoes off at the door. Yes, the drummer too.'),
     venue('tongue_hall', 'Sendai Beef Tongue Hall', 'sendai', 2, 'club', 500, [900, 1400], 'Named after the local speciality. The rider is entirely grilled beef tongue.'),
-    venue('snow_cellar', 'Sapporo Snow Cellar', 'sapporo', 2, 'club', 550, [1000, 1500], 'Under a snowbank. The crowd arrives dressed for Saskatoon.'),
+    venue('snow_cellar', 'Sapporo Snow Cellar', 'sapporo', 2, 'club', 550, [1000, 1500], 'Under a snowbank. The crowd arrives dressed for a prairie January.'),
     venue('drum_logic', 'Fukuoka Drum Logic', 'fukuoka', 3, 'club', 1000, [1800, 2700], 'A drum shop upstairs lends you a gong. You politely decline. Kit rules.'),
     venue('club_okonomi', 'Club Okonomi', 'hiroshima', 2, 'club', 400, [800, 1200], 'Above an okonomiyaki restaurant. The whole set smells like cabbage and joy.'),
     venue('summer_sonicboom', 'Summer Sonicboom', 'tokyo', 4, 'club', 40000, [6000, 10000], 'A seaside festival. Towels with your band name on them sell out by noon.', { festival: true, outdoor: true, weeks: [3, 4] }),
@@ -143,20 +154,24 @@
     venue('urals_underground', 'The Urals Underground', 'yekaterinburg', 2, 'club', 600, [900, 1400], 'Half the crowd is in Europe, half in Asia. The mosh pit crosses continents.'),
     venue('siberian_station', 'Siberian Station Club', 'novosibirsk', 2, 'club', 500, [800, 1300], 'An old railway depot. The trains out back are louder than the PA.'),
     venue('baikal_frost_hall', 'Baikal Frost Hall', 'irkutsk', 2, 'club', 400, [800, 1200], 'A wooden hall with a wood stove on stage. The stove gets a solo.'),
-    venue('siberian_frostfest', 'Siberian Frostfest', 'irkutsk', 4, 'club', 15000, [5000, 8000], 'On the frozen shore of Lake Baikal in January. Minus forty. The band is unimpressed; they are from Saskatchewan.', { festival: true, outdoor: true, weeks: [13, 14] }),
-    venue('last_stop', 'The Last Stop', 'vladivostok', 2, 'club', 450, [900, 1300], 'The end of the Trans-Siberian. The crowd has come a long way. So have you.')
+    venue('siberian_frostfest', 'Siberian Frostfest', 'irkutsk', 4, 'club', 15000, [5000, 8000], 'On the frozen shore of Lake Baikal in January. Minus forty. The band is unimpressed; they are from the prairies.', { festival: true, outdoor: true, weeks: [13, 14] }),
+    venue('last_stop', 'The Last Stop', 'vladivostok', 2, 'club', 450, [900, 1300], 'The end of the Trans-Siberian. The crowd has come a long way. So have you.'),
+    // v0.9: the Ramblers' Q3 payoff festival (last, as above; country fits best)
+    venue('tumbleworth_fest', 'Tumbleworth Country Music Festival', 'tumbleworth', 4, 'club', 45000, [5500, 9000],
+      'Forty-five thousand people in hats on a riverbank in January. Utes parked for kilometres. Somebody is always yodelling.',
+      { festival: true, outdoor: true, weeks: [13, 14], genreFit: { metal: 0.45, punk: 0.55, rock: 0.85, country: 1 } })
   ];
 
-  // Rental vehicles abroad (you fly; Kenji drives whatever they give you, on whichever side of the road).
+  // Rental vehicles abroad (you fly; your driver drives whatever they give you, on whichever side of the road).
   W.vehicles = {
     sardine_van: { id: 'sardine_van', region: 'uk_europe', name: 'A tiny European van', perWeek: 350, comfort: 1, breakdown: 0.04, seats: 6, look: 'sardine',
-      blurb: 'Five people, a drum kit and a cape in a van the size of a fridge. Packed like sardines.' },
+      blurb: 'The whole band, a drum kit and the merch in a van the size of a fridge. Packed like sardines.' },
     splitter_bus: { id: 'splitter_bus', region: 'uk_europe', name: 'A splitter bus with bunks', perWeek: 850, comfort: 3, breakdown: 0.02, seats: 9, look: 'splitter',
       blurb: 'Bunks in the front, gear in the back. Somebody else\'s band stickers on every surface.' },
     hiace: { id: 'hiace', region: 'japan', name: 'A rented high-roof van', perWeek: 500, comfort: 2, breakdown: 0.01, seats: 8, look: 'kei',
-      blurb: 'Spotless, polite and it beeps when it reverses. Kenji drives on the left without comment.' },
+      blurb: 'Spotless, polite and it beeps when it reverses. Your driver takes the left side of the road without comment.' },
     bullet_pass: { id: 'bullet_pass', region: 'japan', name: 'Bullet-train rail passes', perWeek: 1200, comfort: 4, breakdown: 0, seats: 99, look: 'train',
-      blurb: '300 km/h. The gear goes by courier. Marcel\'s cape goes in the overhead rack.' },
+      blurb: '300 km/h. The gear goes by courier. The stage clothes go in the overhead rack.' },
     ute_trailer: { id: 'ute_trailer', region: 'australia', name: 'A ute and a box trailer', perWeek: 400, comfort: 1, breakdown: 0.05, seats: 5, look: 'ute',
       blurb: 'Three in the cab, two in a borrowed station wagon behind, the kit in a trailer. Vast drives.' },
     campervan: { id: 'campervan', region: 'australia', name: 'A campervan the size of a road train', perWeek: 950, comfort: 3, breakdown: 0.03, seats: 7, look: 'camper',
@@ -186,7 +201,7 @@
       blurb: 'Three weeks of rain, pub gigs and drink tickets: London, Manchester, Glasgow.',
       stops: [{ city: 'london', venue: 'dog_and_distortion' }, { city: 'manchester', venue: 'drizzle_factory' }, { city: 'glasgow', venue: 'barrowlads' }] },
     { id: 'eu_continental', region: 'uk_europe', name: 'The Continental',
-      blurb: 'The tiny-van classic: Amsterdam, Berlin, Prague and Paris (where they love Marcel).',
+      blurb: 'The tiny-van classic: Amsterdam, Berlin, Prague and Paris (where they love a Canadian accent).',
       stops: [{ city: 'amsterdam', venue: 'paradiso_lost' }, { city: 'berlin', venue: 'kellerkatze' }, { city: 'prague', venue: null }, { city: 'paris', venue: 'petit_chaos' }] },
     { id: 'eu_festival_summer', region: 'uk_europe', name: 'Mudstonbury Summer', festival: true,
       blurb: 'Mud season: a London warm-up at the Odium, Mudstonbury in June, then the old church in Amsterdam.',
@@ -219,7 +234,7 @@
       blurb: 'The vast one: Darwin, Alice Springs, Adelaide, Perth. Thousands of km of red dirt between shows.',
       stops: [{ city: 'darwin', venue: 'croc_pit' }, { city: 'alice_springs', venue: 'red_centre_roadhouse' }, { city: 'adelaide', venue: 'governors_shed' }, { city: 'perth', venue: 'isolated_pub' }] },
     { id: 'au_big_day_inn', region: 'australia', name: 'Big Day Inn Summer', festival: true,
-      blurb: 'Escape the Saskatchewan winter: Hobart, Melbourne, then Big Day Inn in Sydney in January.',
+      blurb: 'Escape the prairie winter: Hobart, Melbourne, then Big Day Inn in Sydney in January.',
       stops: [{ city: 'hobart', venue: 'wrest_pointless' }, { city: 'melbourne', venue: 'wrong_corner' }, { city: 'sydney', venue: 'big_day_inn' }] },
     { id: 'ru_showcase', region: 'russia', name: 'Moscow Showcase', showcase: true,
       blurb: 'One week in Moscow: a showcase at the Red Octopus. There is a tank in the lobby.',
@@ -278,7 +293,7 @@
     big: ['{song} is blowing up in {region}. Nobody knows how. Promoters are calling.']
   };
 
-  // Members calling home from the road (group chat). Per member (Hail Damage) + generic; Kenji never speaks.
+  // Members calling home from the road (group chat). Per member (member-keyed; packs add theirs) + generic; Kenji never speaks.
   W.callHome = {
     marcel: ['Called Maman. She asked if they have real bread here. I said yes. She hung up.', 'Wore the cape to call home on video. Maman said I look thin. Capes are slimming.',
       'I miss the lawn. Do not tell anyone I miss the lawn.', 'Facetimed the garage. Somebody put the webcam on the lawnmower. I cried a little.'],
@@ -286,23 +301,50 @@
       'Missed my cousin\'s wedding for this. Sent a video of a guitar solo. She played it at the reception.'],
     jaxon: ['Baba called. She wants to know if I am wearing the toque. I am not wearing the toque.', 'Baba sent a photo of perogies. That is psychological warfare.',
       'Called Baba. She rated the show from the livestream. Four out of ten. The drummer got a nine.'],
-    generic: ['Called home. They asked when we are back. I didn\'t have an answer.', 'It\'s 4 a.m. in Saskatoon. I called anyway. Mom picked up on the first ring.',
+    generic: ['Called home. They asked when we are back. I didn\'t have an answer.', 'It\'s 4 a.m. back home. I called anyway. Mom picked up on the first ring.',
       'Homesick. Is that a thing adults are allowed to say? Asking for the band.', 'Watching hockey highlights in a hotel room at 6 a.m. This is who I am now.',
       'Found a Canadian flag patch in a shop. Bought six. Sewed one on my pillow.']
   };
 
-  // Road lines per region (trip banter abroad) + news lines.
+  // Road lines per region (trip banter abroad) + news lines. Neutral; Hail Damage's own in W.byBand.hail_damage.lines.
   W.lines = {
-    depart: { uk_europe: 'Wheels up. Next stop: rain.', japan: 'Wheels up. Thirteen hours. Marcel packed the cape in a garment bag. The cape has its own seat.',
-      australia: 'Wheels up. Twenty-two hours, two connections, one very confused sense of what season it is.', russia: 'Wheels up. Jaxon packed three toques. Baba packed a fourth.' },
-    home: ['Home. The garage smells exactly the same. Somebody hugs the Moose Hearse.', 'Back in Saskatoon. Mom made a lasagna the size of a snare case.'],
+    depart: { uk_europe: 'Wheels up. Next stop: rain.', japan: 'Wheels up. Thirteen hours. The stage clothes have a garment bag. The garment bag has its own seat.',
+      australia: 'Wheels up. Twenty-two hours, two connections, one very confused sense of what season it is.', russia: 'Wheels up. Everybody packed three toques. Mom packed a fourth.' },
+    home: ['Home. {space} smells exactly the same. Somebody hugs {van}.', 'Back in {city}. Mom made a lasagna the size of a snare case.'],
     broken: '{band} has broken {region}. Crowds sing along now. In the right accent.',
-    rival: '{rival} just played {region} first. The locals keep asking if you know them. "Tall accountant? Veggie tray?"',
+    rival: '{rival} just played {region} first. The locals keep asking if you know them.',
     big: '{song} is huge in {region}. Nobody at home believes it.',
-    moose: 'The moose concept album just went platinum in Finland. Marcel has been crying at the Helsinki opera house for an hour. Good crying.',
-    gongNominated: '{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. Marcel is already writing the speech.',
+    moose: 'The moose concept album just went platinum in Finland. The band has been crying at the Helsinki opera house for an hour. Good crying.',
+    gongNominated: '{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. {front} is already writing the speech.',
     gongWon: '{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Ever.',
-    gongLost: 'The Global Gong went to {venue}. The band claps politely. Marcel claps sarcastically.'
+    gongLost: 'The Global Gong went to {venue}. The band claps politely. {grumbler} claps sarcastically.'
+  };
+  // A band's moment in one city abroad (25_sim_tour cityLines; + byBand). Hail Damage's Paris roses live in byBand.
+  W.cityLines = {};
+
+  // v0.9: the Global Gong red carpet per band (5i_ui_tour; was the UI's GONG_CARPET). Packs add their bands.
+  W.gongCarpet = {
+    hail_damage: [
+      { who: 'reporter', text: 'Live from Amsterdam! Who are you wearing?' }, { who: 'marcel', text: 'The cape. It has its own passport now.' },
+      { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: 'jaxon', text: 'Yes. It does not go on the drum kit. We had a meeting about it.' }
+    ]
+  };
+
+  // v0.9: Hail Damage's own World lines (on top of the neutral ones above).
+  W.byBand = {
+    hail_damage: {
+      lines: {
+        depart: { japan: 'Wheels up. Thirteen hours. Marcel packed the cape in a garment bag. The cape has its own seat.',
+          russia: 'Wheels up. Jaxon packed three toques. Baba packed a fourth.' },
+        home: ['Home. The garage smells exactly the same. Somebody hugs the Moose Hearse.', 'Back in Saskatoon. Mom made a lasagna the size of a snare case.'],
+        rival: '{rival} just played {region} first. The locals keep asking if you know them. "Tall accountant? Veggie tray?"',
+        moose: 'The moose concept album just went platinum in Finland. Marcel has been crying at the Helsinki opera house for an hour. Good crying.',
+        gongNominated: '{band} is nominated for the Global Gong. The ceremony is in Amsterdam in May. Marcel is already writing the speech.',
+        gongLost: 'The Global Gong went to {venue}. The band claps politely. Marcel claps sarcastically.'
+      },
+      callHome: { generic: ['It\'s 4 a.m. in Saskatoon. I called anyway. Mom picked up on the first ring.'] },
+      cityLines: { paris: ['France loves Marcel. Roses land on stage. All of them are for Marcel.'] }
+    }
   };
 
   // The Global Gong (A14): the one international award, World stage only. Nominees besides you and (if they toured) your rival.
@@ -339,7 +381,11 @@
     card('wt_uk_rain', 'uk_europe', 'dana', 'It Is Raining', 'It has rained for nine days. The merch is wet, the cape is wet, the van smells like a wet dog made of cape. Dana wants a day off.', [
       { label: 'A day in a pub, drying off', hint: 'Burnout ↓ · Homesick ↓', effects: { burnout: -6, tour: { homesick: -6 } }, outcome: 'Pie, chips, a fire, a quiz machine. The cape steams gently by the hearth.' },
       { label: 'Busk in the rain for content', hint: 'Buzz ↑ · Burnout ↑', effects: { buzz: 6, burnout: 5, tour: { regionFans: 150 } }, outcome: 'Soaked, acoustic, filmed by a stranger. "Canadians Play Through Biblical Rain" does numbers.' }
-    ], { type: 'weird', once: false, cooldown: 10 }),
+    ], { type: 'weird', once: false, cooldown: 10, gate: { band: ['hail_damage'] } }),
+    card('wt_uk_wet_gear', 'uk_europe', 'nigel', 'It Is Still Raining', 'Nigel the promoter says it has rained for nine days. It has. The merch is wet, the amps are damp, the van smells like a wet dog.', [
+      { label: 'A day in a pub, drying off', hint: 'Burnout ↓ · Homesick ↓', effects: { burnout: -6, tour: { homesick: -6 } }, outcome: 'Pie, chips, a fire, a quiz machine. The band steams gently by the hearth.' },
+      { label: 'Busk in the rain for content', hint: 'Buzz ↑ · Burnout ↑', effects: { buzz: 6, burnout: 5, tour: { regionFans: 150 } }, outcome: 'Soaked, unplugged, filmed by a stranger. "Canadians Play Through Biblical Rain" does numbers.' }
+    ], { type: 'weird', once: false, cooldown: 10, gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
     card('wt_eu_gear_shop', 'uk_europe', 'dana', 'Lost in a Gear Shop', 'Dana went into a Berlin gear shop at 10 a.m. It is now 6 p.m. Soundcheck was an hour ago. She is not answering her phone.', [
       { label: 'Send a search party', hint: 'Chemistry ↑ · Dana ↓', effects: { chemistry: 3, mood: { dana: -4 } }, outcome: 'Found in the basement, holding a fuzz pedal like a newborn. She has to put it back.' },
       { label: 'Let her buy the pedal', hint: 'Fund ↓ · Dana ↑↑', effects: { fund: -600, mood: { dana: 12 }, skill: { dana: 2 } }, outcome: 'It is a very expensive fuzz pedal. Tonight\'s solo sounds like a jet engine in love.' }
@@ -381,7 +427,13 @@
       { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
         success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
         fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
-    ], { type: 'weird' }),
+    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    card('wt_au_kick_spider', 'australia', 'shazza', 'Something in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Shazza looks through the port hole and goes very quiet. "Mate. It has eight legs and a mortgage."', [
+      { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
+      { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
+        success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
+        fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
+    ], { type: 'weird', gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
     card('wt_au_christmas', 'australia', 'marcel', 'Christmas at the Beach', 'It is Christmas and thirty-eight degrees. Marcel has put on the cape and a Santa hat and will not take either off.', [
       { label: 'Beach barbecue for the band', hint: 'Moods ↑ · Homesick ↓', effects: { mood: { all: 8 }, fund: -200, tour: { homesick: -6 } }, outcome: 'Prawns, sunburn and a Christmas cracker joke read aloud in five accents. Not home, but close.' },
       { label: 'Video call home for Christmas', hint: 'Homesick ↓↓ · Burnout ↑', effects: { burnout: 4, tour: { homesick: -12 } }, outcome: 'Snow in the garage window behind Mom. Sand in your sandwich. Everyone cries a little. It helps.' }
@@ -394,7 +446,11 @@
     card('wt_ru_minus40', 'russia', 'dmitri', 'Minus Forty', 'Dmitri from Frostfest apologizes: it is minus forty on the ice today. The local bands are wearing three coats. Your band is in hoodies, unimpressed.', [
       { label: '"This is spring in Saskatoon"', hint: 'Buzz ↑↑ · Burnout ↑', effects: { buzz: 10, burnout: 5, tour: { regionFans: 400 } }, outcome: 'Hoodies, no gloves, full set. The Siberians decide you are their people. There is a chant.' },
       { label: 'Borrow the coats', hint: 'Burnout ↓ · Moods ↑', effects: { burnout: -4, mood: { all: 4 } }, outcome: 'Dmitri hands out fur hats. Marcel wears his over the cape. It is a look.' }
-    ], { type: 'road', city: ['irkutsk'] }),
+    ], { type: 'road', city: ['irkutsk'], gate: { band: ['hail_damage'] } }),
+    card('wt_ru_ice_gig', 'russia', 'dmitri', 'Minus Forty, Again', 'Dmitri from Frostfest apologizes: it is minus forty on the ice today. The local bands are wearing three coats. Your band is in hoodies, unimpressed.', [
+      { label: '"This is spring back home"', hint: 'Buzz ↑↑ · Burnout ↑', effects: { buzz: 10, burnout: 5, tour: { regionFans: 400 } }, outcome: 'Hoodies, no gloves, full set. The Siberians decide you are their people. There is a chant.' },
+      { label: 'Borrow the coats', hint: 'Burnout ↓ · Moods ↑', effects: { burnout: -4, mood: { all: 4 } }, outcome: 'Dmitri hands out fur hats. {front} wears one on stage. It is a look.' }
+    ], { type: 'road', city: ['irkutsk'], gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
     card('wt_ru_white_nights', 'russia', 'marcel', 'White Nights', 'Midnight in St. Petersburg and the sun is still up. The band has not slept in two days. Marcel is writing a symphony about it.', [
       { label: 'Enforce blackout curtains', hint: 'Burnout ↓', effects: { burnout: -8 }, outcome: 'Tinfoil on the windows, earplugs, a strict bedtime. The symphony is postponed.' },
       { label: 'Stay up, see the bridges open', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 5, burnout: 5 }, outcome: 'At 2 a.m. the bridges lift over the Neva in daylight. Nobody talks. Nobody needs to.' }
@@ -406,10 +462,14 @@
     card('wt_ru_banya', 'russia', 'dmitri', 'The Banya', 'Dmitri invites the band to a banya: steam, birch branches, then a roll in the snow. "For the voice," he says to Marcel.', [
       { label: 'Everybody in', hint: 'Burnout ↓ · Chemistry ↑', effects: { burnout: -6, chemistry: 4 }, outcome: 'Hot, cold, hot, cold. Marcel hits a note afterwards that shatters a glass. Dmitri nods. "Told you."' },
       { label: 'Just watch from the door', hint: 'Nothing happens', effects: { mood: { all: 3 } }, outcome: 'You watch your band sprint into a snowbank in towels. You take photos. You will use them.' }
-    ], { type: 'weird' }),
+    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    card('wt_ru_steam', 'russia', 'dmitri', 'The Banya, for the Voice', 'Dmitri invites the band to a banya: steam, birch branches, then a roll in the snow. "For the voice," he says to {front}.', [
+      { label: 'Everybody in', hint: 'Burnout ↓ · Chemistry ↑', effects: { burnout: -6, chemistry: 4 }, outcome: 'Hot, cold, hot, cold. {front} hits a note afterwards that rattles a glass. Dmitri nods. "Told you."' },
+      { label: 'Just watch from the door', hint: 'Nothing happens', effects: { mood: { all: 3 } }, outcome: 'You watch your band sprint into a snowbank in towels. You take photos. You will use them.' }
+    ], { type: 'weird', gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
     // ---- Story cards (forced by the tour sim; story: true) ----
     card('wt_invite', null, 'dj', 'An Invite from Abroad', '{festival} wants {band} in {region}. The promoter covers half the flights if you come soon. The world just got bigger.', [
-      { label: 'We are going', hint: 'Region unlocked · half flights', effects: { buzz: 5, tour: { accept: true } }, outcome: 'You print the email and pin it on the gig board. Marcel measures the cape for an overhead bin.' },
+      { label: 'We are going', hint: 'Region unlocked · half flights', effects: { buzz: 5, tour: { accept: true } }, outcome: 'You print the email and pin it on the gig board. {front} measures the stage clothes for an overhead bin.' },
       { label: 'Not this year', hint: 'The region stays open', effects: { mood: { all: -3 } }, outcome: 'You say thank you, very politely. The region stays open. The offer of flights does not.' }
     ], { type: 'fame', story: true }),
     card('wt_big', null, 'dj', 'Big in One Place', '{song} is number one in {region}. Not at home. There. A radio DJ there plays it every hour. Nobody knows how it happened.', [
@@ -425,7 +485,8 @@
       { label: 'Let Marcel make a speech', hint: 'Marcel ↑↑ · Buzz ↑', effects: { mood: { marcel: 18 }, buzz: 10 }, outcome: 'Eleven minutes, in French, about a moose. The opera house gives a standing ovation. So does the moose on the chandelier.' },
       { label: 'Group hug', hint: 'Chemistry ↑↑', effects: { chemistry: 8, mood: { all: 6 } }, outcome: 'Five Canadians in a pile in a Finnish opera house. Somebody takes a photo. It becomes the next album cover.' }
     ], { type: 'fame', story: true, gate: { band: ['hail_damage'] } }),
-    card('wt_homesick', null, 'dana', 'Homesick', 'Nobody has slept. Everybody has called home twice today. Dana says it out loud: "Can we just go home?"', [
+    // wt_homesick: one base for every band (Mom on the phone, the guitarist says it); a band's own wt_homesick_<bandId> beats it.
+    card('wt_homesick', null, 'mom', 'Homesick', 'Mom calls. It is 4 a.m. back home. Nobody has slept. Everybody has called home twice today. {soloist} says it out loud: "Can we just go home?"', [
       { label: 'Fly home early', hint: 'Skip the rest of the tour', effects: { mood: { all: 8 }, tour: { endTour: true, homesick: -20 } }, outcome: 'You change the flights. The promoter is disappointed. The band sleeps the whole way home.' },
       { label: 'Finish what we started', hint: 'Moods ↓ · Burnout ↑', effects: { mood: { all: -5 }, burnout: 5, chemistry: 3 }, outcome: 'Group hug in a hotel corridor. You finish the tour. It gets into the band\'s bones.' },
       { label: 'Book a day off, fly Mom in', hint: 'Fund ↓ · Homesick ↓↓', effects: { fund: -1400, tour: { homesick: -25 } }, outcome: 'Mom arrives with a cooler of frozen perogies and a toque for everyone. She tidies the tour bus.' }

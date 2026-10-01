@@ -140,6 +140,15 @@ async function scene() {
     c.ok(/playing|same|split|crowd/i.test(sn.t) && sn.bar, 'same-night notice with the crowd split: ' + sn.t.slice(0, 60));
     const a3 = await audit(page); c.ok(!a3.length, 'same-night card layout: ' + a3.join(', '));
     await tap(page, 'btn-sd-ok');
+    // (fixer) the poach card's strip shows the targeted member's mood for the rival's own variant (rv_poach_tundra_wraith)
+    const pm = await page.evaluate(() => {
+      GG.ui.closeAll(); const st = GG.state; st.rival.pending = null; st.gig = null; st.protected = false; st.fans = Math.max(st.fans, 800);
+      const m = st.members.filter(x => x.status === 'active')[1]; m.stage = 2; m.mood = 20;
+      GG.rival.schedule(st, 'poach', m.id);
+      const card = GG.career.currentCard(st), note = card ? GG.ui.rivalCardNote(st, card) : null;
+      return { id: card && card.id, mood: !!(note && note.querySelector('.rv-mood')) };
+    });
+    c.ok(/^rv_poach_/.test(pm.id || '') && pm.mood, 'the poach card strip shows the member\'s mood bar: ' + JSON.stringify(pm));
     c.ok(!errors.length, 'no console errors: ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close(); c.done();
@@ -170,6 +179,9 @@ async function botb() {
     c.ok(w.r.scene === 'stage' && !w.r.paused && w.info.view === 'spectator' && w.info.rival, 'spectator view: the 3D stage from the crowd ' + JSON.stringify({ scene: w.r.scene, paused: w.r.paused, view: w.info.view }));
     c.ok(w.info.painted >= 4 && w.info.band.some(b => /^tw_gord/.test(b)) && !w.info.band.some(b => /^tw_lorne/.test(b)), 'their lineup in corpse paint (drummer on the throne): ' + w.info.band.join(','));
     c.ok(w.score > 0 && w.r.drawCalls < 90, 'ticking score ' + w.score + ', ' + w.r.drawCalls + ' draw calls');
+    // (fixer) each ~5 s snippet opens on a chorus, so their singer is heard: >= 2 sung hits (not the count-in), >= 1 by the singer
+    const sn = w.ui.snippet;
+    c.ok(sn && sn.first === 'chorus' && sn.sung >= 2 && sn.singer >= 1, 'their snippet starts on a chorus and their singer is heard: ' + JSON.stringify(sn));
     // A slow phone's long frame (a 1 s main-thread stall) counts in full: their set runs on wall time, not frames (a 0.1 s
     // cap per frame made the set 4-6x longer under load, and the btn-rs-go wait below timed out).
     const clk = await page.evaluate(async () => {
@@ -224,7 +236,8 @@ async function final() {
     await page.evaluate(() => { GG.ui.closeAll(); GG.main.route(); });
     await waitScreen(page, 'card');
     const eve = await page.evaluate(() => ({ id: GG.state.card && GG.state.card.id, strip: !!document.querySelector('[data-testid="card-rival"]'), who: document.querySelector('.card-head .who').textContent }));
-    c.ok(eve.id === 'rv_final_eve' && eve.strip && /Gord/.test(eve.who), 'Sad Dome eve card, Gord speaking, rival strip ' + JSON.stringify(eve));
+    // v0.9: Tundra Wraith's cards are rival variants now (rv_final_eve_tundra_wraith, content rivalry.cast); Gord still speaks
+    c.ok(/^rv_final_eve(_tundra_wraith)?$/.test(eve.id) && eve.strip && /Gord/.test(eve.who), 'Sad Dome eve card, Gord speaking, rival strip ' + JSON.stringify(eve));
     await tap(page, 'choice-0'); await tap(page, 'btn-card-ok');
     await waitScreen(page, 'showdown');
     const an = await page.evaluate(() => document.querySelector('[data-testid="sd-card"]').textContent);

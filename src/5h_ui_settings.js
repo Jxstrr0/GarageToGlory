@@ -266,7 +266,8 @@
         if (v && v.ok) o.visual = v.offset;
         P.setCalib(profile, o);
         ui.close(s.id);
-        ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. Kenji gives a slow thumbs-up.');
+        ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. '   // v0.9: first launch has no band yet
+          + (GG.state ? ui.fill('{deadpan} gives a slow thumbs-up.', GG.state) : 'Somebody at the back gives a slow thumbs-up.'));
       } }, 'Save calibration'));
       foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone') startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
       s.foot.appendChild(el('div.stack', foot));
@@ -294,7 +295,7 @@
     var slow = Object.assign({}, song, { pattern: Object.assign({}, song.pattern, { bpm: Math.max(30, Math.round((song.pattern.bpm || 120) * speed)) }) });
     var shadow = Object.assign({}, st, { liveGig: null, songs: (st.songs || []).map(function (x) { return x.id === songId ? slow : x; }) });
     var pct = Math.round(speed * 100);
-    var gig = { venueId: 'practice:' + songId, name: 'Practice · ' + song.title, city: 'The garage', tier: 1, kind: 'studio',
+    var gig = { venueId: 'practice:' + songId, name: 'Practice · ' + song.title, city: ui.space(st, true), tier: 1, kind: 'studio',
       capacity: 1, deal: 'flat', pay: 0, gas: 0, quirk: '', source: 'practice', setSize: 1 };
     if (ui.isOpen('practice')) ui.close('practice');
     return ui.playGig(gig, function (r) {
@@ -307,7 +308,7 @@
       var st = GG.state; if (!st) return;
       var speed = d.speed || 0.75;
       s.setTitle('Practice', 'No crowd · no pay · nothing saved');
-      s.body.appendChild(el('p.small.dim', 'Any song from your catalog, slowed down if you like. Kenji holds the click. Nobody is watching. Probably.'));
+      s.body.appendChild(el('p.small.dim', ui.fill('Any song from your catalog, slowed down if you like. {deadpan} holds the click. Nobody is watching. Probably.', st)));
       s.body.appendChild(el('div.caps.set-sec', 'Speed'));
       s.body.appendChild(el('div.set-seg', SPEEDS.map(function (x) {
         return btn('.btn.small' + (x[0] === speed ? '.primary' : ''), { testid: 'practice-speed-' + Math.round(x[0] * 100), onclick: function () { s.rerender({ speed: x[0] }); } }, x[1]);

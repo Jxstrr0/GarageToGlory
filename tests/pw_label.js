@@ -303,10 +303,11 @@ async function awards() {
     await page.waitForFunction(() => GG.debug('uiAwards').loonies.phase === 'show');
     await page.waitForTimeout(1500);
     c.ok(await page.evaluate(() => GG.debug('render').carpet.mode) === 'podium', 'podium mode');
-    let wins = 0, wraith = 0, envShot = false;
+    let wins = 0, wraith = 0, envShot = false, bandLines = 0;
     for (let i = 0; i < noms; i++) {
       await tap(page, 'btn-envelope');
       const w = await page.locator(tid('winner')).textContent();
+      if (await page.locator(tid('band-line')).count()) bandLines++;   // v0.9: the band's own line after the envelope
       if (await page.locator(tid('btn-speech')).count()) {
         wins++;
         if (!envShot) { await page.waitForTimeout(800); await shot(page, 'envelope.png'); envShot = true; }
@@ -320,6 +321,7 @@ async function awards() {
     await page.waitForSelector(tid('loonies-summary'));
     const done = await page.evaluate(() => GG.state.loonies.done);
     c.ok(done, 'envelopes resolved the ceremony in the sim (' + wins + ' win(s), ' + wraith + ' to the rival)');
+    c.ok(bandLines === noms, 'a band line after every envelope (' + bandLines + '/' + noms + ')');
     await tap(page, 'btn-loonies-done');
     await waitScreen(page, 'wrap', 8000);
     const end = await page.evaluate(() => ({ scene: GG.debug('render').scene, carpet: GG.render.carpet.info(), phase: GG.state.phase, week: GG.state.week, news: (GG.state.wrap.labels.news || []).map(n => n.kind) }));

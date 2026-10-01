@@ -37,6 +37,15 @@
     for (var k in extra) gate[k] = extra[k];
     return gate;
   }
+  // v0.9 "Genres": the shared cards for the other three bands (guilt, holidays). Written once, in role aliases and tokens
+  // ({front} {soloist} {filler} {grumbler} {deadpan} {space}), gated away from Hail Damage so its deck stays as it was.
+  // Their packs (zz_band_*.js) push their own voiced decks; these are the family-and-calendar cards every garage band gets.
+  var OTHERS = ['frost_heave', 'gravel_kings', 'grid_road_ramblers'];
+  function o(extra) {
+    var gate = { era: ['garage'], band: OTHERS };
+    for (var k in extra) gate[k] = extra[k];
+    return gate;
+  }
   // Shared effect fragments, frozen so no consumer can mutate one card's effects through another.
   var END = Object.freeze({ cape: Object.freeze({ step: 'end' }) });      // the Cape Saga is over
   var CLEAN = Object.freeze({ capePlan: false, capeSpin: false });        // clear the saga's helper flags
@@ -851,6 +860,69 @@
         { label: 'Eat the tarts', effects: { burnout: -4, mood: { all: 4 } },
           outcome: 'The band eats eleven dozen butter tarts in one sitting. Marcel weeps. Mom never finds out. Mom always finds out.' }
       ] },
+    // v0.9: the same guilt, for every other band (your parents lent the money, whoever the band is). Ids loan_*: the
+    // guilt_* prefix stays Hail Damage's own set (sim_drama checks every guilt_* card fits a Hail Damage career).
+    { id: 'loan_family_chat', type: 'money', speaker: 'mom', title: 'BAND LOAN UPDATES', once: false, cooldown: 8,
+      gate: o({ era: GLS, flags: ['parentsLoan'] }),
+      text: "Mom has started a family group chat called BAND LOAN UPDATES. It has fourteen members, including two aunts, a pastor and somebody's dog groomer. Today's post: your old report card.",
+      choices: [
+        { label: 'Pay Mom back $100', effects: { repay: 100, chemistry: 2 },
+          outcome: 'Mom posts a thumbs-up and one praying-hands. The aunts react with hearts. The dog groomer reacts with a fire.' },
+        { label: 'Leave the group chat', effects: { burnout: 3, chemistry: -2 },
+          outcome: 'You leave. Mom adds you back in eleven seconds. The pastor says "welcome back".' },
+        { label: 'Post a gig video in it', hint: 'Gamble: pride or a pile-on',
+          roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
+            success: { effects: { fans: 8, buzz: 3 }, outcome: 'The aunts share it. The aunts have a lot of friends. Four of them come to the next show with a sign.' },
+            fail: { effects: { burnout: 5 }, outcome: 'Mom replies: "And how much did THIS gig pay?" The pastor leaves the chat. So does the dog groomer.' } },
+          outcome: 'You pick the one where {front} does not fall over.' }
+      ] },
+    { id: 'loan_dad_spreadsheet', type: 'money', speaker: 'dad', title: 'BAND_LOAN_FINAL_v3', once: false, cooldown: 10,
+      gate: o({ era: GLS, flags: ['parentsLoan'] }),
+      text: "Dad has made a spreadsheet called BAND_LOAN_FINAL_v3. It has a tab for interest, a tab for 'projections' and a tab called HOPE that is just empty. He would like to walk you through it.",
+      choices: [
+        { label: 'Pay $150 on the spot', effects: { repay: 150, chemistry: 3 },
+          outcome: 'Dad updates one cell. The whole sheet turns green. He says "well, look at that" four times.' },
+        { label: 'Get the band to audit it', effects: { burnout: 4, mood: { '@deadpan': 4 } },
+          outcome: '{deadpan} finds a formula error in your favour. Dad is devastated and deeply impressed.' },
+        { label: 'Promise next month', effects: { burnout: 3 },
+          outcome: 'Dad adds a tab called NEXT MONTH. It is already formatted. It has conditional colours.' }
+      ] },
+    { id: 'loan_cousin_realtor', type: 'money', speaker: 'mom', title: 'Cousin Brittany', once: false, cooldown: 9,
+      gate: o({ era: GLS, flags: ['parentsLoan'] }),
+      text: 'Your cousin Brittany sells real estate now. She has a billboard. Mom mentions the billboard at every meal. Today Mom mentions Brittany paid off her student loan. In one year. With billboard money.',
+      choices: [
+        { label: 'Pay Mom back $80', effects: { repay: 80, chemistry: 2 },
+          outcome: 'Mom takes the cash and says Brittany would have said thank you in a card. You write a card.' },
+        { label: 'Ask Brittany for a gig', hint: 'Gamble: an open house',
+          roll: { chance: 0.5,
+            success: { effects: { fans: 10, buzz: 4 }, outcome: 'Brittany books the band for an open house. Three buyers, forty neighbours, one sold bungalow. She says you are good luck.' },
+            fail: { effects: { burnout: 5 }, outcome: 'Brittany says she has "a DJ guy". The DJ guy is her husband. He is booked through spring.' } },
+          outcome: 'You text Brittany. She replies with her headshot.' },
+        { label: 'Change the subject', effects: { mood: { all: -3 } },
+          outcome: 'You bring up the band. Mom asks if the band has a billboard. The band does not have a billboard.' }
+      ] },
+    { id: 'loan_church_raffle', type: 'money', speaker: 'mom', title: 'The Quilt Raffle', once: false, cooldown: 12,
+      gate: o({ era: GLS, flags: ['parentsLoan'] }),
+      text: "Mom's church is raffling a quilt 'to support local musicians'. You are the local musicians. The quilt has your band's name sewn on it. Spelled wrong. In a very confident font.",
+      choices: [
+        { label: 'Sell tickets, repay $120', effects: { repay: 120, burnout: 5 },
+          outcome: 'You sell three hundred tickets outside the Co-op. Every cent goes to Mom. The quilt goes to a man who spells it right.' },
+        { label: 'Play the raffle draw', effects: { fans: 8, buzz: 3 },
+          outcome: 'Two songs before the draw. The church ladies clap on one and three. Four of them follow the band now.' },
+        { label: 'Buy the quilt yourselves', effects: { fund: -60, mood: { all: 4 } },
+          outcome: 'The quilt hangs in {space} now. The typo is load-bearing.' }
+      ] },
+    { id: 'loan_grandpa_cheque', type: 'money', speaker: 'dad', title: "Grandpa's Cheque", once: false, cooldown: 12,
+      gate: o({ era: GLS, flags: ['parentsLoan'] }),
+      text: "Grandpa has sent his birthday cheque: $25, like every year since you were six. Dad says it should 'go to the loan'. Grandpa's card says 'buy a guitar string'. Everybody has an opinion.",
+      choices: [
+        { label: 'Sign it over to Dad', effects: { repay: 25, chemistry: 2 },
+          outcome: 'Dad endorses it with great ceremony. Grandpa calls to ask how the string is. You lie.' },
+        { label: 'Spend it on the band', effects: { fund: 25, mood: { all: 3 } },
+          outcome: '{soloist} buys a pack of strings and a chocolate bar. Grandpa is told only about the strings.' },
+        { label: 'Frame the cheque', effects: { burnout: 3, mood: { '@front': 4 } },
+          outcome: '{front} calls it "the band\'s first endorsement deal" and hangs it over the gear. Dad is secretly delighted.' }
+      ] },
     // ======================================================================
     // v0.5 Local Heroes (era 'local'; a few run on into 'signed')
     // ======================================================================
@@ -1049,7 +1121,7 @@
     // ======================================================================
     { id: 'signed_monolith_english', type: 'drama', speaker: 'marcel', title: 'Notes from Monolith', weight: 2,
       gate: g({ era: S, flagEquals: { label: 'monolith' } }),
-      text: "Brayden from Monolith has notes on the demos. 'Love the energy. Love the English titles. Love the lawn thing. Now Marcel " +
+      text: "Devon from Monolith has notes on the demos. 'Love the energy. Love the English titles. Love the lawn thing. Now Marcel " +
         "should sing in English too.' Marcel has not blinked in four minutes. Kenji has moved to stand between Marcel and the phone.",
       choices: [
         { label: 'Tell Monolith "non"', effects: { mood: { marcel: 14 }, buzz: 6, fund: -400, flags: { demandEnglish: 'refused' } },
@@ -1060,7 +1132,7 @@
           outcome: 'Marcel alternates French and English line by line.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
             success: { effects: { fans: 250, buzz: 12, flags: { demandEnglish: 'met' } }, outcome: 'Critics call it "the most Canadian record ever made". Monolith calls it "a strategy". Marcel calls it "Tuesday".' },
-            fail: { effects: { buzz: -6, mood: { marcel: -6 }, flags: { demandEnglish: 'half' } }, outcome: "He loses track mid-verse and sings a line in a language nobody recognises. Brayden says 'love that'. He does not love that." } } }
+            fail: { effects: { buzz: -6, mood: { marcel: -6 }, flags: { demandEnglish: 'half' } }, outcome: "He loses track mid-verse and sings a line in a language nobody recognises. Devon says 'love that'. He does not love that." } } }
       ] },
     { id: 'signed_monolith_radio', type: 'drama', speaker: 'dana', title: 'The Radio Edit', weight: 2,
       gate: g({ era: S, flagEquals: { label: 'monolith' } }),
@@ -1550,6 +1622,117 @@
           outcome: 'You rehearse all night while the city goes green outside. Jaxon keeps the hair. For months.' }
       ] },
 
+    /* ---- v0.9: the holidays for every other band (calendar.js lists each after Hail Damage's; first gate that passes wins) ---- */
+    { id: 'holiday_canada_day_park', type: 'scene', speaker: 'dad', title: 'Canada Day', once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [1, 1], minWeek: 2 }),   // week 1 of year one is the band's own opening card
+      text: 'Canada Day. The park bandshell is booking free shows, Mom is doing a barbecue, and Dad bought fireworks "from a guy". {grumbler} would like to know which guy.',
+      choices: [
+        { label: 'Flyers at the park all day', hint: 'Buzz ↑ · burnout ↑', effects: { buzz: 8, fans: 12, burnout: 5 },
+          outcome: 'You hand out four hundred flyers in a maple-leaf toque. A kid asks if you are "the fireworks band". You are now.' },
+        { label: "Dad's fireworks", hint: 'Gamble: a show or a fire truck',
+          roll: { chance: 0.5, success: { effects: { chemistry: 6, mood: { all: 5 } }, outcome: 'Twelve minutes of glory over the back lane. The neighbours clap from their lawn chairs. Once.' },
+            fail: { effects: { fund: -80, mood: { '@front': -5 } }, outcome: "A roman candle finds {front}'s hair. The fire department is very nice about it. The fine is not." } },
+          outcome: 'Dad reads the instructions, then puts them in his pocket.' },
+        { label: "Mom's barbecue", hint: 'Moods ↑ · burnout ↓', effects: { burnout: -6, mood: { all: 4 } },
+          outcome: 'Burgers, corn, and a lawn game nobody knows the rules to. Mom wins. Mom always wins.' }
+      ] },
+
+    { id: 'holiday_thanksgiving_loan', type: 'money', speaker: 'mom', title: 'Thanksgiving Dinner', once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [7, 7], flags: ['parentsLoan'] }),
+      text: "Thanksgiving at your parents'. Mom made the good stuffing. Dad has put a place card at your seat. It says BORROWER. He says it is a joke. He laminated it.",
+      choices: [
+        { label: 'Pay back $100 over pie', hint: 'Debt ↓ · guilt ↓', effects: { repay: 100, chemistry: 2 },
+          outcome: 'Five twenties under the pumpkin pie. Dad counts them twice and flips the place card over. The back says FAMILY. He had a plan either way.' },
+        { label: 'Bring the band to dinner', hint: 'Gamble: charm or a lecture',
+          roll: { chance: 0.45, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { mood: { all: 4 }, chemistry: 3 }, outcome: 'The band eats like wolves and says "thank you" forty times. Mom forgets the loan for a whole evening. Dad does not.' },
+            fail: { effects: { burnout: 6 }, outcome: '{grumbler} brings up the loan before Dad can. Dad is thrilled to have an ally. It is a long night.' } },
+          outcome: 'You text the band an address.' },
+        { label: 'Eat three plates, say nothing', hint: 'Burnout ↓', effects: { burnout: -5, mood: { '@filler': 3 } },
+          outcome: 'Turkey, stuffing, turkey again. The loan is not mentioned. It is in the room. It had seconds.' }
+      ] },
+
+    { id: 'holiday_thanksgiving_table', type: 'scene', speaker: 'mom', title: 'Thanksgiving', once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [7, 7], notFlags: ['parentsLoan'] }),
+      text: 'Thanksgiving. Mom has set a table for twelve and invited the whole band. Everyone asks when you will get a real job. {front} asks for thirds.',
+      choices: [
+        { label: 'Bring the whole band', hint: 'Chemistry ↑', effects: { chemistry: 5, burnout: -4 },
+          outcome: '{deadpan} carves the turkey without a word, perfectly. {front} gives a toast that goes on for a while. Mom rates the evening a nine.' },
+        { label: 'Play an acoustic set after pie', hint: 'Fans ↑', effects: { fans: 8, mood: { '@soloist': 3 } },
+          outcome: "Unplugged in the living room. The cousins film it. An aunt from out of town asks for your 'CD-ROM'." },
+        { label: 'Leftovers for the week', hint: '+$30 of food · moods ↑', effects: { fund: 30, mood: { all: 3 } },
+          outcome: 'Eleven containers of leftovers. The band eats like royalty until Tuesday. Everything smells like gravy.' }
+      ] },
+
+    { id: 'holiday_halloween_swap', type: 'fame', speaker: '@front', title: 'Halloween Costume Gigs', once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [8, 8] }),
+      text: 'Halloween: every bar wants costume bands, and the rule is you dress as ANOTHER band. {front} has a proposal, a sketchbook and a glue gun.',
+      choices: [
+        { label: 'Go as your rivals', hint: 'Buzz ↑', effects: { buzz: 6, flags: { costume: 'your rivals (thrift-store edition)' } },
+          outcome: 'Thrift-store wigs, borrowed jackets, a lot of attitude. {rival} hear about it and are not amused. The crowd is.' },
+        { label: 'One horse. All of you.', hint: 'Gamble: legendary or a disaster',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 10, fans: 15, flags: { costume: 'a pantomime horse (the whole band, one costume)' } }, outcome: 'The horse plays a whole set. The crowd loses its mind. Somebody tries to ride the horse.' },
+            fail: { effects: { burnout: 6, flags: { costume: 'half a horse' } }, outcome: 'The horse splits at the seam mid-song. {filler}, the back half, plays on alone. It is a lot.' } },
+          outcome: '{front} unrolls forty metres of brown felt.' },
+        { label: "Costumes? We ARE the costume.", hint: 'Chemistry ↑', effects: { chemistry: 3, flags: { costume: 'your own band (nobody noticed)' } },
+          outcome: 'You go as yourselves. Four people compliment the costumes. One says the outfits are "a bit much". {front} is honoured.' }
+      ] },
+
+    { id: 'holiday_grey_mug_halftime', type: 'fame', speaker: 'dj', title: 'The Grey Mug Halftime Show', once: true,
+      gate: o({ era: S, weekOfYear: [10, 10], minFans: 20000, minYear: 4 }),
+      text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
+      choices: [
+        { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your drums.' },
+        { label: 'The pyro, everything', hint: 'Gamble: history or a meme',
+          roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'The pyro hits on the downbeat, {front} hits the high note, four million people scream. It is replayed for years.' },
+            fail: { effects: { fans: 250, buzz: 12, mood: { '@front': -8 }, flags: { greyMug: 'played' } }, outcome: 'The pyro goes off a bar early. {front} survives. The goalposts do not. It is a meme by Monday.' } },
+          outcome: '{front} has already called the pyro guy.' },
+        { label: "We're a club band. Pass.", hint: 'Chemistry ↑', effects: { chemistry: 6, burnout: -8 },
+          outcome: 'You watch the game at a bar back home. A band you have never heard of plays halftime. You heckle, lovingly.' }
+      ] },
+
+    { id: 'holiday_xmas_jingle', type: 'fame', speaker: 'dj', title: 'The Christmas Single', once: false, cooldown: 20,
+      gate: o({ era: S, weekOfYear: [11, 12], flags: ['label'] }),
+      text: 'Deb got the label\'s pitch before you did: a Christmas single. "Grandma Got Run Over by a Zamboni", with sleigh bells. (If you\'re DIY, it\'s Mom\'s pitch. Same song.)',
+      choices: [
+        { label: 'Record it. Sleigh bells and all.', hint: 'Fans ↑ · dignity ↓', effects: { fans: 250, fund: 400, mood: { '@front': -8 } },
+          outcome: 'It charts. It plays in every mall. {front} hears it in a pharmacy and has to sit down.' },
+        { label: 'Do it in our own style', hint: 'Gamble: a cult classic or a flop',
+          roll: { chance: 0.5,
+            success: { effects: { buzz: 15, fans: 300 }, outcome: 'Your sound, a church choir, sleigh bells tuned down. A critic calls it the only Christmas song this year with a pulse.' },
+            fail: { effects: { buzz: -6, fund: -300 }, outcome: 'Nobody wants a nine-minute Christmas song. The label prints two thousand CDs anyway. They are coasters now.' } },
+          outcome: '{soloist} tunes the sleigh bells down.' },
+        { label: 'Refuse. It is a matter of principle.', hint: 'Chemistry ↑ · label ↓', effects: { chemistry: 5, buzz: -4 },
+          outcome: 'The label sends a fruit basket with a note: "Disappointed but festive." {front} eats the fruit. Principles are one thing.' }
+      ] },
+
+    { id: 'holiday_xmas_staff_parties', type: 'money', speaker: '@grumbler', title: 'Christmas Party Season', once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [11, 12] }),
+      text: 'Every office, curling club and car dealership in the district wants a band for its Christmas party. The emails all say "ugly sweaters mandatory". {grumbler} already hates the sweater.',
+      choices: [
+        { label: 'The curling club party', hint: '+$100 · chemistry ↑', effects: { fund: 100, chemistry: 2 },
+          outcome: "Your sweaters have reindeer. {filler}'s reindeer is on fire. On purpose. The skips tip in cash and cheese balls." },
+        { label: "The dentist's office party", hint: '+$150 · dignity ↓', effects: { fund: 150, mood: { all: -4 } },
+          outcome: 'Four hours of "Jingle Bell Rock" for a room of hygienists. They tip in toothbrushes and cash. Mostly toothbrushes.' },
+        { label: "Skip it. It's family time.", hint: 'Burnout ↓', effects: { burnout: -6, chemistry: 2 },
+          outcome: 'You spend a week at home. The band plays one quiet carol in {space}. Nobody argues about the set list. A Christmas miracle.' }
+      ] },
+
+    { id: 'holiday_st_paddys_green', type: 'weird', speaker: '@filler', title: "St. Paddy's Pub Crawl", once: false, cooldown: 20,
+      gate: o({ era: GLS, weekOfYear: [18, 18] }),
+      text: "St. Patrick's Day. Every bar in the province is booking bands and dyeing everything green. {filler} has already dyed their hair. And their eyebrows. And, somehow, the gear.",
+      choices: [
+        { label: 'Play the pub circuit', hint: 'Fans ↑ · burnout ↑', effects: { fans: 15, buzz: 4, burnout: 6 },
+          outcome: 'Three pubs, one night, one fiddle player who follows you between them. {front} learns a jig. It is a threat.' },
+        { label: 'Green-beer photo shoot', hint: 'Buzz ↑', effects: { buzz: 6, mood: { '@filler': 4 } },
+          outcome: 'The band, in green, in front of a leprechaun statue. It makes the local paper. Page nine, but still.' },
+        { label: 'Hide and rehearse', hint: 'Burnout ↓', effects: { burnout: -5 },
+          outcome: 'You rehearse all night while the city goes green outside. {filler} keeps the hair. For months.' }
+      ] },
+
     /* ---- v0.6.1 season cards (C7): cabin fever, frosh week, hail (personally), the festival lineups ---- */
     { id: 'scene_cabin_fever', type: 'drama', speaker: 'marcel', title: 'Cabin Fever', once: false, cooldown: 20,
       gate: g({ era: GLS, weekOfYear: [13, 16] }),
@@ -1728,8 +1911,8 @@
   ];
   GG.content.licenseCards = [
     { id: 'lic_fury', type: 'drama', speaker: 'travis', title: 'Buckle & Boot Are Furious', gate: { band: ['grid_road_ramblers'] },
-      text: 'Buckle & Boot saw the {brand} ad. They have played truck-stop openings for nine years waiting for that call. ' +
-        'Their fiddler posted a video of himself throwing a boot at a TV. It has more views than their last single.',
+      text: 'Buckle & Boot saw the {brand} ad. Brayden and Colt have played truck-stop openings for nine years waiting for that call. ' +
+        'Their mascot posted a video of himself, in the foam pickup costume, throwing a boot at a TV. It outdid their last single.',
       choices: [
         { label: 'Rub it in', hint: 'Buzz ↑ · Rival heat ↑↑', effects: { buzz: 6, lic: { heat: 10 } },
           outcome: 'You post a photo leaning on a Prairie Titan with a straw hat tipped low. Buckle & Boot have unfollowed you twice.' },
@@ -1758,7 +1941,7 @@
         { label: 'Ignore it', hint: 'Haters ↑ a little', effects: { chemistry: 2, fan: { hater: 0.01 } },
           outcome: 'It blows over in a week. Mom keeps the printout on the fridge, next to your report cards.' },
         { label: 'Play a free show at the Legion', hint: 'Haters ↓ · Burnout ↑', effects: { burnout: 6, fans: 20, fan: { hater: -0.02 } },
-          outcome: 'Doreen allows exactly one mosh pit and no speeches. It is the best show of the month. Nobody says sellout at the meat draw.' }
+          outcome: 'The Legion allows exactly one encore and no speeches. It is the best show of the month. Nobody says sellout at the meat draw.' }
       ] }
   ];
 })(window.GG);

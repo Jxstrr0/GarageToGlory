@@ -16,7 +16,7 @@
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
-  function fill(t) { return t && GG.career && GG.career.fillText && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : (t || ''); }
   function sfx(n) { if (GG.audio) GG.audio.sfx(n); }
   function money(n) { return U.fmtMoney(n); }
   function band(st) { var b = GG.content.bands && GG.content.bands[st.bandId]; return b ? b.name : 'The band'; }
@@ -24,18 +24,39 @@
   /* ======================================================================================================
      The band photo (render hook: display only, never saved)
      ====================================================================================================== */
-  var photos = {};   // 'seed|year' -> dataURL (this session)
-  var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7 };   // the one rig (40_render_core)
+  var photos = {};   // 'band|seed|year' -> dataURL (this session; per band, so a new career in the same seed gets its own room)
+  var lastPhoto = null;   // v0.9: the last photo's lineup + room (GG.debug('recap').photo)
+  var B = { SPINE: 2, HEAD: 3, ARM_L: 4, FORE_L: 5, ARM_R: 6, FORE_R: 7, PHONES: 15 };   // the one rig (40_render_core)
   var CAPES = { velvet: 1, curtain: 1, charred: 1, fireproof: 1 };
   function rot(b, x, y, z) { if (b) b.rotation.set(x, y, z); }
   var POSES = {
     fist: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.1); rot(bn[B.ARM_R], 0, 0, -2.5); rot(bn[B.FORE_R], 0, 0, -0.35); rot(bn[B.HEAD], -0.12, 0, 0); },
     cross: function (bn) { rot(bn[B.ARM_L], -0.25, 0, 0.12); rot(bn[B.FORE_L], -1.5, 0, -1.25); rot(bn[B.ARM_R], -0.3, 0, -0.12); rot(bn[B.FORE_R], -1.62, 0, 1.25); },
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
-    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 2.55); rot(bn[B.ARM_R], 0, 0, -2.55); rot(bn[B.FORE_L], 0, 0, 0.5); rot(bn[B.FORE_R], 0, 0, -0.5); },
+    // v0.9 (fixer): the player's sticks go straight up over their own head (+ PLAYER_PAD of room either side): the v0.8.1 V
+    // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
+    // four rooms, four presets and two tiers measures <= 0.3% of any bandmate's face covered now.
+    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
     hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
   };
-  var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips' };
+  // v0.9: every playable band's members have a signature pose (recruits and fill-ins cycle the generic ones).
+  var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips',
+    rox: 'fist', benny: 'hips', moth: 'cross', chase: 'wide', lenny: 'fist', tamara: 'cross', travis: 'hips', earl: 'cross', clementine: 'hips', duke: 'wide' };
+  // The camera: the render's own rig for this room kind (GG.render.garage.photoRig(GG.render.garage.spaceKind(st)) -> { fov,
+  // near, far, pos: [x, y, z], look: [x, y, z], x (the row's centre), gap, z: [even, odd] (members' depth), player (depth) }),
+  // else the v0.8.1 garage framing (cut-away front wall).
+  var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45 };
+  var PLAYER_PAD = 0.17;   // v0.9: extra room either side of the player (their raised arms rise from the shoulders; wide builds too)
+  function photoKind(st) {
+    if (st && (st.spaceTier | 0) > 0) return 'garage';   // the rented rooms share the garage's footprint (and its rig)
+    try { var G = GG.render && GG.render.garage; if (G && typeof G.spaceKind === 'function') return G.spaceKind(st) || ui.spaceKind(st); } catch (e) { /* fall through */ }
+    return ui.spaceKind(st);
+  }
+  function photoRig(st) {
+    var r = null;
+    try { var G = GG.render && GG.render.garage; r = G && typeof G.photoRig === 'function' ? G.photoRig(photoKind(st)) : null; } catch (e) { r = null; }
+    return r && r.pos && r.look ? Object.assign({}, RIG, r) : RIG;
+  }
   function lineup(st) {
     var b = GG.content.bands && GG.content.bands[st.bandId], cm = {};
     ((b && b.members) || []).forEach(function (m) { cm[m.id] = m; });
@@ -50,7 +71,7 @@
   // Renders the photo once per year (cached for the session). null when there's no 3D.
   ui.recapPhoto = function (st, year) {
     st = st || S();
-    var key = st ? (st.seed >>> 0) + '|' + (year || st.year) : null;
+    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) : null;
     if (!st) return null;
     if (photos[key]) return photos[key];
     var R = GG.render;
@@ -64,25 +85,31 @@
       var THREE = ctx.THREE; renderer = ctx.renderer;
       scene.traverse(function (o) { if ((o.isSkinnedMesh || o.isSprite) && o.visible) hidden.push(o); });
       hidden.forEach(function (o) { o.visible = false; });
-      var people = lineup(st), n = people.length, gap = 0.62, x0 = 0.1 - (n - 1) * gap / 2;
+      var rig = photoRig(st), people = lineup(st), n = people.length, gap = rig.gap || 0.62, x0 = (rig.x != null ? rig.x : 0.1) - (n - 1) * gap / 2;
+      var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
+      var pi = people.map(function (p) { return !!p.player; }).indexOf(true);
       people.forEach(function (p, i) {
-        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: p.id === 'marcel' ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
+        var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
+        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
         if (!ch) return;
-        var front = p.player ? 0.45 : (i % 2 ? 0.2 : 0.34);
-        ch.root.position.set(x0 + i * gap, 0, front);
-        ch.root.rotation.y = -0.06 * (x0 + i * gap);
+        var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
+        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -PLAYER_PAD : PLAYER_PAD);
+        ch.root.position.set(px, 0, front);
+        ch.root.rotation.y = -0.06 * px;
         (POSES[p.pose] || POSES.fist)(ch.bones);
+        if (ch.bones[B.PHONES]) ch.bones[B.PHONES].scale.setScalar(0);   // the sulk headphones are a toggle bone: off for the photo
         scene.add(ch.root);
         made.push(ch);
       });
       scene.updateMatrixWorld(true);
+      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
       var W = 1200, H = 760;
       rt = new THREE.WebGLRenderTarget(W, H);
       // From outside the cut-away front wall; the near plane clips everything between the lens and the band (cooler, couch).
-      var cam = new THREE.PerspectiveCamera(35, W / H, 4.7, 40);
-      cam.position.set(0.25, 1.6, 5.75); cam.lookAt(0.05, 1.18, 0); cam.updateMatrixWorld(true);
+      var cam = new THREE.PerspectiveCamera(rig.fov, W / H, rig.near, rig.far);
+      cam.position.set(rig.pos[0], rig.pos[1], rig.pos[2]); cam.lookAt(rig.look[0], rig.look[1], rig.look[2]); cam.updateMatrixWorld(true);
       renderer.setRenderTarget(rt);
       renderer.clear();
       renderer.render(scene, cam);
@@ -109,7 +136,7 @@
   };
   function photoNode(st, rec) {
     var url = ui.recapPhoto(st, rec.y);   // an older year re-opened in a new session: today's lineup stands in
-    var cap = band(st) + ' · ' + (GG.shop && GG.shop.spaceDef ? GG.shop.spaceDef(st, st.spaceTier || 0).name : 'the garage');
+    var cap = band(st) + ' · ' + ui.spaceName(st);
     var pic = url ? el('img.rc-img', { src: url, alt: 'The band, year ' + rec.y, draggable: 'false' })
       : el('div.rc-img.rc-stand', lineup(st).map(function (p) { return ui.avatar(ui.who(p.id), 'lg'); }));
     return el('figure.rc-photo', { testid: 'recap-photo' }, [pic, el('figcaption', cap)]);
@@ -138,7 +165,7 @@
         rec.lic ? stat('Licensing', '+' + money(rec.lic), 'good') : null]),
       el('p.small.dim', rec.loans ? 'Mom has opinions about the loans.' : net >= 0 ? 'The fund grew. Nobody touch it.' : 'More went out than came in. The van ate some of it.')]));
     out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'On stage'),
-      gigCard('Best gig', rec.best, 'best') || el('p.dim', 'No gigs this year. The garage was very quiet.'),
+      gigCard('Best gig', rec.best, 'best') || el('p.dim', 'No gigs this year. ' + ui.space(st, true) + ' was very quiet.'),
       gigCard('Worst gig', rec.worst, 'worst')]));
     out.push(el('div.rc-page', [el('div.caps.rc-kicker', 'In the studio'),
       el('div.rc-grid', [stat('Songs written', String(rec.songs)), stat('Records out', String(rec.albums))]),
@@ -154,12 +181,14 @@
       rv ? el('div.rc-grid', [stat('Scene rank', '#' + rv.rank + (rv.delta ? (rv.delta > 0 ? ' ▲' : ' ▼') + Math.abs(rv.delta) : ''), rv.delta > 0 ? 'good' : rv.delta < 0 ? 'bad' : ''),
         stat(GG.rival ? GG.rival.name(st) : 'The rival', rv.vs ? '#' + rv.vs : '—', rv.vs && rv.vs < rv.rank ? 'bad' : 'good')]) : null,
       rec.regions.length ? el('div.rc-line', ['🌍 Unlocked: ', el('b', names(rec.regions.map(R.regionName)))]) : null]));
-    var gy = R.goodYear(st, rec);
+    var gy = (R.goodYear(st, rec) || []).filter(function (g) {   // v0.9: only this band's people, about this band
+      return g && !ui.foreignMember(ui.speaker(g.who, st), st) && ui.ownLines([g.text], st).length;
+    });
     if (gy.length) {
       out.push(el('div.rc-page.rc-good', [el('div.caps.rc-kicker', 'What a good year looks like'),
         el('div.stack.tight', gy.map(function (g) {
-          var who = ui.who(g.who);
-          return el('div.rc-say' + (g.good ? '.ok' : ''), [ui.avatar(who), el('div.grow', [el('b', { style: { color: who.text } }, who.short), el('div', g.text)])]);
+          var who = ui.who(ui.speaker(g.who, st));
+          return el('div.rc-say' + (g.good ? '.ok' : ''), [ui.avatar(who), el('div.grow', [el('b', { style: { color: who.text } }, who.short), el('div', fill(g.text))])]);
         }))]));
     }
     return out;
@@ -286,4 +315,5 @@
     });
     return out;
   };
+  GG.registerDebug('recapui', function () { return { photo: lastPhoto ? Object.assign({}, lastPhoto) : null }; });   // v0.9
 })(window.GG);

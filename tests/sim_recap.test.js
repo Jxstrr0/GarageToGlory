@@ -15,8 +15,14 @@ test('content: headlines for every event, grade quotes, year one\'s good-year to
   ['final_won', 'final_lost', 'gong', 'loonie', 'cert', 'world', 'signed', 'chart_top', 'charted', 'crack', 'license', 'region', 'quit', 'back',
     'best_s', 'banned', 'loans', 'fans', 'survive_van', 'survive'].forEach(k => ok(Array.isArray(K.headlines[k]) && K.headlines[k].length && K.headlines[k].every(t => t.length <= 90), 'headline ' + k));
   ['S', 'A', 'B', 'C', 'D'].forEach(g => ok(K.quotes[g].length >= 2, 'quotes ' + g));
-  eq(K.goodYear.map(g => g.topic), ['fans', 'songs', 'gigs', 'loans', 'chemistry']);
-  ok(/^\(.*\)$/.test(K.goodYear[4].good) && /^\(.*\)$/.test(K.goodYear[4].bad), 'Kenji never speaks (a nod, in brackets)');
+  // v0.9: goodYear is an array (+ byBand) or { bandId: [..] } (the packs key it); Hail Damage keeps its five.
+  const HD = Array.isArray(K.goodYear) ? K.goodYear : K.goodYear.hail_damage;
+  eq(HD.map(g => g.topic), ['fans', 'songs', 'gigs', 'loans', 'chemistry']);
+  ok(/^\(.*\)$/.test(HD[4].good) && /^\(.*\)$/.test(HD[4].bad), 'Kenji never speaks (a nod, in brackets)');
+  Object.keys(GG.content.bands).forEach(b => {
+    const l = GG.recap.goodYearList({ bandId: b, genre: GG.content.bands[b].genre });
+    eq(l.map(g => g.topic), ['fans', 'songs', 'gigs', 'loans', 'chemistry'], b + ': one line per topic');
+  });
 });
 
 test('the week-24 wrap builds a RECAP (contract shape), stores one per year, compact', () => {

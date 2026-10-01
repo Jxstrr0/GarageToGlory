@@ -200,7 +200,7 @@ test('poach: an unhappy member gets a fruit basket; keep them with a concession 
   GG.on('rival:poach', e => evs.push(e));
   dana.stage = 2; dana.mood = 30; dana.stageWeek = s.totalWeek;
   const r = GG.career.startWeek(s);
-  ok(r.card && r.card.id === 'rv_poach' && s.card.who === 'dana' && evs[0].who === 'dana', 'the poach card comes for Dana');
+  ok(r.card && /^rv_poach(_tundra_wraith)?$/.test(r.card.id) && s.card.who === 'dana' && evs[0].who === 'dana', 'the poach card comes for Dana');
   ok(/Dana/.test(GG.career.fillText(s, r.card.title)), '{recruit} = Dana');
   GG.career.resolveCard(s, 0);
   const keep = s.showdowns.find(x => x.kind === 'poach');
@@ -208,9 +208,9 @@ test('poach: an unhappy member gets a fruit basket; keep them with a concession 
   // the defect path (the gamble's fail branch)
   const t = band(GG, 800, 40, 8), jax = mem(t, 'jaxon');
   jax.stage = 2; jax.mood = 30;
-  ok(R.schedule(t, 'poach', 'jaxon') && t.card.id === 'rv_poach', 'forced poach card');
+  ok(R.schedule(t, 'poach', 'jaxon') && t.card.id === 'rv_poach_tundra_wraith' && GG.career.cardById(t.card.id), 'forced poach card (the rival variant)');
   GG.career.applyEffects(t, { member: { id: 'recruit', act: 'poach' } }, {});
-  R.afterCard(t, GG.career.cardById('rv_poach'));
+  R.afterCard(t, GG.career.cardById(t.card.id));
   const lost = t.showdowns.find(x => x.kind === 'poach');
   ok(lost && !lost.won && jax.status === 'quit' && jax.exit.storyline === 'rival' && t.rivalDefectors.includes('jaxon'), 'Jaxon defects');
   ok(GG.drama.holes(t).includes(jax.role) && t.stats.poached === 1, 'a hole in the band, counted as poached');
@@ -240,7 +240,7 @@ test('cracking: enough net wins (and heat) crack them: breakup, rebrand (new nam
   ok(s.rival.crackCard === 'rv_crack_' + s.rival.cracked, 'a crack card is queued');
   s.totalWeek++; s.week++; s.weekStart = null; s.phase = 'monday';
   const r = GG.career.startWeek(s);
-  ok(r.card && r.card.id === 'rv_crack_' + s.rival.cracked, 'dealt next Monday');
+  ok(r.card && r.card.id === 'rv_crack_' + s.rival.cracked + '_tundra_wraith', 'dealt next Monday (the Tundra Wraith variant)');
   // rebrand: new name everywhere, same accountants
   const b = band(GG, 3000, 60, 4);
   eq(R.crack(b, 'rebrand'), 'rebrand');
@@ -281,7 +281,7 @@ test('the final: year 10, week 21, the Sad Dome co-bill decides who headlines fo
   const s = band(GG, 30000, 9 * 24 + 21);
   s.era = 'signed';
   const r = GG.career.startWeek(s);
-  ok(r.card && r.card.id === 'rv_final_eve', 'Sad Dome eve card');
+  ok(r.card && r.card.id === 'rv_final_eve_tundra_wraith', 'Sad Dome eve card (the Tundra Wraith variant)');
   GG.career.resolveCard(s, 1);
   ok(s.gig && s.gig.showdown.kind === 'final' && s.gig.city === 'Calgary' && s.gig.km === 620 && R.pending(s).kind === 'final', 'booked at the Sad Dome');
   const set = R.showdown(s);
@@ -305,7 +305,11 @@ test('the final: year 10, week 21, the Sad Dome co-bill decides who headlines fo
 test('leaderboard: you, the rival and the scene by fans, with ranks and trends', () => {
   const GG = fresh(true), s = band(GG, 2500, 60), R = GG.rival;
   const all = R.leaderboard(s);
-  ok(all.length === 2 + GG.content.rivalry.scene.length && all.every((r, i) => r.rank === i + 1 && (i === 0 || all[i - 1].fans >= r.fans)), 'sorted + ranked');
+  // v0.9 (Q4/Q8): the scene skips the row for your own rival and your own band's cameo row
+  const scene = GG.content.rivalry.scene, skip = scene.filter(f => f.rivalId === 'tundra_wraith' || f.name === 'Tundra Wraith' || f.bandId === 'hail_damage');
+  eq(skip.length, 2, 'Hail Damage: two rows skipped (Tundra Wraith, the Hail Damage cameo)');
+  ok(!all.some(r => !r.you && !r.rival && (r.rivalId === 'tundra_wraith' || r.bandId === 'hail_damage')), 'no duplicate rows');
+  ok(all.length === 2 + scene.length - skip.length && all.every((r, i) => r.rank === i + 1 && (i === 0 || all[i - 1].fans >= r.fans)), 'sorted + ranked');
   ok(all.some(r => r.you && r.fans === 2500) && all.some(r => r.rival && r.name === 'Tundra Wraith'), 'you and them');
   const top = R.leaderboard(s, 3);
   ok(top.some(r => r.you) && top.some(r => r.rival) && top.length <= 5, 'top n keeps you and the rival');

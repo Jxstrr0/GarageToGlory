@@ -18,7 +18,7 @@
 // testids: world-map, world-pin-<id>, world-region-<id>, world-status, btn-world-close, btn-world-map, world-panel ·
 //   region-map, city-pin-<id>, region-city, pkg-<id>, pkg-open-<id>, btn-region-back · tour-pkg, pick-vehicle-<id>,
 //   pick-stay-<id>, pick-extra-<id>, quote-total, quote-upfront, quote-why, btn-book-tour · tour-flight, btn-flight-go ·
-//   tour-home, btn-home-ok · moose-opera, btn-moose-ok · gong-phase, btn-gong-next, btn-gong-envelope, gong-winner,
+//   tour-home, btn-home-ok · moose-opera, btn-moose-ok · tour-payoff, btn-payoff-ok (v0.9) · gong-phase, btn-gong-next, btn-gong-envelope, gong-winner,
 //   btn-gong-speech, btn-gong-done · plan-tour, plan-homesick, plan-forced · wrap-tour, wrap-homesick, wrap-callhome,
 //   wrap-unlocked, wrap-home, wrap-gong, card-region · tour-cancel.
 (function (GG) {
@@ -27,7 +27,9 @@
   function S() { return GG.state; }
   function T() { return GG.tour; }
   function has(st) { return !!(GG.tour && (st || S())); }
-  function fill(t) { var st = S(); return t && st && GG.career && GG.career.fillText ? GG.career.fillText(st, String(t)) : (t || ''); }
+  function fill(t) { var st = S(); return t && st ? ui.fill(String(t), st) : (t || ''); }   // v0.9: + role/space/van tokens
+  var NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'];
+  function heads(st) { var n = (GG.drama && GG.drama.lineup ? GG.drama.lineup(st) : ui.active(st)).length + 1; return NUM[n] || String(n); }   // the lineup + you
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function money(n) { return U.fmtMoney(Math.round(n || 0)); }
   function num(n) { return U.fmtNum(Math.round(n || 0)); }
@@ -148,7 +150,7 @@
       ui.bar(v, 100, { color: v >= 70 ? 'var(--bad)' : v >= 45 ? 'var(--amber)' : 'var(--blue)' })]);
   }
   function cancelTour() {
-    ui.confirm({ title: 'Cancel the tour?', text: 'The rental and the extra are refunded. The flights are not. Marcel has already packed.', yes: 'Cancel it', no: 'Keep it' }).then(function (yes) {
+    ui.confirm({ title: 'Cancel the tour?', text: fill('The rental and the extra are refunded. The flights are not. {front} has already packed.'), yes: 'Cancel it', no: 'Keep it' }).then(function (yes) {
       if (!yes || !S()) return;
       var r = T().cancel(S());
       if (r) { ui.toast('Tour cancelled. ' + money(r.refund) + ' back in the fund.'); if (GG.main) GG.main.sync(); }
@@ -282,7 +284,7 @@
     sfx('cash');
     if (GG.main) GG.main.sync();
     ['tour-pkg', 'tour-region', 'world'].forEach(function (id) { if (ui.isOpen(id)) ui.close(id); });
-    ui.toast('Booked: ' + r.name + '. Wheels up next Monday. Marcel is packing the cape.', { who: 'Tour booked', ms: 5000 });
+    ui.toast('Booked: ' + r.name + '. Wheels up next Monday. ' + fill('{front} is already packing.'), { who: 'Tour booked', ms: 5000 });
   }
 
   /* ---- Planner hooks (52_ui_week) ------------------------------------------------------------------------------------ */
@@ -375,8 +377,10 @@
         if (u < 1) requestAnimationFrame(step); else plane.classList.add('landed');
       })(t0);
       var veh = K.vehicles[a.choices.vehicle] || {}, stay = K.stays[a.choices.stay] || {};
-      s.body.appendChild(el('div.panel.tw-flight', [el('p.card-text', fill(((K.lines || {}).depart || {})[a.region] || 'Wheels up.')),
-        el('p.small', 'Landed in ' + (home.name || 'the airport') + '. Jet lag: burnout +' + jet + '. ' + (veh.name ? veh.name + ' is waiting in the car park' + (veh.look === 'sardine' ? '. Five people and a drum kit. It will be cosy.' : '.') : '')),
+      var KL = K.lines || {}, bbl = KL.byBand && KL.byBand[st.bandId], dep = (bbl && bbl.depart && bbl.depart[a.region]) || (KL.depart || {})[a.region];   // v0.9: byBand first
+      dep = Array.isArray(dep) ? ui.pick(ui.ownLines(dep)) : dep && ui.ownLines([dep]).length ? dep : null;
+      s.body.appendChild(el('div.panel.tw-flight', [el('p.card-text', fill(dep || 'Wheels up.')),
+        el('p.small', 'Landed in ' + (home.name || 'the airport') + '. Jet lag: burnout +' + jet + '. ' + (veh.name ? veh.name + ' is waiting in the car park' + (veh.look === 'sardine' ? '. ' + heads(st) + ' people and a drum kit. It will be cosy.' : '.') : '')),
         el('p.small.dim', a.stops.map(function (x) { return x.cityName; }).join(' → ') + (stay.name ? ' · ' + stay.name : '')),
         el('p.small.dim', drv(st).you ? 'You collect the rental keys. Nobody else wants to drive on this side of the road.' : drv(st).name + ' collects the rental keys and adjusts every mirror before anyone gets in.')]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-flight-go', onclick: function () { ui.close(s.id); } }, 'Grab the gear ▸'));
@@ -392,7 +396,7 @@
       var R = T().region(sum.region) || {}, lines = (T().content().lines || {}).home || [];
       s.setTitle('Home!', (R.name || 'ABROAD').toUpperCase() + ' · ' + sum.gigs + ' SHOWS');
       ui.append(s.body, [el('div', { testid: 'tour-home' }),
-        el('p.card-text', fill(lines[(sum.start || 0) % Math.max(1, lines.length)] || 'Home. The garage smells exactly the same.')),
+        el('p.card-text', homeLine(lines, sum)),
         el('div.panel.tw-quote', [
           el('div.kv2', [el('span', 'Shows'), el('b', sum.gigs + (sum.festivals ? ' (' + sum.festivals + ' festival' + (sum.festivals > 1 ? 's' : '') + ')' : ''))]),
           el('div.kv2', [el('span', 'Best night'), el('b', sum.best || '—')]),
@@ -401,12 +405,17 @@
           el('div.kv2', [el('span', 'Flights, rental, hotels'), el('b.bad', '−' + money(sum.cost))]),
           el('div.kv2.tot', [el('span', 'Net'), el('b' + (sum.net >= 0 ? '.good' : '.bad'), (sum.net >= 0 ? '+' : '−') + money(Math.abs(sum.net)))])]),
         sum.cut ? el('p.small.dim', 'You flew home early. Nobody talks about it. Everybody talks about it.') : null,
-        el('p.small.dim', (drv(S()).you ? 'The Moose Hearse is exactly where you left it in long-term parking. It starts on the third try.' : drv(S()).name + ' is at arrivals with the Moose Hearse, holding a sign with the band name spelled correctly. First time ever.'))]);
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-home-ok', onclick: function () { ui.close(s.id); } }, 'Home sweet garage'));
+        el('p.small.dim', fill(drv(S()).you ? '{van} is exactly where you left it in long-term parking. It starts on the third try.' : drv(S()).name + ' is at arrivals with {van}, holding a sign with the band name spelled correctly. First time ever.'))]);
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-home-ok', onclick: function () { ui.close(s.id); } }, 'Home sweet ' + ui.space(S()).replace(/^the /i, '')));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
   });
 
+  // v0.9: world.lines.home is neutral + byBand (ui.pool); a line naming another band's people is skipped.
+  function homeLine(flat, sum) {
+    var W = T().content() || {}, pool = W.lines ? ui.pool(W.lines, 'home') : flat, own = ui.ownLines(pool);
+    return own.length ? fill(own[(sum.start || 0) % own.length]) : fill('Home. ' + ui.space(S(), true) + ' smells exactly the same.');
+  }
   /* ---- The Moose Opera (Helsinki) ------------------------------------------------------------------------------------ */
   var mooseDue = false;
   GG.on('tour:moose', function () { mooseDue = true; });
@@ -419,8 +428,38 @@
         el('div.tw-opera', { testid: 'moose-opera' }, [el('div.tw-chand', [el('span.ant.l'), el('span.ant.r'), el('span.bulbs')]), el('div.tw-disc', [el('span', '🫎')]), el('div.tw-curtain.l'), el('div.tw-curtain.r')]),
         el('div.panel.tw-flight', [el('p.card-text', fill((T().content().lines || {}).moose || 'The moose concept album just went platinum in Finland.')),
           el('p.small', 'The chandelier is shaped like antlers. Nobody can explain it. The orchestra plays the moose song in the interval, unasked.'),
-          el('p.small.dim', 'Marcel has already written a sequel. It is called "Moose Opera". Hold that thought for later in the career.')])]);
+          el('p.small.dim', fill('{namer} has already written a sequel. It is called "Moose Opera". Hold that thought for later in the career.'))])]);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-moose-ok', onclick: function () { ui.close(s.id); } }, 'Bow to the moose ▸'));
+    },
+    onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
+  });
+
+  /* ---- v0.9 (owner Q3): every other band's World payoff (the sim's 'tour:payoff' { packageId, flag }) ------------------
+     Frost Heave's squat anthem at Wackelstein (Berlin), Gravel Kings on Mudstonbury's main stage, the Ramblers' Australian
+     country-festival circuit. The package's payoff block may carry { head, sub, text, line, trophy }; else its name + the
+     payoff line. Same beat as the Moose Opera: a full screen after the wrap (a toast on autoplay). */
+  var payoffDue = null;
+  var PAYOFF_ICON = { punk: '🧷', rock: '🎸', country: '🤠', metal: '🤘' };
+  GG.on('tour:payoff', function (p) { payoffDue = p || {}; });
+  function payoffInfo(p) {
+    var st = S(), pkg = p && p.packageId && T() && T().pkg ? T().pkg(p.packageId) : null, P = (pkg && pkg.payoff) || {};
+    var city = P.city && T().cityDef ? T().cityDef(P.city) : null, R = pkg && T().region ? T().region(pkg.region) || {} : {};
+    return { id: (pkg && pkg.id) || 'payoff', genre: (st && st.genre) || 'rock',
+      head: fill(P.head || P.trophy || (pkg && pkg.name) || 'It happened'),
+      sub: String(fill(P.sub || [city && city.name, R.name].filter(Boolean).join(' · ') || 'Abroad')).toUpperCase(),
+      text: fill(P.text || P.line || '{band} just did the thing nobody back home is going to believe.'),
+      quip: fill(P.quip || '{front} is already calling home about it. Collect.') };
+  }
+  ui.playPayoff = function (p, done) { payoffDue = null; sfx('cheer'); return ui.show('tour-payoff', { payoff: p || {}, done: done }); };
+  ui.define('tour-payoff', {
+    kind: 'full', cls: 'tworld.moose', sticky: true,
+    build: function (s, d) {
+      var st = S(); if (!st) return;
+      var x = payoffInfo(d.payoff);
+      ui.append(s.body, [el('div.tw-head', [el('h2', [el('span.sub', x.sub), x.head])]),
+        el('div.tw-opera.po-' + x.genre, { testid: 'tour-payoff', data: { pkg: x.id } }, [el('div.tw-disc', [el('span', PAYOFF_ICON[x.genre] || '🌍')]), el('div.tw-curtain.l'), el('div.tw-curtain.r')]),
+        el('div.panel.tw-flight', [el('p.card-text', x.text), el('p.small.dim', x.quip)])]);
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-payoff-ok', onclick: function () { ui.close(s.id); } }, 'Take a bow ▸'));
     },
     onClose: function (s) { if (s.data && s.data.done) setTimeout(s.data.done, 0); }
   });
@@ -431,7 +470,7 @@
     var st = S(), t = w && w.tour, out = [];
     if (!st || !t || !has(st)) return out;
     if (t.away) {
-      var calls = (st.chat || []).filter(function (m) { return m.tone === 'home'; }).slice(-2);
+      var calls = (st.chat || []).filter(function (m) { return m.tone === 'home' && ui.chatOk(m, st); }).slice(-2);
       out.push(el('div.panel', { testid: 'wrap-tour' }, [el('div.caps', '✈ On tour'),
         t.hotel ? el('div.line-list', [el('div', [el('span', 'Hotels this week'), el('span.bad', '−' + money(t.hotel))])]) : null,
         el('div.tw-bar', { testid: 'wrap-homesick' }, [el('span.small', '🏠 Homesick ' + Math.round(t.homesick) + '/100'), ui.bar(t.homesick, 100, { color: t.homesick >= 70 ? 'var(--bad)' : t.homesick >= 45 ? 'var(--amber)' : 'var(--blue)' })]),
@@ -457,6 +496,8 @@
     var chain = [];
     if (mooseDue && views()) chain.push(function (next) { ui.playMoose(next); });
     else if (mooseDue) { mooseDue = false; ui.toast('Platinum in Finland. The moose concept album did it.', { who: 'Moose Opera' }); }
+    if (payoffDue && views()) { var po = payoffDue; chain.push(function (next) { ui.playPayoff(po, next); }); }
+    else if (payoffDue) { var pi = payoffInfo(payoffDue); payoffDue = null; ui.toast(pi.head + '. ' + pi.text, { who: 'World Stage' }); }
     if (t.home && views() && !seenHome[t.home.id]) { seenHome[t.home.id] = 1; chain.push(function (next) { ui.show('tour-home', { summary: t.home, done: next }); }); }
     if (chain.length) setTimeout(function run() { var f = chain.shift(); if (f && ui.isOpen('wrap')) f(function () { setTimeout(run, 0); }); }, 400);
     return out;
@@ -471,13 +512,23 @@
     var g = T().gong(st);
     return st.week === g.week && !g.result && g.nominated;
   };
+  // v0.9: the Gong carpet is the band's (content world.gongCarpet[bandId]); Hail Damage's lines are its default, other
+  // bands without content get their own singer + filler ('@front' / '@filler').
   var GONG_CARPET = [
     { who: 'reporter', text: 'Live from Amsterdam! Who are you wearing?' }, { who: 'marcel', text: 'The cape. It has its own passport now.' },
     { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: 'jaxon', text: 'Yes. It does not go on the drum kit. We had a meeting about it.' }
   ];
+  var GONG_CARPET_ANY = [
+    { who: 'reporter', text: 'Live from Amsterdam! Who are you wearing?' }, { who: '@front', text: 'Something from a thrift store in {city}. It has been to more countries than we have.' },
+    { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: '@filler', text: 'Yes. It does not go on the drum kit. We had a meeting about it.' }
+  ];
+  function gongCarpet(st) {
+    var W = (GG.content.world || {}).gongCarpet, own = W && Array.isArray(W[st.bandId]) && W[st.bandId].length ? W[st.bandId] : null;
+    return ui.presentLines(own || (st.bandId === 'hail_damage' ? GONG_CARPET : GONG_CARPET_ANY), st) || GONG_CARPET_ANY;   // (v0.9: minus quit bandmates)
+  }
   var GONG_SPEECH = { id: 'gong_speech', title: 'Say something! (in five languages)', text: 'The gong is heavier than it looks. The interpreter is waiting. Somebody in the back is already hitting it.',
     choices: [
-      { label: 'Thank Canada, then everyone else', hint: 'Safe. Moms cry on four continents.', effects: { fans: 60, mood: { all: 3 } }, outcome: 'You thank Saskatoon. The room claps politely. Somewhere in Finland, a moose looks up.' },
+      { label: 'Thank Canada, then everyone else', hint: 'Safe. Moms cry on four continents.', effects: { fans: 60, mood: { all: 3 } }, outcome: 'You thank {city}. The room claps politely. Somewhere in Finland, a moose looks up.' },
       { label: 'Thank the Japanese fan club', hint: 'Emiko will frame it', effects: { buzz: 6, fans: 40 }, outcome: 'Emiko Tanabe stands up in the balcony and bows. Two hundred people bow back.' },
       { label: 'Hit the gong', hint: 'Gamble: it is not yours to hit', effects: { buzz: 12, fund: -150 }, outcome: 'BWONNNG. The security guard sighs. The fine is €150. Worth it.' }
     ] };
@@ -519,13 +570,16 @@
       if (!G.threeD) s.body.appendChild(el('div.lo-back' + (G.phase === 'carpet' ? '.carpet' : '.stage') + '.gong'));
       ui.append(s.body, [head, el('div.lo-gap'), card]);
       if (G.phase === 'carpet') {
-        var i = Math.min(G.line, GONG_CARPET.length), shown = GONG_CARPET.slice(Math.max(0, i - 1), i + 1);
+        var GC = gongCarpet(st), i = Math.min(G.line, GC.length), shown = GC.slice(Math.max(0, i - 1), i + 1);
         if (i === 0) card.appendChild(el('p.small', 'A bronze gong on a teak stand, under a spotlight, behind a velvet rope. The one international award. Twelve countries, one carpet, a lot of flashbulbs.'));
-        shown.forEach(function (x) { card.appendChild(x.who === 'reporter' ? el('p.lo-q', [el('b', 'Reporter: '), x.text]) : el('p.lo-q', [el('b', ui.who(x.who).short + ': '), x.text])); });
+        shown.forEach(function (x) {   // (a band's own npc reporter, e.g. Dolores from Speedy Creek 97, takes the reporter slot)
+          var npc = x.who && x.who !== 'reporter' && GG.content.npcs && GG.content.npcs[x.who] && !(st.members || []).some(function (m) { return m.id === x.who; }) ? GG.content.npcs[x.who] : null;
+          card.appendChild(x.who === 'reporter' || npc ? el('p.lo-q', [el('b', (npc ? npc.name : 'Reporter') + ': '), fill(x.text)]) : el('p.lo-q', { testid: 'gong-carpet-line' }, [el('b', ui.who(ui.speaker(x.who, st)).short + ': '), fill(x.text)]));
+        });
         card.appendChild(btn('.btn.primary.block', { testid: 'btn-gong-next', onclick: function () {
-          if (G.line < GONG_CARPET.length) { G.line += 2; rc('flash', 6); s.rerender({}); gframe(s); return; }
+          if (G.line < GC.length) { G.line += 2; rc('flash', 6); s.rerender({}); gframe(s); return; }
           G.phase = 'show'; rc('setMode', 'podium'); s.rerender({}); gframe(s);
-        } }, G.line === 0 ? 'Walk the carpet 📸' : G.line < GONG_CARPET.length ? 'Keep walking ▸' : 'Head inside ▸'));
+        } }, G.line === 0 ? 'Walk the carpet 📸' : G.line < GC.length ? 'Keep walking ▸' : 'Head inside ▸'));
       } else if (G.phase === 'show') {
         card.appendChild(el('h3.lo-cat', 'The Global Gong'));
         if (!G.result) {
@@ -543,7 +597,9 @@
           var r = G.result;
           card.appendChild(el('div.lo-noms', [el('span.chip.you', band)].concat((r.against || []).map(function (x) { return el('span.chip', x.name + ' (' + x.from + ')'); }))));
           card.appendChild(el('div.lo-winner' + (r.won ? '.won' : ''), { testid: 'gong-winner', data: { won: r.won ? '1' : '0' } }, [el('span.caps', 'And the Gong goes to…'), el('b', r.won ? band : r.winner)]));
-          if (!r.won) card.appendChild(el('p.small.dim', (r.against || []).some(function (x) { return x.rival && x.name === r.winner; }) ? 'Tundra Wraith accept in corpse paint and thank you by name. In four languages.' : 'You clap. Marcel claps slower. Much slower. In Dutch.'));
+          if (!r.won) card.appendChild(el('p.small.dim', fill((r.against || []).some(function (x) { return x.rival && x.name === r.winner; })
+            ? (((ui.band(st) || {}).rival === 'tundra_wraith') ? '{rival} accept in corpse paint and thank you by name. In four languages.' : '{rival} accept and thank you by name. In four languages.')
+            : 'You clap. {grumbler} claps slower. Much slower. In Dutch.')));
           if (r.won && !G.speech) card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-gong-speech', onclick: function () {
             ui.show('loonie-card', { card: GONG_SPEECH, kind: 'speech', onPick: function (i) { var ch = GONG_SPEECH.choices[i]; if (ch && GG.career.applyEffects) GG.career.applyEffects(S(), ch.effects || {}); G.speech = true; if (GG.main) GG.main.sync(); },
               onDone: function () { if (G) { s.rerender({}); gframe(s); } } });
@@ -554,7 +610,7 @@
         var cur = S(), dd = {};
         ['fund', 'fans', 'buzz'].forEach(function (k) { if (cur[k] !== G.start[k]) dd[k] = cur[k] - G.start[k]; });
         card.appendChild(el('div', { testid: 'gong-summary' }, [el('h3.lo-cat', G.result && G.result.won ? 'The Global Gong is yours!' : 'No gong this year.'),
-          el('p.small', G.result && G.result.won ? 'It goes on the trophy shelf. Not on the drum kit. Never on the drum kit.' : 'The stroopwafels at the after-party were excellent. Jaxon took forty.'),
+          el('p.small', G.result && G.result.won ? 'It goes on the trophy shelf. Not on the drum kit. Never on the drum kit.' : fill('The stroopwafels at the after-party were excellent. {filler} took forty.')),
           ui.deltaChips(dd, { emptyText: 'Free stroopwafels' })]));
         card.appendChild(btn('.btn.primary.big.block', { testid: 'btn-gong-done', onclick: function () { ui.close(s.id); } }, 'Fly home ▸'));
       }
@@ -587,6 +643,6 @@
   };
 
   GG.registerDebug('tourui', function () {
-    return { gong: G ? { phase: G.phase, threeD: G.threeD, result: G.result } : null, mooseDue: mooseDue, flown: Object.keys(flown) };
+    return { gong: G ? { phase: G.phase, threeD: G.threeD, result: G.result } : null, mooseDue: mooseDue, payoffDue: payoffDue, flown: Object.keys(flown) };
   });
 })(window.GG);

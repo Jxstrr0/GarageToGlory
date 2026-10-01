@@ -36,6 +36,10 @@
 // Events: 'tour:unlocked' { region, via } · 'tour:invite' { invite } · 'tour:booked' { tour } · 'tour:depart' { tour } ·
 //   'tour:week' { tour, stop, index } · 'tour:home' { summary } · 'tour:broken' { region } · 'tour:big' { region, song } ·
 //   'tour:rival' { region } · 'tour:president' {} · 'tour:moose' {} · 'tour:gong' { result } · 'tour:homesick' { value }
+// v0.9: needsMet(s, pkg) (package.needs: 'moose' | flag | { flag, is?, band? }) ; payoffDone(s) ; package.payoff { city?, flag?,
+//   value?, trophy?, line?, chat?, card?, fans?, buzz? } fires once at its gig (t.payoffs[pkgId]) and counts for the Gong like
+//   the Moose Opera (owner Q3) ; pickText(s, rng, path, fallback) (world content pools + byBand) ; story cards through
+//   '<id>_<bandId>' variants (wt_homesick: speaker 'recruit' = the grumpiest talker) ; callHome never uses a silent member.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var T = GG.tour = GG.tour || {};
@@ -59,6 +63,7 @@
     rival: { fans: 15000, chance: 0.05, order: ['uk_europe', 'japan', 'russia', 'australia'] },
     gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
     moose: { fans: 3000, buzz: 12 },
+    payoffFlags: { mooseOpera: 'platinum', squatAnthemPayoff: true, mudstonbury: 'headlined', mudHeadlinePayoff: true, outbackPayoff: true },   // v0.9: Gong payoff
     cardGap: 3, cardChance: 0.75,
     bot: { goodCushion: 2500, avgCushion: 3500, gap: 10, avgChance: 0.35, restHomesick: 55 }
   };
@@ -138,6 +143,7 @@
     t.homesick = U.clamp(t.homesick, 0, 100);
     if (t.president === undefined) t.president = null;
     if (t.moose === undefined) t.moose = null;
+    if (!t.payoffs || typeof t.payoffs !== 'object' || Array.isArray(t.payoffs)) t.payoffs = {};   // v0.9: { <packageId>: { week, flag } }
     if (t.lastCard === undefined) t.lastCard = null;
     if (!t.rival || typeof t.rival !== 'object' || Array.isArray(t.rival)) t.rival = {};
     if (t.ctx === undefined) t.ctx = null;
@@ -291,6 +297,7 @@
     if (GG.labels && GG.labels.inSession && GG.labels.inSession(s)) return no('You are in the studio.');
     if (s.phase === 'gig') return no('Play this weekend first.');
     if (pkg.needs === 'moose' && !(s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland') && !t.moose)) return no('Finland is waiting for a certain concept album.');
+    if (pkg.needs && pkg.needs !== 'moose' && !(T.needsMet(s, pkg) && !t.payoffs[pkg.id])) return no(pkg.needsText || 'Not yet. The story is still being written.');
     if (pkg.showcase && (rs(s, pkg.region).tours > 0 || t.history.some(function (h) { return h.packageId === pkg.id; }))) return no('A showcase is a first impression. You only get one.');
     if (pkg.minRegionFans && rs(s, pkg.region).fans < pkg.minRegionFans) return no('Needs ' + U.fmtNum(pkg.minRegionFans) + ' fans in ' + T.region(pkg.region).name + '.');
     var why = timing(s, pkg, s.totalWeek + 1);
@@ -300,8 +307,52 @@
   };
   T.packages = function (s, region) {
     return K().packages.filter(function (p) { return !region || p.region === region; }).filter(function (p) {
-      return p.needs !== 'moose' || (s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland'));
+      return !p.needs || T.needsMet(s, p);
     }).map(function (p) { var c = T.canBook(s, p.id); return Object.assign({}, p, { ok: c.ok, why: c.why, quote: c.quote, window: T.departWindow(p) }); });
+  };
+  // v0.9 (owner Q3): a World payoff package per band. needs: 'moose' (Hail Damage's Moose Opera, v0.7) or { flag, is?: [values]
+  // | value, band?: [ids] }: the storyline flag that unlocks the package. payoff: { city?, flag?, value?, trophy?, line?, chat?,
+  // card?, fans?, buzz? }: fires once, at the package's gig in `city` (else its last stop) and counts toward the Global Gong
+  // like the Moose Opera. t.payoffs[pkgId] = { week, flag }.
+  T.needsMet = function (s, p) {
+    var n = p && p.needs;
+    if (!n) return true;
+    if (n === 'moose') return !!(s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland'));
+    if (typeof n === 'string') return !!(s.flags && s.flags[n]);
+    if (n.band && [].concat(n.band).indexOf(s.bandId) < 0) return false;
+    var v = s.flags && n.flag ? s.flags[n.flag] : null, is = n.is || (n.value != null ? [n.value] : null);
+    return is ? [].concat(is).indexOf(v) >= 0 : !!v;
+  };
+  // Every band's World payoff counts for the Gong like the Moose Opera: a fired package payoff (t.payoffs), or the flag its
+  // storyline leaves behind (cfg().payoffFlags: { flag: true (any value) | value | [values] }), e.g. a payoff card's own flag.
+  T.payoffDone = function (s) {
+    var t = T.ensure(s), F = cfg().payoffFlags || {}, f = s.flags || {};
+    if (t.moose || Object.keys(t.payoffs || {}).length) return true;
+    return Object.keys(F).some(function (k) {
+      var want = F[k], v = f[k];
+      if (v == null || v === false) return false;
+      return want === true || [].concat(want).indexOf(v) >= 0;
+    });
+  };
+  // The payoff gig: payoff.venue (a stop's venue id), else payoff.city, else the package's last stop.
+  function payoffAt(s, g) {
+    var a = T.active(s), p = a && T.pkg(a.packageId), P = p && p.payoff;
+    if (!p || !p.needs || p.needs === 'moose' || !P || T.ensure(s).payoffs[p.id]) return null;
+    if (P.venue) return g.venueId === P.venue || g.id === P.venue ? p : null;
+    var last = a.stops[a.stops.length - 1] || {}, city = P.city || last.city;
+    return g.cityId === city || g.city === city || (T.cityDef(city) && T.cityDef(city).name === g.city) ? p : null;
+  }
+  function payoff(s, p, r, d, g) {
+    var t = T.ensure(s), P = p.payoff || {}, Q = cfg().moose, flag = P.flag || (typeof p.needs === 'string' ? p.needs + 'Payoff' : p.needs && p.needs.flag ? p.needs.flag + 'Payoff' : 'worldPayoff');
+    t.payoffs[p.id] = { week: s.totalWeek, flag: flag };
+    s.flags[flag] = P.value != null ? P.value : true;
+    (s.trophies || (s.trophies = [])).push({ kind: P.trophyKind || 'payoff', title: GG.career.fillText(s, P.trophy || p.name), year: s.year });
+    addRegionFans(s, p.region, P.fans != null ? P.fans : Q.fans, d);
+    fx(s, { buzz: P.buzz != null ? P.buzz : Q.buzz }, d);
+    if (r && r.lines && P.line) r.lines.push(GG.career.fillText(s, P.line));
+    if (P.chat) chat(s, 'dj', P.chat, null, 'news');
+    if (P.card) t.queue.unshift({ card: P.card, region: p.region, now: true });
+    GG.emit('tour:payoff', { packageId: p.id, flag: flag, venueId: (g && g.venueId) || null });
   };
   T.book = function (s, pkgId, choices) {
     var c = T.canBook(s, pkgId, choices);
@@ -402,7 +453,9 @@
     if (ex && ex.buzz) r.buzz = (r.buzz || 0) + Math.round(ex.buzz / 2);
     var first = rs(s, g.region).gigs === 0;
     if (first) r.lines.push('Your first show in ' + T.region(g.region).name + '. ' + (g.silent ? 'Silence during every song. A roar after. Every single time.' : 'They came. They stayed. Some of them knew the words.'));
-    if (g.cityId === 'paris' && activeMembers(s).some(function (m) { return m.id === 'marcel'; })) r.lines.push('France loves Marcel. Roses land on stage. All of them are for Marcel.');
+    var cl = GG.career.pool(s, K(), ['cityLines', g.cityId]);   // v0.9: world.cityLines[cityId] (+ byBand): a band's moment in that city
+    if (Array.isArray(cl) && cl.length) r.lines.push(GG.career.fillText(s, rng.pick(cl)));
+    else if (g.cityId === 'paris' && GG.songs && GG.songs.namerFr && GG.songs.namerFr(s)) r.lines.push(GG.career.fillText(s, 'France loves {namer}. Roses land on stage. All of them are for {namer}.'));
     if (g.festival) r.lines.push('A festival crowd: ' + U.fmtNum(r.crowd) + ' people, most of them hearing {band} for the first time.'.replace('{band}', bandName(s)));
     return r;
   };
@@ -419,13 +472,15 @@
       a.fans += r.fans || 0; a.pay += r.pay || 0; a.take = (a.take || 0) + take;
     }
     if (g.cityId === 'helsinki' && s.flags && (s.flags.mooseAlbum === 'ready' || s.flags.mooseAlbum === 'finland') && !t.moose) moose(s, r, d);
+    var po = payoffAt(s, g);   // v0.9: another band's World payoff
+    if (po) payoff(s, po, r, d, g);
     return T.travel(s, g, rng, d);
   };
   T.travel = function (s, g, rng, d) {
     var Q = cfg().travel, a = T.active(s), veh = a ? K().vehicles[a.choices.vehicle] : null, km = g.km || 0;
     var comfort = veh ? veh.comfort : 2, burn = km < 60 ? 0 : Math.min(Q.burnoutMax, Math.round(km / 100 * (6 - comfort) * Q.burnoutPer100));
     if (burn) fx(s, { burnout: burn }, d);
-    var out = { km: km, driven: km, wear: 0, burnout: burn, breakdown: null, driver: GG.world ? GG.world.driver(s).id : 'kenji', vehicle: veh ? veh.id : null, abroad: true };
+    var out = { km: km, driven: km, wear: 0, burnout: burn, breakdown: null, driver: GG.world ? GG.world.driver(s).id : 'you', vehicle: veh ? veh.id : null, abroad: true };
     if (veh && km > 0 && rng.chance(veh.breakdown * (km >= 300 ? 1.5 : 1))) {
       var cost = rng.int(Q.breakdownCost[0], Q.breakdownCost[1]);
       fx(s, { fund: -cost, burnout: 3, chemistry: -2 }, d);
@@ -448,7 +503,7 @@
       toName: tc ? tc.name : gig.city, km: km, highway: (T.region(a.region) || {}).road || '', season: season, night: km >= 400,
       cardId: card ? card.id : null, resolved: !card, choice: null, outcome: null, deltas: null, success: null,
       banter: GG.world ? GG.world.banter(s, 2) : [], weather: wx.kind, temp: wx.temp, holiday: hol ? hol.id : null,
-      driver: GG.world ? GG.world.driver(s).id : 'kenji', abroad: true, region: a.region, vehicle: veh.id || null, vehicleName: veh.name || '', vehicleLook: veh.look || null };
+      driver: GG.world ? GG.world.driver(s).id : 'you', abroad: true, region: a.region, vehicle: veh.id || null, vehicleName: veh.name || '', vehicleLook: veh.look || null };
     return s.trip;
   };
   T.roadCardOk = function (s, c) {
@@ -464,7 +519,7 @@
     if (a.status === 'booked' && s.totalWeek >= a.start) {
       a.status = 'on';
       fx(s, { burnout: (cfg().jetLag[a.region] || 5) });
-      chat(s, 'dj', ((K().lines.depart || {})[a.region]) || 'Wheels up.', null, 'news');
+      chat(s, 'dj', pickText(s, seeded(s, 'depart'), ['lines', 'depart', a.region], 'Wheels up.'), null, 'news');
       GG.emit('tour:depart', { tour: a });
     }
     if (a.status !== 'on') return null;
@@ -522,6 +577,28 @@
   };
 
   /* ---- Monday cards abroad + story cards ------------------------------------------------------------------------------ */
+  // v0.9: a story card for this band: '<id>_<bandId>' (gate + speaker ok), else the base card when it isn't gated to another
+  // band and its speaker is ok (wt_homesick's speaker 'recruit' = a talker, set as ctx.who).
+  function queuedCard(s, id) {
+    var v = GG.career.cardById ? GG.career.cardById(id + '_' + s.bandId) : null;
+    if (v && T.card(v.id) && GG.career.gatePasses(s, v.gate) && GG.career.cardOk(s, v)) return v;
+    var c = T.card(id);
+    if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) return null;
+    return !GG.career.cardOk || GG.career.cardOk(s, c) ? c : null;
+  }
+  // v0.9: the week the homesick card was last dealt, under the base id or the band's variant (queuedCard deals
+  // wt_homesick_<bandId> when it exists, and startWeek records seenCards under the id it dealt). -1e9 = never.
+  function homesickSeen(s) {
+    var a = s.seenCards.wt_homesick, b = s.seenCards['wt_homesick_' + s.bandId];
+    return Math.max(a == null ? -1e9 : a, b == null ? -1e9 : b);
+  }
+  // Content text: a pool path over GG.content.world (+ byBand); string or [strings] (seeded pick).
+  function pickText(s, rng, path, fallback) {
+    var v = GG.career.pool ? GG.career.pool(s, K(), path) : null;
+    if (Array.isArray(v)) return v.length ? rng.pick(v) : fallback;
+    return typeof v === 'string' && v ? v : fallback;
+  }
+  T.pickText = pickText;
   function availableCard(s, c) {
     var w = s.seenCards && s.seenCards[c.id];
     if (w == null) return true;
@@ -532,11 +609,15 @@
     if (s.ended || s.totalWeek <= 1) return null;
     // story cards first (the president and the moose come right away; the rest keep a gap)
     for (var i = 0; i < t.queue.length; i++) {
-      var q = t.queue[i], c = T.card(q.card);
-      if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) { t.queue.splice(i--, 1); continue; }
+      var q = t.queue[i], c = queuedCard(s, q.card);
+      if (!c) { t.queue.splice(i--, 1); continue; }
       if (!q.now && t.lastCard != null && s.totalWeek - t.lastCard < Q.cardGap) break;
       t.queue.splice(i, 1);
       t.ctx = { region: q.region || null, invite: q.invite || null, festival: q.festival || null, song: q.song || null, card: c.id };
+      if (c.speaker === 'recruit') {   // v0.9: the homesick one is a bandmate who talks (the most homesick = the grumpiest)
+        var tk = GG.career.talkers(s).slice().sort(function (a, b) { return a.mood - b.mood; })[0];
+        if (tk) t.ctx.who = tk.id;
+      }
       t.lastCard = s.totalWeek;
       return c;
     }
@@ -544,7 +625,8 @@
     var st = T.stop(s), rng = seeded(s, 'card');
     if (!rng.chance(Q.cardChance)) return null;
     var pool = T.cards().filter(function (c) {
-      return !c.story && availableCard(s, c) && (!c.city || c.city.indexOf(st.city) >= 0) && GG.career.gatePasses(s, c.gate);
+      return !c.story && availableCard(s, c) && (!c.city || c.city.indexOf(st.city) >= 0) && GG.career.gatePasses(s, c.gate)
+        && (!GG.career.cardOk || GG.career.cardOk(s, c)) && !(GG.career.isVariantId && GG.career.isVariantId(c.id));   // v0.9 speaker / card guard
     });
     if (!pool.length) return null;
     var pick = rng.weighted(pool, function (c) { return (c.weight || 1) * (c.city ? 3 : 1); });
@@ -594,14 +676,16 @@
     t.history.push(sum);
     if (t.history.length > 20) t.history.splice(0, t.history.length - 20);
     t.active = null;
-    chat(s, 'mom', seeded(s, 'home').pick(K().lines.home || ['Home.']), null, 'news');
+    var hl = GG.career.pool ? GG.career.pool(s, K(), ['lines', 'home']) : K().lines.home;   // v0.9: + byBand
+    chat(s, 'mom', seeded(s, 'home').pick(Array.isArray(hl) && hl.length ? hl : ['Home.']), null, 'news');
     out.home = sum;
     GG.emit('tour:home', { summary: sum });
   }
   function callHome(s, rng, n) {
-    var pools = K().callHome || {}, act = rng.shuffle(activeMembers(s).filter(function (m) { return m.id !== 'kenji'; }));
+    var pools = K().callHome || {}, act = rng.shuffle(GG.career.talkers(s));   // v0.9: silent members never call home
+    var gen = GG.career.pool ? GG.career.pool(s, K(), ['callHome', 'generic']) : pools.generic;
     for (var i = 0; i < Math.min(n, act.length); i++) {
-      var m = act[i], pool = (pools[m.id] && pools[m.id].length && rng.chance(0.7)) ? pools[m.id] : pools.generic;
+      var m = act[i], pool = (pools[m.id] && pools[m.id].length && rng.chance(0.7)) ? pools[m.id] : gen;
       if (pool && pool.length) chat(s, m.id, rng.pick(pool), null, 'home');
     }
   }
@@ -610,7 +694,7 @@
       var r = rs(s, id), R = T.region(id);
       if (!r.broken && r.fans >= R.breakAt) {
         r.broken = s.totalWeek;
-        chat(s, 'dj', fill(s, K().lines.broken || '{band} broke {region}.', { region: R.name }), null, 'news');
+        chat(s, 'dj', fill(s, pickText(s, seeded(s, 'line|broken'), ['lines', 'broken'], '{band} broke {region}.'), { region: R.name }), null, 'news');
         out.broken.push(id);
         GG.emit('tour:broken', { region: id });
       }
@@ -631,7 +715,7 @@
       if (!r.unlocked) T.unlock(s, id, 'big', out);
       addRegionFans(s, id, Math.round(T.region(id).breakAt * 0.1));
       t.queue.push({ card: 'wt_big', region: id, song: song.title });
-      chat(s, 'dj', fill(s, K().lines.big || '{song} is big in {region}.', { song: '“' + song.title + '”', region: T.region(id).name }), null, 'news');
+      chat(s, 'dj', fill(s, pickText(s, seeded(s, 'line|big'), ['lines', 'big'], '{song} is big in {region}.'), { song: '“' + song.title + '”', region: T.region(id).name }), null, 'news');
       out.big = { region: id, song: song.title };
       GG.emit('tour:big', { region: id, song: r.big });
       return;
@@ -666,7 +750,7 @@
       if (t.homesick >= H.burnoutAt) fx(s, { burnout: H.burnout });
       callHome(s, R, t.homesick >= 60 ? 2 : 1);
       if (t.homesick >= H.cardAt && !t.queue.some(function (q) { return q.card === 'wt_homesick'; }) && idxOf(s, a) < a.stops.length - 1
-        && (s.seenCards.wt_homesick == null || s.totalWeek - s.seenCards.wt_homesick >= 12)) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
+        && s.totalWeek - homesickSeen(s) >= 12) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
       var i = idxOf(s, a);
       if (i >= a.stops.length - 1 || (a.endAfter != null && i >= a.endAfter)) finish(s, out);
     } else t.homesick = U.clamp(t.homesick + H.home, 0, H.max);
@@ -678,7 +762,7 @@
       rollBig(s, R, out);
       checkBroken(s, out);
       var GW = (K().gong || {}).week || 22;
-      if (s.week === GW - 1 && gongCase(s).nominated) chat(s, 'dj', fill(s, K().lines.gongNominated || '{band} is nominated for the Global Gong.'), null, 'news');
+      if (s.week === GW - 1 && gongCase(s).nominated) chat(s, 'dj', fill(s, pickText(s, seeded(s, 'line|gongNominated'), ['lines', 'gongNominated'], '{band} is nominated for the Global Gong.')), null, 'news');
       if (s.week === GW) out.gong = T.runGong(s);
     }
     return out;
@@ -693,9 +777,9 @@
     t.rival[next] = s.totalWeek;
     var r = rs(s, next), first = !r.broken;
     if (first) r.rivalFirst = s.totalWeek;
-    var text = first ? fill(s, K().lines.rival || '{rival} broke {region} first.', { region: T.region(next).name })
+    var text = first ? fill(s, pickText(s, seeded(s, 'line|rival'), ['lines', 'rival'], '{rival} broke {region} first.'), { region: T.region(next).name })
       : fill(s, '{rival} finally toured {region}. The locals asked them if they know you.', { region: T.region(next).name });
-    if (news) news(text); else chat(s, 'wraith_frontman', text, null, 'news');
+    if (news) news(text); else chat(s, (GG.rival && GG.rival.frontSpeaker && GG.rival.frontSpeaker(s)) || 'dj', text, null, 'news');   // v0.9: the rival's own frontman
     GG.emit('tour:rival', { region: next, first: first });
     return next;
   };
@@ -707,7 +791,7 @@
     t.history.forEach(function (h) { if (h.end > y0 - WPY / 2) fest += h.festivals; });
     if (t.active) t.active.results.forEach(function (r) { if (r.festival) fest++; });
     var bigs = REGION_IDS.filter(function (id) { return rs(s, id).big; }).length;
-    var score = Q.base + broken * Q.perBroken + Math.min(Q.fansMax, T.abroadFans(s) / Q.fansPer) + fest * Q.perFestival + bigs * Q.perBig + (t.moose ? Q.moose : 0);
+    var score = Q.base + broken * Q.perBroken + Math.min(Q.fansMax, T.abroadFans(s) / Q.fansPer) + fest * Q.perFestival + bigs * Q.perBig + (T.payoffDone(s) ? Q.moose : 0);   // v0.9: any band's payoff
     return { nominated: broken >= Q.nominateBroken || fest > 0, score: score, broken: broken, festivals: fest };
   }
   T.gong = function (s) {
@@ -723,7 +807,7 @@
     if (!c.nominated) { done = { year: s.year, week: s.totalWeek, nominated: false, won: false }; t.gongs.push(done); return done; }
     var field = rng.shuffle(G.nominees).slice(0, 3).map(function (n) { return { id: n.id, name: n.name, from: n.from, score: n.strength + rng.range(-Q.noise, Q.noise) }; });
     var rv = s.rival, rr = Object.keys(t.rival).length;
-    if (rv && rr && rv.cracked !== 'breakup') field.push({ id: rv.id, name: GG.rival ? GG.rival.name(s) : 'Tundra Wraith', from: 'Canada', rival: true, score: 50 + rr * 4 + rng.range(-Q.noise, Q.noise) });
+    if (rv && rr && rv.cracked !== 'breakup') field.push({ id: rv.id, name: GG.rival ? GG.rival.name(s) : 'the other band', from: 'Canada', rival: true, score: 50 + rr * 4 + rng.range(-Q.noise, Q.noise) });
     var you = c.score + rng.range(-Q.noise, Q.noise), top = field.reduce(function (b, x) { return !b || x.score > b.score ? x : b; }, null);
     var won = !top || you >= top.score;
     done = { year: s.year, week: s.totalWeek, nominated: true, won: won, score: Math.round(you), winner: won ? 'you' : top.name,
@@ -734,8 +818,8 @@
       fx(s, { fund: Q.prize, fans: gain, buzz: Q.buzz });
       (s.trophies || (s.trophies = [])).push({ kind: 'gong', title: 'The Global Gong', year: s.year });
       done.prize = Q.prize; done.fans = gain;
-      chat(s, 'dj', fill(s, K().lines.gongWon || '{band} won the Global Gong.'), null, 'news');
-    } else chat(s, 'dj', fill(s, K().lines.gongLost || 'The Global Gong went to {venue}.', { venue: top.name }), null, 'news');
+      chat(s, 'dj', fill(s, pickText(s, seeded(s, 'line|gongWon'), ['lines', 'gongWon'], '{band} won the Global Gong.')), null, 'news');
+    } else chat(s, 'dj', fill(s, pickText(s, seeded(s, 'line|gongLost'), ['lines', 'gongLost'], 'The Global Gong went to {venue}.'), { venue: top.name }), null, 'news');
     GG.emit('tour:gong', { result: done });
     return done;
   };
@@ -785,24 +869,51 @@
   };
 
   /* ---- Bots (botTour) ------------------------------------------------------------------------------------------------- */
+  // The bot's choices for a package (hostel + publicist + the comfiest vehicle when the good bot is rich).
+  function botChoices(s, style, region) {
+    var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
+    if (style === 'good' && rich) ch.vehicle = T.vehicles(region).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+    return ch;
+  }
+  // v0.9: a story payoff package (owner Q3: needs met, never fired) leaves in a ~2-week window a year, so a bot books it the
+  // way a player who has waited for it would: no gap since the last tour, a small cushion (bot.payoffCushion), the promoter's
+  // floor when hostels don't fit the fund, and only a really fried band (bot.payoffBurnout) stays home. Hail Damage's Moose
+  // Opera counts too once its album is ready.
+  function botPayoff(s, style, B) {
+    if (s.burnout >= (B.payoffBurnout != null ? B.payoffBurnout : 80)) return null;
+    var cushion = B.payoffCushion != null ? B.payoffCushion : 500, pick = null;
+    REGION_IDS.forEach(function (id) {
+      if (pick || !T.unlocked(s, id)) return;
+      K().packages.forEach(function (p) {
+        if (pick || p.region !== id || !p.needs) return;
+        [botChoices(s, style, id), { stay: 'couch', extra: 'none' }].forEach(function (ch) {   // (else the promoter's floor: it's the story)
+          if (pick) return;
+          var c = T.canBook(s, p.id, ch);
+          if (c.ok && s.fund >= c.quote.total + cushion) pick = { id: p.id, ch: ch };
+        });
+      });
+    });
+    return pick;
+  }
   T.botWeek = function (s, style) {
     if (s.era !== 'world' || s.ended) return null;
     var t = T.ensure(s), B = cfg().bot;
     if (t.active) return null;
-    var last = t.history[t.history.length - 1];
-    if (last && s.totalWeek - last.end < B.gap) return null;
     var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
     if (fin && s.year === fin.year && s.week >= fin.week - 8 && s.week <= fin.week) return null;   // bots stay home to prepare for the Sad Dome
+    var pay = botPayoff(s, style, B);
+    if (pay) { var tp = T.book(s, pay.id, pay.ch); if (tp && !tp.error) return tp; }
+    var last = t.history[t.history.length - 1];
+    if (last && s.totalWeek - last.end < B.gap) return null;
     if (s.burnout >= 60 || (style !== 'good' && !seeded(s, 'bot').chance(B.avgChance))) return null;   // tired bands stay home
     var cushion = style === 'good' ? B.goodCushion : B.avgCushion, best = null, bestV = -Infinity;
     REGION_IDS.forEach(function (id) {
       if (!T.unlocked(s, id)) return;
       K().packages.filter(function (p) { return p.region === id; }).forEach(function (p) {
-        var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
-        if (style === 'good' && rich) ch.vehicle = T.vehicles(id).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+        var ch = botChoices(s, style, id);
         var c = T.canBook(s, p.id, ch);
         if (!c.ok || s.fund < c.quote.total + cushion) return;
-        var q = c.quote, v = q.fansEst * 2.2 + q.payEst * 0.55 - q.total + (p.festival ? 1500 : 0) + (p.needs === 'moose' ? 3000 : 0);
+        var q = c.quote, v = q.fansEst * 2.2 + q.payEst * 0.55 - q.total + (p.festival ? 1500 : 0) + (p.needs ? 3000 : 0);   // v0.9: any payoff package
         if (style !== 'good') v += seeded(s, 'botpick|' + p.id).range(-1500, 1500);
         if (v > bestV) { bestV = v; best = { id: p.id, ch: ch }; }
       });
@@ -843,6 +954,7 @@
     var st = T.status(s);
     return { era: s.era, onTour: st.onTour, booked: st.booked, here: st.here, region: st.region, homesick: st.homesick,
       active: st.active ? { id: st.active.id, packageId: st.active.packageId, status: st.active.status, start: st.active.start, index: st.index } : null,
-      unlocked: REGION_IDS.filter(function (id) { return T.unlocked(s, id); }), abroadFans: st.abroadFans, gongs: s.tour.gongs.length, moose: !!s.tour.moose };
+      unlocked: REGION_IDS.filter(function (id) { return T.unlocked(s, id); }), abroadFans: st.abroadFans, gongs: s.tour.gongs.length, moose: !!s.tour.moose,
+      payoffs: Object.keys(s.tour.payoffs || {}) };
   });
 })(window.GG);

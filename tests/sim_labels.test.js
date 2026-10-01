@@ -207,6 +207,13 @@ test('release: tracklist rules, lead single, title/cover options, schedule >= 2 
   ok(cv.rows.length >= 10 && cv.rows.every((r, i, l) => i === 0 || r.pos > l[i - 1].pos), 'chart view rows sorted');
   if (a.chart.pos) ok(cv.rows.some(r => r.you && r.pos === a.chart.pos && r.title === 'My Lawn' && r.move === 'new'), 'you on the chart');
   eq(JSON.stringify(GG.labels.chartView(s, a.id)), JSON.stringify(cv), 'chart view is stable');
+  // (fixer) the filler rows: never the rival (its record charts through its own row), titles from the neutral chartFiller pool
+  const CF = GG.content.albumWords.chartFiller = { forms: ['{adj} {noun}', 'Love on {place}'], adj: ['Testy'], noun: ['Filler'], place: ['the Lake'] }, words = [].concat(CF.adj, CF.noun, CF.place);
+  for (let w = 1; w <= 40; w++) {
+    s.totalWeek = w; const rows = GG.labels.chartView(s).rows.filter(r => !r.you && !r.rival);
+    ok(rows.every(r => r.artist !== GG.rival.name(s)), 'no filler row credits the rival (week ' + w + ')');
+    ok(rows.every(r => words.some(x => r.title.includes(x))), 'filler titles from chartFiller: ' + rows.map(r => r.title).join(' | '));
+  }
 });
 
 test('reviews: deterministic; recycled drum patterns lower scores', () => {
@@ -408,6 +415,63 @@ test('bots: sign, record, release over a career; deterministic per seed; no DOM/
   ok(a.awards.length > 0, 'Loonie nominations happen');
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', '24_sim_labels.js'), 'utf8');
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '24_sim_labels.js is pure');
+});
+
+test('v0.9: demandsByBand, a demand whose card can never be dealt settles half, rival-only labels never offer', () => {
+  const GG = fresh({ cards: [{ id: 'dm_hd_only', type: 'money', speaker: 'marcel', title: 't', text: 't', gate: { band: ['hail_damage'] }, choices: [{ label: 'a', outcome: 'o' }] }] });
+  const L = GG.labels, lab = L.label('monolith');
+  const fh = GG.career.newCareer({ seed: 9, bandId: 'frost_heave' });
+  const own = { monolith: [{ kind: 'image', text: 'Less council, more cardio.' }, { kind: 'council', text: 'Stop suing city hall.' }] };
+  const saved = lab.demandsByBand;
+  const LS = GG.content.labels && (GG.content.labels.labels || GG.content.labels), src = LS && LS.monolith || {};
+  src.demandsByBand = { frost_heave: own.monolith };
+  try {
+    const d = L.demandsFor(fh, L.label('monolith')).map(x => x.kind || x);
+    ok(d.indexOf('council') >= 0 && d.filter(k => k === 'image').length === 1, 'band demands on top, same kind replaced ' + d);
+    eq(L.demandsFor(fh, L.label('monolith')).find(x => x.kind === 'image').text, 'Less council, more cardio.');
+  } finally { if (saved === undefined) delete src.demandsByBand; else src.demandsByBand = saved; }
+  const hdOnly = GG.content.cards[0];
+  ok(L.cardNeverPasses(fh, hdOnly.id) && !L.cardNeverPasses(GG.career.newCareer({ seed: 9 }), hdOnly.id), 'gated to another band = never');
+  ok(L.cardNeverPasses(fh, 'no_such_card'), 'missing = never');
+  // a deal whose carded demand can never come up settles 'half' after the grace instead of hanging
+  fh.era = 'signed'; fh.fans = 5000; fh.label = { id: 'x', labelId: 'monolith', name: 'Monolith', signed: 1, advance: 0, recouped: 0, costs: 0, royalty: 0.1,
+    albumsOwed: 3, albumsDelivered: 0, deadline: 999, goodwill: 60, salesMult: 1, dropped: false,
+    demands: [{ kind: 'english', text: '-', card: hdOnly.id, due: 2, answered: null }] };
+  fh.totalWeek = 10;
+  L.weekly(fh, GG.rngFor(fh), { chat: [] });
+  eq(fh.label.demands[0].answered, 'half', 'settled');
+  // rival-only labels
+  const src2 = LS, add = { id: 'monolith_tv', name: 'Monolith TV', rivalOnly: true, advance: [1, 2], royalty: 0.1, albums: 1, deadlineWeeks: 10, offerMinFans: 0, offerMinBuzz: 0, demands: [] };
+  src2.monolith_tv = add;
+  try { eq(L.interest(fh, 'monolith_tv'), 0, 'never offered'); } finally { delete src2.monolith_tv; }
+});
+
+test('v0.9: a band line after each envelope (awards.win / lose + byBand), own voices only, the outcome unchanged', () => {
+  const lines = {};
+  ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].forEach(b => {
+    const run = withLine => {
+      const GG = load({ localStorage: load.fakeStorage() });
+      const s = GG.career.newCareer({ seed: 12, bandId: b, player: { name: 'T' } });
+      if (!withLine) { GG.content.awards.win = []; GG.content.awards.lose = []; delete GG.content.awards.byBand; }
+      s.loonies = { year: s.year, week: 20, nominations: [
+        { category: 'album', name: 'Album', what: 'x', nominees: ['Us', s.rival.name, 'X'], strength: 99, rival: 1 },
+        { category: 'live', name: 'Live', what: 'x', nominees: ['Us', s.rival.name, 'X'], strength: 1, rival: 99 }], invited: true, results: null, done: false };
+      return { s, GG, res: GG.labels.runLoonies(s) };
+    };
+    const a = run(true), z = run(false);
+    eq(a.res.map(r => [r.won, r.winner, r.you, r.them]), z.res.map(r => [r.won, r.winner, r.you, r.them]), b + ': same envelopes with or without the lines');
+    ok(z.res.every(r => r.bandLine === null), b + ': no lines, no band line');
+    const own = a.GG.content.bands[b].members.map(m => m.name.split(' ')[0]);
+    const other = [].concat(...Object.keys(a.GG.content.bands).filter(x => x !== b).map(x => a.GG.content.bands[x].members.map(m => m.name.split(' ')[0])));
+    a.res.forEach(r => {
+      ok(typeof r.bandLine === 'string' && r.bandLine.length > 10 && !/\{/.test(r.bandLine), b + ': a filled line ' + r.bandLine);
+      ok(!other.some(n => new RegExp('\\b' + n + '\\b').test(r.bandLine) && !own.includes(n)), b + ': no other band named: ' + r.bandLine);
+    });
+    const env = a.GG.labels.openEnvelope(a.s, 'album');   // the UI's per-envelope call carries it too (59c shows it)
+    eq(env && env.bandLine, a.res[0].bandLine, b + ': openEnvelope returns the band line');
+    lines[b] = a.res.map(r => r.bandLine).join(' ');
+  });
+  ok(/Kenji|Marcel|Dana|Jaxon/.test(lines.hail_damage) && /Rox|Benny|Moth/.test(lines.frost_heave), 'each band in its own voice');
 });
 
 done('sim_labels');

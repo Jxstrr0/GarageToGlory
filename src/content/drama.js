@@ -11,6 +11,9 @@
 //     {recruit} = the member the card is about (the recruit filling the slot on a *_filled return card).
 // Want rules (27_sim_drama RULES): spotlight, cape, solos, practice, freedom, baba, mystery.
 // Kenji never speaks words: his lines are punctuation or (stage directions). His ultimatum is a packed bass case.
+// v0.9 "Genres": each pack adds its members to drama.members (+ ult_ / ret_ / ret_<id>_filled cards); rival outcomes say
+//   {rival}; fillIns cover every lineup role ('guitar', 'vocals/acoustic', 'fiddle'; 27_sim_drama fillPool normalises
+//   the rest, e.g. 'vocals/guitar' -> vocals); the recruit ultimatum talks about {space}, not the garage.
 (function (GG) {
   function ret(id) { return { member: { id: id, act: 'return' } }; }
   function fx(extra, id, act) { var o = { member: { id: id, act: act } }; for (var k in extra) o[k] = extra[k]; return o; }
@@ -159,11 +162,15 @@
     },
 
     fillIns: {
-      vocals: ['Brayden from the karaoke bar', 'Wendell, who does weddings', 'Tammy from the church choir'],
+      vocals: ['Kyle from the karaoke bar', 'Wendell, who does weddings', 'Tammy from the church choir'],
       'lead guitar': ['Dwayne from the music store', "Mrs. Hiebert's grandson", 'Clint, who knows one solo'],
       'rhythm guitar': ['Cody, who knows three chords', 'Gus from the Legion', 'A kid named Rowan'],
       bass: ['Ron, who owns a bass', 'Sheila from the jazz trio', 'Lyle, who brought a tuba "just in case"'],
-      any: ['Dwayne from the music store', 'Cousin Dale, somehow']
+      // v0.9: the other lineups' roles ('vocals/guitar' falls through to vocals: 27_sim_drama fillPool)
+      guitar: ['Clint, who knows one solo', 'A kid named Rowan', 'Dwayne from the music store'],
+      'vocals/acoustic': ["A busker from the farmers' market", 'Cody, who sings at weddings', 'Tammy from the church choir'],
+      fiddle: ['Mrs. Hiebert, who plays at church', 'A fiddler from the Legion jam', 'Gus, old-time fiddle champion (1983)'],
+      any: ['Dwayne from the music store', 'A cousin, somehow']
     }
   };
 
@@ -191,7 +198,7 @@
         { label: 'Tell her to go to Calgary', effects: fx({ chemistry: -4 }, 'dana', 'quit'),
           outcome: "She packs Gwendolyn and a pedalboard the size of a door. 'It's in 13/8,' she says. 'You wouldn't understand.' You wouldn't." }
       ] },
-    { id: 'ult_jaxon', type: 'drama', speaker: 'baba', title: 'Baba Has Spoken',
+    { id: 'ult_jaxon', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Baba Has Spoken',
       text: "Baba Kowalchuk is in your garage with a roaster of perogies and a clipboard. 'Jaxon is tired. Jaxon is thin. Jaxon comes home at " +
         "one in the morning. Explain.' Jaxon stands behind her, holding his guitar like a shield.",
       choices: [
@@ -214,7 +221,7 @@
           outcome: 'You say nothing. He says nothing. The next morning the case is gone, and so is Kenji. His corner still smells faintly of cedar.' }
       ] },
     { id: 'ult_recruit', type: 'drama', speaker: 'recruit', title: '{recruit} Wants a Word',
-      text: "{recruit} catches you after rehearsal. 'I answered a Kijiji ad. It said paid gigs, a real band, and a garage with heat. " +
+      text: "{recruit} catches you after rehearsal. 'I answered a Kijiji ad. It said paid gigs, a real band, and a jam space with heat. " +
         "One out of three. I've had other offers. Well, one. A wedding band.'",
       choices: [
         { label: "Raise the band's cut (+5%)", effects: fx({ payCut: 0.05, mood: { recruit: 15 } }, 'recruit', 'settle'),
@@ -222,7 +229,7 @@
         { label: 'Buy a space heater ($60)', effects: fx({ fund: -60, mood: { recruit: 12 } }, 'recruit', 'settle'),
           outcome: "Two out of three. {recruit} sits right next to the heater at every rehearsal and calls it 'the office'." },
         { label: "The door's right there", effects: fx({ chemistry: -3 }, 'recruit', 'quit'),
-          outcome: '{recruit} packs up and pins a one-star review of the garage to the music-store corkboard. It is fair.' }
+          outcome: '{recruit} packs up and pins a one-star review of {space} to the music-store corkboard. It is fair.' }
       ] },
 
     // ---- Returns: an empty slot (welcome back / conditions / not yet) or a filled one (keep the recruit or the original) ----
@@ -244,7 +251,7 @@
         { label: 'Take Marcel back', effects: ret('marcel'),
           outcome: '{recruit} takes it well and leaves a thank-you card. Marcel reads it aloud, dramatically, in French. The garage is complete again.' },
         { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'marcel', 'rival'),
-          outcome: "Marcel sweeps out. Two weeks later Tundra Wraith announces a new vocalist: 'Lord Abyssus'. They send you a fruit basket." }
+          outcome: "Marcel sweeps out. Two weeks later {rival} announce a new vocalist: 'Lord Abyssus'. They send you a fruit basket." }
       ] },
     { id: 'ret_dana', type: 'drama', speaker: 'dana', title: 'No Mosh Pit',
       text: "Dana is in the driveway with Gwendolyn and a new pedalboard. 'Prog shows have no mosh pit,' she says. 'None. I looked. I need a mosh pit.'",
@@ -262,9 +269,9 @@
         { label: 'Take Dana back', effects: ret('dana'),
           outcome: '{recruit} is gracious about it. Dana resets the amp to her exact settings and quietly re-strings everything {recruit} touched.' },
         { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'dana', 'rival'),
-          outcome: 'Dana leaves without a word, which is new. Tundra Wraith posts a photo of their new lead guitarist. They tag you. Politely.' }
+          outcome: 'Dana leaves without a word, which is new. {rival} post a photo of their new lead guitarist. They tag you. Politely.' }
       ] },
-    { id: 'ret_jaxon', type: 'drama', speaker: 'baba', title: 'Heard You on the Radio',
+    { id: 'ret_jaxon', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Heard You on the Radio',
       text: "Baba is at the side door. 'I heard you on the radio,' she says. 'Deb Wiebe played the loud one. Olga called me.' Behind her, Jaxon is already holding his guitar.",
       choices: [
         { label: 'Welcome back, Rip', effects: fx({ chemistry: 4 }, 'jaxon', 'return'),
@@ -274,13 +281,13 @@
         { label: 'Not yet', effects: fx({ mood: { jaxon: -5 } }, 'jaxon', 'later'),
           outcome: 'Baba narrows her eyes at you. Jaxon waves sadly from the car. You receive no perogies for several weeks.' }
       ] },
-    { id: 'ret_jaxon_filled', type: 'drama', speaker: 'baba', title: 'Who Is This',
+    { id: 'ret_jaxon_filled', type: 'drama', speaker: 'baba', gate: { band: ['hail_damage'] }, title: 'Who Is This',
       text: "Baba has heard you on the radio and brought Jaxon back. She sees {recruit} holding a rhythm guitar. 'Who is this,' she says. It is not a question.",
       choices: [
         { label: 'Take Jaxon back', effects: ret('jaxon'),
           outcome: '{recruit} gets a roaster of perogies as a goodbye gift. Baba insists. Jaxon sneaks a fill into the very first song.' },
         { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'jaxon', 'rival'),
-          outcome: "Baba says nothing. That is worse. A month later Tundra Wraith's new rhythm guitarist is a very polite nineteen-year-old." }
+          outcome: "Baba says nothing. That is worse. A month later the new rhythm guitarist in {rival} is a very polite nineteen-year-old." }
       ] },
     { id: 'ret_kenji_filled', type: 'drama', speaker: 'kenji', title: 'The Corner',
       text: 'Kenji is back. He is standing in his corner, sunglasses on, bass in hand, looking at {recruit}, who is also standing in his corner. Nobody moves. The fridge hums.',
@@ -288,7 +295,7 @@
         { label: 'Kenji gets his corner', effects: ret('kenji'),
           outcome: '{recruit} understands without a word, which is the only way anything is ever said to Kenji. Kenji plugs in. He nods once.' },
         { label: 'Keep {recruit}', effects: fx({ mood: { recruit: 8 } }, 'kenji', 'rival'),
-          outcome: "Kenji nods, which may mean anything. Weeks later, Tundra Wraith's promo photo has a fifth member in sunglasses at the back." }
+          outcome: "Kenji nods, which may mean anything. Weeks later, the new {rival} promo photo has a fifth member in sunglasses at the back." }
       ] }
   ];
 })(window.GG);

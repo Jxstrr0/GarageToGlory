@@ -47,7 +47,7 @@
             'Forty-one years reviewing records. I wept at {single}. My wife came in to check on me. She wept too. Then she asked who it was.',
             '{album} is a classic. I say that about once a decade, usually about a record from 1972.',
             'Put it on the turntable, pour a rye, call your kids. Tell them this is what music sounded like back when it mattered, which is now, somehow.',
-            'I have seen the future of prairie music and it is {band}, and it wears a cape, and it is louder than my doctor would like.'
+            'I have seen the future of prairie music and it is {band}, and it wears whatever it likes, and it is louder than my doctor would like.'
           ]
         },
         byBand: {
@@ -66,7 +66,8 @@
             ],
             great: [
               '{nick:marcel} sings like the last man in a burning barn, and the band plays like they are trying to save him. Essential.',
-              'I do not like heavy metal. I like {album}. I am as confused as you are. Buy it on vinyl.'
+              'I do not like heavy metal. I like {album}. I am as confused as you are. Buy it on vinyl.',
+              'I have seen the future of prairie music and it is {band}, and it wears a cape, and it is louder than my doctor would like.'
             ]
           }
         },
@@ -101,7 +102,7 @@
           great: [
             "STOP EVERYTHING! {album} is the best thing to come out of the prairies since the prairies! Call your nan! Call your MP!",
             '{single} is a national anthem for people who shovel their own driveways! Which is all of us! GLORIOUS!',
-            "We have listened to {album} eleven times on the train from Saskatoon to Jasper and cried at every elevator we passed! Masterpiece!"
+            "We have listened to {album} eleven times on the train across the prairies and cried at every grain elevator we passed! Masterpiece!"
           ]
         },
         byBand: {
@@ -109,7 +110,8 @@
             awful: ["Metal from Saskatoon! We were SO ready! And then {album} happened! It happened for a long time!"],
             meh: ["Hail Damage's lyrics are in French, which is very Canadian of them! We checked! They're about a lawn! Also Canadian!"],
             good: ["{nick:marcel} in a cape, screaming in French about lawn care over a blast beat! Is anything MORE Canadian?! No!"],
-            great: ["{band} are a hailstorm in July: loud, sudden, and absolutely everyone is talking about it at the Co-op! TEN TOQUES!"]
+            great: ["{band} are a hailstorm in July: loud, sudden, and absolutely everyone is talking about it at the Co-op! TEN TOQUES!",
+              "We have listened to {album} eleven times on the train from Saskatoon to Jasper and cried at every elevator we passed! Masterpiece!"]
           }
         },
         recycled: [
@@ -165,7 +167,7 @@
         id: 'deci_hell', name: 'Deci-Hell', critic: 'ANONYMOUS (PHOTOCOPIED AT THE DOWNTOWN LIBRARY)', scale: 5, decimals: 0, unit: 'skulls', caps: true,
         genres: { metal: 1, punk: 0.5, rock: 0.3, country: 0.1 }, bias: 0,
         weights: { quality: 0.3, production: 0.4, polish: 0.3, recycled: 0.6 },
-        voice: 'A photocopied metal zine. ALL CAPS, ALWAYS. Rates in skulls. Nobody knows who writes it. Kenji might.',
+        voice: 'A photocopied metal zine. ALL CAPS, ALWAYS. Rates in skulls. Nobody knows who writes it. Probably somebody\'s quiet bassist.',
         quotes: {
           awful: [
             '{album} IS WEAKER THAN LIBRARY COFFEE. WE KNOW. WE PRINT THIS AT THE LIBRARY.',

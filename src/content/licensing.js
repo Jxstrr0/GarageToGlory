@@ -10,6 +10,8 @@
 //             back to 'mom' when that member isn't in your band), takeFx? (EFFECT_KEYS, e.g. a mortified Marcel),
 //             title, offer (card text), take, decline, counterWin, counterWalk, expire (chat lines; tokens below) }]
 //   lines  : { later, walkChat, takeChat, declineChat } shared lines.
+//   v0.9: band?: [bandId] limits a brand to those bands (Marcel's employer is Hail Damage's only); the other brand texts are
+//   neutral (Mom, Dad, the superfans). Packs push an "employer" brand per band. 'truck' is the Buckle & Boot fury brand.
 // Tokens (GG.licensing.fillText, plus the usual career ones): {brand} {adwhat} {adsong} {adfee} {adcounter} {adtake}
 //   {adodds} {adleft}. Every brand is a parody: no real companies, no USA.
 (function (GG) {
@@ -40,7 +42,7 @@
         offer: 'Prairie Titan Trucks wants "{adsong}" for a commercial: a pickup jumping a coulee in slow motion while a farmer nods. ' +
           'They offer {adfee}. Dad has already asked if the band gets a discount.',
         take: 'The ad airs during the hockey game. The truck jumps the coulee to your chorus forty times a weekend. Dad watches every one.',
-        decline: 'You pass. Prairie Titan uses a banjo instead. Dad takes it personally and parks his truck facing the garage, sulking.',
+        decline: 'You pass. Prairie Titan uses a banjo instead. Dad takes it personally and parks his truck facing the house, sulking.',
         counterWin: '"Fine," says the marketing guy, chewing a toothpick. "Your chorus better be as loud as that engine." It is.',
         counterWalk: 'Prairie Titan goes with a jingle a guy in Estevan made on his phone. Dad does not bring it up. Dad brings it up daily.',
         expire: 'Prairie Titan stopped calling. The coulee jump now plays to a banjo. Dad sighs every time.' },
@@ -51,24 +53,24 @@
         offer: 'Riot Juice (tagline: "Now With 40% More Moose") wants "{adsong}" behind a snowmobile doing a backflip over a grain bin. ' +
           '{adfee}. Mom took the message. She wrote "RIOT JUICE??" and underlined it three times.',
         take: 'Twenty-nine seconds of snowmobile backflips to your song. The band gets a pallet of Riot Juice. Nobody sleeps for a week.',
-        decline: 'You pass. The superfans notice. Dale from Warman posts "they said NO to the moose juice" with eleven flexing emojis.',
+        decline: 'You pass. The superfans notice. The comments fill up with "they said NO to the moose juice" and eleven flexing emojis.',
         counterWin: 'Riot Juice agrees before you finish the sentence. Their marketing guy is on his fourth can. He agrees to everything.',
         counterWalk: 'Riot Juice hangs up mid-sentence. Word is they signed a polka-core band from Gimli. Their backflips are worse.',
-        expire: 'Riot Juice stopped calling. The pallet of free samples never came. Jaxon checks the porch anyway.' },
+        expire: 'Riot Juice stopped calling. The pallet of free samples never came. Somebody checks the porch anyway.' },
       { id: 'hockey', name: 'Saturday Night Puck', what: 'hockey highlight package',
         blurb: 'The highlight package on Sportsnut: glove saves, line brawls and a Zamboni at sunset, cut to a song.',
-        fee: [1500, 2500], genres: { metal: 2, punk: 2, rock: 2, country: 2 }, sellout: 0.2, buzz: 6, reach: 0.012, speaker: 'neighbour',
+        fee: [1500, 2500], genres: { metal: 2, punk: 2, rock: 2, country: 2 }, sellout: 0.2, buzz: 6, reach: 0.012, speaker: 'dad',
         title: 'Glove Save, Big Riff',
         offer: 'Sportsnut wants "{adsong}" under the Saturday Night Puck highlight package: glove saves, line brawls, a Zamboni at sunset. ' +
-          '{adfee}. Mr. Lindqvist from next door heard first. He is weirdly emotional about it.',
-        take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Mr. Lindqvist cries a little.',
-        decline: 'You pass. Sportsnut uses stock music called "Hockey Rock 7". Mr. Lindqvist will not look at you.',
+          '{adfee}. Dad heard first. He is weirdly emotional about it.',
+        take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Dad cries a little.',
+        decline: 'You pass. Sportsnut uses stock music called "Hockey Rock 7". Dad will not look at you.',
         counterWin: 'Sportsnut ups it. "For the playoffs," says a producer with a whistle around his neck. He blows it when you say yes.',
-        counterWalk: 'Sportsnut goes with "Hockey Rock 7". It is fine. It is so, so fine. Mr. Lindqvist mows his lawn angrily.',
-        expire: 'Saturday Night Puck went with "Hockey Rock 7". Mr. Lindqvist mutters about it over the fence.' },
+        counterWalk: 'Sportsnut goes with "Hockey Rock 7". It is fine. It is so, so fine. Dad shovels the driveway angrily.',
+        expire: 'Saturday Night Puck went with "Hockey Rock 7". Dad mutters about it at supper.' },
       { id: 'insurance', name: 'Prairie Mutual Hail & Hardship', what: 'insurance ad',
         blurb: 'The regional insurer. Covers hail, grasshoppers and "acts of Saskatchewan". Marcel adjusts claims for them. Marcel is mortified.',
-        fee: [2000, 3500], genres: { metal: 3, country: 0.5, rock: 0.3, punk: 0.1 }, sellout: 0.9, buzz: 4, reach: 0.01, speaker: 'marcel',
+        fee: [2000, 3500], genres: { metal: 3, country: 0.5, rock: 0.3, punk: 0.1 }, sellout: 0.9, buzz: 4, reach: 0.01, speaker: 'marcel', band: ['hail_damage'],
         takeFx: { mood: { marcel: -6 } },
         title: 'Your Employer Is Calling',
         offer: 'Prairie Mutual Hail & Hardship wants "{adsong}" for a regional ad: hail smashing a truck, then a calm adjuster with a clipboard. ' +
@@ -80,14 +82,14 @@
         expire: 'Prairie Mutual went with a harp. Marcel has never been happier at work.' },
       { id: 'game', name: 'Moosefall IV: Antler Protocol', what: 'video game trailer',
         blurb: 'A game about a cyborg moose defending a grain elevator from robots. Made by Gopherbyte, a studio above a vape shop in Montréal.',
-        fee: [2000, 4000], genres: { metal: 2.5, punk: 2, rock: 2, country: 1 }, sellout: 0.3, buzz: 9, reach: 0.025, speaker: 'dj',
+        fee: [2000, 4000], genres: { metal: 2.5, punk: 2, rock: 2, country: 1 }, sellout: 0.3, buzz: 9, reach: 0.025, speaker: 'mom',
         title: 'The Moose Has Lasers',
         offer: 'Gopherbyte wants "{adsong}" for the Moosefall IV: Antler Protocol trailer: a cyborg moose defending a grain elevator from robots. ' +
-          '{adfee}. Deb from CRUD 90.5 passed on the email. She says it is "very brutal, in a gentle way".',
+          '{adfee}. Mom forwarded the email with the subject line "IS THIS A SCAM".',
         take: 'The trailer drops. A cyborg moose headbutts a robot on your downbeat. Millions of views. The comments are about the moose, and you.',
         decline: 'You pass. The trailer uses a synth track. The comments ask "where is the guitar??" for a week. You feel seen.',
-        counterWin: 'Gopherbyte says yes and asks if the band wants to be playable characters. Kenji nods before anyone else can answer.',
-        counterWalk: 'Gopherbyte goes quiet, then posts the trailer with a synth track. The moose looks disappointed. So does Dana.',
+        counterWin: 'Gopherbyte says yes and asks if the band wants to be playable characters. Everybody says yes at once.',
+        counterWalk: 'Gopherbyte goes quiet, then posts the trailer with a synth track. The moose looks disappointed. So does the band.',
         expire: 'Moosefall IV shipped its trailer with a synth track. The moose deserved better.' }
     ],
     lines: {

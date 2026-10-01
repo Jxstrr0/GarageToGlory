@@ -10,7 +10,7 @@
   var V = ui.v5 = ui.v5 || {};
   function S() { return GG.state; }
   V.S = S;
-  V.fill = function (t) { return t && GG.career && GG.career.fillText && S() ? GG.career.fillText(S(), String(t)) : (t || ''); };
+  V.fill = function (t) { return t && S() ? ui.fill(String(t), S()) : (t || ''); };   // v0.9: + role/space tokens (50_ui_core)
   V.sfx = function (n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); };
   V.sync = function () { if (GG.main && GG.main.sync) GG.main.sync(); else if (ui.refreshHud) ui.refreshHud(); };
 
@@ -32,7 +32,7 @@
   function asList(x) { if (!x) return []; if (Array.isArray(x)) return x; return Object.keys(x).map(function (k) { var v = x[k]; if (v && typeof v === 'object' && !v.id) v.id = k; return v; }); }
   function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i]; return null; }
   var LABEL_FALLBACK = {
-    gopherwood: { id: 'gopherwood', name: 'Gopherwood Records', kind: 'indie', blurb: 'An indie out of a Saskatoon basement. Small advance, fair cut, total creative freedom.' },
+    gopherwood: { id: 'gopherwood', name: 'Gopherwood Records', kind: 'indie', blurb: 'An indie out of a prairie basement. Small advance, fair cut, total creative freedom.' },
     monolith: { id: 'monolith', name: 'Monolith Records', kind: 'major', blurb: 'A major. Huge advance, tiny cut, and opinions about everything.' },
     diy: { id: 'diy', name: 'DIY', kind: 'diy', blurb: 'No label. Keep everything. Pay for everything.' }
   };
@@ -81,13 +81,35 @@
     var d = V.labelDef(id), icon = { gopherwood: '🐿', monolith: '▮', diy: '✂' }[id] || '♪';
     return el('div.lbl-logo.' + (id || 'x') + (size ? '.' + size : ''), { title: d.name }, [el('span.li', icon), el('span.ln', d.name.replace(/ Records$/, ''))]);
   };
-  V.memberLine = function (preferred, lines) {   // a bandmate's one-liner (first active preferred member, else anyone)
-    var st = S(), act = (st && st.members || []).filter(function (m) { return m.status === 'active'; });
-    var m = null;
-    for (var i = 0; i < preferred.length && !m; i++) m = act.filter(function (x) { return x.id === preferred[i]; })[0] || null;
-    m = m || act[0] || null;
-    var pool = lines[m && m.id] || lines.any || [];
-    return m && pool.length ? { who: m.id, text: V.fill(ui.pick(pool)) } : null;
+  // A bandmate's one-liner. v0.9: `preferred` may hold role aliases ('@front', '@soloist', '@deadpan', ...); the first
+  // preferred member with their own lines speaks, else the first preferred one who talks (with the 'any' pool), else
+  // anyone with lines. Silent members only ever use their own (stage-direction) lines. Nobody else's people leak in.
+  V.memberLine = function (preferred, lines) {
+    var st = S(); if (!st) return null;
+    lines = lines || {};
+    var act = ui.active(st), talk = ui.talkers(st), ids = (preferred || []).map(function (p) { return ui.speaker(p, st); });
+    function isAct(id) { return act.some(function (x) { return x.id === id; }); }
+    function talks(id) { return talk.some(function (x) { return x.id === id; }); }
+    function own(id) { var p = ui.ownLines(lines[id], st); return p.length ? p : null; }
+    var any = ui.ownLines(lines.any, st), who = null, pool = null, i;
+    for (i = 0; i < ids.length && !who; i++) if (isAct(ids[i]) && own(ids[i])) { who = ids[i]; pool = own(who); }
+    for (i = 0; i < ids.length && !who; i++) if (talks(ids[i]) && any.length) { who = ids[i]; pool = any; }
+    for (i = 0; i < act.length && !who; i++) if (own(act[i].id)) { who = act[i].id; pool = own(who); }
+    if (!who && talk.length && any.length) { who = talk[0].id; pool = any; }
+    return who && pool ? { who: who, text: V.fill(ui.pick(pool)) } : null;
+  };
+  // v0.9: reaction pools from content first (lines[contentKey] as { <key>: { <memberId>: [..], any } } or
+  // { <memberId>: { <key>: [..] } }, plus lines.byBand[bandId][contentKey][key] as extra 'any' lines), over the
+  // UI's member-keyed defaults (member ids are unique across bands, so a default never speaks in another band).
+  V.reactPool = function (contentKey, key, fallback) {
+    var L = GG.content.lines || {}, R = L[contentKey] || {}, st = S(), out = {};
+    Object.keys(fallback || {}).forEach(function (id) { out[id] = fallback[id]; });
+    var byKey = R[key];
+    if (byKey && typeof byKey === 'object' && !Array.isArray(byKey)) Object.keys(byKey).forEach(function (id) { if (Array.isArray(byKey[id]) && byKey[id].length) out[id] = byKey[id]; });
+    Object.keys(R).forEach(function (id) { var x = R[id]; if (id !== key && x && typeof x === 'object' && !Array.isArray(x) && Array.isArray(x[key]) && x[key].length) out[id] = x[key]; });
+    var bb = L.byBand && st && L.byBand[st.bandId], bx = bb && bb[contentKey] && bb[contentKey][key];
+    if (Array.isArray(bx) && bx.length) out.any = (out.any || []).concat(bx);
+    return out;
   };
   V.react = function (r) { return r ? el('div.react', [ui.avatar(r.who, 'sm'), el('div.t', [el('b', ui.who(r.who).short + ': '), r.text])]) : null; };
 
@@ -98,6 +120,7 @@
     if (!Array.isArray(o)) o = (st.labelOffers || []).filter(function (x) { return x && (x.expires == null || x.expires >= st.totalWeek); });
     return o;
   };
+  // Defaults for content lines.labelReact (A ports these; any band's members can be added there).
   var REACT = {
     monolith: { marcel: ["They want me to sing in English? Non. Absolument non. ...How much is the advance?"],
       dana: ['A major label. My solo is going to be on the radio. Probably cut to four seconds, but still.'],
@@ -108,8 +131,20 @@
       marcel: ['They said the cape is "a vibe". I trust them completely.'],
       jaxon: ['The owner gave me a granola bar. Unprompted. Sign it.'],
       any: ['Small advance, but they actually listened to the demo. Twice!'] },
-    diy: { any: ['We keep everything! Also we pay for everything. Also what is a "distribution"?'] }
+    diy: { any: ['We keep everything! Also we pay for everything. Also what is a "distribution"?'] },
+    signed: { marcel: ['I would like the record to show I signed first. In French.'], dana: ['We are SIGNED. I am telling my landlord.'], any: ['Signed! Somebody call our moms.'] }
   };
+  // Speakers by role (v0.9): the major gets the singer + the deadpan one, the indie the guitar + the filler.
+  var REACT_ROLES = { monolith: ['@front', '@deadpan'], gopherwood: ['@soloist', '@filler'], diy: ['@front', '@soloist'], signed: ['@front', '@soloist'] };
+  function labelReact(key) { return V.memberLine(REACT_ROLES[key] || REACT_ROLES.gopherwood, V.reactPool('labelReact', key, REACT[key] || REACT.gopherwood)); }
+  // The contract's merch clause names the band's signature prop (member.signature / member.cape) and its owner.
+  var PROP = { capeSpin: 'the cape', hatTip: 'the hat', kneeSlide: 'the leather pants', stageDive: 'the jacket' };
+  function propClause(st) {
+    var b = ui.band(st), m = b && (b.members || []).filter(function (x) { return x.cape || (x.signature && PROP[x.signature.action]); })[0];
+    var prop = m && (m.cape ? PROP.capeSpin : PROP[m.signature.action]);
+    return prop ? 'No 360 deal. The merch table, the van and ' + prop + ' remain the property of the Band (and ' + m.name + ', respectively).'
+      : 'No 360 deal. The merch table and the van remain the property of the Band.';
+  }
   function termsGrid(o) {
     var def = V.labelDef(o.labelId);
     return el('div.stat-grid.offer-terms', { testid: 'offer-terms' }, [
@@ -145,7 +180,7 @@
         return { id: x.labelId, label: V.labelDef(x.labelId).name.replace(/ Records$/, '') };
       }), o.labelId, function (id) { s.rerender({ labelId: id }); }, 'offer-tab-')));
       var left = o.expires != null ? o.expires - st.totalWeek : null;
-      var dem = demandsOf(o), r = V.memberLine(o.labelId === 'monolith' ? ['marcel', 'kenji'] : ['dana', 'jaxon'], REACT[o.labelId] || REACT.gopherwood);
+      var dem = demandsOf(o), r = labelReact(o.labelId === 'monolith' ? 'monolith' : o.labelId === 'diy' ? 'diy' : 'gopherwood');
       ui.append(s.body, el('div.offer-card.' + o.labelId, { testid: 'offer-card' }, [
         el('div.row', [V.logo(o.labelId), el('div.grow'), left != null ? el('span.tag' + (left <= 1 ? '.amber' : ''), left <= 0 ? 'expires this week' : 'expires in ' + left + ' wk' + (left === 1 ? '' : 's')) : null]),
         el('p.offer-blurb', V.fill(def.blurb || '')),
@@ -168,7 +203,7 @@
         } }, 'Pass'),
         btn('.btn.primary.grow', { testid: 'btn-sign', onclick: function () {
           ui.confirm({ title: 'Sign with ' + def.name + '?', yes: 'Sign it', no: 'Not yet',
-            text: U.fmtMoney(o.advance || 0) + ' up front (recoupable), ' + (o.albums || 1) + ' album' + ((o.albums || 1) > 1 ? 's' : '') + ' in ' + (o.deadlineWeeks || 48) + ' weeks. Marcel is already practising his autograph.' })
+            text: U.fmtMoney(o.advance || 0) + ' up front (recoupable), ' + (o.albums || 1) + ' album' + ((o.albums || 1) > 1 ? 's' : '') + ' in ' + (o.deadlineWeeks || 48) + ' weeks. ' + V.fill('{front} is already practising an autograph.') })
             .then(function (ok) {
               if (!ok || !V.need('sign')) return;
               var deal = V.call('sign', S(), o.labelId);
@@ -183,12 +218,12 @@
   });
   function goDIY() {
     ui.confirm({ title: 'Go DIY?', yes: 'DIY forever', no: 'Hmm, no',
-      text: 'No label. You keep every dollar, and you pay every dollar: studio, producer, promo. Jaxon has offered to "do the website".' })
+      text: 'No label. You keep every dollar, and you pay every dollar: studio, producer, promo. ' + V.fill('{filler} has offered to "do the website".') })
       .then(function (ok) {
         if (!ok || !V.need('goDIY')) return;
         V.call('goDIY', S()); V.sync();
         if (ui.isOpen('label-offer')) ui.close('label-offer');
-        ui.toast('You are your own label now. The fax machine is Kenji.', { kind: 'good' });
+        ui.toast(V.fill('You are your own label now. The fax machine is {deadpan}.'), { kind: 'good' });
       });
   }
   V.goDIY = goDIY;
@@ -206,11 +241,11 @@
         ['Royalty', 'The Band receives ' + V.pct(L.royalty || 0) + ' of every unit, once the advance is paid back.'],
         ['Albums', (L.albumsOwed || 1) + ' album' + ((L.albumsOwed || 1) > 1 ? 's' : '') + ', the first due by ' + V.weekLabel(L.deadline || st.totalWeek + 48) + '.'],
         ['Creative', dem.length ? dem.map(function (x) { return V.fill(x.text || x.kind); }).join(' ') : 'The Label will not interfere. The Label will, however, send muffins.'],
-        ['Merch', 'No 360 deal. The merch table, the van and the cape remain the property of the Band (and Marcel, respectively).']
+        ['Merch', propClause(st)]
       ];
       ui.append(s.body, el('div.deal-paper', { testid: 'deal-paper' }, [
         el('div.deal-head', [V.logo(L.labelId, 'lg'), el('div.caps', 'Recording agreement')]),
-        el('p.deal-parties', ['Between ', el('b', def.name), ' (“the Label”) and ', el('b', band), ' (“the Band”), of ' + (st.city || 'Saskatoon') + ', SK.']),
+        el('p.deal-parties', { testid: 'deal-parties' }, ['Between ', el('b', def.name), ' (“the Label”) and ', el('b', band), ' (“the Band”), of ' + (st.city || 'town') + ', ' + ui.province(st) + '.']),
         el('ol.deal-clauses', clauses.map(function (c) { return el('li', [el('b', c[0] + '. '), c[1]]); })),
         el('div.deal-sign', [
           el('div.sig', [el('span.ink', p.name || 'You'), el('span.sl', 'The Band (drums, founder)')]),
@@ -218,7 +253,7 @@
         ]),
         el('div.deal-stamp', 'SIGNED')
       ]));
-      var r = V.memberLine(['marcel', 'dana'], { marcel: ['I would like the record to show I signed first. In French.'], dana: ['We are SIGNED. I am telling my landlord.'], any: ['Signed! Somebody call our moms.'] });
+      var r = labelReact('signed');
       if (r) s.body.appendChild(V.react(r));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-deal-done', onclick: function () { ui.close(s.id); } }, 'Frame it'));
     },
@@ -259,7 +294,7 @@
       ]));
     } else if (L && L.labelId === 'diy' && !L.dropped) {
       out.push(el('div.panel.deal-card', { testid: 'label-status' }, [el('div.row', [V.logo('diy'), el('div.grow'), el('span.tag', 'no label')]),
-        el('p.small', { style: 'margin-top:8px' }, 'You are your own label. You keep every dollar and pay for every studio hour. The fax machine is Kenji.')]));
+        el('p.small', { style: 'margin-top:8px' }, V.fill('You are your own label. You keep every dollar and pay for every studio hour. The fax machine is {deadpan}.'))]));
     } else {
       out.push(el('div.panel', { testid: 'label-none' }, [
         el('div', { style: 'font-weight:800' }, L && L.dropped ? 'Dropped by ' + V.labelDef(L.labelId).name + '.' : 'No label yet.'),
@@ -296,7 +331,7 @@
       ui.append(s.body, [el('div.row', { style: 'margin-bottom:10px' }, [V.logo(L && L.labelId), el('div.grow'), el('span.tag', 'demand')]),
         el('p.card-text', { testid: 'demand-text' }, '“' + V.fill(pd.demand.text || pd.demand.kind) + '”')]);
       if (!d.res) {
-        [['met', 'Fine. Do it.', 'The label is thrilled. Marcel is not.'], ['half', 'Meet them halfway', 'Everybody is a little annoyed. Classic compromise.'],
+        [['met', 'Fine. Do it.', V.fill('The label is thrilled. {grumbler} is not.')], ['half', 'Meet them halfway', 'Everybody is a little annoyed. Classic compromise.'],
           ['refused', 'No.', 'Creative integrity! The label writes this down somewhere.']].forEach(function (c) {
           s.body.appendChild(btn('.choice', { testid: 'demand-' + c[0], onclick: function () {
             if (s.data.res) return;

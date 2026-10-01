@@ -1,6 +1,8 @@
 // pw_flow.js: end-to-end UI flows on a 390x844 phone viewport, driven only through data-testid taps.
-// Sections (META_ONLY=flow|year|code|layout, comma-separated; default all). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=flow|bands|year|code|layout, comma-separated; default all). Each must finish inside `timeout 500`.
 //   flow   : title → new career → week 1 → week 2 → manual save → reload → Continue lands on the same week
+//   bands  : (v0.9) the same flow for punk, rock and country: their genre card → their band → week 2 → save → reload →
+//            Continue lands on the same week of the same band (bandId, genre, city kept)
 //   year   : quickStart, 24 weeks through the UI → year 2 week 1; reload → Continue → same state
 //   code   : 2 weeks, back up a save code, restore it in a fresh browser (empty storage); damaged code shows an error
 //   layout : every screen has no horizontal overflow and buttons ≥ 44x44; screenshots + one contact sheet
@@ -81,8 +83,9 @@ async function playWeek(page, acts, opts) {
 }
 
 /* ---- flow ---------------------------------------------------------------------------------------------- */
-async function flow() {
-  const c = checker('flow');
+async function flow(genre) {
+  genre = genre || 'metal';
+  const c = checker(genre === 'metal' ? 'flow' : 'flow:' + genre);
   const { page, errors, close } = await openAuto();
   try {
     await page.waitForSelector(tid('btn-new'));
@@ -92,8 +95,8 @@ async function flow() {
     await tap(page, 'btn-new');
     await tap(page, 'slot-1');
     await waitScreen(page, 'genre');
-    c.ok(await page.locator(tid('genre-punk')).isDisabled(), 'punk is locked (until v0.9 ships)');
-    await tap(page, 'genre-metal');
+    c.ok(!(await page.locator(tid('genre-punk')).isDisabled()), 'punk is playable (v0.9)');
+    await tap(page, 'genre-' + genre);
     await tap(page, 'btn-intro-next');
     await waitScreen(page, 'logo'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker (5m_ui_logo)
     await waitScreen(page, 'creator');
@@ -109,9 +112,11 @@ async function flow() {
     await tap(page, 'btn-coldopen-skip');
     await page.waitForFunction(() => GG.state && (GG.debug('ui').screen === 'card' || GG.state.phase === 'plan'));
     const st1 = await page.evaluate(() => ({ name: GG.state.player.name, nick: GG.state.player.nick, slot: GG.state.slot, week: GG.state.totalWeek,
-      card: GG.debug('ui').screen, hud: document.querySelector('[data-testid="hud-week"]').textContent }));
-    c.ok(st1.name === 'Tanner' && st1.nick === 'Thunderwrist' && st1.slot === '1' && st1.week === 1, 'career created in slot 1, week 1');
-    c.ok(st1.card === 'card', 'week-1 Monday card auto-opens');
+      card: GG.debug('ui').screen, phase: GG.state.phase, genre: GG.state.genre, hud: document.querySelector('[data-testid="hud-week"]').textContent }));
+    c.ok(st1.name === 'Tanner' && st1.nick === 'Thunderwrist' && st1.slot === '1' && st1.week === 1 && st1.genre === genre, 'career created in slot 1, week 1 (' + st1.genre + ')');
+    // v0.9: the other bands' forced week-1 cards come with their content packs; until then week 1 may start on the planner
+    if (genre === 'metal') c.ok(st1.card === 'card', 'week-1 Monday card auto-opens');
+    else c.ok(st1.card === 'card' || st1.phase === 'plan', 'week 1 starts on the Monday card or the planner: ' + st1.card + '/' + st1.phase);
     c.ok(/Y1/.test(st1.hud) && /W1\/24/.test(st1.hud), 'HUD shows Y1 · W1/24: ' + st1.hud);
     let sawGig = false, savedText = '';
     await playWeek(page, ['rehearse', 'write', 'rest'], {
@@ -123,21 +128,25 @@ async function flow() {
     c.ok(/Saved/.test(savedText), 'wrap shows the Saved indicator: ' + savedText);
     await page.waitForFunction(() => GG.state.totalWeek === 2);
     c.ok(true, 'reached week 2');
+    // (let week 2's Monday settle first: a card opening under the menu mid-tap could swallow the save under load)
+    await page.waitForFunction(() => GG.debug('ui').screen === 'card' || GG.state.phase === 'plan', null, { timeout: 10000 }).catch(() => {});
     // Manual save to slot 2 from the ☰ menu (HUD stays tappable over the Monday card sheet).
     await tap(page, 'btn-menu');
     await waitScreen(page, 'menu');
     await tap(page, 'menu-save-2');
+    await page.waitForFunction(() => !!document.querySelector('[data-testid="btn-confirm-yes"]') || GG.save.list().some(r => r.slot === '2' && r.exists), null, { timeout: 5000 }).catch(() => {});
     if (await page.locator(tid('btn-confirm-yes')).count()) await tap(page, 'btn-confirm-yes');
     const slot2 = await page.evaluate(() => GG.save.list().filter(r => r.slot === '2')[0]);
     c.ok(slot2 && slot2.exists, 'slot 2 written');
     await tap(page, 'menu-resume');
-    const before = await snap(page);
+    const before = await snap(page), band0 = await page.evaluate(() => ({ id: GG.state.bandId, city: GG.state.city }));
     await page.reload();
     await page.waitForSelector(tid('btn-continue'));
     await tap(page, 'btn-continue');
     await page.waitForFunction(() => !!GG.state);
-    const after = await snap(page);
+    const after = await snap(page), band1 = await page.evaluate(() => ({ id: GG.state.bandId, city: GG.state.city, genre: GG.state.genre }));
     c.ok(same(before, after) && after.totalWeek === 2, 'Continue → same week/fund/fans: ' + JSON.stringify([before, after]));
+    c.ok(band1.id === band0.id && band1.city === band0.city && band1.genre === genre, 'Continue → the same band: ' + JSON.stringify(band1));
     c.ok(await page.evaluate(() => GG.state.slot) === '2', 'career now lives in slot 2');
     c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
   } catch (e) { c.ok(false, 'flow threw: ' + (e.stack || e)); }
@@ -344,6 +353,7 @@ async function layout() {
 
 (async () => {
   if (want('flow')) await flow();
+  if (want('bands')) for (const g of ['punk', 'rock', 'country']) await flow(g);   // v0.9: every band's new career
   if (want('year')) await year();
   if (want('code')) await code();
   if (want('layout')) await layout();

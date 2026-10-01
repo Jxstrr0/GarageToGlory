@@ -13,6 +13,11 @@
 //     rivalLoses:  { <rivalId>: [text {band} {category}] }   you beat them; they are gracious about it, which is worse
 //   }
 // Tokens: {band} {category} (the category's display name; the sim/UI replaces it) + the usual fillText tokens.
+// v0.9 "Genres" (plan_contract_0.9 §4.1): win / lose are neutral + byBand[bandId].{win, lose}; per band (packs add theirs):
+//   speech[bandId] / speechWorstVan[bandId] = CARD (Worst Van is accepted by the band's driver), carpet[bandId] =
+//   [{ who, text }] (the red-carpet chat, 59c_ui_awards), outfitCards: every band's (flag-gated, the first whose gate passes),
+//   nominees[genre] = [parody band names] (metal = the old fallback list; packs add punk / rock / country),
+//   rivalThanks / rivalLoses [rivalId] (packs add their rivals; the sim falls back to neutral {rival} lines).
 // Rewards are suggestions the sim may scale. Kenji never speaks. No USA content.
 (function (GG) {
   function fx(extra, outfit) { var o = { flags: { loonieOutfit: outfit || 'cape' } }; for (var k in extra) o[k] = extra[k]; return o; }
@@ -45,7 +50,7 @@
     },
     presenters: [
       { name: 'Brenda Kowalyk', blurb: 'Olympic curler (retired). Sequinned sweater. Reads every name like she is calling a sweep.' },
-      { name: 'Deb Wiebe', blurb: 'Host of Midnight Mayhem on CRUD 90.5. Says "brutal" like a bedtime story. Your first radio play.' },
+      { name: 'Deb Wiebe', blurb: 'Host of Midnight Mayhem on CRUD 90.5 campus radio. Says "brutal" like a bedtime story. Plays every demo she gets.' },
       { name: 'Mayor Ron Dueck of Flin Flon', blurb: 'Reads the cue cards upside down and commits to it.' },
       { name: 'Last year\'s Worst Van winners', blurb: 'Arrived by tow truck. Still holding the trophy. Refuse to give it back.' },
       { name: 'Wally Szymanski', blurb: 'Hockey commentator. Wears a suit reupholstered from a chesterfield. Shouts every nominee.' }
@@ -65,17 +70,44 @@
       'Drumroll, please. Not you, you\'re a nominee. And the Loonie goes to...'
     ],
     win: [
-      'Marcel is already on stage. Nobody saw him move.',
-      'Dana hugs the trophy like it is a vintage amp. Jaxon calls his baba from the stage.',
-      'Kenji stands, buttons his jacket and nods once. The arena goes quiet out of respect.',
+      '{front} is already on stage. Nobody saw anybody move.',
+      '{soloist} hugs the trophy like a vintage amp. {filler} calls home from the stage.',
+      '{deadpan} stands, buttons a jacket and nods once. The arena goes quiet out of respect.',
       'Your mom stands on her chair. An usher asks her to sit. She does not sit.'
     ],
     lose: [
-      'Marcel applauds with his whole cape, which is a lot of applause.',
-      'Jaxon texts his baba: "we lost". Baba: "you are winners to me. also you forgot your lunch".',
-      'Dana whispers that the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
-      'Kenji\'s expression does not change. Somehow you feel better.'
+      '{front} applauds the winners with the whole body, which is a lot of applause.',
+      '{filler} texts home: "we lost". Home: "you are winners to me. also you forgot your lunch".',
+      '{soloist} whispers that the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
+      '{deadpan}\'s expression does not change. Somehow you feel better.'
     ],
+    // v0.9: the red-carpet chat per band (was 59c's FB.carpet); speakers may be role aliases. Packs add their bands.
+    //   A line voiced by a member id drops out (with its question) when that member has quit (ui.presentLines); nobody left ->
+    //   the UI's neutral @role set. Hail Damage's cape and baba lines are Marcel's and Jaxon's own (a fill-in never inherits them).
+    carpet: {
+      hail_damage: [{ who: 'reporter', text: 'Who are you wearing tonight?' }, { who: 'marcel', text: 'The cape. The cape is wearing me.' },
+        { who: 'reporter', text: 'Any predictions?' }, { who: 'jaxon', text: 'My baba predicts we lose to the corpse-paint guys. She is usually right.' }]
+    },
+    // v0.9: parody co-nominees per genre (metal = the pre-v0.9 list; packs add punk, rock and country)
+    nominees: {
+      metal: ['The Hoarfrosts', 'Combine Harvester of Sorrow', 'Slough Monster', 'The Bunnock Kings', 'Stubble Burners',
+        'Rural Municipality 344', 'The Gopher Derby', 'Winnipeg Mosquito Choir', 'The Chinook Arches']
+    },
+    byBand: {
+      hail_damage: {
+        win: [
+          'Marcel is already on stage. Nobody saw him move.',
+          'Dana hugs the trophy like it is a vintage amp. Jaxon calls his baba from the stage.',
+          'Kenji stands, buttons his jacket and nods once. The arena goes quiet out of respect.'
+        ],
+        lose: [
+          'Marcel applauds with his whole cape, which is a lot of applause.',
+          'Jaxon texts his baba: "we lost". Baba: "you are winners to me. also you forgot your lunch".',
+          'Dana whispers that the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
+          'Kenji\'s expression does not change. Somehow you feel better.'
+        ]
+      }
+    },
     outfits: { cape: 'His cape, whatever state it is in', tux: 'A black suit or a rented tux', robe: 'A wizard robe from 2009',
       fur: "His mother's fur coat", antlers: 'Foam moose antlers' },
 
@@ -161,7 +193,8 @@
         ] }
     ],
 
-    speech: { id: 'loonie_speech', type: 'fame', speaker: 'marcel', title: 'The Speech', once: false, cooldown: 20, gate: { band: ['hail_damage'] },
+    // v0.9: speech / speechWorstVan are keyed by band ({ <bandId>: CARD }); packs add theirs.
+    speech: { hail_damage: { id: 'loonie_speech', type: 'fame', speaker: 'marcel', title: 'The Speech', once: false, cooldown: 20, gate: { band: ['hail_damage'] },
       text: 'They said your name. The band is on stage holding a loonie the size of a hubcap. Marcel, for once in his life, hands you ' +
         'the microphone. Kenji takes two steps back. You have thirty seconds before the music plays you off.',
       choices: [
@@ -176,9 +209,9 @@
               outcome: "'Tundra Wraith, buddy: thanks for the fruit basket. The pears were soft.' The room explodes. Tundra Wraith laugh hardest of all. Terrifying." },
             fail: { effects: { buzz: -6, mood: { all: -4 }, flags: { wraithFeud: true } },
               outcome: 'It lands wrong. Tundra Wraith stand and applaud you, sincerely. Now you are the villain. A fruit basket is waiting at the hotel.' } } }
-      ] },
+      ] } },
 
-    speechWorstVan: { id: 'loonie_speech_van', type: 'fame', speaker: 'kenji', title: 'Worst Van', once: false, cooldown: 20, gate: { band: ['hail_damage'] },
+    speechWorstVan: { hail_damage: { id: 'loonie_speech_van', type: 'fame', speaker: 'kenji', title: 'Worst Van', once: false, cooldown: 20, gate: { band: ['hail_damage'] },
       text: 'You won Worst Van. The Moose Hearse is parked outside, leaking something green onto the red carpet. Someone has to go up. ' +
         'Kenji, who has driven every kilometre, stands. Everyone looks at him. He puts on his sunglasses.',
       choices: [
@@ -188,7 +221,7 @@
           outcome: "You thank the van by name. A mechanic in the crowd yells 'THE TRANSMISSION, THOUGH'. A man from Moose Jaw offers $400 for it. It's family." },
         { label: "Blame Dad's truck", effects: { fans: 120, mood: { jaxon: 5 } },
           outcome: 'Dad, watching at home, stands up and argues with the TV. Mom films it. The clip gets more views than the whole broadcast.' }
-      ] },
+      ] } },
 
     rivalThanks: {
       tundra_wraith: [

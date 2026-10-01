@@ -50,9 +50,9 @@
   function extraPanel(s, D, name) {
     var def = extraDef(name);
     return el('div.seq-extra.stack', { testid: 'seq-extra-' + name }, [
-      el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? 'Dana\'s spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
+      el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
         el('p.small.dim', def.blurb),
-        el('p.small', name === 'solo' ? 'Goes in before the last chorus. Live, you only play the quarter notes: the rest is Dana\'s.' : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.')]),
+        el('p.small', name === 'solo' ? 'Goes in before the last chorus. Live, you only play the quarter notes: the rest is ' + soloWho().pos + '.' : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.')]),
       D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
   }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
@@ -62,6 +62,15 @@
   function st() { return GG.state; }
   function gear() { return (st() && st().gear) || GG.songs.DEFAULT_GEAR; }
   function genre() { return (st() && st().genre) || 'metal'; }
+  // v0.9: who takes the solo (gig.roles solo: lead guitar > guitar > fiddle; the same resolver the gig and the audio use)
+  // and who names the songs (band.roles.namer), for the songwriter's copy. { id, name, pos: "Dana's", verb }
+  function soloWho() {
+    var id = st() ? ui.roleOf('soloist') : null, n = id ? ui.who(id).short : null, fiddle = id && /fiddle/.test(ui.who(id).role || '');
+    return { id: id, name: n || 'The guitarist', pos: n ? n + '’s' : 'The guitarist’s', verb: fiddle ? 'saws away' : 'shreds' };
+  }
+  function namer() { var id = st() ? ui.roleOf('namer') : null; return id ? ui.who(id).short : 'the band'; }
+  var TITLE_HINT = { metal: 'Crabgrass of the Damned', punk: 'Parking Ticket Riot', rock: 'Leather Pants Forever', country: 'My Truck Left Me' };
+  function sing() { var s = st(); return s ? { singer: ui.roleOf('front', s), band: s.bandId } : {}; }   // v0.9: who sings (the audio's vocal voice, if it keys on it)
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function tint(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
 
@@ -91,7 +100,7 @@
     if (!V.tip) return r;
     ui.clear(V.tip);
     if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
-    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are Dana\'s.']);
+    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are ' + soloWho().pos + '.']);
     else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
     else ui.append(V.tip, [r.notes ? el('b.amber', GG.songs.verdict(genre(), r.groove) + ' ') : null, tips.slice(0, 2).join(' ')]);
     return r;
@@ -203,9 +212,9 @@
       } }, 'Guided steps')]) : null,
       el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
         : el('div.row', [
-          el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let Marcel',
+          el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let ' + namer(),
             oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D); } }),
-          btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New title from Marcel', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
+          btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New title from ' + namer(), onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
         ]), D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
       el('div.panel.stack.tight', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
         el('div.row.tiny.faint', [el('span.grow', G.tempo[0]), el('span', G.tempo[1])])]),
@@ -252,10 +261,15 @@
       style: 'width:48px;height:48px;flex:0 0 48px;font-size:22px', onclick: function () {
         var on = GG.audio && GG.audio.toggleMetronome ? GG.audio.toggleMetronome() : false;
         paintMetro(b, on);
-        ui.toast(on ? 'Click on. Marcel counts you in: "one, two, uh, the other ones."' : 'Click off. Feel it.');
+        ui.toast(on ? countIn() : 'Click off. Feel it.');
       } }, '♩');
     paintMetro(b, metroOn());
     return b;
+  }
+  // v0.9: the count-in line is the band's (content lines.byBand[bandId].countIn), else the singer counts.
+  function countIn() {
+    var c = ui.bandLines('countIn'), t = Array.isArray(c) ? ui.pick(c) : c;
+    return 'Click on. ' + ui.fill(t || '{front} counts you in: "one, two, one two three four."');
   }
   function paintMetro(b, on) {
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.dataset.on = on ? '1' : '0';
@@ -263,8 +277,8 @@
   }
   function startPlay(s, D, kind) {
     var section = kind === 'song' ? null : (D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab);
-    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, { genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }) : null;
-    if (!h) { ui.toast("No sound on this device. Imagine it. It's heavy."); return; }
+    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, Object.assign({ genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }, sing())) : null;
+    if (!h) { ui.toast("No sound on this device. Imagine it. It's loud."); return; }
     D.handle = h; D.playing = kind;
     if (D.view && D.view.pos) D.view.pos.textContent = '';
     playButtons(D);
@@ -369,13 +383,14 @@
   function gsteps() { return GSTEPS.slice(0, 3).concat(GG.songs.allSections(gear()).filter(isExtra), GSTEPS.slice(3)); }
   function extraStep(s, D, name) {
     var on = hasSec(D, name), def = extraDef(name);
-    var yes = name === 'solo' ? 'Yes: Dana\'s solo before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
+    var sw = soloWho(), ns = ui.bandLines('noSolo'), noSolo = ui.fill((Array.isArray(ns) ? ns[0] : ns) || '{soloist} will mention it. Gently. Twice.');
+    var yes = name === 'solo' ? 'Yes: ' + sw.pos + ' solo before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
     return [el('div.guide-hint', { testid: 'guide-hint' }, def.blurb),
       el('div.guide-presets', [
         btn('.guide-preset' + (on ? '.on' : ''), { testid: 'guide-extra-' + name + '-yes', onclick: function () { if (!on) addExtra(s, D, name); } },
-          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Live you play quarter notes while she shreds. Crowds love a solo after the first chorus.' : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
+          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Live you play quarter notes while ' + sw.name + ' ' + sw.verb + '. Crowds love a solo after the first chorus.' : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
         btn('.guide-preset' + (!on ? '.on' : ''), { testid: 'guide-extra-' + name + '-no', onclick: function () { if (on) removeExtra(s, D, name); } },
-          [el('span.gp-top', [el('b', no), !on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Dana will mention it. Gently. Twice.' : 'Like a pickup truck hitting a snowbank.')])]),
+          [el('span.gp-top', [el('b', no), !on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? noSolo : 'Like a pickup truck hitting a snowbank.')])]),
       on ? el('div.small.dim', 'Tweak it in Advanced ⚙ if you like. It\'s already built from your ' + (name === 'solo' ? 'verse' : 'chorus') + '.') : null];
   }
   var ORDER_BLURB = { short: 'Verse, chorus, twice. In and out before the fries get cold.',
@@ -383,14 +398,31 @@
   function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
   function setMode(m) { try { if (GG.prefs && prefMode() !== m) GG.prefs.set({ songwriterMode: m }); } catch (e) { /* storage off */ } }
   // One line from whoever fits the screen (role match on the active lineup). (The first-ever Write's hint is about the grid.)
+  // v0.9: coach lines per genre (content grooves.coach[genre][step], Lane D), else the neutral flat grooves.coach[step],
+  // else COACH (neutral, tokenised). Speakers who don't talk (Kenji) are skipped.
+  var COACH = {
+    verse: [{ role: 'guitar|fiddle', text: 'Start with the kick and the snare. Keep it steady; I will do the fancy stuff.' }, { role: 'vocals', text: 'Give me room to sing. Steady is good. Steady is great.' }],
+    chorus: [{ role: 'vocals', text: 'The chorus should hit harder than the verse. A crash on the one. Trust me.' }, { role: 'guitar|fiddle', text: 'Bigger than the verse. More cymbal, more everything.' }],
+    bridge: [{ role: 'guitar|fiddle', text: 'The bridge is my spot. Something different, not too busy.' }, { role: 'bass', text: 'Change it up here. Then we come back home.' }],
+    tempo: [{ role: 'vocals', text: 'Pick a speed I can sing at. Or at least yell at.' }, { role: 'guitar|fiddle', text: 'Fast is fun. Tight is better.' }],
+    order: [{ role: 'vocals', text: 'Verse, chorus, repeat. People like knowing where they are.' }, { role: 'bass', text: 'Short songs get played. Long songs get talked about.' }],
+    name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }]
+  };
   function coachFor(D, step) {
-    var lines = ((GG.content.grooves || {}).coach || {})[step] || [], state = st();
-    var act = state ? state.members.filter(function (m) { return m.status === 'active'; }) : [];
-    for (var k = 0; k < lines.length; k++) {
-      var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
-      for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ln.text };
+    // (coach[genre] || {})[step] || coach[step] (the neutral flat set), then the UI's own COACH; the first set with a talker wins
+    var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
+    var sets = [mine[step], CO[step], COACH[step]].filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
+    var act = ui.talkers(state);
+    for (var q = 0; q < sets.length; q++) {
+      var lines = sets[q];
+      for (var k = 0; k < lines.length; k++) {
+        var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
+        if (!ui.ownLines([ln.text], state).length) continue;
+        for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+      }
     }
-    return lines[0] ? { who: null, text: lines[0].text } : null;
+    var own = sets.length ? ui.ownLines(sets[0], state) : [];
+    return own[0] ? { who: null, text: ui.fill(own[0].text, state) } : null;
   }
   function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }
   function chip(label, a, b, neutral) {
@@ -458,9 +490,9 @@
   function nameStep(s, D) {
     return [el('div.guide-name', [el('div.caps', 'Your song'), el('div.fr', { testid: 'guide-title' }, D.title || 'Untitled'),
         D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
-      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another title from Marcel'),
+      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another title from ' + namer()),
       el('div.caps', { style: 'margin-top:6px' }, 'Or type your own'),
-      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Crabgrass of the Damned',
+      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: TITLE_HINT[genre()] || 'Your song title',
         oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D);
           var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
   }
@@ -543,11 +575,15 @@
     }
     next();
   };
+  // v0.9: writeTips are member-keyed (every band's members, genre-correct); a band without any gets a neutral grid tip.
+  var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
     var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
-    var ids = Object.keys(tips).filter(function (id) { return state.members.some(function (m) { return m.id === id && m.status === 'active'; }); });
+    var ids = Object.keys(tips).filter(function (id) { return ui.talkers(state).some(function (m) { return m.id === id; }); });
     var who = ui.pick(ids);
-    return who ? { who: who, text: GG.career.fillText(state, ui.pick(tips[who])) } : null;
+    if (who) return { who: who, text: ui.fill(ui.pick(tips[who]), state) };
+    var t = ui.talkers(state)[0];
+    return t ? { who: t.id, text: 'Tap a square to add a hit, drag down a lane to paint, hit play to hear it. ' + (TIP_BEAT[state.genre] || '') } : null;
   }
   // The kit hotspot: the sketch pad on state.draft.
   ui.openSketch = function () {

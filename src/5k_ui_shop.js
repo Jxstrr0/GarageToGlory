@@ -27,8 +27,45 @@
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function money(n) { return U.fmtMoney(Math.round(n || 0)); }
   function sync() { if (GG.main && GG.main.sync) GG.main.sync(); }
-  function fill(t) { return t && GG.career && S() ? GG.career.fillText(S(), t) : (t || ''); }
+  function fill(t) { return t && S() ? ui.fill(t, S()) : (t || ''); }
   function content() { return (SH() && SH().content()) || {}; }
+
+  /* ---- v0.9 GENRES: per-band shop copy ------------------------------------------------------------------------- */
+  // The drum shop's street, the printer's town and the tier-0 room's benefactor follow the band's city / space.
+  var STREET = { Saskatoon: '8TH STREET', Regina: 'DEWDNEY AVENUE', Edmonton: 'WHYTE AVENUE', 'Swift Current': 'CENTRAL AVENUE' };
+  var PRINTER = { Saskatoon: 'Martensville', Regina: 'White City', Edmonton: 'St. Albert', 'Swift Current': 'Gull Lake' };
+  // The car lot: Cousin Dale's (npcs.js, band: HD) for Hail Damage; the other bands buy from a lot in their own city.
+  var DEALER = { Saskatoon: 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11', Regina: 'Prairie Lemon Motors, out on the Ring Road',
+    Edmonton: 'Henday Hank\'s Wheel Deals, just off the Henday', 'Swift Current': 'Gully\'s Used Trucks & Grain Augers, Hwy 1' };
+  function dealer(st) { return st.bandId === 'hail_damage' ? DEALER.Saskatoon : (st.city !== 'Saskatoon' && DEALER[st.city]) || 'The used-car lot by the highway'; }
+  var BENEFACTOR = { garage: 'Free (thanks, Mom)', laundromat: 'Free (the Suds-O-Rama likes the noise)', stripmall: 'Free (the landlord forgot about it)', quonset: 'Free (thanks, uncle)' };
+  function street(st) { return STREET[st.city] || String(st.city || 'MAIN STREET').toUpperCase(); }
+  // Q7: rented rooms keep their geometry but get a local name + blurb per home city (content spaces[tier].byCity[city]).
+  ui.spaceLocal = function (st, def) {
+    if (!def || !st) return def;
+    var by = def.byCity, cid = GG.world && GG.world.cityId ? GG.world.cityId(st.city) : null, x = by && (by[st.city] || (cid && by[cid]));
+    return x ? Object.assign({}, def, { name: x.name || def.name, blurb: x.blurb || def.blurb }) : def;
+  };
+  // Q6: every band's misprint (content: the misprint merch item's byBand[bandId] = { typo, find, replace, stash }); Hail
+  // Damage's HALE DAMAGE stays its own default. The printed words, the stamped box and the stash come from it.
+  var MISPRINT_HD = { typo: 'HALE DAMAGE', find: 'HAIL', replace: 'HALE', stash: 'under the workbench' };
+  function misprintInfo(st) {
+    var K = content(), bid = st && st.bandId, def = SH() && SH().merchDef ? SH().merchDef('misprint') : null;
+    var srcs = [K.merch && !Array.isArray(K.merch) ? K.merch.misprint : null, def, K.misprint].filter(Boolean);
+    for (var i = 0; i < srcs.length; i++) { var x = srcs[i].byBand && srcs[i].byBand[bid]; if (x && x.typo) return x; }
+    if (bid === 'hail_damage' || !bid) return MISPRINT_HD;
+    var b = ui.band(st), name = String((b && b.name) || 'THE BAND').toUpperCase();
+    return { typo: name, find: '', replace: name.split(' ').slice(-1)[0], stash: 'in the back' };
+  }
+  ui.misprintInfo = misprintInfo;
+  function typoParts(mp) {
+    var w = String(mp.typo || '').split(/\s+/).filter(Boolean), hot = mp.replace && w.indexOf(String(mp.replace).toUpperCase()) >= 0 ? String(mp.replace).toUpperCase() : w[0];
+    return { words: w, hot: hot || 'MISPRINT' };
+  }
+  function nod(st, you, they) {   // the van's driver (or you) approves of a van thing
+    var d = ui.driverOf(st);
+    return d.you ? 'You ' + you + '. Nobody sees.' : d.name + ' ' + they + '.';
+  }
   var dbg = { gear: 0, stock: 0, misprintTease: 0, collector: 0, lastBuy: null, lastWhy: null };
   var ERA = { garage: 'Garage', local: 'Local Heroes', signed: 'Signed', world: 'World Stage' };
   var LANE_OF = { toms: 'toms', ride: 'ride', pedal: 'kick' };
@@ -61,7 +98,7 @@
      ====================================================================================================== */
   function sectionRow(st, id) {
     var def = (content().sections || {})[id] || { name: id, blurb: '' }, own = SH().ownsSection(st, id);
-    var how = id === 'outro' ? 'Unlocks after 3 songs written. Jaxon will have an idea.' : 'Local Heroes: Dana will insist. She is holding your sticks hostage.';
+    var how = fill(id === 'outro' ? 'Unlocks after 3 songs written. {filler} will have an idea.' : 'Local Heroes: {soloist} will insist. Your sticks are being held hostage.');
     return el('div.shop-row' + (own ? '.own' : '.locked'), { testid: 'gear-section-' + id }, [
       el('span.shop-ico', id === 'outro' ? '🎬' : '🎸'),
       el('div.grow', [el('b', def.name), el('div.small.dim', def.blurb), own ? null : el('div.tiny.amber', how)]),
@@ -71,7 +108,7 @@
     kind: 'sheet', tall: true, cls: 'shop',
     build: function (s) {
       var st = S(); if (!st || !SH()) return;
-      s.setTitle('Drum shop', 'PAWN SHOP ROW · 8TH STREET');
+      s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
       ui.append(s.body, el('div.stack', [
         el('div.panel.warm.shop-now', { testid: 'gear-now' }, [el('div.caps', 'On the riser now'), el('div.shop-big', kd.name || 'A kit'),
@@ -89,7 +126,8 @@
                 var r = SH().buyKit(S(), k.tier);
                 if (!r.ok) return nope(r);
                 bought('kit', k.id, r); hear('kit'); dbg.gear++;
-                ui.clearToasts(); ui.toast(k.name + '. It sounds like a real band now. Mostly.', { who: 'Dana', ms: 2600 });
+                var sol = ui.roleOf('soloist', S());
+                ui.clearToasts(); ui.toast(k.name + '. It sounds like a real band now. Mostly.', { who: sol ? ui.who(sol).short : 'The band', ms: 2600 });
                 refreshSeq(); s.rerender();
               } }, money(k.cost))]);
         })),
@@ -129,11 +167,11 @@
   }
   function misprintPanel(mp) {
     if (!mp) return null;
-    var P = (SH().cfg().merch || {}).misprint || { weeks: 8, minFans: 300 }, st = S();
+    var P = (SH().cfg().merch || {}).misprint || { weeks: 8, minFans: 300 }, st = S(), mi = misprintInfo(st), tp = typoParts(mi);
     var text = mp.status === 'pending' ? [el('b', 'The first shirt order came back… wrong. '), 'Somebody will bring it up on Monday.']
-      : mp.status === 'boxed' ? [el('b', mp.units + ' HALE DAMAGE shirts, boxed. '), 'Under the workbench with HALE in Sharpie. Dana says misprints are worth money someday.',
+      : mp.status === 'boxed' ? [el('b', mp.units + ' ' + mi.typo + ' shirts, boxed. '), ui.cap(mi.stash || 'in the back') + ' with ' + tp.hot + ' in Sharpie. ' + fill('{soloist} says misprints are worth money someday.'),
         el('div.tiny.dim', { style: 'margin-top:4px' }, 'Week ' + Math.min(P.weeks, Math.max(0, st.totalWeek - mp.week)) + ' of ' + P.weeks + ' in the box · ' + U.fmtNum(Math.min(st.fans, P.minFans)) + ' / ' + U.fmtNum(P.minFans) + ' fans')]
-      : mp.status === 'collector' ? [el('b', 'Collector\'s item. '), 'The HALE DAMAGE misprints sell for ' + money(SH().priceOf(st, 'misprint')) + ' each. There will never be more.']
+      : mp.status === 'collector' ? [el('b', 'Collector\'s item. '), 'The ' + mi.typo + ' misprints sell for ' + money(SH().priceOf(st, 'misprint')) + ' each. There will never be more.']
       : [mp.status];
     return el('div.panel' + (mp.status === 'collector' ? '.warm' : ''), { testid: 'merch-misprint', data: { status: mp.status } }, [el('div.row', [el('span.shop-ico', mp.status === 'collector' ? '🏆' : '📦'), el('div.grow.small', text)])]);
   }
@@ -179,7 +217,11 @@
           var r = SH().buyStock(S(), it.id, n);
           if (!r.ok) return nope(r);
           bought('stock', it.id, r); dbg.stock++;
-          if (r.misprint) { dbg.misprintTease++; ui.toast('The shirts are back from the printer in Martensville. Something is… off. Let\'s talk Monday.', { who: 'Dana', ms: 6000 }); }
+          if (r.misprint) {
+            dbg.misprintTease++;
+            var st0 = S(), sol0 = ui.roleOf('soloist', st0);
+            ui.toast('The shirts are back from the printer in ' + (PRINTER[st0.city] || 'the next town over') + '. Something is… off. Let\'s talk Monday.', { who: sol0 ? ui.who(sol0).short : 'Merch', ms: 6000 });
+          }
           else ui.toast(U.fmtNum(r.units) + ' ' + (def.name || it.name).toLowerCase() + ' in the pile. The van hauls what fits.', { who: 'Merch' });
           s.rerender();
         } }, 'Buy ' + n + ' · ' + money(cost))]),
@@ -310,19 +352,20 @@
         u.owned ? el('span.tag.amber', 'Fitted') : btn('.btn.small' + (u.can ? '.primary' : ''), { testid: 'van-up-' + u.id, disabled: !u.can, onclick: function () {
           var r = SH().buyVanUpgrade(S(), u.id);
           if (!r.ok) return nope(r);
-          bought('vanUpgrade', u.id, r); ui.toast(u.name + ': fitted. Kenji nods once.', { who: 'Van' }); rerender();
+          bought('vanUpgrade', u.id, r); ui.toast(u.name + ': fitted. ' + nod(S(), 'nod once', 'nods once'), { who: 'Van' }); rerender();
         } }, money(u.cost))]);
     }) : [el('p.small.dim', 'Nothing fits this vehicle. It is perfect as it is. (It is not.)')]);
   };
   ui.spacePanel = function (st, rerender) {
-    var cur = SH().spaceDef(st, st.spaceTier || 0), perks = perkText(SH().perks(st));
+    var cur = ui.spaceLocal(st, SH().spaceDef(st, st.spaceTier || 0)), perks = perkText(SH().perks(st));
     return el('div.stack', [
       el('div.panel.warm', { testid: 'space-now' }, [el('div.caps', 'You rehearse at'), el('div.shop-big', cur.name),
-        el('div.small.dim', cur.blurb), el('div.chips', { style: 'margin-top:6px' }, [el('span.chip', cur.rent ? 'Rent ' + money(cur.rent) + '/week' : 'Free (thanks, Mom)')]
+        el('div.small.dim', fill(cur.blurb)), el('div.chips', { style: 'margin-top:6px' }, [el('span.chip', cur.rent ? 'Rent ' + money(cur.rent) + '/week' : BENEFACTOR[ui.spaceKind(st)] || 'Free')]
           .concat(perks.map(function (p) { return el('span.chip.up', p); }))),
         st.rentLate ? el('div.small.bad', { testid: 'space-late', style: 'margin-top:6px' }, 'Behind on rent: two weeks short and the landlord changes the locks.') : null]),
       el('div.caps', 'Rooms around town'),
-      el('div.stack.tight', SH().spaces(st).map(function (x) {
+      el('div.stack.tight', SH().spaces(st).map(function (x0) {
+        var x = x0.tier ? ui.spaceLocal(st, x0) : x0;   // v0.9 (Q7): rented rooms, named for your city
         return el('div.shop-row' + (x.current ? '.own' : !x.available ? '.locked' : ''), { testid: 'space-' + x.tier }, [
           el('span.shop-tier', String(x.tier + 1)),
           el('div.grow', [el('b', x.name), el('div.small.dim', x.blurb), el('div.chips', { style: 'margin-top:4px' }, [el('span.chip', x.rent ? money(x.rent) + '/wk' : 'Free')]
@@ -338,7 +381,8 @@
           } }, x.tier < (st.spaceTier || 0) ? 'Move back' : 'Move in')]);
       })),
       el('div.caps', 'Make it yours'),
-      el('div.stack.tight', SH().upgrades(st).map(function (u) {
+      el('div.stack.tight', SH().upgrades(st).map(function (u0) {
+        var bs = u0.bySpace && u0.bySpace[st.space || (ui.band(st) || {}).space], u = bs ? Object.assign({}, u0, { name: bs.name || u0.name, blurb: bs.blurb || u0.blurb }) : u0;   // v0.9: tier-0 upgrades per start space
         return el('div.shop-row' + (u.owned ? '.own' : !u.can ? '.locked' : ''), { testid: 'space-upgrade-' + u.id }, [
           el('div.grow', [el('b', u.name), u.moves ? el('span.tag', { style: 'margin-left:6px' }, 'Moves with you') : null, el('div.small.dim', u.blurb),
             el('div.chips', { style: 'margin-top:4px' }, perkText(u.perk).map(function (p) { return el('span.chip', p); })), !u.owned && !u.can && u.why ? el('div.tiny.bad', u.why) : null]),
@@ -352,7 +396,7 @@
   };
   ui.dealerPanel = function (st, rerender) {
     return el('div.stack', [
-      el('p.small.dim', { style: 'margin:0' }, 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
+      el('p.small.dim', { style: 'margin:0', testid: 'dealer-intro' }, dealer(st) + '. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
       el('div.stack.tight', SH().vans(st).map(function (v) {
         var q = v.quote || {};
         return el('div.shop-row.dealer' + (v.current ? '.own' : !v.can ? '.locked' : ''), { testid: 'van-tier-' + v.tier }, [
@@ -368,7 +412,7 @@
                 if (!yes) return;
                 var r = SH().buyVan(S(), v.tier);
                 if (!r.ok) return nope(r);
-                bought('van', v.tier, r); ui.toast(v.name + '. Kenji adjusts the mirrors and nods.', { who: 'New ride' }); rerender({ tab: 'van' });
+                bought('van', v.tier, r); ui.toast(v.name + '. ' + nod(S(), 'adjust the mirrors and nod', 'adjusts the mirrors and nods'), { who: 'New ride' }); rerender({ tab: 'van' });
               });
             } }, 'Buy · ' + money(q.net))])]);
       }))
@@ -398,12 +442,13 @@
       return el('span.chip' + (it.sold >= it.hauled ? '.up' : ''), (def ? def.name : id) + ' ' + it.sold + '/' + it.hauled);
     });
     var dale = (m.named || []).indexOf('dale') >= 0;
+    var hs = dale && GG.fans && GG.fans.homeSuperfan && S() ? GG.fans.homeSuperfan(S()) : null;   // v0.9: the 'dale' slot is the band's own home superfan
     return el('div.merch-res', { testid: 'gig-merch' }, [
       el('div.row', [el('span', { style: 'font-size:22px' }, '👕'), el('div.grow', [el('div.caps', 'Merch table'),
         m.boxes ? el('div', [el('b', m.sold + ' sold'), ' · ', el('b.good', '+' + money(m.earned)), el('span.small.dim', ' · ' + m.boxes + ' of ' + m.space + ' boxes hauled')])
           : el('div.small.dim', 'No merch on the table tonight. Somebody asked. Twice.')])]),
       items.length ? el('div.chips', { style: 'margin-top:6px' }, items) : null,
-      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, 'Dale bought one, as always.') : null]);
+      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, ((hs && (hs.short || hs.name)) || 'Your first superfan') + ' bought one, as always.') : null]);
   };
   ui.isMerchLine = function (t) { return /^Merch table: /.test(String(t || '')); };
   ui.shopWrap = function (w) {
@@ -427,12 +472,12 @@
       } else if (u.kind === 'merch') {
         var names = (u.ids || []).map(function (id) { var d = SH().merchDef(id); return d ? d.name : id; });
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'merch' } }, [el('span', { style: 'font-size:24px' }, '👕'),
-          el('div.grow', [el('div', { style: 'font-weight:800' }, 'New merch: ' + names.join(', ')), el('div.small.dim', 'Tap the merch boxes in the garage to stock it.')])]));
+          el('div.grow', [el('div', { style: 'font-weight:800' }, 'New merch: ' + names.join(', ')), el('div.small.dim', 'Tap the merch boxes in ' + ui.space(st) + ' to stock it.')])]));
       }
     });
     if (sh.misprint === 'collector') {
       out.push(el('div.panel.warm', { testid: 'wrap-collector' }, [el('div.row', [el('span', { style: 'font-size:24px' }, '🏆'), el('div.grow', [
-        el('div', { style: 'font-weight:800' }, 'The HALE DAMAGE misprints are a collector\'s item'), el('div.small.dim', 'On the merch table at ' + money(SH().priceOf(st, 'misprint')) + ' each.')])]),
+        el('div', { style: 'font-weight:800' }, 'The ' + misprintInfo(st).typo + ' misprints are a collector\'s item'), el('div.small.dim', 'On the merch table at ' + money(SH().priceOf(st, 'misprint')) + ' each.')])]),
         btn('.btn.small.block', { style: 'margin-top:8px', testid: 'wrap-collector-see', onclick: function () { ui.playCollector(); } }, 'See it again')]));
     }
     return out;
@@ -459,13 +504,16 @@
     kind: 'full', cls: 'collector',
     build: function (s, d) {
       var st = S(); if (!st || !SH()) return;
-      var mp = SH().misprint(st) || { units: 50 }, line = ((content().lines || {}).misprintCollector || [])[0], price = SH().priceOf(st, 'misprint');
-      var shirt = el('div.col-shirt', [el('div.col-print', [el('span.col-hale', 'HALE'), el('span.col-dmg', 'DAMAGE')]), el('div.col-tag', { testid: 'collector-price' }, money(price))]);
+      var mp = SH().misprint(st) || { units: 50 }, price = SH().priceOf(st, 'misprint'), mi = misprintInfo(st), tp = typoParts(mi);
+      var col = ui.pool(content().lines || {}, 'misprintCollector').filter(function (x) { return x && ui.active(st).some(function (m) { return m.id === ui.speaker(x.who, st); }) && ui.ownLines([x.text], st).length; });
+      var line = col[0] || null;   // v0.9: a line from someone in this band, about this band's misprint (lines are byBand)
+      var shirt = el('div.col-shirt', [el('div.col-print', { testid: 'collector-print', data: { typo: mi.typo } }, tp.words.map(function (w) { return el('span.' + (w === tp.hot ? 'col-hale' : 'col-dmg'), w); })),
+        el('div.col-tag', { testid: 'collector-price' }, money(price))]);
       ui.append(s.body, el('div.col-wrap', { testid: 'collector' }, [
-        el('div.caps.col-kicker', 'Under the workbench for ' + Math.max(1, st.totalWeek - (mp.week || 0)) + ' weeks'),
+        el('div.caps.col-kicker', ui.cap(mi.stash || 'in the back') + ' for ' + Math.max(1, st.totalWeek - (mp.week || 0)) + ' weeks'),
         el('h1.display.col-title', ['Collector\'s', el('br'), 'item']),
-        el('div.col-stage', [el('div.col-box', [el('i.col-flap.l'), el('i.col-flap.r'), el('b', 'HALE')]), shirt, el('div.col-stamp', 'RARE')]),
-        line ? el('div.col-quote', [el('b', ui.who(line.who).short + ': '), fill(line.text)]) : null,
+        el('div.col-stage', [el('div.col-box', [el('i.col-flap.l'), el('i.col-flap.r'), el('b', tp.hot)]), shirt, el('div.col-stamp', 'RARE')]),
+        line ? el('div.col-quote', [el('b', ui.who(ui.speaker(line.who, st)).short + ': '), fill(line.text)]) : null,
         el('p.small.dim.center', U.fmtNum(mp.units || 0) + ' misprinted shirts go on the merch table at ' + money(price) + ' each. There will never be more.')
       ]));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-collector-ok', onclick: function () { ui.close(s.id); if (d && d.done) setTimeout(d.done, 0); } }, 'Put them on the table'));

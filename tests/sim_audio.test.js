@@ -51,8 +51,8 @@ test('the timeline is deterministic and drums still match toNotes', () => {
 });
 
 test('each genre has its band; vocal hits land on whole beats, in key, and only where they belong', () => {
-  const PARTS = { metal: ['gtr', 'gtr2', 'bass', 'lead'], punk: ['gtr', 'bass'], rock: ['gtr', 'bass', 'lead'], country: ['bass', 'clean', 'fiddle', 'twang'] };
-  const CHORUS = { metal: 'scream', punk: 'hey', rock: 'yeah', country: 'yeehaw' };
+  const PARTS = { metal: ['gtr', 'gtr2', 'bass', 'lead'], punk: ['gtr', 'bass', 'lead'], rock: ['gtr', 'gtr2', 'bass', 'lead'], country: ['bass', 'clean', 'fiddle', 'twang'] };
+  const CHORUS = { metal: 'scream', punk: 'hey', rock: 'yeah', country: 'yeehaw' };   // (metal: the scream family, v0.9)
   for (const g of C.GENRES) {
     const t = A.timeline(song(g), { genre: g, songId: 's1' }), b = band(t), B = G[g].backing, kinds = new Set(b.map(e => e.kind));
     ok(PARTS[g].every(k => kinds.has(k)), g + ' parts ' + [...kinds]);
@@ -61,10 +61,10 @@ test('each genre has its band; vocal hits land on whole beats, in key, and only 
     for (const v of vox) {
       ok(v.beat % 1 === 0, g + ' vocal off the beat grid at ' + v.beat);
       ok(B.scale.includes(((v.midi - t.key.tonic) % 12 + 12) % 12), g + ' vocal out of key ' + v.midi);
-      ok(v.section === 'chorus' || v.role === 'break', g + ' vocal in a ' + v.section);
+      ok(v.section === 'chorus' || v.role === 'break' || (v.count && v.beat === 0), g + ' vocal in a ' + v.section);   // v0.9: + the count-in yell
     }
-    ok(vox.some(v => v.voc === CHORUS[g] && v.section === 'chorus'), g + ' chorus vocal');
-    ok(!A.timeline(song(g), { genre: g, vocals: false }).events.some(e => e.kind === 'vox'), g + ' vocals: false');
+    ok(vox.some(v => A.vocFamily(v.voc) === CHORUS[g] && v.section === 'chorus'), g + ' chorus vocal');
+    ok(!A.timeline(song(g), { genre: g, vocals: false }).events.some(e => e.kind === 'vox' || e.kind === 'bvox'), g + ' vocals: false');
   }
   const punk = A.timeline(song('punk'), { genre: 'punk', songId: 's1' });
   ok(band(punk).filter(e => e.voc === 'hey').every(e => e.gang), 'punk: gang shouts');
@@ -76,11 +76,11 @@ test('sections change density: sparse verses, full choruses, stripped breakdowns
     ok(layers('chorus') > layers('verse'), g + ' chorus fuller ' + layers('verse') + ' -> ' + layers('chorus'));
     const brk = b.filter(e => e.role === 'break'), solo = b.filter(e => e.role === 'solo');
     ok(brk.every(e => ['gtr', 'bass', 'vox'].includes(e.kind)), g + ' breakdown: heavy parts only');
-    if (solo.length) ok(solo.some(e => e.kind === 'lead' || e.kind === 'fiddle'), g + ' solo');
+    if (solo.length) ok(solo.some(e => e.kind === 'lead' || e.kind === 'fiddle' || e.kind === 'twang'), g + ' solo');
   }
   const mt = A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' }), metal = band(mt), tonic = mt.key.tonic;
   const growls = metal.filter(e => e.role === 'break' && e.kind === 'vox');
-  ok(growls.length >= 2 && growls.every(e => e.voc === 'growl'), 'metal: growls on the breakdown ' + growls.map(e => e.voc));
+  ok(growls.length >= 2 && growls.every(e => A.vocFamily(e.voc) === 'growl'), 'metal: growls on the breakdown ' + growls.map(e => e.voc));
   const brk = metal.filter(e => e.role === 'break' && e.kind === 'gtr'), b0 = brk[0].beat;
   ok(growls[0].beat === b0, 'the first growl lands on the drop');
   ok(brk[0].power && !brk[0].mute && brk[0].len >= 2 && brk[0].midi === tonic, 'the drop: one open low-string hit ' + JSON.stringify(brk[0]));
@@ -118,7 +118,7 @@ test('metal v0.7.2: drop tuning by tempo band, darker riffs, tremolo picking, da
   const solo = band(A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' })).filter(e => e.kind === 'lead'), tk = A.keyFor('s6', 'metal', 140).tonic;
   ok(solo.length >= 16 && solo.every(e => B.scale.includes(((e.midi - tk) % 12 + 12) % 12)), 'Dana: fast arpeggios, all in the phrygian scale');
   const ch = A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' });
-  ok(band(ch).filter(e => e.kind === 'vox' && e.section === 'chorus').every(e => e.voc === 'scream'), 'screams on the chorus');
+  ok(band(ch).filter(e => e.kind === 'vox' && e.section === 'chorus').every(e => A.vocFamily(e.voc) === 'scream'), 'screams on the chorus');
 });
 
 test('metal: chugs on every kick hit, bass doubling; tempo still decides the style', () => {
@@ -179,7 +179,7 @@ test('v0.8 Outro rings out, Solo is Dana\'s over a stripped kit', () => {
     const soloDrums = t.events.filter(e => e.kind === 'drum' && e.section === 'solo'), soloBand = band(t).filter(e => e.section === 'solo');
     ok(soloDrums.length > 0 && soloDrums.every(e => (e.beat * 4) % 4 === 0), g + ': stripped kit (on the beat only)');
     ok(soloBand.every(e => e.role === 'solo' && e.kind !== 'vox'), g + ': solo role, no vocal hits');
-    if (g !== 'punk') ok(soloBand.some(e => e.kind === 'lead' || e.kind === 'fiddle'), g + ': a lead takes the solo');
+    ok(soloBand.some(e => e.kind === 'lead' || e.kind === 'fiddle' || e.kind === 'twang'), g + ': a lead takes the solo');   // v0.9: punk too (two chords)
     const loop = A.timeline(p, { genre: g, section: 'outro' });
     ok(loop.events.some(e => e.section === 'outro'), g + ': outro loops in the sequencer');
   }
@@ -202,11 +202,11 @@ test('mixer + metronome: settings.mix / settings.metronome, clamped, unknown bus
 test('v0.7.2 crowd pre-render: resumable steps, each only a few ms; slicing never changes the audio', () => {
   // A second copy of the module in a fresh GG, with its (private) crowd builder handed out for this test only.
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', '30_audio.js'), 'utf8')
-    .replace(/\}\)\(window\.GG\);\s*$/, 'GG.__crowd = { build: CROWD_BUILD, more: MORE, parts: CROWD_PARTS, speak: speak, stereo: stereo, talkSegs: talkSegs };\n})(window.GG);');
+    .replace(/\}\)\(window\.GG\);\s*$/, 'GG.__crowd = { build: CROWD_BUILD, more: MORE, parts: CROWD_PARTS.concat(CROWD_EXTRA), speak: speak, stereo: stereo, talkSegs: talkSegs };\n})(window.GG);');
   const G2 = load({ localStorage: load.fakeStorage() });
   new Function('window', src)({ GG: G2 });
   const X = G2.__crowd, now = () => { const t = process.hrtime(); return t[0] * 1e3 + t[1] / 1e6; };
-  ok(X && X.parts.length === 7, 'crowd builder reachable');
+  ok(X && X.parts.length === 10, 'crowd builder reachable (+ v0.9 gang, whoa, yeehaw)');
   const run = k => {   // one build of part k, step by step: [times per call, output]
     const steps = X.build[k](), times = []; let out;
     for (let i = 0; i < steps.length;) { const t0 = now(); out = steps[i](); times.push(now() - t0); if (out !== X.more) i++; }
@@ -228,6 +228,212 @@ test('v0.7.2 crowd pre-render: resumable steps, each only a few ms; slicing neve
   const whole = voice(0);
   ok(!/:0$/.test(whole), 'the voice is not silent');
   [4096, 1000, 31, 7].forEach(sl => eq(voice(sl), whole, 'slices of ' + sl + ' = one pass'));
+});
+
+// ---- v0.9 "Genres" (plan_contract_0.9 §5 D) + vocal diversity (owner popup 2026-09-30) -----------------------------------
+const career = bandId => GG.career.newCareer({ seed: 7, bandId, player: { name: 'Test', nick: 'T', presetId: null } });
+const full = (g, bpm) => { const p = JSON.parse(JSON.stringify(GG.songs.signature(g))); if (bpm) p.bpm = bpm; return p; };
+const vocals = t => t.events.filter(e => e.kind === 'vox' || e.kind === 'bvox');
+
+test('v0.9 genre amps (content): punk + rock double-tracked L/R with far less gain than metal, country Tele slapback, fiddle body, acoustic spread', () => {
+  for (const g of ['punk', 'rock']) {
+    const a = G[g].backing.amp;
+    ok(a && a.pan >= 0.4 && a.pan <= 0.8 && a.gain > 2 && a.gain < 13 && a.lag > 0 && a.lag < 0.02 && a.detune > 0, g + ' amp: L/R double, crunch not metal ' + JSON.stringify(a));
+    ok(a.mid[2] > 0, g + ' mid-forward');
+  }
+  ok(G.punk.backing.amp.gain > G.rock.backing.amp.gain && G.rock.backing.amp.ring > 0, 'punk crunchier than rock; rock\'s open chords ring');
+  const c = G.country.backing;
+  ok(c.amp.gain < 2 && c.amp.slap >= 0.07 && c.amp.slap <= 0.16 && c.amp.slapFb > 0 && c.amp.slapFb < 0.4 && c.amp.slapLv > 0, 'country: a clean Tele with slapback ' + JSON.stringify(c.amp));
+  ok(c.fiddle.body.length >= 3 && c.fiddle.bow > 0 && c.fiddle.vib[1] > 0, 'the fiddle: body formants, bow noise, vibrato');
+  ok(c.acoustic.spread > 0 && c.acoustic.body[2] > 0, 'the acoustic: body + stereo spread');
+  ok(!G.metal.backing.amp, 'metal keeps its own v0.7.2 amp (untouched)');
+});
+
+test('v0.9 tempo styles: punk skate / hardcore, rock power ballad (+ forced, the Chartbusters) / driving 8ths, country two-step vs train', () => {
+  eq([180, 205, 225].map(b => A.styleFor('punk', b).id), ['eighths', 'skate', 'hardcore']);
+  eq([80, 120, 150].map(b => A.styleFor('rock', b).id), ['ballad', 'rock', 'drive']);
+  eq([95, 115].map(b => A.styleFor('country', b).id), ['twostep', 'train']);
+  eq([80, 140, 200].map(b => A.styleFor('metal', b).id), ['doom', 'chug', 'tremolo'], 'metal unchanged');
+  const skate = band(A.timeline(song('punk', 205), { genre: 'punk', section: 'verse', bars: 1 })).filter(e => e.kind === 'gtr');
+  ok(skate.length === 16 && skate.filter(e => !e.mute).length === 4, 'skate: muted 16ths, the chord on every beat');
+  const hc = band(A.timeline(song('punk', 225), { genre: 'punk', section: 'chorus', bars: 1 })).filter(e => e.kind === 'gtr');
+  ok(hc.length === 2 && hc.every(e => e.len >= 1.5), 'hardcore: a half-time chorus (the mosh part)');
+  const ballad = A.timeline(song('rock', 120), { genre: 'rock', style: 'ballad', rival: 'chartbusters', songId: 'cb1' }), bb = band(ballad);
+  ok(ballad.style === 'ballad' && bb.some(e => e.kind === 'clean' && e.section === 'verse') && bb.some(e => e.kind === 'gtr2' && e.section === 'chorus'), 'forced power ballad: arpeggios, then the chord rings');
+  ok(ballad.voice === 'rival:chartbusters', 'the rival\'s singer sings it: ' + ballad.voice);
+  const train = band(A.timeline(song('country', 115), { genre: 'country', section: 'verse', bars: 1 })), two = band(A.timeline(song('country', 95), { genre: 'country', section: 'verse', bars: 1 }));
+  ok(train.filter(e => e.kind === 'bass').length === 4 && two.filter(e => e.kind === 'bass').length === 2, 'train: a walking bass; two-step: boom on 1 and 3');
+  // (fixer) the train's walking bass stays in the major key, bridge vi / ii included (no G# / C# under a G-major song)
+  const MAJ = [0, 2, 4, 5, 7, 9, 11], off = [];
+  for (let i = 0; i < 60; i++) {
+    const p = full('country', 115); p.arrangement = ['verse', 'chorus', 'bridge', 'chorus'];
+    const t = A.timeline(p, { genre: 'country', songId: 'tb' + i });
+    t.events.filter(e => e.kind === 'bass').forEach(e => { if (!MAJ.includes(((e.midi - t.key.tonic) % 12 + 12) % 12)) off.push(e.section + ':' + e.midi); });
+  }
+  eq(off.length, 0, 'train bass out of key: ' + off.slice(0, 6).join(','));
+});
+
+test('v0.9 solos follow gig.roles: Benny\'s two chords, Lenny\'s lead, Earl\'s Tele (the fiddle if Earl\'s gone), nobody = no solo', () => {
+  const cases = [['frost_heave', 'punk', 'benny', 'twochord', 'lead'], ['gravel_kings', 'rock', 'lenny', 'lead', 'lead'], ['grid_road_ramblers', 'country', 'earl', 'twang', 'twang']];
+  for (const [bandId, g, who, kind, evKind] of cases) {
+    GG.state = career(bandId);
+    eq(GG.gig.roles(GG.state).solo, who, bandId + ' soloist');
+    eq(A.soloFor(g), kind, bandId + ' solo instrument');
+    const solo = band(A.timeline(song(g), { genre: g, songId: 's1' })).filter(e => e.role === 'solo');
+    ok(solo.length && solo.some(e => e.kind === evKind), bandId + ': the solo is heard (' + evKind + ')');
+    if (g === 'punk') ok(solo.filter(e => e.kind === 'lead').every(e => e.power) && new Set(solo.filter(e => e.kind === 'gtr').map(e => e.midi % 12)).size <= 4, 'Benny: two chords, as power chords on top');
+  }
+  GG.state = career('grid_road_ramblers'); GG.state.members.find(m => m.id === 'earl').status = 'quit';
+  eq(A.soloFor('country'), 'fiddle', 'Earl gone: Clementine takes the solo');
+  GG.state = career('frost_heave'); GG.state.members.find(m => m.id === 'benny').status = 'quit';
+  eq(GG.gig.roles(GG.state).solo, null); eq(A.soloFor('punk'), null, 'no soloist');
+  ok(!band(A.timeline(song('punk'), { genre: 'punk', songId: 's1' })).some(e => e.role === 'solo' || e.kind === 'lead'), 'nobody solos: the band plays on');
+  GG.state = career('hail_damage');
+  eq(band(A.timeline(song('metal', 140), { genre: 'metal', songId: 's6' })).filter(e => e.kind === 'lead').length > 0, true, 'metal: Dana, as ever');
+  GG.state = null;
+  eq(['punk', 'rock', 'country'].map(g => A.soloFor(g)), ['twochord', 'lead', 'twang'], 'no career: the genre\'s own');
+});
+
+test('v0.9 country: the fiddle takes the fills and the outro, holds the last chord; strums alternate up and down', () => {
+  const gear = { lanes: 4, sections: ['outro', 'solo'] };
+  const p = GG.songs.addSection(GG.songs.signature('country', gear), 'outro', gear), t = A.timeline(p, { genre: 'country', songId: 's2' }), b = band(t);
+  ok(b.filter(e => e.section === 'outro' && e.kind === 'fiddle').length >= 16, 'the fiddle carries the outro');
+  ok(b.some(e => e.kind === 'fiddle' && e.ring), 'the fiddle holds the last chord');
+  ok(b.some(e => e.kind === 'fiddle' && e.section === 'verse') && b.some(e => e.kind === 'twang' && e.section === 'verse'), 'verse phrase ends: Earl, then the fiddle');
+  const strums = b.filter(e => e.strum && e.section === 'chorus');
+  ok(strums.some(e => e.up) && strums.some(e => !e.up), 'down and up strums');
+});
+
+test('vocal diversity: >= 4 scream types across a metal set, varied per song and per section, all on the grid, in key', () => {
+  const types = new Set(), perSong = [];
+  for (let i = 1; i <= 8; i++) {
+    const t = A.timeline(full('metal', [80, 140, 200][i % 3]), { genre: 'metal', songId: 'set' + i }), v = vocals(t), tonic = t.key.tonic;
+    v.forEach(e => types.add(e.voc));
+    for (const e of v) {
+      ok(e.beat % 1 === 0 && G.metal.backing.scale.includes(((e.midi - tonic) % 12 + 12) % 12), 'on the grid, in key ' + JSON.stringify([e.beat, e.voc, e.midi]));
+      ok(e.section === 'chorus' || e.role === 'break' || e.count, 'only where they belong: ' + e.section);
+    }
+    const ch = t.events.filter(e => e.kind === 'vox' && e.section === 'chorus');
+    const byEntry = {}; ch.forEach(e => { const k = Math.floor(e.beat / 16); (byEntry[k] = byEntry[k] || []).push(e.voc); });
+    perSong.push(Object.values(byEntry).map(x => x.join()).join('|'));
+    ok(new Set(Object.values(byEntry).map(x => x.join())).size >= 2, 'the choruses of one song scream differently: ' + JSON.stringify(byEntry));
+  }
+  const screamTypes = [...types].filter(x => A.vocFamily(x) === 'scream'), growlTypes = [...types].filter(x => A.vocFamily(x) === 'growl');
+  ok(types.size >= 6 && screamTypes.length >= 4 && growlTypes.length >= 2, 'a metal set: ' + [...types]);
+  ok(['shriek', 'squeal', 'fry', 'guttural'].every(x => types.has(x)) && types.has('gang') || types.has('held'), 'shrieks, squeals, fry, gutturals, gang / held screams');
+  ok(new Set(perSong).size >= 6, 'songs differ ' + new Set(perSong).size);
+});
+
+test('vocal diversity: every singer has a profile of their own (pitch, vowels, grit, vibrato, twang); rivals too', () => {
+  const V = GG.content.voices, ids = ['marcel', 'rox', 'chase', 'travis', 'tw_gord'];
+  const profs = ids.map(id => A.voiceFor(id, 'metal')).concat(['mall_rats', 'chartbusters', 'buckle_and_boot'].map(r => A.voiceFor(null, 'rock', r)));
+  eq(profs.map(p => p.id), ['marcel', 'rox', 'chase', 'travis', 'tw_gord', 'rival:mall_rats', 'rival:chartbusters', 'rival:buckle_and_boot']);
+  const sig = p => [p.pitch, p.formant, p.rasp || 0, p.twang || 0, (p.vib || [0, 0])[1], p.drive || 0].join();
+  eq(new Set(profs.map(sig)).size, profs.length, 'eight distinct voices');
+  ok(A.voiceFor('tw_gord', 'metal').formant < 0.9 && A.voiceFor('marcel', 'metal').vowels.u === 'ue', 'Gord: a big throat; Marcel: French vowels');
+  eq(A.voiceFor(null, 'metal', 'tundra_wraith').id, 'tw_gord', 'Tundra Wraith sings with Gord');
+  ok(A.voiceFor('rox', 'punk').rasp > 0.6 && A.voiceFor('chase', 'rock').vib[1] > 0.02 && A.voiceFor('travis', 'country').twang >= 6, 'Rox hoarse, Chase wide vibrato, Travis Lee twang');
+  eq(A.voiceFor('kenji', 'metal').id, 'genre:metal', 'no profile: the genre default');
+  for (const id of Object.keys(V.profiles)) ok(V.profiles[id].range[0] < V.profiles[id].range[1] && Array.isArray(V.profiles[id].words), id + ' profile shape');
+  // The same song, sung by different singers, sits in different places (pitch) and picks different screams.
+  const p = full('metal', 140), mid = o => { const v = A.timeline(p, Object.assign({ genre: 'metal', songId: 'v1' }, o)).events.filter(e => e.kind === 'vox'); return v.reduce((s, e) => s + e.midi, 0) / v.length; };
+  ok(mid({ singer: 'marcel' }) - mid({ singer: 'tw_gord' }) >= 5, 'Marcel sings well above Gord');
+  const gordTypes = new Set(), marcelTypes = new Set();
+  for (let i = 1; i <= 10; i++) {
+    vocals(A.timeline(full('metal', 140), { genre: 'metal', songId: 'g' + i, singer: 'tw_gord' })).forEach(e => gordTypes.add(e.voc));
+    vocals(A.timeline(full('metal', 140), { genre: 'metal', songId: 'g' + i, singer: 'marcel' })).forEach(e => marcelTypes.add(e.voc));
+  }
+  ok(gordTypes.has('guttural') && marcelTypes.has('shriek'), 'Gord growls gutturals, Marcel shrieks');
+  // A Hail Damage career: Marcel is the singer (gig.roles.front).
+  GG.state = career('hail_damage');
+  eq(A.timeline(full('metal'), { genre: 'metal', songId: 'h1' }).voice, 'marcel');
+  GG.state = career('frost_heave'); eq(A.timeline(full('punk'), { genre: 'punk', songId: 'h1' }).voice, 'rox');
+  GG.state = null;
+});
+
+test('vocal diversity (fixer): Brayden sings dead flat with no yodel flip; Travis Lee keeps both (the profile decides)', () => {
+  const br = A.voiceFor(null, 'country', 'buckle_and_boot'), tr = A.voiceFor('travis', 'country');
+  ['ooh', 'yeah', 'holler', 'yeehaw'].forEach(v => { const p = A.voxPitch(v, br); ok(!p.yodel && !p.vib, 'Brayden ' + v + ': no flip, no vibrato ' + JSON.stringify(p)); });
+  ok(A.voxPitch('yeehaw', tr).yodel && A.voxPitch('holler', tr).yodel, 'Travis Lee yodels his yeehaw and holler');
+  ok(A.voxPitch('ooh', tr).vib && A.voxPitch('ooh', tr).vib[1] > 0, 'Travis Lee\'s ooh has vibrato');
+  const marcel = A.voiceFor('marcel', 'metal'); eq(A.voxPitch('ooh', marcel).vib, [6.4, Math.max(0.014, (A.voxPitch('ooh', {}).vib || [0, 0])[1])], 'a profile vibrato still wins');
+});
+
+test('vocal diversity: shouted words vary per genre, no two choruses alike, the odd French word from Marcel', () => {
+  const V = GG.content.voices;
+  for (const g of C.GENRES) {
+    ok(V.words[g].length >= 8 && V.words[g].concat(V.count[g]).every(w => V.lex[w]), g + ' words, each with phonemes');
+    const words = new Set();
+    for (let i = 1; i <= 6; i++) {
+      const t = A.timeline(full(g), { genre: g, songId: 'w' + i }), v = vocals(t);
+      ok(v.every(e => e.word), g + ': every hit shouts a word');
+      v.forEach(e => words.add(e.word));
+      const byEntry = {}; t.events.filter(e => e.kind === 'vox' && e.section === 'chorus').forEach(e => { const k = Math.floor(e.beat / 16); (byEntry[k] = byEntry[k] || []).push(e.word); });
+      const ch = Object.values(byEntry).map(x => x.join());
+      ok(ch.length < 2 || new Set(ch).size === ch.length, g + ': no two choruses shout the same words ' + JSON.stringify(ch));
+    }
+    ok(words.size >= 8, g + ' word variety: ' + words.size + ' ' + [...words]);
+  }
+  const lex = Object.values(V.lex).join(' ').split(/\s+/).concat(...Object.values(V.profiles).map(p => Object.values(p.vowels || {})));   // (+ Marcel's vowel swaps)
+  ok(['ue', 'oe', 'ae', 's', 'p', 't', 'k', 'n', 'l', 'r', 'h'].every(x => lex.includes(x)), 'the lexicon covers the vowels and consonants the renderer shapes');
+  const fr = new Set(V.profiles.marcel.words), seen = [];
+  for (let i = 1; i <= 10; i++) vocals(A.timeline(full('metal'), { genre: 'metal', songId: 'm' + i, singer: 'marcel' })).forEach(e => { if (fr.has(e.word)) seen.push(e.word); });
+  ok(seen.length >= 3 && seen.length <= 40 && new Set(seen).size >= 2, 'Marcel sneaks French in (the odd word, not all of them): ' + seen);
+  const other = []; for (let i = 1; i <= 10; i++) vocals(A.timeline(full('metal'), { genre: 'metal', songId: 'm' + i, singer: 'tw_gord' })).forEach(e => { if (fr.has(e.word)) other.push(e.word); });
+  eq(other.length, 0, 'nobody else speaks French');
+});
+
+test('vocal moments: a count-in yell, call-and-response (the band answers, the crowd may join), held screams at chorus ends, whoa-ohs with a harmony', () => {
+  for (const g of C.GENRES) {
+    const t = A.timeline(full(g), { genre: g, songId: 'vm1' }), v = vocals(t), B = G[g].backing, tonic = t.key.tonic, inKeyM = m => B.scale.includes(((m - tonic) % 12 + 12) % 12);
+    const count = v.filter(e => e.count);
+    ok(count.length === 1 && count[0].beat === 0 && count[0].kind === 'vox', g + ': one count-in yell, on the first downbeat');
+    ok(!A.timeline(full(g), { genre: g, songId: 'vm1', section: 'verse' }).events.some(e => e.count), g + ': no count-in when a section loops');
+    const held = v.filter(e => e.held);
+    ok(held.length >= 1 && held.every(e => e.kind === 'vox' && e.len >= 2 && e.section === 'chorus' && (e.beat % 16) >= 12), g + ': a held note closes a chorus');
+    const resp = v.filter(e => e.kind === 'bvox' && e.answer);
+    ok(resp.length >= 2 && resp.every(e => e.gang && e.section === 'chorus' && e.beat % 1 === 0 && inKeyM(e.midi)), g + ': the band answers (gang, on the beat, in key)');
+    ok(v.filter(e => e.kind === 'bvox').every(e => e.section === 'chorus' && e.role !== 'solo' && e.role !== 'break'), g + ': backing vocals only in choruses');
+    if (B.vox.whoa && B.vox.whoa.length) {
+      const whoa = v.filter(e => e.voc === 'whoa');
+      ok(whoa.length >= 2 && whoa.every(e => e.harm >= 3 && e.harm <= 5 && inKeyM(e.midi) && inKeyM(e.midi + e.harm)), g + ': whoa-ohs with a harmony, in key');
+      const first = Math.min(...t.events.filter(e => e.section === 'chorus').map(e => e.beat));
+      ok(!whoa.some(e => e.beat < first + 16), g + ': the first chorus has none (choruses differ)');
+    }
+  }
+});
+
+test('v0.9 garage beds per tier-0 space, the noodler per band (who the garage shows, by their gear)', () => {
+  eq(A.bedFor('garage').layers, ['hum', 'tone', 'fridge']);
+  ok(A.bedFor('laundromat').events.join() === 'dryer,buzzer' && A.bedFor('laundromat').layers.includes('tumble'), 'laundromat: dryers in 4/4 + the buzzer');
+  ok(A.bedFor('stripmall').layers.includes('fluorescent') && A.bedFor('stripmall').events.includes('vacuum'), 'strip mall: the tube + the vacuum repair');
+  ok(A.bedFor('quonset', 'summer').events.includes('crickets') && A.bedFor('quonset', 'spring').events.includes('meadowlark') && A.bedFor('quonset', 'winter').events.join() === 'creak', 'Quonset: wind on steel, crickets / meadowlark by season');
+  eq(A.bedFor('moon').kind, 'garage', 'unknown: the garage');
+  eq(Object.keys(C.SPACE_KINDS).map(k => A.bedFor(C.SPACE_KINDS[k]).kind), ['garage', 'laundromat', 'stripmall', 'quonset'], 'every tier-0 space has a bed');
+  const GEAR = { v: 'pluck', sg: 'twochord', strat: 'riff', tele: 'twang', fiddle: 'bach', acoustic: 'strum' };
+  const want = { hail_damage: ['dana', 'pluck'], frost_heave: ['benny', 'twochord'], gravel_kings: ['lenny', 'riff'] };
+  for (const b of Object.keys(GG.content.bands)) {
+    const st = career(b), n = A.noodleFor(st), m = GG.content.bands[b].members.find(x => x.id === n.who);
+    ok(n && m && m.gear && GEAR[m.gear] === n.style, b + ': ' + JSON.stringify(n));
+    if (want[b]) eq([n.who, n.style], want[b], b + ' noodler');
+    ok(n.who !== 'rox' && n.who !== 'chase' && n.who !== 'travis' || m.gear === 'acoustic', b + ': the singer does not noodle (unless acoustic)');
+  }
+});
+
+test('v0.9 crowd one-shots for every §4.4 moment kind', () => {
+  const want = { headbang: 'roar', wallOfDeath: 'roar', pogo: 'gang', circlePit: 'gang', gangShout: 'gang', fistPump: 'gang', singAlong: 'whoa', lighters: 'whoa', clapAlong: 'clap', lineDance: 'clap', yeehaw: 'yee' };
+  for (const [k, shot] of Object.entries(want)) { ok(C.MOMENTS.includes(k), k + ' is a moment'); ok((A.momentShots(k) || []).includes(shot), k + ' -> ' + shot + ' ' + A.momentShots(k)); }
+  ok(A.momentShots('lineDance').includes('yee') && A.momentShots('clapAlong').includes('yee'), 'yee-haws with the clap-along');
+  eq(A.momentShots('mosh'), null, 'mosh: the v0.7.2 cheer, unchanged');
+});
+
+test('v0.9 coach lines per genre (grooves.coach[genre][step]) + the neutral fallback', () => {
+  const CO = GG.content.grooves.coach, steps = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'];
+  for (const g of C.GENRES) for (const s of steps) ok(CO[g] && CO[g][s] && CO[g][s].length && CO[g][s].every(l => l.text.length <= 120 && new RegExp(l.role)), g + ' coach ' + s);
+  for (const s of steps) ok(CO[s].every(l => !/lawn|French|neck/i.test(l.text)), 'neutral ' + s);
+  ok(/lawn/.test(CO.metal.name[0].text), 'Hail Damage keeps its lines');
+  const roleOk = (b, g) => steps.every(s => CO[g][s].some(l => GG.content.bands[b].members.some(m => new RegExp(l.role).test(m.role))));
+  ok(roleOk('frost_heave', 'punk') && roleOk('gravel_kings', 'rock') && roleOk('grid_road_ramblers', 'country'), 'every step has a speaker in the band');
 });
 
 done('sim_audio');

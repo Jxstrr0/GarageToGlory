@@ -72,6 +72,7 @@ h1, h2, h3, p { margin: 0; }
 .panel.alert { background: #2a1820; border-color: #6d2f3a; }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 800 10px/1.6 var(--font); letter-spacing: .08em; text-transform: uppercase;
   background: var(--panel2); color: var(--dim); border: 1px solid var(--line); white-space: nowrap; }
+[data-testid="van-driver"] .tag { white-space: normal; text-align: right; max-width: 58%; border-radius: 10px; }   /* v0.9: Earl's effect is a sentence */
 .tag.amber { color: #1d1204; background: var(--amber); border-color: var(--amber); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font: 700 13px/1.3 var(--font);
@@ -235,6 +236,7 @@ h1, h2, h3, p { margin: 0; }
 .cold-text { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; padding: 20px 28px; text-align: center;
   font: 800 23px/1.35 var(--font); text-wrap: balance; animation: gg-in .35s ease-out; }
 .cold-foot { padding: 0 var(--gutter) calc(var(--safe-bot) + 18px); display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.cold-top, .cold-text, .cold-foot { position: relative; z-index: 1; }   /* v0.9: above the cold-open fx layer (neon/snow/dust/hail) */
 .dots { display: flex; justify-content: center; gap: 6px; } .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .dots i.on { background: var(--amber); }
 .hail { position: absolute; inset: 0; pointer-events: none; opacity: .35;
   background-image: radial-gradient(circle, #cfe3ff 1.2px, transparent 1.8px), radial-gradient(circle, #cfe3ff 1px, transparent 1.6px);
@@ -599,6 +601,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .lo-gap { flex: 1 1 auto; min-height: 120px; }
 .lo-card { position: relative; z-index: 1; max-height: 52%; overflow-y: auto; overflow-x: hidden; padding: 14px var(--gutter) calc(var(--safe-bot) + 16px); background: linear-gradient(180deg, rgba(20, 16, 26, .94), #120f18); border-top: 2px solid #c9a227; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; gap: 10px; }
 .lo-card .btn { flex: 0 0 auto; }
+.lo-card > * { flex-shrink: 0; }   /* v0.9: the card scrolls; the broadcast chip (.lg-cast, overflow hidden) never gets crushed */
 .lo-back { position: absolute; inset: 0; }
 .lo-back.carpet { background: linear-gradient(180deg, transparent 58%, #7a0f18 58%, #9c1420 100%), repeating-linear-gradient(45deg, #f4f1ea 0 38px, #ece6d8 38px 76px); }
 .lo-back.stage { background: radial-gradient(60% 40% at 50% 40%, #e0bb3a 0 30%, transparent 31%), repeating-linear-gradient(90deg, #6e0d16 0 18px, #8a1420 18px 36px); }
@@ -1003,6 +1006,76 @@ img.merch-art { flex: 0 0 auto; border-radius: 10px; background: rgba(255, 255, 
 .rs-bar img.logo-img { border-radius: 6px; }
 .bb-page img.logo-img { border-radius: 12px; }
 /* ==== end v0.8.1 LOGO ==== */
+/* v0.9 GENRES (lane B-UI): cold-open weather per band (band.coldOpenFx), the four tier-0 rooms as 2D art (no-WebGL
+   garage + the genre card's peek: .spx.sp-garage|laundromat|stripmall|quonset), N gig silhouettes, rival faces per rival. */
+.cold.fx-snow { background: radial-gradient(90% 60% at 50% 40%, #243049, #0a0d16); }
+.cold.fx-neon { background: radial-gradient(90% 60% at 50% 40%, #2a1638, #07060f); }
+.cold.fx-dust { background: radial-gradient(100% 60% at 50% 78%, #7a4a1e, #2a170b 62%, #0b0805); }
+.cold-fx.snow, .cold-fx.neon, .cold-fx.dust { position: absolute; inset: 0; pointer-events: none; }
+.cold-fx.snow { opacity: .6; background-image: radial-gradient(circle, #fff 1.6px, transparent 2.2px), radial-gradient(circle, #e8f0ff 1.1px, transparent 1.8px);
+  background-size: 70px 90px, 110px 120px; background-position: 0 0, 40px 30px; animation: gg-snow 7s linear infinite; }
+@keyframes gg-snow { to { background-position: 35px 90px, 15px 150px; } }
+.cold-fx.neon { background: linear-gradient(180deg, transparent 0 62%, rgba(255, 60, 172, .12) 62%, transparent 100%),
+  repeating-linear-gradient(0deg, rgba(0, 255, 240, .045) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 70px rgba(255, 60, 172, .4), inset 0 0 140px rgba(60, 220, 255, .2); animation: gg-neon 2.6s steps(1) infinite; }
+@keyframes gg-neon { 0%, 100% { opacity: 1; } 47% { opacity: .72; } 50% { opacity: 1; } 53% { opacity: .82; } }
+.cold-fx.dust { opacity: .55; background-image: radial-gradient(circle, rgba(240, 200, 120, .9) 1px, transparent 1.6px), radial-gradient(circle, rgba(255, 230, 170, .7) 1.4px, transparent 2px);
+  background-size: 80px 60px, 130px 90px; animation: gg-dust 11s linear infinite; }
+@keyframes gg-dust { to { background-position: 160px -30px, 130px 25px; } }
+html.gg-calm .cold-fx { animation: none !important; }
+/* the tier-0 rooms (the garage door + bulb + oil stain restyled per room kind) */
+.spx.sp-laundromat { background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(0, 0, 0, .22) 22px 24px), linear-gradient(180deg, #3a4452 0%, #2e3642 58%, #4a4c50 58%, #34363a 100%); }
+.spx.sp-laundromat .door { border: 3px solid #8d96a3; border-radius: 6px; box-shadow: none;
+  background: radial-gradient(circle at 17% 50%, #a9c3d9 0 12%, #262c36 13% 17%, transparent 18%), radial-gradient(circle at 50% 50%, #a9c3d9 0 12%, #262c36 13% 17%, transparent 18%),
+    radial-gradient(circle at 83% 50%, #a9c3d9 0 12%, #262c36 13% 17%, transparent 18%), linear-gradient(#dfe3e8, #b9c0c8); }
+.spx.sp-laundromat .bulb { background: #f4fbff; box-shadow: 0 0 50px 24px rgba(200, 230, 255, .18); }
+.spx.sp-laundromat .stain { background: rgba(120, 170, 220, .22); }
+.spx.sp-stripmall { background: linear-gradient(180deg, #2f3a3c 0%, #283235 58%, #5a5046 58%, #463e36 100%); }
+.spx.sp-stripmall .door { border: 4px solid #a0a6ae; border-radius: 2px; box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
+  background: repeating-linear-gradient(180deg, rgba(18, 22, 32, .88) 0 7px, rgba(255, 205, 140, .28) 7px 10px), #273040; }
+.spx.sp-stripmall .bulb { left: 30%; width: 40%; height: 6px; margin-left: 0; border-radius: 3px; background: #eef6ff; box-shadow: 0 0 40px 14px rgba(210, 235, 255, .22); }
+.spx.sp-stripmall .stain { left: 56%; top: 58%; width: 30%; height: 13%; border-radius: 3px; background: #6b4a2b; box-shadow: inset 0 4px 0 #8a6038; }
+.spx.sp-quonset { background: linear-gradient(180deg, #1c2233 0%, #1a1f2c 58%, #4a3d2a 58%, #3a2f20 100%); }
+.spx.sp-quonset .door { left: 4%; right: 4%; top: 9%; height: 48%; border: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; box-shadow: inset 0 -20px 40px rgba(0, 0, 0, .45);
+  background: repeating-linear-gradient(90deg, #8f949b 0 7px, #6a7078 7px 13px); }
+.spx.sp-quonset .stain { left: 58%; top: 52%; width: 28%; height: 11%; border-radius: 5px; background: repeating-linear-gradient(90deg, #d9b75a 0 8px, #c29e44 8px 10px); }
+/* the genre card's peek at the starting space */
+.genre-card .ico.peek { position: relative; display: block; overflow: hidden; padding: 0; border: 1px solid rgba(255, 255, 255, .12); }
+.genre-card .ico.peek .door { position: absolute; left: 12%; right: 12%; top: 18%; height: 44%; }
+.genre-card .ico.peek.sp-quonset .door { left: 4%; right: 4%; top: 10%; height: 50%; }
+.genre-card .ico.peek .bulb { position: absolute; left: 50%; top: 8%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; }
+.genre-card .ico.peek.sp-stripmall .bulb { left: 30%; width: 40%; height: 3px; margin-left: 0; }
+.genre-card .ico.peek .stain { position: absolute; left: 22%; top: 72%; width: 40%; height: 12%; border-radius: 50%; }
+.genre-card .ico.peek.sp-stripmall .stain, .genre-card .ico.peek.sp-quonset .stain { left: 56%; top: 62%; width: 32%; height: 18%; border-radius: 2px; }
+.genre-card .ico.peek.sp-garage { background: linear-gradient(180deg, #1b2236 0%, #151b2b 62%, #2a2a2e 62%, #1d1d22 100%); }
+.genre-card .ico.peek.sp-garage .door { border: 2px solid #3a4150; border-radius: 3px 3px 0 0; background: repeating-linear-gradient(180deg, #2c3342 0 5px, #232937 5px 6px); }
+.genre-card .ico.peek.sp-garage .bulb { background: #ffe2a0; box-shadow: 0 0 14px 6px rgba(255, 190, 100, .25); }
+.genre-card .ico.peek.sp-garage .stain { background: rgba(0, 0, 0, .35); }
+.genre-card .ico.peek img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.genre-card .ico.peek b { position: absolute; right: 2px; bottom: 0; font-size: 20px; line-height: 1.1; text-shadow: 0 1px 3px #000; }
+/* the 2D gig backdrop: one silhouette per bandmate (3..6) */
+.gig-back .band i:nth-child(5) { height: 96px; } .gig-back .band i:nth-child(6) { height: 100px; }
+.gig-back[data-n="5"] .band i, .gig-back[data-n="6"] .band i { width: 28px; }
+/* rival faces: corpse paint (base .rv-face) only for the casts that wear it; a sponsor cap, aviators + the scarf, a cowboy hat */
+.rv-face.cap, .rv-face.scarf, .rv-face.hat, .rv-face.plain { background: #e3b48c; border-color: #3a2a1e; overflow: visible; }
+.rv-face.cap i, .rv-face.hat i, .rv-face.plain i { top: 44%; width: 13%; height: 13%; border-radius: 50%; background: #1d1612; transform: none !important; }
+.rv-face.cap i:first-child, .rv-face.hat i:first-child, .rv-face.plain i:first-child { left: 26%; } .rv-face.cap i:nth-child(2), .rv-face.hat i:nth-child(2), .rv-face.plain i:nth-child(2) { right: 26%; }
+.rv-face.cap::before { left: -6%; top: -8%; width: 112%; height: 36%; margin: 0; border-radius: 60% 60% 12% 12%; background: #e0403a; box-shadow: 10px 6px 0 -3px #e0403a; }
+.rv-face.scarf::before { display: none; }
+.rv-face.scarf i { top: 36%; width: 30%; height: 20%; border-radius: 35%; background: #23252c; border: 1px solid #c9a227; transform: none !important; }
+.rv-face.scarf i:first-child { left: 13%; } .rv-face.scarf i:nth-child(2) { right: 13%; }
+.rv-face.scarf::after { left: -8%; right: -8%; bottom: -12%; height: 24%; border-radius: 8px; background: repeating-linear-gradient(90deg, #b03060 0 5px, #d4506f 5px 9px); }
+.rv-face.hat::before { left: -22%; top: -18%; width: 144%; height: 30%; margin: 0; border-radius: 45% 45% 10px 10px; background: #8a5a2b; box-shadow: inset 0 -4px 0 #5e3c1b; }
+.rs-sil.cap i::before, .rs-sil.scarf i::before, .rs-sil.hat i::before, .rs-sil.plain i::before { background: #d9a57b; box-shadow: none; }
+.rs-sil.hat i::after { content: ''; position: absolute; left: -2px; top: 2px; width: 44px; height: 9px; border-radius: 40% 40% 4px 4px; background: #8a5a2b; }
+.rs-sil.cap i::after { content: ''; position: absolute; left: 6px; top: 4px; width: 30px; height: 10px; border-radius: 50% 50% 3px 3px; background: #e0403a; }
+/* the World payoff stages (5i tour-payoff): a Berlin squat festival, Mudstonbury's field, an Australian country fair */
+.tw-opera.po-punk { background: linear-gradient(180deg, #1c1c22, #3a2226 70%, #2a2a2e 70%); border-color: #5a3a3e; }
+.tw-opera.po-rock { background: linear-gradient(180deg, #16203a, #2a3a5a 62%, #2f5a2a 62%, #22401f 100%); border-color: #3a5a7a; }
+.tw-opera.po-country { background: linear-gradient(180deg, #3a1e0e, #b8642a 64%, #8a4a1e 64%, #5a3014 100%); border-color: #a0582a; }
+.tw-opera.po-metal { background: linear-gradient(180deg, #120d18, #2a1a30 70%, #1a1418 70%); }
+.lo-band { font-style: italic; color: #cfd3dc; margin: 8px 0 0; }   /* v0.9: the band line after a Loonie envelope (59c) */
+/* ==== end v0.9 GENRES ==== */
 </style>
 </head>
 <body>

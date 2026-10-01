@@ -26,18 +26,20 @@
   function init(o) {
     o = o || {};
     var st = o.mode === 'career' ? GG.state : null, pl = st ? st.player || {} : {};
-    var genre = o.genre || (st && st.genre) || 'metal';
+    var bandDef = (GG.content.bands || {})[o.bandId || (st && st.bandId)] || null;   // v0.9: the draft's band (51 passes bandId)
+    var genre = o.genre || (st && st.genre) || (bandDef && bandDef.genre) || 'metal';
     E = {
-      mode: o.mode === 'career' ? 'career' : 'new', onDone: o.onDone || null, genre: genre,
+      mode: o.mode === 'career' ? 'career' : 'new', onDone: o.onDone || null, genre: genre, city: (st && st.city) || (bandDef && bandDef.city) || '',
+      spaceShort: (bandDef && bandDef.spaceShort) || 'the garage',
       band: o.band || bandName(st), st: st || C().draftState(genre, !!o.carry),
       look: C().expand(o.look || pl.look || null), stage: C().expand(o.stageLook || pl.stageLook || o.look || pl.look || null),
-      kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b'))),
+      kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b', bandDef && bandDef.id))),
       which: 'everyday', tab: 'body', view: 'full'
     };
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
   }
-  function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'Hail Damage'; }
+  function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'The band'; }
 
   /* ---- Screen ------------------------------------------------------------------------------------------------------ */
   ui.define('look', {
@@ -67,7 +69,7 @@
         btn('.btn.primary.grow', { testid: 'lk-done', onclick: done }, E.mode === 'new' ? 'Looks good' : 'Done')
       ]));
       var ok = GG.render && GG.render.preview && GG.render.preview.mount(host);
-      if (!ok) host.appendChild(el('div.lk-nopreview', 'No 3D here, but the garage will show it.'));
+      if (!ok) host.appendChild(el('div.lk-nopreview', 'No 3D here, but ' + E.spaceShort + ' will show it.'));
       refresh();
     },
     onClose: function () { if (GG.render && GG.render.preview) GG.render.preview.unmount(); if (E) clearTimeout(E.noteT); E = null; }
@@ -277,7 +279,7 @@
       section('Hardware', chips('hardware', function () { return K.hardware; }, set('hardware')));
       section('Kick-drum head', chips('head', function () { return K.head; }, set('head')));
       if (K.head === 'text') {
-        var t = el('input.lk-text', { testid: 'lk-headtext', type: 'text', maxLength: 20, value: K.headText || '', placeholder: 'SASKATOON', autocomplete: 'off',
+        var t = el('input.lk-text', { testid: 'lk-headtext', type: 'text', maxLength: 20, value: K.headText || '', placeholder: String(E.city || 'YOUR TOWN').toUpperCase().slice(0, 14), autocomplete: 'off',
           oninput: function () { K.headText = C().headText(t.value); preview(); },
           onchange: function () { K.headText = C().headText(t.value); t.value = K.headText; preview(); } });
         section('Your text', t, 'Up to 14 letters, numbers or ! ? & \' . - #');

@@ -359,4 +359,54 @@ test('bots shop sensibly and careers stay deterministic', () => {
   ok(a.fund >= 0 && a.merch && isFinite(a.merch.earned), 'avg bot fine');
 });
 
+test('v0.9: every band\'s van, misprint (Q6) and forced cards through their band variants', () => {
+  const GG = fresh(), S = GG.shop, K = GG.content.shop;
+  Object.keys(GG.content.bands).forEach(id => {
+    const s = GG.career.newCareer({ seed: 3, bandId: id });
+    eq(s.van.name, (K.vanNames[id] || [])[0] || 'The Van', id + ' tier-0 van');
+    ok(S.misprintInfo(s).typo && S.misprintInfo(s).name.indexOf(S.misprintInfo(s).typo) === 0, id + ' misprint ' + S.misprintInfo(s).typo);
+  });
+  eq(['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'].map(id => S.misprintInfo({ bandId: id }).typo),
+    ['HALE DAMAGE', 'FROST HEAVY', 'GRAVY KINGS', 'THE GRID ROAD RUMBLERS'], 'owner Q6');
+  eq(S.vanName('no_such_band', 0), 'The Van', 'no borrowed Moose Hearse');
+  // The Hail Damage misprint card never fits another band. v0.9 content ships a variant for every band, so the
+  // "no variant" case hides the Frost Heave one for a moment: then the first order is a normal one.
+  const SC = GG.content.shopCards, vi = SC.findIndex(c => c.id === 'money_merch_misprint_frost_heave');
+  ok(vi >= 0, 'the Frost Heave pack ships its misprint variant');
+  const hidden = SC.splice(vi, 1)[0];
+  try {
+    const fh = GG.career.newCareer({ seed: 3, bandId: 'frost_heave' });
+    fh.fund = 5000; S.unlockMerch(fh, true);
+    const shirt = S.merchItems(fh).find(x => x.id === 'shirt');
+    ok(shirt && shirt.unlocked, 'shirts unlocked');
+    eq(S.buyStock(fh, 'shirt', 1).misprint, false, 'no misprint card for this band: a normal order');
+  } finally { SC.splice(vi, 0, hidden); }
+  // With the pack variants: each band misprints its first order and is dealt its own card (voiced by its own band).
+  [['frost_heave', 'FROST HEAVY'], ['gravel_kings', 'GRAVY KINGS'], ['grid_road_ramblers', 'THE GRID ROAD RUMBLERS']].forEach(([bid, typo]) => {
+    const f2 = GG.career.newCareer({ seed: 4, bandId: bid }); f2.fund = 5000; S.unlockMerch(f2, true);
+    eq(S.buyStock(f2, 'shirt', 1).misprint, true, bid + ': the band variant misprints the first order');
+    f2.totalWeek = 10;
+    const c = S.forcedCard(f2);
+    eq(c && c.id, 'money_merch_misprint_' + bid, bid + ': the variant is dealt');
+    ok(GG.career.cardOk(f2, c), bid + ': the variant voices and moves its own band');
+    const mi = S.merchItems(f2).find(x => x.id === 'misprint');
+    eq(mi ? mi.name : S.misprintInfo(f2).name, typo + ' shirts (misprint)', bid + ': misprint name');
+  });
+  // the solo card is the soloist's: Hail Damage's (Dana's) never goes to another band. v0.9: Gravel Kings get Lenny's
+  // own variant; with no variant for the band, the auto path still unlocks the solo.
+  const gk = GG.career.newCareer({ seed: 5, bandId: 'gravel_kings' });
+  gk.era = 'local'; gk.eraHistory.push({ era: 'local', week: 2 }); gk.stats.songsWritten = 9; gk.totalWeek = 30;
+  const solo = S.variantCard(gk, 'shop_solo');
+  eq(solo && solo.id, 'shop_solo_gravel_kings', 'Gravel Kings: their own solo card, never the base one');
+  eq(solo.speaker, GG.gig.roles(gk).solo, 'voiced by the soloist');
+  ok(!S.forcedCard(gk) || S.forcedCard(gk).id !== 'shop_solo', 'no Dana card for Gravel Kings');
+  const si = SC.findIndex(c => c.id === 'shop_solo_gravel_kings'), hid = SC.splice(si, 1)[0];
+  try {
+    ok(S.variantCard(gk, 'shop_solo') === null, 'no variant: no solo card at all');
+    gk.totalWeek = 2 + GG.content.economy.shop.soloAutoWeeks + 1;
+    S.weekly(gk, GG.rngFor(gk), {});
+    ok(S.ownsSection(gk, 'solo'), 'the solo arrives on its own');
+  } finally { SC.splice(si, 0, hid); }
+});
+
 done('sim_shop');

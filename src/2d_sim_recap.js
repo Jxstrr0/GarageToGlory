@@ -15,6 +15,8 @@
 //   recruit who left is gone from state.members, so an id would not resolve later). photo stays null (the screen renders
 //   the band photo live; it is never saved).
 // Events: 'recap:built' { recap }.
+// v0.9: goodYearList(s) (flat + byBand, or { <bandId>: [..] }) ; a goodYear entry voiced only by another band's members is
+//   skipped ; headlines + byBand ; the gig quote never comes from a silent member.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var R = GG.recap = GG.recap || {};
@@ -60,7 +62,7 @@
     var ys = s && s.yearStart; if (!ys || !r) return;
     var q = null;
     (r.reactions || []).some(function (x) {
-      if (!x || !x.text || x.who === 'kenji') return false;
+      if (!x || !x.text || (GG.career && GG.career.isSilent ? GG.career.isSilent(s, x.who) : x.who === 'kenji')) return false;   // v0.9: never a silent member
       var who = GG.career && GG.career.memberName ? GG.career.memberName(s, x.who) : x.who;
       q = '“' + short(GG.career ? GG.career.fillText(s, x.text) : x.text, 90) + '” — ' + who;
       return true;
@@ -167,7 +169,7 @@
   R.headline = function (s, rec) {
     var H = K().headlines || {}, ev = R.events(s, rec), rng = rngFor(s, rec.y, 'headline');
     for (var i = 0; i < ev.length; i++) {
-      var pool = H[ev[i].key];
+      var pool = GG.career && GG.career.pool ? GG.career.pool(s, K(), ['headlines', ev[i].key]) : H[ev[i].key];   // v0.9: + byBand
       if (!pool || !pool.length) continue;
       var t = ev[i].tokens, text = rng.pick(pool).replace(/\{(nth|n|name|award|album|cert|label|region|venue|brand|song|van)\}/g, function (all, k) {
         if (k === 'nth') return R.nth(rec.y);
@@ -179,21 +181,50 @@
   };
 
   /* ---- Year one: what a good year looks like ------------------------------------------------------------------ */
+  // v0.9: an npc speaks only when it may in this career (career.speakerOk: Baba is Hail Damage's).
   function speaker(s, prefer) {
-    var npcs = GG.content.npcs || {};
+    var npcs = GG.content.npcs || {}, ok = GG.career && GG.career.speakerOk;
     for (var i = 0; i < (prefer || []).length; i++) {
       var id = prefer[i];
-      if (npcs[id] || (s.members || []).some(function (m) { return m.id === id && m.status === 'active'; })) return id;
+      if (!id) continue;
+      if ((s.members || []).some(function (m) { return m.id === id && m.status === 'active'; })) return id;
+      if (npcs[id] && (!ok || GG.career.speakerOk(s, id))) return id;
     }
     return null;
   }
+  // v0.9: an entry voiced only by another band's members (or npcs this career never hears from) is theirs, not ours.
+  function foreignVoice(s, prefer) {
+    var K2 = GG.career;
+    if (!prefer || !prefer.length || !K2 || !K2.speakerOk) return false;
+    return prefer.every(function (id) { return !K2.isAlias(id) && !K2.speakerOk(s, id); });
+  }
+  // v0.9: recap.goodYear = [..] (flat, + byBand[bandId].goodYear) or { <bandId>: [..], default?: [..] }.
+  // Both shapes also read recap.byBand[bandId].goodYear (a pack may write either). One line per topic: the band's own
+  // entry wins over the flat one (so a pack's set doesn't double the flat Mom 'loans' line), in first-seen topic order.
+  R.goodYearList = function (s) {
+    var G = K().goodYear, list;
+    if (Array.isArray(G)) { var p = GG.career && GG.career.pool ? GG.career.pool(s, K(), 'goodYear') : G; list = Array.isArray(p) ? p : G; }
+    else {
+      var bb = K().byBand && s && K().byBand[s.bandId], own = (bb && Array.isArray(bb.goodYear)) ? bb.goodYear : [];
+      list = ((G && (G[s.bandId] || (own.length ? null : G['default']))) || []).concat(own);
+    }
+    var order = [], by = {};
+    list.forEach(function (g, i) {
+      if (!g) return;
+      var k = g.topic || ('#' + i);
+      if (!(k in by)) order.push(k);
+      by[k] = g;
+    });
+    return order.map(function (k) { return by[k]; });
+  };
   R.goodYear = function (s, rec) {
     if (!rec || rec.y !== 1) return [];
     var val = { fans: rec.fans, songs: rec.songs, gigs: rec.gigs, loans: rec.loans, chemistry: rec.chem };
-    return (K().goodYear || []).map(function (g) {
-      var who = speaker(s, g.who);
-      if (!who && g.topic !== 'chemistry') {   // another band (v0.9): any bandmate but Kenji says it
-        var m = (s.members || []).filter(function (x) { return x.status === 'active' && x.id !== 'kenji'; })[0];
+    return R.goodYearList(s).map(function (g) {
+      if (foreignVoice(s, g.who)) return null;   // v0.9: Marcel's line stays in Marcel's career
+      var who = speaker(s, (g.who || []).map(function (id) { return GG.career && GG.career.isAlias && GG.career.isAlias(id) ? GG.career.roleOf(s, id) : id; }));
+      if (!who && g.topic !== 'chemistry') {   // a neutral line (or an alias nobody holds): the first bandmate who talks says it
+        var m = GG.career && GG.career.talkers ? GG.career.talkers(s)[0] : (s.members || []).filter(function (x) { return x.status === 'active'; })[0];
         who = m ? m.id : null;
       }
       if (!who) return null;

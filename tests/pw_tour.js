@@ -1,5 +1,5 @@
 // pw_tour.js: the v0.7 "World" UI (5i_ui_tour) on a 390x844 phone viewport (WORLDUI agent).
-// Sections (META_ONLY=map|tour|gong, comma-separated; default all three + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=map|tour|gong|payoff, comma-separated; default all four + the contact sheet). Each fits `timeout 500`.
 //   map  : a World-era career (UK & Europe open) → the world map (4 region pins + cards, lock state, status strip) →
 //          UK & Europe region screen (regional map, city pins, tap Helsinki → its venues) → a package → the picker
 //          (rental / stay / extra, live quote) → Book (fund − upfront, booked) → planner shows the booked tour →
@@ -15,6 +15,7 @@
 //   gong : week 22 of a World-era year, nominated (a broken region): the wrap opens the Global Gong ceremony (the v0.5
 //          red carpet, sign "The Global Gong") → envelope → win → speech → after-party → the wrap shows the Gong; the
 //          Moose Opera (tour:moose) plays after the wrap opens. Screenshots gong.png, moose.png.
+//   payoff: (v0.9) Frost Heave's World payoff screen after the wrap (tour:payoff; see payoff() below).
 //   sheet: (default run or META_ONLY=sheet) tiles the 8 v0.7 screenshots into tests/.cache/v07_sheet.png.
 // Run: node build.js && META_ONLY=map timeout 500 node tests/pw_tour.js
 const path = require('path'), fs = require('fs');
@@ -47,7 +48,7 @@ function audit(page) {
 async function worldCareer(page, o) {
   await page.waitForFunction(() => window.GG && GG.main && GG.tour && GG.ui.openWorld, null, { timeout: 15000 });
   await page.evaluate(o => {
-    GG.main.quickStart({ seed: o.seed || 707, openCard: false });
+    GG.main.quickStart({ seed: o.seed || 707, openCard: false, bandId: o.bandId });   // v0.9: any band (default Hail Damage)
     GG.ui.closeAll();
     const s = GG.state, tw = o.tw || 125;
     s.totalWeek = tw; s.year = Math.floor((tw - 1) / 24) + 1; s.week = (tw - 1) % 24 + 1;
@@ -320,6 +321,34 @@ async function gong() {
   await close(); c.done();
 }
 
+/* ---- payoff (v0.9, owner Q3): another band's World payoff (the sim's 'tour:payoff') plays after the wrap opens ---------
+   Frost Heave in the World era: tour:payoff → the wrap → the payoff screen (their genre's stage, the package's name or the
+   neutral line, nobody else's people) → back to the wrap. Screenshot payoff.png. */
+async function payoff() {
+  const c = checker('payoff');
+  const { page, errors, close } = await open();
+  try {
+    await worldCareer(page, { bandId: 'frost_heave', tw: 129 });
+    const pk = await page.evaluate(() => {
+      const s = GG.state, p = (GG.tour.content().packages || []).filter(x => x.needs && x.needs !== 'moose')[0] || GG.tour.content().packages[0];
+      s.phase = 'wrap'; GG.main.sync(); GG.emit('tour:payoff', { packageId: p.id, flag: 'testPayoff' }); GG.main.wrapWeek();
+      return { id: p.id, name: p.name, band: s.bandId };
+    });
+    await waitScreen(page, 'tour-payoff', 8000);
+    const r = await page.evaluate(() => ({ pkg: document.querySelector('[data-testid="tour-payoff"]').dataset.pkg, cls: document.querySelector('[data-testid="tour-payoff"]').className,
+      txt: document.querySelector('.full.tworld').textContent }));
+    c.ok(pk.band === 'frost_heave' && r.pkg === pk.id && /po-punk/.test(r.cls) && r.txt.includes('🧷'), 'the payoff screen: ' + pk.id + ', the punk stage ' + r.cls);
+    c.ok(!/Marcel|Kenji|Dana|Jaxon|moose|Moose/.test(r.txt), 'nobody else\'s people or moose: ' + r.txt.slice(0, 160));
+    const bad = await audit(page); c.ok(!bad.length, 'payoff layout: ' + bad.join(', '));
+    await page.waitForTimeout(900); await shot(page, 'payoff.png');
+    await tap(page, 'btn-payoff-ok');
+    await waitScreen(page, 'wrap');
+    c.ok(await page.evaluate(() => GG.debug('tourui').payoffDue === null), 'the payoff played once');
+    c.ok(!errors.length, 'no console errors: ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'payoff threw: ' + e.message); console.log(errors.slice(0, 5).join('\n')); }
+  await close(); c.done();
+}
+
 /* ---- the contact sheet ------------------------------------------------------------------------------------------- */
 async function sheet() {
   const names = [['world_map', 'World map'], ['region_map', 'Region map'], ['tour_pkg', 'Tour package'], ['van_abroad', 'Van abroad'],
@@ -343,5 +372,6 @@ async function sheet() {
   if (want('map')) await map();
   if (want('tour')) await tour();
   if (want('gong')) await gong();
+  if (want('payoff')) await payoff();   // v0.9
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();

@@ -1,5 +1,5 @@
 // pw_recap.js (v0.8.1 LICRECAP): licensing offers (D1) and the year-end recap (D3) on a 390x844 phone viewport.
-// Sections (META_ONLY=offer|recap, comma-separated; default both). Each fits `timeout 500`.
+// Sections (META_ONLY=offer|recap|bands, comma-separated; default all). Each fits `timeout 500`.
 //   offer : a Signed band gets an offer → the Monday card (brand, song, fee, 4 choices with hints) → Take it: the fee (minus
 //           the label's cut) lands in the fund, the song is "in a commercial" (SONG.ad, stale), buzz up; a second offer →
 //           "Sleep on it" → it waits on the laptop's Offers line → the offer sheet → Counter (walks or lands at +40%) →
@@ -9,6 +9,7 @@
 //           Rolling Scone headline + a real 3D band photo, money, gigs, studio, the band + the scene, year one's "what a
 //           good year looks like") → Start year 2 → week 25; the laptop's Years tab re-opens it. Layout audit on every
 //           page. Screenshots recap_p<0..5>.png, recap_years.png.
+//   bands : (v0.9) the band photo for Frost Heave, Gravel Kings and the Ramblers in their own tier-0 rooms (see below).
 // Run: node build.js && META_ONLY=recap timeout 500 node tests/pw_recap.js
 const path = require('path'), fs = require('fs');
 const { open, checker } = require('./_pw');
@@ -207,8 +208,56 @@ async function recap() {
   c.done();
 }
 
+/* ---- bands (v0.9): the band photo for the other bands (4-piece Frost Heave + Gravel Kings, 5-piece Ramblers) ---------------
+   Each in its own tier-0 room: the photo is a real 3D still (not blank), everyone in this lineup (+ you) is posed, nobody
+   from another band, the caption names this band's space, the cover is this band's. Screenshots recap_band_<id>.png. */
+async function bands() {
+  const c = checker('recap:bands');
+  for (const bandId of ['frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+    const { page, errors, close } = await open();
+    try {
+      await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+      await page.evaluate(b => {
+        GG.main.quickStart({ seed: 7171, bandId: b, openCard: false });
+        GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'monday'; s.weekStart = null;
+        for (let i = 0; i < 24 && s.week !== 24; i++) GG.career.botWeek(s, 'avg');
+        if (s.phase !== 'ended') { s.card = null; s.phase = 'plan'; GG.career.setPlan(s, ['rest', 'rest', 'rest']); s.gig = null; s.offer = null; GG.career.runWeek(s, { autoGig: true }); GG.career.endWeek(s); }
+        GG.ui.closeAll(); GG.main.sync();
+        const y = (GG.recap.list(s).slice(-1)[0] || {}).y; if (y) GG.ui.openRecap(y);
+      }, bandId);
+      await waitScreen(page, 'recap');
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(async () => {
+        const img = document.querySelector('[data-testid="recap-photo"] img'); let photo = null;
+        if (img) {
+          await img.decode();
+          const cv = document.createElement('canvas'); cv.width = 60; cv.height = 38; const g = cv.getContext('2d'); g.drawImage(img, 0, 0, 60, 38);
+          const d = g.getImageData(0, 0, 60, 38).data, lum = []; for (let i = 0; i < d.length; i += 4) lum.push(d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11);
+          const m = lum.reduce((a, b) => a + b, 0) / lum.length, v = Math.sqrt(lum.reduce((a, b) => a + (b - m) * (b - m), 0) / lum.length);
+          photo = { w: img.naturalWidth, mean: Math.round(m), sd: Math.round(v) };
+        }
+        const s = GG.state, dbg = GG.debug('recapui').photo, act = s.members.filter(m => m.status === 'active').map(m => m.id);
+        const foreign = Object.keys(GG.content.bands).filter(k => k !== s.bandId).reduce((a, k) => a.concat(GG.content.bands[k].members.map(m => m.id)), []);
+        return { photo, dbg, act, foreign, kind: GG.ui.spaceKind(s), cap: (document.querySelector('[data-testid="recap-photo"]') || {}).textContent || '', space: GG.ui.spaceName(s),
+          band: GG.content.bands[s.bandId].name, cover: (document.querySelector('[data-testid="recap-page-0"]') || {}).textContent || '' };
+      });
+      c.ok(r.photo && r.photo.w >= 500 && r.photo.mean > 20 && r.photo.sd > 12, bandId + ': the band photo is a real 3D still (not blank): ' + JSON.stringify(r.photo));
+      const posed = r.dbg ? r.dbg.ids.filter(id => id !== 'player') : [];
+      c.ok(r.dbg && r.dbg.n === Math.min(7, r.act.length + 1) && r.act.slice(0, 6).every(id => posed.includes(id)), bandId + ': the whole lineup + you in the photo (' + (r.dbg && r.dbg.n) + ' for ' + r.act.length + '+1): ' + posed.join(','));
+      c.ok(r.dbg && r.dbg.kind === r.kind && !posed.some(id => r.foreign.includes(id)), bandId + ': posed in its own ' + r.kind + ', nobody from another band');
+      c.ok(r.cap.includes(r.band) && r.cap.includes(r.space), bandId + ': the caption is ' + r.band + ' · ' + r.space + ': ' + r.cap);
+      await shot(page, 'recap_band_' + bandId + '.png');
+      c.ok(errors.length === 0, bandId + ': no console errors ' + errors.join(' | '));
+    } catch (e) { c.ok(false, bandId + ' threw: ' + (e.stack || e)); }
+    await close();
+  }
+  c.done();
+}
+
 (async () => {
   fs.mkdirSync(CACHE, { recursive: true });
   if (want('offer')) await offer();
   if (want('recap')) await recap();
+  if (want('bands')) await bands();   // v0.9
 })();

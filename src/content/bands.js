@@ -11,8 +11,7 @@
 //   - `titleEn` is null for songs already in English (all of them since v0.7.2). Metal starters also carry `fr`:
 //     Marcel's French original. It seeds the starter's drum pattern (unchanged since v0.1) and lets old saves that
 //     still hold the French title rename it to the English one on load (GG.songs.migrateTitles).
-//   - All four bands become playable from the start with v0.9 (owner); until it ships, the live build keeps
-//     Frost Heave / Gravel Kings / the Ramblers locked (v0.8.2 hotfix). v0.9 band fields (roles, firstGig, homeRing, spaceShort, door,
+//   - All four bands are playable from the start (owner, v0.9). v0.9 band fields (roles, firstGig, homeRing, spaceShort, door,
 //     province, coldOpenFx, throne) and member fields (gear, silent, cape, signature, look.top) are applied by the table at
 //     the bottom of this file (see CONTENT SCHEMAS in 02_contracts.js and plan/plan_contract_0.9.md §3-4).
 (function (GG) {
@@ -74,11 +73,11 @@
     ]
   };
 
-  // ---- Punk: Frost Heave (locked until v0.9) ------------------------------
+  // ---- Punk: Frost Heave (playable, v0.9) --------------------------
   bands.frost_heave = {
     id: 'frost_heave', name: 'Frost Heave', genre: 'punk', city: 'Regina', region: 'canada',
     space: 'laundromat_basement', spaceName: 'The basement under the Suds-O-Rama', size: 4, rival: 'mall_rats',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: 'Punk. A four-piece out of a laundromat basement in Regina. Every song is about city council. ' +
       'The dryers are the rhythm section.',
     coldOpen: [
@@ -93,20 +92,20 @@
     ],
     members: [
       { id: 'rox', name: 'Rox', fullName: 'Rox Delorme', nick: 'Rox', role: 'vocals/guitar',
-        hometown: 'Regina', skill: 47, mood: 62,
+        hometown: 'Regina', skill: 52, mood: 66,
         wants: 'A seat on city council, to burn it down from the inside.',
         bio: 'Screams exclusively about city council. Banned from every warehouse club in the province. ' +
           'Has attended 212 consecutive council meetings, all as a heckler.',
         idle: 'pace',
         look: look('#f0c9a4', '#d23b62', 'mohawk', '#232323', '#2c2c34', 0.98, 0.95, ['tattoos']) },
       { id: 'benny', name: 'Benny', fullName: 'Benny "Two Chords" Mahon', nick: 'Two Chords', role: 'guitar',
-        hometown: 'Moose Jaw', skill: 34, mood: 70,
+        hometown: 'Moose Jaw', skill: 46, mood: 70,
         wants: 'To never, ever learn a third chord.',
         bio: 'Knows two chords and refuses to learn a third on principle. The principle is unclear. He will fight you about it.',
-        idle: 'phone',
+        idle: 'noodle',
         look: look('#e2b48c', '#e8d36a', 'spiky', '#4a6a3a', '#2a3550', 1.0, 1.05, ['bandana']) },
       { id: 'moth', name: 'Moth', fullName: 'Moth', nick: 'Moth', role: 'bass',
-        hometown: 'The van (formerly Estevan)', skill: 44, mood: 58,
+        hometown: 'The van (formerly Estevan)', skill: 56, mood: 64,
         wants: 'Permission to stay in the van. Forever.',
         bio: "Lives in the van full-time. You need permission to go in. Moth's mailing address is a parking spot.",
         idle: 'corner',
@@ -114,11 +113,11 @@
     ]
   };
 
-  // ---- Rock: Gravel Kings (locked until v0.9) -----------------------------
+  // ---- Rock: Gravel Kings (playable, v0.9) --------------------------
   bands.gravel_kings = {
     id: 'gravel_kings', name: 'Gravel Kings', genre: 'rock', city: 'Edmonton', region: 'canada',
     space: 'strip_mall_unit', spaceName: 'Unit 4B, Westgate Plaza', size: 4, rival: 'chartbusters',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: "Rock. A four-piece in an empty strip-mall unit in Edmonton. It's 1985 in there. It will always be 1985 in there.",
     coldOpen: [
       'Edmonton. Minus forty. A man in leather pants is jogging past a strip mall.',
@@ -138,14 +137,14 @@
         idle: 'mirror',
         look: look('#ecc7a0', '#d9b25a', 'mullet', '#b9b9c2', '#1a1a1a', 1.04, 0.95, ['headband']) },
       { id: 'lenny', name: 'Lenny', fullName: 'Lenny Szabo', nick: 'Lawsuit', role: 'guitar',
-        hometown: 'Leduc', skill: 55, mood: 60,
+        hometown: 'Leduc', skill: 55, mood: 65,
         wants: "One riff the lawyers don't call about.",
         bio: 'Every riff sounds a little too much like a famous one. The lawyers keep calling. ' +
           'He lets them go to voicemail, in the key of E.',
         idle: 'noodle',
         look: look('#dcae86', '#3b2a1e', 'long', '#2f4f6f', '#2a2a30', 1.0, 1.0, ['moustache']) },
       { id: 'tamara', name: 'Tamara', fullName: 'Tamara "T-Bone" Ruiz', nick: 'T-Bone', role: 'bass',
-        hometown: 'Sherwood Park', skill: 52, mood: 66,
+        hometown: 'Sherwood Park', skill: 52, mood: 68,
         wants: 'Everyone home by midnight, teeth flossed.',
         bio: 'The only functioning adult. A dental hygienist who flosses backstage and does the band taxes for fun.',
         idle: 'phone',
@@ -153,11 +152,11 @@
     ]
   };
 
-  // ---- Country: The Grid Road Ramblers (locked until v0.9) ----------------
+  // ---- Country: The Grid Road Ramblers (playable, v0.9) --------------------------
   bands.grid_road_ramblers = {
     id: 'grid_road_ramblers', name: 'The Grid Road Ramblers', genre: 'country', city: 'Swift Current', region: 'canada',
     space: 'quonset', spaceName: "Duke's uncle's Quonset", size: 5, rival: 'buckle_and_boot',
-    locked: true, comingIn: 'v0.9',
+    locked: false, comingIn: null,
     blurb: 'Country. A five-piece in a Quonset outside Swift Current. Heartbreak, trucks, a fiddle and a very large hat.',
     coldOpen: [
       'Outside Swift Current. A Quonset, a grid road, and a sunset the colour of canola.',
@@ -177,19 +176,19 @@
         idle: 'noodle',
         look: look('#f0cda8', '#7a5230', 'short', '#8a5a3a', '#3b4f6b', 1.02, 0.95, ['hat']) },
       { id: 'earl', name: 'Earl', fullName: 'Earl Nakamura-Pike', nick: 'Earl', role: 'lead guitar',
-        hometown: 'Lethbridge', skill: 60, mood: 64,
+        hometown: 'Lethbridge', skill: 60, mood: 66,
         wants: 'Someone to hear the whole story about the 1979 session.',
         bio: 'Seventy-year-old session legend who has played with everyone and will tell you about it, song by song, during your song.',
         idle: 'pace',
         look: look('#d9b894', '#cfcfcf', 'bald', '#4d6b4a', '#57504a', 0.95, 1.0, ['beard', 'glasses']) },
       { id: 'clementine', name: 'Clementine', fullName: 'Clementine Beaudry', nick: 'Clem', role: 'fiddle',
-        hometown: 'Montréal', skill: 58, mood: 60,
+        hometown: 'Montréal', skill: 58, mood: 64,
         wants: 'To never be caught enjoying this.',
         bio: "Classically trained violinist 'slumming it'. Secretly loves every second. Keeps sheet music for Bach in her case in case anyone's watching.",
         idle: 'noodle',
         look: look('#f3d6be', '#b0452a', 'bun', '#2d3e66', '#1f1f28', 1.0, 0.95, []) },
       { id: 'duke', name: 'Duke', fullName: 'Duke Harlan', nick: 'Duke', role: 'bass',
-        hometown: 'Maple Creek', skill: 32, mood: 74,
+        hometown: 'Maple Creek', skill: 42, mood: 74,
         wants: 'A bigger hat.',
         bio: 'Huge hat, modest bass skills. The hat is the character. The hat has more fans than the band.',
         idle: 'lunch',
@@ -198,19 +197,21 @@
   };
 
   // ---- Rivals ------------------------------------------------------------
-  // v0.6: Tundra Wraith's lineup (Gord "Grimnir" Penner + three accountants) lives in content/rivals.js; the other rivals'
-  // members are designed in v0.9 (refer to them by role only until then).
+  // v0.6: Tundra Wraith's lineup (Gord "Grimnir" Penner + three accountants) lives in content/rivals.js; v0.9 (owner
+  // decisions 2026-09-30): the other three rivals' casts come from the band packs (content/zz_band_*.js, rivalry.cast).
   var rivals = {
     tundra_wraith: { id: 'tundra_wraith', name: 'Tundra Wraith', city: 'Winnipeg', genre: 'metal',
       blurb: "Corpse paint on stage; off stage, four chartered accountants who are unbearably polite. Frontman Gord 'Grimnir' " +
         "Penner calls you 'buddy', sends fruit baskets, and wins every award you're up for." },
     mall_rats: { id: 'mall_rats', name: 'Mall Rats', city: 'Toronto', genre: 'punk',
-      blurb: 'Manufactured punk from a TV talent show. Skateboard sponsor, stylist, pre-ripped jeans. ' +
-        'They throw sponsor money at everything, including you.' },
+      blurb: "TV-talent-show punk: frontman 'Blaze' (Kevin, from Oakville), a bassist who has never plugged in, a drummer picked " +
+        'for his jawline, and Siobhan the stylist, who really runs it. Sponsored kickflips. Sponsor money for everyone.' },
     chartbusters: { id: 'chartbusters', name: 'Chartbusters', city: 'Vancouver', genre: 'rock',
-      blurb: 'The stadium band every station plays and everyone claims to hate. They own the radio. They may literally own the radio.' },
+      blurb: "Thirty years at the top. Rex Glamour wears a scarf in July. Four drummers, all named Steve. They quietly bought the " +
+        'radio conglomerate. Every single is the same power ballad.' },
     buckle_and_boot: { id: 'buckle_and_boot', name: 'Buckle & Boot', city: 'Red Deer', genre: 'country',
-      blurb: "Bro-country duo sponsored by a truck brand. Every song is about tailgates. They're in every truck commercial, sometimes as the truck." }
+      blurb: "Truck-ad cousins Brayden and Colt, ex-junior hockey. One sings about tailgates, the other 'plays' an unplugged guitar. " +
+        "Their sponsor's mascot, a guy in a pickup costume, is basically the third member." }
   };
 
   // ---- v0.9 "Genres": band + member fields (stage 0, lead; Lane A owns this file from here) ----------------------
@@ -225,9 +226,14 @@
     grid_road_ramblers: { roles: { namer: 'travis', grumbler: 'earl', deadpan: 'clementine' }, firstGig: 'quonset_yard_party', homeRing: 'sask',
       spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
   };
-  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
+  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40;
+  // perSong: once per song instead, Marcel's cape spin as in v0.8.3).
+  // idle 'noodle' (set on the member above: Dana, Benny, Lenny, Travis) = the garage noodler with an instrument; the audio
+  // garage noodle follows the first one (Benny's two chords, Lenny's riff), then Clementine's 'fiddle' idle.
+  // v0.9 integration: the member skill / mood numbers above follow the sims lane's balance proposal (Frost Heave, Gravel
+  // Kings and the Ramblers were well below Hail Damage's average gig score with the same bot).
   var V09_MEMBERS = {
-    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape', perSong: true } },   // the cape spins every song (v0.8.3)
     dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },
     rox: { gear: 'sg', top: 'jacket', signature: { action: 'stageDive', combo: 40, crowd: 8 } },
     benny: { gear: 'sg', top: 'tee' },

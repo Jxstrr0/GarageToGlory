@@ -8,7 +8,14 @@
 // v0.6.1 also: GG.content.drivers (Addendum 1 C1), one designated driver per band + 'you' (see the bottom of this file).
 // Extra effect key: van: { condition: ±n } (the Moose Hearse's condition, 0..100).
 // Hints: a roll's hint starts with "Gamble: "; a choice with a van effect always has a hint.
+// v0.9 "Genres": every band drives. Cards in Hail Damage's voice (Marcel's cape, Baba's lunch, Kenji at the wheel) are
+//   gated band: ['hail_damage'] (or driver: ['kenji'], which only Hail Damage has); the shared cards speak through role
+//   aliases ('@front', '@soloist', '@filler', '@grumbler') and tokens ({front} {soloist} {filler} {grumbler} {deadpan}),
+//   so they read right for any lineup. A few neutral copies of Hail Damage-only classics (frozen van, hail, the you-drive
+//   pool, an anywhere card) are gated to the other three bands so Hail Damage's own road deck stays exactly as it was.
+//   The band packs (zz_band_*.js) push each driver's own pool (Moth, T-Bone, Earl) into this array.
 (function (GG) {
+  var HD = ['hail_damage'], OTHERS = ['frost_heave', 'gravel_kings', 'grid_road_ramblers'];
   GG.content.roadCards = [
     { id: 'road_moose', type: 'road', speaker: 'marcel', title: 'Moose on the Highway', once: false, cooldown: 8,
       gate: { minKm: 60, driver: ['kenji'] },
@@ -55,23 +62,24 @@
           outcome: 'Jaxon stares at the sign until it is gone. Then he stares at where it was for another ten minutes.' }
       ] },
 
-    { id: 'road_grain_elevator', type: 'road', speaker: 'marcel', title: 'The Last Grain Elevator', once: false, cooldown: 12,
+    { id: 'road_grain_elevator', type: 'road', speaker: '@front', title: 'The Last Grain Elevator', once: false, cooldown: 12,
       gate: { minKm: 60, season: ['summer', 'fall'] },
       text: 'An old wooden grain elevator stands alone against the sky, paint peeling, the town name long gone. ' +
-        'Marcel grips the headrest. "The press photo. Right now. The light is perfect."',
+        '{front} grips the headrest. "The press photo. Right now. The light is perfect."',
       choices: [
         { label: 'Pull over. Shoot it.', hint: 'Buzz ↑ · Late for load-in', effects: { buzz: 5, burnout: 3 },
           outcome: 'The band, squinting, in front of a grain elevator. The best photo you will ever take. You are late for load-in.' },
-        { label: "It'll be perfect on the way home", effects: { mood: { marcel: -6 } },
-          outcome: 'It is dark on the way home. Marcel mentions this at every stop sign.' },
-        { label: 'Marcel shoots a solo portrait', hint: 'Gamble: majestic or meme',
+        { label: "It'll be perfect on the way home", effects: { mood: { '@front': -6 } },
+          outcome: 'It is dark on the way home. {front} mentions this at every stop sign.' },
+        { label: 'A solo portrait of the singer', hint: 'Gamble: majestic or meme',
           roll: { chance: 0.5,
-            success: { effects: { buzz: 8, mood: { marcel: 8 } }, outcome: 'Marcel, cape in the wind, elevator behind him. Brooding. Majestic. On forty posters by Monday.' },
-            fail: { effects: { mood: { marcel: -4 }, chemistry: -3 }, outcome: 'The cape wraps around his head. Dana gets all of it on video. Marcel will demand its deletion for years.' } },
-          outcome: 'Marcel climbs the ditch, cape first.' }
+            success: { effects: { buzz: 8, mood: { '@front': 8 } }, outcome: '{front}, hair in the wind, the elevator behind. Brooding. Majestic. On forty posters by Monday.' },
+            fail: { effects: { mood: { '@front': -4 }, chemistry: -3 }, outcome: 'The wind wraps a jacket around {front}\'s head. {soloist} gets all of it on video. The deletion requests go on for years.' } },
+          outcome: '{front} climbs the ditch, chin first.' }
       ] },
 
     { id: 'road_babas_lunch', type: 'road', speaker: 'baba', title: "Baba's Road Lunch", once: false, cooldown: 6,
+      gate: { band: HD },
       text: "Jaxon's baba has packed the band a lunch for the drive: a margarine tub of perogies, garlic sausage, " +
         'two dozen cabbage rolls and a note that just says EAT.',
       choices: [
@@ -116,7 +124,7 @@
       ] },
 
     { id: 'road_fowl_supper', type: 'road', speaker: 'marcel', title: 'Fowl Supper Tonight', once: false, cooldown: 12,
-      gate: { minKm: 60, season: ['fall'] },
+      gate: { minKm: 60, season: ['fall'], band: HD },
       text: 'A hand-painted sign: FOWL SUPPER TONITE, $15, ALL WELCOME. The church lot is full of trucks. ' +
         'Jaxon has already undone his seatbelt.',
       choices: [
@@ -132,7 +140,7 @@
       ] },
 
     { id: 'road_banjo_hitchhiker', type: 'road', speaker: 'dana', title: 'Hitchhiker with a Banjo', once: false, cooldown: 16,
-      gate: { minKm: 100 },
+      gate: { minKm: 100, band: HD },
       text: 'A guy in a straw hat stands by a grid road with a banjo case and a sign that just says WEST. ' +
         'Dana slows down before anyone can vote.',
       choices: [
@@ -221,18 +229,18 @@
       ] },
 
     /* ---- v0.6.1 (Addendum 1 C1 + C7): the van's classics, weather, seasons, holidays ---------------------------------- */
-    { id: 'road_deer_yellowhead', type: 'road', speaker: 'dana', title: 'Deer on the Yellowhead', once: false, cooldown: 8,
+    { id: 'road_deer_yellowhead', type: 'road', speaker: '@soloist', title: 'Deer on the Yellowhead', once: false, cooldown: 8,
       gate: { minKm: 100 },
       text: 'Three deer on the Yellowhead, standing in the headlights like a tribute band waiting for a cue. Nobody moves. The deer do not move either.',
       choices: [
         { label: 'Brake and wait', hint: 'Safe, slow', effects: { burnout: 3, chemistry: 2 },
-          outcome: 'Four minutes. The deer leave in single file, like they rehearsed it. Marcel calls them "the rhythm section".' },
+          outcome: 'Four minutes. The deer leave in single file, like they rehearsed it. {front} calls them "the rhythm section".' },
         { label: 'Honk the riff', hint: 'Gamble: deer have taste',
-          roll: { chance: 0.6, success: { effects: { buzz: 4, mood: { all: 3 } }, outcome: 'They bolt on the downbeat. Perfect timing. Dana is weirdly proud.' },
+          roll: { chance: 0.6, success: { effects: { buzz: 4, mood: { all: 3 } }, outcome: 'They bolt on the downbeat. Perfect timing. {soloist} is weirdly proud.' },
             fail: { effects: { van: { condition: -4 }, burnout: 3 }, outcome: 'One deer headbutts the grille on the "and" of four. Off-beat AND rude.' } },
           outcome: 'Da-da-DUN-da on the horn.' },
-        { label: 'High beams, slowly', hint: 'Van ↓', effects: { van: { condition: -1 }, mood: { dana: 3 } },
-          outcome: 'You creep past. The biggest one stares at the Moose Hearse like it owes him money.' }
+        { label: 'High beams, slowly', hint: 'Van ↓', effects: { van: { condition: -1 }, mood: { '@soloist': 3 } },
+          outcome: 'You creep past. The biggest one stares at the van like it owes him money.' }
       ] },
 
     { id: 'road_shotgun', type: 'road', speaker: 'jaxon', title: 'The Fight Over Shotgun', once: false, cooldown: 10,
@@ -251,6 +259,7 @@
       ] },
 
     { id: 'road_cape_door', type: 'road', speaker: 'marcel', title: 'Cape in the Sliding Door', once: false, cooldown: 12,
+      gate: { band: HD },
       text: 'Marcel slams the sliding door on his cape (or, capeless, his good scarf). It flaps outside the van for eighty kilometres like a flag of surrender.',
       choices: [
         { label: 'Pull over and free him', hint: 'Burnout ↑ · Marcel ↑', effects: { burnout: 3, mood: { marcel: 5 } },
@@ -264,7 +273,7 @@
           outcome: 'Jaxon hangs out the window with his phone.' }
       ] },
 
-    { id: 'road_whiteout_tch', type: 'road', speaker: 'dana', title: 'Whiteout on the Trans-Canada', once: false, cooldown: 6,
+    { id: 'road_whiteout_tch', type: 'road', speaker: '@soloist', title: 'Whiteout on the Trans-Canada', once: false, cooldown: 6,
       gate: { minKm: 60, weather: ['blizzard', 'snow'] },
       text: 'The Trans-Canada disappears. White above, white below, white sideways. The only proof of the road is the rumble strip, which is also, now, the only music.',
       choices: [
@@ -279,7 +288,7 @@
       ] },
 
     { id: 'road_frozen_van', type: 'road', speaker: 'neighbour', title: 'Frozen Solid', once: false, cooldown: 8,
-      gate: { season: ['winter'] },
+      gate: { season: ['winter'], band: HD },
       text: 'Minus 34. Nobody plugged the van in. It makes a noise like a moose with a head cold. Mr. Lindqvist is watching from his driveway, holding jumper cables and a lesson.',
       choices: [
         { label: 'Accept the boost (and lesson)', hint: 'Burnout ↑', effects: { burnout: 4, chemistry: 2 },
@@ -292,14 +301,29 @@
           outcome: 'The cab driver helps carry the kick drum. He has opinions about double bass. He is right.' }
       ] },
 
-    { id: 'road_construction', type: 'road', speaker: 'jaxon', title: 'Road Construction', once: false, cooldown: 8,
+    // v0.9: the frozen van for everyone else (no Mr. Lindqvist next door)
+    { id: 'road_frozen_solid', type: 'road', speaker: '@grumbler', title: 'Minus Thirty-Four', once: false, cooldown: 8,
+      gate: { season: ['winter'], band: OTHERS },
+      text: 'Minus 34. Nobody plugged the van in. It makes a noise like a moose with a head cold. {grumbler} says this is exactly what they said would happen. Nobody remembers them saying it.',
+      choices: [
+        { label: 'Flag down a boost', hint: 'Burnout ↑', effects: { burnout: 4, chemistry: 2 },
+          outcome: 'A guy in a snowmobile suit has cables, a thermos and forty minutes of opinions about block heaters. The van starts. He wants a shout-out.' },
+        { label: 'Hair dryer on the engine', hint: 'Gamble: prairie engineering',
+          roll: { chance: 0.5, success: { effects: { mood: { all: 4 } }, outcome: 'It works. {soloist} will never let anyone forget whose idea it was.' },
+            fail: { effects: { van: { condition: -3 }, fund: -40 }, outcome: 'The hair dryer dies. Then the extension cord. Then the fuse. Cab money, forty bucks.' } },
+          outcome: '{soloist} finds an extension cord.' },
+        { label: 'Gear on a toboggan, cab it', hint: '−$80', effects: { fund: -80, burnout: 3 },
+          outcome: 'The cab driver helps carry the amps. He has opinions about your genre. He is right.' }
+      ] },
+
+    { id: 'road_construction', type: 'road', speaker: '@filler', title: 'Road Construction', once: false, cooldown: 8,
       gate: { minKm: 60, season: ['summer'] },
       text: 'A flag person, one lane, a forty-minute wait. There are two seasons on the prairies: winter and construction.',
       choices: [
         { label: 'Wait it out', hint: 'Burnout ↑', effects: { burnout: 3 },
           outcome: 'The flag person flips the sign to SLOW and gives you a thumbs-up. She saw you at the Legion. She has notes.' },
         { label: 'Band practice in the van', hint: 'Chemistry ↑', effects: { chemistry: 3, mood: { all: 2 } },
-          outcome: 'Air guitar, lap drums, Marcel harmonizing with the backup beeper of a grader. It is honestly tight.' },
+          outcome: 'Air guitar, lap drums, {front} harmonizing with the backup beeper of a grader. It is honestly tight.' },
         { label: 'Detour down a grid road', hint: 'Gamble: shortcut or gravel',
           roll: { chance: 0.5, success: { effects: { fans: 4, buzz: 3 }, outcome: 'The grid road goes right past a farmyard party. You leave with a flatbed of new fans.' },
             fail: { effects: { van: { condition: -4 }, burnout: 4 }, outcome: 'Gravel. Washboard. Forty minutes of it. Your fillings are loose. The van is looser.' } },
@@ -307,7 +331,7 @@
       ] },
 
     { id: 'road_mosquitoes', type: 'road', speaker: 'jaxon', title: 'Mosquito Cloud', once: false, cooldown: 8,
-      gate: { season: ['summer'] },
+      gate: { season: ['summer'], band: HD },
       text: 'A gas stop next to a slough at dusk. The mosquitoes find Jaxon first. Then everyone. Then, briefly, the van itself.',
       choices: [
         { label: 'Bug spray for everyone', hint: '−$15 · moods ↑', effects: { fund: -15, mood: { all: 3 } },
@@ -321,7 +345,7 @@
       ] },
 
     { id: 'road_hailstorm', type: 'road', speaker: 'marcel', title: 'Hailstorm', once: false, cooldown: 6,
-      gate: { weather: ['hail'] },
+      gate: { weather: ['hail'], band: HD },
       text: 'Hail the size of perogies, drumming on the Moose Hearse. Marcel presses his face to the glass: "They are calling our NAME." Hail Damage takes hail personally.',
       choices: [
         { label: 'Wait under an overpass', hint: 'Burnout ↑', effects: { burnout: 3 },
@@ -334,49 +358,80 @@
           outcome: 'Phones out, windows up.' }
       ] },
 
-    { id: 'road_heat_wave', type: 'road', speaker: 'dana', title: 'Heat Wave', once: false, cooldown: 6,
+    // v0.9: hail for everyone else (Hail Damage takes hail personally; the others just take it)
+    { id: 'road_hail_alley', type: 'road', speaker: '@grumbler', title: 'Hail Alley', once: false, cooldown: 6,
+      gate: { weather: ['hail'], band: OTHERS },
+      text: 'Hail the size of perogies, drumming on the roof like a drummer with something to prove. {grumbler} has read the insurance forms. {grumbler} is not calm.',
+      choices: [
+        { label: 'Wait under an overpass', hint: 'Burnout ↑', effects: { burnout: 3 },
+          outcome: 'Twelve minutes under the bridge with two grain trucks and a family of four. {front} shares the snacks. Friends for life.' },
+        { label: 'Keep driving. Hats on.', hint: 'Van ↓ · buzz ↑', effects: { van: { condition: -5 }, buzz: 6, chemistry: 3 },
+          outcome: 'You drive through it screaming the chorus. The van looks like a golf ball now. The crowd hears the story and cheers the dents.' },
+        { label: 'Film the hail on the roof', hint: 'Gamble: a new drum loop',
+          roll: { chance: 0.55, success: { effects: { buzz: 5, fans: 5 }, outcome: 'Hail on the roof, perfectly in time. You post it as "new album teaser". Nobody knows you are joking.' },
+            fail: { effects: { van: { condition: -3 } }, outcome: 'A hailstone takes out the antenna mid-take. The radio is now permanently on one station.' } },
+          outcome: 'Phones out, windows up.' }
+      ] },
+
+    { id: 'road_heat_wave', type: 'road', speaker: '@soloist', title: 'Heat Wave', once: false, cooldown: 6,
       gate: { weather: ['heat'] },
-      text: "Thirty-four degrees. The van's air conditioning is a window that rolls down halfway. The drum cases are too hot to touch. The chips on the dash have melted into one chip.",
+      text: "Thirty-four degrees. The van's air conditioning is a window that rolls down halfway. The gear cases are too hot to touch. The chips on the dash have melted into one chip.",
       choices: [
         { label: 'Slushies at the next town', hint: '−$20 · moods ↑', effects: { fund: -20, mood: { all: 4 } },
-          outcome: 'Five blue slushies. Five blue tongues. Marcel says it is a look. Marcel is right.' },
+          outcome: 'Blue slushies all round. Blue tongues all round. {front} says it is a look. {front} is right.' },
         { label: 'Windows down, demo up', hint: 'Buzz ↑ · burnout ↑', effects: { buzz: 3, burnout: 3 },
-          outcome: 'You blast the demo through every town at full volume. A kid on a bike headbangs. Worth it.' },
+          outcome: 'You blast the demo through every town at full volume. A kid on a bike loses his mind. Worth it.' },
         { label: 'Stop at a lake', hint: 'Gamble: a swim or a sunburn',
           roll: { chance: 0.6, success: { effects: { burnout: -6, chemistry: 3 }, outcome: 'Twenty minutes in a prairie lake. Everyone comes out a better person. Slightly greener.' },
-            fail: { effects: { burnout: 4, mood: { jaxon: -4 } }, outcome: 'Leeches. Jaxon does not want to talk about it. Jaxon talks about it for three hours.' } },
+            fail: { effects: { burnout: 4, mood: { '@filler': -4 } }, outcome: 'Leeches. {filler} does not want to talk about it. {filler} talks about it for three hours.' } },
           outcome: 'There is a lake sign.' }
       ] },
 
-    { id: 'road_xmas_lights', type: 'road', speaker: 'marcel', title: 'The Christmas Lights Farm', once: false, cooldown: 18,
+    { id: 'road_xmas_lights', type: 'road', speaker: '@front', title: 'The Christmas Lights Farm', once: false, cooldown: 18,
       gate: { holiday: ['christmas'] },
-      text: 'A farmyard off the highway with forty thousand Christmas lights, a light-up moose and a speaker playing carols. Marcel is already undoing his seatbelt.',
+      text: 'A farmyard off the highway with forty thousand Christmas lights, a light-up moose and a speaker playing carols. {front} is already out of the seatbelt.',
       choices: [
         { label: 'Five minutes. FIVE.', hint: 'Moods ↑', effects: { mood: { all: 4 }, burnout: -3 },
           outcome: 'It is twenty-five minutes. The farmer gives you hot chocolate and asks you to play next year. You say yes.' },
         { label: 'Photo with the moose', hint: 'Buzz ↑', effects: { buzz: 4 },
-          outcome: 'The band, in capes, in front of a light-up moose. It becomes the band Christmas card. Mom frames it.' },
-        { label: 'No stopping', effects: { mood: { marcel: -5 } },
-          outcome: 'Marcel watches the lights disappear in the side mirror like a man watching his childhood leave.' }
+          outcome: 'The band, in matching toques, in front of a light-up moose. It becomes the band Christmas card. Somebody\'s mom frames it.' },
+        { label: 'No stopping', effects: { mood: { '@front': -5 } },
+          outcome: '{front} watches the lights disappear in the side mirror like someone watching their childhood leave.' }
       ] },
 
-    { id: 'road_long_weekend', type: 'road', speaker: 'jaxon', title: 'Long-Weekend Traffic', once: false, cooldown: 18,
+    { id: 'road_long_weekend', type: 'road', speaker: '@filler', title: 'Long-Weekend Traffic', once: false, cooldown: 18,
       gate: { holiday: ['canada_day'], minKm: 60 },
       text: 'Canada Day. Every camper trailer in the province is on the same highway, doing 70, towing a boat. One has a flag the size of your van.',
       choices: [
         { label: 'Enjoy the parade', hint: 'Burnout ↑ · chemistry ↑', effects: { burnout: 3, chemistry: 3 },
-          outcome: 'You honk at every flag. Every flag honks back. By Davidson it is a convoy. Somebody waves a hockey stick.' },
+          outcome: 'You honk at every flag. Every flag honks back. By the next town it is a convoy. Somebody waves a hockey stick.' },
         { label: 'Hand flyers to the campers', hint: 'Fans ↑', effects: { fans: 6, burnout: 3 },
-          outcome: 'Jaxon runs flyers along the line at a construction stop. Six campers promise to come. Two bring lawn chairs.' },
+          outcome: '{filler} runs flyers along the line at a construction stop. Six campers promise to come. Two bring lawn chairs.' },
         { label: 'Grid-road shortcut', hint: 'Gamble: gravel or glory',
           roll: { chance: 0.5, success: { effects: { mood: { all: 3 } }, outcome: 'Empty gravel all the way. You beat the convoy by an hour.' },
             fail: { effects: { van: { condition: -3 } }, outcome: 'Every other band had the same idea. It is a grid-road traffic jam. With cows.' } },
-          outcome: 'Dana opens the road atlas.' }
+          outcome: '{soloist} opens the road atlas.' }
+      ] },
+
+    // v0.9: an anywhere card for the other three bands (Hail Damage's are Baba's lunch and the cape in the door)
+    { id: 'road_giant_perogy', type: 'road', speaker: '@filler', title: "The World's Largest Perogy", once: false, cooldown: 12,
+      gate: { band: OTHERS },
+      text: "A sign: WORLD'S LARGEST PEROGY, 2 KM. {filler} is already pointing. Nobody is sure the claim holds up. Nobody wants to be the one to check.",
+      choices: [
+        { label: 'Photo with the perogy', hint: 'Buzz ↑ · Burnout ↑', effects: { buzz: 4, burnout: 3 },
+          outcome: 'The band, squinting, under a giant perogy on a giant fork. It is the best press photo you have. It is not close.' },
+        { label: 'Lunch at the perogy café', hint: '−$30 · Moods ↑', effects: { fund: -30, mood: { all: 4 } },
+          outcome: 'The café under the perogy serves perogies. Of course it does. {front} orders three dozen "for the road". They do not survive the road.' },
+        { label: 'Write a song about it', hint: 'Gamble: a hit or a novelty',
+          roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
+            success: { effects: { fans: 6, chemistry: 3 }, outcome: 'Four chords, a chorus about sour cream. The crowd sings it back at the gig. Nobody saw that coming.' },
+            fail: { effects: { mood: { '@front': -4 } }, outcome: 'It rhymes "perogy" with "fogey". {deadpan} asks for it never to be played again. It is played again.' } },
+          outcome: '{front} writes the chorus on a napkin.' }
       ] },
 
     /* ---- YOU drive (the band's driver quit): wrong turns, gas-station arguments ------------------------------------------ */
     { id: 'road_wrong_turn', type: 'road', speaker: 'dana', title: 'Wrong Turn', once: false, cooldown: 4,
-      gate: { driver: ['you'] },
+      gate: { driver: ['you'], band: HD },
       text: 'You were supposed to turn at the last town. You are now somewhere with a grain elevator, a Co-op and no road signs. Kenji never missed a turn. Kenji is not here.',
       choices: [
         { label: 'Ask at the Co-op', hint: 'Burnout ↑ · fans ↑', effects: { burnout: 3, fans: 3 },
@@ -390,7 +445,7 @@
       ] },
 
     { id: 'road_gas_argument', type: 'road', speaker: 'jaxon', title: 'Gas Station Argument', once: false, cooldown: 4,
-      gate: { driver: ['you'] },
+      gate: { driver: ['you'], band: HD },
       text: 'Pump 4. Who is paying? Marcel says he paid last time. He did not. Dana has a spreadsheet. Jaxon has a family-size bag of ketchup chips and no wallet.',
       choices: [
         { label: 'The band fund pays', hint: '−$40', effects: { fund: -40, chemistry: 2 },
@@ -404,7 +459,7 @@
       ] },
 
     { id: 'road_lead_foot', type: 'road', speaker: 'marcel', title: 'Lead Foot', once: false, cooldown: 6,
-      gate: { driver: ['you'], minKm: 60 },
+      gate: { driver: ['you'], minKm: 60, band: HD },
       text: 'You drive like you drum: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
       choices: [
         { label: 'Pay the ticket', hint: '−$120', effects: { fund: -120 },
@@ -417,49 +472,78 @@
           outcome: 'You roll down the window.' }
       ] },
 
-    { id: 'road_driver_music', type: 'road', speaker: 'dana', title: 'Driver Picks the Music', once: false, cooldown: 6,
+    { id: 'road_driver_music', type: 'road', speaker: '@soloist', title: 'Driver Picks the Music', once: false, cooldown: 6,
       gate: { driver: ['you'] },
       text: 'The rule: the driver picks the music. You are the driver. You put on your own demo. On repeat. The band makes a noise like a van full of cats.',
       choices: [
         { label: 'The demo. On repeat.', hint: 'Moods ↓ · chemistry ↑', effects: { mood: { all: -3 }, chemistry: 3 },
           outcome: 'By the fourth listen everyone is critiquing the bridge. By the tenth they are fixing it. It is basically rehearsal.' },
-        { label: 'Give Marcel the aux', effects: { mood: { marcel: 5, dana: -3 } },
-          outcome: 'Four hours of Gregorian chant and one polka. Marcel says it is "research". It might be.' },
-        { label: 'Silence. Like Kenji did.', hint: 'Burnout ↓', effects: { burnout: -4, mood: { all: 2 } },
+        { label: 'Give the singer the aux', effects: { mood: { '@front': 5, '@soloist': -3 } },
+          outcome: 'Four hours of Gregorian chant and one polka. {front} says it is "research". It might be.' },
+        { label: 'Silence. Total silence.', hint: 'Burnout ↓', effects: { burnout: -4, mood: { all: 2 } },
           outcome: 'The prairie goes by in perfect silence. Somebody tears up. Nobody says who.' }
-      ] }
-,
+      ] },
+
+    // v0.9: the you-drive classics for the other three bands (Hail Damage keeps its own wrong turn and pump-4 argument)
+    { id: 'road_lost_grid_road', type: 'road', speaker: '@soloist', title: 'Wrong Turn, Grid Road', once: false, cooldown: 4,
+      gate: { driver: ['you'], band: OTHERS },
+      text: 'You were supposed to turn at the last town. You are now on a grid road between two canola fields, with no signs, one bar of signal and a farm dog escorting the van.',
+      choices: [
+        { label: 'Ask at the farmhouse', hint: 'Burnout ↑ · fans ↑', effects: { burnout: 3, fans: 3 },
+          outcome: 'The farmer draws you a map on a feed-store receipt and buys a CD. He says it is for his daughter. It is for him.' },
+        { label: 'Trust the phone GPS', hint: 'Gamble: satellites vs. the prairie',
+          roll: { chance: 0.5, success: { effects: { chemistry: 2 }, outcome: 'Recalculating... it works. The band claps. You bow. You nearly miss the next turn.' },
+            fail: { effects: { burnout: 5, fund: -30 }, outcome: 'The GPS sends you down a road that becomes a field. Extra gas, a flat of patience.' } },
+          outcome: 'You hold the phone up to the sky like an offering.' },
+        { label: 'U-turn. Blame the navigator.', effects: { chemistry: -3, mood: { '@filler': -4 } },
+          outcome: '{filler} was asleep. It does not matter. It will never matter. The band has chosen its story.' }
+      ] },
+
+    { id: 'road_pump_standoff', type: 'road', speaker: '@grumbler', title: 'Gas Station Standoff', once: false, cooldown: 4,
+      gate: { driver: ['you'], band: OTHERS },
+      text: 'Pump 4. Who is paying? {front} says they paid last time. They did not. {deadpan} has the receipts. Everyone else has a family-size bag of ketchup chips and no wallet.',
+      choices: [
+        { label: 'The band fund pays', hint: '−$40', effects: { fund: -40, chemistry: 2 },
+          outcome: 'The band fund pays. The band fund always pays. The band fund is the adult in this van.' },
+        { label: 'Split it evenly', hint: 'Moods ↓', effects: { mood: { all: -3 } },
+          outcome: 'Twenty minutes of math at the pump. Somebody owes somebody $3.40. It will be brought up at the reunion.' },
+        { label: 'Loser of the argument pays', hint: 'Gamble: debate club',
+          roll: { chance: 0.5, success: { effects: { chemistry: 3 }, outcome: '{front} loses, with dignity, and pays in coins. Exact change. A legend.' },
+            fail: { effects: { chemistry: -4, burnout: 3 }, outcome: 'Nobody loses. Everybody loses. The attendant pays, out of pity. You tip him in merch.' } },
+          outcome: '{deadpan} fans out the receipts.' }
+      ] },
 
     // ---- v0.7 (WORLDSIM): region road cards abroad (gate.region; GG.tour only draws these on tour, never at home).
-    //      No van effects: the Moose Hearse is at home. Kenji still drives, on whichever side of the road they use.
+    //      No van effects: the band's own van is at home. The designated driver still drives, on whichever side of the road
+    //      they use (the Kenji-at-the-wheel ones are gated driver: ['kenji']). v0.9: role aliases + tokens for the rest.
     { id: 'road_uk_left', type: 'road', speaker: 'dana', title: 'The Wrong Side', gate: { region: ['uk_europe'], driver: ['kenji'] },
       text: 'Roundabouts. So many roundabouts. Kenji takes every one on the left without a flicker. Dana has her eyes shut and her hands on the dash.',
       choices: [
         { label: 'Trust Kenji', hint: 'Chemistry ↑', effects: { chemistry: 3 }, outcome: 'Four hundred roundabouts. Zero mistakes. Kenji parks in a space the width of a shopping cart. Silent applause.' },
         { label: 'Dana navigates from a paper map', hint: 'Dana ↑ · Burnout ↑', effects: { mood: { dana: 5 }, burnout: 4 }, outcome: 'Three wrong turns, one sheep, one castle nobody planned to see. Dana is thrilled.' }
       ] },
-    { id: 'road_uk_hedgerow', type: 'road', speaker: 'jaxon', title: 'The Hedgerow Lane', gate: { region: ['uk_europe'], minKm: 100 },
+    { id: 'road_uk_hedgerow', type: 'road', speaker: '@filler', title: 'The Hedgerow Lane', gate: { region: ['uk_europe'], minKm: 100 },
       text: 'The satnav sends the tiny van down a lane between two hedges, exactly one van wide. A tractor appears ahead. It is not reversing.',
       choices: [
         { label: 'Reverse half a mile', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'Twenty minutes backwards through a hedge tunnel. The farmer waves. It feels sarcastic.' },
         { label: 'Offer him tickets', hint: 'Gamble: a new fan, or a long wait', roll: { chance: 0.5, stat: 'buzz', statScale: 0.005,
           success: { effects: { fans: 12, buzz: 3 }, outcome: 'He reverses, then comes to the gig with his whole family. They stand at the front in wellies.' },
-          fail: { effects: { burnout: 6 }, outcome: '"Not my kind of music," he says, without asking what kind it is. He eats a sandwich. You wait.' } }, outcome: 'Jaxon waves the guest list out the window.' }
+          fail: { effects: { burnout: 6 }, outcome: '"Not my kind of music," he says, without asking what kind it is. He eats a sandwich. You wait.' } }, outcome: '{filler} waves the guest list out the window.' }
       ] },
-    { id: 'road_eu_border', type: 'road', speaker: 'marcel', title: 'The Border Check', gate: { region: ['uk_europe'], minKm: 200 },
-      text: 'A border officer opens the back of the van and finds the cape. He holds it up to the light for a long time. "Purpose of visit?"',
+    { id: 'road_eu_border', type: 'road', speaker: '@front', title: 'The Border Check', gate: { region: ['uk_europe'], minKm: 200 },
+      text: 'A border officer opens the back of the van and finds {front}\'s stage clothes. He holds them up to the light for a long time. "Purpose of visit?"',
       choices: [
-        { label: '"Business." (Cape business.)', hint: 'Marcel ↑', effects: { mood: { marcel: 5 } }, outcome: 'He folds the cape with great care and hands it back. "Good luck with the business."' },
-        { label: 'Let Marcel explain the album', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 4, buzz: 3 }, outcome: 'Forty minutes on the moose concept album. The officer asks for a signed copy. For his mother.' }
+        { label: '"Business." (Stage-clothes business.)', hint: 'The singer ↑', effects: { mood: { '@front': 5 } }, outcome: 'He folds everything with great care and hands it back. "Good luck with the business."' },
+        { label: 'Let the singer explain the album', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 4, buzz: 3 }, outcome: 'Forty minutes on the concept album. The officer asks for a signed copy. For his mother.' }
       ] },
-    { id: 'road_eu_autobahn', type: 'road', speaker: 'dana', title: 'The Autobahn', gate: { region: ['uk_europe'], minKm: 150 },
+    { id: 'road_eu_autobahn', type: 'road', speaker: '@soloist', title: 'The Autobahn', gate: { region: ['uk_europe'], minKm: 150 },
       text: 'No speed limit. The tiny rental van tops out at 104 km/h. Every car in Germany passes you, flashing its lights like a disco.',
       choices: [
         { label: 'Stay in the slow lane', hint: 'Burnout ↑', effects: { burnout: 3, chemistry: 2 }, outcome: 'Six hours of trucks. A game of license-plate bingo gets extremely competitive.' },
         { label: 'Stop at a rest stop with a museum', hint: 'Moods ↑', effects: { mood: { all: 4 }, fund: -60 }, outcome: 'A rest stop with a sausage museum. You do not ask questions. You buy the fridge magnet.' }
       ] },
-    { id: 'road_jp_toll', type: 'road', speaker: 'jaxon', title: 'The Tolls', gate: { region: ['japan'], minKm: 150 },
-      text: 'Tokyo to Osaka on the expressway. Jaxon reads the toll receipts aloud. The tolls cost more than the first gig ever paid.',
+    { id: 'road_jp_toll', type: 'road', speaker: '@filler', title: 'The Tolls', gate: { region: ['japan'], minKm: 150 },
+      text: 'Tokyo to Osaka on the expressway. {filler} reads the toll receipts aloud. The tolls cost more than the first gig ever paid.',
       choices: [
         { label: 'Pay and admire the rest stops', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 4 } }, outcome: 'The rest stops have gardens, hot food and a toilet with more buttons than the mixing desk.' },
         { label: 'Take the slow roads', hint: 'Burnout ↑', effects: { burnout: 5, chemistry: 2 }, outcome: 'Rice fields, mountains, a village festival. You arrive at soundcheck with thirty seconds to spare.' }
@@ -472,13 +556,13 @@
           fail: { effects: { fund: -120, burnout: 3 }, outcome: 'The robot refuses. A very polite man directs you to a lot three km away.' } }, outcome: 'Kenji looks at the robot. The robot looks at Kenji.' },
         { label: 'Park far away and walk', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'You carry the kit through a train station. Commuters make way in perfect silence.' }
       ] },
-    { id: 'road_au_roadtrain', type: 'road', speaker: 'jaxon', title: 'Road Train', gate: { region: ['australia'], minKm: 300 },
-      text: 'A road train overtakes you: a truck pulling four trailers, fifty metres of it. It takes nine seconds. Jaxon counts out loud.',
+    { id: 'road_au_roadtrain', type: 'road', speaker: '@filler', title: 'Road Train', gate: { region: ['australia'], minKm: 300 },
+      text: 'A road train overtakes you: a truck pulling four trailers, fifty metres of it. It takes nine seconds. {filler} counts out loud.',
       choices: [
-        { label: 'Wave at the driver', hint: 'Buzz ↑', effects: { buzz: 3, mood: { jaxon: 4 } }, outcome: 'The driver honks the horn in the rhythm of your single. He has the album. Nobody knows how.' },
+        { label: 'Wave at the driver', hint: 'Buzz ↑', effects: { buzz: 3, mood: { '@filler': 4 } }, outcome: 'The driver honks the horn in the rhythm of your single. He has the album. Nobody knows how.' },
         { label: 'Pull over and let it go', hint: 'Burnout ↑', effects: { burnout: 3 }, outcome: 'You wait in the red dirt. The dust takes ten minutes to settle. It is in the snare forever now.' }
       ] },
-    { id: 'road_au_nothing', type: 'road', speaker: 'dana', title: 'Eight Hundred km of Nothing', gate: { region: ['australia'], minKm: 500 },
+    { id: 'road_au_nothing', type: 'road', speaker: '@soloist', title: 'Eight Hundred km of Nothing', gate: { region: ['australia'], minKm: 500 },
       text: 'Red dirt, blue sky, a single tree every hundred km. The next fuel stop is 340 km away. The fuel gauge disagrees about the maths.',
       choices: [
         { label: 'Fill every jerry can', hint: 'Fund ↓', effects: { fund: -120 }, outcome: 'You roll into the roadhouse on fumes and pride. The owner has a guest book. You sign it as a band.' },
@@ -486,10 +570,10 @@
           success: { effects: { chemistry: 4 }, outcome: 'You coast in with the needle under E. The band cheers like it is a gig.' },
           fail: { effects: { burnout: 8, fund: -200 }, outcome: 'Out of fuel at km 322. A grey nomad couple in a caravan tows you in and makes you tea.' } }, outcome: 'You do the maths again. It still disagrees.' }
       ] },
-    { id: 'road_au_kangaroo', type: 'road', speaker: 'marcel', title: 'Dusk', gate: { region: ['australia'], minKm: 150 },
-      text: 'Dusk on a country road. Kangaroos everywhere, standing, staring. Marcel has named nine of them.',
+    { id: 'road_au_kangaroo', type: 'road', speaker: '@front', title: 'Dusk', gate: { region: ['australia'], minKm: 150 },
+      text: 'Dusk on a country road. Kangaroos everywhere, standing, staring. {front} has named nine of them.',
       choices: [
-        { label: 'Crawl along at 40', hint: 'Burnout ↑', effects: { burnout: 4, mood: { marcel: 3 } }, outcome: 'Slow and safe. Marcel narrates each kangaroo\'s life story. Some have tragic endings.' },
+        { label: 'Crawl along at 40', hint: 'Burnout ↑', effects: { burnout: 4, mood: { '@front': 3 } }, outcome: 'Slow and safe. {front} narrates each kangaroo\'s life story. Some have tragic endings.' },
         { label: 'Stop for the night in a pub', hint: 'Fund ↓ · Moods ↑', effects: { fund: -150, mood: { all: 5 } }, outcome: 'A country pub with rooms upstairs. The locals ask for a song. You play one, acoustic, on bar stools.' }
       ] },
     { id: 'road_ru_taiga', type: 'road', speaker: 'dmitri', title: 'Breakdown in the Taiga', gate: { region: ['russia'], minKm: 300 },
@@ -498,44 +582,55 @@
         { label: 'Help Dmitri fix it', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 4, burnout: 5 }, outcome: 'Four hours, one borrowed part from a passing farmer, a lot of tea. The bus starts. Everybody cheers.' },
         { label: 'Flag down a truck', hint: 'Fund ↓', effects: { fund: -200, burnout: 3 }, outcome: 'A logging truck tows the bus to the next town. The driver plays your album on the way. Loud.' }
       ] },
-    { id: 'road_ru_cold', type: 'road', speaker: 'jaxon', title: 'Minus Thirty-Eight', gate: { region: ['russia'], season: ['winter'] },
-      text: 'Minus thirty-eight. The locals are worried about the band. The band plugs in the block heater they brought from Saskatoon.',
+    { id: 'road_ru_cold', type: 'road', speaker: '@filler', title: 'Minus Thirty-Eight', gate: { region: ['russia'], season: ['winter'] },
+      text: 'Minus thirty-eight. The locals are worried about the band. The band plugs in the block heater they brought from home.',
       choices: [
-        { label: 'Explain the block heater', hint: 'Buzz ↑', effects: { buzz: 4, chemistry: 2 }, outcome: 'A crowd gathers around the Saskatoon block heater. It becomes a local legend. Someone writes a song about it.' },
+        { label: 'Explain the block heater', hint: 'Buzz ↑', effects: { buzz: 4, chemistry: 2 }, outcome: 'A crowd gathers around the prairie block heater. It becomes a local legend. Someone writes a song about it.' },
         { label: 'Sleep in the warm bus', hint: 'Burnout ↓', effects: { burnout: -4 }, outcome: 'Everyone piles in under every coat. It is cosy. It smells like a hockey bag.' }
       ] },
-    { id: 'road_ru_train', type: 'road', speaker: 'marcel', title: 'Tea on the Trans-Siberian', gate: { region: ['russia'], minKm: 800 },
-      text: 'Day three on the train. Tea in glass holders, a chess game with a retired sailor, snow forever outside. Marcel has written half an opera.',
+    { id: 'road_ru_train', type: 'road', speaker: '@front', title: 'Tea on the Trans-Siberian', gate: { region: ['russia'], minKm: 800 },
+      text: 'Day three on the train. Tea in glass holders, a chess game with a retired sailor, snow forever outside. {front} has written half an opera.',
       choices: [
-        { label: 'Let him write the opera', hint: 'Marcel ↑ · Chemistry ↓', effects: { mood: { marcel: 6 }, chemistry: -2 }, outcome: 'He writes all night. It is about a moose on a train. Obviously.' },
-        { label: 'Band chess tournament', hint: 'Chemistry ↑', effects: { chemistry: 4 }, outcome: 'The sailor beats everyone. Then he teaches Jaxon a card game and loses his hat.' }
+        { label: 'Let the opera happen', hint: 'The singer ↑ · Chemistry ↓', effects: { mood: { '@front': 6 }, chemistry: -2 }, outcome: 'All night, by the light of a tea glass. It is about a moose on a train. Obviously.' },
+        { label: 'Band chess tournament', hint: 'Chemistry ↑', effects: { chemistry: 4 }, outcome: 'The sailor beats everyone. Then he teaches {filler} a card game and loses his hat.' }
       ] }
   ];
 
-  // v0.6.1 (Addendum 1 C1): the designated driver per band. Only Hail Damage plays now; the others ride in v0.9.
+  // v0.6.1 (Addendum 1 C1): the designated driver per band. v0.9: every band plays, so every driver drives.
+  //   you.takeOver is the neutral line (no cactus: it is not always Kenji's van); you.byBand[bandId].takeOver is the band's
+  //   own version, read as career.pool(state, drivers.you, 'takeOver') (Hail Damage keeps its tiny cactus; packs add theirs).
   //   { <memberId>: { id, band, name, dashboard (the dash item the van scene shows), dashName, blurb, effect,
   //     mods: { breakdown x, wear x, burnout x, comfort ±, repair x (0 = free), chemistry + per long drive, roadChance x },
   //     back (group-chat line when they take the wheel back) } } + you (the founder, when the driver quits).
+  //   shades: true = the van scene draws the driver in sunglasses (Kenji; Earl keeps his own glasses).
+  //   dock / load (optional): the week screen's van lines for this driver (52_ui_week vanLine); Kenji uses the silent default.
   GG.content.drivers = {
-    kenji: { id: 'kenji', band: 'hail_damage', name: 'Kenji', dashboard: 'cactus', dashName: 'a single tiny cactus',
+    kenji: { id: 'kenji', band: 'hail_damage', name: 'Kenji', dashboard: 'cactus', dashName: 'a single tiny cactus', shades: true,
       blurb: 'Silent. Perfect record. Never uses GPS, always exactly on time. Nobody knows if he has a licence.',
       effect: 'Fewer breakdowns', mods: { breakdown: 0.5 },
       back: 'Kenji is back in the driver\'s seat. Nobody saw him get in. The tiny cactus has been watered.' },
     moth: { id: 'moth', band: 'frost_heave', name: 'Moth', dashboard: 'laundry', dashName: "Moth's laundry",
       blurb: 'It is her apartment. Nobody else may drive. Her stuff is everywhere.',
       effect: 'Free maintenance, terrible comfort', mods: { repair: 0, comfort: -2 },
-      back: 'Moth is back. She has re-hung her laundry from the rear-view mirror. The van is her apartment again.' },
+      back: 'Moth is back. She has re-hung her laundry from the rear-view mirror. The van is her apartment again.',
+      dock: 'The van is warming up. Moth is already in it. She lives in it.',
+      load: "Load the van. Knock first. Moth is in the driver's seat, folding laundry." },
     tamara: { id: 'tamara', band: 'gravel_kings', name: 'T-Bone', dashboard: 'cassettes', dashName: "Chase's '80s cassettes",
       blurb: "The only adult in the van. Chase begs to drive and blasts '80s cassettes. The answer is no.",
       effect: 'Safe but slow', mods: { breakdown: 0.6, burnout: 1.3 },
-      back: 'T-Bone has the keys again. Chase is in the back, sulking, with a Walkman.' },
+      back: 'T-Bone has the keys again. Chase is in the back, sulking, with headphones and one cassette.',
+      dock: 'The van is warming up. T-Bone has the keys and a checklist.',
+      load: 'Load the van. T-Bone checks the tire pressure. Chase asks to drive. The answer is no.' },
     earl: { id: 'earl', band: 'grid_road_ramblers', name: 'Earl', dashboard: 'atlas', dashName: 'a 1987 road atlas',
       blurb: 'Twenty under the limit. Stops at every historical marker and reads it aloud.',
-      effect: 'Slow, but road stories boost chemistry', mods: { burnout: 1.3, chemistry: 2 },
-      back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.' },
+      effect: 'Slow and gentle on the van; road stories boost chemistry', mods: { breakdown: 0.6, burnout: 1.3, chemistry: 2 },
+      back: 'Earl is driving again. First stop: a historical marker about a grain elevator that is no longer there.',
+      dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
+      load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },
     you: { id: 'you', band: null, name: 'You', dashboard: 'none', dashName: 'nothing but a fuel light',
       blurb: 'The founder, behind the wheel. You drive like you drum.',
       effect: 'More wrong turns, more gas-station arguments', mods: { breakdown: 1.15, roadChance: 1.25 },
-      takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' }
+      takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. Nobody touches the stuff on the dash.',
+      byBand: { hail_damage: { takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' } } }
   };
 })(window.GG);

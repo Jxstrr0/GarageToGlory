@@ -232,4 +232,49 @@ test('bots over 5 years: posts, virality, a Patreeon in the Signed era; determin
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '29_sim_fans.js is pure');
 });
 
+test('v0.9 (Q5): the home superfan per band in the dale slot; rival comments from the cast', () => {
+  const GG = fresh(), F = GG.fans, B = GG.content.bandbook;
+  const fh = GG.career.newCareer({ seed: 6, bandId: 'frost_heave' });
+  const dale = B.superfans.find(d => d.id === 'dale');
+  eq(F.homeSuperfan(fh).name, (B.homeSuperfan && B.homeSuperfan.frost_heave || dale).name, 'fallback: Dale (until content)');
+  const saved = B.homeSuperfan;
+  B.homeSuperfan = Object.assign({}, saved || {}, { frost_heave: { name: 'Lorna from the Suds-O-Rama', from: 'Regina', blurb: 'Folds your shirts.',
+    gigLines: ['{n} shows in, Lorna folds the merch shirts before you can sell them.'], comments: ['Lovely. Shirts are folded.'], gift: 'lorna_socks' } });
+  try {
+    const s = GG.career.newCareer({ seed: 6, bandId: 'frost_heave' });
+    ok(s.superfans.dale, 'the slot is still dale');
+    eq([F.superfanDef('dale', s).name, F.superfanDef('dale', s).short, GG.career.fillText(s, '{superfan}')], ['Lorna from the Suds-O-Rama', 'Lorna', 'Lorna from the Suds-O-Rama']);
+    const r = { grade: 'B', crowd: 20, capacity: 50, km: 0, city: s.city, lines: [] };
+    F.gigShape(s, { capacity: 50, km: 0, city: s.city }, r);
+    ok(r.lines.some(l => /Lorna folds the merch shirts/.test(l)), 'her gig line ' + r.lines);
+    eq(F.superfanList(s).find(x => x.id === 'dale').name, 'Lorna from the Suds-O-Rama', 'the Bandbook list');
+  } finally { B.homeSuperfan = saved; }
+  const cast = GG.content.rivalry.cast, had = cast.mall_rats;
+  cast.mall_rats = Object.assign({}, had || {}, { comments: ['Brought to you by Skate Juice™.'] });
+  try {
+    const s = GG.career.newCareer({ seed: 7, bandId: 'frost_heave' });
+    const post = F.post(s, {});
+    eq(post.comments[post.comments.length - 1].text, 'Brought to you by Skate Juice™.', 'the rival comments in its own voice');
+    eq(post.comments[post.comments.length - 1].name, 'Mall Rats');
+  } finally { if (had) cast.mall_rats = had; else delete cast.mall_rats; }
+});
+
+test('v0.9: Patreeon chat pools the band layer (Dale\'s lines for Hail Damage only); an unhappy club grumbles instead', () => {
+  const GG = fresh();
+  const hd = GG.career.newCareer({ seed: 5, bandId: 'hail_damage', player: { name: 'T' } });
+  const fh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'T' } });
+  ok(GG.fans.pool(hd, ['club', 'payoutChat'], []).some(t => /Dale/.test(t)), 'Hail Damage: Dale on the Full Kit tier');
+  ok(!GG.fans.pool(fh, ['club', 'payoutChat'], []).some(t => /Dale/.test(t)), 'Frost Heave: no Dale');
+  const month = (s, happy) => {
+    at(s, 2, 3); s.era = 'signed'; GG.fans.ensure(s);
+    s.fanClub = { members: 12, happiness: happy, tier: 'snare', earned: 0, lastExclusive: -1, exclusives: 0, paid: 0 };
+    const n = s.chat.length; GG.fans.weekly(s);
+    return s.chat.slice(n).map(m => m.text).filter(t => /Patreeon/.test(t));
+  };
+  const happy = month(GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } }), 90);
+  const sad = month(GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } }), 10);
+  ok(happy.length === 1 && GG.content.bandbook.club.payoutChat.some(t => happy[0].startsWith(t.split('{')[0])), 'a happy month: payout line ' + happy);
+  ok(sad.length === 1 && GG.content.bandbook.club.grumbleChat.includes(sad[0]) && !sad.some(t => /Patreeon payout|Patreeon paid|Patreeon: /.test(t)), 'an unhappy month: no cheerful payout line ' + sad);
+});
+
 done('sim_fans');

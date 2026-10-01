@@ -63,12 +63,16 @@ test('content: four regions (no Canada, no USA), the C6 cities with map pins, ve
 test('content: world cards (region + story) and region road cards are valid; Kenji never speaks', () => {
   const GG = fresh(), K = GG.content, C = GG.contracts, W = K.world;
   const ids = new Set((K.cards || []).map(c => c.id).concat(K.roadCards.map(c => c.id), GG.drama.cards().map(c => c.id), GG.labels.cards().map(c => c.id), GG.rival.cards().map(c => c.id), GG.fans.cards().map(c => c.id)));
-  const speakers = Object.keys(K.npcs).concat(K.bands.hail_damage.members.map(m => m.id));
+  // v0.9: a world card is voiced by an npc, a role alias, the recruit slot, or a talking member of the band(s) its gate names (packs);
+  // an ungated card may not name any band's member. Silent members (Kenji) never speak.
+  const npcs = Object.keys(K.npcs).concat(C.ROLE_ALIASES || [], ['recruit']);
+  const talk = bid => ((K.bands[bid] && K.bands[bid].members) || []).filter(m => !m.silent).map(m => m.id);
+  const speakersOf = c => npcs.concat(...((c.gate && c.gate.band) || []).map(talk));
   const TOUR_KEYS = ['regionFans', 'homesick', 'gift', 'endTour', 'accept', 'big'];
   W.cards.forEach(c => {
     const w = 'world card ' + c.id;
     ok(/^wt_[a-z0-9_]+$/.test(c.id) && !ids.has(c.id), w + ': id'); ids.add(c.id);
-    ok(C.CARD_TYPES.includes(c.type) && speakers.includes(c.speaker) && c.speaker !== 'kenji', w + ': type/speaker');
+    ok(C.CARD_TYPES.includes(c.type) && speakersOf(c).includes(c.speaker) && c.speaker !== 'kenji', w + ': type/speaker ' + c.speaker);
     ok(c.title.length <= 32 && c.text.length <= 280, w + ': lengths');
     Object.keys(c.gate).forEach(k => ok(C.GATE_KEYS.includes(k), w + ': gate ' + k));
     eq(c.gate.era, ['world'], w + ': World era');
@@ -234,6 +238,28 @@ test('homesickness: forces a rest, the homesick card can fly the band home early
   ok(!T.active(s) && s.tour.history[0].cut && s.tour.history[0].gigs === 2, 'home after this week\'s show: ' + JSON.stringify(s.tour.history[0]));
 });
 
+test('homesickness (v0.9 fixer): the band\'s own homesick card keeps the 12-week cooldown (no card every tour week)', () => {
+  for (const band of ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+    const GG = fresh(), T = GG.tour, s = GG.career.newCareer({ seed: 13, bandId: band, player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 60000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    s.eraHistory.push({ era: 'local', week: 20 }, { era: 'signed', week: 40 }, { era: 'world', week: 100 });
+    s.milestones.worldReady = 100;
+    T.unlock(s, 'russia'); T.book(s, 'ru_trans_siberian', { stay: 'couch' }); s.phase = 'wrap'; GG.career.endWeek(s);
+    const hits = [];
+    for (let n = 0; n < 14 && T.active(s); n++) {
+      const st = GG.career.startWeek(s), id = st.card && st.card.id;
+      if (id && /^wt_homesick/.test(id)) { hits.push(id); GG.career.resolveCard(s, 1); }   // 'Finish what we started' (homesickness stays)
+      else if (s.card && !s.card.resolved) GG.career.resolveCard(s, 0);
+      GG.career.setPlan(s, ['rest', 'rest', 'rest']); GG.career.runWeek(s, { autoGig: true });
+      if (s.phase === 'gig') GG.career.finishGig(s, null);
+      s.tour.homesick = 95; GG.career.endWeek(s);
+    }
+    eq(hits.length, 1, band + ': one homesick card on a 4-stop tour ' + hits.join(','));
+    ok(band === 'hail_damage' ? hits[0] === 'wt_homesick' : hits[0] === 'wt_homesick_' + band, band + ': the band\'s own variant ' + hits[0]);
+  }
+});
+
 test('Japan: silent crowd until the song ends (then applause), never boos; the fan-club president; gifts', () => {
   const GG = fresh(), T = GG.tour, s = world(GG, 17, 125);
   T.unlock(s, 'japan'); T.book(s, 'jp_bullet'); s.phase = 'wrap'; GG.career.endWeek(s);
@@ -348,6 +374,74 @@ test('the Moose Opera: a ready moose album → the Nordic Moose Run → platinum
   s.phase = 'monday'; s.weekStart = null; s.card = null;
   const st = GG.career.startWeek(s); eq(st.card && st.card.id, 'wt_moose', 'Marcel\'s moment');
   ok(!T.canBook(s, 'eu_moose_run').ok, 'once');
+});
+
+test('v0.9 (Q3): a generic World payoff: package needs { flag }, payoff at its city, counts toward the Gong like the moose', () => {
+  const GG = fresh(), T = GG.tour, W = GG.content.world, base = W.packages.find(p => p.id === 'eu_moose_run');
+  const pkg = Object.assign({}, base, { id: 'eu_squat_anthem', name: 'The Squat Anthem Tour', needs: { flag: 'squatAnthem', is: ['ready'], band: ['frost_heave'] },
+    payoff: { city: base.stops[base.stops.length - 1].city, flag: 'squatAnthemBig', trophy: 'Big in Berlin: {band}', line: '{front} crowd-surfs to the soundboard.', fans: 2500, buzz: 10 } });
+  W.packages.push(pkg);
+  try {
+    const s = GG.career.newCareer({ seed: 44, bandId: 'frost_heave', player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 60000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    T.unlock(s, 'uk_europe');
+    ok(!T.packages(s, 'uk_europe').some(p => p.id === pkg.id) && !T.canBook(s, pkg.id).ok, 'hidden until the storyline flag');
+    ok(!T.packages(s, 'uk_europe').some(p => p.id === 'eu_moose_run'), 'no Moose Run for Frost Heave');
+    s.flags.squatAnthem = 'ready';
+    ok(T.canBook(s, pkg.id).ok, 'on: ' + T.canBook(s, pkg.id).why);
+    const g0 = GG.tour.gong(s).case.score;
+    T.book(s, pkg.id); s.phase = 'wrap'; GG.career.endWeek(s);
+    const ev = []; GG.on('tour:payoff', e => ev.push(e.packageId));
+    playTour(GG, s);
+    ok(s.tour.payoffs[pkg.id] && s.flags.squatAnthemBig === true && ev.length === 1, 'the payoff fired once ' + JSON.stringify(s.tour.payoffs));
+    ok(s.trophies.some(t => t.title === 'Big in Berlin: Frost Heave'), 'trophy with tokens');
+    ok(T.payoffDone(s) && GG.tour.gong(s).case.score >= g0 + GG.tour.cfg().gong.moose, 'Gong credit like the moose');
+    ok(!T.canBook(s, pkg.id).ok, 'once');
+    const hd = world(GG, 45); hd.flags.squatAnthem = 'ready';
+    ok(!T.needsMet(hd, pkg), 'band-scoped needs');
+  } finally { W.packages.pop(); }
+});
+
+test('v0.9 (Q3): every band pack\'s payoff fires at its own gig and counts for the Gong; the storyline flags count too', () => {
+  const GG = fresh(), T = GG.tour;
+  const cases = [
+    ['frost_heave', 'eu_squat_anthem_tour', { squatAnthem: 'berlin' }, 'wackelstein_fest', 'squatAnthemPayoff'],
+    ['gravel_kings', 'gk_mudstonbury_headline', { mudHeadline: true }, 'mudstonbury_fest', 'mudHeadlinePayoff'],
+    ['grid_road_ramblers', 'au_country_circuit', { outback: 'tumbleworth' }, 'tumbleworth_fest', 'outbackPayoff']];
+  cases.forEach(([bid, pid, flags, venue, flag], i) => {
+    const pkg = T.pkg(pid);
+    ok(pkg && pkg.needs && pkg.payoff, bid + ': package ' + pid);
+    const s = GG.career.newCareer({ seed: 60 + i, bandId: bid, player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 90000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    T.unlock(s, pkg.region);
+    ok(!T.payoffDone(s), bid + ': no payoff yet');
+    Object.assign(s.flags, flags);
+    // a festival stop only runs in its weeks: move to the package's departure window
+    const win = T.departWindow(pkg); if (win && win.length) at(s, 5 * 24 + win[0]);
+    Object.assign(s, { phase: 'monday', gig: null, weekStart: null });
+    const why = T.canBook(s, pid); ok(why.ok, bid + ': bookable: ' + why.why);
+    if (!why.ok) return;
+    const ev = []; GG.on('tour:payoff', e => { if (e.packageId === pid) ev.push({ where: e.venueId }); });
+    T.book(s, pid); s.phase = 'wrap'; GG.career.endWeek(s);
+    playTour(GG, s);
+    const po = s.tour.payoffs[pid];
+    ok(po && po.flag === flag && s.flags[flag] != null, bid + ': the payoff fired ' + JSON.stringify(s.tour.payoffs));
+    ok(ev.length === 1 && ev[0].where === venue, bid + ': at ' + venue + ' (got ' + (ev[0] && ev[0].where) + ')');
+    ok(T.payoffDone(s), bid + ': Gong credit');
+  });
+  // the payoff lands at the venue it names (Mudstonbury, not the Manchester stop after it)
+  const s = GG.career.newCareer({ seed: 70, bandId: 'gravel_kings', player: { name: 'T' } });
+  ok(!T.payoffDone(s), 'fresh');
+  s.flags.mudstonbury = 'declined'; ok(!T.payoffDone(s), 'a declined headline does not count');
+  s.flags.mudstonbury = 'headlined'; ok(T.payoffDone(s), 'the headline card\'s flag counts');
+  const m = GG.career.newCareer({ seed: 73, bandId: 'gravel_kings', player: { name: 'T' } });
+  m.flags.mudHeadlinePayoff = 'mudstonbury'; ok(T.payoffDone(m), 'mudHeadlinePayoff (the package payoff flag) counts');
+  const r = GG.career.newCareer({ seed: 71, bandId: 'grid_road_ramblers', player: { name: 'T' } });
+  r.flags.outbackPayoff = 'tumbleworth'; ok(T.payoffDone(r), 'outbackPayoff counts');
+  const f = GG.career.newCareer({ seed: 72, bandId: 'frost_heave', player: { name: 'T' } });
+  f.flags.squatAnthemPayoff = 'wackelstein'; ok(T.payoffDone(f), 'squatAnthemPayoff counts');
 });
 
 test('Abbot Lane Studios (London) unlocks in the World era; the World era switches on at the Steady threshold', () => {

@@ -135,7 +135,7 @@ test('freshness: the same room next week brings fewer new fans', () => {
 
 test('van: wear per km, burnout on long drives, no breakdowns while protected', () => {
   const GG = fresh(), W = GG.world, s = career(GG, 6, 100);
-  eq([s.van.id, s.van.name, s.van.condition, s.van.km], ['moose_hearse', 'The Moose Hearse', 72, 0]);
+  eq([s.van.id, s.van.name, s.van.condition, s.van.km], ['van', 'The Moose Hearse', 72, 0]);   // v0.9: a neutral id, the band's van name
   eq(W.km('Saskatoon', 'Regina'), 239); eq(W.km('regina', 'saskatoon'), 239);
   eq(W.km('Swift Current', 'Yorkton'), 174 + 71 + 187, 'shortest path through Moose Jaw and Regina');
   eq(W.route('saskatoon', 'swift_current'), ['saskatoon', 'swift_current']);
@@ -255,8 +255,8 @@ test('migration v2 -> v3: defaults for old saves, idempotent, schema bumped', ()
 test('rings: Saskatchewan from day one, the West in Local Heroes, the East & North once Signed; one far gig a week', () => {
   const GG = fresh(), W = GG.world, V = id => GG.gig.venue(id);
   const s = career(GG, 61, 20000);
-  eq([W.ring('Saskatoon'), W.ring('Humboldt'), W.ring('Calgary'), W.ring('Winnipeg'), W.ring('Toronto'), W.ring('Yellowknife')], ['sask', 'sask', 'west', 'west', 'eastnorth', 'eastnorth']);
-  ok(W.ringOpen(s, 'sask') && !W.ringOpen(s, 'west') && !W.ringOpen(s, 'eastnorth'), 'garage: Saskatchewan only');
+  eq([W.ring('Saskatoon'), W.ring('Humboldt'), W.ring('Calgary'), W.ring('Winnipeg'), W.ring('Toronto'), W.ring('Yellowknife')], ['sask', 'sask', 'alberta', 'west', 'eastnorth', 'eastnorth']);   // v0.9 Q1a: Calgary sits in the Alberta ring
+  ok(W.ringOpen(s, 'sask') && !W.ringOpen(s, 'alberta') && !W.ringOpen(s, 'west') && !W.ringOpen(s, 'eastnorth'), 'garage: Saskatchewan only');
   ok(!W.bookable(s, V('cowtown_saloon')) && W.bookable(s, V('derrick_lounge')), 'Calgary locked in the garage, Estevan open');
   s.era = 'local'; ok(W.bookable(s, V('cowtown_saloon')) && !W.bookable(s, V('the_hoofprint')), 'Local Heroes: the West');
   s.era = 'signed'; ok(W.bookable(s, V('the_hoofprint')) && W.bookable(s, V('commandant_ballroom')), 'Signed: the East & North (+ theatres)');
@@ -325,6 +325,46 @@ test('trips carry the weather, the holiday and the driver; road cards gate on we
 test('sim purity: 26_sim_world has no Math.random / Date / DOM', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', '26_sim_world.js'), 'utf8');
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), 'pure');
+});
+
+test('v0.9: "you drive now" is the band\'s own line (byBand / a pack map), never the cactus outside Hail Damage', () => {
+  const GG = fresh(), W = GG.world;
+  const lines = {};
+  Object.keys(GG.content.bands).forEach(b => {
+    const s = GG.career.newCareer({ seed: 5, bandId: b, player: { name: 'T' } });
+    const drv = W.driver(s).id, m = s.members.find(x => x.id === drv);
+    ok(m, b + ': a bandmate drives at the start');
+    const chats = [];
+    const post = GG.career.postChat;
+    GG.career.postChat = function (st, who, text) { chats.push({ who, text }); return post.apply(GG.career, arguments); };
+    try { m.status = 'quit'; const r = W.syncDriver(s); ok(r && r.to === 'you', b + ': you drive'); } finally { GG.career.postChat = post; }
+    lines[b] = W.takeOverLine(s);
+    ok(chats.some(c => c.text === lines[b]), b + ': posted ' + JSON.stringify(chats));
+    ok(typeof lines[b] === 'string' && lines[b].length > 10, b + ': a line');
+    if (b !== 'hail_damage') ok(!/cactus/i.test(lines[b]), b + ': no cactus');
+  });
+  ok(/cactus/.test(lines.hail_damage), 'Hail Damage keeps the tiny cactus');
+  eq(new Set(Object.values(lines)).size, Object.keys(lines).length, 'one line per band');
+});
+
+test('v0.9 integration: venue.reach keeps neighbourhood rooms off far bands\' boards; bots take a free van fix', () => {
+  const GG = fresh(), W = GG.world, V = GG.content.venues;
+  const reach = V.filter(v => v.reach);
+  ok(reach.length >= 10 && reach.every(v => v.reach === 150), 'reach-limited home rooms: ' + reach.length);
+  const hd = career(GG, 5, 400), fh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'T' } });
+  fh.fans = 400;
+  const dewdney = V.find(v => v.id === 'dewdney_drop');
+  ok(!W.inReach(hd, dewdney) && W.inReach(fh, dewdney), 'a Regina neighbourhood room: Frost Heave yes, Hail Damage no');
+  ok(!W.bookable(hd, dewdney) && W.bookable(fh, dewdney), 'bookable follows reach');
+  let seen = 0;
+  for (let w = 1; w <= 48; w++) { hd.totalWeek = w; hd.listingsWeek = null; W.listings(hd).forEach(l => { if (reach.some(v => v.id === l.venueId)) seen++; }); }
+  eq(seen, 0, 'never on a Saskatoon band\'s board');
+  // Moth does her own maintenance: the bot fixes the van for free well before it is a wreck
+  const m = GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } });
+  m.protected = false; m.fund = 0; m.van.condition = 40;
+  eq(W.repairQuote(m).cost, 0, 'free with Moth driving');
+  GG.career.botWeek(m, 'avg');
+  ok(m.van.condition > 40, 'the avg bot took the free fix with an empty fund: ' + m.van.condition);
 });
 
 done('sim_world');

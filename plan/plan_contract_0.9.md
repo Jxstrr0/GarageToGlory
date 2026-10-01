@@ -199,7 +199,7 @@ Role aliases (`C.ROLE_ALIASES`) are valid as `card.speaker`, `chat.who`, and as 
 | rock | fistPump | singAlong | lighters |
 | country | clapAlong | yeehaw | lineDance |
 
-- Band signature: `member.signature` fires once per gig at combo ≥ 40 (and when its flag is set, if it has one). The sim does `crowd +8`, `moment(action)` and `band(memberId, action)`.
+- Band signature: `member.signature` fires once per gig at combo ≥ 40 (and when its flag is set, if it has one). The sim does `crowd +8`, `moment(action)` and `band(memberId, action)`. *(Fixer, 2026-10-01: `perSong: true` makes it once per song instead; Marcel's cape spin has it, so Hail Damage keeps v0.8.3's spin in every song that reaches combo 40.)*
 - Rival set: Mall Rats do a `kickflip` once per set.
 - Events are unchanged: `crowd:moment {kind, t}` and `gig:band {id, action}`.
 - Text lives in content: `lines.live[memberId].signature` for band actions, `lines.moments[kind]` for crowd moments.
