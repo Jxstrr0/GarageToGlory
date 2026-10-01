@@ -41763,8 +41763,8 @@ html.gg-calm .cold-fx { animation: none !important; }
       K.crowdMat = mat;
       C.body = instanced(bb.build(), mat, MAX_CROWD, n);
       C.head = instanced(hb.build(), mat, MAX_CROWD, n);
-      C.hairA = instanced(hairGeo(G.hair[0]), mat, MAX_CROWD, nA);
-      C.hairB = instanced(hairGeo(G.hair[1]), mat, MAX_CROWD, nB);
+      C.hairA = instanced(hairGeo(G.hair[0], D.view === 'spectator'), mat, MAX_CROWD, nA);
+      C.hairB = instanced(hairGeo(G.hair[1], D.view === 'spectator'), mat, MAX_CROWD, nB);
       var ag = ab.build();
       C.armL = instanced(ag, mat, MAX_CROWD, n); C.armR = instanced(ag, mat, MAX_CROWD, n, true);
       for (i = 0; i < MAX_CROWD; i++) {
@@ -41794,8 +41794,10 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (!own) K.geos.push(geo);
       return m;
     }
-    function hairGeo(style) {
+    function hairGeo(style, spec) {
       var b = new ctx.Builder({ jitter: 0.04, seed: 37 }), W = 0xffffff;
+      // v0.9: from the spectator riser a full-brim crowd of cowboy hats hid Buckle & Boot; the riser view gets a flatter, narrower hat
+      if (style === 'cowboy' && spec) { b.box(0.36, 0.02, 0.33, 0, 0.3, 0, W); b.box(0.25, 0.09, 0.23, 0, 0.35, 0, W); b.box(0.26, 0.025, 0.24, 0, 0.32, 0, 0x555555); return b.build(); }
       switch (style) {
         case 'long': b.box(0.27, 0.07, 0.27, 0, 0.32, 0, W); b.box(0.28, 0.42, 0.06, 0, 0.13, -0.14, W); b.box(0.04, 0.3, 0.2, 0.14, 0.17, -0.02, W); b.box(0.04, 0.3, 0.2, -0.14, 0.17, -0.02, W); break;
         case 'mohawk': b.box(0.06, 0.2, 0.27, 0, 0.38, 0, W); break;
