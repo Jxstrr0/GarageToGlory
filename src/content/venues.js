@@ -8,6 +8,7 @@
 //   genreFit { metal, punk, rock, country } 0..1, quirk (one funny line), catch (the listing's small print),
 //   walkIns (people there anyway), setSize (songs you play), deals (the deal options the board can list),
 //   payRange { flat: [lo, hi] $ guarantee, door: [lo, hi] $ per head } (exposure always pays 0).
+//   reach (v0.9, optional): road km from a band's home city within which the room books it (neighbourhood rooms).
 //   deal + pay = the default deal for GG.gig.makeGig (card bookings, v0.1); gas = v0.1 round-trip $ from Saskatoon
 //   (the board computes gas from road km instead).
 // v0.9 "Genres": every home has starter rooms: Regina (Craig's Basement, an all-ages skate park), Edmonton + St. Albert,

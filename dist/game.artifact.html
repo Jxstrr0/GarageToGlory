@@ -1459,6 +1459,8 @@ html.gg-calm .cold-fx { animation: none !important; }
    activities: { <activityId>: { id, name, icon, blurb, ...numbers } }        (owned by the sim)
    economy: { startFund, startFans, startBuzz, weeklyUpkeep, buzzDecay, quietWeekChance, ... } (owned by the sim)
    venues: [ { id, name, city, region, tier, kind, capacity, deal, pay, minFans, genreFit:{metal..}, quirk, walkIns, gas, setSize } ]
+           (v0.9) reach? (road km): a neighbourhood room only books bands based within that many km (world.inReach;
+           board, offers, opening slots, Battle of the Bands); economy.bot.freeFixBelow (60): bots take a free van fix below it
    lines:  { activity: { <activityId>: [text] }, chat: { <memberId>: { happy:[], ok:[], grumpy:[] } },
              gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
              guilt: [text], yearEnd: [text], quietWeek: [text] }
@@ -10221,6 +10223,7 @@ html.gg-calm .cold-fx { animation: none !important; }
 //   genreFit { metal, punk, rock, country } 0..1, quirk (one funny line), catch (the listing's small print),
 //   walkIns (people there anyway), setSize (songs you play), deals (the deal options the board can list),
 //   payRange { flat: [lo, hi] $ guarantee, door: [lo, hi] $ per head } (exposure always pays 0).
+//   reach (v0.9, optional): road km from a band's home city within which the room books it (neighbourhood rooms).
 //   deal + pay = the default deal for GG.gig.makeGig (card bookings, v0.1); gas = v0.1 round-trip $ from Saskatoon
 //   (the board computes gas from road km instead).
 // v0.9 "Genres": every home has starter rooms: Regina (Craig's Basement, an all-ages skate park), Edmonton + St. Albert,
@@ -27989,6 +27992,7 @@ html.gg-calm .cold-fx { animation: none !important; }
 //   homeRooms(state) (small rooms in the home ring; too few = the garage rings open too) ; nearRing(state, ringId) ;
 //   highwayOut(state) ; far listings are relative to home (owner Q1) ; defaultVan uses shop.vanName (id 'van') ; banter skips silent members (their own stage
 //   directions only) + the driver's own pool ; the returning driver posts the syncDriver line ; state.venuePlays ({homeVenue}).
+//   inReach(state, venue) (venue.reach km from home; bookable / offers / opening slots respect it).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};

@@ -285,6 +285,8 @@
    activities: { <activityId>: { id, name, icon, blurb, ...numbers } }        (owned by the sim)
    economy: { startFund, startFans, startBuzz, weeklyUpkeep, buzzDecay, quietWeekChance, ... } (owned by the sim)
    venues: [ { id, name, city, region, tier, kind, capacity, deal, pay, minFans, genreFit:{metal..}, quirk, walkIns, gas, setSize } ]
+           (v0.9) reach? (road km): a neighbourhood room only books bands based within that many km (world.inReach;
+           board, offers, opening slots, Battle of the Bands); economy.bot.freeFixBelow (60): bots take a free van fix below it
    lines:  { activity: { <activityId>: [text] }, chat: { <memberId>: { happy:[], ok:[], grumpy:[] } },
              gigReactions: { <memberId>: { great:[], ok:[], bad:[] } }, tap: { <memberId>: [text] },
              guilt: [text], yearEnd: [text], quietWeek: [text] }

@@ -347,4 +347,24 @@ test('v0.9: "you drive now" is the band\'s own line (byBand / a pack map), never
   eq(new Set(Object.values(lines)).size, Object.keys(lines).length, 'one line per band');
 });
 
+test('v0.9 integration: venue.reach keeps neighbourhood rooms off far bands\' boards; bots take a free van fix', () => {
+  const GG = fresh(), W = GG.world, V = GG.content.venues;
+  const reach = V.filter(v => v.reach);
+  ok(reach.length >= 10 && reach.every(v => v.reach === 150), 'reach-limited home rooms: ' + reach.length);
+  const hd = career(GG, 5, 400), fh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'T' } });
+  fh.fans = 400;
+  const dewdney = V.find(v => v.id === 'dewdney_drop');
+  ok(!W.inReach(hd, dewdney) && W.inReach(fh, dewdney), 'a Regina neighbourhood room: Frost Heave yes, Hail Damage no');
+  ok(!W.bookable(hd, dewdney) && W.bookable(fh, dewdney), 'bookable follows reach');
+  let seen = 0;
+  for (let w = 1; w <= 48; w++) { hd.totalWeek = w; hd.listingsWeek = null; W.listings(hd).forEach(l => { if (reach.some(v => v.id === l.venueId)) seen++; }); }
+  eq(seen, 0, 'never on a Saskatoon band\'s board');
+  // Moth does her own maintenance: the bot fixes the van for free well before it is a wreck
+  const m = GG.career.newCareer({ seed: 9, bandId: 'frost_heave', player: { name: 'T' } });
+  m.protected = false; m.fund = 0; m.van.condition = 40;
+  eq(W.repairQuote(m).cost, 0, 'free with Moth driving');
+  GG.career.botWeek(m, 'avg');
+  ok(m.van.condition > 40, 'the avg bot took the free fix with an empty fund: ' + m.van.condition);
+});
+
 done('sim_world');

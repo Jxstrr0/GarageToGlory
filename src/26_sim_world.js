@@ -29,6 +29,7 @@
 //   homeRooms(state) (small rooms in the home ring; too few = the garage rings open too) ; nearRing(state, ringId) ;
 //   highwayOut(state) ; far listings are relative to home (owner Q1) ; defaultVan uses shop.vanName (id 'van') ; banter skips silent members (their own stage
 //   directions only) + the driver's own pool ; the returning driver posts the syncDriver line ; state.venuePlays ({homeVenue}).
+//   inReach(state, venue) (venue.reach km from home; bookable / offers / opening slots respect it).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var world = GG.world = GG.world || {};
