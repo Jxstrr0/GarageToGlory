@@ -60,7 +60,8 @@ function appText(page) {
   return page.evaluate(() => {
     const app = document.getElementById('app').cloneNode(true);
     // (+ layers hidden under a full screen, and the title's hint: the title is Hail Damage's cover in every career)
-    app.querySelectorAll('.layer.hidden, [data-testid="title-hint"], [data-testid^="scene-row-"], .lo-noms, [data-testid^="chart-row"], [data-testid="logo-cast"], script, style').forEach(e => e.remove());
+    // (+ the genre screen's band cards: picking a band shows every band, its space and city, by design)
+    app.querySelectorAll('.layer.hidden, [data-testid="title-hint"], [data-testid^="scene-row-"], .lo-noms, [data-testid^="chart-row"], [data-testid="logo-cast"], [data-testid^="genre-"], script, style').forEach(e => e.remove());
     return app.textContent || '';
   });
 }
@@ -205,6 +206,11 @@ async function runBand(bandId) {
     await check('wrap');
     await page.evaluate(() => { GG.ui.gigAutoplay = false; });
 
+
+    /* ---- the laptop: all tabs; Scene = this band's rival ---- */
+    await tap(page, 'btn-next-week');
+    await page.waitForFunction(() => GG.state.totalWeek === 2, null, { timeout: 10000 });
+
     /* ---- the door (van-info): the repair and the car lot are this band's; a merch result names its home superfan ---- */
     await page.evaluate(() => { GG.ui.closeAll(); GG.state.van.condition = Math.min(GG.state.van.condition, 50); GG.ui.showVan('van'); });
     await waitScreen(page, 'van-info');
@@ -229,10 +235,6 @@ async function runBand(bandId) {
     c.ok(mr.t.includes(mr.sf + ' bought one') && (bandId === 'hail_damage' || !/\bDale\b/.test(mr.t)), 'the merch result names this band\'s superfan (' + mr.sf + '): ' + mr.t);
     await check('merch-result');
     await page.evaluate(() => GG.ui.closeAll());
-
-    /* ---- the laptop: all tabs; Scene = this band's rival ---- */
-    await tap(page, 'btn-next-week');
-    await page.waitForFunction(() => GG.state.totalWeek === 2, null, { timeout: 10000 });
     await page.evaluate(() => { GG.ui.closeAll(); const S = GG.state; for (let i = 0; i < 26; i++) GG.career.botWeek(S, 'avg'); S.card = null; S.phase = 'plan'; GG.main.sync(); GG.ui.show('laptop', { tab: 'chat' }); });
     let scene = null;
     for (const t of ['chat', 'bandbook', 'band', 'money', 'label', 'albums', 'scene', 'world', 'years']) {
@@ -307,7 +309,12 @@ async function runBand(bandId) {
     }
     await tap(page, 'btn-head-inside');
     for (let k = 0; k < 40 && !(await page.locator(tid('loonies-summary')).count()); k++) {
-      if (await page.locator(tid('btn-envelope')).count()) { await tap(page, 'btn-envelope'); await page.waitForTimeout(150); await scan('envelope'); }
+      if (await page.locator(tid('btn-envelope')).count()) {
+        await tap(page, 'btn-envelope'); await page.waitForTimeout(150); await scan('envelope');
+        // (fixer) the card scrolls; the broadcast chip under the envelope is never squeezed (390x844 crushed it to 16 px)
+        const lc = await page.evaluate(() => { const e = document.querySelector('[data-testid="logo-cast"]'); return e ? { h: e.clientHeight, sh: e.scrollHeight } : null; });
+        if (lc) c.ok(lc.h >= lc.sh - 1, 'the envelope\'s broadcast chip is not crushed: ' + JSON.stringify(lc));
+      }
       if (await page.locator(tid('btn-speech')).count()) { await tap(page, 'btn-speech'); await waitScreen(page, 'loonie-card'); await check('speech'); await tap(page, 'loonie-choice-0'); await tap(page, 'btn-loonie-card-ok'); }
       if (await page.locator(tid('btn-award-next')).count()) await tap(page, 'btn-award-next');
       await page.waitForTimeout(150);

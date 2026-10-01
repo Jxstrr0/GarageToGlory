@@ -27967,8 +27967,9 @@ html.gg-calm .cold-fx { animation: none !important; }
     return ch;
   }
   // v0.9: a story payoff package (owner Q3: needs met, never fired) leaves in a ~2-week window a year, so a bot books it the
-  // way a player who has waited for it would: no gap since the last tour, a small cushion (bot.payoffCushion), and only a
-  // really fried band (bot.payoffBurnout) stays home. Hail Damage's Moose Opera counts too once its album is ready.
+  // way a player who has waited for it would: no gap since the last tour, a small cushion (bot.payoffCushion), the promoter's
+  // floor when hostels don't fit the fund, and only a really fried band (bot.payoffBurnout) stays home. Hail Damage's Moose
+  // Opera counts too once its album is ready.
   function botPayoff(s, style, B) {
     if (s.burnout >= (B.payoffBurnout != null ? B.payoffBurnout : 80)) return null;
     var cushion = B.payoffCushion != null ? B.payoffCushion : 500, pick = null;
@@ -27976,8 +27977,11 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (pick || !T.unlocked(s, id)) return;
       K().packages.forEach(function (p) {
         if (pick || p.region !== id || !p.needs) return;
-        var ch = botChoices(s, style, id), c = T.canBook(s, p.id, ch);
-        if (c.ok && s.fund >= c.quote.total + cushion) pick = { id: p.id, ch: ch };
+        [botChoices(s, style, id), { stay: 'couch', extra: 'none' }].forEach(function (ch) {   // (else the promoter's floor: it's the story)
+          if (pick) return;
+          var c = T.canBook(s, p.id, ch);
+          if (c.ok && s.fund >= c.quote.total + cushion) pick = { id: p.id, ch: ch };
+        });
       });
     });
     return pick;
