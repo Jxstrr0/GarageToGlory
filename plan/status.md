@@ -10,8 +10,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres.
-- Next: **1.0 "Glory"** (+ D4 achievements, Hall of Fame; v0.9 forward-compat notes in "What's in v0.9" → v1.0) → 1.1
-  Tuning (D5).
+- Next: **1.0 "Glory"** (+ D4 achievements, Hall of Fame; v0.9 forward-compat notes in "What's in v0.9" → v1.0; Seats
+  forward-compat in handoff E12) → **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; draft contract
+  `plan/plan_contract_1.1.md`) → **1.2 Tuning** (D5, moved from 1.1 by the owner 2026-10-01).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -513,6 +514,20 @@ Later versions:
 - [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
 - [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0
 - [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
+
+## Addendum 3 (handoff Part E "Seats") — decisions (owner popups, 2026-10-01; locked)
+- S1 **Seat swap**: pick drums / bass / rhythm / lead; the member whose seat you take moves to the drum kit (E3 table).
+- S2 **Taps + holds** on the same highway; lanes by pitch contour; **bass max 5 lanes, guitar max 6**.
+- S3 **Your part + auto drums** in the songwriter (progression/hook pick + a 2–5 row rhythm grid; the drummer suggests a groove).
+- S4 Roadmap: **v1.1 Seats** after v1.0 Glory; Tuning → **v1.2**.
+- S5 Gravel Kings rhythm: **Chase drums + sings**. S6 Rox / Travis Lee **sing from the kit**.
+- S7 Storylines: **3 role arcs** (Nobody Hears the Bass · The Engine Room · Solo Too Long) **+ 12 band finales**.
+
+## Addendum 3 — pending
+- [ ] v1.0: build seat-aware where E12 says (Hall of Fame `seat`, tokenised tutorial, epilogue hooks)
+- [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md`, popup for E14 open items (size budget, gear names, body shapes, picker preview)
+- [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
+- [ ] v1.2 Tuning (D5) covers all four seats
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
