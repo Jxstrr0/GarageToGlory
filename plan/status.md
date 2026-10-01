@@ -94,8 +94,9 @@ tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home sup
   per moment, room beds + noodles per space; a voice profile per singer (Marcel, Rox, Chase, Travis Lee, Gord, Blaze, Rex,
   Brayden), metal scream types per song/section, count-in yells, held notes, gang answers, whoa-ohs with harmony, varied shouted
   words per genre (Marcel's odd French word). All on the beat grid, in key, under the voice caps.
-- **Drum sync:** the v0.8.3 drum-sync code (`11_settings.js` prefs + `GG.prefs.SYNC`, `30_audio.js` play `{ at }`, `55_ui_gig.js`
-  start/resume) is untouched by every v0.9 lane; `sync.test.js` and `pw_gig` sync/sync2 stay green.
+- **Drum sync:** the v0.8.3 drum-sync code is intact: `11_settings.js` is unchanged since v0.8.3, and the v0.9 edits to
+  `30_audio.js` / `55_ui_gig.js` only add genre/vocal options around it (`GG.audio.play(pattern, { at, … })` still books the
+  song on the band's clock; 55 now also passes `singer` + `band`). `sync.test.js` and `pw_gig` sync/sync2 stay green.
 - **Balance** (`BAND=all node tools/balance.js 6 10` → `plan/balance_v09_all.txt`; 30 seeds → `plan/balance_v09_all_30seeds.txt`):
   at 30 seeds every §5 B4 avg-bot target holds for all three new bands except the Ramblers' "World inside the 6-year window"
   (over 9 years all four bands reach World in 30/30 careers: HD wk 146, GK 153, FH 166, GRR 170 = +1 year). Hail Damage is
@@ -103,6 +104,13 @@ tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home sup
   seeds within noise of the stage-0 tree: avg fans y6 −1.0 %, y3 −3.2 %, good y6 −0.2 %, Local wk 22 both).
 - **Size budget:** `dist/game.html` is 4.39 MB (4,283 KiB as `node build.js` prints it; gzip 1.34 MB). The owner-facing budget
   is relaxed from 3.8 MB to **4.5 MB** for v0.9 (the three band packs are ≈ +0.95 MB); v1.0 should not grow it much further.
+- **Tests at integration (2026-10-01):** `node tests/run.js` SUITE ALL PASS (21 files, 381 checks); `sim_bands` strict leak scan (default
+  on) clean for all four bands, also over full 10-year careers (`LEAK_YEARS=10`), plus the inverse check in Hail Damage's
+  career; Playwright **68/68 sections green at 390×844 and 68/68 at 440×956** (every META_ONLY section of every
+  `tests/pw_*.js`: bands ×4 + flat, bands_render, garage, stage/van, flow ×5, gig ×7, rival ×3, label ×3 + sheet, tour ×4 +
+  sheet, shop ×5 + sheet, recap ×3, world ×4, drama, fans ×2, seq ×6, logo ×2 + sheet, creator ×3 + sheet, settings ×3,
+  title ×3). The 440 run uses a scratch copy of tests/ with the viewport patched in `_pw.js` + the VERSION file
+  (`PW_TAG=_440 LOGO_VIEW=440x956`). Garage draw calls per room stay under HD × 1.15 (pw_bands_render).
 - **v1.0 forward-compat (contract gap #11):** epilogues exist for all 14 originals; "The Original Five" must read the band size;
   "a statue in Saskatoon" → `{city}`; the HD-flavoured achievement seeds (Ma Pelouse, Buddy) need per-band twins or `band` gates.
 
