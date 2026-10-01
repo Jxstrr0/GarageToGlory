@@ -140,6 +140,15 @@ async function scene() {
     c.ok(/playing|same|split|crowd/i.test(sn.t) && sn.bar, 'same-night notice with the crowd split: ' + sn.t.slice(0, 60));
     const a3 = await audit(page); c.ok(!a3.length, 'same-night card layout: ' + a3.join(', '));
     await tap(page, 'btn-sd-ok');
+    // (fixer) the poach card's strip shows the targeted member's mood for the rival's own variant (rv_poach_tundra_wraith)
+    const pm = await page.evaluate(() => {
+      GG.ui.closeAll(); const st = GG.state; st.rival.pending = null; st.gig = null; st.protected = false; st.fans = Math.max(st.fans, 800);
+      const m = st.members.filter(x => x.status === 'active')[1]; m.stage = 2; m.mood = 20;
+      GG.rival.schedule(st, 'poach', m.id);
+      const card = GG.career.currentCard(st), note = card ? GG.ui.rivalCardNote(st, card) : null;
+      return { id: card && card.id, mood: !!(note && note.querySelector('.rv-mood')) };
+    });
+    c.ok(/^rv_poach_/.test(pm.id || '') && pm.mood, 'the poach card strip shows the member\'s mood bar: ' + JSON.stringify(pm));
     c.ok(!errors.length, 'no console errors: ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close(); c.done();

@@ -362,7 +362,7 @@
   };
   ui.mechanic = function (st) {
     var rp = GG.world && GG.world.driverMods ? GG.world.driverMods(st).repair : 1, dr = ui.driverOf(st);
-    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot. No charge, some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
+    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot, with some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
     if (st && st.bandId === 'hail_damage') return { who: 'Dale', shop: 'Cousin Dale\'s Garage', fixed: 'Cousin Dale fixed "most of it".', none: 'Nothing to fix. Dale is disappointed.' };
     var m = (st && MECHANIC[st.city]) || { shop: 'The garage down the road', who: 'Mechanic', fixed: 'The garage down the road fixed "most of it".' };
     return Object.assign({ none: 'Nothing to fix. ' + m.who + ' is disappointed.' }, m);

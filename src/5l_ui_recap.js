@@ -35,7 +35,7 @@
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
     // v0.9 (fixer): the player's sticks go straight up over their own head (+ PLAYER_PAD of room either side): the v0.8.1 V
     // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
-    // four rooms measures <= 1% of any bandmate's face covered now.
+    // four rooms, four presets and two tiers measures <= 0.3% of any bandmate's face covered now.
     sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
     hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
   };

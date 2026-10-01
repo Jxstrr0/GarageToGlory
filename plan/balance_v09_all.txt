@@ -8,16 +8,16 @@ AVG bot
   3 |     960    2811 |     3968 (2176- 5143) |   43 |   70 |   73 |   0.0 |  1.5   0.6  0.6 1.1 |   9.6 | 11.4 |   51 |  33 |  0.0 | 0.9  1.3   62   115  0.0  0.3 | 3.6 50%   35  3749 | 0.0     0   0 | 0.4 2.8 0.0 0.1  2312  1087  4014 |   420
   4 |    1613    3712 |     8339 (6038-11518) |   56 |   68 |   75 |   0.0 |  2.6   1.4  0.2 2.1 |  10.7 | 11.8 |   49 |  34 |  0.0 | 0.8  1.3   44   107  0.0  0.6 | 3.4 44%   42  7531 | 0.0     0   0 | 1.1 3.0 0.1 0.5  3466  1979  5784 |   608
   5 |    2296    5054 |    16374 (11000-21088) |   60 |   82 |   68 |   0.0 |  0.4   0.2  0.6 1.8 |  10.2 | 12.1 |   53 |  39 |  0.0 | 0.7  1.6   21   164  0.0  0.6 | 4.1 37%   48 12167 | 0.0     0   0 | 1.5 3.0 0.2 0.7  4540  2668  7609 |   527
-  6 |    3440    5078 |    24342 (20839-32606) |   63 |   74 |   70 |   0.0 |  0.2   0.0  0.2 1.6 |   6.7 | 12.8 |   55 |  55 |  0.0 | 1.0  1.2    9   195  0.3  0.7 | 3.9 51%   59 16891 | 0.1   447   1 | 1.9 3.0 0.6 1.2  4729  2693  9137 |  1222
+  6 |    3272    4810 |    24400 (20839-32606) |   63 |   74 |   70 |   0.0 |  0.2   0.0  0.2 1.6 |   6.7 | 12.9 |   55 |  55 |  0.0 | 1.0  1.2    9   195  0.3  0.7 | 3.9 51%   59 16891 | 0.2   504   1 | 1.9 3.0 0.6 1.2  4763  2727  9297 |  1222
 world: era wk 136 (y6, 3/10, 128-140) | tours 0.1/career (net 132 $/career) | regions open 0.6 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
 eras: local wk 23 (y1, 10/10, 17-29) | first offer wk 40 (y2, 10/10, 29-61) | first deal wk 44 (y2, 10/10, 30-62) | signed era wk 44 (y2, 10/10, 30-61) | world-ready wk 136 (y6, 3/10, 128-140)
-shop: 6 lanes + pedal wk 58 (y3, 10/10, 34-87) | sprinter wk 125 (y6, 1/10, 125-125) | merch 53% of gig pay (net 28%, $8577/career) | at the end: kit 1.9, van tier 0.6, space tier 1.2
+shop: 6 lanes + pedal wk 58 (y3, 10/10, 34-87) | sprinter wk 125 (y6, 1/10, 125-125) | merch 52% of gig pay (net 28%, $8611/career) | at the end: kit 1.9, van tier 0.6, space tier 1.2
 licensing: offers 1.5/career (0-2), taken 1.3 (countered 0.3, walked 0.0) | career total median $2580 (0-5896)
 loans after year 1 (per career): 0.00 | releases 5.8 | drops 0.0 | units sold 74518
 rival: cracked 1/10 (rebrand@y4) | Sad Dome: you headline 0/0 | poach defections 0.10 per career
 quits/year after protection: 0.75 (ultimatums 1.42, returns 0.37, over 57 seed-years)
 
-AVG band: cards 132.1/career, no-card weeks 8% | garage board 4.4 listings @ 119 km | km/gig 149 | live moments per song: combo 94% chorus 93% peak 90%, signature gigs 30% | rival lineup 5.6 | payoff 0/10 | week-1 gig buddys_house_party (0/0/0 km)
+AVG band: cards 132.1/career, no-card weeks 8% | garage board 4.4 listings @ 119 km | km/gig 149 | live moments per song: combo 94% chorus 93% peak 90%, signature gigs 30% | rival lineup 5.6 | payoff 0/10 (0/1 with the needs met and a window left) | week-1 gig buddys_house_party (0/0/0 km)
 
 GOOD bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
@@ -35,135 +35,135 @@ loans after year 1 (per career): 0.10 | releases 7.4 | drops 0.0 | units sold 18
 rival: cracked 9/10 (breakup@y5 opener@y5 opener@y6 rebrand@y4 rebrand@y3 opener@y3 breakup@y6 breakup@y5 rebrand@y3) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
 quits/year after protection: 0.00 (ultimatums 0.00, returns 0.00, over 60 seed-years)
 
-GOOD band: cards 106.1/career, no-card weeks 26% | garage board 4.3 listings @ 116 km | km/gig 186 | live moments per song: combo 96% chorus 92% peak 92%, signature gigs 85% | rival lineup 4.0 | payoff 0/10 | week-1 gig buddys_house_party (0/0/0 km)
+GOOD band: cards 106.1/career, no-card weeks 26% | garage board 4.3 listings @ 116 km | km/gig 186 | live moments per song: combo 96% chorus 92% peak 92%, signature gigs 85% | rival lineup 4.0 | payoff 0/10 (0/0 with the needs met and a window left) | week-1 gig buddys_house_party (0/0/0 km)
 
 === Frost Heave (frost_heave) ===
 AVG bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |      54     407 |      356 ( 231-  538) |   21 |   61 |   59 |   0.5 |  0.5   0.2  0.0 0.2 |  12.1 | 14.2 |   59 |  62 |  0.0 | 0.0  0.0    -     0  0.0  0.0 | 2.1 38%   15   286 | 0.0     0   0 | 0.0 0.0 0.0 0.0     3   -69  1043 |     0
-  2 |     272    1362 |     1467 ( 755- 2330) |   31 |   71 |   71 |   0.1 |  2.3   1.4  0.6 0.8 |  11.0 | 12.6 |   54 |  62 |  0.0 | 0.6  0.7   80    28  0.0  0.0 | 3.4 35%   26  1271 | 0.0     0   0 | 0.1 1.3 0.0 0.0   751    41  2897 |   430
-  3 |    1099    2566 |     3248 (1803- 6022) |   40 |   65 |   73 |   0.0 |  1.3   0.9  0.5 1.1 |   8.9 | 12.4 |   52 |  59 |  0.0 | 0.9  0.7   72    26  0.0  0.1 | 3.5 37%   35  3469 | 0.0     0   0 | 0.6 2.4 0.0 0.0  2069  1079  4185 |   188
-  4 |    1685    3428 |     6340 (3948- 9380) |   44 |   69 |   75 |   0.0 |  1.6   0.8  0.5 1.3 |  10.8 | 12.7 |   51 |  65 |  0.0 | 0.8  1.3   52     3  0.0  0.4 | 3.4 32%   42  7124 | 0.0     0   0 | 1.2 3.0 0.0 0.0  2724  1544  4278 |   528
-  5 |    2364    4153 |    11675 (8256-14757) |   54 |   76 |   75 |   0.0 |  0.8   0.7  0.5 1.3 |   8.1 | 13.7 |   51 |  65 |  0.0 | 0.7  1.4   34   116  0.0  0.4 | 4.1 41%   51 11425 | 0.0     0   0 | 1.8 3.0 0.2 0.6  3629  1999  6701 |   649
-  6 |    2914    4676 |    18343 (14513-22982) |   60 |   73 |   74 |   0.0 |  1.7   0.8  0.2 1.9 |   9.8 | 11.2 |   53 |  69 |  0.0 | 0.9  1.3   22   124  0.0  0.5 | 3.9 51%   59 15702 | 0.0     0   0 | 2.0 3.0 0.5 1.4  3479  1838  6979 |  1527
-world: era never | tours 0.0/career (net 0 $/career) | regions open 0.0 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
-eras: local wk 20 (y1, 10/10, 16-25) | first offer wk 40 (y2, 10/10, 25-60) | first deal wk 45 (y2, 10/10, 27-66) | signed era wk 45 (y2, 10/10, 27-66) | world-ready never
-shop: 6 lanes + pedal wk 61 (y3, 10/10, 34-94) | sprinter wk 138 (y6, 1/10, 138-138) | merch 49% of gig pay (net 25%, $6432/career) | at the end: kit 2.0, van tier 0.5, space tier 1.4
-licensing: offers 1.5/career (0-3), taken 1.4 (countered 0.2, walked 0.0) | career total median $3280 (0-6720)
-loans after year 1 (per career): 0.10 | releases 5.4 | drops 0.1 | units sold 43972
-rival: cracked 0/10 | Sad Dome: you headline 0/0 | poach defections 0.10 per career
-quits/year after protection: 0.81 (ultimatums 1.39, returns 0.39, over 59 seed-years)
+  1 |      64     489 |      402 ( 279-  574) |   23 |   59 |   60 |   0.6 |  1.2   0.3  0.0 0.3 |  10.5 | 14.5 |   59 |  65 |  0.0 | 0.0  0.0    -     0  0.0  0.0 | 2.0 40%   14   286 | 0.0     0   0 | 0.0 0.0 0.0 0.0     3   -88  1241 |     0
+  2 |     329    1403 |     1444 ( 767- 2489) |   34 |   65 |   73 |   0.2 |  0.9   0.8  0.6 0.5 |  11.1 | 12.3 |   53 |  69 |  0.0 | 0.8  0.9   74    86  0.0  0.0 | 3.2 28%   24  1280 | 0.0     0   0 | 0.0 1.4 0.0 0.0   891   121  2689 |   580
+  3 |     895    2876 |     3667 (2100- 4713) |   41 |   69 |   75 |   0.1 |  1.3   0.9  0.6 0.7 |   8.4 | 12.4 |   50 |  69 |  0.0 | 0.8  1.1   66     5  0.0  0.2 | 3.7 38%   34  3502 | 0.0     0   0 | 0.4 2.8 0.0 0.0  2256  1196  3961 |   190
+  4 |    1808    3957 |     8427 (4894-12546) |   52 |   75 |   71 |   0.0 |  1.2   0.5  0.2 1.0 |   8.8 | 13.2 |   54 |  70 |  0.0 | 0.9  1.7   34    22  0.0  0.6 | 3.5 43%   43  7101 | 0.0     0   0 | 1.3 3.0 0.0 0.0  2836  1560  3947 |   599
+  5 |    2730    5155 |    14896 (8936-20677) |   56 |   78 |   71 |   0.0 |  1.1   0.7  0.4 1.0 |   8.6 | 12.7 |   54 |  69 |  0.0 | 0.9  1.0   27   221  0.0  0.7 | 5.0 58%   54 11128 | 0.0     0   0 | 1.7 3.0 0.0 0.6  3536  1947  6682 |   670
+  6 |    2767    3883 |    20895 (14341-29852) |   62 |   75 |   70 |   0.0 |  0.1   0.1  0.5 0.6 |   8.7 | 12.5 |   56 |  73 |  0.0 | 0.7  1.2   15   395  0.0  0.3 | 3.9 56%   66 15026 | 0.1    97   0 | 2.0 3.0 0.2 1.4  3176  1728  7628 |  1358
+world: era wk 134 (y6, 2/10, 124-143) | tours 0.0/career (net 0 $/career) | regions open 0.2 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
+eras: local wk 19 (y1, 10/10, 16-23) | first offer wk 39 (y2, 10/10, 31-50) | first deal wk 42 (y2, 10/10, 32-51) | signed era wk 42 (y2, 10/10, 32-51) | world-ready wk 134 (y6, 2/10, 124-143)
+shop: 6 lanes + pedal wk 59 (y3, 10/10, 34-79) | sprinter never | merch 49% of gig pay (net 25%, $6464/career) | at the end: kit 2.0, van tier 0.2, space tier 1.4
+licensing: offers 1.6/career (0-3), taken 1.5 (countered 0.2, walked 0.0) | career total median $3520 (0-7404)
+loans after year 1 (per career): 0.30 | releases 5.9 | drops 0.2 | units sold 57258
+rival: cracked 0/10 | Sad Dome: you headline 0/0 | poach defections 0.00 per career
+quits/year after protection: 0.55 (ultimatums 0.97, returns 0.38, over 60 seed-years)
 
-AVG band: cards 135.4/career, no-card weeks 6% | garage board 4.3 listings @ 147 km | km/gig 163 | live moments per song: combo 98% chorus 93% peak 94%, signature gigs 68% | rival lineup 5.2 | payoff 0/10 | week-1 gig craigs_basement (0/0/0 km)
+AVG band: cards 133.0/career, no-card weeks 8% | garage board 4.4 listings @ 149 km | km/gig 160 | live moments per song: combo 97% chorus 90% peak 94%, signature gigs 83% | rival lineup 4.6 | payoff 0/10 (0/0 with the needs met and a window left) | week-1 gig craigs_basement (0/0/0 km)
 
 GOOD bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |      92     851 |      691 ( 560-  893) |   20 |   93 |   56 |   0.1 |  0.0   0.0  0.0 0.0 |  12.3 | 23.2 |   71 |  68 |  0.0 | 0.2  0.0    -     0  0.0  0.0 | 2.9 31%   16   288 | 0.0     0   0 | 0.0 0.0 0.0 0.0   578  -323  2912 |     0
-  2 |     731    2938 |     4846 (3156- 7662) |   56 |   93 |   57 |   0.0 |  0.0   0.0  0.0 0.0 |   8.9 | 19.9 |   82 |  74 |  0.0 | 0.8  1.9   59   198  0.0  1.1 | 4.1 76%   30  1220 | 0.0     0   0 | 1.3 3.0 0.1 0.2  4556  2411  7902 |   885
-  3 |    1830    4233 |    12025 (8174-17366) |   62 |   95 |   58 |   0.0 |  0.0   0.0  0.0 0.0 |  11.6 | 21.3 |   83 |  70 |  0.0 | 0.9  1.3   33   201  0.0  1.0 | 4.5 82%   44  3067 | 0.0     0   0 | 1.8 3.0 1.0 2.0  7018  4180 14243 |   678
-  4 |    1925    5202 |    23485 (15526-31069) |   66 |   97 |   58 |   0.0 |  0.0   0.0  0.0 0.0 |  10.5 | 21.2 |   85 |  77 |  0.0 | 0.7  1.6    8    13  0.0  1.6 | 3.5 74%   44  5759 | 0.1    30   0 | 1.9 3.0 1.6 2.0  7636  4667 21924 |   648
-  5 |    2569    4937 |    34634 (24363-42863) |   70 |   95 |   58 |   0.0 |  0.0   0.0  0.0 0.0 |  10.4 | 21.7 |   86 |  77 |  0.0 | 1.0  1.2    6   362  0.9  1.6 | 3.2 72%   41  8156 | 0.8  2925   5 | 2.1 3.0 2.0 2.4  7427  4520 31000 |  1246
-  6 |    2542    6778 |    40958 (33461-48844) |   66 |   94 |   59 |   0.0 |  0.0   0.0  0.0 0.0 |  10.8 | 21.6 |   82 |  73 |  0.0 | 0.8  1.2    6  3969  0.5  1.8 | 2.8 82%   37 10262 | 0.7  4784   3 | 2.5 3.0 2.0 2.3  6911  4529 31735 |  1719
-world: era wk 101 (y5, 10/10, 83-123) | tours 1.4/career (net 2554 $/career) | regions open 2.8 (invite/big 0.6) broken 0.4 | Gong won 0.1 of 0.4 nominations | moose 0/10 | JP president 1/10
-eras: local wk 16 (y1, 10/10, 14-17) | first offer wk 27 (y2, 10/10, 22-35) | first deal wk 28 (y2, 10/10, 23-36) | signed era wk 28 (y2, 10/10, 23-36) | world-ready wk 101 (y5, 10/10, 83-123)
-shop: 6 lanes + pedal wk 34 (y2, 10/10, 29-41) | sprinter wk 92 (y4, 10/10, 63-120) | merch 31% of gig pay (net 18%, $19984/career) | at the end: kit 2.5, van tier 2.0, space tier 2.3
-licensing: offers 2.0/career (0-4), taken 1.6 (countered 1.5, walked 0.2) | career total median $4788 (0-11565)
-loans after year 1 (per career): 0.00 | releases 7.2 | drops 0.0 | units sold 161123
-rival: cracked 8/10 (opener@y5 opener@y5 opener@y4 breakup@y6 opener@y3 breakup@y4 rebrand@y3 opener@y3) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
-quits/year after protection: 0.00 (ultimatums 0.00, returns 0.00, over 60 seed-years)
+  1 |      83     640 |      692 ( 622-  893) |   20 |   90 |   55 |   0.1 |  0.0   0.0  0.0 0.0 |  11.9 | 22.9 |   73 |  69 |  0.0 | 0.1  0.1  100     6  0.0  0.0 | 2.7 30%   16   288 | 0.0     0   0 | 0.0 0.0 0.0 0.0   517  -277  2648 |     0
+  2 |     616    2775 |     4260 (3328- 5702) |   54 |   95 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |   9.0 | 20.4 |   85 |  74 |  0.0 | 0.9  1.7   57   146  0.0  0.3 | 4.2 64%   29  1238 | 0.0     0   0 | 0.8 3.0 0.1 0.0  4298  2301  6991 |   893
+  3 |    1514    3135 |    10948 (9216-15002) |   64 |   93 |   58 |   0.0 |  0.0   0.0  0.0 0.0 |  10.4 | 20.1 |   82 |  76 |  0.0 | 1.0  1.4   32   351  0.0  1.3 | 4.0 78%   43  3204 | 0.0     0   0 | 1.7 3.0 1.0 1.4  5847  3295 12312 |   470
+  4 |    1881    4006 |    23189 (18325-27161) |   69 |   96 |   58 |   0.0 |  0.0   0.0  0.0 0.0 |  11.1 | 21.3 |   85 |  69 |  0.0 | 1.0  1.4    6    39  0.1  2.0 | 4.1 76%   53  6109 | 0.0     0   0 | 1.9 3.0 1.4 2.0  7560  4548 20229 |   942
+  5 |    2232    6034 |    34030 (30792-37318) |   72 |   97 |   59 |   0.0 |  0.1   0.0  0.0 0.0 |  11.3 | 21.3 |   84 |  76 |  0.0 | 0.8  1.4    2   680  1.0  2.3 | 4.4 70%   52  8697 | 0.8  1343   2 | 2.0 3.0 1.6 2.3  6965  4262 25055 |   902
+  6 |    2276    7432 |    43799 (37480-51537) |   68 |   96 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |  10.1 | 20.9 |   85 |  68 |  0.0 | 0.9  1.3    3  4777  1.0  2.1 | 2.5 88%   38 10549 | 0.8  6002   5 | 2.2 3.0 1.9 2.5  6788  4276 31989 |  1229
+world: era wk 101 (y5, 10/10, 91-110) | tours 1.4/career (net 3532 $/career) | regions open 3.0 (invite/big 0.7) broken 0.5 | Gong won 0.1 of 0.5 nominations | moose 0/10 | JP president 0/10
+eras: local wk 15 (y1, 10/10, 14-17) | first offer wk 28 (y2, 10/10, 20-36) | first deal wk 29 (y2, 10/10, 21-37) | signed era wk 29 (y2, 10/10, 21-37) | world-ready wk 101 (y5, 10/10, 91-110)
+shop: 6 lanes + pedal wk 36 (y2, 10/10, 29-46) | sprinter wk 104 (y5, 9/10, 81-133) | merch 32% of gig pay (net 19%, $18405/career) | at the end: kit 2.2, van tier 1.9, space tier 2.5
+licensing: offers 1.9/career (0-3), taken 1.5 (countered 1.5, walked 0.1) | career total median $2940 (0-9881)
+loans after year 1 (per career): 0.00 | releases 7.3 | drops 0.0 | units sold 196086
+rival: cracked 8/10 (breakup@y4 opener@y6 rebrand@y5 breakup@y5 rebrand@y6 opener@y5 rebrand@y2 breakup@y6) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
+quits/year after protection: 0.00 (ultimatums 0.02, returns 0.00, over 60 seed-years)
 
-GOOD band: cards 107.1/career, no-card weeks 26% | garage board 4.4 listings @ 152 km | km/gig 175 | live moments per song: combo 96% chorus 96% peak 93%, signature gigs 92% | rival lineup 4.0 | payoff 0/10 | week-1 gig craigs_basement (0/0/0 km)
+GOOD band: cards 106.4/career, no-card weeks 26% | garage board 4.4 listings @ 152 km | km/gig 157 | live moments per song: combo 99% chorus 98% peak 95%, signature gigs 97% | rival lineup 4.0 | payoff 4/10 (4/7 with the needs met and a window left) | week-1 gig craigs_basement (0/0/0 km)
 
 === Gravel Kings (gravel_kings) ===
 AVG bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |     191     622 |      431 ( 293-  536) |   24 |   67 |   55 |   0.0 |  0.0   0.0  0.0 0.0 |  10.2 | 14.7 |   62 |  52 |  0.0 | 0.0  0.0    -     0  0.0  0.0 | 2.0 45%   15   271 | 0.0     0   0 | 0.0 0.1 0.0 0.0    72  -139  1154 |     0
-  2 |     441    1548 |     1949 (1484- 3063) |   40 |   63 |   76 |   0.2 |  2.5   1.1  0.3 0.7 |   9.1 | 13.3 |   51 |  38 |  0.0 | 1.0  1.2   79    82  0.0  0.3 | 4.0 38%   28  1219 | 0.0     0   0 | 0.1 1.8 0.0 0.3  1718   654  3571 |   620
-  3 |     932    1869 |     4489 (3061- 5788) |   46 |   62 |   74 |   0.1 |  2.1   1.5  0.5 1.6 |   8.8 | 12.1 |   50 |  33 |  0.0 | 0.8  1.0   66    31  0.0  0.1 | 3.9 41%   39  3357 | 0.0     0   0 | 0.4 2.3 0.0 0.2  2344  1432  3047 |   188
-  4 |    1345    3195 |     8452 (4990-11226) |   54 |   69 |   73 |   0.2 |  1.8   0.9  0.8 1.2 |   8.3 | 12.4 |   51 |  40 |  0.0 | 0.9  1.0   45    83  0.0  0.6 | 3.7 49%   47  6767 | 0.0     0   0 | 1.1 2.5 0.1 0.4  2955  1656  5868 |   908
-  5 |    2323    4956 |    15206 (6967-19730) |   60 |   77 |   72 |   0.0 |  1.3   0.6  0.3 1.5 |   9.0 | 13.5 |   54 |  39 |  0.0 | 0.9  1.3   24    33  0.0  0.3 | 3.9 41%   55 10695 | 0.0     0   0 | 1.7 3.0 0.1 0.5  3838  2185 10164 |   731
-  6 |    3363    5553 |    22602 (13068-28146) |   63 |   81 |   70 |   0.0 |  0.6   0.5  0.4 1.7 |   9.7 | 12.0 |   55 |  62 |  0.0 | 0.8  1.3   14    14  0.1  0.3 | 3.8 47%   61 14758 | 0.0     0   0 | 1.9 3.0 0.6 1.0  4079  2589  9843 |  1696
-world: era wk 139 (y6, 4/10, 133-144) | tours 0.0/career (net 0 $/career) | regions open 0.6 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
-eras: local wk 19 (y1, 10/10, 16-23) | first offer wk 33 (y2, 10/10, 25-39) | first deal wk 36 (y2, 10/10, 26-45) | signed era wk 36 (y2, 10/10, 26-45) | world-ready wk 139 (y6, 4/10, 133-144)
-shop: 6 lanes + pedal wk 66 (y3, 10/10, 33-118) | sprinter wk 133 (y6, 1/10, 133-133) | merch 45% of gig pay (net 25%, $8376/career) | at the end: kit 1.9, van tier 0.6, space tier 1.0
-licensing: offers 1.7/career (0-3), taken 1.5 (countered 0.4, walked 0.0) | career total median $4391 (0-7985)
-loans after year 1 (per career): 0.50 | releases 5.8 | drops 0.0 | units sold 57857
-rival: cracked 0/10 | Sad Dome: you headline 0/0 | poach defections 0.20 per career
-quits/year after protection: 0.77 (ultimatums 1.38, returns 0.38, over 60 seed-years)
+  1 |     148     539 |      392 ( 259-  608) |   23 |   71 |   52 |   0.0 |  0.3   0.0  0.0 0.0 |  11.2 | 13.2 |   63 |  55 |  0.0 | 0.0  0.1    -    10  0.0  0.0 | 1.8 28%   14   275 | 0.0     0   0 | 0.0 0.0 0.0 0.0     5   -94   829 |     0
+  2 |     257    1182 |     1624 ( 832- 2263) |   40 |   60 |   77 |   0.2 |  2.1   1.1  0.2 0.9 |   9.4 | 11.8 |   51 |  28 |  0.0 | 0.8  0.8   82    82  0.0  0.2 | 3.3 42%   24  1224 | 0.0     0   0 | 0.0 1.4 0.0 0.0  1014   265  2826 |   248
+  3 |     550    2424 |     4288 (2518- 6314) |   46 |   68 |   72 |   0.0 |  1.2   0.7  0.6 0.9 |  10.1 | 11.6 |   54 |  33 |  0.0 | 1.0  1.0   64     4  0.0  0.6 | 3.3 33%   34  3390 | 0.0     0   0 | 0.2 2.4 0.0 0.0  1988  1099  3432 |   188
+  4 |    1515    3740 |     9226 (6870-12759) |   55 |   73 |   71 |   0.0 |  1.5   1.0  0.8 1.1 |   7.6 | 12.8 |   52 |  38 |  0.0 | 0.9  1.5   39   464  0.0  0.3 | 3.5 46%   43  6849 | 0.0     0   0 | 1.5 3.0 0.1 0.2  3515  1901  5621 |  1103
+  5 |    2726    4948 |    17345 (10897-21579) |   60 |   79 |   69 |   0.0 |  1.1   0.6  0.5 1.1 |   8.2 | 13.0 |   56 |  43 |  0.0 | 0.9  1.5   19    51  0.0  0.5 | 4.8 48%   54 10732 | 0.0     0   0 | 2.0 3.0 0.2 1.6  4402  2616 10098 |   491
+  6 |    2505    5946 |    27531 (21126-41242) |   65 |   76 |   70 |   0.0 |  0.7   0.4  0.4 1.1 |   9.9 | 11.9 |   59 |  60 |  0.0 | 0.9  1.5   10    18  0.1  0.8 | 3.5 46%   56 14730 | 0.3  1626   2 | 2.0 3.0 0.5 1.7  4044  2685 12331 |  1689
+world: era wk 137 (y6, 6/10, 130-144) | tours 0.3/career (net 885 $/career) | regions open 1.2 (invite/big 0.2) broken 0.2 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
+eras: local wk 19 (y1, 10/10, 15-23) | first offer wk 34 (y2, 10/10, 24-48) | first deal wk 40 (y2, 10/10, 31-51) | signed era wk 40 (y2, 10/10, 31-51) | world-ready wk 137 (y6, 6/10, 130-144)
+shop: 6 lanes + pedal wk 64 (y3, 10/10, 44-93) | sprinter never | merch 43% of gig pay (net 24%, $8473/career) | at the end: kit 2.0, van tier 0.5, space tier 1.7
+licensing: offers 1.5/career (0-2), taken 1.4 (countered 0.3, walked 0.0) | career total median $4125 (0-7200)
+loans after year 1 (per career): 0.20 | releases 6.4 | drops 0.0 | units sold 80403
+rival: cracked 1/10 (opener@y5) | Sad Dome: you headline 0/0 | poach defections 0.10 per career
+quits/year after protection: 0.63 (ultimatums 1.15, returns 0.42, over 60 seed-years)
 
-AVG band: cards 132.0/career, no-card weeks 8% | garage board 4.2 listings @ 48 km | km/gig 150 | live moments per song: combo 95% chorus 93% peak 95%, signature gigs 65% | rival lineup 5.3 | payoff 0/10 | week-1 gig mill_woods_basement_party (0/0/0 km)
+AVG band: cards 133.0/career, no-card weeks 8% | garage board 4.2 listings @ 45 km | km/gig 157 | live moments per song: combo 97% chorus 96% peak 93%, signature gigs 65% | rival lineup 4.7 | payoff 2/10 (2/2 with the needs met and a window left) | week-1 gig mill_woods_basement_party (0/0/0 km)
 
 GOOD bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |     208     814 |      905 ( 552- 1426) |   24 |   92 |   53 |   0.1 |  0.0   0.0  0.0 0.0 |  12.6 | 22.8 |   74 |  44 |  0.0 | 0.5  0.3   91    41  0.0  0.0 | 3.1 39%   17   273 | 0.0     0   0 | 0.0 0.6 0.0 0.0  1013  -213  3105 |     0
-  2 |     760    2067 |     4914 (3719- 7130) |   57 |   93 |   59 |   0.0 |  0.0   0.0  0.0 0.0 |   9.0 | 20.7 |   80 |  58 |  0.0 | 1.0  1.6   60   199  0.0  0.3 | 4.3 72%   31  1170 | 0.0     0   0 | 0.9 2.8 0.3 0.4  5585  3065  6947 |  1050
-  3 |    1145    4931 |    11954 (9022-16223) |   68 |   93 |   61 |   0.0 |  0.0   0.0  0.0 0.0 |   9.8 | 19.7 |   79 |  67 |  0.0 | 0.9  1.3   40   252  0.0  1.3 | 3.7 76%   40  3013 | 0.0     0   0 | 2.0 3.0 1.1 1.8  9969  6081 19036 |   520
-  4 |    3697    9042 |    24716 (20577-32856) |   70 |   97 |   54 |   0.0 |  0.0   0.0  0.0 0.0 |  12.8 | 21.3 |   87 |  67 |  0.0 | 1.0  1.7    8   282  0.1  1.2 | 3.2 88%   39  5488 | 0.3   607   1 | 2.0 3.0 2.0 2.3 11296  7086 29381 |   744
-  5 |    3086    6263 |    35360 (31671-39562) |   72 |   96 |   54 |   0.0 |  0.0   0.0  0.0 0.0 |  10.7 | 20.5 |   87 |  65 |  0.0 | 1.0  1.0    2   382  0.7  1.9 | 2.9 83%   39  7742 | 0.9  3534   7 | 2.2 3.0 2.0 2.5  9746  6391 34730 |  1022
-  6 |    3085    8493 |    42704 (39512-47554) |   70 |   96 |   54 |   0.0 |  0.0   0.0  0.0 0.0 |  11.0 | 21.8 |   85 |  57 |  0.0 | 0.5  1.7    3  6585  0.6  1.3 | 2.5 80%   31  9802 | 1.1  5909   5 | 2.6 3.0 2.0 2.7  9883  6268 33147 |  1968
-world: era wk 100 (y5, 10/10, 88-107) | tours 2.1/career (net 1426 $/career) | regions open 3.5 (invite/big 0.8) broken 0.6 | Gong won 0.1 of 0.8 nominations | moose 0/10 | JP president 1/10
-eras: local wk 14 (y1, 10/10, 10-17) | first offer wk 27 (y2, 10/10, 20-37) | first deal wk 28 (y2, 10/10, 21-38) | signed era wk 28 (y2, 10/10, 21-38) | world-ready wk 100 (y5, 10/10, 88-107)
-shop: 6 lanes + pedal wk 35 (y2, 10/10, 23-54) | sprinter wk 76 (y4, 10/10, 59-86) | merch 38% of gig pay (net 23%, $28678/career) | at the end: kit 2.6, van tier 2.0, space tier 2.7
-licensing: offers 1.9/career (0-3), taken 1.6 (countered 1.4, walked 0.1) | career total median $5620 (0-8484)
-loans after year 1 (per career): 0.00 | releases 7.6 | drops 0.0 | units sold 170221
-rival: cracked 9/10 (opener@y5 breakup@y6 opener@y6 rebrand@y3 opener@y3 breakup@y4 opener@y5 opener@y5 rebrand@y2) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
+  1 |     187    1047 |      956 ( 604- 1277) |   24 |   95 |   52 |   0.1 |  0.0   0.0  0.0 0.0 |  12.3 | 23.1 |   75 |  53 |  0.0 | 0.4  0.3   91    35  0.0  0.0 | 3.0 40%   17   273 | 0.0     0   0 | 0.1 0.7 0.0 0.0  1140   -92  2992 |     0
+  2 |     707    2285 |     5453 (4489- 7065) |   60 |   93 |   60 |   0.1 |  0.0   0.0  0.0 0.0 |   9.4 | 20.9 |   81 |  49 |  0.0 | 0.9  1.7   55   266  0.0  0.6 | 4.5 76%   32  1165 | 0.0     0   0 | 1.1 3.0 0.1 0.4  5558  3161  7430 |  1082
+  3 |    1439    5503 |    13674 (11529-17367) |   69 |   98 |   57 |   0.0 |  0.0   0.0  0.0 0.0 |  11.4 | 20.9 |   83 |  76 |  0.0 | 0.9  1.4   32   569  0.0  1.7 | 4.7 74%   52  2977 | 0.0     0   0 | 2.0 3.0 1.5 2.0 10096  6101 21268 |   950
+  4 |    3101    5909 |    27161 (22744-32091) |   73 |   97 |   55 |   0.0 |  0.0   0.0  0.0 0.0 |  11.4 | 21.4 |   88 |  71 |  0.0 | 1.0  1.5    5    55  0.3  1.7 | 3.3 82%   50  5632 | 0.6  1210   2 | 2.2 3.0 2.0 2.5 10183  6363 28734 |  1182
+  5 |    3091    8440 |    41482 (36928-48148) |   71 |   98 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |  10.0 | 22.2 |   86 |  66 |  0.0 | 0.9  1.3    2   395  1.0  1.6 | 3.4 76%   39  8147 | 1.2  7649   7 | 2.4 3.0 2.0 2.8 10583  6844 42145 |  1036
+  6 |    4254   15026 |    49344 (43359-55678) |   70 |   97 |   53 |   0.0 |  0.0   0.0  0.0 0.0 |  10.2 | 21.4 |   85 |  60 |  0.0 | 0.7  1.4    2  9447  0.8  1.5 | 2.6 81%   33 10023 | 1.2 10999   7 | 3.0 3.0 2.0 3.0 10109  6416 37979 |  1809
+world: era wk 94 (y4, 10/10, 84-106) | tours 2.8/career (net 4546 $/career) | regions open 3.9 (invite/big 0.9) broken 0.9 | Gong won 0.5 of 1.4 nominations | moose 0/10 | JP president 1/10
+eras: local wk 14 (y1, 10/10, 12-16) | first offer wk 25 (y2, 10/10, 20-33) | first deal wk 26 (y2, 10/10, 21-34) | signed era wk 26 (y2, 10/10, 21-34) | world-ready wk 94 (y4, 10/10, 84-106)
+shop: 6 lanes + pedal wk 31 (y2, 10/10, 22-40) | sprinter wk 72 (y3, 10/10, 59-93) | merch 34% of gig pay (net 20%, $28793/career) | at the end: kit 3.0, van tier 2.0, space tier 3.0
+licensing: offers 2.0/career (0-3), taken 1.7 (countered 1.7, walked 0.0) | career total median $8208 (0-15008)
+loans after year 1 (per career): 0.10 | releases 7.6 | drops 0.0 | units sold 190149
+rival: cracked 10/10 (opener@y5 breakup@y5 opener@y6 opener@y4 rebrand@y4 rebrand@y3 opener@y4 opener@y6 rebrand@y4 opener@y3) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
 quits/year after protection: 0.00 (ultimatums 0.00, returns 0.00, over 60 seed-years)
 
-GOOD band: cards 106.5/career, no-card weeks 26% | garage board 4.2 listings @ 41 km | km/gig 161 | live moments per song: combo 93% chorus 96% peak 89%, signature gigs 95% | rival lineup 4.0 | payoff 0/10 | week-1 gig mill_woods_basement_party (0/0/0 km)
+GOOD band: cards 103.1/career, no-card weeks 28% | garage board 4.2 listings @ 45 km | km/gig 162 | live moments per song: combo 94% chorus 98% peak 93%, signature gigs 95% | rival lineup 4.0 | payoff 4/10 (4/4 with the needs met and a window left) | week-1 gig mill_woods_basement_party (0/0/0 km)
 
 === The Grid Road Ramblers (grid_road_ramblers) ===
 AVG bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |      57     289 |      318 ( 224-  487) |   19 |   61 |   65 |   0.4 |  1.4   0.9  0.0 0.9 |  12.5 | 13.4 |   54 |  36 |  0.0 | 0.0  0.0    -     0  0.0  0.0 | 1.8 17%   14   302 | 0.0     0   0 | 0.0 0.0 0.0 0.0    23   -63   937 |     0
-  2 |     246    1143 |     1242 ( 847- 2090) |   30 |   65 |   73 |   0.2 |  1.9   1.0  0.7 1.0 |   9.8 | 13.6 |   53 |  25 |  0.0 | 0.7  0.6   74    40  0.0  0.2 | 3.3 21%   24  1355 | 0.0     0   0 | 0.0 1.0 0.0 0.0   729   216  2677 |   270
-  3 |     689    2020 |     3510 (2460- 4846) |   43 |   63 |   77 |   0.3 |  1.3   1.1  0.4 1.6 |   7.8 | 14.4 |   51 |  26 |  0.0 | 0.9  1.1   71    15  0.0  0.7 | 4.0 48%   34  3626 | 0.0     0   0 | 0.3 2.2 0.0 0.0  2173  1204  3863 |   195
-  4 |    1656    3671 |     6769 (5079- 9275) |   48 |   66 |   74 |   0.0 |  1.9   0.8  0.6 1.7 |   8.6 | 12.8 |   49 |  35 |  0.0 | 0.9  1.4   53     2  0.0  0.8 | 3.7 43%   47  7368 | 0.0     0   0 | 0.9 3.0 0.0 0.4  3335  1887  4155 |  1170
-  5 |    2040    2968 |    12555 (7190-16249) |   52 |   69 |   76 |   0.0 |  1.7   0.9  0.4 1.9 |   8.8 | 11.5 |   47 |  30 |  0.0 | 0.9  1.4   32    41  0.0  0.8 | 4.5 40%   55 11796 | 0.0     0   0 | 1.5 3.0 0.0 0.6  3694  2180  5785 |   520
-  6 |    2018    4192 |    18818 (12181-23260) |   58 |   78 |   73 |   0.0 |  1.2   1.0  0.4 2.4 |   9.0 | 10.9 |   49 |  39 |  0.0 | 0.8  1.6   23    49  0.0  0.5 | 4.4 43%   67 16385 | 0.0     0   0 | 1.9 3.0 0.1 1.1  3336  2345  6509 |  1394
-world: era never | tours 0.0/career (net 0 $/career) | regions open 0.0 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
-eras: local wk 20 (y1, 10/10, 11-25) | first offer wk 39 (y2, 10/10, 31-46) | first deal wk 45 (y2, 10/10, 32-63) | signed era wk 45 (y2, 10/10, 32-63) | world-ready never
-shop: 6 lanes + pedal wk 68 (y3, 10/10, 45-96) | sprinter never | merch 56% of gig pay (net 32%, $7769/career) | at the end: kit 1.9, van tier 0.1, space tier 1.1
-licensing: offers 1.5/career (0-2), taken 1.4 (countered 0.3, walked 0.0) | career total median $3570 (0-6300)
-loans after year 1 (per career): 0.50 | releases 6.1 | drops 0.0 | units sold 48443
-rival: cracked 0/10 | Sad Dome: you headline 0/0 | poach defections 0.10 per career
-quits/year after protection: 1.00 (ultimatums 1.65, returns 0.44, over 57 seed-years)
+  1 |      67     556 |      376 ( 170-  562) |   21 |   64 |   64 |   0.5 |  0.4   0.1  0.0 0.1 |  12.2 | 13.4 |   55 |  39 |  0.0 | 0.0  0.0    -     0  0.0  0.0 | 2.0 55%   15   294 | 0.0     0   0 | 0.0 0.0 0.0 0.0    21   -71  1158 |     0
+  2 |     329    1083 |     1700 ( 684- 3175) |   36 |   64 |   75 |   0.1 |  2.7   2.0  0.6 1.4 |  10.9 | 13.9 |   52 |  26 |  0.0 | 0.9  0.9   74    45  0.0  0.5 | 3.9 38%   27  1303 | 0.0     0   0 | 0.0 1.0 0.0 0.0   777   296  2878 |   248
+  3 |     745    2252 |     3828 (1592- 6360) |   42 |   68 |   77 |   0.1 |  2.0   1.0  1.0 1.2 |  10.6 | 13.2 |   50 |  28 |  0.0 | 1.0  0.8   64    73  0.0  0.5 | 4.3 37%   41  3531 | 0.0     0   0 | 0.2 2.1 0.0 0.0  1954  1038  4058 |   210
+  4 |    1039    2100 |     7604 (3131-13670) |   50 |   71 |   71 |   0.0 |  0.8   0.5  0.7 1.1 |  10.6 | 12.3 |   52 |  33 |  0.0 | 0.7  1.1   39    53  0.0  0.2 | 3.6 31%   51  7260 | 0.0     0   0 | 1.0 2.4 0.1 0.1  2764  1508  4836 |  1028
+  5 |    1733    4473 |    12469 (5307-22690) |   58 |   76 |   72 |   0.0 |  1.0   0.3  0.3 1.1 |   9.1 | 13.4 |   56 |  31 |  0.0 | 0.8  0.9   41    75  0.0  0.3 | 4.5 47%   57 11570 | 0.0     0   0 | 1.6 2.9 0.1 0.7  4341  2609  7834 |   543
+  6 |    2708    5343 |    18518 (6766-25871) |   61 |   74 |   73 |   0.0 |  0.7   0.6  0.2 1.4 |   8.2 | 11.9 |   57 |  35 |  0.0 | 0.8  1.2   20   427  0.0  0.6 | 4.3 37%   67 16270 | 0.0     0   0 | 1.9 3.0 0.2 0.9  3412  2081  6164 |  1338
+world: era wk 136 (y6, 2/10, 131-140) | tours 0.0/career (net 0 $/career) | regions open 0.2 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
+eras: local wk 21 (y1, 10/10, 14-32) | first offer wk 35 (y2, 10/10, 26-56) | first deal wk 37 (y2, 10/10, 27-57) | signed era wk 37 (y2, 10/10, 27-57) | world-ready wk 136 (y6, 2/10, 131-140)
+shop: 6 lanes + pedal wk 75 (y4, 10/10, 46-126) | sprinter never | merch 49% of gig pay (net 28%, $7460/career) | at the end: kit 1.9, van tier 0.2, space tier 0.9
+licensing: offers 1.5/career (0-2), taken 1.3 (countered 0.3, walked 0.0) | career total median $3975 (0-6300)
+loans after year 1 (per career): 0.20 | releases 4.9 | drops 0.4 | units sold 44231
+rival: cracked 0/10 | Sad Dome: you headline 0/0 | poach defections 0.40 per career
+quits/year after protection: 0.78 (ultimatums 1.31, returns 0.48, over 58 seed-years)
 
-AVG band: cards 134.3/career, no-card weeks 7% | garage board 4.3 listings @ 157 km | km/gig 173 | live moments per song: combo 98% chorus 91% peak 97%, signature gigs 62% | rival lineup 4.7 | payoff 0/10 | week-1 gig quonset_yard_party (0/0/0 km)
+AVG band: cards 133.8/career, no-card weeks 7% | garage board 4.3 listings @ 153 km | km/gig 165 | live moments per song: combo 99% chorus 93% peak 96%, signature gigs 75% | rival lineup 4.1 | payoff 0/10 (0/0 with the needs met and a window left) | week-1 gig quonset_yard_party (0/0/0 km)
 
 GOOD bot
  yr | fundMin fundEnd |  fans end (min-max) | buzz | chem | burn | loans | ults quits rets out | songs | gigs | mood | van | bans | sgn  rel peak   roy cert loon |  sd sdW heat   rvF |  tr   abr  hs | kit  gr  vt  sp   mer  mNet   pay |   lic
-  1 |      90     981 |      823 ( 569- 1268) |   21 |   93 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |  12.7 | 22.5 |   72 |  42 |  0.0 | 0.5  0.2   98    29  0.0  0.0 | 2.7 41%   16   299 | 0.0     0   0 | 0.0 0.1 0.0 0.0   769   -85  2768 |     0
-  2 |     743    2442 |     4597 (3501- 5827) |   51 |   93 |   63 |   0.1 |  0.0   0.0  0.0 0.0 |   7.9 | 20.2 |   77 |  51 |  0.0 | 0.7  1.6   61   133  0.0  0.7 | 3.7 65%   30  1269 | 0.0     0   0 | 0.8 2.8 0.0 0.3  4669  2554  6963 |  1033
-  3 |    1370    3263 |    10224 (7073-12172) |   62 |   95 |   63 |   0.0 |  0.3   0.0  0.0 0.0 |   9.9 | 20.8 |   77 |  66 |  0.0 | 1.0  1.1   43   191  0.0  1.1 | 4.4 73%   47  3248 | 0.0     0   0 | 1.9 3.0 1.0 1.6 10288  6194 15521 |   525
-  4 |    2025    5525 |    20799 (16317-24627) |   69 |   97 |   59 |   0.0 |  0.0   0.0  0.0 0.0 |  12.0 | 21.5 |   85 |  66 |  0.0 | 0.9  1.5   14   119  0.0  1.7 | 4.5 84%   53  5668 | 0.0     0   0 | 1.9 3.0 1.6 2.0 11159  6987 17349 |  1272
-  5 |    2573    6057 |    30769 (26559-34150) |   71 |   97 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |  11.3 | 21.4 |   87 |  61 |  0.0 | 1.0  1.5    4   455  0.6  2.2 | 2.9 79%   32  7090 | 0.1   259   0 | 2.0 3.0 1.9 2.5 11550  7317 24416 |   476
-  6 |    2823    5393 |    37127 (32277-43193) |   67 |   96 |   55 |   0.0 |  0.0   0.0  0.0 0.0 |  10.8 | 21.2 |   87 |  52 |  0.0 | 0.7  1.3    6  4547  0.4  2.8 | 2.3 70%   30  8777 | 0.5  1598   2 | 2.1 3.0 1.9 2.8 10688  6692 27501 |  1316
-world: era wk 106 (y5, 10/10, 97-116) | tours 0.6/career (net 1812 $/career) | regions open 2.9 (invite/big 1.3) broken 0.1 | Gong won 0.0 of 0.3 nominations | moose 0/10 | JP president 1/10
-eras: local wk 15 (y1, 10/10, 13-18) | first offer wk 25 (y1, 10/10, 19-32) | first deal wk 26 (y2, 10/10, 20-33) | signed era wk 26 (y2, 10/10, 20-33) | world-ready wk 106 (y5, 10/10, 97-116)
-shop: 6 lanes + pedal wk 37 (y2, 10/10, 30-60) | sprinter wk 92 (y4, 9/10, 65-114) | merch 52% of gig pay (net 31%, $29657/career) | at the end: kit 2.1, van tier 1.9, space tier 2.8
-licensing: offers 1.9/career (0-3), taken 1.4 (countered 1.2, walked 0.2) | career total median $4140 (0-10205)
-loans after year 1 (per career): 0.10 | releases 7.2 | drops 0.0 | units sold 139112
-rival: cracked 8/10 (opener@y5 rebrand@y4 breakup@y4 breakup@y4 breakup@y4 opener@y5 rebrand@y5 breakup@y4) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
-quits/year after protection: 0.00 (ultimatums 0.05, returns 0.00, over 60 seed-years)
+  1 |     106     954 |      894 ( 627- 1279) |   23 |   94 |   56 |   0.1 |  0.0   0.0  0.0 0.0 |  11.4 | 22.5 |   73 |  47 |  0.0 | 0.3  0.3   94    44  0.0  0.0 | 2.8 43%   16   297 | 0.0     0   0 | 0.0 0.3 0.0 0.0  1006     7  3242 |     0
+  2 |     859    2068 |     4518 (3805- 6141) |   52 |   87 |   66 |   0.1 |  0.0   0.0  0.0 0.0 |   9.4 | 21.0 |   77 |  52 |  0.0 | 0.9  1.4   56    81  0.0  0.7 | 4.2 69%   29  1255 | 0.0     0   0 | 0.8 2.9 0.0 0.2  4824  2868  7254 |   630
+  3 |    1151    3730 |    10887 (8742-13096) |   63 |   93 |   66 |   0.0 |  0.0   0.0  0.0 0.0 |   9.6 | 20.8 |   75 |  55 |  0.0 | 1.0  1.3   38   147  0.0  1.8 | 4.6 83%   45  3121 | 0.0     0   0 | 2.0 3.0 0.9 1.8 10206  5866 15026 |   528
+  4 |    2532    5905 |    22682 (20876-25430) |   69 |   97 |   60 |   0.0 |  0.0   0.0  0.0 0.0 |  10.9 | 22.0 |   85 |  62 |  0.0 | 1.0  1.5    6    14  0.0  1.8 | 3.7 78%   43  5489 | 0.0     0   0 | 2.0 3.0 1.7 2.0 11732  7418 18913 |  1248
+  5 |    1974    5496 |    33184 (31614-35807) |   72 |   97 |   56 |   0.0 |  0.0   0.0  0.0 0.0 |  10.3 | 21.6 |   87 |  54 |  0.0 | 0.9  1.2    1     6  1.1  2.4 | 3.3 76%   38  7804 | 0.4  1045   1 | 2.0 3.0 2.0 2.6 10835  6810 25152 |   616
+  6 |    3108    7182 |    39622 (35503-44022) |   67 |   96 |   55 |   0.0 |  0.0   0.0  0.0 0.0 |   9.9 | 21.2 |   87 |  50 |  0.0 | 0.9  1.2    7  3579  0.4  2.2 | 2.0 75%   34 10253 | 0.6  2835   5 | 2.1 3.0 2.0 2.7 10707  6885 29841 |  1618
+world: era wk 103 (y5, 10/10, 94-109) | tours 1.0/career (net 1246 $/career) | regions open 2.5 (invite/big 0.8) broken 0.3 | Gong won 0.0 of 0.3 nominations | moose 0/10 | JP president 1/10
+eras: local wk 14 (y1, 10/10, 11-16) | first offer wk 29 (y2, 10/10, 19-40) | first deal wk 30 (y2, 10/10, 20-41) | signed era wk 30 (y2, 10/10, 20-41) | world-ready wk 103 (y5, 10/10, 94-109)
+shop: 6 lanes + pedal wk 37 (y2, 10/10, 25-56) | sprinter wk 90 (y4, 10/10, 80-105) | merch 50% of gig pay (net 30%, $29853/career) | at the end: kit 2.1, van tier 2.0, space tier 2.7
+licensing: offers 1.8/career (0-3), taken 1.4 (countered 1.3, walked 0.1) | career total median $3960 (0-9095)
+loans after year 1 (per career): 0.10 | releases 6.9 | drops 0.0 | units sold 161759
+rival: cracked 9/10 (opener@y4 opener@y4 rebrand@y5 breakup@y4 opener@y5 opener@y3 rebrand@y3 opener@y5 opener@y3) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
+quits/year after protection: 0.00 (ultimatums 0.00, returns 0.00, over 60 seed-years)
 
-GOOD band: cards 108.3/career, no-card weeks 25% | garage board 4.4 listings @ 166 km | km/gig 201 | live moments per song: combo 99% chorus 92% peak 91%, signature gigs 100% | rival lineup 3.0 | payoff 0/10 | week-1 gig quonset_yard_party (0/0/0 km)
+GOOD band: cards 106.4/career, no-card weeks 26% | garage board 4.3 listings @ 169 km | km/gig 220 | live moments per song: combo 99% chorus 93% peak 90%, signature gigs 100% | rival lineup 3.0 | payoff 1/10 (1/6 with the needs met and a window left) | week-1 gig quonset_yard_party (0/0/0 km)
 
 CROSS-BAND (avg bot): fans@y3 fund@y3 | loans y1-3 | quits/yr rets/yr | local wk, 1st offer wk, signed wk, world wk | signed@y3 | cards/career no-card% | board n @km | km/gig | peak moment/song | rival lineup | payoff
-       hail_damage   3968   2811 |  0.0 |  0.75  0.37 |   23   40   44  136 | 0.9 |  132   8% |  4.4 @ 119 |  149 |  90% | 5.6 | 0
-       frost_heave   3248   2566 |  0.6 |  0.81  0.39 |   20   40   45    - | 0.9 |  135   6% |  4.3 @ 147 |  163 |  94% | 5.2 | 0
-      gravel_kings   4489   1869 |  0.3 |  0.77  0.38 |   19   33   36  139 | 0.8 |  132   8% |  4.2 @  48 |  150 |  95% | 5.3 | 0
-grid_road_ramblers   3510   2020 |  0.9 |  1.00  0.44 |   20   39   45    - | 0.9 |  134   7% |  4.3 @ 157 |  173 |  97% | 4.7 | 0
-  targets        frost_heave local wk 20 ok | fans 82% ok | fund 91% ok | loans 0.6 ok | signed@3 0.9 ok | world - MISS | cards 102% ok | no-card +-2pt ok | board 4.3@147 ok | km/gig 1.09x ok | quits 0.81/yr rets 48% ok
-  targets       gravel_kings local wk 19 MISS | fans 113% ok | fund 66% MISS | loans 0.3 ok | signed@3 0.8 ok | world 139 ok | cards 100% ok | no-card +0pt ok | board 4.2@48 ok | km/gig 1.00x ok | quits 0.77/yr rets 50% ok
-  targets grid_road_ramblers local wk 20 ok | fans 88% ok | fund 72% MISS | loans 0.9 ok | signed@3 0.9 ok | world - MISS | cards 102% ok | no-card +-2pt ok | board 4.3@157 ok | km/gig 1.16x ok | quits 1.00/yr rets 44% ok
+       hail_damage   3968   2811 |  0.0 |  0.75  0.37 |   23   40   44  136 | 0.9 |  132   8% |  4.4 @ 119 |  149 |  90% | 5.6 | 0 (0/1 eligible)
+       frost_heave   3667   2876 |  0.9 |  0.55  0.38 |   19   39   42  134 | 0.8 |  133   8% |  4.4 @ 149 |  160 |  94% | 4.6 | 0 (0/0 eligible)
+      gravel_kings   4288   2424 |  0.2 |  0.63  0.42 |   19   34   40  137 | 1.0 |  133   8% |  4.2 @  45 |  157 |  93% | 4.7 | 2 (2/2 eligible)
+grid_road_ramblers   3828   2252 |  0.7 |  0.78  0.48 |   21   35   37  136 | 1.0 |  134   7% |  4.3 @ 153 |  165 |  96% | 4.1 | 0 (0/0 eligible)
+  targets        frost_heave local wk 19 MISS | fans 92% ok | fund 102% ok | loans 0.9 ok | signed@3 0.8 ok | world 134 (20%) ok | cards 101% ok | no-card +-1pt ok | board 4.4@149 ok | km/gig 1.07x ok | quits 0.55/yr rets 70% ok
+  targets       gravel_kings local wk 19 MISS | fans 108% ok | fund 86% ok | loans 0.2 ok | signed@3 1.0 ok | world 137 (60%) ok | cards 101% ok | no-card +-1pt ok | board 4.2@45 ok | km/gig 1.05x ok | quits 0.63/yr rets 66% ok
+  targets grid_road_ramblers local wk 21 ok | fans 96% ok | fund 80% ok | loans 0.7 ok | signed@3 1.0 ok | world 136 (20%) ok | cards 101% ok | no-card +-1pt ok | board 4.3@153 ok | km/gig 1.11x ok | quits 0.78/yr rets 62% ok
 
 CROSS-BAND (good bot): fans@y3 fund@y3 | loans y1-3 | quits/yr rets/yr | local wk, 1st offer wk, signed wk, world wk | signed@y3 | cards/career no-card% | board n @km | km/gig | peak moment/song | rival lineup | payoff
-       hail_damage  11229   3866 |  0.1 |  0.00  0.00 |   15   26   27  101 | 1.0 |  106  26% |  4.3 @ 116 |  186 |  92% | 4.0 | 0
-       frost_heave  12025   4233 |  0.1 |  0.00  0.00 |   16   27   28  101 | 0.9 |  107  26% |  4.4 @ 152 |  175 |  93% | 4.0 | 0
-      gravel_kings  11954   4931 |  0.1 |  0.00  0.00 |   14   27   28  100 | 0.9 |  107  26% |  4.2 @  41 |  161 |  89% | 4.0 | 0
-grid_road_ramblers  10224   3263 |  0.1 |  0.00  0.00 |   15   25   26  106 | 1.0 |  108  25% |  4.4 @ 166 |  201 |  91% | 3.0 | 0
-  targets        frost_heave local wk 16 ok | fans 107% ok | fund 109% ok | loans 0.1 ok | signed@3 0.9 ok | world 101 ok | cards 101% ok | no-card +-1pt ok | board 4.4@152 ok | km/gig 0.94x ok | quits 0.00/yr rets 0% ok
-  targets       gravel_kings local wk 14 ok | fans 106% ok | fund 128% MISS | loans 0.1 ok | signed@3 0.9 ok | world 100 ok | cards 100% ok | no-card +0pt ok | board 4.2@41 ok | km/gig 0.87x ok | quits 0.00/yr rets 0% ok
-  targets grid_road_ramblers local wk 15 ok | fans 91% ok | fund 84% ok | loans 0.1 ok | signed@3 1.0 ok | world 106 ok | cards 102% ok | no-card +-2pt ok | board 4.4@166 ok | km/gig 1.08x ok | quits 0.00/yr rets 0% ok
+       hail_damage  11229   3866 |  0.1 |  0.00  0.00 |   15   26   27  101 | 1.0 |  106  26% |  4.3 @ 116 |  186 |  92% | 4.0 | 0 (0/0 eligible)
+       frost_heave  10948   3135 |  0.1 |  0.00  0.00 |   15   28   29  101 | 1.0 |  106  26% |  4.4 @ 152 |  157 |  95% | 4.0 | 4 (4/7 eligible)
+      gravel_kings  13674   5503 |  0.2 |  0.00  0.00 |   14   25   26   94 | 0.9 |  103  28% |  4.2 @  45 |  162 |  93% | 4.0 | 4 (4/4 eligible)
+grid_road_ramblers  10887   3730 |  0.2 |  0.00  0.00 |   14   29   30  103 | 1.0 |  106  26% |  4.3 @ 169 |  220 |  90% | 3.0 | 1 (1/6 eligible)
+  targets        frost_heave local wk 15 ok | fans 97% ok | fund 81% ok | loans 0.1 ok | signed@3 1.0 ok | world 101 (100%) ok | cards 100% ok | no-card +0pt ok | board 4.4@152 ok | km/gig 0.85x ok | quits 0.00/yr rets 0% ok | payoff 4/7 ok
+  targets       gravel_kings local wk 14 ok | fans 122% MISS | fund 142% MISS | loans 0.2 ok | signed@3 0.9 ok | world 94 (100%) ok | cards 97% ok | no-card +2pt ok | board 4.2@45 ok | km/gig 0.87x ok | quits 0.00/yr rets 0% ok | payoff 4/4 ok
+  targets grid_road_ramblers local wk 14 ok | fans 97% ok | fund 96% ok | loans 0.2 ok | signed@3 1.0 ok | world 103 (100%) ok | cards 100% ok | no-card +0pt ok | board 4.3@169 ok | km/gig 1.19x ok | quits 0.00/yr rets 0% ok | payoff 1/6 MISS
 invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 100k)
-done in 85.46 s
+done in 128.98 s

@@ -97,12 +97,19 @@ tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home sup
 - **Drum sync:** the v0.8.3 drum-sync code is intact: `11_settings.js` is unchanged since v0.8.3, and the v0.9 edits to
   `30_audio.js` / `55_ui_gig.js` only add genre/vocal options around it (`GG.audio.play(pattern, { at, … })` still books the
   song on the band's clock; 55 now also passes `singer` + `band`). `sync.test.js` and `pw_gig` sync/sync2 stay green.
-- **Balance** (`BAND=all node tools/balance.js 6 10` → `plan/balance_v09_all.txt`; 30 seeds → `plan/balance_v09_all_30seeds.txt`):
-  at 30 seeds every §5 B4 avg-bot target holds for all three new bands except the Ramblers' "World inside the 6-year window"
-  (over 9 years all four bands reach World in 30/30 careers: HD wk 146, GK 153, FH 166, GRR 170 = +1 year). Hail Damage is
-  byte-identical through the v0.9 tuning; `plan/balance_baseline_v09_hd.txt` was re-recorded after the content merge (6 × 40
-  seeds within noise of the stage-0 tree: avg fans y6 −1.0 %, y3 −3.2 %, good y6 −0.2 %, Local wk 22 both).
-- **Size budget:** `dist/game.html` is 4.39 MB (4,283 KiB as `node build.js` prints it; gzip 1.34 MB). The owner-facing budget
+- **Balance** (`BAND=all node tools/balance.js 6 10` → `plan/balance_v09_all.txt`; 30 seeds → `plan/balance_v09_all_30seeds.txt`;
+  re-run after the fixer pass below). The World target now also needs the reach share (careers that got to the World era) within
+  15 points of Hail Damage's (it used to average only the careers that made it, so 2/30 passed as "ok"). At 30 seeds, avg bot:
+  Frost Heave fans@y3 95 %, fund 107 %, World 5/30 vs HD 10/30 (MISS by one career; it was 2/30); Gravel Kings fans 120 %, fund
+  135 % (MISS; 120 % at 60 seeds, so mostly noise), Local wk 19 (MISS by a week, as before at 10 seeds), World 18/30; the Ramblers
+  fans 96 %, fund 78 %, World 6/30 (was 0/30). Good bot: all targets hold except Gravel Kings' fund 130 % (122 % at 60 seeds) and
+  the Ramblers' World payoff (see the fixer pass). Recycled tracks per album (12 seeds × 6 years, avg bot): HD 0.47, FH 0.63,
+  GK 0.81, GRR 1.17 (were 0.47 / 2.78 / 2.29 / 3.84); average critic HD 77.8, FH 75.3, GK 74.0, GRR 75.5 (were 77.7 / 69.5 /
+  67.6 / 65.3). Over 9 years (integration run) all four bands reached World in 30/30 careers.
+  `plan/balance_baseline_v09_hd.txt` (the Hail Damage no-regression reference, `node tools/balance.js 6 10`) was re-recorded in
+  the fixer pass: the only change is year 6 of the avg bot (one career whose moose album was ready now books the Moose Run in
+  week 143: tours left 0.1 → 0.2, fund −$270, fans +0.2 %); everything else is byte-identical.
+- **Size budget:** `dist/game.html` is 4.42 MB (4,305 KiB as `node build.js` prints it; gzip 1.35 MB). The owner-facing budget
   is relaxed from 3.8 MB to **4.5 MB** for v0.9 (the three band packs are ≈ +0.95 MB); v1.0 should not grow it much further.
 - **Tests at integration (2026-10-01):** `node tests/run.js` SUITE ALL PASS (21 files, 381 checks); `sim_bands` strict leak scan (default
   on) clean for all four bands, also over full 10-year careers (`LEAK_YEARS=10`), plus the inverse check in Hail Damage's
@@ -111,6 +118,49 @@ tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home sup
   sheet, shop ×5 + sheet, recap ×3, world ×4, drama, fans ×2, seq ×6, logo ×2 + sheet, creator ×3 + sheet, settings ×3,
   title ×3). The 440 run uses a scratch copy of tests/ with the viewport patched in `_pw.js` + the VERSION file
   (`PW_TAG=_440 LOGO_VIEW=440x956`). Garage draw calls per room stay under HD × 1.15 (pw_bands_render).
+  **After the fixer pass:** `node tests/run.js` SUITE ALL PASS (21 files, 383 tests; + cape per song, homesick cooldown per
+  band, holiday / scandal order, fans_trucker per band, chart filler, train bass in key, Brayden vs Travis; `sim_bands`
+  clean with the wider leak vocabulary, also at `LEAK_YEARS=10`); Playwright 67
+  sections at 390×844 green (every section above; gig `double` needed a rerun under load, a timing flake that passes alone),
+  and at 440×956 pw_bands ×4 + flat (LEAK_STRICT=1) and pw_gig sync/sync2 (sync is load-sensitive: it failed twice while
+  three balance runs and the 390 lane shared the 4 cores, then passed alone, as does the pre-fix build).
+- **Fixer pass (2026-10-01, after the v0.9 review; findings in the review list):**
+  - Leaks: the merch panel names the band's own home superfan (the 'dale' slot) instead of "Dale"; the van repair is Cousin
+    Dale's Garage for Hail Damage only (`ui.mechanic(st)`, 57: Regina "Pothole Pete's Auto & Lube", Edmonton "Whyte Knuckle Auto",
+    Swift Current "Harv's Hitch & Hose"; a driver with `mods.repair` 0 (Moth) does it herself, free, and gets the toast); the car
+    lot is per city (5k `DEALER`: Cousin Dale's for Hail Damage, Prairie Lemon Motors, Henday Hank's Wheel Deals, Gully's Used
+    Trucks & Grain Augers); the Maple 100's filler rows draw from a neutral `albumWords.chartFiller` pool (the genre title
+    pools carry the packs' in-jokes) and never credit the rival (its record has its own row); the Snare tier says "the monthly
+    livestream from {space}" (filled by 5g).
+  - Leak tests: pw_bands opens the van-info Van and Car lot tabs and a gig result whose merch names the home superfan, for every
+    band, and checks the envelope's broadcast chip isn't squeezed; its vocabulary (and sim_bands') adds the other bands'
+    superfans, tier-0 vans, spaces, rivals and rival casts (plain-word nicknames and Lorne left out: the Ramblers' coffee row has
+    its own Lorne) and Cousin Dale / Dale from Warman / Hwy 11 (+ the Moose Opera in sim_bands; not bare "Warman": the Warman
+    curling rink is a shared venue). The genre screen's band cards are skipped (picking a band shows every band by design).
+  - Content: Gravel Kings' holiday cards go first in each holiday list (they were never dealt) and lic_scandal_leather goes in
+    before the neutral who:'band' sellout (it could never fire), like the other packs; `fans_trucker_gravel_kings` (Gravel
+    Kings met no trucker; `content_bands` now requires fans_trucker per band); punk / rock / country groove libraries padded
+    to metal's 5/4/3 (generated-song pairs at the recycled bar: metal 1.5 %, punk 1.3 %, rock 1.5 %, country 1.9 %, were 6-10 %).
+  - Sims: the homesick card's 12-week cooldown reads the variant id the band was dealt (Frost Heave, Gravel Kings and the
+    Ramblers got it every tour week); Marcel's cape spins once per song again (`member.signature.perSong`, contract §4.4
+    note; v0.9 had made it once a gig); the tour bot books a story payoff package whose needs are met in its departure window
+    without the 16-week gap, with a $500 cushion (`economy.tour.bot.payoffCushion`), the promoter's floor when hostels don't
+    fit and only a band over burnout 80 staying home (`payoffBurnout`). `tools/balance.js` reports `payoff a/b` (fired /
+    careers whose needs were met with a window left; good-bot target ≥ 30 %): 30 seeds FH 11/19, GK 16/18, GRR 3/18 (MISS: the
+    Australian circuit costs $6,950 up front, twice the others, and the good bot has $3-7k in week 11-12 or is in the studio).
+  - UI / render: the Loonies card's children never shrink (`.lo-card > *`; the broadcast chip was crushed to 16 px at 390×844,
+    Hail Damage included); the cold open's text and buttons sit above the fx layer (Gravel Kings' neon tinted the button);
+    the poach mood bar shows for every rival's `rv_poach_<rival>` variant; Gravel Kings' locked Sask tab says Local Heroes
+    (`world.ringEra`); no backpack inside Grandpa's Suburban's bench; the recap photo's sticks go straight up over the player's
+    head with 0.17 more room either side (an occlusion probe over 4 bands × 4 presets × 2 tiers: ≤ 0.3 % of a bandmate's face,
+    was ~40 %); the tier-0 upgrades are drawn as each space sold them (41 `buildUps(…, kind)`: the laundromat's orange couch,
+    lint bags, pop machine; the strip mall's waiting-room couch, ceiling foam tiles, salon mini-fridge, neon OPEN sign; the
+    Quonset's tailgate bench on hay bales, hay-bale baffles, chest freezer, yard lights); the van sheet's driver effect tag wraps.
+  - Audio: the rival spectator snippets start on their first chorus (`songPattern` rotates the arrangement; the stage drummer
+    walks 4 bars per entry like the audio), so their singer is heard (all 84 measured snippets have a sung hit inside 5.2 s, was
+    2); a song that opens on a chorus call skips the count-in yell on top of it; Brayden is dead flat with no yodel flip
+    (voice profile `yodel: false`; a zero-depth `vib` means no vibrato); the train beat's walking bass is snapped to the major
+    scale (no G#/C# under the bridge's vi/ii).
 - **v1.0 forward-compat (contract gap #11):** epilogues exist for all 14 originals; "The Original Five" must read the band size;
   "a statue in Saskatoon" → `{city}`; the HD-flavoured achievement seeds (Ma Pelouse, Buddy) need per-band twins or `band` gates.
 
@@ -1065,15 +1115,21 @@ Later versions:
   - `GG.world` (26): `homeRing`, `homeRooms`, `nearRing`, `ringEra`, `inReach(state, venue)` (venue.reach), `takeOverLine(state)`.
   - `GG.tour` (25): `needsMet(s, pkg)`, `payoffDone(s)` (any band's payoff, `cfg().payoffFlags`); bus `tour:payoff
     { packageId, flag, venueId }`. `GG.labels.runLoonies` / `openEnvelope` results carry `bandLine`.
-  - `GG.gig` (22): `moments(genre)` → `{ combo, chorus, peak }` (§4.4), `signatures(state)`, `roles(state)`.
+  - `GG.gig` (22): `moments(genre)` → `{ combo, chorus, peak }` (§4.4), `signatures(state)` (+ `perSong`: Marcel's cape spins
+    every song), `roles(state)`.
+  - `GG.tour.botWeek` books a met story payoff in its window (`economy.tour.bot.payoffCushion` 500, `payoffBurnout` 80);
+    `GG.labels.chartView` filler titles come from `GG.content.albumWords.chartFiller` (neutral), never the rival.
   - `GG.audio` (30): `voiceFor(singerId)`, `vocFamily`, `soloFor(genre, soloist)`, `bedFor(spaceKind)`, `noodleFor(member)`,
-    `momentShots(kind)`; `play`/`timeline` opts `style`, `singer`, `rival`, `soloist`; voice profiles in `GG.content.voices`.
+    `momentShots(kind)`, `voxPitch(voc, profile)` → `{ yodel, vib }` (fixer: the profile's `yodel: false` / zero-depth `vib`
+    win); `play`/`timeline` opts `style`, `singer`, `rival`, `soloist`; voice profiles in `GG.content.voices`.
   - `GG.render.garage.photoRig(spaceKind)` → `{ fov, near, far, pos, look, … }` (5l's band photo), `spaceKind(state)`; `peek(kind)`
     is optional and not implemented (the genre card shows the 2D room art). `GG.render.logo.misprint/misprintFor`;
     `R.gearOf(member, contentMember, genre)` (40); stage `info()` adds mics, layout, gear, props, session, drummer, bannerLogo.
   - `GG.ui` (50): `presentLines(list, st)` (a scripted `{ who, text }` exchange minus the lines of bandmates not in the lineup,
     with their set-up question; null when nobody is left to answer), `safeLine`, `ownLines`, `tokens`, `fill`, `pool`,
-    `speaker`, `talkers`, `roleOf`, `band`, `space`, `spaceKind`, `driverOf`, `superfan`, `province`, `bandLines`.
+    `speaker`, `talkers`, `roleOf`, `band`, `space`, `spaceKind`, `driverOf`, `superfan`, `province`, `bandLines`;
+    `mechanic(st)` (57: `{ who, shop, fixed, none, self? }`, who fixes the van). Debug `rivalui.snippet` → `{ first, sung,
+    singer, voice }` (the current rival song's opening entry + sung hits inside a 5.2 s snippet).
   - Tools: `BAND=<id>|all`, `TUNE='member.skill=N'`, `FIT='venue.genre=x'`, `DECK=synthetic|none` for `tools/balance.js`;
     `LEAK_STRICT` (on by default; `=0` warns) and `LEAK_YEARS` for `tests/sim_bands.test.js`; pw_bands is strict too.
 - v0.8.3 drum sync (`11_settings.js`): settings `drumSync` (default true), `syncDisp` (ms 10..40, default 25), calib profile
@@ -1208,6 +1264,12 @@ Later versions:
   slot partly behind Duke from the drummer camera; small Hail Damage-only texts with no byBand reader stayed neutral
   (licensing brand texts, the Full Kit perk, the cape venue quirk); the bots rarely see the Japan/Australia/Russia region cards
   or the Gopherwood/DIY label cards; the 10-seed balance run is noisy (read the 30-seed file next to it).
+- v0.9 fixer leftovers: rock's walking bass (`30_audio` rock styles: root, +4, +7, next − 1) plays a major third over minor
+  chords and a chromatic approach that rubs a semitone against the guitars (the train-beat fix wasn't extended to rock);
+  `progression()` picks a section's progression with `hashSeed('bridge|' + kick + snare) % 2`, and drum rows are only 'x' /
+  '.' (both even char codes), so every genre always gets its first bridge progression; the Ramblers' Australian payoff costs
+  twice the others (the good bot fires it in 3/18 eligible careers); Gravel Kings' good bot fund@y3 is 122-130 % of Hail Damage;
+  Frost Heave reaches World in 5/30 avg careers vs Hail Damage's 10/30.
 - v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);
   `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" in content (the UI shows Gord); heat decays emit
   'heat:changed' every week; the spectator view keeps crowd pits off (they'd run through the riser camera); rival banter

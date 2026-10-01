@@ -945,6 +945,14 @@
     s.connect(filterNode(c, X.noise[0], X.noise[1], X.noise[2], gainNode(c, X.noise[3], into)));
     run(r, s, t, dur);
   }
+  // v0.9: a sung hit's pitch gesture: the voc type's yodel flip (yeehaw, holler) unless the profile says `yodel: false`
+  // (Brayden), else a vibrato: the profile's own (an explicit zero-depth `vib` = dead flat), else the type's.
+  // -> { yodel, vib: [rate Hz, depth] | null }. A.voxPitch(voc, profile) for tests.
+  function voxPitch(V, vp) {
+    var yod = !!V.yodel && vp.yodel !== false;
+    return { yodel: yod, vib: yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null };
+  }
+  A.voxPitch = function (voc, profile) { return voxPitch(VOX[voc] || VOX.hey, profile || {}); };
   function voxHit(r, p, ev, t, spb) {
     var c = r.ctx, V = VOX[ev.voc] || VOX.hey, dur = Math.max(0.1, Math.min(V.len, ev.len * spb, ev.gap * spb));
     if (V.metal) { metalVox(r, p, ev, t, dur, V); return; }
@@ -969,9 +977,7 @@
       (amp || into).connect(bp);
     });
     if (art) articulate(bank, amp, art, t, sc);
-    // v0.9: the profile decides: yodel false = no flip (Brayden), an explicit zero-depth vib = dead-flat pitch (no type vibrato)
-    var yod = V.yodel && vp.yodel !== false;
-    var vib = yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null;
+    var pz = voxPitch(V, vp), yod = pz.yodel, vib = pz.vib;
     fs.forEach(function (fg, g) {
       var o = c.createOscillator();
       o.type = 'sawtooth'; if (g) o.detune.value = 14;

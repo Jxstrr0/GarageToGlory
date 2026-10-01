@@ -351,6 +351,14 @@ test('vocal diversity: every singer has a profile of their own (pitch, vowels, g
   GG.state = null;
 });
 
+test('vocal diversity (fixer): Brayden sings dead flat with no yodel flip; Travis Lee keeps both (the profile decides)', () => {
+  const br = A.voiceFor(null, 'country', 'buckle_and_boot'), tr = A.voiceFor('travis', 'country');
+  ['ooh', 'yeah', 'holler', 'yeehaw'].forEach(v => { const p = A.voxPitch(v, br); ok(!p.yodel && !p.vib, 'Brayden ' + v + ': no flip, no vibrato ' + JSON.stringify(p)); });
+  ok(A.voxPitch('yeehaw', tr).yodel && A.voxPitch('holler', tr).yodel, 'Travis Lee yodels his yeehaw and holler');
+  ok(A.voxPitch('ooh', tr).vib && A.voxPitch('ooh', tr).vib[1] > 0, 'Travis Lee\'s ooh has vibrato');
+  const marcel = A.voiceFor('marcel', 'metal'); eq(A.voxPitch('ooh', marcel).vib, [6.4, Math.max(0.014, (A.voxPitch('ooh', {}).vib || [0, 0])[1])], 'a profile vibrato still wins');
+});
+
 test('vocal diversity: shouted words vary per genre, no two choruses alike, the odd French word from Marcel', () => {
   const V = GG.content.voices;
   for (const g of C.GENRES) {

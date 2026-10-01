@@ -72,6 +72,7 @@ h1, h2, h3, p { margin: 0; }
 .panel.alert { background: #2a1820; border-color: #6d2f3a; }
 .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 800 10px/1.6 var(--font); letter-spacing: .08em; text-transform: uppercase;
   background: var(--panel2); color: var(--dim); border: 1px solid var(--line); white-space: nowrap; }
+[data-testid="van-driver"] .tag { white-space: normal; text-align: right; max-width: 58%; border-radius: 10px; }   /* v0.9: Earl's effect is a sentence */
 .tag.amber { color: #1d1204; background: var(--amber); border-color: var(--amber); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font: 700 13px/1.3 var(--font);
@@ -1628,6 +1629,7 @@ html.gg-calm .cold-fx { animation: none !important; }
 //       metal.fr = ready-made French titles for Hail Damage (songs are titled in English since v0.7.2, but Marcel always
 //       pitches one French album title; all secretly about the lawn).
 //       Suggested 3 options: one fr title (metal) + two generated forms; the player may also type their own.
+//     chartFiller: { forms, adj, noun, place }   (v0.9: the Maple 100's filler rows; neutral, no band in-jokes)
 //     covers: { motifs: [ { id, name, desc, genres } ], palettes: [ { id, name, colors: [bg, fg, accent] (#rrggbb), genres } ],
 //               fonts: [ { id, name, css (a system font stack, no downloads), weight, caps, genres } ] }
 //   }
@@ -33779,6 +33781,14 @@ html.gg-calm .cold-fx { animation: none !important; }
     s.connect(filterNode(c, X.noise[0], X.noise[1], X.noise[2], gainNode(c, X.noise[3], into)));
     run(r, s, t, dur);
   }
+  // v0.9: a sung hit's pitch gesture: the voc type's yodel flip (yeehaw, holler) unless the profile says `yodel: false`
+  // (Brayden), else a vibrato: the profile's own (an explicit zero-depth `vib` = dead flat), else the type's.
+  // -> { yodel, vib: [rate Hz, depth] | null }. A.voxPitch(voc, profile) for tests.
+  function voxPitch(V, vp) {
+    var yod = !!V.yodel && vp.yodel !== false;
+    return { yodel: yod, vib: yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null };
+  }
+  A.voxPitch = function (voc, profile) { return voxPitch(VOX[voc] || VOX.hey, profile || {}); };
   function voxHit(r, p, ev, t, spb) {
     var c = r.ctx, V = VOX[ev.voc] || VOX.hey, dur = Math.max(0.1, Math.min(V.len, ev.len * spb, ev.gap * spb));
     if (V.metal) { metalVox(r, p, ev, t, dur, V); return; }
@@ -33803,9 +33813,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       (amp || into).connect(bp);
     });
     if (art) articulate(bank, amp, art, t, sc);
-    // v0.9: the profile decides: yodel false = no flip (Brayden), an explicit zero-depth vib = dead-flat pitch (no type vibrato)
-    var yod = V.yodel && vp.yodel !== false;
-    var vib = yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null;
+    var pz = voxPitch(V, vp), yod = pz.yodel, vib = pz.vib;
     fs.forEach(function (fg, g) {
       var o = c.createOscillator();
       o.type = 'sawtooth'; if (g) o.detune.value = 14;
@@ -43342,13 +43350,13 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (!VT && !D.look) {                                                                     // v0.8 SPACES review: somebody's backpack on the floor
         var bench = !!(T0 && T0.bobble === 'cow');   // v0.9: Grandpa's Suburban's front bench fills the middle; no backpack poking through it
         if (!bench) {
-        b.push(0.04, 0.45, -0.24, -0.3, 0.25, 0);                                             // (slumped on the console lid, between the seats)
-        b.box(0.22, 0.26, 0.13, 0, 0.13, 0, 0x2a3c5e); b.box(0.18, 0.11, 0.045, 0, 0.08, 0.08, 0x22314e);
-        b.box(0.2, 0.01, 0.01, 0, 0.245, 0.067, 0xb8bcc2); b.box(0.14, 0.008, 0.01, 0, 0.135, 0.104, 0xb8bcc2);          // zips
-        b.box(0.07, 0.07, 0.006, 0.05, 0.2, 0.068, 0xd23c3c); b.box(0.035, 0.035, 0.008, 0.05, 0.2, 0.071, 0xf2efe6);    // a patch
-        b.box(0.035, 0.2, 0.02, -0.07, 0.14, -0.075, 0x1a2436, 0.2); b.box(0.035, 0.2, 0.02, 0.07, 0.14, -0.075, 0x1a2436, 0.2);   // straps
-        b.box(0.07, 0.02, 0.035, 0, 0.27, -0.015, 0x1a2436);
-        b.pop();
+          b.push(0.04, 0.45, -0.24, -0.3, 0.25, 0);                                             // (slumped on the console lid, between the seats)
+          b.box(0.22, 0.26, 0.13, 0, 0.13, 0, 0x2a3c5e); b.box(0.18, 0.11, 0.045, 0, 0.08, 0.08, 0x22314e);
+          b.box(0.2, 0.01, 0.01, 0, 0.245, 0.067, 0xb8bcc2); b.box(0.14, 0.008, 0.01, 0, 0.135, 0.104, 0xb8bcc2);          // zips
+          b.box(0.07, 0.07, 0.006, 0.05, 0.2, 0.068, 0xd23c3c); b.box(0.035, 0.035, 0.008, 0.05, 0.2, 0.071, 0xf2efe6);    // a patch
+          b.box(0.035, 0.2, 0.02, -0.07, 0.14, -0.075, 0x1a2436, 0.2); b.box(0.035, 0.2, 0.02, 0.07, 0.14, -0.075, 0x1a2436, 0.2);   // straps
+          b.box(0.07, 0.02, 0.035, 0, 0.27, -0.015, 0x1a2436);
+          b.pop();
         }
         b.box(0.16, 0.2, 0.05, -0.2, 0.62, 0.55, 0xd8302a, -0.3, 0.4, 0); b.box(0.08, 0.04, 0.052, -0.2, 0.65, 0.55, 0xf2d15b, -0.3, 0.4, 0);   // ketchup chips on the bench
       }
@@ -50206,7 +50214,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
   ui.mechanic = function (st) {
     var rp = GG.world && GG.world.driverMods ? GG.world.driverMods(st).repair : 1, dr = ui.driverOf(st);
-    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot. No charge, some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
+    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot, with some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
     if (st && st.bandId === 'hail_damage') return { who: 'Dale', shop: 'Cousin Dale\'s Garage', fixed: 'Cousin Dale fixed "most of it".', none: 'Nothing to fix. Dale is disappointed.' };
     var m = (st && MECHANIC[st.city]) || { shop: 'The garage down the road', who: 'Mechanic', fixed: 'The garage down the road fixed "most of it".' };
     return Object.assign({ none: 'Nothing to fix. ' + m.who + ' is disappointed.' }, m);
@@ -54780,7 +54788,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
     // v0.9 (fixer): the player's sticks go straight up over their own head (+ PLAYER_PAD of room either side): the v0.8.1 V
     // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
-    // four rooms measures <= 1% of any bandmate's face covered now.
+    // four rooms, four presets and two tiers measures <= 0.3% of any bandmate's face covered now.
     sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
     hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
   };

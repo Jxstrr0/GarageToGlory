@@ -6,10 +6,10 @@ AVG bot
   3 |     960    2811 |     3968 (2176- 5143) |   43 |   70 |   73 |   0.0 |  1.5   0.6  0.6 1.1 |   9.6 | 11.4 |   51 |  33 |  0.0 | 0.9  1.3   62   115  0.0  0.3 | 3.6 50%   35  3749 | 0.0     0   0 | 0.4 2.8 0.0 0.1  2312  1087  4014 |   420
   4 |    1613    3712 |     8339 (6038-11518) |   56 |   68 |   75 |   0.0 |  2.6   1.4  0.2 2.1 |  10.7 | 11.8 |   49 |  34 |  0.0 | 0.8  1.3   44   107  0.0  0.6 | 3.4 44%   42  7531 | 0.0     0   0 | 1.1 3.0 0.1 0.5  3466  1979  5784 |   608
   5 |    2296    5054 |    16374 (11000-21088) |   60 |   82 |   68 |   0.0 |  0.4   0.2  0.6 1.8 |  10.2 | 12.1 |   53 |  39 |  0.0 | 0.7  1.6   21   164  0.0  0.6 | 4.1 37%   48 12167 | 0.0     0   0 | 1.5 3.0 0.2 0.7  4540  2668  7609 |   527
-  6 |    3440    5078 |    24342 (20839-32606) |   63 |   74 |   70 |   0.0 |  0.2   0.0  0.2 1.6 |   6.7 | 12.8 |   55 |  55 |  0.0 | 1.0  1.2    9   195  0.3  0.7 | 3.9 51%   59 16891 | 0.1   447   1 | 1.9 3.0 0.6 1.2  4729  2693  9137 |  1222
+  6 |    3272    4810 |    24400 (20839-32606) |   63 |   74 |   70 |   0.0 |  0.2   0.0  0.2 1.6 |   6.7 | 12.9 |   55 |  55 |  0.0 | 1.0  1.2    9   195  0.3  0.7 | 3.9 51%   59 16891 | 0.2   504   1 | 1.9 3.0 0.6 1.2  4763  2727  9297 |  1222
 world: era wk 136 (y6, 3/10, 128-140) | tours 0.1/career (net 132 $/career) | regions open 0.6 (invite/big 0.0) broken 0.0 | Gong won 0.0 of 0.0 nominations | moose 0/10 | JP president 0/10
 eras: local wk 23 (y1, 10/10, 17-29) | first offer wk 40 (y2, 10/10, 29-61) | first deal wk 44 (y2, 10/10, 30-62) | signed era wk 44 (y2, 10/10, 30-61) | world-ready wk 136 (y6, 3/10, 128-140)
-shop: 6 lanes + pedal wk 58 (y3, 10/10, 34-87) | sprinter wk 125 (y6, 1/10, 125-125) | merch 53% of gig pay (net 28%, $8577/career) | at the end: kit 1.9, van tier 0.6, space tier 1.2
+shop: 6 lanes + pedal wk 58 (y3, 10/10, 34-87) | sprinter wk 125 (y6, 1/10, 125-125) | merch 52% of gig pay (net 28%, $8611/career) | at the end: kit 1.9, van tier 0.6, space tier 1.2
 licensing: offers 1.5/career (0-2), taken 1.3 (countered 0.3, walked 0.0) | career total median $2580 (0-5896)
 loans after year 1 (per career): 0.00 | releases 5.8 | drops 0.0 | units sold 74518
 rival: cracked 1/10 (rebrand@y4) | Sad Dome: you headline 0/0 | poach defections 0.10 per career
@@ -31,4 +31,4 @@ loans after year 1 (per career): 0.10 | releases 7.4 | drops 0.0 | units sold 18
 rival: cracked 9/10 (breakup@y5 opener@y5 opener@y6 rebrand@y4 rebrand@y3 opener@y3 breakup@y6 breakup@y5 rebrand@y3) | Sad Dome: you headline 0/0 | poach defections 0.00 per career
 quits/year after protection: 0.00 (ultimatums 0.00, returns 0.00, over 60 seed-years)
 invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 100k)
-done in 18.61 s
+done in 28.50 s

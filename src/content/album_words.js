@@ -5,6 +5,7 @@
 //       metal.fr = ready-made French titles for Hail Damage (songs are titled in English since v0.7.2, but Marcel always
 //       pitches one French album title; all secretly about the lawn).
 //       Suggested 3 options: one fr title (metal) + two generated forms; the player may also type their own.
+//     chartFiller: { forms, adj, noun, place }   (v0.9: the Maple 100's filler rows; neutral, no band in-jokes)
 //     covers: { motifs: [ { id, name, desc, genres } ], palettes: [ { id, name, colors: [bg, fg, accent] (#rrggbb), genres } ],
 //               fonts: [ { id, name, css (a system font stack, no downloads), weight, caps, genres } ] }
 //   }

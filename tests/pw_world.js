@@ -301,6 +301,14 @@ async function drivers() {
         return { band: s.bandId, id: drv.id, name: drv.name, you: drv.you, designated: drv.designated, dash: def.dashboard, cactus: drv.dashboard === 'cactus' };
       }, bandId);
       c.ok(d.band === bandId && !d.you && d.id === d.designated && d.dash && d.dash !== 'cactus', bandId + ': ' + d.name + ' drives, dashboard ' + d.dash);
+      if (bandId === 'gravel_kings') {   // (fixer) a locked ring's tab names the era it opens in for THIS band (Q1a: Sask at Local Heroes)
+        await page.evaluate(() => GG.ui.openBoard({ mode: 'view' }));
+        await waitScreen(page, 'board');
+        await tap(page, 'board-tab-map');
+        const rt = await page.evaluate(() => ({ sask: (document.querySelector('[data-testid="ring-sask"]') || {}).textContent || '', era: GG.world.ringEra(GG.state, 'sask') }));
+        c.ok(rt.era === 'local' && /Local Heroes/.test(rt.sask) && !/Garage/.test(rt.sask), 'gravel_kings: the locked Sask tab says Local Heroes: ' + rt.sask);
+        await page.evaluate(() => GG.ui.closeAll());
+      }
       const trip = async (label) => {
         await page.evaluate(() => {
           // (a venue out of town: a long enough drive that the van hasn't arrived by the time the test looks)
