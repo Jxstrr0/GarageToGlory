@@ -586,6 +586,12 @@
     if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) return null;
     return !GG.career.cardOk || GG.career.cardOk(s, c) ? c : null;
   }
+  // v0.9: the week the homesick card was last dealt, under the base id or the band's variant (queuedCard deals
+  // wt_homesick_<bandId> when it exists, and startWeek records seenCards under the id it dealt). -1e9 = never.
+  function homesickSeen(s) {
+    var a = s.seenCards.wt_homesick, b = s.seenCards['wt_homesick_' + s.bandId];
+    return Math.max(a == null ? -1e9 : a, b == null ? -1e9 : b);
+  }
   // Content text: a pool path over GG.content.world (+ byBand); string or [strings] (seeded pick).
   function pickText(s, rng, path, fallback) {
     var v = GG.career.pool ? GG.career.pool(s, K(), path) : null;
@@ -744,7 +750,7 @@
       if (t.homesick >= H.burnoutAt) fx(s, { burnout: H.burnout });
       callHome(s, R, t.homesick >= 60 ? 2 : 1);
       if (t.homesick >= H.cardAt && !t.queue.some(function (q) { return q.card === 'wt_homesick'; }) && idxOf(s, a) < a.stops.length - 1
-        && (s.seenCards.wt_homesick == null || s.totalWeek - s.seenCards.wt_homesick >= 12)) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
+        && s.totalWeek - homesickSeen(s) >= 12) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
       var i = idxOf(s, a);
       if (i >= a.stops.length - 1 || (a.endAfter != null && i >= a.endAfter)) finish(s, out);
     } else t.homesick = U.clamp(t.homesick + H.home, 0, H.max);
@@ -863,21 +869,48 @@
   };
 
   /* ---- Bots (botTour) ------------------------------------------------------------------------------------------------- */
+  // The bot's choices for a package (hostel + publicist + the comfiest vehicle when the good bot is rich).
+  function botChoices(s, style, region) {
+    var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
+    if (style === 'good' && rich) ch.vehicle = T.vehicles(region).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+    return ch;
+  }
+  // v0.9: a story payoff package (owner Q3: needs met, never fired) leaves in a ~2-week window a year, so a bot books it the
+  // way a player who has waited for it would: no gap since the last tour, a small cushion (bot.payoffCushion), the promoter's
+  // floor when hostels don't fit the fund, and only a really fried band (bot.payoffBurnout) stays home. Hail Damage's Moose
+  // Opera counts too once its album is ready.
+  function botPayoff(s, style, B) {
+    if (s.burnout >= (B.payoffBurnout != null ? B.payoffBurnout : 80)) return null;
+    var cushion = B.payoffCushion != null ? B.payoffCushion : 500, pick = null;
+    REGION_IDS.forEach(function (id) {
+      if (pick || !T.unlocked(s, id)) return;
+      K().packages.forEach(function (p) {
+        if (pick || p.region !== id || !p.needs) return;
+        [botChoices(s, style, id), { stay: 'couch', extra: 'none' }].forEach(function (ch) {   // (else the promoter's floor: it's the story)
+          if (pick) return;
+          var c = T.canBook(s, p.id, ch);
+          if (c.ok && s.fund >= c.quote.total + cushion) pick = { id: p.id, ch: ch };
+        });
+      });
+    });
+    return pick;
+  }
   T.botWeek = function (s, style) {
     if (s.era !== 'world' || s.ended) return null;
     var t = T.ensure(s), B = cfg().bot;
     if (t.active) return null;
-    var last = t.history[t.history.length - 1];
-    if (last && s.totalWeek - last.end < B.gap) return null;
     var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
     if (fin && s.year === fin.year && s.week >= fin.week - 8 && s.week <= fin.week) return null;   // bots stay home to prepare for the Sad Dome
+    var pay = botPayoff(s, style, B);
+    if (pay) { var tp = T.book(s, pay.id, pay.ch); if (tp && !tp.error) return tp; }
+    var last = t.history[t.history.length - 1];
+    if (last && s.totalWeek - last.end < B.gap) return null;
     if (s.burnout >= 60 || (style !== 'good' && !seeded(s, 'bot').chance(B.avgChance))) return null;   // tired bands stay home
     var cushion = style === 'good' ? B.goodCushion : B.avgCushion, best = null, bestV = -Infinity;
     REGION_IDS.forEach(function (id) {
       if (!T.unlocked(s, id)) return;
       K().packages.filter(function (p) { return p.region === id; }).forEach(function (p) {
-        var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
-        if (style === 'good' && rich) ch.vehicle = T.vehicles(id).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+        var ch = botChoices(s, style, id);
         var c = T.canBook(s, p.id, ch);
         if (!c.ok || s.fund < c.quote.total + cushion) return;
         var q = c.quote, v = q.fansEst * 2.2 + q.payEst * 0.55 - q.total + (p.festival ? 1500 : 0) + (p.needs ? 3000 : 0);   // v0.9: any payoff package

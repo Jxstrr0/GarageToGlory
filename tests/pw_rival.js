@@ -170,6 +170,9 @@ async function botb() {
     c.ok(w.r.scene === 'stage' && !w.r.paused && w.info.view === 'spectator' && w.info.rival, 'spectator view: the 3D stage from the crowd ' + JSON.stringify({ scene: w.r.scene, paused: w.r.paused, view: w.info.view }));
     c.ok(w.info.painted >= 4 && w.info.band.some(b => /^tw_gord/.test(b)) && !w.info.band.some(b => /^tw_lorne/.test(b)), 'their lineup in corpse paint (drummer on the throne): ' + w.info.band.join(','));
     c.ok(w.score > 0 && w.r.drawCalls < 90, 'ticking score ' + w.score + ', ' + w.r.drawCalls + ' draw calls');
+    // (fixer) each ~5 s snippet opens on a chorus, so their singer is heard: >= 2 sung hits (not the count-in), >= 1 by the singer
+    const sn = w.ui.snippet;
+    c.ok(sn && sn.first === 'chorus' && sn.sung >= 2 && sn.singer >= 1, 'their snippet starts on a chorus and their singer is heard: ' + JSON.stringify(sn));
     // A slow phone's long frame (a 1 s main-thread stall) counts in full: their set runs on wall time, not frames (a 0.1 s
     // cap per frame made the set 4-6x longer under load, and the btn-rs-go wait below timed out).
     const clk = await page.evaluate(async () => {

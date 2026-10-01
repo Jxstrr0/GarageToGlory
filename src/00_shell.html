@@ -235,6 +235,7 @@ h1, h2, h3, p { margin: 0; }
 .cold-text { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; padding: 20px 28px; text-align: center;
   font: 800 23px/1.35 var(--font); text-wrap: balance; animation: gg-in .35s ease-out; }
 .cold-foot { padding: 0 var(--gutter) calc(var(--safe-bot) + 18px); display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.cold-top, .cold-text, .cold-foot { position: relative; z-index: 1; }   /* v0.9: above the cold-open fx layer (neon/snow/dust/hail) */
 .dots { display: flex; justify-content: center; gap: 6px; } .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .dots i.on { background: var(--amber); }
 .hail { position: absolute; inset: 0; pointer-events: none; opacity: .35;
   background-image: radial-gradient(circle, #cfe3ff 1.2px, transparent 1.8px), radial-gradient(circle, #cfe3ff 1px, transparent 1.6px);
@@ -599,6 +600,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .lo-gap { flex: 1 1 auto; min-height: 120px; }
 .lo-card { position: relative; z-index: 1; max-height: 52%; overflow-y: auto; overflow-x: hidden; padding: 14px var(--gutter) calc(var(--safe-bot) + 16px); background: linear-gradient(180deg, rgba(20, 16, 26, .94), #120f18); border-top: 2px solid #c9a227; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; gap: 10px; }
 .lo-card .btn { flex: 0 0 auto; }
+.lo-card > * { flex-shrink: 0; }   /* v0.9: the card scrolls; the broadcast chip (.lg-cast, overflow hidden) never gets crushed */
 .lo-back { position: absolute; inset: 0; }
 .lo-back.carpet { background: linear-gradient(180deg, transparent 58%, #7a0f18 58%, #9c1420 100%), repeating-linear-gradient(45deg, #f4f1ea 0 38px, #ece6d8 38px 76px); }
 .lo-back.stage { background: radial-gradient(60% 40% at 50% 40%, #e0bb3a 0 30%, transparent 31%), repeating-linear-gradient(90deg, #6e0d16 0 18px, #8a1420 18px 36px); }

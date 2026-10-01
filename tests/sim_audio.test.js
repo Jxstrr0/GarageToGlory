@@ -263,6 +263,14 @@ test('v0.9 tempo styles: punk skate / hardcore, rock power ballad (+ forced, the
   ok(ballad.voice === 'rival:chartbusters', 'the rival\'s singer sings it: ' + ballad.voice);
   const train = band(A.timeline(song('country', 115), { genre: 'country', section: 'verse', bars: 1 })), two = band(A.timeline(song('country', 95), { genre: 'country', section: 'verse', bars: 1 }));
   ok(train.filter(e => e.kind === 'bass').length === 4 && two.filter(e => e.kind === 'bass').length === 2, 'train: a walking bass; two-step: boom on 1 and 3');
+  // (fixer) the train's walking bass stays in the major key, bridge vi / ii included (no G# / C# under a G-major song)
+  const MAJ = [0, 2, 4, 5, 7, 9, 11], off = [];
+  for (let i = 0; i < 60; i++) {
+    const p = full('country', 115); p.arrangement = ['verse', 'chorus', 'bridge', 'chorus'];
+    const t = A.timeline(p, { genre: 'country', songId: 'tb' + i });
+    t.events.filter(e => e.kind === 'bass').forEach(e => { if (!MAJ.includes(((e.midi - t.key.tonic) % 12 + 12) % 12)) off.push(e.section + ':' + e.midi); });
+  }
+  eq(off.length, 0, 'train bass out of key: ' + off.slice(0, 6).join(','));
 });
 
 test('v0.9 solos follow gig.roles: Benny\'s two chords, Lenny\'s lead, Earl\'s Tele (the fiddle if Earl\'s gone), nobody = no solo', () => {

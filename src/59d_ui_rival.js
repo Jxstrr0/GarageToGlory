@@ -280,7 +280,7 @@
   ui.rivalCardNote = function (st, card) {
     if (!card || !/^rv_/.test(card.id || '') || !on(st)) return null;
     var R = RV(), r = R.record(st), kids = [face('sm'), el('div.grow', [el('b', R.name(st)), el('div.tiny.dim', 'Heat ' + Math.round(R.heat(st)) + ' · you ' + r.you + ' · them ' + r.them)])];
-    if (card.id === 'rv_poach' && st.card && st.card.who) {
+    if (/^rv_poach(_|$)/.test(card.id) && st.card && st.card.who) {   // v0.9: every rival deals its own rv_poach_<id> variant
       var m = (st.members || []).filter(function (x) { return x.id === st.card.who; })[0];
       if (m) kids.push(el('div.rv-mood', [el('span.tiny.dim', ui.who(m.id).short + "'s mood"), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) })]));
     }
@@ -326,6 +326,10 @@
     try {
       var p = GG.songs.generate(V.genre || 'metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});   // v0.9: the rival's genre
       if (p) p.bpm = U.clamp(song.bpm || p.bpm, 60, 240);
+      // v0.9: each song is a ~5 s snippet, and every arrangement opens with a verse (no vocals): start at the first chorus so the
+      // rival's singer (voice profile, own words) is heard. The audio and their stage drummer both read p.arrangement.
+      var c = p && p.arrangement ? p.arrangement.indexOf('chorus') : -1;
+      if (c > 0) p.arrangement = p.arrangement.slice(c).concat(p.arrangement.slice(0, c));
       return p;
     } catch (e) { return null; }
   }
@@ -384,6 +388,7 @@
       var ao = { genre: V.genre, loop: true, singer: V.singer, rival: V.rid, band: V.rid };
       if (V.style) ao.style = V.style;
       if (V.soloist !== undefined) ao.soloist = V.soloist;
+      V.ao = ao;
       try { V.handle = GG.audio.play(V.pattern, ao); } catch (e) { V.handle = null; }
     }
     var st = S(), pool = banterPool(st, i === 0 ? (V.kind === 'final' ? 'final' : 'open') : 'mid');
@@ -403,7 +408,7 @@
         var spb = 60 / (V.pattern.bpm || 180), step = Math.floor(V.songT / 1000 / (spb / 4)), arr = V.pattern.arrangement || ['verse'];
         if (step !== V.step) {
           V.step = step;
-          var sec = V.pattern.sections[arr[Math.floor(step / 16) % arr.length]] || [], s16 = step % 16;
+          var sec = V.pattern.sections[arr[Math.floor(step / (16 * C.BARS_PER_SECTION)) % arr.length]] || [], s16 = step % 16;   // each entry plays 4 bars (like the audio)
           for (var l = 0; l < sec.length; l++) if (sec[l] && sec[l][s16] === 'x') api.hit(l, 'perfect');
         }
       }
@@ -580,7 +585,18 @@
       el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
   };
 
+  // (snippet: this song's opening entry + how many of the singer's / band's sung hits land inside a real 5.2 s snippet, not
+  // counting the count-in yell; computed only when the debug is read)
+  function snippet() {
+    if (!V || !V.pattern || !GG.audio || !GG.audio.timeline) return null;
+    try {
+      var t = GG.audio.timeline(V.pattern, V.ao || { genre: V.genre }), spb = 60 / t.bpm;
+      var sung = t.events.filter(function (e) { return (e.kind === 'vox' || e.kind === 'bvox') && !e.count && e.beat * spb < 5.2; });
+      return { first: V.pattern.arrangement[0], sung: sung.length, singer: sung.filter(function (e) { return e.kind === 'vox'; }).length, voice: t.voice || null };
+    } catch (e) { return null; }
+  }
   GG.registerDebug('rivalui', function () {
-    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, moment: V ? V.moment || null : null, announced: Object.keys(announced) };
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, moment: V ? V.moment || null : null, announced: Object.keys(announced),
+      snippet: snippet() };
   });
 })(window.GG);

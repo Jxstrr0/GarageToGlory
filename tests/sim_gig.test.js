@@ -229,6 +229,7 @@ test('band effects: cape spin, solo, sneaky fills, unhappy members; genre moment
   const rp = play(plain, PERFECT, 2), rc = play(caped, PERFECT, 2);
   ok(rc.moments.includes('capeSpin') && !rp.moments.includes('capeSpin'), 'cape spin needs a cape');
   ok(rc.songResults[0].crowdAvg >= rp.songResults[0].crowdAvg, 'the cape helps');
+  ok(rc.songResults.filter(x => x.moments.includes('capeSpin')).length === rc.songResults.length, 'the cape spins in every song (v0.8.3; perSong): ' + rc.songResults.map(x => x.moments.includes('capeSpin')));
   ok(rc.reactions.find(x => x.who === 'marcel').text.length > 0);
   eq(GG.gig.roles(plain), { front: 'marcel', solo: 'dana', fill: 'jaxon' });
   ok(rp.moments.includes('solo') || !plain.songs.some(x => x.pattern.arrangement.includes('bridge')), 'solo moment');

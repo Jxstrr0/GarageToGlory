@@ -34,6 +34,10 @@
   // The drum shop's street, the printer's town and the tier-0 room's benefactor follow the band's city / space.
   var STREET = { Saskatoon: '8TH STREET', Regina: 'DEWDNEY AVENUE', Edmonton: 'WHYTE AVENUE', 'Swift Current': 'CENTRAL AVENUE' };
   var PRINTER = { Saskatoon: 'Martensville', Regina: 'White City', Edmonton: 'St. Albert', 'Swift Current': 'Gull Lake' };
+  // The car lot: Cousin Dale's (npcs.js, band: HD) for Hail Damage; the other bands buy from a lot in their own city.
+  var DEALER = { Saskatoon: 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11', Regina: 'Prairie Lemon Motors, out on the Ring Road',
+    Edmonton: 'Henday Hank\'s Wheel Deals, just off the Henday', 'Swift Current': 'Gully\'s Used Trucks & Grain Augers, Hwy 1' };
+  function dealer(st) { return st.bandId === 'hail_damage' ? DEALER.Saskatoon : (st.city !== 'Saskatoon' && DEALER[st.city]) || 'The used-car lot by the highway'; }
   var BENEFACTOR = { garage: 'Free (thanks, Mom)', laundromat: 'Free (the Suds-O-Rama likes the noise)', stripmall: 'Free (the landlord forgot about it)', quonset: 'Free (thanks, uncle)' };
   function street(st) { return STREET[st.city] || String(st.city || 'MAIN STREET').toUpperCase(); }
   // Q7: rented rooms keep their geometry but get a local name + blurb per home city (content spaces[tier].byCity[city]).
@@ -392,7 +396,7 @@
   };
   ui.dealerPanel = function (st, rerender) {
     return el('div.stack', [
-      el('p.small.dim', { style: 'margin:0' }, 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
+      el('p.small.dim', { style: 'margin:0', testid: 'dealer-intro' }, dealer(st) + '. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
       el('div.stack.tight', SH().vans(st).map(function (v) {
         var q = v.quote || {};
         return el('div.shop-row.dealer' + (v.current ? '.own' : !v.can ? '.locked' : ''), { testid: 'van-tier-' + v.tier }, [
@@ -438,12 +442,13 @@
       return el('span.chip' + (it.sold >= it.hauled ? '.up' : ''), (def ? def.name : id) + ' ' + it.sold + '/' + it.hauled);
     });
     var dale = (m.named || []).indexOf('dale') >= 0;
+    var hs = dale && GG.fans && GG.fans.homeSuperfan && S() ? GG.fans.homeSuperfan(S()) : null;   // v0.9: the 'dale' slot is the band's own home superfan
     return el('div.merch-res', { testid: 'gig-merch' }, [
       el('div.row', [el('span', { style: 'font-size:22px' }, '👕'), el('div.grow', [el('div.caps', 'Merch table'),
         m.boxes ? el('div', [el('b', m.sold + ' sold'), ' · ', el('b.good', '+' + money(m.earned)), el('span.small.dim', ' · ' + m.boxes + ' of ' + m.space + ' boxes hauled')])
           : el('div.small.dim', 'No merch on the table tonight. Somebody asked. Twice.')])]),
       items.length ? el('div.chips', { style: 'margin-top:6px' }, items) : null,
-      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, 'Dale bought one, as always.') : null]);
+      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, ((hs && (hs.short || hs.name)) || 'Your first superfan') + ' bought one, as always.') : null]);
   };
   ui.isMerchLine = function (t) { return /^Merch table: /.test(String(t || '')); };
   ui.shopWrap = function (w) {

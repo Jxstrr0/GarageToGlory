@@ -33,7 +33,10 @@
     fist: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.1); rot(bn[B.ARM_R], 0, 0, -2.5); rot(bn[B.FORE_R], 0, 0, -0.35); rot(bn[B.HEAD], -0.12, 0, 0); },
     cross: function (bn) { rot(bn[B.ARM_L], -0.25, 0, 0.12); rot(bn[B.FORE_L], -1.5, 0, -1.25); rot(bn[B.ARM_R], -0.3, 0, -0.12); rot(bn[B.FORE_R], -1.62, 0, 1.25); },
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
-    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 2.55); rot(bn[B.ARM_R], 0, 0, -2.55); rot(bn[B.FORE_L], 0, 0, 0.5); rot(bn[B.FORE_R], 0, 0, -0.5); },
+    // v0.9 (fixer): the player's sticks go straight up over their own head (+ PLAYER_PAD of room either side): the v0.8.1 V
+    // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
+    // four rooms measures <= 1% of any bandmate's face covered now.
+    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
     hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
   };
   // v0.9: every playable band's members have a signature pose (recruits and fill-ins cycle the generic ones).
@@ -43,6 +46,7 @@
   // near, far, pos: [x, y, z], look: [x, y, z], x (the row's centre), gap, z: [even, odd] (members' depth), player (depth) }),
   // else the v0.8.1 garage framing (cut-away front wall).
   var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45 };
+  var PLAYER_PAD = 0.17;   // v0.9: extra room either side of the player (their raised arms rise from the shoulders; wide builds too)
   function photoKind(st) {
     if (st && (st.spaceTier | 0) > 0) return 'garage';   // the rented rooms share the garage's footprint (and its rig)
     try { var G = GG.render && GG.render.garage; if (G && typeof G.spaceKind === 'function') return G.spaceKind(st) || ui.spaceKind(st); } catch (e) { /* fall through */ }
@@ -85,13 +89,15 @@
       var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
+      var pi = people.map(function (p) { return !!p.player; }).indexOf(true);
       people.forEach(function (p, i) {
         var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
         var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
         if (!ch) return;
         var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
-        ch.root.position.set(x0 + i * gap, 0, front);
-        ch.root.rotation.y = -0.06 * (x0 + i * gap);
+        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -PLAYER_PAD : PLAYER_PAD);
+        ch.root.position.set(px, 0, front);
+        ch.root.rotation.y = -0.06 * px;
         (POSES[p.pose] || POSES.fist)(ch.bones);
         if (ch.bones[B.PHONES]) ch.bones[B.PHONES].scale.setScalar(0);   // the sulk headphones are a toggle bone: off for the photo
         scene.add(ch.root);

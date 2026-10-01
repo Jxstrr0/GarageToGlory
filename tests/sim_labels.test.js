@@ -207,6 +207,13 @@ test('release: tracklist rules, lead single, title/cover options, schedule >= 2 
   ok(cv.rows.length >= 10 && cv.rows.every((r, i, l) => i === 0 || r.pos > l[i - 1].pos), 'chart view rows sorted');
   if (a.chart.pos) ok(cv.rows.some(r => r.you && r.pos === a.chart.pos && r.title === 'My Lawn' && r.move === 'new'), 'you on the chart');
   eq(JSON.stringify(GG.labels.chartView(s, a.id)), JSON.stringify(cv), 'chart view is stable');
+  // (fixer) the filler rows: never the rival (its record charts through its own row), titles from the neutral chartFiller pool
+  const CF = GG.content.albumWords.chartFiller = { forms: ['{adj} {noun}', 'Love on {place}'], adj: ['Testy'], noun: ['Filler'], place: ['the Lake'] }, words = [].concat(CF.adj, CF.noun, CF.place);
+  for (let w = 1; w <= 40; w++) {
+    s.totalWeek = w; const rows = GG.labels.chartView(s).rows.filter(r => !r.you && !r.rival);
+    ok(rows.every(r => r.artist !== GG.rival.name(s)), 'no filler row credits the rival (week ' + w + ')');
+    ok(rows.every(r => words.some(x => r.title.includes(x))), 'filler titles from chartFiller: ' + rows.map(r => r.title).join(' | '));
+  }
 });
 
 test('reviews: deterministic; recycled drum patterns lower scores', () => {

@@ -39,7 +39,7 @@
                      { title: 'The Eternal Dandelions', titleEn: null, fr: 'Les Pissenlits Éternels' }],
       members: [
         { id: 'marcel', name: 'Marcel Fontaine', nick: 'Lord Abyssus', role: 'vocals', skill: 44, mood: 66, cape: true,
-          signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+          signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape', perSong: true } },
         { id: 'dana', name: 'Dana Okafor', nick: 'Sweep', role: 'lead guitar', skill: 56, mood: 64 },
         { id: 'jaxon', name: 'Jaxon Kowalchuk', nick: 'Rip', role: 'rhythm guitar', skill: 50, mood: 70 },
         { id: 'kenji', name: 'Kenji Blackbird', nick: 'Kenji', role: 'bass', skill: 54, mood: 60, silent: true }]

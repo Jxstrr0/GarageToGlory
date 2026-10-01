@@ -26,6 +26,8 @@
 //   TUNE='rox.skill=51,benny.mood=70' overrides member numbers in-process (to try a bands.js rebalance before editing it).
 //   FIT='venue_id.punk=0.6,...' overrides venue genre fits in-process (to try a venues.js rebalance before editing it).
 //   DECK=synthetic|none: every band on the synthetic role-alias deck / no Monday deck (the economy without content).
+//   The World target also needs the reach share (careers that got to the World era) within 15 points of Hail Damage's;
+//   payoff a/b = fired / careers whose payoff needs were met in the World era with a departure window left (good bot >= 30%).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
@@ -119,7 +121,7 @@ function run(style, bandId) {
   const rows = [];   // rows[year] = array of per-seed year stats
   for (let seed = 1; seed <= seeds; seed++) {
     const s = GG.career.newCareer(bandId ? { seed: seed * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: seed * 7919, player: { name: 'Bot' } });
-    let y = null, full = null, sprinter = null;
+    let y = null, full = null, sprinter = null, needW = null, needPkg = null;   // v0.9: the first World week a payoff package's needs are met
     if (bs) { bs.firstKm.push(s.gig && s.gig.km != null ? s.gig.km : (s.gig ? 0 : null)); bs.firstGig.push(s.gig ? s.gig.venueId : null); }
     for (let w = 0; w < years * WPY && !s.ended; w++) {
       if (s.week === 1) y = { fundMin: Infinity, buzz: 0, burn: 0, mood: 0, n: 0, loans0: s.stats.parentsLoans, songs0: s.stats.songsWritten, gigs0: s.stats.gigs,
@@ -131,6 +133,10 @@ function run(style, bandId) {
       if (bs && s.era === 'garage' && s.phase === 'monday') { const L = GG.world ? GG.world.refresh(s) : []; bs.board[0] += 1; bs.board[1] += L.length; L.forEach(l => { bs.board[2] += l.km || 0; bs.board[3]++; }); }
       GG.career.botWeek(s, style);
       check(s, (bandId ? bandId + ':' : '') + style + '#' + seed);
+      if (bs && needW == null && s.era === 'world' && GG.tour && GG.tour.needsMet) {
+        needPkg = ((GG.content.world || {}).packages || []).find(p => p.needs && (!p.needs.band || [].concat(p.needs.band).includes(s.bandId)) && GG.tour.needsMet(s, p)) || null;
+        if (needPkg) needW = s.totalWeek;
+      }
       if (bs && s.week === 1) liveProbe(s);
       if (full == null && s.gear && s.gear.lanes >= 6 && s.gear.doubleKick) full = s.totalWeek - 1;
       if (sprinter == null && s.van && s.van.tier >= 2) sprinter = s.totalWeek - 1;
@@ -154,7 +160,17 @@ function run(style, bandId) {
             return { sd: sds.length, sdWon: sds.filter(x => x.won).length, heat: y.heat / y.n, rvF: s.rival ? s.rival.fans : 0 }; })() });
       }
     }
-    if (bs) { bs.lineup += s.rival && s.rival.members ? s.rival.members.length : 0; bs.payoff += s.tour && (s.tour.moose || Object.keys(s.tour.payoffs || {}).length) ? 1 : 0; bs.cards += s.stats.cards || 0; bs.careers++; }
+    if (bs) {
+      const paid = s.tour && (s.tour.moose || Object.keys(s.tour.payoffs || {}).length) ? 1 : 0;
+      bs.lineup += s.rival && s.rival.members ? s.rival.members.length : 0; bs.payoff += paid; bs.cards += s.stats.cards || 0; bs.careers++;
+      // eligible: the needs were met in the World era with a departure window left that gets the tour home inside the run
+      if (needPkg) {
+        const win = GG.tour.departWindow(needPkg) || Array.from({ length: WPY }, (_, i) => i + 1), end = years * WPY, len = (needPkg.stops || []).length || 1;
+        let ok = false;
+        for (let w = needW + 1; w + len <= end && !ok; w++) if (win.includes(((w - 1) % WPY) + 1)) ok = true;
+        if (ok || paid) { bs.eligible++; bs.paidElig += paid; }
+      }
+    }
     const eraWeek = e => { const h = (s.eraHistory || []).find(x => x.era === e); return h ? h.week : null; };
     timing[style].push({ local: eraWeek('local'), offer: s.milestones.firstOffer || null, signedEra: eraWeek('signed'),
       deal: s.milestones.signed || null, world: s.milestones.worldReady || null, fans: s.fans,
@@ -215,14 +231,14 @@ function table(style, rows) {
   if (after.length) out.push('quits/year after protection: ' + avg(after, 'quits').toFixed(2) + ' (ultimatums ' + avg(after, 'ults').toFixed(2) + ', returns ' + avg(after, 'rets').toFixed(2) + ', over ' + after.length + ' seed-years)');
   return out.join('\n');
 }
-function newStats() { return { weeks: 0, noCard: 0, board: [0, 0, 0, 0], gigs: 0, km: 0, live: { gigs: 0, songs: 0, combo: 0, chorus: 0, peak: 0, sig: 0 }, lineup: 0, payoff: 0, cards: 0, careers: 0, firstKm: [], firstGig: [] }; }
+function newStats() { return { weeks: 0, noCard: 0, board: [0, 0, 0, 0], gigs: 0, km: 0, live: { gigs: 0, songs: 0, combo: 0, chorus: 0, peak: 0, sig: 0 }, lineup: 0, payoff: 0, eligible: 0, paidElig: 0, cards: 0, careers: 0, firstKm: [], firstGig: [] }; }
 function bandLine(style, st) {
   const pct = (a, b) => b ? Math.round(100 * a / b) + '%' : '-';
   return style.toUpperCase() + ' band: cards ' + (st.cards / Math.max(1, st.careers)).toFixed(1) + '/career, no-card weeks ' + pct(st.noCard, st.weeks) +
     ' | garage board ' + (st.board[1] / Math.max(1, st.board[0])).toFixed(1) + ' listings @ ' + Math.round(st.board[2] / Math.max(1, st.board[3])) + ' km' +
     ' | km/gig ' + Math.round(st.km / Math.max(1, st.gigs)) + ' | live moments per song: combo ' + pct(st.live.combo, st.live.songs) + ' chorus ' + pct(st.live.chorus, st.live.songs) +
     ' peak ' + pct(st.live.peak, st.live.songs) + ', signature gigs ' + pct(st.live.sig, st.live.gigs) +
-    ' | rival lineup ' + (st.lineup / Math.max(1, st.careers)).toFixed(1) + ' | payoff ' + st.payoff + '/' + st.careers +
+    ' | rival lineup ' + (st.lineup / Math.max(1, st.careers)).toFixed(1) + ' | payoff ' + st.payoff + '/' + st.careers + ' (' + st.paidElig + '/' + st.eligible + ' with the needs met and a window left)' +
     ' | week-1 gig ' + (st.firstGig[0] || 'none') + ' (' + st.firstKm.filter(x => x != null).map(x => Math.round(x)).slice(0, 3).join('/') + ' km)';
 }
 const bandIds = BAND === 'all' ? Object.keys(GG.content.bands || { hail_damage: 1 }) : BAND ? [BAND] : [null];
@@ -242,9 +258,10 @@ bandIds.forEach(bandId => {
       const y13 = rows.slice(0, 3).reduce((t, a) => t.concat(a), []), post = all.filter(r => !r.prot);
       per[style] = { fans3: Math.round(mean(last, 'fans')), fund3: Math.round(mean(last, 'fundEnd')), loans13: y13.reduce((t, r) => t + r.loans, 0) / T.length,
         quits: post.length ? mean(post, 'quits') : 0, rets: post.length ? mean(post, 'rets') : 0, local: wk('local'), offer: wk('offer'), signed: wk('signedEra'),
-        world: wk('worldEra'), sgn3: mean(last, 'sgn'), cards: bs.cards / Math.max(1, bs.careers), noCard: bs.weeks ? bs.noCard / bs.weeks : 0,
+        world: wk('worldEra'), worldN: T.filter(t => t.worldEra != null).length / Math.max(1, T.length), sgn3: mean(last, 'sgn'), cards: bs.cards / Math.max(1, bs.careers), noCard: bs.weeks ? bs.noCard / bs.weeks : 0,
         board: bs.board[1] / Math.max(1, bs.board[0]), boardKm: bs.board[2] / Math.max(1, bs.board[3]), kmGig: bs.km / Math.max(1, bs.gigs),
-        peak: bs.live.songs ? bs.live.peak / bs.live.songs : 0, lineup: bs.lineup / Math.max(1, bs.careers), payoff: bs.payoff };
+        peak: bs.live.songs ? bs.live.peak / bs.live.songs : 0, lineup: bs.lineup / Math.max(1, bs.careers), payoff: bs.payoff,
+        paidElig: bs.paidElig, eligible: bs.eligible };
     }
   });
   if (bandId) { console.log('\n=== ' + ((GG.content.bands[bandId] || {}).name || bandId) + ' (' + bandId + ') ==='); summary.push({ id: bandId, per: per }); }
@@ -260,7 +277,7 @@ if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_co
       console.log(pad2(b.id, 18) + ' ' + pad2(x.fans3, 6) + ' ' + pad2(x.fund3, 6) + ' | ' + pad2(x.loans13.toFixed(1), 4) + ' | ' + pad2(x.quits.toFixed(2), 5) + ' ' + pad2(x.rets.toFixed(2), 5) +
         ' | ' + pad2(x.local, 4) + ' ' + pad2(x.offer, 4) + ' ' + pad2(x.signed, 4) + ' ' + pad2(x.world, 4) + ' | ' + pad2(x.sgn3.toFixed(1), 3) +
         ' | ' + pad2(x.cards.toFixed(0), 4) + ' ' + pad2(Math.round(x.noCard * 100) + '%', 4) + ' | ' + pad2(x.board.toFixed(1), 4) + ' @' + pad2(Math.round(x.boardKm), 4) +
-        ' | ' + pad2(Math.round(x.kmGig), 4) + ' | ' + pad2(Math.round(x.peak * 100) + '%', 4) + ' | ' + pad2(x.lineup.toFixed(1), 3) + ' | ' + x.payoff);
+        ' | ' + pad2(Math.round(x.kmGig), 4) + ' | ' + pad2(Math.round(x.peak * 100) + '%', 4) + ' | ' + pad2(x.lineup.toFixed(1), 3) + ' | ' + x.payoff + ' (' + x.paidElig + '/' + x.eligible + ' eligible)');
     });
     // §5 B4 targets against Hail Damage (avg bot is the one that counts): ok / MISS per target
     const hd = (summary.find(b => b.id === 'hail_damage') || {}).per;
@@ -275,13 +292,17 @@ if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_co
         'fund ' + Math.round(100 * x.fund3 / Math.max(1, H.fund3)) + '% ' + mark(Math.abs(x.fund3 / Math.max(1, H.fund3) - 1) <= 0.25),
         'loans ' + x.loans13.toFixed(1) + ' ' + mark(x.loans13 <= H.loans13 + 1),
         'signed@3 ' + x.sgn3.toFixed(1) + ' ' + mark(x.sgn3 >= H.sgn3 - 0.15),
-        'world ' + (x.world || '-') + ' ' + mark(x.world != null && H.world != null ? Math.abs(x.world - H.world) <= WPY : x.world == null && H.world == null),
+        // World: the week (reachers only) within a year of Hail Damage's AND the reach share within 15 points of it (a band
+        // with 2/30 careers in the World era must not pass on those two careers' week alone)
+        'world ' + (x.world || '-') + ' (' + Math.round(100 * x.worldN) + '%) ' + mark((x.world != null && H.world != null ? Math.abs(x.world - H.world) <= WPY : x.world == null && H.world == null) && x.worldN >= H.worldN - 0.15),
         'cards ' + Math.round(100 * x.cards / Math.max(1, H.cards)) + '% ' + mark(x.cards >= 0.85 * H.cards),
         'no-card +' + Math.round(100 * (x.noCard - H.noCard)) + 'pt ' + mark(x.noCard <= H.noCard + 0.10),
         'board ' + x.board.toFixed(1) + '@' + Math.round(x.boardKm) + ' ' + mark(x.board >= 3 && x.boardKm <= 300),
         'km/gig ' + (x.kmGig / Math.max(1, H.kmGig)).toFixed(2) + 'x ' + mark(x.kmGig <= 1.25 * H.kmGig),
         'quits ' + x.quits.toFixed(2) + '/yr rets ' + (x.quits ? Math.round(100 * x.rets / x.quits) : 0) + '% ' + mark(x.quits <= 1 && (x.quits === 0 || x.rets / x.quits >= 0.4))
       ];
+      // Q3 payoff (good bot): at least 30% of the careers whose needs were met with a window left actually fire it
+      if (style === 'good') t.push('payoff ' + x.paidElig + '/' + x.eligible + ' ' + (x.eligible ? mark(x.paidElig / x.eligible >= 0.3) : '-'));
       console.log('  targets ' + pad2(b.id, 18) + ' ' + t.join(' | '));
     });
   });

@@ -639,6 +639,8 @@
       }
       if (!VT || VT.bench) b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
       if (!VT && !D.look) {                                                                     // v0.8 SPACES review: somebody's backpack on the floor
+        var bench = !!(T0 && T0.bobble === 'cow');   // v0.9: Grandpa's Suburban's front bench fills the middle; no backpack poking through it
+        if (!bench) {
         b.push(0.04, 0.45, -0.24, -0.3, 0.25, 0);                                             // (slumped on the console lid, between the seats)
         b.box(0.22, 0.26, 0.13, 0, 0.13, 0, 0x2a3c5e); b.box(0.18, 0.11, 0.045, 0, 0.08, 0.08, 0x22314e);
         b.box(0.2, 0.01, 0.01, 0, 0.245, 0.067, 0xb8bcc2); b.box(0.14, 0.008, 0.01, 0, 0.135, 0.104, 0xb8bcc2);          // zips
@@ -646,6 +648,7 @@
         b.box(0.035, 0.2, 0.02, -0.07, 0.14, -0.075, 0x1a2436, 0.2); b.box(0.035, 0.2, 0.02, 0.07, 0.14, -0.075, 0x1a2436, 0.2);   // straps
         b.box(0.07, 0.02, 0.035, 0, 0.27, -0.015, 0x1a2436);
         b.pop();
+        }
         b.box(0.16, 0.2, 0.05, -0.2, 0.62, 0.55, 0xd8302a, -0.3, 0.4, 0); b.box(0.08, 0.04, 0.052, -0.2, 0.65, 0.55, 0xf2d15b, -0.3, 0.4, 0);   // ketchup chips on the bench
       }
       if (D.look === 'sardine') {                                   // v0.7: the tiny European van: gear to the roof, laps full

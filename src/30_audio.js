@@ -969,11 +969,13 @@
       (amp || into).connect(bp);
     });
     if (art) articulate(bank, amp, art, t, sc);
-    var vib = V.yodel ? null : vp.vib && vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : V.vib ? [5.2, V.vib] : null;
+    // v0.9: the profile decides: yodel false = no flip (Brayden), an explicit zero-depth vib = dead-flat pitch (no type vibrato)
+    var yod = V.yodel && vp.yodel !== false;
+    var vib = yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null;
     fs.forEach(function (fg, g) {
       var o = c.createOscillator();
       o.type = 'sawtooth'; if (g) o.detune.value = 14;
-      if (V.yodel) {   // "yee" up to the fourth, "haw" down past the root
+      if (yod) {   // "yee" up to the fourth, "haw" down past the root
         o.frequency.setValueAtTime(fg, t);
         o.frequency.exponentialRampToValueAtTime(fg * 1.335, t + dur * 0.3);
         o.frequency.exponentialRampToValueAtTime(fg * 0.84, t + dur);
@@ -1130,6 +1132,7 @@
   function riffFor(B, sec) { var list = B.riffs || [[0]]; return list[GG.hashSeed('riff|' + (sec[0] || '')) % list.length]; }
   var HIT = 120;   // 'x'
   // Nearest note of the key's scale (ties go down): sung and shouted hits always fit the song.
+  var MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
   function inKey(midi, tonic, scale) {
     if (!scale || !scale.length) return midi;
     for (var d = 0; d < 12; d++) {
@@ -1406,7 +1409,9 @@
     // The fiddle takes the fills (phrase ends, every other chorus bar) and the outro; Earl's Tele takes the solo.
     country: function (o, w) {
       var i, full = o.role !== 'sparse', sc = o.B.scale || [0, 2, 4, 7, 9], train = o.style === 'train';
-      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, o.root + [0, 4, 7, 9][k]); });   // walking
+      // walking (root, 3rd, 5th, 6th), snapped to the full major scale (not o.B.scale: that's the pentatonic) so the bridge's vi / ii
+      // walk their own minor third instead of a G#/C# under a G-major song; ties go down
+      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, inKey(o.root + [0, 4, 7, 9][k], o.key, MAJOR_SCALE)); });
       else { w.bass(0, 4); w.bass(8, 4, o.root + 7); }                   // boom on 1 and 3: root, fifth
       (train ? (full ? [2, 6, 10, 14] : [4, 12]) : full ? [4, 6, 12, 14] : [4, 12]).forEach(function (s) {
         w.note('clean', s, 1.5, o.root + 12, { strum: full ? [0, 4, 7] : [0, 7], up: s % 4 === 2 });
@@ -1485,7 +1490,10 @@
   // answers (resp; the crowd joins in when hot) and, from the second chorus, whoa-ohs with a harmony; in a breakdown the
   // drop and the growls. Metal slots resolve to this song's scream types; every hit shouts the song's next word.
   function sing(S, V, o, w, e, nth, name, role, brk, key, lastChorus) {
-    if (S.whole && e === 0 && o.bar === 0 && V.count) w.vox(0, V.count[0], key.tonic + V.count[1], false, { word: S.rng.pick(S.count.length ? S.count : ['HEY']), count: true });
+    // (a song that opens on a chorus with a downbeat call, e.g. the rival's ~5 s snippets in 59d: that call is the opener, no
+    // count-in yell on top of it from the same singer)
+    var opener = name === 'chorus' && (V.hits || []).some(function (h) { return h[0] === 0 && h[1] === 0; });
+    if (S.whole && e === 0 && o.bar === 0 && V.count && !opener) w.vox(0, V.count[0], key.tonic + V.count[1], false, { word: S.rng.pick(S.count.length ? S.count : ['HEY']), count: true });
     if (name === 'chorus') {
       var hold = V.held && (nth % 2 === 1 || lastChorus) ? V.held : null, hits = (V.hits || []).filter(function (h) { return !(hold && hold[0] === h[0] && hold[1] === h[1]); });   // the held note takes its slot
       if (o.bar === 0 || !S.line) { S.line = S.chorus(hits.length + (hold ? 1 : 0)); S.li = 0; }

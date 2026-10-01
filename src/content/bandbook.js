@@ -267,7 +267,7 @@
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
-      { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly garage livestream.' },
+      { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly livestream from {space}.' },   // v0.9: {space} (filled by 5g tierRow)
       { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a handwritten thank-you note from the band (mostly doodles).' }
     ],
     club: {

@@ -125,7 +125,7 @@
   function happyLabel(h) { return h >= 80 ? 'Thrilled' : h >= 60 ? 'Content' : h >= 40 ? 'Restless' : h >= 25 ? 'Grumbling' : 'Cancelling'; }
   function tierRow(t, open) {
     return el('div.bb-tier' + (open && !t.unlocked ? '.off' : ''), { testid: 'bb-tier-' + t.id }, [el('div.ic', t.icon || '🥁'),
-      el('div.grow', [el('b', t.name), el('span', t.perk)]),
+      el('div.grow', [el('b', t.name), el('span', GG.state ? ui.fill(t.perk, GG.state) : t.perk)]),   // v0.9: perks carry {space}
       el('div.price', ['$' + t.price + '/mo', el('small', !open ? (t.minMembers ? 'opens at ' + t.minMembers : '') : t.unlocked ? t.members + (t.dale ? ' (incl. ' + ui.superfan() + ')' : '') + ' members'
         : t.dale ? ui.superfan() + ' (not open yet; pays anyway)' : 'opens at ' + t.minMembers + ' members')])]);
   }

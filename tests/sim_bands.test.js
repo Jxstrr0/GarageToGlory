@@ -15,8 +15,22 @@ const LEAK_STRICT = true;   // v0.9 integration: Lane A's content has merged; LE
 const STRICT = process.env.LEAK_STRICT === '0' ? false : LEAK_STRICT || !!process.env.LEAK_STRICT;
 const BANDS = Object.keys(K.bands);
 const LEAK_YEARS = Math.max(1, parseInt(process.env.LEAK_YEARS, 10) || 3);   // LEAK_YEARS=10: a full-career scan (slow)
-const HD_LEAK = /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE/;
-// Other bands' own names (members, bands, rivals) in a Hail Damage career. Short member names use word boundaries.
+// (fixer: + Cousin Dale / Dale from Warman / Hwy 11 / the Moose Opera; not bare 'Warman': the Warman Curling Rink Lounge is
+// a shared venue other bands play)
+const HD_LEAK = /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE|Cousin Dale|Dale from Warman|Hwy 11|Moose Opera/;
+// A band's world beyond its members (fixer): its home superfan, tier-0 van, space, and its rival's cast (cast nicknames that
+// are plain words are left out: Dusty, Colt, Boot, The Jaw ...).
+// (Lorne: the Ramblers' coffee row has its own Lorne; Tundra Wraith's is caught as Lorne Dueck / Frostgrave)
+const PLAIN = ['Dusty', 'Colt', 'Boot', 'Buckle', 'Unplugged', 'The Solo', 'The Board', 'The Jaw', 'Steve', 'Dex', 'Rex', 'Lorne'];
+function worldOf(id) {
+  const b = K.bands[id], out = [], hs = (K.bandbook.homeSuperfan || {})[id], cast = ((K.rivalry || {}).cast || {})[b.rival] || {};
+  if (hs && id !== 'hail_damage') out.push(hs.short || String(hs.name).split(' ')[0], hs.name);
+  if (GG.shop && GG.shop.vanName && id !== 'hail_damage') out.push(GG.shop.vanName(id, 0));
+  if (id !== 'hail_damage') out.push(b.spaceName);
+  (cast.members || []).forEach(m => [m.name, m.fullName, m.nick].forEach(w => { if (w && w.length > 2 && PLAIN.indexOf(w) < 0) out.push(w); }));
+  return out;
+}
+// Other bands' own names (members, bands, rivals, + their world) in a Hail Damage career. Short member names use word boundaries.
 function otherNames() {
   const names = [];
   BANDS.filter(id => id !== 'hail_damage').forEach(id => {
@@ -24,6 +38,7 @@ function otherNames() {
     names.push(b.name);
     b.members.forEach(m => { names.push(m.name); if (m.fullName) names.push(m.fullName); });
     const r = K.rivals[b.rival]; if (r) names.push(r.name);
+    names.push(...worldOf(id));
   });
   return names.filter(Boolean);
 }
@@ -38,8 +53,9 @@ function crossNames(id) {
     names.push(b.name);
     b.members.forEach(m => { names.push(m.name); if (m.fullName) names.push(m.fullName); });
     const r = K.rivals[b.rival]; if (r) names.push(r.name);
+    names.push(...worldOf(x));
   });
-  return names.filter(Boolean);
+  return names.concat(worldOf('hail_damage')).filter(Boolean);   // (+ Tundra Wraith's accountants: HD_LEAK has Gord)
 }
 const CROSS = {};
 BANDS.filter(id => id !== 'hail_damage').forEach(id => { CROSS[id] = new RegExp('\\b(' + crossNames(id).map(esc).join('|') + ')\\b'); });

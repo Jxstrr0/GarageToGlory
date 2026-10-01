@@ -209,10 +209,12 @@
     return el('div.gb-rings', orderedRings(st).map(function (r) {
       var open = ringOpen(st, r.id), n = list.filter(function (l) { return W().ring(l.city) === r.id; }).length;
       return btn('.gb-ring' + (r.id === cur ? '.sel' : '') + (open ? '' : '.locked'), { testid: 'ring-' + r.id, 'aria-pressed': r.id === cur ? 'true' : 'false', data: { home: r.id === h ? '1' : '' }, onclick: function () { onRing(r.id); } },
-        [(open ? '' : '🔒 ') + (r.id === h ? '🏠 ' : '') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[(r.eraBy && r.eraBy[h]) || r.era] || r.era)]);
+        [(open ? '' : '🔒 ') + (r.id === h ? '🏠 ' : '') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[ringEraOf(st, r)] || r.era)]);
     }));
   }
   var ERA_NAME = { garage: 'Garage', local: 'Local Heroes', signed: 'Signed', world: 'World Stage' };
+  // v0.9: the era a ring opens in for THIS band (world.ringEra: Q1a, Gravel Kings' Sask + West open at Local Heroes).
+  function ringEraOf(st, r) { try { if (W().ringEra) return W().ringEra(st, r.id) || r.era; } catch (e) { /* older sim */ } return r.era; }
   function calLine(st) {
     if (!GG.calendar) return null;
     var L = GG.calendar.label(st);

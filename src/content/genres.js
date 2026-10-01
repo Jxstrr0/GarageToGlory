@@ -122,15 +122,22 @@
         verse: [
           ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', E],
           ['x...x...x...x...', '..x...x...x...x.', 'x...x...x...x...', 'x...............'],
-          ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', E]
+          ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', E],
+          // v0.9 (fixer): metal-sized library (5/4/3) so jammed punk songs don't read as recycled. A skank on the crash,
+          // a d-beat-ish push on the crash; a busier skank chorus; the snare-on-every-8th thrash chorus with offbeat hats.
+          ['x.x.....x.x.....', '....x.x.....x.x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.....x.x.....x.', '..x.x.....x.x...', E, 'x.x.x.x.x.x.x.x.']
         ],
         chorus: [
           ['x...x...x...x...', '..x...x...x...x.', E, 'x.x.x.x.x.x.x.x.'],
-          ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......']
+          ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......'],
+          ['x.x...x.x.x...x.', '....x.x.....x.x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', '..x...x...x...x.', 'x...x...x...x...']
         ],
         bridge: [
           ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
-          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x...............']   // the snare-8ths break
         ]
       },
       // v0.9: tempo decides (downstrokes, a skate-punk gallop, hardcore thrash with a half-time mosh chorus); Benny's
@@ -177,15 +184,22 @@
         verse: [
           ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
           ['x.......x.x.....', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
-          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          // v0.9 (fixer): 5/4/3 like metal. Ride-cymbal rock; quarter hats with the bell on the offbeats; a push chorus
+          // (quarter hats, crash + offbeat bell); four-on-the-floor with the hats on the "and"; a ride-pattern bridge.
+          ['x.....x.x.......', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.......x...x...', '....x.......x...', 'x...x...x...x...', '..x...x...x...x.']
         ],
         chorus: [
           ['x.......x.......', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
-          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.x.....x.x.....', '....x.......x...', 'x...x...x...x...', 'x.x...x...x...x.'],
+          ['x...x...x...x...', '....x.......x...', '..x...x...x...x.', 'x...x...x...x...']
         ],
         bridge: [
           ['x.......x.......', '....x.......x...', 'x...x...x...x...', 'x...............'],
-          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x.x.....x.x.....', '....x.......x...', E, 'x.x.x.x.x.x.x.x.']
         ]
       },
       // v0.9: a power ballad under 90 BPM (also the Chartbusters' forced style 'ballad': every single they have), big open
@@ -228,15 +242,22 @@
         verse: [
           ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
           ['x.......x.......', '.xxx.xxx.xxx.xxx', '....x.......x...', E],
-          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', E]
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
+          // v0.9 (fixer): 5/4/3 like metal. Train-beat snares with the rests moved around (each one its own shuffle), a
+          // pushed kick, the hats on 8ths or quarters: so a jammed country song isn't the same three bars every time.
+          ['x.....x.x.......', 'xx.xxx.xxx.xxx.x', '....x.......x...', E],
+          ['x.......x.....x.', 'xxx.xxx.xxx.xxx.', 'x.x.x.x.x.x.x.x.', E]
         ],
         chorus: [
           ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', 'x...............'],
-          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', E, 'x...............']
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', E, 'x...............'],
+          ['x.......x.x.....', 'x.xxx.xxx.xxx.xx', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.....x.x.......', 'xx.xxx.xxx.xxx.x', 'x...x...x...x...', 'x...............']
         ],
         bridge: [
           ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', E],
-          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x...x...x...x...', 'xxx.xxx.xxx.xxx.', 'x.x.x.x.x.x.x.x.', 'x...............']
         ]
       },
       // v0.9: the two-step (boom-chick) and, from 108 BPM, the train beat (a walking bass, chicka strums). Earl takes the
@@ -271,7 +292,8 @@
   //   defaults[genre] / profiles[memberId] / rivals[rivalId]: a voice profile. pitch (semitones, then back into the key),
   //     range [lo, hi] midi (octave-folded into it), formant (vowel-space scale: < 1 bigger throat), vowels (swaps: the
   //     French ones), rasp 0..1 (grit + pitch jitter), drive (extra distortion), vib [rate Hz, depth], twang (dB of nasal
-  //     'ng' ring near 2 kHz), breath 0..1, scoop (semitones up into the note), screams { type: weight }, pan.
+  //     'ng' ring near 2 kHz; vib [r, 0] = dead flat, no vibrato at all), breath 0..1, scoop (semitones up into the note),
+  //     yodel (false: no yodel flip on the yodel types, yeehaw/holler; true/absent: the flip), screams { type: weight }, pan.
   GG.content.voices = {
     types: {
       metal: { chorus: ['scream', 'shriek', 'squeal', 'gang'], brk: ['growl', 'guttural', 'fry'], held: ['held', 'shriekHeld'] }
@@ -331,7 +353,7 @@
       // Rex Glamour: a stadium falsetto in a July scarf; the same power ballad every single.
       chartbusters: { pitch: 7, range: [62, 84], formant: 1.12, vib: [5.9, 0.038], breath: 0.3, scoop: -3, words: ['FOREVER', 'BABY', 'TONIGHT'], wordChance: 0.35 },
       // Brayden: bro-country, dead-flat pitch (the truck brand paid for the tuning), every song about tailgates.
-      buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
+      buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], yodel: false, rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
     }
   };
 })(window.GG);

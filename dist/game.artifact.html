@@ -235,6 +235,7 @@ h1, h2, h3, p { margin: 0; }
 .cold-text { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; padding: 20px 28px; text-align: center;
   font: 800 23px/1.35 var(--font); text-wrap: balance; animation: gg-in .35s ease-out; }
 .cold-foot { padding: 0 var(--gutter) calc(var(--safe-bot) + 18px); display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.cold-top, .cold-text, .cold-foot { position: relative; z-index: 1; }   /* v0.9: above the cold-open fx layer (neon/snow/dust/hail) */
 .dots { display: flex; justify-content: center; gap: 6px; } .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); } .dots i.on { background: var(--amber); }
 .hail { position: absolute; inset: 0; pointer-events: none; opacity: .35;
   background-image: radial-gradient(circle, #cfe3ff 1.2px, transparent 1.8px), radial-gradient(circle, #cfe3ff 1px, transparent 1.6px);
@@ -599,6 +600,7 @@ canvas.cover.thumb { width: 84px; height: 84px; flex: 0 0 84px; } canvas.cover.m
 .lo-gap { flex: 1 1 auto; min-height: 120px; }
 .lo-card { position: relative; z-index: 1; max-height: 52%; overflow-y: auto; overflow-x: hidden; padding: 14px var(--gutter) calc(var(--safe-bot) + 16px); background: linear-gradient(180deg, rgba(20, 16, 26, .94), #120f18); border-top: 2px solid #c9a227; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; gap: 10px; }
 .lo-card .btn { flex: 0 0 auto; }
+.lo-card > * { flex-shrink: 0; }   /* v0.9: the card scrolls; the broadcast chip (.lg-cast, overflow hidden) never gets crushed */
 .lo-back { position: absolute; inset: 0; }
 .lo-back.carpet { background: linear-gradient(180deg, transparent 58%, #7a0f18 58%, #9c1420 100%), repeating-linear-gradient(45deg, #f4f1ea 0 38px, #ece6d8 38px 76px); }
 .lo-back.stage { background: radial-gradient(60% 40% at 50% 40%, #e0bb3a 0 30%, transparent 31%), repeating-linear-gradient(90deg, #6e0d16 0 18px, #8a1420 18px 36px); }
@@ -1410,7 +1412,7 @@ html.gg-calm .cold-fx { animation: none !important; }
                          coldOpenFx: 'hail'|'snow'|'neon'|'dust', throne,
                          blurb, coldOpen: [panel text..], starterSongs: [ { title, titleEn } ],
                          members: [ { id, name, fullName, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
-           MEMBER (v0.9) + gear (C.GEAR), silent, cape, signature { action, combo, crowd, flag? }; look.top.
+           MEMBER (v0.9) + gear (C.GEAR), silent, cape, signature { action, combo, crowd, flag?, perSong? }; look.top.
    v0.9 content keying (plan_contract_0.9 §4.1): flat pools neutral + tokenised, band extras in <file>.byBand[bandId];
      member-keyed pools by member id; card variants '<baseId>_<bandId>' / '_<rivalId>' (career.variant); rivalry.cast[rid]
      (members, news, showdowns, banter, ui, carpet, defector, comments, songs, albums, rebrands, label, vehicle, drummer?,
@@ -1680,6 +1682,16 @@ html.gg-calm .cold-fx { animation: none !important; }
         noun: ['Grain', 'Quonset', 'Tailgate', 'Barley', 'Tractor', 'Coffee Row', 'Fence Line', 'Wheat', 'Gravel', 'Dust'],
         place: ['the Quonset', 'Swift Current', 'the Grid Road', 'Coffee Row', 'the Auction Mart', 'Maple Creek', 'the Home Quarter']
       }
+    },
+    // v0.9: the Maple 100's filler rows (24_sim_labels chartView). Every genre's title pool above now carries a band's own
+    // in-jokes (the packs add theirs), so the chart's other records draw from this neutral pool: no band places, people or spaces.
+    chartFiller: {
+      forms: ['{adj} {noun}', 'The {adj} {noun}', '{noun} Song', 'Love on {place}', 'Down by {place}', 'Another {adj} {noun}',
+        'Your {adj} {noun}', 'Summer at {place}', '{noun} (Radio Edit)', 'Nothing but {noun}'],
+      adj: ['Northern', 'Lonely', 'Electric', 'Midnight', 'Golden', 'Restless', 'Wild', 'Cold', 'Paper', 'Slow', 'Last', 'Rusty'],
+      noun: ['Heart', 'Highway', 'Radio', 'Sky', 'Fire', 'River', 'Night', 'Dream', 'Rain', 'Window', 'Motel', 'Satellite', 'Postcard',
+        'Canoe', 'Toboggan', 'Chinook', 'Thunder', 'Summer'],
+      place: ['the Lake', 'the Coast', 'the Ferry', 'the North Shore', 'the Last Exit', 'the Cottage', 'the Ski Hill', 'the Dock']
     },
     covers: {
       motifs: [
@@ -2611,7 +2623,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     },
     tiers: [
       { id: 'drumstick', name: 'Drumstick', icon: '🥢', price: 3, minMembers: 0, perk: 'Your name in the monthly thank-you post (small font).' },
-      { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly garage livestream.' },
+      { id: 'snare', name: 'Snare', icon: '🥁', price: 8, minMembers: 8, perk: 'Exclusive posts and the monthly livestream from {space}.' },   // v0.9: {space} (filled by 5g tierRow)
       { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a handwritten thank-you note from the band (mostly doodles).' }
     ],
     club: {
@@ -3096,13 +3108,14 @@ html.gg-calm .cold-fx { animation: none !important; }
     grid_road_ramblers: { roles: { namer: 'travis', grumbler: 'earl', deadpan: 'clementine' }, firstGig: 'quonset_yard_party', homeRing: 'sask',
       spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
   };
-  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
+  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40;
+  // perSong: once per song instead, Marcel's cape spin as in v0.8.3).
   // idle 'noodle' (set on the member above: Dana, Benny, Lenny, Travis) = the garage noodler with an instrument; the audio
   // garage noodle follows the first one (Benny's two chords, Lenny's riff), then Clementine's 'fiddle' idle.
   // v0.9 integration: the member skill / mood numbers above follow the sims lane's balance proposal (Frost Heave, Gravel
   // Kings and the Ramblers were well below Hail Damage's average gig score with the same bot).
   var V09_MEMBERS = {
-    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape', perSong: true } },   // the cape spins every song (v0.8.3)
     dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },
     rox: { gear: 'sg', top: 'jacket', signature: { action: 'stageDive', combo: 40, crowd: 8 } },
     benny: { gear: 'sg', top: 'tee' },
@@ -5859,7 +5872,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
       moose: { fans: 3000, buzz: 12 },
       cardGap: 3, cardChance: 0.75,   // tour story cards (min weeks apart) ; a region card on this share of tour Mondays
-      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55 }
+      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55, payoffCushion: 500, payoffBurnout: 80 }
     },
 
     // ---- Labels, studios, releases (24_sim_labels.js, v0.5) --------------------------------------------------------
@@ -6200,15 +6213,22 @@ html.gg-calm .cold-fx { animation: none !important; }
         verse: [
           ['x...x...x...x...', '..x...x...x...x.', 'x.x.x.x.x.x.x.x.', E],
           ['x...x...x...x...', '..x...x...x...x.', 'x...x...x...x...', 'x...............'],
-          ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', E]
+          ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', E],
+          // v0.9 (fixer): metal-sized library (5/4/3) so jammed punk songs don't read as recycled. A skank on the crash,
+          // a d-beat-ish push on the crash; a busier skank chorus; the snare-on-every-8th thrash chorus with offbeat hats.
+          ['x.x.....x.x.....', '....x.x.....x.x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.....x.x.....x.', '..x.x.....x.x...', E, 'x.x.x.x.x.x.x.x.']
         ],
         chorus: [
           ['x...x...x...x...', '..x...x...x...x.', E, 'x.x.x.x.x.x.x.x.'],
-          ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......']
+          ['x...x...x...x...', '..x.x.x...x.x.x.', 'x.x.x.x.x.x.x.x.', 'x.......x.......'],
+          ['x.x...x.x.x...x.', '....x.x.....x.x.', E, 'x.x.x.x.x.x.x.x.'],
+          ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', '..x...x...x...x.', 'x...x...x...x...']
         ],
         bridge: [
           ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
-          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', 'x.x.x.x.x.x.x.x.', 'x...............']   // the snare-8ths break
         ]
       },
       // v0.9: tempo decides (downstrokes, a skate-punk gallop, hardcore thrash with a half-time mosh chorus); Benny's
@@ -6255,15 +6275,22 @@ html.gg-calm .cold-fx { animation: none !important; }
         verse: [
           ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
           ['x.......x.x.....', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
-          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          // v0.9 (fixer): 5/4/3 like metal. Ride-cymbal rock; quarter hats with the bell on the offbeats; a push chorus
+          // (quarter hats, crash + offbeat bell); four-on-the-floor with the hats on the "and"; a ride-pattern bridge.
+          ['x.....x.x.......', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
+          ['x.......x...x...', '....x.......x...', 'x...x...x...x...', '..x...x...x...x.']
         ],
         chorus: [
           ['x.......x.......', '....x.......x...', E, 'x.x.x.x.x.x.x.x.'],
-          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............']
+          ['x.....x.x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.x.....x.x.....', '....x.......x...', 'x...x...x...x...', 'x.x...x...x...x.'],
+          ['x...x...x...x...', '....x.......x...', '..x...x...x...x.', 'x...x...x...x...']
         ],
         bridge: [
           ['x.......x.......', '....x.......x...', 'x...x...x...x...', 'x...............'],
-          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x.x.....x.x.....', '....x.......x...', E, 'x.x.x.x.x.x.x.x.']
         ]
       },
       // v0.9: a power ballad under 90 BPM (also the Chartbusters' forced style 'ballad': every single they have), big open
@@ -6306,15 +6333,22 @@ html.gg-calm .cold-fx { animation: none !important; }
         verse: [
           ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
           ['x.......x.......', '.xxx.xxx.xxx.xxx', '....x.......x...', E],
-          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', E]
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', '....x.......x...', E],
+          // v0.9 (fixer): 5/4/3 like metal. Train-beat snares with the rests moved around (each one its own shuffle), a
+          // pushed kick, the hats on 8ths or quarters: so a jammed country song isn't the same three bars every time.
+          ['x.....x.x.......', 'xx.xxx.xxx.xxx.x', '....x.......x...', E],
+          ['x.......x.....x.', 'xxx.xxx.xxx.xxx.', 'x.x.x.x.x.x.x.x.', E]
         ],
         chorus: [
           ['x.......x.......', 'xxxxxxxxxxxxxxxx', '....x.......x...', 'x...............'],
-          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', E, 'x...............']
+          ['x...x...x...x...', 'xxxxxxxxxxxxxxxx', E, 'x...............'],
+          ['x.......x.x.....', 'x.xxx.xxx.xxx.xx', 'x.x.x.x.x.x.x.x.', 'x...............'],
+          ['x.....x.x.......', 'xx.xxx.xxx.xxx.x', 'x...x...x...x...', 'x...............']
         ],
         bridge: [
           ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', E],
-          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E]
+          ['x.......x.......', '....x.......x...', 'x.x.x.x.x.x.x.x.', E],
+          ['x...x...x...x...', 'xxx.xxx.xxx.xxx.', 'x.x.x.x.x.x.x.x.', 'x...............']
         ]
       },
       // v0.9: the two-step (boom-chick) and, from 108 BPM, the train beat (a walking bass, chicka strums). Earl takes the
@@ -6349,7 +6383,8 @@ html.gg-calm .cold-fx { animation: none !important; }
   //   defaults[genre] / profiles[memberId] / rivals[rivalId]: a voice profile. pitch (semitones, then back into the key),
   //     range [lo, hi] midi (octave-folded into it), formant (vowel-space scale: < 1 bigger throat), vowels (swaps: the
   //     French ones), rasp 0..1 (grit + pitch jitter), drive (extra distortion), vib [rate Hz, depth], twang (dB of nasal
-  //     'ng' ring near 2 kHz), breath 0..1, scoop (semitones up into the note), screams { type: weight }, pan.
+  //     'ng' ring near 2 kHz; vib [r, 0] = dead flat, no vibrato at all), breath 0..1, scoop (semitones up into the note),
+  //     yodel (false: no yodel flip on the yodel types, yeehaw/holler; true/absent: the flip), screams { type: weight }, pan.
   GG.content.voices = {
     types: {
       metal: { chorus: ['scream', 'shriek', 'squeal', 'gang'], brk: ['growl', 'guttural', 'fry'], held: ['held', 'shriekHeld'] }
@@ -6409,7 +6444,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       // Rex Glamour: a stadium falsetto in a July scarf; the same power ballad every single.
       chartbusters: { pitch: 7, range: [62, 84], formant: 1.12, vib: [5.9, 0.038], breath: 0.3, scoop: -3, words: ['FOREVER', 'BABY', 'TONIGHT'], wordChance: 0.35 },
       // Brayden: bro-country, dead-flat pitch (the truck brand paid for the tuning), every song about tailgates.
-      buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
+      buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], yodel: false, rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
     }
   };
 })(window.GG);
@@ -16348,6 +16383,16 @@ html.gg-calm .cold-fx { animation: none !important; }
         'It goes up behind the till counter. Chase stares at it for a long time. "She got the hair," he whispers. She got the hair.'),
        ch('Let Chase decide', { mood: { chase: 5 }, fan: { gift: 'gloria_portrait', superfan: { dale: 8 } } },
         'Chase hangs it at eye level, next to his mirror, so he can see both of himself at once. It is the happiest he has ever been.')]),
+    // The trucker superfan (fans_trucker's variant: the base card is Hail Damage's; superFanCard tries fans_trucker_<band> first).
+    card('fans_trucker_gravel_kings', 'road', 'tamara', 'The Jumper-Cable Story', gb({}),
+      "2 a.m., driving home from a gig, the Petro-Canuck in Innisfail. {van} has died at pump 4. T-Bone says it is 'just resting'. A semi pulls in. " +
+      'A trucker named Wendell produces jumper cables longer than the van. "Heard you on the radio," he says. Once. By mistake.',
+      [ch('Buy him a coffee and a donut', { fund: -12, fan: { superfan: { trucker: 10 } } },
+        'He tells you about every band he has ever boosted. It is a long list. You are, he says, "top five, ahead of a band with a scarf".'),
+       ch('Play him a song in the lot', { burnout: 4, chemistry: 3, fan: { superfan: { trucker: 15 } } },
+        'Lenny plays the riff on an unplugged guitar under the gas-station lights. Chase does a knee slide on the pump island. Wendell honks the air horn.'),
+       ch('Sign his thermos', { buzz: 2, fan: { superfan: { trucker: 8 } } },
+        '"Now I can never wash it," says Wendell, who has clearly never washed it. Chase signs it twice, once from each side of his hair.')]),
     card('fans_hater_page_gravel_kings', 'fame', 'gk_reporter', 'The Anti-Fan Club', gb({}),
       'Kyle from the Courier reports on a new page: "{band} Are Stuck in 1985 (Derogatory)". It has a logo, a scarf avatar and a ' +
       'monthly meeting at a Calgary pub. Someone suspects it is run from a radio conglomerate.',
@@ -17551,7 +17596,10 @@ html.gg-calm .cold-fx { animation: none !important; }
     var cal = obj(K, 'calendar');
     arr(cal, 'holidays').forEach(function (h) {
       if (!h || !HOLIDAY_CARDS[h.id]) return;
-      addUnique(arr(h, 'cards'), HOLIDAY_CARDS[h.id]);
+      // The band's own holiday cards go first (like Frost Heave and the Ramblers): the calendar deals the first card whose gate
+      // passes, so the shared new-band cards (holiday_canada_day_park, ...) stay the fallback instead of always winning.
+      var hc = arr(h, 'cards'), mine = HOLIDAY_CARDS[h.id].filter(function (id) { return hc.indexOf(id) < 0; });
+      hc.splice.apply(hc, [0, 0].concat(mine));
     });
     arr(cal, 'holidays').forEach(function (h) {
       if (!h || !P.holidayLines[h.id] || !h.gig) return;   // only holidays that already shape gigs
@@ -17594,7 +17642,11 @@ html.gg-calm .cold-fx { animation: none !important; }
     var lic = obj(K, 'licensing');
     addUnique(arr(lic, 'brands'), P.brands);
     addCards(arr(K, 'licenseCards'), P.licenseCards);
-    addUnique(arr(K, 'licenseScandals'), P.licenseScandals);
+    // The take path uses the first scandal whose speaker + gate pass, and lic_scandal_sellout (who 'band', gate {}) always does:
+    // the band's own scandal goes in before the first who:'band' entry (the same splice as Frost Heave and the Ramblers).
+    var LS = arr(K, 'licenseScandals'), mineLS = P.licenseScandals.filter(function (x) { return !LS.some(function (y) { return y && y.card === x.card; }); }), si = -1;
+    for (var li = 0; li < LS.length; li++) if (LS[li] && LS[li].who === 'band') { si = li; break; }
+    if (si < 0) LS.push.apply(LS, mineLS); else LS.splice.apply(LS, [si, 0].concat(mineLS));
 
     // ---- studio events, drama ----
     addCards(arr(K, 'studioEvents'), P.studioEvents);
@@ -21752,7 +21804,7 @@ html.gg-calm .cold-fx { animation: none !important; }
                      { title: 'The Eternal Dandelions', titleEn: null, fr: 'Les Pissenlits Éternels' }],
       members: [
         { id: 'marcel', name: 'Marcel Fontaine', nick: 'Lord Abyssus', role: 'vocals', skill: 44, mood: 66, cape: true,
-          signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+          signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape', perSong: true } },
         { id: 'dana', name: 'Dana Okafor', nick: 'Sweep', role: 'lead guitar', skill: 56, mood: 64 },
         { id: 'jaxon', name: 'Jaxon Kowalchuk', nick: 'Rip', role: 'rhythm guitar', skill: 50, mood: 70 },
         { id: 'kenji', name: 'Kenji Blackbird', nick: 'Kenji', role: 'bass', skill: 54, mood: 60, silent: true }]
@@ -23926,7 +23978,7 @@ html.gg-calm .cold-fx { animation: none !important; }
 //   double notes on the chart. Order: two-thumb rule -> doubles -> difficulty thinning (Easy/Normal thin a double like any
 //   kick note). chart(song, { doubles: false }) = no merge.
 // v0.9: moments(genre) -> { combo, chorus, peak } (§4.4; economy.gig.moments overrides) ; signatures(state) -> [{ id, action,
-//   combo, crowd, flag }] (bands.js member.signature, once per gig: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
+//   combo, crowd, flag, perSong }] (bands.js member.signature, once per gig, perSong once per song: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
 //   fallback; content lines.live[memberId].{solo, fill, signature, flub} and lines.moments[kind] win).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -24127,8 +24179,9 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
   var GENRE_MOMENT = { metal: 'wallOfDeath', punk: 'circlePit', rock: 'lighters', country: 'lineDance' };
   function peakMoment(genre) { return gig.moments(genre).peak || GENRE_MOMENT[genre]; }
-  // v0.9: band signature actions (bands.js member.signature { action, combo, crowd, flag? }): once per gig at combo >=
-  // combo (and only while its flag is set: Marcel's cape). -> [{ id, action, combo, crowd, flag }]
+  // v0.9: band signature actions (bands.js member.signature { action, combo, crowd, flag?, perSong? }): once per gig at combo >=
+  // combo (perSong: once per song, Marcel's cape spin as in v0.8.3; and only while its flag is set: Marcel's cape).
+  // -> [{ id, action, combo, crowd, flag, perSong }]
   function flagOn(state, f) { var v = state.flags && state.flags[f]; return !!v && v !== 'none'; }
   gig.signatures = function (state) {
     var out = [];
@@ -24136,7 +24189,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       var d = GG.career.memberDef ? GG.career.memberDef(state, m.id) : null, sg = (d && m.original !== false && d.signature) || m.signature;
       if (!sg || !sg.action) return;
       if (sg.flag === 'cape' ? !capeOn(state) : sg.flag && !flagOn(state, sg.flag)) return;
-      out.push({ id: m.id, action: sg.action, combo: sg.combo || 40, crowd: sg.crowd != null ? sg.crowd : 8, flag: sg.flag || null });
+      out.push({ id: m.id, action: sg.action, combo: sg.combo || 40, crowd: sg.crowd != null ? sg.crowd : 8, flag: sg.flag || null, perSong: !!sg.perSong });
     });
     return out;
   };
@@ -24352,7 +24405,7 @@ html.gg-calm .cold-fx { animation: none !important; }
     if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
     var W = gig.windows(state, diff), roles = gig.roles(state), genre = state.genre, MT = gig.moments(genre);
-    var sigs = gig.signatures(state);   // v0.9: once per gig (live.sigDone survives a save between songs)
+    var sigs = gig.signatures(state);   // v0.9: once per gig (live.sigDone survives a save between songs; perSong: cur.sigDone)
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
     var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
     var soloLift = (GG.content.economy.shop && GG.content.economy.shop.soloCrowd) || 3;
@@ -24433,10 +24486,10 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (S.combo % cfg.comboStep === 0) crowdAdd(cfg.comboBonus);
       var cm = MT.combo || 'mosh';   // v0.9: the genre's combo moment (metal: mosh)
       if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready(cm, t)) moment(cm, t);
-      for (var si = 0; si < sigs.length; si++) {   // v0.9: band signatures (Marcel's cape spin, Rox's stage dive, ...), once per gig
-        var sg = sigs[si], done = live.sigDone || (live.sigDone = {});
-        if (done[sg.id] || S.combo < (sg.action === 'capeSpin' ? cfg.capeCombo : sg.combo)) continue;
-        done[sg.id] = true; if (sg.action === 'capeSpin') cur.capeDone = true;
+      for (var si = 0; si < sigs.length; si++) {   // v0.9: band signatures (Rox's stage dive, ...), once per gig; perSong (Marcel's cape) once per song
+        var sg = sigs[si], done = live.sigDone || (live.sigDone = {}), sd = cur.sigDone || (cur.sigDone = {});
+        if ((sg.perSong ? sd[sg.id] : done[sg.id]) || S.combo < (sg.action === 'capeSpin' ? cfg.capeCombo : sg.combo)) continue;
+        done[sg.id] = true; sd[sg.id] = true; if (sg.action === 'capeSpin') cur.capeDone = true;
         crowdAdd(sg.action === 'capeSpin' ? cfg.capeCrowd : sg.crowd); moment(sg.action, t); band(sg.id, sg.action);
       }
     }
@@ -26217,6 +26270,10 @@ html.gg-calm .cold-fx { animation: none !important; }
     if (!a || !t) return false;
     a.title = t; a.titleEn = L.titleEn(state, t); return true;
   };
+  // v0.9: the Maple 100's filler titles (content albumWords.chartFiller: no band in-jokes; the genre pools carry the packs' own).
+  var FALLBACK_CHART = { forms: ['{adj} {noun}', '{noun} Song', 'Love on {place}'], adj: ['Northern', 'Lonely', 'Electric', 'Midnight'],
+    noun: ['Heart', 'Highway', 'Radio', 'Sky', 'River'], place: ['the Lake', 'the Coast', 'the Ferry'] };
+  function chartWords() { var W = GG.content.albumWords || {}; return W.chartFiller || FALLBACK_CHART; }
   function wordsFor(genre) {
     var W = GG.content.albumWords || {}, T = W.titles || null, g = T && (T[genre] || T.metal);
     return g || FALLBACK_WORDS[genre] || FALLBACK_WORDS.metal;
@@ -26473,8 +26530,9 @@ html.gg-calm .cold-fx { animation: none !important; }
   L.chartView = function (state, albumId) {
     var a = albumId ? L.album(state, albumId) : L.released(state).slice(-1)[0], c = a && a.chart || {};
     var week = c.week || state.totalWeek, pos = c.pos || null, rows = [];
-    var artists = (GG.content.headliners || []).map(function (h) { return h.name; }).concat(FALLBACK_OTHERS, [rivalName(state)])
-      .filter(function (x, i, l) { return l.indexOf(x) === i; });
+    // v0.9: the rival is not in the filler artists (its own record charts through GG.rival.chartEntry, the rc row)
+    var rv = rivalName(state), artists = (GG.content.headliners || []).map(function (h) { return h.name; }).concat(FALLBACK_OTHERS)
+      .filter(function (x, i, l) { return l.indexOf(x) === i && x !== rv; });
     var want = {}, rc = GG.rival && state.rival ? GG.rival.chartEntry(state, week) : null;   // v0.6: the rival's record charts too
     if (rc && rc.pos === pos) rc = null;
     for (var i = 1; i <= 10; i++) want[i] = true;
@@ -26487,7 +26545,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       }
       if (rc && p === rc.pos) { rows.push({ pos: p, title: rc.title, artist: rc.artist, move: rc.move, weeks: rc.weeks, you: false, rival: true }); return; }
       var r = GG.RNG(GG.hashSeed(state.seed + '|chart|' + week + '|' + p));
-      var w = wordsFor(r.pick(C.GENRES)), form = r.pick(w.forms || w.patterns || ['{adj} {noun}']);
+      var w = chartWords(), form = r.pick(w.forms || w.patterns || ['{adj} {noun}']);
       var title = String(form).replace(/\{(\w+?)2?\}/g, function (all, slot) { var pl = w[slot]; return pl && pl.length ? r.pick(pl) : slot; });
       rows.push({ pos: p, title: title, artist: r.pick(artists), move: r.chance(0.15) ? 'new' : r.int(-6, 6), weeks: r.int(1, 30), you: false });
     });
@@ -27619,6 +27677,12 @@ html.gg-calm .cold-fx { animation: none !important; }
     if (!c || (c.gate && c.gate.band && c.gate.band.indexOf(s.bandId) < 0)) return null;
     return !GG.career.cardOk || GG.career.cardOk(s, c) ? c : null;
   }
+  // v0.9: the week the homesick card was last dealt, under the base id or the band's variant (queuedCard deals
+  // wt_homesick_<bandId> when it exists, and startWeek records seenCards under the id it dealt). -1e9 = never.
+  function homesickSeen(s) {
+    var a = s.seenCards.wt_homesick, b = s.seenCards['wt_homesick_' + s.bandId];
+    return Math.max(a == null ? -1e9 : a, b == null ? -1e9 : b);
+  }
   // Content text: a pool path over GG.content.world (+ byBand); string or [strings] (seeded pick).
   function pickText(s, rng, path, fallback) {
     var v = GG.career.pool ? GG.career.pool(s, K(), path) : null;
@@ -27777,7 +27841,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (t.homesick >= H.burnoutAt) fx(s, { burnout: H.burnout });
       callHome(s, R, t.homesick >= 60 ? 2 : 1);
       if (t.homesick >= H.cardAt && !t.queue.some(function (q) { return q.card === 'wt_homesick'; }) && idxOf(s, a) < a.stops.length - 1
-        && (s.seenCards.wt_homesick == null || s.totalWeek - s.seenCards.wt_homesick >= 12)) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
+        && s.totalWeek - homesickSeen(s) >= 12) { t.queue.unshift({ card: 'wt_homesick', now: true, region: a.region }); GG.emit('tour:homesick', { value: t.homesick }); }
       var i = idxOf(s, a);
       if (i >= a.stops.length - 1 || (a.endAfter != null && i >= a.endAfter)) finish(s, out);
     } else t.homesick = U.clamp(t.homesick + H.home, 0, H.max);
@@ -27896,21 +27960,44 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
 
   /* ---- Bots (botTour) ------------------------------------------------------------------------------------------------- */
+  // The bot's choices for a package (hostel + publicist + the comfiest vehicle when the good bot is rich).
+  function botChoices(s, style, region) {
+    var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
+    if (style === 'good' && rich) ch.vehicle = T.vehicles(region).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+    return ch;
+  }
+  // v0.9: a story payoff package (owner Q3: needs met, never fired) leaves in a ~2-week window a year, so a bot books it the
+  // way a player who has waited for it would: no gap since the last tour, a small cushion (bot.payoffCushion), and only a
+  // really fried band (bot.payoffBurnout) stays home. Hail Damage's Moose Opera counts too once its album is ready.
+  function botPayoff(s, style, B) {
+    if (s.burnout >= (B.payoffBurnout != null ? B.payoffBurnout : 80)) return null;
+    var cushion = B.payoffCushion != null ? B.payoffCushion : 500, pick = null;
+    REGION_IDS.forEach(function (id) {
+      if (pick || !T.unlocked(s, id)) return;
+      K().packages.forEach(function (p) {
+        if (pick || p.region !== id || !p.needs) return;
+        var ch = botChoices(s, style, id), c = T.canBook(s, p.id, ch);
+        if (c.ok && s.fund >= c.quote.total + cushion) pick = { id: p.id, ch: ch };
+      });
+    });
+    return pick;
+  }
   T.botWeek = function (s, style) {
     if (s.era !== 'world' || s.ended) return null;
     var t = T.ensure(s), B = cfg().bot;
     if (t.active) return null;
-    var last = t.history[t.history.length - 1];
-    if (last && s.totalWeek - last.end < B.gap) return null;
     var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
     if (fin && s.year === fin.year && s.week >= fin.week - 8 && s.week <= fin.week) return null;   // bots stay home to prepare for the Sad Dome
+    var pay = botPayoff(s, style, B);
+    if (pay) { var tp = T.book(s, pay.id, pay.ch); if (tp && !tp.error) return tp; }
+    var last = t.history[t.history.length - 1];
+    if (last && s.totalWeek - last.end < B.gap) return null;
     if (s.burnout >= 60 || (style !== 'good' && !seeded(s, 'bot').chance(B.avgChance))) return null;   // tired bands stay home
     var cushion = style === 'good' ? B.goodCushion : B.avgCushion, best = null, bestV = -Infinity;
     REGION_IDS.forEach(function (id) {
       if (!T.unlocked(s, id)) return;
       K().packages.filter(function (p) { return p.region === id; }).forEach(function (p) {
-        var rich = s.fund > 15000, ch = { stay: style === 'good' ? 'hostel' : 'couch', extra: style === 'good' && rich ? 'publicist' : 'none' };
-        if (style === 'good' && rich) ch.vehicle = T.vehicles(id).sort(function (a, b) { return b.comfort - a.comfort; })[0].id;
+        var ch = botChoices(s, style, id);
         var c = T.canBook(s, p.id, ch);
         if (!c.ok || s.fund < c.quote.total + cushion) return;
         var q = c.quote, v = q.fansEst * 2.2 + q.payEst * 0.55 - q.total + (p.festival ? 1500 : 0) + (p.needs ? 3000 : 0);   // v0.9: any payoff package
@@ -33712,11 +33799,13 @@ html.gg-calm .cold-fx { animation: none !important; }
       (amp || into).connect(bp);
     });
     if (art) articulate(bank, amp, art, t, sc);
-    var vib = V.yodel ? null : vp.vib && vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : V.vib ? [5.2, V.vib] : null;
+    // v0.9: the profile decides: yodel false = no flip (Brayden), an explicit zero-depth vib = dead-flat pitch (no type vibrato)
+    var yod = V.yodel && vp.yodel !== false;
+    var vib = yod ? null : vp.vib ? (vp.vib[1] ? [vp.vib[0], Math.max(vp.vib[1], V.vib || 0)] : null) : V.vib ? [5.2, V.vib] : null;
     fs.forEach(function (fg, g) {
       var o = c.createOscillator();
       o.type = 'sawtooth'; if (g) o.detune.value = 14;
-      if (V.yodel) {   // "yee" up to the fourth, "haw" down past the root
+      if (yod) {   // "yee" up to the fourth, "haw" down past the root
         o.frequency.setValueAtTime(fg, t);
         o.frequency.exponentialRampToValueAtTime(fg * 1.335, t + dur * 0.3);
         o.frequency.exponentialRampToValueAtTime(fg * 0.84, t + dur);
@@ -33873,6 +33962,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   function riffFor(B, sec) { var list = B.riffs || [[0]]; return list[GG.hashSeed('riff|' + (sec[0] || '')) % list.length]; }
   var HIT = 120;   // 'x'
   // Nearest note of the key's scale (ties go down): sung and shouted hits always fit the song.
+  var MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
   function inKey(midi, tonic, scale) {
     if (!scale || !scale.length) return midi;
     for (var d = 0; d < 12; d++) {
@@ -34149,7 +34239,9 @@ html.gg-calm .cold-fx { animation: none !important; }
     // The fiddle takes the fills (phrase ends, every other chorus bar) and the outro; Earl's Tele takes the solo.
     country: function (o, w) {
       var i, full = o.role !== 'sparse', sc = o.B.scale || [0, 2, 4, 7, 9], train = o.style === 'train';
-      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, o.root + [0, 4, 7, 9][k]); });   // walking
+      // walking (root, 3rd, 5th, 6th), snapped to the full major scale (not o.B.scale: that's the pentatonic) so the bridge's vi / ii
+      // walk their own minor third instead of a G#/C# under a G-major song; ties go down
+      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, inKey(o.root + [0, 4, 7, 9][k], o.key, MAJOR_SCALE)); });
       else { w.bass(0, 4); w.bass(8, 4, o.root + 7); }                   // boom on 1 and 3: root, fifth
       (train ? (full ? [2, 6, 10, 14] : [4, 12]) : full ? [4, 6, 12, 14] : [4, 12]).forEach(function (s) {
         w.note('clean', s, 1.5, o.root + 12, { strum: full ? [0, 4, 7] : [0, 7], up: s % 4 === 2 });
@@ -34228,7 +34320,10 @@ html.gg-calm .cold-fx { animation: none !important; }
   // answers (resp; the crowd joins in when hot) and, from the second chorus, whoa-ohs with a harmony; in a breakdown the
   // drop and the growls. Metal slots resolve to this song's scream types; every hit shouts the song's next word.
   function sing(S, V, o, w, e, nth, name, role, brk, key, lastChorus) {
-    if (S.whole && e === 0 && o.bar === 0 && V.count) w.vox(0, V.count[0], key.tonic + V.count[1], false, { word: S.rng.pick(S.count.length ? S.count : ['HEY']), count: true });
+    // (a song that opens on a chorus with a downbeat call, e.g. the rival's ~5 s snippets in 59d: that call is the opener, no
+    // count-in yell on top of it from the same singer)
+    var opener = name === 'chorus' && (V.hits || []).some(function (h) { return h[0] === 0 && h[1] === 0; });
+    if (S.whole && e === 0 && o.bar === 0 && V.count && !opener) w.vox(0, V.count[0], key.tonic + V.count[1], false, { word: S.rng.pick(S.count.length ? S.count : ['HEY']), count: true });
     if (name === 'chorus') {
       var hold = V.held && (nth % 2 === 1 || lastChorus) ? V.held : null, hits = (V.hits || []).filter(function (h) { return !(hold && hold[0] === h[0] && hold[1] === h[1]); });   // the held note takes its slot
       if (o.bar === 0 || !S.line) { S.line = S.chorus(hits.length + (hold ? 1 : 0)); S.li = 0; }
@@ -40182,36 +40277,120 @@ html.gg-calm .cold-fx { animation: none !important; }
         var nx = Math.round(w / 0.1), ny = Math.round(h / 0.1);
         for (var i = 0; i < nx; i++) for (var j = 0; j < ny; j++) if ((i + j) % 2 === 0) b.box(0.07, 0.07, 0.035, x - w / 2 + 0.05 + i * 0.1, y - h / 2 + 0.05 + j * 0.1, z + 0.02, 0x86727c);
       }
-      function buildUps(list, tier, ri) {
+      // v0.9 (fixer): the tier-0 upgrades look like what each space's shop sold them as (content/shop.js upgrades[].bySpace):
+      // the laundromat's lint bags + pop machine, the strip mall's ceiling foam tiles + salon mini-fridge + neon OPEN sign,
+      // the Quonset's tailgate bench + hay-bale baffles + chest freezer + yard lights. Same spots and footprints as the
+      // parents' garage versions (the couch and the fridge move with the band, so they follow the band's space, not the room).
+      function hayBale(b, w, h, d, x, y, z) {
+        b.box(w, h, d, x, y, z, 0xd2ae4a);
+        b.box(w + 0.012, h + 0.012, 0.025, x, y, z - d * 0.28, 0x8a6a2a); b.box(w + 0.012, h + 0.012, 0.025, x, y, z + d * 0.28, 0x8a6a2a);   // twine
+        b.box(w * 0.3, 0.02, d * 0.4, x - w * 0.18, y + h / 2 + 0.008, z, 0xe6c86a, 0, 0.4, 0);                                          // loose straw
+      }
+      function lintBags(b, w, h, x, y, z) {                                 // clear bags of grey lint, stapled to the blocks
+        var nx = Math.max(1, Math.round(w / 0.24)), ny = Math.max(1, Math.round(h / 0.3)), i, j;
+        for (i = 0; i < nx; i++) for (j = 0; j < ny; j++) {
+          var bx = x - w / 2 + (i + 0.5) * w / nx, by = y - h / 2 + (j + 0.5) * h / ny, sz = 0.9 + ((i * 7 + j * 3) % 5) * 0.03;
+          b.box(w / nx * 0.92 * sz, h / ny * 0.88, 0.06, bx, by, z + 0.03, (i + j) % 2 ? 0x9ea4ae : 0x8c929e);
+          b.box(w / nx * 0.5, 0.02, 0.065, bx, by + h / ny * 0.42, z + 0.035, 0xd8dce2);                                                 // the knotted top
+        }
+      }
+      function balesOnLedge(b, w, x, y, z, rows) {                          // hay-bale baffles: bales stacked on a 2x8 ledge
+        var n = Math.max(1, Math.round(w / 0.42)), i, j;
+        b.box(w + 0.06, 0.04, 0.3, x, y - 0.02, z + 0.15, 0x7a5a3a);
+        for (j = 0; j < rows; j++) for (i = 0; i < n - (j % 2); i++) hayBale(b, w / n * 0.96, 0.26, 0.28, x - w / 2 + (i + 0.5 + (j % 2) * 0.5) * w / n, y + 0.13 + j * 0.27, z + 0.15);
+      }
+      function buildUps(list, tier, ri, kind) {
         var b = new ctx.Builder({ jitter: 0.04, seed: 101 }), g = new ctx.Builder({ jitter: 0, seed: 102 }), i, k, has = function (id) { return list.indexOf(id) >= 0; };
         upObs.length = 0;
+        kind = kind || 'garage';
         if (has('curb_couch')) {                                                            // floral loveseat, from the curb, facing the kit
           b.at(-0.55, 0, 2.42, Math.PI);                                                    // (between the merch + laptop stands: see stand())
-          var FB = 0xb08a3a;
-          b.box(0.7, 0.22, 0.54, 0, 0.26, 0, FB); b.box(0.7, 0.46, 0.14, 0, 0.58, -0.21, sh(FB, 0.92), -0.08);
-          b.box(0.1, 0.32, 0.56, 0.35, 0.44, 0, sh(FB, 0.85)); b.box(0.1, 0.32, 0.56, -0.35, 0.44, 0, sh(FB, 0.85));
-          for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.3 : -0.3), 0.07, (k < 2 ? 0.21 : -0.21), 0x3a2410);
-          for (k = 0; k < 7; k++) b.box(0.06, 0.06, 0.012, -0.24 + (k % 4) * 0.16 + (k > 3 ? 0.08 : 0), 0.46 + (k > 3 ? 0.2 : 0), -0.13, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
-          b.box(0.24, 0.02, 0.18, 0.12, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);               // a stain shaped like Manitoba
+          if (kind === 'quonset') {                                                         // the tailgate bench: a truck seat on two hay bales
+            hayBale(b, 0.36, 0.28, 0.5, -0.19, 0.14, 0); hayBale(b, 0.36, 0.28, 0.5, 0.19, 0.14, 0);
+            b.box(0.76, 0.1, 0.46, 0, 0.33, 0.02, 0x5a3a2a); b.box(0.76, 0.42, 0.11, 0, 0.58, -0.2, 0x4e3224, -0.1);
+            b.box(0.72, 0.012, 0.014, 0, 0.385, 0.25, 0x2a1a10); b.box(0.16, 0.012, 0.1, 0.18, 0.386, 0.06, 0xb9bdc4, 0, 0.3, 0);   // piping, a duct-tape patch
+          } else {
+            var FB = kind === 'laundromat' ? 0xc0642a : kind === 'stripmall' ? 0xd87aa8 : 0xb08a3a;   // orange vinyl / salon pink / floral gold
+            b.box(0.7, 0.22, 0.54, 0, 0.26, 0, FB); b.box(0.7, 0.46, 0.14, 0, 0.58, -0.21, sh(FB, 0.92), -0.08);
+            b.box(0.1, 0.32, 0.56, 0.35, 0.44, 0, sh(FB, 0.85)); b.box(0.1, 0.32, 0.56, -0.35, 0.44, 0, sh(FB, 0.85));
+            for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.3 : -0.3), 0.07, (k < 2 ? 0.21 : -0.21), kind === 'stripmall' ? 0xc0c4ca : 0x3a2410);
+            if (kind === 'laundromat') {                                                    // a dryer sheet and a lost sock on the cushion
+              b.box(0.16, 0.006, 0.12, -0.14, 0.374, 0.05, 0xf2efe6, 0, 0.5, 0); b.box(0.06, 0.03, 0.16, 0.16, 0.385, 0.02, 0x7a9ad8, 0, -0.4, 0);
+            } else if (kind === 'stripmall') {                                              // a waiting-room magazine, two years old
+              b.box(0.18, 0.012, 0.24, 0.12, 0.377, 0.04, 0xe8e0d0, 0, 0.3, 0); b.box(0.18, 0.004, 0.06, 0.12, 0.385, -0.02, 0xd04a7a, 0, 0.3, 0);
+            } else {
+              for (k = 0; k < 7; k++) b.box(0.06, 0.06, 0.012, -0.24 + (k % 4) * 0.16 + (k > 3 ? 0.08 : 0), 0.46 + (k > 3 ? 0.2 : 0), -0.13, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
+              b.box(0.24, 0.02, 0.18, 0.12, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);             // a stain shaped like Manitoba
+            }
+          }
           obs(upObs, -0.55, 2.42, 0.8, 0.58, 0);
         }
         if (has('beer_fridge')) {                                                           // Dad's fridge, plugged into the outlet
           b.at(X1 - 0.25, 0, -0.45, -Math.PI / 2); g.at(X1 - 0.25, 0, -0.45, -Math.PI / 2);
-          b.box(0.5, 0.78, 0.44, 0, 0.4, 0, 0xe6e3da); b.box(0.5, 0.012, 0.012, 0, 0.56, 0.222, 0xa8a49a);
-          b.box(0.03, 0.18, 0.04, 0.2, 0.42, 0.24, 0x9aa0a8);
-          b.box(0.12, 0.08, 0.004, -0.1, 0.66, 0.223, 0xc0392b); b.box(0.08, 0.1, 0.004, 0.08, 0.3, 0.223, 0x2f6fd1, 0, 0, 0.2); b.box(0.1, 0.06, 0.004, -0.12, 0.2, 0.223, 0xe8c531, 0, 0, -0.15);
-          b.box(0.05, 0.02, 0.05, -0.18, 0.02, 0.18, 0x222222); b.box(0.05, 0.02, 0.05, 0.18, 0.02, 0.18, 0x222222);
-          b.cyl(0.03, 0.03, 0.12, 8, -0.12, 0.85, 0, 0x9ad13a); b.cyl(0.03, 0.03, 0.12, 8, 0.02, 0.85, 0.05, 0x7a4a1a);   // cans on top
-          obs(upObs, X1 - 0.25, -0.45, 0.5, 0.44, -Math.PI / 2);
+          if (kind === 'laundromat') {                                                      // the pop machine, out of order since 1994
+            b.box(0.5, 1.5, 0.44, 0, 0.75, 0, 0xb8282a); b.box(0.36, 0.78, 0.01, -0.05, 1.02, 0.222, 0xe8e2d0);
+            for (k = 0; k < 6; k++) b.box(0.07, 0.05, 0.012, 0.18, 1.32 - k * 0.09, 0.226, k % 2 ? 0xf2efe6 : 0x2a2a2e);
+            b.box(0.03, 0.08, 0.012, 0.18, 0.7, 0.226, 0x1a1a1e); b.box(0.3, 0.12, 0.06, -0.04, 0.2, 0.2, 0x1a1a1e);   // coin slot, the chute
+            b.box(0.15, 0.09, 0.004, -0.06, 0.86, 0.229, 0xf6f2e2, 0, 0, 0.12);           // OUT OF ORDER (taped on)
+            g.box(0.38, 0.06, 0.004, -0.04, 1.44, 0.229, 0xff6a5a);
+          } else if (kind === 'stripmall') {                                                // the salon mini-fridge (it hums in E)
+            b.box(0.46, 0.52, 0.42, 0, 0.26, 0, 0xf0eeea); b.box(0.46, 0.012, 0.012, 0, 0.4, 0.212, 0xb0aca4); b.box(0.03, 0.12, 0.04, 0.19, 0.3, 0.22, 0x9aa0a8);
+            b.box(0.04, 0.07, 0.04, -0.12, 0.555, 0.02, 0xe0407a); b.box(0.04, 0.07, 0.04, -0.04, 0.555, -0.04, 0xa01a3a);   // nail polish on top
+            b.box(0.02, 0.04, 0.02, -0.12, 0.61, 0.02, 0x1a1a1e); b.box(0.02, 0.04, 0.02, -0.04, 0.61, -0.04, 0x1a1a1e);
+            b.box(0.12, 0.08, 0.004, 0.02, 0.2, 0.213, 0xff9ac8, 0, 0, 0.15);           // a sticker: a heart
+          } else if (kind === 'quonset') {                                                  // the chest freezer: snacks one side, beef the other
+            b.box(0.7, 0.6, 0.44, 0, 0.3, 0, 0xeceae2); b.box(0.72, 0.05, 0.46, 0, 0.625, 0, 0xf6f4ec);
+            b.box(0.2, 0.03, 0.03, 0, 0.58, 0.235, 0x9aa0a8); b.box(0.7, 0.012, 0.012, 0, 0.6, 0.222, 0xb0aca4);
+            b.box(0.18, 0.06, 0.004, -0.2, 0.42, 0.223, 0xe8dcb0, 0, 0, 0.05); b.box(0.18, 0.06, 0.004, 0.2, 0.42, 0.223, 0xe8dcb0, 0, 0, -0.05);   // two tape labels
+            b.box(0.2, 0.05, 0.14, 0.18, 0.672, 0.02, 0xd8c050, 0, 0.3, 0);               // a bag of chips on the lid
+          } else {
+            b.box(0.5, 0.78, 0.44, 0, 0.4, 0, 0xe6e3da); b.box(0.5, 0.012, 0.012, 0, 0.56, 0.222, 0xa8a49a);
+            b.box(0.03, 0.18, 0.04, 0.2, 0.42, 0.24, 0x9aa0a8);
+            b.box(0.12, 0.08, 0.004, -0.1, 0.66, 0.223, 0xc0392b); b.box(0.08, 0.1, 0.004, 0.08, 0.3, 0.223, 0x2f6fd1, 0, 0, 0.2); b.box(0.1, 0.06, 0.004, -0.12, 0.2, 0.223, 0xe8c531, 0, 0, -0.15);
+            b.box(0.05, 0.02, 0.05, -0.18, 0.02, 0.18, 0x222222); b.box(0.05, 0.02, 0.05, 0.18, 0.02, 0.18, 0x222222);
+            b.cyl(0.03, 0.03, 0.12, 8, -0.12, 0.85, 0, 0x9ad13a); b.cyl(0.03, 0.03, 0.12, 8, 0.02, 0.85, 0.05, 0x7a4a1a);   // cans on top
+          }
+          obs(upObs, X1 - 0.25, -0.45, kind === 'quonset' ? 0.72 : 0.5, 0.46, -Math.PI / 2);
         }
-        if (has('xmas_lights')) {                                                           // up all year, round the whiteboard
+        if (has('xmas_lights') && kind === 'stripmall') {                                   // the neon OPEN sign the last tenant left, in the window
+          b.at(-0.2, 0, Z0, 0); g.at(-0.2, 0, Z0, 0);
+          b.box(0.82, 0.36, 0.03, 0, 1.95, 0.16, 0x141418); b.box(0.008, 0.36, 0.008, -0.36, 2.3, 0.16, 0x9aa0a8); b.box(0.008, 0.36, 0.008, 0.36, 2.3, 0.16, 0x9aa0a8);
+          var NP = 0xff4fb0, NB = 0x40e0ff, NZ = 0.18, NY = 1.95, sw = 0.024;
+          g.box(0.76, sw, 0.01, 0, NY + 0.15, NZ, NB); g.box(0.76, sw, 0.01, 0, NY - 0.15, NZ, NB); g.box(sw, 0.3, 0.01, -0.37, NY, NZ, NB); g.box(sw, 0.3, 0.01, 0.37, NY, NZ, NB);
+          [-0.255, -0.085, 0.085, 0.255].forEach(function (lx, li) {                         // O P E N
+            var L = lx - 0.055, R = lx + 0.055, T = NY + 0.085, B2 = NY - 0.085;
+            g.box(sw, 0.17, 0.01, L, NY, NZ, NP);
+            if (li === 0) { g.box(sw, 0.17, 0.01, R, NY, NZ, NP); g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.11, sw, 0.01, lx, B2, NZ, NP); }
+            if (li === 1) { g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.11, sw, 0.01, lx, NY, NZ, NP); g.box(sw, 0.085, 0.01, R, NY + 0.042, NZ, NP); }
+            if (li === 2) { g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.09, sw, 0.01, lx - 0.01, NY, NZ, NP); g.box(0.11, sw, 0.01, lx, B2, NZ, NP); }
+            if (li === 3) { g.box(sw, 0.17, 0.01, R, NY, NZ, NP); g.box(sw, 0.2, 0.01, lx, NY, NZ, NP, 0, 0, 0.58); }
+          });
+        } else if (has('xmas_lights') && kind === 'quonset') {                              // two farm yard lights bolted to the arch
+          [-1.7, 1.3].forEach(function (lz) {
+            b.at(X1, 0, lz, -Math.PI / 2); g.at(X1, 0, lz, -Math.PI / 2);
+            b.box(0.12, 0.12, 0.03, 0, 2.38, 0.015, 0x4a4e54); b.box(0.04, 0.04, 0.42, 0, 2.38, 0.22, 0x5a5e64);
+            b.cyl(0.08, 0.17, 0.11, 10, 0, 2.33, 0.44, 0x6a7a6e); g.cyl(0.075, 0.075, 0.02, 10, 0, 2.27, 0.44, 0xfff1c0);
+            for (k = 0; k < 3; k++) b.box(0.03, 0.006, 0.022, -0.1 + k * 0.1, 2.12 - (k % 2) * 0.08, 0.36 + k * 0.05, 0x8a7a60, 0, k * 0.9, 0);   // the moths
+          });
+        } else if (has('xmas_lights')) {                                                    // up all year, round the whiteboard (the laundromat's too)
           b.at(X1, 0, PROPS.board.z, -Math.PI / 2); g.at(X1, 0, PROPS.board.z, -Math.PI / 2);
           var XC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xff66dd], n = 0;
           for (k = 0; k <= 16; k++) { var u = -0.84 + k * 0.105, sag = 0.04 * Math.sin((k % 4) / 4 * Math.PI); g.box(0.04, 0.055, 0.04, u, 1.96 - sag, 0.06, XC[n++ % 5]); }
           for (k = 1; k <= 8; k++) { g.box(0.04, 0.055, 0.04, -0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); g.box(0.04, 0.055, 0.04, 0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); }
           b.box(1.72, 0.008, 0.008, 0, 1.95, 0.06, 0x1a3a1a);
         }
-        if (has('egg_foam')) {                                                              // stapled to every wall
+        if (has('egg_foam') && kind === 'stripmall' && ri === 5) {                          // foam tiles in Unit 4B's drop ceiling (stripMallRoom's CY strip)
+          var FT = 0x4a4c56, FU = 0x5e606c, CY2 = 2.658;
+          b.at(0, 0, 0, 0);
+          for (i = 0; i < 8; i++) { b.box(0.56, 0.016, 0.46, -2.0 + i * 0.6, CY2, Z0 + 0.25, FT); for (k = 0; k < 4; k++) b.box(0.1, 0.035, 0.1, -2.12 + i * 0.6 + (k % 2) * 0.24, CY2 + 0.02, Z0 + 0.15 + (k > 1 ? 0.2 : 0), FU); }
+          for (i = 0; i < 9; i++) { b.box(0.46, 0.016, 0.56, X1 - 0.25, CY2, -2.1 + i * 0.6, FT); for (k = 0; k < 4; k++) b.box(0.1, 0.035, 0.1, X1 - 0.35 + (k % 2) * 0.2, CY2 + 0.02, -2.22 + i * 0.6 + (k > 1 ? 0.24 : 0), FU); }
+        } else if (has('egg_foam') && kind === 'laundromat') {                              // dryer-lint insulation: bags of it, stapled up
+          b.at(0, 0, Z0, 0); lintBags(b, 1.0, 0.9, -0.45, 1.72, 0.07);
+          b.at(X1, 0, 0, -Math.PI / 2); lintBags(b, 0.4, 1.3, 2.42, 1.65, 0.03);
+        } else if (has('egg_foam') && kind === 'quonset') {                                 // hay-bale baffles along the steel walls
+          b.at(0, 0, Z0, 0); balesOnLedge(b, 1.1, -0.45, 1.3, 0.04, 2);
+          b.at(X1, 0, 0, -Math.PI / 2); balesOnLedge(b, 0.84, 2.3, 1.5, 0.0, 2);
+        } else if (has('egg_foam')) {                                                       // stapled to every wall
           // (Unit 4B's back wall is the shop window left of x 1.52: its patch goes on the bit of drywall right of the door)
           b.at(0, 0, Z0, 0); if (ri === 5) eggFoam(b, 0.6, 0.9, 1.91, 1.72, 0.07); else eggFoam(b, 1.0, 0.9, -0.45, 1.72, 0.07);
           b.at(X1, 0, 0, -Math.PI / 2); eggFoam(b, 0.4, 1.3, 2.42, 1.65, 0.03);
@@ -40407,8 +40586,8 @@ html.gg-calm .cold-fx { animation: none !important; }
           cur.room = roomSig; cur.tier = tier; cur.ri = ri; cur.green = green; cur.city = city;
           buildRoom(ri, green, band, catering, D); hideGarage(ri, band);
         }
-        var upSig = tier + '|' + ri + '|' + list.join(',');
-        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier, ri); }
+        var upKind = spaceKindOf(band), upSig = tier + '|' + ri + '|' + upKind + '|' + list.join(',');   // v0.9: the band's own space's upgrade art
+        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier, ri, upKind); }
         var p = st && GG.shop && GG.shop.pile && st.merch ? GG.shop.pile(st) : { boxes: 0, items: [] };
         var mis = (p.items || []).some(function (x) { return x.misprint; }), shown = Math.min(p.boxes, PILE_MAX + 1);
         var pileSig = shown + '|' + mis;
@@ -43157,6 +43336,8 @@ html.gg-calm .cold-fx { animation: none !important; }
       }
       if (!VT || VT.bench) b.box(0.26, 0.2, 0.2, 0.02, 0.56, 0.74, 0xc8a870, 0, 0.2, 0);                                // one merch box rides on the bench
       if (!VT && !D.look) {                                                                     // v0.8 SPACES review: somebody's backpack on the floor
+        var bench = !!(T0 && T0.bobble === 'cow');   // v0.9: Grandpa's Suburban's front bench fills the middle; no backpack poking through it
+        if (!bench) {
         b.push(0.04, 0.45, -0.24, -0.3, 0.25, 0);                                             // (slumped on the console lid, between the seats)
         b.box(0.22, 0.26, 0.13, 0, 0.13, 0, 0x2a3c5e); b.box(0.18, 0.11, 0.045, 0, 0.08, 0.08, 0x22314e);
         b.box(0.2, 0.01, 0.01, 0, 0.245, 0.067, 0xb8bcc2); b.box(0.14, 0.008, 0.01, 0, 0.135, 0.104, 0xb8bcc2);          // zips
@@ -43164,6 +43345,7 @@ html.gg-calm .cold-fx { animation: none !important; }
         b.box(0.035, 0.2, 0.02, -0.07, 0.14, -0.075, 0x1a2436, 0.2); b.box(0.035, 0.2, 0.02, 0.07, 0.14, -0.075, 0x1a2436, 0.2);   // straps
         b.box(0.07, 0.02, 0.035, 0, 0.27, -0.015, 0x1a2436);
         b.pop();
+        }
         b.box(0.16, 0.2, 0.05, -0.2, 0.62, 0.55, 0xd8302a, -0.3, 0.4, 0); b.box(0.08, 0.04, 0.052, -0.2, 0.65, 0.55, 0xf2d15b, -0.3, 0.4, 0);   // ketchup chips on the bench
       }
       if (D.look === 'sardine') {                                   // v0.7: the tiny European van: gear to the roof, laps full
@@ -49535,10 +49717,12 @@ html.gg-calm .cold-fx { animation: none !important; }
     return el('div.gb-rings', orderedRings(st).map(function (r) {
       var open = ringOpen(st, r.id), n = list.filter(function (l) { return W().ring(l.city) === r.id; }).length;
       return btn('.gb-ring' + (r.id === cur ? '.sel' : '') + (open ? '' : '.locked'), { testid: 'ring-' + r.id, 'aria-pressed': r.id === cur ? 'true' : 'false', data: { home: r.id === h ? '1' : '' }, onclick: function () { onRing(r.id); } },
-        [(open ? '' : '🔒 ') + (r.id === h ? '🏠 ' : '') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[(r.eraBy && r.eraBy[h]) || r.era] || r.era)]);
+        [(open ? '' : '🔒 ') + (r.id === h ? '🏠 ' : '') + (r.short || r.name), el('small', open ? (n ? n + ' gig' + (n === 1 ? '' : 's') : 'no gigs') : ERA_NAME[ringEraOf(st, r)] || r.era)]);
     }));
   }
   var ERA_NAME = { garage: 'Garage', local: 'Local Heroes', signed: 'Signed', world: 'World Stage' };
+  // v0.9: the era a ring opens in for THIS band (world.ringEra: Q1a, Gravel Kings' Sask + West open at Local Heroes).
+  function ringEraOf(st, r) { try { if (W().ringEra) return W().ringEra(st, r.id) || r.era; } catch (e) { /* older sim */ } return r.era; }
   function calLine(st) {
     if (!GG.calendar) return null;
     var L = GG.calendar.label(st);
@@ -49662,7 +49846,7 @@ html.gg-calm .cold-fx { animation: none !important; }
 //     (screen 'road', resolved with GG.world.resolveRoad like a Monday card), 1–2 banter bubbles, an arrival line,
 //     then done(trip). The scene is set back to 'garage' before done (the caller may switch to 'stage').
 //   GG.ui.showVan(tab): screen 'van-info' (the garage door; v0.8 tabs van | space | dealer): the van (condition, merch space in
-//     boxes, comfort, km; Cousin Dale's repair) + the v0.8 shop panels from 5k_ui_shop (van side + stickers, rename, upgrades;
+//     boxes, comfort, km; the repair: ui.mechanic(st), Cousin Dale for Hail Damage) + the v0.8 shop panels from 5k_ui_shop (van side + stickers, rename, upgrades;
 //     rehearsal spaces + upgrades; the car lot).
 // v0.6.1 (Addendum 1 C1/C7): the trip passes weather, temp, holiday, driver + dashboard item to the 3D scene
 //   (setTrip { weather, driver, dashboard }); the route header shows the weather (van-weather); the 2D windshield draws
@@ -50005,10 +50189,24 @@ html.gg-calm .cold-fx { animation: none !important; }
   });
 
   /* ---- The garage door: the van, the rehearsal space, the car lot (v0.8 tabs) ---------------------------------- */
-  // v0.8 (SHOPUI): tabs Van (the van-side view with its venue stickers, rename, driver, condition + Cousin Dale's repair,
+  // v0.8 (SHOPUI): tabs Van (the van-side view with its venue stickers, rename, driver, condition + the repair (ui.mechanic),
   // merch space in boxes, van upgrades) · Space (GG.ui.spacePanel: rooms around town + move, this room's upgrades) ·
   // Car lot (GG.ui.dealerPanel: bigger vehicles, quote + trade-in). Panels live in 5k_ui_shop.js.
   var DOOR_TABS = [{ id: 'van', label: '🚐 Van' }, { id: 'space', label: '🏠 Space' }, { id: 'dealer', label: '🔑 Car lot' }];
+  // v0.9: who fixes the van. Cousin Dale is Hail Damage's (npcs.js, band: HD); the other bands get a garage in their own
+  // city. A driver with mods.repair 0 (Moth) does the work herself, free, and gets the credit.
+  var MECHANIC = {
+    Regina: { shop: 'Pothole Pete\'s Auto & Lube', who: 'Pete', fixed: 'Pothole Pete fixed "most of it", then pointed at the pothole that did it.' },
+    Edmonton: { shop: 'Whyte Knuckle Auto', who: 'Marv', fixed: 'Marv at Whyte Knuckle Auto fixed "most of it". He kept the hubcap as a tip.' },
+    'Swift Current': { shop: 'Harv\'s Hitch & Hose', who: 'Harv', fixed: 'Harv fixed "most of it" with baler twine and a strong opinion.' }
+  };
+  ui.mechanic = function (st) {
+    var rp = GG.world && GG.world.driverMods ? GG.world.driverMods(st).repair : 1, dr = ui.driverOf(st);
+    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot. No charge, some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
+    if (st && st.bandId === 'hail_damage') return { who: 'Dale', shop: 'Cousin Dale\'s Garage', fixed: 'Cousin Dale fixed "most of it".', none: 'Nothing to fix. Dale is disappointed.' };
+    var m = (st && MECHANIC[st.city]) || { shop: 'The garage down the road', who: 'Mechanic', fixed: 'The garage down the road fixed "most of it".' };
+    return Object.assign({ none: 'Nothing to fix. ' + m.who + ' is disappointed.' }, m);
+  };
   ui.define('van-info', {
     kind: 'sheet', tall: true, cls: 'shop',
     title: function () { var st = S(); return (st && st.van && st.van.name) || 'The van'; },
@@ -50021,7 +50219,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       if (shop) s.body.appendChild(el('div.shop-tabs', ui.tabs(DOOR_TABS, tab, function (id) { rerender({ tab: id }); s.body.scrollTop = 0; }, 'door-tab-')));
       if (shop && tab === 'space') { s.body.appendChild(ui.spacePanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
       if (shop && tab === 'dealer') { s.body.appendChild(ui.dealerPanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
-      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {};
+      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {}, mech = ui.mechanic(st);
       var own = dr.designated && D[dr.designated] ? D[dr.designated].name || ui.who(dr.designated).short : null, ownSilent = own && ui.isSilent(dr.designated, st);
       // v0.9: when you drive, the band's own driver's dash item stays (the same rule as the trip's dashOf)
       var ownDash = dr.you && dr.designated && D[dr.designated] && D[dr.designated].dashboard && D[dr.designated].dashboard !== 'none' ? D[dr.designated].dashName : null;
@@ -50059,10 +50257,10 @@ html.gg-calm .cold-fx { animation: none !important; }
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'van-repair', disabled: !q.gain || st.fund < q.cost, onclick: function () {
         var r = W.repairVan(S());
         if (!r) return;
-        sfx('cash'); ui.toast('Cousin Dale fixed "most of it". +' + r.gain + ' condition for ' + U.fmtMoney(r.cost) + '.', { who: 'Dale' });
+        sfx('cash'); ui.toast(mech.fixed + ' +' + r.gain + ' condition' + (r.cost ? ' for ' + U.fmtMoney(r.cost) : ', free') + '.', { who: mech.who });
         if (GG.main && GG.main.sync) GG.main.sync();
         s.rerender();
-      } }, q.gain ? "Cousin Dale's Garage: +" + q.gain + ' for ' + U.fmtMoney(q.cost) : 'Nothing to fix. Dale is disappointed.'));
+      } }, !q.gain ? mech.none : mech.self ? mech.who + ' does the maintenance: +' + q.gain + ' (free)' : mech.shop + ': +' + q.gain + ' for ' + U.fmtMoney(q.cost)));
     }
   });
   ui.showVan = function (tab) { return S() && GG.world ? ui.show('van-info', { tab: typeof tab === 'string' ? tab : 'van' }) : null; };
@@ -52183,7 +52381,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   ui.rivalCardNote = function (st, card) {
     if (!card || !/^rv_/.test(card.id || '') || !on(st)) return null;
     var R = RV(), r = R.record(st), kids = [face('sm'), el('div.grow', [el('b', R.name(st)), el('div.tiny.dim', 'Heat ' + Math.round(R.heat(st)) + ' · you ' + r.you + ' · them ' + r.them)])];
-    if (card.id === 'rv_poach' && st.card && st.card.who) {
+    if (/^rv_poach(_|$)/.test(card.id) && st.card && st.card.who) {   // v0.9: every rival deals its own rv_poach_<id> variant
       var m = (st.members || []).filter(function (x) { return x.id === st.card.who; })[0];
       if (m) kids.push(el('div.rv-mood', [el('span.tiny.dim', ui.who(m.id).short + "'s mood"), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) })]));
     }
@@ -52229,6 +52427,10 @@ html.gg-calm .cold-fx { animation: none !important; }
     try {
       var p = GG.songs.generate(V.genre || 'metal', GG.RNG(GG.hashSeed(song.title + '|' + i)), {});   // v0.9: the rival's genre
       if (p) p.bpm = U.clamp(song.bpm || p.bpm, 60, 240);
+      // v0.9: each song is a ~5 s snippet, and every arrangement opens with a verse (no vocals): start at the first chorus so the
+      // rival's singer (voice profile, own words) is heard. The audio and their stage drummer both read p.arrangement.
+      var c = p && p.arrangement ? p.arrangement.indexOf('chorus') : -1;
+      if (c > 0) p.arrangement = p.arrangement.slice(c).concat(p.arrangement.slice(0, c));
       return p;
     } catch (e) { return null; }
   }
@@ -52287,6 +52489,7 @@ html.gg-calm .cold-fx { animation: none !important; }
       var ao = { genre: V.genre, loop: true, singer: V.singer, rival: V.rid, band: V.rid };
       if (V.style) ao.style = V.style;
       if (V.soloist !== undefined) ao.soloist = V.soloist;
+      V.ao = ao;
       try { V.handle = GG.audio.play(V.pattern, ao); } catch (e) { V.handle = null; }
     }
     var st = S(), pool = banterPool(st, i === 0 ? (V.kind === 'final' ? 'final' : 'open') : 'mid');
@@ -52306,7 +52509,7 @@ html.gg-calm .cold-fx { animation: none !important; }
         var spb = 60 / (V.pattern.bpm || 180), step = Math.floor(V.songT / 1000 / (spb / 4)), arr = V.pattern.arrangement || ['verse'];
         if (step !== V.step) {
           V.step = step;
-          var sec = V.pattern.sections[arr[Math.floor(step / 16) % arr.length]] || [], s16 = step % 16;
+          var sec = V.pattern.sections[arr[Math.floor(step / (16 * C.BARS_PER_SECTION)) % arr.length]] || [], s16 = step % 16;   // each entry plays 4 bars (like the audio)
           for (var l = 0; l < sec.length; l++) if (sec[l] && sec[l][s16] === 'x') api.hit(l, 'perfect');
         }
       }
@@ -52483,8 +52686,19 @@ html.gg-calm .cold-fx { animation: none !important; }
       el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
   };
 
+  // (snippet: this song's opening entry + how many of the singer's / band's sung hits land inside a real 5.2 s snippet, not
+  // counting the count-in yell; computed only when the debug is read)
+  function snippet() {
+    if (!V || !V.pattern || !GG.audio || !GG.audio.timeline) return null;
+    try {
+      var t = GG.audio.timeline(V.pattern, V.ao || { genre: V.genre }), spb = 60 / t.bpm;
+      var sung = t.events.filter(function (e) { return (e.kind === 'vox' || e.kind === 'bvox') && !e.count && e.beat * spb < 5.2; });
+      return { first: V.pattern.arrangement[0], sung: sung.length, singer: sung.filter(function (e) { return e.kind === 'vox'; }).length, voice: t.voice || null };
+    } catch (e) { return null; }
+  }
   GG.registerDebug('rivalui', function () {
-    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, moment: V ? V.moment || null : null, announced: Object.keys(announced) };
+    return { views: views(), watching: !!V, song: V ? V.i : -1, ended: V ? V.ended : null, stage: V ? V.stage : null, clock: V ? V.t : null, moment: V ? V.moment || null : null, announced: Object.keys(announced),
+      snippet: snippet() };
   });
 })(window.GG);
 
@@ -52617,7 +52831,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   function happyLabel(h) { return h >= 80 ? 'Thrilled' : h >= 60 ? 'Content' : h >= 40 ? 'Restless' : h >= 25 ? 'Grumbling' : 'Cancelling'; }
   function tierRow(t, open) {
     return el('div.bb-tier' + (open && !t.unlocked ? '.off' : ''), { testid: 'bb-tier-' + t.id }, [el('div.ic', t.icon || '🥁'),
-      el('div.grow', [el('b', t.name), el('span', t.perk)]),
+      el('div.grow', [el('b', t.name), el('span', GG.state ? ui.fill(t.perk, GG.state) : t.perk)]),   // v0.9: perks carry {space}
       el('div.price', ['$' + t.price + '/mo', el('small', !open ? (t.minMembers ? 'opens at ' + t.minMembers : '') : t.unlocked ? t.members + (t.dale ? ' (incl. ' + ui.superfan() + ')' : '') + ' members'
         : t.dale ? ui.superfan() + ' (not open yet; pays anyway)' : 'opens at ' + t.minMembers + ' members')])]);
   }
@@ -54028,6 +54242,10 @@ html.gg-calm .cold-fx { animation: none !important; }
   // The drum shop's street, the printer's town and the tier-0 room's benefactor follow the band's city / space.
   var STREET = { Saskatoon: '8TH STREET', Regina: 'DEWDNEY AVENUE', Edmonton: 'WHYTE AVENUE', 'Swift Current': 'CENTRAL AVENUE' };
   var PRINTER = { Saskatoon: 'Martensville', Regina: 'White City', Edmonton: 'St. Albert', 'Swift Current': 'Gull Lake' };
+  // The car lot: Cousin Dale's (npcs.js, band: HD) for Hail Damage; the other bands buy from a lot in their own city.
+  var DEALER = { Saskatoon: 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11', Regina: 'Prairie Lemon Motors, out on the Ring Road',
+    Edmonton: 'Henday Hank\'s Wheel Deals, just off the Henday', 'Swift Current': 'Gully\'s Used Trucks & Grain Augers, Hwy 1' };
+  function dealer(st) { return st.bandId === 'hail_damage' ? DEALER.Saskatoon : (st.city !== 'Saskatoon' && DEALER[st.city]) || 'The used-car lot by the highway'; }
   var BENEFACTOR = { garage: 'Free (thanks, Mom)', laundromat: 'Free (the Suds-O-Rama likes the noise)', stripmall: 'Free (the landlord forgot about it)', quonset: 'Free (thanks, uncle)' };
   function street(st) { return STREET[st.city] || String(st.city || 'MAIN STREET').toUpperCase(); }
   // Q7: rented rooms keep their geometry but get a local name + blurb per home city (content spaces[tier].byCity[city]).
@@ -54386,7 +54604,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   };
   ui.dealerPanel = function (st, rerender) {
     return el('div.stack', [
-      el('p.small.dim', { style: 'margin:0' }, 'Cousin Dale\'s Pre-Loved Vehicles, Hwy 11. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
+      el('p.small.dim', { style: 'margin:0', testid: 'dealer-intro' }, dealer(st) + '. Your old ride goes in as a trade-in (' + Math.round(((SH().cfg().tradeIn) || 0.3) * 100) + '% of its price × condition).'),
       el('div.stack.tight', SH().vans(st).map(function (v) {
         var q = v.quote || {};
         return el('div.shop-row.dealer' + (v.current ? '.own' : !v.can ? '.locked' : ''), { testid: 'van-tier-' + v.tier }, [
@@ -54432,12 +54650,13 @@ html.gg-calm .cold-fx { animation: none !important; }
       return el('span.chip' + (it.sold >= it.hauled ? '.up' : ''), (def ? def.name : id) + ' ' + it.sold + '/' + it.hauled);
     });
     var dale = (m.named || []).indexOf('dale') >= 0;
+    var hs = dale && GG.fans && GG.fans.homeSuperfan && S() ? GG.fans.homeSuperfan(S()) : null;   // v0.9: the 'dale' slot is the band's own home superfan
     return el('div.merch-res', { testid: 'gig-merch' }, [
       el('div.row', [el('span', { style: 'font-size:22px' }, '👕'), el('div.grow', [el('div.caps', 'Merch table'),
         m.boxes ? el('div', [el('b', m.sold + ' sold'), ' · ', el('b.good', '+' + money(m.earned)), el('span.small.dim', ' · ' + m.boxes + ' of ' + m.space + ' boxes hauled')])
           : el('div.small.dim', 'No merch on the table tonight. Somebody asked. Twice.')])]),
       items.length ? el('div.chips', { style: 'margin-top:6px' }, items) : null,
-      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, 'Dale bought one, as always.') : null]);
+      dale ? el('div.tiny.amber', { style: 'margin-top:4px' }, ((hs && (hs.short || hs.name)) || 'Your first superfan') + ' bought one, as always.') : null]);
   };
   ui.isMerchLine = function (t) { return /^Merch table: /.test(String(t || '')); };
   ui.shopWrap = function (w) {
@@ -54555,7 +54774,10 @@ html.gg-calm .cold-fx { animation: none !important; }
     fist: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.1); rot(bn[B.ARM_R], 0, 0, -2.5); rot(bn[B.FORE_R], 0, 0, -0.35); rot(bn[B.HEAD], -0.12, 0, 0); },
     cross: function (bn) { rot(bn[B.ARM_L], -0.25, 0, 0.12); rot(bn[B.FORE_L], -1.5, 0, -1.25); rot(bn[B.ARM_R], -0.3, 0, -0.12); rot(bn[B.FORE_R], -1.62, 0, 1.25); },
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
-    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 2.55); rot(bn[B.ARM_R], 0, 0, -2.55); rot(bn[B.FORE_L], 0, 0, 0.5); rot(bn[B.FORE_R], 0, 0, -0.5); },
+    // v0.9 (fixer): the player's sticks go straight up over their own head (+ PLAYER_PAD of room either side): the v0.8.1 V
+    // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
+    // four rooms measures <= 1% of any bandmate's face covered now.
+    sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
     hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
   };
   // v0.9: every playable band's members have a signature pose (recruits and fill-ins cycle the generic ones).
@@ -54565,6 +54787,7 @@ html.gg-calm .cold-fx { animation: none !important; }
   // near, far, pos: [x, y, z], look: [x, y, z], x (the row's centre), gap, z: [even, odd] (members' depth), player (depth) }),
   // else the v0.8.1 garage framing (cut-away front wall).
   var RIG = { fov: 35, near: 4.7, far: 40, pos: [0.25, 1.6, 5.75], look: [0.05, 1.18, 0], x: 0.1, gap: 0.62, z: [0.34, 0.2], player: 0.45 };
+  var PLAYER_PAD = 0.17;   // v0.9: extra room either side of the player (their raised arms rise from the shoulders; wide builds too)
   function photoKind(st) {
     if (st && (st.spaceTier | 0) > 0) return 'garage';   // the rented rooms share the garage's footprint (and its rig)
     try { var G = GG.render && GG.render.garage; if (G && typeof G.spaceKind === 'function') return G.spaceKind(st) || ui.spaceKind(st); } catch (e) { /* fall through */ }
@@ -54607,13 +54830,15 @@ html.gg-calm .cold-fx { animation: none !important; }
       var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
+      var pi = people.map(function (p) { return !!p.player; }).indexOf(true);
       people.forEach(function (p, i) {
         var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
         var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
         if (!ch) return;
         var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
-        ch.root.position.set(x0 + i * gap, 0, front);
-        ch.root.rotation.y = -0.06 * (x0 + i * gap);
+        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -PLAYER_PAD : PLAYER_PAD);
+        ch.root.position.set(px, 0, front);
+        ch.root.rotation.y = -0.06 * px;
         (POSES[p.pose] || POSES.fist)(ch.bones);
         if (ch.bones[B.PHONES]) ch.bones[B.PHONES].scale.setScalar(0);   // the sulk headphones are a toggle bone: off for the photo
         scene.add(ch.root);

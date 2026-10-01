@@ -238,6 +238,28 @@ test('homesickness: forces a rest, the homesick card can fly the band home early
   ok(!T.active(s) && s.tour.history[0].cut && s.tour.history[0].gigs === 2, 'home after this week\'s show: ' + JSON.stringify(s.tour.history[0]));
 });
 
+test('homesickness (v0.9 fixer): the band\'s own homesick card keeps the 12-week cooldown (no card every tour week)', () => {
+  for (const band of ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+    const GG = fresh(), T = GG.tour, s = GG.career.newCareer({ seed: 13, bandId: band, player: { name: 'T' } });
+    at(s, 125);
+    Object.assign(s, { era: 'world', protected: false, fans: 30000, fund: 60000, buzz: 60, phase: 'monday', gig: null, weekStart: null });
+    s.eraHistory.push({ era: 'local', week: 20 }, { era: 'signed', week: 40 }, { era: 'world', week: 100 });
+    s.milestones.worldReady = 100;
+    T.unlock(s, 'russia'); T.book(s, 'ru_trans_siberian', { stay: 'couch' }); s.phase = 'wrap'; GG.career.endWeek(s);
+    const hits = [];
+    for (let n = 0; n < 14 && T.active(s); n++) {
+      const st = GG.career.startWeek(s), id = st.card && st.card.id;
+      if (id && /^wt_homesick/.test(id)) { hits.push(id); GG.career.resolveCard(s, 1); }   // 'Finish what we started' (homesickness stays)
+      else if (s.card && !s.card.resolved) GG.career.resolveCard(s, 0);
+      GG.career.setPlan(s, ['rest', 'rest', 'rest']); GG.career.runWeek(s, { autoGig: true });
+      if (s.phase === 'gig') GG.career.finishGig(s, null);
+      s.tour.homesick = 95; GG.career.endWeek(s);
+    }
+    eq(hits.length, 1, band + ': one homesick card on a 4-stop tour ' + hits.join(','));
+    ok(band === 'hail_damage' ? hits[0] === 'wt_homesick' : hits[0] === 'wt_homesick_' + band, band + ': the band\'s own variant ' + hits[0]);
+  }
+});
+
 test('Japan: silent crowd until the song ends (then applause), never boos; the fan-club president; gifts', () => {
   const GG = fresh(), T = GG.tour, s = world(GG, 17, 125);
   T.unlock(s, 'japan'); T.book(s, 'jp_bullet'); s.phase = 'wrap'; GG.career.endWeek(s);

@@ -23,7 +23,7 @@
 //   double notes on the chart. Order: two-thumb rule -> doubles -> difficulty thinning (Easy/Normal thin a double like any
 //   kick note). chart(song, { doubles: false }) = no merge.
 // v0.9: moments(genre) -> { combo, chorus, peak } (§4.4; economy.gig.moments overrides) ; signatures(state) -> [{ id, action,
-//   combo, crowd, flag }] (bands.js member.signature, once per gig: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
+//   combo, crowd, flag, perSong }] (bands.js member.signature, once per gig, perSong once per song: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
 //   fallback; content lines.live[memberId].{solo, fill, signature, flub} and lines.moments[kind] win).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
@@ -224,8 +224,9 @@
   };
   var GENRE_MOMENT = { metal: 'wallOfDeath', punk: 'circlePit', rock: 'lighters', country: 'lineDance' };
   function peakMoment(genre) { return gig.moments(genre).peak || GENRE_MOMENT[genre]; }
-  // v0.9: band signature actions (bands.js member.signature { action, combo, crowd, flag? }): once per gig at combo >=
-  // combo (and only while its flag is set: Marcel's cape). -> [{ id, action, combo, crowd, flag }]
+  // v0.9: band signature actions (bands.js member.signature { action, combo, crowd, flag?, perSong? }): once per gig at combo >=
+  // combo (perSong: once per song, Marcel's cape spin as in v0.8.3; and only while its flag is set: Marcel's cape).
+  // -> [{ id, action, combo, crowd, flag, perSong }]
   function flagOn(state, f) { var v = state.flags && state.flags[f]; return !!v && v !== 'none'; }
   gig.signatures = function (state) {
     var out = [];
@@ -233,7 +234,7 @@
       var d = GG.career.memberDef ? GG.career.memberDef(state, m.id) : null, sg = (d && m.original !== false && d.signature) || m.signature;
       if (!sg || !sg.action) return;
       if (sg.flag === 'cape' ? !capeOn(state) : sg.flag && !flagOn(state, sg.flag)) return;
-      out.push({ id: m.id, action: sg.action, combo: sg.combo || 40, crowd: sg.crowd != null ? sg.crowd : 8, flag: sg.flag || null });
+      out.push({ id: m.id, action: sg.action, combo: sg.combo || 40, crowd: sg.crowd != null ? sg.crowd : 8, flag: sg.flag || null, perSong: !!sg.perSong });
     });
     return out;
   };
@@ -449,7 +450,7 @@
     if (opts.difficulty && live.difficulty == null) live.difficulty = opts.difficulty;
     var diff = live.difficulty || opts.difficulty || 'hard', dcfg = diffOf(diff), thinned = !!dcfg.laneGap;
     var W = gig.windows(state, diff), roles = gig.roles(state), genre = state.genre, MT = gig.moments(genre);
-    var sigs = gig.signatures(state);   // v0.9: once per gig (live.sigDone survives a save between songs)
+    var sigs = gig.signatures(state);   // v0.9: once per gig (live.sigDone survives a save between songs; perSong: cur.sigDone)
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
     var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
     var soloLift = (GG.content.economy.shop && GG.content.economy.shop.soloCrowd) || 3;
@@ -530,10 +531,10 @@
       if (S.combo % cfg.comboStep === 0) crowdAdd(cfg.comboBonus);
       var cm = MT.combo || 'mosh';   // v0.9: the genre's combo moment (metal: mosh)
       if (!silent && S.combo % cfg.moshCombo === 0 && S.crowd >= cfg.moshCrowd && ready(cm, t)) moment(cm, t);
-      for (var si = 0; si < sigs.length; si++) {   // v0.9: band signatures (Marcel's cape spin, Rox's stage dive, ...), once per gig
-        var sg = sigs[si], done = live.sigDone || (live.sigDone = {});
-        if (done[sg.id] || S.combo < (sg.action === 'capeSpin' ? cfg.capeCombo : sg.combo)) continue;
-        done[sg.id] = true; if (sg.action === 'capeSpin') cur.capeDone = true;
+      for (var si = 0; si < sigs.length; si++) {   // v0.9: band signatures (Rox's stage dive, ...), once per gig; perSong (Marcel's cape) once per song
+        var sg = sigs[si], done = live.sigDone || (live.sigDone = {}), sd = cur.sigDone || (cur.sigDone = {});
+        if ((sg.perSong ? sd[sg.id] : done[sg.id]) || S.combo < (sg.action === 'capeSpin' ? cfg.capeCombo : sg.combo)) continue;
+        done[sg.id] = true; sd[sg.id] = true; if (sg.action === 'capeSpin') cur.capeDone = true;
         crowdAdd(sg.action === 'capeSpin' ? cfg.capeCrowd : sg.crowd); moment(sg.action, t); band(sg.id, sg.action);
       }
     }

@@ -6,7 +6,7 @@
 //     (screen 'road', resolved with GG.world.resolveRoad like a Monday card), 1–2 banter bubbles, an arrival line,
 //     then done(trip). The scene is set back to 'garage' before done (the caller may switch to 'stage').
 //   GG.ui.showVan(tab): screen 'van-info' (the garage door; v0.8 tabs van | space | dealer): the van (condition, merch space in
-//     boxes, comfort, km; Cousin Dale's repair) + the v0.8 shop panels from 5k_ui_shop (van side + stickers, rename, upgrades;
+//     boxes, comfort, km; the repair: ui.mechanic(st), Cousin Dale for Hail Damage) + the v0.8 shop panels from 5k_ui_shop (van side + stickers, rename, upgrades;
 //     rehearsal spaces + upgrades; the car lot).
 // v0.6.1 (Addendum 1 C1/C7): the trip passes weather, temp, holiday, driver + dashboard item to the 3D scene
 //   (setTrip { weather, driver, dashboard }); the route header shows the weather (van-weather); the 2D windshield draws
@@ -349,10 +349,24 @@
   });
 
   /* ---- The garage door: the van, the rehearsal space, the car lot (v0.8 tabs) ---------------------------------- */
-  // v0.8 (SHOPUI): tabs Van (the van-side view with its venue stickers, rename, driver, condition + Cousin Dale's repair,
+  // v0.8 (SHOPUI): tabs Van (the van-side view with its venue stickers, rename, driver, condition + the repair (ui.mechanic),
   // merch space in boxes, van upgrades) · Space (GG.ui.spacePanel: rooms around town + move, this room's upgrades) ·
   // Car lot (GG.ui.dealerPanel: bigger vehicles, quote + trade-in). Panels live in 5k_ui_shop.js.
   var DOOR_TABS = [{ id: 'van', label: '🚐 Van' }, { id: 'space', label: '🏠 Space' }, { id: 'dealer', label: '🔑 Car lot' }];
+  // v0.9: who fixes the van. Cousin Dale is Hail Damage's (npcs.js, band: HD); the other bands get a garage in their own
+  // city. A driver with mods.repair 0 (Moth) does the work herself, free, and gets the credit.
+  var MECHANIC = {
+    Regina: { shop: 'Pothole Pete\'s Auto & Lube', who: 'Pete', fixed: 'Pothole Pete fixed "most of it", then pointed at the pothole that did it.' },
+    Edmonton: { shop: 'Whyte Knuckle Auto', who: 'Marv', fixed: 'Marv at Whyte Knuckle Auto fixed "most of it". He kept the hubcap as a tip.' },
+    'Swift Current': { shop: 'Harv\'s Hitch & Hose', who: 'Harv', fixed: 'Harv fixed "most of it" with baler twine and a strong opinion.' }
+  };
+  ui.mechanic = function (st) {
+    var rp = GG.world && GG.world.driverMods ? GG.world.driverMods(st).repair : 1, dr = ui.driverOf(st);
+    if (rp === 0 && dr && !dr.you) return { self: true, who: dr.name, shop: dr.name, fixed: dr.name + ' fixed "most of it" in the parking lot. No charge, some swearing.', none: 'Nothing to fix. ' + dr.name + ' checks the oil anyway.' };
+    if (st && st.bandId === 'hail_damage') return { who: 'Dale', shop: 'Cousin Dale\'s Garage', fixed: 'Cousin Dale fixed "most of it".', none: 'Nothing to fix. Dale is disappointed.' };
+    var m = (st && MECHANIC[st.city]) || { shop: 'The garage down the road', who: 'Mechanic', fixed: 'The garage down the road fixed "most of it".' };
+    return Object.assign({ none: 'Nothing to fix. ' + m.who + ' is disappointed.' }, m);
+  };
   ui.define('van-info', {
     kind: 'sheet', tall: true, cls: 'shop',
     title: function () { var st = S(); return (st && st.van && st.van.name) || 'The van'; },
@@ -365,7 +379,7 @@
       if (shop) s.body.appendChild(el('div.shop-tabs', ui.tabs(DOOR_TABS, tab, function (id) { rerender({ tab: id }); s.body.scrollTop = 0; }, 'door-tab-')));
       if (shop && tab === 'space') { s.body.appendChild(ui.spacePanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
       if (shop && tab === 'dealer') { s.body.appendChild(ui.dealerPanel(st, rerender)); s.foot.appendChild(btn('.btn.block', { testid: 'btn-door-done', onclick: function () { ui.close(s.id); } }, 'Done')); return; }
-      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {};
+      var W = GG.world, van = W.van(st), q = W.repairQuote(st), dr = ui.driverOf(st), D = GG.content.drivers || {}, mech = ui.mechanic(st);
       var own = dr.designated && D[dr.designated] ? D[dr.designated].name || ui.who(dr.designated).short : null, ownSilent = own && ui.isSilent(dr.designated, st);
       // v0.9: when you drive, the band's own driver's dash item stays (the same rule as the trip's dashOf)
       var ownDash = dr.you && dr.designated && D[dr.designated] && D[dr.designated].dashboard && D[dr.designated].dashboard !== 'none' ? D[dr.designated].dashName : null;
@@ -403,10 +417,10 @@
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'van-repair', disabled: !q.gain || st.fund < q.cost, onclick: function () {
         var r = W.repairVan(S());
         if (!r) return;
-        sfx('cash'); ui.toast('Cousin Dale fixed "most of it". +' + r.gain + ' condition for ' + U.fmtMoney(r.cost) + '.', { who: 'Dale' });
+        sfx('cash'); ui.toast(mech.fixed + ' +' + r.gain + ' condition' + (r.cost ? ' for ' + U.fmtMoney(r.cost) : ', free') + '.', { who: mech.who });
         if (GG.main && GG.main.sync) GG.main.sync();
         s.rerender();
-      } }, q.gain ? "Cousin Dale's Garage: +" + q.gain + ' for ' + U.fmtMoney(q.cost) : 'Nothing to fix. Dale is disappointed.'));
+      } }, !q.gain ? mech.none : mech.self ? mech.who + ' does the maintenance: +' + q.gain + ' (free)' : mech.shop + ': +' + q.gain + ' for ' + U.fmtMoney(q.cost)));
     }
   });
   ui.showVan = function (tab) { return S() && GG.world ? ui.show('van-info', { tab: typeof tab === 'string' ? tab : 'van' }) : null; };

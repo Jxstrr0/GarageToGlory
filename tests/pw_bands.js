@@ -11,8 +11,11 @@
 //     rival's lineup; their set plays the rival's genre on the audio) → the verdict → the Loonies red carpet (this band's
 //     people on the carpet, the outfit beat only when the band has an outfit card) → the year-end recap (the band photo,
 //     the pages). Every screen: a layout audit (no overflow, 44 px buttons) and a DOM text leak scan.
+//   the door (fixer): the van-info sheet (the repair: Cousin Dale only for Hail Damage, Moth does Frost Heave's for free) and
+//     its car lot, and a gig result whose merch names the band's home superfan (the 'dale' slot).
 //   Leak scan: another playable band's people or Hail Damage's world (Marcel, Kenji, Baba, the Moose Hearse, Tundra Wraith,
-//     Gord, HALE DAMAGE...) in this career. Strict (LEAK_STRICT=0 turns it back to warn-only while debugging content); the
+//     Gord, HALE DAMAGE, Cousin Dale, Dale from Warman, Hwy 11...) in this career; other bands' superfans, tier-0 vans,
+//     spaces, rivals and rival casts count too. Strict (LEAK_STRICT=0 turns it back to warn-only while debugging content); the
 //     inverse (another band's people in a Hail Damage career) is always strict. Q8 cameos are allow-listed (the Scene
 //     leaderboard, award nominee chips, the Maple 100). No console errors (strict).
 // Run: node build.js && META_ONLY=bands timeout 500 node tests/pw_bands.js
@@ -89,13 +92,26 @@ async function runBand(bandId) {
     await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
     band = await page.evaluate(b => {
       const B = GG.content.bands, me = B[b], words = [];
-      Object.keys(B).forEach(k => { if (k !== b) B[k].members.forEach(m => [m.name, m.nick].forEach(w => { if (w && w.length > 2) words.push(w); })); });
+      // v0.9 (fixer): other bands' people AND world: members, home superfan, tier-0 van, space, rival + its cast (cast
+      // nicknames that are plain words are left out: Dusty, Colt, Boot, The Jaw ...)
+      const PLAIN = ['Dusty', 'Colt', 'Boot', 'Buckle', 'Unplugged', 'The Solo', 'The Board', 'The Jaw', 'Steve', 'Dex', 'Rex', 'Lorne'];
+      Object.keys(B).forEach(k => {
+        if (k === b) return;
+        B[k].members.forEach(m => [m.name, m.nick].forEach(w => { if (w && w.length > 2) words.push(w); }));
+        const hs = GG.fans.homeSuperfan({ bandId: k }); if (hs && k !== 'hail_damage') words.push(hs.short || hs.name);
+        if (GG.shop && GG.shop.vanName) words.push(GG.shop.vanName(k, 0));
+        if (k !== 'hail_damage') words.push(B[k].spaceName);
+        const rv = GG.content.rivals[B[k].rival], cast = ((GG.content.rivalry || {}).cast || {})[B[k].rival] || {};
+        if (rv) words.push(rv.name);
+        (cast.members || []).forEach(m => [m.name, m.fullName, m.nick].forEach(w => { if (w && w.length > 2 && PLAIN.indexOf(w) < 0) words.push(w); }));
+      });
+      ['Suds-O-Rama', 'Westgate Plaza'].forEach(w => { if (!me.spaceName.includes(w)) words.push(w); });
       return { id: b, name: me.name, genre: me.genre, city: me.city, members: me.members.map(m => ({ id: m.id, name: m.name, silent: !!m.silent })), space: me.space,
         spaceShort: me.spaceShort, spaceName: me.spaceName, fx: me.coldOpenFx, rival: me.rival, rivalGenre: (GG.content.rivals[me.rival] || {}).genre, firstGig: me.firstGig,
         driver: GG.world.driverFor(b), words: Array.from(new Set(words)) };
     }, bandId);
     foreignRe = new RegExp('\\b(' + band.words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
-    hdRe = bandId === 'hail_damage' ? null : /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE/g;
+    hdRe = bandId === 'hail_damage' ? null : /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE|Cousin Dale|Dale from Warman|Hwy 11/g;
 
     /* ---- new career: genre card → intro → logo → creator → cold open ---- */
     await tap(page, 'btn-new'); await tap(page, 'slot-1');
@@ -188,6 +204,31 @@ async function runBand(bandId) {
     await waitScreen(page, 'wrap', 15000);
     await check('wrap');
     await page.evaluate(() => { GG.ui.gigAutoplay = false; });
+
+    /* ---- the door (van-info): the repair and the car lot are this band's; a merch result names its home superfan ---- */
+    await page.evaluate(() => { GG.ui.closeAll(); GG.state.van.condition = Math.min(GG.state.van.condition, 50); GG.ui.showVan('van'); });
+    await waitScreen(page, 'van-info');
+    const vr = await page.evaluate(() => ({ rep: (document.querySelector('[data-testid="van-repair"]') || {}).textContent || '', free: GG.world.driverMods(GG.state).repair === 0, drv: GG.world.driver(GG.state).name }));
+    c.ok(bandId === 'hail_damage' ? /Cousin Dale/.test(vr.rep) : !/Dale/.test(vr.rep) && (!vr.free || (vr.rep.includes(vr.drv) && /free/.test(vr.rep))),
+      'the van repair is this band\'s (' + (vr.free ? vr.drv + ' does it, free' : 'a garage in ' + band.city) + '): ' + vr.rep);
+    await check('van-info');
+    await shot(page, bandId + '_door_van');
+    await tap(page, 'door-tab-dealer');
+    await page.waitForTimeout(80);
+    const dl = await page.evaluate(() => (document.querySelector('[data-testid="dealer-intro"]') || {}).textContent || '');
+    c.ok(bandId === 'hail_damage' ? /Cousin Dale/.test(dl) : !!dl && !/Dale|Hwy 11/.test(dl), 'the car lot is this band\'s: ' + dl);
+    await check('van-info-dealer');
+    await page.evaluate(() => {
+      GG.ui.closeAll();
+      GG.ui.show('gig-results', { result: { grade: 'B', name: 'The Merch Test', city: GG.state.city, score: 70, accuracy: 0.8, maxCombo: 30, crowd: 40, capacity: 60,
+        pay: 100, gas: 10, fans: 5, buzz: 1, moments: [], songResults: [], lines: ['Merch table: 3 sold, $45.'],
+        merch: { sold: 3, earned: 45, boxes: 1, space: 2, items: {}, named: ['dale'] } } });
+    });
+    await waitScreen(page, 'gig-results');
+    const mr = await page.evaluate(() => { const h = GG.fans.homeSuperfan(GG.state); return { t: (document.querySelector('[data-testid="gig-merch"]') || {}).textContent || '', sf: h.short || h.name }; });
+    c.ok(mr.t.includes(mr.sf + ' bought one') && (bandId === 'hail_damage' || !/\bDale\b/.test(mr.t)), 'the merch result names this band\'s superfan (' + mr.sf + '): ' + mr.t);
+    await check('merch-result');
+    await page.evaluate(() => GG.ui.closeAll());
 
     /* ---- the laptop: all tabs; Scene = this band's rival ---- */
     await tap(page, 'btn-next-week');

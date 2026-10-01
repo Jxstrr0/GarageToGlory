@@ -537,7 +537,7 @@ test('text tokens are only {player} {band} {city} {rival} {nick:id} {name:id} + 
       const good = ['player', 'band', 'city', 'recruit', 'rival'].includes(t) || C.TOKENS.includes(t)   // v0.9: §4.2 tokens everywhere
         || (/^content\.drama\.stageText/.test(p) && ['who', 'gripe'].includes(t))
         || (/^content\.reviews\./.test(p) && ['album', 'single'].includes(t)) || (/^content\.awards\./.test(p) && t === 'category')
-        || (/^content\.albumWords\.titles\.\w+\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))
+        || (/^content\.albumWords\.(titles\.\w+|chartFiller)\.forms/.test(p) && ['adj', 'noun', 'place'].includes(t))   // (v0.9 fixer: + the Maple 100's neutral chartFiller pool, same slots)
         || (/^content\.rivalry\./.test(p) && ['rival', 'album', 'pos', 'fans', 'venue', 'name', 'prize', 'n'].includes(t))   // v0.6
         || (/^content\.calendar\.(holidays|byBand)/.test(p) && t === 'costume')   // v0.6.1: Halloween costume band (v0.9: + byBand holidayLines)
         || (/^content\.world\./.test(p) && ['region', 'song', 'festival', 'here', 'rival', 'venue'].includes(t))   // v0.7: GG.tour tokens

@@ -60,6 +60,16 @@
         place: ['the Quonset', 'Swift Current', 'the Grid Road', 'Coffee Row', 'the Auction Mart', 'Maple Creek', 'the Home Quarter']
       }
     },
+    // v0.9: the Maple 100's filler rows (24_sim_labels chartView). Every genre's title pool above now carries a band's own
+    // in-jokes (the packs add theirs), so the chart's other records draw from this neutral pool: no band places, people or spaces.
+    chartFiller: {
+      forms: ['{adj} {noun}', 'The {adj} {noun}', '{noun} Song', 'Love on {place}', 'Down by {place}', 'Another {adj} {noun}',
+        'Your {adj} {noun}', 'Summer at {place}', '{noun} (Radio Edit)', 'Nothing but {noun}'],
+      adj: ['Northern', 'Lonely', 'Electric', 'Midnight', 'Golden', 'Restless', 'Wild', 'Cold', 'Paper', 'Slow', 'Last', 'Rusty'],
+      noun: ['Heart', 'Highway', 'Radio', 'Sky', 'Fire', 'River', 'Night', 'Dream', 'Rain', 'Window', 'Motel', 'Satellite', 'Postcard',
+        'Canoe', 'Toboggan', 'Chinook', 'Thunder', 'Summer'],
+      place: ['the Lake', 'the Coast', 'the Ferry', 'the North Shore', 'the Last Exit', 'the Cottage', 'the Ski Hill', 'the Dock']
+    },
     covers: {
       motifs: [
         { id: 'skull', name: 'Skull', desc: 'A skull wearing a crown of dandelions', genres: ['metal', 'punk'] },

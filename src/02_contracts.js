@@ -236,7 +236,7 @@
                          coldOpenFx: 'hail'|'snow'|'neon'|'dust', throne,
                          blurb, coldOpen: [panel text..], starterSongs: [ { title, titleEn } ],
                          members: [ { id, name, fullName, nick, role, hometown, skill, mood, wants, bio, idle, look: LOOK } ] } }
-           MEMBER (v0.9) + gear (C.GEAR), silent, cape, signature { action, combo, crowd, flag? }; look.top.
+           MEMBER (v0.9) + gear (C.GEAR), silent, cape, signature { action, combo, crowd, flag?, perSong? }; look.top.
    v0.9 content keying (plan_contract_0.9 §4.1): flat pools neutral + tokenised, band extras in <file>.byBand[bandId];
      member-keyed pools by member id; card variants '<baseId>_<bandId>' / '_<rivalId>' (career.variant); rivalry.cast[rid]
      (members, news, showdowns, banter, ui, carpet, defector, comments, songs, albums, rebrands, label, vehicle, drummer?,

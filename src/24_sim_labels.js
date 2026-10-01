@@ -694,6 +694,10 @@
     if (!a || !t) return false;
     a.title = t; a.titleEn = L.titleEn(state, t); return true;
   };
+  // v0.9: the Maple 100's filler titles (content albumWords.chartFiller: no band in-jokes; the genre pools carry the packs' own).
+  var FALLBACK_CHART = { forms: ['{adj} {noun}', '{noun} Song', 'Love on {place}'], adj: ['Northern', 'Lonely', 'Electric', 'Midnight'],
+    noun: ['Heart', 'Highway', 'Radio', 'Sky', 'River'], place: ['the Lake', 'the Coast', 'the Ferry'] };
+  function chartWords() { var W = GG.content.albumWords || {}; return W.chartFiller || FALLBACK_CHART; }
   function wordsFor(genre) {
     var W = GG.content.albumWords || {}, T = W.titles || null, g = T && (T[genre] || T.metal);
     return g || FALLBACK_WORDS[genre] || FALLBACK_WORDS.metal;
@@ -950,8 +954,9 @@
   L.chartView = function (state, albumId) {
     var a = albumId ? L.album(state, albumId) : L.released(state).slice(-1)[0], c = a && a.chart || {};
     var week = c.week || state.totalWeek, pos = c.pos || null, rows = [];
-    var artists = (GG.content.headliners || []).map(function (h) { return h.name; }).concat(FALLBACK_OTHERS, [rivalName(state)])
-      .filter(function (x, i, l) { return l.indexOf(x) === i; });
+    // v0.9: the rival is not in the filler artists (its own record charts through GG.rival.chartEntry, the rc row)
+    var rv = rivalName(state), artists = (GG.content.headliners || []).map(function (h) { return h.name; }).concat(FALLBACK_OTHERS)
+      .filter(function (x, i, l) { return l.indexOf(x) === i && x !== rv; });
     var want = {}, rc = GG.rival && state.rival ? GG.rival.chartEntry(state, week) : null;   // v0.6: the rival's record charts too
     if (rc && rc.pos === pos) rc = null;
     for (var i = 1; i <= 10; i++) want[i] = true;
@@ -964,7 +969,7 @@
       }
       if (rc && p === rc.pos) { rows.push({ pos: p, title: rc.title, artist: rc.artist, move: rc.move, weeks: rc.weeks, you: false, rival: true }); return; }
       var r = GG.RNG(GG.hashSeed(state.seed + '|chart|' + week + '|' + p));
-      var w = wordsFor(r.pick(C.GENRES)), form = r.pick(w.forms || w.patterns || ['{adj} {noun}']);
+      var w = chartWords(), form = r.pick(w.forms || w.patterns || ['{adj} {noun}']);
       var title = String(form).replace(/\{(\w+?)2?\}/g, function (all, slot) { var pl = w[slot]; return pl && pl.length ? r.pick(pl) : slot; });
       rows.push({ pos: p, title: title, artist: r.pick(artists), move: r.chance(0.15) ? 'new' : r.int(-6, 6), weeks: r.int(1, 30), you: false });
     });

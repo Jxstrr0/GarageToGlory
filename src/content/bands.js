@@ -226,13 +226,14 @@
     grid_road_ramblers: { roles: { namer: 'travis', grumbler: 'earl', deadpan: 'clementine' }, firstGig: 'quonset_yard_party', homeRing: 'sask',
       spaceShort: 'the Quonset', door: 'the Quonset door', province: 'SK', coldOpenFx: 'dust', throne: 'haybale' }
   };
-  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40).
+  // gear (C.GEAR; none = mic only), look.top, flags; signature = the member's once-a-gig stage action (combo >= 40;
+  // perSong: once per song instead, Marcel's cape spin as in v0.8.3).
   // idle 'noodle' (set on the member above: Dana, Benny, Lenny, Travis) = the garage noodler with an instrument; the audio
   // garage noodle follows the first one (Benny's two chords, Lenny's riff), then Clementine's 'fiddle' idle.
   // v0.9 integration: the member skill / mood numbers above follow the sims lane's balance proposal (Frost Heave, Gravel
   // Kings and the Ramblers were well below Hail Damage's average gig score with the same bot).
   var V09_MEMBERS = {
-    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape' } },
+    marcel: { cape: true, signature: { action: 'capeSpin', combo: 40, crowd: 8, flag: 'cape', perSong: true } },   // the cape spins every song (v0.8.3)
     dana: { gear: 'v' }, jaxon: { gear: 'v' }, kenji: { gear: 'bass', silent: true },
     rox: { gear: 'sg', top: 'jacket', signature: { action: 'stageDive', combo: 40, crowd: 8 } },
     benny: { gear: 'sg', top: 'tee' },

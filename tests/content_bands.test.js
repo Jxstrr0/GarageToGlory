@@ -179,7 +179,8 @@ test('rival cast: Tundra Wraith (cast.tundra_wraith, the model every pack follow
 const RULES = ['spotlight', 'cape', 'solos', 'practice', 'freedom', 'baba', 'mystery', 'council', 'twoChords', 'van', 'eighties', 'lawsuit',
   'adulting', 'truck', 'stories', 'secretJoy', 'hat'];
 const SHOP_VARIANTS = ['shop_space_1', 'shop_space_2', 'shop_space_3', 'shop_solo', 'shop_merch_start', 'shop_pawn_kit', 'shop_van_deal'];
-const FAN_VARIANTS = ['fans_dale_hello', 'fans_macaroni', 'fans_patreeon', 'fans_hater_page', 'fans_club_grumble'];
+// (fixer: + fans_trucker: the base card is Hail Damage's, so a band without its variant never meets the trucker superfan)
+const FAN_VARIANTS = ['fans_dale_hello', 'fans_macaroni', 'fans_patreeon', 'fans_hater_page', 'fans_club_grumble', 'fans_trucker'];
 
 function deckProblems(b) {
   const { bad, need } = checker(), mine = CARDS.filter(c => only(c, b)), g = BANDS[b].genre;
@@ -198,6 +199,12 @@ function deckProblems(b) {
   C.LABELS.forEach(l => need(mine.some(c => c.gate.flagEquals && c.gate.flagEquals.label === l), 'label card for ' + l));
   n('guilt / repay cards', mine.filter(c => (c.gate.flags || []).includes('parentsLoan') && c.choices.some(ch => ch.effects && ch.effects.repay)), 2);
   K.calendar.holidays.filter(h => arr(h.cards)).forEach(h => need(h.cards.some(id => only(CARDS.find(c => c.id === id), b)), 'holiday ' + h.id + ': the band\'s own card in its list'));
+  // (fixer) ...and ahead of any shared card this band can draw: the calendar deals the first card whose gate passes
+  K.calendar.holidays.filter(h => arr(h.cards)).forEach(h => {
+    const at = h.cards.map(id => CARDS.find(c => c.id === id)), own = at.findIndex(c => only(c, b));
+    const shared = at.findIndex(c => c && !only(c, b) && (!c.gate || !Array.isArray(c.gate.band) || c.gate.band.includes(b)));
+    need(own >= 0 && (shared < 0 || own < shared), 'holiday ' + h.id + ': the band\'s own card comes before the shared ' + (at[shared] || {}).id);
+  });
   ['gopherwood', 'monolith'].forEach(l => {
     const d = (K.labels[l].demandsByBand || {})[b];
     need(arr(d), 'labels.' + l + '.demandsByBand.' + b);
@@ -209,6 +216,9 @@ function deckProblems(b) {
   need(sc.length >= 4 && sc.every(x => (K.bandbook.cards || []).some(c => c.id === x.card)), 'scandal cards ≥4 (' + sc.length + ')');
   need((K.licensing.brands || []).some(x => (x.band || []).includes(b)), 'an "employer" licensing brand gated to the band');
   need((K.licenseScandals || []).some(x => MEMBERS(b).includes(x.who) && (K.licenseCards || []).some(c => c.id === x.card && only(c, b))), 'a licensing sellout scandal');
+  // (fixer) ...ahead of the neutral who:'band' one, which always passes (the take path uses the first that does)
+  const LS = K.licenseScandals || [], mineLS = LS.findIndex(x => MEMBERS(b).includes(x.who)), bandLS = LS.findIndex(x => x.who === 'band');
+  need(mineLS >= 0 && (bandLS < 0 || mineLS < bandLS), 'the band\'s licensing scandal comes before the neutral who:\'band\' one (' + mineLS + ' vs ' + bandLS + ')');
   return bad;
 }
 function dramaProblems(b) {

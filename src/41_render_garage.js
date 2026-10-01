@@ -2860,36 +2860,120 @@
         var nx = Math.round(w / 0.1), ny = Math.round(h / 0.1);
         for (var i = 0; i < nx; i++) for (var j = 0; j < ny; j++) if ((i + j) % 2 === 0) b.box(0.07, 0.07, 0.035, x - w / 2 + 0.05 + i * 0.1, y - h / 2 + 0.05 + j * 0.1, z + 0.02, 0x86727c);
       }
-      function buildUps(list, tier, ri) {
+      // v0.9 (fixer): the tier-0 upgrades look like what each space's shop sold them as (content/shop.js upgrades[].bySpace):
+      // the laundromat's lint bags + pop machine, the strip mall's ceiling foam tiles + salon mini-fridge + neon OPEN sign,
+      // the Quonset's tailgate bench + hay-bale baffles + chest freezer + yard lights. Same spots and footprints as the
+      // parents' garage versions (the couch and the fridge move with the band, so they follow the band's space, not the room).
+      function hayBale(b, w, h, d, x, y, z) {
+        b.box(w, h, d, x, y, z, 0xd2ae4a);
+        b.box(w + 0.012, h + 0.012, 0.025, x, y, z - d * 0.28, 0x8a6a2a); b.box(w + 0.012, h + 0.012, 0.025, x, y, z + d * 0.28, 0x8a6a2a);   // twine
+        b.box(w * 0.3, 0.02, d * 0.4, x - w * 0.18, y + h / 2 + 0.008, z, 0xe6c86a, 0, 0.4, 0);                                          // loose straw
+      }
+      function lintBags(b, w, h, x, y, z) {                                 // clear bags of grey lint, stapled to the blocks
+        var nx = Math.max(1, Math.round(w / 0.24)), ny = Math.max(1, Math.round(h / 0.3)), i, j;
+        for (i = 0; i < nx; i++) for (j = 0; j < ny; j++) {
+          var bx = x - w / 2 + (i + 0.5) * w / nx, by = y - h / 2 + (j + 0.5) * h / ny, sz = 0.9 + ((i * 7 + j * 3) % 5) * 0.03;
+          b.box(w / nx * 0.92 * sz, h / ny * 0.88, 0.06, bx, by, z + 0.03, (i + j) % 2 ? 0x9ea4ae : 0x8c929e);
+          b.box(w / nx * 0.5, 0.02, 0.065, bx, by + h / ny * 0.42, z + 0.035, 0xd8dce2);                                                 // the knotted top
+        }
+      }
+      function balesOnLedge(b, w, x, y, z, rows) {                          // hay-bale baffles: bales stacked on a 2x8 ledge
+        var n = Math.max(1, Math.round(w / 0.42)), i, j;
+        b.box(w + 0.06, 0.04, 0.3, x, y - 0.02, z + 0.15, 0x7a5a3a);
+        for (j = 0; j < rows; j++) for (i = 0; i < n - (j % 2); i++) hayBale(b, w / n * 0.96, 0.26, 0.28, x - w / 2 + (i + 0.5 + (j % 2) * 0.5) * w / n, y + 0.13 + j * 0.27, z + 0.15);
+      }
+      function buildUps(list, tier, ri, kind) {
         var b = new ctx.Builder({ jitter: 0.04, seed: 101 }), g = new ctx.Builder({ jitter: 0, seed: 102 }), i, k, has = function (id) { return list.indexOf(id) >= 0; };
         upObs.length = 0;
+        kind = kind || 'garage';
         if (has('curb_couch')) {                                                            // floral loveseat, from the curb, facing the kit
           b.at(-0.55, 0, 2.42, Math.PI);                                                    // (between the merch + laptop stands: see stand())
-          var FB = 0xb08a3a;
-          b.box(0.7, 0.22, 0.54, 0, 0.26, 0, FB); b.box(0.7, 0.46, 0.14, 0, 0.58, -0.21, sh(FB, 0.92), -0.08);
-          b.box(0.1, 0.32, 0.56, 0.35, 0.44, 0, sh(FB, 0.85)); b.box(0.1, 0.32, 0.56, -0.35, 0.44, 0, sh(FB, 0.85));
-          for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.3 : -0.3), 0.07, (k < 2 ? 0.21 : -0.21), 0x3a2410);
-          for (k = 0; k < 7; k++) b.box(0.06, 0.06, 0.012, -0.24 + (k % 4) * 0.16 + (k > 3 ? 0.08 : 0), 0.46 + (k > 3 ? 0.2 : 0), -0.13, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
-          b.box(0.24, 0.02, 0.18, 0.12, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);               // a stain shaped like Manitoba
+          if (kind === 'quonset') {                                                         // the tailgate bench: a truck seat on two hay bales
+            hayBale(b, 0.36, 0.28, 0.5, -0.19, 0.14, 0); hayBale(b, 0.36, 0.28, 0.5, 0.19, 0.14, 0);
+            b.box(0.76, 0.1, 0.46, 0, 0.33, 0.02, 0x5a3a2a); b.box(0.76, 0.42, 0.11, 0, 0.58, -0.2, 0x4e3224, -0.1);
+            b.box(0.72, 0.012, 0.014, 0, 0.385, 0.25, 0x2a1a10); b.box(0.16, 0.012, 0.1, 0.18, 0.386, 0.06, 0xb9bdc4, 0, 0.3, 0);   // piping, a duct-tape patch
+          } else {
+            var FB = kind === 'laundromat' ? 0xc0642a : kind === 'stripmall' ? 0xd87aa8 : 0xb08a3a;   // orange vinyl / salon pink / floral gold
+            b.box(0.7, 0.22, 0.54, 0, 0.26, 0, FB); b.box(0.7, 0.46, 0.14, 0, 0.58, -0.21, sh(FB, 0.92), -0.08);
+            b.box(0.1, 0.32, 0.56, 0.35, 0.44, 0, sh(FB, 0.85)); b.box(0.1, 0.32, 0.56, -0.35, 0.44, 0, sh(FB, 0.85));
+            for (k = 0; k < 4; k++) b.box(0.05, 0.14, 0.05, (k % 2 ? 0.3 : -0.3), 0.07, (k < 2 ? 0.21 : -0.21), kind === 'stripmall' ? 0xc0c4ca : 0x3a2410);
+            if (kind === 'laundromat') {                                                    // a dryer sheet and a lost sock on the cushion
+              b.box(0.16, 0.006, 0.12, -0.14, 0.374, 0.05, 0xf2efe6, 0, 0.5, 0); b.box(0.06, 0.03, 0.16, 0.16, 0.385, 0.02, 0x7a9ad8, 0, -0.4, 0);
+            } else if (kind === 'stripmall') {                                              // a waiting-room magazine, two years old
+              b.box(0.18, 0.012, 0.24, 0.12, 0.377, 0.04, 0xe8e0d0, 0, 0.3, 0); b.box(0.18, 0.004, 0.06, 0.12, 0.385, -0.02, 0xd04a7a, 0, 0.3, 0);
+            } else {
+              for (k = 0; k < 7; k++) b.box(0.06, 0.06, 0.012, -0.24 + (k % 4) * 0.16 + (k > 3 ? 0.08 : 0), 0.46 + (k > 3 ? 0.2 : 0), -0.13, [0xc0392b, 0xe8d8b0, 0x5f8f45][k % 3], -0.08);
+              b.box(0.24, 0.02, 0.18, 0.12, 0.375, 0.05, 0x8a6a2a, 0, 0.3, 0);             // a stain shaped like Manitoba
+            }
+          }
           obs(upObs, -0.55, 2.42, 0.8, 0.58, 0);
         }
         if (has('beer_fridge')) {                                                           // Dad's fridge, plugged into the outlet
           b.at(X1 - 0.25, 0, -0.45, -Math.PI / 2); g.at(X1 - 0.25, 0, -0.45, -Math.PI / 2);
-          b.box(0.5, 0.78, 0.44, 0, 0.4, 0, 0xe6e3da); b.box(0.5, 0.012, 0.012, 0, 0.56, 0.222, 0xa8a49a);
-          b.box(0.03, 0.18, 0.04, 0.2, 0.42, 0.24, 0x9aa0a8);
-          b.box(0.12, 0.08, 0.004, -0.1, 0.66, 0.223, 0xc0392b); b.box(0.08, 0.1, 0.004, 0.08, 0.3, 0.223, 0x2f6fd1, 0, 0, 0.2); b.box(0.1, 0.06, 0.004, -0.12, 0.2, 0.223, 0xe8c531, 0, 0, -0.15);
-          b.box(0.05, 0.02, 0.05, -0.18, 0.02, 0.18, 0x222222); b.box(0.05, 0.02, 0.05, 0.18, 0.02, 0.18, 0x222222);
-          b.cyl(0.03, 0.03, 0.12, 8, -0.12, 0.85, 0, 0x9ad13a); b.cyl(0.03, 0.03, 0.12, 8, 0.02, 0.85, 0.05, 0x7a4a1a);   // cans on top
-          obs(upObs, X1 - 0.25, -0.45, 0.5, 0.44, -Math.PI / 2);
+          if (kind === 'laundromat') {                                                      // the pop machine, out of order since 1994
+            b.box(0.5, 1.5, 0.44, 0, 0.75, 0, 0xb8282a); b.box(0.36, 0.78, 0.01, -0.05, 1.02, 0.222, 0xe8e2d0);
+            for (k = 0; k < 6; k++) b.box(0.07, 0.05, 0.012, 0.18, 1.32 - k * 0.09, 0.226, k % 2 ? 0xf2efe6 : 0x2a2a2e);
+            b.box(0.03, 0.08, 0.012, 0.18, 0.7, 0.226, 0x1a1a1e); b.box(0.3, 0.12, 0.06, -0.04, 0.2, 0.2, 0x1a1a1e);   // coin slot, the chute
+            b.box(0.15, 0.09, 0.004, -0.06, 0.86, 0.229, 0xf6f2e2, 0, 0, 0.12);           // OUT OF ORDER (taped on)
+            g.box(0.38, 0.06, 0.004, -0.04, 1.44, 0.229, 0xff6a5a);
+          } else if (kind === 'stripmall') {                                                // the salon mini-fridge (it hums in E)
+            b.box(0.46, 0.52, 0.42, 0, 0.26, 0, 0xf0eeea); b.box(0.46, 0.012, 0.012, 0, 0.4, 0.212, 0xb0aca4); b.box(0.03, 0.12, 0.04, 0.19, 0.3, 0.22, 0x9aa0a8);
+            b.box(0.04, 0.07, 0.04, -0.12, 0.555, 0.02, 0xe0407a); b.box(0.04, 0.07, 0.04, -0.04, 0.555, -0.04, 0xa01a3a);   // nail polish on top
+            b.box(0.02, 0.04, 0.02, -0.12, 0.61, 0.02, 0x1a1a1e); b.box(0.02, 0.04, 0.02, -0.04, 0.61, -0.04, 0x1a1a1e);
+            b.box(0.12, 0.08, 0.004, 0.02, 0.2, 0.213, 0xff9ac8, 0, 0, 0.15);           // a sticker: a heart
+          } else if (kind === 'quonset') {                                                  // the chest freezer: snacks one side, beef the other
+            b.box(0.7, 0.6, 0.44, 0, 0.3, 0, 0xeceae2); b.box(0.72, 0.05, 0.46, 0, 0.625, 0, 0xf6f4ec);
+            b.box(0.2, 0.03, 0.03, 0, 0.58, 0.235, 0x9aa0a8); b.box(0.7, 0.012, 0.012, 0, 0.6, 0.222, 0xb0aca4);
+            b.box(0.18, 0.06, 0.004, -0.2, 0.42, 0.223, 0xe8dcb0, 0, 0, 0.05); b.box(0.18, 0.06, 0.004, 0.2, 0.42, 0.223, 0xe8dcb0, 0, 0, -0.05);   // two tape labels
+            b.box(0.2, 0.05, 0.14, 0.18, 0.672, 0.02, 0xd8c050, 0, 0.3, 0);               // a bag of chips on the lid
+          } else {
+            b.box(0.5, 0.78, 0.44, 0, 0.4, 0, 0xe6e3da); b.box(0.5, 0.012, 0.012, 0, 0.56, 0.222, 0xa8a49a);
+            b.box(0.03, 0.18, 0.04, 0.2, 0.42, 0.24, 0x9aa0a8);
+            b.box(0.12, 0.08, 0.004, -0.1, 0.66, 0.223, 0xc0392b); b.box(0.08, 0.1, 0.004, 0.08, 0.3, 0.223, 0x2f6fd1, 0, 0, 0.2); b.box(0.1, 0.06, 0.004, -0.12, 0.2, 0.223, 0xe8c531, 0, 0, -0.15);
+            b.box(0.05, 0.02, 0.05, -0.18, 0.02, 0.18, 0x222222); b.box(0.05, 0.02, 0.05, 0.18, 0.02, 0.18, 0x222222);
+            b.cyl(0.03, 0.03, 0.12, 8, -0.12, 0.85, 0, 0x9ad13a); b.cyl(0.03, 0.03, 0.12, 8, 0.02, 0.85, 0.05, 0x7a4a1a);   // cans on top
+          }
+          obs(upObs, X1 - 0.25, -0.45, kind === 'quonset' ? 0.72 : 0.5, 0.46, -Math.PI / 2);
         }
-        if (has('xmas_lights')) {                                                           // up all year, round the whiteboard
+        if (has('xmas_lights') && kind === 'stripmall') {                                   // the neon OPEN sign the last tenant left, in the window
+          b.at(-0.2, 0, Z0, 0); g.at(-0.2, 0, Z0, 0);
+          b.box(0.82, 0.36, 0.03, 0, 1.95, 0.16, 0x141418); b.box(0.008, 0.36, 0.008, -0.36, 2.3, 0.16, 0x9aa0a8); b.box(0.008, 0.36, 0.008, 0.36, 2.3, 0.16, 0x9aa0a8);
+          var NP = 0xff4fb0, NB = 0x40e0ff, NZ = 0.18, NY = 1.95, sw = 0.024;
+          g.box(0.76, sw, 0.01, 0, NY + 0.15, NZ, NB); g.box(0.76, sw, 0.01, 0, NY - 0.15, NZ, NB); g.box(sw, 0.3, 0.01, -0.37, NY, NZ, NB); g.box(sw, 0.3, 0.01, 0.37, NY, NZ, NB);
+          [-0.255, -0.085, 0.085, 0.255].forEach(function (lx, li) {                         // O P E N
+            var L = lx - 0.055, R = lx + 0.055, T = NY + 0.085, B2 = NY - 0.085;
+            g.box(sw, 0.17, 0.01, L, NY, NZ, NP);
+            if (li === 0) { g.box(sw, 0.17, 0.01, R, NY, NZ, NP); g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.11, sw, 0.01, lx, B2, NZ, NP); }
+            if (li === 1) { g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.11, sw, 0.01, lx, NY, NZ, NP); g.box(sw, 0.085, 0.01, R, NY + 0.042, NZ, NP); }
+            if (li === 2) { g.box(0.11, sw, 0.01, lx, T, NZ, NP); g.box(0.09, sw, 0.01, lx - 0.01, NY, NZ, NP); g.box(0.11, sw, 0.01, lx, B2, NZ, NP); }
+            if (li === 3) { g.box(sw, 0.17, 0.01, R, NY, NZ, NP); g.box(sw, 0.2, 0.01, lx, NY, NZ, NP, 0, 0, 0.58); }
+          });
+        } else if (has('xmas_lights') && kind === 'quonset') {                              // two farm yard lights bolted to the arch
+          [-1.7, 1.3].forEach(function (lz) {
+            b.at(X1, 0, lz, -Math.PI / 2); g.at(X1, 0, lz, -Math.PI / 2);
+            b.box(0.12, 0.12, 0.03, 0, 2.38, 0.015, 0x4a4e54); b.box(0.04, 0.04, 0.42, 0, 2.38, 0.22, 0x5a5e64);
+            b.cyl(0.08, 0.17, 0.11, 10, 0, 2.33, 0.44, 0x6a7a6e); g.cyl(0.075, 0.075, 0.02, 10, 0, 2.27, 0.44, 0xfff1c0);
+            for (k = 0; k < 3; k++) b.box(0.03, 0.006, 0.022, -0.1 + k * 0.1, 2.12 - (k % 2) * 0.08, 0.36 + k * 0.05, 0x8a7a60, 0, k * 0.9, 0);   // the moths
+          });
+        } else if (has('xmas_lights')) {                                                    // up all year, round the whiteboard (the laundromat's too)
           b.at(X1, 0, PROPS.board.z, -Math.PI / 2); g.at(X1, 0, PROPS.board.z, -Math.PI / 2);
           var XC = [0xff3b30, 0x34c759, 0x2f7fff, 0xffcc00, 0xff66dd], n = 0;
           for (k = 0; k <= 16; k++) { var u = -0.84 + k * 0.105, sag = 0.04 * Math.sin((k % 4) / 4 * Math.PI); g.box(0.04, 0.055, 0.04, u, 1.96 - sag, 0.06, XC[n++ % 5]); }
           for (k = 1; k <= 8; k++) { g.box(0.04, 0.055, 0.04, -0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); g.box(0.04, 0.055, 0.04, 0.86, 1.96 - k * 0.12, 0.06, XC[n++ % 5]); }
           b.box(1.72, 0.008, 0.008, 0, 1.95, 0.06, 0x1a3a1a);
         }
-        if (has('egg_foam')) {                                                              // stapled to every wall
+        if (has('egg_foam') && kind === 'stripmall' && ri === 5) {                          // foam tiles in Unit 4B's drop ceiling (stripMallRoom's CY strip)
+          var FT = 0x4a4c56, FU = 0x5e606c, CY2 = 2.658;
+          b.at(0, 0, 0, 0);
+          for (i = 0; i < 8; i++) { b.box(0.56, 0.016, 0.46, -2.0 + i * 0.6, CY2, Z0 + 0.25, FT); for (k = 0; k < 4; k++) b.box(0.1, 0.035, 0.1, -2.12 + i * 0.6 + (k % 2) * 0.24, CY2 + 0.02, Z0 + 0.15 + (k > 1 ? 0.2 : 0), FU); }
+          for (i = 0; i < 9; i++) { b.box(0.46, 0.016, 0.56, X1 - 0.25, CY2, -2.1 + i * 0.6, FT); for (k = 0; k < 4; k++) b.box(0.1, 0.035, 0.1, X1 - 0.35 + (k % 2) * 0.2, CY2 + 0.02, -2.22 + i * 0.6 + (k > 1 ? 0.24 : 0), FU); }
+        } else if (has('egg_foam') && kind === 'laundromat') {                              // dryer-lint insulation: bags of it, stapled up
+          b.at(0, 0, Z0, 0); lintBags(b, 1.0, 0.9, -0.45, 1.72, 0.07);
+          b.at(X1, 0, 0, -Math.PI / 2); lintBags(b, 0.4, 1.3, 2.42, 1.65, 0.03);
+        } else if (has('egg_foam') && kind === 'quonset') {                                 // hay-bale baffles along the steel walls
+          b.at(0, 0, Z0, 0); balesOnLedge(b, 1.1, -0.45, 1.3, 0.04, 2);
+          b.at(X1, 0, 0, -Math.PI / 2); balesOnLedge(b, 0.84, 2.3, 1.5, 0.0, 2);
+        } else if (has('egg_foam')) {                                                       // stapled to every wall
           // (Unit 4B's back wall is the shop window left of x 1.52: its patch goes on the bit of drywall right of the door)
           b.at(0, 0, Z0, 0); if (ri === 5) eggFoam(b, 0.6, 0.9, 1.91, 1.72, 0.07); else eggFoam(b, 1.0, 0.9, -0.45, 1.72, 0.07);
           b.at(X1, 0, 0, -Math.PI / 2); eggFoam(b, 0.4, 1.3, 2.42, 1.65, 0.03);
@@ -3085,8 +3169,8 @@
           cur.room = roomSig; cur.tier = tier; cur.ri = ri; cur.green = green; cur.city = city;
           buildRoom(ri, green, band, catering, D); hideGarage(ri, band);
         }
-        var upSig = tier + '|' + ri + '|' + list.join(',');
-        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier, ri); }
+        var upKind = spaceKindOf(band), upSig = tier + '|' + ri + '|' + upKind + '|' + list.join(',');   // v0.9: the band's own space's upgrade art
+        if (upSig !== cur.ups) { cur.ups = upSig; cur.list = list; buildUps(list, tier, ri, upKind); }
         var p = st && GG.shop && GG.shop.pile && st.merch ? GG.shop.pile(st) : { boxes: 0, items: [] };
         var mis = (p.items || []).some(function (x) { return x.misprint; }), shown = Math.min(p.boxes, PILE_MAX + 1);
         var pileSig = shown + '|' + mis;

@@ -155,7 +155,7 @@
       gong: { base: 29, perBroken: 10, fansPer: 1000, fansMax: 24, perFestival: 6, perBig: 5, moose: 6, nominateBroken: 1, prize: 5000, fans: 0.03, fansMax: 3000, buzz: 12, noise: 8 },
       moose: { fans: 3000, buzz: 12 },
       cardGap: 3, cardChance: 0.75,   // tour story cards (min weeks apart) ; a region card on this share of tour Mondays
-      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55 }
+      bot: { goodCushion: 2500, avgCushion: 2000, gap: 16, avgChance: 0.35, restHomesick: 55, payoffCushion: 500, payoffBurnout: 80 }
     },
 
     // ---- Labels, studios, releases (24_sim_labels.js, v0.5) --------------------------------------------------------

@@ -1452,6 +1452,16 @@
         'It goes up behind the till counter. Chase stares at it for a long time. "She got the hair," he whispers. She got the hair.'),
        ch('Let Chase decide', { mood: { chase: 5 }, fan: { gift: 'gloria_portrait', superfan: { dale: 8 } } },
         'Chase hangs it at eye level, next to his mirror, so he can see both of himself at once. It is the happiest he has ever been.')]),
+    // The trucker superfan (fans_trucker's variant: the base card is Hail Damage's; superFanCard tries fans_trucker_<band> first).
+    card('fans_trucker_gravel_kings', 'road', 'tamara', 'The Jumper-Cable Story', gb({}),
+      "2 a.m., driving home from a gig, the Petro-Canuck in Innisfail. {van} has died at pump 4. T-Bone says it is 'just resting'. A semi pulls in. " +
+      'A trucker named Wendell produces jumper cables longer than the van. "Heard you on the radio," he says. Once. By mistake.',
+      [ch('Buy him a coffee and a donut', { fund: -12, fan: { superfan: { trucker: 10 } } },
+        'He tells you about every band he has ever boosted. It is a long list. You are, he says, "top five, ahead of a band with a scarf".'),
+       ch('Play him a song in the lot', { burnout: 4, chemistry: 3, fan: { superfan: { trucker: 15 } } },
+        'Lenny plays the riff on an unplugged guitar under the gas-station lights. Chase does a knee slide on the pump island. Wendell honks the air horn.'),
+       ch('Sign his thermos', { buzz: 2, fan: { superfan: { trucker: 8 } } },
+        '"Now I can never wash it," says Wendell, who has clearly never washed it. Chase signs it twice, once from each side of his hair.')]),
     card('fans_hater_page_gravel_kings', 'fame', 'gk_reporter', 'The Anti-Fan Club', gb({}),
       'Kyle from the Courier reports on a new page: "{band} Are Stuck in 1985 (Derogatory)". It has a logo, a scarf avatar and a ' +
       'monthly meeting at a Calgary pub. Someone suspects it is run from a radio conglomerate.',
@@ -2655,7 +2665,10 @@
     var cal = obj(K, 'calendar');
     arr(cal, 'holidays').forEach(function (h) {
       if (!h || !HOLIDAY_CARDS[h.id]) return;
-      addUnique(arr(h, 'cards'), HOLIDAY_CARDS[h.id]);
+      // The band's own holiday cards go first (like Frost Heave and the Ramblers): the calendar deals the first card whose gate
+      // passes, so the shared new-band cards (holiday_canada_day_park, ...) stay the fallback instead of always winning.
+      var hc = arr(h, 'cards'), mine = HOLIDAY_CARDS[h.id].filter(function (id) { return hc.indexOf(id) < 0; });
+      hc.splice.apply(hc, [0, 0].concat(mine));
     });
     arr(cal, 'holidays').forEach(function (h) {
       if (!h || !P.holidayLines[h.id] || !h.gig) return;   // only holidays that already shape gigs
@@ -2698,7 +2711,11 @@
     var lic = obj(K, 'licensing');
     addUnique(arr(lic, 'brands'), P.brands);
     addCards(arr(K, 'licenseCards'), P.licenseCards);
-    addUnique(arr(K, 'licenseScandals'), P.licenseScandals);
+    // The take path uses the first scandal whose speaker + gate pass, and lic_scandal_sellout (who 'band', gate {}) always does:
+    // the band's own scandal goes in before the first who:'band' entry (the same splice as Frost Heave and the Ramblers).
+    var LS = arr(K, 'licenseScandals'), mineLS = P.licenseScandals.filter(function (x) { return !LS.some(function (y) { return y && y.card === x.card; }); }), si = -1;
+    for (var li = 0; li < LS.length; li++) if (LS[li] && LS[li].who === 'band') { si = li; break; }
+    if (si < 0) LS.push.apply(LS, mineLS); else LS.splice.apply(LS, [si, 0].concat(mineLS));
 
     // ---- studio events, drama ----
     addCards(arr(K, 'studioEvents'), P.studioEvents);
