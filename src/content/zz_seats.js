@@ -26,7 +26,7 @@
     rhythm: { hail_damage: 'jaxon', frost_heave: 'rox', gravel_kings: 'chase', grid_road_ramblers: 'travis' },
     lead: { hail_damage: 'dana', frost_heave: 'benny', gravel_kings: 'lenny', grid_road_ramblers: 'earl' }
   };
-  var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LSW = ['local', 'signed', 'world'];
+  var GLS = ['garage', 'local', 'signed'], ALL = ['garage', 'local', 'signed', 'world'], LSW = ['local', 'signed', 'world'];
   function allGate(era) { return { era: era.slice(), genre: GENRES.slice(), band: BANDS.slice() }; }
   function bandGate(b, era, extra) {
     var g = { era: era.slice(), genre: [GENRE[b]], band: [b] };
@@ -56,7 +56,7 @@
       fx.chat = clone(lines);
     });
     var c = { id: id, type: type, speaker: speaker, title: title, chain: chain, step: step, seat: [seat], gate: allGate(era), text: text, choices: choices };
-    if (step === 1) c.weight = 3;
+    if (step === 1) c.weight = 12;   // the seat's own storyline: it should start in the first year or two
     return c;
   }
   function flags(o) { return { flags: o }; }
@@ -64,7 +64,7 @@
 
   var cards = [
     /* ==== Nobody Hears the Bass (seat: bass) =================================================================== */
-    arc('bass', 1, 'arc_bass_1_unmiked', 'scene', '@front', 'Nobody Mics the Bass', GL,
+    arc('bass', 1, 'arc_bass_1_unmiked', 'scene', '@front', 'Nobody Mics the Bass', GLS,
       "A real sound guy, for once. He mics {front}, the guitars, {drummer}'s kit and a dog that wandered in. Not you. Nobody " +
       'notices for three songs. Not the crowd, not the band. Not, if you are honest, you.',
       [ch('March over mid-song', { buzz: 3 }, "He squints at you. 'Oh, there's a bass?' He finds a cable. It was the dog's cable.", 'Buzz ↑ · the sound guy remembers you'),
@@ -75,7 +75,7 @@
         gravel_kings: ['@drummer', 'I taped a mic to your cab at the break. Labelled the cable. You are welcome. Floss tonight.'],
         grid_road_ramblers: ['@drummer', "Nobody heard the bass. That's how you know it's working. The hat heard it. The hat hears everything."] },
       2, 4),
-    arc('bass', 2, 'arc_bass_2_poll', 'fame', '@front', 'The Poll', GLS,
+    arc('bass', 2, 'arc_bass_2_poll', 'fame', '@front', 'The Poll', ALL,
       "The band page ran a poll: 'Name the band.' {front} got 94 percent. {drummer} got 71. The bassist got zero. One person wrote in " +
       "'the tall one?' You are not the tall one.",
       [ch('Post a selfie with the bass', { fans: 15, buzz: 2 }, 'Forty-one likes. Thirty are for the bass. Somebody asks if it is for sale. Somebody else asks if you are.', 'Fans ↑'),
@@ -86,7 +86,7 @@
         gravel_kings: ['@drummer', 'I got 63 percent. Most of them wrote "the one with the floss". I will take it.'],
         grid_road_ramblers: ['@drummer', "The hat got 40 percent. The hat isn't even in the band. The hat's in every band."] },
       3, 5),
-    arc('bass', 3, 'arc_bass_3_funk', 'weird', 'mom', 'Thursday Night', GLS,
+    arc('bass', 3, 'arc_bass_3_funk', 'weird', 'mom', 'Thursday Night', ALL,
       "You have started a secret Thursday funk night at the Legion, under a fake name: Dr. Lowend and the Basement Committee. " +
       "It drew ninety people last week. The band's last show drew sixty. Mom found out from the Legion newsletter.",
       [ch('Keep the wig on', { fund: 80, burnout: 5 }, 'Every Thursday a different wig and a different first name. The Legion manager thinks you are four people. He pays all four.', '+$80 · Burnout ↑'),
@@ -132,7 +132,7 @@
       'end'),
 
     /* ==== The Engine Room (seat: rhythm) ======================================================================= */
-    arc('rhythm', 1, 'arc_rhythm_1_compliment', 'scene', '@front', 'Whose Riff', GL,
+    arc('rhythm', 1, 'arc_rhythm_1_compliment', 'scene', '@front', 'Whose Riff', GLS,
       "At the house party a guy in a toque grabs {soloist}: 'That riff! In the second song! Genius!' You wrote that riff. " +
       "{soloist} says 'thanks, man'. The toque guy buys {soloist} a pop.",
       [ch('Set the record straight', { buzz: 2, mood: { '@soloist': -4 } }, "You explain the riff, chord by chord. The toque guy says 'cool, cool' and asks {soloist} to sign his toque.", 'Buzz ↑ · {soloist} ↓'),
@@ -143,7 +143,7 @@
         gravel_kings: ['@drummer', 'In 1985 the rhythm guitarist got the girl. Or so I have been told. By myself. Repeatedly.'],
         grid_road_ramblers: ['@drummer', "I'll write a song about it. A riff gets stolen at a house party. It's about a truck, mostly."] },
       2, 4),
-    arc('rhythm', 2, 'arc_rhythm_2_anyone', 'weird', '@grumbler', 'The Part Anyone Can Play', GLS,
+    arc('rhythm', 2, 'arc_rhythm_2_anyone', 'weird', '@grumbler', 'The Part Anyone Can Play', ALL,
       "The clerk at Riff Raff Music, the one with the goatee, watches you test strings and says rhythm guitar is 'the part " +
       "anyone can play'. There is a stool by the window. It is clearly for a strum-off.",
       [bet('Strum-off at the window', 'your right hand vs his goatee', 'You sit on the stool. He sits on the amp.', {}, 0.55, 'drumSkill',
@@ -156,7 +156,7 @@
         gravel_kings: ['@drummer', 'Anyone can play rhythm. Anyone can play drums. Not everyone can do it in leather. That is the separator.'],
         grid_road_ramblers: ['@drummer', "Strummed for years. The trick's not your hand. It's your heart. And your hand."] },
       3, 5),
-    arc('rhythm', 3, 'arc_rhythm_3_click', 'drama', '@front', 'The Click Track Wars', GLS,
+    arc('rhythm', 3, 'arc_rhythm_3_click', 'drama', '@front', 'The Click Track Wars', ALL,
       "A producer from the city sits in on rehearsal and wants the whole band on a click. {front} wants you to BE the click. " +
       "{drummer} wants the click to be a cowbell. The producer has a laptop and a lot of feelings.",
       [ch('Play to the click', { drumSkill: 2, burnout: 4 }, 'Three hours with a beep in your ear. Your time is perfect. Your soul is a spreadsheet. The demo sounds great.', 'Your chops ↑ · Burnout ↑'),
@@ -204,8 +204,8 @@
       'end'),
 
     /* ==== Solo Too Long (seat: lead) ============================================================================ */
-    arc('lead', 1, 'arc_lead_1_too_long', 'scene', '@front', 'Solo Too Long', GL,
-      'Your first real solo, at your first real gig. Twelve people and a dog came. By minute six of the solo the twelve people ' +
+    arc('lead', 1, 'arc_lead_1_too_long', 'scene', '@front', 'Solo Too Long', GLS,
+      'Your longest solo yet, at a real gig in a real hall. Twelve people and a dog came. By minute six the twelve people ' +
       'leave for snacks. The dog stays. The dog gets it.',
       [ch('Finish the solo', { drumSkill: 1, burnout: 4 }, 'Minute nine. The twelve come back with nachos. You are still soloing. They clap, out of respect for the nachos.', 'Your chops ↑ · Burnout ↑'),
        ch('Land it early', { chemistry: 4 }, 'You end it at minute seven, on a big bend. {front} looks relieved in a way you will think about for years.', 'Chemistry ↑'),
@@ -215,7 +215,7 @@
         gravel_kings: ['@drummer', 'That solo sounded like a famous solo. In a good way. In a way that did not sound like a lawsuit. Rare.'],
         grid_road_ramblers: ['@drummer', 'In 1979 I played a solo so long the bar closed around me. They let me finish. You get to finish too.'] },
       2, 4),
-    arc('lead', 2, 'arc_lead_2_pedal', 'money', '@grumbler', 'The Pedal', GLS,
+    arc('lead', 2, 'arc_lead_2_pedal', 'money', '@grumbler', 'The Pedal', ALL,
       "There is a pedal at the pawn shop: the Moose Fuzz Deluxe, hand-wired, $300. It makes your guitar sound like a snowmobile " +
       'falling down stairs. You need it. You do not have $300. You have a dream and a bus pass.',
       [ch('Buy it', { fund: -250, drumSkill: 2 }, 'You buy it. You play nothing but the Moose Fuzz for a week. The band asks you to play anything else. You play the Moose Fuzz.', '−$250 · Your chops ↑↑'),
@@ -226,7 +226,7 @@
         gravel_kings: ['@drummer', 'That pedal is on a famous record. I can hear it. Which famous record? Buy it and find out. Do not tell my lawyer.'],
         grid_road_ramblers: ['@drummer', "Played through a pedal like that in 1979. Set my amp on fire. Best solo I ever played. Buy it."] },
       3, 5),
-    arc('lead', 3, 'arc_lead_3_quarterly', 'fame', 'dj', 'Shred Quarterly', GLS,
+    arc('lead', 3, 'arc_lead_3_quarterly', 'fame', 'dj', 'Shred Quarterly', ALL,
       "Shred Quarterly, the guitar magazine printed in a basement in Brandon, wants your rig rundown. Two pages. Pick weights, " +
       'string gauges, the works. Fair warning: everyone who does the rig rundown talks only in specs for a week.',
       [ch('Do the rundown', { buzz: 6, mood: { all: -3 } }, "You do it. For a week you answer every question in gauges. 'How are you?' 'Ten to forty-six.' The band starts a swear jar for specs.", 'Buzz ↑ · Moods ↓'),

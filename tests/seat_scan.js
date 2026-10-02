@@ -78,7 +78,7 @@ function seatAware(GG) {
     if (Array.isArray(v)) { v.forEach(x => walk(x, here, depth + 1)); return; }
     Object.keys(v).forEach(k => walk(v[k], here || AWARE_KEYS.indexOf(k) >= 0, depth + 1));
   })(GG.content, false, 0);
-  return out;
+  return out.sort((a, b) => b.source.length - a.source.length);   // longest first: a card's text before its title inside it
 }
 // HARD: drum words aimed at the player are leaks even inside a LEFT phrase ("You are the drummer.", "your sticks").
 const HARD = /\b(you(?:'re| are) (?:the|a|our) drummer|your (?:drums?|drum kit|kit|sticks|drumsticks|snare|kick|kick drum|hi-?hats?|cymbals?|fills?|double kick|blast beats?|backbeat|drum face|drum groove|drum throne|throne)|you drum|you drummed|like you drum)\b/i;
