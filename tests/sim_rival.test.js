@@ -353,4 +353,41 @@ test('bots: full careers with showdowns of every live kind, a crack for the good
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '23_sim_rival.js is pure');
 });
 
+// v1.0 (plan_contract_1.0 Q2, §4.4): the Sad Dome is week 21 of the career's LAST year (R.finalAt). Bonus years move it to
+// year 12 / 13 (announced in that year); a 10-year career (or noBonus) keeps it in year 10.
+test('v1.0: the Sad Dome in the last year: +3 → year 13 week 21 (nothing in year 10), noBonus → year 10; announced in that year', () => {
+  const GG = fresh(), R = GG.rival;
+  const s = band(GG, 30000, 9 * 24 + 21); s.era = 'signed'; s.bonusYears = 3; s.maxWeeks = 312;
+  eq(R.finalAt(s), { year: 13, week: 21 });
+  eq(R.next(s).final.week, 12 * 24 + 21, 'next(): the final is week 309');
+  ok(R.next(s).final.reachable, 'reachable inside the 13-year career');
+  const r = GG.career.startWeek(s);
+  ok(!(r.card && /final_eve/.test(r.card.id)) && !(s.gig && s.gig.showdown && s.gig.showdown.kind === 'final') && !R.pending(s), 'y10 w21 of a bonus career: no Sad Dome');
+  GG.career.setPlan(s, ['rest', 'rest', 'rest']); GG.career.runWeek(s, AUTO); GG.career.endWeek(s);
+  ok(!s.finalShowdown, 'no final in year 10');
+  const t = band(GG, 30000, 12 * 24 + 1); t.era = 'signed'; t.bonusYears = 3; t.maxWeeks = 312;
+  t.phase = 'wrap'; GG.career.endWeek(t);   // a year-13 wrap announces it
+  ok(t.rival.finalNews && t.rival.news.some(n => n.kind === 'finalSoon'), 'announced in year 13');
+  const u = band(GG, 30000, 12 * 24 + 21); u.era = 'signed'; u.bonusYears = 3; u.maxWeeks = 312;
+  const ru = GG.career.startWeek(u);
+  ok(ru.card && /final_eve/.test(ru.card.id), 'year 13 week 21: the Sad Dome eve card');
+  GG.career.resolveCard(u, 1);
+  ok(u.gig && u.gig.showdown.kind === 'final' && R.pending(u).kind === 'final', 'booked at the Sad Dome in year 13');
+  GG.career.setPlan(u, ['book', 'rest', 'rest']); GG.career.runWeek(u, AUTO);
+  ok(u.finalShowdown && u.finalShowdown.week === 309, 'the final is played in week 309');
+  GG.legacy.noBonus = true;
+  const v = band(GG, 30000, 9 * 24 + 21, 3); v.era = 'signed';
+  eq(R.finalAt(v), { year: 10, week: 21 }, 'noBonus: year 10');
+  GG.legacy.noBonus = false;
+});
+
+test('v1.0: the scene\'s filler bands fade over the career\'s own length (a 13-year career fades them more slowly)', () => {
+  const GG = fresh(true), R = GG.rival;
+  const a = band(GG, 2500, 9 * 24 + 12), b = band(GG, 2500, 9 * 24 + 12);
+  b.bonusYears = 3; b.maxWeeks = 312;
+  const fa = R.leaderboard(a).filter(x => !x.you && !x.rival), fb = R.leaderboard(b).filter(x => !x.you && !x.rival);
+  const faded = fa.filter((x, i) => fb[i] && fb[i].id === x.id && fb[i].fans > x.fans).length;
+  ok(fa.length && fb.length && fa.every((x, i) => fb.find(y => y.id === x.id).fans >= x.fans) && faded > 0, 'year 10: the same filler band has as many or more fans in a 13-year career (' + faded + ' rows higher)');
+});
+
 done('sim_rival');

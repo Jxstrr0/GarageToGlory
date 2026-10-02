@@ -346,6 +346,27 @@ test('bots: 240-week careers finish, stay in RANGES, fund >= 0, garage protectio
   }
 });
 
+// v1.0 (plan_contract_1.0 §5 E): bonus years. A seeded good-bot career per band reaches the World stage early, earns +2 / +3
+// and plays on to week 288 / 312 with the invariants holding (ranges, fund >= 0, one ending at its own last week).
+test('v1.0: a seeded 312-week bonus career per band finishes, no exceptions, invariants hold', () => {
+  for (const band of ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+    const GG = fresh();
+    const s = GG.career.newCareer({ seed: 1234, bandId: band, player: { name: 'Bot' } });
+    let weeks = 0, ends = 0;
+    GG.on('career:end', () => ends++);
+    while (!s.ended) {
+      GG.career.botWeek(s, 'good'); weeks++;
+      const bad = inRanges(GG, s);
+      if (bad) throw new Error(band + ' week ' + s.totalWeek + ': ' + bad);
+      if (s.fund < 0) throw new Error(band + ': fund negative after wrap');
+      if (weeks > 400) throw new Error(band + ': never ended');
+    }
+    ok([2, 3].includes(s.bonusYears) && s.maxWeeks === 240 + 24 * s.bonusYears, band + ': bonus years ' + s.bonusYears);
+    eq([weeks, s.totalWeek, s.year, s.week, s.phase, ends], [s.maxWeeks, s.maxWeeks, s.maxWeeks / 24, 24, 'ended', 1], band);
+    ok(s.legacy && s.legacy.years === s.maxWeeks / 24 && s.history.length <= GG.content.economy.historyMax, band + ': the ending, history capped');
+  }
+});
+
 test('determinism: same seed => identical career; no Math.random/Date in sims', () => {
   const play = seed => { const GG = fresh(LONG); const s = GG.career.newCareer({ seed }); for (let i = 0; i < 120; i++) GG.career.botWeek(s, 'avg'); return JSON.stringify(s); };
   const rnd = Math.random, now = Date.now;

@@ -1,5 +1,5 @@
 // 2f_sim_legacy.js (v1.0 "Glory", Lane E; plan/plan_contract_1.0.md §4.1–4.4): the Legacy score, the ending tier, special
-// endings, epilogue cards, bonus years and the career's final year. Pure sim: no DOM, no audio, no Math.random, no clock;
+// endings, epilogue cards, bonus years and the career's final year. Pure sim: no DOM, no audio, no random rolls, no clock;
 // never draws from the career RNG (variant picks hash careerId + member id). Content: GG.content.endings (content/endings.js).
 // Seat-neutral: no Legacy part reads the seat (state.seat || 'drums' is only stored, and keys the player's epilogue card).
 // API (GG.legacy):

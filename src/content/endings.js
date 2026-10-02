@@ -102,7 +102,7 @@
       { id: 'band_of_strangers', name: 'Band of Strangers', test: { kind: 'originals', kept: 0 }, unlock: { emblem: 'price_tag' },
         line: 'Not one original left. {band} is now you and some strangers from Kijiji.',
         lineByCount: {
-          0: 'Not one original left. {band} is now you, a drum kit and a Kijiji ad that never expired.',
+          0: 'Not one original left. {band} is now you, your {instrument} and a Kijiji ad that never expired.',
           1: 'Not one original left. {band} is now you and one stranger from Kijiji. You still split the gas money.',
           2: 'Not one original left. {band} is now you and two strangers from Kijiji. Nobody knows the old songs. The crowd sings them anyway.',
           3: 'Not one original left. {band} is now you and three strangers from Kijiji. The listing said "band, gently used". It was accurate.',
