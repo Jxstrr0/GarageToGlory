@@ -896,7 +896,11 @@
         extras: ch.extras, extrasHit: cur.extrasHit, stray: cur.stray, cheer: cur.cheer, stale: song.stale || 0 };
       if (cur.hold) {   // v1.1 string seats: holds, rings, how much you held; the lead seat's spotlight time (Solo Too Long)
         r.seat = seat; r.holds = cur.holds; r.rings = cur.rings; r.held = cur.holds ? Math.round(cur.heldSum / cur.holds * 1000) / 1000 : 1;
-        if (seat === 'lead') { r.dur = Math.round(ch.duration * 10) / 10; r.solo = Math.round(ch.solos.reduce(function (a, x) { return a + x.t1 - x.t0; }, 0) * 10) / 10; }
+        if (seat === 'lead') {   // your spotlight: seconds of solo bars, and how many of your notes were in them
+          r.dur = Math.round(ch.duration * 10) / 10; r.solo = Math.round(ch.solos.reduce(function (a, x) { return a + x.t1 - x.t0; }, 0) * 10) / 10;
+          r.soloNotes = n.filter(function (x) { return ch.solos.some(function (q) { return x.t >= q.t0 - 1e-6 && x.t < q.t1 - 1e-6; }); }).length;   // (+ the shred bar)
+          r.allNotes = n.length;
+        }
       }
       var i = cur.i;
       live.songs[i] = r; live.songs.length = i + 1;

@@ -95,7 +95,7 @@
   function chat(s, list, d) {
     if (!GG.career || !GG.career.postChat) return [];
     return (list || []).map(function (x) {
-      if (!x || !x.text) return null;
+      if (!x || !x.text || (GG.career.seatOk && !GG.career.seatOk(s, x))) return null;   // v1.1: a line's seat / swapped gates
       var who = GG.career.isAlias && GG.career.isAlias(x.who) ? GG.career.roleOf(s, x.who) : x.who;
       if (!who) return null;
       var member = (s.members || []).some(function (m) { return m.id === who; });

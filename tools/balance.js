@@ -53,6 +53,7 @@ if (SEAT) {   // the string seats chart from the song's timeline (pure; no Web A
   new Function('window', fs.readFileSync(path.join(__dirname, '..', 'src', '30_audio.js'), 'utf8'))({ GG: GG });
 }
 let seatNow = null;
+const SEED_OFFSET = parseInt(process.env.SEED_OFFSET, 10) || 0;   // v1.1: another set of seeds (a noise check for the ±10 % gate)
 const NO_BONUS = !!process.env.NO_BONUS;   // v1.0: the v0.9 report, exactly (bonus years off)
 if (GG.legacy) GG.legacy.noBonus = NO_BONUS;
 const FANS_CAP = NO_BONUS ? 100000 : 250000, FANS_CAP_TEXT = NO_BONUS ? '100k' : '250k';
@@ -143,7 +144,7 @@ function liveProbe(s) {   // a live bot gig at a local room, on a copy of the ca
 function run(style, bandId) {
   const rows = [];   // rows[year] = array of per-seed year stats
   for (let seed = 1; seed <= seeds; seed++) {
-    const s = GG.career.newCareer(Object.assign(bandId ? { seed: seed * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: seed * 7919, player: { name: 'Bot' } }, seatNow ? { seat: seatNow } : {}));
+    const s = GG.career.newCareer(Object.assign(bandId ? { seed: (seed + SEED_OFFSET) * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: (seed + SEED_OFFSET) * 7919, player: { name: 'Bot' } }, seatNow ? { seat: seatNow } : {}));
     let y = null, full = null, sprinter = null, needW = null, needPkg = null;   // v0.9: the first World week a payoff package's needs are met
     if (bs) { bs.firstKm.push(s.gig && s.gig.km != null ? s.gig.km : (s.gig ? 0 : null)); bs.firstGig.push(s.gig ? s.gig.venueId : null); }
     for (let w = 0; w < years * WPY && !s.ended; w++) {

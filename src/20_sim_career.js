@@ -635,7 +635,7 @@
     },
     chat: function (state, v, d) {
       var list = Array.isArray(v) ? v : [v];
-      for (var i = 0; i < list.length; i++) if (list[i] && list[i].text) postChat(state, list[i].who, list[i].text, d);
+      for (var i = 0; i < list.length; i++) if (list[i] && list[i].text && career.seatOk(state, list[i])) postChat(state, list[i].who, list[i].text, d);   // v1.1: a line's seat / swapped gates
     },
     // v0.4 (drama). member: { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (see 27_sim_drama).
     member: function (state, v, d) { v = resolveMemberSpec(state, v); if (GG.drama && v && (!Array.isArray(v) || v.length)) GG.drama.applyMember(state, v, d); },

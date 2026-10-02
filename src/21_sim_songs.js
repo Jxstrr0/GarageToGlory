@@ -385,14 +385,15 @@
     var lanes = Math.max(pa.lanes, pb.lanes), sum = 0;
     SECTIONS.forEach(function (name) { sum += jaccard(pa.sections[name], pb.sections[name], lanes, -1); });
     var d = sum / SECTIONS.length;
-    // v1.1: two parts for the same seat compare too (half the score): rows per section + the same progression / hook.
+    // v1.1: two parts for the same seat compare too (rows per section + the same progression / hook): a song is as recycled
+    // as its drums only when your part is recycled too (a fresh part over an old beat reads 60 % as recycled).
     if (pa.part && pb.part && pa.part.seat === pb.part.seat) {
       var ps = 0, k = songs.part.key(pa.part.seat);
       SECTIONS.forEach(function (name) {
         var x = pa.part.sections[name], y = pb.part.sections[name];
         ps += 0.8 * jaccard(x.rows, y.rows, x.rows.length, -1) + (x[k] === y[k] ? 0.2 : 0);
       });
-      d = 0.5 * d + 0.5 * ps / SECTIONS.length;
+      d = d * (0.6 + 0.4 * ps / SECTIONS.length);
     }
     return Math.round(d * 1000) / 1000;
   };
@@ -959,7 +960,7 @@
     var cands = [];
     state.members.forEach(function (m) {
       if (m.status !== 'active' || !L[m.id] || !Array.isArray(L[m.id].custom)) return;
-      L[m.id].custom.forEach(function (c) { if (c && c.text) cands.push({ who: m.id, when: c.when || 'any', text: c.text }); });
+      L[m.id].custom.forEach(function (c) { if (c && c.text && (!K.seatOk || K.seatOk(state, c))) cands.push({ who: m.id, when: c.when || 'any', text: c.text }); });   // v1.1: seat gates
     });
     if (cands.length) {
       var cr = GG.RNG(GG.hashSeed((state.seed || 1) + '|custom|' + song.id)), sim = null;

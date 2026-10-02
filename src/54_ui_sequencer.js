@@ -550,17 +550,28 @@
     order: [{ role: 'vocals', text: 'Verse, chorus, repeat. People like knowing where they are.' }, { role: 'bass', text: 'Short songs get played. Long songs get talked about.' }],
     name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }]
   };
+  // v1.1 string seats: coach[genre].bySeat[seat][step] and coach.bySeat[seat][step] come first (Lane A's lines; role
+  // 'drummer' = whoever is on the kit), then SEAT_COACH (neutral), then the drum-seat sets; a line's seat / swapped gates hold.
+  var SEAT_COACH = {
+    drums: [{ role: 'drummer', text: 'I picked a groove. Tell me if you want something else. Or do not. I will play it anyway.' }],
+    verse: [{ role: 'drummer', text: 'Lock in with my kick and we are a band. Wander off and we are two bands.' }, { role: 'vocals', text: 'Leave me some room to sing over {yourPart}.' }],
+    chorus: [{ role: 'vocals', text: 'The chorus needs a lift. Make {yourPart} bigger than the verse.' }, { role: 'drummer', text: 'Same chords as the verse? Bold. Wrong, but bold.' }],
+    bridge: [{ role: 'drummer', text: 'The bridge is where we get weird. Then we come home.' }]
+  };
   function coachFor(D, step) {
     // (coach[genre] || {})[step] || coach[step] (the neutral flat set), then the UI's own COACH; the first set with a talker wins
     var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
-    var sets = [mine[step], CO[step], COACH[step]].filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
-    var act = ui.talkers(state);
+    var sp = seat(), bySeat = function (o) { return o && o.bySeat && o.bySeat[sp] ? o.bySeat[sp][step] : null; };
+    var seatSets = sp !== 'drums' ? [bySeat(mine), bySeat(CO), SEAT_COACH[step]] : [];
+    var sets = seatSets.concat([mine[step], CO[step], COACH[step]]).filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
+    var act = ui.talkers(state), dr = sp !== 'drums' && GG.career.drummerId ? GG.career.drummerId(state) : null;
     for (var q = 0; q < sets.length; q++) {
       var lines = sets[q];
       for (var k = 0; k < lines.length; k++) {
         var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
-        if (!ui.ownLines([ln.text], state).length) continue;
-        for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+        if (!ui.ownLines([ln.text], state).length || (GG.career.seatOk && !GG.career.seatOk(state, ln))) continue;
+        if (ln.role === 'drummer') { if (dr && act.some(function (m) { return m.id === dr; })) return { who: dr, text: ui.fill(ln.text, state) }; continue; }
+        for (var j = 0; j < act.length; j++) if (act[j].id !== dr && re.test(GG.career.stageRole ? GG.career.stageRole(state, act[j]) : act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
       }
     }
     var own = sets.length ? ui.ownLines(sets[0], state) : [];

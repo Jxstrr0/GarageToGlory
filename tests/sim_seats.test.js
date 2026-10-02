@@ -237,7 +237,9 @@ test('PART: sanitize keeps the part (rows clipped / padded, indexes clamped), su
   const a = GG.songs.sanitize(Object.assign(GG.songs.signature('metal'), { part: P.full('metal', 'bass', GG.songs.signature('metal')) }), null, 'metal');
   const b = JSON.parse(JSON.stringify(a)); Object.values(b.part.sections).forEach(x => { x.rows = x.rows.map(() => 'x.x.x.x.x.x.x.x.'); x.prog = (x.prog + 1) % 3; });
   eq(GG.songs.similarity(a, a), 1, 'same song, same part');
-  ok(GG.songs.similarity(a, b) < GG.songs.similarity(a, a) && GG.songs.similarity(a, b) >= 0.5, 'the same drums with a new part read less recycled ' + GG.songs.similarity(a, b));
+  ok(GG.songs.similarity(a, b) < GG.songs.similarity(a, a) && GG.songs.similarity(a, b) >= 0.6, 'the same drums with a new part read less recycled ' + GG.songs.similarity(a, b));
+  const c2 = JSON.parse(JSON.stringify(a)); c2.sections.verse = c2.sections.verse.map(() => 'x...............');
+  ok(GG.songs.similarity(a, c2) <= GG.songs.similarity(GG.songs.sanitize(Object.assign({}, a, { part: undefined })), GG.songs.sanitize(Object.assign({}, c2, { part: undefined }))) + 1e-9, 'a part never makes a song read more recycled than its drums');
   eq(GG.songs.similarity(GG.songs.signature('metal'), GG.songs.signature('metal')), 1, 'drum songs: v1.0');
   // careers: every string-seat song carries a part (jams, starters), deterministic per song id
   STR.forEach(seat => {
@@ -411,13 +413,20 @@ test('seat achievements: kinds evaluate (finished seat careers, a lead solo long
   eq(AC.SEAT_KINDS, ['seatCareer', 'soloTooLong', 'allSeats']);
   const bass = career('hail_damage', 'bass'), lead = career('hail_damage', 'lead');
   eq([AC.test(bass, { kind: 'seatCareer', seat: 'bass' }), AC.test(Object.assign(bass, { ended: true }), { kind: 'seatCareer', seat: 'bass' }), AC.test(bass, { kind: 'seatCareer', seat: 'rhythm' })], [false, true, false], 'Low End on a finished bass career');
-  eq([AC.test(lead, { kind: 'soloTooLong' }, { r: { songResults: [{ solo: 70, dur: 120 }] } }), AC.test(lead, { kind: 'soloTooLong' }, { r: { songResults: [{ solo: 30, dur: 120 }] } }),
-    AC.test(bass, { kind: 'soloTooLong' }, { r: { songResults: [{ solo: 70, dur: 120 }] } })], [true, false, false], 'Solo Too Long: the lead seat’s spotlight > half the song');
+  eq([AC.test(lead, { kind: 'soloTooLong' }, { r: { songResults: [{ soloNotes: 64, notes: 119 }] } }), AC.test(lead, { kind: 'soloTooLong' }, { r: { songResults: [{ soloNotes: 30, notes: 120, allNotes: 140 }] } }),
+    AC.test(bass, { kind: 'soloTooLong' }, { r: { songResults: [{ soloNotes: 70, notes: 120 }] } }), AC.test(lead, { kind: 'soloTooLong', by: 'time', min: 0.15 }, { r: { songResults: [{ solo: 30, dur: 120 }] } })],
+    [true, false, false, true], 'Solo Too Long: more of your notes in the solo than in the rest of the song (lead only; by time too)');
   eq([AC.test({}, { kind: 'allSeats' }, { careers: { bySeat: { drums: 1, bass: 2, rhythm: 1, lead: 1 } } }), AC.test({}, { kind: 'allSeats' }, { careers: { bySeat: { drums: 3, bass: 1, lead: 1 } } })], [true, false], 'Musical Chairs');
   // a lead gig's song results carry the spotlight time
   const s = jammed('hail_damage', 'lead', 4);
   const r = GG.gig.botPlay(GG.gig.session(s, GG.gig.makeGig(s, 'legion_63', 'book'), null, { emit: false, difficulty: 'hard' }), { accuracy: 1 }, GG.RNG(2));
-  ok(r.songResults.every(x => x.dur > 0 && x.solo >= 0), 'lead song results: solo / dur ' + JSON.stringify(r.songResults.map(x => [x.solo, x.dur])));
+  ok(r.songResults.every(x => x.dur > 0 && x.solo >= 0 && x.soloNotes >= 0 && x.soloNotes <= x.notes), 'lead song results: solo / dur / soloNotes ' + JSON.stringify(r.songResults.map(x => [x.solo, x.dur, x.soloNotes, x.notes])));
+  // a short metal song with a solo section: the solo has more of your notes than the rest (the achievement is reachable)
+  s.gear.sections = ['outro', 'solo'];
+  let p = GG.songs.signature('metal', s.gear); p.arrangement = GG.songs.ARRANGEMENTS.short.slice(); p = GG.songs.addSection(p, 'solo', s.gear);
+  s.songs = [GG.songs.create(s, p, 'Shred Too Long')]; s.liveGig = null;
+  const r2 = GG.gig.botPlay(GG.gig.session(s, GG.gig.makeGig(s, 'legion_63', 'book'), null, { emit: false, difficulty: 'hard' }), { accuracy: 1 }, GG.RNG(2));
+  ok(AC.test(s, { kind: 'soloTooLong' }, { r: r2 }), 'Solo Too Long is reachable: ' + JSON.stringify(r2.songResults.map(x => [x.soloNotes, x.allNotes])));
 });
 
 test('songs.reactions by seat: the swapped drummer reacts from the kit, never on the drum seat; the career RNG never moves for it', () => {

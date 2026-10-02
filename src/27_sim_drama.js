@@ -326,7 +326,7 @@
       if (!x || m.status === 'active' || x.storyline === 'rival') return;
       var ex = exitDef(m), beats = ex && ex.beats || [], weeks = state.totalWeek - x.since;
       while ((x.beat || 0) < beats.length && beats[x.beat || 0].at <= weeks) {
-        var b = beats[x.beat || 0], msg = chat(state, b.who || m.id, b.text, 'news');
+        var b = beats[x.beat || 0], msg = GG.career.seatOk && !GG.career.seatOk(state, b) ? null : chat(state, b.who || m.id, b.text, 'news');   // v1.1: seat gates
         x.beat = (x.beat || 0) + 1;
         if (msg) { wrap.chat.push(msg); wrap.drama.push(msg.text); }
       }
@@ -427,7 +427,7 @@
       var ra = ex.returnAfter || E.returnAfter;
       m.status = ex.away ? 'away' : 'quit';
       m.exit = { storyline: ex.id, since: state.totalWeek, returnDue: state.totalWeek + rng.int(ra[0], ra[1]), beat: 0 };
-      if (ex.quitLine) chat(state, ex.quitLine.who || m.id, ex.quitLine.text, 'news');
+      if (ex.quitLine && (!GG.career.seatOk || GG.career.seatOk(state, ex.quitLine))) chat(state, ex.quitLine.who || m.id, ex.quitLine.text, 'news');
     }
     if (GG.world && GG.world.syncDriver) GG.world.syncDriver(state);   // v0.6.1: the driver quit -> you drive
     GG.emit('member:quit', { id: m.id });
@@ -444,7 +444,7 @@
     m.returns = (m.returns || 0) + 1;
     m.exit = null;
     bump(state, 'returns');
-    if (ex && ex.backLine) chat(state, ex.backLine.who || m.id, ex.backLine.text, 'news');
+    if (ex && ex.backLine && (!GG.career.seatOk || GG.career.seatOk(state, ex.backLine))) chat(state, ex.backLine.who || m.id, ex.backLine.text, 'news');
     if (GG.world && GG.world.syncDriver) GG.world.syncDriver(state);   // v0.6.1: the driver is back behind the wheel
     GG.emit('member:return', { id: m.id });
   }
