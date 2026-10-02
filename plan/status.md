@@ -2,6 +2,26 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
+## RESUME HERE (v1.1 "Seats" paused 2026-10-02 14:40 UTC, owner's stop time; delete this block when v1.1 merges)
+- Branch `v1.1-seats` (pushed). Stage 0 = 829b059. Lanes **D audio** + **B sims/gameplay UI** are finished and merged (a3aeea7).
+- Unfinished lanes, saved as WIP on origin (both on top of 829b059, not merged yet):
+  - **C render** → `wip-v11-c` (58a29ee). C1–C5 done (instrument models, stage seat camera + swapped drummer, garage seat,
+    creator Your gear tab, carpet/recap/van). C6 in progress: pw_stage/pw_garage/pw_creator/pw_recap seat sections and
+    sim_creator gear look written; contact sheet + full regression not yet run.
+  - **A content** → `wip-v11-a` (28607e2). A1 done (SEAT= strict leak scan). A2 seat audit pass part-way (tokenise/gate per
+    file, `src/content/zz_seats.js` started). A3–A6 not started (bands seatLines/bySeat, role arcs + 12 finales + player
+    epilogues, shop bySeat names/creator parts/coach lines/seat achievements, content_seats test + runs).
+- Known failures after D+B merge (3 sim_seats checks; integration work): doom-tempo rhythm chart needs holds/chords;
+  frost_heave lead avg bot 89.8 vs drums 85.8 (band too wide); "Solo Too Long" reachability.
+- Resume steps:
+  1. Resume workflow run `wf_867f4c13-592` (script `workflows/scripts/v11-seats-build-wf_867f4c13-592.js` in the session dir;
+     if that session is gone, relaunch lanes C and A with the same contract sections). D and B results are cached.
+     Add RESUME notes to the C and A prompts: start from `git fetch origin wip-v11-<c|a> && git reset --hard
+     origin/wip-v11-<c|a>` (not 829b059), read the task list above, finish the remaining tasks only. Escape backticks.
+  2. Integrator: merge C then A into `v1.1-seats` (D+B already in, a3aeea7), lead work (51 seat picker, pw_seats), fix the
+     3 sim_seats failures, build (gate 5,000,000 B), node tests + pw matrix at 390x844 and 440x956.
+  3. One review pass (≤ 3 lenses), verify blocker/major only, fix. PR `v1.1-seats` → main, merge, delete `wip-v11-*`.
+
 ## Version
 - Current: **1.0.1.0** = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix (one touch on a lane seam hits both lanes only
   when both have a note due; see the note below). 1.0 "Glory" = 0.9 "Genres" + endings (Legacy score, five tiers, eight
