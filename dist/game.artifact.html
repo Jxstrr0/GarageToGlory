@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V1.0.0.0</title>
+<title>Garage to Glory - V1.0.1.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -1100,12 +1100,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.0.0.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.0.1.0</div></div>
 </div>
 <script>/* 01_ns.js */
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '1.0.0.0';
+  GG.VERSION = '1.0.1.0';
   GG.content = GG.content || {};
 
   var handlers = {};
@@ -24308,6 +24308,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       emit('gig:judge', { lane: C.LANES[li], judgement: out.judgement, combo: S.combo, crowd: S.crowd });
       return out;
     };
+    S.due = function (lane, t) {
+      if (!cur) return false;
+      var li = typeof lane === 'number' ? lane : LI[lane];
+      if (!(li >= 0 && li < cur.byLane.length)) return false;
+      if (assists.autoKick && li === LI.kick) return false;
+      var list = cur.byLane[li], n = cur.notes, best = -1, bestD = 1e9;
+      for (var k = cur.lp[li]; k < list.length; k++) {
+        var x = n[list[k]];
+        if (x.t > t + W.good) break;
+        if (x.j !== 0 || x.free) continue;
+        var d = Math.abs(t - x.t);
+        if (d <= W.good && d < bestD) { best = list[k]; bestD = d; }
+      }
+      if (best < 0) return false;
+      var dh = li === LI.kick && cur.dblHit >= 0 ? n[cur.dblHit] : null;
+      if (dh && Math.abs(t - dh.t2) <= W.good && Math.abs(t - dh.t2) < bestD) return false;
+      var f = fillAt(t);
+      return bestD <= W.perfect || !f || n[best].t < f.t0 || n[best].t >= f.t1 - 1e-6;
+    };
     function cue(c, t) {
       if (c.kind === 'solo') { moment('solo', t); band(roles.solo, 'solo'); if (c.section === 'solo') crowdAdd(soloLift); }   // v0.8: Dana's own section
       else if (c.kind === 'fill') band(roles.fill, 'fill');
@@ -24385,7 +24404,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     S.song = function () { return cur ? cur.song : set[live.index] || null; };
     S.stats = function () {
       return cur ? { perfect: cur.perfect, good: cur.good, miss: cur.notes.filter(function (x) { return x.j === 3; }).length,
-        fills: cur.fills, combo: S.combo, maxCombo: cur.maxCombo, crowd: S.crowd, flubs: cur.flubs } : null;
+        fills: cur.fills, combo: S.combo, maxCombo: cur.maxCombo, crowd: S.crowd, flubs: cur.flubs, stray: cur.stray } : null;
     };
     S.finish = function () { return finishLive(S, seed); };
     return S;
@@ -47852,8 +47871,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!r || ev.clientY < r.top || ev.clientY > r.bottom || ev.clientX < r.left || ev.clientX > r.right) return;
     if (ev.cancelable) ev.preventDefault();
     wake();
-    var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
-    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp, true);
+    var x = (ev.clientX - r.left) / (r.width / G.lanes), li = U.clamp(Math.floor(x), 0, G.lanes - 1), fr = x - li;
+    var nb = fr < BRIDGE && li > 0 ? li - 1 : fr > 1 - BRIDGE && li < G.lanes - 1 ? li + 1 : -1;   // v1.0.1 smart bridge: the seam
+    if (nb >= 0 && G.mode === 'play') {
+      var at = tapTime(ev.timeStamp);
+      if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) { tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1; return; }
+    }
+    tap(col(li), ev.timeStamp, true);
+  }
+  var BRIDGE = 1 / 6;
+  function tapTime(stamp) {
+    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
+    return heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);
   }
   function onKey(ev) {
     if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
@@ -47863,9 +47892,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     tap(col(li), ev.timeStamp, false);
   }
   function tap(li, stamp, touch) {
-    var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, s0 = ok ? stamp : now, r;   // some browsers stamp events on another time base: trust it only if it's recent
-    if (ok && touch && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
-    var at = heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);   // v0.6.1: calibration (classic only, v0.8.3)
+    var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
+    if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
+    var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
     if (at < -0.4) { playTap(li, at, null); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
@@ -48277,7 +48306,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         offset: G.lastTap.offset, snap: G.lastTap.snap, due: G.lastTap.due, disp: G.lastTap.disp } : null,
       sync: G.sync, D: G.D, K: G.K, latD: G.latD, zeroBand: G.zeroBand, zero: G.zero, spb: ch ? ch.spb : null, vis: G.drawOff,   // v0.8.3 drum sync
       tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
-      dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, hats: G.hatN, hatSkip: G.hatSkip,
+      dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
       akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
   });
 })(window.GG);

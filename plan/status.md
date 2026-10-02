@@ -3,18 +3,17 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current: **1.0.0.0 "Glory"** = 0.9 "Genres" + endings (Legacy score, five tiers, eight specials, epilogues, bonus years, the
-  end sequence), achievements + the laptop Trophies tab, the Hall of Fame (title button, entry sheet, backup code), meta
-  unlocks (looks from finished careers), the guided tutorial (full week 1 + light weeks 2–4, "?" replays) and the perf pass
-  (frame governor, graphics "Auto", the global voice cap). Integrated on `v1.0-glory` 2026-10-02 (lead: P → E → M → T → Q sweep);
-  `main` gets it through the PR from `v1.0-glory`. **Update Current/Next at every merge.**
+- Current: **1.0.1.0** = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix (one touch on a lane seam hits both lanes only
+  when both have a note due; see the note below). 1.0 "Glory" = 0.9 "Genres" + endings (Legacy score, five tiers, eight
+  specials, epilogues, bonus years, the end sequence), achievements + the laptop Trophies tab, the Hall of Fame (title button,
+  entry sheet, backup code), meta unlocks (looks from finished careers), the guided tutorial (full week 1 + light weeks 2–4,
+  "?" replays) and the perf pass (frame governor, graphics "Auto", the global voice cap). **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory.
-- Next: **1.0.1 "Smart bridge"** (the queued two-lane tap hotfix below) → **1.1 "Seats"** (handoff Part E: play bass / rhythm /
-  lead; draft contract `plan/plan_contract_1.1.md`, re-audit it at its stage 0; the size gate leaves ~270 KB under 4.5 MB)
-  → **1.2 "Tuning"** (D5).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge).
+- Next: **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; draft contract `plan/plan_contract_1.1.md`, re-audit it at
+  its stage 0; the size gate leaves ~270 KB under 4.5 MB) → **1.2 "Tuning"** (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -31,11 +30,14 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Render: un-pausing (and a long rAF gap after an undrawn tick) resets the ratio band + cost window; the tick estimate is the
   10th percentile of the last 60 rAF intervals (`R.tickEstimate`, rises to 33 ms at 30 Hz rAF); `debug('perf').vsync`.
 
-## Queued after v1.0: v1.0.1 "Smart bridge" (owner popup 2026-10-02)
-- One touch on the seam between two neighbouring lanes (≈ middle third of the gap) hits BOTH lanes only when both have a
-  note due inside the judgement window; otherwise only the nearer lane. No extra stray penalties. Default on, no setting.
-  Lefty-aware (columns), keys unchanged, drum-sync booking per lane as today. Small hotfix in 55_ui_gig.js onDown/tap +
-  a pw_gig `bridge` section, right after v1.0 merges.
+## v1.0.1 smart bridge (hotfix; owner popup 2026-10-02)
+- 55_ui_gig onDown: a touch within 1/6 lane width of a lane boundary (the middle third of the gap between the two lane
+  centres) hits BOTH lanes only when both have a note judge() would hit at the touch's time (`ses.due`); otherwise only the
+  nearer lane (as before). Each lane is a normal tap (judged + its drum booked per lane, drum-sync model; the second tap skips
+  the dispatch sample), so a bridge never adds a stray. Default on, no setting; lefty-aware (columns via col()), keys
+  unchanged, 4–6 lanes, charts (two-thumb rule) unchanged. Debug `gigui.bridgeN`; session `stats().stray`.
+- Tests: sim_gig `due`; pw_gig `bridge` (chord seam = both, one lane due = one + no stray, centre = one, lefty mirrored,
+  6 lanes, keys = one).
 
 ## Locked foundations (from handoff A2)
 | Call | Decision |
@@ -1209,6 +1211,8 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.0.1**: `GG.gig.session(...).due(lane, t)` -> bool: judge(lane, t) would hit a note (pure; the smart bridge asks it);
+  `stats()` adds `stray`.
 - **v1.0 "Glory" (merged 2026-10-02; the lane APIs are folded into `02_contracts.js` "As merged")**:
   - `GG.legacy` (2f): noBonus, careerId, ensure, migrate, gig, worldWeek, bonusFor, finalYear, yearsText, deck, weekly, raw, parts,
     score, tierDef, tier, tierRank, TESTS, specialOk, specials, whenOk, epilogues, compute, finish, text, hofEntry; debug `legacy`.

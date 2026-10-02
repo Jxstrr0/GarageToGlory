@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2 (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -14,6 +14,9 @@
 //         second t2 - hitT after the tap's heard kick on the audio clock via GG.audio.hit), the drummer's left foot kicks;
 //         an untapped double plays no extra kick; tapping both kicks = a silent echo (still 2 kicks); headphones calibrated
 //         +200 ms keep the pair spaced; closing cancels scheduled hits; Auto-kick plays both kicks of every double.
+//   bridge (v1.0.1 smart bridge): a touch on the seam between two lanes hits both on a 2-note chord (two drums, booked per
+//         lane), only the nearer lane when just one is due (no stray), one lane from a lane's centre; lefty mirrors the
+//         columns (the right seam hits the chord, the left seam is a single stray); a 6-lane song bridges toms + ride.
 //   sync (v0.8.3 drum sync): the count-in hats on the band grid, the band honours the count's zero (opts.at), perfect and
 //         slightly late taps sound exactly on the band's grid, early ones keep their offset, the audio offset is ignored,
 //         auto notes and Auto-kick's kicks are booked on the 16th grid (none from the frame), the Classic toggle = 0.8.2.
@@ -569,7 +572,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -692,6 +695,99 @@ async function sync2() {
     const dh = await dbg(page, 'gigui');
     c.ok(Math.abs(dh.vis - 0.03) < 1e-9, 'an unmeasured profile draws with the 30 ms guess ' + dh.vis);
     await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ audioProfile: 'speaker' }); GG.prefs.setCalib('speaker', { audio: 0, visual: 0 }); });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// v1.0.1 smart bridge (owner popup 2026-10-02): one touch on the seam between two lanes (within 1/6 lane of the boundary)
+// hits BOTH only when both have a note due; otherwise the nearer lane alone. Probes dispatch one pointerdown at a column
+// position x (in lane widths) at the note's time and diff the session stats + the drums booked.
+async function bridge() {
+  const c = checker('bridge');
+  const { page, errors, close } = await open();
+  const E = '................';
+  const probe = (x, at) => page.evaluate(async ([x, at]) => {
+    const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+    while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
+    while (GG.debug('gigui').songT < at) { /* spin */ }
+    const d0 = GG.debug('gigui'), n0 = window.__h.length;
+    cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + x * r.width / lanes, clientY: r.bottom - 36, pointerId: 9, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+    const d1 = GG.debug('gigui'), a = d0.stats, b = d1.stats;
+    return { hits: b.perfect + b.good - a.perfect - a.good, stray: b.stray - a.stray, drums: window.__h.slice(n0).map(h => h.l), bridged: d1.bridgeN - d0.bridgeN, disp: d1.dispN - d0.dispN };
+  }, [x, at]);
+  // the next moment (t > songT + 0.6) whose notes are exactly these lanes
+  const next = lanes => page.waitForFunction(want => {
+    const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+    for (const n of d.soon) {
+      if (n.t < d.songT + 0.6 || n.t > d.dur - 2) continue;
+      const at = d.soon.filter(m => Math.abs(m.t - n.t) < 0.002).map(m => m.li).sort().join();
+      if (at === want) return n;
+    }
+    return null;
+  }, lanes.join(), { timeout: 8000 }).then(h => h.jsonValue());
+  const show = async (lanes, bar, lefty) => {
+    await page.evaluate(([lanes, bar, lefty]) => {
+      GG.ui.closeAll(); const s = GG.state; s.liveGig = null; GG.prefs.set({ lefty }); s.gear = Object.assign({}, s.gear, { lanes });
+      const song = GG.songs.create(s, { bpm: 90, lanes, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'verse', 'chorus', 'verse', 'chorus'],
+        sections: { verse: bar, chorus: bar, bridge: bar.map(() => '................') } }, 'Seam Test ' + lanes, { quality: 60, polish: 60 });
+      s.songs = [song]; s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); window.__h = [];
+      GG.ui.playGig(s.gig, () => {});
+    }, [lanes, bar, lefty]);
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+  };
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => {
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false });
+      GG.main.quickStart({ seed: 1010, openCard: false });
+      const s = GG.state; s.card = null; s.phase = 'plan'; GG.ui.gigAutoplay = false;
+      window.__h = []; const h0 = GG.audio.hit;
+      GG.audio.hit = function (l) { window.__h.push({ l }); return h0.apply(this, arguments); };
+    });
+    // kick + snare chords on 1 and 3, the snare alone on 2 and 4 (4 lanes: kick | snare | hat | cymbal)
+    const bar4 = ['x.......x.......', 'x...x...x...x...', E, E];
+    await show(4, bar4, false);
+    c.ok((await dbg(page, 'gigui')).lanes === 4, '4-lane song on the highway');
+    let n = await next([0, 1]), p = await probe(1.0, n.t);
+    c.ok(p.hits === 2 && p.stray === 0 && p.bridged === 1 && p.drums.sort().join() === 'kick,snare', 'seam touch on a kick+snare chord hits both ' + JSON.stringify(p));
+    c.ok(p.disp <= 1, 'one dispatch sample per touch ' + p.disp);
+    n = await next([0, 1]); p = await probe(0.9, n.t);
+    c.ok(p.hits === 2 && p.stray === 0 && p.bridged === 1, 'kick side of the seam (0.9) bridges too ' + JSON.stringify(p));
+    n = await next([1]); p = await probe(1.9, n.t);
+    c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0 && p.drums.join() === 'snare', 'seam touch with only the snare due: snare alone, no stray ' + JSON.stringify(p));
+    n = await next([1]); p = await probe(1.1, n.t);
+    c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0 && p.drums.join() === 'snare', 'kick|snare seam, only the snare due: snare alone ' + JSON.stringify(p));
+    n = await next([0, 1]); p = await probe(0.5, n.t);
+    c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0 && p.drums.join() === 'kick', 'centre touch on a chord hits its own lane only ' + JSON.stringify(p));
+    n = await next([0, 1]); p = await probe(1.25, n.t);
+    c.ok(p.hits === 1 && p.bridged === 0 && p.drums.join() === 'snare', 'outside the seam third (1.25): one lane ' + JSON.stringify(p));
+    n = await next([1]); p = await probe(3.0, n.t);
+    c.ok(p.hits === 0 && p.stray === 1 && p.bridged === 0 && p.drums.length === 1, 'hat|cymbal seam with nothing due: one stray, as before ' + JSON.stringify(p));
+    // keys never bridge
+    n = await next([0, 1]);
+    const k = await page.evaluate(async at => { while (GG.debug('gigui').songT < at) await new Promise(r => setTimeout(r, 2)); const a = GG.debug('gigui').stats;
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); const b = GG.debug('gigui').stats; return b.perfect + b.good - a.perfect - a.good; }, n.t);
+    c.ok(k === 1, 'a key hits one lane ' + k);
+    // lefty: kick in column 3, snare in column 2
+    await show(4, bar4, true);
+    n = await next([0, 1]); p = await probe(3.0, n.t);
+    c.ok(p.hits === 2 && p.stray === 0 && p.bridged === 1 && p.drums.sort().join() === 'kick,snare', 'lefty: the mirrored seam (columns 2|3) hits the chord ' + JSON.stringify(p));
+    n = await next([1]); p = await probe(2.1, n.t);
+    c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0 && p.drums.join() === 'snare', 'lefty: snare alone due, the snare|hat seam hits the snare ' + JSON.stringify(p));
+    n = await next([0, 1]); p = await probe(1.0, n.t);
+    c.ok(p.hits === 0 && p.stray === 1 && p.bridged === 0, 'lefty: the unmirrored seam (hat|cymbal) is a single stray ' + JSON.stringify(p));
+    // 6 lanes: toms + ride chords (lanes 4, 5), the right-most seam
+    await show(6, [E, '....x.......x...', E, E, 'x.......x.......', 'x.......x.......'], false);
+    c.ok((await dbg(page, 'gigui')).lanes === 6, '6-lane song on the highway');
+    n = await next([4, 5]); p = await probe(5.05, n.t);
+    c.ok(p.hits === 2 && p.stray === 0 && p.bridged === 1 && p.drums.sort().join() === 'ride,toms', '6 lanes: toms|ride seam hits both ' + JSON.stringify(p));
+    n = await next([1]); p = await probe(1.95, n.t);
+    c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0, '6 lanes: snare|hat seam, snare alone due: one hit ' + JSON.stringify(p));
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ lefty: false }); });
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();

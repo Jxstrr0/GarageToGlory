@@ -430,6 +430,7 @@
   /* ---- The session --------------------------------------------------------------------------------------- */
   // GG.gig.session(state, gig, setlist:[songId|SONG], opts) resumes state.liveGig when it is this gig (setlist ignored).
   // startSong(i?) -> chart ; judge(lane, t) -> { judgement: 'perfect'|'good'|'fill'|null (stray), note, combo, crowd } ;
+  // due(lane, t) -> bool (v1.0.1: judge(lane, t) would hit a note; pure) ;
   // tick(t) -> { misses, crowd, level } (misses + crowd decay + cues; no allocation) ; endSong() -> SONG_RESULT (saved in
   // state.liveGig, 'gig:song') ; finish() -> GIG_RESULT. t = seconds from the song's first beat.
   // Emits (when s.emit): 'gig:judge', 'crowd:level', 'crowd:moment' { kind }, 'gig:band' { who, action }; 'gig:song' always
@@ -585,6 +586,27 @@
       emit('gig:judge', { lane: C.LANES[li], judgement: out.judgement, combo: S.combo, crowd: S.crowd });
       return out;
     };
+    // v1.0.1 smart bridge: would judge(lane, t) hit a note? Pure (no state change, no emit): a judgeable unhit note in the
+    // lane within W.good of t that judge() would take (not a double's echo, not a fill-window tap, not an Auto-kick lane).
+    S.due = function (lane, t) {
+      if (!cur) return false;
+      var li = typeof lane === 'number' ? lane : LI[lane];
+      if (!(li >= 0 && li < cur.byLane.length)) return false;
+      if (assists.autoKick && li === LI.kick) return false;
+      var list = cur.byLane[li], n = cur.notes, best = -1, bestD = 1e9;
+      for (var k = cur.lp[li]; k < list.length; k++) {
+        var x = n[list[k]];
+        if (x.t > t + W.good) break;
+        if (x.j !== 0 || x.free) continue;
+        var d = Math.abs(t - x.t);
+        if (d <= W.good && d < bestD) { best = list[k]; bestD = d; }
+      }
+      if (best < 0) return false;
+      var dh = li === LI.kick && cur.dblHit >= 0 ? n[cur.dblHit] : null;
+      if (dh && Math.abs(t - dh.t2) <= W.good && Math.abs(t - dh.t2) < bestD) return false;
+      var f = fillAt(t);
+      return bestD <= W.perfect || !f || n[best].t < f.t0 || n[best].t >= f.t1 - 1e-6;
+    };
     function cue(c, t) {
       if (c.kind === 'solo') { moment('solo', t); band(roles.solo, 'solo'); if (c.section === 'solo') crowdAdd(soloLift); }   // v0.8: Dana's own section
       else if (c.kind === 'fill') band(roles.fill, 'fill');
@@ -662,7 +684,7 @@
     S.song = function () { return cur ? cur.song : set[live.index] || null; };
     S.stats = function () {
       return cur ? { perfect: cur.perfect, good: cur.good, miss: cur.notes.filter(function (x) { return x.j === 3; }).length,
-        fills: cur.fills, combo: S.combo, maxCombo: cur.maxCombo, crowd: S.crowd, flubs: cur.flubs } : null;
+        fills: cur.fills, combo: S.combo, maxCombo: cur.maxCombo, crowd: S.crowd, flubs: cur.flubs, stray: cur.stray } : null;
     };
     S.finish = function () { return finishLive(S, seed); };
     return S;
