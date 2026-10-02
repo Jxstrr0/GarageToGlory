@@ -345,6 +345,6 @@
   GG.registerDebug('meta', function () {
     if (!meta) return { enabled: M.enabled, loaded: false };
     return { enabled: M.enabled, loaded: true, scanned: meta.scanned, careers: meta.careers, lessons: Object.keys(meta.lessons).length,
-      ach: Object.keys(meta.ach).length, hof: hof.entries.length };
+      ach: Object.keys(meta.ach).length, hof: hof.entries.length, unlocks: { palettes: meta.unlocks.palettes.length, emblems: meta.unlocks.emblems.length, parts: meta.unlocks.parts.length }, quota: quotaSent };
   });
 })(window.GG);
