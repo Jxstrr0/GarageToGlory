@@ -1,4 +1,4 @@
-// pw_label.js: v0.5 "Signed" UI on a 390x844 phone viewport. Sections (META_ONLY): label, studio, awards.
+// pw_label.js: v0.5 "Signed" UI on a 390x844 phone viewport. Sections (META_ONLY): label, studio, awards, seat (v1.1).
 //   label  : an offer sheet (Monolith + Gopherwood tabs, terms, demands, band reaction) → sign → the contract screen →
 //            laptop Label tab (recoup bar, deadline, demands) + Albums tab. Screenshots label_offer.png, label_deal.png.
 //   studio : book the studio (kind, studio, producer, weeks, tracks, cost) → the session sheet (events, takes) → PLAY a
@@ -350,5 +350,43 @@ async function sheet() {
   if (want('label')) await label();
   if (want('studio')) await studio();
   if (want('awards')) await awards();
+  if (want('seat')) await seatStudio();
   if (want('sheet')) await sheet();
 })();
+
+// v1.1 "Seats" (plan_contract_1.1 §1.1 #9): the studio on a string seat: "Bass takes" + 🎸 Play; playing a take runs your
+// seat's chart in studio mode (no drum lanes, the chart's seat) and counts the take; layout audit; no console errors.
+async function seatStudio() {
+  const c = checker('seat');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForFunction(() => window.GG && GG.main && GG.ui && GG.ui.v5 && GG.labels && GG.labels.book, null, { timeout: 15000 });
+    await page.evaluate(() => {
+      GG.main.quickStart({ seed: 6161, bandId: 'hail_damage', seat: 'bass', openCard: false }); GG.ui.closeAll();
+      const s = GG.state, rng = GG.RNG(99);
+      s.totalWeek = 40; s.year = 2; s.week = 16; s.fans = 1500; s.protected = false; GG.career.setEra(s, 'local', 'test'); s.fund = 4000; s.drumSkill = 55;
+      while (s.songs.length < 10) GG.songs.create(s, GG.songs.generate(s.genre, rng), null, { auto: true });
+      s.labelOffers = [GG.labels.makeOffer(s, 'gopherwood', GG.RNG(4))]; GG.labels.sign(s, 'gopherwood');
+      s.phase = 'plan'; GG.main.sync();
+      GG.labels.book(s, { kind: 'ep', studioId: 'strip_mall_sound', producerId: 'solveig_birch', tracks: GG.labels.freshSongs(s).slice(0, 4).map(x => x.id), weeks: 2 });
+      window.__charts = []; const ch0 = GG.gig.chart; GG.gig.chart = function (song, o) { const r = ch0.apply(this, arguments); window.__charts.push({ seat: r.seat, lane: r.notes[0] && r.notes[0].lane }); return r; };
+      GG.ui.show('studio', {});
+    });
+    await waitScreen(page, 'studio');
+    const head = await page.locator(tid('takes-head')).textContent(), first = await page.evaluate(() => GG.state.session.tracks[0]);
+    c.ok(/^Bass takes · your chops 55$/.test(head), 'the studio says "Bass takes": ' + head);
+    c.ok(/🎸 Play/.test(await page.locator(tid('btn-play-take-' + first)).textContent()), 'the take button plays your instrument');
+    let bad = await audit(page); c.ok(!bad.length, 'studio layout: ' + bad.join(', '));
+    await page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 0.97, jitterMs: 10 }; });
+    await tap(page, 'btn-play-take-' + first);
+    await page.waitForFunction(id => (GG.state.session.takes[id] || 0) > 0, first, { timeout: 15000 });
+    await page.waitForFunction(() => !GG.ui.isOpen('gig') && GG.ui.isOpen('studio'), null, { timeout: 15000 });
+    const t = await page.evaluate(id => ({ take: GG.state.session.takes[id], live: GG.state.liveGig, charts: window.__charts.slice(-1)[0] }), first);
+    c.ok(t.take > 60 && !t.live, 'a bass take counts (' + t.take + '), no liveGig left behind');
+    c.ok(t.charts && t.charts.seat === 'bass' && /^str\d$/.test(t.charts.lane || ''), 'the take ran your seat’s chart ' + JSON.stringify(t.charts));
+    await page.evaluate(() => { GG.ui.gigAutoplay = false; });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}

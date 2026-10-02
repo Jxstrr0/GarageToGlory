@@ -13,7 +13,13 @@
 //              v0.7.2 (metal): tune { style: semitones } (tuning per tempo band), bassFloor (lowest bass midi), stabs, arps,
 //              v0.9: amp (punk/rock: gain, level, pan, preHp, mid/presence [Hz, Q, dB], lp, detune, lag, ring; country: the
 //                    Tele's gain, bright, slap, slapFb, slapLv, slapPan), fiddle { body, bow, vib, pan }, acoustic { body,
-//                    sparkle, spread, level }, twoChords (punk), vox += resp, held, count, whoa (see the punk entry) },
+//                    sparkle, spread, level }, twoChords (punk), vox += resp, held, count, whoa (see the punk entry),
+//              v1.1 "Seats" (Lane D; the songwriter's "Your part", plan_contract_1.1 §4.4): progNames { verse|chorus|bridge:
+//                    [plain-words name per progressions entry, same order] } (bass + rhythm pick a progression by these),
+//                    hooks { verse|chorus|bridge: [HOOK] } (the lead picks one; PART.sections[s].hook indexes it),
+//                    HOOK = { name (plain words), deg: [5 scale degrees, low -> high: the five rows of the lead grid; indexes
+//                    into backing.scale, wrapping an octave up past its end], rows: [5 x 16-char 'x'/'.'] (the hook's own
+//                    melody, row 0 = the lowest degree; a starting point for songs.part.suggest) } },
 //   kit: { room, verb, level, six: 'ride'|'china', train (country rim/brush snare), kick, snare, hat, cymbal, toms, tomDec }
 //        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | scream | yeah | yeehaw | ooh),
 //   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
@@ -77,6 +83,29 @@
           verse: [[0, 0, 1, 0], [0, 0, 6, 5], [0, 1, 0, 8], [0, 3, 1, 0], [0, 1, 0, 6]],
           chorus: [[0, 8, 5, 1], [8, 7, 5, 6], [0, 1, 8, 7], [3, 1, 0, 6], [10, 8, 6, 1]],
           bridge: [[1, 1, 0, 0], [6, 5, 6, 7], [0, 1, 3, 1], [8, 8, 7, 6]]
+        },
+        // v1.1 "Your part": the progressions in plain words (bass, rhythm) and the lead's hooks (phrygian degrees)
+        progNames: {
+          verse: ['one chord, one grudge', 'the tritone drop', 'up the cellar stairs', 'minor third, major grudge', "the devil's interval, twice"],
+          chorus: ['the big dark lift', 'falling off the grain elevator', 'the storm rolls in', 'back down to the cellar', 'the long way down'],
+          bridge: ['the half-step lurch', 'pacing the tritone', 'the crawl', 'sinking slowly']
+        },
+        hooks: {
+          verse: [
+            { name: 'dark and slow', deg: [0, 1, 2, 4, 5], rows: ['x.......x.......', '......x.........', '............x...', '..............x.', E] },
+            { name: 'the creeping half-step', deg: [0, 1, 3, 4, 5], rows: ['x...x...........', '..x...x.........', '........x.......', '..........x.x...', '..............x.'] },
+            { name: 'a cold wind off the slough', deg: [2, 4, 5, 7, 8], rows: ['x...........x...', '....x...........', '........x.......', '..........x.....', '..............x.'] }
+          ],
+          chorus: [
+            { name: 'the big chorus lift', deg: [4, 5, 7, 8, 9], rows: ['x...............', '....x...........', '........x.......', '..........x.....', '............x...'] },
+            { name: 'screaming into the hail', deg: [7, 8, 9, 11, 12], rows: ['x.......x.......', '..x.......x.....', '....x.......x...', '......x.........', '..............x.'] },
+            { name: 'the grain-elevator drop', deg: [3, 4, 5, 6, 7], rows: ['........x.......', '......x.........', '....x...........', '..x.............', 'x...............'] }
+          ],
+          bridge: [
+            { name: 'down into the cellar', deg: [0, 1, 2, 3, 4], rows: ['............x...', '.........x......', '......x.........', '...x............', 'x...............'] },
+            { name: 'pacing the tritone', deg: [0, 3, 4, 5, 8], rows: ['x.......x.......', '...x.......x....', '......x.......x.', E, E] },
+            { name: 'the long winter', deg: [0, 2, 4, 5, 7], rows: ['x...............', '....x...........', '........x.......', '............x...', E] }
+          ]
         },
         // Tremolo riffs: 8 pitches over the bar's chord, each tremolo-picked for an 8th (b2 pedals, tritones, chromatic
         // descents, a phrygian-dominant major third).
@@ -144,6 +173,24 @@
       // two-chord "solo" takes the bridge; crunchy L/R double-tracked amps (amp), mid-forward, far less gain than metal.
       backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths'], [200, 'skate', 'Skate-punk gallop'], [220, 'hardcore', 'Hardcore thrash']],
         progressions: { verse: [[0, 5, 7, 5], [0, 0, 5, 7], [0, 3, 5, 7]], chorus: [[5, 7, 0, 0], [3, 5, 7, 7], [7, 5, 0, 0]], bridge: [[5, 5, 7, 7], [3, 3, 5, 7]] },
+        progNames: { verse: ['three chords and a grudge', 'two on the one, then go', 'up the stairs, out the door'],
+          chorus: ['the shout-along', 'climb and hang on', 'back home, hard'], bridge: ['stomp, stomp, go', 'the slow build'] },
+        hooks: {
+          verse: [
+            { name: 'three notes and a grudge', deg: [0, 2, 4, 5, 7], rows: ['x.x.....x.x.....', '....x.......x...', '......x.......x.', E, E] },
+            { name: 'the snotty little one', deg: [2, 3, 4, 5, 7], rows: ['x.......x.......', '..x.......x.....', '....x.......x...', '......x.........', '..............x.'] },
+            { name: 'the laundromat lullaby', deg: [0, 1, 2, 4, 5], rows: ['x...x...........', '..x.............', '......x...x.....', '........x.......', '............x...'] }
+          ],
+          chorus: [
+            { name: 'the shout-along', deg: [4, 5, 7, 8, 9], rows: ['x...x...x...x...', '..x.......x.....', '......x.......x.', E, E] },
+            { name: 'the pogo ladder', deg: [0, 2, 4, 7, 9], rows: ['x...............', '..x.............', '....x...........', '......x.........', '........x.x.x.x.'] },
+            { name: 'up yours, gravity', deg: [4, 5, 6, 7, 9], rows: ['x.......x.......', '..x.............', '....x...........', '......x.....x...', '..........x...x.'] }
+          ],
+          bridge: [
+            { name: 'the slow build', deg: [0, 1, 2, 3, 4], rows: ['x...............', '....x...........', '........x.......', '............x...', '..............x.'] },
+            { name: 'one more time, louder', deg: [3, 4, 5, 6, 7], rows: ['x.x.x.x.........', '........x.x.....', '............x...', '..............x.', E] }
+          ]
+        },
         riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         twoChords: [0, 5],   // Benny's entire vocabulary, relative to the bar's chord (I and IV)
@@ -206,6 +253,24 @@
       // chords, driving 8ths from 140. Crunch amps double-tracked L/R; the open chords ring (amp.ring) over the chorus.
       backing: { root: 45, styles: [[0, 'ballad', 'Power ballad'], [90, 'rock', 'Big open chords'], [140, 'drive', 'Driving 8ths']],
         progressions: { verse: [[0, 0, 5, 7], [0, 10, 5, 0], [0, 7, 5, 5]], chorus: [[5, 7, 0, 0], [0, 5, 7, 5], [10, 5, 0, 7]], bridge: [[3, 5, 7, 7], [9, 7, 5, 7]] },
+        progNames: { verse: ['the highway', 'the flat-seven swagger', 'down from the top'],
+          chorus: ['the big chorus lift', 'fist in the air', 'the long way home'], bridge: ['the minor turn', 'the sad-guy detour'] },
+        hooks: {   // (blues scale degrees)
+          verse: [
+            { name: 'the strut', deg: [0, 1, 2, 4, 5], rows: ['x.....x.........', '..x.............', '....x...........', '........x.......', '..........x.x...'] },
+            { name: 'parking-lot swagger', deg: [0, 1, 2, 3, 4], rows: ['x...........x...', '...x............', '......x.........', '........x.......', '..........x.....'] },
+            { name: 'the strip-mall shuffle', deg: [4, 5, 6, 7, 8], rows: ['x.......x.......', '...x.......x....', '......x.......x.', E, E] }
+          ],
+          chorus: [
+            { name: 'the big chorus lift', deg: [4, 5, 6, 7, 8], rows: ['x...............', '....x...........', '........x.......', '..........x.....', '............x...'] },
+            { name: 'fist in the air', deg: [6, 7, 8, 9, 10], rows: ['x.......x.......', '..x.......x.....', '....x.......x...', '......x.........', '..............x.'] },
+            { name: 'the encore wail', deg: [5, 6, 7, 8, 10], rows: ['........x.......', '......x.........', '....x...........', '..x.............', 'x...............'] }
+          ],
+          bridge: [
+            { name: 'the sad-guy detour', deg: [0, 1, 2, 3, 4], rows: ['............x...', '........x.......', '......x.........', '...x............', 'x...............'] },
+            { name: 'leather pants, slowly', deg: [1, 2, 4, 5, 6], rows: ['x...............', '....x...........', '........x.......', '..........x.....', '..............x.'] }
+          ]
+        },
         riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         amp: { gain: 5.5, level: 0.09, pan: 0.45, preHp: 90, mid: [800, 0.8, 3], presence: [2800, 1, 3], lp: 6000, detune: 4, lag: 0.012, ring: 0.2 },
@@ -265,6 +330,24 @@
       // formants [Hz, Q, level] + bow noise); Travis strums a fuller acoustic (acoustic: body, sparkle, stereo spread).
       backing: { root: 43, styles: [[0, 'twostep', 'Two-step'], [108, 'train', 'Train beat']],
         progressions: { verse: [[0, 0, 5, 7], [0, 5, 0, 7], [0, 7, 5, 0]], chorus: [[5, 0, 7, 0], [5, 5, 0, 7], [0, 5, 7, 7]], bridge: [[9, 5, 7, 7], [2, 7, 0, 0]] },
+        progNames: { verse: ['home on the grid road', 'back and forth to town', 'the long driveway'],
+          chorus: ['the big sing-along', 'leaning on the fence', 'the truck-commercial lift'], bridge: ['the sad-letter turn', 'the hay-bale shuffle'] },
+        hooks: {   // (pentatonic degrees)
+          verse: [
+            { name: 'down the grid road', deg: [0, 1, 2, 3, 4], rows: ['x.......x.......', '..x.............', '....x.......x...', '......x.........', '..............x.'] },
+            { name: 'the porch swing', deg: [2, 3, 4, 5, 6], rows: ['x...........x...', '..x.............', '....x...x.......', '......x.........', '..........x.....'] },
+            { name: 'the long driveway', deg: [0, 2, 3, 4, 5], rows: ['x...............', '....x...........', '........x.......', '..........x.....', '............x...'] }
+          ],
+          chorus: [
+            { name: 'the big sing-along', deg: [3, 4, 5, 6, 7], rows: ['x.......x.......', '..x.......x.....', '....x.......x...', '......x.........', '..............x.'] },
+            { name: 'the yee-haw climb', deg: [5, 6, 7, 8, 10], rows: ['x...............', '..x.............', '....x...........', '......x.........', '........x.x.x...'] },
+            { name: 'Sunday at the Legion', deg: [2, 3, 4, 5, 7], rows: ['............x...', '........x.......', '....x...........', '..x.............', 'x...............'] }
+          ],
+          bridge: [
+            { name: 'the sad letter', deg: [0, 1, 2, 3, 4], rows: ['..............x.', '..........x.....', '......x.........', '...x............', 'x...............'] },
+            { name: 'the hay-bale shuffle', deg: [3, 4, 5, 6, 7], rows: ['x...x...x...x...', '..x.......x.....', '......x.......x.', E, E] }
+          ]
+        },
         riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
         amp: { gain: 1.6, level: 0.2, pan: 0.3, bright: [2800, 1.2, 6], lp: 7000, slap: 0.11, slapFb: 0.18, slapLv: 0.5, slapPan: -0.35 },

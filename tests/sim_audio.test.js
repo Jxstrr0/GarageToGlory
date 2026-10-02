@@ -489,4 +489,166 @@ test('v1.0 voicePlan: cap 32, reserves by priority, one-shots below make room, t
   ok(!A.voiceStats || A.voiceStats().active === 0, 'no context: no live voices');
 });
 
+/* ---- v1.1 "Seats" (Lane D, plan_contract_1.1 §4.7) ------------------------------------------------------------------ */
+const crypto = require('crypto'), E16 = '................';
+const H16 = x => crypto.createHash('sha1').update(JSON.stringify(x)).digest('hex').slice(0, 16);
+// The drum seat is the regression baseline: 1,212 timelines (4 genres x 6 patterns x 4 tempos x 14 option sets + a live
+// drum-seat career's songs) fingerprinted with the stage-0 code (829b059, before any v1.1 audio edit), per genre x pattern.
+const STAGE0 = { 'metal|p0': 'bdcdf5c057a8', 'metal|p1': 'f644059b441e', 'metal|p2': '0d56f2db587d', 'metal|p3': 'cd9ebc41f289', 'metal|p4': 'fa65178d5325',
+  'metal|p5': 'f68be1b9d681', 'metal|career': 'ff0f27ac7c98', 'punk|p0': 'ee2168187384', 'punk|p1': '06ab053aa3fc', 'punk|p2': '540e1e24b6d6',
+  'punk|p3': 'd6265b494282', 'punk|p4': '26ba24472c82', 'punk|p5': 'b4983c855e4d', 'punk|career': '41b86b015937', 'rock|p0': 'cd02112fbaf3',
+  'rock|p1': '7f3f9ea18b9c', 'rock|p2': 'b6084f0cbe1f', 'rock|p3': '5e18e3657813', 'rock|p4': 'e3094f555c8e', 'rock|p5': '09b47cd63096',
+  'rock|career': '66c2feefd38f', 'country|p0': '063600180d27', 'country|p1': 'b3be69244f7d', 'country|p2': 'ed45778938c2', 'country|p3': '18acbee0800e',
+  'country|p4': 'a201e6d20879', 'country|p5': '89f534675b40', 'country|career': '15cf514ace0a' };
+const FP_BANDS = { metal: 'hail_damage', punk: 'frost_heave', rock: 'gravel_kings', country: 'grid_road_ramblers' };
+function fpPatterns(g) {   // the signature (+ a solo and an outro), the starter, three jams, a jam with all the gear
+  const sig = JSON.parse(JSON.stringify(GG.songs.signature(g)));
+  sig.sections.solo = sig.sections.verse.slice(); sig.sections.outro = sig.sections.chorus.slice();
+  sig.arrangement = ['verse', 'chorus', 'bridge', 'solo', 'chorus', 'outro'];
+  const pats = [sig, GG.songs.starter(g)];
+  for (let i = 1; i <= 3; i++) pats.push(GG.songs.generate(g, GG.RNG(100 + i), {}));
+  pats.push(GG.songs.generate(g, GG.RNG(7), { gear: { lanes: 6, doubleKick: true, owned: ['toms', 'ride', 'pedal'], sections: ['outro', 'solo'], quality: 3 } }));
+  return pats;
+}
+function fingerprints(extra) {   // -> { 'genre|pN': hash } with `extra` opts merged into every timeline call
+  const OPTS = [{}, { section: 'chorus' }, { vocals: false }, { drums: false }, { backing: false }, { bars: 3 }, { soloist: null },
+    { soloist: 'benny' }, { soloist: 'earl' }, { style: 'ballad' }, { singer: 'rox' }, { rival: 'mall_rats' }, { section: 'solo' }, { section: 'outro' }];
+  const groups = {}, add = (k, h) => { const p = k.split('|').slice(0, 2).join('|'); (groups[p] = groups[p] || []).push(k + '=' + h); };
+  GG.state = null;
+  for (const g of C.GENRES) {
+    fpPatterns(g).forEach((p, pi) => [undefined, 80, 140, 200].forEach(bpm => {
+      const q = JSON.parse(JSON.stringify(p)); if (bpm) q.bpm = bpm;
+      OPTS.forEach((o, oi) => { if (!o.section || q.sections[o.section]) add(g + '|p' + pi + '|' + (bpm || '-') + '|o' + oi, H16(A.timeline(q, Object.assign({ genre: g, songId: 's' + pi }, o, extra)))); });
+    }));
+    const st = GG.career.newCareer({ seed: 11, bandId: FP_BANDS[g], seat: 'drums', player: { name: 'Fp' } });
+    GG.state = st;
+    st.songs.slice(0, 2).forEach((s, si) => add(g + '|career|' + si, H16(A.timeline(s.pattern, Object.assign({ genre: g }, extra)))));
+    GG.state = null;
+  }
+  const out = {};
+  for (const k of Object.keys(groups)) out[k] = crypto.createHash('sha1').update(groups[k].join(',')).digest('hex').slice(0, 12);
+  return out;
+}
+const seatEvents = (t, g, seat) => { const K = A.seatKinds(g, seat); return t.events.filter(e => K.includes(e.kind)); };
+const otherEvents = (t, g, seat) => { const K = A.seatKinds(g, seat); return JSON.stringify(t.events.filter(e => !K.includes(e.kind))); };
+const fullSong = (g, bpm) => { const p = JSON.parse(JSON.stringify(GG.songs.signature(g))); if (bpm) p.bpm = bpm; p.sections.solo = p.sections.verse.slice(); p.sections.outro = p.sections.chorus.slice(); p.arrangement = ['verse', 'chorus', 'bridge', 'solo', 'chorus', 'outro']; return p; };
+const tempos = g => ({ metal: [80, 150, 200], punk: [160, 205, 225], rock: [80, 120, 150], country: [90, 115] })[g];
+
+test('v1.1 drum baseline: without the new opts every timeline is byte-for-byte stage 0 (1,212 fingerprints); seat drums / mute change nothing', () => {
+  eq(fingerprints({}), STAGE0, 'no new opts');
+  eq(fingerprints({ seat: 'drums' }), STAGE0, "seat: 'drums'");
+  eq(fingerprints({ mute: ['gtr', 'bass', 'drum'] }), STAGE0, 'opts.mute: the event list is identical (play() skips them)');
+  eq(fingerprints({ seat: 'drums', part: { seat: 'bass', sections: { verse: { prog: 1, rows: ['x...x...x...x...', E16, E16] } } } }), STAGE0, 'a part never applies to the drum seat');
+});
+
+test('v1.1 opts.seat: every seat kind is present per genre; only the seat kinds change; rock rhythm >= 1 per beat-pair in verses; country lead >= 1 lick per bar', () => {
+  for (const g of C.GENRES) for (const seat of ['bass', 'rhythm', 'lead']) for (const bpm of tempos(g)) {
+    const p = fullSong(g, bpm), base = A.timeline(p, { genre: g, songId: 's1' }), t = A.timeline(p, { genre: g, songId: 's1', seat }), w = g + '/' + seat + '@' + bpm;
+    eq([t.seat, t.part, base.seat], [seat, undefined, undefined], w + ' result seat');
+    eq(otherEvents(t, g, seat), otherEvents(base, g, seat), w + ': every other event is exactly as without the seat');
+    const mine = seatEvents(t, g, seat), kinds = new Set(mine.map(e => e.kind));
+    ok(A.seatKinds(g, seat).every(k => kinds.has(k)) || (g === 'rock' && seat === 'rhythm' && kinds.has('gtr2')), w + ': every seat kind is there ' + [...kinds]);
+    for (let b = 0; b < t.beats / 4; b++) ok(mine.some(e => e.beat >= b * 4 && e.beat < b * 4 + 4) || (g === 'rock' && seat === 'lead' && t.style === 'ballad'), w + ': bar ' + b + ' has your part');
+    eq(JSON.stringify(A.timeline(p, { genre: g, songId: 's1', seat })), JSON.stringify(t), w + ' deterministic');
+    if (seat !== 'rhythm' && !(g === 'country' && seat === 'lead')) eq(JSON.stringify(t.events), JSON.stringify(base.events), w + ': no layer, the same timeline');
+  }
+  // rock rhythm (the new seat): >= 1 event per beat-pair in verses at every style; the whole-bar chorus ring is now yours
+  for (const bpm of [80, 120, 150]) {
+    const t = A.timeline(fullSong('rock', bpm), { genre: 'rock', songId: 's2', seat: 'rhythm' }), mine = seatEvents(t, 'rock', 'rhythm');
+    const verses = t.events.filter(e => e.kind === 'step' && e.section === 'verse' && e.step % 8 === 0).map(e => e.beat);
+    ok(verses.length && verses.every(b => mine.some(e => e.beat >= b && e.beat < b + 2)), 'rock rhythm @' + bpm + ' (' + t.style + '): an event in every verse beat-pair');
+    ok(t.style === 'ballad' || mine.filter(e => e.section === 'chorus').length >= 4 * 4 * 2, 'rock rhythm @' + bpm + ': open chords in the chorus');
+    ok(!mine.some(e => e.kind === 'gtr2' && e.len >= 4 && !e.ring), 'rock rhythm @' + bpm + ': no whole-bar ring left (your chords instead)');
+    ok(mine.some(e => e.role === 'break' && e.kind === 'gtr2') || t.style === 'ballad', 'rock rhythm: the riff in the breaks');
+  }
+  const drive = A.timeline(fullSong('rock', 150), { genre: 'rock', songId: 's2', seat: 'rhythm' });
+  ok(seatEvents(drive, 'rock', 'rhythm').some(e => e.mute) && seatEvents(drive, 'rock', 'rhythm').some(e => !e.mute), 'rock rhythm: palm-muted pushes and open chords');
+  // country lead: a lick (>= 2 Tele notes) in every bar, verses and choruses; Earl's solo stays the Tele
+  for (const bpm of [90, 115]) {
+    const t = A.timeline(fullSong('country', bpm), { genre: 'country', songId: 's3', seat: 'lead' }), tw = seatEvents(t, 'country', 'lead');
+    for (let b = 0; b < t.beats / 4; b++) ok(tw.filter(e => e.beat >= b * 4 && e.beat < b * 4 + 4).length >= (b === t.beats / 4 - 1 ? 1 : 2), 'country lead @' + bpm + ': a lick in bar ' + b + ' (the last: one held note)');
+    ok(tw.every(e => e.kind === 'twang') && tw.filter(e => e.role === 'solo').length >= 16, 'country lead: the solo is the Tele, dense');
+    ok(tw.some(e => e.ring), 'country lead: the last note rings over the end');
+  }
+});
+
+test('v1.1 opts.part: replaces exactly the seat kinds (part: true), the band follows a prog, the lead keeps its solo, holds come from long notes', () => {
+  const defProg = (g, p, name) => { const list = G[g].backing.progressions[name], sec = GG.songs.sanitize(p, null, null, true).sections[name]; return GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length; };
+  const ROWS = { bass: ['x.......x.......', '....x.......x...', '..............x.'], rhythm: ['x.x.x.x.....x.x.', '........x.......'], lead: ['x...............', '...x............', '......x.........', '........x.x.....', '............x...'] };
+  for (const g of C.GENRES) for (const seat of ['bass', 'rhythm', 'lead']) {
+    const p = fullSong(g), sections = {};
+    ['verse', 'chorus', 'bridge', 'solo', 'outro'].forEach(n => { sections[n] = { rows: ROWS[seat] }; if (seat === 'lead') sections[n].hook = 1; else if (G[g].backing.progressions[n]) sections[n].prog = defProg(g, p, n); });
+    const part = { seat, sections }, base = A.timeline(p, { genre: g, songId: 's4', seat }), t = A.timeline(p, { genre: g, songId: 's4', seat, part }), w = g + '/' + seat;
+    eq([t.seat, t.part], [seat, true], w + ' result');
+    eq(otherEvents(t, g, seat), otherEvents(base, g, seat), w + ': every other kind exactly as without the part (same chords)');
+    const mine = seatEvents(t, g, seat), kept = mine.filter(e => !e.part);
+    ok(mine.filter(e => e.part).length >= 30, w + ': your part plays');
+    ok(kept.every(e => (seat === 'lead' && e.role === 'solo') || e.ring), w + ': generated notes left only in your own solo and the last ring ' + JSON.stringify(kept.slice(0, 2)));
+    const want = { bass: 'bass', rhythm: { metal: 'gtr', punk: 'gtr', rock: 'gtr2', country: 'clean' }[g], lead: g === 'country' ? 'twang' : 'lead' }[seat];
+    ok(mine.filter(e => e.part).every(e => e.kind === want || (g === 'metal' && seat === 'rhythm' && e.kind === 'gtr2')), w + ': written as ' + want);
+    eq(JSON.stringify(A.timeline(p, { genre: g, songId: 's4', part })), JSON.stringify(t), w + ': the seat defaults to part.seat');
+    if (seat === 'lead') {   // the hook: 5 scale degrees, in key; long notes bend in
+      const sc = G[g].backing.scale, hk = G[g].backing.hooks.verse[1];
+      const verse = mine.filter(e => e.part && e.section === 'verse');
+      ok(verse.every(e => sc.includes(((e.midi - t.key.tonic) % 12 + 12) % 12)), w + ': hook notes in the scale');
+      eq(new Set(verse.map(e => e.midi)).size, 5, w + ': five rows = five pitches (' + hk.name + ')');
+      ok(verse.filter(e => e.len >= 0.75).every(e => e.bend === 2), w + ': long notes bend in');
+    }
+    if (seat === 'bass') ok(mine.some(e => e.part && e.section === 'verse' && e.len >= 1), w + ': a root rings a whole beat (a hold for the chart)');
+  }
+  // the band follows your progression (bass / rhythm); a lead part leaves the chords alone
+  const p = fullSong('punk'), alt = (defProg('punk', p, 'verse') + 1) % G.punk.backing.progressions.verse.length;
+  const t0 = A.timeline(p, { genre: 'punk', songId: 's5', seat: 'bass' });
+  const t1 = A.timeline(p, { genre: 'punk', songId: 's5', seat: 'bass', part: { seat: 'bass', sections: { verse: { prog: alt, rows: ROWS.bass } } } });
+  const roots = t => t.events.filter(e => e.kind === 'gtr' && e.section === 'verse' && e.beat % 4 === 0).map(e => e.midi - t.key.tonic);
+  ok(JSON.stringify(roots(t0)) !== JSON.stringify(roots(t1)), 'the guitars follow your verse progression ' + roots(t0) + ' -> ' + roots(t1));
+  eq(roots(t1).slice(0, 4), G.punk.backing.progressions.verse[alt], 'bar by bar');
+  // robust: junk rows, out-of-range indexes, a part for another seat, no sections
+  const junk = { seat: 'lead', sections: { verse: { hook: 99, rows: ['xxxxxxxxxxxxxxxxxxxxxxx', null, 42, 'abc'] }, chorus: 'nope', bridge: { prog: -5 } } };
+  const tj = A.timeline(p, { genre: 'punk', songId: 's6', seat: 'lead', part: junk });
+  eq(seatEvents(tj, 'punk', 'lead').filter(e => e.part && e.section === 'verse').length, 4 * 16, 'junk rows: clipped to 16 steps, the rest read as rests');
+  ok(!seatEvents(tj, 'punk', 'lead').some(e => e.part && e.section === 'bridge'), 'a section with no hits plays nothing of yours');
+  eq(JSON.stringify(A.timeline(p, { genre: 'punk', songId: 's6', seat: 'bass', part: junk })), JSON.stringify(A.timeline(p, { genre: 'punk', songId: 's6', seat: 'bass' })), 'a part for another seat is ignored');
+  eq(JSON.stringify(A.timeline(p, { genre: 'punk', songId: 's6', seat: 'bass', part: { seat: 'bass' } })), JSON.stringify(A.timeline(p, { genre: 'punk', songId: 's6', seat: 'bass' })), 'no sections: nothing changes');
+});
+
+test('v1.1 backing tables: progNames parallel to progressions, 2-3 hooks per section (5 ascending degrees, a 5-row melody), plain words', () => {
+  const DRUMWORDS = /\b(drums?|drummers?|kits?|sticks|snares?|kicks?|hi-?hats?|cymbals?|toms|the beat|backbeat|fills?)\b/i;
+  for (const g of C.GENRES) {
+    const B = G[g].backing;
+    for (const s of C.SECTIONS) {
+      eq(B.progNames[s].length, B.progressions[s].length, g + ' ' + s + ': a name per progression');
+      ok(B.progNames[s].every(n => typeof n === 'string' && n.length >= 5 && n.length <= 40 && !DRUMWORDS.test(n)), g + ' ' + s + ' prog names');
+      ok(new Set(B.progNames[s]).size === B.progNames[s].length, g + ' ' + s + ' prog names unique');
+      const hooks = B.hooks[s];
+      ok(hooks.length >= 2 && hooks.length <= 3, g + ' ' + s + ' hooks');
+      hooks.forEach(h => {
+        ok(typeof h.name === 'string' && h.name.length >= 5 && h.name.length <= 40 && !DRUMWORDS.test(h.name), g + ' hook name ' + h.name);
+        ok(h.deg.length === 5 && h.deg.every((d, i) => Number.isInteger(d) && d >= 0 && (!i || d > h.deg[i - 1])), g + ' ' + h.name + ': 5 ascending degrees');
+        ok(h.rows.length === 5 && h.rows.every(r => /^[x.]{16}$/.test(r)) && h.rows.join('').includes('x'), g + ' ' + h.name + ': 5 rows');
+        for (let st = 0; st < 16; st++) ok(h.rows.filter(r => r[st] === 'x').length <= 1, g + ' ' + h.name + ': one note per step');
+      });
+      ok(new Set(hooks.map(h => h.name)).size === hooks.length, g + ' ' + s + ' hook names unique');
+    }
+  }
+});
+
+test('v1.1 your instrument (no Web Audio here): voices fail soft, seatVoiceFor, soloFor(player), the noodle by seat', () => {
+  eq([A.pluck(40, 0, { len: 1 }), A.strum(40, 0), A.lead(64, 0, { hold: true }), A.release(null, 0), A.release({}, 0)], [null, null, null, null, null], 'null without a context');
+  eq([A.seatPreview('hail_damage', 'bass'), A.stopPreview()], [null, false], 'no preview without Web Audio');
+  eq(['bass', 'gtr', 'gtr2', 'clean', 'lead', 'twang', 'drum'].map(A.seatVoiceFor), ['pluck', 'strum', 'strum', 'strum', 'lead', 'lead', null]);
+  eq(C.GENRES.map(g => A.soloFor(g, 'player')), ['lead', 'twochord', 'lead', 'twang'], "soloFor(genre, 'player'): your seat's solo voice");
+  // your solo is charted on your kinds: a lead career with roles.solo = 'player' gets the genre's solo kinds
+  for (const g of C.GENRES) {
+    const t = A.timeline(fullSong(g), { genre: g, songId: 's7', soloist: 'player', seat: 'lead' }), K = A.seatKinds(g, 'lead');
+    ok(t.events.filter(e => e.role === 'solo' && e.kind !== 'step' && e.kind !== 'drum' && e.kind !== 'bass' && e.kind !== 'vox' && e.kind !== 'bvox' && e.kind !== 'clean' && e.kind !== 'gtr2' && e.kind !== 'fiddle').every(e => K.includes(e.kind)), g + ': the solo is on your kinds');
+  }
+  const want = { bass: 'walk', rhythm: { metal: 'chug', punk: 'power', rock: 'power', country: 'strum' }, lead: { metal: 'lick', punk: 'lick', rock: 'lick', country: 'twang' } };
+  for (const b of Object.keys(GG.content.bands)) for (const seat of C.SEATS) {
+    const st = GG.career.newCareer({ seed: 7, bandId: b, seat, player: { name: 'N' } }), n = A.noodleFor(st), g = st.genre;
+    if (seat === 'drums') { eq(n, A.noodleFor(career(b)), b + ': the drum seat keeps the band noodler'); continue; }
+    eq(n, { who: 'player', style: seat === 'bass' ? want.bass : want[seat][g] }, b + '/' + seat + ': you noodle');
+  }
+});
+
 done('sim_audio');

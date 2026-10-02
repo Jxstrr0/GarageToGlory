@@ -168,10 +168,17 @@ test('every gate key evaluates', () => {
     [{ notFlags: ['b'] }, true], [{ notFlags: ['a'] }, false], [{ flagEquals: { cape: 'velvet' } }, true],
     [{ flagEquals: { cape: 'curtain' } }, false], [{ flagEquals: { hat: null } }, true], [{ gigBooked: true }, true],
     [{ gigBooked: false }, false], [{ moodBelow: { marcel: 31 } }, true], [{ moodBelow: { marcel: 30 } }, false],
-    [{ moodAbove: { marcel: 29 } }, true], [{ moodAbove: { nobody: 1 } }, false], [{ bogusKey: 1 }, false], [null, true]
+    [{ moodAbove: { marcel: 29 } }, true], [{ moodAbove: { nobody: 1 } }, false], [{ bogusKey: 1 }, false], [null, true],
+    // v1.1 "Seats" (C.SEAT_GATE_KEYS; fold-ready: the lead moves them into GATE_KEYS at integration): this is a drum career
+    [{ seat: ['drums'] }, true], [{ seat: ['bass', 'lead'] }, false], [{ swapped: false }, true], [{ swapped: true }, false], [{ swapped: 'kenji' }, false]
   ];
   cases.forEach(([g, want]) => eq(P(g), want, JSON.stringify(g)));
   eq(GG.contracts.GATE_KEYS.every(k => cases.some(([g]) => g && k in g)), true, 'all GATE_KEYS covered');
+  eq((GG.contracts.SEAT_GATE_KEYS || []).every(k => cases.some(([g]) => g && k in g)), true, 'all SEAT_GATE_KEYS covered');
+  // the same gates on a bass career (Kenji on the kit)
+  const b = GG.career.newCareer({ seed: 1, bandId: 'hail_damage', seat: 'bass' }), Q = g => GG.career.gatePasses(b, g);
+  [[{ seat: ['drums'] }, false], [{ seat: ['bass', 'lead'] }, true], [{ swapped: false }, false], [{ swapped: true }, true], [{ swapped: 'kenji' }, true],
+    [{ swapped: ['dana', 'jaxon'] }, false], [{ seat: ['bass'], genre: ['metal'], swapped: 'kenji' }, true]].forEach(([g, want]) => eq(Q(g), want, 'bass seat ' + JSON.stringify(g)));
 });
 
 test('every effect key applies, clamps, and reports real deltas', () => {
