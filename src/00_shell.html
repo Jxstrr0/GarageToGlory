@@ -1088,6 +1088,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 /* v1.0 QA { */
 /* Lead / Lane Q: phone-QA fixes. Every new v1.0 control is >= 48 px: the laptop's ten tabs (Trophies wraps 5 + 5). */
 .tabs.tabs:has(> .tab:nth-child(10)) > .tab.tab { min-height: 48px; }
+/* A sheet with no foot ends in its body: the last row (a Monday card's third choice, the Trophies list) scrolls clear of the
+   home indicator (phoneqa: 10-20 px under it at 390x844). No change where --safe-bot is 0. */
+.sheet > .sheet-body:last-child, .sheet > .sheet-body:has(+ .sheet-foot:empty) { padding-bottom: calc(var(--safe-bot) + 14px); }
 /* } */
 </style>
 </head>

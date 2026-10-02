@@ -18,7 +18,7 @@
   GG.content.recruits = {
     names: {
       metal: {
-        first: ['Dustin', 'Brandi', 'Trent', 'Krystal', 'Wade', 'Tara', 'Colton', 'Shayla', 'Brody', 'Jolene', 'Garrett',
+        first: ['Dustin', 'Brandi', 'Trent', 'Krystal', 'Wade', 'Tara', 'Colton', 'Shayla', 'Brock', 'Jolene', 'Garrett',
           'Destiny', 'Lyle', 'Raylene', 'Darnell', 'Morgan', 'Kendra', 'Trevor', 'Olga', 'Mitch'],
         last: ['Friesen', 'Tkachuk', 'Lavoie', 'Bergstrom', 'Kowalski', 'Desjardins', 'Olson', 'Wiebe', 'Pelletier', 'Sawchuk',
           'McAllister', 'Nakamura', 'Okonkwo', 'Delorme', 'Ratushniak', 'Lindgren', 'Boychuk', 'Fehr'],

@@ -326,6 +326,15 @@ function collector(s) {
     finish: function () {
       offs.forEach(f => f());
       (s.chat || []).forEach(m => add('chat:' + m.who, m.text));
+      // v1.0 Lane Q: the lessons, the achievement rows this band can see, and the ending (tier text + epilogues; computed
+      // for a live career, the recorded one for an ended career)
+      if (GG.lessons) GG.lessons.LESSONS.forEach(id => (GG.lessons.steps(s, id) || []).forEach(st => add('lesson:' + id, GG.career.fillText(s, st.text))));
+      if (GG.achieve) GG.achieve.list(s).filter(a => !a.band || a.band.indexOf(s.bandId) >= 0).forEach(a => { add('ach:' + a.id, a.name); add('ach:' + a.id, a.blurb); });
+      if (GG.legacy) {
+        const lg = s.legacy && s.legacy.tier ? s.legacy : GG.legacy.compute(s);
+        strings('ending', GG.legacy.text(s, lg), 0);
+        (lg.epilogues || []).forEach(e => { add('epilogue:' + e.id, e.name); add('epilogue:' + e.id, e.text); });
+      }
       (s.albums || []).forEach(a => (a.reviews || []).forEach(r => add('review', r.quote)));
       if (s.loonies) strings('loonies', (s.loonies.results || []).map(r => [r.thanks, r.rivalLine, r.bandLine]), 0);
       if (GG.labels) { card('speech', GG.labels.speechCard(s)); card('outfit', GG.labels.outfitCard(s)); }
