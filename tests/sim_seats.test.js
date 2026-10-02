@@ -405,6 +405,13 @@ test('seat gear in the shop: the drum economy renamed per seat, one purchase set
   }));
   const lead = career('hail_damage', 'lead'); lead.gear.quality = 2;
   ok(SH.whammy(lead) && !SH.whammy(career('hail_damage', 'rhythm')), 'the lead’s whammy comes with amp tier 2');
+  // bends score with the whammy: a rock lead gig with a solo at amp tier 2 counts its bends (and only then)
+  const bend = q => { const x = jammed('gravel_kings', 'lead', 6); x.gear.quality = q; x.gear.sections = ['outro', 'solo'];
+    let pp = GG.songs.signature('rock', x.gear); pp.arrangement = GG.songs.ARRANGEMENTS.classic.slice(); pp = GG.songs.addSection(pp, 'solo', x.gear);
+    x.songs = [GG.songs.create(x, pp, 'Bend It')];
+    return GG.gig.botPlay(GG.gig.session(x, GG.gig.makeGig(x, 'legion_63', 'book'), null, { emit: false, difficulty: 'hard' }), { accuracy: 1 }, GG.RNG(4)).songResults[0]; };
+  const b2 = bend(2), b0 = bend(0);
+  ok(b2.bends > 0 && !('bends' in b0) && b2.crowdAvg >= b0.crowdAvg, 'whammy: bends score (' + b2.bends + ') ' + JSON.stringify([b2.crowdAvg, b0.crowdAvg]));
   eq(SH.gearName(career('hail_damage', 'drums'), 'ride'), 'China cymbal', 'the drum seat’s names: v1.0');
 });
 

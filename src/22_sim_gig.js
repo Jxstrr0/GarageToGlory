@@ -633,7 +633,7 @@
     var bonus = gig.setlistBonuses(state, set), unhappy = active(state).filter(function (m) { return m.mood < cfg.unhappy; });
     // v1.1: a string seat plays its own chart (seatChart: holds, chords, runs; S.release ends a hold). Auto-kick is a drum
     // assist (a string seat has no kick lane).
-    var seat = GG.career.seatOf ? GG.career.seatOf(state) : 'drums', strings = seat !== 'drums';
+    var seat = GG.career.seatOf ? GG.career.seatOf(state) : 'drums', strings = seat !== 'drums', whammy = seat === 'lead' && !!(GG.shop && GG.shop.whammy && GG.shop.whammy(state));
     function LN(li) { return strings ? STR_LANES[li] : C.LANES[li]; }
     var assists = { noFail: !!opts.noFail, autoKick: !!opts.autoKick && !strings }, floor = assists.noFail ? gig.noFailFloor : 0;   // v0.6.1 C4
     var soloLift = (GG.content.economy.shop && GG.content.economy.shop.soloCrowd) || 3;
@@ -690,7 +690,7 @@
         moments: [], lastMoment: {}, genreDone: false, capeDone: false, cheer: !!song.classic,
         dens: U.clamp(cfg.densityRef / Math.max(0.5, nps), dc[0], dc[1]),
         staleMul: Math.max(0.2, 1 - (song.stale || 0) / cfg.staleGain) };
-      if (strings) { cur.hold = [-1, -1, -1, -1, -1, -1]; cur.holds = 0; cur.rings = 0; cur.heldSum = 0; }
+      if (strings) { cur.hold = [-1, -1, -1, -1, -1, -1]; cur.holds = 0; cur.rings = 0; cur.heldSum = 0; cur.bends = 0; }
       S.chart = chart; S.index = i; S.combo = 0; S.t = 0; S.playing = true; S.crowd = live.crowd; S.hidden = live.crowd;
       S.level = gig.levelOf(S.crowd);
       if (i === 0 && bonus.opener) crowdAdd(cfg.opener);
@@ -709,6 +709,7 @@
       x.j = kind === 'perfect' ? 1 : 2;
       if (x.dbl) { x.hitT = t; cur.dblHit = k; }   // v0.7.2: the second kick plays at max(t2, just after this)
       if (x.hold && cur.hold) { if (cur.hold[x.li] >= 0) endHold(x.li, t); cur.hold[x.li] = k; x.hitT = t; }   // v1.1: held from here
+      if (x.bend && whammy) { cur.bends++; crowdAdd((cfg.bendGain != null ? cfg.bendGain : 0.6) * cur.staleMul); }   // v1.1: the lead's whammy (amp tier 2): bends score
       if (kind === 'perfect') cur.perfect++; else cur.good++;
       if (x.extra) cur.extrasHit++;
       cur.entryHits[x.entry]++;
@@ -903,6 +904,7 @@
         extras: ch.extras, extrasHit: cur.extrasHit, stray: cur.stray, cheer: cur.cheer, stale: song.stale || 0 };
       if (cur.hold) {   // v1.1 string seats: holds, rings, how much you held; the lead seat's spotlight time (Solo Too Long)
         r.seat = seat; r.holds = cur.holds; r.rings = cur.rings; r.held = cur.holds ? Math.round(cur.heldSum / cur.holds * 1000) / 1000 : 1;
+        if (whammy) r.bends = cur.bends;
         if (seat === 'lead') {   // your spotlight: seconds of solo bars, and how many of your notes were in them
           r.dur = Math.round(ch.duration * 10) / 10; r.solo = Math.round(ch.solos.reduce(function (a, x) { return a + x.t1 - x.t0; }, 0) * 10) / 10;
           r.soloNotes = n.filter(function (x) { return ch.solos.some(function (q) { return x.t >= q.t0 - 1e-6 && x.t < q.t1 - 1e-6; }); }).length;   // (+ the shred bar)
