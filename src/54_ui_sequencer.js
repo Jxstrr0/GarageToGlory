@@ -564,7 +564,7 @@
         return;
       }
       var sketch = queued[k] || null, i = k;
-      var tip = firstEver && i === 0 ? firstTip(state) : null;
+      var tip = firstEver && i === 0 && !(GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(state)) ? firstTip(state) : null;   // v1.0: quiet while the w1_write lesson runs
       ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), hint: tip,
         pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : GG.songs.starter(genre(), gear()),
         title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,

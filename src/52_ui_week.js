@@ -43,7 +43,7 @@
      HUD top bar + dock
      ====================================================================================================== */
   var STAT_HELP = {
-    week: 'The calendar. 24 weeks a year, ten years to glory. Every week: a Monday card, three blocks, maybe a gig.',
+    week: "The calendar. 24 weeks a year, ten years to glory (more if you're quick). Every week: a Monday card, three blocks, maybe a gig.",
     fund: 'Band fund: the one shared wallet. Gigs and Hustle fill it; upkeep, gas and gear drain it. Hit zero and your parents "help".',
     fans: 'Fans: people who would admit to liking you. Gigs and buzz grow them, and they never leave. Your mom counts.',
     buzz: 'Buzz: how hard people are talking about you right now. Promote and play gigs to pump it; it fades every week.',
@@ -482,11 +482,11 @@
       if (!w) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-next-week', onclick: GG.main.nextWeek }, 'Next week')); return; }
       s.setTitle('Week ' + w.week + ' wrap', 'YEAR ' + w.year);
       var parts = [];
-      parts.push(el('div', [el('div.caps', { style: 'margin-bottom:6px' }, 'This week'), ui.deltaChips(w.deltas, { emptyText: 'A perfectly flat week.' })]));
+      parts.push(el('div', { testid: 'wrap-deltas' }, [el('div.caps', { style: 'margin-bottom:6px' }, 'This week'), ui.deltaChips(w.deltas, { emptyText: 'A perfectly flat week.', testid: 'wrap-d-' })]));   // v1.0: stat testids (lessons)
       var ll = el('div.line-list.panel');
-      if (w.upkeep) ll.appendChild(el('div', [el('span', 'Upkeep (strings, gas, pizza)'), el('span.bad', '−' + U.fmtMoney(w.upkeep))]));
-      if (w.buzzDecay) ll.appendChild(el('div', [el('span', 'Buzz fades'), el('span.bad', '−' + Math.abs(w.buzzDecay))]));
-      if (st && st.debtToParents) ll.appendChild(el('div', [el('span', 'Owed to your parents'), el('span', U.fmtMoney(st.debtToParents))]));
+      if (w.upkeep) ll.appendChild(el('div', { testid: 'wrap-upkeep' }, [el('span', 'Upkeep (strings, gas, pizza)'), el('span.bad', '−' + U.fmtMoney(w.upkeep))]));
+      if (w.buzzDecay) ll.appendChild(el('div', { testid: 'wrap-buzz-fade' }, [el('span', 'Buzz fades'), el('span.bad', '−' + Math.abs(w.buzzDecay))]));
+      if (st && st.debtToParents) ll.appendChild(el('div', { testid: 'wrap-owed' }, [el('span', 'Owed to your parents'), el('span', U.fmtMoney(st.debtToParents))]));
       if (ll.children.length) parts.push(ll);
       if (w.parentsLoan) {
         parts.push(el('div.panel.alert', { testid: 'wrap-loan' }, [el('div.row', [el('span', { style: 'font-size:24px' }, '🏠'), el('div.grow', [
@@ -502,10 +502,10 @@
       if (ui.shopWrap) parts.push.apply(parts, ui.shopWrap(w));     // v0.8: rent, Outro/Solo + merch unlocks, eviction, the collector's item
       if (ui.licenseWrap) parts.push.apply(parts, ui.licenseWrap(w));   // v0.8.1: a licensing offer came in, offers that expired
       if (w.members && w.members.length) {
-        var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
+        var moods = el('div.panel', { testid: 'wrap-moods' }, [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
           var who = ui.who(m.id), label = m.label || ui.moodLabel(m.mood);
-          moods.appendChild(el('div.mood-row', [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
+          moods.appendChild(el('div.mood-row', { testid: 'wrap-mood-' + m.id }, [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
             el('span.lb', { style: { color: ui.moodColor(m.mood) } }, (m.stage >= 1 && ui.stageBadge ? '' : ui.moodEmoji(label) + ' ') + (m.stage >= 1 && ui.stageBadge ? ['😐', '😒', '⚠'][Math.min(3, m.stage) - 1] + ' ' : '') + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
         });
         parts.push(moods);
