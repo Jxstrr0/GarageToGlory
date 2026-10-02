@@ -380,4 +380,163 @@
     one_album_wonders: 'You sell your guitar, then buy it back the next week. It lives in {space} under a tarp, waiting for the second album and a longer solo.',
     still_in_the_garage: 'You still solo in {space} on Tuesday nights. The neighbours stopped complaining years ago. They know when the solo ends. It does not end.'
   };
+
+  /* ==== 4. Shop names per seat (owner E14b: parody names at the drum prices; 2a reads gear[i].bySeat / kit[i].bySeat) ==== */
+  var SG = {
+    bass: {
+      toms: { names: { metal: 'Low B of Doom', punk: 'Five-String (Duct-Taped)', rock: 'The Five-String Thunder-Plank', country: 'The Five-String Boomer' },
+        blurb: 'A fifth string, lower than your opinions. Lane 5: the bottom of the bottom end.' },
+      ride: { names: { metal: 'The Cryo-Fridge 8x10', punk: 'A Church-Basement Fridge Cab', rock: 'The Walk-In Freezer', country: 'The Grain-Bin Cab' },
+        blurb: 'Eight ten-inch speakers in a box the size of a fridge. No new lane. The front row feels it in their fillings.' },
+      pedal: { names: { metal: 'Gallop Finger Tape', punk: 'Downstroke Wrist Brace', rock: 'Slap-Happy Tape', country: 'Walking-Boots Finger Picks' },
+        blurb: 'Fast fingers: hold a run and it plays itself. Without them a run is thinned to the beat.' } },
+    rhythm: {
+      toms: { names: { metal: 'The Drop-Tune Neck', punk: 'Fresh Strings, All Six', rock: 'The Big Chord Neck', country: 'The Capo of Destiny' },
+        blurb: 'More neck, more chords. Lane 5: higher voicings for the big moments.' },
+      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Rodeo-Grade Strings' },
+        blurb: 'Lane 6: the top of the neck, for the shimmer and the shout.' },
+      pedal: { names: { metal: 'The Chug Glove', punk: 'The 8th-Note Wristband', rock: 'Turbo Shark-Fin Picks', country: 'Boom-Chick Thumb Pick' },
+        blurb: 'Fast picking: hold a run and the chugs keep coming. Without it a run is thinned to the beat.' } },
+    lead: {
+      toms: { names: { metal: 'Jumbo Frets of Woe', punk: 'Frets Filed Flat', rock: 'The Fret Job Supreme', country: 'Grandpa-Approved Frets' },
+        blurb: 'Big frets, easy bends. Lane 5: higher notes for the hook.' },
+      ride: { names: { metal: 'Twenty-Four Frets of Fury', punk: 'The Extra Fret Nobody Uses', rock: 'The Dive-Bomb Neck', country: 'The Pedal-Steel Wannabe' },
+        blurb: 'Lane 6: the very top of the neck. Dogs in three townships hear the solo.' },
+      pedal: { names: { metal: 'Shred Picks', punk: 'Fast Picks (Borrowed Forever)', rock: 'The Sweep Machine', country: 'Chicken-Pickin’ Picks' },
+        blurb: 'Shred picks: hold a run and it rips. Without them a run is thinned to the beat.' } }
+  };
+  var SK = {   // amp tiers 0..3 per seat at the kit tiers' prices (the lead's whammy comes with tier 2)
+    bass: [['The Practice Amp With the Hum', 'It hums in E-flat. You tuned to it. The cat leaves the room.'],
+      ['A Pawn Shop Bass Combo', 'Fifteen inches of speaker and one working knob. The knob is volume. That is the one you need.'],
+      ['The Maple Leaf Bass Stack', 'A head and a cab with a maple leaf on the grille. The basement windows hum along.'],
+      ['The Arena Rig', 'A wall of cabinets and an amp tech named Doug. Doug has opinions about low end.']],
+    rhythm: [['The Practice Amp With the Hum', 'It hums in E-flat. You tuned to it.'],
+      ['Pawn Shop Combo', 'Two knobs work. The third one is for show.'],
+      ['The Maple Leaf Stack', 'A half-stack with a maple leaf on the grille. It does not go to eleven; it goes to "pardon?"'],
+      ['The Arena Rig', 'A wall of cabinets and an amp tech named Doug. Doug has opinions.']],
+    lead: [['The Practice Amp With the Hum', 'It hums in E-flat. You tuned to it. Your solos are now also in E-flat.'],
+      ['Pawn Shop Combo', 'Two knobs work. The third one is for show. It still sustains for a week.'],
+      ['The Maple Leaf Stack', 'A half-stack with a maple leaf on the grille, and a whammy bar thrown in: bends score a bonus.'],
+      ['The Arena Rig', 'A wall of cabinets and an amp tech named Doug. Doug times your solos. Doug has given up.']]
+  };
+  (K.shop.gear || []).forEach(function (g) {
+    ['bass', 'rhythm', 'lead'].forEach(function (seat) { if (SG[seat][g.id]) (g.bySeat = g.bySeat || {})[seat] = SG[seat][g.id]; });
+  });
+  (K.shop.kit || []).forEach(function (k) {
+    ['bass', 'rhythm', 'lead'].forEach(function (seat) { var x = SK[seat][k.tier]; if (x) (k.bySeat = k.bySeat || {})[seat] = { name: x[0], blurb: x[1] }; });
+  });
+
+  /* ==== 5. The creator's "Your gear" names (2b gearNames: creator.gear.shapes[seat][id], guards, stickers) =========== */
+  K.creator.gear = {
+    shapes: {
+      bass: { plank: 'The Fence Plank', offset: 'The Lazy Offset', arrow: 'The Thunder-Arrow', violin: 'The Violin Bass (Not That One)' },
+      rhythm: { double_cut: 'The Twin Horns', single_cut: 'The Grain-Bin Slab', offset: 'The Wonky Waist', acoustic: 'The Campfire Dreadnought' },
+      lead: { vee: 'The V of Doom', pointy: 'The Icicle', double_cut: 'The Twin Horns', single_cut: 'The Grain-Bin Slab' }
+    },
+    guards: { white: 'White pickguard', black: 'Black pickguard', tortoise: 'Tortoiseshell', none: 'No pickguard' },
+    stickers: { none: 'Bare body', logo: 'Band logo sticker' }
+  };
+
+  /* ==== 6. Songwriter coach lines per seat (54 coachFor: coach[genre].bySeat[seat][step], then coach.bySeat[seat][step];
+     role 'drummer' = whoever is on the kit, other roles match the lineup's seatRole). They may name genres.js progNames /
+     hooks (Lane D). ================================================================================================ */
+  var CO = K.grooves.coach;
+  CO.bySeat = {
+    bass: {
+      drums: [{ role: 'drummer', text: 'I picked a groove for every part. Lock your bass to my kick and nobody can stop us.' }],
+      verse: [{ role: 'vocals', text: 'Keep the verse low and steady. Roots on the one. Leave me room to sing.' }, { role: 'guitar', text: 'Pick a progression and stay under me. The low end is the floor we stand on.' }],
+      chorus: [{ role: 'vocals', text: 'Chorus: jump to the octave. People feel it in their chests before they hear it.' }],
+      bridge: [{ role: 'drummer', text: 'Bridge: try a different progression. Then walk us home to the last chorus.' }]
+    },
+    rhythm: {
+      drums: [{ role: 'drummer', text: 'Groove picked. Your riff and my kick should agree on where the one is.' }],
+      verse: [{ role: 'vocals', text: 'The verse riff carries the song. Chug it, so the words sit on top.' }, { role: 'bass', text: 'Pick a progression and I will follow your right hand.' }],
+      chorus: [{ role: 'vocals', text: 'Chorus: let it ring. Open chords. Big. The kind you can see from the back.' }],
+      bridge: [{ role: 'lead guitar|guitar', text: 'The bridge is my solo spot. Give me something to stand on. Sustained chords.' }]
+    },
+    lead: {
+      drums: [{ role: 'drummer', text: 'Groove picked. Your hook goes on top. Try not to solo through my fills.' }],
+      verse: [{ role: 'vocals', text: 'Keep the verse hook small. The verse is mine. The chorus is ours.' }, { role: 'bass', text: 'Pick a hook and leave some gaps. Gaps are where the hook lives.' }],
+      chorus: [{ role: 'vocals', text: 'The chorus hook should repeat. That is what people sing back on the bus home.' }],
+      bridge: [{ role: 'bass|rhythm guitar|guitar', text: 'Bridge: go somewhere else. High and short, then land it.' }]
+    }
+  };
+  var GC = {
+    metal: {
+      bass: { drums: [{ role: 'drummer', text: 'Groove picked. Gallop with my kick. Two hands, two feet, one bass line. One beast.' }],
+        verse: [{ role: 'vocals', text: 'Under my screaming the bass must be dark. Like a lawn at midnight. Try "the tritone drop".' }, { role: 'guitar', text: 'Double my riff an octave down. Low-end spec: everything.' }],
+        chorus: [{ role: 'vocals', text: 'The chorus: "the big dark lift". The windows must shake. The neighbours must wonder.' }],
+        bridge: [{ role: 'lead guitar', text: 'Bridge: hold the root and let me shred. One note, held for my whole solo. You can do it.' }] },
+      rhythm: { drums: [{ role: 'drummer', text: 'ok i picked a groove. there are fills in it. your riff goes between the fills' }],
+        verse: [{ role: 'vocals', text: 'Chug the verse. Palm-muted, like a storm far away. I will be the lightning.' }, { role: 'lead guitar', text: 'Lock the chug to the kick. Every hit. I will double you on the right.' }],
+        chorus: [{ role: 'vocals', text: 'Chorus: let the chords ring out over everything. "The big dark lift". Magnifique.' }],
+        bridge: [{ role: 'lead guitar', text: 'Bridge is my solo. Sustained chords under it, please. Gain at seven. Not eight.' }] },
+      lead: { drums: [{ role: 'drummer', text: 'Groove picked: 210 bpm, the blast on the chorus. Your hook goes on top. Specs on request.' }],
+        verse: [{ role: 'vocals', text: 'The verse hook: something cold, like a wind off the slough. Then get out of my way.' }, { role: 'rhythm guitar', text: 'pick a hook and i will chug under it. no fills. ok one fill' }],
+        chorus: [{ role: 'vocals', text: 'The chorus hook must lift. "The big chorus lift". Repeat it until the crowd surrenders.' }],
+        bridge: [{ role: 'rhythm guitar', text: 'bridge is ur solo now. go nuts. i will hold the riff. baba says do not go too long' }] }
+    },
+    punk: {
+      bass: { drums: [{ role: 'drummer', text: 'groove picked. the fast one. lock to it. permission granted' }],
+        verse: [{ role: 'vocals', text: 'Verse: "three chords and a grudge". Root notes, eighths, no mercy.' }, { role: '^guitar$', text: 'two chords from me. you play the low end of both. that is the whole song' }],
+        chorus: [{ role: 'vocals', text: 'Chorus: faster and louder. If council can hear the bass, we did it right.' }],
+        bridge: [{ role: '^guitar$', text: 'bridge: half-time so the pit can breathe. then we go fast again' }] },
+      rhythm: { drums: [{ role: 'drummer', text: 'Groove picked. The chair moves that you play the riff. Seconded. Carried.' }],
+        verse: [{ role: 'drummer', text: 'Steady eighths in the verse. I will scream the bylaw over it.' }, { role: 'bass', text: 'pick a progression. i will follow your right hand. it is a good hand' }],
+        chorus: [{ role: '^guitar$', text: 'chorus: same chords, angrier. that is songwriting' }],
+        bridge: [{ role: '^guitar$', text: 'bridge is my solo. it is two chords. very fast. just hold something under it' }] },
+      lead: { drums: [{ role: 'drummer', text: 'groove picked. two beats. the fast one and the other fast one. hook goes on top' }],
+        verse: [{ role: 'vocals', text: 'Verse hook: short and loud, like a good heckle. Then let me yell.' }, { role: 'bass', text: 'leave gaps in the hook. the van likes gaps' }],
+        chorus: [{ role: 'vocals', text: 'Chorus hook: one you can chant outside city hall. Repeat it. Repeat it.' }],
+        bridge: [{ role: 'bass', text: 'bridge: go high, go short. no third chord. i am told that matters' }] }
+    },
+    rock: {
+      bass: { drums: [{ role: 'drummer', text: 'Groove scheduled. Kick on one and three. Lock in with it and we are home by midnight.' }],
+        verse: [{ role: 'vocals', text: 'The verse bass line should strut, like leather pants walking into 1985. Try "the highway".' }, { role: 'guitar', text: 'Pick a line that is legally distinct. I will check with my people.' }],
+        chorus: [{ role: 'vocals', text: 'Chorus: the octave jump! The lighters go up! It is 1985 in every chest in the room!' }],
+        bridge: [{ role: 'guitar', text: 'Bridge is my solo. Hold the root. If it sounds familiar, that is a coincidence.' }] },
+      rhythm: { drums: [{ role: 'drummer', text: 'I picked a groove! A big one! I will sing over it and also drum! Very 1985!' }],
+        verse: [{ role: 'drummer', text: 'Verse: chug it under me so I can sing from the kit. I have a headset now.' }, { role: 'bass', text: 'Pick a progression. I have colour-coded the chords. Blue is safe.' }],
+        chorus: [{ role: 'guitar', text: 'Chorus: big open chords. Let them ring. Totally original chords. Probably.' }],
+        bridge: [{ role: 'guitar', text: 'Bridge: sustained chords under my solo. My lawyers prefer sustained chords.' }] },
+      lead: { drums: [{ role: 'drummer', text: 'I picked a groove. It sounds like a famous groove, so it is good. Hook on top.' }],
+        verse: [{ role: 'vocals', text: 'The verse hook: something to hum in a convertible in 1985. In January. In Edmonton.' }, { role: 'bass', text: 'Leave gaps in the hook. Gaps are healthy. Like flossing.' }],
+        chorus: [{ role: 'vocals', text: 'Chorus: "the big chorus lift". Repeat it. The arena must sing it back!' }],
+        bridge: [{ role: 'bass', text: 'Bridge: your solo. Keep it under a minute. I have a cleaning at 8.' }] }
+    },
+    country: {
+      bass: { drums: [{ role: 'drummer', text: 'Groove picked. Slow and steady, how the hat likes it. Root and fifth on one and three.' }],
+        verse: [{ role: 'vocals', text: 'Verse: walk it like a man going home. "Home on the grid road", actually.' }, { role: 'lead guitar', text: 'Boom-chick. Root, fifth. Played behind a line like that in 1979.' }],
+        chorus: [{ role: 'vocals', text: 'Chorus: walk up to it. Make the crowd feel like they are coming home.' }],
+        bridge: [{ role: 'fiddle', text: 'The bridge is mine. Keep it simple underneath. I will make it sound expensive.' }] },
+      rhythm: { drums: [{ role: 'drummer', text: 'Picked a train beat. I sing from the kit now. Strum like a truck idling and we are set.' }],
+        verse: [{ role: 'drummer', text: 'Verse strum: steady. Like a truck idling. I mean it kindly.' }, { role: 'bass', text: 'Pick a progression. "Back and forth to town" is a good one. The hat agrees.' }],
+        chorus: [{ role: 'lead guitar', text: 'Chorus: open chords, let them ring. Every great one I backed let the chorus ring.' }],
+        bridge: [{ role: 'fiddle', text: 'Bridge is the fiddle break. Hold the chords still. Do not watch me enjoy it.' }] },
+      lead: { drums: [{ role: 'drummer', text: 'Picked a groove. Drummed one like it in 1974 on a cardboard box. Your lick goes on top.' }],
+        verse: [{ role: 'vocals', text: 'Verse lick: small. Answer my lines, do not sing over them. Like a duet with a truck.' }, { role: 'fiddle', text: 'Leave gaps in your lick. I will fill them. Tastefully.' }],
+        chorus: [{ role: 'vocals', text: 'Chorus lick: the one people hum at the gas station. Repeat it. Make me cry.' }],
+        bridge: [{ role: 'fiddle', text: 'Bridge: trade bars with me. For the music. Not because it is fun.' }] }
+    }
+  };
+  Object.keys(GC).forEach(function (g) { var o = CO[g] = CO[g] || {}; o.bySeat = GC[g]; });
+
+  /* ==== 7. The seat achievements (handoff E12; Lane B's kinds seatCareer / soloTooLong / allSeats). They join
+     content.achievements once the contracts list the kinds (the lead folds them into C.ACH_KINDS at integration, as Lane B
+     asked; sim_achieve checks every row's kind against GG.achieve.KINDS); until then they wait in K.seatAchievements
+     (content_seats checks them). No drum words, so no seat gate: a drum career's Trophies tab shows them as goals. ======= */
+  var SEAT_ACH = [
+    { id: 'low_end', name: 'Low End', icon: '🔊', when: 'end', test: { kind: 'seatCareer', seat: 'bass' },
+      blurb: 'Finish a career on bass. Nobody heard you. Everybody felt you. That is the job.' },
+    { id: 'the_engine_room', name: 'The Engine Room', icon: '⚙️', when: 'end', test: { kind: 'seatCareer', seat: 'rhythm' },
+      blurb: 'Finish a career on rhythm guitar. The riff was yours the whole time. Now it is official.' },
+    { id: 'solo_too_long', name: 'Solo Too Long', icon: '🎸', when: 'gig', test: { kind: 'soloTooLong' },
+      blurb: 'On lead guitar, play a song where the solo is most of your part. The dog stayed. The dog gets it.' },
+    { id: 'musical_chairs', name: 'Musical Chairs', icon: '🪑', when: 'meta', test: { kind: 'allSeats' },
+      blurb: 'Finish a career in every seat in the band. Everybody has sat everywhere. Nobody wants the hay bale.' }
+  ];
+  K.seatAchievements = SEAT_ACH;
+  var AK = GG.contracts && GG.contracts.ACH_KINDS;
+  if (Array.isArray(AK) && Array.isArray(K.achievements) && ['seatCareer', 'soloTooLong', 'allSeats'].every(function (k) { return AK.indexOf(k) >= 0; }))
+    SEAT_ACH.forEach(function (a) { if (!K.achievements.some(function (x) { return x.id === a.id; })) K.achievements.push(a); });
 })(window.GG);
