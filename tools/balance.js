@@ -77,6 +77,7 @@ function syntheticDeck() {
 // comparison then isolates the economy + member numbers from how much content each band has (v0.9).
 const DECK = process.env.DECK || '';
 const real = DECK ? 0 : GG.content.cards && GG.content.cards.length;
+if (DECK && GG.content.endings) GG.content.endings.bonusCards = [];   // v1.0: no bonus-year cards join a stub deck (GG.legacy.deck)
 if (DECK === 'none') GG.content.cards = [];
 else if (!real) GG.content.cards = syntheticDeck();
 if (process.env.WIDE_GATES) GG.content.cards.forEach(c => { if (c.gate && Array.isArray(c.gate.era) && c.gate.era.length === 1 && c.gate.era[0] === 'garage') c.gate.era = C.ERAS.slice(); });
