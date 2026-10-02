@@ -24,8 +24,8 @@
   L.noBonus = false;
 
   var TUNE = {
-    fans: { max: 250, full: 80000, pow: 0.6 },
-    units: { max: 200, full: 600000, pow: 0.5 },
+    fans: { max: 250, full: 100000, pow: 0.6 },
+    units: { max: 200, full: 800000, pow: 0.5 },
     awards: { max: 150, loonie: 8, gong: 20, cert: 4, greyMug: 10 },
     venue: { max: 100, floor: 15, full: 19000 },
     regions: { per: 25, max: 100 },

@@ -28,7 +28,8 @@ test('the seven parts on synthetic states (fans, units, awards, venue, regions, 
   eq(L.parts(s).parts, { fans: 0, units: 0, awards: 0, venue: 0, regions: 0, unity: 50, final: 0 }, 'nothing earned (chemistry 0; the originals still in: unity 50)');
   const gone = blank(GG); gone.members.forEach(m => quit(gone, m.id));
   eq(L.parts(gone).parts.unity, 0, 'chemistry 0 and every original gone: unity 0');
-  s.fans = 80000; s.stats.units = 600000; s.stats.loonieWins = 2; s.stats.certs = 3; s.flags.greyMug = 'played';
+  const T = GG.content.endings.legacy;
+  s.fans = T.fans.full; s.stats.units = T.units.full; s.stats.loonieWins = 2; s.stats.certs = 3; s.flags.greyMug = 'played';
   s.tour.gongs = [{ year: 6, won: true }, { year: 7, won: false }];
   s.legacyTrack.bigHead = { id: 'x', name: 'X', cap: 19000, week: 9 };
   reg(s, 'uk_europe').broken = 50; reg(s, 'japan').broken = 60; reg(s, 'canada').broken = 10;   // home never counts
@@ -36,7 +37,7 @@ test('the seven parts on synthetic states (fans, units, awards, venue, regions, 
   const p = L.parts(s).parts;
   eq(p, { fans: 250, units: 200, awards: 2 * 8 + 20 + 3 * 4 + 10, venue: 100, regions: 50, unity: 100, final: 100 }, 'full marks where earned');
   eq(L.compute(s).score, Object.values(p).reduce((a, b) => a + b, 0), 'score = the sum of the parts');
-  s.fans = 20000; s.stats.units = 150000; eq([L.parts(s).parts.fans, L.parts(s).parts.units], [Math.round(250 * Math.pow(0.25, 0.6)), 100], 'fans^0.6, units^0.5');
+  s.fans = T.fans.full / 4; s.stats.units = T.units.full / 4; eq([L.parts(s).parts.fans, L.parts(s).parts.units], [Math.round(250 * Math.pow(0.25, 0.6)), 100], 'fans^0.6, units^0.5');
   s.stats.loonieWins = 30; eq(L.parts(s).parts.awards, 150, 'awards cap at 150');
   s.finalShowdown = null; s.legacyTrack.bigHead.cap = 500;
   eq(L.parts(s).parts.venue, Math.round(100 * Math.log(500 / 15) / Math.log(19000 / 15)), 'venue: log scale from 15 to the Sad Dome\'s 19,000');
@@ -88,7 +89,7 @@ test('tiers by the score alone: 800 / 600 / 400 / 200 boundaries; difficulty is 
   const s = blank(GG); s.fans = 50000; s.stats.units = 300000; s.chemistry = 70;
   const a = L.compute(s), b = L.compute(Object.assign(JSON.parse(JSON.stringify(s)), { careerDifficulty: 'brutal' }));
   ok(a.score === b.score && a.tier === b.tier && a.difficulty === 'normal' && b.difficulty === 'brutal', 'brutal: the same score and tier, a different badge');
-  const lost = blank(GG, 'hail_damage', { finalShowdown: { headliner: 'rival', won: false } }); lost.fans = 80000; lost.stats.units = 600000; lost.stats.loonieWins = 20; lost.chemistry = 100;
+  const lost = blank(GG, 'hail_damage', { finalShowdown: { headliner: 'rival', won: false } }); lost.fans = 100000; lost.stats.units = 800000; lost.stats.loonieWins = 20; lost.chemistry = 100;
   reg(lost, 'japan').broken = 1; lost.legacyTrack.bigHead = { id: 'x', name: 'X', cap: 15000, week: 3 };
   const lg = L.compute(lost), tx = L.text(lost, lg);
   ok(lg.tier === 'arena_legends' && /\{rival\}|Tundra Wraith/.test(tx.tier.line) && /asterisk/.test(tx.tier.line), 'losing the Sad Dome changes the text, not the tier: ' + tx.tier.line);
