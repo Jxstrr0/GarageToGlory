@@ -34,6 +34,13 @@
 //   kick is that hit) unless its kick was dropped. Hits scheduled ahead are cancelled by stopAudio (GG.audio.hitCancel).
 //   The kick zone flashes again + a small ring and the stage drummer's left foot kicks (GG.render.stage.kick2) when the
 //   second kick is heard. Debug gigui adds doubles, doublesPlayed.
+// v1.1 "Seats" (plan_contract_1.1 §4.5): a string seat (bass / rhythm / lead) plays its own chart (GG.gig.chart with the seat:
+//   lanes 'str0'..'str5', low -> high, sized by GG.career.seatLanes) in its own colours; a tap plays your instrument
+//   (GG.audio.pluck / strum / lead, booked on the band clock exactly like a drum hit: syncSnap, never before the lane's last
+//   booking); a hold sounds until you lift (pointerup / keyup -> ses.release + GG.audio.release); a run (the run gear) plays
+//   its notes on the band grid while you hold it; a 2-lane chord draws as two gems on a bar (tap both); auto notes play
+//   through your voice. The band plays the drums from the song (GG.audio.play { drums: true, seat, part, mute: your kinds }).
+//   The drum seat's path is unchanged.
 // v0.7.2 fix (booking pump): auto notes and second kicks are booked from a 25 ms timer as well as the frame loop. A GPU-bound
 //   phone (the 3D stage, a hitch) can go 150+ ms between frames while the main thread is free; booking only on frames
 //   meant a late frame booked them in the past (GG.audio.hit plays a past time now = a late drum). Same pattern as the
@@ -96,11 +103,23 @@
   function fill(t) { return t && S() ? ui.fill(t, S()) : t; }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function auto() { return !!ui.gigAutoplay; }
-  function lanesOf(state) { var n = state && state.gear && state.gear.lanes; return n >= 1 ? Math.min(n, C.LANES.length) : 4; }
+  function seatOf(st) { return GG.career && GG.career.seatOf ? GG.career.seatOf(st) : 'drums'; }
+  function strings() { return !!(G && G.seat && G.seat !== 'drums'); }
+  function lanesOf(state) {
+    if (seatOf(state) !== 'drums' && GG.career.seatLanes) return GG.career.seatLanes(state);   // v1.1: your rig's lanes
+    var n = state && state.gear && state.gear.lanes; return n >= 1 ? Math.min(n, C.LANES.length) : 4;
+  }
+  // v1.1 string lanes, low -> high (colourblind: the same Okabe-Ito set as the kit, by index).
+  var STR_COLORS = ['#57c77a', '#ff6b4a', '#ffd23f', '#4f8cff', '#ff9f43', '#b98cff'];
+  var STR_CB = ['#009E73', '#D55E00', '#F0E442', '#56B4E9', '#E69F00', '#CC79A7'];
+  ui.STR_COLORS = STR_COLORS;
   function laneColor(l) {
+    if (strings()) return (G.cb ? STR_CB : STR_COLORS)[l] || '#8899bb';
     if (G && G.cb && GG.prefs && GG.prefs.CB_COLOURS[C.LANES[l]]) return GG.prefs.CB_COLOURS[C.LANES[l]];
     var L = ui.LANES && ui.LANES[C.LANES[l]]; return L ? L.color : '#8899bb';
   }
+  function laneName(l) { return strings() ? 'str' + l : C.LANES[l]; }
+  function laneIndex(lane) { var m = /^str(\d)$/.exec(String(lane)); return m ? +m[1] : C.LANES.indexOf(lane); }
   function col(l) { return G && G.lefty ? G.lanes - 1 - l : l; }   // v0.6.1 lefty: lane l is drawn (and tapped) in column col(l)
   function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
 
@@ -218,7 +237,7 @@
     // The stage takes 'gig:judge' (stick hits, flinches), 'crowd:level' and 'crowd:moment' straight off the bus.
     'gig:judge': function (p) {
       if (!G || !G.chart) return;
-      var li = C.LANES.indexOf(p.lane);
+      var li = laneIndex(p.lane);
       if (p.judgement && !p.auto) { G.popKind = p.judgement; G.popLane = li; G.popAt = performance.now(); }
       if (p.judgement === 'perfect' || p.judgement === 'good') G.burst[li] = performance.now();
     },
@@ -232,6 +251,7 @@
       if (!G) return;
       var who = p.who || p.id;   // v0.9 contract names it id; the v0.3 sim sends who
       stageCall('bandAction', who, p.action);
+      if (who === 'player' && p.action === 'solo') { banner('Your solo! The spotlight is yours.', 'band'); return; }   // v1.1 the lead seat
       if (p.action) banner(bandText(p.action).replace('{n}', who ? ui.who(who).short : 'The band'), p.action === 'miss' ? 'bad' : 'band');
     },
     'audio:end': function (p) {   // the song stopped under us (app hidden, another screen): pause, restart on resume
@@ -250,6 +270,9 @@
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
     if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
     else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
+    // v1.1: lifting a finger (or a key) ends a hold
+    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); window.addEventListener('keyup', onKeyUp); }
+    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); window.removeEventListener('keyup', onKeyUp); }
   }
 
   GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
@@ -264,8 +287,9 @@
       dq: [], dp: 0, dblN: 0, k2: [-1, -1, -1, -1, -1, -1], k2i: 0, k2Last: -1e9, k2W: -1e9,
       zeroBand: 0, D: 0, K: 0, latD: 0, sync: false, lats: [], disp: [], dispP90: null, drawOff: 0, visM: false, waking: false,
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
-      press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf(st),
-      attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null };
+      press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
+      attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
     readPrefs();
     listen(true);
     ui.show('gig', {});
@@ -368,8 +392,14 @@
     G.startTimer = 0;
     var song = G.ses.song(), p = performance.now(), h = null;
     var at = G.actx && G.actx.state === 'running' ? G.zeroBand : undefined;   // v0.8.3: start on the count-in's grid
-    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
-      singer: ui.roleOf('front', S()), band: S().bandId }) : null; }   // v0.9: who sings (for the audio's per-singer vocal voice)
+    var po = { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
+      singer: ui.roleOf('front', S()), band: S().bandId };   // v0.9: who sings (for the audio's per-singer vocal voice)
+    if (strings()) {   // v1.1: the band (the swapped drummer) plays the drums; your part is muted, your taps play it
+      po.drums = true; po.seat = G.seat; po.part = song.pattern && song.pattern.part;
+      po.mute = GG.audio && GG.audio.seatKinds ? GG.audio.seatKinds(S().genre, G.seat) : null;
+      po.soloist = G.ses && G.ses.roles ? G.ses.roles.solo : undefined;
+    }
+    try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, po) : null; }
     catch (e) { console.error('[gig] audio.play failed', e); }
     G.handle = h;
     if (!h) return;   // no Web Audio: the performance clock keeps time
@@ -471,7 +501,8 @@
       var n = a[G.ap++];
       if (n.li >= G.lanes) continue;
       if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
+      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined, false);   // v1.1: your voice plays it
+      else if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
       G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - (t - G.D)) * 1000;   // the ring shows when it's heard
     }
   }
@@ -544,6 +575,77 @@
     autoNotes(t, p);   // v0.6.2 two-thumb drops play themselves
     if (G.kq.length) autoKicks(t, p);   // v0.8.3 Auto-kick
     if (G.dq.length) doubleKicks(t, p);   // v0.7.2 a double's second kick
+    if (G.seat !== 'drums') seatBook(t, p);   // v1.1: runs while held, holds that rang out
+  }
+
+  /* ---- v1.1 "Seats": your instrument ----------------------------------------------------------------------- */
+  // The voice for a note kind (bass -> pluck, lead / twang -> lead, the rest -> strum); no kind = the seat's own.
+  function voiceFor(kind) {
+    var A = GG.audio; if (!A) return null;
+    var k = kind || ({ bass: 'bass', lead: 'lead' })[G.seat] || 'gtr';
+    return k === 'bass' ? A.pluck : k === 'lead' || k === 'twang' ? A.lead : A.strum;
+  }
+  function laneMidi(li) {
+    var m = G.laneMidi[li];
+    if (m != null) return m;
+    var n = G.chart ? G.chart.notes : [];
+    for (var k = 0; k < n.length; k++) if (n[k].li === li && n[k].midi != null) return (G.laneMidi[li] = n[k].midi);
+    return 40 + li * 5;
+  }
+  // One of your notes (a tap's, an auto note, a run's) -> the voice handle (null without the voice). fifth: the chord's
+  // second lane plays the fifth.
+  function seatSound(n, li, when, fifth) {
+    var f = voiceFor(n && n.kind), midi = n && n.midi != null ? n.midi : laneMidi(li), o;
+    if (!f) return null;
+    if (n && n.midi != null) G.laneMidi[li] = n.midi;
+    o = { len: n ? (n.run && n.seq && n.seq.length ? n.seq[0][0] : n.len || 0.25) : 0.25, hold: !!(n && n.hold && !n.run), kind: n && n.kind || null,
+      power: !!(n && n.power), mute: !!(n && n.mute), strum: n && n.strum || null, up: !!(n && n.up), bend: !!(n && n.bend), chord: !!(n && n.chord) };
+    try { G.seatN++; return f(fifth ? midi + 7 : midi, when, o); } catch (e) { return null; }
+  }
+  function nowWhen(li, J) {   // the band-clock booking time for a sound at song time J (drum sync), else undefined ('now')
+    var c = G.actx;
+    if (!G.sync || !G.clockOk || !c || c.state !== 'running') return undefined;
+    var when = Math.max(GG.prefs.syncWhen(J, G.zeroBand, c.currentTime), G.lastBook[li] + 0.001);
+    G.lastBook[li] = when;
+    return when;
+  }
+  function releaseLane(li, J) {   // lift: the session judges the hold, the voice stops
+    var h = G.held[li];
+    if (G.ses && G.ses.release) G.ses.release(li, J);
+    G.held[li] = null;
+    if (h && h.h && GG.audio && GG.audio.release) { try { GG.audio.release(h.h, nowWhen(li, J)); G.relN++; } catch (e) { /* a voice that already ended */ } }
+  }
+  // Runs play on the band grid while their lane is held; a hold that rang out lets its voice go at its end.
+  function seatBook(t, p) {
+    var c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running', now = heardSong(c, sched, t), ahead = aheadOf(sched, now);
+    for (var r = G.runs.length - 1; r >= 0; r--) {
+      var ru = G.runs[r], n = ru.n, live = G.ses.holding && G.ses.holding(ru.li) === n;
+      while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
+        var q = n.seq[ru.i++], at = n.t + q[0];
+        if (at < now - 0.08) continue;
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, false);
+        G.runN++;
+      }
+      if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
+    }
+    for (var l = 0; l < G.held.length; l++) {
+      var h = G.held[l];
+      if (h && !(G.ses.holding && G.ses.holding(l) === h.n)) { G.held[l] = null; if (h.h && GG.audio && GG.audio.release) { try { GG.audio.release(h.h, sched ? G.zeroBand + Math.min(h.n.t + h.n.len, Math.max(now, h.n.t)) : undefined); } catch (e) { /* ended */ } } }
+    }
+  }
+  function onUp(ev) {
+    if (!G || !strings()) return;
+    var ls = G.ptr[ev.pointerId];
+    if (!ls) return;
+    delete G.ptr[ev.pointerId];
+    var at = tapTime(ev.timeStamp);
+    for (var i = 0; i < ls.length; i++) releaseLane(ls[i], at);
+  }
+  function onKeyUp(ev) {
+    if (!G || !strings()) return;
+    var li = KEYS[ev.key && ev.key.toLowerCase()];
+    if (li == null || li >= G.lanes) return;
+    releaseLane(col(li), tapTime(ev.timeStamp));
   }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
@@ -599,9 +701,14 @@
     var nb = fr < BRIDGE && li > 0 ? li - 1 : fr > 1 - BRIDGE && li < G.lanes - 1 ? li + 1 : -1;   // v1.0.1 smart bridge: the seam
     if (nb >= 0 && G.mode === 'play') {
       var at = tapTime(ev.timeStamp);
-      if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) { tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1; return; }
+      if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) {
+        tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1;
+        if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li), col(nb)];   // v1.1: one finger holds both
+        return;
+      }
     }
     tap(col(li), ev.timeStamp, true);
+    if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li)];
   }
   // v1.0.1 smart bridge: a touch within BRIDGE lane widths of a lane boundary (the middle third of the gap between the two
   // lane centres) hits BOTH lanes only when both have a note judge() would hit at this touch's time (ses.due: pure); else
@@ -624,7 +731,7 @@
     if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
     var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
-    if (at < -0.4) { playTap(li, at, null); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
+    if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
     if (r) { r.at = at; r.disp = ok ? now - stamp : null; }
     if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
@@ -638,6 +745,7 @@
   // its note inside [-15, +15] ms), never before the lane's last booked tap (A.hit's choke expects time order); classic
   // (or a clock that isn't running) plays it 'now'.
   function playTap(li, J, r) {
+    if (G.seat !== 'drums') return playSeat(li, J, r);   // v1.1
     var lane = C.LANES[li], c = G.actx;
     if (!GG.audio || !GG.audio.hit) return J;
     if (!G.sync || !G.clockOk || !c || c.state !== 'running') {
@@ -652,6 +760,28 @@
     if (Jp !== J) G.snapN++;
     if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
     return when - G.zeroBand;
+  }
+
+  // v1.1: a string seat's tap plays your note (a chord's second lane: the fifth; a stray: the lane's last pitch) on the same
+  // drum-sync booking; a hold keeps its handle for the lift, a run starts booking its notes while held.
+  function playSeat(li, J, r) {
+    var c = G.actx, n = r && r.note ? r.note : null, hit = !!(n && r.judgement && r.judgement !== 'miss'), when, Jp = J, out;
+    if (G.held[li]) releaseLane(li, J);
+    if (!G.sync || !G.clockOk || !c || c.state !== 'running') { when = undefined; out = c ? c.currentTime + HIT_LEAD - G.zeroBand : J; if (r) r.snap = false; }
+    else {
+      Jp = GG.prefs.syncSnap(J, hit ? n.t : null, hit);
+      when = Math.max(GG.prefs.syncWhen(Jp, G.zeroBand, c.currentTime), G.lastBook[li] + 0.001);
+      G.lastBook[li] = when;
+      if (Jp !== J) G.snapN++;
+      if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
+      out = when - G.zeroBand;
+    }
+    var h = seatSound(n && (hit || r.partial) ? n : null, li, when, !!(n && n.chord && n.chord[1] === li && n.chord[0] !== li));
+    if (hit && n.hold) {
+      G.held[li] = { h: h, n: n };
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: li, i: 0 });
+    }
+    return out;
   }
 
   /* ---- Highway drawing ------------------------------------------------------------------------------------ */
@@ -691,10 +821,15 @@
       x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
-      var L = ui.LANES && ui.LANES[C.LANES[l]];
+      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]];
       x.textAlign = 'center'; x.textBaseline = 'middle';
-      x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-      x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+      if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
+        x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1;
+        x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+      } else {
+        x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+      }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
@@ -716,8 +851,9 @@
       y = yOf(b * spb, t); if (y > hitY) continue;
       x.fillStyle = b % 4 === 0 ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.07)'; x.fillRect(0, y, W, b % 4 === 0 ? 2 : 1);
     }
-    for (k = 0; k < ch.fills.length; k++) band(x, ch.fills[k], t, 'rgba(185,140,255,.13)', '#c9a4ff', 'FREESTYLE · GO WILD');
-    for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', 'SOLO · KEEP IT SIMPLE');
+    for (k = 0; k < ch.fills.length; k++) band(x, ch.fills[k], t, 'rgba(185,140,255,.13)', '#c9a4ff', ch.fills[k].shred ? 'SHRED · GO WILD' : 'FREESTYLE · GO WILD');
+    for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', G.seat === 'lead' ? 'SOLO · YOUR SPOTLIGHT' : 'SOLO · KEEP IT SIMPLE');
+    if (G.seat !== 'drums') drawHeld(x, t);   // v1.1: the tails of the notes you are holding
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
     var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
     x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
@@ -736,6 +872,12 @@
       if (a <= 0) continue;
       y = yOf(nt.t, t);
       var gx = col(nt.li) * laneW + (laneW - gw) / 2;
+      if (nt.hold && nt.j === 0) tail(x, nt, nt.li, t, y, 0.55 * a);   // v1.1: a hold's tail (a run's has ticks)
+      if (nt.chord && nt.j === 0 && nt.chord[1] < G.lanes) {   // v1.1: a 2-lane chord: both gems on a bar
+        var cx2 = col(nt.chord[1]) * laneW + (laneW - gw) / 2;
+        x.globalAlpha = 0.8 * a; x.fillStyle = '#ffffff'; x.fillRect(Math.min(gx, cx2) + gw / 2, y - 2, Math.abs(cx2 - gx), 4);
+        x.globalAlpha = (nt.cl && nt.cl.indexOf(nt.chord[1]) >= 0 ? 0.35 : 1) * a; x.fillStyle = laneColor(nt.chord[1]); rr(x, cx2, y - gh / 2, gw, gh, gr); x.fill();
+      }
       if (nt.j === 3) { x.globalAlpha = 0.5 * a; x.fillStyle = '#4a5063'; }
       else if (nt.free) { x.globalAlpha = 0.3 * a; x.fillStyle = laneColor(nt.li); }
       else { x.globalAlpha = 1; x.fillStyle = laneColor(nt.li); }
@@ -782,6 +924,28 @@
     }
     x.fillStyle = 'rgba(255,255,255,.12)'; x.fillRect(0, 0, W, 3);   // song progress
     x.fillStyle = '#ffb347'; x.fillRect(0, 0, W * U.clamp(t / ch.duration, 0, 1), 3);
+  }
+  // v1.1: a hold's tail from its head (y) up to its end; ticks mark a run's notes. Held notes draw from the hit line.
+  function tail(x, n, li, t, y, alpha) {
+    var y1 = yOf(n.t + n.len, t), tx = col(li) * laneW + laneW / 2, w = n.run ? 12 : 10;
+    if (y1 >= y) return;
+    G.tailN = (G.tailN || 0) + 1;
+    x.globalAlpha = alpha; x.fillStyle = laneColor(li);
+    x.fillRect(tx - w / 2, Math.max(0, y1), w, y - Math.max(0, y1));
+    if (n.run && n.seq) {
+      x.fillStyle = '#ffffff';
+      for (var q = 0; q < n.seq.length; q++) { var yy = yOf(n.t + n.seq[q][0], t); if (yy < y && yy > 0) x.fillRect(tx - w, yy - 1, w * 2, 2); }
+    }
+    x.globalAlpha = 1;
+  }
+  function drawHeld(x, t) {
+    for (var l = 0; l < G.lanes; l++) {
+      var n = G.ses && G.ses.holding ? G.ses.holding(l) : null;
+      if (!n) continue;
+      tail(x, n, l, t, hitY, 0.9);
+      var a = 0.35 + 0.25 * Math.sin(t * 18);   // the zone glows while you hold
+      x.globalAlpha = a; x.fillStyle = laneColor(l); rr(x, col(l) * laneW + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12); x.fill(); x.globalAlpha = 1;
+    }
   }
   function band(x, f, t, bg, fg, label) {
     var y0 = yOf(f.t1, t), y1 = yOf(f.t0, t);
@@ -875,7 +1039,7 @@
       s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
           el('div.tiny.dim', x.perfect + ' perfect · ' + x.good + ' good · ' + x.miss + ' missed · combo ' + x.maxCombo
-            + (x.fills ? ' · ' + x.fills + ' fill taps' : ''))]),
+            + (x.fills ? ' · ' + x.fills + ' fill taps' : '') + (x.holds ? ' · ' + (x.rings || 0) + ' of ' + x.holds + ' holds rang out' : ''))]),
           el('div.acc', Math.round(x.accuracy * 100) + '%')]);
       })));
       (r.lines || []).forEach(function (t) {   // v0.9: a line about another band's people is dropped (the leak net, 50_ui_core)
@@ -967,7 +1131,7 @@
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
-        var on = [pf.noFail ? 'No-fail' : null, pf.autoKick ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
+        var on = [pf.noFail ? 'No-fail' : null, pf.autoKick && seatOf(st) === 'drums' ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
         s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
           '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
       }
@@ -1026,7 +1190,7 @@
       var t = songTime(p);
       for (var i = 0; i < ch.notes.length && soon.length < 12; i++) {
         var n = ch.notes[i]; if (n.j !== 0 || n.free || n.li >= G.lanes) continue;
-        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : { li: n.li, t: n.t });
+        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : n.hold || n.chord ? { li: n.li, t: n.t, len: n.len, hold: !!n.hold, chord: n.chord || null, run: !!n.run } : { li: n.li, t: n.t });
         if (!next && n.t > t + 0.35) next = n.dbl ? { lane: n.lane, li: n.li, t: n.t, t2: n.t2 } : { lane: n.lane, li: n.li, t: n.t };
       }
     }
@@ -1038,6 +1202,8 @@
       sync: G.sync, D: G.D, K: G.K, latD: G.latD, zeroBand: G.zeroBand, zero: G.zero, spb: ch ? ch.spb : null, vis: G.drawOff,   // v0.8.3 drum sync
       tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
       dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
-      akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
+      akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null,
+      seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
+      seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0 };
   });
 })(window.GG);

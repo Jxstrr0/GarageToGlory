@@ -157,6 +157,7 @@
       else if (!isObj(m[k])) m[k] = {};
     });
     if (freshMerch) S.unlockMerch(s, true);   // a new career / an old save: everything its era has opened, quietly (later: weekly, with news)
+    seatGearSync(s);   // v1.1: a string seat's rig follows the gear the band owns (no-op on drums)
     return s;
   };
   // A new career: the band's own tier-0 vehicle name (world.defaultVan names every van The Moose Hearse).
@@ -168,13 +169,75 @@
   S.migrate = function (s) { return S.ensure(s); };
 
   /* ---- Gear: lanes, the pedal, kit quality, extra sections ------------------------------------------------------- */
+  // v1.1 "Seats" (plan_contract_1.1 §4.6, owner E14b): a string seat buys the same three items at the same prices and eras,
+  // renamed for its rig (content shop.gear[i].bySeat[seat] = { name, names: { <genre>: name }, blurb } and shop.kit[i].bySeat;
+  // the parody fallbacks below until content has them). One purchase sets both: the band's kit grows exactly as today
+  // (gear.owned / lanes / doubleKick: the swapped drummer gets the matching drum piece, a chat line) AND your rig
+  // (gear.seatLanes[seat] 5 / 6, capped by C.SEAT_MAX_LANES: bass's 'ride' is the fridge, a cab with no lane;
+  // gear.runs[seat] from the 'pedal'). Amp tier 2 adds the lead's whammy (bends score a bonus). gigBonus, botWeek, merch
+  // and balance are unchanged.
+  var SEAT_GEAR = {
+    bass: { toms: { names: { metal: 'Low B of Doom', punk: 'Five-String (Duct-Taped)', rock: 'The Thunder-Plank V', country: 'The Five-String Boomer' },
+        blurb: 'A fifth string, lower than your opinions. Lane 5: the bottom of the bottom end.' },
+      ride: { names: { metal: 'The Cryo-Fridge 8x10', punk: 'A Church-Basement Fridge Cab', rock: 'The Walk-In Freezer', country: 'The Grain-Bin Cab' },
+        blurb: 'Eight ten-inch speakers in a box the size of a fridge. No new lane. Everyone feels it in their fillings.' },
+      pedal: { names: { metal: 'Gallop Finger Tape', punk: 'Downstroke Wrist Brace', rock: 'Slap-Happy Tape', country: 'Walking-Boots Finger Picks' },
+        blurb: 'Fast fingers: hold a run and it plays itself. Without them a run is thinned to the beat.' } },
+    rhythm: { toms: { names: { metal: 'The Drop-Tune Neck', punk: 'Fresh Strings, All Six', rock: 'The Big Chord Neck', country: 'The Capo of Destiny' },
+        blurb: 'More neck, more chords. Lane 5: higher voicings for the big moments.' },
+      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Nashville Strings' },
+        blurb: 'Lane 6: the top of the neck, for the shimmer and the shout.' },
+      pedal: { names: { metal: 'The Chug Glove', punk: 'The 8th-Note Wristband', rock: 'Turbo Shark-Fin Picks', country: 'Boom-Chick Thumb Pick' },
+        blurb: 'Fast picking: hold a run and the chugs keep coming. Without it a run is thinned to the beat.' } },
+    lead: { toms: { names: { metal: 'Jumbo Frets of Woe', punk: 'Frets Filed Flat', rock: 'The Fret Job Supreme', country: 'Earl-Approved Frets' },
+        blurb: 'Big frets, easy bends. Lane 5: higher notes for the hook.' },
+      ride: { names: { metal: 'Twenty-Four Frets of Fury', punk: 'The Extra Fret Nobody Uses', rock: 'Dive-Bomb Neck', country: 'The Pedal-Steel Wannabe' },
+        blurb: 'Lane 6: the very top of the neck. Dogs in three townships hear the solo.' },
+      pedal: { names: { metal: 'Shred Picks', punk: 'Fast Picks (Stolen)', rock: 'The Sweep Kit', country: 'Chicken-Pickin\u2019 Picks' },
+        blurb: 'Shred picks: hold a run and it rips. Without them a run is thinned to the beat.' } }
+  };
+  var SEAT_KIT = ['Practice Amp With the Hum', 'Pawn Shop Combo', 'The Maple Leaf Stack', 'The Arena Rig'];
+  var SEAT_KIT_BLURB = ['It hums in E-flat. You tuned to it.', 'Two knobs work. The third one is for show.',
+    'A half-stack with a maple leaf on the grille. It does not go to eleven; it goes to "pardon?"',
+    'A wall of cabinets and an amp tech named Doug. Doug has opinions.'];
+  function seatOf(s) { return GG.career && GG.career.seatOf ? GG.career.seatOf(s) : 'drums'; }
+  function seatInfo(s, def) {
+    var seat = seatOf(s);
+    if (seat === 'drums' || !def) return null;
+    var c = def.bySeat && def.bySeat[seat], fb = SEAT_GEAR[seat] && SEAT_GEAR[seat][def.id];
+    if (def.tier != null) fb = { name: SEAT_KIT[def.tier] || def.name, blurb: SEAT_KIT_BLURB[def.tier] || def.blurb };
+    var g = s && s.genre;
+    return { name: (c && c.names && c.names[g]) || (c && c.name) || (fb && fb.names && fb.names[g]) || (fb && fb.name) || def.name,
+      blurb: (c && c.blurb) || (fb && fb.blurb) || def.blurb };
+  }
+  // What a gear item adds to a string seat's rig: { lane: 5|6|null, runs: bool, cab: bool } (null on drums).
+  S.seatGearEffect = function (s, id) {
+    var def = typeof id === 'string' ? S.gearDef(id) : id, seat = seatOf(s);
+    if (!def || seat === 'drums') return null;
+    var max = C.SEAT_MAX_LANES[seat] || 6, lane = def.lane && def.lane <= max ? def.lane : null;
+    return { lane: lane, runs: !!def.pedal, cab: !!def.lane && !lane };
+  };
+  function seatGearSync(s) {
+    var seat = seatOf(s), g = s.gear;
+    if (seat === 'drums' || !g || !isObj(g.seatLanes)) return;
+    var max = C.SEAT_MAX_LANES[seat] || 6, n = 4;
+    (g.owned || []).forEach(function (id) { var d = S.gearDef(id); if (d && d.lane && d.lane <= max) n = Math.max(n, d.lane); });
+    g.seatLanes[seat] = U.clamp(Math.max(isFinite(g.seatLanes[seat]) ? g.seatLanes[seat] : 4, n), 4, max);
+    if (!isObj(g.runs)) g.runs = { bass: false, rhythm: false, lead: false };
+    if (has(g.owned, 'pedal')) g.runs[seat] = true;
+  }
+  S.seatGearSync = seatGearSync;
   S.gearDef = function (id) { return find(K().gear, id); };
-  S.gearName = function (s, def) { def = typeof def === 'string' ? S.gearDef(def) : def; return def ? (def.names && def.names[s && s.genre]) || def.name : ''; };
+  S.gearName = function (s, def) {
+    def = typeof def === 'string' ? S.gearDef(def) : def;
+    var si = seatInfo(s, def);
+    return si ? si.name : def ? (def.names && def.names[s && s.genre]) || def.name : '';
+  };
   S.ownsGear = function (s, id) { return has(s.gear && s.gear.owned, id); };
   S.canBuyGear = function (s, id) {
     var def = S.gearDef(id);
     if (!def) return fail('Not in the shop.');
-    if (S.ownsGear(s, id)) return fail('Already on the kit.');
+    if (S.ownsGear(s, id)) return fail(seatOf(s) === 'drums' ? 'Already on the kit.' : 'Already in your rig.');
     if (!eraOk(s, def.era)) return fail('Unlocks in ' + eraName(def.era) + '.');
     if (def.needs && !S.ownsGear(s, def.needs)) return fail('Needs the ' + S.gearName(s, def.needs).toLowerCase() + ' first.');
     if (s.fund < def.cost) return fail('Not enough in the fund (' + money(def.cost) + ').');
@@ -187,23 +250,30 @@
     g.owned.push(id);
     if (def.lane) g.lanes = Math.max(g.lanes, Math.min(def.lane, C.LANES.length));
     if (def.pedal) g.doubleKick = true;
+    if (seatOf(s) !== 'drums') {   // v1.1: your rig grows too; the swapped drummer gets the matching drum piece
+      seatGearSync(s);
+      chat(s, lineList(s, 'drummerGear').length ? lineList(s, 'drummerGear') : DRUMMER_GEAR, d);
+    }
     GG.emit('shop:buy', { kind: 'gear', id: id, cost: def.cost });
     changed(s);
     return { ok: true, cost: def.cost, deltas: d };
   };
+  var DRUMMER_GEAR = [{ who: '@drummer', text: 'The shop threw in a drum piece with your {gear} upgrade. I am keeping it. It is mine now.' }];
   S.gearItems = function (s) {
     return K().gear.map(function (def) {
-      var c = S.canBuyGear(s, def.id);
-      return { id: def.id, name: S.gearName(s, def), blurb: def.blurb, cost: def.cost, lane: def.lane || null, pedal: !!def.pedal,
+      var c = S.canBuyGear(s, def.id), si = seatInfo(s, def), se = S.seatGearEffect(s, def);
+      var o = { id: def.id, name: S.gearName(s, def), blurb: si ? si.blurb : def.blurb, cost: def.cost, lane: se ? se.lane : def.lane || null, pedal: !!def.pedal,
         era: def.era, needs: def.needs || null, owned: S.ownsGear(s, def.id), can: c.ok, why: c.ok ? '' : c.why };
+      if (se) { o.seat = seatOf(s); o.runs = se.runs; o.cab = se.cab; }   // v1.1: what it does for your rig
+      return o;
     });
   };
   S.kitDef = function (tier) { var k = K().kit; for (var i = 0; i < k.length; i++) if (k[i].tier === tier) return k[i]; return null; };
   S.canBuyKit = function (s, tier) {
     var def = S.kitDef(tier), q = s.gear.quality;
     if (!def) return fail('Not in the shop.');
-    if (tier <= q) return fail('You already play a better kit.');
-    if (tier !== q + 1) return fail('One kit at a time: ' + S.kitDef(q + 1).name + ' first.');
+    if (tier <= q) return fail(seatOf(s) === 'drums' ? 'You already play a better kit.' : 'You already play a better amp.');
+    if (tier !== q + 1) return fail((seatOf(s) === 'drums' ? 'One kit at a time: ' : 'One amp at a time: ') + S.kitName(s, S.kitDef(q + 1)) + ' first.');
     if (!eraOk(s, def.era)) return fail('Unlocks in ' + eraName(def.era) + '.');
     if (s.fund < def.cost) return fail('Not enough in the fund (' + money(def.cost) + ').');
     return { ok: true, cost: def.cost };
@@ -217,12 +287,17 @@
     changed(s);
     return { ok: true, cost: def.cost, deltas: d };
   };
+  // v1.1: the kit tier's name for your seat (amp tiers on string seats; content kit[i].bySeat[seat] wins).
+  S.kitName = function (s, k) { var si = seatInfo(s, k); return si ? si.name : k ? k.name : ''; };
+  S.whammy = function (s) { return seatOf(s) === 'lead' && !!s.gear && (s.gear.quality || 0) >= 2; };   // lead: amp tier 2 adds the whammy
   S.kitTiers = function (s) {
-    var q = s.gear.quality;
+    var q = s.gear.quality, seat = seatOf(s);
     return K().kit.map(function (k) {
-      var c = S.canBuyKit(s, k.tier);
-      return { tier: k.tier, id: k.id, name: k.name, blurb: k.blurb, cost: k.cost, era: k.era, owned: k.tier <= q, current: k.tier === q,
+      var c = S.canBuyKit(s, k.tier), si = seatInfo(s, k);
+      var o = { tier: k.tier, id: k.id, name: si ? si.name : k.name, blurb: si ? si.blurb : k.blurb, cost: k.cost, era: k.era, owned: k.tier <= q, current: k.tier === q,
         next: k.tier === q + 1, can: c.ok, why: c.ok || k.tier <= q ? '' : c.why };
+      if (si) { o.seat = seat; if (seat === 'lead' && k.tier >= 2) o.whammy = true; }
+      return o;
     });
   };
   S.ownsSection = function (s, id) { return has(s.gear && s.gear.sections, id); };

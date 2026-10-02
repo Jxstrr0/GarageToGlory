@@ -894,7 +894,10 @@
         perfect: cur.perfect, good: cur.good, miss: miss, maxCombo: cur.maxCombo, crowdEnd: Math.round(S.crowd),
         crowdAvg: Math.round(avg), fills: cur.fills, moments: cur.moments.slice(), notes: total, flubs: cur.flubs,
         extras: ch.extras, extrasHit: cur.extrasHit, stray: cur.stray, cheer: cur.cheer, stale: song.stale || 0 };
-      if (cur.hold) { r.seat = seat; r.holds = cur.holds; r.rings = cur.rings; r.held = cur.holds ? Math.round(cur.heldSum / cur.holds * 1000) / 1000 : 1; }   // v1.1
+      if (cur.hold) {   // v1.1 string seats: holds, rings, how much you held; the lead seat's spotlight time (Solo Too Long)
+        r.seat = seat; r.holds = cur.holds; r.rings = cur.rings; r.held = cur.holds ? Math.round(cur.heldSum / cur.holds * 1000) / 1000 : 1;
+        if (seat === 'lead') { r.dur = Math.round(ch.duration * 10) / 10; r.solo = Math.round(ch.solos.reduce(function (a, x) { return a + x.t1 - x.t0; }, 0) * 10) / 10; }
+      }
       var i = cur.i;
       live.songs[i] = r; live.songs.length = i + 1;
       live.index = i + 1;

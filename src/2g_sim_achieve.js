@@ -126,9 +126,25 @@
       var ids = Object.keys(B).filter(function (id) { return B[id] && !B[id].locked; });
       return ids.length > 0 && ids.every(function (id) { return num(by[id]) > 0; });
     } },
-    careers: { m: 1, fn: function (s, t, x) { return num(x.careers && x.careers.finished) >= (t.min || 3); } }
+    careers: { m: 1, fn: function (s, t, x) { return num(x.careers && x.careers.finished) >= (t.min || 3); } },
+    // v1.1 "Seats" (handoff E12; plan_contract_1.1 §1.1 #12): Low End / The Engine Room = { kind: 'seatCareer', seat } (a
+    // finished career on that seat; when 'end'); Solo Too Long = { kind: 'soloTooLong', min?: 0.5 } (a live song on the lead
+    // seat whose spotlight ran longer than the rest of it: SONG_RESULT.solo / .dur; when 'gig'); Musical Chairs = { kind:
+    // 'allSeats' } (META.careers.bySeat has every C.SEATS seat; when 'meta').
+    seatCareer: { s: 1, fn: function (s, t) { return seatOf(s) === (t.seat || seatOf(s)) && !!(s.ended || obj(s.legacy)); } },
+    soloTooLong: { x: 1, fn: function (s, t, x) {
+      var res = (x.r && x.r.songResults) || [];
+      return seatOf(s) === 'lead' && res.some(function (r) { return r && num(r.dur) > 0 && num(r.solo) / num(r.dur) > (t.min != null ? num(t.min) : 0.5); });
+    } },
+    allSeats: { m: 1, fn: function (s, t, x) {
+      var by = (x.careers && x.careers.bySeat) || {};
+      return (CT.SEATS || ['drums', 'bass', 'rhythm', 'lead']).every(function (k) { return num(by[k]) > 0; });
+    } }
   };
-  A.KINDS = Object.keys(KIND);
+  // v1.1: the seat kinds join KINDS once the contracts list them (the lead folds them into C.ACH_KINDS at integration, like
+  // C.SEAT_GATE_KEYS); they evaluate either way (A.test). SEAT_KINDS lists them for content tests until then.
+  A.SEAT_KINDS = ['seatCareer', 'soloTooLong', 'allSeats'];
+  A.KINDS = Object.keys(KIND).filter(function (k) { return A.SEAT_KINDS.indexOf(k) < 0 || !CT.ACH_KINDS || CT.ACH_KINDS.indexOf(k) >= 0; });
   A.kindInfo = function (k) { var i = KIND[k]; return i ? { state: !!i.s, counter: !!i.c, ctx: !!i.x, meta: !!i.m } : null; };
   A.test = function (state, test, ctx) {
     var k = test && KIND[test.kind];

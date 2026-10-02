@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -22,7 +22,7 @@
 //         auto notes and Auto-kick's kicks are booked on the 16th grid (none from the frame), the Classic toggle = 0.8.2.
 // Run: node build.js && timeout 500 node tests/pw_gig.js
 const path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, shotName } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
@@ -572,7 +572,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -788,6 +788,111 @@ async function bridge() {
     n = await next([1]); p = await probe(1.95, n.t);
     c.ok(p.hits === 1 && p.stray === 0 && p.bridged === 0, '6 lanes: snare|hat seam, snare alone due: one hit ' + JSON.stringify(p));
     await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ lefty: false }); });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// v1.1 "Seats" (plan_contract_1.1 §4.5): a bass gig and a lead gig (Hail Damage, doom tempo so the parts ring) on Hard.
+// The highway draws string lanes (GG.career.seatLanes) with hold tails; a timed press on a hold head judges it, keeping
+// the finger down to the end rings it out ('gig:hold' ring), lifting early gates the voice (GG.audio.release on the tap's
+// handle; held < 1, no miss, the combo stays); taps play your voice (pluck on bass, lead / strum on the lead seat), never a
+// drum; the band plays the drums (GG.audio.play drums: true, your kinds muted); the rest autoplays to a results screen
+// with the holds line; layout audit; no console errors. Screenshots tests/.cache/gig_seat_<seat>.png.
+async function seatGig() {
+  const c = checker('seat');
+  const { page, errors, close } = await open();
+  const press = (li, at, id) => page.evaluate(async ([li, at, id]) => {
+    const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+    while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
+    while (GG.debug('gigui').songT < at) { /* spin */ }
+    cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (li + 0.5) * r.width / lanes, clientY: r.bottom - 36, pointerId: id, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+    return GG.debug('gigui').last;
+  }, [li, at, id]);
+  const lift = (at, id) => page.evaluate(async ([at, id]) => {
+    while (GG.debug('gigui').songT < at) await new Promise(res => setTimeout(res, 4));
+    document.querySelector('[data-testid="gig-highway"]').dispatchEvent(new PointerEvent('pointerup', { pointerId: id, pointerType: 'touch', bubbles: true, cancelable: true }));
+    return GG.debug('gigui');
+  }, [at, id]);
+  // the next judged hold (a plain hold, not a run, long enough to tell a ring from a lift)
+  const nextHold = (minLen) => page.waitForFunction(m => {
+    const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+    for (const n of d.soon) if (n.hold && !n.run && !n.chord && n.len >= m && n.t > d.songT + 0.5 && n.t + n.len < d.dur - 1) return n;
+    return null;
+  }, minLen, { timeout: 15000 }).then(h => h.jsonValue());
+  const shows = [['bass', 'pluck'], ['lead', null]];
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    for (const [seat, voice] of shows) {
+      await page.evaluate(seat => {
+        GG.ui.closeAll();
+        GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, noFail: false });
+        GG.main.quickStart({ seed: 2024, bandId: 'hail_damage', seat, openCard: false });
+        const s = GG.state; s.card = null; s.phase = 'plan'; GG.ui.gigAutoplay = false;
+        for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(70 + i));
+        s.songs.forEach(x => { x.pattern.bpm = 90; });   // doom: the chords ring (holds)
+        const A = GG.audio, v = window.__v = { calls: [], rel: [], hits: [], holds: [], play: null };
+        ['pluck', 'strum', 'lead'].forEach(k => { const f = A[k]; A[k] = function (midi, when, o) { const h = f.apply(this, arguments) || { spy: k, n: v.calls.length }; v.calls.push({ k, midi, hold: !!(o && o.hold) }); return h; }; });
+        const r0 = A.release; A.release = function (h, w) { v.rel.push(h && h.spy ? h.spy : 'voice'); return r0.apply(this, arguments); };
+        const h0 = A.hit; A.hit = function (l) { v.hits.push(l); return h0.apply(this, arguments); };
+        const p0 = A.play; A.play = function (pat, o) { v.play = { drums: o.drums, seat: o.seat, mute: o.mute }; return p0.apply(this, arguments); };
+        GG.on('gig:hold', p => v.holds.push(p)); v.judge = []; GG.on('gig:judge', p => v.judge.push({ lane: p.lane, judgement: p.judgement }));
+        s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
+        window.__done = null;
+        GG.ui.playGig(s.gig, r => { window.__done = r; });
+      }, seat);
+      await waitScreen(page, 'gig-set');
+      c.ok((await audit(page)).length === 0, seat + ': setlist layout ' + (await audit(page)).join('; '));
+      await tap(page, 'btn-gig-start');
+      await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+      const d0 = await dbg(page, 'gigui');
+      c.ok(d0.seat === seat && d0.lanes === 4 && d0.holds > 0, seat + ': string highway (' + d0.lanes + ' lanes, ' + d0.holds + ' holds)');
+      const pl = await page.evaluate(() => window.__v.play);
+      c.ok(pl && pl.drums === true && pl.seat === seat && Array.isArray(pl.mute) && pl.mute.length > 0, seat + ': the band plays the drums, your kinds muted ' + JSON.stringify(pl));
+      // 1) hold to the end: rings
+      let n = await nextHold(0.5);
+      const v0 = await page.evaluate(() => window.__v.calls.length), st0 = (await dbg(page, 'gigui')).stats;
+      let r = await press(n.li, n.t, 21);
+      c.ok(r && /^(perfect|good)$/.test(r.judgement), seat + ': the hold head judges like a tap ' + (r && r.judgement));
+      await page.waitForFunction(at => GG.debug('gigui').songT > at, n.t + 0.15);
+      const dh = await dbg(page, 'gigui');
+      c.ok(dh.holding.includes(n.li) && dh.tailN > 0, seat + ': held (the tail draws from the line) ' + JSON.stringify({ holding: dh.holding, tails: dh.tailN }));
+      await page.screenshot({ path: path.join(CACHE, shotName('gig_seat_' + seat + '.png')) });
+      let d1 = await lift(n.t + n.len + 0.12, 21);
+      let hs = await page.evaluate(() => window.__v.holds.slice());
+      c.ok(hs.length >= 1 && hs[hs.length - 1].ring === true && hs[hs.length - 1].held >= 0.9, seat + ': held to the end rings out ' + JSON.stringify(hs.slice(-1)));
+      const vc = await page.evaluate(n0 => window.__v.calls.slice(n0), v0);
+      c.ok(vc.length >= 1 && vc.some(x => x.hold) && (!voice || vc.every(x => x.k === voice)), seat + ': the tap plays your voice (hold) ' + JSON.stringify(vc.slice(0, 3)));
+      // 2) lift early: gated, no miss, combo kept
+      n = await nextHold(0.8);
+      const rel0 = await page.evaluate(() => window.__v.rel.length);
+      r = await press(n.li, n.t, 22);
+      const j0 = await page.evaluate(() => window.__v.judge.length);
+      d1 = await lift(n.t + n.len * 0.4, 22);
+      await page.waitForFunction(at => GG.debug('gigui').songT > at, n.t + n.len + 0.4);
+      const jm = await page.evaluate(([j0, lane]) => window.__v.judge.slice(j0).filter(x => x.lane === lane && x.judgement === 'miss').length, [j0, 'str' + n.li]);
+      hs = await page.evaluate(() => window.__v.holds.slice());
+      const last = hs[hs.length - 1];
+      c.ok(last && last.ring === false && last.held > 0.15 && last.held < 0.8, seat + ': lifting early gates the note (held < 1, no ring) ' + JSON.stringify(last));
+      c.ok(r && /^(perfect|good)$/.test(r.judgement) && jm === 0, seat + ': an early lift is no miss (the hold stays a hit, no miss on its lane) ' + JSON.stringify({ head: r && r.judgement, miss: jm }));
+      c.ok(await page.evaluate(n0 => window.__v.rel.length > n0, rel0), seat + ': the voice is released on the lift');
+      c.ok(!d1.holding.includes(n.li), seat + ': the lane stops holding');
+      const drums = await page.evaluate(() => window.__v.hits.filter(l => l !== 'hat').length);
+      c.ok(drums === 0, seat + ': your taps never play a drum (the count-in hats only) ' + drums);
+      c.ok(st0 && (await dbg(page, 'gigui')).stats.stray === st0.stray, seat + ': no stray from holding');
+      // the rest autoplays: results with the holds line
+      await page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; });
+      await page.waitForFunction(() => GG.debug('ui').screen === 'gig-results', null, { timeout: 30000 });
+      const res = await page.evaluate(() => document.querySelector('.gigres-songs').textContent);
+      c.ok(/holds rang out/.test(res), seat + ': results show the holds ' + res.slice(0, 120));
+      c.ok((await audit(page)).length === 0, seat + ': results layout ' + (await audit(page)).join('; '));
+      await tap(page, 'btn-gig-done');
+      await page.waitForFunction(() => window.__done, null, { timeout: 5000 });
+      const dn = await page.evaluate(() => ({ seat: window.__done.songResults[0].seat, holds: window.__done.songResults.some(x => x.holds > 0) }));
+      c.ok(dn.seat === seat && dn.holds, seat + ': song results carry the seat + holds ' + JSON.stringify(dn));
+      await page.evaluate(() => { GG.ui.gigAutoplay = false; });
+    }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
