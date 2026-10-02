@@ -75,7 +75,8 @@
     if (!rec || !R.goodYear) return null;
     var out = (R.goodYear(state, rec) || []).map(function (g) {
       var silent = K().isSilent && K().isSilent(state, g.who);
-      if (!silent && !speaker(state, g.who)) return null;
+      var npc = !silent && K().memberDef && !K().memberDef(state, g.who) && K().speakerOk && K().speakerOk(state, g.who);   // Mom has a line too
+      if (!silent && !npc && !speaker(state, g.who)) return null;
       return silent ? { who: null, narr: true, text: g.text } : { who: g.who, text: g.text };
     }).filter(Boolean);
     return out.length ? out : null;

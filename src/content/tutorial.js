@@ -194,7 +194,7 @@
       } },
     { id: 'w1_wrap', title: 'The week wrap', when: { week: 1, screen: 'wrap' },
       steps: [
-        { who: '@deadpan', text: 'The fund is the one wallet we share. Gigs and Hustle fill it. Gas, strings and pizza drain it.', point: { testid: ['wrap-d-fund', 'hud-fund'] } },
+        { who: '@deadpan', text: 'The fund is the band\'s one wallet. Gigs and Hustle fill it. Gas, strings and pizza drain it.', point: { testid: ['wrap-d-fund', 'hud-fund'] } },
         { who: '@front', text: 'Fans are people who would admit to liking us. They don\'t leave. Your mom counts.', point: { testid: ['wrap-d-fans', 'hud-fans'] } },
         { who: '@front', text: 'Buzz is how hard people are talking about us right now. It fades every week. Promote and play to pump it.', point: { testid: ['wrap-d-buzz', 'hud-buzz'] } },
         { who: '@soloist', text: 'Chem is how well we gel. Rehearse and good gigs help. Drama hurts.', point: { testid: ['wrap-d-chemistry', 'hud-chem'] } },
@@ -223,7 +223,7 @@
           { who: 'tamara', text: 'Moods are down there. Keep them up, or I start scheduling band meetings. Nobody wants that.', point: { testid: 'wrap-moods' } }
         ] },
         grid_road_ramblers: { steps: [
-          { who: 'clementine', text: 'The fund is the one wallet we share. Gigs and Hustle fill it. Gas, strings and rosin drain it.', point: { testid: ['wrap-d-fund', 'hud-fund'] } },
+          { who: 'clementine', text: 'The fund is the band\'s one wallet. Gigs and Hustle fill it. Gas, strings and rosin drain it.', point: { testid: ['wrap-d-fund', 'hud-fund'] } },
           { who: 'travis', text: 'Fans are folks who would admit to liking us. They don\'t leave. Your mom counts. Mine cried.', point: { testid: ['wrap-d-fans', 'hud-fans'] } },
           { who: 'duke', text: 'Buzz is how much folks are talking about us this week. It fades. Mostly they talk about the hat.', point: { testid: ['wrap-d-buzz', 'hud-buzz'] } },
           { who: 'earl', text: 'Chem is how well we gel. Rehearse and good gigs help. Drama hurts. I\'ve seen bands with less drama split up.', point: { testid: ['wrap-d-chemistry', 'hud-chem'] } },
