@@ -25,6 +25,14 @@
 // v0.9: moments(genre) -> { combo, chorus, peak } (§4.4; economy.gig.moments overrides) ; signatures(state) -> [{ id, action,
 //   combo, crowd, flag, perSong }] (bands.js member.signature, once per gig, perSong once per song: crowd +8, crowd:moment + gig:band) ; LIVE_LINES (neutral
 //   fallback; content lines.live[memberId].{solo, fill, signature, flub} and lines.moments[kind] win).
+// v1.1 "Seats" (plan_contract_1.1 §4.2 / §4.5): roles(state) by stage role (career.stageRole; the drum seat = v1.0; the lead
+//   seat's solo = 'player'; roles.drummer, not enumerable) ; chart(song, { seat, genre, lanes, runs, soloist, difficulty }) on a
+//   string seat = seatChart (lanes 'str0'..'str5', NOTE + kind, midi, len (s), hold, chord: [li, li2], run + t2 + seq) +
+//   chart.holds / chords / runs / kinds / genre / tail, fills[].cap (+ shred) ; RUN_GAP, HOLD_BEATS, STR_LANES ; the
+//   session on a string seat: S.release(lane, t) -> { lane, held, ring } ('gig:hold'), S.holding(lane) -> NOTE|null, S.seat,
+//   2-lane chords (one note, both lanes in the window; one lane = a Good), a flow crowd (economy.gig.live flowGain,
+//   holdGain, ringGain, ringAt, seatDensityClamp), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
+//   soloNotes, allNotes) ; botPlay holds every hold to its end and taps both lanes of a chord.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -461,12 +469,11 @@
     ev.forEach(function (e) { if (e.role === 'solo') { var w = where(e); soloBars[w.entry * C.BARS_PER_SECTION + w.bar] = 1; } });
     if (seat === 'lead') {
       Object.keys(soloBars).map(Number).sort(function (a, b) { return a - b; }).forEach(function (b, i, all) {
-        var e = Math.floor(b / C.BARS_PER_SECTION), t0 = e * entryBeats * spb, bt0 = b * 4 * spb;
+        var e = Math.floor(b / C.BARS_PER_SECTION), bt0 = b * 4 * spb;
         var startRun = i === 0 || all[i - 1] !== b - 1, endRun = i === all.length - 1 || all[i + 1] !== b + 1;
         if (startRun) solos.push({ entry: e, t0: bt0, t1: bt0 });
         solos[solos.length - 1].t1 = bt0 + 4 * spb;
         if (endRun && free && !fills.some(function (f) { return Math.abs(f.t0 - bt0) < 1e-6; })) fills.push({ entry: e, t0: bt0, t1: bt0 + 4 * spb, shred: true });
-        void t0;
       });
       fills.sort(function (a, b) { return a.t0 - b.t0; });
     }

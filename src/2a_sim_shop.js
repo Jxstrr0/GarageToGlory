@@ -36,6 +36,8 @@
 //   v0.9: spaceDef localises rented rooms (spaces[tier].byCity[city] = { name, blurb }, owner Q7) · upgradeView(s, id)
 //         (upgrades[id].bySpace[spaceId] = { name, blurb }) · misprintInfo(s) -> { typo, find, replace, stash, name } (owner
 //         Q6) · lineList(s, key) (shop.lines + byBand) · variantCard(s, id) ('<id>_<bandId>' first; gate + speaker)
+//   v1.1 "Seats" (§4.6): gearName / gearItems / kitTiers name your seat's line (bySeat content, parody fallbacks; the same
+//         ids, prices and eras) · seatGearEffect(s, id) -> { lane, runs, cab } · seatGearSync(s) · kitName(s, kitDef) · whammy(s)
 //   Every buy returns { ok: true, cost, deltas } or { ok: false, why } (why: plain words for the UI).
 // Events: 'shop:buy' { kind: 'gear'|'kit'|'upgrade'|'van'|'vanUpgrade'|'stock', id, cost } · 'shop:unlock' { kind:
 //   'section'|'merch', id|ids, why } · 'shop:move' { from, to, tier, evicted? } · 'shop:rename' { name } · 'shop:sticker' { venueId,

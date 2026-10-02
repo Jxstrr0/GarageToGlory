@@ -15,6 +15,10 @@
 //   counts any member.signature ; mysteryDrift (was kenjiDrift) ; an original without a content exit takes a generic break and
 //   comes back through ret_original (variant '<id>_<bandId>') ; fillPool(role) (role normalisation) ; recruits by genre
 //   (traits/quirks genres: [..]) and hometownsByCity.
+// v1.1 "Seats" (plan_contract_1.1 §4.2): on a string seat the swapped member's spot is 'drums' (slotOf): roles / holder /
+//   holes / returns / fill-ins / ads use it, so their quit leaves a drum hole (drummer fill-ins, recruits with role and
+//   seatRole 'drums', content recruits.drummers = { nicks, quirks? }) and their return puts them back on the kit. The
+//   player's seat is never a hole. A line's seat / swapped gates hold for exit beats and quit / back lines.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var drama = GG.drama = GG.drama || {};

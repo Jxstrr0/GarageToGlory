@@ -19,6 +19,11 @@
 // v0.9: reactions(state, song, rng) by role (band.roles.namer names it, gig.roles solo/fill, band.roles.deadpan nods) +
 //   lines.songReactions[id].custom [{ when: 'difficultyHigh'|'similarityHigh'|'any', text }] ; namerFr(state) (the French
 //   title gag only when the namer has French titles).
+// v1.1 "Seats" (plan_contract_1.1 §4.4): PATTERN.part (string seats; songs.part.*: ROWS, key, choices, suggest, sanitize,
+//   full, toggle, pick, MODS, modify, notes) ; sanitize keeps a part ; rate blends your part in (PART_WEIGHT; rate().part =
+//   { groove, hook, tips }) ; partRating ; similarity scales by how alike the parts are ; create gives a string seat's song
+//   its part (a seeded suggestion per song id when none was written) ; reactions add the swapped drummer's kit line and a
+//   bandmate's bySeat line (own seed).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};

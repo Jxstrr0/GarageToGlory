@@ -21,6 +21,9 @@
 //   swap table (seatSwap / swapped / seatRoleFor / lineup / drummerId), seat tokens {instrument} {gear} {sticks} {drummer}
 //   {yourPart} {seat} (C.SEAT_TOKENS; drums = v1.0's words), gates seat / swapped (GATE + seatOk; cardOk and
 //   speakerOk(state, who, line) honour them), the '@drummer' alias (the swapped drummer; null on drums).
+// v1.1 Lane B: stageRole(state, m) (every role reader goes through it) ; '@bassist' / '@soloist' on your own seat = 'player'
+//   ({bassist} / {soloist} read "you"; such an alias never speaks, posts chat or moves a mood) ; ARCS + arcOf(state) (the
+//   seat's arc flag: bassArc / rhythmArc / leadArc) ; card chat effects honour a line's seat / swapped gates.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
