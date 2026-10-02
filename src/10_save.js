@@ -231,8 +231,37 @@
     if (typeof s.tutorial.on !== 'boolean') s.tutorial.on = false;
     if (!s.tutorial.done || typeof s.tutorial.done !== 'object') s.tutorial.done = {};
     if (typeof s.tutorial.past4 !== 'boolean') s.tutorial.past4 = s.totalWeek >= 4;
+    // v1.1 "Seats" (SAVE_SCHEMA stays 10; 02_contracts V1.1 SEATS): fill when missing, never overwrite, no events. Old
+    // saves are drummers. A member without a seatRole gets GG.career.seatRoleFor (the swapped drummer: 'drums' or
+    // 'drums/vocals'; everyone else: their role).
+    if (C.SEATS.indexOf(s.seat) < 0) s.seat = 'drums';
+    s.members.forEach(function (m) {
+      if (typeof m.seatRole !== 'string' || !m.seatRole) m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(s, m) : m.role;
+    });
+    seatGear(s.gear);
+    if (s.player && typeof s.player === 'object' && !Array.isArray(s.player)) s.player.gearLook = gearLook(s.player.gearLook);
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
+  // v1.1: gear.seatLanes { bass, rhythm, lead } (4..C.SEAT_MAX_LANES[seat], default 4) and gear.runs (bool, default false).
+  function seatGear(g) {
+    if (!g.seatLanes || typeof g.seatLanes !== 'object' || Array.isArray(g.seatLanes)) g.seatLanes = {};
+    if (!g.runs || typeof g.runs !== 'object' || Array.isArray(g.runs)) g.runs = {};
+    C.SEATS.forEach(function (k) {
+      if (k === 'drums') return;
+      var n = g.seatLanes[k];
+      g.seatLanes[k] = isFinite(n) ? Math.max(4, Math.min(C.SEAT_MAX_LANES[k], Math.round(n))) : 4;
+      g.runs[k] = !!g.runs[k];
+    });
+    return g;
+  }
+  save.seatGear = seatGear;
+  // v1.1: player.gearLook (string seats' "your gear"): missing keys take C.GEAR_LOOK; an existing look keeps its values.
+  function gearLook(o) {
+    var out = o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+    Object.keys(C.GEAR_LOOK).forEach(function (k) { if (out[k] === undefined) out[k] = C.GEAR_LOOK[k]; });
+    return out;
+  }
+  save.gearLook = gearLook;
 
   /* ---- Save codes: UTF-8 -> LZW (9..16-bit codes) -> base64url ------------------ */
   var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';

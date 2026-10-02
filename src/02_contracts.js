@@ -69,7 +69,8 @@
   C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone', 'fiddle'];
   C.GEAR = ['v', 'bass', 'sg', 'strat', 'tele', 'acoustic', 'fiddle'];   // v0.9 MEMBER.gear (none = mic only)
   // v0.9: role aliases usable as card.speaker / chat.who / mood|skill|member effect keys (resolve at draw time).
-  C.ROLE_ALIASES = ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any'];
+  C.ROLE_ALIASES = ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any',
+    '@drummer'];   // v1.1: the swapped drummer (null on the drum seat, so a '@drummer' speaker only draws in string careers)
   // v0.9: the four tier-0 rooms (band.space -> render room kind).
   C.SPACE_KINDS = { parents_garage: 'garage', laundromat_basement: 'laundromat', strip_mall_unit: 'stripmall', quonset: 'quonset' };
   // v0.9 fillText tokens (career.fillText; fallbacks in plan_contract_0.9 §4.2). Existing: {player} {band} {city} {rival}
@@ -78,8 +79,38 @@
   C.TOKENS = ['front', 'soloist', 'filler', 'bassist', 'namer', 'grumbler', 'deadpan', 'driver', 'van', 'space', 'spaceName',
     'door', 'province', 'homeVenue', 'superfan', 'rivalFront',
     // v1.0 seat-aware tokens (handoff E12): {instrument} = the player's instrument ('drums'), {drummer} = who plays the kit
-    // ('you'). v1.1 "Seats" fills them per seat (state.seat || 'drums'); the other seat tokens ({gear} {sticks} …) are v1.1.
-    'instrument', 'drummer'];
+    // ('you'). v1.1 "Seats" fills them per seat (state.seat); the drum seat reads exactly as v1.0.
+    'instrument', 'drummer',
+    // v1.1 "Seats" (plan_contract_1.1 §4.3): {gear} {sticks} {yourPart} {seat}; values per seat in C.SEAT_TOKENS.
+    'gear', 'sticks', 'yourPart', 'seat'];
+  // v1.1 "Seats" (handoff Part E; plan/plan_contract_1.1.md §4). The player's seat is fixed for the career (state.seat).
+  C.SEATS = ['drums', 'bass', 'rhythm', 'lead'];
+  C.SEAT_MAX_LANES = { drums: 6, bass: 5, rhythm: 6, lead: 6 };   // owner S2; every seat starts on 4 lanes
+  // Timeline event kinds (GG.audio.timeline, confirmed against 30_audio at stage 0) that make each seat's part. A string
+  // seat's chart = these events; the backing mutes them (opts.mute) and your taps play them. 'gtr' is ONE event for both
+  // double-tracked guitars (no L/R tag: side 0 = L, side 1 = R inside the voice), so metal/punk rhythm and lead share it.
+  // Rock's gtr2 rings only over choruses and clean is the ballad's arpeggio: Lane D writes the rock rhythm layer when
+  // opts.seat === 'rhythm'. Country rhythm = 'clean' with ev.strum (the acoustic); country lead = 'twang' (Earl's Tele).
+  C.SEAT_KINDS = {
+    metal: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr', 'gtr2'], lead: ['gtr', 'lead'] },
+    punk: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr'], lead: ['gtr', 'lead'] },
+    rock: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr2', 'clean'], lead: ['gtr', 'lead'] },
+    country: { drums: ['drum'], bass: ['bass'], rhythm: ['clean'], lead: ['twang'] }
+  };
+  // Seat token values ({drummer} is computed: 'you' on drums, else the swapped drummer's name). Drums = v1.0 exactly.
+  C.SEAT_TOKENS = {
+    drums: { instrument: 'drums', gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums' },
+    bass: { instrument: 'bass', gear: 'bass rig', sticks: 'picks', yourPart: 'the bass line', seat: 'bass' },
+    rhythm: { instrument: 'guitar', gear: 'rig', sticks: 'picks', yourPart: 'the riff', seat: 'rhythm guitar' },
+    lead: { instrument: 'guitar', gear: 'rig', sticks: 'picks', yourPart: 'the lead', seat: 'lead guitar' }
+  };
+  // The creator's "your gear" tab for string seats (E14: 3–4 body shapes per seat; add, don't shrink). Ids only; names are
+  // content (Lane A), models Lane C. GEAR_LOOK = { shape: C.GEAR_SHAPES[seat] id | null (null = the seat's first shape,
+  // country rhythm: 'acoustic'), color: '#rrggbb' | null (null = the kit colour), guard: C.GEAR_GUARDS, sticker: 'none'|'logo' }.
+  C.GEAR_SHAPES = { bass: ['plank', 'offset', 'arrow', 'violin'], rhythm: ['double_cut', 'single_cut', 'offset', 'acoustic'],
+    lead: ['vee', 'pointy', 'double_cut', 'single_cut'] };
+  C.GEAR_GUARDS = ['white', 'black', 'tortoise', 'none'];
+  C.GEAR_LOOK = { shape: null, color: null, guard: 'white', sticker: 'none' };   // the default (save migrate + newCareer)
   // v1.0 "Glory" endings (plan_contract_1.0 §4.1–4.2; content in src/content/endings.js, sim in 2f_sim_legacy.js).
   C.LEGACY_PARTS = ['fans', 'units', 'awards', 'venue', 'regions', 'unity', 'final'];   // the seven Legacy parts (0–1000 total)
   C.ENDING_TIERS = ['arena_legends', 'canadian_institution', 'cult_heroes', 'one_album_wonders', 'still_in_the_garage'];   // best first
@@ -125,9 +156,12 @@
   //   flags:[names that must be truthy]  notFlags:[names that must be falsy]
   //   flagEquals:{ name: value }          gigBooked:true|false
   //   moodBelow:{ memberId: n }  moodAbove:{ memberId: n }
+  //   v1.1 seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] | true (someone is the swapped drummer) |
+  //     false (nobody: the drum seat). The drum seat never matches swapped: true / an id. Lines and cards may also carry
+  //     seat / swapped at the top level (career.seatOk; cardOk and speakerOk(state, who, line) honour both).
   C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
     'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
-    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
 
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
@@ -392,6 +426,32 @@
   //   crowdRaw. Voice-cap priority: band notes are never dropped; crowd one-shots go first.
 
   /* ======================================================================
+   V1.1 SEATS (plan/plan_contract_1.1.md §4; handoff Part E; SAVE_SCHEMA stays 10: GG.save.migrate fills these when
+   missing, no events; GG.career.newCareer starts with the same values, args.seat default 'drums')
+     seat: C.SEATS                          the player's seat, fixed for the career (old saves: 'drums')
+     members[i].seatRole: string            the member's stage role this career: 'drums' | 'drums/vocals' for the swapped
+                                            member (a singer keeps singing from the kit), else the content role. Content
+                                            `role` stays the source of truth for everything else (wants, quits, recruits).
+     gear.seatLanes: { bass: 4..5, rhythm: 4..6, lead: 4..6 }   gear.runs: { bass, rhythm, lead }: bool (the seat's run gear)
+       (the drum seat keeps gear.lanes / gear.doubleKick; a seat's lane-5/6/run purchase also grows the band's kit, §4.6)
+     player.gearLook: GEAR_LOOK (C.GEAR_LOOK default; drums keep player.kit)
+     flags.bassArc 'legend'|'secret'|'quiet' · rhythmArc 'credited'|'unsung'|'engine' · leadArc 'guitarHero'|'bandFirst'|'soloAlbum'
+     SONG.pattern.part?: PART (string seats only; drum-seat songs never have one)
+   PART = { seat: 'bass'|'rhythm'|'lead', sections: { <section>: { prog?: int (backing.progressions[section] index; bass,
+     rhythm), hook?: int (backing.hooks index; lead), rows: [16-char 'x'/'.' rows: bass 3 (root, fifth, octave), rhythm 2
+     (chug, open), lead 5 (hook scale degrees low -> high)] } } }   songs.sanitize keeps it (rows clipped/padded, indexes
+     clamped); a section without one is generated (songs.part.suggest).
+   NOTE (string seats) adds: kind (timeline kind), midi, len (s), hold: bool (len >= 1 beat; Easy >= 2), chord?: [li, li]
+     (2-lane, Hard/Expert, rhythm), run?: true (a merged fast repeat; t2 = the run's end), auto notes as drums.
+   bands.<id>.seats = { bass: memberId, rhythm: memberId, lead: memberId } (E3; Gravel Kings rhythm = 'chase', who drums and
+     sings). GG.career: seatOf(state), seatSwap(bandId, seat) -> memberId|null (drums -> null), swapped(state) -> memberId|null,
+     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x).
+   Stage-0 stubs (lanes replace): gig.chart(song, { seat }) = the drum chart; GG.audio.pluck|strum|lead(midi, when, opts) and
+     release(handle, when) -> null; GG.audio.seatKinds(genre, seat) -> C.SEAT_KINDS; GG.render.stage.setup({ seat }) is
+     stored (info().seat) and otherwise ignored.
+  ====================================================================== */
+
+  /* ======================================================================
    EVENTS (GG.emit(name, payload))            emitted by
    'career:new'     { state }                 career.newCareer
    'career:loaded'  { state }                 main, after a load
@@ -441,11 +501,15 @@
    'tut:step'       { id, step, replay? }  'tut:done' { id, replay?, skipped? }      GG.tutorial
    'end:step'       { step, index, of }       5n end sequence (UI)
    'perf:quality'   { pixelRatio, reason }    render (adaptive pixel ratio, 'auto' graphics)
+   v1.1 "Seats":
+   'gig:hold'       { lane, held (0..1), ring } gig session, a string-seat hold ends (released early: held < 1; ring = held
+                                              to the end, the ring bonus) — render + UI react
+   'seat:picked'    { seat, swapped }         ui (the new-career seat picker; swapped = memberId | null)
   ====================================================================== */
 
   /* ======================================================================
    COMMANDS (module APIs). Sims take state as the first arg and never touch the DOM.
-   GG.career.newCareer({ seed, bandId, slot, player:{ name, nick, presetId } }) -> state
+   GG.career.newCareer({ seed, bandId, slot, player:{ name, nick, presetId }, seat? (v1.1, default 'drums') }) -> state
    GG.career.startWeek(state)            -> { card: CARD|null, offer: GIG|null }  phase -> 'monday' | 'plan'
    GG.career.currentCard(state)          -> CARD|null
    GG.career.resolveCard(state, i)       -> { cardId, choice, outcome, deltas, success }  phase -> 'plan'

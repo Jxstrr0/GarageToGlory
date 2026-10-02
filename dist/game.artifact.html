@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V1.0.1.0</title>
+<title>Garage to Glory - V1.1.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -1100,12 +1100,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.0.1.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.1.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '1.0.1.0';
+  GG.VERSION = '1.1.0.0';
   GG.content = GG.content || {};
 
   var handlers = {};
@@ -1238,11 +1238,31 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   C.LOOK_EXTRAS = ['sunglasses', 'beard', 'moustache', 'glasses', 'headband', 'tattoos', 'hat', 'bandana', 'toque', 'bighat'];
   C.IDLES = ['mirror', 'noodle', 'lunch', 'corner', 'pace', 'phone', 'fiddle'];
   C.GEAR = ['v', 'bass', 'sg', 'strat', 'tele', 'acoustic', 'fiddle'];   // v0.9 MEMBER.gear (none = mic only)
-  C.ROLE_ALIASES = ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any'];
+  C.ROLE_ALIASES = ['@front', '@soloist', '@filler', '@bassist', '@namer', '@grumbler', '@deadpan', '@driver', '@any',
+    '@drummer'];   // v1.1: the swapped drummer (null on the drum seat, so a '@drummer' speaker only draws in string careers)
   C.SPACE_KINDS = { parents_garage: 'garage', laundromat_basement: 'laundromat', strip_mall_unit: 'stripmall', quonset: 'quonset' };
   C.TOKENS = ['front', 'soloist', 'filler', 'bassist', 'namer', 'grumbler', 'deadpan', 'driver', 'van', 'space', 'spaceName',
     'door', 'province', 'homeVenue', 'superfan', 'rivalFront',
-    'instrument', 'drummer'];
+    'instrument', 'drummer',
+    'gear', 'sticks', 'yourPart', 'seat'];
+  C.SEATS = ['drums', 'bass', 'rhythm', 'lead'];
+  C.SEAT_MAX_LANES = { drums: 6, bass: 5, rhythm: 6, lead: 6 };   // owner S2; every seat starts on 4 lanes
+  C.SEAT_KINDS = {
+    metal: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr', 'gtr2'], lead: ['gtr', 'lead'] },
+    punk: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr'], lead: ['gtr', 'lead'] },
+    rock: { drums: ['drum'], bass: ['bass'], rhythm: ['gtr2', 'clean'], lead: ['gtr', 'lead'] },
+    country: { drums: ['drum'], bass: ['bass'], rhythm: ['clean'], lead: ['twang'] }
+  };
+  C.SEAT_TOKENS = {
+    drums: { instrument: 'drums', gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums' },
+    bass: { instrument: 'bass', gear: 'bass rig', sticks: 'picks', yourPart: 'the bass line', seat: 'bass' },
+    rhythm: { instrument: 'guitar', gear: 'rig', sticks: 'picks', yourPart: 'the riff', seat: 'rhythm guitar' },
+    lead: { instrument: 'guitar', gear: 'rig', sticks: 'picks', yourPart: 'the lead', seat: 'lead guitar' }
+  };
+  C.GEAR_SHAPES = { bass: ['plank', 'offset', 'arrow', 'violin'], rhythm: ['double_cut', 'single_cut', 'offset', 'acoustic'],
+    lead: ['vee', 'pointy', 'double_cut', 'single_cut'] };
+  C.GEAR_GUARDS = ['white', 'black', 'tortoise', 'none'];
+  C.GEAR_LOOK = { shape: null, color: null, guard: 'white', sticker: 'none' };   // the default (save migrate + newCareer)
   C.LEGACY_PARTS = ['fans', 'units', 'awards', 'venue', 'regions', 'unity', 'final'];   // the seven Legacy parts (0–1000 total)
   C.ENDING_TIERS = ['arena_legends', 'canadian_institution', 'cult_heroes', 'one_album_wonders', 'still_in_the_garage'];   // best first
   C.SPECIAL_ENDINGS = ['big_in_japan', 'moose_opera', 'big_in_berlin', 'mudstonbury_legends', 'outback_legends',
@@ -1271,7 +1291,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
     'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
-    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
 
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
@@ -1506,6 +1526,32 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ====================================================================== */
 
   /* ======================================================================
+   V1.1 SEATS (plan/plan_contract_1.1.md §4; handoff Part E; SAVE_SCHEMA stays 10: GG.save.migrate fills these when
+   missing, no events; GG.career.newCareer starts with the same values, args.seat default 'drums')
+     seat: C.SEATS                          the player's seat, fixed for the career (old saves: 'drums')
+     members[i].seatRole: string            the member's stage role this career: 'drums' | 'drums/vocals' for the swapped
+                                            member (a singer keeps singing from the kit), else the content role. Content
+                                            `role` stays the source of truth for everything else (wants, quits, recruits).
+     gear.seatLanes: { bass: 4..5, rhythm: 4..6, lead: 4..6 }   gear.runs: { bass, rhythm, lead }: bool (the seat's run gear)
+       (the drum seat keeps gear.lanes / gear.doubleKick; a seat's lane-5/6/run purchase also grows the band's kit, §4.6)
+     player.gearLook: GEAR_LOOK (C.GEAR_LOOK default; drums keep player.kit)
+     flags.bassArc 'legend'|'secret'|'quiet' · rhythmArc 'credited'|'unsung'|'engine' · leadArc 'guitarHero'|'bandFirst'|'soloAlbum'
+     SONG.pattern.part?: PART (string seats only; drum-seat songs never have one)
+   PART = { seat: 'bass'|'rhythm'|'lead', sections: { <section>: { prog?: int (backing.progressions[section] index; bass,
+     rhythm), hook?: int (backing.hooks index; lead), rows: [16-char 'x'/'.' rows: bass 3 (root, fifth, octave), rhythm 2
+     (chug, open), lead 5 (hook scale degrees low -> high)] } } }   songs.sanitize keeps it (rows clipped/padded, indexes
+     clamped); a section without one is generated (songs.part.suggest).
+   NOTE (string seats) adds: kind (timeline kind), midi, len (s), hold: bool (len >= 1 beat; Easy >= 2), chord?: [li, li]
+     (2-lane, Hard/Expert, rhythm), run?: true (a merged fast repeat; t2 = the run's end), auto notes as drums.
+   bands.<id>.seats = { bass: memberId, rhythm: memberId, lead: memberId } (E3; Gravel Kings rhythm = 'chase', who drums and
+     sings). GG.career: seatOf(state), seatSwap(bandId, seat) -> memberId|null (drums -> null), swapped(state) -> memberId|null,
+     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x).
+   Stage-0 stubs (lanes replace): gig.chart(song, { seat }) = the drum chart; GG.audio.pluck|strum|lead(midi, when, opts) and
+     release(handle, when) -> null; GG.audio.seatKinds(genre, seat) -> C.SEAT_KINDS; GG.render.stage.setup({ seat }) is
+     stored (info().seat) and otherwise ignored.
+  ====================================================================== */
+
+  /* ======================================================================
    EVENTS (GG.emit(name, payload))            emitted by
    'career:new'     { state }                 career.newCareer
    'career:loaded'  { state }                 main, after a load
@@ -1555,11 +1601,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    'tut:step'       { id, step, replay? }  'tut:done' { id, replay?, skipped? }      GG.tutorial
    'end:step'       { step, index, of }       5n end sequence (UI)
    'perf:quality'   { pixelRatio, reason }    render (adaptive pixel ratio, 'auto' graphics)
+   v1.1 "Seats":
+   'gig:hold'       { lane, held (0..1), ring } gig session, a string-seat hold ends (released early: held < 1; ring = held
+                                              to the end, the ring bonus) — render + UI react
+   'seat:picked'    { seat, swapped }         ui (the new-career seat picker; swapped = memberId | null)
   ====================================================================== */
 
   /* ======================================================================
    COMMANDS (module APIs). Sims take state as the first arg and never touch the DOM.
-   GG.career.newCareer({ seed, bandId, slot, player:{ name, nick, presetId } }) -> state
+   GG.career.newCareer({ seed, bandId, slot, player:{ name, nick, presetId }, seat? (v1.1, default 'drums') }) -> state
    GG.career.startWeek(state)            -> { card: CARD|null, offer: GIG|null }  phase -> 'monday' | 'plan'
    GG.career.currentCard(state)          -> CARD|null
    GG.career.resolveCard(state, i)       -> { cardId, choice, outcome, deltas, success }  phase -> 'plan'
@@ -3133,6 +3183,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (x.swapExtra && m.look) m.look.extras = m.look.extras.map(function (e) { return e === x.swapExtra[0] ? x.swapExtra[1] : e; });
     });
   });
+
+  var V11_SEATS = {
+    hail_damage: { bass: 'kenji', rhythm: 'jaxon', lead: 'dana' },
+    frost_heave: { bass: 'moth', rhythm: 'rox', lead: 'benny' },
+    gravel_kings: { bass: 'tamara', rhythm: 'chase', lead: 'lenny' },
+    grid_road_ramblers: { bass: 'duke', rhythm: 'travis', lead: 'earl' }
+  };
+  Object.keys(V11_SEATS).forEach(function (id) { bands[id].seats = V11_SEATS[id]; });
 
   GG.content.bands = bands;
   GG.content.rivals = rivals;
@@ -21232,8 +21290,32 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (typeof s.tutorial.on !== 'boolean') s.tutorial.on = false;
     if (!s.tutorial.done || typeof s.tutorial.done !== 'object') s.tutorial.done = {};
     if (typeof s.tutorial.past4 !== 'boolean') s.tutorial.past4 = s.totalWeek >= 4;
+    if (C.SEATS.indexOf(s.seat) < 0) s.seat = 'drums';
+    s.members.forEach(function (m) {
+      if (typeof m.seatRole !== 'string' || !m.seatRole) m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(s, m) : m.role;
+    });
+    seatGear(s.gear);
+    if (s.player && typeof s.player === 'object' && !Array.isArray(s.player)) s.player.gearLook = gearLook(s.player.gearLook);
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
+  function seatGear(g) {
+    if (!g.seatLanes || typeof g.seatLanes !== 'object' || Array.isArray(g.seatLanes)) g.seatLanes = {};
+    if (!g.runs || typeof g.runs !== 'object' || Array.isArray(g.runs)) g.runs = {};
+    C.SEATS.forEach(function (k) {
+      if (k === 'drums') return;
+      var n = g.seatLanes[k];
+      g.seatLanes[k] = isFinite(n) ? Math.max(4, Math.min(C.SEAT_MAX_LANES[k], Math.round(n))) : 4;
+      g.runs[k] = !!g.runs[k];
+    });
+    return g;
+  }
+  save.seatGear = seatGear;
+  function gearLook(o) {
+    var out = o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+    Object.keys(C.GEAR_LOOK).forEach(function (k) { if (out[k] === undefined) out[k] = C.GEAR_LOOK[k]; });
+    return out;
+  }
+  save.gearLook = gearLook;
 
   /* ---- Save codes: UTF-8 -> LZW (9..16-bit codes) -> base64url ------------------ */
   var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -22017,6 +22099,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return d && !d.you && on(d.id) ? d.id : null;
       }
       case 'any': return weekPick(state, 'any', talk.length ? talk : act);
+      case 'drummer': return career.drummerId(state);   // v1.1: the swapped drummer (null on the drum seat)
     }
     return null;
   };
@@ -22026,7 +22109,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (cr && Object.prototype.hasOwnProperty.call(cr, who)) return cr[who];
     return career.roleOf(state, who);
   };
-  var ALIAS_RE = /@(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any)\b/g;
+  var ALIAS_RE = /@(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any|drummer)\b/g;
   career.cardRoles = function (state, card) {
     if (!card) return null;
     var out = null, seen = {}, m, txt;
@@ -22039,6 +22122,56 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       (out = out || {})[a] = career.roleOf(state, a);
     }
     return out;
+  };
+
+  /* ======================================================================
+     v1.1 "Seats" (plan_contract_1.1 §4; 02_contracts V1.1 SEATS). Stage 0 (lead): the seat, the swap table, seat roles,
+     the lineup, the seat tokens and the seat / swapped gates. Lane B owns the rest (roles by seatRole, quits/returns into
+     the drum seat, arcs).
+       seatOf(state) -> C.SEATS ('drums' when missing) ; seatSwap(bandId, seat) -> memberId | null (bands.js seats; drums
+       -> null) ; swapped(state) -> the swapped drummer's id for this career | null ; seatRoleFor(state, member) ;
+       lineup(state) -> [{ id: 'player'|memberId, seatRole }] (player first, then active members in band order) ;
+       drummerId(state) -> the active member on the kit | null (the drum seat: null) ; seatOk(state, x) -> x.seat / x.swapped
+       hold (a card, a gate, a line)
+     ====================================================================== */
+  var SEAT_FALLBACK = { bass: [/bass/], rhythm: [/rhythm/, /vocals\/(guitar|acoustic)/, /^vocals$/], lead: [/lead/, /^guitar$/] };
+  career.seatOf = function (state) { var s = state && state.seat; return C.SEATS.indexOf(s) >= 0 ? s : 'drums'; };
+  career.seatSwap = function (bandId, seat) {
+    if (!seat || seat === 'drums' || C.SEATS.indexOf(seat) < 0) return null;
+    var b = career.band(bandId);
+    if (!b) return null;
+    if (b.seats) return b.seats[seat] || null;
+    var list = b.members || [], pats = SEAT_FALLBACK[seat] || [];   // a band without a table (the fallback roster): by role
+    for (var p = 0; p < pats.length; p++) for (var i = 0; i < list.length; i++) if (pats[p].test(String(list[i].role || ''))) return list[i].id;
+    return null;
+  };
+  career.swapped = function (state) { return state ? career.seatSwap(state.bandId, career.seatOf(state)) : null; };
+  career.seatRoleFor = function (state, m) {
+    if (!m) return '';
+    var id = career.swapped(state);
+    if (id && m.id === id) return /vocals/.test(String(m.role || '')) ? 'drums/vocals' : 'drums';
+    return m.role || '';
+  };
+  career.lineup = function (state) {
+    var out = [{ id: 'player', seatRole: career.seatOf(state) }];
+    if (state && Array.isArray(state.members)) activeMembers(state).forEach(function (m) { out.push({ id: m.id, seatRole: m.seatRole || career.seatRoleFor(state, m) }); });
+    return out;
+  };
+  career.drummerId = function (state) {
+    if (!state || career.seatOf(state) === 'drums' || !Array.isArray(state.members)) return null;
+    var act = activeMembers(state);
+    for (var i = 0; i < act.length; i++) if (/^drums/.test(act[i].seatRole || career.seatRoleFor(state, act[i]))) return act[i].id;
+    return null;
+  };
+  function seatGate(s, v) { return [].concat(v).indexOf(career.seatOf(s)) >= 0; }
+  function swappedGate(s, v) {
+    var id = career.swapped(s);
+    if (v === false) return !id;
+    return !!id && (v === true || [].concat(v).indexOf(id) >= 0);
+  }
+  career.seatOk = function (state, x) {
+    if (!x || typeof x !== 'object') return true;
+    return (x.seat == null || seatGate(state, x.seat)) && (x.swapped == null || swappedGate(state, x.swapped));
   };
 
   var NPC_SCOPE = { baba: { band: ['hail_damage'] }, gord: { band: ['hail_damage'] }, dale_warman: { band: ['hail_damage'] },
@@ -22060,7 +22193,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function rivalIdOf(state) { var b = career.band(state); return (state && state.rival && state.rival.id) || (b && b.rival) || null; }
   career.rivalId = rivalIdOf;
   function listHas(v, x) { return Array.isArray(v) ? v.indexOf(x) >= 0 : v === x; }
-  career.speakerOk = function (state, who) {
+  career.speakerOk = function (state, who, line) {
+    if (line && typeof line === 'object' && !career.seatOk(state, line)) return false;
     if (who == null || who === '' || who === 'player' || who === 'you' || who === 'recruit') return true;
     if (typeof who !== 'string') return false;
     if (career.isAlias(who)) return who === '@driver' || career.resolveWho(state, who) != null;
@@ -22101,6 +22235,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   career.cardOk = function (state, card) {
     if (!card) return false;
+    if (!career.seatOk(state, card) || !career.seatOk(state, card.gate)) return false;   // v1.1: seat / swapped (top level or gate)
     if (card.cameo === true) return true;
     if (!career.speakerOk(state, card.speaker)) return false;
     var refs = memberRefs(card);
@@ -22189,13 +22324,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       case 'homeVenue': { var hv = career.homeVenue(state); return hv ? hv.name : 'the local bar'; }
       case 'superfan': { var sf = GG.fans && GG.fans.homeSuperfan && state.bandId ? GG.fans.homeSuperfan(state) : null; return (sf && sf.name) || 'your first superfan'; }
       case 'rivalFront': return (GG.rival && GG.rival.frontName && state.bandId ? GG.rival.frontName(state) : '') || 'their singer';
-      case 'instrument': return 'drums';   // v1.0 (E12): the player's seat is always the kit; v1.1 "Seats" reads state.seat
-      case 'drummer': return 'you';
+      case 'instrument': case 'gear': case 'sticks': case 'yourPart': case 'seat':
+        return ((C.SEAT_TOKENS || {})[career.seatOf(state)] || { instrument: 'drums', gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums' })[key];
+      case 'drummer': {
+        if (career.seatOf(state) === 'drums') return 'you';
+        var dr = career.drummerId(state);
+        return dr ? career.memberName(state, dr) : 'the drummer';
+      }
     }
     return null;
   };
 
-  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan|instrument|drummer)(?::([\w-]+))?\}/g;
+  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan|instrument|drummer|gear|sticks|yourPart|seat)(?::([\w-]+))?\}/g;
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
@@ -22408,7 +22548,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     },
     gigBooked: function (s, v) { return !!s.gig === !!v; },
     moodBelow: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m < v[id]; }); },
-    moodAbove: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m > v[id]; }); }
+    moodAbove: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m > v[id]; }); },
+    seat: seatGate, swapped: swappedGate   // v1.1 (C.GATE_KEYS)
   };
   career.gatePasses = function (state, gate) {
     if (!gate) return true;
@@ -22504,7 +22645,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     preset = preset || presets[0] || null;
     return { name: p.name || 'You', nick: p.nick || '', presetId: preset ? preset.id : (p.presetId || null),
       look: U.clone(p.look || (preset && preset.look) || DEFAULT_LOOK),
-      kitColor: p.kitColor || (preset && preset.kitColor) || DEFAULT_KIT };
+      kitColor: p.kitColor || (preset && preset.kitColor) || DEFAULT_KIT,
+      gearLook: Object.assign({}, C.GEAR_LOOK, p.gearLook || {}) };   // v1.1: a string seat's "your gear" (drums keep player.kit)
   }
   function makeMembers(band) {
     var src = band.members && band.members.length ? band.members : GENERIC_MEMBERS;
@@ -22547,12 +22689,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       v: C.SAVE_SCHEMA, createdVersion: GG.VERSION, slot: args.slot || 'auto', seed: seed, rng: seed,
       bandId: bandId, genre: band.genre || 'metal', region: band.region || 'canada', city: band.city || 'Saskatoon',
       space: band.space || 'parents_garage', player: makePlayer(p),
+      seat: C.SEATS.indexOf(args.seat) >= 0 ? args.seat : 'drums',   // v1.1 "Seats": fixed for the career
       totalWeek: 1, year: 1, week: 1, maxWeeks: C.WEEKS_PER_YEAR * C.CAREER_YEARS,
       phase: 'monday', era: 'garage', protected: true,
       careerDifficulty: GG.difficulty ? GG.difficulty.of({ careerDifficulty: args.careerDifficulty }) : 'normal',   // v0.6.1 C4: locked per career
       fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
-      members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
+      members: makeMembers(band), songs: [], pendingSongs: [], draft: null,
+      gear: { lanes: 4, doubleKick: false, seatLanes: { bass: 4, rhythm: 4, lead: 4 }, runs: { bass: false, rhythm: false, lead: false } },   // v1.1 seat gear
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -22567,6 +22711,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       albums: [], awards: [], trophies: [], loonies: null, liveYear: { gigs: 0, score: 0 },
       bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false }
     };
+    state.members.forEach(function (m) { m.seatRole = career.seatRoleFor(state, m); });   // v1.1: the swapped member drums
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
@@ -24125,8 +24270,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (o.doubles !== false) notes = doubles(notes, gig.DOUBLE_GAP).notes;   // v0.7.2 double kicks
     if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0, dbl = 0; notes.forEach(function (n) { if (!n.free) total++; if (n.dbl) dbl++; });
-    return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
+    var out = { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
       duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, doubles: dbl, extras: extras, fills: fills, solos: solos, sections: sections };
+    if (o.seat != null) { out.seat = o.seat; out.stub = o.seat !== 'drums'; }
+    return out;
   };
 
   /* ---- Setlists ------------------------------------------------------------------------------------------ */
@@ -34039,6 +34186,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return player(pattern, opts, { rig: rig });
   };
   A.stop = function () { if (current) current.stop(); };
+  A.seatKinds = function (genre, seat) {
+    var K = (GG.contracts && GG.contracts.SEAT_KINDS) || {}, g = K[genre] || K.metal || { drums: ['drum'] };
+    return (g[seat] || g.drums || ['drum']).slice();
+  };
+  A.pluck = function () { return null; };
+  A.strum = function () { return null; };
+  A.lead = function () { return null; };
+  A.release = function () { return null; };
   var previewPort = null, schedPort = null, taps = {};
   A.hit = function (lane, when) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted()) return false;
@@ -40281,6 +40436,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
+        seat: cfg.seat || st.seat || 'drums',   // v1.1 stage 0: stored only (info().seat)
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         rivalId: cfg.rivalId || (cfg.rival ? (st.rival && st.rival.id) || (band && band.rival) || null : null),         // v0.9: the rival's cast
         banner: cfg.banner || '', bannerSub: cfg.sub || '',
@@ -41900,7 +42056,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0,
+          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
           mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
           props: K.rivalProps.slice(), session: K.session, drummer: K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
           xs: K.band.map(function (r) { return +r.bx.toFixed(2); }),
@@ -45457,10 +45613,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
       city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
       band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you',
-      instrument: 'drums', drummer: 'you'   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      instrument: 'drums', drummer: 'you',   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums'   // v1.1: the drum seat's words (C.SEAT_TOKENS.drums)
     };
   };
-  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer)\}/g;
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer|gear|sticks|yourPart|seat)\}/g;
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);
@@ -54652,7 +54809,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   M.newCareer = function (o) {
     o = o || {};
     var st = GG.career.newCareer({ seed: o.seed, bandId: bandIdOk(o.bandId), slot: String(o.slot || '1'), player: o.player || { name: 'You' },
-      careerDifficulty: o.careerDifficulty });   // v0.6.1 C4: chill | normal | brutal, locked for the career
+      careerDifficulty: o.careerDifficulty, seat: o.seat });   // v0.6.1 C4: chill | normal | brutal, locked for the career; v1.1 seat
     if (st.tutorial) st.tutorial.on = !o.skipLessons;   // v1.0 (Q7): the lessons run unless the creator's "Skip the lessons" is on
     setState(st);
     write(st.slot, st); write('auto', st);   // the slot is claimed right away, so Continue works from week 1
@@ -54664,7 +54821,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var presets = GG.content.presets || [];
     ui.closeAll();
     M.newCareer({ seed: o.seed != null ? (o.seed >>> 0) || 1 : GG.hashSeed(name + Date.now()), slot: o.slot || '1', bandId: o.bandId,
-      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty, skipLessons: o.skipLessons });
+      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty, skipLessons: o.skipLessons,
+      seat: o.seat });   // v1.1: quickStart({ seat }) / ?seat=bass (tests, lanes)
     if (o.openCard === false) { GG.career.startWeek(GG.state); M.sync(); }
     else M.enterGarage();
     return GG.state;
@@ -54800,7 +54958,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     document.addEventListener('visibilitychange', onVisibility);
     updatePause();
     var q = query();
-    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester', bandId: q.band });
+    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester', bandId: q.band, seat: q.seat });
     else ui.show('title');
   };
 

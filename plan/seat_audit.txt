@@ -1,0 +1,568 @@
+# plan/seat_audit.txt: content lines with drum vocabulary (tools/seat_audit.js, v1.1 "Seats" stage 0, handoff E8)
+# Lane A decides per line: tokenise ({instrument} {gear} {sticks} {drummer} {yourPart} {seat}) | gate (seat: ['drums']) |
+# leave (the band's drums in general). Only human text in string literals is read (ids/data keys never count).
+# Tags: [gated] the line already has a seat gate; [tok] it already uses a seat token. Regenerate after edits.
+#
+# count per file (lines):
+#   src/content/zz_band_grid_road_ramblers.js .. 94
+#   src/content/zz_band_frost_heave.js ......... 58
+#   src/content/cards.js ....................... 55
+#   src/content/zz_band_gravel_kings.js ........ 55
+#   src/content/grooves.js ..................... 29
+#   src/content/lines.js ....................... 24
+#   src/content/world.js ....................... 23
+#   src/content/album_words.js ................. 22
+#   src/content/bandbook.js .................... 21
+#   src/content/road_cards.js .................. 18
+#   src/content/shop.js ........................ 16
+#   src/content/tutorial.js .................... 16
+#   src/content/genres.js ...................... 14
+#   src/content/reviews.js ..................... 14
+#   src/content/rivals.js ...................... 12
+#   src/content/venues.js ...................... 11
+#   src/content/endings.js ..................... 8
+#   src/content/bands.js ....................... 7
+#   src/content/recruits.js .................... 7
+#   src/content/drama.js ....................... 5
+#   src/content/creator.js ..................... 4
+#   src/content/calendar.js .................... 3
+#   src/content/labels.js ...................... 3
+#   src/content/awards.js ...................... 2
+#   src/content/map.js ......................... 2
+#   src/content/npcs.js ........................ 2
+#   src/content/recap.js ....................... 2
+#   src/content/achievements.js ................ 1
+#   src/content/licensing.js ................... 1
+#   src/content/song_titles.js ................. 1
+#   TOTAL 530 lines in 30 files
+
+src/content/achievements.js:38  blurb: 'Write a metal song where the kick drum is half of everything you play. The neighbours’ windows hum along.' },
+src/content/album_words.js:27  'Return to {place}', 'Where the {noun} Sleeps', 'Lord of the {noun}', 'The {adj} {noun}', 'Throne of {adj} {noun}'],
+src/content/album_words.js:38  { fr: 'Hiver sans Fin', en: 'Winter Without End' }, { fr: 'Le Trône de Gazon', en: 'The Throne of Sod' },
+src/content/album_words.js:124  fail: { effects: { production: -4 }, outcome: 'On playback, you can hear a zipper hitting the drum every two seconds. It is in time. It is not good.' } } },
+src/content/album_words.js:140  text: "The furnace kicks in every twenty minutes with a boom like a bass drum in a well. It is January. Dad will not turn it off. " +
+src/content/album_words.js:157  outcome: 'Walt is happy. Happy Walt is a great engineer. He puts a real compressor on the kick. You can feel it in your teeth.' },
+src/content/album_words.js:179  { id: 'studio_silo_echo', type: 'weird', speaker: 'dana', title: 'Nine Seconds of Snare', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: HD },
+src/content/album_words.js:180  text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his bass down ' +
+src/content/album_words.js:184  outcome: 'Your drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
+src/content/album_words.js:199  outcome: "Tarps over everything. Dana's pedalboard survives. Your hi-hat does not. $40 and a lot of wet wipes." }
+src/content/album_words.js:287  text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+src/content/album_words.js:291  outcome: 'You set up the kick in the grain tank.',
+src/content/album_words.js:293  success: { effects: { production: 5, buzz: 5 }, outcome: 'The kick sounds like a heartbeat in a cathedral. Pitchspork will write two thousand words about it. Lyle weeps.' },
+src/content/album_words.js:296  outcome: 'Lyle agrees, sadly, and mics the kick from across the street instead. It sounds like distant weather. It is fine.' },
+src/content/album_words.js:361  fail: { effects: { production: -4 }, outcome: 'On playback you can hear a zipper hitting the drum every two seconds. It is in time. It is not good.' } } }
+src/content/album_words.js:368  outcome: 'Walt is happy. Happy Walt is a great engineer. He puts a real compressor on the kick. You can feel it in your teeth.' },
+src/content/album_words.js:373  text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. {bassist} plays one low note, puts the bass down ' +
+src/content/album_words.js:377  outcome: 'Your drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
+src/content/album_words.js:426  { id: 'studio_any_combine', type: 'weird', speaker: '@filler', title: 'Kick Drum in a Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: OTHERS },
+src/content/album_words.js:427  text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+src/content/album_words.js:431  outcome: 'You set up the kick in the grain tank.',
+src/content/album_words.js:433  success: { effects: { production: 5, buzz: 5 }, outcome: 'The kick sounds like a heartbeat in a cathedral. Pitchspork will write two thousand words about it.' },
+src/content/album_words.js:436  outcome: 'Lyle agrees, sadly, and mics the kick from across the street instead. It sounds like distant weather. It is fine.' }
+src/content/awards.js:202  outcome: "You thank your mom for the garage, the loan and the pizza pops. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'." },
+src/content/awards.js:231  'Special shout-out to {band}. You inspire us every day. We have a photo of your drummer on our fridge. It\'s a nice photo. Don\'t worry about it.',
+src/content/bandbook.js:61  bad: ['sounds like a raccoon fell into a drum kit. 3 stars'],
+src/content/bandbook.js:69  { id: 'mitts', from: 'a knitting circle', text: 'Mitts in band colours, one pair each plus a spare. The spare is for the drummer. Drummers lose mitts.' },
+src/content/bandbook.js:70  { id: 'crochet_band', from: 'a crocheter in Kindersley', text: 'The whole band, crocheted, four inches tall. The drummer is the only one with arms. Accurate.' },
+src/content/bandbook.js:71  { id: 'jam_jar', from: 'a fan at the farmers\' market', text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' }
+src/content/bandbook.js:84  'Full run-through of “{song}”. The furnace kicks in during the quiet part. It\'s in the band now.',
+src/content/bandbook.js:107  'BTS: the band eating perogies off a kick drum case. Catering has arrived.',
+src/content/bandbook.js:119  'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
+src/content/bandbook.js:140  'not usually my thing but the drummer is working very hard',
+src/content/bandbook.js:153  'my uncle could drum like that and he\'s a snowplow',
+src/content/bandbook.js:217  'The fan-club president hands the crew a gift bag for each member. The drummer\'s has drumsticks in it. How did she know.',
+src/content/bandbook.js:244  { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
+src/content/bandbook.js:253  { id: 'jam', from: 'Barb from the curling rink', band: ['hail_damage'], text: 'A jar of Saskatoon-berry jam labelled "for the drummer\'s wrists".' },
+src/content/bandbook.js:257  { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
+src/content/bandbook.js:263  jp_towel: { from: 'the Japanese fan club', text: 'A concert towel with the band name in katakana. It lives on the drum riser now.' },
+src/content/bandbook.js:271  { id: 'full_kit', name: 'Full Kit', icon: '🎛️', price: 20, minMembers: 20, perk: 'All of it, plus a handwritten thank-you note from the band (mostly doodles).' }
+src/content/bandbook.js:277  'Patreeon payout: {money} from {n} members. Our very first superfan is on the Full Kit tier. Of course.',
+src/content/bandbook.js:278  'Patreeon paid {money} this month. {n} members. One of them is our mom, at the Drumstick tier.',
+src/content/bandbook.js:325  payoutChat: ['Patreeon payout: {money} from {n} members. Dale is on the Full Kit tier. Of course he is.'],
+src/content/bandbook.js:382  fail: { effects: { buzz: -4, mood: { marcel: -8 } }, outcome: 'The turf catches on the kick pedal. Marcel spends the encore untangling it.' } },
+src/content/bandbook.js:489  'exclusive stuff for them. Tiers: Drumstick, Snare, Full Kit. Dale has already asked where to send the cheque.',
+src/content/bandbook.js:492  outcome: 'Patreeon is live. First member: Dale, Full Kit, at 12:01 a.m. Second member: Mom, Drumstick, "to be supportive".' },
+src/content/bands.js:32  'French screaming, endless solos, one silent bassist, and you holding it all together from behind the kit.',
+src/content/bands.js:37  "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a drum kit.",
+src/content/bands.js:86  'In the basement under the Suds-O-Rama, Benny plays both of his chords. Moth wanders in from the van. You bring a snare.',
+src/content/bands.js:125  "Lenny's riff sounds exactly like a famous one. Tamara hands out floss. You set up your kit where the till used to be.",
+src/content/bands.js:165  'You drag a hay bale over as a drum throne. The Grid Road Ramblers are born.'
+src/content/bands.js:207  blurb: "TV-talent-show punk: frontman 'Blaze' (Kevin, from Oakville), a bassist who has never plugged in, a drummer picked " +
+src/content/bands.js:210  blurb: "Thirty years at the top. Rex Glamour wears a scarf in July. Four drummers, all named Steve. They quietly bought the " +
+src/content/calendar.js:112  rain: ['It rained. The outdoor crowd huddled under a tarp and cheered anyway.', 'Rain on the tin roof, perfectly in time with the hi-hat.'],
+src/content/calendar.js:115  heat: ['A heat wave. The drum throne was a frying pan. The crowd was a sauna with opinions.'],
+src/content/calendar.js:116  hail: ['Hail on the roof like a double-kick run. The crowd thought it was part of the show.'],
+src/content/cards.js:75  text: "Marcel slides a costume catalogue across your snare. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
+src/content/cards.js:190  text: "Jaxon's baba has sent a roaster of perogies 'for the band, because you are all too skinny and the drummer, " +
+src/content/cards.js:196  outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
+src/content/cards.js:206  outcome: "The basement acoustics are incredible. Baba's notes: 'Louder, the drummer. The French one, less.' She serves soup at the break." },
+src/content/cards.js:228  chat: { who: 'jaxon', text: 'WAIT kenji NODDED?? at the DRUMMER?? screenshot or it didnt happen' } },
+src/content/cards.js:232  { id: 'jaxon_shred_fill', type: 'drama', speaker: 'jaxon', title: 'The Sneaky Fill', gate: g({ minWeek: 4, maxWeek: 16 }),
+src/content/cards.js:239  outcome: 'Jaxon plays it straight for exactly one rehearsal. Then the fills come back, quieter, like raccoons.' },
+src/content/cards.js:241  outcome: 'The fills get sneakier. You start hearing them in your sleep. Kenji definitely hears them. He says nothing, obviously.' }
+src/content/cards.js:264  { label: 'Duel her on drums', hint: 'Gamble: your arms vs her ten-hour days',
+src/content/cards.js:268  outcome: 'A fourteen-minute drum-guitar duel. Marcel lies on the floor in awe. Dana shakes your hand and quotes your tempo back to you.' },
+src/content/cards.js:278  outcome: 'You play the bass lines on your floor tom for two weeks. It technically counts. Kenji returns Thursday as if nothing happened.' },
+src/content/cards.js:363  outcome: 'Eleven guitars, four amps, one drum kit and five people barely visible behind it. Dana makes it her phone background.' },
+src/content/cards.js:427  text: "Your mom is having a garage sale. In the garage. Your rehearsal space. Saturday. 'Just move the drums a bit, honey. " +
+src/content/cards.js:431  outcome: "You sell a busted amp, two cracked cymbals and Dana's 'backup backup' cable. She holds a small memorial." },
+src/content/cards.js:453  text: "There's a Prairie Polytechnic pamphlet on your snare: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
+src/content/cards.js:461  outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on the snare.' }
+src/content/cards.js:466  "Column C is labelled 'drumsticks??'. There are a lot of drumsticks.",
+src/content/cards.js:469  outcome: "You explain that drumsticks break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
+src/content/cards.js:472  { label: 'Sell your spare cymbal', effects: { fund: 60, burnout: 3 },
+src/content/cards.js:473  outcome: 'The cymbal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
+src/content/cards.js:484  outcome: "You load it like a museum exhibit. Jaxon rides with the cymbals on his lap.",
+src/content/cards.js:493  outcome: "The 8 bus through Sutherland with a full drum kit. A lady helps carry the floor tom. She's coming to the show now." }
+src/content/cards.js:516  outcome: "You drag the kick drum four blocks on a toboggan. Kenji carries his bass case like a coffin. People take pictures. Very metal." },
+src/content/cards.js:529  outcome: 'A vintage cowbell and a real gong. The gong goes back to the pawn shop (house rules: no gong on the kit). The cowbell becomes your closer. Mr. Lindqvist files his first complaint of the season.' },
+src/content/cards.js:653  outcome: 'You squeeze the whole kit into the closet. The ON AIR light comes on.',
+src/content/cards.js:669  "riding a lunch box, Kenji as a shadow, and you, a small circle labelled 'DRUMS'.",
+src/content/cards.js:696  "Minus one skull for the drummer's facial expressions.' Everyone turns to look at you.",
+src/content/cards.js:700  { label: 'Work on your drum face', effects: { drumSkill: 2, burnout: 4 },
+src/content/cards.js:731  { label: 'Move the kit, save the truck', effects: { burnout: 6, chemistry: 4, mood: { dana: -4 } },
+src/content/cards.js:732  outcome: 'You move the whole band out into the storm in ninety seconds. The truck is saved. The cymbals are dented. They sound better.' },
+src/content/cards.js:809  text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
+src/content/cards.js:813  outcome: "Trevor finds $80 of 'drumstick overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
+src/content/cards.js:814  { label: 'Challenge Trevor to a drum-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two kits in the driveway.',
+src/content/cards.js:829  outcome: "Marcel calls it 'the most metal document in Saskatoon' and hangs it over the kit. Dad is secretly delighted." }
+src/content/cards.js:957  'in French he learned from a cereal box. Their drummer does your drum face. Marcel is equal parts flattered and threatened.',
+src/content/cards.js:960  outcome: "You teach their drummer a proper blast beat. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
+src/content/cards.js:971  outcome: 'Gord and his bride slow-dance to a blast beat. The grandmother is first on the floor for the breakdown. It is the best wedding in Saskatchewan history.' },
+src/content/cards.js:1209  outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and your blast beat. It goes on a label sampler. It is weirdly the best song on it.' },
+src/content/cards.js:1252  outcome: 'Jaxon builds a CD tower to the rafters, stable enough to survive a blast beat. Mostly. Dad parks outside and looks at the garage the way a man looks at the sea.' }
+src/content/cards.js:1304  outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "the drums were good". He has never said more.' },
+src/content/cards.js:1420  outcome: "Mom answers them all herself, signed 'The Drummer's Mom'. She now has more pen pals than you have fans in Regina." },
+src/content/cards.js:1561  outcome: 'Corpse paint, cardigans, a veggie tray on the kick drum. Gord hears about it and sends a fruit basket "for the effort, buddy".' },
+src/content/cards.js:1576  outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your double kick.' },
+src/content/cards.js:1594  success: { effects: { buzz: 15, fans: 300 }, outcome: 'Blast beats, a choir, sleigh bells tuned to D. Deci-Hell gives it six skulls out of five.' },
+src/content/cards.js:1687  outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your drums.' },
+src/content/cards.js:1768  outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your drum kit. You are not sure what that means.' },
+src/content/cards.js:1771  fail: { effects: { burnout: 5, fund: -40 }, outcome: 'A hailstone the size of a perogy takes out the ride cymbal. And the phone. Forty bucks.' } },
+src/content/cards.js:1774  outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad a blast beat. Even trade.' }
+src/content/cards.js:1824  { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+src/content/cards.js:1825  text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
+src/content/cards.js:1828  { label: 'Buy it today ($650)', hint: '−$650 · a real kit: better sound', effects: { fund: -650, shop: { kit: 1 } },
+src/content/cards.js:1840  'Jaxon has already measured the trailer for the drum cases.',
+src/content/cards.js:1855  'wants one. She is holding your sticks hostage.',
+src/content/cards.js:1858  outcome: 'Dana hands back your sticks and plays you the one-bar version. It is still somehow three minutes long.' },
+src/content/cards.js:1862  outcome: 'Dana returns your sticks. She plays the solo anyway, alone, in the driveway, facing the street.' }
+src/content/creator.js:79  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Drummers run hot.');
+src/content/creator.js:110  P('head', 'moose', 'A moose', { fans: 500 }); P('head', 'face', 'Your face', { award: 'platinum' }, 'Go platinum and it goes on the kick.');
+src/content/creator.js:111  P('throne', 'crate', 'Milk crate', null, 'Two of them, zip-tied.'); P('throne', 'stool', 'Throne stool', { fans: 100 });
+src/content/creator.js:147  head: { label: 'Kick-drum head', field: 'kit.head', group: 'kit' },
+src/content/drama.js:119  epilogue: "Jaxon becomes a guitar teacher. Every student learns a sneaky fill. Baba approves."
+src/content/drama.js:184  outcome: "The garage fills with fog. You can't see the drum kit. Marcel has never been happier. The smoke detector files a complaint." },
+src/content/drama.js:188  outcome: "Marcel folds the letter into a swan, sets it on your snare and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
+src/content/drama.js:245  outcome: 'He nods gravely, leaves the album on your snare, and waits in his car. For weeks. Occasionally he honks.' }
+src/content/drama.js:288  outcome: '{recruit} gets a roaster of perogies as a goodbye gift. Baba insists. Jaxon sneaks a fill into the very first song.' },
+src/content/endings.js:87  hail_damage: { line: 'Your mom wants to park the car in {space} again. She has already moved the drum riser onto the lawn. Marcel is negotiating with the lawn.' },
+src/content/endings.js:249  'Now plays for {rival}, where every drummer is named Steve. They are not the drummer. They are still called Steve.'],
+src/content/endings.js:257  arena_legends: 'You hang up your sticks after the last arena show. Your hands keep drumming on every steering wheel and kitchen table in {city}. Your dentist has asked you to stop doing it in the chair.',
+src/content/endings.js:258  canadian_institution: 'You open a drum school in {city}. Every student wants to learn the fill from the song. You charge extra for the fill. It is worth it.',
+src/content/endings.js:259  cult_heroes: 'You play every reunion show. The same three hundred people come every time. They know your fills better than you do. They bring you soup.',
+src/content/endings.js:260  one_album_wonders: 'You sell your kit, then buy it back the next week. It lives in {space} under a tarp, waiting for the second album.',
+src/content/endings.js:261  still_in_the_garage: 'You still drum in {space} on Tuesday nights. The neighbours stopped complaining years ago. They time their lawnmowers to you.'
+src/content/endings.js:315  ch('Take it, in minor', 'Fund ↑ · Buzz ↓', { fund: 1000, buzz: -5 }, 'You rewrite the jingle in a minor key with a blast beat. The company loves it. Lawns across the prairies are mowed angrily.'),
+src/content/genres.js:32  { f: 'kick', lo: 7, loDK: 11, hi: 16, soft: 5, w: 3, tip: 'Metal wants a busier kick. Try every 8th.' },
+src/content/genres.js:34  tip: 'Put the snare on 2 and 4, or go full blast.' },
+src/content/genres.js:35  { f: 'time', lo: 6, hi: 24, soft: 4, w: 1.5, tip: 'Keep the hats or cymbals busy.' },
+src/content/genres.js:106  { f: 'snare', lo: 4, hi: 8, soft: 3, w: 4, tip: 'Punk wants a fast, driving snare.' },
+src/content/genres.js:108  { f: 'kick', lo: 3, hi: 6, soft: 3, w: 1, tip: 'Kick on the quarters keeps it moving.' },
+src/content/genres.js:111  { f: 'snareOdd', lo: 0, hi: 1, soft: 3, w: 1, tip: "That's a train, not a riot. Fewer 16th snares." }
+src/content/genres.js:167  { f: 'backbeat', lo: 1, hi: 1, soft: 0.5, w: 3, tip: 'Rock needs a solid backbeat: snare on 2 and 4.' },
+src/content/genres.js:168  { f: 'kickDown', lo: 1, hi: 1, soft: 0.5, w: 2, tip: 'Kick on 1 and 3. Every time.' },
+src/content/genres.js:169  { f: 'kick', lo: 2, hi: 5, soft: 3, w: 3, tip: 'Rock kick: less is more.' },
+src/content/genres.js:172  { f: 'snareOff', lo: 0, hi: 1, soft: 3, w: 2, tip: 'Too much snare clutter for rock.' },
+src/content/genres.js:220  reactions: { great: 'Stadium-sized.', good: 'Solid.', meh: 'A bit wobbly.', bad: 'Where is the backbeat?' }
+src/content/genres.js:226  { f: 'snare', lo: 12, hi: 16, soft: 6, w: 5, tip: 'Country wants the train beat: snare on every 16th.' },
+src/content/genres.js:227  { f: 'kickDown', lo: 1, hi: 1, soft: 0.5, w: 2, tip: 'Kick on 1 and 3 keeps the train rolling.' },
+src/content/genres.js:228  { f: 'kick', lo: 2, hi: 4, soft: 3, w: 1.5, tip: 'Country kick stays simple.' },
+src/content/grooves.js:19  var SIMPLER = { id: 'simpler', name: 'Simpler', desc: 'Only the 8th notes survive, hats on the beat. Easier on the hands.',
+src/content/grooves.js:24  { id: 'headbanger', name: 'Headbanger', signature: true, desc: 'Kick on every 8th, snare on 2 and 4. The neck-snapper.',
+src/content/grooves.js:26  { id: 'blast', name: 'Blast beat', desc: 'Kick, snare and crash on every 8th. The neighbours will call someone.',
+src/content/grooves.js:28  { id: 'thrash', name: 'Thrash skank', desc: 'Kick on the beat, snare on the "and". Polka, but angry.',
+src/content/grooves.js:30  { id: 'doom', name: 'Half-time doom', desc: 'One snare a bar, big crashes. Play it slow, like a Regina February.',
+src/content/grooves.js:34  { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. Your calves file a complaint.',
+src/content/grooves.js:38  { id: 'more', name: 'More metal', desc: 'Busier kick, a crash on the one, hats on every 8th.',
+src/content/grooves.js:48  { id: 'skank', name: 'Punk skank', signature: true, desc: 'Kick on the beat, snare on the "and", hats flat out.',
+src/content/grooves.js:52  { id: 'floor', name: 'Four on the floor', desc: 'Kick on every beat, open hats in between. Dance, you cowards.',
+src/content/grooves.js:54  { id: 'buzzsaw', name: 'Buzzsaw 8ths', desc: 'Kick on every 8th under a plain backbeat. One speed: yes.',
+src/content/grooves.js:56  { id: 'hardcore', name: 'Hardcore two-step', desc: 'Stop-start snare hits for the circle pit.',
+src/content/grooves.js:60  { id: 'more', name: 'More punk', desc: 'Faster, snare on the "and", straight 8th hats.',
+src/content/grooves.js:63  { id: 'busier', name: 'Busier', desc: 'Kick on every 8th and a crash to kick it off.',
+src/content/grooves.js:70  { id: 'backbeat', name: 'Rock backbeat', signature: true, desc: 'Kick on 1 and 3, snare on 2 and 4, 8th hats. The classic.',
+src/content/grooves.js:72  { id: 'halftime', name: 'Half-time', desc: 'One big snare in the middle. Feels slow, sounds huge.',
+src/content/grooves.js:76  { id: 'floor', name: 'Four on the floor', desc: 'Kick on every beat, open hats on the "and".',
+src/content/grooves.js:82  { id: 'more', name: 'More rock', desc: 'Kick on 1 and 3, snare on 2 and 4, steady 8th hats.',
+src/content/grooves.js:86  { id: 'busier', name: 'Busier', desc: 'Extra kicks on the "and" and a crash on the one.',
+src/content/grooves.js:93  { id: 'train', name: 'Train beat', signature: true, desc: 'Snare on every 16th, kick on 1 and 3. Chugga-chugga.',
+src/content/grooves.js:99  { id: 'brush', name: 'Brush shuffle', desc: 'Swung brushes on the snare. Sounds like a dusty gravel road.',
+src/content/grooves.js:101  { id: 'hoedown', name: 'Hoedown', desc: 'Kick on the beat, snare on the "and". Fiddles optional, joy mandatory.',
+src/content/grooves.js:105  { id: 'more', name: 'More twang', desc: 'The train beat: snare on every 16th, kick on 1 and 3, a chick on 2 and 4.',
+src/content/grooves.js:109  { id: 'simpler', name: 'Simpler', desc: 'Only the 8th notes survive, hats on the beat. Easier on the wrists.', ops: SIMPLER.ops },
+src/content/grooves.js:110  { id: 'busier', name: 'Busier', desc: 'Snare on every 8th and a hat chick on 2 and 4.',
+src/content/grooves.js:120  { role: 'bass', text: "Verse first. Keep it steady and I'll lock in with the kick." }],
+src/content/grooves.js:134  { role: 'bass', text: "Verse first. Keep it steady and I'll lock in with the kick." }],
+src/content/grooves.js:149  { role: 'bass', text: 'Keep the verse simple. The dryers upstairs are keeping better time than most drummers.' }],
+src/content/grooves.js:164  { role: 'bass', text: 'Steady verse, please. Kick on 1 and 3. I have a cleaning at 8 a.m.' }],
+src/content/grooves.js:180  { role: 'lead guitar', text: "Verse first. Back in '79 I played a verse so steady the drummer fell asleep. Good drummer." }],
+src/content/labels.js:71  rep: { name: 'You', blurb: 'The drummer, the founder, and now the label, the accountant and the shipping department.' },
+src/content/labels.js:105  quirk: 'A snare hit decays for nine seconds. A cough decays for eleven. A grain truck still unloads next door at harvest.' },
+src/content/labels.js:134  blurb: 'Experimental. Once recorded a cowbell inside a combine at harvest. Mics the kick drum from the next farm over. Cheap, for reasons.',
+src/content/licensing.js:66  take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Dad cries a little.',
+src/content/lines.js:47  'We built a song around your drum groove. {deadpan} nodded once. The song is finished.',
+src/content/lines.js:74  'We returned bottles, pop cans and one cracked cymbal. The cymbal was worth more.',
+src/content/lines.js:80  'We played crokinole until midnight. Somebody flicked a disc into the kick drum.',
+src/content/lines.js:103  'Some of us are artists. Some of us rush the chorus. I name no drummers.',
+src/content/lines.js:151  'is the fill in bar 12 ok or should i add more notes (more notes)'
+src/content/lines.js:259  '(Kenji stares at the floor tom for a full minute.)',
+src/content/lines.js:279  "Your hi-hat is two milliseconds early. It's fine. It's not fine.",
+src/content/lines.js:285  'did you hear that fill? no? good. that was the plan',
+src/content/lines.js:303  "Your dad leaves a Prairie Polytechnic course calendar on your snare. 'Accounting' is circled. Twice.",
+src/content/lines.js:304  "Your mom tells the neighbours you're 'between things'. You are between the kick drum and the floor tom.",
+src/content/lines.js:356  'ok so i added a fill in bar 4. you did not write it. it is there now',
+src/content/lines.js:358  'i played the simple part. then i got bored. then there was a fill. sorry',
+src/content/lines.js:384  dana: ["Start with the kick. Metal wants it busy: try every 8th. Then leave me room for a solo.", 'Tap to add a hit, drag down a lane to paint. Kick first, the rest follows.'],
+src/content/lines.js:386  jaxon: ['tap a square to add a hit. drag to paint a whole row. hit play to hear it', "kick on every 8th is the metal thing. the pedal thing comes later i think"]
+src/content/lines.js:441  'The regulars asked for something else entirely. You played yours. They clapped for the drums, eventually.',
+src/content/lines.js:546  "Snuck a fill into the second verse. Nobody's noticed yet. Don't tell them. Baba packed studio sandwiches.",
+src/content/lines.js:602  jaxon: { fill: ['i did a fill. you kept up. respect', 'did you notice the fill. be honest',
+src/content/lines.js:603  'that fill was not in the song. it is now. baba would say it is "a bit much"'] }
+src/content/lines.js:686  'A metal crowd. They wanted blast beats. You gave them a guitar solo and a fist pump. A few pumped back.',
+src/content/lines.js:712  'We built a song around your drum groove. Kenji nodded once. The song is finished.',
+src/content/lines.js:714  'We wrote a ballad. It lasted ninety seconds before Marcel turned it into a blast beat.'
+src/content/lines.js:729  'We played a wedding social in Humboldt. The Chicken Dance, with blast beats. Cash and a pan of lasagna.',
+src/content/lines.js:752  "Baba sends a card: 'Proud of Jaxon. The drummer also. The French one, we will see.'",
+src/content/lines.js:775  'A cowboy hat hit the snare mid-fill. You kept the hat. You earned the hat.'
+src/content/map.js:42  regina: { id: 'regina', ring: 'sask', name: 'Regina', x: 0.64, y: 0.74, label: 'right', blurb: 'The Queen City. Flatter than a drum skin.' },
+src/content/map.js:58  lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your cymbals.' },
+src/content/npcs.js:21  blurb: "Jaxon's grandmother. Packs his lunches, sets his curfew, rates every song out of ten. Mostly fours. The drummer gets a nine." },
+src/content/npcs.js:54  blurb: 'Hosts Frostbite Hour on CRUX 91.3 campus radio. Plays anything with a snare that sounds like a garbage can lid.' },
+src/content/recap.js:25  signed: ['{band} Sign With {label}; Mom Reads the Contract Twice', '{label} Signs {band}; Lawyers Learn What a Drummer Is'],
+src/content/recap.js:59  bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your kit.' },
+src/content/recruits.js:103  [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your sticks.',
+src/content/recruits.js:143  outcome: 'You rehearse. {recruit} practises flicks on your snare head between songs. It is somehow in time.' }])] },
+src/content/recruits.js:178  '{recruit} has published issue 47 of their rehearsal zine. It reviews your hi-hat. Harshly. Three hundred copies are already at the record store.',
+src/content/recruits.js:180  outcome: 'The whole band reads it together. It is mean, accurate and very funny. Your hi-hat gets better.' },
+src/content/recruits.js:194  outcome: 'The whole band walks home through the snow, carrying cymbals. It is the most punk thing you have ever done.' },
+src/content/recruits.js:215  "{recruit}'s hair is now taller than the kick drum. The venue has banned aerosols after the smoke alarm went off twice during soundcheck.",
+src/content/recruits.js:263  fail: { effects: { chemistry: -3 }, outcome: 'The yodel goes on for sixteen bars. Then thirty-two. You end it with a crash cymbal.' } } },
+src/content/reviews.js:44  'The drums on {album} swing like a screen door on a farmhouse in August. That is the highest praise I have.'
+src/content/reviews.js:76  'The drummer seems to know one beat, and to love it very much. So did every drummer in 1964. That was different.',
+src/content/reviews.js:77  'Half of {album} shares one drum pattern. My turntable thought it was skipping.'
+src/content/reviews.js:112  good: ["{nick:marcel} in a cape, screaming in French about lawn care over a blast beat! Is anything MORE Canadian?! No!"],
+src/content/reviews.js:119  'The drummer is sticking with what works! Like wearing the same parka for nine years! Respect! But also, a new parka!',
+src/content/reviews.js:142  'The hi-hat on {single} functions as a metaphor for late-stage canola futures. I cried, but critically.',
+src/content/reviews.js:160  'By the fourth song sharing one drum pattern, the pattern becomes a character. By the sixth, a hostage.',
+src/content/reviews.js:161  'The drummer has found a groove and would like to be buried in it. Across several tracks. It is almost conceptual. It is not conceptual.',
+src/content/reviews.js:196  meh: ['THE DRUMMER MAKES FACES. WE CAN HEAR THE FACES. PLEASE STOP MAKING THE FACES.'],
+src/content/reviews.js:202  'SAME BEAT. SAME BEAT. SAME BEAT. WE ARE NOT A DRUM MACHINE AND NEITHER ARE YOU.',
+src/content/reviews.js:203  'THE DRUMMER RECYCLED MORE PATTERNS THAN THE BOTTLE DEPOT. MINUS ONE SKULL. RECYCLE CANS, NOT BEATS.',
+src/content/reviews.js:247  "Heavy stuff. But the drummer has the good steady feel of a man who has baled hay, and we respect that."
+src/content/reviews.js:257  "The beat on track three came back on track six like a stray dog. We fed it. It'll keep coming back now.",
+src/content/reviews.js:258  'The drummer has one good horse and rides it in every race.'
+src/content/rivals.js:149  outcome: "You tell them to send a demo. They send a demo, a press kit, a letter of reference and a fruit basket. By courier. That afternoon." }
+src/content/rivals.js:153  "Not literally. We brought a first-aid kit just in case.'",
+src/content/rivals.js:168  minivan: 'a beige 2011 Dodge Grand Caravan with a Winnipeg Jets bumper sticker and a tidy first-aid kit',
+src/content/rivals.js:169  vehicle: 'a beige 2011 Dodge Grand Caravan with a Winnipeg Jets bumper sticker and a tidy first-aid kit',
+src/content/rivals.js:193  bio: 'Plays blast beats at exactly 240 bpm to a metronome app. Emails you a polite tempo report after every show. Drives a 2009 Corolla with 400,000 km on it.',
+src/content/rivals.js:195  'Nods at you, drummer to drummer. Then files a report.'],
+src/content/rivals.js:198  songs: ['Eternal Winter (Fiscal Year End)', 'Audit of the Frozen Throne', 'Plug In the Block Heater', 'Minus Forty (Both Scales)',
+src/content/rivals.js:202  { title: 'Eternal Winter, Fiscal Year End', kind: 'album' }, { title: 'Audit of the Frozen Throne', kind: 'album' },
+src/content/rivals.js:223  vehicleLine: 'Gord drives a beige 2011 Dodge Grand Caravan with a Winnipeg Jets bumper sticker and a tidy first-aid kit.',
+src/content/rivals.js:246  'Subscribed at the Drumstick tier to support you guys! Every bit helps, right? 🤘',
+src/content/rivals.js:377  outcome: 'You tell them to send a demo. They send a demo, a press kit and a gift basket. By courier. That afternoon.' }
+src/content/rivals.js:381  "Not literally. We brought a first-aid kit just in case.'",
+src/content/road_cards.js:123  outcome: 'Forty kilometres of washboard gravel. Every cymbal in the van is now out of tune, somehow.' }
+src/content/road_cards.js:151  outcome: 'Pete squeezes in next to the bass drum.' },
+src/content/road_cards.js:158  text: 'Lights in the mirror. A Mountie walks up, peers at the band, the drum kit, and Kenji\'s sunglasses. ' +
+src/content/road_cards.js:206  text: 'Spring thaw. The highway is forty percent pothole. Every hit launches the cymbal stands a foot in the air. ' +
+src/content/road_cards.js:207  'Jaxon is holding the bass drum like a baby.',
+src/content/road_cards.js:210  outcome: 'You arrive late but intact. The cymbals thank you.' },
+src/content/road_cards.js:301  outcome: 'The cab driver helps carry the kick drum. He has opinions about double bass. He is right.' }
+src/content/road_cards.js:326  outcome: 'Air guitar, lap drums, {front} harmonizing with the backup beeper of a grader. It is honestly tight.' },
+src/content/road_cards.js:349  text: 'Hail the size of perogies, drumming on the Moose Hearse. Marcel presses his face to the glass: "They are calling our NAME." Hail Damage takes hail personally.',
+src/content/road_cards.js:355  { label: 'Film the hail on the roof', hint: 'Gamble: a new drum loop',
+src/content/road_cards.js:364  text: 'Hail the size of perogies, drumming on the roof like a drummer with something to prove. {grumbler} has read the insurance forms. {grumbler} is not calm.',
+src/content/road_cards.js:370  { label: 'Film the hail on the roof', hint: 'Gamble: a new drum loop',
+src/content/road_cards.js:463  text: 'You drive like you drum: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
+src/content/road_cards.js:470  roll: { chance: 0.4, success: { effects: { buzz: 3 }, outcome: 'The officer is a drummer. You get a warning and a tip about ride cymbals.' },
+src/content/road_cards.js:471  fail: { effects: { fund: -150 }, outcome: 'The officer is not a drummer. The officer is a clarinet player. It is worse.' } },
+src/content/road_cards.js:557  { label: 'Park far away and walk', hint: 'Burnout ↑', effects: { burnout: 4 }, outcome: 'You carry the kit through a train station. Commuters make way in perfect silence.' }
+src/content/road_cards.js:563  { label: 'Pull over and let it go', hint: 'Burnout ↑', effects: { burnout: 3 }, outcome: 'You wait in the red dirt. The dust takes ten minutes to settle. It is in the snare forever now.' }
+src/content/road_cards.js:631  blurb: 'The founder, behind the wheel. You drive like you drum.',
+src/content/shop.js:30  { id: 'toms', name: 'Rack tom + floor tom', lane: 5, cost: 450, era: 'garage',
+src/content/shop.js:31  blurb: 'Two pawn-shop toms from two different kits. Lane 5: fills that roll down the kit.' },
+src/content/shop.js:32  { id: 'ride', name: 'Ride cymbal', names: { metal: 'China cymbal', punk: 'China cymbal', rock: 'Ride cymbal', country: 'Ride cymbal' },
+src/content/shop.js:34  { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 300, era: 'garage',
+src/content/shop.js:35  blurb: 'Both feet on the kick. The kick lane can hit every 16th. Your calves file a complaint.' }
+src/content/shop.js:39  blurb: 'A kick with a pillow in it, a snare, one hi-hat, a cracked crash. The throne is a milk crate.' },
+src/content/shop.js:41  blurb: 'From the pawn shop downtown. The shells don\'t match. It sounds like a real kit, mostly.' },
+src/content/shop.js:42  { tier: 2, id: 'pro', name: 'Maple Pro Kit', cost: 2800, era: 'local',
+src/content/shop.js:44  { tier: 3, id: 'arena', name: 'The Arena Kit', cost: 9000, era: 'world',
+src/content/shop.js:45  blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even at rehearsal.' }
+src/content/shop.js:48  outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.' },
+src/content/shop.js:49  solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.' }
+src/content/shop.js:55  blurb: 'A cinder-block room in a strip mall, next to a tire shop. Egg-crate foam, a light that buzzes, a sign that says NO DRUMS AFTER 11.',
+src/content/shop.js:58  blurb: 'A cinder-block room in a Saskatoon strip mall, next to the tire shop on 8th. Egg-crate foam, a buzzing light, NO DRUMS AFTER 11.' },
+src/content/shop.js:113  laundromat_basement: { name: 'The pop machine', blurb: 'Out of order since 1994. One good kick and it takes loonies and gives you whatever it wants. Everyone hangs around it.' },
+src/content/shop.js:121  laundromat_basement: { name: 'Christmas lights', blurb: 'Strung along the pipes. When a dryer upstairs kicks on, they flicker in time. Inspiring.' },
+src/content/song_titles.js:53  { en: 'Throne of Sod', fr: 'Le Trône de Gazon' },
+src/content/tutorial.js:53  [gated][tok]  { who: 'dana', text: 'Tap the {instrument} to sketch a beat. Kick, snare, hats, crash: the full spec sheet.', seat: D, point: { hotspot: 'kit' } },
+src/content/tutorial.js:61  [gated][tok]  { who: 'benny', text: 'Tap the {instrument} and sketch a beat. Fast snare, flat hats. If it feels too fast it\'s almost fast enough.', seat: D, point: { hotspot: 'kit' } },
+src/content/tutorial.js:69  [gated][tok]  { who: 'lenny', text: 'Tap the {instrument} and sketch a beat. Kick on one and three, snare on two and four. Nobody owns that one. I checked.', seat: D, point: { hotspot: 'kit' } },
+src/content/tutorial.js:77  [gated][tok]  { who: 'earl', text: 'Tap the {instrument} and sketch a beat. Train beat on the snare, kick on one and three. I played that for everybody in 1974.', seat: D, point: { hotspot: 'kit' } },
+src/content/tutorial.js:119  [gated]  { who: 'dana', text: 'Each card is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
+src/content/tutorial.js:130  [gated]  { who: 'tamara', text: 'Each card is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. Steady hats. I colour-coded them.', seat: D, point: { testid: 'btn-guide-play' } },
+src/content/tutorial.js:166  [gated]  { who: '@soloist', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Your sticks, your night.', seat: D },
+src/content/tutorial.js:167  [tok]  { who: '@front', text: '{drummer} count us in. Tap Start when you\'re ready.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
+src/content/tutorial.js:173  [gated]  { who: 'dana', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Hit them like you mean it.', seat: D },
+src/content/tutorial.js:174  [tok]  { who: 'jaxon', text: '{drummer} count us in. hit start. i promise no fills. (fills)', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
+src/content/tutorial.js:179  [gated]  { who: 'benny', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Hit them hard. Like a third chord. Which I will never learn.', seat: D },
+src/content/tutorial.js:180  [tok]  { who: 'rox', text: '{drummer} count us in. Motion carried. Hit Start.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
+src/content/tutorial.js:185  [gated]  { who: 'tamara', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Steady. Like flossing.', seat: D },
+src/content/tutorial.js:186  [tok]  { who: 'chase', text: '{drummer} count us in. Hit Start. Leather pants on.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
+src/content/tutorial.js:191  [gated]  { who: 'earl', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Keep it simple. Every great one I backed kept it simple.', seat: D },
+src/content/tutorial.js:192  [tok]  { who: 'duke', text: '{drummer} count us in. Hit Start. The hat is ready.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
+src/content/venues.js:95  quirk: 'The bowl echoes. Every snare hit comes back twice, slightly late.',
+src/content/venues.js:96  catch: 'Wind gusts to seventy. Hold on to the cymbals.' },
+src/content/venues.js:106  quirk: 'Behind the rec centre. The bowl is the pit. A kid on a scooter will absolutely try to jump the kick drum.',
+src/content/venues.js:134  quirk: 'The dartboard is two metres from the kick drum. The darts league does not pause.',
+src/content/venues.js:275  quirk: 'The sound guy hates drummers. Specifically you.',
+src/content/venues.js:310  quirk: 'Half bar, half bait shop. The minnow tank sits right next to the kick drum.',
+src/content/venues.js:644  quirk: 'An old vaudeville house with a painted ceiling. The ghost in the balcony only claps for drum solos.',
+src/content/venues.js:645  catch: 'The load-in is on the windiest street in Canada. The kick drum has blown away before.' },
+src/content/venues.js:714  quirk: 'A legendary sprung dance floor. When the crowd jumps, the whole room bounces. So does the drum riser.',
+src/content/venues.js:743  quirk: 'The most famous room in the country. The ceiling is a century old. The acoustics make your snare sound like thunder.',
+src/content/venues.js:779  catch: 'The noon gun goes off every day at twelve. You play at night. Your drummer brain will still flinch.' },
+src/content/world.js:40  blurb: 'Seasons upside down: a Canadian winter is Aussie festival summer. Vast drives. Check the kick drum for spiders.',
+src/content/world.js:118  venue('drizzle_factory', 'The Drizzle Factory', 'manchester', 2, 'club', 450, [900, 1400], 'An old mill. The roof leaks onto the ride cymbal, in time.'),
+src/content/world.js:136  venue('tick_tock', 'Kyoto Tick Tock', 'kyoto', 2, 'club', 260, [700, 1100], 'An old sake warehouse. Take your shoes off at the door. Yes, the drummer too.'),
+src/content/world.js:139  venue('drum_logic', 'Fukuoka Drum Logic', 'fukuoka', 3, 'club', 1000, [1800, 2700], 'A drum shop upstairs lends you a gong. You politely decline. Kit rules.'),
+src/content/world.js:143  venue('big_day_inn', 'Big Day Inn', 'sydney', 4, 'club', 50000, [6000, 10000], 'January, forty degrees, sunscreen on the snare. A Canadian winter, an Aussie summer.', { festival: true, outdoor: true, weeks: [13, 14] }),
+src/content/world.js:168  blurb: 'The whole band, a drum kit and the merch in a van the size of a fridge. Packed like sardines.' },
+src/content/world.js:176  blurb: 'Three in the cab, two in a borrowed station wagon behind, the kit in a trailer. Vast drives.' },
+src/content/world.js:185  couch: { id: 'couch', name: "The promoter's floor", perWeek: 0, homesick: 4, mood: -2, blurb: 'Free. Sleeping bags, a cat that hates drummers, one bathroom.' },
+src/content/world.js:186  hostel: { id: 'hostel', name: 'Hostels', perWeek: 350, homesick: 1, mood: 0, blurb: 'Bunk beds, strangers, lockers. The drummer gets the top bunk.' },
+src/content/world.js:303  'Called Baba. She rated the show from the livestream. Four out of ten. The drummer got a nine.'],
+src/content/world.js:313  home: ['Home. {space} smells exactly the same. Somebody hugs {van}.', 'Back in {city}. Mom made a lasagna the size of a snare case.'],
+src/content/world.js:319  gongWon: '{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Ever.',
+src/content/world.js:329  { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: 'jaxon', text: 'Yes. It does not go on the drum kit. We had a meeting about it.' }
+src/content/world.js:339  home: ['Home. The garage smells exactly the same. Somebody hugs the Moose Hearse.', 'Back in Saskatoon. Mom made a lasagna the size of a snare case.'],
+src/content/world.js:353  blurb: 'The one international award. A bronze gong on a teak stand. It goes on a shelf, never on a drum kit.',
+src/content/world.js:398  { label: 'Wade in with the gear', hint: 'Burnout ↑ · Buzz ↑', effects: { burnout: 6, buzz: 6, tour: { regionFans: 300 } }, outcome: 'You carry the kick drum over your head through the crowd like a trophy. They chant your name.' },
+src/content/world.js:401  card('wt_eu_sardines', 'uk_europe', 'jaxon', 'Packed Like Sardines', 'The rental van fits the kit, the merch and exactly four and a half people. Jaxon has been sitting on the floor tom since Amsterdam.', [
+src/content/world.js:402  { label: 'Rotate seats every hour', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 4, burnout: 3 }, outcome: 'A strict rota. Everyone gets an hour on the floor tom. Nobody is happy. Everyone is equal.' },
+src/content/world.js:413  { label: 'Write back to every one', hint: 'Burnout ↑ · Fans ↑', effects: { burnout: 4, fans: 120, tour: { gift: 'jp_towel', regionFans: 250 } }, outcome: 'Three hundred thank-you notes on hotel stationery. The towel goes on the drum rise...
+src/content/world.js:425  card('wt_au_spider', 'australia', 'dana', 'Spider in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Dana looks through the port hole and goes very quiet. "Something in there has eight legs and a mortgage."', [
+src/content/world.js:428  success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
+src/content/world.js:431  card('wt_au_kick_spider', 'australia', 'shazza', 'Something in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Shazza looks through the port hole and goes very quiet. "Mate. It has eight legs and a mortgage."', [
+src/content/world.js:434  success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
+src/content/zz_band_frost_heave.js:147  bio: 'Chosen by a focus group for his jawline. Plays to a click track the network owns. Nods at you, drummer to drummer, then checks his angles in the cymbal.',
+src/content/zz_band_frost_heave.js:149  'Brought a stylist to soundcheck. For the kit.'],
+src/content/zz_band_frost_heave.js:177  "{rival}'s drummer Brody was voted Canada's Most Punk Jawline. There is a trophy. It is a jaw.",
+src/content/zz_band_frost_heave.js:243  openingSlot: ["Afterwards Blaze shakes your hand for the cameras. Siobhan asks if your drummer does sponsorships. You are the drummer.",
+src/content/zz_band_frost_heave.js:271  commentsExclusive: ["Subscribed at the Drumstick tier to support the scene! Expensing it as research. — Siobhan",
+src/content/zz_band_frost_heave.js:314  outcome: 'Blaze whoops. Dex mimes excitement. Brody checks his jaw in a cymbal. Siobhan sends a stage plot before you hang up.' },
+src/content/zz_band_frost_heave.js:577  "through the floor for a week. 'The bridge drags. The singer is flat. The drummer is fine. I charge $40 a month.'",
+src/content/zz_band_frost_heave.js:593  { label: 'Rehearse to dryer four', hint: 'Drum skill ↑', effects: { drumSkill: 1, chemistry: 2 },
+src/content/zz_band_frost_heave.js:615  text: "The cymbals are in the van. The van is Moth's apartment. Moth is asleep in it, and there is a sign on the side door: " +
+src/content/zz_band_frost_heave.js:619  outcome: 'Moth opens the door in a housecoat, hands you the cymbals and a cup of tea, and closes the door. It was a lovely visit.' },
+src/content/zz_band_frost_heave.js:620  { label: 'Rehearse without cymbals', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 2, drumSkill: 1 },
+src/content/zz_band_frost_heave.js:621  outcome: 'You play the whole set on the hi-hat. It is very punk. Rox says crashes are "a bourgeois luxury" and means it.' },
+src/content/zz_band_frost_heave.js:658  success: { effects: { buzz: 8, fans: 10 }, outcome: 'The clip of a punk band playing ankle-deep in suds goes around Regina. Someone coins "soap-core". It sticks.' },
+src/content/zz_band_frost_heave.js:668  outcome: 'You fold every towel while the band rehearses without drums. It is weirdly relaxing. Moth brings you a clean one.' },
+src/content/zz_band_frost_heave.js:797  outcome: 'The envelope goes above the kit. It is proof: the van is a real address. Moth has never looked so proud.' }
+src/content/zz_band_frost_heave.js:854  { label: 'Let Irma kick it', hint: 'Chemistry ↑', effects: { chemistry: 3, burnout: -3 },
+src/content/zz_band_frost_heave.js:855  outcome: 'Irma kicks it once. It works. She looks at you all as if this proves something. It does.' }
+src/content/zz_band_frost_heave.js:1049  outcome: 'You carry the snare to the van.',
+src/content/zz_band_frost_heave.js:1051  success: { effects: { chemistry: 6, mood: { moth: 8 } }, outcome: 'Four people and a snare in a minivan. It is the tightest the band has ever sounded. Moth makes popcorn.' },
+src/content/zz_band_frost_heave.js:1052  fail: { effects: { mood: { moth: -8 }, burnout: 4 }, outcome: 'The snare knocks over a plant. The plant was important. Moth asks everyone to leave. Everyone leaves.' } } }
+src/content/zz_band_frost_heave.js:1072  outcome: 'The deck sits by the kick drum, center-left. A kid in the pit asks if you are the Mall Rats now. Benny kicks it off the stage.' },
+src/content/zz_band_frost_heave.js:1663  outcome: 'Metal and punk, one basement, two drummers. The cape goes in dryer four after all. It comes out a little smaller and very soft.' },
+src/content/zz_band_frost_heave.js:1709  { id: 'shop_pawn_kit_frost_heave', type: 'money', speaker: 'moth', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+src/content/zz_band_frost_heave.js:1710  text: "Moth texts a photo from the pawn shop on Dewdney: a five-piece kit, shells that almost match, $800. Then: 'guy says $650 today. " +
+src/content/zz_band_frost_heave.js:1713  { label: 'Buy it today ($650)', hint: '−$650 · a real kit: better sound', effects: { fund: -650, shop: { kit: 1 } },
+src/content/zz_band_frost_heave.js:1718  fail: { effects: { mood: { moth: -5 } }, outcome: 'He sells it to a church drummer while Moth is still staring. Moth takes it personally.' } },
+src/content/zz_band_frost_heave.js:1738  "get a real solo section. He is holding your sticks hostage. He is also holding the setlist hostage.",
+src/content/zz_band_frost_heave.js:1741  outcome: 'Benny returns your sticks and plays you the solo. Chord one. Chord two. Chord one. It is, somehow, exhilarating.' },
+src/content/zz_band_frost_heave.js:1745  outcome: 'Benny returns the sticks. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
+src/content/zz_band_frost_heave.js:1928  outcome: 'Rox leaves the nameplate on your snare and sits in the laundromat for weeks, filing complaints about the wait.' }
+src/content/zz_band_frost_heave.js:2015  'Basement rehearsal, 40 seconds. At 0:22 Irma bangs the ceiling with a mop, perfectly on the beat. She is now the most-liked part.'
+src/content/zz_band_frost_heave.js:2045  'VIRAL: {player} counts in so hard the drumstick flies into a dryer and keeps spinning. {views} views.',
+src/content/zz_band_frost_heave.js:2201  "Drumstick, Snare, Full Kit. Delphine has already asked if she can pay in quarters.",
+src/content/zz_band_frost_heave.js:2204  outcome: 'Patreeon is live. First member: Delphine, Full Kit, 12:01 a.m. Second member: Irma, Drumstick, "to keep an eye on things".' },
+src/content/zz_band_frost_heave.js:2360  gongWon: ['{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Benny hits it twice. Once per chord.'],
+src/content/zz_band_frost_heave.js:2373  { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: '@soloist', text: 'Yes. It only makes one sound. We respect that. It does not go on the drum kit.' }
+src/content/zz_band_frost_heave.js:2490  outcome: 'Four pairs of gas-station headphones. The band rehearses silently, air-drumming, air-screaming. Moth approves.' }
+src/content/zz_band_frost_heave.js:2520  outcome: 'You carry the drum kit six blocks through a construction site. A crew member helps. He wants to be on the guest list.' }
+src/content/zz_band_frost_heave.js:2539  { label: "Tell her you've got it", hint: 'Moth ↓ · Drum skill ↑', effects: { mood: { moth: -5 }, drumSkill: 1 },
+src/content/zz_band_frost_heave.js:2638  { label: 'Push on. Hold the line.', hint: 'Van ↓ · Drum skill ↑', effects: { drumSkill: 1, van: { condition: -3 } },
+src/content/zz_band_frost_heave.js:2729  { label: 'Record without a click', hint: 'Drum skill ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
+src/content/zz_band_frost_heave.js:2786  success: { effects: ofx({ buzz: 12, fans: 120 }, 'sash'), outcome: "VOTE ROX, VOTE BENNY, VOTE MOTH, VOTE DRUMS. A fashion site calls it 'municipal chic'." },
+src/content/zz_band_frost_heave.js:2865  solo: [{ who: 'benny', text: 'solo section unlocked. you play the beat. i play both chords. fast' }],
+src/content/zz_band_frost_heave.js:3054  awful: ['NOT METAL. NOT EVEN TRYING. TWO CHORDS. THE SINGER SCREAMS ABOUT PARKING. THE DRUMMER IS THE ONLY SURVIVOR.',
+src/content/zz_band_frost_heave.js:3057  '{single} IS ALMOST A BLAST BEAT. ALMOST. THE DRUMMER IS TRYING. RESPECT THE DRUMMER.'],
+src/content/zz_band_frost_heave.js:3058  good: ['THE DRUMMER ON {album} PLAYS LIKE A HAILSTORM ON A LAUNDROMAT ROOF. WE ARE NOT PUNK. WE ARE LISTENING.',
+src/content/zz_band_frost_heave.js:3106  "Don't put the cymbals on my bed.", 'Oil change Tuesday. Rehearse around it.'],
+src/content/zz_band_frost_heave.js:3144  { when: 'difficultyHigh', text: "too many notes on the kit. i'm protesting with fewer notes on the guitar" },
+src/content/zz_band_frost_heave.js:3148  fills: ['(Moth played a fill. One note. It was the right one.)', "Put a little bass run in bar 12. Don't make it weird.", 'Snuck a note into the verse. It lives there now.'],
+src/content/zz_band_frost_heave.js:3156  rox: ['Punk is fast. Snare on every "and", never below 170 BPM. Council is slower. Be faster than council.',
+src/content/zz_band_frost_heave.js:3158  benny: ["kick on the beat, snare in between, hats going 8ths. that's the whole secret. like two chords",
+src/content/zz_band_frost_heave.js:3160  moth: ["Keep the hats straight 8ths. I'll follow the kick. Don't get clever.", 'Try the D-beat preset. Boom, crack, ba-boom. Sounds like the dryers.']
+src/content/zz_band_frost_heave.js:3167  'can we stop? i need a slurpee and a moment', 'rox, the rumble strip is not a drum roll. ok it kind of is',
+src/content/zz_band_frost_heave.js:3184  fill: ['Rox fills the gap with a scream. It is a fill. It counts.', 'Rox hits the crash with the megaphone on the fill. Perfect timing.',
+src/content/zz_band_frost_heave.js:3194  fill: ['Benny sneaks a chord in the gap. It is one of the two. Relief.', 'Benny rakes the strings on the fill. No chord at all. Pure noise.',
+src/content/zz_band_frost_heave.js:3204  fill: ['Moth slides a fill into the gap. One note. The right note.', 'Moth rolls a little bass run into the fill and looks away like nothing happened.',
+src/content/zz_band_frost_heave.js:3205  'Moth answers your fill with a low thump that shakes the floor.'],
+src/content/zz_band_frost_heave.js:3241  'We built a song around your drum groove. Rox found a bylaw that fits the rhythm.',
+src/content/zz_band_gravel_kings.js:63  blurb: 'Runs the nail salon on the left of Unit 4B. Can hear every snare hit through the wall. Charges Chase for cuticle work anyway.' },
+src/content/zz_band_gravel_kings.js:110  dayJob: 'Chartbusters drummer (the fifth Steve)',
+src/content/zz_band_gravel_kings.js:111  bio: 'The fifth drummer, all of them named Steve. Nobody has asked his last name. The four previous Steves have a support group.',
+src/content/zz_band_gravel_kings.js:112  gags: ['His kit has a strip of masking tape that says STEVE, over four older strips that also say STEVE.',
+src/content/zz_band_gravel_kings.js:230  'Steve #5 here! Big fan. Are you hiring drummers? Asking for a Steve.',
+src/content/zz_band_gravel_kings.js:305  "Mr. Petrenko has typed up the house rules for Unit 4B: no drums before the nail salon closes, no pyrotechnics, and 'Chase " +
+src/content/zz_band_gravel_kings.js:314  'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your snare is in my ' +
+src/content/zz_band_gravel_kings.js:366  'Tamara handles it. You do not know how. You find a colour-coded spreadsheet taped inside the kick drum.')]),
+src/content/zz_band_gravel_kings.js:440  'Four people and a drummer in Unit 4B, watching on Gus\'s repair-shop TV through the wall. You all yell. The vacuum yells back.')]),
+src/content/zz_band_gravel_kings.js:511  'The photo shows the kit where the till used to be. Readers ask if the band is for sale. Chase says "only our souls".'),
+src/content/zz_band_gravel_kings.js:532  'The motion is tabled. The table is the kick drum. The agenda stays taped to it for a month. It becomes part of the look.')]),
+src/content/zz_band_gravel_kings.js:693  "a word in four hours. Their drummer asks yours about double-kick pedals. Lenny is intimidated.",
+src/content/zz_band_gravel_kings.js:694  [ch('Swap drummers for a song', { buzz: 8, drumSkill: 1 },
+src/content/zz_band_gravel_kings.js:695  'You play their blast beat; their drummer plays your backbeat. Nobody notices for a full verse. Then everybody notices. It rules.'),
+src/content/zz_band_gravel_kings.js:791  bet('Confidence', 'a legend or a fire extinguisher', 'Chase starts his run from the drum riser.', 0.4, 'buzz',
+src/content/zz_band_gravel_kings.js:865  'The drum kit moves downtown, onto the old till counter. Chase says 1985 lives wherever the counter goes. He may be right.'),
+src/content/zz_band_gravel_kings.js:952  "DIY distribution means boxes. Unit 4B is now half rehearsal space, half warehouse. The kit is still where the till was. The boxes " +
+src/content/zz_band_gravel_kings.js:1051  'He wears it over the mullet. Only the back sticks out. He calls it a "winter mullet". It trends locally for a week.')],
+src/content/zz_band_gravel_kings.js:1100  'Chase sings the first dance. The couple cries. The best man cries. The caterer cries. Tamara hands out tissues from her kit.'),
+src/content/zz_band_gravel_kings.js:1113  'A full drum kit on the light rail at rush hour. Commuters help carry the floor tom. Six of them come to the gig.')],
+src/content/zz_band_gravel_kings.js:1119  "on your snare drum, with 'TAMARA DID IT!' written on it.",
+src/content/zz_band_gravel_kings.js:1165  'Four plates, one drummer, one cassette. Everyone says what they are thankful for. Chase says "1985". Lenny says "voicemail".'),
+src/content/zz_band_gravel_kings.js:1167  'A holiday gig at a pub on Whyte. The turkey is served on stage. Chase uses a drumstick as a mic. You tip the chef.')],
+src/content/zz_band_gravel_kings.js:1386  card('shop_pawn_kit_gravel_kings', 'money', 'lenny', 'The Pawn Shop Kit', g({ era: GL, minWeek: 8, minFund: 1100 }),
+src/content/zz_band_gravel_kings.js:1387  "Lenny texts a photo from a pawn shop on 118th Avenue: a five-piece kit, shells that almost match, $800. Then: 'guy says $650 today. " +
+src/content/zz_band_gravel_kings.js:1390  'Three trips in the van. The first rehearsal sounds like a real band. The milk crate becomes a merch stand. Chase signs it.', '−$650 · a real kit: better sound'),
+src/content/zz_band_gravel_kings.js:1393  { mood: { lenny: -5 } }, 'He sells it to a church drummer while you haggle. Lenny sulks until Thursday.'),
+src/content/zz_band_gravel_kings.js:1474  "Tamara found Patreeon: superfans pay monthly, the band posts exclusives. Tiers: Drumstick, Snare, Full Kit. She has already " +
+src/content/zz_band_gravel_kings.js:1477  'Patreeon is live. First member: Gloria, Full Kit, at 7:01 a.m., mid-lap. Second member: Mom, Drumstick, "to be supportive".'),
+src/content/zz_band_gravel_kings.js:1611  "The producer wants 'a modern sound': drum samples, a click track, vocals tuned to perfection. Chase is appalled. Lenny is " +
+src/content/zz_band_gravel_kings.js:1612  "intrigued. The drum samples came pre-installed. They sound a lot like Steve #5.",
+src/content/zz_band_gravel_kings.js:1613  [ch('Real drums, real everything', { production: 2, drumSkill: 1 },
+src/content/zz_band_gravel_kings.js:1810  '{recruit} understands. Tamara gives {recruit} a floss kit and a reference letter. She is back at the wheel by Tuesday.'),
+src/content/zz_band_gravel_kings.js:1845  "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'."),
+src/content/zz_band_gravel_kings.js:1963  { when: 'difficultyHigh', text: "That's a lot of notes, drummer. I will be sliding through half of them on my knees." },
+src/content/zz_band_gravel_kings.js:1992  chase: ['Rock wants the backbeat: snare on 2 and 4, kick on 1 and 3. Then the chorus crashes. Then I slide.',
+src/content/zz_band_gravel_kings.js:1994  lenny: ['Keep the hats on 8ths and leave the snare on 2 and 4. Give me room in the bridge for a riff nobody owns.',
+src/content/zz_band_gravel_kings.js:1996  tamara: ['Kick on 1 and 3, snare on 2 and 4, hats steady. Around 120 is a safe rock tempo. Save it often.',
+src/content/zz_band_gravel_kings.js:2008  'Please stop putting your feet on the dash. It is a dash, not an ottoman.', 'I have a first-aid kit, a tire gauge, four toothbrushes and floss. We are fine.']
+src/content/zz_band_gravel_kings.js:2022  fill: ['I clapped on the fill. You kept up. Respect.', 'Did you hear me yell during the fill? That was a fill.', 'The fill was great. I was behind it, spiritually.'],
+src/content/zz_band_gravel_kings.js:2026  fill: ['Snuck a lick into the fill. You caught it. Respect.', 'Did you notice the run in bar eight? That was new. That was me.', 'Fill was tight. Tighter than a court date.'],
+src/content/zz_band_gravel_kings.js:2031  fill: ['Locked the fill with the kick. Clean. Hygienic.', 'I followed your fill. You were early. I forgave you.', 'Good fill. We are still home by midnight.'],
+src/content/zz_band_gravel_kings.js:2068  '{nick:chase} made us rehearse the knee slide. The drummer does not slide. The drummer still had to rehearse it.',
+src/content/zz_band_gravel_kings.js:2075  'We built a song around your backbeat. Tamara timed it: 3:40. Radio length. Home by midnight.',
+src/content/zz_band_gravel_kings.js:2086  'We pinned our number to the music-store corkboard, next to a lost cat and a used drum throne.',
+src/content/zz_band_gravel_kings.js:2087  "Tamara emailed every venue in {city} with a PDF press kit. Formatted. Paginated. They replied out of respect.",
+src/content/zz_band_gravel_kings.js:2132  'A cowboy hat hit the snare mid-fill. Chase put it on. He looked incredible. He kept it.'],
+src/content/zz_band_gravel_kings.js:2135  catalog: 'No songs yet. Lenny has riffs. Some of them might even be his. Write one on the kit.' },
+src/content/zz_band_gravel_kings.js:2140  'Your dad leaves the oil-patch job ads on your snare. Rig hand is circled. Twice.',
+src/content/zz_band_gravel_kings.js:2254  gongWon: '{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Tamara has made sure.',
+src/content/zz_band_gravel_kings.js:2259  { who: 'reporter', text: 'Is it true the Gong is a real gong?' }, { who: 'tamara', text: 'Yes. It does not go on the drum kit. I checked the contract.' }
+src/content/zz_band_gravel_kings.js:2315  ch('Earplugs for everyone', { burnout: -3, mood: { chase: -3 } }, 'T-Bone hands out earplugs from the first-aid kit. Chase keeps calling the race, silently, with his hands.')],
+src/content/zz_band_gravel_kings.js:2333  'You drive like you drum: steady on the straights, too fast in the fills. A photo radar van blinks at you on the ring road. Chase ' +
+src/content/zz_band_gravel_kings.js:2485  'Guitar, bass, drums, a man in leather pants. {album} belongs on vinyl, next to your father\'s records. Next to mine.'],
+src/content/zz_band_gravel_kings.js:2505  "Beneath the leather, {album} is a rigorous study of the backbeat. The bassist's restraint is the record's secret thesis."],
+src/content/zz_band_grid_road_ramblers.js:173  dayJob: 'Session drummer, by the hour',
+src/content/zz_band_grid_road_ramblers.js:174  bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, drummer to drummer.',
+src/content/zz_band_grid_road_ramblers.js:180  'Penalty Box Blues', 'Lift Kit Love', 'Tailgate (Acoustic, Colt Unplugged)', 'Half-Ton of Heartache', 'Tailgate Again'],
+src/content/zz_band_grid_road_ramblers.js:200  "{rival}'s session drummer left a show at exactly 10:00 p.m. The booked hour was over. The song was not.",
+src/content/zz_band_grid_road_ramblers.js:237  win: ["The crowd picks you. Brayden hockey-stops over to shake your hand and slides into the drum riser. You take {prize}.",
+src/content/zz_band_grid_road_ramblers.js:270  "Brayden does a hockey stop across the stage. In boots. He mostly sticks it.", "The session guy checks his watch between songs.",
+src/content/zz_band_grid_road_ramblers.js:275  openingSlot: ["Afterwards Brayden shakes your hand and asks if your drummer does truck ads. You are the drummer.",
+src/content/zz_band_grid_road_ramblers.js:286  solo: 'Colt: a solo, on a guitar that is not plugged in. The session guy covers it on the toms.',
+src/content/zz_band_grid_road_ramblers.js:301  "is that a hay bale drum stool?? genius. we're stealing it"
+src/content/zz_band_grid_road_ramblers.js:303  commentsExclusive: ["Subscribed at the Drumstick tier to support the scene! Expensing it to Prairie Titan. — Brayden",
+src/content/zz_band_grid_road_ramblers.js:357  outcome: "You mail Brayden a square bale with a note: 'For the drum stool. Good luck.' He sits on it for the show. Sheldon is livid." }
+src/content/zz_band_grid_road_ramblers.js:380  "Brayden hockey-stops over to your table to shake your hand. He mostly sticks it. Colt waves an unplugged cable.",
+src/content/zz_band_grid_road_ramblers.js:607  "before seeding. 'Bring the drummer,' he says. 'Drummers are good at lifting.'",
+src/content/zz_band_grid_road_ramblers.js:619  { id: 'grr_hay_throne', type: 'weird', speaker: 'duke', title: 'The Hay Bale Throne', gate: g({ maxWeek: 10 }),
+src/content/zz_band_grid_road_ramblers.js:620  text: "Your drum throne is a square bale. It is itchy. It sheds. It is slowly getting shorter because Vern's horse, Doris, comes in " +
+src/content/zz_band_grid_road_ramblers.js:624  outcome: 'A fence of pallets around the kit. Doris watches you from over it for the whole set, chewing. You play better with an audience.' },
+src/content/zz_band_grid_road_ramblers.js:626  outcome: 'A flake of hay by the door before every rehearsal. Doris eats it and leaves. The throne survives. Doris becomes a fan.' },
+src/content/zz_band_grid_road_ramblers.js:692  text: "The Quonset is a steel half-cylinder. Every snare hit comes back four times. Clementine has timed the echo: 0.8 seconds. " +
+src/content/zz_band_grid_road_ramblers.js:697  { label: 'Play with the echo', hint: 'Clementine ↑ · Drum skill ↑', effects: { mood: { clementine: 6 }, drumSkill: 1 },
+src/content/zz_band_grid_road_ramblers.js:725  outcome: 'A boot dryer from the Co-op, modified by Earl. The hat sits on it like a king. Duke calls it "the throne room".' }
+src/content/zz_band_grid_road_ramblers.js:736  outcome: 'You ask Lloyd if the auction needs a drummer.',
+src/content/zz_band_grid_road_ramblers.js:763  { id: 'grr_gophers', type: 'weird', speaker: 'duke', title: 'Gophers Under the Kit', gate: g({ era: GLS }),
+src/content/zz_band_grid_road_ramblers.js:764  text: "Your kick drum is sinking. The Quonset floor is dirt under the plywood, and the gophers have been busy. The kick is now four " +
+src/content/zz_band_grid_road_ramblers.js:765  "centimetres lower than the snare. Duke is on his belly, looking into a hole, making friends.",
+src/content/zz_band_grid_road_ramblers.js:768  outcome: 'Vern helps you pour a pad. The kit sits level for the first time. Your kick has never sounded so solid. The gophers relocate.' },
+src/content/zz_band_grid_road_ramblers.js:769  { label: 'Play around the tilt', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+src/content/zz_band_grid_road_ramblers.js:793  outcome: 'Earl leads Duke. Clementine leads Travis. You play the beat on a pail. It is chaos, then it is dancing, then it is lovely.' },
+src/content/zz_band_grid_road_ramblers.js:794  { label: 'Just play the beat', hint: 'Drum skill ↑', effects: { drumSkill: 1, mood: { earl: -4 } },
+src/content/zz_band_grid_road_ramblers.js:812  "It is minus five and falling. The kit is covered in straw. Clementine is playing in mittens.",
+src/content/zz_band_grid_road_ramblers.js:854  outcome: "Nobody moves. The band has never been so focused. Biscuit lies down, satisfied, by the kick drum. She is the band's stage manager now." },
+src/content/zz_band_grid_road_ramblers.js:893  outcome: "Found at 2 a.m. inside the kick drum. Nobody knows how. Earl holds it up to the light and tells you the story. All of it." },
+src/content/zz_band_grid_road_ramblers.js:957  outcome: "Acoustic, fiddle, you on brushes on a hay bale, Duke humming the bass. Rain on the steel roof. Nobody wants the power back." },
+src/content/zz_band_grid_road_ramblers.js:982  outcome: "Clementine says 'I know' in a flat voice and goes back to her spot. On the next song she plays the fill twice. It is a yes." },
+src/content/zz_band_grid_road_ramblers.js:1017  { label: 'Take the Tuesday gig', hint: '+$50 · Drum skill ↑', effects: { fund: 50, drumSkill: 1 },
+src/content/zz_band_grid_road_ramblers.js:1018  outcome: 'Marg blows the whistle when you drift off the tempo. You never drift again. You are now the tightest drummer in the southwest.' },
+src/content/zz_band_grid_road_ramblers.js:1054  { label: 'Keep playing', hint: 'Duke ↓ · Drum skill ↑', effects: { mood: { duke: -6 }, drumSkill: 1 },
+src/content/zz_band_grid_road_ramblers.js:1078  "good fiddle, the hat is a lot'. They would like to know why the drummer 'hits so hard'.",
+src/content/zz_band_grid_road_ramblers.js:1084  { label: 'Play louder, out of love', hint: 'Buzz ↑ · Drum skill ↑', effects: { buzz: 3, drumSkill: 1 },
+src/content/zz_band_grid_road_ramblers.js:1102  { label: 'Join her', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+src/content/zz_band_grid_road_ramblers.js:1118  outcome: 'Vern brings pickles. Biscuit gets the bone. It is less a rehearsal than a family dinner with a drum kit.' }
+src/content/zz_band_grid_road_ramblers.js:1132  text: "A dry spell and a hard wind. The dust got into the Quonset, the amps, the snare wires and Clementine's fiddle case. She opens " +
+src/content/zz_band_grid_road_ramblers.js:1136  outcome: 'A whole day with brushes and a shop vac. The gear shines. Clementine polishes her fiddle for two hours. It forgives you.' },
+src/content/zz_band_grid_road_ramblers.js:1138  outcome: 'Every snare hit puffs a little cloud. It looks amazing in the photos. The fiddle sounds like sandpaper. She plays it anyway.' },
+src/content/zz_band_grid_road_ramblers.js:1144  "strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
+src/content/zz_band_grid_road_ramblers.js:1242  text: "Mom has sent an itemized note: 'Square bales for drum stools, 6 @ $5. Coffee for coffee row, 40 @ $2. Hat dryer (Duke's).' It is " +
+src/content/zz_band_grid_road_ramblers.js:1246  outcome: 'You mail $100 with a photo of the hay bale throne. Mom frames the photo. She sends a new note: "Thank you! P.S. the rest."' },
+src/content/zz_band_grid_road_ramblers.js:1389  outcome: 'Forty autographs on receipts, a cap and one feed bag. Travis signs it "Travis Lee (the truck guy)". It sticks.' },
+src/content/zz_band_grid_road_ramblers.js:1466  success: { effects: { fans: 80, buzz: 12 }, outcome: 'The Ramblers with a full orchestra. Duke\'s hat has its own spotlight. You drum on a hay bale on a concert stage.' },
+src/content/zz_band_grid_road_ramblers.js:1545  fail: { effects: { burnout: 6 }, outcome: 'The heifers hate the snare. So does Vern. You are moved back to the Quonset by 3 a.m.' } } },
+src/content/zz_band_grid_road_ramblers.js:1779  outcome: 'Punk and country, one Quonset, two drummers. Their guitarist refuses to learn a third chord. Clementine respects it, somehow.' },
+src/content/zz_band_grid_road_ramblers.js:1836  { id: 'shop_pawn_kit_grid_road_ramblers', type: 'money', speaker: 'earl', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+src/content/zz_band_grid_road_ramblers.js:1837  text: "Earl calls from a pawn shop in Medicine Hat: a five-piece kit, shells that almost match, $800. 'Fella says $650 today. I played " +
+src/content/zz_band_grid_road_ramblers.js:1838  "with the drummer who pawned it. 1979. Good hands. The hay bale can stay, son. The milk crate cannot.'",
+src/content/zz_band_grid_road_ramblers.js:1840  { label: 'Buy it today ($650)', hint: '−$650 · a real kit: better sound', effects: { fund: -650, shop: { kit: 1 } },
+src/content/zz_band_grid_road_ramblers.js:1845  fail: { effects: { mood: { earl: -5 } }, outcome: 'The pawnbroker sells it to a church drummer mid-story. Earl finishes the story anyway. For the drummer.' } },
+src/content/zz_band_grid_road_ramblers.js:1846  outcome: "Earl leans on the counter. 'Let me tell you about this kit.'" },
+src/content/zz_band_grid_road_ramblers.js:1847  { label: 'Not yet', effects: { mood: { earl: -4 } }, outcome: 'The milk crate creaks. Doris eats a corner of the hay bale. Earl drives home without the kit, slowly.' }
+src/content/zz_band_grid_road_ramblers.js:1865  "section. He is holding your sticks hostage. He has done this before. In 1979. To a better drummer, he says.",
+src/content/zz_band_grid_road_ramblers.js:1868  outcome: 'Earl returns the sticks and plays you the solo. It is thirty-two bars of pure twang. The story in the middle is optional. It is not.' },
+src/content/zz_band_grid_road_ramblers.js:1872  outcome: 'Earl returns the sticks. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
+src/content/zz_band_grid_road_ramblers.js:2021  { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums." }
+src/content/zz_band_grid_road_ramblers.js:2141  text: "Clementine is back. {recruit} is sitting on her hay bale, playing her fills, out of tune. Clementine does not move. She just " +
+src/content/zz_band_grid_road_ramblers.js:2145  outcome: '{recruit} hands over the hay bale and the fills. Clementine tunes the whole band in silence and plays the first fill perfectly.' },
+src/content/zz_band_grid_road_ramblers.js:2240  'VIRAL: {player} drums on a hay bale so hard it bursts on the last hit, like confetti. {views} views.'
+src/content/zz_band_grid_road_ramblers.js:2260  'the drummer sits on hay. what next. a gopher on bass']
+src/content/zz_band_grid_road_ramblers.js:2274  { id: 'grr_gift_bale', from: 'a farmer near Kyle', text: 'A square bale "for the drum stool", tied with baler twine and a bow. Doris ate the bow.' },
+src/content/zz_band_grid_road_ramblers.js:2275  { id: 'grr_gift_jerky', from: 'the Gull Lake rink', text: 'Forty sticks of homemade jerky, labelled "for Duke". Duke shares one. With the hat.' },
+src/content/zz_band_grid_road_ramblers.js:2387  outcome: 'It goes up behind the kit. Vern stops in front of it every time he comes in. He finds his own cap from 1994.' },
+src/content/zz_band_grid_road_ramblers.js:2405  "Tiers: Drumstick, Snare, Full Kit. Wilf has already asked if he can pay by cheque.",
+src/content/zz_band_grid_road_ramblers.js:2408  outcome: 'Patreeon is live. First member: Wilf, Full Kit, by cheque, mailed. Second member: the hat fan club, collectively, Snare.' },
+src/content/zz_band_grid_road_ramblers.js:2588  gongWon: ['{band} won the Global Gong. It is a real gong. It does not go on the drum kit. Duke hangs his hat on it.'],
+src/content/zz_band_grid_road_ramblers.js:2735  { label: 'Just keep trying', hint: 'Drum skill ↑', effects: { drumSkill: 1, burnout: 3 },
+src/content/zz_band_grid_road_ramblers.js:2736  outcome: "On the fourth try you feel it: clutch, gas, a rhythm. It's a groove. You're a drummer. You drive in time from now on." }
+src/content/zz_band_grid_road_ramblers.js:2925  text: "The producer wants a click track. Earl has never played to a click. 'In 1979 we had a drummer,' he says, and points at you. " +
+src/content/zz_band_grid_road_ramblers.js:2926  "The producer points at the click. Earl points at you again. You are the drummer. Everyone is looking at you.",
+src/content/zz_band_grid_road_ramblers.js:2928  { label: 'No click. Follow the drummer.', hint: 'Drum skill ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
+src/content/zz_band_grid_road_ramblers.js:2930  { label: 'Click for the drums only', hint: 'Production ↑ · Earl ↑', effects: { production: 2, mood: { earl: 4 } },
+src/content/zz_band_grid_road_ramblers.js:3041  'The Culvert Kings', 'Loretta and the Lift Kits', 'The Stubble Jumpers', 'Grain Bin Gospel', 'The Coulee Crooners']);
+src/content/zz_band_grid_road_ramblers.js:3183  'Picking Rocks for Rent', 'Summerfallow Heart', 'Hay Bale Throne', 'Quonset Echo', 'Chinook Took the Door',
+src/content/zz_band_grid_road_ramblers.js:3232  awful: ['NOT METAL. A FIDDLE. A HAT. THE SINGER CRIES ABOUT A TRUCK. THE DRUMMER SITS ON HAY. THE DRUMMER IS THE ONLY SURVIVOR.',
+src/content/zz_band_grid_road_ramblers.js:3235  '{single} HAS A TRAIN BEAT. ALMOST A BLAST BEAT. ALMOST. THE DRUMMER IS TRYING. RESPECT THE DRUMMER.'],
+src/content/zz_band_grid_road_ramblers.js:3236  good: ['THE DRUMMER ON {album} PLAYS LIKE HAIL ON A QUONSET ROOF. WE ARE NOT COUNTRY. WE ARE LISTENING.',
+src/content/zz_band_grid_road_ramblers.js:3335  { when: 'difficultyHigh', text: 'Busy kit. In 1979 the drummer played less and we sold more records.' }]
+src/content/zz_band_grid_road_ramblers.js:3338  fills: ['(Clementine plays a fill. Four notes. One is Bach.)', 'I put a fiddle run in bar 12. Do not make it weird.', 'A small fill after the chorus. Tasteful. Unlike the rest.'],
+src/content/zz_band_grid_road_ramblers.js:3351  travis: ['Country loves a train beat: snare on every eighth, brushed if you can. It sounds like a truck on a grid road.',
+src/content/zz_band_grid_road_ramblers.js:3353  earl: ['Boom-chick. Kick on one and three, snare on two and four. That is the two-step. It has worked since 1947.',
+src/content/zz_band_grid_road_ramblers.js:3356  duke: ["Kick on the one. I'll be there. Probably.", 'Try the shuffle preset. It sounds like a horse walking. Doris approves.']
+src/content/zz_band_grid_road_ramblers.js:3381  fill: ['Travis Lee fills the gap with a "yeah!" It counts.', 'Travis Lee slaps the acoustic on the fill. Right on time.', 'Travis Lee drops a little G run into the gap. It lands.'],
+src/content/zz_band_grid_road_ramblers.js:3383  'Travis Lee jumps off the drum riser in his boots. He lands it. Mostly.'],
+src/content/zz_band_grid_road_ramblers.js:3390  fill: ['Earl drops a chicken-pickin\' lick into the gap. Of course he does.', 'Earl answers your fill with a twangy double-stop. Perfect.',
+src/content/zz_band_grid_road_ramblers.js:3391  'Earl slides a little run into the fill and tips his head at you.'],
+src/content/zz_band_grid_road_ramblers.js:3399  fill: ['Clementine answers the fill with a fiddle run. Tasteful. Devastating.', 'Clementine slides a double-stop into the gap and looks away like nothing happened.',
+src/content/zz_band_grid_road_ramblers.js:3409  fill: ['Duke rolls a little walk-up into the fill. Three notes. The right three.', 'Duke thumps the low string on the fill. The floor answers.',
+src/content/zz_band_grid_road_ramblers.js:3410  'Duke answers your fill with a nod and one perfect note.'],

@@ -66,6 +66,9 @@
 //   A.prerenderHit({ lane, variant, quality, genre, cap, sr }) -> Promise<AudioBuffer> + renderOffline({ lane, pre: buffer })
 //   (tests). Band voices reuse one envelope gain per port and voice (sharedEnv). The crowd's raw audio builds on the first
 //   garage entry ('career:new' / 'career:loaded'), no unlock needed: A.prewarm(). debug('audio') += global, prerender, crowdRaw.
+// v1.1 "Seats" stage 0 (plan_contract_1.1 §4.5; Lane D owns the real ones): A.seatKinds(genre, seat) -> [kind] (C.SEAT_KINDS,
+//   confirmed against this file's timeline); stubs A.pluck / A.strum / A.lead (midi, when, opts { len, hold, kind }) -> null
+//   (Lane D: a handle) and A.release(handle, when) -> null. The timeline takes no opts.mute / opts.part / opts.seat yet.
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -1765,6 +1768,16 @@
     return player(pattern, opts, { rig: rig });
   };
   A.stop = function () { if (current) current.stop(); };
+  // v1.1 "Seats" (stage 0): the timeline kinds that make a seat's part (C.SEAT_KINDS; unknown genre -> metal, unknown seat
+  // -> drums) and no-op stubs for the string seats' playable voices (Lane D replaces them; same booking rules as A.hit).
+  A.seatKinds = function (genre, seat) {
+    var K = (GG.contracts && GG.contracts.SEAT_KINDS) || {}, g = K[genre] || K.metal || { drums: ['drum'] };
+    return (g[seat] || g.drums || ['drum']).slice();
+  };
+  A.pluck = function () { return null; };
+  A.strum = function () { return null; };
+  A.lead = function () { return null; };
+  A.release = function () { return null; };
   // One drum hit right now (the sequencer's cells, the gig's taps), in the current song's kit and room.
   var previewPort = null, schedPort = null, taps = {};
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).

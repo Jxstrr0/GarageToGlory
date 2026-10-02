@@ -7,6 +7,8 @@
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
 //   v0.7.2 kick2(): a double kick's second hit (the left foot on the double pedal, the kick shell pulses); info().kick2s
+//   v1.1 stage 0: setup({ ..., seat }) is stored (default state.seat || 'drums'; info().seat) and otherwise ignored (Lane C:
+//   the seat camera, your instrument, the swapped drummer on the riser).
 // v0.6 (RIVALUI): setup({ ..., rival: true, members: GG.rival.lineup (corpsePaint / stageShirt / defector), drummer: { look,
 //   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
 //   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
@@ -259,6 +261,7 @@
         G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
+        seat: cfg.seat || st.seat || 'drums',   // v1.1 stage 0: stored only (info().seat)
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         rivalId: cfg.rivalId || (cfg.rival ? (st.rival && st.rival.id) || (band && band.rival) || null : null),         // v0.9: the rival's cast
         banner: cfg.banner || '', bannerSub: cfg.sub || '',
@@ -1964,7 +1967,7 @@
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0,
+          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
           mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
           props: K.rivalProps.slice(), session: K.session, drummer: K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
           xs: K.band.map(function (r) { return +r.bx.toFixed(2); }),

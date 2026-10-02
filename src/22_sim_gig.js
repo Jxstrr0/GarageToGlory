@@ -388,8 +388,12 @@
     if (o.doubles !== false) notes = doubles(notes, gig.DOUBLE_GAP).notes;   // v0.7.2 double kicks
     if (o.difficulty && diffOf(o.difficulty).laneGap) notes = thin(notes, diffOf(o.difficulty));
     var total = 0, dbl = 0; notes.forEach(function (n) { if (!n.free) total++; if (n.dbl) dbl++; });
-    return { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
+    var out = { songId: song && song.id || null, title: song && song.title || '', bpm: p.bpm, spb: spb, lanes: p.lanes,
       duration: GG.songs.seconds(p), notes: notes, auto: tt.auto, total: total, doubles: dbl, extras: extras, fills: fills, solos: solos, sections: sections };
+    // v1.1 stage-0 stub (plan_contract_1.1 §4.5; Lane B builds the string charts): o.seat is accepted and every seat gets
+    // the drum chart; chart.seat says which seat asked, chart.stub that the notes are still the drums.
+    if (o.seat != null) { out.seat = o.seat; out.stub = o.seat !== 'drums'; }
+    return out;
   };
 
   /* ---- Setlists ------------------------------------------------------------------------------------------ */

@@ -441,10 +441,11 @@
       homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
       city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
       band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you',
-      instrument: 'drums', drummer: 'you'   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      instrument: 'drums', drummer: 'you',   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums'   // v1.1: the drum seat's words (C.SEAT_TOKENS.drums)
     };
   };
-  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer)\}/g;
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer|gear|sticks|yourPart|seat)\}/g;
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);

@@ -259,6 +259,18 @@
     });
   });
 
+  // ---- v1.1 "Seats": the seat-swap table (handoff E3; stage 0, lead; Lane A owns this file from here) -------------------
+  // seats[seat] = the member who moves to the drum kit when you take that seat (drums: nobody, no entry). A member whose
+  // role sings ('vocals...') sings from the kit (seatRole 'drums/vocals'): Rox, Chase (Gravel Kings has no rhythm guitarist:
+  // your rhythm seat is new and Chase drums + sings, S5) and Travis Lee (S6). Clementine always fiddles; Marcel always sings.
+  var V11_SEATS = {
+    hail_damage: { bass: 'kenji', rhythm: 'jaxon', lead: 'dana' },
+    frost_heave: { bass: 'moth', rhythm: 'rox', lead: 'benny' },
+    gravel_kings: { bass: 'tamara', rhythm: 'chase', lead: 'lenny' },
+    grid_road_ramblers: { bass: 'duke', rhythm: 'travis', lead: 'earl' }
+  };
+  Object.keys(V11_SEATS).forEach(function (id) { bands[id].seats = V11_SEATS[id]; });
+
   GG.content.bands = bands;
   GG.content.rivals = rivals;
 })(window.GG);
