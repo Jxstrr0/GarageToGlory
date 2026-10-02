@@ -210,6 +210,7 @@ test('v1.0: 12_meta core: empty/blocked storage, idempotent recordCareer, career
   eq([blocked.meta.hof().length, quota.length], [1, 0], 'memory fallback (no quota event without working storage)');
 
   const store = load.fakeStorage(), GG = load({ localStorage: store });
+  GG.legacy = null;   // this test pins the basic (no-Legacy) entry mechanics; the real GG.legacy scores are covered in sim_legacy/sim_meta
   GG.meta.load();
   eq(GG.meta.get().scanned, GG.VERSION, 'an empty install scans once');
   const ended = GG.save.migrate(fixture('v09_ended').state), added = [];
@@ -254,6 +255,7 @@ test('v1.0: the one-time slot scan (v0.9 fixtures): past4 once per career, ended
   const store = load.fakeStorage();
   ['1', '2', '3'].forEach((slot, i) => store._map.set('gg.v1.slot.' + slot, JSON.stringify(fixture(FIX[i]))));
   const GG = load({ localStorage: store });
+  GG.legacy = null;   // simulate the pre-Legacy boot; the stub below stands in for GG.legacy
   GG.meta.load();
   eq([GG.meta.get().careers.past4, GG.meta.get().scanned, GG.meta.hof().length], [3, null, 0], 'no GG.legacy yet: past4 counted, the ended slot waits');
   GG.meta.load();
