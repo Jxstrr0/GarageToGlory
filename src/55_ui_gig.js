@@ -18,6 +18,7 @@
 //   Auto-kick, auto notes and second kicks go out on the band grid from the pump. The calibration's audio offset is not
 //   used (the highway draws + the visual offset only). Off = classic timing (0.8.2: judged minus the audio offset, taps
 //   sound 'now'; the count-in / Auto-kick / auto notes stay on the band grid). See the "drum sync" block below.
+// v1.0.1 smart bridge: one touch on the seam between two lanes hits both only when both have a note due (see onDown).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
 // v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6); the results show r.merch.
 // v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
@@ -594,8 +595,22 @@
     if (!r || ev.clientY < r.top || ev.clientY > r.bottom || ev.clientX < r.left || ev.clientX > r.right) return;
     if (ev.cancelable) ev.preventDefault();
     wake();
-    var li = Math.floor((ev.clientX - r.left) / (r.width / G.lanes));
-    tap(col(li < 0 ? 0 : li >= G.lanes ? G.lanes - 1 : li), ev.timeStamp, true);
+    var x = (ev.clientX - r.left) / (r.width / G.lanes), li = U.clamp(Math.floor(x), 0, G.lanes - 1), fr = x - li;
+    var nb = fr < BRIDGE && li > 0 ? li - 1 : fr > 1 - BRIDGE && li < G.lanes - 1 ? li + 1 : -1;   // v1.0.1 smart bridge: the seam
+    if (nb >= 0 && G.mode === 'play') {
+      var at = tapTime(ev.timeStamp);
+      if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) { tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1; return; }
+    }
+    tap(col(li), ev.timeStamp, true);
+  }
+  // v1.0.1 smart bridge: a touch within BRIDGE lane widths of a lane boundary (the middle third of the gap between the two
+  // lane centres) hits BOTH lanes only when both have a note judge() would hit at this touch's time (ses.due: pure); else
+  // only the nearer lane (as before). Each lane is a normal tap (judged, its drum booked per lane), so a bridge never adds
+  // a stray. The second tap ('bridge') skips the dispatch sample (one touch, one sample). Keys never bridge.
+  var BRIDGE = 1 / 6;
+  function tapTime(stamp) {
+    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
+    return heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);
   }
   function onKey(ev) {
     if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
@@ -605,9 +620,9 @@
     tap(col(li), ev.timeStamp, false);
   }
   function tap(li, stamp, touch) {
-    var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, s0 = ok ? stamp : now, r;   // some browsers stamp events on another time base: trust it only if it's recent
-    if (ok && touch && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
-    var at = heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);   // v0.6.1: calibration (classic only, v0.8.3)
+    var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
+    if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
+    var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
     if (at < -0.4) { playTap(li, at, null); stageCall('hit', C.LANES[li], 'good'); return; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
@@ -1022,7 +1037,7 @@
         offset: G.lastTap.offset, snap: G.lastTap.snap, due: G.lastTap.due, disp: G.lastTap.disp } : null,
       sync: G.sync, D: G.D, K: G.K, latD: G.latD, zeroBand: G.zeroBand, zero: G.zero, spb: ch ? ch.spb : null, vis: G.drawOff,   // v0.8.3 drum sync
       tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
-      dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, hats: G.hatN, hatSkip: G.hatSkip,
+      dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
       akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null };
   });
 })(window.GG);

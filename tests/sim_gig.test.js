@@ -208,6 +208,22 @@ test('session: judging, fill taps, strays, liveGig saves between songs and resum
   eq(events, [1, 2]); eq(r.songResults.length, 3); eq(r.songResults[0].perfect, 1); eq(saved.liveGig.index, 3);
 });
 
+test('due (v1.0.1 smart bridge): pure "would judge hit a note here", matches judge()', () => {
+  const s = decent(9), g = legion(s), ses = GG.gig.session(s, g, null, { emit: false }), W = ses.windows;
+  const ch = ses.startSong(), n = ch.notes.filter(x => !x.free);
+  const alone = x => ch.notes.every(y => y === x || y.lane !== x.lane || Math.abs(y.t - x.t) > 0.5);
+  const a = n.find((x, i) => i > 2 && alone(x)), snap = JSON.stringify([ses.crowd, ses.combo, a.j]);
+  eq(ses.due(a.lane, a.t), true); eq(ses.due(a.li, a.t + W.good * 0.9), true);
+  eq(ses.due(a.lane, a.t + W.good + 0.05), false); eq(ses.due(a.lane, a.t - W.good - 0.05), false);
+  eq(ses.due(99, a.t), false); eq(ses.due('nope', a.t), false);
+  eq(JSON.stringify([ses.crowd, ses.combo, a.j]), snap, 'due() changes nothing');
+  eq(ses.judge(a.lane, a.t).judgement, 'perfect'); eq(ses.due(a.lane, a.t), false, 'a hit note is no longer due');
+  const other = () => n.find(x => x.lane !== a.lane && alone(x) && x.t > a.t + 1);
+  const b = other(); eq(ses.due(b.lane, b.t), !!ses.judge(b.lane, b.t).note);
+  const k = GG.gig.session(decent(9), legion(decent(9)), null, { emit: false, autoKick: true }), kc = k.startSong(), kn = kc.notes.find(x => x.lane === 'kick' && !x.free);
+  if (kn) eq(k.due('kick', kn.t), false, 'Auto-kick lanes are never due');
+  eq(GG.gig.session(decent(9), legion(decent(9)), null, { emit: false }).due('kick', 0), false, 'no song yet');
+});
 test('stale songs score less; classics get a cheer; setlist opener + closer bonus', () => {
   const s1 = decent(11, 1), s2 = decent(11, 1), s3 = decent(11, 1);
   s2.songs[0].stale = 90; s3.songs[0].classic = true;
