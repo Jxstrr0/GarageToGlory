@@ -553,6 +553,7 @@
       stage: 0, want: null, exit: null, gripe: null,
       recruit: { trait: c.trait, quirk: c.quirk, hometown: c.hometown, askingCut: c.askingCut, stars: c.stars, chemistry: c.chemistry },
       look: c.look };
+    m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(state, m) : m.role;   // v1.1 (Lane B: a drum-seat hole)
     state.members.push(m);
     clampStat(state, 'chemistry', state.chemistry + (c.chemistry - state.chemistry) * E.hireChemPull);
     if (state.fillIns) delete state.fillIns[ad.role];

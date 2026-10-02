@@ -1291,7 +1291,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
     'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
-    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
+  C.SEAT_GATE_KEYS = ['seat', 'swapped'];
 
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
@@ -1533,7 +1534,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
                                             member (a singer keeps singing from the kit), else the content role. Content
                                             `role` stays the source of truth for everything else (wants, quits, recruits).
      gear.seatLanes: { bass: 4..5, rhythm: 4..6, lead: 4..6 }   gear.runs: { bass, rhythm, lead }: bool (the seat's run gear)
-       (the drum seat keeps gear.lanes / gear.doubleKick; a seat's lane-5/6/run purchase also grows the band's kit, §4.6)
+       STRING SEATS ONLY: a drum-seat career keeps v1.0's exact gear object (the regression baseline; four v1.0 tests
+       deep-compare it), so readers use GG.career.seatLanes(state) / seatRuns(state) (drums: gear.lanes / gear.doubleKick).
+       A seat's lane-5/6/run purchase also grows the band's kit (gear.lanes / owned / doubleKick), plan_contract_1.1 §4.6.
      player.gearLook: GEAR_LOOK (C.GEAR_LOOK default; drums keep player.kit)
      flags.bassArc 'legend'|'secret'|'quiet' · rhythmArc 'credited'|'unsung'|'engine' · leadArc 'guitarHero'|'bandFirst'|'soloAlbum'
      SONG.pattern.part?: PART (string seats only; drum-seat songs never have one)
@@ -1545,7 +1548,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      (2-lane, Hard/Expert, rhythm), run?: true (a merged fast repeat; t2 = the run's end), auto notes as drums.
    bands.<id>.seats = { bass: memberId, rhythm: memberId, lead: memberId } (E3; Gravel Kings rhythm = 'chase', who drums and
      sings). GG.career: seatOf(state), seatSwap(bandId, seat) -> memberId|null (drums -> null), swapped(state) -> memberId|null,
-     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x).
+     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x),
+     seatLanes(state), seatRuns(state) (drums: gear.lanes / gear.doubleKick).
    Stage-0 stubs (lanes replace): gig.chart(song, { seat }) = the drum chart; GG.audio.pluck|strum|lead(midi, when, opts) and
      release(handle, when) -> null; GG.audio.seatKinds(genre, seat) -> C.SEAT_KINDS; GG.render.stage.setup({ seat }) is
      stored (info().seat) and otherwise ignored.
@@ -21294,7 +21298,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     s.members.forEach(function (m) {
       if (typeof m.seatRole !== 'string' || !m.seatRole) m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(s, m) : m.role;
     });
-    seatGear(s.gear);
+    if (s.seat !== 'drums') seatGear(s.gear);   // string seats only: a drum career's gear stays v1.0's exact object
     if (s.player && typeof s.player === 'object' && !Array.isArray(s.player)) s.player.gearLook = gearLook(s.player.gearLook);
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
@@ -22132,7 +22136,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        -> null) ; swapped(state) -> the swapped drummer's id for this career | null ; seatRoleFor(state, member) ;
        lineup(state) -> [{ id: 'player'|memberId, seatRole }] (player first, then active members in band order) ;
        drummerId(state) -> the active member on the kit | null (the drum seat: null) ; seatOk(state, x) -> x.seat / x.swapped
-       hold (a card, a gate, a line)
+       hold (a card, a gate, a line) ; seatLanes(state) / seatRuns(state) (drums: gear.lanes / gear.doubleKick)
      ====================================================================== */
   var SEAT_FALLBACK = { bass: [/bass/], rhythm: [/rhythm/, /vocals\/(guitar|acoustic)/, /^vocals$/], lead: [/lead/, /^guitar$/] };
   career.seatOf = function (state) { var s = state && state.seat; return C.SEATS.indexOf(s) >= 0 ? s : 'drums'; };
@@ -22169,6 +22173,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (v === false) return !id;
     return !!id && (v === true || [].concat(v).indexOf(id) >= 0);
   }
+  career.seatLanes = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    if (seat === 'drums') return isFinite(g.lanes) ? g.lanes : 4;
+    var n = g.seatLanes && g.seatLanes[seat];
+    return isFinite(n) ? Math.max(4, Math.min(C.SEAT_MAX_LANES[seat], n)) : 4;
+  };
+  career.seatRuns = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    return seat === 'drums' ? !!g.doubleKick : !!(g.runs && g.runs[seat]);
+  };
   career.seatOk = function (state, x) {
     if (!x || typeof x !== 'object') return true;
     return (x.seat == null || seatGate(state, x.seat)) && (x.swapped == null || swappedGate(state, x.swapped));
@@ -22696,7 +22710,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
       members: makeMembers(band), songs: [], pendingSongs: [], draft: null,
-      gear: { lanes: 4, doubleKick: false, seatLanes: { bass: 4, rhythm: 4, lead: 4 }, runs: { bass: false, rhythm: false, lead: false } },   // v1.1 seat gear
+      gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -22712,6 +22726,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false }
     };
     state.members.forEach(function (m) { m.seatRole = career.seatRoleFor(state, m); });   // v1.1: the swapped member drums
+    if (state.seat !== 'drums') {   // v1.1: string seats only (a drum career's gear stays v1.0's exact object)
+      state.gear.seatLanes = { bass: 4, rhythm: 4, lead: 4 };
+      state.gear.runs = { bass: false, rhythm: false, lead: false };
+    }
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts
@@ -28851,6 +28869,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       stage: 0, want: null, exit: null, gripe: null,
       recruit: { trait: c.trait, quirk: c.quirk, hometown: c.hometown, askingCut: c.askingCut, stars: c.stars, chemistry: c.chemistry },
       look: c.look };
+    m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(state, m) : m.role;   // v1.1 (Lane B: a drum-seat hole)
     state.members.push(m);
     clampStat(state, 'chemistry', state.chemistry + (c.chemistry - state.chemistry) * E.hireChemPull);
     if (state.fillIns) delete state.fillIns[ad.role];

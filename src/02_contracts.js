@@ -156,12 +156,15 @@
   //   flags:[names that must be truthy]  notFlags:[names that must be falsy]
   //   flagEquals:{ name: value }          gigBooked:true|false
   //   moodBelow:{ memberId: n }  moodAbove:{ memberId: n }
-  //   v1.1 seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] | true (someone is the swapped drummer) |
-  //     false (nobody: the drum seat). The drum seat never matches swapped: true / an id. Lines and cards may also carry
-  //     seat / swapped at the top level (career.seatOk; cardOk and speakerOk(state, who, line) honour both).
   C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
     'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
-    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
+  // v1.1 "Seats" gate keys (career.gatePasses evaluates them like GATE_KEYS; kept in their own list until Lane B's
+  // sim_career gate test covers them, then the lead folds them into GATE_KEYS; Lane A's content.test accepts both lists):
+  //   seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] | true (someone is the swapped drummer) |
+  //     false (nobody: the drum seat). The drum seat never matches swapped: true / an id. Lines and cards may also carry
+  //     seat / swapped at the top level (career.seatOk; cardOk and speakerOk(state, who, line) honour both).
+  C.SEAT_GATE_KEYS = ['seat', 'swapped'];
 
   /* ======================================================================
    CAREER STATE (GG.state in the browser; plain JSON, saved as-is)
@@ -433,7 +436,9 @@
                                             member (a singer keeps singing from the kit), else the content role. Content
                                             `role` stays the source of truth for everything else (wants, quits, recruits).
      gear.seatLanes: { bass: 4..5, rhythm: 4..6, lead: 4..6 }   gear.runs: { bass, rhythm, lead }: bool (the seat's run gear)
-       (the drum seat keeps gear.lanes / gear.doubleKick; a seat's lane-5/6/run purchase also grows the band's kit, §4.6)
+       STRING SEATS ONLY: a drum-seat career keeps v1.0's exact gear object (the regression baseline; four v1.0 tests
+       deep-compare it), so readers use GG.career.seatLanes(state) / seatRuns(state) (drums: gear.lanes / gear.doubleKick).
+       A seat's lane-5/6/run purchase also grows the band's kit (gear.lanes / owned / doubleKick), plan_contract_1.1 §4.6.
      player.gearLook: GEAR_LOOK (C.GEAR_LOOK default; drums keep player.kit)
      flags.bassArc 'legend'|'secret'|'quiet' · rhythmArc 'credited'|'unsung'|'engine' · leadArc 'guitarHero'|'bandFirst'|'soloAlbum'
      SONG.pattern.part?: PART (string seats only; drum-seat songs never have one)
@@ -445,7 +450,8 @@
      (2-lane, Hard/Expert, rhythm), run?: true (a merged fast repeat; t2 = the run's end), auto notes as drums.
    bands.<id>.seats = { bass: memberId, rhythm: memberId, lead: memberId } (E3; Gravel Kings rhythm = 'chase', who drums and
      sings). GG.career: seatOf(state), seatSwap(bandId, seat) -> memberId|null (drums -> null), swapped(state) -> memberId|null,
-     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x).
+     seatRoleFor(state, member), lineup(state) -> [{ id: 'player'|memberId, seatRole }], drummerId(state), seatOk(state, x),
+     seatLanes(state), seatRuns(state) (drums: gear.lanes / gear.doubleKick).
    Stage-0 stubs (lanes replace): gig.chart(song, { seat }) = the drum chart; GG.audio.pluck|strum|lead(midi, when, opts) and
      release(handle, when) -> null; GG.audio.seatKinds(genre, seat) -> C.SEAT_KINDS; GG.render.stage.setup({ seat }) is
      stored (info().seat) and otherwise ignored.

@@ -233,12 +233,12 @@
     if (typeof s.tutorial.past4 !== 'boolean') s.tutorial.past4 = s.totalWeek >= 4;
     // v1.1 "Seats" (SAVE_SCHEMA stays 10; 02_contracts V1.1 SEATS): fill when missing, never overwrite, no events. Old
     // saves are drummers. A member without a seatRole gets GG.career.seatRoleFor (the swapped drummer: 'drums' or
-    // 'drums/vocals'; everyone else: their role).
+    // 'drums/vocals'; everyone else: their role). gear.seatLanes / gear.runs exist on string-seat careers only.
     if (C.SEATS.indexOf(s.seat) < 0) s.seat = 'drums';
     s.members.forEach(function (m) {
       if (typeof m.seatRole !== 'string' || !m.seatRole) m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(s, m) : m.role;
     });
-    seatGear(s.gear);
+    if (s.seat !== 'drums') seatGear(s.gear);   // string seats only: a drum career's gear stays v1.0's exact object
     if (s.player && typeof s.player === 'object' && !Array.isArray(s.player)) s.player.gearLook = gearLook(s.player.gearLook);
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };

@@ -552,7 +552,7 @@ function report() {
   }
   if (tt) L.push('## Time to interactive (median of ' + (tt.trials.length / Math.max(1, Object.keys(tt.median).length)) + '): x1 ' + (tt.median.x1 ? tt.median.x1.tti : '-') + ' ms (before ' + BEFORE.tti.x1 + ') | x4 ' + (tt.median.x4 ? tt.median.x4.tti : '-') + ' ms (before ' + BEFORE.tti.x4 + ')' +
     (btt && btt.median ? ' | same-run before: x1 ' + (btt.median.x1 ? btt.median.x1.tti : '-') + ' / x4 ' + (btt.median.x4 ? btt.median.x4.tti : '-') + ' ms' : ''));
-  if (sz) L.push('## Size: dist/game.html ' + sz.bytes + ' B (gate <= 4,250,000 ' + ok(sz.bytes <= 4250000) + '), gzip-9 ' + sz.gzip + ' B');
+  if (sz) L.push('## Size: dist/game.html ' + sz.bytes + ' B (gate <= 5,000,000 (v1.1, E14) ' + ok(sz.bytes <= 5000000) + '), gzip-9 ' + sz.gzip + ' B');
   const txt = L.join('\n') + '\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, txt);

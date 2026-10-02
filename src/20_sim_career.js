@@ -259,7 +259,7 @@
        -> null) ; swapped(state) -> the swapped drummer's id for this career | null ; seatRoleFor(state, member) ;
        lineup(state) -> [{ id: 'player'|memberId, seatRole }] (player first, then active members in band order) ;
        drummerId(state) -> the active member on the kit | null (the drum seat: null) ; seatOk(state, x) -> x.seat / x.swapped
-       hold (a card, a gate, a line)
+       hold (a card, a gate, a line) ; seatLanes(state) / seatRuns(state) (drums: gear.lanes / gear.doubleKick)
      ====================================================================== */
   var SEAT_FALLBACK = { bass: [/bass/], rhythm: [/rhythm/, /vocals\/(guitar|acoustic)/, /^vocals$/], lead: [/lead/, /^guitar$/] };
   career.seatOf = function (state) { var s = state && state.seat; return C.SEATS.indexOf(s) >= 0 ? s : 'drums'; };
@@ -296,6 +296,17 @@
     if (v === false) return !id;
     return !!id && (v === true || [].concat(v).indexOf(id) >= 0);
   }
+  // The highway lane count / run gear for the player's seat (drums: gear.lanes / gear.doubleKick, as v1.0).
+  career.seatLanes = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    if (seat === 'drums') return isFinite(g.lanes) ? g.lanes : 4;
+    var n = g.seatLanes && g.seatLanes[seat];
+    return isFinite(n) ? Math.max(4, Math.min(C.SEAT_MAX_LANES[seat], n)) : 4;
+  };
+  career.seatRuns = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    return seat === 'drums' ? !!g.doubleKick : !!(g.runs && g.runs[seat]);
+  };
   career.seatOk = function (state, x) {
     if (!x || typeof x !== 'object') return true;
     return (x.seat == null || seatGate(state, x.seat)) && (x.swapped == null || swappedGate(state, x.swapped));
@@ -872,7 +883,7 @@
       fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
       members: makeMembers(band), songs: [], pendingSongs: [], draft: null,
-      gear: { lanes: 4, doubleKick: false, seatLanes: { bass: 4, rhythm: 4, lead: 4 }, runs: { bass: false, rhythm: false, lead: false } },   // v1.1 seat gear
+      gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -892,6 +903,10 @@
       bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false }
     };
     state.members.forEach(function (m) { m.seatRole = career.seatRoleFor(state, m); });   // v1.1: the swapped member drums
+    if (state.seat !== 'drums') {   // v1.1: string seats only (a drum career's gear stays v1.0's exact object)
+      state.gear.seatLanes = { bass: 4, rhythm: 4, lead: 4 };
+      state.gear.runs = { bass: false, rhythm: false, lead: false };
+    }
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts

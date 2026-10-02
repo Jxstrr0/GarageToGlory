@@ -12,8 +12,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge).
-- Next: **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; draft contract `plan/plan_contract_1.1.md`, re-audit it at
-  its stage 0; the size gate leaves ~270 KB under 4.5 MB) → **1.2 "Tuning"** (D5).
+- Next: **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; contract `plan/plan_contract_1.1.md`, finished at stage 0
+  2026-10-02 on `v1.1-seats`, VERSION 1.1.0.0; size gate **5,000,000 B** per E14) → **1.2 "Tuning"** (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -599,7 +599,7 @@ Later versions:
 ## Addendum 3 — pending
 - [x] v1.0: seat-aware where E12 says (`HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}` tokens, lessons
       and achievements gated `seat: ['drums']` for drum words, epilogue `seatRole` hooks, Legacy seat-neutral) — merged 2026-10-02
-- [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md` (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview)
+- [x] v1.1 stage 0: fresh audits, `plan/plan_contract_1.1.md` finished (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview) — 2026-10-02 on `v1.1-seats` (contract §3)
 - [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
 - [ ] v1.2 Tuning (D5) covers all four seats
 
@@ -1211,6 +1211,22 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.1 stage 0** (2026-10-02, `v1.1-seats`; shapes in `02_contracts.js` V1.1 SEATS, contract §3/§4):
+  - Contracts: `C.SEATS`, `C.SEAT_MAX_LANES { drums 6, bass 5, rhythm 6, lead 6 }`, `C.SEAT_KINDS` (confirmed on the real timeline:
+    metal rhythm gtr+gtr2 / lead gtr+lead; punk rhythm gtr / lead gtr+lead; rock rhythm gtr2+clean (Lane D adds a seat layer) /
+    lead gtr+lead; country rhythm clean (the acoustic strum) / lead twang; bass = bass; drums = drum), `C.SEAT_TOKENS`, `C.TOKENS +=
+    gear sticks yourPart seat`, `C.ROLE_ALIASES += '@drummer'`, `C.SEAT_GATE_KEYS ['seat', 'swapped']` (fold into GATE_KEYS once
+    sim_career's gate test covers them), `C.GEAR_SHAPES / GEAR_GUARDS / GEAR_LOOK`; events `gig:hold`, `seat:picked`. SAVE_SCHEMA 10.
+  - State (migrate fills, no events; newCareer the same): `seat` ('drums' for old saves), `members[].seatRole`, string seats only
+    `gear.seatLanes { bass, rhythm, lead }` + `gear.runs` (a drum career's gear stays v1.0's object), `player.gearLook`.
+  - `GG.career`: `seatOf, seatSwap(bandId, seat), swapped, seatRoleFor, lineup, drummerId, seatLanes, seatRuns, seatOk`,
+    `speakerOk(state, who, line)`; gates `seat` / `swapped` (gatePasses, cardOk top level + gate, cameo too); tokens per seat
+    (drums = v1.0: drums / you / kit / sticks / the beat / drums). `bands.<id>.seats` (E3). Recruits get `seatRole` at hire.
+  - Stubs: `gig.chart(song, { seat })` = the drum chart + `seat`, `stub`; `GG.audio.seatKinds`, `pluck/strum/lead/release` → null;
+    `GG.render.stage.setup({ seat })` stored (`info().seat`); `GG.main.newCareer/quickStart({ seat })`, `?quick=1&seat=bass`.
+  - Tools/tests: `tools/seat_audit.js` → `plan/seat_audit.txt` (530 lines); `tools/make_fixtures_v10.js` →
+    `tests/fixtures/v10_recruit.json.gz` (1.0.1.0 Ramblers, a recruit + a quit original); `tests/sim_seats.test.js`; save.test +2;
+    `tools/perf.js` size gate 5,000,000. Drum regression: 8 seeded 3-year bot careers byte-identical to 1.0.1.0.
 - **v1.0.1**: `GG.gig.session(...).due(lane, t)` -> bool: judge(lane, t) would hit a note (pure; the smart bridge asks it);
   `stats()` adds `stray`.
 - **v1.0 "Glory" (merged 2026-10-02; the lane APIs are folded into `02_contracts.js` "As merged")**:

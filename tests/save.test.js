@@ -338,4 +338,52 @@ test('v1.0: a code with _meta stays under CODE_MAX by carrying fewer Hall of Fam
   ok(same(GG.save.readCode(cut).state, GG.save.readCode(full).state), 'the career itself is untouched');
 });
 
+// ---- v1.1 stage 0: the seat fields (plan_contract_1.1 §3/§4.1). Old saves are drummers: seat 'drums', seatRole = role, the
+// gear object untouched (gear.seatLanes / gear.runs exist on string-seat careers only), player.gearLook = C.GEAR_LOOK. ----
+const FIX11 = FIX.concat(['v10_recruit']);
+const V11 = s => ({ seat: s.seat, roles: s.members.map(m => m.id + ':' + m.seatRole), gear: [s.gear.seatLanes, s.gear.runs], look: s.player.gearLook });
+
+test('v1.1: v0.9 + v1.0 fixtures (and the v0.1 save) migrate as drummers, idempotent, rng untouched, no events', () => {
+  const GG = load({ localStorage: load.fakeStorage() }), C = GG.contracts;
+  const evs = []; const emit = GG.emit; GG.emit = function (n) { evs.push(n); return emit.apply(this, arguments); };
+  eq(fixture('v10_recruit').version, '1.0.1.0', 'v10_recruit is a 1.0.1.0 slot record');
+  FIX11.concat(['v01']).forEach(name => {
+    const src = name === 'v01' ? JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'save_v01.json'), 'utf8')).state : fixture(name).state;
+    ok(!('seat' in src) && src.members.every(m => !('seatRole' in m)) && !(src.player && 'gearLook' in src.player), name + ' has none of the v1.1 fields');
+    const m = GG.save.migrate(JSON.parse(JSON.stringify(src)));
+    eq(V11(m), { seat: 'drums', roles: m.members.map(x => x.id + ':' + x.role), gear: [undefined, undefined], look: C.GEAR_LOOK }, name + ' defaults');
+    ok(!('seatLanes' in m.gear) && !('runs' in m.gear), name + ' drum gear object has no seat keys');
+    eq([m.rng, m.seed, m.totalWeek], [src.rng || src.seed, src.seed, src.totalWeek], name + ' career untouched');
+    ok(same(GG.save.migrate(JSON.parse(JSON.stringify(m))), m), name + ' idempotent');
+  });
+  const rec = GG.save.migrate(fixture('v10_recruit').state);
+  eq(rec.members.map(x => x.id + ':' + x.status + ':' + x.seatRole), ['travis:quit:vocals/acoustic', 'earl:active:lead guitar', 'clementine:active:fiddle',
+    'duke:active:bass', 'rec1:active:vocals/acoustic'], 'v10_recruit: the quit original and the recruit keep their roles');
+  eq(evs, [], 'migrate emits nothing');
+});
+
+test('v1.1: a string seat fills its gear + the swapped seatRole; existing values are never overwritten; bad values are fixed', () => {
+  const GG = load({ localStorage: load.fakeStorage() }), C = GG.contracts;
+  const v01 = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'save_v01.json'), 'utf8')).state;   // Hail Damage, wk 15
+  const b = GG.save.migrate(Object.assign(v01(), { seat: 'bass' }));
+  eq(V11(b), { seat: 'bass', roles: ['marcel:vocals', 'dana:lead guitar', 'jaxon:rhythm guitar', 'kenji:drums'],
+    gear: [{ bass: 4, rhythm: 4, lead: 4 }, { bass: false, rhythm: false, lead: false }], look: C.GEAR_LOOK }, 'bass seat: Kenji drums');
+  const kept = Object.assign(v01(), { seat: 'lead' });
+  kept.members.find(x => x.id === 'dana').seatRole = 'drums'; kept.members.find(x => x.id === 'marcel').seatRole = 'vocals (cape)';
+  kept.gear = { lanes: 4, doubleKick: false, seatLanes: { lead: 6, bass: 9, rhythm: 2 }, runs: { lead: true } };
+  kept.player.gearLook = { shape: 'vee', color: '#ff0000' };
+  const k = GG.save.migrate(kept);
+  eq(V11(k), { seat: 'lead', roles: ['marcel:vocals (cape)', 'dana:drums', 'jaxon:rhythm guitar', 'kenji:bass'],
+    gear: [{ lead: 6, bass: 5, rhythm: 4 }, { lead: true, bass: false, rhythm: false }],
+    look: { shape: 'vee', color: '#ff0000', guard: 'white', sticker: 'none' } }, 'kept, clamped to 4..SEAT_MAX_LANES, filled');
+  eq(GG.save.migrate(Object.assign(v01(), { seat: 'vocals' })).seat, 'drums', 'an unknown seat becomes drums');
+  const fresh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'New' } });
+  eq(V11(fresh), { seat: 'drums', roles: ['rox:vocals/guitar', 'benny:guitar', 'moth:bass'], gear: [undefined, undefined], look: C.GEAR_LOOK }, 'new drum careers start the same');
+  ok(same(GG.save.migrate(JSON.parse(JSON.stringify(fresh))), fresh), 'a new career is already migrated');
+  const rh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', seat: 'rhythm', player: { name: 'New' } });
+  ok(same(GG.save.migrate(JSON.parse(JSON.stringify(rh))), rh), 'a new string-seat career is already migrated');
+  eq(GG.save.fromCode(GG.save.toCode(rh)).seat, 'rhythm', 'the seat survives a save code');
+  GG.save.write('2', rh); eq([GG.save.read('2').seat, GG.save.read('2').members.find(x => x.id === 'rox').seatRole], ['rhythm', 'drums/vocals'], 'and a slot');
+});
+
 done('save');
