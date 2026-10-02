@@ -29,7 +29,7 @@ const LEFT = [
   'Hay Bale Throne', 'tape your sticks', 'sticks it', 'It sticks', 'back sticks out', 'sticks of homemade jerky', 'drumstick as a mic',
   'kicks in', 'kicks on', 'Kick it', 'kick it', 'Irma kicks', 'One good kick', 'Benny kicks it', 'brushes and a shop vac',
   // the Patreeon tiers (Drumstick, Snare, Full Kit) are the band's merch names
-  'Drumstick', 'Full Kit', 'Snare, Full Kit', 'collectively, Snare',
+  'Drumstick, Snare, Full Kit', 'Snare, Full Kit', 'Drumstick', 'Full Kit', 'collectively, Snare',
   // the band's drums, kit, drummer and drum sound in general (on a string seat the swapped drummer plays them)
   'the drummer', 'The drummer', 'THE DRUMMER', 'your drummer', 'Drummers lose mitts', 'I name no drummers', 'What a Drummer Is', 'two drummers',
   'every drummer is named Steve', 'hiring drummers', "session drummer", 'a drummer with something to prove', 'Four people and a drummer',
@@ -42,7 +42,7 @@ const LEFT = [
   'hi-hat', 'the cymbals', 'The cymbals', 'cymbal stands', 'cymbals on', 'cymbals in', 'without cymbals', 'cracked cymbal', 'ride cymbal',
   'spare cymbal', 'The cymbal goes', 'a cymbal case', 'crash cymbal', 'in a cymbal', 'Hold on to the cymbals', 'floor tom', 'on the toms',
   'double-kick run', 'double bass', 'blast beat', 'Blast beats', 'blast beats', 'BLAST BEAT', 'backbeat', 'train beat', 'TRAIN BEAT',
-  'on the beat', 'keep the beat', 'Gamble: a new drum loop', 'Gophers Under the Kit', 'Move the kit', 'move the drums',
+  'on the beat', 'keep the beat', 'The beat on track', 'Gamble: a new drum loop', 'Gophers Under the Kit', 'Move the kit', 'move the drums',
   'Counts the song in from behind the kit', 'behind the kit', 'flatter than a drum skin', 'Flatter than a drum skin', 'drum shop upstairs',
   'Kit rules', 'Drum Logic', 'on the drum kit', 'never on a drum kit',
   // fills that are a guitar's, a bass's or a fiddle's (Jaxon's sneaky fills, Clementine's runs) and the fills of the songs

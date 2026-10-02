@@ -100,7 +100,7 @@
       { id: 'hockey', text: 'Speaks only in hockey metaphors.', chem: 4, cards: [
         card('qk_hockey', 'drama', 'Line Changes',
           "{recruit} has drawn the setlist like a line chart. 'Dump it in with the fast one, cycle the mid-tempo, then pull the goalie for the closer.' It might work.",
-          [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your sticks.',
+          [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your stick.',
             roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
               success: { effects: { buzz: 5, fans: 10 }, outcome: "It works. The crowd chants like it's overtime. {recruit} taps your pads. You don't have pads." },
               fail: { effects: { burnout: 5 }, outcome: 'You pull the goalie. There is no goalie. The closer starts twice.' } } },

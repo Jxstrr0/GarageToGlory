@@ -650,7 +650,7 @@
         "studio. The studio is a broom closet in a university basement. She whispers 'brutal' as a compliment.",
       choices: [
         { label: 'Play live on air', hint: 'Gamble: live radio, one take',
-          outcome: 'You squeeze the whole kit into the closet. The ON AIR light comes on.',
+          outcome: 'You squeeze the whole band and your {gear} into the closet. The ON AIR light comes on.',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.008,
             success: { effects: { fans: 20, buzz: 8 },
               outcome: "One take, no mistakes. Deb whispers 'brutal' four times. The phone line lights up: two night-shift nurses. Now fans." },

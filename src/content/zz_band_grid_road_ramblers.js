@@ -944,10 +944,10 @@
         { label: 'Keep the tone', hint: 'Earl ↑ · Buzz ↑', effects: { mood: { earl: 6 }, buzz: 3 },
           outcome: "The hum is on the next recording. Reviewers call it 'lived-in'. It is literally lived in." },
         { label: 'Get a barn cat ($0)', hint: 'Gamble: Vern has several',
-          outcome: 'Vern brings a cat named Gordon.',
+          outcome: 'Vern brings a cat named Biscuit.',
           roll: { chance: 0.5,
-            success: { effects: { chemistry: 4 }, outcome: 'Gordon clears the amp in one night and sleeps on it forever after. The tone is now "cat".' },
-            fail: { effects: { burnout: 4 }, outcome: 'Gordon moves into the amp too. The mice and Gordon reach an agreement. The hum doubles.' } } }
+            success: { effects: { chemistry: 4 }, outcome: 'Biscuit clears the amp in one night and sleeps on it forever after. The tone is now "cat".' },
+            fail: { effects: { burnout: 4 }, outcome: 'Biscuit moves into the amp too. The mice and Biscuit reach an agreement. The hum doubles.' } } }
       ] },
     { id: 'grr_lantern_rehearsal', type: 'scene', speaker: 'clementine', title: 'Power Out, Lanterns In', gate: g({ era: GLS }),
       text: "A thunderstorm took out the power on the whole road. The Quonset is dark. Vern has brought two coal-oil lanterns and says " +
@@ -2018,7 +2018,8 @@
         quitLine: { who: 'duke', text: "My uncle's crew needs a hand for harvest. Then another harvest. I'm taking the hat. The hat needs air." },
         beats: [
           { at: 3, who: 'grr_vern', text: "Duke's combining near Brandon. Says the hat got a sunburn. The hat. Not him. He says the hat is fine now." },
-          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums.", seat: ['drums', 'rhythm', 'lead'] },
+          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums.", seat: ['drums'] },
+          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. Nobody on {seat}.", seat: ['rhythm', 'lead'] },
           { at: 9, who: 'duke', text: "Sat in on drums at a harvest dance in Manitoba. The hat stayed on. They loved it. Didn't feel the same. No bass.", seat: ['bass'] }
         ],
         changed: "Back from harvest with a farmer's tan and a fourth note he learned from a fiddler in Brandon.",
