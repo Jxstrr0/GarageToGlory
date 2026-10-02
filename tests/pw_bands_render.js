@@ -14,14 +14,19 @@
 //     session drummer (never you on their throne), the Mall Rats' kickflip;
 //   recap: the year-end photo in each band's room is not blank; GG.render.garage.photoRig(kind) per room.
 // No console errors. Contact sheet: tests/.cache/v09_render_sheet.png (look at it).
+// v1.1 "Seats" (Lane C): META_ONLY=seats (opt-in, not in the default run): every band x seat: the stage from your camera (the
+//   highway third cut off), the riser seen from the front (the swapped drummer + the boom mic for the singing drummers), the
+//   garage (the drummer at the kit, you at your rig); per tile the draw calls (stage <= the band's drum stage x 1.15, garage
+//   <= the band's drum garage x 1.15). Contact sheet tests/.cache/v11_seat_sheet<TAG>.png (look at it).
 // Until content lane A merges, the three new rivals have no cast: a small fixture cast is injected (only when missing).
 const path = require('path'), fs = require('fs');
-const { open, checker } = require('./_pw');
+const { open, checker, shotName } = require('./_pw');
 
 const ONLY = process.env.META_ONLY || 'bands_render';
 const ALL = /bands_render/.test(ONLY);
 const DO = k => ALL || new RegExp('\\b' + k + '\\b').test(ONLY);
-if (!['garage', 'stage', 'van', 'carpet', 'rival', 'recap'].some(DO)) { console.log('SKIP pw_bands_render (META_ONLY=' + ONLY + ')'); process.exit(0); }
+const DO_SEATS = /\bseats\b/.test(ONLY);   // v1.1 (opt-in)
+if (!['garage', 'stage', 'van', 'carpet', 'rival', 'recap'].some(DO) && !DO_SEATS) { console.log('SKIP pw_bands_render (META_ONLY=' + ONLY + ')'); process.exit(0); }
 const SHEET = path.join(__dirname, '.cache', 'v09_render_sheet.png');
 const BANDS = ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'];
 const KIND = { hail_damage: 'garage', frost_heave: 'laundromat', gravel_kings: 'stripmall', grid_road_ramblers: 'quonset' };
@@ -54,6 +59,65 @@ function fixtureCasts() {
         { id: 'bb_colt', name: 'Colt', role: 'guitar', look: L('#e0b08a', '#3a2416', 'cap', '#f2efe6', '#34507a'), corpsePaint: false },
         { id: 'bb_mascot', name: 'The Truck', role: 'mascot', look: L('#d8b08a', '#3a2416', 'short', '#b8262a', '#2a2a30'), corpsePaint: false }] }
   };
+}
+
+// v1.1: every band x seat: stage (your camera), the riser from the front, the garage. One sheet, three tiles per band x seat.
+async function seatSheet(page, c, notes) {
+  const SEATS = ['drums', 'bass', 'rhythm', 'lead'], VENUE = { venueId: 'gopher_hole', kind: 'bar', name: 'The Gopher Hole', capacity: 180 };
+  const rows = [], base = {}, hide = on => bareUi(page, on);
+  for (const b of BANDS) {
+    const row = { stage: [], riser: [], garage: [] };
+    for (const seat of SEATS) {
+      const r = await page.evaluate(([b, seat, venue]) => {
+        const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: b, seat });
+        if (GG.ui && GG.ui.closeAll) GG.ui.closeAll();
+        st.player.gearLook = { shape: null, color: null, guard: 'white', sticker: 'logo' };
+        GG.render.setPaused(false); GG.render.syncState(st); GG.render.setScene('stage');
+        GG.render.stage.setup({ venue, crowd: 120, members: st.members, flags: st.flags, genre: st.genre, player: st.player, seat: st.seat });
+        GG.render.stage.setCrowdLevel(72, true);
+        return { drummer: GG.career.drummerId(st) || 'you' };
+      }, [b, seat, VENUE]);
+      await advance(page, 8);
+      await page.evaluate(() => { for (let i = 0; i < 3; i++) GG.render.stage.hit('str' + (i + 1), 'perfect'); });
+      await advance(page, 2);
+      const si = await page.evaluate(() => ({ i: GG.render.stage.info(), calls: GG.debug('render').drawCalls }));
+      if (seat === 'drums') base[b] = { stage: si.calls };
+      c.ok(seat === 'drums' || si.calls <= base[b].stage * 1.15, b + ' ' + seat + ': stage ' + si.calls + ' calls <= drums ' + base[b].stage + ' x 1.15');
+      await hide(true);
+      row.stage.push({ label: b + ' · ' + seat + ' · ' + si.i.view + ' · ' + si.calls + ' calls', img: await shot(page, { x: 0, y: 0, width: 390, height: 563 }) });
+      if (seat !== 'drums') {   // the riser from the front of the stage (a test camera; the spot camera faces the crowd)
+        await page.evaluate(() => { const cam = GG.render.util.ctx().camera; cam.position.set(0.2, 0.5 + 2.6, -1.0); cam.lookAt(0, 0.5 + 0.85, 1.62); cam.updateMatrixWorld(); });
+        await advance(page, 3);
+        await page.evaluate(() => { const cam = GG.render.util.ctx().camera; cam.position.set(0.2, 0.5 + 2.6, -1.0); cam.lookAt(0, 0.5 + 0.85, 1.62); cam.updateMatrixWorld(); });
+        await advance(page, 1);
+        row.riser.push({ label: b + ' · ' + seat + ' · on the riser: ' + si.i.drummer + (si.i.boom ? ' + boom mic' : ''), img: await shot(page, { x: 0, y: 0, width: 390, height: 563 }) });
+        c.ok(si.i.drummer === r.drummer && (si.i.boom === ['rox', 'chase', 'travis'].includes(r.drummer)), b + ' ' + seat + ': ' + r.drummer + ' on the riser' + (si.i.boom ? ' with a boom mic' : ''));
+      }
+      await hide(false);
+      await page.evaluate(() => { GG.render.setScene('garage'); GG.render.syncState(GG.state); GG.render.goToHotspot('kit'); });
+      await page.waitForFunction(() => { const d = GG.debug('render'); return d.scene === 'garage' && !d.walking && !d.pending; }, null, { timeout: 30000 }).catch(() => {});
+      await page.evaluate(() => { if (GG.ui && GG.ui.closeAll) GG.ui.closeAll(); GG.render.setPaused(false); });
+      await advance(page, 6);
+      const gd = await dbg(page);
+      if (seat === 'drums') base[b].garage = gd.drawCalls;
+      c.ok(seat === 'drums' || gd.drawCalls <= base[b].garage * 1.15, b + ' ' + seat + ': garage ' + gd.drawCalls + ' calls <= drums ' + base[b].garage + ' x 1.15');
+      await hide(true);
+      row.garage.push({ label: b + ' · ' + seat + ' · garage · kit: ' + (gd.seat.drummer || 'you') + ' · ' + gd.drawCalls + ' calls', img: await shot(page, { x: 0, y: 140, width: 390, height: 330 }) });
+      await hide(false);
+    }
+    rows.push(row);
+  }
+  const cell = t => '<div><div style="padding:2px 4px">' + t.label + '</div><img style="width:300px;display:block" src="data:image/png;base64,' + t.img + '"></div>';
+  const html = '<html><body style="margin:0;background:#15151a;font:11px system-ui;color:#ddd"><div style="display:grid;grid-template-columns:repeat(4,300px);gap:6px;padding:6px">' +
+    rows.map(r => r.stage.map(cell).join('') + '<div style="padding:8px;color:#999">the riser, from the front:</div>' + r.riser.map(cell).join('') + r.garage.map(cell).join('')).join('') + '</div></body></html>';
+  const sp = await page.context().newPage();
+  await sp.setViewportSize({ width: 4 * 306 + 12, height: 800 });
+  await sp.setContent(html);
+  await sp.waitForTimeout(400);
+  const out = path.join(__dirname, '.cache', shotName('v11_seat_sheet.png'));
+  await sp.screenshot({ path: out, fullPage: true });
+  await sp.close();
+  notes.push('seat sheet ' + out);
 }
 
 (async () => {
@@ -254,6 +318,9 @@ function fixtureCasts() {
         if (r.url && b !== 'hail_damage') tiles.push({ label: b + ' — recap photo', img: r.url.replace(/^data:image\/\w+;base64,/, ''), jpeg: true });
       }
     }
+
+    // ---------------------------------------------------------------------------------------------- v1.1 seats sheet
+    if (DO_SEATS) await seatSheet(page, c, notes);
 
     // ---------------------------------------------------------------------------------------------------- the sheet
     if (tiles.length) {
