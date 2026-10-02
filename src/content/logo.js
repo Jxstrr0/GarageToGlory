@@ -8,6 +8,8 @@
 //   styles: [{ id (C.LOGO_STYLES), name, blurb, genre }]   metal = spiky unreadable, punk = cut-out ransom, rock = chrome '80s,
 //     country = western slab. Any genre may use any style; the band's default is its genre's.
 //   palettes: [{ id, name, fg (the lettering), em (the emblem), ground (outlines + badge backgrounds; dark or light) }]
+//   v1.0: an emblem or palette with `meta: 'tier:<C.ENDING_TIERS id>' | 'special:<C.SPECIAL_ENDINGS id>' | [those]` is a meta
+//     unlock (owner Q5): hidden from the picker until a finished career earns it (GG.meta.unlocked), never used for rival logos.
 //   bands: { <bandId>: { emblem, style, palette } }   (the four playable bands' default logos)
 //   rivals: { <rivalId | scene band id>: { emblem, style, palette } | { same: <rivalId> } }   (fixed; the renderer is the same)
 //   rebrand: { cost: { <era>: $ }, buzz }   ("small fee + a little buzz")
@@ -31,7 +33,14 @@
       // v0.8.1 additions (D6: the list grows)
       { id: 'curling_stone', name: 'Curling stone', art: { scale: 0.95, dy: 0.02 } },
       { id: 'mosquito', name: 'Mosquito', art: { scale: 1, dy: 0 } },
-      { id: 'toque', name: 'Toque', art: { scale: 0.95, dy: 0 } }
+      { id: 'toque', name: 'Toque', art: { scale: 0.95, dy: 0 } },
+      // v1.0 "Glory" meta emblems (owner Q5: looks from finished careers; D6 closed, add-don't-shrink). `meta` = the ending that
+      // unlocks it the first time across careers (12_meta unlocksFor); the picker offers it, with a trophy chip, once unlocked.
+      { id: 'lantern', name: 'Paper lantern', meta: 'special:big_in_japan', art: { scale: 0.95, dy: 0 } },
+      { id: 'price_tag', name: 'Price tag', meta: 'special:band_of_strangers', art: { scale: 0.95, dy: 0 } },
+      { id: 'handshake', name: 'Handshake', meta: 'special:original_lineup', art: { scale: 1, dy: 0 } },
+      { id: 'globe_record', name: 'Globe record', meta: ['special:moose_opera', 'special:big_in_berlin', 'special:mudstonbury_legends', 'special:outback_legends'],
+        art: { scale: 0.95, dy: 0 } }
     ],
     styles: [
       { id: 'metal', name: 'Spiky', blurb: 'Unreadable. Perfect. Looks like a root system in a blizzard.', genre: 'metal' },
@@ -53,7 +62,14 @@
       { id: 'pink', name: 'Punk pink', fg: '#16161a', em: '#f0609f', ground: '#fbe9f1' },
       { id: 'gold', name: 'Gold record', fg: '#ffd84a', em: '#9a7420', ground: '#140f04' },
       { id: 'maple', name: 'Maple red', fg: '#ffffff', em: '#d8281c', ground: '#2a0707' },
-      { id: 'slime', name: 'Slough slime', fg: '#b8ff3c', em: '#7a34b0', ground: '#130a1c' }
+      { id: 'slime', name: 'Slough slime', fg: '#b8ff3c', em: '#7a34b0', ground: '#130a1c' },
+      // v1.0 "Glory" meta palettes: the first career to reach each ending tier unlocks its palette; Rival Red = Side Project.
+      { id: 'arena_gold', name: 'Arena Gold', fg: '#fff3c4', em: '#d4a017', ground: '#1a1204', meta: 'tier:arena_legends' },
+      { id: 'hockey_night', name: 'Hockey Night', fg: '#ffffff', em: '#c8102e', ground: '#0b1f3a', meta: 'tier:canadian_institution' },
+      { id: 'cult_velvet', name: 'Cult Velvet', fg: '#f0d9ff', em: '#8e3aa6', ground: '#16061c', meta: 'tier:cult_heroes' },
+      { id: 'one_hit_teal', name: 'One-Hit Teal', fg: '#e9fffb', em: '#14a39a', ground: '#06201e', meta: 'tier:one_album_wonders' },
+      { id: 'garage_grey', name: 'Garage Grey', fg: '#e6e6e2', em: '#8a8f94', ground: '#1b1c1e', meta: 'tier:still_in_the_garage' },
+      { id: 'rival_red', name: 'Rival Red', fg: '#ffe9e4', em: '#e0301e', ground: '#1e0705', meta: 'special:side_project' }
     ],
     bands: {
       hail_damage: { emblem: 'hailstone', style: 'metal', palette: 'frost' },

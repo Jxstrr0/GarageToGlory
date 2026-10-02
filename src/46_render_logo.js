@@ -206,6 +206,41 @@
       g.save(); g.beginPath(); parts[1][0](g); g.clip(); g.fillStyle = P.hi; g.fillRect(-40, -8, 80, 7); g.fillStyle = P.ground; g.fillRect(-40, 1, 80, 2); g.restore();
       var r = []; for (var x = -30; x <= 30; x += 6) r.push([[x, 12], [x, 30]]);
       lines(g, shade(P.lo, 0.7), 1.8, r);
+    },
+    // v1.0 meta emblems (Q5; unlocked by endings, content/logo.js `meta`)
+    lantern: function (g, P) {
+      lines(g, P.lo, 3, [[[0, -50], [0, -42]]], P.ground);
+      blob(g, P, [[function (g) { rrect(g, -14, -44, 28, 9, 2); }, P.lo], [function (g) { ell(g, 0, 0, 34, 38); }, P.em], [function (g) { rrect(g, -14, 35, 28, 9, 2); }, P.lo]]);
+      var r = []; for (var y = -27; y <= 27; y += 9) { var w = 34 * Math.sqrt(1 - y * y / 1444); r.push([[-w + 3, y], [w - 3, y]]); }
+      lines(g, P.lo, 1.8, r);
+      g.beginPath(); g.arc(-6, -6, 24, Math.PI * 1.1, Math.PI * 1.45); g.strokeStyle = P.hi; g.lineWidth = 4; g.stroke();
+      lines(g, P.hi, 2.4, [[[0, 44], [0, 52]], [[-4, 44], [-6, 51]], [[4, 44], [6, 51]]], P.ground);
+    },
+    price_tag: function (g, P) {
+      g.save(); g.rotate(-0.62);
+      blob(g, P, [[function (g) { poly(g, [[-46, 0], [-24, -22], [46, -22], [46, 22], [-24, 22]]); }, P.em]]);
+      dot(g, P.ground, -26, 0, 6.5); dot(g, P.hi, -26, 0, 3);
+      lines(g, P.hi, 2.6, [[[-14, -15], [38, -15]]]);
+      g.font = '900 30px "Arial Black", "Liberation Sans", "DejaVu Sans", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = P.ground; g.fillText('$', 12, 3);
+      g.restore();
+      lines(g, P.lo, 2.2, [[[-21, 16], [-34, 30], [-46, 26]]], P.ground);
+    },
+    handshake: function (g, P) {
+      blob(g, P, [[function (g) { poly(g, [[-50, -2], [-22, -22], [-8, -8], [-36, 16]]); }, P.lo], [function (g) { poly(g, [[50, -2], [22, -22], [8, -8], [36, 16]]); }, shade(P.em, 0.75)],
+        [function (g) { ell(g, 0, 0, 22, 15, -0.2); }, P.em], [function (g) { rrect(g, -50, -12, 10, 26, 3); rrect(g, 40, -12, 10, 26, 3); }, P.hi]]);
+      lines(g, P.lo, 2, [[[-10, -8], [6, 2]], [[-12, -1], [4, 9]], [[-11, 6], [1, 14]]]);
+      lines(g, P.hi, 3, [[[-4, -12], [12, -10]]]);
+    },
+    globe_record: function (g, P) {
+      blob(g, P, [[function (g) { circ(g, 0, 0, 46); }, shade(P.em, 0.42)]]);
+      g.lineWidth = 1.4; g.strokeStyle = shade(P.em, 0.75);
+      [40, 34, 28, 22].forEach(function (r) { g.beginPath(); circ(g, 0, 0, r); g.stroke(); });
+      g.strokeStyle = P.hi; g.lineWidth = 2.2;
+      g.beginPath(); ell(g, 0, 0, 18, 44); g.stroke(); g.beginPath(); g.moveTo(-44, 0); g.lineTo(44, 0); g.stroke();
+      g.beginPath(); ell(g, 0, -20, 38, 6); g.stroke(); g.beginPath(); ell(g, 0, 20, 38, 6); g.stroke();
+      dot(g, P.em, 0, 0, 12); dot(g, P.ground, 0, 0, 3);
+      g.beginPath(); g.arc(0, 0, 40, Math.PI * 1.15, Math.PI * 1.4); g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.stroke();
     }
   };
   LG.emblemIds = function () { return Object.keys(EMB); };
@@ -256,8 +291,9 @@
     return Math.max(6, Math.min(s, bw / ((w100 / 100) + (extraW || 0))));
   }
   // White text on a transparent mask: { M, boxes: [{ x0, x1, yc }], s, preY }. opts: { track, arc (line 0), skew, fatten }
+  // v1.0 (perf hand-in): o.read = the mask is read back (metal's spikes); a CPU-backed canvas makes getImageData cheap.
   function mask(W, H, sp, f, s, o) {
-    var M = mk(W, H), g = M.getContext('2d'), n = sp.lines.length, preH = sp.prefix ? PRE * s : 0, y0 = (H - (n * LINE * s + preH)) / 2, boxes = [];
+    var M = mk(W, H), g = o.read ? M.getContext('2d', { willReadFrequently: true }) : M.getContext('2d'), n = sp.lines.length, preH = sp.prefix ? PRE * s : 0, y0 = (H - (n * LINE * s + preH)) / 2, boxes = [];
     g.fillStyle = g.strokeStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.lineJoin = 'miter';
     sp.lines.forEach(function (ln, i) {
       var yc = y0 + preH + (i + 0.5) * LINE * s, lw = measure(g, f, s, ln, o.track), x = (W - lw) / 2;
@@ -328,7 +364,7 @@
     if (style === 'punk') { ransom(T, sp, P, rng); return T; }
     if (style === 'metal') {
       sp.lines = sp.lines.map(function (l) { return l.toUpperCase(); });
-      var s = fit(g, FONTS.metal, sp, bw * 0.84, bh * (sp.lines.length > 1 ? 0.5 : 0.4), 0), K = mask(bw, bh, sp, FONTS.metal, s, { fatten: 0.035 });
+      var s = fit(g, FONTS.metal, sp, bw * 0.84, bh * (sp.lines.length > 1 ? 0.5 : 0.4), 0), K = mask(bw, bh, sp, FONTS.metal, s, { fatten: 0.035, read: true });
       spikes(K, rng);
       g.drawImage(ring(K.M, P.ground, Math.max(1.5, s * 0.075)), 0, 0); g.drawImage(tint(K.M, P.fg), 0, 0);
       return T;

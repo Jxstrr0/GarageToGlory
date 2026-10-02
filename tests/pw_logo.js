@@ -1,5 +1,8 @@
 // pw_logo.js: the v0.8.1 band logo (Addendum 2 D2, LOGO) on a 390x844 phone viewport.
-// Sections (META_ONLY=picker|reuse, comma-separated; default both + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=picker|reuse|meta, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
+//   meta:   (v1.0, Lane M) the first HD quickStart timed (report); unlocked meta palettes / emblems (owner Q5) offered with 🏆 in
+//           every genre's picker, locked ones hidden, a pick sticks to the career, Rebrand lists them, rival logos never use
+//           them. Screenshot logo_meta.png.
 //   picker: new career → band intro → the logo picker ('logo': live preview, 15 emblems, 4 lettering styles, 10+ colour pairs;
 //           layout audit) → three taps (moose, western slab, gold) → the creator (Back keeps the pick) → Start: the career has
 //           it + this phone remembers it for metal (the next new career starts from it) → the laptop's Band tab: Rebrand
@@ -142,6 +145,60 @@ async function picker() {
     if (errors.length) console.log(errors.join('\n').slice(0, 1500));
     c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'picker threw: ' + (e.stack || e).toString().slice(0, 500)); }
+  await close(); c.done();
+}
+
+/* ---- meta (v1.0, Lane M: owner Q5 looks from finished careers) ------------------------------------------------------ */
+// The first HD quickStart on a fresh page is timed (report only; the logo readback fix: willReadFrequently on the metal mask).
+// Meta palettes / emblems this phone unlocked (GG.meta 'palettes' / 'emblems') are offered with a 🏆 chip in every genre's
+// picker (new career and Rebrand); locked ones stay hidden; a picked one sticks to the career. Screenshot logo_meta.png.
+async function meta() {
+  const c = checker('meta');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForFunction(() => window.GG && GG.main && GG.ui && GG.ui.openLogo && GG.meta && GG.meta.enabled, null, { timeout: 20000 });
+    const qs = await page.evaluate(() => { const t0 = performance.now(); GG.main.quickStart({ seed: 7, openCard: false }); const t1 = performance.now();
+      return { ms: Math.round(t1 - t0), draws: GG.debug('render-logo').draws }; });
+    console.log('meta: first Hail Damage quickStart ' + qs.ms + ' ms (' + qs.draws + ' logo draws; report only, PERF baseline 1.5-1.8 s)');
+    c.ok(qs.ms > 0, 'first HD quickStart timed: ' + qs.ms + ' ms');
+    await page.evaluate(() => { GG.main.quitToTitle(); GG.meta.unlock('palettes', ['arena_gold', 'rival_red']); GG.meta.unlock('emblems', ['lantern']); });
+    const want = ['logo-pal-arena_gold', 'logo-pal-rival_red', 'logo-emblem-lantern'], hidden = ['logo-pal-hockey_night', 'logo-pal-garage_grey', 'logo-emblem-price_tag', 'logo-emblem-globe_record'];
+    for (const b of ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers']) {
+      await page.evaluate(b => { GG.ui.closeAll(); GG.ui.openLogo({ mode: 'new', bandId: b, onDone: () => {} }); }, b);
+      await waitScreen(page, 'logo');
+      const r = await page.evaluate(([w, h]) => ({ on: w.map(id => { const e = document.querySelector('[data-testid="' + id + '"]'); return !!e && e.dataset.meta === '1' && /🏆/.test(e.textContent); }),
+        off: h.filter(id => document.querySelector('[data-testid="' + id + '"]')), plain: document.querySelector('[data-testid="logo-pal-frost"]').dataset.meta || null }), [want, hidden]);
+      c.ok(r.on.every(Boolean) && !r.off.length && !r.plain, b + ': unlocked meta looks offered with 🏆, locked ones hidden ' + JSON.stringify(r));
+    }
+    await page.evaluate(() => GG.main.quitToTitle());
+    await page.waitForSelector(tid('btn-new'));
+    // Pick them in a new metal career; the career keeps them.
+    await tap(page, 'btn-new'); await tap(page, 'slot-3'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await waitScreen(page, 'logo');
+    await tap(page, 'logo-emblem-lantern'); await tap(page, 'logo-pal-arena_gold');
+    await page.waitForTimeout(300);
+    const key = await page.getAttribute(tid('logo-preview'), 'data-key');
+    c.ok(key === 'lantern.metal.arena_gold', 'picked: ' + key);
+    const imgs = await page.evaluate(() => Array.from(document.querySelectorAll('[data-testid="logo-screen"] img')).every(i => i.complete && i.naturalWidth > 0));
+    c.ok(imgs, 'the new emblem draws');
+    const bad = await audit(page); c.ok(!bad.length, 'picker layout with meta looks ' + bad.join(', '));
+    c.ok(await noShare(page), 'no share button');
+    await shot(page, 'logo_meta.png');
+    await tap(page, 'btn-logo-done'); await waitScreen(page, 'creator');
+    await page.fill(tid('creator-name'), 'Gold');
+    await tap(page, 'btn-create');
+    await waitScreen(page, 'coldopen');
+    c.ok(await page.evaluate(() => GG.logo.key(GG.state.logo)) === 'lantern.metal.arena_gold', 'the career has the meta look');
+    // Rebrand lists them too, in a punk career
+    await boot(page, 77, { fund: 5000 });
+    await page.evaluate(() => { GG.ui.openLogo({ mode: 'rebrand' }); });
+    await waitScreen(page, 'logo');
+    c.ok(await page.evaluate(() => GG.state.bandId) && await page.locator(tid('logo-pal-rival_red')).count() === 1, 'Rebrand offers them too');
+    // Rival logos never use a meta look
+    c.ok(await page.evaluate(() => { const ids = Object.keys(GG.content.logo.rivals).concat(['some_scene_band', 'another_one', 'x1', 'x2', 'x3']);
+      return ids.every(id => { const l = GG.logo.rival(id); return !GG.logo.isMeta(l.emblem) && !GG.logo.isMeta(l.palette); }); }), 'rival logos never use meta looks');
+    c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'meta threw: ' + (e.stack || e).toString().slice(0, 500)); }
   await close(); c.done();
 }
 
@@ -293,5 +350,6 @@ async function sheet() {
   fs.mkdirSync(CACHE, { recursive: true });
   if (want('picker')) await picker();
   if (want('reuse')) await reuse();
+  if (want('meta')) await meta();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();

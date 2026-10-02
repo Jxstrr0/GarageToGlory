@@ -9,6 +9,7 @@
 // testids: lk-cancel, lk-done, lk-random, lk-which-everyday|stage, lk-tab-<tab>, lk-view-full|face|hands, lk-opt-<cat>-<value>,
 //   lk-sw-<field>-<i>, lk-height, lk-knuckles-right|left, lk-headtext, lk-arm-L|R-<none|half|full>, lk-count, lk-lock (why a part
 //   is locked, over the preview). Debug 'creator-ui'.
+// v1.0 (Q5): parts a finished career unlocked (GG.creator.metaPart) are open in every genre and wear a 🏆 chip (data-meta).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn;
   var TABS = [
@@ -154,14 +155,14 @@
     var cur = get();
     return el('div.lk-chips', C().parts(E.st, cat).filter(function (p) { return !o.only || o.only(p); }).map(function (p) {
       var on = o.multi ? (cur || []).indexOf(p.value) >= 0 : cur === p.value;
-      return btn('.lk-chip' + (on ? '.on' : '') + (p.locked ? '.locked' : ''), { testid: 'lk-opt-' + cat + '-' + p.value, 'aria-pressed': on ? 'true' : 'false',
-        title: p.locked ? 'Locked: ' + p.why : p.hint || p.name,
+      return btn('.lk-chip' + (on ? '.on' : '') + (p.locked ? '.locked' : '') + (p.meta ? '.meta' : ''), { testid: 'lk-opt-' + cat + '-' + p.value, 'aria-pressed': on ? 'true' : 'false',
+        title: p.locked ? 'Locked: ' + p.why : p.meta ? 'Unlocked by a finished career (every genre)' : p.hint || p.name, data: p.meta ? { meta: '1' } : null,
         onclick: function () {
           if (p.locked) { lockNote('🔒 ' + p.name + ': ' + p.why + '.'); return; }
           if (o.multi) { var a = (get() || []).slice(), i = a.indexOf(p.value); if (i >= 0) a.splice(i, 1); else a.push(p.value); set(a); }
           else set(p.value);
           refresh();
-        } }, [p.color ? el('i.dot', { style: { background: p.color } }) : null, p.locked ? '🔒 ' : '', p.name]);
+        } }, [p.color ? el('i.dot', { style: { background: p.color } }) : null, p.locked ? '🔒 ' : p.meta ? '🏆 ' : '', p.name]);   // v1.0: 🏆 = from a finished career
     }));
   }
   function swatches(field, list, get, set) {
