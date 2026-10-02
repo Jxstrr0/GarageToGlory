@@ -34,7 +34,7 @@ const LEFT = [
   'Drumstick, Snare, Full Kit', 'Snare, Full Kit', 'Drumstick', 'Full Kit', 'collectively, Snare',
   // the band's drums, kit, drummer and drum sound in general (on a string seat the swapped drummer plays them)
   'the drummer', 'The drummer', 'THE DRUMMER', 'your drummer', 'Drummers lose mitts', 'I name no drummers', 'What a Drummer Is', 'two drummers',
-  'every drummer is named Steve', 'hiring drummers', "session drummer", 'a drummer with something to prove', 'Four people and a drummer',
+  'every drummer is named Steve', 'every drummer in 1964', 'hiring drummers', "session drummer", 'a drummer with something to prove', 'Four people and a drummer',
   'one drummer, one cassette', 'Their drummer asks yours', 'Swap drummers', 'The drummers trade places', 'hates drummers', 'a cat that hates drummers',
   'drumming on the', 'air-drumming', 'lap drums', 'my uncle could drum',
   'the drums', 'The drums', 'drum kit', 'the kit', 'The kit', 'drum riser', 'drum throne', 'drum stool', 'drum cases', 'snare case', 'drum samples',
