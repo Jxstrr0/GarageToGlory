@@ -38,6 +38,9 @@
     return save.storageOk;
   };
   function fail() { save.storageOk = false; }
+  // v1.0: a full store (quota) is not "no storage": storageOk stays true and save.lastError = 'quota' (12_meta's retry path).
+  function isQuota(e) { return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014); }
+  save.lastError = null;
   function getRaw(key) {
     if (backend) {
       try { var v = backend.getItem(key); return v != null ? v : (memory[key] != null ? memory[key] : null); }
@@ -49,7 +52,8 @@
   function setRaw(key, value) {
     memory[key] = value;
     if (!backend) return false;
-    try { backend.setItem(key, value); return true; } catch (e) { fail(); return false; }
+    try { backend.setItem(key, value); save.lastError = null; return true; }
+    catch (e) { if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
   }
   function removeRaw(key) {
     delete memory[key];

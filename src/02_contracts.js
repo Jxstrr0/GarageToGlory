@@ -34,6 +34,8 @@
   C.MERCH_TIERS = ['basics', 'warm', 'vinyl', 'limited'];     // stickers/shirts → hoodies/toques → vinyl → silly limited editions
   // v0.8.1 (Addendum 2): band logo (D2) + licensing (D1). Lists are starting sets (add, don't shrink); palettes in content/logo.js.
   C.LOGO_EMBLEMS = ['skull', 'wheat', 'bolt', 'moose', 'maple', 'gopher', 'anvil', 'hailstone', 'elevator', 'cowboy_hat', 'safety_pin', 'flaming_tire'];
+  // v1.0 meta-unlock emblems (Q5; content/logo.js after the starting twelve, GG.logo.emblems() lists them): lantern,
+  // price_tag, handshake, globe_record. Not added here: this list is the starting set (sim_logo pins its order).
   C.LOGO_STYLES = ['metal', 'punk', 'rock', 'country'];   // spiky unreadable / cut-out ransom / chrome '80s / western slab (any genre may use any)
   C.LICENSE_CHOICES = ['take', 'decline', 'counter'];
   C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
@@ -83,8 +85,7 @@
   C.ENDING_TIERS = ['arena_legends', 'canadian_institution', 'cult_heroes', 'one_album_wonders', 'still_in_the_garage'];   // best first
   C.SPECIAL_ENDINGS = ['big_in_japan', 'moose_opera', 'big_in_berlin', 'mudstonbury_legends', 'outback_legends',
     'band_of_strangers', 'original_lineup', 'side_project'];   // stack on the tier; original_lineup = The Original Five / Four
-  // ADVISORY lists (lane tests validate against GG.achieve.KINDS / GG.lessons.LESSONS; the lead folds the final lists in at
-  // the v1.0 merge). ACH test kinds (§4.6) and lesson ids (§4.7).
+  // ACH test kinds (§4.6) and lesson ids (§4.7): final as merged in v1.0 (equal to GG.achieve.KINDS / GG.lessons.LESSONS).
   C.ACH_KINDS = ['milestone', 'bannedInYear', 'releasedFr', 'originals', 'award', 'winterNoBreakdown', 'rivalLoonieStreak',
     'special', 'venuePlayed', 'songKickShare', 'flag', 'stat', 'final', 'bonus', 'tier', 'botbInYear', 'licensedBrand', 'crack',
     'returned', 'reviewBelow', 'studio', 'km', 'weatherGig', 'allBands', 'difficulty', 'careers', 'gongWon'];
@@ -359,6 +360,36 @@
    WRAP gains legacy (LEGACY, the career's last wrap only). Modules: GG.legacy (2f), GG.meta (12), GG.achieve (2g),
      GG.lessons (2h), GG.tutorial (5p); GG.rival.finalAt(state) -> { year, week } (the Sad Dome in the career's last year).
   ====================================================================== */
+  // As merged (v1.0 lanes E/M/T/P):
+  // ENDINGS (2f, Lane E): GG.legacy = { noBonus, careerId, ensure, migrate, gig, worldWeek, bonusFor, finalYear, yearsText,
+  //   deck, weekly, raw, parts, score, tierDef, tier, tierRank, TESTS, specialOk, specials, whenOk, epilogues, compute, finish,
+  //   text, hofEntry }. deck(state) appends content.endings.bonusCards to the Monday deck at runtime (on the grant, later wraps
+  //   and career:loaded of a bonus save; years 1–10 untouched, so NO_BONUS runs replay exactly). WRAP.bonus = { years, maxWeeks,
+  //   line } on the grant week. LEGACY.raw also carries greyMug, rivalOriginals. Old saves (createdVersion < 1.0) get the
+  //   biggest-venue estimate inside compute() (venue.est: true), not from migrate (legacyTrack.bigHead stays null).
+  //   Tunables in content/endings.js legacy (fans full 100k, units full 800k). UI: 'end:step' { step, index, of } (5n);
+  //   GG.ui.endGo(step), ui.rivalEnd(st, opts). Tiers carry unlock palette ids; specials carry emblems / palettes.
+  // META (12 + 2g, Lane M): state.ach.t = { bans: { <year>: n }, botb: { <year>: n }, botbLast, km,
+  //   winter: { y, away, bd, closed } | null, streak: { y, n, best } | null }. HOF_ENTRY may also carry
+  //   unlocks: { palettes, emblems, parts } and mach: [achId] (both left out of exportLite). 'meta:unlock' fires once per kind;
+  //   recordCareer's unlocks items carry fresh, its ach = the meta achievements this career earned; award(state, ids, opts)
+  //   takes { silent }. GG.achieve = { defs, def, gated, name, ensure, migrate, originals, kickShare, KINDS, kindInfo, test,
+  //   check, gig, weekly, finish, metaIds, view, list, earned }. UI: ui.trophiesPanel, ui.achToast (box of 3, pointer-events
+  //   none), screens 'hof' / 'hof-entry', code sheet mode 'hof'; GG.logo.pickEmblems / pickPalettes / isMeta,
+  //   GG.creator.metaPart. Debugs: achieve, trophies, hof.
+  // TUTORIAL (2h + 5p, Lane T): GG.lessons = { LESSONS, def, ensure, on, done, mark, stop, available, steps, matches, due };
+  //   due(state, ctx) takes ctx.totalWeek. LESSON may also carry garage: true, mark: true, when.minWeek / when.mode; STEP
+  //   point.testid may be an array (the first found on screen is used). GG.tutorial = { enabled (off under automation unless
+  //   ?tut=1), running, active, start, replay, check, skip, offerSkip, openLessons, suppressWriteTip, debug }. 'tut:step' /
+  //   'tut:done' may carry replay; 'tut:done' may carry skipped.
+  // PERF (40 + 30 + 11, Lane P): P.GRAPHICS = ['auto', 'low', 'med', 'high'] (unknown values normalize to 'auto';
+  //   DEFAULT_SETTINGS.graphics = 'auto'). GG.render: invalidate(n), nextRatio(cur, p95, heldMs) (pure), RATIO_STEPS,
+  //   feedFrames(ms[]) (tests only), perfState(); util.freeze/thaw and ctx.freeze; scene factories may return busy().
+  //   'perf:quality' reason: 'slow' | 'fast' | 'settings'. GG.debug('perf') = { mode, cap, ticks, rendered, pixelRatio,
+  //   autoRatio, want, quality, covered, p95, applied, shaderChecks, voices, drops, tapDrops, voiceCap }. Behind a tall sheet
+  //   the 3D runs at 10 fps once the camera glide ends. GG.audio: VOICES (global cap 32), voicePlan(active, req), voiceStats(),
+  //   prerender(), prerenderHit(o), prewarm(), renderOffline({ lane, pre, cap }); GG.debug('audio') adds global, prerender,
+  //   crowdRaw. Voice-cap priority: band notes are never dropped; crowd one-shots go first.
 
   /* ======================================================================
    EVENTS (GG.emit(name, payload))            emitted by
@@ -407,7 +438,8 @@
    'hof:added'      { entry }                 GG.meta.recordCareer
    'meta:changed'   { keys }                  GG.meta, after a stored change
    'ui:tab'         { sheet, tab }            ui (laptop tab switches; sheet 'laptop')
-   'tut:step'       { id, step }  'tut:done' { id }                                 GG.tutorial
+   'tut:step'       { id, step, replay? }  'tut:done' { id, replay?, skipped? }      GG.tutorial
+   'end:step'       { step, index, of }       5n end sequence (UI)
    'perf:quality'   { pixelRatio, reason }    render (adaptive pixel ratio, 'auto' graphics)
   ====================================================================== */
 

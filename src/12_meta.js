@@ -127,7 +127,7 @@
       rival: { id: rv.id || null, name: GG.rival && GG.rival.name && s.bandId ? GG.rival.name(s) : (rv.name || null) },
       final: s.finalShowdown ? s.finalShowdown.headliner || null : null,
       stats: { fans: num(s.fans), units: num(st.units), loonies: num(st.loonieWins), gongs: ((s.tour && s.tour.gongs) || []).filter(function (g) { return g && g.won; }).length,
-        certs: num(st.certs), gigs: num(st.gigs), songs: num(st.songsWritten), albums: (s.albums || []).filter(function (a) { return a && a.released; }).length,
+        certs: num(st.certs), gigs: num(st.gigs), songs: num(st.songsWritten), albums: (s.albums || []).filter(function (a) { return a && a.status === 'released'; }).length,
         loans: num(st.parentsLoans), venue: bh ? { name: bh.name, cap: bh.cap } : null,
         broken: Object.keys(regions).filter(function (k) { return regions[k] && regions[k].broken; }).length },
       ach: Object.keys((s.ach && s.ach.got) || {}),

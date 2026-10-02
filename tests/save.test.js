@@ -30,6 +30,17 @@ test('write/read/list/remove round-trip', () => {
   eq(GG.save.autosave(s), true); ok(GG.save.read('auto'));
 });
 
+test('v1.0: a quota miss is not "no storage" (storageOk stays true, lastError quota)', () => {
+  const st = load.fakeStorage(); let full = false; const set = st.setItem;
+  st.setItem = (k, v) => { if (full) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } set(k, v); };
+  const GG = load({ localStorage: st }), s = career(GG);
+  eq([GG.save.storageOk, GG.save.write('1', s)], [true, true]);
+  full = true;
+  eq([GG.save.write('2', s), GG.save.storageOk, GG.save.lastError], [false, true, 'quota'], 'quota: kept as working storage');
+  full = false;
+  eq([GG.save.write('2', s), GG.save.lastError], [true, null], 'a later write clears it');
+});
+
 test('storage throwing on read / on write / missing: memory fallback, no throws', () => {
   for (const opts of [{ throwOnRead: true }, { throwOnWrite: true }]) {
     const GG = load({ localStorage: load.fakeStorage(opts) });
