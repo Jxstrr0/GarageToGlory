@@ -8,6 +8,9 @@
 // Results: tests/.cache/perf/<what>.json; `all` and `report` write OUT: the v1.0 table against plan/perf_baseline_v10.txt
 // (contract §4.9: hard gates = draw calls, triangles, audio nodes per hit / per second, the voice cap, governor mode/cap per
 // scene; report-only = JS/frame, render() time, quickStart, first builds, heap, TTI).
+// v1.1 "Seats" (Lane C): scenes also measures the string-seat club stage (bass, lead: the spot camera, you + your instrument,
+// the swapped drummer) and a rhythm-seat garage (the drummer at the kit, your rig); the report adds a seats line: each <= the
+// drum scene x 1.15 (contract §4.8). The size gate is 5,000,000 B (E14).
 // Process rule: every browser this script opens is its own child and is closed in a finally {} (never pkill by name).
 'use strict';
 const fs = require('fs'), path = require('path'), zlib = require('zlib');
@@ -208,6 +211,34 @@ async function scenes(T, dpr) {
       }, vid);
       const si = await page.evaluate(() => { const i = GG.render.stage.info(); return { kind: i.kind, people: i.people, band: i.band.length, lod: i.lod || null }; });
       await grab(name, { build: Math.round(build), stage: si });
+    }
+    for (const seat of ['bass', 'lead']) {   // v1.1: the club stage from a string seat (same venue, crowd and kit as stage_club)
+      const build = await page.evaluate(seat => {
+        const t0 = performance.now(), st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat });
+        if (GG.ui && GG.ui.closeAll) GG.ui.closeAll();
+        st.player.kit = Object.assign({}, st.player.kit || {}, { extras: ['pyro', 'fan', 'cowbell'] });
+        st.player.gearLook = { shape: null, color: null, guard: 'white', sticker: 'logo' };
+        GG.render.syncState(st); GG.render.setScene('stage');
+        GG.render.stage.setup({ venue: { kind: 'club', name: 'Test club', capacity: 400 }, crowd: 5000, capacity: 400, genre: st.genre, flags: { cape: 'velvet' }, player: st.player, seat,
+          members: st.members.map(m => ({ id: m.id, name: m.name, role: m.role, seatRole: m.seatRole, mood: m.mood, look: m.look })) });
+        GG.render.stage.setCrowdLevel(95);
+        return performance.now() - t0;
+      }, seat);
+      const si = await page.evaluate(() => { const i = GG.render.stage.info(); return { kind: i.kind, people: i.people, band: i.band.length, view: i.view, drummer: i.drummer, seat: i.seat }; });
+      await grab('stage_club_seat_' + seat, { build: Math.round(build), stage: si });
+    }
+    {   // v1.1: a rhythm-seat garage (Hail Damage: Jaxon at the kit, you at your rig)
+      const build = await page.evaluate(() => {
+        const t0 = performance.now(), st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat: 'rhythm' });
+        if (GG.ui && GG.ui.closeAll) GG.ui.closeAll();
+        st.player.gearLook = { shape: null, color: null, guard: 'white', sticker: 'logo' };
+        GG.render.setScene('garage'); GG.render.syncState(st);
+        return performance.now() - t0;
+      });
+      await bareUi(false);
+      await grab('garage_seat_rhythm', { build: Math.round(build) });
+      await bareUi(true);
+      await page.evaluate(() => { const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage' }); GG.ui.closeAll(); st.player.kit = Object.assign({}, st.player.kit || {}, { extras: ['pyro', 'fan', 'cowbell'] }); GG.render.syncState(st); });
     }
     {
       const build = await page.evaluate(() => {
@@ -552,6 +583,11 @@ function report() {
   }
   if (tt) L.push('## Time to interactive (median of ' + (tt.trials.length / Math.max(1, Object.keys(tt.median).length)) + '): x1 ' + (tt.median.x1 ? tt.median.x1.tti : '-') + ' ms (before ' + BEFORE.tti.x1 + ') | x4 ' + (tt.median.x4 ? tt.median.x4.tti : '-') + ' ms (before ' + BEFORE.tti.x4 + ')' +
     (btt && btt.median ? ' | same-run before: x1 ' + (btt.median.x1 ? btt.median.x1.tti : '-') + ' / x4 ' + (btt.median.x4 ? btt.median.x4.tti : '-') + ' ms' : ''));
+  if (s1 && s1.scenes.stage_club) {   // v1.1 seats (Lane C): <= the drum scene x 1.15
+    const sc = s1.scenes, seatLine = (k, base) => sc[k] ? k + ' ' + sc[k].info.calls + ' calls / ' + sc[k].info.tris + ' tris ' + ok(sc[k].info.calls <= Math.floor(sc[base].info.calls * 1.15)) + ' (<= ' + base + ' ' + sc[base].info.calls + ' x 1.15)' : k + ' -';
+    L.push('## v1.1 seats: ' + [seatLine('stage_club_seat_bass', 'stage_club'), seatLine('stage_club_seat_lead', 'stage_club'), sc.garage_hail_damage ? seatLine('garage_seat_rhythm', 'garage_hail_damage') : ''].join(' | '));
+    L.push('');
+  }
   if (sz) L.push('## Size: dist/game.html ' + sz.bytes + ' B (gate <= 5,000,000 (v1.1, E14) ' + ok(sz.bytes <= 5000000) + '), gzip-9 ' + sz.gzip + ' B');
   const txt = L.join('\n') + '\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

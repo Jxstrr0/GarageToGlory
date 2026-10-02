@@ -72,7 +72,7 @@
       gear: V && V.gear || null, sticker: !!(V && V.sticker) };
   };
 
-  function clearChar() { clearSticker(); if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearChar() { clearSticker(); if (V) V.ssig = ''; if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
   function clearSticker() {
     if (!V || !V.sticker) return;
     var m = V.sticker; if (m.parent) m.parent.remove(m);

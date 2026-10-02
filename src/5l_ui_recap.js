@@ -13,7 +13,7 @@
 //    Years tab (GG.ui.recapPanel). The week wrap lists licensing news (GG.ui.licenseWrap).
 // v1.1 "Seats" (Lane C): on a string seat you hold your own instrument in the photo (player.gearLook -> GG.render.seatGear; the
 //   'axe' pose, no raised sticks: PLAYER_PAD only for the drum seat) and the swapped drummer brings the sticks (their own pose).
-//   The drum seat is exactly v0.9's photo. GG.debug('recap').photo adds seat + gear.
+//   The drum seat is exactly v0.9's photo. GG.debug('recapui').photo adds seat, gear, sticks (who holds them).
 // API: GG.ui.openRecap(year, then?) · recapPhoto(state) -> dataURL|null · openOffer(id) · offersLine(st, rerender) ·
 //      recapPanel(st) · licenseWrap(wrap) -> [nodes]
 (function (GG) {
