@@ -38,6 +38,12 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Known v1.2 items already logged: Ramblers' World payoff rarely reached (Australia ~$7k up front), Gravel Kings fund y3
   ~20–30 % high, rock walking-bass clashes, bridge progression never varies (fix changes HD audio).
 
+## Queued after v1.0: v1.0.1 "Smart bridge" (owner popup 2026-10-02)
+- One touch on the seam between two neighbouring lanes (≈ middle third of the gap) hits BOTH lanes only when both have a
+  note due inside the judgement window; otherwise only the nearer lane. No extra stray penalties. Default on, no setting.
+  Lefty-aware (columns), keys unchanged, drum-sync booking per lane as today. Small hotfix in 55_ui_gig.js onDown/tap +
+  a pw_gig `bridge` section, right after v1.0 merges.
+
 ## Locked foundations (from handoff A2)
 | Call | Decision |
 |---|---|
