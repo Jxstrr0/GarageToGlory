@@ -110,7 +110,7 @@ async function seatSection(page, c, notes) {
       await advance(page, 30);
       const a1 = await page.evaluate(() => { const x = GG.render.stage.info().autoHits; for (let k = 0; k < 16; k++) GG.emit('audio:step', { section: 'verse', entry: 0, bar: 0, step: k, time: 0 }); return { x, y: GG.render.stage.info().autoHits }; });
       c.ok(a1.x > a0 && a1.y - a1.x >= 10, tag + ': the drummer keeps time on their own clock (' + a0 + ' -> ' + a1.x + ') and plays the band grid (+' + (a1.y - a1.x) + ' on 16 steps)');
-      const acts = await page.evaluate(([seat, dr]) => { const s = GG.render.stage; return { solo: s.bandAction(null, 'solo'), fill: s.bandAction(dr, 'fill'), acting: s.info().acting }; }, [seat, r.drummer]);
+      const acts = await page.evaluate(([seat, dr]) => { const s = GG.render.stage; return { solo: s.bandAction(seat === 'lead' ? 'player' : null, 'solo'), fill: s.bandAction(dr, 'fill'), acting: s.info().acting }; }, [seat, r.drummer]);   // (55 sends gig:band { who: 'player', action: 'solo' } on the lead seat)
       c.ok(acts.solo && acts.fill && (seat === 'lead' ? acts.acting.includes('player:solo') : !acts.acting.includes('player:solo')), tag + ': the solo is ' + (seat === 'lead' ? 'yours' : 'the band\'s') + ', the drummer fills ' + acts.acting.join(','));
     }
     if (band === 'hail_damage' && seat === 'bass') {

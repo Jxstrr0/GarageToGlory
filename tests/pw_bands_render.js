@@ -107,6 +107,14 @@ async function seatSheet(page, c, notes) {
     }
     rows.push(row);
   }
+  if (process.env.CONTACT_DIR) {   // every tile as its own PNG too (CONTACT_DIR=<dir>), named band_seat_view<TAG>.png
+    fs.mkdirSync(process.env.CONTACT_DIR, { recursive: true });
+    rows.forEach((r, bi) => ['stage', 'riser', 'garage'].forEach(k => r[k].forEach(t => {
+      const seat = t.label.split(' · ')[1];
+      fs.writeFileSync(path.join(process.env.CONTACT_DIR, shotName(BANDS[bi] + '_' + seat + '_' + k + '.png')), Buffer.from(t.img, 'base64'));
+    })));
+    notes.push('seat tiles in ' + process.env.CONTACT_DIR);
+  }
   const cell = t => '<div><div style="padding:2px 4px">' + t.label + '</div><img style="width:300px;display:block" src="data:image/png;base64,' + t.img + '"></div>';
   const html = '<html><body style="margin:0;background:#15151a;font:11px system-ui;color:#ddd"><div style="display:grid;grid-template-columns:repeat(4,300px);gap:6px;padding:6px">' +
     rows.map(r => r.stage.map(cell).join('') + '<div style="padding:8px;color:#999">the riser, from the front:</div>' + r.riser.map(cell).join('') + r.garage.map(cell).join('')).join('') + '</div></body></html>';
