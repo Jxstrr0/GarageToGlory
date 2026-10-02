@@ -19,7 +19,7 @@
   var ACT_FALLBACK = {
     rehearse: { icon: '🥁', name: 'Rehearse', blurb: 'Tighter band, sorer wrists.' },
     write: { icon: '✍️', name: 'Write', blurb: 'A new song. Nobody knows what it is about yet.' },
-    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facebook." },
+    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facepage." },
     book: { icon: '📅', name: 'Book', blurb: 'Find somewhere that will have you.' },
     hustle: { icon: '💵', name: 'Hustle', blurb: 'Weddings, busking, bingo. Cash.' },
     rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' },

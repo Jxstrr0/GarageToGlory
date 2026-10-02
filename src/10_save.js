@@ -82,15 +82,37 @@
     try {
       if (!validSlot(slot)) throw new Error('Unknown save slot ' + slot);
       var rec = { savedAt: Date.now(), version: GG.VERSION, summary: summary(state), state: state };
-      ok = setRaw(save.KEYS.slot(slot), JSON.stringify(rec));
+      ok = setRaw(save.KEYS.slot(slot), packSlot(rec));
       if (!ok) err = 'Storage unavailable: saved for this session only.';
     } catch (e) { ok = false; err = String(e && e.message || e); }
     if (ok) GG.emit('save:done', { slot: slot }); else GG.emit('save:failed', { slot: slot, error: err });
     return ok;
   };
   // The full record ({ savedAt, version, summary, state }) or null. The state inside is migrated.
+  // v1.0 (Lane Q, storage at 13 years): a slot whose JSON passes SLOT_PACK_AT chars is stored as
+  // 'LZ1:' + <header length> + ':' + JSON{ savedAt, version, summary } + the LZW body of JSON(state) (save.compress), about
+  // 2.4x smaller (a 312-week career: ~320k -> ~130k chars; four slots + the Hall of Fame stayed under 1.2M). The header
+  // keeps list() from decompressing. Smaller slots stay plain JSON; both forms read back.
+  var SLOT_PACK_AT = 150000;
+  save.SLOT_PACK_AT = SLOT_PACK_AT;
+  function packSlot(rec) {
+    var j = JSON.stringify(rec);
+    if (j.length < SLOT_PACK_AT) return j;
+    var h = JSON.stringify({ savedAt: rec.savedAt, version: rec.version, summary: rec.summary });
+    return 'LZ1:' + h.length + ':' + h + save.compress(JSON.stringify(rec.state));
+  }
+  function readSlot(slot, headOnly) {
+    var raw = getRaw(save.KEYS.slot(slot));
+    if (raw == null) return null;
+    try {
+      if (raw.slice(0, 4) !== 'LZ1:') return JSON.parse(raw);
+      var i = raw.indexOf(':', 4), n = +raw.slice(4, i), rec = JSON.parse(raw.substr(i + 1, n));
+      rec.state = headOnly ? true : JSON.parse(save.decompress(raw.slice(i + 1 + n)));
+      return rec;
+    } catch (e) { return null; }
+  }
   save.readRecord = function (slot) {
-    var rec = getJSON(save.KEYS.slot(slot));
+    var rec = readSlot(slot);
     if (!rec || !rec.state) return null;
     try { rec.state = save.migrate(rec.state); } catch (e) { return null; }
     return rec;
@@ -98,7 +120,7 @@
   save.read = function (slot) { var r = save.readRecord(slot); return r ? r.state : null; };
   save.list = function () {
     return C.SLOTS.map(function (slot) {
-      var rec = getJSON(save.KEYS.slot(slot));
+      var rec = readSlot(slot, true);
       var ok = !!(rec && rec.state);
       return { slot: slot, exists: ok, summary: ok ? rec.summary || summary(rec.state) : null, savedAt: ok ? rec.savedAt : null };
     });
@@ -320,8 +342,18 @@
   function encode(obj) { var body = save.compress(JSON.stringify(obj)); return 'GG1:' + body + checksum(body); }
   // v1.0: in the browser (GG.meta.enabled) the code also carries the Hall of Fame lite as `_meta`, on a shallow copy (the
   // state object is never mutated); node codes are unchanged.
+  // v1.0 (Lane Q): a code stays <= CODE_MAX chars (chat apps and notes) when it can: a long career's code carries fewer
+  // Hall of Fame entries (the best 10 by score, then 5, then the counters only); the Hall of Fame "Backup code" has them all.
+  save.CODE_MAX = 135000;
   save.toCode = function (state) {
-    return encode(GG.meta && GG.meta.enabled ? Object.assign({}, state, { _meta: GG.meta.exportLite() }) : state);
+    if (!(GG.meta && GG.meta.enabled)) return encode(state);
+    var lite = GG.meta.exportLite(), code = encode(Object.assign({}, state, { _meta: lite }));
+    var best = lite.entries.slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+    [10, 5, 0].forEach(function (k) {
+      if (code.length <= save.CODE_MAX || lite.entries.length <= k) return;
+      code = encode(Object.assign({}, state, { _meta: Object.assign({}, lite, { entries: best.slice(0, k), trimmed: true }) }));
+    });
+    return code;
   };
   // v1.0: a meta-only code (the Hall of Fame "Backup code"): every entry with its year strip, trophies and unlocks.
   save.metaCode = function () {

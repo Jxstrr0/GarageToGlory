@@ -526,7 +526,7 @@
           outcome: "You win it for forty bucks. Jaxon carries it to the truck like it's a baby.",
           roll: { chance: 0.5,
             success: { effects: { drumSkill: 2, buzz: 3 },
-              outcome: 'A vintage cowbell and a real gong. The gong becomes your closer. Mr. Lindqvist files his first complaint of the season.' },
+              outcome: 'A vintage cowbell and a real gong. The gong goes back to the pawn shop (house rules: no gong on the kit). The cowbell becomes your closer. Mr. Lindqvist files his first complaint of the season.' },
             fail: { effects: { mood: { dana: 4 } },
               outcome: "Eleven accordion straps and a stuffed weasel. Dana says the straps are 'actually great'. The weasel lives on her amp now." } } },
         { label: 'Let Marcel bid on the mower', effects: { fund: -150, mood: { marcel: 15 } },

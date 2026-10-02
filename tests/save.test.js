@@ -286,4 +286,31 @@ test('v1.0: graphics defaults to auto (normalized to high until Lane P adds auto
   GG.prefs.set({ graphics: 'high' }); eq(GG.prefs.get().graphics, 'high', 'a stored pick stays');
 });
 
+test('v1.0: a long career slot is stored packed (LZ1 + header) and reads back; small slots stay JSON', () => {
+  const store = load.fakeStorage(), GG = load({ localStorage: store }), s = career(GG);
+  GG.save.write('1', s); ok(store._map.get('gg.v1.slot.1').charAt(0) === '{', 'a short career: plain JSON');
+  const big = JSON.parse(JSON.stringify(s)); let r = 7; big.history = Array.from({ length: 30000 }, (_, i) => ({ w: i, n: (r = (r * 48271) % 2147483647) % 1000 }));
+  eq(GG.save.write('2', big), true);
+  const raw = store._map.get('gg.v1.slot.2');
+  ok(raw.slice(0, 4) === 'LZ1:' && raw.length < JSON.stringify(big).length / 2, 'packed: ' + raw.length + ' < ' + JSON.stringify(big).length);
+  ok(same(GG.save.read('2'), GG.save.migrate(JSON.parse(JSON.stringify(big)))), 'reads back identical');
+  const row = GG.save.list().find(x => x.slot === '2');
+  eq([row.exists, row.summary.year], [true, big.year], 'list() reads the header only');
+  store._map.set('gg.v1.slot.3', 'LZ1:5:{"a"}garbage'); eq(GG.save.read('3'), null, 'a damaged packed slot reads as empty');
+});
+
+test('v1.0: a code with _meta stays under CODE_MAX by carrying fewer Hall of Fame entries', () => {
+  const GG = load({ localStorage: load.fakeStorage() }); GG.legacy = null; GG.meta.load(); GG.meta.enabled = true;
+  const ended = GG.save.migrate(fixture('v09_ended').state);
+  for (let i = 0; i < 25; i++) { const x = JSON.parse(JSON.stringify(ended)); x.seed = 500 + i; x.player = { name: 'P' + i * 7919 }; x.legacy = { score: 100 + i * 31, parts: {}, specials: [] }; GG.meta.recordCareer(x); }
+  const s = career(GG), full = GG.save.toCode(s), fullN = GG.save.readCode(full).meta.entries.length;
+  GG.meta.enabled = false; const bare = GG.save.toCode(s).length; GG.meta.enabled = true;
+  GG.save.CODE_MAX = bare + Math.round((full.length - bare) / 3);
+  const cut = GG.save.toCode(s), m = GG.save.readCode(cut).meta;
+  ok(cut.length <= GG.save.CODE_MAX && m.entries.length < fullN && m.entries.length >= 0, 'trimmed: ' + fullN + ' -> ' + m.entries.length + ' entries, ' + cut.length + ' chars');
+  const top = GG.meta.hof().map(e => e.score).sort((a, b) => b - a).slice(0, m.entries.length);
+  eq(m.entries.map(e => e.score).sort((a, b) => b - a), top, 'the best by score are the ones kept');
+  ok(same(GG.save.readCode(cut).state, GG.save.readCode(full).state), 'the career itself is untouched');
+});
+
 done('save');

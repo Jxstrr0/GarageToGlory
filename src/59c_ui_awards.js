@@ -158,7 +158,7 @@
       ui.append(s.body, [
         el('div.cert-disc.' + (plat ? 'platinum' : 'gold'), { testid: 'cert-disc' }, [el('div.cert-label', thumb(a, 160, 'label-art'))]),
         el('p.center', [el('b', '“' + a.title + '”'),  ' is certified ' + (plat ? 'PLATINUM' : 'GOLD') + ': ' + num(plat ? C.CERT.platinum : C.CERT.gold) + ' units in Canada.']),
-        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at Costco.' : V.fill('{front} wants to wear it. As a medallion. The chain is being measured.'))
+        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at the Cost-Lo.' : V.fill('{front} wants to wear it. As a medallion. The chain is being measured.'))
       ]);
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'btn-cert-ok', onclick: function () { ui.close(s.id); } }, 'Hang it on the wall'));
     },
