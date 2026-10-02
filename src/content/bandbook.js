@@ -116,7 +116,7 @@
     },
     viral: {
       good: [
-        'VIRAL: {player} falls off the stage mid-song and finishes {yourPart} lying on the floor. {views} views.',
+        'VIRAL: {player} falls off the drum riser mid-song and finishes {yourPart} lying on the floor. {views} views.',
         'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
       // who: a member id, a role alias ('@front') or 'any'. GG.fans reads pool('viral') as one object, so a layer's cringe

@@ -139,7 +139,7 @@
        ch('Let the riff speak', { chemistry: 3 }, 'You let it go. The riff knows who wrote it. You know who wrote it. That is two.', 'Chemistry ↑'),
        ch('Play it on the porch', { drumSkill: 1, burnout: 3 }, 'You play the riff on the porch until the toque guy turns around. He buys you a pop too. It is warm. You drink it anyway.', 'Your chops ↑ · Burnout ↑')],
       { hail_damage: ['@drummer', 'i knew it was ur riff. i put a sneaky fill under it. the fill is also ur riff now. sorry'],
-        frost_heave: ['@drummer', 'Motion to credit the riff to the person who wrote it. Seconded by me. Carried by me. I am the drummer now, I have the gavel.'],
+        frost_heave: ['@drummer', 'Motion to credit the riff to the person who wrote it. Seconded by me. Carried. I am the drummer now. I have the gavel.'],
         gravel_kings: ['@drummer', 'In 1985 the rhythm guitarist got the girl. Or so I have been told. By myself. Repeatedly.'],
         grid_road_ramblers: ['@drummer', "I'll write a song about it. A riff gets stolen at a house party. It's about a truck, mostly."] },
       2, 4),
@@ -151,7 +151,7 @@
          { burnout: 6 }, 'He plays one chord so cleanly the window rattles. You buy strings at full price. Your wrist hurts for a week.'),
        ch('Buy your strings and go', { fund: -30, chemistry: 2 }, 'You pay, you leave, you write a riff about him on the bus. It is the best thing you write all month.', '−$30 · Chemistry ↑'),
        ch('Teach him the riff', { chemistry: 4, buzz: 2 }, "He can't play it. Not the notes, the feel. He hands you a business card: 'teaching inquiries'.", 'Chemistry ↑ · Buzz ↑')],
-      { hail_damage: ['@drummer', 'anyone can play rhythm?? i played rhythm for two years. it was very hard. the drums are also very hard. everything is hard'],
+      { hail_damage: ['@drummer', 'anyone can play rhythm?? i played it for two years. very hard. drums are also very hard. everything is hard'],
         frost_heave: ['@drummer', 'I played rhythm guitar for nine years. Anyone can play it. Not everyone can play it while yelling about zoning.'],
         gravel_kings: ['@drummer', 'Anyone can play rhythm. Anyone can play drums. Not everyone can do it in leather. That is the separator.'],
         grid_road_ramblers: ['@drummer', "Strummed for years. The trick's not your hand. It's your heart. And your hand."] },
@@ -194,7 +194,7 @@
     arc('rhythm', 6, 'arc_rhythm_6_trio', 'scene', '@front', 'Power Trio Night', LSW,
       "{soloist} is stuck on the wrong side of a highway closure with half the gear. Showtime is in an hour. You, {front} and " +
       '{drummer} are a power trio tonight. The setlist is now mostly you.',
-      [ch('Carry the set', fx({ buzz: 10, fans: 90 }, flags({ rhythmArcDone: true })), 'Every song, the riff is the song. The crowd never misses a thing. {soloist} arrives for the encore and stands at the side, clapping.', 'Buzz ↑↑ · Fans ↑'),
+      [ch('Carry the set', fx({ buzz: 10, fans: 80 }, flags({ rhythmArcDone: true })), 'Every song, the riff is the song. The crowd never misses a thing. {soloist} arrives for the encore and stands at the side, clapping.', 'Buzz ↑↑ · Fans ↑'),
        ch('Stretch the riffs', fx({ chemistry: 6, drumSkill: 1 }, flags({ rhythmArcDone: true })), 'You play every riff twice as long and the band locks in like a tractor in low gear. It is the tightest show of the year.', 'Chemistry ↑ · Your chops ↑'),
        ch('Make it an unplugged night', fx({ mood: { all: 5 }, burnout: -6 }, flags({ rhythmArcDone: true })), 'Stools, a lamp, your guitar. {front} sings the quiet versions. People film it. The quiet versions end up on the radio.', 'Moods ↑ · Burnout ↓')],
       { hail_damage: ['@drummer', 'power trio night. i did zero sneaky fills. ok four. but they were for you'],
@@ -221,7 +221,7 @@
       [ch('Buy it', { fund: -250, drumSkill: 2 }, 'You buy it. You play nothing but the Moose Fuzz for a week. The band asks you to play anything else. You play the Moose Fuzz.', '−$250 · Your chops ↑↑'),
        ch('Build one from a mail-order box', { burnout: 6, drumSkill: 1, buzz: 2 }, 'Three nights with a soldering iron. It hums, it smokes a little, it sounds like a goose. It is yours.', 'Burnout ↑ · Your chops ↑'),
        ch('Practise without it', { chemistry: 3, burnout: -3 }, 'You play the solo clean, a hundred times, until it sounds like it has a pedal. It does not need one. You still want one.', 'Chemistry ↑ · Burnout ↓')],
-      { hail_damage: ['@drummer', 'Moose Fuzz Deluxe: germanium, true bypass, 9 V only. Do not run it off a daisy chain. I have opinions on your daisy chain.'],
+      { hail_damage: ['@drummer', 'Moose Fuzz Deluxe: germanium, true bypass, 9 V only. Do not run it off a daisy chain. I have opinions on daisy chains.'],
         frost_heave: ['@drummer', 'a pedal is a third chord you can step on. i have principles. i also have a broken one in the van you can have'],
         gravel_kings: ['@drummer', 'That pedal is on a famous record. I can hear it. Which famous record? Buy it and find out. Do not tell my lawyer.'],
         grid_road_ramblers: ['@drummer', "Played through a pedal like that in 1979. Set my amp on fire. Best solo I ever played. Buy it."] },
@@ -241,7 +241,7 @@
       "{rivalFront} slides into your messages: {rival} wants you on their next record. Session fee, their merch, their haircut. " +
       "'Just the solos,' the message says. 'You don't even have to leave your band. We would just like your hands.'",
       [ch('Tell the band', { chemistry: 6, mood: { all: 4 } }, 'You read the message out loud at rehearsal. {front} prints it, frames it and hangs it above the merch table as a warning.', 'Chemistry ↑ · Moods ↑'),
-       ch('Take the session, once', { fund: 600, buzz: 4, mood: { all: -6 } }, "You play their solos for one afternoon. The cheque clears. Their record is better. Your band is very polite to you for a month.", '+$600 · Buzz ↑ · Moods ↓'),
+       ch('Take the session, once', { fund: 400, buzz: 4, mood: { all: -6 } }, "You play their solos for one afternoon. The cheque clears. Their record is better. Your band is very polite to you for a month.", '+$400 · Buzz ↑ · Moods ↓'),
        ch('Leave them on read', { buzz: 6 }, '{rival} sends a fruit basket, then a second message, then a third. You leave all of them on read. It becomes a scene legend.', 'Buzz ↑')],
       { hail_damage: ['@drummer', 'They want your hands? Your hands are under contract to me. I wrote the contract. In gear specs. It is binding.'],
         frost_heave: ['@drummer', 'they offered me a session once. i played two chords. they said thanks. they never called again. it was perfect'],
@@ -252,7 +252,7 @@
       'The label wants a radio edit of the single. They have marked the cut in red: your solo. All of it. The song goes from five ' +
       "minutes to three. 'Radio people,' says the label, 'have places to be.'",
       [ch('Keep the solo', fx({ buzz: 12, mood: { '@front': -4 } }, flags({ leadArc: 'guitarHero' })), "You refuse. The single goes out at five minutes. Two stations play it anyway, all of it. A trucker phones in to cry.", 'Buzz ↑↑ · the guitar hero'),
-       ch('Cut it for the band', fx({ chemistry: 8, fans: 120 }, flags({ leadArc: 'bandFirst' })), "Three minutes, no solo. It is everywhere by Friday. {front} buys you a steak. You play the solo live, every night, twice as long.", 'Chemistry ↑↑ · Fans ↑ · band first'),
+       ch('Cut it for the band', fx({ chemistry: 8, fans: 80 }, flags({ leadArc: 'bandFirst' })), "Three minutes, no solo. It is everywhere by Friday. {front} buys you a steak. You play the solo live, every night, twice as long.", 'Chemistry ↑↑ · Fans ↑ · band first'),
        ch('Save it for a solo album', fx({ fund: 300, buzz: 6 }, flags({ leadArc: 'soloAlbum' })), "You cut it, keep the tape and start a folder called SOLO ALBUM. The folder is already full.", '+$300 · Buzz ↑ · the solo album')],
       { hail_damage: ['@drummer', 'A radio edit without the solo is not a song. It is a jingle. I will play a drum solo where your solo was. In protest.'],
         frost_heave: ['@drummer', 'cut the solo. keep the two chords. that is what i have been saying for years and nobody listens'],
@@ -262,7 +262,7 @@
     arc('lead', 6, 'arc_lead_6_clinic', 'fame', '@front', 'The Guitar Clinic', LSW,
       "A festival asks you to run a guitar clinic in a tent behind the main stage. Forty kids with guitars, one with a ukulele, " +
       'all of them looking at your hands. You can teach, or you can shred.',
-      [ch('Teach them the solo', fx({ fans: 100, buzz: 6 }, flags({ leadArcDone: true })), 'You teach the solo slowly, one bend at a time. The ukulele kid gets it first. Forty kids play it back at you, terribly, beautifully.', 'Fans ↑ · Buzz ↑'),
+      [ch('Teach them the solo', fx({ fans: 80, buzz: 6 }, flags({ leadArcDone: true })), 'You teach the solo slowly, one bend at a time. The ukulele kid gets it first. Forty kids play it back at you, terribly, beautifully.', 'Fans ↑ · Buzz ↑'),
        ch('Shred until the tent shakes', fx({ drumSkill: 2, buzz: 8 }, flags({ leadArcDone: true })), 'Twenty minutes, no breathing. The tent pole hums. A kid faints, then asks for a pick. You give him the pick.', 'Your chops ↑ · Buzz ↑'),
        ch('Bring the band in', fx({ chemistry: 6, mood: { all: 5 } }, flags({ leadArcDone: true })), 'You call the band into the tent and play the solo as a band. {front} sings the solo. {drummer} plays it on the toms. The kids lose it.', 'Chemistry ↑ · Moods ↑')],
       { hail_damage: ['@drummer', 'I ran the drum half of the clinic. Fourteen kids. All of them now speak in drum specs. I have built an army.'],
@@ -301,7 +301,7 @@
     fin('bass', GRR, 'fin_bass_grid_road_ramblers', 'duke', 'The Hat',
       'At the end of the last song Duke stands up from the kit, takes off the hat, and puts it on your head. The Quonset goes ' +
       "silent. Travis Lee starts crying. Clementine says 'well' and means a great deal by it. The hat is the character. Now you are.",
-      [ch('Wear the hat', { buzz: 10, fans: 120 }, 'You wear the hat to every show. It gets more fan mail than you. You do not mind. It is the hat.', 'Buzz ↑↑ · Fans ↑'),
+      [ch('Wear the hat', { buzz: 10, fans: 80 }, 'You wear the hat to every show. It gets more fan mail than you. You do not mind. It is the hat.', 'Buzz ↑↑ · Fans ↑'),
        ch('Give it back', { chemistry: 8, mood: { duke: 12 } }, "You put the hat back on Duke's head. He tips it to you. Nobody in the Quonset has a dry eye. Doris the horse included.", 'Chemistry ↑↑ · Duke ↑↑'),
        ch('Get your own hat', { fund: -120, mood: { all: 6 } }, 'A matching hat, from the Co-op. Duke inspects it, adjusts the brim a quarter inch, and declares it a real hat.', '−$120 · Moods ↑')]),
     // rhythm
@@ -314,7 +314,7 @@
     fin('rhythm', FH, 'fin_rhythm_frost_heave', 'rox', 'The Jingle',
       "Rox is running for council. Her campaign jingle is your riff, the one from the house party. It plays outside every " +
       "polling station in the ward. Councillor Pomeroy has filed a noise complaint about it. Rox has framed the complaint.",
-      [ch('Play it at the rally', { buzz: 10, fans: 120, mood: { rox: 10 } }, 'You play the riff from a flatbed while Rox screams the platform from behind the kit. The ward hums it for weeks.', 'Buzz ↑↑ · Fans ↑ · Rox ↑'),
+      [ch('Play it at the rally', { buzz: 10, fans: 80, mood: { rox: 10 } }, 'You play the riff from a flatbed while Rox screams the platform from behind the kit. The ward hums it for weeks.', 'Buzz ↑↑ · Fans ↑ · Rox ↑'),
        ch('Ask for a royalty', { fund: 200, mood: { rox: -4 } }, "Rox pays you in campaign buttons and $200 from a jar. It is the most honest money in Regina politics.", '+$200 · Rox ↓'),
        ch('Write her a second verse', { chemistry: 8, mood: { rox: 8 } }, 'The second verse is about potholes. It is the most popular political song in Saskatchewan history. It is not close.', 'Chemistry ↑↑ · Rox ↑')]),
     fin('rhythm', GK, 'fin_rhythm_gravel_kings', 'chase', 'Very 1985',
@@ -328,7 +328,7 @@
       "explains he means it kindly. Then he explains it again. Then he writes a song about it. It is about a truck.",
       [ch('Take it as a compliment', { chemistry: 8, mood: { travis: 10 } }, 'It is a compliment. A truck idling means it will always start. Travis Lee hugs you for a full minute.', 'Chemistry ↑↑ · Travis Lee ↑'),
        ch('Rev it up', { buzz: 6, drumSkill: 1 }, 'You play the next song like a truck in a pull competition. Earl whoops. Clementine plays faster to keep up, and loves it.', 'Buzz ↑ · Your chops ↑'),
-       ch('Learn the truck song', { fans: 100, buzz: 6 }, "The truck song goes in the set. The crowd sings 'idling, idling' at the chorus. Travis Lee weeps every single time.", 'Fans ↑ · Buzz ↑')]),
+       ch('Learn the truck song', { fans: 80, buzz: 6 }, "The truck song goes in the set. The crowd sings 'idling, idling' at the chorus. Travis Lee weeps every single time.", 'Fans ↑ · Buzz ↑')]),
     // lead
     fin('lead', HD, 'fin_lead_hail_damage', 'dana', 'One Sentence',
       "Between songs Dana leans out from behind the kit. Everyone braces for a cymbal spec. Instead she says: 'I like playing " +
@@ -351,7 +351,7 @@
     fin('lead', GRR, 'fin_lead_grid_road_ramblers', 'earl', 'The Twangmaster',
       "Earl climbs off the drum riser holding his old guitar, the '72 Twangmaster with the cigarette burn on the headstock. He " +
       "puts it in your hands. 'I played it with everyone,' he says. 'Now you.' Clementine has to leave the Quonset.",
-      [ch('Play it tonight', { buzz: 10, fans: 120, mood: { earl: 12 } }, 'The Twangmaster sounds like 1979 and next year at once. Earl tells the crowd about every session it played. Nobody leaves.', 'Buzz ↑↑ · Fans ↑ · Earl ↑'),
+      [ch('Play it tonight', { buzz: 10, fans: 80, mood: { earl: 12 } }, 'The Twangmaster sounds like 1979 and next year at once. Earl tells the crowd about every session it played. Nobody leaves.', 'Buzz ↑↑ · Fans ↑ · Earl ↑'),
        ch('Hang it on the wall', { chemistry: 8, mood: { earl: 8 } }, 'It goes on the Quonset wall, above the hay bales. Earl tells it a story every rehearsal. The guitar listens.', 'Chemistry ↑↑ · Earl ↑'),
        ch('Give it back, for now', { mood: { earl: 6, all: 4 } }, "'Keep it till the last show,' you say. Earl nods slowly. 'That's what I said in 1979.' He does not explain.", 'Moods ↑')])
   );
