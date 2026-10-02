@@ -1323,7 +1323,7 @@
   // its speaker belongs to the band (else the neutral fallback speech).
   function bandCard(state, x) {
     var c = x && x.choices ? x : x && state ? x[state.bandId] : null;
-    return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker)) ? c : null;
+    return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.seatOk || GG.career.seatOk(state, c)) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker)) ? c : null;   // v1.1: top-level seat gates
   }
   L.speechCard = function (state) {
     var A = awardsContent(), r = state && state.loonies && state.loonies.results || [], won = r.filter(function (x) { return x.won; });
@@ -1345,7 +1345,7 @@
   // The red-carpet outfit card (content awards.outfitCards; cape-aware gates: the first card whose gate passes).
   L.outfitCard = function (state) {
     return (awardsContent().outfitCards || []).filter(function (c) {
-      return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker));   // v0.9: null when none fits the band
+      return c && c.choices && GG.career.gatePasses(state, c.gate) && (!GG.career.seatOk || GG.career.seatOk(state, c)) && (!GG.career.speakerOk || GG.career.speakerOk(state, c.speaker));   // v0.9: null when none fits the band (v1.1: + seat gates)
     })[0] || null;
   };
   L.outfit = function (state, i, cardId) {

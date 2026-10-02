@@ -499,7 +499,8 @@
     return Math.round(U.clamp(100 * ((r.perfect || 0) + 0.6 * (r.good || 0)) / n, 0, 100));
   }
   V.takeScore = takeScore;
-  // Play a drum take yourself: the gig session in studio mode (no crowd), one song. done(score 0..100 | null).
+  // Play a take yourself: the gig session in studio mode (no crowd), one song (v1.1: your seat's chart; the shadow state keeps
+  // the seat). done(score 0..100 | null).
   ui.playTake = function (songId, done) {
     var st = S(), song = V.song(songId);
     if (!st || !song || !ui.playGig || !GG.gig || !GG.gig.session) { if (done) done(null); return false; }
@@ -534,7 +535,8 @@
       s.body.appendChild(el('div.panel.studio-log', { testid: 'session-events' }, ev.length ? ev.map(function (t, i) {
         return el('div.log-line' + (i === 0 ? '.new' : ''), [el('span.ic', '▸'), el('span', V.fill(typeof t === 'string' ? t : t.text || ''))]);
       }) : el('p.small.dim', 'Nothing yet. The engineer is eating a sandwich over the console.')));
-      s.body.appendChild(el('div.caps.step-h', 'Drum takes · your chops ' + Math.round(st.drumSkill || 0)));
+      var strSeat = GG.career.seatOf && GG.career.seatOf(st) !== 'drums';   // v1.1: "{instrument} takes" (your seat's chart when you play one)
+      s.body.appendChild(el('div.caps.step-h', { testid: 'takes-head' }, (strSeat ? ui.cap(V.fill('{instrument}')) : 'Drum') + ' takes · your chops ' + Math.round(st.drumSkill || 0)));
       s.body.appendChild(el('p.tiny.dim', { style: 'margin-bottom:6px' }, 'Takes run off your chops. Or play one yourself: the best take counts.'));
       s.body.appendChild(el('div.panel', (ses.tracks || []).map(function (id) {
         var t = ses.takes && ses.takes[id], song = V.song(id);
@@ -548,7 +550,7 @@
               ui.show('studio', {});
               ui.toast(score >= (best || 0) && score > (t || 0) ? 'Take ' + score + '. That is the one. (Producer nods.)' : 'Take ' + score + '. Keeping the better one (' + Math.round(best || t || 0) + ').', { kind: score >= 70 ? 'good' : '' });
             });
-          } }, '🥁 Play')
+          } }, strSeat ? '🎸 Play' : '🥁 Play')
         ]);
       })));
       var rec = V.call('pending', st), weekGo = st.phase === 'plan' && V.call('inSession', st);
