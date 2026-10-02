@@ -329,16 +329,22 @@
   }
   gig.levelOf = function (crowd) { return C.CROWD_LEVELS[U.clamp(Math.floor(crowd / 20), 0, C.CROWD_LEVELS.length - 1)]; };
   // Who does what on stage: the frontman spins the cape, the soloist takes the bridge, the filler sneaks in fills.
+  // v1.1 (plan_contract_1.1 §4.2): by stage role (career.stageRole: the drum seat = the content role, exactly v1.0). On the
+  // lead seat the solo is yours ('player'); fill never names the drummer or the player. roles.drummer (not enumerable, so
+  // a drum career's roles read exactly as v1.0) = whoever is on the kit (career.drummerId) or 'player' (the drum seat).
   gig.roles = function (state) {
-    var act = active(state);
+    var act = active(state), K = GG.career, seat = K.seatOf ? K.seatOf(state) : 'drums';
+    function role(m) { return K.stageRole ? K.stageRole(state, m) : m.role || ''; }
     function byRole(list, skip) {
-      for (var r = 0; r < list.length; r++) for (var i = 0; i < act.length; i++) if (act[i].role === list[r] && act[i].id !== skip) return act[i].id;
+      for (var r = 0; r < list.length; r++) for (var i = 0; i < act.length; i++) if (role(act[i]) === list[r] && act[i].id !== skip) return act[i].id;
       return null;
     }
     var front = null;
-    for (var i = 0; i < act.length && !front; i++) if (/vocals/.test(act[i].role || '')) front = act[i].id;
-    var solo = byRole(['lead guitar', 'guitar', 'fiddle']);
-    return { front: front, solo: solo, fill: byRole(['rhythm guitar', 'fiddle', 'guitar', 'bass'], solo) };
+    for (var i = 0; i < act.length && !front; i++) if (/vocals/.test(role(act[i]))) front = act[i].id;
+    var solo = seat === 'lead' ? 'player' : byRole(['lead guitar', 'guitar', 'fiddle']);
+    var out = { front: front, solo: solo, fill: byRole(['rhythm guitar', 'fiddle', 'guitar', 'bass'], solo) };
+    Object.defineProperty(out, 'drummer', { value: seat === 'drums' ? 'player' : (K.drummerId ? K.drummerId(state) : null), enumerable: false });
+    return out;
   };
 
   // A song's chart: every hit of the pattern as a timed note { t, lane, li, section, entry, bar, step, j (0 = open) }

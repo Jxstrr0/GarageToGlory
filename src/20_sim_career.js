@@ -210,8 +210,9 @@
       case 'front': case 'singer': return front;
       case 'soloist': case 'solo': return g.solo || null;
       case 'filler': case 'fill': return g.fill || null;
-      case 'bassist': case 'bass': {
-        var bm = activeMembers(state).filter(function (m) { return /bass/.test(m.role || ''); })[0];
+      case 'bassist': case 'bass': {   // v1.1: by seatRole (the drum seat: = role); the bass seat = the player
+        if (career.seatOf(state) === 'bass') return 'player';
+        var bm = activeMembers(state).filter(function (m) { return /bass/.test(career.stageRole(state, m)); })[0];
         return bm ? bm.id : null;
       }
       case 'namer': case 'grumbler': return on(R[r]) ? R[r] : front;
@@ -279,6 +280,25 @@
     if (id && m.id === id) return /vocals/.test(String(m.role || '')) ? 'drums/vocals' : 'drums';
     return m.role || '';
   };
+  // v1.1 (Lane B): a member's stage role this career: the drum seat = the content role exactly (v1.0); a string seat =
+  // seatRole ('drums' | 'drums/vocals' for whoever is on the kit). Every role reader (gig.roles, roleOf, drama holes,
+  // songs.reactions) goes through it.
+  career.stageRole = function (state, m) {
+    if (!m) return '';
+    if (career.seatOf(state) === 'drums') return m.role || '';
+    return m.seatRole || career.seatRoleFor(state, m);
+  };
+  // v1.1 role arcs (handoff E7; content chains by Lane A): the seat's arc flag and its values (state.flags[flag]).
+  career.ARCS = { bass: { flag: 'bassArc', values: ['legend', 'secret', 'quiet'] },
+    rhythm: { flag: 'rhythmArc', values: ['credited', 'unsung', 'engine'] },
+    lead: { flag: 'leadArc', values: ['guitarHero', 'bandFirst', 'soloAlbum'] } };
+  // -> { seat, flag, value|null } for a string seat (value = the arc's ending once its chain set it), null on drums.
+  career.arcOf = function (state) {
+    var a = career.ARCS[career.seatOf(state)];
+    if (!a) return null;
+    var v = state && state.flags ? state.flags[a.flag] : null;
+    return { seat: career.seatOf(state), flag: a.flag, value: a.values.indexOf(v) >= 0 ? v : null };
+  };
   career.lineup = function (state) {
     var out = [{ id: 'player', seatRole: career.seatOf(state) }];
     if (state && Array.isArray(state.members)) activeMembers(state).forEach(function (m) { out.push({ id: m.id, seatRole: m.seatRole || career.seatRoleFor(state, m) }); });
@@ -338,7 +358,7 @@
     if (line && typeof line === 'object' && !career.seatOk(state, line)) return false;
     if (who == null || who === '' || who === 'player' || who === 'you' || who === 'recruit') return true;
     if (typeof who !== 'string') return false;
-    if (career.isAlias(who)) return who === '@driver' || career.resolveWho(state, who) != null;
+    if (career.isAlias(who)) { var rw = career.resolveWho(state, who); return who === '@driver' || (rw != null && rw !== 'player'); }   // v1.1: never the player
     if (who === 'rival_frontman') { var cf = GG.rival && GG.rival.cast ? GG.rival.cast(state) : null; return !!(cf && cf.frontman); }
     if (findMember(state, who) || /^fill_/.test(who)) return true;
     var mi = membersIndex()[who];
@@ -448,7 +468,7 @@
     if (!best) { var fg = career.firstGigVenue ? career.firstGigVenue(state, career.band(state) || {}) : null; best = fg ? GG.gig.venue(fg) : null; }
     return best ? { id: best.id, name: best.name } : null;
   };
-  function nameOr(state, id, fallback) { return id ? career.memberName(state, id) : fallback; }
+  function nameOr(state, id, fallback) { return id === 'player' ? 'you' : id ? career.memberName(state, id) : fallback; }   // v1.1: your own seat
   function roleToken(state, alias) {
     var cr = state.card && state.card.roles;
     return cr && Object.prototype.hasOwnProperty.call(cr, alias) ? cr[alias] : career.roleOf(state, alias);
@@ -561,7 +581,7 @@
   // tone (v0.4): 'grumble' | 'pa' (passive-aggressive) | 'news' (drama storylines); plain chat has none.
   // v0.9: a role alias resolves to the member; a speaker from another band (or rival, or a scoped npc) posts nothing (null).
   function postChat(state, who, text, d, tone) {
-    if (career.isAlias(who)) { who = career.resolveWho(state, who); if (!who) return null; }
+    if (career.isAlias(who)) { who = career.resolveWho(state, who); if (!who || who === 'player') return null; }   // v1.1: an alias on your own seat
     if (!career.speakerOk(state, who)) return null;
     var msg = { week: state.totalWeek, who: who, text: career.fillText(state, text) };
     if (tone) msg.tone = tone;
@@ -674,7 +694,7 @@
         Object.keys(v).forEach(function (id) {
           if (!v[id]) return;
           var rid = career.isAlias(id) ? (state ? career.resolveWho(state, id) : null) : id;   // v0.9 role aliases
-          if (!rid) return;
+          if (!rid || rid === 'player') return;   // v1.1: an alias on your own seat moves nobody
           var who = id === 'all' ? (k === 'mood' ? 'Everyone' : 'Band') : career.memberName(state, rid);
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });

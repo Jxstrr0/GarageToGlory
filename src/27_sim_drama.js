@@ -89,14 +89,24 @@
 
   /* ---- Roster: roles, holes, fill-ins, the lineup that plays ------------------------------------------ */
   // The band's roles (content order); a hole is a role nobody active plays.
+  // v1.1 (plan_contract_1.1 §4.2): on a string seat the swapped member's spot is 'drums' (the player's own seat is never a
+  // hole): slotOf(m) = 'drums' for whoever sits on the kit (the swapped original, a drummer recruit), else the content role.
+  // The drum seat = v1.0 exactly (content roles).
+  function seatOn(state) { return GG.career.seatOf ? GG.career.seatOf(state) : 'drums'; }
+  function slotOf(state, m) {
+    if (!m || seatOn(state) === 'drums') return m ? m.role : null;
+    var sr = GG.career.stageRole ? GG.career.stageRole(state, m) : m.role;
+    return /^drums/.test(sr || '') ? 'drums' : m.role;
+  }
+  drama.slotOf = slotOf;
   drama.roles = function (state) {
     var band = GG.career.band(state), src = band && band.members && band.members.length ? band.members
       : list(state).filter(function (m) { return m.original; });
-    var out = [];
-    src.forEach(function (m) { if (m.role && out.indexOf(m.role) < 0) out.push(m.role); });
+    var out = [], sw = seatOn(state) !== 'drums' && GG.career.swapped ? GG.career.swapped(state) : null;
+    src.forEach(function (m) { var r = sw && m.id === sw ? 'drums' : m.role; if (r && out.indexOf(r) < 0) out.push(r); });
     return out;
   };
-  drama.holder = function (state, role) { return active(state).filter(function (m) { return m.role === role; })[0] || null; };
+  drama.holder = function (state, role) { return active(state).filter(function (m) { return slotOf(state, m) === role; })[0] || null; };
   drama.holes = function (state) { return drama.roles(state).filter(function (r) { return !drama.holder(state, r); }); };
   drama.openHoles = function (state) { var f = state.fillIns || {}; return drama.holes(state).filter(function (r) { return !f[r]; }); };
   function slug(role) { return String(role).toLowerCase().replace(/[^a-z0-9]+/g, '_'); }
@@ -321,7 +331,7 @@
         if (msg) { wrap.chat.push(msg); wrap.drama.push(msg.text); }
       }
       // An 'away' member (Kenji) comes back on his own when his spot is still empty.
-      if (m.status === 'away' && x.returnDue != null && state.totalWeek >= x.returnDue && !drama.holder(state, m.role)) {
+      if (m.status === 'away' && x.returnDue != null && state.totalWeek >= x.returnDue && !drama.holder(state, slotOf(state, m))) {
         returnMember(state, m);
         wrap.drama.push(GG.career.fillText(state, ex && ex.backLine ? ex.backLine.text : first(m) + ' is back.'));
       }
@@ -373,7 +383,7 @@
     });
     for (i = 0; i < gone.length; i++) {
       m = gone[i];
-      var ex = exitDef(m), holder = drama.holder(state, m.role);
+      var ex = exitDef(m), holder = drama.holder(state, slotOf(state, m));
       if (ex && ex.needBuzz && state.buzz < ex.needBuzz) continue;
       if (m.status === 'away' && !holder) continue;                     // walks back in on his own at the wrap
       if ((c = cardFor(m, holder ? 'returnFilled' : 'return', state))) return { card: c, who: holder && !ex.generic ? holder.id : m.id };
@@ -423,10 +433,10 @@
     GG.emit('member:quit', { id: m.id });
   }
   function returnMember(state, m) {
-    var E = cfg(), ex = exitDef(m), holder = drama.holder(state, m.role);
+    var E = cfg(), ex = exitDef(m), slot = slotOf(state, m), holder = drama.holder(state, slot);   // v1.1: back to the drums (seatRole kept)
     if (holder && !holder.original) state.members.splice(state.members.indexOf(holder), 1);   // the recruit steps aside
-    if (state.fillIns) delete state.fillIns[m.role];
-    if (state.recruitAd && state.recruitAd.role === m.role) state.recruitAd = null;
+    if (state.fillIns) delete state.fillIns[slot];
+    if (state.recruitAd && state.recruitAd.role === slot) state.recruitAd = null;
     m.status = 'active'; m.stage = 0; m.ultimatum = null; m.stageWeek = state.totalWeek; m.gripe = null;
     m.mood = Math.max(m.mood, E.returnMood);
     m.skill = Math.min(C.RANGES.skill[1], m.skill + E.returnSkill);
@@ -502,14 +512,19 @@
   function forGenre(state, x) { return !x || !x.genres || x.genres.indexOf(state.genre) >= 0; }
   function candidate(state, role, rng, used) {
     var E = cfg(), Rc = R(), names = (Rc.names && (Rc.names[state.genre] || Rc.names.metal)) || FALLBACK.names;
-    var fn = fresh(rng, names.first, used, 'f'), ln = rng.pick(names.last), nick = fresh(rng, names.nicks, used, 'n');
+    // v1.1: the drum-seat hole (a string-seat career) draws drummers: recruits.drummers = { nicks: [..] | { <genre>: [..] },
+    // quirks?: [quirkId] } flavours the nick (and prefers those quirks); everything else is the normal generator.
+    var dr = role === 'drums' && Rc.drummers ? Rc.drummers : null, dn = dr && dr.nicks ? (Array.isArray(dr.nicks) ? dr.nicks : dr.nicks[state.genre] || dr.nicks.metal) : null;
+    var fn = fresh(rng, names.first, used, 'f'), ln = rng.pick(names.last), nick = fresh(rng, dn && dn.length ? dn : names.nicks, used, 'n');
     var byCity = Rc.hometownsByCity && Rc.hometownsByCity[state.city];   // v0.9: recruits come from around the band's own city
     var towns = (byCity && byCity.length && byCity) || (Rc.hometowns && (Rc.hometowns[state.region] || Rc.hometowns.canada)) || [state.city || 'town'];
     var hometown = rng.pick(towns), boost = Math.max(0, C.ERAS.indexOf(state.era)) + Math.min(2, (state.fans || 0) / 1500);
     var stars = 1 + rng.weighted([0, 1, 2, 3, 4], function (i) { return E.recruitStars[i] * (1 + boost * i * 0.35); });
     var traits = (Rc.traits || FALLBACK.traits).filter(function (x) { return forGenre(state, x); });
     var tr = fresh(rng, traits.length ? traits : (Rc.traits || FALLBACK.traits), used, 't') || FALLBACK.traits[0];
-    var q = fresh(rng, (Rc.quirks || []).filter(function (x) { return forGenre(state, x) && !active(state).some(function (m) { return m.recruit && m.recruit.quirk === x.id; }); }), used, 'q');
+    var qs = (Rc.quirks || []).filter(function (x) { return forGenre(state, x) && !active(state).some(function (m) { return m.recruit && m.recruit.quirk === x.id; }); });
+    if (dr && Array.isArray(dr.quirks)) { var dq = qs.filter(function (x) { return dr.quirks.indexOf(x.id) >= 0; }); if (dq.length) qs = dq; }
+    var q = fresh(rng, qs, used, 'q');
     var ask = tr.id === 'frugal' ? 0.1 : U.clamp(Math.round((0.12 + stars * 0.035 + rng.range(-0.04, 0.04)) * 20) / 20, 0.1, 0.45);
     var chem = U.clamp(Math.round(50 + (tr.chem || 0) + (q && q.chem || 0) + (hometown === state.city ? 8 : 0)
       + (state.chemistry - 50) * 0.3 + rng.int(-20, 20)), 5, 95);
@@ -553,7 +568,7 @@
       stage: 0, want: null, exit: null, gripe: null,
       recruit: { trait: c.trait, quirk: c.quirk, hometown: c.hometown, askingCut: c.askingCut, stars: c.stars, chemistry: c.chemistry },
       look: c.look };
-    m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(state, m) : m.role;   // v1.1 (Lane B: a drum-seat hole)
+    m.seatRole = GG.career && GG.career.seatRoleFor ? GG.career.seatRoleFor(state, m) : m.role;   // v1.1: the drum-seat hole hires a drummer (role + seatRole 'drums')
     state.members.push(m);
     clampStat(state, 'chemistry', state.chemistry + (c.chemistry - state.chemistry) * E.hireChemPull);
     if (state.fillIns) delete state.fillIns[ad.role];
@@ -579,7 +594,8 @@
   drama.dismissFillIn = function (state, role) { if (state.fillIns) delete state.fillIns[role]; changed(state); };
   // v0.9: role normalisation for fill-ins: 'vocals/guitar' -> 'vocals/guitar', then 'vocals', then 'guitar' (-> lead guitar);
   // 'acoustic' -> rhythm guitar; 'fiddle' -> its own pool, else lead guitar.
-  var ROLE_ALIAS = { guitar: ['guitar', 'lead guitar', 'rhythm guitar'], acoustic: ['acoustic', 'rhythm guitar'], fiddle: ['fiddle', 'lead guitar'] };
+  var ROLE_ALIAS = { guitar: ['guitar', 'lead guitar', 'rhythm guitar'], acoustic: ['acoustic', 'rhythm guitar'], fiddle: ['fiddle', 'lead guitar'],
+    drums: ['drums', 'drummer'] };   // v1.1: the drum-seat hole (fillIns.drums, else any)
   function fillPool(F, role) {
     var r = String(role || '').toLowerCase(), tries = [r];
     r.split('/').forEach(function (p) { p = p.trim(); tries = tries.concat(ROLE_ALIAS[p] || [p]); });
@@ -643,7 +659,7 @@
   drama.botValue = function (state, spec) {
     var B = cfg().bot, v = 0;
     (Array.isArray(spec) ? spec : [spec]).forEach(function (x) {
-      var m = x && find(state, x.id), h = m ? drama.holder(state, m.role) : null;
+      var m = x && find(state, x.id), h = m ? drama.holder(state, slotOf(state, m)) : null;
       if (x.act === 'settle') v += B.keep;
       else if (x.act === 'quit') v -= B.keep;
       else if (x.act === 'return' && m) v += h && h !== m ? (m.skill - h.skill) * 0.8 + 3 : B.keep;
