@@ -171,7 +171,7 @@
     // cast.drummer when the lineup has no drummer; the stage's session path uses his id + look), never the player.
     drummer: { id: 'bb_session', hired: true, name: 'The Session Guy', short: 'Session guy', fullName: 'The Session Guy', nick: 'The Session Guy', role: 'drums', lane: 'back',
         dayJob: 'Session drummer, by the hour',
-        bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, drummer to drummer.',
+        bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, one professional to another.',
         gags: ['Leaves at exactly the end of the booked hour. Mid-song, if needed.', 'Invoices Buckle & Boot for the encore separately.',
           'The only member of the band who can read music. Does not bring it up.'],
         look: look('#c68b5e', '#1c1c1c', 'bald', '#4a4a52', '#222228', 1.0, 1.05, ['beard'], 'tee'), corpsePaint: false, stageShirt: '#4a4a52' },
@@ -272,7 +272,7 @@
       final: ["Brayden: \"Calgary! Tailgates down for the last time tonight!\""],
       opening: ["Afterwards Brayden hands you a Prairie Titan keychain. 'No hard feelings, bud. Yet.'"]
     },
-    openingSlot: ["Afterwards Brayden shakes your hand and asks if your drummer does truck ads. You are the drummer.",
+    openingSlot: ["Afterwards Brayden asks who plays {instrument}. You do. He asks if you do truck ads.",
       "After the set Sheldon offers the band a 'hay-bale partnership'. Duke asks what that is. Nobody knows."],
 
     ui: {
@@ -616,7 +616,7 @@
             success: { effects: { mood: { travis: 6 }, fans: 3 }, outcome: "Vern listens to the whole thing and says 'that'll do'. It is the highest praise in Saskatchewan. Rent waived." },
             fail: { effects: { burnout: 5 }, outcome: "Vern says 'that's nice' and hands Travis a rock bucket. The rocks are still there. So is Vern." } } }
       ] },
-    { id: 'grr_hay_throne', type: 'weird', speaker: 'duke', title: 'The Hay Bale Throne', gate: g({ maxWeek: 10 }),
+    { id: 'grr_hay_throne', type: 'weird', speaker: 'duke', title: 'The Hay Bale Throne', seat: ['drums'], gate: g({ maxWeek: 10 }),
       text: "Your drum throne is a square bale. It is itchy. It sheds. It is slowly getting shorter because Vern's horse, Doris, comes in " +
         "through the side door and eats it during rehearsal. Duke says the bale 'has character'.",
       choices: [
@@ -694,7 +694,7 @@
       choices: [
         { label: 'Hang blankets on the walls', hint: '−$30 · Skill ↑', effects: { fund: -30, skill: { all: 1 } },
           outcome: "Vern's old horse blankets on every rib of the Quonset. The echo is gone. The smell of horse is not. You play tighter anyway." },
-        { label: 'Play with the echo', hint: 'Clementine ↑ · Drum skill ↑', effects: { mood: { clementine: 6 }, drumSkill: 1 },
+        { label: 'Play with the echo', hint: 'Clementine ↑ · Your chops ↑', effects: { mood: { clementine: 6 }, drumSkill: 1 },
           outcome: "You play every fill so the echo finishes it. Clementine calls it 'ensemble'. Duke calls it 'the Quonset playing along'." },
         { label: 'Rehearse outside', hint: 'Burnout ↓ · Fans ↑', effects: { burnout: -4, fans: 4 },
           outcome: 'You set up in the yard. Two neighbours stop their trucks on the grid road to listen. One honks at the end. That is a review.' }
@@ -733,7 +733,7 @@
         { label: 'Sit on his hands', hint: 'Chemistry ↑', effects: { chemistry: 3, burnout: 3 },
           outcome: 'Clementine and Duke sit on either side of him holding his arms down. He sways to the auctioneer like it is a ballad.' },
         { label: 'Ask Lloyd for a job', hint: 'Gamble: auctioneers need rhythm',
-          outcome: 'You ask Lloyd if the auction needs a drummer.',
+          outcome: 'You ask Lloyd if the auction needs a rhythm section.',
           roll: { chance: 0.45,
             success: { effects: { fund: 60, drumSkill: 1, book: 'auction_mart_stage' }, outcome: 'You keep time on a feed pail. Lloyd sells at 150 BPM. Record auction. $60, lunch, and Saturday in his sale ring.' },
             fail: { effects: { burnout: 4 }, outcome: 'Lloyd says the auction has a rhythm and it is Lloyd. You go home with the mystery wrenches.' } } }
@@ -761,12 +761,12 @@
           outcome: 'Five yeehaws on the next break. Clementine rolls her eyes. On the last chorus she does it again, just a little. She is smiling.' }
       ] },
     { id: 'grr_gophers', type: 'weird', speaker: 'duke', title: 'Gophers Under the Kit', gate: g({ era: GLS }),
-      text: "Your kick drum is sinking. The Quonset floor is dirt under the plywood, and the gophers have been busy. The kick is now four " +
+      text: "The kick drum is sinking. The Quonset floor is dirt under the plywood, and the gophers have been busy. The kick is now four " +
         "centimetres lower than the snare. Duke is on his belly, looking into a hole, making friends.",
       choices: [
         { label: 'Pour a concrete pad ($120)', hint: '−$120 · Skill ↑', effects: { fund: -120, drumSkill: 2 },
-          outcome: 'Vern helps you pour a pad. The kit sits level for the first time. Your kick has never sounded so solid. The gophers relocate.' },
-        { label: 'Play around the tilt', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+          outcome: 'Vern helps you pour a pad. The kit sits level for the first time. The kick has never sounded so solid. The gophers relocate.' },
+        { label: 'Play around the tilt', hint: 'Your chops ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
           outcome: 'You adapt. You play downhill. At your next gig on a flat stage you overshoot every fill. The crowd thinks it is on purpose.' },
         { label: 'Let Duke negotiate', hint: 'Duke ↑ · Chemistry ↑', effects: { mood: { duke: 6 }, chemistry: 3 },
           outcome: "Duke leaves a peanut butter sandwich at the hole every rehearsal. The digging stops. Duke says it is 'an understanding'." }
@@ -790,8 +790,8 @@
         "1962 and has not stopped. He would like to teach everyone first. In the Quonset. Now.",
       choices: [
         { label: 'Take the lesson', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 5, burnout: 4 },
-          outcome: 'Earl leads Duke. Clementine leads Travis. You play the beat on a pail. It is chaos, then it is dancing, then it is lovely.' },
-        { label: 'Just play the beat', hint: 'Drum skill ↑', effects: { drumSkill: 1, mood: { earl: -4 } },
+          outcome: 'Earl leads Duke. Clementine leads Travis. You keep the beat on a pail. It is chaos, then it is dancing, then it is lovely.' },
+        { label: 'Just play the song', hint: 'Your chops ↑', effects: { drumSkill: 1, mood: { earl: -4 } },
           outcome: 'Boom-chick, boom-chick, three hours straight. Your left foot has never been so reliable. Earl dances alone. He is fine.' },
         { label: 'Film the lesson', hint: 'Buzz ↑ · Duke ↓', effects: { buzz: 5, mood: { duke: -4 } },
           outcome: "Duke's two-step, in the hat, is a sensation. He is mortified. The hat is not. The hat has never looked better." }
@@ -954,7 +954,7 @@
         "'the old-timers played by lantern'. Travis Lee has an acoustic. Clementine has a fiddle. The amps are useless.",
       choices: [
         { label: 'Play unplugged', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 5, skill: { all: 1 } },
-          outcome: "Acoustic, fiddle, you on brushes on a hay bale, Duke humming the bass. Rain on the steel roof. Nobody wants the power back." },
+          outcome: "Acoustic, fiddle, you playing as quietly as you can, Duke humming along. Rain on the steel roof. Nobody wants the power back." },
         { label: 'Tell stories instead', hint: 'Earl ↑ · Burnout ↓', effects: { mood: { earl: 8 }, burnout: -4 },
           outcome: 'Earl tells the 1979 story by lantern. It is different this time. There is a woman in it. Nobody interrupts. Nobody breathes.' },
         { label: 'Drive to town', hint: '−$20 · Burnout ↑', effects: { fund: -20, burnout: 4 },
@@ -1014,8 +1014,8 @@
       text: "The seniors' line-dance class at the Legion is tired of the CD player. They want a live band every Tuesday afternoon. $50 a week. " +
         "They have requests. They have a lot of requests. The instructor, Marg, is eighty-four and has a whistle.",
       choices: [
-        { label: 'Take the Tuesday gig', hint: '+$50 · Drum skill ↑', effects: { fund: 50, drumSkill: 1 },
-          outcome: 'Marg blows the whistle when you drift off the tempo. You never drift again. You are now the tightest drummer in the southwest.' },
+        { label: 'Take the Tuesday gig', hint: '+$50 · Your chops ↑', effects: { fund: 50, drumSkill: 1 },
+          outcome: 'Marg blows the whistle when you drift off the tempo. You never drift again. You are now the tightest player in the southwest.' },
         { label: 'Just one Tuesday', hint: 'Fans ↑', effects: { fans: 8 },
           outcome: "Forty seniors, perfect lines, a boot-scoot so precise it's military. Marg says you 'show promise'. The whole class comes to your next gig." },
         { label: 'Earl goes alone', hint: 'Earl ↑ · Chemistry ↓', effects: { mood: { earl: 8 }, chemistry: -2 },
@@ -1051,7 +1051,7 @@
       choices: [
         { label: 'Stop the show. Find the hat.', hint: 'Duke ↑ · Buzz ↑', effects: { mood: { duke: 8 }, buzz: 3 },
           outcome: 'The whole crowd fans out across the field. A kid finds it. The show resumes to the biggest cheer of the night.' },
-        { label: 'Keep playing', hint: 'Duke ↓ · Drum skill ↑', effects: { mood: { duke: -6 }, drumSkill: 1 },
+        { label: 'Keep playing', hint: 'Duke ↓ · Your chops ↑', effects: { mood: { duke: -6 }, drumSkill: 1 },
           outcome: 'You carry the song. Duke plays hatless, small, blinking in the sun. A farmer returns the hat after the show. Duke hugs him.' },
         { label: 'Send Biscuit', hint: 'Gamble: a heeler, a hat, a field',
           outcome: "Vern whistles. Biscuit is off like a shot.",
@@ -1081,7 +1081,7 @@
           outcome: 'You turn down a notch. Clementine is audible. The hat stays exactly as big. Coffee row calls the next show "better, still loud".' },
         { label: 'Invite coffee row to a show', hint: 'Fans ↑ · Burnout ↑', effects: { fans: 8, burnout: 3 },
           outcome: 'Seven farmers in the front row with earplugs from the Co-op. They clap on one and three. They stay to the end. High praise.' },
-        { label: 'Play louder, out of love', hint: 'Buzz ↑ · Drum skill ↑', effects: { buzz: 3, drumSkill: 1 },
+        { label: 'Play louder, out of love', hint: 'Buzz ↑ · Your chops ↑', effects: { buzz: 3, drumSkill: 1 },
           outcome: 'Wilf reports back: "still loud, but on purpose now". The row respects a decision.' }
       ] },
     { id: 'grr_rep_truck_song', type: 'drama', speaker: 'travis', title: 'Another Truck Song', once: false, cooldown: 9, gate: g({ era: GLS }),
@@ -1099,7 +1099,7 @@
       text: "Clementine practises scales in the Quonset at five every morning. Classical scales. Three octaves. Vern's rooster has started " +
         "crowing in D minor to match. Duke, asleep in the loft, would like a word. With the rooster, mostly.",
       choices: [
-        { label: 'Join her', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+        { label: 'Join her', hint: 'Your chops ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
           outcome: 'Five a.m. rudiments with a classical violinist. She counts you in with a glare. You have never been so precise or so tired.' },
         { label: 'Let her be', hint: 'Clementine ↑', effects: { mood: { clementine: 5 } },
           outcome: 'She plays in the dark until sunrise. When you come in at nine the coffee is on and she is playing a hoedown. She will deny both.' },
@@ -1463,7 +1463,7 @@
         { label: 'Offer the whole band', hint: 'Gamble: the symphony and a hay bale',
           outcome: 'You email the symphony: package deal.',
           roll: { chance: 0.45,
-            success: { effects: { fans: 80, buzz: 12 }, outcome: 'The Ramblers with a full orchestra. Duke\'s hat has its own spotlight. You drum on a hay bale on a concert stage.' },
+            success: { effects: { fans: 80, buzz: 12 }, outcome: 'The Ramblers with a full orchestra. Duke\'s hat has its own spotlight. You play {instrument} on a hay bale on a concert stage.' },
             fail: { effects: { mood: { clementine: -6 } }, outcome: '"Just the fiddler," says the symphony. Clementine declines out of loyalty and is quietly furious about it.' } } },
         { label: 'Say nothing', hint: 'Chemistry ↑', effects: { chemistry: 3 },
           outcome: 'She decides alone. She goes. She tells nobody. You find out from a review that calls her "slumming it, gloriously".' }
@@ -1833,7 +1833,7 @@
         { label: 'Not yet', effects: { mood: { travis: -4 } },
           outcome: 'Travis Lee tapes the design to the Quonset wall. It watches you rehearse. The truck on it is very shiny.' }
       ] },
-    { id: 'shop_pawn_kit_grid_road_ramblers', type: 'money', speaker: 'earl', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit_grid_road_ramblers', type: 'money', speaker: 'earl', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Earl calls from a pawn shop in Medicine Hat: a five-piece kit, shells that almost match, $800. 'Fella says $650 today. I played " +
         "with the drummer who pawned it. 1979. Good hands. The hay bale can stay, son. The milk crate cannot.'",
       choices: [
@@ -1860,16 +1860,16 @@
         { label: 'Keep the old Suburban', effects: { chemistry: 2, mood: { earl: 3 } },
           outcome: "Earl pats the Suburban's dashboard. 'She has another million in her,' he says. At twenty under, she might." }
       ] },
-    { id: 'shop_solo_grid_road_ramblers', type: 'drama', speaker: 'earl', title: 'Earl Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo_grid_road_ramblers', type: 'drama', speaker: 'earl', title: 'Earl Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: "Earl has written a solo. It is thirty-two bars. It has a story in the middle. He will only play it if the songs get a real solo " +
-        "section. He is holding your sticks hostage. He has done this before. In 1979. To a better drummer, he says.",
+        "section. He is holding your {sticks} hostage. He has done this before. In 1979. To a better one, he says.",
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Earl ↑', effects: { mood: { earl: 8 }, shop: { section: 'solo' } },
-          outcome: 'Earl returns the sticks and plays you the solo. It is thirty-two bars of pure twang. The story in the middle is optional. It is not.' },
+          outcome: 'Earl returns the {sticks} and plays you the solo. It is thirty-two bars of pure twang. The story in the middle is optional. It is not.' },
         { label: 'Only with a fiddle answer', hint: 'Solo unlocked · Earl ↑ · Clementine ↑', effects: { mood: { earl: 5, clementine: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'Guitar, then fiddle, trading fours. It turns into a duel. Nobody wins. The crowd is the winner. Earl says it was a tie. It was not.' },
         { label: 'No solos in this band', hint: 'Earl ↓↓', effects: { mood: { earl: -10 } },
-          outcome: 'Earl returns the sticks. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
+          outcome: 'Earl returns the {sticks}. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
       ] },
     { id: 'shop_space_1_grid_road_ramblers', type: 'money', speaker: 'duke', title: 'A Room in Town', gate: g({ era: LSW }),
       text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $60 a week, " +
@@ -2018,7 +2018,8 @@
         quitLine: { who: 'duke', text: "My uncle's crew needs a hand for harvest. Then another harvest. I'm taking the hat. The hat needs air." },
         beats: [
           { at: 3, who: 'grr_vern', text: "Duke's combining near Brandon. Says the hat got a sunburn. The hat. Not him. He says the hat is fine now." },
-          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums." }
+          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums.", seat: ['drums', 'rhythm', 'lead'] },
+          { at: 9, who: 'duke', text: "Sat in on drums at a harvest dance in Manitoba. The hat stayed on. They loved it. Didn't feel the same. No bass.", seat: ['bass'] }
         ],
         changed: "Back from harvest with a farmer's tan and a fourth note he learned from a fiddler in Brandon.",
         backLine: { who: 'duke', text: "Harvest's in. The hat and I talked it over. We're back. I brought a roast." }
@@ -2237,7 +2238,7 @@
         'VIRAL: Clementine plays a reel so fast a man\'s boot flies off and lands on the stage in time. {views} views.',
         'VIRAL: Travis Lee restarts his 1987 truck on the first try, on camera, and weeps with joy. {views} views.',
         'VIRAL: a whole curling rink two-steps to the waltz while the ice crew keeps sweeping. {views} views.',
-        'VIRAL: {player} drums on a hay bale so hard it bursts on the last hit, like confetti. {views} views.'
+        'VIRAL: {player} plays {instrument} on a hay bale so hard it bursts on the last note, like confetti. {views} views.'
       ],
       cringe: [
         { who: 'travis', text: 'Wrong kind of viral: Travis Lee\'s "how to drive stick" tutorial. He stalls eleven times. {views} views.' },
@@ -2732,8 +2733,8 @@
           roll: { chance: 0.6,
             success: { effects: { mood: { travis: 10 }, chemistry: 3 }, outcome: 'He drives the rest of the way without one stall. He does twenty under. Nobody says a word. Everyone thinks it.' },
             fail: { effects: { burnout: 4, van: { condition: -3 } }, outcome: 'He stalls at the same light. Then he rolls back into a mailbox. The mailbox belongs to Honest Gus.' } } },
-        { label: 'Just keep trying', hint: 'Drum skill ↑', effects: { drumSkill: 1, burnout: 3 },
-          outcome: "On the fourth try you feel it: clutch, gas, a rhythm. It's a groove. You're a drummer. You drive in time from now on." }
+        { label: 'Just keep trying', hint: 'Your chops ↑', effects: { drumSkill: 1, burnout: 3 },
+          outcome: "On the fourth try you feel it: clutch, gas, a rhythm. It's a groove. You're a musician. You drive in time from now on." }
       ] },
     { id: 'road_grr_you_gas_argument', type: 'road', speaker: 'duke', title: 'The Gas Station Argument', once: false, cooldown: 10, gate: road({ driver: YOU }),
       text: "Gas station outside Herbert. Duke wants jerky. Clementine wants to leave. Travis wants to look at the used trucks across the road. " +
@@ -2921,7 +2922,7 @@
         { label: 'Soundproof the wall', hint: '−$120 · Production ↑', effects: { fund: -120, production: 3 },
           outcome: 'Duke hangs Vern\'s horse blankets on the shared wall. The tailgate song fades to a hum. Your ballad breathes again.' }
       ] },
-    { id: 'studio_grr_click', type: 'drama', speaker: 'earl', title: 'Earl Will Not Play to a Click', once: false, cooldown: 10, gate: only({}),
+    { id: 'studio_grr_click', type: 'drama', speaker: 'earl', title: 'Earl Will Not Play to a Click', once: false, cooldown: 10, seat: ['drums'], gate: only({}),
       text: "The producer wants a click track. Earl has never played to a click. 'In 1979 we had a drummer,' he says, and points at you. " +
         "The producer points at the click. Earl points at you again. You are the drummer. Everyone is looking at you.",
       choices: [
@@ -3332,7 +3333,7 @@
       solo: ['A solo section. Thirty-two bars. I will keep the story under sixteen.', 'Room for a solo. I played on the original of this.'],
       custom: [{ when: 'similarityHigh', text: 'I played on the original of this one. Literally. It sounds like a session in 1979.' },
         { when: 'any', text: 'I played on the original. Well. I will have, once we record it.' },
-        { when: 'difficultyHigh', text: 'Busy kit. In 1979 the drummer played less and we sold more records.' }]
+        { when: 'difficultyHigh', text: 'Busy kit. In 1979 the drummer played less and we sold more records.', seat: ['drums', 'bass', 'rhythm'] }]
     },
     clementine: {
       fills: ['(Clementine plays a fill. Four notes. One is Bach.)', 'I put a fiddle run in bar 12. Do not make it weird.', 'A small fill after the chorus. Tasteful. Unlike the rest.'],
@@ -3342,9 +3343,9 @@
         { when: 'any', text: 'It is a hoedown. I will play it like Paganini. That is my compromise.' }]
     },
     duke: {
-      custom: [{ when: 'any', text: 'Three notes fit. They always fit.' },
-        { when: 'similarityHigh', text: 'Sounds like the last one. Same three notes. Efficient.' },
-        { when: 'difficultyHigh', text: 'Hard one. Might need the fourth note.' }]
+      custom: [{ when: 'any', text: 'Three notes fit. They always fit.', seat: ['drums', 'rhythm', 'lead'] },
+        { when: 'similarityHigh', text: 'Sounds like the last one. Same three notes. Efficient.', seat: ['drums', 'rhythm', 'lead'] },
+        { when: 'difficultyHigh', text: 'Hard one. Might need the fourth note.', seat: ['drums', 'rhythm', 'lead'] }]
     }
   });
   members(obj(LN, 'writeTips'), {

@@ -192,7 +192,7 @@
             dayJob: 'Forensic accountant',
             bio: 'Plays blast beats at exactly 240 bpm to a metronome app. Emails you a polite tempo report after every show. Drives a 2009 Corolla with 400,000 km on it.',
             gags: ['Audits your tempo. You were 3% fast in the bridge. He attached a chart.',
-              'Nods at you, drummer to drummer. Then files a report.'],
+              'Nods at you, one metronome to another. Then files a report.'],
             look: look('#ecebe6', '#0c0c0e', 'long', '#4e5e70', '#222228', 1.0, 1.1, ['glasses'], 'jacket'), corpsePaint: true, stageShirt: '#0f0f13' }
         ],
         songs: ['Eternal Winter (Fiscal Year End)', 'Audit of the Frozen Throne', 'Plug In the Block Heater', 'Minus Forty (Both Scales)',

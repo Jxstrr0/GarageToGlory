@@ -74,7 +74,7 @@
         { label: 'A solo portrait of the singer', hint: 'Gamble: majestic or meme',
           roll: { chance: 0.5,
             success: { effects: { buzz: 8, mood: { '@front': 8 } }, outcome: '{front}, hair in the wind, the elevator behind. Brooding. Majestic. On forty posters by Monday.' },
-            fail: { effects: { mood: { '@front': -4 }, chemistry: -3 }, outcome: 'The wind wraps a jacket around {front}\'s head. {soloist} gets all of it on video. The deletion requests go on for years.' } },
+            fail: { effects: { mood: { '@front': -4 }, chemistry: -3 }, outcome: 'The wind wraps a jacket around {front}\'s head. It is all on video, courtesy of {soloist}. The deletion requests go on for years.' } },
           outcome: '{front} climbs the ditch, chin first.' }
       ] },
 
@@ -309,9 +309,9 @@
         { label: 'Flag down a boost', hint: 'Burnout ↑', effects: { burnout: 4, chemistry: 2 },
           outcome: 'A guy in a snowmobile suit has cables, a thermos and forty minutes of opinions about block heaters. The van starts. He wants a shout-out.' },
         { label: 'Hair dryer on the engine', hint: 'Gamble: prairie engineering',
-          roll: { chance: 0.5, success: { effects: { mood: { all: 4 } }, outcome: 'It works. {soloist} will never let anyone forget whose idea it was.' },
+          roll: { chance: 0.5, success: { effects: { mood: { all: 4 } }, outcome: 'It works. It was the idea of {soloist}, and nobody will be allowed to forget it.' },
             fail: { effects: { van: { condition: -3 }, fund: -40 }, outcome: 'The hair dryer dies. Then the extension cord. Then the fuse. Cab money, forty bucks.' } },
-          outcome: '{soloist} finds an extension cord.' },
+          outcome: 'An extension cord turns up, found by {soloist}.' },
         { label: 'Gear on a toboggan, cab it', hint: '−$80', effects: { fund: -80, burnout: 3 },
           outcome: 'The cab driver helps carry the amps. He has opinions about your genre. He is right.' }
       ] },
@@ -410,7 +410,7 @@
         { label: 'Grid-road shortcut', hint: 'Gamble: gravel or glory',
           roll: { chance: 0.5, success: { effects: { mood: { all: 3 } }, outcome: 'Empty gravel all the way. You beat the convoy by an hour.' },
             fail: { effects: { van: { condition: -3 } }, outcome: 'Every other band had the same idea. It is a grid-road traffic jam. With cows.' } },
-          outcome: '{soloist} opens the road atlas.' }
+          outcome: 'Out comes the road atlas, opened by {soloist}.' }
       ] },
 
     // v0.9: an anywhere card for the other three bands (Hail Damage's are Baba's lunch and the cape in the door)
@@ -460,15 +460,15 @@
 
     { id: 'road_lead_foot', type: 'road', speaker: 'marcel', title: 'Lead Foot', once: false, cooldown: 6,
       gate: { driver: ['you'], minKm: 60, band: HD },
-      text: 'You drive like you drum: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
+      text: 'You drive like you play {instrument}: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
       choices: [
         { label: 'Pay the ticket', hint: '−$120', effects: { fund: -120 },
           outcome: 'The photo is actually great. Marcel is mid-wave, cape up. It becomes the new press shot.' },
         { label: 'Drive like Kenji now', hint: 'Burnout ↑ · safe', effects: { burnout: 4, chemistry: 2 },
           outcome: 'Exactly the limit, both hands on the wheel, sunglasses on. The band sits up straight. It feels like church.' },
         { label: 'Blame the tempo', hint: 'Gamble: a warning',
-          roll: { chance: 0.4, success: { effects: { buzz: 3 }, outcome: 'The officer is a drummer. You get a warning and a tip about ride cymbals.' },
-            fail: { effects: { fund: -150 }, outcome: 'The officer is not a drummer. The officer is a clarinet player. It is worse.' } },
+          roll: { chance: 0.4, success: { effects: { buzz: 3 }, outcome: 'The officer plays {instrument} too. You get a warning and a tip about your {gear}.' },
+            fail: { effects: { fund: -150 }, outcome: 'The officer does not play {instrument}. The officer plays the clarinet. It is worse.' } },
           outcome: 'You roll down the window.' }
       ] },
 
@@ -628,7 +628,7 @@
       dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
       load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },
     you: { id: 'you', band: null, name: 'You', dashboard: 'none', dashName: 'nothing but a fuel light',
-      blurb: 'The founder, behind the wheel. You drive like you drum.',
+      blurb: 'The founder, behind the wheel. You drive the way you keep time.',
       effect: 'More wrong turns, more gas-station arguments', mods: { breakdown: 1.15, roadChance: 1.25 },
       takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. Nobody touches the stuff on the dash.',
       byBand: { hail_damage: { takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' } } }

@@ -31,7 +31,7 @@
           bar: ['x.....x.x.......', '........x.......', 'x...x...x...x...', 'x.......x.......'] },
         { id: 'gallop', name: 'Gallop', pedal: true, desc: 'Da-ga-da, da-ga-da. Horses, but metal.',
           bar: ['x.xxx.xxx.xxx.xx', '....x.......x...', E, 'x...x...x...x...'] },
-        { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. Your calves file a complaint.',
+        { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. The calves file a complaint.',
           bar: ['xxxxxxxxxxxxxxxx', '....x.......x...', E, 'x.......x.......'] }
       ],
       mods: [

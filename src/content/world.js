@@ -427,13 +427,20 @@
       { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
         success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
         fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
-    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    ], { type: 'weird', seat: ['drums'], gate: { band: ['hail_damage'] } }),
     card('wt_au_kick_spider', 'australia', 'shazza', 'Something in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Shazza looks through the port hole and goes very quiet. "Mate. It has eight legs and a mortgage."', [
       { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
       { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
         success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
         fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
-    ], { type: 'weird', gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
+    ], { type: 'weird', seat: ['drums'], gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
+    // v1.1 Seats: the string seats' spider (the drum seat keeps the kick-drum ones above)
+    card('wt_au_amp_spider', 'australia', 'shazza', 'Something in the Cab', 'Soundcheck. Your {instrument} sounds wrong. Shazza looks into the back of the amp and goes very quiet. "Mate. It has eight legs and a mortgage."', [
+      { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
+      { label: 'Play through it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
+        success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the speaker cone. It moves in time. Someone films it. Every poster now calls you "Spider".' },
+        fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto your strap. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You plug in. Carefully.' }
+    ], { type: 'weird', seat: ['bass', 'rhythm', 'lead'] }),
     card('wt_au_christmas', 'australia', 'marcel', 'Christmas at the Beach', 'It is Christmas and thirty-eight degrees. Marcel has put on the cape and a Santa hat and will not take either off.', [
       { label: 'Beach barbecue for the band', hint: 'Moods ↑ · Homesick ↓', effects: { mood: { all: 8 }, fund: -200, tour: { homesick: -6 } }, outcome: 'Prawns, sunburn and a Christmas cracker joke read aloud in five accents. Not home, but close.' },
       { label: 'Video call home for Christmas', hint: 'Homesick ↓↓ · Burnout ↑', effects: { burnout: 4, tour: { homesick: -12 } }, outcome: 'Snow in the garage window behind Mom. Sand in your sandwich. Everyone cries a little. It helps.' }

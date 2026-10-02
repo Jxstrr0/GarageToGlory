@@ -34,7 +34,7 @@
       'Saskatoon. July. The sky over Circle Drive turns the colour of a bruise.',
       "Hail the size of perogies. Eleven minutes later, your dad's brand-new truck looks like a golf ball.",
       "The insurance adjuster arrives in black eyeliner. He circles the truck twice and whispers the claim type like a curse: 'Hail. Damage.'",
-      "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a drum kit.",
+      "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a {gear}.",
       "Now you have both. The truck lives on the street. The garage is yours. Hail Damage is born."
     ],
     starterSongs: [   // English titles (v0.7.2); `fr` = Marcel's original (seeds the pattern, renames old saves)
@@ -83,7 +83,7 @@
     coldOpen: [
       'Regina. January. The city fills a pothole on Dewdney Avenue with a smaller pothole.',
       "Rox Delorme screams at the council meeting for eleven minutes. The minutes record it as 'public comment'.",
-      'In the basement under the Suds-O-Rama, Benny plays both of his chords. Moth wanders in from the van. You bring a snare.',
+      'In the basement under the Suds-O-Rama, Benny plays both of his chords. Moth wanders in from the van. You bring your {sticks}.',
       'The dryers thump in 4/4. Frost Heave is born, and council is on notice.'
     ],
     starterSongs: [
@@ -122,7 +122,7 @@
     coldOpen: [
       'Edmonton. Minus forty. A man in leather pants is jogging past a strip mall.',
       "That man is Chase Vanderhoek. He believes it's 1985. He's rented Unit 4B, between a nail salon and a vacuum repair.",
-      "Lenny's riff sounds exactly like a famous one. Tamara hands out floss. You set up your kit where the till used to be.",
+      "Lenny's riff sounds exactly like a famous one. Tamara hands out floss. You set up your {gear} where the till used to be.",
       'Gravel Kings are born. A lawyer calls before the first chorus ends.'
     ],
     starterSongs: [
@@ -162,7 +162,7 @@
       'Outside Swift Current. A Quonset, a grid road, and a sunset the colour of canola.',
       "Travis Lee Beauchamp sings about a truck he's never owned. Earl says he played on the original. There is no original.",
       "Clementine tunes her fiddle like it's beneath her. Duke's hat enters the Quonset a full second before Duke.",
-      'You drag a hay bale over as a drum throne. The Grid Road Ramblers are born.'
+      'You drag a hay bale over and sit on it like a throne. The Grid Road Ramblers are born.'
     ],
     starterSongs: [
       { title: "My Truck's Got Feelings", titleEn: null },

@@ -6,6 +6,8 @@
 // road cards). Strict since the v0.9 integration: Hail Damage names in another band's career, another new band's names
 // in a new band's career (Q8 cameo cards with cameo: true excepted) and other bands' names in a Hail Damage career all
 // fail; missing rival lineups fail too. LEAK_STRICT=0 turns the non-Hail-Damage checks back into warnings.
+// v1.1 "Seats" (Lane A): SEAT=bass|rhythm|lead|all runs every band on the string seats with the strict seat leak scan
+// (tests/seat_scan.js); the default run adds a quick one (see RUN_SEATS below).
 const load = require('./_load');
 const { test, ok, eq, done } = require('./_t');
 
@@ -15,6 +17,15 @@ const LEAK_STRICT = true;   // v0.9 integration: Lane A's content has merged; LE
 const STRICT = process.env.LEAK_STRICT === '0' ? false : LEAK_STRICT || !!process.env.LEAK_STRICT;
 const BANDS = Object.keys(K.bands);
 const LEAK_YEARS = Math.max(1, parseInt(process.env.LEAK_YEARS, 10) || 3);   // LEAK_YEARS=10: a full-career scan (slow)
+// v1.1 "Seats" (Lane A, plan_contract_1.1 §5 A): SEAT=bass|rhythm|lead|all (all = the three string seats; a comma list works,
+// drums included) runs the career block per band x seat and adds the strict SEAT LEAK SCAN (tests/seat_scan.js: drum vocabulary
+// in any text a string-seat career sees, minus Lane A's [left] phrases and the lines written for a string seat). Unset = the
+// drum seat exactly as before, plus a quick seat scan (one seed, one year per band x string seat).
+const SEAT_ENV = process.env.SEAT || '';
+const RUN_SEATS = !SEAT_ENV ? ['drums'] : SEAT_ENV === 'all' ? ['bass', 'rhythm', 'lead'] : SEAT_ENV.split(',').filter(x => C.SEATS.indexOf(x) >= 0);
+const SCAN = require('./seat_scan');
+const AWARE = SCAN.seatAware(GG);
+const DUMP = process.env.SEAT_DUMP || '', DUMPED = [];   // SEAT_DUMP=<file>: every seat leak, one per line (Lane A's worklist)
 // (fixer: + Cousin Dale / Dale from Warman / Hwy 11 / the Moose Opera; not bare 'Warman': the Warman Curling Rink Lounge is
 // a shared venue other bands play)
 const HD_LEAK = /Marcel|Dana|Jaxon|Kenji|Baba|Lord Abyssus|Moose Hearse|Tundra Wraith|Gord|Grimnir|HALE DAMAGE|Cousin Dale|Dale from Warman|Hwy 11|Moose Opera/;
@@ -329,7 +340,7 @@ function collector(s) {
       // v1.0 Lane Q: the lessons, the achievement rows this band can see, and the ending (tier text + epilogues; computed
       // for a live career, the recorded one for an ended career)
       if (GG.lessons) GG.lessons.LESSONS.forEach(id => (GG.lessons.steps(s, id) || []).forEach(st => add('lesson:' + id, GG.career.fillText(s, st.text))));
-      if (GG.achieve) GG.achieve.list(s).filter(a => !a.band || a.band.indexOf(s.bandId) >= 0).forEach(a => { add('ach:' + a.id, a.name); add('ach:' + a.id, a.blurb); });
+      if (GG.achieve) GG.achieve.list(s).filter(a => (!a.band || a.band.indexOf(s.bandId) >= 0) && (!a.seat || a.seat.indexOf(GG.career.seatOf(s)) >= 0)).forEach(a => { add('ach:' + a.id, a.name); add('ach:' + a.id, a.blurb); });
       if (GG.legacy) {
         const lg = s.legacy && s.legacy.tier ? s.legacy : GG.legacy.compute(s);
         strings('ending', GG.legacy.text(s, lg), 0);
@@ -356,51 +367,75 @@ function scrub(s, text) {
 }
 const CAMEO_SRC = /^(scene|cameo)/;
 const results = {};
-BANDS.forEach(id => {
-  test('career: ' + id + ' (3 seeds x 3 years, avg + good)', () => {
-    const b = K.bands[id], leaks = [];
-    const firstGigVenue = GG.gig.venue(b.firstGig) ? b.firstGig : null;
-    for (const style of ['avg', 'good']) {
-      for (let seed = 1; seed <= 3; seed++) {
-        const s = GG.career.newCareer({ seed: seed * 101 + 7, bandId: id, player: { name: 'Bot' } }), tag = id + '/' + style + '#' + seed;
-        // start: band, city, space, van, driver, first gig
-        eq([s.bandId, s.genre, s.city, s.space], [id, b.genre, b.city, b.space], tag + ' band fields');
-        eq(s.van.name, GG.shop.vanName(id, 0), tag + ' van name');
-        const drv = GG.world.driverFor(id);
-        eq(GG.world.driver(s).id, drv || 'you', tag + ' driver');
-        if (K.drivers[drv]) eq(K.drivers[drv].band, id, tag + ' the band\'s own driver');
-        ok(s.gig, tag + ' a first gig');
-        if (firstGigVenue) eq(s.gig.venueId, firstGigVenue, tag + ' band.firstGig');
-        else warn(id + ': firstGig ' + b.firstGig + ' is not in venues yet; fallback ' + s.gig.venueId);
-        ok((s.gig.km || 0) <= 60, tag + ' week-1 km ' + s.gig.km);
-        const col = collector(s); recruitNames = [];
-        let week1 = null;
-        const off = GG.on('week:start', e => { if (e.totalWeek === 1) week1 = e.card; });
-        for (let w = 0; w < LEAK_YEARS * WPY && !s.ended; w++) { GG.career.botWeek(s, style); invariants(s, tag + ' w' + s.totalWeek); }
-        off();
-        const c1 = week1 && GG.career.cardById(week1);
-        if (c1 && c1.forceWeek === 1) ok(c1.gate && c1.gate.band && c1.gate.band.indexOf(id) >= 0, tag + ' the forced week-one card is band-gated: ' + c1.id);
-        else if (id !== 'hail_damage') warn(id + ': no forced week-one card yet (drew ' + (week1 || 'nothing') + ')');
-        // leaks
-        col.finish().forEach(x => {
-          if (CAMEO_SRC.test(x.src)) return;
-          const t = scrub(s, x.t);
-          if (id !== 'hail_damage' && HD_LEAK.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
-          if (id !== 'hail_damage' && CROSS[id].test(t)) leaks.push(x.src + ' [' + t.match(CROSS[id])[0] + ']: ' + t.slice(0, 140));
-          if (id === 'hail_damage' && INVERSE.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
-        });
-        // a save round-trips (slot + code)
-        eq(GG.save.write('1', s), true, tag + ' saved');
-        ok(JSON.stringify(GG.save.read('1')) === JSON.stringify(s), tag + ' read back identical');
-        ok(JSON.stringify(GG.save.fromCode(GG.save.toCode(s))) === JSON.stringify(s), tag + ' save code round-trip');
-        results[tag] = { fans: s.fans, fund: s.fund, loans: s.stats.parentsLoans, quits: s.stats.quits, returns: s.stats.returns, cards: s.stats.cards };
-      }
+// One band's careers on one seat: start checks, LEAK_YEARS of bot weeks, the band leak scan, on a string seat the seat leak
+// scan (strict), the save round-trip. Returns { leaks, seatLeaks }.
+function careers(id, seat, styles, seeds, years) {
+  const b = K.bands[id], leaks = [], seatLeaks = [];
+  const firstGigVenue = GG.gig.venue(b.firstGig) ? b.firstGig : null;
+  for (const style of styles) {
+    for (let seed = 1; seed <= seeds; seed++) {
+      const args = { seed: seed * 101 + 7, bandId: id, player: { name: 'Bot' } };
+      if (seat !== 'drums') args.seat = seat;
+      const s = GG.career.newCareer(args), tag = id + (seat !== 'drums' ? '@' + seat : '') + '/' + style + '#' + seed;
+      // start: band, city, space, van, driver, first gig
+      eq([s.bandId, s.genre, s.city, s.space], [id, b.genre, b.city, b.space], tag + ' band fields');
+      eq(GG.career.seatOf(s), seat, tag + ' seat');
+      eq(s.van.name, GG.shop.vanName(id, 0), tag + ' van name');
+      const drv = GG.world.driverFor(id);
+      eq(GG.world.driver(s).id, drv || 'you', tag + ' driver');
+      if (K.drivers[drv]) eq(K.drivers[drv].band, id, tag + ' the band\'s own driver');
+      ok(s.gig, tag + ' a first gig');
+      if (firstGigVenue) eq(s.gig.venueId, firstGigVenue, tag + ' band.firstGig');
+      else warn(id + ': firstGig ' + b.firstGig + ' is not in venues yet; fallback ' + s.gig.venueId);
+      ok((s.gig.km || 0) <= 60, tag + ' week-1 km ' + s.gig.km);
+      const col = collector(s); recruitNames = [];
+      let week1 = null;
+      const off = GG.on('week:start', e => { if (e.totalWeek === 1) week1 = e.card; });
+      for (let w = 0; w < years * WPY && !s.ended; w++) { GG.career.botWeek(s, style); invariants(s, tag + ' w' + s.totalWeek); }
+      off();
+      const c1 = week1 && GG.career.cardById(week1);
+      if (c1 && c1.forceWeek === 1) ok(c1.gate && c1.gate.band && c1.gate.band.indexOf(id) >= 0, tag + ' the forced week-one card is band-gated: ' + c1.id);
+      else if (id !== 'hail_damage') warn(id + ': no forced week-one card yet (drew ' + (week1 || 'nothing') + ')');
+      // leaks
+      col.finish().forEach(x => {
+        if (CAMEO_SRC.test(x.src)) return;
+        const t = scrub(s, x.t);
+        if (id !== 'hail_damage' && HD_LEAK.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
+        if (id !== 'hail_damage' && CROSS[id].test(t)) leaks.push(x.src + ' [' + t.match(CROSS[id])[0] + ']: ' + t.slice(0, 140));
+        if (id === 'hail_damage' && INVERSE.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
+        if (seat !== 'drums') { const w = SCAN.leak(t, AWARE); if (w) seatLeaks.push(x.src + ' [' + w + ']: ' + t.slice(0, 160)); }
+      });
+      // a save round-trips (slot + code)
+      eq(GG.save.write('1', s), true, tag + ' saved');
+      ok(JSON.stringify(GG.save.read('1')) === JSON.stringify(s), tag + ' read back identical');
+      ok(JSON.stringify(GG.save.fromCode(GG.save.toCode(s))) === JSON.stringify(s), tag + ' save code round-trip');
+      results[tag] = { fans: s.fans, fund: s.fund, loans: s.stats.parentsLoans, quits: s.stats.quits, returns: s.stats.returns, cards: s.stats.cards };
     }
-    const uniq = Array.from(new Set(leaks));
-    if (id === 'hail_damage') ok(!uniq.length, 'another band leaked into a Hail Damage career:\n  ' + uniq.slice(0, 12).join('\n  '));
-    else if (STRICT) ok(!uniq.length, id + ' leaks (Hail Damage or another band):\n  ' + uniq.slice(0, 30).join('\n  '));
-    else if (uniq.length) warn(id + ': ' + uniq.length + ' Hail Damage leak(s), e.g. ' + uniq.slice(0, 3).join(' || '));
+  }
+  return { leaks: Array.from(new Set(leaks)), seatLeaks: Array.from(new Set(seatLeaks)) };
+}
+function bandLeaks(id, uniq) {
+  if (id === 'hail_damage') ok(!uniq.length, 'another band leaked into a Hail Damage career:\n  ' + uniq.slice(0, 12).join('\n  '));
+  else if (STRICT) ok(!uniq.length, id + ' leaks (Hail Damage or another band):\n  ' + uniq.slice(0, 30).join('\n  '));
+  else if (uniq.length) warn(id + ': ' + uniq.length + ' Hail Damage leak(s), e.g. ' + uniq.slice(0, 3).join(' || '));
+}
+RUN_SEATS.forEach(seat => BANDS.forEach(id => {
+  test('career: ' + id + (seat !== 'drums' ? ' on ' + seat : '') + ' (3 seeds x ' + LEAK_YEARS + ' years, avg + good)', () => {
+    const r = careers(id, seat, ['avg', 'good'], 3, LEAK_YEARS);
+    bandLeaks(id, r.leaks);
+    if (DUMP) r.seatLeaks.forEach(x => DUMPED.push(id + '@' + seat + ' ' + x));
+    if (seat !== 'drums') ok(!r.seatLeaks.length, id + ' on ' + seat + ': ' + r.seatLeaks.length + ' seat leak(s) (drum words aimed at a ' + seat + ' player):\n  ' + r.seatLeaks.slice(0, 40).join('\n  '));
   });
+}));
+// v1.1: the quick seat scan in the default run (one seed, one year, the avg bot, per band x string seat).
+if (!SEAT_ENV) test('seat leak scan (quick): every band x bass / rhythm / lead, one year', () => {
+  const all = [];
+  ['bass', 'rhythm', 'lead'].forEach(seat => BANDS.forEach(id => {
+    const r = careers(id, seat, ['avg'], 1, 1);
+    bandLeaks(id, r.leaks);
+    r.seatLeaks.forEach(x => all.push(id + '@' + seat + ' ' + x));
+  }));
+  ok(!all.length, all.length + ' seat leak(s):\n  ' + all.slice(0, 40).join('\n  '));
 });
 
 test('loans can be repaid; an original comes back (every band)', () => {
@@ -444,6 +479,7 @@ test('Hail Damage keeps its flavour (the baseline band)', () => {
   eq(GG.world.nearRing(s, 'west'), false, 'the West is far from Saskatoon');
 });
 
+if (DUMP) require('fs').writeFileSync(DUMP, Array.from(new Set(DUMPED)).sort().join('\n') + '\n');
 done('sim_bands');
 if (warnings.length) {
   console.log('WARN (' + warnings.length + (STRICT ? '' : ', strict after Lane A: LEAK_STRICT=1') + '):');

@@ -272,7 +272,7 @@
       capacity: 150, deal: 'door', pay: 3, minFans: 150, walkIns: 20, gas: 5, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [2, 3], flat: [140, 200] },
       genreFit: { metal: 1, punk: 0.9, rock: 0.9, country: 0.6 },
-      quirk: 'The sound guy hates drummers. Specifically you.',
+      quirk: 'The sound guy hates whoever plays {instrument}. Specifically you.',
       catch: 'The monitors face the bar, not the stage. On purpose.' },
 
     { id: 'club_permafrost', name: 'Club Permafrost', city: 'Saskatoon', region: 'canada', tier: 2, kind: 'club',
@@ -740,7 +740,7 @@
       capacity: 2000, deal: 'door', pay: 1.8, minFans: 12000, walkIns: 200, gas: 1400, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [1.5, 2.3], flat: [3000, 4200] },
       genreFit: fit('any'),
-      quirk: 'The most famous room in the country. The ceiling is a century old. The acoustics make your snare sound like thunder.',
+      quirk: 'The most famous room in the country. The ceiling is a century old. The acoustics make your {instrument} sound like thunder.',
       catch: 'Your mom flew in. She is in the royal box. She brought a sign. The sign says your childhood nickname.' },
 
     { id: 'question_period_pub', name: 'Question Period Pub', city: 'Ottawa', region: 'canada', tier: 2, kind: 'bar',
@@ -776,7 +776,7 @@
       deals: ['door', 'flat'], payRange: { door: [2.5, 4], flat: [600, 850] },
       genreFit: { metal: 0.7, punk: 0.9, rock: 1, country: 1 },
       quirk: 'Every set turns into a kitchen party. Someone brings a fiddle. Someone brings spoons. Someone brings a lobster.',
-      catch: 'The noon gun goes off every day at twelve. You play at night. Your drummer brain will still flinch.' },
+      catch: 'The noon gun goes off every day at twelve. You play at night. Your stage brain will still flinch.' },
 
     { id: 'screech_in_room', name: 'The Screech-In Room', city: "St. John's", region: 'canada', tier: 2, kind: 'bar',
       capacity: 200, deal: 'flat', pay: 700, minFans: 2400, walkIns: 55, gas: 2500, setSize: 5,
