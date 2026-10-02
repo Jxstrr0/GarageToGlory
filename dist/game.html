@@ -1959,7 +1959,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'and leaves for lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of blankets from Cousin Dale. The echo comes down to three seconds. Dana misses the other six.' },
         { label: 'Record the ringing note', effects: { production: 3, mood: { kenji: 6 } },
@@ -1974,7 +1974,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Shoo them out', effects: { burnout: 5, production: 3 },
           outcome: 'Two hours with a broom. The pigeons leave and come back in a different order. Marcel says they have changed key.' },
         { label: 'Cover the gear', effects: { fund: -40, production: 1, mood: { dana: 5 } },
-          outcome: "Tarps over everything. Dana's pedalboard survives. Your hi-hat does not. $40 and a lot of wet wipes." }
+          outcome: "Tarps over everything. Dana's pedalboard survives. The hi-hat does not. $40 and a lot of wet wipes." }
       ] },
     { id: 'studio_silo_harvest', type: 'scene', speaker: 'jaxon', title: 'Harvest Traffic', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: "A farmer still uses the other half of the elevator. Right in the middle of the ballad, a grain truck backs up to the pit, " +
@@ -2061,7 +2061,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Kenji listens to both versions, then silently moves one chorus back. It is exactly right. Chad never calls him "the tall one" again.' }
       ] },
     { id: 'studio_lyle_combine', type: 'weird', speaker: 'jaxon', title: 'The Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: HD },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         "He did not say from whom. It is idling in the parking lot.",
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',
@@ -2145,11 +2145,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "'Engineered by Walt, landlord.' He wants his whole title in the liner notes. And the strip mall's phone number." }
       ] },
     { id: 'studio_any_echo', type: 'weird', speaker: '@soloist', title: 'Nine Seconds of Reverb', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: OTHERS },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. {bassist} plays one low note, puts the bass down ' +
-        'and leaves for lunch. On Tuesday it is still faintly ringing.',
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. One low note from {bassist} hangs in the air ' +
+        'through lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of moving blankets. The echo comes down to three seconds. {soloist} misses the other six.' }
       ] },
@@ -2199,7 +2199,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "You fight for the bridges and win half of them. Chad says 'love the passion'. He means it as an insult." }
       ] },
     { id: 'studio_any_combine', type: 'weird', speaker: '@filler', title: 'Kick Drum in a Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: OTHERS },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         'He did not say from whom. It is idling in the parking lot.',
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',
@@ -2312,14 +2312,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     ],
     win: [
       '{front} is already on stage. Nobody saw anybody move.',
-      '{soloist} hugs the trophy like a vintage amp. {filler} calls home from the stage.',
+      'Nobody can get the trophy off {soloist}. {filler} calls home from the stage.',
       '{deadpan} stands, buttons a jacket and nods once. The arena goes quiet out of respect.',
       'Your mom stands on her chair. An usher asks her to sit. She does not sit.'
     ],
     lose: [
       '{front} applauds the winners with the whole body, which is a lot of applause.',
       '{filler} texts home: "we lost". Home: "you are winners to me. also you forgot your lunch".',
-      '{soloist} whispers that the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
+      'According to {soloist}, the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
       '{deadpan}\'s expression does not change. Somehow you feel better.'
     ],
     carpet: {
@@ -2435,7 +2435,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'the microphone. Kenji takes two steps back. You have thirty seconds before the music plays you off.',
       choices: [
         { label: 'Thank your mom', effects: { fans: 120, chemistry: 6, mood: { all: 6 }, chat: { who: 'mom', text: 'I was the one crying in row M. The man beside me cried too.' } },
-          outcome: "You thank your mom for the garage, the loan and the pizza pops. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'." },
+          outcome: "You thank your mom for the garage, the loan and the pizza pops. The camera finds her in row M, holding a sign: 'THAT'S MY KID'." },
         { label: 'Thank the moose', effects: { buzz: 14, fans: 80, flags: { mooseMuse: true } },
           outcome: "'And most of all... the moose.' Silence. Then someone yells 'THE MOOSE!' and the arena chants it. Marcel weeps. He knows which moose." },
         { label: 'Take a shot at Tundra Wraith', hint: 'Gamble: roast, or roasted',
@@ -2569,7 +2569,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     },
     viral: {
       good: [
-        'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
+        'VIRAL: {player} falls off the stage mid-song and finishes {yourPart} lying on the floor. {views} views.',
         'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
       cringe: [
@@ -2687,7 +2687,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ]
     },
     mail: [
-      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
+      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started {instrument} because of you. My parents would like a word."' },
       { id: 'mail_nan', from: 'someone\'s nan in Melfort', text: '"Too loud. Lovely kids. Enclosed: a doughnut-hole coupon from 1998." It\'s expired. It\'s perfect.' },
       { id: 'mail_poem', from: 'a poet in Biggar', band: ['hail_damage'], text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
       { id: 'mail_teacher', from: 'a music teacher in Unity', text: '"My students now play everything at double speed. Thank you. I think."' },
@@ -2700,7 +2700,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { id: 'abyssus_doll', from: 'a crocheter in Kindersley', band: ['hail_damage'], text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
       { id: 'pizza_art', from: 'an art student in Regina', text: 'Fan art on a pizza box: the band as gophers. It\'s accurate.' },
       { id: 'casserole', from: 'somebody\'s grandma', text: 'A frozen casserole with no note. Just "EAT" in marker on the foil.' },
-      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
+      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of {sticks} signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
     ],
     scriptedGifts: {
       macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },
@@ -2977,7 +2977,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'Saskatoon. July. The sky over Circle Drive turns the colour of a bruise.',
       "Hail the size of perogies. Eleven minutes later, your dad's brand-new truck looks like a golf ball.",
       "The insurance adjuster arrives in black eyeliner. He circles the truck twice and whispers the claim type like a curse: 'Hail. Damage.'",
-      "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a drum kit.",
+      "'That,' says Marcel Fontaine, adjuster and screamer, 'is the name of our band.' You didn't have a band. You had a {gear}.",
       "Now you have both. The truck lives on the street. The garage is yours. Hail Damage is born."
     ],
     starterSongs: [   // English titles (v0.7.2); `fr` = Marcel's original (seeds the pattern, renames old saves)
@@ -3025,7 +3025,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     coldOpen: [
       'Regina. January. The city fills a pothole on Dewdney Avenue with a smaller pothole.',
       "Rox Delorme screams at the council meeting for eleven minutes. The minutes record it as 'public comment'.",
-      'In the basement under the Suds-O-Rama, Benny plays both of his chords. Moth wanders in from the van. You bring a snare.',
+      'In the basement under the Suds-O-Rama, Benny plays both of his chords. Moth wanders in from the van. You bring your {sticks}.',
       'The dryers thump in 4/4. Frost Heave is born, and council is on notice.'
     ],
     starterSongs: [
@@ -3063,7 +3063,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     coldOpen: [
       'Edmonton. Minus forty. A man in leather pants is jogging past a strip mall.',
       "That man is Chase Vanderhoek. He believes it's 1985. He's rented Unit 4B, between a nail salon and a vacuum repair.",
-      "Lenny's riff sounds exactly like a famous one. Tamara hands out floss. You set up your kit where the till used to be.",
+      "Lenny's riff sounds exactly like a famous one. Tamara hands out floss. You set up your {gear} where the till used to be.",
       'Gravel Kings are born. A lawyer calls before the first chorus ends.'
     ],
     starterSongs: [
@@ -3102,7 +3102,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'Outside Swift Current. A Quonset, a grid road, and a sunset the colour of canola.',
       "Travis Lee Beauchamp sings about a truck he's never owned. Earl says he played on the original. There is no original.",
       "Clementine tunes her fiddle like it's beneath her. Duke's hat enters the Quonset a full second before Duke.",
-      'You drag a hay bale over as a drum throne. The Grid Road Ramblers are born.'
+      'You drag a hay bale over and sit on it like a throne. The Grid Road Ramblers are born.'
     ],
     starterSongs: [
       { title: "My Truck's Got Feelings", titleEn: null },
@@ -3275,7 +3275,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { id: 'nye', name: "New Year's Eve", icon: '🎆', weeks: [12, 12],
         blurb: "The best-paying gig of the year. Everyone's out, everyone's loud, everyone counts down wrong.",
         pay: { all: 2 }, gig: { crowd: 8, buzz: 2, lines: ["New Year's Eve. You count the crowd down to midnight at 11:58. Nobody minds.",
-          "Midnight hits mid-song. {soloist} kisses the guitar. It was that kind of night."] } },
+          "Midnight hits mid-song. {soloist} and the guitar share a moment. It was that kind of night."] } },
       { id: 'st_patricks', name: "St. Patrick's Day", icon: '☘️', weeks: [18, 18],
         blurb: 'Pub gig circuit: every bar in the province turns green and books a band.', cards: ['holiday_st_paddys', 'holiday_st_paddys_green'], weight: { bar: 2.5 }, pay: { bar: 1.3 },
         gig: { crowd: 4, lines: ["St. Paddy's: green beer, a guy in a leprechaun hat, and a mosh pit that is mostly a jig."] } },
@@ -3355,7 +3355,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'cape_1_pitch', type: 'drama', speaker: 'marcel', title: 'A Cape for Lord Abyssus', chain: 'cape', step: 1,
       weight: 3, gate: g({ era: GLS, minWeek: 3 }),
-      text: "Marcel slides a costume catalogue across your snare. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
+      text: "Marcel slides a costume catalogue across your {gear}. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
         "'Lord Abyssus cannot scream about the void in a hoodie from the Co-op.'",
       choices: [
         { label: 'Buy the velvet cape ($120)',
@@ -3467,13 +3467,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'jaxon_baba_lunch', type: 'drama', speaker: 'baba', title: 'A Roaster of Perogies', weight: 2,
       gate: g({ minWeek: 2, maxWeek: 8 }),
-      text: "Jaxon's baba has sent a roaster of perogies 'for the band, because you are all too skinny and the drummer, " +
+      text: "Jaxon's baba has sent a roaster of perogies 'for the band, because you are all too skinny and the one on {instrument}, " +
         "{player}, looks tired.' Taped to the lid: 'JAXON HOME BY 10.'",
       choices: [
         { label: 'Eat together, thank Baba', effects: { chemistry: 4, burnout: -5, mood: { all: 4 } },
           outcome: 'Forty-eight perogies, sour cream, fried onions. Kenji eats nine without removing his sunglasses. The band has never felt closer.' },
         { label: 'Invite Baba to rehearsal', effects: { chemistry: 3, mood: { jaxon: -5 }, skill: { jaxon: 1 } },
-          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
+          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The one on {instrument} is nice.' Jaxon wants to evaporate." },
         { label: 'Rehearse past 10 anyway', effects: { skill: { all: 1 }, mood: { jaxon: -8 }, flags: { babaMad: true } },
           outcome: "Jaxon's phone rings at 10:01. And 10:02. And 10:03. He leaves at 10:04, head down. The riffs are tighter. Baba is not." }
       ] },
@@ -3483,7 +3483,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'but only in her basement, next to the chest freezer, where she can hear.',
       choices: [
         { label: "Rehearse in Baba's basement", effects: { chemistry: 5, mood: { jaxon: 5 }, flags: { babaMad: false } },
-          outcome: "The basement acoustics are incredible. Baba's notes: 'Louder, the drummer. The French one, less.' She serves soup at the break." },
+          outcome: "The basement acoustics are incredible. Baba's notes: 'Louder, the one on {instrument}. The French one, less.' She serves soup at the break." },
         { label: 'Bring Baba flowers', effects: { fund: -30, mood: { jaxon: 8 }, flags: { babaMad: false } },
           outcome: 'You arrive with carnations from the Co-op. Baba inspects them, then you, then approves both. Jaxon is ungrounded by supper.' },
         { label: 'Sneak him out the window', hint: 'Gamble: Baba sees everything',
@@ -3495,8 +3495,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
               outcome: 'Baba is waiting in the yard, in a lawn chair, in the dark. She says one word in Ukrainian. Everyone goes home.' } } }
       ] },
 
-    { id: 'kenji_silent_nod', type: 'drama', speaker: 'kenji', title: 'The Nod', weight: 2, gate: g({ minWeek: 3, maxWeek: 12 }),
-      text: 'Mid-song, Kenji turns to face you. Then it happens: a single, silent nod. Dana drops her pick. Marcel stops screaming. ' +
+    { id: 'kenji_silent_nod', type: 'drama', speaker: 'kenji', title: 'The Nod', weight: 2, seat: ['drums', 'rhythm', 'lead'], gate: g({ minWeek: 3, maxWeek: 12 }),
+      text: 'Mid-song, Kenji turns to face you. Then it happens: a single, silent nod. Dana stops mid-note. Marcel stops screaming. ' +
         'In the history of the band, nobody has ever received the nod.',
       choices: [
         { label: 'Nod back. Coolly.', effects: { chemistry: 5, mood: { kenji: 5 }, drumSkill: 1 },
@@ -3505,11 +3505,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Kenji looks at you through his sunglasses for four full minutes, then leaves. His bass is still humming.' },
         { label: 'Tell the group chat',
           effects: { chemistry: 3, mood: { kenji: -3, jaxon: 5 },
-            chat: { who: 'jaxon', text: 'WAIT kenji NODDED?? at the DRUMMER?? screenshot or it didnt happen' } },
+            chat: { who: 'jaxon', text: 'WAIT kenji NODDED?? at {player}?? screenshot or it didnt happen' } },
           outcome: 'The group chat explodes. Kenji leaves it, then rejoins it. Everyone agrees that counts as a second nod.' }
       ] },
 
-    { id: 'jaxon_shred_fill', type: 'drama', speaker: 'jaxon', title: 'The Sneaky Fill', gate: g({ minWeek: 4, maxWeek: 16 }),
+    { id: 'jaxon_shred_fill', type: 'drama', speaker: 'jaxon', title: 'The Sneaky Fill', seat: ['drums', 'bass', 'lead'], gate: g({ minWeek: 4, maxWeek: 16 }),
       text: 'During the simplest chug in the set, Jaxon sneaks in a 32nd-note shred fill. Then another. He glances around ' +
         'like nobody noticed. Everybody noticed. Dana noticed the most.',
       choices: [
@@ -3533,7 +3533,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "Marcel posts a 400-word denial in French. Gord translates it. It's about the lawn again." }
       ] },
 
-    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ era: GL, minFans: 40 }),
+    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: GL, minFans: 40 }),
       text: "Dana's solo in 'The Green Tomb (It Is the Lawn)' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
         'but somehow she makes it work. Marcel has started bringing a book.',
       choices: [
@@ -3541,21 +3541,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'At the next show a man falls asleep during the solo and wakes up still in the solo. He buys a shirt.' },
         { label: 'Cap it at 90 seconds', effects: { mood: { dana: -8 }, chemistry: 4 },
           outcome: 'Dana agrees. Her 90 seconds somehow contain more notes than the eleven minutes did. Marcel finishes his book anyway.' },
-        { label: 'Duel her on drums', hint: 'Gamble: your arms vs her ten-hour days',
+        { label: 'Duel her on {instrument}', hint: 'Gamble: your arms vs her ten-hour days',
           outcome: 'You count it in. Dana smiles the smile of someone with calluses on her calluses.',
           roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.006,
             success: { effects: { drumSkill: 2, mood: { dana: 6 }, chemistry: 5 },
-              outcome: 'A fourteen-minute drum-guitar duel. Marcel lies on the floor in awe. Dana shakes your hand and quotes your tempo back to you.' },
+              outcome: 'A fourteen-minute duel, {instrument} against guitar. Marcel lies on the floor in awe. Dana shakes your hand and quotes your tempo back to you.' },
             fail: { effects: { burnout: 10, mood: { dana: 4 } },
               outcome: "You tap out at minute nine. Dana doesn't notice. She finishes at minute twenty-two, alone, triumphant." } } }
       ] },
 
-    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', gate: g({ era: GLS, minWeek: 14 }),
+    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', seat: ['drums', 'rhythm', 'lead'], gate: g({ era: GLS, minWeek: 14 }),
       text: "Kenji hasn't been to rehearsal in two weeks. His bass is still in the corner, with a postcard propped against it " +
         'from Churchill, Manitoba. It is blank. The polar bear on the front looks smug.',
       choices: [
         { label: 'Learn his parts yourself', effects: { drumSkill: 2, burnout: 8 },
-          outcome: 'You play the bass lines on your floor tom for two weeks. It technically counts. Kenji returns Thursday as if nothing happened.' },
+          outcome: 'You play the bass lines on your {instrument} for two weeks. It technically counts. Kenji returns Thursday as if nothing happened.' },
         { label: 'Hire a fill-in bassist', effects: { fund: -60, chemistry: -3 },
           outcome: "The fill-in plays everything like a ska song. Kenji returns Thursday, silently carries the fill-in's amp to the curb, and plugs in." },
         { label: 'Leave his corner as is', effects: { mood: { kenji: 10 }, chemistry: 4 },
@@ -3727,7 +3727,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'money_night_school', type: 'money', speaker: 'mom', title: 'Night School', once: false, cooldown: 8, weight: 2,
       gate: g({ era: GLS, flags: ['parentsLoan'] }),
-      text: "There's a Prairie Polytechnic pamphlet on your snare: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
+      text: "There's a Prairie Polytechnic pamphlet on your {gear}: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
         "from Mom: 'No pressure!! Love Mom.' Under it, a smaller one: 'Some pressure.'",
       choices: [
         { label: 'Promise to pay her back', effects: { burnout: 4, chemistry: 2 },
@@ -3735,15 +3735,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Take the night class', effects: { fund: 40, burnout: 8 },
           outcome: 'You learn double-entry bookkeeping. The band finances improve, mostly by accident. Marcel asks if capes are deductible.' },
         { label: 'Mow the lawn for her', effects: { burnout: 3, mood: { marcel: 4 } },
-          outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on the snare.' }
+          outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on your {gear}.' }
       ] },
 
     { id: 'money_dad_spreadsheet', type: 'money', speaker: 'dad', title: 'Where Did It Go', gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Dad has printed a spreadsheet and taped it to the garage door: 'HAIL DAMAGE: WHERE DID IT GO'. " +
-        "Column C is labelled 'drumsticks??'. There are a lot of drumsticks.",
+        "Column C is labelled '{sticks}??'. There are a lot of {sticks}.",
       choices: [
         { label: 'Walk Dad through it', effects: { burnout: 4, chemistry: 2 },
-          outcome: "You explain that drumsticks break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
+          outcome: "You explain that {sticks} break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
         { label: 'Hand the books to Dana', effects: { fund: 30, mood: { dana: -5 } },
           outcome: 'Dana cuts spending 12 percent and itemizes her string gauges. Dad is so impressed he asks her to do his taxes.' },
         { label: 'Sell your spare cymbal', effects: { fund: 60, burnout: 3 },
@@ -3787,7 +3787,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Get a boost next door', effects: { chemistry: 3, burnout: 3 },
           outcome: "Mr. Lindqvist boosts the truck in his housecoat and lectures you on fog machines. He's weirdly into it. He asks about 'the haze'." },
         { label: 'Toboggan the gear over', effects: { burnout: 10, buzz: 4, fans: 3 },
-          outcome: "You drag the kick drum four blocks on a toboggan. Kenji carries his bass case like a coffin. People take pictures. Very metal." },
+          outcome: "You drag the kick drum four blocks on a toboggan. Kenji carries a cymbal case like a coffin. People take pictures. Very metal." },
         { label: 'Call a tow ($90)', effects: { fund: -90 },
           outcome: "The tow driver takes an hour, charges $90 and asks 'Hail Damage? Like the truck?' Yes. Exactly like the truck." }
       ] },
@@ -3934,7 +3934,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'fame_fan_mail', type: 'fame', speaker: 'jaxon', title: 'Our First Fan Letter', gate: g({ era: GL, minFans: 40 }),
       text: "Your first fan letter, from a kid in Kindersley! It's a drawing: Marcel as a dragon, Dana with eight arms, Jaxon " +
-        "riding a lunch box, Kenji as a shadow, and you, a small circle labelled 'DRUMS'.",
+        "riding a lunch box, Kenji as a shadow, and you, a small circle labelled '{seat}'.",
       choices: [
         { label: 'Put it on the trophy shelf', effects: { mood: { all: 5 }, chemistry: 3 },
           outcome: "It's the first thing on the trophy shelf. Dana insists on a photo next to it. You add 'small circle' to your bio." },
@@ -3961,11 +3961,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'fame_deci_hell', type: 'fame', speaker: 'zine', title: 'Four Skulls', gate: g({ era: GL, minFans: 100, minWeek: 10 }),
       text: "Deci-Hell, the metal zine photocopied at the downtown library, reviewed your last show: 'Four skulls out of five. " +
-        "Minus one skull for the drummer's facial expressions.' Everyone turns to look at you.",
+        "Minus one skull for the facial expressions of whoever plays {instrument}.' Everyone turns to look at you.",
       choices: [
         { label: 'Frame it', effects: { buzz: 5, chemistry: 3 },
           outcome: "It goes on the trophy shelf. Marcel adds a sticky note: 'The missing skull was yours, not mine.'" },
-        { label: 'Work on your drum face', effects: { drumSkill: 2, burnout: 4 },
+        { label: 'Work on your stage face', effects: { drumSkill: 2, burnout: 4 },
           outcome: "You practise a neutral face in Marcel's mirror all week. He says you're doing it wrong and demonstrates a face that frightens Jaxon." },
         { label: 'Write to the editor', effects: { buzz: 4, mood: { kenji: 5 } },
           outcome: "The next issue prints your letter with a reply: 'Fair. Five skulls.' Kenji looks unusually pleased. Suspicious." }
@@ -4067,12 +4067,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
     { id: 'guilt_accountant', type: 'money', speaker: 'mom', title: 'Trevor the Accountant', once: false, cooldown: 10,
       gate: g({ era: GLS, flags: ['parentsLoan'] }),
-      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
+      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a {gear} he never plays. " +
         'Mom has invited Trevor for supper. Trevor has brought a pamphlet.',
       choices: [
         { label: 'Let Trevor do the books', effects: { repay: 80, burnout: 4 },
-          outcome: "Trevor finds $80 of 'drumstick overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
-        { label: 'Challenge Trevor to a drum-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two kits in the driveway.',
+          outcome: "Trevor finds $80 of '{sticks} overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
+        { label: 'Challenge Trevor to a jam-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two {gear}s in the driveway.',
           roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.008,
             success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'You win. Trevor shakes your hand and books the band for his office party.' },
             fail: { effects: { burnout: 6 }, outcome: "Trevor wins. He had lessons. Mom says 'see?' and nothing else all evening." } } }
@@ -4210,10 +4210,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
     { id: 'local_copycats', type: 'scene', speaker: 'marcel', title: 'Hail Damage Jr.', gate: g({ era: LS, minFans: 350 }),
       text: 'There is a band of fifteen-year-olds in Warman called Hail Damage Jr. They wear bath-towel capes. Their singer screams ' +
-        'in French he learned from a cereal box. Their drummer does your drum face. Marcel is equal parts flattered and threatened.',
+        'in French he learned from a cereal box. The kid on {instrument} does your stage face. Marcel is equal parts flattered and threatened.',
       choices: [
         { label: 'Mentor them', effects: { chemistry: 5, fans: 30, burnout: 4 },
-          outcome: "You teach their drummer a proper blast beat. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
+          outcome: "You teach the kid on {instrument} your whole routine. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
         { label: 'Book them as your opener', effects: { fans: 45, buzz: 6, mood: { marcel: -4 } },
           outcome: "They are good. They are too good. They do the Abyssal Spin better than Marcel. He watches from side stage, arms folded, cape very still." },
         { label: 'Dad writes them a letter', effects: { buzz: -4, mood: { marcel: 5 } },
@@ -4458,7 +4458,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'dentists, and a teenage harpist who only plays death metal covers. Wendell is flipping burgers in an apron that says LABEL BOSS.',
       choices: [
         { label: 'Jam with everyone', effects: { fans: 80, chemistry: 5, skill: { all: 1 } },
-          outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and your blast beat. It goes on a label sampler. It is weirdly the best song on it.' },
+          outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and you on {instrument}. It goes on a label sampler. It is weirdly the best song on it.' },
         { label: 'Talk shop with the dentists', effects: { mood: { all: 4 }, burnout: -5 },
           outcome: "They check everyone's teeth for free. Kenji has perfect teeth. This surprises no one and unsettles everyone." },
         { label: 'Recruit the harpist', effects: { buzz: 8, mood: { dana: -4 } },
@@ -4550,7 +4550,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Take the brochure', effects: { fund: -200, mood: { all: 3 }, chemistry: 4 },
           outcome: 'You open a small retirement savings plan with $200. Dad shakes your hand like you just won the provincial bonspiel. Mom takes a photo.' },
         { label: 'Play Dad the album', effects: { mood: { all: 5 }, chemistry: 5 },
-          outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "the drums were good". He has never said more.' },
+          outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "you were good". He has never said more.' },
         { label: 'Sign the emergency copies', effects: { fans: 60, buzz: 4 },
           outcome: 'Mom gives the emergency copies to the dentist, the mail carrier, her hairdresser and Father Mykola. Father Mykola plays it at the church picnic.' }
       ] },
@@ -4666,7 +4666,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Answer every letter', effects: { fans: 150, burnout: 8 },
           outcome: 'Three nights at the kitchen table. Mom does the envelopes. Kenji signs his name with the small bird. A kid in Flin Flon frames hers.' },
         { label: 'Mom answers them', effects: { fans: 80, chemistry: 4, chat: { who: 'mom', text: 'Answered 212 letters. Told them all to wear a toque. Pickles are good!' } },
-          outcome: "Mom answers them all herself, signed 'The Drummer's Mom'. She now has more pen pals than you have fans in Regina." },
+          outcome: "Mom answers them all herself, signed 'A Proud Band Mom'. She now has more pen pals than you have fans in Regina." },
         { label: 'Marcel reads the fan fiction', effects: { mood: { marcel: 10 }, buzz: 4 },
           outcome: "Marcel reads it aloud in the van, all 90 pages. He is moved. He is the lawn. He has never felt so understood." }
       ] },
@@ -4813,7 +4813,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
       choices: [
         { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
-          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your double kick.' },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your {instrument}.' },
         { label: 'The cape, the pyro, everything', hint: 'Gamble: history or a meme',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
             success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'Marcel spins, the pyro hits on the downbeat, four million people scream. It is replayed for years.' },
@@ -4924,7 +4924,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
       choices: [
         { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
-          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your drums.' },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your {instrument}.' },
         { label: 'The pyro, everything', hint: 'Gamble: history or a meme',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
             success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'The pyro hits on the downbeat, {front} hits the high note, four million people scream. It is replayed for years.' },
@@ -5005,13 +5005,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: "A hailstorm flattens the garden and dents Dad's new truck (again). Dad looks at the sky, then at your band shirt that says HAIL DAMAGE, then at you. For a long time.",
       choices: [
         { label: "'We had nothing to do with it'", hint: 'Moods ↓', effects: { mood: { all: -3 }, chemistry: 2 },
-          outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your drum kit. You are not sure what that means.' },
+          outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your {gear}. You are not sure what that means.' },
         { label: 'Film the band in the hail', hint: 'Gamble: content or concussion',
           roll: { chance: 0.55, success: { effects: { buzz: 8, fans: 10 }, outcome: 'Hail Damage, playing in actual hail damage. The clip goes around the province. Dad shares it. With a sigh.' },
             fail: { effects: { burnout: 5, fund: -40 }, outcome: 'A hailstone the size of a perogy takes out the ride cymbal. And the phone. Forty bucks.' } },
           outcome: 'Marcel grabs a hockey helmet.' },
         { label: 'Help fix the truck', hint: '−$50 · Dad ↑', effects: { fund: -50, burnout: 3, chemistry: 3 },
-          outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad a blast beat. Even trade.' }
+          outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad to headbang. Even trade.' }
       ] },
 
     { id: 'fame_festival_lineups', type: 'fame', speaker: 'dj', title: 'The Lineups Are Out', once: false, cooldown: 20,
@@ -5054,7 +5054,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Marcel hangs the design on the garage wall anyway. It watches you rehearse.' }
       ] },
 
-    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
         "'the guy says $650 if we take it today. the milk crate is embarrassing us.'",
       choices: [
@@ -5083,16 +5083,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "A curling team buys it. You see it at every bonspiel for a year. The old van feels loved, briefly." }
       ] },
 
-    { id: 'shop_solo', type: 'drama', speaker: 'dana', title: 'Dana Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo', type: 'drama', speaker: 'dana', title: 'Dana Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: 'Dana has written a solo. It is eleven minutes long. She will cut it to one bar if she gets a real solo section, in every song that ' +
-        'wants one. She is holding your sticks hostage.',
+        'wants one. She is holding your {sticks} hostage.',
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Dana ↑', effects: { mood: { dana: 8 }, shop: { section: 'solo' } },
-          outcome: 'Dana hands back your sticks and plays you the one-bar version. It is still somehow three minutes long.' },
+          outcome: 'Dana hands back your {sticks} and plays you the one-bar version. It is still somehow three minutes long.' },
         { label: 'Only with a cape spin', hint: 'Solo unlocked · Dana ↑ · Marcel ↑', effects: { mood: { dana: 5, marcel: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'Her solo, his spin, the same eight bars. Nobody can see her fingers behind the cape. Everyone is happy, loudly.' },
         { label: 'No solos in this band', hint: 'Dana ↓↓', effects: { mood: { dana: -10 } },
-          outcome: 'Dana returns your sticks. She plays the solo anyway, alone, in the driveway, facing the street.' }
+          outcome: 'Dana returns your {sticks}. She plays the solo anyway, alone, in the driveway, facing the street.' }
       ] },
 
     { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),
@@ -5232,7 +5232,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   P('headwear', 'bandana', 'Bandana', FIRST_GIG);
   P('headwear', 'cowboy', 'Cowboy hat', { fans: 250, genreStart: ['country'] });
 
-  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Drummers run hot.');
+  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Stage lights run hot.');
   P('outfit', 'battlejacket', 'Battle jacket', { milestone: 'firstGig', genreStart: ['metal'] }, 'Denim vest, forty patches, never washed.');
   P('outfit', 'leathervest', 'Leather vest', { fans: 250 });
   P('outfit', 'cdntux', 'Canadian tuxedo', { era: 'local', genreStart: ['rock'] }, 'Denim on denim. Formal wear.');
@@ -5487,7 +5487,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'He introduces every song', effects: fx({ buzz: -3, burnout: 4, mood: { marcel: 12 } }, 'marcel', 'settle'),
           outcome: 'Sets now run 40% longer. The introductions are in French and describe the lawn in detail. The crowd is baffled. Marcel is radiant.' },
         { label: 'Call his bluff', effects: fx({ chemistry: -4 }, 'marcel', 'quit'),
-          outcome: "Marcel folds the letter into a swan, sets it on your snare and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
+          outcome: "Marcel folds the letter into a swan, sets it on your {gear} and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
       ] },
     { id: 'ult_dana', type: 'drama', speaker: 'dana', title: 'Terms and Conditions',
       text: "Dana has made a slideshow. Slide one: every solo she's been cut from, in minutes. Slide two: a 7-string with a 26.5-inch scale. " +
@@ -5543,7 +5543,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Audition first', effects: fx({ mood: { marcel: -8 }, skill: { marcel: 2 } }, 'marcel', 'return'),
           outcome: 'He auditions with a nine-minute song about hedges. He gets the gig. He would like everyone to know he was nervous.' },
         { label: 'Not yet, Marcel', effects: fx({ mood: { marcel: -5 } }, 'marcel', 'later'),
-          outcome: 'He nods gravely, leaves the album on your snare, and waits in his car. For weeks. Occasionally he honks.' }
+          outcome: 'He nods gravely, leaves the album on your {gear}, and waits in his car. For weeks. Occasionally he honks.' }
       ] },
     { id: 'ret_marcel_filled', type: 'drama', speaker: 'marcel', title: 'Two Frontmen',
       text: "Marcel is back from Quebec, cape over one arm. He sees {recruit} at his mic stand. 'Ah,' he says. 'I see.' " +
@@ -6176,7 +6176,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     bonusCards: [
       bc(HD, 1, 'fame', '@front', 'The Farewell Tour (Again)',
-        'A promoter wants to book a Farewell Tour. {front} points out that you are not breaking up. The promoter points out that farewell tours sell twice as many tickets. {soloist} is already planning a farewell solo.', [
+        'A promoter wants to book a Farewell Tour. {front} points out that you are not breaking up. The promoter points out that farewell tours sell twice as many tickets. Somebody, and it is {soloist}, is already planning a farewell solo.', [
           ch('Book the farewell tour', 'Fans ↑ · Burnout ↑', { fans: 300, buzz: 10, burnout: 12 }, 'You say goodbye in fourteen cities. Then you come home and rehearse on Tuesday like always. The fans are thrilled and confused.'),
           ch('Tell the truth: we are not done', 'Chemistry ↑ · Buzz ↓', { chemistry: 6, buzz: -4 }, 'The promoter sighs and books a "See You Later" tour instead. It sells half as well. Everyone sleeps better.')
         ]),
@@ -6186,7 +6186,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ch('Gigs only, no garage', 'Buzz ↑ · Mood ↑', { buzz: 8, mood: { all: 4 } }, 'The documentary is two hours of live footage and one shot of the garage door, closed. Critics call it "mysterious". {front} calls it a triumph.')
         ]),
       bc(HD, 3, 'weird', '@front', 'Reunion Rumours',
-        'Somebody online says {band} broke up years ago and this is a tribute act. {front} is furious. {soloist} is mostly flattered that the tribute act is this good.', [
+        'Somebody online says {band} broke up years ago and this is a tribute act. {front} is furious. The rest of the band is mostly flattered that the tribute act is this good.', [
           ch('Post a photo from rehearsal', 'Buzz ↑', { buzz: 8 }, 'You post a photo from {space}. The comments decide it is a very convincing tribute act. You stop reading the comments.'),
           ch('Play a surprise show at home', 'Fans ↑ · Fund ↓', { fans: 150, fund: -600, mood: { all: 5 } }, 'You book the legion hall back home under a fake name. Four hundred people figure it out by noon. The tribute act rumour dies on the spot.')
         ]),
@@ -6662,7 +6662,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           bar: ['x.....x.x.......', '........x.......', 'x...x...x...x...', 'x.......x.......'] },
         { id: 'gallop', name: 'Gallop', pedal: true, desc: 'Da-ga-da, da-ga-da. Horses, but metal.',
           bar: ['x.xxx.xxx.xxx.xx', '....x.......x...', E, 'x...x...x...x...'] },
-        { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. Your calves file a complaint.',
+        { id: 'dkrun', name: 'Double-kick run', pedal: true, desc: 'Both feet, every 16th. The calves file a complaint.',
           bar: ['xxxxxxxxxxxxxxxx', '....x.......x...', E, 'x.......x.......'] }
       ],
       mods: [
@@ -6870,7 +6870,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       blurb: 'No label. You book it, you pay for it, you mail the CDs from Mom\'s kitchen table. You also keep every loonie.',
       advance: [0, 0], royalty: 1, albums: 0, deadlineWeeks: 0, demands: [],
       offerMinFans: 0, offerMinBuzz: 0, dropOnFlop: 0,
-      rep: { name: 'You', blurb: 'The drummer, the founder, and now the label, the accountant and the shipping department.' },
+      rep: { name: 'You', blurb: 'The founder, and now also the label, the accountant and the shipping department.' },
       offer: 'No contract, no advance, no notes. Just a box of blank mailers and your mom asking who is paying for all these stamps.',
       perks: ['Keep every dollar', 'Nobody tells the singer what to sing about', 'Release whenever you like'],
       catches: ['You pay for the studio, the producer and the promo', 'No advance, no safety net', 'Distribution is a hockey bag']
@@ -6987,7 +6987,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         title: 'Glove Save, Big Riff',
         offer: 'Sportsnut wants "{adsong}" under the Saturday Night Puck highlight package: glove saves, line brawls, a Zamboni at sunset. ' +
           '{adfee}. Dad heard first. He is weirdly emotional about it.',
-        take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Dad cries a little.',
+        take: 'A glove save lands exactly on the downbeat. The whole province hears you between periods. Dad cries a little.',
         decline: 'You pass. Sportsnut uses stock music called "Hockey Rock 7". Dad will not look at you.',
         counterWin: 'Sportsnut ups it. "For the playoffs," says a producer with a whistle around his neck. He blows it when you say yes.',
         counterWalk: 'Sportsnut goes with "Hockey Rock 7". It is fine. It is so, so fine. Dad shovels the driveway angrily.',
@@ -7035,13 +7035,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         '{front} made us run the chorus until {door} rattled in time.',
         'Door open, full volume. Three kids on bikes stopped to listen, then rode off to be normal again.',
         "We tightened the ending. It had four endings. Now it has two, which {grumbler} calls 'a compromise'.",
-        '{soloist} counted in way too fast. We played it that fast anyway. It might be the new tempo.',
+        'The count-in from {soloist} was way too fast. We played it that fast anyway. It might be the new tempo.',
         'Two hours on one bridge. {deadpan} never said a word. The bridge is fixed.'
       ],
       write: [
-        'We built a song around your drum groove. {deadpan} nodded once. The song is finished.',
+        'We built a song around a groove you found on {instrument}. {deadpan} nodded once. The song is finished.',
         '{namer} wrote the lyrics on the back of a receipt. The receipt was for guitar strings.',
-        '{soloist} brought in a riff with nineteen parts. We kept four.',
+        'A riff from {soloist} came in with nineteen parts. We kept four.',
         'We wrote a ballad. It lasted ninety seconds before somebody sped it up.',
         'We argued about the chorus for an hour, then wrote a better one in five minutes.',
         'A riff showed up in the parking lot after rehearsal. We ran back inside before it left.'
@@ -7052,7 +7052,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'We mailed the demo to three campus radio stations and one guy who says he knows a guy.',
         'We chalked the band name on the sidewalk downtown. It rained. Now it is mostly vowels.',
         "We posted a rehearsal clip. Somebody's aunt commented 'very loud, very good, eat something'.",
-        '{soloist} wrote a press release. It is mostly gear specs.'
+        'The press release is by {soloist}. It is mostly gear specs.'
       ],
       book: [
         "We called every hall in {city} from the kitchen phone. Mom took messages. She underlined 'NO' twice.",
@@ -7071,7 +7071,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ],
       rest: [
         "We watched curling on somebody's TV. {deadpan} knew every rule. How.",
-        'Nobody touched an instrument all night. {soloist} touched one only nine times.',
+        'Nobody touched an instrument all night, except {soloist}, nine times.',
         'We played crokinole until midnight. Somebody flicked a disc into the kick drum.',
         'We drove out to see the grain elevators at sunset and said nothing for an hour.',
         'A lazy evening. Pizza, a movie nobody picked and a nap on the gear cases.',
@@ -7271,7 +7271,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         "Shh. I'm on hour seven.",
         "Stainless frets, 25.5-inch scale, 24 frets. I'm telling you because you asked.",
         'I wrote a solo for the chorus. It starts in the verse.',
-        "Your hi-hat is two milliseconds early. It's fine. It's not fine.",
+        "You were two milliseconds early in bar nine. It's fine. It's not fine.",
         'Want to hear my new pickups? You are going to hear them anyway.',
         "Ten hours a day isn't a lot. It's the minimum."
       ],
@@ -7295,8 +7295,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     guilt: [
       "Your mom asks if you've thought about night school.",
-      "Your dad leaves a Prairie Polytechnic course calendar on your snare. 'Accounting' is circled. Twice.",
-      "Your mom tells the neighbours you're 'between things'. You are between the kick drum and the floor tom.",
+      "Your dad leaves a Prairie Polytechnic course calendar on your {gear}. 'Accounting' is circled. Twice.",
+      "Your mom tells the neighbours you're 'between things'. You are between the {gear} and the fridge.",
       'Your dad hands over the cash and says nothing. The nothing is very loud.',
       "Your mom has started calling the band fund 'the other kid'.",
       "An aunt calls to ask how 'the little band' is doing. Mom told her.",
@@ -7306,7 +7306,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     yearEnd: [
       'Another year in {space}. Somehow everyone is still here.',
       "{front} raises a glass: 'To {band}. To next year. To a van that starts.'",
-      "Year's end. {soloist} worked out the practice hours. Nobody wanted to hear the number.",
+      "Year's end. The practice hours have been worked out by {soloist}. Nobody wanted to hear the number.",
       "{deadpan} gives a year-end nod. Everyone agrees it's the best gift they got.",
       "Mom looks at the band, looks at the band fund, and says 'Another year, eh.' It's almost a blessing."
     ],
@@ -7383,7 +7383,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     quietWeek: [
       'A quiet Monday. Suspiciously quiet.',
-      'Nothing happens. {soloist} practises. {space} hums at sixty cycles.',
+      'Nothing happens. Somebody practises. It is {soloist}. {space} hums at sixty cycles.',
       "A slow week. Somebody's mom sends soup. It's a good week.",
       '{deadpan} was spotted at the Co-op buying one lime. That is the whole news.',
       'The group chat is silent. Even {front}. Especially {front}. Something is brewing.',
@@ -7511,12 +7511,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ],
       monolith: [
         'An email from Monolith Records, Toronto. Someone from A&R would "love to connect". The signature has a waterfall in it.',
-        'Monolith Records want a meeting. {front} has ironed a shirt. {soloist} has printed questions. {deadpan} is unreadable.'
+        'Monolith Records want a meeting. {front} has ironed a shirt. There are printed questions from {soloist}. {deadpan} is unreadable.'
       ]
     },
     offerExpired: [
       "The label's offer ran out. Wendell sends a card anyway: 'Door's always open.' Monolith sends nothing. That's how you can tell.",
-      'The deadline passed. The offer is gone. {front} says it was "not our destiny". {soloist} says it was "a Tuesday".'
+      'The deadline passed. The offer is gone. {front} says it was "not our destiny". According to {soloist}, it was "a Tuesday".'
     ],
     labelDropped: [
       "The label dropped you. A two-line email. {front} prints it and burns it in the barbecue. You're DIY now, like the old days.",
@@ -7552,7 +7552,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'A chart debut. Mom asked what number is good. You said lower is better. She is now worried about her cholesterol.'
     ],
     chartClimb: [
-      "Up the Maple 100 this week. {soloist} made a line graph. It's going the right way for once.",
+      "Up the Maple 100 this week. There is a line graph by {soloist}. It's going the right way for once.",
       'Climbing the chart. Mom called the radio station to request it. Then called again with a different voice.'
     ],
     chartDrop: [
@@ -7560,7 +7560,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       "Slipping on the Maple 100. {filler} says it's 'a breather'. The chart does not breathe. The chart is a list."
     ],
     recouped: [
-      'The advance is paid back. Recouped. From now on the royalties are yours. {soloist} opened a spreadsheet just for joy.',
+      'The advance is paid back. Recouped. From now on the royalties are yours. A spreadsheet, opened by {soloist}, just for joy.',
       'Recouped! The label is even. Wendell sent a card. Monolith sent an automated email. Both count.'
     ],
     cert: {
@@ -7695,7 +7695,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             "We wrote a riff in drop C. Marcel screamed French over it. He says it's about the void. It's about his lawn.",
             'Dana brought in a riff with nineteen parts. We kept four. She took it well, in gear specs.',
             '{nick:marcel} wrote the lyrics on the back of a claim form. The claim was approved.',
-            'We built a song around your drum groove. Kenji nodded once. The song is finished.',
+            'We built a song around a groove you found on {instrument}. Kenji nodded once. The song is finished.',
             'Jaxon hummed the tune his baba sings while making cabbage rolls. It is in 7/8 now.',
             'We wrote a ballad. It lasted ninety seconds before Marcel turned it into a blast beat.'
           ],
@@ -7735,7 +7735,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           "Another year in the garage. The lawnmower has heard every song. It hasn't complained. Much.",
           "{nick:marcel} raises a glass: 'To Hail Damage. To the Abyss. To next year's lawn.'",
           "Year's end. Dana worked out she practised 3,650 hours. She'd like to get that number up.",
-          "Baba sends a card: 'Proud of Jaxon. The drummer also. The French one, we will see.'",
+          "Baba sends a card: 'Proud of Jaxon. The one on {instrument}, also. The French one, we will see.'",
           "Kenji gives a year-end nod. Everyone agrees it's the best gift they got.",
           "Dad looks at the garage, looks at the band, and says 'Another year, eh.' It's almost a blessing."
         ],
@@ -7758,7 +7758,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           'Wrong crowd entirely. The boots started flying in song two. You still got paid.',
           'The regulars asked for something they could two-step to. Marcel growled at them. The boots came out.',
           'Half the room left. The other half stayed out of spite. The cheque cleared.',
-          'A cowboy hat hit the snare mid-fill. You kept the hat. You earned the hat.'
+          'A cowboy hat landed on your {gear} mid-song. You kept the hat. You earned the hat.'
         ],
         venueUp: ['"Same time next month?" the owner asks. Marcel says yes before you can blink.'],
         venueBanned: ['They take an instant photo of the band on the way out. It is for the banned wall. Marcel poses anyway.'],
@@ -7988,7 +7988,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       leduc: { id: 'leduc', ring: 'alberta', name: 'Leduc', x: 0.5, y: 0.3, label: 'right', blurb: 'Where the oil boom started. Pumpjacks, a reservoir and the airport.' },
       red_deer: { id: 'red_deer', ring: 'alberta', name: 'Red Deer', x: 0.46, y: 0.5, label: 'left', blurb: 'Exactly halfway to everything. It knows.' },
       calgary: { id: 'calgary', ring: 'alberta', name: 'Calgary', x: 0.4, y: 0.7, label: 'left', blurb: 'Cowtown. Home of the Sad Dome.' },
-      lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your cymbals.' },
+      lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your hat.' },
       /* ---- The West (Local Heroes) ---- */
       kelowna: { id: 'kelowna', ring: 'west', name: 'Kelowna', x: 0.2, y: 0.66, label: 'above', blurb: 'Wineries, a lake monster and your cousin\'s boat.' },
       vancouver: { id: 'vancouver', ring: 'west', name: 'Vancouver', x: 0.1, y: 0.8, label: 'right', blurb: 'It is raining. It was raining. It will be raining.', climate: 'coast' },
@@ -8245,7 +8245,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         bad: 'Baba says a real band plays {target} gigs a year. We played {n}. She\'s not mad. She\'s disappointed.' },
       { topic: 'loans', who: ['mom'], target: 0,
         good: 'A good year is one where you don\'t borrow from us. You didn\'t! I\'m framing the bank statement.',
-        bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your kit.' },
+        bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your {gear}.' },
       { topic: 'chemistry', who: ['kenji'], target: 60,
         good: '(Kenji gives the year one slow, silent nod.)',
         bad: '(Kenji looks at the band for a long time. No nod.)' }
@@ -8395,7 +8395,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           [{ label: 'Play the tournament', effects: { chemistry: 5, burnout: -4 },
             outcome: "Kenji wins without speaking. The trophy is a hubcap. It's now the band's most prized possession." },
            { label: 'Rehearse. Now.', effects: { drumSkill: 1, mood: { recruit: -6 } },
-             outcome: 'You rehearse. {recruit} practises flicks on your snare head between songs. It is somehow in time.' }])] },
+             outcome: 'You rehearse. {recruit} practises flicks against your {gear} between songs. It is somehow in time.' }])] },
       { id: 'harvest', text: 'Vanishes every fall to help with harvest.', chem: 2, genres: ['metal'], cards: [
         card('qk_harvest', 'money', 'Harvest Call',
           "{recruit}'s uncle needs a hand with harvest near Rosetown. 'Two weeks,' says {recruit}. 'Three if it rains. Four if the combine does the thing.'",
@@ -8429,9 +8429,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
       { id: 'zine_maker', text: 'Makes a zine about every rehearsal. Every. Single. One.', chem: 2, genres: ['punk'], cards: [
         card('qk_zine', 'fame', 'Issue Forty-Seven',
-          '{recruit} has published issue 47 of their rehearsal zine. It reviews your hi-hat. Harshly. Three hundred copies are already at the record store.',
+          '{recruit} has published issue 47 of their rehearsal zine. It reviews {yourPart} you played on Tuesday. Harshly. Three hundred copies are already at the record store.',
           [{ label: 'Read it out loud', effects: { chemistry: 3, buzz: 2 },
-            outcome: 'The whole band reads it together. It is mean, accurate and very funny. Your hi-hat gets better.' },
+            outcome: 'The whole band reads it together. It is mean, accurate and very funny. Your playing gets better.' },
            { label: 'Ask for a better review', effects: { mood: { recruit: -5 } },
              outcome: 'Issue 48 reviews the request. It is worse.' }])] },
       { id: 'safety_pins', text: 'Holds their entire outfit together with safety pins.', chem: 1, genres: ['punk'], cards: [
@@ -8514,7 +8514,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           [{ label: 'Give them eight bars', hint: 'Gamble: magic, or mayhem', outcome: 'The yodel begins.',
             roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
               success: { effects: { buzz: 6, fans: 10 }, outcome: 'The crowd yodels back. A grandmother in the front row weeps. It is the moment of the night.' },
-              fail: { effects: { chemistry: -3 }, outcome: 'The yodel goes on for sixteen bars. Then thirty-two. You end it with a crash cymbal.' } } },
+              fail: { effects: { chemistry: -3 }, outcome: 'The yodel goes on for sixteen bars. Then thirty-two. The band ends it with a crash cymbal.' } } },
            { label: 'No yodelling', effects: { mood: { recruit: -5 } },
              outcome: '{recruit} agrees, then hums a yodel under every song for a week.' }])] }
     ],
@@ -8958,7 +8958,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             dayJob: 'Forensic accountant',
             bio: 'Plays blast beats at exactly 240 bpm to a metronome app. Emails you a polite tempo report after every show. Drives a 2009 Corolla with 400,000 km on it.',
             gags: ['Audits your tempo. You were 3% fast in the bridge. He attached a chart.',
-              'Nods at you, drummer to drummer. Then files a report.'],
+              'Nods at you, one metronome to another. Then files a report.'],
             look: look('#ecebe6', '#0c0c0e', 'long', '#4e5e70', '#222228', 1.0, 1.1, ['glasses'], 'jacket'), corpsePaint: true, stageShirt: '#0f0f13' }
         ],
         songs: ['Eternal Winter (Fiscal Year End)', 'Audit of the Frozen Throne', 'Plug In the Block Heater', 'Minus Forty (Both Scales)',
@@ -9272,7 +9272,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'A solo portrait of the singer', hint: 'Gamble: majestic or meme',
           roll: { chance: 0.5,
             success: { effects: { buzz: 8, mood: { '@front': 8 } }, outcome: '{front}, hair in the wind, the elevator behind. Brooding. Majestic. On forty posters by Monday.' },
-            fail: { effects: { mood: { '@front': -4 }, chemistry: -3 }, outcome: 'The wind wraps a jacket around {front}\'s head. {soloist} gets all of it on video. The deletion requests go on for years.' } },
+            fail: { effects: { mood: { '@front': -4 }, chemistry: -3 }, outcome: 'The wind wraps a jacket around {front}\'s head. It is all on video, courtesy of {soloist}. The deletion requests go on for years.' } },
           outcome: '{front} climbs the ditch, chin first.' }
       ] },
 
@@ -9506,9 +9506,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Flag down a boost', hint: 'Burnout ↑', effects: { burnout: 4, chemistry: 2 },
           outcome: 'A guy in a snowmobile suit has cables, a thermos and forty minutes of opinions about block heaters. The van starts. He wants a shout-out.' },
         { label: 'Hair dryer on the engine', hint: 'Gamble: prairie engineering',
-          roll: { chance: 0.5, success: { effects: { mood: { all: 4 } }, outcome: 'It works. {soloist} will never let anyone forget whose idea it was.' },
+          roll: { chance: 0.5, success: { effects: { mood: { all: 4 } }, outcome: 'It works. It was the idea of {soloist}, and nobody will be allowed to forget it.' },
             fail: { effects: { van: { condition: -3 }, fund: -40 }, outcome: 'The hair dryer dies. Then the extension cord. Then the fuse. Cab money, forty bucks.' } },
-          outcome: '{soloist} finds an extension cord.' },
+          outcome: 'An extension cord turns up, found by {soloist}.' },
         { label: 'Gear on a toboggan, cab it', hint: '−$80', effects: { fund: -80, burnout: 3 },
           outcome: 'The cab driver helps carry the amps. He has opinions about your genre. He is right.' }
       ] },
@@ -9606,7 +9606,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Grid-road shortcut', hint: 'Gamble: gravel or glory',
           roll: { chance: 0.5, success: { effects: { mood: { all: 3 } }, outcome: 'Empty gravel all the way. You beat the convoy by an hour.' },
             fail: { effects: { van: { condition: -3 } }, outcome: 'Every other band had the same idea. It is a grid-road traffic jam. With cows.' } },
-          outcome: '{soloist} opens the road atlas.' }
+          outcome: 'Out comes the road atlas, opened by {soloist}.' }
       ] },
 
     { id: 'road_giant_perogy', type: 'road', speaker: '@filler', title: "The World's Largest Perogy", once: false, cooldown: 12,
@@ -9655,15 +9655,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'road_lead_foot', type: 'road', speaker: 'marcel', title: 'Lead Foot', once: false, cooldown: 6,
       gate: { driver: ['you'], minKm: 60, band: HD },
-      text: 'You drive like you drum: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
+      text: 'You drive like you play {instrument}: fine on the straight parts, way too fast in the fills. A photo radar van blinks at you outside Davidson. Marcel waves at it.',
       choices: [
         { label: 'Pay the ticket', hint: '−$120', effects: { fund: -120 },
           outcome: 'The photo is actually great. Marcel is mid-wave, cape up. It becomes the new press shot.' },
         { label: 'Drive like Kenji now', hint: 'Burnout ↑ · safe', effects: { burnout: 4, chemistry: 2 },
           outcome: 'Exactly the limit, both hands on the wheel, sunglasses on. The band sits up straight. It feels like church.' },
         { label: 'Blame the tempo', hint: 'Gamble: a warning',
-          roll: { chance: 0.4, success: { effects: { buzz: 3 }, outcome: 'The officer is a drummer. You get a warning and a tip about ride cymbals.' },
-            fail: { effects: { fund: -150 }, outcome: 'The officer is not a drummer. The officer is a clarinet player. It is worse.' } },
+          roll: { chance: 0.4, success: { effects: { buzz: 3 }, outcome: 'The officer plays {instrument} too. You get a warning and a tip about your {gear}.' },
+            fail: { effects: { fund: -150 }, outcome: 'The officer does not play {instrument}. The officer plays the clarinet. It is worse.' } },
           outcome: 'You roll down the window.' }
       ] },
 
@@ -9811,7 +9811,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       dock: 'The van is warming up. Earl has the keys and the 1987 atlas.',
       load: 'Load the van. Earl is warming it up at twenty under the limit. In park.' },
     you: { id: 'you', band: null, name: 'You', dashboard: 'none', dashName: 'nothing but a fuel light',
-      blurb: 'The founder, behind the wheel. You drive like you drum.',
+      blurb: 'The founder, behind the wheel. You drive the way you keep time.',
       effect: 'More wrong turns, more gas-station arguments', mods: { breakdown: 1.15, roadChance: 1.25 },
       takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. Nobody touches the stuff on the dash.',
       byBand: { hail_damage: { takeOver: 'You drive now. The seat is still warm. The mirrors are set for someone taller. The tiny cactus stays on the dash.' } } }
@@ -10736,7 +10736,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       capacity: 150, deal: 'door', pay: 3, minFans: 150, walkIns: 20, gas: 5, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [2, 3], flat: [140, 200] },
       genreFit: { metal: 1, punk: 0.9, rock: 0.9, country: 0.6 },
-      quirk: 'The sound guy hates drummers. Specifically you.',
+      quirk: 'The sound guy hates whoever plays {instrument}. Specifically you.',
       catch: 'The monitors face the bar, not the stage. On purpose.' },
 
     { id: 'club_permafrost', name: 'Club Permafrost', city: 'Saskatoon', region: 'canada', tier: 2, kind: 'club',
@@ -11193,7 +11193,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       capacity: 2000, deal: 'door', pay: 1.8, minFans: 12000, walkIns: 200, gas: 1400, setSize: 5,
       deals: ['door', 'flat'], payRange: { door: [1.5, 2.3], flat: [3000, 4200] },
       genreFit: fit('any'),
-      quirk: 'The most famous room in the country. The ceiling is a century old. The acoustics make your snare sound like thunder.',
+      quirk: 'The most famous room in the country. The ceiling is a century old. The acoustics make your {instrument} sound like thunder.',
       catch: 'Your mom flew in. She is in the royal box. She brought a sign. The sign says your childhood nickname.' },
 
     { id: 'question_period_pub', name: 'Question Period Pub', city: 'Ottawa', region: 'canada', tier: 2, kind: 'bar',
@@ -11229,7 +11229,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       deals: ['door', 'flat'], payRange: { door: [2.5, 4], flat: [600, 850] },
       genreFit: { metal: 0.7, punk: 0.9, rock: 1, country: 1 },
       quirk: 'Every set turns into a kitchen party. Someone brings a fiddle. Someone brings spoons. Someone brings a lobster.',
-      catch: 'The noon gun goes off every day at twelve. You play at night. Your drummer brain will still flinch.' },
+      catch: 'The noon gun goes off every day at twelve. You play at night. Your stage brain will still flinch.' },
 
     { id: 'screech_in_room', name: 'The Screech-In Room', city: "St. John's", region: 'canada', tier: 2, kind: 'bar',
       capacity: 200, deal: 'flat', pay: 700, minFans: 2400, walkIns: 55, gas: 2500, setSize: 5,
@@ -11655,13 +11655,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
         success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
         fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
-    ], { type: 'weird', gate: { band: ['hail_damage'] } }),
+    ], { type: 'weird', seat: ['drums'], gate: { band: ['hail_damage'] } }),
     card('wt_au_kick_spider', 'australia', 'shazza', 'Something in the Kick Drum', 'Soundcheck. The kick drum sounds wrong. Shazza looks through the port hole and goes very quiet. "Mate. It has eight legs and a mortgage."', [
       { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
       { label: 'Play around it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
         success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the kick. Someone films it. You are now "the spider drummer".' },
         fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto the pedal. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You sit down. Carefully.' }
-    ], { type: 'weird', gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
+    ], { type: 'weird', seat: ['drums'], gate: { band: ['frost_heave', 'gravel_kings', 'grid_road_ramblers'] } }),
+    card('wt_au_amp_spider', 'australia', 'shazza', 'Something in the Cab', 'Soundcheck. Your {instrument} sounds wrong. Shazza looks into the back of the amp and goes very quiet. "Mate. It has eight legs and a mortgage."', [
+      { label: 'Ask a local for help', hint: 'Chemistry ↑', effects: { chemistry: 3, tour: { regionFans: 80 } }, outcome: 'The sound guy scoops it out with a pint glass and a coaster. "She\'s harmless, mate." She is the size of a hand.' },
+      { label: 'Play through it', hint: 'Gamble: legend, or you scream on mic', roll: { chance: 0.5, stat: 'drumSkill', statScale: 0.006,
+        success: { effects: { buzz: 8, fans: 150 }, outcome: 'You play the whole set with a spider in the speaker cone. It moves in time. Someone films it. Every poster now calls you "Spider".' },
+        fail: { effects: { burnout: 6, buzz: 3 }, outcome: 'Song two, she climbs out onto your strap. You scream into the vocal mic. The crowd thinks it\'s a breakdown.' } }, outcome: 'You plug in. Carefully.' }
+    ], { type: 'weird', seat: ['bass', 'rhythm', 'lead'] }),
     card('wt_au_christmas', 'australia', 'marcel', 'Christmas at the Beach', 'It is Christmas and thirty-eight degrees. Marcel has put on the cape and a Santa hat and will not take either off.', [
       { label: 'Beach barbecue for the band', hint: 'Moods ↑ · Homesick ↓', effects: { mood: { all: 8 }, fund: -200, tour: { homesick: -6 } }, outcome: 'Prawns, sunburn and a Christmas cracker joke read aloud in five accents. Not home, but close.' },
       { label: 'Video call home for Christmas', hint: 'Homesick ↓↓ · Burnout ↑', effects: { burnout: 4, tour: { homesick: -12 } }, outcome: 'Snow in the garage window behind Mom. Sand in your sandwich. Everyone cries a little. It helps.' }
@@ -11823,7 +11829,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         look: look('#8d5a3b', '#0f0f12', 'cap', '#3fbf7f', '#2b2b33', 1.06, 1.0, ['hat'], 'hoodie'), corpsePaint: false, stageShirt: '#3fbf7f' },
       { id: 'mr_brody', name: 'Brody', short: 'Brody', fullName: 'Brody Van Alstyne', nick: 'The Jaw', role: 'drums', lane: 'back',
         dayJob: 'Model (jawline)',
-        bio: 'Chosen by a focus group for his jawline. Plays to a click track the network owns. Nods at you, drummer to drummer, then checks his angles in the cymbal.',
+        bio: 'Chosen by a focus group for his jawline. Plays to a click track the network owns. Nods at you, one professional to another, then checks his angles in the cymbal.',
         gags: ['The jawline has its own lighting cue.', 'Plays a skate-punk beat he learned from a tutorial, perfectly, forever.',
           'Brought a stylist to soundcheck. For the kit.'],
         look: look('#e8c4a0', '#6b4a2c', 'short', '#f2f2f2', '#22222a', 1.05, 1.05, [], 'tee'), corpsePaint: false, stageShirt: '#f2f2f2' }
@@ -11917,7 +11923,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       final: ["Blaze: \"Calgary! This is for everybody who voted in the app!\""],
       opening: ["Afterwards Siobhan hands you her card. It says 'Let's talk'. It always says that."]
     },
-    openingSlot: ["Afterwards Blaze shakes your hand for the cameras. Siobhan asks if your drummer does sponsorships. You are the drummer.",
+    openingSlot: ["Afterwards Blaze shakes your hand for the cameras. Siobhan asks who plays {instrument}. You do. She asks if you do sponsorships.",
       "After the set Siobhan offers to 'elevate your look'. Moth hides the van keys."],
 
     ui: {
@@ -12259,7 +12265,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: "Upstairs, dryer number four thumps at exactly 190 beats per minute when it has sneakers in it. Moth has noticed. " +
         "She wants to tune the whole band to dryer four. Rox wants to know who owns the sneakers.",
       choices: [
-        { label: 'Rehearse to dryer four', hint: 'Drum skill ↑', effects: { drumSkill: 1, chemistry: 2 },
+        { label: 'Rehearse to dryer four', hint: 'Your chops ↑', effects: { drumSkill: 1, chemistry: 2 },
           outcome: 'Three hours locked to a load of sneakers. Your eighth notes have never been tighter. The sneakers are very clean.' },
         { label: 'Buy the sneakers ($25)', hint: '−$25 · Moth ↑', effects: { fund: -25, mood: { moth: 6 } },
           outcome: 'The sneakers now live in the basement and go in the dryer before every rehearsal. They are a band member, sort of.' },
@@ -12287,7 +12293,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Knock. Wait. Knock again.', hint: 'Moth ↑', effects: { mood: { moth: 8 } },
           outcome: 'Moth opens the door in a housecoat, hands you the cymbals and a cup of tea, and closes the door. It was a lovely visit.' },
         { label: 'Rehearse without cymbals', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 2, drumSkill: 1 },
-          outcome: 'You play the whole set on the hi-hat. It is very punk. Rox says crashes are "a bourgeois luxury" and means it.' },
+          outcome: 'The band plays the whole set on the hi-hat. It is very punk. Rox says crashes are "a bourgeois luxury" and means it.' },
         { label: 'Climb in the window', hint: 'Moth ↓↓', effects: { mood: { moth: -10 }, burnout: 3 },
           outcome: 'You land in her sock drawer. It is also her kitchen. Moth does not speak to you until Thursday. She changes the locks. On a van.' }
       ] },
@@ -12334,7 +12340,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Everybody folds', hint: 'Chemistry ↑ · Rox ↓', effects: { chemistry: 4, mood: { rox: -4 } },
           outcome: 'Forty towels, one hour, one argument about corners. Rox folds hers into tiny fists. Irma says it is acceptable.' },
         { label: 'You fold. Alone.', hint: 'Burnout ↑ · Everyone ↑', effects: { burnout: 5, mood: { all: 3 } },
-          outcome: 'You fold every towel while the band rehearses without drums. It is weirdly relaxing. Moth brings you a clean one.' },
+          outcome: 'You fold every towel while the band rehearses without you. It is weirdly relaxing. Moth brings you a clean one.' },
         { label: 'Pay Irma $20 instead', hint: '−$20 · Rox ↑', effects: { fund: -20, mood: { rox: 5 } },
           outcome: 'Irma takes the money and says principles are expensive. Rox agrees. Rox says that is the whole point.' }
       ] },
@@ -12705,7 +12711,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Over by eleven', hint: 'Moth ↑ · Burnout ↓', effects: { mood: { moth: 6 }, burnout: -4 },
           outcome: 'The set ends at 10:58. Moth is home at 10:59. She blinks the van\'s headlights twice: good night.' }
       ] },
-    { id: 'fh_drama_moth_home', type: 'drama', speaker: 'moth', title: 'Moth Stayed Home', once: false, cooldown: 8, gate: g({ era: GLS, minWeek: 6 }),
+    { id: 'fh_drama_moth_home', type: 'drama', speaker: 'moth', title: 'Moth Stayed Home', once: false, cooldown: 8, seat: ['drums', 'rhythm', 'lead'], gate: g({ era: GLS, minWeek: 6 }),
       text: "Moth has not come down for rehearsal. She is home. Home is the van, parked forty feet from the basement door, lights on, curtains " +
         "drawn. There is a note on the door: 'NOT TODAY. BASS PARTS ARE THE SAME AS LAST TIME.'",
       choices: [
@@ -13367,7 +13373,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Not yet', effects: { mood: { rox: -4 } },
           outcome: 'Rox tapes the design to the basement wall. It watches you rehearse. It is, metaphorically, on fire.' }
       ] },
-    { id: 'shop_pawn_kit_frost_heave', type: 'money', speaker: 'moth', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit_frost_heave', type: 'money', speaker: 'moth', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Moth texts a photo from the pawn shop on Dewdney: a five-piece kit, shells that almost match, $800. Then: 'guy says $650 today. " +
         "the milk crate has to go. it's been in my van for a month.'",
       choices: [
@@ -13394,16 +13400,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Keep the old van', effects: { chemistry: 2, mood: { moth: 3 } },
           outcome: 'A skate crew buys the church van instead. Moth pats the Pothole\'s dashboard all the way home.' }
       ] },
-    { id: 'shop_solo_frost_heave', type: 'drama', speaker: 'benny', title: 'Benny Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo_frost_heave', type: 'drama', speaker: 'benny', title: 'Benny Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: "Benny has written a solo. It is both of his chords, alternating, very fast, for eight bars. He will only play it if the songs " +
-        "get a real solo section. He is holding your sticks hostage. He is also holding the setlist hostage.",
+        "get a real solo section. He is holding your {sticks} hostage. He is also holding the setlist hostage.",
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Benny ↑', effects: { mood: { benny: 8 }, shop: { section: 'solo' } },
-          outcome: 'Benny returns your sticks and plays you the solo. Chord one. Chord two. Chord one. It is, somehow, exhilarating.' },
+          outcome: 'Benny returns your {sticks} and plays you the solo. Chord one. Chord two. Chord one. It is, somehow, exhilarating.' },
         { label: 'Only with a stage dive', hint: 'Solo unlocked · Benny ↑ · Rox ↑', effects: { mood: { benny: 5, rox: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'His solo, her dive, the same eight bars. Nobody watches Benny. Benny prefers it that way. Everyone is happy, loudly.' },
         { label: 'No solos in this band', hint: 'Benny ↓↓', effects: { mood: { benny: -10 } },
-          outcome: 'Benny returns the sticks. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
+          outcome: 'Benny returns the {sticks}. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
       ] },
     { id: 'shop_space_1_frost_heave', type: 'money', speaker: 'rox', title: 'A Room With a Lock', gate: g({ era: LSW }),
       text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $60 a week, no dryers. Irma is " +
@@ -13584,7 +13590,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Audition first', effects: mfx({ mood: { rox: -8 }, skill: { rox: 2 } }, 'rox', 'return'),
           outcome: 'She auditions with a nine-minute song about parking appeals. She gets the gig. She would like it noted that she was nervous.' },
         { label: 'Not yet, Rox', effects: mfx({ mood: { rox: -5 } }, 'rox', 'later'),
-          outcome: 'Rox leaves the nameplate on your snare and sits in the laundromat for weeks, filing complaints about the wait.' }
+          outcome: 'Rox leaves the nameplate on your {gear} and sits in the laundromat for weeks, filing complaints about the wait.' }
       ] },
     { id: 'ret_rox_filled', type: 'drama', speaker: 'rox', title: 'Point of Order',
       text: "Rox is back, nameplate under one arm. {recruit} is at her mic, holding her megaphone. 'Point of order,' Rox says, very quietly. " +
@@ -13700,7 +13706,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'VIRAL: Moth fixes the van\'s alternator with a coat hanger in eleven seconds, in the rain, without a word. {views} views.',
         'VIRAL: a whole laundromat sings the chorus while the dryers keep time. {views} views.',
         'VIRAL: the band plays on top of an actual frost heave while traffic launches over it. {views} views.',
-        'VIRAL: {player} counts in so hard the drumstick flies into a dryer and keeps spinning. {views} views.',
+        'VIRAL: {player} counts in so hard one of the {sticks} flies into a dryer and keeps spinning. {views} views.',
         'VIRAL: Rox heckles a city council livestream from the gallery and the mayor answers her, live. {views} views.',
         'VIRAL: Benny teaches a room of forty kids both chords in ninety seconds. The kids start a band on the spot. {views} views.',
         'VIRAL: a news crew knocks on the van. Moth opens the curtain one inch, says "no", closes it. {views} views.'
@@ -14188,7 +14194,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       choices: [
         { label: 'Put her on speaker', hint: 'Chemistry ↑ · Moth ↑', effects: { chemistry: 4, mood: { moth: 6 } },
           outcome: 'Moth talks you through three towns. She knows every pothole. The band cheers when she says "left, now". It is like she never left.' },
-        { label: "Tell her you've got it", hint: 'Moth ↓ · Drum skill ↑', effects: { mood: { moth: -5 }, drumSkill: 1 },
+        { label: "Tell her you've got it", hint: 'Moth ↓ · Your chops ↑', effects: { mood: { moth: -5 }, drumSkill: 1 },
           outcome: 'You have got it, mostly. The brakes pull left. You pull right. It is a partnership now, you and her van.' },
         { label: 'Pull over and listen', hint: 'Van ↑', effects: { burnout: 3, van: { condition: 4 } },
           outcome: 'Moth diagnoses a loose belt over the phone from the sound alone. You tighten it. She hangs up without saying goodbye. That is love.' }
@@ -14286,7 +14292,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Four people leaning in unison for eighty kilometres. It does nothing. It feels like it does everything.' },
         { label: 'Wait it out at a café', hint: '−$25 · Burnout ↓', effects: { fund: -25, burnout: -5 },
           outcome: 'Pie and coffee in a small-town café while the wind screams. The waitress says it is "a bit breezy". It is 90 km/h.' },
-        { label: 'Push on. Hold the line.', hint: 'Van ↓ · Drum skill ↑', effects: { drumSkill: 1, van: { condition: -3 } },
+        { label: 'Push on. Hold the line.', hint: 'Van ↓ · Your chops ↑', effects: { drumSkill: 1, van: { condition: -3 } },
           outcome: 'You make it. The side mirror does not. Moth, if she is there, is already sketching a replacement out of a hubcap.' }
       ] }
   ]);
@@ -14377,7 +14383,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: "The producer's click track tops out at 220 BPM. The new song is 236. The producer says it is 'not a tempo, it is a medical event'. " +
         "Benny says the song has two chords so it is 'basically half as fast'. That is not how tempo works.",
       choices: [
-        { label: 'Record without a click', hint: 'Drum skill ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
+        { label: 'Record without a click', hint: 'Your chops ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
           outcome: 'You count it in off the dryer thump in your head. It speeds up by the end. It sounds like a riot. It is the single.' },
         { label: 'Slow it to 220', hint: 'Production ↑ · Benny ↓', effects: { production: 2, mood: { benny: -4 } },
           outcome: 'At 220 it sounds like a ballad to the band. To everyone else, still a medical event. The producer is relieved.' },
@@ -14434,7 +14440,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Matching sashes for all', hint: 'Gamble: a campaign or a costume',
           outcome: 'Moth sews four sashes in the van on the way to the show.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
-            success: { effects: ofx({ buzz: 12, fans: 120 }, 'sash'), outcome: "VOTE ROX, VOTE BENNY, VOTE MOTH, VOTE DRUMS. A fashion site calls it 'municipal chic'." },
+            success: { effects: ofx({ buzz: 12, fans: 120 }, 'sash'), outcome: "VOTE ROX, VOTE BENNY, VOTE MOTH, VOTE {player}. A fashion site calls it 'municipal chic'." },
             fail: { effects: ofx({ buzz: 4, burnout: 5 }, 'sash'), outcome: 'The sashes are mistaken for a pageant. Someone hands Benny a tiara. He keeps it.' } } },
         { label: 'Just the jacket', hint: 'Chemistry ↑', effects: ofx({ chemistry: 3, fans: 80 }, 'jacket'),
           outcome: 'The jacket with every safety pin. Classic. Rox keeps the sash in her pocket, just in case someone asks. Someone asks.' }
@@ -14513,7 +14519,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   merge(obj(band(SH), 'lines'), {
     outro: [{ who: 'benny', text: 'what if the song ended. on purpose. on chord two. with a big crash' },
       { who: 'rox', text: 'An outro. Every good meeting needs an adjournment. Motion to end loud.' }],
-    solo: [{ who: 'benny', text: 'solo section unlocked. you play the beat. i play both chords. fast' }],
+    solo: [{ who: 'benny', text: 'solo section unlocked. you play {yourPart}. i play both chords. fast', seat: ['drums', 'bass', 'rhythm'] }],
     misprintCollector: [{ who: 'benny', text: 'there is a fan page for FROST HEAVY shirts now. the box behind dryer six is worth money. i said this' }],
     move: [{ who: 'rox', text: 'A real room. With a lock. Irma says she will miss the noise. Irma is lying. Irma is crying.' }],
     van: [{ who: 'moth', text: 'New van. I moved in last night. Knock first. Same rules. Bigger kitchen.' }],
@@ -14787,15 +14793,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       noSolo: ['no solo? good. solos have too many notes', "cool, no room for a solo. i'll play chord two where it would've been",
         'no solo section. finally someone gets it'],
       solo: ["a solo section. i'll play both chords. alternating. fast", 'eight bars of solo. chord one, chord two, chord one, chord... two'],
-      custom: [{ when: 'difficultyHigh', text: 'this is hard. hard songs need more chords. i refuse. play it easier' },
-        { when: 'difficultyHigh', text: "too many notes on the kit. i'm protesting with fewer notes on the guitar" },
-        { when: 'any', text: 'i played it with two chords. it works. it always works' }]
+      custom: [{ when: 'difficultyHigh', text: 'this is hard. hard songs need more chords. i refuse. play it easier', seat: ['drums', 'bass', 'rhythm'] },
+        { when: 'difficultyHigh', text: "too many notes on the kit. i'm protesting with fewer notes on the guitar", seat: ['drums', 'bass', 'rhythm'] },
+        { when: 'any', text: 'i played it with two chords. it works. it always works', seat: ['drums', 'bass', 'rhythm'] }]
     },
     moth: {
       fills: ['(Moth played a fill. One note. It was the right one.)', "Put a little bass run in bar 12. Don't make it weird.", 'Snuck a note into the verse. It lives there now.'],
       great: ['(Moth nods. Then she lets you ride in the front seat. The front seat.)', "That's a good one. I'll play it in the van.",
         '(Moth taps the dash twice. The highest honour in the Pothole.)'],
-      custom: [{ when: 'similarityHigh', text: 'Sounds like the last one. Same bassline works. Efficient.' },
+      custom: [{ when: 'similarityHigh', text: 'Sounds like the last one. Same bassline works. Efficient.', seat: ['drums', 'rhythm', 'lead'] },
         { when: 'any', text: '(Moth writes the title on the van ceiling with the others.)' }]
     }
   });
@@ -14885,7 +14891,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'Benny wrote a riff. It has two chords. They are the same two chords. It is new, somehow.',
         'We wrote a song about the pothole on Dewdney. It is eighty seconds long. So is the pothole.',
         'Moth wrote one bass line and said "done". It was done.',
-        'We built a song around your drum groove. Rox found a bylaw that fits the rhythm.',
+        'We built a song around a groove you found on {instrument}. Rox found a bylaw that fits the rhythm.',
         'We tried a ballad. It lasted forty seconds before Rox turned it into a protest.'],
       promote: ['We stapled flyers to every pole on Albert Street. Rox stapled one to a council notice. It stayed up.',
         'Rox did a "public comment" on the campus radio call-in show. It was about the band. Mostly.',
@@ -15282,7 +15288,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        ch('Negotiate the loading dock', { buzz: 3, mood: { chase: 6, tamara: -4 } },
         'The loading dock is officially "backstage" from 6 p.m. to 10 p.m. Chase installs a door sign. Tamara installs a clock.')]),
     card('gk_early_nail_salon', 'scene', 'gk_nails', 'The Wall Is Thin', g({ minWeek: 2, maxWeek: 12 }),
-      'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your snare is in my ' +
+      'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your {gear} is in my ' +
       "customer's toes. She is tapping along. It is ruining the polish.\"",
       [ch('Rehearse after salon hours', { burnout: 4, chemistry: 3 },
         'Rehearsals start at 8 p.m. now. Trinh leaves a thank-you note and a coupon. Chase uses the coupon. His cuticles have never looked better.'),
@@ -15661,7 +15667,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'A double bill in Lloydminster with Hail Damage, a metal band from Saskatoon. Their singer has a cape. Their bassist has not said ' +
       "a word in four hours. Their drummer asks yours about double-kick pedals. Lenny is intimidated.",
       [ch('Swap drummers for a song', { buzz: 8, drumSkill: 1 },
-        'You play their blast beat; their drummer plays your backbeat. Nobody notices for a full verse. Then everybody notices. It rules.'),
+        'The drummers trade places: ours plays their blast beat, theirs plays our backbeat. Nobody notices for a full verse. Then everybody notices. It rules.'),
        ch('Split the green room pizza', { chemistry: 5, fans: 20 },
         'Their singer blesses the pizza in French. Chase blesses it in 1985. The bassist nods at Lenny once. Lenny will talk about it for years.'),
        ch('Outplay them', { buzz: 10, burnout: 6 },
@@ -15760,7 +15766,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { buzz: 18, fans: 300 }, 'He lands between the flames on the downbeat. Nobody knows how. He does not know how.',
         { buzz: 6, burnout: 10, mood: { chase: -10 } }, 'He slides a metre short. The flames go up anyway. Tamara extinguishes his hair. It grows back.'),
        ch('No pyro. Just the slide.', { chemistry: 5, mood: { chase: -8 } },
-        'The slide alone is still the best thing in the show. Chase says the flames were "in his heart". Tamara says that is where they stay.')]),
+        'The slide alone is still the best thing in the show. Chase says the flames were "in his heart". Tamara says that is where they stay.')],
+      { seat: ['drums', 'bass', 'lead'] }),
     card('gk_s_royalty_audit', 'money', 'tamara', 'Tamara Audits the Label', g({ era: S, minWeek: 30 }),
       'Tamara has read the royalty statement. All forty pages. With a ruler. She has found a column that does not add up, a charge ' +
       "for 'catering (scarves)', and a line item called 'Rex'. She wants a meeting.",
@@ -16081,7 +16088,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     card('gk_guilt_hygiene', 'money', 'mom', 'Hygiene School', g({ era: GLS, flags: ['parentsLoan'] }),
       "Mom has met Tamara. Mom likes Tamara very much. Mom has now left a brochure for the dental hygiene program at the college " +
-      "on your snare drum, with 'TAMARA DID IT!' written on it.",
+      "on your {gear}, with 'TAMARA DID IT!' written on it.",
       [ch('Pay her back $100', { repay: 100, chemistry: 2 },
         'You hand over a hundred dollars. Mom hands back the brochure. "Keep it. For later." It goes in the receipts shoebox.'),
        ch('Have Tamara talk to her', { mood: { tamara: 4 }, burnout: 3 },
@@ -16344,7 +16351,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        bet('Haggle', 'haggle him down', 'Tamara takes the phone.', 0.5, 'chemistry',
         { fund: -520, shop: { kit: 1 } }, 'Tamara negotiates like a dental billing department. $520, and he throws in a cowbell. No gong.',
         { mood: { lenny: -5 } }, 'He sells it to a church drummer while you haggle. Lenny sulks until Thursday.'),
-       ch('Not yet', { mood: { lenny: -4 } }, 'The milk crate creaks, as if it heard. Chase apologizes to it.')]),
+       ch('Not yet', { mood: { lenny: -4 } }, 'The milk crate creaks, as if it heard. Chase apologizes to it.')], { seat: ['drums'] }),
     card('shop_van_deal_gravel_kings', 'money', 'tamara', 'The Dental Clinic Van', g({ era: LSW, minFund: 4000 }),
       "The Sherwood Park Smile Centre is retiring its mobile-clinic van: fifteen seats, a trailer, a sink that still works. $3,000 and " +
       "the old van for parts. Tamara has already checked the tires. She has already named it.",
@@ -16363,7 +16370,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        ch('Only with a knee slide', { mood: { lenny: 5, chase: 5 }, chemistry: -2, shop: { section: 'solo' } },
         "Lenny's solo, Chase's slide, the same eight bars. Nobody can see Lenny's hands behind the leather. Everyone is happy, loudly.", 'Solo unlocked · Lenny ↑ · Chase ↑'),
        ch('No solos in this band', { mood: { lenny: -10 } },
-        'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')]),
+        'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')], { seat: ['drums', 'bass', 'rhythm'] }),
     card('shop_space_1_gravel_kings', 'money', 'gk_landlord', 'A Room with a Real Door', g({ era: LSW }),
       "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $60 a week, and no nail salon on the other side " +
       "of the wall. Mr. Petrenko says Unit 4B 'will always be here'. He means it as a threat and a comfort.",
@@ -16778,7 +16785,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     "They said your name. The band is on stage holding a loonie the size of a hubcap. Chase, for once in his life, hands you the mic. " +
     "Tamara checks her watch. You have thirty seconds before the music plays you off.",
     [ch('Thank your mom', { fans: 120, chemistry: 6, mood: { all: 6 }, chat: { who: 'mom', text: 'I was the one crying in row M. Tamara gave me a tissue.' } },
-      "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'."),
+      "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY KID'."),
      ch('Thank Westgate Plaza', { buzz: 14, fans: 80 },
       "'And most of all: Unit 4B. Trinh. Gus. Mr. Petrenko. Darrell.' Silence. Then someone yells 'WESTGATE!' and the arena chants it."),
      bet('Take a shot at Chartbusters', 'roast, or roasted', 'You lean into the mic and find their table. The scarves.', 0.55, 'buzz',
@@ -16892,7 +16899,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           'This one is going to be huge. Arenas. Lighters. It is called', 'Leather pants were made for this song. Its name is',
           'I wrote the chorus on a napkin at the poutine place. The song is called'],
         custom: [
-          { when: 'difficultyHigh', text: "That's a lot of notes, drummer. I will be sliding through half of them on my knees." },
+          { when: 'difficultyHigh', text: "That's a lot of notes. I will be sliding through half of them on my knees.", seat: ['drums', 'bass', 'lead'] },
           { when: 'similarityHigh', text: "Didn't we... already write this one? It's fine. It's a callback. 1985 was full of callbacks." },
           { when: 'any', text: 'Somebody get the wind machine. This one needs weather.' }
         ]
@@ -16903,8 +16910,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         fills: ['I snuck a little lick into bar four. It is new. I checked. Mostly checked.', 'The verse had room, so I put a slide there. An original slide.',
           "Don't listen to bar twelve too closely. Or do. It's the most original thing I own."],
         custom: [
-          { when: 'similarityHigh', text: 'Hang on. This sounds like a famous riff. Which means it sounds like me. Which means a lawyer.' },
-          { when: 'difficultyHigh', text: "Fast. Real fast. I'll need new strings and a lawyer who is also fast." },
+          { when: 'similarityHigh', text: 'Hang on. This sounds like a famous riff. Which means it sounds like me. Which means a lawyer.', seat: ['drums', 'bass', 'rhythm'] },
+          { when: 'difficultyHigh', text: "Fast. Real fast. I'll need new strings and a lawyer who is also fast.", seat: ['drums', 'bass', 'rhythm'] },
           { when: 'any', text: "I'm running it through the app tonight. Just to be safe. Everything is fine." }
         ]
       },
@@ -16997,14 +17004,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   P.bandLines = {
     activity: {
       rehearse: ['We ran "Leather Pants at Forty Below" eleven times. On the twelfth, the nail salon clapped through the wall.',
-        '{nick:chase} made us rehearse the knee slide. The drummer does not slide. The drummer still had to rehearse it.',
+        '{nick:chase} made us rehearse the knee slide. Everyone. Even whoever is on drums.',
         'Tamara ran rehearsal with a stopwatch. We were done at 9:59:40. Twenty seconds of silence. Beautiful.',
         "Lenny played the riff until it sounded like nobody's. It took two hours. It was worth it.",
         'Gus tested vacuums all night in B flat. We rehearsed in B flat. It works, somehow.',
         'We tightened the ending. It had a knee slide, a key change and a fake ending. Now it has two of those.'],
       write: ['We wrote a riff. Lenny checked it on the app. Then checked it again. Then again. 11%. Keeper.',
         '{nick:chase} wrote the lyrics on a napkin at the poutine place. The napkin is now framed.',
-        'We built a song around your backbeat. Tamara timed it: 3:40. Radio length. Home by midnight.',
+        'We built a song around a groove you found on {instrument}. Tamara timed it: 3:40. Radio length. Home by midnight.',
         'We wrote a power ballad. It lasted ninety seconds before Chase added a key change and a wind machine.',
         'Lenny brought a riff from a dream. He described the dream. It was about a lawyer.',
         'Tamara wrote a bass line so tidy you could eat off it. The song grew around it like a garden.'],
@@ -17064,12 +17071,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'A cowboy hat hit the snare mid-fill. Chase put it on. He looked incredible. He kept it.'],
     countIn: ['ONE, TWO, ONE-TWO-THREE... ROCK!', 'Hit it!', '1985! Two! Three! Four!', 'A-one, a-two... knee slide!'],
     empty: { chat: 'No messages yet. Chase is at the payphone. Tamara is typing a very organised message.',
-      catalog: 'No songs yet. Lenny has riffs. Some of them might even be his. Write one on the kit.' },
+      catalog: 'No songs yet. Lenny has riffs. Some of them might even be his. Write one.' },
     exposure: ['Chase: "Exposure is basically radio play. Say yes."', 'Exposure! We are going to be SO exposed. In leather.',
       'Tamara: "Exposure does not pay for diesel." Chase: "It pays for the soul."'],
     noSolo: ['Where does my solo go? Nowhere? Cool. I will solo in the parking lot.', 'No solo section. Lenny is writing a letter. To the minutes.'],
     guilt: ["Your mom asks if you've thought about hygiene school. She has met Tamara.",
-      'Your dad leaves the oil-patch job ads on your snare. Rig hand is circled. Twice.',
+      'Your dad leaves the oil-patch job ads on your {gear}. Rig hand is circled. Twice.',
       "Your mom tells the neighbours you're 'in rock'. The neighbours ask which rock.",
       'Dad drives past Westgate Plaza, slows down at Unit 4B, and keeps going. Mom calls it progress.'],
     venueUp: ['The owner wants you back. Better money next time. Chase asks for a wind machine.', 'Handshake plus shoulder grab. Tamara confirms the date in writing.',
@@ -17253,7 +17260,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { burnout: 6, mood: { all: -3 } }, 'Forty minutes of crescents. You pass the same garden gnome four times. It judges you.')],
       { once: false, cooldown: 6 }),
     card('road_gk_you_speeding', 'road', 'chase', 'Photo Radar on the Henday', rg({ driver: ['you'], minKm: 40 }),
-      'You drive like you drum: steady on the straights, too fast in the fills. A photo radar van blinks at you on the ring road. Chase ' +
+      'You drive like you play {instrument}: steady on the straights, too fast in the fills. A photo radar van blinks at you on the ring road. Chase ' +
       'strikes a pose.',
       [ch('Pay the ticket', { fund: -120 }, 'The photo is great. Chase is mid-pose, mullet up. It becomes the new press shot.', '−$120'),
        ch('Drive like T-Bone now', { burnout: 4, chemistry: 2 }, 'Exactly the limit, hands at ten and two. The band sits up straight. It feels like she is watching.', 'Burnout ↑ · safe')],
@@ -17811,7 +17818,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     ],
     drummer: { id: 'bb_session', hired: true, name: 'The Session Guy', short: 'Session guy', fullName: 'The Session Guy', nick: 'The Session Guy', role: 'drums', lane: 'back',
         dayJob: 'Session drummer, by the hour',
-        bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, drummer to drummer.',
+        bio: 'Hired by the hour. Nobody knows his name, including the cousins. Has drummed on four hundred truck commercials. Nods at you, one professional to another.',
         gags: ['Leaves at exactly the end of the booked hour. Mid-song, if needed.', 'Invoices Buckle & Boot for the encore separately.',
           'The only member of the band who can read music. Does not bring it up.'],
         look: look('#c68b5e', '#1c1c1c', 'bald', '#4a4a52', '#222228', 1.0, 1.05, ['beard'], 'tee'), corpsePaint: false, stageShirt: '#4a4a52' },
@@ -17910,7 +17917,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       final: ["Brayden: \"Calgary! Tailgates down for the last time tonight!\""],
       opening: ["Afterwards Brayden hands you a Prairie Titan keychain. 'No hard feelings, bud. Yet.'"]
     },
-    openingSlot: ["Afterwards Brayden shakes your hand and asks if your drummer does truck ads. You are the drummer.",
+    openingSlot: ["Afterwards Brayden asks who plays {instrument}. You do. He asks if you do truck ads.",
       "After the set Sheldon offers the band a 'hay-bale partnership'. Duke asks what that is. Nobody knows."],
 
     ui: {
@@ -18246,7 +18253,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             success: { effects: { mood: { travis: 6 }, fans: 3 }, outcome: "Vern listens to the whole thing and says 'that'll do'. It is the highest praise in Saskatchewan. Rent waived." },
             fail: { effects: { burnout: 5 }, outcome: "Vern says 'that's nice' and hands Travis a rock bucket. The rocks are still there. So is Vern." } } }
       ] },
-    { id: 'grr_hay_throne', type: 'weird', speaker: 'duke', title: 'The Hay Bale Throne', gate: g({ maxWeek: 10 }),
+    { id: 'grr_hay_throne', type: 'weird', speaker: 'duke', title: 'The Hay Bale Throne', seat: ['drums'], gate: g({ maxWeek: 10 }),
       text: "Your drum throne is a square bale. It is itchy. It sheds. It is slowly getting shorter because Vern's horse, Doris, comes in " +
         "through the side door and eats it during rehearsal. Duke says the bale 'has character'.",
       choices: [
@@ -18324,7 +18331,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       choices: [
         { label: 'Hang blankets on the walls', hint: '−$30 · Skill ↑', effects: { fund: -30, skill: { all: 1 } },
           outcome: "Vern's old horse blankets on every rib of the Quonset. The echo is gone. The smell of horse is not. You play tighter anyway." },
-        { label: 'Play with the echo', hint: 'Clementine ↑ · Drum skill ↑', effects: { mood: { clementine: 6 }, drumSkill: 1 },
+        { label: 'Play with the echo', hint: 'Clementine ↑ · Your chops ↑', effects: { mood: { clementine: 6 }, drumSkill: 1 },
           outcome: "You play every fill so the echo finishes it. Clementine calls it 'ensemble'. Duke calls it 'the Quonset playing along'." },
         { label: 'Rehearse outside', hint: 'Burnout ↓ · Fans ↑', effects: { burnout: -4, fans: 4 },
           outcome: 'You set up in the yard. Two neighbours stop their trucks on the grid road to listen. One honks at the end. That is a review.' }
@@ -18362,7 +18369,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Sit on his hands', hint: 'Chemistry ↑', effects: { chemistry: 3, burnout: 3 },
           outcome: 'Clementine and Duke sit on either side of him holding his arms down. He sways to the auctioneer like it is a ballad.' },
         { label: 'Ask Lloyd for a job', hint: 'Gamble: auctioneers need rhythm',
-          outcome: 'You ask Lloyd if the auction needs a drummer.',
+          outcome: 'You ask Lloyd if the auction needs a rhythm section.',
           roll: { chance: 0.45,
             success: { effects: { fund: 60, drumSkill: 1, book: 'auction_mart_stage' }, outcome: 'You keep time on a feed pail. Lloyd sells at 150 BPM. Record auction. $60, lunch, and Saturday in his sale ring.' },
             fail: { effects: { burnout: 4 }, outcome: 'Lloyd says the auction has a rhythm and it is Lloyd. You go home with the mystery wrenches.' } } }
@@ -18390,12 +18397,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Five yeehaws on the next break. Clementine rolls her eyes. On the last chorus she does it again, just a little. She is smiling.' }
       ] },
     { id: 'grr_gophers', type: 'weird', speaker: 'duke', title: 'Gophers Under the Kit', gate: g({ era: GLS }),
-      text: "Your kick drum is sinking. The Quonset floor is dirt under the plywood, and the gophers have been busy. The kick is now four " +
+      text: "The kick drum is sinking. The Quonset floor is dirt under the plywood, and the gophers have been busy. The kick is now four " +
         "centimetres lower than the snare. Duke is on his belly, looking into a hole, making friends.",
       choices: [
         { label: 'Pour a concrete pad ($120)', hint: '−$120 · Skill ↑', effects: { fund: -120, drumSkill: 2 },
-          outcome: 'Vern helps you pour a pad. The kit sits level for the first time. Your kick has never sounded so solid. The gophers relocate.' },
-        { label: 'Play around the tilt', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+          outcome: 'Vern helps you pour a pad. The kit sits level for the first time. The kick has never sounded so solid. The gophers relocate.' },
+        { label: 'Play around the tilt', hint: 'Your chops ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
           outcome: 'You adapt. You play downhill. At your next gig on a flat stage you overshoot every fill. The crowd thinks it is on purpose.' },
         { label: 'Let Duke negotiate', hint: 'Duke ↑ · Chemistry ↑', effects: { mood: { duke: 6 }, chemistry: 3 },
           outcome: "Duke leaves a peanut butter sandwich at the hole every rehearsal. The digging stops. Duke says it is 'an understanding'." }
@@ -18419,8 +18426,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         "1962 and has not stopped. He would like to teach everyone first. In the Quonset. Now.",
       choices: [
         { label: 'Take the lesson', hint: 'Chemistry ↑ · Burnout ↑', effects: { chemistry: 5, burnout: 4 },
-          outcome: 'Earl leads Duke. Clementine leads Travis. You play the beat on a pail. It is chaos, then it is dancing, then it is lovely.' },
-        { label: 'Just play the beat', hint: 'Drum skill ↑', effects: { drumSkill: 1, mood: { earl: -4 } },
+          outcome: 'Earl leads Duke. Clementine leads Travis. You keep the beat on a pail. It is chaos, then it is dancing, then it is lovely.' },
+        { label: 'Just play the song', hint: 'Your chops ↑', effects: { drumSkill: 1, mood: { earl: -4 } },
           outcome: 'Boom-chick, boom-chick, three hours straight. Your left foot has never been so reliable. Earl dances alone. He is fine.' },
         { label: 'Film the lesson', hint: 'Buzz ↑ · Duke ↓', effects: { buzz: 5, mood: { duke: -4 } },
           outcome: "Duke's two-step, in the hat, is a sensation. He is mortified. The hat is not. The hat has never looked better." }
@@ -18583,7 +18590,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         "'the old-timers played by lantern'. Travis Lee has an acoustic. Clementine has a fiddle. The amps are useless.",
       choices: [
         { label: 'Play unplugged', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 5, skill: { all: 1 } },
-          outcome: "Acoustic, fiddle, you on brushes on a hay bale, Duke humming the bass. Rain on the steel roof. Nobody wants the power back." },
+          outcome: "Acoustic, fiddle, you playing as quietly as you can, Duke humming along. Rain on the steel roof. Nobody wants the power back." },
         { label: 'Tell stories instead', hint: 'Earl ↑ · Burnout ↓', effects: { mood: { earl: 8 }, burnout: -4 },
           outcome: 'Earl tells the 1979 story by lantern. It is different this time. There is a woman in it. Nobody interrupts. Nobody breathes.' },
         { label: 'Drive to town', hint: '−$20 · Burnout ↑', effects: { fund: -20, burnout: 4 },
@@ -18643,8 +18650,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: "The seniors' line-dance class at the Legion is tired of the CD player. They want a live band every Tuesday afternoon. $50 a week. " +
         "They have requests. They have a lot of requests. The instructor, Marg, is eighty-four and has a whistle.",
       choices: [
-        { label: 'Take the Tuesday gig', hint: '+$50 · Drum skill ↑', effects: { fund: 50, drumSkill: 1 },
-          outcome: 'Marg blows the whistle when you drift off the tempo. You never drift again. You are now the tightest drummer in the southwest.' },
+        { label: 'Take the Tuesday gig', hint: '+$50 · Your chops ↑', effects: { fund: 50, drumSkill: 1 },
+          outcome: 'Marg blows the whistle when you drift off the tempo. You never drift again. You are now the tightest player in the southwest.' },
         { label: 'Just one Tuesday', hint: 'Fans ↑', effects: { fans: 8 },
           outcome: "Forty seniors, perfect lines, a boot-scoot so precise it's military. Marg says you 'show promise'. The whole class comes to your next gig." },
         { label: 'Earl goes alone', hint: 'Earl ↑ · Chemistry ↓', effects: { mood: { earl: 8 }, chemistry: -2 },
@@ -18679,7 +18686,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       choices: [
         { label: 'Stop the show. Find the hat.', hint: 'Duke ↑ · Buzz ↑', effects: { mood: { duke: 8 }, buzz: 3 },
           outcome: 'The whole crowd fans out across the field. A kid finds it. The show resumes to the biggest cheer of the night.' },
-        { label: 'Keep playing', hint: 'Duke ↓ · Drum skill ↑', effects: { mood: { duke: -6 }, drumSkill: 1 },
+        { label: 'Keep playing', hint: 'Duke ↓ · Your chops ↑', effects: { mood: { duke: -6 }, drumSkill: 1 },
           outcome: 'You carry the song. Duke plays hatless, small, blinking in the sun. A farmer returns the hat after the show. Duke hugs him.' },
         { label: 'Send Biscuit', hint: 'Gamble: a heeler, a hat, a field',
           outcome: "Vern whistles. Biscuit is off like a shot.",
@@ -18709,7 +18716,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'You turn down a notch. Clementine is audible. The hat stays exactly as big. Coffee row calls the next show "better, still loud".' },
         { label: 'Invite coffee row to a show', hint: 'Fans ↑ · Burnout ↑', effects: { fans: 8, burnout: 3 },
           outcome: 'Seven farmers in the front row with earplugs from the Co-op. They clap on one and three. They stay to the end. High praise.' },
-        { label: 'Play louder, out of love', hint: 'Buzz ↑ · Drum skill ↑', effects: { buzz: 3, drumSkill: 1 },
+        { label: 'Play louder, out of love', hint: 'Buzz ↑ · Your chops ↑', effects: { buzz: 3, drumSkill: 1 },
           outcome: 'Wilf reports back: "still loud, but on purpose now". The row respects a decision.' }
       ] },
     { id: 'grr_rep_truck_song', type: 'drama', speaker: 'travis', title: 'Another Truck Song', once: false, cooldown: 9, gate: g({ era: GLS }),
@@ -18727,7 +18734,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       text: "Clementine practises scales in the Quonset at five every morning. Classical scales. Three octaves. Vern's rooster has started " +
         "crowing in D minor to match. Duke, asleep in the loft, would like a word. With the rooster, mostly.",
       choices: [
-        { label: 'Join her', hint: 'Drum skill ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
+        { label: 'Join her', hint: 'Your chops ↑ · Burnout ↑', effects: { drumSkill: 1, burnout: 4 },
           outcome: 'Five a.m. rudiments with a classical violinist. She counts you in with a glare. You have never been so precise or so tired.' },
         { label: 'Let her be', hint: 'Clementine ↑', effects: { mood: { clementine: 5 } },
           outcome: 'She plays in the dark until sunrise. When you come in at nine the coffee is on and she is playing a hoedown. She will deny both.' },
@@ -19087,7 +19094,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Offer the whole band', hint: 'Gamble: the symphony and a hay bale',
           outcome: 'You email the symphony: package deal.',
           roll: { chance: 0.45,
-            success: { effects: { fans: 80, buzz: 12 }, outcome: 'The Ramblers with a full orchestra. Duke\'s hat has its own spotlight. You drum on a hay bale on a concert stage.' },
+            success: { effects: { fans: 80, buzz: 12 }, outcome: 'The Ramblers with a full orchestra. Duke\'s hat has its own spotlight. You play {instrument} on a hay bale on a concert stage.' },
             fail: { effects: { mood: { clementine: -6 } }, outcome: '"Just the fiddler," says the symphony. Clementine declines out of loyalty and is quietly furious about it.' } } },
         { label: 'Say nothing', hint: 'Chemistry ↑', effects: { chemistry: 3 },
           outcome: 'She decides alone. She goes. She tells nobody. You find out from a review that calls her "slumming it, gloriously".' }
@@ -19454,7 +19461,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Not yet', effects: { mood: { travis: -4 } },
           outcome: 'Travis Lee tapes the design to the Quonset wall. It watches you rehearse. The truck on it is very shiny.' }
       ] },
-    { id: 'shop_pawn_kit_grid_road_ramblers', type: 'money', speaker: 'earl', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit_grid_road_ramblers', type: 'money', speaker: 'earl', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Earl calls from a pawn shop in Medicine Hat: a five-piece kit, shells that almost match, $800. 'Fella says $650 today. I played " +
         "with the drummer who pawned it. 1979. Good hands. The hay bale can stay, son. The milk crate cannot.'",
       choices: [
@@ -19481,16 +19488,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Keep the old Suburban', effects: { chemistry: 2, mood: { earl: 3 } },
           outcome: "Earl pats the Suburban's dashboard. 'She has another million in her,' he says. At twenty under, she might." }
       ] },
-    { id: 'shop_solo_grid_road_ramblers', type: 'drama', speaker: 'earl', title: 'Earl Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo_grid_road_ramblers', type: 'drama', speaker: 'earl', title: 'Earl Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: "Earl has written a solo. It is thirty-two bars. It has a story in the middle. He will only play it if the songs get a real solo " +
-        "section. He is holding your sticks hostage. He has done this before. In 1979. To a better drummer, he says.",
+        "section. He is holding your {sticks} hostage. He has done this before. In 1979. To a better one, he says.",
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Earl ↑', effects: { mood: { earl: 8 }, shop: { section: 'solo' } },
-          outcome: 'Earl returns the sticks and plays you the solo. It is thirty-two bars of pure twang. The story in the middle is optional. It is not.' },
+          outcome: 'Earl returns the {sticks} and plays you the solo. It is thirty-two bars of pure twang. The story in the middle is optional. It is not.' },
         { label: 'Only with a fiddle answer', hint: 'Solo unlocked · Earl ↑ · Clementine ↑', effects: { mood: { earl: 5, clementine: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'Guitar, then fiddle, trading fours. It turns into a duel. Nobody wins. The crowd is the winner. Earl says it was a tie. It was not.' },
         { label: 'No solos in this band', hint: 'Earl ↓↓', effects: { mood: { earl: -10 } },
-          outcome: 'Earl returns the sticks. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
+          outcome: 'Earl returns the {sticks}. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
       ] },
     { id: 'shop_space_1_grid_road_ramblers', type: 'money', speaker: 'duke', title: 'A Room in Town', gate: g({ era: LSW }),
       text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $60 a week, " +
@@ -19639,7 +19646,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         quitLine: { who: 'duke', text: "My uncle's crew needs a hand for harvest. Then another harvest. I'm taking the hat. The hat needs air." },
         beats: [
           { at: 3, who: 'grr_vern', text: "Duke's combining near Brandon. Says the hat got a sunburn. The hat. Not him. He says the hat is fine now." },
-          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums." }
+          { at: 9, who: 'duke', text: "Played bass at a harvest dance in Manitoba. Three notes. They loved it. Didn't feel the same. No drums.", seat: ['drums', 'rhythm', 'lead'] },
+          { at: 9, who: 'duke', text: "Sat in on drums at a harvest dance in Manitoba. The hat stayed on. They loved it. Didn't feel the same. No bass.", seat: ['bass'] }
         ],
         changed: "Back from harvest with a farmer's tan and a fourth note he learned from a fiddler in Brandon.",
         backLine: { who: 'duke', text: "Harvest's in. The hat and I talked it over. We're back. I brought a roast." }
@@ -19855,7 +19863,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'VIRAL: Clementine plays a reel so fast a man\'s boot flies off and lands on the stage in time. {views} views.',
         'VIRAL: Travis Lee restarts his 1987 truck on the first try, on camera, and weeps with joy. {views} views.',
         'VIRAL: a whole curling rink two-steps to the waltz while the ice crew keeps sweeping. {views} views.',
-        'VIRAL: {player} drums on a hay bale so hard it bursts on the last hit, like confetti. {views} views.'
+        'VIRAL: {player} plays {instrument} on a hay bale so hard it bursts on the last note, like confetti. {views} views.'
       ],
       cringe: [
         { who: 'travis', text: 'Wrong kind of viral: Travis Lee\'s "how to drive stick" tutorial. He stalls eleven times. {views} views.' },
@@ -20345,8 +20353,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           roll: { chance: 0.6,
             success: { effects: { mood: { travis: 10 }, chemistry: 3 }, outcome: 'He drives the rest of the way without one stall. He does twenty under. Nobody says a word. Everyone thinks it.' },
             fail: { effects: { burnout: 4, van: { condition: -3 } }, outcome: 'He stalls at the same light. Then he rolls back into a mailbox. The mailbox belongs to Honest Gus.' } } },
-        { label: 'Just keep trying', hint: 'Drum skill ↑', effects: { drumSkill: 1, burnout: 3 },
-          outcome: "On the fourth try you feel it: clutch, gas, a rhythm. It's a groove. You're a drummer. You drive in time from now on." }
+        { label: 'Just keep trying', hint: 'Your chops ↑', effects: { drumSkill: 1, burnout: 3 },
+          outcome: "On the fourth try you feel it: clutch, gas, a rhythm. It's a groove. You're a musician. You drive in time from now on." }
       ] },
     { id: 'road_grr_you_gas_argument', type: 'road', speaker: 'duke', title: 'The Gas Station Argument', once: false, cooldown: 10, gate: road({ driver: YOU }),
       text: "Gas station outside Herbert. Duke wants jerky. Clementine wants to leave. Travis wants to look at the used trucks across the road. " +
@@ -20533,7 +20541,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Soundproof the wall', hint: '−$120 · Production ↑', effects: { fund: -120, production: 3 },
           outcome: 'Duke hangs Vern\'s horse blankets on the shared wall. The tailgate song fades to a hum. Your ballad breathes again.' }
       ] },
-    { id: 'studio_grr_click', type: 'drama', speaker: 'earl', title: 'Earl Will Not Play to a Click', once: false, cooldown: 10, gate: only({}),
+    { id: 'studio_grr_click', type: 'drama', speaker: 'earl', title: 'Earl Will Not Play to a Click', once: false, cooldown: 10, seat: ['drums'], gate: only({}),
       text: "The producer wants a click track. Earl has never played to a click. 'In 1979 we had a drummer,' he says, and points at you. " +
         "The producer points at the click. Earl points at you again. You are the drummer. Everyone is looking at you.",
       choices: [
@@ -20942,7 +20950,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       solo: ['A solo section. Thirty-two bars. I will keep the story under sixteen.', 'Room for a solo. I played on the original of this.'],
       custom: [{ when: 'similarityHigh', text: 'I played on the original of this one. Literally. It sounds like a session in 1979.' },
         { when: 'any', text: 'I played on the original. Well. I will have, once we record it.' },
-        { when: 'difficultyHigh', text: 'Busy kit. In 1979 the drummer played less and we sold more records.' }]
+        { when: 'difficultyHigh', text: 'Busy kit. In 1979 the drummer played less and we sold more records.', seat: ['drums', 'bass', 'rhythm'] }]
     },
     clementine: {
       fills: ['(Clementine plays a fill. Four notes. One is Bach.)', 'I put a fiddle run in bar 12. Do not make it weird.', 'A small fill after the chorus. Tasteful. Unlike the rest.'],
@@ -20952,9 +20960,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { when: 'any', text: 'It is a hoedown. I will play it like Paganini. That is my compromise.' }]
     },
     duke: {
-      custom: [{ when: 'any', text: 'Three notes fit. They always fit.' },
-        { when: 'similarityHigh', text: 'Sounds like the last one. Same three notes. Efficient.' },
-        { when: 'difficultyHigh', text: 'Hard one. Might need the fourth note.' }]
+      custom: [{ when: 'any', text: 'Three notes fit. They always fit.', seat: ['drums', 'rhythm', 'lead'] },
+        { when: 'similarityHigh', text: 'Sounds like the last one. Same three notes. Efficient.', seat: ['drums', 'rhythm', 'lead'] },
+        { when: 'difficultyHigh', text: 'Hard one. Might need the fourth note.', seat: ['drums', 'rhythm', 'lead'] }]
     }
   });
   members(obj(LN, 'writeTips'), {
@@ -21169,6 +21177,345 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     ]);
   }
   if (DRV.you) band(DRV.you).takeOver = "You drive now. Earl's atlas is still on the dash, open to page 42. His thermos is in the cup holder. It is still warm.";
+})(window.GG);
+
+</script>
+<script>/* content/zz_seats.js */
+(function (GG) {
+  var K = GG.content;
+  var HD = 'hail_damage', FH = 'frost_heave', GK = 'gravel_kings', GRR = 'grid_road_ramblers';
+  var BANDS = [HD, FH, GK, GRR], GENRES = ['metal', 'punk', 'rock', 'country'];
+  var GENRE = { hail_damage: 'metal', frost_heave: 'punk', gravel_kings: 'rock', grid_road_ramblers: 'country' };
+  var SWAP = {   // bands.js seats (E3): who moves to the kit when you take the seat
+    bass: { hail_damage: 'kenji', frost_heave: 'moth', gravel_kings: 'tamara', grid_road_ramblers: 'duke' },
+    rhythm: { hail_damage: 'jaxon', frost_heave: 'rox', gravel_kings: 'chase', grid_road_ramblers: 'travis' },
+    lead: { hail_damage: 'dana', frost_heave: 'benny', gravel_kings: 'lenny', grid_road_ramblers: 'earl' }
+  };
+  var GL = ['garage', 'local'], GLS = ['garage', 'local', 'signed'], LSW = ['local', 'signed', 'world'];
+  function allGate(era) { return { era: era.slice(), genre: GENRES.slice(), band: BANDS.slice() }; }
+  function bandGate(b, era, extra) {
+    var g = { era: era.slice(), genre: [GENRE[b]], band: [b] };
+    for (var k in extra || {}) g[k] = extra[k];
+    return g;
+  }
+  function ch(label, effects, outcome, hint) {
+    var o = { label: label, effects: effects, outcome: outcome };
+    if (hint) o.hint = hint;
+    return o;
+  }
+  function bet(label, hint, setup, effects, chance, stat, sFx, sOut, fFx, fOut) {
+    var roll = { chance: chance, success: { effects: sFx, outcome: sOut }, fail: { effects: fFx, outcome: fOut } };
+    if (stat) { roll.stat = stat; roll.statScale = 0.005; }
+    return { label: label, hint: 'Gamble: ' + hint, effects: effects || {}, outcome: setup, roll: roll };
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function arc(seat, step, id, type, speaker, title, era, text, choices, byBand, next, delay) {
+    var chain = 'arc_' + seat, swap = SWAP[seat];
+    var lines = BANDS.map(function (b) { return { who: byBand[b][0], text: byBand[b][1], swapped: swap[b] }; });
+    choices.forEach(function (c) {
+      var fx = c.effects = c.effects || {};
+      var spec = next === 'end' ? { step: 'end' } : { step: next, delay: delay };
+      fx.chain = {}; fx.chain[chain] = spec;
+      fx.chat = clone(lines);
+    });
+    var c = { id: id, type: type, speaker: speaker, title: title, chain: chain, step: step, seat: [seat], gate: allGate(era), text: text, choices: choices };
+    if (step === 1) c.weight = 3;
+    return c;
+  }
+  function flags(o) { return { flags: o }; }
+  function fx(base, more) { var o = {}; var k; for (k in base) o[k] = base[k]; for (k in more || {}) o[k] = more[k]; return o; }
+
+  var cards = [
+    /* ==== Nobody Hears the Bass (seat: bass) =================================================================== */
+    arc('bass', 1, 'arc_bass_1_unmiked', 'scene', '@front', 'Nobody Mics the Bass', GL,
+      "A real sound guy, for once. He mics {front}, the guitars, {drummer}'s kit and a dog that wandered in. Not you. Nobody " +
+      'notices for three songs. Not the crowd, not the band. Not, if you are honest, you.',
+      [ch('March over mid-song', { buzz: 3 }, "He squints at you. 'Oh, there's a bass?' He finds a cable. It was the dog's cable.", 'Buzz ↑ · the sound guy remembers you'),
+       ch('Turn up. Stand closer.', { drumSkill: 1, burnout: 4 }, 'You stand so close to your amp it becomes a hat. The front row feels it in their fillings and blames the furnace.', 'Your chops ↑ · Burnout ↑'),
+       ch('Let it go. Feel it instead.', { chemistry: 3 }, "Afterwards a man says 'great show, where was the bass coming from?' You say 'the floor'. He nods like that makes sense.", 'Chemistry ↑')],
+      { hail_damage: ['@drummer', '({drummer} stares at the empty mic stand by your amp. After the set, the kick-drum mic is pointing at you.)'],
+        frost_heave: ['@drummer', 'nobody mics the van either. we are the same, you and the van. both load-bearing'],
+        gravel_kings: ['@drummer', 'I taped a mic to your cab at the break. Labelled the cable. You are welcome. Floss tonight.'],
+        grid_road_ramblers: ['@drummer', "Nobody heard the bass. That's how you know it's working. The hat heard it. The hat hears everything."] },
+      2, 4),
+    arc('bass', 2, 'arc_bass_2_poll', 'fame', '@front', 'The Poll', GLS,
+      "The band page ran a poll: 'Name the band.' {front} got 94 percent. {drummer} got 71. The bassist got zero. One person wrote in " +
+      "'the tall one?' You are not the tall one.",
+      [ch('Post a selfie with the bass', { fans: 15, buzz: 2 }, 'Forty-one likes. Thirty are for the bass. Somebody asks if it is for sale. Somebody else asks if you are.', 'Fans ↑'),
+       ch('Start a mystery fan page', { buzz: 5, burnout: 3 }, "A page called 'Who Is the Bassist' gets eight hundred followers. You run it. Nobody knows. It is the best-run page in the scene.", 'Buzz ↑ · Burnout ↑'),
+       ch('Print the shirt', { fund: -60, chemistry: 3, fans: 10 }, "A shirt that says THE TALL ONE? It outsells the band shirt in Lloydminster. Nobody can explain it.", '−$60 · Fans ↑')],
+      { hail_damage: ['@drummer', '({drummer} got 4 percent, as "the guy in sunglasses". He taps your zero on the screen. Then taps his heart.)'],
+        frost_heave: ['@drummer', 'i got 12 percent. people think i am a roadie who lives in the van. i am a drummer who lives in the van. big difference'],
+        gravel_kings: ['@drummer', 'I got 63 percent. Most of them wrote "the one with the floss". I will take it.'],
+        grid_road_ramblers: ['@drummer', "The hat got 40 percent. The hat isn't even in the band. The hat's in every band."] },
+      3, 5),
+    arc('bass', 3, 'arc_bass_3_funk', 'weird', 'mom', 'Thursday Night', GLS,
+      "You have started a secret Thursday funk night at the Legion, under a fake name: Dr. Lowend and the Basement Committee. " +
+      "It drew ninety people last week. The band's last show drew sixty. Mom found out from the Legion newsletter.",
+      [ch('Keep the wig on', { fund: 80, burnout: 5 }, 'Every Thursday a different wig and a different first name. The Legion manager thinks you are four people. He pays all four.', '+$80 · Burnout ↑'),
+       ch('Invite {drummer}', { chemistry: 4, mood: { '@drummer': 6 } }, '{drummer} plays a shuffle behind you on the Legion kit. It is the most fun anyone has had on a Thursday in this province.', 'Chemistry ↑ · {drummer} ↑'),
+       ch('Tell the band', { mood: { all: 3 }, buzz: 3 }, "You tell them at rehearsal. {front} is hurt for exactly one song, then asks if Thursday needs a singer. It does not.", 'Moods ↑ · Buzz ↑')],
+      { hail_damage: ['@drummer', '({drummer} is at the back of the Legion on Thursday, in sunglasses, in a different wig. He nods once. Every week.)'],
+        frost_heave: ['@drummer', 'parked the van outside the legion thursday. you can hear dr lowend from the van. i give it four dryers out of four'],
+        gravel_kings: ['@drummer', 'Dr. Lowend owes the Legion a security deposit. I paid it. It is on the band spreadsheet as "funk".'],
+        grid_road_ramblers: ['@drummer', 'Went to Thursday. Danced with a widow from Gull Lake. The hat stayed on. The hat had a good night.'] },
+      4, 6),
+    arc('bass', 4, 'arc_bass_4_cropped', 'drama', '@front', 'Cropped', LSW,
+      "The photographer sends the final shot for the new record cover. {front} is in focus. {drummer} is in focus behind the kit. " +
+      'Your elbow is at the very edge. The elbow has been cropped.',
+      [ch('Fight it', { buzz: 6, mood: { '@front': -5 } }, "You make them reshoot. Your face is on the cover now, a little too big. {front} calls it 'bold'. It is a word.", 'Buzz ↑ · {front} ↓'),
+       ch('Embrace the mystery', { buzz: 4, chemistry: 3 }, 'The elbow becomes a logo. Fans draw it on their hands at shows. Nobody knows whose elbow it is. You know.', 'Buzz ↑ · Chemistry ↑'),
+       ch('Wear something unforgettable', { fund: -150, buzz: 8 }, 'A sequined poncho, every show, forever. The next photo cannot crop you. The poncho gets its own fan mail.', '−$150 · Buzz ↑↑')],
+      { hail_damage: ['@drummer', '({drummer} asks the photographer for the uncropped file. He frames it. Only the elbow.)'],
+        frost_heave: ['@drummer', 'the elbow is the best part of that photo. the elbow is punk. it did not ask permission to be there'],
+        gravel_kings: ['@drummer', 'I requested the full-resolution file for the band archive. Your elbow is in the archive. Properly filed.'],
+        grid_road_ramblers: ['@drummer', 'They cropped the hat once. Once. The photographer works in Moose Jaw now. Just saying.'] },
+      5, 5),
+    arc('bass', 5, 'arc_bass_5_feature', 'fame', 'dj', 'Unsung Heroes of the Low End', LSW,
+      "Rolling Scone wants you for a feature: 'Unsung Heroes of the Low End'. Half a page, a real photo, no elbows. If you go, " +
+      'they will ask about Thursday nights. They always find out about Thursday nights.',
+      [ch('Do the feature', fx({ buzz: 10, fans: 60 }, flags({ bassArc: 'legend' })), "The headline: 'DR. LOWEND UNMASKED'. Thursday night triples. The band reads it at the gas station, out loud.", 'Buzz ↑↑ · Fans ↑ · the legend'),
+       ch('Stay a secret', fx({ chemistry: 4, burnout: -4 }, flags({ bassArc: 'secret' })), 'You send them a photo of your shoes. They run it. Thursday stays yours. Nobody knows, and somehow everybody knows.', 'Chemistry ↑ · the secret'),
+       ch('Send {drummer} instead', fx({ mood: { '@drummer': 8 }, buzz: 3 }, flags({ bassArc: 'quiet' })), "The feature runs as 'Unsung Heroes of the Drum Riser'. You are quoted once: 'it's fine'. You meant it.", '{drummer} ↑ · the quiet one')],
+      { hail_damage: ['@drummer', '({drummer} reads the feature with a highlighter. Every line about you is highlighted. It is all the lines.)'],
+        frost_heave: ['@drummer', 'rolling scone wanted a photo of the van. i said the van is private. you can be in it though. that is new'],
+        gravel_kings: ['@drummer', "I proofread the article for them. Two typos and a missing comma. The comma was yours. You're welcome."],
+        grid_road_ramblers: ['@drummer', 'Rolling Scone asked me about the bass. I said ask the bassist. First time anybody asked me to pass. Felt good.'] },
+      6, 4),
+    arc('bass', 6, 'arc_bass_6_chant', 'scene', '@front', 'They Sing the Bass Line', LSW,
+      'Somewhere far from {city}, a crowd that cannot pronounce your name sings your bass line back at you. All of it. In tune. ' +
+      '{front} stops singing to listen.',
+      [ch('Play it again', fx({ buzz: 10, fans: 80 }, flags({ bassArcDone: true })), "You play the line four more times. They sing it four more times. A local paper calls you 'the quiet engine'.", 'Buzz ↑↑ · Fans ↑'),
+       ch('Point the bass at them', fx({ chemistry: 6, mood: { all: 4 } }, flags({ bassArcDone: true })), "You point the bass at them like a microphone. They roar. {drummer} hits the crash for you. Just for you.", 'Chemistry ↑ · Moods ↑'),
+       ch('Nod. Coolly.', fx({ buzz: 6, burnout: -6 }, flags({ bassArcDone: true })), 'You nod once. The whole crowd nods back. It is the most bassist moment in recorded history.', 'Buzz ↑ · Burnout ↓')],
+      { hail_damage: ['@drummer', '({drummer} keeps the beat for the crowd for an extra minute, so they can finish. Then a single nod. At you.)'],
+        frost_heave: ['@drummer', 'they sang the bass line. nobody sings the drums. i am not jealous. i am a little jealous'],
+        gravel_kings: ['@drummer', 'I counted. They sang it nine times. Nine. I will be putting it in the minutes.'],
+        grid_road_ramblers: ['@drummer', "A whole field singing the bass. Three notes, like I always said. Three notes fit."] },
+      'end'),
+
+    /* ==== The Engine Room (seat: rhythm) ======================================================================= */
+    arc('rhythm', 1, 'arc_rhythm_1_compliment', 'scene', '@front', 'Whose Riff', GL,
+      "At the house party a guy in a toque grabs {soloist}: 'That riff! In the second song! Genius!' You wrote that riff. " +
+      "{soloist} says 'thanks, man'. The toque guy buys {soloist} a pop.",
+      [ch('Set the record straight', { buzz: 2, mood: { '@soloist': -4 } }, "You explain the riff, chord by chord. The toque guy says 'cool, cool' and asks {soloist} to sign his toque.", 'Buzz ↑ · {soloist} ↓'),
+       ch('Let the riff speak', { chemistry: 3 }, 'You let it go. The riff knows who wrote it. You know who wrote it. That is two.', 'Chemistry ↑'),
+       ch('Play it on the porch', { drumSkill: 1, burnout: 3 }, 'You play the riff on the porch until the toque guy turns around. He buys you a pop too. It is warm. You drink it anyway.', 'Your chops ↑ · Burnout ↑')],
+      { hail_damage: ['@drummer', 'i knew it was ur riff. i put a sneaky fill under it. the fill is also ur riff now. sorry'],
+        frost_heave: ['@drummer', 'Motion to credit the riff to the person who wrote it. Seconded by me. Carried by me. I am the drummer now, I have the gavel.'],
+        gravel_kings: ['@drummer', 'In 1985 the rhythm guitarist got the girl. Or so I have been told. By myself. Repeatedly.'],
+        grid_road_ramblers: ['@drummer', "I'll write a song about it. A riff gets stolen at a house party. It's about a truck, mostly."] },
+      2, 4),
+    arc('rhythm', 2, 'arc_rhythm_2_anyone', 'weird', '@grumbler', 'The Part Anyone Can Play', GLS,
+      "The clerk at Riff Raff Music, the one with the goatee, watches you test strings and says rhythm guitar is 'the part " +
+      "anyone can play'. There is a stool by the window. It is clearly for a strum-off.",
+      [bet('Strum-off at the window', 'your right hand vs his goatee', 'You sit on the stool. He sits on the amp.', {}, 0.55, 'drumSkill',
+         { buzz: 6, fans: 10 }, 'Eleven minutes of downstrokes. A crowd forms on the sidewalk. He concedes and gives you strings at cost.',
+         { burnout: 6 }, 'He plays one chord so cleanly the window rattles. You buy strings at full price. Your wrist hurts for a week.'),
+       ch('Buy your strings and go', { fund: -30, chemistry: 2 }, 'You pay, you leave, you write a riff about him on the bus. It is the best thing you write all month.', '−$30 · Chemistry ↑'),
+       ch('Teach him the riff', { chemistry: 4, buzz: 2 }, "He can't play it. Not the notes, the feel. He hands you a business card: 'teaching inquiries'.", 'Chemistry ↑ · Buzz ↑')],
+      { hail_damage: ['@drummer', 'anyone can play rhythm?? i played rhythm for two years. it was very hard. the drums are also very hard. everything is hard'],
+        frost_heave: ['@drummer', 'I played rhythm guitar for nine years. Anyone can play it. Not everyone can play it while yelling about zoning.'],
+        gravel_kings: ['@drummer', 'Anyone can play rhythm. Anyone can play drums. Not everyone can do it in leather. That is the separator.'],
+        grid_road_ramblers: ['@drummer', "Strummed for years. The trick's not your hand. It's your heart. And your hand."] },
+      3, 5),
+    arc('rhythm', 3, 'arc_rhythm_3_click', 'drama', '@front', 'The Click Track Wars', GLS,
+      "A producer from the city sits in on rehearsal and wants the whole band on a click. {front} wants you to BE the click. " +
+      "{drummer} wants the click to be a cowbell. The producer has a laptop and a lot of feelings.",
+      [ch('Play to the click', { drumSkill: 2, burnout: 4 }, 'Three hours with a beep in your ear. Your time is perfect. Your soul is a spreadsheet. The demo sounds great.', 'Your chops ↑ · Burnout ↑'),
+       ch('Be the click', { chemistry: 5, mood: { '@front': 4 } }, 'The band locks to your right hand. The producer turns the laptop off and stares at you like a man seeing a sunrise.', 'Chemistry ↑ · {front} ↑'),
+       ch('The click is a cowbell', { buzz: 5, mood: { '@drummer': 5 } }, '{drummer} plays a cowbell on every quarter note. The producer leaves. The cowbell stays on the record. No gong.', 'Buzz ↑ · {drummer} ↑')],
+      { hail_damage: ['@drummer', 'i dont need a click. i have baba. she bangs on the ceiling on 2 and 4'],
+        frost_heave: ['@drummer', 'Council has a click. It is called procedure. I hate it. Your right hand is better than procedure.'],
+        gravel_kings: ['@drummer', 'In 1985 the click was a man named Dale with a stopwatch. We fired Dale. Dale is fine. He sells boats.'],
+        grid_road_ramblers: ['@drummer', "Never played to a click in my life. Played to a truck idling once. Same thing, warmer."] },
+      4, 6),
+    arc('rhythm', 4, 'arc_rhythm_4_the_click', 'money', '@front', 'They Call Him the Click', LSW,
+      "The producer suggests replacing your parts on the record with a session player everybody calls the Click. He has played on " +
+      "four hundred records. He has never been in a band. He has a very tidy van.",
+      [ch('Play it yourself', { drumSkill: 2, burnout: 6, mood: { all: 3 } }, 'You do forty takes until the producer stops looking at his watch. Take forty-one goes on the record. It is yours.', 'Your chops ↑ · Burnout ↑'),
+       ch('Let the Click play', { fund: -200, burnout: -6 }, 'The Click plays everything in one afternoon, perfectly, and leaves. The record is tight. You listen to it once.', '−$200 · Burnout ↓'),
+       bet('Play it better on the demo', 'outplay the Click', 'You record your part at home first, in one take, and send it in.', {}, 0.5, 'drumSkill',
+         { buzz: 8, chemistry: 4 }, "The producer plays both. The room picks yours. The Click nods, shakes your hand, and asks who taught you. Nobody did.",
+         { burnout: 5, mood: { all: -3 } }, 'The Click is better. Slightly. You know it. He knows it. He is very nice about it, which is worse.')],
+      { hail_damage: ['@drummer', 'the click asked me to play to a click. i said i am the drummer now. he said thats why. rude'],
+        frost_heave: ['@drummer', 'The Click once played a jingle for a councillor I despise. I have filed a complaint with myself. It was upheld.'],
+        gravel_kings: ['@drummer', 'The Click played on a power ballad in 1986. Not 1985. 1986. We cannot trust him.'],
+        grid_road_ramblers: ['@drummer', "Session fellas are fine. But a song knows who's playing it. Songs are like dogs that way."] },
+      5, 4),
+    arc('rhythm', 5, 'arc_rhythm_5_split', 'money', '@front', 'Who Wrote the Riff', LSW,
+      "The royalty split meeting. A lawyer, a whiteboard and a muffin tray. Your biggest song's riff is yours, start to finish. " +
+      "{front} wrote the words. Everyone looks at the whiteboard. The whiteboard says 'EVENLY?' with a question mark.",
+      [ch('Ask for the credit', fx({ fund: 400, mood: { all: -4 } }, flags({ rhythmArc: 'credited' })), "Your name goes on the riff, in ink. The cheque is bigger. Rehearsal is quieter for a week. The riff is yours, officially.", '+$400 · Moods ↓ · credited'),
+       ch('Split it evenly', fx({ chemistry: 8, mood: { all: 4 } }, flags({ rhythmArc: 'engine' })), "Four ways, even. {front} hugs you over the muffins. The band is an engine and you are the part that turns.", 'Chemistry ↑↑ · the engine'),
+       ch('Say nothing', fx({ burnout: 6, chemistry: 2 }, flags({ rhythmArc: 'unsung' })), "The whiteboard stays as it is. Nobody asks. You eat a muffin. It is a bran muffin. Of course it is.", 'Burnout ↑ · unsung')],
+      { hail_damage: ['@drummer', 'baba says the riff writer gets the biggest perogy. she has made you a perogy the size of a hubcap'],
+        frost_heave: ['@drummer', 'I move that the riff be credited to its author. I am also the author of this motion. Two credits. Very efficient.'],
+        gravel_kings: ['@drummer', 'In 1985 the drummer got credit for everything. I am honouring that tradition by giving it to you instead.'],
+        grid_road_ramblers: ['@drummer', "Your name on the riff, my name on the tears. Fair's fair."] },
+      6, 4),
+    arc('rhythm', 6, 'arc_rhythm_6_trio', 'scene', '@front', 'Power Trio Night', LSW,
+      "{soloist} is stuck on the wrong side of a highway closure with half the gear. Showtime is in an hour. You, {front} and " +
+      '{drummer} are a power trio tonight. The setlist is now mostly you.',
+      [ch('Carry the set', fx({ buzz: 10, fans: 90 }, flags({ rhythmArcDone: true })), 'Every song, the riff is the song. The crowd never misses a thing. {soloist} arrives for the encore and stands at the side, clapping.', 'Buzz ↑↑ · Fans ↑'),
+       ch('Stretch the riffs', fx({ chemistry: 6, drumSkill: 1 }, flags({ rhythmArcDone: true })), 'You play every riff twice as long and the band locks in like a tractor in low gear. It is the tightest show of the year.', 'Chemistry ↑ · Your chops ↑'),
+       ch('Make it an unplugged night', fx({ mood: { all: 5 }, burnout: -6 }, flags({ rhythmArcDone: true })), 'Stools, a lamp, your guitar. {front} sings the quiet versions. People film it. The quiet versions end up on the radio.', 'Moods ↑ · Burnout ↓')],
+      { hail_damage: ['@drummer', 'power trio night. i did zero sneaky fills. ok four. but they were for you'],
+        frost_heave: ['@drummer', 'Three people. One riff. Zero chords wasted. This is the most efficient government this band has ever had.'],
+        gravel_kings: ['@drummer', 'A power trio! Like the great ones! I sang, I drummed, I did a knee slide off the riser. Do not tell the doctor.'],
+        grid_road_ramblers: ['@drummer', "Sang from the kit all night and you carried us. Like a truck idling. A good truck."] },
+      'end'),
+
+    /* ==== Solo Too Long (seat: lead) ============================================================================ */
+    arc('lead', 1, 'arc_lead_1_too_long', 'scene', '@front', 'Solo Too Long', GL,
+      'Your first real solo, at your first real gig. Twelve people and a dog came. By minute six of the solo the twelve people ' +
+      'leave for snacks. The dog stays. The dog gets it.',
+      [ch('Finish the solo', { drumSkill: 1, burnout: 4 }, 'Minute nine. The twelve come back with nachos. You are still soloing. They clap, out of respect for the nachos.', 'Your chops ↑ · Burnout ↑'),
+       ch('Land it early', { chemistry: 4 }, 'You end it at minute seven, on a big bend. {front} looks relieved in a way you will think about for years.', 'Chemistry ↑'),
+       ch('Play to the dog', { fans: 12, buzz: 3 }, 'You turn and solo straight at the dog. The dog howls in key. That clip gets more views than the band.', 'Fans ↑ · Buzz ↑')],
+      { hail_damage: ['@drummer', 'Your solo: 9 min 14 s. My record: 11 min 2 s. On guitar. Drum record pending. Specs to follow.'],
+        frost_heave: ['@drummer', 'that solo had at least nine chords in it. i counted. i am disappointed and impressed'],
+        gravel_kings: ['@drummer', 'That solo sounded like a famous solo. In a good way. In a way that did not sound like a lawsuit. Rare.'],
+        grid_road_ramblers: ['@drummer', 'In 1979 I played a solo so long the bar closed around me. They let me finish. You get to finish too.'] },
+      2, 4),
+    arc('lead', 2, 'arc_lead_2_pedal', 'money', '@grumbler', 'The Pedal', GLS,
+      "There is a pedal at the pawn shop: the Moose Fuzz Deluxe, hand-wired, $300. It makes your guitar sound like a snowmobile " +
+      'falling down stairs. You need it. You do not have $300. You have a dream and a bus pass.',
+      [ch('Buy it', { fund: -250, drumSkill: 2 }, 'You buy it. You play nothing but the Moose Fuzz for a week. The band asks you to play anything else. You play the Moose Fuzz.', '−$250 · Your chops ↑↑'),
+       ch('Build one from a mail-order box', { burnout: 6, drumSkill: 1, buzz: 2 }, 'Three nights with a soldering iron. It hums, it smokes a little, it sounds like a goose. It is yours.', 'Burnout ↑ · Your chops ↑'),
+       ch('Practise without it', { chemistry: 3, burnout: -3 }, 'You play the solo clean, a hundred times, until it sounds like it has a pedal. It does not need one. You still want one.', 'Chemistry ↑ · Burnout ↓')],
+      { hail_damage: ['@drummer', 'Moose Fuzz Deluxe: germanium, true bypass, 9 V only. Do not run it off a daisy chain. I have opinions on your daisy chain.'],
+        frost_heave: ['@drummer', 'a pedal is a third chord you can step on. i have principles. i also have a broken one in the van you can have'],
+        gravel_kings: ['@drummer', 'That pedal is on a famous record. I can hear it. Which famous record? Buy it and find out. Do not tell my lawyer.'],
+        grid_road_ramblers: ['@drummer', "Played through a pedal like that in 1979. Set my amp on fire. Best solo I ever played. Buy it."] },
+      3, 5),
+    arc('lead', 3, 'arc_lead_3_quarterly', 'fame', 'dj', 'Shred Quarterly', GLS,
+      "Shred Quarterly, the guitar magazine printed in a basement in Brandon, wants your rig rundown. Two pages. Pick weights, " +
+      'string gauges, the works. Fair warning: everyone who does the rig rundown talks only in specs for a week.',
+      [ch('Do the rundown', { buzz: 6, mood: { all: -3 } }, "You do it. For a week you answer every question in gauges. 'How are you?' 'Ten to forty-six.' The band starts a swear jar for specs.", 'Buzz ↑ · Moods ↓'),
+       ch('Do it, but funny', { buzz: 4, fans: 20 }, "You list your main pick as 'a loonie' and your tone secret as 'fear'. Shred Quarterly prints it. Readers write in, furious and delighted.", 'Buzz ↑ · Fans ↑'),
+       ch('Send them to {drummer}', { mood: { '@drummer': 6 }, chemistry: 3 }, "{drummer} gets a two-page spread about drums in a guitar magazine. The editor is confused. The readers love it.", '{drummer} ↑ · Chemistry ↑')],
+      { hail_damage: ['@drummer', 'Rig rundown. Finally. Kick: 22 x 18. Snare: 14 x 6.5, maple. They did not ask about drums. I am telling them anyway.'],
+        frost_heave: ['@drummer', 'my rig rundown: two sticks. i use both. no third stick. on principle'],
+        gravel_kings: ['@drummer', 'Shred Quarterly once printed my riff next to a famous riff and asked readers to spot the difference. Nobody could.'],
+        grid_road_ramblers: ['@drummer', "Shred Quarterly did my rig rundown in 1981. I said 'a guitar and a dream'. They printed 'a guitar and a dram'. Fair."] },
+      4, 6),
+    arc('lead', 4, 'arc_lead_4_poach', 'drama', 'rival_frontman', 'The Poach', LSW,
+      "{rivalFront} slides into your messages: {rival} wants you on their next record. Session fee, their merch, their haircut. " +
+      "'Just the solos,' the message says. 'You don't even have to leave your band. We would just like your hands.'",
+      [ch('Tell the band', { chemistry: 6, mood: { all: 4 } }, 'You read the message out loud at rehearsal. {front} prints it, frames it and hangs it above the merch table as a warning.', 'Chemistry ↑ · Moods ↑'),
+       ch('Take the session, once', { fund: 600, buzz: 4, mood: { all: -6 } }, "You play their solos for one afternoon. The cheque clears. Their record is better. Your band is very polite to you for a month.", '+$600 · Buzz ↑ · Moods ↓'),
+       ch('Leave them on read', { buzz: 6 }, '{rival} sends a fruit basket, then a second message, then a third. You leave all of them on read. It becomes a scene legend.', 'Buzz ↑')],
+      { hail_damage: ['@drummer', 'They want your hands? Your hands are under contract to me. I wrote the contract. In gear specs. It is binding.'],
+        frost_heave: ['@drummer', 'they offered me a session once. i played two chords. they said thanks. they never called again. it was perfect'],
+        gravel_kings: ['@drummer', 'They poached a drummer from us in 1985. Not me. A different drummer. It still hurts.'],
+        grid_road_ramblers: ['@drummer', "Fellas have been poaching guitar players since the forties. Stay with the ones who drove you home."] },
+      5, 4),
+    arc('lead', 5, 'arc_lead_5_radio_edit', 'drama', '@front', 'The Radio Edit', LSW,
+      'The label wants a radio edit of the single. They have marked the cut in red: your solo. All of it. The song goes from five ' +
+      "minutes to three. 'Radio people,' says the label, 'have places to be.'",
+      [ch('Keep the solo', fx({ buzz: 12, mood: { '@front': -4 } }, flags({ leadArc: 'guitarHero' })), "You refuse. The single goes out at five minutes. Two stations play it anyway, all of it. A trucker phones in to cry.", 'Buzz ↑↑ · the guitar hero'),
+       ch('Cut it for the band', fx({ chemistry: 8, fans: 120 }, flags({ leadArc: 'bandFirst' })), "Three minutes, no solo. It is everywhere by Friday. {front} buys you a steak. You play the solo live, every night, twice as long.", 'Chemistry ↑↑ · Fans ↑ · band first'),
+       ch('Save it for a solo album', fx({ fund: 300, buzz: 6 }, flags({ leadArc: 'soloAlbum' })), "You cut it, keep the tape and start a folder called SOLO ALBUM. The folder is already full.", '+$300 · Buzz ↑ · the solo album')],
+      { hail_damage: ['@drummer', 'A radio edit without the solo is not a song. It is a jingle. I will play a drum solo where your solo was. In protest.'],
+        frost_heave: ['@drummer', 'cut the solo. keep the two chords. that is what i have been saying for years and nobody listens'],
+        gravel_kings: ['@drummer', 'In 1985 radio played the whole solo and then the DJ played it again. We must return to those values.'],
+        grid_road_ramblers: ['@drummer', "They cut my solo out of a song in 1979. The song went gold. I'm still mad. Gold's not everything."] },
+      6, 4),
+    arc('lead', 6, 'arc_lead_6_clinic', 'fame', '@front', 'The Guitar Clinic', LSW,
+      "A festival asks you to run a guitar clinic in a tent behind the main stage. Forty kids with guitars, one with a ukulele, " +
+      'all of them looking at your hands. You can teach, or you can shred.',
+      [ch('Teach them the solo', fx({ fans: 100, buzz: 6 }, flags({ leadArcDone: true })), 'You teach the solo slowly, one bend at a time. The ukulele kid gets it first. Forty kids play it back at you, terribly, beautifully.', 'Fans ↑ · Buzz ↑'),
+       ch('Shred until the tent shakes', fx({ drumSkill: 2, buzz: 8 }, flags({ leadArcDone: true })), 'Twenty minutes, no breathing. The tent pole hums. A kid faints, then asks for a pick. You give him the pick.', 'Your chops ↑ · Buzz ↑'),
+       ch('Bring the band in', fx({ chemistry: 6, mood: { all: 5 } }, flags({ leadArcDone: true })), 'You call the band into the tent and play the solo as a band. {front} sings the solo. {drummer} plays it on the toms. The kids lose it.', 'Chemistry ↑ · Moods ↑')],
+      { hail_damage: ['@drummer', 'I ran the drum half of the clinic. Fourteen kids. All of them now speak in drum specs. I have built an army.'],
+        frost_heave: ['@drummer', 'i taught the kids two beats. they asked for a third. i said no. they respected it. the future is safe'],
+        gravel_kings: ['@drummer', 'A kid played me a beat and asked if it was original. I said no. I said nothing is. I said enjoy it anyway.'],
+        grid_road_ramblers: ['@drummer', "Told the kids about the 1979 session. They didn't ask. They'll tell their kids. That's how it works."] },
+      'end')
+  ];
+
+  /* ==== The 12 band finales (one per band x string seat, after <arc>Done) ========================================= */
+  function fin(seat, b, id, speaker, title, text, choices) {
+    var flag = { bass: 'bassArcDone', rhythm: 'rhythmArcDone', lead: 'leadArcDone' }[seat];
+    return { id: id, type: 'drama', speaker: speaker, title: title, seat: [seat], once: true, weight: 6,
+      gate: bandGate(b, LSW, { flags: [flag] }), text: text, choices: choices };
+  }
+  cards.push(
+    fin('bass', HD, 'fin_bass_hail_damage', 'marcel', 'Nice',
+      'After the encore Kenji stands up behind the kit, takes off his sunglasses, looks straight at you and says one word: ' +
+      "'Nice.' Then he puts the sunglasses back on and sits down. Marcel has to lie on the floor. Dana writes the date on her arm.",
+      [ch('Say nothing back', { chemistry: 8, mood: { kenji: 12 } }, 'You say nothing. Kenji nods. It is the best conversation either of you has ever had.', 'Chemistry ↑↑ · Kenji ↑↑'),
+       ch('Write it on the setlist', { buzz: 6, mood: { all: 6 } }, "You write NICE - KENJI on the setlist and frame it. It hangs in the garage between the moose and the cape.", 'Buzz ↑ · Moods ↑'),
+       ch('Ask him to say it again', { mood: { kenji: -5 }, chemistry: 4 }, 'He does not. He never will. Jaxon claims he recorded it. He did not. Nobody did. It only happened once.', 'Kenji ↓ · Chemistry ↑')]),
+    fin('bass', FH, 'fin_bass_frost_heave', 'moth', 'Permanent Permission',
+      "Moth knocks on the basement door. In her hand: a laminated card, hole-punched, on a lanyard. It says PERMANENT " +
+      "PERMISSION - VAN. Nobody in the band has ever had one. Rox asks where hers is. Moth does not answer.",
+      [ch('Wear it everywhere', { chemistry: 6, mood: { moth: 12 } }, 'You wear it to the bank, to the dentist, to bed. Moth nods every time she sees it. You may enter the van. Forever.', 'Chemistry ↑ · Moth ↑↑'),
+       ch('Knock anyway', { mood: { moth: 8, all: 3 } }, 'You still knock, every time. Moth says it is not necessary. Moth smiles, which she has done twice since 2019.', 'Moods ↑'),
+       ch('Move in for a night', { burnout: -8, chemistry: 4 }, 'One night in the van. The heater ticks. Moth makes tea on a camp stove. It is the best sleep you have had in a year.', 'Burnout ↓↓ · Chemistry ↑')]),
+    fin('bass', GK, 'fin_bass_gravel_kings', 'tamara', 'A Cleaning, as a Thank-You',
+      "T-Bone hands you an appointment card: a dental cleaning, Tuesday, 8 a.m., her chair. 'As a thank-you,' she says. " +
+      "'For the low end.' Then she calls you the band's second functioning adult. Chase and Lenny look at each other.",
+      [ch('Go to the cleaning', { burnout: -6, mood: { tamara: 12 } }, 'Forty minutes, no cavities. She says your gums are "steady, like your playing". It is the nicest thing anyone has said to you.', 'Burnout ↓ · T-Bone ↑↑'),
+       ch('Accept the title', { chemistry: 6, mood: { tamara: 8 } }, 'You get a key to the filing cabinet and a copy of the band budget. You read it. It is beautiful.', 'Chemistry ↑ · T-Bone ↑'),
+       ch('Book the whole band', { fund: -80, chemistry: 8 }, 'Four cleanings, back to back. Chase sings in the chair. Lenny asks if the drill has a famous sound. It does. T-Bone is thrilled.', '−$80 · Chemistry ↑↑')]),
+    fin('bass', GRR, 'fin_bass_grid_road_ramblers', 'duke', 'The Hat',
+      'At the end of the last song Duke stands up from the kit, takes off the hat, and puts it on your head. The Quonset goes ' +
+      "silent. Travis Lee starts crying. Clementine says 'well' and means a great deal by it. The hat is the character. Now you are.",
+      [ch('Wear the hat', { buzz: 10, fans: 120 }, 'You wear the hat to every show. It gets more fan mail than you. You do not mind. It is the hat.', 'Buzz ↑↑ · Fans ↑'),
+       ch('Give it back', { chemistry: 8, mood: { duke: 12 } }, "You put the hat back on Duke's head. He tips it to you. Nobody in the Quonset has a dry eye. Doris the horse included.", 'Chemistry ↑↑ · Duke ↑↑'),
+       ch('Get your own hat', { fund: -120, mood: { all: 6 } }, 'A matching hat, from the Co-op. Duke inspects it, adjusts the brim a quarter inch, and declares it a real hat.', '−$120 · Moods ↑')]),
+    fin('rhythm', HD, 'fin_rhythm_hail_damage', 'baba', 'Two Lunches',
+      "Baba arrives at the garage with two lunch bags. One says JAXON. The other has your name on it, spelled correctly, in " +
+      "her best handwriting. Jaxon goes white. In this family, there is no higher honour than a tour lunch.",
+      [ch('Eat it at the gig', { mood: { all: 6 }, burnout: -6 }, 'Cabbage rolls, a pickle and a note: "You keep the time. Good." You keep the note in your guitar case forever.', 'Moods ↑ · Burnout ↓'),
+       ch('Thank Baba in person', { chemistry: 8, mood: { jaxon: 10 } }, "You thank her at the door. She pats your cheek and says the riff is 'not too much yelling'. That is a ten out of ten.", 'Chemistry ↑↑ · Jaxon ↑'),
+       ch('Share it with Jaxon', { chemistry: 6, mood: { jaxon: 12 } }, 'You split both lunches down the middle. Jaxon says it is the best day of his life. He is on drums now. He plays like it.', 'Chemistry ↑ · Jaxon ↑↑')]),
+    fin('rhythm', FH, 'fin_rhythm_frost_heave', 'rox', 'The Jingle',
+      "Rox is running for council. Her campaign jingle is your riff, the one from the house party. It plays outside every " +
+      "polling station in the ward. Councillor Pomeroy has filed a noise complaint about it. Rox has framed the complaint.",
+      [ch('Play it at the rally', { buzz: 10, fans: 120, mood: { rox: 10 } }, 'You play the riff from a flatbed while Rox screams the platform from behind the kit. The ward hums it for weeks.', 'Buzz ↑↑ · Fans ↑ · Rox ↑'),
+       ch('Ask for a royalty', { fund: 200, mood: { rox: -4 } }, "Rox pays you in campaign buttons and $200 from a jar. It is the most honest money in Regina politics.", '+$200 · Rox ↓'),
+       ch('Write her a second verse', { chemistry: 8, mood: { rox: 8 } }, 'The second verse is about potholes. It is the most popular political song in Saskatchewan history. It is not close.', 'Chemistry ↑↑ · Rox ↑')]),
+    fin('rhythm', GK, 'fin_rhythm_gravel_kings', 'chase', 'Very 1985',
+      "Chase stops the rehearsal, stands up behind the kit in full leather and points a drumstick at you. 'That rhythm part,' " +
+      "he says, voice shaking, 'is very 1985.' Lenny drops his pick. T-Bone writes it in the minutes. It is his highest praise.",
+      [ch('Accept, humbly', { chemistry: 8, mood: { chase: 10 } }, 'You nod. Chase nods. A wind machine nobody owns turns on by itself. It is very 1985 in Unit 4B.', 'Chemistry ↑↑ · Chase ↑'),
+       ch('Ask what 1986 would say', { buzz: 4, mood: { chase: -4 } }, "Chase says 1986 is a year he does not acknowledge. He says it kindly. He means it completely.", 'Buzz ↑ · Chase ↓'),
+       ch('Get it on a jacket', { fund: -100, buzz: 8 }, 'VERY 1985, airbrushed across the back of a denim jacket. Chase cries when he sees it. Then he orders four more.', '−$100 · Buzz ↑')]),
+    fin('rhythm', GRR, 'fin_rhythm_grid_road_ramblers', 'travis', 'Like a Truck Idling',
+      "After the show Travis Lee climbs off the drum riser, wipes his eyes and says you strum 'like a truck idling'. Then he " +
+      "explains he means it kindly. Then he explains it again. Then he writes a song about it. It is about a truck.",
+      [ch('Take it as a compliment', { chemistry: 8, mood: { travis: 10 } }, 'It is a compliment. A truck idling means it will always start. Travis Lee hugs you for a full minute.', 'Chemistry ↑↑ · Travis Lee ↑'),
+       ch('Rev it up', { buzz: 6, drumSkill: 1 }, 'You play the next song like a truck in a pull competition. Earl whoops. Clementine plays faster to keep up, and loves it.', 'Buzz ↑ · Your chops ↑'),
+       ch('Learn the truck song', { fans: 100, buzz: 6 }, "The truck song goes in the set. The crowd sings 'idling, idling' at the chorus. Travis Lee weeps every single time.", 'Fans ↑ · Buzz ↑')]),
+    fin('lead', HD, 'fin_lead_hail_damage', 'dana', 'One Sentence',
+      "Between songs Dana leans out from behind the kit. Everyone braces for a cymbal spec. Instead she says: 'I like playing " +
+      "with you.' One sentence. No gear in it at all. Marcel drops the microphone. Jaxon checks if she has a fever.",
+      [ch('Say it back', { chemistry: 10, mood: { dana: 10 } }, "You say it back. She nods. Then she says 'twenty-inch ride, by the way' to cover it. It does not cover it.", 'Chemistry ↑↑ · Dana ↑'),
+       ch('Play her a solo', { buzz: 6, mood: { dana: 8 } }, 'You answer with eight bars. She answers with a drum fill eleven minutes long. The crowd stays for all of it.', 'Buzz ↑ · Dana ↑'),
+       ch('Write it on the riser', { mood: { all: 6 } }, "You write I LIKE PLAYING WITH YOU on the drum riser in silver marker. She pretends not to see it. She sees it every night.", 'Moods ↑')]),
+    fin('lead', FH, 'fin_lead_frost_heave', 'benny', 'A Third Chord, Once',
+      "Benny takes you into the laundromat supply closet, closes the door, and says you may play a third chord. Once. In here. " +
+      "Nobody can ever know. He looks at the mop bucket like it might tell.",
+      [ch('Play the third chord', { chemistry: 8, mood: { benny: 10 } }, 'You play a D. It rings off the bleach. Benny closes his eyes. Then he says "never again" and means it, and also means thank you.', 'Chemistry ↑↑ · Benny ↑'),
+       ch('Play it softly', { mood: { benny: 12 } }, 'You barely touch the strings. Benny nods. It is the quietest chord in punk history. He will talk about it for years.', 'Benny ↑↑'),
+       ch('Decline, on principle', { buzz: 6, mood: { benny: 6 } }, "You say you respect the principle. Benny's eyes go wet. He gives you a pick with TWO written on it.", 'Buzz ↑ · Benny ↑')]),
+    fin('lead', GK, 'fin_lead_gravel_kings', 'lenny', 'The Lawyers Call You',
+      "Lenny's lawyers call. Not about Lenny. About you. Your solo in the single sounds like a famous solo, they say. Lenny is " +
+      "beside himself with pride. 'They called YOU,' he keeps saying. 'You have arrived.'",
+      [ch('Settle in style', { fund: -400, buzz: 12 }, 'You settle in a hotel ballroom with a cake shaped like a guitar. Lenny gives a speech. The lawyers cry a little.', '−$400 · Buzz ↑↑'),
+       ch('Prove it is yours', { drumSkill: 2, buzz: 6 }, 'You play the solo backwards, then in a minor key, then on one string. The lawyers concede. Lenny is a little disappointed.', 'Your chops ↑ · Buzz ↑'),
+       ch('Hire Lenny\'s lawyers', { fund: -200, mood: { lenny: 12 } }, 'You hire them. They are very good. They have had a lot of practice. Lenny calls it "a family business now".', '−$200 · Lenny ↑↑')]),
+    fin('lead', GRR, 'fin_lead_grid_road_ramblers', 'earl', 'The Twangmaster',
+      "Earl climbs off the drum riser holding his old guitar, the '72 Twangmaster with the cigarette burn on the headstock. He " +
+      "puts it in your hands. 'I played it with everyone,' he says. 'Now you.' Clementine has to leave the Quonset.",
+      [ch('Play it tonight', { buzz: 10, fans: 120, mood: { earl: 12 } }, 'The Twangmaster sounds like 1979 and next year at once. Earl tells the crowd about every session it played. Nobody leaves.', 'Buzz ↑↑ · Fans ↑ · Earl ↑'),
+       ch('Hang it on the wall', { chemistry: 8, mood: { earl: 8 } }, 'It goes on the Quonset wall, above the hay bales. Earl tells it a story every rehearsal. The guitar listens.', 'Chemistry ↑↑ · Earl ↑'),
+       ch('Give it back, for now', { mood: { earl: 6, all: 4 } }, "'Keep it till the last show,' you say. Earl nods slowly. 'That's what I said in 1979.' He does not explain.", 'Moods ↑')])
+  );
+  cards.forEach(function (c) { K.cards.push(c); });
 })(window.GG);
 
 </script>
