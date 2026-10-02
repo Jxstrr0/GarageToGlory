@@ -356,4 +356,28 @@
        ch('Give it back, for now', { mood: { earl: 6, all: 4 } }, "'Keep it till the last show,' you say. Earl nods slowly. 'That's what I said in 1979.' He does not explain.", 'Moods ↑')])
   );
   cards.forEach(function (c) { K.cards.push(c); });
+
+  /* ==== The player's epilogue per seat (2f legacy: endings.player[seat][tier]; drums stays endings.js) ============ */
+  var P = K.endings.player = K.endings.player || {};
+  P.bass = {
+    arena_legends: 'You retire the bass after the last arena show. It hangs above a fireplace in {city}. Guests swear they can feel it humming when nobody is playing it.',
+    canadian_institution: 'You open a bass school in {city}. The sign just says LOW END. Every student wants the line from the song. You teach it one note at a time, like a glacier.',
+    cult_heroes: 'You play every reunion show. The same three hundred people come every time, and they stand on your side of the stage. They know your bass lines better than you do.',
+    one_album_wonders: 'You sell your bass, then buy it back the next week. It lives in {space} in its case, waiting for the second album.',
+    still_in_the_garage: 'You still play bass in {space} on Tuesday nights. The neighbours stopped complaining years ago. Their windows hum along.'
+  };
+  P.rhythm = {
+    arena_legends: 'You hang up your guitar after the last arena show. Your right hand keeps strumming on every steering wheel in {city}. Your dentist has asked you to stop doing it in the chair.',
+    canadian_institution: 'You teach rhythm guitar in {city}. Lesson one is downstrokes. Lesson two is downstrokes. Your students are the tightest players in the province.',
+    cult_heroes: 'You play every reunion show. The same three hundred people come every time. They know your riffs better than you do. They hum them at you in the grocery store.',
+    one_album_wonders: 'You sell your guitar, then buy it back the next week. It lives in {space} under a tarp, waiting for the second album.',
+    still_in_the_garage: 'You still strum in {space} on Tuesday nights. The neighbours stopped complaining years ago. They time their lawnmowers to your riffs.'
+  };
+  P.lead = {
+    arena_legends: 'You play one last solo at the last arena show. It runs eleven minutes. Nobody leaves. A music store in {city} names a guitar pick after you. It is very thin.',
+    canadian_institution: 'You open a guitar school in {city}. Every student wants to learn the solo from the song. You charge extra for the solo. It is worth it.',
+    cult_heroes: 'You play every reunion show. The same three hundred people come every time. They air-guitar your solos note for note. They bring you soup.',
+    one_album_wonders: 'You sell your guitar, then buy it back the next week. It lives in {space} under a tarp, waiting for the second album and a longer solo.',
+    still_in_the_garage: 'You still solo in {space} on Tuesday nights. The neighbours stopped complaining years ago. They know when the solo ends. It does not end.'
+  };
 })(window.GG);

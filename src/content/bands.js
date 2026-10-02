@@ -270,6 +270,30 @@
     grid_road_ramblers: { bass: 'duke', rhythm: 'travis', lead: 'earl' }
   };
   Object.keys(V11_SEATS).forEach(function (id) { bands[id].seats = V11_SEATS[id]; });
+  // v1.1 (Lane A): seatLines[seat] = the seat picker card's "who moves" line (51's seat screen; E3). Drums: nobody moves.
+  var V11_SEAT_LINES = {
+    hail_damage: {
+      drums: 'You take the throne behind the kit. Nobody moves. Kenji nods at your sticks, which is a lot, for Kenji.',
+      bass: 'Kenji takes the drum throne. He did not say yes. He did not say no. He is already perfect at it.',
+      rhythm: 'Jaxon takes the drum throne. He has wanted to play fills for his whole life. Baba is already banging on the ceiling.',
+      lead: 'Dana takes the drum throne, with a binder of drum specs she wrote last night. The solos are yours now. She has notes.' },
+    frost_heave: {
+      drums: 'You take the throne behind the kit. Nobody moves. The dryers upstairs keep time with you.',
+      bass: 'Moth takes the drum throne and moves the kit into the van. You may visit it. With permission.',
+      rhythm: 'Rox takes the drum throne and keeps screaming, from the back now. Motion to drum: carried.',
+      lead: 'Benny takes the drum throne. He has learned two beats. He refuses to learn a third.' },
+    gravel_kings: {
+      drums: 'You take the throne behind the kit. Nobody moves. It is 1985 back there and it always will be.',
+      bass: 'Tamara takes the drum throne. She has colour-coded the kit and booked the rehearsals. Everyone will be home by midnight.',
+      rhythm: 'Chase takes the drum throne, in leather, and sings from the kit. The rhythm guitar is new, and it is yours.',
+      lead: 'Lenny takes the drum throne. Every beat he plays sounds like a famous one. The lawyers are thrilled.' },
+    grid_road_ramblers: {
+      drums: 'You take the hay bale behind the kit. Nobody moves. Duke tips his hat at you.',
+      bass: 'Duke takes the drum throne. The cymbals go up a foot to clear the hat. He plays slow, steady and dignified.',
+      rhythm: 'Travis Lee takes the drum throne and sings from the kit. He cries a little. He says it is like driving a truck.',
+      lead: 'Earl takes the drum throne. He played drums once, in 1974, on a cardboard box. He will tell you about it.' }
+  };
+  Object.keys(V11_SEAT_LINES).forEach(function (id) { bands[id].seatLines = V11_SEAT_LINES[id]; });
 
   GG.content.bands = bands;
   GG.content.rivals = rivals;

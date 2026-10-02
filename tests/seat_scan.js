@@ -24,6 +24,8 @@ const word = t => (String(t).match(WORDS) || String(t).match(TOMS) || [''])[0];
 
 // [left] decisions (Lane A, v1.1): the phrase is matched against the resolved text (case-sensitive, tokens resolved).
 const LEFT = [
+  // the band's gear on the road, a rival's drummer, the fan club's gift for the band's drummer
+  'carrying cymbals', 'carry the snare', 'and a snare in a minivan', 'Every cymbal in the van', "'s drummer Brody", "The drummer's has drumsticks in it",
   // words that only look like drum words (a first-aid kit, a hockey stick, the Frozen Throne, "it sticks", "kicks in")
   'first-aid kit', 'press kit', 'floss kit', 'from her kit', 'Lift Kit', 'Frozen Throne', 'Throne of', 'Trône', 'like a throne', 'the throne room',
   'Hay Bale Throne', 'tape your sticks', 'sticks it', 'It sticks', 'back sticks out', 'sticks of homemade jerky', 'drumstick as a mic',
