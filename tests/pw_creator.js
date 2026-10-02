@@ -1,5 +1,7 @@
 // pw_creator.js: the v0.8 full character creator + kit look (lane CREATOR) on a 390x844 phone viewport.
-// Sections (META_ONLY=creator|kit|stage, comma-separated; default all three + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=creator|kit|stage|meta, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
+//   meta:    (v1.0, Lane M) parts a finished career unlocked work in every genre with a 🏆 chip (punk + country new careers,
+//            a running rock career); the career's own unlock list is unchanged. Screenshot creator_meta.png.
 //   creator: new career with carried-over unlocks (carry-toggle) → "Customize" → the 'look' screen (live 3D preview, 7 tabs,
 //            layout audit) → body / face / hair / clothes → Stage (leather vest, corpse paint; the cape is locked: toast) →
 //            Ink (a forearm maple leaf, knuckles typed "lo7ve!" -> LOVE, "abcdef" -> ABCD -> HATE, the Hands view) → Kit
@@ -290,6 +292,49 @@ async function stage() {
   await close(); c.done();
 }
 
+/* ---- meta (v1.0, Lane M: owner Q5) -------------------------------------------------------------------------------- */
+// Creator parts some finished career unlocked (GG.meta 'parts') work in every genre: the new-career creator notes them
+// (meta-parts), the look screen shows them open with a 🏆 chip in punk and country, and a running rock career lets you
+// wear them (GG.creator.parts(state) flags them meta). The career's own unlock list never changes because of them.
+async function meta() {
+  const c = checker('meta');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.waitForFunction(() => GG.meta && GG.meta.enabled);
+    await page.evaluate(() => { ['punk', 'country', 'rock', 'metal'].forEach(g => localStorage.removeItem('gg.v1.unlocks.' + g)); GG.meta.unlock('parts', ['hairStyle.dreads', 'outfit.leathervest']); });
+    for (const [genre, slot] of [['punk', 'slot-1'], ['country', 'slot-2']]) {
+      await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('title'); });
+      await tap(page, 'btn-new'); await tap(page, slot); await tap(page, 'genre-' + genre); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');
+      await waitScreen(page, 'creator');
+      const note = await page.evaluate(() => (document.querySelector('[data-testid="meta-parts"]') || {}).textContent || '');
+      c.ok(/2 looks from finished careers/.test(note), genre + ': the creator notes the looks from finished careers ' + note);
+      await tap(page, 'btn-customize');
+      await waitScreen(page, 'look');
+      await tap(page, 'lk-tab-hair');
+      const opt = await page.evaluate(() => { const b = document.querySelector('[data-testid="lk-opt-hairStyle-dreads"]'); return b ? { meta: b.dataset.meta, locked: b.classList.contains('locked'), t: b.textContent } : null; });
+      c.ok(opt && opt.meta === '1' && !opt.locked && /🏆/.test(opt.t), genre + ': dreads open with a 🏆 chip ' + JSON.stringify(opt));
+      const other = await page.evaluate(() => { const b = document.querySelector('[data-testid="lk-opt-hairStyle-braids"]'); return b ? { locked: b.classList.contains('locked'), meta: b.dataset.meta || null } : null; });
+      c.ok(other && other.locked && !other.meta, genre + ': a part nobody unlocked stays locked ' + JSON.stringify(other));
+      await tap(page, 'lk-opt-hairStyle-dreads');
+      const bad = await audit(page); c.ok(!bad.length, genre + ': look screen layout ' + bad.join(', '));
+      if (genre === 'punk') await shot(page, (process.env.PW_TAG ? 'creator_meta' + process.env.PW_TAG : 'creator_meta') + '.png');
+      await tap(page, 'lk-done');
+      await waitScreen(page, 'creator');
+      await page.fill(tid('creator-name'), 'Meta');
+      await tap(page, 'btn-create');
+      await waitScreen(page, 'coldopen');
+      const st = await page.evaluate(() => ({ hair: GG.state.player.look.hairStyle, own: GG.state.unlocks.creator.includes('hairStyle.dreads') }));
+      c.ok(st.hair === 'dreads' && !st.own, genre + ': the career wears it (its own unlock list unchanged) ' + JSON.stringify(st));
+    }
+    const rock = await page.evaluate(() => { GG.main.quickStart({ seed: 3, bandId: 'gravel_kings', openCard: false }); const p = GG.creator.parts(GG.state, 'outfit').find(x => x.id === 'outfit.leathervest');
+      const L = GG.creator.lockLook(GG.state, Object.assign({}, GG.state.player.stageLook, { outfit: 'leathervest' })); return { meta: p.meta, locked: p.locked, kept: L.outfit }; });
+    c.ok(rock.meta && !rock.locked && rock.kept === 'leathervest', 'a running rock career can wear it (lockLook keeps it) ' + JSON.stringify(rock));
+    c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'meta threw: ' + (e.stack || e).toString().slice(0, 500)); }
+  await close(); c.done();
+}
+
 /* ---- the contact sheet ------------------------------------------------------------------------------------------- */
 async function sheet() {
   const names = [['creator_body', 'Creator: body'], ['creator_face', 'Creator: face'], ['creator_stage', 'Creator: stage look'], ['creator_knuckles', 'Knuckle tattoos'],
@@ -314,5 +359,6 @@ async function sheet() {
   if (want('creator')) await creator();
   if (want('kit')) await kit();
   if (want('stage')) await stage();
+  if (want('meta')) await meta();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();
