@@ -342,7 +342,7 @@
     var front = null;
     for (var i = 0; i < act.length && !front; i++) if (/vocals/.test(role(act[i]))) front = act[i].id;
     var solo = seat === 'lead' ? 'player' : byRole(['lead guitar', 'guitar', 'fiddle']);
-    var out = { front: front, solo: solo, fill: byRole(['rhythm guitar', 'fiddle', 'guitar', 'bass'], solo) };
+    var out = { front: front, solo: solo, fill: byRole(seat === 'drums' ? ['rhythm guitar', 'fiddle', 'guitar', 'bass'] : ['rhythm guitar', 'fiddle', 'guitar', 'bass', 'vocals/guitar', 'vocals/acoustic', 'vocals'], solo) };   // v1.1: a singing guitarist (else the singer) fills when the filler moved to the kit
     Object.defineProperty(out, 'drummer', { value: seat === 'drums' ? 'player' : (K.drummerId ? K.drummerId(state) : null), enumerable: false });
     return out;
   };
@@ -421,7 +421,7 @@
   //     moment counting held notes (a chord under a hold plays one lane, a third thumb goes auto).
   // Dropped notes go to chart.auto (your voice plays them, never judged): the song always sounds whole.
   gig.RUN_GAP = 0.18;
-  var FLOW = { easy: 1.3, normal: 1, hard: 0.85, expert: 0.6 };   // the string seats' flow by difficulty (parity with the kit)
+  var FLOW = { easy: 1.3, normal: 1, hard: 0.75, expert: 0.45, lead: 0.8 };   // the string seats' flow by difficulty (parity with the kit; the lead seat has its shred windows)
   gig.HOLD_BEATS = { easy: 2, normal: 1, hard: 1, expert: 1 };
   var STR_LANES = ['str0', 'str1', 'str2', 'str3', 'str4', 'str5'];
   STR_LANES.forEach(function (l, i) { LI[l] = i; });
@@ -852,7 +852,7 @@
       }
       // v1.1 flow (string seats): while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part
       // (country boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit.
-      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * dt * cur.staleMul * (1.15 - real() / 200));
+      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];

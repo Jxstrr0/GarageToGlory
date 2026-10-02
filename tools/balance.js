@@ -34,12 +34,25 @@
 // Canadian Institution or Cult Heroes, +3 <= 10%; each band's avg median tier within one tier of Hail Damage's; all bands'
 // avg bonus rate 10-50%). NO_BONUS=1 turns bonus years off (GG.legacy.noBonus) and prints exactly the v0.9 report (no new
 // lines, the 100k fans sanity cap); without it the cap is 250k (13-year careers).
+// v1.1 "Seats" (plan_contract_1.1 §4.10): SEAT=drums|bass|rhythm|lead|all (comma lists too) plays every band's careers in
+// those seats (30_audio loaded, so the yearly live probe charts the seat's own part) and adds: SEATS VS DRUMS (per band x
+// seat x bot style: fans@y3, fund@y3, the World week + reach, each as a share of the drum seat's; ok = within ±10 %) and
+// LIVE BOTS (per band x seat x difficulty, LIVE_SEEDS fresh careers (default 3) at the local legion: the perfect bot's accuracy
+// (must be 1.000) and the avg bot's (0.9, 40 ms) song score vs the drum seat's; ok = within 3 points). Without SEAT the
+// output is exactly the v1.0 report.
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
 const t0 = Date.now();
 const GG = load({ localStorage: load.fakeStorage() });
 const C = GG.contracts, WPY = C.WEEKS_PER_YEAR;
+const SEAT = process.env.SEAT || '';
+const SEATS = SEAT === 'all' ? C.SEATS.slice() : SEAT ? SEAT.split(',').filter(x => C.SEATS.includes(x)) : [null];
+if (SEAT) {   // the string seats chart from the song's timeline (pure; no Web Audio needed)
+  const fs = require('fs'), path = require('path');
+  new Function('window', fs.readFileSync(path.join(__dirname, '..', 'src', '30_audio.js'), 'utf8'))({ GG: GG });
+}
+let seatNow = null;
 const NO_BONUS = !!process.env.NO_BONUS;   // v1.0: the v0.9 report, exactly (bonus years off)
 if (GG.legacy) GG.legacy.noBonus = NO_BONUS;
 const FANS_CAP = NO_BONUS ? 100000 : 250000, FANS_CAP_TEXT = NO_BONUS ? '100k' : '250k';
@@ -130,7 +143,7 @@ function liveProbe(s) {   // a live bot gig at a local room, on a copy of the ca
 function run(style, bandId) {
   const rows = [];   // rows[year] = array of per-seed year stats
   for (let seed = 1; seed <= seeds; seed++) {
-    const s = GG.career.newCareer(bandId ? { seed: seed * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: seed * 7919, player: { name: 'Bot' } });
+    const s = GG.career.newCareer(Object.assign(bandId ? { seed: seed * 7919, bandId: bandId, player: { name: 'Bot' } } : { seed: seed * 7919, player: { name: 'Bot' } }, seatNow ? { seat: seatNow } : {}));
     let y = null, full = null, sprinter = null, needW = null, needPkg = null;   // v0.9: the first World week a payoff package's needs are met
     if (bs) { bs.firstKm.push(s.gig && s.gig.km != null ? s.gig.km : (s.gig ? 0 : null)); bs.firstGig.push(s.gig ? s.gig.venueId : null); }
     for (let w = 0; w < years * WPY && !s.ended; w++) {
@@ -277,8 +290,12 @@ function bandLine(style, st) {
     ' | week-1 gig ' + (st.firstGig[0] || 'none') + ' (' + st.firstKm.filter(x => x != null).map(x => Math.round(x)).slice(0, 3).join('/') + ' km)';
 }
 const bandIds = BAND === 'all' ? Object.keys(GG.content.bands || { hail_damage: 1 }) : BAND ? [BAND] : [null];
-const summary = [];
-console.log('Garage to Glory balance: ' + years + ' year(s) x ' + seeds + ' seed(s), ' + deckLabel + ', averages over seeds' + (BAND ? ', BAND=' + BAND : ''));
+let summary = [];
+const seatSummary = {};   // v1.1: seat -> summary (per band, per style)
+console.log('Garage to Glory balance: ' + years + ' year(s) x ' + seeds + ' seed(s), ' + deckLabel + ', averages over seeds' + (BAND ? ', BAND=' + BAND : '') + (SEAT ? ', SEAT=' + SEAT : ''));
+SEATS.forEach(seatId => {
+seatNow = seatId; summary = [];
+if (seatId) console.log('\n##### SEAT ' + seatId + ' #####');
 bandIds.forEach(bandId => {
   timing = { avg: [], good: [] };
   const out = [], per = {};
@@ -358,6 +375,60 @@ if (GG.legacy && !NO_BONUS && summary.length > 1) {   // v1.0 (plan_contract_1.0
       ' | +2/+3 ' + pc((g.bonus[2] || 0) + (g.bonus[3] || 0)) + ' ' + mark((g.bonus[2] || 0) + (g.bonus[3] || 0) >= 0.999));
   });
   if (nAll) console.log('  all bands, avg bot bonus rate ' + pc(bonusAll / nAll) + ' ' + mark(bonusAll / nAll >= 0.1 && bonusAll / nAll <= 0.5) + ' (10-50%; Gravel Kings\' higher rate accepted)');
+}
+if (seatId) seatSummary[seatId] = summary;
+});
+if (SEAT) seatReport();
+// v1.1: every seat against the drum seat of the same band (a seat is flavour, not a difficulty): fans@y3, fund@y3, World.
+function seatReport() {
+  const pad2 = (v, n) => { const s = v == null ? '-' : String(v); return s.length >= n ? s : ' '.repeat(n - s.length) + s; };
+  const mark = c => c ? 'ok' : 'MISS', pc = (a, b) => b ? Math.round(100 * a / b) + '%' : '-';
+  const drums = seatSummary.drums;
+  if (drums && Object.keys(seatSummary).length > 1) {
+    console.log('\nSEATS VS DRUMS (fans@y' + Math.min(3, years) + ', fund@y' + Math.min(3, years) + ', World week + reach; ok = within ±10 % of the drum seat)');
+    ['avg', 'good'].forEach(style => {
+      drums.forEach(d => {
+        const D = d.per[style]; if (!D) return;
+        C.SEATS.filter(x => x !== 'drums' && seatSummary[x]).forEach(seatId => {
+          const b = seatSummary[seatId].find(x => x.id === d.id), X = b && b.per[style]; if (!X) return;
+          const f = X.fans3 / Math.max(1, D.fans3), m = X.fund3 / Math.max(1, D.fund3);
+          const wOk = D.world == null && X.world == null ? true : D.world != null && X.world != null && Math.abs(X.world - D.world) <= 0.1 * D.world && Math.abs(X.worldN - D.worldN) <= 0.1;
+          console.log('  ' + style + ' ' + pad2(d.id || 'hail_damage', 18) + ' ' + pad2(seatId, 6) + ' fans ' + pad2(X.fans3, 6) + ' (' + pc(X.fans3, D.fans3) + ') ' + mark(Math.abs(f - 1) <= 0.1)
+            + ' | fund ' + pad2(X.fund3, 6) + ' (' + pc(X.fund3, D.fund3) + ') ' + mark(Math.abs(m - 1) <= 0.1)
+            + ' | world ' + (X.world || '-') + ' vs ' + (D.world || '-') + ' (' + Math.round(100 * X.worldN) + '% vs ' + Math.round(100 * D.worldN) + '%) ' + mark(wOk));
+        });
+      });
+    });
+  }
+  liveBots();
+}
+// v1.1: live gig bots per band x seat x difficulty (fresh careers, two jammed songs, the local legion).
+function liveBots() {
+  const N = Math.max(1, parseInt(process.env.LIVE_SEEDS, 10) || 3), D = ['easy', 'normal', 'hard', 'expert'];
+  const ids = bandIds[0] ? bandIds : ['hail_damage'], mark = c => c ? 'ok' : 'MISS';
+  console.log('\nLIVE BOTS (' + N + ' seeds: perfect accuracy must be 1.000; avg bot (0.9, 40 ms) song score within 3 points of the drum seat)');
+  ids.forEach(bandId => {
+    const base = {};
+    C.SEATS.filter(x => SEATS.includes(x) || x === 'drums').forEach(seatId => {
+      const cells = D.map(d => {
+        const res = [[1, 0], [0.9, 40]].map(([acc, jit]) => {
+          let sc = 0, ac = 0, n = 0;
+          for (let k = 1; k <= N; k++) {
+            const s = GG.career.newCareer({ seed: k * 104729, bandId, seat: seatId, player: { name: 'Bot' } });
+            s.drumSkill = 30; s.members.forEach(m => { m.mood = 70; });
+            for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(k * 10 + i));
+            const r = GG.gig.botPlay(GG.gig.session(s, GG.gig.makeGig(s, 'legion_63', 'book'), null, { emit: false, difficulty: d }), { accuracy: acc, jitterMs: jit }, GG.RNG(k));
+            r.songResults.forEach(x => { sc += x.score; ac += x.accuracy; n++; });
+          }
+          return { score: sc / n, acc: ac / n };
+        });
+        if (seatId === 'drums') base[d] = res[1].score;
+        return d + ' ' + res[0].acc.toFixed(3) + ' ' + res[1].score.toFixed(1) + (seatId === 'drums' ? '' : ' (' + (res[1].score - base[d] >= 0 ? '+' : '') + (res[1].score - base[d]).toFixed(1) + ')')
+          + ' ' + mark(res[0].acc >= 0.9999 && (seatId === 'drums' || Math.abs(res[1].score - base[d]) <= 3));
+      });
+      console.log('  ' + bandId.padStart(18) + ' ' + seatId.padEnd(6) + ' ' + cells.join(' | '));
+    });
+  });
 }
 console.log(problems.length ? 'INVARIANT PROBLEMS:\n  ' + problems.join('\n  ') : 'invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < ' + FANS_CAP_TEXT + ')');
 console.log('done in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');
