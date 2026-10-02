@@ -135,6 +135,25 @@ async function seatSection(page, c, notes) {
   });
   await advance(page, 2);
   c.ok(rv.a.view === 'drummer' && !rv.a.you && rv.a.drummer !== 'player' && rv.b.view === 'spectator' && rv.b.camera === 'spectator' && !!rv.b.you, 'a rival set keeps the kit camera; spectator view keeps its camera (your band still by seat) ' + JSON.stringify([rv.a.view, rv.a.drummer, rv.b.view]));
+  // The gig screen's own setup (55 stageData: drama.lineup members, no seat / lineup keys): the seat comes from the state; the
+  // swapped drummer quit and a drama fill-in ('fill_drums') covers the kit.
+  const fi = await page.evaluate(venue => {
+    const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'frost_heave', seat: 'rhythm' });
+    for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+    const data = () => ({ venue, crowd: 120, capacity: 180, genre: st.genre, flags: st.flags, player: st.player,
+      members: GG.drama.lineup(st).map(m => ({ id: m.id, name: m.name, role: m.role, mood: m.mood, look: m.look || null })) });
+    GG.render.setPaused(false); GG.render.syncState(st); GG.render.setScene('stage');
+    GG.render.stage.setup(data());
+    const a = GG.render.stage.info(), sw = GG.career.drummerId(st);
+    st.members.find(x => x.id === sw).status = 'quit';
+    GG.drama.hireFillIn(st, 'drums');
+    GG.render.syncState(st); GG.render.stage.setup(data());
+    const b = GG.render.stage.info();
+    return { sw, a: [a.seat, a.view, a.drummer, a.boom], b: [b.seat, b.view, b.drummer, b.boom], band: b.band };
+  }, VENUE);
+  await advance(page, 2);
+  c.ok(fi.a.join() === 'rhythm,spot,' + fi.sw + ',true' && fi.b[0] === 'rhythm' && fi.b[2] === 'fill_drums' && !fi.b[3] && !fi.band.some(x => x.indexOf(fi.sw + ':') === 0),
+    'the gig screen setup (no seat key) reads the seat from the state; ' + fi.sw + ' quit -> the fill-in drummer on the riser, no boom mic ' + JSON.stringify([fi.a, fi.b]));
   // Per-frame allocations: the drum stage vs a seat stage, same venue + crowd, no test calls inside the window.
   const cdp = await page.context().newCDPSession(page);
   const measure = async seat => {

@@ -306,6 +306,19 @@ async function seat(c) {
       }
     }
     console.log('seat garage: ' + rows.join(' | '));
+    // The swapped drummer quits (a 'drums' hole) and a drama fill-in covers it: the fill-in sits at the kit, not the quitter.
+    const fill = await page.evaluate(() => {
+      const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat: 'bass' });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      const sw = GG.career.drummerId(st), m = st.members.find(x => x.id === sw);
+      m.status = 'quit';
+      const hired = GG.drama.hireFillIn(st, 'drums');
+      GG.render.setPaused(false); GG.render.syncState(st);
+      const d = GG.debug('render');
+      return { sw, hired: !!hired, holes: GG.drama.holes(st), seat: d.seat, atKit: d.members.filter(x => x.pose === 'drum').map(x => x.id) };
+    });
+    c.ok(fill.hired && fill.seat.drummer === 'fill_drums' && fill.atKit.length === 1 && fill.atKit[0] === 'fill_drums',
+      'hail_damage bass: ' + fill.sw + ' quit, the fill-in drummer sits at the kit ' + JSON.stringify([fill.holes, fill.seat.drummer, fill.atKit]));
     // Back to a drum career: the label and the kit are the drummer's again.
     const back = await page.evaluate(() => {
       const st = GG.main.quickStart({ seed: 77, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage' });

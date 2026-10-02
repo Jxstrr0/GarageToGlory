@@ -38930,6 +38930,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       for (i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
       var ms = st.members || [];
       for (i = 0; i < ms.length; i++) if (ms[i] && (!ms[i].status || ms[i].status === 'active') && /^drums/.test(String(ms[i].seatRole || ''))) return ms[i].id;
+      var fi = GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : [];
+      for (i = 0; i < fi.length; i++) if (fi[i] && /^drums/.test(String(fi[i].role || ''))) return fi[i].id;
       return null;
     }
     function setRig(on) {

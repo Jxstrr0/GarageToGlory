@@ -660,6 +660,9 @@
       for (i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
       var ms = st.members || [];
       for (i = 0; i < ms.length; i++) if (ms[i] && (!ms[i].status || ms[i].status === 'active') && /^drums/.test(String(ms[i].seatRole || ''))) return ms[i].id;
+      // The swapped drummer quit: a drama fill-in for the 'drums' hole (id 'fill_drums') takes the kit until someone is hired.
+      var fi = GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : [];
+      for (i = 0; i < fi.length; i++) if (fi[i] && /^drums/.test(String(fi[i].role || ''))) return fi[i].id;
       return null;
     }
     function setRig(on) {
