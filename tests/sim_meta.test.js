@@ -118,6 +118,23 @@ test('slot scan (v0.9 fixtures): past4 once per career, the ended slot recorded 
   eq([GG.meta.get().careers.past4, GG.meta.hof().length], [3, 1], 'never twice');
 });
 
+test('slot scan, then the ending is played: the scanned entry takes in the trophies the ending earned', () => {
+  const store = load.fakeStorage();
+  store._map.set('gg.v1.slot.1', JSON.stringify(fixture('v09_ended')));
+  store._map.set('gg.v1.slot.auto', JSON.stringify(fixture('v09_ended')));
+  const GG = load({ localStorage: store });
+  GG.meta.load();
+  eq([GG.meta.hof().length, (GG.meta.hof()[0].ach || []).length], [1, 0], 'the scan records the ended career with no trophies yet');
+  const st = GG.save.read('1');   // what 5n_ui_ending.ending() does when the slot is opened
+  GG.legacy.finish(st); GG.achieve.finish(st);
+  const got = Object.keys(st.ach.got), r = GG.meta.recordCareer(st);
+  ok(got.length > 0 && !r.fresh, 'the ending earned trophies; the entry is not new (' + got.length + ')');
+  const e = GG.meta.hof()[0];
+  ok(got.every(id => e.ach.includes(id)), 'the stored entry lists every trophy the ending earned (' + e.ach.length + ')');
+  const again = load({ localStorage: store }); again.meta.load();
+  ok(got.every(id => again.meta.hof()[0].ach.includes(id)), 'and it was written: a reload sees them');
+});
+
 test('cosmetic unlocks (Q5): first time a tier → its palette, a special → its emblem / palette, parts → every genre; events once', () => {
   const GG = load({ localStorage: load.fakeStorage() }); GG.meta.load(); legacyStub(GG);
   const ev = []; GG.on('meta:unlock', e => ev.push(e.kind + ':' + e.ids.join('+')));

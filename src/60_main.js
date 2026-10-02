@@ -85,7 +85,14 @@
   GG.on('gig:pending', function () {
     var st = GG.state; if (st) Promise.resolve().then(function () { if (GG.state === st && st.phase === 'gig') autosave(st); });
   });
-  GG.on('gig:song', function () { var st = GG.state; if (st && st.liveGig) autosave(st); });
+  // v1.0: the per-song save waits for an idle moment (at most 1 s), so a long career's save does not land on the frame the
+  // between-songs card opens; it still runs only while that gig is live.
+  var songSave = null;
+  GG.on('gig:song', function () {
+    var st = GG.state; if (!st || !st.liveGig || songSave) return;
+    var run = function () { songSave = null; if (GG.state === st && st.liveGig) autosave(st); };
+    songSave = typeof requestIdleCallback === 'function' ? requestIdleCallback(run, { timeout: 1000 }) : setTimeout(run, 50);
+  });
   // Manual save from the menu. The slot becomes this career's slot; 'auto' is refreshed so Continue lands here.
   M.saveTo = function (slot) {
     var st = GG.state; if (!st) return false;

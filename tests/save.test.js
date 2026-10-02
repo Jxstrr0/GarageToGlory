@@ -41,6 +41,20 @@ test('v1.0: a quota miss is not "no storage" (storageOk stays true, lastError qu
   eq([GG.save.write('2', s), GG.save.lastError], [true, null], 'a later write clears it');
 });
 
+test('v1.0: after a quota miss, reads of that slot return this session\'s newer copy, not the older stored one', () => {
+  const st = load.fakeStorage(); let full = false; const set = st.setItem;
+  st.setItem = (k, v) => { if (full) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } set(k, v); };
+  const GG = load({ localStorage: st }), s = career(GG, 10);
+  eq(GG.save.write('1', s), true);
+  const wk = s.totalWeek; GG.career.botWeek(s, 'avg'); full = true;
+  eq([GG.save.write('1', s), GG.save.lastError], [false, 'quota'], 'the second write misses');
+  eq([GG.save.read('1').totalWeek, GG.save.list()[1].summary.week], [wk + 1, s.week], 'read + list give the newer week');
+  full = false; GG.career.botWeek(s, 'avg');
+  eq(GG.save.write('1', s), true); eq(GG.save.read('1').totalWeek, wk + 2, 'a write that persists reads from storage again');
+  ok(JSON.parse(st._map.get('gg.v1.slot.1')).state.totalWeek === wk + 2, 'stored');
+  full = true; GG.save.write('2', s); GG.save.remove('2'); eq(GG.save.read('2'), null, 'remove clears the session copy too');
+});
+
 test('storage throwing on read / on write / missing: memory fallback, no throws', () => {
   for (const opts of [{ throwOnRead: true }, { throwOnWrite: true }]) {
     const GG = load({ localStorage: load.fakeStorage(opts) });
@@ -297,6 +311,17 @@ test('v1.0: a long career slot is stored packed (LZ1 + header) and reads back; s
   const row = GG.save.list().find(x => x.slot === '2');
   eq([row.exists, row.summary.year], [true, big.year], 'list() reads the header only');
   store._map.set('gg.v1.slot.3', 'LZ1:5:{"a"}garbage'); eq(GG.save.read('3'), null, 'a damaged packed slot reads as empty');
+});
+
+test('v1.0: an autosave of a long career (auto + its slot) compresses the state once', () => {
+  const store = load.fakeStorage(), GG = load({ localStorage: store }), s = career(GG);
+  let r = 11; s.history = Array.from({ length: 30000 }, (_, i) => ({ w: i, n: (r = (r * 48271) % 2147483647) % 1000 }));
+  const n0 = GG.save.packStats.compress;
+  eq([GG.save.write('auto', s), GG.save.write('1', s)], [true, true]);
+  eq(GG.save.packStats.compress - n0, 1, 'one compression for two writes of the same state');
+  ok(same(GG.save.read('auto'), GG.save.read('1')), 'both slots read back the same career');
+  s.fans += 1; GG.save.write('auto', s); eq(GG.save.packStats.compress - n0, 2, 'a changed state compresses again');
+  eq(GG.save.read('auto').fans, s.fans, 'and reads back the change');
 });
 
 test('v1.0: a code with _meta stays under CODE_MAX by carrying fewer Hall of Fame entries', () => {

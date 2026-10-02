@@ -21,6 +21,9 @@
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
+  // Keys whose latest write did not reach storage (a full store): reads take this session's copy in memory, not the older
+  // stored one, until a write to that key persists again (or it is removed).
+  var stale = {};
   save.storageOk = false;
   // (Re)binds storage. Default: window.localStorage. Probes a write/read/remove; on failure uses memory only.
   save.init = function (storage) {
@@ -42,6 +45,7 @@
   function isQuota(e) { return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014); }
   save.lastError = null;
   function getRaw(key) {
+    if (stale[key] && memory[key] != null) return memory[key];
     if (backend) {
       try { var v = backend.getItem(key); return v != null ? v : (memory[key] != null ? memory[key] : null); }
       catch (e) { fail(); }
@@ -52,11 +56,11 @@
   function setRaw(key, value) {
     memory[key] = value;
     if (!backend) return false;
-    try { backend.setItem(key, value); save.lastError = null; return true; }
-    catch (e) { if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
+    try { backend.setItem(key, value); save.lastError = null; delete stale[key]; return true; }
+    catch (e) { stale[key] = 1; if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
   }
   function removeRaw(key) {
-    delete memory[key];
+    delete memory[key]; delete stale[key];
     if (backend) { try { backend.removeItem(key); } catch (e) { fail(); } }
   }
   function getJSON(key) {
@@ -95,11 +99,16 @@
   // keeps list() from decompressing. Smaller slots stay plain JSON; both forms read back.
   var SLOT_PACK_AT = 150000;
   save.SLOT_PACK_AT = SLOT_PACK_AT;
+  // The LZW is the slow part (~35 ms on a 13-year state), and an autosave writes the same state to 'auto' and to its slot:
+  // the last { json, body } pair is kept, so one autosave compresses once (save.packStats counts the compressions).
+  var packCache = { json: null, body: null };
+  save.packStats = { compress: 0 };
   function packSlot(rec) {
-    var j = JSON.stringify(rec);
-    if (j.length < SLOT_PACK_AT) return j;
     var h = JSON.stringify({ savedAt: rec.savedAt, version: rec.version, summary: rec.summary });
-    return 'LZ1:' + h.length + ':' + h + save.compress(JSON.stringify(rec.state));
+    var sj = JSON.stringify(rec.state);
+    if (h.length + sj.length + 10 < SLOT_PACK_AT) return h.slice(0, -1) + ',"state":' + sj + '}';   // = JSON.stringify(rec)
+    if (packCache.json !== sj) { packCache.body = save.compress(sj); packCache.json = sj; save.packStats.compress++; }
+    return 'LZ1:' + h.length + ':' + h + packCache.body;
   }
   function readSlot(slot, headOnly) {
     var raw = getRaw(save.KEYS.slot(slot));

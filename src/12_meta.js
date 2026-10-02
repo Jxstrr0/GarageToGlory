@@ -163,7 +163,11 @@
       if (old.mach) e.mach = old.mach;
       if (!meta.careers.best || num(e.score) > num(meta.careers.best.score)) meta.careers.best = { score: num(e.score), careerId: e.id };
     }
-    else e = E[at];
+    else {   // the same (or a lower) score: keep the stored entry, but take in trophies earned since it was written
+      var cur = e; e = E[at];   // (a v0.9 ended slot recorded by the slot scan has no trophies until its ending is played)
+      e.ach = Array.isArray(e.ach) ? e.ach : [];
+      (Array.isArray(cur.ach) ? cur.ach : []).forEach(function (id) { if (e.ach.indexOf(id) < 0) e.ach.push(id); });
+    }
     // Q5: cosmetic unlocks (first time across careers); the entry remembers what it unlocked.
     var news = [], want = M.unlocksFor(e, state);
     UNLOCK_KINDS.forEach(function (k) {

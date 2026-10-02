@@ -6105,10 +6105,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       },
       chat: { 3: ['Three more years. The world is not done with us. We are not done with the world.'], 2: ['Two more years. We are not done yet. Not even close.'] },
       byBand: {
-        hail_damage: { chat: { 3: ['Mes amis! Three more years. The lawn has been consulted. The lawn says: encore.'], 2: ['Two more years! The cape is not ready to retire. Neither is Lord Abyssus.'] } },
-        frost_heave: { chat: { 3: ['three more years. council can wait. council can never wait but it will'], 2: ['two more years!! filing a motion to make it three'] } },
-        gravel_kings: { chat: { 3: ['Three more years, babies. Rock never sleeps. It naps on the bus, then it rocks.'], 2: ['Two more years! It is still 1985 and the tour bus still has a tape deck.'] } },
-        grid_road_ramblers: { chat: { 3: ["Three more years on the road. I'm writing a song about it. It's about a truck."], 2: ['Two more years. Two more fall fairs and one more broken heart. Mine, probably.'] } }
+        hail_damage: { chat: { 3: [{ who: 'marcel', text: 'Mes amis! Three more years. The lawn has been consulted. The lawn says: encore.' }], 2: [{ who: 'marcel', text: 'Two more years! The cape is not ready to retire. Neither is Lord Abyssus.' }] } },
+        frost_heave: { chat: { 3: [{ who: 'benny', text: 'three more years. council can wait. council can never wait but it will' }], 2: [{ who: 'benny', text: 'two more years!! filing a motion to make it three' }] } },
+        gravel_kings: { chat: { 3: [{ who: 'chase', text: 'Three more years, babies. Rock never sleeps. It naps on the bus, then it rocks.' }], 2: [{ who: 'chase', text: 'Two more years! It is still 1985 and the tour bus still has a tape deck.' }] } },
+        grid_road_ramblers: { chat: { 3: [{ who: 'travis', text: "Three more years on the road. I'm writing a song about it. It's about a truck." }], 2: [{ who: 'travis', text: 'Two more years. Two more fall fairs and one more broken heart. Mine, probably.' }] } }
       }
     },
 
@@ -6189,12 +6189,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ch('Play the old hits', 'Burnout ↓ · Mood ↓', { burnout: -8, mood: { '@soloist': -6 } }, 'You stick to the hits. {soloist} plays the new riff in soundcheck every night. The crew learns it. The crew loves it.')
         ]),
       bc(GRR, 1, 'fame', '@front', 'The Farewell Tour (Again)',
-        'A promoter wants a Grid Road Ramblers Farewell Tour, "fall fairs and rodeos, one last time". {front} cried at the word farewell. {grumbler} reminds everyone he has done four farewell tours with other bands.', [
+        'A promoter wants a Grid Road Ramblers Farewell Tour, "fall fairs and rodeos, one last time". {front} cried at the word farewell. {grumbler} asks if there is a discount for repeat farewells.', [
           ch('One last time (again)', 'Fans ↑ · Burnout ↑', { fans: 280, buzz: 10, burnout: 12 }, 'You say goodbye at fourteen fall fairs. Then you are back in {space} on Tuesday. The 4-H kids are not surprised.'),
           ch('Country singers never retire', 'Chemistry ↑ · Buzz ↓', { chemistry: 6, buzz: -4 }, 'You turn it down. {front} writes a song about not retiring. It is about a truck that refuses to stop running.')
         ]),
       bc(GRR, 2, 'scene', '@grumbler', 'The Documentary',
-        'A film crew wants to shoot a documentary about {band} in {space}. {grumbler} has stories for every frame. The director asks for a two-hour cut. Earl offers six.', [
+        'A film crew wants to shoot a documentary about {band} in {space}. {grumbler} has stories for every frame. The director asks for a two-hour cut. {grumbler} offers six.', [
           ch('Six hours of stories', 'Buzz ↑↑ · Chemistry ↓', { buzz: 16, chemistry: -4 }, 'The documentary runs as a twelve-part series. Episode nine is entirely about one session in 1979. It is the most-watched episode.'),
           ch('Just the shows', 'Buzz ↑ · Mood ↑', { buzz: 8, mood: { all: 4 } }, 'Ninety minutes of live footage and one long shot of a grain elevator at sunset. Critics call it "a poem". Your mom calls it "nice".')
         ]),
@@ -6204,7 +6204,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ch('Surprise show at home', 'Fans ↑ · Fund ↓', { fans: 150, fund: -500, mood: { all: 5 } }, 'You play the auction mart in {city}. Coffee row comes in a group. They have been waiting years to say "told you so".')
         ]),
       bc(GRR, 4, 'money', '@grumbler', 'The Seed Company',
-        'A seed company wants {band} for a radio jingle about canola. {grumbler} has played on a canola jingle before, in 1983. He has notes.', [
+        'A seed company wants {band} for a radio jingle about canola. {grumbler} has opinions about canola. Long ones. With footnotes.', [
           ch('Sing about canola', 'Fund ↑ · Buzz ↓', { fund: 900, buzz: -5 }, 'The jingle plays every morning on farm radio for a decade. Farmers hum it on combines. You are, briefly, agricultural.'),
           ch('Keep the songs about trucks', 'Mood ↑', { mood: { all: 6 }, chemistry: 3 }, 'You turn it down. {front} writes a canola song anyway, for free, about a truck driving past a canola field.')
         ]),
@@ -10033,7 +10033,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       steps: [
         { who: '@front', text: 'This is {space}. Tap the floor to walk around. Tap stuff to use it.' },
         { who: '@front', text: 'The whiteboard plans the week: three blocks, Monday to Friday.', point: { hotspot: 'plan' } },
-        { who: '@soloist', text: 'Your {instrument} lives over there. Practise on it any time.', point: { hotspot: 'kit' } },
+        { who: '@soloist', text: 'Your {instrument}: over there. Practise any time.', point: { hotspot: 'kit' } },
         { who: '@filler', text: 'The gig board. That\'s where gigs come from, once anybody will have us.', point: { hotspot: 'gigboard' } },
         { who: '@front', text: 'When you\'re ready, tap the big button and plan the week.', point: { testid: 'btn-primary' }, advance: { event: 'screen:open', id: 'plan' } }
       ],
@@ -10049,7 +10049,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         frost_heave: { steps: [
           { who: 'rox', text: 'Welcome to the basement. Tap the floor to walk. Tap stuff to use it. Mind the dryer, it\'s load-bearing.' },
           { who: 'rox', text: 'The whiteboard is our agenda. Three blocks a week. No motions from the floor.', point: { hotspot: 'plan' } },
-          { who: 'benny', text: 'That\'s your {instrument}. Practise on it whenever. I only practise two chords. Saves time.', point: { hotspot: 'kit' } },
+          { who: 'benny', text: 'Your {instrument}, over there. Practise whenever. I only practise two chords. Saves time.', point: { hotspot: 'kit' } },
           { who: 'benny', text: 'Tap the {instrument} and sketch a beat. Fast snare, flat hats. If it feels too fast it\'s almost fast enough.', seat: D, point: { hotspot: 'kit' } },
           { who: 'moth', text: 'Gig board. Gigs. I drive to them. Don\'t touch the van.', point: { hotspot: 'gigboard' } },
           { who: 'rox', text: 'Big button. Plan the week. Meeting adjourned.', point: { testid: 'btn-primary' }, advance: { event: 'screen:open', id: 'plan' } }
@@ -10102,29 +10102,29 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { id: 'w1_write', title: 'Writing a song', when: { week: 1, screen: 'seq', mode: 'write' },
       steps: [
         { who: '@soloist', text: 'A Write block makes a song. Go one step at a time: pick a part, play it, tweak it, next.' },
-        { who: '@soloist', text: 'Every square is a hit. Kick at the bottom of the beat, snare on the backbeat, hats to keep time. Play to hear it.', seat: D, point: { testid: 'seq-grid' } },
+        { who: '@soloist', text: 'Each card is a groove. Tap one, then hit Play to hear it. The tweaks underneath change it a little.', seat: D, point: { testid: 'btn-guide-play' } },
         { who: '@front', text: 'Stuck? Let the band jam one. You get a song either way.', point: { testid: 'btn-seq-jam' } }
       ],
       byBand: {
         hail_damage: { steps: [
           { who: 'dana', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Like a solo, but shorter. Much shorter.' },
-          { who: 'dana', text: 'Each square is a hit. Metal wants a busy kick, snare on two and four, a crash on the one. Play it before you judge it.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'dana', text: 'Each card is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'marcel', text: 'When it is done, I will name it. In French. It will be about darkness. (It will be about my lawn.)' },
           { who: 'jaxon', text: 'or just let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-jam' } }
         ] },
         frost_heave: { steps: [
           { who: 'rox', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Faster than council.' },
-          { who: 'moth', text: 'Each square is a hit. Kick on the beat, snare on the "and", hats flat out. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'moth', text: 'Each card is a groove. Tap one, hit Play. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'benny', text: 'Or let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-jam' } }
         ] },
         gravel_kings: { steps: [
           { who: 'chase', text: 'Write block! One part at a time: pick a groove, play it, tweak it, next. Then I add the slide.' },
-          { who: 'tamara', text: 'Each square is a hit. Kick on one and three, snare on two and four, steady hats. Around 120 is a safe rock tempo.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'tamara', text: 'Each card is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. Steady hats. I colour-coded them.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'lenny', text: 'Or let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-jam' } }
         ] },
         grid_road_ramblers: { steps: [
           { who: 'travis', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. I\'ll bring the heartbreak.' },
-          { who: 'earl', text: 'Each square is a hit. Train beat: snare chugging, kick on one and three. Play it back. I\'ll wait. I have stories.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'earl', text: 'Each card is a groove. Tap one, hit Play to hear it. Train beat\'s the one. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'clementine', text: 'Or let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-jam' } }
         ] }
       } },
@@ -21047,6 +21047,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
+  var stale = {};
   save.storageOk = false;
   save.init = function (storage) {
     backend = null; save.storageOk = false;
@@ -21066,6 +21067,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function isQuota(e) { return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014); }
   save.lastError = null;
   function getRaw(key) {
+    if (stale[key] && memory[key] != null) return memory[key];
     if (backend) {
       try { var v = backend.getItem(key); return v != null ? v : (memory[key] != null ? memory[key] : null); }
       catch (e) { fail(); }
@@ -21075,11 +21077,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function setRaw(key, value) {
     memory[key] = value;
     if (!backend) return false;
-    try { backend.setItem(key, value); save.lastError = null; return true; }
-    catch (e) { if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
+    try { backend.setItem(key, value); save.lastError = null; delete stale[key]; return true; }
+    catch (e) { stale[key] = 1; if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
   }
   function removeRaw(key) {
-    delete memory[key];
+    delete memory[key]; delete stale[key];
     if (backend) { try { backend.removeItem(key); } catch (e) { fail(); } }
   }
   function getJSON(key) {
@@ -21112,11 +21114,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   };
   var SLOT_PACK_AT = 150000;
   save.SLOT_PACK_AT = SLOT_PACK_AT;
+  var packCache = { json: null, body: null };
+  save.packStats = { compress: 0 };
   function packSlot(rec) {
-    var j = JSON.stringify(rec);
-    if (j.length < SLOT_PACK_AT) return j;
     var h = JSON.stringify({ savedAt: rec.savedAt, version: rec.version, summary: rec.summary });
-    return 'LZ1:' + h.length + ':' + h + save.compress(JSON.stringify(rec.state));
+    var sj = JSON.stringify(rec.state);
+    if (h.length + sj.length + 10 < SLOT_PACK_AT) return h.slice(0, -1) + ',"state":' + sj + '}';   // = JSON.stringify(rec)
+    if (packCache.json !== sj) { packCache.body = save.compress(sj); packCache.json = sj; save.packStats.compress++; }
+    return 'LZ1:' + h.length + ':' + h + packCache.body;
   }
   function readSlot(slot, headOnly) {
     var raw = getRaw(save.KEYS.slot(slot));
@@ -21631,7 +21636,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (old.mach) e.mach = old.mach;
       if (!meta.careers.best || num(e.score) > num(meta.careers.best.score)) meta.careers.best = { score: num(e.score), careerId: e.id };
     }
-    else e = E[at];
+    else {   // the same (or a lower) score: keep the stored entry, but take in trophies earned since it was written
+      var cur = e; e = E[at];   // (a v0.9 ended slot recorded by the slot scan has no trophies until its ending is played)
+      e.ach = Array.isArray(e.ach) ? e.ach : [];
+      (Array.isArray(cur.ach) ? cur.ach : []).forEach(function (id) { if (e.ach.indexOf(id) < 0) e.ach.push(id); });
+    }
     var news = [], want = M.unlocksFor(e, state);
     UNLOCK_KINDS.forEach(function (k) {
       var ids = addUnlocks(k, want[k]);
@@ -31942,6 +31951,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var B = K().bonus || {}, by = (B.byBand && B.byBand[state.bandId]) || {};
     var ms = hashPick(state, 'bonus|ms', (by.milestone && by.milestone[years]) || (B.milestone && B.milestone[years]));
     var ch = hashPick(state, 'bonus|chat', (by.chat && by.chat[years]) || (B.chat && B.chat[years]));
+    if (ch && typeof ch === 'object' && ch.who && !(state.members || []).some(function (m) { return m && m.id === ch.who && m.status === 'active'; }))
+      ch = hashPick(state, 'bonus|chat', B.chat && B.chat[years]);
     var line = ms ? fill(state, ms) : (NUM[years] || years) + ' bonus years: the career now runs ' + (NUM[C.CAREER_YEARS + years] || '') + ' years.';
     if (wrap) { (wrap.milestones = wrap.milestones || []).push(line); wrap.bonus = { years: years, maxWeeks: state.maxWeeks, line: line }; }
     if (ch && GG.career && GG.career.postChat) {
@@ -35122,6 +35133,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   var GOV = { mode: 'none', cap: 0, ticks: 0, rendered: 0, dirty: 0, lastRender: 0, covered: false, open: {},
     costs: new Float32Array(90), nCost: 0, iCost: 0, vsync: 16.7, prevTs: 0, prevRendered: false, lastWork: 0,
+    ivs: new Float32Array(60), nIv: 0, iIv: 0, ivTicks: 0,
     evalAt: 0, band: 0, bandSince: 0, want: null, injectUntil: 0, applied: 0, shaderChecks: true };
   var CAPS = { live: 60, drive: 60, busy: 60, glide: 60, idle: 30, covered: 10 };
 
@@ -35221,7 +35233,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     paused = !!p;
     if (paused) { if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
     else {
-      if (was) { lastTs = 0; GOV.prevTs = 0; }   // (the pause is not a slow frame)
+      if (was) { lastTs = 0; GOV.prevTs = 0; resetBand(); }   // (the pause is not a slow frame, nor time held in a band)
       invalidate(2);   // an explicit un-pause is honoured: the governor never holds a scene paused, it only thins frames
     }
   };
@@ -35272,8 +35284,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     GOV.ticks++;
     if (GOV.prevTs) {
       var iv = ts - GOV.prevTs;
-      if (iv > 4 && iv < GOV.vsync) GOV.vsync = Math.max(6, iv);
-      if (GOV.prevRendered) sampleCost(Math.max(GOV.lastWork, iv - GOV.vsync), ts);
+      if (iv > 500 && !GOV.prevRendered) resetBand();
+      else {
+        trackVsync(iv);
+        if (GOV.prevRendered) sampleCost(Math.max(GOV.lastWork, iv - GOV.vsync), ts);
+      }
     }
     GOV.prevTs = ts; GOV.prevRendered = false;
     var mode = govMode(), cap = CAPS[mode] || 30;
@@ -35344,6 +35359,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
   }
 
+  var ivSort = new Float32Array(60);
+  function trackVsync(iv) {
+    if (!(iv > 4) || iv > 100) return;
+    GOV.ivs[GOV.iIv] = iv; GOV.iIv = (GOV.iIv + 1) % GOV.ivs.length; if (GOV.nIv < GOV.ivs.length) GOV.nIv++;
+    if (iv < GOV.vsync) GOV.vsync = Math.max(6, iv);   // a faster tick lowers it at once
+    if (++GOV.ivTicks % 15 || GOV.nIv < 15) return;
+    var n = GOV.nIv; for (var i = 0; i < n; i++) ivSort[i] = GOV.ivs[i];
+    GOV.vsync = tickEstimate(ivSort.subarray(0, n));
+  }
+  function tickEstimate(a) {   // a: typed array of tick intervals (sorted in place)
+    if (!a.length) return 16.7;
+    a.sort();
+    return Math.max(6, Math.min(50, a[Math.floor(0.1 * a.length)]));
+  }
+  R.tickEstimate = function (list) { return tickEstimate(Float32Array.from((list || []).filter(function (x) { return x > 4 && x <= 100; }))); };
+  function resetBand() { GOV.band = 0; GOV.bandSince = now(); GOV.nCost = 0; GOV.iCost = 0; }
   function sampleCost(ms, ts) {
     if (GOV.injectUntil && ts < GOV.injectUntil) return;   // tests feed frame times (R.feedFrames)
     pushCost(ms);
@@ -35401,7 +35432,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   R.perfState = function () {
     var p = R.prefs();
     return { mode: GOV.mode, cap: GOV.cap, ticks: GOV.ticks, rendered: GOV.rendered, pixelRatio: R.available && renderer ? renderer.getPixelRatio() : pixelRatio(),
-      autoRatio: autoPx, want: GOV.want, quality: p.quality, covered: GOV.covered, p95: Math.round(costP95() * 10) / 10, applied: GOV.applied, shaderChecks: GOV.shaderChecks };
+      autoRatio: autoPx, want: GOV.want, quality: p.quality, covered: GOV.covered, p95: Math.round(costP95() * 10) / 10, applied: GOV.applied, shaderChecks: GOV.shaderChecks, vsync: Math.round(GOV.vsync * 10) / 10 };
   };
 
   function onResize() {
@@ -54106,10 +54137,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
     return null;
   }
-  function hudBottom() {
+  var probes = null;
+  function safe() {
+    if (!probes) {
+      probes = ['top', 'bot'].map(function (k) {
+        var d = document.createElement('div');
+        d.setAttribute('aria-hidden', 'true');
+        d.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:var(--safe-' + k + ', 0px)';
+        document.body.appendChild(d); return d;
+      });
+    }
+    return { top: probes[0].offsetHeight || 0, bot: probes[1].offsetHeight || 0 };
+  }
+  function hudBottom(sf) {
     var bar = document.querySelector('#hud .hud-bar');
     if (bar && !bar.classList.contains('hidden')) { var r = bar.getBoundingClientRect(); if (r.height) return r.bottom; }
-    return 12;
+    return sf.top + 12;
   }
   function place() {
     if (!card || !cur) return;
@@ -54128,19 +54171,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     } else ring.style.display = 'none';
     var e = ui.get(ui.top() || ''), tallSheet = !!(e && e.def && e.def.kind !== 'full' && e.def.tall);
     var useTop = cy != null ? cy > H * 0.5 : !tallSheet;
-    var dock = document.querySelector('#hud .dock'), db = 12;
-    if (dock && !dock.classList.contains('hidden')) { var dr = dock.getBoundingClientRect(); if (dr.height) db = Math.max(12, H - dr.top + 8); }
+    var sf = safe(), dock = document.querySelector('#hud .dock'), db = sf.bot + 12;
+    if (dock && !dock.classList.contains('hidden')) { var dr = dock.getBoundingClientRect(); if (dr.height) db = Math.max(db, H - dr.top + 8); }
     var foot = e && e.root && e.root.querySelector('.sheet-foot, .full-foot'), fr = foot ? foot.getBoundingClientRect() : null;   // the screen's own buttons stay free
     if (fr && fr.height > 8 && foot.children.length) db = Math.max(db, H - fr.top + 8);
 
-    var ch = card.offsetHeight || 150, topY = Math.max(8, hudBottom() + 8), botY = H - db - ch;
+    var ch = card.offsetHeight || 150, topY = Math.max(8, hudBottom(sf) + 8), botY = H - db - ch;
     var y = useTop ? topY : botY;
     if (cy == null && e && e.def && e.def.kind === 'full') y = Math.round(H * 0.5 - ch / 2);   // a full screen keeps its header and footer controls
     if (t && t.box) {   // never sit on the box itself: flip to the other slot if it would
       var ov = function (yy) { return yy < t.box.bottom && yy + ch > t.box.top; };
       if (ov(y)) { var alt = useTop ? botY : topY; if (!ov(alt)) y = alt; }
     }
-    card.style.top = Math.round(Math.max(8, Math.min(y, H - ch - 8))) + 'px';
+    card.style.top = Math.round(Math.max(sf.top + 8, Math.min(y, H - ch - 8 - sf.bot))) + 'px';
   }
   function refresh() {
     ensureLayer();
@@ -54559,7 +54602,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   GG.on('gig:pending', function () {
     var st = GG.state; if (st) Promise.resolve().then(function () { if (GG.state === st && st.phase === 'gig') autosave(st); });
   });
-  GG.on('gig:song', function () { var st = GG.state; if (st && st.liveGig) autosave(st); });
+  var songSave = null;
+  GG.on('gig:song', function () {
+    var st = GG.state; if (!st || !st.liveGig || songSave) return;
+    var run = function () { songSave = null; if (GG.state === st && st.liveGig) autosave(st); };
+    songSave = typeof requestIdleCallback === 'function' ? requestIdleCallback(run, { timeout: 1000 }) : setTimeout(run, 50);
+  });
   M.saveTo = function (slot) {
     var st = GG.state; if (!st) return false;
     st.slot = String(slot);

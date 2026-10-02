@@ -18,6 +18,19 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
+## v1.0 review fixes (2026-10-02, on `v1.0-glory`)
+- Endings: Ramblers bonus cards no longer name Earl in text once he has left ({grumbler} tokens); `endings.bonus.byBand.*.chat`
+  entries are `{ who, text }` (the original speaker); `GG.legacy.weekly` falls back to the generic '@front' line when that member is gone.
+- Meta: `recordCareer` on an existing entry (same / lower score) merges the state's trophies into it (a v0.9 ended slot recorded
+  by the slot scan gets its trophies when its ending plays).
+- Save: a key whose last write missed (quota) reads this session's copy from memory until a write persists; packed slots
+  cache the last `{ json, body }` so an autosave (auto + slot) compresses once (`save.packStats.compress`); the per-song
+  autosave runs at the next idle moment (<= 1 s).
+- Tutorial: the bubble keeps clear of --safe-top / --safe-bot with the HUD hidden (pw_tutorial `tut_notch`); w1_write step 2
+  teaches the guided cards (points at btn-guide-play); {instrument} lines read right as "drums".
+- Render: un-pausing (and a long rAF gap after an undrawn tick) resets the ratio band + cost window; the tick estimate is the
+  10th percentile of the last 60 rAF intervals (`R.tickEstimate`, rises to 33 ms at 30 Hz rAF); `debug('perf').vsync`.
+
 ## Queued after v1.0: v1.0.1 "Smart bridge" (owner popup 2026-10-02)
 - One touch on the seam between two neighbouring lanes (≈ middle third of the gap) hits BOTH lanes only when both have a
   note due inside the judgement window; otherwise only the nearer lane. No extra stray penalties. Default on, no setting.

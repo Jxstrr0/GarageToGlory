@@ -17,8 +17,9 @@
 //   player    : { drums: { <tierId>: text } }  the player's own card, keyed by seat (handoff E12; v1.1 adds bass / rhythm /
 //               lead; a missing seat falls back to drums)
 //   rival     : { you|rival|none: [text], byRival: { <rivalId>: { you?, rival?, none? } } }  the Sad Dome line on the end screen
-//   bonus     : { milestone: { 2|3: [text] }, chat: { 2|3: [text] }, byBand: { <bandId>: { milestone?, chat? } } }  the
-//               bonus-year grant (a wrap milestone line + one '@front' chat line, picked by a hash of the career id)
+//   bonus     : { milestone: { 2|3: [text] }, chat: { 2|3: [text] }, byBand: { <bandId>: { milestone?, chat?: { 2|3: [{ who, text }] } } } }  the
+//               bonus-year grant (a wrap milestone line + one chat line, picked by a hash of the career id; a byBand line
+//               names its original speaker and falls back to the generic '@front' line when that member is gone)
 //   bonusCards: [ CARD ]  Monday cards for bonus years 11–13 (gate era ['world'] + minYear 11 + band + genre). GG.legacy adds
 //               them to the Monday deck once a career has bonus years (see 2f_sim_legacy.js: never in years 1–10, so no
 //               existing pool changes order or weight and NO_BONUS careers replay exactly).
@@ -285,10 +286,10 @@
       },
       chat: { 3: ['Three more years. The world is not done with us. We are not done with the world.'], 2: ['Two more years. We are not done yet. Not even close.'] },
       byBand: {
-        hail_damage: { chat: { 3: ['Mes amis! Three more years. The lawn has been consulted. The lawn says: encore.'], 2: ['Two more years! The cape is not ready to retire. Neither is Lord Abyssus.'] } },
-        frost_heave: { chat: { 3: ['three more years. council can wait. council can never wait but it will'], 2: ['two more years!! filing a motion to make it three'] } },
-        gravel_kings: { chat: { 3: ['Three more years, babies. Rock never sleeps. It naps on the bus, then it rocks.'], 2: ['Two more years! It is still 1985 and the tour bus still has a tape deck.'] } },
-        grid_road_ramblers: { chat: { 3: ["Three more years on the road. I'm writing a song about it. It's about a truck."], 2: ['Two more years. Two more fall fairs and one more broken heart. Mine, probably.'] } }
+        hail_damage: { chat: { 3: [{ who: 'marcel', text: 'Mes amis! Three more years. The lawn has been consulted. The lawn says: encore.' }], 2: [{ who: 'marcel', text: 'Two more years! The cape is not ready to retire. Neither is Lord Abyssus.' }] } },
+        frost_heave: { chat: { 3: [{ who: 'benny', text: 'three more years. council can wait. council can never wait but it will' }], 2: [{ who: 'benny', text: 'two more years!! filing a motion to make it three' }] } },
+        gravel_kings: { chat: { 3: [{ who: 'chase', text: 'Three more years, babies. Rock never sleeps. It naps on the bus, then it rocks.' }], 2: [{ who: 'chase', text: 'Two more years! It is still 1985 and the tour bus still has a tape deck.' }] } },
+        grid_road_ramblers: { chat: { 3: [{ who: 'travis', text: "Three more years on the road. I'm writing a song about it. It's about a truck." }], 2: [{ who: 'travis', text: 'Two more years. Two more fall fairs and one more broken heart. Mine, probably.' }] } }
       }
     },
 
@@ -373,12 +374,12 @@
         ]),
       // The Grid Road Ramblers
       bc(GRR, 1, 'fame', '@front', 'The Farewell Tour (Again)',
-        'A promoter wants a Grid Road Ramblers Farewell Tour, "fall fairs and rodeos, one last time". {front} cried at the word farewell. {grumbler} reminds everyone he has done four farewell tours with other bands.', [
+        'A promoter wants a Grid Road Ramblers Farewell Tour, "fall fairs and rodeos, one last time". {front} cried at the word farewell. {grumbler} asks if there is a discount for repeat farewells.', [
           ch('One last time (again)', 'Fans ↑ · Burnout ↑', { fans: 280, buzz: 10, burnout: 12 }, 'You say goodbye at fourteen fall fairs. Then you are back in {space} on Tuesday. The 4-H kids are not surprised.'),
           ch('Country singers never retire', 'Chemistry ↑ · Buzz ↓', { chemistry: 6, buzz: -4 }, 'You turn it down. {front} writes a song about not retiring. It is about a truck that refuses to stop running.')
         ]),
       bc(GRR, 2, 'scene', '@grumbler', 'The Documentary',
-        'A film crew wants to shoot a documentary about {band} in {space}. {grumbler} has stories for every frame. The director asks for a two-hour cut. Earl offers six.', [
+        'A film crew wants to shoot a documentary about {band} in {space}. {grumbler} has stories for every frame. The director asks for a two-hour cut. {grumbler} offers six.', [
           ch('Six hours of stories', 'Buzz ↑↑ · Chemistry ↓', { buzz: 16, chemistry: -4 }, 'The documentary runs as a twelve-part series. Episode nine is entirely about one session in 1979. It is the most-watched episode.'),
           ch('Just the shows', 'Buzz ↑ · Mood ↑', { buzz: 8, mood: { all: 4 } }, 'Ninety minutes of live footage and one long shot of a grain elevator at sunset. Critics call it "a poem". Your mom calls it "nice".')
         ]),
@@ -388,7 +389,7 @@
           ch('Surprise show at home', 'Fans ↑ · Fund ↓', { fans: 150, fund: -500, mood: { all: 5 } }, 'You play the auction mart in {city}. Coffee row comes in a group. They have been waiting years to say "told you so".')
         ]),
       bc(GRR, 4, 'money', '@grumbler', 'The Seed Company',
-        'A seed company wants {band} for a radio jingle about canola. {grumbler} has played on a canola jingle before, in 1983. He has notes.', [
+        'A seed company wants {band} for a radio jingle about canola. {grumbler} has opinions about canola. Long ones. With footnotes.', [
           ch('Sing about canola', 'Fund ↑ · Buzz ↓', { fund: 900, buzz: -5 }, 'The jingle plays every morning on farm radio for a decade. Farmers hum it on combines. You are, briefly, agricultural.'),
           ch('Keep the songs about trucks', 'Mood ↑', { mood: { all: 6 }, chemistry: 3 }, 'You turn it down. {front} writes a canola song anyway, for free, about a truck driving past a canola field.')
         ]),

@@ -203,6 +203,25 @@ async function ratio() {
     await quick(page);
     const p0 = await page.evaluate(() => ({ perf: GG.debug('perf'), dpr: devicePixelRatio, canvas: document.querySelector('#scene canvas').width, css: document.querySelector('#scene canvas').clientWidth }));
     c.ok(p0.dpr === 3 && p0.perf.quality === 'auto' && p0.perf.pixelRatio === 1.5 && Math.abs(p0.canvas - p0.css * 1.5) <= 1, "auto on a DPR-3 phone: 1.5x, not 2x " + JSON.stringify({ px: p0.perf.pixelRatio, canvas: p0.canvas, css: p0.css }));
+    // a pause is not time held in the slow band: slow frames, a 3 s pause, resume (then neutral frames): no step for 1.5 s
+    const pz = await page.evaluate(async () => {
+      const q = []; GG.on('perf:quality', p => q.push(p));
+      const feedFor = async (ms, dur) => { const t0 = performance.now(); while (performance.now() - t0 < dur) { GG.render.feedFrames([ms, ms, ms, ms, ms, ms]); await new Promise(r => setTimeout(r, 100)); } };
+      // slow frames until the governor has looked at them a few times (headless ticks are slow), well under the 2 s hold
+      const t1 = GG.debug('perf').ticks, t0 = performance.now();
+      let k = 0; while (performance.now() - t0 < 1700 && (k++ < 5 || GG.debug('perf').ticks - t1 < 4)) await feedFor(30, 100);
+      const before = GG.debug('perf').p95;
+      GG.render.setPaused(true); await new Promise(r => setTimeout(r, 3000)); GG.render.setPaused(false);
+      await feedFor(16, 1500);
+      return { before, q: q.length, auto: GG.debug('perf').autoRatio };
+    });
+    c.ok(pz.before > 20 && pz.q === 0 && pz.auto === 1.5, 'slow frames, a 3 s pause, resume: the ratio holds (the band is measured again) ' + JSON.stringify(pz));
+    // rAF delivered at 30 Hz (iOS Low Power Mode, a throttled iframe): the tick estimate follows it, so a 33 ms tick is not
+    // a 16.6 ms frame cost; a 60 Hz screen with slow GPU frames keeps the real vsync (the cheap skipped ticks)
+    const te = await page.evaluate(() => { const f = GG.render.tickEstimate, rep = (v, n) => Array(n).fill(v);
+      return [f(rep(33.3, 60)), f(rep(16.7, 60)), f(rep(33.3, 40).concat(rep(16.7, 20))), f(rep(33.3, 57).concat([36, 38, 41])), f([]), f(rep(400, 30))].map(x => Math.round(x * 10) / 10); });
+    c.ok(JSON.stringify(te) === JSON.stringify([33.3, 16.7, 16.7, 33.3, 16.7, 16.7]), 'R.tickEstimate: 30 Hz rAF -> 33 ms; 60 Hz (or mixed) -> 16.7; gaps ignored ' + JSON.stringify(te));
+    await page.waitForTimeout(600);
     await page.evaluate(() => { window.__q = []; GG.on('perf:quality', p => window.__q.push(p)); });
     const feed = (ms, secs, stop) => page.evaluate(async ([ms, secs, stop]) => {
       const t0 = performance.now();

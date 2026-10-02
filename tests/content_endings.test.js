@@ -35,7 +35,7 @@ function bandText(b) {
   Object.values(E.recruits.byTrait).forEach(l => out.push(...l)); quirks.forEach(q => out.push(...(E.recruits.byQuirk[q] || []))); out.push(...E.recruits.any);
   out.push(...E.defectors.any, ...((E.defectors.byRival || {})[rv] || []));
   ['you', 'rival', 'none'].forEach(k => out.push(...(E.rival[k] || []), ...(((E.rival.byRival || {})[rv] || {})[k] || [])));
-  [2, 3].forEach(y => out.push(...(E.bonus.milestone[y] || []), ...(E.bonus.chat[y] || []), ...((((E.bonus.byBand || {})[b] || {}).chat || {})[y] || [])));
+  [2, 3].forEach(y => out.push(...(E.bonus.milestone[y] || []), ...(E.bonus.chat[y] || []), ...((((E.bonus.byBand || {})[b] || {}).chat || {})[y] || []).map(x => x.text)));
   Object.values(E.player.drums).forEach(t => out.push(t));
   E.bonusCards.filter(c => c.gate.band.includes(b)).forEach(c => strings(c, c.id).forEach(([, s]) => out.push(s)));
   return out.filter(Boolean);
@@ -136,7 +136,10 @@ test('bonus years: milestone + chat lines for +2 and +3, per band; 4-6 bonus car
   [2, 3].forEach(y => ok(E.bonus.milestone[y].length && E.bonus.chat[y].length, 'generic +' + y));
   BAND_IDS.forEach(b => {
     const bb = E.bonus.byBand[b];
-    ok(bb && [2, 3].every(y => bb.chat[y] && bb.chat[y].length && bb.chat[y].every(x => str(x, LIMIT.chat))), b + ': chat lines for +2 and +3 (<= 120)');
+    ok(bb && [2, 3].every(y => bb.chat[y] && bb.chat[y].length && bb.chat[y].every(x => x && str(x.text, LIMIT.chat))), b + ': chat lines for +2 and +3 (<= 120)');
+    // each band line names the original who says it (a talker of that band, never Kenji): the grant falls back to the generic line when they are gone
+    const talkers = BANDS[b].members.filter(m => !m.silent).map(m => m.id);
+    ok([2, 3].every(y => bb.chat[y].every(x => talkers.includes(x.who) && x.who !== 'kenji')), b + ': chat lines name an original talker');
     const n = E.bonusCards.filter(c => c.gate.band.length === 1 && c.gate.band[0] === b).length;
     ok(n >= 4 && n <= 6, b + ': ' + n + ' bonus cards');
   });
@@ -163,6 +166,15 @@ test('bonus cards: Monday-card shape, ids unique, speakers of the band (Kenji ne
         vals.forEach(x => { const a = m[2] ? Math.abs(x) : x; ok(Number.isInteger(x) && a >= m[0] && a <= m[1], w + '#' + i + ': ' + k + ' ' + x + ' in the World-era range'); });
       });
     });
+  });
+});
+
+test("Ramblers bonus cards name nobody who has left: with Earl gone, no card text says 'Earl'", () => {
+  const s = GG.career.newCareer({ seed: 5, bandId: 'grid_road_ramblers', player: { name: 'Pat Doe', nick: 'Patty' } });
+  s.members.find(m => m.id === 'earl').status = 'quit';
+  E.bonusCards.filter(c => c.gate.band.includes('grid_road_ramblers')).forEach(c => {
+    const txt = [c.text].concat(...c.choices.map(x => [x.label, x.outcome])).map(t => GG.career.fillText(s, t || '')).join(' ');
+    ok(!/\bEarl\b|1983/.test(txt), c.id + ': no Earl once he has left (' + txt.slice(0, 80) + ')');
   });
 });
 

@@ -1,5 +1,5 @@
 // pw_tutorial.js (v1.0 Lane T; plan_contract_1.0 §5 Lane T acceptance): the in-character lessons in a real browser (?tut=1).
-// Sections (META_ONLY=tut_w1|tut_calib|tut_w24|tut_skip|tut_replay, comma-separated; default all). Each fits `timeout 500`.
+// Sections (META_ONLY=tut_w1|tut_calib|tut_w24|tut_skip|tut_replay|tut_notch, comma-separated; default all). Each fits `timeout 500`.
 //   tut_w1     : week one for each band (BANDS=hail_damage,... to narrow): the bubbles come in order (card → walk → plan →
 //                write → results → setlist → wrap), taps reach the game while a bubble is up, the first-Write tip stays quiet,
 //                nothing shows during the song, the wrap explains each stat once; all seven week-one lessons end up done
@@ -7,6 +7,7 @@
 //   tut_w24    : weeks 2–4: the gig board, the laptop (chat, money), the merch table, the van, a mood drop: each lesson once
 //   tut_skip   : a profile that passed week 4 (meta past4 = 1): the creator offers "Skip the lessons" (on, 48 px) → no lessons;
 //                "?" still replays one (Close, done unchanged)
+//   tut_notch  : --safe-top / --safe-bot forced: the w1_gig bubbles over the gig setlist (HUD hidden) clear the notch and home bar
 //   tut_replay : every lesson replays from the "?" sheet (ticks for seen ones), never touching state.tutorial.done
 // SHOTS=1 saves tests/.cache/tut_<label>.png at every bubble check.
 // Every section: no console errors, every bubble button >= 48 px, the bubble stays on screen. PW_VIEW=440x956 for the owner's phone.
@@ -366,8 +367,48 @@ async function replay() {
   c.done();
 }
 
+/* ---- tut_notch ---------------------------------------------------------------------------------------------- */
+// The notch / Dynamic Island and the home bar (--safe-top 59 px / --safe-bot 34 px forced, as on the owner's iPhone): with the
+// HUD bar hidden (the gig setlist over the full gig screen), every w1_gig bubble stays below the safe top and above the home bar.
+async function notch(band) {
+  const c = checker('tut_notch ' + band);
+  const { page, errors, close } = await openTut('?quick=1&seed=5&tut=1&band=' + band);
+  try {
+    await page.waitForFunction(() => window.GG && GG.state, null, { timeout: 15000 });
+    await page.waitForTimeout(1200);
+    await page.addStyleTag({ content: ':root{--safe-top:59px !important;--safe-bot:34px !important}' });
+    await page.evaluate(() => {
+      ['w1_card', 'w1_walk', 'w1_plan', 'w1_write', 'w1_rehearse'].forEach(id => GG.lessons.mark(GG.state, id));
+      GG.ui.closeAll();
+      const g = GG.gig.bookLocal(GG.state, GG.rngFor({ rng: 7 }), 1);
+      GG.ui.playGig(g, function () {});
+    });
+    await bubbleOf(page, 'w1_gig');
+    let n = 0;
+    for (let k = 0; k < 6; k++) {
+      await page.waitForTimeout(450);   // the card's entry animation settles
+      const m = await page.evaluate(() => {
+        const card = document.querySelector('#tut:not(.off) [data-testid="tut-bubble"]'), hb = document.querySelector('#hud .hud-bar');
+        if (!card) return null;
+        const r = card.getBoundingClientRect();
+        return { lesson: card.dataset.lesson, step: card.dataset.step, top: r.top, bottom: r.bottom, H: innerHeight, hudHidden: !hb || hb.classList.contains('hidden'), last: !document.querySelector('#tut [data-testid="tut-next"]') };
+      });
+      if (!m || m.lesson !== 'w1_gig') break;
+      n++;
+      c.ok(m.top >= 59 && m.bottom <= m.H - 34, 'w1_gig step ' + m.step + ': clear of the notch and the home bar ' + JSON.stringify(m));
+      if (m.last) break;
+      await page.locator(tid('tut-next')).last().click({ timeout: 5000 });
+    }
+    c.ok(n >= 2, 'checked ' + n + ' w1_gig steps');
+    c.ok(errors.length === 0, 'no console errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
+  } catch (e) { c.ok(false, 'threw: ' + e.message.split('\n')[0]); }
+  finally { await close(); }
+  c.done();
+}
+
 (async () => {
   console.log('viewport ' + VIEW.width + 'x' + VIEW.height);
+  if (want('tut_notch')) for (const b of BANDS) await notch(b);
   if (want('tut_w1')) for (const b of BANDS) await weekOne(b);
   if (want('tut_calib')) await calib();
   if (want('tut_w24')) await weeks24();

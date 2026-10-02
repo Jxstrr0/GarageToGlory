@@ -153,6 +153,9 @@
     var B = K().bonus || {}, by = (B.byBand && B.byBand[state.bandId]) || {};
     var ms = hashPick(state, 'bonus|ms', (by.milestone && by.milestone[years]) || (B.milestone && B.milestone[years]));
     var ch = hashPick(state, 'bonus|chat', (by.chat && by.chat[years]) || (B.chat && B.chat[years]));
+    // A band's own line is written in one original member's voice: if that member is gone, use the generic '@front' line.
+    if (ch && typeof ch === 'object' && ch.who && !(state.members || []).some(function (m) { return m && m.id === ch.who && m.status === 'active'; }))
+      ch = hashPick(state, 'bonus|chat', B.chat && B.chat[years]);
     var line = ms ? fill(state, ms) : (NUM[years] || years) + ' bonus years: the career now runs ' + (NUM[C.CAREER_YEARS + years] || '') + ' years.';
     if (wrap) { (wrap.milestones = wrap.milestones || []).push(line); wrap.bonus = { years: years, maxWeeks: state.maxWeeks, line: line }; }
     if (ch && GG.career && GG.career.postChat) {

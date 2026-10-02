@@ -123,10 +123,24 @@
     }
     return null;
   }
-  function hudBottom() {
+  // The notch / home-indicator insets (--safe-top / --safe-bot) in px, read from two invisible probes; with the HUD bar
+  // hidden (a full screen, the gig setlist) the card still keeps clear of the Dynamic Island and the home bar.
+  var probes = null;
+  function safe() {
+    if (!probes) {
+      probes = ['top', 'bot'].map(function (k) {
+        var d = document.createElement('div');
+        d.setAttribute('aria-hidden', 'true');
+        d.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:var(--safe-' + k + ', 0px)';
+        document.body.appendChild(d); return d;
+      });
+    }
+    return { top: probes[0].offsetHeight || 0, bot: probes[1].offsetHeight || 0 };
+  }
+  function hudBottom(sf) {
     var bar = document.querySelector('#hud .hud-bar');
     if (bar && !bar.classList.contains('hidden')) { var r = bar.getBoundingClientRect(); if (r.height) return r.bottom; }
-    return 12;
+    return sf.top + 12;
   }
   function place() {
     if (!card || !cur) return;
@@ -148,19 +162,19 @@
     // screen (the middle: the sequencer's header and step buttons stay free).
     var e = ui.get(ui.top() || ''), tallSheet = !!(e && e.def && e.def.kind !== 'full' && e.def.tall);
     var useTop = cy != null ? cy > H * 0.5 : !tallSheet;
-    var dock = document.querySelector('#hud .dock'), db = 12;
-    if (dock && !dock.classList.contains('hidden')) { var dr = dock.getBoundingClientRect(); if (dr.height) db = Math.max(12, H - dr.top + 8); }
+    var sf = safe(), dock = document.querySelector('#hud .dock'), db = sf.bot + 12;
+    if (dock && !dock.classList.contains('hidden')) { var dr = dock.getBoundingClientRect(); if (dr.height) db = Math.max(db, H - dr.top + 8); }
     var foot = e && e.root && e.root.querySelector('.sheet-foot, .full-foot'), fr = foot ? foot.getBoundingClientRect() : null;   // the screen's own buttons stay free
     if (fr && fr.height > 8 && foot.children.length) db = Math.max(db, H - fr.top + 8);
 
-    var ch = card.offsetHeight || 150, topY = Math.max(8, hudBottom() + 8), botY = H - db - ch;
+    var ch = card.offsetHeight || 150, topY = Math.max(8, hudBottom(sf) + 8), botY = H - db - ch;
     var y = useTop ? topY : botY;
     if (cy == null && e && e.def && e.def.kind === 'full') y = Math.round(H * 0.5 - ch / 2);   // a full screen keeps its header and footer controls
     if (t && t.box) {   // never sit on the box itself: flip to the other slot if it would
       var ov = function (yy) { return yy < t.box.bottom && yy + ch > t.box.top; };
       if (ov(y)) { var alt = useTop ? botY : topY; if (!ov(alt)) y = alt; }
     }
-    card.style.top = Math.round(Math.max(8, Math.min(y, H - ch - 8))) + 'px';
+    card.style.top = Math.round(Math.max(sf.top + 8, Math.min(y, H - ch - 8 - sf.bot))) + 'px';
   }
   function refresh() {
     ensureLayer();

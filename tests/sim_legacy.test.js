@@ -250,6 +250,22 @@ test('compute is pure, finish is idempotent (one legacy:done), hofEntry (seat, n
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '2f_sim_legacy.js is pure');
 });
 
+test("bonus chat: a band's own line speaks as its original; if that member is gone, the generic '@front' line", () => {
+  const GG = fresh(), L = GG.legacy, E_GENERIC = [].concat(...Object.values(GG.content.endings.bonus.chat));
+  [['hail_damage', 'marcel', /Mes amis|cape|lawn|Abyssus/], ['gravel_kings', 'chase', /babies|1985/], ['frost_heave', 'benny', /council|motion/],
+   ['grid_road_ramblers', 'travis', /truck|broken heart/]].forEach(([band, who, voice]) => {
+    const mk = gone => {
+      const s = blank(GG, band); s.totalWeek = 120; s.year = 5; s.week = 24; s.era = 'world';
+      s.eraHistory = [{ era: 'garage', week: 1 }, { era: 'local', week: 20 }, { era: 'signed', week: 50 }, { era: 'world', week: 120 }];
+      if (gone) s.members.find(m => m.id === who).status = 'quit';
+      const wrap = { chat: [] }; L.weekly(s, wrap); return wrap.chat[0];
+    };
+    const kept = mk(false), left = mk(true);
+    ok(kept && kept.who === who && voice.test(kept.text), band + ': ' + who + ' posts the band line');
+    ok(left && left.who !== who && !voice.test(left.text) && E_GENERIC.includes(left.text), band + ': ' + who + ' gone, the generic line (' + (left && left.who) + ': ' + (left && left.text) + ')');
+  });
+});
+
 test('one 312-week bonus career per band (good bot): no exceptions, the Sad Dome in the last year, bonus cards drawn, a clean ending', () => {
   const GG = fresh(), K = GG.content;
   BANDS.forEach(band => {

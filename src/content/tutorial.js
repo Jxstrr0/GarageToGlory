@@ -41,7 +41,7 @@
       steps: [
         { who: '@front', text: 'This is {space}. Tap the floor to walk around. Tap stuff to use it.' },
         { who: '@front', text: 'The whiteboard plans the week: three blocks, Monday to Friday.', point: { hotspot: 'plan' } },
-        { who: '@soloist', text: 'Your {instrument} lives over there. Practise on it any time.', point: { hotspot: 'kit' } },
+        { who: '@soloist', text: 'Your {instrument}: over there. Practise any time.', point: { hotspot: 'kit' } },
         { who: '@filler', text: 'The gig board. That\'s where gigs come from, once anybody will have us.', point: { hotspot: 'gigboard' } },
         { who: '@front', text: 'When you\'re ready, tap the big button and plan the week.', point: { testid: 'btn-primary' }, advance: { event: 'screen:open', id: 'plan' } }
       ],
@@ -57,7 +57,7 @@
         frost_heave: { steps: [
           { who: 'rox', text: 'Welcome to the basement. Tap the floor to walk. Tap stuff to use it. Mind the dryer, it\'s load-bearing.' },
           { who: 'rox', text: 'The whiteboard is our agenda. Three blocks a week. No motions from the floor.', point: { hotspot: 'plan' } },
-          { who: 'benny', text: 'That\'s your {instrument}. Practise on it whenever. I only practise two chords. Saves time.', point: { hotspot: 'kit' } },
+          { who: 'benny', text: 'Your {instrument}, over there. Practise whenever. I only practise two chords. Saves time.', point: { hotspot: 'kit' } },
           { who: 'benny', text: 'Tap the {instrument} and sketch a beat. Fast snare, flat hats. If it feels too fast it\'s almost fast enough.', seat: D, point: { hotspot: 'kit' } },
           { who: 'moth', text: 'Gig board. Gigs. I drive to them. Don\'t touch the van.', point: { hotspot: 'gigboard' } },
           { who: 'rox', text: 'Big button. Plan the week. Meeting adjourned.', point: { testid: 'btn-primary' }, advance: { event: 'screen:open', id: 'plan' } }
@@ -110,29 +110,29 @@
     { id: 'w1_write', title: 'Writing a song', when: { week: 1, screen: 'seq', mode: 'write' },
       steps: [
         { who: '@soloist', text: 'A Write block makes a song. Go one step at a time: pick a part, play it, tweak it, next.' },
-        { who: '@soloist', text: 'Every square is a hit. Kick at the bottom of the beat, snare on the backbeat, hats to keep time. Play to hear it.', seat: D, point: { testid: 'seq-grid' } },
+        { who: '@soloist', text: 'Each card is a groove. Tap one, then hit Play to hear it. The tweaks underneath change it a little.', seat: D, point: { testid: 'btn-guide-play' } },
         { who: '@front', text: 'Stuck? Let the band jam one. You get a song either way.', point: { testid: 'btn-seq-jam' } }
       ],
       byBand: {
         hail_damage: { steps: [
           { who: 'dana', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Like a solo, but shorter. Much shorter.' },
-          { who: 'dana', text: 'Each square is a hit. Metal wants a busy kick, snare on two and four, a crash on the one. Play it before you judge it.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'dana', text: 'Each card is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'marcel', text: 'When it is done, I will name it. In French. It will be about darkness. (It will be about my lawn.)' },
           { who: 'jaxon', text: 'or just let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-jam' } }
         ] },
         frost_heave: { steps: [
           { who: 'rox', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Faster than council.' },
-          { who: 'moth', text: 'Each square is a hit. Kick on the beat, snare on the "and", hats flat out. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'moth', text: 'Each card is a groove. Tap one, hit Play. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'benny', text: 'Or let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-jam' } }
         ] },
         gravel_kings: { steps: [
           { who: 'chase', text: 'Write block! One part at a time: pick a groove, play it, tweak it, next. Then I add the slide.' },
-          { who: 'tamara', text: 'Each square is a hit. Kick on one and three, snare on two and four, steady hats. Around 120 is a safe rock tempo.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'tamara', text: 'Each card is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. Steady hats. I colour-coded them.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'lenny', text: 'Or let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-jam' } }
         ] },
         grid_road_ramblers: { steps: [
           { who: 'travis', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. I\'ll bring the heartbreak.' },
-          { who: 'earl', text: 'Each square is a hit. Train beat: snare chugging, kick on one and three. Play it back. I\'ll wait. I have stories.', seat: D, point: { testid: 'seq-grid' } },
+          { who: 'earl', text: 'Each card is a groove. Tap one, hit Play to hear it. Train beat\'s the one. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
           { who: 'clementine', text: 'Or let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-jam' } }
         ] }
       } },

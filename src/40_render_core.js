@@ -99,6 +99,7 @@
   // an explicit setPaused(false)) renders the next frames regardless. 60_main's setPaused(true) always wins.
   var GOV = { mode: 'none', cap: 0, ticks: 0, rendered: 0, dirty: 0, lastRender: 0, covered: false, open: {},
     costs: new Float32Array(90), nCost: 0, iCost: 0, vsync: 16.7, prevTs: 0, prevRendered: false, lastWork: 0,
+    ivs: new Float32Array(60), nIv: 0, iIv: 0, ivTicks: 0,
     evalAt: 0, band: 0, bandSince: 0, want: null, injectUntil: 0, applied: 0, shaderChecks: true };
   var CAPS = { live: 60, drive: 60, busy: 60, glide: 60, idle: 30, covered: 10 };
 
@@ -207,7 +208,7 @@
     paused = !!p;
     if (paused) { if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
     else {
-      if (was) { lastTs = 0; GOV.prevTs = 0; }   // (the pause is not a slow frame)
+      if (was) { lastTs = 0; GOV.prevTs = 0; resetBand(); }   // (the pause is not a slow frame, nor time held in a band)
       invalidate(2);   // an explicit un-pause is honoured: the governor never holds a scene paused, it only thins frames
     }
   };
@@ -266,8 +267,13 @@
     // The rendered frame before this tick: its cost is the CPU work plus any delay the GPU added to this tick.
     if (GOV.prevTs) {
       var iv = ts - GOV.prevTs;
-      if (iv > 4 && iv < GOV.vsync) GOV.vsync = Math.max(6, iv);
-      if (GOV.prevRendered) sampleCost(Math.max(GOV.lastWork, iv - GOV.vsync), ts);
+      // a long gap after a tick that drew nothing is the browser holding rAF back (a hidden tab), not a slow frame: measure
+      // the band again from here (after a drawn frame it is that frame's cost and counts)
+      if (iv > 500 && !GOV.prevRendered) resetBand();
+      else {
+        trackVsync(iv);
+        if (GOV.prevRendered) sampleCost(Math.max(GOV.lastWork, iv - GOV.vsync), ts);
+      }
     }
     GOV.prevTs = ts; GOV.prevRendered = false;
     var mode = govMode(), cap = CAPS[mode] || 30;
@@ -346,6 +352,27 @@
   // Frame cost samples (ms) go into a ring; every 250 ms the p95 picks a band (1 slow > 20, -1 fast < 12, 0 between) and
   // R.nextRatio decides with how long the band has held. A new ratio waits until no song is live (applied on the next
   // check, a screen change or a scene change), then the 'perf:quality' event tells listeners.
+  // The delivered tick interval, so the GPU delay is measured against it: the 10th percentile of the last 60 rAF intervals
+  // (rises to ~33 ms when the browser delivers rAF at 30 Hz: iOS Low Power Mode, a throttled iframe; skipped ticks of a
+  // capped scene keep it at the true vsync on a slow GPU). Re-read every 15 ticks.
+  var ivSort = new Float32Array(60);
+  function trackVsync(iv) {
+    if (!(iv > 4) || iv > 100) return;
+    GOV.ivs[GOV.iIv] = iv; GOV.iIv = (GOV.iIv + 1) % GOV.ivs.length; if (GOV.nIv < GOV.ivs.length) GOV.nIv++;
+    if (iv < GOV.vsync) GOV.vsync = Math.max(6, iv);   // a faster tick lowers it at once
+    if (++GOV.ivTicks % 15 || GOV.nIv < 15) return;
+    var n = GOV.nIv; for (var i = 0; i < n; i++) ivSort[i] = GOV.ivs[i];
+    GOV.vsync = tickEstimate(ivSort.subarray(0, n));
+  }
+  function tickEstimate(a) {   // a: typed array of tick intervals (sorted in place)
+    if (!a.length) return 16.7;
+    a.sort();
+    return Math.max(6, Math.min(50, a[Math.floor(0.1 * a.length)]));
+  }
+  // Pure (tests): the tick estimate for a list of rAF intervals in ms.
+  R.tickEstimate = function (list) { return tickEstimate(Float32Array.from((list || []).filter(function (x) { return x > 4 && x <= 100; }))); };
+  // Forget the frame-cost window and the time held in a band (after a pause or a long gap between ticks).
+  function resetBand() { GOV.band = 0; GOV.bandSince = now(); GOV.nCost = 0; GOV.iCost = 0; }
   function sampleCost(ms, ts) {
     if (GOV.injectUntil && ts < GOV.injectUntil) return;   // tests feed frame times (R.feedFrames)
     pushCost(ms);
@@ -405,7 +432,7 @@
   R.perfState = function () {
     var p = R.prefs();
     return { mode: GOV.mode, cap: GOV.cap, ticks: GOV.ticks, rendered: GOV.rendered, pixelRatio: R.available && renderer ? renderer.getPixelRatio() : pixelRatio(),
-      autoRatio: autoPx, want: GOV.want, quality: p.quality, covered: GOV.covered, p95: Math.round(costP95() * 10) / 10, applied: GOV.applied, shaderChecks: GOV.shaderChecks };
+      autoRatio: autoPx, want: GOV.want, quality: p.quality, covered: GOV.covered, p95: Math.round(costP95() * 10) / 10, applied: GOV.applied, shaderChecks: GOV.shaderChecks, vsync: Math.round(GOV.vsync * 10) / 10 };
   };
 
   // ---- Resize / orientation ------------------------------------------------------

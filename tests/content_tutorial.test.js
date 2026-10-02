@@ -46,6 +46,23 @@ test('tokens: only C.TOKENS (incl. {instrument} / {drummer}); the player\'s kit 
   ok(C.TOKENS.includes('instrument') && C.TOKENS.includes('drummer'), 'stage 0 tokens present');
 });
 
+test('{instrument} reads right as a plural ("drums"): no "{instrument} lives", "That\'s your {instrument}" or "on it"', () => {
+  T.forEach(l => allSteps(l).forEach(([b, steps]) => steps.forEach((s, i) => {
+    if (!/\{instrument\}/.test(s.text)) return;
+    ok(!/\{instrument\} (lives|is|was|has|sits)\b|that'?s your \{instrument\}|\bon it\b/i.test(s.text), l.id + '/' + b + '#' + i + ': singular grammar around {instrument}: ' + s.text);
+  })));
+});
+
+test('w1_write teaches the guided writer the player sees by default: no step-grid squares, no seq-grid point', () => {
+  const w = T.find(l => l.id === 'w1_write');
+  allSteps(w).forEach(([b, steps]) => steps.forEach((s, i) => {
+    ok(!/\bsquares?\b/i.test(s.text), 'w1_write/' + b + '#' + i + ': talks about squares');
+    const ids = s.point && s.point.testid ? [].concat(s.point.testid) : [];
+    ok(!ids.includes('seq-grid'), 'w1_write/' + b + '#' + i + ': points at seq-grid (Advanced only)');
+  }));
+  ok(allSteps(w).every(([, steps]) => steps.some(s => s.point && [].concat(s.point.testid || []).includes('btn-guide-play'))), 'every layer points at the guided Play button');
+});
+
 test('E12: drum words appear only in steps gated seat: [\'drums\'] (titles too)', () => {
   const bad = [];
   let gated = 0;
