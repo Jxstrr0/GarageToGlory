@@ -7,8 +7,19 @@
 //   setCrowdLevel(0..100, snap) ; moment(kind in C.MOMENTS) ; hit(lane, judgement) ; bandAction(memberId|null, action)
 //   action: 'capeSpin' | 'solo' | 'fill' | 'miss' ; setFrame({ top, bottom }) ; info() -> counts for tests
 //   v0.7.2 kick2(): a double kick's second hit (the left foot on the double pedal, the kick shell pulses); info().kick2s
-//   v1.1 stage 0: setup({ ..., seat }) is stored (default state.seat || 'drums'; info().seat) and otherwise ignored (Lane C:
-//   the seat camera, your instrument, the swapped drummer on the riser).
+//   v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): setup({ ..., seat, lineup }) (defaults: state.seat || 'drums',
+//   GG.career.lineup(state)). Drums = the v0.3 behind-the-kit camera, unchanged. A string seat (your own band; a rival set
+//   keeps its drummer): you stand at your spot with your instrument (player.gearLook -> R.seatGear; the headstock sticker when
+//   gearLook.sticker is 'logo'): bass stage-left, rhythm stage-right, lead front-left beside the singer; the band takes the other
+//   spots by seatRole; the swapped drummer (the lineup's 'drums' / 'drums/vocals' seatRole) sits on the riser with sticks and
+//   plays along on the band's grid ('audio:step'; their own beat clock when no song runs), a boom mic over the kit when their
+//   seatRole is 'drums/vocals' (Rox, Chase, Travis Lee: info().mics lists them, info().boom). Camera ('spot'): low, over your
+//   shoulder, facing the crowd. hit('str' + li, judgement) strums your instrument (the fretting hand slides with the lane);
+//   'gig:judge' lanes 'str*' do the same; 'gig:hold' { ring } gets a neck-up flourish. bandAction(null, 'solo') on the lead seat
+//   is yours. view 'spectator' keeps its crowd camera (the band still arranged by seat). info() adds seat, view ('drummer' |
+//   'spot' | 'spectator'), camera ('kit' | 'spot' | 'spectator'), drummer (the id on the throne: 'player' on drums), you
+//   ({ seat, gear, sticker, x, z, strums, fret }), boom, autoHits. Draw calls <= the drum stage x 1.15 (your character + the
+//   sticker; the boom mic is merged into the room mesh); no per-frame allocation.
 // v0.6 (RIVALUI): setup({ ..., rival: true, members: GG.rival.lineup (corpsePaint / stageShirt / defector), drummer: { look,
 //   corpsePaint }, banner: 'TUNDRA WRAITH', sub, view: 'spectator' }) puts the rival's lineup on stage (corpse paint, black stage
 //   shirts, their drummer on your throne) and frames it from the crowd (a spectator camera facing the stage, a backdrop wall
@@ -54,6 +65,7 @@
   // The frontman answers the chorus moments: the mic out to the crowd (the sing-along / gang shout), the hat off (yeehaw).
   var CHORUS_GESTURE = { gangShout: 'crowdMic', singAlong: 'crowdMic', yeehaw: 'hatTip', headbang: null };
   var FORMATIONS = { mosh: 1, circlePit: 1, wallOfDeath: 1, lineDance: 1 };
+  var SEAT_OK = { drums: 1, bass: 1, rhythm: 1, lead: 1 };   // v1.1 (C.SEATS)
 
   // ---- Venue kinds (C.VENUE_KINDS). hs = stage height, sw = stage half-width, w = room half-width. ----
   var KIND = {
@@ -216,7 +228,8 @@
   });
   GG.on('crowd:level', function (p) { if (p && typeof p.crowd === 'number') A.setCrowdLevel(p.crowd); });
   GG.on('crowd:moment', function (p) { if (p && p.kind) A.moment(p.kind); });
-  GG.on('audio:step', function (p) { if (inst && inst.active && p && (p.step | 0) % 4 === 0) inst.beat(); });
+  GG.on('audio:step', function (p) { if (inst && inst.active && p) { if ((p.step | 0) % 4 === 0) inst.beat(); inst.step(p.step | 0); } });
+  GG.on('gig:hold', function (p) { if (inst && inst.active && p && p.ring) inst.ring(); });   // v1.1: a held note rang out
 
   // ======================================================================================================
   R.defineScene('stage', function (ctx) {
@@ -238,7 +251,8 @@
       level: pending.level, smooth: pending.level, hype: pending.level / 100, idx: 2,
       beatLen: 0.45, beatT: 0, beats: 0, lastBeatAt: 0,
       form: { kind: null, t: 0, dur: 0 }, arms: { kind: null, t: 0, dur: 0 }, cheer: 0, kickPulse: 0, time: 0,
-      moments: 0, hits: 0, kick2s: 0, bow: 0
+      moments: 0, hits: 0, kick2s: 0, bow: 0,
+      autoHits: 0, lastStep: -9, autoQ: -1   // v1.1: the swapped drummer's own playing
     };
     var BOW = 3.4;   // v0.7: clap (1.6 s), then a bow
 
@@ -261,12 +275,31 @@
         G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
-        seat: cfg.seat || st.seat || 'drums',   // v1.1 stage 0: stored only (info().seat)
+        seat: SEAT_OK[cfg.seat || st.seat] ? cfg.seat || st.seat : 'drums',   // v1.1: the player's seat (resolveSeat fills the rest)
+        lineup: Array.isArray(cfg.lineup) ? cfg.lineup : null,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         rivalId: cfg.rivalId || (cfg.rival ? (st.rival && st.rival.id) || (band && band.rival) || null : null),         // v0.9: the rival's cast
         banner: cfg.banner || '', bannerSub: cfg.sub || '',
         venue: venue && typeof venue === 'object' ? venue : null   // v0.8: the kit look (pyro only at arena shows)
       };
+    }
+    // v1.1: a string seat in your own band: who sits on the throne (the lineup's drums seatRole), who sings from there, the
+    // seatRole of everyone (the band's spots follow it). A rival set never changes (their drummer, their spots).
+    function resolveSeat(D) {
+      var st = lastState || GG.state || {};
+      D.seatMode = D.seat !== 'drums' && !D.rival;
+      D.roles = {}; D.kitId = null; D.kitSings = false;
+      if (!D.seatMode) return D;
+      var lu = D.lineup || (GG.career && GG.career.lineup && st.members ? safeLineup(st) : null) || [], i, e;
+      for (i = 0; i < lu.length; i++) { e = lu[i]; if (e && e.id) D.roles[e.id] = String(e.seatRole || ''); }
+      for (i = 0; i < D.members.length; i++) { e = D.members[i]; if (e && e.id && D.roles[e.id] == null) D.roles[e.id] = String(e.seatRole || e.role || ''); }
+      for (var id in D.roles) if (id !== 'player' && /^drums/.test(D.roles[id]) && isActive(D, id)) { D.kitId = id; D.kitSings = /vocal/.test(D.roles[id]); break; }
+      return D;
+    }
+    function safeLineup(st) { try { return GG.career.lineup(st); } catch (e) { return null; } }
+    function isActive(D, id) {
+      for (var i = 0; i < D.members.length; i++) { var m = D.members[i]; if (m && m.id === id) return !m.status || m.status === 'active'; }
+      return false;
     }
 
     function contentMember(band, id) {
@@ -296,10 +329,11 @@
 
     function build() {
       teardown();
-      var D = resolve(), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
+      var D = resolveSeat(resolve()), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
       if (V.ceil && V.ceil < hs + CAM.pos[1] + 0.55) V.ceil = hs + CAM.pos[1] + 0.55;   // keep the camera under the roof
       K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front, painted: 0,
-        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1, mics: [], rivalProps: [], layout: 0, session: false, crowdMic: 0 };
+        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1, mics: [], rivalProps: [], layout: 0, session: false, crowdMic: 0,
+        you: null, boom: false, sticker: null };   // v1.1: your record (a string seat), the swapped drummer's boom mic, the headstock sticker
       scene.add(K.root);
       scene.background.setHex(V.bg);
       S.beatLen = 60 / clamp(D.bpm, 60, 240);
@@ -309,6 +343,7 @@
       buildDeck(lit, glow, V, D);
       buildDressing(lit, glow, D);
       buildKitStatic(lit, hs, kitLook(D));
+      if (D.seatMode && D.kitSings) { boomMic(lit, hs); K.boom = true; }   // v1.1: a singing drummer (merged: no extra draw call)
       buildBackline(lit, glow, V, D);
       if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       ctx.freeze(mesh(lit.build(), ctx.mats.vc));   // (v1.0: the static room skips the per-frame matrix)
@@ -395,7 +430,8 @@
         if (!big) { B.box(hW, 0.3, 0.34, x, hs + hH + 0.15, z + 0.02, 0x1d1d20); B.box(hW - 0.1, 0.05, 0.02, x, hs + hH + 0.2, z + 0.19, 0xc9a64a); }
         G.box(0.03, 0.03, 0.02, x + hW / 2 - 0.08, hs + hH + (big ? -0.06 : 0.24), z + (big ? 0.205 : 0.195), 0xff3020);
       };
-      amp(-2.05 * k, 0.55, false); amp(2.05 * k, 0.45, false); amp(1.95 * k, 1.55, true);
+      var yourSide = D.seatMode ? (D.seat === 'rhythm' ? 1 : -1) : 0;   // v1.1: your amp steps back, out of the shoulder camera
+      amp(-2.05 * k, yourSide < 0 ? 2.05 : 0.55, false); amp(2.05 * k, yourSide > 0 ? 1.55 : 0.45, false); amp(1.95 * k, yourSide > 0 ? 2.2 : 1.55, true);
       // Monitor wedges along the front edge (we see their backs).
       for (i = -1; i <= 1; i++) {
         var mx = i * 1.05 * k, mz = front + 0.32;
@@ -806,6 +842,24 @@
         R.kit.pyroBase(b, px, hs, pz); R.kit.pyroBase(b, -px, hs, pz);
       }
     }
+    // v1.1: the boom mic for a singing drummer (Rox, Chase, Travis Lee): a stand on the drummer's right, beside the floor tom,
+    // the boom reaching in front of the face. World space; merged into the room mesh.
+    function rod(b, x0, y0, z0, x1, y1, z1, w, color) {
+      var dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      b.push((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, 0, Math.atan2(dx, dz), 0);
+      b.box(w, w, L, 0, 0, 0, color, Math.asin(clamp(-dy / L, -1, 1)), 0, 0);
+      b.pop();
+    }
+    var BOOM = { base: [0.66, 1.78], top: 1.48, mic: [0.06, 1.2, 1.34] };
+    function boomMic(b, hs) {
+      var bx = BOOM.base[0], bz = BOOM.base[1], ty = hs + BOOM.top, m = BOOM.mic, blk = 0x1a1a1a, i, a;
+      b.at(0, 0, 0, 0);
+      for (i = 0; i < 3; i++) { a = i * 2.1 + 0.3; rod(b, bx, hs + 0.02, bz, bx + 0.16 * Math.sin(a), hs + 0.01, bz + 0.16 * Math.cos(a), 0.02, blk); }
+      b.box(0.025, BOOM.top, 0.025, bx, hs + BOOM.top / 2, bz, blk);
+      rod(b, bx, ty, bz, m[0], hs + m[1] + 0.03, m[2] + 0.05, 0.02, blk);
+      b.cyl(0.028, 0.02, 0.11, 8, m[0], hs + m[1], m[2] + 0.02, 0x2a2a2a, -1.15, 0, 0);
+      b.shape(new THREE.IcosahedronGeometry(0.034, 0), m[0], hs + m[1] - 0.02, m[2] - 0.04, 1, 1, 1, 0x8a8e94);
+    }
     // Moving kit parts: kick shell (pulses), hi-hat top, crash, ride (wobble). World-placed meshes.
     function buildKitParts(hs) {
       var KL = kitLook(K.D), chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = KL.color, w = [0, 0, 0];
@@ -906,19 +960,65 @@
       return D.rivalId === 'tundra_wraith' || !D.rivalId;
     }
     function isMascot(m, cm) { return /mascot/i.test(String((m && m.role) || (cm && cm.role) || '')) || !!((m && m.mascot) || (cm && cm.mascot)); }
+    // v1.1: the spots on a string seat (your own band). You first (bass stage-left, rhythm stage-right, lead front-left beside the
+    // singer, who steps right), then the singer, then everyone else by seatRole into the first free spot on their list (free =
+    // clear of every taken spot). Spot keys: C centre, L / R the front corners, LC / RC beside the centre, LB / RB by the kit.
+    var YOU_SPOT = { bass: 'L', rhythm: 'R', lead: 'LC' };
+    function seatSpots(V, seat) {
+      var k = Math.min(1, V.sw / 2.8), f = V.front || DEFAULT_FRONT, P = Math.PI;
+      return {
+        C: { x: seat === 'lead' ? 0.32 * k : 0, z: f + 0.95, yaw: P }, L: { x: -1.55 * k, z: f + 1.3, yaw: P - 0.35 }, R: { x: 1.55 * k, z: f + 1.25, yaw: P + 0.35 },
+        LC: { x: -0.82 * k, z: f + 1.0, yaw: P - 0.12 }, RC: { x: 0.85 * k, z: f + 1.08, yaw: P + 0.2 },
+        LB: { x: -1.45 * k, z: KZ - 0.45, yaw: 0.95 }, RB: { x: 1.3 * k, z: KZ + 0.2, yaw: -1.0 }, k: k
+      };
+    }
+    function seatPrefs(role) {
+      if (/vocal/.test(role)) return ['C', 'RC', 'LC', 'R', 'L'];
+      if (/lead/.test(role)) return ['L', 'R', 'LC', 'RC', 'LB'];
+      if (/rhythm/.test(role)) return ['R', 'L', 'RC', 'LB', 'RB'];
+      if (/bass/.test(role)) return ['RB', 'LB', 'R', 'L'];
+      if (/fiddle|violin/.test(role)) return ['R', 'RC', 'L', 'LB'];
+      if (/guitar|acoustic|banjo/.test(role)) return ['L', 'R', 'LC', 'RC', 'LB', 'RB'];
+      return ['RC', 'LC', 'LB', 'RB', 'R', 'L'];
+    }
+    var NOT_BEHIND_YOU = { bass: 'LB', lead: 'LB', rhythm: 'RB' };   // (the camera stands there)
+    function seatOrder(D, active) {
+      var SP = seatSpots(D.V, D.seat), taken = [], used = {}, order = [], gap = 0.55, i, j, skip = NOT_BEHIND_YOU[D.seat];
+      var free = function (p) { for (var t = 0; t < taken.length; t++) { var dx = taken[t].x - p.x, dz = taken[t].z - p.z; if (dx * dx + dz * dz < gap * gap) return false; } return true; };
+      var you = SP[YOU_SPOT[D.seat]];
+      taken.push(you);
+      order.push({ m: { id: 'player' }, slot: D.seat, role: D.seat, pos: you, you: true });
+      var rest = active.slice().sort(function (a, b) { return (/vocal/.test(D.roles[a.id] || '') ? 0 : 1) - (/vocal/.test(D.roles[b.id] || '') ? 0 : 1); });
+      for (i = 0; i < rest.length && order.length < 6; i++) {
+        var m = rest[i], role = String(D.roles[m.id] || m.role || roleOf(D, m.id) || '').toLowerCase(), prefs = seatPrefs(role), pos = null;
+        for (j = 0; j < prefs.length && !pos; j++) if (prefs[j] !== skip && free(SP[prefs[j]])) pos = SP[prefs[j]];
+        if (!pos) continue;                                                          // (more than five out front: they watch from the side)
+        taken.push(pos);
+        var slot = /vocal/.test(role) && !used.vocals ? 'vocals' : /bass/.test(role) && !used.bass ? 'bass' : /lead/.test(role) && !used.lead ? 'lead'
+          : /rhythm|fiddle|violin/.test(role) && !used.rhythm ? 'rhythm' : /guitar|acoustic|banjo/.test(role) ? (!used.lead ? 'lead' : !used.rhythm ? 'rhythm' : 'extra') : 'extra';
+        used[slot] = true;
+        order.push({ m: m, slot: slot, role: role, pos: pos });
+      }
+      return order;
+    }
     function buildBand(D) {
       var list = D.members || [], used = {}, cv = D.flags && D.flags.cape, i, m;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var active = [];
-      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active') && !/drum/i.test(String(m.role || ''))) active.push(m); }
+      for (i = 0; i < list.length; i++) {
+        m = list[i];
+        if (!m || !m.id || (m.status && m.status !== 'active')) continue;
+        if (D.seatMode ? m.id === D.kitId || /^drums/.test(D.roles[m.id] || '') : /drum/i.test(String(m.role || ''))) continue;   // v1.1: the kit by seatRole
+        active.push(m);
+      }
       var sp = spots(D.V, active.length);
-      K.layout = active.length <= 3 ? 3 : Math.min(5, active.length);
+      K.layout = D.seatMode ? Math.min(6, active.length + 1) : active.length <= 3 ? 3 : Math.min(5, active.length);
       var capeId = null;
       for (i = 0; i < active.length && !D.rival; i++) { var cmc = contentMember(D.band, active[i].id); if (active[i].cape || (cmc && cmc.cape)) capeId = active[i].id; }
       for (i = 0; !capeId && !D.rival && i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';   // (older content)
-      // Assign slots: vocals, lead, rhythm, bass, extra.
-      var order = [];
-      for (i = 0; i < active.length; i++) {
+      // Assign slots: vocals, lead, rhythm, bass, extra (v1.1: a string seat places you first, by seatRole).
+      var order = D.seatMode ? seatOrder(D, active) : [];
+      for (i = 0; i < active.length && !D.seatMode; i++) {
         m = active[i];
         var role = String(m.role || roleOf(D, m.id) || '').toLowerCase(), slot = null;
         if (/vocal/.test(role) && !used.vocals) slot = 'vocals';
@@ -933,11 +1033,13 @@
       }
       var genre = D.genre;
       for (i = 0; i < order.length; i++) {
-        var o = order[i], cm = D.rival ? castMember(D, o.m.id) : contentMember(D.band, o.m.id), sp0 = sp[o.slot];
+        if (order[i].you) { buildYou(D, order[i], i); continue; }   // v1.1: you, with your instrument
+        var o = order[i], cm = D.rival ? castMember(D, o.m.id) : contentMember(D.band, o.m.id), sp0 = o.pos || sp[o.slot];
         var mascot = isMascot(o.m, cm);
         var gear = mascot ? null : R.gearOf ? R.gearOf(o.m, cm, genre) : (/vocal/.test(o.role) && !/guitar/.test(o.role) ? null : 'v');
-        if (o.slot === 'bass' && !mascot) gear = 'bass';
+        if (o.slot === 'bass' && !mascot && !D.seatMode) gear = 'bass';
         if (o.slot === 'vocals' && gear && !/guitar|acoustic|fiddle|banjo|bass/.test(o.role) && !(o.m.gear || (cm && cm.gear))) gear = null;   // a singer holds the mic
+        if (D.seatMode && gear === 'bass' && !/bass/.test(o.role)) gear = null;    // (v1.1: only a bass seatRole holds a bass)
         var ins = mascot ? 'mascot' : instOfGear(gear);
         var cape = o.m.id === capeId ? capeVariant : null;
         var lk = (GG.creator && !D.rival ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
@@ -964,6 +1066,31 @@
         if (o.slot === 'vocals' && !mascot) { micStand(sp0.x, sp0.z, sp0.yaw, ins === 'mic' ? 0.36 : 0.5); rec.mic = true; K.mics.push(o.m.id); }
         if (D.rival) rivalProps(D, rec, o.m, cm, i);
       }
+    }
+    // v1.1: you on a string seat: your stage look, your instrument (R.seatGear from player.gearLook; a null colour = the kit's),
+    // the headstock sticker (the band logo) when gearLook.sticker is 'logo'. A K.band record (the band's motion code runs it),
+    // marked you: your hits drive the strum and slide the fretting hand ('str' + li) instead of the beat.
+    function buildYou(D, o, i) {
+      var pl = D.player || {}, pre = findPreset(pl.presetId), sp0 = o.pos;
+      var look = (GG.creator ? GG.creator.stageLookFor(pl) : null) || pl.look || (pre && pre.look) || null;
+      var gl = pl.gearLook || {}, gear = R.seatGear ? R.seatGear(D.seat, gl, kitLook(D).color, D.genre) : (D.seat === 'bass' ? 'bass' : 'v');
+      var ch = R.buildCharacter(look, { id: 'player', gear: gear, band: D.band && D.band.name });
+      if (!ch) return;
+      K.chars.push(ch);
+      ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0);
+      ch.root.position.set(sp0.x, K.hs, sp0.z); ch.root.rotation.y = sp0.yaw;
+      K.root.add(ch.root);
+      var spec = R.seatGearSpec ? R.seatGearSpec(gear) : null, ins = D.seat === 'bass' ? 'bass' : spec && spec.shape === 'acoustic' ? 'acoustic' : 'guitar';
+      if (gl.sticker === 'logo' && R.gearSticker && R.logo && R.logo.texture) {
+        var st = lastState || GG.state || {}, tex = null;
+        try { tex = R.logo.texture(GG.logo ? GG.logo.get(st) : null, (D.band && D.band.name) || 'The Band', 128, { badge: 'round', mini: true }); } catch (e) { tex = null; }
+        var sm = tex ? R.gearSticker(ctx, ch, gear, tex) : null;
+        if (sm) { K.geos.push(sm.geometry); K.mats.push(sm.material); K.texs.push(tex); K.sticker = sm; } else if (tex) tex.dispose();
+      }
+      var rec = { id: 'player', slot: o.slot, inst: ins, gear: gear, ch: ch, cape: false, x: sp0.x, z: sp0.z, yaw: sp0.yaw, bx: sp0.x, bz: sp0.z, byaw: sp0.yaw,
+        mood: 70, energy: 1, ph: hash01(i, 31), act: null, actT: 0, actDur: 0, sig: null, mic: false, prop: null, hatBig: false,
+        you: true, strumT: 9, fret: 1, fretGoal: 1, ringT: 9, strums: 0 };
+      K.band.push(rec); K.you = rec;
     }
     // v0.9: a defector in a band without corpse paint takes the cast's look: the stylist's ripped jeans (Mall Rats), a
     // rhinestone jacket (Chartbusters), head-to-toe denim (Buckle & Boot).
@@ -1095,10 +1222,12 @@
         if (!D.drummer.look) D.drummer = Object.assign({}, D.drummer, { look: SESSION_LOOK });
         K.session = true;
       }
-      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
+      var sd = D.seatMode ? seatDrummer(D) : null;   // v1.1: a string seat: the swapped drummer (a session fill-in on an empty throne)
+      K.seatDrum = sd;
+      var pl = sd || D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = sd ? sd.look : (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
       if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer (Tundra Wraith: painted)
       K.drummerLook = dl;
-      var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
+      var ch = R.buildCharacter(dl, { id: sd ? sd.id : D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
       if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) corpsePaint(ch, 3);
@@ -1123,10 +1252,18 @@
       };
       for (lane in STRIKE) { st = STRIKE[lane]; if (!st) continue; solve(lane, st); if (st.alt) solve(lane + '2', st.alt); }
       K.drummer = { ch: ch, sticks: sticks, poses: poses, seat: seat / scale,
-        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, kick2T: 9, tomAlt: 0, flinch: 9 };
+        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, kick2T: 9, tomAlt: 0, flinch: 9, fillT: 9 };
+      if (sd && sd.sings) K.mics.push(sd.id);   // v1.1: the boom mic is theirs
       copyPose(K.drummer.L.cur, poses.snare.up); copyPose(K.drummer.R.cur, poses.hat.up);
     }
     function copyPose(out, p) { for (var i = 0; i < 6; i++) out[i] = p[i]; }
+    function seatDrummer(D) {
+      var m = null, i;
+      for (i = 0; i < D.members.length; i++) if (D.members[i] && D.members[i].id === D.kitId) m = D.members[i];
+      if (!m) return { id: 'fill_in_drums', look: SESSION_LOOK, sings: false, session: true };
+      var cm = contentMember(D.band, m.id);
+      return { id: m.id, look: (GG.creator ? GG.creator.stageLookFor(m, cm) : null) || m.look || (cm && cm.look) || null, sings: D.kitSings };
+    }
     // ---- Crowd (instanced) -----------------------------------------------------------------------------
     function buildCrowd(D) {
       var V = D.V, G = D.G, front = (V.front || DEFAULT_FRONT) - (D.kind === 'club' ? 1.25 : 0.5), back = V.back + 0.8, xw = V.w - 0.45, i;
@@ -1327,8 +1464,12 @@
     // ---- Camera framing ---------------------------------------------------------------------------------
     var CAM = { pos: [0.35, 3.25, 4.2], look: [-0.05, -0.05, -3.6], bandFov: 45, minHFov: 38 };
     var SPEC = { x: 0.85, y: 2.9, back: 5.2, clear: 1.6, look: [0.1, 1.2, -0.3], bandFov: 40, minHFov: 42 };   // v0.6: a riser in the crowd, facing the stage
+    // v1.1: a string seat's camera: from your spot (behind your outside shoulder, from the wing), facing the crowd diagonally
+    // across the stage so the band in between and the room stay in frame; you stand in the lower outside corner.
+    var SPOT = { side: 0.15, up: 2.95, back: 2.35, aim: 0.75, lookY: 0.15, lookZ: 2.2, bandFov: 48, minHFov: 46 };
+    function camView() { return !K ? 'kit' : K.D.view === 'spectator' ? 'spectator' : K.you ? 'spot' : 'kit'; }
     function frame() {
-      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, spec = K && K.D.view === 'spectator', CF = spec ? SPEC : CAM;
+      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, view = camView(), spec = view === 'spectator', CF = spec ? SPEC : view === 'spot' ? SPOT : CAM;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H / 3) : F.bottom;
       var bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
@@ -1342,6 +1483,10 @@
       if (spec) {
         cam.position.set(SPEC.x, Math.min(K.V.ceil ? K.V.ceil - 0.35 : 99, hs + SPEC.y), K.front - SPEC.back);
         cam.lookAt(SPEC.look[0], hs + SPEC.look[1], KZ + SPEC.look[2]);
+      } else if (view === 'spot') {
+        var y = K.you, out = y.bx < -0.05 ? -1 : y.bx > 0.05 ? 1 : -1, kk = Math.min(1, K.V.sw / 2.8);
+        cam.position.set(y.bx + out * SPOT.side, hs + SPOT.up, y.bz + SPOT.back);
+        cam.lookAt(-out * SPOT.aim * kk, hs + SPOT.lookY, K.front - SPOT.lookZ);
       } else {
         cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
         cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
@@ -1391,19 +1536,25 @@
     function frontman() {
       for (var i = 0; i < K.band.length; i++) if (K.band[i].cape) return K.band[i];
       for (i = 0; i < K.band.length; i++) if (K.band[i].slot === 'vocals') return K.band[i];
-      return K.band[0] || null;
+      for (i = 0; i < K.band.length; i++) if (!K.band[i].you) return K.band[i];   // (v1.1: never you)
+      return null;
     }
-    function bySlot(slot) { for (var i = 0; i < K.band.length; i++) if (K.band[i].slot === slot) return K.band[i]; return null; }
+    function bySlot(slot, notYou) { for (var i = 0; i < K.band.length; i++) if (K.band[i].slot === slot && !(notYou && K.band[i].you)) return K.band[i]; return null; }
     function bandAction(id, action) {
       if (!K || !K.band.length) return false;
       var r = null, i;
+      if (id && K.drummer && K.seatDrum && id === K.seatDrum.id) {   // v1.1: the swapped drummer's sneaky fills are drum fills now
+        if (action !== 'fill' && action !== 'solo') return false;
+        K.drummer.fillT = 0; return true;
+      }
       if (id) for (i = 0; i < K.band.length; i++) if (K.band[i].id === id) r = K.band[i];
       if (!r) {
         if (action === 'capeSpin') r = frontman();
         else if (action === 'stageDive' || action === 'kneeSlide' || action === 'hatTip' || action === 'kickflip') r = bySig(action);
         else if (action === 'solo') r = bySlot('lead') || bySlot('rhythm') || K.band[0];
-        else if (action === 'fill') r = bySlot('rhythm') || bySlot('lead') || K.band[0];
+        else if (action === 'fill') r = bySlot('rhythm', true) || bySlot('lead', true) || K.band[0];
         else r = K.band[Math.floor(hash01(S.moments++, 51) * K.band.length)];
+        if (r && r.you && action !== 'solo') r = K.band.length > 1 ? K.band[(K.band.indexOf(r) + 1) % K.band.length] : null;   // (v1.1: you never miss a cue)
       }
       if (!r || !DUR[action] || !BAND_ACTS[action]) return false;
       bandAct(r, action, DUR[action]);
@@ -1414,9 +1565,39 @@
     function bandAct(r, action, dur) { if (!r) return; r.act = action; r.actT = 0; r.actDur = dur; }
 
     function hit(lane, judgement) {
-      if (!K || !K.drummer) return;
+      if (!K) return;
+      if (typeof lane === 'string' && lane.indexOf('str') === 0) { strumHit(lane, judgement); return; }   // v1.1: your strings
+      if (!K.drummer) return;
       S.hits++;
+      kitHit(lane, judgement, true);
+    }
+    // v1.1: a string-seat hit: the strum hand comes down, the fretting hand slides to the lane (low lanes by the headstock).
+    function strumHit(lane, judgement) {
+      var y = K.you;
+      if (!y) return;
+      S.hits++;
+      if (judgement === 'miss') { if (!y.act) bandAct(y, 'miss', DUR.miss); return; }
+      var li = +lane.slice(3);
+      y.strumT = 0; y.strums++; y.fretGoal = isFinite(li) ? clamp(li, 0, 5) : y.fretGoal;
+    }
+    // v1.1: the swapped drummer plays along on the band's grid (16ths from 'audio:step'; their own beat clock when no song runs).
+    function autoDrum(n) {
+      var Dm = K.drummer;
+      if (!Dm) return;
+      var s16 = ((n % 16) + 16) % 16, metal = K.D.genre === 'metal';
+      if (Dm.fillT < 1.3) { kitHit((n & 1) ? 'toms' : 'snare', 'good', false); if (s16 % 4 === 0) kitHit('kick', 'good', false); return; }
+      if (s16 === 0 || s16 === 8 || (metal && (s16 === 10 || s16 === 2))) kitHit('kick', 'good', false);
+      if (s16 === 4 || s16 === 12) kitHit('snare', 'good', false);
+      if (s16 % 2 === 0) kitHit(n % 64 === 0 ? 'cymbal' : 'hat', 'good', false);
+    }
+    function stepTick(n) {
+      if (!K || !K.D.seatMode || !K.drummer) return;
+      S.lastStep = S.time;
+      autoDrum(n);
+    }
+    function kitHit(lane, judgement, flash) {
       var Dm = K.drummer, fi = LANES.indexOf(lane);
+      if (!flash) S.autoHits++;
       if (judgement === 'miss') { Dm.flinch = 0; return; }
       if (lane === 'kick') { Dm.kickT = 0; K.wob.kickT = 0; S.kickPulse = 1; }
       else {
@@ -1428,7 +1609,7 @@
         hand.key = key; hand.t = 0;
         if (lane === 'hat') K.wob.hatT = 0; else if (lane === 'cymbal') K.wob.crashT = 0; else if (lane === 'ride') K.wob.rideT = 0;
       }
-      if (fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
+      if (flash && fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
         K.flash.t[fi] = 0; col.setHex(HIT_COL[judgement] || HIT_COL.good);
         K.flash.mesh.setColorAt(fi, col); K.flash.mesh.instanceColor.needsUpdate = true;
       }
@@ -1470,6 +1651,10 @@
       if (S.cheer > 0) S.cheer -= dt;
       if (S.bow > 0) S.bow -= dt;
       S.kickPulse = Math.max(0, S.kickPulse - dt * 7);
+      if (K.D.seatMode && K.drummer && S.time - S.lastStep > 1.0) {   // v1.1: no song clock: the drummer keeps their own time
+        var q = Math.floor((S.beats + S.beatT) * 4);
+        if (q !== S.autoQ) { S.autoQ = q; autoDrum(q); }
+      }
       updateLights(dt, t);
       updateBand(dt, t);
       updateDrummer(dt, t);
@@ -1551,6 +1736,7 @@
           if (r.inst === 'acoustic') { rot(bn[B_ARM_L], -0.05, 0, 0.2); bn[B_FORE_R].rotation.z = 0.6; }   // (strummed high on the chest)
           if (r.slot === 'bass') { bn[B_HEAD].rotation.x = 0.05 + (hash01(Math.floor(t / 6), 81) < 0.35 && frac(t / 6) < 0.12 ? 0.3 * bump(frac(t / 6) / 0.12) : 0); bn[B_SPINE].rotation.x = 0.02; }
           if (r.mic) { bn[B_SPINE].rotation.x = 0.1; bn[B_HEAD].rotation.x = 0.02 + 0.1 * beat * h; }   // a singing guitarist leans into the stand
+          if (r.you) youPose(r, bn, dt, t);                                       // v1.1: your hits strum, the lane slides your hand
         }
         // Actions
         if (a === 'capeSpin') {
@@ -1628,6 +1814,17 @@
         r.ch.root.position.set(x, y, z); r.ch.root.rotation.set(tilt, yaw, 0, 'YXZ');
       }
     }
+    // v1.1: your strumming: a down-stroke on every hit ('str' + li), the fretting hand along the neck by lane (0 = by the
+    // headstock), a neck-up flourish when a held note rings out ('gig:hold' ring); a lazy idle strum between notes.
+    function youPose(r, bn, dt, t) {
+      r.strumT += dt; r.ringT += dt;
+      r.fret += (r.fretGoal - r.fret) * (1 - Math.exp(-14 * dt));
+      var u = r.strumT, st = u < 0.07 ? -0.3 + 0.6 * (u / 0.07) : u < 0.7 ? 0.3 * Math.exp(-(u - 0.07) * 7) : 0.04 * Math.sin(t * 3 + r.ph * 6);
+      var f = r.fret / 5, ring = r.ringT < 0.7 ? bump(r.ringT / 0.7) : 0;
+      rot(bn[B_ARM_L], 0.1 - 0.35 * ring, 0, 0.3 - 0.2 * f); rot(bn[B_FORE_L], -1.95 - 0.25 * f, 0, 0.1);
+      bn[B_FORE_R].rotation.x = -0.95 + st;
+      if (ring) { bn[B_SPINE].rotation.x -= 0.18 * ring; bn[B_HEAD].rotation.x -= 0.25 * ring; }
+    }
     function walkPose(bn, ph, amp) {                                                // a quick run cycle for the signatures
       var s = Math.sin(ph);
       bn[B_LEG_L].rotation.x = s * 0.6 * amp; bn[B_LEG_R].rotation.x = -s * 0.6 * amp;
@@ -1643,7 +1840,7 @@
       bn[B_HIPS].position.y = hy;
       bn[B_LEG_L].rotation.x = -a; bn[B_SHIN_L].rotation.x = a; bn[B_LEG_R].rotation.x = -a; bn[B_SHIN_R].rotation.x = a;
       bn[B_LEG_L].rotation.z = 0.25; bn[B_LEG_R].rotation.z = -0.25;
-      Dm.kickT += dt; Dm.flinch += dt; Dm.kick2T += dt;
+      Dm.kickT += dt; Dm.flinch += dt; Dm.kick2T += dt; Dm.fillT += dt;
       var kp = Dm.kickT < 0.14 ? bump(Dm.kickT / 0.14) : 0, k2 = Dm.kick2T < 0.14 ? bump(Dm.kick2T / 0.14) : 0;
       bn[B_LEG_R].rotation.x = -a - 0.12 * (1 - kp); bn[B_SHIN_R].rotation.x = a + 0.1 * kp;
       if (k2) { bn[B_LEG_L].rotation.x = -a - 0.12 * k2; bn[B_SHIN_L].rotation.x = a + 0.06 * k2; }   // v0.7.2 left foot
@@ -1959,6 +2156,7 @@
       active: false,
       build: function () { build(); },
       level: setLevel, moment: moment, hit: hit, kick2: kick2, bandAction: bandAction, beat: onBeat, frame: function () { if (K) frame(); },
+      step: stepTick, ring: function () { if (K && K.you) K.you.ringT = 0; },   // v1.1
       info: function () {
         if (!K) return { built: false };
         var C = K.crowd;
@@ -1967,9 +2165,11 @@
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
+          view: camView() === 'spot' ? 'spot' : K.D.view, camera: camView(), rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
+          you: K.you ? { seat: K.D.seat, gear: K.you.gear, inst: K.you.inst, sticker: !!K.sticker, x: +K.you.bx.toFixed(2), z: +K.you.bz.toFixed(2), strums: K.you.strums, fret: Math.round(K.you.fret), act: K.you.act } : null,
+          boom: !!K.boom, autoHits: S.autoHits, seatMode: !!K.D.seatMode,   // v1.1
           mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
-          props: K.rivalProps.slice(), session: K.session, drummer: K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
+          props: K.rivalProps.slice(), session: K.session, drummer: K.seatDrum ? K.seatDrum.id : K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
           xs: K.band.map(function (r) { return +r.bx.toFixed(2); }),
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
