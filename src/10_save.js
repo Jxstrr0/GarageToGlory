@@ -1,7 +1,9 @@
 // 10_save.js: save slots in localStorage (with an in-memory fallback), settings, and copy-paste save codes.
-//   keys: gg.v1.slot.<auto|1|2|3>, gg.v1.settings, gg.v1.hof (reserved), gg.v1.meta (reserved)
+//   keys: gg.v1.slot.<auto|1|2|3>, gg.v1.settings, gg.v1.hof (Hall of Fame, 12_meta), gg.v1.meta (12_meta)
 //   slot record: { savedAt, version, summary: { band, player, year, week, fans, fund }, state }
 //   save code:   'GG1:' + base64url(LZW(UTF-8(JSON))) + 6-char checksum of that body
+//   v1.0: a career code's JSON may carry `_meta` (GG.meta.exportLite(): the Hall of Fame lite + counters); a meta-only code
+//   is { v: 1, metaOnly: true, _meta: GG.meta.exportFull() } (metaCode). readCode() splits them; fromCode() = the state.
 // Every storage access is wrapped: when storage is missing or throws, saves live in memory for the session
 // and GG.save.storageOk is false (the UI can warn that progress won't survive a reload).
 (function (GG) {
@@ -14,10 +16,14 @@
   // mix / metronome / brushes default inside GG.audio. Only keys the player changed are stored.
   var DEFAULT_SETTINGS = { muted: false, gigDifficulty: 'easy', noteSpeed: 1, noFail: false, autoKick: false,
     audioProfile: 'speaker', calib: { speaker: { audio: 0, visual: 0, at: 0 }, headphones: { audio: 0, visual: 0, at: 0 } }, calibSeen: false,
-    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'high', skipVan: false, fastAnim: false };
+    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'auto', skipVan: false, fastAnim: false };
+  // v1.0 (§0 Q8): graphics defaults to 'auto' (adaptive pixel ratio; P.normalize maps it to 'high' until 'auto' is in P.GRAPHICS).
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
+  // Keys whose latest write did not reach storage (a full store): reads take this session's copy in memory, not the older
+  // stored one, until a write to that key persists again (or it is removed).
+  var stale = {};
   save.storageOk = false;
   // (Re)binds storage. Default: window.localStorage. Probes a write/read/remove; on failure uses memory only.
   save.init = function (storage) {
@@ -35,7 +41,11 @@
     return save.storageOk;
   };
   function fail() { save.storageOk = false; }
+  // v1.0: a full store (quota) is not "no storage": storageOk stays true and save.lastError = 'quota' (12_meta's retry path).
+  function isQuota(e) { return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014); }
+  save.lastError = null;
   function getRaw(key) {
+    if (stale[key] && memory[key] != null) return memory[key];
     if (backend) {
       try { var v = backend.getItem(key); return v != null ? v : (memory[key] != null ? memory[key] : null); }
       catch (e) { fail(); }
@@ -46,10 +56,11 @@
   function setRaw(key, value) {
     memory[key] = value;
     if (!backend) return false;
-    try { backend.setItem(key, value); return true; } catch (e) { fail(); return false; }
+    try { backend.setItem(key, value); save.lastError = null; delete stale[key]; return true; }
+    catch (e) { stale[key] = 1; if (isQuota(e)) save.lastError = 'quota'; else fail(); return false; }
   }
   function removeRaw(key) {
-    delete memory[key];
+    delete memory[key]; delete stale[key];
     if (backend) { try { backend.removeItem(key); } catch (e) { fail(); } }
   }
   function getJSON(key) {
@@ -75,15 +86,42 @@
     try {
       if (!validSlot(slot)) throw new Error('Unknown save slot ' + slot);
       var rec = { savedAt: Date.now(), version: GG.VERSION, summary: summary(state), state: state };
-      ok = setRaw(save.KEYS.slot(slot), JSON.stringify(rec));
+      ok = setRaw(save.KEYS.slot(slot), packSlot(rec));
       if (!ok) err = 'Storage unavailable: saved for this session only.';
     } catch (e) { ok = false; err = String(e && e.message || e); }
     if (ok) GG.emit('save:done', { slot: slot }); else GG.emit('save:failed', { slot: slot, error: err });
     return ok;
   };
   // The full record ({ savedAt, version, summary, state }) or null. The state inside is migrated.
+  // v1.0 (Lane Q, storage at 13 years): a slot whose JSON passes SLOT_PACK_AT chars is stored as
+  // 'LZ1:' + <header length> + ':' + JSON{ savedAt, version, summary } + the LZW body of JSON(state) (save.compress), about
+  // 2.4x smaller (a 312-week career: ~320k -> ~130k chars; four slots + the Hall of Fame stayed under 1.2M). The header
+  // keeps list() from decompressing. Smaller slots stay plain JSON; both forms read back.
+  var SLOT_PACK_AT = 150000;
+  save.SLOT_PACK_AT = SLOT_PACK_AT;
+  // The LZW is the slow part (~35 ms on a 13-year state), and an autosave writes the same state to 'auto' and to its slot:
+  // the last { json, body } pair is kept, so one autosave compresses once (save.packStats counts the compressions).
+  var packCache = { json: null, body: null };
+  save.packStats = { compress: 0 };
+  function packSlot(rec) {
+    var h = JSON.stringify({ savedAt: rec.savedAt, version: rec.version, summary: rec.summary });
+    var sj = JSON.stringify(rec.state);
+    if (h.length + sj.length + 10 < SLOT_PACK_AT) return h.slice(0, -1) + ',"state":' + sj + '}';   // = JSON.stringify(rec)
+    if (packCache.json !== sj) { packCache.body = save.compress(sj); packCache.json = sj; save.packStats.compress++; }
+    return 'LZ1:' + h.length + ':' + h + packCache.body;
+  }
+  function readSlot(slot, headOnly) {
+    var raw = getRaw(save.KEYS.slot(slot));
+    if (raw == null) return null;
+    try {
+      if (raw.slice(0, 4) !== 'LZ1:') return JSON.parse(raw);
+      var i = raw.indexOf(':', 4), n = +raw.slice(4, i), rec = JSON.parse(raw.substr(i + 1, n));
+      rec.state = headOnly ? true : JSON.parse(save.decompress(raw.slice(i + 1 + n)));
+      return rec;
+    } catch (e) { return null; }
+  }
   save.readRecord = function (slot) {
-    var rec = getJSON(save.KEYS.slot(slot));
+    var rec = readSlot(slot);
     if (!rec || !rec.state) return null;
     try { rec.state = save.migrate(rec.state); } catch (e) { return null; }
     return rec;
@@ -91,7 +129,7 @@
   save.read = function (slot) { var r = save.readRecord(slot); return r ? r.state : null; };
   save.list = function () {
     return C.SLOTS.map(function (slot) {
-      var rec = getJSON(save.KEYS.slot(slot));
+      var rec = readSlot(slot, true);
       var ok = !!(rec && rec.state);
       return { slot: slot, exists: ok, summary: ok ? rec.summary || summary(rec.state) : null, savedAt: ok ? rec.savedAt : null };
     });
@@ -181,6 +219,18 @@
       if (!x.rating) { var r = GG.songs.rate(x.pattern, s.genre, s.gear); x.rating = { groove: r.groove, hook: r.hook, difficulty: r.difficulty }; }
     });
     if (!isFinite(s.rng)) s.rng = s.seed;
+    // v1.0 "Glory" (SAVE_SCHEMA stays 10): fill when missing, never overwrite, no events. Old saves never start the lessons;
+    // a save past week 4 counts as past4 (the "Skip the lessons" offer).
+    if (!isFinite(s.bonusYears)) s.bonusYears = 0;
+    if (!s.legacyTrack || typeof s.legacyTrack !== 'object') s.legacyTrack = { bigHead: null };
+    def(s.legacyTrack, 'bigHead', null);
+    if (s.legacy === undefined || (s.legacy !== null && typeof s.legacy !== 'object')) s.legacy = null;
+    if (!s.ach || typeof s.ach !== 'object') s.ach = { got: {}, t: {} };
+    ['got', 't'].forEach(function (k) { if (!s.ach[k] || typeof s.ach[k] !== 'object') s.ach[k] = {}; });
+    if (!s.tutorial || typeof s.tutorial !== 'object') s.tutorial = { on: false, done: {}, past4: s.totalWeek >= 4 };
+    if (typeof s.tutorial.on !== 'boolean') s.tutorial.on = false;
+    if (!s.tutorial.done || typeof s.tutorial.done !== 'object') s.tutorial.done = {};
+    if (typeof s.tutorial.past4 !== 'boolean') s.tutorial.past4 = s.totalWeek >= 4;
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
 
@@ -298,12 +348,30 @@
   save.decompress = function (b64) { return utf8Decode(decompress(b64)); };
 
   // 'GG1:' + body + checksum. Safe to paste in chat apps and notes (base64url, no spaces).
+  function encode(obj) { var body = save.compress(JSON.stringify(obj)); return 'GG1:' + body + checksum(body); }
+  // v1.0: in the browser (GG.meta.enabled) the code also carries the Hall of Fame lite as `_meta`, on a shallow copy (the
+  // state object is never mutated); node codes are unchanged.
+  // v1.0 (Lane Q): a code stays <= CODE_MAX chars (chat apps and notes) when it can: a long career's code carries fewer
+  // Hall of Fame entries (the best 10 by score, then 5, then the counters only); the Hall of Fame "Backup code" has them all.
+  save.CODE_MAX = 135000;
   save.toCode = function (state) {
-    var body = save.compress(JSON.stringify(state));
-    return 'GG1:' + body + checksum(body);
+    if (!(GG.meta && GG.meta.enabled)) return encode(state);
+    var lite = GG.meta.exportLite(), code = encode(Object.assign({}, state, { _meta: lite }));
+    var best = lite.entries.slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+    [10, 5, 0].forEach(function (k) {
+      if (code.length <= save.CODE_MAX || lite.entries.length <= k) return;
+      code = encode(Object.assign({}, state, { _meta: Object.assign({}, lite, { entries: best.slice(0, k), trimmed: true }) }));
+    });
+    return code;
+  };
+  // v1.0: a meta-only code (the Hall of Fame "Backup code"): every entry with its year strip, trophies and unlocks.
+  save.metaCode = function () {
+    return encode({ v: 1, metaOnly: true, _meta: GG.meta && GG.meta.exportFull ? GG.meta.exportFull() : null });
   };
   // Tolerates spaces/line breaks/zero-width characters and text around the code. Throws Error(DAMAGED).
-  save.fromCode = function (text) {
+  // v1.0: -> { state: migrated state | null (a meta-only code), meta: the `_meta` object | null }. `_meta` is taken off
+  // before migrate; merging it is the caller's job (GG.meta.mergeLite, after the player confirms).
+  save.readCode = function (text) {
     var s = String(text == null ? '' : text).replace(/[\s​-‍⁠﻿]+/g, '');
     var at = s.indexOf('GG1:');
     if (at < 0) throw new Error(DAMAGED);
@@ -311,10 +379,23 @@
     if (s.length < 7) throw new Error(DAMAGED);
     var body = s.slice(0, -6);
     if (checksum(body) !== s.slice(-6)) throw new Error(DAMAGED);
-    var state;
-    try { state = save.migrate(JSON.parse(save.decompress(body))); } catch (e) { throw new Error(DAMAGED); }
+    var obj, meta = null, state = null;
+    try { obj = JSON.parse(save.decompress(body)); } catch (e) { throw new Error(DAMAGED); }
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error(DAMAGED);
+    if (obj._meta && typeof obj._meta === 'object') meta = obj._meta;
+    delete obj._meta;
+    if (obj.metaOnly) {
+      if (!meta) throw new Error(DAMAGED);
+      return { state: null, meta: meta };
+    }
+    try { state = save.migrate(obj); } catch (e) { throw new Error(DAMAGED); }
     if (typeof state.bandId !== 'string' || !state.members.length || !isFinite(state.fund)) throw new Error(DAMAGED);
-    return state;
+    return { state: state, meta: meta };
+  };
+  save.fromCode = function (text) {
+    var r = save.readCode(text);
+    if (!r.state) throw new Error(DAMAGED);
+    return r.state;
   };
 
   save.init();

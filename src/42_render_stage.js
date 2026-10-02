@@ -34,6 +34,10 @@
     B_LEG_L = 8, B_SHIN_L = 9, B_LEG_R = 10, B_SHIN_R = 11, B_CAPE1 = 12, B_CAPE2 = 13, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17;
   var HIPS_Y = 0.86;
   var MAX_CROWD = 150, MAX_CUPS = 12, MAX_BOOS = 6, N_FLASH = 6;
+  // v1.0 (Lane P, §4.9): crowd LOD. The NEAR people nearest the camera keep the full rig (body, head, hair, two arms); the
+  // rest are one merged 20-triangle instance each (a body box tinted by the shirt + a head box in skin, no bottoms) whose
+  // matrices are written at 30 Hz; they still follow every formation and the beat.
+  var NEAR = 50, LOD_SPLIT = 1.36;
   var NO_PREFS = { calm: false, shake: true, crowdScale: 1 };
   function rprefs() { return (GG.render && GG.render.prefs && GG.render.prefs()) || NO_PREFS; }   // v0.6.1 (40_render_core)
   var KZ = 1.0, THRONE_Z = 0.62;                  // kit centre z; the drummer sits THRONE_Z behind it
@@ -304,8 +308,8 @@
       buildKitStatic(lit, hs, kitLook(D));
       buildBackline(lit, glow, V, D);
       if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
-      mesh(lit.build(), ctx.mats.vc);
-      mesh(glow.build(), ctx.mats.unlit);
+      ctx.freeze(mesh(lit.build(), ctx.mats.vc));   // (v1.0: the static room skips the per-frame matrix)
+      ctx.freeze(mesh(glow.build(), ctx.mats.unlit));
       buildSign(D);
       buildLights(D);
       buildBeams(D);
@@ -568,18 +572,29 @@
       }
     }
     // v0.7: a sea of static heads from behind the live crowd to z1 (one merged mesh; neat rows when seated).
+    // v1.0 (Lane P): one box per person (5 faces, the shirt shading into the head's skin / hat at the top, 10 triangles), the
+    // raised hands only in the nearest third of the rows.
     function crowdSea(B, D, z0, z1, xw, gap, seated, y0, rise) {
-      var G2 = D.G, j = 0, x, z, row = 0;
+      var G2 = D.G, j = 0, x, z, row = 0, rows = Math.max(1, Math.ceil((z0 - z1) / gap));
       for (z = z0; z > z1; z -= gap, row++) for (x = -xw; x <= xw; x += gap) {
         j++;
         if (!seated && hash01(j, 51) < 0.1) continue;
         var px = x + (seated ? 0 : (hash01(j, 52) - 0.5) * 0.3), pz = z + (seated ? 0 : (hash01(j, 53) - 0.5) * 0.3), yb = (y0 || 0) + row * (rise || 0);
         var h = seated ? 0.95 : 1.45 + hash01(j, 54) * 0.3, shirt = pickOf(G2.shirts, j, 55);
         if (D.dress === 'frost') shirt = pickOf([0xc0392b, 0x2d5fa0, 0x3a3a40, 0xe0d8c8, 0x2a6a3a], j, 56);
-        B.box(0.42, h - 0.25, 0.26, px, yb + (h - 0.25) / 2, pz, shirt);
-        B.box(0.24, 0.26, 0.24, px, yb + h - 0.1, pz, D.dress === 'frost' && hash01(j, 57) < 0.7 ? pickOf([0xc0392b, 0xf0f0f0, 0x2d5fa0], j, 58) : pickOf(SKINS, j, 59));
-        if (!seated && !D.silent && hash01(j, 60) < 0.14) B.box(0.1, 0.55, 0.1, px + 0.2, yb + h + 0.1, pz, pickOf(SKINS, j, 61));
+        seaPerson(B, px, yb, pz, 0.38, h, 0.26, shirt, D.dress === 'frost' && hash01(j, 57) < 0.7 ? pickOf([0xc0392b, 0xf0f0f0, 0x2d5fa0], j, 58) : pickOf(SKINS, j, 59));
+        if (!seated && !D.silent && row * 3 < rows && hash01(j, 60) < 0.14) B.box(0.1, 0.55, 0.1, px + 0.2, yb + h + 0.1, pz, pickOf(SKINS, j, 61));
       }
+    }
+    var SEA_FACES = [[[-1, 1], [1, 1]], [[1, -1], [-1, -1]], [[1, 1], [1, -1]], [[-1, -1], [-1, 1]]];   // front, back, right, left (x, z corners)
+    function seaPerson(B, x, y0, z, w, h, d, shirt, top) {
+      var hw = w / 2, hd = d / 2, y1 = y0 + h, i, f, a, b;
+      for (i = 0; i < 4; i++) {
+        f = SEA_FACES[i]; a = f[0]; b = f[1];
+        var p0 = [x + a[0] * hw, y0, z + a[1] * hd], p1 = [x + b[0] * hw, y0, z + b[1] * hd], p2 = [x + b[0] * hw, y1, z + b[1] * hd], p3 = [x + a[0] * hw, y1, z + a[1] * hd];
+        B.triC(p0, p1, p2, shirt, shirt, top); B.triC(p0, p2, p3, shirt, top, top);
+      }
+      B.triC([x - hw, y1, z + hd], [x + hw, y1, z + hd], [x + hw, y1, z - hd], top, top, top); B.triC([x - hw, y1, z + hd], [x + hw, y1, z - hd], [x - hw, y1, z - hd], top, top, top);
     }
     function buildFestival(B, G, D) {
       var V = D.V, gd = D.dress, front = V.front || DEFAULT_FRONT, i, s, x, z;
@@ -1126,8 +1141,14 @@
       }
       slots.sort(function (a, b) { return a.d - b.d; });
       var n = Math.min(D.crowd, slots.length, MAX_CROWD);
+      if (D.view === 'spectator' && n > NEAR) {   // v1.0 LOD: from the riser, "near" means near the camera (behind it: last)
+        var rz = (V.front || DEFAULT_FRONT) - SPEC.back;
+        slots = slots.slice(0, n).map(function (q) { var ddx = q.x - SPEC.x, ddz = q.z - rz; q.c = (ddz < 0 ? 100 : 0) + Math.sqrt(ddx * ddx + ddz * ddz); return q; });
+        slots.sort(function (a, b) { return a.c - b.c; });
+      }
+      var near = Math.min(n, NEAR);
       var C = K.crowd = {
-        n: n, front: front, back: back, xw: xw,
+        n: n, near: near, lodTick: 0, front: front, back: back, xw: xw,
         hx: new Float32Array(MAX_CROWD), hz: new Float32Array(MAX_CROWD), px: new Float32Array(MAX_CROWD), pz: new Float32Array(MAX_CROWD),
         yaw: new Float32Array(MAX_CROWD), aLx: new Float32Array(MAX_CROWD), aLz: new Float32Array(MAX_CROWD), aRx: new Float32Array(MAX_CROWD), aRz: new Float32Array(MAX_CROWD),
         hp: new Float32Array(MAX_CROWD), ph: new Float32Array(MAX_CROWD), en: new Float32Array(MAX_CROWD), sc: new Float32Array(MAX_CROWD),
@@ -1147,7 +1168,7 @@
         C.ang[i] = Math.atan2(slots[i].z - C.pitZ, slots[i].x - C.pitX); C.spd[i] = (hash01(i, 6) < 0.5 ? -1 : 1) * (1.3 + hash01(i, 7) * 1.2);
         var gp = grid[i % grid.length]; C.ldx[i] = gp.x; C.ldz[i] = gp.z;
         C.aLx[i] = 0.05; C.aRx[i] = 0.05; C.aLz[i] = 0.1; C.aRz[i] = -0.1;
-        C.hairType[i] = hash01(i, 8) < G.hairA ? 0 : 1; C.hairIdx[i] = C.hairType[i] ? nB++ : nA++;
+        C.hairType[i] = hash01(i, 8) < G.hairA ? 0 : 1; C.hairIdx[i] = i >= near ? 0 : C.hairType[i] ? nB++ : nA++;
       }
       // Geometry: body (legs + torso), head (pivot at the neck), hair A/B, arm (pivot at the shoulder).
       var bb = new ctx.Builder({ jitter: 0.05, seed: 23 });
@@ -1163,29 +1184,62 @@
       ab.box(0.11, 0.5, 0.12, 0, -0.25, 0, 0xf0f0f0); ab.box(0.1, 0.1, 0.11, 0, -0.55, 0.01, 0xffffff);
       var mat = ownMat(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
       K.crowdMat = mat;
-      C.body = instanced(bb.build(), mat, MAX_CROWD, n);
-      C.head = instanced(hb.build(), mat, MAX_CROWD, n);
-      C.hairA = instanced(hairGeo(G.hair[0], D.view === 'spectator'), mat, MAX_CROWD, nA);
-      C.hairB = instanced(hairGeo(G.hair[1], D.view === 'spectator'), mat, MAX_CROWD, nB);
+      C.body = instanced(bb.build(), mat, NEAR, near);
+      C.head = instanced(hb.build(), mat, NEAR, near);
+      C.hairA = instanced(hairGeo(G.hair[0], D.view === 'spectator'), mat, NEAR, nA);
+      C.hairB = instanced(hairGeo(G.hair[1], D.view === 'spectator'), mat, NEAR, nB);
       var ag = ab.build();
-      C.armL = instanced(ag, mat, MAX_CROWD, n); C.armR = instanced(ag, mat, MAX_CROWD, n, true);
+      C.armL = instanced(ag, mat, NEAR, near); C.armR = instanced(ag, mat, NEAR, near, true);
+      C.lod = instanced(lodGeo(), lodMat(), MAX_CROWD - NEAR, Math.max(0, n - near));
       for (i = 0; i < MAX_CROWD; i++) {
         var party = D.kind === 'house' || D.kind === 'church' || D.kind === 'bingo';
         col.setHex(party && hash01(i, 12) < 0.4 ? pickOf([0xd8a04a, 0x5a8ad8, 0xe07a8a, 0x7ab86a, 0xefe8d8], i, 13) : pickOf(G.shirts, i, 9));
-        C.body.setColorAt(i, col);
+        if (i < NEAR) C.body.setColorAt(i, col); else C.lod.setColorAt(i - NEAR, col);
+        if (i >= NEAR) continue;
         col.setHex(pickOf(SKINS, i, 10)); C.head.setColorAt(i, col); C.armL.setColorAt(i, col); C.armR.setColorAt(i, col);
       }
-      for (i = 0; i < n; i++) {
+      for (i = 0; i < near; i++) {
         col.setHex(C.hairType[i] ? pickOf(G.hairColsB, i, 11) : pickOf(G.hairCols, i, 12));
         (C.hairType[i] ? C.hairB : C.hairA).setColorAt(C.hairIdx[i], col);
       }
       // Fill unused hair slots so instanceColor exists for the full buffer.
       col.setHex(0x222222);
-      for (i = nA; i < MAX_CROWD; i++) C.hairA.setColorAt(i, col);
-      for (i = nB; i < MAX_CROWD; i++) C.hairB.setColorAt(i, col);
+      for (i = nA; i < NEAR; i++) C.hairA.setColorAt(i, col);
+      for (i = nB; i < NEAR; i++) C.hairB.setColorAt(i, col);
       C.nA = nA; C.nB = nB;
       // The crowd surfer (only when the room is wild) is someone near the front middle.
       C.surfer = n > 12 ? Math.min(n - 1, 5) : -1;
+    }
+    // v1.0 LOD person: a body box (shirt-tinted, the legs darker) + a head box (skin, the hair darker on top), no bottom faces,
+    // vertex-coloured; lodMat tints only the body (below LOD_SPLIT) with the instance colour, so heads keep their skin tone.
+    function lodGeo() {
+      var p = [], c = [], skin = new THREE.Color(0xd8a67c), hair = new THREE.Color(0x3a2a20), legs = new THREE.Color(0x4a4e5a), white = new THREE.Color(0xffffff);
+      function box(w, y0, y1, d, bot, top, cap) {
+        var x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2;
+        var F = [[[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]],
+          [[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]], [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]],
+          [[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]]];
+        F.forEach(function (q, k) {
+          var cs = k === 4 ? [cap, cap, cap, cap] : [bot, bot, top, top];
+          [[0, 1, 2], [0, 2, 3]].forEach(function (t) { t.forEach(function (v) { p.push(q[v][0], q[v][1], q[v][2]); c.push(cs[v].r, cs[v].g, cs[v].b); }); });
+        });
+      }
+      box(0.42, 0, LOD_SPLIT - 0.02, 0.24, legs, white, white);
+      box(0.25, LOD_SPLIT, LOD_SPLIT + 0.28, 0.25, skin, skin, hair);
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
+      g.computeVertexNormals(); g.computeBoundingSphere();
+      return g;
+    }
+    var LOD_MAT = null;
+    function lodMat() {
+      if (LOD_MAT) return LOD_MAT;   // shared across builds (one program); never disposed with the scene
+      LOD_MAT = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+      LOD_MAT.onBeforeCompile = function (sh) {
+        sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n#ifdef USE_INSTANCING_COLOR\n\tvColor.xyz = color.xyz * mix(vec3(1.0), instanceColor.xyz, step(position.y, ' + LOD_SPLIT.toFixed(2) + '));\n#endif');
+      };
+      LOD_MAT.customProgramCacheKey = function () { return 'gg-crowd-lod'; };
+      return LOD_MAT;
     }
     function instanced(geo, mat, max, count, own) {
       var m = new THREE.InstancedMesh(geo, mat, max);
@@ -1657,7 +1711,7 @@
       var cheer = S.cheer > 0 ? ease(Math.min(1, S.cheer / 0.4)) : 0;
       var kPos = 1 - Math.exp(-3.2 * dt), kRun = 1 - Math.exp(-7 * dt), kArm = 1 - Math.exp(-12 * dt), kYaw = 1 - Math.exp(-5 * dt);
       var silent = K.D.silent, surfOn = lvl >= 4 && !F && C.surfer >= 0 && !silent;
-      var glowOn = false, i;
+      var glowOn = false, i, near = C.near, lodNow = (C.lodTick = (C.lodTick + 1) & 1) === 0 || dt > 0.03;   // LOD matrices at 30 Hz
       for (i = 0; i < n; i++) {
         var ph = C.ph[i], en = C.en[i], hx = C.hx[i], hz = C.hz[i];
         var bob = bump(frac(bt + ph * 0.18)), tx = hx, tz = hz, ty = 0, tyaw = 0, hp = 0, run = 0;
@@ -1773,15 +1827,21 @@
           var su = frac(t * 0.08 + 0.3);
           px = C.pitX + 0.8 * Math.sin(t * 0.5); pz = C.front - 0.4 - 3.6 * bump(su); py = 1.55 + 0.05 * Math.sin(t * 4); rx = -1.45; yw = 0.3 * Math.sin(t * 0.7);
         }
+        var lod = i >= near;
+        if (lod && !lodNow && !glow && !C.glow[i]) continue;   // a far person between LOD frames: nothing to write
         dummy.position.set(px, py, pz); dummy.rotation.set(rx, yw, 0); dummy.scale.set(s, s, s); dummy.updateMatrix();
-        C.body.setMatrixAt(i, dummy.matrix);
-        mB.makeRotationX(C.hp[i]); mB.setPosition(0, 1.4, 0); mA.multiplyMatrices(dummy.matrix, mB);
-        C.head.setMatrixAt(i, mA);
-        (C.hairType[i] ? C.hairB : C.hairA).setMatrixAt(C.hairIdx[i], mA);
-        eul.set(C.aLx[i], 0, C.aLz[i]); mB.makeRotationFromEuler(eul); mB.setPosition(0.26, 1.32, 0); mA.multiplyMatrices(dummy.matrix, mB);
-        C.armL.setMatrixAt(i, mA);
-        eul.set(C.aRx[i], 0, C.aRz[i]); mB.makeRotationFromEuler(eul); mB.setPosition(-0.26, 1.32, 0); mC.multiplyMatrices(dummy.matrix, mB);
-        C.armR.setMatrixAt(i, mC);
+        if (!lod) {
+          C.body.setMatrixAt(i, dummy.matrix);
+          mB.makeRotationX(C.hp[i]); mB.setPosition(0, 1.4, 0); mA.multiplyMatrices(dummy.matrix, mB);
+          C.head.setMatrixAt(i, mA);
+          (C.hairType[i] ? C.hairB : C.hairA).setMatrixAt(C.hairIdx[i], mA);
+          eul.set(C.aLx[i], 0, C.aLz[i]); mB.makeRotationFromEuler(eul); mB.setPosition(0.26, 1.32, 0); mA.multiplyMatrices(dummy.matrix, mB);
+          C.armL.setMatrixAt(i, mA);
+        } else if (lodNow) C.lod.setMatrixAt(i - NEAR, dummy.matrix);
+        if (!lod || glow) {   // (a far person's raised hand only carries the lighter / phone)
+          eul.set(C.aRx[i], 0, C.aRz[i]); mB.makeRotationFromEuler(eul); mB.setPosition(-0.26, 1.32, 0); mC.multiplyMatrices(dummy.matrix, mB);
+          if (!lod) C.armR.setMatrixAt(i, mC);
+        }
         // lighter flame / phone screen at the right hand
         if (glow && !(surfOn && i === C.surfer)) {
           vA.set(0, -0.64, 0.02).applyMatrix4(mC);
@@ -1790,7 +1850,8 @@
           mA.compose(vA, qCam, vScale);
           C.glows.setMatrixAt(i, mA);
           if (C.glow[i] !== glow) { col.setHex(glow === 1 ? 0xffa030 : 0x9fd0ff); C.glows.setColorAt(i, col); C.glow[i] = glow; glowOn = true; }
-        } else C.glows.setMatrixAt(i, zero);
+        } else { C.glows.setMatrixAt(i, zero); if (C.glow[i] && lod) C.glow[i] = 0; }
+        if (lod && !lodNow) continue;
         // shadow
         var ss = run ? 0.55 : 0.6;
         mA.makeScale(ss * s, 1, ss * s); mA.setPosition(px, 0.012, pz);
@@ -1799,6 +1860,7 @@
       if (glowOn) C.glows.instanceColor.needsUpdate = true;
       C.body.instanceMatrix.needsUpdate = true; C.head.instanceMatrix.needsUpdate = true; C.hairA.instanceMatrix.needsUpdate = true; C.hairB.instanceMatrix.needsUpdate = true;
       C.armL.instanceMatrix.needsUpdate = true; C.armR.instanceMatrix.needsUpdate = true; C.glows.instanceMatrix.needsUpdate = true;
+      if (lodNow) C.lod.instanceMatrix.needsUpdate = true;
       // Band + drummer shadows.
       for (i = 0; i < K.band.length; i++) { mA.makeScale(0.7, 1, 0.7); mA.setPosition(K.band[i].x, K.hs + 0.012, K.band[i].z); K.shadows.setMatrixAt(n + i, mA); }
       mA.makeScale(0.9, 1, 0.9); mA.setPosition(0, K.hs + 0.012, KZ + THRONE_Z - 0.2); K.shadows.setMatrixAt(n + K.band.length, mA);
@@ -1897,7 +1959,7 @@
       info: function () {
         if (!K) return { built: false };
         var C = K.crowd;
-        return { built: true, kind: K.D.kind, genre: K.D.genre, people: C.n, band: K.band.map(function (r) { return r.id + ':' + r.slot + ':' + r.inst; }),
+        return { built: true, kind: K.D.kind, genre: K.D.genre, people: C.n, lod: { near: C.near, far: C.n - C.near }, band: K.band.map(function (r) { return r.id + ':' + r.slot + ':' + r.inst; }),
           cape: K.band.some(function (r) { return r.cape; }), crowd: Math.round(S.smooth), level: LEVELS[S.idx], formation: S.form.kind, arms: S.arms.kind,
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,

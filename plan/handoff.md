@@ -516,3 +516,245 @@ No new features. The point is to make years 3–10 feel like "scrappy, but not t
 - Exact fee ranges and offer odds for licensing (D1) — propose numbers in the v0.8 contract and confirm with one popup.
 - The final emblem and palette lists for the logo picker (D2) — the lists above are a starting set; add, don't shrink.
 - Any achievements beyond the seed list (D4) — add freely if they're cheap and funny.
+
+---
+
+# Part E — Addendum 3: "Seats" (owner, 2026-10-01)
+
+Written Thursday, October 1, 2026, from a design session that read the repo at `main` 0.9.0.0 (merge of PR #18). Locked
+owner decisions unless marked open (E14). Same rules as always: cheap-game-build doctrine, Red Skies layout, questions as
+popups, content as data, no USA content, no share button.
+
+**TIMING — READ FIRST:** this is roadmap entry **v1.1.0 "Seats"**. It does not start until **v1.0 "Glory"** is merged.
+Tuning (Part D5) moves from v1.1 to **v1.2 "Tuning"** so the playtest pass covers all four seats. When you receive this
+file: append it to `plan/handoff.md` as Part E (the patch already does), record the decisions in `plan/status.md` (the patch
+already adds "Addendum 3 — decisions" and an "Addendum 3 — pending" checklist), and keep building v1.0 untouched.
+v1.0 work that would be thrown away by Seats (see E12 "v1.0 forward-compat") should be written seat-aware from the start.
+
+## E1. Pitch
+You're still the founder, but now you pick **your seat**: drums (as before), **bass**, **rhythm guitar** or **lead guitar**.
+Each seat changes how gigs play, what you write in the songwriter, which gear you buy, how the stage looks from your spot,
+and which storyline you live through. The band stays the hand-made band you know: whoever's seat you take slides over to
+the drum kit ("seat swap"), keeps their whole personality, and the jokes follow them to the drum throne.
+
+## E2. Locked owner decisions (popups 2026-10-01)
+| # | Question | Answer |
+|---|---|---|
+| S1 | Who drums when you don't? | **Seat swap.** The member whose seat you take moves to the kit. Every hand-made character stays. |
+| S2 | How do guitar/bass play on the highway? | **Taps + holds.** Same highway engine as drums, lanes by pitch; long notes are holds (ringing chords, bends, held lead notes). **Bass: max 5 lanes. Guitar: max 6 lanes.** |
+| S3 | What do you write in the songwriter? | **Your part + auto drums.** You pick chords/riffs per section from the genre's riff book and tap your rhythm on a grid; the band's (swapped) drummer suggests a beat you can tweak. |
+| S4 | Roadmap | **v1.1 "Seats"** after v1.0 Glory; Tuning moves to **v1.2**. |
+| S5 | Gravel Kings has no rhythm guitarist | **Chase drums + sings.** Picking rhythm in Gravel Kings adds your rhythm seat; Chase moves behind the kit and sings from there ("in 1985 drummers sang"). |
+| S6 | Rox / Travis Lee sing and play rhythm | **They sing from the kit.** Pure seat swap; they keep every vocal (voice profiles unchanged), a mic stand on the riser. |
+| S7 | Storyline size | **3 role arcs + band twists.** One multi-week chain per seat (bass, rhythm, lead), shared by all bands with `byBand` flavour lines, plus one band-specific finale card per band × seat (**12 finales**). |
+
+## E3. The seat-swap table (content, `bands.js` → `seats`)
+| band | you on bass | you on rhythm | you on lead |
+|---|---|---|---|
+| Hail Damage | Kenji → drums (silent drummer; still drives the Moose Hearse) | Jaxon → drums (sneaky fills become real drum fills) | Dana → drums (her drum solos run longer than the songs) |
+| Frost Heave | Moth → drums (lives in the van, now with a kit in it) | Rox → drums + vocals (screams about city council from the riser) | Benny → drums ("two beats, on principle") |
+| Gravel Kings | T-Bone → drums (flosses between songs, perfect time) | **new rhythm seat**; Chase → drums + vocals (leather pants on a throne) | Lenny → drums (every beat sounds like a famous one) |
+| The Grid Road Ramblers | Duke → drums (the hat stays on; modest drum skills) | Travis Lee → drums + vocals | Earl → drums (has drummed with everyone too) |
+- **Drums** = exactly today's game (no swap). Old saves load as `seat: 'drums'`.
+- Clementine always stays on fiddle. Marcel always just sings.
+- The swapped member keeps id, name, wants, mood, skill, quits/returns, epilogue and driver duties. Only their **stage role**
+  changes for this career (`member.seatRole`, see E10). Their content `role` stays the source of truth for everything else.
+- Band size never changes (Gravel Kings on rhythm: you + Chase on drums/vocals + Lenny + T-Bone = still four).
+- If the swapped drummer **quits**, the hole is the drum seat: fill-in/recruit drummers come from the recruit generator
+  (needs a drummer name/quirk flavour, E9). If they **return**, they go back to the drums.
+
+## E4. Seat basics (what changes per seat)
+| | Drums | Bass | Rhythm | Lead |
+|---|---|---|---|---|
+| Highway lanes (start → max) | 4 → 6 | 4 → **5** | 4 → **6** | 4 → **6** |
+| Lane meaning | kit pieces | strings, low → high | chord-root contour, low → high | melody contour, low → high |
+| Holds | none | ringing roots (≥ 1 beat) | ringing chords, the outro chord | held notes, bends, the last note of a solo |
+| Your spotlight | freestyle fills | "the groove" bars (break bars lock to the kick) | chug runs + the riff intro | the solo section (densest, freestyle shred bar) |
+| When someone else solos | you lay back (stripped kit) | you lay back (roots only) | you lay back (sustained chords) | — (it's you) |
+| Chops stat | `drumSkill` | same field | same field | same field |
+| Gear line in the shop | kit lanes, pedal, kit quality | 5-string (lane 5), "fast fingers" runs, amp tier | lane 5 + lane 6 neck/string upgrades, "fast picking" runs, amp tier | same as rhythm, + a whammy (bends score bonus) |
+| Studio | drum takes | bass takes | rhythm takes | lead takes + solo takes |
+
+- **Chops:** keep the save field `drumSkill` (effects, cards, balance and saves all use it); the UI already labels it "Your
+  chops". It widens the timing window exactly like today for every seat.
+- **Genre moments** (wall of death, circle pit, lighters, line dance) and member signatures (cape spin, stage dive, knee
+  slide, hat tip) are unchanged. New player signatures by seat: **bass** "the lean-back" (low-end rumble shot), **rhythm**
+  "the windmill", **lead** "the knee slide"… unless Chase is on the kit, then the knee slide is yours by inheritance.
+
+## E5. Gigs: the string highway
+Same `22_sim_gig` session, judgement, crowd meter, combos, two-thumb rule, difficulty thinning, drum-sync clock model
+(v0.8.3) and saves-between-songs. What's new:
+- **Charts come from the song's timeline** (`GG.audio.timeline` is pure; it already writes `bass`, `gtr`, `gtr2`, `clean`,
+  `lead`, `twang`, `fiddle` events with `midi` + `len`). A seat chart = the timeline events of that seat's kinds (E10
+  `SEAT_KINDS`), timed by beat exactly like drum notes. When the song has a written part (E6), those events come from it.
+- **Lane mapping (contour, Guitar-Hero style):** per section entry, collect the distinct pitches the seat plays, sort low →
+  high, spread them over the lanes you own (same pitch = same lane every time in that section; a chord change moves lanes).
+  Bass lane 5 (5-string) = the lowest notes; guitar lanes 5–6 = the highest. Deterministic (no rng).
+- **Holds:** a note with `len ≥ 1 beat` (Easy: ≥ 2 beats) is a hold. The head is judged like a tap (Perfect/Good/Miss).
+  While held: sustain points tick and the note keeps sounding; releasing early just gates the sound (no miss, no combo
+  break); held to the end = a small "ring" bonus. A hold never blocks its lane's next note (a new head in that lane ends it).
+- **Chords (rhythm):** on Hard/Expert a power chord can be a 2-lane chord (two-thumb rule: never more than 2 at once).
+  Easy/Normal: single lane.
+- **Runs (the double-kick idea for strings):** fast repeats of the same pitch (metal chugs, punk 8th downstrokes, tremolo
+  picking, ≤ `gig.RUN_GAP` apart) merge into **one hold note** ("run"): hold it and the run plays on the band's grid; release
+  and it stops. Needs the seat's "fast fingers/picking" gear, like the double kick needs the pedal; without it the run is
+  thinned to quarter notes. One note for accuracy/combo.
+- **Your sound:** your taps play your instrument (pluck / strum / lead voice) booked on the band clock with the same
+  `syncSnap` rule as drum hits; the backing **mutes your seat's part**, so a missed note is silence (the classic feel).
+  The drums are played by the band (from the song's drum pattern).
+- **Band effects by seat:** the soloist's solo eases you (bass/rhythm); when you are lead the solo section is yours (dense,
+  freestyle shred bar, crowd bonus); Jaxon/Dana/Lenny on drums keep their "sneaky fill" flavour as audible drum fills (no
+  extra notes for you). Unhappy members still miss cues. **No mid-gig chaos** (locked A6) still holds.
+
+## E6. Songwriting: "Your part + auto drums"
+The songwriter keeps its three sections + arrangement, tempo slider, Play, rating and naming. For a non-drum seat:
+1. **Drums first, automatically:** the swapped drummer suggests a groove from the genre's preset library
+   (`content/grooves.js` presets; a signature groove by default). A "Tell {drummer} what to play" button opens today's drum
+   grid unchanged, so drum writing is never lost. Members' coach lines react ("Kenji nods at the kick pattern").
+2. **Your part, per section:** pick a **progression** (rhythm, bass) from the genre's `backing.progressions[section]` list
+   or a **hook** (lead) from a new `backing.hooks` list, shown as plain words ("dark and slow", "the big chorus lift").
+3. **Tap your rhythm on a grid** (16 steps, top-to-bottom like everything else):
+   - Bass: 3 rows = root / fifth / octave.
+   - Rhythm: 2 rows = chug (palm mute) / open (ring); a hit on both = an accent chord.
+   - Lead: 5 rows = scale degrees of the hook (low → high); the hook's notes play on your hits.
+   - One-tap modifiers like the drum mods ("lock to the kick", "double time", "let it ring", "call and answer").
+4. **Rating:** Groove gets a seat signature per genre (metal rhythm: chugs locked to the kick; punk rhythm: steady 8ths;
+   rock lead: a hook that repeats in the chorus; country bass: root–fifth on 1 and 3, the boom-chick). Hook contrast reads
+   your part too. Difficulty counts your part's notes. Reviews' "recycled patterns" check also compares parts.
+5. Band reactions on save, per seat (Dana on drums wants a drum solo; Benny objects to your third chord).
+
+Data: `pattern.part = { seat, sections: { <name>: { prog | hook: index, rows: [rowStr x 2..5] } } }` (16-char rows, `'x'`/`'.'`
+like drum rows). `pattern.sections` (drums) stays as is. Drummer-seat songs have no `part`.
+
+## E7. Storylines: three role arcs + band twists (Monday cards, chains, flags)
+Each arc is a chain like the Cape Saga: ~6–8 cards over 2–4 years, gated by era, with hints, `byBand` lines in every card and
+one band-specific finale (12 total). Each arc ends in a flag that feeds the v1.0 ending/epilogue. Writers: tone is the same
+comedic Spinal Tap energy; no USA content.
+
+**Bass — "Nobody Hears the Bass"** (flag `bassArc`: 'legend' | 'secret' | 'quiet')
+1. Garage: the sound guy at your first real gig forgets to mic you; nobody notices, including the band.
+2. Local: a Bandbook poll — 0 % of fans can name the bassist (one says "the tall one?").
+3. Local: you start a secret Thursday funk night at a Legion hall under a fake name; it draws more people than your band.
+4. Signed: the label photographer crops you out of the album cover. Choice: fight it / embrace the mystery / start wearing
+   something unforgettable.
+5. Signed: Rolling Scone wants an "unsung heroes of the low end" feature — if you go, the secret funk night is outed.
+6. World: a foreign crowd chants the bass line back at you (the "big in one place" engine, bass flavour).
+7. **Finale per band:** Hail Damage — Kenji, from behind the kit, says his first word of the career to you: "Nice." /
+   Frost Heave — Moth grants you permanent permission to enter the van. / Gravel Kings — T-Bone schedules your first dental
+   cleaning "as a thank-you" and calls you the band's second functioning adult. / Ramblers — Duke takes off the hat and puts
+   it on you (the hat is the character; now you are).
+
+**Rhythm — "The Engine Room"** (flag `rhythmArc`: 'credited' | 'unsung' | 'engine')
+1. Garage: you write the riff; the lead/singer gets the compliment at the house party.
+2. Local: a gear-shop clerk calls rhythm guitar "the part anyone can play"; a strum-off at the music store.
+3. Local: the click track wars — a producer wants you on a metronome; the band wants you to *be* the metronome.
+4. Signed: the label suggests replacing your album parts with a session player ("the Click"). Choice: play it yourself in
+   the studio (a rhythm take), let it happen, or play it better on the demo and dare them.
+5. Signed: royalty split meeting — who wrote the riff of your biggest song? (`{player}` credit tag on that song.)
+6. World: a power trio night — the lead is stuck at a border crossing *before* the gig; you carry the set (a pre-gig card
+   that changes the setlist bonus, not a mid-gig event).
+7. **Finale per band:** Hail Damage — Jaxon's baba starts packing *you* a tour lunch too (the highest honour). / Frost Heave —
+   Rox's council campaign jingle is your riff, and it wins (or loses) the ward. / Gravel Kings — Chase admits your rhythm
+   part is "very 1985" (his highest praise). / Ramblers — Travis Lee says you strum "like a truck idling", and means it kindly.
+
+**Lead — "Solo Too Long"** (flag `leadArc`: 'guitarHero' | 'bandFirst' | 'soloAlbum')
+1. Garage: your first solo runs longer than the song; the crowd of twelve and a dog leaves for snacks.
+2. Local: the gear spiral — a pedal you can't afford (a fund-vs-chops choice; the parents' loan can show up).
+3. Local: a magazine ("Shred Quarterly") wants your rig rundown; you talk only in gear specs for a week.
+4. Signed: the rival tries to poach you for their next record (uses the existing rival-poach machinery, aimed at the player
+   as flavour only — you never quit, so it is a heat/buzz/money choice).
+5. Signed: the label wants a solo-free radio edit of the single.
+6. World: a festival guitar clinic; you can teach (fans, buzz) or shred (chops).
+7. **Finale per band:** Hail Damage — Dana, from the drums, finally says one sentence that isn't a gear spec. / Frost Heave —
+   Benny lets you play a third chord, once, in a closet. / Gravel Kings — Lenny's lawyers call *you* (your solo sounds like a
+   famous one); settle it in style. / Ramblers — Earl hands you his Tele: "I played it with everyone. Now you."
+
+**Seat flavour beyond the arcs:** each swapped drummer gets a small `bySeat` layer — 4–6 Monday cards and chat lines about
+being on drums (Kenji drums in sunglasses; Dana demands a drum riser with a wind machine; Rox's council speeches from the
+kit; Duke's hat vs the crash cymbal), a week-one card ("{drummer} has never played drums. They have a week."), and their
+drum-seat epilogue variant. Recruits: a drummer flavour pool (names stay genre-flavoured; quirks already fit).
+
+## E8. Content audit (drum words)
+~400 drum references live in content (`cards.js`, the three `zz_band_*` packs, `genres.js`, `bandbook.js`, `world.js`,
+`road_cards.js`, `reviews.js`, `creator.js`, …). A non-drum seat must never read "your kit", "your sticks", "drum skill" as
+if they were theirs. Stage 0 adds `tools/seat_audit.js` (lists every line with drum vocabulary) and each line is either:
+- **tokenised** with the new seat tokens (E10): `{instrument}` drums / bass / guitar, `{gear}` kit / bass rig / rig,
+  `{sticks}` sticks / picks, `{drummer}` (you, or the swapped member's name), `{yourPart}` the beat / the bass line /
+  the riff / the lead;
+- **gated** with `seat: ['drums']` (keeps drum-only jokes for drummer careers); or
+- **left** when it means the band's drums generally.
+A strict leak scan (like `sim_bands`) runs full careers for every band × seat and fails on drum vocabulary aimed at a
+non-drum player.
+
+## E9. New-career flow, render, audio, UI
+- **Pick your seat:** new screen after the genre card and before the logo: four seat cards (Drums / Bass / Rhythm / Lead),
+  each saying who moves to the drums ("Kenji takes the drum throne. He did not say yes. He did not say no.") and showing the
+  stage spot. Default = Drums. The seat is fixed for the career (no switching).
+- **Character creator:** the "kit look" tab becomes "your gear": drums = KIT_LOOK as today; bass/guitar = body shape
+  (per seat 3–4 shapes), colour (same palette), pickguard, headstock sticker (the band logo option). The swapped drummer
+  plays a default kit in the band's colours.
+- **Stage camera:** drums keeps the behind-the-kit camera. Strings: a low over-the-shoulder camera from your stage spot
+  (bass stage-left, rhythm stage-right, lead front-left beside the singer) facing the crowd, the swapped drummer on the riser
+  behind (the singing drummers get a boom mic). Same draw-call budget (≤ HD × 1.15).
+- **Garage:** the swapped drummer idles at the kit hotspot; the kit hotspot becomes "your rig" (your amp corner) and opens
+  the songwriter. Your character noodles on your instrument (the existing noodle audio by seat).
+- **Red carpet, recap photo, title:** your instrument in hand in photos (the v0.9 sticks occlusion fix only applies to
+  drums); the title stays Hail Damage's hailstorm garage.
+- **Audio:** new playable voices for taps (`GG.audio.pluck/strum/lead` booked on the band clock like `GG.audio.hit`),
+  holds gate the note on release, the timeline accepts `opts.mute` (your seat's kinds) and `opts.part` (your written part),
+  voice caps respected. Metal's lead seat is Dana's R-channel guitar + the solos; rock's rhythm seat is the `gtr2`/`clean`
+  layer; country's rhythm seat is Travis's acoustic strum; punk rhythm is Rox's guitar, punk lead is Benny's guitar + the
+  two-chord break.
+- **Shop:** the gear tab shows your seat's line (E4). Kit quality tiers map to amp/rig tiers; prices reuse the drum ones.
+- **Studio:** "Drum takes" becomes "{instrument} takes"; the swapped drummer's drum takes run off their member skill.
+
+## E10. Build handoff (tech notes for the lead and lanes)
+- **State:** `state.seat` ∈ `C.SEATS = ['drums','bass','rhythm','lead']` (save migration: missing → 'drums'); each member
+  gets `seatRole` (their stage role this career; equals `role` unless swapped). `GG.career.seatSwap(bandId, seat)` → member
+  id or null (Gravel Kings rhythm → 'chase'); `GG.career.lineup(state)` → `[{ id: 'player'|memberId, seatRole }]`.
+- **Gig roles:** `gig.roles(state)` reads `seatRole`; `solo` can be `'player'` (lead seat); `fill` skips the drummer.
+- **Charts:** `gig.chart(song, { seat, lanes, run, difficulty })` → drum seat unchanged; string seats build from
+  `GG.audio.timeline(pattern, { genre, part })` filtered by `SEAT_KINDS[genre][seat]`. Notes add `len`, `hold`, `chord`
+  (2-lane), `run`. 22 reads the timeline lazily (it is pure; 30 loads after 2x in build order but is defined before any
+  chart is built); extracting it into a sim module is back-burner.
+- **Lane counts:** `gear.seatLanes = { bass: 4..5, rhythm: 4..6, lead: 4..6 }`; `C.SEAT_MAX_LANES = { drums: 6, bass: 5,
+  rhythm: 6, lead: 6 }` (owner S2).
+- **Tokens:** `{instrument} {gear} {sticks} {drummer} {yourPart} {seat}` in `career.fillText`; card gates `seat: [..]` and
+  `swapped: '<memberId>'|true` (only when that member is the swapped drummer). `career.cardOk` checks both.
+- **Balance:** `SEAT=bass|rhythm|lead|all BAND=all node tools/balance.js 6 10` (and 30 seeds). Target: every seat within
+  ±10 % of the drum seat on fans@y3, fund@y3 and World reach for the same band (a seat is flavour, not a difficulty
+  choice). Live gig bots per seat × difficulty: perfect = 100 %, avg within 3 points of drums.
+- **Tests:** `tests/sim_seats.test.js` (swap table for 4 bands × 4 seats, migration, lineup, roles, chart = seat events after
+  runs/thinning, lane ≤ max, holds/chords/runs judged, perfect bot 100 % on every seat × difficulty, determinism),
+  `content_seats` (3 arcs + 12 finales valid, every swapped member has a bySeat layer + week-one card + epilogue variant),
+  the strict seat leak scan (E8), `sim_audio` (seat voices on the grid, muted seat, holds gate), `pw_seats.js` sections
+  `pick | write | gig | studio | shop | garage | stage` at 390×844 + `gig` at 440×956, no console errors. Every existing
+  drum-seat test must stay green unchanged (drums is the regression baseline).
+- **Size:** `dist/game.html` was 4.42 MB at v0.9; budget for Seats is an open popup (E14).
+
+## E11. Roadmap change
+- v1.0 "Glory" unchanged (build it first).
+- **v1.1.0 "Seats"** = this addendum, one feature batch (contract `plan/plan_contract_1.1.md`, draft included; lanes A
+  content, B sims + gig/songwriter/studio/shop UI, C render, D audio; lead owns the seat picker, shell, main, build).
+  **Done when:** a full year can be played on a phone in every band × seat, every seat's first gig is winnable on Easy by a
+  new player, the seat leak scan is clean, balance targets hold, and all existing tests stay green.
+- **v1.2 "Tuning"** = Part D5 unchanged, now covering all four seats (the owner plays one year in each seat).
+
+## E12. v1.0 forward-compat (so Glory isn't redone)
+- Hall of Fame entries store `seat`; legacy score is seat-neutral.
+- Achievements: add seat ones later in v1.1 (Low End: finish a career on bass; The Engine Room: on rhythm; Solo Too Long:
+  a lead solo longer than the rest of the song; Musical Chairs: finish careers in all four seats). v1.0 seeds that say
+  "drum" stay drum-gated.
+- Epilogues: the player's epilogue line is per seat; swapped members need a drum-seat variant (Kenji: "a new drum kit
+  arrives every Christmas").
+- The v1.0 in-character tutorial must read `{instrument}` / `{drummer}` tokens instead of hard-coding the kit.
+
+## E13. Not doing
+- No switching seats mid-career. No vocals seat. No keyboard/fiddle seat (Clementine stays). No firing (locked).
+- No mid-gig chaos events (locked A6). No share button (Part D).
+
+## E14. Still open (ask with popups when you get there)
+- Size budget for v1.1 (recommend 5.0 MB; the arcs + bySeat layers ≈ +0.3–0.4 MB).
+- Exact gear names/prices per genre for lanes 5–6 and the run gear (propose in the contract; one popup).
+- Body-shape lists for the guitar/bass creator (start with 3–4 per seat; add, don't shrink).
+- Whether the seat picker shows a 3-second audio preview of each seat's part (cheap if the timeline is reused; ask).

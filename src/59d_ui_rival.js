@@ -153,7 +153,7 @@
     if (p && p.kind !== 'poach') rows.push(el('div.rv-next', [el('span.ic', icon(p.kind)), el('div.grow', [el('b', 'This week: ' + title(p.kind)),
       el('div.tiny.dim', (p.venue || '') + (p.city ? ', ' + p.city : '') + (p.status === 'offered' ? ' · you haven\'t answered' : p.status === 'passed' ? ' · you passed' : p.status === 'done' ? ' · settled' : ''))])]));
     if (fin) rows.push(el('div.rv-next.final' + (fin.won ? '.won' : ''), [el('span.ic', '🏟️'), el('div.grow', [el('b', fin.won ? 'You headlined the Sad Dome. Forever.' : (fin.rival || R.name(st)) + ' headlined the Sad Dome. You opened.'),
-      el('div.tiny.dim', 'Year 10: you ' + fin.score + ' · them ' + fin.rivalScore)])]));
+      el('div.tiny.dim', 'Year ' + Math.ceil((fin.week || 237) / 24) + ': you ' + fin.score + ' · them ' + fin.rivalScore)])]));   // v1.0: the career's last year
     else if (nx.final && nx.final.reachable && nx.final.inWeeks >= 0) rows.push(el('div.rv-next', [el('span.ic', '🏟️'), el('div.grow', [el('b', nx.final.inWeeks === 0 ? 'The Sad Dome: this week' : 'The Sad Dome in ' + nx.final.inWeeks + ' week' + (nx.final.inWeeks === 1 ? '' : 's')),
       el('div.tiny.dim', 'Calgary, ' + wk(nx.final.week) + '. One co-bill decides who headlines and who opens. Forever.')])]));
     rows.push(el('div.tiny.dim', { style: 'margin-top:6px' }, 'Showdown odds this week: ~' + Math.round(nx.chance * 100) + '% (heat drives it)'));
@@ -577,12 +577,15 @@
       el('span.small', { style: { color: heatColor(x.heat) } }, 'Heat ' + Math.round(x.heat) + (x.heatDelta ? ' ' + (x.heatDelta > 0 ? '▲' : '▼') + Math.abs(Math.round(x.heatDelta)) : ''))])].concat(rows)));
     return out;
   };
-  ui.rivalEnd = function (st) {
+  // The end sequence's rival card (5n_ui_ending, testid end-final). v1.0: opts.line = the ending's rival line (GG.legacy.text).
+  ui.rivalEnd = function (st, opts) {
     var f = st && st.finalShowdown;
     if (!f) return null;
+    opts = opts || {};
     return el('div.panel.rv-next.final' + (f.won ? '.won' : ''), { testid: 'end-final' }, [el('span.ic', '🏟️'), el('div.grow', [
       el('b', f.won ? 'You headlined the Sad Dome. ' + (f.rival || 'They') + ' opened. Forever.' : (f.rival || 'They') + ' headlined the Sad Dome. You opened. Forever.'),
-      el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
+      el('div.tiny.dim', 'Year ' + Math.ceil((f.week || 237) / 24) + ': you ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : '')),
+      opts.line ? el('p', { style: 'margin:10px 0 0;font-size:15px;line-height:1.45' }, opts.line) : null])]);
   };
 
   // (snippet: this song's opening entry + how many of the singer's / band's sung hits land inside a real 5.2 s snippet, not

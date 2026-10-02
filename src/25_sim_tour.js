@@ -258,7 +258,7 @@
       var w = woy(start + i), v = pkg.stops[i].venue ? T.venue(pkg.stops[i].venue) : null;
       if (w === C.LOONIES_WEEK) return 'You fly home for the Loonies (week ' + C.LOONIES_WEEK + ').';
       if (v && v.weeks && (w < v.weeks[0] || w > v.weeks[1])) { var win = T.departWindow(pkg) || []; return v.name + ' only runs in ' + (GG.calendar ? GG.calendar.monthName(v.weeks[0]) : 'its season') + (win.length ? ': this tour leaves in week ' + win.join(' or ') + ' (' + (GG.calendar ? GG.calendar.monthName(win[0]) : '') + ').' : '.'); }
-      var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
+      var fin = GG.rival && GG.rival.finalAt ? GG.rival.finalAt(s) : null;   // v1.0: the career's last year (bonus years)
       if (fin && Math.floor((start + i - 1) / WPY) + 1 === fin.year && w === fin.week) return 'The Sad Dome is that week.';
     }
     return '';
@@ -899,7 +899,7 @@
     if (s.era !== 'world' || s.ended) return null;
     var t = T.ensure(s), B = cfg().bot;
     if (t.active) return null;
-    var fin = GG.rival && GG.rival.cfg ? GG.rival.cfg().final : null;
+    var fin = GG.rival && GG.rival.finalAt ? GG.rival.finalAt(s) : null;   // v1.0: the career's last year (bonus years)
     if (fin && s.year === fin.year && s.week >= fin.week - 8 && s.week <= fin.week) return null;   // bots stay home to prepare for the Sad Dome
     var pay = botPayoff(s, style, B);
     if (pay) { var tp = T.book(s, pay.id, pay.ch); if (tp && !tp.error) return tp; }

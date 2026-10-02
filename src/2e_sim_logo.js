@@ -2,7 +2,8 @@
 // State: state.logo = { emblem, style, palette } (three ids; 02_contracts v0.8.1). Content: GG.content.logo (content/logo.js).
 // API (GG.logo):
 //   Lists    content() ; emblems() / styles() / palettes() (content order; emblems = C.LOGO_EMBLEMS + additions) ;
-//            emblem(id) / style(id) / palette(id) -> def | null
+//            emblem(id) / style(id) / palette(id) -> def | null ; v1.0: pickEmblems() / pickPalettes() (the picker: meta items
+//            only once unlocked, flagged meta: true) ; isMeta(id)
 //   Logos    sanitize(logo, bandIdOrGenre?) -> a valid { emblem, style, palette } (bad ids fall back to the band's default) ;
 //            defaultFor(bandIdOrGenre) ; get(state) (sanitised, never writes) ; ensure(state) (fills state.logo) ;
 //            same(a, b) ; rival(id, genre?) (the fixed logo of a rival / scene band; unknown ids get a stable hashed one) ;
@@ -32,6 +33,17 @@
   };
   L.styles = function () { return K().styles.slice(); };
   L.palettes = function () { return K().palettes.slice(); };
+  // v1.0 (Q5 meta unlocks): an emblem / palette with a content `meta` key is earned by a finished career's ending (12_meta).
+  // The picker lists (pickEmblems / pickPalettes) hide the locked ones and mark the unlocked ones `meta: true` (the 🏆 chip);
+  // sanitize stays permissive (a logo keeps its look even when this device's meta storage is gone); rival logos never use them.
+  L.isMeta = function (id) { var d = byId(K().emblems, id) || byId(K().palettes, id); return !!(d && d.meta); };
+  function metaOpen(kind, d) { return !d.meta || !!(GG.meta && GG.meta.isUnlocked && GG.meta.isUnlocked(kind, d.id)); }
+  function pickList(list, kind) {
+    return list.filter(function (d) { return metaOpen(kind, d); }).map(function (d) { return d.meta ? Object.assign({}, d, { meta: true }) : d; });
+  }
+  L.pickEmblems = function () { return pickList(L.emblems(), 'emblems'); };
+  L.pickPalettes = function () { return pickList(L.palettes(), 'palettes'); };
+  function plain(list) { return list.filter(function (d) { return !d.meta; }); }
   L.emblem = function (id) { return byId(L.emblems(), id); };
   L.style = function (id) { return byId(K().styles, id); };
   L.palette = function (id) { return byId(K().palettes, id); };
@@ -75,7 +87,7 @@
     var r = K().rivals || {}, d = r[id], n = 0;
     while (d && d.same && n++ < 4) d = r[d.same];
     if (d && d.emblem) return { emblem: d.emblem, style: d.style, palette: d.palette };
-    var h = GG.hashSeed('logo|' + id), em = L.emblems(), pa = K().palettes;
+    var h = GG.hashSeed('logo|' + id), em = plain(L.emblems()), pa = plain(K().palettes);
     return { emblem: em.length ? em[h % em.length].id : 'skull', style: (CT.LOGO_STYLES || []).indexOf(genre) >= 0 ? genre : (CT.LOGO_STYLES || ['metal'])[(h >>> 8) % 4],
       palette: pa.length ? pa[(h >>> 12) % pa.length].id : 'frost' };
   };

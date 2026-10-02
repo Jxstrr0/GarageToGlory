@@ -440,10 +440,11 @@
       space: ui.space(st), spaceName: b.spaceName || ui.space(st), door: b.door || 'the door', province: ui.province(st),
       homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
       city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
-      band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you'
+      band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you',
+      instrument: 'drums', drummer: 'you'   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
     };
   };
-  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player)\}/g;
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer)\}/g;
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);
@@ -525,7 +526,8 @@
   };
 
   /* ---- Delta chips -------------------------------------------------------------------------------
-     deltas: { fund, fans, buzz, chemistry, burnout, drumSkill, mood: { id: n }, skill: { id: n } } (what actually changed) */
+     deltas: { fund, fans, buzz, chemistry, burnout, drumSkill, mood: { id: n }, skill: { id: n } } (what actually changed)
+     opts: { emptyText, testid } (v1.0: testid = a prefix; each stat chip gets <prefix><stat>, e.g. 'wrap-d-fans') */
   var STAT_CHIP = [
     ['fund', function (v) { return (v > 0 ? '+' : '') + U.fmtMoney(v); }, 1],
     ['fans', function (v) { return U.signed(v) + ' fans'; }, 1],
@@ -540,7 +542,7 @@
     if (d) {
       STAT_CHIP.forEach(function (c) {
         var v = Math.round(d[c[0]] || 0); if (!v) return;
-        chips.push(el('span.chip.' + (v * c[2] > 0 ? 'up' : 'down'), c[1](v)));
+        chips.push(el('span.chip.' + (v * c[2] > 0 ? 'up' : 'down'), opts.testid ? { testid: opts.testid + c[0] } : null, c[1](v)));   // v1.0: wrap-d-<stat> (lessons point at it)
       });
       ['mood', 'skill'].forEach(function (k) {
         var map = d[k]; if (!map || typeof map !== 'object') return;

@@ -84,7 +84,7 @@ async function bandbook() {
     // the laptop: seven tabs in two rows, each a full thumb target
     await openBandbook(page);
     const tabs = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="laptop-tab-"]')].map(e => { const r = e.getBoundingClientRect(); return { h: r.height, w: r.width, top: Math.round(r.top), right: r.right, vw: document.documentElement.clientWidth }; }));
-    c.ok(tabs.length === 9 && tabs.every(t => t.h >= 44 && t.w >= 60 && t.right <= t.vw + 0.5) && new Set(tabs.map(t => t.top)).size === 2, 'laptop: 9 tabs (v0.7: + World, v0.8.1: + Years), 2 rows, ≥44px ' + JSON.stringify(tabs.map(t => [Math.round(t.w), t.h])));
+    c.ok(tabs.length === 10 && tabs.every(t => t.h >= 48 && t.w >= 60 && t.right <= t.vw + 0.5) && new Set(tabs.map(t => t.top)).size === 2, 'laptop: 10 tabs (v0.7: + World, v0.8.1: + Years, v1.0: + Trophies), 2 rows (5 + 5), ≥48px ' + JSON.stringify(tabs.map(t => [Math.round(t.w), t.h])));
     // a good viral + a cringe post (the dice loaded through the economy tunables)
     await page.evaluate(() => {
       const E = GG.content.economy, keep = E.fans, s = GG.state;

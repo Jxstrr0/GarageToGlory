@@ -404,6 +404,8 @@
       case 'homeVenue': { var hv = career.homeVenue(state); return hv ? hv.name : 'the local bar'; }
       case 'superfan': { var sf = GG.fans && GG.fans.homeSuperfan && state.bandId ? GG.fans.homeSuperfan(state) : null; return (sf && sf.name) || 'your first superfan'; }
       case 'rivalFront': return (GG.rival && GG.rival.frontName && state.bandId ? GG.rival.frontName(state) : '') || 'their singer';
+      case 'instrument': return 'drums';   // v1.0 (E12): the player's seat is always the kit; v1.1 "Seats" reads state.seat
+      case 'drummer': return 'you';
     }
     return null;
   };
@@ -413,8 +415,8 @@
   // v0.6: {rival} = the rival band's current name (GG.rival.name; follows a rebrand).
   // v0.9: the C.TOKENS role/band tokens ({front} {soloist} {filler} {bassist} {namer} {grumbler} {deadpan} {driver} {van}
   // {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront}); {rival} falls back to 'the other band',
-  // {city} to the career's city.
-  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan)(?::([\w-]+))?\}/g;
+  // {city} to the career's city. v1.0: {instrument} 'drums', {drummer} 'you' (seat tokens; v1.1 fills them per seat).
+  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan|instrument|drummer)(?::([\w-]+))?\}/g;
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
@@ -814,7 +816,9 @@
       payCut: E.drama ? E.drama.payCut : 0.3, fillIns: {}, recruitAd: null, rivalDefectors: [],
       // v0.5 (24_sim_labels): eras, labels, the studio, records, awards, the trophy wall
       eraHistory: [{ era: 'garage', week: 1 }], label: null, labelOffers: [], labelNext: {}, pastDeals: [], session: null,
-      albums: [], awards: [], trophies: [], loonies: null, liveYear: { gigs: 0, score: 0 }
+      albums: [], awards: [], trophies: [], loonies: null, liveYear: { gigs: 0, score: 0 },
+      // v1.0 "Glory" (02_contracts V1.0 GLORY; the same defaults GG.save.migrate fills on old saves)
+      bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false }
     };
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
@@ -1082,6 +1086,7 @@
     if (GG.world) GG.world.afterGig(state, g, r, rng);
     if (GG.labels) GG.labels.afterGig(state, r);   // v0.5: the Best Live Act case for the Loonies
     if (GG.recap) GG.recap.gig(state, r);          // v0.8.1: the year's best / worst gig
+    if (GG.legacy) GG.legacy.gig(state, r, g); if (GG.achieve) GG.achieve.gig(state, r, g);   // v1.0: biggest venue headlined; gig achievements
     state.liveGig = null;
     GG.emit('gig:done', { result: r });
     changed(state);
@@ -1210,6 +1215,7 @@
     state.offer = null; state.card = null; state.quiet = null;
     if (state.totalWeek >= state.maxWeeks) {
       state.ended = true; state.phase = 'ended'; wrap.ended = true;
+      if (GG.legacy) wrap.legacy = GG.legacy.finish(state); if (GG.achieve) GG.achieve.finish(state);   // v1.0: before 'career:end'
       return;
     }
     state.totalWeek++;
@@ -1245,11 +1251,13 @@
     GG.songs.weekly(state);
     if (GG.licensing) GG.licensing.weekly(state, rng, wrap);   // v0.8.1: offers expire, ad songs stay stale, a new offer (wrap.licensing; own RNG)
     wrap.milestones = checkMilestones(state);
+    if (GG.legacy) GG.legacy.weekly(state, wrap);   // v1.0: bonus years land here, before advance() reads maxWeeks
     state.history.push(historyPoint(state));
     if (state.history.length > E.historyMax) state.history.splice(0, state.history.length - E.historyMax);
     wrap.deltas = statDeltas(ws, state);
     wrap.members = memberWrap(ws, state);
     if (state.week === C.WEEKS_PER_YEAR) yearEnd(state, rng, wrap);
+    if (GG.achieve) GG.achieve.weekly(state, wrap);   // v1.0: week / year achievements
     advance(state, wrap);
     state.wrap = wrap;
     GG.emit('week:wrap', { wrap: wrap });

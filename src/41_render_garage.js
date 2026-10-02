@@ -435,9 +435,9 @@
     buildBackWall(lit, glow, foot, gLit);
     buildRightWall(lit, glow, foot, gLit);
     buildFloorProps(lit, glow, foot, gLit, gFoot);
-    scene.add(new THREE.Mesh(lit.build(), ctx.mats.vc));
-    scene.add(new THREE.Mesh(glow.build(), ctx.mats.unlit));
-    var garageOnly = [new THREE.Mesh(gLit.build(), ctx.mats.vc), new THREE.Mesh(gGlow.build(), ctx.mats.unlit)];
+    scene.add(ctx.freeze(new THREE.Mesh(lit.build(), ctx.mats.vc)));   // (v1.0: static room meshes skip the per-frame matrix)
+    scene.add(ctx.freeze(new THREE.Mesh(glow.build(), ctx.mats.unlit)));
+    var garageOnly = [ctx.freeze(new THREE.Mesh(gLit.build(), ctx.mats.vc)), ctx.freeze(new THREE.Mesh(gGlow.build(), ctx.mats.unlit))];
     scene.add(garageOnly[0]); scene.add(garageOnly[1]);
     var shafts = buildShafts(); scene.add(shafts);
     var dust = buildDust(); scene.add(dust.points);
@@ -525,6 +525,12 @@
       exit: function () { ctx.ring.hide(); },
       sync: sync,
       update: update,
+      // v1.0 governor: 60 fps while someone moves (walking, turning to a hotspot, a tapped bandmate's hop / nod / look)
+      busy: function () {
+        if (player.walking || player.pending || player.speed > 0.01) return true;
+        for (var i = 0; i < peopleList.length; i++) { var r = peopleList[i]; if (r.hopT > 0 || r.nodT >= 0 || r.lookW > 0.01 || r.lookT > 0) return true; }
+        return false;
+      },
       onTap: onTap,
       goToHotspot: function (action) { return walkToHotspot(action); },
       anchor: anchor,
@@ -1648,14 +1654,24 @@
     // Riser (kit-local rectangle, metres): the studio's carpeted riser, the arena's black deck.
     var RISERS = [null, null, { h: 0.16, x: 0.95, z0: -1.12, z1: 0.62 }, { h: 0.2, x: 1.0, z0: -1.15, z1: 0.66 }];
     function buildSpace() {
-      function mk(mat, order) { var m = new THREE.Mesh(new THREE.BufferGeometry(), mat); m.visible = false; if (order) m.renderOrder = order; scene.add(m); return m; }
-      var AW = 2048, AH = 1024, atlas = document.createElement('canvas'); atlas.width = AW; atlas.height = AH;   // (v0.8 SPACES review: 2048 wide, the signs got bigger)
-      var ag = atlas.getContext('2d'), atex = new THREE.CanvasTexture(atlas); atex.anisotropy = 4;
+      function mk(mat, order) { var m = ctx.freeze(new THREE.Mesh(new THREE.BufferGeometry(), mat)); m.visible = false; if (order) m.renderOrder = order; scene.add(m); return m; }
+      // (v0.8 SPACES review: 2048 wide, the signs got bigger.) v1.0 (Lane P): the atlas is made on the first room that paints
+      // decals (a rented tier, or another band's tier-0 room), never for the parents' garage; 'low' graphics paint it at half
+      // size (1024 x 512, the same 2048 x 1024 layout drawn through a 0.5 scale, so every region and UV stays put).
+      var AW = 2048, AH = 1024, atlas = null, ag = null, atex = null;
+      function ensureAtlas() {
+        if (atlas) return;
+        var k = R.prefs && R.prefs().quality === 'low' ? 0.5 : 1;
+        atlas = document.createElement('canvas'); atlas.width = AW * k; atlas.height = AH * k;
+        ag = atlas.getContext('2d'); if (k !== 1) ag.scale(k, k);
+        atex = new THREE.CanvasTexture(atlas); atex.anisotropy = 4;
+        [decal, decalGlow, hall].forEach(function (m) { m.material.map = atex; m.material.needsUpdate = true; });
+      }
       var fixMat = new THREE.MeshBasicMaterial({ vertexColors: true });
       var washMat = new THREE.MeshBasicMaterial({ map: ctx.radialTexture('glow'), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
       var room = mk(ctx.mats.vc), roomGlow = mk(ctx.mats.unlit), fix = mk(fixMat), wash = mk(washMat, 3);
-      var decal = mk(new THREE.MeshLambertMaterial({ map: atex, alphaTest: 0.35 })), decalGlow = mk(new THREE.MeshBasicMaterial({ map: atex, alphaTest: 0.35 }));
-      var hall = mk(new THREE.MeshLambertMaterial({ map: atex, transparent: true, depthWrite: false }), -1);
+      var decal = mk(new THREE.MeshLambertMaterial({ map: null, alphaTest: 0.35 })), decalGlow = mk(new THREE.MeshBasicMaterial({ map: null, alphaTest: 0.35 }));
+      var hall = mk(new THREE.MeshLambertMaterial({ map: null, transparent: true, depthWrite: false }), -1);
       var ups = mk(ctx.mats.vc), upsGlow = mk(ctx.mats.unlit), pile = mk(ctx.mats.vc);
       // The disco ball: a faceted ball on a chain (own mesh so it can spin).
       var bb = new ctx.Builder({ jitter: 0.35, seed: 71 });
@@ -1679,7 +1695,7 @@
       /* ---- the atlas: a guillotine packer over the 2048 x 1024 canvas (the corridor floor keeps the bottom-left 512²) ------ */
       var free;
       function resetAtlas() {
-        ag.clearRect(0, 0, AW, AH);
+        if (ag) ag.clearRect(0, 0, AW, AH);
         free = [{ x: 0, y: 0, w: AW, h: 508 }, { x: 516, y: 512, w: AW - 516, h: 512 }];
       }
       // -> { x, y, w, h } (4 px transparent gutter all round). A best-fit guillotine packer (v0.8 SPACES review: the old shelf
@@ -2835,6 +2851,7 @@
         var b = new ctx.Builder({ jitter: 0.04, seed: 80 + tier }), g = new ctx.Builder({ jitter: 0, seed: 90 + tier }), fx = new ctx.Builder({ jitter: 0, seed: 95 + tier });
         var W = { p: [], n: [], uv: [], c: [] }, dl = new DecalSet(), dg = new DecalSet(), hl = new DecalSet();
         tierObs.length = 0; cur.hallProps = 0; cur.signText = ''; cur.exterior = null;
+        if (tier) ensureAtlas();
         resetAtlas();
         paintNames(band);
         if (tier) {
@@ -3210,6 +3227,7 @@
           pileBox: cur.pileBox && cur.pileBox.slice(), pileSign: cur.pileSign && cur.pileSign.slice(), disco: ball.visible, door: cur.door,
           garage: garageOnly[0].visible, yard: cur.ri === 0 || cur.ri === 6, banner: banner.mesh.visible, sign: cur.ri > 0 && cur.decals > 0, signText: cur.ri > 0 ? cur.signText : '',
           neighbours: (cur.neighbours || []).slice(), couchKind: cur.ri >= 4 ? couchKind : null,
+          atlas: atlas ? atlas.width + 'x' + atlas.height : null,   // v1.0 (Lane P): made on the first decal room only
           obstacles: self.obstacles.map(function (o) { return o.slice(); }) };
       };
       return self;

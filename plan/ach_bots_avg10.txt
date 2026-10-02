@@ -1,0 +1,8 @@
+hail_damage avg avg earned 10.0 min 8 km 18018,18400,18770,19251,22633,22937,23033,23549,23723,23977,25372,28402,31950,32037,40284
+   {"twelve_people":15,"minus_forty":15,"block_heater":10,"ma_pelouse":12,"moms_basement_tapes":14,"gas_station_sushi":15,"sold_out":15,"buddy":15,"prodigal_bandmate":12,"grey_mug":7,"worst_van":8,"between_periods":9,"whos_opening_now":1,"frostbite":1,"night_school":1}
+frost_heave avg avg earned 8.7 min 6 km 14716,14759,17947,20643,21898,22631,22987,24472,25145,25710,25934,26962,28029,28725,33395
+   {"twelve_people":15,"minus_forty":15,"moms_basement_tapes":10,"gas_station_sushi":15,"sold_out":15,"sponsored_content":15,"block_heater":10,"night_school":7,"prodigal_bandmate":12,"grey_mug":5,"between_periods":8,"read_the_minutes":1,"global_gonger":1,"worst_van":2}
+gravel_kings avg avg earned 9.8 min 8 km 15758,19430,20158,21109,21387,23382,24112,26409,28804,29916,30730,30842,30999,31027,36414
+   {"twelve_people":15,"minus_forty":14,"moms_basement_tapes":12,"sold_out":15,"between_periods":8,"prodigal_bandmate":14,"worst_van":12,"gas_station_sushi":15,"power_ballad_blues":15,"grey_mug":6,"legally_distinct":8,"global_gonger":4,"frostbite":2,"block_heater":5,"night_school":2}
+grid_road_ramblers avg avg earned 9.9 min 8 km 22467,22899,22915,22983,23229,25241,25900,26272,26898,28418,29257,30903,33375,34736,35064
+   {"twelve_people":15,"minus_forty":15,"moms_basement_tapes":15,"gas_station_sushi":15,"sold_out":15,"worst_van":15,"tailgated":15,"grey_mug":6,"between_periods":8,"prodigal_bandmate":15,"block_heater":10,"night_school":1,"truck_song":2,"hat_trick":1,"global_gonger":1}

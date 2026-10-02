@@ -9,7 +9,7 @@
 //           the crowd verdict → the wrap's rival panel. The showdown is stored and the fans/prize swing applied.
 //   final : a full bot career to year 10 week 21 → Sad Dome eve card (rival strip) → the Sad Dome announcement → the van to
 //           Calgary → their 4-song set (skipped) → your set (autoplay) → "You headline/open. Forever." → finalShowdown stored
-//           → the end screen shows the Sad Dome result.
+//           → the end screen shows the Sad Dome result (v1.0: the end sequence's rival card, GG.ui.endGo('final')).
 // Run: node build.js && META_ONLY=scene timeout 500 node tests/pw_rival.js
 const fs = require('fs'), path = require('path');
 const { open, checker } = require('./_pw');
@@ -43,6 +43,7 @@ function audit(page) {
 async function setup(page, seed, weeks, style) {
   await page.waitForFunction(() => window.GG && GG.main && GG.ui && GG.ui.scenePanel && GG.rival, null, { timeout: 15000 });
   await page.evaluate(([s, n, st]) => {
+    if (GG.legacy) GG.legacy.noBonus = true;   // v1.0: the 10-year shape (the Sad Dome in year 10, week 237)
     GG.ui.showdownViews = true; GG.ui.gigAutoplay = false;
     GG.main.quickStart({ seed: s, openCard: false }); GG.ui.closeAll();
     const S = GG.state; S.card = null; S.phase = 'plan';
@@ -106,7 +107,7 @@ async function scene() {
     c.ok(/Rivalry heat/.test(v.heat) && /Sad Dome/.test(v.next) && /odds/.test(v.next), 'heat meter, Sad Dome countdown, showdown odds');
     c.ok(v.you && v.rival && v.rows >= 10, 'leaderboard: you, the rival and the scene (' + v.rows + ' rows)');
     c.ok(v.newsN > 0 && v.news === Math.min(8, v.newsN) && v.lineup >= 4 && v.albums === v.albumsN && v.albumsN >= 1, 'news ' + v.news + ', lineup ' + v.lineup + ', records ' + v.albums);
-    c.ok(v.tabs === 9, 'nine laptop tabs (v0.6.1: + Bandbook, v0.7: + World, v0.8.1: + Years)');
+    c.ok(v.tabs === 10, 'ten laptop tabs (v0.6.1: + Bandbook, v0.7: + World, v0.8.1: + Years, v1.0: + Trophies)');
     const a1 = await audit(page); c.ok(!a1.length, 'scene tab layout: ' + a1.join(', '));
     await shot(page, 'scene');
     await page.evaluate(() => { const b = document.querySelector('[data-testid="scene-board"]'); b.scrollIntoView({ block: 'start' }); });
@@ -269,7 +270,8 @@ async function final() {
     await waitScreen(page, 'wrap');
     await page.evaluate(() => { GG.ui.gigAutoplay = true; GG.ui.showdownViews = false; const st = GG.state; GG.ui.closeAll(); while (st.phase !== 'ended') { if (st.phase === 'wrap') GG.career.endWeek(st); else GG.career.botWeek(st, 'good'); } GG.main.route(); });
     await waitScreen(page, 'end');
-    const end = await page.evaluate(() => (document.querySelector('[data-testid="end-final"]') || {}).textContent || '');
+    // v1.0: the end sequence shows one card at a time (Legacy, tier, specials, epilogues, then the rival card)
+    const end = await page.evaluate(() => { if (GG.ui.endGo) GG.ui.endGo('final'); return (document.querySelector('[data-testid="end-final"]') || {}).textContent || ''; });
     c.ok(/Sad Dome/.test(end) && /Forever/.test(end), 'end screen: ' + end.slice(0, 80));
     c.ok(!errors.length, 'no console errors: ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }

@@ -10,10 +10,12 @@
 // v0.8 (SHOPUI): the Money tab adds merch sold / stock bought and the rehearsal space's weekly rent.
 // v0.8.1 (LICRECAP): an "Offers" line above the tabs while a licensing offer is open (GG.ui.offersLine -> the offer sheet)
 // and a Years tab (past year-end recaps: GG.ui.recapPanel in 5l_ui_recap; nine tabs wrap 5 + 4).
+// v1.0: a 10th tab, Trophies (achievements across careers: GG.ui.trophiesPanel in 5o_ui_trophies; ten tabs wrap 5 + 5);
+// every tab switch emits 'ui:tab' { sheet: 'laptop', tab } (the tutorial's money / chat lessons listen to it).
 // Read-only views of GG.state; later versions add socials as more tabs.
 (function (GG) {
   var ui = GG.ui, el = ui.el, U = GG.util;
-  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }, { id: 'years', label: 'Years' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
+  var TABS = [{ id: 'chat', label: 'Chat' }, { id: 'bandbook', label: 'Bandbook' }, { id: 'band', label: 'Band' }, { id: 'money', label: 'Money' }, { id: 'label', label: 'Label' }, { id: 'albums', label: 'Albums' }, { id: 'scene', label: 'Scene' }, { id: 'world', label: 'World' }, { id: 'years', label: 'Years' }, { id: 'trophies', label: 'Trophies' }];   // v0.7: World (GG.ui.worldPanel in 5i_ui_tour)
   var lastTab = 'chat';
   function fill(t) { return GG.state ? ui.fill(t, GG.state) : t; }
   // v0.9: empty states per band (content lines.byBand[bandId].empty { chat, catalog }), else neutral + tokens.
@@ -109,9 +111,10 @@
         : tab === 'world' ? (ui.worldPanel ? ui.worldPanel(st) : el('p.dim', 'No passport yet.'))   // v0.7
         : tab === 'bandbook' ? (ui.bandbookPanel ? ui.bandbookPanel(st, function () { s.rerender({ tab: 'bandbook' }); }) : el('p.dim', 'Bandbook is down.'))   // v0.6.1
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
+        : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
       ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
-        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); }, 'laptop-tab-')),
+        ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }

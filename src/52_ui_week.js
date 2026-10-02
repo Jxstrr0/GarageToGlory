@@ -3,6 +3,8 @@
 // versions, and the 2D fallback garage when three.js/WebGL isn't available.
 // v0.8 (SHOPUI): the merch hotspot opens the merch table (GG.ui.openMerch); the gig result shows r.merch (GG.ui.merchResult,
 // its "Merch table:" line is folded in); the wrap shows wrap.shop (GG.ui.shopWrap) and plays the collector moment once.
+// v1.0 (Lane T): HUD "?" (btn-help → GG.tutorial.openLessons); wrap testids for the lessons: wrap-deltas, wrap-d-<stat>
+// (fund/fans/buzz/chemistry/...), wrap-upkeep, wrap-buzz-fade, wrap-owed, wrap-moods, wrap-mood-<memberId>.
 // Flow commands (start/run/end the week, save) go through GG.main; this file only reads GG.state and calls
 // GG.career for the per-screen actions (resolve a card, edit the plan, accept an offer).
 (function (GG) {
@@ -17,7 +19,7 @@
   var ACT_FALLBACK = {
     rehearse: { icon: '🥁', name: 'Rehearse', blurb: 'Tighter band, sorer wrists.' },
     write: { icon: '✍️', name: 'Write', blurb: 'A new song. Nobody knows what it is about yet.' },
-    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facebook." },
+    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facepage." },
     book: { icon: '📅', name: 'Book', blurb: 'Find somewhere that will have you.' },
     hustle: { icon: '💵', name: 'Hustle', blurb: 'Weddings, busking, bingo. Cash.' },
     rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' },
@@ -43,7 +45,7 @@
      HUD top bar + dock
      ====================================================================================================== */
   var STAT_HELP = {
-    week: 'The calendar. 24 weeks a year, ten years to glory. Every week: a Monday card, three blocks, maybe a gig.',
+    week: "The calendar. 24 weeks a year, ten years to glory (more if you're quick). Every week: a Monday card, three blocks, maybe a gig.",
     fund: 'Band fund: the one shared wallet. Gigs and Hustle fill it; upkeep, gas and gear drain it. Hit zero and your parents "help".',
     fans: 'Fans: people who would admit to liking you. Gigs and buzz grow them, and they never leave. Your mom counts.',
     buzz: 'Buzz: how hard people are talking about you right now. Promote and play gigs to pump it; it fades every week.',
@@ -71,6 +73,7 @@
     };
     hud.cal = el('div.hud-cal', { testid: 'hud-cal', 'aria-live': 'polite' });   // v0.6.1: month · season · weather · holiday
     hud.bar = el('div.hud-bar', [hud.week, hud.fund, hud.fans, hud.buzz, hud.chem,
+      GG.tutorial ? btn('.hud-menu.hud-help', { testid: 'btn-help', 'aria-label': 'Lessons', onclick: function () { GG.tutorial.openLessons(); } }, '?') : null,   // v1.0 (Lane T)
       btn('.hud-menu', { testid: 'btn-menu', 'aria-label': 'Menu', onclick: function () { ui.show('menu'); } }, '☰'), hud.cal]);
     if (!document.getElementById('gg-hud-cal-css')) {
       var css = document.createElement('style'); css.id = 'gg-hud-cal-css';
@@ -481,11 +484,11 @@
       if (!w) { s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-next-week', onclick: GG.main.nextWeek }, 'Next week')); return; }
       s.setTitle('Week ' + w.week + ' wrap', 'YEAR ' + w.year);
       var parts = [];
-      parts.push(el('div', [el('div.caps', { style: 'margin-bottom:6px' }, 'This week'), ui.deltaChips(w.deltas, { emptyText: 'A perfectly flat week.' })]));
+      parts.push(el('div', { testid: 'wrap-deltas' }, [el('div.caps', { style: 'margin-bottom:6px' }, 'This week'), ui.deltaChips(w.deltas, { emptyText: 'A perfectly flat week.', testid: 'wrap-d-' })]));   // v1.0: stat testids (lessons)
       var ll = el('div.line-list.panel');
-      if (w.upkeep) ll.appendChild(el('div', [el('span', 'Upkeep (strings, gas, pizza)'), el('span.bad', '−' + U.fmtMoney(w.upkeep))]));
-      if (w.buzzDecay) ll.appendChild(el('div', [el('span', 'Buzz fades'), el('span.bad', '−' + Math.abs(w.buzzDecay))]));
-      if (st && st.debtToParents) ll.appendChild(el('div', [el('span', 'Owed to your parents'), el('span', U.fmtMoney(st.debtToParents))]));
+      if (w.upkeep) ll.appendChild(el('div', { testid: 'wrap-upkeep' }, [el('span', 'Upkeep (strings, gas, pizza)'), el('span.bad', '−' + U.fmtMoney(w.upkeep))]));
+      if (w.buzzDecay) ll.appendChild(el('div', { testid: 'wrap-buzz-fade' }, [el('span', 'Buzz fades'), el('span.bad', '−' + Math.abs(w.buzzDecay))]));
+      if (st && st.debtToParents) ll.appendChild(el('div', { testid: 'wrap-owed' }, [el('span', 'Owed to your parents'), el('span', U.fmtMoney(st.debtToParents))]));
       if (ll.children.length) parts.push(ll);
       if (w.parentsLoan) {
         parts.push(el('div.panel.alert', { testid: 'wrap-loan' }, [el('div.row', [el('span', { style: 'font-size:24px' }, '🏠'), el('div.grow', [
@@ -501,17 +504,17 @@
       if (ui.shopWrap) parts.push.apply(parts, ui.shopWrap(w));     // v0.8: rent, Outro/Solo + merch unlocks, eviction, the collector's item
       if (ui.licenseWrap) parts.push.apply(parts, ui.licenseWrap(w));   // v0.8.1: a licensing offer came in, offers that expired
       if (w.members && w.members.length) {
-        var moods = el('div.panel', [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
+        var moods = el('div.panel', { testid: 'wrap-moods' }, [el('div.caps', { style: 'margin-bottom:2px' }, 'The band')]);
         w.members.forEach(function (m) {
           var who = ui.who(m.id), label = m.label || ui.moodLabel(m.mood);
-          moods.appendChild(el('div.mood-row', [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
+          moods.appendChild(el('div.mood-row', { testid: 'wrap-mood-' + m.id }, [el('span.nm', { style: { color: who.text } }, who.short), ui.bar(m.mood, 100, { color: ui.moodColor(m.mood) }),
             el('span.lb', { style: { color: ui.moodColor(m.mood) } }, (m.stage >= 1 && ui.stageBadge ? '' : ui.moodEmoji(label) + ' ') + (m.stage >= 1 && ui.stageBadge ? ['😐', '😒', '⚠'][Math.min(3, m.stage) - 1] + ' ' : '') + label + (m.moodDelta ? ' ' + U.signed(m.moodDelta) : ''))]));
         });
         parts.push(moods);
       }
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
-      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', 'Ten years. One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));
+      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
       ui.append(s.body, el('div.stack', parts));
       var t = savedText();
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
@@ -528,26 +531,7 @@
     onClose: function (s) { (s.data._off || []).forEach(function (off) { off(); }); }
   });
 
-  /* ======================================================================================================
-     End of career
-     ====================================================================================================== */
-  ui.define('end', {
-    kind: 'full',
-    build: function (s) {
-      var st = S() || {}, stats = st.stats || {};
-      var band = (GG.content.bands || {})[st.bandId];
-      var grid = el('div.stat-grid', [
-        ['Years', st.year || 10], ['Fans', U.fmtNum(st.fans || 0)], ['Fund', U.fmtMoney(st.fund || 0)],
-        ['Gigs', stats.gigs || 0], ['Songs', stats.songsWritten || (st.songs || []).length], ["Parents' loans", stats.parentsLoans || 0]
-      ].map(function (x) { return el('div', [el('span.caps', x[0]), el('b', String(x[1]))]); }));
-      ui.append(s.body, el('div.title-wrap', [
-        el('h1.logo', { style: 'font-size:44px' }, ["That's a", el('span.glory', ' career')]),
-        el('p.tagline', (band ? band.name : 'The band') + ' played their last show in ' + ui.space(st) + '. Your mom kept every flyer.'),
-        el('div.panel', grid), ui.rivalEnd ? ui.rivalEnd(st) : null
-      ]));
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-end-title', onclick: function () { GG.main.quitToTitle(); } }, 'Back to title'));
-    }
-  });
+  // v1.0: the end-of-career screen ('end') moved to 5n_ui_ending.js (Lane E's end sequence).
 
   /* ======================================================================================================
      Hotspots: placeholders for later versions, gig board, trophies

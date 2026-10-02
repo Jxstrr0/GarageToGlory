@@ -22,6 +22,9 @@
 // Events: 'creator:unlocked' { ids, names, source: 'week'|'event' } ; 'creator:changed' { state }.
 // No gong on the drum kit, ever (KIT_LOOK extras are cowbell / fan / pyro).
 // v0.9: newKit(color, bandId) / lockKit use the band's tier-0 throne (bands.js throne: crate / bucket / haybale) ; bandThrone(id).
+// v1.0 (Q5 meta unlocks): metaPart(id) = a part some finished career unlocked (GG.meta 'parts', when GG.meta.enabled); it counts
+//   as unlocked in every genre (isUnlocked, lockLook, the pickers) and parts() flags it meta: true (the 🏆 chip). checkUnlocks
+//   still grants by the career's own progress only, so state.unlocks and the wrap lines never depend on this device.
 (function (GG) {
   var C = GG.creator = {};
   var CT = GG.contracts, U = GG.util;
@@ -87,19 +90,28 @@
     var u = state && state.unlocks;
     return u && Array.isArray(u.creator) ? u.creator : [];
   }
-  C.isUnlocked = function (state, id) {
+  // Unlocked by this career (or its genre's start) alone: the sim's own rule (checkUnlocks grants by it, so the career's
+  // unlock list and wrap lines never depend on this device's meta storage).
+  function ownPart(state, id) {
     var p = C.part(id);
     if (!p) return false;
     if (!p.gate) return true;
     if (p.gate.genreStart && state && p.gate.genreStart.indexOf(state.genre) >= 0) return true;
     return list(state).indexOf(id) >= 0;
+  }
+  // v1.0 (Q5): creator parts unlocked in any finished career (GG.meta.unlocked('parts'), browser only) work in every genre.
+  C.metaPart = function (id) {
+    var M = GG.meta;
+    return !!(M && M.enabled && M.isUnlocked && C.part(id) && M.isUnlocked('parts', id));
   };
+  C.isUnlocked = function (state, id) { return ownPart(state, id) || C.metaPart(id); };
   C.parts = function (state, cat) {
     build();
     var src = cat ? (byCat[cat] || []) : content().parts;
     return src.map(function (p) {
-      var locked = !C.isUnlocked(state, p.id);
+      var mine = ownPart(state, p.id), locked = !mine && !C.metaPart(p.id);
       var o = { id: p.id, cat: p.cat, value: p.value, name: p.name, locked: locked, why: locked ? C.gateText(p.gate) : '' };
+      if (!mine && !locked) o.meta = true;   // the 🏆 chip: here from a finished career
       if (p.color) o.color = p.color;
       if (p.hint) o.hint = p.hint;
       return o;
@@ -125,7 +137,7 @@
     build();
     var out = [];
     content().parts.forEach(function (p) {
-      if (!p.gate || C.isUnlocked(state, p.id)) return;
+      if (!p.gate || ownPart(state, p.id)) return;
       if (C.gateMet(state, p.gate) && C.grant(state, p.id)) out.push(p.id);
     });
     return out;

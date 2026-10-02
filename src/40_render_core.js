@@ -15,7 +15,14 @@
 //     labels: [Sprite], pickables: [Object3D],  userData.action (hotspot) or userData.memberId (bandmate)
 //     floorY: number|null, onTap(hit),          hit = { type:'hotspot', action } | { type:'member', id } | { type:'floor', x, z }
 //     anchor(kind, id, outVec3) -> bool,        world point; kind 'hotspot' | 'label' | 'member' | 'player'
-//     goToHotspot(action) -> bool, debug() -> {} merged into GG.debug('render') }
+//     goToHotspot(action) -> bool, debug() -> {} merged into GG.debug('render'),
+//     busy() -> bool (v1.0: something moves that wants 60 fps: walking, the carpet walk) }
+// v1.0 "Glory" (Lane P, contract §4.9): the frame governor (60 fps live gig / rival set / van drive / walking / camera glide;
+//   30 fps idle; 10 fps behind a tall sheet; any change draws the next frame: R.invalidate(n)), 'auto' graphics with the
+//   adaptive pixel ratio (R.nextRatio(cur, p95, heldMs) pure, R.RATIO_STEPS, applied only between songs or scenes,
+//   'perf:quality' { pixelRatio, reason }), R.feedFrames(ms[]) (tests), R.perfState() = GG.debug('perf') { mode, cap,
+//   ticks, rendered, pixelRatio, autoRatio, want, quality, covered, p95, applied, shaderChecks, voices, drops, tapDrops,
+//   voiceCap }, shader error checks only under automation or ?debug=1, R.util.freeze / thaw + ctx.freeze (static props).
 (function (GG) {
   var R = GG.render = GG.render || {};
   var THREE = null;                       // resolved in init(); the CDN script may be missing
@@ -26,21 +33,43 @@
   // R.prefs() -> { quality: 'low'|'med'|'high', shake, calm, pixelRatio, crowdScale } (cached; never reads storage per
   // frame) ; R.applySettings() re-reads GG.prefs and resizes. low = 1x pixels + 40% crowd, med = 1.5x + 70%, high = 2x + all.
   // Scenes read R.prefs().calm (no strobing lights / hit flashes), .shake (camera shake allowed) and .crowdScale.
-  var QUALITY = { low: { px: 1, crowd: 0.4 }, med: { px: 1.5, crowd: 0.7 }, high: { px: 2, crowd: 1 } };
-  var PREFS = null;
+  // v1.0 (§0 Q8, Lane P): 'auto' (the new default) = 1.5x pixels (never more than the screen has) and the full crowd; the
+  // adaptive pixel ratio steps it 1.5 -> 1.25 -> 1.0 on slow frames and back up on fast ones (R.nextRatio, the governor below),
+  // only between songs or scenes. R.prefs().pixelRatio is the live ratio for 'auto'.
+  var QUALITY = { low: { px: 1, crowd: 0.4 }, med: { px: 1.5, crowd: 0.7 }, high: { px: 2, crowd: 1 }, auto: { px: 1.5, crowd: 1, auto: true } };
+  var RATIO_STEPS = [1.5, 1.25, 1];
+  var PREFS = null, autoPx = RATIO_STEPS[0];
   R.prefs = function () {
     if (PREFS) return PREFS;
     var s = {}; try { s = GG.prefs ? GG.prefs.get() : {}; } catch (e) { s = {}; }
     var q = QUALITY[s.graphics] ? s.graphics : 'high';
-    PREFS = { quality: q, shake: s.cameraShake !== false, calm: !!s.reducedFlash, pixelRatio: QUALITY[q].px, crowdScale: QUALITY[q].crowd };
+    PREFS = { quality: q, shake: s.cameraShake !== false, calm: !!s.reducedFlash, pixelRatio: QUALITY[q].auto ? autoPx : QUALITY[q].px, crowdScale: QUALITY[q].crowd, auto: !!QUALITY[q].auto };
     return PREFS;
   };
-  function pixelRatio() { return Math.min(R.prefs().pixelRatio, (typeof window !== 'undefined' && window.devicePixelRatio) || 1); }
-  R.applySettings = function () { PREFS = null; R.prefs(); if (R.available && renderer) { needsResize = true; applyResize(); } return PREFS; };
+  function devRatio() { return (typeof window !== 'undefined' && window.devicePixelRatio) || 1; }
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio()); }
+  R.applySettings = function () {
+    var was = R.available && renderer ? renderer.getPixelRatio() : null;
+    PREFS = null; R.prefs();
+    if (R.available && renderer) { needsResize = true; applyResize(); invalidate(); }
+    if (was != null && renderer.getPixelRatio() !== was) GG.emit('perf:quality', { pixelRatio: renderer.getPixelRatio(), reason: 'settings' });
+    return PREFS;
+  };
   if (GG.on) GG.on('settings:changed', function (p) {
     var k = (p && p.keys) || [];
     if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
   });
+  // Pure: the next 'auto' pixel ratio from the current one, the frame-cost p95 (ms) and how long (ms) that p95 has stayed in
+  // its band: > 20 ms held 2 s steps down (1.5 -> 1.25 -> 1.0), < 12 ms held 4 s steps back up; anything else keeps it.
+  R.RATIO_STEPS = RATIO_STEPS.slice();
+  R.nextRatio = function (cur, p95, heldMs) {
+    var i = 0, best = Infinity;
+    for (var k = 0; k < RATIO_STEPS.length; k++) { var d = Math.abs(RATIO_STEPS[k] - cur); if (d < best) { best = d; i = k; } }
+    if (!(p95 >= 0) || !(heldMs >= 0)) return RATIO_STEPS[i];
+    if (p95 > 20 && heldMs >= 2000) return RATIO_STEPS[Math.min(RATIO_STEPS.length - 1, i + 1)];
+    if (p95 < 12 && heldMs >= 4000) return RATIO_STEPS[Math.max(0, i - 1)];
+    return RATIO_STEPS[i];
+  };
 
   // ---- Tunables ------------------------------------------------------------
   var TAP_SLOP = 12;                      // CSS px a finger may drift and still count as a tap
@@ -62,6 +91,18 @@
   var hits = [];                          // reused raycast result array
   var ctx = null;
 
+  // ---- v1.0 frame governor (Lane P, contract §4.9) ----------------------------------------------------------------
+  // One rAF loop still ticks, but a frame is only rendered when the scene needs it: 60 fps for the live gig and the rival's
+  // set (stage under 'gig' / 'rival-set'), a van drive ('van' / 'road'), walking (the scene's busy()), a camera glide;
+  // 30 fps for an idle garage, title, van or carpet; 10 fps behind a tall sheet once the glide is done. Any change
+  // (syncState, setScene, setViewInsets, a resize, a preview call into R.stage / R.van / R.carpet / R.title / R.preview,
+  // an explicit setPaused(false)) renders the next frames regardless. 60_main's setPaused(true) always wins.
+  var GOV = { mode: 'none', cap: 0, ticks: 0, rendered: 0, dirty: 0, lastRender: 0, covered: false, open: {},
+    costs: new Float32Array(90), nCost: 0, iCost: 0, vsync: 16.7, prevTs: 0, prevRendered: false, lastWork: 0,
+    ivs: new Float32Array(60), nIv: 0, iIv: 0, ivTicks: 0,
+    evalAt: 0, band: 0, bandSince: 0, want: null, injectUntil: 0, applied: 0, shaderChecks: true };
+  var CAPS = { live: 60, drive: 60, busy: 60, glide: 60, idle: 30, covered: 10 };
+
   // Camera rig: fitCamera() picks a distance + view offset; placeCamera() moves it each frame.
   var rig = { dir: null, target: null, dist: 10, goalDist: 10, offX: 0, offY: 0, goalOffX: 0, goalOffY: 0, snap: true };
 
@@ -82,6 +123,9 @@
       renderer = new THREE.WebGLRenderer({ antialias: dpr < 2, alpha: false, powerPreference: 'default' });
       renderer.setPixelRatio(pixelRatio());
       renderer.setClearColor(0x0b1020, 1);
+      // v1.0: no getProgramInfoLog round trip per new shader on phones (a first-visit stall); kept for tests and ?debug=1.
+      GOV.shaderChecks = !!((typeof navigator !== 'undefined' && navigator.webdriver) || (typeof location !== 'undefined' && /[?&]debug=1/.test(location.search || '')));
+      if (renderer.debug) renderer.debug.checkShaderErrors = GOV.shaderChecks;
       container = el;
       canvas = renderer.domElement;
       canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%';
@@ -103,6 +147,8 @@
       canvas.addEventListener('webglcontextrestored', function () { contextLost = false; });
 
       R.available = true;
+      wrapPreviews();
+      readStack();
       applyResize();
       if (curName !== 'none') { var want = curName; curName = 'none'; R.setScene(want); }
       return true;
@@ -134,30 +180,42 @@
       try { built[name] = factories[name](ctx); } catch (e) { console.error('[render] scene "' + name + '" failed to build:', e); return false; }
     }
     cur = built[name]; curName = name;
+    // v1.0: the last scene's camera glide ends with it (only the garage frames itself through the rig; a stale glide
+    // would keep overriding another scene's own view offset and hold the governor at 60 fps)
+    rig.dist = rig.goalDist; rig.offX = rig.goalOffX; rig.offY = rig.goalOffY;
     canvas.style.visibility = 'visible';
     ring.attach(cur.scene);
     if (cur.resize) cur.resize(W, H, false);
     rescaleLabels();
     if (lastState && cur.sync) safeSync(lastState);
     if (cur.enter) cur.enter();
-    schedule();
+    maybeApplyRatio('scene');   // a scene change is "between songs": a pending 'auto' step lands here
+    invalidate(3);
     return true;
   };
 
   R.syncState = function (state) {
     lastState = state || null;
     if (cur && cur.sync && lastState) safeSync(lastState);
+    invalidate();
   };
   function safeSync(state) {
     try { cur.sync(state); } catch (e) { console.error('[render] syncState failed:', e); }
   }
 
   R.setPaused = function (p) {
+    var was = paused;
     paused = !!p;
     if (paused) { if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
-    else { lastTs = 0; schedule(); }
+    else {
+      if (was) { lastTs = 0; GOV.prevTs = 0; resetBand(); }   // (the pause is not a slow frame, nor time held in a band)
+      invalidate(2);   // an explicit un-pause is honoured: the governor never holds a scene paused, it only thins frames
+    }
   };
   R.isPaused = function () { return paused; };
+  // v1.0: "something changed, draw it" (n frames regardless of the governor's cap).
+  function invalidate(n) { GOV.dirty = Math.max(GOV.dirty, n || 1); schedule(); }
+  R.invalidate = function (n) { invalidate(n); };
 
   // The UI tells the renderer which CSS px strips are covered (HUD bar, bottom sheet); the camera
   // re-fits the room into the uncovered band with a short glide. bottom: -1 restores the default.
@@ -165,7 +223,7 @@
     o = o || {};
     if (typeof o.top === 'number') insets.top = Math.max(0, o.top);
     if (typeof o.bottom === 'number') insets.bottom = o.bottom;
-    if (R.available && cur && cur.resize) { cur.resize(W, H, true); schedule(); }
+    if (R.available && cur && cur.resize) { cur.resize(W, H, true); invalidate(2); }
   };
 
   R.goToHotspot = function (action) { return !!(R.available && cur && cur.goToHotspot && cur.goToHotspot(action)); };
@@ -205,8 +263,26 @@
   function frame(ts) {
     rafId = 0;
     if (paused || !cur) return;
+    GOV.ticks++;
+    // The rendered frame before this tick: its cost is the CPU work plus any delay the GPU added to this tick.
+    if (GOV.prevTs) {
+      var iv = ts - GOV.prevTs;
+      // a long gap after a tick that drew nothing is the browser holding rAF back (a hidden tab), not a slow frame: measure
+      // the band again from here (after a drawn frame it is that frame's cost and counts)
+      if (iv > 500 && !GOV.prevRendered) resetBand();
+      else {
+        trackVsync(iv);
+        if (GOV.prevRendered) sampleCost(Math.max(GOV.lastWork, iv - GOV.vsync), ts);
+      }
+    }
+    GOV.prevTs = ts; GOV.prevRendered = false;
+    var mode = govMode(), cap = CAPS[mode] || 30;
+    GOV.mode = mode; GOV.cap = cap;
+    if (!GOV.dirty && GOV.lastRender && ts - GOV.lastRender < 1000 / cap - 4) { evalRatio(ts); schedule(); return; }   // (a 120 Hz screen too)
+    if (GOV.dirty) GOV.dirty--;
+    var t0 = now();
     var dt = lastTs ? Math.min(MAX_DT, (ts - lastTs) / 1000) : 1 / 60;
-    lastTs = ts;
+    lastTs = ts; GOV.lastRender = ts;
     if (needsResize) applyResize();
     clock += dt;
     stepRig(dt);
@@ -216,15 +292,154 @@
       renderer.render(cur.scene, camera);
       drawCalls = renderer.info.render.calls;
       triangles = renderer.info.render.triangles;
-      frames++;
+      frames++; GOV.rendered++;
     }
+    GOV.lastWork = now() - t0; GOV.prevRendered = true;
+    evalRatio(ts);
     schedule();
   }
+
+  // ---- Governor: which rate this frame needs ------------------------------------------------------------------------------
+  function gliding() { return rig.dist !== rig.goalDist || rig.offX !== rig.goalOffX || rig.offY !== rig.goalOffY; }
+  function govMode() {
+    var gl = gliding(), o = GOV.open;
+    if (GOV.covered) return gl ? 'glide' : 'covered';
+    if (curName === 'stage' && (o.gig || o['rival-set'])) return 'live';
+    if (curName === 'van' && (o.van || o.road)) return 'drive';
+    if (gl) return 'glide';
+    if (cur && cur.busy) { try { if (cur.busy()) return 'busy'; } catch (e) { /* idle */ } }
+    return 'idle';
+  }
+  // The UI stack (read on 'ui:stack'): which screens are open, and whether the scene sits behind a tall sheet (or a full
+  // screen that isn't see-through; 60_main pauses for those anyway). Modals and short sheets leave the scene in view.
+  function readStack() {
+    var ui = GG.ui, o = {}, cov = false;
+    if (ui && ui.stackIds) {
+      var ids = ui.stackIds(), found = false;
+      for (var i = ids.length - 1; i >= 0; i--) {
+        o[ids[i]] = true;
+        if (found) continue;
+        var e = ui.get(ids[i]), d = e && e.def;
+        if (!d) continue;
+        if (d.kind === 'full') { cov = !d.live3d; found = true; }
+        else if (d.kind === 'sheet' && d.tall) { cov = true; found = true; }
+      }
+    }
+    GOV.open = o;
+    if (cov !== GOV.covered) { GOV.covered = cov; invalidate(); }
+  }
+  if (GG.on) {
+    GG.on('ui:stack', readStack);
+    GG.on('screen:open', function () { readStack(); maybeApplyRatio('screen'); });
+    GG.on('screen:close', function () { readStack(); maybeApplyRatio('screen'); });
+  }
+  // Every preview / API call into a scene draws the next frames (wrapped once at init; info() and pure helpers are not).
+  var NO_WRAP = { info: 1, armPose: 1, seasonOf: 1, photoRig: 1, spaceKind: 1, KINDS: 1 };
+  function wrapPreviews() {
+    ['stage', 'van', 'carpet', 'title', 'preview', 'garage'].forEach(function (k) {
+      var api = R[k];
+      if (!api || api.__gov) return;
+      Object.keys(api).forEach(function (fn) {
+        var f = api[fn];
+        if (typeof f !== 'function' || NO_WRAP[fn] || /^(get|is)[A-Z]/.test(fn)) return;
+        api[fn] = function () { var r = f.apply(this, arguments); invalidate(); return r; };
+      });
+      api.__gov = true;
+    });
+  }
+
+  // ---- Adaptive pixel ratio ('auto' graphics) -------------------------------------------------------------------------------
+  // Frame cost samples (ms) go into a ring; every 250 ms the p95 picks a band (1 slow > 20, -1 fast < 12, 0 between) and
+  // R.nextRatio decides with how long the band has held. A new ratio waits until no song is live (applied on the next
+  // check, a screen change or a scene change), then the 'perf:quality' event tells listeners.
+  // The delivered tick interval, so the GPU delay is measured against it: the 10th percentile of the last 60 rAF intervals
+  // (rises to ~33 ms when the browser delivers rAF at 30 Hz: iOS Low Power Mode, a throttled iframe; skipped ticks of a
+  // capped scene keep it at the true vsync on a slow GPU). Re-read every 15 ticks.
+  var ivSort = new Float32Array(60);
+  function trackVsync(iv) {
+    if (!(iv > 4) || iv > 100) return;
+    GOV.ivs[GOV.iIv] = iv; GOV.iIv = (GOV.iIv + 1) % GOV.ivs.length; if (GOV.nIv < GOV.ivs.length) GOV.nIv++;
+    if (iv < GOV.vsync) GOV.vsync = Math.max(6, iv);   // a faster tick lowers it at once
+    if (++GOV.ivTicks % 15 || GOV.nIv < 15) return;
+    var n = GOV.nIv; for (var i = 0; i < n; i++) ivSort[i] = GOV.ivs[i];
+    GOV.vsync = tickEstimate(ivSort.subarray(0, n));
+  }
+  function tickEstimate(a) {   // a: typed array of tick intervals (sorted in place)
+    if (!a.length) return 16.7;
+    a.sort();
+    return Math.max(6, Math.min(50, a[Math.floor(0.1 * a.length)]));
+  }
+  // Pure (tests): the tick estimate for a list of rAF intervals in ms.
+  R.tickEstimate = function (list) { return tickEstimate(Float32Array.from((list || []).filter(function (x) { return x > 4 && x <= 100; }))); };
+  // Forget the frame-cost window and the time held in a band (after a pause or a long gap between ticks).
+  function resetBand() { GOV.band = 0; GOV.bandSince = now(); GOV.nCost = 0; GOV.iCost = 0; }
+  function sampleCost(ms, ts) {
+    if (GOV.injectUntil && ts < GOV.injectUntil) return;   // tests feed frame times (R.feedFrames)
+    pushCost(ms);
+  }
+  function pushCost(ms) {
+    GOV.costs[GOV.iCost] = ms; GOV.iCost = (GOV.iCost + 1) % GOV.costs.length; if (GOV.nCost < GOV.costs.length) GOV.nCost++;
+  }
+  var sortBuf = new Float32Array(90);
+  function costP95() {
+    var n = GOV.nCost; if (n < 20) return -1;
+    for (var i = 0; i < n; i++) sortBuf[i] = GOV.costs[i];
+    var a = sortBuf.subarray(0, n); a.sort();
+    return a[Math.min(n - 1, Math.floor(0.95 * n))];
+  }
+  R.feedFrames = function (list) {   // tests (pw_perf ratio): inject frame costs in ms; real samples are ignored for 1 s
+    var t = (typeof performance !== 'undefined' ? performance.now() : 0);
+    GOV.injectUntil = t + 1000;
+    for (var i = 0; i < (list || []).length; i++) pushCost(+list[i] || 0);
+    return R.perfState();
+  };
+  function evalRatio(ts) {
+    if (ts - GOV.evalAt < 250) return;
+    GOV.evalAt = ts;
+    if (!R.prefs().auto) { GOV.want = null; GOV.band = 0; return; }
+    var p95 = costP95(), band = p95 < 0 ? 0 : p95 > 20 ? 1 : p95 < 12 ? -1 : 0, t = now();
+    if (band !== GOV.band) { GOV.band = band; GOV.bandSince = t; }
+    if (band) {
+      var from = GOV.want != null ? GOV.want : autoPx, next = R.nextRatio(from, p95, t - GOV.bandSince), dev = devRatio();
+      if (next !== from) {
+        GOV.bandSince = t; GOV.reason = band > 0 ? 'slow' : 'fast';
+        // a step the screen can't show (a DPR-1 screen: 1.5 and 1.25 are both 1x) is taken silently, no resize
+        if (GOV.want == null && Math.min(next, dev) === Math.min(autoPx, dev)) { autoPx = next; PREFS = null; }
+        else GOV.want = next;
+      }
+    }
+    if (GOV.want != null) maybeApplyRatio('check');
+  }
+  // A song is live: the gig's count-in / play (55_ui_gig), the rival's set, or any song the audio is playing.
+  function songLive() {
+    try {
+      if (GG.audio && GG.audio.isPlaying && GG.audio.isPlaying()) return true;
+      if (GOV.open['rival-set']) return true;
+      if (GOV.open.gig) { var g = GG.debug('gigui'); return !!(g && g.open && (g.mode === 'count' || g.mode === 'play' || g.mode === 'hold')); }
+    } catch (e) { /* not live */ }
+    return false;
+  }
+  function maybeApplyRatio(why) {
+    if (GOV.want == null || GOV.want === autoPx || !R.prefs().auto || songLive()) { if (GOV.want === autoPx) GOV.want = null; return false; }
+    var before = pixelRatio();
+    autoPx = GOV.want; GOV.want = null; GOV.applied++;
+    GOV.nCost = 0; GOV.iCost = 0; GOV.band = 0;   // a fresh window at the new ratio
+    PREFS = null; R.prefs();
+    if (R.available && renderer) { needsResize = true; applyResize(); invalidate(); }
+    if (pixelRatio() !== before) GG.emit('perf:quality', { pixelRatio: pixelRatio(), reason: GOV.reason || why });   // (a DPR-1 screen never changes)
+    return true;
+  }
+  R.perfState = function () {
+    var p = R.prefs();
+    return { mode: GOV.mode, cap: GOV.cap, ticks: GOV.ticks, rendered: GOV.rendered, pixelRatio: R.available && renderer ? renderer.getPixelRatio() : pixelRatio(),
+      autoRatio: autoPx, want: GOV.want, quality: p.quality, covered: GOV.covered, p95: Math.round(costP95() * 10) / 10, applied: GOV.applied, shaderChecks: GOV.shaderChecks, vsync: Math.round(GOV.vsync * 10) / 10 };
+  };
 
   // ---- Resize / orientation ------------------------------------------------------
   function onResize() {
     needsResize = true;
     if (paused || !cur) applyResize();   // keep matrices valid for screen-position queries
+    else invalidate();
   }
   function applyResize() {
     if (!R.available) return;
@@ -612,13 +827,17 @@
       THREE: THREE, renderer: renderer, camera: camera, mats: mats, ring: ring,
       size: function () { return { w: W, h: H }; },
       Builder: Builder, makeLabel: makeLabel, scaleLabel: scaleLabel, disposeLabel: disposeLabel, radialTexture: radialTexture,
-      fitCamera: fitCamera, placeCamera: placeCamera,
+      fitCamera: fitCamera, placeCamera: placeCamera, freeze: freeze,
       emit: function (ev, p) { GG.emit(ev, p); },
       wrapAngle: wrapAngle, approachAngle: approachAngle, smooth: smooth, shade: shade, hash: hashStr
     };
   }
+  // v1.0 (Lane P): a prop that never moves after it is placed skips the per-frame matrix compose (scenes call it on their
+  // static room meshes; a frozen object that does move must call R.util.thaw / updateMatrix itself).
+  function freeze(o) { if (o) { o.updateMatrix(); o.matrixAutoUpdate = false; } return o; }
   // Shared helpers for other modules (character builder, future scenes). Valid after init().
   R.util = {
+    freeze: freeze, thaw: function (o) { if (o) o.matrixAutoUpdate = true; return o; },
     wrapAngle: wrapAngle, smooth: smooth,
     ctx: function () { return ctx; },
     currentScene: function () { return cur && cur.scene; }   // debugging aid (dev console, close-up renders)
@@ -1881,6 +2100,12 @@
     var d = { available: R.available, scene: cur ? curName : 'none', paused: paused, frames: frames, drawCalls: drawCalls, triangles: triangles };
     if (R.available) { d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom }; }
     if (cur && cur.debug) { var x = cur.debug(); for (var k in x) d[k] = x[k]; }
+    return d;
+  });
+  // v1.0 (Lane P): the governor, the pixel ratio and the audio's global voice count in one place.
+  GG.registerDebug('perf', function () {
+    var d = R.perfState(), a = GG.audio && GG.audio.voiceStats ? GG.audio.voiceStats() : null;
+    d.voices = a ? a.active : null; d.drops = a ? a.drops : null; d.tapDrops = a ? a.tapDrops : null; d.voiceCap = a ? a.cap : null;
     return d;
   });
 })(window.GG);

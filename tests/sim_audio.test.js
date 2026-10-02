@@ -436,4 +436,57 @@ test('v0.9 coach lines per genre (grooves.coach[genre][step]) + the neutral fall
   ok(roleOk('frost_heave', 'punk') && roleOk('gravel_kings', 'rock') && roleOk('grid_road_ramblers', 'country'), 'every step has a speaker in the band');
 });
 
+// v1.0 (Lane P, §4.9): the global voice cap (32) and its priorities: taps > the song's kick/snare > band > crowd > ambience > sfx.
+test('v1.0 voicePlan: cap 32, reserves by priority, one-shots below make room, taps never dropped', () => {
+  const V = A.VOICES, plan = A.voicePlan;
+  eq([V.cap, V.order], [32, ['tap', 'drum', 'band', 'crowd', 'amb', 'sfx']], 'cap + priority order');
+  ok(V.order.every((k, i) => i === 0 || V.reserve[k] > V.reserve[V.order[i - 1]]), 'each class keeps more room free for the ones above it ' + JSON.stringify(V.reserve));
+  eq(V.reserve.tap, 0, 'taps reserve nothing');
+  // plenty of room: everyone plays
+  for (const cls of V.order) eq(plan({}, { cls, n: 2 }).ok, true, cls + ' plays in an empty room');
+  eq(plan({ band: 4, crowd: 3 }, { cls: 'sfx', n: 1 }), { ok: true, evict: {}, total: 7, over: 0 }, 'the plan reports the total');
+  // the lower a class, the earlier it yields: at 20 sounding voices sfx (reserve 14) is out, the band (8) still plays
+  const busy = { band: 8, crowd: 8, tap: 4 };
+  const at20 = Object.fromEntries(V.order.map(k => [k, plan(busy, { cls: k, n: 1 }).ok]));
+  eq(at20, { tap: true, drum: true, band: true, crowd: true, amb: false, sfx: false }, 'at 20 voices ' + JSON.stringify(at20));
+  // every class stops exactly at cap - reserve when nothing below it can make room (the band's voices are never evicted)
+  for (const k of V.order) {
+    const lim = V.cap - V.reserve[k];
+    eq(plan({ band: lim - 1 }, { cls: k, n: 1 }).ok, true, k + ' fits up to ' + lim);
+    if (k !== 'tap') eq(plan({ band: lim }, { cls: k, n: 1 }).ok, false, k + ' refused past ' + lim);
+  }
+  // over its limit a class evicts one-shots strictly below it, lowest first; never its own class or anything above
+  eq(plan({ band: 20, crowd: 4 }, { cls: 'band', n: 1 }), { ok: true, evict: { crowd: 1 }, total: 24, over: 0 }, 'the band pushes a crowd one-shot out');
+  eq(plan({ band: 16, crowd: 2, sfx: 2, amb: 2 }, { cls: 'crowd', n: 1 }), { ok: true, evict: { sfx: 1 }, total: 22, over: 0 }, 'the crowd pushes an sfx out (not ambience first)');
+  eq(plan({ band: 18, crowd: 4 }, { cls: 'crowd', n: 1 }).ok, false, 'the crowd never evicts the crowd');
+  eq(plan({ band: 20, sfx: 4 }, { cls: 'sfx', n: 1 }).ok, false, 'sfx evicts nobody');
+  // a full house: a tap still plays and evicts the lowest one-shots first (sfx, then ambience, then the crowd)
+  const full = { tap: 6, drum: 4, band: 10, crowd: 8, amb: 2, sfx: 2 };   // 32
+  const p1 = plan(full, { cls: 'tap', n: 1 });
+  eq([p1.ok, p1.evict, p1.over], [true, { sfx: 1 }, 0], 'tap over the cap evicts one sfx ' + JSON.stringify(p1));
+  const p3 = plan(full, { cls: 'tap', n: 5 });
+  eq([p3.ok, p3.evict, p3.over], [true, { sfx: 2, amb: 2, crowd: 1 }, 0], 'five taps: sfx, then ambience, then crowd ' + JSON.stringify(p3));
+  const p4 = plan({ tap: 12, drum: 6, band: 14 }, { cls: 'tap', n: 2 });
+  eq([p4.ok, p4.evict, p4.over], [true, {}, 2], 'nothing evictable below: the tap still plays (over the cap, counted) ' + JSON.stringify(p4));
+  const pk = plan(full, { cls: 'drum', n: 1 });
+  eq([pk.ok, pk.evict], [true, { sfx: 2, amb: 2, crowd: 3 }], 'the song\'s kick makes room down to its own limit (26) ' + JSON.stringify(pk));
+  // no class can starve the taps: every class below them, each pushing as hard as it can (evictions applied), tops out at
+  // cap - reserve(drum) = 26, so six lanes of taps always fit
+  const fill = {}; let guard = 0;
+  for (let round = 0; round < 3; round++) for (const k of V.order.slice(1).reverse()) {
+    for (;;) {
+      const p = plan(fill, { cls: k, n: 1 }); if (!p.ok || ++guard > 500) break;
+      for (const e in p.evict) fill[e] -= p.evict[e];
+      fill[k] = (fill[k] || 0) + 1;
+    }
+  }
+  const total = Object.values(fill).reduce((a, b) => a + b, 0);
+  ok(guard < 500 && total <= V.cap - V.reserve.drum, 'the rest tops out at ' + total + ' <= ' + (V.cap - V.reserve.drum) + ' ' + JSON.stringify(fill));
+  ok(V.cap - total >= 6, 'six lanes of taps always fit');
+  // pure: no state, same answer twice, unknown class = sfx
+  eq(plan(full, { cls: 'tap', n: 1 }), p1, 'deterministic');
+  eq(plan({ sfx: 17 }, { cls: 'moose', n: 1 }).ok, plan({ sfx: 17 }, { cls: 'sfx', n: 1 }).ok, 'unknown class is treated as sfx');
+  ok(!A.voiceStats || A.voiceStats().active === 0, 'no context: no live voices');
+});
+
 done('sim_audio');

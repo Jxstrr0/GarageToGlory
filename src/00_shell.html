@@ -1076,6 +1076,22 @@ html.gg-calm .cold-fx { animation: none !important; }
 .tw-opera.po-metal { background: linear-gradient(180deg, #120d18, #2a1a30 70%, #1a1418 70%); }
 .lo-band { font-style: italic; color: #cfd3dc; margin: 8px 0 0; }   /* v0.9: the band line after a Loonie envelope (59c) */
 /* ==== end v0.9 GENRES ==== */
+/* v1.0 TUTORIAL { */
+/* Lane T: edits to existing shell rules for the tutorial (e.g. .hud .l with Bigger text). New modules inject their own CSS. */
+/* The HUD with the "?" (btn-help, 48 px): five chips sized by what they hold, so "W12/24" fits at 390 px and Buzz/Chem stay >= 44 px. */
+.hud-bar { gap: 3px; padding-left: 6px; padding-right: 6px; }
+.hud-chip.week { flex: 1.35 1 0; } .hud-chip.fund { flex: 1.25 1 0; } .hud-chip.fans { flex: 1.1 1 0; } .hud-chip.buzz, .hud-chip.chem { flex: .98 1 0; }
+.hud-help { font-size: 20px; font-weight: 900; color: var(--amber); }
+/* Bigger text reaches the HUD stat labels (they were fixed at 9 px). */
+html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
+/* } */
+/* v1.0 QA { */
+/* Lead / Lane Q: phone-QA fixes. Every new v1.0 control is >= 48 px: the laptop's ten tabs (Trophies wraps 5 + 5). */
+.tabs.tabs:has(> .tab:nth-child(10)) > .tab.tab { min-height: 48px; }
+/* A sheet with no foot ends in its body: the last row (a Monday card's third choice, the Trophies list) scrolls clear of the
+   home indicator (phoneqa: 10-20 px under it at 390x844). No change where --safe-bot is 0. */
+.sheet > .sheet-body:last-child, .sheet > .sheet-body:has(+ .sheet-foot:empty) { padding-bottom: calc(var(--safe-bot) + 14px); }
+/* } */
 </style>
 </head>
 <body>

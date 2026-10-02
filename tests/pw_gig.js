@@ -278,6 +278,8 @@ async function e2e() {
     // Song 1 by the bot, then stop at song 2 and reload: Continue resumes the set.
     await page.evaluate(() => { GG.once('gig:song', () => { GG.ui.gigAutoplay = false; }); GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; });
     await page.waitForFunction(() => GG.state.liveGig && GG.state.liveGig.index === 1 && GG.debug('gigui').mode === 'count', null, { timeout: 8000 });
+    // v1.0: the per-song save runs at the next idle moment (at most 1 s later), not on the frame the song ends
+    await page.waitForFunction(() => { const r = GG.save.read('2'); return r && r.liveGig && r.liveGig.index === 1; }, null, { timeout: 2000 }).catch(() => {});
     const saved1 = await page.evaluate(() => { const r = GG.save.read('2'); return r && r.liveGig && r.liveGig.index; });
     c.ok(saved1 === 1, "autosaved between songs ('gig:song') " + saved1);
     await page.reload();

@@ -567,7 +567,7 @@
     var x = V.call('promoOptions', st);
     if (Array.isArray(x) && x.length) return x;
     return [{ id: 0, name: 'Word of mouth', cost: 0, blurb: '{filler} tells some cousins.' }, { id: 1, name: 'Posters on every pole', cost: 60, blurb: 'Staples: 4,000. Poles: 3.' },
-      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'A billboard in {city}', cost: 450, blurb: 'Visible from the Tim Hortons drive-thru.' }];
+      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'A billboard in {city}', cost: 450, blurb: 'Visible from the Tim Norton’s drive-thru.' }];
   }
   function releaseWeeks(st) {
     var x = V.call('releaseWeeks', st);
