@@ -11,6 +11,9 @@
 //  - 'offer' (sheet): one licensing offer (brand, song, fee, the label's cut, weeks left) with Take / Counter / Decline,
 //    then the outcome. The laptop shows an "Offers" line above its tabs while any offer is open (GG.ui.offersLine) and a
 //    Years tab (GG.ui.recapPanel). The week wrap lists licensing news (GG.ui.licenseWrap).
+// v1.1 "Seats" (Lane C): on a string seat you hold your own instrument in the photo (player.gearLook -> GG.render.seatGear; the
+//   'axe' pose, no raised sticks: PLAYER_PAD only for the drum seat) and the swapped drummer brings the sticks (their own pose).
+//   The drum seat is exactly v0.9's photo. GG.debug('recap').photo adds seat + gear.
 // API: GG.ui.openRecap(year, then?) · recapPhoto(state) -> dataURL|null · openOffer(id) · offersLine(st, rerender) ·
 //      recapPanel(st) · licenseWrap(wrap) -> [nodes]
 (function (GG) {
@@ -37,7 +40,9 @@
     // (arms 2.55, forearms 0.5) crossed the faces next to them (~40% of Rox's, Dana's, Earl's). An occlusion probe over all
     // four rooms, four presets and two tiers measures <= 0.3% of any bandmate's face covered now.
     sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
-    hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
+    hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); },
+    // v1.1: your instrument for the camera: the fretting hand high on the neck, the picking hand mid-strum, chin up.
+    axe: function (bn) { rot(bn[B.ARM_L], -0.15, 0, 0.3); rot(bn[B.FORE_L], -2.0, 0, 0.12); rot(bn[B.ARM_R], -0.35, 0, 0.12); rot(bn[B.FORE_R], -1.1, 0, 0.45); rot(bn[B.HEAD], -0.15, 0, 0); }
   };
   // v0.9: every playable band's members have a signature pose (recruits and fill-ins cycle the generic ones).
   var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips',
@@ -64,14 +69,26 @@
       return { id: m.id, look: m.look || (cm[m.id] && cm[m.id].look) || null, pose: POSE_OF[m.id] || ['fist', 'hips', 'cross'][i % 3] };
     });
     var p = st.player || {}, preset = (GG.content.presets || []).filter(function (x) { return x.id === p.presetId; })[0];
-    var mid = Math.floor(list.length / 2);
-    list.splice(mid, 0, { id: 'player', look: p.look || (preset && preset.look) || null, pose: 'sticks', player: true });
+    var mid = Math.floor(list.length / 2), seat = stringSeat(st);
+    list.splice(mid, 0, { id: 'player', look: p.look || (preset && preset.look) || null, pose: seat ? 'axe' : 'sticks', player: true, seat: seat });
+    if (seat) { var dr = drummerOf(st); list.forEach(function (x) { if (x.id === dr) x.drummer = true; }); }   // v1.1: the swapped drummer brings the sticks
     return list.slice(0, 7);
+  }
+  function stringSeat(st) { var x = st && st.seat; return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+  function drummerOf(st) {
+    var lu = null;
+    try { lu = GG.career && GG.career.lineup ? GG.career.lineup(st) : null; } catch (e) { lu = null; }
+    for (var i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
+    return null;
+  }
+  function seatGear(st) {
+    var seat = stringSeat(st), R = GG.render, p = st.player || {};
+    return seat && R && R.seatGear ? R.seatGear(seat, p.gearLook, (p.kit && p.kit.color) || p.kitColor || null, st.genre) : null;
   }
   // Renders the photo once per year (cached for the session). null when there's no 3D.
   ui.recapPhoto = function (st, year) {
     st = st || S();
-    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) : null;
+    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) + (stringSeat(st) ? '|' + st.seat : '') : null;   // (v1.1: + the seat)
     if (!st) return null;
     if (photos[key]) return photos[key];
     var R = GG.render;
@@ -89,13 +106,13 @@
       var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
-      var pi = people.map(function (p) { return !!p.player; }).indexOf(true);
+      var pi = people.map(function (p) { return !!p.player; }).indexOf(true), axe = seatGear(st), pad = axe ? 0.06 : PLAYER_PAD;   // v1.1: an instrument needs less room than raised sticks
       people.forEach(function (p, i) {
         var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
-        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
+        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: (p.player && !axe) || p.drummer ? (kl ? kl.sticks : true) : null, gear: p.player && axe ? axe : undefined });
         if (!ch) return;
         var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
-        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -PLAYER_PAD : PLAYER_PAD);
+        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -pad : pad);
         ch.root.position.set(px, 0, front);
         ch.root.rotation.y = -0.06 * px;
         (POSES[p.pose] || POSES.fist)(ch.bones);
@@ -104,7 +121,8 @@
         made.push(ch);
       });
       scene.updateMatrixWorld(true);
-      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
+      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render',   // v0.9 (debug)
+        seat: stringSeat(st) || 'drums', gear: axe || null, sticks: people.filter(function (p) { return (p.player && !axe) || p.drummer; }).map(function (p) { return p.id; }) };   // v1.1
       var W = 1200, H = 760;
       rt = new THREE.WebGLRenderTarget(W, H);
       // From outside the cut-away front wall; the near plane clips everything between the lens and the band (cooler, couch).

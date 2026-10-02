@@ -15,6 +15,12 @@
 // instead of the yard). debug().space = { tier, kind, wall, floor, bg, fixture, riser, hall, decals, green, upgrades, boxes,
 // pile (drawn), pileBox, pileSign, disco, door (the door hotspot's label), garage (garage-only shown), sign, signText, obstacles }.
 // The drum kit (buildKit) is lane B's (R.kit.garage in 40_render_core). The character builder lives in 40 (R.charGeometry).
+// v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): on a string seat (state.seat bass / rhythm / lead) the swapped drummer (the
+// member whose seatRole is 'drums' / 'drums/vocals') sits at the kit and plays (sticks in the kit's colour); the 'kit' hotspot
+// becomes "Your rig" in the amp corner (same action: it opens the songwriter as today) and you noodle your own instrument there
+// (player.gearLook -> R.seatGear; the headstock sticker when gearLook.sticker is 'logo'); whoever noodled in that corner takes
+// the spare noodle spot. You wear your instrument everywhere. No extra draw call but the sticker. debug().seat = { seat, rig,
+// drummer, label, gear, sticker, playerPose }.
 (function (GG) {
   var R = GG.render;
   if (!R || !R.defineScene) return;
@@ -56,6 +62,10 @@
     pizza: { x: -0.8, z: 1.5, yaw: 0.35 }, bulb: { x: 0.2, z: -0.2 }
   };
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
+  // v1.1: a string seat's rig corner by the amps (the 'kit' hotspot moves here, labelled "Your rig"), and where a displaced
+  // noodler goes instead.
+  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.68, 1.86, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
+  var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
   // Hotspots: hit box [cx, cy, cz, w, h, d] (world, generous for thumbs), label position, where the
@@ -555,8 +565,16 @@
       var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '') + (kl && kl.head === 'logo' && st.logo ? JSON.stringify(st.logo) : '');   // v0.8: the kit look (KIT_LOOK); v0.8.1: + the logo
       if (ksig !== kit.sig) buildKit(kc, kl, ksig);
       if (kit.mesh) kit.mesh.position.y = space.riserH();          // v0.8 polish: the studio / arena kit stands on a riser
-      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
+      var seat = stringSeat(st), genre0 = st.genre || (band && band.genre) || 'metal';   // v1.1
+      setRig(!!seat);
+      var pgear = seat && R.seatGear ? R.seatGear(seat, pl.gearLook, (kl && kl.color) || kc, genre0) : null, prevP = player.p;
+      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, seat ? { gear: pgear } : { sticks: kl ? kl.sticks : true });
+      syncSticker(st, band, pgear, !!seat && !!pl.gearLook && pl.gearLook.sticker === 'logo', prevP !== player.p);
       if (!player.p.placed) { player.p.placed = true; placePlayer(); }
+      if (!seat && player.pose === 'rig') player.pose = 'stand';
+      if (seat && player.pose === 'drum') player.pose = 'rig';
+      var kitId = seat ? drummerOf(st) : null;
+      seatInfo = { seat: seat || 'drums', rig: !!seat, drummer: kitId, gear: pgear };
 
       var flags = st.flags || {}, cv = flags.cape;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_VARIANTS[cv] ? cv : 'velvet') : null;
@@ -566,6 +584,7 @@
       bandProps.set(band, list, st);   // v0.9: the seat props + the leaning instrument are the band's (the mirror, the crate, the bucket, ...)
       capeId = capeOwner(band, list);  // v0.9: member.cape (content), not "the first mirror idler"
       capeShown = 'none';
+      if (seat) usedSpots.noodle = true;   // v1.1: the amp corner is your rig
       for (i = 0; i < list.length; i++) {
         m = list[i];
         if (!m || !m.id || (m.status && m.status !== 'active')) continue;
@@ -575,6 +594,8 @@
         var gear = idle === 'noodle' || idle === 'fiddle' ? (R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : 'guitar') || (idle === 'fiddle' ? 'fiddle' : 'v')
           : idle === 'pace' && !held && R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : null;   // (a pacer with an instrument keeps it on: Rox)
         var opts = { gear: gear, held: held, floorProp: idle === 'lunch' ? (FLOOR_BY_ID[m.id] || (band && band.id !== 'hail_damage' ? 'lunchpail' : 'lunchbox')) : null, cape: cape };
+        var onKit = !!kitId && m.id === kitId;   // v1.1: the swapped drummer, at the kit with sticks
+        if (onKit) { opts = { gear: null, held: null, floorProp: null, cape: cape, sticks: kl ? kl.sticks : true }; gear = null; }
         var rec = people[m.id] || (people[m.id] = { id: m.id, p: null, x: 0, z: 0, yaw: 0, baseYaw: 0, lookT: 0, lookW: 0, hopT: 0, nodT: -1 });
         rec.genre = genre; rec.gear = gear;
         ensurePerson(rec, m.id, m.look || (cm && cm.look) || DEFAULT_LOOKS[m.id] || genericLook(m.id), opts);
@@ -582,8 +603,10 @@
         var mood = typeof m.mood === 'number' ? m.mood : 60;
         rec.mood = mood;
         rec.energy = mood >= 70 ? 1.15 : mood >= 45 ? 1 : 0.78;
-        var pose = mood < SULK_MOOD ? 'sulk' : (SPOTS[idle] && !usedSpots[idle] ? idle : 'stand');
-        var spot = pose === 'sulk' ? COUCH_SEATS[Math.min(couch++, COUCH_SEATS.length - 1)] : pose === 'stand' ? SPARE[spare++ % SPARE.length] : SPOTS[idle];
+        var pose = mood < SULK_MOOD ? 'sulk' : onKit ? 'drum' : (SPOTS[idle] && !usedSpots[idle] ? idle : 'stand');
+        if (seat && pose === 'stand' && idle === 'noodle' && !usedSpots.noodle2) { pose = 'noodle2'; usedSpots.noodle2 = true; }   // v1.1: the spare noodle spot
+        var spot = pose === 'sulk' ? COUCH_SEATS[Math.min(couch++, COUCH_SEATS.length - 1)] : pose === 'drum' ? kitSpot : pose === 'noodle2' ? NOODLE2 : pose === 'stand' ? SPARE[spare++ % SPARE.length] : SPOTS[idle];
+        if (pose === 'noodle2') pose = 'noodle';
         if (pose !== 'sulk' && pose !== 'stand') usedSpots[idle] = true;
         setPose(rec, pose, spot);
         seen[m.id] = true;
@@ -625,6 +648,43 @@
         rec.hit = hit;
         if (rec.pose) sizeHit(rec);
       }
+    }
+    // v1.1: string seats. The seat (null on drums), who sits at the kit (the lineup's drums seatRole), the rig hotspot, the
+    // headstock sticker on your instrument.
+    var seatInfo = { seat: 'drums', rig: false, drummer: null, gear: null }, rigOn = false;
+    var kitSpot = (function () { var t = rotLocal(KIT, 0, -0.72 * KIT_SCALE); return { x: t.x, z: t.z, yaw: KIT.yaw, seat: 0.54 }; })();
+    function stringSeat(st) { var x = st && st.seat; return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+    function drummerOf(st) {
+      var lu = null, i;
+      try { lu = GG.career && GG.career.lineup ? GG.career.lineup(st) : null; } catch (e) { lu = null; }
+      for (i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
+      var ms = st.members || [];
+      for (i = 0; i < ms.length; i++) if (ms[i] && (!ms[i].status || ms[i].status === 'active') && /^drums/.test(String(ms[i].seatRole || ''))) return ms[i].id;
+      return null;
+    }
+    function setRig(on) {
+      var h = hs.kit;
+      if (!h || rigOn === on) return;
+      rigOn = on;
+      var D = on ? RIG : h.def, text = on ? RIG.label : h.def.label;
+      h.box.position.set(D.box[0], D.box[1], D.box[2]); h.box.scale.set(D.box[3], D.box[4], D.box[5]); h.box.updateMatrixWorld();
+      var lab = ctx.makeLabel(text, { px: 20 }), old = h.label, li = labels.indexOf(old);
+      lab.position.set(D.at[0], D.at[1], D.at[2]); lab.userData.action = 'kit'; scene.add(lab);
+      if (li >= 0) labels[li] = lab;
+      ctx.disposeLabel(old); h.label = lab; h.y = D.at[1]; h.text = text;
+    }
+    function syncSticker(st, band, gear, want, rebuilt) {
+      var S0 = player.sticker, sig = want && gear ? gear + '|' + JSON.stringify(st.logo || null) + '|' + ((band && band.name) || '') : '';
+      if (S0 && (rebuilt || S0.sig !== sig)) {
+        if (S0.mesh.parent) S0.mesh.parent.remove(S0.mesh);
+        S0.mesh.geometry.dispose(); S0.mesh.material.dispose(); if (S0.tex) S0.tex.dispose();
+        player.sticker = S0 = null;
+      }
+      if (!sig || S0 || !R.gearSticker || !R.logo || !R.logo.texture) return;
+      var tex = null;
+      try { tex = R.logo.texture(GG.logo ? GG.logo.get(st) : null, (band && band.name) || 'The Band', 128, { badge: 'round', mini: true }); } catch (e) { tex = null; }
+      var m = tex ? R.gearSticker(ctx, player.p, gear, tex) : null;
+      if (m) player.sticker = { mesh: m, tex: tex, sig: sig }; else if (tex) tex.dispose();
     }
     function setPose(rec, pose, spot) {
       rec.spot = spot;
@@ -693,11 +753,11 @@
       var h = hs[action];
       if (!h || !state || !player.p) return false;
       var st = standOf(h.def);
-      player.pending = action; player.faceT = 0; player.faceYaw = h.def.face;
+      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && action === 'kit' ? RIG.face : h.def.face;
       startWalk(st[0], st[1]);
       return true;
     }
-    function standOf(def) { return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch)
+    function standOf(def) { if (rigOn && def.action === 'kit') return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
     function clampX(x) { return clamp(x, ROOM.x0 + WALK.margin, ROOM.x1 - WALK.margin); }
     function clampZ(z) { return clamp(z, ROOM.z0 + WALK.margin, ROOM.z1 - WALK.margin); }
     function pushOut(x, z) {
@@ -718,7 +778,8 @@
       if (dx * dx + dz * dz < 0.0025) {          // already there: just turn (and fire the hotspot)
         p.walking = false; p.x = tx; p.z = tz;
         if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = 0; }
-        p.pose = p.pending === 'kit' ? 'drum' : p.pose === 'drum' && !p.pending ? 'drum' : 'stand';
+        var kp = rigOn ? 'rig' : 'drum';   // v1.1: your rig on a string seat
+        p.pose = p.pending === 'kit' ? kp : p.pose === kp && !p.pending ? kp : 'stand';
         ctx.ring.hide();
         return;
       }
@@ -813,8 +874,9 @@
       resetPose(p.p, 'stand');
       var amp = clamp(p.speed / WALK.speed, 0, 1);
       if (p.pose === 'drum') drumPose(bn, t, p.scale / KIT_SCALE);
+      else if (p.pose === 'rig') IDLES.noodle(p, bn, t * 1.05);           // v1.1: noodling at your rig
       else if (amp > 0.02) { walkCycle(bn, p.phase, amp); p.idleT = 0; }
-      else { p.idleT += dt; playerIdle(bn, t, p.idleT); }
+      else { p.idleT += dt; if (rigOn) seatIdle(bn, t, p.idleT); else playerIdle(bn, t, p.idleT); }
       p.y += (space.floorAt(p.x, p.z) - p.y) * (1 - Math.exp(-14 * dt));   // v0.8 polish: steps up onto a riser
       p.p.root.position.set(p.x, p.y, p.z);
       p.p.root.rotation.y = p.yaw;
@@ -825,7 +887,7 @@
       ctx.ring.hide();
       if (p.pending) {
         p.goalYaw = p.faceYaw; p.faceT = 0;
-        if (p.pending === 'kit') p.pose = 'drum';
+        if (p.pending === 'kit') p.pose = rigOn ? 'rig' : 'drum';
       }
     }
     function playerIdle(bn, t, idleT) {
@@ -840,6 +902,13 @@
         bn[B_HEAD].rotation.x = 0.1 * w * Math.max(0, Math.sin(t * 8.5));
       }
       bn[B_HEAD].rotation.y = 0.25 * Math.sin(t * 0.37) * Math.sin(t * 0.23);
+      breathe(bn, t, 1);
+    }
+    function seatIdle(bn, t, idleT) {                    // v1.1: hands on your instrument, a lazy strum every few seconds
+      rot(bn[B_ARM_L], 0.1, 0, 0.16); rot(bn[B_FORE_L], -2.0, 0, 0.12);
+      var c = (idleT + 2) % 6, w = idleT > 2 && c < 1.8 ? bump(c / 1.8) : 0;
+      rot(bn[B_ARM_R], -0.3, 0, 0.12); rot(bn[B_FORE_R], -0.9 + w * 0.18 * Math.sin(t * 12), 0, 0.42);
+      bn[B_HEAD].rotation.x = 0.08 + 0.12 * w; bn[B_HEAD].rotation.y = 0.2 * Math.sin(t * 0.37) * Math.sin(t * 0.23) * (1 - w);
       breathe(bn, t, 1);
     }
     function drumPose(bn, t, scale) {                    // on the throne, playing a little groove
@@ -862,7 +931,8 @@
       for (var i = 0; i < peopleList.length; i++) {
         var r = peopleList[i], bn = r.p.bones, tt = t * r.energy + r.phase;
         resetPose(r.p, r.pose);
-        (IDLES[r.pose] || IDLES.stand)(r, bn, tt, dt);
+        if (r.pose === 'drum') drumPose(bn, tt, r.scale / KIT_SCALE);           // v1.1: the swapped drummer at the kit
+        else (IDLES[r.pose] || IDLES.stand)(r, bn, tt, dt);
         if (r.pose !== 'sulk' && r.pose !== 'pace' && r.pose !== 'mirror') capeIdle(bn, tt, 0);
         if (r.mood < 45 && r.pose !== 'sulk') { bn[B_HEAD].rotation.x += 0.14; bn[B_SPINE].rotation.x += 0.06; }
         // Tapped: turn toward the player (seated people turn their head), hop or nod.
@@ -931,7 +1001,8 @@
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
         hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         labelAt: hsList.map(function (h) { var p = h.label.position; return { action: h.def.action, x: rnd(p.x), y: rnd(h.y), z: rnd(p.z) }; }),   // v0.8 polish: for label/prop overlap checks
-        trophyWall: trophyWall.counts, bandProps: bandProps.state()
+        trophyWall: trophyWall.counts, bandProps: bandProps.state(),
+        seat: Object.assign({}, seatInfo, { label: hs.kit ? hs.kit.text || HOTSPOTS[4].label : null, sticker: !!player.sticker, playerPose: player.walking ? 'walk' : player.pose })   // v1.1
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
