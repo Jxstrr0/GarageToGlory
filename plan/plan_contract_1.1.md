@@ -9,8 +9,10 @@ numbers, so the lead runs fresh read-only audits (sims, content, ui, render_audi
 ## 0. Owner answers (popups 2026-10-01 — LOCKED)
 S1 seat swap · S2 taps + holds, bass ≤ 5 lanes, guitar ≤ 6 · S3 your part + auto drums · S4 v1.1 Seats, Tuning → v1.2 ·
 S5 Gravel Kings rhythm: Chase drums + sings · S6 Rox/Travis sing from the kit · S7 3 role arcs + 12 band finales.
-Open (ask at stage 0, one popup): size budget (rec. 5.0 MB), gear names/prices for lanes 5–6 + run gear, body shapes,
-seat-picker audio preview.
+E14 open items, answered by owner popup 2026-10-02 (all recommended, LOCKED): **size budget 5.0 MB** (dist on disk, stripped);
+**gear = parody names per genre, priced like the matching drum upgrades** (every seat costs the same); **3–4 body shapes per
+string seat** in the creator (add, don't shrink); **seat picker: tap a seat card to hear a ~3 s preview** of that seat's part
+from a starter song over the band (reuses the song player).
 
 ### Defaults taken without a popup (list them in the stage-0 popup so the owner can object)
 - The seat is fixed for the whole career; old saves are drummers.

@@ -599,7 +599,7 @@ Later versions:
 ## Addendum 3 — pending
 - [x] v1.0: seat-aware where E12 says (`HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}` tokens, lessons
       and achievements gated `seat: ['drums']` for drum words, epilogue `seatRole` hooks, Legacy seat-neutral) — merged 2026-10-02
-- [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md`, popup for E14 open items (size budget, gear names, body shapes, picker preview)
+- [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md` (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview)
 - [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
 - [ ] v1.2 Tuning (D5) covers all four seats
 
