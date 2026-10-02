@@ -34,7 +34,7 @@
   var M = GG.meta = GG.meta || {};
   var HOF_CAP = 40, HOF_TOP = 10, SEEN_CAP = 200, UNLOCK_KINDS = ['palettes', 'emblems', 'parts'];
   M.enabled = false;
-  var meta = null, hof = null, quotaSent = false;
+  var meta = null, hof = null, quotaSent = false, works = null;
 
   function obj(o) { return o && typeof o === 'object' && !Array.isArray(o) ? o : null; }
   function num(v) { return isFinite(v) ? +v : 0; }
@@ -60,7 +60,7 @@
     h.entries = h.entries.filter(function (e) { return obj(e) && typeof e.id === 'string'; });
     return h;
   }
-  function ensure() { if (!meta) meta = normMeta(save.getJSON(save.KEYS.meta)); if (!hof) hof = normHof(save.getJSON(save.KEYS.hof)); }
+  function ensure() { if (works === null) works = save.storageOk !== false; if (!meta) meta = normMeta(save.getJSON(save.KEYS.meta)); if (!hof) hof = normHof(save.getJSON(save.KEYS.hof)); }
 
   M.get = function () { ensure(); return meta; };
   M.hof = function () { ensure(); return hof.entries; };
@@ -85,15 +85,18 @@
     var top = topIds(E);
     for (var i = E.length - 1; i >= 0 && E.length > HOF_CAP; i--) if (top.indexOf(E[i].id) < 0) E.splice(i, 1);
   }
+  // Lane M: `works` = this browser's storage worked when meta was first read (10_save's fail() flips save.storageOk to false
+  // on any failed write, a quota miss included). A retry that succeeds proves storage works, so it puts storageOk back.
+
   function writeHof() {
-    var had = save.storageOk;
+    if (works === null) works = save.storageOk !== false;
     if (save.setJSON(save.KEYS.hof, hof)) return true;
-    if (had) {
+    if (works) {
       var top = topIds(hof.entries);
       hof.entries.forEach(function (e) { if (top.indexOf(e.id) < 0) delete e.strip; });
-      if (save.setJSON(save.KEYS.hof, hof)) return true;
+      if (save.setJSON(save.KEYS.hof, hof)) { save.storageOk = true; return true; }
     }
-    if (!quotaSent && had) { quotaSent = true; GG.emit('meta:quota', {}); }
+    if (!quotaSent && works) { quotaSent = true; GG.emit('meta:quota', {}); }
     return false;
   }
   M.save = function () { ensure(); var a = writeMeta(), b = writeHof(); changed(['meta', 'hof']); return a && b; };
@@ -314,6 +317,7 @@
   }
   // Reads both keys (memory fallback when storage is missing) and runs the one-time slot scan.
   M.load = function () {
+    if (works === null) works = save.storageOk !== false;
     meta = normMeta(save.getJSON(save.KEYS.meta)); hof = normHof(save.getJSON(save.KEYS.hof));
     if (!meta.scanned) scan();
     return meta;
