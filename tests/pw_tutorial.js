@@ -8,9 +8,11 @@
 //   tut_skip   : a profile that passed week 4 (meta past4 = 1): the creator offers "Skip the lessons" (on, 48 px) → no lessons;
 //                "?" still replays one (Close, done unchanged)
 //   tut_replay : every lesson replays from the "?" sheet (ticks for seen ones), never touching state.tutorial.done
+// SHOTS=1 saves tests/.cache/tut_<label>.png at every bubble check.
 // Every section: no console errors, every bubble button >= 48 px, the bubble stays on screen. PW_VIEW=440x956 for the owner's phone.
 // Run: node build.js && timeout 500 node tests/pw_tutorial.js
-const { open, checker, VIEW } = require('./_pw');
+const { open, checker, VIEW, shotName } = require('./_pw');
+const SHOTS = process.env.SHOTS ? require('path').join(__dirname, '.cache') : null;   // SHOTS=1: a screenshot per bubble checked
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
 const BANDS = (process.env.BANDS || 'hail_damage,frost_heave,gravel_kings,grid_road_ramblers').split(',');
@@ -49,6 +51,8 @@ async function cardChecks(page, c, label) {
     return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, btns, W: innerWidth, H: innerHeight, sw: document.documentElement.scrollWidth };
   });
   if (!r) { c.ok(false, label + ': bubble present'); return; }
+  if (SHOTS) await page.waitForTimeout(450);
+  if (SHOTS) await page.screenshot({ path: require('path').join(SHOTS, shotName('tut_' + label.replace(/\W+/g, '_') + '.png')) });
   c.ok(r.btns.length >= 2 && r.btns.every(b => b[1] >= 48 && b[2] >= 48), label + ': bubble buttons >= 48 px ' + JSON.stringify(r.btns));
   c.ok(r.top >= 0 && r.bottom <= r.H && r.left >= 0 && r.right <= r.W && r.sw <= r.W, label + ': bubble on screen, no horizontal scroll');
 }

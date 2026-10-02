@@ -144,12 +144,18 @@
       }
     } else ring.style.display = 'none';
     // Top slot under the HUD, or the bottom slot (above the dock when it shows); the one away from the target.
-    var e = ui.get(ui.top() || ''), tallTop = !!(e && e.def && (e.def.kind === 'full' || e.def.tall));
-    var useTop = cy != null ? cy > H * 0.5 : !tallTop;
+    // No target: the top slot, except over a tall sheet (its tabs and header live up there; its footer is short) and a full
+    // screen (the middle: the sequencer's header and step buttons stay free).
+    var e = ui.get(ui.top() || ''), tallSheet = !!(e && e.def && e.def.kind !== 'full' && e.def.tall);
+    var useTop = cy != null ? cy > H * 0.5 : !tallSheet;
     var dock = document.querySelector('#hud .dock'), db = 12;
     if (dock && !dock.classList.contains('hidden')) { var dr = dock.getBoundingClientRect(); if (dr.height) db = Math.max(12, H - dr.top + 8); }
+    var foot = e && e.root && e.root.querySelector('.sheet-foot, .full-foot'), fr = foot ? foot.getBoundingClientRect() : null;   // the screen's own buttons stay free
+    if (fr && fr.height > 8 && foot.children.length) db = Math.max(db, H - fr.top + 8);
+
     var ch = card.offsetHeight || 150, topY = Math.max(8, hudBottom() + 8), botY = H - db - ch;
     var y = useTop ? topY : botY;
+    if (cy == null && e && e.def && e.def.kind === 'full') y = Math.round(H * 0.5 - ch / 2);   // a full screen keeps its header and footer controls
     if (t && t.box) {   // never sit on the box itself: flip to the other slot if it would
       var ov = function (yy) { return yy < t.box.bottom && yy + ch > t.box.top; };
       if (ov(y)) { var alt = useTop ? botY : topY; if (!ov(alt)) y = alt; }
