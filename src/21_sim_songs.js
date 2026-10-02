@@ -200,7 +200,8 @@
     var hookD = hookOf(p, lanes, tips), groove = sumW ? sumG / sumW : 0;
     // v1.1: a string seat's song also rates your part (seat signatures per genre): groove, hook contrast and difficulty
     // blend in by PART_WEIGHT; notes = your part's notes. A drum pattern (no part) rates exactly as before.
-    var pr = p.part ? rateWithPart(p, genre, tips, X) : null, PW = songs.PART_WEIGHT;
+    var ptips = {}, pr = p.part ? rateWithPart(p, genre, ptips, X) : null, PW = songs.PART_WEIGHT;
+    Object.keys(ptips).forEach(function (k) { tips[k] = (tips[k] || 0) + ptips[k]; });
     if (pr) {
       groove = groove * (1 - PW.groove) + pr.groove * PW.groove;
       hookD = hookD * (1 - PW.hook) + pr.hook * PW.hook;
@@ -213,7 +214,8 @@
     names.forEach(function (name) { sections[name] = Math.round(100 * (per[name] != null ? per[name] : barGroove(G, feats[name], g, {}, 0))); });
     var out = { groove: Math.round(100 * groove), hook: Math.round(100 * hook),
       difficulty: Math.round(100 * (1 - Math.exp(-raw / 28))), notes: notes, tips: list.slice(0, 2), sections: sections };
-    if (pr) out.part = { groove: Math.round(100 * pr.groove), hook: Math.round(100 * pr.hook) };
+    if (pr) out.part = { groove: Math.round(100 * pr.groove), hook: Math.round(100 * pr.hook),
+      tips: Object.keys(ptips).sort(function (a, b) { return ptips[b] - ptips[a] || (a < b ? -1 : 1); }).slice(0, 2) };   // your part's own tips (the part grid shows these)
     return out;
   };
   // A one-word verdict for a groove score ("Neck-snapping.").
@@ -437,7 +439,7 @@
     var seen = {}, B = songs.genre(genre || 'metal').backing || {}, PN = seat !== 'lead' && B.progNames ? B.progNames[section] : null;
     return partList(genre, seat, section).map(function (x, i) {
       var n = progWords(x, i, PN);
-      if (seen[n]) n += ' (' + (++seen[n]) + ')'; else seen[n] = 1;
+      if (seen[n]) n += ' ' + ['II', 'III', 'IV', 'V', 'VI'][Math.min(4, seen[n]++ - 1)]; else seen[n] = 1;
       return { i: i, name: n };
     });
   };

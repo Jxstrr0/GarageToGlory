@@ -1,5 +1,5 @@
 // pw_shop.js: the v0.8 "Kit" shop UI (SHOPUI, lane A stage 2) on a 390x844 phone viewport.
-// Sections (META_ONLY=gear|merch|space|van|spaces|sheet, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=gear|merch|space|van|spaces|seat|sheet, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
 //   gear : the kit hotspot (sketch pad) → 🛒 Drum shop: kit tiers (the pro kit waits for Local Heroes, the why shows), toms →
 //          lane 5, ride → lane 6 (needs the toms first), the pedal, the pawn-shop kit (GG.audio.kitQuality 1); each buy is
 //          heard (GG.audio.hit on the new lane); the open grid grows to 6 lanes; Outro / Solo tabs ("+Solo" → Add → the
@@ -600,5 +600,78 @@ async function sheet() {
   if (want('space')) await space();
   if (want('van')) await van();
   if (want('spaces')) await spaces();
+  if (want('seat')) await seatShop();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();
+
+/* ---- seat (v1.1 "Seats", plan_contract_1.1 §4.6, owner E14b) ---------------------------------------------------------- */
+// A string seat's shop: bass (Hail Damage) and lead (Ramblers) from the sketch pad's 🛒 "{Instrument} shop": the parody
+// names per genre for the seat at exactly the drum prices and eras; the 5-string adds lane 5 to YOUR highway and the band's
+// toms (the kit grows too), bass's ride slot is the fridge (a cab, no lane), the run gear sets your runs (+ the double
+// kick); the lead's amp tier 2 shows the whammy; a buy plays your instrument (no drum hit); the swapped drummer's chat line;
+// no gong; layout audit; no console errors. Screenshot shop_seat.png.
+async function seatShop() {
+  const c = checker('seat');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+    for (const [bandId, seatId] of [['hail_damage', 'bass'], ['grid_road_ramblers', 'lead']]) {
+      await page.evaluate(([bandId, seatId]) => {
+        GG.ui.closeAll();
+        GG.main.quickStart({ seed: 909, bandId, seat: seatId, openCard: false });
+        GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'plan'; s.fund = 20000; s.era = 'local'; s.protected = false;
+        if (!s.eraHistory.some(x => x.era === 'local')) s.eraHistory.push({ era: 'local', week: 1 });
+        window.__hits = []; window.__voice = [];
+        const A = GG.audio, h0 = A.hit;
+        A.hit = function (l) { window.__hits.push(l); return h0.apply(this, arguments); };
+        ['pluck', 'strum', 'lead'].forEach(k => { const f = A[k]; A[k] = function () { window.__voice.push(k); return f.apply(this, arguments); }; });
+        GG.main.sync();
+        GG.ui.openSketch();
+      }, [bandId, seatId]);
+      await waitScreen(page, 'seq');
+      const shopBtn = await text(page, 'btn-kit-shop');
+      c.ok(seatId === 'bass' ? /Bass shop/.test(shopBtn) : /Guitar shop/.test(shopBtn), seatId + ': the sketch pad opens your seat’s shop: ' + shopBtn);
+      await tap(page, 'btn-kit-shop'); await waitScreen(page, 'gear');
+      const g0 = await page.evaluate(() => {
+        const q = s => document.querySelector('[data-testid="' + s + '"]');
+        return { title: document.querySelector('.sheet.shop').textContent.slice(0, 80), now: q('gear-now').dataset, nowText: q('gear-now').textContent,
+          items: GG.shop.gearItems(GG.state).map(x => ({ id: x.id, name: x.name, cost: x.cost, era: x.era, lane: x.lane, runs: x.runs, cab: x.cab })),
+          kits: GG.shop.kitTiers(GG.state).map(x => ({ name: x.name, cost: x.cost, whammy: !!x.whammy })), drum: (() => { const st = JSON.parse(JSON.stringify(GG.state)); st.seat = 'drums';
+            return { items: GG.shop.gearItems(st).map(x => ({ id: x.id, name: x.name, cost: x.cost, era: x.era })), kits: GG.shop.kitTiers(st).map(x => ({ name: x.name, cost: x.cost })) }; })(),
+          text: document.querySelector('.sheet.shop').textContent };
+      });
+      c.ok(g0.now.seat === seatId && g0.now.lanes === '4' && g0.now.runs === '0' && /Your rig now/.test(g0.nowText), seatId + ': your rig now (4 lanes, no runs) ' + JSON.stringify(g0.now));
+      c.ok(g0.items.every((x, i) => x.cost === g0.drum.items[i].cost && x.era === g0.drum.items[i].era && x.name !== g0.drum.items[i].name), seatId + ': the drum prices and eras, your own names ' + g0.items.map(x => x.name + ' $' + x.cost).join(' · '));
+      c.ok(g0.kits.every((k, i) => k.cost === g0.drum.kits[i].cost && k.name !== g0.drum.kits[i].name), seatId + ': amp tiers at the kit prices ' + g0.kits.map(k => k.name).join(' · '));
+      c.ok(!/\bgong\b/i.test(g0.text.replace(/Global Gong/g, '')) && !/\b(sticks|kit tier|toms|cymbal)\b/i.test(g0.items.map(x => x.name).join(' ')), seatId + ': no gong, no drum names');
+      if (seatId === 'bass') {
+        c.ok(g0.items.find(x => x.id === 'toms').lane === 5 && g0.items.find(x => x.id === 'ride').cab && !g0.items.find(x => x.id === 'ride').lane && g0.items.find(x => x.id === 'pedal').runs,
+          'bass: lane 5, the fridge (a cab, no lane), fast fingers (runs) ' + JSON.stringify(g0.items));
+        c.ok(/Low B of Doom|Five-String/.test(g0.items.find(x => x.id === 'toms').name), 'bass: a parody 5-string name ' + g0.items.find(x => x.id === 'toms').name);
+      } else {
+        c.ok(g0.items.find(x => x.id === 'ride').lane === 6 && g0.kits[2].whammy && !g0.kits[1].whammy, 'lead: lane 6 + the whammy with amp tier 2 ' + JSON.stringify(g0.kits));
+      }
+      c.ok((await audit(page)).length === 0, seatId + ': shop layout ' + (await audit(page)).join('; '));
+      if (seatId === 'bass') { await page.waitForTimeout(450); await shot(page, 'shop_seat.png'); }
+      const v0 = await page.evaluate(() => ({ voice: window.__voice.length, hits: window.__hits.length, chat: GG.state.chat.length }));
+      await tap(page, 'gear-buy-toms');
+      await page.waitForFunction(n => window.__voice.length > n, v0.voice, { timeout: 4000 }).catch(() => {});
+      const b1 = await page.evaluate(() => ({ seatLanes: GG.career.seatLanes(GG.state), lanes: GG.state.gear.lanes, owned: GG.state.gear.owned.slice(), now: document.querySelector('[data-testid="gear-now"]').dataset,
+        voice: window.__voice.length, hits: window.__hits.length, chat: GG.state.chat.slice(-1)[0], drummer: GG.career.drummerId(GG.state) }));
+      c.ok(b1.seatLanes === 5 && b1.lanes === 5 && b1.owned.includes('toms') && b1.now.lanes === '5', seatId + ': lane 5 on your highway AND the band’s toms ' + JSON.stringify({ seat: b1.seatLanes, kit: b1.lanes }));
+      c.ok(b1.voice > v0.voice && b1.hits === v0.hits, seatId + ': the buy plays your instrument, not a drum ' + JSON.stringify([v0, b1.voice, b1.hits]));
+      c.ok(b1.chat && b1.chat.who === b1.drummer, seatId + ': the swapped drummer got the matching drum piece (chat) ' + JSON.stringify(b1.chat));
+      await tap(page, 'gear-buy-ride');
+      await tap(page, 'gear-buy-pedal');
+      const b2 = await page.evaluate(() => ({ seatLanes: GG.career.seatLanes(GG.state), runs: GG.career.seatRuns(GG.state), lanes: GG.state.gear.lanes, dk: GG.state.gear.doubleKick, now: document.querySelector('[data-testid="gear-now"]').dataset }));
+      c.ok(b2.seatLanes === (seatId === 'bass' ? 5 : 6) && b2.lanes === 6 && b2.runs && b2.dk && b2.now.runs === '1', seatId + ': ride/cab + run gear: your lanes ' + b2.seatLanes + ', kit 6 + double kick, runs on ' + JSON.stringify(b2));
+      await tap(page, 'btn-gear-done');
+      const grid = await page.evaluate(() => ({ cols: document.querySelector('[data-testid="part-grid"]') ? document.querySelector('[data-testid="part-grid"]').dataset.lanes : null }));
+      c.ok(grid.cols === (seatId === 'bass' ? '3' : '5'), seatId + ': back to your part’s grid ' + JSON.stringify(grid));
+    }
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
