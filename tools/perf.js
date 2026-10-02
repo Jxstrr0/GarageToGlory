@@ -438,6 +438,8 @@ async function governor() {
     await page.waitForTimeout(1500);
     await row('title (idle)');
     await page.evaluate(() => { GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, bandId: 'hail_damage' }); GG.ui.closeAll(); });
+    // (the first garage glide runs at 2-3 headless fps while SwiftShader compiles; wait for it, then sample)
+    await page.waitForFunction(() => GG.debug('perf').mode !== 'glide', null, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2500);
     await row('garage (idle)');
     await page.evaluate(() => GG.render.goToHotspot('kit'));

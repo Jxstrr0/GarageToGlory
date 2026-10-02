@@ -198,4 +198,4 @@ grid_road_ramblers  10962   3918 |  0.2 |  0.00  0.00 |   14   28   29  104 | 1.
   targets       gravel_kings local wk 14 ok | fans 115% ok | fund 130% MISS | loans 0.1 ok | signed@3 1.0 ok | world 93 (100%) ok | cards 98% ok | no-card +1pt ok | board 4.2@44 ok | km/gig 0.83x ok | quits 0.00/yr rets 0% ok | payoff 18/18 ok
   targets grid_road_ramblers local wk 14 ok | fans 92% ok | fund 93% ok | loans 0.2 ok | signed@3 1.0 ok | world 104 (100%) ok | cards 102% ok | no-card +-1pt ok | board 4.3@165 ok | km/gig 1.09x ok | quits 0.00/yr rets 0% ok | payoff 16/18 ok
 invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 100k)
-done in 681.60 s
+done in 790.35 s

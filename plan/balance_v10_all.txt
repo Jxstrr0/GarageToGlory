@@ -235,4 +235,4 @@ LEGACY TARGETS (avg bot: AL <= 20%, CI+CH >= 60%, +3 <= 10%, median tier within 
   grid_road_ramblers avg: AL 3% ok | CI+CH 93% ok | +3 0% ok | bonus 20% | median CH ok || good: AL 100% ok | +3 100% ok | +2/+3 100% ok
   all bands, avg bot bonus rate 33% ok (10-50%; Gravel Kings' higher rate accepted)
 invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 250k)
-done in 870.39 s
+done in 1785.98 s

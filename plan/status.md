@@ -3,40 +3,20 @@
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
 ## Version
-- Current (on `main` after the v0.9 merge): **0.9.0.0 "Genres"** = 0.8.3 (drum sync) + all four bands playable, each with
-  its own rival cast, storyline, World payoff, home city/ring, space, driver, superfan and misprint ("What's in v0.9" below).
-  Integrated on `v09-int`, merged 2026-10-01 (PR from `v0.9-genres`). **Update Current/Next at every merge.**
+- Current: **1.0.0.0 "Glory"** = 0.9 "Genres" + endings (Legacy score, five tiers, eight specials, epilogues, bonus years, the
+  end sequence), achievements + the laptop Trophies tab, the Hall of Fame (title button, entry sheet, backup code), meta
+  unlocks (looks from finished careers), the guided tutorial (full week 1 + light weeks 2–4, "?" replays) and the perf pass
+  (frame governor, graphics "Auto", the global voice cap). Integrated on `v1.0-glory` 2026-10-02 (lead: P → E → M → T → Q sweep);
+  `main` gets it through the PR from `v1.0-glory`. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres.
-- In progress: **1.0.0.0 "Glory"** on branch `v1.0-glory` (stage 0 done 2026-10-02: VERSION 1.0.0.0, contract
-  `plan/plan_contract_1.0.md`; lanes E/M/T/P next). `main` stays 0.9.0.0 until the v1.0 merge.
-- Next: **1.0 "Glory"** (+ D4 achievements, Hall of Fame; v0.9 forward-compat notes in "What's in v0.9" → v1.0; Seats
-  forward-compat in handoff E12) → **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; draft contract
-  `plan/plan_contract_1.1.md`) → **1.2 Tuning** (D5, moved from 1.1 by the owner 2026-10-01).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory.
+- Next: **1.0.1 "Smart bridge"** (the queued two-lane tap hotfix below) → **1.1 "Seats"** (handoff Part E: play bass / rhythm /
+  lead; draft contract `plan/plan_contract_1.1.md`, re-audit it at its stage 0; the size gate leaves ~270 KB under 4.5 MB)
+  → **1.2 "Tuning"** (D5).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
-
-## RESUME HERE (2026-10-02: v1.0 stage 0 committed on `v1.0-glory`)
-- **main = 0.9.0.0 "Genres"**; branch **`v1.0-glory`** = the v1.0 contract (`plan/plan_contract_1.0.md`, revised after the two
-  critiques; §0 owner answers LOCKED) + **stage 0 (§3, items 1–12) committed**: VERSION 1.0.0.0, comment-stripping build,
-  contracts, hooks, migrate defaults, save-code `_meta`, `12_meta` core, `R.finalAt`, UI sockets, `PW_VIEW`, fixtures, baselines
-  (details in "v1.0 stage 0" under APIs below). `node tests/run.js` SUITE ALL PASS (22 files); pw_flow flow + layout, pw_gig gig +
-  sync, pw_title flow, pw_bands hail_damage, pw_rival scene + final, pw_fans bandbook at 390×844 and pw_flow flow + layout at
-  `PW_VIEW=440x956` green on the stripped dist.
-- **Next:** §3.13 worktrees from the stage-0 commit (copy `tests/.cache/three*` into each), launch lanes **E, M, T, P** per §5
-  (process rule: own PIDs only; WIP to `wip-v10-<lane>` before any long wait), integrate per §6 (P → E → M → T → Q sweep →
-  one review pass), full node + pw at 390×844 and 440×956, PR `v1.0-glory` → main, merge, then **v1.1 "Seats"** (handoff
-  Part E; re-audit `plan/plan_contract_1.1.md` at its stage 0), then 1.2 "Tuning".
-- Lanes must know (stage-0 notes that go beyond the contract text): new careers also start with the five v1.0 fields
-  (`newCareer`, same defaults as migrate); `GG.meta.hof()` exists (the title socket reads it); `GG.meta.recordCareer` builds a
-  basic entry when `GG.legacy` is absent; the scan keeps `meta.scanned` null until ended slots could be recorded (past4 is
-  deduped by `meta.seen`); `tut-skip` is a 48 px toggle button (`aria-pressed`), not a checkbox; the HUD "?" (`btn-help`)
-  renders only when `GG.tutorial` exists, and at 390 px it squeezes the five chips to ~51 px ("W1/24" ellipsizes: Lane T to fit);
-  `ui.fill`'s no-state fallback (50) does not know `{instrument}`/`{drummer}` (with a state they go through `fillText`).
-- Known v1.2 items already logged: Ramblers' World payoff rarely reached (Australia ~$7k up front), Gravel Kings fund y3
-  ~20–30 % high, rock walking-bass clashes, bridge progression never varies (fix changes HD audio).
 
 ## Queued after v1.0: v1.0.1 "Smart bridge" (owner popup 2026-10-02)
 - One touch on the seam between two neighbouring lanes (≈ middle third of the gap) hits BOTH lanes only when both have a
@@ -511,7 +491,8 @@ Later versions:
   band's), colour pair (~10 curated). Drawn procedurally to a cached canvas texture, reused everywhere: kick-drum head
   art, merch, van stickers, Bandbook avatar, garage banner, Loonies broadcast card, Hall of Fame entry. No image files.
   Save: `logo: { emblem, style, palette }`; carry-over follows the cosmetics rule. Rival bands get fixed logos from content
-  (same renderer) on the Scene leaderboard + BOTB screens. **OPEN (D6): final emblem + palette lists (add, don't shrink).**
+  (same renderer) on the Scene leaderboard + BOTB screens. **D6 closed in v1.0:** palettes Arena Gold, Hockey Night, Cult Velvet,
+  One-Hit Teal, Garage Grey, Rival Red; emblems lantern, price_tag, handshake, globe_record (meta unlocks; no gong).
 - D3 Year-end recap (v0.8.1): at the week-24 wrap, before the next year: one swipeable screen — fund change (in vs out),
   fans gained, best/worst gig (venue, grade, one-line quote), songs written + albums released, awards (Loonies, Global
   Gong), who quit / came back, rival standing (leaderboard delta), regions unlocked, a Rolling Scone headline generated
@@ -521,8 +502,7 @@ Later versions:
 - D4 Achievements (v1.0, with Hall of Fame + meta unlocks): cross-career, meta storage, laptop "Trophies" + a toast on
   unlock; ~30 as content (`src/content/achievements.js`: id, name, blurb, condition); never gate content. Seed list in
   handoff Part D4 (Twelve People and a Dog, The Wall, Ma Pelouse, The Original Five, Kijiji All-Stars, Sold Out, Worst Van,
-  Block Heater, Buddy, Big in Japan, Frostbite, Chugging Along, Grey Mug, Night School, Sad Dome). **OPEN: extras (cheap +
-  funny, add freely).**
+  Block Heater, Buddy, Big in Japan, Frostbite, Chugging Along, Grey Mug, Night School, Sad Dome). Shipped in v1.0 with 36.
 - D5 **v1.1 "Tuning"** (new roadmap entry after v1.0): no new features; owner playtests years 3–6 on his phone → numbered
   items in this file → small v1.1.x patches, `tools/balance.js` before/after each; bot probes (fund by year incl. the late
   plateau, fans vs Steady targets, quits ≈ 1 per 1–2 years, rival gap, World ≈ year 5–6, bonus-year rate); back-burner
@@ -537,8 +517,7 @@ Later versions:
       PSA, Tamara's dental clinic, a seed dealer)
 - [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
 - [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
-- [ ] D4 achievements (~30, cross-career, laptop Trophies) — v1.0 (**in progress**: contract `plan/plan_contract_1.0.md` §4.6,
-      Lane M; stage 0 on `v1.0-glory` 2026-10-02: `C.ACH_KINDS` advisory, `state.ach`, the laptop Trophies tab socket)
+- [x] D4 achievements (36, cross-career, laptop Trophies, toast on a fresh unlock) — v1.0 (Lane M), merged 2026-10-02
 - [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
 
 ## Addendum 3 (handoff Part E "Seats") — decisions (owner popups, 2026-10-01; locked)
@@ -550,8 +529,8 @@ Later versions:
 - S7 Storylines: **3 role arcs** (Nobody Hears the Bass · The Engine Room · Solo Too Long) **+ 12 band finales**.
 
 ## Addendum 3 — pending
-- [ ] v1.0: build seat-aware where E12 says (Hall of Fame `seat`, tokenised tutorial, epilogue hooks) (**in progress**: stage 0
-      added `{instrument}` / `{drummer}` (drums: 'drums' / 'you'), `HOF_ENTRY.seat` + `META.careers.bySeat` in 12_meta; Lanes E/M/T)
+- [x] v1.0: seat-aware where E12 says (`HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}` tokens, lessons
+      and achievements gated `seat: ['drums']` for drum words, epilogue `seatRole` hooks, Legacy seat-neutral) — merged 2026-10-02
 - [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md`, popup for E14 open items (size budget, gear names, body shapes, picker preview)
 - [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
 - [ ] v1.2 Tuning (D5) covers all four seats
@@ -1380,11 +1359,10 @@ Later versions:
   lines live in 59d (UI flavour, like 55's).
 - v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
 - v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
-  dressing); producer `weird` unused; full-career save code ≈ 65–70k chars (album reviews); balance 10×20 takes ~39 s.
+  dressing); producer `weird` unused; balance 10×20 takes ~39 s. (Save codes: a 312-week career ≈ 120–131k chars; see v1.0.)
 - v0.4: late-game avg-bot fund plateaus ~$3.5k (was $11k) because of the members' cut; the good bot never sees drama
   (moods ~85). Both belong to the v0.5 era/economy pass. Pay-the-band money has no other use yet (members' savings).
 - v0.4: fill-ins have generic garage idles/tap lines; the van scene doesn't carry fill-ins.
-- v0.4: epilogue lines per original are content-only hooks for v1.0; `rivalDefectors` isn't used by a rival sim yet (v0.6).
 - v0.4: EFFECT_KEYS additions (`member`, `payCut`, `repay`) are pushed at runtime by 20_sim_career until the lead
   folds them into 02_contracts.js.
 - v0.3: later years pay far more than v0.2 (good bot year 2 ≈ $7k fund, 2,000 fans) because of 250–300-cap rooms —
@@ -1394,9 +1372,7 @@ Later versions:
 - Restoring a save code keeps the code's slot; its next autosave overwrites that slot without asking.
 - With the planner sheet open the room squeezes into a 150px band and hotspot labels overlap a little.
 - Once-only garage cards run out after ~1.5 years; later garage years lean on repeatables (eras/content in v0.5+).
-- Full-career save code ≈ 17.6k chars (could trim `history`).
 - Flags `mooseMuse` and `babaMad` are set by cards but unused yet (hooks for the moose album chain / baba storyline).
-- Week-one teaching is one in-character toast; the full guided tutorial is v1.0.
 - Marcel's mirror has no reflection.
 - v0.2: last week's plan stays on the whiteboard (v0.1 behaviour); Go with a kept Write opens the sequencer again.
 - v0.2: the mix was tuned by numbers (peaks/rms), not by ear on a phone; backing for punk/rock/country is basic.

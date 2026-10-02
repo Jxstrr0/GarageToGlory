@@ -111,7 +111,10 @@ async function governor() {
     let g = await gov(page);
     c.ok(g.mode === 'idle' && g.cap === 30 && g.fps <= 33, 'title: idle, 30 fps ' + JSON.stringify(g));
     await quick(page);
-    await sleep(900);   // the camera settles
+    // the camera settles: since the logo readback fix (46, Lane M) quickStart no longer stalls ~3 s, so SwiftShader's
+    // first-frame shader work now lands after it and the glide can take several seconds of 2-3 fps headless frames
+    await page.waitForFunction(() => GG.debug('perf').mode !== 'glide', null, { timeout: 30000 }).catch(() => {});
+    await sleep(900);
     g = await gov(page);
     c.ok(g.mode === 'idle' && g.cap === 30 && g.fps <= 33, 'garage idle: 30 fps ' + JSON.stringify(g));
     // walking to the kit: 60

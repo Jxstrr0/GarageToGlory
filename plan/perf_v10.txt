@@ -1,0 +1,46 @@
+# v1.0 PERF (Lane P) vs plan/perf_baseline_v10.txt. Headless Chromium + SwiftShader, isMobile, DPR 1, 390x844. node tools/perf.js all
+# Hard gates (contract §4.9): draw calls, triangles, audio nodes, voice cap, tap drops, governor mode/cap, the atlas. Report-only: JS/frame, render(), builds, TTI, heap.
+
+## Scenes: calls / tris (x1) | JS/frame p50/p95 ms (x4) | governor (mode cap, rendered/s at x1) | first build ms (x4)
+scene | before calls/tris | after calls/tris | gate | before js x4 | after js x4 | governor | build x4 before/after
+title | 33/37345 | 33/37345 | ok (<= 33 / 38000) | 4.7/11.7 | 7.6/14.5 | idle 30 (9.5/s) | -/-
+garage_hail_damage | 43/10030 | 43/10030 | ok (< 60, <= HD x 1.15) | 4.5/7.2 | 7.3/14.4 | glide 60 (8.2/s) | 2288/498
+garage_frost_heave | 39/10739 | 39/10739 | ok (< 60, <= HD x 1.15) | - | 6.1/18.9 | idle 30 (11.2/s) | -/448
+garage_gravel_kings | 39/8950 | 39/8950 | ok (< 60, <= HD x 1.15) | - | 3.8/14 | idle 30 (10.7/s) | -/340
+garage_grid_road_ramblers | 41/14613 | 41/14613 | ok (< 60, <= HD x 1.15) | - | 4.9/10.3 | idle 30 (9.2/s) | -/272
+laptop(over garage) | 43/10030 | 43/10030 | - | - | 0.1/8.9 | glide 60 (10.7/s) | -/-
+stage_festival_full | 35/65680 | 36/32408 | ok (<= 38 / 35000) | 5.2/12 | 2/17.1 | idle 30 (7.5/s) | 337/438
+stage_sad_dome | 35/46126 | 36/24126 | ok (<= 38 / 28000) | 6.6/15.1 | 14.7/24.6 | idle 30 (5/s) | -/179
+stage_budokhan | 33/53972 | 34/27058 | ok (<= - / 30000) | - | 2/15.7 | idle 30 (4.2/s) | -/198
+stage_club | 35/46014 | 36/24014 | ok (<= 38 / 28000) | 6/8.9 | 3.5/18 | idle 30 (3.5/s) | -/126
+carpet | 19/10496 | 19/10496 | ok (<= 19 / 10500) | 2.2/5 | 7.6/12.2 | busy 60 (5.2/s) | -/227
+van | 28/15962 | 28/15962 | ok (<= 31 / 18000) | 3.1/9.1 | 6.1/14.9 | idle 30 (7/s) | 643/289
+
+## Frame governor (gate: mode + cap per scene; rendered/s is SwiftShader-bound here, the cap is what a phone gets)
+state | scene | mode | cap | rendered/s | rAF ticks/s | gate
+title (idle) | title | idle | 30 | 7 | 10 | ok (idle 30)
+garage (idle) | garage | idle | 30 | 9.5 | 9.5 | ok (idle 30)
+garage (walking to the kit) | garage | busy | 60 | 8.8 | 8.8 | ok (busy 60)
+laptop over the garage (tall) | garage | covered | 10 | 10 | 58 | ok (covered 10)
+setlist sheet over the stage | stage | covered | 10 | 10 | 60 | ok (covered 10)
+live gig | stage | live | 60 | 4 | 4 | ok (live 60)
+van drive | van | drive | 60 | 4.5 | 4.5 | ok (drive 60)
+van (no drive, a preview) | van | idle | 30 | 3 | 3 | ok (idle 30)
+(also gated in tests/pw_perf.js governor: the rival's set = live 60; ratio: 1.5x on DPR 3, 1.5 -> 1.25 -> 1.0 on slow frames, never mid-song, back up on fast frames)
+
+## Gig peak: Hail Damage, Mudstonbury main stage, Expert, 6 lanes + pedal, 170 BPM, forced crowd moments
+CPU x1: JS/frame p50/p95 2.4/7.7 ms (before 1.7/3.5) | render() p50/p95 1.2/4.1 (before 0.9/2.6) | calls/tris 39/32492 | heap 11.3 MB
+   audio: peak sources 25 (before 30; gate <= 32 ok) | nodes/s 57 (before 154; gate <= 80 ok) | tap drops 0 (gate 0 ok) | song drops 0 | taps 372 {"perfect":372} | global {"cap":32,"active":3,"byClass":{"tap":0,"drum":0,"band":0,"crowd":3,"amb":0,"sfx":0},"drops":7,"dropsBy":{"tap":0,"drum":0,"band":0,"crowd":7,"amb":0,"sfx":0},"tapDrops":0,"evicted":1,"over":0,"peak":26}
+CPU x4: JS/frame p50/p95 12.4/28.5 ms (before 8.3/18.2) | render() p50/p95 6.5/16.3 (before 4.4/10.3) | calls/tris 39/32492 | heap 11.3 MB
+   audio: peak sources 23 (before 22; gate <= 32 ok) | nodes/s 56 (before 147; gate <= 80 ok) | tap drops 0 (gate 0 ok) | song drops 0 | taps 380 {"perfect":380} | global {"cap":32,"active":3,"byClass":{"tap":0,"drum":0,"band":0,"crowd":3,"amb":0,"sfx":0},"drops":6,"dropsBy":{"tap":0,"drum":0,"band":0,"crowd":6,"amb":0,"sfx":0},"tapDrops":0,"evicted":1,"over":0,"peak":27}
+
+## Audio nodes per live drum hit (GG.audio.hit outside a song): live synthesis -> pre-rendered
+first hits right after the unlock (the kit renders in ~57 ms, so mostly pre-rendered already): kick 2.5, snare 1.1, hat 1.1, cymbal 1.2, toms 1.2, ride 1.2 | v0.9 live synthesis: ~5.7 nodes per hit (same-run gig: 105 nodes/s from 18.4 hits/s)
+pre-rendered:   kick 1, snare 1, hat 1, cymbal 1, toms 1, ride 1 {"key":"metal|0","ready":true,"building":null,"renders":8,"hits":59,"ms":57}
+
+## First-visit stalls (CPU x4): quickStart 452 ms (before 1.5-1.8 s at x1; logo readback = Lane M), first garage build 1 ms, first festival stage 399 ms (before 935 ms incl. first-use shaders), first van 253 ms (before 643 ms)
+   space atlas at tier 0: null (before 2048x1024 allocated) | textures in the garage: ["64x64","64x64","512x176","64x64","356x64","268x64","297x64","307x64","273x64","233x64","215x64","256x256"] | shader checks: true (automation; off for players)
+   the crowd's audio after the first garage entry, no tap yet: {"core":true,"ms":4297,"parts":7,"unlocked":"none"} (before: built only after the first tap)
+
+## Time to interactive (median of 3): x1 836 ms (before 573) | x4 2785 ms (before 1753)
+## Size: dist/game.html 4229802 B (gate <= 4,250,000 ok), gzip-9 1240494 B
