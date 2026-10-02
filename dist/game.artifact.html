@@ -3738,7 +3738,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "You win it for forty bucks. Jaxon carries it to the truck like it's a baby.",
           roll: { chance: 0.5,
             success: { effects: { drumSkill: 2, buzz: 3 },
-              outcome: 'A vintage cowbell and a real gong. The gong becomes your closer. Mr. Lindqvist files his first complaint of the season.' },
+              outcome: 'A vintage cowbell and a real gong. The gong goes back to the pawn shop (house rules: no gong on the kit). The cowbell becomes your closer. Mr. Lindqvist files his first complaint of the season.' },
             fail: { effects: { mood: { dana: 4 } },
               outcome: "Eleven accordion straps and a stuffed weasel. Dana says the straps are 'actually great'. The weasel lives on her amp now." } } },
         { label: 'Let Marcel bid on the mower', effects: { fund: -150, mood: { marcel: 15 } },
@@ -8136,7 +8136,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   GG.content.recruits = {
     names: {
       metal: {
-        first: ['Dustin', 'Brandi', 'Trent', 'Krystal', 'Wade', 'Tara', 'Colton', 'Shayla', 'Brody', 'Jolene', 'Garrett',
+        first: ['Dustin', 'Brandi', 'Trent', 'Krystal', 'Wade', 'Tara', 'Colton', 'Shayla', 'Brock', 'Jolene', 'Garrett',
           'Destiny', 'Lyle', 'Raylene', 'Darnell', 'Morgan', 'Kendra', 'Trevor', 'Olga', 'Mitch'],
         last: ['Friesen', 'Tkachuk', 'Lavoie', 'Bergstrom', 'Kowalski', 'Desjardins', 'Olson', 'Wiebe', 'Pelletier', 'Sawchuk',
           'McAllister', 'Nakamura', 'Okonkwo', 'Delorme', 'Ratushniak', 'Lindgren', 'Boychuk', 'Fehr'],
@@ -21104,14 +21104,32 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     try {
       if (!validSlot(slot)) throw new Error('Unknown save slot ' + slot);
       var rec = { savedAt: Date.now(), version: GG.VERSION, summary: summary(state), state: state };
-      ok = setRaw(save.KEYS.slot(slot), JSON.stringify(rec));
+      ok = setRaw(save.KEYS.slot(slot), packSlot(rec));
       if (!ok) err = 'Storage unavailable: saved for this session only.';
     } catch (e) { ok = false; err = String(e && e.message || e); }
     if (ok) GG.emit('save:done', { slot: slot }); else GG.emit('save:failed', { slot: slot, error: err });
     return ok;
   };
+  var SLOT_PACK_AT = 150000;
+  save.SLOT_PACK_AT = SLOT_PACK_AT;
+  function packSlot(rec) {
+    var j = JSON.stringify(rec);
+    if (j.length < SLOT_PACK_AT) return j;
+    var h = JSON.stringify({ savedAt: rec.savedAt, version: rec.version, summary: rec.summary });
+    return 'LZ1:' + h.length + ':' + h + save.compress(JSON.stringify(rec.state));
+  }
+  function readSlot(slot, headOnly) {
+    var raw = getRaw(save.KEYS.slot(slot));
+    if (raw == null) return null;
+    try {
+      if (raw.slice(0, 4) !== 'LZ1:') return JSON.parse(raw);
+      var i = raw.indexOf(':', 4), n = +raw.slice(4, i), rec = JSON.parse(raw.substr(i + 1, n));
+      rec.state = headOnly ? true : JSON.parse(save.decompress(raw.slice(i + 1 + n)));
+      return rec;
+    } catch (e) { return null; }
+  }
   save.readRecord = function (slot) {
-    var rec = getJSON(save.KEYS.slot(slot));
+    var rec = readSlot(slot);
     if (!rec || !rec.state) return null;
     try { rec.state = save.migrate(rec.state); } catch (e) { return null; }
     return rec;
@@ -21119,7 +21137,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   save.read = function (slot) { var r = save.readRecord(slot); return r ? r.state : null; };
   save.list = function () {
     return C.SLOTS.map(function (slot) {
-      var rec = getJSON(save.KEYS.slot(slot));
+      var rec = readSlot(slot, true);
       var ok = !!(rec && rec.state);
       return { slot: slot, exists: ok, summary: ok ? rec.summary || summary(rec.state) : null, savedAt: ok ? rec.savedAt : null };
     });
@@ -21324,8 +21342,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   save.decompress = function (b64) { return utf8Decode(decompress(b64)); };
 
   function encode(obj) { var body = save.compress(JSON.stringify(obj)); return 'GG1:' + body + checksum(body); }
+  save.CODE_MAX = 135000;
   save.toCode = function (state) {
-    return encode(GG.meta && GG.meta.enabled ? Object.assign({}, state, { _meta: GG.meta.exportLite() }) : state);
+    if (!(GG.meta && GG.meta.enabled)) return encode(state);
+    var lite = GG.meta.exportLite(), code = encode(Object.assign({}, state, { _meta: lite }));
+    var best = lite.entries.slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+    [10, 5, 0].forEach(function (k) {
+      if (code.length <= save.CODE_MAX || lite.entries.length <= k) return;
+      code = encode(Object.assign({}, state, { _meta: Object.assign({}, lite, { entries: best.slice(0, k), trimmed: true }) }));
+    });
+    return code;
   };
   save.metaCode = function () {
     return encode({ v: 1, metaOnly: true, _meta: GG.meta && GG.meta.exportFull ? GG.meta.exportFull() : null });
@@ -45996,7 +46022,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var ACT_FALLBACK = {
     rehearse: { icon: '🥁', name: 'Rehearse', blurb: 'Tighter band, sorer wrists.' },
     write: { icon: '✍️', name: 'Write', blurb: 'A new song. Nobody knows what it is about yet.' },
-    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facebook." },
+    promote: { icon: '📣', name: 'Promote', blurb: "Posters, posts and your mom's Facepage." },
     book: { icon: '📅', name: 'Book', blurb: 'Find somewhere that will have you.' },
     hustle: { icon: '💵', name: 'Hustle', blurb: 'Weddings, busking, bingo. Cash.' },
     rest: { icon: '🛋️', name: 'Rest', blurb: 'Burnout down, moods up. The couch wins.' },
@@ -50039,7 +50065,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var x = V.call('promoOptions', st);
     if (Array.isArray(x) && x.length) return x;
     return [{ id: 0, name: 'Word of mouth', cost: 0, blurb: '{filler} tells some cousins.' }, { id: 1, name: 'Posters on every pole', cost: 60, blurb: 'Staples: 4,000. Poles: 3.' },
-      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'A billboard in {city}', cost: 450, blurb: 'Visible from the Tim Hortons drive-thru.' }];
+      { id: 2, name: 'Campus radio push', cost: 180, blurb: 'The DJ pronounces the band name wrong on air. Twice.' }, { id: 3, name: 'A billboard in {city}', cost: 450, blurb: 'Visible from the Tim Norton’s drive-thru.' }];
   }
   function releaseWeeks(st) {
     var x = V.call('releaseWeeks', st);
@@ -50302,7 +50328,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ui.append(s.body, [
         el('div.cert-disc.' + (plat ? 'platinum' : 'gold'), { testid: 'cert-disc' }, [el('div.cert-label', thumb(a, 160, 'label-art'))]),
         el('p.center', [el('b', '“' + a.title + '”'),  ' is certified ' + (plat ? 'PLATINUM' : 'GOLD') + ': ' + num(plat ? C.CERT.platinum : C.CERT.gold) + ' units in Canada.']),
-        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at Costco.' : V.fill('{front} wants to wear it. As a medallion. The chain is being measured.'))
+        el('p.small.dim.center', plat ? 'Your mom has told the neighbours, the mail carrier and a stranger at the Cost-Lo.' : V.fill('{front} wants to wear it. As a medallion. The chain is being measured.'))
       ]);
       s.foot.appendChild(btn('.btn.primary.block', { testid: 'btn-cert-ok', onclick: function () { ui.close(s.id); } }, 'Hang it on the wall'));
     },

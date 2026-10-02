@@ -93,6 +93,49 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
+## What's in v1.0 "Glory" (contract `plan/plan_contract_1.0.md`; lanes P, E, M, T merged on `v1.0-glory` 2026-10-02)
+- **Legacy + endings (Lane E, `2f_sim_legacy.js`, `content/endings.js`, `5n_ui_ending.js`):** a 0–1000 Legacy score from seven
+  parts (fans, units, awards, biggest venue headlined, regions, band unity, the Sad Dome); five tiers by score only (Arena
+  Legends ≥ 800, Canadian Institution ≥ 600, Cult Heroes ≥ 400, One-Album Wonders ≥ 200, Still in the Garage, which names
+  `{space}`); eight specials stacked on the tier (Big in Japan, Moose Opera, Big in Berlin, Mudstonbury Legends, Outback
+  Legends, Kijiji All-Stars / Band of Strangers, The Original Five/Four, Side Project); epilogue cards for every member (lineup,
+  departed originals, defectors, recruits, the player; Kenji silent; `seatRole` hooks). Pure, no RNG, seat-neutral.
+- **Bonus years:** World era by totalWeek ≤ 120 → +3 years, ≤ 144 → +2, granted once on the spot with a bandmate's line (never
+  after the Sad Dome news / showdown or from year 10). The Sad Dome sits in week 21 of the career's last year (`R.finalAt`).
+  Bonus-year Monday cards (`endings.bonusCards`, `minYear: 11`) join the deck at runtime via `GG.legacy.deck()` (content.test
+  still forbids World-era gates in the load-time deck); a NO_BONUS run replays v0.9 exactly.
+- **End sequence:** final → tier → special → epilogues → player → rival → summary (unlocks + this career's trophies) → Hall of
+  Fame / Back to title; a live career shows a read-only preview; an ended career is recorded once (idempotent by careerId).
+- **Achievements (Lane M, `2g_sim_achieve.js`, `content/achievements.js`, `5o_ui_trophies.js`):** 36 (per-band twins for
+  storylines, rival streaks and World payoffs; drum words gated `seat: ['drums']`), per-career `state.ach` + cross-career meta;
+  laptop "Trophies" tab (10 tabs wrap 5 + 5), "???" rows for other bands, a toast only for a fresh unlock and never mid-song.
+  Avg bot earns 8.7–10 per 10-year career (`plan/ach_bots_avg10.txt`).
+- **Hall of Fame (`12_meta.js`, `5q_ui_hof.js`):** title button + list (logo, tier chip, score, difficulty badge, seat chip), entry
+  sheet (seven parts, lineup, trophies, yearly headline strip), cap 40 with the top 10 never dropped, quota path, backup code
+  (meta-only, full strips) and the save code's `_meta` lite (merged after a confirm). Existing players' slots are scanned once.
+- **Meta unlocks (Q5):** tier/special palettes (Arena Gold, Hockey Night, Cult Velvet, One-Hit Teal, Garage Grey, Rival Red) +
+  emblems (lantern, price_tag, handshake, globe_record) + cross-genre creator parts, shown with 🏆; looks only.
+- **Tutorial (Lane T, `2h_sim_lessons.js`, `content/tutorial.js`, `5p_ui_tutorial.js`):** 12 lessons (full week 1 + light weeks
+  2–4 + "a good year"), every band in its own voice, bubbles point at testids and never cover the highway or show during a song;
+  "Skip the lessons" offered once any career passed week 4; the HUD "?" replays any lesson; off under automation unless `?tut=1`.
+- **Perf (Lane P):** frame governor (60 live/drive/walk/glide, 30 idle rooms, 10 behind a tall sheet), graphics "Auto" (the
+  fresh-profile default: 1.5× on DPR 3, steps down on slow frames between songs), crowd LOD (festival 65.7k → 32.4k tris), global
+  voice cap 32 with pre-rendered drum hits (nodes/s at the gig peak 154 → 57), lazy space atlas, shader checks only under
+  automation, the logo readback fix (first HD quickStart ~3 s → ~0.2–0.45 s headless). `tools/perf.js` (all, scenes, governor,
+  gig, tti, audio, stalls, size, report) → `plan/perf_v10.txt`: every hard gate ok.
+- **Lane Q (lead):** `tools/phoneqa.js` (green at both sizes); footless sheets pad by `--safe-bot`; large slots stored packed
+  (LZ1 header + LZW) and save codes kept ≤ 135k chars by trimming the Hall of Fame entries they carry; sim_bands leak scan
+  over lessons, achievements and endings (`LEAK_YEARS=13` clean); owner-rules fixes (recruit "Brody" → "Brock", three real
+  brands parodied, the farm-auction gong no longer joins the kit).
+- **Numbers:** `dist/game.html` 4,229,802 B (gate 4,250,000 ok; +216 KB over stage 0's 4,013,378 vs the +150 KB target: E ≈ +76,
+  M ≈ +56, T ≈ +56, P ≈ +26 KB stripped; gzip 1,239,348 B, +61 KB). Balance 13×30 (`plan/balance_v10_all.txt`): every Legacy
+  target ok (good bot 100 % Arena Legends, +3 in 97–100 %; avg bot AL 3–17 %, CI+CH 83–94 %, +3 0–3 %, bonus rate HD 33 /
+  FH 17 / GK 60 / GRR 20 %, all 33 %); `NO_BONUS=1 … 10 30` identical to `plan/balance_baseline_v10.txt`. Storage at 13 years
+  (good bot, 312 weeks): save code 128–134k chars incl. `_meta` (HD carries 5 HoF entries, others 19), slot JSON 285–320k →
+  packed ~130k, total localStorage for 4 slots + a 40-entry HoF + meta 0.64–0.69M chars (was 1.44M unpacked).
+- **Seat-aware hooks (E12):** `HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}`, `seat` gates on lessons and
+  achievements, epilogue `seatRole`, code reads `state.seat || 'drums'` (no `state.seat` field until v1.1).
+
 ## What's in v0.9 "Genres" (contract `plan/plan_contract_0.9.md`; integrated on `v09-int`, 2026-10-01)
 All four bands are playable from the new-career screen. Each has its own rival (a fair-fight underdog curve, Q4), Q2 storyline,
 Q3 World payoff (a tour package + 3-card chain that counts for the Global Gong like the Moose Opera), first gig, home ring,
@@ -1143,6 +1186,30 @@ Later versions:
   Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.0 "Glory" (merged 2026-10-02; the lane APIs are folded into `02_contracts.js` "As merged")**:
+  - `GG.legacy` (2f): noBonus, careerId, ensure, migrate, gig, worldWeek, bonusFor, finalYear, yearsText, deck, weekly, raw, parts,
+    score, tierDef, tier, tierRank, TESTS, specialOk, specials, whenOk, epilogues, compute, finish, text, hofEntry; debug `legacy`.
+    WRAP.bonus; events `legacy:bonus`, `legacy:done`; UI `end:step`, `GG.ui.endGo(step)`, `ui.rivalEnd`.
+  - `GG.achieve` (2g): defs, def, gated, name, ensure, migrate, originals, kickShare, KINDS, kindInfo, test, check, gig, weekly,
+    finish, metaIds, view, list, earned; `state.ach.t` counters; events `ach:earned`, `meta:ach`. UI `ui.trophiesPanel`,
+    `ui.achToast`; testids `laptop-tab-trophies`, `trophies-count`, `trophy-row-<id>` (data-band, data-state).
+  - `GG.meta` (12): enabled, load, get, save, hof, careerId, lessonSeen, markLesson, recordCareer → { entry, fresh, unlocks, ach },
+    exportLite, exportFull, mergeLite, award, has, unlock, unlocked, isUnlocked, unlocksFor, unlockNames; events `meta:unlock`,
+    `meta:quota`, `hof:added`, `meta:changed`. Screens `hof` / `hof-entry`, code sheet mode `hof`; testids `btn-hof`, `menu-hof`,
+    `hof-row-<i>`, `hof-entry`, `hof-year-<y>`, `hof-code`. `GG.logo.pickEmblems/pickPalettes/isMeta`, `GG.creator.metaPart`.
+  - `GG.lessons` (2h): LESSONS, def, ensure, on, done, mark, stop, available, steps, matches, due(state, ctx); `GG.tutorial` (5p):
+    enabled, running, active, start, replay, check, skip, offerSkip, openLessons, suppressWriteTip; events `tut:step`, `tut:done`;
+    `?tut=1`; testids `tut-bubble`, `tut-next`, `tut-skip-lessons`, `tut-close`, `lesson-<id>`, `lessons-off/on/close`, `btn-help`.
+  - Render/audio (Lane P): `GG.render.invalidate(n)`, `nextRatio(cur, p95, heldMs)`, `RATIO_STEPS`, `perfState()`, `feedFrames`
+    (tests); `GG.debug('perf')`; `perf:quality` { pixelRatio, reason: slow | fast | settings }; `GG.audio.VOICES`, `voicePlan`,
+    `voiceStats`, `prerender`, `prerenderHit`, `prewarm`, `renderOffline({ lane, pre, cap })`. Voice-cap priority: taps and band
+    notes are never dropped; crowd one-shots go first. Settings `P.GRAPHICS = auto | low | med | high` (unknown → auto).
+  - `GG.rival.finalAt(state)` → { year, week }. Save: `save.readCode(text)` → { state | null, meta | null }, `save.metaCode()`,
+    `save.CODE_MAX` (135000: toCode trims the Hall of Fame entries it carries), `save.SLOT_PACK_AT` (150000: bigger slots stored
+    `LZ1:<n>:<header>` + LZW), `save.lastError` ('quota' after a full store; storageOk stays true).
+  - Tests/tools: `PW_VIEW=440x956` (owner's phone), `NOSTRIP=1 node build.js`, `tools/perf.js`, `tests/pw_perf.js` (scenes,
+    governor, ratio, stalls, audio), `tools/phoneqa.js`, `tests/pw_tutorial.js` (`SHOTS=1`), `tests/pw_ending.js`,
+    `tests/pw_hof.js`, `tests/pw_trophies.js`, `LEAK_YEARS=13 node tests/sim_bands.test.js`, `A15_STRICT=1` (sim_lessons).
 - **v1.0 stage 0** (2026-10-02, `v1.0-glory`; shapes in `02_contracts.js` V1.0 GLORY, contract §3/§4):
   - Build: `node build.js` strips full-line `//` comments from every JS module in dist/ (never inside a template literal or a
     block comment; trailing comments stay) and prints bytes on disk + KiB: 4,013,378 B after stage 0 (was 4,417,065 B with
@@ -1340,6 +1407,17 @@ Later versions:
 - Tests: sim_gig difficulty test; pw_gig `touch` section (real touchscreen taps under a stray layer, stalled clock).
 
 ## Back-burner
+- v1.0 leftovers: the title scene is Hail Damage's garage for every band (HD-only title scene); A15 first-gig tempo — every
+  band's slowest starter jam sits above its genre's slowest preset (HD 7/10 seeds, the others 10/10; pinning a slow starter
+  tempo changes the songs and the balance baseline, so it waits for v1.2 Tuning; `A15_STRICT=1` makes it a gate); World-era
+  Monday decks have no home cards (deck gates stop at signed); bonus-year cards are appended at runtime, not at load (needs
+  content.test's World-gate rule relaxed for `minYear >= 11`); Minus Forty and Fine and each band's rival-streak twin are
+  earned by every average career; the handshake emblem reads abstract at small sizes; the rival epilogue is a line on
+  `end-final`, no `mooseMuse` / `babaMad` epilogue variants; `pw_ending bonus` plays 312 weeks in-page (3–4 min per size);
+  JS/frame at CPU ×4 in the gig peak ≈ the 0.9 build (report-only target ≤ 6 / 14 ms not met; SwiftShader-bound); the first
+  festival build didn't reach −40 %; next-scene shader pre-compile and the Sad Dome crowd dressing not done; sizes over the
+  soft lane targets (above); the 3D runs at 10 fps (not paused) behind a tall sheet; the dist is ~20 KB under the 4.25 MB gate
+  (v1.1 Seats needs the 4.5 MB ceiling or trimming: e.g. the 02_contracts doc block still ships, block comments aren't stripped).
 - v0.9 leftovers: Buckle & Boot's spectator view in a real BotB is mostly the crowd's big hats (render polish in 42's spectator
   camera); Rock/punk leads incl. Benny's break still go through Dana's lead amp; the Chartbusters' ballad only plays when forced
   (rock's slider floor is 90 BPM); country strums a major triad on every chord; nobody has listened to the v0.9 audio on a phone
