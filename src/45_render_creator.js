@@ -5,6 +5,9 @@
 // API (GG.render.preview), safe before GG.render.init() (mount returns false without WebGL):
 //   mount(el) -> bool ; set({ look, kit, mode: 'char'|'kit', view: 'full'|'face'|'hands', band, genre }) ; turn(dx) ;
 //   unmount() ; info() -> { mounted, mode, view, frames, v8, kit, art, calls, pose }
+// v1.1 "Seats" (Lane C): mode 'gear' (a string seat's "your gear" tab): set({ mode: 'gear', seat, gearLook, kitColor, logo })
+//   puts your instrument (R.seatGear: shape / colour / guard) on you in a playing pose, framed close, with the headstock
+//   sticker (the band logo, R.gearSticker) when gearLook.sticker is 'logo'; info() adds { gear (the gear string), sticker }.
 // Views: 'full' (turntable, drag to turn), 'face' (close-up), 'hands' (fists to the camera: the knuckle letters read left
 // to right, right hand first). Kit mode: the garage kit on a rug, pyro bases + flames shown (they only fire at arena shows).
 (function (GG) {
@@ -13,12 +16,13 @@
   var B_ARM_L = 4, B_FORE_L = 5, B_ARM_R = 6, B_FORE_R = 7, B_HEAD = 3, B_SPINE = 2, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17, B_CAPE1 = 12, B_CAPE2 = 13;
   var P = R.preview = {};
   var V = null;              // live view: { THREE, renderer, scene, camera, host, canvas, ch, kit, art, raf, ... }
-  var want = { look: null, kit: null, mode: 'char', view: 'full', band: '', genre: 'metal' };
+  var want = { look: null, kit: null, mode: 'char', view: 'full', band: '', genre: 'metal', seat: null, gearLook: null, kitColor: null, logo: null };
   var CAMS = {
     full: { pos: [0, 1.1, 4.3], at: [0, 1.0, 0] },
     face: { pos: [0, 1.76, 1.75], at: [0, 1.73, 0] },
     hands: { pos: [0, 1.0, 1.85], at: [0, 0.88, 0] },
-    kit: { pos: [0.7, 1.95, 4.3], at: [0, 0.62, -0.1] }
+    kit: { pos: [0.7, 1.95, 4.3], at: [0, 0.62, -0.1] },
+    gear: { pos: [0.05, 1.28, 3.3], at: [0.22, 1.08, 0] }    // v1.1: your instrument, close (the neck runs to screen right)
   };
 
   P.mount = function (el) {
@@ -64,10 +68,19 @@
   P.turn = function (dx) { if (V) V.yaw += dx; };
   P.info = function () {
     return { mounted: !!V, mode: want.mode, view: want.view, frames: V ? V.frames : 0, v8: !!(GG.creator && GG.creator.isV8(want.look)),
-      kit: !!(V && V.kit), art: !!(V && V.art), calls: V ? V.renderer.info.render.calls : 0, pose: V && V.ch ? V.pose : null };
+      kit: !!(V && V.kit), art: !!(V && V.art), calls: V ? V.renderer.info.render.calls : 0, pose: V && V.ch ? V.pose : null,
+      gear: V && V.gear || null, sticker: !!(V && V.sticker) };
   };
 
-  function clearChar() { if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearChar() { clearSticker(); if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearSticker() {
+    if (!V || !V.sticker) return;
+    var m = V.sticker; if (m.parent) m.parent.remove(m);
+    m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); V.sticker = null;
+  }
+  function gearOf() {   // v1.1: the gear string for the 'gear' mode (null on drums / no seat)
+    return want.mode === 'gear' && want.seat && want.seat !== 'drums' && R.seatGear ? R.seatGear(want.seat, want.gearLook, want.kitColor, want.genre) : null;
+  }
   function clearKit() {
     if (!V) return;
     if (V.kit) { V.scene.remove(V.kit); V.kit.geometry.dispose(); V.kit = null; }
@@ -76,18 +89,26 @@
   }
   // Rebuilds only what changed (look -> character, kit look -> kit).
   function apply() {
-    var THREE = V.THREE, kitMode = want.mode === 'kit';
-    var sig = JSON.stringify([want.look, want.view === 'hands', want.band]);
+    var THREE = V.THREE, kitMode = want.mode === 'kit', gear = gearOf();
+    var sig = JSON.stringify([want.look, want.view === 'hands', want.band, gear]);
     if (!kitMode && (sig !== V.sig || !V.ch)) {
       clearChar();
-      V.sig = sig;
-      V.ch = R.buildCharacter(want.look, { id: 'player', band: want.band || null });   // v0.9: the 'logo' tattoo shows the new band's initials
+      V.sig = sig; V.gear = gear;
+      V.ch = R.buildCharacter(want.look, { id: 'player', band: want.band || null, gear: gear || undefined });   // v0.9: the 'logo' tattoo shows the new band's initials
       if (V.ch) {
         var bn = V.ch.bones;
-        bn[B_GEAR].scale.setScalar(0); bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
+        if (!gear) bn[B_GEAR].scale.setScalar(0);
+        bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
         V.scene.add(V.ch.root);
       }
     }
+    var ssig = gear && want.gearLook && want.gearLook.sticker === 'logo' ? JSON.stringify([gear, want.logo, want.band]) : '';
+    if (V.ch && ssig !== (V.ssig || '')) {   // v1.1: the headstock sticker (the band logo)
+      clearSticker(); V.ssig = ssig;
+      var LG = R.logo, tex = ssig && LG && LG.texture ? LG.texture(want.logo || null, want.band || 'The Band', 128, { badge: 'round', mini: true }) : null;
+      if (tex) V.sticker = R.gearSticker(V.ctx, V.ch, gear, tex);
+    }
+    if (!V.ch) V.ssig = '';
     if (V.ch) V.ch.root.visible = !kitMode;
     var ksig = kitMode ? JSON.stringify([want.kit, want.band, want.genre, want.look && want.look.skin]) : '';
     if (kitMode && ksig !== V.ksig) {
@@ -130,10 +151,10 @@
     var dt = V.last ? Math.min(0.05, (ts - V.last) / 1000) : 0.016;
     V.last = ts; V.t += dt;
     resize();
-    var kitMode = want.mode === 'kit', view = kitMode ? 'kit' : (want.view || 'full');
+    var kitMode = want.mode === 'kit', view = kitMode ? 'kit' : V.gear ? 'gear' : (want.view || 'full');
     var s = V.ch ? V.ch.root.scale.y : 1, cam = CAMS[view] || CAMS.full, lift = view === 'kit' ? 1 : s;
     var fit = Math.max(1, 0.8 / Math.max(0.3, V.camera.aspect));                      // a narrow preview backs the camera off
-    V.camera.position.set(cam.pos[0], cam.pos[1] * lift, cam.pos[2] * (view === 'full' || view === 'kit' ? fit : 1));
+    V.camera.position.set(cam.pos[0], cam.pos[1] * lift, cam.pos[2] * (view === 'full' || view === 'kit' || view === 'gear' ? fit : 1));
     V.camera.lookAt(cam.at[0], cam.at[1] * lift, cam.at[2]);
     if (V.ch && !kitMode) pose(V.ch, view, V.t);
     if (V.kit) { V.kit.rotation.y = 0.35 + (V.yaw - 0.42); if (V.flames) { V.flames.rotation.y = V.kit.rotation.y; V.flames.scale.y = 0.9 + 0.1 * Math.sin(V.t * 30); } }
@@ -144,13 +165,19 @@
   function pose(ch, view, t) {
     var bn = ch.bones, i;
     for (i = 1; i < bn.length; i++) bn[i].rotation.set(0, 0, 0);
-    ch.root.rotation.y = view === 'hands' ? 0 : view === 'face' ? V.yaw * 0.6 : V.yaw;
+    ch.root.rotation.y = view === 'hands' ? 0 : view === 'face' ? V.yaw * 0.6 : view === 'gear' ? (V.yaw - 0.42) * 0.8 : V.yaw;
     var br = Math.sin(t * 1.8);
     bn[B_SPINE].rotation.x = 0.015 * br;
     if (view === 'hands') {
       bn[B_ARM_L].rotation.set(-0.15, -Math.PI / 2, 0.02); bn[B_ARM_R].rotation.set(-0.15, Math.PI / 2, -0.02);
       bn[B_FORE_L].rotation.set(0, 0, 0.35); bn[B_FORE_R].rotation.set(0, 0, -0.35);   // elbows bend forward (local z = world ∓x here)
       V.pose = 'fists';
+    } else if (view === 'gear') {                                  // v1.1: playing your instrument (the stage's guitar pose)
+      var strum = Math.sin(t * 7) * 0.14 * (Math.sin(t * 0.8) > -0.5 ? 1 : 0.2);
+      bn[B_ARM_L].rotation.set(0.1, 0, 0.14); bn[B_FORE_L].rotation.set(-2.05, 0, 0.1 + 0.05 * Math.sin(t * 1.3));
+      bn[B_ARM_R].rotation.set(-0.35, 0, 0.12); bn[B_FORE_R].rotation.set(-0.95 + strum, 0, 0.45);
+      bn[B_HEAD].rotation.x = 0.16;
+      V.pose = 'play';
     } else {
       bn[B_ARM_L].rotation.z = 0.1; bn[B_ARM_R].rotation.z = -0.1;
       bn[B_FORE_L].rotation.x = -0.12; bn[B_FORE_R].rotation.x = -0.12;
