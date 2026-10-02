@@ -512,6 +512,11 @@
       resize: function () { if (K) frame(true); },
       update: update,
       sync: function () {},
+      busy: function () {   // v1.0 governor: the carpet walk at 60 fps
+        if (!K || !P) return false;
+        for (var i = 0; i < P.band.length; i++) if (!P.band[i].arrived) return true;
+        return false;
+      },
       debug: function () { return { carpet: inst.info() }; }
     };
     inst = {

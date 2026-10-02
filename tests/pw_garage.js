@@ -57,6 +57,9 @@ async function settle(page) {
     for (let i = 0; i < 4; i++) { try { if (GG.ui && GG.ui.close) GG.ui.close(); } catch (e) {} }
     GG.render.setPaused(false);
   });
+  // v1.0: let the camera glide back from the sheet's framing before the next screen position is read (slow software GL
+  // could leave it mid-glide, so a tap aimed at one hotspot landed on its neighbour once the glide went on)
+  await page.waitForFunction(() => { const d = GG.debug('render'), p = GG.debug('perf'); return d.insets.bottom === -1 && (!p || p.mode !== 'glide'); }, null, { timeout: 8000 }).catch(() => {});
 }
 const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
 

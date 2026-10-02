@@ -58,6 +58,14 @@
 //   garage: a bed per tier-0 space (A.bedFor(kind, season): laundromat dryers + buzzer, strip-mall tube + the vacuum repair,
 //     Quonset wind on steel + crickets / a meadowlark) and a noodle per band by the noodler's gear (A.noodleFor(state)).
 //   play / timeline opts += style (force), singer, rival, soloist. debug('audio') += rigs, voice, solo, bed, noodle, vocTypes.
+// v1.0 "Glory" (Lane P, contract §4.9): a global voice cap of 32 over every live source, by priority tap > drum (the song's
+//   kick + snare) > band > crowd > amb > sfx: A.VOICES { cap, order, reserve } ; A.voicePlan(active, req) (pure) ;
+//   A.voiceStats() -> { cap, active, byClass, drops, dropsBy, tapDrops, evicted, over, peak }. Taps are never dropped.
+//   Pre-rendered tap hits per kit (genre + quality tier), built after the unlock off the main path (never mid-song): one
+//   buffer source per tap into a pooled per-lane choke gain (live synthesis until ready): A.prerender() -> state ;
+//   A.prerenderHit({ lane, variant, quality, genre, cap, sr }) -> Promise<AudioBuffer> + renderOffline({ lane, pre: buffer })
+//   (tests). Band voices reuse one envelope gain per port and voice (sharedEnv). The crowd's raw audio builds on the first
+//   garage entry ('career:new' / 'career:loaded'), no unlock needed: A.prewarm(). debug('audio') += global, prerender, crowdRaw.
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -68,6 +76,77 @@
   var voices = 0, muted = null, suspended = false, current = null, stepCount = 0, lastStep = null;
   var prefs = null, mixNodes = [], live = { amb: 0, crowd: 0 };
   var counts = { clicks: 0, noodles: 0, thumps: 0, cheers: 0, boos: 0, vox: 0, claps: 0, woos: 0, whistles: 0, applause: 0, dropped: 0, tapDrops: 0 };
+
+  // ---- v1.0 (Lane P, §4.9): the global voice cap ----------------------------------------------------------------------
+  // Every live source belongs to a class, highest priority first: tap (your hits) > drum (the song's kick + snare) > band
+  // (the band, its vocals, the other drum lanes) > crowd > amb (rooms, the road, the radio) > sfx. Under the cap of 32 a class
+  // may only start voices while it leaves its reserve free for the classes above it (so taps always find room); over its
+  // limit a class evicts the one-shots below it (sfx, ambience, crowd) before it gives up, and a tap is never dropped. A.voicePlan(active, req) is
+  // the pure rule (node-tested): active = { <class>: sounding voices }, req = { cls, n } -> { ok, evict: { <class>: n },
+  // total, over } (over: voices a tap still takes past the cap when nothing below it could be evicted). The per-class
+  // caps above stay as they were.
+  var VOICE_CAP = 32, VOICE_CLS = ['tap', 'drum', 'band', 'crowd', 'amb', 'sfx'];
+  var VOICE_RESERVE = { tap: 0, drum: 6, band: 8, crowd: 10, amb: 12, sfx: 14 };
+  A.VOICES = { cap: VOICE_CAP, order: VOICE_CLS.slice(), reserve: Object.assign({}, VOICE_RESERVE) };
+  A.voicePlan = function (active, req) {
+    active = active || {}; req = req || {};
+    var cls = VOICE_RESERVE[req.cls] != null ? req.cls : 'sfx', n = Math.max(0, req.n == null ? 1 : req.n | 0), total = 0, i, k;
+    for (i = 0; i < VOICE_CLS.length; i++) total += Math.max(0, active[VOICE_CLS[i]] | 0);
+    var need = total + n - (VOICE_CAP - VOICE_RESERVE[cls]), evict = {}, evictable = { sfx: 1, amb: 1, crowd: 1 }, rank = VOICE_CLS.indexOf(cls);
+    if (need <= 0) return { ok: true, evict: evict, total: total, over: 0 };
+    // over its limit: one-shots of the classes below it (sfx, then ambience, then the crowd) make room
+    for (i = VOICE_CLS.length - 1; i > rank && need > 0; i--) {
+      k = VOICE_CLS[i]; if (!evictable[k]) continue;
+      var take = Math.min(need, Math.max(0, active[k] | 0));
+      if (take > 0) { evict[k] = take; need -= take; }
+    }
+    if (need <= 0) return { ok: true, evict: evict, total: total, over: 0 };
+    if (cls !== 'tap') return { ok: false, evict: {}, total: total, over: 0 };
+    return { ok: true, evict: evict, total: total, over: need };   // a tap is never dropped
+  };
+  // The live rig's ledger (taps and the song's voices, with end times) + the counters of the other classes.
+  var VL = { end: [], cls: [], drops: { tap: 0, drum: 0, band: 0, crowd: 0, amb: 0, sfx: 0 }, evicted: 0, over: 0, peak: 0 };
+  var shotsLive = [];   // evictable one-shots on the live context: { s, g, end, cls }
+  function vlPrune(t) {
+    var j = 0;
+    for (var i = 0; i < VL.end.length; i++) if (VL.end[i] > t) { VL.end[j] = VL.end[i]; VL.cls[j] = VL.cls[i]; j++; }
+    VL.end.length = j; VL.cls.length = j;
+    if (shotsLive.length > 24) shotsLive = shotsLive.filter(function (x) { return x.end > t; });
+  }
+  function vlActive(t) {   // sounding at t (a booking ahead asks about its own time; only what has ended by now is forgotten)
+    vlPrune(Math.min(t, ctx.currentTime) + 1e-4);
+    var a = { tap: 0, drum: 0, band: 0, crowd: live.crowd + (crowd.bed ? crowd.bed.srcs.length : 0), amb: live.amb + (amb.bed ? amb.bed.srcs.length : 0), sfx: voices }, i;
+    if (radioRig) for (i = 0; i < radioRig.busy.length; i++) if (radioRig.busy[i] > t) a.amb++;
+    for (i = 0; i < VL.end.length; i++) if (VL.end[i] > t + 1e-4) a[VL.cls[i]]++;
+    return a;
+  }
+  // May `cls` start n live voices at t? (Taps: always; they may evict one-shots below them.)
+  function admit(cls, t, n) {
+    if (!ctx) return true;
+    var a = vlActive(t), p = A.voicePlan(a, { cls: cls, n: n });
+    if (!p.ok) { VL.drops[cls]++; return false; }
+    var gone = 0;
+    for (var k in p.evict) gone += evictShots(k, p.evict[k], t);
+    if (p.over) VL.over++;
+    if (p.total + n - gone > VL.peak) VL.peak = p.total + n - gone;
+    return true;
+  }
+  function vlAdd(cls, end, n) { for (var i = 0; i < n; i++) { VL.end.push(end); VL.cls.push(cls); } }
+  function evictShots(cls, n, t) {
+    var list = shotsLive.filter(function (x) { return x.cls === cls && x.end > t; }).sort(function (a, b) { return a.end - b.end; });
+    for (var i = 0; i < list.length && n > 0; i++, n--) {
+      var x = list[i];
+      try { if (x.g) { x.g.gain.cancelScheduledValues(t); x.g.gain.setTargetAtTime(0, t, 0.008); } x.s.stop(t + 0.04); } catch (e) { /* already stopped */ }
+      x.end = t; VL.evicted++;
+    }
+    return list.length ? Math.min(list.length, i) : 0;
+  }
+  A.voiceStats = function () {
+    var t = ctx ? ctx.currentTime : 0, a = ctx ? vlActive(t) : null, tot = 0, d = 0;
+    if (a) for (var k in a) tot += a[k];
+    for (var c in VL.drops) if (c !== 'tap') d += VL.drops[c];
+    return { cap: VOICE_CAP, active: tot, byClass: a, drops: d, dropsBy: Object.assign({}, VL.drops), tapDrops: counts.tapDrops, evicted: VL.evicted, over: VL.over, peak: VL.peak };
+  };
 
   function settings() {
     try { return (GG.save && GG.save.settings && GG.save.settings()) || {}; } catch (e) { return {}; }
@@ -195,6 +274,7 @@
     voices++;
     src.onended = function () { voices = Math.max(0, voices - 1); };
     src.start(t0); src.stop(t0 + dur + 0.05);
+    shotsLive.push({ s: src, g: null, end: t0 + dur + 0.05, cls: 'sfx' });   // (v1.0: evictable under the voice cap)
   }
   // Attack/decay envelope on a fresh gain node connected to `dest` (default the sfx bus).
   function env(t0, attack, peak, decay, dest) {
@@ -275,6 +355,7 @@
       if (swell) { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(gain, at + 0.25); g.gain.setTargetAtTime(0, at + dur * 0.45, dur * 0.18); }
       voices++; s.onended = function () { voices = Math.max(0, voices - 1); };
       s.start(at, off); s.stop(at + dur);
+      shotsLive.push({ s: s, g: g, end: at + dur, cls: 'sfx' });
     }
     if (isBoo) { play(CB.boo[0], t, 0.6, 0, 0, 2.4); return; }
     play(CB.roar[0], t, 0.45, 0, 0.9, 2.6, true);
@@ -296,6 +377,7 @@
     if (!r || !ctx || A.isMuted() || suspended || ctx.state !== 'running') return false;
     if (CROWD_SFX[name] && crowd.on && ctx.currentTime - crowd.last < 0.3) return true;   // the crowd already reacted
     if (voices + r[0] > MAX_VOICES) return false;
+    if (!admit('sfx', ctx.currentTime, r[0])) return false;   // v1.0: the global voice cap (sfx yields first)
     sfxDest = CROWD_SFX[name] ? crowdBus : null;
     try { r[1](ctx.currentTime + 0.01); } catch (e) { sfxDest = null; return false; }
     sfxDest = null;
@@ -444,6 +526,7 @@
     tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
     if (r.genre === genre && r.kit && r.tier === tier) return;
     r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
+    if (r === rig) preWant();   // v1.0: (re)render this kit's tap hits in the background
     var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
     r.drums.gain.setValueAtTime(0.8 * (k.level || 1) * q.trim, t);
     r.qDrive.curve = satCurve(q.drive);
@@ -640,10 +723,11 @@
       if (wave) o.setPeriodicWave(wave); else o.type = 'sawtooth';
       o.detune.value = side ? dt + h : -dt - h;
       o.frequency.setValueAtTime(base * 1.006, tt); o.frequency.exponentialRampToValueAtTime(base, tt + 0.02);   // pick bloom
-      if (ev.mute) e = gate(c, tt, 0.0015, 0.7, dd, 0.4, side ? p.aMuteR : p.aMuteL);
-      else if (ev.trem) e = gate(c, tt, 0.002, 0.55, dd * 0.9, 0.7, side ? p.aOpenR : p.aOpenL);
-      else if (ev.ring) e = decay(c, tt, 0.003, 0.6, dd, side ? p.aOpenR : p.aOpenL);
-      else e = held(c, tt, 0.5, dd, side ? p.aOpenR : p.aOpenL, 0.003);
+      var ad = ev.mute ? (side ? p.aMuteR : p.aMuteL) : (side ? p.aOpenR : p.aOpenL), ak = (ev.mute ? 'aMute' : 'aOpen') + side;   // (v1.0: shared envelopes)
+      if (ev.mute) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return gate(c, tt, 0.0015, 0.7, dd, 0.4, ad, g0); });
+      else if (ev.trem) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return gate(c, tt, 0.002, 0.55, dd * 0.9, 0.7, ad, g0); });
+      else if (ev.ring) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return decay(c, tt, 0.003, 0.6, dd, ad, g0); });
+      else e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return held(c, tt, 0.5, dd, ad, 0.003, g0); });
       o.connect(e); run(r, o, tt, dd);
     }
     return true;
@@ -665,12 +749,16 @@
   }
   // Books `n` sources from t to t + dur against the voice cap (band notes also against the band's share).
   // false = no room (the hit is dropped).
-  function book(r, t, dur, n, band) {
+  // v1.0: cls (the live rig only) = the voice class under the global cap: 'tap' (never refused by the song's cap), 'drum'
+  // (the song's kick + snare) or 'band' (everything else; the default).
+  function book(r, t, dur, n, band, cls) {
     var t1 = t + 1e-4;   // a note that ends as the next one starts (float rounding) frees its voice in time
     r.busy = r.busy.filter(function (end) { return end > t1; });
     if (band) { r.band = r.band.filter(function (end) { return end > t1; }); if (r.band.length + n > r.bandCap) { counts.dropped++; return false; } }
-    if (r.busy.length + n > r.cap) { counts.dropped++; return false; }
+    if (cls !== 'tap' && r.busy.length + n > r.cap) { counts.dropped++; return false; }
+    if (r === rig && !admit(cls || 'band', t, n)) { counts.dropped++; return false; }
     for (var i = 0; i < n; i++) { r.busy.push(t + dur); if (band) r.band.push(t + dur); }
+    if (r === rig) vlAdd(cls || 'band', t + dur, n);
     return true;
   }
   function fits(r, t, n) {   // would book(r, t, .., n, band) succeed? (nothing booked, nothing counted)
@@ -679,23 +767,35 @@
   }
   function run(r, node, t, dur) { node.start(t); node.stop(t + dur); if (r.collect) r.collect.push(node); }
   // Envelope gain: attack to peak, then an exponential decay to silence at t + dur (a choke shortens dur).
-  function decay(c, t, attack, peak, dur, dest) {
-    var g = c.createGain();
+  // (v1.0: g0 = a voice's shared envelope gain to schedule on instead of a new one; g._end = when the envelope is done)
+  function decay(c, t, attack, peak, dur, dest, g0) {
+    var g = g0 || c.createGain();
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, attack + 0.01));
-    g.connect(dest);
+    if (!g0) g.connect(dest);
+    g._end = t + Math.max(dur, attack + 0.01);
     return g;
   }
+  // v1.0 (Lane P): a band voice's envelope gain, kept per port and reused note after note (a voice never overlaps itself:
+  // a note lasts min(len, gap)), so a note costs its oscillator only (the gig's busiest scheduler halves its new nodes). A
+  // note that would start before the last envelope on it is done gets its own gain, exactly as before.
+  function sharedEnv(p, c, key, t, dests, make) {
+    var E = p.env || (p.env = {}), x = E[key];
+    if (!x) { x = E[key] = { g: c.createGain(), end: -1 }; for (var i = 0; i < dests.length; i++) x.g.connect(dests[i]); }
+    if (t < x.end - 1e-6) return make(null);
+    var g = make(x.g); x.end = g._end; return g;
+  }
   // Held note: attack, a gentle sag, then a short release that ends at t + dur.
-  function held(c, t, peak, dur, dest, attack) {
+  function held(c, t, peak, dur, dest, attack, g0) {
     attack = attack || 0.006;
-    var g = c.createGain(), end = Math.max(dur, attack + 0.03), rel = Math.min(0.05, end * 0.3);
+    var g = g0 || c.createGain(), end = Math.max(dur, attack + 0.03), rel = Math.min(0.05, end * 0.3);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(peak, t + attack);
     g.gain.linearRampToValueAtTime(peak * 0.7, t + Math.max(attack + 0.005, end - rel));
     g.gain.exponentialRampToValueAtTime(0.0001, t + end);
-    g.connect(dest);
+    if (!g0) g.connect(dest);
+    g._end = t + end;
     return g;
   }
   function osc(r, type, f0, f1, glide, t, dur, gain, detune) {
@@ -772,11 +872,11 @@
       osc(r, 'triangle', 1180, 0, 0, t, d, decay(c, t, 0.001, 0.07, d, p.drums));
     } }
   };
-  function drumHit(r, p, lane, t, cap, v) {
+  function drumHit(r, p, lane, t, cap, v, cls) {
     var D = DRUMS[lane]; if (!D) return false;
     var k = r.kit || DEFAULT_KIT, n = typeof D.n === 'function' ? D.n(k, v) : D.n;
     var d = Math.max(0.012, Math.min(D.len(k, v), cap));
-    if (!book(r, t, d, n)) return null;
+    if (!book(r, t, d, n, false, cls || (lane === 'kick' || lane === 'snare' ? 'drum' : 'band'))) return null;
     D.play(r, p, t, d, k, v);
     return { t: t, end: t + d, n: n };   // the booking (live taps cut it off at the lane's next tap)
   }
@@ -1016,7 +1116,7 @@
       if (!book(r, t, dur, 1, true)) return;
       var b = c.createOscillator(); b.type = 'sawtooth';
       b.frequency.setValueAtTime(f * 1.006, t); b.frequency.exponentialRampToValueAtTime(f, t + 0.03);   // the string settles
-      b.connect(ev.mute || ev.trem || ev.len <= 0.5 ? gate(c, t, 0.002, 0.8, dur, ev.mute ? 0.5 : 0.7, p.mBass) : held(c, t, 0.65, dur, p.mBass));
+      b.connect(sharedEnv(p, c, 'mBass', t, [p.mBass], ev.mute || ev.trem || ev.len <= 0.5 ? function (g0) { return gate(c, t, 0.002, 0.8, dur, ev.mute ? 0.5 : 0.7, p.mBass, g0); } : function (g0) { return held(c, t, 0.65, dur, p.mBass, null, g0); }));
       run(r, b, t, dur);
       return;
     }
@@ -1030,23 +1130,24 @@
       o.detune.value = ring ? 0 : side ? 6 + h : -5 - h;
       o.frequency.setValueAtTime(base * 1.007, tt); o.frequency.exponentialRampToValueAtTime(base, tt + 0.025);   // pick bloom
       if (ev.sag && dd > 0.4) { o.frequency.setValueAtTime(base, tt + dd * 0.55); o.frequency.exponentialRampToValueAtTime(base * 0.985, tt + dd); }
-      var g;
-      if (ring) { g = held(c, tt, 0.22, dd, p.mOpenL, 0.02); g.connect(p.mOpenR); }
-      else if (ev.mute) g = gate(c, tt, 0.0015, 0.62, dd, 0.4, side ? p.mMuteR : p.mMuteL);
-      else if (ev.trem) g = gate(c, tt, 0.002, 0.5, dd * 0.9, 0.7, side ? p.mOpenR : p.mOpenL);
-      else g = held(c, tt, 0.48, dd, side ? p.mOpenR : p.mOpenL, 0.003);
+      var g, dst = side ? (ev.mute ? p.mMuteR : p.mOpenR) : (ev.mute ? p.mMuteL : p.mOpenL);
+      if (ring) g = sharedEnv(p, c, 'mRing', tt, [p.mOpenL, p.mOpenR], function (g0) { var x = held(c, tt, 0.22, dd, p.mOpenL, 0.02, g0); if (!g0) x.connect(p.mOpenR); return x; });
+      else if (ev.mute) g = sharedEnv(p, c, 'mMute' + side, tt, [dst], function (g0) { return gate(c, tt, 0.0015, 0.62, dd, 0.4, dst, g0); });
+      else if (ev.trem) g = sharedEnv(p, c, 'mOpen' + side, tt, [dst], function (g0) { return gate(c, tt, 0.002, 0.5, dd * 0.9, 0.7, dst, g0); });
+      else g = sharedEnv(p, c, 'mOpen' + side, tt, [dst], function (g0) { return held(c, tt, 0.48, dd, dst, 0.003, g0); });
       o.connect(g); run(r, o, tt, dd);
     }
   }
   // Gated note: attack to peak, decay to peak*sustain by the end, then shut within 12 ms (tight: the amp's gain would
   // otherwise hold a slow decay up and smear the chugs together).
-  function gate(c, t, attack, peak, dur, sustain, dest) {
-    var g = c.createGain(), end = Math.max(dur, attack + 0.02), rel = Math.min(0.012, end * 0.25);
+  function gate(c, t, attack, peak, dur, sustain, dest, g0) {
+    var g = g0 || c.createGain(), end = Math.max(dur, attack + 0.02), rel = Math.min(0.012, end * 0.25);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(peak, t + attack);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * sustain), t + end - rel);
     g.gain.exponentialRampToValueAtTime(0.0001, t + end);
-    g.connect(dest);
+    if (!g0) g.connect(dest);
+    g._end = t + end;
     return g;
   }
   function playNote(r, p, ev, t, spb) {
@@ -1056,7 +1157,7 @@
     var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), o, g;
     if (ev.kind === 'bass') {
       if (!book(r, t, dur, 1, true)) return;
-      osc(r, 'sawtooth', f, 0, 0, t, dur, ev.len <= 0.5 || ev.ring ? decay(c, t, 0.004, 0.55, dur, p.bass) : held(c, t, 0.4, dur, p.bass));
+      osc(r, 'sawtooth', f, 0, 0, t, dur, sharedEnv(p, c, 'bass', t, [p.bass], ev.len <= 0.5 || ev.ring ? function (g0) { return decay(c, t, 0.004, 0.55, dur, p.bass, g0); } : function (g0) { return held(c, t, 0.4, dur, p.bass, null, g0); }));
       return;
     }
     if (ev.kind === 'lead' || ev.kind === 'fiddle' || ev.kind === 'twang') {
@@ -1682,15 +1783,92 @@
     var last = taps[lane];
     if (last && last.t < t && last.end > t) {   // lanes are monophonic, as in the timeline: this tap cuts off the last one
       last.g.gain.setTargetAtTime(0, t, 0.006);
-      last.src.forEach(function (s) { try { s.stop(Math.min(last.end, t + 0.05)); } catch (e) { /* old Safari: one stop() only */ } });
+      var stopAt = Math.min(last.end, t + 0.05);
+      last.src.forEach(function (s) { try { s.stop(stopAt); } catch (e) { /* old Safari: one stop() only */ } });
+      if (last.slot) last.slot.until = stopAt;
       for (var k = 0; k < last.n; k++) { var j = rig.busy.indexOf(last.end); if (j >= 0) rig.busy[j] = t; }
+      for (k = 0; k < VL.end.length; k++) if (VL.cls[k] === 'tap' && VL.end[k] === last.end) VL.end[k] = stopAt;   // (its tail still sounds until then)
       taps[lane] = null;
     }
-    var g = gainNode(ctx, 1, port.drums), src = rig.collect = [], b;   // drum voices only use port.drums: a gain per tap is its port
-    try { b = drumHit(rig, { drums: g }, lane, t, lane === 'cymbal' ? 0.9 : 0.5, v); } finally { rig.collect = null; }
+    var cap = lane === 'cymbal' ? 0.9 : 0.5, pre = preHit(lane, v, cap), b, g;
+    // v1.0 (Lane P): the hit pre-rendered for this kit (one buffer source into the lane's pooled choke gain: 1 node per
+    // hit instead of 4-7), else synthesized live as before. The booking (when it sounds) is the same either way.
+    if (pre) {
+      var slot = laneSlot(port, lane, t), src1 = ctx.createBufferSource();
+      src1.buffer = pre.buf; src1.connect(slot.g);
+      book(rig, t, pre.d, 1, false, 'tap');   // (taps are never refused)
+      slot.g.gain.setValueAtTime(1, t);
+      src1.start(t); src1.stop(t + pre.d + 0.005);
+      slot.until = t + pre.d + 0.005;
+      taps[lane] = { t: t, end: t + pre.d, n: 1, g: slot.g, src: [src1], slot: slot };
+      PRE.hits++;
+      return true;
+    }
+    g = gainNode(ctx, 1, port.drums); var src = rig.collect = [];   // drum voices only use port.drums: a gain per tap is its port
+    try { b = drumHit(rig, { drums: g }, lane, t, cap, v, 'tap'); } finally { rig.collect = null; }
     if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
   };
+  // A lane's choke gains on a port, reused round robin once their last source has stopped (a fresh one if all are busy).
+  function laneSlot(port, lane, t) {
+    var pool = port.slots || (port.slots = {}), L = pool[lane] || (pool[lane] = []), i;
+    for (i = 0; i < L.length; i++) if (L[i].until <= t - 0.002) return L[i];
+    var sl = { g: gainNode(ctx, 1, port.drums), until: 0 };
+    if (L.length < 6) L.push(sl);
+    return sl;
+  }
+
+  // ---- v1.0 (Lane P): pre-rendered drum hits ---------------------------------------------------------------------------
+  // After the audio unlock (and whenever the career's kit changes: genre or quality tier), every live-tap voice of the kit
+  // (kick, snare + its country variants, hat, cymbal, the three toms, ride / china) is rendered once through the same DRUMS
+  // recipe on an OfflineAudioContext at the live sample rate: the dry hit as it enters the kit chain (drive, box, EQ, the
+  // room stay live and shared). Never while a song plays; one hit at a time. Taps use them once the kit's set is complete.
+  var PRE = { key: null, bufs: null, building: null, ready: false, hits: 0, renders: 0, ms: 0, timer: 0 };
+  function preKey() { return rig ? (rig.genre || 'metal') + '|' + rig.tier : null; }
+  function preHit(lane, v, cap) {
+    if (!PRE.ready || PRE.key !== preKey()) { preWant(); return null; }
+    var x = PRE.bufs[lane + '|' + (v == null ? '' : v) + '|' + cap];
+    return x || null;
+  }
+  function preList(k) {
+    var out = [['kick'], ['hat'], ['cymbal'], ['ride'], ['toms', 0], ['toms', 1], ['toms', 2], ['snare']];
+    if (k.train) out.push(['snare', 'rim'], ['snare', 'brush'], ['snare', 'ghost']);
+    return out;
+  }
+  function preWant() {
+    if (!ctx || !rig || PRE.timer || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+    var key = preKey();
+    if (PRE.key === key && PRE.ready) return;
+    if (PRE.building === key) return;
+    PRE.timer = setTimeout(function () { PRE.timer = 0; preBuild(); }, 250);
+  }
+  function preBuild() {
+    var key = preKey(); if (!key || (PRE.key === key && PRE.ready)) return;
+    if (current && current.playing && !current.radio) { PRE.timer = setTimeout(function () { PRE.timer = 0; preBuild(); }, 1000); return; }   // never mid-song
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, k = rig.kit || DEFAULT_KIT, sr = ctx.sampleRate;
+    var jobs = preList(k), bufs = {}, t0 = performance.now(), nz = null;
+    PRE.building = key; PRE.ready = false;
+    function next(i) {
+      if (PRE.building !== key) return;                       // the kit changed again: that build wins
+      if (preKey() !== key) { PRE.building = null; preWant(); return; }
+      if (i >= jobs.length) { PRE.bufs = bufs; PRE.key = key; PRE.ready = true; PRE.building = null; PRE.ms = Math.round(performance.now() - t0); return; }
+      if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
+      var lane = jobs[i][0], v = jobs[i][1], D = DRUMS[lane], caps = lane === 'cymbal' ? [0.9] : [0.5];
+      var d = Math.max(0.012, Math.min(D.len(k, v), caps[0])), oc;
+      try {
+        oc = new OAC(1, Math.ceil((d + 0.006) * sr), sr);
+        var r = { ctx: oc, noise: rig.noise || nz || (nz = noiseBuffer(oc)), busy: [], band: [], cap: 99, bandCap: 99, kit: k };   // (the live rig's noise: same samples)
+        D.play(r, { drums: oc.destination }, 0, d, k, v);
+      } catch (e) { PRE.building = null; return; }   // no offline audio: taps stay live
+      oc.startRendering().then(function (buf) {
+        bufs[lane + '|' + (v == null ? '' : v) + '|' + caps[0]] = { buf: buf, d: d };
+        PRE.renders++;
+        setTimeout(function () { next(i + 1); }, 0);
+      }, function () { PRE.building = null; });
+    }
+    next(0);
+  }
+  A.prerender = function () { preWant(); return { key: PRE.key, ready: PRE.ready, building: PRE.building, renders: PRE.renders, hits: PRE.hits, ms: PRE.ms }; };
   A.hitCancel = function () {   // v0.7.2: drops every hit still scheduled ahead (a 5 ms fade, then the port is cut)
     var p = schedPort; schedPort = null;
     if (!p || !ctx) return;
@@ -2060,10 +2238,11 @@
   // A one-shot on the crowd fader (stereo placed, slightly re-pitched), counted against CROWD_VOICES when live.
   function shot(B, buf, t, gain, pan, rate, off, dur) {
     if (!buf || (B.live && live.crowd >= CROWD_VOICES)) return null;
+    if (B.live && !admit('crowd', t, 1)) return null;   // v1.0: the global voice cap
     var c = B.c, s = c.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate || 1;
     var g = gainNode(c, gain, panNode(c, pan, B.gain)); s.connect(g);
     s.start(t, off || 0); if (dur) s.stop(t + dur);
-    if (B.live) track([s], 'crowd');
+    if (B.live) { track([s], 'crowd'); shotsLive.push({ s: s, g: g, end: t + (dur || (buf.duration - (off || 0)) / (rate || 1)), cls: 'crowd' }); }
     return g;
   }
   // v0.9 what each genre moment adds to the cheer: roar (the metal roar), gang (HEY/OI shouts on the beats; take 0 HEY,
@@ -2164,6 +2343,7 @@
     var s = c.createBufferSource(); s.buffer = nz; s.connect(filterNode(c, 'lowpass', 320, 0.8, decay(c, t, 0.002, 0.25, 0.06, dest))); s.start(t); s.stop(t + 0.08);
     return [o, s];
   }
+  function ambOk(n, t) { return live.amb + n <= AMB_VOICES && admit('amb', t, n); }   // v1.0: + the global voice cap
   function track(srcs, pool) {
     srcs.forEach(function (s) { live[pool]++; s.onended = function () { live[pool] = Math.max(0, live[pool] - 1); }; });
   }
@@ -2423,17 +2603,17 @@
   function noodle() {
     if (!ctx || amb.mode !== 'garage' || !amb.bed) return;
     var N = amb.noodle, now = ctx.currentTime, S = amb.space;
-    if (S && S.events.length) bedTick(S.events, ctx, amb.bed.gain, now, now + 0.3, S.rng, function (n) { return live.amb + n <= AMB_VOICES; });
+    if (S && S.events.length) bedTick(S.events, ctx, amb.bed.gain, now, now + 0.3, S.rng, function (n) { return ambOk(n, now); });
     if (!N) return;
     if (N.next < now) N.next = now + 0.05;   // a throttled tab doesn't pile notes up
     while (N.next < now + 0.3) {
       if (N.style !== 'pluck' && NOODLES[N.style]) {   // v0.9: the band's own noodle
-        var room = live.amb + 3 <= AMB_VOICES, x = room ? NOODLES[N.style](N, ctx, amb.bed.gain, N.next) : [[], 0.3];
+        var room = ambOk(3, now), x = room ? NOODLES[N.style](N, ctx, amb.bed.gain, N.next) : [[], 0.3];
         if (x[0].length) { track(x[0], 'amb'); counts.noodles++; }
         N.next += x[1];
         continue;
       }
-      if (live.amb < AMB_VOICES) {
+      if (ambOk(1, now)) {
         track(pluck(ctx, amb.bed.gain, N.next, N.tonic + N.scale[N.rng.int(0, N.scale.length - 1)] + (N.rng.chance(0.2) ? 12 : 0), 0.035), 'amb');
         counts.noodles++;
       }
@@ -2451,7 +2631,7 @@
     var now = ctx.currentTime;
     if (R.next < now) R.next = now + 0.05;
     while (R.next < now + 0.4) {
-      if (live.amb + 2 <= AMB_VOICES) { track(thump(ctx, amb.bed.gain, R.next, noise), 'amb'); counts.thumps++; }
+      if (ambOk(2, now)) { track(thump(ctx, amb.bed.gain, R.next, noise), 'amb'); counts.thumps++; }
       R.next += R.rng.range(0.9, 2.6);
     }
   }
@@ -2562,6 +2742,24 @@
       if (!crowdAll(CB)) warmCrowd();
     }, 25);
   }
+  // v1.0 (Lane P): the crowd's raw audio is plain JS DSP (no AudioContext needed), so it starts on the first garage entry
+  // (a new or loaded career) in the same small slices, instead of after the first tap: the first gig's crowd is ready even
+  // on a slow phone that books a show within seconds of unlocking the audio.
+  var prewarmT = 0;
+  function prewarmCrowd() {
+    if (prewarmT || CROWD_PARTS.concat(CROWD_EXTRA).every(function (k) { return CROWD_RAW[k]; })) return;
+    prewarmT = setTimeout(function step() {
+      prewarmT = 0;
+      if (current && current.playing && !current.radio) { prewarmT = setTimeout(step, 500); return; }   // never mid-song
+      var k = CROWD_PARTS.concat(CROWD_EXTRA).filter(function (x) { return !CROWD_RAW[x]; })[0];
+      if (!k) return;
+      try { crowdRun(k, 8); } catch (e) { return; }
+      prewarmT = setTimeout(step, 25);
+    }, 25);
+  }
+  A.prewarm = function () { prewarmCrowd(); return CROWD_PARTS.concat(CROWD_EXTRA).filter(function (k) { return CROWD_RAW[k]; }).length; };
+  GG.on('career:new', prewarmCrowd);
+  GG.on('career:loaded', prewarmCrowd);
   GG.on('screen:open', refreshSoon);
   GG.on('screen:close', refreshSoon);
   GG.on('ui:stack', refreshSoon);
@@ -2638,7 +2836,9 @@
       var port = makePort(r);
       setKit(r, genre, spec.quality); setRoom(r, spec.room || r.kit.room || 'room');   // v0.8: spec.quality 0..3 (default: the career's tier)
       if (spec.voxInvert) { r.vox.gain.value *= -1; r.bvox.gain.value *= -1; if (genre === 'metal') metalRig(r).vox.gain.value *= -1; }   // tests: V/A split
-      if (spec.lane) drumHit(r, port, spec.lane, 0.05, 2, spec.variant);
+      if (spec.lane && spec.pre) {   // v1.0 (tests): the pre-rendered hit of this kit, played as the live taps play it
+        var hb = spec.pre, hs = oc.createBufferSource(); hs.buffer = hb; hs.connect(port.drums); hs.start(0.05);
+      } else if (spec.lane) drumHit(r, port, spec.lane, 0.05, spec.cap || 2, spec.variant);
       else if (spec.probe) {
         var vt = spec.probe === 'vox' ? spec.voc || 'shout' : spec.probe, voc = !!VOX[vt], len = seconds - 0.3;
         var ev = { beat: 0, kind: voc ? 'vox' : spec.probe, voc: voc ? vt : null, midi: spec.midi || 36, len: 4, gap: 4, power: !!spec.power, mute: !!spec.mute };
@@ -2683,6 +2883,17 @@
     });
   };
   A.renderOffline.probe = true;   // v0.7.2 feature flag (spec.probe, spec.crowd, stereo)
+  // v1.0 (tests): the dry pre-rendered hit for (genre, kit tier, lane, variant, cap) at sample rate sr -> Promise<AudioBuffer>,
+  // rendered exactly as preBuild renders the live kit's set; feed it to renderOffline({ lane, pre: buffer, quality, genre }).
+  A.prerenderHit = function (o) {
+    o = o || {};
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, k = kitFor(o.genre || 'metal', o.quality == null ? REF_QUALITY : o.quality);
+    var D = DRUMS[o.lane], sr = o.sr || 44100, cap = o.cap || (o.lane === 'cymbal' ? 0.9 : 0.5);
+    if (!OAC || !D) return Promise.reject(new Error('no offline audio / lane'));
+    var d = Math.max(0.012, Math.min(D.len(k, o.variant), cap)), oc = new OAC(1, Math.ceil((d + 0.006) * sr), sr);
+    D.play({ ctx: oc, noise: noiseBuffer(oc), busy: [], band: [], cap: 99, bandCap: 99, kit: k }, { drums: oc.destination }, 0, d, k, o.variant);
+    return oc.startRendering();
+  };
 
   GG.registerDebug('audio', function () {
     return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), voices: voices, playing: A.isPlaying(),
@@ -2696,6 +2907,9 @@
       // v0.9: which amps this rig has built (a punk career never builds the metal one), the room bed, the noodle, vocal types
       rigs: rig ? { metal: !!rig.metal, amps: Object.keys(rig.amps || {}) } : null, voice: current && current.timeline ? current.timeline.voice : null,
       solo: current && current.timeline ? current.timeline.solo : null, bed: amb.space ? { kind: amb.space.kind, season: amb.space.season, events: amb.space.events.map(function (x) { return x.ev; }) } : null,
-      noodle: amb.noodle ? { who: amb.noodle.who, style: amb.noodle.style } : null, vocTypes: Object.assign({}, vocTypes), extras: CROWD_EXTRA.filter(function (k) { return CB && CB[k]; }) };
+      noodle: amb.noodle ? { who: amb.noodle.who, style: amb.noodle.style } : null, vocTypes: Object.assign({}, vocTypes), extras: CROWD_EXTRA.filter(function (k) { return CB && CB[k]; }),
+      // v1.0 (Lane P): the global voice cap, the pre-rendered tap hits, the crowd's raw parts built before the unlock
+      global: ctx ? A.voiceStats() : null, prerender: { key: PRE.key, ready: PRE.ready, building: PRE.building, renders: PRE.renders, hits: PRE.hits, ms: PRE.ms },
+      crowdRaw: CROWD_PARTS.concat(CROWD_EXTRA).filter(function (k) { return CROWD_RAW[k]; }).length };
   });
 })(window.GG);

@@ -23,7 +23,7 @@
   /* ---- Preferences ------------------------------------------------------------------------------------------ */
   var P = GG.prefs = GG.prefs || {};
   P.PROFILES = ['speaker', 'headphones'];
-  P.GRAPHICS = ['low', 'med', 'high'];
+  P.GRAPHICS = ['auto', 'low', 'med', 'high'];   // v1.0 (§0 Q8): 'auto' = the default (adaptive pixel ratio, 40_render_core)
   P.NOTE_SPEEDS = [0.7, 0.85, 1, 1.2, 1.4];
   // Okabe–Ito: tells kick / snare / hats / cymbal / toms / ride apart with any colour vision.
   P.CB_COLOURS = { kick: '#E69F00', snare: '#56B4E9', hat: '#F0E442', cymbal: '#CC79A7', toms: '#009E73', ride: '#D55E00' };
@@ -35,7 +35,7 @@
     var c = s.calib && typeof s.calib === 'object' ? s.calib : {};
     s.calib = { speaker: prof(c.speaker), headphones: prof(c.headphones) };
     if (P.PROFILES.indexOf(s.audioProfile) < 0) s.audioProfile = 'speaker';
-    if (P.GRAPHICS.indexOf(s.graphics) < 0) s.graphics = 'high';
+    if (P.GRAPHICS.indexOf(s.graphics) < 0) s.graphics = 'auto';   // v1.0: unknown -> the default (was 'high')
     s.noteSpeed = U.clamp(num(s.noteSpeed, 1), 0.5, 2);
     if (!C.GIG_DIFFICULTY || C.GIG_DIFFICULTY.indexOf(s.gigDifficulty) < 0) s.gigDifficulty = 'easy';
     ['noFail', 'autoKick', 'calibSeen', 'lefty', 'colourblind', 'bigText', 'reducedFlash', 'skipVan', 'fastAnim'].forEach(function (k) { s[k] = !!s[k]; });
