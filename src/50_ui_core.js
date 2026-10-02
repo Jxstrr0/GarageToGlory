@@ -440,10 +440,11 @@
       space: ui.space(st), spaceName: b.spaceName || ui.space(st), door: b.door || 'the door', province: ui.province(st),
       homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
       city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
-      band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you'
+      band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you',
+      instrument: 'drums', drummer: 'you'   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
     };
   };
-  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player)\}/g;
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer)\}/g;
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);

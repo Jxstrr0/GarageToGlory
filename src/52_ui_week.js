@@ -3,6 +3,8 @@
 // versions, and the 2D fallback garage when three.js/WebGL isn't available.
 // v0.8 (SHOPUI): the merch hotspot opens the merch table (GG.ui.openMerch); the gig result shows r.merch (GG.ui.merchResult,
 // its "Merch table:" line is folded in); the wrap shows wrap.shop (GG.ui.shopWrap) and plays the collector moment once.
+// v1.0 (Lane T): HUD "?" (btn-help → GG.tutorial.openLessons); wrap testids for the lessons: wrap-deltas, wrap-d-<stat>
+// (fund/fans/buzz/chemistry/...), wrap-upkeep, wrap-buzz-fade, wrap-owed, wrap-moods, wrap-mood-<memberId>.
 // Flow commands (start/run/end the week, save) go through GG.main; this file only reads GG.state and calls
 // GG.career for the per-screen actions (resolve a card, edit the plan, accept an offer).
 (function (GG) {
