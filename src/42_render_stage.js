@@ -1089,7 +1089,7 @@
       }
       var rec = { id: 'player', slot: o.slot, inst: ins, gear: gear, ch: ch, cape: false, x: sp0.x, z: sp0.z, yaw: sp0.yaw, bx: sp0.x, bz: sp0.z, byaw: sp0.yaw,
         mood: 70, energy: 1, ph: hash01(i, 31), act: null, actT: 0, actDur: 0, sig: null, mic: false, prop: null, hatBig: false,
-        you: true, strumT: 9, fret: 1, fretGoal: 1, ringT: 9, strums: 0 };
+        you: true, yf: new Float32Array([9, 9, 1, 1]), strums: 0 };   // yf: strum time, ring time, fret, fret goal (typed: no boxing)
       K.band.push(rec); K.you = rec;
     }
     // v0.9: a defector in a band without corpse paint takes the cast's look: the stylist's ripped jeans (Mall Rats), a
@@ -1577,8 +1577,8 @@
       if (!y) return;
       S.hits++;
       if (judgement === 'miss') { if (!y.act) bandAct(y, 'miss', DUR.miss); return; }
-      var li = +lane.slice(3);
-      y.strumT = 0; y.strums++; y.fretGoal = isFinite(li) ? clamp(li, 0, 5) : y.fretGoal;
+      var li = lane.charCodeAt(3) - 48;                                            // 'str0'..'str5' (no allocation)
+      y.yf[0] = 0; y.strums++; if (li >= 0 && li <= 9) y.yf[3] = li > 5 ? 5 : li;
     }
     // v1.1: the swapped drummer plays along on the band's grid (16ths from 'audio:step'; their own beat clock when no song runs).
     function autoDrum(n) {
@@ -1817,10 +1817,11 @@
     // v1.1: your strumming: a down-stroke on every hit ('str' + li), the fretting hand along the neck by lane (0 = by the
     // headstock), a neck-up flourish when a held note rings out ('gig:hold' ring); a lazy idle strum between notes.
     function youPose(r, bn, dt, t) {
-      r.strumT += dt; r.ringT += dt;
-      r.fret += (r.fretGoal - r.fret) * (1 - Math.exp(-14 * dt));
-      var u = r.strumT, st = u < 0.07 ? -0.3 + 0.6 * (u / 0.07) : u < 0.7 ? 0.3 * Math.exp(-(u - 0.07) * 7) : 0.04 * Math.sin(t * 3 + r.ph * 6);
-      var f = r.fret / 5, ring = r.ringT < 0.7 ? bump(r.ringT / 0.7) : 0;
+      var Y = r.yf;
+      Y[0] += dt; Y[1] += dt;
+      Y[2] += (Y[3] - Y[2]) * (1 - Math.exp(-14 * dt));
+      var u = Y[0], st = u < 0.07 ? -0.3 + 0.6 * (u / 0.07) : u < 0.7 ? 0.3 * Math.exp(-(u - 0.07) * 7) : 0.04 * Math.sin(t * 3 + r.ph * 6);
+      var f = Y[2] / 5, ring = Y[1] < 0.7 ? bump(Y[1] / 0.7) : 0;
       rot(bn[B_ARM_L], 0.1 - 0.35 * ring, 0, 0.3 - 0.2 * f); rot(bn[B_FORE_L], -1.95 - 0.25 * f, 0, 0.1);
       bn[B_FORE_R].rotation.x = -0.95 + st;
       if (ring) { bn[B_SPINE].rotation.x -= 0.18 * ring; bn[B_HEAD].rotation.x -= 0.25 * ring; }
@@ -2156,7 +2157,7 @@
       active: false,
       build: function () { build(); },
       level: setLevel, moment: moment, hit: hit, kick2: kick2, bandAction: bandAction, beat: onBeat, frame: function () { if (K) frame(); },
-      step: stepTick, ring: function () { if (K && K.you) K.you.ringT = 0; },   // v1.1
+      step: stepTick, ring: function () { if (K && K.you) K.you.yf[1] = 0; },   // v1.1
       info: function () {
         if (!K) return { built: false };
         var C = K.crowd;
@@ -2166,7 +2167,7 @@
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
           view: camView() === 'spot' ? 'spot' : K.D.view, camera: camView(), rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
-          you: K.you ? { seat: K.D.seat, gear: K.you.gear, inst: K.you.inst, sticker: !!K.sticker, x: +K.you.bx.toFixed(2), z: +K.you.bz.toFixed(2), strums: K.you.strums, fret: Math.round(K.you.fret), act: K.you.act } : null,
+          you: K.you ? { seat: K.D.seat, gear: K.you.gear, inst: K.you.inst, sticker: !!K.sticker, x: +K.you.bx.toFixed(2), z: +K.you.bz.toFixed(2), strums: K.you.strums, fret: Math.round(K.you.yf[2]), act: K.you.act, ring: K.you.yf[1] < 0.7 } : null,
           boom: !!K.boom, autoHits: S.autoHits, seatMode: !!K.D.seatMode,   // v1.1
           mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
           props: K.rivalProps.slice(), session: K.session, drummer: K.seatDrum ? K.seatDrum.id : K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,

@@ -6,12 +6,20 @@
 // Van: every season day/night builds with the right weather, Kenji drives, progress/skyline, moose, talk,
 // season from state.week, draw calls < 50. Screenshots: tests/.cache/stage.png (bottom third covered by a dark
 // rectangle = the note highway) and tests/.cache/van.png.
+// v1.1 "Seats" (Lane C): META_ONLY=seat (also in the default run): every band x string seat (12): the spot camera (low, behind
+// your shoulder at your spot, facing the crowd), you with your instrument (the gear string, the logo sticker) on screen, the
+// swapped drummer on the throne (info().drummer = GG.career.drummerId), a boom mic for Rox / Chase / Travis Lee (info().mics +
+// boom) and nobody else, draw calls <= the Hail Damage drum stage x 1.15 (and the band's own), 'str' hits strum + slide the hand
+// (API + the 'gig:judge' bus), 'gig:hold' ring, the drummer plays along ('audio:step' + their own clock), the lead seat's solo is
+// yours, a drum fill by the swapped drummer, a rival set keeps the kit camera, and no per-frame allocation (sampled heap
+// allocations per rendered frame on a seat stage <= the drum stage's, none in the seat code). Screenshot
+// tests/.cache/stage_seat<TAG>.png (Hail Damage, bass, the highway third covered).
 const path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, shotName } = require('./_pw');
 
-const ONLY = process.env.META_ONLY || 'stage,van';
-if (!/stage|van/.test(ONLY)) { console.log('SKIP pw_stage (META_ONLY=' + ONLY + ')'); process.exit(0); }
-const DO_STAGE = /stage/.test(ONLY), DO_VAN = /van/.test(ONLY);
+const ONLY = process.env.META_ONLY || 'stage,van,seat';
+if (!/stage|van|seat/.test(ONLY)) { console.log('SKIP pw_stage (META_ONLY=' + ONLY + ')'); process.exit(0); }
+const DO_STAGE = /stage/.test(ONLY), DO_VAN = /van/.test(ONLY), DO_SEAT = /seat/.test(ONLY);
 const SHOT_STAGE = path.join(__dirname, '.cache', 'stage.png'), SHOT_VAN = path.join(__dirname, '.cache', 'van.png');
 
 const dbg = page => page.evaluate(() => GG.debug('render'));
@@ -21,6 +29,134 @@ const mem = page => page.evaluate(() => { const i = GG.render.util.ctx().rendere
 async function advance(page, n) {
   const f0 = (await dbg(page)).frames;
   await page.waitForFunction(x => GG.debug('render').frames >= x, f0 + (n || 3), { timeout: 30000 });
+}
+
+// ---- v1.1 seat ----------------------------------------------------------------------------------------------------------
+const SEAT_FNS = /^(update|updateBand|youPose|updateDrummer|handPose|autoDrum|stepTick|kitHit|strumHit|updateKit|updateLights|updateCrowd|updateProps|frame|camView|hit)$/;
+// Sampled heap allocations (collected objects included) over n rendered frames: { perFrame, seatCode } bytes.
+async function allocs(page, cdp, n) {
+  await cdp.send('HeapProfiler.enable');
+  await cdp.send('HeapProfiler.collectGarbage');
+  await cdp.send('HeapProfiler.startSampling', { samplingInterval: 256, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
+  const f0 = await page.evaluate(() => GG.debug('render').frames);
+  await page.waitForFunction(x => GG.debug('render').frames >= x, f0 + n, { timeout: 60000 });
+  const f1 = await page.evaluate(() => GG.debug('render').frames);
+  const { profile } = await cdp.send('HeapProfiler.stopSampling');
+  let total = 0, mine = 0;
+  const walk = (node, inStage) => {
+    const fn = node.callFrame.functionName || '', hit = inStage || (SEAT_FNS.test(fn) && /game\.html/.test(node.callFrame.url));
+    total += node.selfSize; if (hit && /^(youPose|autoDrum|stepTick|strumHit|kitHit|camView)$/.test(fn)) mine += node.selfSize;
+    (node.children || []).forEach(ch => walk(ch, hit));
+  };
+  walk(profile.head, false);
+  return { perFrame: Math.round(total / Math.max(1, f1 - f0)), seatCode: mine, frames: f1 - f0 };
+}
+async function seatSection(page, c, notes) {
+  const BANDS = ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'], SEATS = ['drums', 'bass', 'rhythm', 'lead'];
+  const SINGS = { frost_heave: 'rox', gravel_kings: 'chase', grid_road_ramblers: 'travis' };   // the singing drummers (rhythm seat)
+  const VENUE = { venueId: 'gopher_hole', kind: 'bar', name: 'The Gopher Hole', capacity: 180 };
+  const base = {}, rows = [];
+  const err0 = (await page.evaluate(() => 0));
+  for (const band of BANDS) for (const seat of SEATS) {
+    const r = await page.evaluate(([band, seat, venue]) => {
+      const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: band, seat });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      st.player.gearLook = { shape: null, color: '#d9a520', guard: 'black', sticker: 'logo' };
+      GG.render.setPaused(false); GG.render.syncState(st); GG.render.setScene('stage');
+      GG.render.stage.setup({ venue, crowd: 120, members: st.members, flags: st.flags, genre: st.genre, player: st.player, seat: st.seat });
+      GG.render.stage.setCrowdLevel(70, true);
+      return { drummer: GG.career.drummerId(st), lineup: GG.career.lineup(st) };
+    }, [band, seat, VENUE]);
+    await advance(page, 4);
+    const q = await page.evaluate(() => {
+      const i = GG.render.stage.info(), d = GG.debug('render'), cam = GG.render.util.ctx().camera, f = { x: 0, y: 0, z: -1 };
+      const e = cam.matrixWorld.elements, fw = { x: -e[8], y: -e[9], z: -e[10] };
+      const head = i.you ? GG.render.worldToScreen(i.you.x, 1.5 + (i.you ? 0 : 0), i.you.z) : null;
+      return { i, calls: d.drawCalls, cam: { x: cam.position.x, y: cam.position.y, z: cam.position.z, fw }, head, H: innerHeight, W: innerWidth };
+    });
+    const i = q.i, tag = band + ' ' + seat;
+    if (seat === 'drums') {
+      base[band] = q.calls;
+      c.ok(i.view === 'drummer' && i.camera === 'kit' && i.drummer === 'player' && !i.you && !i.boom && i.seat === 'drums', tag + ': the v0.3 kit camera, you on the throne');
+      continue;
+    }
+    const hd = base.hail_damage, ratio = q.calls / hd;
+    rows.push(band + '/' + seat + ' ' + q.calls + ' (HD drums ' + hd + ', own ' + base[band] + ')');
+    c.ok(i.seat === seat && i.view === 'spot' && i.camera === 'spot' && i.seatMode, tag + ': the spot camera ' + JSON.stringify({ view: i.view, camera: i.camera }));
+    c.ok(i.drummer === r.drummer && !!r.drummer, tag + ': ' + r.drummer + ' on the throne (info ' + i.drummer + ')');
+    const sings = SINGS[band] && seat === 'rhythm' ? SINGS[band] : null;
+    c.ok(sings ? i.boom && i.mics.includes(sings) : !i.boom && !i.mics.includes(r.drummer), tag + ': ' + (sings ? 'a boom mic for ' + sings : 'no boom mic') + ' ' + JSON.stringify(i.mics));
+    c.ok(i.you && i.you.gear.indexOf('seat|' + seat + '|') === 0 && /#d9a520\|black$/.test(i.you.gear) && i.you.sticker && i.band.some(b => b.indexOf('player:' + seat + ':') === 0), tag + ': you with your instrument + sticker ' + (i.you && i.you.gear));
+    const side = { bass: -1, rhythm: 1, lead: -1 }[seat];
+    c.ok(Math.sign(i.you.x) === side && Math.abs(q.cam.x - i.you.x) < 0.7 && q.cam.z > i.you.z + 1 && q.cam.y < 4.3 && q.cam.fw.z < -0.6, tag + ': camera behind your spot (' + (side < 0 ? 'stage-left' : 'stage-right') + '), facing the crowd ' + JSON.stringify({ you: [i.you.x, i.you.z], cam: q.cam }));
+    c.ok(q.head && q.head.x > -40 && q.head.x < q.W + 40 && q.head.y > 0 && q.head.y < q.H * 0.72, tag + ': you are in frame above the highway ' + JSON.stringify(q.head));
+    c.ok(ratio <= 1.15 && q.calls <= base[band] * 1.15, tag + ': draw calls ' + q.calls + ' <= HD drum stage ' + hd + ' x 1.15');
+    if (band === 'hail_damage' || band === 'grid_road_ramblers') {
+      const h = await page.evaluate(() => {
+        const s = GG.render.stage, a = s.info();
+        s.hit('str2', 'perfect'); s.hit('str2', 'good'); s.hit('str4', 'perfect');
+        const b = s.info();
+        GG.emit('gig:judge', { lane: 'str1', judgement: 'perfect', combo: 3, crowd: 80 });
+        GG.emit('gig:hold', { lane: 'str1', held: 1, ring: true });
+        const c2 = s.info();
+        s.hit('str3', 'miss');
+        return { a: a.you.strums, b: b.you.strums, fret: b.you.fret, c: c2.you.strums, ring: c2.you.ring, miss: s.info().you.act, hits: c2.hits - a.hits };
+      });
+      c.ok(h.b - h.a === 3 && h.c - h.b === 1 && h.hits === 4 && h.ring && h.miss === 'miss', tag + ": 'str' hits strum (API + 'gig:judge'), 'gig:hold' rings, a miss flinches " + JSON.stringify(h));
+      await advance(page, 6);
+      const fret = await page.evaluate(() => GG.render.stage.info().you.fret);
+      c.ok(fret >= 1 && fret <= 2, tag + ': the fretting hand slides to the lane (' + fret + ')');
+      const a0 = await page.evaluate(() => GG.render.stage.info().autoHits);
+      await advance(page, 30);
+      const a1 = await page.evaluate(() => { const x = GG.render.stage.info().autoHits; for (let k = 0; k < 16; k++) GG.emit('audio:step', { section: 'verse', entry: 0, bar: 0, step: k, time: 0 }); return { x, y: GG.render.stage.info().autoHits }; });
+      c.ok(a1.x > a0 && a1.y - a1.x >= 10, tag + ': the drummer keeps time on their own clock (' + a0 + ' -> ' + a1.x + ') and plays the band grid (+' + (a1.y - a1.x) + ' on 16 steps)');
+      const acts = await page.evaluate(([seat, dr]) => { const s = GG.render.stage; return { solo: s.bandAction(null, 'solo'), fill: s.bandAction(dr, 'fill'), acting: s.info().acting }; }, [seat, r.drummer]);
+      c.ok(acts.solo && acts.fill && (seat === 'lead' ? acts.acting.includes('player:solo') : !acts.acting.includes('player:solo')), tag + ': the solo is ' + (seat === 'lead' ? 'yours' : 'the band\'s') + ', the drummer fills ' + acts.acting.join(','));
+    }
+    if (band === 'hail_damage' && seat === 'bass') {
+      await page.evaluate(() => {
+        const d = document.createElement('div'); d.id = '__hw';
+        d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;height:33.34%;background:rgba(9,9,16,0.94);z-index:2147483647;border-top:2px solid #3a3a55';
+        document.body.appendChild(d);
+      });
+      await advance(page, 4);
+      await bareUi(page, true); await page.screenshot({ path: path.join(__dirname, '.cache', shotName('stage_seat.png')) }); await bareUi(page, false);
+      await page.evaluate(() => { const d = document.getElementById('__hw'); if (d) d.remove(); });
+    }
+  }
+  notes.push('seat stage calls: ' + rows.join(' | '));
+  // A rival set (their lineup, their drummer) keeps the v0.3 camera on a string-seat career; spectator stays spectator.
+  const rv = await page.evaluate(() => {
+    const s = GG.render.stage;
+    s.setup({ venue: { kind: 'club', name: 'Showdown' }, crowd: 90, genre: 'metal', rival: true, members: [{ id: 'tw1', role: 'vocals' }, { id: 'tw2', role: 'guitar' }], seat: 'bass' });
+    const a = s.info();
+    s.setup({ venue: { kind: 'club', name: 'Showdown' }, crowd: 90, genre: 'metal', members: GG.state.members, player: GG.state.player, seat: 'bass', view: 'spectator' });
+    return { a, b: s.info() };
+  });
+  await advance(page, 2);
+  c.ok(rv.a.view === 'drummer' && !rv.a.you && rv.a.drummer !== 'player' && rv.b.view === 'spectator' && rv.b.camera === 'spectator' && !!rv.b.you, 'a rival set keeps the kit camera; spectator view keeps its camera (your band still by seat) ' + JSON.stringify([rv.a.view, rv.a.drummer, rv.b.view]));
+  // Per-frame allocations: the drum stage vs a seat stage, same venue + crowd, no test calls inside the window.
+  const cdp = await page.context().newCDPSession(page);
+  const measure = async seat => {
+    await page.evaluate(([seat, venue]) => {
+      const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      GG.render.setPaused(false); GG.render.syncState(st); GG.render.setScene('stage');
+      GG.render.stage.setup({ venue, crowd: 120, members: st.members, flags: st.flags, genre: st.genre, player: st.player, seat: st.seat });
+      GG.render.stage.setCrowdLevel(70, true);
+    }, [seat, VENUE]);
+    await advance(page, 10);
+    return allocs(page, cdp, 90);
+  };
+  const ad = await measure('drums'), as = await measure('bass'), ar = await measure('rhythm');
+  notes.push('allocs/frame drums ' + ad.perFrame + ' B, bass ' + as.perFrame + ' B (seat code ' + as.seatCode + ' B), rhythm ' + ar.perFrame + ' B (seat code ' + ar.seatCode + ' B)');
+  // (V8 boxes double temporaries while a once-per-frame function is still interpreted: ~16 B each, never an object; the drum
+  // code shows the same: handPose ~600 B per frame. An array, object or closure per frame in the seat code would blow this.)
+  const pf = x => Math.round(x.seatCode / Math.max(1, x.frames));
+  c.ok(pf(as) <= 640 && pf(ar) <= 640, 'no objects allocated per frame in the seat code (youPose, autoDrum, kitHit, strumHit, camView): ' + pf(as) + ' / ' + pf(ar) + ' B per frame (boxed doubles only)');
+  c.ok(as.perFrame <= ad.perFrame * 1.25 + 512 && ar.perFrame <= ad.perFrame * 1.25 + 512, 'per-frame allocations on a seat stage stay at the drum stage\'s (' + ad.perFrame + ' B -> ' + as.perFrame + ' / ' + ar.perFrame + ' B)');
+  await cdp.detach().catch(() => {});
+  return err0;
 }
 
 (async () => {
@@ -178,6 +314,8 @@ async function advance(page, n) {
       await bareUi(page, true); await page.screenshot({ path: SHOT_STAGE }); await bareUi(page, false);
       await page.evaluate(() => { clearInterval(window.__hits); const d = document.getElementById('__hw'); if (d) d.remove(); });
     }
+
+    if (DO_SEAT) await seatSection(page, c, notes);
 
     if (DO_VAN) {
       await page.evaluate(() => GG.render.setScene('van'));
