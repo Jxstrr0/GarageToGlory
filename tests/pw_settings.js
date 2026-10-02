@@ -58,7 +58,12 @@ async function settings() {
   try {
     await page.waitForSelector(tid('title-settings'));
     c.ok(await page.evaluate(() => GG.debug('ui').screen) === 'title', 'no calibration popup under automation');
+    // v1.0 (§0 Q8, Lane P): a fresh profile is on 'auto' graphics (nothing stored), its button pressed and >= 48 px
+    const g0 = await page.evaluate(() => ({ pf: GG.prefs.get().graphics, stored: (GG.save.getJSON ? GG.save.getJSON(GG.save.KEYS.settings) : JSON.parse(localStorage.getItem(GG.save.KEYS.settings) || 'null')) || {}, r: GG.render.prefs() }));
+    c.ok(g0.pf === 'auto' && g0.stored.graphics === undefined && g0.r.quality === 'auto' && g0.r.crowdScale === 1 && g0.r.auto === true, 'fresh profile: graphics auto, not stored, full crowd ' + JSON.stringify([g0.pf, g0.stored.graphics, g0.r]));
     await tap(page, 'title-settings'); await waitScreen(page, 'settings');
+    const gb = await page.evaluate(() => { const b = document.querySelector('[data-testid="set-gfx-auto"]'), r = b && b.getBoundingClientRect(); return b && { on: b.getAttribute('aria-pressed'), w: r.width, h: r.height, n: document.querySelectorAll('[data-testid^="set-gfx-"]').length }; });
+    c.ok(gb && gb.on === 'true' && gb.w >= 48 && gb.h >= 48 && gb.n === 4, 'Auto | Low | Medium | High, Auto pressed, >= 48 px ' + JSON.stringify(gb));
     for (const id of ['set-career-diff', 'set-gigdiff-expert', 'set-speed-140', 'set-noFail', 'set-autoKick', 'set-lefty', 'set-drumSync', 'set-profile-headphones', 'set-calibrate',
       'set-gfx-low', 'set-colourblind', 'set-bigText', 'set-reducedFlash', 'set-cameraShake', 'set-skipVan', 'set-fastAnim', 'set-save-load', 'set-save-restore'])
       c.ok(await page.locator(tid(id)).count() === 1, 'has ' + id);
@@ -138,6 +143,13 @@ async function settings() {
     await page.evaluate(() => { const s = GG.state; window.__van = null; GG.ui.playVan(s.gig, t => { window.__van = t; }); });
     await page.waitForFunction(() => GG.debug('van') && GG.debug('van').skipped, null, { timeout: 5000 }).catch(() => {});
     c.ok(await page.evaluate(() => !!(GG.debug('van') && GG.debug('van').skipped)), 'skip van scenes skips the drive');
+    // v1.0 (Lane P): a graphics option picked by hand is stored and survives a reload ('high' stays 'high', not 'auto')
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ graphics: 'high' }); });
+    await page.reload(); await page.waitForSelector(tid('title-settings'));
+    const gh = await page.evaluate(() => ({ pf: GG.prefs.get().graphics, r: GG.render.prefs(), px: GG.debug('perf').quality }));
+    c.ok(gh.pf === 'high' && gh.r.quality === 'high' && gh.r.pixelRatio === 2 && !gh.r.auto && gh.px === 'high', 'a stored High stays High after a reload ' + JSON.stringify(gh));
+    await page.evaluate(() => GG.prefs.set({ graphics: 'auto' }));
+    c.ok((await pf(page)).graphics === 'auto' && await page.evaluate(() => GG.render.prefs().quality === 'auto'), 'back to Auto');
     c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3));
   } finally { await close(); c.done(); }
 }

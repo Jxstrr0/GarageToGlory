@@ -457,7 +457,7 @@ test('calibration maths: nearest click, trimmed mean, needs four taps', () => {
   eq(GG.prefs.calibCompute(clicks, [clicks[0] - 30, clicks[1] - 30], { interval: 600 }).ok, false);
   eq(GG.prefs.calibCompute(clicks, clicks.map(c => c - 40), { interval: 600 }).offset, -40);
   const pf = GG.prefs.get();
-  eq([pf.audioProfile, pf.calib.speaker.audio, pf.calib.headphones.visual, pf.noteSpeed, pf.graphics, pf.cameraShake], ['speaker', 0, 0, 1, 'high', true]);
+  eq([pf.audioProfile, pf.calib.speaker.audio, pf.calib.headphones.visual, pf.noteSpeed, pf.graphics, pf.cameraShake], ['speaker', 0, 0, 1, 'auto', true]);   // v1.0 (§0 Q8): a fresh profile is 'auto'
   GG.prefs.setCalib('headphones', { audio: 180, visual: 400 }); GG.prefs.setProfile('headphones');
   const o = GG.prefs.offsets(); eq([o.audio, o.visual], [0.18, 0.25]);
   eq(GG.prefs.get().calibSeen, true);

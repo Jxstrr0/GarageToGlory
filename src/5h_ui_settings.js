@@ -35,6 +35,13 @@
     if (hit && GG.audio && GG.audio.applySettings) GG.audio.applySettings();
   });
 
+  // v1.0 (Lane P): the graphics row gained 'Auto'; its four buttons are v1.0 controls (>= 48 px, four across at 390 px).
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-set-gfx-css')) {
+    var gcss = document.createElement('style'); gcss.id = 'gg-set-gfx-css';
+    gcss.textContent = '.set-seg.set-gfx .btn { min-height: 48px; min-width: 48px; flex: 1 1 0; padding: 0 6px; }';
+    document.head.appendChild(gcss);
+  }
+
   /* ---- Building blocks ------------------------------------------------------------------------------------ */
   function row(label, sub, ctl, testid) {
     return el('div.set-row', testid ? { testid: testid } : null, [el('div.lbl', [el('b', label), sub ? el('span', sub) : null]), ctl]);
@@ -44,8 +51,8 @@
     return row(label, sub, btn('.btn.small.set-toggle' + (on ? '.primary' : ''), { testid: 'set-' + key, 'aria-pressed': on ? 'true' : 'false',
       onclick: function () { var o = {}; o[key] = !on; set(o); s.rerender(); } }, on ? 'On' : 'Off'));
   }
-  function seg(s, key, opts, prefix, cur) {
-    return el('div.set-seg', opts.map(function (x) {
+  function seg(s, key, opts, prefix, cur, cls) {
+    return el('div.set-seg' + (cls ? '.' + cls : ''), opts.map(function (x) {
       var on = cur === x[0];
       return btn('.btn.small' + (on ? '.primary' : ''), { testid: prefix + x[2], 'aria-pressed': on ? 'true' : 'false',
         onclick: function () { var o = {}; o[key] = x[0]; set(o); s.rerender(); } }, x[1]);
@@ -113,8 +120,9 @@
 
       // Look + feel
       s.body.appendChild(sec('Look + feel', 'set-look'));
-      s.body.appendChild(row('Graphics', 'Low saves battery: fewer pixels, a smaller crowd.', null));
-      s.body.appendChild(seg(s, 'graphics', [['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics));
+      // v1.0 (§0 Q8): Auto is the default: a little softer than High on a sharp phone screen, steps down only when frames run slow.
+      s.body.appendChild(row('Graphics', 'Auto picks the sharpness and backs off when frames run slow. Low saves battery: fewer pixels, a smaller crowd.', null));
+      s.body.appendChild(seg(s, 'graphics', [['auto', 'Auto', 'auto'], ['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics, 'set-gfx'));
       s.body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
       if (pf.colourblind) s.body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
         return el('span.tag', { style: { background: P.CB_COLOURS[l], color: '#111', flex: '1 1 0', textAlign: 'center' } }, (ui.LANES && ui.LANES[l] ? ui.LANES[l].name : l));
