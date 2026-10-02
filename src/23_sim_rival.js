@@ -4,7 +4,8 @@
 // slowly, drives how often showdowns happen and feeds buzz to both bands. Showdowns: botb (a Monday gig offer; you watch
 // their set, then play yours), sameNight (the crowd splits on buzz), stolenSlot (they take a board listing), loonies
 // (co-nominees), poach (a Monday card for an unhappy member), festival (a board listing: they headline, you outplay them
-// from a lower slot), final (year 10: the Sad Dome co-bill decides who headlines forever -> state.finalShowdown).
+// from a lower slot), final (year 10: the Sad Dome co-bill decides who headlines forever -> state.finalShowdown; v1.0: week 21
+// of the career's LAST year, R.finalAt, so year 12 or 13 with bonus years).
 // Beat them enough and they crack (C.CRACKS): breakup, rebrand (new name, same accountants) or they ask to open for you.
 // Pure sim: no DOM, no audio.
 // API (GG.rival):
@@ -348,8 +349,9 @@
   /* ---- Scheduling (Monday) --------------------------------------------------------------------------------------- */
   R.pending = function (state) { var rv = get(state), p = rv.pending; return p && p.week === state.totalWeek ? p : null; };
   function crackFactor(rv) { return rv.cracked ? ((cfg().schedule.crackFactor || {})[rv.cracked] || 0) : 1; }
+  // v1.0 (Q2): the Sad Dome is week 21 of the career's last year (R.finalAt; year 10 without bonus years).
   function isFinalWeek(state) {
-    var F = cfg(state).final;
+    var F = R.finalAt(state);
     return state.year === F.year && state.week === F.week && !state.finalShowdown && state.maxWeeks >= state.totalWeek;
   }
   function inWeeks(ranges, wk) { return (ranges || []).some(function (r) { return wk >= r[0] && wk <= r[1]; }); }
@@ -496,7 +498,7 @@
   };
   // What's coming: this week's showdown, this week's scheduling chance (from heat), the Sad Dome's week (totalWeek).
   R.next = function (state) {
-    var rv = get(state), k = cfg(state), F = k.final, fw = (F.year - 1) * WPY + F.week;
+    var rv = get(state), k = cfg(state), F = R.finalAt(state), fw = (F.year - 1) * WPY + F.week;   // v1.0: the career's last year
     return { pending: R.pending(state), chance: Math.round((k.schedule.base + k.schedule.perHeat * rv.heat) * crackFactor(rv) * 1000) / 1000,
       final: state.finalShowdown ? null : { week: fw, inWeeks: fw - state.totalWeek, reachable: state.maxWeeks >= fw } };
   };
@@ -767,8 +769,9 @@
     if (rv.heat >= 50 && rv.heatWas < 50) news(state, out, 'heatUp', null, r);
     else if (rv.heat < 20 && rv.heatWas >= 20 && !rv.cracked) news(state, out, 'heatDown', null, r);
     out.cracked = maybeCrack(state, rv, out);
-    // year 10: the Sad Dome is announced
-    var F = k.final;
+    // the career's last year (v1.0: year 10, or 12 / 13 with bonus years): the Sad Dome is announced. Once finalNews is set
+    // GG.legacy refuses a bonus-year grant, so the announced week never moves.
+    var F = R.finalAt(state);
     if (!rv.finalNews && state.year === F.year && state.maxWeeks >= (F.year - 1) * WPY + F.week) {
       rv.finalNews = true; news(state, out, 'finalSoon', { n: F.week }, r);
     }
@@ -789,7 +792,8 @@
   function fillerFans(state, f, w) {
     var yrs = Math.max(0, w) / WPY, t = Math.min(1, yrs / Math.max(0.5, f.rise || 3)), s = t * t * (3 - 2 * t);
     var v = f.base + (f.peak - f.base) * s;
-    if (yrs > f.rise) v *= 1 - (f.fade || 0) * Math.min(1, (yrs - f.rise) / Math.max(1, C.CAREER_YEARS - f.rise));
+    var span = (isFinite(state.maxWeeks) && state.maxWeeks > 0 ? state.maxWeeks : WPY * C.CAREER_YEARS) / WPY;   // v1.0: fades over the career's own length
+    if (yrs > f.rise) v *= 1 - (f.fade || 0) * Math.min(1, (yrs - f.rise) / Math.max(1, span - f.rise));
     var rng = GG.RNG(GG.hashSeed((state.seed >>> 0) + '|scene|' + f.id + '|' + w));
     return Math.max(0, Math.round(v * rng.range(0.97, 1.03)));
   }

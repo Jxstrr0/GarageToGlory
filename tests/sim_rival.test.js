@@ -334,6 +334,7 @@ test('migration v5 -> v6: a rival caught up to the current week, idempotent, sav
 
 test('bots: full careers with showdowns of every live kind, a crack for the good bot, the final; deterministic; pure', () => {
   const GG = fresh(), runs = {};
+  GG.legacy.noBonus = true;   // v1.0: the 10-year shape (the Sad Dome in year 10); bonus careers are tested below
   for (const style of ['avg', 'good']) {
     const s = career(GG, 2024);
     while (!s.ended) GG.career.botWeek(s, style);

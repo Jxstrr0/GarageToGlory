@@ -325,6 +325,7 @@ test('bots: 240-week careers finish, stay in RANGES, fund >= 0, garage protectio
   for (const [label, deck] of [['loaded content', null], ['fixture deck', LONG]]) {
     for (const style of ['avg', 'good']) {
       const GG = fresh(deck);
+      GG.legacy.noBonus = true;   // v1.0: the 10-year shape (bonus years have their own 312-week test below)
       const s = GG.career.newCareer({ seed: 1234, player: { name: 'Bot' } });
       let weeks = 0;
       while (!s.ended) {
