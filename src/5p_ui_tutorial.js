@@ -70,10 +70,12 @@
     app.insertBefore(layer, document.getElementById('toast'));
     return layer;
   }
-  function liveScreen() { for (var i = 0; i < LIVE.length; i++) if (ui.isOpen(LIVE[i])) return LIVE[i]; return null; }
+  // A song is live (or about to count in) when the show's own screen is on top: the setlist sheet sits over 'gig' before
+  // the count-in, so 'gig' merely being open isn't enough. The calibration blocks everything while it is open anywhere.
   function songLive() {
-    if (liveScreen()) return true;
-    var st = S(); return !!(ui.isOpen('studio') && st && st.liveGig);
+    if (ui.isOpen('calib')) return true;
+    var top = ui.top();
+    return LIVE.indexOf(top) >= 0;
   }
   // Where the current lesson may show right now.
   function canShow() {
@@ -207,7 +209,14 @@
     GG.emit('tut:done', { id: c.id, replay: c.replay || undefined, skipped: why === 'skip' || undefined });
   }
   function markDone(st, id) {
-    if (L.mark(st, id)) { try { if (GG.meta && GG.meta.enabled && GG.meta.markLesson) GG.meta.markLesson(id); } catch (e) { /* meta is optional */ } }
+    if (!L.mark(st, id)) return;
+    try { if (GG.meta && GG.meta.enabled && GG.meta.markLesson) GG.meta.markLesson(id); } catch (e) { /* meta is optional */ }
+    persist(st);
+  }
+  // Lesson progress is saved right away (quietly: autosave + the career's slot), so a reload never repeats a lesson.
+  function persist(st) {
+    if (!st || GG.state !== st || !GG.save || !GG.save.write) return;
+    try { GG.save.write('auto', st); if (st.slot && st.slot !== 'auto') GG.save.write(String(st.slot), st); } catch (e) { /* the next autosave keeps it */ }
   }
 
   // Starts a lesson (opts.replay: from "?"; opts.host: the screen it belongs to). Returns true when it started (or queued).
@@ -246,7 +255,7 @@
     finish(null, 'skip');
     if (st) {
       L.stop(st);
-      try { if (GG.save && GG.save.write) { GG.save.write('auto', st); if (st.slot && st.slot !== 'auto') GG.save.write(String(st.slot), st); } } catch (e) { /* next autosave keeps it */ }
+      persist(st);
     }
     ui.toast('Lessons off. Tap ? any time to replay one.', { who: 'Lessons' });
   };
@@ -267,7 +276,11 @@
     var ctx = { screen: id, host: id };
     if (id === 'seq') { var e = ui.get('seq'); ctx.mode = e && e.data ? e.data.mode : null; }
     if (id === 'laptop') ctx.tab = laptopTab();
-    if (id === 'wrap' && moodDrop) ctx.event = 'moodDrop';
+    if (id === 'wrap') {
+      var we = ui.get('wrap'), w = we && we.data && we.data.wrap;
+      if (w && w.year && w.week) ctx.totalWeek = (w.year - 1) * (GG.contracts.WEEKS_PER_YEAR || 24) + w.week;   // the week being wrapped (the sim already moved on)
+      if (moodDrop) ctx.event = 'moodDrop';
+    }
     setTimeout(function () { if (ui.isOpen(id)) T.check(ctx); refresh(); }, 0);   // after the screen's own listeners (and its layout)
   });
   GG.on('screen:close', function (p) {

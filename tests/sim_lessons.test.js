@@ -103,6 +103,7 @@ test('due(): off unless on; week one in order by screen; seq only in write mode;
   s.totalWeek = 2;
   eq(L.due(s, { screen: 'card' }), null, 'w1_card is week one only');
   eq(L.due(s, { screen: 'wrap' }), null, 'w1_wrap is week one only');
+  eq(L.due(s, { screen: 'wrap', totalWeek: 1 }), 'w1_wrap', 'the wrap of week one (the sim already moved to week 2) passes its own week');
 });
 
 test('due(): weeks 2–4 triggers (board, money/merch, chat or a mood drop, the van) once each, within year one', () => {

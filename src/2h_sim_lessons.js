@@ -4,7 +4,8 @@
 //   GG.lessons = { LESSONS, ensure(state), on(state), done(state, id), mark(state, id) -> true when newly marked, stop(state),
 //                  def(id), available(state, id), steps(state, id) -> [VIEW_STEP], due(state, ctx) -> lessonId | null }
 //   state.tutorial = { on, done: { <lessonId>: totalWeek }, past4 }   (stage-0 migrate defaults; newCareer in 60_main sets on)
-//   ctx = { screen?, mode?, tab?, event? } — what just happened in the UI (a screen opened, a laptop tab, 'afterCard', 'moodDrop').
+//   ctx = { screen?, mode?, tab?, event?, totalWeek? } — what just happened in the UI (a screen opened, a laptop tab, 'afterCard',
+//   'moodDrop'); totalWeek overrides state.totalWeek (the wrap screen shows the week that just ended).
 //   VIEW_STEP = { i, who: memberId | null, narr?: true, text, point: STEP.point | null, advance: 'next' | { event, id? } | { hotspot } }
 // Speakers: role aliases resolve through career.roleOf (at the time of the lesson); a speaker who isn't an active member of
 // this lineup, a silent member (Kenji) or anyone career.speakerOk refuses is dropped with the step. Seat gates read
@@ -116,7 +117,7 @@
   };
   L.due = function (state, ctx) {
     if (!L.on(state)) return null;
-    var tw = state.totalWeek || 1;
+    var tw = (ctx && ctx.totalWeek) || state.totalWeek || 1;   // a wrap screen passes the week it wraps (endWeek already advanced)
     for (var i = 0; i < L.LESSONS.length; i++) {
       var id = L.LESSONS[i], d = L.def(id);
       if (!d || L.done(state, id) || !L.available(state, id)) continue;
