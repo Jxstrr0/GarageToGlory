@@ -19,8 +19,10 @@
   var KIND_LABEL = { member: 'Still in the band', recruit: 'Joined along the way', gone: 'Left the band', player: 'You' };
   var last = null, unlockLog = [], timers = [];
 
-  // Cosmetic unlocks announced while this career ended (12_meta 'meta:unlock'; the end summary lists them).
-  GG.on('career:end', function () { unlockLog = []; });
+  // Cosmetic unlocks announced as this career ended (12_meta's 'career:end' listener records it first and emits 'meta:unlock';
+  // the end summary lists them). A new or loaded career starts a fresh list.
+  function resetUnlocks() { unlockLog = []; }
+  GG.on('career:new', resetUnlocks); GG.on('career:loaded', resetUnlocks);
   GG.on('meta:unlock', function (p) { if (p) unlockLog.push(p); });
 
   function css() {
