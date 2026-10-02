@@ -133,9 +133,11 @@
       ach: Object.keys((s.ach && s.ach.got) || {}),
       strip: (s.recaps || []).map(function (r) { return { y: r.y, h: r.headline || '', fans: num(r.fans), era: r.era || null, best: r.best ? r.best.name : null, aw: (r.awards || []).length }; }) };
   }
+  // Lane M: GG.legacy.hofEntry's fields win; any field it leaves out (or undefined) comes from the basic entry (the UI and the
+  // unlocks always find logo, lineup, ach, strip, stats).
   function entryFor(state) {
-    var e = GG.legacy && GG.legacy.hofEntry ? GG.legacy.hofEntry(state) : basicEntry(state);
-    e = Object.assign({}, e);
+    var e = basicEntry(state), L = GG.legacy && GG.legacy.hofEntry ? GG.legacy.hofEntry(state) : null;
+    if (obj(L)) for (var k in L) if (L[k] !== undefined) e[k] = L[k];
     e.id = e.id || M.careerId(state); e.seat = e.seat || 'drums';
     e.at = M.today(); e.ver = GG.VERSION;
     return e;
