@@ -91,6 +91,12 @@
     return cfgBy[rid] || (cfgBy[rid] = merge(cfgVal, by));
   }
   R.cfg = cfg;
+  // v1.0 (plan_contract_1.0 §3.8, Q2): the Sad Dome's { year, week }: week 21 of the career's last year (GG.legacy.finalYear,
+  // = ceil(maxWeeks / 24) once bonus years exist), else economy.rival.final.year (10).
+  R.finalAt = function (state) {
+    var F = cfg(state).final;
+    return { year: GG.legacy && GG.legacy.finalYear ? GG.legacy.finalYear(state) : F.year, week: F.week };
+  };
 
   /* ---- Content + helpers --------------------------------------------------------------------------------------- */
   function content() { return GG.content.rivalry || {}; }

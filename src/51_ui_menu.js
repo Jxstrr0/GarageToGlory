@@ -6,6 +6,9 @@
 // customised), a carry-over toggle (carry-toggle: unlocks from past careers in this genre, GG.creator.carry) and hands both
 // to GG.creator.prepare() right before GG.main.newCareer; the ☰ menu has "Look" (menu-look) mid-career.
 // v0.8.1 (LOGO): band intro → the logo picker ('logo', 5m_ui_logo; GG.logo.prepare) → the creator.
+// v1.0 (stage-0 sockets): the title's "Hall of Fame" (btn-hof, once GG.meta has an entry and the 'hof' screen exists), ☰
+// rows "Lessons" (menu-lessons → GG.tutorial.openLessons) and "Hall of Fame" (menu-hof), and the creator's "Skip the lessons"
+// toggle (tut-skip, on by default, shown when GG.tutorial.offerSkip()) passed to GG.main.newCareer as skipLessons.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -123,6 +126,7 @@
         btn('.btn.grow', { testid: 'btn-load', onclick: function () { ui.show('load'); } }, 'Load'),
         btn('.btn.grow', { testid: 'btn-code-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore code')
       ]));
+      if (ui.defined('hof') && GG.meta && GG.meta.hof().length) kids.push(btn('.btn.block', { testid: 'btn-hof', onclick: function () { ui.show('hof'); } }, '🏆 Hall of Fame'));   // v1.0
       kids.push(el('div.row', [
         btn('.btn.ghost.grow', { testid: 'title-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
         ui.defined && ui.defined('settings') ? btn('.btn.ghost.grow', { testid: 'title-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null
@@ -299,6 +303,10 @@
       var carry = el('label.cr-carry', { htmlFor: 'cr-carry' }, [carryBox, el('span', carryN ? 'Carry over ' + carryN + ' unlock' + (carryN === 1 ? '' : 's') + ' from past ' + genre + ' careers'
         : 'Unlocks from past ' + genre + ' careers carry over here (none yet)')]);
       carryBox.id = 'cr-carry';
+      var offerSkip = !!(GG.tutorial && GG.tutorial.offerSkip && GG.tutorial.offerSkip());   // v1.0: "Skip the lessons" (on by default)
+      if (draft.skipLessons == null) draft.skipLessons = true;
+      var tutSkip = offerSkip ? btn('.btn.block.tut-skip' + (draft.skipLessons ? '.on' : ''), { testid: 'tut-skip', 'aria-pressed': draft.skipLessons ? 'true' : 'false',
+        onclick: function () { draft.skipLessons = !draft.skipLessons; s.rerender(); } }, (draft.skipLessons ? '✓ ' : '') + 'Skip the lessons' + (draft.skipLessons ? '' : ': off')) : null;
       var DL = GG.difficulty ? GG.difficulty.LEVELS : ['normal'];
       if (DL.indexOf(draft.careerDifficulty) < 0) draft.careerDifficulty = 'normal';
       var diffPick = el('div.diff-pick', { testid: 'diff-pick' }, DL.map(function (d) {
@@ -314,7 +322,7 @@
         if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
         GG.main.newCareer({ slot: draft.slot || '1', bandId: (dband && dband.id) || draft.bandId,
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
-          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()) });
+          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()), skipLessons: offerSkip ? !!draft.skipLessons : false });
         ui.closeAll();
         ui.show('coldopen');
       } }, 'Start the band');
@@ -328,6 +336,7 @@
           grid,
           customize,
           carry,
+          tutSkip,
           el('div.caps', 'Career difficulty · locked for this career'),
           diffPick,
           el('p.small.dim', { testid: 'diff-blurb' }, GG.difficulty ? GG.difficulty.text(draft.careerDifficulty).blurb : '')
@@ -392,6 +401,8 @@
         el('div.sep'),
         ui.openLook && st ? btn('.btn.block', { testid: 'menu-look', onclick: function () { ui.close(s.id); ui.openLook({ mode: 'career' }); } }, '👕 Look: everyday, stage, ink, kit') : null,   // v0.8
         ui.defined && ui.defined('settings') ? btn('.btn.block', { testid: 'menu-settings', onclick: function () { ui.show('settings'); } }, '⚙ Settings') : null,
+        GG.tutorial && GG.tutorial.openLessons ? btn('.btn.block', { testid: 'menu-lessons', onclick: function () { ui.close(s.id); GG.tutorial.openLessons(); } }, '? Lessons') : null,   // v1.0
+        ui.defined && ui.defined('hof') ? btn('.btn.block', { testid: 'menu-hof', onclick: function () { ui.show('hof'); } }, '🏆 Hall of Fame') : null,   // v1.0
         el('div.row', [
           btn('.btn.grow', { testid: 'menu-sound', onclick: function () { GG.audio.toggleMuted(); s.rerender(); } }, soundLabel()),
           btn('.btn.danger.grow', { testid: 'menu-quit', onclick: function () {

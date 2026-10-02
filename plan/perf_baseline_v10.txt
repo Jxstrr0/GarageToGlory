@@ -1,0 +1,104 @@
+# v1.0 PERF baseline (0.9.0.0 "Genres", before any v1.0 change)
+# Source: the read-only PERF audit of 2026-10-01 (probes now in tools/perf_probes/, copied verbatim from the audit scratch dir;
+# they read dist/game.html and tests/.cache/three-0.149.0.min.js relative to their own folder: copy those next to them, or
+# Lane P ports them into tools/perf.js). Headless Chromium, SwiftShader WebGL, isMobile, DPR 1 unless noted; CPU throttle x1 / x4.
+# Hard gates vs report-only rows: plan/plan_contract_1.0.md §4.9. dist/game.html measured here = 4,417,065 B (comments kept).
+
+## Scenes (perf_scenes.js; table.js): renderer.info + JS/render per frame + first-build ms
+scene | calls | tris | geo/tex/prog | heapMB | js p50/p95 1x | js p50/p95 4x | render p50/p95 4x | fps sw 390@1x / 440@1x / 440@dpr3 | build ms 1x/4x
+title | 33 | 37345 | 26/9/13 | 7.3 | 1.4/6.2 | 4.7/11.7 | 4/9.6 | 12.6 / 12.6 / 8.7 | -/-
+garage_hail_damage | 43 | 10030 | 36/17/15 | 8.8 | 1.4/2.4 | 4.5/7.2 | 3.6/5.9 | 15.3 / 14.3 / 8.6 | 1793/2288
+garage_frost_heave | 39 | 10739 | 39/17/17 | 9 | 1.3/2.1 | 4.9/9 | 3.6/8.5 | 18.6 / 16.3 / 9 | 87/241
+garage_gravel_kings | 39 | 8950 | 42/17/19 | 9.2 | 1.3/3.7 | 4.9/8.6 | 3.6/6.9 | 15.3 / 14.6 / 8 | 119/332
+garage_grid_road_ramblers | 41 | 14613 | 39/18/19 | 9.4 | 1.2/2.6 | 5.1/10.1 | 3.7/8.2 | 14.7 / 14 / 7 | 72/259
+map(board,over garage) | 43 | 10030 | 36/18/19 | 11.2 | null/null | null/null | null/null | paused / paused / paused | -/-
+laptop(over garage) | 43 | 10030 | 36/18/19 | 9.8 | 1/1.8 | 3.8/7.1 | 3.3/6.6 | 31 / 31 / 22 | -/-
+stage_festival_full | 35 | 65680 | 66/26/30 | 10.7 | 1.2/2.3 | 5.2/12 | 3.2/8.2 | 9.6 / 8 / 8.3 | 93/337
+stage_sad_dome | 35 | 46126 | 66/26/30 | 10.7 | 1.3/2.8 | 6.6/15.1 | 4.3/8.9 | 6.7 / 5.7 / 2.3 | 35/97
+stage_budokhan | 33 | 53972 | 64/25/29 | 10.7 | 1.2/3.1 | 4.7/7.1 | 3.2/5.3 | 7.7 / 6.3 / 3 | 32/166
+stage_club | 35 | 46014 | 66/26/30 | 10.8 | 1.2/5.7 | 6/8.9 | 4.5/6.5 | 7.7 / 6 / 3 | 22/89
+carpet | 19 | 10496 | 55/29/27 | 11.1 | 0.7/2.1 | 2.2/5 | 1.8/4 | 18.3 / 16.6 / 1.7 | 51/157
+van | 28 | 15962 | 63/27/34 | 11.8 | 1/1.6 | 3.1/9.1 | 2.6/8.2 | 15.6 / 14 / 10 | 554/643
+
+## Gig peak (perf_gig.js): Hail Damage, Mudstonbury main stage (60k cap, 150-person crowd), Expert, 6 lanes + pedal, first song
+CPU x1: fps 6.1 | frame p50/p95 166.6/316.6 ms | JS/frame p50/p95/max 1.7/3.5/10.1 ms | render() p50/p95 0.9/2.6 ms | calls 38 tris 65764 | heap 11 MB | audio peak sources 30 (at 7.56 s), nodes/s 154, caps {"song":13,"band":7,"crowd":12,"amb":0,"sfx":0,"level":100}, drops 0/0 | taps 382 judged {"perfect":382}
+CPU x4: fps 4.7 | frame p50/p95 216.6/433.4 ms | JS/frame p50/p95/max 8.3/18.2/44.1 ms | render() p50/p95 4.4/10.3 ms | calls 38 tris 65764 | heap 11 MB | audio peak sources 22 (at 7.53 s), nodes/s 147, caps {"song":13,"band":7,"crowd":0,"amb":0,"sfx":4,"level":100}, drops 0/0 | taps 380 judged {"perfect":376,"null":1,"good":3}
+
+## Time to interactive (perf_tti.js, 390x844, fresh browser per trial)
+CPU x1: tti 522 / 573 / 579 ms | long tasks total 309 / 331 / 339 ms | script s 0.4 / 0.42 / 0.44 | heap 6.9 / 6.9 / 6.9 MB | first tap 110 / 126 / 135 ms
+CPU x4: tti 1753 / 1789 / 1663 ms | long tasks total 1152 / 1123 / 1206 ms | script s 1.39 / 1.48 / 1.48 | heap 6.9 / 6.9 / 6.9 MB | first tap 130 / 121 / 119 ms
+
+## Save code size (perf_save.js: toCode length / slot JSON chars after a bot career)
+6 years, 24 careers: code 64897..80268 chars (mean 74622), JSON 135718..169903, all round-trip: true
+  biggest keys (max JSON chars): songs 58994, bandbook 19138, albums 18346, history 8482, showdowns 8205, chat 7257, rival 6107, gifts 5361
+10 years, 16 careers: code 90140..104206 chars (mean 98769), JSON 195138..242634, all round-trip: true
+  biggest keys (max JSON chars): songs 96804, albums 32295, bandbook 19343, history 14327, showdowns 13719, chat 7341, recaps 7077, rival 7055
+
+## Size (perf_size.js)
+game.html raw 4417065 (4.42 MB, 4314 KiB) gzip-9 1345605 (1.35 MB) brotli 1007148
+three.min.js (cdnjs, not in the budget) 608081 gzip 152982
+
+by group (raw KiB / gzip KiB):
+  content: band packs       936    291
+  content: shared           837    268
+  render                    772    237
+  sims                      708    224
+  ui                        680    224
+  audio                     182     58
+  core                       82     32
+
+top 15 modules (raw KiB / gzip KiB):
+  content/zz_band_grid_road_ramblers.js    348    104
+  content/zz_band_frost_heave.js          320     97
+  41_render_garage.js                     270     82
+  content/zz_band_gravel_kings.js         269     90
+  30_audio.js                             182     58
+  content/cards.js                        176     51
+  42_render_stage.js                      140     43
+  40_render_core.js                       120     35
+  43_render_van.js                        107     33
+  24_sim_labels.js                        104     32
+  20_sim_career.js                         85     26
+  55_ui_gig.js                             71     24
+  content/venues.js                        64     17
+  25_sim_tour.js                           64     20
+  2a_sim_shop.js                           60     18
+
+full-line comments ~ 460 KiB of 4306 KiB (10.7%)
+leading indentation ~ 285 KiB
+
+## Phone QA (perf_phoneqa.js; emulated notch/home insets)
+--- 390x844 insets 47/34
+title          {"screen":"title","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":12,"under12":0,"under11":0,"texts":10,"smallest":["12px title-credit \"a game by Prairie \"","15px tagline \"From your parents'\"","15px btn-load \"Load\"","15px btn-code-restore \"Restore code\""]}
+garage/plan    {"screen":null,"buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":9,"under11":6,"texts":17,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+laptop         {"screen":"laptop","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":19,"under11":6,"texts":28,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+settings       {"screen":"settings","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":4,"under11":0,"texts":36,"smallest":["11px caps \"Garage to Glory\"","11px caps \"Career\"","11px caps \"Play\"","11px caps \"Audio + timing\""]}
+board          {"screen":"board","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":14,"under11":0,"texts":39,"smallest":["11px sub \"YEAR 1 · WEEK 1 · \"","11px caps \"Booked this weeken\"","11px gb-chip \"Tier 1 · 40 cap\"","11px gb-chip \"Exposure (free)\""]}
+gig setlist    {"screen":"gig-set","buttonsSmall":0,"small":[],"notch":[],"home":["set-song-s5@16","set-song-s1@-36"],"overflow":0,"minFont":11,"under12":10,"under11":0,"texts":50,"smallest":["11px caps \"Saskatoon · legion\"","11px caps \"Crowd\"","11px sub \"Legion Hall, Branc\"","11px caps \"Difficulty\""]}
+gig highway    {"lanes":6,"laneW":65,"hwTop":558,"hwH":252,"hitFromBottom":36}
+gig play       {"screen":"gig","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":2,"under11":0,"texts":5,"smallest":["11px caps \"Saskatoon · legion\"","11px caps \"Crowd\"","13px lv \"Warm\"","15px B \"Legion Hall, Branc\""]}
+--- 390x844 insets 47/34 + bigText
+garage/plan    {"screen":null,"buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":9,"under11":6,"texts":17,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+laptop         {"screen":"laptop","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":19,"under11":6,"texts":28,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+settings       {"screen":"settings","buttonsSmall":0,"small":[],"notch":[],"home":["set-practice@21"],"overflow":0,"minFont":12,"under12":0,"under11":0,"texts":35,"smallest":["12px SPAN \"Locked for this ca\"","12px SPAN \"Timing window, sta\"","12px SPAN \"How fast the highw\"","12px SPAN \"The crowd can't tu\""]}
+board          {"screen":"board","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":13,"under11":0,"texts":39,"smallest":["11px sub \"YEAR 1 · WEEK 1 · \"","11px gb-chip \"Tier 1 · 40 cap\"","11px gb-chip \"Exposure (free)\"","11px gb-chip \"Needs 0 fans ✓\""]}
+gig setlist    {"screen":"gig-set","buttonsSmall":0,"small":[],"notch":[],"home":["set-song-s5@-22"],"overflow":0,"minFont":11,"under12":1,"under11":0,"texts":48,"smallest":["11px sub \"Legion Hall, Branc\"","12.5px caps \"Saskatoon · legion\"","12.5px caps \"Crowd\"","12.5px caps \"Difficulty\""]}
+gig highway    {"lanes":6,"laneW":65,"hwTop":558,"hwH":252,"hitFromBottom":36}
+gig play       {"screen":"gig","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":12.5,"under12":0,"under11":0,"texts":5,"smallest":["12.5px caps \"Saskatoon · legion\"","12.5px caps \"Crowd\"","13px lv \"Warm\"","15px B \"Legion Hall, Branc\""]}
+--- 440x956 insets 59/34
+title          {"screen":"title","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":12,"under12":0,"under11":0,"texts":10,"smallest":["12px title-credit \"a game by Prairie \"","15px tagline \"From your parents'\"","15px btn-load \"Load\"","15px btn-code-restore \"Restore code\""]}
+garage/plan    {"screen":null,"buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":9,"under11":6,"texts":17,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+laptop         {"screen":"laptop","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":19,"under11":6,"texts":28,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+settings       {"screen":"settings","buttonsSmall":0,"small":[],"notch":[],"home":["set-calibrate@6"],"overflow":0,"minFont":11,"under12":4,"under11":0,"texts":42,"smallest":["11px caps \"Garage to Glory\"","11px caps \"Career\"","11px caps \"Play\"","11px caps \"Audio + timing\""]}
+board          {"screen":"board","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":15,"under11":0,"texts":45,"smallest":["11px sub \"YEAR 1 · WEEK 1 · \"","11px caps \"Booked this weeken\"","11px gb-chip \"Tier 1 · 40 cap\"","11px gb-chip \"Exposure (free)\""]}
+gig setlist    {"screen":"gig-set","buttonsSmall":0,"small":[],"notch":[],"home":["set-song-s2@12","set-song-s4@-40"],"overflow":0,"minFont":11,"under12":12,"under11":0,"texts":55,"smallest":["11px caps \"Saskatoon · legion\"","11px caps \"Crowd\"","11px sub \"Legion Hall, Branc\"","11px caps \"Difficulty\""]}
+gig highway    {"lanes":6,"laneW":73,"hwTop":632,"hwH":290,"hitFromBottom":36}
+gig play       {"screen":"gig","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":2,"under11":0,"texts":5,"smallest":["11px caps \"Saskatoon · legion\"","11px caps \"Crowd\"","13px lv \"Warm\"","15px B \"Legion Hall, Branc\""]}
+--- 440x956 insets 59/34 + bigText
+garage/plan    {"screen":null,"buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":9,"under11":6,"texts":17,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+laptop         {"screen":"laptop","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":9,"under12":19,"under11":6,"texts":28,"smallest":["9px l \"Y1\"","9px l \"Fund\"","9px l \"Fans\"","9px l \"Buzz\""]}
+settings       {"screen":"settings","buttonsSmall":0,"small":[],"notch":[],"home":["set-calibrate@-15"],"overflow":0,"minFont":12,"under12":0,"under11":0,"texts":42,"smallest":["12px SPAN \"Locked for this ca\"","12px SPAN \"Timing window, sta\"","12px SPAN \"How fast the highw\"","12px SPAN \"The crowd can't tu\""]}
+board          {"screen":"board","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":11,"under12":13,"under11":0,"texts":43,"smallest":["11px sub \"YEAR 1 · WEEK 1 · \"","11px gb-chip \"Tier 1 · 40 cap\"","11px gb-chip \"Exposure (free)\"","11px gb-chip \"Needs 0 fans ✓\""]}
+gig setlist    {"screen":"gig-set","buttonsSmall":0,"small":[],"notch":[],"home":["set-song-s2@-13"],"overflow":0,"minFont":11,"under12":1,"under11":0,"texts":54,"smallest":["11px sub \"Legion Hall, Branc\"","12.5px caps \"Saskatoon · legion\"","12.5px caps \"Crowd\"","12.5px caps \"Difficulty\""]}
+gig highway    {"lanes":6,"laneW":73,"hwTop":632,"hwH":290,"hitFromBottom":36}
+gig play       {"screen":"gig","buttonsSmall":0,"small":[],"notch":[],"home":[],"overflow":0,"minFont":12.5,"under12":0,"under11":0,"texts":5,"smallest":["12.5px caps \"Saskatoon · legion\"","12.5px caps \"Crowd\"","13px lv \"Warm\"","15px B \"Legion Hall, Branc\""]}

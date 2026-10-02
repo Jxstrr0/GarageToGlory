@@ -1,7 +1,8 @@
 // Node loader: runs the DOM-free modules (ns, contracts, content, save, sims) in a fresh vm context.
 // const GG = require('./_load')({ localStorage: fakeStorage() });
+// v1.0: { strip: true } loads each module with its full-line comments stripped, exactly as build.js ships it (build.test.js).
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const { ORDER } = require('../build.js');
+const { ORDER, strip } = require('../build.js');
 const SRC = path.join(__dirname, '..', 'src');
 const VERSION = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
 const SIM_SAFE = /^(0[12]_|1\d_|2[\da-z]_|content\/)/;   // v0.8: 2a_sim_shop, 2b_sim_creator
@@ -25,7 +26,9 @@ function load(opts) {
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   for (const f of ORDER.filter(f => SIM_SAFE.test(f))) {
-    const code = fs.readFileSync(path.join(SRC, f), 'utf8').replace(/__VERSION__/g, VERSION);
+    let code = fs.readFileSync(path.join(SRC, f), 'utf8');
+    if (opts.strip) code = strip(code).code;
+    code = code.replace(/__VERSION__/g, VERSION);
     vm.runInContext(code, ctx, { filename: f });
   }
   return ctx.GG;

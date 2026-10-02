@@ -250,6 +250,7 @@
     M.booted = true;
     var bootEl = document.getElementById('boot');
     if (bootEl && bootEl.parentNode) bootEl.parentNode.removeChild(bootEl);
+    if (GG.meta) { try { GG.meta.enabled = true; GG.meta.load(); } catch (e) { console.error('[main] meta.load failed', e); } }   // v1.0: Hall of Fame + meta, the one-time slot scan
     ui.init();
     var scene = document.getElementById('scene');
     if (GG.render && typeof GG.render.init === 'function') {

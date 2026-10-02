@@ -1076,6 +1076,13 @@ html.gg-calm .cold-fx { animation: none !important; }
 .tw-opera.po-metal { background: linear-gradient(180deg, #120d18, #2a1a30 70%, #1a1418 70%); }
 .lo-band { font-style: italic; color: #cfd3dc; margin: 8px 0 0; }   /* v0.9: the band line after a Loonie envelope (59c) */
 /* ==== end v0.9 GENRES ==== */
+/* v1.0 TUTORIAL { */
+/* Lane T: edits to existing shell rules for the tutorial (e.g. .hud .l with Bigger text). New modules inject their own CSS. */
+/* } */
+/* v1.0 QA { */
+/* Lead / Lane Q: phone-QA fixes. Every new v1.0 control is >= 48 px: the laptop's ten tabs (Trophies wraps 5 + 5). */
+.tabs.tabs:has(> .tab:nth-child(10)) > .tab.tab { min-height: 48px; }
+/* } */
 </style>
 </head>
 <body>

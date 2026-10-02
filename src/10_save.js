@@ -1,7 +1,9 @@
 // 10_save.js: save slots in localStorage (with an in-memory fallback), settings, and copy-paste save codes.
-//   keys: gg.v1.slot.<auto|1|2|3>, gg.v1.settings, gg.v1.hof (reserved), gg.v1.meta (reserved)
+//   keys: gg.v1.slot.<auto|1|2|3>, gg.v1.settings, gg.v1.hof (Hall of Fame, 12_meta), gg.v1.meta (12_meta)
 //   slot record: { savedAt, version, summary: { band, player, year, week, fans, fund }, state }
 //   save code:   'GG1:' + base64url(LZW(UTF-8(JSON))) + 6-char checksum of that body
+//   v1.0: a career code's JSON may carry `_meta` (GG.meta.exportLite(): the Hall of Fame lite + counters); a meta-only code
+//   is { v: 1, metaOnly: true, _meta: GG.meta.exportFull() } (metaCode). readCode() splits them; fromCode() = the state.
 // Every storage access is wrapped: when storage is missing or throws, saves live in memory for the session
 // and GG.save.storageOk is false (the UI can warn that progress won't survive a reload).
 (function (GG) {
@@ -14,7 +16,8 @@
   // mix / metronome / brushes default inside GG.audio. Only keys the player changed are stored.
   var DEFAULT_SETTINGS = { muted: false, gigDifficulty: 'easy', noteSpeed: 1, noFail: false, autoKick: false,
     audioProfile: 'speaker', calib: { speaker: { audio: 0, visual: 0, at: 0 }, headphones: { audio: 0, visual: 0, at: 0 } }, calibSeen: false,
-    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'high', skipVan: false, fastAnim: false };
+    lefty: false, colourblind: false, bigText: false, reducedFlash: false, cameraShake: true, graphics: 'auto', skipVan: false, fastAnim: false };
+  // v1.0 (§0 Q8): graphics defaults to 'auto' (adaptive pixel ratio; P.normalize maps it to 'high' until 'auto' is in P.GRAPHICS).
 
   /* ---- Storage backend ---------------------------------------------------- */
   var backend = null, memory = {};
@@ -181,6 +184,18 @@
       if (!x.rating) { var r = GG.songs.rate(x.pattern, s.genre, s.gear); x.rating = { groove: r.groove, hook: r.hook, difficulty: r.difficulty }; }
     });
     if (!isFinite(s.rng)) s.rng = s.seed;
+    // v1.0 "Glory" (SAVE_SCHEMA stays 10): fill when missing, never overwrite, no events. Old saves never start the lessons;
+    // a save past week 4 counts as past4 (the "Skip the lessons" offer).
+    if (!isFinite(s.bonusYears)) s.bonusYears = 0;
+    if (!s.legacyTrack || typeof s.legacyTrack !== 'object') s.legacyTrack = { bigHead: null };
+    def(s.legacyTrack, 'bigHead', null);
+    if (s.legacy === undefined || (s.legacy !== null && typeof s.legacy !== 'object')) s.legacy = null;
+    if (!s.ach || typeof s.ach !== 'object') s.ach = { got: {}, t: {} };
+    ['got', 't'].forEach(function (k) { if (!s.ach[k] || typeof s.ach[k] !== 'object') s.ach[k] = {}; });
+    if (!s.tutorial || typeof s.tutorial !== 'object') s.tutorial = { on: false, done: {}, past4: s.totalWeek >= 4 };
+    if (typeof s.tutorial.on !== 'boolean') s.tutorial.on = false;
+    if (!s.tutorial.done || typeof s.tutorial.done !== 'object') s.tutorial.done = {};
+    if (typeof s.tutorial.past4 !== 'boolean') s.tutorial.past4 = s.totalWeek >= 4;
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
 
@@ -298,12 +313,20 @@
   save.decompress = function (b64) { return utf8Decode(decompress(b64)); };
 
   // 'GG1:' + body + checksum. Safe to paste in chat apps and notes (base64url, no spaces).
+  function encode(obj) { var body = save.compress(JSON.stringify(obj)); return 'GG1:' + body + checksum(body); }
+  // v1.0: in the browser (GG.meta.enabled) the code also carries the Hall of Fame lite as `_meta`, on a shallow copy (the
+  // state object is never mutated); node codes are unchanged.
   save.toCode = function (state) {
-    var body = save.compress(JSON.stringify(state));
-    return 'GG1:' + body + checksum(body);
+    return encode(GG.meta && GG.meta.enabled ? Object.assign({}, state, { _meta: GG.meta.exportLite() }) : state);
+  };
+  // v1.0: a meta-only code (the Hall of Fame "Backup code"): every entry with its year strip, trophies and unlocks.
+  save.metaCode = function () {
+    return encode({ v: 1, metaOnly: true, _meta: GG.meta && GG.meta.exportFull ? GG.meta.exportFull() : null });
   };
   // Tolerates spaces/line breaks/zero-width characters and text around the code. Throws Error(DAMAGED).
-  save.fromCode = function (text) {
+  // v1.0: -> { state: migrated state | null (a meta-only code), meta: the `_meta` object | null }. `_meta` is taken off
+  // before migrate; merging it is the caller's job (GG.meta.mergeLite, after the player confirms).
+  save.readCode = function (text) {
     var s = String(text == null ? '' : text).replace(/[\s​-‍⁠﻿]+/g, '');
     var at = s.indexOf('GG1:');
     if (at < 0) throw new Error(DAMAGED);
@@ -311,10 +334,23 @@
     if (s.length < 7) throw new Error(DAMAGED);
     var body = s.slice(0, -6);
     if (checksum(body) !== s.slice(-6)) throw new Error(DAMAGED);
-    var state;
-    try { state = save.migrate(JSON.parse(save.decompress(body))); } catch (e) { throw new Error(DAMAGED); }
+    var obj, meta = null, state = null;
+    try { obj = JSON.parse(save.decompress(body)); } catch (e) { throw new Error(DAMAGED); }
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error(DAMAGED);
+    if (obj._meta && typeof obj._meta === 'object') meta = obj._meta;
+    delete obj._meta;
+    if (obj.metaOnly) {
+      if (!meta) throw new Error(DAMAGED);
+      return { state: null, meta: meta };
+    }
+    try { state = save.migrate(obj); } catch (e) { throw new Error(DAMAGED); }
     if (typeof state.bandId !== 'string' || !state.members.length || !isFinite(state.fund)) throw new Error(DAMAGED);
-    return state;
+    return { state: state, meta: meta };
+  };
+  save.fromCode = function (text) {
+    var r = save.readCode(text);
+    if (!r.state) throw new Error(DAMAGED);
+    return r.state;
   };
 
   save.init();

@@ -71,6 +71,7 @@
     };
     hud.cal = el('div.hud-cal', { testid: 'hud-cal', 'aria-live': 'polite' });   // v0.6.1: month · season · weather · holiday
     hud.bar = el('div.hud-bar', [hud.week, hud.fund, hud.fans, hud.buzz, hud.chem,
+      GG.tutorial ? btn('.hud-menu.hud-help', { testid: 'btn-help', 'aria-label': 'Lessons', onclick: function () { GG.tutorial.openLessons(); } }, '?') : null,   // v1.0 (Lane T)
       btn('.hud-menu', { testid: 'btn-menu', 'aria-label': 'Menu', onclick: function () { ui.show('menu'); } }, '☰'), hud.cal]);
     if (!document.getElementById('gg-hud-cal-css')) {
       var css = document.createElement('style'); css.id = 'gg-hud-cal-css';
@@ -511,7 +512,7 @@
       }
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
-      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', 'Ten years. One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));
+      if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
       ui.append(s.body, el('div.stack', parts));
       var t = savedText();
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
@@ -528,26 +529,7 @@
     onClose: function (s) { (s.data._off || []).forEach(function (off) { off(); }); }
   });
 
-  /* ======================================================================================================
-     End of career
-     ====================================================================================================== */
-  ui.define('end', {
-    kind: 'full',
-    build: function (s) {
-      var st = S() || {}, stats = st.stats || {};
-      var band = (GG.content.bands || {})[st.bandId];
-      var grid = el('div.stat-grid', [
-        ['Years', st.year || 10], ['Fans', U.fmtNum(st.fans || 0)], ['Fund', U.fmtMoney(st.fund || 0)],
-        ['Gigs', stats.gigs || 0], ['Songs', stats.songsWritten || (st.songs || []).length], ["Parents' loans", stats.parentsLoans || 0]
-      ].map(function (x) { return el('div', [el('span.caps', x[0]), el('b', String(x[1]))]); }));
-      ui.append(s.body, el('div.title-wrap', [
-        el('h1.logo', { style: 'font-size:44px' }, ["That's a", el('span.glory', ' career')]),
-        el('p.tagline', (band ? band.name : 'The band') + ' played their last show in ' + ui.space(st) + '. Your mom kept every flyer.'),
-        el('div.panel', grid), ui.rivalEnd ? ui.rivalEnd(st) : null
-      ]));
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-end-title', onclick: function () { GG.main.quitToTitle(); } }, 'Back to title'));
-    }
-  });
+  // v1.0: the end-of-career screen ('end') moved to 5n_ui_ending.js (Lane E's end sequence).
 
   /* ======================================================================================================
      Hotspots: placeholders for later versions, gig board, trophies

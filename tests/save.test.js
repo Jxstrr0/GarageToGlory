@@ -136,4 +136,141 @@ test('v0.9: every band saves and loads (slot, code, migrate); a partial save tak
   });
 });
 
+// ---- v1.0 stage 0: the five new state fields, save codes with _meta, the meta-only code, 12_meta core -------------------
+const fs = require('fs'), path = require('path'), zlib = require('zlib');
+const FIX = ['v09_world_y9', 'v09_y10w14', 'v09_ended'];
+const fixture = name => JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, 'fixtures', name + '.json.gz'))).toString('utf8'));
+const V10 = s => ({ bonusYears: s.bonusYears, legacyTrack: s.legacyTrack, legacy: s.legacy, ach: s.ach, tutorial: s.tutorial });
+
+test('v1.0: v0.9 fixtures (and the v0.1 save) fill all five fields, idempotent, rng untouched, no events', () => {
+  const GG = load({ localStorage: load.fakeStorage() });
+  const evs = []; const emit = GG.emit; GG.emit = function (n, p) { evs.push(n); return emit.apply(this, arguments); };
+  FIX.forEach(name => {
+    const rec = fixture(name);
+    eq(rec.version, '0.9.0.0', name + ' is a 0.9.0.0 slot record');
+    ok(['bonusYears', 'legacyTrack', 'legacy', 'ach', 'tutorial'].every(k => !(k in rec.state)), name + ' has none of the v1.0 fields');
+    const m = GG.save.migrate(JSON.parse(JSON.stringify(rec.state)));
+    eq(V10(m), { bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: true } }, name + ' defaults');
+    eq([m.rng, m.seed, m.totalWeek, m.maxWeeks, m.ended], [rec.state.rng, rec.state.seed, rec.state.totalWeek, 240, rec.state.ended], name + ' career untouched');
+    ok(same(GG.save.migrate(JSON.parse(JSON.stringify(m))), m), name + ' idempotent');
+  });
+  eq(fixture('v09_ended').state.phase, 'ended'); ok(fixture('v09_y10w14').state.rival.finalNews, 'v09_y10w14 has rival.finalNews');
+  const w9 = fixture('v09_world_y9').state, ww = (w9.eraHistory.find(e => e.era === 'world') || {}).week;
+  ok(w9.year === 9 && ww <= 120, 'v09_world_y9: World at wk ' + ww + ' (<= 120), year ' + w9.year);
+  const v01 = GG.save.migrate(JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'save_v01.json'), 'utf8')).state);
+  eq(V10(v01).tutorial, { on: false, done: {}, past4: true }, 'v0.1 save (week 15): past week 4');
+  const young = JSON.parse(JSON.stringify(v01)); delete young.tutorial; young.totalWeek = 3;
+  eq(GG.save.migrate(young).tutorial.past4, false, 'a save before week 4 is not past4');
+  const kept = JSON.parse(JSON.stringify(v01)); kept.bonusYears = 3; kept.tutorial = { on: true, done: { w1_card: 1 }, past4: false }; kept.ach = { got: { the_wall: 9 } };
+  const km = GG.save.migrate(kept);
+  eq([km.bonusYears, km.tutorial, km.ach], [3, { on: true, done: { w1_card: 1 }, past4: false }, { got: { the_wall: 9 }, t: {} }], 'existing values are never overwritten');
+  eq(evs, [], 'migrate emits nothing');
+  const fresh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'New' } });
+  eq(V10(fresh), { bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false } }, 'new careers start with the same fields');
+});
+
+test('v1.0: old codes restore unchanged; node codes carry no _meta; readCode / fromCode', () => {
+  const GG = load({ localStorage: load.fakeStorage() });
+  eq(GG.meta.enabled, false, 'meta is off in node');
+  const st = GG.save.migrate(fixture('v09_y10w14').state), code = GG.save.toCode(st);
+  eq(JSON.parse(GG.save.decompress(code.slice(4, -6))), JSON.parse(JSON.stringify(st)), 'a node code is the plain state JSON (no _meta)');
+  const old = fixture('v09_world_y9').state, oldCode = GG.save.toCode(old);   // the 0.9.0.0 code format: GG1 + LZW of the bare state
+  const r = GG.save.readCode(oldCode);
+  eq(r.meta, null); ok(same(r.state, GG.save.migrate(JSON.parse(JSON.stringify(old)))), 'a v0.9 code restores as its migrated state');
+  ok(same(GG.save.fromCode(oldCode), r.state), 'fromCode = readCode().state');
+  let threw = 0; ['', 'GG1:', oldCode.slice(0, -3), oldCode.slice(0, 40) + 'x' + oldCode.slice(41)].forEach(c => { try { GG.save.readCode(c); } catch (e) { if (/damaged/.test(e.message)) threw++; } });
+  eq(threw, 4, 'damaged codes throw the DAMAGED message');
+});
+
+test('v1.0: _meta rides along in browser codes without mutating the state; the meta-only code', () => {
+  const store = load.fakeStorage(), GG = load({ localStorage: store });
+  GG.meta.enabled = true; GG.meta.load();
+  const ended = GG.save.migrate(fixture('v09_ended').state);
+  const out = GG.meta.recordCareer(ended);
+  ok(out && out.fresh && out.entry.id === GG.meta.careerId(ended) && out.entry.seat === 'drums' && out.entry.ver === GG.VERSION && /^\d{4}-\d\d-\d\d$/.test(out.entry.at), 'an entry with id, seat, ver, at');
+  const s = career(GG, 40), before = JSON.stringify(s), code = GG.save.toCode(s);
+  eq(JSON.stringify(s), before, 'toCode never mutates the state'); ok(!('_meta' in s), 'no _meta key on the state');
+  const r = GG.save.readCode(code);
+  eq(r.meta, GG.meta.exportLite(), '_meta = exportLite()'); ok(same(r.state, s), 'the state comes back without _meta');
+  ok(r.meta.entries.length === 1 && !('strip' in r.meta.entries[0]) && !('seen' in r.meta.meta) && !('lessons' in r.meta.meta), 'lite: no strip / seen / lessons');
+  ok(same(GG.save.fromCode(code), s), 'fromCode ignores _meta');
+  const mc = GG.save.metaCode(), m = GG.save.readCode(mc);
+  eq(m.state, null, 'meta-only code: no state'); eq(m.meta, GG.meta.exportFull(), 'meta-only code = exportFull()');
+  ok(Array.isArray(m.meta.entries[0].strip) && m.meta.entries[0].strip.length === ended.recaps.length, 'full: the year strip travels');
+  let threw = false; try { GG.save.fromCode(mc); } catch (e) { threw = /damaged/.test(e.message); } ok(threw, 'fromCode refuses a meta-only code');
+  GG.meta.enabled = false; ok(!('_meta' in JSON.parse(GG.save.decompress(GG.save.toCode(s).slice(4, -6)))), 'disabled: no _meta');
+});
+
+test('v1.0: 12_meta core: empty/blocked storage, idempotent recordCareer, careerId, lessons, merge, listeners only when enabled', () => {
+  const blocked = load({ localStorage: load.fakeStorage({ throwOnWrite: true }) });
+  blocked.meta.enabled = true; blocked.meta.load();
+  eq(blocked.meta.hof(), []); eq(blocked.meta.get().careers.started, 0);
+  const quota = []; blocked.on('meta:quota', () => quota.push(1));
+  ok(blocked.meta.recordCareer(blocked.save.migrate(fixture('v09_ended').state)).fresh, 'blocked storage: kept in memory');
+  eq([blocked.meta.hof().length, quota.length], [1, 0], 'memory fallback (no quota event without working storage)');
+
+  const store = load.fakeStorage(), GG = load({ localStorage: store });
+  GG.meta.load();
+  eq(GG.meta.get().scanned, GG.VERSION, 'an empty install scans once');
+  const ended = GG.save.migrate(fixture('v09_ended').state), added = [];
+  GG.on('hof:added', e => added.push(e.entry.id));
+  const a = GG.meta.recordCareer(ended), b = GG.meta.recordCareer(ended);
+  ok(a.fresh && !b.fresh, 'the same career twice: fresh once');
+  eq([GG.meta.hof().length, GG.meta.get().careers.finished, GG.meta.get().careers.byBand, GG.meta.get().careers.bySeat], [1, 1, { gravel_kings: 1 }, { drums: 1 }]);
+  eq(added.length, 2, 'hof:added each time');
+  const better = JSON.parse(JSON.stringify(ended)); better.legacy = { v: 1, score: 640, parts: {}, tier: 'canadian_institution', specials: [] };
+  GG.meta.recordCareer(better);
+  eq([GG.meta.hof().length, GG.meta.hof()[0].score, GG.meta.get().careers.finished, GG.meta.get().careers.best.score], [1, 640, 1, 640], 'a replay keeps the higher score, counted once');
+  GG.meta.recordCareer(ended); eq(GG.meta.hof()[0].score, 640, 'a lower replay never lowers it');
+  eq(GG.meta.careerId({ seed: 7919, bandId: 'hail_damage' }), (7919).toString(36) + '.hail_damage');
+  const legacyId = GG.meta.careerId({ seed: 1, bandId: 'hail_damage', player: { name: 'Robin' }, createdVersion: '0.1.0.0', history: [{ w: 0 }] });
+  ok(/^1\.hail_damage\.[0-9a-z]+$/.test(legacyId) && legacyId !== GG.meta.careerId({ seed: 1, bandId: 'hail_damage', player: { name: 'Kim' }, history: [{ w: 0 }] }), 'seed-less saves get a hashed id: ' + legacyId);
+  ok(!GG.meta.lessonSeen('w1_card') && GG.meta.markLesson('w1_card') && GG.meta.lessonSeen('w1_card') && !GG.meta.markLesson('w1_card'), 'lessons');
+  ok(JSON.parse(store._map.get('gg.v1.hof')).entries.length === 1 && JSON.parse(store._map.get('gg.v1.meta')).lessons.w1_card === 1, 'stored under gg.v1.hof / gg.v1.meta');
+  // cap 40, the top 10 by score kept
+  for (let i = 0; i < 45; i++) { const x = JSON.parse(JSON.stringify(ended)); x.seed = 1000 + i; x.legacy = { score: i < 5 ? 900 + i : i, parts: {}, specials: [] }; GG.meta.recordCareer(x); }
+  const H = GG.meta.hof();
+  ok(H.length === 40 && [900, 901, 902, 903, 904, 640].every(sc => H.some(e => e.score === sc)) && H[0].score === 44, 'cap 40, top 10 never dropped, newest first');
+  // lite merge into a fresh install
+  const G2 = load({ localStorage: load.fakeStorage() }); G2.meta.load();
+  const res = G2.meta.mergeLite(GG.meta.exportLite());
+  ok(res.added === G2.meta.hof().length && G2.meta.hof().length >= 10 && G2.meta.hof().length <= 20, 'lite = top 10 ∪ newest 10: ' + res.added);
+  eq(G2.meta.get().careers.finished, GG.meta.get().careers.finished, 'counters by max');
+  G2.meta.mergeLite(GG.meta.exportFull());
+  eq(G2.meta.hof().length, 40, 'a full backup restores every entry'); ok(G2.meta.hof().every(e => Array.isArray(e.strip)), 'strips filled in');
+  // listeners: no-ops unless enabled (node bots never write meta)
+  const G3store = load.fakeStorage(), G3 = load({ localStorage: G3store }); G3.meta.load();
+  const before = G3store._map.get('gg.v1.meta');
+  const s = G3.career.newCareer({ seed: 4, player: { name: 'Bot' } }); G3.state = s;
+  for (let i = 0; i < 6; i++) G3.career.botWeek(s, 'avg');
+  eq([G3store._map.get('gg.v1.meta'), s.tutorial.past4], [before, false], 'disabled: nothing written');
+  G3.meta.enabled = true;
+  const t = G3.career.newCareer({ seed: 5, player: { name: 'Bot' } }); G3.state = t;
+  for (let i = 0; i < 5; i++) G3.career.botWeek(t, 'avg');
+  eq([G3.meta.get().careers.started, G3.meta.get().careers.past4, t.tutorial.past4], [1, 1, true], 'enabled: career:new counts, week 4 passed once');
+});
+
+test('v1.0: the one-time slot scan (v0.9 fixtures): past4 once per career, ended slots once GG.legacy exists', () => {
+  const store = load.fakeStorage();
+  ['1', '2', '3'].forEach((slot, i) => store._map.set('gg.v1.slot.' + slot, JSON.stringify(fixture(FIX[i]))));
+  const GG = load({ localStorage: store });
+  GG.meta.load();
+  eq([GG.meta.get().careers.past4, GG.meta.get().scanned, GG.meta.hof().length], [3, null, 0], 'no GG.legacy yet: past4 counted, the ended slot waits');
+  GG.meta.load();
+  eq([GG.meta.get().careers.past4, GG.meta.get().scanned], [3, null], 'a second boot never counts past4 twice');
+  GG.legacy = { hofEntry: s => ({ id: GG.meta.careerId(s), bandId: s.bandId, seat: 'drums', score: 321, tier: 'one_album_wonders' }) };   // a stub of Lane E's API
+  const unlocks = []; GG.on('meta:unlock', e => unlocks.push(e));
+  GG.meta.load();
+  eq([GG.meta.get().careers.past4, GG.meta.get().scanned, GG.meta.hof().length, GG.meta.hof()[0].score, GG.meta.get().careers.finished], [3, GG.VERSION, 1, 321, 1], 'the ended slot is recorded once');
+  GG.meta.load(); eq([GG.meta.hof().length, GG.meta.get().careers.finished, unlocks.length], [1, 1, 0], 'scanned: never again; silent');
+  ok(['1', '2', '3'].every((slot, i) => same(JSON.parse(store._map.get('gg.v1.slot.' + slot)), fixture(FIX[i]))), 'the slots themselves are untouched');
+});
+
+test('v1.0: graphics defaults to auto (normalized to high until Lane P adds auto)', () => {
+  const GG = load({ localStorage: load.fakeStorage() });
+  eq(GG.save.SETTINGS_DEFAULTS.graphics, 'auto');
+  eq(GG.prefs.get().graphics, GG.prefs.GRAPHICS.indexOf('auto') >= 0 ? 'auto' : 'high');
+  GG.prefs.set({ graphics: 'high' }); eq(GG.prefs.get().graphics, 'high', 'a stored pick stays');
+});
+
 done('save');

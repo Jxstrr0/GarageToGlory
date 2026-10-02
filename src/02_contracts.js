@@ -5,7 +5,11 @@
 
   C.SAVE_SCHEMA = 10;            // state.v; bump + add a migration in 10_save.js when the shape changes
   C.WEEKS_PER_YEAR = 24;
-  C.CAREER_YEARS = 10;           // 240 weeks (+2–3 bonus years later, v1.0)
+  C.CAREER_YEARS = 10;           // 240 weeks; v1.0 bonus years (C.BONUS) raise state.maxWeeks to 288 / 312
+  // v1.0 "Glory" (plan_contract_1.0 §0 Q1): the World era reached by totalWeek <= maxWeek (inclusive) earns `years` bonus
+  // years, granted once by GG.legacy.weekly (state.bonusYears, state.maxWeeks = 240 + 24 x years); never after the Sad Dome
+  // is announced (rival.finalNews), after state.finalShowdown, or from year 10 on.
+  C.BONUS = { maxYears: 3, rule: [{ maxWeek: 120, years: 3 }, { maxWeek: 144, years: 2 }] };
   C.BLOCKS_PER_WEEK = 3;         // two weeknights + the weekend
   C.BLOCK_LABELS = ['Tue night', 'Thu night', 'Weekend'];
 
@@ -70,7 +74,23 @@
   // {recruit} {name:id} {nick:id} ({name:<castId>} also resolves rival cast members). Fallbacks: {rival} 'the other band',
   // {city} state.city, {bassist}/{filler} 'the bassist', {front} 'the singer', {driver} 'you'.
   C.TOKENS = ['front', 'soloist', 'filler', 'bassist', 'namer', 'grumbler', 'deadpan', 'driver', 'van', 'space', 'spaceName',
-    'door', 'province', 'homeVenue', 'superfan', 'rivalFront'];
+    'door', 'province', 'homeVenue', 'superfan', 'rivalFront',
+    // v1.0 seat-aware tokens (handoff E12): {instrument} = the player's instrument ('drums'), {drummer} = who plays the kit
+    // ('you'). v1.1 "Seats" fills them per seat (state.seat || 'drums'); the other seat tokens ({gear} {sticks} …) are v1.1.
+    'instrument', 'drummer'];
+  // v1.0 "Glory" endings (plan_contract_1.0 §4.1–4.2; content in src/content/endings.js, sim in 2f_sim_legacy.js).
+  C.LEGACY_PARTS = ['fans', 'units', 'awards', 'venue', 'regions', 'unity', 'final'];   // the seven Legacy parts (0–1000 total)
+  C.ENDING_TIERS = ['arena_legends', 'canadian_institution', 'cult_heroes', 'one_album_wonders', 'still_in_the_garage'];   // best first
+  C.SPECIAL_ENDINGS = ['big_in_japan', 'moose_opera', 'big_in_berlin', 'mudstonbury_legends', 'outback_legends',
+    'band_of_strangers', 'original_lineup', 'side_project'];   // stack on the tier; original_lineup = The Original Five / Four
+  // ADVISORY lists (lane tests validate against GG.achieve.KINDS / GG.lessons.LESSONS; the lead folds the final lists in at
+  // the v1.0 merge). ACH test kinds (§4.6) and lesson ids (§4.7).
+  C.ACH_KINDS = ['milestone', 'bannedInYear', 'releasedFr', 'originals', 'award', 'winterNoBreakdown', 'rivalLoonieStreak',
+    'special', 'venuePlayed', 'songKickShare', 'flag', 'stat', 'final', 'bonus', 'tier', 'botbInYear', 'licensedBrand', 'crack',
+    'returned', 'reviewBelow', 'studio', 'km', 'weatherGig', 'allBands', 'difficulty', 'careers', 'gongWon'];
+  C.ACH_WHEN = ['gig', 'week', 'year', 'end', 'meta', 'load'];
+  C.LESSONS = ['w1_card', 'w1_walk', 'w1_plan', 'w1_write', 'w1_rehearse', 'w1_gig', 'w1_wrap', 'w2_board', 'w2_money', 'w3_chat',
+    'w4_van', 'y1_good_year'];
   C.CAPE_VALUES = ['velvet', 'curtain', 'charred', 'fireproof', 'none'];   // state.flags.cape (render reads it)
   C.CARD_BOOKABLE = ['st_vlads_hall', 'bingo_palace', 'legion_63', 'warman_curling_lounge',   // venue ids cards may `book`
     'craigs_basement', 'mill_woods_basement_party', 'quonset_yard_party',   // v0.9 home first gigs
@@ -275,6 +295,9 @@
      bandbook.homeSuperfan[bandId] = { name, short, from, icon, blurb, gigLines[], gigLinesFar?[], comments[], gift } (the
        'dale' state slot); bandbook.byBand[bandId].club.{ payoutChat, grumbleChat } (fans.pool).
            idle = 'mirror'|'noodle'|'lunch'|'corner'|'pace'|'phone'|'fiddle'  (garage idle animation)
+   v1.0 "Glory" content: endings (src/content/endings.js: tiers, specials, epilogues, recruits, player, rival, bonusCards,
+     legacy tunables), achievements (src/content/achievements.js: [ ACH ]), tutorial (src/content/tutorial.js: [ LESSON ]);
+     shapes in the V1.0 GLORY block below.
    rivals: { <rivalId>: { id, name, city, genre, blurb } }
    npcs:   { <npcId>: { id, name, blurb } }   (mom, dad, baba, neighbour, radio DJ, ...)
    cards:  [ CARD ]
@@ -295,6 +318,46 @@
    lines.songReactions / lines.writeTips (per member) — band reactions to a new song / first-Write tips
    presets: [ { id, name, blurb, look: LOOK, kitColor } ]
    Text may use tokens: {player} {band} {city} {nick:<memberId>} {name:<memberId>} — GG.career.fillText() replaces them.
+  ====================================================================== */
+
+  /* ======================================================================
+   V1.0 GLORY (plan/plan_contract_1.0.md §4; SAVE_SCHEMA stays 10: GG.save.migrate fills these when missing, no events)
+   New state fields (stage 0 migrate defaults; new careers start with the same values):
+     bonusYears: 0 | 2 | 3                  (GG.legacy.weekly; maxWeeks follows: 240 + 24 x bonusYears)
+     legacyTrack: { bigHead: null | { id, name, cap, week, est? } }   biggest venue HEADLINED (GG.legacy.gig; est = migrated guess)
+     legacy: null | LEGACY                  (GG.legacy.finish at the career's end, idempotent)
+     ach: { got: { <achId>: totalWeek }, t: { bans, botb, km, winter, streak } }   per-career achievements + counters (2g)
+     tutorial: { on: bool, done: { <lessonId>: totalWeek }, past4: bool }   (old saves: on false, past4 = totalWeek >= 4)
+     No state.seat in v1.0: code reads (state.seat || 'drums') (v1.1 "Seats" adds the field).
+   LEGACY = { v: 1, score 0..1000, parts: { <C.LEGACY_PARTS>: points }, raw: { fans, units, loonies, gongs, certs,
+     venue: { id, name, cap, est? } | null, broken: [regionId], chem, originals: { start, kept, everQuit }, final: 'you'|'rival'|null },
+     tier: C.ENDING_TIERS, specials: [C.SPECIAL_ENDINGS], epilogues: [ EPILOGUE ], years, bonusYears, difficulty, seat, week }
+   EPILOGUE = { kind: 'member'|'gone'|'defector'|'recruit'|'player'|'rival', id, name, text, silent?: true }
+     endings.epilogues[memberId] = [ { when: WHEN, text } ] (first match wins; fallback drama.members[id].epilogue)
+     WHEN = { flag?, values?, notValues?, minTier?, special?, status?, inLineup?, minYearsIn?, seatRole? } (all given must hold;
+     seatRole matches member.seatRole || member.role); endings.player = { drums: { <tierId>: text } } (missing seat → drums)
+   HOF_ENTRY = { id: careerId, at, ver, bandId, band, genre, city, seat: 'drums', player: { name, nick },
+     logo: { emblem, style, palette }, difficulty, years, bonusYears, score, parts, tier, specials: [id],
+     lineup: [ { id, name, original, status } ], rival: { id, name }, final: 'you'|'rival'|null,
+     stats: { fans, units, loonies, gongs, certs, gigs, songs, albums, loans, venue: { name, cap } | null, broken },
+     ach: [achId], strip: [ { y, h, fans, era, best, aw } ] }   (GG.legacy.hofEntry builds it without at/ver; 12_meta stamps them)
+   HOF (localStorage gg.v1.hof) = { v: 1, entries: [ HOF_ENTRY ] }   newest first; cap 40, the top 10 by score never dropped
+   META (localStorage gg.v1.meta) = { v: 1, scanned: '<VERSION>' | null,
+     careers: { started, past4, finished, byBand: { <bandId>: n }, bySeat: { drums: n }, best: { score, careerId } | null },
+     lessons: { <lessonId>: 1 }, ach: { <achId>: { at: 'YYYY-MM-DD', band, y } },
+     unlocks: { palettes: [id], emblems: [id], parts: [id] }, seen: { <careerId>: 1 } }   (seen capped at 200)
+   careerId(state) = seed.toString(36) + '.' + bandId (+ '.' + hashSeed(player.name + createdVersion + history[0]) when seed === 1)
+   Save codes (10_save): toCode(state) carries `_meta: GG.meta.exportLite()` when GG.meta.enabled (the state is never mutated);
+     readCode(text) -> { state | null, meta | null } (`_meta` comes off before migrate; a { v: 1, metaOnly: true, _meta } body
+     -> state null); metaCode() -> 'GG1:' code of { v: 1, metaOnly: true, _meta: GG.meta.exportFull() }.
+   ACH = { id, name, blurb, icon (emoji), band?: [bandId], seat?: [seat], when: C.ACH_WHEN, test: { kind: C.ACH_KINDS, … },
+     nameBySize?: { 4: '…', 5: '…' }, hidden?: false }   (any drum vocabulary → seat: ['drums'])
+   LESSON = { id: C.LESSONS, title, band?: [bandId], seat?: [seat], when: { maxWeek?, week?, screen?, tab?, first?: true },
+     steps: [ STEP ], byBand?: { <bandId>: { steps } } }
+   STEP = { who: '@front'|'@deadpan'|'@grumbler'|'@driver'|'@any'|memberId, text (tokens incl. {instrument} {drummer}),
+     seat?: [seat], point?: { hotspot } | { testid } | { member: alias }, advance: 'next' | { event, id? } | { hotspot } }
+   WRAP gains legacy (LEGACY, the career's last wrap only). Modules: GG.legacy (2f), GG.meta (12), GG.achieve (2g),
+     GG.lessons (2h), GG.tutorial (5p); GG.rival.finalAt(state) -> { year, week } (the Sad Dome in the career's last year).
   ====================================================================== */
 
   /* ======================================================================
@@ -334,6 +397,18 @@
    'save:done'      { slot }  'save:failed' { slot, error }                         save / main
    'tour:unlocked' { region, via } 'tour:invite' 'tour:booked' 'tour:depart' 'tour:week' 'tour:home' 'tour:broken'
      'tour:big' 'tour:rival' 'tour:president' 'tour:moose' 'tour:gong' 'tour:homesick'   (v0.7 tour; payloads in 25_sim_tour.js)
+   v1.0 "Glory" (node bots emit the sim events; only browser listeners write meta, GG.meta.enabled):
+   'legacy:bonus'   { years, maxWeeks }       GG.legacy.weekly, the one-time bonus-year grant
+   'legacy:done'    { legacy }                GG.legacy.finish (before 'career:end')
+   'ach:earned'     { ids }                   GG.achieve (per-career, first time this career)
+   'meta:ach'       { ids, fresh }            GG.meta.award (fresh = first time across careers: the toast)
+   'meta:unlock'    { kind, ids, names }      GG.meta.recordCareer (cosmetic unlocks; not when opts.silent)
+   'meta:quota'     {}                        GG.meta, once, when the Hall of Fame could not be stored
+   'hof:added'      { entry }                 GG.meta.recordCareer
+   'meta:changed'   { keys }                  GG.meta, after a stored change
+   'ui:tab'         { sheet, tab }            ui (laptop tab switches; sheet 'laptop')
+   'tut:step'       { id, step }  'tut:done' { id }                                 GG.tutorial
+   'perf:quality'   { pixelRatio, reason }    render (adaptive pixel ratio, 'auto' graphics)
   ====================================================================== */
 
   /* ======================================================================
@@ -380,6 +455,9 @@
    GG.save.write(slot, state) -> bool ; read(slot) -> state|null ; list() -> [{ slot, exists, summary }]
    GG.save.remove(slot) ; toCode(state) -> 'GG1:...' ; fromCode(text) -> state (throws on bad code)
    GG.save.migrate(state) -> state ; GG.save.storageOk -> bool
+   GG.save.readCode(text) -> { state|null, meta|null } (throws on a bad code) ; metaCode() -> 'GG1:...' (v1.0, see V1.0 GLORY)
+   GG.meta (12_meta.js): enabled, load(), get(), save(), hof(), careerId(state), lessonSeen(id), markLesson(id), exportLite(),
+     exportFull(), mergeLite(obj), recordCareer(state, opts) -> { entry, fresh, unlocks, ach }, award/has/unlock/unlocked
    GG.render.init(containerEl) -> bool ; setScene('garage'|'none') ; syncState(state) ; setPaused(bool)
    GG.render.goToHotspot(action) ; hotspotScreenPos(action) -> {x,y}|null ; memberScreenPos(id) -> {x,y}|null
    GG.audio.unlock() ; sfx(name) ; setMuted(bool) ; suspend() / resume()
