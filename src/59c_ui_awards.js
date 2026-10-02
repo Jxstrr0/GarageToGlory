@@ -10,7 +10,7 @@
 //   testids: review-<i>, review-score-<i>, btn-review-next, btn-reviews-done, chart-row-<pos>, chart-you, chart-stats,
 //   cert-disc, btn-cert-ok, album-<id>, btn-book-studio, btn-open-studio, trophy-<i>, loonies-phase, btn-carpet-next,
 //   btn-head-inside, envelope, btn-envelope, winner, wraith-thanks, btn-award-next, btn-speech, loonie-choice-<i>,
-//   btn-loonie-card-ok, loonies-summary, btn-loonies-done.
+//   btn-loonie-card-ok, loonies-summary, btn-loonies-done. v1.0: trophies-all (the shelf → the laptop's Trophies tab).
 // Sim calls (guarded): labels.chartView, loonies, openEnvelope, outfit, speech.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util, C = GG.contracts, V = ui.v5;
@@ -180,7 +180,9 @@
         s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Wall of shame (banned venues)'));
         banned.forEach(function (id) { var v = GG.gig && GG.gig.venue ? GG.gig.venue(id) : null; s.body.appendChild(el('div.trophy-row', [el('span.ti', '🚫'), el('div.grow', [el('b', v ? v.name : id), el('div.tiny.dim', v ? v.city : '')])])); });
       }
-      s.foot.appendChild(btn('.btn.block', { onclick: function () { ui.close(s.id); } }, 'Close'));
+      // v1.0 (nice-to-have): the shelf links to the laptop's Trophies tab (achievements across every career on this phone)
+      s.foot.appendChild(el('div.row', [ui.trophiesPanel && ui.defined('laptop') ? btn('.btn.grow', { testid: 'trophies-all', onclick: function () { ui.close(s.id); ui.show('laptop', { tab: 'trophies' }); } }, '🏆 All-time trophies')
+        : null, btn('.btn.grow', { onclick: function () { ui.close(s.id); } }, 'Close')]));
     }
   });
   ui.albumsPanel = function (st) {

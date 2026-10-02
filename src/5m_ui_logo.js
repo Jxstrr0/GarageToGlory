@@ -10,6 +10,7 @@
 // testids: logo-screen, logo-preview, logo-prev-kick|shirt|avatar, logo-emblem-<id>, logo-style-<id>, logo-pal-<id>,
 //   logo-default, logo-surprise, btn-logo-done, btn-logo-back, btn-logo-rebrand, btn-logo-cancel, logo-cost, logo-why,
 //   laptop-logo, laptop-rebrand, logo-cast. Debug: GG.debug('logo-ui'). CSS: 00_shell /* v0.8.1 LOGO */.
+// v1.0 (Q5): meta emblems / palettes earned by finished careers show in the picker with a 🏆 chip (logo-meta-<id>, data-meta).
 // No share / screenshot / download button, ever (owner, Addendum 2).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -20,6 +21,14 @@
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
   function shirtUrl(lg, name) { var c = RL().merch(lg, name, 'shirt', Math.round(58 * dpr())); if (!c._url) c._url = c.toDataURL('image/png'); return c._url; }
   function nameOf(st) { var b = st && GG.career && GG.career.band ? GG.career.band(st) : null; return (b && b.name) || 'The Band'; }
+  // v1.0: the picker's lists (meta items only once unlocked; 2e). Older sims without them: everything.
+  function pickE() { return L().pickEmblems ? L().pickEmblems() : L().emblems(); }
+  function pickP() { return L().pickPalettes ? L().pickPalettes() : L().palettes(); }
+  var CSS = '.lg-embtn{position:relative}.lg-embtn .lg-meta{position:absolute;top:2px;right:3px;font-style:normal;font-size:12px;line-height:1}'
+    + '.lg-pal.meta:not(.on),.lg-embtn.meta:not(.on){box-shadow:inset 0 0 0 1px rgba(255,200,60,.55)}';
+  if (typeof document !== 'undefined' && !document.getElementById('css-logo-meta')) {
+    var st0 = document.createElement('style'); st0.id = 'css-logo-meta'; st0.textContent = CSS; document.head.appendChild(st0);
+  }
 
   /* ---- Widgets ------------------------------------------------------------------------------------------------------ */
   ui.logoImg = function (lg, name, size, o) {
@@ -111,26 +120,26 @@
           el('div.lg-mini', { testid: 'logo-prev-shirt' }, [RL() ? el('img.merch-art', { src: shirtUrl(lg, name), width: 58, height: 58, alt: '' }) : null, el('span', 'Shirt')]),
           el('div.lg-mini', { testid: 'logo-prev-avatar' }, [ui.logoImg(lg, name, 40, { badge: 'round' }), el('span', 'Bandbook')])]),
         el('div.lg-caption', [el('b', em.name), ' · ', sty.name, ' · ', pal.name])]);
-      var emblems = el('div.lg-emb', L().emblems().map(function (e) {
+      var emblems = el('div.lg-emb', pickE().map(function (e) {   // v1.0: meta emblems (Q5) once a finished career unlocked them, with a 🏆 chip
         var on = e.id === lg.emblem;
-        return btn('.lg-embtn' + (on ? '.on' : ''), { testid: 'logo-emblem-' + e.id, 'aria-pressed': on ? 'true' : 'false', title: e.name, onclick: function () { pick('emblem', e.id); } },
-          [ui.logoImg(Object.assign({}, lg, { emblem: e.id }), name, 40, { plain: true, alt: '' }), el('span', e.name)]);
+        return btn('.lg-embtn' + (on ? '.on' : '') + (e.meta ? '.meta' : ''), { testid: 'logo-emblem-' + e.id, 'aria-pressed': on ? 'true' : 'false', title: e.name, data: e.meta ? { meta: '1' } : null, onclick: function () { pick('emblem', e.id); } },
+          [ui.logoImg(Object.assign({}, lg, { emblem: e.id }), name, 40, { plain: true, alt: '' }), el('span', e.name), e.meta ? el('i.lg-meta', { testid: 'logo-meta-' + e.id, title: 'Unlocked by a finished career' }, '🏆') : null]);
       }));
       var styles = el('div.lg-styles', L().styles().map(function (x) {
         var on = x.id === lg.style;
         return btn('.lg-stbtn' + (on ? '.on' : ''), { testid: 'logo-style-' + x.id, 'aria-pressed': on ? 'true' : 'false', onclick: function () { pick('style', x.id); } },
           [ui.logoImg(Object.assign({}, lg, { style: x.id }), name, 62, { shape: 'wide', textOnly: true, mini: false, alt: '' }), el('span', x.name)]);
       }));
-      var pals = el('div.lg-pals', L().palettes().map(function (p) {
+      var pals = el('div.lg-pals', pickP().map(function (p) {
         var on = p.id === lg.palette;
-        return btn('.lg-pal' + (on ? '.on' : ''), { testid: 'logo-pal-' + p.id, 'aria-pressed': on ? 'true' : 'false', title: p.name, onclick: function () { pick('palette', p.id); } },
-          [el('span.sw', { style: { background: p.ground } }, [el('i', { style: { background: p.em } }), el('i', { style: { background: p.fg } })]), el('span.pn', p.name)]);
+        return btn('.lg-pal' + (on ? '.on' : '') + (p.meta ? '.meta' : ''), { testid: 'logo-pal-' + p.id, 'aria-pressed': on ? 'true' : 'false', title: p.name, data: p.meta ? { meta: '1' } : null, onclick: function () { pick('palette', p.id); } },
+          [el('span.sw', { style: { background: p.ground } }, [el('i', { style: { background: p.em } }), el('i', { style: { background: p.fg } })]), el('span.pn', (p.meta ? '🏆 ' : '') + p.name)]);
       }));
       var def = L().defaultFor(E.bandId);
       var tools = el('div.lg-tools', [
         btn('.lk-chip', { testid: 'logo-default', disabled: L().same(def, lg), onclick: function () { E.logo = def; E.carried = false; dbg.picks++; var x = ui.get('logo'); if (x) x.rerender(); } }, '↺ Band default'),
         btn('.lk-chip', { testid: 'logo-surprise', onclick: function () {
-          var r = ui.rng, es = L().emblems(), ps = L().palettes(), ss = L().styles();
+          var r = ui.rng, es = pickE(), ps = pickP(), ss = L().styles();
           E.logo = { emblem: es[Math.floor(r.next() * es.length)].id, style: r.next() < 0.6 ? lg.style : ss[Math.floor(r.next() * ss.length)].id, palette: ps[Math.floor(r.next() * ps.length)].id };
           E.carried = false; dbg.picks++; sfx('tap'); var x = ui.get('logo'); if (x) x.rerender();
         } }, '🎲 Surprise me'),

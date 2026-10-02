@@ -9,6 +9,10 @@
 // v1.0 (stage-0 sockets): the title's "Hall of Fame" (btn-hof, once GG.meta has an entry and the 'hof' screen exists), ☰
 // rows "Lessons" (menu-lessons → GG.tutorial.openLessons) and "Hall of Fame" (menu-hof), and the creator's "Skip the lessons"
 // toggle (tut-skip, on by default, shown when GG.tutorial.offerSkip()) passed to GG.main.newCareer as skipLessons.
+// v1.0 (Lane M): the code sheet's mode 'hof' (the Hall of Fame "Backup code", GG.save.metaCode) and a restore that reads
+// either kind of code (GG.save.readCode: a meta-only code asks "Restore Hall of Fame and trophies?" then GG.meta.mergeLite; a
+// career code loads after the usual confirm, then merges its Hall of Fame lite); the creator notes looks from finished
+// careers (meta-parts).
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -303,6 +307,8 @@
       var carry = el('label.cr-carry', { htmlFor: 'cr-carry' }, [carryBox, el('span', carryN ? 'Carry over ' + carryN + ' unlock' + (carryN === 1 ? '' : 's') + ' from past ' + genre + ' careers'
         : 'Unlocks from past ' + genre + ' careers carry over here (none yet)')]);
       carryBox.id = 'cr-carry';
+      var metaN = GG.meta && GG.meta.enabled && GG.meta.unlocked ? GG.meta.unlocked('parts').length : 0;   // v1.0 (Q5): looks from finished careers
+      var metaLine = metaN ? el('p.tiny.dim', { testid: 'meta-parts' }, '🏆 ' + metaN + ' look' + (metaN === 1 ? '' : 's') + ' from finished careers work in every genre (no toggle needed).') : null;
       var offerSkip = !!(GG.tutorial && GG.tutorial.offerSkip && GG.tutorial.offerSkip());   // v1.0: "Skip the lessons" (on by default)
       if (draft.skipLessons == null) draft.skipLessons = true;
       var tutSkip = offerSkip ? btn('.btn.block.tut-skip' + (draft.skipLessons ? '.on' : ''), { testid: 'tut-skip', 'aria-pressed': draft.skipLessons ? 'true' : 'false',
@@ -336,6 +342,7 @@
           grid,
           customize,
           carry,
+          metaLine,
           tutSkip,
           el('div.caps', 'Career difficulty · locked for this career'),
           diffPick,
@@ -415,21 +422,26 @@
   });
 
   /* ---- Save code: backup + restore ------------------------------------------------------------------------------ */
+  // v1.0: mode 'hof' = the Hall of Fame "Backup code" (GG.save.metaCode(): every Hall of Fame entry with its year strip, the
+  // trophies and the unlocked looks; restored from Restore code). Restore reads the code with GG.save.readCode: a meta-only
+  // code asks "Restore Hall of Fame and trophies?" and merges (GG.meta.mergeLite); a career code loads the career after the
+  // usual confirm and then merges its `_meta` (the Hall of Fame lite). A failed import never merges anything.
   ui.define('code', {
     kind: 'sheet',
-    title: function (d) { return d.mode === 'backup' ? 'Back up' : 'Restore'; },
+    title: function (d) { return d.mode === 'backup' ? 'Back up' : d.mode === 'hof' ? 'Hall of Fame backup' : 'Restore'; },
     build: function (s, d) {
-      var backup = d.mode === 'backup';
+      var hofMode = d.mode === 'hof', backup = d.mode === 'backup' || hofMode;
       var code = '';
       if (backup) {
-        try { code = GG.save.toCode(GG.state); } catch (e) { code = ''; console.warn('[ui] toCode failed', e); }
+        try { code = hofMode ? GG.save.metaCode() : GG.save.toCode(GG.state); } catch (e) { code = ''; console.warn('[ui] toCode failed', e); }
       }
       var ta = el('textarea.code', { testid: 'code-text', rows: 6, spellcheck: 'false', autocomplete: 'off', readOnly: backup, value: code,
         placeholder: 'Paste a GG1:… code here' });
       var msg = el('div.err', { testid: 'code-error', role: 'alert' });
       ui.append(s.body, [el('div.stack', [
-        el('p.small.dim', backup ? 'Your whole career as one alarming string. Paste it into your notes app or email it to yourself. It works on any device.'
-          : 'Paste a save code. Line breaks and stray spaces are fine; missing chunks are not.'),
+        el('p.small.dim', hofMode ? 'Your Hall of Fame, every trophy and the looks you unlocked, as one alarming string. Paste it into your notes app. To bring it back: title → Restore code.'
+          : backup ? 'Your whole career as one alarming string. Paste it into your notes app or email it to yourself. It works on any device.'
+          : 'Paste a save code (a career, or a Hall of Fame backup). Line breaks and stray spaces are fine; missing chunks are not.'),
         ta, el('div.field', [msg])
       ])]);
       if (backup) {
@@ -446,16 +458,37 @@
         } }, 'Copy code'));
       } else {
         s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-code-load', onclick: function () {
-          var state;
+          var r;
           msg.textContent = '';
-          try { state = GG.save.fromCode(ta.value); }
+          try { r = GG.save.readCode ? GG.save.readCode(ta.value) : { state: GG.save.fromCode(ta.value), meta: null }; }
           catch (e) { msg.textContent = (e && e.message) || "That code didn't work."; return; }
-          if (!state) { msg.textContent = "That code didn't work."; return; }
-          var go = function () { ui.closeAll(); GG.main.loadState(state, { from: 'code' }); };
+          if (!r || (!r.state && !r.meta)) { msg.textContent = "That code didn't work."; return; }
+          var merge = function (meta) {   // v1.0: the Hall of Fame + trophies that rode along (or the whole backup)
+            if (!meta || !GG.meta || !GG.meta.mergeLite) return null;
+            try { return GG.meta.mergeLite(meta); } catch (e) { console.warn('[ui] mergeLite failed', e); return null; }
+          };
+          if (!r.state) {   // a Hall of Fame backup code
+            var n = (r.meta.entries || []).length, k = Object.keys((r.meta.meta && r.meta.meta.ach) || {}).length;
+            ui.confirm({ title: 'Restore Hall of Fame and trophies?', text: n + ' career' + (n === 1 ? '' : 's') + ' and ' + k + ' troph' + (k === 1 ? 'y' : 'ies')
+              + '. They join what is already on this phone; nothing here is lost.', yes: 'Restore', no: 'Cancel' })
+              .then(function (ok) {
+                if (!ok) return;
+                var res = merge(r.meta);
+                ui.close(s.id);
+                var t = !GG.state && ui.get('title'); if (t && t.rerender) t.rerender();
+                ui.toast(res ? 'Hall of Fame restored: ' + res.added + ' new, ' + res.updated + ' updated.' : "That backup wouldn't merge.", { kind: res ? 'good' : 'bad' });
+              });
+            return;
+          }
+          var go = function () {
+            ui.closeAll();
+            try { GG.main.loadState(r.state, { from: 'code' }); } catch (e) { console.warn('[ui] loadState failed', e); ui.toast("That career wouldn't load.", { kind: 'bad' }); return; }
+            merge(r.meta);
+          };
           if (!GG.state) return go();
           ui.confirm({ title: 'Swap careers?', text: 'This replaces the career you have open. Unsaved progress is lost.', yes: 'Load it', no: 'Cancel', danger: true })
             .then(function (ok) { if (ok) go(); });
-        } }, 'Load career'));
+        } }, 'Load code'));
       }
     }
   });
