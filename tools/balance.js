@@ -28,12 +28,21 @@
 //   DECK=synthetic|none: every band on the synthetic role-alias deck / no Monday deck (the economy without content).
 //   The World target also needs the reach share (careers that got to the World era) within 15 points of Hail Damage's;
 //   payoff a/b = fired / careers whose payoff needs were met in the World era with a departure window left (good bot >= 30%).
+// v1.0 "Glory" (plan_contract_1.0 §5 Lane E): careers run to their own maxWeeks (bonus years: `node tools/balance.js 13 30`);
+// per band and style a legacy line (Legacy score mean / range, tier mix, specials, the World week and the bonus rate 0/2/3),
+// then the cross-band LEGACY targets (good bot >= 80% Arena Legends and +3, +2 or more 100%; avg bot <= 20% Arena, >= 60%
+// Canadian Institution or Cult Heroes, +3 <= 10%; each band's avg median tier within one tier of Hail Damage's; all bands'
+// avg bonus rate 10-50%). NO_BONUS=1 turns bonus years off (GG.legacy.noBonus) and prints exactly the v0.9 report (no new
+// lines, the 100k fans sanity cap); without it the cap is 250k (13-year careers).
 const load = require('../tests/_load');
 const years = Math.max(1, parseInt(process.argv[2], 10) || 1);
 const seeds = Math.max(1, parseInt(process.argv[3], 10) || 5);
 const t0 = Date.now();
 const GG = load({ localStorage: load.fakeStorage() });
 const C = GG.contracts, WPY = C.WEEKS_PER_YEAR;
+const NO_BONUS = !!process.env.NO_BONUS;   // v1.0: the v0.9 report, exactly (bonus years off)
+if (GG.legacy) GG.legacy.noBonus = NO_BONUS;
+const FANS_CAP = NO_BONUS ? 100000 : 250000, FANS_CAP_TEXT = NO_BONUS ? '100k' : '250k';
 // NO_DRAMA=1: v0.3-equivalent knobs (no drama sim, v0.3 upkeep) to compare against.
 if (process.env.NO_DRAMA) { GG.drama = null; GG.content.economy.weeklyUpkeep = 30; }
 
@@ -80,7 +89,7 @@ function check(s, tag) {
   C.STATS.forEach(k => { if (!isFinite(s[k])) bad(k + ' = ' + s[k]); const r = C.RANGES[k]; if (r && (s[k] < r[0] || s[k] > r[1])) bad(k + ' out of range: ' + s[k]); });
   s.members.forEach(m => C.MEMBER_STATS.forEach(k => { const r = C.RANGES[k]; if (!isFinite(m[k]) || m[k] < r[0] || m[k] > r[1]) bad(m.id + '.' + k + ' = ' + m[k]); }));
   if (s.fund < 0) bad('fund negative after wrap: ' + s.fund);
-  if (s.fans >= 100000) bad('fans not sane: ' + s.fans);
+  if (s.fans >= FANS_CAP) bad('fans not sane: ' + s.fans);
 }
 
 // ---- Run ---------------------------------------------------------------------------------------------------
@@ -165,7 +174,7 @@ function run(style, bandId) {
       bs.lineup += s.rival && s.rival.members ? s.rival.members.length : 0; bs.payoff += paid; bs.cards += s.stats.cards || 0; bs.careers++;
       // eligible: the needs were met in the World era with a departure window left that gets the tour home inside the run
       if (needPkg) {
-        const win = GG.tour.departWindow(needPkg) || Array.from({ length: WPY }, (_, i) => i + 1), end = years * WPY, len = (needPkg.stops || []).length || 1;
+        const win = GG.tour.departWindow(needPkg) || Array.from({ length: WPY }, (_, i) => i + 1), end = Math.min(years * WPY, s.maxWeeks), len = (needPkg.stops || []).length || 1;   // v1.0: the career's own end
         let ok = false;
         for (let w = needW + 1; w + len <= end && !ok; w++) if (win.includes(((w - 1) % WPY) + 1)) ok = true;
         if (ok || paid) { bs.eligible++; bs.paidElig += paid; }
@@ -180,6 +189,9 @@ function run(style, bandId) {
       final: s.finalShowdown ? s.finalShowdown.headliner : null,
       poached: (s.showdowns || []).filter(x => x.kind === 'poach' && !x.won).length,
       worldEra: eraWeek('world'), tours: s.tour ? s.tour.history.length : 0,
+      ...(() => { if (!GG.legacy || NO_BONUS) return {};   // v1.0: the Legacy (a preview when the run stops before the career ends)
+        const lg = s.legacy || GG.legacy.compute(s);
+        return { lgScore: lg.score, lgTier: lg.tier, lgSpecials: lg.specials, lgParts: lg.parts, lgEnded: !!s.ended, bonus: s.bonusYears || 0, worldWk: GG.legacy.worldWeek(s) }; })(),
       unl: s.tour ? Object.values(s.tour.regions).filter(r => r.unlocked).length : 0, inv: s.tour ? Object.values(s.tour.regions).filter(r => r.via === 'invite' || r.via === 'big').length : 0,
       brk: s.tour ? Object.values(s.tour.regions).filter(r => r.broken).length : 0, gong: s.tour ? s.tour.gongs.filter(g => g.won).length : 0,
       gongN: s.tour ? s.tour.gongs.filter(g => g.nominated).length : 0, moose: !!(s.tour && s.tour.moose), pres: !!(s.tour && s.tour.president),
@@ -229,7 +241,29 @@ function table(style, rows) {
   // v0.4: quits per year once the garage-era protection is off (years that ended still protected don't count)
   const after = rows.map(a => a.filter(r => !r.prot)).reduce((t, a) => t.concat(a), []);
   if (after.length) out.push('quits/year after protection: ' + avg(after, 'quits').toFixed(2) + ' (ultimatums ' + avg(after, 'ults').toFixed(2) + ', returns ' + avg(after, 'rets').toFixed(2) + ', over ' + after.length + ' seed-years)');
+  if (GG.legacy && !NO_BONUS) out.push(legacyLine(T));
   return out.join('\n');
+}
+// v1.0: the Legacy per style: score mean (min-max), tier mix, bonus years (World week), specials, the mean of each part.
+const TIER_ABBR = { arena_legends: 'AL', canadian_institution: 'CI', cult_heroes: 'CH', one_album_wonders: 'OA', still_in_the_garage: 'SG' };
+function legacyStats(T) {
+  const L = T.filter(t => t.lgScore != null), n = Math.max(1, L.length), sc = L.map(t => t.lgScore).sort((a, b) => a - b);
+  const tiers = {}; C.ENDING_TIERS.forEach(id => { tiers[id] = L.filter(t => t.lgTier === id).length / n; });
+  const bonus = { 0: 0, 2: 0, 3: 0 }; L.forEach(t => { bonus[t.bonus] = (bonus[t.bonus] || 0) + 1 / n; });
+  const specials = {}; L.forEach(t => (t.lgSpecials || []).forEach(id => { specials[id] = (specials[id] || 0) + 1; }));
+  const ranks = L.map(t => C.ENDING_TIERS.indexOf(t.lgTier)).sort((a, b) => a - b), ww = L.map(t => t.worldWk).filter(x => x != null);
+  const parts = {}; C.LEGACY_PARTS.forEach(k => { parts[k] = L.reduce((a, t) => a + ((t.lgParts || {})[k] || 0), 0) / n; });
+  return { n: L.length, ended: L.filter(t => t.lgEnded).length, mean: sc.reduce((a, b) => a + b, 0) / n, min: sc[0], max: sc[sc.length - 1],
+    median: sc[Math.floor(sc.length / 2)], tiers, bonus, specials, medianRank: ranks[Math.floor(ranks.length / 2)],
+    world: ww.length ? Math.round(ww.reduce((a, b) => a + b, 0) / ww.length) : null, worldN: ww.length, parts };
+}
+function legacyLine(T) {
+  const x = legacyStats(T), pc = v => Math.round(100 * v) + '%';
+  if (!x.n) return 'legacy: -';
+  return 'legacy: score ' + Math.round(x.mean) + ' (median ' + x.median + ', ' + x.min + '-' + x.max + (x.ended < x.n ? ', ' + (x.n - x.ended) + ' previews' : '') + ') | tiers ' +
+    C.ENDING_TIERS.map(id => TIER_ABBR[id] + ' ' + pc(x.tiers[id])).join(' ') + ' | bonus +3 ' + pc(x.bonus[3] || 0) + ' +2 ' + pc(x.bonus[2] || 0) + ' none ' + pc(x.bonus[0] || 0) +
+    ' (World wk ' + (x.world == null ? '-' : x.world) + ', ' + x.worldN + '/' + x.n + ') | parts ' + C.LEGACY_PARTS.map(k => k + ' ' + Math.round(x.parts[k])).join(' ') +
+    ' | specials ' + (Object.keys(x.specials).length ? Object.keys(x.specials).map(k => k + ' ' + x.specials[k]).join(', ') : 'none');
 }
 function newStats() { return { weeks: 0, noCard: 0, board: [0, 0, 0, 0], gigs: 0, km: 0, live: { gigs: 0, songs: 0, combo: 0, chorus: 0, peak: 0, sig: 0 }, lineup: 0, payoff: 0, eligible: 0, paidElig: 0, cards: 0, careers: 0, firstKm: [], firstGig: [] }; }
 function bandLine(style, st) {
@@ -261,7 +295,7 @@ bandIds.forEach(bandId => {
         world: wk('worldEra'), worldN: T.filter(t => t.worldEra != null).length / Math.max(1, T.length), sgn3: mean(last, 'sgn'), cards: bs.cards / Math.max(1, bs.careers), noCard: bs.weeks ? bs.noCard / bs.weeks : 0,
         board: bs.board[1] / Math.max(1, bs.board[0]), boardKm: bs.board[2] / Math.max(1, bs.board[3]), kmGig: bs.km / Math.max(1, bs.gigs),
         peak: bs.live.songs ? bs.live.peak / bs.live.songs : 0, lineup: bs.lineup / Math.max(1, bs.careers), payoff: bs.payoff,
-        paidElig: bs.paidElig, eligible: bs.eligible };
+        paidElig: bs.paidElig, eligible: bs.eligible, legacy: GG.legacy && !NO_BONUS ? legacyStats(T) : null };
     }
   });
   if (bandId) { console.log('\n=== ' + ((GG.content.bands[bandId] || {}).name || bandId) + ' (' + bandId + ') ==='); summary.push({ id: bandId, per: per }); }
@@ -307,5 +341,22 @@ if (summary.length > 1) {   // v0.9: the cross-band comparison (targets: plan_co
     });
   });
 }
-console.log(problems.length ? 'INVARIANT PROBLEMS:\n  ' + problems.join('\n  ') : 'invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < 100k)');
+if (GG.legacy && !NO_BONUS && summary.length > 1) {   // v1.0 (plan_contract_1.0 §5 Lane E): the Legacy targets per band
+  const pc = v => Math.round(100 * v) + '%', mark = c => c ? 'ok' : 'MISS', hd = (summary.find(b => b.id === 'hail_damage') || {}).per;
+  console.log('\nLEGACY TARGETS (avg bot: AL <= 20%, CI+CH >= 60%, +3 <= 10%, median tier within one of Hail Damage; good bot: AL >= 80%, +3 >= 80%, +2 or more 100%)');
+  let bonusAll = 0, nAll = 0;
+  summary.forEach(b => {
+    const a = b.per.avg && b.per.avg.legacy, g = b.per.good && b.per.good.legacy; if (!a || !g) return;
+    const hdRank = hd && hd.avg && hd.avg.legacy ? hd.avg.legacy.medianRank : a.medianRank;
+    bonusAll += ((a.bonus[2] || 0) + (a.bonus[3] || 0)) * a.n; nAll += a.n;
+    console.log('  ' + b.id.padStart(18) + ' avg: AL ' + pc(a.tiers.arena_legends) + ' ' + mark(a.tiers.arena_legends <= 0.2) +
+      ' | CI+CH ' + pc(a.tiers.canadian_institution + a.tiers.cult_heroes) + ' ' + mark(a.tiers.canadian_institution + a.tiers.cult_heroes >= 0.6) +
+      ' | +3 ' + pc(a.bonus[3] || 0) + ' ' + mark((a.bonus[3] || 0) <= 0.1) + ' | bonus ' + pc((a.bonus[2] || 0) + (a.bonus[3] || 0)) +
+      ' | median ' + TIER_ABBR[C.ENDING_TIERS[a.medianRank]] + ' ' + mark(Math.abs(a.medianRank - hdRank) <= 1) +
+      ' || good: AL ' + pc(g.tiers.arena_legends) + ' ' + mark(g.tiers.arena_legends >= 0.8) + ' | +3 ' + pc(g.bonus[3] || 0) + ' ' + mark((g.bonus[3] || 0) >= 0.8) +
+      ' | +2/+3 ' + pc((g.bonus[2] || 0) + (g.bonus[3] || 0)) + ' ' + mark((g.bonus[2] || 0) + (g.bonus[3] || 0) >= 0.999));
+  });
+  if (nAll) console.log('  all bands, avg bot bonus rate ' + pc(bonusAll / nAll) + ' ' + mark(bonusAll / nAll >= 0.1 && bonusAll / nAll <= 0.5) + ' (10-50%; Gravel Kings\' higher rate accepted)');
+}
+console.log(problems.length ? 'INVARIANT PROBLEMS:\n  ' + problems.join('\n  ') : 'invariants OK (finite, in RANGES, fund >= 0 after every wrap, fans < ' + FANS_CAP_TEXT + ')');
 console.log('done in ' + ((Date.now() - t0) / 1000).toFixed(2) + ' s');

@@ -259,19 +259,20 @@
       }
     },
 
+    // The aftermath (the panel above it already says who headlined); 'none' stands alone.
     rival: {
-      you: ['{band} headlined the Sad Dome. {rival} opened. Forever. {rivalFront} still sends a polite card every Christmas.'],
-      rival: ['{rival} headlined the Sad Dome. You opened. Forever. {rivalFront} still sends a card every Christmas, which is worse.'],
+      you: ['{rivalFront} still sends a polite card every Christmas. It is signed "Second Place".'],
+      rival: ['{rivalFront} still sends a card every Christmas, which is worse. It is always very nice about it.'],
       none: ['The Sad Dome never happened. {band} and {rival} keep circling each other at festivals, forever, like two cats on a fence.'],
       byRival: {
-        tundra_wraith: { you: ['You headlined the Sad Dome. {rival} opened, then mailed a thank-you card and an itemized invoice for the veggie tray.'],
-          rival: ['{rival} headlined the Sad Dome. {rivalFront} thanked you from the stage, by name, in a calm voice. It still haunts you.'] },
-        mall_rats: { you: ['You headlined the Sad Dome. {rival} opened in your colours. Their sponsor called it a pivot.'],
-          rival: ['{rival} headlined the Sad Dome with a kickflip. It did not land. The crowd forgave them. You did not.'] },
-        chartbusters: { you: ['You headlined the Sad Dome. {rival} opened with the power ballad, played it again, and went home.'],
-          rival: ['{rival} headlined the Sad Dome and played the power ballad four times. Their radio stations played it forty.'] },
-        buckle_and_boot: { you: ['You headlined the Sad Dome. {rival} opened with the truck mascot. The truck stalled. You did not.'],
-          rival: ['{rival} headlined the Sad Dome with fireworks shaped like trucks. You opened. The trucks got a standing ovation.'] }
+        tundra_wraith: { you: ['{rival} mailed you a thank-you card and an itemized invoice for the veggie tray.'],
+          rival: ['{rivalFront} thanked you from the stage, by name, in a calm voice. It still haunts you.'] },
+        mall_rats: { you: ['{rival} showed up the next week in your colours. Their sponsor called it a pivot.'],
+          rival: ['They closed with a kickflip. It did not land. The crowd forgave them. You did not.'] },
+        chartbusters: { you: ['{rival} played the power ballad, played it again, and went home.'],
+          rival: ['They played the power ballad four times. Their radio stations played it forty.'] },
+        buckle_and_boot: { you: ['{rival} brought the truck mascot. The truck stalled. You did not.'],
+          rival: ['Fireworks shaped like trucks. The trucks got a standing ovation. You got a polite one.'] }
       }
     },
 

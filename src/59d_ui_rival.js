@@ -577,12 +577,15 @@
       el('span.small', { style: { color: heatColor(x.heat) } }, 'Heat ' + Math.round(x.heat) + (x.heatDelta ? ' ' + (x.heatDelta > 0 ? '▲' : '▼') + Math.abs(Math.round(x.heatDelta)) : ''))])].concat(rows)));
     return out;
   };
-  ui.rivalEnd = function (st) {
+  // The end sequence's rival card (5n_ui_ending, testid end-final). v1.0: opts.line = the ending's rival line (GG.legacy.text).
+  ui.rivalEnd = function (st, opts) {
     var f = st && st.finalShowdown;
     if (!f) return null;
+    opts = opts || {};
     return el('div.panel.rv-next.final' + (f.won ? '.won' : ''), { testid: 'end-final' }, [el('span.ic', '🏟️'), el('div.grow', [
       el('b', f.won ? 'You headlined the Sad Dome. ' + (f.rival || 'They') + ' opened. Forever.' : (f.rival || 'They') + ' headlined the Sad Dome. You opened. Forever.'),
-      el('div.tiny.dim', 'You ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : ''))])]);
+      el('div.tiny.dim', 'Year ' + Math.ceil((f.week || 237) / 24) + ': you ' + f.score + ' · them ' + f.rivalScore + (on(st) ? ' · head-to-head ' + RV().record(st).you + '–' + RV().record(st).them : '')),
+      opts.line ? el('p', { style: 'margin:10px 0 0;font-size:15px;line-height:1.45' }, opts.line) : null])]);
   };
 
   // (snippet: this song's opening entry + how many of the singer's / band's sung hits land inside a real 5.2 s snippet, not
