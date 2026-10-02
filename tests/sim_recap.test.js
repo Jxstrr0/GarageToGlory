@@ -96,6 +96,7 @@ test('year one: the bandmates explain a good year (Marcel, Dana, Jaxon, Mom; Ken
 
 test('saves: old saves get recaps; deterministic headlines; a 10-year career keeps recaps small', () => {
   const GG = fresh(), s = GG.career.newCareer({ seed: 3, player: { name: 'T' } });
+  GG.legacy.noBonus = true;   // v1.0: a 10-year career (bonus years would add recaps 11-13)
   const old = JSON.parse(JSON.stringify(s)); delete old.recaps; old.v = 9;
   ok(Array.isArray(GG.save.migrate(old).recaps), 'old save filled');
   const a = GG.career.newCareer({ seed: 77, player: { name: 'T' } }), b = GG.career.newCareer({ seed: 77, player: { name: 'T' } });

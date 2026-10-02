@@ -198,6 +198,7 @@ test('sellout: haters up by the brand\'s weight; a scandal card queued through B
 
 test('bots answer offers sensibly; careers see 2–4 offers and a median of roughly $5k–15k; deterministic; the career RNG untouched', () => {
   const GG = fresh(), L = GG.licensing, totals = [], counts = [];
+  GG.legacy.noBonus = true;   // v1.0: the 10-year careers these numbers were tuned on
   for (let seed = 1; seed <= 5; seed++) {
     const s = GG.career.newCareer({ seed: seed * 7919, player: { name: 'Bot' } });
     while (!s.ended) GG.career.botWeek(s, 'avg');

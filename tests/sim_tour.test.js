@@ -475,4 +475,30 @@ test('botTour: bots tour in the World era, deterministic per seed, invariants ho
   ok(!/Math\.random|\bDate\b|document\.|window\.(?!GG)/.test(src), '25_sim_tour.js is pure');
 });
 
+// v1.0 (plan_contract_1.0 §4.4, Q2): the tour's Sad Dome guard and the bots' stay-home weeks read GG.rival.finalAt (the
+// career's last year), so bonus years move both from year 10 to year 13.
+test('v1.0 bonus years: +3 → a tour over y13 w21 is refused and y10 w21 is free; bots stay home before y13 w21, not y10', () => {
+  const GG = fresh(), T = GG.tour, PKG = 'uk_pub_crawl';   // three stops, no festival windows
+  const bonus = (tw) => { const s = world(GG, 7, tw); T.unlock(s, 'uk_europe'); s.bonusYears = 3; s.maxWeeks = 312; return s; };
+  const y10 = bonus(9 * 24 + 20);   // leaves next week = y10 w21
+  ok(T.canBook(y10, PKG).ok, 'bonus career: y10 w21 is just another week (' + T.canBook(y10, PKG).why + ')');
+  const y13 = bonus(12 * 24 + 20);
+  const no = T.canBook(y13, PKG);
+  ok(!no.ok && /Sad Dome/.test(no.why), 'bonus career: a tour over y13 w21 is refused: ' + no.why);
+  GG.legacy.noBonus = true;
+  const ten = world(GG, 7, 9 * 24 + 20); T.unlock(ten, 'uk_europe');
+  ok(!T.canBook(ten, PKG).ok && /Sad Dome/.test(T.canBook(ten, PKG).why), 'a 10-year career: y10 w21 is the Sad Dome');
+  GG.legacy.noBonus = false;
+  // the good bot stays home in the eight weeks before the career's Sad Dome (a ready Moose Opera run would otherwise leave)
+  const home = bonus(12 * 24 + 15); home.flags.mooseAlbum = 'ready';
+  eq(T.botWeek(home, 'good'), null, 'bonus career, y13 w15: the bot stays home');
+  const free = bonus(9 * 24 + 15); free.flags.mooseAlbum = 'ready';
+  const tp = T.botWeek(free, 'good');
+  ok(tp && !tp.error && free.tour.active && tp.packageId === 'eu_moose_run', 'bonus career, y10 w15: the bot leaves on the Moose Opera run (' + (tp && (tp.packageId || tp.error)) + ')');
+  GG.legacy.noBonus = true;
+  const ten2 = world(GG, 7, 9 * 24 + 15); T.unlock(ten2, 'uk_europe'); ten2.flags.mooseAlbum = 'ready';
+  eq(T.botWeek(ten2, 'good'), null, 'a 10-year career, y10 w15: the bot stays home');
+  GG.legacy.noBonus = false;
+});
+
 done('sim_tour');
