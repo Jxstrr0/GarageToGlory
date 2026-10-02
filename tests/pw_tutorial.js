@@ -58,6 +58,9 @@ async function cardChecks(page, c, label) {
 }
 // A tap at the centre of a game control lands on it (the bubble layer lets taps through).
 async function reaches(page, id) {
+  // (the sheet under the bubble may still be sliding in: headless SwiftShader can start its 0.22 s CSS animation late, and
+  // mid-slide the control sits below the viewport; wait for the finite animations, as a player's tap would land after them)
+  await page.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running' || !isFinite(a.effect.getTiming().iterations)), null, { timeout: 10000 }).catch(() => {});
   return page.evaluate(id => {
     const els = Array.from(document.querySelectorAll('[data-testid="' + id + '"]')); const n = els[els.length - 1]; if (!n) return false;
     const r = n.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);

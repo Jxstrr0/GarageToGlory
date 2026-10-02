@@ -133,6 +133,16 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   FH 17 / GK 60 / GRR 20 %, all 33 %); `NO_BONUS=1 … 10 30` identical to `plan/balance_baseline_v10.txt`. Storage at 13 years
   (good bot, 312 weeks): save code 128–134k chars incl. `_meta` (HD carries 5 HoF entries, others 19), slot JSON 285–320k →
   packed ~130k, total localStorage for 4 slots + a 40-entry HoF + meta 0.64–0.69M chars (was 1.44M unpacked).
+- **Tests at integration (2026-10-02):** `node tests/run.js` SUITE ALL PASS (28 files); `LEAK_YEARS=13 node tests/sim_bands.test.js`
+  clean; Playwright: every META_ONLY section of every `tests/pw_*.js` (90 cells: bands ×4 + flat, bands_render ×6, creator ×4,
+  drama, ending ×4, fans ×2, flow ×5, garage, gig ×7, hof ×3, label ×4, logo ×3, perf ×5, recap ×3, rival ×3, seq ×6,
+  settings ×3, shop ×5, stage ×2, title ×3, tour ×4, trophies ×2, tutorial ×5, world ×4) at 390×844 and `PW_VIEW=440x956`:
+  176/180 green in the full run; tutorial `tut_w1` (390 + 440) failed on a test race (the card sheet still sliding in when
+  "a tap reaches the game" was probed; `reaches()` now waits for finite animations) and is green twice at both sizes after
+  the fix; pw_gig `double` and pw_seq `audio` at 440 failed once under load and passed alone twice each (timing flakes).
+  `tools/phoneqa.js` green at both sizes; contact sheets `tests/.cache/v10_sheet_390.png` / `_440.png` viewed.
+  Integration fixes to tests: `save.test` (no-Legacy entries with `GG.legacy = null`, + quota / packed slot / code trim),
+  `pw_perf` + `tools/perf.js` governor wait for the first garage glide (the logo fix moved a 3 s stall out of quickStart).
 - **Seat-aware hooks (E12):** `HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}`, `seat` gates on lessons and
   achievements, epilogue `seatRole`, code reads `state.seat || 'drums'` (no `state.seat` field until v1.1).
 
