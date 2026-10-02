@@ -161,7 +161,7 @@
       "{drummer} wants the click to be a cowbell. The producer has a laptop and a lot of feelings.",
       [ch('Play to the click', { drumSkill: 2, burnout: 4 }, 'Three hours with a beep in your ear. Your time is perfect. Your soul is a spreadsheet. The demo sounds great.', 'Your chops ↑ · Burnout ↑'),
        ch('Be the click', { chemistry: 5, mood: { '@front': 4 } }, 'The band locks to your right hand. The producer turns the laptop off and stares at you like a man seeing a sunrise.', 'Chemistry ↑ · {front} ↑'),
-       ch('The click is a cowbell', { buzz: 5, mood: { '@drummer': 5 } }, '{drummer} plays a cowbell on every quarter note. The producer leaves. The cowbell stays on the record. No gong.', 'Buzz ↑ · {drummer} ↑')],
+       ch('The click is a cowbell', { buzz: 5, mood: { '@drummer': 5 } }, '{drummer} plays a cowbell on every quarter note. The producer leaves. The cowbell stays on the record.', 'Buzz ↑ · {drummer} ↑')],
       { hail_damage: ['@drummer', 'i dont need a click. i have baba. she bangs on the ceiling on 2 and 4'],
         frost_heave: ['@drummer', 'Council has a click. It is called procedure. I hate it. Your right hand is better than procedure.'],
         gravel_kings: ['@drummer', 'In 1985 the click was a man named Dale with a stopwatch. We fired Dale. Dale is fine. He sells boats.'],
