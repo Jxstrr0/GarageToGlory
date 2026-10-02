@@ -774,9 +774,9 @@
   // false = no room (the hit is dropped).
   // v1.0: cls (the live rig only) = the voice class under the global cap: 'tap' (never refused by the song's cap), 'drum'
   // (the song's kick + snare) or 'band' (everything else; the default).
-  var seatBook = null;   // v1.1: while one of your notes is played through a band voice: { n } (booked as 'tap', never refused)
+  var seatBook = null;   // v1.1: while one of your notes is played through a band voice: { n, ends } (booked as 'tap', never refused)
   function book(r, t, dur, n, band, cls) {
-    if (seatBook) { band = false; cls = 'tap'; seatBook.n += n; }
+    if (seatBook) { band = false; cls = 'tap'; seatBook.n += n; for (var q = 0; q < n; q++) seatBook.ends.push(t + dur); }
     var t1 = t + 1e-4;   // a note that ends as the next one starts (float rounding) frees its voice in time
     r.busy = r.busy.filter(function (end) { return end > t1; });
     if (band) { r.band = r.band.filter(function (end) { return end > t1; }); if (r.band.length + n > r.bandCap) { counts.dropped++; return false; } }
@@ -1929,13 +1929,14 @@
   // your taps sound exactly like the part the backing mutes (metal's double-tracked pair through the metal amp, punk/rock's
   // crunch amps, rock's ringing gtr2, the country acoustic's strum, Earl's Tele...). o = { len (seconds it sounds; default
   // 0.35, max 8), hold (A.release gates it), kind, power, mute, strum ([intervals]), up, bend (semitones up into it), trem,
-  // ring, chord ([li, li2]: one strum), seat (pan hint; default state.seat) }. Booked like A.hit: `when` (an AudioContext
+  // ring, chord ([li, li2]: one strum), repeats ([seconds after the start]: a run's notes on the band grid, one handle; a
+  // release stops the ones not played yet), seat (pan hint; default state.seat) }. Booked like A.hit: `when` (an AudioContext
   // time < 1 s ahead: the gig's drum-sync path, syncSnap'd) or now + 5 ms, class 'tap' (never dropped by the voice cap; the
   // same voices the muted band note would have used: 1 for bass / lead, the pair for 'gtr', the strings of a strum; a hold is
   // one booking for its whole length). Each voice is monophonic like a string: a new note chokes the last at its start (one
   // booked earlier than the last ends where that one starts). Notes go through pooled per-voice slots (a port each), so a
   // choke / release is a 20 ms gate and A.hitCancel() silences every booked one. null: no running audio, muted, no midi.
-  // handle = { fn, kind, midi, t, end, len, hold, n (voices), released, cut (ctx time it was gated) }.
+  // handle = { fn, kind, midi, t, end, len, hold, n (voices booked), repeats, released, cut (ctx time it was gated) }.
   // A.release(handle, when) -> true (a hold was gated at max(when, t + 60 ms)) | false (not a hold / already over) | null.
   // A.seatVoiceFor(kind) -> 'pluck' | 'strum' | 'lead' (which voice plays a timeline kind).
   var SEAT_KIND = {
@@ -1968,29 +1969,44 @@
     if (!h || h.end <= at) return false;
     var stopAt = Math.min(h.end, at + tc * 6), p = h.slot.p, k;
     for (k in p) if (p[k] && p[k].gain) { try { p[k].gain.setTargetAtTime(0, at, tc); } catch (e) { /* ignore */ } }
-    h.src.forEach(function (s) { try { s.stop(stopAt); } catch (e) { /* old Safari: one stop() only */ } });
-    for (k = 0; k < h.n; k++) { var j = r.busy.indexOf(h.end); if (j >= 0) r.busy[j] = stopAt; }
-    if (r === rig) for (k = 0; k < VL.end.length; k++) if (VL.cls[k] === 'tap' && VL.end[k] === h.end) VL.end[k] = stopAt;
+    h.src.forEach(function (s) { try { s.stop(stopAt); } catch (e) { /* old Safari: one stop() only */ } });   // (repeats not yet started never play)
+    seatFree(r, h, stopAt);
     h.slot.until = stopAt; h.end = stopAt; h.cut = at;
     return true;
+  }
+  function seatFree(r, h, e) {   // the voice ledger: the note's bookings now end at e
+    for (var i = 0; i < h.ends.length; i++) {
+      var x = h.ends[i]; if (x <= e) continue;
+      var j = r.busy.indexOf(x); if (j >= 0) r.busy[j] = e;
+      if (r === rig) for (var k = 0; k < VL.end.length; k++) if (VL.cls[k] === 'tap' && VL.end[k] === x) { VL.end[k] = e; break; }
+      h.ends[i] = e;
+    }
   }
   function seatPlay(r, fn, midi, t, o) {
     var g = r.genre || 'metal', kind = o.kind || SEAT_KIND[fn](g), pool = seatPool(r, fn), last = pool.last;
     var len = Math.max(0.03, Math.min(SEAT_MAXLEN, +o.len > 0 ? +o.len : SEAT_LEN));
     if (last && last.end > t) {
       if (last.t < t) { if (seatCut(r, last, t, 0.006)) SEATS.choked++; }
-      else len = Math.max(0.005, Math.min(len, last.t - t));   // booked out of order: it ends where the later one starts
+      else len = Math.max(0.03, Math.min(len, last.t - t));   // booked out of order: it ends where the later one starts
     }
     var sl = seatSlot(r, pool, t);
     var ev = { beat: 0, kind: kind, midi: midi, len: len, gap: len, power: o.power != null ? !!o.power : kind === 'gtr' || kind === 'gtr2',
       mute: !!o.mute, trem: !!o.trem, ring: !!o.ring, up: !!o.up, bend: +o.bend || 0 };
     if (Array.isArray(o.strum)) ev.strum = o.strum.slice(0, 4);
     else if (kind === 'clean' && g === 'country') ev.strum = o.mute ? [0, 7] : [0, 4, 7];
-    var src = r.collect = [], b = seatBook = { n: 0 };
-    try { playNote(r, sl.p, ev, t, 1); } finally { seatBook = null; r.collect = null; }
+    // o.repeats [seconds after t] (a run: the repeats on the band grid, one note; a release stops the rest)
+    var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
+    var src = r.collect = [], b = seatBook = { n: 0, ends: [] };
+    try {
+      if (!reps.length) playNote(r, sl.p, ev, t, 1);
+      else {
+        var at = [0].concat(reps);
+        for (var i = 0; i < at.length; i++) { var d = (i + 1 < at.length ? at[i + 1] : len) - at[i]; playNote(r, sl.p, Object.assign({}, ev, { len: d, gap: d, bend: i ? 0 : ev.bend }), t + at[i], 1); }
+      }
+    } finally { seatBook = null; r.collect = null; }
     if (!src.length) return null;
     seatLevels(sl, t, o.seat || (GG.state && GG.state.seat) || null);
-    var h = { fn: fn, kind: kind, midi: midi, t: t, end: t + len, len: len, hold: !!o.hold, n: b.n, released: false, cut: null, slot: sl, src: src };
+    var h = { fn: fn, kind: kind, midi: midi, t: t, end: t + len, len: len, hold: !!o.hold, n: b.n, ends: b.ends, repeats: reps.length, released: false, cut: null, slot: sl, src: src };
     sl.until = h.end; pool.last = h;
     var L = r.seatLive || (r.seatLive = []);
     if (L.length > 16) r.seatLive = L = L.filter(function (x) { return x.end > t - 0.5; });
@@ -2035,9 +2051,8 @@
     live.forEach(function (h) {   // the voice ledger lets them go now
       if (slots.indexOf(h.slot) < 0) slots.push(h.slot);
       if (h.end <= t) return;
-      var k, j, e = t + 0.005;
-      for (k = 0; k < h.n; k++) { j = r.busy.indexOf(h.end); if (j >= 0) r.busy[j] = e; }
-      if (r === rig) for (k = 0; k < VL.end.length; k++) if (VL.cls[k] === 'tap' && VL.end[k] === h.end) VL.end[k] = e;
+      var e = t + 0.005;
+      seatFree(r, h, e);
       h.src.forEach(function (s) { try { s.stop(e + 0.01); } catch (x) { /* ignore */ } });
       h.end = e; h.cut = t;
     });
@@ -3046,7 +3061,8 @@
     }
     radioRig.fader.gain.setTargetAtTime(0.3, t, 0.8);
     setKit(radioRig, st.genre || 'metal');
-    amb.radio = player(song.pattern, { genre: st.genre || 'metal', section: null, loop: true, songId: song.id }, { rig: radioRig, quiet: true });
+    var seat = st.seat && st.seat !== 'drums' ? st.seat : undefined;   // v1.1: your part on the radio too (a string seat's song)
+    amb.radio = player(song.pattern, { genre: st.genre || 'metal', section: null, loop: true, songId: song.id, seat: seat, part: seat ? song.pattern.part : undefined }, { rig: radioRig, quiet: true });
     amb.radioSong = song.id;
   }
   function stopRadio() {

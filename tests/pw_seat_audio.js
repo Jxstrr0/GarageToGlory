@@ -122,6 +122,14 @@ async function voices() {
       const nx = A.pluck(41, ctx.currentTime + 0.1, { len: 0.2 });
       r.after = !!nx && nx.n === 1;
       await wait(300);
+      // a run (o.repeats): its notes on the grid under one handle; a release stops the ones not played yet
+      t = ctx.currentTime + 0.2; s0 = S.length;
+      const run = A.pluck(40, t, { len: 0.5, hold: true, repeats: [0.1, 0.2, 0.3] });
+      const runSrc = S.slice(s0), runStarts = runSrc.map(x => Math.round((x.s - t) * 1000));
+      A.release(run, t + 0.15);
+      const stopAt = t + 0.15 + 0.12, late = runSrc.filter(x => x.s > stopAt);
+      r.run = { n: run.n, repeats: run.repeats, starts: runStarts, cut: Math.round((run.cut - (t + 0.15)) * 1e5) / 100, lateSilent: late.length >= 1 && late.every(x => x.e < x.s), allStop: runSrc.every(x => x.e <= stopAt + 1e-6) };
+      await wait(700);
       // muted game: null (like A.hit), no source
       A.setMuted(true); s0 = S.length; r.muted = [A.pluck(40), S.length - s0]; A.setMuted(false);
       r.dbg = GG.debug('audio').seat;
@@ -134,6 +142,7 @@ async function voices() {
     c.ok(hr.tap.rel === false && hr.tap.same && hr.tap.hold === false, 'a tap is not gated by a release ' + JSON.stringify(hr.tap));
     c.ok(Math.abs(hr.choke.cut) <= 1 && Math.abs(hr.choke.end) <= 1 && hr.choke.h2, 'monophonic: the next pluck chokes the last at its start ' + JSON.stringify(hr.choke));
     c.ok(hr.cancel.stopped && hr.cancel.n >= 3 && hr.cancel.live === 0 && hr.cancel.ends && hr.after, 'hitCancel: booked notes stop now, the ledger lets them go, the next note plays ' + JSON.stringify(hr.cancel));
+    c.ok(hr.run.n === 4 && hr.run.repeats === 3 && hr.run.starts.join() === '0,100,200,300' && Math.abs(hr.run.cut) <= 1 && hr.run.lateSilent && hr.run.allStop, 'a run: its repeats on the grid under one handle; the release stops the rest (they never play) ' + JSON.stringify(hr.run));
     c.ok(hr.muted[0] === null && hr.muted[1] === 0, 'muted: no note ' + JSON.stringify(hr.muted));
     c.ok(hr.dbg.released >= 2 && hr.dbg.choked >= 1 && hr.dbg.cancelled >= 1, "debug('audio').seat counts " + JSON.stringify(hr.dbg));
 
