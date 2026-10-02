@@ -24,9 +24,29 @@ const word = t => (String(t).match(WORDS) || String(t).match(TOMS) || [''])[0];
 
 // [left] decisions (Lane A, v1.1): the phrase is matched against the resolved text (case-sensitive, tokens resolved).
 const LEFT = [
-  // words that only look like drum words
-  'first-aid kit', 'press kit', 'Frozen Throne', 'Throne of', 'Trône', 'Drum Logic', 'tape your sticks', 'goal stick', 'hockey stick',
-  'kicks in', 'kick on and', 'One good kick', 'kicks on', 'kick it off',
+  // words that only look like drum words (a first-aid kit, a hockey stick, the Frozen Throne, "it sticks", "kicks in")
+  'first-aid kit', 'press kit', 'floss kit', 'from her kit', 'Lift Kit', 'Frozen Throne', 'Throne of', 'Trône', 'like a throne', 'the throne room',
+  'Hay Bale Throne', 'tape your sticks', 'sticks it', 'It sticks', 'back sticks out', 'sticks of homemade jerky', 'drumstick as a mic',
+  'kicks in', 'kicks on', 'Kick it', 'kick it', 'Irma kicks', 'One good kick', 'Benny kicks it', 'brushes and a shop vac',
+  // the Patreeon tiers (Drumstick, Snare, Full Kit) are the band's merch names
+  'Drumstick', 'Full Kit', 'Snare, Full Kit', 'collectively, Snare',
+  // the band's drums, kit, drummer and drum sound in general (on a string seat the swapped drummer plays them)
+  'the drummer', 'The drummer', 'THE DRUMMER', 'your drummer', 'Drummers lose mitts', 'I name no drummers', 'What a Drummer Is', 'two drummers',
+  'every drummer is named Steve', 'hiring drummers', "session drummer", 'a drummer with something to prove', 'Four people and a drummer',
+  'one drummer, one cassette', 'Their drummer asks yours', 'Swap drummers', 'The drummers trade places', 'hates drummers', 'a cat that hates drummers',
+  'drumming on the', 'air-drumming', 'lap drums', 'my uncle could drum',
+  'the drums', 'The drums', 'drum kit', 'the kit', 'The kit', 'drum riser', 'drum throne', 'drum stool', 'drum cases', 'snare case', 'drum samples',
+  'Real drums, real everything', 'Click for the drums', 'NO DRUMS AFTER', 'Guitar, bass, drums', 'whoever is on drums', 'clapped for the drums',
+  'kick drum', 'Kick Drum', 'bass drum', 'the kick', 'The kick', 'kick pedal', 'snare hit', 'Every snare', 'the snare', 'The snare', 'snare wires',
+  'Nine Seconds of Snare', 'a zipper hitting the drum', 'drum solos', 'drum loop', 'drum pattern', 'one drum kit', 'DRUM MACHINE',
+  'hi-hat', 'the cymbals', 'The cymbals', 'cymbal stands', 'cymbals on', 'cymbals in', 'without cymbals', 'cracked cymbal', 'ride cymbal',
+  'spare cymbal', 'The cymbal goes', 'a cymbal case', 'crash cymbal', 'in a cymbal', 'Hold on to the cymbals', 'floor tom', 'on the toms',
+  'double-kick run', 'double bass', 'blast beat', 'Blast beats', 'blast beats', 'BLAST BEAT', 'backbeat', 'train beat', 'TRAIN BEAT',
+  'on the beat', 'keep the beat', 'Gamble: a new drum loop', 'Gophers Under the Kit', 'Move the kit', 'move the drums',
+  'Counts the song in from behind the kit', 'behind the kit', 'flatter than a drum skin', 'Flatter than a drum skin', 'drum shop upstairs',
+  'Kit rules', 'Drum Logic', 'on the drum kit', 'never on a drum kit',
+  // fills that are a guitar's, a bass's or a fiddle's (Jaxon's sneaky fills, Clementine's runs) and the fills of the songs
+  'sneaky fill', 'Sneaky Fill', 'a fill', 'the fill', 'the fills', 'her fills', 'that fill', 'the fills come back', 'Then the fills',
 ];
 const LEFT_RE = LEFT.map(p => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'));
 
@@ -58,13 +78,17 @@ function seatAware(GG) {
   })(GG.content, false, 0);
   return out;
 }
-// The LEFT phrases and the seat-aware lines are cut out of the text first; whatever drum word is still there is a leak.
+// HARD: drum words aimed at the player are leaks even inside a LEFT phrase ("You are the drummer.", "your sticks").
+const HARD = /\b(you(?:'re| are) (?:the|a|our) drummer|your (?:drums?|drum kit|kit|sticks|drumsticks|snare|kick|kick drum|hi-?hats?|cymbals?|fills?|double kick|blast beats?|backbeat|drum face|drum groove|drum throne|throne)|you drum|you drummed|like you drum)\b/i;
+// The seat-aware lines are cut out first (written for a string seat), then HARD is checked, then the LEFT phrases are cut;
+// whatever drum word is still there is a leak.
 function leak(text, aware) {
   let t = String(text || '');
-  if (!drumWords(t)) return null;
-  LEFT_RE.forEach(re => { re.lastIndex = 0; t = t.replace(re, ' '); });
-  if (!drumWords(t)) return null;
+  if (!/\s/.test(t) || !drumWords(t)) return null;   // one word = an id (a club tier, a gift id), not text
   (aware || []).forEach(re => { if (re.test(t)) t = t.replace(re, ' '); });
+  const h = t.match(HARD);
+  if (h) return h[0];
+  LEFT_RE.forEach(re => { re.lastIndex = 0; t = t.replace(re, ' '); });
   return drumWords(t) ? word(t) || 'drum word' : null;
 }
-module.exports = { WORDS, TOMS, drumWords, word, LEFT, seatAware, leak, toRe, stringSeatGate };
+module.exports = { WORDS, TOMS, HARD, drumWords, word, LEFT, seatAware, leak, toRe, stringSeatGate };
