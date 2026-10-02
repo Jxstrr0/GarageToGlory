@@ -1,5 +1,5 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
 //   genres, voices: v0.9 (see the functions: genre amps, styles, solos, beds, crowd one-shots, in-career songs; singers).
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
@@ -27,7 +27,7 @@
 //           Writes tests/.cache/v072_<genre>.wav and v072_crowd.wav (not committed).
 // Run: node build.js && timeout 500 node tests/pw_seq.js
 const fs = require('fs'), path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, shotName } = require('./_pw');
 const load = require('./_load');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -837,4 +837,110 @@ async function voices() {
   if (want('seq') || want('guided')) await guided();
   if (want('audio')) await audio();
   if (want('heavy')) await heavy();
+  if (want('part')) await part();
 })();
+
+// v1.1 "Seats" (plan_contract_1.1 §4.4): the string-seat songwriter. A bass Write (Hail Damage): guided step 1 = Kenji's
+// suggested groove (the signature, per section) + "Tell Kenji what to play" (today's drum grid, unchanged) -> "Your part"
+// per section: a progression card, the 3-row grid (root / fifth / octave), one-tap tweaks with their meter change, Play
+// plays your part (GG.audio.play { seat, part }) -> tempo -> order -> name -> Save: the song lands with exactly that part.
+// Advanced: the "Your part | Drums" switch. A lead sketch pad: the 5-row hook grid + "Guitar shop". Layout audit on every
+// screen; no console errors.
+async function part() {
+  const c = checker('part');
+  const { page, errors, close } = await open();
+  const ev = (f, a) => page.evaluate(f, a);
+  const step = () => page.evaluate(() => GG.debug('seq').step);
+  const partOf = () => page.evaluate(() => GG.ui.get('seq').data.pat.part);
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await ev(() => {
+      GG.prefs.set({ songwriterMode: 'guided' });
+      GG.main.quickStart({ seed: 4242, bandId: 'hail_damage', seat: 'bass' });
+      const A = GG.audio, p0 = A.play; window.__play = [];
+      A.play = function (pat, o) { window.__play.push({ seat: o && o.seat, part: !!(o && o.part), drums: o && o.drums }); return p0.apply(this, arguments); };
+    });
+    await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
+    if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
+    await page.waitForFunction(() => GG.state.phase === 'plan' && GG.debug('ui').stack.length === 0);
+    await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
+    for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
+    await tap(page, 'btn-go'); await waitScreen(page, 'seq');
+    const d0 = await ev(() => ({ dbg: GG.debug('seq'), step: document.querySelector('[data-testid="guide-step"]').textContent,
+      drums: document.querySelector('[data-testid="part-drums"]').textContent, tell: document.querySelector('[data-testid="btn-tell-drummer"]').textContent }));
+    c.ok(d0.dbg.seat === 'bass' && d0.dbg.step === 'drums' && /Step 1 of 7 · Drums/.test(d0.step), 'a bass Write opens on the drums step ' + d0.step);
+    c.ok(/Verse/.test(d0.drums) && /Chorus/.test(d0.drums) && /Bridge/.test(d0.drums) && /Headbanger/.test(d0.drums), 'Kenji suggests the signature groove per section ' + d0.drums);
+    c.ok(d0.tell === 'Tell Kenji what to play', 'Tell {drummer} what to play: ' + d0.tell);
+    c.ok(d0.dbg.part && d0.dbg.part.seat === 'bass' && Object.keys(d0.dbg.part.sections).join() === 'verse,chorus,bridge', 'the song carries a bass part for every section');
+    c.ok((await audit(page)).length === 0, 'drums step layout ' + (await audit(page)).join('; '));
+    // Tell Kenji: today's drum grid, then back to the guided steps from the Song tab
+    await tap(page, 'btn-tell-drummer');
+    const g0 = await ev(() => ({ dbg: GG.debug('seq'), kick: !!document.querySelector('[data-testid="cell-kick-0"]'), sw: !!document.querySelector('[data-testid="seq-layers"]'),
+      label: document.querySelector('[data-testid="seq-layer-drums"]').textContent }));
+    c.ok(!g0.dbg.guided && g0.dbg.layer === 'drums' && g0.kick && g0.sw && /Kenji/.test(g0.label), 'the drum grid (unchanged) under a Your part | Drums switch ' + g0.label);
+    const k0 = await ev(() => GG.ui.get('seq').data.pat.sections.verse[1]);
+    await page.locator(tid('cell-snare-2')).click();
+    c.ok(await ev(() => GG.ui.get('seq').data.pat.sections.verse[1]) !== k0, 'a drum cell still toggles');
+    await tap(page, 'seq-layer-part');
+    c.ok(await ev(() => GG.debug('seq').layer === 'part' && !!document.querySelector('[data-testid="part-grid"]') && document.querySelectorAll('[data-testid^="part-cell-"]').length === 48), 'Your part: 3 rows x 16 steps');
+    c.ok((await audit(page)).length === 0, 'advanced part layout ' + (await audit(page)).join('; '));
+    await tap(page, 'seq-tab-song'); await tap(page, 'btn-seq-guided');
+    c.ok(await step() === 'drums', 'Guided steps returns to the drums step');
+    await tap(page, 'btn-guide-next');
+    const v0 = await ev(() => ({ step: GG.debug('seq').step, picks: document.querySelectorAll('[data-testid^="part-pick-"]').length, mods: [...document.querySelectorAll('[data-testid^="part-mod-"]')].map(b => b.dataset.testid),
+      cols: document.querySelector('[data-testid="part-grid"]').dataset.lanes, hint: document.querySelector('[data-testid="guide-hint"]').textContent }));
+    c.ok(v0.step === 'verse' && v0.picks >= 3 && v0.cols === '3' && /root, fifth or octave/.test(v0.hint), 'your verse: progressions + the root/fifth/octave grid ' + JSON.stringify(v0));
+    c.ok(v0.mods.join() === 'part-mod-lock,part-mod-double,part-mod-ring,part-mod-call', 'the four one-tap tweaks ' + v0.mods);
+    c.ok((await audit(page)).length === 0, 'part step layout ' + (await audit(page)).join('; '));
+    await tap(page, 'part-pick-1');
+    c.ok((await partOf()).sections.verse.prog === 1 && await ev(() => !!document.querySelector('[data-testid="part-pick-1"].on')), 'picking a progression sets the verse');
+    const m0 = await meters(page);
+    await page.locator(tid('part-cell-2-15')).click();
+    const pv = await partOf();
+    c.ok(pv.sections.verse.rows[2][15] === 'x', 'a tap on the grid adds an octave note ' + pv.sections.verse.rows[2]);
+    await tap(page, 'part-mod-lock');
+    const ch = await ev(() => document.querySelector('[data-testid="guide-change"]').textContent);
+    c.ok(/Lock to the kick/.test(ch) && /Groove \d+ → \d+/.test(ch), '"Lock to the kick" shows the meter change ' + ch);
+    const m1 = await meters(page);
+    c.ok(m0.join() !== m1.join() || /→/.test(ch), 'the meters follow your part ' + m0 + ' / ' + m1);
+    const verse = JSON.stringify((await partOf()).sections.verse);
+    await tap(page, 'btn-guide-play');
+    await page.waitForFunction(() => GG.debug('seq').playing === 'loop', null, { timeout: 5000 });
+    const pl = await ev(() => window.__play[window.__play.length - 1]);
+    c.ok(pl && pl.seat === 'bass' && pl.part, 'Play plays your part (seat + part) ' + JSON.stringify(pl));
+    await tap(page, 'btn-guide-play');
+    await tap(page, 'btn-guide-next');
+    c.ok(await step() === 'chorus', 'chorus');
+    await tap(page, 'part-mod-double');
+    const chorus = JSON.stringify((await partOf()).sections.chorus);
+    await tap(page, 'btn-guide-next');
+    c.ok(await step() === 'bridge', 'bridge');
+    await tap(page, 'part-mod-ring');
+    const bridge = JSON.stringify((await partOf()).sections.bridge);
+    for (let k = 0; k < 3; k++) await tap(page, 'btn-guide-next');
+    c.ok(await step() === 'name', 'tempo -> order -> name');
+    await page.locator(tid('guide-title-input')).fill('Low End Theory of Doom');
+    await tap(page, 'btn-guide-save');
+    await waitScreen(page, 'results');
+    const last = await ev(() => GG.state.songs[GG.state.songs.length - 1]);
+    c.ok(last.title === 'Low End Theory of Doom' && last.pattern.part && last.pattern.part.seat === 'bass', 'the song lands with your bass part');
+    c.ok(JSON.stringify(last.pattern.part.sections.verse) === verse && JSON.stringify(last.pattern.part.sections.chorus) === chorus && JSON.stringify(last.pattern.part.sections.bridge) === bridge,
+      'with exactly the part you wrote');
+    c.ok(last.rating && last.rating.groove > 0 && await ev(() => !!GG.songs.partRating(GG.state.songs[GG.state.songs.length - 1].pattern, 'metal')), 'rated with your part');
+    // the lead seat's sketch pad: 5 hook rows, the guitar shop
+    await ev(() => { GG.ui.closeAll(); GG.main.quickStart({ seed: 4343, bandId: 'grid_road_ramblers', seat: 'lead', openCard: false }); GG.state.card = null; GG.state.phase = 'plan'; GG.ui.openSketch(); });
+    await waitScreen(page, 'seq');
+    const sk = await ev(() => ({ dbg: GG.debug('seq'), cols: document.querySelector('[data-testid="part-grid"]').dataset.lanes, shop: document.querySelector('[data-testid="btn-kit-shop"]').textContent }));
+    c.ok(sk.dbg.mode === 'sketch' && sk.dbg.layer === 'part' && sk.cols === '5' && sk.dbg.part.seat === 'lead', 'lead sketch pad: the 5-row hook grid ' + sk.cols);
+    c.ok(/Guitar shop/.test(sk.shop), 'the sketch pad shop is your seat’s: ' + sk.shop);
+    c.ok((await audit(page)).length === 0, 'lead sketch layout ' + (await audit(page)).join('; '));
+    await tap(page, 'btn-seq-tools');
+    c.ok(await ev(() => !!document.querySelector('[data-testid="part-mod-call"]') && !!document.querySelector('[data-testid="part-clear"]')), 'the ⋯ tools hold your part’s tweaks');
+    await tap(page, 'part-mod-call');
+    c.ok((await audit(page)).length === 0, 'after a tweak from the tools ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('seq_part.png')) });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'part threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
