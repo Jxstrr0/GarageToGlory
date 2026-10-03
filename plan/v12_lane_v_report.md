@@ -95,11 +95,10 @@ scope; vocals stay fully synthesized (no samples).
   bvox events is all Lane V needs from F (`ev.vel` in the copied events). `GG.voice.velGain` uses `A.velGain` when 31
   defines it.
 - **Lane I:** (1) `GG.dsp.impulse2('plate', sr, seed)` already matches (`buildVox` calls it with seed 1201, caches per
-  sample rate). (2) `r.carve` is still missing on `wip-v12-i`: please expose the non-metal genre amps' presence filters as
-  `r.carve` = an array of peaking BiquadFilterNodes (dB) for the current genre, or `{ <genre>: [...] }`, or a function
-  `(genre) -> [...]`; GainNodes work too (then -3 dB = x0.708). `voxCarve` reads the resting gain once (`node._carve0`)
-  and dips -3 dB for 80 % of the hit. Metal keeps its own -6 in `metalVox` (do not add metal's `pres` to it). (3) If
-  renderOffline gets feel by default, the vocal path in tests follows it (no extra spec key needed).
+  sample rate). (2) `r.carve` as Lane I built it (a flat array of every built amp's carve band, peaking, `node._base` =
+  the resting dB; metal's `M.pres` included) works as is: `voxCarve` takes the rest from `_base`, skips `r.metal.pres`
+  (metalVox keeps its own -6) and dips -3 dB for 80 % of the hit (see §8). (3) renderOffline's feel plan replaces vel set
+  on events; the vox section passes `feel: false` for its vel checks.
 - **Lead:** fold `vox: A.voxStats ? A.voxStats() : null` into `debug('audio')` (contract §4.6; Lane V registered
   `debug('vox')` meanwhile; keys `{ chain, plate: 'plate'|'room'|'none', delay, genre, hits, doubles, gang3, carve,
   sends }`). Merge: Lane V touched in 30 only `articulate`, `voxHit` (one dispatch line), `metalVox` (5 guarded lines) and a
@@ -107,7 +106,8 @@ scope; vocals stay fully synthesized (no samples).
   pw_seq a new `vox` section + header line + runner line. `dist/` not committed.
 
 ## 6. Hand-overs
-- Lane I -> Lane V: `r.carve` (above). Lane F: optional `r.voxTempo(spb)` line.
+- Lane I -> Lane V: none left (`r.carve` + `impulse2` checked end to end, §8). Lane F: its player WIP already calls
+  `r.voxTempo(spb)` at song start.
 - Lead: `debug('audio').vox`; ear check of the clips (plate level, the double's width, belt brightness) with `audio_clips`
   once F gives vel (the numbers say level, presence and balance hold; taste is the owner's).
 
@@ -115,9 +115,30 @@ scope; vocals stay fully synthesized (no samples).
 - Contract wording "voices profiles gain press / ring / double": done as a parallel table (`voices.sound`), because the
   profile object rides on every vocal event and new keys would move the 1,212 timeline fingerprints.
 - Voiced murmur before b / d / g (F10 "polish if time allows"): not done; s / z / f / v got the 5-8 kHz lift.
-- The carve is untested end to end until Lane I exposes `r.carve` (guarded: absent = no carve; counter `carve` in stats).
+- Carve: closed (§8).
 - Metal gangs grow to 3 with the third voice on its own shaper + bank (panned 0.4); the 1.1 octave voice stays in the
   main bank (centre), so the metal gang is centre + right rather than left / centre / right.
 - Width: rock vocals read slightly narrower than 1.1 (0.221 -> 0.194; cause not isolated: the dry voice is denser after
   the compressor against the same room send); the real plate brings it to ~0.21. Worth an ear check.
 - Classic toggled off after a Classic-on unlock keeps the 1.1 vocals until the next rig (page reload); debug-only switch.
+
+## 8. Resume pass (2026-10-03 afternoon): checked against Lanes I + F
+- Trial integration in a scratch copy (never pushed): this branch + `wip-v12-i` `639a10a` (merged) + `wip-v12-f`
+  `6a939ed` (its diff applied; 2 hunks in `A.hit`, the tap path, clash with Lane I's tap edits: F vs I, not vocals; the
+  trial kept I's). Lane I merges into this branch with one conflict only: `tests/pw_seq.js` header + runner lines (keep
+  both: `vox` and `kit` / `real`); `src/30_audio.js` auto-merges.
+- Found + fixed (`voxCarve`, Lane V's function): (1) rest gain from Lane I's `node._base` (reading `gain.value` could catch
+  a dip in flight); (2) metal's presence nodes in `r.carve` are left to `metalVox`; (3) the first lead line of a rig's
+  first song came before the amps existed (built at the first guitar note): `voxCarve` now builds the genre's amps
+  (`ampRig`, non-metal) before carving; probe: rock's first hit carved 2 nodes, country 3 (rock's amps built earlier on
+  the same rig dip too: silent, harmless); (4) `carve` counts only hits that dipped a node; `debug('vox').carveNodes`.
+- Test harness (pw_seq `vox`): the no-plate pass answers `impulse2('plate')` with null instead of deleting `impulse2`
+  (Lane I's rooms call it: deleting threw); `feel: false` on the offline specs (Lane F's offline plan replaced the vel
+  under test); "no vel" = a render with `A._buildVox` unset (the chain adds nothing; holds with any lane in); "= the 1.1
+  render" asserted only without Lane I's rooms (with them: max diff 0.65 from Lane I's rooms v2, logged); Classic on +
+  vel = Classic on without vel. New check: live lead hits carve when `r.carve` exists.
+- Results: this branch alone `vox` ALL PASS 17 (numbers = §4 table, unchanged), `hash` 232/232, `node tests/run.js` SUITE
+  ALL PASS. Trial (I + F + V): `vox` ALL PASS 17, sim_voice 10/10; live rock carve 1 / nodes 2, punk carve 2 / nodes 4;
+  real plate width rock 0.157, metal 0.040; V/A by vel (rock) 0.6 -9.9, 0.85 -7.3, 1.0 -6.3 dB. With Lane I's rooms
+  (vocals alone, RMS before -> after): metal -22.7 -> -23.2, punk -21.3 -> -22.1, rock -20.9 -> -20.6, country -21.9 ->
+  -21.1 dB; V/A metal -6.4 -> -6.6, punk -4.0 -> -3.9, rock -7.8 -> -7.2, country -2.6 -> -1.4 dB.
