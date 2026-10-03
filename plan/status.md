@@ -228,6 +228,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.1 review fixes** (report §5): `GG.shop.sectionDef(state, id)` (seat text of Solo / Outro), `ui.SEAT_NAME / seatName /
+  seatIcon / seatOf`, `R.labelScreenPos(action)`, seat chart notes may carry `with` (a same-voice partner; `o.with` on
+  pluck/strum/lead), `drama.members[id].kit[kind]` (kit variants, content/zz_seats_drama.js), content/zz_seats_gates.js (cards
+  off a member's swap seat), swapped gate id = that member on the kit now, `tests/seat_scan.js` `oldLeak` / `swappedNames`.
 - **v1.1 as merged, lanes C + A** (full list in `02_contracts.js` V1.1 SEATS "As merged (v1.1 lanes C render + A content)"):
   - Render: `R.seatGear(seat, gearLook, kitColor, genre)` / `R.instrument`; `stage.setup({ ..., seat, lineup })` (55 passes both);
     `stage.info()` + `seat, view ('drummer'|'spot'|'spectator'), camera, drummer, you, boom, mics, seatMode, autoHits`;

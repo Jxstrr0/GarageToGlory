@@ -162,7 +162,8 @@
     'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
   // v1.1 "Seats" gate keys, folded into GATE_KEYS at integration (sim_career's gate test covers both on a drum and a bass
   // career). C.SEAT_GATE_KEYS stays as the seat subset (content tests that concat it still pass):
-  //   seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] | true (someone is the swapped drummer) |
+  //   seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] (that member is the swapped drummer AND on the
+  //     kit right now: v1.1 review) | true (someone is the swapped drummer) |
   //     false (nobody: the drum seat). The drum seat never matches swapped: true / an id. Lines and cards may also carry
   //     seat / swapped at the top level (career.seatOk; cardOk and speakerOk(state, who, line) honour both).
   C.SEAT_GATE_KEYS = ['seat', 'swapped'];
