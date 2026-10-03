@@ -187,7 +187,7 @@
         blurb: 'Fast fingers: hold a run and it plays itself. Without them a run is thinned to the beat.' } },
     rhythm: { toms: { names: { metal: 'The Drop-Tune Neck', punk: 'Fresh Strings, All Six', rock: 'The Big Chord Neck', country: 'The Capo of Destiny' },
         blurb: 'More neck, more chords. Lane 5: higher voicings for the big moments.' },
-      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Nashville Strings' },
+      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Rodeo-Grade Strings' },
         blurb: 'Lane 6: the top of the neck, for the shimmer and the shout.' },
       pedal: { names: { metal: 'The Chug Glove', punk: 'The 8th-Note Wristband', rock: 'Turbo Shark-Fin Picks', country: 'Boom-Chick Thumb Pick' },
         blurb: 'Fast picking: hold a run and the chugs keep coming. Without it a run is thinned to the beat.' } },

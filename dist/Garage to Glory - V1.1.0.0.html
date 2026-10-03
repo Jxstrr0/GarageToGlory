@@ -21734,7 +21734,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { id: 'the_engine_room', name: 'The Engine Room', icon: '⚙️', when: 'end', test: { kind: 'seatCareer', seat: 'rhythm' },
       blurb: 'Finish a career on rhythm guitar. The riff was yours the whole time. Now it is official.' },
     { id: 'solo_too_long', name: 'Solo Too Long', icon: '🎸', when: 'gig', test: { kind: 'soloTooLong' },
-      blurb: 'On lead guitar, play a song where the solo is most of your part. The dog stayed. The dog gets it.' },
+      blurb: 'On lead guitar, play a song where the solo takes over. The dog stayed. The dog gets it.' },
     { id: 'musical_chairs', name: 'Musical Chairs', icon: '🪑', when: 'meta', test: { kind: 'allSeats' },
       blurb: 'Finish a career in every seat in the band. Everybody has sat everywhere. Nobody wants the hay bale.' }
   ];
@@ -31774,7 +31774,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         blurb: 'Fast fingers: hold a run and it plays itself. Without them a run is thinned to the beat.' } },
     rhythm: { toms: { names: { metal: 'The Drop-Tune Neck', punk: 'Fresh Strings, All Six', rock: 'The Big Chord Neck', country: 'The Capo of Destiny' },
         blurb: 'More neck, more chords. Lane 5: higher voicings for the big moments.' },
-      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Nashville Strings' },
+      ride: { names: { metal: 'Seven-String of the Abyss', punk: 'A Second Pickup (Unwired)', rock: 'The Twelve-String Shimmer', country: 'Rodeo-Grade Strings' },
         blurb: 'Lane 6: the top of the neck, for the shimmer and the shout.' },
       pedal: { names: { metal: 'The Chug Glove', punk: 'The 8th-Note Wristband', rock: 'Turbo Shark-Fin Picks', country: 'Boom-Chick Thumb Pick' },
         blurb: 'Fast picking: hold a run and the chugs keep coming. Without it a run is thinned to the beat.' } },
@@ -48682,7 +48682,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (!n) { err.textContent = 'Even ' + ({ drums: 'drummers', bass: 'bass players' }[seatOf(draft.seat)] || 'guitarists') + ' need a name.'; return; }
         create.disabled = true;
         var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
-        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
+        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null,
+          gearLook: custom && custom.gearLook || null, carry: !!draft.carry });   // v1.1: the creator's "Your gear" (string seats)
         GG.main.newCareer({ slot: draft.slot || '1', bandId: (dband && dband.id) || draft.bandId,
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
           careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()), skipLessons: offerSkip ? !!draft.skipLessons : false,
@@ -50471,7 +50472,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var band = GG.content.bands && GG.content.bands[state.bandId], looks = {};
     (band && band.members || []).forEach(function (m) { looks[m.id] = m.look; });
     var v = Object.assign({}, GG.gig.venue(g.venueId) || {}, g);
+    var lineup = null;   // v1.1: the seat entry point (contract §5 cross-lane: stage.setup({ seat, lineup })); 42 falls back the same way
+    try { lineup = GG.career.lineup ? GG.career.lineup(state) : null; } catch (e) { lineup = null; }
     return { venue: v, crowd: G.attendance, capacity: g.capacity, genre: state.genre, flags: state.flags || {}, player: state.player,
+      seat: state.seat || 'drums', lineup: lineup,
       members: (GG.drama ? GG.drama.lineup(state) : state.members.filter(function (m) { return m.status === 'active'; })).map(function (m) {   // v0.4: + fill-ins
         return { id: m.id, name: m.name, role: m.role, mood: m.mood, look: m.look || looks[m.id] || null };
       }) };

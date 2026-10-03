@@ -71,7 +71,7 @@ async function creator() {
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => { localStorage.removeItem('gg.v1.unlocks.punk'); localStorage.setItem('gg.v1.unlocks.metal', JSON.stringify({ ids: ['tatSpot.knuckles', 'outfit.leathervest', 'hairStyle.mohawk'] })); });
-    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker
+    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next'); await tap(page, 'btn-logo-done');   // v1.1 seat picker (drums)   // v0.8.1: the logo picker
     await waitScreen(page, 'creator');
     const carry = await page.evaluate(() => { const b = document.querySelector('[data-testid="carry-toggle"]'); return { on: b.checked, dis: b.disabled, t: b.parentNode.textContent }; });
     c.ok(carry.on && !carry.dis && /3 unlocks from past metal careers/.test(carry.t), 'carry-over toggle offered + on: ' + JSON.stringify(carry));
@@ -310,7 +310,7 @@ async function meta() {
     await page.evaluate(() => { ['punk', 'country', 'rock', 'metal'].forEach(g => localStorage.removeItem('gg.v1.unlocks.' + g)); GG.meta.unlock('parts', ['hairStyle.dreads', 'outfit.leathervest']); });
     for (const [genre, slot] of [['punk', 'slot-1'], ['country', 'slot-2']]) {
       await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('title'); });
-      await tap(page, 'btn-new'); await tap(page, slot); await tap(page, 'genre-' + genre); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');
+      await tap(page, 'btn-new'); await tap(page, slot); await tap(page, 'genre-' + genre); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next'); await tap(page, 'btn-logo-done');   // v1.1 seat picker (drums)
       await waitScreen(page, 'creator');
       const note = await page.evaluate(() => (document.querySelector('[data-testid="meta-parts"]') || {}).textContent || '');
       c.ok(/2 looks from finished careers/.test(note), genre + ': the creator notes the looks from finished careers ' + note);

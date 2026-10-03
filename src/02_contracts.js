@@ -459,7 +459,7 @@
   ====================================================================== */
   // As merged (v1.1 lanes D audio + B sims/gameplay UI; plan/v11_lane_reports.md; contract §4.9):
   //   Folds: C.GATE_KEYS += seat, swapped (C.SEAT_GATE_KEYS = that subset); C.ACH_KINDS += seatCareer { seat }, soloTooLong
-  //   { min? (default 0.4, spotlight notes / all your notes), by?: 'time' }, allSeats (= GG.achieve.SEAT_KINDS). C.SEAT_KINDS unchanged.
+  //   { min? (default 0.3 after the lead's retune on D's real lead charts; spotlight notes / all your notes), by?: 'time' }, allSeats (= GG.achieve.SEAT_KINDS). C.SEAT_KINDS unchanged.
   //   GG.audio (30): seatVoiceFor(kind) -> 'pluck'|'strum'|'lead'; pluck|strum|lead(midi, when, o) -> handle { fn, kind, midi, t,
   //     end, len, hold, n, repeats, released, cut } | null (muted / no audio); o = { len, hold, kind, power, mute, strum, up, bend,
   //     trem, ring, repeats: [s after t] (a run on the grid), seat }; booked like hit (when < 1 s ahead, else now + 5 ms), class
@@ -486,6 +486,33 @@
   //   UI: 51 screen 'seat' (testids seat-drums|bass|rhythm|lead, seat-next; tap = A.seatPreview, leaving = A.stopPreview;
   //     emits 'seat:picked'); 55 string lanes (str0..5, holds/runs/chords drawn); 54 "Your part"; 5k "{Instrument} shop";
   //     59b "{Instrument} takes".
+  // As merged (v1.1 lanes C render + A content; plan/v11_lane_c_report.md, plan/v11_lane_a_report.md; contract §4.9):
+  //   Render (40-45): R.seatGear(seat, gearLook, kitColor, genre) -> the instrument group (3-4 body shapes per string seat,
+  //     guard, headstock sticker = the logo canvas; colour from gearLook, else the kit colour); R.instrument (the same builder).
+  //     stage.setup({ ..., seat, lineup }) (defaults state.seat / career.lineup(state); 55 stageData may omit both).
+  //     stage.info() adds seat, view ('drummer' | 'spot' | 'spectator'), camera ('kit' | 'spot' | 'spectator'), drummer (the id on
+  //     the throne: 'player' on drums; the drama fill-in 'fill_drums' when the swapped drummer quits), you ({ seat, gear,
+  //     sticker, x, z, strums, fret } | null), boom (a singing drummer's boom mic), mics, seatMode, autoHits. van.info().gigBag
+  //     (the seat | null); carpet.info().you ({ seat, gear } | null). The garage: the swapped drummer at the kit, the kit spot
+  //     reads "Your rig" (opens the songwriter), you noodle in the amp corner (debug('render').seat).
+  //   GG.creator (2b): sanitizeGearLook(gearLook, seat?) -> C.GEAR_LOOK, gearShapes(seat), gearDefault(seat, genre), gearNames(seat)
+  //     -> { shapes, guards, stickers } (content creator.gear), stageLookFor(who, contentMember?); prepare / init / apply take
+  //     gearLook. UI 5j: openLook({ ..., seat, gearLook, logo }): on a string seat the Kit tab is "Your gear" (lk-tab-gear;
+  //     lk-gear-shape-<id>, lk-gear-sw-<i>, lk-gear-color-kit, lk-gear-guard-<id>, lk-gear-sticker-none|logo); onDone adds
+  //     gearLook (51 passes it to creator.prepare). 5l recap photo shows your instrument.
+  //   Content (A; src/content/zz_seats.js, zz_seats_drummers.js): bands.<id>.seatLines { drums, bass, rhythm, lead } (51's "who
+  //     moves" line); CARD top-level seat?: [seat] / swapped?: memberId (also on chat lines; gatePasses + cardOk); card id
+  //     prefixes arc_ (the three role arcs: flags bassArc / rhythmArc / leadArc, then <arc>Done at step 6), fin_ (12 band finales,
+  //     once, band + seat + <arc>Done), sw_ (12 first-week cards forceWeek 2 + 48 Monday cards per swapped member);
+  //     shop.gear[i].bySeat[seat] = { names: { <genre> }, blurb } and shop.kit[i].bySeat[seat] (amp tiers; lead tier 2 = the
+  //     whammy); shop.byBand[b].lines.drummerGear (gated swapped: <id>); creator.gear { shapes: { <seat>: { <id>: name } },
+  //     guards, stickers }; grooves.coach.bySeat[seat][step] + coach[genre].bySeat[seat][step] (steps drums | verse | chorus |
+  //     bridge); lines.songReactions[id].kit / .bySeat[seat]; recruits.drummers { nicks: { <genre>: [..] } }; drama.fillIns.drums;
+  //     endings.player.bass|rhythm|lead[tier] (drums stays endings.player.drums); endings.epilogues[id][i].when.seatRole
+  //     ([seat roles]) + inLineup; content.seatAchievements (low_end, engine_room, solo_too_long, musical_chairs: kinds
+  //     seatCareer / soloTooLong / allSeats; they join content.achievements because C.ACH_KINDS lists the kinds).
+  //   Tests: tests/seat_scan.js (the strict string-seat leak scan: leak(text, seatAware(GG)), LEFT phrases);
+  //     SEAT=bass|rhythm|lead|all LEAK_YEARS=n node tests/sim_bands.test.js; tests/content_seats.test.js.
 
   /* ======================================================================
    EVENTS (GG.emit(name, payload))            emitted by

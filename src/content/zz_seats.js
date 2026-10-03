@@ -531,7 +531,7 @@
     { id: 'the_engine_room', name: 'The Engine Room', icon: '⚙️', when: 'end', test: { kind: 'seatCareer', seat: 'rhythm' },
       blurb: 'Finish a career on rhythm guitar. The riff was yours the whole time. Now it is official.' },
     { id: 'solo_too_long', name: 'Solo Too Long', icon: '🎸', when: 'gig', test: { kind: 'soloTooLong' },
-      blurb: 'On lead guitar, play a song where the solo is most of your part. The dog stayed. The dog gets it.' },
+      blurb: 'On lead guitar, play a song where the solo takes over. The dog stayed. The dog gets it.' },
     { id: 'musical_chairs', name: 'Musical Chairs', icon: '🪑', when: 'meta', test: { kind: 'allSeats' },
       blurb: 'Finish a career in every seat in the band. Everybody has sat everywhere. Nobody wants the hay bale.' }
   ];

@@ -192,7 +192,10 @@
     var band = GG.content.bands && GG.content.bands[state.bandId], looks = {};
     (band && band.members || []).forEach(function (m) { looks[m.id] = m.look; });
     var v = Object.assign({}, GG.gig.venue(g.venueId) || {}, g);
+    var lineup = null;   // v1.1: the seat entry point (contract §5 cross-lane: stage.setup({ seat, lineup })); 42 falls back the same way
+    try { lineup = GG.career.lineup ? GG.career.lineup(state) : null; } catch (e) { lineup = null; }
     return { venue: v, crowd: G.attendance, capacity: g.capacity, genre: state.genre, flags: state.flags || {}, player: state.player,
+      seat: state.seat || 'drums', lineup: lineup,
       members: (GG.drama ? GG.drama.lineup(state) : state.members.filter(function (m) { return m.status === 'active'; })).map(function (m) {   // v0.4: + fill-ins
         return { id: m.id, name: m.name, role: m.role, mood: m.mood, look: m.look || looks[m.id] || null };
       }) };

@@ -399,7 +399,8 @@
         if (!n) { err.textContent = 'Even ' + ({ drums: 'drummers', bass: 'bass players' }[seatOf(draft.seat)] || 'guitarists') + ' need a name.'; return; }
         create.disabled = true;
         var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
-        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
+        if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null,
+          gearLook: custom && custom.gearLook || null, carry: !!draft.carry });   // v1.1: the creator's "Your gear" (string seats)
         GG.main.newCareer({ slot: draft.slot || '1', bandId: (dband && dband.id) || draft.bandId,
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
           careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()), skipLessons: offerSkip ? !!draft.skipLessons : false,

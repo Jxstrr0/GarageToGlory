@@ -23,6 +23,8 @@
 const path = require('path');
 const { open, checker, shotName } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
+const SCAN = require('./seat_scan');
+const AWARE = SCAN.seatAware(require('./_load')());   // the seat-aware content lines (node-loaded content)
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
 const tid = id => `[data-testid="${id}"]`;
@@ -98,10 +100,16 @@ async function pick() {
     const head = await page.evaluate(() => document.querySelector('.screen-h') ? [...document.querySelectorAll('.screen-h')].pop().textContent : '');
     c.ok(/rhythm guitar\?/i.test(head), 'the creator asks for the seat: ' + head);
     bad = await audit(page); c.ok(!bad.length, 'creator layout ' + bad.join('; '));
+    // v1.1 integration: Customize opens Lane C's "Your gear" tab for the seat picked on 'seat'; the pick reaches the career
+    await tap(page, 'btn-customize'); await waitScreen(page, 'look');
+    const lk = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="lk-tab-"]')].map(e => e.dataset.testid));
+    c.ok(lk.includes('lk-tab-gear') && !lk.includes('lk-tab-kit'), 'ui.openLook({ seat: rhythm }): "Your gear" replaces Kit ' + lk.join(','));
+    await tap(page, 'lk-tab-gear'); await tap(page, 'lk-gear-shape-offset'); await tap(page, 'lk-done'); await waitScreen(page, 'creator');
     await page.fill(tid('creator-name'), 'Riff Raff');
     await tap(page, 'btn-create'); await waitScreen(page, 'coldopen');
-    const st = await page.evaluate(() => { const s = GG.state; return { seat: s.seat, rox: s.members.find(m => m.id === 'rox').seatRole, lanes: GG.career.seatLanes(s), sl: s.gear.seatLanes, drummer: GG.career.drummerId(s) }; });
+    const st = await page.evaluate(() => { const s = GG.state; return { seat: s.seat, rox: s.members.find(m => m.id === 'rox').seatRole, lanes: GG.career.seatLanes(s), sl: s.gear.seatLanes, drummer: GG.career.drummerId(s), gl: s.player.gearLook }; });
     c.ok(st.seat === 'rhythm' && st.rox === 'drums/vocals' && st.drummer === 'rox' && st.sl && st.lanes === 4, 'a rhythm career: Rox drums and sings ' + JSON.stringify(st));
+    c.ok(st.gl && st.gl.shape === 'offset', 'the creator\'s gear pick reaches player.gearLook ' + JSON.stringify(st.gl));
     // a second career through the same screens, left on Drums: v1.0's drummer
     await page.goto(url); await page.waitForSelector(tid('btn-new'));
     await tap(page, 'btn-new'); await tap(page, 'slot-2'); await waitScreen(page, 'genre');
@@ -322,16 +330,20 @@ async function garage() {
   try {
     await page.waitForSelector(tid('btn-new'));
     const has = await page.evaluate(() => !!(GG.render && (GG.render.seatGear || GG.render.instrument)));
-    if (!has) { console.log('SKIP garage: GG.render.seatGear / R.instrument missing (Lane C not merged yet)'); await close(); c.ok(true, 'skipped'); c.done(); return; }
+    c.ok(has, 'GG.render.seatGear / R.instrument (Lane C)');
     for (const [band, seat, drummer] of [['hail_damage', 'bass', 'kenji'], ['gravel_kings', 'rhythm', 'chase'], ['grid_road_ramblers', 'lead', 'earl']]) {
       await page.evaluate(([band, seat]) => { GG.ui.closeAll(); GG.main.quickStart({ seed: 11, bandId: band, seat, openCard: false }); GG.ui.closeAll(); }, [band, seat]);
       await page.waitForTimeout(1200);
       const g = await page.evaluate(() => { const d = GG.debug('render'); return { scene: d.scene, seat: d.seat || null, available: d.available }; });
       if (!g.available) { console.log('SKIP garage: no WebGL in this browser'); break; }
-      if (!g.seat || !('rig' in g.seat)) { console.log('SKIP garage: the garage has no seat debug yet (Lane C)'); break; }
+      if (!g.seat || !('rig' in g.seat)) { c.ok(false, 'the garage has no seat debug (Lane C) ' + JSON.stringify(g)); break; }
       c.ok(g.seat.seat === seat && g.seat.rig && g.seat.drummer === drummer, band + '/' + seat + ': ' + drummer + ' at the kit, your rig ' + JSON.stringify(g.seat));
       c.ok(!g.seat.label || /Your rig/.test(g.seat.label), band + '/' + seat + ': the kit hotspot reads "Your rig" ' + g.seat.label);
       await page.screenshot({ path: path.join(CACHE, shotName('seats_garage_' + seat + '.png')) });
+      // Lane A's strict seat leak scan (tests/seat_scan.js) over the week UI's visible text on this string seat
+      const lines = await page.evaluate(() => (document.body.innerText || '').split(/\n+/).map(t => t.trim()).filter(Boolean));
+      const leaks = lines.map(t => [t, SCAN.leak(t, AWARE)]).filter(x => x[1]);
+      c.ok(!leaks.length, band + '/' + seat + ': no drum words aimed at you in the week UI ' + JSON.stringify(leaks.slice(0, 3)));
     }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'garage threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
@@ -354,9 +366,9 @@ async function stage() {
     await waitScreen(page, 'gig-set');
     await page.waitForTimeout(800);
     const info = await page.evaluate(() => GG.render && GG.render.stage && GG.render.stage.info ? GG.render.stage.info() : null);
-    if (!info || info.view !== 'spot') { console.log('SKIP stage: stage.info() has no seat view yet (Lane C not merged) ' + JSON.stringify(info && { seat: info.seat, view: info.view })); await close(); c.ok(true, 'skipped'); c.done(); return; }
     c.ok(info.seat === 'lead' && info.view === 'spot', 'the lead seat stands at its spot ' + JSON.stringify({ seat: info.seat, view: info.view }));
     c.ok(info.drummer === 'benny' || (info.drummer && info.drummer.id === 'benny'), 'Benny on the riser ' + JSON.stringify(info.drummer));
+    c.ok(info.you && info.you.seat === 'lead' && !!info.you.gear && info.camera === 'spot', 'you stand with your instrument, over-the-shoulder camera ' + JSON.stringify({ you: info.you, camera: info.camera }));
     await page.screenshot({ path: path.join(CACHE, shotName('seats_stage.png')) });
     await page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; });
     await tap(page, 'btn-gig-start');
