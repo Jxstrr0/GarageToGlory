@@ -331,9 +331,13 @@
     var act = {}, mine = {}, b = ui.band(st), out = [], ask = [], answered = 0;
     ui.active(st).forEach(function (m) { act[m.id] = 1; });
     ((b && b.members) || []).concat(st.members || []).forEach(function (m) { if (m && m.id) mine[m.id] = 1; });
+    var K = GG.career;
     list.forEach(function (x) {
       var who = x && typeof x === 'object' ? x.who : null;
-      if (!who || who === 'reporter' || (!mine[who] && String(who).charAt(0) !== '@')) { ask.push(x); return; }
+      var q = !who || who === 'reporter' || (!mine[who] && String(who).charAt(0) !== '@');
+      // v1.1: a line gated off this seat (seat / swapped, career.speakerOk) is gone; an answer takes its question with it
+      if (x && typeof x === 'object' && K && K.speakerOk && !K.speakerOk(st, q ? null : who, x)) { if (!q) ask = []; return; }
+      if (q) { ask.push(x); return; }
       if (act[ui.speaker(who, st)]) { out = out.concat(ask, [x]); answered++; }
       ask = [];
     });

@@ -13,10 +13,13 @@
 // either kind of code (GG.save.readCode: a meta-only code asks "Restore Hall of Fame and trophies?" then GG.meta.mergeLite; a
 // career code loads after the usual confirm, then merges its Hall of Fame lite); the creator notes looks from finished
 // careers (meta-parts).
+// v1.1 (SEATS): band intro → the seat picker ('seat': seat-drums|bass|rhythm|lead + seat-next; tap a card = a ~3 s
+// preview, GG.audio.seatPreview; leaving = GG.audio.stopPreview; Drums preselected; fixed for the career; emits
+// 'seat:picked' { seat, swapped }) → the logo → the creator (copy by seat; ui.openLook({ seat })) → newCareer({ seat }).
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
-  var draft = {};                  // new-career choices in progress: { slot, bandId }
+  var draft = {};                  // new-career choices in progress: { slot, bandId, genre, seat (v1.1), ... }
   var storageWarned = false;
 
   // The genre cards (labels + icons; names/spaces/cities only when content is missing a band, which then can't be picked).
@@ -78,7 +81,7 @@
   function slotButton(r, label, testid, onPick, current) {
     return btn('.slot-btn', { testid: testid, disabled: !onPick, onclick: onPick }, [
       el('span.n', label),
-      el('span.grow', [el('div.t', r.exists ? ((r.summary && r.summary.player) || 'Your drummer') + (current ? ' (current)' : '') : 'Empty slot'),
+      el('span.grow', [el('div.t', r.exists ? ((r.summary && r.summary.player) || 'You') + (current ? ' (current)' : '') : 'Empty slot'),
         el('div.d', ui.slotSummary(r))])
     ]);
   }
@@ -219,7 +222,7 @@
         ]));
       });
       ui.append(s.body, [backRow(s, 'Pick your poison', 'New career · slot ' + (draft.slot || '1')),
-        el('p.screen-sub', "You're the drummer. You're always the drummer."), list]);
+        el('p.screen-sub', 'Four bands, four rooms. Pick one, then pick where you stand in it.'), list]);
     }
   });
 
@@ -247,15 +250,86 @@
           band && band.blurb ? el('p', { style: 'font-size:16px' }, band.blurb) : null,
           el('div.panel.warm.row', { testid: 'intro-home' }, [el('span', { style: 'font-size:28px' }, SPACE_ICON[spaceKindOf(band)] || '🏠'), el('div.grow', [el('div.caps', 'Home base'),
             el('div', { style: 'font-weight:800' }, home.charAt(0).toUpperCase() + home.slice(1) + (city ? ', ' + city : ''))])]),
-          mates.children.length ? el('div.panel', [el('div.caps', { style: 'margin-bottom:4px' }, 'The band (plus you, on drums)'), mates]) : null
+          mates.children.length ? el('div.panel', [el('div.caps', { style: 'margin-bottom:4px' }, 'The band (plus you)'), mates]) : null
         ])
       ]);
-      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () {   // v0.8.1: the logo picker first (5m)
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-intro-next', onclick: function () {   // v1.1: the seat picker, then the logo (5m)
         if (!band) return;
-        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: band.id, genre: band.genre || draft.genre, band: name, onDone: function () { ui.show('creator'); } });
-        else ui.show('creator');
+        ui.show('seat');
       } }, "That's my band →"));
     }
+  });
+
+  /* ---- New career: the seat (v1.1 "Seats", plan_contract_1.1 §0 / §5 Lead) ------------------------------------- */
+  // Four cards: who moves to the drums (band.seatLines[seat] when content has it, else a plain line from the swap
+  // table) and your stage spot. A tap picks the card and plays its ~3 s preview; Drums is preselected; the seat is
+  // fixed for the whole career. Leaving the screen (back or next) stops the preview.
+  var SEAT_ICON = { drums: '🥁', bass: '🎸', rhythm: '🎸', lead: '🎸' };
+  var SEAT_NAME = { drums: 'Drums', bass: 'Bass', rhythm: 'Rhythm guitar', lead: 'Lead guitar' };
+  function seatWord(seat) { var T = GG.contracts.SEAT_TOKENS || {}; return (T[seat] && T[seat].seat) || 'drums'; }
+  function seatOf(x) { return (GG.contracts.SEATS || ['drums']).indexOf(x) >= 0 ? x : 'drums'; }
+  function firstName(m) { return m ? (m.name || m.id || '').split(' ')[0] : ''; }
+  function seatSinger(band, swappedId) {
+    var ms = (band && band.members) || [];
+    return ms.filter(function (m) { return m.id !== swappedId && /vocal|sing/i.test(m.role || ''); })[0] || null;
+  }
+  function seatLine(band, seat) {
+    var L = band && band.seatLines, t = L && typeof L[seat] === 'string' ? L[seat].trim() : '';
+    if (t && t.indexOf('{') < 0) return t;   // content lines are plain words (a stray token falls back)
+    var id = GG.career.seatSwap(band && band.id, seat), m = id ? ((band && band.members) || []).filter(function (x) { return x.id === id; })[0] : null;
+    if (seat === 'drums' || !m) return 'You take the kit. Nobody moves.';
+    return firstName(m) + ' moves to the drums' + (/vocal|sing/i.test(m.role || '') ? ' and sings from the kit.' : '.');
+  }
+  function seatSpot(band, seat) {
+    if (seat === 'drums') return 'Behind the kit, on the riser';
+    if (seat === 'bass') return 'Stage left';
+    if (seat === 'rhythm') return 'Stage right';
+    var sg = seatSinger(band, GG.career.seatSwap(band && band.id, seat));
+    return 'Up front, beside ' + (sg ? firstName(sg) : 'the singer');
+  }
+  function stopSeatPreview() { try { if (GG.audio && GG.audio.stopPreview) GG.audio.stopPreview(); } catch (e) { console.warn('[ui] stopPreview', e); } }
+  ui.seatLine = seatLine; ui.seatSpot = seatSpot;   // tests / other screens
+  ui.define('seat', {
+    kind: 'full',
+    build: function (s) {
+      var band = draftBand();
+      if (!band) { ui.close(s.id); return; }
+      if (draft.seatBand !== band.id) { draft.seat = 'drums'; draft.seatBand = band.id; }   // Drums preselected per band
+      draft.seat = seatOf(draft.seat);
+      var g = genreRow(band.genre || draft.genre), list = el('div.stack.seat-list', { style: 'margin-top:14px' });
+      (GG.contracts.SEATS || ['drums']).forEach(function (seat) {
+        var on = seat === draft.seat;
+        list.appendChild(btn('.seat-card' + (on ? '.on' : ''), { testid: 'seat-' + seat, 'aria-pressed': on ? 'true' : 'false', data: { seat: seat },
+          onclick: function () {
+            draft.seat = seat;
+            try {
+              if (GG.audio && GG.audio.unlock) GG.audio.unlock();
+              if (GG.audio && GG.audio.seatPreview) GG.audio.seatPreview(band.id, seat);
+            } catch (e) { console.warn('[ui] seatPreview', e); }
+            s.rerender();
+          } }, [
+          el('span.ico', SEAT_ICON[seat] || '🎸'),
+          el('span.grow', [
+            el('div.g', SEAT_NAME[seat] || seat),
+            el('div.b', { testid: 'seat-line-' + seat }, seatLine(band, seat)),
+            el('div.c', [el('span.caps', 'Stage spot '), seatSpot(band, seat)])
+          ]),
+          on ? el('span.tag.amber', 'Picked') : el('span.tag', '▶ Hear it')
+        ]));
+      });
+      ui.append(s.body, [backRow(s, 'Pick your seat', band.name + ' · ' + g.label),
+        el('p.screen-sub', 'Take any seat in the band. Whoever had it moves to the drums. Tap a card to hear it.'),
+        list,
+        el('p.small.dim', { testid: 'seat-fixed', style: 'margin-top:12px' }, 'Your seat is yours for the whole career. No switching mid-tour.')]);
+      s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'seat-next', onclick: function () {
+        var seat = seatOf(draft.seat);
+        stopSeatPreview();
+        GG.emit('seat:picked', { seat: seat, swapped: GG.career.seatSwap(band.id, seat) });
+        if (ui.openLogo) ui.openLogo({ mode: 'new', bandId: band.id, genre: band.genre || draft.genre, band: band.name, onDone: function () { ui.show('creator'); } });
+        else ui.show('creator');
+      } }, (draft.seat === 'drums' ? "I'm on drums" : "I'm on " + seatWord(draft.seat)) + ' →'));
+    },
+    onClose: function () { stopSeatPreview(); }
   });
 
   /* ---- New career: character creator -------------------------------------------------------------------- */
@@ -298,10 +372,10 @@
       var customize = btn('.btn.block.cr-custom', { testid: 'btn-customize', disabled: !GG.creator || !ui.openLook, onclick: function () {
         var pre = list.filter(function (p) { return p.id === draft.presetId; })[0] || list[0], c = draft.useCustom && draft.custom;
         var band = draftBand();
-        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, bandId: band && band.id, carry: !!draft.carry,
+        ui.openLook({ mode: 'new', genre: genre, band: band && band.name, bandId: band && band.id, carry: !!draft.carry, seat: seatOf(draft.seat),
           look: c ? c.look : pre.look, stageLook: c ? c.stageLook : null, kit: c ? c.kit : GG.creator.newKit(pre.kitColor, band && band.id),   // v0.9: the band's own throne
           onDone: function (out) { draft.custom = out; draft.useCustom = true; var cr = ui.get('creator'); if (cr) cr.rerender(); } });
-      } }, draft.custom && draft.useCustom ? '✂ Keep tweaking your look' : '✂ Customize: face, hair, ink, stage outfit, kit');
+      } }, draft.custom && draft.useCustom ? '✂ Keep tweaking your look' : '✂ Customize: face, hair, ink, stage outfit, ' + (seatOf(draft.seat) === 'drums' ? 'kit' : 'gear'));
       var carryBox = el('input', { type: 'checkbox', testid: 'carry-toggle', checked: !!draft.carry && carryN > 0, disabled: !carryN,
         onchange: function () { draft.carry = carryBox.checked; } });
       var carry = el('label.cr-carry', { htmlFor: 'cr-carry' }, [carryBox, el('span', carryN ? 'Carry over ' + carryN + ' unlock' + (carryN === 1 ? '' : 's') + ' from past ' + genre + ' careers'
@@ -322,19 +396,20 @@
       }));
       create = btn('.btn.primary.big.block', { testid: 'btn-create', disabled: !(draft.name || '').trim(), onclick: function () {
         var n = (name.value || '').trim().slice(0, 16);
-        if (!n) { err.textContent = 'Even drummers need a name.'; return; }
+        if (!n) { err.textContent = 'Even ' + ({ drums: 'drummers', bass: 'bass players' }[seatOf(draft.seat)] || 'guitarists') + ' need a name.'; return; }
         create.disabled = true;
         var custom = draft.useCustom && draft.custom;   // v0.8: the full creator's look + kit, carried-over unlocks
         if (GG.creator) GG.creator.prepare({ look: custom ? custom.look : null, stageLook: custom ? custom.stageLook : null, kit: custom ? custom.kit : null, carry: !!draft.carry });
         GG.main.newCareer({ slot: draft.slot || '1', bandId: (dband && dband.id) || draft.bandId,
           player: { name: n, nick: (nick.value || '').trim().slice(0, 16), presetId: draft.presetId, look: custom ? custom.look : undefined, kitColor: custom ? custom.kit.color : undefined },
-          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()), skipLessons: offerSkip ? !!draft.skipLessons : false });
+          careerDifficulty: draft.careerDifficulty || 'normal', seed: GG.hashSeed(n + Date.now()), skipLessons: offerSkip ? !!draft.skipLessons : false,
+          seat: seatOf(draft.seat) });   // v1.1: the seat picked on 'seat' (drums when the picker was skipped)
         ui.closeAll();
         ui.show('coldopen');
       } }, 'Start the band');
       ui.append(s.body, [
-        backRow(s, "Who's on drums?", 'Character'),
-        el('p.screen-sub', "You. You're on drums. You founded the band, you can't quit, and nobody can fire you."),
+        backRow(s, "Who's on " + seatWord(seatOf(draft.seat)) + '?', 'Character'),
+        el('p.screen-sub', "You. You're on " + seatWord(seatOf(draft.seat)) + ". You founded the band, you can't quit, and nobody can fire you."),
         el('div.stack', { style: 'margin-top:16px' }, [
           el('div.field', [el('label', { htmlFor: 'cr-name' }, 'Your name'), name, err]),
           el('div.field', [el('label', { htmlFor: 'cr-nick' }, 'Stage nickname'), nick]),

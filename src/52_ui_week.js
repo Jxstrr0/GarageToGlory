@@ -609,6 +609,14 @@
      ====================================================================================================== */
   var SPOTS = [['plan', '📋', 'Whiteboard'], ['laptop', '💻', 'Laptop'], ['kit', '🥁', 'Drum kit'], ['gigboard', '📌', 'Gig board'],
     ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door']];
+  // v1.1 SPOTS by seat: the 'kit' spot opens the songwriter on every seat; on a string seat it is "Your rig" (the swapped
+  // drummer has the kit). -> [action, icon, label, seat]
+  function spotOf(action, st) {
+    var x = SPOTS.filter(function (y) { return y[0] === action; })[0], seat = GG.career && GG.career.seatOf && st ? GG.career.seatOf(st) : 'drums';
+    if (action === 'kit' && seat !== 'drums') return ['kit', '🎸', 'Your rig', seat];
+    return [x[0], x[1], x[2], seat];
+  }
+  ui.spotOf = spotOf;
   // v0.9: the backdrop is the band's own tier-0 room (sp-garage | sp-laundromat | sp-stripmall | sp-quonset, CSS in the
   // 00_shell v0.9 GENRES block): a garage door, a row of dryers, a shop window + till, a corrugated arch.
   function refreshFallback() {
@@ -620,6 +628,8 @@
       fallback.dataset.space = kind;
       if (fallback.noteEl) fallback.noteEl.textContent = 'The 3D ' + ui.space(st).replace(/^the /i, '') + " couldn't start on this device, so here's the budget version.";
     }
+    var kitBtn = fallback.querySelector('[data-testid="hs-kit"]'), sk = spotOf('kit', st);   // v1.1: "Your rig" on a string seat
+    if (kitBtn && kitBtn.dataset.seat !== sk[3]) { ui.clear(kitBtn); ui.append(kitBtn, [el('span', sk[1]), sk[2]]); kitBtn.dataset.seat = sk[3]; }
     ui.clear(fallback.mates);
     ((st && st.members) || []).forEach(function (m) {
       var who = ui.who(m.id);

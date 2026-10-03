@@ -130,6 +130,7 @@ async function runBand(bandId) {
     c.ok(band.members.every(m => intro.includes(m.name)) && intro.includes(band.spaceName) && intro.includes(band.name), 'intro: ' + band.name + ', its members and home base');
     await check('intro');
     await tap(page, 'btn-intro-next');
+    await waitScreen(page, 'seat'); await tap(page, 'seat-next');   // v1.1: the seat picker (drums preselected)
     await waitScreen(page, 'logo');
     await check('logo');
     await tap(page, 'btn-logo-done');

@@ -286,6 +286,7 @@ async function skip() {
     await waitScreen(page, 'genre');
     await tap(page, 'genre-rock');
     await tap(page, 'btn-intro-next');
+    await tap(page, 'seat-next');   // v1.1: the seat picker (drums preselected)
     await waitScreen(page, 'logo'); await tap(page, 'btn-logo-done');
     await waitScreen(page, 'creator');
     await page.fill(tid('creator-name'), 'Skipper');

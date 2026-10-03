@@ -84,10 +84,12 @@
       s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
       s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
       s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
-      s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
-      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', 'Mirrors the lanes: kick on the right.'));
-      s.body.appendChild(toggle(s, 'drumSync', 'Drum sync', "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
-      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song'));
+      var strSeat = !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums');   // v1.1: a string seat has no kick lane
+      if (!strSeat) s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
+      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
+      s.body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
+        : "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
+      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
 
       // Audio
       s.body.appendChild(sec('Audio + timing', 'set-audio'));
@@ -326,7 +328,7 @@
       GG.songs.best(st).forEach(function (song) {
         var r = song.rating || {};
         list.appendChild(btn('.song', { testid: 'practice-song-' + song.id, onclick: function () { ui.practice(song.id, speed); } },
-          el('div.row', [el('span', { style: 'font-size:20px' }, '🥁'), el('div.grow', [el('b', song.title),
+          el('div.row', [el('span', { style: 'font-size:20px' }, GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums' ? '🎸' : '🥁'), el('div.grow', [el('b', song.title),
             el('div.tiny.dim', 'Diff ' + (r.difficulty || '?') + ' · ' + Math.round((song.pattern && song.pattern.bpm || 120) * speed) + ' bpm at this speed')])])));
       });
       s.body.appendChild(list);
@@ -338,7 +340,8 @@
     var e = ui.get('seq');
     if (!e || !e.data || e.data.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
     if (e.body.querySelector('[data-testid="kit-practice"]')) return;
-    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song instead'));
+    var strSeat = GG.career && GG.career.seatOf && GG.career.seatOf(GG.state) !== 'drums';   // v1.1: on a string seat this is your rig
+    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song instead'));
   });
 
   GG.registerDebug('settings', function () {
