@@ -1289,7 +1289,7 @@
   // makes an oscillator of a type: up to ~8 ms on a 4x-throttled phone), then the hits, then the render
   // (off the main thread), then the copies out; a slice adds hits while it is under PRE_STEP ms. wait() pauses it while a song
   // plays (never mid-song).
-  var PRE_WAVES = ['sine', 'triangle', 'square'], PRE_STEP = 2;   // (ms of graph building / copying per slice)
+  var PRE_WAVES = ['sine', 'triangle', 'square'], PRE_STEP = 1;   // (ms of graph building / copying per slice)
   // A yield to the event loop without setTimeout's 4 ms clamp (a MessageChannel task), so a build of ~100 slices isn't
   // mostly waiting; the browser still paints between tasks.
   var soonQ = [], soonCh = null;
@@ -1298,12 +1298,13 @@
     if (!soonCh) { soonCh = new MessageChannel(); soonCh.port1.onmessage = function () { var f = soonQ.shift(); if (f) f(); }; if (soonCh.port1.unref) soonCh.port1.unref(); }
     soonQ.push(fn); soonCh.port2.postMessage(0);
   }
+  function sliceNote(o, t0) { var d = performance.now() - t0; if (!(d <= o.slice)) o.slice = d; }   // o.slice: the longest slice (wall ms)
   function pre2Phase(k, R, hits, sr, stale, wait, done, fail) {
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, at = [], tot = 0.01, oc, i, r, w = 0, h = 0, out = [], buf = null;
     for (i = 0; i < hits.length; i++) { at.push(tot); tot += hits[i].len + 0.02; }
     try { oc = new OAC(1, Math.ceil(tot * sr), sr); } catch (e) { fail(e); return; }
     r = { ctx: oc, noise: rig.noise, busy: [], band: [], cap: 999, bandCap: 999, kit: k, tier: rig.tier };
-    function slice(fn) { soon(function () { if (stale()) return; if (wait()) { setTimeout(function () { slice(fn); }, 1000); return; } var t0 = performance.now(); try { fn(); } catch (e) { fail(e); return; } PRE2.slice = Math.max(PRE2.slice, performance.now() - t0); }, 0); }
+    function slice(fn) { soon(function () { if (stale()) return; if (wait()) { setTimeout(function () { slice(fn); }, 1000); return; } var t0 = performance.now(); try { fn(); } catch (e) { fail(e); return; } sliceNote(PRE2, t0); }, 0); }
     function build() {
       if (w < PRE_WAVES.length) { oc.createOscillator().type = PRE_WAVES[w++]; slice(build); return; }   // (warms the table; never started)
       var t1 = performance.now();   // hits while this slice is under PRE_STEP ms (at least one)
@@ -1426,7 +1427,7 @@
     function timed(fn, then) {   // one slice (a MessageChannel task), timed into SK.slice
       soon(function () {
         if (SK.building !== kit.id) return;
-        var s0 = performance.now(); fn(); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
+        var s0 = performance.now(); fn(); sliceNote(SK, s0);
         then();
       });
     }
@@ -1435,7 +1436,7 @@
       if (i >= J.jobs.length) { SK.ready = true; SK.building = null; SK.ms = Math.round(performance.now() - t0); return; }
       if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
       var job = J.jobs[i];
-      var a0 = performance.now(), ab = b64ab(job[2]); SK.slice = Math.max(SK.slice || 0, performance.now() - a0);
+      var a0 = performance.now(), ab = b64ab(job[2]); sliceNote(SK, a0);
       decodeAB(ctx, ab, function (b) {   // then two more slices: the peak, then the onset + the copy (each a short loop)
         var pk;
         timed(function () { pk = peakOf(b.getChannelData(0), b.sampleRate); }, function () {
@@ -1818,10 +1819,10 @@
     KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
     if (!KS.busy) { KS.busy = true; soon(ksPump); }
   }
-  // ~2 ms of string per slice: GG.dsp.pluckJob renders a string KS_STEP samples per step (then its gain pass, then its add into
+  // ~1 ms of string per slice: GG.dsp.pluckJob renders a string KS_STEP samples per step (then its gain pass, then its add into
   // the sum, the same per step: the same samples as one pluck call), so no slice runs long on a 4x-throttled phone.
   // One job at a time, so its string and its sum render into two reused scratch arrays (no garbage per string).
-  var KS_SLICE_MS = 2, KS_STEP = 512, ksTmp = null, ksAcc = null;
+  var KS_SLICE_MS = 1, KS_STEP = 512, ksTmp = null, ksAcc = null;
   function ksScratch(n) {
     if (!ksTmp || ksTmp.length < n) { ksTmp = new Float32Array(n); ksAcc = new Float32Array(n); }
     var acc = ksAcc.subarray(0, n); acc.fill(0); return acc;
@@ -1853,7 +1854,7 @@
       if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; ksPut(ctx, sp, job.acc); job = KS.queue[0]; }
       if (performance.now() - t0 >= KS_SLICE_MS) break;
     }
-    KS.slice = Math.max(KS.slice, performance.now() - t0);
+    sliceNote(KS, t0);
     soon(ksPump);
   }
   // The KS spec a timeline event plays (null: not a plucked string / a voice that stays an oscillator).
