@@ -50,3 +50,12 @@ Contract `plan/plan_contract_1.1.md` §5 Lead, cross-lane hand-overs, §6 checkl
 ### Balance, drum seat (§6.5)
 - `NO_BONUS=1 BAND=all node tools/balance.js 10 30` equals `plan/balance_v10_nobonus.txt` (1.0.1.0) line for line
   (`grep -v '^done in'`); only the header's deck size changes (444 -> 534 cards: the 90 new cards are all seat-gated).
+
+### Size and render (§6.7)
+- `dist/game.html` **4,537,936 B** (gate 5,000,000: ok, 462,064 B headroom); gzip-9 1,332,946 B (gzip -6 1,339,325 B).
+  Delta vs stage 0 (4,247,084): **+290,852 B** (planned +660 KB). By lane: D +30,506 · B +72,015 · lead (51 picker) +7,489 ·
+  C +41,553 · A +138,898 · integration +391.
+- `node tools/perf.js scenes` + `report` (390x844, SwiftShader): every scene's draw calls / triangles within its gate. Seats line:
+  `stage_club_seat_bass` 32 calls, `stage_club_seat_lead` 35 (gate: stage_club 36 x 1.15 = 41.4); `garage_seat_rhythm` 44
+  (gate: garage_hail_damage 43 x 1.15 = 49.5). Voice cap holds: peak sources 25 (x1) / 23 (x4) <= 32, tap drops 0, audio
+  nodes/s 57 / 56 <= 80.
