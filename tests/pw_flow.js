@@ -91,6 +91,8 @@ async function flow(genre) {
     await page.waitForSelector(tid('btn-new'));
     const credit = await page.textContent(tid('title-credit'));
     c.ok(credit.includes('Prairie Blue Studio') && credit.includes('V' + VERSION), 'title shows studio + version: ' + credit);
+    const kitCredit = await page.locator(tid('title-kit-credit')).count() ? await page.textContent(tid('title-kit-credit')) : '';
+    c.ok(/The Metal Kick Drum/.test(kitCredit) && /Rafa Prieto/.test(kitCredit) && await page.locator(tid('title-kit-credit')).isVisible(), 'title credits the sample kit (F17): ' + kitCredit);
     c.ok(await page.locator(tid('btn-continue')).count() === 0, 'no Continue on empty storage');
     await tap(page, 'btn-new');
     await tap(page, 'slot-1');

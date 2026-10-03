@@ -4524,6 +4524,8 @@
       noodle: amb.noodle ? { who: amb.noodle.who, style: amb.noodle.style } : null, vocTypes: Object.assign({}, vocTypes), extras: CROWD_EXTRA.filter(function (k) { return CB && CB[k]; }),
       // v1.0 (Lane P): the global voice cap, the pre-rendered tap hits, the crowd's raw parts built before the unlock
       global: ctx ? A.voiceStats() : null, prerender: { key: PRE.key, ready: PRE.ready, building: PRE.building, renders: PRE.renders, hits: PRE.hits, ms: PRE.ms },
+      // v1.2 (contract §4.6): Lane F's feel (players + the last plan), Lane V's vocal chain + counters
+      feel: A.feelStats ? A.feelStats() : null, vox: A.voxStats ? A.voxStats() : null,
       // v1.2 Lane I: the tier's realism row, the sampled kit (F17)
       realism: rig ? A.realism(rig.tier) : A.realism(),
       ks: { n: KS.n, bytes: KS.bytes, hits: KS.hits, misses: KS.misses, queued: KS.queue.length, evicted: KS.evicted, warms: KS.warms, warmMs: KS.warmMs, slice: Math.round(KS.slice * 100) / 100 },

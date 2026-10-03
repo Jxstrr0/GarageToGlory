@@ -457,6 +457,29 @@
      undefined, warm -> resolved Promise, realism(tier) -> C.REALISM[tier]; GG.dsp = {}, GG.voice = {}.
    F16 (owner popup 2026-10-03, all as recommended; each a one-constant change): C.FEEL_MOOD, C.FEEL_STUDIO + C.FEEL_RIVAL,
    C.BAND_AMP_BY_TIER, Classic hidden.
+   As merged (lanes F -> I -> V, 2026-10-03; lane reports plan/v12_lane_<f|i|v>_report.md):
+     F (31): A.velGain(v), A.tightness(skill) = clamp((skill - 30) / 60, 0, 1), A.feelFor(...) -> + studio, rival, seat;
+       byKind keys = drum lanes + bass gtr gtr2 clean lead twang fiddle vox bvox (your seat: who 'player', t 1). A.feelPlan(...)
+       -> + dgap: Float32Array(n) (beats; the gap to the same voice's next event), stats + n, gig. A.TAP_AUTO { hat, kick,
+       double, other }; A.tapVel(...) + run, rnd. A.feelStats() (debug('feel'), folded into debug('audio').feel).
+       player(): feelOf / feelPlanFor (seed hashSeed(songId | pass)); h.feel, h.plan; voxTempo(r, spb) at song start.
+       55: bandOpts (+ gig, + studio on a studio take), warmSong() -> A.warm after the chart is built, tapVel before every tap
+       sound, auto strokes at A.TAP_AUTO; debug('gigui').feel.
+     I (32 + 30): GG.dsp + pluckJob(o) -> { out, done, step(m) }, METAL_RATIOS, ROOMS2, CABS, irGain, irFromB64.
+       drumHit(r, p, lane, t, cap, v, cls, vel) (vel + Classic off -> drumVel: DRUMS2 by tier, round robins, kit pan);
+       PRE2 (layers x round robins per C.REALISM, 6 MB cap, serves taps AND song drum events); KS cache (A.warm(pattern,
+       { genre, songId }) -> Promise<{ n, ms }>, LRU 8 MB); cab IRs by tier (cabName / CAB_TRIM; backing.amp.ir base64 PCM16
+       overrides); A.impulse2(c, cls); r.carve (presence peaking nodes of every built amp, node._base = rest dB); r.duck;
+       r.crush. A.sampleKit(genre, tier) (F17; null on Classic), SK decode in slices + onset trim. renderOffline + vel, hit,
+       feel (false = none), studio, gig, hits, gap -> result + kitUsed, kitOnset; prerenderHit + vel, rr.
+       debug('audio') + realism, pre, ks, kit { id, ready, n, bytes, ms, err, onset, slice, used, last, credit }.
+     V (33 + 30): GG.voice + oq, PRESS, press, pressAt, BW, F45, STEP_DB, ring, onset, envelope, velGain, DOUBLE, GANG3,
+       CHAIN, SENDS, DELAY, sends, delayTime, profile. buildVox(r) = A._buildVox (r.vx chain, r.voxDelay, r.voxTempo(spb));
+       voxSing / metalExtra / voxCarve; content voices.sound (genre:<g> | profile id | rival:<id> -> { press, ring, double,
+       breath }; a parallel table so vocal events keep the 1.1 profile). A.voxStats() (debug('vox'), folded into
+       debug('audio').vox).
+     Kits (F17): GG.content.kits.<id> = { id, name, credit, terms, genres, tiers, codec, sr, lanes, trim }; the title screen
+       shows every kit's credit (51); README "Credits"; src/content/kit_<id>.LICENSE.md next to the module.
   ====================================================================== */
   C.VEL_REF = 0.85;   // vel 0.85 plays at the 1.1 level
   C.FEEL_CLAMP = { gigDrum: 0.006, gig: 0.015, free: 0.025, sixteenth: 0.25 };   // s: gig kick/snare, gig other kinds, outside gigs; max share of a 16th

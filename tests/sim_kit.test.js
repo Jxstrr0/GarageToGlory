@@ -46,7 +46,12 @@ test('attribution: every kit has a credit, and the built dist/game.html carries 
     ok(typeof K[id].credit === 'string' && K[id].credit.trim().length > 20, id + ': a credit');
     ok(html.includes(K[id].credit), id + ': dist/game.html contains the credit (run node build.js)');
     ok(fs.existsSync(path.join(ROOT, 'src', 'content', 'kit_' + id + '.LICENSE.md')), id + ': its LICENSE file');
+    ok(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').includes(K[id].credit), id + ': README.md Credits carries the credit');
   }
+  // the title screen shows every kit's credit (51_ui_menu kitCredits -> data-testid title-kit-credit; pw_flow checks it rendered)
+  const menu = fs.readFileSync(path.join(ROOT, 'src', '51_ui_menu.js'), 'utf8');
+  ok(/GG\.content\.kits/.test(menu) && /title-kit-credit/.test(menu), '51_ui_menu renders the kit credit line');
+  ok(/^## Credits$/m.test(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')), 'README.md has a Credits section');
 });
 
 test('no raw .wav tracked by git (local/ stays out)', () => {
