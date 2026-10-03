@@ -547,7 +547,7 @@
     tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
     if (r.genre === genre && r.kit && r.tier === tier) return;
     r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
-    if (r === rig) { preWant(); skWant(); }   // v1.0: (re)render this kit's tap hits in the background (v1.2: + decode its sampled kit)
+    if (r === rig) { preWant(); skWant(); pre2Want(); }   // v1.0: (re)render this kit's tap hits in the background (v1.2: + its sampled kit, the velocity sets)
     var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
     r.drums.gain.setValueAtTime(0.8 * (k.level || 1) * q.trim, t);
     r.qDrive.curve = satCurve(q.drive);
@@ -930,6 +930,10 @@
   // (velGain) -> pan (kit stereo, F6) -> port.drums; a choke is a 6 ms fade at the next hit. The live rig before its buffers
   // are ready: the 1.1 recipe at velGain (F3.6). Offline renders (renderOffline) play the 1.2 recipe directly.
   function velGain(v) { return A.velGain ? A.velGain(v) : Math.min(1.333, Math.pow(Math.max(0, v) / (C.VEL_REF || 0.85), 1.5)); }
+  function mkBuf(c, n, sr) {   // a mono AudioBuffer (the constructor where there is one: no node is made on the context)
+    try { if (typeof AudioBuffer === 'function') return new AudioBuffer({ length: n, sampleRate: sr, numberOfChannels: 1 }); } catch (e) { /* old Safari */ }
+    return c.createBuffer(1, n, sr);
+  }
   var KIT_LANES = ['kick', 'snare', 'hat', 'cymbal', 'toms', 'ride'];   // = C.LANES: the highway's columns, left to right
   // Kit stereo (F6): kick + snare centre, the rest on the side of their highway column x 0.5, the toms sweep high -> floor;
   // lefty mirrors; the tier's width (C.REALISM: milk crate x 0.3, one cheap mic).
@@ -965,7 +969,7 @@
     s.buffer = hb.buf; s.playbackRate.value = 1 + 0.0025 * j; s.connect(sl.lp);
     sl.lp.frequency.setValueAtTime((hb.lpMin + (1 - hb.lpMin) * clamp01(vel)) * 16000, t);
     sl.g.gain.cancelScheduledValues(t);
-    sl.g.gain.setValueAtTime(velGain(vel) * (hb.gain || 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5)), t);
+    sl.g.gain.setValueAtTime(velGain(vel) * (hb.gain || 1) * (sl.pan ? Math.SQRT2 : 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5)), t);   // (x SQRT2: the panner's -3 dB centre)
     if (d < hb.d - 0.002) sl.g.gain.setTargetAtTime(0, t + d, 0.006);   // choked: fades at the next hit
     s.start(t); s.stop(t + d + 0.04); sl.until = t + d + 0.04;
     if (r.collect) r.collect.push(s);
@@ -984,17 +988,258 @@
       if (hb.kit) { KITUSE[lane]++; r.kitUsed = (r.kitUsed || 0) + 1; }
       return { t: t, end: t + d, n: 1, slot: sl, src: [s] };
     }
-    n = typeof D.n === 'function' ? D.n(k, v) : D.n; d = Math.max(0.012, Math.min(D.len(k, v), cap));
-    if (!book(r, t, d, n, false, cls)) return null;
-    if (r === rig) { D.play(r, { drums: gainNode(c, velGain(vel), p.drums) }, t, d, k, v); return { t: t, end: t + d, n: n }; }   // F3.6: the 1.1 sound
-    var sl2 = vslot(r, p, lane, t, v);   // offline: the 1.2 recipe, live, through the hit slot
-    sl2.lp.frequency.setValueAtTime((0.55 + 0.45 * clamp01(vel)) * 16000, t); sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(velGain(vel), t);
-    sl2.until = t + d + 0.04;
-    D.play(r, { drums: sl2.lp }, t, d, k, v);
-    return { t: t, end: t + d, n: n };
+    if (r === rig) {   // F3.6: not ready yet -> the 1.1 sound, at the hit's level
+      n = typeof D.n === 'function' ? D.n(k, v) : D.n; d = Math.max(0.012, Math.min(D.len(k, v), cap));
+      if (!book(r, t, d, n, false, cls)) return null;
+      D.play(r, { drums: gainNode(c, velGain(vel), p.drums) }, t, d, k, v);
+      return { t: t, end: t + d, n: n };
+    }
+    // offline (renderOffline): the 1.2 recipe played live through the hit slot, booked as the one source it costs live
+    var R = A.realism(r.tier), D2 = DRUMS2[lane], ri = nextRR(r, 'o|' + lane + '|' + (v == null ? '' : v), R.rr), nat;
+    nat = D2.len(k, v, R, ri); d = Math.max(0.012, Math.min(nat, cap));
+    if (!book(r, t, d, 1, false, cls)) return null;
+    var sl2 = vslot(r, p, lane, t, v);
+    sl2.lp.frequency.setValueAtTime((0.55 + 0.45 * clamp01(vel)) * 16000, t); sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(velGain(vel) * (sl2.pan ? Math.SQRT2 : 1), t);
+    if (d < nat - 0.002) sl2.g.gain.setTargetAtTime(0, t + d, 0.006);
+    sl2.until = t + nat + 0.02;   // (its tail runs on under the fade: the slot stays taken until it is over)
+    d2play(lane, r, sl2.lp, t, nat, k, v, vel, ri, R);
+    return { t: t, end: t + d, n: 1 };
   }
-  // F6 pre-rendered velocity sets (taps + the song's drum events): filled in by the PRE widening; null = not ready.
-  function preVel() { return null; }
+  // Round robins in order, no repeats: the next index of `key` on this rig (renderOffline's spec.hit sets the first).
+  function nextRR(r, key, n) {
+    var rr = r.rr || (r.rr = {});
+    return (rr[key] = rr[key] == null ? (r.hit0 || 0) % Math.max(1, n) : (rr[key] + 1) % Math.max(1, n));
+  }
+  // A round robin's spread (F6): pitch x (1 +- 0.012), decay x (1 +- 0.07), filter x (1 +- 0.04), a new stretch of the shared
+  // noise. rr 0 = the reference; rrJ(rr, salt) in -1..1, deterministic.
+  function rrJ(rr, salt) { return rr ? ((GG.hashSeed(salt + '|' + rr) % 2001) / 1000 - 1) : 0; }
+  function noiseAt(r, t, dur, gain, type, f, q, f1, off) {   // noiseHit from `off` s into the (looped) shared noise
+    var s = r.ctx.createBufferSource(); s.buffer = r.noise; s.loop = true;
+    var fl = filterNode(r.ctx, type, f, q, gain);
+    if (f1) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    s.connect(fl); s.start(t, (off || 0) % 1); s.stop(t + dur); if (r.collect) r.collect.push(s);
+    return fl;
+  }
+  // 1.2 recipes (F6 + the F11 tier table). play(r, dest, t, d, kit, variant, vel, rr, R) renders ONE hit at unity level (the
+  // slot applies velGain): vel shapes the timbre (pitch, click, rim shot), rr the round-robin spread, R = C.REALISM[tier]; d =
+  // its natural length len(kit, variant, R, rr) (a choke is the slot's fade). Tier 0 (milk crate) keeps the 1.1 recipes + vel
+  // + round robins; pawn shop up: second modes, beater click, the metal cluster; pro: wires + rim shots; arena: bloom + sub.
+  var CLUSTER = [1, 1.4826, 1.8002, 2.5459, 2.6301, 3.8964];   // the 808 squares (= GG.dsp.METAL_RATIOS)
+  function cluster(r, t, d, dest, base, n, rr, salt, spread) {   // n squares at the 808 ratios (jittered per round robin), summed
+    var c = r.ctx, g = gainNode(c, 1 / Math.sqrt(n), dest);
+    for (var i = 0; i < n; i++) {
+      var o = c.createOscillator(); o.type = 'square';
+      o.frequency.value = base * CLUSTER[i] * (1 + (spread || 0) * rrJ(rr + 1, salt + i));
+      o.connect(g); o.start(t); o.stop(t + d); if (r.collect) r.collect.push(o);
+    }
+    return g;
+  }
+  var DRUMS2 = {
+    kick: { len: function (k, v, R, rr) { return k.kick.dec * (1 + 0.07 * rrJ(rr, 'kd')) * (R.subKick ? 1.15 : 1); },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, K = k.kick, pf = (1 + 0.03 * (vel - 0.85)) * (1 + 0.012 * rrJ(rr, 'kp')), cl = Math.min(K.clickLen || 0.018, d), vv = vel / 0.85;
+        osc(r, 'sine', K.f0 * pf, K.f1 * pf, K.glide, t, d, decay(c, t, 0.002, K.body, d, dest));
+        if (R.rr > 2) {   // pawn shop up: a second body mode (x 1.52, -10 dB, half the decay), a beater click 2.5-5 kHz (~ vel^2)
+          var d2 = Math.max(0.02, d * 0.5);
+          osc(r, 'sine', K.f0 * 1.52 * pf, K.f1 * 1.52 * pf, K.glide, t, d2, decay(c, t, 0.002, K.body * 0.316, d2, dest));
+          noiseAt(r, t, cl, decay(c, t, 0.0008, K.click * 1.2 * vv * vv, cl, dest), 'bandpass', 3500 * (1 + 0.04 * rrJ(rr, 'kf')), 0.8, 0, 0.11 * rr);
+        } else noiseAt(r, t, cl, decay(c, t, 0.001, K.click * vv * vv, cl, dest), 'highpass', (K.clickHp || 2600) * (1 + 0.04 * rrJ(rr, 'kf')), 0.7, 0, 0.11 * rr);
+        if (R.subKick) osc(r, 'sine', 55, 42, 0.12, t, d, decay(c, t, 0.008, K.body * 0.45, d, dest));   // arena: the sub tail
+      } },
+    snare: { len: function (k, v, R, rr) {
+        var S = k.snare, x = v === 'rim' ? 0.05 : v === 'brush' ? 0.2 : R.wires ? Math.max(S.dec, S.bodyDec * 1.4) * 1.1 : S.dec;
+        return x * (1 + 0.07 * rrJ(rr, 'sd'));
+      },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, S = k.snare, b, pf = 1 + 0.012 * rrJ(rr, 'sp'), ff = 1 + 0.04 * rrJ(rr, 'sf'), off = 0.13 * rr + 0.05;
+        if (v === 'rim') { b = Math.min(0.035, d); osc(r, 'triangle', 1750 * pf, 1450 * pf, 0.02, t, b, decay(c, t, 0.001, 0.5, b, dest)); noiseAt(r, t, b, decay(c, t, 0.001, 0.4, b, dest), 'bandpass', 3400 * ff, 2.2, 0, off); return; }
+        if (v === 'brush') { noiseAt(r, t, d, decay(c, t, 0.02, 0.32, d, dest), 'bandpass', 4200 * ff, 0.7, 2600 * ff, off); return; }
+        var lv = v === 'ghost' ? 0.4 : 1; b = Math.min(S.bodyDec * (1 + 0.07 * rrJ(rr, 'sb')), d);
+        if (R.snareModes > 1) {   // two head modes (~185 + 330 Hz x the kit's pitch; the second -6 dB), struck a little sharp
+          var m1 = S.f1 * 1.09 * pf;
+          osc(r, 'triangle', m1 * 1.25, m1, 0.03, t, b, decay(c, t, 0.001, S.body * lv, b, dest));
+          osc(r, 'sine', m1 * 1.78 * 1.2, m1 * 1.78, 0.025, t, b * 0.7, decay(c, t, 0.001, S.body * lv * 0.5, b * 0.7, dest));
+        } else osc(r, 'triangle', S.f0 * pf, S.f1 * pf, 0.06, t, b, decay(c, t, 0.001, S.body * lv, b, dest));
+        if (R.wires) {   // the wires: noise band-passed 1.8-7 kHz, ringing 40 % past the head, level with the head's energy
+          var lp7 = filterNode(c, 'lowpass', 7000 * ff, 0.6, decay(c, t, 0.001, S.noise * lv * (0.75 + 0.25 * vel), d, dest));
+          noiseAt(r, t, d, lp7, 'highpass', 1800 * ff, 0.7, 0, off);
+        } else noiseAt(r, t, d, decay(c, t, 0.001, S.noise * lv, d, dest), 'highpass', S.hp * ff, 0.8, 0, off);
+        if (R.rim && vel > 0.92 && !v) {   // a rim shot: a 900 Hz ring + more crack
+          var rb = Math.min(0.09, d), cr = Math.min(0.018, d);
+          osc(r, 'sine', 900 * pf, 880 * pf, 0.05, t, rb, decay(c, t, 0.001, 0.32, rb, dest));
+          noiseAt(r, t, cr, decay(c, t, 0.0005, 0.55, cr, dest), 'highpass', 4200 * ff, 0.7, 0, off + 0.3);
+        }
+      } },
+    hat: { len: function (k, v, R, rr) { return k.hat.dec * (1 + 0.07 * rrJ(rr, 'hd')); },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, H = k.hat, ff = 1 + 0.04 * rrJ(rr, 'hf'), off = 0.17 * rr + 0.21;
+        if (!R.metal) { noiseAt(r, t, d, decay(c, t, 0.001, H.lv, d, dest), 'highpass', H.hp * ff, 0.9, 0, off); return; }
+        var hp = filterNode(c, 'highpass', 7000 * ff, 0.7, decay(c, t, 0.001, H.lv * 1.1, d, dest));
+        cluster(r, t, d, filterNode(c, 'bandpass', 10000 * ff, 0.8, hp), 205.3 * 1.6 * (H.hp / 7800) * ff, R.metal, rr, 'hat', 0.01);
+        noiseAt(r, t, d, decay(c, t, 0.001, H.lv * 0.35, d, dest), 'highpass', H.hp * ff, 0.9, 0, off);
+      } },
+    cymbal: { len: function (k, v, R, rr) { return k.cymbal.dec * (1 + 0.07 * rrJ(rr, 'cd')) * (R.cymBloom ? 1.2 : 1); },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, Y = k.cymbal, ff = 1 + 0.04 * rrJ(rr, 'cf'), off = 0.19 * rr + 0.4, s = Math.min(d, Y.dec * 0.5);
+        if (!R.metal) {
+          noiseAt(r, t, d, decay(c, t, 0.002, Y.lv, d, dest), 'highpass', Y.hp * ff, 0.6, Y.f1, off);
+          noiseAt(r, t, s, decay(c, t, 0.004, Y.lv * 0.35, s, dest), 'bandpass', 5200 * ff, 3, 0, off + 0.5);
+          return;
+        }
+        // the bloom: the cluster through a high-pass that sweeps down over 300 ms (450 on the arena kit) + a noise wash
+        var hp = filterNode(c, 'highpass', Y.hp * ff, 0.7, decay(c, t, 0.003, Y.lv * 0.9, d, dest));
+        hp.frequency.setValueAtTime(Y.hp * ff, t); hp.frequency.exponentialRampToValueAtTime(Math.max(2000, Y.hp * 0.4) * ff, t + (R.cymBloom ? 0.45 : 0.3));
+        cluster(r, t, d, filterNode(c, 'bandpass', 9000 * ff, 0.6, hp), 205.3 * 1.3 * ff, R.metal, rr, 'cym', 0.02);
+        noiseAt(r, t, d, decay(c, t, 0.002, Y.lv * 0.55, d, dest), 'highpass', Y.hp * 0.85 * ff, 0.6, Y.f1, off);
+      } },
+    ride: { len: function (k, v, R, rr) { return (k.six === 'china' ? 0.9 : 0.5) * (k.q ? k.q.sustain : 1) * (1 + 0.07 * rrJ(rr, 'rd')); },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, pf = 1 + 0.012 * rrJ(rr, 'rp'), ff = 1 + 0.04 * rrJ(rr, 'rf'), off = 0.23 * rr + 0.6, sh = Math.min(0.25, d);
+        if (!R.metal) {
+          if (k.six === 'china') { noiseAt(r, t, d, decay(c, t, 0.001, 0.36, d, dest), 'bandpass', 3300 * ff, 0.7, 2200 * ff, off); osc(r, 'square', 587 * pf, 0, 0, t, sh, decay(c, t, 0.001, 0.05, sh, dest)); return; }
+          noiseAt(r, t, d, decay(c, t, 0.001, 0.2, d, dest), 'bandpass', 6400 * ff, 1.4, 0, off);
+          osc(r, 'triangle', 1180 * pf, 0, 0, t, d, decay(c, t, 0.001, 0.07, d, dest));
+          return;
+        }
+        if (k.six === 'china') {   // the cluster low and mid-heavy: trashy
+          cluster(r, t, d, filterNode(c, 'bandpass', 3300 * ff, 0.8, decay(c, t, 0.001, 0.4, d, dest)), 205.3 * 0.62 * pf, R.metal, rr, 'china', 0.03);
+          noiseAt(r, t, d, decay(c, t, 0.001, 0.22, d, dest), 'bandpass', 3000 * ff, 0.7, 2200 * ff, off);
+          return;
+        }
+        [[1, 0.06], [2.32, 0.045], [3.61, 0.03]].forEach(function (x) { osc(r, 'sine', 520 * x[0] * pf, 0, 0, t, d, decay(c, t, 0.001, x[1], d, dest)); });   // the bell
+        var pg = Math.min(0.02, d);
+        noiseAt(r, t, pg, decay(c, t, 0.0005, 0.25, pg, dest), 'bandpass', 6400 * ff, 1.4, 0, off);   // the stick ping
+        noiseAt(r, t, d, decay(c, t, 0.002, 0.12, d, dest), 'bandpass', 6400 * ff, 1.4, 0, off + 0.3);   // the wash
+      } },
+    toms: { len: function (k, v, R, rr) { return (k.tomDec || 0.36) * (R.rr > 2 && v === 2 ? 1.25 : 1) * (1 + 0.07 * rrJ(rr, 'td' + v)); },
+      play: function (r, dest, t, d, k, v, vel, rr, R) {
+        var c = r.ctx, f = ((k.toms || DEFAULT_KIT.toms)[v || 0] || 200) * (1 + 0.012 * rrJ(rr, 'tp' + v)), lv = 0.85 * Math.min(1.1, k.q ? k.q.body : 1);
+        if (R.rr <= 2) { osc(r, 'sine', f, f * 0.55, 0.2, t, d, decay(c, t, 0.002, lv, d, dest)); return; }
+        osc(r, 'sine', f * 1.04, f * 0.62, 0.32, t, d, decay(c, t, 0.002, lv, d, dest));   // a slower pitch drop
+        var d2 = Math.max(0.02, d * 0.35), sa = Math.min(0.012, d);
+        osc(r, 'sine', f * 1.6 * 1.04, f * 1.6 * 0.75, 0.15, t, d2, decay(c, t, 0.001, lv * 0.355, d2, dest));   // the second mode, -9 dB, fast
+        noiseAt(r, t, sa, decay(c, t, 0.0005, 0.3 * (0.6 + 0.4 * vel), sa, dest), 'bandpass', 2500 * (1 + 0.04 * rrJ(rr, 'tf' + v)), 0.9, 0, 0.29 * rr + 0.7);   // the stick
+      } }
+  };
+  // Level per lane (tier 0 / pawn shop up), set by numbers so a 1.2 hit at vel 0.85 lands within ~1 dB of the 1.1 hit
+  // (first 100 ms + whole hit, every genre; the slot's pan law is made up in velPlay / the offline slot: x SQRT2).
+  var LV2 = { kick: [1, 0.82], snare: [0.81, 0.84], hat: [1.08, 1.75], cymbal: [0.83, 1.25], toms: [1, 0.93], ride: [1, 1] };
+  function d2play(lane, r, dest, t, d, k, v, vel, rr, R) {
+    var L = LV2[lane] || [1, 1];
+    DRUMS2[lane].play(r, gainNode(r.ctx, L[R.rr > 2 ? 1 : 0], dest), t, d, k, v, vel, rr, R);
+  }
+  // ---- F6: PRE widened (velocity layers x round robins), serving your taps AND the song's drum events ----------------------
+  // Per live kit (genre + tier + sample rate): every lane x variant rendered through DRUMS2 on OfflineAudioContexts, one
+  // buffer per (layer, round robin) at its natural length. Layers (kick, snare, toms; hat / cymbal / ride and the country
+  // variants have one): C.REALISM[tier].layers at LAYER_VEL; round robins: .rr. A sampled kit (F17) replaces kick / snare /
+  // toms. Built after the unlock / a kit change, never mid-song: one reference hit of every lane first (one context), then a
+  // lane per slice; capped at 6 MB (round robins drop, never below 2). A hit takes the nearest layer, the next round robin.
+  var LAYER_VEL = { 1: [0.85], 2: [0.55, 0.9], 3: [0.4, 0.7, 0.95] }, PRE_CAP = 6e6;
+  var PRE2 = { key: null, sets: {}, building: null, ready: false, renders: 0, hits: 0, ms: 0, bytes: 0, rr: 0, layers: 0, slice: 0, timer: 0, first: false };
+  function pre2Key() { return rig && ctx ? (rig.genre || 'metal') + '|' + rig.tier + '|' + ctx.sampleRate : null; }
+  function pre2Plan(k, R, genre, tier, sr) {   // -> [{ lane, v, vels: [layer vel], rr, len }]
+    var skit = A.sampleKit(genre, tier), out = [], lay = R.layers || 1, cap = PRE_CAP;
+    if (skit) cap -= 21.5 * sr * 4;   // (the sampled kit's decoded clips count against the same 6 MB: ~21.5 s mono)
+    function add(lane, v, layered) {
+      if (skit && (lane === 'kick' || lane === 'toms' || (lane === 'snare' && v == null))) return;   // the samples play these
+      var vels = LAYER_VEL[layered ? lay : 1] || LAYER_VEL[1], len = 0;
+      for (var i = 0; i < R.rr; i++) len = Math.max(len, DRUMS2[lane].len(k, v, R, i));
+      out.push({ lane: lane, v: v, vels: vels, rr: R.rr, len: Math.min(2.5, len) });
+    }
+    add('kick', null, true); add('snare', null, true); add('hat', null, false); add('cymbal', null, false); add('ride', null, false);
+    add('toms', 0, true); add('toms', 1, true); add('toms', 2, true);
+    if (k.train) { add('snare', 'rim', false); add('snare', 'brush', false); add('snare', 'ghost', false); }
+    var bytes = function () { return out.reduce(function (s, x) { return s + x.len * sr * 4 * x.vels.length * x.rr; }, 0); };
+    while (bytes() > cap) {   // the cap: the biggest lane loses a round robin (never below 2)
+      var big = null; out.forEach(function (x) { if (x.rr > 2 && (!big || x.len * x.vels.length * x.rr > big.len * big.vels.length * big.rr)) big = x; });
+      if (!big) break; big.rr--;
+    }
+    return out;
+  }
+  function preVel(r, lane, v, vel) {
+    if (r !== rig || !PRE2.key || PRE2.key !== pre2Key()) { if (r === rig) pre2Want(); return null; }
+    var S = PRE2.sets[lane + '|' + (v == null ? '' : v)]; if (!S) return null;
+    var li = 0, best = 9;
+    for (var i = 0; i < S.vels.length; i++) { var dd = Math.abs(S.vels[i] - vel); if (dd < best) { best = dd; li = i; } }
+    var list = S.bufs[li]; if (!list || !list.length) { list = S.bufs[S.ref]; if (!list || !list.length) return null; li = S.ref; }
+    var ri = nextRR(r, 'p|' + lane + '|' + (v == null ? '' : v) + '|' + li, list.length);
+    PRE2.hits++;
+    return { buf: list[ri], d: list[ri].duration, lpMin: 0.55, rr: ri, layer: li };
+  }
+  function pre2Want() {
+    if (!ctx || !rig || PRE2.timer || A.isClassic() || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return;
+    var key = pre2Key();
+    if (PRE2.key === key && (PRE2.ready || PRE2.building === key)) return;
+    PRE2.timer = setTimeout(function () { PRE2.timer = 0; pre2Build(); }, 350);
+  }
+  // A phase = ONE OfflineAudioContext holding a list of hits back to back (20 ms apart), built across slices before it renders:
+  // first the oscillator wavetables it needs, one type per slice (Chromium builds a band-limited table the first time a context
+  // makes an oscillator of a type: up to ~8 ms on a 4x-throttled phone), then the hits, then the render
+  // (off the main thread), then the copies out; a slice adds hits while it is under PRE_STEP ms. wait() pauses it while a song
+  // plays (never mid-song).
+  var PRE_WAVES = ['sine', 'triangle', 'square'], PRE_STEP = 2;   // (ms of graph building / copying per slice)
+  // A yield to the event loop without setTimeout's 4 ms clamp (a MessageChannel task), so a build of ~100 slices isn't
+  // mostly waiting; the browser still paints between tasks.
+  var soonQ = [], soonCh = null;
+  function soon(fn) {   // (the channel is made on first use: a node test that never builds never holds one open)
+    if (typeof MessageChannel !== 'function') { setTimeout(fn, 0); return; }
+    if (!soonCh) { soonCh = new MessageChannel(); soonCh.port1.onmessage = function () { var f = soonQ.shift(); if (f) f(); }; }
+    soonQ.push(fn); soonCh.port2.postMessage(0);
+  }
+  function pre2Phase(k, R, hits, sr, stale, wait, done, fail) {
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, at = [], tot = 0.01, oc, i, r, w = 0, h = 0, out = [], buf = null;
+    for (i = 0; i < hits.length; i++) { at.push(tot); tot += hits[i].len + 0.02; }
+    try { oc = new OAC(1, Math.ceil(tot * sr), sr); } catch (e) { fail(e); return; }
+    r = { ctx: oc, noise: rig.noise, busy: [], band: [], cap: 999, bandCap: 999, kit: k, tier: rig.tier };
+    function slice(fn) { soon(function () { if (stale()) return; if (wait()) { setTimeout(function () { slice(fn); }, 1000); return; } var t0 = performance.now(); try { fn(); } catch (e) { fail(e); return; } PRE2.slice = Math.max(PRE2.slice, performance.now() - t0); }, 0); }
+    function build() {
+      if (w < PRE_WAVES.length) { oc.createOscillator().type = PRE_WAVES[w++]; slice(build); return; }   // (warms the table; never started)
+      var t1 = performance.now();   // hits while this slice is under PRE_STEP ms (at least one)
+      do { var x = hits[h]; d2play(x.lane, r, oc.destination, at[h], x.len, k, x.v, x.vel, x.rr, R); h++; } while (h < hits.length && performance.now() - t1 < PRE_STEP);
+      if (h < hits.length) { slice(build); return; }
+      oc.startRendering().then(function (b) { buf = b.getChannelData(0); h = 0; slice(copy); }, fail);
+    }
+    function copy() {
+      var t1 = performance.now();
+      do {
+        var a0 = Math.round(at[h] * sr), m = Math.max(1, Math.round(hits[h].len * sr)), b = mkBuf(ctx, m, sr);
+        b.getChannelData(0).set(buf.subarray(a0, a0 + m)); out.push(b); h++;
+      } while (h < hits.length && performance.now() - t1 < PRE_STEP);
+      if (h < hits.length) { slice(copy); return; }
+      buf = null; done(out);
+    }
+    slice(build);
+  }
+  function pre2Build() {
+    var key = pre2Key(); if (!key || A.isClassic() || (PRE2.key === key && PRE2.ready)) return;
+    if (current && current.playing && !current.radio) { PRE2.timer = setTimeout(function () { PRE2.timer = 0; pre2Build(); }, 1000); return; }   // never mid-song
+    var k = rig.kit || DEFAULT_KIT, R = A.realism(rig.tier), sr = ctx.sampleRate, plan = pre2Plan(k, R, rig.genre || 'metal', rig.tier, sr), t0 = performance.now(), sets = {};
+    PRE2.building = key; PRE2.ready = false; PRE2.first = false; PRE2.key = key; PRE2.sets = sets; PRE2.bytes = 0; PRE2.slice = 0;
+    plan.forEach(function (x) {
+      var ref = 0, bd = 9; x.vels.forEach(function (vv, i) { if (Math.abs(vv - 0.85) < bd) { bd = Math.abs(vv - 0.85); ref = i; } });
+      x.ref = ref; sets[x.lane + '|' + (x.v == null ? '' : x.v)] = { vels: x.vels, bufs: x.vels.map(function () { return []; }), ref: ref, rr: x.rr };
+    });
+    PRE2.rr = plan.reduce(function (m, x) { return Math.max(m, x.rr); }, 0); PRE2.layers = plan.reduce(function (m, x) { return Math.max(m, x.vels.length); }, 0);
+    var stale = function () { return PRE2.building !== key || pre2Key() !== key; };
+    var wait = function () { return !!(current && current.playing && !current.radio); };
+    var fail = function () { if (PRE2.building === key) PRE2.building = null; };
+    function put(j, b) { var S = sets[j.x.lane + '|' + (j.x.v == null ? '' : j.x.v)]; S.bufs[j.li][j.ri] = b; PRE2.bytes += b.length * 4; PRE2.renders++; }
+    function run(jobs, then) {
+      if (!jobs.length) { then(); return; }
+      pre2Phase(k, R, jobs.map(function (j) { return { lane: j.x.lane, v: j.x.v, vel: j.x.vels[j.li], rr: j.ri, len: j.x.len }; }), sr, stale, wait, function (bufs) {
+        if (stale()) return;
+        bufs.forEach(function (b, n) { put(jobs[n], b); });
+        then();
+      }, fail);
+    }
+    // phase 1: one reference hit of every lane (taps and the song switch over once it is in); phase 2: the other layers + round robins
+    var first = plan.map(function (x) { return { x: x, li: x.ref, ri: 0 }; }), rest = [];
+    plan.forEach(function (x) { x.vels.forEach(function (vv, li) { for (var ri = 0; ri < x.rr; ri++) if (!(li === x.ref && ri === 0)) rest.push({ x: x, li: li, ri: ri }); }); });
+    run(first, function () {
+      PRE2.first = true;
+      run(rest, function () { PRE2.ready = true; PRE2.building = null; PRE2.ms = Math.round(performance.now() - t0); });
+    });
+  }
 
   // ---- F17: the sampled kit (GG.content.kits, e.g. src/content/kit_tmkd_vortex.js: TMKD "Vortex", credit required) --------
   // A.sampleKit(genre, tier) -> the kit listing that genre + tier (metal, pro + arena), else null; Classic on -> null. The live
@@ -1025,16 +1270,17 @@
     return { jobs: out, want: want };
   }
   function b64ab(s) { var bin = atob(s), n = bin.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
-  function onsetOf(d, sr) {   // -> sample index of the first sample over 2 % of the peak
-    var pk = 0, i, a;
-    for (i = 0; i < d.length; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
-    for (i = 0; i < d.length; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > 0.02 * pk) return i; }
+  function onsetOf(d, sr) {   // -> sample index of the first sample over 2 % of the peak (a drum peaks in its first 200 ms)
+    var n = Math.min(d.length, Math.round(0.2 * sr)), pk = 0, i, a;
+    for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+    for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > 0.02 * pk) return i; }
     return 0;
   }
-  function skTrim(c, buf, db) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (+ the lane trim)
-    var d = buf.getChannelData(0), s = Math.max(0, onsetOf(d, buf.sampleRate) - Math.round(0.001 * buf.sampleRate));
-    var m = Math.max(1, d.length - s), out = c.createBuffer(1, m, buf.sampleRate), o = out.getChannelData(0), g = Math.pow(10, (db || 0) / 20);
-    for (var i = 0; i < m; i++) o[i] = d[s + i] * g;
+  function skTrim(c, buf) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (a block copy)
+    var d = buf.getChannelData(0), on = onsetOf(d, buf.sampleRate), s = Math.max(0, on - Math.round(0.001 * buf.sampleRate));
+    var out = mkBuf(c, Math.max(1, d.length - s), buf.sampleRate);
+    out.getChannelData(0).set(d.subarray(s));
+    out.onset = on - s;   // (samples)
     return out;
   }
   function decodeAB(c, ab, ok, bad) {   // decodeAudioData, callback or promise flavour (old Safari), each answer once
@@ -1044,9 +1290,10 @@
     try { var pr = c.decodeAudioData(ab, y, no); if (pr && pr.then) pr.then(y, no); } catch (e) { no(e); }
   }
   function skAdd(S, c, job, b) {
-    var tb = skTrim(c, b, job[3]), key = job[0];
+    var tb = skTrim(c, b), key = job[0];
     (S.bufs[key] || (S.bufs[key] = []))[job[1]] = tb; S.have[key] = (S.have[key] || 0) + 1; S.bytes += tb.length * 4 * tb.numberOfChannels;
-    S.onset = Math.max(S.onset, onsetOf(tb.getChannelData(0), tb.sampleRate) / tb.sampleRate * 1000);
+    S.gain = S.gain || {}; S.gain[key] = Math.pow(10, (job[3] || 0) / 20);   // the lane's trim (dB), applied by the hit's slot
+    S.onset = Math.max(S.onset, Math.min(tb.onset, 0.001 * tb.sampleRate) / tb.sampleRate * 1000);   // (where its onset now sits, ms)
   }
   function skWant() {
     if (!ctx || !rig || SK.timer || typeof atob !== 'function') return;
@@ -1058,15 +1305,16 @@
     if (!ctx) return;
     if (current && current.playing && !current.radio) { SK.timer = setTimeout(function () { SK.timer = 0; skBuild(kit); }, 1000); return; }   // never mid-song
     var J = skJobs(kit), t0 = performance.now();
-    Object.assign(SK, { id: kit.id, sr: ctx.sampleRate, bufs: {}, have: {}, want: J.want, ready: false, building: kit.id, bytes: 0, err: null, onset: 0 });
+    Object.assign(SK, { id: kit.id, sr: ctx.sampleRate, bufs: {}, have: {}, gain: {}, want: J.want, ready: false, building: kit.id, bytes: 0, err: null, onset: 0, slice: 0 });
     function next(i) {
       if (SK.building !== kit.id) return;
       if (i >= J.jobs.length) { SK.ready = true; SK.building = null; SK.ms = Math.round(performance.now() - t0); return; }
       if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
       var job = J.jobs[i];
-      decodeAB(ctx, b64ab(job[2]), function (b) {
+      var a0 = performance.now(), ab = b64ab(job[2]); SK.slice = Math.max(SK.slice || 0, performance.now() - a0);
+      decodeAB(ctx, ab, function (b) {
         if (SK.building !== kit.id) return;
-        skAdd(SK, ctx, job, b);
+        var s0 = performance.now(); skAdd(SK, ctx, job, b); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
         setTimeout(function () { next(i + 1); }, 0);   // one clip per slice
       }, function (e) {
         SK.err = String((e && e.message) || e || 'decode failed'); SK.errId = kit.id; SK.building = null;
@@ -1095,7 +1343,7 @@
     var key = skKey(lane, v), list = S.bufs[key];
     if (!list || !S.want[key] || S.have[key] !== S.want[key]) return null;
     var rr = r.rr || (r.rr = {}), i = rr[key] = rr[key] == null ? (r.hit0 || 0) % list.length : (rr[key] + 1) % list.length;
-    return { buf: list[i], d: list[i].duration, lpMin: 0.45, kit: true, rr: i };
+    return { buf: list[i], d: list[i].duration, lpMin: 0.45, gain: (S.gain && S.gain[key]) || 1, kit: true, rr: i };
   }
 
   /* ---- Vocal hits: a sawtooth (or a gang of two) through a 3-formant bank, pitched to the song's key ---------- */
@@ -3520,11 +3768,19 @@
   A.renderOffline.probe = true;   // v0.7.2 feature flag (spec.probe, spec.crowd, stereo)
   // v1.0 (tests): the dry pre-rendered hit for (genre, kit tier, lane, variant, cap) at sample rate sr -> Promise<AudioBuffer>,
   // rendered exactly as preBuild renders the live kit's set; feed it to renderOffline({ lane, pre: buffer, quality, genre }).
+  // v1.2 (Lane I): o.vel (Classic off) = one hit of the velocity set as the widened PRE renders it (DRUMS2 at that layer vel,
+  // unity level, its natural length; o.rr = the round robin, default 0; o.quality picks C.REALISM[tier]).
   A.prerenderHit = function (o) {
     o = o || {};
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, k = kitFor(o.genre || 'metal', o.quality == null ? REF_QUALITY : o.quality);
     var D = DRUMS[o.lane], sr = o.sr || 44100, cap = o.cap || (o.lane === 'cymbal' ? 0.9 : 0.5);
     if (!OAC || !D) return Promise.reject(new Error('no offline audio / lane'));
+    if (o.vel != null && !A.isClassic()) {
+      var tier = o.quality == null ? REF_QUALITY : o.quality, R = A.realism(tier), ri = o.rr | 0, len = Math.min(2.5, DRUMS2[o.lane].len(k, o.variant, R, ri));
+      var oc2 = new OAC(1, Math.ceil((len + 0.006) * sr), sr);
+      d2play(o.lane, { ctx: oc2, noise: noiseBuffer(oc2), busy: [], band: [], cap: 99, bandCap: 99, kit: k, tier: tier }, oc2.destination, 0, len, k, o.variant, clamp01(o.vel), ri, R);
+      return oc2.startRendering();
+    }
     var d = Math.max(0.012, Math.min(D.len(k, o.variant), cap)), oc = new OAC(1, Math.ceil((d + 0.006) * sr), sr);
     D.play({ ctx: oc, noise: noiseBuffer(oc), busy: [], band: [], cap: 99, bandCap: 99, kit: k }, { drums: oc.destination }, 0, d, k, o.variant);
     return oc.startRendering();
@@ -3561,8 +3817,10 @@
       global: ctx ? A.voiceStats() : null, prerender: { key: PRE.key, ready: PRE.ready, building: PRE.building, renders: PRE.renders, hits: PRE.hits, ms: PRE.ms },
       // v1.2 Lane I: the tier's realism row, the sampled kit (F17)
       realism: rig ? A.realism(rig.tier) : A.realism(),
+      pre: { key: PRE2.key, ready: PRE2.ready, first: PRE2.first, building: PRE2.building, sets: Object.keys(PRE2.sets).length, rr: PRE2.rr, layers: PRE2.layers,
+        bytes: PRE2.bytes, ms: PRE2.ms, renders: PRE2.renders, hits: PRE2.hits, slice: Math.round(PRE2.slice * 100) / 100 },
       kit: { id: SK.id, ready: SK.ready, n: Object.keys(SK.have).reduce(function (a, k) { return a + SK.have[k]; }, 0), bytes: SK.bytes, ms: SK.ms, err: SK.err,
-        onset: Math.round(SK.onset * 1000) / 1000, used: Object.assign({}, KITUSE), last: KITLAST ? Object.assign({}, KITLAST) : null, credit: (function () { var K = GG.content && GG.content.kits || {}; return Object.keys(K).map(function (k) { return K[k].credit; }); })() },
+        onset: Math.round(SK.onset * 1000) / 1000, slice: Math.round((SK.slice || 0) * 100) / 100, used: Object.assign({}, KITUSE), last: KITLAST ? Object.assign({}, KITLAST) : null, credit: (function () { var K = GG.content && GG.content.kits || {}; return Object.keys(K).map(function (k) { return K[k].credit; }); })() },
       crowdRaw: CROWD_PARTS.concat(CROWD_EXTRA).filter(function (k) { return CROWD_RAW[k]; }).length,
       // v1.1 Seats: your notes (per voice, the last one), the song's muted / played kinds, the seat preview
       seat: { notes: Object.assign({}, SEATS.notes), released: SEATS.released, choked: SEATS.choked, cancelled: SEATS.cancelled,

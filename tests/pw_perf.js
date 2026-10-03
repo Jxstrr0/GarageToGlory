@@ -16,6 +16,10 @@
 //   audio   : the kit's tap hits pre-render after the unlock; a pre-rendered tap is one new node (two the first time a
 //             lane needs a choke gain); its spectrum matches the live synthesis; hits book exactly when asked (+-1 ms);
 //             a burst of taps over a song + a cheering crowd: the global cap holds (<= 32), no tap is ever dropped.
+//   pre     : v1.2 Lane I (handoff F6 / F17 / F13 perf): on a 4x CPU throttle, the widened PRE (velocity layers x round
+//             robins) builds after a kit change in <= 2.5 s with no main-thread slice over 8 ms and <= 6 MB per kit (with the
+//             sampled kit: its decoded clips + the synth lanes); the TMKD kit decodes (metal tier 3) in slices <= 8 ms; a
+//             velocity tap is one buffer source (+ its slot the first time) from the set; the 1.1 tap path is untouched.
 // Run: node build.js && META_ONLY=governor timeout 500 node tests/pw_perf.js
 const { open, checker, VIEW } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -435,10 +439,58 @@ async function audio() {
   finally { await o.close(); c.done(); }
 }
 
+async function pre() {
+  const c = checker('pre');
+  const o = await open({ noGoto: true });
+  const { page, errors } = o;
+  try {
+    await o.context.addInitScript(COUNT);
+    await page.goto(o.url);
+    await boot(page);
+    await quick(page);
+    await page.mouse.click(Math.round(W / 2), 120);
+    await page.evaluate(() => GG.audio.unlock());
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const rows = [];
+    for (const [g, q] of [['metal', 3], ['punk', 3], ['country', 2], ['rock', 0], ['metal', 1]]) {
+      await page.evaluate(([g, q]) => { GG.state.genre = g; GG.state.gear.quality = q; GG.audio.hit('hat', undefined, { vel: 0.85 }); }, [g, q]);
+      const key = g + '|' + q + '|';
+      await page.waitForFunction(k => { const p = GG.debug('audio').pre; return p.ready && p.key && p.key.indexOf(k) === 0; }, key, { timeout: 30000 });
+      if (g === 'metal' && q >= 2) await page.waitForFunction(() => GG.debug('audio').kit.ready, null, { timeout: 30000 });
+      const d = await page.evaluate(() => { const a = GG.debug('audio'); return { pre: a.pre, kit: a.kit }; });
+      const kitOn = g === 'metal' && q >= 2, bytes = d.pre.bytes + (kitOn ? d.kit.bytes : 0);
+      rows.push({ kit: key, ms: d.pre.ms, slice: d.pre.slice, sets: d.pre.sets, rr: d.pre.rr, layers: d.pre.layers, bytes, kitMs: kitOn ? d.kit.ms : null, kitSlice: kitOn ? d.kit.slice : null });
+    }
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    console.log('INFO pre (4x throttle) ' + JSON.stringify(rows));
+    c.ok(rows.every(r => r.ms <= 2500), 'the velocity sets build in <= 2.5 s on a 4x throttle ' + rows.map(r => r.kit + r.ms + 'ms').join(' '));
+    c.ok(rows.every(r => r.slice <= 8 && (r.kitSlice == null || r.kitSlice <= 8)), 'no build slice over 8 ms ' + rows.map(r => r.kit + r.slice + '/' + r.kitSlice).join(' '));
+    c.ok(rows.every(r => r.bytes <= 6e6), 'every kit set <= 6 MB ' + rows.map(r => r.kit + Math.round(r.bytes / 1e3) + 'kB').join(' '));
+    const t3 = rows.find(r => r.kit === 'punk|3|'), t1 = rows.find(r => r.kit === 'metal|1|'), t0 = rows.find(r => r.kit === 'rock|0|');
+    c.ok(t3.layers === 3 && t3.rr >= 3 && t1.layers === 2 && t1.rr === 3 && t0.layers === 1 && t0.rr === 2, 'layers + round robins follow C.REALISM (arena 3 x 4, pawn 2 x 3, milk crate 1 x 2) ' + JSON.stringify([t3, t1, t0].map(r => [r.kit, r.layers, r.rr])));
+    // a velocity tap: one buffer source from the set (+ the lane's slot: gain, low-pass, pan, the first time)
+    const per = await page.evaluate(async () => {
+      const out = {}, h0 = GG.debug('audio').pre.hits;
+      for (const lane of ['hat', 'cymbal', 'ride', 'kick', 'snare']) {
+        const r = [];
+        for (let i = 0; i < 5; i++) { const n0 = window.__nodes.n; GG.audio.hit(lane, undefined, { vel: 0.5 + 0.1 * i }); r.push(window.__nodes.n - n0); await new Promise(res => setTimeout(res, 120)); }
+        out[lane] = r;
+      }
+      return { out, hits: GG.debug('audio').pre.hits - h0 };
+    });
+    c.ok(Object.values(per.out).every(r => r.every(n => n === 1 || n === 4) && r.filter(n => n === 4).length <= 2), 'a velocity tap = 1 buffer source (+3 nodes while its lane builds a slot) ' + JSON.stringify(per.out));
+    c.ok(per.hits >= 25, 'every velocity tap played from the set (' + per.hits + ')');
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'pre threw: ' + (e.stack || e)); }
+  finally { await o.close(); c.done(); }
+}
+
 (async () => {
   if (want('scenes')) await scenes();
   if (want('governor')) await governor();
   if (want('ratio')) await ratio();
   if (want('stalls')) await stalls();
   if (want('audio')) await audio();
+  if (want('pre')) await pre();
 })();
