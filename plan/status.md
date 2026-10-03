@@ -213,6 +213,24 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.1 as merged** (lanes D + B, lead folds; full list in `02_contracts.js` V1.1 SEATS "As merged"):
+  - Folds: `C.GATE_KEYS += seat, swapped` (`C.SEAT_GATE_KEYS` stays as the subset); `C.ACH_KINDS += seatCareer, soloTooLong,
+    allSeats` (= `GG.achieve.SEAT_KINDS`, now in `KINDS`). `C.SEAT_KINDS` unchanged.
+  - `GG.audio`: `seatVoiceFor(kind)`, `pluck|strum|lead(midi, when, o)` → handle `{ fn, kind, midi, t, end, len, hold, n, repeats,
+    released, cut }` (o adds `repeats`, `trem`, `ring`, `seat`), `release(h, when)` → true/false/null, `seatPreview(bandId, seat,
+    opts?)` → handle + `{ bandId, seat, secs, stopAt }`, `stopPreview()`; `play()` handle + `kinds/muted/mute/seat`; timeline +
+    `seat/part` (part notes `part: true`, last outro bar `ring: true`, `tl.tail`); `renderOffline({ seat, part, mute, seatNotes })`;
+    `soloFor(genre, 'player')`; `debug('audio').seat`; genres `backing.progNames` / `backing.hooks`.
+  - `GG.gig`: `STR_LANES`, `HOLD_BEATS`, `RUN_GAP` 0.18; chart opts `genre`, `soloist`; chart keys `holds, chords, runs, kinds,
+    genre, tail, fills[].cap/shred`; `S.release(lane, t)`, `S.holding`, `S.seat`; SONG_RESULT `seat, holds, rings, held, bends,
+    solo, dur, soloNotes, allNotes`; `roles().drummer` non-enumerable; `economy.gig.live` `flowGain, holdGain, ringGain, ringAt,
+    seatDensityClamp, bendGain`.
+  - `GG.songs.part.*` (ROWS, key, choices, suggest, sanitize, full, toggle, pick, MODS, modify, notes), `partRating`,
+    `PART_WEIGHT`, `rate().part`; `GG.career.stageRole / ARCS / arcOf`; `GG.drama.slotOf`; `GG.shop.seatGearEffect /
+    seatGearSync / kitName / whammy`.
+  - UI: 51 screen `seat` (testids `seat-drums|bass|rhythm|lead`, `seat-next`), 55 string lanes, 54 "Your part", 5k / 59b by seat.
+  - pw matrix adds `tests/pw_seat_audio.js` (voices | mute | preview | noodle) and `tests/pw_seats.js` (pick | write | gig |
+    studio | shop | garage | stage), both at 390x844 and `PW_VIEW=440x956`.
 - **v1.1 stage 0** (2026-10-02, `v1.1-seats`; shapes in `02_contracts.js` V1.1 SEATS, contract §3/§4):
   - Contracts: `C.SEATS`, `C.SEAT_MAX_LANES { drums 6, bass 5, rhythm 6, lead 6 }`, `C.SEAT_KINDS` (confirmed on the real timeline:
     metal rhythm gtr+gtr2 / lead gtr+lead; punk rhythm gtr / lead gtr+lead; rock rhythm gtr2+clean (Lane D adds a seat layer) /

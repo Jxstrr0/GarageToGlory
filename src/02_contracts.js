@@ -119,7 +119,8 @@
   // ACH test kinds (§4.6) and lesson ids (§4.7): final as merged in v1.0 (equal to GG.achieve.KINDS / GG.lessons.LESSONS).
   C.ACH_KINDS = ['milestone', 'bannedInYear', 'releasedFr', 'originals', 'award', 'winterNoBreakdown', 'rivalLoonieStreak',
     'special', 'venuePlayed', 'songKickShare', 'flag', 'stat', 'final', 'bonus', 'tier', 'botbInYear', 'licensedBrand', 'crack',
-    'returned', 'reviewBelow', 'studio', 'km', 'weatherGig', 'allBands', 'difficulty', 'careers', 'gongWon'];
+    'returned', 'reviewBelow', 'studio', 'km', 'weatherGig', 'allBands', 'difficulty', 'careers', 'gongWon',
+    'seatCareer', 'soloTooLong', 'allSeats'];   // v1.1 seat kinds (GG.achieve.SEAT_KINDS): seatCareer { seat }, soloTooLong { min?, by? }, allSeats
   C.ACH_WHEN = ['gig', 'week', 'year', 'end', 'meta', 'load'];
   C.LESSONS = ['w1_card', 'w1_walk', 'w1_plan', 'w1_write', 'w1_rehearse', 'w1_gig', 'w1_wrap', 'w2_board', 'w2_money', 'w3_chat',
     'w4_van', 'y1_good_year'];
@@ -158,9 +159,9 @@
   //   moodBelow:{ memberId: n }  moodAbove:{ memberId: n }
   C.GATE_KEYS = ['era', 'genre', 'region', 'band', 'minWeek', 'maxWeek', 'weekOfYear', 'minYear', 'maxYear',
     'minFans', 'maxFans', 'minFund', 'maxFund', 'minBuzz', 'maxBuzz', 'minChemistry', 'maxChemistry',
-    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove'];
-  // v1.1 "Seats" gate keys (career.gatePasses evaluates them like GATE_KEYS; kept in their own list until Lane B's
-  // sim_career gate test covers them, then the lead folds them into GATE_KEYS; Lane A's content.test accepts both lists):
+    'flags', 'notFlags', 'flagEquals', 'gigBooked', 'moodBelow', 'moodAbove', 'seat', 'swapped'];
+  // v1.1 "Seats" gate keys, folded into GATE_KEYS at integration (sim_career's gate test covers both on a drum and a bass
+  // career). C.SEAT_GATE_KEYS stays as the seat subset (content tests that concat it still pass):
   //   seat:[C.SEATS..] (the player's seat)  swapped: memberId | [memberIds] | true (someone is the swapped drummer) |
   //     false (nobody: the drum seat). The drum seat never matches swapped: true / an id. Lines and cards may also carry
   //     seat / swapped at the top level (career.seatOk; cardOk and speakerOk(state, who, line) honour both).
@@ -456,6 +457,35 @@
      release(handle, when) -> null; GG.audio.seatKinds(genre, seat) -> C.SEAT_KINDS; GG.render.stage.setup({ seat }) is
      stored (info().seat) and otherwise ignored.
   ====================================================================== */
+  // As merged (v1.1 lanes D audio + B sims/gameplay UI; plan/v11_lane_reports.md; contract §4.9):
+  //   Folds: C.GATE_KEYS += seat, swapped (C.SEAT_GATE_KEYS = that subset); C.ACH_KINDS += seatCareer { seat }, soloTooLong
+  //   { min? (default 0.4, spotlight notes / all your notes), by?: 'time' }, allSeats (= GG.achieve.SEAT_KINDS). C.SEAT_KINDS unchanged.
+  //   GG.audio (30): seatVoiceFor(kind) -> 'pluck'|'strum'|'lead'; pluck|strum|lead(midi, when, o) -> handle { fn, kind, midi, t,
+  //     end, len, hold, n, repeats, released, cut } | null (muted / no audio); o = { len, hold, kind, power, mute, strum, up, bend,
+  //     trem, ring, repeats: [s after t] (a run on the grid), seat }; booked like hit (when < 1 s ahead, else now + 5 ms), class
+  //     'tap' (never dropped), one voice per fn. release(handle, when) -> true | false (already released / a tap) | null (no
+  //     handle): gates a hold (>= 60 ms, 20 ms fade). hitCancel() also cuts booked seat notes. seatPreview(bandId, seat, opts?)
+  //     -> handle + { bandId, seat, secs, stopAt } | null: ~3 s of the band's first starter song's chorus, the seat's kinds
+  //     +6 dB, the rest -6 dB, one at a time, stops itself (play / stop / suspend / stopPreview() end it). play() handle adds
+  //     kinds, muted, mute, seat; timeline result adds seat, part (part notes carry part: true; the outro's last bar ring: true,
+  //     tl.tail beats past the end); renderOffline({ seat, part, mute, seatNotes: [{ fn, midi, at, o, release }] }); soloFor(genre,
+  //     'player'); noodle by seat (walk, chug, power, lick); debug('audio').seat. genres.js backing.progNames[section][i]
+  //     (plain words) + backing.hooks[section] = [{ name, degrees: [5], rows: [5 rows] }].
+  //   GG.gig (22): STR_LANES, HOLD_BEATS { easy 2, normal 1, hard 1, expert 1 }, RUN_GAP 0.18; chart opts genre, soloist; string
+  //     chart keys holds, chords, runs, kinds, genre, tail, fills[].cap / shred; S.release(lane, t), S.holding, S.seat; SONG_RESULT
+  //     adds seat, holds, rings, held, bends (lead seat at amp tier 2), and on the lead seat solo, dur, soloNotes, allNotes;
+  //     roles(state).drummer is non-enumerable (the drum seat's roles object equals v1.0's). economy.gig.live adds flowGain,
+  //     holdGain, ringGain, ringAt, seatDensityClamp, bendGain.
+  //   GG.songs (21): part.{ ROWS, key(seat), choices(genre, seat, section), suggest, sanitize, full, toggle, pick, MODS, modify
+  //     (lock | double | ring | call), notes }, partRating(pattern, genre), PART_WEIGHT { groove, hook, difficulty }, rate().part =
+  //     { groove, hook, tips }; similarity scales by part likeness; create gives string-seat songs a part (seeded per song id).
+  //   GG.career (20): stageRole(state, m) (drums: the content role; string seats: seatRole), ARCS { bass|rhythm|lead: { flag,
+  //     values } }, arcOf(state). GG.drama (27): slotOf (the swapped member's slot is 'drums'; a drum hole on a string seat hires
+  //     drummers, fill-in id fill_drums). GG.shop (2a): seatGearEffect(s, id), seatGearSync, kitName(s, k), whammy(s).
+  //   GG.achieve (2g): SEAT_KINDS; KINDS includes them now that C.ACH_KINDS lists them.
+  //   UI: 51 screen 'seat' (testids seat-drums|bass|rhythm|lead, seat-next; tap = A.seatPreview, leaving = A.stopPreview;
+  //     emits 'seat:picked'); 55 string lanes (str0..5, holds/runs/chords drawn); 54 "Your part"; 5k "{Instrument} shop";
+  //     59b "{Instrument} takes".
 
   /* ======================================================================
    EVENTS (GG.emit(name, payload))            emitted by
