@@ -880,6 +880,8 @@ async function vox() {
       const spec = (g, o) => Object.assign({ genre: g, pattern: GG.songs.signature(g), section: 'chorus', bars: 4, songId: 'vx1', singer: SING[g] }, o);
       // 1) before (1.1 path) / after (Soundcheck, vel 0.85), no plate yet (GG.dsp.impulse2 missing until Lane I lands)
       const realImp = GG.dsp.impulse2, bufs = {};
+      delete GG.dsp.impulse2;   // pass 1 without a plate (Lane I's impulse2 or not), pass 2 with it (or a stand-in)
+      out.plateSrc = realImp ? 'GG.dsp.impulse2' : 'stand-in';
       for (const g of GG.contracts.GENRES) {
         velOff();
         const b0 = await A.renderOffline(spec(g, { vocalsOnly: true })), va0 = await split(spec(g, {}));
@@ -889,7 +891,7 @@ async function vox() {
         out.genres[g] = { before: Object.assign(m(b0.buffer), { va: va0 }), after: Object.assign(m(b1.buffer), { va: va1 }) }; bufs[g] = b1.buffer;
       }
       // 2) the plate: a stand-in impulse2 (decaying stereo noise, 1.2 s) exercises the plate path until Lane I's impulse2 lands
-      if (!realImp) GG.dsp.impulse2 = (cls, sr, seed) => { const n = Math.floor(1.2 * sr), L = new Float32Array(n), R = new Float32Array(n); let s = seed || 1; for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; L[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); s = (s * 16807) % 2147483647; R[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); } return [L, R]; };
+      GG.dsp.impulse2 = realImp || ((cls, sr, seed) => { const n = Math.floor(1.2 * sr), L = new Float32Array(n), R = new Float32Array(n); let s = seed || 1; for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; L[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); s = (s * 16807) % 2147483647; R[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); } return [L, R]; });
       for (const g of GG.contracts.GENRES) {
         velOn(0.85);
         const b2 = await A.renderOffline(spec(g, { vocalsOnly: true }));
@@ -913,7 +915,8 @@ async function vox() {
       const mg = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 24, songId: 'set1', singer: 'tw_gord' });
       velOff();
       out.metal = { set: m(ms.buffer), gord: m(mg.buffer) };
-      // 6) live: a rock chorus + a punk song through play(): the chain on the live rig, doubles / gangs / plate counted
+      // 6) live: a rock chorus + a punk song through play(): the chain on the live rig (made at unlock, with the plate impulse
+      //    of pass 2), doubles / gangs / plate counted
       A.unlock(); await new Promise(r => setTimeout(r, 200));
       velOn(0.85);
       const live = {};
@@ -925,10 +928,10 @@ async function vox() {
       }
       velOff();
       out.live = live;
-      if (!realImp) delete GG.dsp.impulse2;
+      if (realImp) GG.dsp.impulse2 = realImp; else delete GG.dsp.impulse2;
       return out;
     });
-    console.log('v1.2 vox numbers (before = 1.1 path, after = Soundcheck vel 0.85, no plate; plate = with a stand-in impulse2) ' + JSON.stringify(res));
+    console.log('v1.2 vox numbers (before = 1.1 path, after = Soundcheck vel 0.85, no plate; plate = with ' + res.plateSrc + ') ' + JSON.stringify(res));
     const G = Object.entries(res.genres);
     for (const [g, x] of G) console.log('vox ' + g.padEnd(8) + ' rms ' + x.before.rms + ' -> ' + x.after.rms + ' (plate ' + x.plate.rms + ') | 2-4k ' + x.before.b24 + ' -> ' + x.after.b24 + ' | 4k+ ' + x.before.hi + ' -> ' + x.after.hi +
       ' | width ' + x.before.width + ' -> ' + x.after.width + ' (plate ' + x.plate.width + ') | peak ' + x.before.peak + ' -> ' + x.after.peak + ' | V/A ' + x.before.va + ' -> ' + x.after.va + ' dB');
@@ -945,6 +948,7 @@ async function vox() {
     c.ok(L.rock.playing && L.rock.chain && L.rock.hits > 0 && L.rock.doubles > 0 && L.rock.genre === 'rock', 'live rock chorus: the chain sings, chorus doubles ' + JSON.stringify(L.rock));
     c.ok(L.punk.gang3 > 0, 'live punk chorus: gang hits grow to 3 voices ' + L.punk.gang3);
     c.ok(L.rock.delay > 0.2 && L.rock.delay < 1.5, 'rock: the tempo delay is set (dotted 1/8) ' + L.rock.delay);
+    c.ok(L.rock.plate === 'plate' || L.rock.plate === 'room', 'live: the plate is built (room = the slow-phone fallback) ' + L.rock.plate);
     c.ok(L.punk.playing && L.punk.hits > L.rock.hits && L.punk.delay === L.rock.delay, 'live punk: sings, no delay change (punk has none) ' + JSON.stringify(L.punk));
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'vox threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }

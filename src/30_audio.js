@@ -1145,7 +1145,7 @@
   // aspiration's depth, inp = the level into the compressor (peaks reach the -18 dB threshold, so vel still moves the
   // level), out = the chain's output trim, plate = the plate's wet return, room = the room send that stands in for the
   // plate on a slow phone.
-  var VXL = { f1: 4.2, dbl: 0.55, gang: 0.7, breath: 1.6, inp: 0.25, out: 2.2, plate: 1.4, room: 1 };
+  var VXL = { f1: 4.2, dbl: 0.55, gang: 0.7, breath: 1.6, inp: 0.25, out: 2.2, plate: 3.2, room: 1 };
   function voxSoundcheck(r, ev) { return ev.vel != null && !!r.vx && !A.isClassic(); }
   // Room for n more sources at t on this rig (song + band caps) and, live, under the global cap without evicting anything
   // (a double / third gang voice is optional: never at a crowd one-shot's expense, never a counted drop).
@@ -1208,8 +1208,9 @@
     return vxSlow.on;
   }
   // Per hit: the genre's air shelf, plate (or room) send and delay; the delay time from the song's tempo (r.voxTempo; a
-  // player() line may call it at the song's start too, nothing breaks if both do).
-  function voxSetup(r, spb) {
+  // player() line may call it at the song's start too, nothing breaks if both do; the first vocal hit of every playback
+  // (a new port) re-sets it, whatever else wrote r.voxDelay.delayTime).
+  function voxSetup(r, spb, p) {
     var X = r.vx, GV = GG.voice, g = r.genre || 'metal', S = GV.sends(g), t = r.ctx.currentTime;
     var plate = !!X.plate && !(r === rig && voxSlow());   // (no plate impulse yet: no plate send at all)
     if (X.genre !== g || X.plateOn !== plate) {
@@ -1219,6 +1220,7 @@
       if (X.roomSend) X.roomSend.gain.setValueAtTime(plate || !X.plate ? 0 : S.plate * VXL.room, t);
       if (X.delaySend) X.delaySend.gain.setValueAtTime(S.delay ? S.delay.mix : 0, t);
     }
+    if (p && X.port !== p) { X.port = p; X.resync = true; }
     r.voxTempo(spb);
     X.stats[X.plate ? plate ? 'plate' : 'room' : 'noPlate']++;
   }
@@ -1252,7 +1254,7 @@
     var gang3 = !!ev.gang && voxRoom(r, t, n0 + 1), dbl = !ev.gang && !bv && S.double !== false && (ev.role === 'full' || ev.section === 'chorus') && voxRoom(r, t, n0 + 1);
     if (!book(r, t, dur, n0 + (gang3 || dbl ? 1 : 0), true)) return;
     counts.vox++; vocTypes[ev.voc] = (vocTypes[ev.voc] || 0) + 1;
-    voxSetup(r, spb);
+    voxSetup(r, spb, p);
     X.stats.hits++; if (gang3) X.stats.gang3++; if (dbl) X.stats.doubles++;
     var dest = voxIn(r, p, bv ? 'vxB' : 'vxL'), ring = GV.ring(S);
     if (ring) dest = eqNode(c, 'peaking', ring[0], ring[1], ring[2], dest);
@@ -1296,8 +1298,9 @@
       bursts.forEach(function (x) {
         var bt = t + x[0], bl = Math.max(0.008, x[1]);
         if (x[5]) { ng.gain.setValueAtTime(base, bt); ng.gain.linearRampToValueAtTime(x[4], bt + 0.008); ng.gain.linearRampToValueAtTime(base, bt + bl); return; }
-        cf.frequency.setValueAtTime(x[2], bt); cf.Q.setValueAtTime(x[3], bt);
-        cg.gain.setValueAtTime(0, bt); cg.gain.linearRampToValueAtTime(x[4] * 0.6, bt + 0.004); cg.gain.linearRampToValueAtTime(0, bt + bl);
+        var hiss = x[2] >= 5000;   // s / z / f / v: more 5-8 kHz (F10 consonant polish)
+        cf.frequency.setValueAtTime(hiss ? Math.min(8000, x[2] * 1.15) : x[2], bt); cf.Q.setValueAtTime(x[3], bt);
+        cg.gain.setValueAtTime(0, bt); cg.gain.linearRampToValueAtTime(x[4] * (hiss ? 0.85 : 0.6), bt + 0.004); cg.gain.linearRampToValueAtTime(0, bt + bl);
       });
       if (breath > 0.02) {   // aspiration that pulses with the folds: 2.5 kHz noise x the half-wave rectified glottal wave
         var pg = gainNode(c, 0, amp), rect = c.createWaveShaper(); rect.curve = rectCurve();
@@ -1311,7 +1314,7 @@
   // Metal (metalVox's Soundcheck tail): the plate send, and the extra voice when booked: a held scream's double (+8 cents,
   // 18-28 ms late, its own 3-formant bank, panned +-0.25) or a gang's third voice (+27 ms, formants x 1.08, panned 0.4).
   function metalExtra(r, p, ev, t, dur, V, M, out, f, seed, xtra, gang, vib, sco) {
-    voxSetup(r, 0);
+    voxSetup(r, 0, p);
     if (r.vx.fx) out.connect(voxIn(r, p, 'vxM'));
     r.vx.stats.hits++;
     if (!xtra) return;
@@ -1364,7 +1367,8 @@
     X.delaySend = gainNode(c, 0, d); X.fx.connect(X.delaySend);
     r.voxTempo = function (spb) {   // the delay time for the rig's genre at spb seconds per beat (only when it changes)
       var dt = GV.delayTime(r.genre || 'metal', spb);
-      if (dt && Math.abs(dt - X.dt) > 1e-4) { d.delayTime.setValueAtTime(dt, c.currentTime); X.dt = dt; }
+      if (dt && (X.resync || Math.abs(dt - X.dt) > 1e-4)) { d.delayTime.setValueAtTime(dt, c.currentTime); X.dt = dt; }
+      X.resync = false;
     };
     return X;
   }

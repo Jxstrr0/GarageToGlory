@@ -149,7 +149,7 @@
     metal: { plate: 0.18, delay: null, air: true, trim: 0 },
     punk: { plate: 0.08, delay: null, air: false, trim: 0 },
     rock: { plate: 0.2, delay: { beats: 0.75, mix: 0.15 }, air: true, trim: -2.5 },        // dotted 1/8: the '80s wail
-    country: { plate: 0.12, delay: { secs: 0.11, mix: 0.2 }, air: true, trim: -4 }        // slapback, matches Earl's Tele
+    country: { plate: 0.12, delay: { secs: 0.11, mix: 0.2 }, air: true, trim: -5.5 }      // slapback, matches Earl's Tele
   };
   V.DELAY = { feedback: 0.25, lp: 3500, max: 1.5 };
   V.sends = function (genre) { return V.SENDS[genre] || V.SENDS.rock; };
