@@ -109,12 +109,12 @@
      The drum shop
      ====================================================================================================== */
   function sectionRow(st, id) {
-    var def = (content().sections || {})[id] || { name: id, blurb: '' }, own = SH().ownsSection(st, id);
+    var def = SH().sectionDef(st, id), own = SH().ownsSection(st, id);   // v1.1 review: the seat's text
     var how = fill(id === 'outro' ? 'Unlocks after 3 songs written. {filler} will have an idea.' : ui.roleOf('soloist', st) === 'player' ? 'Local Heroes: your solo section arrives. Your {sticks} have been ready for years.'
       : 'Local Heroes: {soloist} will insist. Your {sticks} are being held hostage.');   // v1.1: {sticks}; the lead seat's solo is yours
     return el('div.shop-row' + (own ? '.own' : '.locked'), { testid: 'gear-section-' + id }, [
       el('span.shop-ico', id === 'outro' ? '🎬' : '🎸'),
-      el('div.grow', [el('b', def.name), el('div.small.dim', def.blurb), own ? null : el('div.tiny.amber', how)]),
+      el('div.grow', [el('b', def.name), el('div.small.dim', fill(def.blurb)), own ? null : el('div.tiny.amber', how)]),
       el('span.tag' + (own ? '.amber' : ''), own ? 'In your songs' : 'Locked')]);
   }
   ui.define('gear', {
@@ -531,9 +531,9 @@
     if (sh.rent) out.push(el('div.line-list.panel', { testid: 'wrap-rent' }, [el('div', [el('span', 'Rent · ' + rentRoom + ' (in upkeep)'), el('span.bad', '−' + money(sh.rent))])]));
     (sh.unlocks || []).forEach(function (u) {
       if (u.kind === 'section') {
-        var sd = (content().sections || {})[u.id] || { name: u.id, blurb: '' };
+        var sd = SH().sectionDef(st, u.id);
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'section', id: u.id } }, [el('span', { style: 'font-size:24px' }, u.id === 'outro' ? '🎬' : '🎸'),
-          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', sd.blurb + ' New tab in the songwriter.')])]));
+          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', fill(sd.blurb) + ' New tab in the songwriter.')])]));
       } else if (u.kind === 'merch') {
         var names = (u.ids || []).map(function (id) { var d = SH().merchDef(id); return d ? d.name : id; });
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'merch' } }, [el('span', { style: 'font-size:24px' }, '👕'),

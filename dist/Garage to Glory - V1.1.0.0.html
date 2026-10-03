@@ -9878,8 +9878,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even at rehearsal.' }
     ],
     sections: {
-      outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.' },
-      solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.' }
+      outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.',
+        bySeat: {   // v1.1 review: the string seats (GG.shop.sectionDef; the UI fills the tokens)
+          bass: 'A proper ending: the last chord rings out, you hold the low note under it and {drummer} gets a big fill to finish.',
+          rhythm: 'A proper ending: the last chord rings out under your hand and {drummer} gets a big fill to finish.',
+          lead: 'A proper ending: the last chord rings out, you bend the last note and {drummer} gets a big fill to finish.' } },
+      solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.',
+        bySeat: {
+          bass: 'The soloist\'s spotlight: you play the roots and nothing else while {soloist} takes over.',
+          rhythm: 'The soloist\'s spotlight: you hold long, ringing chords while {soloist} takes over.',
+          lead: 'Your spotlight: the band drops to a stripped kit and the solo is yours.' } }
     },
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
@@ -32015,6 +32023,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
   };
   S.ownsSection = function (s, id) { return has(s.gear && s.gear.sections, id); };
+  S.sectionDef = function (s, id) {
+    var d = ((GG.content.shop || {}).sections || {})[id], seat = GG.career && GG.career.seatOf ? GG.career.seatOf(s) : 'drums';
+    if (!d) return { name: id, blurb: '' };
+    return { name: d.name, blurb: (seat !== 'drums' && d.bySeat && d.bySeat[seat]) || d.blurb || '' };
+  };
   S.unlockSection = function (s, id, why) {
     if (C.EXTRA_SECTIONS.indexOf(id) < 0 || S.ownsSection(s, id)) return false;
     s.gear.sections.push(id);
@@ -49749,7 +49762,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var names = D.mode === 'view' ? GG.songs.sectionsOf(D.pat) : GG.songs.allSections(gear());
     return names.map(function (n) { return { id: n, label: (isExtra(n) && !hasSec(D, n) ? '+' : '') + SEC_LABEL[n] }; }).concat([{ id: 'song', label: 'Song' }]);
   }
-  function extraDef(name) { return ((GG.content.shop && GG.content.shop.sections) || {})[name] || { name: SEC_LABEL[name], blurb: '' }; }
+  function extraDef(name) {   // v1.1 review: the seat's text (GG.shop.sectionDef), tokens filled
+    var d = GG.shop && GG.shop.sectionDef ? GG.shop.sectionDef(GG.state, name) : ((GG.content.shop && GG.content.shop.sections) || {})[name];
+    return d ? { name: d.name || SEC_LABEL[name], blurb: ui.fill(d.blurb || '') } : { name: SEC_LABEL[name], blurb: '' };
+  }
   function withSongExtras(D, arr) { return GG.songs.withExtras(arr.slice(), gear(), { solo: hasSec(D, 'solo'), outro: hasSec(D, 'outro') }); }
   function baseArrangementId(p) { return GG.songs.arrangementId({ arrangement: (p.arrangement || []).filter(function (x) { return !isExtra(x); }) }); }
   function addExtra(s, D, name) {
@@ -49766,7 +49782,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
         el('p.small.dim', def.blurb),
         el('p.small', name === 'solo' ? (soloWho().you ? 'Goes in before the last chorus. Live, the whole section is your spotlight.' : 'Goes in before the last chorus. Live, you only play ' + (strSeat() ? 'one note a beat' : 'the quarter notes') + ': the rest is ' + soloWho().pos + '.')
-          : 'Goes at the very end: the last chord rings out, and you get a big ' + (strSeat() ? 'finish' : 'fill') + ' to finish.')]),
+          : (strSeat() ? ui.fill('Goes at the very end: the last chord rings out, and {drummer} gets a big fill to finish.') : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.'))]),
       D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
   }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
@@ -56153,12 +56169,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      The drum shop
      ====================================================================================================== */
   function sectionRow(st, id) {
-    var def = (content().sections || {})[id] || { name: id, blurb: '' }, own = SH().ownsSection(st, id);
+    var def = SH().sectionDef(st, id), own = SH().ownsSection(st, id);   // v1.1 review: the seat's text
     var how = fill(id === 'outro' ? 'Unlocks after 3 songs written. {filler} will have an idea.' : ui.roleOf('soloist', st) === 'player' ? 'Local Heroes: your solo section arrives. Your {sticks} have been ready for years.'
       : 'Local Heroes: {soloist} will insist. Your {sticks} are being held hostage.');   // v1.1: {sticks}; the lead seat's solo is yours
     return el('div.shop-row' + (own ? '.own' : '.locked'), { testid: 'gear-section-' + id }, [
       el('span.shop-ico', id === 'outro' ? '🎬' : '🎸'),
-      el('div.grow', [el('b', def.name), el('div.small.dim', def.blurb), own ? null : el('div.tiny.amber', how)]),
+      el('div.grow', [el('b', def.name), el('div.small.dim', fill(def.blurb)), own ? null : el('div.tiny.amber', how)]),
       el('span.tag' + (own ? '.amber' : ''), own ? 'In your songs' : 'Locked')]);
   }
   ui.define('gear', {
@@ -56565,9 +56581,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (sh.rent) out.push(el('div.line-list.panel', { testid: 'wrap-rent' }, [el('div', [el('span', 'Rent · ' + rentRoom + ' (in upkeep)'), el('span.bad', '−' + money(sh.rent))])]));
     (sh.unlocks || []).forEach(function (u) {
       if (u.kind === 'section') {
-        var sd = (content().sections || {})[u.id] || { name: u.id, blurb: '' };
+        var sd = SH().sectionDef(st, u.id);
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'section', id: u.id } }, [el('span', { style: 'font-size:24px' }, u.id === 'outro' ? '🎬' : '🎸'),
-          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', sd.blurb + ' New tab in the songwriter.')])]));
+          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', fill(sd.blurb) + ' New tab in the songwriter.')])]));
       } else if (u.kind === 'merch') {
         var names = (u.ids || []).map(function (id) { var d = SH().merchDef(id); return d ? d.name : id; });
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'merch' } }, [el('span', { style: 'font-size:24px' }, '👕'),

@@ -45,8 +45,16 @@
         blurb: 'Big shells, bigger cymbals, a drum tech named Doug. It sounds like a stadium, even at rehearsal.' }
     ],
     sections: {
-      outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.' },
-      solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.' }
+      outro: { name: 'Outro', blurb: 'A proper ending: the last chord rings out and you get a big fill to finish.',
+        bySeat: {   // v1.1 review: the string seats (GG.shop.sectionDef; the UI fills the tokens)
+          bass: 'A proper ending: the last chord rings out, you hold the low note under it and {drummer} gets a big fill to finish.',
+          rhythm: 'A proper ending: the last chord rings out under your hand and {drummer} gets a big fill to finish.',
+          lead: 'A proper ending: the last chord rings out, you bend the last note and {drummer} gets a big fill to finish.' } },
+      solo: { name: 'Solo', blurb: 'The soloist\'s spotlight: you lay back on a stripped kit while the lead takes over.',
+        bySeat: {
+          bass: 'The soloist\'s spotlight: you play the roots and nothing else while {soloist} takes over.',
+          rhythm: 'The soloist\'s spotlight: you hold long, ringing chords while {soloist} takes over.',
+          lead: 'Your spotlight: the band drops to a stripped kit and the solo is yours.' } }
     },
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},

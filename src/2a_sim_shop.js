@@ -303,6 +303,13 @@
     });
   };
   S.ownsSection = function (s, id) { return has(s.gear && s.gear.sections, id); };
+  // v1.1 review: a song section's shop text for this seat ({ name, blurb }; blurb = sections[id].bySeat[seat] on a string
+  // seat, tokens unfilled: the UI fills them), else the drum seat's (v1.0)
+  S.sectionDef = function (s, id) {
+    var d = ((GG.content.shop || {}).sections || {})[id], seat = GG.career && GG.career.seatOf ? GG.career.seatOf(s) : 'drums';
+    if (!d) return { name: id, blurb: '' };
+    return { name: d.name, blurb: (seat !== 'drums' && d.bySeat && d.bySeat[seat]) || d.blurb || '' };
+  };
   // Unlocks an extra section (outro | solo). Returns true when it was new. Emits 'shop:unlock'.
   S.unlockSection = function (s, id, why) {
     if (C.EXTRA_SECTIONS.indexOf(id) < 0 || S.ownsSection(s, id)) return false;

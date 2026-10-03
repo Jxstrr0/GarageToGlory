@@ -41,7 +41,10 @@
     var names = D.mode === 'view' ? GG.songs.sectionsOf(D.pat) : GG.songs.allSections(gear());
     return names.map(function (n) { return { id: n, label: (isExtra(n) && !hasSec(D, n) ? '+' : '') + SEC_LABEL[n] }; }).concat([{ id: 'song', label: 'Song' }]);
   }
-  function extraDef(name) { return ((GG.content.shop && GG.content.shop.sections) || {})[name] || { name: SEC_LABEL[name], blurb: '' }; }
+  function extraDef(name) {   // v1.1 review: the seat's text (GG.shop.sectionDef), tokens filled
+    var d = GG.shop && GG.shop.sectionDef ? GG.shop.sectionDef(GG.state, name) : ((GG.content.shop && GG.content.shop.sections) || {})[name];
+    return d ? { name: d.name || SEC_LABEL[name], blurb: ui.fill(d.blurb || '') } : { name: SEC_LABEL[name], blurb: '' };
+  }
   // Arrangement presets keep the extras the song uses (a solo before the last chorus, an outro at the end).
   function withSongExtras(D, arr) { return GG.songs.withExtras(arr.slice(), gear(), { solo: hasSec(D, 'solo'), outro: hasSec(D, 'outro') }); }
   function baseArrangementId(p) { return GG.songs.arrangementId({ arrangement: (p.arrangement || []).filter(function (x) { return !isExtra(x); }) }); }
@@ -59,7 +62,7 @@
       el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
         el('p.small.dim', def.blurb),
         el('p.small', name === 'solo' ? (soloWho().you ? 'Goes in before the last chorus. Live, the whole section is your spotlight.' : 'Goes in before the last chorus. Live, you only play ' + (strSeat() ? 'one note a beat' : 'the quarter notes') + ': the rest is ' + soloWho().pos + '.')
-          : 'Goes at the very end: the last chord rings out, and you get a big ' + (strSeat() ? 'finish' : 'fill') + ' to finish.')]),
+          : (strSeat() ? ui.fill('Goes at the very end: the last chord rings out, and {drummer} gets a big fill to finish.') : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.'))]),
       D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
   }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
