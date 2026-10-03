@@ -188,7 +188,7 @@
           el('div.grow', [el('b', k.name), k.whammy ? el('span.tag', { style: 'margin-left:6px' }, '+ whammy') : null, el('div.small.dim', k.blurb),
             !k.can && k.why ? el('div.tiny.bad', { testid: 'gear-why-kit-' + k.tier }, k.why) : null]),
           state ? el('span.tag' + (k.current ? '.amber' : ''), state)
-            : btn('.btn.small' + (k.can ? '.primary' : ''), { testid: 'gear-buy-kit-' + k.tier, disabled: !k.can, onclick: function () {
+            : btn('.btn.small' + (k.can ? '.primary' : ''), { testid: 'gear-buy-kit-' + k.tier, disabled: !k.can, style: 'min-height:48px', onclick: function () {
               var r = SH().buyKit(S(), k.tier);
               if (!r.ok) return nope(r);
               bought('kit', k.id, r); hear('kit'); dbg.gear++;
@@ -203,7 +203,7 @@
           el('span.shop-ico', x.cab ? '🧊' : SEAT_ICON[x.id] || '🎸'),
           el('div.grow', [el('b', x.name), tag ? el('span.tag', { style: 'margin-left:6px' }, tag) : null,
             el('div.small.dim', x.blurb), !x.owned && !x.can && x.why ? el('div.tiny.bad', { testid: 'gear-why-' + x.id }, x.why) : null]),
-          x.owned ? el('span.tag.amber', 'In your rig') : btn('.btn.small' + (x.can ? '.primary' : ''), { testid: 'gear-buy-' + x.id, disabled: !x.can, onclick: function () {
+          x.owned ? el('span.tag.amber', 'In your rig') : btn('.btn.small' + (x.can ? '.primary' : ''), { testid: 'gear-buy-' + x.id, disabled: !x.can, style: 'min-height:48px', onclick: function () {
             var r = SH().buyGear(S(), x.id);
             if (!r.ok) return nope(r);
             bought('gear', x.id, r); hear(x.id); dbg.gear++;
