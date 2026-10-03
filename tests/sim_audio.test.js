@@ -651,4 +651,70 @@ test('v1.1 your instrument (no Web Audio here): voices fail soft, seatVoiceFor, 
   }
 });
 
+// v1.2 "Soundcheck" stage 0 (contract §3.9, handoff F3): the Classic switch and the stage-0 stubs leave the timeline alone.
+// 31 / 32 / 33 load after 30 as in the build (ORDER by name); the 1,212 fingerprints must not move, Classic on or off, and the
+// new play() opts (gig, feel, studio) never reach A.timeline (feel is applied in player(), never baked into the events).
+for (const f of ['31_audio_feel.js', '32_audio_dsp.js', '33_audio_voice.js']) {
+  const fp = path.join(__dirname, '..', 'src', f);
+  if (fs.existsSync(fp)) new Function('window', fs.readFileSync(fp, 'utf8'))({ GG: GG });
+}
+test('v1.2 classic: stubs change nothing (1,212 timeline fingerprints, Classic off / on, new play opts)', () => {
+  const before = JSON.stringify(GG.save.settings());
+  eq(A.isClassic(), false, 'default off (settings.audioClassic missing)');
+  eq(GG.prefs.get().audioClassic, false, 'prefs normalise it to false');
+  eq(fingerprints({}), STAGE0, 'Classic off');
+  eq(A.classic(true), true, 'A.classic(true)');
+  ok(A.isClassic() && GG.save.settings().audioClassic === true && GG.debug('audio').classic === true, 'persisted + in debug(audio)');
+  eq(fingerprints({}), STAGE0, 'Classic on');
+  eq(fingerprints({ gig: true, feel: false, studio: true }), STAGE0, 'opts.gig / feel / studio never change the timeline');
+  eq(A.classic(false), false, 'A.classic(false)');
+  GG.save.saveSettings({ audioClassic: true }); A.applySettings();
+  eq(A.isClassic(), true, 'applySettings re-reads the setting');
+  A.classic(false);
+  ok(JSON.parse(before).audioClassic !== true && GG.save.settings().audioClassic === false, 'left off');
+});
+
+// Stage-0 stub returns: the 1.1 behaviour until the lanes fill them in (lanes F / I / V replace these asserts with their own).
+test('v1.2 stage-0 contracts + stubs (VEL_REF, FEEL_CLAMP, F16 constants, REALISM = F11; stubs return the 1.1 behaviour)', () => {
+  eq(C.VEL_REF, 0.85);
+  eq(C.FEEL_CLAMP, { gigDrum: 0.006, gig: 0.015, free: 0.025, sixteenth: 0.25 });
+  eq([C.FEEL_MOOD, C.FEEL_STUDIO, C.FEEL_RIVAL, C.BAND_AMP_BY_TIER], [{ below: 30, spread: 1.25 }, 0.25, 0.15, true], 'F16 answers');
+  eq(C.REALISM.map(r => r.id), C.KIT_QUALITY, 'one row per kit tier');
+  eq(C.REALISM.map(r => [r.rr, r.layers, r.metal, r.snareModes, r.wires, r.rim, r.crush, r.width, r.cab, r.cymBloom, r.subKick]), [
+    [2, 1, 0, 1, false, false, 0, 0.3, 'practice8', false, false],
+    [3, 2, 3, 2, false, false, 0.15, 0.6, 'combo12', false, false],
+    [4, 2, 6, 2, true, true, 0.25, 1, 'genre', false, false],
+    [4, 3, 6, 2, true, true, 0.35, 1, 'genre', true, true]], 'F11');
+  eq(C.REALISM[3].layerLanes, ['kick', 'snare', 'toms'], 'arena: 3 layers on kick, snare, toms');
+  eq([0, 1, 2, 3, -1, 9].map(t => A.realism(t).id), ['milk_crate', 'pawn_shop', 'pro', 'arena', 'milk_crate', 'arena'], 'realism(tier), clamped');
+  eq(A.realism().id, 'pro', 'outside a career: the reference tier');
+  const tl = A.timeline(song('metal'), { genre: 'metal', songId: 's1' });
+  // Lane F filled feelFor / feelPlan / tapVel (31_audio_feel.js; full checks in sim_feel.test.js)
+  const FL = A.feelFor(null, 'metal', {}), tv = A.tapVel({ judgement: 'perfect', step: 0, lane: 'kick' });
+  ok(FL && FL.byKind && Object.values(FL.byKind).every(x => x.t === 0.5), 'feelFor(null): every player t = 0.5');
+  eq(A.feelPlan(tl, null, 1, { gig: true }), null, 'feelPlan without a FEEL: null (the 1.1 path)');
+  ok(typeof tv === 'number' && tv >= 0.97 - 1e-9 && tv <= 1, 'tapVel: a Perfect downbeat ~ 1');
+  ok(A.warm() instanceof Promise, 'warm -> a Promise');
+  ok(GG.dsp && typeof GG.dsp === 'object' && GG.voice && typeof GG.voice === 'object', 'GG.dsp / GG.voice exist');
+});
+
+// v1.2 Lane F (handoff F3.2 / F3.3): the feel plan rides beside the timeline; steps never move, lanes keep their order.
+test('v1.2 feelPlan never moves steps / keeps lane order at 60-260 bpm (the timeline untouched)', () => {
+  for (const g of C.GENRES) for (const bpm of [60, 120, 190, 260]) for (const gig of [false, true]) {
+    const p = fullSong(g, bpm), tl = A.timeline(p, { genre: g, songId: 's8' }), before = JSON.stringify(tl.events);
+    const FL = A.feelFor(null, g, {}), plan = A.feelPlan(tl, FL, GG.hashSeed('s8|0'), { gig }), w = g + '@' + bpm + (gig ? ' gig' : '');
+    eq(JSON.stringify(tl.events), before, w + ': events never mutated');
+    eq(plan.dt.length, tl.events.length, w + ': one entry per event');
+    const spb = 60 / tl.bpm, cap = Math.min(gig ? 0.015 : 0.025, 0.25 * spb / 4), last = {};
+    tl.events.forEach((e, i) => {
+      if (e.kind === 'step') { eq([plan.dt[i], plan.vel[i]], [0, 1], w + ': a step stays put'); return; }
+      ok(Math.abs(plan.dt[i]) <= cap + 1e-7, w + ': clamp ' + plan.dt[i]);
+      const key = e.kind === 'drum' ? e.lane : e.kind, at = e.beat * spb + plan.dt[i];
+      if (last[key] != null) ok(at >= last[key] - 1e-7, w + ': ' + key + ' keeps its order');
+      last[key] = at;
+    });
+  }
+  eq(fingerprints({ gig: true, feel: true, studio: true }), STAGE0, 'the 1,212 fingerprints with Lane F loaded');
+});
+
 done('sim_audio');

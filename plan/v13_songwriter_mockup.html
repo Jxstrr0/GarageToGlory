@@ -1,0 +1,143 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#0f1420;--bg2:#161d2e;--panel:#1c2438;--panel2:#243050;--line:#34426a;--text:#f3efe6;--dim:#a9b1c6;--faint:#6f7a96;--amber:#ffb347;--green:#57c77a;--blue:#4f8cff;--purple:#9b6bff;
+--font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--display:"Arial Black","Helvetica Neue",Impact,system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070c;font-family:var(--font);color:var(--text);padding:20px 24px 28px;width:1424px}
+h1{font:900 26px var(--display);text-transform:uppercase;letter-spacing:.02em;margin-bottom:4px}
+.sub{color:var(--dim);font-size:15px;margin-bottom:16px}
+.row{display:flex;gap:24px}
+.cap{color:var(--amber);font:900 13px var(--display);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.phone{width:440px;height:956px;background:radial-gradient(120% 60% at 50% 0%,#1a2340 0%,var(--bg) 60%);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid #222b40}
+.hd{display:flex;align-items:center;gap:12px;padding:14px 16px 8px}
+.ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--dim);font-size:20px;flex:none}
+.ttl{flex:1;min-width:0}.ttl .k{font-size:11px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;font-weight:800}
+.ttl .n{font-weight:900;font-style:italic;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meters{display:flex;gap:14px;padding:4px 16px 8px}
+.m{flex:1;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.m b{color:var(--text);font-size:13px;min-width:20px;text-align:right}.m i{flex:1;height:4px;border-radius:2px;background:#2a3350;position:relative;overflow:hidden}
+.m i::after{content:"";position:absolute;inset:0;width:var(--v);background:var(--c);border-radius:2px}
+.m .d{color:var(--green);font-size:11px;font-weight:900}
+.coach{display:flex;align-items:center;gap:10px;margin:2px 16px 10px;padding:7px 12px 7px 7px;background:var(--bg2);border-radius:20px;font-size:14px;color:var(--dim)}
+.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#10141f;flex:none}
+.coach span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.coach strong{color:var(--text)}.coach .more{color:var(--faint);font-weight:900}
+.foot{margin-top:auto;display:flex;gap:10px;padding:10px 16px 18px;background:linear-gradient(transparent,var(--bg) 30%)}
+.fb{flex:1;height:52px;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:15px;letter-spacing:.06em;text-transform:uppercase;background:var(--panel);color:var(--text)}
+.fb.p{background:var(--amber);color:#1b1206}.fb.g{background:transparent;border:1.5px solid var(--line);color:var(--dim)}
+.tabs{display:flex;padding:0 16px;gap:4px;border-bottom:1px solid #222b44}
+.tab{flex:1;text-align:center;padding:10px 0 9px;font-weight:900;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);border-bottom:3px solid transparent}
+.tab.on{color:var(--text);border-color:var(--amber)}
+.seg{display:flex;background:var(--bg2);border-radius:12px;padding:3px;gap:3px}
+.seg div{padding:7px 12px;border-radius:9px;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.seg .on{background:var(--panel2);color:var(--text)}
+.grid{display:grid;gap:3px;padding:0 16px 0 8px;flex:1;min-height:0}
+.gh{font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:4px 0 3px;border-radius:6px}
+.bl{font-size:11px;font-weight:900;color:var(--faint);display:grid;place-items:center}.bl.b{color:var(--text);font-size:13px}
+.c{border-radius:6px;background:#161d30}.c.beat{background:#1b2338}
+.c.on{background:var(--c);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+/* option B */
+.B .phone{background:radial-gradient(120% 60% at 50% 0%,#23192e 0%,#120f1a 60%)}
+.tl{display:flex;gap:4px;padding:2px 16px 10px;align-items:stretch}
+.tb{flex:var(--w,1);min-width:0;overflow:hidden;height:46px;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:9px;font-weight:900;letter-spacing:0;text-transform:uppercase;color:#10141f;opacity:.55}
+.tb.on{opacity:1;outline:2px solid var(--text);outline-offset:1px}.tb small{font-size:9px;opacity:.7}
+.tb.add{background:transparent;border:1.5px dashed var(--line);color:var(--faint);opacity:1;flex:0 0 34px;font-size:18px}
+.pads{display:flex;gap:6px;padding:0 16px 10px}
+.pad{flex:1;border-radius:10px;background:var(--panel);text-align:center;padding:5px 0 6px;position:relative}
+.pad .ch{font:900 20px var(--display)}.pad .bn{font-size:9px;font-weight:900;color:var(--faint);letter-spacing:.08em}
+.pad .ar{position:absolute;top:50%;transform:translateY(-50%);font-size:12px;color:var(--faint)}.pad .ar.l{left:6px}.pad .ar.r{right:6px}
+.pad.home{box-shadow:inset 0 0 0 1.5px var(--green)}
+/* quick song */
+.qtitle{padding:6px 16px 10px;font:900 22px var(--display);text-transform:uppercase}
+.recipes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 14px}
+.rc{background:var(--bg2);border-radius:12px;padding:10px 12px;border:1.5px solid transparent}
+.rc.on{border-color:var(--amber);background:#2a2a35}.rc b{display:block;font-size:15px}.rc span{font-size:12px;color:var(--dim)}
+.sl{padding:0 16px 12px}
+.sl .t{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.sl .t b{font-size:15px}.sl .t em{font-style:normal;font-size:13px;color:var(--amber);font-weight:800}
+.track{height:8px;border-radius:4px;background:#2a3350;position:relative}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--c)}
+.track .kn{position:absolute;top:50%;width:26px;height:26px;border-radius:50%;background:var(--text);transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:6px;font-weight:700}
+/* B quick */
+.tapes{display:flex;gap:10px;overflow:hidden;padding:0 16px 14px}
+.tape{flex:0 0 132px;height:92px;border-radius:10px;background:#2b2433;padding:8px 10px;position:relative;border:1.5px solid transparent}
+.tape.on{border-color:var(--amber)}
+.tape .lb{background:var(--c);color:#16121c;border-radius:4px;padding:3px 6px;font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tape .reels{display:flex;justify-content:center;gap:26px;margin-top:12px}.tape .reels i{width:24px;height:24px;border-radius:50%;border:4px solid #4a4058;background:#16121c}
+.tape small{position:absolute;bottom:6px;left:10px;font-size:10px;color:var(--dim)}
+.desk{margin:0 16px 12px;background:#1d1824;border-radius:16px;padding:14px 8px 10px;display:flex;justify-content:space-around}
+.fd{display:flex;flex-direction:column;align-items:center;width:84px}
+.fd .val{font-size:12px;font-weight:900;color:var(--amber);height:16px}
+.slot{width:8px;height:230px;border-radius:4px;background:#0f0c14;position:relative;margin:8px 0}
+.slot .lit{position:absolute;left:0;right:0;bottom:0;border-radius:4px;background:var(--c);opacity:.8}
+.cap2{position:absolute;left:50%;width:46px;height:24px;border-radius:5px;background:linear-gradient(#e8e4dc,#a9a49a);transform:translate(-50%,50%);box-shadow:0 3px 6px rgba(0,0,0,.6)}
+.cap2::after{content:"";position:absolute;left:4px;right:4px;top:11px;height:2px;background:#333}
+.fd .nm{font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.04em}.fd .en{font-size:10px;color:var(--faint);text-align:center;line-height:1.2;height:24px}
+.tempo{margin:0 16px 10px;display:flex;align-items:center;gap:10px;background:#1d1824;border-radius:14px;padding:10px 14px}
+.tempo b{font:900 26px var(--display)}.tempo span{color:var(--dim);font-size:13px;flex:1}.tempo .pm{width:36px;height:36px;border-radius:50%;background:#2b2433;display:grid;place-items:center;font-weight:900;font-size:18px}
+.note{color:var(--faint);font-size:12px;padding:0 16px 8px}
+</style></head><body>
+<div id="root"></div>
+<script>
+const COL={chug:'#57c77a',open:'#ff6b4a',root:'#ffd23f',fifth:'#3cd0c0',oct:'#4f8cff',scr:'#b98cff',kick:'#ff6b4a',snare:'#ffd23f',hat:'#3cd0c0',crash:'#b98cff'};
+const GTR=[['chug','Chug','x.x.x.x.x.......'],['open','Open','..........x.....'],['root','Root','............x.x.'],['fifth','5th','.............x..'],['oct','Oct','..............x.'],['scr','Scratch','...x.......x....']];
+const DRM=[['kick','🦶 Kick','x.x.x.x.x.x.x.x.'],['snare','🥁 Snare','....x.......x...'],['hat','🎩 Hats','x.x.x.x.x.x.x.x.'],['crash','💥 Crash','x...............']];
+const BL=['1','e','&','a'];
+function grid(rows,rowH){let h=`<div class="grid" style="grid-template-columns:26px repeat(${rows.length},1fr);grid-auto-rows:${rowH}px;grid-template-rows:22px">`;
+ h+='<div></div>'+rows.map(r=>`<div class="gh" style="color:${COL[r[0]]};background:${COL[r[0]]}22">${r[1]}</div>`).join('');
+ for(let s=0;s<16;s++){h+=`<div class="bl ${s%4?'':'b'}">${s%4?BL[s%4]:(s/4+1)}</div>`;h+=rows.map(r=>`<div class="c ${s%4?'':'beat'} ${r[2][s]==='x'?'on':''}" style="--c:${COL[r[0]]}"></div>`).join('');}
+ return h+'</div>';}
+const meters=(g,hk,d,delta)=>`<div class="meters"><div class="m">Groove<i style="--v:${g}%;--c:var(--amber)"></i><b>${g}</b>${delta?'<span class="d">+6</span>':''}</div><div class="m">Hook<i style="--v:${hk}%;--c:var(--amber)"></i><b>${hk}</b></div><div class="m">Diff<i style="--v:${d}%;--c:var(--blue)"></i><b>${d}</b></div></div>`;
+const coach=(who,c,t)=>`<div class="coach"><div class="av" style="background:${c}">${who[0]}</div><span><strong>${who}:</strong> ${t}</span><b class="more">›</b></div>`;
+const hd=(k,n)=>`<div class="hd"><div class="ic">✕</div><div class="ttl"><div class="k">${k}</div><div class="n">${n}</div></div><div class="ic">⋯</div></div>`;
+const slider=(n,v,lo,hi,val,c)=>`<div class="sl"><div class="t"><b>${n}</b><em>${val}</em></div><div class="track"><div class="fill" style="width:${v}%;--c:${c}"></div><div class="kn" style="left:${v}%"></div></div><div class="ends"><span>${lo}</span><span>${hi}</span></div></div>`;
+const fader=(n,v,val,en,c)=>`<div class="fd"><div class="val">${val}</div><div class="slot"><div class="lit" style="height:${v}%;--c:${c}"></div><div class="cap2" style="bottom:${v}%"></div></div><div class="nm">${n}</div><div class="en">${en}</div></div>`;
+const A={
+quick:()=>`${hd('Write block 1 of 1 · New song','Quick song')}${meters(88,74,41)}${coach('Marcel','#57c77a','Pick a recipe, push the sliders, hit play. I will fill in the rest.')}
+<div class="qtitle">Start from a recipe</div>
+<div class="recipes">
+<div class="rc on"><b>Neck-snapper</b><span>Fast, tight, chugging</span></div><div class="rc"><b>Doom crawl</b><span>Slow, heavy, huge</span></div>
+<div class="rc"><b>Thrash attack</b><span>Speed and fury</span></div><div class="rc"><b>Stadium anthem</b><span>Big chorus, fists up</span></div>
+<div class="rc"><b>Gallop</b><span>Horses, but metal 🔒 double kick</span></div><div class="rc"><b>Surprise me</b><span>Roll the dice</span></div></div>
+${slider('Energy',72,'Sparse · easy','Busy · show-off','Busy','var(--amber)')}
+${slider('Mood',85,'Bright','Dark','Very dark','var(--purple)')}
+${slider('Feel',18,'Straight','Swing','Straight','#3cd0c0')}
+${slider('Fills & surprises',50,'None','Lots','Some','#ff6b4a')}
+${slider('Tempo',64,'Slow','Fast','172 bpm · Fast','var(--blue)')}
+<div class="foot"><div class="fb">▶ Play</div><div class="fb g" style="font-size:13px">Tweak ✎</div><div class="fb p">Save ✓</div></div>`,
+part:()=>`${hd('Write block 1 of 1 · Rhythm guitar','Grub Worms Must Burn')}
+<div class="tabs"><div class="tab on">Verse</div><div class="tab">Chorus</div><div class="tab">Bridge</div><div class="tab">Song</div></div>
+${meters(93,87,46,true)}${coach('Marcel','#57c77a','Chug the verse. Palm-muted, like a storm far away.')}
+<div style="display:flex;align-items:center;gap:10px;padding:0 16px 8px"><div class="seg"><div class="on">Your part</div><div>Drums</div></div><div style="flex:1;text-align:right;font-size:12px;color:var(--dim)">Chords: <b style="color:var(--text)">the tritone drop ▾</b></div></div>
+<div class="pads" style="padding-bottom:10px">${['E5','E5','B♭5','E5'].map((c,i)=>`<div class="pad ${i===0||i===3?'home':''}" style="padding:4px 0 5px"><div class="bn">BAR ${i+1}</div><div class="ch" style="font-size:17px">${c}</div></div>`).join('')}</div>
+${grid(GTR,32)}
+<div class="foot"><div class="fb">▶ Loop</div><div class="fb">▶ Song</div><div class="fb p">Save ✓</div></div>`,
+drums:()=>`${hd('Write block 1 of 1 · Drums','Le Pacte du Semis')}
+<div class="tabs"><div class="tab">Verse</div><div class="tab on">Chorus</div><div class="tab">Bridge</div><div class="tab">Song</div></div>
+${meters(67,59,37)}${coach('Dana','#ffb347','Kick first, the rest follows. Drag down a lane to paint.')}
+${grid(DRM,38)}
+<div class="foot"><div class="fb">▶ Loop</div><div class="fb">▶ Song</div><div class="fb p">Save ✓</div></div>`};
+const TL=[['Verse','#57c77a',2],['Chorus','#ffb347',1.4],['Verse','#57c77a',2],['Chorus','#ffb347',1.4],['Bridge','#9b6bff',1],['Chorus','#ffb347',1.4]];
+const tl=on=>`<div class="tl">${TL.map((t,i)=>`<div class="tb ${i===on?'on':''}" style="background:${t[1]};--w:${t[2]}">${t[0]}</div>`).join('')}<div class="tb add">+</div></div>`;
+const B={
+quick:()=>`${hd('Write block 1 of 1 · New song','Quick song')}${meters(88,74,41)}
+<div class="note">Pick a tape, then ride the faders.</div>
+<div class="tapes">${[['Neck-snapper','#57c77a','Fast · tight'],['Doom crawl','#9b6bff','Slow · huge'],['Thrash attack','#ff6b4a','Speed · fury'],['Stadium anthem','#ffb347','Fists up']].map((t,i)=>`<div class="tape ${i===0?'on':''}"><div class="lb" style="--c:${t[1]}">${t[0]}</div><div class="reels"><i></i><i></i></div><small>${t[2]}</small></div>`).join('')}</div>
+<div class="desk">${fader('Energy',72,'Busy','sparse ↕ busy','var(--amber)')}${fader('Mood',85,'Very dark','bright ↕ dark','var(--purple)')}${fader('Feel',18,'Straight','straight ↕ swing','#3cd0c0')}${fader('Fills',50,'Some','none ↕ lots','#ff6b4a')}</div>
+<div class="tempo"><div class="pm">−</div><b>172</b><span>bpm · Fast. Heads will bang.</span><div class="pm">+</div></div>
+${coach('Marcel','#57c77a','Neck-snapper, dark as February. I like it.')}
+<div class="foot"><div class="fb">▶ Play</div><div class="fb g" style="font-size:13px">Tweak ✎</div><div class="fb p">Save ✓</div></div>`,
+part:()=>`${hd('Write block 1 of 1 · Rhythm guitar','Grub Worms Must Burn')}${tl(0)}
+${meters(93,87,46,true)}${coach('Marcel','#57c77a','Chug the verse. Palm-muted, like a storm far away.')}
+<div style="display:flex;align-items:center;gap:10px;padding:0 16px 8px"><div class="seg"><div class="on">Your part</div><div>Drums</div></div><div style="flex:1;text-align:right;font-size:12px;color:var(--dim)">Tap a bar to change its chord</div></div>
+<div class="pads">${['E5','E5','B♭5','E5'].map((c,i)=>`<div class="pad ${i===0||i===3?'home':''}"><span class="ar l">‹</span><div class="bn">BAR ${i+1}</div><div class="ch">${c}</div><span class="ar r">›</span></div>`).join('')}</div>
+${grid(GTR,30)}
+<div class="foot"><div class="fb">▶ Loop</div><div class="fb">▶ Song</div><div class="fb p">Save ✓</div></div>`,
+drums:()=>`${hd('Write block 1 of 1 · Drums','Le Pacte du Semis')}${tl(1)}
+${meters(67,59,37)}${coach('Dana','#ffb347','Kick first, the rest follows. Drag down a lane to paint.')}
+${grid(DRM,36)}
+<div class="foot"><div class="fb">▶ Loop</div><div class="fb">▶ Song</div><div class="fb p">Save ✓</div></div>`};
+const opt=new URLSearchParams(location.search).get('opt')||'A', O=opt==='A'?A:B;
+document.body.className=opt;
+document.getElementById('root').innerHTML=`<h1>Option ${opt} · ${opt==='A'?'Clean sheet':'Mixing desk'}</h1><div class="sub">${opt==='A'?'Flat and quiet: underline tabs for sections, horizontal sliders, recipe cards, a chord row above the grid.':'More garage: the song is a coloured timeline you tap to edit, recipes are cassette tapes, sliders are mixing-desk faders, chord pads with ‹ › per bar.'}</div>
+<div class="row">${[['1 · Quick song','quick'],['2 · Your part (guitar)','part'],['3 · Drums','drums']].map(s=>`<div><div class="cap">${s[0]}</div><div class="phone">${O[s[1]]()}</div></div>`).join('')}</div>`;
+</script></body></html>

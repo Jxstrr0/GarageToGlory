@@ -344,6 +344,7 @@
     hideBetween();
     G.chart = G.ses.startSong();
     if (auto()) { playAuto(); return; }
+    warmSong();   // v1.2
     beginCount();
   }
   function beginCount(held) {
@@ -392,18 +393,33 @@
     layout();
     loop();
   }
-  function startAudio() {
-    if (!G) return;
-    G.startTimer = 0;
-    var song = G.ses.song(), p = performance.now(), h = null;
-    var at = G.actx && G.actx.state === 'running' ? G.zeroBand : undefined;   // v0.8.3: start on the count-in's grid
+  // The band's play() options for this song (v1.2: + gig, the gig clamps of the band's feel, F3.3; also what A.warm renders).
+  function bandOpts(song, at) {
     var po = { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
-      singer: ui.roleOf('front', S()), band: S().bandId };   // v0.9: who sings (for the audio's per-singer vocal voice)
+      singer: ui.roleOf('front', S()), band: S().bandId, gig: true };   // v0.9: who sings (for the audio's per-singer vocal voice)
+    if (G.opts && G.opts.studio && !G.opts.practice) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO; practice runs in studio mode but is no take)
     if (strings()) {   // v1.1: the band (the swapped drummer) plays the drums; your part is muted, your taps play it
       po.drums = true; po.seat = G.seat; po.part = song.pattern && song.pattern.part;
       po.mute = GG.audio && GG.audio.seatKinds ? GG.audio.seatKinds(S().genre, G.seat) : null;
       po.soloist = G.ses && G.ses.roles ? G.ses.roles.solo : undefined;
     }
+    return po;
+  }
+  // v1.2 (Lane F): the song's string buffers render while the count-in runs (A.warm, Lane I; a miss plays the 1.1 sound).
+  function warmSong() {
+    var A = GG.audio, song = G && G.ses && G.ses.song ? G.ses.song() : null;
+    if (!song || !song.pattern || !A || !A.warm || (A.isClassic && A.isClassic())) return;
+    try {
+      var w = A.warm(song.pattern, bandOpts(song)), tok = G.warmTok = (G.warmTok || 0) + 1;
+      if (w && typeof w.then === 'function') w.then(function (x) { if (G && G.warmTok === tok) G.warm = x || null; }, function () { /* ignore */ });
+    } catch (e) { /* the 1.1 sound plays */ }
+  }
+  function startAudio() {
+    if (!G) return;
+    G.startTimer = 0;
+    var song = G.ses.song(), p = performance.now(), h = null;
+    var at = G.actx && G.actx.state === 'running' ? G.zeroBand : undefined;   // v0.8.3: start on the count-in's grid
+    var po = bandOpts(song, at);
     try { h = GG.audio && GG.audio.play ? GG.audio.play(song.pattern, po) : null; }
     catch (e) { console.error('[gig] audio.play failed', e); }
     G.handle = h;
@@ -418,6 +434,7 @@
   function restartSong() {
     stopAudio();
     G.chart = G.ses.startSong(G.ses.index);
+    warmSong();   // v1.2 (the cache keeps it: nothing new to render)
     beginCount();
   }
   function endSong() {
@@ -506,8 +523,8 @@
       var n = a[G.ap++];
       if (n.li >= G.lanes) continue;
       if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined);   // v1.1: your voice plays it
-      else if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
+      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined, autoVel('other'));   // v1.1: your voice plays it (v1.2: + vel)
+      else if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined, autoVel(n.lane));
       G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - (t - G.D)) * 1000;   // the ring shows when it's heard
     }
   }
@@ -527,7 +544,7 @@
       var at = G.hb * G.chart.spb; if (at > now + ahead) break;
       G.hb++;
       if (at < now - 0.08) { G.hatSkip++; continue; }
-      if (GG.audio && GG.audio.hit) GG.audio.hit('hat', sched ? G.zeroBand + at : undefined);
+      if (GG.audio && GG.audio.hit) GG.audio.hit('hat', sched ? G.zeroBand + at : undefined, autoVel('hat'));
       G.hatN++;
     }
   }
@@ -540,7 +557,7 @@
       G.kp++;
       if (x.free) continue;
       if (x.t < now - 0.08) { G.akSkip++; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + x.t : undefined);
+      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + x.t : undefined, autoVel('kick'));
       G.akN++;
     }
   }
@@ -562,7 +579,7 @@
       if (w > now + ahead) continue;
       x.d2 = 1; G.k2W = w;
       if (w < now - 0.08 || KICK >= G.lanes) { x.d2 = 2; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + w : undefined);
+      if (GG.audio && GG.audio.hit) GG.audio.hit('kick', sched ? G.zeroBand + w : undefined, autoVel('double'));   // (a softer second stroke)
       G.dblN++;
       var at = p + Math.max(0, w - (t - G.D)) * 1000;           // when it's heard: the zone flash, a ring, the drummer's left foot
       G.k2[G.k2i] = at; G.k2i = (G.k2i + 1) % G.k2.length; G.autoAt[KICK] = at;
@@ -599,13 +616,14 @@
   }
   // One of your notes (a tap's, an auto note, a run's) -> the voice handle (null without the voice). fifth: the chord's
   // second lane plays the fifth.
-  function seatSound(n, li, when) {
+  function seatSound(n, li, when, vo) {
     var f = voiceFor(n && n.kind), midi = n && n.midi != null ? n.midi : laneMidi(li), o;
     if (!f) return null;
     if (n && n.midi != null) G.laneMidi[li] = n.midi;
     o = { len: n ? (n.run && n.seq && n.seq.length ? n.seq[0][0] : n.len || 0.25) : 0.25, hold: !!(n && n.hold && !n.run), kind: n && n.kind || null,
       power: !!(n && n.power), mute: !!(n && n.mute), strum: n && n.strum || null, up: !!(n && n.up), bend: !!(n && n.bend), chord: !!(n && n.chord) };
     if (n && n.with) o.with = n.with;   // v1.1 review: a same-voice partner (metal's chorus ring) layers on this note's handle
+    if (vo) o.vel = vo.vel;   // v1.2 (F5): the tap's velocity (no vo: the 1.1 call)
     try { G.seatN++; return f(midi, when, o); } catch (e) { return null; }
   }
   function nowWhen(li, J) {   // the band-clock booking time for a sound at song time J (drum sync), else undefined ('now')
@@ -641,7 +659,7 @@
       while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
         var q = n.seq[ru.i++], at = n.t + q[0];
         if (at < now - 0.08) continue;
-        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined);
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, ru.vo || autoVel('other'));   // (v1.2 review: the head tap's vel, so the run stays one string sound)
         G.runN++;
       }
       if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
@@ -763,6 +781,32 @@
     }
     return r;
   }
+  // v1.2 "Soundcheck" (Lane F, handoff F5): every tap's velocity from how well and where you hit (A.tapVel: judgement x the
+  // judged note's 16th x the hands of a fast hat run, +- 0.03); strays take the last note's step; count-in noodling 'count';
+  // the first lane of a chord (partial) plays it as a Good. The game's own strokes (count-in hats, auto notes, Auto-kick, a
+  // double's 2nd kick) take A.TAP_AUTO. -> { vel } | undefined (Classic on / no feel module: the 1.1 call, no o).
+  function velOn() { var A = GG.audio; return !!(A && A.tapVel && A.TAP_AUTO && !(A.isClassic && A.isClassic())); }
+  function tapVel(li, J, r) {
+    if (!velOn()) return undefined;
+    var n = r && r.note && !r.echo ? r.note : null, j = J < -0.4 ? 'count' : r && r.judgement && r.judgement !== 'miss' ? r.judgement : r && r.partial ? 'good' : null;
+    if (n && n.step != null) G.velStep = n.step;
+    var lane = strings() ? 'str' : C.LANES[li], prev = null;
+    if (lane === 'hat') {
+      prev = G.hatT != null ? G.hatT : null;
+      G.hatRun = prev != null && J - prev >= 0 && J - prev < 0.15 ? (G.hatRun || 0) + 1 : 0;
+      G.hatT = J;
+    }
+    var v = GG.audio.tapVel({ judgement: j, step: n && n.step != null ? n.step : G.velStep, lane: lane, prevHatT: prev, t: J, run: lane === 'hat' ? G.hatRun : null });
+    if (v == null || !isFinite(v)) return undefined;
+    G.velN = (G.velN || 0) + 1; G.velLast = { li: li, lane: lane, judgement: j, step: n && n.step != null ? n.step : G.velStep == null ? null : G.velStep, vel: v };
+    return { vel: v };
+  }
+  function autoVel(kind) {
+    if (!velOn()) return undefined;
+    var T = GG.audio.TAP_AUTO, v = T[kind] != null ? T[kind] : T.other;
+    G.autoVelN = (G.autoVelN || 0) + 1;
+    return { vel: v };
+  }
   // v0.8.3: plays a tap's drum and returns the band time it sounds at. Drum sync books it on the band's clock (snapped to
   // its note inside [-15, +15] ms), never before the lane's last booked tap (A.hit's choke expects time order); classic
   // (or a clock that isn't running) plays it 'now'.
@@ -770,15 +814,16 @@
     if (G.seat !== 'drums') return playSeat(li, J, r);   // v1.1
     var lane = C.LANES[li], c = G.actx;
     if (!GG.audio || !GG.audio.hit) return J;
+    var vo = tapVel(li, J, r);   // v1.2 (F5): judged first, so the accent costs no latency
     if (!G.sync || !G.clockOk || !c || c.state !== 'running') {
-      GG.audio.hit(lane); if (r) r.snap = false;
+      GG.audio.hit(lane, undefined, vo); if (r) r.snap = false;
       return c ? c.currentTime + HIT_LEAD - G.zeroBand : J;
     }
     var hit = !!(r && r.note && r.judgement && r.judgement !== 'miss');
     var Jp = GG.prefs.syncSnap(J, hit ? r.note.t : null, hit);
     var when = Math.max(GG.prefs.syncWhen(Jp, G.zeroBand, c.currentTime), G.lastBook[li] + 0.001);
     G.lastBook[li] = when;
-    GG.audio.hit(lane, when);
+    GG.audio.hit(lane, when, vo);
     if (Jp !== J) G.snapN++;
     if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
     return when - G.zeroBand;
@@ -801,12 +846,13 @@
       if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
       out = when - G.zeroBand;
     }
-    if (n && n.chord && (hit || r.partial)) h = n.sh || (n.sh = seatSound(n, n.li, when));
-    else h = seatSound(n && hit ? n : null, li, when);
+    var vo = tapVel(li, J, r);   // v1.2 (F5)
+    if (n && n.chord && (hit || r.partial)) h = n.sh || (n.sh = seatSound(n, n.li, when, vo));
+    else h = seatSound(n && hit ? n : null, li, when, vo);
     if (hit && n.hold) {
       if (G.held[n.li] && G.held[n.li].n !== n) dropVoice(n.li, J);
       G.held[n.li] = { h: h, n: n };
-      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0 });
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0, vo: vo });
     }
     return out;
   }
@@ -1231,6 +1277,8 @@
       dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
       akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null,
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
-      seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0 };
+      seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
+      feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
+        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null } };   // v1.2 (Lane F)
   });
 })(window.GG);

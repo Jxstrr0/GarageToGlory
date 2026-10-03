@@ -16,6 +16,12 @@
 //   audio   : the kit's tap hits pre-render after the unlock; a pre-rendered tap is one new node (two the first time a
 //             lane needs a choke gain); its spectrum matches the live synthesis; hits book exactly when asked (+-1 ms);
 //             a burst of taps over a song + a cheering crowd: the global cap holds (<= 32), no tap is ever dropped.
+//   pre     : v1.2 Lane I (handoff F6 / F17 / F13 perf): on a 4x CPU throttle, the widened PRE (velocity layers x round
+//             robins) builds after a kit change in <= 2.5 s with no main-thread slice over 8 ms and <= 6 MB per kit (with the
+//             sampled kit: its decoded clips + the synth lanes); the TMKD kit decodes (metal tier 3) in slices <= 8 ms; a
+//             velocity tap is one buffer source (+ its slot the first time) from the set; the 1.1 tap path is untouched;
+//             KS warm (F7) per song <= 300 ms of traced CPU on the 4x throttle (wall <= 1.2 s), slices <= 8 ms, cache <= 8 MB. A slice = its main-thread CPU time from
+//             a trace, less the GC inside it (see sliceTrace; the wall numbers are logged next to it).
 // Run: node build.js && META_ONLY=governor timeout 500 node tests/pw_perf.js
 const { open, checker, VIEW } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -435,10 +441,115 @@ async function audio() {
   finally { await o.close(); c.done(); }
 }
 
+// v1.2 (Lane I): a slice's cost = its main-thread CPU time from a trace (the FunctionCall of the audio code's MessageChannel
+// task, `soonCh.port1.onmessage`: every PRE / kit / KS slice), less V8's own pauses inside it (GC phases, interrupts that
+// install optimised code or serve a GC request). The 4x throttle spins (a task's thread CPU ~ its throttled wall time:
+// measured 2.83 ms vs 0.68 ms at 1x for the same loop), so CPU time is the slice as a 4x-slower phone runs it, without the
+// time the OS gave the CPU to other processes (a 3 ms slice was measured at 59 ms of wall on a loaded machine) or a GC
+// finalisation (~17-21 ms at 4x) that landed inside it. Wall numbers are logged next to it (debug('audio') .slice).
+async function sliceTrace(o) {
+  const t = await o.page.evaluate(() => performance.mark('gg-sync').startTime);
+  const ev = JSON.parse((await o.browser.stopTracing()).toString()).traceEvents;
+  const sync = ev.find(e => e.name === 'gg-sync');
+  if (!sync) return { err: 'no sync mark', ours: [] };
+  const off = sync.ts / 1000 - t, main = e => e.pid === sync.pid && e.tid === sync.tid && e.ph === 'X';
+  const gcs = ev.filter(e => main(e) && (/^V8\.GC_/.test(e.name) || e.name === 'V8.HandleInterrupts'));
+  const ours = ev.filter(e => main(e) && e.name === 'FunctionCall' && e.args && e.args.data && e.args.data.functionName === 'soonCh.port1.onmessage').map(e => {
+    const inner = gcs.filter(g => g.ts >= e.ts && g.ts + g.dur <= e.ts + e.dur);
+    const top = inner.filter(g => !inner.some(h => h !== g && h.ts <= g.ts && h.ts + h.dur >= g.ts + g.dur && h.dur > g.dur));   // (outermost phases only)
+    const gc = top.reduce((a, g) => a + (g.tdur == null ? g.dur : g.tdur), 0), cpu = e.tdur == null ? e.dur : e.tdur;
+    return { t: e.ts / 1000 - off, wall: e.dur / 1000, cpu: cpu / 1000, work: Math.max(0, (cpu - gc) / 1000) };
+  });
+  return { ours };
+}
+const r2 = x => Math.round(x * 100) / 100;
+function sliceStats(ours, t0, t1) {
+  const w = ours.filter(x => x.t >= t0 && x.t <= t1);
+  return { n: w.length, wall: r2(Math.max(0, ...w.map(x => x.wall))), cpu: r2(Math.max(0, ...w.map(x => x.cpu))), work: r2(Math.max(0, ...w.map(x => x.work))),
+    sum: r2(w.reduce((a, x) => a + x.cpu, 0)),   // (sum: the window's total main-thread CPU in our slices)
+    top: w.slice().sort((a, b) => b.work - a.work).slice(0, 3).map(x => [r2(x.t - t0), r2(x.work)]) };   // (the 3 biggest: [ms into the window, work])
+}
+
+async function pre() {
+  const c = checker('pre');
+  const o = await open({ noGoto: true });
+  const { page, errors } = o;
+  try {
+    await o.context.addInitScript(COUNT);
+    await page.goto(o.url);
+    await boot(page);
+    await quick(page);
+    await page.mouse.click(Math.round(W / 2), 120);
+    await page.evaluate(() => { GG.audio.unlock(); GG.render.setPaused(true); });   // (no frames: a small trace)
+    await o.browser.startTracing(page, { categories: ['devtools.timeline', 'v8', 'disabled-by-default-v8.gc', 'blink.user_timing'] });
+    const now = () => page.evaluate(() => performance.now());
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const rows = [];
+    for (const [g, q] of [['metal', 3], ['punk', 3], ['country', 2], ['rock', 0], ['metal', 1]]) {
+      const w0 = await now();
+      await page.evaluate(([g, q]) => { GG.state.genre = g; GG.state.gear.quality = q; GG.audio.hit('hat', undefined, { vel: 0.85 }); }, [g, q]);
+      const key = g + '|' + q + '|';
+      await page.waitForFunction(k => { const p = GG.debug('audio').pre; return p.ready && p.key && p.key.indexOf(k) === 0; }, key, { timeout: 30000 });
+      if (g === 'metal' && q >= 2) await page.waitForFunction(() => GG.debug('audio').kit.ready, null, { timeout: 30000 });
+      const d = await page.evaluate(() => { const a = GG.debug('audio'); return { pre: a.pre, kit: a.kit }; });
+      const kitOn = g === 'metal' && q >= 2, bytes = d.pre.bytes + (kitOn ? d.kit.bytes : 0);
+      rows.push({ kit: key, ms: d.pre.ms, slice: d.pre.slice, sets: d.pre.sets, rr: d.pre.rr, layers: d.pre.layers, bytes, kitMs: kitOn ? d.kit.ms : null, kitSlice: kitOn ? d.kit.slice : null, w: [w0, await now()] });
+    }
+    // KS warm (F7): each genre's signature song, its whole arrangement, on the 4x throttle
+    const warm = [];
+    for (const g of ['metal', 'punk', 'rock', 'country']) {
+      const w0 = await now();
+      warm.push(Object.assign({ w0 }, await page.evaluate(async g => {
+        GG.state.genre = g; const pat = GG.songs.sanitize(GG.songs.signature(g), null, null, true), t0 = performance.now();
+        const res = await GG.audio.warm(pat, { genre: g, songId: 'warm-' + g });
+        const k = GG.debug('audio').ks;
+        return { g, n: res.n, ms: Math.round(performance.now() - t0), slice: k.slice, bytes: k.bytes };
+      }, g), { w1: await now() }));
+    }
+    const tr = await sliceTrace(o);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    await page.evaluate(() => GG.render.setPaused(false));
+    rows.forEach(r => { r.cost = sliceStats(tr.ours, r.w[0], r.w[1]); delete r.w; });
+    warm.forEach(w => { w.cost = sliceStats(tr.ours, w.w0, w.w1); delete w.w0; delete w.w1; });
+    console.log('INFO audio slices traced: ' + tr.ours.length + (tr.err ? ' (' + tr.err + ')' : '') + '; cost = { n, wall, cpu, work = cpu - GC }, the max per window in ms');
+    // (the warm loop left GG.state.genre on country: back to the metal tier-1 set before the per-tap check)
+    await page.evaluate(() => { GG.state.genre = 'metal'; GG.state.gear.quality = 1; GG.audio.hit('hat', undefined, { vel: 0.85 }); });
+    await page.waitForFunction(() => { const p = GG.debug('audio').pre; return p.ready && p.key && p.key.indexOf('metal|1|') === 0; }, null, { timeout: 30000 });
+    await sleep(300);
+    console.log('INFO pre (4x throttle) ' + JSON.stringify(rows));
+    console.log('INFO ks warm (4x throttle) ' + JSON.stringify(warm));
+    c.ok(!tr.err && warm.every(w => w.n > 0 && w.cost.n > 0 && w.cost.work <= 8 && w.bytes <= 8e6), 'KS warm: every genre queues its strings, slices <= 8 ms (wall/cpu/work), cache <= 8 MB ' + JSON.stringify(warm.map(w => [w.g, w.n, w.cost.wall + '/' + w.cost.cpu + '/' + w.cost.work, Math.round(w.bytes / 1e3) + 'kB'])));
+    // (v1.2 review: F7's budget is CPU, "<= 300 ms total CPU spread over slices": the traced CPU of the warm's slices on the 4x
+    // throttle, summed; the wall time, which also holds the yields between slices, is logged and kept under 1.2 s)
+    c.ok(!tr.err && warm.every(w => w.cost.sum <= 300 && w.ms <= 300 * 4), 'KS warm per song <= 300 ms of CPU on the 4x throttle (traced, summed; wall <= 1.2 s) ' + JSON.stringify(warm.map(w => [w.g, w.cost.sum + ' cpu', w.ms + ' wall'])));
+    c.ok(rows.every(r => r.ms <= 2500), 'the velocity sets build in <= 2.5 s on a 4x throttle ' + rows.map(r => r.kit + r.ms + 'ms').join(' '));
+    c.ok(!tr.err && rows.every(r => r.cost.n > 0 && r.cost.work <= 8), 'no build slice over 8 ms (set + kit, wall/cpu/work) ' + rows.map(r => r.kit + r.cost.wall + '/' + r.cost.cpu + '/' + r.cost.work).join(' '));
+    c.ok(rows.every(r => r.bytes <= 6e6), 'every kit set <= 6 MB ' + rows.map(r => r.kit + Math.round(r.bytes / 1e3) + 'kB').join(' '));
+    const t3 = rows.find(r => r.kit === 'punk|3|'), t1 = rows.find(r => r.kit === 'metal|1|'), t0 = rows.find(r => r.kit === 'rock|0|');
+    c.ok(t3.layers === 3 && t3.rr >= 3 && t1.layers === 2 && t1.rr === 3 && t0.layers === 1 && t0.rr === 2, 'layers + round robins follow C.REALISM (arena 3 x 4, pawn 2 x 3, milk crate 1 x 2) ' + JSON.stringify([t3, t1, t0].map(r => [r.kit, r.layers, r.rr])));
+    // a velocity tap: one buffer source from the set (+ the lane's slot: gain, low-pass, pan, the first time)
+    const per = await page.evaluate(async () => {
+      const out = {}, h0 = GG.debug('audio').pre.hits;
+      for (const lane of ['hat', 'cymbal', 'ride', 'kick', 'snare']) {
+        const r = [];
+        for (let i = 0; i < 5; i++) { const n0 = window.__nodes.n; GG.audio.hit(lane, undefined, { vel: 0.5 + 0.1 * i }); r.push(window.__nodes.n - n0); await new Promise(res => setTimeout(res, 120)); }
+        out[lane] = r;
+      }
+      return { out, hits: GG.debug('audio').pre.hits - h0 };
+    });
+    c.ok(Object.values(per.out).every(r => r.every(n => n === 1 || n === 4) && r.filter(n => n === 4).length <= 2), 'a velocity tap = 1 buffer source (+3 nodes while its lane builds a slot) ' + JSON.stringify(per.out));
+    c.ok(per.hits >= 25, 'every velocity tap played from the set (' + per.hits + ')');
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'pre threw: ' + (e.stack || e)); }
+  finally { await o.close(); c.done(); }
+}
+
 (async () => {
   if (want('scenes')) await scenes();
   if (want('governor')) await governor();
   if (want('ratio')) await ratio();
   if (want('stalls')) await stalls();
   if (want('audio')) await audio();
+  if (want('pre')) await pre();
 })();

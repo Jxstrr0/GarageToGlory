@@ -76,6 +76,9 @@
       // chorus downbeats and growls on the breakdowns. 30_audio plays metal through its own high-gain amp (two guitars).
       backing: {
         root: 36,   // C2: drop C
+        // v1.2 "Soundcheck" (Lane F, handoff F4): the band's feel. slop scales every player's timing spread; push = the mean
+        // offset per part in ms (+ = laid back), scaled by (1 - 0.5 t). Metal locks in (only the singer leans back).
+        feel: { slop: 0.6, push: { kick: 0, snare: 0, hat: 0, bass: 0, gtr: 0, vox: 4 } },
         tune: { doom: -1, chug: 0, tremolo: 1 },   // semitones per tempo band (keyFor(seed, genre, bpm))
         bassFloor: 23,   // B0, a five-string's low B: lower bass notes stay up with the guitars
         styles: [[0, 'doom', 'Doom sludge'], [100, 'chug', 'Palm-muted chugs'], [171, 'tremolo', 'Tremolo riffs']],
@@ -172,6 +175,7 @@
       // v0.9: tempo decides (downstrokes, a skate-punk gallop, hardcore thrash with a half-time mosh chorus); Benny's
       // two-chord "solo" takes the bridge; crunchy L/R double-tracked amps (amp), mid-forward, far less gain than metal.
       backing: { root: 45, styles: [[0, 'eighths', 'Downstroke 8ths'], [200, 'skate', 'Skate-punk gallop'], [220, 'hardcore', 'Hardcore thrash']],
+        feel: { slop: 1.1, push: { kick: -3, snare: -5, hat: -4, bass: -3, gtr: -4, vox: -2 } },   // v1.2 (F4): punk rushes
         progressions: { verse: [[0, 5, 7, 5], [0, 0, 5, 7], [0, 3, 5, 7]], chorus: [[5, 7, 0, 0], [3, 5, 7, 7], [7, 5, 0, 0]], bridge: [[5, 5, 7, 7], [3, 3, 5, 7]] },
         progNames: { verse: ['three chords and a grudge', 'two on the one, then go', 'up the stairs, out the door'],
           chorus: ['the shout-along', 'climb and hang on', 'back home, hard'], bridge: ['stomp, stomp, go', 'the slow build'] },
@@ -252,6 +256,7 @@
       // v0.9: a power ballad under 90 BPM (also the Chartbusters' forced style 'ballad': every single they have), big open
       // chords, driving 8ths from 140. Crunch amps double-tracked L/R; the open chords ring (amp.ring) over the chorus.
       backing: { root: 45, styles: [[0, 'ballad', 'Power ballad'], [90, 'rock', 'Big open chords'], [140, 'drive', 'Driving 8ths']],
+        feel: { slop: 1.0, push: { kick: 0, snare: 7, hat: 2, bass: 4, gtr: 2, vox: 6 } },   // v1.2 (F4): rock lays back (the snare most)
         progressions: { verse: [[0, 0, 5, 7], [0, 10, 5, 0], [0, 7, 5, 5]], chorus: [[5, 7, 0, 0], [0, 5, 7, 5], [10, 5, 0, 7]], bridge: [[3, 5, 7, 7], [9, 7, 5, 7]] },
         progNames: { verse: ['the highway', 'the flat-seven swagger', 'down from the top'],
           chorus: ['the big chorus lift', 'fist in the air', 'the long way home'], bridge: ['the minor turn', 'the sad-guy detour'] },
@@ -329,6 +334,7 @@
       // solo on a clean Tele with slapback (amp); Clementine's fiddle takes the fills and the outro (fiddle: body
       // formants [Hz, Q, level] + bow noise); Travis strums a fuller acoustic (acoustic: body, sparkle, stereo spread).
       backing: { root: 43, styles: [[0, 'twostep', 'Two-step'], [108, 'train', 'Train beat']],
+        feel: { slop: 0.9, push: { kick: 0, snare: 4, hat: 2, bass: 2, gtr: 3, vox: 5 } },   // v1.2 (F4): country sits a hair behind
         progressions: { verse: [[0, 0, 5, 7], [0, 5, 0, 7], [0, 7, 5, 0]], chorus: [[5, 0, 7, 0], [5, 5, 0, 7], [0, 5, 7, 7]], bridge: [[9, 5, 7, 7], [2, 7, 0, 0]] },
         progNames: { verse: ['home on the grid road', 'back and forth to town', 'the long driveway'],
           chorus: ['the big sing-along', 'leaning on the fence', 'the truck-commercial lift'], bridge: ['the sad-letter turn', 'the hay-bale shuffle'] },
@@ -437,6 +443,23 @@
       chartbusters: { pitch: 7, range: [62, 84], formant: 1.12, vib: [5.9, 0.038], breath: 0.3, scoop: -3, words: ['FOREVER', 'BABY', 'TONIGHT'], wordChance: 0.35 },
       // Brayden: bro-country, dead-flat pitch (the truck brand paid for the tuning), every song about tailgates.
       buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], yodel: false, rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
+    },
+    // v1.2 "Soundcheck" (Lane V, handoff F10; GG.voice.profile): each singer's sound on top of the 1.1 profile, kept apart
+    //   so A.timeline (which carries the 1.1 profile on every vocal event) never moves. Keys: 'genre:<g>' (the genre's
+    //   default), a profiles id, 'rival:<rivalId>'. press 0..1 (the glottal wave: 0 breathy .. 1 belt; absent: the voc
+    //   type's own: yell / wail belt, holler modal, whoa-ohs breathy; metal always belts), ring (dB of the singer's 3 kHz
+    //   ring), double (chorus lead hits get a double take when there's room; default true), breath 0..1 (extra pulsed
+    //   aspiration).
+    sound: {
+      'genre:rock': { ring: 3 },
+      'genre:country': { ring: 4 },
+      marcel: { ring: 2 },
+      rox: { press: 0.95, ring: 2, breath: 0.1 },
+      chase: { ring: 5 },
+      travis: { ring: 6 },
+      'rival:mall_rats': { press: 0.55, ring: 1 },
+      'rival:chartbusters': { press: 0.3, ring: 3, breath: 0.15 },
+      'rival:buckle_and_boot': { press: 0.45, double: false }
     }
   };
 })(window.GG);

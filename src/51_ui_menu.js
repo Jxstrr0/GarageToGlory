@@ -21,6 +21,11 @@
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   var draft = {};                  // new-career choices in progress: { slot, bandId, genre, seat (v1.1), ... }
   var storageWarned = false;
+  // v1.2 (F17): the credit line of every sample kit in the build (GG.content.kits; the kit's terms make it mandatory)
+  function kitCredits() {
+    var K = (GG.content && GG.content.kits) || {};
+    return Object.keys(K).map(function (k) { return K[k] && K[k].credit; }).filter(Boolean);
+  }
 
   // The genre cards (labels + icons; names/spaces/cities only when content is missing a band, which then can't be picked).
   // v0.9: all four bands are playable (content.bands[*].locked:false); a band missing from content shows 'Locked'.
@@ -148,7 +153,11 @@
           el('div.title-foot', [
             is3d ? el('div.title-hint', { testid: 'title-hint' }, 'Psst: tap the kit. Or Marcel.') : null,
             el('div.menu-list', kids),
-            el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION)
+            el('div.credits', [
+              el('p.credit', { testid: 'title-credit' }, 'a game by Prairie Blue Studio · V' + GG.VERSION),
+              // v1.2 (handoff F17.2, mandatory): every sample kit in the build is credited on the title screen
+              kitCredits().length ? el('p.credit.kit-credit', { testid: 'title-kit-credit' }, kitCredits().join(' · ')) : null
+            ])
           ])
         ])
       ]);

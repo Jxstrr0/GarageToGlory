@@ -44,7 +44,7 @@ async function open(opts) {
 function checker(label) {
   const res = [];
   return {
-    ok(cond, msg) { res.push([msg, !!cond]); if (!cond) console.log('FAIL ' + label + ' > ' + msg); },
+    ok(cond, msg) { res.push([msg, !!cond]); if (!cond) console.log('FAIL ' + label + ' > ' + msg); else if (process.env.PW_VERBOSE) console.log('ok ' + label + ' > ' + msg); },   // (PW_VERBOSE=1: passes too)
     done() { const f = res.filter(r => !r[1]).length; console.log((f ? 'FAILED ' + f + '/' : 'ALL PASS ') + res.length + ' (' + label + ')'); if (f) process.exitCode = 1; }
   };
 }

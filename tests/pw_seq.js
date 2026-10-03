@@ -1,5 +1,18 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash|kit|real|vox, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+//   real  : v1.2 Lane I (handoff F13 "no two hits the same"): 8 consecutive snares, 8 hats (one render each, equal vel, the
+//           pro kit, punk's synth kit) and 8 metal palm-muted chugs (KS, 2 round robins) all differ pairwise (RMS diff > -40 dB);
+//           the KS cache / PRE / realism debug fields exist; renders with vel stay finite and under the ceiling. ~1 min.
+//   kit   : v1.2 Lane I (handoff F17.3): the TMKD "Vortex" sampled kit. Metal on tier 3 renders it (result.kitUsed), onsets <= 1 ms
+//           (rendered + the live decode), 5 consecutive snares all differ, per-lane loudness within +-1 dB of the 1.1 pro-tier synth
+//           (tools/kit_trim.js), Classic on: metal tier 1 + punk tier 3 hashes = the 1.1 fixture; Classic off: metal tier 1 and punk
+//           tier 3 render bit-identical with and without the kit module (it never leaks into other tiers or genres). ~1 min.
+//   vox   : v1.2 Lane V (handoff F10): the Soundcheck vocals (vel on vox events) vs the 1.1 path: numbers before / after
+//           (vocals RMS, 2-4 kHz, width, voice / band), Classic on + vel = 1.1, no vel = 1.1, doubles / gangs live, plate, vel level.
+//   hash  : v1.2 stage 0 (handoff F3.1): with GG.audio.classic(true), every case of tests/fixtures/audio_v11_hashes.json (4 genres x
+//           full / drums / band songs, 4 genres x 6 tap lanes x 4 kit tiers live + pre-rendered, sections, seat notes, vocals,
+//           probes, radio) renders bit-identical to 1.1.0.0 (tools/audio_hashes.js verify; deterministic summing: tools/_audio_lab.js).
+//           HASH_ONLY=<key prefixes> narrows it (e.g. HASH_ONLY=tap,pre). ~4-5 min alone.
 //   genres, voices: v0.9 (see the functions: genre amps, styles, solos, beds, crowd one-shots, in-career songs; singers).
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
@@ -830,6 +843,134 @@ async function voices() {
   c.done();
 }
 
+// v1.2 "Soundcheck" Lane V (handoff F10, contract §5 Lane V): the human vocals. Until Lane F's player() hands out vel, the
+// section adds vel 0.85 (= the 1.1 level) to every vox / bvox event by wrapping GG.audio.timeline in the page (renderOffline
+// and play() both read it), so the Soundcheck path sings; without vel (or with Classic on) the 1.1 hit plays. Logs the
+// before / after numbers per genre (vocals alone: RMS, 2-4 kHz band, width, peak; full chorus: voice / band ratio by the
+// voxInvert split), checks: clean renders, Classic on + vel = the 1.1 render, no vel = the 1.1 render, doubles and gangs
+// sound (debug('vox') on a live song), the plate (a stub GG.dsp.impulse2 until Lane I's lands) and the no-plate fallback,
+// vel changes the level, no console errors.
+async function vox() {
+  const c = checker('vox');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(pageHelpers);
+    const res = await page.evaluate(async () => {
+      const A = GG.audio, T0 = A.timeline, out = { genres: {}, metal: {}, checks: {} };
+      const velOn = v => { A.timeline = function (p, o) { const t = T0.call(A, p, o); return Object.assign({}, t, { events: t.events.map(e => (e.kind === 'vox' || e.kind === 'bvox') ? Object.assign({}, e, { vel: v }) : e) }); }; };
+      const velOff = () => { A.timeline = T0; };
+      const m = (b) => {   // RMS / peak dBFS, the 2-4 kHz band (dB, the __bands method), width (side / mid)
+        const sr = b.sampleRate, N = 8192, n = b.length, L = b.getChannelData(0), R = b.getChannelData(1), mono = new Float32Array(n);
+        let ms = 0, pk = 0, side = 0, mid = 0;
+        for (let i = 0; i < n; i++) { mono[i] = (L[i] + R[i]) / 2; ms += mono[i] * mono[i]; pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i])); side += (L[i] - R[i]) ** 2; mid += (L[i] + R[i]) ** 2; }
+        ms /= n;
+        const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+        let tot = 0, b24 = 0, hi = 0;
+        for (let s = 0; s + N <= n; s += N / 2) {
+          const re = new Float64Array(N), im = new Float64Array(N); for (let i = 0; i < N; i++) re[i] = mono[s + i] * w[i];
+          // (radix-2 FFT, as pageHelpers)
+          for (let i = 1, j = 0; i < N; i++) { let bit = N >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+          for (let len = 2; len <= N; len <<= 1) { const a = -2 * Math.PI / len, wr = Math.cos(a), wi = Math.sin(a); for (let i = 0; i < N; i += len) { let cr = 1, ci = 0; for (let k = 0; k < len / 2; k++) { const p = i + k, q = p + len / 2, br = re[q] * cr - im[q] * ci, bi = re[q] * ci + im[q] * cr; re[q] = re[p] - br; im[q] = im[p] - bi; re[p] += br; im[p] += bi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
+          for (let k = 1; k < N / 2; k++) { const f = k * sr / N, p = re[k] * re[k] + im[k] * im[k]; tot += p; if (f >= 2000 && f < 4000) b24 += p; if (f >= 4000) hi += p; }
+        }
+        const db = x => +(10 * Math.log10(x + 1e-12)).toFixed(1);
+        return { rms: db(ms), peak: db(pk * pk), b24: db(ms * b24 / tot), hi: db(ms * hi / tot), width: mid ? +(side / mid).toFixed(3) : 0, nan: Number.isNaN(ms) };
+      };
+      const split = async spec => {   // voice / band (dB) by the polarity-inverted render
+        const a = (await A.renderOffline(spec)).buffer, b = (await A.renderOffline(Object.assign({ voxInvert: true }, spec))).buffer;
+        let v = 0, bd = 0; for (let ch = 0; ch < 2; ch++) { const x = a.getChannelData(ch), y = b.getChannelData(ch); for (let i = 0; i < x.length; i++) { v += ((x[i] - y[i]) / 2) ** 2; bd += ((x[i] + y[i]) / 2) ** 2; } }
+        return +(10 * Math.log10(v / bd)).toFixed(1);
+      };
+      const maxDiff = (a, b) => { let d = 0; for (let ch = 0; ch < 2; ch++) { const x = a.getChannelData(ch), y = b.getChannelData(ch); for (let i = 0; i < x.length; i++) d = Math.max(d, Math.abs(x[i] - y[i])); } return d; };
+      const SING = { metal: 'marcel', punk: 'rox', rock: 'chase', country: 'travis' };
+      // (feel: false: Lane F's offline feel plan would replace the vel set here; no effect before Lane F lands)
+      const spec = (g, o) => Object.assign({ genre: g, pattern: GG.songs.signature(g), section: 'chorus', bars: 4, songId: 'vx1', singer: SING[g], feel: false }, o);
+      // 1) before (1.1 path) / after (Soundcheck, vel 0.85), no plate (impulse2('plate') answers null: buildVox skips the plate)
+      const realImp = GG.dsp.impulse2, bufs = {};
+      // pass 1 without a plate (Lane I's impulse2 or not; its rooms keep theirs), pass 2 with it (or a stand-in)
+      if (realImp) GG.dsp.impulse2 = function (cls) { return cls === 'plate' ? null : realImp.apply(this, arguments); }; else delete GG.dsp.impulse2;
+      out.plateSrc = realImp ? 'GG.dsp.impulse2' : 'stand-in';
+      for (const g of GG.contracts.GENRES) {
+        velOff();
+        const b0 = await A.renderOffline(spec(g, { vocalsOnly: true })), va0 = await split(spec(g, {}));
+        velOn(0.85);
+        const b1 = await A.renderOffline(spec(g, { vocalsOnly: true })), va1 = await split(spec(g, {}));
+        velOff();
+        out.genres[g] = { before: Object.assign(m(b0.buffer), { va: va0 }), after: Object.assign(m(b1.buffer), { va: va1 }) }; bufs[g] = b1.buffer;
+      }
+      // 2) the plate: a stand-in impulse2 (decaying stereo noise, 1.2 s) exercises the plate path until Lane I's impulse2 lands
+      GG.dsp.impulse2 = realImp || ((cls, sr, seed) => { const n = Math.floor(1.2 * sr), L = new Float32Array(n), R = new Float32Array(n); let s = seed || 1; for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; L[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); s = (s * 16807) % 2147483647; R[i] = (s / 1073741823.5 - 1) * Math.exp(-5 * i / n); } return [L, R]; });
+      for (const g of GG.contracts.GENRES) {
+        velOn(0.85);
+        const b2 = await A.renderOffline(spec(g, { vocalsOnly: true }));
+        velOff();
+        out.genres[g].plate = Object.assign(m(b2.buffer), { diff: +maxDiff(b2.buffer, bufs[g]).toFixed(4) });
+      }
+      // 3) Classic on: vel is ignored (= Classic on without vel, the 1.1 render the hash fixture pins); Classic off without vel:
+      //    Lane V adds nothing (the chain idle on the bus = a rig built without it); without Lane I's rooms that is the 1.1 render
+      const ref = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer, BV = A._buildVox;
+      A._buildVox = null;
+      const noChain = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
+      A._buildVox = BV; A.classic(true);
+      const cl11 = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
+      velOn(0.85);
+      const cl = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
+      velOff(); A.classic(false);
+      out.checks.classicVel = maxDiff(cl11, cl); out.checks.noVel = maxDiff(ref, noChain); out.checks.noVel11 = maxDiff(ref, cl11);
+      // 4) vel moves the level: 0.6 vs 0.85 vs 1.0 (vocals alone, punk)
+      const lv = {};
+      for (const v of [0.6, 0.85, 1]) { velOn(v); lv[v] = await split(spec('rock', {})); velOff(); }
+      out.checks.vel = lv;
+      // 5) metal: a whole song (held screams double, gangs grow to 3) + Gord's growls
+      velOn(0.85);
+      const ms = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 24, songId: 'set1', singer: 'marcel', vocalsOnly: true });
+      const mg = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), full: true, bars: 24, songId: 'set1', singer: 'tw_gord' });
+      velOff();
+      out.metal = { set: m(ms.buffer), gord: m(mg.buffer) };
+      // 6) live: a rock chorus + a punk song through play(): the chain on the live rig (made at unlock, with the plate impulse
+      //    of pass 2), doubles / gangs / plate counted
+      A.unlock(); await new Promise(r => setTimeout(r, 200));
+      velOn(0.85);
+      const live = {};
+      for (const g of ['rock', 'punk']) {
+        const h = A.play(GG.songs.signature(g), { genre: g, section: 'chorus', loop: true, songId: 'vx2' });
+        await new Promise(r => setTimeout(r, 3500));
+        live[g] = Object.assign({ playing: !!(h && h.playing) }, GG.debug('vox'));
+        A.stop();
+      }
+      velOff();
+      out.live = live;
+      if (realImp) GG.dsp.impulse2 = realImp; else delete GG.dsp.impulse2;
+      return out;
+    });
+    console.log('v1.2 vox numbers (before = 1.1 path, after = Soundcheck vel 0.85, no plate; plate = with ' + res.plateSrc + ') ' + JSON.stringify(res));
+    const G = Object.entries(res.genres);
+    for (const [g, x] of G) console.log('vox ' + g.padEnd(8) + ' rms ' + x.before.rms + ' -> ' + x.after.rms + ' (plate ' + x.plate.rms + ') | 2-4k ' + x.before.b24 + ' -> ' + x.after.b24 + ' | 4k+ ' + x.before.hi + ' -> ' + x.after.hi +
+      ' | width ' + x.before.width + ' -> ' + x.after.width + ' (plate ' + x.plate.width + ') | peak ' + x.before.peak + ' -> ' + x.after.peak + ' | V/A ' + x.before.va + ' -> ' + x.after.va + ' dB');
+    c.ok(G.every(([, x]) => ['before', 'after', 'plate'].every(k => !x[k].nan && x[k].peak < 0 && x[k].rms > -60)), 'every vocal render clean, never clipping ' + G.map(([g, x]) => g + ' ' + x.after.peak + '/' + x.plate.peak).join(', '));
+    c.ok(G.every(([, x]) => Math.abs(x.after.rms - x.before.rms) <= 2), 'vocal level within 2 dB of 1.1 at vel 0.85 ' + G.map(([g, x]) => g + ' ' + (x.after.rms - x.before.rms).toFixed(1)).join(', '));
+    c.ok(G.every(([, x]) => Math.abs(x.after.va - x.before.va) <= 2.5), 'voice / band ratio within 2.5 dB of 1.1 ' + G.map(([g, x]) => g + ' ' + x.before.va + '->' + x.after.va).join(', '));
+    c.ok(G.every(([, x]) => x.after.b24 - x.after.rms >= x.before.b24 - x.before.rms - 3), 'the 2-4 kHz presence holds (share within 3 dB or up) ' + G.map(([g, x]) => g + ' ' + (x.before.b24 - x.before.rms).toFixed(1) + '->' + (x.after.b24 - x.after.rms).toFixed(1)).join(', '));
+    c.ok(G.every(([, x]) => x.plate.diff > 0.003 && Math.abs(x.plate.rms - x.after.rms) < 1.5), 'the plate sings (renders differ, level kept) ' + G.map(([g, x]) => g + ' ' + x.plate.diff + ' / ' + (x.plate.rms - x.after.rms).toFixed(1) + ' dB').join(', '));
+    c.ok(res.checks.classicVel < 1e-4, 'Classic on: vel is ignored, the 1.1 render (max diff ' + res.checks.classicVel + ')');
+    c.ok(res.checks.noVel < 1e-4, 'no vel: the vocal chain adds nothing (= a rig without it, max diff ' + res.checks.noVel + ')');
+    c.ok(res.plateSrc !== 'stand-in' || res.checks.noVel11 < 1e-4, 'no vel, no Lane I rooms: the 1.1 render (max diff ' + res.checks.noVel11 + (res.plateSrc !== 'stand-in' ? ', Lane I rooms in: logged only' : '') + ')');
+    c.ok(res.checks.vel[0.6] < res.checks.vel[0.85] - 1.5 && res.checks.vel[1] > res.checks.vel[0.85], 'vel sets the voice against the band (rock chorus, V/A dB by vel) ' + JSON.stringify(res.checks.vel));
+    c.ok(!res.metal.set.nan && res.metal.set.peak < 0 && !res.metal.gord.nan && res.metal.gord.peak < 0, 'a metal set (Marcel) + a full song (Gord) clean ' + JSON.stringify(res.metal));
+    const L = res.live;
+    c.ok(L.rock.playing && L.rock.chain && L.rock.hits > 0 && L.rock.doubles > 0 && L.rock.genre === 'rock', 'live rock chorus: the chain sings, chorus doubles ' + JSON.stringify(L.rock));
+    c.ok(L.punk.gang3 > 0, 'live punk chorus: gang hits grow to 3 voices ' + L.punk.gang3);
+    c.ok(!L.rock.carveNodes || L.rock.carve > 0, 'live rock: lead hits carve the amps\' presence when Lane I\'s r.carve is there (nodes ' + (L.rock.carveNodes || 0) + ', carves ' + L.rock.carve + ')');
+    c.ok(L.rock.delay > 0.2 && L.rock.delay < 1.5, 'rock: the tempo delay is set (dotted 1/8) ' + L.rock.delay);
+    c.ok(L.rock.plate === 'plate' || L.rock.plate === 'room', 'live: the plate is built (room = the slow-phone fallback) ' + L.rock.plate);
+    c.ok(L.punk.playing && L.punk.hits > L.rock.hits && L.punk.delay === L.rock.delay, 'live punk: sings, no delay change (punk has none) ' + JSON.stringify(L.punk));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'vox threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  finally { await close(); }
+  c.done();
+}
+
 (async () => {
   if (want('genres')) await genres();
   if (want('voices')) await voices();
@@ -838,6 +979,10 @@ async function voices() {
   if (want('audio')) await audio();
   if (want('heavy')) await heavy();
   if (want('part')) await part();
+  if (want('hash')) await hash();
+  if (want('kit')) await kit();
+  if (want('real')) await real();
+  if (want('vox')) await vox();
 })();
 
 // v1.1 "Seats" (plan_contract_1.1 §4.4): the string-seat songwriter. A bass Write (Hail Damage): guided step 1 = Kenji's
@@ -941,6 +1086,130 @@ async function part() {
     await page.screenshot({ path: path.join(CACHE, shotName('seq_part.png')) });
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'part threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// v1.2 stage 0 (handoff F3.1 / F13): the Classic switch is the regression baseline. With it on, renderOffline / prerenderHit
+// output must equal the 1.1.0.0 fixture bit for bit (SHA-1 of the Float32 samples; method + cases in tools/_audio_lab.js).
+async function hash() {
+  const c = checker('hash');
+  try {
+    const { verify } = require('../tools/audio_hashes');
+    const r = await verify({ quiet: true, only: (process.env.HASH_ONLY || '').split(',').filter(Boolean) });
+    console.log('hash: ' + (r.n - r.bad.length) + '/' + r.n + ' equal in ' + Math.round(r.ms / 1000) + ' s ' + JSON.stringify(r.info));
+    c.ok(r.info.classicApi && r.info.classic === true, 'GG.audio.classic(true) switches the Classic sound on ' + JSON.stringify(r.info));
+    c.ok(r.n >= 200 || (process.env.HASH_ONLY || '') !== '', 'the whole fixture was rendered (' + r.n + ' cases)');
+    c.ok(r.bad.length === 0, 'classic on: every render equals 1.1.0.0 ' + (r.bad.length ? r.bad.length + ' differ: ' + r.bad.slice(0, 6).map(b => b.key + ' rms ' + b.want.rms + ' -> ' + b.got.rms).join(', ') : ''));
+    c.ok(r.errors.length === 0, 'no console errors ' + r.errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'hash threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  c.done();
+}
+
+// v1.2 Lane I (handoff F17.3): the sampled kit. See the header (section kit).
+async function kit() {
+  const c = checker('kit');
+  try {
+    const lab = require('../tools/_audio_lab'), { verify } = require('../tools/audio_hashes'), { measure } = require('../tools/kit_trim');
+    const L = await lab.openLab({ classic: false });
+    try {
+      const r = await L.page.evaluate(async () => {
+        const A = GG.audio, W = window.__lab, out = {};
+        const onset = (b, at) => { const d = b.getChannelData(0); let pk = 0; for (const v of d) pk = Math.max(pk, Math.abs(v)); for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > 0.02 * pk) return (i / b.sampleRate - at) * 1000; return null; };
+        const one = await A.renderOffline({ genre: 'metal', lane: 'snare', quality: 3, vel: 0.85, room: 'dry' });
+        const song = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), section: 'chorus', bars: 2, quality: 3, vel: 0.85 });
+        out.used = { one: one.kitUsed, song: song.kitUsed, drums: song.counts.drum, nan: one.nan || song.nan, peak: song.peak, clipOnset: one.kitOnset };
+        out.onsets = [];
+        for (const [lane, v] of [['kick'], ['snare'], ['toms', 0], ['toms', 1], ['toms', 2]]) for (let h = 0; h < 5; h++) {
+          const x = await A.renderOffline({ genre: 'metal', lane, variant: v, quality: 3, vel: 0.85, hit: h, room: 'dry' }); out.onsets.push(onset(x.buffer, 0.05));
+        }
+        const sn = []; for (let h = 0; h < 5; h++) sn.push((await A.renderOffline({ genre: 'metal', lane: 'snare', quality: 3, vel: 0.85, hit: h, room: 'dry' })).buffer.getChannelData(0));
+        out.pairs = [];
+        for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) { let d = 0, e = 0; for (let k = 0; k < sn[i].length; k++) { d += (sn[i][k] - sn[j][k]) ** 2; e += sn[i][k] ** 2; } out.pairs.push(+(10 * Math.log10(d / e)).toFixed(1)); }
+        // the kit never leaks: Classic off, metal tier 1 + punk tier 3 render the same with and without the kit module
+        const specs = [];
+        for (const l of GG.contracts.LANES) { specs.push({ genre: 'metal', lane: l, quality: 1, vel: 0.85 }); specs.push({ genre: 'punk', lane: l, quality: 3, vel: 0.85 }); }
+        specs.push({ genre: 'metal', pattern: GG.songs.signature('metal'), section: 'verse', bars: 2, quality: 1, vel: 0.85 });
+        specs.push({ genre: 'punk', pattern: GG.songs.signature('punk'), section: 'verse', bars: 2, quality: 3, vel: 0.85 });
+        const hashAll = async () => { const h = []; for (const s of specs) h.push(await W.sha1((await A.renderOffline(s)).buffer)); return h; };
+        // (v1.2 review) the absolute onset: kick + snare through the same chain with the kit and with the DRUMS2 synth (no kit
+        // module): a skipped MP3 trim would land the samples ~25 ms late
+        const abs = async () => { const o = []; for (const lane of ['kick', 'snare']) o.push(onset((await A.renderOffline({ genre: 'metal', lane, quality: 3, vel: 0.85, room: 'dry' })).buffer, 0.05)); return o; };
+        const absKit = await abs();
+        const withKit = await hashAll(), K = GG.content.kits; GG.content.kits = {};
+        const absSynth = await abs();
+        const without = await hashAll(); GG.content.kits = K;
+        out.abs = { kit: absKit.map(x => +x.toFixed(3)), synth: absSynth.map(x => +x.toFixed(3)) };
+        out.leak = { n: specs.length, same: withKit.filter((h, i) => h === without[i]).length, diff: specs.filter((s, i) => withKit[i] !== without[i]).map(s => s.genre + '/' + (s.lane || 'song') + '/q' + s.quality) };
+        // the live decode (v1.2 review, F17.2): the title screen's unlock (no career) decodes nothing; a metal career on the pro
+        // kit decodes it; a punk career loaded after it releases it
+        const wait = ms => new Promise(res => setTimeout(res, ms)), kd = () => GG.debug('audio').kit;
+        document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); A.unlock();
+        await wait(1500);
+        out.title = { n: kd().n, bytes: kd().bytes, id: kd().id, state: !!GG.state };
+        GG.main.quickStart({ seed: 5, bandId: 'hail_damage', openCard: false }); GG.state.gear.quality = 2;
+        for (let i = 0; i < 200 && !kd().ready; i++) await wait(100);
+        const k = kd(); out.live = { ready: k.ready, n: k.n, onset: k.onset, bytes: k.bytes, ms: k.ms, err: k.err, genre: GG.state.genre };
+        GG.main.quickStart({ seed: 5, bandId: 'frost_heave', openCard: false });
+        for (let i = 0; i < 50 && kd().n; i++) await wait(100);
+        out.punk = { genre: GG.state.genre, n: kd().n, bytes: kd().bytes, ready: kd().ready, pre: GG.debug('audio').pre.key };
+        return out;
+      });
+      c.ok(r.used.one === 1 && r.used.song > 0 && r.used.song <= r.used.drums && !r.used.nan && r.used.peak < 1, 'metal tier 3 renders the sampled kit ' + JSON.stringify(r.used));
+      // (a render's onset includes the kit chain's fixed latency, ~15 ms of compressor look-ahead + oversampling: the clips must
+      // all land within 1 ms of each other, and each decoded clip starts at most 1 ms before its first sample over 2 % of its peak)
+      const o0 = Math.min(...r.onsets), o1 = Math.max(...r.onsets);
+      c.ok(r.used.clipOnset != null && r.used.clipOnset <= 1 && o1 - o0 <= 1, 'decoded clips start <= 1 ms before their onset (' + r.used.clipOnset + ' ms), 25 rendered clips within ' + (o1 - o0).toFixed(3) + ' ms of each other');
+      c.ok(r.abs.kit.every((x, i) => x != null && r.abs.synth[i] != null && Math.abs(x - r.abs.synth[i]) <= 1), 'onset <= 1 ms absolute: sampled kick / snare land within 1 ms of the synth\'s through the same chain ' + JSON.stringify(r.abs));
+      c.ok(!r.title.state && r.title.n === 0 && r.title.bytes === 0, 'the title screen unlock (no career) decodes nothing ' + JSON.stringify(r.title));
+      c.ok(r.live.genre === 'metal' && r.live.ready && r.live.n === 25 && !r.live.err && r.live.onset <= 1, 'the live decode (a metal career on the pro kit): 25 clips, onset <= 1 ms ' + JSON.stringify(r.live));
+      c.ok(r.punk.genre === 'punk' && r.punk.n === 0 && r.punk.bytes === 0 && !r.punk.ready, 'a punk career loaded after it releases the decoded kit ' + JSON.stringify(r.punk));
+      c.ok(r.pairs.every(d => d > -40), '5 consecutive snares all differ (pairwise diff > -40 dB) ' + JSON.stringify(r.pairs));
+      c.ok(r.leak.same === r.leak.n, 'Classic off: metal tier 1 + punk tier 3 renders identical with and without the kit ' + JSON.stringify(r.leak));
+      c.ok(L.errors.length === 0, 'no console errors ' + L.errors.slice(0, 3).join(' | '));
+    } finally { await L.close(); }
+    const m = await measure({ genre: 'metal' });
+    const ds = Object.entries(m.lanes || {}).map(([k, v]) => k + ' ' + v.delta);
+    c.ok(!m.error && Object.values(m.lanes).every(v => Math.abs(v.delta) <= 1 && v.used === 5), 'per-lane loudness within +-1 dB of the 1.1 pro-tier synth: ' + ds.join(', '));
+    const h = await verify({ quiet: true, only: ['tap|metal', 'pre|metal', 'tap|punk', 'pre|punk'] });
+    c.ok(h.n === 96 && h.bad.length === 0, 'Classic on: metal + punk taps (every tier) = the 1.1 fixture ' + (h.n - h.bad.length) + '/' + h.n + (h.bad.length ? ' ' + h.bad.slice(0, 3).map(b => b.key).join(', ') : ''));
+  } catch (e) { c.ok(false, 'kit threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  c.done();
+}
+
+// v1.2 Lane I (handoff F13): no two hits the same. See the header (section real).
+async function real() {
+  const c = checker('real');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    const r = await page.evaluate(async () => {
+      const A = GG.audio, E = '................', out = {};
+      const pairs = (buf, at, win) => {   // RMS of the difference of every pair of hit windows, dB re the first window
+        const d = buf.getChannelData(0), sr = buf.sampleRate, W = Math.round(win * sr), wins = at.map(t => d.subarray(Math.round(t * sr), Math.round(t * sr) + W));
+        let e0 = 0; for (const v of wins[0]) e0 += v * v;
+        const res = [];
+        for (let i = 0; i < wins.length; i++) for (let j = i + 1; j < wins.length; j++) { let s = 0; for (let k = 0; k < W; k++) s += (wins[i][k] - wins[j][k]) ** 2; res.push(+(10 * Math.log10(s / e0 + 1e-12)).toFixed(1)); }
+        return res;
+      };
+      const pat = (rows) => ({ bpm: 120, lanes: 4, arrangement: ['verse'], sections: { verse: rows, chorus: [E, E, E, E], bridge: [E, E, E, E] } });
+      const sn = await A.renderOffline({ genre: 'punk', pattern: pat([E, 'x...x...x...x...', E, E]), section: 'verse', bars: 2, quality: 2, backing: false, vocals: false, vel: 0.85, room: 'dry' });
+      out.snare = { pairs: pairs(sn.buffer, [0, 1, 2, 3, 4, 5, 6, 7].map(i => 0.05 + i * 0.5), 0.3), nan: sn.nan, peak: sn.peak };
+      const ht = await A.renderOffline({ genre: 'punk', pattern: pat([E, E, 'x.x.x.x.........', E]), section: 'verse', bars: 2, quality: 2, backing: false, vocals: false, vel: 0.85, room: 'dry' });
+      out.hat = { pairs: pairs(ht.buffer, [0, 1, 2, 3, 8, 9, 10, 11].map(i => 0.05 + i * 0.25), 0.04), nan: ht.nan, peak: ht.peak };
+      const ch = await A.renderOffline({ probe: 'gtr', genre: 'metal', midi: 40, mute: true, power: true, hits: 8, gap: 0.25, vel: 0.85, seconds: 2.6, room: 'dry' });
+      out.chug = { pairs: pairs(ch.buffer, [0, 1, 2, 3, 4, 5, 6, 7].map(i => 0.05 + i * 0.25), 0.15), nan: ch.nan, peak: ch.peak };
+      const dbg = GG.debug('audio');
+      out.dbg = { ks: !!dbg.ks && dbg.ks.n > 0, pre: !!dbg.pre, realism: dbg.realism && dbg.realism.id, kit: !!dbg.kit };
+      return out;
+    });
+    for (const k of ['snare', 'hat', 'chug']) {
+      const x = r[k];
+      c.ok(x.pairs.length === 28 && x.pairs.every(v => v > -40) && !x.nan && x.peak < 1, k + ': 8 consecutive hits all differ (min ' + Math.min(...x.pairs) + ' dB) ' + JSON.stringify(x.pairs));
+    }
+    c.ok(r.dbg.ks && r.dbg.pre && r.dbg.realism === 'pro' && r.dbg.kit, 'debug(audio): ks, pre, realism, kit ' + JSON.stringify(r.dbg));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'real threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
 }

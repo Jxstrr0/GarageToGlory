@@ -758,3 +758,391 @@ non-drum player.
 - Exact gear names/prices per genre for lanes 5–6 and the run gear (propose in the contract; one popup).
 - Body-shape lists for the guitar/bass creator (start with 3–4 per seat; add, don't shrink).
 - Whether the seat picker shows a 3-second audio preview of each seat's part (cheap if the timeline is reused; ask).
+
+# Part F — Addendum 4: "Soundcheck" (owner, 2026-10-03)
+
+Written Saturday, October 3, 2026, from a design session that read the repo at `main` 1.1.0.0 (merge of PR #22). Locked
+owner decisions unless marked open (F16). Same rules as always: cheap-game-build doctrine, Red Skies layout, questions as
+popups, content as data, no USA content, no share button.
+
+**TIMING — READ FIRST:** this is roadmap entry **v1.2.0 "Soundcheck"**. It starts now (1.1 is merged). **Tuning (Part D5)
+moves from v1.2 to v1.3** so the playtest pass hears the final sound. When you receive this file: append it to
+`plan/handoff.md` as Part F (the patch already does), record the decisions in `plan/status.md` (the patch already adds
+"Addendum 4 — decisions" and an "Addendum 4 — pending" checklist), then finish the draft contract
+`plan/plan_contract_1.2.md` at stage 0 (re-audit: line numbers here are from 1.1.0.0).
+
+**Scope:** the owner's items 1–3 from the 2026-10-03 sound review: (1) the band plays like people (timing feel + velocity +
+round robins), (2) instruments (drums, strings, amps, rooms, mix), (3) vocals. Item 4 (real recordings: phone-recorded
+shouts, a sampled kit, DI guitar notes, a real cab IR) is **parked for later** (F15). Everything stays synthesized: Web
+Audio nodes + plain seeded JS DSP rendered into AudioBuffers, exactly as the crowd and the v1.0 tap pre-renders already are.
+
+## F1. Pitch
+Today every hit is the same hit and every note lands dead on the grid, so even good synthesis reads as "a machine".
+Soundcheck makes the band sound like four people in a room: a garage band that drags and rushes and hits unevenly, tightening
+up as their skill grows into an arena band; drums with real accents, ghost notes and metallic cymbals; guitars and bass that
+pluck and decay like strings through a real-sounding speaker; rooms with depth; and singers with breath, wobble and a proper
+vocal chain. Your own taps get accents too: nail a Perfect on the downbeat and it lands hardest.
+
+## F2. Locked owner decisions (popups 2026-10-03)
+| # | Question | Answer |
+|---|---|---|
+| N1 | Roadmap slot | **v1.2 "Soundcheck"** now; **Tuning moves to v1.3** (the playtest hears the final sound). |
+| N2 | How loose is the band? | **Driven by member skill.** An early garage band is sloppy and drags; by the arena years they're tight. Each genre has its own feel on top (punk rushes, rock lays back, metal locks in). |
+| N3 | Your taps have no strength on a phone. Accents? | **Accuracy + beat position.** A Perfect on a downbeat lands hardest; an off-beat Good is softer; every hit also varies a little (round robins). |
+| N4 | Should cheap gear still sound cheap? | **Yes: the upgrades raise the top end.** The milk crate kit stays thin and boxy; better tiers unlock the new realism; the arena kit sounds best. |
+| N5 | Real recordings (sound review item 4) | **Later.** Not in 1.2; the code keeps hooks so they drop in (F15). |
+| N6–N9 | A free sample kit the owner supplied (TMKD "Vortex") | **In 1.2: shareable with credit, never sold; part of Soundcheck; metal at pro + arena; DIRECT mics** (F17). |
+
+## F3. Ground rules (every lane)
+1. **Classic switch = the regression baseline.** `settings.audioClassic` (hidden; debug `GG.audio.classic(bool)`) bypasses
+   every Soundcheck path. With it on, `renderOffline` output for the four genres must be bit-identical to 1.1.0.0 (hash the
+   Float32 buffers). Like the drum seat in 1.1, this is how we prove nothing else moved.
+2. **`A.timeline()` stays pure and unchanged.** The 1,212 `sim_audio` fingerprints must not move. Feel (timing + velocity)
+   is applied in `player()` at schedule time, from a pure plan (`A.feelPlan`), never baked into the events.
+3. **The gig clock is sacred.** `'step'` events (`audio:step`, the highway, stage visuals) are never shifted. No tempo drift
+   anywhere. In a gig, the band's kick + snare move at most ±6 ms (the swapped drummer is the clock you play to), every other
+   kind at most ±15 ms. Outside gigs (songwriter, radio, rival, seat preview) the clamp is ±25 ms. Any offset is also
+   clamped to ≤ 25 % of a 16th at the song's tempo, so monophonic lanes keep their time order (chokes stay correct).
+4. **Voice cap unchanged** (32, priority tap > drum > band > crowd > amb > sfx). New timbres must cost the same or fewer
+   sources: rich sounds (metal cymbals, chords, strums) are pre-rendered into ONE buffer source each.
+5. **No AudioWorklet.** Blob-module loading inside the Artifact host and old iOS is not worth the risk. Use native nodes +
+   JS DSP into AudioBuffers, built off the main path in small slices (≤ 8 ms each), never mid-song (as `PRE` does today).
+6. **Fallback is always the 1.1 sound.** If a buffer isn't ready, play the existing live recipe for that note/hit.
+7. **Velocity reference.** `vel` is 0..1; `VEL_REF = 0.85` plays at today's level: gain × `(vel / 0.85) ^ 1.5`, capped at
+   +2.5 dB. Missing `vel` (classic, old callers) = today's exact code path.
+8. **Tier gating (N4):** every Soundcheck upgrade reads the kit tier `rig.tier` (`state.gear.quality`, 0 milk crate → 3
+   arena) through one table, `A.realism(tier)` (F11). Tier 0 keeps today's recipes, apart from feel + velocity.
+
+## F4. The band's feel (N2): timing + velocity, per player
+**Who plays what.** Each event kind belongs to one band member this career (`career.lineup(state)` → `seatRole`):
+`drum` → the drummer (you on the drum seat: your taps, no feel; the swapped drummer on a string seat), `bass` → bass,
+`gtr` left / `gtr2` / `clean` → rhythm guitar, `gtr` right / `lead` / `twang` → lead guitar, `vox` → the singer, `bvox` →
+the band's mean, `fiddle` → Clementine. Your seat's kinds are muted in gigs (your taps play them, F5). Missing member → skill 50.
+
+**Tightness** `t = clamp((skill − 30) / 60, 0, 1)` per player (starters at 42–56 skill sit at t ≈ 0.2–0.45: audibly loose).
+- **Timing spread** (ms, one standard deviation) = `lerp(12, 2.5, t) × genre.slop`.
+- **Timing is correlated, not white noise.** Each player drifts: `off[n] = 0.7 × off[n−1] + N(0, spread × 0.71)` (an AR(1)
+  wander). Real players lean ahead or behind for a few beats; per-note noise sounds like a broken clock.
+- **Genre push** (mean offset in ms, scaled by `(1 − 0.5t)` so pros still have the genre's feel but less of it):
+
+| genre | slop | drum kick | drum snare | hat/ride | bass | guitars | vox |
+|---|---|---|---|---|---|---|---|
+| metal | 0.6 | 0 | 0 | 0 | 0 | 0 | +4 |
+| punk | 1.1 | −3 | −5 | −4 | −3 | −4 | −2 |
+| rock | 1.0 | 0 | +7 (laid back) | +2 | +4 | +2 | +6 |
+| country | 0.9 | 0 | +4 | +2 | +2 | +3 | +5 |
+
+  Content data: `genres.js` → `backing.feel = { slop, push: { kick, snare, hat, bass, gtr, vox } }` (Lane F owns the key).
+- **Velocity spread** (one SD) = `lerp(0.10, 0.03, t)` per hit.
+- **Accent map** (16th step within the bar → base vel): step 0 → 1.0; 8 → 0.94; 4 / 12 → 0.9 (the snare's backbeat → 1.0);
+  other 8ths → 0.8; 16ths → 0.66. Ghost / brush / rim variants: × 0.45. Bass + guitars follow the same map, flattened
+  halfway (`0.5 + 0.5 × map`); palm-muted chugs flatten to 0.85 ± spread (metal chugs are even on purpose).
+- **Section dynamics:** sparse × 0.86, full × 1.0, break × 1.04, solo backing × 0.9; the last bar before a section change
+  ramps +0 → +8 % (the band leans into the change); the outro's ringing chord × 1.05.
+- **Studio vs live:** the van radio and recorded songs use `t + 0.25` (studio takes are tighter); rivals use their own members'
+  skill (`GG.rival.lineup(state)`, missing → 60) + 0.15 (they're seasoned) — F16 asks the owner to confirm both.
+- **Determinism:** seeded by `songId | pass | event index | player` so `renderOffline` renders are reproducible.
+
+API (pure, node-tested): `A.feelFor(state|null, genre, opts)` → `{ byKind: { kind: { t, spread, push, velSd } } }`;
+`A.feelPlan(timeline, feel, seed, { gig })` → `{ dt: Float32Array, vel: Float32Array }` (one entry per timeline event;
+`dt` in seconds, already clamped per F3.3; step events always 0). `player()` adds `dt[i]` to the scheduled time and passes
+`vel[i]` to `schedule()` as `ev.vel` (a copied event; the timeline is never mutated).
+
+## F5. Your hits (N3)
+Every tap gets a `vel` from how well and where you hit:
+- **Judgement:** perfect 1.0 · good 0.86 · fill 0.76 · stray (null) 0.62 · count-in noodling 0.7.
+- **Beat position** (the judged note's 16th step): downbeat 1.0 · quarter 0.96 · snare backbeat 1.0 · 8th 0.9 · 16th 0.82.
+- **Fast hat runs** (hat notes < 150 ms apart): alternate 1.0 / 0.84 (two hands).
+- Random ± 0.03, then clamp 0.45..1. Strays use the last note's step.
+- Drum seat: `GG.audio.hit(lane, when, { vel })`; string seats: `A.pluck / A.strum / A.lead(midi, when, { vel, .. })`.
+  Auto-hat / auto-kick / the scheduled double's 2nd kick: 0.88 / 0.9 / 0.82 (a real double is a softer second stroke).
+- The judgement already exists before the sound is booked (`55_ui_gig.js` `tap()` judges, then `playTap` / `playSeat`), so
+  this costs nothing in latency.
+- Round robins (F6) make two Perfects in a row still sound different.
+
+## F6. Drums
+Every lane gets a velocity-aware recipe and **round-robin variants**. Pre-rendered sets (the v1.0 `PRE` machinery, widened)
+now serve **both your taps and the song's drum events** (the swapped drummer, songwriter playback, radio), one buffer source
+per hit; the live recipe is the fallback. Velocity between layers: nearest layer + gain + a per-slot low-pass (pooled with
+the lane's choke gain: brighter when harder, cutoff `lerp(0.55, 1, vel) × 16 kHz`).
+
+| lane | 1.1 recipe | Soundcheck recipe (tiers per F11) |
+|---|---|---|
+| kick | 1 sine glide + noise click | sine body with pitch drop + a 2nd body mode (×1.52, −10 dB, half decay) + beater click (band-passed noise 2.5–5 kHz, level ∝ vel²) + arena sub tail (40–55 Hz, +3 dB). Pitch × `(1 + 0.03 (vel − 0.85))`. |
+| snare | 1 triangle + high-passed noise | two head modes (≈ 185 and 330 Hz × snarePitch, the 2nd −6 dB) + **wires**: noise band-passed 1.8–7 kHz whose decay outlasts the head by 40 %, wire level follows head energy; vel > 0.92 on tier ≥ 2 adds a **rim shot** (a 900 Hz ring + more crack). Ghost / brush / rim keep their variants on the soft layer. |
+| hat | high-passed noise | **metal cluster**: 6 square oscillators at the 808 ratios (≈ 205.3, 304.4, 369.6, 522.7, 540, 800 Hz × kit factor) summed → band-pass 10 kHz → high-pass 7 kHz, plus a little noise; closed decay as today. Band (not your taps) may open the hat on the "and" of 4 in `full` bars at tier ≥ 2 (choked by the next hat). |
+| cymbal (crash) | high-passed noise + 5.2 kHz shimmer | metal cluster (6 squares, ratios jittered per round robin) through a high-pass whose cutoff sweeps down over 300 ms (the bloom) + a noise wash; longer decay on arena. |
+| ride / china | noise ping + 1.18 kHz triangle | ride: 3 inharmonic bell partials (1, 2.32, 3.61 × f) + stick ping + soft wash; china: the cluster at lower ratios, mid-heavy, trashy. |
+| toms | 1 sine glide | two modes (1 and 1.6 ×, the 2nd −9 dB, fast) + stick attack (short noise) + a slower pitch drop; floor tom longer. |
+
+**Round robins:** each variant re-renders with pitch × (1 ± 0.012), decay × (1 ± 0.07), filter × (1 ± 0.04) and a different
+noise start offset (a new segment of the shared noise buffer, so the hiss differs). Played in order with no repeats.
+
+**Kit stereo:** kick + snare centre (± 0.05); hat, cymbal, toms and ride sit on the side of their highway column, × 0.5
+(lefty mirrors), toms sweep across their three variants (high → floor). Tier 0 collapses widths × 0.3 (one cheap mic).
+
+**Memory + time budget:** velocity layers only for kick, snare and toms; hat, cymbal and ride use 1 layer + gain + filter.
+Pro: 4 RR × 2 layers ≈ 20 s of mono audio ≈ 3.8 MB; arena (3 layers) ≈ 5.1 MB. Hard cap **6 MB** per kit set. Build order:
+one variant of every lane first (taps switch over as soon as that's done), then the rest. Build ≤ 2.5 s wall on a 4× CPU
+throttle, slices ≤ 8 ms, never mid-song.
+
+## F7. Strings: guitars and bass (Karplus-Strong)
+Replace the oscillator notes (`metalNote`, `ampNote`, `playNote`'s bass / gtr / lead / twang / strum paths) with
+**pre-rendered plucked-string buffers** played through the SAME envelopes (`gate` / `held` / `decay` / `sharedEnv`) and the
+SAME amp chains. The envelopes keep the palm-mute gating and chokes; the buffer brings the pluck.
+
+- **Algorithm** (pure JS, `src/32_audio_dsp.js`, `GG.dsp.pluck(o)` → Float32Array): extended Karplus-Strong. A noise burst
+  excitation, low-passed by velocity (harder = brighter) and combed by **pick position** (`x[n] − x[n − βN]`, β 0.13 near the
+  bridge for metal/punk, 0.2 rock, 0.27 neck for clean/country); a delay loop with a one-zero loop filter (brightness S) and
+  decay stretch ρ set from the target T60; a **first-order all-pass for fractional delay so it's in tune** (plain KS is
+  flat at high pitch; test ±3 cents from midi 28 to 88).
+- **Articulations:** open (guitar T60 ≈ 2.5 s, bass 3 s), palm mute (excitation low-passed ~1.2 kHz, T60 0.12 s, 2 round
+  robins: chugs are the most repeated notes), tremolo (short bright), ring/sag (the existing pitch sag via `playbackRate`).
+- **Power chords = one buffer:** root + fifth + octave strings summed with 2–4 ms spread. The double-tracked L/R pair plays
+  the same buffer at ± 5 cents (`playbackRate`) with the existing lag, so a power chord still costs one source per side.
+- **Strums = one buffer:** country acoustic + rock `clean`: all strings mixed with 9–13 ms spacing, down or up order baked
+  in, keyed by (shape, direction, vel layer). This *saves* sources (today: one oscillator per string).
+- **Bass:** KS with a darker loop filter + a finger thump (low-passed noise, 6 ms) for rock/country, a pick click for
+  punk/metal; the metal sub + grind split stays.
+- **Lead + twang:** KS attack, then for holds longer than the buffer, loop whole periods of the tail (`loopStart/loopEnd`
+  at an integer number of periods) so a held lead sustains under the amp's compression. Bends, slides and vibrato ride on
+  `playbackRate`. The fiddle stays bowed (oscillator), with its existing vibrato and bow noise.
+- **Cache:** sample rate 22,050 Hz for distorted guitars and bass (the cabs low-pass by 5–6.5 kHz anyway), 32,000 Hz for
+  clean/acoustic/twang; LRU cap 8 MB per rig. `A.warm(pattern, opts)` → Promise renders the song's unique (kind, midi,
+  articulation, layer) set from its timeline (pure) in slices; the gig calls it when the chart is built (before the
+  count-in), the songwriter when a song opens, `play()` calls it without waiting. Typical song: 15–40 buffers, ≤ 300 ms
+  total CPU spread over slices.
+
+## F8. Amps and cabinets
+- **Cab IR convolver** replaces the cab biquads in `metalRig` and `ampRig` (keep each pre-EQ and clipper; the clipper is the
+  amp, the IR is the speaker + mic). One 1,024-sample (~21 ms) mono IR per genre, synthesized once (pure JS): low resonance
+  peak, low-mid scoop, presence hump, 3–5 seeded narrow cone-breakup notches between 3 and 7 kHz, two steep low-passes, and a
+  mic comb (the same impulse again 0.25–0.45 ms later at −8 dB: off-axis + back wall). Normalised; `normalize = false`.
+
+| genre | cab | res. peak | presence | low-pass |
+|---|---|---|---|---|
+| metal | closed 4×12, tight | 95 Hz +4 dB | 2.4 kHz +3 dB, 600 Hz −4 dB scoop | 5.5 kHz |
+| punk | 2×12, mid-forward | 110 Hz +2 dB | 1.6 kHz +4 dB | 5.0 kHz |
+| rock | 4×12 "greenback" | 100 Hz +3 dB | 2.0 kHz +4 dB | 5.8 kHz |
+| country | open-back 1×12 | 120 Hz +1 dB | 3.2 kHz +3 dB (the Tele sparkle) | 6.5 kHz |
+
+- **Tier 0 band rigs (default, F16 confirms):** milk-crate careers play through a **1×8 practice amp IR** (boxy, honky
+  900 Hz bump, low-pass 4 kHz); pawn shop a 1×12; pro + arena the genre cab above. The band's sound levels up with the gear.
+- **Hook for item 4:** `backing.amp.ir` (base64 PCM16) overrides the synthesized IR when present (a real IR later, no code).
+- Cost: two short convolvers per genre rig (L + R), built on first use like the amps today. Check `pw_perf`.
+
+## F9. Rooms and the mix
+- **Impulse v2** (`impulse(c, cls)` rewritten, still pure seeded JS): per-room **pre-delay** (dry 0, room 8, hall 18, theatre
+  25, arena 40 ms), **early reflections** (8 taps inside the room's ER window: dry 15, room 30, hall 60, theatre 70, arena
+  120 ms; falling gains, alternating channels, slightly different L/R times), then the late tail with **frequency-dependent
+  decay** (the one-pole tone darkens over the tail: `tone × (1 − 0.6u)`, so highs die first), L/R decorrelated as now. Keep
+  the hall/arena slap echo. Add a `plate` class (1.2 s, bright, dense, no ER) for vocals (F10).
+- **Kick ducks the bass:** the scheduler knows every kick time, so the bass path gets a scheduled dip (−2 dB in 5 ms, back
+  with a 50 ms time constant) on each kick: punch without a sidechain node. One `r.duck` gain on each bass path.
+- **Drum parallel compression:** `busDrums` → a hard compressor (−32 dB, 8:1, 3 ms / 120 ms) → back into `glue` at
+  0.15 / 0.25 / 0.35 by tier 1 / 2 / 3 (tier 0: none).
+- **Vocal carve for every genre:** the guitars' presence band dips −3 dB while a vocal sings (metal keeps its −6).
+- Re-balance wet levels and bus trims **by numbers** (F13): mean RMS per genre within ± 1 dB of 1.1, peaks under the ceiling.
+
+## F10. Vocals
+The shouts stay short hits on the beat grid (that doesn't change); they become far more human. Pure helpers live in
+`src/33_audio_voice.js` (`GG.voice`), the wiring in `voxHit` / `metalVox`.
+- **Glottal source** instead of a raw sawtooth: three PeriodicWaves per context (breathy, modal, belt) from the DFT of one
+  Rosenberg pulse period, differentiated for lip radiation (48 harmonics). Open quotient: breathy 0.8, modal 0.6, belt 0.4
+  (belt = brighter, pressed). Voice profile `vp.press` 0..1 picks / blends (punk yell + rock wail belt, country holler modal,
+  ballads breathy). Metal keeps its driven buzz but starts from the belt wave.
+- **Five formants** (F1–F5) instead of three, Q from real bandwidths (≈ 80, 90, 120, 130, 140 Hz → Q = F / BW), levels
+  falling ~6 dB per formant; F4 ≈ 3,400, F5 ≈ 4,300 Hz × `vp.formant`. **Singer's ring** (`vp.ring`, dB): a 3 kHz peak for
+  belters (rock wail, country holler). **F1 tracks pitch:** when f0 > 0.9 × F1, F1 rises to 1.1 × f0 (high notes don't thin out).
+- **Breath that pulses:** aspiration noise (band-pass 2.5 kHz) through a gain whose AudioParam is driven by the glottal
+  oscillator through a half-wave rectifier (noise bursts once per vocal-fold cycle, as in a real throat). Level from
+  `vp.breath`. Reuses the hit's existing noise source (no extra source when consonants already need one).
+- **Pitch that lives:** vibrato with onset 0.18–0.3 s (by note length), rate 5.2–6.2 Hz per note drifting ± 0.2 Hz, depth
+  drifting ± 20 %; a slow 1/f wander of ± 8 cents under everything; cycle jitter stays (`jit`). **Shimmer:** a gentle
+  random gain curve (3–6 % at 40–80 Hz) per hit.
+- **Dynamics:** each hit takes its `vel` (F4, the singer's tightness) and held notes swell to + 10 % by 60 % of their length,
+  then settle.
+- **Doubles and gangs:** chorus lead vocals (non-metal) get a double when there's room (`fits(r, t, 1)`): + 8 cents, 18–28 ms
+  late, its own 3-formant bank, panned ± 0.25. Metal held screams get the same double. Gang hits grow from 2 to 3 voices
+  when there's room: offsets 0 / 14 / 27 ms, formant scales 0.92 / 1 / 1.08, pans −0.4 / 0 / 0.4.
+- **Vocal chain** (built by `buildVox(r)`, called from `makeRig`): high-pass 100 Hz → compressor (−18 dB, 4:1, 5 / 120 ms) →
+  presence + 3 dB at 3.2 kHz → air shelf + 2 dB at 10 kHz (not punk) → the band bus; sends: the `plate` (F9) and a
+  **tempo-synced delay** (set per song from its bpm; feedback 0.25, low-passed 3.5 kHz in the loop).
+
+| genre | plate send | delay | note |
+|---|---|---|---|
+| metal | 0.18 | — | double on held screams |
+| punk | 0.08 | — | dry and in your face, no air shelf |
+| rock | 0.20 | dotted 1/8, 0.15 | the '80s wail |
+| country | 0.12 | 110 ms slapback, 0.2 | matches Earl's Tele |
+
+- **Consonants (polish if time allows):** a short voiced murmur before b/d/g; more 5–8 kHz energy on s/z.
+- **Expectation, said plainly:** this makes a convincing *synthesized* singer and much better shouts; real words that read as
+  a person still need recordings (item 4).
+- Perf: the plate is a second convolver per rig. If the frame governor has stepped the pixel ratio down to 1.0 (a slow phone), vocals use the room send instead.
+
+## F11. Tier table: `A.realism(tier)` (N4)
+| tier | drums | strings | rooms + mix |
+|---|---|---|---|
+| 0 milk crate | today's recipes + vel + 2 RR; noise cymbals (trashy) | KS on; 1×8 practice amp IR | impulse v2; no drum crush; kit width × 0.3 |
+| 1 pawn shop | 2 vel layers, 3 RR; 3-partial metal hats/cymbals; 2 snare modes | 1×12 IR | crush 0.15; width × 0.6 |
+| 2 pro | 2 layers, 4 RR; 6-partial metal; wires; rim shots | the genre cab | crush 0.25; full width |
+| 3 arena | 3 layers (kick, snare, toms), 4 RR; longer cymbal bloom; sub kick | the genre cab | crush 0.35; full width |
+Feel (F4), your tap accents (F5) and the vocals (F10) are tier-independent: the band and the singer aren't gear.
+
+## F12. Build handoff (tech notes for the lead and lanes)
+- **New modules** (build ORDER is by name, so they load after `30_audio.js`; 30 only touches them inside functions):
+  `src/31_audio_feel.js` (`A.feelFor`, `A.feelPlan`, `A.tapVel`, the accent map — pure), `src/32_audio_dsp.js`
+  (`GG.dsp`: `pluck`, `chord`, `strum`, `metal` cluster, JS biquad, `impulse2`, `cabIR` — pure), `src/33_audio_voice.js`
+  (`GG.voice`: `glottalWaves(sr)` spectra, `vibCurve`, `wander`, `shimmer`, formant tables — pure).
+- **`30_audio.js` regions by owner** (contract §2 lists functions): feel wiring in `player()` / `schedule()` / `A.hit` /
+  `seatVoice` / `seatPlay`; instruments in `DRUMS` / `drumHit` / `PRE*` / `makeRig` / `setKit` / `ROOMS` / `impulse` /
+  `setRoom` / `metalRig` / `ampRig` / `metalNote` / `ampNote` / `playNote` (non-vox); vocals in `VOWELS` .. `MVOX` /
+  `voxCurve` / `addVib` / `metalVox` / `voxHit` + a new `buildVox(r)`. Stage 0 puts a one-line `buildVox` hook in `makeRig`.
+- **Event contract:** every scheduled event may carry `ev.vel` (absent = 1.1 behaviour); `A.hit(lane, when, o)` and the seat
+  voices accept `o.vel`. Timing offsets are applied by `player()` before `schedule()` (consumers never see `dt`).
+- **Gig:** `55_ui_gig.js` `playTap` / `playSeat` compute `A.tapVel({ judgement, step, lane, prevHatT })`; `startAudio` passes
+  `po.gig = true` (the tighter clamps) and calls `A.warm` when the chart is built.
+- **Settings:** `settings.audioClassic` (hidden, default false) + `A.classic(bool)`; save migration none needed (missing =
+  false). Debug `debug('audio')` += `feel` (per-kind t / spread / push, last plan stats), `realism` (tier row), `ks`
+  (cache n / bytes / misses), `pre` (sets, RR, layers, bytes), `vox` (doubles, gang3, chain on).
+- **Size:** + ~70–90 KB source, + ~0.4 MB for the sampled kit (F17) ≈ 5.05 MB; the budget moves to **6.0 MB** (1.1.0.0 is 4.56 MB).
+
+## F13. Verification (numbers first, then ears)
+- **Node:** `sim_feel.test.js` (determinism, clamps per F3.3 at 60–260 bpm, step events never move, AR(1) spread matches
+  `t`, accent map, `tapVel` table), `sim_dsp.test.js` (KS tuning ± 3 cents midi 28–88 by autocorrelation, T60 within 15 %,
+  no NaN/denormals, chord/strum buffers = sum of their strings, IR normalised, impulse v2 pre-delay/ER positions, metal
+  cluster spectrum > 6 kHz), `sim_voice.test.js` (glottal spectra tilt per OQ, F1 tracking, vibrato onset). `sim_audio`
+  fingerprints untouched.
+- **Classic hash:** with `audioClassic` on, `renderOffline` of 4 genres × (full song, drums only, band only) hashes equal to
+  1.1.0.0's (stored in `tests/fixtures/audio_v11_hashes.json`, written at stage 0 BEFORE any audio change).
+- **Band-energy tables** (`pw_seq` `audio`): print the 5-band table (0–150, 150–500, 500–1.5k, 1.5–4k, 4k+ Hz) per genre,
+  1.1 vs 1.2, into `plan/v12_audio_numbers.txt`. Targets: mean RMS ± 1 dB of 1.1; 4k+ band not up by more than 3 dB (no
+  harshness on phone speakers); peaks ≤ the ceiling; stereo width per genre logged. Retune pw_seq thresholds only with
+  the before/after numbers in the commit message.
+- **"No two hits the same":** render 8 consecutive snare hits at equal vel: every pair differs (sample RMS diff > −40 dB).
+  Same for chugs and the hat.
+- **Perf** (`pw_perf`, 390×844 and 440×956, 4× CPU throttle): gig frame p95 ≤ 1.1 × 1.1.0.0; voice peak ≤ 32, tap drops 0;
+  `PRE` build ≤ 2.5 s, KS warm ≤ 300 ms per song, no slice > 8 ms; scheduler pump p95 ≤ 2 ms.
+- **Ears:** render four 15 s clips (one per genre, the band's first starter song, chorus → verse) as 1.1 and 1.2, encode
+  `.m4a`, send to the owner, then a popup: ship / tweak (which genre). Plus one 8-hit "Perfect vs Good" tap demo.
+
+## F14. Roadmap change
+- **v1.2.0 "Soundcheck"** = this addendum, one feature batch (contract `plan/plan_contract_1.2.md`, draft included; lanes F
+  feel, I instruments, V vocals; the lead owns stage 0, settings, the gig wiring merge, build, tuning by numbers, the review).
+  **Done when:** every F13 check passes, classic hashes match 1.1, all existing tests are green (audio-number tests retuned
+  with logged numbers), and the owner OKs the clips.
+- **v1.3 "Tuning"** = Part D5 unchanged (all four seats), now played with the final sound.
+- **Later (unscheduled): "Real recordings"** = sound review item 4 (F15).
+
+## F15. Not doing (in 1.2)
+- **Real recordings** (owner N5, later; **except** the TMKD kick/snare/toms for metal, F17): phone-recorded shouts (3–4 takes per word, pitch-shifted ≤ ± 3 semitones), a
+  sampled kit (3 velocity layers, AAC/m4a), DI guitar notes through the existing amps, a real cab IR. The hooks are ready:
+  `backing.amp.ir`, the `PRE` set format (a lane's buffers can come from files), the KS cache key (a note's buffer can come
+  from a sample).
+- No AudioWorklet, no tempo drift, no new player-facing settings (Classic is hidden), no lyrics (vocals stay shouted hits).
+- No change to charts, judging windows, the gig clock or `A.timeline()`.
+
+## F16. Still open (ask with popups when you get there)
+- Low mood makes the band sloppier (mood < 30 → spread × 1.25, a fight you can hear)? Recommend **yes** (it's funny).
+- Studio takes (radio, recorded songs) tighter than live (`t + 0.25`), and rivals tighter than you (+ 0.15)? Recommend **yes**.
+- Band amps follow the kit tier (milk crate = a 1×8 practice amp)? Recommend **yes** (F8 default).
+- Show "Classic sound" in Settings for players, or keep it debug-only? Recommend **debug-only**.
+
+## F17. Sampled kit: TMKD "Vortex" free pack (owner, 2026-10-03)
+The owner supplied a free drum sample pack (`Drums.zip`, 18 MB). It pulls one piece of item 4 into 1.2: **real kick, snare
+and tom samples for metal at the pro and arena tiers**. Everything else in F6 stays as designed (hats, cymbals, ride and
+china stay synthesized; every other genre and tier stays synthesized).
+
+**Owner decisions (popups + the pack's terms, 2026-10-03):**
+| # | Question | Answer |
+|---|---|---|
+| N6 | License | **The pack's own terms allow it** (owner's screenshot of the TMKD terms, below): free to share and use in the game, **credited to TMKD, never sold**. It ships in the repo and in every build. |
+| N7 | How it goes in | **Part of Soundcheck** (Lane I), not a separate 1.1 patch. |
+| N8 | Where it plays | **Metal at pro + arena tiers** (Hail Damage earns the real kit by upgrading). |
+| N9 | Which mics | **DIRECT** close mics (mono, dry; the venue rooms place it). |
+
+**The terms (transcribed from the owner's screenshot of The Metal Kick Drum's free-pack notice; commit this text as
+`src/content/kit_tmkd_vortex.LICENSE.md`):**
+> THIS IS A SET OF AUDIO FILES ONLY, THIS IS NOT A PHYSICAL DRUM. The Package is in .ZIP format, so you will need WINZIP to
+> extract its contents. This is an original product by The Metal Kick Drum, Copyright © 2019. All rights reserved. Drums
+> recorded & processed by Rafa Prieto. All free packs are allowed and mandatory to share! but it is not allowed to take
+> credits or sell the product in other format of any kind.
+
+What that means for the build (the rules Lane I and the lead follow):
+- **Sharing is fine:** the encoded kit is committed (`src/content/kit_tmkd_vortex.js`), goes into `dist/`, the public repo and the main
+  artifact.
+- **Never take credit:** the credit line is mandatory wherever the kit ships (the title credit + the LICENSE file next to the kit + the
+  README). Nothing may present the drums as Prairie Blue Studio's own.
+- **Never sell:** Garage to Glory is free. **If it ever becomes paid or monetized (price, ads, in-app purchases), this kit
+  must be replaced or TMKD's written permission obtained first.** Logged in status.md as a standing rule.
+- The raw 34 MB of WAVs stay out of git (size, not licence): `local/` is git-ignored and holds the unzipped source; only the
+  encoded module (~0.4 MB) is committed.
+
+**What's in the zip (safety-checked in the design session; re-check at stage 0 with `tools/check_kit_zip.py`):** 62 entries,
+60 `.wav` + 2 folders, stored (no compression; ratio 1.9 = audio), no absolute paths, no `..`, no symlinks, no exec bits, no
+encryption. Every file is a valid RIFF/WAVE PCM file with nothing after the RIFF length (no hidden payload). Chunks: `fmt`,
+`LIST`, `PAD`, `data` (+ `iXML` on ALL MICS). INFO metadata: "TMKD - VORTEX KIT", "The Metal Kick Drum", engineer
+"R. Prieto", ©2018 (the terms say 2019; credit uses the terms).
+- `TMKD-VORTEX_Free_Pack_Wav/DIRECT/`: mono 24-bit 44.1 kHz, `KD` kick, `SN` snare, `RT1` / `RT2` rack toms, `FT1` / `FT2`
+  floor toms, 5 hits each (`_01`..`_05`). **← use these (N9).**
+- `ALL MICS/`: the same hits mixed with room mics, stereo. Not used.
+- The 5 hits per drum are **round robins at one velocity** (peaks within ~1.5 dB): there are no velocity layers.
+
+Measured (DIRECT): kick ≈ 67 Hz, -50 dB by ~0.3 s; snare ≈ 180 Hz, ~0.55 s; RT1 ≈ 133 Hz, RT2 ≈ 113 Hz, ~1.3 s; FT1 ≈ 87 Hz,
+FT2 ≈ 77 Hz, ~2.2 s. Onsets at 0–1 ms.
+
+### F17.1 The kit module (one file per kit; a swap = replace the file)
+`tools/make_kit.py` (numpy + soundfile + ffmpeg; reusable for any future kit) reads a source folder + a map and writes
+`src/content/kit_<id>.js` (a flat file: `build.js` already concatenates every `src/content/*.js` by name, so no build change;
+the license sits next to it as `kit_<id>.LICENSE.md`, which the build ignores):
+```
+GG.content.kits = GG.content.kits || {};
+GG.content.kits.tmkd_vortex = { id: 'tmkd_vortex', name: 'TMKD Vortex',
+  credit: 'Drum samples: "Vortex" free pack by The Metal Kick Drum, recorded & processed by Rafa Prieto (© 2019)',
+  terms: 'free to share, credit required, not for sale (src/content/kit_tmkd_vortex.LICENSE.md)',
+  genres: ['metal'], tiers: [2, 3], codec: 'mp3', sr: 44100,
+  lanes: { kick: [b64 x5], snare: [b64 x5], toms: [[b64 x5] /*0 high*/, [b64 x5] /*1 mid*/, [b64 x5] /*2 floor*/] },
+  trim: { kick: dB, snare: dB, toms: [dB, dB, dB] } };
+```
+- **Map:** kick ← `KD`, snare ← `SN`, toms 0 (high) ← `RT1`, 1 (mid) ← `RT2`, 2 (floor) ← `FT1`. `FT2` unused (the game has
+  three tom voices).
+- **Trim + fade:** kick 0.45 s, snare 0.65 s, rack toms 1.0 s, floor tom 1.2 s, each ending in a 40 ms cosine fade. Peak-
+  normalise every round robin to -0.3 dBFS (velocity is the game's job).
+- **Encode:** mono MP3, 112 kbps (`libmp3lame`). MP3 decodes in every browser's `decodeAudioData` (and in the open-source
+  Chromium the tests use, which lacks AAC). About 0.3 MB of MP3 → about 0.4 MB of base64.
+- **Encoder delay:** MP3 adds ~25 ms of leading silence that not every browser strips. After decoding, find the first sample
+  over 2 % of the peak, start 1 ms before it, and copy into a fresh AudioBuffer. Test: the onset lands at ≤ 1 ms.
+- **`trim` (dB per lane):** set so each lane's first-100 ms RMS at vel 0.85 matches the 1.1 synth hit of that lane on the pro
+  tier within ± 1 dB (measured with `renderOffline`; the numbers go in `plan/v12_audio_numbers.txt`).
+- **Size:** + ~0.4 MB on `dist/game.html`. With Soundcheck's code that's ≈ 5.05 MB, so the **size budget moves to 6.0 MB**
+  (`tools/perf.js` gate 6,000,000). The ~8 MB ceiling discussed for full recordings stays for later.
+
+### F17.2 Runtime (Lane I; `30_audio.js` regions it already owns)
+- `A.sampleKit(genre, tier)` → the kit when `GG.content.kits` has one listing that genre and tier, else null. Classic on →
+  always null.
+- **Decode** after the unlock and whenever the career's kit (genre + tier) changes to one with a sample kit: one sample per
+  slice (`decodeAudioData` + the onset trim), never mid-song, like `PRE`. Holds `SK = { id, bufs: { 'kick|0'..'toms2|4' },
+  ready, ms, bytes, err }`. Decoded size ≈ 21.5 s mono float ≈ 3.8 MB; it **replaces** the kick/snare/tom synth renders in
+  the PRE set (hat, cymbal and ride renders stay), so the F6 6 MB cap holds. Non-metal careers never decode it.
+- **Playback:** taps and the song's drum events (the swapped drummer, songwriter, radio) take kick / snare / toms from `SK`:
+  one buffer source into the lane's pooled choke slot (as v1.0 taps). Round robins in order, no repeats.
+  **Velocity:** `velGain(vel)` + the slot low-pass at `lerp(0.45, 1, vel) × 16 kHz` (samples have one layer, so soft hits
+  need the darker filter more than synth hits). The kit chain after it is unchanged (tier drive, box, low/high cuts, room
+  send), so pro vs arena still differ.
+- **Chokes:** the 0.5 s tap cap and lane chokes stay. A choke fades in 6 ms (as now), so a ringing tom never clicks.
+- **Fallback:** decode error or not ready yet → the F6 synth recipe. Log `SK.err` once.
+- **Credit (mandatory):** the title screen credit gets a second small line with `kit.credit` for every kit in the build
+  (`51_ui_menu.js:151`; lead owns 51), and the README gets a "Credits" section with the same line.
+- **Debug:** `debug('audio').kit = { id, ready, n, bytes, ms, err, used: { kick, snare, toms } }`.
+
+### F17.3 Tests
+- `tests/sim_kit.test.js` (node): module shape (5 / 5 / 3 × 5 clips, genres, tiers, `credit` names The Metal Kick Drum and
+  Rafa Prieto); `src/content/kit_tmkd_vortex.LICENSE.md` exists; **attribution check**: every kit in `GG.content.kits` has a
+  non-empty credit and the built `dist/game.html` contains it; no raw `.wav` is tracked (`git ls-files '*.wav'` empty).
+- `pw_seq` section `kit`: metal on tier 3 renders with `kit.used` > 0, onset ≤ 1 ms, 5 consecutive snares all differ,
+  per-lane loudness within ± 1 dB of the synth reference; metal tier 1 and punk tier 3 render hash-identical to the classic
+  hashes for those cases (the kit never leaks into other tiers or genres). `pw_gig` section `kit`: metal drum seat on tier 3,
+  taps play samples, tap drops 0, booking latency unchanged. `pw_flow` / title: the credit line is visible.
+- Classic on → `A.sampleKit` null and the classic hashes hold.
+- Ears: one extra 15 s metal clip (tier 3) next to the F13 clips.

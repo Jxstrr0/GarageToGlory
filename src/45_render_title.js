@@ -625,7 +625,8 @@
         for (var j = 0; j < K.people.length; j++) if (K.people[j].pose === 'noodle' || K.people[j].pose === 'lean') K.people[j].react = 0;   // the band reacts
         var ac = audio && audio.context && audio.context(), t0 = ac ? ac.currentTime + 0.02 : 0;
         var FILL = [['snare', 0], ['snare', 0.09], ['toms', 0.18], ['toms', 0.27], ['toms', 0.36], ['kick', 0.46], ['cymbal', 0.46]];
-        if (ac && audio.hit) for (var i = 0; i < FILL.length; i++) audio.hit(FILL[i][0], t0 + FILL[i][1]);
+        var vo = audio.TAP_AUTO ? { vel: audio.TAP_AUTO.other } : undefined;   // (v1.2: the velocity kit; Classic ignores it)
+        if (ac && audio.hit) for (var i = 0; i < FILL.length; i++) audio.hit(FILL[i][0], t0 + FILL[i][1], vo);
         return true;
       }
       if (action === 'marcel') { T.taps.marcel++; T.summon = 0; strike(0.7); return true; }

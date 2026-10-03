@@ -431,6 +431,75 @@
   //   crowdRaw. Voice-cap priority: band notes are never dropped; crowd one-shots go first.
 
   /* ======================================================================
+   V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)
+   Ground rules (F3): Classic on = 1.1 byte for byte (tests/fixtures/audio_v11_hashes.json, tools/audio_hashes.js); A.timeline()
+   pure and unchanged; 'step' events never move (feel is applied in player() from a pure plan); voice cap 32; no AudioWorklet;
+   a buffer not ready = the 1.1 recipe; missing vel = the 1.1 code path.
+   Events + options:
+     scheduled events may carry ev.vel 0..1 (a copy made in player(); tl.events never mutated). A.hit(lane, when, o) and
+     A.pluck / strum / lead(midi, when, o) take o.vel. A.play(pattern, opts) + opts.gig (gig clamps), opts.feel (false = no feel),
+     opts.studio (true = radio / recorded songs: t + C.FEEL_STUDIO). Classic on: all ignored.
+     velGain(v) = min(1.333, (v / C.VEL_REF) ^ 1.5) (+2.5 dB cap), one helper in 31.
+   Feel (Lane F, 31_audio_feel.js): A.feelFor(state|null, genre, { rival, studio, seat }) -> FEEL { genre, byKind: { <kind|lane>:
+     { who, t, spread (s), push (s), velSd } }, slop } (null state: every t = 0.5; mood < C.FEEL_MOOD.below: spread x
+     C.FEEL_MOOD.spread; rival: t + C.FEEL_RIVAL; studio: t + C.FEEL_STUDIO). A.feelPlan(tl, FEEL, seed, { gig }) -> { dt:
+     Float32Array(n), vel: Float32Array(n), stats: { maxAbsDt, meanVel } } (n = tl.events.length; steps 0 / 1; clamps
+     C.FEEL_CLAMP). A.accent(step, kind, lane, variant, role) -> base vel; A.tapVel({ judgement, step, lane, prevHatT, t }) -> vel.
+     genres.js backing.feel { slop, push: { kick, snare, hat, bass, gtr, vox } } (ms).
+   DSP (Lane I, 32_audio_dsp.js, pure): GG.dsp.pluck / chord / strum / metal / biquad / impulse2 / cabIR (shapes: contract §4.3);
+     A.warm(...) -> Promise (KS cache), A.realism(tier) -> C.REALISM[tier] (tier default: the career's kit), genres.js
+     backing.amp.ir. Cab per tier: C.REALISM[tier].cab when C.BAND_AMP_BY_TIER, else 'genre'.
+   Voice (Lane V, 33_audio_voice.js, pure): GG.voice.glottal / WAVES / formants / track / pitchCurve / shimmer (contract §4.4);
+     A._buildVox(r) (registered by 33/30: the vocal chain; makeRig calls it unless Classic); voices profiles + press, ring, double.
+   Settings / debug: settings.audioClassic (hidden, default false; no Settings UI, owner F16.4); GG.audio.classic(bool) ->
+     bool (persisted), isClassic(). debug('audio') + classic (stage 0), feel (F), realism / pre / ks (I), vox (V).
+   Stage-0 stubs (30; each returns the 1.1 behaviour until its lane fills it in): feelFor -> null, feelPlan -> null, tapVel ->
+     undefined, warm -> resolved Promise, realism(tier) -> C.REALISM[tier]; GG.dsp = {}, GG.voice = {}.
+   F16 (owner popup 2026-10-03, all as recommended; each a one-constant change): C.FEEL_MOOD, C.FEEL_STUDIO + C.FEEL_RIVAL,
+   C.BAND_AMP_BY_TIER, Classic hidden.
+   As merged (lanes F -> I -> V, 2026-10-03; lane reports plan/v12_lane_<f|i|v>_report.md):
+     F (31): A.velGain(v), A.tightness(skill) = clamp((skill - 30) / 60, 0, 1), A.feelFor(...) -> + studio, rival, seat;
+       byKind keys = drum lanes + bass gtr gtr2 clean lead twang fiddle vox bvox (your seat: who 'player', t 1). A.feelPlan(...)
+       -> + dgap: Float32Array(n) (beats; the gap to the same voice's next event), stats + n, gig. A.TAP_AUTO { hat, kick,
+       double, other }; A.tapVel(...) + run, rnd. A.feelStats() (debug('feel'), folded into debug('audio').feel).
+       player(): feelOf / feelPlanFor (seed hashSeed(songId | pass)); h.feel, h.plan; voxTempo(r, spb) at song start.
+       55: bandOpts (+ gig, + studio on a studio take), warmSong() -> A.warm after the chart is built, tapVel before every tap
+       sound, auto strokes at A.TAP_AUTO; debug('gigui').feel.
+     I (32 + 30): GG.dsp + pluckJob(o) -> { out, done, step(m) }, METAL_RATIOS, ROOMS2, CABS, irGain, irFromB64.
+       drumHit(r, p, lane, t, cap, v, cls, vel) (vel + Classic off -> drumVel: DRUMS2 by tier, round robins, kit pan);
+       PRE2 (layers x round robins per C.REALISM, 6 MB cap, serves taps AND song drum events); KS cache (A.warm(pattern,
+       { genre, songId }) -> Promise<{ n, ms }>, LRU 8 MB); cab IRs by tier (cabName / CAB_TRIM; backing.amp.ir base64 PCM16
+       overrides); A.impulse2(c, cls); r.carve (presence peaking nodes of every built amp, node._base = rest dB); r.duck;
+       r.crush. A.sampleKit(genre, tier) (F17; null on Classic), SK decode in slices + onset trim. renderOffline + vel, hit,
+       feel (false = none), studio, gig, hits, gap -> result + kitUsed, kitOnset; prerenderHit + vel, rr.
+       debug('audio') + realism, pre, ks, kit { id, ready, n, bytes, ms, err, onset, slice, used, last, credit }.
+     V (33 + 30): GG.voice + oq, PRESS, press, pressAt, BW, F45, STEP_DB, ring, onset, envelope, velGain, DOUBLE, GANG3,
+       CHAIN, SENDS, DELAY, sends, delayTime, profile. buildVox(r) = A._buildVox (r.vx chain, r.voxDelay, r.voxTempo(spb));
+       voxSing / metalExtra / voxCarve; content voices.sound (genre:<g> | profile id | rival:<id> -> { press, ring, double,
+       breath }; a parallel table so vocal events keep the 1.1 profile). A.voxStats() (debug('vox'), folded into
+       debug('audio').vox).
+     Kits (F17): GG.content.kits.<id> = { id, name, credit, terms, genres, tiers, codec, sr, lanes, trim }; the title screen
+       shows every kit's credit (51); README "Credits"; src/content/kit_<id>.LICENSE.md next to the module.
+  ====================================================================== */
+  C.VEL_REF = 0.85;   // vel 0.85 plays at the 1.1 level
+  C.FEEL_CLAMP = { gigDrum: 0.006, gig: 0.015, free: 0.025, sixteenth: 0.25 };   // s: gig kick/snare, gig other kinds, outside gigs; max share of a 16th
+  C.FEEL_MOOD = { below: 30, spread: 1.25 };   // F16.1: a member with mood < 30 plays sloppier (timing spread x 1.25)
+  C.FEEL_STUDIO = 0.25;                        // F16.2: studio takes (van radio, recorded songs) play at t + 0.25
+  C.FEEL_RIVAL = 0.15;                         // F16.2: rivals play at t + 0.15
+  C.BAND_AMP_BY_TIER = true;                   // F16.3: band amps follow the kit tier (C.REALISM[tier].cab); false = the genre cab always
+  // F11 tier table (N4: cheap gear still sounds cheap). rr: round robins; layers: velocity layers (layerLanes: the lanes that
+  // get them, null = all; others 2 at tier 3); metal: partials of the hat / cymbal cluster (0 = today's noise cymbals);
+  // snareModes; wires (snare wires); rim (rim shots); crush: drum parallel crush; width: kit stereo width; cab: the band amps'
+  // IR ('practice8' 1x8 practice amp, 'combo12' 1x12, 'genre' the genre cab); cymBloom: longer cymbal bloom; subKick.
+  // Feel, your tap accents and the vocals are tier-independent.
+  C.REALISM = [
+    { id: 'milk_crate', rr: 2, layers: 1, layerLanes: null, metal: 0, snareModes: 1, wires: false, rim: false, crush: 0, width: 0.3, cab: 'practice8', cymBloom: false, subKick: false },
+    { id: 'pawn_shop', rr: 3, layers: 2, layerLanes: null, metal: 3, snareModes: 2, wires: false, rim: false, crush: 0.15, width: 0.6, cab: 'combo12', cymBloom: false, subKick: false },
+    { id: 'pro', rr: 4, layers: 2, layerLanes: null, metal: 6, snareModes: 2, wires: true, rim: true, crush: 0.25, width: 1, cab: 'genre', cymBloom: false, subKick: false },
+    { id: 'arena', rr: 4, layers: 3, layerLanes: ['kick', 'snare', 'toms'], metal: 6, snareModes: 2, wires: true, rim: true, crush: 0.35, width: 1, cab: 'genre', cymBloom: true, subKick: true }
+  ];
+
+  /* ======================================================================
    V1.1 SEATS (plan/plan_contract_1.1.md §4; handoff Part E; SAVE_SCHEMA stays 10: GG.save.migrate fills these when
    missing, no events; GG.career.newCareer starts with the same values, args.seat default 'drums')
      seat: C.SEATS                          the player's seat, fixed for the career (old saves: 'drums')

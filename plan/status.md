@@ -8,15 +8,24 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Leftovers for later: wip-v11-a / wip-v11-c / wip-v11-fix branches on origin (the session proxy can't delete branches; the
   owner can delete them on GitHub), cosmetic + content gaps in `plan/v11_integration_report.md`.
 
+## v1.2 owner answer (2026-10-03, LOCKED)
+- Listened to the 1.1 vs 1.2 clips (4 genres, taps, sampled-kit metal): **ship** as built. Tonal changes stand (metal drums
+  ~+2 dB from the sampled kit, punk mids fuller, rock 4k+ lower, rock/country bass ~-2 dB below 150 Hz).
+- Leftovers: owner deletes `wip-v12-f`, `wip-v12-i`, `wip-v12-v`, `wip-v12-lead` (and any `wip-v11-*` still there) on
+  GitHub (the session proxy can't). Open gaps: `plan/v12_integration_report.md` §8 (strings warm only in gigs, rival
+  players share one tightness, gang vocals centre + right, Classic-off keeps 1.1 vocals until reload).
+
 ## Version
-- Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
-  moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
+- Current: **1.2.0.0 "Soundcheck"** (PR #23, merged 2026-10-03) = 1.1.0.0 +
+  the band plays like people, real-feeling instruments + the TMKD sampled kit, human vocals. See "What's in v1.2" below.
   **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
-- Next: **1.2 "Tuning"** (handoff D5; covers all four seats).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck.
+- Next: **1.3 "Songwriter"** (owner 2026-10-03; decisions in "Addendum 5" below: quick song recipes + sliders, more note
+  rows + per-bar chords, one-flow "Clean sheet" UI). Then **1.4 "Tuning"** (handoff D5; covers all four seats, played with
+  the final sound and the final songwriter).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -121,6 +130,33 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
+## What's in v1.2 "Soundcheck" (contract `plan/plan_contract_1.2.md`; lanes F, I, V + lead merged on `v1.2-soundcheck` 2026-10-03; shipped PR #23)
+- **The band plays like people (F, `31_audio_feel.js`):** every player's timing + velocity from their skill (`A.tightness`: sloppy
+  garage band -> tight arena band; AR(1) drift per player, seeded, re-planned per loop pass) + a per-genre push (punk rushes,
+  rock lays back, metal locks in: `genres.js backing.feel`); accents by beat position and section (F4 map + ramps into a new
+  section); F16: mood < 30 -> spread x 1.25, studio takes (van radio, recorded songs) t + 0.25, rivals t + 0.15. The gig clock
+  is untouched: step events never move; band kick/snare +-6 ms, other kinds +-15 ms in gigs, +-25 ms outside, <= 25 % of a 16th.
+- **Your taps (F):** `A.tapVel` = judgement (Perfect 1 .. stray 0.62) x beat position (downbeat hardest) x alternating hands on
+  fast hats; auto strokes at `A.TAP_AUTO`. One gain law everywhere: `A.velGain(v) = min(1.333, (v / 0.85)^1.5)`.
+- **Real-feeling instruments (I, `32_audio_dsp.js` + 30):** drums by velocity (DRUMS2 recipes, round robins + velocity layers per
+  `C.REALISM[tier]`, kit stereo, the widened PRE serves taps AND song drum events, built in slices); Karplus-Strong guitars and
+  bass (KS cache, `A.warm` during the count-in, LRU 8 MB; a miss plays the 1.1 oscillator); cab IRs by kit tier (F16.3: milk
+  crate 1x8, pawn 1x12, pro/arena the genre cab); rooms v2 (pre-delay, early reflections, darker tails, a vocal plate); kick
+  ducks the bass; drum parallel crush by tier. Cheap gear still sounds cheap (N4).
+- **The TMKD "Vortex" sampled kit (I, F17):** metal at pro + arena tiers (kick, snare, 3 toms; DIRECT mics; MP3 in
+  `src/content/kit_tmkd_vortex.js`, 433 KB), credit line on the title screen + README Credits + `kit_tmkd_vortex.LICENSE.md`.
+- **Human vocals (V, `33_audio_voice.js` + 30):** glottal waves by press, 5 formants with F1 tracking, singer's ring, shimmer,
+  natural pitch curves (scoop, vibrato onset, 1/f wander), doubles on choruses, 3-voice gangs, a vocal chain (HP, comp, presence,
+  air), plate + tempo delay sends, the guitars' presence dips -3 dB under a lead vocal (`r.carve`).
+- **Safety:** `GG.audio.classic(true)` (hidden, debug-only; `settings.audioClassic`) = the 1.1 sound node for node (232-case hash
+  fixture equal); no `vel` = the 1.1 code path; `A.timeline()` unchanged (1,212 fingerprints); voice cap 32; no AudioWorklet.
+- **Numbers (F13, `plan/v12_audio_numbers.txt` "1.1 vs 1.2"):** full-mix RMS within +-1 dB of 1.1 per genre (metal +0.9, punk
+  +0.1, rock +0.2, country +0.2), 4k+ down 0.5-2.4 dB, peaks <= -4.7 dBFS; one re-balance (metal + punk KS bass excitation,
+  for pw_seq `heavy`'s "heavier" low end). Size 5.12 MB (gate 6.0 MB).
+- **§0 defaults (no popup; the owner may object):** Classic hidden, default off; VEL_REF 0.85 = the 1.1 level; the gig clamps above.
+- **Leftovers:** see `plan/v12_integration_report.md` §7 (rival members have no skill -> t 0.65; metal gang centre + right;
+  voiced murmur before b/d/g; Classic off after on keeps the 1.1 vocals until reload; `opts.feel === false` unused).
+
 ## What's in v1.1 "Seats" (contract `plan/plan_contract_1.1.md`; lanes D, B, C, A + lead merged on `v1.1-seats` 2026-10-03)
 - **Pick a seat (lead, 51):** title → slot → genre → intro → **seat** → logo → creator → cold open. Four cards (drums preselected),
   each says who moves to the drums (`bands.<id>.seatLines`) and your stage spot; a tap plays a ~3 s preview of that seat's
@@ -223,7 +259,63 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - [x] v1.1 stage 0: fresh audits, `plan/plan_contract_1.1.md` finished (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview) — 2026-10-02 on `v1.1-seats` (contract §3)
 - [x] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat — integrated 2026-10-03 on
       `v1.1-seats` (`plan/v11_integration_report.md`); review + PR to main pending
-- [ ] v1.2 Tuning (D5) covers all four seats
+- [ ] Tuning (D5) covers all four seats — moved to **v1.3** (Addendum 4, N1)
+
+## Addendum 4 (handoff Part F "Soundcheck") — decisions (owner popups, 2026-10-03; locked)
+- N1 Roadmap: **v1.2 Soundcheck** now; Tuning → **v1.3**.
+- N2 Band feel: **driven by member skill** (sloppy garage band → tight arena band) + a feel per genre (punk rushes, rock lays
+  back, metal locks in).
+- N3 Your taps: **accents from accuracy + beat position** (a Perfect downbeat lands hardest) + round robins.
+- N4 Cheap gear **still sounds cheap**: the upgrades raise the top end (`A.realism(tier)`).
+- N5 Real recordings (sound review item 4): **later**; 1.2 keeps the hooks (Part F15).
+- F16 (one popup, 2026-10-03, all as recommended): (1) low mood makes the band sloppier: mood < 30 → timing spread × 1.25
+  (`C.FEEL_MOOD`); (2) studio takes (van radio, recorded songs) `t + 0.25` (`C.FEEL_STUDIO`) and rivals `t + 0.15`
+  (`C.FEEL_RIVAL`); (3) band amps follow the kit tier: milk crate = 1×8 practice amp IR, pawn shop = 1×12, pro / arena = the
+  genre cab (`C.BAND_AMP_BY_TIER`, `C.REALISM[tier].cab`); (4) "Classic sound" stays hidden, debug-only (`settings.audioClassic`,
+  `GG.audio.classic(bool)`; no Settings UI).
+- N6–N9 Sampled kit (Part F17): the owner's free TMKD "Vortex" pack; its terms allow sharing with **credit to The Metal Kick
+  Drum / Rafa Prieto** and forbid selling, so it ships in the repo and every build with a credit line on the title screen.
+  Part of Soundcheck (Lane I); **metal at pro + arena tiers**, kick/snare/3 toms; **DIRECT** mics. The owner attaches
+  `Drums.zip` at stage 0 (raw WAVs stay in git-ignored `local/`). Size budget → **6.0 MB**.
+- **Standing rule:** Garage to Glory is free. Before it is ever sold or monetized (price, ads, in-app purchases), replace the
+  TMKD kit or get TMKD's written permission.
+
+## Addendum 4 — pending
+- [x] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3) —
+      2026-10-03 (`plan/v12_stage0_report.md`; 232-case fixture `tests/fixtures/audio_v11_hashes.json`, numbers
+      `plan/v12_audio_numbers.txt` "1.1")
+- [x] F17 kit source: `local/` git-ignored (raw WAVs, size), `tools/check_kit_zip.py` passed on the owner's Drums.zip (62 entries, 60 wav ok, 0 problems; the re-sent zip is byte-identical), unzipped to `local/kits/tmkd_vortex/src/` (2026-10-03). Owner 2026-10-03: "scrap the kit guard local kit. one build with the drum samples only".
+- [x] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge (F -> I -> V), hand-overs, F17 credit line (title +
+      README Credits), tuning by numbers (F13 met), matrix + perf + size + clips — 2026-10-03 (`plan/v12_integration_report.md`)
+- [x] v1.2 review pass (3 lenses) + fixes (5 majors, 12 minors), owner clip popup: ship, PR #23 to main — 2026-10-03
+- [ ] v1.4 Tuning (D5) covers all four seats (was 1.3; moved for the v1.3 Songwriter, owner 2026-10-03)
+
+## Addendum 5 (v1.3 "Songwriter") — decisions (owner popups, 2026-10-03; locked)
+Owner words: "we need a bit more song building variation when painting guitar too. if i don't want to actually pick all
+the notes i should have some presets with sliders and more accessible options to build different sounding songs both when
+I am drums and other instruments" and "touch up and modify the UI in the song builder a bit. Make it more clear and feel
+like less 'layer stacked on top of each other'. Just make it a more seamless process that's easier to read overall".
+- S1 Roadmap: **v1.3 Songwriter** right after v1.2; Tuning (D5) becomes **v1.4**.
+- S2 Guitar painting: **more note rows** (rhythm: Chug, Open, Root, 5th, Oct, Scratch; bass + lead get a wider range) and
+  **pick each bar's chord** (4 bar chord chips, build your own progression). Not chosen: hold-length drag, per-note techniques.
+- S3 Sliders, for drums and every instrument: **Energy** (sparse/easy <-> busy/show-off), **Mood** (bright major <-> dark
+  minor; key + scale), **Feel** (straight <-> swing/shuffle), **Fills & surprises** (none <-> lots), plus **Tempo**.
+- S4 Builder: **"Quick song, then tweak"**: one screen, pick a recipe (per genre, e.g. Neck-snapper, Doom crawl, Stadium
+  anthem, "Surprise me"; pedal recipes locked without a double kick), move the sliders, hear it, done; any section can be
+  fine-tuned by hand after.
+- S5 Ratings: **rate by the notes only**; a slider-built song can reach top ratings.
+- S6 UI: **one flow** (no separate Guided / Advanced modes; tips inline). Meters = **one slim strip** of 3 mini bars under
+  the header (+/- flash on change). Coach = **one-line bubble** with the bandmate's avatar, tap for the full tip. "Let the
+  band jam one", the metronome and the tools go in the header's ⋯ menu.
+- S7 Look: **Option A "Clean sheet"** (`plan/v13_songwriter_mockup.html` `?opt=A`, `plan/v13_songwriter_mockup_A.png`;
+  the owner first tapped B, then corrected: "Sorry, A was my answer"). Flat and quiet; underline section tabs (Verse /
+  Chorus / Bridge / Song); recipe cards in 2 columns; horizontal sliders with end labels + a value label; "Your part | Drums"
+  toggle with "Chords: <progression> ▾" beside it; 4 chord chips (BAR n + chord name; home chord outlined green) above the
+  grid; the grid fills the screen (no scroll at 440x956); footer ▶ Loop / ▶ Song / Save ✓ (Quick song: ▶ Play / Tweak ✎ /
+  Save ✓). Same navy background as the rest of the game.
+
+## Addendum 5 — pending
+- [ ] v1.3 contract (`plan/plan_contract_1.3.md`) from the merged 1.2 code, stage 0, lanes, integrate, review, owner check
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
@@ -232,6 +324,31 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.2 as merged** (lanes F -> I -> V + lead, 2026-10-03; full list in `02_contracts.js` V1.2 SOUNDCHECK "As merged"; lane
+  reports `plan/v12_lane_<f|i|v>_report.md`). Rule: every new path needs a `vel` AND Classic off; no vel = the 1.1 path.
+  - F (31): `A.velGain(v)`, `A.tightness(skill)`, `A.feelFor(state|null, genre, { rival, studio, seat })`, `A.feelPlan(tl, FEEL, seed,
+    { gig })` -> `{ dt, vel, dgap, stats }`, `A.accent`, `A.tapVel`, `A.TAP_AUTO`, `A.feelStats()`; `A.play` opts `gig / feel / studio`;
+    player() plays copies (`+ vel`, `t + dt`, `gap + dgap`), steps never move; 55 `bandOpts`, `warmSong` (A.warm), `tapVel` before
+    every tap sound; `debug('gigui').feel`. Content `genres.js backing.feel { slop, push }`.
+  - I (32 + 30): `GG.dsp.{ pluck, chord, strum, metal, biquad, impulse2, cabIR, irGain, irFromB64, pluckJob }`; `drumHit(.., cls, vel)`;
+    PRE2 (layers x round robins, 6 MB, serves song events), KS cache + `A.warm(pattern, { genre, songId })`, cab IRs by tier,
+    `A.impulse2`, `r.carve`, `r.duck`, `r.crush`, `A.sampleKit(genre, tier)`; renderOffline + `vel, hit, feel, studio, gig, hits,
+    gap` (-> `kitUsed, kitOnset`), prerenderHit + `vel, rr`. Kits: `GG.content.kits.<id>` `{ id, name, credit, terms, genres,
+    tiers, codec, sr, lanes, trim }` (`src/content/kit_tmkd_vortex.js` + `.LICENSE.md`).
+  - V (33 + 30): `GG.voice.{ glottal, WAVES, formants, track, pitchCurve, shimmer, press, pressAt, ring, envelope, sends, delayTime,
+    profile, .. }`; `A._buildVox(r)` -> `r.vx`, `r.voxDelay`, `r.voxTempo(spb)`; content `voices.sound` (a parallel table:
+    vocal events keep the 1.1 profile); `A.voxStats()`.
+  - Debug: `debug('audio')` + `classic, feel, vox, realism, pre, ks, kit`; `debug('feel')`, `debug('vox')`.
+  - Lead: `tools/audio_numbers.js --diff <a> <b>` (the F13 verdict), `tools/audio_clips.js --metal-kit`, `tools/perf.js gig KITQ=`;
+    title `[data-testid=title-kit-credit]` (every kit's credit).
+- **v1.2 stage 0** (2026-10-03, `v1.2-soundcheck`; shapes in `02_contracts.js` V1.2 SOUNDCHECK, contract §4):
+  - Contracts: `C.VEL_REF` 0.85, `C.FEEL_CLAMP { gigDrum, gig, free, sixteenth }`, `C.REALISM[tier]` (F11 + `id, layerLanes, cymBloom,
+    subKick`), F16 `C.FEEL_MOOD { below 30, spread 1.25 }`, `C.FEEL_STUDIO` 0.25, `C.FEEL_RIVAL` 0.15, `C.BAND_AMP_BY_TIER` true.
+  - `settings.audioClassic` (hidden, default false); `GG.audio.classic(bool)` / `isClassic()`, `debug('audio').classic`; stubs
+    `feelFor / feelPlan` → null, `tapVel` → undefined, `warm` → Promise, `realism(tier)` → `C.REALISM` row; `GG.dsp = {}`,
+    `GG.voice = {}`; makeRig `if (A._buildVox && !A.isClassic()) A._buildVox(r)`. `src/31|32|33_audio_*.js` headers only.
+  - Tools: `tools/_audio_lab.js` (cases, page helpers, deterministic summing for hashes), `tools/audio_hashes.js` (verify /
+    `--write`), `tools/audio_numbers.js --section <v>`, `tools/audio_clips.js --tag <v> --out <dir>`; `pw_seq` section `hash`.
 - **v1.1 review fixes** (report §5): `GG.shop.sectionDef(state, id)` (seat text of Solo / Outro), `ui.SEAT_NAME / seatName /
   seatIcon / seatOf`, `R.labelScreenPos(action)`, seat chart notes may carry `with` (a same-voice partner; `o.with` on
   pluck/strum/lead), `drama.members[id].kit[kind]` (kit variants, content/zz_seats_drama.js), content/zz_seats_gates.js (cards
