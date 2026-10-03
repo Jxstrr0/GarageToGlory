@@ -8,27 +8,24 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Leftovers for later: wip-v11-a / wip-v11-c / wip-v11-fix branches on origin (the session proxy can't delete branches; the
   owner can delete them on GitHub), cosmetic + content gaps in `plan/v11_integration_report.md`.
 
-## RESUME HERE (v1.2 "Soundcheck" integrated, 2026-10-03 evening; delete when v1.2 merges)
-- Branch `v1.2-soundcheck`: stage 0 + lanes F, I, V merged (F -> I -> V), hand-overs wired, F17 credits (title + README), tuning
-  by numbers (F13 met, no re-balance), matrix + perf + clips: `plan/v12_integration_report.md`.
-- Owner 2026-10-03: the TMKD samples SHIP IN THE GAME ("scrap the kit guard local kit. one build with the drum samples only").
-- Next: review pass (<= 3 lenses: clock safety, perf, regression; verify blocker/major only) -> fix -> send the owner the clips
-  (`.m4a`: 1.1 vs 1.2 per genre, tap demo, sampled-kit metal clip; paths in the report §5), popup ship / tweak (which genre)
-  -> PR to main, merge, status Current 1.2.0.0 on main, owner deletes `wip-v12-*` + `wip-v12-lead` (the proxy can't).
-- Container-only state (lost on restart): `local/kits/tmkd_vortex/src/` (re-attach Drums.zip, `tools/check_kit_zip.py`, unzip;
-  only needed to re-make the kit module), pip numpy/soundfile/imageio-ffmpeg + `/usr/local/bin/ffmpeg` symlink, the clips in
-  the session scratchpad.
+## v1.2 owner answer (2026-10-03, LOCKED)
+- Listened to the 1.1 vs 1.2 clips (4 genres, taps, sampled-kit metal): **ship** as built. Tonal changes stand (metal drums
+  ~+2 dB from the sampled kit, punk mids fuller, rock 4k+ lower, rock/country bass ~-2 dB below 150 Hz).
+- Leftovers: owner deletes `wip-v12-f`, `wip-v12-i`, `wip-v12-v`, `wip-v12-lead` (and any `wip-v11-*` still there) on
+  GitHub (the session proxy can't). Open gaps: `plan/v12_integration_report.md` §8 (strings warm only in gigs, rival
+  players share one tightness, gang vocals centre + right, Classic-off keeps 1.1 vocals until reload).
 
 ## Version
-- Current: **1.2.0.0 "Soundcheck"** (in review on `v1.2-soundcheck`, integrated 2026-10-03; not yet merged to main) = 1.1.0.0 +
+- Current: **1.2.0.0 "Soundcheck"** (PR #23, merged 2026-10-03) = 1.1.0.0 +
   the band plays like people, real-feeling instruments + the TMKD sampled kit, human vocals. See "What's in v1.2" below.
-  Last on main: **1.1.0.0 "Seats"** (PR #21, 2026-10-03). **Update Current/Next at every merge.**
+  **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · (1.2 Soundcheck in review).
-- Next: **1.3 "Tuning"** (handoff D5; covers all four seats, played with the final sound). Before it: the v1.2 review pass
-  (3 lenses: clock safety, perf, regression), the owner's clip popup (ship / tweak), PR to main.
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck.
+- Next: **1.3 "Songwriter"** (owner 2026-10-03; decisions in "Addendum 5" below: quick song recipes + sliders, more note
+  rows + per-bar chords, one-flow "Clean sheet" UI). Then **1.4 "Tuning"** (handoff D5; covers all four seats, played with
+  the final sound and the final songwriter).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -133,7 +130,7 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
-## What's in v1.2 "Soundcheck" (contract `plan/plan_contract_1.2.md`; lanes F, I, V + lead merged on `v1.2-soundcheck` 2026-10-03; in review)
+## What's in v1.2 "Soundcheck" (contract `plan/plan_contract_1.2.md`; lanes F, I, V + lead merged on `v1.2-soundcheck` 2026-10-03; shipped PR #23)
 - **The band plays like people (F, `31_audio_feel.js`):** every player's timing + velocity from their skill (`A.tightness`: sloppy
   garage band -> tight arena band; AR(1) drift per player, seeded, re-planned per loop pass) + a per-genre push (punk rushes,
   rock lays back, metal locks in: `genres.js backing.feel`); accents by beat position and section (F4 map + ramps into a new
@@ -290,8 +287,35 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - [x] F17 kit source: `local/` git-ignored (raw WAVs, size), `tools/check_kit_zip.py` passed on the owner's Drums.zip (62 entries, 60 wav ok, 0 problems; the re-sent zip is byte-identical), unzipped to `local/kits/tmkd_vortex/src/` (2026-10-03). Owner 2026-10-03: "scrap the kit guard local kit. one build with the drum samples only".
 - [x] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge (F -> I -> V), hand-overs, F17 credit line (title +
       README Credits), tuning by numbers (F13 met), matrix + perf + size + clips — 2026-10-03 (`plan/v12_integration_report.md`)
-- [ ] v1.2 review pass (3 lenses) + fixes, owner clip popup (ship / tweak), PR to main
-- [ ] v1.3 Tuning (D5) covers all four seats
+- [x] v1.2 review pass (3 lenses) + fixes (5 majors, 12 minors), owner clip popup: ship, PR #23 to main — 2026-10-03
+- [ ] v1.4 Tuning (D5) covers all four seats (was 1.3; moved for the v1.3 Songwriter, owner 2026-10-03)
+
+## Addendum 5 (v1.3 "Songwriter") — decisions (owner popups, 2026-10-03; locked)
+Owner words: "we need a bit more song building variation when painting guitar too. if i don't want to actually pick all
+the notes i should have some presets with sliders and more accessible options to build different sounding songs both when
+I am drums and other instruments" and "touch up and modify the UI in the song builder a bit. Make it more clear and feel
+like less 'layer stacked on top of each other'. Just make it a more seamless process that's easier to read overall".
+- S1 Roadmap: **v1.3 Songwriter** right after v1.2; Tuning (D5) becomes **v1.4**.
+- S2 Guitar painting: **more note rows** (rhythm: Chug, Open, Root, 5th, Oct, Scratch; bass + lead get a wider range) and
+  **pick each bar's chord** (4 bar chord chips, build your own progression). Not chosen: hold-length drag, per-note techniques.
+- S3 Sliders, for drums and every instrument: **Energy** (sparse/easy <-> busy/show-off), **Mood** (bright major <-> dark
+  minor; key + scale), **Feel** (straight <-> swing/shuffle), **Fills & surprises** (none <-> lots), plus **Tempo**.
+- S4 Builder: **"Quick song, then tweak"**: one screen, pick a recipe (per genre, e.g. Neck-snapper, Doom crawl, Stadium
+  anthem, "Surprise me"; pedal recipes locked without a double kick), move the sliders, hear it, done; any section can be
+  fine-tuned by hand after.
+- S5 Ratings: **rate by the notes only**; a slider-built song can reach top ratings.
+- S6 UI: **one flow** (no separate Guided / Advanced modes; tips inline). Meters = **one slim strip** of 3 mini bars under
+  the header (+/- flash on change). Coach = **one-line bubble** with the bandmate's avatar, tap for the full tip. "Let the
+  band jam one", the metronome and the tools go in the header's ⋯ menu.
+- S7 Look: **Option A "Clean sheet"** (`plan/v13_songwriter_mockup.html` `?opt=A`, `plan/v13_songwriter_mockup_A.png`;
+  the owner first tapped B, then corrected: "Sorry, A was my answer"). Flat and quiet; underline section tabs (Verse /
+  Chorus / Bridge / Song); recipe cards in 2 columns; horizontal sliders with end labels + a value label; "Your part | Drums"
+  toggle with "Chords: <progression> ▾" beside it; 4 chord chips (BAR n + chord name; home chord outlined green) above the
+  grid; the grid fills the screen (no scroll at 440x956); footer ▶ Loop / ▶ Song / Save ✓ (Quick song: ▶ Play / Tweak ✎ /
+  Save ✓). Same navy background as the rest of the game.
+
+## Addendum 5 — pending
+- [ ] v1.3 contract (`plan/plan_contract_1.3.md`) from the merged 1.2 code, stage 0, lanes, integrate, review, owner check
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
