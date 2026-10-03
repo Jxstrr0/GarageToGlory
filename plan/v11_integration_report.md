@@ -72,6 +72,29 @@ Means over the 12 band x seat cells: avg bot fans 105 %, fund 101 %; good bot fa
 same: up to 19 % drum vs drum). World week: every string seat within 7 weeks of drums; reach differs by <= 17 points (a share
 of 30 seeds; the good bot reaches 100 % everywhere).
 
+**Pooled 60 seeds** (default + `SEED_OFFSET=500`, both for drums and for `SEAT=bass,rhythm,lead`; fans / fund % of drums):
+
+| band | bot | bass | rhythm | lead |
+|---|---|---|---|---|
+| Hail Damage | avg | 109 / 107 | 105 / **112** | **116** / **119** |
+| Frost Heave | avg | 109 / 105 | 102 / 94 | 106 / 107 |
+| Gravel Kings | avg | 109 / 104 | 99 / 102 | 108 / 104 |
+| Grid Road Ramblers | avg | 100 / 109 | 110 / **123** | 110 / **115** |
+| Hail Damage | good | 94 / 98 | 93 / 99 | 96 / 95 |
+| Frost Heave | good | 96 / 100 | 97 / 102 | 99 / 103 |
+| Gravel Kings | good | 98 / 100 | 91 / 91 | 95 / 102 |
+| Grid Road Ramblers | good | 95 / 92 | 105 / 102 | 100 / 91 |
+
+- **Good bot: every cell within ±10 %** (91-105 %).
+- **Avg bot: a mild upward tilt on string seats** (mean +7 % fans, +8 % fund; 5 cells above +10 %). Not tuned, because no
+  seat-specific cause was found and the per-cell values are seed noise-dominated: the same cell swings by 20-30 points
+  between the two seed sets (Hail Damage lead: 103 / 102 on the default seeds, ~129 / 136 on offset 500, against a drum set
+  that itself dropped to 85 %). Ruled out: song quality (200 jams per band x seat: string-seat quality equal or 0.5-4 points
+  lower), the 90 new seat cards (smaller deltas than the v1.0 deck: +7 vs +15 fans, -8 vs +9 fund per choice; removing them
+  moves Hail Damage lead 3x30 from 103 / 102 to 107 / 99), drama (ultimatums/quits are not lower on string seats), and
+  `gig.performance` / `shop.gigBonus` (seat-neutral formulas). **Open item for the review pass / v1.2 Tuning:** a 100+ seed
+  run per cell (or a paired-seed comparison) to separate a real avg-bot tilt from noise.
+
 **Live bots** (`LIVE BOTS`, 3 fresh careers per cell): perfect bot accuracy **1.000 on all 64 band x seat x difficulty cells**;
 avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). sim_seats ALL PASS 17.
 
