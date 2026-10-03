@@ -446,11 +446,11 @@
     //   aspiration).
     sound: {
       'genre:rock': { ring: 3 },
-      'genre:country': { ring: 2 },
+      'genre:country': { ring: 4 },
       marcel: { ring: 2 },
       rox: { press: 0.95, ring: 2, breath: 0.1 },
       chase: { ring: 5 },
-      travis: { ring: 4 },
+      travis: { ring: 6 },
       'rival:mall_rats': { press: 0.55, ring: 1 },
       'rival:chartbusters': { press: 0.3, ring: 3, breath: 0.15 },
       'rival:buckle_and_boot': { press: 0.45, double: false }

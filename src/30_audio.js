@@ -999,9 +999,10 @@
     return (plans[key] = { pts: pts, bursts: bursts });
   }
   // Glide filters `bank` (3 bandpasses) and an amp gain along a word plan starting at t (formants x scale).
-  function articulate(bank, amp, plan, t, scale) {
+  // v1.2 (Lane V): f0 = the sung pitch: F1 tracks it (GG.voice.track; absent: the 1.1 targets).
+  function articulate(bank, amp, plan, t, scale, f0) {
     bank.forEach(function (bp, k) {
-      plan.pts.forEach(function (q, n) { var f = Math.max(80, Math.min(9000, q[1][k] * scale)); if (!n) bp.frequency.setValueAtTime(f, t + q[0]); else bp.frequency.linearRampToValueAtTime(f, t + q[0]); });
+      plan.pts.forEach(function (q, n) { var f = Math.max(80, Math.min(9000, q[1][k] * scale)); if (f0 && !k) f = GG.voice.track(f, f0); if (!n) bp.frequency.setValueAtTime(f, t + q[0]); else bp.frequency.linearRampToValueAtTime(f, t + q[0]); });
     });
     if (amp) plan.pts.forEach(function (q, n) { if (!n) amp.gain.setValueAtTime(q[2], t + q[0]); else amp.gain.linearRampToValueAtTime(q[2], t + q[0]); });
   }
@@ -1044,14 +1045,15 @@
   }
   function metalVox(r, p, ev, t, dur, V) {
     var c = r.ctx, X = MVOX[V.metal] || MVOX.scream, sub = !!X.sub, gang = !!(ev.gang || V.gang), n = 3;   // buzz + (sub | double) + noise
-    if (!book(r, t, dur, n, true)) return;
+    var vsc = voxSoundcheck(r, ev), xtra = vsc && (gang || V.hold) && voxRoom(r, t, n + 1) ? 1 : 0;   // v1.2 Lane V: + a double / third gang voice
+    if (!book(r, t, dur, n + xtra, true)) return;
     counts.vox++; vocTypes[ev.voc] = (vocTypes[ev.voc] || 0) + 1;
     metalPort(r, p);
     var vp = ev.vp || {}, fsc = vp.formant || 1, f = mtof(ev.midi) / Math.pow(2, X.oct || 0), seed = ev.midi * 131 + Math.round(t * 1000);
     r.metal.pres.forEach(function (pr) {   // the guitars clear the voice's band while it sings (a dynamic EQ dip)
       pr.gain.setTargetAtTime(AMP.carve, t, 0.012); pr.gain.setTargetAtTime(3, t + dur * 0.8, 0.1);
     });
-    var out = held(c, t, V.peak, dur, p.mVox, sub ? 0.03 : 0.012);
+    var out = vsc ? voxEnv(c, t, V.peak * GG.voice.velGain(ev.vel), dur, p.mVox, sub ? 0.03 : 0.012) : held(c, t, V.peak, dur, p.mVox, sub ? 0.03 : 0.012);
     var sh = c.createWaveShaper(); sh.curve = asymCurve(X.drive + (vp.drive || 0)); sh.oversample = '2x';
     var art = ev.word && !X.noWord ? wordPlan(ev.word, dur, vp.vowels) : null, bank = [];
     X.f[0].forEach(function (f0, k) {
@@ -1065,16 +1067,17 @@
     var am = c.createGain(); am.gain.setValueCurveAtTime(rattle(dur, X.rattle[0], Math.min(0.85, X.rattle[1] + (vp.rasp || 0) * 0.12), seed), t, dur);
     am.connect(sh);
     var into = gainNode(c, sub ? 0.7 : 0.55, am), vib = V.hold ? vp.vib : null, sc = (X.scoop || 0) + (vp.scoop || 0) * 0.5;
-    var o = c.createOscillator(); o.type = 'sawtooth';
+    var o = c.createOscillator(); if (vsc) o.setPeriodicWave(voxWave(r, GG.voice.WAVES.belt)); else o.type = 'sawtooth';   // (v1.2: from the belt wave)
     o.frequency.setValueCurveAtTime(addVib(contour(f, dur, sc, X.fall, X.jit, seed), 90, vib), t, dur);
     o.connect(into); run(r, o, t, dur);
     var o2 = c.createOscillator();   // growl: the subharmonic (square, an octave down); scream: the double
     if (sub) { o2.type = 'square'; o2.frequency.setValueCurveAtTime(contour(f / 2, dur, 0, X.fall, X.jit * 1.5, seed + 7), t, dur); o2.connect(gainNode(c, 0.55, into)); }
-    else { o2.type = 'sawtooth'; o2.detune.value = gang ? -1200 : 22; o2.frequency.setValueCurveAtTime(addVib(contour(f, dur, sc, X.fall, X.jit, seed + 3), 90, vib), t, dur); o2.connect(gainNode(c, gang ? 0.6 : 0.45, into)); }
+    else { if (vsc) o2.setPeriodicWave(voxWave(r, GG.voice.WAVES.belt)); else o2.type = 'sawtooth'; o2.detune.value = gang ? -1200 : 22; o2.frequency.setValueCurveAtTime(addVib(contour(f, dur, sc, X.fall, X.jit, seed + 3), 90, vib), t, dur); o2.connect(gainNode(c, gang ? 0.6 : 0.45, into)); }
     run(r, o2, t + (sub ? 0 : 0.012), dur - (sub ? 0 : 0.012));
     var s = c.createBufferSource(); s.buffer = r.noise; s.loop = true;
     s.connect(filterNode(c, X.noise[0], X.noise[1], X.noise[2], gainNode(c, X.noise[3], into)));
     run(r, s, t, dur);
+    if (vsc) metalExtra(r, p, ev, t, dur, V, X, out, f, seed, xtra, gang, vib, sc);
   }
   // v0.9: a sung hit's pitch gesture: the voc type's yodel flip (yeehaw, holler) unless the profile says `yodel: false`
   // (Brayden), else a vibrato: the profile's own (an explicit zero-depth `vib` = dead flat), else the type's.
@@ -1087,6 +1090,7 @@
   function voxHit(r, p, ev, t, spb) {
     var c = r.ctx, V = VOX[ev.voc] || VOX.hey, dur = Math.max(0.1, Math.min(V.len, ev.len * spb, ev.gap * spb));
     if (V.metal) { metalVox(r, p, ev, t, dur, V); return; }
+    if (voxSoundcheck(r, ev)) { voxSing(r, p, ev, t, dur, V, spb); return; }   // v1.2 Lane V: vel-carrying hits, Classic off
     var vp = ev.vp || {}, art = ev.word ? wordPlan(ev.word, dur, vp.vowels) : null, rasp = vp.rasp || 0, f = mtof(ev.midi);
     var fs = [f].concat(ev.gang ? [f * 0.5] : [], ev.harm ? [f * Math.pow(2, ev.harm / 12)] : []);
     var bursts = (art ? art.bursts : []).slice();
@@ -1133,6 +1137,245 @@
       run(r, s, t, dur);
     }
   }
+
+  /* ---- v1.2 "Soundcheck" vocals (Lane V; handoff F10, contract §4.4) ------------------------------------------------- */
+  // Every path below runs only for a vel-carrying hit with Classic off (voxSoundcheck); otherwise voxHit / metalVox play the
+  // 1.1 hit node for node. The pure models are GG.voice (33_audio_voice.js). Levels tuned by numbers (pw_seq section vox).
+  // VXL: f1 = the F1 formant's gain (F2..F5 fall ~6 dB each), dbl / gang = an extra voice's level, breath = the pulsed
+  // aspiration's depth, inp = the level into the compressor (peaks reach the -18 dB threshold, so vel still moves the
+  // level), out = the chain's output trim, plate = the plate's wet return, room = the room send that stands in for the
+  // plate on a slow phone.
+  var VXL = { f1: 4.2, dbl: 0.55, gang: 0.7, breath: 1.6, inp: 0.25, out: 2.2, plate: 1.4, room: 1 };
+  function voxSoundcheck(r, ev) { return ev.vel != null && !!r.vx && !A.isClassic(); }
+  // Room for n more sources at t on this rig (song + band caps) and, live, under the global cap without evicting anything
+  // (a double / third gang voice is optional: never at a crowd one-shot's expense, never a counted drop).
+  function voxRoom(r, t, n) {
+    if (!fits(r, t, n)) return false;
+    if (r !== rig || !ctx) return true;
+    var pl = A.voicePlan(vlActive(t), { cls: 'band', n: n });
+    return pl.ok && !Object.keys(pl.evict).length;
+  }
+  // The glottal PeriodicWave for an open quotient (GG.voice.glottal, 48 harmonics), cached per rig.
+  function voxWave(r, oq) {
+    var W = r.vx.waves || (r.vx.waves = {}), k = (+oq).toFixed(2);
+    if (!W[k]) { var g = GG.voice.glottal(oq, GG.voice.HARMONICS); W[k] = r.ctx.createPeriodicWave(g.real, g.imag); }
+    return W[k];
+  }
+  var rectC = null;   // half-wave rectifier (the breath follows the folds' opening)
+  function rectCurve() { if (!rectC) { rectC = new Float32Array(1025); for (var i = 0; i < 1025; i++) rectC[i] = Math.max(0, i / 512 - 1); } return rectC; }
+  // The swell envelope (GG.voice.envelope) on a new gain into dest.
+  function voxEnv(c, t, peak, dur, dest, attack) {
+    var g = c.createGain(), pts = GG.voice.envelope(peak, dur, attack);
+    pts.forEach(function (q) {
+      if (q[2] === 'set') g.gain.setValueAtTime(q[1], t + q[0]);
+      else if (q[2] === 'exp') g.gain.exponentialRampToValueAtTime(q[1], t + q[0]);
+      else g.gain.linearRampToValueAtTime(q[1], t + q[0]);
+    });
+    g.connect(dest); g._end = t + pts[pts.length - 1][0];
+    return g;
+  }
+  // A parallel formant bank: rows [[f, q, dB]] (GG.voice.formants) fed by src, each band at g0 x its dB into dest.
+  function voxBank(c, rows, src, dest, g0) {
+    return rows.map(function (x) { var bp = filterNode(c, 'bandpass', x[0], x[1], gainNode(c, g0 * Math.pow(10, x[2] / 20), dest)); src.connect(bp); return bp; });
+  }
+  // F1..F3 of a bank along the word (articulate, F1 tracking f0) or gliding vowel a -> b over 70 % of the hit.
+  function voxGlide(bank, art, amp, t, dur, a, b, sc, f0) {
+    var b3 = bank.slice(0, 3), tr = GG.voice.track;
+    if (art) { articulate(b3, amp, art, t, sc, f0); return; }
+    b3.forEach(function (bp, k) {
+      var fa = a[k] * sc, fb = b[k] * sc;
+      if (!k) { fa = tr(fa, f0); fb = tr(fb, f0); }
+      bp.frequency.setValueAtTime(fa, t); bp.frequency.linearRampToValueAtTime(fb, t + dur * 0.7);
+    });
+  }
+  // The vocal inputs of a playback port (made on first use; closePort silences them with the rest): vxL (lead) and vxB
+  // (backing) into the chain at the 1.1 channel's level and polarity (renderOffline voxInvert flips r.vox / r.bvox / the
+  // metal vox and the chain follows); vxM (metal) into the sends only (the metal channel keeps its own tone).
+  function voxIn(r, p, key) {
+    if (!p[key]) {
+      var src = key === 'vxB' ? r.bvox : key === 'vxM' ? metalRig(r).vox : r.vox, lv = p.level != null ? p.level : 1;
+      p[key] = gainNode(r.ctx, lv * src.gain.value, key === 'vxM' ? r.vx.fx || null : r.vx.in);
+    }
+    return p[key];
+  }
+  // A slow phone: the frame governor has stepped the pixel ratio down to 1.0 (F10 perf: the plate gives way to the room).
+  var vxSlow = { at: -9, on: false };
+  function voxSlow() {
+    var now = ctx ? ctx.currentTime : 0;
+    if (now - vxSlow.at < 2) return vxSlow.on;
+    vxSlow.at = now; vxSlow.on = false;
+    try { var R = GG.render; if (R && R.prefs && R.perfState && R.prefs().auto) { var ps = R.perfState(); vxSlow.on = ps.autoRatio != null && ps.autoRatio <= 1; } } catch (e) { /* not slow */ }
+    return vxSlow.on;
+  }
+  // Per hit: the genre's air shelf, plate (or room) send and delay; the delay time from the song's tempo (r.voxTempo; a
+  // player() line may call it at the song's start too, nothing breaks if both do).
+  function voxSetup(r, spb) {
+    var X = r.vx, GV = GG.voice, g = r.genre || 'metal', S = GV.sends(g), t = r.ctx.currentTime;
+    var plate = !!X.plate && !(r === rig && voxSlow());   // (no plate impulse yet: no plate send at all)
+    if (X.genre !== g || X.plateOn !== plate) {
+      X.genre = g; X.plateOn = plate;
+      X.air.gain.setValueAtTime(S.air ? GV.CHAIN.air[2] : 0, t);
+      if (X.plateSend) X.plateSend.gain.setValueAtTime(plate ? S.plate : 0, t);
+      if (X.roomSend) X.roomSend.gain.setValueAtTime(plate || !X.plate ? 0 : S.plate * VXL.room, t);
+      if (X.delaySend) X.delaySend.gain.setValueAtTime(S.delay ? S.delay.mix : 0, t);
+    }
+    r.voxTempo(spb);
+    X.stats[X.plate ? plate ? 'plate' : 'room' : 'noPlate']++;
+  }
+  // The guitars' presence band dips 3 dB while a (non-metal) lead vocal sings (F9; metal keeps its own -6 in metalVox).
+  // r.carve (Lane I): presence filters (peaking, dB) or gains (linear) of the current genre's amps: an array, an object by
+  // genre, or a function (genre) -> array. Missing: nothing to carve.
+  function voxCarve(r, t, dur) {
+    var L = r.carve;
+    if (typeof L === 'function') L = L(r.genre); else if (L && !Array.isArray(L)) L = L[r.genre];
+    if (!L || !L.length) return;
+    L.forEach(function (x) {
+      if (!x || !x.gain || !x.gain.setTargetAtTime) return;
+      if (x._carve0 == null) x._carve0 = x.gain.value;
+      x.gain.setTargetAtTime(x.frequency ? x._carve0 - 3 : x._carve0 * 0.708, t, 0.012);
+      x.gain.setTargetAtTime(x._carve0, t + dur * 0.8, 0.1);
+    });
+    r.vx.stats.carve++;
+  }
+  // A sung hit (non-metal): the glottal wave (press: breathy .. belt), 5 formants (F1 tracks the pitch) + the singer's ring,
+  // pulsed breath, a living pitch (GG.voice.pitchCurve), shimmer, the vel swell; a double take (+8 cents, 18-28 ms late,
+  // its own 3-formant bank, panned +-0.25) on chorus lead hits, a third gang voice, when there's room; into the vocal chain;
+  // the guitars' presence carved. Sources as 1.1 (+1 for a double or a third gang voice).
+  function voxSing(r, p, ev, t, dur, V, spb) {
+    var c = r.ctx, GV = GG.voice, X = r.vx, vp = ev.vp || {}, S = GV.profile(vp, r.genre), rasp = vp.rasp || 0, f = mtof(ev.midi), bv = ev.kind === 'bvox';
+    var art = ev.word ? wordPlan(ev.word, dur, vp.vowels) : null, harm = ev.harm ? f * Math.pow(2, ev.harm / 12) : 0;
+    var bursts = (art ? art.bursts : []).slice();
+    if (V.breath && !(bursts[0] && bursts[0][0] === 0)) bursts.unshift([0, V.breath, 1500, 0.5, 0.8, true]);   // the "h" of hey
+    var press = GV.pressAt(GV.press(ev.voc, S), ev.vel), breath = Math.min(0.6, (vp.breath || 0) * 0.35 + (S.breath || 0) + 0.1 * (1 - press));
+    var base = Math.min(0.5, rasp * 0.45 + (V.rough ? 0.3 : 0)), nz = bursts.length || base > 0.02 || breath > 0.02 ? 1 : 0;
+    var n0 = 1 + (ev.gang ? 1 : 0) + (harm ? 1 : 0) + nz, seed = ev.midi * 31 + Math.round(t * 1000);
+    var gang3 = !!ev.gang && voxRoom(r, t, n0 + 1), dbl = !ev.gang && !bv && S.double !== false && (ev.role === 'full' || ev.section === 'chorus') && voxRoom(r, t, n0 + 1);
+    if (!book(r, t, dur, n0 + (gang3 || dbl ? 1 : 0), true)) return;
+    counts.vox++; vocTypes[ev.voc] = (vocTypes[ev.voc] || 0) + 1;
+    voxSetup(r, spb);
+    X.stats.hits++; if (gang3) X.stats.gang3++; if (dbl) X.stats.doubles++;
+    var dest = voxIn(r, p, bv ? 'vxB' : 'vxL'), ring = GV.ring(S);
+    if (ring) dest = eqNode(c, 'peaking', ring[0], ring[1], ring[2], dest);
+    if (vp.twang) dest = eqNode(c, 'peaking', 2100, 3.5, vp.twang, dest);   // the nasal 'ng' ring of a twang
+    var trim = Math.pow(10, (GV.sends(r.genre).trim || 0) / 20), out = voxEnv(c, t, V.peak * GV.velGain(ev.vel) * trim, dur, dest, 0.012), into = gainNode(c, 1, null), input = into;
+    var drive = Math.max(V.drive || 0, vp.drive || 0) + Math.round(rasp * 8) / 2, dc = drive ? driveCurve(drive) : null;
+    if (dc) { var sh = c.createWaveShaper(); sh.curve = dc; input.connect(sh); into = sh; }
+    var amp = gainNode(c, 1, null), shim = gainNode(c, 1, amp);
+    into.connect(shim);
+    shim.gain.setValueCurveAtTime(GV.shimmer(dur, 0.03 + 0.03 * Math.min(1, rasp + 0.5 * (1 - press)), seed), t, dur);
+    var sc = vp.formant || 1, a = VOWELS[V.vw[0]], b = VOWELS[V.vw[1]], wave = voxWave(r, GV.oq(press));
+    voxGlide(voxBank(c, GV.formants(a, vp, f), amp, out, VXL.f1), art, amp, t, dur, a, b, sc, f);
+    var pz = voxPitch(V, vp), yod = pz.yodel, own = !!(vp.vib && vp.vib[1]);
+    var po = { scoop: V.scoop || vp.scoop || 0, bend: V.bend || 0, vib: pz.vib ? [own ? pz.vib[0] : 5.7, pz.vib[1]] : null, jit: (V.rough || 0) + rasp * 0.02, rateSpread: own ? 0.3 : 0.5 };
+    function pitch(o, fg, at, len, sd) {
+      if (yod) {   // "yee" up to the fourth, "haw" down past the root (as 1.1)
+        o.frequency.setValueAtTime(fg, at); o.frequency.exponentialRampToValueAtTime(fg * 1.335, at + len * 0.3); o.frequency.exponentialRampToValueAtTime(fg * 0.84, at + len);
+      } else o.frequency.setValueCurveAtTime(GV.pitchCurve(fg, len, Object.assign({ seed: sd }, po)), at, len);
+    }
+    var main = null;
+    [f].concat(ev.gang && !gang3 ? [f * 0.5] : [], harm ? [harm] : []).forEach(function (fg, g) {
+      var o = c.createOscillator(); o.setPeriodicWave(wave); if (g) o.detune.value = 14;
+      pitch(o, fg, t, dur, seed + g * 7); o.connect(input); run(r, o, t, dur);
+      if (!g) main = o;
+    });
+    var D = GV.DOUBLE, G3 = GV.GANG3, late = D.late[0] + (D.late[1] - D.late[0]) * ((seed % 101) / 100);
+    var extras = gang3 ? [[f * 0.5, G3[1], 0, VXL.gang], [f, G3[2], -9, VXL.gang]] : dbl ? [[f, [late, D.scale, seed % 2 ? D.pan : -D.pan], D.cents, VXL.dbl]] : [];
+    extras.forEach(function (x, i) {   // [f, [offset, formant scale, pan], detune cents, level]: its own 3-formant bank
+      var at = t + x[1][0], len = dur - x[1][0], xs = sc * x[1][1], src = gainNode(c, 1, null), feed = src;
+      if (dc) { var s2 = c.createWaveShaper(); s2.curve = dc; src.connect(s2); feed = s2; }
+      var bk = voxBank(c, GV.formants(a, { formant: xs }, x[0]).slice(0, 3), feed, gainNode(c, x[3], panNode(c, x[1][2], out)), VXL.f1);
+      voxGlide(bk, art, null, at, len, a, b, xs, x[0]);
+      var o = c.createOscillator(); o.setPeriodicWave(wave); o.detune.value = x[2];
+      pitch(o, x[0], at, len, seed + 101 + i * 13); o.connect(src); run(r, o, at, len);
+    });
+    if (nz) {   // rasp, the consonants and the breath: one noise source
+      var s = c.createBufferSource(); s.buffer = r.noise; s.loop = true;
+      var ng = gainNode(c, 0, input), cf = filterNode(c, 'bandpass', 3000, 0.8, null), cg = gainNode(c, 0, out);
+      cf.connect(cg); s.connect(ng); s.connect(cf);
+      ng.gain.setValueAtTime(base, t); cg.gain.setValueAtTime(0, t);
+      bursts.forEach(function (x) {
+        var bt = t + x[0], bl = Math.max(0.008, x[1]);
+        if (x[5]) { ng.gain.setValueAtTime(base, bt); ng.gain.linearRampToValueAtTime(x[4], bt + 0.008); ng.gain.linearRampToValueAtTime(base, bt + bl); return; }
+        cf.frequency.setValueAtTime(x[2], bt); cf.Q.setValueAtTime(x[3], bt);
+        cg.gain.setValueAtTime(0, bt); cg.gain.linearRampToValueAtTime(x[4] * 0.6, bt + 0.004); cg.gain.linearRampToValueAtTime(0, bt + bl);
+      });
+      if (breath > 0.02) {   // aspiration that pulses with the folds: 2.5 kHz noise x the half-wave rectified glottal wave
+        var pg = gainNode(c, 0, amp), rect = c.createWaveShaper(); rect.curve = rectCurve();
+        s.connect(filterNode(c, 'bandpass', 2500, 0.8, pg));
+        main.connect(rect); rect.connect(gainNode(c, breath * VXL.breath, pg.gain));
+      }
+      run(r, s, t, dur);
+    }
+    if (!bv) voxCarve(r, t, dur);
+  }
+  // Metal (metalVox's Soundcheck tail): the plate send, and the extra voice when booked: a held scream's double (+8 cents,
+  // 18-28 ms late, its own 3-formant bank, panned +-0.25) or a gang's third voice (+27 ms, formants x 1.08, panned 0.4).
+  function metalExtra(r, p, ev, t, dur, V, M, out, f, seed, xtra, gang, vib, sco) {
+    voxSetup(r, 0);
+    if (r.vx.fx) out.connect(voxIn(r, p, 'vxM'));
+    r.vx.stats.hits++;
+    if (!xtra) return;
+    var c = r.ctx, GV = GG.voice, vp = ev.vp || {}, fsc = vp.formant || 1, D = GV.DOUBLE, G = GV.GANG3[2];
+    var late = gang ? G[0] : D.late[0] + (D.late[1] - D.late[0]) * ((seed % 101) / 100), len = dur - late, at = t + late;
+    var scale = gang ? G[1] : D.scale, pan = gang ? G[2] : seed % 2 ? D.pan : -D.pan;
+    var sh = c.createWaveShaper(); sh.curve = asymCurve(M.drive + (vp.drive || 0)); sh.oversample = '2x';
+    var g = gainNode(c, gang ? VXL.gang * 0.7 : VXL.dbl * 0.8, panNode(c, pan, out));
+    M.f[0].forEach(function (f0, k) {
+      var bp = filterNode(c, 'bandpass', f0 * fsc * scale, M.q[k], gainNode(c, M.lv[k], g));
+      bp.frequency.setValueAtTime(f0 * fsc * scale, at); bp.frequency.linearRampToValueAtTime(M.f[1][k] * fsc * scale, at + len * (M.sweep || 0.75));
+      sh.connect(bp);
+    });
+    var o = c.createOscillator(); o.setPeriodicWave(voxWave(r, GV.WAVES.belt)); o.detune.value = gang ? -9 : D.cents;
+    o.frequency.setValueCurveAtTime(addVib(contour(f, len, sco, M.fall, M.jit, seed + 11), 90, vib), at, len);
+    o.connect(gainNode(c, 0.55, sh)); run(r, o, at, len);
+    r.vx.stats[gang ? 'gang3' : 'doubles']++;
+  }
+  // The vocal chain on a rig (makeRig's hook, never with Classic on): in -> high-pass 100 Hz -> compressor (-18 dB, 4:1,
+  // 5 / 120 ms) -> presence +3 dB @ 3.2 kHz -> air shelf +2 dB @ 10 kHz (0 for punk) -> out -> the band bus. Sends from
+  // out (and from the metal channel, vxM) through fx: the plate (GG.dsp.impulse2('plate'); a slow phone: the room send
+  // instead; no impulse2 (Lane I's, until it lands): no plate) and the tempo delay r.voxDelay (feedback 0.25, low-passed 3.5 kHz in the loop). No room send on the
+  // rig (the van radio): no sends at all.
+  var plateIR = {};   // sample rate -> [L, R] (pure data, one per rate)
+  function buildVox(r) {
+    var c = r.ctx, GV = GG.voice, CH = GV.CHAIN, X = r.vx = { genre: null, plate: null, plateOn: null, dt: 0, waves: null, fx: null,
+      stats: { hits: 0, doubles: 0, gang3: 0, carve: 0, plate: 0, room: 0, noPlate: 0 } };
+    X.out = gainNode(c, VXL.out, r.busBand);
+    X.air = eqNode(c, 'highshelf', CH.air[0], CH.air[1], CH.air[2], X.out);
+    var pres = eqNode(c, 'peaking', CH.pres[0], CH.pres[1], CH.pres[2], X.air), comp = c.createDynamicsCompressor(), K = CH.comp;
+    comp.threshold.value = K.threshold; comp.knee.value = K.knee; comp.ratio.value = K.ratio; comp.attack.value = K.attack; comp.release.value = K.release;
+    comp.connect(pres);
+    X.in = gainNode(c, VXL.inp, filterNode(c, 'highpass', CH.hp, 0.7, comp));
+    X.comp = comp;
+    r.voxTempo = function () {};
+    if (!r.send) return X;
+    X.fx = gainNode(c, 1, null); X.out.connect(X.fx);
+    X.roomSend = gainNode(c, 0, r.send); X.fx.connect(X.roomSend);
+    if (GG.dsp && typeof GG.dsp.impulse2 === 'function') {
+      try {
+        var sr = c.sampleRate, ir = plateIR[sr] || (plateIR[sr] = GG.dsp.impulse2('plate', sr, 1201)), L = ir[0], R = ir[1] || ir[0];
+        var buf = c.createBuffer(2, L.length, sr); buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
+        var conv = c.createConvolver(); conv.buffer = buf; conv.connect(gainNode(c, VXL.plate, r.glue));
+        X.plateSend = gainNode(c, 0, conv); X.fx.connect(X.plateSend);
+        X.plate = conv;
+      } catch (e) { X.plate = null; }
+    }
+    var d = r.voxDelay = X.delay = c.createDelay(GV.DELAY.max + 0.05), lp = filterNode(c, 'lowpass', GV.DELAY.lp, 0.7, r.busBand);
+    d.connect(lp); lp.connect(gainNode(c, GV.DELAY.feedback, d));
+    X.delaySend = gainNode(c, 0, d); X.fx.connect(X.delaySend);
+    r.voxTempo = function (spb) {   // the delay time for the rig's genre at spb seconds per beat (only when it changes)
+      var dt = GV.delayTime(r.genre || 'metal', spb);
+      if (dt && Math.abs(dt - X.dt) > 1e-4) { d.delayTime.setValueAtTime(dt, c.currentTime); X.dt = dt; }
+    };
+    return X;
+  }
+  A._buildVox = buildVox;
+  // Lane V debug (the lead folds it into debug('audio').vox): the live rig's chain + counters.
+  A.voxStats = function () {
+    var X = rig && rig.vx;
+    return X ? { chain: true, plate: X.plate ? X.plateOn === false ? 'room' : 'plate' : 'none', delay: X.dt || 0, genre: X.genre, hits: X.stats.hits,
+      doubles: X.stats.doubles, gang3: X.stats.gang3, carve: X.stats.carve, sends: { plate: X.stats.plate, room: X.stats.room, noPlate: X.stats.noPlate } } : { chain: false };
+  };
+  GG.registerDebug('vox', function () { return A.voxStats(); });
 
   // Band notes: 'gtr'/'gtr2' (distorted; power: root+fifth, mute: palm-muted), 'lead' (Dana's amp, bend), 'fiddle'
   // (vibrato), 'twang' (bent clean licks), 'clean' (strum: [intervals] staggered), 'bass', 'vox' (vocal hits).

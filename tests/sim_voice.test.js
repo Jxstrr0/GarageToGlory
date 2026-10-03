@@ -40,13 +40,15 @@ test('press -> open quotient: quantised (<= 9 waves), voc type defaults, metal b
   ok(V.press('ooh', {}) < 0.3 && V.press('whoa', {}) < 0.3, 'whoa-ohs breathy');
   eq(V.press('scream', {}, true), 1, 'metal: the belt wave');
   eq(V.press('yell', { press: 0.2 }), 0.2, 'profile press');
+  eq(V.pressAt(0.5, undefined), 0.5, 'no vel: as is'); ok(Math.abs(V.pressAt(0.5, 0.85) - 0.5) < 1e-12, 'VEL_REF: as is');
+  ok(V.pressAt(0.5, 1) > 0.6 && V.pressAt(0.5, 0.5) < 0.3 && V.pressAt(0.95, 1) === 1 && V.pressAt(0.1, 0.2) === 0, 'harder = pressed, softer = open, clamped');
 });
 
 test('formants: 5 rows, Q = F / BW, -6 dB steps, F4/F5 x formant scale, F1 tracks a high f0, ordered', () => {
   const f = V.formants('a', { formant: 1 });
   eq(f.length, 5);
   eq(f.map(r => r[0]), [730, 1090, 2440, 3400, 4300]);
-  eq(f.map(r => r[2]), [0, -6, -12, -18, -24]);
+  eq(f.map(r => r[2]), [0, -5, -10, -15, -20], '~6 dB steps (5, tuned by numbers)');
   f.forEach((r, k) => ok(Math.abs(r[1] - r[0] / V.BW[k]) < 0.01, 'Q ' + k));
   const s = V.formants('a', { formant: 1.1 });
   ok(Math.abs(s[3][0] - 3740) < 0.1 && Math.abs(s[4][0] - 4730) < 0.1, 'F4 / F5 scale');

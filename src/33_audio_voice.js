@@ -47,6 +47,11 @@
     if (metal) return 1;
     return V.PRESS[voc] != null ? V.PRESS[voc] : 0.6;
   };
+  // A harder hit presses harder (brighter), a soft one opens up: press + (vel - VEL_REF) x 0.8 (no vel: press as is).
+  V.pressAt = function (press, vel) {
+    if (vel == null) return press;
+    return clamp(press + (+vel - ((GG.contracts && GG.contracts.VEL_REF) || 0.85)) * 0.8, 0, 1);
+  };
 
   // ---- Formants (F10): five, Q from real bandwidths, ~6 dB down per formant; F1 follows a high f0 ----------------------
   // The 1.1 vowel targets (F1..F3), the same table as 30's VOWELS (that one stays the Classic path's).
@@ -54,7 +59,7 @@
     ae: [660, 1720, 2410], oe: [480, 1560, 2380], ue: [260, 1800, 2200] };
   V.BW = [80, 90, 120, 130, 140];      // Hz, F1..F5
   V.F45 = [3400, 4300];                // F4, F5 (Hz) x vp.formant
-  V.STEP_DB = -6;                      // each formant ~6 dB under the one before
+  V.STEP_DB = -5;                      // each formant ~6 dB under the one before (5: tuned by numbers, pw_seq vox)
   // F1' = 1.1 f0 when f0 > 0.9 F1 (a high note opens the jaw: the first formant rides over the pitch, never under it).
   V.track = function (F1, f0) { return f0 > 0.9 * F1 ? 1.1 * f0 : F1; };
   // vowel: a name (V.VOWELS) or [F1, F2, F3] (Hz, unscaled); vp.formant scales the vowel space (< 1 = a bigger throat);
@@ -139,12 +144,12 @@
   V.GANG3 = [[0, 1, 0], [0.014, 0.92, -0.4], [0.027, 1.08, 0.4]];
   V.CHAIN = { hp: 100, comp: { threshold: -18, knee: 6, ratio: 4, attack: 0.005, release: 0.12 }, pres: [3200, 0.9, 3], air: [10000, 0.7, 2] };
   // Per genre: plate send, delay ({ beats } tempo-synced or { secs } fixed; mix = send level; feedback 0.25, LP 3.5 kHz in the
-  // loop), air (false: no air shelf).
+  // loop), air (false: no air shelf), trim (dB on a non-metal hit: the voice / band balance of 1.1, by numbers: pw_seq vox).
   V.SENDS = {
-    metal: { plate: 0.18, delay: null, air: true },
-    punk: { plate: 0.08, delay: null, air: false },
-    rock: { plate: 0.2, delay: { beats: 0.75, mix: 0.15 }, air: true },        // dotted 1/8: the '80s wail
-    country: { plate: 0.12, delay: { secs: 0.11, mix: 0.2 }, air: true }      // slapback, matches Earl's Tele
+    metal: { plate: 0.18, delay: null, air: true, trim: 0 },
+    punk: { plate: 0.08, delay: null, air: false, trim: 0 },
+    rock: { plate: 0.2, delay: { beats: 0.75, mix: 0.15 }, air: true, trim: -2.5 },        // dotted 1/8: the '80s wail
+    country: { plate: 0.12, delay: { secs: 0.11, mix: 0.2 }, air: true, trim: -4 }        // slapback, matches Earl's Tele
   };
   V.DELAY = { feedback: 0.25, lp: 3500, max: 1.5 };
   V.sends = function (genre) { return V.SENDS[genre] || V.SENDS.rock; };
