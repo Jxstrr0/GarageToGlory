@@ -567,7 +567,7 @@
   function setKit(r, genre, tier) {
     genre = genre || 'metal';
     tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
-    if (r.genre === genre && r.kit && r.tier === tier) { if (r === rig) skWant(); return; }   // (v1.2 review: a career loaded on the same kit)
+    if (r.genre === genre && r.kit && r.tier === tier) { if (r === rig) { skWant(); pre2Want(); } return; }   // (v1.2 review: a career loaded on the same kit)
     r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
     if (r === rig) { preWant(); skWant(); pre2Want(); }   // v1.0: (re)render this kit's tap hits in the background (v1.2: + its sampled kit, the velocity sets)
     var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
@@ -1268,9 +1268,12 @@
   // lane per slice; capped at 6 MB (round robins drop, never below 2). A hit takes the nearest layer, the next round robin.
   var LAYER_VEL = { 1: [0.85], 2: [0.55, 0.9], 3: [0.4, 0.7, 0.95] }, PRE_CAP = 6e6;
   var PRE2 = { key: null, sets: {}, building: null, ready: false, renders: 0, hits: 0, ms: 0, bytes: 0, rr: 0, layers: 0, slice: 0, timer: 0, first: false };
-  function pre2Key() { return rig && ctx ? (rig.genre || 'metal') + '|' + rig.tier + '|' + ctx.sampleRate : null; }
+  // (v1.2 review) '|kit' = a set that leaves kick / snare / toms to the sampled kit: only with a loaded career (the kit decodes
+  // only then, F17.2), so the title screen's set renders those lanes too, and a career's set is a different key.
+  function pre2KeyFor(genre, tier) { return (genre || 'metal') + '|' + tier + '|' + ctx.sampleRate + (GG.state && A.sampleKit(genre || 'metal', tier) ? '|kit' : ''); }
+  function pre2Key() { return rig && ctx ? pre2KeyFor(rig.genre, rig.tier) : null; }
   function pre2Plan(k, R, genre, tier, sr) {   // -> [{ lane, v, vels: [layer vel], rr, len }]
-    var skit = A.sampleKit(genre, tier), out = [], lay = R.layers || 1, cap = PRE_CAP;
+    var skit = GG.state ? A.sampleKit(genre, tier) : null, out = [], lay = R.layers || 1, cap = PRE_CAP;
     if (skit) cap -= 21.5 * sr * 4;   // (the sampled kit's decoded clips count against the same 6 MB: ~21.5 s mono)
     function add(lane, v, layered) {
       if (skit && (lane === 'kick' || lane === 'toms' || (lane === 'snare' && v == null))) return;   // the samples play these
@@ -1289,7 +1292,7 @@
     return out;
   }
   function preVel(r, lane, v, vel) {   // (v1.2 review: any live rig on the set's genre | tier | rate, e.g. the van radio, shares it)
-    var key = r === rig ? pre2Key() : ctx && r.ctx === ctx ? (r.genre || 'metal') + '|' + r.tier + '|' + ctx.sampleRate : null;
+    var key = r === rig ? pre2Key() : ctx && r.ctx === ctx ? pre2KeyFor(r.genre, r.tier) : null;
     if (!key || !PRE2.key || PRE2.key !== key) { if (r === rig) pre2Want(); return null; }
     var S = PRE2.sets[lane + '|' + (v == null ? '' : v)]; if (!S) return null;
     var li = 0, best = 9;
