@@ -2,44 +2,19 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
-## RESUME HERE (v1.1 "Seats" paused 2026-10-02 14:40 UTC, owner's stop time; delete this block when v1.1 merges)
-- Branch `v1.1-seats` (pushed). Stage 0 = 829b059. Lanes **D audio** + **B sims/gameplay UI** are finished and merged (a3aeea7).
-- Unfinished lanes, saved as WIP on origin (both on top of 829b059, not merged yet):
-  - **C render** → `wip-v11-c` (58a29ee). C1–C5 done (instrument models, stage seat camera + swapped drummer, garage seat,
-    creator Your gear tab, carpet/recap/van). C6 in progress: pw_stage/pw_garage/pw_creator/pw_recap seat sections and
-    sim_creator gear look written; contact sheet + full regression not yet run.
-  - **A content** → `wip-v11-a` (28607e2). A1 done (SEAT= strict leak scan). A2 seat audit pass part-way (tokenise/gate per
-    file, `src/content/zz_seats.js` started). A3–A6 not started (bands seatLines/bySeat, role arcs + 12 finales + player
-    epilogues, shop bySeat names/creator parts/coach lines/seat achievements, content_seats test + runs).
-- Lead integration progress (2026-10-03, on `v1.1-seats`; lanes C/A still running in their worktrees):
-  - [x] 1. Folds: `C.GATE_KEYS += seat, swapped`, `C.ACH_KINDS += seatCareer, soloTooLong, allSeats`; D/B APIs in 02 + below.
-  - [x] 2. sim_seats ALL PASS 17: metal rhythm suggested part rings (holds at doom tempo); string crowd retuned (avg bot within
-    ~1.8 of drums); soloTooLong default min 0.3.
-  - [x] 3. 51 seat picker (intro → seat → logo → creator), seat copy, 52 'Your rig' spot, 5h labels, 50 presentLines gates.
-  - [x] 4. tests/pw_seats.js: pick 19, write 11, gig 8 (also 440x956), studio 6, shop 7 green at 390; garage/stage skip until C.
-  - [x] 5. build 4,357,094 B; node SUITE ALL PASS; pw_flow/title/gig sync+bridge+seat/seat_audio/seats green at 390 + 440.
-    Report: `plan/v11_lead_report.md` (integrator: pw_creator needs a `seat-next` tap after C merges; balance re-run).
-- Resume steps:
-  1. Resume workflow run `wf_867f4c13-592` (script `workflows/scripts/v11-seats-build-wf_867f4c13-592.js` in the session dir;
-     if that session is gone, relaunch lanes C and A with the same contract sections). D and B results are cached.
-     Add RESUME notes to the C and A prompts: start from `git fetch origin wip-v11-<c|a> && git reset --hard
-     origin/wip-v11-<c|a>` (not 829b059), read the task list above, finish the remaining tasks only. Escape backticks.
-  2. Integrator: merge C then A into `v1.1-seats` (D+B already in, a3aeea7), lead work (51 seat picker, pw_seats), fix the
-     3 sim_seats failures, build (gate 5,000,000 B), node tests + pw matrix at 390x844 and 440x956.
-  3. One review pass (≤ 3 lenses), verify blocker/major only, fix. PR `v1.1-seats` → main, merge, delete `wip-v11-*`.
+## v1.1 integrated, in review (2026-10-03)
+- `v1.1-seats` has lanes D, B, C, A + the lead work merged; checklist results in `plan/v11_integration_report.md`. Next: one
+  review pass (≤ 3 lenses), then PR `v1.1-seats` → main, merge, delete `wip-v11-*`, owner summary with the §0 defaults.
 
 ## Version
-- Current: **1.0.1.0** = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix (one touch on a lane seam hits both lanes only
-  when both have a note due; see the note below). 1.0 "Glory" = 0.9 "Genres" + endings (Legacy score, five tiers, eight
-  specials, epilogues, bonus years, the end sequence), achievements + the laptop Trophies tab, the Hall of Fame (title button,
-  entry sheet, backup code), meta unlocks (looks from finished careers), the guided tutorial (full week 1 + light weeks 2–4,
-  "?" replays) and the perf pass (frame governor, graphics "Auto", the global voice cap). **Update Current/Next at every merge.**
+- Current: **1.1.0.0 "Seats"** (in review on `v1.1-seats`) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
+  moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
+  **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge).
-- Next: **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; contract `plan/plan_contract_1.1.md`, finished at stage 0
-  2026-10-02 on `v1.1-seats`, VERSION 1.1.0.0; size gate **5,000,000 B** per E14) → **1.2 "Tuning"** (D5).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats (in review).
+- Next: **1.2 "Tuning"** (handoff D5; covers all four seats).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -144,6 +119,37 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
+## What's in v1.1 "Seats" (contract `plan/plan_contract_1.1.md`; lanes D, B, C, A + lead merged on `v1.1-seats` 2026-10-03)
+- **Pick a seat (lead, 51):** title → slot → genre → intro → **seat** → logo → creator → cold open. Four cards (drums preselected),
+  each says who moves to the drums (`bands.<id>.seatLines`) and your stage spot; a tap plays a ~3 s preview of that seat's
+  part (`GG.audio.seatPreview`); "Your seat is yours for the whole career". Swap table (E3): Hail Damage bass Kenji / rhythm
+  Jaxon / lead Dana; Frost Heave Moth / Rox / Benny; Gravel Kings Tamara / Chase / Lenny; Ramblers Duke / Travis Lee / Earl.
+  Rox, Chase and Travis Lee sing from the kit.
+- **Play it (B + D):** string lanes on the same highway (bass ≤ 5, guitar ≤ 6) by pitch contour; taps + holds (rings), 2-lane
+  chords on Hard/Expert rhythm, runs; your instrument plays through the band's sound (`pluck / strum / lead`, release gates a
+  hold); the backing mutes your kinds, so a miss is silence; the lead gets the solos (whammy bends with amp tier 2).
+- **Write it (B + D):** "Your part" in the songwriter: a progression (bass, rhythm) or hook (lead) per section + a 2–5 row grid;
+  the swapped drummer suggests the groove (drum layer you can tweak); the whole band follows your chords.
+- **See it (C):** the stage's over-the-shoulder spot camera (bass stage-left, rhythm stage-right, lead front-left), you with your
+  instrument (3–4 body shapes per seat, colour, guard, headstock logo sticker: the creator's "Your gear" tab), the swapped
+  drummer on the riser (boom mic when they sing; the fill-in drummer if they quit), "Your rig" in the garage, the carpet pose,
+  the recap photo and the van gig bag.
+- **Live it (A + B):** ~150 audit lines tokenised or gated (strict 10-year seat leak scan clean), 12 first-week + 48 Monday
+  cards for the swapped drummers, three role arcs (Nobody Hears the Bass · The Engine Room · Solo Too Long) + 12 band finales,
+  player epilogues per seat, swapped-drummer epilogue variants, the shop's parody gear names per seat at drum prices (one buy
+  grows your rig and the band's kit), coach lines per seat, four seat achievements (Low End, The Engine Room, Solo Too Long,
+  Musical Chairs).
+- **The drum seat is unchanged:** drum timelines byte-identical (1,212 fingerprints), drum-only balance identical to 1.0.1.0's,
+  every existing test green.
+- **§0 defaults (taken without a popup; the owner may object):** the seat is fixed for the career (old saves load as drummers);
+  `drumSkill` stays the chops stat for every seat; the swapped drummer keeps driving when they are the driver; metal rhythm =
+  Jaxon, metal lead = Dana; the title stays Hail Damage's garage with the drummer at the kit; seat gear = the drum gear economy
+  renamed per seat (bass's 350 item is "the fridge" cab, the lead's whammy comes with amp tier 2); `gear.seatLanes / runs` only
+  on string-seat careers; the backing mutes whole kinds; `{sticks}` reads "picks" on string seats, `{instrument}` "guitar" for
+  rhythm and lead; `'@drummer'` = the swapped drummer.
+- **Open owner choices (D):** on metal/punk/rock lead your written part replaces the shared rhythm-guitar pair in the sections you
+  write; a part section with no hits is silent.
+
 ## What's in v1.0 "Glory" (contract `plan/plan_contract_1.0.md`; lanes P, E, M, T merged on `v1.0-glory` 2026-10-02)
 - **Legacy + endings (Lane E, `2f_sim_legacy.js`, `content/endings.js`, `5n_ui_ending.js`):** a 0–1000 Legacy score from seven
   parts (fans, units, awards, biggest venue headlined, regions, band unity, the Sad Dome); five tiers by score only (Arena
@@ -209,7 +215,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - [x] v1.0: seat-aware where E12 says (`HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}` tokens, lessons
       and achievements gated `seat: ['drums']` for drum words, epilogue `seatRole` hooks, Legacy seat-neutral) — merged 2026-10-02
 - [x] v1.1 stage 0: fresh audits, `plan/plan_contract_1.1.md` finished (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview) — 2026-10-02 on `v1.1-seats` (contract §3)
-- [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
+- [x] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat — integrated 2026-10-03 on
+      `v1.1-seats` (`plan/v11_integration_report.md`); review + PR to main pending
 - [ ] v1.2 Tuning (D5) covers all four seats
 
 ## Tech
@@ -219,6 +226,20 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.1 as merged, lanes C + A** (full list in `02_contracts.js` V1.1 SEATS "As merged (v1.1 lanes C render + A content)"):
+  - Render: `R.seatGear(seat, gearLook, kitColor, genre)` / `R.instrument`; `stage.setup({ ..., seat, lineup })` (55 passes both);
+    `stage.info()` + `seat, view ('drummer'|'spot'|'spectator'), camera, drummer, you, boom, mics, seatMode, autoHits`;
+    `van.info().gigBag`; `carpet.info().you`; garage `debug('render').seat` { seat, rig, drummer, gear, label, sticker }.
+  - `GG.creator`: `sanitizeGearLook(gl, seat?)`, `gearShapes`, `gearDefault`, `gearNames`, `stageLookFor`; `prepare/init/apply` take
+    `gearLook`. `ui.openLook({ ..., seat, gearLook, logo })` → "Your gear" tab on string seats (testids `lk-tab-gear`,
+    `lk-gear-shape-<id>`, `lk-gear-sw-<i>`, `lk-gear-color-kit`, `lk-gear-guard-<id>`, `lk-gear-sticker-none|logo`).
+  - Content keys: `bands.seatLines`, card/chat top-level `seat` / `swapped`, card prefixes `arc_` / `fin_` / `sw_`, flags
+    `bassArc|rhythmArc|leadArc` + `*ArcDone`, `shop.gear[i].bySeat` / `shop.kit[i].bySeat` / `shop.byBand[b].lines.drummerGear`,
+    `creator.gear`, `grooves.coach(.genre).bySeat`, `lines.songReactions[id].kit|bySeat`, `recruits.drummers`, `drama.fillIns.drums`,
+    `endings.player.<seat>`, epilogue `when.seatRole`, `content.seatAchievements`.
+  - Tests/tools: `tests/seat_scan.js` (strict leak scan; LEFT phrases also match in ALL CAPS), `SEAT=all LEAK_YEARS=10 node
+    tests/sim_bands.test.js`, `tests/content_seats.test.js`, `META_ONLY=seats node tests/pw_bands_render.js` (opt-in contact
+    sheet, ~3 min), `tools/phoneqa.js` sweeps the v1.1 screens, `tools/perf.js scenes` seats line.
 - **v1.1 as merged** (lanes D + B, lead folds; full list in `02_contracts.js` V1.1 SEATS "As merged"):
   - Folds: `C.GATE_KEYS += seat, swapped` (`C.SEAT_GATE_KEYS` stays as the subset); `C.ACH_KINDS += seatCareer, soloTooLong,
     allSeats` (= `GG.achieve.SEAT_KINDS`, now in `KINDS`). `C.SEAT_KINDS` unchanged.
