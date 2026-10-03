@@ -94,6 +94,18 @@ test('chord / strum: exactly the sum of their strings (spread, gap, up order)', 
   ok(finite(D.strum({ fs: [mtof(40), mtof(45), mtof(50), mtof(55), mtof(59), mtof(64)], sr: 32000, dur: 1, seed: 3 })), 'six strings finite');
 });
 
+test('pluckJob: stepped in slices = one pluck call, sample for sample (30 fills its string cache a few ms at a time)', () => {
+  [{ f: mtof(40), sr: 22050, dur: 1.6, vel: 0.9, pick: 0.13, exLp: 3500, click: 0.6, seed: 7 },
+   { f: mtof(64), sr: 32000, dur: 1.4, vel: 0.55, pick: 0.27, bright: 0.25, seed: 3 },
+   { f: mtof(33), sr: 22050, dur: 0.35, vel: 0.9, mute: true, thump: 0.8, exLp: 350, seed: 11 }].forEach(o => {
+    const a = D.pluck(o), j = D.pluckJob(o); let steps = 0;
+    while (!j.step(2048)) steps++;
+    let same = a.length === j.out.length;
+    for (let i = 0; same && i < a.length; i++) if (a[i] !== j.out[i]) same = false;
+    ok(same && j.done && steps > 0, 'pluckJob f=' + o.f.toFixed(1) + ' identical in ' + (steps + 1) + ' steps');
+  });
+});
+
 test('metal cluster: energy above 6 kHz, finite, the bloom sweeps, seeds differ', () => {
   const sr = 44100, hat = D.metal({ sr, dur: 0.15, base: 205.3 * 1.6, hp: 7000, bp: 10000, seed: 1 });
   ok(finite(hat), 'finite');

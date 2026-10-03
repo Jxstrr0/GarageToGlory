@@ -1769,11 +1769,11 @@
       opts: { sr: V.sr, vel: KS_LAYERS[layer], pick: V.pick, bright: art === 'trem' ? Math.min(0.9, V.bright + 0.2) : V.bright, t60: art === 'trem' ? 0.5 : V.t60,
         mute: art === 'mute', exLp: V.exLp, thump: V.thump, click: V.click, seed: 1 + midi * 7 + rr * 101 } };
   }
+  function ksOpts(spec, i, off) { return Object.assign({}, spec.opts, { f: spec.fs[i], dur: (spec.n - off) / spec.sr, seed: spec.opts.seed + i, norm: 0.5 / Math.max(1, spec.fs.length) }); }
+  function ksAdd(acc, s, off, n) { for (var j = 0; j < s.length && off + j < n; j++) acc[off + j] += s[j]; }
   function ksString(spec, acc, i) {   // adds string i of the spec into acc (the same sum as GG.dsp.chord / strum)
-    var sr = spec.sr, off = Math.round(spec.offs[i] * sr), n = spec.n;
-    if (off >= n) return;
-    var s = GG.dsp.pluck(Object.assign({}, spec.opts, { f: spec.fs[i], dur: (n - off) / sr, seed: spec.opts.seed + i, norm: 0.5 / Math.max(1, spec.fs.length) }));
-    for (var j = 0; j < s.length && off + j < n; j++) acc[off + j] += s[j];
+    var off = Math.round(spec.offs[i] * spec.sr);
+    if (off < spec.n) ksAdd(acc, GG.dsp.pluck(ksOpts(spec, i, off)), off, spec.n);
   }
   function ksPut(c, spec, acc) {
     var b = mkBuf(c, spec.n, spec.sr); b.getChannelData(0).set(acc);
@@ -1805,7 +1805,10 @@
     KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
     if (!KS.busy) { KS.busy = true; soon(ksPump); }
   }
-  function ksPump() {   // one string per slice
+  // ~3 ms of string per slice: GG.dsp.pluckJob renders a string 2048 samples at a time (the same samples as one pluck call),
+  // so a slice stays well under 8 ms on a 4x-throttled phone; finished buffers land in the cache between slices.
+  var KS_SLICE_MS = 3, KS_STEP = 2048;
+  function ksPump() {
     var job = KS.queue[0];
     if (!job || !ctx) {
       KS.busy = false;
@@ -1813,9 +1816,19 @@
       return;
     }
     var t0 = performance.now();
-    if (!job.acc) job.acc = new Float32Array(job.spec.n);
-    ksString(job.spec, job.acc, job.i++);
-    if (job.i >= job.spec.fs.length) { KS.queue.shift(); delete KS.qset[job.spec.key]; ksPut(ctx, job.spec, job.acc); }
+    while (job) {
+      var sp = job.spec;
+      if (!job.acc) job.acc = new Float32Array(sp.n);
+      if (!job.pj && job.i < sp.fs.length) {
+        job.off = Math.round(sp.offs[job.i] * sp.sr);
+        if (job.off >= sp.n) job.i++;
+        else if (GG.dsp.pluckJob) job.pj = GG.dsp.pluckJob(ksOpts(sp, job.i, job.off));
+        else ksString(sp, job.acc, job.i++);   // (an older dsp: a whole string)
+      }
+      if (job.pj && job.pj.step(KS_STEP)) { ksAdd(job.acc, job.pj.out, job.off, sp.n); job.pj = null; job.i++; }
+      if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; ksPut(ctx, sp, job.acc); job = KS.queue[0]; }
+      if (performance.now() - t0 >= KS_SLICE_MS) break;
+    }
     KS.slice = Math.max(KS.slice, performance.now() - t0);
     soon(ksPump);
   }
