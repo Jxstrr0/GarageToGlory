@@ -2,9 +2,7 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
-## v1.1 integrated, in review (2026-10-03)
-- `v1.1-seats` has lanes D, B, C, A + the lead work merged; checklist results in `plan/v11_integration_report.md`. Next: one
-  review pass (≤ 3 lenses), then PR `v1.1-seats` → main, merge, delete `wip-v11-*`, owner summary with the §0 defaults.
+## v1.1 integrated, in review (2026-10-03): all lanes merged on `v1.1-seats`, checklist green (`plan/v11_integration_report.md`); next: review pass, PR → main.
 
 ## Version
 - Current: **1.1.0.0 "Seats"** (in review on `v1.1-seats`) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
@@ -147,6 +145,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   renamed per seat (bass's 350 item is "the fridge" cab, the lead's whammy comes with amp tier 2); `gear.seatLanes / runs` only
   on string-seat careers; the backing mutes whole kinds; `{sticks}` reads "picks" on string seats, `{instrument}` "guitar" for
   rhythm and lead; `'@drummer'` = the swapped drummer.
+- **Leftovers (back burner):** avg-bot balance tilt on string seats (+7 % fans, inside seed noise; good bot within ±10 %);
+  A's forceWeek-2 first-week cards, weekly mood chat not seat-aware, no string-seat tutorial walk/write twins; C's cosmetic
+  camera notes + the garage "Trophies" / "Your rig" chip overlap (details: `plan/v11_integration_report.md` §4).
 - **Open owner choices (D):** on metal/punk/rock lead your written part replaces the shared rhythm-guitar pair in the sections you
   write; a part section with no hits is silent.
 

@@ -156,3 +156,19 @@ avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). s
   `stage_club_seat_bass` 32 calls, `stage_club_seat_lead` 35 (gate: stage_club 36 x 1.15 = 41.4); `garage_seat_rhythm` 44
   (gate: garage_hail_damage 43 x 1.15 = 49.5). Voice cap holds: peak sources 25 (x1) / 23 (x4) <= 32, tap drops 0, audio
   nodes/s 57 / 56 <= 80.
+
+## 4. Gaps (none blocks the review pass)
+1. **Avg-bot balance tilt** on string seats (+7 % fans / +8 % fund on average, 60 seeds; good bot within ±10 % everywhere).
+   Analysed above; left for the review pass / v1.2 Tuning (needs a 100+ seed or paired-seed run to separate it from noise).
+2. **Owner choices still open (Lane D):** on metal/punk/rock lead your written part replaces the shared rhythm-guitar pair in
+   the sections you write; an empty part section is silent. Listed in status.md "What's in v1.1" for the owner summary.
+3. **Content (Lane A):** the 12 first-week cards use `forceWeek: 2`, so a future week-2 forced card would collide on string
+   seats; the weekly mood chat (20 `postWeeklyChat`) has no swapped-drummer layer; the tutorial's walk / write steps have no
+   string-seat twins (sim_lessons' "drum-only steps drop by >= 2" check); drummer recruits get nicknames only.
+4. **Cosmetic (Lane C):** Hail Damage bass / lead camera shows the crash cymbal's edge bottom-right; Ramblers rhythm: Clementine
+   fills part of the left of the view; the 440 contact-sheet tiles are cropped to 390 px; **new:** in a string-seat garage the
+   "Trophies" chip overlaps the "Your rig" chip (top-left, `tests/.cache/seats_garage_rhythm.png`).
+5. **Load timing:** the five sections in the matrix footnote can time out when two browsers and a balance run share the
+   machine; all green alone twice.
+6. Not done here (contract §6 items 6 "review" and 10): the one review pass, the PR `v1.1-seats` -> main, deleting the
+   `wip-v11-*` branches, and the owner summary.
