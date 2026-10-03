@@ -9,6 +9,7 @@
 //     mute: the palm mute (excitation low-passed ~1.2 kHz, T60 0.12 s); exLp (Hz): a darker excitation (a bass finger: the
 //     fundamental leads, as on a real bass). thump (bass fingers: 6 ms of low-passed noise), click
 //     (a pick click). A DC blocker; norm (default 0.5): RMS of the first 60 ms.
+//   pluckJob(o) -> { out, done, step(n) }: the same, n samples at a time (30 fills its string cache in short slices).
 //   chord({ fs: [hz], spread (s between strings, default 0.003), ...pluck }) / strum({ fs, gap (default 0.011), up, ...pluck })
 //     -> Float32Array: the strings summed (string i starts i x spread / gap later; up = high string first), each string a
 //     pluck with seed + i and norm / fs.length. Exactly the sum of its strings (sim_dsp).
@@ -84,7 +85,8 @@
     for (var k = 0; k < 60; k++) { var m = (lo + hi) / 2; if (apDelay(m, w) > d) lo = m; else hi = m; }
     return (lo + hi) / 2;
   }
-  D.pluck = function (o) {
+  // pluckJob(o) -> { out, done, step(nSamples) -> done }: the same pluck, resumable (30 renders a string a few ms at a time).
+  D.pluckJob = function (o) {
     o = o || {};
     var sr = o.sr || 22050, f = clampN(o.f || 110, 20, sr * 0.3), dur = o.dur || 1, n = Math.max(1, Math.ceil(dur * sr));
     var vel = o.vel == null ? 0.85 : clampN(o.vel, 0, 1), mute = !!o.mute, t60 = mute ? (o.t60 || 0.12) : (o.t60 || 2.5);
@@ -106,36 +108,46 @@
     for (i = 0; i < P; i++) { comb[i] = ex[i] - (i >= bN ? ex[i - bN] : 0); mean += comb[i]; }
     mean /= P; for (i = 0; i < P; i++) comb[i] -= mean;
     // the loop: y[n] = x[n] + rho * AP(LP(y[n - L]))
-    var buf = new Float32Array(L), bi = 0, lpPrev = 0, apX = 0, apY = 0, dcX = 0, dcY = 0, dcR = 1 - TAU * 20 / sr;
-    for (i = 0; i < n; i++) {
-      var del = buf[bi];
-      var l1 = (1 - S) * del + S * lpPrev; lpPrev = del;
-      var ap = C * l1 + apX - C * apY; apX = l1; apY = ap;
-      var y = (i < P ? comb[i] : 0) + rho * ap;
-      if (y < 1e-20 && y > -1e-20) y = 0;
-      buf[bi] = y; bi = bi + 1 === L ? 0 : bi + 1;
-      var dc = y - dcX + dcR * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
-      out[i] = dcY;
-    }
-    // finger thump (bass: rock / country) or pick click (punk / metal): a few ms of filtered noise on top
-    if (o.thump || o.click) {
-      var tn = Math.min(n, Math.round((o.thump ? 0.006 : 0.003) * sr)), ta = o.thump ? 1 - Math.exp(-TAU * 400 / sr) : 1 - Math.exp(-TAU * 5000 / sr);
-      var lvl = (o.thump || o.click) * (0.4 + 0.6 * vel), tlp = 0, prev = 0;
-      for (i = 0; i < tn; i++) {
-        var nz = rnd(); tlp += (nz - tlp) * ta;
-        var v = o.thump ? tlp * 3 : tlp - prev; prev = tlp;
-        out[i] += lvl * v * (1 - i / tn);
+    var buf = new Float32Array(L), bi = 0, lpPrev = 0, apX = 0, apY = 0, dcX = 0, dcY = 0, dcR = 1 - TAU * 20 / sr, k = 0;
+    var job = { out: out, done: false, step: function (m) {
+      if (job.done) return true;
+      var end = Math.min(n, k + Math.max(1, m || n));
+      for (; k < end; k++) {
+        var del = buf[bi];
+        var l1 = (1 - S) * del + S * lpPrev; lpPrev = del;
+        var ap = C * l1 + apX - C * apY; apX = l1; apY = ap;
+        var y = (k < P ? comb[k] : 0) + rho * ap;
+        if (y < 1e-20 && y > -1e-20) y = 0;
+        buf[bi] = y; bi = bi + 1 === L ? 0 : bi + 1;
+        var dc = y - dcX + dcR * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
+        out[k] = dcY;
+      }
+      if (k < n) return false;
+      finish(); job.done = true; return true;
+    } };
+    function finish() {
+      var j;
+      // finger thump (bass: rock / country) or pick click (punk / metal): a few ms of filtered noise on top
+      if (o.thump || o.click) {
+        var tn = Math.min(n, Math.round((o.thump ? 0.006 : 0.003) * sr)), ta = o.thump ? 1 - Math.exp(-TAU * 400 / sr) : 1 - Math.exp(-TAU * 5000 / sr);
+        var lvl = (o.thump || o.click) * (0.4 + 0.6 * vel), tlp = 0, prev = 0;
+        for (j = 0; j < tn; j++) {
+          var nz = rnd(); tlp += (nz - tlp) * ta;
+          var v = o.thump ? tlp * 3 : tlp - prev; prev = tlp;
+          out[j] += lvl * v * (1 - j / tn);
+        }
+      }
+      var norm = o.norm == null ? 0.5 : o.norm;
+      if (norm > 0) {
+        var m2 = Math.min(n, Math.round(0.06 * sr)), e = 0;
+        for (j = 0; j < m2; j++) e += out[j] * out[j];
+        var rms = Math.sqrt(e / Math.max(1, m2)), g = rms > 1e-9 ? norm / rms : 0;
+        for (j = 0; j < n; j++) { var z = out[j] * g; out[j] = z < 1e-20 && z > -1e-20 ? 0 : z; }
       }
     }
-    var norm = o.norm == null ? 0.5 : o.norm;
-    if (norm > 0) {
-      var m = Math.min(n, Math.round(0.06 * sr)), e = 0;
-      for (i = 0; i < m; i++) e += out[i] * out[i];
-      var rms = Math.sqrt(e / Math.max(1, m)), g = rms > 1e-9 ? norm / rms : 0;
-      for (i = 0; i < n; i++) { var z = out[i] * g; out[i] = z < 1e-20 && z > -1e-20 ? 0 : z; }
-    }
-    return out;
+    return job;
   };
+  D.pluck = function (o) { var j = D.pluckJob(o); j.step(); return j.out; };
   function strings(o, gap, order) {
     var fs = o.fs || [], sr = o.sr || 22050, dur = o.dur || 1, n = Math.ceil(dur * sr), out = new Float32Array(n), k = fs.length;
     for (var j = 0; j < k; j++) {
