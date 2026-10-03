@@ -1,5 +1,9 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash|kit, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+//   kit   : v1.2 Lane I (handoff F17.3): the TMKD "Vortex" sampled kit. Metal on tier 3 renders it (result.kitUsed), onsets <= 1 ms
+//           (rendered + the live decode), 5 consecutive snares all differ, per-lane loudness within +-1 dB of the 1.1 pro-tier synth
+//           (tools/kit_trim.js), Classic on: metal tier 1 + punk tier 3 hashes = the 1.1 fixture; Classic off: metal tier 1 and punk
+//           tier 3 render bit-identical with and without the kit module (it never leaks into other tiers or genres). ~1 min.
 //   hash  : v1.2 stage 0 (handoff F3.1): with GG.audio.classic(true), every case of tests/fixtures/audio_v11_hashes.json (4 genres x
 //           full / drums / band songs, 4 genres x 6 tap lanes x 4 kit tiers live + pre-rendered, sections, seat notes, vocals,
 //           probes, radio) renders bit-identical to 1.1.0.0 (tools/audio_hashes.js verify; deterministic summing: tools/_audio_lab.js).
@@ -843,6 +847,7 @@ async function voices() {
   if (want('heavy')) await heavy();
   if (want('part')) await part();
   if (want('hash')) await hash();
+  if (want('kit')) await kit();
 })();
 
 // v1.1 "Seats" (plan_contract_1.1 §4.4): the string-seat songwriter. A bass Write (Hail Damage): guided step 1 = Kenji's
@@ -963,5 +968,59 @@ async function hash() {
     c.ok(r.bad.length === 0, 'classic on: every render equals 1.1.0.0 ' + (r.bad.length ? r.bad.length + ' differ: ' + r.bad.slice(0, 6).map(b => b.key + ' rms ' + b.want.rms + ' -> ' + b.got.rms).join(', ') : ''));
     c.ok(r.errors.length === 0, 'no console errors ' + r.errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'hash threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  c.done();
+}
+
+// v1.2 Lane I (handoff F17.3): the sampled kit. See the header (section kit).
+async function kit() {
+  const c = checker('kit');
+  try {
+    const lab = require('../tools/_audio_lab'), { verify } = require('../tools/audio_hashes'), { measure } = require('../tools/kit_trim');
+    const L = await lab.openLab({ classic: false });
+    try {
+      const r = await L.page.evaluate(async () => {
+        const A = GG.audio, W = window.__lab, out = {};
+        const onset = (b, at) => { const d = b.getChannelData(0); let pk = 0; for (const v of d) pk = Math.max(pk, Math.abs(v)); for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > 0.02 * pk) return (i / b.sampleRate - at) * 1000; return null; };
+        const one = await A.renderOffline({ genre: 'metal', lane: 'snare', quality: 3, vel: 0.85, room: 'dry' });
+        const song = await A.renderOffline({ genre: 'metal', pattern: GG.songs.signature('metal'), section: 'chorus', bars: 2, quality: 3, vel: 0.85 });
+        out.used = { one: one.kitUsed, song: song.kitUsed, drums: song.counts.drum, nan: one.nan || song.nan, peak: song.peak, clipOnset: one.kitOnset };
+        out.onsets = [];
+        for (const [lane, v] of [['kick'], ['snare'], ['toms', 0], ['toms', 1], ['toms', 2]]) for (let h = 0; h < 5; h++) {
+          const x = await A.renderOffline({ genre: 'metal', lane, variant: v, quality: 3, vel: 0.85, hit: h, room: 'dry' }); out.onsets.push(onset(x.buffer, 0.05));
+        }
+        const sn = []; for (let h = 0; h < 5; h++) sn.push((await A.renderOffline({ genre: 'metal', lane: 'snare', quality: 3, vel: 0.85, hit: h, room: 'dry' })).buffer.getChannelData(0));
+        out.pairs = [];
+        for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) { let d = 0, e = 0; for (let k = 0; k < sn[i].length; k++) { d += (sn[i][k] - sn[j][k]) ** 2; e += sn[i][k] ** 2; } out.pairs.push(+(10 * Math.log10(d / e)).toFixed(1)); }
+        // the kit never leaks: Classic off, metal tier 1 + punk tier 3 render the same with and without the kit module
+        const specs = [];
+        for (const l of GG.contracts.LANES) { specs.push({ genre: 'metal', lane: l, quality: 1, vel: 0.85 }); specs.push({ genre: 'punk', lane: l, quality: 3, vel: 0.85 }); }
+        specs.push({ genre: 'metal', pattern: GG.songs.signature('metal'), section: 'verse', bars: 2, quality: 1, vel: 0.85 });
+        specs.push({ genre: 'punk', pattern: GG.songs.signature('punk'), section: 'verse', bars: 2, quality: 3, vel: 0.85 });
+        const hashAll = async () => { const h = []; for (const s of specs) h.push(await W.sha1((await A.renderOffline(s)).buffer)); return h; };
+        const withKit = await hashAll(), K = GG.content.kits; GG.content.kits = {};
+        const without = await hashAll(); GG.content.kits = K;
+        out.leak = { n: specs.length, same: withKit.filter((h, i) => h === without[i]).length, diff: specs.filter((s, i) => withKit[i] !== without[i]).map(s => s.genre + '/' + (s.lane || 'song') + '/q' + s.quality) };
+        // the live decode (title screen: the pro kit, metal)
+        document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); A.unlock();
+        for (let i = 0; i < 200 && !GG.debug('audio').kit.ready; i++) await new Promise(res => setTimeout(res, 100));
+        const k = GG.debug('audio').kit; out.live = { ready: k.ready, n: k.n, onset: k.onset, bytes: k.bytes, ms: k.ms, err: k.err };
+        return out;
+      });
+      c.ok(r.used.one === 1 && r.used.song > 0 && r.used.song <= r.used.drums && !r.used.nan && r.used.peak < 1, 'metal tier 3 renders the sampled kit ' + JSON.stringify(r.used));
+      // (a render's onset includes the kit chain's fixed latency, ~15 ms of compressor look-ahead + oversampling: the clips must
+      // all land within 1 ms of each other, and each decoded clip starts at most 1 ms before its first sample over 2 % of its peak)
+      const o0 = Math.min(...r.onsets), o1 = Math.max(...r.onsets);
+      c.ok(r.used.clipOnset != null && r.used.clipOnset <= 1 && o1 - o0 <= 1, 'onsets <= 1 ms: decoded clips ' + r.used.clipOnset + ' ms, 25 rendered clips within ' + (o1 - o0).toFixed(3) + ' ms of each other');
+      c.ok(r.live.ready && r.live.n === 25 && !r.live.err && r.live.onset <= 1, 'the live decode: 25 clips, onset <= 1 ms ' + JSON.stringify(r.live));
+      c.ok(r.pairs.every(d => d > -40), '5 consecutive snares all differ (pairwise diff > -40 dB) ' + JSON.stringify(r.pairs));
+      c.ok(r.leak.same === r.leak.n, 'Classic off: metal tier 1 + punk tier 3 renders identical with and without the kit ' + JSON.stringify(r.leak));
+      c.ok(L.errors.length === 0, 'no console errors ' + L.errors.slice(0, 3).join(' | '));
+    } finally { await L.close(); }
+    const m = await measure({ genre: 'metal' });
+    const ds = Object.entries(m.lanes || {}).map(([k, v]) => k + ' ' + v.delta);
+    c.ok(!m.error && Object.values(m.lanes).every(v => Math.abs(v.delta) <= 1 && v.used === 5), 'per-lane loudness within +-1 dB of the 1.1 pro-tier synth: ' + ds.join(', '));
+    const h = await verify({ quiet: true, only: ['tap|metal', 'pre|metal', 'tap|punk', 'pre|punk'] });
+    c.ok(h.n === 96 && h.bad.length === 0, 'Classic on: metal + punk taps (every tier) = the 1.1 fixture ' + (h.n - h.bad.length) + '/' + h.n + (h.bad.length ? ' ' + h.bad.slice(0, 3).map(b => b.key).join(', ') : ''));
+  } catch (e) { c.ok(false, 'kit threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   c.done();
 }

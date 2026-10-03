@@ -518,6 +518,10 @@
     r.qBox = c.createBiquadFilter(); r.qBox.type = 'peaking'; r.qBox.frequency.value = 480; r.qBox.Q.value = 1.1; r.qBox.gain.value = 0; r.qBox.connect(r.qLow);
     r.qDrive = c.createWaveShaper(); r.qDrive.curve = satCurve(0); r.qDrive.oversample = '2x'; r.qDrive.connect(r.qBox);
     r.drums = gainNode(c, 0.8, r.qDrive);
+    // v1.2 (Lane I): the kit is stereo now (F6 kit stereo: per-hit pans), so the kit chain's input is fixed at 2 channels; when a
+    // panned hit ends, a 'max' input would fall back to mono and reset the chain's filter states at a moment Chromium picks
+    // (offline renders then differ in the last bits run to run). Classic: untouched (the 1.1 graph).
+    if (!A.isClassic()) { r.drums.channelCountMode = 'explicit'; r.drums.channelCount = 2; }
     r.click = gainNode(c, 0.8, o.clickDest || glue);
     var shaper = c.createWaveShaper(); shaper.curve = driveCurve(18); shaper.oversample = '2x';
     shaper.connect(filterNode(c, 'lowpass', 3600, 0.9, filterNode(c, 'highpass', 90, 0.7, gainNode(c, 0.09, r.busBand))));
@@ -938,13 +942,20 @@
     try { lefty = !!(GG.prefs && GG.prefs.get && GG.prefs.get().lefty); } catch (e) { /* no prefs */ }
     return (lefty ? -x : x) * (R ? R.width : 1);
   }
-  function vslot(r, port, lane, t) {   // a lane's pooled hit slots on a port (reused once their last source has stopped)
-    var pool = port.vslots || (port.vslots = {}), L = pool[lane] || (pool[lane] = []), c = r.ctx, i;
-    for (i = 0; i < L.length; i++) if (L[i].until <= t - 0.002) return L[i];
-    var sl = { g: c.createGain(), lp: c.createBiquadFilter(), pan: c.createStereoPanner ? c.createStereoPanner() : null, until: 0 };
-    sl.lp.type = 'lowpass'; sl.lp.Q.value = 0.707; sl.lp.connect(sl.g);
-    if (sl.pan) { sl.g.connect(sl.pan); sl.pan.connect(port.drums); } else sl.g.connect(port.drums);
-    if (L.length < 6) L.push(sl);
+  // A lane's pooled hit slots on a port (toms: per drum), reused once their last source has stopped. The pan is a plain value
+  // (set when the slot is made or the kit's width / lefty changes), never automated: Chromium's automated StereoPanner made
+  // offline renders differ in the last bits run to run.
+  function vslot(r, port, lane, t, v) {
+    var key = lane === 'toms' ? 'toms' + (v | 0) : lane, pool = port.vslots || (port.vslots = {}), L = pool[key] || (pool[key] = []), c = r.ctx, i, sl = null;
+    for (i = 0; i < L.length; i++) if (L[i].until <= t - 0.002) { sl = L[i]; break; }
+    if (!sl) {
+      sl = { g: c.createGain(), lp: c.createBiquadFilter(), pan: c.createStereoPanner ? c.createStereoPanner() : null, until: 0, x: null };
+      sl.lp.type = 'lowpass'; sl.lp.Q.value = 0.707; sl.lp.connect(sl.g);
+      if (sl.pan) { sl.g.connect(sl.pan); sl.pan.connect(port.drums); } else sl.g.connect(port.drums);
+      if (L.length < 6) L.push(sl);
+    }
+    var x = kitPan(r, lane, v);
+    if (sl.pan && sl.x !== x) { sl.pan.pan.value = x; sl.x = x; }
     return sl;
   }
   // One buffered hit into a slot: hb = { buf, d (its natural length), lpMin, gain }; d = how long it sounds (choked / capped).
@@ -956,12 +967,11 @@
     sl.g.gain.cancelScheduledValues(t);
     sl.g.gain.setValueAtTime(velGain(vel) * (hb.gain || 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5)), t);
     if (d < hb.d - 0.002) sl.g.gain.setTargetAtTime(0, t + d, 0.006);   // choked: fades at the next hit
-    if (sl.pan) sl.pan.pan.setValueAtTime(kitPan(r, lane, v), t);
     s.start(t); s.stop(t + d + 0.04); sl.until = t + d + 0.04;
     if (r.collect) r.collect.push(s);
     return s;
   }
-  var KITUSE = { kick: 0, snare: 0, toms: 0 };
+  var KITUSE = { kick: 0, snare: 0, toms: 0 }, KITLAST = null;   // (debug: sampled-kit hits per lane, the last velocity tap)
   function velBuf(r, lane, v, vel) { return skBuf(r, lane, v) || preVel(r, lane, v, vel); }
   function drumVel(r, p, lane, t, cap, v, cls, vel) {
     var D = DRUMS[lane]; if (!D) return false;
@@ -970,16 +980,15 @@
     if (hb) {
       d = Math.max(0.012, Math.min(hb.d, cap));
       if (!book(r, t, d, 1, false, cls)) return null;
-      var sl = vslot(r, p, lane, t), s = velPlay(r, sl, hb, lane, v, vel, t, d);
+      var sl = vslot(r, p, lane, t, v), s = velPlay(r, sl, hb, lane, v, vel, t, d);
       if (hb.kit) { KITUSE[lane]++; r.kitUsed = (r.kitUsed || 0) + 1; }
       return { t: t, end: t + d, n: 1, slot: sl, src: [s] };
     }
     n = typeof D.n === 'function' ? D.n(k, v) : D.n; d = Math.max(0.012, Math.min(D.len(k, v), cap));
     if (!book(r, t, d, n, false, cls)) return null;
     if (r === rig) { D.play(r, { drums: gainNode(c, velGain(vel), p.drums) }, t, d, k, v); return { t: t, end: t + d, n: n }; }   // F3.6: the 1.1 sound
-    var sl2 = vslot(r, p, lane, t);   // offline: the 1.2 recipe, live, through the hit slot
+    var sl2 = vslot(r, p, lane, t, v);   // offline: the 1.2 recipe, live, through the hit slot
     sl2.lp.frequency.setValueAtTime((0.55 + 0.45 * clamp01(vel)) * 16000, t); sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(velGain(vel), t);
-    if (sl2.pan) sl2.pan.pan.setValueAtTime(kitPan(r, lane, v), t);
     sl2.until = t + d + 0.04;
     D.play(r, { drums: sl2.lp }, t, d, k, v);
     return { t: t, end: t + d, n: n };
@@ -2330,9 +2339,10 @@
     }
     var cap = lane === 'cymbal' ? 0.9 : 0.5, pre = vel == null ? preHit(lane, v, cap) : velBuf(rig, lane, v, vel), b, g;
     if (pre && vel != null) {   // v1.2: the velocity hit
-      var vsl = vslot(rig, port, lane, t), dv = Math.max(0.012, Math.min(pre.d, cap)), vs = velPlay(rig, vsl, pre, lane, v, vel, t, dv);
+      var vsl = vslot(rig, port, lane, t, v), dv = Math.max(0.012, Math.min(pre.d, cap)), vs = velPlay(rig, vsl, pre, lane, v, vel, t, dv);
       book(rig, t, dv, 1, false, 'tap');
       if (pre.kit) KITUSE[lane]++;
+      KITLAST = { lane: lane, t: t, kit: !!pre.kit, rr: pre.rr, vel: vel };
       taps[lane] = { t: t, end: t + dv, n: 1, g: vsl.g, src: [vs], slot: vsl };
       PRE.hits++;
       return true;
@@ -3388,8 +3398,8 @@
     spec = spec || {};
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OAC) return Promise.reject(new Error('no OfflineAudioContext'));
-    var skit = !spec._sk && !spec.ambience ? A.sampleKit(spec.genre || 'metal', spec.quality == null ? A.kitQuality() : spec.quality) : null;
-    if (skit && !(SKOFF[skit.id] && SKOFF[skit.id].ready)) return skOffline(skit).then(function () { return A.renderOffline(Object.assign({}, spec, { _sk: true })); });
+    var skit = !spec.ambience ? A.sampleKit(spec.genre || 'metal', spec.quality == null ? A.kitQuality() : spec.quality) : null;
+    if (skit && !spec._sk && !(SKOFF[skit.id] && SKOFF[skit.id].ready)) return skOffline(skit).then(function () { return A.renderOffline(Object.assign({}, spec, { _sk: true })); });
     var cl = A.isClassic(), fixVel = !cl && spec.vel != null ? clamp01(spec.vel) : null;
     var genre = spec.genre || 'metal', bars = spec.bars || 2, style = typeof spec.backing === 'string' ? spec.backing : null;
     var pat = GG.songs.sanitize(spec.pattern || GG.songs.genre(genre).signature, null, null, true);
@@ -3436,6 +3446,9 @@
       var radio = amb === 'radio', r = makeRig(oc, radio ? radioChain(oc, gainNode(oc, 0.3 * busGain('sfx'), dest)) : dest, null,
         radio ? { mix: false, verb: false, voices: 8, bandVoices: 6, level: 0.9 } : { mix: 'static' });
       var port = makePort(r);
+      if (!cl && oc.createConstantSource) {   // v1.2: a silent keep-alive on the (stereo) kit chain: Chromium never disables it mid-render, so the
+        var ka = oc.createConstantSource(); ka.offset.value = 0; ka.connect(r.drums); ka.start(0);   // chain's filter states never reset at a moment it picks
+      }
       setKit(r, genre, spec.quality); setRoom(r, spec.room || r.kit.room || 'room');   // v0.8: spec.quality 0..3 (default: the career's tier)
       if (spec.voxInvert) { r.vox.gain.value *= -1; r.bvox.gain.value *= -1; if (genre === 'metal') metalRig(r).vox.gain.value *= -1; }   // tests: V/A split
       if (spec.lane && spec.pre) {   // v1.0 (tests): the pre-rendered hit of this kit, played as the live taps play it
@@ -3500,7 +3513,8 @@
       // tail: rms after the first 0.3 s (a single hit's sustain / ring; v0.8 kit quality tiers)
       return { peak: peak, rms: Math.sqrt(sum / n), tail: Math.sqrt(late / Math.max(1, nl)), nan: nan, seconds: seconds, counts: tally, key: tl ? tl.key : null, crowd: ct, buffer: buf,
         bed: bed, voice: tl ? tl.voice || null : null, midi: tl && tl.midi || null, solo: tl ? tl.solo || null : null, rigs: r ? { metal: !!r.metal, amps: Object.keys(r.amps || {}) } : null,
-        seat: seatOut, tlSeat: tl ? tl.seat || null : null, kitUsed: r ? r.kitUsed || 0 : 0 };
+        seat: seatOut, tlSeat: tl ? tl.seat || null : null, kitUsed: r ? r.kitUsed || 0 : 0,
+        kitOnset: skit && SKOFF[skit.id] ? Math.round(SKOFF[skit.id].onset * 1000) / 1000 : null };   // (ms: the decoded clips' latest onset)
     });
   };
   A.renderOffline.probe = true;   // v0.7.2 feature flag (spec.probe, spec.crowd, stereo)
@@ -3548,7 +3562,7 @@
       // v1.2 Lane I: the tier's realism row, the sampled kit (F17)
       realism: rig ? A.realism(rig.tier) : A.realism(),
       kit: { id: SK.id, ready: SK.ready, n: Object.keys(SK.have).reduce(function (a, k) { return a + SK.have[k]; }, 0), bytes: SK.bytes, ms: SK.ms, err: SK.err,
-        onset: Math.round(SK.onset * 1000) / 1000, used: Object.assign({}, KITUSE), credit: (function () { var K = GG.content && GG.content.kits || {}; return Object.keys(K).map(function (k) { return K[k].credit; }); })() },
+        onset: Math.round(SK.onset * 1000) / 1000, used: Object.assign({}, KITUSE), last: KITLAST ? Object.assign({}, KITLAST) : null, credit: (function () { var K = GG.content && GG.content.kits || {}; return Object.keys(K).map(function (k) { return K[k].credit; }); })() },
       crowdRaw: CROWD_PARTS.concat(CROWD_EXTRA).filter(function (k) { return CROWD_RAW[k]; }).length,
       // v1.1 Seats: your notes (per voice, the last one), the song's muted / played kinds, the seat preview
       seat: { notes: Object.assign({}, SEATS.notes), released: SEATS.released, choked: SEATS.choked, cancelled: SEATS.cancelled,
