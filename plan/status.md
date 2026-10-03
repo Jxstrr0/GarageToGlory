@@ -241,11 +241,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (`C.FEEL_RIVAL`); (3) band amps follow the kit tier: milk crate = 1×8 practice amp IR, pawn shop = 1×12, pro / arena = the
   genre cab (`C.BAND_AMP_BY_TIER`, `C.REALISM[tier].cab`); (4) "Classic sound" stays hidden, debug-only (`settings.audioClassic`,
   `GG.audio.classic(bool)`; no Settings UI).
+- N6–N9 Sampled kit (Part F17): the owner's free TMKD "Vortex" pack; its terms allow sharing with **credit to The Metal Kick
+  Drum / Rafa Prieto** and forbid selling, so it ships in the repo and every build with a credit line on the title screen.
+  Part of Soundcheck (Lane I); **metal at pro + arena tiers**, kick/snare/3 toms; **DIRECT** mics. The owner attaches
+  `Drums.zip` at stage 0 (raw WAVs stay in git-ignored `local/`). Size budget → **6.0 MB**.
+- **Standing rule:** Garage to Glory is free. Before it is ever sold or monetized (price, ads, in-app purchases), replace the
+  TMKD kit or get TMKD's written permission.
 
 ## Addendum 4 — pending
 - [x] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3) —
       2026-10-03 (`plan/v12_stage0_report.md`; 232-case fixture `tests/fixtures/audio_v11_hashes.json`, numbers
       `plan/v12_audio_numbers.txt` "1.1")
+- [x] F17 kit source: `local/` git-ignored (raw WAVs, size), `tools/check_kit_zip.py` passed on the owner's Drums.zip (62 entries, 60 wav ok, 0 problems; the re-sent zip is byte-identical), unzipped to `local/kits/tmkd_vortex/src/` (2026-10-03). Owner 2026-10-03: "scrap the kit guard local kit. one build with the drum samples only".
 - [ ] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge, tuning by numbers, owner clip popup, PR to main
 - [ ] v1.3 Tuning (D5) covers all four seats
 
