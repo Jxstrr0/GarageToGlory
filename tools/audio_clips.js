@@ -13,6 +13,7 @@
 //                       t }) when it exists, sent as spec.vel (+ spec.hit = the index, for round robins); 1.1 has neither.
 //                       Each hit renders alone through the kit chain + room and the hits are summed at their times.
 // The 1.2 integrator re-runs this with --tag v12 so both sets share song, sections, length and level path.
+//   --metal-kit (1.2): + <tag>_metal_kit.wav = the metal clip on the arena kit (tier 3; F17: the TMKD kit plays at tiers 2-3).
 const fs = require('fs'), path = require('path');
 const lab = require('./_audio_lab');
 
@@ -23,15 +24,19 @@ async function clips(opts) {
   const L = await lab.openLab({ classic: !!opts.classic, extra: lab.specExtra(), nativeSum: true });   // (levels: last-bit summing order is irrelevant)
   const made = { version: VERSION, classic: !!opts.classic, extra: process.env.SPEC_EXTRA || null, clips: {} };
   try {
-    for (const c of lab.clipCases()) {
+    const cases = lab.clipCases();
+    if (opts.metalKit) {   // v1.2 (F17): the sampled-kit metal clip on the arena kit (tier 3); tier 2 (the metal clip above) plays the kit too
+      const m = cases.find(c => c.key === 'metal'); cases.push({ key: 'metal_kit', spec: Object.assign({}, m.spec, { quality: 3 }) });
+    }
+    for (const c of cases) {
       const r = await L.page.evaluate(async a => {
         const x = await window.__lab.render(a.spec), st = window.__lab.stats(x.buffer), pcm = window.__lab.pcm16(x.buffer, a.secs, 0.3);
-        return { pcm, st, title: x.title, voice: x.voice, key: x.key ? x.key.name : null, counts: x.counts };
+        return { pcm, st, title: x.title, voice: x.voice, key: x.key ? x.key.name : null, counts: x.counts, kitUsed: x.kitUsed || 0 };
       }, { spec: c.spec, secs: lab.CLIP_SECS });
       const file = path.join(opts.out, `${opts.tag}_${c.key}.wav`);
       fs.writeFileSync(file, lab.wavBytes(Buffer.from(r.pcm.b64, 'base64'), r.pcm.sr));
-      made.clips[c.key] = { file: path.basename(file), band: lab.CLIP_BANDS[c.key], title: r.title, voice: r.voice, key: r.key, secs: +(r.pcm.frames / r.pcm.sr).toFixed(2),
-        rms: r.st.rms, peak: r.st.peak, events: r.counts, spec: c.spec };
+      made.clips[c.key] = { file: path.basename(file), band: lab.CLIP_BANDS[c.key.split('_')[0]], title: r.title, voice: r.voice, key: r.key, secs: +(r.pcm.frames / r.pcm.sr).toFixed(2),
+        rms: r.st.rms, peak: r.st.peak, events: r.counts, spec: c.spec, kitUsed: r.kitUsed };
       console.log(`${file}: ${r.title} (${r.voice}, ${r.key}) rms ${r.st.rms} peak ${r.st.peak}`);
     }
     const D = lab.TAP_DEMO;
@@ -63,6 +68,6 @@ if (require.main === module) {
   const tag = arg('--tag') || 'v' + VERSION.split('.').slice(0, 2).join('');
   const out = path.resolve(arg('--out') || path.join(lab.ROOT, 'tests', '.cache', 'clips'));
   fs.mkdirSync(out, { recursive: true });
-  clips({ tag, out, classic: process.argv.includes('--classic') }).catch(e => { console.error(e.stack || e); process.exitCode = 1; });
+  clips({ tag, out, classic: process.argv.includes('--classic'), metalKit: process.argv.includes('--metal-kit') }).catch(e => { console.error(e.stack || e); process.exitCode = 1; });
 }
 module.exports = { clips };
