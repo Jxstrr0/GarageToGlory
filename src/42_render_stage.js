@@ -1476,6 +1476,7 @@
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
+      if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
       camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();

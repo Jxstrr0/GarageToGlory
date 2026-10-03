@@ -1140,7 +1140,7 @@
           outcome: 'Weatherstripping and caulk from the Co-op. The dust stays out. So does the air. Rehearsal is warm and very focused.' }
       ] },
     { id: 'grr_rep_doris_setlist', type: 'weird', speaker: 'duke', title: 'Doris Ate the Setlist', once: false, cooldown: 12, gate: g({ era: GLS }),
-      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and somebody's " +
+      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet. And somebody's " +
         "guitar strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
       choices: [
         { label: 'Play the new songs for Doris', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 3, skill: { all: 1 } },
@@ -2534,7 +2534,7 @@
       "In a small hall outside Novosibirsk an old accordion player waits by the stage. He says, through a translator, that he played a " +
       "session with Earl in 1979. In Moscow. Earl has never been to Moscow. Earl is looking at him very carefully.", [
         { label: 'Play a song together', hint: 'Gamble: two old session men',
-          outcome: 'Earl straps on his guitar. The accordion starts a waltz.',
+          outcome: 'Earl counts the band in. The accordion starts a waltz.',
           roll: { chance: 0.55,
             success: { effects: { buzz: 12, mood: { earl: 14 }, tour: { regionFans: 250 } }, outcome: 'They play like they have always played together. Afterwards Earl says quietly, "maybe it was Moose Jaw". They hug.' },
             fail: { effects: { mood: { earl: -6 } }, outcome: 'The accordion is in a different key and a different decade. They finish anyway. The crowd applauds the effort. Loudly.' } } },

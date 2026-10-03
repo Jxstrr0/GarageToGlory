@@ -1935,7 +1935,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         "'I'm not heating the whole street so your screaming guy can be quiet.'",
       choices: [
         { label: 'Record in parkas', effects: { burnout: 6, production: 3 },
-          outcome: 'Everyone in toques and snow pants. Dana solos in mittens. Kenji looks exactly the same as always, which is unnerving.' },
+          outcome: 'Everyone in toques and snow pants. Dana plays in mittens. Kenji looks exactly the same as always, which is unnerving.' },
         { label: 'Time the takes', effects: { drumSkill: 1, production: 2 },
           outcome: 'You learn the furnace rhythm by heart and drop every take into the gaps. The whole album is exactly nineteen minutes a song.' },
         { label: 'Pay for a space heater', effects: { fund: -60, production: 1, mood: { all: 3 } },
@@ -1988,7 +1988,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Shoo them out', effects: { burnout: 5, production: 3 },
           outcome: 'Two hours with a broom. The pigeons leave and come back in a different order. Marcel says they have changed key.' },
         { label: 'Cover the gear', effects: { fund: -40, production: 1, mood: { dana: 5 } },
-          outcome: "Tarps over everything. Dana's pedalboard survives. The hi-hat does not. $40 and a lot of wet wipes." }
+          outcome: "Tarps over everything. Dana's gear survives. The hi-hat does not. $40 and a lot of wet wipes." }
       ] },
     { id: 'studio_silo_harvest', type: 'scene', speaker: 'jaxon', title: 'Harvest Traffic', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: "A farmer still uses the other half of the elevator. Right in the middle of the ballad, a grain truck backs up to the pit, " +
@@ -2020,7 +2020,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             fail: { effects: { fund: -150, burnout: 6 }, outcome: "Gerald takes it personally. He leaves with the cooler, a mic stand and Jaxon's lunch. $150 in gear." } } }
       ] },
     { id: 'studio_cabin_generator', type: 'money', speaker: 'dana', title: 'The Generator', once: false, cooldown: 10, gate: { producer: ['solveig_birch'], band: HD },
-      text: "The cabin's generator coughs and dies halfway through Dana's solo. The nearest gas is forty minutes away. Solveig lights " +
+      text: "The cabin's generator coughs and dies halfway through the solo. The nearest gas is forty minutes away. Solveig lights " +
         "a lantern and says the woods are telling you to play acoustic.",
       choices: [
         { label: 'Play it acoustic', effects: { production: 3, mood: { dana: -4 }, chemistry: 4 },
@@ -4075,8 +4075,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     { id: 'weird_spring_melt', type: 'weird', speaker: 'dana', title: 'Spring Melt', once: false, cooldown: 12,
       gate: g({ era: GLS, weekOfYear: [19, 22] }),
-      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. Dana's pedalboard is floating. " +
-        'She is standing on an amp, holding her guitar over her head like a newborn.',
+      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. {soloist}'s pedalboard is floating. " +
+        '{soloist} is standing on an amp, holding the guitar overhead like a newborn.',
       choices: [
         { label: 'Sandbag the door', effects: { burnout: 8, chemistry: 4 },
           outcome: "Dad brings sandbags and a lot of opinions. You finish at 2 a.m. The garage is saved. Jaxon's lunch box is not." },
@@ -18826,7 +18826,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Weatherstripping and caulk from the Co-op. The dust stays out. So does the air. Rehearsal is warm and very focused.' }
       ] },
     { id: 'grr_rep_doris_setlist', type: 'weird', speaker: 'duke', title: 'Doris Ate the Setlist', once: false, cooldown: 12, gate: g({ era: GLS }),
-      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and somebody's " +
+      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet. And somebody's " +
         "guitar strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
       choices: [
         { label: 'Play the new songs for Doris', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 3, skill: { all: 1 } },
@@ -20207,7 +20207,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       "In a small hall outside Novosibirsk an old accordion player waits by the stage. He says, through a translator, that he played a " +
       "session with Earl in 1979. In Moscow. Earl has never been to Moscow. Earl is looking at him very carefully.", [
         { label: 'Play a song together', hint: 'Gamble: two old session men',
-          outcome: 'Earl straps on his guitar. The accordion starts a waltz.',
+          outcome: 'Earl counts the band in. The accordion starts a waltz.',
           roll: { chance: 0.55,
             success: { effects: { buzz: 12, mood: { earl: 14 }, tour: { regionFans: 250 } }, outcome: 'They play like they have always played together. Afterwards Earl says quietly, "maybe it was Moose Jaw". They hug.' },
             fail: { effects: { mood: { earl: -6 } }, outcome: 'The accordion is in a different key and a different decade. They finish anyway. The crowd applauds the effort. Loudly.' } } },
@@ -22392,11 +22392,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     rhythm: ['grr_lantern_rehearsal', 'grr_local_truck_stop'],
     lead: [
       'scandal_cover', 'signed_dana_signature', 'signed_monolith_radio', 'studio_dana_take_41',
-      'fh_benny_capo', 'fh_local_two_string', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
+      'fh_benny_capo', 'wt_fh_jp_bow', 'fh_local_two_string', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
       'scandal_fh_third_chord', 'studio_fh_third_chord', 'fh_rox_minutes', 'road_fh_three_chords', 'holiday_st_paddys_frost_heave',
       'gk_l_anthem', 'gk_s_signature_guitar', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
       'gk_early_voicemail', 'scandal_gk_riff_leak', 'studio_gk_riff_flag',
-      'grr_small_rodeo_anthem', 'signed_grr_monolith_radio', 'grr_rep_tuning'
+      'grr_small_rodeo_anthem', 'wt_grr_golden_banjo', 'signed_grr_monolith_radio', 'grr_rep_tuning'
     ]
   };
   var want = {};   // id (or prefix*) -> [seats to leave out]
@@ -39698,7 +39698,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     pizza: { x: -0.8, z: 1.5, yaw: 0.35 }, bulb: { x: 0.2, z: -0.2 }
   };
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
-  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.5, 1.35, Z0 + 0.75], stand: [-0.85, -1.95], face: -0.2 };
+  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [0.05, 1.95, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
@@ -44118,6 +44118,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
+      if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
       camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
       cam.setViewOffset(W, H, 0, camOffY, W, H);
       cam.updateProjectionMatrix();

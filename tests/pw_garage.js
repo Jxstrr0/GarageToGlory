@@ -286,6 +286,8 @@ async function seat(c) {
       c.ok(setup.drummer && d.seat.drummer === setup.drummer && atKit.length === 1 && atKit[0] === setup.drummer,
         band + ' ' + seat + ': ' + setup.drummer + ' sits at the kit (' + atKit.join(',') + ')');
       c.ok(d.seat.rig && d.seat.label === 'Your rig' && inView(label, 390, 844) && label.y >= 56 && label.y <= 844 * 0.65, band + ' ' + seat + ': the kit hotspot reads "Your rig", on screen ' + JSON.stringify(label));
+      const lab = await page.evaluate(() => ({ rig: GG.render.labelScreenPos('kit'), tro: GG.render.labelScreenPos('trophies') }));   // v1.1 review
+      c.ok(lab.rig && lab.tro && (Math.abs(lab.rig.y - lab.tro.y) >= 28 || Math.abs(lab.rig.x - lab.tro.x) >= 80), band + ' ' + seat + ': the "Your rig" and "Trophies" labels do not overlap ' + JSON.stringify(lab));
       c.ok(typeof d.seat.gear === 'string' && d.seat.gear.indexOf('seat|' + seat + '|') === 0 && /\|tortoise$/.test(d.seat.gear) && d.seat.sticker, band + ' ' + seat + ': your instrument + the logo sticker ' + d.seat.gear);
       c.ok(ratio <= 1.15, band + ' ' + seat + ': draw calls ' + d.drawCalls + ' <= drum garage ' + base[band] + ' x 1.15');
       if (band === 'hail_damage' || band === 'grid_road_ramblers') {   // a real tap on the rig: walk there, the hotspot fires, you noodle

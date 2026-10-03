@@ -773,8 +773,8 @@
 
     { id: 'weird_spring_melt', type: 'weird', speaker: 'dana', title: 'Spring Melt', once: false, cooldown: 12,
       gate: g({ era: GLS, weekOfYear: [19, 22] }),
-      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. Dana's pedalboard is floating. " +
-        'She is standing on an amp, holding her guitar over her head like a newborn.',
+      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. {soloist}'s pedalboard is floating. " +
+        '{soloist} is standing on an amp, holding the guitar overhead like a newborn.',
       choices: [
         { label: 'Sandbag the door', effects: { burnout: 8, chemistry: 4 },
           outcome: "Dad brings sandbags and a lot of opinions. You finish at 2 a.m. The garage is saved. Jaxon's lunch box is not." },

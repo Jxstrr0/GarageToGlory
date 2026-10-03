@@ -141,7 +141,7 @@
         "'I'm not heating the whole street so your screaming guy can be quiet.'",
       choices: [
         { label: 'Record in parkas', effects: { burnout: 6, production: 3 },
-          outcome: 'Everyone in toques and snow pants. Dana solos in mittens. Kenji looks exactly the same as always, which is unnerving.' },
+          outcome: 'Everyone in toques and snow pants. Dana plays in mittens. Kenji looks exactly the same as always, which is unnerving.' },
         { label: 'Time the takes', effects: { drumSkill: 1, production: 2 },
           outcome: 'You learn the furnace rhythm by heart and drop every take into the gaps. The whole album is exactly nineteen minutes a song.' },
         { label: 'Pay for a space heater', effects: { fund: -60, production: 1, mood: { all: 3 } },
@@ -196,7 +196,7 @@
         { label: 'Shoo them out', effects: { burnout: 5, production: 3 },
           outcome: 'Two hours with a broom. The pigeons leave and come back in a different order. Marcel says they have changed key.' },
         { label: 'Cover the gear', effects: { fund: -40, production: 1, mood: { dana: 5 } },
-          outcome: "Tarps over everything. Dana's pedalboard survives. The hi-hat does not. $40 and a lot of wet wipes." }
+          outcome: "Tarps over everything. Dana's gear survives. The hi-hat does not. $40 and a lot of wet wipes." }
       ] },
     { id: 'studio_silo_harvest', type: 'scene', speaker: 'jaxon', title: 'Harvest Traffic', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: "A farmer still uses the other half of the elevator. Right in the middle of the ballad, a grain truck backs up to the pit, " +
@@ -229,7 +229,7 @@
             fail: { effects: { fund: -150, burnout: 6 }, outcome: "Gerald takes it personally. He leaves with the cooler, a mic stand and Jaxon's lunch. $150 in gear." } } }
       ] },
     { id: 'studio_cabin_generator', type: 'money', speaker: 'dana', title: 'The Generator', once: false, cooldown: 10, gate: { producer: ['solveig_birch'], band: HD },
-      text: "The cabin's generator coughs and dies halfway through Dana's solo. The nearest gas is forty minutes away. Solveig lights " +
+      text: "The cabin's generator coughs and dies halfway through the solo. The nearest gas is forty minutes away. Solveig lights " +
         "a lantern and says the woods are telling you to play acoustic.",
       choices: [
         { label: 'Play it acoustic', effects: { production: 3, mood: { dana: -4 }, chemistry: 4 },

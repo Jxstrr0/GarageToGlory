@@ -64,7 +64,7 @@
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
   // v1.1: a string seat's rig corner by the amps (the 'kit' hotspot moves here, labelled "Your rig"), and where a displaced
   // noodler goes instead.
-  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.5, 1.35, Z0 + 0.75], stand: [-0.85, -1.95], face: -0.2 };
+  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [0.05, 1.95, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
