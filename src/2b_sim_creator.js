@@ -14,7 +14,10 @@
 //           stageLookFor(who, contentMember?) (player | member -> the LOOK for stage scenes) ; isV8(look)
 //   Kit     sanitizeKit(kit, fallbackColor) ; kitLook(player) (normalised; legacy players get the v0.7 kit) ; legacyKit(color) ;
 //           newKit(color) ; isArena(venue|gig) (pyro only there) ; headText(text)
-//   Career  init(state, opts) ('career:new' consumes prepare()) ; prepare({ look, stageLook, kit, carry }) ; migrate(state)
+//   Gear    (v1.1 Seats, string seats) sanitizeGearLook(gearLook, seat?) -> C.GEAR_LOOK shape (a shape not on the seat -> null =
+//           the seat's default) ; gearShapes(seat) ; gearDefault(seat, genre) (country rhythm: 'acoustic') ; gearNames(seat) ->
+//           { shapes, guards, stickers } (content creator.gear, else built-in names) ; init / apply take opts.gearLook
+//   Career  init(state, opts) ('career:new' consumes prepare()) ; prepare({ look, stageLook, kit, gearLook?, carry }) ; migrate(state)
 //           (chained onto GG.save.migrate: fills player.stageLook / player.kit / unlocks only when missing; never state.v) ;
 //           apply(state, { look, stageLook, kit }) -> { look, stageLook, kit } (sanitised + lock-checked; 'creator:changed')
 //   Carry   carry.key(genre) ; carry.read(genre) -> [ids] ; carry.write(state) ; carry.count(genre)   (localStorage
@@ -331,6 +334,43 @@
     return !!(v.dome || v.arena || (v.capacity || 0) >= 5000 || (v.tier || 0) >= 4);
   };
 
+  /* ---- v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): your gear on a string seat ---------------------------------------- */
+  // player.gearLook = C.GEAR_LOOK { shape, color, guard, sticker } (drums keep player.kit). Every gear part is open from day
+  // one (no gates: it is the instrument you started the band with). Names: content creator.gear = { shapes: { <seat>: { <id>:
+  // name } }, guards: { <id>: name }, stickers: { none, logo } } when the content lane adds it, else the built-in parody names.
+  var GEAR_NAMES = {
+    shapes: {
+      bass: { plank: 'The Plank', offset: 'The Lazy Offset', arrow: 'The Thunder-Arrow', violin: 'The Violin (Not That One)' },
+      rhythm: { double_cut: 'The Twin Horns', single_cut: 'The Heavy Slab', offset: 'The Wonky Waist', acoustic: 'The Campfire Dreadnought' },
+      lead: { vee: 'The V of Doom', pointy: 'The Pointy Boi', double_cut: 'The Twin Horns', single_cut: 'The Heavy Slab' }
+    },
+    guards: { white: 'White guard', black: 'Black guard', tortoise: 'Tortoiseshell', none: 'No guard' },
+    stickers: { none: 'Bare headstock', logo: 'Band logo sticker' }
+  };
+  C.gearShapes = function (seat) { return (CT.GEAR_SHAPES && CT.GEAR_SHAPES[seat] || []).slice(); };
+  C.gearDefault = function (seat, genre) {   // the shape a null shape draws (country rhythm: the acoustic)
+    var l = C.gearShapes(seat);
+    return seat === 'rhythm' && genre === 'country' && l.indexOf('acoustic') >= 0 ? 'acoustic' : l[0] || null;
+  };
+  C.gearNames = function (seat) {
+    var g = content().gear || {}, out = { shapes: {}, guards: {}, stickers: {} };
+    C.gearShapes(seat).forEach(function (id) { out.shapes[id] = (g.shapes && g.shapes[seat] && g.shapes[seat][id]) || (GEAR_NAMES.shapes[seat] || {})[id] || id; });
+    (CT.GEAR_GUARDS || []).forEach(function (id) { out.guards[id] = (g.guards && g.guards[id]) || GEAR_NAMES.guards[id] || id; });
+    ['none', 'logo'].forEach(function (id) { out.stickers[id] = (g.stickers && g.stickers[id]) || GEAR_NAMES.stickers[id]; });
+    return out;
+  };
+  C.sanitizeGearLook = function (gl, seat) {
+    gl = gl && typeof gl === 'object' ? gl : {};
+    var D = CT.GEAR_LOOK || { shape: null, color: null, guard: 'white', sticker: 'none' }, shapes = seat ? C.gearShapes(seat) : [];
+    var any = !seat && Object.keys(CT.GEAR_SHAPES || {}).some(function (k) { return CT.GEAR_SHAPES[k].indexOf(gl.shape) >= 0; });
+    return {
+      shape: typeof gl.shape === 'string' && (shapes.indexOf(gl.shape) >= 0 || any) ? gl.shape : null,
+      color: col(gl.color, null),
+      guard: (CT.GEAR_GUARDS || []).indexOf(gl.guard) >= 0 ? gl.guard : D.guard,
+      sticker: gl.sticker === 'logo' ? 'logo' : 'none'
+    };
+  };
+
   /* ---- Career: new, migrate, apply ------------------------------------------------------------------------------------ */
   C.prepare = function (o) { pending = o ? clone(o) : null; return pending; };
   C.pending = function () { return pending; };
@@ -346,6 +386,7 @@
     if (opts.stageLook) C.syncPerson(pl.look, pl.stageLook);
     pl.kit = C.lockKit(state, C.sanitizeKit(opts.kit || C.newKit(pl.kitColor, state.bandId), pl.kitColor));
     pl.kitColor = pl.kit.color;
+    if (opts.gearLook) pl.gearLook = C.sanitizeGearLook(opts.gearLook, state.seat);   // v1.1: the creator's "your gear"
     return state;
   };
   // Old saves: the stage look = the everyday look, the v0.7 kit, and whatever the career has already earned (quietly).
@@ -375,8 +416,10 @@
     C.syncPerson(look, stage);
     var kit = C.lockKit(state, C.sanitizeKit(o.kit || pl.kit || C.kitLook(pl), pl.kitColor));
     pl.look = look; pl.stageLook = stage; pl.kit = kit; pl.kitColor = kit.color;
+    var res = { look: look, stageLook: stage, kit: kit };
+    if (o.gearLook) res.gearLook = pl.gearLook = C.sanitizeGearLook(o.gearLook, state.seat);   // v1.1: a string seat's gear
     GG.emit('creator:changed', { state: state });
-    return { look: look, stageLook: stage, kit: kit };
+    return res;
   };
 
   /* ---- Carry-over (per genre, this device) ------------------------------------------------------------------------------ */
@@ -421,6 +464,7 @@
   GG.registerDebug('creator', function () {
     var st = GG.state, pl = st && st.player;
     return { unlocked: st ? list(st).length : 0, parts: content().parts.length, pending: !!pending,
-      v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null };
+      v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null,
+      seat: (st && st.seat) || 'drums', gearLook: pl && pl.gearLook ? clone(pl.gearLook) : null };   // v1.1
   });
 })(window.GG);

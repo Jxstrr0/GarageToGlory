@@ -31803,6 +31803,40 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return !!(v.dome || v.arena || (v.capacity || 0) >= 5000 || (v.tier || 0) >= 4);
   };
 
+  /* ---- v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): your gear on a string seat ---------------------------------------- */
+  var GEAR_NAMES = {
+    shapes: {
+      bass: { plank: 'The Plank', offset: 'The Lazy Offset', arrow: 'The Thunder-Arrow', violin: 'The Violin (Not That One)' },
+      rhythm: { double_cut: 'The Twin Horns', single_cut: 'The Heavy Slab', offset: 'The Wonky Waist', acoustic: 'The Campfire Dreadnought' },
+      lead: { vee: 'The V of Doom', pointy: 'The Pointy Boi', double_cut: 'The Twin Horns', single_cut: 'The Heavy Slab' }
+    },
+    guards: { white: 'White guard', black: 'Black guard', tortoise: 'Tortoiseshell', none: 'No guard' },
+    stickers: { none: 'Bare headstock', logo: 'Band logo sticker' }
+  };
+  C.gearShapes = function (seat) { return (CT.GEAR_SHAPES && CT.GEAR_SHAPES[seat] || []).slice(); };
+  C.gearDefault = function (seat, genre) {   // the shape a null shape draws (country rhythm: the acoustic)
+    var l = C.gearShapes(seat);
+    return seat === 'rhythm' && genre === 'country' && l.indexOf('acoustic') >= 0 ? 'acoustic' : l[0] || null;
+  };
+  C.gearNames = function (seat) {
+    var g = content().gear || {}, out = { shapes: {}, guards: {}, stickers: {} };
+    C.gearShapes(seat).forEach(function (id) { out.shapes[id] = (g.shapes && g.shapes[seat] && g.shapes[seat][id]) || (GEAR_NAMES.shapes[seat] || {})[id] || id; });
+    (CT.GEAR_GUARDS || []).forEach(function (id) { out.guards[id] = (g.guards && g.guards[id]) || GEAR_NAMES.guards[id] || id; });
+    ['none', 'logo'].forEach(function (id) { out.stickers[id] = (g.stickers && g.stickers[id]) || GEAR_NAMES.stickers[id]; });
+    return out;
+  };
+  C.sanitizeGearLook = function (gl, seat) {
+    gl = gl && typeof gl === 'object' ? gl : {};
+    var D = CT.GEAR_LOOK || { shape: null, color: null, guard: 'white', sticker: 'none' }, shapes = seat ? C.gearShapes(seat) : [];
+    var any = !seat && Object.keys(CT.GEAR_SHAPES || {}).some(function (k) { return CT.GEAR_SHAPES[k].indexOf(gl.shape) >= 0; });
+    return {
+      shape: typeof gl.shape === 'string' && (shapes.indexOf(gl.shape) >= 0 || any) ? gl.shape : null,
+      color: col(gl.color, null),
+      guard: (CT.GEAR_GUARDS || []).indexOf(gl.guard) >= 0 ? gl.guard : D.guard,
+      sticker: gl.sticker === 'logo' ? 'logo' : 'none'
+    };
+  };
+
   /* ---- Career: new, migrate, apply ------------------------------------------------------------------------------------ */
   C.prepare = function (o) { pending = o ? clone(o) : null; return pending; };
   C.pending = function () { return pending; };
@@ -31818,6 +31852,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (opts.stageLook) C.syncPerson(pl.look, pl.stageLook);
     pl.kit = C.lockKit(state, C.sanitizeKit(opts.kit || C.newKit(pl.kitColor, state.bandId), pl.kitColor));
     pl.kitColor = pl.kit.color;
+    if (opts.gearLook) pl.gearLook = C.sanitizeGearLook(opts.gearLook, state.seat);   // v1.1: the creator's "your gear"
     return state;
   };
   C.migrate = function (s) {
@@ -31846,8 +31881,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     C.syncPerson(look, stage);
     var kit = C.lockKit(state, C.sanitizeKit(o.kit || pl.kit || C.kitLook(pl), pl.kitColor));
     pl.look = look; pl.stageLook = stage; pl.kit = kit; pl.kitColor = kit.color;
+    var res = { look: look, stageLook: stage, kit: kit };
+    if (o.gearLook) res.gearLook = pl.gearLook = C.sanitizeGearLook(o.gearLook, state.seat);   // v1.1: a string seat's gear
     GG.emit('creator:changed', { state: state });
-    return { look: look, stageLook: stage, kit: kit };
+    return res;
   };
 
   /* ---- Carry-over (per genre, this device) ------------------------------------------------------------------------------ */
@@ -31892,7 +31929,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   GG.registerDebug('creator', function () {
     var st = GG.state, pl = st && st.player;
     return { unlocked: st ? list(st).length : 0, parts: content().parts.length, pending: !!pending,
-      v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null };
+      v8: !!(pl && C.isV8(pl.look)), stageV8: !!(pl && C.isV8(pl.stageLook)), kit: pl ? C.kitLook(pl) : null,
+      seat: (st && st.seat) || 'drums', gearLook: pl && pl.gearLook ? clone(pl.gearLook) : null };   // v1.1
   });
 })(window.GG);
 
@@ -37199,6 +37237,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function gearParts(b, kind, sx) {
     kind = GEAR_ALIAS[kind] || kind;
     if (kind === 'v') { guitarParts(b); return; }
+    if (typeof kind === 'string' && kind.indexOf('seat|') === 0) { seatGearParts(b, R.seatGearSpec(kind)); return; }   // v1.1: your own
     var black = 0x151515, i;
     b.bone = B_GEAR;
     if (kind === 'fiddle') {                                                   // under the chin, scroll out front-left
@@ -37264,6 +37303,133 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     b.pop();
   }
   function sh0(c, f) { return shade(c, f); }
+
+  var SEAT_SHAPES = { bass: ['plank', 'offset', 'arrow', 'violin'], rhythm: ['double_cut', 'single_cut', 'offset', 'acoustic'], lead: ['vee', 'pointy', 'double_cut', 'single_cut'] };
+  var GUARD_COL = { white: 0xe9e5dc, black: 0x151515, tortoise: 0x5a2410 };
+  var BODY = {
+    double_cut: [[0.06, 0.03], [0.1, 0.1], [0.07, 0.14], [0.0, 0.13], [-0.07, 0.1], [-0.17, 0.15], [-0.27, 0.13], [-0.33, 0.05], [-0.33, -0.06],
+      [-0.27, -0.14], [-0.16, -0.15], [-0.07, -0.11], [0.0, -0.12], [0.05, -0.1], [0.07, -0.07], [0.06, -0.03]],
+    single_cut: [[0.06, 0.03], [0.03, 0.09], [-0.05, 0.12], [-0.15, 0.15], [-0.26, 0.14], [-0.33, 0.07], [-0.34, -0.03], [-0.29, -0.12],
+      [-0.18, -0.16], [-0.07, -0.14], [0.0, -0.12], [0.06, -0.1], [0.07, -0.06], [0.06, -0.03]],
+    offset: [[0.06, 0.03], [0.09, 0.1], [0.03, 0.15], [-0.08, 0.15], [-0.2, 0.14], [-0.3, 0.1], [-0.36, 0.02], [-0.33, -0.08], [-0.24, -0.15],
+      [-0.12, -0.14], [-0.04, -0.1], [0.03, -0.09], [0.06, -0.05], [0.06, -0.03]],
+    pointy: [[0.06, 0.035], [0.17, 0.14], [0.02, 0.1], [-0.14, 0.12], [-0.4, 0.15], [-0.3, 0.0], [-0.42, -0.13], [-0.16, -0.12], [0.0, -0.11], [0.06, -0.035]],
+    plank: [[0.06, 0.03], [0.12, 0.11], [0.08, 0.15], [0.0, 0.13], [-0.08, 0.11], [-0.19, 0.16], [-0.3, 0.14], [-0.37, 0.05], [-0.37, -0.06],
+      [-0.3, -0.15], [-0.18, -0.16], [-0.08, -0.12], [0.0, -0.13], [0.06, -0.11], [0.08, -0.07], [0.06, -0.03]],
+    bassoffset: [[0.06, 0.03], [0.16, 0.11], [0.1, 0.15], [-0.02, 0.13], [-0.1, 0.11], [-0.22, 0.16], [-0.33, 0.13], [-0.4, 0.04], [-0.38, -0.07],
+      [-0.29, -0.15], [-0.16, -0.15], [-0.07, -0.11], [0.02, -0.11], [0.07, -0.07], [0.06, -0.03]],
+    arrow: [[0.07, 0.035], [0.0, 0.1], [-0.25, 0.18], [-0.18, 0.06], [-0.46, 0.0], [-0.18, -0.06], [-0.25, -0.17], [0.0, -0.1], [0.07, -0.035]],
+    violin: [[0.04, 0.04], [0.0, 0.1], [-0.08, 0.11], [-0.14, 0.07], [-0.22, 0.12], [-0.32, 0.1], [-0.36, 0.0], [-0.32, -0.1], [-0.22, -0.12],
+      [-0.14, -0.07], [-0.08, -0.11], [0.0, -0.1], [0.04, -0.04]]
+  };
+  var VEE_WING = [[0.07, 0.03], [-0.36, 0.21], [-0.42, 0.15], [-0.04, -0.04]];   // the top wing; the bottom one mirrors it
+  var GUARD = [[0.04, -0.02], [0.0, 0.05], [-0.07, 0.06], [-0.14, 0.02], [-0.2, -0.07], [-0.15, -0.12], [-0.06, -0.1], [0.02, -0.07]];
+  var PICKUPS = { double_cut: 'single', single_cut: 'hum', offset: 'soap', vee: 'hum', pointy: 'hum', plank: 'split', bassoffset: 'bar', arrow: 'hum', violin: 'small' };
+  function seatShapes(seat) { var C = GG.contracts && GG.contracts.GEAR_SHAPES; return (C && C[seat]) || SEAT_SHAPES[seat] || null; }
+  function hex6(c) { return typeof c === 'number' ? '#' + ('00000' + c.toString(16)).slice(-6) : c; }
+  R.seatGear = function (seat, gl, kitColor, genre) {
+    var shapes = seatShapes(seat);
+    if (!shapes) return null;
+    gl = gl || {};
+    var shape = shapes.indexOf(gl.shape) >= 0 ? gl.shape : (seat === 'rhythm' && genre === 'country' && shapes.indexOf('acoustic') >= 0 ? 'acoustic' : shapes[0]);
+    var col = hexOf(gl.color, null);
+    if (col == null) col = shape === 'acoustic' ? 'natural' : hexOf(kitColor, '#b3262b');
+    var guard = GUARD_COL[gl.guard] != null || gl.guard === 'none' ? gl.guard : 'white';
+    return 'seat|' + seat + '|' + shape + '|' + hex6(col) + '|' + guard;
+  };
+  R.seatGearSpec = function (s) {
+    var p = String(s || '').split('|');
+    if (p[0] !== 'seat' || !SEAT_SHAPES[p[1]]) return null;
+    var shape = SEAT_SHAPES[p[1]].indexOf(p[2]) >= 0 || (seatShapes(p[1]) || []).indexOf(p[2]) >= 0 ? p[2] : SEAT_SHAPES[p[1]][0];
+    return { seat: p[1], shape: shape, color: p[3] === 'natural' ? null : hexOf(p[3], '#b3262b'), guard: GUARD_COL[p[4]] != null || p[4] === 'none' ? p[4] : 'white', bass: p[1] === 'bass' };
+  };
+  function gearFrame(spec) {   // the instrument's frame (char space): where it hangs + its tilt, the neck, the headstock
+    var bass = spec.bass, violin = spec.shape === 'violin', acoustic = spec.shape === 'acoustic';
+    var nl = bass && !violin ? 0.82 : violin ? 0.58 : acoustic ? 0.5 : 0.6, tilt = acoustic ? 0.35 : bass ? 0.36 : 0.42;
+    return { x: acoustic ? -0.06 : -0.08, y: acoustic ? 1.04 : 1.02, z: acoustic ? 0.22 : 0.21, tilt: tilt, nl: nl, hx: 0.07 + nl, T: violin ? 0.075 : acoustic ? 0.1 : bass ? 0.05 : 0.045 };
+  }
+  function prism(b, pts, d, col, edge, z) {
+    var n = pts.length, cx = 0, cy = 0, i, a, c, h = d / 2, z0 = (z || 0) - h, z1 = (z || 0) + h;
+    for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
+    cx /= n; cy /= n;
+    for (i = 0; i < n; i++) {
+      a = pts[i]; c = pts[(i + 1) % n];
+      b.tri([cx, cy, z1], [a[0], a[1], z1], [c[0], c[1], z1], col);
+      b.tri([cx, cy, z0], [c[0], c[1], z0], [a[0], a[1], z0], col);
+      b.quad([a[0], a[1], z0], [c[0], c[1], z0], [c[0], c[1], z1], [a[0], a[1], z1], edge == null ? col : edge);
+    }
+  }
+  function scalePts(pts, k, flip) { return pts.map(function (p) { return [p[0] * k, (flip ? -p[1] : p[1]) * k]; }); }
+  function seatGearParts(b, spec) {
+    if (!spec) return;
+    var F = gearFrame(spec), shape = spec.shape, i, chrome = 0xc9ccd2, black = 0x151515;
+    b.bone = B_GEAR;
+    b.box(0.05, 0.64, 0.02, 0.02, 1.2, 0.15, 0x1c1714, 0, 0, 0.62);                                     // strap across the chest
+    b.push(F.x, F.y, F.z, 0, 0, F.tilt);
+    if (shape === 'acoustic') {                                                // a dreadnought (natural wood, or your colour on the top)
+      var AW = spec.color == null ? 0xd8a860 : hexOf(spec.color, 0xd8a860), AE = spec.color == null ? 0x6a3a1a : sh0(AW, 0.55);
+      b.box(0.24, 0.4, 0.1, -0.16, 0, 0, AE); b.box(0.22, 0.38, 0.012, -0.16, 0, 0.051, AW);
+      b.box(0.2, 0.32, 0.1, 0.03, 0, 0, AE); b.box(0.18, 0.3, 0.012, 0.03, 0, 0.051, AW);
+      b.cyl(0.055, 0.055, 0.012, 12, 0.0, 0, 0.056, 0x1a120c, Math.PI / 2); b.cyl(0.066, 0.066, 0.008, 12, 0.0, 0, 0.054, 0x3a2a1a, Math.PI / 2);
+      b.box(0.03, 0.16, 0.02, -0.2, 0, 0.06, 0x2a1a0e);
+      if (spec.guard !== 'none') b.box(0.1, 0.1, 0.006, -0.04, -0.1, 0.058, GUARD_COL[spec.guard]);
+      b.box(F.nl, 0.05, 0.03, 0.07 + F.nl / 2, 0, 0.03, 0x3a2414); b.box(0.13, 0.07, 0.025, F.hx + 0.06, 0.0, 0.03, 0x2a1a10);
+      for (i = 0; i < 3; i++) { b.box(0.02, 0.02, 0.02, F.hx + 0.02 + i * 0.035, 0.045, 0.03, 0xc8c8c0); b.box(0.02, 0.02, 0.02, F.hx + 0.02 + i * 0.035, -0.045, 0.03, 0xc8c8c0); }
+      b.box(F.hx + 0.2, 0.02, 0.003, (F.hx - 0.2) / 2, 0, 0.061, 0x8e9096);                           // the strings, bridge to nut
+      b.pop();
+      return;
+    }
+    var body = hexOf(spec.color, 0xb3262b), edge = sh0(body, 0.62), T = F.T, fz = T / 2, k = spec.bass ? 1.1 : 1;
+    if (shape === 'vee') {                                                     // two wings, a centre block
+      prism(b, VEE_WING, T, body, edge); prism(b, scalePts(VEE_WING, 1, true).reverse(), T, body, edge);
+      b.box(0.16, 0.12, T, 0.0, 0, 0, body);
+    } else prism(b, scalePts(BODY[spec.bass && shape === 'offset' ? 'bassoffset' : shape] || BODY.double_cut, k), T, body, edge);
+    if (shape === 'violin') {                                                  // the hollow body: f-holes, a carved top line
+      b.box(0.012, 0.06, 0.004, -0.2, 0.05, fz + 0.002, 0x120c08); b.box(0.012, 0.06, 0.004, -0.2, -0.05, fz + 0.002, 0x120c08);
+      b.box(0.3, 0.008, 0.003, -0.17, 0, fz + 0.003, sh0(body, 1.25));
+    }
+    if (spec.guard !== 'none') {                                               // the pickguard (tortoise: a few darker flecks)
+      var gc = GUARD_COL[spec.guard] != null ? GUARD_COL[spec.guard] : GUARD_COL.white;
+      prism(b, scalePts(GUARD, k * (shape === 'violin' ? 0.7 : 1), false), 0.004, gc, gc, fz + 0.002);
+      if (spec.guard === 'tortoise') for (i = 0; i < 4; i++) b.box(0.03, 0.012, 0.002, -0.03 - i * 0.04, 0.03 - (i % 2) * 0.06, fz + 0.005, 0x2a0e04, 0, 0, 0.4 * (i - 1.5));
+    }
+    var pk = PICKUPS[spec.bass && shape === 'offset' ? 'bassoffset' : shape] || 'hum', pz = fz + 0.006;   // pickups
+    if (pk === 'single') for (i = 0; i < 3; i++) b.box(0.022, 0.075, 0.008, -0.03 - i * 0.065, 0, pz, 0xf2efe6);
+    else if (pk === 'soap') { b.box(0.04, 0.085, 0.008, -0.05, 0, pz, 0xf2efe6); b.box(0.04, 0.085, 0.008, -0.17, 0, pz, 0xf2efe6); }
+    else if (pk === 'split') { b.box(0.03, 0.05, 0.008, -0.1, 0.025, pz, black); b.box(0.03, 0.05, 0.008, -0.13, -0.025, pz, black); }
+    else if (pk === 'bar') { b.box(0.03, 0.09, 0.008, -0.08, 0, pz, black); b.box(0.03, 0.09, 0.008, -0.2, 0, pz, black); }
+    else if (pk === 'small') { b.box(0.03, 0.06, 0.008, -0.06, 0, pz, 0xc9ccd2); b.box(0.03, 0.06, 0.008, -0.12, 0, pz, 0xc9ccd2); }
+    else { b.box(0.04, 0.085, 0.01, -0.05, 0, pz, black); b.box(0.04, 0.085, 0.01, -0.16, 0, pz, black); b.box(0.042, 0.087, 0.004, -0.05, 0, pz - 0.004, chrome); b.box(0.042, 0.087, 0.004, -0.16, 0, pz - 0.004, chrome); }
+    b.box(0.04, spec.bass ? 0.1 : 0.08, 0.012, spec.bass ? -0.27 : -0.24, 0, fz + 0.006, chrome);              // bridge
+    for (i = 0; i < (spec.bass ? 2 : 3); i++) b.cyl(0.014, 0.014, 0.014, 8, -0.2 - i * 0.04, -0.1, fz + 0.007, i ? 0xd9c27a : black, Math.PI / 2);   // knobs
+    b.box(F.nl, spec.bass ? 0.045 : 0.05, 0.03, 0.07 + F.nl / 2, 0, 0.012, 0x2a1a10);
+    for (i = 0; i < 4; i++) b.box(0.012, 0.012, 0.004, 0.16 + i * F.nl * 0.2, 0, 0.029, 0xe8e2d0);
+    var sx0 = spec.bass ? -0.27 : -0.24, sL = F.hx - sx0;
+    b.box(sL, spec.bass ? 0.016 : 0.02, 0.003, sx0 + sL / 2, 0, Math.max(0.03, fz + 0.014), 0x8e9096);
+    var hc = shape === 'single_cut' || shape === 'violin' ? (shape === 'violin' ? 0x3a1a0a : black) : body;
+    b.box(0.14, 0.07, 0.028, F.hx + 0.065, 0.012, 0.012, hc, 0, 0, -0.12);
+    var nt = spec.bass ? 4 : 6, inline = !spec.bass && (shape === 'double_cut' || shape === 'offset' || shape === 'pointy' || shape === 'vee');
+    for (i = 0; i < nt; i++) {
+      if (inline) b.box(0.016, 0.022, 0.026, F.hx + 0.012 + i * 0.022, 0.052 - i * 0.003, 0.018, chrome);
+      else b.box(0.02, 0.025, 0.03, F.hx + 0.02 + (i % (nt / 2)) * (spec.bass ? 0.05 : 0.035), i < nt / 2 ? 0.05 : -0.026, 0.018, chrome);
+    }
+    b.pop();
+  }
+  R.headstockAt = function (spec) {
+    if (!spec) return null;
+    var F = gearFrame(spec), ac = spec.shape === 'acoustic', lx = F.hx + (ac ? 0.06 : 0.065), ly = ac ? 0 : 0.012, c = Math.cos(F.tilt), s = Math.sin(F.tilt);
+    return { x: F.x + lx * c - ly * s, y: F.y + lx * s + ly * c, z: F.z + (ac ? 0.03 : 0.012) + (ac ? 0.0125 : 0.014) + 0.002, rz: F.tilt + (ac ? 0 : -0.12), w: ac ? 0.12 : 0.13, h: 0.06 };
+  };
+  R.gearSticker = function (ctx, ch, gear, tex) {
+    var spec = R.seatGearSpec(gear), H = R.headstockAt(spec);
+    if (!H || !ch || !tex) return null;
+    var THREE = ctx.THREE, s = Math.min(H.w * 0.62, H.h * 1.05);
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.2 }));
+    m.position.set(H.x, H.y - 0.94, H.z + 0.003); m.rotation.z = H.rz;    // gear-bone space (the bone binds at y 0.94)
+    m.userData.sticker = true;
+    ch.bones[B_GEAR].add(m);
+    return m;
+  };
   var GENRE_GUITAR = { metal: 'v', punk: 'sg', rock: 'strat', country: 'tele' };
   R.gearOf = function (m, cm, genre) {
     var g = (m && m.gear) || (cm && cm.gear);
@@ -38235,6 +38401,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     pizza: { x: -0.8, z: 1.5, yaw: 0.35 }, bulb: { x: 0.2, z: -0.2 }
   };
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
+  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.68, 1.86, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
+  var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
   var HOTSPOTS = [
@@ -38683,8 +38851,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var kl = R.kit ? R.kit.norm(pl.kit, kc) : null, ksig = kc + (kl ? JSON.stringify(kl) : '') + (kl && kl.head === 'logo' && st.logo ? JSON.stringify(st.logo) : '');   // v0.8: the kit look (KIT_LOOK); v0.8.1: + the logo
       if (ksig !== kit.sig) buildKit(kc, kl, ksig);
       if (kit.mesh) kit.mesh.position.y = space.riserH();          // v0.8 polish: the studio / arena kit stands on a riser
-      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, { sticks: kl ? kl.sticks : true });
+      var seat = stringSeat(st), genre0 = st.genre || (band && band.genre) || 'metal';   // v1.1
+      setRig(!!seat);
+      var pgear = seat && R.seatGear ? R.seatGear(seat, pl.gearLook, (kl && kl.color) || kc, genre0) : null, prevP = player.p;
+      ensurePerson(player, 'player', pl.look || (preset && preset.look) || DEFAULT_LOOKS.player, seat ? { gear: pgear } : { sticks: kl ? kl.sticks : true });
+      syncSticker(st, band, pgear, !!seat && !!pl.gearLook && pl.gearLook.sticker === 'logo', prevP !== player.p);
       if (!player.p.placed) { player.p.placed = true; placePlayer(); }
+      if (!seat && player.pose === 'rig') player.pose = 'stand';
+      if (seat && player.pose === 'drum') player.pose = 'rig';
+      var kitId = seat ? drummerOf(st) : null;
+      seatInfo = { seat: seat || 'drums', rig: !!seat, drummer: kitId, gear: pgear };
 
       var flags = st.flags || {}, cv = flags.cape;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_VARIANTS[cv] ? cv : 'velvet') : null;
@@ -38693,6 +38869,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       bandProps.set(band, list, st);   // v0.9: the seat props + the leaning instrument are the band's (the mirror, the crate, the bucket, ...)
       capeId = capeOwner(band, list);  // v0.9: member.cape (content), not "the first mirror idler"
       capeShown = 'none';
+      if (seat) usedSpots.noodle = true;   // v1.1: the amp corner is your rig
       for (i = 0; i < list.length; i++) {
         m = list[i];
         if (!m || !m.id || (m.status && m.status !== 'active')) continue;
@@ -38702,6 +38879,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var gear = idle === 'noodle' || idle === 'fiddle' ? (R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : 'guitar') || (idle === 'fiddle' ? 'fiddle' : 'v')
           : idle === 'pace' && !held && R.gearOf ? R.gearOf(m, cm && cm.id === m.id ? cm : null, genre) : null;   // (a pacer with an instrument keeps it on: Rox)
         var opts = { gear: gear, held: held, floorProp: idle === 'lunch' ? (FLOOR_BY_ID[m.id] || (band && band.id !== 'hail_damage' ? 'lunchpail' : 'lunchbox')) : null, cape: cape };
+        var onKit = !!kitId && m.id === kitId;   // v1.1: the swapped drummer, at the kit with sticks
+        if (onKit) { opts = { gear: null, held: null, floorProp: null, cape: cape, sticks: kl ? kl.sticks : true }; gear = null; }
         var rec = people[m.id] || (people[m.id] = { id: m.id, p: null, x: 0, z: 0, yaw: 0, baseYaw: 0, lookT: 0, lookW: 0, hopT: 0, nodT: -1 });
         rec.genre = genre; rec.gear = gear;
         ensurePerson(rec, m.id, m.look || (cm && cm.look) || DEFAULT_LOOKS[m.id] || genericLook(m.id), opts);
@@ -38709,8 +38888,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var mood = typeof m.mood === 'number' ? m.mood : 60;
         rec.mood = mood;
         rec.energy = mood >= 70 ? 1.15 : mood >= 45 ? 1 : 0.78;
-        var pose = mood < SULK_MOOD ? 'sulk' : (SPOTS[idle] && !usedSpots[idle] ? idle : 'stand');
-        var spot = pose === 'sulk' ? COUCH_SEATS[Math.min(couch++, COUCH_SEATS.length - 1)] : pose === 'stand' ? SPARE[spare++ % SPARE.length] : SPOTS[idle];
+        var pose = mood < SULK_MOOD ? 'sulk' : onKit ? 'drum' : (SPOTS[idle] && !usedSpots[idle] ? idle : 'stand');
+        if (seat && pose === 'stand' && idle === 'noodle' && !usedSpots.noodle2) { pose = 'noodle2'; usedSpots.noodle2 = true; }   // v1.1: the spare noodle spot
+        var spot = pose === 'sulk' ? COUCH_SEATS[Math.min(couch++, COUCH_SEATS.length - 1)] : pose === 'drum' ? kitSpot : pose === 'noodle2' ? NOODLE2 : pose === 'stand' ? SPARE[spare++ % SPARE.length] : SPOTS[idle];
+        if (pose === 'noodle2') pose = 'noodle';
         if (pose !== 'sulk' && pose !== 'stand') usedSpots[idle] = true;
         setPose(rec, pose, spot);
         seen[m.id] = true;
@@ -38752,6 +38933,43 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         rec.hit = hit;
         if (rec.pose) sizeHit(rec);
       }
+    }
+    var seatInfo = { seat: 'drums', rig: false, drummer: null, gear: null }, rigOn = false;
+    var kitSpot = (function () { var t = rotLocal(KIT, 0, -0.72 * KIT_SCALE); return { x: t.x, z: t.z, yaw: KIT.yaw, seat: 0.54 }; })();
+    function stringSeat(st) { var x = st && st.seat; return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+    function drummerOf(st) {
+      var lu = null, i;
+      try { lu = GG.career && GG.career.lineup ? GG.career.lineup(st) : null; } catch (e) { lu = null; }
+      for (i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
+      var ms = st.members || [];
+      for (i = 0; i < ms.length; i++) if (ms[i] && (!ms[i].status || ms[i].status === 'active') && /^drums/.test(String(ms[i].seatRole || ''))) return ms[i].id;
+      var fi = GG.drama && GG.drama.fillInFigures ? GG.drama.fillInFigures(st) : [];
+      for (i = 0; i < fi.length; i++) if (fi[i] && /^drums/.test(String(fi[i].role || ''))) return fi[i].id;
+      return null;
+    }
+    function setRig(on) {
+      var h = hs.kit;
+      if (!h || rigOn === on) return;
+      rigOn = on;
+      var D = on ? RIG : h.def, text = on ? RIG.label : h.def.label;
+      h.box.position.set(D.box[0], D.box[1], D.box[2]); h.box.scale.set(D.box[3], D.box[4], D.box[5]); h.box.updateMatrixWorld();
+      var lab = ctx.makeLabel(text, { px: 20 }), old = h.label, li = labels.indexOf(old);
+      lab.position.set(D.at[0], D.at[1], D.at[2]); lab.userData.action = 'kit'; scene.add(lab);
+      if (li >= 0) labels[li] = lab;
+      ctx.disposeLabel(old); h.label = lab; h.y = D.at[1]; h.text = text;
+    }
+    function syncSticker(st, band, gear, want, rebuilt) {
+      var S0 = player.sticker, sig = want && gear ? gear + '|' + JSON.stringify(st.logo || null) + '|' + ((band && band.name) || '') : '';
+      if (S0 && (rebuilt || S0.sig !== sig)) {
+        if (S0.mesh.parent) S0.mesh.parent.remove(S0.mesh);
+        S0.mesh.geometry.dispose(); S0.mesh.material.dispose(); if (S0.tex) S0.tex.dispose();
+        player.sticker = S0 = null;
+      }
+      if (!sig || S0 || !R.gearSticker || !R.logo || !R.logo.texture) return;
+      var tex = null;
+      try { tex = R.logo.texture(GG.logo ? GG.logo.get(st) : null, (band && band.name) || 'The Band', 128, { badge: 'round', mini: true }); } catch (e) { tex = null; }
+      var m = tex ? R.gearSticker(ctx, player.p, gear, tex) : null;
+      if (m) player.sticker = { mesh: m, tex: tex, sig: sig }; else if (tex) tex.dispose();
     }
     function setPose(rec, pose, spot) {
       rec.spot = spot;
@@ -38817,11 +39035,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var h = hs[action];
       if (!h || !state || !player.p) return false;
       var st = standOf(h.def);
-      player.pending = action; player.faceT = 0; player.faceYaw = h.def.face;
+      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && action === 'kit' ? RIG.face : h.def.face;
       startWalk(st[0], st[1]);
       return true;
     }
-    function standOf(def) { return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch)
+    function standOf(def) { if (rigOn && def.action === 'kit') return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
     function clampX(x) { return clamp(x, ROOM.x0 + WALK.margin, ROOM.x1 - WALK.margin); }
     function clampZ(z) { return clamp(z, ROOM.z0 + WALK.margin, ROOM.z1 - WALK.margin); }
     function pushOut(x, z) {
@@ -38842,7 +39060,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (dx * dx + dz * dz < 0.0025) {          // already there: just turn (and fire the hotspot)
         p.walking = false; p.x = tx; p.z = tz;
         if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = 0; }
-        p.pose = p.pending === 'kit' ? 'drum' : p.pose === 'drum' && !p.pending ? 'drum' : 'stand';
+        var kp = rigOn ? 'rig' : 'drum';   // v1.1: your rig on a string seat
+        p.pose = p.pending === 'kit' ? kp : p.pose === kp && !p.pending ? kp : 'stand';
         ctx.ring.hide();
         return;
       }
@@ -38933,8 +39152,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       resetPose(p.p, 'stand');
       var amp = clamp(p.speed / WALK.speed, 0, 1);
       if (p.pose === 'drum') drumPose(bn, t, p.scale / KIT_SCALE);
+      else if (p.pose === 'rig') IDLES.noodle(p, bn, t * 1.05);           // v1.1: noodling at your rig
       else if (amp > 0.02) { walkCycle(bn, p.phase, amp); p.idleT = 0; }
-      else { p.idleT += dt; playerIdle(bn, t, p.idleT); }
+      else { p.idleT += dt; if (rigOn) seatIdle(bn, t, p.idleT); else playerIdle(bn, t, p.idleT); }
       p.y += (space.floorAt(p.x, p.z) - p.y) * (1 - Math.exp(-14 * dt));   // v0.8 polish: steps up onto a riser
       p.p.root.position.set(p.x, p.y, p.z);
       p.p.root.rotation.y = p.yaw;
@@ -38945,7 +39165,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ctx.ring.hide();
       if (p.pending) {
         p.goalYaw = p.faceYaw; p.faceT = 0;
-        if (p.pending === 'kit') p.pose = 'drum';
+        if (p.pending === 'kit') p.pose = rigOn ? 'rig' : 'drum';
       }
     }
     function playerIdle(bn, t, idleT) {
@@ -38960,6 +39180,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         bn[B_HEAD].rotation.x = 0.1 * w * Math.max(0, Math.sin(t * 8.5));
       }
       bn[B_HEAD].rotation.y = 0.25 * Math.sin(t * 0.37) * Math.sin(t * 0.23);
+      breathe(bn, t, 1);
+    }
+    function seatIdle(bn, t, idleT) {                    // v1.1: hands on your instrument, a lazy strum every few seconds
+      rot(bn[B_ARM_L], 0.1, 0, 0.16); rot(bn[B_FORE_L], -2.0, 0, 0.12);
+      var c = (idleT + 2) % 6, w = idleT > 2 && c < 1.8 ? bump(c / 1.8) : 0;
+      rot(bn[B_ARM_R], -0.3, 0, 0.12); rot(bn[B_FORE_R], -0.9 + w * 0.18 * Math.sin(t * 12), 0, 0.42);
+      bn[B_HEAD].rotation.x = 0.08 + 0.12 * w; bn[B_HEAD].rotation.y = 0.2 * Math.sin(t * 0.37) * Math.sin(t * 0.23) * (1 - w);
       breathe(bn, t, 1);
     }
     function drumPose(bn, t, scale) {                    // on the throne, playing a little groove
@@ -38980,7 +39207,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       for (var i = 0; i < peopleList.length; i++) {
         var r = peopleList[i], bn = r.p.bones, tt = t * r.energy + r.phase;
         resetPose(r.p, r.pose);
-        (IDLES[r.pose] || IDLES.stand)(r, bn, tt, dt);
+        if (r.pose === 'drum') drumPose(bn, tt, r.scale / KIT_SCALE);           // v1.1: the swapped drummer at the kit
+        else (IDLES[r.pose] || IDLES.stand)(r, bn, tt, dt);
         if (r.pose !== 'sulk' && r.pose !== 'pace' && r.pose !== 'mirror') capeIdle(bn, tt, 0);
         if (r.mood < 45 && r.pose !== 'sulk') { bn[B_HEAD].rotation.x += 0.14; bn[B_SPINE].rotation.x += 0.06; }
         r.lookT -= dt;
@@ -39043,7 +39271,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
         hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         labelAt: hsList.map(function (h) { var p = h.label.position; return { action: h.def.action, x: rnd(p.x), y: rnd(h.y), z: rnd(p.z) }; }),   // v0.8 polish: for label/prop overlap checks
-        trophyWall: trophyWall.counts, bandProps: bandProps.state()
+        trophyWall: trophyWall.counts, bandProps: bandProps.state(),
+        seat: Object.assign({}, seatInfo, { label: hs.kit ? hs.kit.text || HOTSPOTS[4].label : null, sticker: !!player.sticker, playerPose: player.walking ? 'walk' : player.pose })   // v1.1
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
@@ -41278,6 +41507,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var BAND_ACTS = { capeSpin: 1, solo: 1, fill: 1, miss: 1, stageDive: 1, kneeSlide: 1, hatTip: 1, kickflip: 1 };
   var CHORUS_GESTURE = { gangShout: 'crowdMic', singAlong: 'crowdMic', yeehaw: 'hatTip', headbang: null };
   var FORMATIONS = { mosh: 1, circlePit: 1, wallOfDeath: 1, lineDance: 1 };
+  var SEAT_OK = { drums: 1, bass: 1, rhythm: 1, lead: 1 };   // v1.1 (C.SEATS)
 
   var KIND = {
     house: { hs: 0, sw: 2.0, w: 3.7, front: -1.8, back: -7.4, ceil: 2.9, floor: 0x7b5636, wall: 0xb7a67a, trim: 0x5b3f26, ceilCol: 0xd8d0b8, deck: 0x7a2f2a, amb: [0xffe2b8, 0x4a3a2a, 0.8], key: 0.5, wash: 0.55, beams: 0, bg: 0x1a140e, name: "Buddy's House Party", sub: "PLEASE DON'T MOSH ON THE COUCH" },
@@ -41427,7 +41657,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   });
   GG.on('crowd:level', function (p) { if (p && typeof p.crowd === 'number') A.setCrowdLevel(p.crowd); });
   GG.on('crowd:moment', function (p) { if (p && p.kind) A.moment(p.kind); });
-  GG.on('audio:step', function (p) { if (inst && inst.active && p && (p.step | 0) % 4 === 0) inst.beat(); });
+  GG.on('audio:step', function (p) { if (inst && inst.active && p) { if ((p.step | 0) % 4 === 0) inst.beat(); inst.step(p.step | 0); } });
+  GG.on('gig:hold', function (p) { if (inst && inst.active && p && p.ring) inst.ring(); });   // v1.1: a held note rang out
 
   R.defineScene('stage', function (ctx) {
     THREE = ctx.THREE;
@@ -41446,7 +41677,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       level: pending.level, smooth: pending.level, hype: pending.level / 100, idx: 2,
       beatLen: 0.45, beatT: 0, beats: 0, lastBeatAt: 0,
       form: { kind: null, t: 0, dur: 0 }, arms: { kind: null, t: 0, dur: 0 }, cheer: 0, kickPulse: 0, time: 0,
-      moments: 0, hits: 0, kick2s: 0, bow: 0
+      moments: 0, hits: 0, kick2s: 0, bow: 0,
+      autoHits: 0, lastStep: -9, autoQ: -1   // v1.1: the swapped drummer's own playing
     };
     var BOW = 3.4;   // v0.7: clap (1.6 s), then a bow
 
@@ -41468,12 +41700,29 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         G: GENRE[genre], band: band, members: members, flags: flags, player: player,
         crowd: Math.round(clamp(crowd, 3, Math.max(12, MAX_CROWD * rprefs().crowdScale))), attendance: crowd, venueName: (venue && typeof venue === 'object' && venue.name) || KIND[kind].name,   // v0.6.1: graphics quality (v0.7: venueName was stuck inside this comment)
         bpm: +cfg.bpm || GENRE[genre].bpm,
-        seat: cfg.seat || st.seat || 'drums',   // v1.1 stage 0: stored only (info().seat)
+        seat: SEAT_OK[cfg.seat || st.seat] ? cfg.seat || st.seat : 'drums',   // v1.1: the player's seat (resolveSeat fills the rest)
+        lineup: Array.isArray(cfg.lineup) ? cfg.lineup : null,
         view: cfg.view === 'spectator' ? 'spectator' : 'drummer', rival: !!cfg.rival, drummer: cfg.drummer || null,   // v0.6
         rivalId: cfg.rivalId || (cfg.rival ? (st.rival && st.rival.id) || (band && band.rival) || null : null),         // v0.9: the rival's cast
         banner: cfg.banner || '', bannerSub: cfg.sub || '',
         venue: venue && typeof venue === 'object' ? venue : null   // v0.8: the kit look (pyro only at arena shows)
       };
+    }
+    function resolveSeat(D) {
+      var st = lastState || GG.state || {};
+      D.seatMode = D.seat !== 'drums' && !D.rival;
+      D.roles = {}; D.kitId = null; D.kitSings = false;
+      if (!D.seatMode) return D;
+      var lu = D.lineup || (GG.career && GG.career.lineup && st.members ? safeLineup(st) : null) || [], i, e;
+      for (i = 0; i < lu.length; i++) { e = lu[i]; if (e && e.id) D.roles[e.id] = String(e.seatRole || ''); }
+      for (i = 0; i < D.members.length; i++) { e = D.members[i]; if (e && e.id && D.roles[e.id] == null) D.roles[e.id] = String(e.seatRole || e.role || ''); }
+      for (var id in D.roles) if (id !== 'player' && /^drums/.test(D.roles[id]) && isActive(D, id)) { D.kitId = id; D.kitSings = /vocal/.test(D.roles[id]); break; }
+      return D;
+    }
+    function safeLineup(st) { try { return GG.career.lineup(st); } catch (e) { return null; } }
+    function isActive(D, id) {
+      for (var i = 0; i < D.members.length; i++) { var m = D.members[i]; if (m && m.id === id) return !m.status || m.status === 'active'; }
+      return false;
     }
 
     function contentMember(band, id) {
@@ -41501,10 +41750,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     function build() {
       teardown();
-      var D = resolve(), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
+      var D = resolveSeat(resolve()), V = D.V, hs = V.hs, front = V.front || DEFAULT_FRONT;
       if (V.ceil && V.ceil < hs + CAM.pos[1] + 0.55) V.ceil = hs + CAM.pos[1] + 0.55;   // keep the camera under the roof
       K = { root: new THREE.Group(), chars: [], geos: [], mats: [], texs: [], D: D, V: V, hs: hs, front: front, painted: 0,
-        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1, mics: [], rivalProps: [], layout: 0, session: false, crowdMic: 0 };
+        band: [], spin: [], beamsL: null, beamsR: null, lights: {}, dog: null, surfer: -1, mics: [], rivalProps: [], layout: 0, session: false, crowdMic: 0,
+        you: null, boom: false, sticker: null };   // v1.1: your record (a string seat), the swapped drummer's boom mic, the headstock sticker
       scene.add(K.root);
       scene.background.setHex(V.bg);
       S.beatLen = 60 / clamp(D.bpm, 60, 240);
@@ -41514,6 +41764,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       buildDeck(lit, glow, V, D);
       buildDressing(lit, glow, D);
       buildKitStatic(lit, hs, kitLook(D));
+      if (D.seatMode && D.kitSings) { boomMic(lit, hs); K.boom = true; }   // v1.1: a singing drummer (merged: no extra draw call)
       buildBackline(lit, glow, V, D);
       if (D.view === 'spectator') buildBackdrop(lit, V, D);   // v0.6: the crowd can see the back of the stage
       ctx.freeze(mesh(lit.build(), ctx.mats.vc));   // (v1.0: the static room skips the per-frame matrix)
@@ -41593,7 +41844,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (!big) { B.box(hW, 0.3, 0.34, x, hs + hH + 0.15, z + 0.02, 0x1d1d20); B.box(hW - 0.1, 0.05, 0.02, x, hs + hH + 0.2, z + 0.19, 0xc9a64a); }
         G.box(0.03, 0.03, 0.02, x + hW / 2 - 0.08, hs + hH + (big ? -0.06 : 0.24), z + (big ? 0.205 : 0.195), 0xff3020);
       };
-      amp(-2.05 * k, 0.55, false); amp(2.05 * k, 0.45, false); amp(1.95 * k, 1.55, true);
+      var yourSide = D.seatMode ? (D.seat === 'rhythm' ? 1 : -1) : 0;   // v1.1: your amp steps back, out of the shoulder camera
+      amp(-2.05 * k, yourSide < 0 ? 2.05 : 0.55, false); amp(2.05 * k, yourSide > 0 ? 1.55 : 0.45, false); amp(1.95 * k, yourSide > 0 ? 2.2 : 1.55, true);
       for (i = -1; i <= 1; i++) {
         var mx = i * 1.05 * k, mz = front + 0.32;
         B.push(mx, hs, mz, 0, 0, 0);
@@ -41988,6 +42240,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         R.kit.pyroBase(b, px, hs, pz); R.kit.pyroBase(b, -px, hs, pz);
       }
     }
+    function rod(b, x0, y0, z0, x1, y1, z1, w, color) {
+      var dx = x1 - x0, dy = y1 - y0, dz = z1 - z0, L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      b.push((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, 0, Math.atan2(dx, dz), 0);
+      b.box(w, w, L, 0, 0, 0, color, Math.asin(clamp(-dy / L, -1, 1)), 0, 0);
+      b.pop();
+    }
+    var BOOM = { base: [0.66, 1.78], top: 1.48, mic: [0.06, 1.2, 1.34] };
+    function boomMic(b, hs) {
+      var bx = BOOM.base[0], bz = BOOM.base[1], ty = hs + BOOM.top, m = BOOM.mic, blk = 0x1a1a1a, i, a;
+      b.at(0, 0, 0, 0);
+      for (i = 0; i < 3; i++) { a = i * 2.1 + 0.3; rod(b, bx, hs + 0.02, bz, bx + 0.16 * Math.sin(a), hs + 0.01, bz + 0.16 * Math.cos(a), 0.02, blk); }
+      b.box(0.025, BOOM.top, 0.025, bx, hs + BOOM.top / 2, bz, blk);
+      rod(b, bx, ty, bz, m[0], hs + m[1] + 0.03, m[2] + 0.05, 0.02, blk);
+      b.cyl(0.028, 0.02, 0.11, 8, m[0], hs + m[1], m[2] + 0.02, 0x2a2a2a, -1.15, 0, 0);
+      b.shape(new THREE.IcosahedronGeometry(0.034, 0), m[0], hs + m[1] - 0.02, m[2] - 0.04, 1, 1, 1, 0x8a8e94);
+    }
     function buildKitParts(hs) {
       var KL = kitLook(K.D), chrome = R.kit ? R.kit.hardware(KL) : 0xb9bec6, bronze = 0xd2a43c, head = 0xefe9dc, shell = KL.color, w = [0, 0, 0];
       var kb = new ctx.Builder({ jitter: 0.03, seed: 9 }), art = R.kit ? R.kit.headArt(KL, kickInfo(K.D)) : null;
@@ -42077,18 +42345,61 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       return D.rivalId === 'tundra_wraith' || !D.rivalId;
     }
     function isMascot(m, cm) { return /mascot/i.test(String((m && m.role) || (cm && cm.role) || '')) || !!((m && m.mascot) || (cm && cm.mascot)); }
+    var YOU_SPOT = { bass: 'L', rhythm: 'R', lead: 'LC' };
+    function seatSpots(V, seat) {
+      var k = Math.min(1, V.sw / 2.8), f = V.front || DEFAULT_FRONT, P = Math.PI;
+      return {
+        C: { x: seat === 'lead' ? 0.32 * k : 0, z: f + 0.95, yaw: P }, L: { x: -1.55 * k, z: f + 1.3, yaw: P - 0.35 }, R: { x: 1.55 * k, z: f + 1.25, yaw: P + 0.35 },
+        LC: { x: -0.82 * k, z: f + 1.0, yaw: P - 0.12 }, RC: { x: 0.85 * k, z: f + 1.08, yaw: P + 0.2 },
+        LB: { x: -1.45 * k, z: KZ - 0.45, yaw: 0.95 }, RB: { x: 1.3 * k, z: KZ + 0.2, yaw: -1.0 }, k: k
+      };
+    }
+    function seatPrefs(role) {
+      if (/vocal/.test(role)) return ['C', 'RC', 'LC', 'R', 'L'];
+      if (/lead/.test(role)) return ['L', 'R', 'LC', 'RC', 'LB'];
+      if (/rhythm/.test(role)) return ['R', 'L', 'RC', 'LB', 'RB'];
+      if (/bass/.test(role)) return ['RB', 'LB', 'R', 'L'];
+      if (/fiddle|violin/.test(role)) return ['R', 'RC', 'L', 'LB'];
+      if (/guitar|acoustic|banjo/.test(role)) return ['L', 'R', 'LC', 'RC', 'LB', 'RB'];
+      return ['RC', 'LC', 'LB', 'RB', 'R', 'L'];
+    }
+    var NOT_BEHIND_YOU = { bass: 'LB', lead: 'LB', rhythm: 'RB' };   // (the camera stands there)
+    function seatOrder(D, active) {
+      var SP = seatSpots(D.V, D.seat), taken = [], used = {}, order = [], gap = 0.55, i, j, skip = NOT_BEHIND_YOU[D.seat];
+      var free = function (p) { for (var t = 0; t < taken.length; t++) { var dx = taken[t].x - p.x, dz = taken[t].z - p.z; if (dx * dx + dz * dz < gap * gap) return false; } return true; };
+      var you = SP[YOU_SPOT[D.seat]];
+      taken.push(you);
+      order.push({ m: { id: 'player' }, slot: D.seat, role: D.seat, pos: you, you: true });
+      var rest = active.slice().sort(function (a, b) { return (/vocal/.test(D.roles[a.id] || '') ? 0 : 1) - (/vocal/.test(D.roles[b.id] || '') ? 0 : 1); });
+      for (i = 0; i < rest.length && order.length < 6; i++) {
+        var m = rest[i], role = String(D.roles[m.id] || m.role || roleOf(D, m.id) || '').toLowerCase(), prefs = seatPrefs(role), pos = null;
+        for (j = 0; j < prefs.length && !pos; j++) if (prefs[j] !== skip && free(SP[prefs[j]])) pos = SP[prefs[j]];
+        if (!pos) continue;                                                          // (more than five out front: they watch from the side)
+        taken.push(pos);
+        var slot = /vocal/.test(role) && !used.vocals ? 'vocals' : /bass/.test(role) && !used.bass ? 'bass' : /lead/.test(role) && !used.lead ? 'lead'
+          : /rhythm|fiddle|violin/.test(role) && !used.rhythm ? 'rhythm' : /guitar|acoustic|banjo/.test(role) ? (!used.lead ? 'lead' : !used.rhythm ? 'rhythm' : 'extra') : 'extra';
+        used[slot] = true;
+        order.push({ m: m, slot: slot, role: role, pos: pos });
+      }
+      return order;
+    }
     function buildBand(D) {
       var list = D.members || [], used = {}, cv = D.flags && D.flags.cape, i, m;
       var capeVariant = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : null;
       var active = [];
-      for (i = 0; i < list.length; i++) { m = list[i]; if (m && m.id && (!m.status || m.status === 'active') && !/drum/i.test(String(m.role || ''))) active.push(m); }
+      for (i = 0; i < list.length; i++) {
+        m = list[i];
+        if (!m || !m.id || (m.status && m.status !== 'active')) continue;
+        if (D.seatMode ? m.id === D.kitId || /^drums/.test(D.roles[m.id] || '') : /drum/i.test(String(m.role || ''))) continue;   // v1.1: the kit by seatRole
+        active.push(m);
+      }
       var sp = spots(D.V, active.length);
-      K.layout = active.length <= 3 ? 3 : Math.min(5, active.length);
+      K.layout = D.seatMode ? Math.min(6, active.length + 1) : active.length <= 3 ? 3 : Math.min(5, active.length);
       var capeId = null;
       for (i = 0; i < active.length && !D.rival; i++) { var cmc = contentMember(D.band, active[i].id); if (active[i].cape || (cmc && cmc.cape)) capeId = active[i].id; }
       for (i = 0; !capeId && !D.rival && i < active.length; i++) if (active[i].id === 'marcel') capeId = 'marcel';   // (older content)
-      var order = [];
-      for (i = 0; i < active.length; i++) {
+      var order = D.seatMode ? seatOrder(D, active) : [];
+      for (i = 0; i < active.length && !D.seatMode; i++) {
         m = active[i];
         var role = String(m.role || roleOf(D, m.id) || '').toLowerCase(), slot = null;
         if (/vocal/.test(role) && !used.vocals) slot = 'vocals';
@@ -42103,11 +42414,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       var genre = D.genre;
       for (i = 0; i < order.length; i++) {
-        var o = order[i], cm = D.rival ? castMember(D, o.m.id) : contentMember(D.band, o.m.id), sp0 = sp[o.slot];
+        if (order[i].you) { buildYou(D, order[i], i); continue; }   // v1.1: you, with your instrument
+        var o = order[i], cm = D.rival ? castMember(D, o.m.id) : contentMember(D.band, o.m.id), sp0 = o.pos || sp[o.slot];
         var mascot = isMascot(o.m, cm);
         var gear = mascot ? null : R.gearOf ? R.gearOf(o.m, cm, genre) : (/vocal/.test(o.role) && !/guitar/.test(o.role) ? null : 'v');
-        if (o.slot === 'bass' && !mascot) gear = 'bass';
+        if (o.slot === 'bass' && !mascot && !D.seatMode) gear = 'bass';
         if (o.slot === 'vocals' && gear && !/guitar|acoustic|fiddle|banjo|bass/.test(o.role) && !(o.m.gear || (cm && cm.gear))) gear = null;   // a singer holds the mic
+        if (D.seatMode && gear === 'bass' && !/bass/.test(o.role)) gear = null;    // (v1.1: only a bass seatRole holds a bass)
         var ins = mascot ? 'mascot' : instOfGear(gear);
         var cape = o.m.id === capeId ? capeVariant : null;
         var lk = (GG.creator && !D.rival ? GG.creator.stageLookFor(o.m, cm) : null) || o.m.look || (cm && cm.look) || null;   // v0.8: stage looks
@@ -42133,6 +42446,28 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (o.slot === 'vocals' && !mascot) { micStand(sp0.x, sp0.z, sp0.yaw, ins === 'mic' ? 0.36 : 0.5); rec.mic = true; K.mics.push(o.m.id); }
         if (D.rival) rivalProps(D, rec, o.m, cm, i);
       }
+    }
+    function buildYou(D, o, i) {
+      var pl = D.player || {}, pre = findPreset(pl.presetId), sp0 = o.pos;
+      var look = (GG.creator ? GG.creator.stageLookFor(pl) : null) || pl.look || (pre && pre.look) || null;
+      var gl = pl.gearLook || {}, gear = R.seatGear ? R.seatGear(D.seat, gl, kitLook(D).color, D.genre) : (D.seat === 'bass' ? 'bass' : 'v');
+      var ch = R.buildCharacter(look, { id: 'player', gear: gear, band: D.band && D.band.name });
+      if (!ch) return;
+      K.chars.push(ch);
+      ch.bones[B_PHONES].scale.setScalar(0); ch.bones[B_FLOOR].scale.setScalar(0); ch.bones[B_HELD].scale.setScalar(0);
+      ch.root.position.set(sp0.x, K.hs, sp0.z); ch.root.rotation.y = sp0.yaw;
+      K.root.add(ch.root);
+      var spec = R.seatGearSpec ? R.seatGearSpec(gear) : null, ins = D.seat === 'bass' ? 'bass' : spec && spec.shape === 'acoustic' ? 'acoustic' : 'guitar';
+      if (gl.sticker === 'logo' && R.gearSticker && R.logo && R.logo.texture) {
+        var st = lastState || GG.state || {}, tex = null;
+        try { tex = R.logo.texture(GG.logo ? GG.logo.get(st) : null, (D.band && D.band.name) || 'The Band', 128, { badge: 'round', mini: true }); } catch (e) { tex = null; }
+        var sm = tex ? R.gearSticker(ctx, ch, gear, tex) : null;
+        if (sm) { K.geos.push(sm.geometry); K.mats.push(sm.material); K.texs.push(tex); K.sticker = sm; } else if (tex) tex.dispose();
+      }
+      var rec = { id: 'player', slot: o.slot, inst: ins, gear: gear, ch: ch, cape: false, x: sp0.x, z: sp0.z, yaw: sp0.yaw, bx: sp0.x, bz: sp0.z, byaw: sp0.yaw,
+        mood: 70, energy: 1, ph: hash01(i, 31), act: null, actT: 0, actDur: 0, sig: null, mic: false, prop: null, hatBig: false,
+        you: true, yf: new Float32Array([9, 9, 1, 1]), strums: 0 };   // yf: strum time, ring time, fret, fret goal (typed: no boxing)
+      K.band.push(rec); K.you = rec;
     }
     function defectorLook(l, D) {
       var c = castOf(D), kind = c && c.defector && c.defector.look || ({ mall_rats: 'stylist', chartbusters: 'rhinestone', buckle_and_boot: 'denim' })[D.rivalId] || null, o = {}, k;
@@ -42252,10 +42587,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (!D.drummer.look) D.drummer = Object.assign({}, D.drummer, { look: SESSION_LOOK });
         K.session = true;
       }
-      var pl = D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
+      var sd = D.seatMode ? seatDrummer(D) : null;   // v1.1: a string seat: the swapped drummer (a session fill-in on an empty throne)
+      K.seatDrum = sd;
+      var pl = sd || D.drummer || D.player || {}, pre = findPreset(pl.presetId), dl = sd ? sd.look : (!D.drummer && GG.creator ? GG.creator.stageLookFor(pl) : pl.look) || (pre && pre.look) || null;   // v0.8: your stage look
       if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) dl = paintLook(dl, D.drummer.stageShirt);   // v0.6: their drummer (Tundra Wraith: painted)
       K.drummerLook = dl;
-      var ch = R.buildCharacter(dl, { id: D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
+      var ch = R.buildCharacter(dl, { id: sd ? sd.id : D.drummer ? D.drummer.id || 'rival_drums' : 'player', sticks: false });
       if (!ch) return;
       K.chars.push(ch);
       if (D.drummer && D.drummer.corpsePaint && paints(D, { id: D.drummer.id, corpsePaint: true })) corpsePaint(ch, 3);
@@ -42279,10 +42616,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       };
       for (lane in STRIKE) { st = STRIKE[lane]; if (!st) continue; solve(lane, st); if (st.alt) solve(lane + '2', st.alt); }
       K.drummer = { ch: ch, sticks: sticks, poses: poses, seat: seat / scale,
-        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, kick2T: 9, tomAlt: 0, flinch: 9 };
+        L: { cur: new Float32Array(6), key: 'snare', t: 9 }, R: { cur: new Float32Array(6), key: 'hat', t: 9 }, kickT: 9, kick2T: 9, tomAlt: 0, flinch: 9, fillT: 9 };
+      if (sd && sd.sings) K.mics.push(sd.id);   // v1.1: the boom mic is theirs
       copyPose(K.drummer.L.cur, poses.snare.up); copyPose(K.drummer.R.cur, poses.hat.up);
     }
     function copyPose(out, p) { for (var i = 0; i < 6; i++) out[i] = p[i]; }
+    function seatDrummer(D) {
+      var m = null, i;
+      for (i = 0; i < D.members.length; i++) if (D.members[i] && D.members[i].id === D.kitId) m = D.members[i];
+      if (!m) return { id: 'fill_in_drums', look: SESSION_LOOK, sings: false, session: true };
+      var cm = contentMember(D.band, m.id);
+      return { id: m.id, look: (GG.creator ? GG.creator.stageLookFor(m, cm) : null) || m.look || (cm && cm.look) || null, sings: D.kitSings };
+    }
     function buildCrowd(D) {
       var V = D.V, G = D.G, front = (V.front || DEFAULT_FRONT) - (D.kind === 'club' ? 1.25 : 0.5), back = V.back + 0.8, xw = V.w - 0.45, i;
       var slots = [];
@@ -42466,8 +42811,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     var CAM = { pos: [0.35, 3.25, 4.2], look: [-0.05, -0.05, -3.6], bandFov: 45, minHFov: 38 };
     var SPEC = { x: 0.85, y: 2.9, back: 5.2, clear: 1.6, look: [0.1, 1.2, -0.3], bandFov: 40, minHFov: 42 };   // v0.6: a riser in the crowd, facing the stage
+    var SPOT = { side: 0.15, up: 2.95, back: 2.35, aim: 0.75, lookY: 0.15, lookZ: 2.2, bandFov: 48, minHFov: 46 };
+    function camView() { return !K ? 'kit' : K.D.view === 'spectator' ? 'spectator' : K.you ? 'spot' : 'kit'; }
     function frame() {
-      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, spec = K && K.D.view === 'spectator', CF = spec ? SPEC : CAM;
+      var cam = ctx.camera, sz = ctx.size(), W = sz.w, H = sz.h, F = pending.frame, view = camView(), spec = view === 'spectator', CF = spec ? SPEC : view === 'spot' ? SPOT : CAM;
       var top = F.top || 0, bottom = F.bottom < 0 ? Math.round(H / 3) : F.bottom;
       var bandH = Math.max(80, H - top - bottom);
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
@@ -42481,6 +42828,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (spec) {
         cam.position.set(SPEC.x, Math.min(K.V.ceil ? K.V.ceil - 0.35 : 99, hs + SPEC.y), K.front - SPEC.back);
         cam.lookAt(SPEC.look[0], hs + SPEC.look[1], KZ + SPEC.look[2]);
+      } else if (view === 'spot') {
+        var y = K.you, out = y.bx < -0.05 ? -1 : y.bx > 0.05 ? 1 : -1, kk = Math.min(1, K.V.sw / 2.8);
+        cam.position.set(y.bx + out * SPOT.side, hs + SPOT.up, y.bz + SPOT.back);
+        cam.lookAt(-out * SPOT.aim * kk, hs + SPOT.lookY, K.front - SPOT.lookZ);
       } else {
         cam.position.set(CAM.pos[0], hs + CAM.pos[1], CAM.pos[2]);
         cam.lookAt(CAM.look[0], hs * 0.5 + CAM.look[1], CAM.look[2]);
@@ -42526,19 +42877,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     function frontman() {
       for (var i = 0; i < K.band.length; i++) if (K.band[i].cape) return K.band[i];
       for (i = 0; i < K.band.length; i++) if (K.band[i].slot === 'vocals') return K.band[i];
-      return K.band[0] || null;
+      for (i = 0; i < K.band.length; i++) if (!K.band[i].you) return K.band[i];   // (v1.1: never you)
+      return null;
     }
-    function bySlot(slot) { for (var i = 0; i < K.band.length; i++) if (K.band[i].slot === slot) return K.band[i]; return null; }
+    function bySlot(slot, notYou) { for (var i = 0; i < K.band.length; i++) if (K.band[i].slot === slot && !(notYou && K.band[i].you)) return K.band[i]; return null; }
     function bandAction(id, action) {
       if (!K || !K.band.length) return false;
       var r = null, i;
+      if (id && K.drummer && K.seatDrum && id === K.seatDrum.id) {   // v1.1: the swapped drummer's sneaky fills are drum fills now
+        if (action !== 'fill' && action !== 'solo') return false;
+        K.drummer.fillT = 0; return true;
+      }
       if (id) for (i = 0; i < K.band.length; i++) if (K.band[i].id === id) r = K.band[i];
       if (!r) {
         if (action === 'capeSpin') r = frontman();
         else if (action === 'stageDive' || action === 'kneeSlide' || action === 'hatTip' || action === 'kickflip') r = bySig(action);
         else if (action === 'solo') r = bySlot('lead') || bySlot('rhythm') || K.band[0];
-        else if (action === 'fill') r = bySlot('rhythm') || bySlot('lead') || K.band[0];
+        else if (action === 'fill') r = bySlot('rhythm', true) || bySlot('lead', true) || K.band[0];
         else r = K.band[Math.floor(hash01(S.moments++, 51) * K.band.length)];
+        if (r && r.you && action !== 'solo') r = K.band.length > 1 ? K.band[(K.band.indexOf(r) + 1) % K.band.length] : null;   // (v1.1: you never miss a cue)
       }
       if (!r || !DUR[action] || !BAND_ACTS[action]) return false;
       bandAct(r, action, DUR[action]);
@@ -42549,9 +42906,37 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     function bandAct(r, action, dur) { if (!r) return; r.act = action; r.actT = 0; r.actDur = dur; }
 
     function hit(lane, judgement) {
-      if (!K || !K.drummer) return;
+      if (!K) return;
+      if (typeof lane === 'string' && lane.indexOf('str') === 0) { strumHit(lane, judgement); return; }   // v1.1: your strings
+      if (!K.drummer) return;
       S.hits++;
+      kitHit(lane, judgement, true);
+    }
+    function strumHit(lane, judgement) {
+      var y = K.you;
+      if (!y) return;
+      S.hits++;
+      if (judgement === 'miss') { if (!y.act) bandAct(y, 'miss', DUR.miss); return; }
+      var li = lane.charCodeAt(3) - 48;                                            // 'str0'..'str5' (no allocation)
+      y.yf[0] = 0; y.strums++; if (li >= 0 && li <= 9) y.yf[3] = li > 5 ? 5 : li;
+    }
+    function autoDrum(n) {
+      var Dm = K.drummer;
+      if (!Dm) return;
+      var s16 = ((n % 16) + 16) % 16, metal = K.D.genre === 'metal';
+      if (Dm.fillT < 1.3) { kitHit((n & 1) ? 'toms' : 'snare', 'good', false); if (s16 % 4 === 0) kitHit('kick', 'good', false); return; }
+      if (s16 === 0 || s16 === 8 || (metal && (s16 === 10 || s16 === 2))) kitHit('kick', 'good', false);
+      if (s16 === 4 || s16 === 12) kitHit('snare', 'good', false);
+      if (s16 % 2 === 0) kitHit(n % 64 === 0 ? 'cymbal' : 'hat', 'good', false);
+    }
+    function stepTick(n) {
+      if (!K || !K.D.seatMode || !K.drummer) return;
+      S.lastStep = S.time;
+      autoDrum(n);
+    }
+    function kitHit(lane, judgement, flash) {
       var Dm = K.drummer, fi = LANES.indexOf(lane);
+      if (!flash) S.autoHits++;
       if (judgement === 'miss') { Dm.flinch = 0; return; }
       if (lane === 'kick') { Dm.kickT = 0; K.wob.kickT = 0; S.kickPulse = 1; }
       else {
@@ -42563,7 +42948,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         hand.key = key; hand.t = 0;
         if (lane === 'hat') K.wob.hatT = 0; else if (lane === 'cymbal') K.wob.crashT = 0; else if (lane === 'ride') K.wob.rideT = 0;
       }
-      if (fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
+      if (flash && fi >= 0 && fi < N_FLASH && !rprefs().calm) {   // v0.6.1 reduced flashing: no hit flashes
         K.flash.t[fi] = 0; col.setHex(HIT_COL[judgement] || HIT_COL.good);
         K.flash.mesh.setColorAt(fi, col); K.flash.mesh.instanceColor.needsUpdate = true;
       }
@@ -42604,6 +42989,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (S.cheer > 0) S.cheer -= dt;
       if (S.bow > 0) S.bow -= dt;
       S.kickPulse = Math.max(0, S.kickPulse - dt * 7);
+      if (K.D.seatMode && K.drummer && S.time - S.lastStep > 1.0) {   // v1.1: no song clock: the drummer keeps their own time
+        var q = Math.floor((S.beats + S.beatT) * 4);
+        if (q !== S.autoQ) { S.autoQ = q; autoDrum(q); }
+      }
       updateLights(dt, t);
       updateBand(dt, t);
       updateDrummer(dt, t);
@@ -42685,6 +43074,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           if (r.inst === 'acoustic') { rot(bn[B_ARM_L], -0.05, 0, 0.2); bn[B_FORE_R].rotation.z = 0.6; }   // (strummed high on the chest)
           if (r.slot === 'bass') { bn[B_HEAD].rotation.x = 0.05 + (hash01(Math.floor(t / 6), 81) < 0.35 && frac(t / 6) < 0.12 ? 0.3 * bump(frac(t / 6) / 0.12) : 0); bn[B_SPINE].rotation.x = 0.02; }
           if (r.mic) { bn[B_SPINE].rotation.x = 0.1; bn[B_HEAD].rotation.x = 0.02 + 0.1 * beat * h; }   // a singing guitarist leans into the stand
+          if (r.you) youPose(r, bn, dt, t);                                       // v1.1: your hits strum, the lane slides your hand
         }
         if (a === 'capeSpin') {
           var sp = ease(u);
@@ -42760,6 +43150,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         r.ch.root.position.set(x, y, z); r.ch.root.rotation.set(tilt, yaw, 0, 'YXZ');
       }
     }
+    function youPose(r, bn, dt, t) {
+      var Y = r.yf;
+      Y[0] += dt; Y[1] += dt;
+      Y[2] += (Y[3] - Y[2]) * (1 - Math.exp(-14 * dt));
+      var u = Y[0], st = u < 0.07 ? -0.3 + 0.6 * (u / 0.07) : u < 0.7 ? 0.3 * Math.exp(-(u - 0.07) * 7) : 0.04 * Math.sin(t * 3 + r.ph * 6);
+      var f = Y[2] / 5, ring = Y[1] < 0.7 ? bump(Y[1] / 0.7) : 0;
+      rot(bn[B_ARM_L], 0.1 - 0.35 * ring, 0, 0.3 - 0.2 * f); rot(bn[B_FORE_L], -1.95 - 0.25 * f, 0, 0.1);
+      bn[B_FORE_R].rotation.x = -0.95 + st;
+      if (ring) { bn[B_SPINE].rotation.x -= 0.18 * ring; bn[B_HEAD].rotation.x -= 0.25 * ring; }
+    }
     function walkPose(bn, ph, amp) {                                                // a quick run cycle for the signatures
       var s = Math.sin(ph);
       bn[B_LEG_L].rotation.x = s * 0.6 * amp; bn[B_LEG_R].rotation.x = -s * 0.6 * amp;
@@ -42775,7 +43175,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       bn[B_HIPS].position.y = hy;
       bn[B_LEG_L].rotation.x = -a; bn[B_SHIN_L].rotation.x = a; bn[B_LEG_R].rotation.x = -a; bn[B_SHIN_R].rotation.x = a;
       bn[B_LEG_L].rotation.z = 0.25; bn[B_LEG_R].rotation.z = -0.25;
-      Dm.kickT += dt; Dm.flinch += dt; Dm.kick2T += dt;
+      Dm.kickT += dt; Dm.flinch += dt; Dm.kick2T += dt; Dm.fillT += dt;
       var kp = Dm.kickT < 0.14 ? bump(Dm.kickT / 0.14) : 0, k2 = Dm.kick2T < 0.14 ? bump(Dm.kick2T / 0.14) : 0;
       bn[B_LEG_R].rotation.x = -a - 0.12 * (1 - kp); bn[B_SHIN_R].rotation.x = a + 0.1 * kp;
       if (k2) { bn[B_LEG_L].rotation.x = -a - 0.12 * k2; bn[B_SHIN_L].rotation.x = a + 0.06 * k2; }   // v0.7.2 left foot
@@ -43080,6 +43480,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       active: false,
       build: function () { build(); },
       level: setLevel, moment: moment, hit: hit, kick2: kick2, bandAction: bandAction, beat: onBeat, frame: function () { if (K) frame(); },
+      step: stepTick, ring: function () { if (K && K.you) K.you.yf[1] = 0; },   // v1.1
       info: function () {
         if (!K) return { built: false };
         var C = K.crowd;
@@ -43088,9 +43489,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           cupsFlying: K.cups.list.filter(function (c) { return c.on; }).length, boos: K.boos.list.filter(function (b) { return b.on; }).length,
           acting: K.band.filter(function (r) { return r.act; }).map(function (r) { return r.id + ':' + r.act; }), dog: !!K.dog, hits: S.hits, kick2s: S.kick2s, moments: S.moments,
           beatLen: +S.beatLen.toFixed(3), geos: K.geos.length, mats: K.mats.length, texs: K.texs.length,
-          view: K.D.view, rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
+          view: camView() === 'spot' ? 'spot' : K.D.view, camera: camView(), rival: K.D.rival, painted: K.painted, dress: K.D.dress, silent: K.D.silent, bowing: S.bow > 0, seat: K.D.seat,
+          you: K.you ? { seat: K.D.seat, gear: K.you.gear, inst: K.you.inst, sticker: !!K.sticker, x: +K.you.bx.toFixed(2), z: +K.you.bz.toFixed(2), strums: K.you.strums, fret: Math.round(K.you.yf[2]), act: K.you.act, ring: K.you.yf[1] < 0.7 } : null,
+          boom: !!K.boom, autoHits: S.autoHits, seatMode: !!K.D.seatMode,   // v1.1
           mics: K.mics.slice(), layout: K.layout, gear: K.band.map(function (r) { return r.id + ':' + (r.gear || r.inst); }), rivalId: K.D.rivalId || null,   // v0.9
-          props: K.rivalProps.slice(), session: K.session, drummer: K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
+          props: K.rivalProps.slice(), session: K.session, drummer: K.seatDrum ? K.seatDrum.id : K.D.drummer ? K.D.drummer.id || 'rival_drums' : 'player', bannerLogo: !!K.bannerLogo,
           xs: K.band.map(function (r) { return +r.bx.toFixed(2); }),
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
@@ -43205,6 +43608,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         weather: WX[o.weather] ? o.weather : null, driver: driver,
         dashboard: o.dashboard !== undefined && !(o.dashboard === 'cactus' && driver !== 'kenji' && (designated ? designated !== 'kenji' : !hdVan)) ? o.dashboard : dashItem,
         playerLook: pl.look || (preset && preset.look) || null,
+        seat: st.seat === 'bass' || st.seat === 'rhythm' || st.seat === 'lead' ? st.seat : null,   // v1.1: your gig bag
+        gearColor: (pl.gearLook && pl.gearLook.color) || (pl.kit && pl.kit.color) || pl.kitColor || '#b3262b',
         region: REGION[o.region] ? o.region : null, look: o.look || null,   // v0.7: abroad
         tier: o.look ? null : clamp(isFinite(o.tier) ? Math.round(o.tier) : (st.van && isFinite(st.van.tier) ? st.van.tier : 0), 0, 3),
         stickers: (o.stickers || (st.van && st.van.stickers) || []).slice(-12).map(function (x) { return { name: String(x.name || x.venueId || ''), banned: !!(x.banned || (st.banned && st.banned.indexOf(x.venueId) >= 0)) }; })
@@ -43262,6 +43667,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       buildWeather(D);
       buildInterior(D);
       buildPeople(D);
+      buildGigBag(D);   // v1.1
       buildMirror(D);
       frame();
       return K;
@@ -43962,6 +44368,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       K.mirror = shadesOn ? 'sunglasses' : glasses ? 'glasses' : 'eyes';
     }
 
+    function buildGigBag(D) {
+      if (!D.seat) return;
+      var b = new ctx.Builder({ jitter: 0.04, seed: 23 }), bag = 0x232327, seam = 0x3a3a40, patch = parseInt(String(D.gearColor).replace('#', ''), 16) || 0xb3262b;
+      var bass = D.seat === 'bass', L = bass ? 0.62 : 0.5;
+      b.push(0.0, 0.08, -0.12, 0.18, 0, 0.12);                                          // standing in the gap, leaning back a touch
+      b.box(0.34, 0.46, 0.13, 0, 0.23, 0, bag); b.box(0.3, 0.02, 0.135, 0, 0.36, 0, seam);   // the body end, a zip seam
+      b.box(0.1, L, 0.08, 0, 0.46 + L / 2, 0, bag); b.box(0.15, 0.17, 0.09, 0, 0.55 + L, 0, bag);   // the neck, the headstock end
+      b.box(0.16, 0.12, 0.012, 0, 0.22, 0.07, patch); b.box(0.035, 0.6, 0.01, 0.09, 0.45, 0.072, seam);   // a patch in your colour, a strap
+      b.pop();
+      var m = mesh(b.build(), ctx.mats.vc);
+      K.gigBag = D.seat; return m;
+    }
     var HELD_VAN = { jaxon: 'sandwich', duke: 'sandwich', tamara: 'floss', earl: 'coffee' };
     function buildPeople(D) {
       var list = [], i, m;
@@ -44272,6 +44690,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
           tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, logo: !!K.logo, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
+          gigBag: K.gigBag || null,   // v1.1
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           driverExtras: K.driverLook && K.driverLook.extras ? K.driverLook.extras.slice() : [], mirror: K.mirror || null, ornaments: K.ornaments || null, bandId: K.D.bandId,   // v0.9
           talking: K.people.filter(function (r) { return r.talk > 0; }).map(function (r) { return r.id; }),
@@ -44561,7 +44980,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var o = pending.o || {}, st = GG.state || {}, band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
       var flags = o.flags || st.flags || {}, cv = flags.cape, outfit = o.outfit || null;
       var cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : outfit === 'cape' ? 'velvet' : null;
-      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null, painted: 0, wave: 'polite', rivalId: null };
+      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null, painted: 0, wave: 'polite', rivalId: null, you: null };
       var mem = (o.members || st.members || (band && band.members) || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }).slice(0, 5);
       var pl = o.player || st.player || {}, preset = GG.content && GG.content.presets && pl.presetId ? GG.content.presets.filter(function (x) { return x.id === pl.presetId; })[0] : null;
       var stageLook = function (m, cm) { return GG.creator ? GG.creator.stageLookFor(m, cm) : null; };   // v0.8: stage looks on the carpet
@@ -44575,8 +44994,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var n = roster.length, spread = n > 5 ? 0.68 : 0.76;
       for (i = 0; i < n; i++) {
         var m = roster[i], cm = contentMember(band, m.id), look = outfitLook((m.id !== 'player' && stageLook(m, cm)) || m.look || (cm && cm.look) || null, outfit, i);
-        var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null }, 'band', i);
+        var yg = m.id === 'player' ? youGear(o, st, pl) : null;   // v1.1: your instrument on a string seat
+        var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null, gear: yg || undefined }, 'band', i);
         if (!rec) continue;
+        if (yg) { rec.axe = true; P.you = { seat: o.seat || st.seat, gear: yg }; }
         rec.cx = -3.05 + i * spread; rec.cz = 0.2 - (i % 2) * 0.28;
         rec.px = STAGE_X - 3.35 + i * 0.5; rec.pz = 0.5 - (i % 2) * 0.35;
         rec.x0 = -6.2 - i * 0.55; rec.delay = i * 0.14;
@@ -44601,6 +45022,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (h) { h.cx = h.px = STAGE_X; h.cz = h.pz = -0.25; h.x0 = STAGE_X; h.arrived = true; P.host = h; P.env = envelopeMesh(h.ch); }
       T.t = 0; T.envelope = null; T.envT = 0;
       placeAll(true);
+    }
+    function youGear(o, st, pl) {
+      var seat = o.seat || st.seat;
+      if (seat !== 'bass' && seat !== 'rhythm' && seat !== 'lead' || !R.seatGear) return null;
+      var kc = (pl.kit && pl.kit.color) || pl.kitColor || null, band = GG.content && GG.content.bands && GG.content.bands[st.bandId];
+      return R.seatGear(seat, pl.gearLook, kc, o.genre || st.genre || (band && band.genre));
     }
     function placeAll(snap) {
       if (!P) return;
@@ -44670,7 +45097,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         else if (pod && lost) { var c = Math.sin(t * 11 + r.ph); aLx = -1.1; aRx = -1.1; aLz = -0.35 - c * 0.12; aRz = 0.35 + c * 0.12; fL = -0.4; fR = -0.4; }
         else {
           var k = ((Math.floor((t + r.ph * 2) / 3.2) + r.i) % 4);            // photo poses: horns, point, hip, stand
-          if (k === 0) { aLz = 2.4; aRz = -2.4; }
+          if (r.axe) { aLx = 0.1 - (k === 0 ? 0.5 : 0); aLz = 0.14 + (k === 0 ? 0.3 : 0); fL = -2.05; aRx = -0.35; aRz = 0.12; fR = -0.95 + (k === 1 ? 0.2 * Math.sin(t * 14) : 0); }   // v1.1: your axe for the cameras
+          else if (k === 0) { aLz = 2.4; aRz = -2.4; }
           else if (k === 1) { aRx = -1.5; aRz = -0.2; }
           else if (k === 2) { aLz = 0.6; fL = -1.3; aRz = -0.6; fR = 1.3; }
           if (r.cape && T.mode === 'carpet') { r.ch.root.rotation.y = r.yaw + Math.sin(t * 1.6) * 0.9; aLz = 1.3; aRz = -1.3; }
@@ -44786,7 +45214,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return { built: true, mode: T.mode, band: P ? P.band.map(function (r) { return r.id; }) : [], rival: P ? P.rival.length : 0, host: !!(P && P.host),
           rivalId: P ? P.rivalId : null, painted: P ? P.painted : 0, wave: P ? P.wave : null, mascot: !!(P && P.rival.some(function (r) { return r.mascot; })),   // v0.9
           cape: !!(P && P.band.some(function (r) { return r.cape; })), walking: P ? P.band.filter(function (r) { return !r.arrived; }).length : 0,
-          envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length };
+          envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length,
+          you: P && P.you ? { seat: P.you.seat, gear: P.you.gear } : null };   // v1.1
       }
     };
     return shell;
@@ -44801,12 +45230,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var B_ARM_L = 4, B_FORE_L = 5, B_ARM_R = 6, B_FORE_R = 7, B_HEAD = 3, B_SPINE = 2, B_GEAR = 14, B_PHONES = 15, B_HELD = 16, B_FLOOR = 17, B_CAPE1 = 12, B_CAPE2 = 13;
   var P = R.preview = {};
   var V = null;              // live view: { THREE, renderer, scene, camera, host, canvas, ch, kit, art, raf, ... }
-  var want = { look: null, kit: null, mode: 'char', view: 'full', band: '', genre: 'metal' };
+  var want = { look: null, kit: null, mode: 'char', view: 'full', band: '', genre: 'metal', seat: null, gearLook: null, kitColor: null, logo: null };
   var CAMS = {
     full: { pos: [0, 1.1, 4.3], at: [0, 1.0, 0] },
     face: { pos: [0, 1.76, 1.75], at: [0, 1.73, 0] },
     hands: { pos: [0, 1.0, 1.85], at: [0, 0.88, 0] },
-    kit: { pos: [0.7, 1.95, 4.3], at: [0, 0.62, -0.1] }
+    kit: { pos: [0.7, 1.95, 4.3], at: [0, 0.62, -0.1] },
+    gear: { pos: [0.05, 1.28, 3.3], at: [0.22, 1.08, 0] }    // v1.1: your instrument, close (the neck runs to screen right)
   };
 
   P.mount = function (el) {
@@ -44852,10 +45282,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   P.turn = function (dx) { if (V) V.yaw += dx; };
   P.info = function () {
     return { mounted: !!V, mode: want.mode, view: want.view, frames: V ? V.frames : 0, v8: !!(GG.creator && GG.creator.isV8(want.look)),
-      kit: !!(V && V.kit), art: !!(V && V.art), calls: V ? V.renderer.info.render.calls : 0, pose: V && V.ch ? V.pose : null };
+      kit: !!(V && V.kit), art: !!(V && V.art), calls: V ? V.renderer.info.render.calls : 0, pose: V && V.ch ? V.pose : null,
+      gear: V && V.gear || null, sticker: !!(V && V.sticker) };
   };
 
-  function clearChar() { if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearChar() { clearSticker(); if (V) V.ssig = ''; if (V && V.ch) { V.ch.dispose(); V.ch = null; } }
+  function clearSticker() {
+    if (!V || !V.sticker) return;
+    var m = V.sticker; if (m.parent) m.parent.remove(m);
+    m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); V.sticker = null;
+  }
+  function gearOf() {   // v1.1: the gear string for the 'gear' mode (null on drums / no seat)
+    return want.mode === 'gear' && want.seat && want.seat !== 'drums' && R.seatGear ? R.seatGear(want.seat, want.gearLook, want.kitColor, want.genre) : null;
+  }
   function clearKit() {
     if (!V) return;
     if (V.kit) { V.scene.remove(V.kit); V.kit.geometry.dispose(); V.kit = null; }
@@ -44863,18 +45302,26 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (V.flames) { V.scene.remove(V.flames); V.flames.geometry.dispose(); V.flames = null; }
   }
   function apply() {
-    var THREE = V.THREE, kitMode = want.mode === 'kit';
-    var sig = JSON.stringify([want.look, want.view === 'hands', want.band]);
+    var THREE = V.THREE, kitMode = want.mode === 'kit', gear = gearOf();
+    var sig = JSON.stringify([want.look, want.view === 'hands', want.band, gear]);
     if (!kitMode && (sig !== V.sig || !V.ch)) {
       clearChar();
-      V.sig = sig;
-      V.ch = R.buildCharacter(want.look, { id: 'player', band: want.band || null });   // v0.9: the 'logo' tattoo shows the new band's initials
+      V.sig = sig; V.gear = gear;
+      V.ch = R.buildCharacter(want.look, { id: 'player', band: want.band || null, gear: gear || undefined });   // v0.9: the 'logo' tattoo shows the new band's initials
       if (V.ch) {
         var bn = V.ch.bones;
-        bn[B_GEAR].scale.setScalar(0); bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
+        if (!gear) bn[B_GEAR].scale.setScalar(0);
+        bn[B_PHONES].scale.setScalar(0); bn[B_HELD].scale.setScalar(0); bn[B_FLOOR].scale.setScalar(0);
         V.scene.add(V.ch.root);
       }
     }
+    var ssig = gear && want.gearLook && want.gearLook.sticker === 'logo' ? JSON.stringify([gear, want.logo, want.band]) : '';
+    if (V.ch && ssig !== (V.ssig || '')) {   // v1.1: the headstock sticker (the band logo)
+      clearSticker(); V.ssig = ssig;
+      var LG = R.logo, tex = ssig && LG && LG.texture ? LG.texture(want.logo || null, want.band || 'The Band', 128, { badge: 'round', mini: true }) : null;
+      if (tex) V.sticker = R.gearSticker(V.ctx, V.ch, gear, tex);
+    }
+    if (!V.ch) V.ssig = '';
     if (V.ch) V.ch.root.visible = !kitMode;
     var ksig = kitMode ? JSON.stringify([want.kit, want.band, want.genre, want.look && want.look.skin]) : '';
     if (kitMode && ksig !== V.ksig) {
@@ -44917,10 +45364,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var dt = V.last ? Math.min(0.05, (ts - V.last) / 1000) : 0.016;
     V.last = ts; V.t += dt;
     resize();
-    var kitMode = want.mode === 'kit', view = kitMode ? 'kit' : (want.view || 'full');
+    var kitMode = want.mode === 'kit', view = kitMode ? 'kit' : V.gear ? 'gear' : (want.view || 'full');
     var s = V.ch ? V.ch.root.scale.y : 1, cam = CAMS[view] || CAMS.full, lift = view === 'kit' ? 1 : s;
     var fit = Math.max(1, 0.8 / Math.max(0.3, V.camera.aspect));                      // a narrow preview backs the camera off
-    V.camera.position.set(cam.pos[0], cam.pos[1] * lift, cam.pos[2] * (view === 'full' || view === 'kit' ? fit : 1));
+    V.camera.position.set(cam.pos[0], cam.pos[1] * lift, cam.pos[2] * (view === 'full' || view === 'kit' || view === 'gear' ? fit : 1));
     V.camera.lookAt(cam.at[0], cam.at[1] * lift, cam.at[2]);
     if (V.ch && !kitMode) pose(V.ch, view, V.t);
     if (V.kit) { V.kit.rotation.y = 0.35 + (V.yaw - 0.42); if (V.flames) { V.flames.rotation.y = V.kit.rotation.y; V.flames.scale.y = 0.9 + 0.1 * Math.sin(V.t * 30); } }
@@ -44930,13 +45377,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function pose(ch, view, t) {
     var bn = ch.bones, i;
     for (i = 1; i < bn.length; i++) bn[i].rotation.set(0, 0, 0);
-    ch.root.rotation.y = view === 'hands' ? 0 : view === 'face' ? V.yaw * 0.6 : V.yaw;
+    ch.root.rotation.y = view === 'hands' ? 0 : view === 'face' ? V.yaw * 0.6 : view === 'gear' ? (V.yaw - 0.42) * 0.8 : V.yaw;
     var br = Math.sin(t * 1.8);
     bn[B_SPINE].rotation.x = 0.015 * br;
     if (view === 'hands') {
       bn[B_ARM_L].rotation.set(-0.15, -Math.PI / 2, 0.02); bn[B_ARM_R].rotation.set(-0.15, Math.PI / 2, -0.02);
       bn[B_FORE_L].rotation.set(0, 0, 0.35); bn[B_FORE_R].rotation.set(0, 0, -0.35);   // elbows bend forward (local z = world ∓x here)
       V.pose = 'fists';
+    } else if (view === 'gear') {                                  // v1.1: playing your instrument (the stage's guitar pose)
+      var strum = Math.sin(t * 7) * 0.14 * (Math.sin(t * 0.8) > -0.5 ? 1 : 0.2);
+      bn[B_ARM_L].rotation.set(0.1, 0, 0.14); bn[B_FORE_L].rotation.set(-2.05, 0, 0.1 + 0.05 * Math.sin(t * 1.3));
+      bn[B_ARM_R].rotation.set(-0.35, 0, 0.12); bn[B_FORE_R].rotation.set(-0.95 + strum, 0, 0.45);
+      bn[B_HEAD].rotation.x = 0.16;
+      V.pose = 'play';
     } else {
       bn[B_ARM_L].rotation.z = 0.1; bn[B_ARM_R].rotation.z = -0.1;
       bn[B_FORE_L].rotation.x = -0.12; bn[B_FORE_R].rotation.x = -0.12;
@@ -54062,7 +54515,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { id: 'clothes', label: 'Clothes', icon: '👕' }, { id: 'stage', label: 'Stage', icon: '🎤' }, { id: 'ink', label: 'Ink', icon: '🖋️' },
     { id: 'kit', label: 'Kit', icon: '🥁' }
   ];
+  var GEAR_TAB = { id: 'gear', label: 'Your gear', icon: '🎸' };   // v1.1: replaces the Kit tab on a string seat
   var E = null;            // the open editor: { mode, st, look, stage, kit, which, tab, view, genre, band, onDone, s, panel, tabs, ... }
+  (function css() {   // v1.1: the gear tab's controls (>= 48 px)
+    if (typeof document === 'undefined' || document.getElementById('lk-gear-css')) return;
+    var st = document.createElement('style'); st.id = 'lk-gear-css';
+    st.textContent = '.lk-chip.lk-big{min-height:48px}.lk-sw.lk-big{width:48px;height:48px}.lk-sw.lk-kitsw{display:inline-flex;align-items:center;justify-content:center;font:800 11px var(--font);color:#fff;text-shadow:0 1px 2px #000}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+  function stringSeat(x) { return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+  function tabs() { return E && E.seat ? TABS.map(function (t) { return t.id === 'kit' ? GEAR_TAB : t; }) : TABS; }
   function C() { return GG.creator; }
   function content() { return GG.content.creator || { swatches: {} }; }
   function cur() { return E.which === 'stage' ? E.stage : E.look; }
@@ -54082,6 +54544,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b', bandDef && bandDef.id))),
       which: 'everyday', tab: 'body', view: 'full'
     };
+    E.seat = stringSeat(o.seat || (st && st.seat));
+    E.gearLook = C().sanitizeGearLook ? C().sanitizeGearLook(o.gearLook || pl.gearLook || null, E.seat) : null;
+    E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
   }
@@ -54104,7 +54569,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ui.append(s.body, [
         el('div.lk-head', [
           btn('.icon-btn', { testid: 'lk-cancel', 'aria-label': 'Back', onclick: cancel }, '←'),
-          el('div.grow', [el('div.caps', E.mode === 'new' ? 'New career · your look' : 'Your look'), el('div.lk-title', 'Who’s on drums?')]),
+          el('div.grow', [el('div.caps', E.mode === 'new' ? 'New career · your look' : 'Your look'), el('div.lk-title', E.seat === 'bass' ? 'Who’s on bass?' : E.seat ? 'Who’s on guitar?' : 'Who’s on drums?')]),
           el('span.tag', { testid: 'lk-count', title: 'Parts unlocked' }, '🔓 ' + open + '/' + total)
         ]),
         el('div.lk-stagewrap', [host, E.viewBar, E.note]),
@@ -54129,6 +54594,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function cancel() { ui.close('look'); }
   function done() {
     var out = { look: C().stageOnly(E.look), stageLook: clone(E.stage), kit: clone(E.kit) };
+    if (E.seat && E.gearLook) out.gearLook = clone(E.gearLook);   // v1.1
     if (E.mode === 'career' && GG.state) {
       var res = C().apply(GG.state, out);
       if (GG.main && GG.main.sync) GG.main.sync();
@@ -54153,6 +54619,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     L.shirt = any(sw.clothes); L.pants = any(sw.clothes);
     E.stage.outfit = val('outfit');
     C().syncPerson(L, E.stage);
+    if (E.seat && E.gearLook) {   // v1.1: a new instrument too
+      var shapes = C().gearShapes(E.seat), guards = GG.contracts.GEAR_GUARDS || ['white'];
+      E.gearLook.shape = shapes[Math.floor(r.next() * shapes.length)] || null; E.gearLook.color = r.next() < 0.3 ? null : any(sw.kit);
+      E.gearLook.guard = guards[Math.floor(r.next() * guards.length)];
+    }
     refresh();
   }
 
@@ -54163,7 +54634,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     try { bars(); panel(); preview(); } finally { E.busy = false; }
   }
   function preview() {
-    if (GG.render && GG.render.preview) GG.render.preview.set({ look: cur(), kit: E.kit, mode: E.tab === 'kit' ? 'kit' : 'char', view: E.view, band: E.band, genre: E.genre });
+    if (GG.render && GG.render.preview) GG.render.preview.set({ look: cur(), kit: E.kit, mode: E.tab === 'kit' ? 'kit' : E.tab === 'gear' ? 'gear' : 'char', view: E.view, band: E.band, genre: E.genre,
+      seat: E.seat, gearLook: E.gearLook, kitColor: E.kit && E.kit.color, logo: E.logo });   // v1.1: the gear mode
   }
   function panel() {
     var keep = E.panel.scrollTop;
@@ -54172,14 +54644,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     E.panel.scrollTop = keep;
   }
   function bars() {
-    var kitMode = E.tab === 'kit';
+    var kitMode = E.tab === 'kit' || E.tab === 'gear';
     ui.clear(E.whichBar);
     ui.append(E.whichBar, [['everyday', '👟 Everyday'], ['stage', '🎤 Stage']].map(function (w) {
       return btn('.lk-seg' + (E.which === w[0] ? '.on' : ''), { testid: 'lk-which-' + w[0], role: 'tab', 'aria-selected': E.which === w[0] ? 'true' : 'false',
         disabled: kitMode, onclick: function () { E.which = w[0]; if (w[0] === 'everyday' && E.tab === 'stage') E.tab = 'clothes'; refresh(); } }, w[1]);
     }));
     ui.clear(E.tabs);
-    ui.append(E.tabs, TABS.map(function (t) {
+    ui.append(E.tabs, tabs().map(function (t) {
       return btn('.lk-tab' + (E.tab === t.id ? '.on' : ''), { testid: 'lk-tab-' + t.id, role: 'tab', 'aria-selected': E.tab === t.id ? 'true' : 'false',
         onclick: function () { E.tab = t.id; if (t.id === 'stage') E.which = 'stage'; if (t.id === 'face' && E.view === 'full') E.view = 'face'; if (t.id !== 'face' && t.id !== 'ink' && E.view !== 'full') E.view = 'full'; refresh(); } },
         [el('span.i', t.icon), el('span.l', t.label)]);
@@ -54188,7 +54660,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!kitMode) ui.append(E.viewBar, [['full', 'Full'], ['face', 'Face'], ['hands', 'Hands']].map(function (v) {
       return btn('.lk-view' + (E.view === v[0] ? '.on' : ''), { testid: 'lk-view-' + v[0], onclick: function () { E.view = v[0]; refresh(); } }, v[1]);
     }));
-    else ui.append(E.viewBar, el('span.lk-viewnote', 'Your kit'));
+    else ui.append(E.viewBar, el('span.lk-viewnote', E.tab === 'gear' ? 'Your ' + (E.seat === 'bass' ? 'bass' : 'guitar') : 'Your kit'));
   }
   function section(title, kids, note) {
     E.panel.appendChild(el('div.lk-sec', [el('div.caps', title), note ? el('div.small.dim', note) : null, kids]));
@@ -54331,6 +54803,27 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       section('Sticks', chips('sticks', function () { var p = C().partsIn('sticks').filter(function (x) { return x.color.toLowerCase() === sk; })[0]; return p ? p.value : null; },
         function (v) { K.sticks = C().partFor('sticks', v).color; }));
       section('Extras', chips('kitExtra', function () { return K.extras; }, function (a) { K.extras = a; }, { multi: true }), 'Pyro only fires at arena shows. There is no gong. There will never be a gong.');
+    },
+    gear: function () {
+      var G = E.gearLook, N = C().gearNames(E.seat), def = C().gearDefault(E.seat, E.genre), shape = G.shape || def;
+      var pick = function (testid, on, label, fn) {
+        return btn('.lk-chip.lk-big' + (on ? '.on' : ''), { testid: testid, 'aria-pressed': on ? 'true' : 'false', onclick: function () { fn(); refresh(); } }, label);
+      };
+      section('Body shape', el('div.lk-chips', C().gearShapes(E.seat).map(function (id) {
+        return pick('lk-gear-shape-' + id, shape === id, N.shapes[id], function () { G.shape = id; });
+      })), E.seat === 'bass' ? 'Four strings. The fifth comes from the shop.' : null);
+      var v = String(G.color || '').toLowerCase(), list = content().swatches.kit || [];
+      section('Colour', el('div.lk-swatches', [btn('.lk-sw.lk-big.lk-kitsw' + (!G.color ? '.on' : ''), { testid: 'lk-gear-color-kit', 'aria-label': 'Match the kit colour', 'aria-pressed': !G.color ? 'true' : 'false',
+        style: { background: (E.kit && E.kit.color) || '#b3262b' }, onclick: function () { G.color = null; refresh(); } }, 'KIT')].concat(list.map(function (c, i) {
+        return btn('.lk-sw.lk-big' + (v === c.toLowerCase() ? '.on' : ''), { testid: 'lk-gear-sw-' + i, 'aria-label': 'colour ' + c, 'aria-pressed': v === c.toLowerCase() ? 'true' : 'false', style: { background: c },
+          onclick: function () { G.color = c; refresh(); } });
+      }))), shape === 'acoustic' ? 'KIT on an acoustic means natural wood.' : null);
+      section('Pickguard', el('div.lk-chips', (GG.contracts.GEAR_GUARDS || []).map(function (id) {
+        return pick('lk-gear-guard-' + id, G.guard === id, N.guards[id], function () { G.guard = id; });
+      })));
+      section('Headstock sticker', el('div.lk-chips', ['none', 'logo'].map(function (id) {
+        return pick('lk-gear-sticker-' + id, G.sticker === id, N.stickers[id], function () { G.sticker = id; });
+      })), 'The band logo, slapped on crooked. Like a professional.');
     }
   };
   function heightLabel(h) { return h < 0.95 ? 'Compact' : h < 1.0 ? 'Average-ish' : h < 1.05 ? 'Average' : 'Tall'; }
@@ -54343,6 +54836,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   GG.registerDebug('creator-ui', function () {
     if (!E) return { open: false };
     return { open: true, mode: E.mode, which: E.which, tab: E.tab, view: E.view, look: clone(E.look), stage: clone(E.stage), kit: clone(E.kit),
+      seat: E.seat || 'drums', gearLook: E.gearLook ? clone(E.gearLook) : null, tabs: tabs().map(function (t) { return t.id; }),   // v1.1
       preview: GG.render && GG.render.preview ? GG.render.preview.info() : null };
   });
 })(window.GG);
@@ -54925,7 +55419,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     cross: function (bn) { rot(bn[B.ARM_L], -0.25, 0, 0.12); rot(bn[B.FORE_L], -1.5, 0, -1.25); rot(bn[B.ARM_R], -0.3, 0, -0.12); rot(bn[B.FORE_R], -1.62, 0, 1.25); },
     wide: function (bn) { rot(bn[B.ARM_L], 0, 0, 1.25); rot(bn[B.ARM_R], 0, 0, -1.25); rot(bn[B.FORE_L], 0, 0, 0.3); rot(bn[B.FORE_R], 0, 0, -0.3); rot(bn[B.HEAD], -0.2, 0, 0); },
     sticks: function (bn) { rot(bn[B.ARM_L], 0, 0, 3.1); rot(bn[B.ARM_R], 0, 0, -3.1); rot(bn[B.FORE_L], 0, 0, 0.35); rot(bn[B.FORE_R], 0, 0, -0.35); },
-    hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); }
+    hips: function (bn) { rot(bn[B.ARM_L], 0, 0, 0.55); rot(bn[B.FORE_L], -0.4, 0, -1.9); rot(bn[B.ARM_R], 0, 0, -0.55); rot(bn[B.FORE_R], -0.4, 0, 1.9); },
+    axe: function (bn) { rot(bn[B.ARM_L], -0.15, 0, 0.3); rot(bn[B.FORE_L], -2.0, 0, 0.12); rot(bn[B.ARM_R], -0.35, 0, 0.12); rot(bn[B.FORE_R], -1.1, 0, 0.45); rot(bn[B.HEAD], -0.15, 0, 0); }
   };
   var POSE_OF = { marcel: 'wide', kenji: 'cross', dana: 'fist', jaxon: 'hips',
     rox: 'fist', benny: 'hips', moth: 'cross', chase: 'wide', lenny: 'fist', tamara: 'cross', travis: 'hips', earl: 'cross', clementine: 'hips', duke: 'wide' };
@@ -54948,13 +55443,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       return { id: m.id, look: m.look || (cm[m.id] && cm[m.id].look) || null, pose: POSE_OF[m.id] || ['fist', 'hips', 'cross'][i % 3] };
     });
     var p = st.player || {}, preset = (GG.content.presets || []).filter(function (x) { return x.id === p.presetId; })[0];
-    var mid = Math.floor(list.length / 2);
-    list.splice(mid, 0, { id: 'player', look: p.look || (preset && preset.look) || null, pose: 'sticks', player: true });
+    var mid = Math.floor(list.length / 2), seat = stringSeat(st);
+    list.splice(mid, 0, { id: 'player', look: p.look || (preset && preset.look) || null, pose: seat ? 'axe' : 'sticks', player: true, seat: seat });
+    if (seat) { var dr = drummerOf(st); list.forEach(function (x) { if (x.id === dr) x.drummer = true; }); }   // v1.1: the swapped drummer brings the sticks
     return list.slice(0, 7);
+  }
+  function stringSeat(st) { var x = st && st.seat; return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+  function drummerOf(st) {
+    var lu = null;
+    try { lu = GG.career && GG.career.lineup ? GG.career.lineup(st) : null; } catch (e) { lu = null; }
+    for (var i = 0; lu && i < lu.length; i++) if (lu[i] && lu[i].id !== 'player' && /^drums/.test(String(lu[i].seatRole || ''))) return lu[i].id;
+    return null;
+  }
+  function seatGear(st) {
+    var seat = stringSeat(st), R = GG.render, p = st.player || {};
+    return seat && R && R.seatGear ? R.seatGear(seat, p.gearLook, (p.kit && p.kit.color) || p.kitColor || null, st.genre) : null;
   }
   ui.recapPhoto = function (st, year) {
     st = st || S();
-    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) : null;
+    var key = st ? (st.bandId || 'hail_damage') + '|' + (st.seed >>> 0) + '|' + (year || st.year) + (stringSeat(st) ? '|' + st.seat : '') : null;   // (v1.1: + the seat)
     if (!st) return null;
     if (photos[key]) return photos[key];
     var R = GG.render;
@@ -54972,13 +55479,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var zs = Array.isArray(rig.z) && rig.z.length >= 2 ? rig.z : RIG.z, zp = rig.player != null ? rig.player : RIG.player;
       var cv = st.flags && st.flags.cape, cape = typeof cv === 'string' && cv !== 'none' ? (CAPES[cv] ? cv : 'velvet') : null;
       var kl = GG.render.kit && st.player ? GG.render.kit.norm(st.player.kit, st.player.kitColor) : null;
-      var pi = people.map(function (p) { return !!p.player; }).indexOf(true);
+      var pi = people.map(function (p) { return !!p.player; }).indexOf(true), axe = seatGear(st), pad = axe ? 0.06 : PLAYER_PAD;   // v1.1: an instrument needs less room than raised sticks
       people.forEach(function (p, i) {
         var md = p.player ? null : ui.memberDef(p.id, st);   // v0.9: the cape goes on whoever owns it (member.cape)
-        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: p.player ? (kl ? kl.sticks : true) : null });
+        var ch = R.buildCharacter(p.look, { id: p.id, scale: 1.18, lift: true, cape: md && md.cape ? cape : null, sticks: (p.player && !axe) || p.drummer ? (kl ? kl.sticks : true) : null, gear: p.player && axe ? axe : undefined });
         if (!ch) return;
         var front = p.player ? zp : (i % 2 ? zs[1] : zs[0]);
-        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -PLAYER_PAD : PLAYER_PAD);
+        var px = x0 + i * gap + (pi < 0 || i === pi ? 0 : i < pi ? -pad : pad);
         ch.root.position.set(px, 0, front);
         ch.root.rotation.y = -0.06 * px;
         (POSES[p.pose] || POSES.fist)(ch.bones);
@@ -54987,7 +55494,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         made.push(ch);
       });
       scene.updateMatrixWorld(true);
-      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render' };   // v0.9 (debug)
+      lastPhoto = { key: key, n: made.length, ids: people.map(function (p) { return p.id; }), kind: photoKind(st), rig: rig === RIG ? 'default' : 'render',   // v0.9 (debug)
+        seat: stringSeat(st) || 'drums', gear: axe || null, sticks: people.filter(function (p) { return (p.player && !axe) || p.drummer; }).map(function (p) { return p.id; }) };   // v1.1
       var W = 1200, H = 760;
       rt = new THREE.WebGLRenderTarget(W, H);
       var cam = new THREE.PerspectiveCamera(rig.fov, W / H, rig.near, rig.far);

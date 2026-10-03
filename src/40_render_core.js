@@ -1059,6 +1059,7 @@
   function gearParts(b, kind, sx) {
     kind = GEAR_ALIAS[kind] || kind;
     if (kind === 'v') { guitarParts(b); return; }
+    if (typeof kind === 'string' && kind.indexOf('seat|') === 0) { seatGearParts(b, R.seatGearSpec(kind)); return; }   // v1.1: your own
     var black = 0x151515, i;
     b.bone = B_GEAR;
     if (kind === 'fiddle') {                                                   // under the chin, scroll out front-left
@@ -1124,6 +1125,147 @@
     b.pop();
   }
   function sh0(c, f) { return shade(c, f); }
+
+  // ---- v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): your own instrument on a string seat --------------------------------
+  // player.gearLook (C.GEAR_LOOK { shape: C.GEAR_SHAPES[seat] id | null, color: '#rrggbb' | null, guard: C.GEAR_GUARDS, sticker })
+  // becomes a gear string that every gear consumer already takes (R.buildCharacter opts.gear, the garage person signature, the
+  // stage): R.seatGear(seat, gearLook, kitColor, genre) -> 'seat|<seat>|<shape>|<#rrggbb or natural>|<guard>' (null on drums).
+  // seatGearParts draws it on the gear bone, merged into the character's one mesh (no extra draw call): four body shapes per seat
+  // as extruded outlines (bass plank / offset / arrow / violin; rhythm double_cut / single_cut / offset / acoustic; lead vee /
+  // pointy / double_cut / single_cut), the colour (null = the kit colour; a null-colour acoustic is natural wood), the pickguard
+  // (white / black / tortoise / none), pickups, a bridge, the strings, the long bass neck, 4 or 6 tuners. R.seatGearSpec(str)
+  // parses one; R.headstockAt(spec) -> the headstock face in character space { x, y, z, rz, w, h }; R.gearSticker(ctx, ch, gear,
+  // texture) adds the headstock sticker (one small textured quad on the gear bone) and returns it (the caller disposes it).
+  var SEAT_SHAPES = { bass: ['plank', 'offset', 'arrow', 'violin'], rhythm: ['double_cut', 'single_cut', 'offset', 'acoustic'], lead: ['vee', 'pointy', 'double_cut', 'single_cut'] };
+  var GUARD_COL = { white: 0xe9e5dc, black: 0x151515, tortoise: 0x5a2410 };
+  // Body outlines (x up the neck, y toward the player's head; counter-clockwise, star-shaped around their centroid).
+  var BODY = {
+    double_cut: [[0.06, 0.03], [0.1, 0.1], [0.07, 0.14], [0.0, 0.13], [-0.07, 0.1], [-0.17, 0.15], [-0.27, 0.13], [-0.33, 0.05], [-0.33, -0.06],
+      [-0.27, -0.14], [-0.16, -0.15], [-0.07, -0.11], [0.0, -0.12], [0.05, -0.1], [0.07, -0.07], [0.06, -0.03]],
+    single_cut: [[0.06, 0.03], [0.03, 0.09], [-0.05, 0.12], [-0.15, 0.15], [-0.26, 0.14], [-0.33, 0.07], [-0.34, -0.03], [-0.29, -0.12],
+      [-0.18, -0.16], [-0.07, -0.14], [0.0, -0.12], [0.06, -0.1], [0.07, -0.06], [0.06, -0.03]],
+    offset: [[0.06, 0.03], [0.09, 0.1], [0.03, 0.15], [-0.08, 0.15], [-0.2, 0.14], [-0.3, 0.1], [-0.36, 0.02], [-0.33, -0.08], [-0.24, -0.15],
+      [-0.12, -0.14], [-0.04, -0.1], [0.03, -0.09], [0.06, -0.05], [0.06, -0.03]],
+    pointy: [[0.06, 0.035], [0.17, 0.14], [0.02, 0.1], [-0.14, 0.12], [-0.4, 0.15], [-0.3, 0.0], [-0.42, -0.13], [-0.16, -0.12], [0.0, -0.11], [0.06, -0.035]],
+    plank: [[0.06, 0.03], [0.12, 0.11], [0.08, 0.15], [0.0, 0.13], [-0.08, 0.11], [-0.19, 0.16], [-0.3, 0.14], [-0.37, 0.05], [-0.37, -0.06],
+      [-0.3, -0.15], [-0.18, -0.16], [-0.08, -0.12], [0.0, -0.13], [0.06, -0.11], [0.08, -0.07], [0.06, -0.03]],
+    bassoffset: [[0.06, 0.03], [0.16, 0.11], [0.1, 0.15], [-0.02, 0.13], [-0.1, 0.11], [-0.22, 0.16], [-0.33, 0.13], [-0.4, 0.04], [-0.38, -0.07],
+      [-0.29, -0.15], [-0.16, -0.15], [-0.07, -0.11], [0.02, -0.11], [0.07, -0.07], [0.06, -0.03]],
+    arrow: [[0.07, 0.035], [0.0, 0.1], [-0.25, 0.18], [-0.18, 0.06], [-0.46, 0.0], [-0.18, -0.06], [-0.25, -0.17], [0.0, -0.1], [0.07, -0.035]],
+    violin: [[0.04, 0.04], [0.0, 0.1], [-0.08, 0.11], [-0.14, 0.07], [-0.22, 0.12], [-0.32, 0.1], [-0.36, 0.0], [-0.32, -0.1], [-0.22, -0.12],
+      [-0.14, -0.07], [-0.08, -0.11], [0.0, -0.1], [0.04, -0.04]]
+  };
+  var VEE_WING = [[0.07, 0.03], [-0.36, 0.21], [-0.42, 0.15], [-0.04, -0.04]];   // the top wing; the bottom one mirrors it
+  var GUARD = [[0.04, -0.02], [0.0, 0.05], [-0.07, 0.06], [-0.14, 0.02], [-0.2, -0.07], [-0.15, -0.12], [-0.06, -0.1], [0.02, -0.07]];
+  var PICKUPS = { double_cut: 'single', single_cut: 'hum', offset: 'soap', vee: 'hum', pointy: 'hum', plank: 'split', bassoffset: 'bar', arrow: 'hum', violin: 'small' };
+  function seatShapes(seat) { var C = GG.contracts && GG.contracts.GEAR_SHAPES; return (C && C[seat]) || SEAT_SHAPES[seat] || null; }
+  function hex6(c) { return typeof c === 'number' ? '#' + ('00000' + c.toString(16)).slice(-6) : c; }
+  R.seatGear = function (seat, gl, kitColor, genre) {
+    var shapes = seatShapes(seat);
+    if (!shapes) return null;
+    gl = gl || {};
+    var shape = shapes.indexOf(gl.shape) >= 0 ? gl.shape : (seat === 'rhythm' && genre === 'country' && shapes.indexOf('acoustic') >= 0 ? 'acoustic' : shapes[0]);
+    var col = hexOf(gl.color, null);
+    if (col == null) col = shape === 'acoustic' ? 'natural' : hexOf(kitColor, '#b3262b');
+    var guard = GUARD_COL[gl.guard] != null || gl.guard === 'none' ? gl.guard : 'white';
+    return 'seat|' + seat + '|' + shape + '|' + hex6(col) + '|' + guard;
+  };
+  R.seatGearSpec = function (s) {
+    var p = String(s || '').split('|');
+    if (p[0] !== 'seat' || !SEAT_SHAPES[p[1]]) return null;
+    var shape = SEAT_SHAPES[p[1]].indexOf(p[2]) >= 0 || (seatShapes(p[1]) || []).indexOf(p[2]) >= 0 ? p[2] : SEAT_SHAPES[p[1]][0];
+    return { seat: p[1], shape: shape, color: p[3] === 'natural' ? null : hexOf(p[3], '#b3262b'), guard: GUARD_COL[p[4]] != null || p[4] === 'none' ? p[4] : 'white', bass: p[1] === 'bass' };
+  };
+  function gearFrame(spec) {   // the instrument's frame (char space): where it hangs + its tilt, the neck, the headstock
+    var bass = spec.bass, violin = spec.shape === 'violin', acoustic = spec.shape === 'acoustic';
+    var nl = bass && !violin ? 0.82 : violin ? 0.58 : acoustic ? 0.5 : 0.6, tilt = acoustic ? 0.35 : bass ? 0.36 : 0.42;
+    return { x: acoustic ? -0.06 : -0.08, y: acoustic ? 1.04 : 1.02, z: acoustic ? 0.22 : 0.21, tilt: tilt, nl: nl, hx: 0.07 + nl, T: violin ? 0.075 : acoustic ? 0.1 : bass ? 0.05 : 0.045 };
+  }
+  // Extruded outline in the builder's current frame: front + back fans around the centroid, side quads (edge colour).
+  function prism(b, pts, d, col, edge, z) {
+    var n = pts.length, cx = 0, cy = 0, i, a, c, h = d / 2, z0 = (z || 0) - h, z1 = (z || 0) + h;
+    for (i = 0; i < n; i++) { cx += pts[i][0]; cy += pts[i][1]; }
+    cx /= n; cy /= n;
+    for (i = 0; i < n; i++) {
+      a = pts[i]; c = pts[(i + 1) % n];
+      b.tri([cx, cy, z1], [a[0], a[1], z1], [c[0], c[1], z1], col);
+      b.tri([cx, cy, z0], [c[0], c[1], z0], [a[0], a[1], z0], col);
+      b.quad([a[0], a[1], z0], [c[0], c[1], z0], [c[0], c[1], z1], [a[0], a[1], z1], edge == null ? col : edge);
+    }
+  }
+  function scalePts(pts, k, flip) { return pts.map(function (p) { return [p[0] * k, (flip ? -p[1] : p[1]) * k]; }); }
+  function seatGearParts(b, spec) {
+    if (!spec) return;
+    var F = gearFrame(spec), shape = spec.shape, i, chrome = 0xc9ccd2, black = 0x151515;
+    b.bone = B_GEAR;
+    b.box(0.05, 0.64, 0.02, 0.02, 1.2, 0.15, 0x1c1714, 0, 0, 0.62);                                     // strap across the chest
+    b.push(F.x, F.y, F.z, 0, 0, F.tilt);
+    if (shape === 'acoustic') {                                                // a dreadnought (natural wood, or your colour on the top)
+      var AW = spec.color == null ? 0xd8a860 : hexOf(spec.color, 0xd8a860), AE = spec.color == null ? 0x6a3a1a : sh0(AW, 0.55);
+      b.box(0.24, 0.4, 0.1, -0.16, 0, 0, AE); b.box(0.22, 0.38, 0.012, -0.16, 0, 0.051, AW);
+      b.box(0.2, 0.32, 0.1, 0.03, 0, 0, AE); b.box(0.18, 0.3, 0.012, 0.03, 0, 0.051, AW);
+      b.cyl(0.055, 0.055, 0.012, 12, 0.0, 0, 0.056, 0x1a120c, Math.PI / 2); b.cyl(0.066, 0.066, 0.008, 12, 0.0, 0, 0.054, 0x3a2a1a, Math.PI / 2);
+      b.box(0.03, 0.16, 0.02, -0.2, 0, 0.06, 0x2a1a0e);
+      if (spec.guard !== 'none') b.box(0.1, 0.1, 0.006, -0.04, -0.1, 0.058, GUARD_COL[spec.guard]);
+      b.box(F.nl, 0.05, 0.03, 0.07 + F.nl / 2, 0, 0.03, 0x3a2414); b.box(0.13, 0.07, 0.025, F.hx + 0.06, 0.0, 0.03, 0x2a1a10);
+      for (i = 0; i < 3; i++) { b.box(0.02, 0.02, 0.02, F.hx + 0.02 + i * 0.035, 0.045, 0.03, 0xc8c8c0); b.box(0.02, 0.02, 0.02, F.hx + 0.02 + i * 0.035, -0.045, 0.03, 0xc8c8c0); }
+      b.box(F.hx + 0.2, 0.02, 0.003, (F.hx - 0.2) / 2, 0, 0.061, 0x8e9096);                           // the strings, bridge to nut
+      b.pop();
+      return;
+    }
+    var body = hexOf(spec.color, 0xb3262b), edge = sh0(body, 0.62), T = F.T, fz = T / 2, k = spec.bass ? 1.1 : 1;
+    if (shape === 'vee') {                                                     // two wings, a centre block
+      prism(b, VEE_WING, T, body, edge); prism(b, scalePts(VEE_WING, 1, true).reverse(), T, body, edge);
+      b.box(0.16, 0.12, T, 0.0, 0, 0, body);
+    } else prism(b, scalePts(BODY[spec.bass && shape === 'offset' ? 'bassoffset' : shape] || BODY.double_cut, k), T, body, edge);
+    if (shape === 'violin') {                                                  // the hollow body: f-holes, a carved top line
+      b.box(0.012, 0.06, 0.004, -0.2, 0.05, fz + 0.002, 0x120c08); b.box(0.012, 0.06, 0.004, -0.2, -0.05, fz + 0.002, 0x120c08);
+      b.box(0.3, 0.008, 0.003, -0.17, 0, fz + 0.003, sh0(body, 1.25));
+    }
+    if (spec.guard !== 'none') {                                               // the pickguard (tortoise: a few darker flecks)
+      var gc = GUARD_COL[spec.guard] != null ? GUARD_COL[spec.guard] : GUARD_COL.white;
+      prism(b, scalePts(GUARD, k * (shape === 'violin' ? 0.7 : 1), false), 0.004, gc, gc, fz + 0.002);
+      if (spec.guard === 'tortoise') for (i = 0; i < 4; i++) b.box(0.03, 0.012, 0.002, -0.03 - i * 0.04, 0.03 - (i % 2) * 0.06, fz + 0.005, 0x2a0e04, 0, 0, 0.4 * (i - 1.5));
+    }
+    var pk = PICKUPS[spec.bass && shape === 'offset' ? 'bassoffset' : shape] || 'hum', pz = fz + 0.006;   // pickups
+    if (pk === 'single') for (i = 0; i < 3; i++) b.box(0.022, 0.075, 0.008, -0.03 - i * 0.065, 0, pz, 0xf2efe6);
+    else if (pk === 'soap') { b.box(0.04, 0.085, 0.008, -0.05, 0, pz, 0xf2efe6); b.box(0.04, 0.085, 0.008, -0.17, 0, pz, 0xf2efe6); }
+    else if (pk === 'split') { b.box(0.03, 0.05, 0.008, -0.1, 0.025, pz, black); b.box(0.03, 0.05, 0.008, -0.13, -0.025, pz, black); }
+    else if (pk === 'bar') { b.box(0.03, 0.09, 0.008, -0.08, 0, pz, black); b.box(0.03, 0.09, 0.008, -0.2, 0, pz, black); }
+    else if (pk === 'small') { b.box(0.03, 0.06, 0.008, -0.06, 0, pz, 0xc9ccd2); b.box(0.03, 0.06, 0.008, -0.12, 0, pz, 0xc9ccd2); }
+    else { b.box(0.04, 0.085, 0.01, -0.05, 0, pz, black); b.box(0.04, 0.085, 0.01, -0.16, 0, pz, black); b.box(0.042, 0.087, 0.004, -0.05, 0, pz - 0.004, chrome); b.box(0.042, 0.087, 0.004, -0.16, 0, pz - 0.004, chrome); }
+    b.box(0.04, spec.bass ? 0.1 : 0.08, 0.012, spec.bass ? -0.27 : -0.24, 0, fz + 0.006, chrome);              // bridge
+    for (i = 0; i < (spec.bass ? 2 : 3); i++) b.cyl(0.014, 0.014, 0.014, 8, -0.2 - i * 0.04, -0.1, fz + 0.007, i ? 0xd9c27a : black, Math.PI / 2);   // knobs
+    // Neck, fretboard dots, the strings (one pale band), the headstock + tuners.
+    b.box(F.nl, spec.bass ? 0.045 : 0.05, 0.03, 0.07 + F.nl / 2, 0, 0.012, 0x2a1a10);
+    for (i = 0; i < 4; i++) b.box(0.012, 0.012, 0.004, 0.16 + i * F.nl * 0.2, 0, 0.029, 0xe8e2d0);
+    var sx0 = spec.bass ? -0.27 : -0.24, sL = F.hx - sx0;
+    b.box(sL, spec.bass ? 0.016 : 0.02, 0.003, sx0 + sL / 2, 0, Math.max(0.03, fz + 0.014), 0x8e9096);
+    var hc = shape === 'single_cut' || shape === 'violin' ? (shape === 'violin' ? 0x3a1a0a : black) : body;
+    b.box(0.14, 0.07, 0.028, F.hx + 0.065, 0.012, 0.012, hc, 0, 0, -0.12);
+    var nt = spec.bass ? 4 : 6, inline = !spec.bass && (shape === 'double_cut' || shape === 'offset' || shape === 'pointy' || shape === 'vee');
+    for (i = 0; i < nt; i++) {
+      if (inline) b.box(0.016, 0.022, 0.026, F.hx + 0.012 + i * 0.022, 0.052 - i * 0.003, 0.018, chrome);
+      else b.box(0.02, 0.025, 0.03, F.hx + 0.02 + (i % (nt / 2)) * (spec.bass ? 0.05 : 0.035), i < nt / 2 ? 0.05 : -0.026, 0.018, chrome);
+    }
+    b.pop();
+  }
+  // The headstock face in character space (the sticker's spot): the frame's push transform applied to its centre.
+  R.headstockAt = function (spec) {
+    if (!spec) return null;
+    var F = gearFrame(spec), ac = spec.shape === 'acoustic', lx = F.hx + (ac ? 0.06 : 0.065), ly = ac ? 0 : 0.012, c = Math.cos(F.tilt), s = Math.sin(F.tilt);
+    return { x: F.x + lx * c - ly * s, y: F.y + lx * s + ly * c, z: F.z + (ac ? 0.03 : 0.012) + (ac ? 0.0125 : 0.014) + 0.002, rz: F.tilt + (ac ? 0 : -0.12), w: ac ? 0.12 : 0.13, h: 0.06 };
+  };
+  R.gearSticker = function (ctx, ch, gear, tex) {
+    var spec = R.seatGearSpec(gear), H = R.headstockAt(spec);
+    if (!H || !ch || !tex) return null;
+    var THREE = ctx.THREE, s = Math.min(H.w * 0.62, H.h * 1.05);
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.2 }));
+    m.position.set(H.x, H.y - 0.94, H.z + 0.003); m.rotation.z = H.rz;    // gear-bone space (the bone binds at y 0.94)
+    m.userData.sticker = true;
+    ch.bones[B_GEAR].add(m);
+    return m;
+  };
   // What a member plays: member.gear (C.GEAR), else by role (bass / fiddle / acoustic / guitar by genre), null = mic only.
   var GENRE_GUITAR = { metal: 'v', punk: 'sg', rock: 'strat', country: 'tele' };
   R.gearOf = function (m, cm, genre) {

@@ -225,4 +225,36 @@ test('stage looks: player stage look, members fall back to their look; apply kee
   eq([s.player.kit.shell, s.player.kitColor, s.player.kit.extras, ev], ['sparkle', '#d45a8a', ['cowbell', 'fan'], 1]);
 });
 
+// v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): the string seats' "your gear" (player.gearLook).
+test('v1.1 gear look: 3-4 shapes per seat with names, sanitize per seat, prepare/apply carry it, drums untouched', () => {
+  const GG = fresh(), C = GG.creator, CT = GG.contracts;
+  ['bass', 'rhythm', 'lead'].forEach(seat => {
+    const shapes = C.gearShapes(seat), N = C.gearNames(seat);
+    ok(shapes.length >= 3 && shapes.length <= 4 && shapes.join() === CT.GEAR_SHAPES[seat].join(), seat + ': 3-4 body shapes ' + shapes.join(','));
+    shapes.forEach(id => ok(typeof N.shapes[id] === 'string' && N.shapes[id].length > 2 && N.shapes[id] !== id, seat + ' shape named: ' + id + ' = ' + N.shapes[id]));
+    CT.GEAR_GUARDS.forEach(id => ok(N.guards[id], 'guard named ' + id));
+    ok(N.stickers.none && N.stickers.logo, 'sticker names');
+    ok(!/fender|gibson|ibanez|rickenbacker|hofner|höfner|gretsch|epiphone|jackson|esp|schecter|yamaha|martin|taylor|usa|america/i.test(Object.values(N.shapes).join(' ')), seat + ': parody names, no brands, no USA');
+  });
+  eq(C.gearDefault('rhythm', 'country'), 'acoustic', 'country rhythm defaults to the acoustic');
+  eq(C.gearDefault('bass', 'metal'), 'plank');
+  eq(C.sanitizeGearLook({ shape: 'vee', color: '#ABCDEF', guard: 'tortoise', sticker: 'logo', junk: 1 }, 'lead'), { shape: 'vee', color: '#abcdef', guard: 'tortoise', sticker: 'logo' }, 'a good look keeps every field (colour lowercased)');
+  eq(C.sanitizeGearLook({ shape: 'vee', color: 'red', guard: 'gold', sticker: 'yes' }, 'bass'), { shape: null, color: null, guard: 'white', sticker: 'none' }, 'a shape from another seat, bad colour / guard / sticker -> defaults');
+  eq(C.sanitizeGearLook(null, 'rhythm'), Object.assign({}, CT.GEAR_LOOK), 'missing -> C.GEAR_LOOK');
+  eq(C.sanitizeGearLook({ shape: 'violin' }).shape, 'violin', 'no seat: any seat\'s shape id stays');
+  // A new career from the creator: prepare({ gearLook }) is sanitised for the career's seat.
+  C.prepare({ gearLook: { shape: 'arrow', color: '#1f8a4c', guard: 'black', sticker: 'logo' } });
+  const s = career(GG, { seat: 'bass', bandId: 'hail_damage' });
+  eq(s.player.gearLook, { shape: 'arrow', color: '#1f8a4c', guard: 'black', sticker: 'logo' }, 'prepare -> the career gear look');
+  C.prepare({ gearLook: { shape: 'arrow' } });
+  const s2 = career(GG, { seat: 'lead', bandId: 'frost_heave' });
+  eq(s2.player.gearLook.shape, null, 'a bass shape on the lead seat -> the seat default');
+  const r = C.apply(s2, { gearLook: { shape: 'pointy', color: '#d45a8a', guard: 'none', sticker: 'none' } });
+  eq([r.gearLook.shape, s2.player.gearLook.guard, s2.player.gearLook.color], ['pointy', 'none', '#d45a8a'], 'apply (career mode) sets the gear look');
+  // Drums: no gearLook in prepare -> the stage-0 default stays; apply without gearLook returns v1.0's three keys.
+  const d = career(GG, { bandId: 'hail_damage' });
+  eq(d.player.gearLook, Object.assign({}, CT.GEAR_LOOK), 'drum career: the stage-0 default, untouched');
+  eq(Object.keys(C.apply(d, {})).sort(), ['kit', 'look', 'stageLook'], 'apply without gearLook = v1.0 result');
+});
+
 done('sim_creator');

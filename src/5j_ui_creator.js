@@ -10,6 +10,12 @@
 //   lk-sw-<field>-<i>, lk-height, lk-knuckles-right|left, lk-headtext, lk-arm-L|R-<none|half|full>, lk-count, lk-lock (why a part
 //   is locked, over the preview). Debug 'creator-ui'.
 // v1.0 (Q5): parts a finished career unlocked (GG.creator.metaPart) are open in every genre and wear a 🏆 chip (data-meta).
+// v1.1 "Seats" (Lane C, plan_contract_1.1 §4.8): openLook({ ..., seat, gearLook, logo }) (career mode: GG.state.seat /
+//   player.gearLook / the band logo). On a string seat the Kit tab is "Your gear" (lk-tab-gear): body shape (C.GEAR_SHAPES[seat],
+//   names from GG.creator.gearNames: lk-gear-shape-<id>), colour (the kit swatches + "kit colour" = null: lk-gear-sw-<i>,
+//   lk-gear-color-kit), pickguard (C.GEAR_GUARDS: lk-gear-guard-<id>), headstock sticker (lk-gear-sticker-none|logo); the
+//   preview's 'gear' mode shows it played. onDone gets { look, stageLook, kit, gearLook } (string seats); career mode applies it
+//   (GG.creator.apply). The drum seat is exactly v1.0 (the Kit tab, KIT_LOOK). New controls are >= 48 px (CSS injected here).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn;
   var TABS = [
@@ -17,7 +23,16 @@
     { id: 'clothes', label: 'Clothes', icon: '👕' }, { id: 'stage', label: 'Stage', icon: '🎤' }, { id: 'ink', label: 'Ink', icon: '🖋️' },
     { id: 'kit', label: 'Kit', icon: '🥁' }
   ];
+  var GEAR_TAB = { id: 'gear', label: 'Your gear', icon: '🎸' };   // v1.1: replaces the Kit tab on a string seat
   var E = null;            // the open editor: { mode, st, look, stage, kit, which, tab, view, genre, band, onDone, s, panel, tabs, ... }
+  (function css() {   // v1.1: the gear tab's controls (>= 48 px)
+    if (typeof document === 'undefined' || document.getElementById('lk-gear-css')) return;
+    var st = document.createElement('style'); st.id = 'lk-gear-css';
+    st.textContent = '.lk-chip.lk-big{min-height:48px}.lk-sw.lk-big{width:48px;height:48px}.lk-sw.lk-kitsw{display:inline-flex;align-items:center;justify-content:center;font:800 11px var(--font);color:#fff;text-shadow:0 1px 2px #000}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+  function stringSeat(x) { return x === 'bass' || x === 'rhythm' || x === 'lead' ? x : null; }
+  function tabs() { return E && E.seat ? TABS.map(function (t) { return t.id === 'kit' ? GEAR_TAB : t; }) : TABS; }
   function C() { return GG.creator; }
   function content() { return GG.content.creator || { swatches: {} }; }
   function cur() { return E.which === 'stage' ? E.stage : E.look; }
@@ -37,6 +52,10 @@
       kit: C().sanitizeKit(o.kit || (st ? C().kitLook(pl) : C().newKit((o.kit && o.kit.color) || '#b3262b', bandDef && bandDef.id))),
       which: 'everyday', tab: 'body', view: 'full'
     };
+    // v1.1: your seat + gear (string seats only; drums keep the kit tab).
+    E.seat = stringSeat(o.seat || (st && st.seat));
+    E.gearLook = C().sanitizeGearLook ? C().sanitizeGearLook(o.gearLook || pl.gearLook || null, E.seat) : null;
+    E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
   }
@@ -59,7 +78,7 @@
       ui.append(s.body, [
         el('div.lk-head', [
           btn('.icon-btn', { testid: 'lk-cancel', 'aria-label': 'Back', onclick: cancel }, '←'),
-          el('div.grow', [el('div.caps', E.mode === 'new' ? 'New career · your look' : 'Your look'), el('div.lk-title', 'Who’s on drums?')]),
+          el('div.grow', [el('div.caps', E.mode === 'new' ? 'New career · your look' : 'Your look'), el('div.lk-title', E.seat === 'bass' ? 'Who’s on bass?' : E.seat ? 'Who’s on guitar?' : 'Who’s on drums?')]),
           el('span.tag', { testid: 'lk-count', title: 'Parts unlocked' }, '🔓 ' + open + '/' + total)
         ]),
         el('div.lk-stagewrap', [host, E.viewBar, E.note]),
@@ -85,6 +104,7 @@
   function cancel() { ui.close('look'); }
   function done() {
     var out = { look: C().stageOnly(E.look), stageLook: clone(E.stage), kit: clone(E.kit) };
+    if (E.seat && E.gearLook) out.gearLook = clone(E.gearLook);   // v1.1
     if (E.mode === 'career' && GG.state) {
       var res = C().apply(GG.state, out);
       if (GG.main && GG.main.sync) GG.main.sync();
@@ -109,6 +129,11 @@
     L.shirt = any(sw.clothes); L.pants = any(sw.clothes);
     E.stage.outfit = val('outfit');
     C().syncPerson(L, E.stage);
+    if (E.seat && E.gearLook) {   // v1.1: a new instrument too
+      var shapes = C().gearShapes(E.seat), guards = GG.contracts.GEAR_GUARDS || ['white'];
+      E.gearLook.shape = shapes[Math.floor(r.next() * shapes.length)] || null; E.gearLook.color = r.next() < 0.3 ? null : any(sw.kit);
+      E.gearLook.guard = guards[Math.floor(r.next() * guards.length)];
+    }
     refresh();
   }
 
@@ -119,7 +144,8 @@
     try { bars(); panel(); preview(); } finally { E.busy = false; }
   }
   function preview() {
-    if (GG.render && GG.render.preview) GG.render.preview.set({ look: cur(), kit: E.kit, mode: E.tab === 'kit' ? 'kit' : 'char', view: E.view, band: E.band, genre: E.genre });
+    if (GG.render && GG.render.preview) GG.render.preview.set({ look: cur(), kit: E.kit, mode: E.tab === 'kit' ? 'kit' : E.tab === 'gear' ? 'gear' : 'char', view: E.view, band: E.band, genre: E.genre,
+      seat: E.seat, gearLook: E.gearLook, kitColor: E.kit && E.kit.color, logo: E.logo });   // v1.1: the gear mode
   }
   function panel() {
     var keep = E.panel.scrollTop;
@@ -128,14 +154,14 @@
     E.panel.scrollTop = keep;
   }
   function bars() {
-    var kitMode = E.tab === 'kit';
+    var kitMode = E.tab === 'kit' || E.tab === 'gear';
     ui.clear(E.whichBar);
     ui.append(E.whichBar, [['everyday', '👟 Everyday'], ['stage', '🎤 Stage']].map(function (w) {
       return btn('.lk-seg' + (E.which === w[0] ? '.on' : ''), { testid: 'lk-which-' + w[0], role: 'tab', 'aria-selected': E.which === w[0] ? 'true' : 'false',
         disabled: kitMode, onclick: function () { E.which = w[0]; if (w[0] === 'everyday' && E.tab === 'stage') E.tab = 'clothes'; refresh(); } }, w[1]);
     }));
     ui.clear(E.tabs);
-    ui.append(E.tabs, TABS.map(function (t) {
+    ui.append(E.tabs, tabs().map(function (t) {
       return btn('.lk-tab' + (E.tab === t.id ? '.on' : ''), { testid: 'lk-tab-' + t.id, role: 'tab', 'aria-selected': E.tab === t.id ? 'true' : 'false',
         onclick: function () { E.tab = t.id; if (t.id === 'stage') E.which = 'stage'; if (t.id === 'face' && E.view === 'full') E.view = 'face'; if (t.id !== 'face' && t.id !== 'ink' && E.view !== 'full') E.view = 'full'; refresh(); } },
         [el('span.i', t.icon), el('span.l', t.label)]);
@@ -144,7 +170,7 @@
     if (!kitMode) ui.append(E.viewBar, [['full', 'Full'], ['face', 'Face'], ['hands', 'Hands']].map(function (v) {
       return btn('.lk-view' + (E.view === v[0] ? '.on' : ''), { testid: 'lk-view-' + v[0], onclick: function () { E.view = v[0]; refresh(); } }, v[1]);
     }));
-    else ui.append(E.viewBar, el('span.lk-viewnote', 'Your kit'));
+    else ui.append(E.viewBar, el('span.lk-viewnote', E.tab === 'gear' ? 'Your ' + (E.seat === 'bass' ? 'bass' : 'guitar') : 'Your kit'));
   }
   function section(title, kids, note) {
     E.panel.appendChild(el('div.lk-sec', [el('div.caps', title), note ? el('div.small.dim', note) : null, kids]));
@@ -290,6 +316,28 @@
       section('Sticks', chips('sticks', function () { var p = C().partsIn('sticks').filter(function (x) { return x.color.toLowerCase() === sk; })[0]; return p ? p.value : null; },
         function (v) { K.sticks = C().partFor('sticks', v).color; }));
       section('Extras', chips('kitExtra', function () { return K.extras; }, function (a) { K.extras = a; }, { multi: true }), 'Pyro only fires at arena shows. There is no gong. There will never be a gong.');
+    },
+    // v1.1: a string seat's instrument (player.gearLook). Every part is yours from day one.
+    gear: function () {
+      var G = E.gearLook, N = C().gearNames(E.seat), def = C().gearDefault(E.seat, E.genre), shape = G.shape || def;
+      var pick = function (testid, on, label, fn) {
+        return btn('.lk-chip.lk-big' + (on ? '.on' : ''), { testid: testid, 'aria-pressed': on ? 'true' : 'false', onclick: function () { fn(); refresh(); } }, label);
+      };
+      section('Body shape', el('div.lk-chips', C().gearShapes(E.seat).map(function (id) {
+        return pick('lk-gear-shape-' + id, shape === id, N.shapes[id], function () { G.shape = id; });
+      })), E.seat === 'bass' ? 'Four strings. The fifth comes from the shop.' : null);
+      var v = String(G.color || '').toLowerCase(), list = content().swatches.kit || [];
+      section('Colour', el('div.lk-swatches', [btn('.lk-sw.lk-big.lk-kitsw' + (!G.color ? '.on' : ''), { testid: 'lk-gear-color-kit', 'aria-label': 'Match the kit colour', 'aria-pressed': !G.color ? 'true' : 'false',
+        style: { background: (E.kit && E.kit.color) || '#b3262b' }, onclick: function () { G.color = null; refresh(); } }, 'KIT')].concat(list.map(function (c, i) {
+        return btn('.lk-sw.lk-big' + (v === c.toLowerCase() ? '.on' : ''), { testid: 'lk-gear-sw-' + i, 'aria-label': 'colour ' + c, 'aria-pressed': v === c.toLowerCase() ? 'true' : 'false', style: { background: c },
+          onclick: function () { G.color = c; refresh(); } });
+      }))), shape === 'acoustic' ? 'KIT on an acoustic means natural wood.' : null);
+      section('Pickguard', el('div.lk-chips', (GG.contracts.GEAR_GUARDS || []).map(function (id) {
+        return pick('lk-gear-guard-' + id, G.guard === id, N.guards[id], function () { G.guard = id; });
+      })));
+      section('Headstock sticker', el('div.lk-chips', ['none', 'logo'].map(function (id) {
+        return pick('lk-gear-sticker-' + id, G.sticker === id, N.stickers[id], function () { G.sticker = id; });
+      })), 'The band logo, slapped on crooked. Like a professional.');
     }
   };
   function heightLabel(h) { return h < 0.95 ? 'Compact' : h < 1.0 ? 'Average-ish' : h < 1.05 ? 'Average' : 'Tall'; }
@@ -303,6 +351,7 @@
   GG.registerDebug('creator-ui', function () {
     if (!E) return { open: false };
     return { open: true, mode: E.mode, which: E.which, tab: E.tab, view: E.view, look: clone(E.look), stage: clone(E.stage), kit: clone(E.kit),
+      seat: E.seat || 'drums', gearLook: E.gearLook ? clone(E.gearLook) : null, tabs: tabs().map(function (t) { return t.id; }),   // v1.1
       preview: GG.render && GG.render.preview ? GG.render.preview.info() : null };
   });
 })(window.GG);
