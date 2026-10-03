@@ -251,11 +251,9 @@ async function studio() {
       const s = GG.state, rng = GG.RNG(17);
       s.totalWeek = 40; s.year = 2; s.week = 16; s.fans = 1500; s.protected = false; GG.career.setEra(s, 'local', 'test'); s.fund = 4000; s.drumSkill = 55;
       while (s.songs.length < 10) GG.songs.create(s, GG.songs.generate(s.genre, rng), null, { auto: true });
-      const lid = (GG.content.labels || []).map(l => l.id)[0] || 'gopherwood';
-      s.labelOffers = [GG.labels.makeOffer(s, lid, GG.RNG(4))]; GG.labels.sign(s, lid);
+      s.labelOffers = [GG.labels.makeOffer(s, 'gopherwood', GG.RNG(4))]; GG.labels.sign(s, 'gopherwood');
       s.phase = 'plan'; GG.main.sync();
-      const studioId = ((GG.content.studios || [])[0] || {}).id || 'strip_mall_sound', producerId = ((GG.content.producers || [])[0] || {}).id || 'solveig_birch';
-      GG.labels.book(s, { kind: 'ep', studioId, producerId, tracks: GG.labels.freshSongs(s).slice(0, 4).map(x => x.id), weeks: 2 });
+      GG.labels.book(s, { kind: 'ep', studioId: 'strip_mall_sound', producerId: 'solveig_birch', tracks: GG.labels.freshSongs(s).slice(0, 4).map(x => x.id), weeks: 2 });
       window.__charts = []; const ch0 = GG.gig.chart; GG.gig.chart = function (song, o) { const r = ch0.apply(this, arguments); window.__charts.push({ seat: r.seat, lane: r.notes[0] && r.notes[0].lane }); return r; };
       GG.ui.show('studio', {});
     });

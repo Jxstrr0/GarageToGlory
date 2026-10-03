@@ -15,7 +15,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   - [x] 1. Folds: `C.GATE_KEYS += seat, swapped`, `C.ACH_KINDS += seatCareer, soloTooLong, allSeats`; D/B APIs in 02 + below.
   - [x] 2. sim_seats ALL PASS 17: metal rhythm suggested part rings (holds at doom tempo); string crowd retuned (avg bot within
     ~1.8 of drums); soloTooLong default min 0.3.
-  - [ ] 3. 51 seat picker + 52 SPOTS + 60 routing.  [ ] 4. tests/pw_seats.js.  [ ] 5. build + node + pw regression; report.
+  - [x] 3. 51 seat picker (intro → seat → logo → creator), seat copy, 52 'Your rig' spot, 5h labels, 50 presentLines gates.
+  - [x] 4. tests/pw_seats.js: pick 19, write 11, gig 8 (also 440x956), studio 6, shop 7 green at 390; garage/stage skip until C.
+  - [ ] 5. build + node + pw regression; plan/v11_lead_report.md.
 - Resume steps:
   1. Resume workflow run `wf_867f4c13-592` (script `workflows/scripts/v11-seats-build-wf_867f4c13-592.js` in the session dir;
      if that session is gone, relaunch lanes C and A with the same contract sections). D and B results are cached.
