@@ -16,7 +16,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
-- Next: **1.2 "Tuning"** (handoff D5; covers all four seats).
+- Next: **1.2 "Soundcheck"** (handoff **Part F**: band feel by member skill, velocity + round robins, real-feeling drums,
+  Karplus-Strong strings, cab IRs, rooms v2, human vocals; draft contract `plan/plan_contract_1.2.md`, finish at stage 0).
+  Then **1.3 "Tuning"** (handoff D5; covers all four seats, played with the final sound).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -223,7 +225,20 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - [x] v1.1 stage 0: fresh audits, `plan/plan_contract_1.1.md` finished (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview) — 2026-10-02 on `v1.1-seats` (contract §3)
 - [x] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat — integrated 2026-10-03 on
       `v1.1-seats` (`plan/v11_integration_report.md`); review + PR to main pending
-- [ ] v1.2 Tuning (D5) covers all four seats
+- [ ] Tuning (D5) covers all four seats — moved to **v1.3** (Addendum 4, N1)
+
+## Addendum 4 (handoff Part F "Soundcheck") — decisions (owner popups, 2026-10-03; locked)
+- N1 Roadmap: **v1.2 Soundcheck** now; Tuning → **v1.3**.
+- N2 Band feel: **driven by member skill** (sloppy garage band → tight arena band) + a feel per genre (punk rushes, rock lays
+  back, metal locks in).
+- N3 Your taps: **accents from accuracy + beat position** (a Perfect downbeat lands hardest) + round robins.
+- N4 Cheap gear **still sounds cheap**: the upgrades raise the top end (`A.realism(tier)`).
+- N5 Real recordings (sound review item 4): **later**; 1.2 keeps the hooks (Part F15).
+
+## Addendum 4 — pending
+- [ ] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3)
+- [ ] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge, tuning by numbers, owner clip popup, PR to main
+- [ ] v1.3 Tuning (D5) covers all four seats
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
