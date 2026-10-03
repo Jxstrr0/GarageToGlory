@@ -8,6 +8,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Leftovers for later: wip-v11-a / wip-v11-c / wip-v11-fix branches on origin (the session proxy can't delete branches; the
   owner can delete them on GitHub), cosmetic + content gaps in `plan/v11_integration_report.md`.
 
+## RESUME HERE (v1.2 "Soundcheck" in progress, 2026-10-03 15:05 UTC; delete when v1.2 merges)
+- Branch `v1.2-soundcheck`: stage 0 done (08789f4: 232-case classic hash fixture, 1.1 numbers, 1.1 clips); F17 kit source
+  (`local/` ignored, zip checked + unzipped to `local/kits/tmkd_vortex/src/`), kit LICENSE + 6,000,000 B gate (d6c09b2).
+- Owner 2026-10-03: the TMKD samples SHIP IN THE GAME ("scrap the kit guard local kit. one build with the drum samples only").
+- Lanes (workflow run `wf_702275bb-3ab`, script `workflows/scripts/v12-soundcheck-build-wf_702275bb-3ab.js` in the session dir):
+  V vocals DONE (`wip-v12-v` bb32da9); I instruments + kit at its last task (`wip-v12-i`); F feel early (`wip-v12-f`).
+  Then integrate (merge F → I → V, credit line on title + README Credits, tuning by numbers, .m4a clips) → review (3 lenses) → fix.
+- After the run: send the owner the clips (1.1 vs 1.2 per genre, tap demo, sampled-kit metal clip), popup ship / tweak,
+  then PR → main, merge, status Current 1.2.0.0, owner deletes `wip-v12-*` (the proxy can't).
+- Container-only state (lost on restart): `local/kits/tmkd_vortex/src/` (re-attach Drums.zip, `tools/check_kit_zip.py`, unzip),
+  pip numpy/soundfile/imageio-ffmpeg + `/usr/local/bin/ffmpeg` symlink.
+
 ## Version
 - Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
   moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
