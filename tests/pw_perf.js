@@ -20,7 +20,7 @@
 //             robins) builds after a kit change in <= 2.5 s with no main-thread slice over 8 ms and <= 6 MB per kit (with the
 //             sampled kit: its decoded clips + the synth lanes); the TMKD kit decodes (metal tier 3) in slices <= 8 ms; a
 //             velocity tap is one buffer source (+ its slot the first time) from the set; the 1.1 tap path is untouched;
-//             KS warm (F7) per song <= 1.2 s wall, slices <= 8 ms, cache <= 8 MB. A slice = its main-thread CPU time from
+//             KS warm (F7) per song <= 300 ms of traced CPU on the 4x throttle (wall <= 1.2 s), slices <= 8 ms, cache <= 8 MB. A slice = its main-thread CPU time from
 //             a trace, less the GC inside it (see sliceTrace; the wall numbers are logged next to it).
 // Run: node build.js && META_ONLY=governor timeout 500 node tests/pw_perf.js
 const { open, checker, VIEW } = require('./_pw');
@@ -465,7 +465,8 @@ async function sliceTrace(o) {
 const r2 = x => Math.round(x * 100) / 100;
 function sliceStats(ours, t0, t1) {
   const w = ours.filter(x => x.t >= t0 && x.t <= t1);
-  return { n: w.length, wall: r2(Math.max(0, ...w.map(x => x.wall))), cpu: r2(Math.max(0, ...w.map(x => x.cpu))), work: r2(Math.max(0, ...w.map(x => x.work))) };
+  return { n: w.length, wall: r2(Math.max(0, ...w.map(x => x.wall))), cpu: r2(Math.max(0, ...w.map(x => x.cpu))), work: r2(Math.max(0, ...w.map(x => x.work))),
+    sum: r2(w.reduce((a, x) => a + x.cpu, 0)) };   // (sum: the window's total main-thread CPU in our slices)
 }
 
 async function pre() {
@@ -518,7 +519,9 @@ async function pre() {
     console.log('INFO pre (4x throttle) ' + JSON.stringify(rows));
     console.log('INFO ks warm (4x throttle) ' + JSON.stringify(warm));
     c.ok(!tr.err && warm.every(w => w.n > 0 && w.cost.n > 0 && w.cost.work <= 8 && w.bytes <= 8e6), 'KS warm: every genre queues its strings, slices <= 8 ms (wall/cpu/work), cache <= 8 MB ' + JSON.stringify(warm.map(w => [w.g, w.n, w.cost.wall + '/' + w.cost.cpu + '/' + w.cost.work, Math.round(w.bytes / 1e3) + 'kB'])));
-    c.ok(warm.every(w => w.ms <= 300 * 4), 'KS warm per song <= 300 ms of CPU (wall on the 4x throttle <= 1.2 s) ' + JSON.stringify(warm.map(w => [w.g, w.ms])));
+    // (v1.2 review: F7's budget is CPU, "<= 300 ms total CPU spread over slices": the traced CPU of the warm's slices on the 4x
+    // throttle, summed; the wall time, which also holds the yields between slices, is logged and kept under 1.2 s)
+    c.ok(!tr.err && warm.every(w => w.cost.sum <= 300 && w.ms <= 300 * 4), 'KS warm per song <= 300 ms of CPU on the 4x throttle (traced, summed; wall <= 1.2 s) ' + JSON.stringify(warm.map(w => [w.g, w.cost.sum + ' cpu', w.ms + ' wall'])));
     c.ok(rows.every(r => r.ms <= 2500), 'the velocity sets build in <= 2.5 s on a 4x throttle ' + rows.map(r => r.kit + r.ms + 'ms').join(' '));
     c.ok(!tr.err && rows.every(r => r.cost.n > 0 && r.cost.work <= 8), 'no build slice over 8 ms (set + kit, wall/cpu/work) ' + rows.map(r => r.kit + r.cost.wall + '/' + r.cost.cpu + '/' + r.cost.work).join(' '));
     c.ok(rows.every(r => r.bytes <= 6e6), 'every kit set <= 6 MB ' + rows.map(r => r.kit + Math.round(r.bytes / 1e3) + 'kB').join(' '));
