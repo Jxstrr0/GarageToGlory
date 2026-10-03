@@ -2,11 +2,11 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
-## Open owner questions (v1.1, asked 2026-10-03 after the merge; shipped with the recommended default)
-- Average-bot balance on string seats runs ~+7% fans / +8% fund over drums (5 of 12 cells > +10% at 60 seeds; drums vs
-  drums seed noise is 15–19%; good bot within ±10% everywhere). Default: leave it (re-check with paired seeds in 1.2 Tuning).
-- A lead part you write replaces the shared rhythm-guitar pair in those sections (metal/punk/rock), and an empty part section
-  is silent. Default: keep.
+## v1.1 owner answers (2026-10-03, LOCKED)
+- String-seat average-bot balance (~+7–8% over drums, inside seed noise): **leave it**; re-check with paired seeds in 1.2 Tuning.
+- A lead part you write replaces the shared rhythm-guitar pair in those sections; an empty part section is silent: **keep**.
+- Leftovers for later: wip-v11-a / wip-v11-c / wip-v11-fix branches on origin (the session proxy can't delete branches; the
+  owner can delete them on GitHub), cosmetic + content gaps in `plan/v11_integration_report.md`.
 
 ## Version
 - Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
