@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -578,7 +578,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -1135,6 +1135,67 @@ async function feelGig() {
     await page.evaluate(() => GG.ui.closeAll());
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// META_ONLY=kit (v1.2 Lane I, handoff F17.3): the TMKD "Vortex" sampled kit in a metal gig on the arena kit (tier 3), drum
+// seat. The kit decodes after the unlock (never mid-song); your kick / snare taps play its samples (one buffer source each,
+// round robins in order), no tap is dropped, and every tap sounds exactly at the time the gig booked it (the drum-sync
+// booking is unchanged). Taps only take the new path with a vel (F3.7): until Lane F's A.tapVel is merged the section adds
+// { vel: 0.85 } to the gig's A.hit calls itself (logged), so the sampled path is what is measured either way.
+async function kitGig() {
+  const c = checker('kit');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    const setup = await page.evaluate(() => {
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, noFail: true });
+      GG.main.quickStart({ seed: 1702, openCard: false });
+      const s = GG.state, E = '................'; s.card = null; s.phase = 'plan';
+      s.gear.quality = 3;
+      const bar = ['x...x...x...x...', '....x.......x...', E, E];
+      const song = GG.songs.create(s, { bpm: 120, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'verse', 'chorus'],
+        sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] } }, 'Kit Test', { quality: 60, polish: 60 });
+      s.songs = [song];
+      const stub = GG.audio.tapVel({ judgement: 'perfect', step: 0, lane: 'kick' }) === undefined;
+      window.__k = []; const h0 = GG.audio.hit;
+      GG.audio.hit = function (l, w, o) {
+        if (stub && !o) o = { vel: 0.85 };   // (Lane F wires A.tapVel into 55's playTap; until then the test passes the vel)
+        const r = h0.call(this, l, w, o), k = GG.debug('audio').kit;
+        window.__k.push({ l, w, now: GG.audio.context().currentTime, last: k.last });
+        return r;
+      };
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = false;
+      return { genre: s.genre, tier: s.gear.quality, kit: !!GG.audio.sampleKit(s.genre, 3), stub };
+    });
+    c.ok(setup.genre === 'metal' && setup.tier === 3 && setup.kit, 'metal career on the arena kit: the sampled kit applies ' + JSON.stringify(setup));
+    if (setup.stub) console.log('  kit: A.tapVel is the stage-0 stub (Lane F not merged): the test adds vel 0.85 to the gig\'s taps');
+    await page.mouse.click(200, 400);   // the unlock
+    await page.evaluate(() => GG.audio.unlock());
+    await page.waitForFunction(() => GG.debug('audio').kit.ready === true, null, { timeout: 20000 });
+    const k0 = await page.evaluate(() => GG.debug('audio').kit);
+    c.ok(k0.id === 'tmkd_vortex' && k0.n === 25 && k0.err === null && k0.onset <= 1 && k0.bytes > 1e6 && k0.bytes < 6e6,
+      'the kit decoded after the unlock: 25 clips, onset <= 1 ms, under the 6 MB cap ' + JSON.stringify({ n: k0.n, onset: k0.onset, bytes: k0.bytes, ms: k0.ms }));
+    await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+    const next = () => page.waitForFunction(() => { const d = GG.debug('gigui'); return d.mode === 'play' && d.next && d.next.t < d.dur - 1 ? d.next : null; }, null, { timeout: 8000 }).then(h => h.jsonValue());
+    const used0 = k0.used, n0 = await page.evaluate(() => window.__k.length);
+    for (let i = 0; i < 12; i++) { const n = await next(); await tapAt(page, n.li, n.t); }
+    await page.waitForTimeout(300);
+    const r = await page.evaluate(n0 => { const k = GG.debug('audio').kit, v = GG.audio.voiceStats(); return { used: k.used, taps: window.__k.slice(n0), drops: v.tapDrops }; }, n0);
+    const mine = r.taps.filter(x => x.l === 'kick' || x.l === 'snare'), viaKit = mine.filter(x => x.last && x.last.kit && x.last.lane === x.l);
+    const gain = (r.used.kick - used0.kick) + (r.used.snare - used0.snare);
+    c.ok(mine.length >= 10 && viaKit.length === mine.length && gain >= mine.length, 'your kick / snare taps play the samples ' + JSON.stringify({ taps: mine.length, kit: viaKit.length, used: gain }));
+    const rr = mine.filter(x => x.l === 'snare').map(x => x.last.rr);
+    c.ok(rr.every((v, i) => i === 0 || v === (rr[i - 1] + 1) % 5), 'snare round robins in order, no repeats ' + JSON.stringify(rr));
+    const off = mine.map(x => x.w != null && x.w > x.now + 0.005 && x.w < x.now + 1 ? Math.abs(x.last.t - x.w) : Math.abs(x.last.t - (x.now + 0.005)));
+    c.ok(off.every(d => d < 1e-6), 'every tap sounds exactly when the gig booked it (booking unchanged) max ' + Math.max(...off));
+    c.ok(r.drops === 0, 'tap drops 0');
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'kit threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
 }
