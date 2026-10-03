@@ -236,3 +236,12 @@ Eight confirmed findings fixed, then the 12 minor (unverified) findings checked:
 - `node tests/run.js`: SUITE ALL PASS (sim_seats 20, content_seats 11, sim_gig 24, sim_bands 17, ...).
 - `SEAT=all LEAK_YEARS=10 node tests/sim_bands.test.js` (strict, with the new old-instrument pass): **ALL PASS 24**, zero seat
   leaks. `LEAK_YEARS=13 node tests/sim_bands.test.js` (drums): **ALL PASS 17**.
+- Playwright, each at 390x844 and `PW_VIEW=440x956`, all green on the first run: pw_gig `seat` 33, `chord` 10 (new), `sync` 14,
+  `bridge` 17; pw_seats `pick` 25, `write` 11, `gig` 8, `studio` 6, `shop` 7, `garage` 11, `stage` 4; pw_garage `seat` 73;
+  pw_recap `seat` 10; pw_settings `settings` 52, `calib` 18, `difficulty` 17; pw_shop `gear` 30, `seat` 26; pw_seq `seq` 34,
+  `guided` 23, `part` 30; pw_drama 19; pw_label `label` 13, `seat` 6; pw_stage 37; pw_flow `flow` 16, `layout` 34;
+  `LEAK_STRICT=1` pw_bands `bands`: Hail Damage 58 / 57, Frost Heave 58, Gravel Kings 57, Ramblers 58 / 59, flat 12.
+- Probes: the reviewer's rv_chord / rv_ring / rv_legato (Playwright) and rv_halfchord (node) all read fixed (one root voice in
+  both orders, no early release; the chorus hold plays 1.143 s; the legato hold rings; a half chord holds 0).
+- Screens looked at: the string-seat garage (labels apart), the bass spot camera at a house party (HD, GK: no cymbal edge),
+  the carpet (you second, instrument in frame).
