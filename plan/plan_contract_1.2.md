@@ -21,13 +21,20 @@ and write to a file.
 | N3 | Your tap accents | **Accuracy + beat position** (+ round robins) (F5). |
 | N4 | Cheap gear | **Still sounds cheap**; upgrades raise the top end (`A.realism(tier)`, F11). |
 | N5 | Real recordings | **Later** (not in 1.2; hooks only, F15). |
+| F16.1 | Low mood makes the band sloppier | **Yes**: mood < 30 → that player's timing spread × 1.25 (`C.FEEL_MOOD = { below: 30, spread: 1.25 }`). |
+| F16.2 | Studio takes + rivals tighter | **Yes, both**: studio takes (van radio, recorded songs) `t + 0.25` (`C.FEEL_STUDIO`), rivals `t + 0.15` (`C.FEEL_RIVAL`). |
+| F16.3 | Band amps follow the kit tier | **Yes**: milk crate = 1×8 practice amp IR, pawn shop = 1×12, pro / arena = the genre cab (`C.BAND_AMP_BY_TIER = true`; `C.REALISM[tier].cab`). |
+| F16.4 | Show "Classic sound" in Settings? | **No: hidden, debug-only** (`settings.audioClassic` + `GG.audio.classic(bool)`; no Settings UI, `5h_ui_settings` untouched). |
+
+F16 answered by the owner in one popup on 2026-10-03 (all four as recommended); each answer sits behind one constant in
+`src/02_contracts.js` (V1.2 SOUNDCHECK), so a later "no" is a one-line change.
 
 ### Defaults (taken without a popup; they stand unless the owner objects — list them in the merge summary)
 - Classic switch hidden (`settings.audioClassic`, debug `A.classic`), default off.
 - `VEL_REF = 0.85` = today's level; missing `vel` = the 1.1 code path, byte for byte.
 - Gig clamps: band kick/snare ± 6 ms, other kinds ± 15 ms; outside gigs ± 25 ms; always ≤ 25 % of a 16th.
-- F16 items are asked at stage 0 in ONE popup (mood slop, studio/rival tightness, band amps by tier, Classic visibility);
-  until answered, build the recommended answer behind a constant so a "no" is a one-line change.
+- F16 items were asked at stage 0 in ONE popup (mood slop, studio/rival tightness, band amps by tier, Classic visibility):
+  answered 2026-10-03, all as recommended (rows F16.1–F16.4 above).
 
 ## 1. Scope
 ### 1.1 Must (handoff F3–F13)

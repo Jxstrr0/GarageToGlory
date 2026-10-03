@@ -651,4 +651,47 @@ test('v1.1 your instrument (no Web Audio here): voices fail soft, seatVoiceFor, 
   }
 });
 
+// v1.2 "Soundcheck" stage 0 (contract §3.9, handoff F3): the Classic switch and the stage-0 stubs leave the timeline alone.
+// 31 / 32 / 33 load after 30 as in the build (ORDER by name); the 1,212 fingerprints must not move, Classic on or off, and the
+// new play() opts (gig, feel, studio) never reach A.timeline (feel is applied in player(), never baked into the events).
+for (const f of ['31_audio_feel.js', '32_audio_dsp.js', '33_audio_voice.js']) {
+  const fp = path.join(__dirname, '..', 'src', f);
+  if (fs.existsSync(fp)) new Function('window', fs.readFileSync(fp, 'utf8'))({ GG: GG });
+}
+test('v1.2 classic: stubs change nothing (1,212 timeline fingerprints, Classic off / on, new play opts)', () => {
+  const before = JSON.stringify(GG.save.settings());
+  eq(A.isClassic(), false, 'default off (settings.audioClassic missing)');
+  eq(GG.prefs.get().audioClassic, false, 'prefs normalise it to false');
+  eq(fingerprints({}), STAGE0, 'Classic off');
+  eq(A.classic(true), true, 'A.classic(true)');
+  ok(A.isClassic() && GG.save.settings().audioClassic === true && GG.debug('audio').classic === true, 'persisted + in debug(audio)');
+  eq(fingerprints({}), STAGE0, 'Classic on');
+  eq(fingerprints({ gig: true, feel: false, studio: true }), STAGE0, 'opts.gig / feel / studio never change the timeline');
+  eq(A.classic(false), false, 'A.classic(false)');
+  GG.save.saveSettings({ audioClassic: true }); A.applySettings();
+  eq(A.isClassic(), true, 'applySettings re-reads the setting');
+  A.classic(false);
+  ok(JSON.parse(before).audioClassic !== true && GG.save.settings().audioClassic === false, 'left off');
+});
+
+// Stage-0 stub returns: the 1.1 behaviour until the lanes fill them in (lanes F / I / V replace these asserts with their own).
+test('v1.2 stage-0 contracts + stubs (VEL_REF, FEEL_CLAMP, F16 constants, REALISM = F11; stubs return the 1.1 behaviour)', () => {
+  eq(C.VEL_REF, 0.85);
+  eq(C.FEEL_CLAMP, { gigDrum: 0.006, gig: 0.015, free: 0.025, sixteenth: 0.25 });
+  eq([C.FEEL_MOOD, C.FEEL_STUDIO, C.FEEL_RIVAL, C.BAND_AMP_BY_TIER], [{ below: 30, spread: 1.25 }, 0.25, 0.15, true], 'F16 answers');
+  eq(C.REALISM.map(r => r.id), C.KIT_QUALITY, 'one row per kit tier');
+  eq(C.REALISM.map(r => [r.rr, r.layers, r.metal, r.snareModes, r.wires, r.rim, r.crush, r.width, r.cab, r.cymBloom, r.subKick]), [
+    [2, 1, 0, 1, false, false, 0, 0.3, 'practice8', false, false],
+    [3, 2, 3, 2, false, false, 0.15, 0.6, 'combo12', false, false],
+    [4, 2, 6, 2, true, true, 0.25, 1, 'genre', false, false],
+    [4, 3, 6, 2, true, true, 0.35, 1, 'genre', true, true]], 'F11');
+  eq(C.REALISM[3].layerLanes, ['kick', 'snare', 'toms'], 'arena: 3 layers on kick, snare, toms');
+  eq([0, 1, 2, 3, -1, 9].map(t => A.realism(t).id), ['milk_crate', 'pawn_shop', 'pro', 'arena', 'milk_crate', 'arena'], 'realism(tier), clamped');
+  eq(A.realism().id, 'pro', 'outside a career: the reference tier');
+  const tl = A.timeline(song('metal'), { genre: 'metal', songId: 's1' });
+  eq([A.feelFor(null, 'metal', {}), A.feelPlan(tl, null, 1, { gig: true }), A.tapVel({ judgement: 'perfect', step: 0, lane: 'kick' })], [null, null, undefined], 'feel stubs');
+  ok(A.warm() instanceof Promise, 'warm -> a Promise');
+  ok(GG.dsp && typeof GG.dsp === 'object' && GG.voice && typeof GG.voice === 'object', 'GG.dsp / GG.voice exist');
+});
+
 done('sim_audio');

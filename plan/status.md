@@ -234,6 +234,11 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - N3 Your taps: **accents from accuracy + beat position** (a Perfect downbeat lands hardest) + round robins.
 - N4 Cheap gear **still sounds cheap**: the upgrades raise the top end (`A.realism(tier)`).
 - N5 Real recordings (sound review item 4): **later**; 1.2 keeps the hooks (Part F15).
+- F16 (one popup, 2026-10-03, all as recommended): (1) low mood makes the band sloppier: mood < 30 → timing spread × 1.25
+  (`C.FEEL_MOOD`); (2) studio takes (van radio, recorded songs) `t + 0.25` (`C.FEEL_STUDIO`) and rivals `t + 0.15`
+  (`C.FEEL_RIVAL`); (3) band amps follow the kit tier: milk crate = 1×8 practice amp IR, pawn shop = 1×12, pro / arena = the
+  genre cab (`C.BAND_AMP_BY_TIER`, `C.REALISM[tier].cab`); (4) "Classic sound" stays hidden, debug-only (`settings.audioClassic`,
+  `GG.audio.classic(bool)`; no Settings UI).
 
 ## Addendum 4 — pending
 - [ ] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3)

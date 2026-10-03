@@ -1,0 +1,21 @@
+# v1.2 "Soundcheck" audio numbers (handoff F13; tools/audio_numbers.js). One section per build; the 1.1 section is the
+# baseline measured before any audio change. Bands: dB = 10 log10(mean square x band share); width = side/mid energy.
+
+## 1.1 (VERSION 1.1.0.0, 2026-10-03; classic off)
+genre    mix    | 0-150 150-500 500-1.5k 1.5-4k   4k+ |  RMS dBFS  peak dBFS  width |  secs
+-------- ------ | ----- ------- -------- ------ ----- | --------- ---------- ------ | -----
+metal    full   | -20.3     -23    -27.1  -28.7 -29.5 |     -16.8       -4.7  0.111 | 35.28
+metal    drums  |   -22   -27.5    -47.7  -40.2 -28.8 |     -19.5       -4.8  0.174 | 35.28
+metal    band   |   -21   -22.7      -26  -27.9   -37 |     -17.1       -4.8  0.105 | 35.28
+punk     full   | -21.6   -27.3    -31.8  -33.5 -25.4 |     -18.3       -4.6  0.157 |  20.6
+punk     drums  | -21.6   -31.2    -39.3  -33.9 -25.1 |     -18.8       -4.9  0.163 |  20.6
+punk     band   | -25.7   -24.8    -28.3  -36.7 -46.9 |     -20.6       -5.6  0.136 |  20.6
+rock     full   | -20.5   -24.8    -27.1  -34.4 -27.8 |     -16.2       -4.7  0.474 |  49.4
+rock     drums  | -20.3   -30.1    -41.5  -35.6 -27.1 |     -16.9       -4.8  0.644 |  49.4
+rock     band   | -24.3   -22.4    -23.8  -34.9 -43.5 |     -17.8       -5.4  0.193 |  49.4
+country  full   | -23.9   -24.9      -25  -31.6 -34.3 |     -19.3       -4.9  0.022 |    59
+country  drums  | -25.7   -40.6    -44.6  -36.2 -33.7 |     -24.6         -5  0.013 |    59
+country  band   | -26.3   -24.2    -24.3  -32.3 -43.7 |     -19.7       -5.5  0.024 |    59
+mean over the 4 full mixes: RMS -17.65 dBFS, 4k+ -29.25 dB, peak -4.72 dBFS, width 0.191
+share (band energy fractions, full mix): metal 0.501/0.265/0.104/0.072/0.06 ; punk 0.544/0.145/0.052/0.035/0.225 ; rock 0.552/0.203/0.119/0.022/0.103 ; country 0.355/0.28/0.273/0.06/0.032
+json [{"g":"metal","mix":"full","dB":[-20.3,-23,-27.1,-28.7,-29.5],"rmsDb":-16.8,"peakDb":-4.7,"width":0.111,"secs":35.28},{"g":"metal","mix":"drums","dB":[-22,-27.5,-47.7,-40.2,-28.8],"rmsDb":-19.5,"peakDb":-4.8,"width":0.174,"secs":35.28},{"g":"metal","mix":"band","dB":[-21,-22.7,-26,-27.9,-37],"rmsDb":-17.1,"peakDb":-4.8,"width":0.105,"secs":35.28},{"g":"punk","mix":"full","dB":[-21.6,-27.3,-31.8,-33.5,-25.4],"rmsDb":-18.3,"peakDb":-4.6,"width":0.157,"secs":20.6},{"g":"punk","mix":"drums","dB":[-21.6,-31.2,-39.3,-33.9,-25.1],"rmsDb":-18.8,"peakDb":-4.9,"width":0.163,"secs":20.6},{"g":"punk","mix":"band","dB":[-25.7,-24.8,-28.3,-36.7,-46.9],"rmsDb":-20.6,"peakDb":-5.6,"width":0.136,"secs":20.6},{"g":"rock","mix":"full","dB":[-20.5,-24.8,-27.1,-34.4,-27.8],"rmsDb":-16.2,"peakDb":-4.7,"width":0.474,"secs":49.4},{"g":"rock","mix":"drums","dB":[-20.3,-30.1,-41.5,-35.6,-27.1],"rmsDb":-16.9,"peakDb":-4.8,"width":0.644,"secs":49.4},{"g":"rock","mix":"band","dB":[-24.3,-22.4,-23.8,-34.9,-43.5],"rmsDb":-17.8,"peakDb":-5.4,"width":0.193,"secs":49.4},{"g":"country","mix":"full","dB":[-23.9,-24.9,-25,-31.6,-34.3],"rmsDb":-19.3,"peakDb":-4.9,"width":0.022,"secs":59},{"g":"country","mix":"drums","dB":[-25.7,-40.6,-44.6,-36.2,-33.7],"rmsDb":-24.6,"peakDb":-5,"width":0.013,"secs":59},{"g":"country","mix":"band","dB":[-26.3,-24.2,-24.3,-32.3,-43.7],"rmsDb":-19.7,"peakDb":-5.5,"width":0.024,"secs":59}]
