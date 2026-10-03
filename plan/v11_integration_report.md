@@ -40,5 +40,13 @@ Contract `plan/plan_contract_1.1.md` §5 Lead, cross-lane hand-overs, §6 checkl
 ## 3. Checklist §6
 (filled in as the runs finish)
 
-### 4. Leak scans
+### Leak scans (§6.4)
 - `LEAK_YEARS=13 node tests/sim_bands.test.js` (drums): ALL PASS 17.
+- `SEAT=all LEAK_YEARS=10 node tests/sim_bands.test.js` (strict): first run FAILED 1/24: Hail Damage rhythm saw a shouting
+  review (24 `caps: true`) quote the album "THRONE OF SOD II"; Lane A's LEFT phrase 'Throne of' is case-sensitive. Fix in
+  `tests/seat_scan.js`: every LEFT phrase also matches in ALL CAPS (HARD phrases aimed at you still win: "YOUR STICKS" is a
+  leak). Re-run: **ALL PASS 24**, zero seat leaks (4 bands x 3 string seats x 3 seeds x 10 years, avg + good bots).
+
+### Balance, drum seat (§6.5)
+- `NO_BONUS=1 BAND=all node tools/balance.js 10 30` equals `plan/balance_v10_nobonus.txt` (1.0.1.0) line for line
+  (`grep -v '^done in'`); only the header's deck size changes (444 -> 534 cards: the 90 new cards are all seat-gated).

@@ -50,7 +50,8 @@ const LEFT = [
   // fills that are a guitar's, a bass's or a fiddle's (Jaxon's sneaky fills, Clementine's runs) and the fills of the songs
   'sneaky fill', 'Sneaky Fill', 'a fill', 'the fill', 'the fills', 'her fills', 'that fill', 'the fills come back', 'Then the fills',
 ];
-const LEFT_RE = LEFT.map(p => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'));
+// v1.1 integration: each phrase also matches in ALL CAPS (24 shouts a review with caps: true, e.g. an album "THRONE OF SOD II")
+const LEFT_RE = [...new Set(LEFT.concat(LEFT.map(p => p.toUpperCase())))].map(p => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'));
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function toRe(raw) {
