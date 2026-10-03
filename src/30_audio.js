@@ -1828,11 +1828,39 @@
   }
 
   /* ---- Playback: the look-ahead scheduler --------------------------------------------------------------- */
+  // v1.2 (Lane F): ev may be the feel plan's copy carrying vel (0..1); drumHit / playNote take the velocity path only with a
+  // vel and the Classic switch off (no vel: the 1.1 call, unchanged).
   function schedule(r, port, ev, t, spb) {
-    if (ev.kind === 'drum') drumHit(r, port, ev.lane, t, ev.gap * spb, ev.v);
+    if (ev.kind === 'drum') drumHit(r, port, ev.lane, t, ev.gap * spb, ev.v, undefined, ev.vel);   // (cls: by lane, as 1.1)
     else playNote(r, port, ev, t, spb);
     // v0.9 crowd-answered chants: a hot live crowd shouts the band's gang answer with it, on the same beat
     if (ev.answer && r === rig && crowdLive() && !crowd.silent && crowd.level >= 65) crowdReact(crowd.bed, crowd, 'chant', t, ev.midi);
+  }
+  // v1.2 (Lane F): the playback's FEEL (31's A.feelFor) | null. Your band (the career, when it plays this genre), a rival
+  // (opts.rival: their lineup, + C.FEEL_RIVAL) or nobody (t = 0.5); opts.studio (the van radio): + C.FEEL_STUDIO.
+  function feelOf(opts, genre, tl) {
+    if (A.isClassic() || opts.feel === false || !A.feelFor || !A.feelPlan) return null;
+    try { return A.feelFor(opts.rival ? GG.state || null : careerFor(genre), genre, { rival: opts.rival || null, studio: !!opts.studio, seat: tl.seat || null }) || null; }
+    catch (e) { return null; }
+  }
+  function feelPlanFor(FL, tl, pass, opts) {
+    if (!FL) return null;
+    try { return A.feelPlan(tl, FL, GG.hashSeed((tl.key && tl.key.seed) + '|' + pass), { gig: !!opts.gig }) || null; } catch (e) { return null; }
+  }
+  // The scheduled copy: + vel, its gap to the same voice's next event moved with the plan (the choke / note length stay right).
+  function feelEv(ev, plan, k) {
+    var e = Object.assign({}, ev);
+    e.vel = plan.vel[k];
+    if (plan.dgap && plan.dgap[k]) e.gap = Math.max(0.001, ev.gap + plan.dgap[k]);
+    return e;
+  }
+  // Lane V's vocal delay follows the song's tempo when a song starts (r.voxTempo: per genre; else a dotted 8th on
+  // r.voxDelay). No vocal chain (Classic, Lane V not in): nothing.
+  function voxTempo(r, spb, t) {
+    try {
+      if (typeof r.voxTempo === 'function') r.voxTempo(spb);
+      else if (r.voxDelay && r.voxDelay.delayTime) r.voxDelay.delayTime.setValueAtTime(Math.min(0.95, spb * 0.75), t);
+    } catch (e) { /* ignore */ }
   }
   // One playback on a rig. quiet (the van radio): no 'audio:step' / 'audio:end', never the current song.
   // v1.1: opts.mute [kinds] = never scheduled (your seat's part: your taps play it); h.kinds / h.muted tally what was
@@ -1849,6 +1877,12 @@
       start: opts.at > c.currentTime + LEAD_IN && opts.at < c.currentTime + 3 ? opts.at : c.currentTime + LEAD_IN,
       kinds: {}, muted: {}, mute: opts.mute ? opts.mute.slice() : [], seat: tl.seat || null };
     if (R.split) { genrePorts(r, port, h.genre); genrePorts(r, port2, h.genre); h.ports = [port, port2]; }
+    // v1.2 (Lane F, F4): the band's feel, a pure plan per pass (A.feelPlan; seeded songId | pass): each band event is
+    // scheduled at + dt with its vel on a COPY (tl.events never change; 'step' events never move). Classic / opts.feel ===
+    // false / no plan: the 1.1 path. h.feel = the FEEL, h.plan = this pass's plan.
+    var FL = feelOf(opts, h.genre, tl), plan = feelPlanFor(FL, tl, 0, opts);
+    h.feel = FL; h.plan = plan;
+    if (!A.isClassic()) voxTempo(r, spb, c.currentTime);   // (Lane V's vocal delay follows the song's tempo)
     function at(ev) { return h.start + (pass * tl.beats + ev.beat) * spb; }
     function pump() {
       if (!h.playing) return;
@@ -1857,6 +1891,7 @@
         if (i >= tl.events.length) {
           if (!loop) { if (now > h.start + (tl.beats + (tl.tail || 0)) * spb + 0.2) h.stop(true, true); return; }   // v0.8: an outro rings out
           i = 0; pass++; lastBeat = -1;
+          if (FL) h.plan = plan = feelPlanFor(FL, tl, pass, opts);
         }
         var ev = tl.events[i], t = at(ev);
         if (t > horizon) break;
@@ -1869,6 +1904,7 @@
         }
         if (mute && mute[ev.kind]) { h.muted[ev.kind] = (h.muted[ev.kind] || 0) + 1; continue; }   // v1.1: your part (your taps play it)
         h.kinds[ev.kind] = (h.kinds[ev.kind] || 0) + 1;
+        if (plan) { t += plan.dt[i - 1]; ev = feelEv(ev, plan, i - 1); }   // v1.2: the feel (a copy with vel; moved by dt)
         try { schedule(r, split && split[ev.kind] ? port2 : port, ev, t, spb); } catch (e) { /* a dropped note never stops the song */ }
       }
       timers = timers.filter(function (x) { return x.t > now - 0.5; });
@@ -1887,6 +1923,7 @@
       var nt = A.timeline(pat, opts);
       if (nt.bpm !== tl.bpm || nt.beats !== tl.beats) return R.quiet ? h : A.play(pat, opts);
       tl = nt; h.timeline = nt; i = 0;
+      if (FL) h.plan = plan = feelPlanFor(FL, tl, pass, opts);   // v1.2: the new events' plan (same pass, same seed)
       while (i < tl.events.length && tl.events[i].beat <= lastBeat) i++;
       return h;
     };
@@ -2000,6 +2037,7 @@
       mute: !!o.mute, trem: !!o.trem, ring: !!o.ring, up: !!o.up, bend: +o.bend || 0 };
     if (Array.isArray(o.strum)) ev.strum = o.strum.slice(0, 4);
     else if (kind === 'clean' && g === 'country') ev.strum = o.mute ? [0, 7] : [0, 4, 7];
+    if (o.vel != null && !A.isClassic()) ev.vel = clamp01(o.vel);   // v1.2 (F5, Lane F): your tap's velocity rides on the note (playNote's velocity path; partners + repeats copy it)
     // o.repeats [seconds after t] (a run: the repeats on the band grid, one note; a release stops the rest)
     var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
     var src = r.collect = [], b = seatBook = { n: 0, ends: [] };
@@ -2043,7 +2081,8 @@
       try { h = seatPlay(rig, fn, +midi, t, o); } catch (e) { h = null; }
       if (!h) { counts.tapDrops++; return null; }
       SEATS.notes[fn]++;
-      SEATS.last = { fn: fn, kind: h.kind, midi: h.midi, when: when == null ? null : when, t: h.t, end: h.end, hold: h.hold, n: h.n };
+      SEATS.last = { fn: fn, kind: h.kind, midi: h.midi, when: when == null ? null : when, t: h.t, end: h.end, hold: h.hold, n: h.n,
+        vel: o.vel != null && !A.isClassic() ? clamp01(o.vel) : null };   // (v1.2: the note's vel, null = the 1.1 path)
       return h;
     };
   }
@@ -2132,8 +2171,11 @@
   var previewPort = null, schedPort = null, taps = {};
   // v0.6.2: `when` (optional AudioContext time) schedules the hit ahead on the audio clock (the gig's two-thumb auto notes).
   // v0.7.2: hits scheduled ahead go through their own port so A.hitCancel() can silence them (a gig restart / hidden app).
-  A.hit = function (lane, when) {
+  // v1.2 (F5, Lane F): o.vel (0..1; A.tapVel) with the Classic switch off plays the hit at A.velGain(vel) (Lane I's velocity
+  // sounds take it from here); no vel = the 1.1 tap, unchanged.
+  A.hit = function (lane, when, o) {
     if (!ctx || suspended || ctx.state !== 'running' || A.isMuted() || !DRUMS[lane]) return false;   // (v1.1: 'str' lanes play A.pluck/strum/lead)
+    var vel = o && o.vel != null && !A.isClassic() ? clamp01(o.vel) : null;
     if (!previewPort) previewPort = makePort(rig);
     var playing = current && current.playing, t = ctx.currentTime + 0.005, v, port = previewPort;
     if (when > t && when < t + 1) { t = when; port = schedPort || (schedPort = makePort(rig)); }
@@ -2160,14 +2202,14 @@
       var slot = laneSlot(port, lane, t), src1 = ctx.createBufferSource();
       src1.buffer = pre.buf; src1.connect(slot.g);
       book(rig, t, pre.d, 1, false, 'tap');   // (taps are never refused)
-      slot.g.gain.setValueAtTime(1, t);
+      slot.g.gain.setValueAtTime(vel == null ? 1 : A.velGain(vel), t);   // (v1.2: at the tap's velocity)
       src1.start(t); src1.stop(t + pre.d + 0.005);
       slot.until = t + pre.d + 0.005;
       taps[lane] = { t: t, end: t + pre.d, n: 1, g: slot.g, src: [src1], slot: slot };
       PRE.hits++;
       return true;
     }
-    g = gainNode(ctx, 1, port.drums); var src = rig.collect = [];   // drum voices only use port.drums: a gain per tap is its port
+    g = gainNode(ctx, vel == null ? 1 : A.velGain(vel), port.drums); var src = rig.collect = [];   // drum voices only use port.drums: a gain per tap is its port (v1.2: at velGain)
     try { b = drumHit(rig, { drums: g }, lane, t, cap, v, 'tap'); } finally { rig.collect = null; }
     if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
@@ -3073,7 +3115,8 @@
     radioRig.fader.gain.setTargetAtTime(0.3, t, 0.8);
     setKit(radioRig, st.genre || 'metal');
     var seat = st.seat && st.seat !== 'drums' ? st.seat : undefined;   // v1.1: your part on the radio too (a string seat's song)
-    amb.radio = player(song.pattern, { genre: st.genre || 'metal', section: null, loop: true, songId: song.id, seat: seat, part: seat ? song.pattern.part : undefined }, { rig: radioRig, quiet: true });
+    amb.radio = player(song.pattern, { genre: st.genre || 'metal', section: null, loop: true, songId: song.id, seat: seat, part: seat ? song.pattern.part : undefined,
+      studio: true }, { rig: radioRig, quiet: true });   // v1.2 (F16.2): the recorded take is tighter (t + C.FEEL_STUDIO)
     amb.radioSong = song.id;
   }
   function stopRadio() {
