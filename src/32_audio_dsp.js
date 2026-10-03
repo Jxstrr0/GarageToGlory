@@ -243,7 +243,7 @@
   // ---- cab IRs -----------------------------------------------------------------------------------------------------
   // [low cut, [res Hz, Q, dB], [scoop Hz, Q, dB] | null, [presence Hz, Q, dB], low-pass Hz, notches, comb delay ms]
   D.CABS = {
-    metal: { hp: 88, res: [95, 1.4, 4], scoop: [600, 0.9, -4], pres: [2400, 1.2, 3], lp: 5500, notches: 4, comb: 0.3 },
+    metal: { hp: 88, res: [95, 1.4, 4], scoop: [600, 0.9, -4], pres: [2400, 1.2, 0], lp: 5500, notches: 4, comb: 0.3 },   // (the +3 dB presence: 30's carve band)
     punk: { hp: 85, res: [110, 1.2, 2], scoop: null, pres: [1600, 1, 4], lp: 5000, notches: 3, comb: 0.35 },
     rock: { hp: 80, res: [100, 1.3, 3], scoop: [700, 0.8, -1.5], pres: [2000, 1, 4], lp: 5800, notches: 4, comb: 0.32 },
     country: { hp: 90, res: [120, 1, 1], scoop: null, pres: [3200, 1, 3], lp: 6500, notches: 3, comb: 0.42 },

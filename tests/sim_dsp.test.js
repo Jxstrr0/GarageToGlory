@@ -132,7 +132,7 @@ test('cab IRs: 1024 samples, normalised (0 dB mean 150 Hz - 5 kHz), shaped per F
     ok(gain(ir, want[name] * 2) < gain(ir, 1000) - 12, name + ': steep low-pass past ' + want[name] + ' Hz');
     ok(gain(ir, 40) < gain(ir, 1000) - 6, name + ': low cut');
   }
-  const m = D.cabIR('metal', sr); ok(gain(m, 600) < gain(m, 2400) - 3, 'metal: 600 Hz scoop under the 2.4 kHz presence');
+  const m = D.cabIR('metal', sr); ok(gain(m, 600) < gain(m, 150) - 4 && gain(m, 95) > gain(m, 1000) + 4, 'metal: the 95 Hz thump over the 600 Hz scoop (its +3 dB presence is 30\'s carve band)');
   const p8 = D.cabIR('practice8', sr); ok(gain(p8, 900) > gain(p8, 200) + 3 && gain(p8, 900) > gain(p8, 4500) + 6, 'practice 1x8: boxy 900 Hz honk');
   ok(D.cabIR('metal', 48000).length === 1024, '1024 at 48 kHz too');
   ok(JSON.stringify(Array.from(D.cabIR('rock', sr).slice(0, 64))) === JSON.stringify(Array.from(D.cabIR('rock', sr).slice(0, 64))), 'deterministic');

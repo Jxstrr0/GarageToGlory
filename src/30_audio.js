@@ -568,7 +568,7 @@
     r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
     if (r === rig) { preWant(); skWant(); pre2Want(); }   // v1.0: (re)render this kit's tap hits in the background (v1.2: + its sampled kit, the velocity sets)
     var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
-    r.drums.gain.setValueAtTime(0.8 * (k.level || 1) * q.trim, t);
+    r.drums.gain.setValueAtTime(0.8 * (k.level || 1) * q.trim * (r.crush ? 1 - 0.25 * ((A.realism(tier) || {}).crush || 0) : 1), t);   // (v1.2: the crush's make-up, by numbers)
     r.qDrive.curve = satCurve(q.drive);
     r.qBox.gain.setValueAtTime(q.box, t); r.qLow.frequency.setValueAtTime(q.low, t); r.qHigh.frequency.setValueAtTime(q.high, t);
     var send = 0.35 + 0.65 * (k.verb || 0);   // the room always speaks; the kit decides how much (rock lots, country little)
@@ -600,7 +600,7 @@
   // a presence lift, and the guitars' presence band dips (carve, dB) while a growl or scream sings, so it cuts through.
   // Tuned by numbers (tests/pw_seq audio): the mids match v0.7.1, the sub and the grind are up, the limiter holds peaks.
   var AMP = { gain: 26, level: 0.13, pan: 0.72, preHp: 110, bassSub: 0.3, bassGrind: 0.14, vox: 0.24, carve: -6 };
-  var CAB_TRIM = { metal: 0.88, punk: 0.92, rock: 0.89, country: 1 };   // v1.2 (F8): the IR cabs' level vs the 1.1 biquad cabs (by numbers)
+  var CAB_TRIM = { metal: 0.66, punk: 0.92, rock: 0.89, country: 1 };   // v1.2 (F8): the IR cabs' level vs the 1.1 biquad cabs (by numbers)
   // v1.2 (Lane I, F8): with Classic off the cab biquads give way to a cab IR convolver (the clipper is the amp, the IR the
   // speaker + mic): the band's amps follow the kit tier (F16.3: milk crate = the 1x8 practice amp, pawn shop = a 1x12, pro /
   // arena = the genre's cab; genres.js backing.amp.ir (base64 PCM16) overrides the genre cab). Each side: shaper -> high-pass
@@ -644,6 +644,7 @@
       M.cabs = [];
       [-AMP.pan, AMP.pan].forEach(function (pan, side) {
         M.pres[side] = carveNode(c, 2600, 1.2, gainNode(c, AMP.level * CAB_TRIM.metal, panNode(c, pan, r.busBand)));
+        M.pres[side].gain.value = 3; M.pres[side]._base = 3;   // (metal keeps 1.1's +3 dB presence here: metalVox carves -6 and restores +3; the IR has none)
         var conv = cabConv(r, 'metal'); conv.connect(M.pres[side]);
         var hp = filterNode(c, 'highpass', 78, 0.7, conv);
         M.cabs.push({ inp: hp, conv: conv, out: M.pres[side] });
@@ -1736,7 +1737,7 @@
   var KS_CAP = 8e6, KS_LAYERS = [0.55, 0.9];
   // string voices: sr, dur (s of buffer), pick (beta), bright (loop filter S), t60, thump / click, lvl (vs the oscillator, by numbers)
   var KS_VOICE = {
-    'metal|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.05, exLp: 3500, t60: 2.5, lvl: 0.85 },
+    'metal|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.05, exLp: 3500, t60: 2.5, lvl: 1.1 },
     'punk|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0, exLp: 3000, t60: 2.5, lvl: 1 },
     'rock|gtr': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0.1, exLp: 4000, t60: 2.5, lvl: 1.1 },
     'country|gtr': { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.3, t60: 2.5, lvl: 1 },
