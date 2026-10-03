@@ -462,8 +462,21 @@ async function pre() {
       const kitOn = g === 'metal' && q >= 2, bytes = d.pre.bytes + (kitOn ? d.kit.bytes : 0);
       rows.push({ kit: key, ms: d.pre.ms, slice: d.pre.slice, sets: d.pre.sets, rr: d.pre.rr, layers: d.pre.layers, bytes, kitMs: kitOn ? d.kit.ms : null, kitSlice: kitOn ? d.kit.slice : null });
     }
+    // KS warm (F7): each genre's signature song, its whole arrangement, on the 4x throttle
+    const warm = [];
+    for (const g of ['metal', 'punk', 'rock', 'country']) {
+      warm.push(await page.evaluate(async g => {
+        GG.state.genre = g; const pat = GG.songs.sanitize(GG.songs.signature(g), null, null, true), t0 = performance.now();
+        const res = await GG.audio.warm(pat, { genre: g, songId: 'warm-' + g });
+        const k = GG.debug('audio').ks;
+        return { g, n: res.n, ms: Math.round(performance.now() - t0), slice: k.slice, bytes: k.bytes };
+      }, g));
+    }
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     console.log('INFO pre (4x throttle) ' + JSON.stringify(rows));
+    console.log('INFO ks warm (4x throttle) ' + JSON.stringify(warm));
+    c.ok(warm.every(w => w.n > 0 && w.slice <= 8 && w.bytes <= 8e6), 'KS warm: every genre queues its strings, slices <= 8 ms, cache <= 8 MB ' + JSON.stringify(warm.map(w => [w.g, w.n, w.slice, Math.round(w.bytes / 1e3) + 'kB'])));
+    c.ok(warm.every(w => w.ms <= 300 * 4), 'KS warm per song <= 300 ms of CPU (wall on the 4x throttle <= 1.2 s) ' + JSON.stringify(warm.map(w => [w.g, w.ms])));
     c.ok(rows.every(r => r.ms <= 2500), 'the velocity sets build in <= 2.5 s on a 4x throttle ' + rows.map(r => r.kit + r.ms + 'ms').join(' '));
     c.ok(rows.every(r => r.slice <= 8 && (r.kitSlice == null || r.kitSlice <= 8)), 'no build slice over 8 ms ' + rows.map(r => r.kit + r.slice + '/' + r.kitSlice).join(' '));
     c.ok(rows.every(r => r.bytes <= 6e6), 'every kit set <= 6 MB ' + rows.map(r => r.kit + Math.round(r.bytes / 1e3) + 'kB').join(' '));

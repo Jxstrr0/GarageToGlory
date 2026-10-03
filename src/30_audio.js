@@ -600,7 +600,7 @@
   // a presence lift, and the guitars' presence band dips (carve, dB) while a growl or scream sings, so it cuts through.
   // Tuned by numbers (tests/pw_seq audio): the mids match v0.7.1, the sub and the grind are up, the limiter holds peaks.
   var AMP = { gain: 26, level: 0.13, pan: 0.72, preHp: 110, bassSub: 0.3, bassGrind: 0.14, vox: 0.24, carve: -6 };
-  var CAB_TRIM = { metal: 1, punk: 1, rock: 1, country: 1 };   // v1.2 (F8): the IR cabs' level vs the 1.1 biquad cabs (by numbers)
+  var CAB_TRIM = { metal: 0.88, punk: 0.92, rock: 0.89, country: 1 };   // v1.2 (F8): the IR cabs' level vs the 1.1 biquad cabs (by numbers)
   // v1.2 (Lane I, F8): with Classic off the cab biquads give way to a cab IR convolver (the clipper is the amp, the IR the
   // speaker + mic): the band's amps follow the kit tier (F16.3: milk crate = the 1x8 practice amp, pawn shop = a 1x12, pro /
   // arena = the genre's cab; genres.js backing.amp.ir (base64 PCM16) overrides the genre cab). Each side: shaper -> high-pass
@@ -1736,19 +1736,20 @@
   var KS_CAP = 8e6, KS_LAYERS = [0.55, 0.9];
   // string voices: sr, dur (s of buffer), pick (beta), bright (loop filter S), t60, thump / click, lvl (vs the oscillator, by numbers)
   var KS_VOICE = {
-    'metal|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.15, t60: 2.5, lvl: 1 },
-    'punk|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.25, t60: 2.5, lvl: 1 },
-    'rock|gtr': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0.3, t60: 2.5, lvl: 1 },
-    'country|gtr': { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.4, t60: 2.5, lvl: 1 },
+    'metal|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.05, exLp: 3500, t60: 2.5, lvl: 0.85 },
+    'punk|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0, exLp: 3000, t60: 2.5, lvl: 1 },
+    'rock|gtr': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0.1, exLp: 4000, t60: 2.5, lvl: 1.1 },
+    'country|gtr': { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.3, t60: 2.5, lvl: 1 },
     'metal|bass': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0, exLp: 450, t60: 3, click: 0.6, lvl: 1.2 },
-    'punk|bass': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0, exLp: 450, t60: 3, click: 0.6, lvl: 1.3 },
-    'rock|bass': { sr: 22050, dur: 1.6, pick: 0.25, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.4 },
-    'country|bass': { sr: 22050, dur: 1.6, pick: 0.27, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.4 },
-    clean: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.35, t60: 2.5, lvl: 1 },
-    acoustic: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.3, t60: 2, lvl: 1 },
-    twang: { sr: 32000, dur: 1.2, pick: 0.12, bright: 0.45, t60: 1.6, lvl: 1 },
-    lead: { sr: 32000, dur: 1.2, pick: 0.15, bright: 0.4, t60: 2.5, lvl: 1 }
+    'punk|bass': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0, exLp: 450, t60: 3, click: 0.6, lvl: 1.6 },
+    'rock|bass': { sr: 22050, dur: 1.6, pick: 0.25, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.7 },
+    'country|bass': { sr: 22050, dur: 1.6, pick: 0.27, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.7 },
+    clean: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.25, exLp: 5000, t60: 2.5, lvl: 1 },
+    acoustic: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.1, exLp: 4000, t60: 2, lvl: 1 },
+    twang: { sr: 32000, dur: 1.2, pick: 0.12, bright: 0.3, exLp: 6000, t60: 1.6, lvl: 1 },
+    lead: { sr: 32000, dur: 1.2, pick: 0.15, bright: 0.3, exLp: 5000, t60: 2.5, lvl: 1 }
   };
+
 
   // -> spec { key, fs, offs (s), sr, n, opts, period (samples, for loops) }. o: { power, fs (Hz), mute, trem, vel, rr, strum, up, side }
   function ksSpec(genre, kind, midi, o) {
