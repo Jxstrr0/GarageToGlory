@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -20,6 +20,12 @@
 //   sync (v0.8.3 drum sync): the count-in hats on the band grid, the band honours the count's zero (opts.at), perfect and
 //         slightly late taps sound exactly on the band's grid, early ones keep their offset, the audio offset is ignored,
 //         auto notes and Auto-kick's kicks are booked on the 16th grid (none from the frame), the Classic toggle = 0.8.2.
+//   feel (v1.2 Soundcheck, Lane F, handoff F4 / F5): every tap carries a vel (A.tapVel: a Perfect downbeat ~ 1, a Good
+//         offbeat ~ 0.86 x 0.9), the count-in hats 0.88 (A.TAP_AUTO), and the Perfect downbeat renders louder than the Good
+//         offbeat (same drum at each vel: Lane I's offline velocity hit when renderOffline takes spec.vel, else the graph A.hit
+//         builds on the pre-rendered path: the kit's hit -> a gain at A.velGain(vel)); the band plays with the gig's feel
+//         (po.gig: plan.stats.gig, every |dt| <= 15 ms) while the 'step' events stay on the 16th grid; a string seat's taps
+//         carry vel to A.pluck / strum / lead; the Classic switch = no vel, no plan; no console errors.
 // Run: node build.js && timeout 500 node tests/pw_gig.js
 const path = require('path');
 const { open, checker, shotName } = require('./_pw');
@@ -572,7 +578,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -1010,6 +1016,123 @@ async function chordGig() {
     }, n3);
     c.ok(/^(perfect|good)$/.test(r3.j) && r3.got != null && r3.got >= r3.want - 0.01, 'partner: an on-time chorus hold plays its whole length ' + JSON.stringify(r3));
     await stop();
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// META_ONLY=feel (v1.2 Soundcheck, Lane F): tap velocity in the gig (see the header).
+async function feelGig() {
+  const c = checker('feel');
+  const { page, errors, close } = await open();
+  const tapF = (li, at) => page.evaluate(async ([li, at]) => {
+    const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+    while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
+    while (GG.debug('gigui').songT < at) { /* spin */ }
+    const n0 = window.__h.length;
+    window.__inTap = true;
+    try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (li + 0.5) * r.width / lanes, clientY: r.bottom - 36, pointerId: 7 + li, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true })); }
+    finally { window.__inTap = false; }
+    return { last: GG.debug('gigui').last, h: window.__h.slice(n0).find(e => e.tap) || null, feel: GG.debug('gigui').feel };
+  }, [li, at]);
+  // the next unjudged note in lane li on one of `steps` (16ths in the bar), far enough ahead to aim at
+  const nextOn = (li, steps) => page.waitForFunction(([li, steps]) => {
+    const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+    for (const n of d.soon) { const st = Math.round(n.t / (d.spb / 4)) % 16; if (n.li === li && steps.includes(st) && n.t > d.songT + 0.4 && n.t < d.dur - 1) return Object.assign({ step: st }, n); }
+    return null;
+  }, [li, steps], { timeout: 12000 }).then(h => h.jsonValue());
+  const startShow = async () => {
+    await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; window.__h = []; window.__steps = []; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').tBand > 0.2, null, { timeout: 8000 });
+  };
+  const db = x => Math.round(20 * Math.log10(x) * 100) / 100;
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => {
+      GG.audio.classic(false);
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, drumSync: true });
+      GG.main.quickStart({ seed: 1212, openCard: false });
+      const s = GG.state, E = '................'; s.card = null; s.phase = 'plan';
+      const bar = ['x.......x.......', '....x.......x...', '..x...x...x...x.', E];   // kick downbeats, snare backbeat, offbeat 8th hats
+      const song = GG.songs.create(s, { bpm: 120, lanes: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus', 'verse', 'chorus', 'verse', 'chorus'],
+        sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] } }, 'Feel Test', { quality: 60, polish: 60 });
+      s.songs = [song];
+      GG.prefs.set({ audioProfile: 'speaker' }); GG.prefs.setCalib('speaker', { audio: 0, visual: 0 });
+      window.__h = []; window.__steps = []; const h0 = GG.audio.hit;
+      GG.audio.hit = function (l, w, o) {
+        window.__h.push({ l, w, tap: !!window.__inTap, vel: o && o.vel != null ? o.vel : null, o: o === undefined ? 'none' : 'obj' });
+        return h0.apply(this, arguments);
+      };
+      GG.on('audio:step', p => { if (window.__steps.length < 400) window.__steps.push(p.time); });
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = false;
+    });
+    await startShow();
+    // (1) the count-in hats: the game's own strokes at A.TAP_AUTO.hat
+    const cnt = await page.evaluate(() => window.__h.filter(e => e.l === 'hat' && !e.tap).map(e => e.vel));
+    c.ok(cnt.length >= 3 && cnt.every(v => v === 0.88), 'count-in hats carry vel 0.88 ' + JSON.stringify(cnt));
+    // (2) the band: the gig's feel (po.gig) applied on copies; the steps stay on the 16th grid
+    await page.waitForFunction(() => window.__steps.length >= 12, null, { timeout: 8000 });
+    const band = await page.evaluate(() => {
+      const h = GG.audio.current(), st = h && h.plan ? h.plan.stats : null, by = h && h.feel ? h.feel.byKind : null;
+      const g = 60 / h.timeline.bpm / 4, off = window.__steps.filter(t => Math.abs((t - h.start) / g - Math.round((t - h.start) / g)) * g > 1e-6).length;
+      return { gig: st && st.gig, maxAbsDt: st && st.maxAbsDt, kick: by && by.kick.who, bass: by && by.bass.who, steps: window.__steps.length, off, dbg: GG.debug('gigui').feel.gig };
+    });
+    c.ok(band.gig === true && band.dbg === true && band.maxAbsDt > 0 && band.maxAbsDt <= 0.015 + 1e-6 && band.kick === 'player' && band.bass && band.bass !== 'player',
+      'the band plays with the gig feel (|dt| <= 15 ms; your kit = your taps) ' + JSON.stringify(band));
+    c.ok(band.steps >= 12 && band.off === 0, 'audio:step events stay on the 16th grid (the gig clock is sacred) ' + JSON.stringify({ steps: band.steps, off: band.off }));
+    // (3) a Perfect downbeat and a Good offbeat
+    const win = await page.evaluate(() => GG.gig.windows(GG.state));
+    const nk = await nextOn(0, [0]), rp = await tapF(nk.li, nk.t);
+    const nh = await nextOn(2, [2, 6, 10, 14]), lateBy = (win.perfect + win.good) / 2, rg = await tapF(nh.li, nh.t + lateBy);
+    const want = await page.evaluate(([a, b]) => [GG.audio.tapVel({ judgement: 'perfect', step: a, lane: 'kick', rnd: 0.5 }), GG.audio.tapVel({ judgement: 'good', step: b, lane: 'hat', rnd: 0.5 })], [nk.step, nh.step]);
+    const vp = rp.h && rp.h.vel, vg = rg.h && rg.h.vel;
+    c.ok(rp.last && rp.last.judgement === 'perfect' && vp != null && Math.abs(vp - want[0]) <= 0.0301 && vp >= 0.97, 'a Perfect downbeat kick carries vel ~ 1 ' + JSON.stringify({ j: rp.last && rp.last.judgement, vel: vp, want: want[0], step: nk.step }));
+    c.ok(rg.last && rg.last.judgement === 'good' && vg != null && Math.abs(vg - want[1]) <= 0.0301, 'a Good offbeat hat carries vel ~ 0.86 x 0.9 ' + JSON.stringify({ j: rg.last && rg.last.judgement, vel: vg, want: want[1], step: nh.step, lateMs: Math.round(lateBy * 1000) }));
+    c.ok(rg.feel && rg.feel.velN >= 2 && rg.feel.last && Math.abs(rg.feel.last.vel - vg) < 1e-9 && rg.feel.last.judgement === 'good', 'debug(gigui).feel: the last tap ' + JSON.stringify(rg.feel && rg.feel.last));
+    // (4) rendered level: the same drum at the two taps' velocities (and vs the 1.1 level, VEL_REF)
+    const lv = await page.evaluate(async ([vp, vg]) => {
+      const A = GG.audio, genre = GG.state.genre, lane = 'snare';
+      const meas = b => { let pk = 0, s = 0, n = 0; for (let ch = 0; ch < b.numberOfChannels; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a; s += d[i] * d[i]; n++; } } return { peak: pk, rms: Math.sqrt(s / n) }; };
+      const r1 = await A.renderOffline({ genre, lane, vel: 1, quality: 2, hit: 0 }), r2 = await A.renderOffline({ genre, lane, vel: 0.5, quality: 2, hit: 0 });
+      let how, lvl;
+      if (Math.abs(r1.peak - r2.peak) > 1e-6) { how = 'renderOffline(spec.vel)'; lvl = async v => meas((await A.renderOffline({ genre, lane, vel: v, quality: 2, hit: 0 })).buffer); }
+      else {   // A.hit's pre-rendered path on this branch: the kit's hit -> a gain at A.velGain(vel)
+        how = 'pre x velGain'; const buf = await A.prerenderHit({ genre, lane, quality: 2 });
+        lvl = async v => { const oc = new OfflineAudioContext(1, buf.length, buf.sampleRate), s = oc.createBufferSource(), g = oc.createGain();
+          s.buffer = buf; g.gain.value = v == null ? 1 : A.velGain(v); s.connect(g); g.connect(oc.destination); s.start(0); return meas(await oc.startRendering()); };
+      }
+      return { how, p: await lvl(vp), g: await lvl(vg), ref: await lvl(GG.contracts.VEL_REF) };
+    }, [vp, vg]);
+    c.ok(lv.p.rms > lv.g.rms * 1.2 && lv.p.peak > lv.g.peak && lv.p.rms >= lv.ref.rms && lv.g.rms <= lv.ref.rms,
+      'the Perfect downbeat renders louder than the Good offbeat (' + lv.how + '): ' + db(lv.p.rms / lv.g.rms) + ' dB rms; vs the 1.1 level ' + db(lv.p.rms / lv.ref.rms) + ' / ' + db(lv.g.rms / lv.ref.rms) + ' dB');
+    console.log('feel numbers: perfect downbeat vel ' + vp + ', good offbeat vel ' + vg + ' (' + Math.round(lateBy * 1000) + ' ms late); ' + lv.how + ': '
+      + db(lv.p.rms / lv.g.rms) + ' dB rms, vs 1.1 ' + db(lv.p.rms / lv.ref.rms) + ' / ' + db(lv.g.rms / lv.ref.rms) + ' dB; band maxAbsDt ' + Math.round(band.maxAbsDt * 1e4) / 10 + ' ms, steps ' + band.steps);
+    // (5) the Classic switch: no vel, no plan (the 1.1 calls)
+    await page.evaluate(() => { GG.ui.closeAll(); GG.audio.classic(true); });
+    await startShow();
+    const nc = await nextOn(0, [0]), rc = await tapF(nc.li, nc.t);
+    const cl = await page.evaluate(() => { const h = GG.audio.current(); return { plan: !!(h && h.plan), feel: !!(h && h.feel), hats: window.__h.filter(e => e.l === 'hat' && !e.tap).map(e => e.o) }; });
+    c.ok(rc.h && rc.h.o === 'none' && cl.hats.length >= 3 && cl.hats.every(o => o === 'none') && !cl.plan && !cl.feel, 'Classic: taps and the count-in call A.hit without o, the band has no plan ' + JSON.stringify({ tap: rc.h && rc.h.o, cl }));
+    await page.evaluate(() => { GG.ui.closeAll(); GG.audio.classic(false); });
+    // (6) a string seat: your taps carry vel to A.pluck / strum / lead
+    await page.evaluate(() => {
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, noFail: false });
+      GG.main.quickStart({ seed: 2024, bandId: 'hail_damage', seat: 'bass', openCard: false });
+      const s = GG.state; s.card = null; s.phase = 'plan'; GG.ui.gigAutoplay = false;
+      for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(70 + i));
+      const A = GG.audio, v = window.__sv = [];
+      ['pluck', 'strum', 'lead'].forEach(k => { const f = A[k]; A[k] = function (midi, when, o) { v.push({ k, vel: o && o.vel != null ? o.vel : null, tap: !!window.__inTap }); return f.apply(this, arguments); }; });
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
+    });
+    await startShow();
+    const ns = await page.waitForFunction(() => { const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null; for (const n of d.soon) if (n.t > d.songT + 0.4 && n.t < d.dur - 1) return n; return null; }, null, { timeout: 12000 }).then(h => h.jsonValue());
+    const rs = await tapF(ns.li, ns.t);
+    const sv = await page.evaluate(() => window.__sv.filter(x => x.tap));
+    c.ok(rs.last && /^(perfect|good|fill)$/.test(rs.last.judgement) && sv.length >= 1 && sv.every(x => x.vel != null && x.vel >= 0.45 && x.vel <= 1), 'bass seat: the tap\'s note carries vel ' + JSON.stringify({ j: rs.last && rs.last.judgement, sv }));
+    await page.evaluate(() => GG.ui.closeAll());
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
