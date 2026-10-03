@@ -50,11 +50,38 @@ function report(r) {
   head.push('#   TOTAL ' + total + ' lines in ' + files.length + ' files', '');
   return { text: head.concat(r.rows).join('\n') + '\n', total, files: files.map(f => [f, r.count[f]]) };
 }
-const rep = report(scan());
+// v1.1 review: the second pass. A swapped member (bands.<id>.seats, E3) named in the same sentence as their OLD instrument's
+// words: on the seat that sends them to the kit the line shows them playing it. Decide per line: seat-neutral words, a seat
+// gate without that seat (content/zz_seats_gates.js for whole cards), or leave (songwriting, someone else's instrument; the
+// runtime scan's OLD_LEFT in tests/seat_scan.js). Tags: [seat] the line carries a seat gate; [swapped] a swapped gate.
+const BASS = /\b(bass|basses|bassist|bass ?lines?)\b/i, GTR = /\b(guitars?|guitarist|solos?|riffs?|chords?|pedalboard|pedals|strap|7-string|frets?|acoustic)\b/i;
+const SWAPPED = { kenji: [/\bKenji\b/, BASS], moth: [/\bMoth\b/, BASS], tamara: [/\b(Tamara|T-Bone)\b/, BASS], duke: [/\bDuke\b/, BASS],
+  jaxon: [/\bJaxon\b/, GTR], rox: [/\bRox\b/, GTR], chase: [/\bChase\b/, GTR], travis: [/\bTravis\b/, GTR],
+  dana: [/\b(Dana|Sweep)\b/, GTR], benny: [/\bBenny\b/, GTR], lenny: [/\bLenny\b/, GTR], earl: [/\bEarl\b/, GTR] };
+function scanOld() {
+  const files = fs.readdirSync(DIR).filter(f => f.endsWith('.js')).sort(), rows = [];
+  files.forEach(f => {
+    const rel = 'src/content/' + f;
+    fs.readFileSync(path.join(DIR, f), 'utf8').split('\n').forEach((line, i) => {
+      if (/^\s*\/\//.test(line)) return;
+      const ids = new Set();
+      texts(line).forEach(t => t.split(/(?<=[.!?])\s+/).forEach(sen => Object.keys(SWAPPED).forEach(id => { if (SWAPPED[id][0].test(sen) && SWAPPED[id][1].test(sen)) ids.add(id); })));
+      if (!ids.size) return;
+      const tags = (/\bseat\s*:/.test(line) ? '[seat]' : '') + (/\bswapped\s*:/.test(line) ? '[swapped]' : ''), t = line.trim();
+      rows.push(rel + ':' + (i + 1) + '  {' + [...ids].join(',') + '}' + (tags ? ' ' + tags : '') + '  ' + (t.length > 200 ? t.slice(0, 197) + '...' : t));
+    });
+  });
+  return rows;
+}
+const rep = report(scan()), old = scanOld();
+rep.text += ['', '# ---- Pass 2 (v1.1 review): a swapped member next to their OLD instrument (' + old.length + ' lines) ----',
+  '# On a string seat the member whose seat you took drums: decide per line (seat-neutral words | a seat gate without their',
+  '# swap seat, content/zz_seats_gates.js for whole cards | leave: songwriting or someone else\'s instrument).', ''].concat(old).join('\n') + '\n';
 if (OUT === '-') process.stdout.write(rep.text);
 else {
   fs.writeFileSync(OUT, rep.text);
+  console.log('pass 2 (old instrument): ' + old.length + ' lines');
   rep.files.forEach(([f, n]) => console.log((f + ' ').padEnd(44, '.') + ' ' + n));
   console.log('TOTAL ' + rep.total + ' lines -> ' + path.relative(ROOT, OUT));
 }
-module.exports = { scan, report, WORDS, TOMS };
+module.exports = { scan, scanOld, report, WORDS, TOMS };

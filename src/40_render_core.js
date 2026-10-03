@@ -238,6 +238,7 @@
     if (h && h.type === 'hotspot' && h.action === action) return p;
     return anchorScreen('label', action) || p;
   };
+  R.labelScreenPos = function (action) { return anchorScreen('label', action); };   // v1.1 review: a hotspot's label chip (overlap checks)
   R.memberScreenPos = function (id) { return anchorScreen('member', id); };
   R.playerScreenPos = function () { return anchorScreen('player', null); };
   R.worldToScreen = function (x, y, z) {

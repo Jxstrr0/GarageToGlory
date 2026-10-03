@@ -14,10 +14,10 @@
       // Hail Damage: Dana drums
       'scandal_cover', 'signed_dana_signature', 'signed_monolith_radio', 'studio_dana_take_41',
       // Frost Heave: Benny drums
-      'fh_benny_capo', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
+      'fh_benny_capo', 'fh_local_two_string', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
       'scandal_fh_third_chord', 'studio_fh_third_chord', 'fh_rox_minutes', 'road_fh_three_chords', 'holiday_st_paddys_frost_heave',
       // Gravel Kings: Lenny drums (his riffs are still his songs; these cards have him playing them on guitar)
-      'gk_l_anthem', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
+      'gk_l_anthem', 'gk_s_signature_guitar', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
       'gk_early_voicemail', 'scandal_gk_riff_leak', 'studio_gk_riff_flag',
       // Grid Road Ramblers: Earl drums
       'grr_small_rodeo_anthem', 'signed_grr_monolith_radio', 'grr_rep_tuning'

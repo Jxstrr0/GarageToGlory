@@ -1043,7 +1043,7 @@
         { label: 'Play the story a backing track', hint: 'Chemistry ↑', effects: { chemistry: 3 },
           outcome: 'You play a soft groove under the story. Travis adds a melody. It becomes a song. It is called "1979". It is nine minutes.' },
         { label: "Earl. The song.", hint: 'Earl ↓ · Skill ↑', effects: { mood: { earl: -4 }, skill: { earl: 1 } },
-          outcome: "Earl stops, nods, and plays the solo he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
+          outcome: "Earl stops, nods, and plays the part he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
       ] },
     { id: 'grr_rep_hat_wind', type: 'weird', speaker: 'duke', title: 'The Hat Blew Off', once: false, cooldown: 10, gate: g({ era: GLS }),
       text: "An outdoor gig and a prairie gust. Duke's hat is gone: off his head, over the crowd, across the parking lot, into a field. " +
@@ -2235,7 +2235,7 @@
     viral: {
       good: [
         'VIRAL: Duke tips his hat on the last chorus and two hundred people in hats tip theirs back. {views} views.',
-        'VIRAL: Earl plays a perfect solo while explaining, mid-solo, the history of the song he is soloing on. {views} views.',
+        'VIRAL: Earl plays a perfect take while explaining, mid-song, the history of the song he is playing. {views} views.',
         'VIRAL: Clementine plays a reel so fast a man\'s boot flies off and lands on the stage in time. {views} views.',
         'VIRAL: Travis Lee restarts his 1987 truck on the first try, on camera, and weeps with joy. {views} views.',
         'VIRAL: a whole curling rink two-steps to the waltz while the ice crew keeps sweeping. {views} views.',

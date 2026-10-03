@@ -28,7 +28,7 @@ const LEFT = [
   'carrying cymbals', 'carry the snare', 'and a snare in a minivan', 'Every cymbal in the van', "'s drummer Brody", "The drummer's has drumsticks in it",
   // words that only look like drum words (a first-aid kit, a hockey stick, the Frozen Throne, "it sticks", "kicks in")
   'first-aid kit', 'press kit', 'floss kit', 'from her kit', 'Lift Kit', 'Frozen Throne', 'Throne of', 'Trône', 'like a throne', 'the throne room',
-  'Hay Bale Throne', 'tape your sticks', 'sticks it', 'It sticks', 'back sticks out', 'sticks of homemade jerky', 'drumstick as a mic',
+  'Hay Bale Throne', 'hay bale throne', 'tape your sticks', 'sticks it', 'It sticks', 'back sticks out', 'sticks of homemade jerky', 'drumstick as a mic',
   'kicks in', 'kicks on', 'Kick it', 'kick it', 'Irma kicks', 'One good kick', 'Benny kicks it', 'brushes and a shop vac',
   // the Patreeon tiers (Drumstick, Snare, Full Kit) are the band's merch names
   'Drumstick, Snare, Full Kit', 'Snare, Full Kit', 'Drumstick', 'Full Kit', 'collectively, Snare',
@@ -42,7 +42,7 @@ const LEFT = [
   'kick drum', 'Kick Drum', 'bass drum', 'the kick', 'The kick', 'kick pedal', 'snare hit', 'Every snare', 'the snare', 'The snare', 'snare wires',
   'Nine Seconds of Snare', 'a zipper hitting the drum', 'drum solos', 'drum loop', 'drum pattern', 'one drum kit', 'DRUM MACHINE',
   'hi-hat', 'the cymbals', 'The cymbals', 'cymbal stands', 'cymbals on', 'cymbals in', 'without cymbals', 'cracked cymbal', 'ride cymbal',
-  'spare cymbal', 'The cymbal goes', 'a cymbal case', 'crash cymbal', 'in a cymbal', 'Hold on to the cymbals', 'floor tom', 'on the toms',
+  'The cymbal goes', 'a cymbal case', 'crash cymbal', 'in a cymbal', 'Hold on to the cymbals', 'floor tom', 'on the toms',
   'double-kick run', 'double bass', 'blast beat', 'Blast beats', 'blast beats', 'BLAST BEAT', 'backbeat', 'train beat', 'TRAIN BEAT',
   'on the beat', 'keep the beat', 'The beat on track', 'Gamble: a new drum loop', 'Gophers Under the Kit', 'Move the kit', 'move the drums',
   'Counts the song in from behind the kit', 'behind the kit', 'flatter than a drum skin', 'Flatter than a drum skin', 'drum shop upstairs',
@@ -103,9 +103,9 @@ const OLD_LEFT = [
   'drum solo', 'Drum solo', 'Benny Two Chords', 'Two Chords',   // a solo on the kit; Benny's nickname
   // "solo" = alone / the section / a solo career; someone else's guitar; the player's own seat ({seat}, "the one on guitar")
   'Solo unlocked', 'does the interview solo', 'goes solo', 'a solo project', 'a solo career', 'Send Dana, solo', "Lenny's solo, Chase's slide",
-  "the winners' guitarist", 'Air guitar', 'a small circle labelled', 'the one on guitar', 'names it "Lenny',
+  "the winners' guitarist", 'Air guitar', "a small circle labelled 'bass'", 'the one on guitar', 'names it "Lenny\'s Riff"',
   // Rox and Benny's two chords on the rhythm seat (Benny still plays them)
-  "chord one is 'outrage' and chord two is 'more outrage'",
+  "chord one is 'outrage' and chord two is 'more outrage'", 'screams the bylaw number over both chords',
 ];
 // Words that are a member's songwriting, not their instrument: Benny's two chords (he still writes two-chord songs from the
 // kit), Lenny's riffs (he still writes them; the lawsuit cards where he PLAYS them on guitar are gated off the lead seat).

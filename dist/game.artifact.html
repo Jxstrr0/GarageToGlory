@@ -1969,7 +1969,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
 
     { id: 'studio_silo_echo', type: 'weird', speaker: 'dana', title: 'Nine Seconds of Snare', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: HD },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his bass down ' +
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his gear down ' +
         'and leaves for lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
@@ -2795,7 +2795,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           cringe: [
             { who: 'marcel', text: 'Wrong kind of viral: Marcel\'s dance tutorial, "The Abyssal Two-Step". {views} views, mostly laughing ones.' },
             { who: 'marcel', text: 'Wrong kind of viral: Marcel reads his poetry over a smoke machine that will not stop. {views} views.' },
-            { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one guitar pick. {views} views.' },
+            { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one tuning key. {views} views.' },
             { who: 'jaxon', text: 'Wrong kind of viral: Jaxon\'s "how to look metal at a wedding", filmed at a real wedding. {views} views.' },
             { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
           ]
@@ -3783,8 +3783,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: "You explain that {sticks} break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
         { label: 'Hand the books to Dana', effects: { fund: 30, mood: { dana: -5 } },
           outcome: 'Dana cuts spending 12 percent and itemizes her string gauges. Dad is so impressed he asks her to do his taxes.' },
-        { label: 'Sell your spare cymbal', effects: { fund: 60, burnout: 3 },
-          outcome: 'The cymbal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
+        { label: 'Sell your spare pedal', effects: { fund: 60, burnout: 3 },
+          outcome: 'The pedal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
       ] },
 
     { id: 'road_dads_truck', type: 'road', speaker: 'dad', title: "Dad's New Truck", gate: g({ minWeek: 2, maxWeek: 12 }),
@@ -8715,7 +8715,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         byBand: {
           hail_damage: {
             awful: ['Lyrics about a lawn, sung in French, over a metal band that has clearly never read theory. Any theory. Of anything.'],
-            meh: ['{nick:dana} solos the way a toddler narrates: with total conviction and no sense of an ending.'],
+            meh: ['{nick:dana} plays the way a toddler narrates: with total conviction and no sense of an ending.'],
             good: ["{nick:marcel}'s lawn lyrics are, read correctly, about the enclosure of the commons. Read incorrectly, they are about a lawn."],
             great: ['Kenji Blackbird reportedly declined to be interviewed by declining to be anywhere. It is the most radical act on any record this decade.']
           }
@@ -18729,7 +18729,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Play the story a backing track', hint: 'Chemistry ↑', effects: { chemistry: 3 },
           outcome: 'You play a soft groove under the story. Travis adds a melody. It becomes a song. It is called "1979". It is nine minutes.' },
         { label: "Earl. The song.", hint: 'Earl ↓ · Skill ↑', effects: { mood: { earl: -4 }, skill: { earl: 1 } },
-          outcome: "Earl stops, nods, and plays the solo he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
+          outcome: "Earl stops, nods, and plays the part he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
       ] },
     { id: 'grr_rep_hat_wind', type: 'weird', speaker: 'duke', title: 'The Hat Blew Off', once: false, cooldown: 10, gate: g({ era: GLS }),
       text: "An outdoor gig and a prairie gust. Duke's hat is gone: off his head, over the crowd, across the parking lot, into a field. " +
@@ -19911,7 +19911,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     viral: {
       good: [
         'VIRAL: Duke tips his hat on the last chorus and two hundred people in hats tip theirs back. {views} views.',
-        'VIRAL: Earl plays a perfect solo while explaining, mid-solo, the history of the song he is soloing on. {views} views.',
+        'VIRAL: Earl plays a perfect take while explaining, mid-song, the history of the song he is playing. {views} views.',
         'VIRAL: Clementine plays a reel so fast a man\'s boot flies off and lands on the stage in time. {views} views.',
         'VIRAL: Travis Lee restarts his 1987 truck on the first try, on camera, and weeps with joy. {views} views.',
         'VIRAL: a whole curling rink two-steps to the waltz while the ice crew keeps sweeping. {views} views.',
@@ -22392,9 +22392,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     rhythm: ['grr_lantern_rehearsal', 'grr_local_truck_stop'],
     lead: [
       'scandal_cover', 'signed_dana_signature', 'signed_monolith_radio', 'studio_dana_take_41',
-      'fh_benny_capo', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
+      'fh_benny_capo', 'fh_local_two_string', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
       'scandal_fh_third_chord', 'studio_fh_third_chord', 'fh_rox_minutes', 'road_fh_three_chords', 'holiday_st_paddys_frost_heave',
-      'gk_l_anthem', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
+      'gk_l_anthem', 'gk_s_signature_guitar', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
       'gk_early_voicemail', 'scandal_gk_riff_leak', 'studio_gk_riff_flag',
       'grr_small_rodeo_anthem', 'signed_grr_monolith_radio', 'grr_rep_tuning'
     ]
@@ -37797,6 +37797,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (h && h.type === 'hotspot' && h.action === action) return p;
     return anchorScreen('label', action) || p;
   };
+  R.labelScreenPos = function (action) { return anchorScreen('label', action); };   // v1.1 review: a hotspot's label chip (overlap checks)
   R.memberScreenPos = function (id) { return anchorScreen('member', id); };
   R.playerScreenPos = function () { return anchorScreen('player', null); };
   R.worldToScreen = function (x, y, z) {
@@ -39697,7 +39698,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     pizza: { x: -0.8, z: 1.5, yaw: 0.35 }, bulb: { x: 0.2, z: -0.2 }
   };
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
-  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.68, 1.86, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
+  var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [-0.5, 1.35, Z0 + 0.75], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
@@ -50543,6 +50544,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   };
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
+    if (strSeat()) {   // v1.1 review: the drum writeTips are the drum grid's; a string seat starts from the drummer's groove
+      var tk = ui.talkers(state)[0];
+      return tk ? { who: tk.id, text: ui.fill('{drummer} has a groove ready. Pick your ' + (GG.career.seatOf(state) === 'lead' ? 'hook' : 'chords') + ' for each section, then tap your part on the grid. Hit play to hear it.', state) } : null;
+    }
     var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
     var ids = Object.keys(tips).filter(function (id) { return ui.talkers(state).some(function (m) { return m.id === id; }); });
     var who = ui.pick(ids);

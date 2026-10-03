@@ -177,7 +177,7 @@
 
     // ---- Grain Silo Studios ----------------------------------------------
     { id: 'studio_silo_echo', type: 'weird', speaker: 'dana', title: 'Nine Seconds of Snare', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: HD },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his bass down ' +
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his gear down ' +
         'and leaves for lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },

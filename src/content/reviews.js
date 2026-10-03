@@ -151,7 +151,7 @@
         byBand: {
           hail_damage: {
             awful: ['Lyrics about a lawn, sung in French, over a metal band that has clearly never read theory. Any theory. Of anything.'],
-            meh: ['{nick:dana} solos the way a toddler narrates: with total conviction and no sense of an ending.'],
+            meh: ['{nick:dana} plays the way a toddler narrates: with total conviction and no sense of an ending.'],
             good: ["{nick:marcel}'s lawn lyrics are, read correctly, about the enclosure of the commons. Read incorrectly, they are about a lawn."],
             great: ['Kenji Blackbird reportedly declined to be interviewed by declining to be anywhere. It is the most radical act on any record this decade.']
           }

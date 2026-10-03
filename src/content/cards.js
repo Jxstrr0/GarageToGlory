@@ -469,8 +469,8 @@
           outcome: "You explain that {sticks} break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
         { label: 'Hand the books to Dana', effects: { fund: 30, mood: { dana: -5 } },
           outcome: 'Dana cuts spending 12 percent and itemizes her string gauges. Dad is so impressed he asks her to do his taxes.' },
-        { label: 'Sell your spare cymbal', effects: { fund: 60, burnout: 3 },
-          outcome: 'The cymbal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
+        { label: 'Sell your spare pedal', effects: { fund: 60, burnout: 3 },
+          outcome: 'The pedal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
       ] },
 
     // ======================================================================
