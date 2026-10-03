@@ -153,8 +153,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   air), plate + tempo delay sends, the guitars' presence dips -3 dB under a lead vocal (`r.carve`).
 - **Safety:** `GG.audio.classic(true)` (hidden, debug-only; `settings.audioClassic`) = the 1.1 sound node for node (232-case hash
   fixture equal); no `vel` = the 1.1 code path; `A.timeline()` unchanged (1,212 fingerprints); voice cap 32; no AudioWorklet.
-- **Numbers (F13, `plan/v12_audio_numbers.txt` "1.1 vs 1.2"):** full-mix RMS within +-1 dB of 1.1 per genre (metal +0.8, punk
-  +0.1, rock +0.2, country +0.2), 4k+ down 0.5-2.4 dB, peaks <= -4.7 dBFS. Size 5.12 MB (gate 6.0 MB).
+- **Numbers (F13, `plan/v12_audio_numbers.txt` "1.1 vs 1.2"):** full-mix RMS within +-1 dB of 1.1 per genre (metal +0.9, punk
+  +0.1, rock +0.2, country +0.2), 4k+ down 0.5-2.4 dB, peaks <= -4.7 dBFS; one re-balance (metal + punk KS bass excitation,
+  for pw_seq `heavy`'s "heavier" low end). Size 5.12 MB (gate 6.0 MB).
 - **§0 defaults (no popup; the owner may object):** Classic hidden, default off; VEL_REF 0.85 = the 1.1 level; the gig clamps above.
 - **Leftovers:** see `plan/v12_integration_report.md` §7 (rival members have no skill -> t 0.65; metal gang centre + right;
   voiced murmur before b/d/g; Classic off after on keeps the 1.1 vocals until reload; `opts.feel === false` unused).

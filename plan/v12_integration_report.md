@@ -13,7 +13,8 @@ wired the hand-overs and added the F17 credits before a container restart (16:43
 | hand-overs + F17 credits | `2b2a542` | below |
 | F13 numbers (this pass) | `c39dada` | section "1.2" + "1.1 vs 1.2"; `audio_numbers.js` label fix + `--diff` |
 | tools (this pass) | `f14139e` | `perf.js gig KITQ=`, `audio_clips.js --metal-kit` |
-| status (this pass) | `be03b71` + this commit | Version, What's in v1.2, APIs, Addendum 4 |
+| status (this pass) | `be03b71` | Version, What's in v1.2, APIs, Addendum 4 |
+| F13 re-balance (this pass) | `0909c6c` | metal + punk KS bass excitation (pw_seq heavy; §4) |
 
 Node suite after every merge: SUITE ALL PASS. Classic hash on the final tree: §3.
 
@@ -40,19 +41,31 @@ Section "1.2" = the merged build as the game plays it (feel on, null state t 0.5
 
 | genre | RMS dBFS 1.1 -> 1.2 (diff) | 4k+ dB 1.1 -> 1.2 (diff) | peak dBFS 1.1 -> 1.2 | width 1.1 -> 1.2 |
 |---|---|---|---|---|
-| metal | -16.8 -> -16.0 (+0.8) | -29.5 -> -30.0 (-0.5) | -4.7 -> -4.7 | 0.111 -> 0.082 |
-| punk | -18.3 -> -18.2 (+0.1) | -25.4 -> -27.4 (-2.0) | -4.6 -> -5.0 | 0.157 -> 0.205 |
+| metal | -16.8 -> -15.9 (+0.9) | -29.5 -> -30.0 (-0.5) | -4.7 -> -4.7 | 0.111 -> 0.083 |
+| punk | -18.3 -> -18.2 (+0.1) | -25.4 -> -27.4 (-2.0) | -4.6 -> -5.0 | 0.157 -> 0.206 |
 | rock | -16.2 -> -16.0 (+0.2) | -27.8 -> -30.2 (-2.4) | -4.7 -> -4.9 | 0.474 -> 0.445 |
 | country | -19.3 -> -19.1 (+0.2) | -34.3 -> -36.5 (-2.2) | -4.9 -> -5.1 | 0.022 -> 0.025 |
-| mean | -17.65 -> -17.33 (+0.3) | -29.25 -> -31.02 | -4.72 -> -4.92 | 0.191 -> 0.189 |
+| mean | -17.65 -> -17.30 (+0.4) | -29.25 -> -31.02 | -4.72 -> -4.92 | 0.191 -> 0.190 |
 
 F13 verdict (`node tools/audio_numbers.js --diff 1.1 1.2`): mean and per-genre RMS within +-1 dB, 4k+ down everywhere (cap +3),
-peaks far under the ceiling (the master ceiling is linear below 0.8 = -1.9 dBFS) -> **ALL MET, so no wet level or bus trim
-was moved** and no pw_seq threshold was retuned. Logged for the ears (stems): metal drums +2.3 dB (the sampled kit's longer
-tails over a song; its first-100 ms per hit matches the synth by `tools/kit_trim.js`), punk band 0-150 Hz -5.0 dB and rock /
-country band 0-150 Hz -2.2 / -1.8 dB (KS bass vs the 1.1 oscillator + the kick duck + feel accents), 500-1.5k up 3.5-4.5 dB
-on metal / punk full mixes (cab IRs), rock band 4k+ -6 dB. Clip levels (15 s, §5): metal +0.5, punk +0.3, rock -0.05,
-country +0.2 dB RMS vs the 1.1 clips.
+peaks far under the ceiling (the master ceiling is linear below 0.8 = -1.9 dBFS): **ALL MET** on the first measurement
+(`c39dada`: metal +0.8, punk +0.1, rock +0.2, country +0.2), so no wet level or bus trim was moved for F13 itself.
+
+**One re-balance, forced by a test (`0909c6c`):** pw_seq `heavy` failed at both sizes on the merged build: "heavier: energy
+below 150 Hz up" (the owner's v0.7.2 "heavier metal": the metal band at 140 bpm, drums off, >= -22.4 dB below 150 Hz and a
+share > 0.372) read -23.0 dB / 0.226 (1.1: -21.5 / 0.47). Cause: with Lane F's feel every band note carries a vel, so the KS
+strings play (Lane I's branch passed because without feel its band took the 1.1 path); the metal KS bass alone read
+-22.6 / -20.1 / -22.1 dB (0-150 / 150-500 / 500-1.5k) vs the 1.1 saw's -21.4 / -27.7 / -34.3: its bright excitation drove the
+bass grind (HP 260 -> shaper) into the mids. Probed in a scratch copy (bass click 0, pick 0.5, guitar exLp / pick / level,
+the metal cab trim: none moved the share enough; the guitars sit in a saturating amp and the glue evens levels), then:
+`KS_VOICE['metal|bass']` exLp 450 -> 150, lvl 1.2 -> 1.4 (band 140: -20.4 / -21.1 / -24.2 dB, share 0.41) and, same cause,
+`KS_VOICE['punk|bass']` exLp 450 -> 200 (punk band 0-150 Hz vs 1.1: -5.0 -> -2.9 dB). The threshold was NOT retuned.
+Metal band vs 1.1 (0-150 / 150-500 / 500-1.5k): -2.4 / +2.4 / +4.2 -> +0.5 / +2.1 / +1.6 dB (back near the 1.1 balance);
+metal full-mix RMS +0.8 -> +0.9 dB (inside +-1, the closest of the four: watch it in any later metal change).
+
+Logged for the ears (stems, not tuned): metal drums +2.3 dB (the sampled kit's longer tails over a song; its first 100 ms per
+hit matches the synth by `tools/kit_trim.js`), rock / country band 0-150 Hz -2.2 / -1.8 dB (KS bass), 500-1.5k up 4.4 dB on
+the punk full mix (cab IRs), rock band 4k+ -6 dB. Clip levels: §5.
 
 ## 5. Clips (F13 "Ears"; scratchpad, not committed)
 Folder `/tmp/claude-0/-home-user-GarageToGlory/ab4a625b-6080-5e92-a86d-0cde530c49e2/scratchpad/v12_clips/` (container-only; re-render with the commands below).
