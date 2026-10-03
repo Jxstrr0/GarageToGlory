@@ -460,22 +460,22 @@
   var E8 = 'x.x.x.x.x.x.x.x.', Q4 = 'x...x...x...x...';
   var SUGGEST = {
     bass: {
-      metal: { v: stepsOf(E8, 0), c: stepsOf('x.x.x.x.x.x.x...', 0).concat([[14, 2]]), b: stepsOf('x..x..x.x.......', 0).concat([[12, 1]]) },
+      metal: { v: stepsOf('x.x.x.x.x.......', 0).concat([[14, 2]]), c: stepsOf('x.x.x.x.x.x.x...', 0).concat([[14, 2]]), b: stepsOf('x..x..x.x.......', 0).concat([[12, 1]]) },   // verse: the root on 3 rings, an octave pickup
       punk: { v: stepsOf(E8, 0), c: stepsOf('x.x.x.x.x.x.....', 0).concat([[12, 1], [14, 1]]), b: stepsOf(Q4, 0).concat([[2, 1], [10, 1]]) },
       rock: { v: stepsOf('x..x..x.x..x..x.', 0), c: stepsOf('x.x.x...x.x.x...', 0).concat([[6, 2], [14, 1]]), b: [[0, 0], [8, 1], [12, 2]] },
       country: { v: [[0, 0], [8, 1]], c: [[0, 0], [4, 0], [8, 1], [12, 2]], b: [[0, 0], [6, 1], [8, 1], [14, 2]] }
     },
     rhythm: {
-      // metal: verse chugs locked to the kick with an open push on 4 that rings into the next bar; chorus = Jaxon's chorus
-      // ring (§0): a stab on 1, chugs, then the accent chord on 3 rings out the bar (open = ringing; before, a written metal
-      // part never rang, so a doom-tempo song had no holds)
-      metal: { v: stepsOf('x.x.x.x.x.x.....', 0).concat([[12, 1]]), c: [[0, 1], [2, 0], [4, 0], [6, 0], [8, 0], [8, 1]], b: stepsOf('x..x..x.x..x..x.', 0) },
+      // metal: verse chugs locked to the kick, then an open push on the and-of-3 that rings into the next bar; chorus = Jaxon's
+      // chorus ring (§0): a stab on 1, chugs, then the accent chord on 3 rings out the bar (open = ringing; before, a written
+      // metal part never rang, so a doom-tempo song had no holds). The bass and the lead verse ring on 3 (then a pickup).
+      metal: { v: stepsOf('x.x.x.x.x.......', 0).concat([[10, 1]]), c: [[0, 1], [2, 0], [4, 0], [6, 0], [8, 0], [8, 1]], b: stepsOf('x..x..x.x..x..x.', 0) },
       punk: { v: stepsOf(E8, 1), c: stepsOf(E8, 1), b: stepsOf('x.x.x.x.........', 1).concat(stepsOf('........x.x.x.x.', 0)) },
       rock: { v: stepsOf(E8, 0), c: [[0, 1], [6, 1], [8, 1], [14, 1]], b: [[0, 1], [8, 1]] },
       country: { v: [[0, 1], [4, 0], [8, 1], [12, 0]], c: stepsOf(Q4, 1).concat([[2, 0], [10, 0]]), b: [[0, 1], [6, 1], [8, 1], [12, 0]] }
     },
     lead: {
-      metal: { v: [[0, 0], [2, 1], [4, 2], [6, 1], [8, 0], [10, 1], [12, 3], [14, 2]], c: [[0, 2], [2, 3], [4, 4], [6, 3], [8, 2], [10, 3], [12, 4], [14, 3]], b: [[0, 1], [4, 2], [8, 3], [12, 4]] },
+      metal: { v: [[0, 0], [2, 1], [4, 2], [6, 1], [8, 3], [14, 2]], c: [[0, 2], [2, 3], [4, 4], [6, 3], [8, 2], [10, 3], [12, 4], [14, 3]], b: [[0, 1], [4, 2], [8, 3], [12, 4]] },
       punk: { v: [[0, 0], [4, 1], [8, 0], [12, 2]], c: [[0, 2], [2, 3], [4, 2], [8, 2], [10, 3], [12, 2]], b: [[0, 1], [4, 2], [8, 1], [12, 3]] },
       rock: { v: [[0, 1], [3, 2], [6, 3], [8, 2], [12, 1]], c: [[0, 2], [2, 3], [4, 4], [6, 2], [8, 2], [10, 3], [12, 4], [14, 2]], b: [[0, 3], [4, 4], [8, 3], [12, 1]] },
       country: { v: [[0, 0], [8, 1], [12, 2], [13, 3], [14, 4]], c: [[0, 2], [4, 3], [8, 2], [12, 3], [13, 4], [14, 2]], b: [[0, 1], [6, 2], [8, 3], [12, 4], [14, 2]] }

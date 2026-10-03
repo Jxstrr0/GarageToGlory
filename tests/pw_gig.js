@@ -837,7 +837,7 @@ async function seatGig() {
         const r0 = A.release; A.release = function (h, w) { v.rel.push(h && h.spy ? h.spy : 'voice'); return r0.apply(this, arguments); };
         const h0 = A.hit; A.hit = function (l) { v.hits.push(l); return h0.apply(this, arguments); };
         const p0 = A.play; A.play = function (pat, o) { v.play = { drums: o.drums, seat: o.seat, mute: o.mute }; return p0.apply(this, arguments); };
-        GG.on('gig:hold', p => v.holds.push(p)); v.judge = []; GG.on('gig:judge', p => v.judge.push({ lane: p.lane, judgement: p.judgement }));
+        GG.on('gig:hold', p => v.holds.push(p)); v.judge = []; GG.on('gig:judge', p => v.judge.push({ lane: p.lane, judgement: p.judgement, t: GG.debug('gigui').songT }));
         s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
         window.__done = null;
         GG.ui.playGig(s.gig, r => { window.__done = r; });
@@ -871,11 +871,14 @@ async function seatGig() {
       const j0 = await page.evaluate(() => window.__v.judge.length);
       d1 = await lift(n.t + n.len * 0.4, 22);
       await page.waitForFunction(at => GG.debug('gigui').songT > at, n.t + n.len + 0.4);
-      const jm = await page.evaluate(([j0, lane]) => window.__v.judge.slice(j0).filter(x => x.lane === lane && x.judgement === 'miss').length, [j0, 'str' + n.li]);
+      // misses on the hold's lane while it is held (a lift-caused miss lands at the lift or at the end). Neighbours on the same
+      // lane are excluded: the note before the head is only called a miss ~0.2 s after its time (just after this press), and a
+      // part rings into its next onset, so the next note is due right at the end and called a miss ~0.2 s later.
+      const jm = await page.evaluate(([j0, lane, from, end]) => window.__v.judge.slice(j0).filter(x => x.lane === lane && x.judgement === 'miss' && x.t > from && !(x.t > end)).length, [j0, 'str' + n.li, n.t + 0.25, n.t + n.len + 0.12]);
       hs = await page.evaluate(() => window.__v.holds.slice());
       const last = hs[hs.length - 1];
       c.ok(last && last.ring === false && last.held > 0.15 && last.held < 0.8, seat + ': lifting early gates the note (held < 1, no ring) ' + JSON.stringify(last));
-      c.ok(r && /^(perfect|good)$/.test(r.judgement) && jm === 0, seat + ': an early lift is no miss (the hold stays a hit, no miss on its lane) ' + JSON.stringify({ head: r && r.judgement, miss: jm }));
+      c.ok(r && /^(perfect|good)$/.test(r.judgement) && jm === 0, seat + ': an early lift is no miss (the hold stays a hit, no miss on its lane) ' + JSON.stringify({ head: r && r.judgement, miss: jm, n: { t: n.t, len: n.len, li: n.li }, j: jm ? await page.evaluate(([j0, lane]) => window.__v.judge.slice(j0).filter(x => x.lane === lane), [j0, 'str' + n.li]) : null }));
       c.ok(await page.evaluate(n0 => window.__v.rel.length > n0, rel0), seat + ': the voice is released on the lift');
       c.ok(!d1.holding.includes(n.li), seat + ': the lane stops holding');
       const drums = await page.evaluate(() => window.__v.hits.filter(l => l !== 'hat').length);
