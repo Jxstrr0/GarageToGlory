@@ -36675,12 +36675,6 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function warmRig(genre) {
     if (!rig || A.isClassic()) return;
     try { if (genre === 'metal') metalRig(rig); else ampRig(rig, genre); } catch (e) { /* built on its first note then */ }
-    if (!rig.vx || !GG.voice || !GG.voice.glottal || !GG.voice.oq) return;
-    (function wave(k) {
-      if (k > 8 || !rig.vx) return;
-      try { voxWave(rig, GG.voice.oq(k / 8)); } catch (e) { return; }
-      soon(function () { wave(k + 1); });
-    })(0);
   }
   A.warm = function (pattern, opts) {
     if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck || !ksOK(ctx)) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)

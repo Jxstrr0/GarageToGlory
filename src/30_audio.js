@@ -2180,18 +2180,12 @@
     }
     return null;
   }
-  // (v1.2 review) the rest of a song's first-use DSP, built before it starts instead of on its first notes in the scheduler
-  // pump: the genre's amp (its cab IR + convolvers) at once, then the glottal waves (the 9 open quotients GG.voice.oq gives),
-  // one per slice.
+  // (v1.2 review) the genre's amp (its cab IR + convolvers), built before the song starts instead of on its first band note in
+  // the scheduler pump. (The glottal waves stay lazy: pre-making all 9 open quotients cost ~180 ms of CPU and a ~24 ms slice
+  // on the 4x throttle, for the 1-3 a song uses.)
   function warmRig(genre) {
     if (!rig || A.isClassic()) return;
     try { if (genre === 'metal') metalRig(rig); else ampRig(rig, genre); } catch (e) { /* built on its first note then */ }
-    if (!rig.vx || !GG.voice || !GG.voice.glottal || !GG.voice.oq) return;
-    (function wave(k) {
-      if (k > 8 || !rig.vx) return;
-      try { voxWave(rig, GG.voice.oq(k / 8)); } catch (e) { return; }
-      soon(function () { wave(k + 1); });
-    })(0);
   }
   // A.warm(pattern, opts) -> Promise<{ n, ms }>: renders the song's KS buffers ahead (its timeline, pure), one string per slice.
   A.warm = function (pattern, opts) {

@@ -466,7 +466,8 @@ const r2 = x => Math.round(x * 100) / 100;
 function sliceStats(ours, t0, t1) {
   const w = ours.filter(x => x.t >= t0 && x.t <= t1);
   return { n: w.length, wall: r2(Math.max(0, ...w.map(x => x.wall))), cpu: r2(Math.max(0, ...w.map(x => x.cpu))), work: r2(Math.max(0, ...w.map(x => x.work))),
-    sum: r2(w.reduce((a, x) => a + x.cpu, 0)) };   // (sum: the window's total main-thread CPU in our slices)
+    sum: r2(w.reduce((a, x) => a + x.cpu, 0)),   // (sum: the window's total main-thread CPU in our slices)
+    top: w.slice().sort((a, b) => b.work - a.work).slice(0, 3).map(x => [r2(x.t - t0), r2(x.work)]) };   // (the 3 biggest: [ms into the window, work])
 }
 
 async function pre() {
