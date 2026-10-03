@@ -88,7 +88,7 @@ of 30 seeds; the good bot reaches 100 % everywhere).
 - **Good bot: every cell within ±10 %** (91-105 %).
 - **Avg bot: a mild upward tilt on string seats** (mean +7 % fans, +8 % fund; 5 cells above +10 %). Not tuned, because no
   seat-specific cause was found and the per-cell values are seed noise-dominated: the same cell swings by 20-30 points
-  between the two seed sets (Hail Damage lead: 103 / 102 on the default seeds, ~129 / 136 on offset 500, against a drum set
+  between the two seed sets (Hail Damage lead: 103 / 102 on the default seeds, 131 / 138 on offset 500, against a drum set
   that itself dropped to 85 %). Ruled out: song quality (200 jams per band x seat: string-seat quality equal or 0.5-4 points
   lower), the 90 new seat cards (smaller deltas than the v1.0 deck: +7 vs +15 fans, -8 vs +9 fund per choice; removing them
   moves Hail Damage lead 3x30 from 103 / 102 to 107 / 99), drama (ultimatums/quits are not lower on string seats), and
