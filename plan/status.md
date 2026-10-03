@@ -242,11 +242,17 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   genre cab (`C.BAND_AMP_BY_TIER`, `C.REALISM[tier].cab`); (4) "Classic sound" stays hidden, debug-only (`settings.audioClassic`,
   `GG.audio.classic(bool)`; no Settings UI).
 
+- N6–N9 Sampled kit (Part F17): the owner's free TMKD "Vortex" pack (no license file) is **local use only** (never in git,
+  the tracked `dist/` or the main artifact; `local/` is git-ignored; swap for a licensed kit later); part of Soundcheck
+  (Lane I); **metal at pro + arena tiers**, kick/snare/3 toms; **DIRECT** mics. The owner attaches `Drums.zip` at stage 0.
+
 ## Addendum 4 — pending
 - [x] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3) —
       2026-10-03 (`plan/v12_stage0_report.md`; 232-case fixture `tests/fixtures/audio_v11_hashes.json`, numbers
       `plan/v12_audio_numbers.txt` "1.1")
+- [ ] F17 licence guard: `local/` git-ignored (done 2026-10-03, 4ee7ef7, before the zip was touched) + `tools/check_kit_zip.py` + unzip to `local/kits/tmkd_vortex/src/` + `LOCAL_KITS` build + leak tests
 - [ ] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge, tuning by numbers, owner clip popup, PR to main
+- [ ] Local-kit build published to its own private artifact (URL here); leak tests green before every PR
 - [ ] v1.3 Tuning (D5) covers all four seats
 
 ## Tech

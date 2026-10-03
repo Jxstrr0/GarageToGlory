@@ -791,6 +791,7 @@ vocal chain. Your own taps get accents too: nail a Perfect on the downbeat and i
 | N3 | Your taps have no strength on a phone. Accents? | **Accuracy + beat position.** A Perfect on a downbeat lands hardest; an off-beat Good is softer; every hit also varies a little (round robins). |
 | N4 | Should cheap gear still sound cheap? | **Yes: the upgrades raise the top end.** The milk crate kit stays thin and boxy; better tiers unlock the new realism; the arena kit sounds best. |
 | N5 | Real recordings (sound review item 4) | **Later.** Not in 1.2; the code keeps hooks so they drop in (F15). |
+| N6–N9 | A free sample kit the owner supplied (TMKD "Vortex") | **Local use only; part of Soundcheck; metal at pro + arena; DIRECT mics** (F17). |
 
 ## F3. Ground rules (every lane)
 1. **Classic switch = the regression baseline.** `settings.audioClassic` (hidden; debug `GG.audio.classic(bool)`) bypasses
@@ -1035,7 +1036,7 @@ Feel (F4), your tap accents (F5) and the vocals (F10) are tier-independent: the 
 - **Later (unscheduled): "Real recordings"** = sound review item 4 (F15).
 
 ## F15. Not doing (in 1.2)
-- **Real recordings** (owner N5, later): phone-recorded shouts (3–4 takes per word, pitch-shifted ≤ ± 3 semitones), a
+- **Real recordings** (owner N5, later; **except** the local-only TMKD kick/snare/toms for metal, F17): phone-recorded shouts (3–4 takes per word, pitch-shifted ≤ ± 3 semitones), a
   sampled kit (3 velocity layers, AAC/m4a), DI guitar notes through the existing amps, a real cab IR. The hooks are ready:
   `backing.amp.ir`, the `PRE` set format (a lane's buffers can come from files), the KS cache key (a note's buffer can come
   from a sample).
@@ -1047,3 +1048,93 @@ Feel (F4), your tap accents (F5) and the vocals (F10) are tier-independent: the 
 - Studio takes (radio, recorded songs) tighter than live (`t + 0.25`), and rivals tighter than you (+ 0.15)? Recommend **yes**.
 - Band amps follow the kit tier (milk crate = a 1×8 practice amp)? Recommend **yes** (F8 default).
 - Show "Classic sound" in Settings for players, or keep it debug-only? Recommend **debug-only**.
+
+## F17. Sampled kit: TMKD "Vortex" (owner, 2026-10-03, LOCAL USE ONLY)
+The owner supplied a free drum sample pack (`Drums.zip`, 18 MB). It pulls one piece of item 4 into 1.2: **real kick, snare
+and tom samples for metal at the pro and arena tiers**. Everything else in F6 stays as designed (hats, cymbals, ride and
+china stay synthesized; every other genre and tier stays synthesized).
+
+**Owner decisions (popups 2026-10-03):**
+| # | Question | Answer |
+|---|---|---|
+| N6 | No license file came with the pack | **Local use only.** Never committed, never shared; swapped for a licensed / purchased kit later. |
+| N7 | How it goes in | **Part of Soundcheck** (Lane I), not a separate 1.1 patch. |
+| N8 | Where it plays | **Metal at pro + arena tiers** (Hail Damage earns the real kit by upgrading). |
+| N9 | Which mics | **DIRECT** close mics (mono, dry; the venue rooms place it). |
+
+**What's in the zip (safety-checked in the design session, re-check at stage 0 with `tools/check_kit_zip.py`):** 62 entries,
+60 `.wav` + 2 folders, stored (no compression; ratio 1.9 = audio), no absolute paths, no `..`, no symlinks, no exec bits, no
+encryption. Every file is a valid RIFF/WAVE PCM file with nothing after the RIFF length (no hidden payload). Chunks: `fmt`,
+`LIST`, `PAD`, `data` (+ `iXML` on ALL MICS). INFO metadata: "TMKD - VORTEX KIT", "The Metal Kick Drum", engineer
+"R. Prieto", ©2018. **No license or readme file.**
+- `TMKD-VORTEX_Free_Pack_Wav/DIRECT/`: mono 24-bit 44.1 kHz, `KD` kick, `SN` snare, `RT1` / `RT2` rack toms, `FT1` / `FT2`
+  floor toms, 5 hits each (`_01`..`_05`). **← use these (N9).**
+- `ALL MICS/`: the same hits mixed with room mics, stereo. Not used.
+- The 5 hits per drum are **round robins at one velocity** (peaks within ~1.5 dB): there are no velocity layers.
+
+Measured (DIRECT): kick ≈ 67 Hz, -50 dB by ~0.3 s; snare ≈ 180 Hz, ~0.55 s; RT1 ≈ 133 Hz, RT2 ≈ 113 Hz, ~1.3 s; FT1 ≈ 87 Hz,
+FT2 ≈ 77 Hz, ~2.2 s. Onsets at 0–1 ms.
+
+### F17.1 Licence guard (hard rules: the build fails if broken)
+- The repo is public (it clones without credentials). **The samples, and anything made from them (encoded clips, base64, a
+  local build), never enter git or the tracked `dist/`.**
+- Everything lives under a new git-ignored folder `local/` (add `local/` to `.gitignore` at stage 0, BEFORE unzipping):
+  `local/kits/tmkd_vortex/src/` (the unzipped pack), `local/kits/tmkd_vortex.js` (the encoded kit module), `local/dist/`.
+- `node build.js` (the normal build → tracked `dist/`) **never** reads `local/`. `LOCAL_KITS=1 node build.js` writes
+  `local/dist/game.local.html` + `game.local.artifact.html` with every `local/kits/*.js` appended after `content/`.
+- Leak tests (always run, in `tests/build.test.js`): `.gitignore` has `local/`; no tracked file (`git ls-files`) contains
+  `TMKD`, `tmkd_vortex` sample data or a `kits.` base64 blob; tracked `dist/*.html` contain no `GG.content.kits` data.
+- Publishing: the main artifact URL always gets the tracked (sample-free) build. A local-kit build may only go to a
+  **separate private artifact** ("Garage to Glory — local kit"), which the owner keeps private and never shares.
+- The swap later: a licensed kit whose terms allow redistribution in a game can move into the tracked
+  `src/content/kits/` **with its license file committed next to it**. Until then every kit is local.
+
+### F17.2 The kit module (one file per kit; a swap = replace the file)
+`tools/make_kit.py` (stdlib + numpy/soundfile + ffmpeg; reusable for any future kit) reads a source folder + a map and
+writes `local/kits/<id>.js`:
+```
+GG.content.kits = GG.content.kits || {};
+GG.content.kits.tmkd_vortex = { id: 'tmkd_vortex', name: 'TMKD Vortex', license: 'local-only',
+  credit: 'Drum samples: TMKD "Vortex" free pack, The Metal Kick Drum (R. Prieto, 2018)',
+  genres: ['metal'], tiers: [2, 3], codec: 'mp3', sr: 44100,
+  lanes: { kick: [b64 x5], snare: [b64 x5], toms: [[b64 x5] /*0 high*/, [b64 x5] /*1 mid*/, [b64 x5] /*2 floor*/] },
+  trim: { kick: dB, snare: dB, toms: [dB, dB, dB] } };
+```
+- **Map:** kick ← `KD`, snare ← `SN`, toms 0 (high) ← `RT1`, 1 (mid) ← `RT2`, 2 (floor) ← `FT1`. `FT2` unused (the game has
+  three tom voices).
+- **Trim + fade:** kick 0.45 s, snare 0.65 s, rack toms 1.0 s, floor tom 1.2 s, each ending in a 40 ms cosine fade. Peak-
+  normalise every round robin to -0.3 dBFS (velocity is the game's job).
+- **Encode:** mono MP3, 112 kbps (`libmp3lame`). MP3 decodes in every browser's `decodeAudioData` (and in the open-source
+  Chromium the tests use, which lacks AAC). About 0.3 MB of MP3 → about 0.4 MB of base64.
+- **Encoder delay:** MP3 adds ~25 ms of leading silence that not every browser strips. After decoding, find the first sample
+  over 2 % of the peak, start 1 ms before it, and copy into a fresh AudioBuffer. Test: the onset lands at ≤ 1 ms.
+- **`trim` (dB per lane):** set so each lane's first-100 ms RMS at vel 0.85 matches the 1.1 synth hit of that lane on the pro
+  tier within ± 1 dB (measured with `renderOffline`; the numbers go in `plan/v12_audio_numbers.txt`).
+
+### F17.3 Runtime (Lane I; `30_audio.js` regions it already owns)
+- `A.sampleKit(genre, tier)` → the kit when `GG.content.kits` has one listing that genre and tier, else null. Classic on →
+  always null.
+- **Decode** after the unlock and whenever the career's kit (genre + tier) changes to one with a sample kit: one sample per
+  slice (`decodeAudioData` + the onset trim), never mid-song, like `PRE`. Holds `SK = { id, bufs: { 'kick|0'..'toms2|4' },
+  ready, ms, bytes, err }`. Decoded size ≈ 21.5 s mono float ≈ 3.8 MB; it **replaces** the kick/snare/tom synth renders in
+  the PRE set (hat, cymbal and ride renders stay), so the F6 6 MB cap holds.
+- **Playback:** taps and the song's drum events (the swapped drummer, songwriter, radio) take kick / snare / toms from `SK`:
+  one buffer source into the lane's pooled choke slot (as v1.0 taps). Round robins in order, no repeats.
+  **Velocity:** `velGain(vel)` + the slot low-pass at `lerp(0.45, 1, vel) × 16 kHz` (samples have one layer, so soft hits
+  need the darker filter more than synth hits). The kit chain after it is unchanged (tier drive, box, low/high cuts, room
+  send), so pro vs arena still differ.
+- **Chokes:** the 0.5 s tap cap and lane chokes stay. A choke fades in 6 ms (as now), so a ringing tom never clicks.
+- **Fallback:** no kit file, decode error or not ready yet → the F6 synth recipe. Log `SK.err` once.
+- **Credit:** when a sample kit has been loaded this session, the title credit gets a second small line with `kit.credit`
+  (`51_ui_menu.js:151`; lead owns 51).
+- **Debug:** `debug('audio').kit = { id, ready, n, bytes, ms, err, used: { kick, snare, toms } }`.
+
+### F17.4 Tests
+- Always (tracked repo): the leak tests (F17.1); `sim_dsp` / `sim_audio` unaffected; with no `local/kits/` present,
+  `A.sampleKit` is null everywhere and the classic hashes are unchanged.
+- Local only (`LOCAL_KITS=1`, skipped with a notice when `local/kits/tmkd_vortex.js` is missing): `tests/sim_kit.test.js`
+  (module shape: 5 / 5 / 3 × 5 clips, credit, license 'local-only', genres, tiers); `pw_seq` section `kit`: metal on tier 3
+  renders with `kit.used` > 0, onset ≤ 1 ms, 5 consecutive snares all differ, per-lane loudness within ± 1 dB of the synth
+  reference, and metal tier 1 / punk tier 3 render hash-identical to a no-kit build; `pw_gig` `kit`: metal drum seat on tier 3,
+  taps play samples, tap drops 0, booking latency unchanged.
+- Ears: one extra 15 s metal clip (tier 3, local build) next to the F13 clips.

@@ -20,7 +20,11 @@ and write to a file.
 | N2 | Band feel | **Driven by member skill** (tightness `t` from skill) + a per-genre feel (F4). |
 | N3 | Your tap accents | **Accuracy + beat position** (+ round robins) (F5). |
 | N4 | Cheap gear | **Still sounds cheap**; upgrades raise the top end (`A.realism(tier)`, F11). |
-| N5 | Real recordings | **Later** (not in 1.2; hooks only, F15). |
+| N5 | Real recordings | **Later** (not in 1.2; hooks only, F15), except N6–N9. |
+| N6 | TMKD "Vortex" sample pack (no license file) | **Local use only**: never in git, never in the tracked `dist/`, never shared; swapped for a licensed kit later (F17.1). |
+| N7 | How the kit goes in | **Part of Soundcheck, Lane I.** |
+| N8 | Where it plays | **Metal at pro + arena tiers** (kick, snare, 3 toms; hats/cymbals/ride stay synthesized). |
+| N9 | Mics | **DIRECT** (mono close mics; the venue rooms place them). |
 | F16.1 | Low mood makes the band sloppier | **Yes**: mood < 30 → that player's timing spread × 1.25 (`C.FEEL_MOOD = { below: 30, spread: 1.25 }`). |
 | F16.2 | Studio takes + rivals tighter | **Yes, both**: studio takes (van radio, recorded songs) `t + 0.25` (`C.FEEL_STUDIO`), rivals `t + 0.15` (`C.FEEL_RIVAL`). |
 | F16.3 | Band amps follow the kit tier | **Yes**: milk crate = 1×8 practice amp IR, pawn shop = 1×12, pro / arena = the genre cab (`C.BAND_AMP_BY_TIER = true`; `C.REALISM[tier].cab`). |
@@ -47,6 +51,7 @@ F16 answered by the owner in one popup on 2026-10-03 (all four as recommended); 
 - F10 vocals: glottal waves, 5 formants + ring + F1 tracking, pulsed breath, living pitch, shimmer, dynamics, doubles, gang of 3,
   the vocal chain with plate + tempo delay.
 - F11 tier table. F3 classic switch + hashes. F13 verification.
+- F17 the local-only sampled kit (licence guard, `tools/make_kit.py`, `A.sampleKit`, decode + onset trim, tests).
 ### 1.2 Nice-to-have (never blocks the merge)
 - Band open-hat on the "and" of 4 (tier ≥ 2). Consonant polish (voiced murmur, s/z energy). Bass inharmonicity (dispersion
   all-pass) at tier 3.
@@ -82,20 +87,25 @@ are unchanged. In 1.1.0.0 only `metalNote` was off by one in the draft (1136 →
 | classic hashes / clips | `tools/audio_hashes.js` (+ `pw_seq` `hash`), `tools/audio_clips.js`, `tools/_audio_lab.js` | see `plan/v12_stage0_report.md` |
 
 ## 3. Stage 0 (lead, one commit on `v1.2-soundcheck` before the lanes fork)
-1. **Re-audit** the §2 lines; fix this table.
-2. **Hashes FIRST:** `tools/audio_hashes.js` renders 4 genres × (full, drums only, band only) + 6 tap lanes × 4 tiers with
+1. **Licence guard FIRST (F17.1):** add `local/` to `.gitignore` and commit that alone, BEFORE the owner's `Drums.zip` is
+   touched. The owner attaches `Drums.zip` to the session; `tools/check_kit_zip.py <zip>` (entries, paths, symlinks, exec bits,
+   RIFF/WAVE PCM, no trailing data; prints a table) must pass, then unzip to `local/kits/tmkd_vortex/src/`. `git status` must
+   show nothing new. `build.js`: `LOCAL_KITS=1` → `local/dist/` with `local/kits/*.js` appended after content; the normal
+   build never reads `local/`. Leak tests in `tests/build.test.js` (F17.1).
+2. **Re-audit** the §2 lines; fix this table.
+3. **Hashes FIRST:** `tools/audio_hashes.js` renders 4 genres × (full, drums only, band only) + 6 tap lanes × 4 tiers with
    `renderOffline` in headless Chromium → `tests/fixtures/audio_v11_hashes.json`. Before ANY audio edit.
-3. **Numbers FIRST:** the 1.1 band-energy tables + RMS/peak/width per genre → `plan/v12_audio_numbers.txt` (section "1.1").
+4. **Numbers FIRST:** the 1.1 band-energy tables + RMS/peak/width per genre → `plan/v12_audio_numbers.txt` (section "1.1").
    Also the 1.1 `.m4a` clips (F13 Ears) → `tests/.cache/v11_clips/`.
-4. **`VERSION` = `1.2.0.0`.**
-5. **`src/02_contracts.js`:** V1.2 SOUNDCHECK block (§4 shapes), `C.VEL_REF = 0.85`, `C.FEEL_CLAMP = { gigDrum: 0.006, gig: 0.015,
+5. **`VERSION` = `1.2.0.0`.**
+6. **`src/02_contracts.js`:** V1.2 SOUNDCHECK block (§4 shapes), `C.VEL_REF = 0.85`, `C.FEEL_CLAMP = { gigDrum: 0.006, gig: 0.015,
    free: 0.025, sixteenth: 0.25 }`, `C.REALISM` (the F11 table as data).
-6. **Settings:** `settings.audioClassic` (default false) in `11_settings.js` + `A.classic(bool)` / `A.isClassic()` in 30.
-7. **Stubs** (all return the 1.1 behaviour): `A.feelFor` → null, `A.feelPlan` → null, `A.tapVel` → undefined, `A.warm` → resolved
+7. **Settings:** `settings.audioClassic` (default false) in `11_settings.js` + `A.classic(bool)` / `A.isClassic()` in 30.
+8. **Stubs** (all return the 1.1 behaviour): `A.feelFor` → null, `A.feelPlan` → null, `A.tapVel` → undefined, `A.warm` → resolved
    Promise, `A.realism(tier)` → `C.REALISM[tier]`, `GG.dsp = {}`, `GG.voice = {}`; empty `src/31_audio_feel.js`,
    `src/32_audio_dsp.js`, `src/33_audio_voice.js` (header comments only); in `makeRig` one line `if (A._buildVox) A._buildVox(r);`.
-8. **F16 popup** (one popup, 4 questions, recommended first) → record in §0 and status.
-9. **Tests:** `tests/sim_audio.test.js` + "classic: stubs change nothing" (timeline fingerprints identical); `tests/pw_seq.js`
+9. **F16 popup** (one popup, 4 questions, recommended first) → record in §0 and status.
+10. **Tests:** `tests/sim_audio.test.js` + "classic: stubs change nothing" (timeline fingerprints identical); `tests/pw_seq.js`
    section `hash` (classic on → hashes equal the fixture). Every existing test green.
 
 ## 4. Shared contract (every lane codes against this)
@@ -144,7 +154,8 @@ warmMs }` (I), `vox { doubles, gang3, chain, plate }` (V), `classic`.
 per song; gig frame p95 ≤ 1.1 × 1.1.0.0; voices ≤ 32, tap drops 0.
 
 ## 5. Lanes (3 agents, medium effort; isolated copies; never publish)
-Isolation: `cp -r repo /work/<lane>`, branch `v12-<lane>` from the stage-0 commit, work + test there. `30_audio.js` is shared:
+Isolation: `cp -r repo /work/<lane>`, branch `v12-<lane>` from the stage-0 commit, work + test there. (`cp -r` also copies the
+ignored `local/` folder, so Lane I has the kit source; it stays ignored there too.) `30_audio.js` is shared:
 **each lane edits ONLY the functions/tables listed for it**; anything else is a hand-over request (bottom of this section).
 Return: the branch (pushed as `wip-v12-<lane>`) + a ≤ 40-line report (APIs as built, tests + results, numbers, what the lead wires).
 
@@ -162,6 +173,12 @@ Return: the branch (pushed as `wip-v12-<lane>`) + a ≤ 40-line report (APIs as 
   branches), new `A.warm` + the KS cache, `A.realism`, `renderOffline` / `prerenderHit` options; `genres.js` `backing.amp.ir` key.
 - Reads `ev.vel` / `o.vel` (absent → 1.1). Vel and RR land in the drum recipes and the KS excitation.
 - Tests: new `tests/sim_dsp.test.js`; `pw_seq` `audio` retuned with logged numbers; `pw_perf` budgets; "no two hits the same".
+- **F17 sampled kit:** owns `tools/make_kit.py` (writes `local/kits/tmkd_vortex.js` from the DIRECT folder: map, trims, fades,
+  normalise, MP3 112 kbps mono, base64, per-lane `trim` dB matched to the pro-tier synth by `renderOffline`), and in 30
+  `A.sampleKit`, `SK` (decode in slices + the onset trim), the kick/snare/tom sample path inside PRE / `drumHit`, the sample
+  velocity filter. Tests: `tests/sim_kit.test.js` and new `pw_seq` section `kit` + `pw_gig` section `kit` (new section
+  functions only; the rest of `pw_gig` is Lane F's), all skipped with a notice when the local kit file is missing.
+  **Never `git add` anything under `local/`; the lane report lists `git ls-files | grep -i tmkd` → empty.**
 
 ### Lane V — VOCALS
 - Owns: `src/33_audio_voice.js`; in 30: `VOWELS`, `GLIDES`, `NOISY`, `PLOSIVE`, `VOX`, `FAMILY`, `MVOX`, `wordPlan`,
@@ -174,7 +191,8 @@ Return: the branch (pushed as `wip-v12-<lane>`) + a ≤ 40-line report (APIs as 
 ### Lead — stage 0, wiring, tuning, review
 - Owns: `02_contracts`, `11_settings`, `5h_ui_settings` (only if F16 says "show Classic"), `build.js`, `60_main.js`, `tools/`,
   `tests/fixtures`, `plan/`, the merge of the three branches (disjoint functions → `git merge`), the tuning pass by numbers
-  (F13), the clips, the owner popup, VERSION, status.
+  (F13), the clips, the owner popup, VERSION, status; F17: `.gitignore`, `tools/check_kit_zip.py`, the `LOCAL_KITS` build,
+  the leak tests, the kit credit line in `51_ui_menu.js` (title credit), the separate private local-kit artifact.
 
 ### Cross-lane hand-over requests (files stay single-owner)
 - Lane V → Lane I: `r.carve` (array of presence-band gains on every genre amp, like metal's `r.metal.pres`); `plate` impulse
@@ -186,8 +204,10 @@ Return: the branch (pushed as `wip-v12-<lane>`) + a ≤ 40-line report (APIs as 
 1. Stage 0 commit (hashes + numbers first). 2. Lanes F, I, V in parallel (one message). 3. Merge F, then I, then V.
 4. Full node suite; `pw_seq` (`hash`, `audio`), `pw_gig` (`gig`, `sync`, `bridge`, `feel`), `pw_seat_audio`, `pw_perf`, `pw_flow
    flow` at 390×844 and 440×956; classic hashes equal. 5. Numbers → `plan/v12_audio_numbers.txt` (1.1 vs 1.2).
-6. Clips (4 genres + the tap demo) → owner; popup ship / tweak. 7. Review pass (≤ 3 lenses: clock safety, perf, regression).
-8. PR to `main`; status: Version, What's in v1.2, APIs, Addendum 4 pending ticked; publish to the same artifact URL.
+6. Clips (4 genres + the tap demo + the local-kit metal clip) → owner; popup ship / tweak. 7. Review pass (≤ 3 lenses: clock safety, perf, regression).
+8. PR to `main`; status: Version, What's in v1.2, APIs, Addendum 4 pending ticked; publish the tracked (sample-free) build to
+   the same artifact URL. Then `LOCAL_KITS=1 node build.js` and publish `local/dist/game.local.artifact.html` to a **separate
+   private artifact** (its own URL, kept in status.md, never shared). Re-run the leak tests right before the PR.
 
 ## 7. Risks
 - **Clock drift into judging** → F3.3 clamps, steps never move, `pw_gig sync` must stay green.
@@ -195,3 +215,6 @@ Return: the branch (pushed as `wip-v12-<lane>`) + a ≤ 40-line report (APIs as 
 - **Memory on old iPhones** → 6 MB PRE + 8 MB KS caps, 22.05 kHz buffers, LRU.
 - **Harshness on phone speakers** (metal cymbals, presence boosts) → the 4k+ band limit in F13.
 - **Regression hidden by "it sounds different"** → the classic hashes; any non-classic number change is logged with a reason.
+- **Unlicensed samples leaking into the public repo or the main artifact** → `local/` ignored before the unzip, the leak tests
+  in the node suite, the separate private artifact, lane reports list `git ls-files | grep -i tmkd` (must be empty).
+- **MP3 encoder delay** (~25 ms of leading silence) → the onset trim at decode + the ≤ 1 ms onset test.
