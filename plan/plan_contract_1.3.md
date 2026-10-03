@@ -25,7 +25,10 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 | S5 | Ratings | **Rate by the notes only**; a slider-built song can reach top ratings. |
 | S6 | UI | **One flow** (no separate Guided / Advanced modes; tips inline). Meters = **one slim strip** of 3 mini bars under the header (+/- flash on change). Coach = **one-line bubble** with the bandmate's avatar, tap for the full tip. "Let the band jam one", the metronome and the tools go in the header's ⋯ menu. |
 | S7 | Look | **Option A "Clean sheet"** (`?opt=A`, `_A.png`; the owner first tapped B, then: "Sorry, A was my answer"). Flat and quiet; underline section tabs (Verse / Chorus / Bridge / Song); recipe cards in 2 columns; horizontal sliders with end labels + a value label; "Your part \| Drums" toggle with "Chords: <progression> ▾" beside it; 4 chord chips (BAR n + chord name; home chord outlined green) above the grid; the grid fills the screen (no scroll at 440x956); footer ▶ Loop / ▶ Song / Save ✓ (Quick song: ▶ Play / Tweak ✎ / Save ✓). Same navy background as the rest of the game. |
-| Q1–Q4 | §8 | Asked at stage 0 in ONE popup; the answers are recorded here before the lanes fork. §4 marks the branches. |
+| Q1 | Gig lanes for the new rows | **Pitch shape** (option 1): low notes left, high notes right, folded onto the 4–6 lanes the rig has; no gig change. |
+| Q2 | Where fills go | **A real fill on bar 4 of each section** (option 1): the optional fill bar the slider writes; paintable from ⋯. |
+| Q3 | Slider/recipe after hand edits | **Ask first** (option 1): "Start over from this recipe? Your hand edits go." (Start over / Keep my edits); Feel + Tempo never ask. |
+| Q4 | Breakdown bars' chords | **Yes, every bar** (option 1): new songs still start the breakdown on home; old songs unchanged. |
 
 ### Defaults (taken without a popup; they stand unless the owner objects — list them in the merge summary)
 - D1 Chords live on the PATTERN (`p.chords`): every seat hears them; drum-seat recipes carry Mood chords with no part (create
@@ -391,7 +394,7 @@ anything outside your files is a hand-over request. Return: the branch (pushed a
   pitches play the oscillator first** (only the gig warms KS) → `A.warm` after compose. **Low 5th folds** (bassFloor, 30:2569) →
   the v2-only allowance (§4.5) + a test in low metal keys. **Size** → content ≈ 15 KB, the guided flow goes, gate at every merge.
 
-## 8. Owner questions (stage 0, ONE popup with Q1–Q4, recommended first)
+## 8. Owner questions — ANSWERED 2026-10-03 (one popup): Q1–Q4 all option 1 (recommended); recorded in §0. Take the option-1 branch everywhere §4 forks.
 **Q1. Your new guitar rows in a gig: which highway lane does a note land on?**
 1. *(recommended)* Keep the pitch shape: low notes left, high notes right, folded onto the lanes your rig has (4–6). The gig code
    needs no change; new rows just add pitches. Why: zero risk to the 1.2 charts, playable at 390 px, the 4-lane start still works.

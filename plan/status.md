@@ -314,8 +314,13 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
   grid; the grid fills the screen (no scroll at 440x956); footer ▶ Loop / ▶ Song / Save ✓ (Quick song: ▶ Play / Tweak ✎ /
   Save ✓). Same navy background as the rest of the game.
 
+- S8 (contract §8 popup, 2026-10-03; all recommended): Q1 gig lanes keep the **pitch shape** (low left, high right, folded onto
+  the rig's 4-6 lanes); Q2 Fills = **a real fill on bar 4** of each section; Q3 a slider/recipe change after hand edits **asks
+  first** (Start over / Keep my edits; Feel + Tempo never ask); Q4 breakdown bars **take a chord too** (new songs still start on home).
+
 ## Addendum 5 — pending
-- [ ] v1.3 contract (`plan/plan_contract_1.3.md`) from the merged 1.2 code, stage 0, lanes, integrate, review, owner check
+- [x] v1.3 contract `plan/plan_contract_1.3.md` (5 readers, writer, critic: 1 blocker + 6 majors applied) — 2026-10-03
+- [ ] v1.3 stage 0 (1.2 compat fixtures FIRST), lanes S / A / U, integrate, review, owner check (440x956 screenshots + slider clips)
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
