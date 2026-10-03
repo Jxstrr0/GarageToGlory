@@ -1226,18 +1226,20 @@
   }
   // The guitars' presence band dips 3 dB while a (non-metal) lead vocal sings (F9; metal keeps its own -6 in metalVox).
   // r.carve (Lane I): presence filters (peaking, dB) or gains (linear) of the current genre's amps: an array, an object by
-  // genre, or a function (genre) -> array. Missing: nothing to carve.
+  // genre, or a function (genre) -> array. Missing: nothing to carve. The resting gain is Lane I's node._base when set (else
+  // the gain read once); metal's presence nodes (r.metal.pres, also in Lane I's r.carve) stay with metalVox's own -6.
   function voxCarve(r, t, dur) {
-    var L = r.carve;
+    var L = r.carve, mp = r.metal && r.metal.pres;
     if (typeof L === 'function') L = L(r.genre); else if (L && !Array.isArray(L)) L = L[r.genre];
     if (!L || !L.length) return;
+    var n = 0;
     L.forEach(function (x) {
-      if (!x || !x.gain || !x.gain.setTargetAtTime) return;
-      if (x._carve0 == null) x._carve0 = x.gain.value;
+      if (!x || !x.gain || !x.gain.setTargetAtTime || (mp && mp.indexOf(x) >= 0)) return;
+      if (x._carve0 == null) x._carve0 = x._base != null ? x._base : x.gain.value;
       x.gain.setTargetAtTime(x.frequency ? x._carve0 - 3 : x._carve0 * 0.708, t, 0.012);
-      x.gain.setTargetAtTime(x._carve0, t + dur * 0.8, 0.1);
+      x.gain.setTargetAtTime(x._carve0, t + dur * 0.8, 0.1); n++;
     });
-    r.vx.stats.carve++;
+    if (n) r.vx.stats.carve++;
   }
   // A sung hit (non-metal): the glottal wave (press: breathy .. belt), 5 formants (F1 tracks the pitch) + the singer's ring,
   // pulsed breath, a living pitch (GG.voice.pitchCurve), shimmer, the vel swell; a double take (+8 cents, 18-28 ms late,
@@ -1377,7 +1379,7 @@
   A.voxStats = function () {
     var X = rig && rig.vx;
     return X ? { chain: true, plate: X.plate ? X.plateOn === false ? 'room' : 'plate' : 'none', delay: X.dt || 0, genre: X.genre, hits: X.stats.hits,
-      doubles: X.stats.doubles, gang3: X.stats.gang3, carve: X.stats.carve, sends: { plate: X.stats.plate, room: X.stats.room, noPlate: X.stats.noPlate } } : { chain: false };
+      doubles: X.stats.doubles, gang3: X.stats.gang3, carve: X.stats.carve, carveNodes: rig.carve ? rig.carve.length || 1 : 0, sends: { plate: X.stats.plate, room: X.stats.room, noPlate: X.stats.noPlate } } : { chain: false };
   };
   GG.registerDebug('vox', function () { return A.voxStats(); });
 

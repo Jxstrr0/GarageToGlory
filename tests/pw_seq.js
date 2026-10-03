@@ -947,6 +947,7 @@ async function vox() {
     const L = res.live;
     c.ok(L.rock.playing && L.rock.chain && L.rock.hits > 0 && L.rock.doubles > 0 && L.rock.genre === 'rock', 'live rock chorus: the chain sings, chorus doubles ' + JSON.stringify(L.rock));
     c.ok(L.punk.gang3 > 0, 'live punk chorus: gang hits grow to 3 voices ' + L.punk.gang3);
+    c.ok(!L.rock.carveNodes || L.rock.carve > 0, 'live rock: lead hits carve the amps\' presence when Lane I\'s r.carve is there (nodes ' + (L.rock.carveNodes || 0) + ', carves ' + L.rock.carve + ')');
     c.ok(L.rock.delay > 0.2 && L.rock.delay < 1.5, 'rock: the tempo delay is set (dotted 1/8) ' + L.rock.delay);
     c.ok(L.rock.plate === 'plate' || L.rock.plate === 'room', 'live: the plate is built (room = the slow-phone fallback) ' + L.rock.plate);
     c.ok(L.punk.playing && L.punk.hits > L.rock.hits && L.punk.delay === L.rock.delay, 'live punk: sings, no delay change (punk has none) ' + JSON.stringify(L.punk));
