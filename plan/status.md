@@ -16,6 +16,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
+- In progress: **1.2.0.0 "Soundcheck"** on `v1.2-soundcheck` (stage 0 done 2026-10-03: `plan/v12_stage0_report.md`; contract
+  `plan/plan_contract_1.2.md` finished; lanes F / I / V next).
 - Next: **1.2 "Soundcheck"** (handoff **Part F**: band feel by member skill, velocity + round robins, real-feeling drums,
   Karplus-Strong strings, cab IRs, rooms v2, human vocals; draft contract `plan/plan_contract_1.2.md`, finish at stage 0).
   Then **1.3 "Tuning"** (handoff D5; covers all four seats, played with the final sound).
@@ -241,7 +243,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   `GG.audio.classic(bool)`; no Settings UI).
 
 ## Addendum 4 — pending
-- [ ] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3)
+- [x] v1.2 stage 0: re-audit, classic hashes + 1.1 numbers/clips FIRST, contracts/settings/stubs, F16 popup (contract §3) —
+      2026-10-03 (`plan/v12_stage0_report.md`; 232-case fixture `tests/fixtures/audio_v11_hashes.json`, numbers
+      `plan/v12_audio_numbers.txt` "1.1")
 - [ ] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge, tuning by numbers, owner clip popup, PR to main
 - [ ] v1.3 Tuning (D5) covers all four seats
 
@@ -252,6 +256,14 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.2 stage 0** (2026-10-03, `v1.2-soundcheck`; shapes in `02_contracts.js` V1.2 SOUNDCHECK, contract §4):
+  - Contracts: `C.VEL_REF` 0.85, `C.FEEL_CLAMP { gigDrum, gig, free, sixteenth }`, `C.REALISM[tier]` (F11 + `id, layerLanes, cymBloom,
+    subKick`), F16 `C.FEEL_MOOD { below 30, spread 1.25 }`, `C.FEEL_STUDIO` 0.25, `C.FEEL_RIVAL` 0.15, `C.BAND_AMP_BY_TIER` true.
+  - `settings.audioClassic` (hidden, default false); `GG.audio.classic(bool)` / `isClassic()`, `debug('audio').classic`; stubs
+    `feelFor / feelPlan` → null, `tapVel` → undefined, `warm` → Promise, `realism(tier)` → `C.REALISM` row; `GG.dsp = {}`,
+    `GG.voice = {}`; makeRig `if (A._buildVox && !A.isClassic()) A._buildVox(r)`. `src/31|32|33_audio_*.js` headers only.
+  - Tools: `tools/_audio_lab.js` (cases, page helpers, deterministic summing for hashes), `tools/audio_hashes.js` (verify /
+    `--write`), `tools/audio_numbers.js --section <v>`, `tools/audio_clips.js --tag <v> --out <dir>`; `pw_seq` section `hash`.
 - **v1.1 review fixes** (report §5): `GG.shop.sectionDef(state, id)` (seat text of Solo / Outro), `ui.SEAT_NAME / seatName /
   seatIcon / seatOf`, `R.labelScreenPos(action)`, seat chart notes may carry `with` (a same-voice partner; `o.with` on
   pluck/strum/lead), `drama.members[id].kit[kind]` (kit variants, content/zz_seats_drama.js), content/zz_seats_gates.js (cards
