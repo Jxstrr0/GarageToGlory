@@ -2,11 +2,12 @@
 // into Float32Arrays (no Web Audio here; node-testable): pluck (Karplus-Strong), chord, strum, metal (the 6-square cluster),
 // biquad (RBJ), impulse2 (dry room hall theatre arena plate), cabIR (genre | 'practice8' | 'combo12'). 30 wraps the arrays into
 // AudioBuffers. Tiers read C.REALISM through A.realism(tier); C.BAND_AMP_BY_TIER (F16.3). Classic on: never used.
-//   pluck({ f, sr, dur, vel, pick, bright, t60, mute, seed, thump, click, norm }) -> Float32Array: extended Karplus-Strong. A
+//   pluck({ f, sr, dur, vel, pick, bright (0 darkest loop .. 1), t60, mute, exLp, seed, thump, click, norm }) -> Float32Array: extended Karplus-Strong. A
 //     one-period noise burst (seeded), low-passed by velocity (harder = brighter) and combed by the pick position (x[n] -
 //     x[n - beta N]); a delay loop with a one-zero loop filter (brightness S) and a loss rho from the target T60; a first-order
 //     all-pass whose coefficient is solved for the exact phase delay at f, so the loop is in tune (+-3 cents, midi 28-88).
-//     mute: the palm mute (excitation low-passed ~1.2 kHz, T60 0.12 s). thump (bass fingers: 6 ms of low-passed noise), click
+//     mute: the palm mute (excitation low-passed ~1.2 kHz, T60 0.12 s); exLp (Hz): a darker excitation (a bass finger: the
+//     fundamental leads, as on a real bass). thump (bass fingers: 6 ms of low-passed noise), click
 //     (a pick click). A DC blocker; norm (default 0.5): RMS of the first 60 ms.
 //   chord({ fs: [hz], spread (s between strings, default 0.003), ...pluck }) / strum({ fs, gap (default 0.011), up, ...pluck })
 //     -> Float32Array: the strings summed (string i starts i x spread / gap later; up = high string first), each string a
@@ -87,7 +88,7 @@
     o = o || {};
     var sr = o.sr || 22050, f = clampN(o.f || 110, 20, sr * 0.3), dur = o.dur || 1, n = Math.max(1, Math.ceil(dur * sr));
     var vel = o.vel == null ? 0.85 : clampN(o.vel, 0, 1), mute = !!o.mute, t60 = mute ? (o.t60 || 0.12) : (o.t60 || 2.5);
-    var S = clampN(o.bright == null ? 0.5 : o.bright, 0.05, 0.95), beta = clampN(o.pick == null ? 0.18 : o.pick, 0.02, 0.5);
+    var S = 0.5 - 0.45 * clampN(o.bright || 0, 0, 1), beta = clampN(o.pick == null ? 0.18 : o.pick, 0.02, 0.5);   // (bright 0 = the darkest loop)
     var out = new Float32Array(n), N = sr / f, w = TAU * f / sr, rnd = seeder(o.seed == null ? 1 : o.seed);
     var tl = lpDelay(S, w), L = Math.floor(N - tl - 0.15), d = N - tl - L;
     if (L < 2) { L = 2; d = Math.max(0.05, N - tl - L); }
@@ -96,10 +97,11 @@
     var hm = Math.sqrt((1 - S) * (1 - S) + S * S + 2 * S * (1 - S) * Math.cos(w)), gN = Math.pow(10, -3 * N / (t60 * sr));
     var rho = Math.min(0.99995, gN / hm);
     // excitation: one period of noise, low-passed by velocity (one pole) and the palm, combed by the pick position
-    var P = Math.max(2, Math.round(N)), ex = new Float32Array(P), a = mute ? 1 - Math.exp(-TAU * 1200 / sr) : 1 - Math.exp(-TAU * (700 + 9000 * vel * vel) / sr);
-    var lp = 0, i;
-    for (i = 0; i < P; i++) { lp += (rnd() - lp) * a; ex[i] = lp; }
-    if (mute) { lp = 0; for (i = 0; i < P; i++) { lp += (ex[i] - lp) * a; ex[i] = lp; } }   // (two poles: the palm is dark)
+    var exf = mute ? 1200 : o.exLp ? o.exLp * (0.5 + 0.5 * vel) : 700 + 9000 * vel * vel;   // the excitation's low-pass (Hz): velocity / the palm / a bass finger
+    var P = Math.max(2, Math.round(N)), ex = new Float32Array(P), a = 1 - Math.exp(-TAU * exf / sr);
+    var lp = 0, i, pass, np = mute || o.exLp ? 2 : 1;
+    for (i = 0; i < P; i++) ex[i] = rnd();
+    for (pass = 0; pass < np; pass++) { lp = 0; for (i = 0; i < 2 * P; i++) { lp += (ex[i % P] - lp) * a; if (i >= P) ex[i - P] = lp; } }   // (circular: the burst is one period)
     var bN = Math.max(1, Math.round(beta * P)), comb = new Float32Array(P), mean = 0;
     for (i = 0; i < P; i++) { comb[i] = ex[i] - (i >= bN ? ex[i - bN] : 0); mean += comb[i]; }
     mean /= P; for (i = 0; i < P; i++) comb[i] -= mean;

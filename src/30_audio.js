@@ -463,6 +463,16 @@
     }
     return b;
   }
+  // v1.2 (Lane I, F9; Classic off): impulse v2 (GG.dsp.impulse2: pre-delay, early reflections, a tail whose highs die first,
+  // the slap; + 'plate' for the vocals) as a stereo AudioBuffer, at the room's wet level x IMP2_TRIM (set by numbers: the v2
+  // impulse is normalised like v1 by the convolver; see plan/v12_lane_i_report.md).
+  var IMP2_TRIM = { dry: 1, room: 1, hall: 1, theatre: 1, arena: 1, plate: 1 };
+  function impulse2(c, cls) {
+    var LR = GG.dsp.impulse2(cls, c.sampleRate), b = c.createBuffer(2, LR[0].length, c.sampleRate);
+    b.getChannelData(0).set(LR[0]); b.getChannelData(1).set(LR[1]);
+    return b;
+  }
+  A.impulse2 = function (c, cls) { return impulse2(c, cls); };   // (Lane V: the vocal plate)
   var DEFAULT_KIT = { room: 'room', verb: 0.3, level: 1, six: 'ride',
     kick: { f0: 165, f1: 50, glide: 0.07, dec: 0.42, body: 1, click: 0.4, clickHp: 2600 },
     snare: { f0: 230, f1: 170, body: 0.55, bodyDec: 0.11, noise: 0.75, hp: 1400, dec: 0.22 },
@@ -531,7 +541,16 @@
     r.dlead = gainNode(c, 1, solo);
     r.clean = gainNode(c, 0.5, filterNode(c, 'lowpass', 2600, 0.7, r.busBand));
     r.lead = gainNode(c, 0.3, filterNode(c, 'lowpass', 5200, 0.7, filterNode(c, 'highpass', 220, 0.7, r.busBand)));
-    r.bass = gainNode(c, 0.38, filterNode(c, 'lowpass', 700, 0.8, r.busBand));
+    // v1.2 (Lane I, F9; Classic: none of this): the kick ducks the bass (r.duck: [the bass path, metal's sub + grind]; a
+    // scheduled -2 dB dip on every kick, no sidechain node) and the drums' parallel crush (busDrums -> a hard compressor -> the
+    // tier's share (C.REALISM crush) -> glue).
+    if (!A.isClassic()) {
+      r.duck = [gainNode(c, 1, r.busBand), gainNode(c, 1, r.busBand)];
+      var cr = c.createDynamicsCompressor();
+      cr.threshold.value = -32; cr.knee.value = 2; cr.ratio.value = 8; cr.attack.value = 0.003; cr.release.value = 0.12;
+      r.crush = gainNode(c, 0, glue); cr.connect(r.crush); r.busDrums.connect(cr);
+    }
+    r.bass = gainNode(c, 0.38, filterNode(c, 'lowpass', 700, 0.8, r.duck ? r.duck[0] : r.busBand));
     r.vox = gainNode(c, 0.5, filterNode(c, 'highpass', 140, 0.7, r.busBand));
     r.bvox = gainNode(c, 0.36, filterNode(c, 'highpass', 170, 0.7, r.busBand));   // v0.9: the band's backing vocals
     if (o.verb !== false && c.createConvolver) {
@@ -554,16 +573,19 @@
     r.qBox.gain.setValueAtTime(q.box, t); r.qLow.frequency.setValueAtTime(q.low, t); r.qHigh.frequency.setValueAtTime(q.high, t);
     var send = 0.35 + 0.65 * (k.verb || 0);   // the room always speaks; the kit decides how much (rock lots, country little)
     if (r.send) { r.drumSend.gain.setValueAtTime(send * q.send, t); r.bandSend.gain.setValueAtTime(send * 0.45, t); }
+    if (r.crush) r.crush.gain.setValueAtTime((A.realism(tier) || {}).crush || 0, t);   // v1.2 (F9): the tier's parallel crush
+    if (!A.isClassic()) cabUpdate(r);   // v1.2 (F8): the band's amps follow the kit tier
   }
   // Swap the room: a fresh convolver fades in, the old tail rings out.
   function setRoom(r, cls) {
     if (!r.send || !ROOMS[cls] || r.room === cls) return;
     var c = r.ctx, t = c.currentTime, old = r.verb, conv = c.createConvolver();
-    conv.buffer = r.irs[cls] || (r.irs[cls] = impulse(c, cls));
-    var wet = gainNode(c, old ? 0 : ROOMS[cls].wet, r.glue);
+    conv.buffer = A.isClassic() ? r.irs[cls] || (r.irs[cls] = impulse(c, cls)) : r.irs[cls + '|2'] || (r.irs[cls + '|2'] = impulse2(c, cls));   // (v1.2: impulse v2)
+    var wl = A.isClassic() ? ROOMS[cls].wet : ROOMS[cls].wet * (IMP2_TRIM[cls] || 1);
+    var wet = gainNode(c, old ? 0 : wl, r.glue);
     conv.connect(wet); r.send.connect(conv);
     if (old) {
-      wet.gain.setValueAtTime(0, t); wet.gain.linearRampToValueAtTime(ROOMS[cls].wet, t + 0.3);
+      wet.gain.setValueAtTime(0, t); wet.gain.linearRampToValueAtTime(wl, t + 0.3);
       try { r.send.disconnect(old.conv); } catch (e) { /* ignore */ }
       old.wet.gain.setTargetAtTime(0, t, 0.3);
       setTimeout(function () { try { old.wet.disconnect(); old.conv.disconnect(); } catch (e) { /* ignore */ } }, 4000);
@@ -578,9 +600,66 @@
   // a presence lift, and the guitars' presence band dips (carve, dB) while a growl or scream sings, so it cuts through.
   // Tuned by numbers (tests/pw_seq audio): the mids match v0.7.1, the sub and the grind are up, the limiter holds peaks.
   var AMP = { gain: 26, level: 0.13, pan: 0.72, preHp: 110, bassSub: 0.3, bassGrind: 0.14, vox: 0.24, carve: -6 };
+  var CAB_TRIM = { metal: 1, punk: 1, rock: 1, country: 1 };   // v1.2 (F8): the IR cabs' level vs the 1.1 biquad cabs (by numbers)
+  // v1.2 (Lane I, F8): with Classic off the cab biquads give way to a cab IR convolver (the clipper is the amp, the IR the
+  // speaker + mic): the band's amps follow the kit tier (F16.3: milk crate = the 1x8 practice amp, pawn shop = a 1x12, pro /
+  // arena = the genre's cab; genres.js backing.amp.ir (base64 PCM16) overrides the genre cab). Each side: shaper -> high-pass
+  // -> IR -> presence (the carve band, 0 dB at rest: r.carve, Lane V dips it while a voice sings) -> level -> pan.
+  function cabName(r, genre) {
+    var R = A.realism(r.tier);
+    return C.BAND_AMP_BY_TIER === false || !R || R.cab === 'genre' ? genre : R.cab;
+  }
+  var IRS = {};
+  function cabBuffer(c, name, genre) {   // the IR as an AudioBuffer at the context's rate (cached per rate + name)
+    var key = name + '|' + c.sampleRate;
+    if (IRS[key]) return IRS[key];
+    var B = name === genre ? (GG.songs.genre(genre).backing || {}).amp || {} : {}, ir = B.ir && GG.dsp.irFromB64 ? GG.dsp.irFromB64(B.ir, c.sampleRate) : null;
+    if (!ir) ir = GG.dsp.cabIR(name, c.sampleRate);
+    var b = c.createBuffer(1, ir.length, c.sampleRate); b.getChannelData(0).set(ir);
+    return (IRS[key] = b);
+  }
+  function cabConv(r, genre) {   // one cab convolver (normalize off: the IR carries its own level)
+    var cv = r.ctx.createConvolver(); cv.normalize = false; cv.buffer = cabBuffer(r.ctx, cabName(r, genre), genre); cv._cab = cabName(r, genre);
+    return cv;
+  }
+  function cabUpdate(r) {   // the kit tier changed: every built amp swaps its IR (a new convolver per side, same wiring)
+    var list = [];
+    if (r.metal && r.metal.cabs) list.push([r.metal, 'metal']);
+    for (var g in r.amps || {}) if (r.amps[g].cabs) list.push([r.amps[g], g]);
+    list.forEach(function (x) {
+      var M = x[0], genre = x[1], want = cabName(r, genre);
+      M.cabs.forEach(function (cb) {
+        if (cb.conv._cab === want) return;
+        var nv = cabConv(r, genre);
+        try { cb.inp.disconnect(cb.conv); cb.conv.disconnect(); } catch (e) { /* ignore */ }
+        cb.inp.connect(nv); nv.connect(cb.out); cb.conv = nv;
+      });
+    });
+  }
+  function carveNode(c, f, q, dest) { var n = eqNode(c, 'peaking', f, q, 0, dest); n._base = 0; return n; }
   function metalRig(r) {
     if (r.metal) return r.metal;
     var c = r.ctx, M = r.metal = { open: [], mute: [], pres: [] };
+    if (!A.isClassic() && c.createConvolver) {   // v1.2: the cab IR (F8)
+      M.cabs = [];
+      [-AMP.pan, AMP.pan].forEach(function (pan, side) {
+        M.pres[side] = carveNode(c, 2600, 1.2, gainNode(c, AMP.level * CAB_TRIM.metal, panNode(c, pan, r.busBand)));
+        var conv = cabConv(r, 'metal'); conv.connect(M.pres[side]);
+        var hp = filterNode(c, 'highpass', 78, 0.7, conv);
+        M.cabs.push({ inp: hp, conv: conv, out: M.pres[side] });
+        var sh = c.createWaveShaper(); sh.curve = asymCurve(AMP.gain); sh.oversample = '4x'; sh.connect(hp);
+        var pre = filterNode(c, 'highpass', AMP.preHp, 0.6, eqNode(c, 'peaking', 900, 0.7, 7, sh));
+        M.open[side] = gainNode(c, 1, pre);
+        M.mute[side] = gainNode(c, 1.25, filterNode(c, 'lowpass', 480, 1.1, pre));
+      });
+      (r.carve = r.carve || []).push(M.pres[0], M.pres[1]);
+      var sub2 = filterNode(c, 'highpass', 30, 0.7, filterNode(c, 'lowpass', 150, 0.8, gainNode(c, AMP.bassSub, r.duck ? r.duck[1] : r.busBand)));
+      var gsh2 = c.createWaveShaper(); gsh2.curve = asymCurve(6); gsh2.oversample = '2x';
+      gsh2.connect(filterNode(c, 'lowpass', 2200, 0.8, eqNode(c, 'peaking', 1000, 1, 4, gainNode(c, AMP.bassGrind, r.duck ? r.duck[1] : r.busBand))));
+      M.bass = gainNode(c, 1, null); M.bass.connect(sub2); M.bass.connect(filterNode(c, 'highpass', 260, 0.7, gsh2));
+      M.vox = gainNode(c, AMP.vox, filterNode(c, 'highpass', 60, 0.7, eqNode(c, 'peaking', 2400, 0.8, 7, r.busBand)));
+      return M;
+    }
     [-AMP.pan, AMP.pan].forEach(function (pan, side) {
       M.pres[side] = eqNode(c, 'peaking', 2600, 1.2, 3, filterNode(c, 'lowpass', 5400, 0.9, filterNode(c, 'lowpass', 6800, 0.6,
         gainNode(c, AMP.level, panNode(c, pan, r.busBand)))));
@@ -634,7 +713,11 @@
       var fb = gainNode(c, a.slapFb || 0.18, delay);
       delay.connect(fb); delay.connect(gainNode(c, (a.level || 0.2) * (a.slapLv || 0.5), panNode(c, a.slapPan || -0.35, r.busBand)));
       var tw = filterNode(c, 'lowpass', a.lp || 7000, 0.7, null); tw.connect(dry); tw.connect(delay);
-      var tsh = c.createWaveShaper(); tsh.curve = driveCurve(a.gain || 1.6); tsh.connect(tw);
+      var tsh = c.createWaveShaper(); tsh.curve = driveCurve(a.gain || 1.6);
+      if (!A.isClassic() && c.createConvolver) {   // v1.2 (F8): Earl's amp through the open-back 1x12 IR (+ the carve band)
+        var tcv = carveNode(c, 3200, 1, gainNode(c, CAB_TRIM.country, tw)), tconv = cabConv(r, 'country');
+        tsh.connect(tconv); tconv.connect(tcv); M.cabs = [{ inp: tsh, conv: tconv, out: tcv }]; (r.carve = r.carve || []).push(tcv);
+      } else tsh.connect(tw);
       M.twang = filterNode(c, 'highpass', 120, 0.7, eqNode(c, 'peaking', br[0], br[1], br[2], tsh));
       M.slap = delay;
       var F = B.fiddle || {}, fout = filterNode(c, 'lowpass', 6500, 0.7, gainNode(c, 0.5, panNode(c, F.pan || -0.35, r.busBand)));
@@ -649,6 +732,19 @@
       return M;
     }
     var mid = a.mid || [1000, 0.9, 4], pres = a.presence || [3000, 1, 2];
+    if (!A.isClassic() && c.createConvolver) {   // v1.2 (F8): shaper -> high-pass -> the cab IR -> carve band -> level -> pan
+      M.cabs = [];
+      [-(a.pan || 0.6), a.pan || 0.6].forEach(function (pan, side) {
+        var cv = carveNode(c, pres[0], pres[1], gainNode(c, (a.level || 0.09) * (CAB_TRIM[genre] || 1), panNode(c, pan, r.busBand)));
+        var conv = cabConv(r, genre); conv.connect(cv);
+        var hp = filterNode(c, 'highpass', 85, 0.7, conv);
+        M.cabs.push({ inp: hp, conv: conv, out: cv }); (r.carve = r.carve || []).push(cv);
+        var sh = c.createWaveShaper(); sh.curve = driveCurve(a.gain || 8); sh.oversample = '2x'; sh.connect(hp);
+        var pre = filterNode(c, 'highpass', a.preHp || 100, 0.6, eqNode(c, 'peaking', mid[0], mid[1], mid[2], sh));
+        M.open[side] = gainNode(c, 1, pre);
+        M.mute[side] = gainNode(c, 1.2, filterNode(c, 'lowpass', 650, 1.1, pre));
+      });
+    } else
     [-(a.pan || 0.6), a.pan || 0.6].forEach(function (pan, side) {
       var cab = filterNode(c, 'highpass', 85, 0.7, eqNode(c, 'peaking', pres[0], pres[1], pres[2], filterNode(c, 'lowpass', a.lp || 5200, 0.8,
         gainNode(c, a.level || 0.09, panNode(c, pan, r.busBand)))));
@@ -969,11 +1065,20 @@
     s.buffer = hb.buf; s.playbackRate.value = 1 + 0.0025 * j; s.connect(sl.lp);
     sl.lp.frequency.setValueAtTime((hb.lpMin + (1 - hb.lpMin) * clamp01(vel)) * 16000, t);
     sl.g.gain.cancelScheduledValues(t);
-    sl.g.gain.setValueAtTime(velGain(vel) * (hb.gain || 1) * (sl.pan ? Math.SQRT2 : 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5)), t);   // (x SQRT2: the panner's -3 dB centre)
-    if (d < hb.d - 0.002) sl.g.gain.setTargetAtTime(0, t + d, 0.006);   // choked: fades at the next hit
+    var gv = velGain(vel) * (hb.gain || 1) * (sl.pan ? Math.SQRT2 : 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5));   // (x SQRT2: the panner's -3 dB centre)
+    sl.g.gain.setValueAtTime(gv, t);
+    if (d < hb.d - 0.002) { if (hb.kit) sl.g.gain.setTargetAtTime(0, t + d, 0.006); else chokeEnv(sl.g.gain, t, d, hb.d, gv); }   // (a sample: just cut at the next hit)
     s.start(t); s.stop(t + d + 0.04); sl.until = t + d + 0.04;
     if (r.collect) r.collect.push(s);
     return s;
+  }
+  // A choked hit (the next hit of its lane comes at t + d, before its natural end nat): as the 1.1 recipe squeezes its
+  // envelope into d, the slot adds the missing decay (the buffer's exponential decay reaches -80 dB at nat; squeezed, at d),
+  // then the 6 ms fade at the next hit.
+  function chokeEnv(gp, t, d, nat, g) {   // (g: the level the slot was set to at t)
+    var lvl = Math.max(1e-4, Math.pow(1e-4, Math.max(0, 1 - d / nat)));
+    if (lvl < 0.999 && g > 0) gp.exponentialRampToValueAtTime(Math.max(1e-6, g * lvl), t + d);
+    gp.setTargetAtTime(0, t + d, 0.006);
   }
   var KITUSE = { kick: 0, snare: 0, toms: 0 }, KITLAST = null;   // (debug: sampled-kit hits per lane, the last velocity tap)
   function velBuf(r, lane, v, vel) { return skBuf(r, lane, v) || preVel(r, lane, v, vel); }
@@ -981,6 +1086,9 @@
     var D = DRUMS[lane]; if (!D) return false;
     var k = r.kit || DEFAULT_KIT, hb = velBuf(r, lane, v, vel), c = r.ctx, n, d;
     cls = cls || (lane === 'kick' || lane === 'snare' ? 'drum' : 'band');
+    if (lane === 'kick' && r.duck) r.duck.forEach(function (g) {   // F9: the bass dips -2 dB in 5 ms, back with a 50 ms time constant
+      g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.794, t, 0.0017); g.gain.setTargetAtTime(1, t + 0.005, 0.05);
+    });
     if (hb) {
       d = Math.max(0.012, Math.min(hb.d, cap));
       if (!book(r, t, d, 1, false, cls)) return null;
@@ -999,8 +1107,9 @@
     nat = D2.len(k, v, R, ri); d = Math.max(0.012, Math.min(nat, cap));
     if (!book(r, t, d, 1, false, cls)) return null;
     var sl2 = vslot(r, p, lane, t, v);
-    sl2.lp.frequency.setValueAtTime((0.55 + 0.45 * clamp01(vel)) * 16000, t); sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(velGain(vel) * (sl2.pan ? Math.SQRT2 : 1), t);
-    if (d < nat - 0.002) sl2.g.gain.setTargetAtTime(0, t + d, 0.006);
+    sl2.lp.frequency.setValueAtTime((0.55 + 0.45 * clamp01(vel)) * 16000, t); var g2 = velGain(vel) * (sl2.pan ? Math.SQRT2 : 1);
+    sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(g2, t);
+    if (d < nat - 0.002) chokeEnv(sl2.g.gain, t, d, nat, g2);
     sl2.until = t + nat + 0.02;   // (its tail runs on under the fade: the slot stays taken until it is over)
     d2play(lane, r, sl2.lp, t, nat, k, v, vel, ri, R);
     return { t: t, end: t + d, n: 1 };
@@ -1102,7 +1211,7 @@
           return;
         }
         if (k.six === 'china') {   // the cluster low and mid-heavy: trashy
-          cluster(r, t, d, filterNode(c, 'bandpass', 3300 * ff, 0.8, decay(c, t, 0.001, 0.4, d, dest)), 205.3 * 0.62 * pf, R.metal, rr, 'china', 0.03);
+          cluster(r, t, d, filterNode(c, 'highpass', 900, 0.7, filterNode(c, 'bandpass', 3300 * ff, 0.8, decay(c, t, 0.001, 0.4, d, dest))), 205.3 * 0.9 * pf, R.metal, rr, 'china', 0.03);
           noiseAt(r, t, d, decay(c, t, 0.001, 0.22, d, dest), 'bandpass', 3000 * ff, 0.7, 2200 * ff, off);
           return;
         }
@@ -1183,7 +1292,7 @@
   var soonQ = [], soonCh = null;
   function soon(fn) {   // (the channel is made on first use: a node test that never builds never holds one open)
     if (typeof MessageChannel !== 'function') { setTimeout(fn, 0); return; }
-    if (!soonCh) { soonCh = new MessageChannel(); soonCh.port1.onmessage = function () { var f = soonQ.shift(); if (f) f(); }; }
+    if (!soonCh) { soonCh = new MessageChannel(); soonCh.port1.onmessage = function () { var f = soonQ.shift(); if (f) f(); }; if (soonCh.port1.unref) soonCh.port1.unref(); }
     soonQ.push(fn); soonCh.port2.postMessage(0);
   }
   function pre2Phase(k, R, hits, sr, stale, wait, done, fail) {
@@ -1572,6 +1681,7 @@
   function metalNote(r, p, ev, t, spb) {
     var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), h = (ev.midi * 7 + Math.round(ev.beat * 4)) % 5;
     metalPort(r, p);
+    if (ev.vel != null && !A.isClassic() && metalKS(r, p, ev, t, dur, h)) return;   // v1.2 (F7): the KS strings (a miss: the oscillator below)
     if (ev.kind === 'bass') {
       if (!book(r, t, dur, 1, true)) return;
       var b = c.createOscillator(); b.type = 'sawtooth';
@@ -1610,10 +1720,272 @@
     g._end = t + end;
     return g;
   }
+  /* ---- v1.2 "Soundcheck" (Lane I, F7): Karplus-Strong strings ------------------------------------------------------------ */
+  // With a vel (ev.vel, o.vel; Classic off) a plucked band note plays a KS buffer (GG.dsp.pluck / the strings of a chord or a
+  // strum summed, pure JS) through the SAME envelope and amp chain as the oscillator it replaces: the envelope keeps the palm
+  // mute's gate and the chokes, the buffer brings the pluck (pick position, velocity brightness, round robins on the chugs).
+  // Power chords = one buffer (root, fifth, octave 3 ms apart; the L / R pair plays it +-5 cents); strums = one buffer per side;
+  // bends, slides, the pick bloom and the doom sag ride on playbackRate; a hold past the buffer loops whole periods of its
+  // tail. Cache: per (voice, midi, articulation, vel layer, round robin), 22.05 kHz for the distorted guitars and the bass,
+  // 32 kHz for clean / acoustic / twang / lead, LRU <= 8 MB. A.warm(pattern, opts) renders a song's set ahead, one string per
+  // slice; a live miss plays the oscillator (the 1.1 sound) and queues the buffer; an offline render (renderOffline) renders a
+  // miss on the spot. The fiddle stays bowed (oscillator).
+  var KS = { map: {}, bytes: 0, n: 0, hits: 0, misses: 0, tick: 0, queue: [], qset: {}, busy: false, slice: 0, evicted: 0, warmMs: 0, warms: 0, waiters: [] };
+  var KS_CAP = 8e6, KS_LAYERS = [0.55, 0.9];
+  // string voices: sr, dur (s of buffer), pick (beta), bright (loop filter S), t60, thump / click, lvl (vs the oscillator, by numbers)
+  var KS_VOICE = {
+    'metal|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.15, t60: 2.5, lvl: 1 },
+    'punk|gtr': { sr: 22050, dur: 1.6, pick: 0.13, bright: 0.25, t60: 2.5, lvl: 1 },
+    'rock|gtr': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0.3, t60: 2.5, lvl: 1 },
+    'country|gtr': { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.4, t60: 2.5, lvl: 1 },
+    'metal|bass': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0, exLp: 450, t60: 3, click: 0.6, lvl: 1.2 },
+    'punk|bass': { sr: 22050, dur: 1.6, pick: 0.2, bright: 0, exLp: 450, t60: 3, click: 0.6, lvl: 1.3 },
+    'rock|bass': { sr: 22050, dur: 1.6, pick: 0.25, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.4 },
+    'country|bass': { sr: 22050, dur: 1.6, pick: 0.27, bright: 0, exLp: 350, t60: 3, thump: 0.8, lvl: 1.4 },
+    clean: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.35, t60: 2.5, lvl: 1 },
+    acoustic: { sr: 32000, dur: 1.4, pick: 0.27, bright: 0.3, t60: 2, lvl: 1 },
+    twang: { sr: 32000, dur: 1.2, pick: 0.12, bright: 0.45, t60: 1.6, lvl: 1 },
+    lead: { sr: 32000, dur: 1.2, pick: 0.15, bright: 0.4, t60: 2.5, lvl: 1 }
+  };
+
+  // -> spec { key, fs, offs (s), sr, n, opts, period (samples, for loops) }. o: { power, fs (Hz), mute, trem, vel, rr, strum, up, side }
+  function ksSpec(genre, kind, midi, o) {
+    var vk = kind === 'bass' || kind === 'gtr' ? (KS_VOICE[genre + '|' + kind] ? genre + '|' + kind : 'metal|' + kind) : kind, V = KS_VOICE[vk];
+    if (!V || !GG.dsp || !GG.dsp.pluck) return null;
+    var f = mtof(midi), art = o.mute ? 'mute' : o.trem ? 'trem' : 'open', layer = (o.vel == null ? 0.9 : o.vel) < 0.7 ? 0 : 1, fs, offs = [], shape = '';
+    if (o.strum) {   // the strings of this side (even / odd), in strum order (an upstroke runs high to low)
+      fs = []; var k = o.strum.length;
+      for (var j = 0; j < k; j++) { var st = o.up ? k - 1 - j : j; if (o.side == null || st % 2 === o.side) { fs.push(mtof(midi + o.strum[st])); offs.push(j * 0.011); } }
+      shape = 's' + o.strum.join('.') + (o.up ? 'u' : 'd') + (o.side == null ? '' : o.side);
+    } else if (o.fs) { fs = o.fs; shape = 'f' + o.fs.length; } else if (o.power) { fs = [f, f * 1.5, f * 2]; shape = 'p'; } else fs = [f];
+    if (!o.strum) for (var i = 0; i < fs.length; i++) offs.push(i * 0.003);
+    var dur = art === 'mute' ? 0.35 : art === 'trem' ? 0.45 : V.dur, rr = o.rr | 0;
+    return { key: [vk, midi, art, layer, rr, shape].join('|'), fs: fs, offs: offs, sr: V.sr, n: Math.ceil(dur * V.sr), lvl: V.lvl,
+      period: V.sr / fs[0] * (shape === 'p' ? 2 : 1),
+      opts: { sr: V.sr, vel: KS_LAYERS[layer], pick: V.pick, bright: art === 'trem' ? Math.min(0.9, V.bright + 0.2) : V.bright, t60: art === 'trem' ? 0.5 : V.t60,
+        mute: art === 'mute', exLp: V.exLp, thump: V.thump, click: V.click, seed: 1 + midi * 7 + rr * 101 } };
+  }
+  function ksString(spec, acc, i) {   // adds string i of the spec into acc (the same sum as GG.dsp.chord / strum)
+    var sr = spec.sr, off = Math.round(spec.offs[i] * sr), n = spec.n;
+    if (off >= n) return;
+    var s = GG.dsp.pluck(Object.assign({}, spec.opts, { f: spec.fs[i], dur: (n - off) / sr, seed: spec.opts.seed + i, norm: 0.5 / Math.max(1, spec.fs.length) }));
+    for (var j = 0; j < s.length && off + j < n; j++) acc[off + j] += s[j];
+  }
+  function ksPut(c, spec, acc) {
+    var b = mkBuf(c, spec.n, spec.sr); b.getChannelData(0).set(acc);
+    var x = KS.map[spec.key] = { buf: b, bytes: spec.n * 4, used: ++KS.tick };
+    KS.bytes += x.bytes; KS.n++;
+    while (KS.bytes > KS_CAP) {   // LRU
+      var old = null, ok;
+      for (ok in KS.map) if (ok !== spec.key && (!old || KS.map[ok].used < KS.map[old].used)) old = ok;
+      if (!old) break;
+      KS.bytes -= KS.map[old].bytes; KS.n--; KS.evicted++; delete KS.map[old];
+    }
+    return b;
+  }
+  function ksGet(r, spec) {
+    if (!spec) return null;
+    var x = KS.map[spec.key];
+    if (x) { x.used = ++KS.tick; KS.hits++; return x.buf; }
+    KS.misses++;
+    if (r !== rig) {   // offline: render it now
+      var acc = new Float32Array(spec.n);
+      for (var i = 0; i < spec.fs.length; i++) ksString(spec, acc, i);
+      return ksPut(r.ctx, spec, acc);
+    }
+    ksQueue(spec);
+    return null;
+  }
+  function ksQueue(spec) {
+    if (KS.qset[spec.key] || KS.map[spec.key]) return;
+    KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
+    if (!KS.busy) { KS.busy = true; soon(ksPump); }
+  }
+  function ksPump() {   // one string per slice
+    var job = KS.queue[0];
+    if (!job || !ctx) {
+      KS.busy = false;
+      var w = KS.waiters; KS.waiters = []; w.forEach(function (x) { KS.warmMs = Math.round(performance.now() - x.t0); x.res({ n: x.n, ms: KS.warmMs }); });
+      return;
+    }
+    var t0 = performance.now();
+    if (!job.acc) job.acc = new Float32Array(job.spec.n);
+    ksString(job.spec, job.acc, job.i++);
+    if (job.i >= job.spec.fs.length) { KS.queue.shift(); delete KS.qset[job.spec.key]; ksPut(ctx, job.spec, job.acc); }
+    KS.slice = Math.max(KS.slice, performance.now() - t0);
+    soon(ksPump);
+  }
+  // The KS spec a timeline event plays (null: not a plucked string / a voice that stays an oscillator).
+  function ksSpecFor(genre, ev, vel, rr) {
+    var k = ev.kind, o = { vel: vel, mute: ev.mute, trem: ev.trem };
+    if (k === 'vox' || k === 'bvox' || k === 'drum' || k === 'step' || k === 'fiddle' || k === 'dlead') return null;
+    if (genre === 'metal' && (k === 'gtr' || k === 'gtr2')) return ksSpec('metal', 'gtr', ev.midi, Object.assign(o, { power: ev.power, rr: ev.mute ? rr : 0 }));
+    if (k === 'bass') return ksSpec(genre, 'bass', ev.midi, o);
+    if (genre === 'country' && ev.strum) return ksSpec('country', 'acoustic', ev.midi, { vel: vel, strum: ev.strum, up: ev.up, side: rr & 1 });
+    if (ev.strum) return ksSpec(genre, 'clean', ev.midi, { vel: vel, strum: ev.strum, up: ev.up });
+    if (k === 'twang') return ksSpec(genre, 'twang', ev.midi, o);
+    if (k === 'lead') return ksSpec(genre, 'lead', ev.midi, { vel: vel, power: ev.power });
+    if (genre === 'punk' || genre === 'rock') {
+      if (k === 'gtr2' && ev.mute) { var f = mtof(ev.midi) / 2; return ksSpec(genre, 'gtr', ev.midi, { vel: vel, mute: true, fs: [f, f * 1.5, f * 2], rr: rr }); }
+      if (k === 'gtr2' || k === 'clean') return ksSpec(genre, ev.power ? 'gtr' : 'clean', ev.midi, { vel: vel, power: ev.power });
+      if (k === 'gtr') return ksSpec(genre, 'gtr', ev.midi, Object.assign(o, { power: ev.power, rr: ev.mute ? rr : 0 }));
+    }
+    return null;
+  }
+  // A.warm(pattern, opts) -> Promise<{ n, ms }>: renders the song's KS buffers ahead (its timeline, pure), one string per slice.
+  A.warm = function (pattern, opts) {
+    if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)
+    opts = opts || {};
+    var genre = opts.genre || (GG.state && GG.state.genre) || 'metal', tl, n = 0;
+    try { tl = A.timeline(pattern, opts); } catch (e) { return Promise.resolve({ n: 0, ms: 0 }); }
+    tl.events.forEach(function (ev) {
+      [0, 1].forEach(function (rr) {
+        var s = ksSpecFor(genre, ev, 0.9, rr);
+        if (s && !KS.map[s.key] && !KS.qset[s.key]) { ksQueue(s); n++; }
+      });
+    });
+    KS.warms++;
+    if (!n) return Promise.resolve({ n: 0, ms: 0 });
+    return new Promise(function (res) { KS.waiters.push({ t0: performance.now(), n: n, res: res }); });
+  };
+  // a KS buffer source; a hold past the buffer loops whole periods of its tail (>= 60 ms)
+  function ksSrc(r, buf, spec, dur, cents) {
+    var s = r.ctx.createBufferSource(); s.buffer = buf;
+    if (cents) s.detune.value = cents;
+    if (dur > buf.duration - 0.01 && spec.period > 1) {
+      var P = spec.period / spec.sr, m = Math.max(1, Math.ceil(0.06 / P));
+      s.loop = true; s.loopEnd = buf.duration - 0.002; s.loopStart = Math.max(0, s.loopEnd - m * P);
+    }
+    return s;
+  }
+  function ksRR(r, ev) { return ev.mute ? nextRR(r, 'ks|' + ev.kind, 2) : 0; }   // chugs: 2 round robins, in order
+  function metalKS(r, p, ev, t, dur, h) {
+    var c = r.ctx, vg = velGain(ev.vel), rr = ksRR(r, ev), spec = ksSpecFor('metal', ev, ev.vel, rr), buf = ksGet(r, spec);
+    if (!buf) return false;
+    vg *= spec.lvl;
+    if (ev.kind === 'bass') {
+      if (!book(r, t, dur, 1, true)) return true;
+      var b = ksSrc(r, buf, spec, dur, 0);
+      b.playbackRate.setValueAtTime(1.006, t); b.playbackRate.exponentialRampToValueAtTime(1, t + 0.03);   // the string settles
+      b.connect(sharedEnv(p, c, 'mBass', t, [p.mBass], ev.mute || ev.trem || ev.len <= 0.5 ? function (g0) { return gate(c, t, 0.002, 0.8 * vg, dur, ev.mute ? 0.5 : 0.7, p.mBass, g0); } : function (g0) { return held(c, t, 0.65 * vg, dur, p.mBass, null, g0); }));
+      run(r, b, t, dur);
+      return true;
+    }
+    var ring = ev.kind === 'gtr2', n = ring ? 1 : 2;
+    if (!book(r, t, dur, n, true)) return true;
+    for (var side = 0; side < n; side++) {
+      var tt = t + (side ? 0.006 + 0.002 * h / 4 : 0), dd = Math.max(0.02, dur - (tt - t));
+      var o = ksSrc(r, buf, spec, dd, ring ? 0 : side ? 5 + h : -5 - h);
+      o.playbackRate.setValueAtTime(1.007, tt); o.playbackRate.exponentialRampToValueAtTime(1, tt + 0.025);   // pick bloom
+      if (ev.sag && dd > 0.4) { o.playbackRate.setValueAtTime(1, tt + dd * 0.55); o.playbackRate.exponentialRampToValueAtTime(0.985, tt + dd); }
+      var g, dst = side ? (ev.mute ? p.mMuteR : p.mOpenR) : (ev.mute ? p.mMuteL : p.mOpenL);
+      if (ring) g = sharedEnv(p, c, 'mRing', tt, [p.mOpenL, p.mOpenR], function (g0) { var x = held(c, tt, 0.22 * vg, dd, p.mOpenL, 0.02, g0); if (!g0) x.connect(p.mOpenR); return x; });
+      else if (ev.mute) g = sharedEnv(p, c, 'mMute' + side, tt, [dst], function (g0) { return gate(c, tt, 0.0015, 0.62 * vg, dd, 0.4, dst, g0); });
+      else if (ev.trem) g = sharedEnv(p, c, 'mOpen' + side, tt, [dst], function (g0) { return gate(c, tt, 0.002, 0.5 * vg, dd * 0.9, 0.7, dst, g0); });
+      else g = sharedEnv(p, c, 'mOpen' + side, tt, [dst], function (g0) { return held(c, tt, 0.48 * vg, dd, dst, 0.003, g0); });
+      o.connect(g); run(r, o, tt, dd);
+    }
+    return true;
+  }
+  // punk / rock crunch amps + the country amp (ampNote's kinds): true = played (or dropped), false = not a KS note / a miss
+  function ampKS(r, p, ev, t, spb) {
+    var g = r.genre, c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), rr = ksRR(r, ev), k, e;
+    if (g === 'country') {
+      if (ev.kind === 'twang') {
+        var sp = ksSpecFor(g, ev, ev.vel, 0), bf = ksGet(r, sp); if (!bf) return false;
+        if (!book(r, t, dur, 1, true)) return true;
+        ampPort(r, p, g);
+        var vg0 = velGain(ev.vel) * sp.lvl, s0 = ksSrc(r, bf, sp, dur, 0);
+        if (ev.bend || ev.slide) { s0.playbackRate.setValueAtTime(Math.pow(2, -(ev.bend || 1) / 12), t); s0.playbackRate.exponentialRampToValueAtTime(1, t + Math.min(0.09, dur * 0.4)); }
+        s0.connect(ev.mute ? gate(c, t, 0.002, 0.8 * vg0, Math.min(dur, 0.09), 0.3, p.aTwang) : decay(c, t, 0.003, 0.85 * vg0, dur, p.aTwang));
+        run(r, s0, t, dur);
+        return true;
+      }
+      if (ev.strum) {   // one buffer per side (even strings left, odd right): 2 sources instead of 6 oscillators
+        var specs = [0, 1].map(function (sd) { return ksSpec('country', 'acoustic', ev.midi, { vel: ev.vel, strum: ev.strum, up: ev.up, side: sd }); });
+        var bufs = specs.map(function (sp2) { return ksGet(r, sp2); });
+        if (!bufs[0] || !bufs[1]) return false;
+        if (!book(r, t, dur, 2, true)) return true;
+        ampPort(r, p, g);
+        [0, 1].forEach(function (sd) {
+          var s1 = ksSrc(r, bufs[sd], specs[sd], dur, sd ? 3 : -3);
+          s1.connect(decay(c, t, 0.002, (ev.ring ? 0.3 : 0.26) * velGain(ev.vel) * specs[sd].lvl * 1.6, dur, sd ? p.aAcR : p.aAcL)); run(r, s1, t, dur);
+        });
+        return true;
+      }
+      return false;
+    }
+    if (g !== 'punk' && g !== 'rock') return false;
+    var a = (GG.songs.genre(g).backing || {}).amp || {}, spec = ksSpecFor(g, ev, ev.vel, rr), buf = ksGet(r, spec), vg = velGain(ev.vel);
+    if (!buf) return false;
+    vg *= spec.lvl;
+    if (ev.kind === 'gtr2' && ev.mute) {
+      if (!book(r, t, dur, 2, true)) return true;
+      ampPort(r, p, g);
+      for (k = 0; k < 2; k++) {
+        var s2 = ksSrc(r, buf, spec, Math.max(0.02, dur - k * 0.004), k ? 4 : -4);
+        s2.connect(gate(c, t + k * 0.004, 0.0015, 0.6 * vg, Math.max(0.02, dur - k * 0.004), 0.4, k ? p.aMuteR : p.aMuteL)); run(r, s2, t + k * 0.004, Math.max(0.02, dur - k * 0.004));
+      }
+      return true;
+    }
+    if (ev.kind === 'gtr2' || ev.kind === 'clean') {
+      if (!book(r, t, dur, 1, true)) return true;
+      ampPort(r, p, g);
+      var s3 = ksSrc(r, buf, spec, dur, 0);
+      s3.connect(decay(c, t, 0.004, (ev.kind === 'clean' ? 0.5 : 0.42) * vg, dur, p.aRing)); run(r, s3, t, dur);
+      return true;
+    }
+    if (ev.kind !== 'gtr') return false;
+    if (!book(r, t, dur, 2, true)) return true;
+    ampPort(r, p, g);
+    var h = (ev.midi * 7 + Math.round(ev.beat * 4)) % 5, dt = a.detune || 5;
+    for (var side = 0; side < 2; side++) {
+      var tt = t + (side ? (a.lag || 0.008) + 0.002 * h / 4 : 0), dd = Math.max(0.02, dur - (tt - t));
+      var o = ksSrc(r, buf, spec, dd, side ? dt + h : -dt - h);
+      o.playbackRate.setValueAtTime(1.006, tt); o.playbackRate.exponentialRampToValueAtTime(1, tt + 0.02);   // pick bloom
+      var ad = ev.mute ? (side ? p.aMuteR : p.aMuteL) : (side ? p.aOpenR : p.aOpenL), ak = (ev.mute ? 'aMute' : 'aOpen') + side;
+      if (ev.mute) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return gate(c, tt, 0.0015, 0.7 * vg, dd, 0.4, ad, g0); });
+      else if (ev.trem) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return gate(c, tt, 0.002, 0.55 * vg, dd * 0.9, 0.7, ad, g0); });
+      else if (ev.ring) e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return decay(c, tt, 0.003, 0.6 * vg, dd, ad, g0); });
+      else e = sharedEnv(p, c, ak, tt, [ad], function (g0) { return held(c, tt, 0.5 * vg, dd, ad, 0.003, g0); });
+      o.connect(e); run(r, o, tt, dd);
+    }
+    return true;
+  }
+  // playNote's generic voices: the bass, the leads (Dana's, Earl's twang, Benny's power-chord "solo"), the clean strum
+  function noteKS(r, p, ev, t, spb) {
+    var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), spec = ksSpecFor(r.genre || 'metal', ev, ev.vel, 0), buf = ksGet(r, spec), vg;
+    if (!buf) return false;
+    vg = velGain(ev.vel) * spec.lvl;
+    if (ev.kind === 'bass') {
+      if (!book(r, t, dur, 1, true)) return true;
+      var b = ksSrc(r, buf, spec, dur, 0);
+      b.connect(sharedEnv(p, c, 'bass', t, [p.bass], ev.len <= 0.5 || ev.ring ? function (g0) { return decay(c, t, 0.004, 0.55 * vg, dur, p.bass, g0); } : function (g0) { return held(c, t, 0.4 * vg, dur, p.bass, null, g0); }));
+      run(r, b, t, dur);
+      return true;
+    }
+    if (ev.kind === 'lead' || ev.kind === 'twang') {
+      if (!book(r, t, dur, 1, true)) return true;
+      var g = ev.kind === 'twang' ? decay(c, t, 0.003, 0.8 * vg, dur, p.lead) : held(c, t, 0.6 * vg, dur, p.dlead, 0.006);
+      var o = ksSrc(r, buf, spec, dur, 0);
+      if (ev.bend || ev.slide) { o.playbackRate.setValueAtTime(Math.pow(2, -(ev.bend || 1) / 12), t); o.playbackRate.exponentialRampToValueAtTime(1, t + Math.min(0.09, dur * 0.4)); }
+      o.connect(g); run(r, o, t, dur);
+      return true;
+    }
+    if (ev.strum) {
+      if (!book(r, t, dur, 1, true)) return true;
+      var s = ksSrc(r, buf, spec, dur, 0);
+      s.connect(decay(c, t, 0.003, 0.32 * vg * 1.6, dur, p.clean)); run(r, s, t, dur);
+      return true;
+    }
+    return false;
+  }
   function playNote(r, p, ev, t, spb) {
     if (ev.kind === 'vox' || ev.kind === 'bvox') { voxHit(r, p, ev, t, spb); return; }
     if (r.genre === 'metal' && METAL_KINDS[ev.kind]) { metalNote(r, p, ev, t, spb); return; }
+    if (r.genre !== 'metal' && ev.vel != null && !A.isClassic() && ampKS(r, p, ev, t, spb)) return;   // v1.2: KS through the genre amps
     if (r.genre !== 'metal' && ampNote(r, p, ev, t, spb)) return;   // v0.9 genre amps
+    if (ev.vel != null && !A.isClassic() && noteKS(r, p, ev, t, spb)) return;   // v1.2: KS bass / leads / strums
     var c = r.ctx, dur = Math.max(0.03, Math.min(ev.len, ev.gap) * spb), f = mtof(ev.midi), o, g;
     if (ev.kind === 'bass') {
       if (!book(r, t, dur, 1, true)) return;
@@ -3791,7 +4163,7 @@
   A.feelFor = function () { return null; };
   A.feelPlan = function () { return null; };
   A.tapVel = function () { return undefined; };
-  A.warm = function () { return Promise.resolve(); };
+  // (A.warm: Lane I's, above with the KS cache)
   A.realism = function (tier) {
     var T = C.REALISM || [];
     tier = tier == null ? A.kitQuality() : tier | 0;
@@ -3817,6 +4189,7 @@
       global: ctx ? A.voiceStats() : null, prerender: { key: PRE.key, ready: PRE.ready, building: PRE.building, renders: PRE.renders, hits: PRE.hits, ms: PRE.ms },
       // v1.2 Lane I: the tier's realism row, the sampled kit (F17)
       realism: rig ? A.realism(rig.tier) : A.realism(),
+      ks: { n: KS.n, bytes: KS.bytes, hits: KS.hits, misses: KS.misses, queued: KS.queue.length, evicted: KS.evicted, warms: KS.warms, warmMs: KS.warmMs, slice: Math.round(KS.slice * 100) / 100 },
       pre: { key: PRE2.key, ready: PRE2.ready, first: PRE2.first, building: PRE2.building, sets: Object.keys(PRE2.sets).length, rr: PRE2.rr, layers: PRE2.layers,
         bytes: PRE2.bytes, ms: PRE2.ms, renders: PRE2.renders, hits: PRE2.hits, slice: Math.round(PRE2.slice * 100) / 100 },
       kit: { id: SK.id, ready: SK.ready, n: Object.keys(SK.have).reduce(function (a, k) { return a + SK.have[k]; }, 0), bytes: SK.bytes, ms: SK.ms, err: SK.err,
