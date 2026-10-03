@@ -87,10 +87,24 @@ string-seat lines in zz_seats.js, all seat-aware).
 
 ## Tests
 
-(filled in below)
+- `node tests/run.js`: every file passes except the known lead items: **sim_seats** 3 failures (doom-tempo rhythm holds/chords,
+  frost_heave lead avg bot 89.8 vs 85.8, "Solo Too Long" reachability; not Lane A's) and **sim_legacy** 1 (handover 1 below:
+  its v1.0 assertion expects the drums player card on the bass seat; the contract asks for `endings.player.bass`).
+  content 53, content_bands 37, content_endings 14, content_seats 9 (new), content_tutorial 10, sim_achieve 12, sim_lessons 13,
+  sim_audio 32, sim_bands 17 (+ the quick seat scan), all green.
+- `SEAT=all LEAK_YEARS=10 node tests/sim_bands.test.js`: **ALL PASS 24**, strict, zero seat leaks for every band x seat
+  (3 seeds x 10 years, avg + good bots).
+- `LEAK_YEARS=13 node tests/sim_bands.test.js` (drums): **ALL PASS 17**.
+- `META_ONLY=bands timeout 500 node tests/pw_bands.js`: 390x844 ALL PASS (57/58/58/57 + flat 12); `PW_VIEW=440x956` ALL PASS
+  (58/58/57/58 + flat 12).
+- Not run by Lane A: the seat-picker / string-seat Playwright pass (`pw_seats.js`, the lead's new file).
 
 ## Handovers (lead)
 
+0. **`tests/sim_legacy.test.js:176`** (not Lane A's; the contract makes it change): `eq(b.epilogues.pop().text,
+   a.epilogues.pop().text, 'no bass player card yet: the drums one')` now fails because `endings.player.bass` exists (contract
+   §5 A2). Change it to expect the seat's own card, e.g. `eq(b.epilogues.pop().text, GG.career.fillText(bass,
+   GG.content.endings.player.bass[b.tier]))` and `ok(... !== a's text)`.
 1. **`C.ACH_KINDS += ['seatCareer', 'soloTooLong', 'allSeats']`** (Lane B asked too): the four seat achievements then join
    `content.achievements` automatically (`zz_seats.js` §7 checks the contract at load; until then they wait in
    `GG.content.seatAchievements`, so `sim_achieve` stays green). content_seats checks both states.
@@ -118,4 +132,4 @@ string-seat lines in zz_seats.js, all seat-aware).
 - Drummer recruits get nicks only (no drummer quirk cards); fill-ins share one pool across genres.
 - Arc reachability in bot runs (avg bot, 10 years, before the step-1 weight went 6 -> 12): 34 of 36 band x seat x seed careers
   started and finished their arc; the finale followed in every finished one. The synthetic walk in content_seats is exhaustive.
-- Size: `dist/game.html` 4,487,591 B (v1.1-seats with D+B: 4,349,605 B; Lane A in total +137,986 B, budget +350 KB).
+- Size: `dist/game.html` 4,488,503 B stripped (v1.1-seats with D+B: 4,349,605 B; Lane A in total +138,898 B, budget +350 KB; gate 5,000,000 B). The committed dist is the post-merge build; rebuild at integration.
