@@ -107,4 +107,26 @@ every note, 40 s; `GAME=` the 1.1.0.0 dist from `369c9e1`; two trials each, alte
 - pw_perf sections at both sizes: PERF_MATRIX_PLACEHOLDER
 
 ## 7. Gaps and notes for the review
-GAPS_PLACEHOLDER
+Lead (this pass):
+- **KS warm over 300 ms once** (metal at 390x844, 366 ms; 243 ms at 440x956; the other 6 songs 109-197 ms). The pw_perf gate
+  is 1.2 s wall; the warm runs during the count-in and a miss plays the 1.1 oscillator. Perf lens: decide whether to tighten.
+- **Only the gig warms songs.** `A.warm` is called from 55 (`warmSong`) only, as the contract asked; the songwriter, garage jam,
+  van radio, a rival's set and the seat preview play their first pass with oscillators for any string note not yet cached
+  (queued, KS from the next pass). Cheap fix if the ears mind: call `A.warm` before those `A.play` calls.
+- **Tonal shifts inside the targets** (logged, not tuned; owner's ears): punk band 0-150 Hz -5 dB, metal drums stem +2.3 dB,
+  mids 500-1.5k +3.5-4.5 dB on metal / punk, rock band 4k+ -6 dB. If the owner asks for "more bass" on punk: KS bass level /
+  `LV2`, then re-run `tools/kit_trim.js` only if the drum bus moves.
+- Tap demo peaks read low for the sampled snare (lower crest factor at the same RMS); judge Perfect vs Good by RMS.
+- `tools/audio_numbers.js --section` used to match by prefix ("1.2" overwrote "1.2 Lane I"); fixed (exact label), Lane I's
+  section restored from git.
+
+From the lanes (still open; details in their reports):
+- F: `opts.feel === false` unused (no metronome-only practice screen); rival members have no `skill` -> every rival player t
+  0.65 (`rv.skill` unused); an echo tap standing in for a dropped double's second kick plays as a stray (0.62, not 0.82);
+  renderOffline ignores `dgap` (test renders only).
+- I: the floor of a PRE slice is one metal top-tier cymbal's graph build (~4-6 ms at 4x); a pre-rendered `GG.dsp.metal`
+  buffer would lower it if a real phone needs headroom. Re-run `tools/kit_trim.js` after any drum bus / crush / room change.
+- V: voiced murmur before b/d/g not done; the metal gang is centre + right (not L/C/R); rock vocals slightly narrower than 1.1
+  (0.221 -> 0.194; ~0.21 with the plate); Classic switched off after it was on keeps the 1.1 vocals until the next page load;
+  with Lane I's rooms v2 the vocals-only render differs from 1.1 by up to 0.65 (rooms, not vocals; logged only).
+- Owner items: the clip popup (ship / tweak, which genre) and the ear check of plate level, double width, belt brightness.
