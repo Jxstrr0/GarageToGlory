@@ -1111,7 +1111,9 @@
     sl2.g.gain.cancelScheduledValues(t); sl2.g.gain.setValueAtTime(g2, t);
     if (d < nat - 0.002) chokeEnv(sl2.g.gain, t, d, nat, g2);
     sl2.until = t + nat + 0.02;   // (its tail runs on under the fade: the slot stays taken until it is over)
+    r.hj = ((r.hitN = (r.hitN || 0) + 1) * 0.6180339887) % 1;   // (no two hits the same: live, velPlay's drift does it)
     d2play(lane, r, sl2.lp, t, nat, k, v, vel, ri, R);
+    r.hj = 0;
     return { t: t, end: t + d, n: 1 };
   }
   // Round robins in order, no repeats: the next index of `key` on this rig (renderOffline's spec.hit sets the first).
@@ -1126,7 +1128,7 @@
     var s = r.ctx.createBufferSource(); s.buffer = r.noise; s.loop = true;
     var fl = filterNode(r.ctx, type, f, q, gain);
     if (f1) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    s.connect(fl); s.start(t, (off || 0) % 1); s.stop(t + dur); if (r.collect) r.collect.push(s);
+    s.connect(fl); s.start(t, ((off || 0) + 0.37 * (r.hj || 0)) % 1); s.stop(t + dur); if (r.collect) r.collect.push(s);   // (r.hj: a per-hit nudge, offline)
     return fl;
   }
   // 1.2 recipes (F6 + the F11 tier table). play(r, dest, t, d, kit, variant, vel, rr, R) renders ONE hit at unity level (the
@@ -1850,8 +1852,8 @@
   };
   // a KS buffer source; a hold past the buffer loops whole periods of its tail (>= 60 ms)
   function ksSrc(r, buf, spec, dur, cents) {
-    var s = r.ctx.createBufferSource(); s.buffer = buf;
-    if (cents) s.detune.value = cents;
+    var s = r.ctx.createBufferSource(), n = r.ksN = (r.ksN || 0) + 1; s.buffer = buf;
+    s.detune.value = (cents || 0) + 3 * (((n * 0.6180339887) % 1) * 2 - 1);   // + a per-note drift of +-3 cents: no two chugs the same
     if (dur > buf.duration - 0.01 && spec.period > 1) {
       var P = spec.period / spec.sr, m = Math.max(1, Math.ceil(0.06 / P));
       s.loop = true; s.loopEnd = buf.duration - 0.002; s.loopStart = Math.max(0, s.loopEnd - m * P);
@@ -4091,7 +4093,9 @@
         }
         if (voc && VOX[vt].metal) metalVox(r, port, ev, 0.05, len, VOX[vt]);
         else if (voc) voxHit(r, port, ev, 0.05, len / 4);
-        else playNote(r, port, ev, 0.05, len / 4);
+        else if (spec.hits > 1 && fixVel != null) {   // v1.2 (tests): hits notes, gap s apart, at spec.vel ("no two hits the same")
+          for (var hk = 0; hk < spec.hits; hk++) playNote(r, port, Object.assign({}, ev, { vel: fixVel, beat: 0 }), 0.05 + hk * spec.gap, spec.gap / 4);
+        } else playNote(r, port, fixVel != null ? Object.assign({}, ev, { vel: fixVel }) : ev, 0.05, len / 4);
       } else {
         tl = A.timeline(pat, { genre: genre, section: spec.full || radio ? null : (spec.section || 'verse'), bars: bars, style: style,
           drums: spec.drums != null ? spec.drums : !style, backing: spec.backing !== false, vocals: spec.vocals, songId: spec.songId,

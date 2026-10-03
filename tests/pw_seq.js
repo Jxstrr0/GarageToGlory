@@ -1,5 +1,8 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
 // Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash|kit, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+//   real  : v1.2 Lane I (handoff F13 "no two hits the same"): 8 consecutive snares, 8 hats (one render each, equal vel, the
+//           pro kit, punk's synth kit) and 8 metal palm-muted chugs (KS, 2 round robins) all differ pairwise (RMS diff > -40 dB);
+//           the KS cache / PRE / realism debug fields exist; renders with vel stay finite and under the ceiling. ~1 min.
 //   kit   : v1.2 Lane I (handoff F17.3): the TMKD "Vortex" sampled kit. Metal on tier 3 renders it (result.kitUsed), onsets <= 1 ms
 //           (rendered + the live decode), 5 consecutive snares all differ, per-lane loudness within +-1 dB of the 1.1 pro-tier synth
 //           (tools/kit_trim.js), Classic on: metal tier 1 + punk tier 3 hashes = the 1.1 fixture; Classic off: metal tier 1 and punk
@@ -848,6 +851,7 @@ async function voices() {
   if (want('part')) await part();
   if (want('hash')) await hash();
   if (want('kit')) await kit();
+  if (want('real')) await real();
 })();
 
 // v1.1 "Seats" (plan_contract_1.1 §4.4): the string-seat songwriter. A bass Write (Hail Damage): guided step 1 = Kenji's
@@ -1022,5 +1026,42 @@ async function kit() {
     const h = await verify({ quiet: true, only: ['tap|metal', 'pre|metal', 'tap|punk', 'pre|punk'] });
     c.ok(h.n === 96 && h.bad.length === 0, 'Classic on: metal + punk taps (every tier) = the 1.1 fixture ' + (h.n - h.bad.length) + '/' + h.n + (h.bad.length ? ' ' + h.bad.slice(0, 3).map(b => b.key).join(', ') : ''));
   } catch (e) { c.ok(false, 'kit threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  c.done();
+}
+
+// v1.2 Lane I (handoff F13): no two hits the same. See the header (section real).
+async function real() {
+  const c = checker('real');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    const r = await page.evaluate(async () => {
+      const A = GG.audio, E = '................', out = {};
+      const pairs = (buf, at, win) => {   // RMS of the difference of every pair of hit windows, dB re the first window
+        const d = buf.getChannelData(0), sr = buf.sampleRate, W = Math.round(win * sr), wins = at.map(t => d.subarray(Math.round(t * sr), Math.round(t * sr) + W));
+        let e0 = 0; for (const v of wins[0]) e0 += v * v;
+        const res = [];
+        for (let i = 0; i < wins.length; i++) for (let j = i + 1; j < wins.length; j++) { let s = 0; for (let k = 0; k < W; k++) s += (wins[i][k] - wins[j][k]) ** 2; res.push(+(10 * Math.log10(s / e0 + 1e-12)).toFixed(1)); }
+        return res;
+      };
+      const pat = (rows) => ({ bpm: 120, lanes: 4, arrangement: ['verse'], sections: { verse: rows, chorus: [E, E, E, E], bridge: [E, E, E, E] } });
+      const sn = await A.renderOffline({ genre: 'punk', pattern: pat([E, 'x...x...x...x...', E, E]), section: 'verse', bars: 2, quality: 2, backing: false, vocals: false, vel: 0.85, room: 'dry' });
+      out.snare = { pairs: pairs(sn.buffer, [0, 1, 2, 3, 4, 5, 6, 7].map(i => 0.05 + i * 0.5), 0.3), nan: sn.nan, peak: sn.peak };
+      const ht = await A.renderOffline({ genre: 'punk', pattern: pat([E, E, 'x.x.x.x.........', E]), section: 'verse', bars: 2, quality: 2, backing: false, vocals: false, vel: 0.85, room: 'dry' });
+      out.hat = { pairs: pairs(ht.buffer, [0, 1, 2, 3, 8, 9, 10, 11].map(i => 0.05 + i * 0.25), 0.04), nan: ht.nan, peak: ht.peak };
+      const ch = await A.renderOffline({ probe: 'gtr', genre: 'metal', midi: 40, mute: true, power: true, hits: 8, gap: 0.25, vel: 0.85, seconds: 2.6, room: 'dry' });
+      out.chug = { pairs: pairs(ch.buffer, [0, 1, 2, 3, 4, 5, 6, 7].map(i => 0.05 + i * 0.25), 0.15), nan: ch.nan, peak: ch.peak };
+      const dbg = GG.debug('audio');
+      out.dbg = { ks: !!dbg.ks && dbg.ks.n > 0, pre: !!dbg.pre, realism: dbg.realism && dbg.realism.id, kit: !!dbg.kit };
+      return out;
+    });
+    for (const k of ['snare', 'hat', 'chug']) {
+      const x = r[k];
+      c.ok(x.pairs.length === 28 && x.pairs.every(v => v > -40) && !x.nan && x.peak < 1, k + ': 8 consecutive hits all differ (min ' + Math.min(...x.pairs) + ' dB) ' + JSON.stringify(x.pairs));
+    }
+    c.ok(r.dbg.ks && r.dbg.pre && r.dbg.realism === 'pro' && r.dbg.kit, 'debug(audio): ks, pre, realism, kit ' + JSON.stringify(r.dbg));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'real threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
   c.done();
 }
