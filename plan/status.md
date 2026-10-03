@@ -11,8 +11,11 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   - **A content** → `wip-v11-a` (28607e2). A1 done (SEAT= strict leak scan). A2 seat audit pass part-way (tokenise/gate per
     file, `src/content/zz_seats.js` started). A3–A6 not started (bands seatLines/bySeat, role arcs + 12 finales + player
     epilogues, shop bySeat names/creator parts/coach lines/seat achievements, content_seats test + runs).
-- Known failures after D+B merge (3 sim_seats checks; integration work): doom-tempo rhythm chart needs holds/chords;
-  frost_heave lead avg bot 89.8 vs drums 85.8 (band too wide); "Solo Too Long" reachability.
+- Lead integration progress (2026-10-03, on `v1.1-seats`; lanes C/A still running in their worktrees):
+  - [x] 1. Folds: `C.GATE_KEYS += seat, swapped`, `C.ACH_KINDS += seatCareer, soloTooLong, allSeats`; D/B APIs in 02 + below.
+  - [x] 2. sim_seats ALL PASS 17: metal rhythm suggested part rings (holds at doom tempo); string crowd retuned (avg bot within
+    ~1.8 of drums); soloTooLong default min 0.3.
+  - [ ] 3. 51 seat picker + 52 SPOTS + 60 routing.  [ ] 4. tests/pw_seats.js.  [ ] 5. build + node + pw regression; report.
 - Resume steps:
   1. Resume workflow run `wf_867f4c13-592` (script `workflows/scripts/v11-seats-build-wf_867f4c13-592.js` in the session dir;
      if that session is gone, relaunch lanes C and A with the same contract sections). D and B results are cached.
