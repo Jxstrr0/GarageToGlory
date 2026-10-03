@@ -46285,6 +46285,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var pLook = stageLook(pl) || pl.look || (preset && preset.look) || null;
       if (pLook && pLook.outfit && outfit && outfit !== 'cape') { pLook = copyLook(pLook); delete pLook.outfit; }   // the band's outfit card wins
       var roster = [{ id: 'player', look: pLook }].concat(mem);
+      if (mem.length && /^(bass|rhythm|lead)$/.test(o.seat || st.seat || '')) roster = [mem[0], roster[0]].concat(mem.slice(1));   // v1.1 review: with an instrument you walk second (the body stays in frame)
       var capeId = null;
       for (var i = 0; i < roster.length; i++) { var cmc = contentMember(band, roster[i].id); if (roster[i].cape || (cmc && cmc.cape)) capeId = roster[i].id; }   // v0.9: member.cape
       if (!capeId) for (i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';

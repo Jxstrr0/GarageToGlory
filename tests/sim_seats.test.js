@@ -99,6 +99,16 @@ test('tokens: the drum seat reads exactly as v1.0; string seats read their seat 
   BANDS.forEach(b => eq(K.tokenValue(career(b, 'drums'), 'drummer'), 'you', b + ' {drummer} on drums'));
 });
 
+test('v1.1 review: a role token that resolves to you reads in the second person (string seats only)', () => {
+  const lead = career('gravel_kings', 'lead', 3), bass = career('hail_damage', 'bass', 3), drums = career('gravel_kings', 'drums', 3);
+  eq(K.fillText(lead, '{soloist} buys a pack of strings.'), 'You buy a pack of strings.', 'a sentence start: You + the verb without -s');
+  eq(K.fillText(lead, '{soloist} is on take forty-one. {soloist} says it is different.'), 'You are on take forty-one. You say it is different.', 'is -> are');
+  eq(K.fillText(lead, 'Marcel hands {soloist} the cape. {soloist}\'s amp hums.'), 'Marcel hands you the cape. Your amp hums.', 'an object stays, a possessive -> Your');
+  eq(K.fillText(lead, 'Chase sings and {soloist} finally plays the riff; {soloist} watches.'), 'Chase sings and you finally play the riff; you watch.', 'after and / ; (an adverb skipped)');
+  eq(K.fillText(bass, 'One low note from {bassist} hangs there. {bassist} has it.'), 'One low note from you hangs there. You have it.', 'the bass seat: {bassist}');
+  eq(K.fillText(drums, '{soloist} buys a pack of strings.'), 'Lenny buys a pack of strings.', 'the drum seat reads as v1.0');
+});
+
 test('gates: seat / swapped in gatePasses, cardOk (gate or top level, cameo too), speakerOk(line), @drummer', () => {
   const drums = career('hail_damage', 'drums'), bass = career('hail_damage', 'bass'), P = (s, g) => K.gatePasses(s, g);
   const cases = [[{ seat: ['drums'] }, true, false], [{ seat: ['bass', 'lead'] }, false, true], [{ seat: 'bass' }, false, true],
