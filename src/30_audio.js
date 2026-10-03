@@ -1382,14 +1382,19 @@
     return { jobs: out, want: want };
   }
   function b64ab(s) { var bin = atob(s), n = bin.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
-  function onsetOf(d, sr) {   // -> sample index of the first sample over 2 % of the peak (a drum peaks in its first 200 ms)
-    var n = Math.min(d.length, Math.round(0.2 * sr)), pk = 0, i, a;
-    for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+  function peakOf(d, sr) {   // (a drum peaks in its first 200 ms)
+    var n = Math.min(d.length, Math.round(0.2 * sr)), pk = 0, a;
+    for (var i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+    return pk;
+  }
+  function onsetOf(d, sr, pk) {   // -> sample index of the first sample over 2 % of the peak (pk: peakOf, when already known)
+    var n = Math.min(d.length, Math.round(0.2 * sr)), i, a;
+    if (pk == null) pk = peakOf(d, sr);
     for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > 0.02 * pk) return i; }
     return 0;
   }
-  function skTrim(c, buf) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (a block copy)
-    var d = buf.getChannelData(0), on = onsetOf(d, buf.sampleRate), s = Math.max(0, on - Math.round(0.001 * buf.sampleRate));
+  function skTrim(c, buf, pk) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (a block copy)
+    var d = buf.getChannelData(0), on = onsetOf(d, buf.sampleRate, pk), s = Math.max(0, on - Math.round(0.001 * buf.sampleRate));
     var out = mkBuf(c, Math.max(1, d.length - s), buf.sampleRate);
     out.getChannelData(0).set(d.subarray(s));
     out.onset = on - s;   // (samples)
@@ -1401,8 +1406,8 @@
     function no(e) { if (!done) { done = true; bad(e); } }
     try { var pr = c.decodeAudioData(ab, y, no); if (pr && pr.then) pr.then(y, no); } catch (e) { no(e); }
   }
-  function skAdd(S, c, job, b) {
-    var tb = skTrim(c, b), key = job[0];
+  function skAdd(S, c, job, b, pk) {
+    var tb = skTrim(c, b, pk), key = job[0];
     (S.bufs[key] || (S.bufs[key] = []))[job[1]] = tb; S.have[key] = (S.have[key] || 0) + 1; S.bytes += tb.length * 4 * tb.numberOfChannels;
     S.gain = S.gain || {}; S.gain[key] = Math.pow(10, (job[3] || 0) / 20);   // the lane's trim (dB), applied by the hit's slot
     S.onset = Math.max(S.onset, Math.min(tb.onset, 0.001 * tb.sampleRate) / tb.sampleRate * 1000);   // (where its onset now sits, ms)
@@ -1418,16 +1423,24 @@
     if (current && current.playing && !current.radio) { SK.timer = setTimeout(function () { SK.timer = 0; skBuild(kit); }, 1000); return; }   // never mid-song
     var J = skJobs(kit), t0 = performance.now();
     Object.assign(SK, { id: kit.id, sr: ctx.sampleRate, bufs: {}, have: {}, gain: {}, want: J.want, ready: false, building: kit.id, bytes: 0, err: null, onset: 0, slice: 0 });
+    function timed(fn, then) {   // one slice (a MessageChannel task), timed into SK.slice
+      soon(function () {
+        if (SK.building !== kit.id) return;
+        var s0 = performance.now(); fn(); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
+        then();
+      });
+    }
     function next(i) {
       if (SK.building !== kit.id) return;
       if (i >= J.jobs.length) { SK.ready = true; SK.building = null; SK.ms = Math.round(performance.now() - t0); return; }
       if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
       var job = J.jobs[i];
       var a0 = performance.now(), ab = b64ab(job[2]); SK.slice = Math.max(SK.slice || 0, performance.now() - a0);
-      decodeAB(ctx, ab, function (b) {
-        if (SK.building !== kit.id) return;
-        var s0 = performance.now(); skAdd(SK, ctx, job, b); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
-        setTimeout(function () { next(i + 1); }, 0);   // one clip per slice
+      decodeAB(ctx, ab, function (b) {   // then two more slices: the peak, then the onset + the copy (each a short loop)
+        var pk;
+        timed(function () { pk = peakOf(b.getChannelData(0), b.sampleRate); }, function () {
+          timed(function () { skAdd(SK, ctx, job, b, pk); }, function () { soon(function () { next(i + 1); }); });   // (the next clip: its own slice)
+        });
       }, function (e) {
         SK.err = String((e && e.message) || e || 'decode failed'); SK.errId = kit.id; SK.building = null;
         if (!SK.logged) { SK.logged = true; try { console.warn('sampled kit ' + kit.id + ': ' + SK.err + ' (the synth plays)'); } catch (x) { /* ignore */ } }
@@ -1805,9 +1818,14 @@
     KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
     if (!KS.busy) { KS.busy = true; soon(ksPump); }
   }
-  // ~3 ms of string per slice: GG.dsp.pluckJob renders a string 2048 samples at a time (the same samples as one pluck call),
-  // so a slice stays well under 8 ms on a 4x-throttled phone; finished buffers land in the cache between slices.
-  var KS_SLICE_MS = 3, KS_STEP = 2048;
+  // ~2 ms of string per slice: GG.dsp.pluckJob renders a string KS_STEP samples per step (then its gain pass, then its add into
+  // the sum, the same per step: the same samples as one pluck call), so no slice runs long on a 4x-throttled phone.
+  // One job at a time, so its string and its sum render into two reused scratch arrays (no garbage per string).
+  var KS_SLICE_MS = 2, KS_STEP = 512, ksTmp = null, ksAcc = null;
+  function ksScratch(n) {
+    if (!ksTmp || ksTmp.length < n) { ksTmp = new Float32Array(n); ksAcc = new Float32Array(n); }
+    var acc = ksAcc.subarray(0, n); acc.fill(0); return acc;
+  }
   function ksPump() {
     var job = KS.queue[0];
     if (!job || !ctx) {
@@ -1818,14 +1836,20 @@
     var t0 = performance.now();
     while (job) {
       var sp = job.spec;
-      if (!job.acc) job.acc = new Float32Array(sp.n);
+      if (!job.acc) job.acc = ksScratch(sp.n);
       if (!job.pj && job.i < sp.fs.length) {
         job.off = Math.round(sp.offs[job.i] * sp.sr);
         if (job.off >= sp.n) job.i++;
-        else if (GG.dsp.pluckJob) job.pj = GG.dsp.pluckJob(ksOpts(sp, job.i, job.off));
+        else if (GG.dsp.pluckJob) job.pj = GG.dsp.pluckJob(Object.assign(ksOpts(sp, job.i, job.off), { out: ksTmp }));
         else ksString(sp, job.acc, job.i++);   // (an older dsp: a whole string)
       }
-      if (job.pj && job.pj.step(KS_STEP)) { ksAdd(job.acc, job.pj.out, job.off, sp.n); job.pj = null; job.i++; }
+      if (job.pj && job.at == null) { if (job.pj.step(KS_STEP)) job.at = 0; }
+      else if (job.pj) {   // the finished string into the sum (as ksAdd), KS_STEP samples per step
+        var s = job.pj.out, acc = job.acc, off = job.off, a1 = Math.min(s.length, sp.n - off), q = job.at, q1 = Math.min(a1, q + KS_STEP);
+        for (; q < q1; q++) acc[off + q] += s[q];
+        job.at = q1;
+        if (q1 >= a1) { job.pj = null; job.at = null; job.i++; }
+      }
       if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; ksPut(ctx, sp, job.acc); job = KS.queue[0]; }
       if (performance.now() - t0 >= KS_SLICE_MS) break;
     }

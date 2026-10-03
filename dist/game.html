@@ -35941,14 +35941,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return { jobs: out, want: want };
   }
   function b64ab(s) { var bin = atob(s), n = bin.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
-  function onsetOf(d, sr) {   // -> sample index of the first sample over 2 % of the peak (a drum peaks in its first 200 ms)
-    var n = Math.min(d.length, Math.round(0.2 * sr)), pk = 0, i, a;
-    for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+  function peakOf(d, sr) {   // (a drum peaks in its first 200 ms)
+    var n = Math.min(d.length, Math.round(0.2 * sr)), pk = 0, a;
+    for (var i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+    return pk;
+  }
+  function onsetOf(d, sr, pk) {   // -> sample index of the first sample over 2 % of the peak (pk: peakOf, when already known)
+    var n = Math.min(d.length, Math.round(0.2 * sr)), i, a;
+    if (pk == null) pk = peakOf(d, sr);
     for (i = 0; i < n; i++) { a = d[i] < 0 ? -d[i] : d[i]; if (a > 0.02 * pk) return i; }
     return 0;
   }
-  function skTrim(c, buf) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (a block copy)
-    var d = buf.getChannelData(0), on = onsetOf(d, buf.sampleRate), s = Math.max(0, on - Math.round(0.001 * buf.sampleRate));
+  function skTrim(c, buf, pk) {   // the MP3 encoder delay off: start 1 ms before the onset, in a fresh buffer (a block copy)
+    var d = buf.getChannelData(0), on = onsetOf(d, buf.sampleRate, pk), s = Math.max(0, on - Math.round(0.001 * buf.sampleRate));
     var out = mkBuf(c, Math.max(1, d.length - s), buf.sampleRate);
     out.getChannelData(0).set(d.subarray(s));
     out.onset = on - s;   // (samples)
@@ -35960,8 +35965,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     function no(e) { if (!done) { done = true; bad(e); } }
     try { var pr = c.decodeAudioData(ab, y, no); if (pr && pr.then) pr.then(y, no); } catch (e) { no(e); }
   }
-  function skAdd(S, c, job, b) {
-    var tb = skTrim(c, b), key = job[0];
+  function skAdd(S, c, job, b, pk) {
+    var tb = skTrim(c, b, pk), key = job[0];
     (S.bufs[key] || (S.bufs[key] = []))[job[1]] = tb; S.have[key] = (S.have[key] || 0) + 1; S.bytes += tb.length * 4 * tb.numberOfChannels;
     S.gain = S.gain || {}; S.gain[key] = Math.pow(10, (job[3] || 0) / 20);   // the lane's trim (dB), applied by the hit's slot
     S.onset = Math.max(S.onset, Math.min(tb.onset, 0.001 * tb.sampleRate) / tb.sampleRate * 1000);   // (where its onset now sits, ms)
@@ -35977,16 +35982,24 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (current && current.playing && !current.radio) { SK.timer = setTimeout(function () { SK.timer = 0; skBuild(kit); }, 1000); return; }   // never mid-song
     var J = skJobs(kit), t0 = performance.now();
     Object.assign(SK, { id: kit.id, sr: ctx.sampleRate, bufs: {}, have: {}, gain: {}, want: J.want, ready: false, building: kit.id, bytes: 0, err: null, onset: 0, slice: 0 });
+    function timed(fn, then) {   // one slice (a MessageChannel task), timed into SK.slice
+      soon(function () {
+        if (SK.building !== kit.id) return;
+        var s0 = performance.now(); fn(); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
+        then();
+      });
+    }
     function next(i) {
       if (SK.building !== kit.id) return;
       if (i >= J.jobs.length) { SK.ready = true; SK.building = null; SK.ms = Math.round(performance.now() - t0); return; }
       if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
       var job = J.jobs[i];
       var a0 = performance.now(), ab = b64ab(job[2]); SK.slice = Math.max(SK.slice || 0, performance.now() - a0);
-      decodeAB(ctx, ab, function (b) {
-        if (SK.building !== kit.id) return;
-        var s0 = performance.now(); skAdd(SK, ctx, job, b); SK.slice = Math.max(SK.slice || 0, performance.now() - s0);
-        setTimeout(function () { next(i + 1); }, 0);   // one clip per slice
+      decodeAB(ctx, ab, function (b) {   // then two more slices: the peak, then the onset + the copy (each a short loop)
+        var pk;
+        timed(function () { pk = peakOf(b.getChannelData(0), b.sampleRate); }, function () {
+          timed(function () { skAdd(SK, ctx, job, b, pk); }, function () { soon(function () { next(i + 1); }); });   // (the next clip: its own slice)
+        });
       }, function (e) {
         SK.err = String((e && e.message) || e || 'decode failed'); SK.errId = kit.id; SK.building = null;
         if (!SK.logged) { SK.logged = true; try { console.warn('sampled kit ' + kit.id + ': ' + SK.err + ' (the synth plays)'); } catch (x) { /* ignore */ } }
@@ -36317,7 +36330,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
     if (!KS.busy) { KS.busy = true; soon(ksPump); }
   }
-  var KS_SLICE_MS = 3, KS_STEP = 2048;
+  var KS_SLICE_MS = 2, KS_STEP = 512, ksTmp = null, ksAcc = null;
+  function ksScratch(n) {
+    if (!ksTmp || ksTmp.length < n) { ksTmp = new Float32Array(n); ksAcc = new Float32Array(n); }
+    var acc = ksAcc.subarray(0, n); acc.fill(0); return acc;
+  }
   function ksPump() {
     var job = KS.queue[0];
     if (!job || !ctx) {
@@ -36328,14 +36345,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var t0 = performance.now();
     while (job) {
       var sp = job.spec;
-      if (!job.acc) job.acc = new Float32Array(sp.n);
+      if (!job.acc) job.acc = ksScratch(sp.n);
       if (!job.pj && job.i < sp.fs.length) {
         job.off = Math.round(sp.offs[job.i] * sp.sr);
         if (job.off >= sp.n) job.i++;
-        else if (GG.dsp.pluckJob) job.pj = GG.dsp.pluckJob(ksOpts(sp, job.i, job.off));
+        else if (GG.dsp.pluckJob) job.pj = GG.dsp.pluckJob(Object.assign(ksOpts(sp, job.i, job.off), { out: ksTmp }));
         else ksString(sp, job.acc, job.i++);   // (an older dsp: a whole string)
       }
-      if (job.pj && job.pj.step(KS_STEP)) { ksAdd(job.acc, job.pj.out, job.off, sp.n); job.pj = null; job.i++; }
+      if (job.pj && job.at == null) { if (job.pj.step(KS_STEP)) job.at = 0; }
+      else if (job.pj) {   // the finished string into the sum (as ksAdd), KS_STEP samples per step
+        var s = job.pj.out, acc = job.acc, off = job.off, a1 = Math.min(s.length, sp.n - off), q = job.at, q1 = Math.min(a1, q + KS_STEP);
+        for (; q < q1; q++) acc[off + q] += s[q];
+        job.at = q1;
+        if (q1 >= a1) { job.pj = null; job.at = null; job.i++; }
+      }
       if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; ksPut(ctx, sp, job.acc); job = KS.queue[0]; }
       if (performance.now() - t0 >= KS_SLICE_MS) break;
     }
@@ -38551,7 +38574,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var sr = o.sr || 22050, f = clampN(o.f || 110, 20, sr * 0.3), dur = o.dur || 1, n = Math.max(1, Math.ceil(dur * sr));
     var vel = o.vel == null ? 0.85 : clampN(o.vel, 0, 1), mute = !!o.mute, t60 = mute ? (o.t60 || 0.12) : (o.t60 || 2.5);
     var S = 0.5 - 0.45 * clampN(o.bright || 0, 0, 1), beta = clampN(o.pick == null ? 0.18 : o.pick, 0.02, 0.5);   // (bright 0 = the darkest loop)
-    var out = new Float32Array(n), N = sr / f, w = TAU * f / sr, rnd = seeder(o.seed == null ? 1 : o.seed);
+    var out = o.out && o.out.length >= n ? o.out.subarray(0, n) : new Float32Array(n), N = sr / f, w = TAU * f / sr, rnd = seeder(o.seed == null ? 1 : o.seed);
     var tl = lpDelay(S, w), L = Math.floor(N - tl - 0.15), d = N - tl - L;
     if (L < 2) { L = 2; d = Math.max(0.05, N - tl - L); }
     var C = apCoef(d, w);
@@ -38565,23 +38588,37 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var bN = Math.max(1, Math.round(beta * P)), comb = new Float32Array(P), mean = 0;
     for (i = 0; i < P; i++) { comb[i] = ex[i] - (i >= bN ? ex[i - bN] : 0); mean += comb[i]; }
     mean /= P; for (i = 0; i < P; i++) comb[i] -= mean;
-    var buf = new Float32Array(L), bi = 0, lpPrev = 0, apX = 0, apY = 0, dcX = 0, dcY = 0, dcR = 1 - TAU * 20 / sr, k = 0;
+    var buf = new Float32Array(L), dcR = 1 - TAU * 20 / sr, st = new Float64Array(7);   // (bi, lpPrev, apX, apY, dcX, dcY, k)
+    var gain = -1, sj = 0;   // (the norm gain once the loop is done, -1 before; sj: where the gain pass is)
     var job = { out: out, done: false, step: function (m) {
       if (job.done) return true;
-      var end = Math.min(n, k + Math.max(1, m || n));
-      for (; k < end; k++) {
-        var del = buf[bi];
-        var l1 = (1 - S) * del + S * lpPrev; lpPrev = del;
-        var ap = C * l1 + apX - C * apY; apX = l1; apY = ap;
-        var y = (k < P ? comb[k] : 0) + rho * ap;
-        if (y < 1e-20 && y > -1e-20) y = 0;
-        buf[bi] = y; bi = bi + 1 === L ? 0 : bi + 1;
-        var dc = y - dcX + dcR * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
-        out[k] = dcY;
+      var lim = m > 0 ? m : n;
+      if (st[6] < n) {
+        loop(Math.min(n, st[6] + lim));
+        if (st[6] < n || m > 0) return false;   // (a sliced job does the rest on its next step)
       }
-      if (k < n) return false;
-      finish(); job.done = true; return true;
+      if (gain < 0) { gain = finish(); if (gain == null) { gain = 0; sj = n; } }   // (norm 0: no gain pass)
+      var j1 = Math.min(n, sj + lim), g = gain, o2 = out;
+      for (var j = sj; j < j1; j++) { var z = o2[j] * g; o2[j] = z < 1e-20 && z > -1e-20 ? 0 : z; }
+      sj = j1;
+      if (sj < n) return false;
+      job.done = true; return true;
     } };
+    function loop(end) {
+      var bi = st[0], lpPrev = st[1], apX = st[2], apY = st[3], dcX = st[4], dcY = st[5], k = st[6];
+      var b = buf, cb = comb, o2 = out, s1 = 1 - S, s0 = S, c = C, r = rho, d0 = dcR, PP = P, LL = L;
+      for (; k < end; k++) {
+        var del = b[bi];
+        var l1 = s1 * del + s0 * lpPrev; lpPrev = del;
+        var ap = c * l1 + apX - c * apY; apX = l1; apY = ap;
+        var y = (k < PP ? cb[k] : 0) + r * ap;
+        if (y < 1e-20 && y > -1e-20) y = 0;
+        b[bi] = y; bi = bi + 1 === LL ? 0 : bi + 1;
+        var dc = y - dcX + d0 * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
+        o2[k] = dcY;
+      }
+      st[0] = bi; st[1] = lpPrev; st[2] = apX; st[3] = apY; st[4] = dcX; st[5] = dcY; st[6] = k;
+    }
     function finish() {
       var j;
       if (o.thump || o.click) {
@@ -38594,12 +38631,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         }
       }
       var norm = o.norm == null ? 0.5 : o.norm;
-      if (norm > 0) {
-        var m2 = Math.min(n, Math.round(0.06 * sr)), e = 0;
-        for (j = 0; j < m2; j++) e += out[j] * out[j];
-        var rms = Math.sqrt(e / Math.max(1, m2)), g = rms > 1e-9 ? norm / rms : 0;
-        for (j = 0; j < n; j++) { var z = out[j] * g; out[j] = z < 1e-20 && z > -1e-20 ? 0 : z; }
-      }
+      if (!(norm > 0)) return null;
+      var m2 = Math.min(n, Math.round(0.06 * sr)), e = 0;
+      for (j = 0; j < m2; j++) e += out[j] * out[j];
+      var rms = Math.sqrt(e / Math.max(1, m2));
+      return rms > 1e-9 ? norm / rms : 0;
     }
     return job;
   };

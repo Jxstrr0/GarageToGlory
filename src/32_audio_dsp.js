@@ -9,7 +9,8 @@
 //     mute: the palm mute (excitation low-passed ~1.2 kHz, T60 0.12 s); exLp (Hz): a darker excitation (a bass finger: the
 //     fundamental leads, as on a real bass). thump (bass fingers: 6 ms of low-passed noise), click
 //     (a pick click). A DC blocker; norm (default 0.5): RMS of the first 60 ms.
-//   pluckJob(o) -> { out, done, step(n) }: the same, n samples at a time (30 fills its string cache in short slices).
+//   pluckJob(o) -> { out, done, step(n) }: the same, n samples at a time (30 fills its string cache in short slices);
+//     o.out: a scratch Float32Array (length >= the pluck) to render into instead of a new one (job.out = its head).
 //   chord({ fs: [hz], spread (s between strings, default 0.003), ...pluck }) / strum({ fs, gap (default 0.011), up, ...pluck })
 //     -> Float32Array: the strings summed (string i starts i x spread / gap later; up = high string first), each string a
 //     pluck with seed + i and norm / fs.length. Exactly the sum of its strings (sim_dsp).
@@ -91,7 +92,7 @@
     var sr = o.sr || 22050, f = clampN(o.f || 110, 20, sr * 0.3), dur = o.dur || 1, n = Math.max(1, Math.ceil(dur * sr));
     var vel = o.vel == null ? 0.85 : clampN(o.vel, 0, 1), mute = !!o.mute, t60 = mute ? (o.t60 || 0.12) : (o.t60 || 2.5);
     var S = 0.5 - 0.45 * clampN(o.bright || 0, 0, 1), beta = clampN(o.pick == null ? 0.18 : o.pick, 0.02, 0.5);   // (bright 0 = the darkest loop)
-    var out = new Float32Array(n), N = sr / f, w = TAU * f / sr, rnd = seeder(o.seed == null ? 1 : o.seed);
+    var out = o.out && o.out.length >= n ? o.out.subarray(0, n) : new Float32Array(n), N = sr / f, w = TAU * f / sr, rnd = seeder(o.seed == null ? 1 : o.seed);
     var tl = lpDelay(S, w), L = Math.floor(N - tl - 0.15), d = N - tl - L;
     if (L < 2) { L = 2; d = Math.max(0.05, N - tl - L); }
     var C = apCoef(d, w);
@@ -108,23 +109,40 @@
     for (i = 0; i < P; i++) { comb[i] = ex[i] - (i >= bN ? ex[i - bN] : 0); mean += comb[i]; }
     mean /= P; for (i = 0; i < P; i++) comb[i] -= mean;
     // the loop: y[n] = x[n] + rho * AP(LP(y[n - L]))
-    var buf = new Float32Array(L), bi = 0, lpPrev = 0, apX = 0, apY = 0, dcX = 0, dcY = 0, dcR = 1 - TAU * 20 / sr, k = 0;
+    var buf = new Float32Array(L), dcR = 1 - TAU * 20 / sr, st = new Float64Array(7);   // (bi, lpPrev, apX, apY, dcX, dcY, k)
+    // step(m): at most m samples of work per call (the loop, then the gain pass); no m = the whole pluck in one call.
+    var gain = -1, sj = 0;   // (the norm gain once the loop is done, -1 before; sj: where the gain pass is)
     var job = { out: out, done: false, step: function (m) {
       if (job.done) return true;
-      var end = Math.min(n, k + Math.max(1, m || n));
-      for (; k < end; k++) {
-        var del = buf[bi];
-        var l1 = (1 - S) * del + S * lpPrev; lpPrev = del;
-        var ap = C * l1 + apX - C * apY; apX = l1; apY = ap;
-        var y = (k < P ? comb[k] : 0) + rho * ap;
-        if (y < 1e-20 && y > -1e-20) y = 0;
-        buf[bi] = y; bi = bi + 1 === L ? 0 : bi + 1;
-        var dc = y - dcX + dcR * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
-        out[k] = dcY;
+      var lim = m > 0 ? m : n;
+      if (st[6] < n) {
+        loop(Math.min(n, st[6] + lim));
+        if (st[6] < n || m > 0) return false;   // (a sliced job does the rest on its next step)
       }
-      if (k < n) return false;
-      finish(); job.done = true; return true;
+      if (gain < 0) { gain = finish(); if (gain == null) { gain = 0; sj = n; } }   // (norm 0: no gain pass)
+      var j1 = Math.min(n, sj + lim), g = gain, o2 = out;
+      for (var j = sj; j < j1; j++) { var z = o2[j] * g; o2[j] = z < 1e-20 && z > -1e-20 ? 0 : z; }
+      sj = j1;
+      if (sj < n) return false;
+      job.done = true; return true;
     } };
+    // the loop runs on locals (closure slots holding doubles would box a number per store: GC pauses mid-slice)
+    function loop(end) {
+      var bi = st[0], lpPrev = st[1], apX = st[2], apY = st[3], dcX = st[4], dcY = st[5], k = st[6];
+      var b = buf, cb = comb, o2 = out, s1 = 1 - S, s0 = S, c = C, r = rho, d0 = dcR, PP = P, LL = L;
+      for (; k < end; k++) {
+        var del = b[bi];
+        var l1 = s1 * del + s0 * lpPrev; lpPrev = del;
+        var ap = c * l1 + apX - c * apY; apX = l1; apY = ap;
+        var y = (k < PP ? cb[k] : 0) + r * ap;
+        if (y < 1e-20 && y > -1e-20) y = 0;
+        b[bi] = y; bi = bi + 1 === LL ? 0 : bi + 1;
+        var dc = y - dcX + d0 * dcY; dcX = y; dcY = dc < 1e-20 && dc > -1e-20 ? 0 : dc;   // DC blocker
+        o2[k] = dcY;
+      }
+      st[0] = bi; st[1] = lpPrev; st[2] = apX; st[3] = apY; st[4] = dcX; st[5] = dcY; st[6] = k;
+    }
+    // -> the norm gain (null: norm 0, no gain pass), after the thump / click
     function finish() {
       var j;
       // finger thump (bass: rock / country) or pick click (punk / metal): a few ms of filtered noise on top
@@ -138,12 +156,11 @@
         }
       }
       var norm = o.norm == null ? 0.5 : o.norm;
-      if (norm > 0) {
-        var m2 = Math.min(n, Math.round(0.06 * sr)), e = 0;
-        for (j = 0; j < m2; j++) e += out[j] * out[j];
-        var rms = Math.sqrt(e / Math.max(1, m2)), g = rms > 1e-9 ? norm / rms : 0;
-        for (j = 0; j < n; j++) { var z = out[j] * g; out[j] = z < 1e-20 && z > -1e-20 ? 0 : z; }
-      }
+      if (!(norm > 0)) return null;
+      var m2 = Math.min(n, Math.round(0.06 * sr)), e = 0;
+      for (j = 0; j < m2; j++) e += out[j] * out[j];
+      var rms = Math.sqrt(e / Math.max(1, m2));
+      return rms > 1e-9 ? norm / rms : 0;
     }
     return job;
   };

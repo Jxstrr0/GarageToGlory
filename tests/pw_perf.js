@@ -473,6 +473,10 @@ async function pre() {
       }, g));
     }
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    // (the warm loop left GG.state.genre on country: back to the metal tier-1 set before the per-tap check)
+    await page.evaluate(() => { GG.state.genre = 'metal'; GG.state.gear.quality = 1; GG.audio.hit('hat', undefined, { vel: 0.85 }); });
+    await page.waitForFunction(() => { const p = GG.debug('audio').pre; return p.ready && p.key && p.key.indexOf('metal|1|') === 0; }, null, { timeout: 30000 });
+    await sleep(300);
     console.log('INFO pre (4x throttle) ' + JSON.stringify(rows));
     console.log('INFO ks warm (4x throttle) ' + JSON.stringify(warm));
     c.ok(warm.every(w => w.n > 0 && w.slice <= 8 && w.bytes <= 8e6), 'KS warm: every genre queues its strings, slices <= 8 ms, cache <= 8 MB ' + JSON.stringify(warm.map(w => [w.g, w.n, w.slice, Math.round(w.bytes / 1e3) + 'kB'])));
