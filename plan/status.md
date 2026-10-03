@@ -2,16 +2,20 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
-## v1.1 integrated, reviewed (2026-10-03): all lanes merged on `v1.1-seats`, checklist green, review fixes applied (`plan/v11_integration_report.md` §5); next: PR → main.
+## Open owner questions (v1.1, asked 2026-10-03 after the merge; shipped with the recommended default)
+- Average-bot balance on string seats runs ~+7% fans / +8% fund over drums (5 of 12 cells > +10% at 60 seeds; drums vs
+  drums seed noise is 15–19%; good bot within ±10% everywhere). Default: leave it (re-check with paired seeds in 1.2 Tuning).
+- A lead part you write replaces the shared rhythm-guitar pair in those sections (metal/punk/rock), and an empty part section
+  is silent. Default: keep.
 
 ## Version
-- Current: **1.1.0.0 "Seats"** (in review on `v1.1-seats`) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
+- Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
   moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
   **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats (in review).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
 - Next: **1.2 "Tuning"** (handoff D5; covers all four seats).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
