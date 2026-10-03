@@ -443,6 +443,23 @@
       chartbusters: { pitch: 7, range: [62, 84], formant: 1.12, vib: [5.9, 0.038], breath: 0.3, scoop: -3, words: ['FOREVER', 'BABY', 'TONIGHT'], wordChance: 0.35 },
       // Brayden: bro-country, dead-flat pitch (the truck brand paid for the tuning), every song about tailgates.
       buckle_and_boot: { pitch: -1, range: [50, 69], formant: 0.97, twang: 5, vib: [0, 0], yodel: false, rasp: 0.08, words: ['TAILGATE', 'TRUCK', 'YEAH'], wordChance: 0.35 }
+    },
+    // v1.2 "Soundcheck" (Lane V, handoff F10; GG.voice.profile): each singer's sound on top of the 1.1 profile, kept apart
+    //   so A.timeline (which carries the 1.1 profile on every vocal event) never moves. Keys: 'genre:<g>' (the genre's
+    //   default), a profiles id, 'rival:<rivalId>'. press 0..1 (the glottal wave: 0 breathy .. 1 belt; absent: the voc
+    //   type's own: yell / wail belt, holler modal, whoa-ohs breathy; metal always belts), ring (dB of the singer's 3 kHz
+    //   ring), double (chorus lead hits get a double take when there's room; default true), breath 0..1 (extra pulsed
+    //   aspiration).
+    sound: {
+      'genre:rock': { ring: 3 },
+      'genre:country': { ring: 4 },
+      marcel: { ring: 2 },
+      rox: { press: 0.95, ring: 2, breath: 0.1 },
+      chase: { ring: 5 },
+      travis: { ring: 6 },
+      'rival:mall_rats': { press: 0.55, ring: 1 },
+      'rival:chartbusters': { press: 0.3, ring: 3, breath: 0.15 },
+      'rival:buckle_and_boot': { press: 0.45, double: false }
     }
   };
 })(window.GG);
