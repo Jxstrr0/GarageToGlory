@@ -1,7 +1,7 @@
-# v1.2 "Soundcheck": plan contract (DRAFT, written 2026-10-03 against `main` 1.1.0.0; finish at stage 0)
+# v1.2 "Soundcheck": plan contract (written 2026-10-03 against `main` 1.1.0.0; finished at stage 0, 2026-10-03)
 
 Repo: `/home/user/GarageToGlory`, branch `v1.2-soundcheck` (= `main` 1.1.0.0 + this patch + stage 0). All paths repo-relative.
-Line numbers are from 1.1.0.0: **re-audit at stage 0** and replace them with the stage-0 tree's.
+Line numbers (§2) are the stage-0 tree's (re-audited 2026-10-03). Stage-0 report: `plan/v12_stage0_report.md`.
 
 Sources: `plan/handoff.md` **Part F** (F1–F16; owner decisions N1–N5), `plan/status.md` (Version, Addendum 4 decisions +
 pending, APIs), the 1.1 contract (format). Read only your lane's section plus §0, §2 and §4 (token rules, status.md).
@@ -53,27 +53,33 @@ F16 answered by the owner in one popup on 2026-10-03 (all four as recommended); 
 ### 1.3 Deferred
 - Everything in F15 (real recordings, worklets, tempo drift, lyrics).
 
-## 2. Reuse map (1.1.0.0 file:line — confirm at stage 0)
+## 2. Reuse map (re-audited on the stage-0 tree, commit `8109ced`; lanes fork from here)
+Stage 0 shifted `30_audio.js` by +5 lines from `A.isClassic` (179) on and +6 from the `_buildVox` hook (538) on; 55 / 20 / 23
+are unchanged. In 1.1.0.0 only `metalNote` was off by one in the draft (1136 → 1137).
 | thing | where | reuse how |
 |---|---|---|
-| look-ahead scheduler | `30:1835 player()`, `pump()` | apply `dt` / `vel` per event index here |
-| event → sound | `30:1825 schedule()` | pass `ev.vel` (copied event) |
-| drum recipes | `30:856 DRUMS`, `30:900 drumHit` | add `vel`, RR params; recipes become the PRE renderers |
-| tap pre-renders | `30:2183 PRE`, `preList`, `preBuild`, `preHit`, `laneSlot` 2170 | widen to RR × layers, serve song events |
-| kit tiers | `30:469 QUALITY`, `30:535 setKit` | `A.realism(tier)` reads `rig.tier` |
-| rig + buses | `30:497 makeRig` | kit panners, `crush`, `duck`, `buildVox(r)` hook |
-| rooms | `30:442 ROOMS`, `30:449 impulse`, `30:549 setRoom` | impulse v2 + `plate` |
-| metal amp | `30:571 metalRig`, `30:592 metalPort`, `30:1136 metalNote` | IR cab; KS buffers into the same envelopes |
-| genre amps | `30:617 ampRig`, `30:657 ampPort`, `30:673 ampNote` | same |
-| other notes | `30:1178 playNote` | KS bass / lead / strum / gtr; vox untouched here |
-| envelopes | `decay` 796, `sharedEnv` 808, `held` 815, `gate` 1168 | unchanged; buffers feed them |
-| vocals | `VOWELS` 916 … `MVOX` 958, `wordPlan` 971, `articulate` 996, `voxCurve` 1004, `metalVox` 1039, `voxHit` 1081 | Lane V |
-| your taps | `30:2129 A.hit`, `30:2029 seatVoice` / `30:1985 seatPlay` | `o.vel` |
-| gig taps | `55:750 tap()`, `55:769 playTap`, `55:792 playSeat`, `55:395 startAudio` | `A.tapVel`, `po.gig`, `A.warm` |
-| member skill | `20_sim_career.js` members `{ skill }`, `career.lineup(state)` (`20:311`) | `A.feelFor` |
+| look-ahead scheduler | `30:1841 player()`, `30:1853 pump()` | apply `dt` / `vel` per event index here |
+| event → sound | `30:1831 schedule()` | pass `ev.vel` (copied event) |
+| drum recipes | `30:862 DRUMS`, `30:906 drumHit`, `30:915 snareVariant` | add `vel`, RR params; recipes become the PRE renderers |
+| tap pre-renders | `30:2189 PRE`, `preKey` 2190, `preHit` 2191, `preList` 2196, `preWant` 2201, `preBuild` 2208, `laneSlot` 2176 | widen to RR × layers, serve song events |
+| kit tiers | `30:474 QUALITY`, `30:541 setKit` | `A.realism(tier)` reads `rig.tier` |
+| rig + buses | `30:502 makeRig` (the `_buildVox` hook at 538) | kit panners, `crush`, `duck`, `buildVox(r)` hook |
+| rooms | `30:447 ROOMS`, `30:454 impulse`, `30:555 setRoom` | impulse v2 + `plate` |
+| metal amp | `30:576 AMP`, `30:577 metalRig`, `30:598 metalPort`, `30:609 powerWave`, `30:1143 metalNote` | IR cab; KS buffers into the same envelopes |
+| genre amps | `30:623 ampRig`, `30:663 ampPort`, `30:672 acousticWave`, `30:679 ampNote` | same |
+| other notes | `30:1184 playNote` | KS bass / lead / strum / gtr; vox untouched here |
+| envelopes | `decay` 802, `sharedEnv` 814, `held` 821, `gate` 1174 | unchanged; buffers feed them |
+| vocals | `VOWELS` 922, `GLIDES` 924, `NOISY` 927, `PLOSIVE` 929, `VOX` 932, `FAMILY` 953, `MVOX` 964, `wordPlan` 977, `articulate` 1002, `voxCurve` 1010, `rattle` 1020, `contour` 1029, `addVib` 1040, `metalVox` 1045, `voxPitch` 1082, `voxHit` 1087 | Lane V |
+| your taps | `30:2135 A.hit`, `30:2035 seatVoice` / `30:1991 seatPlay` | `o.vel` |
+| gig taps | `55:750 tap()`, `55:769 playTap`, `55:792 playSeat`, `55:395 startAudio` (`A.play` at 407); auto / double calls `55:501 autoNotes` (hit 510, auto-hat 530), `55:534 autoKicks` (543), `55:547 doubleKicks` (565) | `A.tapVel`, `po.gig`, `A.warm` |
+| member skill | `20_sim_career.js` members `{ skill, mood }`, `career.lineup(state)` (`20:311`) | `A.feelFor` |
 | rival members | `23_sim_rival.js:245 R.lineup` | rival feel |
-| offline render | `30:3194 A.renderOffline`, `30:3304 A.prerenderHit` | tests + hashes |
-| band-energy helper | `tests/pw_seq.js` `__bands` | the F13 tables |
+| offline render | `30:3200 A.renderOffline`, `30:3310 A.prerenderHit` | tests + hashes |
+| Classic switch | `30:179 A.isClassic` / `A.classic`, `11:46 settings.audioClassic`, `debug('audio').classic` | every Soundcheck path checks it |
+| stage-0 stubs | `30:3322` (`feelFor`, `feelPlan`, `tapVel`, `warm`, `realism`, `GG.dsp`, `GG.voice`) | replaced by assignment in 31 / 32 / 33 (they load after 30) |
+| contracts | `02:434` V1.2 SOUNDCHECK (`C.VEL_REF` 461 … `C.REALISM` 472) | read-only for lanes |
+| band-energy helper | `tests/pw_seq.js` `__bands`; F13 edges in `tools/_audio_lab.js` `bands()` | the F13 tables (`tools/audio_numbers.js`) |
+| classic hashes / clips | `tools/audio_hashes.js` (+ `pw_seq` `hash`), `tools/audio_clips.js`, `tools/_audio_lab.js` | see `plan/v12_stage0_report.md` |
 
 ## 3. Stage 0 (lead, one commit on `v1.2-soundcheck` before the lanes fork)
 1. **Re-audit** the §2 lines; fix this table.
