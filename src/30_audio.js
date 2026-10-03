@@ -1227,9 +1227,12 @@
   // The guitars' presence band dips 3 dB while a (non-metal) lead vocal sings (F9; metal keeps its own -6 in metalVox).
   // r.carve (Lane I): presence filters (peaking, dB) or gains (linear) of the current genre's amps: an array, an object by
   // genre, or a function (genre) -> array. Missing: nothing to carve. The resting gain is Lane I's node._base when set (else
-  // the gain read once); metal's presence nodes (r.metal.pres, also in Lane I's r.carve) stay with metalVox's own -6.
+  // the gain read once); metal's presence nodes (r.metal.pres, also in Lane I's r.carve) stay with metalVox's own -6. The
+  // flat list holds every genre's amps built on the rig: carving a silent one is harmless.
   function voxCarve(r, t, dur) {
     var L = r.carve, mp = r.metal && r.metal.pres;
+    // (the amps are built at their first note: a song's first lead line can come first, so build the genre's amps now)
+    if (!L && r.genre && r.genre !== 'metal') { try { ampRig(r, r.genre); } catch (e) {} L = r.carve; }
     if (typeof L === 'function') L = L(r.genre); else if (L && !Array.isArray(L)) L = L[r.genre];
     if (!L || !L.length) return;
     var n = 0;

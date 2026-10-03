@@ -877,10 +877,12 @@ async function vox() {
       };
       const maxDiff = (a, b) => { let d = 0; for (let ch = 0; ch < 2; ch++) { const x = a.getChannelData(ch), y = b.getChannelData(ch); for (let i = 0; i < x.length; i++) d = Math.max(d, Math.abs(x[i] - y[i])); } return d; };
       const SING = { metal: 'marcel', punk: 'rox', rock: 'chase', country: 'travis' };
-      const spec = (g, o) => Object.assign({ genre: g, pattern: GG.songs.signature(g), section: 'chorus', bars: 4, songId: 'vx1', singer: SING[g] }, o);
-      // 1) before (1.1 path) / after (Soundcheck, vel 0.85), no plate yet (GG.dsp.impulse2 missing until Lane I lands)
+      // (feel: false: Lane F's offline feel plan would replace the vel set here; no effect before Lane F lands)
+      const spec = (g, o) => Object.assign({ genre: g, pattern: GG.songs.signature(g), section: 'chorus', bars: 4, songId: 'vx1', singer: SING[g], feel: false }, o);
+      // 1) before (1.1 path) / after (Soundcheck, vel 0.85), no plate (impulse2('plate') answers null: buildVox skips the plate)
       const realImp = GG.dsp.impulse2, bufs = {};
-      delete GG.dsp.impulse2;   // pass 1 without a plate (Lane I's impulse2 or not), pass 2 with it (or a stand-in)
+      // pass 1 without a plate (Lane I's impulse2 or not; its rooms keep theirs), pass 2 with it (or a stand-in)
+      if (realImp) GG.dsp.impulse2 = function (cls) { return cls === 'plate' ? null : realImp.apply(this, arguments); }; else delete GG.dsp.impulse2;
       out.plateSrc = realImp ? 'GG.dsp.impulse2' : 'stand-in';
       for (const g of GG.contracts.GENRES) {
         velOff();
@@ -898,13 +900,17 @@ async function vox() {
         velOff();
         out.genres[g].plate = Object.assign(m(b2.buffer), { diff: +maxDiff(b2.buffer, bufs[g]).toFixed(4) });
       }
-      // 3) Classic on: vel is ignored (the 1.1 render); Classic off without vel: the 1.1 hit (the chain idle on the bus)
-      const ref = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
-      A.classic(true); velOn(0.85);
+      // 3) Classic on: vel is ignored (= Classic on without vel, the 1.1 render the hash fixture pins); Classic off without vel:
+      //    Lane V adds nothing (the chain idle on the bus = a rig built without it); without Lane I's rooms that is the 1.1 render
+      const ref = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer, BV = A._buildVox;
+      A._buildVox = null;
+      const noChain = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
+      A._buildVox = BV; A.classic(true);
+      const cl11 = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
+      velOn(0.85);
       const cl = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
       velOff(); A.classic(false);
-      const cl0 = (await A.renderOffline(spec('rock', { vocalsOnly: true }))).buffer;
-      out.checks.classicVel = maxDiff(ref, cl); out.checks.noVel = maxDiff(ref, cl0);
+      out.checks.classicVel = maxDiff(cl11, cl); out.checks.noVel = maxDiff(ref, noChain); out.checks.noVel11 = maxDiff(ref, cl11);
       // 4) vel moves the level: 0.6 vs 0.85 vs 1.0 (vocals alone, punk)
       const lv = {};
       for (const v of [0.6, 0.85, 1]) { velOn(v); lv[v] = await split(spec('rock', {})); velOff(); }
@@ -941,7 +947,8 @@ async function vox() {
     c.ok(G.every(([, x]) => x.after.b24 - x.after.rms >= x.before.b24 - x.before.rms - 3), 'the 2-4 kHz presence holds (share within 3 dB or up) ' + G.map(([g, x]) => g + ' ' + (x.before.b24 - x.before.rms).toFixed(1) + '->' + (x.after.b24 - x.after.rms).toFixed(1)).join(', '));
     c.ok(G.every(([, x]) => x.plate.diff > 0.003 && Math.abs(x.plate.rms - x.after.rms) < 1.5), 'the plate sings (renders differ, level kept) ' + G.map(([g, x]) => g + ' ' + x.plate.diff + ' / ' + (x.plate.rms - x.after.rms).toFixed(1) + ' dB').join(', '));
     c.ok(res.checks.classicVel < 1e-4, 'Classic on: vel is ignored, the 1.1 render (max diff ' + res.checks.classicVel + ')');
-    c.ok(res.checks.noVel < 1e-4, 'no vel: the 1.1 render (max diff ' + res.checks.noVel + ')');
+    c.ok(res.checks.noVel < 1e-4, 'no vel: the vocal chain adds nothing (= a rig without it, max diff ' + res.checks.noVel + ')');
+    c.ok(res.plateSrc !== 'stand-in' || res.checks.noVel11 < 1e-4, 'no vel, no Lane I rooms: the 1.1 render (max diff ' + res.checks.noVel11 + (res.plateSrc !== 'stand-in' ? ', Lane I rooms in: logged only' : '') + ')');
     c.ok(res.checks.vel[0.6] < res.checks.vel[0.85] - 1.5 && res.checks.vel[1] > res.checks.vel[0.85], 'vel sets the voice against the band (rock chorus, V/A dB by vel) ' + JSON.stringify(res.checks.vel));
     c.ok(!res.metal.set.nan && res.metal.set.peak < 0 && !res.metal.gord.nan && res.metal.gord.peak < 0, 'a metal set (Marcel) + a full song (Gord) clean ' + JSON.stringify(res.metal));
     const L = res.live;
