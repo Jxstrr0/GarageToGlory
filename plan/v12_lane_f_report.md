@@ -55,11 +55,13 @@ finished 55, the tests and this report. Files touched: `src/31_audio_feel.js` (n
 - `node tests/sim_feel.test.js`: ALL PASS 11 (velGain; feelFor null / career x 4 bands / rival / mood / studio / missing;
   determinism + purity; clamps at 60-260 bpm x 4 genres x gig/free; steps 0/1; lane order; AR(1) SD vs t; push sign;
   accent map + dynamics + ramp; tapVel table; debug).
-- `node tests/sim_audio.test.js`: ALL PASS 36 (stub asserts -> Lane F's; new "feelPlan never moves steps / keeps lane
+- `node tests/sim_audio.test.js`: ALL PASS 35 (stub asserts -> Lane F's; new "feelPlan never moves steps / keeps lane
   order at 60-260 bpm" + the 1,212 fingerprints with 31 loaded and gig / feel / studio opts).
-- Node suite: SEE_SUITE
+- Node suite `node tests/run.js`: SUITE ALL PASS (32 files).
 - `pw_gig` at 390x844: feel 10, sync 14, bridge 17 ALL PASS; at `PW_VIEW=440x956`: feel 10, sync 14, bridge 17 ALL PASS.
-- Classic hash: `ONLY=tap,pre tools/audio_hashes.js` 192/192 during work; full `pw_seq hash`: SEE_HASH
+- Classic hash: `ONLY=tap,pre tools/audio_hashes.js` 192/192 during work; full `META_ONLY=hash pw_seq`: 232/232 equal to the 1.1 fixture (230 s), ALL PASS 4.
+- Regression (390x844): pw_gig double 17, seat 33, chord 10; pw_seat_audio voices 19, mute 4, preview 9, noodle 5;
+  pw_seq seq 34, guided 23; pw_rival botb 16 (a rival set with the rival feel). No console errors anywhere.
 
 ## 4. Numbers
 - AR(1) (metal, slop 0.6, 12 seeds): onset SD 7.06 ms at t 0 (target 7.2), 1.47 ms at t 1 (target 1.5); lag-1 corr 0.668
