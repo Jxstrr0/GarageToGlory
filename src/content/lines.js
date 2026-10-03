@@ -40,13 +40,13 @@
         '{front} made us run the chorus until {door} rattled in time.',
         'Door open, full volume. Three kids on bikes stopped to listen, then rode off to be normal again.',
         "We tightened the ending. It had four endings. Now it has two, which {grumbler} calls 'a compromise'.",
-        '{soloist} counted in way too fast. We played it that fast anyway. It might be the new tempo.',
+        'The count-in from {soloist} was way too fast. We played it that fast anyway. It might be the new tempo.',
         'Two hours on one bridge. {deadpan} never said a word. The bridge is fixed.'
       ],
       write: [
-        'We built a song around your drum groove. {deadpan} nodded once. The song is finished.',
+        'We built a song around a groove you found on {instrument}. {deadpan} nodded once. The song is finished.',
         '{namer} wrote the lyrics on the back of a receipt. The receipt was for guitar strings.',
-        '{soloist} brought in a riff with nineteen parts. We kept four.',
+        'A riff from {soloist} came in with nineteen parts. We kept four.',
         'We wrote a ballad. It lasted ninety seconds before somebody sped it up.',
         'We argued about the chorus for an hour, then wrote a better one in five minutes.',
         'A riff showed up in the parking lot after rehearsal. We ran back inside before it left.'
@@ -57,7 +57,7 @@
         'We mailed the demo to three campus radio stations and one guy who says he knows a guy.',
         'We chalked the band name on the sidewalk downtown. It rained. Now it is mostly vowels.',
         "We posted a rehearsal clip. Somebody's aunt commented 'very loud, very good, eat something'.",
-        '{soloist} wrote a press release. It is mostly gear specs.'
+        'The press release is by {soloist}. It is mostly gear specs.'
       ],
       book: [
         "We called every hall in {city} from the kitchen phone. Mom took messages. She underlined 'NO' twice.",
@@ -76,7 +76,7 @@
       ],
       rest: [
         "We watched curling on somebody's TV. {deadpan} knew every rule. How.",
-        'Nobody touched an instrument all night. {soloist} touched one only nine times.',
+        'Nobody touched an instrument all night, except {soloist}, nine times.',
         'We played crokinole until midnight. Somebody flicked a disc into the kick drum.',
         'We drove out to see the grain elevators at sunset and said nothing for an hour.',
         'A lazy evening. Pizza, a movie nobody picked and a nap on the gear cases.',
@@ -276,7 +276,7 @@
         "Shh. I'm on hour seven.",
         "Stainless frets, 25.5-inch scale, 24 frets. I'm telling you because you asked.",
         'I wrote a solo for the chorus. It starts in the verse.',
-        "Your hi-hat is two milliseconds early. It's fine. It's not fine.",
+        "You were two milliseconds early in bar nine. It's fine. It's not fine.",
         'Want to hear my new pickups? You are going to hear them anyway.',
         "Ten hours a day isn't a lot. It's the minimum."
       ],
@@ -300,8 +300,8 @@
 
     guilt: [
       "Your mom asks if you've thought about night school.",
-      "Your dad leaves a Prairie Polytechnic course calendar on your snare. 'Accounting' is circled. Twice.",
-      "Your mom tells the neighbours you're 'between things'. You are between the kick drum and the floor tom.",
+      "Your dad leaves a Prairie Polytechnic course calendar on your {gear}. 'Accounting' is circled. Twice.",
+      "Your mom tells the neighbours you're 'between things'. You are between the {gear} and the fridge.",
       'Your dad hands over the cash and says nothing. The nothing is very loud.',
       "Your mom has started calling the band fund 'the other kid'.",
       "An aunt calls to ask how 'the little band' is doing. Mom told her.",
@@ -311,7 +311,7 @@
     yearEnd: [
       'Another year in {space}. Somehow everyone is still here.',
       "{front} raises a glass: 'To {band}. To next year. To a van that starts.'",
-      "Year's end. {soloist} worked out the practice hours. Nobody wanted to hear the number.",
+      "Year's end. The practice hours have been worked out by {soloist}. Nobody wanted to hear the number.",
       "{deadpan} gives a year-end nod. Everyone agrees it's the best gift they got.",
       "Mom looks at the band, looks at the band fund, and says 'Another year, eh.' It's almost a blessing."
     ],
@@ -388,7 +388,7 @@
 
     quietWeek: [
       'A quiet Monday. Suspiciously quiet.',
-      'Nothing happens. {soloist} practises. {space} hums at sixty cycles.',
+      'Nothing happens. Somebody practises. It is {soloist}. {space} hums at sixty cycles.',
       "A slow week. Somebody's mom sends soup. It's a good week.",
       '{deadpan} was spotted at the Co-op buying one lime. That is the whole news.',
       'The group chat is silent. Even {front}. Especially {front}. Something is brewing.',
@@ -519,12 +519,12 @@
       ],
       monolith: [
         'An email from Monolith Records, Toronto. Someone from A&R would "love to connect". The signature has a waterfall in it.',
-        'Monolith Records want a meeting. {front} has ironed a shirt. {soloist} has printed questions. {deadpan} is unreadable.'
+        'Monolith Records want a meeting. {front} has ironed a shirt. There are printed questions from {soloist}. {deadpan} is unreadable.'
       ]
     },
     offerExpired: [
       "The label's offer ran out. Wendell sends a card anyway: 'Door's always open.' Monolith sends nothing. That's how you can tell.",
-      'The deadline passed. The offer is gone. {front} says it was "not our destiny". {soloist} says it was "a Tuesday".'
+      'The deadline passed. The offer is gone. {front} says it was "not our destiny". According to {soloist}, it was "a Tuesday".'
     ],
     labelDropped: [
       "The label dropped you. A two-line email. {front} prints it and burns it in the barbecue. You're DIY now, like the old days.",
@@ -560,7 +560,7 @@
       'A chart debut. Mom asked what number is good. You said lower is better. She is now worried about her cholesterol.'
     ],
     chartClimb: [
-      "Up the Maple 100 this week. {soloist} made a line graph. It's going the right way for once.",
+      "Up the Maple 100 this week. There is a line graph by {soloist}. It's going the right way for once.",
       'Climbing the chart. Mom called the radio station to request it. Then called again with a different voice.'
     ],
     chartDrop: [
@@ -568,7 +568,7 @@
       "Slipping on the Maple 100. {filler} says it's 'a breather'. The chart does not breathe. The chart is a list."
     ],
     recouped: [
-      'The advance is paid back. Recouped. From now on the royalties are yours. {soloist} opened a spreadsheet just for joy.',
+      'The advance is paid back. Recouped. From now on the royalties are yours. A spreadsheet, opened by {soloist}, just for joy.',
       'Recouped! The label is even. Wendell sent a card. Monolith sent an automated email. Both count.'
     ],
     cert: {
@@ -709,7 +709,7 @@
             "We wrote a riff in drop C. Marcel screamed French over it. He says it's about the void. It's about his lawn.",
             'Dana brought in a riff with nineteen parts. We kept four. She took it well, in gear specs.',
             '{nick:marcel} wrote the lyrics on the back of a claim form. The claim was approved.',
-            'We built a song around your drum groove. Kenji nodded once. The song is finished.',
+            'We built a song around a groove you found on {instrument}. Kenji nodded once. The song is finished.',
             'Jaxon hummed the tune his baba sings while making cabbage rolls. It is in 7/8 now.',
             'We wrote a ballad. It lasted ninety seconds before Marcel turned it into a blast beat.'
           ],
@@ -749,7 +749,7 @@
           "Another year in the garage. The lawnmower has heard every song. It hasn't complained. Much.",
           "{nick:marcel} raises a glass: 'To Hail Damage. To the Abyss. To next year's lawn.'",
           "Year's end. Dana worked out she practised 3,650 hours. She'd like to get that number up.",
-          "Baba sends a card: 'Proud of Jaxon. The drummer also. The French one, we will see.'",
+          "Baba sends a card: 'Proud of Jaxon. The one on {instrument}, also. The French one, we will see.'",
           "Kenji gives a year-end nod. Everyone agrees it's the best gift they got.",
           "Dad looks at the garage, looks at the band, and says 'Another year, eh.' It's almost a blessing."
         ],
@@ -772,7 +772,7 @@
           'Wrong crowd entirely. The boots started flying in song two. You still got paid.',
           'The regulars asked for something they could two-step to. Marcel growled at them. The boots came out.',
           'Half the room left. The other half stayed out of spite. The cheque cleared.',
-          'A cowboy hat hit the snare mid-fill. You kept the hat. You earned the hat.'
+          'A cowboy hat landed on your {gear} mid-song. You kept the hat. You earned the hat.'
         ],
         venueUp: ['"Same time next month?" the owner asks. Marcel says yes before you can blink.'],
         venueBanned: ['They take an instant photo of the band on the way out. It is for the banned wall. Marcel poses anyway.'],

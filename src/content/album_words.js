@@ -181,7 +181,7 @@
         'and leaves for lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of blankets from Cousin Dale. The echo comes down to three seconds. Dana misses the other six.' },
         { label: 'Record the ringing note', effects: { production: 3, mood: { kenji: 6 } },
@@ -196,7 +196,7 @@
         { label: 'Shoo them out', effects: { burnout: 5, production: 3 },
           outcome: 'Two hours with a broom. The pigeons leave and come back in a different order. Marcel says they have changed key.' },
         { label: 'Cover the gear', effects: { fund: -40, production: 1, mood: { dana: 5 } },
-          outcome: "Tarps over everything. Dana's pedalboard survives. Your hi-hat does not. $40 and a lot of wet wipes." }
+          outcome: "Tarps over everything. Dana's pedalboard survives. The hi-hat does not. $40 and a lot of wet wipes." }
       ] },
     { id: 'studio_silo_harvest', type: 'scene', speaker: 'jaxon', title: 'Harvest Traffic', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: "A farmer still uses the other half of the elevator. Right in the middle of the ballad, a grain truck backs up to the pit, " +
@@ -284,7 +284,7 @@
           outcome: 'Kenji listens to both versions, then silently moves one chorus back. It is exactly right. Chad never calls him "the tall one" again.' }
       ] },
     { id: 'studio_lyle_combine', type: 'weird', speaker: 'jaxon', title: 'The Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: HD },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         "He did not say from whom. It is idling in the parking lot.",
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',
@@ -370,11 +370,11 @@
           outcome: "'Engineered by Walt, landlord.' He wants his whole title in the liner notes. And the strip mall's phone number." }
       ] },
     { id: 'studio_any_echo', type: 'weird', speaker: '@soloist', title: 'Nine Seconds of Reverb', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: OTHERS },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. {bassist} plays one low note, puts the bass down ' +
-        'and leaves for lunch. On Tuesday it is still faintly ringing.',
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. One low note from {bassist} hangs in the air ' +
+        'through lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of moving blankets. The echo comes down to three seconds. {soloist} misses the other six.' }
       ] },
@@ -424,7 +424,7 @@
           outcome: "You fight for the bridges and win half of them. Chad says 'love the passion'. He means it as an insult." }
       ] },
     { id: 'studio_any_combine', type: 'weird', speaker: '@filler', title: 'Kick Drum in a Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: OTHERS },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         'He did not say from whom. It is idling in the parking lot.',
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',

@@ -55,7 +55,7 @@
       leduc: { id: 'leduc', ring: 'alberta', name: 'Leduc', x: 0.5, y: 0.3, label: 'right', blurb: 'Where the oil boom started. Pumpjacks, a reservoir and the airport.' },
       red_deer: { id: 'red_deer', ring: 'alberta', name: 'Red Deer', x: 0.46, y: 0.5, label: 'left', blurb: 'Exactly halfway to everything. It knows.' },
       calgary: { id: 'calgary', ring: 'alberta', name: 'Calgary', x: 0.4, y: 0.7, label: 'left', blurb: 'Cowtown. Home of the Sad Dome.' },
-      lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your cymbals.' },
+      lethbridge: { id: 'lethbridge', ring: 'alberta', name: 'Lethbridge', x: 0.58, y: 0.9, label: 'right', blurb: 'The wind never stops. Hold on to your hat.' },
       /* ---- The West (Local Heroes) ---- */
       kelowna: { id: 'kelowna', ring: 'west', name: 'Kelowna', x: 0.2, y: 0.66, label: 'above', blurb: 'Wineries, a lake monster and your cousin\'s boat.' },
       vancouver: { id: 'vancouver', ring: 'west', name: 'Vancouver', x: 0.1, y: 0.8, label: 'right', blurb: 'It is raining. It was raining. It will be raining.', climate: 'coast' },

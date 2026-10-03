@@ -63,7 +63,7 @@
         title: 'Glove Save, Big Riff',
         offer: 'Sportsnut wants "{adsong}" under the Saturday Night Puck highlight package: glove saves, line brawls, a Zamboni at sunset. ' +
           '{adfee}. Dad heard first. He is weirdly emotional about it.',
-        take: 'A glove save lands exactly on your snare hit. The whole province hears you between periods. Dad cries a little.',
+        take: 'A glove save lands exactly on the downbeat. The whole province hears you between periods. Dad cries a little.',
         decline: 'You pass. Sportsnut uses stock music called "Hockey Rock 7". Dad will not look at you.',
         counterWin: 'Sportsnut ups it. "For the playoffs," says a producer with a whistle around his neck. He blows it when you say yes.',
         counterWalk: 'Sportsnut goes with "Hockey Rock 7". It is fine. It is so, so fine. Dad shovels the driveway angrily.',

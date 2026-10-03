@@ -12,6 +12,7 @@
 // gated seat: ['drums']; no USA places, parody names, nobody from another band.
 (function (GG) {
   var D = ['drums'];   // the drum-mechanics gate (E12)
+  var S = ['bass', 'rhythm', 'lead'];   // v1.1 Seats: the string-seat twin of the gig's lane step (Lane A; walk/write keep their drum-only steps: 54 explains your part)
   GG.content.tutorial = [
     /* ---- Week one (A15: taught by playing, by bandmates in character) ------------------------------------------ */
     { id: 'w1_card', title: 'The Monday card', when: { week: 1, screen: 'card' },
@@ -164,6 +165,7 @@
         { who: '@front', text: 'First gig. Pick the setlist: one or two songs tonight. The slow one first.', point: { testid: 'set-slots' } },
         { who: '@soloist', text: 'Notes fall down the lanes. Tap each lane as its note hits the line. Wide window tonight. Nobody here can tell.', point: { testid: 'btn-gig-start' } },
         { who: '@soloist', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Your sticks, your night.', seat: D },
+        { who: '@front', text: 'Each lane is a string: low notes left, high notes right. Long notes: hold them. Your {sticks}, your night.', seat: S },
         { who: '@front', text: '{drummer} count us in. Tap Start when you\'re ready.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
       ],
       byBand: {
@@ -171,24 +173,28 @@
           { who: 'marcel', text: 'Our first ritual. Pick the setlist: two songs. The slow one first, so the dog can settle.', point: { testid: 'set-slots' } },
           { who: 'dana', text: 'Notes fall down the lanes. Tap each lane as its note hits the line. The window is wide tonight. Twelve people won\'t notice.', point: { testid: 'btn-gig-start' } },
           { who: 'dana', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Hit them like you mean it.', seat: D },
+          { who: 'dana', text: 'Each lane is a string, low to high. Long notes are holds: keep your thumb down to the end. Like a good solo.', seat: S },
           { who: 'jaxon', text: '{drummer} count us in. hit start. i promise no fills. (fills)', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
         ] },
         frost_heave: { steps: [
           { who: 'rox', text: 'First gig. Pick the setlist: two songs. Save the scream for the second one.', point: { testid: 'set-slots' } },
           { who: 'benny', text: 'Notes fall down the lanes. Tap each lane when its note hits the line. Wide window tonight. Nobody in a basement can tell.', point: { testid: 'btn-gig-start' } },
           { who: 'benny', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Hit them hard. Like a third chord. Which I will never learn.', seat: D },
+          { who: 'benny', text: 'Each lane is a string. Low on the left. Long notes, hold them. Hit them hard. Like a second chord.', seat: S },
           { who: 'rox', text: '{drummer} count us in. Motion carried. Hit Start.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
         ] },
         gravel_kings: { steps: [
           { who: 'chase', text: 'First gig, baby! Pick the setlist: two songs. Open slow, build big. That\'s showbiz.', point: { testid: 'set-slots' } },
           { who: 'lenny', text: 'Notes fall down the lanes. Tap each lane as its note hits the line. Wide window tonight. It\'s a basement.', point: { testid: 'btn-gig-start' } },
           { who: 'tamara', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Steady. Like flossing.', seat: D },
+          { who: 'tamara', text: 'Each lane is a string, low to high. Hold the long notes all the way. Steady. Like flossing.', seat: S },
           { who: 'chase', text: '{drummer} count us in. Hit Start. Leather pants on.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
         ] },
         grid_road_ramblers: { steps: [
           { who: 'travis', text: 'First gig. Pick the setlist: two songs. Open with the sad one. Then the sadder one.', point: { testid: 'set-slots' } },
           { who: 'earl', text: 'Notes fall down the lanes. Tap each lane when its note hits the line. Wide window tonight. It\'s a tailgate.', point: { testid: 'btn-gig-start' } },
           { who: 'earl', text: 'Each lane is a piece of the kit: kick, snare, hats, crash. Keep it simple. Every great one I backed kept it simple.', seat: D },
+          { who: 'earl', text: 'Each lane is a string, low to high. Hold the long notes out. Keep it simple. Every great one I backed did.', seat: S },
           { who: 'duke', text: '{drummer} count us in. Hit Start. The hat is ready.', point: { testid: 'btn-gig-start' }, advance: { event: 'screen:open', id: 'gig' } }
         ] }
       } },

@@ -296,7 +296,7 @@
     bonusCards: [
       // Hail Damage
       bc(HD, 1, 'fame', '@front', 'The Farewell Tour (Again)',
-        'A promoter wants to book a Farewell Tour. {front} points out that you are not breaking up. The promoter points out that farewell tours sell twice as many tickets. {soloist} is already planning a farewell solo.', [
+        'A promoter wants to book a Farewell Tour. {front} points out that you are not breaking up. The promoter points out that farewell tours sell twice as many tickets. Somebody, and it is {soloist}, is already planning a farewell solo.', [
           ch('Book the farewell tour', 'Fans ↑ · Burnout ↑', { fans: 300, buzz: 10, burnout: 12 }, 'You say goodbye in fourteen cities. Then you come home and rehearse on Tuesday like always. The fans are thrilled and confused.'),
           ch('Tell the truth: we are not done', 'Chemistry ↑ · Buzz ↓', { chemistry: 6, buzz: -4 }, 'The promoter sighs and books a "See You Later" tour instead. It sells half as well. Everyone sleeps better.')
         ]),
@@ -306,7 +306,7 @@
           ch('Gigs only, no garage', 'Buzz ↑ · Mood ↑', { buzz: 8, mood: { all: 4 } }, 'The documentary is two hours of live footage and one shot of the garage door, closed. Critics call it "mysterious". {front} calls it a triumph.')
         ]),
       bc(HD, 3, 'weird', '@front', 'Reunion Rumours',
-        'Somebody online says {band} broke up years ago and this is a tribute act. {front} is furious. {soloist} is mostly flattered that the tribute act is this good.', [
+        'Somebody online says {band} broke up years ago and this is a tribute act. {front} is furious. The rest of the band is mostly flattered that the tribute act is this good.', [
           ch('Post a photo from rehearsal', 'Buzz ↑', { buzz: 8 }, 'You post a photo from {space}. The comments decide it is a very convincing tribute act. You stop reading the comments.'),
           ch('Play a surprise show at home', 'Fans ↑ · Fund ↓', { fans: 150, fund: -600, mood: { all: 5 } }, 'You book the legion hall back home under a fake name. Four hundred people figure it out by noon. The tribute act rumour dies on the spot.')
         ]),

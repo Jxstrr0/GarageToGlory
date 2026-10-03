@@ -103,17 +103,20 @@ test('epilogues: every original of every band has a variant beyond the shipped d
       ok(v.when && Object.keys(v.when).length && Object.keys(v.when).every(k => WHEN_KEYS.includes(k)), w + ': WHEN keys');
       if (v.when.minTier) ok(C.ENDING_TIERS.includes(v.when.minTier), w + ': minTier');
       if (v.when.special) ok(C.SPECIAL_ENDINGS.includes(v.when.special), w + ': special');
-      ok(!('seatRole' in v.when), w + ': no seatRole variants in v1.0 (v1.1 Seats adds them)');
+      // v1.1 Seats: a seatRole variant is the swapped drummer's ('drums' / 'drums/vocals'), only for a member a seat swaps
+      if ('seatRole' in v.when) ok([].concat(v.when.seatRole).every(r => /^drums/.test(r)) && Object.values(BANDS).some(b => b.seats && Object.values(b.seats).includes(id)), w + ': seatRole = the swapped drummer');
       ok(str(v.text) && v.text !== d.epilogue, w + ': text');
     });
   });
   Object.keys(E.epilogues).forEach(id => ok(ORIGINALS.includes(id), 'epilogues.' + id + ' is an original'));
-  const first = id => E.epilogues[id][0].when;
+  // v1.1 Seats: the swapped drummer's variant (when.seatRole) sits before the generic entries; the v1.0 order is the rest
+  const v10 = id => E.epilogues[id].filter(v => !v.when.seatRole);
+  const first = id => v10(id)[0].when;
   eq(first('marcel'), { flag: 'cape', notValues: ['none'] }, 'Marcel: the cape shop');
   eq(first('dana'), { inLineup: true, minTier: 'cult_heroes' }, 'Dana: the solo finally ends');
   eq(first('jaxon'), { minTier: 'canadian_institution' }, 'Jaxon: Baba becomes the manager');
   eq(first('kenji'), { minTier: 'cult_heroes' }, 'Kenji: a new bass every Christmas (else the shipped blank postcard)');
-  ok(/bass/.test(E.epilogues.kenji[0].text) && /Christmas/.test(E.epilogues.kenji[0].text) && /cape shop/i.test(E.epilogues.marcel[0].text), 'the A14 lines');
+  ok(/bass/.test(v10('kenji')[0].text) && /Christmas/.test(v10('kenji')[0].text) && /cape shop/i.test(v10('marcel')[0].text), 'the A14 lines');
   ok(E.epilogues.rox.some(v => v.when.flag === 'council') && E.epilogues.lenny.some(v => v.when.flag === 'riff') && E.epilogues.travis.some(v => v.when.flag === 'truckStory'),
     'storyline variants: council (Rox), riff (Lenny), truckStory (Travis Lee)');
 });
@@ -126,8 +129,8 @@ test('recruits (>= 2 per trait, 1 per quirk, 4 generic), defectors (any + per ri
   ok(E.recruits.any.length >= 4 && E.recruits.any.every(x => str(x)), '4 generic');
   ok(E.defectors.any.length >= 2 && E.defectors.any.every(x => /\{rival\}/.test(x)), 'defectors name {rival}');
   BAND_IDS.forEach(b => ok((E.defectors.byRival[BANDS[b].rival] || []).length >= 1, b + ': its rival\'s defector lines'));
-  eq(Object.keys(E.player), ['drums'], 'player cards keyed by seat (drums only in v1.0)');
-  eq(Object.keys(E.player.drums).sort(), C.ENDING_TIERS.slice().sort(), 'a player card for every tier');
+  eq(Object.keys(E.player).sort(), C.SEATS.slice().sort(), 'player cards keyed by seat (v1.1: every seat)');
+  C.SEATS.forEach(seat => eq(Object.keys(E.player[seat]).sort(), C.ENDING_TIERS.slice().sort(), seat + ': a player card for every tier'));
   ['you', 'rival', 'none'].forEach(k => ok(E.rival[k].length >= 1 && E.rival[k].every(x => str(x)), 'rival.' + k));
   BAND_IDS.forEach(b => ok(E.rival.byRival[BANDS[b].rival], b + ': rival.byRival.' + BANDS[b].rival));
 });

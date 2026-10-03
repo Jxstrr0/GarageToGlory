@@ -71,14 +71,14 @@
     ],
     win: [
       '{front} is already on stage. Nobody saw anybody move.',
-      '{soloist} hugs the trophy like a vintage amp. {filler} calls home from the stage.',
+      'Nobody can get the trophy off {soloist}. {filler} calls home from the stage.',
       '{deadpan} stands, buttons a jacket and nods once. The arena goes quiet out of respect.',
       'Your mom stands on her chair. An usher asks her to sit. She does not sit.'
     ],
     lose: [
       '{front} applauds the winners with the whole body, which is a lot of applause.',
       '{filler} texts home: "we lost". Home: "you are winners to me. also you forgot your lunch".',
-      '{soloist} whispers that the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
+      'According to {soloist}, the winners\' guitarist uses a cheap tuner. It does not help. It helps a little.',
       '{deadpan}\'s expression does not change. Somehow you feel better.'
     ],
     // v0.9: the red-carpet chat per band (was 59c's FB.carpet); speakers may be role aliases. Packs add their bands.
@@ -199,7 +199,7 @@
         'the microphone. Kenji takes two steps back. You have thirty seconds before the music plays you off.',
       choices: [
         { label: 'Thank your mom', effects: { fans: 120, chemistry: 6, mood: { all: 6 }, chat: { who: 'mom', text: 'I was the one crying in row M. The man beside me cried too.' } },
-          outcome: "You thank your mom for the garage, the loan and the pizza pops. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'." },
+          outcome: "You thank your mom for the garage, the loan and the pizza pops. The camera finds her in row M, holding a sign: 'THAT'S MY KID'." },
         { label: 'Thank the moose', effects: { buzz: 14, fans: 80, flags: { mooseMuse: true } },
           outcome: "'And most of all... the moose.' Silence. Then someone yells 'THE MOOSE!' and the arena chants it. Marcel weeps. He knows which moose." },
         { label: 'Take a shot at Tundra Wraith', hint: 'Gamble: roast, or roasted',

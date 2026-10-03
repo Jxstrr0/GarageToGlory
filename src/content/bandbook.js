@@ -116,7 +116,7 @@
     },
     viral: {
       good: [
-        'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
+        'VIRAL: {player} falls off the drum riser mid-song and finishes {yourPart} lying on the floor. {views} views.',
         'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
       // who: a member id, a role alias ('@front') or 'any'. GG.fans reads pool('viral') as one object, so a layer's cringe
@@ -241,7 +241,7 @@
       ]
     },
     mail: [
-      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
+      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started {instrument} because of you. My parents would like a word."' },
       { id: 'mail_nan', from: 'someone\'s nan in Melfort', text: '"Too loud. Lovely kids. Enclosed: a doughnut-hole coupon from 1998." It\'s expired. It\'s perfect.' },
       { id: 'mail_poem', from: 'a poet in Biggar', band: ['hail_damage'], text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
       { id: 'mail_teacher', from: 'a music teacher in Unity', text: '"My students now play everything at double speed. Thank you. I think."' },
@@ -254,7 +254,7 @@
       { id: 'abyssus_doll', from: 'a crocheter in Kindersley', band: ['hail_damage'], text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
       { id: 'pizza_art', from: 'an art student in Regina', text: 'Fan art on a pizza box: the band as gophers. It\'s accurate.' },
       { id: 'casserole', from: 'somebody\'s grandma', text: 'A frozen casserole with no note. Just "EAT" in marker on the foil.' },
-      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
+      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of {sticks} signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
     ],
     scriptedGifts: {
       macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },

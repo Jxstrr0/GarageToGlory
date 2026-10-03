@@ -144,7 +144,7 @@
         look: look('#8d5a3b', '#0f0f12', 'cap', '#3fbf7f', '#2b2b33', 1.06, 1.0, ['hat'], 'hoodie'), corpsePaint: false, stageShirt: '#3fbf7f' },
       { id: 'mr_brody', name: 'Brody', short: 'Brody', fullName: 'Brody Van Alstyne', nick: 'The Jaw', role: 'drums', lane: 'back',
         dayJob: 'Model (jawline)',
-        bio: 'Chosen by a focus group for his jawline. Plays to a click track the network owns. Nods at you, drummer to drummer, then checks his angles in the cymbal.',
+        bio: 'Chosen by a focus group for his jawline. Plays to a click track the network owns. Nods at you, one professional to another, then checks his angles in the cymbal.',
         gags: ['The jawline has its own lighting cue.', 'Plays a skate-punk beat he learned from a tutorial, perfectly, forever.',
           'Brought a stylist to soundcheck. For the kit.'],
         look: look('#e8c4a0', '#6b4a2c', 'short', '#f2f2f2', '#22222a', 1.05, 1.05, [], 'tee'), corpsePaint: false, stageShirt: '#f2f2f2' }
@@ -240,7 +240,7 @@
       final: ["Blaze: \"Calgary! This is for everybody who voted in the app!\""],
       opening: ["Afterwards Siobhan hands you her card. It says 'Let's talk'. It always says that."]
     },
-    openingSlot: ["Afterwards Blaze shakes your hand for the cameras. Siobhan asks if your drummer does sponsorships. You are the drummer.",
+    openingSlot: ["Afterwards Blaze shakes your hand for the cameras. Siobhan asks who plays {instrument}. You do. She asks if you do sponsorships.",
       "After the set Siobhan offers to 'elevate your look'. Moth hides the van keys."],
 
     ui: {
@@ -590,7 +590,7 @@
       text: "Upstairs, dryer number four thumps at exactly 190 beats per minute when it has sneakers in it. Moth has noticed. " +
         "She wants to tune the whole band to dryer four. Rox wants to know who owns the sneakers.",
       choices: [
-        { label: 'Rehearse to dryer four', hint: 'Drum skill ↑', effects: { drumSkill: 1, chemistry: 2 },
+        { label: 'Rehearse to dryer four', hint: 'Your chops ↑', effects: { drumSkill: 1, chemistry: 2 },
           outcome: 'Three hours locked to a load of sneakers. Your eighth notes have never been tighter. The sneakers are very clean.' },
         { label: 'Buy the sneakers ($25)', hint: '−$25 · Moth ↑', effects: { fund: -25, mood: { moth: 6 } },
           outcome: 'The sneakers now live in the basement and go in the dryer before every rehearsal. They are a band member, sort of.' },
@@ -618,7 +618,7 @@
         { label: 'Knock. Wait. Knock again.', hint: 'Moth ↑', effects: { mood: { moth: 8 } },
           outcome: 'Moth opens the door in a housecoat, hands you the cymbals and a cup of tea, and closes the door. It was a lovely visit.' },
         { label: 'Rehearse without cymbals', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 2, drumSkill: 1 },
-          outcome: 'You play the whole set on the hi-hat. It is very punk. Rox says crashes are "a bourgeois luxury" and means it.' },
+          outcome: 'The band plays the whole set on the hi-hat. It is very punk. Rox says crashes are "a bourgeois luxury" and means it.' },
         { label: 'Climb in the window', hint: 'Moth ↓↓', effects: { mood: { moth: -10 }, burnout: 3 },
           outcome: 'You land in her sock drawer. It is also her kitchen. Moth does not speak to you until Thursday. She changes the locks. On a van.' }
       ] },
@@ -665,7 +665,7 @@
         { label: 'Everybody folds', hint: 'Chemistry ↑ · Rox ↓', effects: { chemistry: 4, mood: { rox: -4 } },
           outcome: 'Forty towels, one hour, one argument about corners. Rox folds hers into tiny fists. Irma says it is acceptable.' },
         { label: 'You fold. Alone.', hint: 'Burnout ↑ · Everyone ↑', effects: { burnout: 5, mood: { all: 3 } },
-          outcome: 'You fold every towel while the band rehearses without drums. It is weirdly relaxing. Moth brings you a clean one.' },
+          outcome: 'You fold every towel while the band rehearses without you. It is weirdly relaxing. Moth brings you a clean one.' },
         { label: 'Pay Irma $20 instead', hint: '−$20 · Rox ↑', effects: { fund: -20, mood: { rox: 5 } },
           outcome: 'Irma takes the money and says principles are expensive. Rox agrees. Rox says that is the whole point.' }
       ] },
@@ -1037,7 +1037,7 @@
         { label: 'Over by eleven', hint: 'Moth ↑ · Burnout ↓', effects: { mood: { moth: 6 }, burnout: -4 },
           outcome: 'The set ends at 10:58. Moth is home at 10:59. She blinks the van\'s headlights twice: good night.' }
       ] },
-    { id: 'fh_drama_moth_home', type: 'drama', speaker: 'moth', title: 'Moth Stayed Home', once: false, cooldown: 8, gate: g({ era: GLS, minWeek: 6 }),
+    { id: 'fh_drama_moth_home', type: 'drama', speaker: 'moth', title: 'Moth Stayed Home', once: false, cooldown: 8, seat: ['drums', 'rhythm', 'lead'], gate: g({ era: GLS, minWeek: 6 }),
       text: "Moth has not come down for rehearsal. She is home. Home is the van, parked forty feet from the basement door, lights on, curtains " +
         "drawn. There is a note on the door: 'NOT TODAY. BASS PARTS ARE THE SAME AS LAST TIME.'",
       choices: [
@@ -1706,7 +1706,7 @@
         { label: 'Not yet', effects: { mood: { rox: -4 } },
           outcome: 'Rox tapes the design to the basement wall. It watches you rehearse. It is, metaphorically, on fire.' }
       ] },
-    { id: 'shop_pawn_kit_frost_heave', type: 'money', speaker: 'moth', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit_frost_heave', type: 'money', speaker: 'moth', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Moth texts a photo from the pawn shop on Dewdney: a five-piece kit, shells that almost match, $800. Then: 'guy says $650 today. " +
         "the milk crate has to go. it's been in my van for a month.'",
       choices: [
@@ -1733,16 +1733,16 @@
         { label: 'Keep the old van', effects: { chemistry: 2, mood: { moth: 3 } },
           outcome: 'A skate crew buys the church van instead. Moth pats the Pothole\'s dashboard all the way home.' }
       ] },
-    { id: 'shop_solo_frost_heave', type: 'drama', speaker: 'benny', title: 'Benny Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo_frost_heave', type: 'drama', speaker: 'benny', title: 'Benny Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: "Benny has written a solo. It is both of his chords, alternating, very fast, for eight bars. He will only play it if the songs " +
-        "get a real solo section. He is holding your sticks hostage. He is also holding the setlist hostage.",
+        "get a real solo section. He is holding your {sticks} hostage. He is also holding the setlist hostage.",
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Benny ↑', effects: { mood: { benny: 8 }, shop: { section: 'solo' } },
-          outcome: 'Benny returns your sticks and plays you the solo. Chord one. Chord two. Chord one. It is, somehow, exhilarating.' },
+          outcome: 'Benny returns your {sticks} and plays you the solo. Chord one. Chord two. Chord one. It is, somehow, exhilarating.' },
         { label: 'Only with a stage dive', hint: 'Solo unlocked · Benny ↑ · Rox ↑', effects: { mood: { benny: 5, rox: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'His solo, her dive, the same eight bars. Nobody watches Benny. Benny prefers it that way. Everyone is happy, loudly.' },
         { label: 'No solos in this band', hint: 'Benny ↓↓', effects: { mood: { benny: -10 } },
-          outcome: 'Benny returns the sticks. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
+          outcome: 'Benny returns the {sticks}. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
       ] },
     { id: 'shop_space_1_frost_heave', type: 'money', speaker: 'rox', title: 'A Room With a Lock', gate: g({ era: LSW }),
       text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $60 a week, no dryers. Irma is " +
@@ -1925,7 +1925,7 @@
         { label: 'Audition first', effects: mfx({ mood: { rox: -8 }, skill: { rox: 2 } }, 'rox', 'return'),
           outcome: 'She auditions with a nine-minute song about parking appeals. She gets the gig. She would like it noted that she was nervous.' },
         { label: 'Not yet, Rox', effects: mfx({ mood: { rox: -5 } }, 'rox', 'later'),
-          outcome: 'Rox leaves the nameplate on your snare and sits in the laundromat for weeks, filing complaints about the wait.' }
+          outcome: 'Rox leaves the nameplate on your {gear} and sits in the laundromat for weeks, filing complaints about the wait.' }
       ] },
     { id: 'ret_rox_filled', type: 'drama', speaker: 'rox', title: 'Point of Order',
       text: "Rox is back, nameplate under one arm. {recruit} is at her mic, holding her megaphone. 'Point of order,' Rox says, very quietly. " +
@@ -2042,7 +2042,7 @@
         'VIRAL: Moth fixes the van\'s alternator with a coat hanger in eleven seconds, in the rain, without a word. {views} views.',
         'VIRAL: a whole laundromat sings the chorus while the dryers keep time. {views} views.',
         'VIRAL: the band plays on top of an actual frost heave while traffic launches over it. {views} views.',
-        'VIRAL: {player} counts in so hard the drumstick flies into a dryer and keeps spinning. {views} views.',
+        'VIRAL: {player} counts in so hard one of the {sticks} flies into a dryer and keeps spinning. {views} views.',
         'VIRAL: Rox heckles a city council livestream from the gallery and the mayor answers her, live. {views} views.',
         'VIRAL: Benny teaches a room of forty kids both chords in ninety seconds. The kids start a band on the spot. {views} views.',
         'VIRAL: a news crew knocks on the van. Moth opens the curtain one inch, says "no", closes it. {views} views.'
@@ -2536,7 +2536,7 @@
       choices: [
         { label: 'Put her on speaker', hint: 'Chemistry ↑ · Moth ↑', effects: { chemistry: 4, mood: { moth: 6 } },
           outcome: 'Moth talks you through three towns. She knows every pothole. The band cheers when she says "left, now". It is like she never left.' },
-        { label: "Tell her you've got it", hint: 'Moth ↓ · Drum skill ↑', effects: { mood: { moth: -5 }, drumSkill: 1 },
+        { label: "Tell her you've got it", hint: 'Moth ↓ · Your chops ↑', effects: { mood: { moth: -5 }, drumSkill: 1 },
           outcome: 'You have got it, mostly. The brakes pull left. You pull right. It is a partnership now, you and her van.' },
         { label: 'Pull over and listen', hint: 'Van ↑', effects: { burnout: 3, van: { condition: 4 } },
           outcome: 'Moth diagnoses a loose belt over the phone from the sound alone. You tighten it. She hangs up without saying goodbye. That is love.' }
@@ -2635,7 +2635,7 @@
           outcome: 'Four people leaning in unison for eighty kilometres. It does nothing. It feels like it does everything.' },
         { label: 'Wait it out at a café', hint: '−$25 · Burnout ↓', effects: { fund: -25, burnout: -5 },
           outcome: 'Pie and coffee in a small-town café while the wind screams. The waitress says it is "a bit breezy". It is 90 km/h.' },
-        { label: 'Push on. Hold the line.', hint: 'Van ↓ · Drum skill ↑', effects: { drumSkill: 1, van: { condition: -3 } },
+        { label: 'Push on. Hold the line.', hint: 'Van ↓ · Your chops ↑', effects: { drumSkill: 1, van: { condition: -3 } },
           outcome: 'You make it. The side mirror does not. Moth, if she is there, is already sketching a replacement out of a hubcap.' }
       ] }
   ]);
@@ -2726,7 +2726,7 @@
       text: "The producer's click track tops out at 220 BPM. The new song is 236. The producer says it is 'not a tempo, it is a medical event'. " +
         "Benny says the song has two chords so it is 'basically half as fast'. That is not how tempo works.",
       choices: [
-        { label: 'Record without a click', hint: 'Drum skill ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
+        { label: 'Record without a click', hint: 'Your chops ↑ · Production ↑', effects: { drumSkill: 1, production: 3 },
           outcome: 'You count it in off the dryer thump in your head. It speeds up by the end. It sounds like a riot. It is the single.' },
         { label: 'Slow it to 220', hint: 'Production ↑ · Benny ↓', effects: { production: 2, mood: { benny: -4 } },
           outcome: 'At 220 it sounds like a ballad to the band. To everyone else, still a medical event. The producer is relieved.' },
@@ -2783,7 +2783,7 @@
         { label: 'Matching sashes for all', hint: 'Gamble: a campaign or a costume',
           outcome: 'Moth sews four sashes in the van on the way to the show.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
-            success: { effects: ofx({ buzz: 12, fans: 120 }, 'sash'), outcome: "VOTE ROX, VOTE BENNY, VOTE MOTH, VOTE DRUMS. A fashion site calls it 'municipal chic'." },
+            success: { effects: ofx({ buzz: 12, fans: 120 }, 'sash'), outcome: "VOTE ROX, VOTE BENNY, VOTE MOTH, VOTE {player}. A fashion site calls it 'municipal chic'." },
             fail: { effects: ofx({ buzz: 4, burnout: 5 }, 'sash'), outcome: 'The sashes are mistaken for a pageant. Someone hands Benny a tiara. He keeps it.' } } },
         { label: 'Just the jacket', hint: 'Chemistry ↑', effects: ofx({ chemistry: 3, fans: 80 }, 'jacket'),
           outcome: 'The jacket with every safety pin. Classic. Rox keeps the sash in her pocket, just in case someone asks. Someone asks.' }
@@ -2862,7 +2862,7 @@
   merge(obj(band(SH), 'lines'), {
     outro: [{ who: 'benny', text: 'what if the song ended. on purpose. on chord two. with a big crash' },
       { who: 'rox', text: 'An outro. Every good meeting needs an adjournment. Motion to end loud.' }],
-    solo: [{ who: 'benny', text: 'solo section unlocked. you play the beat. i play both chords. fast' }],
+    solo: [{ who: 'benny', text: 'solo section unlocked. you play {yourPart}. i play both chords. fast', seat: ['drums', 'bass', 'rhythm'] }],
     misprintCollector: [{ who: 'benny', text: 'there is a fan page for FROST HEAVY shirts now. the box behind dryer six is worth money. i said this' }],
     move: [{ who: 'rox', text: 'A real room. With a lock. Irma says she will miss the noise. Irma is lying. Irma is crying.' }],
     van: [{ who: 'moth', text: 'New van. I moved in last night. Knock first. Same rules. Bigger kitchen.' }],
@@ -3140,15 +3140,15 @@
       noSolo: ['no solo? good. solos have too many notes', "cool, no room for a solo. i'll play chord two where it would've been",
         'no solo section. finally someone gets it'],
       solo: ["a solo section. i'll play both chords. alternating. fast", 'eight bars of solo. chord one, chord two, chord one, chord... two'],
-      custom: [{ when: 'difficultyHigh', text: 'this is hard. hard songs need more chords. i refuse. play it easier' },
-        { when: 'difficultyHigh', text: "too many notes on the kit. i'm protesting with fewer notes on the guitar" },
-        { when: 'any', text: 'i played it with two chords. it works. it always works' }]
+      custom: [{ when: 'difficultyHigh', text: 'this is hard. hard songs need more chords. i refuse. play it easier', seat: ['drums', 'bass', 'rhythm'] },
+        { when: 'difficultyHigh', text: "too many notes on the kit. i'm protesting with fewer notes on the guitar", seat: ['drums', 'bass', 'rhythm'] },
+        { when: 'any', text: 'i played it with two chords. it works. it always works', seat: ['drums', 'bass', 'rhythm'] }]
     },
     moth: {
       fills: ['(Moth played a fill. One note. It was the right one.)', "Put a little bass run in bar 12. Don't make it weird.", 'Snuck a note into the verse. It lives there now.'],
       great: ['(Moth nods. Then she lets you ride in the front seat. The front seat.)', "That's a good one. I'll play it in the van.",
         '(Moth taps the dash twice. The highest honour in the Pothole.)'],
-      custom: [{ when: 'similarityHigh', text: 'Sounds like the last one. Same bassline works. Efficient.' },
+      custom: [{ when: 'similarityHigh', text: 'Sounds like the last one. Same bassline works. Efficient.', seat: ['drums', 'rhythm', 'lead'] },
         { when: 'any', text: '(Moth writes the title on the van ceiling with the others.)' }]
     }
   });
@@ -3238,7 +3238,7 @@
         'Benny wrote a riff. It has two chords. They are the same two chords. It is new, somehow.',
         'We wrote a song about the pothole on Dewdney. It is eighty seconds long. So is the pothole.',
         'Moth wrote one bass line and said "done". It was done.',
-        'We built a song around your drum groove. Rox found a bylaw that fits the rhythm.',
+        'We built a song around a groove you found on {instrument}. Rox found a bylaw that fits the rhythm.',
         'We tried a ballad. It lasted forty seconds before Rox turned it into a protest.'],
       promote: ['We stapled flyers to every pole on Albert Street. Rox stapled one to a council notice. It stayed up.',
         'Rox did a "public comment" on the campus radio call-in show. It was about the band. Mostly.',
