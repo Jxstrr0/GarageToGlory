@@ -173,6 +173,11 @@
   function P() { return prefs || loadPrefs(); }
   function busGain(bus) { var v = P().mix[bus]; v = v == null ? 1 : v; return v * v; }   // squared: the slider feels even
   A.isMuted = function () { if (muted === null) muted = !!settings().muted; return muted; };
+  // v1.2 "Soundcheck" (F3.1): the Classic switch (settings.audioClassic; hidden, debug only: owner F16.4). On, every Soundcheck
+  // path is bypassed and the 1.1 sound plays byte for byte (tests/fixtures/audio_v11_hashes.json). Cached; applySettings re-reads.
+  var classic = null;
+  A.isClassic = function () { if (classic === null) classic = !!settings().audioClassic; return classic; };
+  A.classic = function (on) { if (on === undefined) return A.isClassic(); classic = !!on; persist({ audioClassic: classic }); return classic; };
   function lcg(s) { return (s * 16807) % 2147483647; }
   // One second of white noise per context, shared by every noisy sound.
   function noiseBuffer(c) {
@@ -271,7 +276,7 @@
   A.toggleMetronome = function () { return A.setMetronome(!A.metronome()); };
   // Settings changed elsewhere (the settings screen, a loaded save): re-read mix, metronome, brushes and mute.
   A.applySettings = function () {
-    loadPrefs(); muted = null;
+    loadPrefs(); muted = null; classic = null;
     applyMix();
     if (master) master.gain.setTargetAtTime(A.isMuted() ? 0 : 1, ctx.currentTime, 0.02);
     refreshSoon();
@@ -530,6 +535,7 @@
       r.drumSend = gainNode(c, 0, r.send); r.busDrums.connect(r.drumSend);
       r.bandSend = gainNode(c, 0, r.send); r.busBand.connect(r.bandSend);
     }
+    if (A._buildVox && !A.isClassic()) A._buildVox(r);   // v1.2 Lane V: the vocal chain (Classic: the 1.1 vox path)
     return r;
   }
   function setKit(r, genre, tier) {
@@ -3311,8 +3317,22 @@
     return oc.startRendering();
   };
 
+  // ---- v1.2 "Soundcheck" stage-0 stubs (contract §3.7): each returns the 1.1 behaviour. Lanes replace them by assignment in
+  // 31_audio_feel.js (feelFor, feelPlan, tapVel: F), 30 / 32_audio_dsp.js (warm, realism, GG.dsp: I), 33_audio_voice.js (GG.voice: V).
+  A.feelFor = function () { return null; };
+  A.feelPlan = function () { return null; };
+  A.tapVel = function () { return undefined; };
+  A.warm = function () { return Promise.resolve(); };
+  A.realism = function (tier) {
+    var T = C.REALISM || [];
+    tier = tier == null ? A.kitQuality() : tier | 0;
+    return T[Math.max(0, Math.min(T.length - 1, tier))] || null;
+  };
+  GG.dsp = GG.dsp || {};
+  GG.voice = GG.voice || {};
+
   GG.registerDebug('audio', function () {
-    return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), voices: voices, playing: A.isPlaying(),
+    return { state: ctx ? ctx.state : 'none', muted: A.isMuted(), classic: A.isClassic(), voices: voices, playing: A.isPlaying(),
       songVoices: rig ? rig.busy.filter(function (e) { return e > ctx.currentTime; }).length : 0,
       bandVoices: rig ? rig.band.filter(function (e) { return e > ctx.currentTime; }).length : 0,
       steps: stepCount, lastStep: lastStep, style: current ? current.style : null, key: current && current.key ? current.key.name : null,

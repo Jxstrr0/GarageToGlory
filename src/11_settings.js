@@ -6,7 +6,8 @@
 //   Settings keys (GG.save.settings()): gigDifficulty, noteSpeed, noFail, autoKick, audioProfile, calib { speaker|headphones:
 //     { audio, visual, at } }, calibSeen, lefty, colourblind, bigText, reducedFlash, cameraShake, graphics, skipVan,
 //     fastAnim, songwriterMode ('guided'|'advanced', v0.6.2) (+ lane A's mix, metronome, brushes; muted),
-//     drumSync (v0.8.3, default true), syncDisp (v0.8.3, ms 10..40: this device's touch dispatch p90, default 25).
+//     drumSync (v0.8.3, default true), syncDisp (v0.8.3, ms 10..40: this device's touch dispatch p90, default 25),
+//     audioClassic (v1.2, default false: the 1.1 sound; hidden, debug-only via GG.audio.classic(bool), owner F16.4).
 //     calib profiles also keep vat (v0.8.3: when the light check last wrote `visual`; 0 = never measured).
 //   v0.8.3 drum sync helpers (pure, seconds; 55_ui_gig): SYNC { M, LEAD, DISP0, DISP_MIN, DISP_MAX, SNAP_EARLY, VIS0, MIN_N } ;
 //     syncLead(disp) -> K = clamp(disp) + LEAD + M (the game clock runs D = latency + K ahead of the band) ;
@@ -42,6 +43,7 @@
     s.cameraShake = s.cameraShake !== false;
     s.drumSync = s.drumSync !== false;                                // v0.8.3: default on
     s.syncDisp = U.clamp(Math.round(num(s.syncDisp, 25)), 10, 40);   // v0.8.3: ms, this device's touch dispatch p90
+    s.audioClassic = !!s.audioClassic;                                // v1.2: the Classic sound (hidden; GG.audio.classic)
     if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2: the Write flow's step-by-step screens (default)
     return s;
   };
