@@ -116,7 +116,7 @@
           changed: 'Back from being grounded. Baba approves (for now) and packs lunches for the whole band.',
           backLine: { who: 'baba', text: 'I heard you on the radio. It was loud. Jaxon may come back. Home by ten. — Baba' }
         },
-        epilogue: "Jaxon becomes a guitar teacher. Every student learns a sneaky fill. Baba approves."
+        epilogue: "Jaxon becomes a music teacher. Every student learns a sneaky fill. Baba approves."
       },
 
       kenji: {
@@ -127,7 +127,7 @@
           '(Kenji reacted 😐 to the pay sheet.)'
         ],
         passive: [
-          '(Kenji sent a photo of his bass case. It is closed.)',
+          '(Kenji sent a photo of his gear case. It is closed.)',
           "(Kenji changed the group name to 'Hail Damage (for now)'.)",
           '(Kenji sent a photo of the highway. No caption. Westbound.)'
         ],

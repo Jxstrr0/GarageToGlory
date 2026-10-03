@@ -69,11 +69,11 @@ function stringSeatGate(o) {
   return false;
 }
 const AWARE_KEYS = ['bySeat', 'kit', 'seatLines', 'drummerGear', 'drummers', 'swappedLines'];
-function seatAware(GG) {
+function seatAware(GG, any) {   // any: every seat-aware string (the old-instrument scan), not only the drum-word ones
   const out = [], seen = new Set();
   (function walk(v, aware, depth) {
     if (depth > 14 || v == null) return;
-    if (typeof v === 'string') { if (aware && /\s/.test(v) && drumWords(v) && !seen.has(v)) { seen.add(v); out.push(toRe(v)); } return; }
+    if (typeof v === 'string') { if (aware && /\s/.test(v) && (any || drumWords(v)) && !seen.has(v)) { seen.add(v); out.push(toRe(v)); } return; }
     if (typeof v !== 'object') return;
     const here = aware || stringSeatGate(v);
     if (Array.isArray(v)) { v.forEach(x => walk(x, here, depth + 1)); return; }
@@ -94,4 +94,41 @@ function leak(text, aware) {
   LEFT_RE.forEach(re => { re.lastIndex = 0; t = t.replace(re, ' '); });
   return drumWords(t) ? word(t) || 'drum word' : null;
 }
-module.exports = { WORDS, TOMS, HARD, drumWords, word, LEFT, seatAware, leak, toRe, stringSeatGate };
+// v1.1 review: the swapped member's OLD instrument. On a string seat the member whose seat you took plays the drums, so a
+// sentence that names them (first name or nickname) next to their old instrument's words is a leak ("Kenji packs his bass",
+// "Benny puts his guitar down") unless the text is seat-aware (written for a string seat) or an OLD_LEFT phrase.
+const OLD_WORDS = { bass: /\b(bass|basses|bassist|bass ?lines?)\b/i,
+  guitar: /\b(guitars?|guitarist|solos?|riffs?|chords?|pedalboard|pedals|strap|7-string|frets?|acoustic)\b/i };
+const OLD_LEFT = [
+  'drum solo', 'Drum solo', 'Benny Two Chords', 'Two Chords',   // a solo on the kit; Benny's nickname
+  // "solo" = alone / the section / a solo career; someone else's guitar; the player's own seat ({seat}, "the one on guitar")
+  'Solo unlocked', 'does the interview solo', 'goes solo', 'a solo project', 'a solo career', 'Send Dana, solo', "Lenny's solo, Chase's slide",
+  "the winners' guitarist", 'Air guitar', 'a small circle labelled', 'the one on guitar', 'names it "Lenny',
+  // Rox and Benny's two chords on the rhythm seat (Benny still plays them)
+  "chord one is 'outrage' and chord two is 'more outrage'",
+];
+// Words that are a member's songwriting, not their instrument: Benny's two chords (he still writes two-chord songs from the
+// kit), Lenny's riffs (he still writes them; the lawsuit cards where he PLAYS them on guitar are gated off the lead seat).
+const OLD_SKIP = { benny: /^chords?$/i, lenny: /^riffs?$/i };
+const OLD_LEFT_RE = OLD_LEFT.map(p => new RegExp(esc(p), 'g'));
+// names: RegExp of the swapped member's first name / nickname; kind 'bass' | 'guitar' (the seat you took).
+function oldLeak(text, names, kind, aware, id) {
+  let t = String(text || '');
+  if (!names || !/\s/.test(t) || !names.test(t) || !OLD_WORDS[kind].test(t)) return null;
+  (aware || []).forEach(re => { if (re.test(t)) t = t.replace(re, ' '); });
+  OLD_LEFT_RE.forEach(re => { re.lastIndex = 0; t = t.replace(re, ' '); });
+  const W = new RegExp(OLD_WORDS[kind].source, 'gi'), sens = t.split(/(?<=[.!?)])\s+/), skip = OLD_SKIP[id];
+  for (let i = 0; i < sens.length; i++) {
+    if (!names.test(sens[i])) continue;
+    const hit = (sens[i].match(W) || []).filter(w => !(skip && skip.test(w)));
+    if (hit.length) return hit[0];
+  }
+  return null;
+}
+function swappedNames(GG, bandId, seat) {   // -> { names: RegExp, kind } for a string seat, else null
+  const id = GG.career.seatSwap(bandId, seat), b = GG.content.bands[bandId], m = id && b && (b.members || []).find(x => x.id === id);
+  if (!m) return null;
+  const list = [m.name.split(' ')[0]].concat(m.nick ? [m.nick] : []).map(esc);
+  return { id, names: new RegExp('\\b(' + list.join('|') + ')\\b'), kind: seat === 'bass' ? 'bass' : 'guitar' };
+}
+module.exports = { WORDS, TOMS, HARD, drumWords, word, LEFT, seatAware, leak, toRe, stringSeatGate, OLD_WORDS, OLD_LEFT, oldLeak, swappedNames };

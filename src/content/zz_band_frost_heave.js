@@ -362,10 +362,10 @@
     // ---- Week one (forced) -----------------------------------------------------------------------------------------
     { id: 'fh_week_one_council', type: 'drama', speaker: 'rox', title: 'Public Comment', forceWeek: 1, gate: g({}),
       text: "First real rehearsal under the Suds-O-Rama. Rox arrives late from a council meeting with a megaphone and a printout: " +
-        "'Bylaw 2026-14. Parking.' She wants every song to be about it. Benny has two chords ready. Moth is asleep in the van.",
+        "'Bylaw 2026-14. Parking.' She wants every song to be about it. Benny has two chords written down. Moth is asleep in the van.",
       choices: [
         { label: 'Every song. About parking.', hint: 'Rox ↑ · Chemistry ↑', effects: { mood: { rox: 8 }, chemistry: 2 },
-          outcome: "Rox screams the bylaw number over both of Benny's chords. It rhymes with nothing. It's perfect. Irma bangs on the ceiling with a mop, in time." },
+          outcome: "Rox screams the bylaw number over both chords. It rhymes with nothing. It's perfect. Irma bangs on the ceiling with a mop, in time." },
         { label: 'Maybe one song about us?', hint: 'Rox ↓ · Benny ↑', effects: { mood: { rox: -5, benny: 3 } },
           outcome: "Rox considers it. 'Fine. It's about how we got a parking ticket outside council.' Benny nods. From the van, Moth honks once." },
         { label: 'Only if the chorus is two chords', hint: 'Benny ↑↑ · Chemistry ↑', effects: { mood: { benny: 8 }, chemistry: 3 },
@@ -1759,7 +1759,7 @@
       choices: [
         { label: 'Move in ($150/week)', hint: 'Rent $150/wk · write + record better', effects: { mood: { all: 4 }, shop: { move: 2 } },
           outcome: "A real studio. The engineer hands out keys and a list of rules. Rule one is 'no stage dives off the console'." },
-        { label: 'Not yet', effects: { mood: { benny: -3 } }, outcome: 'Benny keeps the brochure in his guitar case. He takes it out and looks at the booth sometimes.' }
+        { label: 'Not yet', effects: { mood: { benny: -3 } }, outcome: 'Benny keeps the brochure in his back pocket. He takes it out and looks at the booth sometimes.' }
       ] },
     { id: 'shop_space_3_frost_heave', type: 'money', speaker: 'moth', title: 'Backstage, Forever', gate: g({ era: W }),
       text: "The arena offers a permanent room under the stands: a star on the door, showers, a loading bay big enough for the van. $300 a week. " +
@@ -2028,7 +2028,7 @@
       ],
       bts: [
         'Behind the scenes: {who} folding towels for rent. The towels are cleaner than the songs.',
-        'BTS: loading out at minus 31. Moth carries the bass cab like a newborn and the amp like a grudge.'
+        'BTS: loading out at minus 31. Moth carries the heaviest case like a newborn and the amp like a grudge.'
       ],
       exclusive: [
         'Members only: forty minutes of Rox reading council minutes with commentary. Members call it "cathartic".',
@@ -3269,7 +3269,7 @@
       'A quiet Monday. Rox is at a council committee meeting. Nobody knows which one. Neither does the committee.',
       'Nothing happened. Irma did not bang the ceiling once. Suspicious.',
       'A slow week. Moth re-organized the van. Everything is in a different place. It is better. Nobody can find anything.',
-      'Benny spent the week practising both chords. They sound exactly the same. He is satisfied.',
+      'Benny spent the week counting both chords. They sound exactly the same. He is satisfied.',
       'The dryers thumped all week. The band rested. Delphine did her laundry on Thursday. Life goes on.',
       'Quiet week. Rox wrote four letters to the editor. Three were printed. One was about the band.',
       'Nothing on the calendar. Moth parked somewhere new. Nobody knows where. She seems happy.',
@@ -3298,7 +3298,7 @@
     genreClash: [
       'Wrong crowd: a country room. Rox screamed about snow routes. A cowboy agreed with her. Loudly.',
       'The metal crowd found two chords "insufficient". The pit happened anyway.',
-      'A rock bar. Somebody requested a guitar solo. Benny played chord two, slowly, at him.',
+      'A rock bar. Somebody requested a guitar solo. Benny looked at him for the length of two chords.',
       'The crowd wanted a two-step. You gave them two chords. Close enough, apparently.'
     ],
     countIn: ["Rox counts you in through the megaphone: 'ONE, TWO, point of order, FOUR!'",

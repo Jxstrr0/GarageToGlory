@@ -192,7 +192,7 @@
               var r = SH().buyKit(S(), k.tier);
               if (!r.ok) return nope(r);
               bought('kit', k.id, r); hear('kit'); dbg.gear++;
-              ui.clearToasts(); ui.toast(k.name + (k.whammy ? '. It came with a whammy bar. Bends score extra now.' : '. The whole band sounds bigger. Mostly you.'), { who: fill('{drummer}'), ms: 2600 });
+              ui.clearToasts(); ui.toast(k.name + (k.whammy ? '. It came with a whammy bar. Bends score extra now.' : '. The whole band sounds bigger. Mostly you.'), { who: GG.career.drummerId && ui.isSilent(GG.career.drummerId(S()), S()) ? null : fill('{drummer}'), ms: 2600 });   // v1.1 review: a silent drummer (Kenji) says nothing
               refreshSeq(); s.rerender();
             } }, money(k.cost))]);
       })),

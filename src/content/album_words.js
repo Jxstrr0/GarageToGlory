@@ -189,7 +189,7 @@
       ] },
     { id: 'studio_silo_pigeons', type: 'weird', speaker: 'marcel', title: 'The Pigeons', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: 'Forty pigeons live in the top of the elevator. When you play, they coo. In time. Marcel is convinced they are a choir sent to ' +
-        "him. Dana is convinced they are going to land on her pedalboard.",
+        "him. Dana is convinced they are going to land on her gear.",
       choices: [
         { label: 'Mic the pigeons', effects: { production: 2, buzz: 4 },
           outcome: "'Featuring the Rosthern Pigeon Choir.' Pitchspork will call it the most daring choice of the year. It was Tuesday." },
@@ -308,7 +308,7 @@
         { label: 'Ask him for a second take', effects: { mood: { kenji: -6 }, production: 1 },
           outcome: 'Kenji returns, plays the exact same take note for note, hands you a sticky note that says "…" and leaves again.' },
         { label: 'Use the spare days', effects: { production: 2, skill: { all: 1 }, burnout: -3 },
-          outcome: 'With the bass done early, the band spends two days on everything else. Dana plays her solo only twice. Growth.' }
+          outcome: 'With the bass done early, the band spends two days on everything else. Dana does her part only twice. Growth.' }
       ] },
     { id: 'studio_dana_take_41', type: 'drama', speaker: 'dana', title: 'Take Forty-One', once: false, cooldown: 12, gate: { band: HD },
       text: "Dana is on take forty-one of her solo. Takes nine, twenty-two and thirty-five were perfect. She says she 'heard something' " +

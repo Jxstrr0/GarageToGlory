@@ -718,7 +718,7 @@
         "Quonset heater. Duke is sitting next to it, watching it, like a man at a hospital bed.",
       choices: [
         { label: 'Wait for the hat', hint: 'Duke ↑ · Burnout ↑', effects: { mood: { duke: 8 }, burnout: 3 },
-          outcome: 'Two hours. The hat dries. Duke puts it on and plays the best bass line of his life. It was the hat. It is always the hat.' },
+          outcome: 'Two hours. The hat dries. Duke puts it on and plays the best set of his life. It was the hat. It is always the hat.' },
         { label: 'Lend him a toque', hint: 'Duke ↓ · Skill ↑', effects: { mood: { duke: -6 }, skill: { duke: 1 } },
           outcome: 'Duke plays in a toque, small and diminished, like Samson. He is actually more accurate. He will never admit it.' },
         { label: 'Buy a hat dryer ($35)', hint: '−$35 · Duke ↑↑', effects: { fund: -35, mood: { duke: 12 } },
@@ -1041,7 +1041,7 @@
         { label: 'Let him finish', hint: 'Earl ↑ · Burnout ↑', effects: { mood: { earl: 6 }, burnout: 3 },
           outcome: 'The song ends. The story does not. It ends forty minutes later with a punchline about a banjo. It lands.' },
         { label: 'Play the story a backing track', hint: 'Chemistry ↑', effects: { chemistry: 3 },
-          outcome: 'You play a soft groove under the story. Travis adds chords. It becomes a song. It is called "1979". It is nine minutes.' },
+          outcome: 'You play a soft groove under the story. Travis adds a melody. It becomes a song. It is called "1979". It is nine minutes.' },
         { label: "Earl. The song.", hint: 'Earl ↓ · Skill ↑', effects: { mood: { earl: -4 }, skill: { earl: 1 } },
           outcome: "Earl stops, nods, and plays the solo he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
       ] },
@@ -1140,8 +1140,8 @@
           outcome: 'Weatherstripping and caulk from the Co-op. The dust stays out. So does the air. Rehearsal is warm and very focused.' }
       ] },
     { id: 'grr_rep_doris_setlist', type: 'weird', speaker: 'duke', title: 'Doris Ate the Setlist', once: false, cooldown: 12, gate: g({ era: GLS }),
-      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and a guitar " +
-        "strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
+      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and somebody's " +
+        "guitar strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
       choices: [
         { label: 'Play the new songs for Doris', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 3, skill: { all: 1 } },
           outcome: 'Doris listens to the whole set. She nods at the waltz. She leaves during the truck song. Travis takes it personally.' },
@@ -1388,7 +1388,7 @@
         { label: 'Sign everything', hint: 'Fans ↑ · Burnout ↑', effects: { fans: 30, burnout: 5 },
           outcome: 'Forty autographs on receipts, a cap and one feed bag. Travis signs it "Travis Lee (the truck guy)". It sticks.' },
         { label: 'Stay humble', hint: 'Chemistry ↑', effects: { chemistry: 3, mood: { travis: -4 } },
-          outcome: "Travis says he's 'just a condo kid with a guitar'. The kid says 'that's so country'. Travis thinks about it for a week." }
+          outcome: "Travis says he's 'just a condo kid with a truck song'. The kid says 'that's so country'. Travis thinks about it for a week." }
       ] },
     { id: 'grr_local_maple_creek_rodeo', type: 'money', speaker: 'duke', title: 'The Maple Creek Rodeo', gate: g({ era: LS, weekOfYear: [1, 4] }),
       text: "Duke's hometown rodeo wants the Ramblers for the beer-garden stage: $300 and all the chili you can eat. Duke is a legend in Maple " +

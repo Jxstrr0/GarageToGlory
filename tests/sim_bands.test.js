@@ -24,7 +24,7 @@ const LEAK_YEARS = Math.max(1, parseInt(process.env.LEAK_YEARS, 10) || 3);   // 
 const SEAT_ENV = process.env.SEAT || '';
 const RUN_SEATS = !SEAT_ENV ? ['drums'] : SEAT_ENV === 'all' ? ['bass', 'rhythm', 'lead'] : SEAT_ENV.split(',').filter(x => C.SEATS.indexOf(x) >= 0);
 const SCAN = require('./seat_scan');
-const AWARE = SCAN.seatAware(GG);
+const AWARE = SCAN.seatAware(GG), AWARE_ANY = SCAN.seatAware(GG, true);   // (v1.1 review: _ANY for the old-instrument scan)
 const DUMP = process.env.SEAT_DUMP || '', DUMPED = [];   // SEAT_DUMP=<file>: every seat leak, one per line (Lane A's worklist)
 // (fixer: + Cousin Dale / Dale from Warman / Hwy 11 / the Moose Opera; not bare 'Warman': the Warman Curling Rink Lounge is
 // a shared venue other bands play)
@@ -370,7 +370,7 @@ const results = {};
 // One band's careers on one seat: start checks, LEAK_YEARS of bot weeks, the band leak scan, on a string seat the seat leak
 // scan (strict), the save round-trip. Returns { leaks, seatLeaks }.
 function careers(id, seat, styles, seeds, years) {
-  const b = K.bands[id], leaks = [], seatLeaks = [];
+  const b = K.bands[id], leaks = [], seatLeaks = [], SW = seat !== 'drums' ? SCAN.swappedNames(GG, id, seat) : null;
   const firstGigVenue = GG.gig.venue(b.firstGig) ? b.firstGig : null;
   for (const style of styles) {
     for (let seed = 1; seed <= seeds; seed++) {
@@ -404,6 +404,7 @@ function careers(id, seat, styles, seeds, years) {
         if (id !== 'hail_damage' && CROSS[id].test(t)) leaks.push(x.src + ' [' + t.match(CROSS[id])[0] + ']: ' + t.slice(0, 140));
         if (id === 'hail_damage' && INVERSE.test(t)) leaks.push(x.src + ': ' + t.slice(0, 140));
         if (seat !== 'drums') { const w = SCAN.leak(t, AWARE); if (w) seatLeaks.push(x.src + ' [' + w + ']: ' + t.slice(0, 160)); }
+        if (seat !== 'drums' && SW) { const o = SCAN.oldLeak(t, SW.names, SW.kind, AWARE_ANY, SW.id); if (o) seatLeaks.push(x.src + ' [old ' + SW.id + ': ' + o + ']: ' + t.slice(0, 160)); }   // v1.1 review
       });
       // a save round-trips (slot + code)
       eq(GG.save.write('1', s), true, tag + ' saved');

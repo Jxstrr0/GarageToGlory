@@ -135,7 +135,7 @@
         holidayLines: {
           canada_day: ['Somebody starts "O Canada" between songs. You play along. Marcel sings it in French. Twice.'],
           halloween: ['Costume night. The crowd came as you. There are six Marcels in the front row, all in capes.'],
-          nye: ['Midnight hits mid-song. Jaxon kisses his guitar. It was that kind of night.']
+          nye: ['Midnight hits mid-song. Jaxon kisses the setlist. It was that kind of night.']
         }
       }
     }

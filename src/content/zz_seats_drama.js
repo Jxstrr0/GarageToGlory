@@ -19,6 +19,7 @@
     if (!src || !members[id]) return;
     var c = JSON.parse(JSON.stringify(src));
     c.id = baseId + '_kit';
+    c.seat = [seatOf(id)];   // (only forced by GG.drama on that seat; the gate marks it seat-aware for the leak scan)
     if (patch.title) c.title = patch.title;
     c.text = swap(c.text, patch.text);
     (c.choices || []).forEach(function (ch, i) {
@@ -29,6 +30,11 @@
     });
     cards.push(c);
     (members[id].kit = members[id].kit || {})[kind] = c.id;
+  }
+  function seatOf(id) {   // the seat that sends member id to the kit (bands.<b>.seats)
+    var b = K.bands || {}, out = null;
+    Object.keys(b).forEach(function (k) { var st = b[k].seats || {}; Object.keys(st).forEach(function (seat) { if (st[seat] === id) out = seat; }); });
+    return out;
   }
   var STICKS = [['bass case', 'stick bag']], CASE = [['the case', 'the stick bag'], ['The case', 'The stick bag']];
 

@@ -99,7 +99,7 @@
     return (list || []).map(function (x) {
       if (!x || !x.text || (GG.career.seatOk && !GG.career.seatOk(s, x))) return null;   // v1.1: a line's seat / swapped gates
       var who = GG.career.isAlias && GG.career.isAlias(x.who) ? GG.career.roleOf(s, x.who) : x.who;
-      if (!who) return null;
+      if (!who || who === 'player') return null;   // v1.1 review: an alias on your own seat ('@soloist' on lead) never posts as you
       var member = (s.members || []).some(function (m) { return m.id === who; });
       if (member ? !isActive(s, who) : GG.career.speakerOk && !GG.career.speakerOk(s, who)) return null;
       return GG.career.postChat(s, who, x.text, d || null);
@@ -241,7 +241,11 @@
     if (!def) return fail('Not in the shop.');
     if (S.ownsGear(s, id)) return fail(seatOf(s) === 'drums' ? 'Already on the kit.' : 'Already in your rig.');
     if (!eraOk(s, def.era)) return fail('Unlocks in ' + eraName(def.era) + '.');
-    if (def.needs && !S.ownsGear(s, def.needs)) return fail('Needs the ' + S.gearName(s, def.needs).toLowerCase() + ' first.');
+    if (def.needs && !S.ownsGear(s, def.needs)) {
+      var nn = S.gearName(s, def.needs);   // v1.1 review: a string seat's parody names keep their capitals and their own 'The'
+      if (!GG.career || !GG.career.seatOf || GG.career.seatOf(s) === 'drums') return fail('Needs the ' + nn.toLowerCase() + ' first.');
+      return fail('Needs ' + (/^the /i.test(nn) ? 'the ' + nn.slice(4) : 'the ' + nn) + ' first.');
+    }
     if (s.fund < def.cost) return fail('Not enough in the fund (' + money(def.cost) + ').');
     return { ok: true, cost: def.cost };
   };

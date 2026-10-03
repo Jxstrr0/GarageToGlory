@@ -749,7 +749,7 @@
         { label: 'Offer earplugs and a perogy', effects: { chemistry: 2, burnout: -3 },
           outcome: "He accepts both. Then he stays for the chorus. Then he requests 'the lawn one'. He will never admit he's a fan." },
         { label: 'Turn it down', effects: { burnout: -4, mood: { dana: -4, marcel: -3 } },
-          outcome: "You play the rest of the night at library volume. Dana's solo is still twelve minutes. Just quieter." },
+          outcome: "You play the rest of the night at library volume. {soloist}'s solo is still twelve minutes. Just quieter." },
         { label: 'One more song, Mr. L', hint: 'Gamble: noise bylaw roulette',
           outcome: 'You count it in before he can answer.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
@@ -970,7 +970,7 @@
         { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
           outcome: 'Gord and his bride slow-dance to a blast beat. The grandmother is first on the floor for the breakdown. It is the best wedding in Saskatchewan history.' },
         { label: 'Play the whole reception', effects: { fund: 350, burnout: 8, fans: 20 },
-          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji bass solo during the cake. $350 and a garbage bag of perogies.' },
+          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji solo during the cake. $350 and a garbage bag of perogies.' },
         { label: 'Record them a video', effects: { buzz: 5, mood: { marcel: 4 } },
           outcome: "Marcel records a toast in French from the garage. Gord translates it at the reception. It is, somehow, about the groom's lawn." }
       ] },
@@ -1080,7 +1080,7 @@
       ] },
     { id: 'local_kenji_maestro', type: 'weird', speaker: 'kenji', title: 'Maestro', gate: g({ era: LS, minFans: 300 }),
       text: "After a show in Prince Albert, an old man in a long coat walks up to Kenji, bows deeply and says 'Maestro.' Kenji bows " +
-        "back. The man leaves. Kenji packs his bass as if nothing happened. Everyone else is having a small crisis.",
+        "back. The man leaves. Kenji packs up as if nothing happened. Everyone else is having a small crisis.",
       choices: [
         { label: 'Follow the old man', hint: 'Gamble: answers, or a parking lot',
           outcome: 'Jaxon and Dana run after him into the parking lot.',

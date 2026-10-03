@@ -1981,7 +1981,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
     { id: 'studio_silo_pigeons', type: 'weird', speaker: 'marcel', title: 'The Pigeons', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: 'Forty pigeons live in the top of the elevator. When you play, they coo. In time. Marcel is convinced they are a choir sent to ' +
-        "him. Dana is convinced they are going to land on her pedalboard.",
+        "him. Dana is convinced they are going to land on her gear.",
       choices: [
         { label: 'Mic the pigeons', effects: { production: 2, buzz: 4 },
           outcome: "'Featuring the Rosthern Pigeon Choir.' Pitchspork will call it the most daring choice of the year. It was Tuesday." },
@@ -2098,7 +2098,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Ask him for a second take', effects: { mood: { kenji: -6 }, production: 1 },
           outcome: 'Kenji returns, plays the exact same take note for note, hands you a sticky note that says "…" and leaves again.' },
         { label: 'Use the spare days', effects: { production: 2, skill: { all: 1 }, burnout: -3 },
-          outcome: 'With the bass done early, the band spends two days on everything else. Dana plays her solo only twice. Growth.' }
+          outcome: 'With the bass done early, the band spends two days on everything else. Dana does her part only twice. Growth.' }
       ] },
     { id: 'studio_dana_take_41', type: 'drama', speaker: 'dana', title: 'Take Forty-One', once: false, cooldown: 12, gate: { band: HD },
       text: "Dana is on take forty-one of her solo. Takes nine, twenty-two and thirty-five were perfect. She says she 'heard something' " +
@@ -2573,7 +2573,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'Behind the scenes: {who} ironing the backdrop with a waffle iron. Don\'t ask how. Don\'t ask why.',
         'BTS: the band eating perogies off a kick drum case. Catering has arrived.',
         'Behind the scenes: tonight\'s setlist is written on a pizza box. The pizza box is now framed.',
-        'BTS: loading the van at −31. {who} carries the bass cab like a newborn.',
+        'BTS: loading the van at −31. {who} carries the heaviest case like a newborn.',
         'Behind the scenes: {player} practising on pillows at 2 a.m. so Mom can sleep. Mom cannot sleep.'
       ],
       exclusive: [
@@ -2863,7 +2863,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           'Threads are titled "IS HAIL DAMAGE COMPROMISED". Dana wants to know what to do. Kenji is eating a sandwich.',
         choices: [
           { label: 'Let Kenji handle it', effects: { buzz: 6, mood: { kenji: 5 } },
-            outcome: 'Kenji posts one photo: his bass, standing in a snowbank. No caption. It gets more likes than the band page.' },
+            outcome: 'Kenji posts one photo: his gear case, standing in a snowbank. No caption. It gets more likes than the band page.' },
           { label: 'Post a "we are still metal" video', effects: { buzz: 3, burnout: 4 },
             outcome: 'Marcel screams at a blizzard for four minutes. The forums accept it. The neighbours do not.' },
           { label: 'Admit it: the whole band likes jazz', effects: { chemistry: 5, fan: { hater: 0.03 } },
@@ -3351,7 +3351,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         holidayLines: {
           canada_day: ['Somebody starts "O Canada" between songs. You play along. Marcel sings it in French. Twice.'],
           halloween: ['Costume night. The crowd came as you. There are six Marcels in the front row, all in capes.'],
-          nye: ['Midnight hits mid-song. Jaxon kisses his guitar. It was that kind of night.']
+          nye: ['Midnight hits mid-song. Jaxon kisses the setlist. It was that kind of night.']
         }
       }
     }
@@ -4051,7 +4051,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Offer earplugs and a perogy', effects: { chemistry: 2, burnout: -3 },
           outcome: "He accepts both. Then he stays for the chorus. Then he requests 'the lawn one'. He will never admit he's a fan." },
         { label: 'Turn it down', effects: { burnout: -4, mood: { dana: -4, marcel: -3 } },
-          outcome: "You play the rest of the night at library volume. Dana's solo is still twelve minutes. Just quieter." },
+          outcome: "You play the rest of the night at library volume. {soloist}'s solo is still twelve minutes. Just quieter." },
         { label: 'One more song, Mr. L', hint: 'Gamble: noise bylaw roulette',
           outcome: 'You count it in before he can answer.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
@@ -4263,7 +4263,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
           outcome: 'Gord and his bride slow-dance to a blast beat. The grandmother is first on the floor for the breakdown. It is the best wedding in Saskatchewan history.' },
         { label: 'Play the whole reception', effects: { fund: 350, burnout: 8, fans: 20 },
-          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji bass solo during the cake. $350 and a garbage bag of perogies.' },
+          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji solo during the cake. $350 and a garbage bag of perogies.' },
         { label: 'Record them a video', effects: { buzz: 5, mood: { marcel: 4 } },
           outcome: "Marcel records a toast in French from the garage. Gord translates it at the reception. It is, somehow, about the groom's lawn." }
       ] },
@@ -4373,7 +4373,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
     { id: 'local_kenji_maestro', type: 'weird', speaker: 'kenji', title: 'Maestro', gate: g({ era: LS, minFans: 300 }),
       text: "After a show in Prince Albert, an old man in a long coat walks up to Kenji, bows deeply and says 'Maestro.' Kenji bows " +
-        "back. The man leaves. Kenji packs his bass as if nothing happened. Everyone else is having a small crisis.",
+        "back. The man leaves. Kenji packs up as if nothing happened. Everyone else is having a small crisis.",
       choices: [
         { label: 'Follow the old man', hint: 'Gamble: answers, or a parking lot',
           outcome: 'Jaxon and Dana run after him into the parking lot.',
@@ -5457,7 +5457,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           changed: 'Back from being grounded. Baba approves (for now) and packs lunches for the whole band.',
           backLine: { who: 'baba', text: 'I heard you on the radio. It was loud. Jaxon may come back. Home by ten. — Baba' }
         },
-        epilogue: "Jaxon becomes a guitar teacher. Every student learns a sneaky fill. Baba approves."
+        epilogue: "Jaxon becomes a music teacher. Every student learns a sneaky fill. Baba approves."
       },
 
       kenji: {
@@ -5468,7 +5468,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           '(Kenji reacted 😐 to the pay sheet.)'
         ],
         passive: [
-          '(Kenji sent a photo of his bass case. It is closed.)',
+          '(Kenji sent a photo of his gear case. It is closed.)',
           "(Kenji changed the group name to 'Hail Damage (for now)'.)",
           '(Kenji sent a photo of the highway. No caption. Westbound.)'
         ],
@@ -7249,9 +7249,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           'Broke a string, finished the solo on five. Best night of my life.'
         ],
         ok: [
-          'Monitor mix was muddy, but the solo held.',
+          'Monitor mix was muddy, but my part held.',
           'Decent. The room ate the high end.',
-          "I'd give it a B. My pedalboard gets an A."
+          "I'd give it a B. My gear gets an A."
         ],
         bad: [
           'Someone unplugged me to charge a phone.',
@@ -7285,7 +7285,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         ok: [
           '(Kenji nods, but lower. A half-nod, maybe.)',
           '…',
-          '(Kenji packs his bass in eleven seconds and waits by the truck.)'
+          '(Kenji packs up in eleven seconds and waits by the truck.)'
         ],
         bad: [
           '(Kenji stares at the floor tom for a full minute.)',
@@ -8717,7 +8717,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             awful: ['Lyrics about a lawn, sung in French, over a metal band that has clearly never read theory. Any theory. Of anything.'],
             meh: ['{nick:dana} solos the way a toddler narrates: with total conviction and no sense of an ending.'],
             good: ["{nick:marcel}'s lawn lyrics are, read correctly, about the enclosure of the commons. Read incorrectly, they are about a lawn."],
-            great: ['The bassist, Kenji Blackbird, reportedly declined to be interviewed by declining to be anywhere. It is the most radical act on any record this decade.']
+            great: ['Kenji Blackbird reportedly declined to be interviewed by declining to be anywhere. It is the most radical act on any record this decade.']
           }
         },
         recycled: [
@@ -12091,10 +12091,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   add(cards, [
     { id: 'fh_week_one_council', type: 'drama', speaker: 'rox', title: 'Public Comment', forceWeek: 1, gate: g({}),
       text: "First real rehearsal under the Suds-O-Rama. Rox arrives late from a council meeting with a megaphone and a printout: " +
-        "'Bylaw 2026-14. Parking.' She wants every song to be about it. Benny has two chords ready. Moth is asleep in the van.",
+        "'Bylaw 2026-14. Parking.' She wants every song to be about it. Benny has two chords written down. Moth is asleep in the van.",
       choices: [
         { label: 'Every song. About parking.', hint: 'Rox ↑ · Chemistry ↑', effects: { mood: { rox: 8 }, chemistry: 2 },
-          outcome: "Rox screams the bylaw number over both of Benny's chords. It rhymes with nothing. It's perfect. Irma bangs on the ceiling with a mop, in time." },
+          outcome: "Rox screams the bylaw number over both chords. It rhymes with nothing. It's perfect. Irma bangs on the ceiling with a mop, in time." },
         { label: 'Maybe one song about us?', hint: 'Rox ↓ · Benny ↑', effects: { mood: { rox: -5, benny: 3 } },
           outcome: "Rox considers it. 'Fine. It's about how we got a parking ticket outside council.' Benny nods. From the van, Moth honks once." },
         { label: 'Only if the chorus is two chords', hint: 'Benny ↑↑ · Chemistry ↑', effects: { mood: { benny: 8 }, chemistry: 3 },
@@ -13477,7 +13477,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       choices: [
         { label: 'Move in ($150/week)', hint: 'Rent $150/wk · write + record better', effects: { mood: { all: 4 }, shop: { move: 2 } },
           outcome: "A real studio. The engineer hands out keys and a list of rules. Rule one is 'no stage dives off the console'." },
-        { label: 'Not yet', effects: { mood: { benny: -3 } }, outcome: 'Benny keeps the brochure in his guitar case. He takes it out and looks at the booth sometimes.' }
+        { label: 'Not yet', effects: { mood: { benny: -3 } }, outcome: 'Benny keeps the brochure in his back pocket. He takes it out and looks at the booth sometimes.' }
       ] },
     { id: 'shop_space_3_frost_heave', type: 'money', speaker: 'moth', title: 'Backstage, Forever', gate: g({ era: W }),
       text: "The arena offers a permanent room under the stands: a star on the door, showers, a loading bay big enough for the van. $300 a week. " +
@@ -13743,7 +13743,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ],
       bts: [
         'Behind the scenes: {who} folding towels for rent. The towels are cleaner than the songs.',
-        'BTS: loading out at minus 31. Moth carries the bass cab like a newborn and the amp like a grudge.'
+        'BTS: loading out at minus 31. Moth carries the heaviest case like a newborn and the amp like a grudge.'
       ],
       exclusive: [
         'Members only: forty minutes of Rox reading council minutes with commentary. Members call it "cathartic".',
@@ -14973,7 +14973,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'A quiet Monday. Rox is at a council committee meeting. Nobody knows which one. Neither does the committee.',
       'Nothing happened. Irma did not bang the ceiling once. Suspicious.',
       'A slow week. Moth re-organized the van. Everything is in a different place. It is better. Nobody can find anything.',
-      'Benny spent the week practising both chords. They sound exactly the same. He is satisfied.',
+      'Benny spent the week counting both chords. They sound exactly the same. He is satisfied.',
       'The dryers thumped all week. The band rested. Delphine did her laundry on Thursday. Life goes on.',
       'Quiet week. Rox wrote four letters to the editor. Three were printed. One was about the band.',
       'Nothing on the calendar. Moth parked somewhere new. Nobody knows where. She seems happy.',
@@ -15002,7 +15002,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     genreClash: [
       'Wrong crowd: a country room. Rox screamed about snow routes. A cowboy agreed with her. Loudly.',
       'The metal crowd found two chords "insufficient". The pit happened anyway.',
-      'A rock bar. Somebody requested a guitar solo. Benny played chord two, slowly, at him.',
+      'A rock bar. Somebody requested a guitar solo. Benny looked at him for the length of two chords.',
       'The crowd wanted a two-step. You gave them two chords. Close enough, apparently.'
     ],
     countIn: ["Rox counts you in through the megaphone: 'ONE, TWO, point of order, FOUR!'",
@@ -15490,7 +15490,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'The dance floor is full. Chase sings every song as if he wrote it. Lenny plays them a little too accurately. Nobody sues. Tonight.'),
        ch('Originals only', { fans: 12, mood: { chase: 6 } },
         'You play your own songs. The couple\'s first dance is to "Leather Pants at Forty Below". They say it is "their song" now.'),
-       bet('Mashups', 'a hit, or a legal letter', 'Lenny starts a mashup of your chorus and a famous riff.', 0.5, 'chemistry',
+       bet('Mashups', 'a hit, or a legal letter', 'The band starts a mashup of your chorus and a famous riff.', 0.5, 'chemistry',
         { fund: 180, buzz: 5 }, 'The whole wedding sings along. The groom\'s uncle hires you for his retirement party.',
         { fund: 90, mood: { lenny: -5 } }, 'The groom is a paralegal. He hands Lenny a business card during the cake.')]),
     card('gk_airbrushed_van', 'drama', 'chase', 'The Airbrushed Van', g({ era: GLS, minWeek: 5 }),
@@ -16284,7 +16284,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        ch('Lenny changes two notes', { mood: { lenny: -4 }, flags: { riffPlan: 'tweak' }, chain: { riff: { step: 2, delay: 2 } } },
         'Two notes, moved. Lenny plays the new version. Everyone looks at each other. It sounds like a different famous song.'),
        ch('Settle. Drop the song.', { fund: -150, mood: { lenny: -10 }, flags: { riff: 'settled' }, chain: { riff: { step: 'end' } } },
-        'You pay a small settlement and retire the song. Lenny keeps the letter in his guitar case. He does not play for a week.')],
+        'You pay a small settlement and retire the song. Lenny keeps the letter in his wallet. He does not play for a week.')],
       { chain: 'riff', step: 1, weight: 3 }),
     card('gk_riff_2_fight', 'drama', 'tamara', 'Finding a Lawyer', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
       "Court is set for next month. Tamara has made a list of lawyers who will take a rock band's case for a price the band can afford. " +
@@ -16306,8 +16306,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { chain: 'riff', step: 2 }),
     card('gk_riff_3_court', 'drama', 'lenny', 'The Court Date', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
       "The Law Courts, downtown Edmonton. Airwave Dominion sent three lawyers and Rex Glamour's scarf, on its own chair. Lenny has " +
-      "his guitar. The judge has agreed to hear both riffs. 'Play,' she says.",
-      [bet('Lenny plays both riffs', 'the judge has ears', 'Lenny plays "Everything Tonight", then his riff. The room is silent.', 0.55, 'chemistry',
+      "a cassette. The judge has agreed to hear both riffs. 'Play,' she says.",
+      [bet('Play both riffs', 'the judge has ears', 'The band plays "Everything Tonight", then Lenny\'s riff. The room is silent.', 0.55, 'chemistry',
         { buzz: 10, mood: { lenny: 10 }, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules the riffs are "cousins, not twins". Case dismissed. Lenny walks out into the snow and laughs.',
         { fund: -200, mood: { lenny: -6 }, flags: { riffVerdict: 'lost' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules against you, gently, with a small fine. "It is very catchy," she adds. Lenny goes home and does not sleep.'),
        ch("Tamara's spreadsheet", { mood: { tamara: 8 }, buzz: 6, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } },
@@ -16547,7 +16547,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       title: 'Your Employer Is Calling',
       offer: 'The Sherwood Park Smile Centre wants "{adsong}" for a regional ad: a slow-motion smile, a floss montage, a hygienist nodding along. ' +
         '{adfee}. The hygienist in the storyboard is Tamara. Dr. Bhullar did not ask. Tamara is pale.',
-      take: 'The ad runs during the hockey. Patients hum the chorus in the chair. Tamara now cleans teeth to her own bass line. She wants to be swallowed by a spittoon.',
+      take: 'The ad runs during the hockey. Patients hum the chorus in the chair. Tamara now cleans teeth in time. She wants to be swallowed by a spittoon.',
       decline: 'You pass. Tamara hugs everyone, one by one. Dr. Bhullar gives the spot to a harpist. Tamara sends the harpist floss.',
       counterWin: 'The clinic pays up. Dr. Bhullar calls it "an investment in smiles". Tamara scrubs a counter for an hour.',
       counterWalk: 'The clinic pulls out. Tamara is so relieved she cleans three patients in a row without mentioning the band.',
@@ -17065,7 +17065,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         'We built a song around a groove you found on {instrument}. Tamara timed it: 3:40. Radio length. Home by midnight.',
         'We wrote a power ballad. It lasted ninety seconds before Chase added a key change and a wind machine.',
         'Lenny brought a riff from a dream. He described the dream. It was about a lawyer.',
-        'Tamara wrote a bass line so tidy you could eat off it. The song grew around it like a garden.'],
+        'Tamara wrote a part so tidy you could eat off it. The song grew around it like a garden.'],
       promote: ['We stapled flyers to every pole on Whyte Avenue. Three went over Chartbusters posters. Oops.',
         "Chase posted a video of a knee slide in the parking lot. Darrell the parking guy is in it. He's a star now.",
         'We chalked GRAVEL KINGS outside the Mega-Mall. Mall security hosed it off at 7 a.m. The mall-walkers saw it first.',
@@ -17399,7 +17399,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       'VIRAL: Chase holds a note so long the wind machine runs out of gas. {views} views.',
       "VIRAL: Lenny plays a riff so original the song-matching app crashes. {views} views.",
       'VIRAL: Lenny plays a solo through a vacuum motor at the sidewalk sale. Gus cries. {views} views.',
-      'VIRAL: Tamara flosses mid-bass-solo without missing a note. {views} views, mostly from dentists.',
+      'VIRAL: Tamara flosses mid-song without missing a note. {views} views, mostly from dentists.',
       'VIRAL: Tamara parallel-parks the van between two food trucks, first try. {views} views.'],
     cringe: [
       { who: 'chase', text: "Wrong kind of viral: Chase's eleven-minute hairspray review. {views} views, mostly laughing ones." },
@@ -18405,7 +18405,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         "Quonset heater. Duke is sitting next to it, watching it, like a man at a hospital bed.",
       choices: [
         { label: 'Wait for the hat', hint: 'Duke ↑ · Burnout ↑', effects: { mood: { duke: 8 }, burnout: 3 },
-          outcome: 'Two hours. The hat dries. Duke puts it on and plays the best bass line of his life. It was the hat. It is always the hat.' },
+          outcome: 'Two hours. The hat dries. Duke puts it on and plays the best set of his life. It was the hat. It is always the hat.' },
         { label: 'Lend him a toque', hint: 'Duke ↓ · Skill ↑', effects: { mood: { duke: -6 }, skill: { duke: 1 } },
           outcome: 'Duke plays in a toque, small and diminished, like Samson. He is actually more accurate. He will never admit it.' },
         { label: 'Buy a hat dryer ($35)', hint: '−$35 · Duke ↑↑', effects: { fund: -35, mood: { duke: 12 } },
@@ -18727,7 +18727,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Let him finish', hint: 'Earl ↑ · Burnout ↑', effects: { mood: { earl: 6 }, burnout: 3 },
           outcome: 'The song ends. The story does not. It ends forty minutes later with a punchline about a banjo. It lands.' },
         { label: 'Play the story a backing track', hint: 'Chemistry ↑', effects: { chemistry: 3 },
-          outcome: 'You play a soft groove under the story. Travis adds chords. It becomes a song. It is called "1979". It is nine minutes.' },
+          outcome: 'You play a soft groove under the story. Travis adds a melody. It becomes a song. It is called "1979". It is nine minutes.' },
         { label: "Earl. The song.", hint: 'Earl ↓ · Skill ↑', effects: { mood: { earl: -4 }, skill: { earl: 1 } },
           outcome: "Earl stops, nods, and plays the solo he was supposed to play. It is perfect. 'I'll tell you after,' he says. He does." }
       ] },
@@ -18826,8 +18826,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Weatherstripping and caulk from the Co-op. The dust stays out. So does the air. Rehearsal is warm and very focused.' }
       ] },
     { id: 'grr_rep_doris_setlist', type: 'weird', speaker: 'duke', title: 'Doris Ate the Setlist', once: false, cooldown: 12, gate: g({ era: GLS }),
-      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and a guitar " +
-        "strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
+      text: "Doris the horse came into the Quonset and ate the setlist off the floor. Also half of Travis Lee's lyric sheet and somebody's " +
+        "guitar strap. She is standing by the kit now, chewing, looking at you like she would like to hear the new songs.",
       choices: [
         { label: 'Play the new songs for Doris', hint: 'Chemistry ↑ · Skill ↑', effects: { chemistry: 3, skill: { all: 1 } },
           outcome: 'Doris listens to the whole set. She nods at the waltz. She leaves during the truck song. Travis takes it personally.' },
@@ -19070,7 +19070,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         { label: 'Sign everything', hint: 'Fans ↑ · Burnout ↑', effects: { fans: 30, burnout: 5 },
           outcome: 'Forty autographs on receipts, a cap and one feed bag. Travis signs it "Travis Lee (the truck guy)". It sticks.' },
         { label: 'Stay humble', hint: 'Chemistry ↑', effects: { chemistry: 3, mood: { travis: -4 } },
-          outcome: "Travis says he's 'just a condo kid with a guitar'. The kid says 'that's so country'. Travis thinks about it for a week." }
+          outcome: "Travis says he's 'just a condo kid with a truck song'. The kid says 'that's so country'. Travis thinks about it for a week." }
       ] },
     { id: 'grr_local_maple_creek_rodeo', type: 'money', speaker: 'duke', title: 'The Maple Creek Rodeo', gate: g({ era: LS, weekOfYear: [1, 4] }),
       text: "Duke's hometown rodeo wants the Ramblers for the beer-garden stage: $300 and all the chili you can eat. Duke is a legend in Maple " +
@@ -21768,6 +21768,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!src || !members[id]) return;
     var c = JSON.parse(JSON.stringify(src));
     c.id = baseId + '_kit';
+    c.seat = [seatOf(id)];   // (only forced by GG.drama on that seat; the gate marks it seat-aware for the leak scan)
     if (patch.title) c.title = patch.title;
     c.text = swap(c.text, patch.text);
     (c.choices || []).forEach(function (ch, i) {
@@ -21778,6 +21779,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
     cards.push(c);
     (members[id].kit = members[id].kit || {})[kind] = c.id;
+  }
+  function seatOf(id) {   // the seat that sends member id to the kit (bands.<b>.seats)
+    var b = K.bands || {}, out = null;
+    Object.keys(b).forEach(function (k) { var st = b[k].seats || {}; Object.keys(st).forEach(function (seat) { if (st[seat] === id) out = seat; }); });
+    return out;
   }
   var STICKS = [['bass case', 'stick bag']], CASE = [['the case', 'the stick bag'], ['The case', 'The stick bag']];
 
@@ -22375,6 +22381,45 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   };
   K.drama.fillIns = K.drama.fillIns || {};
   K.drama.fillIns.drums = ['Gus, who drums at the Legion on Fridays', 'A kid from the school band with a snare', 'Darlene, a wedding drummer', 'Ernie from the polka band'];
+})(window.GG);
+
+</script>
+<script>/* content/zz_seats_gates.js */
+(function (GG) {
+  var C = GG.contracts, K = GG.content;
+  var OFF = {
+    bass: ['studio_kenji_one_take', 'studio_fh_van_booth', 'signed_fh_monolith_image'],
+    rhythm: ['grr_lantern_rehearsal', 'grr_local_truck_stop'],
+    lead: [
+      'scandal_cover', 'signed_dana_signature', 'signed_monolith_radio', 'studio_dana_take_41',
+      'fh_benny_capo', 'fh_benny_lessons', 'fh_benny_third_chord', 'fh_signed_japan_zine', 'fh_signed_third_chord_offer',
+      'scandal_fh_third_chord', 'studio_fh_third_chord', 'fh_rox_minutes', 'road_fh_three_chords', 'holiday_st_paddys_frost_heave',
+      'gk_l_anthem', 'gk_rep_riff_night', 'road_gk_cassette_war', 'fans_trucker_gravel_kings', 'gk_freeze_demo',
+      'gk_early_voicemail', 'scandal_gk_riff_leak', 'studio_gk_riff_flag',
+      'grr_small_rodeo_anthem', 'signed_grr_monolith_radio', 'grr_rep_tuning'
+    ]
+  };
+  var want = {};   // id (or prefix*) -> [seats to leave out]
+  Object.keys(OFF).forEach(function (seat) { OFF[seat].forEach(function (id) { (want[id] = want[id] || []).push(seat); }); });
+  var prefixes = Object.keys(want).filter(function (k) { return /\*$/.test(k); });
+  function offFor(id) {
+    var out = (want[id] || []).slice();
+    prefixes.forEach(function (p) { if (id.indexOf(p.slice(0, -1)) === 0) out = out.concat(want[p]); });
+    return out;
+  }
+  (function walk(v, depth) {   // (idempotent: a shared object visited twice gets the same gate)
+    if (!v || typeof v !== 'object' || depth > 8) return;
+    if (Array.isArray(v)) { v.forEach(function (x) { walk(x, depth + 1); }); return; }
+    if (typeof v.id === 'string' && (v.text || v.choices)) {
+      var off = offFor(v.id);
+      if (off.length) {
+        var base = v.seat != null ? [].concat(v.seat) : C.SEATS.slice();
+        v.seat = base.filter(function (s) { return off.indexOf(s) < 0; });
+      }
+      return;
+    }
+    Object.keys(v).forEach(function (k) { walk(v[k], depth + 1); });
+  })(K, 0);
 })(window.GG);
 
 </script>
@@ -23657,17 +23702,45 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     state = state || {};
     if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
-    return String(text).replace(TOKEN_RE, function (all, key, id) {
+    var out = String(text).replace(TOKEN_RE, function (all, key, id) {
       if (key === 'rival') return (GG.rival && (state.rival || state.bandId) ? GG.rival.name(state) : '') || 'the other band';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
       if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? shortName(r) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
       if (key === 'city') { var hb = career.band(state); return state.city || (hb && hb.city) || 'town'; }
-      if (key !== 'name' && key !== 'nick') { if (id) return all; var tv = career.tokenValue(state, key); return tv == null ? all : tv; }
+      if (key !== 'name' && key !== 'nick') {
+        if (id) return all;
+        var tv = career.tokenValue(state, key);
+        if (tv === 'you' && YOU_KEYS[key]) return YOU;   // v1.1 review: a role token on your own seat ({soloist} on lead): grammar below
+        return tv == null ? all : tv;
+      }
       if (!id) return all;
       return key === 'nick' ? memberNick(state, id) : career.memberName(state, id);
     });
+    return out.indexOf(YOU) < 0 ? out : youGrammar(out);
   };
+  var YOU = '\u0001', YOU_KEYS = { front: 1, soloist: 1, filler: 1, bassist: 1, namer: 1, grumbler: 1, deadpan: 1 };
+  var YOU_IRR = { is: 'are', was: 'were', has: 'have', does: 'do', "isn't": "aren't", "wasn't": "weren't", "hasn't": "haven't", "doesn't": "don't" };
+  var YOU_ADV = /^(always|also|just|never|still|finally|only|then|already|sometimes|even|now|quietly|slowly|suddenly|simply|actually|really|immediately|nearly|almost|clearly|politely|gently|calmly|proudly|instantly|happily|loudly|softly|\w+ly)$/i;
+  function youVerb(w) {
+    var lw = w.toLowerCase();
+    if (YOU_IRR[lw]) return w.charAt(0) === lw.charAt(0) ? YOU_IRR[lw] : YOU_IRR[lw].charAt(0).toUpperCase() + YOU_IRR[lw].slice(1);
+    if (lw.length > 4 && /[^aeiou]ies$/.test(lw)) return w.slice(0, -3) + 'y';
+    if (/(ch|sh|x|ss|zz|o)es$/.test(lw)) return w.slice(0, -2);
+    if (lw.length > 2 && /[^su']s$/.test(lw)) return w.slice(0, -1);
+    return w;
+  }
+  function youGrammar(str) {
+    return str.replace(/\u0001('s\b)?(?:(\s+)([A-Za-z']+))?(?:(\s+)([A-Za-z']+))?/g, function (all, poss, s1, w1, s2, w2, off, whole) {
+      var before = whole.slice(Math.max(0, off - 14), off).replace(/\u0001/g, 'you');
+      var start = !before || /(^|[.!?…]["'”’)]*\s+|["“‘(—–]\s*|:\s+|\n\s*)$/.test(before);
+      var subj = start || /(\b(and|but|then|while|when|until|as|because|so|if|after|before|where|who)|[;,])\s+$/i.test(before);
+      var head = poss ? (start ? 'Your' : 'your') : (start ? 'You' : 'you');
+      if (poss || !w1 || !subj) return head + (s1 || '') + (w1 || '') + (s2 || '') + (w2 || '');
+      if (YOU_ADV.test(w1) && w2) return head + s1 + w1 + s2 + youVerb(w2);
+      return head + s1 + youVerb(w1) + (s2 || '') + (w2 || '');
+    });
+  }
 
   function contentLines(a, b, c) {
     var o = GG.content.lines; if (!o) return null;
@@ -31831,7 +31904,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return (list || []).map(function (x) {
       if (!x || !x.text || (GG.career.seatOk && !GG.career.seatOk(s, x))) return null;   // v1.1: a line's seat / swapped gates
       var who = GG.career.isAlias && GG.career.isAlias(x.who) ? GG.career.roleOf(s, x.who) : x.who;
-      if (!who) return null;
+      if (!who || who === 'player') return null;   // v1.1 review: an alias on your own seat ('@soloist' on lead) never posts as you
       var member = (s.members || []).some(function (m) { return m.id === who; });
       if (member ? !isActive(s, who) : GG.career.speakerOk && !GG.career.speakerOk(s, who)) return null;
       return GG.career.postChat(s, who, x.text, d || null);
@@ -31962,7 +32035,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!def) return fail('Not in the shop.');
     if (S.ownsGear(s, id)) return fail(seatOf(s) === 'drums' ? 'Already on the kit.' : 'Already in your rig.');
     if (!eraOk(s, def.era)) return fail('Unlocks in ' + eraName(def.era) + '.');
-    if (def.needs && !S.ownsGear(s, def.needs)) return fail('Needs the ' + S.gearName(s, def.needs).toLowerCase() + ' first.');
+    if (def.needs && !S.ownsGear(s, def.needs)) {
+      var nn = S.gearName(s, def.needs);   // v1.1 review: a string seat's parody names keep their capitals and their own 'The'
+      if (!GG.career || !GG.career.seatOf || GG.career.seatOf(s) === 'drums') return fail('Needs the ' + nn.toLowerCase() + ' first.');
+      return fail('Needs ' + (/^the /i.test(nn) ? 'the ' + nn.slice(4) : 'the ' + nn) + ' first.');
+    }
     if (s.fund < def.cost) return fail('Not enough in the fund (' + money(def.cost) + ').');
     return { ok: true, cost: def.cost };
   };
@@ -54850,6 +54927,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         onclick: function () { var o = {}; o[key] = x[0]; set(o); s.rerender(); } }, x[1]);
     }));
   }
+  function strNow() { var st = GG.state; return !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums'); }
+  function syncName() { return strNow() ? 'Band sync' : 'Drum sync'; }
   function sec(title, id) { return el('div.caps.set-sec', id ? { id: id } : null, title); }
   function msText(ms) { return ms === 0 ? 'right on it' : Math.abs(ms) + ' ms ' + (ms > 0 ? 'late' : 'early'); }
   var PROFILE_NAME = { speaker: '🔊 Speaker', headphones: '🎧 Headphones' };
@@ -54869,7 +54948,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
       s.body.appendChild(sec('Play', 'set-play'));
       var gd = GG.gig && GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[pf.gigDifficulty] ? pf.gigDifficulty : 'easy';
-      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your drum skill. Change it any time.', null));
+      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
       s.body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
       s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
       s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
@@ -55020,7 +55099,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
       if (step === 'intro') {
         ui.append(s.body, [
-          el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (Drum sync); the click test is for classic timing."),
+          el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (" + syncName() + "); the click test is for classic timing."),
           el('div.caps.set-sec', 'Calibrating for'),
           el('div.set-seg', P.PROFILES.map(function (p) {
             return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
@@ -55029,7 +55108,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
-          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (Drum sync)'),
+          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (' + syncName() + ')'),
           btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, d.first ? 'Skip for now (Settings → Calibrate later)' : 'Cancel')]));
         return;
       }
@@ -55048,8 +55127,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
       ui.append(s.body, [
         el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
-        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: Drum sync lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
-        a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). Drum sync keeps your drums with the band; watch the highway rather than your ears.") : null
+        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: ' + syncName() + ' lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
+        a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). " + syncName() + (strNow() ? ' keeps your notes' : ' keeps your drums') + " with the band; watch the highway rather than your ears.") : null
       ]);
       var foot = [];
       if (step === 'audioDone') foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
@@ -56250,7 +56329,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
               var r = SH().buyKit(S(), k.tier);
               if (!r.ok) return nope(r);
               bought('kit', k.id, r); hear('kit'); dbg.gear++;
-              ui.clearToasts(); ui.toast(k.name + (k.whammy ? '. It came with a whammy bar. Bends score extra now.' : '. The whole band sounds bigger. Mostly you.'), { who: fill('{drummer}'), ms: 2600 });
+              ui.clearToasts(); ui.toast(k.name + (k.whammy ? '. It came with a whammy bar. Bends score extra now.' : '. The whole band sounds bigger. Mostly you.'), { who: GG.career.drummerId && ui.isSilent(GG.career.drummerId(S()), S()) ? null : fill('{drummer}'), ms: 2600 });   // v1.1 review: a silent drummer (Kenji) says nothing
               refreshSeq(); s.rerender();
             } }, money(k.cost))]);
       })),

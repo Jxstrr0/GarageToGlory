@@ -531,17 +531,49 @@
     state = state || {};
     if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
-    return String(text).replace(TOKEN_RE, function (all, key, id) {
+    var out = String(text).replace(TOKEN_RE, function (all, key, id) {
       if (key === 'rival') return (GG.rival && (state.rival || state.bandId) ? GG.rival.name(state) : '') || 'the other band';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
       if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? shortName(r) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
       if (key === 'city') { var hb = career.band(state); return state.city || (hb && hb.city) || 'town'; }
-      if (key !== 'name' && key !== 'nick') { if (id) return all; var tv = career.tokenValue(state, key); return tv == null ? all : tv; }
+      if (key !== 'name' && key !== 'nick') {
+        if (id) return all;
+        var tv = career.tokenValue(state, key);
+        if (tv === 'you' && YOU_KEYS[key]) return YOU;   // v1.1 review: a role token on your own seat ({soloist} on lead): grammar below
+        return tv == null ? all : tv;
+      }
       if (!id) return all;
       return key === 'nick' ? memberNick(state, id) : career.memberName(state, id);
     });
+    return out.indexOf(YOU) < 0 ? out : youGrammar(out);
   };
+  // v1.1 review: a role token that resolves to you (only on a string seat: {soloist} on lead, {bassist} on bass) was written
+  // as a third person ("{soloist} buys a pack of strings"). As a subject (a sentence start, or after and / but / then ...)
+  // its verb loses the -s (is -> are, has -> have, buys -> buy; an adverb in between is skipped), "{soloist}'s" -> your, and
+  // a sentence start is capitalised. The drum seat never gets here (no role token is you there; {driver} / {drummer} are left).
+  var YOU = '\u0001', YOU_KEYS = { front: 1, soloist: 1, filler: 1, bassist: 1, namer: 1, grumbler: 1, deadpan: 1 };
+  var YOU_IRR = { is: 'are', was: 'were', has: 'have', does: 'do', "isn't": "aren't", "wasn't": "weren't", "hasn't": "haven't", "doesn't": "don't" };
+  var YOU_ADV = /^(always|also|just|never|still|finally|only|then|already|sometimes|even|now|quietly|slowly|suddenly|simply|actually|really|immediately|nearly|almost|clearly|politely|gently|calmly|proudly|instantly|happily|loudly|softly|\w+ly)$/i;
+  function youVerb(w) {
+    var lw = w.toLowerCase();
+    if (YOU_IRR[lw]) return w.charAt(0) === lw.charAt(0) ? YOU_IRR[lw] : YOU_IRR[lw].charAt(0).toUpperCase() + YOU_IRR[lw].slice(1);
+    if (lw.length > 4 && /[^aeiou]ies$/.test(lw)) return w.slice(0, -3) + 'y';
+    if (/(ch|sh|x|ss|zz|o)es$/.test(lw)) return w.slice(0, -2);
+    if (lw.length > 2 && /[^su']s$/.test(lw)) return w.slice(0, -1);
+    return w;
+  }
+  function youGrammar(str) {
+    return str.replace(/\u0001('s\b)?(?:(\s+)([A-Za-z']+))?(?:(\s+)([A-Za-z']+))?/g, function (all, poss, s1, w1, s2, w2, off, whole) {
+      var before = whole.slice(Math.max(0, off - 14), off).replace(/\u0001/g, 'you');
+      var start = !before || /(^|[.!?…]["'”’)]*\s+|["“‘(—–]\s*|:\s+|\n\s*)$/.test(before);
+      var subj = start || /(\b(and|but|then|while|when|until|as|because|so|if|after|before|where|who)|[;,])\s+$/i.test(before);
+      var head = poss ? (start ? 'Your' : 'your') : (start ? 'You' : 'you');
+      if (poss || !w1 || !subj) return head + (s1 || '') + (w1 || '') + (s2 || '') + (w2 || '');
+      if (YOU_ADV.test(w1) && w2) return head + s1 + w1 + s2 + youVerb(w2);
+      return head + s1 + youVerb(w1) + (s2 || '') + (w2 || '');
+    });
+  }
 
   // GG.content.lines[a][b][c] if it is a non-empty array, else null.
   function contentLines(a, b, c) {

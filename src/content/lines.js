@@ -217,9 +217,9 @@
           'Broke a string, finished the solo on five. Best night of my life.'
         ],
         ok: [
-          'Monitor mix was muddy, but the solo held.',
+          'Monitor mix was muddy, but my part held.',
           'Decent. The room ate the high end.',
-          "I'd give it a B. My pedalboard gets an A."
+          "I'd give it a B. My gear gets an A."
         ],
         bad: [
           'Someone unplugged me to charge a phone.',
@@ -253,7 +253,7 @@
         ok: [
           '(Kenji nods, but lower. A half-nod, maybe.)',
           '…',
-          '(Kenji packs his bass in eleven seconds and waits by the truck.)'
+          '(Kenji packs up in eleven seconds and waits by the truck.)'
         ],
         bad: [
           '(Kenji stares at the floor tom for a full minute.)',
