@@ -4,6 +4,7 @@
 //   node build.js && node tools/audio_numbers.js [--section 1.2] [--classic]
 //     --section: the label (default: VERSION's major.minor, e.g. "1.1"); --classic: GG.audio.classic(true) first (1.2+).
 //     SPEC_EXTRA='{"k":v}' merges options into every spec (e.g. what 1.2 needs to render with feel). ~1.5 min.
+//   node tools/audio_numbers.js --diff 1.1 1.2: the section "1.1 vs 1.2" (b minus a + the F13 verdict; exit 1 when not met).
 // Renders the song cases of tools/_audio_lab.js (each genre's signature song, its whole arrangement, kit tier 2 = the
 // reference outside a career): full mix, drums only, band only (band + vocals). Per render: the 5 F13 bands (0-150, 150-500,
 // 500-1.5k, 1.5-4k, 4k+ Hz) in dB (10 log10(mean square x the band's share of the spectrum), the pw_seq __bands method
@@ -56,12 +57,41 @@ function writeSection(label, text) {
   let cur = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : HEAD;
   const parts = cur.split(/\n(?=## )/), head = parts[0].startsWith('## ') ? HEAD : parts[0] + '\n';
   const secs = (parts[0].startsWith('## ') ? parts : parts.slice(1)).map(s => s.trimEnd() + '\n');
-  const i = secs.findIndex(s => s.startsWith('## ' + label + ' '));
+  const i = secs.findIndex(s => s.startsWith('## ' + label + ' ('));   // (exact label: '1.2' must not replace '1.2 Lane I')
   if (i >= 0) secs[i] = text; else secs.push(text);
   fs.writeFileSync(OUT, head.trimEnd() + '\n\n' + secs.join('\n'));
 }
 
-if (require.main === module) {
+// --diff <a> <b>: a section "<a> vs <b>" = b minus a per row (dB columns, RMS, peak) + width a -> b, from the two sections' json
+// lines, plus the F13 verdict (mean and per-genre full-mix RMS within 1 dB, 4k+ not up > 3 dB, peaks under the ceiling).
+function diffSection(a, b) {
+  const cur = fs.readFileSync(OUT, 'utf8'), rowsOf = l => {
+    const sec = cur.split(/\n(?=## )/).find(s => s.startsWith('## ' + l + ' ('));
+    if (!sec) throw new Error('no section ' + l);
+    return JSON.parse(sec.split('\n').find(x => x.startsWith('json ')).slice(5));
+  };
+  const A = rowsOf(a), B = rowsOf(b), p = (s, n) => String(s).padStart(n), d = (x, y) => { const v = Math.round((y - x) * 10) / 10; return (v > 0 ? '+' : '') + v; };
+  const lines = [`## ${a} vs ${b} (diff = ${b} minus ${a}, dB; width ${a} -> ${b})`,
+    'genre    mix    | 0-150 150-500 500-1.5k 1.5-4k   4k+ |       RMS       peak  width',
+    '-------- ------ | ----- ------- -------- ------ ----- | --------- ---------- -------------'];
+  const verdict = [];
+  B.forEach(rb => {
+    const ra = A.find(x => x.g === rb.g && x.mix === rb.mix); if (!ra) return;
+    lines.push(`${rb.g.padEnd(8)} ${rb.mix.padEnd(6)} | ${p(d(ra.dB[0], rb.dB[0]), 5)} ${p(d(ra.dB[1], rb.dB[1]), 7)} ${p(d(ra.dB[2], rb.dB[2]), 8)} ${p(d(ra.dB[3], rb.dB[3]), 6)} ` +
+      `${p(d(ra.dB[4], rb.dB[4]), 5)} | ${p(d(ra.rmsDb, rb.rmsDb), 9)} ${p(d(ra.peakDb, rb.peakDb), 10)} ${p(ra.width.toFixed(3) + ' -> ' + rb.width.toFixed(3), 13)}`);
+    if (rb.mix === 'full') verdict.push({ g: rb.g, rms: rb.rmsDb - ra.rmsDb, hi: rb.dB[4] - ra.dB[4], peak: rb.peakDb });
+  });
+  const mean = k => verdict.reduce((s, v) => s + v[k], 0) / verdict.length, CEIL = 20 * Math.log10(0.8);   // (the master ceiling is linear below 0.8)
+  const ok = Math.abs(mean('rms')) <= 1 && verdict.every(v => Math.abs(v.rms) <= 1 && v.hi <= 3 && v.peak <= CEIL);
+  lines.push(`F13: mean full-mix RMS ${d(0, mean('rms'))} dB (target +-1); per genre RMS ${verdict.map(v => v.g + ' ' + d(0, v.rms)).join(', ')}; ` +
+    `4k+ ${verdict.map(v => v.g + ' ' + d(0, v.hi)).join(', ')} (cap +3); peaks max ${Math.max.apply(null, verdict.map(v => v.peak))} dBFS (ceiling knee ${CEIL.toFixed(1)}) -> ${ok ? 'ALL MET' : 'NOT MET'}`);
+  return { text: lines.join('\n') + '\n', ok };
+}
+
+if (require.main === module && process.argv.includes('--diff')) {
+  const i = process.argv.indexOf('--diff'), a = process.argv[i + 1], b = process.argv[i + 2], r = diffSection(a, b);
+  writeSection(a + ' vs ' + b, r.text); console.log(r.text + 'wrote section "' + a + ' vs ' + b + '"'); if (!r.ok) process.exitCode = 1;
+} else if (require.main === module) {
   const opts = { classic: process.argv.includes('--classic') }, label = arg('--section') || VERSION.split('.').slice(0, 2).join('.');
   measure(opts).then(res => {
     if (res.errors.length) { console.error('console errors: ' + res.errors.join(' | ')); process.exitCode = 1; }
@@ -70,4 +100,4 @@ if (require.main === module) {
     console.log(t + 'wrote section "' + label + '" -> ' + path.relative(lab.ROOT, OUT));
   }).catch(e => { console.error(e.stack || e); process.exitCode = 1; });
 }
-module.exports = { measure, table };
+module.exports = { measure, table, diffSection };
