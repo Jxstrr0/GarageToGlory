@@ -95,7 +95,7 @@
       { id: 'nye', name: "New Year's Eve", icon: '🎆', weeks: [12, 12],
         blurb: "The best-paying gig of the year. Everyone's out, everyone's loud, everyone counts down wrong.",
         pay: { all: 2 }, gig: { crowd: 8, buzz: 2, lines: ["New Year's Eve. You count the crowd down to midnight at 11:58. Nobody minds.",
-          "Midnight hits mid-song. {soloist} kisses the guitar. It was that kind of night."] } },
+          "Midnight hits mid-song. {soloist} and the guitar share a moment. It was that kind of night."] } },
       { id: 'st_patricks', name: "St. Patrick's Day", icon: '☘️', weeks: [18, 18],
         blurb: 'Pub gig circuit: every bar in the province turns green and books a band.', cards: ['holiday_st_paddys', 'holiday_st_paddys_green'], weight: { bar: 2.5 }, pay: { bar: 1.3 },
         gig: { crowd: 4, lines: ["St. Paddy's: green beer, a guy in a leprechaun hat, and a mosh pit that is mostly a jig."] } },
@@ -135,7 +135,7 @@
         holidayLines: {
           canada_day: ['Somebody starts "O Canada" between songs. You play along. Marcel sings it in French. Twice.'],
           halloween: ['Costume night. The crowd came as you. There are six Marcels in the front row, all in capes.'],
-          nye: ['Midnight hits mid-song. Jaxon kisses his guitar. It was that kind of night.']
+          nye: ['Midnight hits mid-song. Jaxon kisses the setlist. It was that kind of night.']
         }
       }
     }

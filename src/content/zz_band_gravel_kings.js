@@ -311,7 +311,7 @@
        ch('Negotiate the loading dock', { buzz: 3, mood: { chase: 6, tamara: -4 } },
         'The loading dock is officially "backstage" from 6 p.m. to 10 p.m. Chase installs a door sign. Tamara installs a clock.')]),
     card('gk_early_nail_salon', 'scene', 'gk_nails', 'The Wall Is Thin', g({ minWeek: 2, maxWeek: 12 }),
-      'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your snare is in my ' +
+      'Trinh from Nails by Trinh knocks on the shared wall during a pedicure appointment. Then she comes around. "Your {gear} is in my ' +
       "customer's toes. She is tapping along. It is ruining the polish.\"",
       [ch('Rehearse after salon hours', { burnout: 4, chemistry: 3 },
         'Rehearsals start at 8 p.m. now. Trinh leaves a thank-you note and a coupon. Chase uses the coupon. His cuticles have never looked better.'),
@@ -463,7 +463,7 @@
         'The dance floor is full. Chase sings every song as if he wrote it. Lenny plays them a little too accurately. Nobody sues. Tonight.'),
        ch('Originals only', { fans: 12, mood: { chase: 6 } },
         'You play your own songs. The couple\'s first dance is to "Leather Pants at Forty Below". They say it is "their song" now.'),
-       bet('Mashups', 'a hit, or a legal letter', 'Lenny starts a mashup of your chorus and a famous riff.', 0.5, 'chemistry',
+       bet('Mashups', 'a hit, or a legal letter', 'The band starts a mashup of your chorus and a famous riff.', 0.5, 'chemistry',
         { fund: 180, buzz: 5 }, 'The whole wedding sings along. The groom\'s uncle hires you for his retirement party.',
         { fund: 90, mood: { lenny: -5 } }, 'The groom is a paralegal. He hands Lenny a business card during the cake.')]),
     card('gk_airbrushed_van', 'drama', 'chase', 'The Airbrushed Van', g({ era: GLS, minWeek: 5 }),
@@ -692,7 +692,7 @@
       'A double bill in Lloydminster with Hail Damage, a metal band from Saskatoon. Their singer has a cape. Their bassist has not said ' +
       "a word in four hours. Their drummer asks yours about double-kick pedals. Lenny is intimidated.",
       [ch('Swap drummers for a song', { buzz: 8, drumSkill: 1 },
-        'You play their blast beat; their drummer plays your backbeat. Nobody notices for a full verse. Then everybody notices. It rules.'),
+        'The drummers trade places: ours plays their blast beat, theirs plays our backbeat. Nobody notices for a full verse. Then everybody notices. It rules.'),
        ch('Split the green room pizza', { chemistry: 5, fans: 20 },
         'Their singer blesses the pizza in French. Chase blesses it in 1985. The bassist nods at Lenny once. Lenny will talk about it for years.'),
        ch('Outplay them', { buzz: 10, burnout: 6 },
@@ -792,7 +792,8 @@
         { buzz: 18, fans: 300 }, 'He lands between the flames on the downbeat. Nobody knows how. He does not know how.',
         { buzz: 6, burnout: 10, mood: { chase: -10 } }, 'He slides a metre short. The flames go up anyway. Tamara extinguishes his hair. It grows back.'),
        ch('No pyro. Just the slide.', { chemistry: 5, mood: { chase: -8 } },
-        'The slide alone is still the best thing in the show. Chase says the flames were "in his heart". Tamara says that is where they stay.')]),
+        'The slide alone is still the best thing in the show. Chase says the flames were "in his heart". Tamara says that is where they stay.')],
+      { seat: ['drums', 'bass', 'lead'] }),
     card('gk_s_royalty_audit', 'money', 'tamara', 'Tamara Audits the Label', g({ era: S, minWeek: 30 }),
       'Tamara has read the royalty statement. All forty pages. With a ruler. She has found a column that does not add up, a charge ' +
       "for 'catering (scarves)', and a line item called 'Rex'. She wants a meeting.",
@@ -1116,7 +1117,7 @@
     // ---- Guilt (parents' loan) ------------------------------------------------------------------------------------------
     card('gk_guilt_hygiene', 'money', 'mom', 'Hygiene School', g({ era: GLS, flags: ['parentsLoan'] }),
       "Mom has met Tamara. Mom likes Tamara very much. Mom has now left a brochure for the dental hygiene program at the college " +
-      "on your snare drum, with 'TAMARA DID IT!' written on it.",
+      "on your {gear}, with 'TAMARA DID IT!' written on it.",
       [ch('Pay her back $100', { repay: 100, chemistry: 2 },
         'You hand over a hundred dollars. Mom hands back the brochure. "Keep it. For later." It goes in the receipts shoebox.'),
        ch('Have Tamara talk to her', { mood: { tamara: 4 }, burnout: 3 },
@@ -1268,7 +1269,7 @@
        ch('Lenny changes two notes', { mood: { lenny: -4 }, flags: { riffPlan: 'tweak' }, chain: { riff: { step: 2, delay: 2 } } },
         'Two notes, moved. Lenny plays the new version. Everyone looks at each other. It sounds like a different famous song.'),
        ch('Settle. Drop the song.', { fund: -150, mood: { lenny: -10 }, flags: { riff: 'settled' }, chain: { riff: { step: 'end' } } },
-        'You pay a small settlement and retire the song. Lenny keeps the letter in his guitar case. He does not play for a week.')],
+        'You pay a small settlement and retire the song. Lenny keeps the letter in his wallet. He does not play for a week.')],
       { chain: 'riff', step: 1, weight: 3 }),
     card('gk_riff_2_fight', 'drama', 'tamara', 'Finding a Lawyer', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
       "Court is set for next month. Tamara has made a list of lawyers who will take a rock band's case for a price the band can afford. " +
@@ -1290,8 +1291,8 @@
       { chain: 'riff', step: 2 }),
     card('gk_riff_3_court', 'drama', 'lenny', 'The Court Date', g({ era: GLS, flagEquals: { riffPlan: 'fight' } }),
       "The Law Courts, downtown Edmonton. Airwave Dominion sent three lawyers and Rex Glamour's scarf, on its own chair. Lenny has " +
-      "his guitar. The judge has agreed to hear both riffs. 'Play,' she says.",
-      [bet('Lenny plays both riffs', 'the judge has ears', 'Lenny plays "Everything Tonight", then his riff. The room is silent.', 0.55, 'chemistry',
+      "a cassette. The judge has agreed to hear both riffs. 'Play,' she says.",
+      [bet('Play both riffs', 'the judge has ears', 'The band plays "Everything Tonight", then Lenny\'s riff. The room is silent.', 0.55, 'chemistry',
         { buzz: 10, mood: { lenny: 10 }, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules the riffs are "cousins, not twins". Case dismissed. Lenny walks out into the snow and laughs.',
         { fund: -200, mood: { lenny: -6 }, flags: { riffVerdict: 'lost' }, chain: { riff: { step: 4, delay: 2 } } }, 'The judge rules against you, gently, with a small fine. "It is very catchy," she adds. Lenny goes home and does not sleep.'),
        ch("Tamara's spreadsheet", { mood: { tamara: 8 }, buzz: 6, flags: { riffVerdict: 'won' }, chain: { riff: { step: 4, delay: 2 } } },
@@ -1391,7 +1392,7 @@
        bet('Haggle', 'haggle him down', 'Tamara takes the phone.', 0.5, 'chemistry',
         { fund: -520, shop: { kit: 1 } }, 'Tamara negotiates like a dental billing department. $520, and he throws in a cowbell. No gong.',
         { mood: { lenny: -5 } }, 'He sells it to a church drummer while you haggle. Lenny sulks until Thursday.'),
-       ch('Not yet', { mood: { lenny: -4 } }, 'The milk crate creaks, as if it heard. Chase apologizes to it.')]),
+       ch('Not yet', { mood: { lenny: -4 } }, 'The milk crate creaks, as if it heard. Chase apologizes to it.')], { seat: ['drums'] }),
     card('shop_van_deal_gravel_kings', 'money', 'tamara', 'The Dental Clinic Van', g({ era: LSW, minFund: 4000 }),
       "The Sherwood Park Smile Centre is retiring its mobile-clinic van: fifteen seats, a trailer, a sink that still works. $3,000 and " +
       "the old van for parts. Tamara has already checked the tires. She has already named it.",
@@ -1410,7 +1411,7 @@
        ch('Only with a knee slide', { mood: { lenny: 5, chase: 5 }, chemistry: -2, shop: { section: 'solo' } },
         "Lenny's solo, Chase's slide, the same eight bars. Nobody can see Lenny's hands behind the leather. Everyone is happy, loudly.", 'Solo unlocked · Lenny ↑ · Chase ↑'),
        ch('No solos in this band', { mood: { lenny: -10 } },
-        'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')]),
+        'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')], { seat: ['drums', 'bass', 'rhythm'] }),
     card('shop_space_1_gravel_kings', 'money', 'gk_landlord', 'A Room with a Real Door', g({ era: LSW }),
       "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $60 a week, and no nail salon on the other side " +
       "of the wall. Mr. Petrenko says Unit 4B 'will always be here'. He means it as a threat and a comfort.",
@@ -1544,7 +1545,7 @@
       title: 'Your Employer Is Calling',
       offer: 'The Sherwood Park Smile Centre wants "{adsong}" for a regional ad: a slow-motion smile, a floss montage, a hygienist nodding along. ' +
         '{adfee}. The hygienist in the storyboard is Tamara. Dr. Bhullar did not ask. Tamara is pale.',
-      take: 'The ad runs during the hockey. Patients hum the chorus in the chair. Tamara now cleans teeth to her own bass line. She wants to be swallowed by a spittoon.',
+      take: 'The ad runs during the hockey. Patients hum the chorus in the chair. Tamara now cleans teeth in time. She wants to be swallowed by a spittoon.',
       decline: 'You pass. Tamara hugs everyone, one by one. Dr. Bhullar gives the spot to a harpist. Tamara sends the harpist floss.',
       counterWin: 'The clinic pays up. Dr. Bhullar calls it "an investment in smiles". Tamara scrubs a counter for an hour.',
       counterWalk: 'The clinic pulls out. Tamara is so relieved she cleans three patients in a row without mentioning the band.',
@@ -1842,7 +1843,7 @@
     "They said your name. The band is on stage holding a loonie the size of a hubcap. Chase, for once in his life, hands you the mic. " +
     "Tamara checks her watch. You have thirty seconds before the music plays you off.",
     [ch('Thank your mom', { fans: 120, chemistry: 6, mood: { all: 6 }, chat: { who: 'mom', text: 'I was the one crying in row M. Tamara gave me a tissue.' } },
-      "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY DRUMMER'."),
+      "You thank your mom for the loan, the rides and the lasagna. The camera finds her in row M, holding a sign: 'THAT'S MY KID'."),
      ch('Thank Westgate Plaza', { buzz: 14, fans: 80 },
       "'And most of all: Unit 4B. Trinh. Gus. Mr. Petrenko. Darrell.' Silence. Then someone yells 'WESTGATE!' and the arena chants it."),
      bet('Take a shot at Chartbusters', 'roast, or roasted', 'You lean into the mic and find their table. The scarves.', 0.55, 'buzz',
@@ -1960,7 +1961,7 @@
           'This one is going to be huge. Arenas. Lighters. It is called', 'Leather pants were made for this song. Its name is',
           'I wrote the chorus on a napkin at the poutine place. The song is called'],
         custom: [
-          { when: 'difficultyHigh', text: "That's a lot of notes, drummer. I will be sliding through half of them on my knees." },
+          { when: 'difficultyHigh', text: "That's a lot of notes. I will be sliding through half of them on my knees.", seat: ['drums', 'bass', 'lead'] },
           { when: 'similarityHigh', text: "Didn't we... already write this one? It's fine. It's a callback. 1985 was full of callbacks." },
           { when: 'any', text: 'Somebody get the wind machine. This one needs weather.' }
         ]
@@ -1971,8 +1972,8 @@
         fills: ['I snuck a little lick into bar four. It is new. I checked. Mostly checked.', 'The verse had room, so I put a slide there. An original slide.',
           "Don't listen to bar twelve too closely. Or do. It's the most original thing I own."],
         custom: [
-          { when: 'similarityHigh', text: 'Hang on. This sounds like a famous riff. Which means it sounds like me. Which means a lawyer.' },
-          { when: 'difficultyHigh', text: "Fast. Real fast. I'll need new strings and a lawyer who is also fast." },
+          { when: 'similarityHigh', text: 'Hang on. This sounds like a famous riff. Which means it sounds like me. Which means a lawyer.', seat: ['drums', 'bass', 'rhythm'] },
+          { when: 'difficultyHigh', text: "Fast. Real fast. I'll need new strings and a lawyer who is also fast.", seat: ['drums', 'bass', 'rhythm'] },
           { when: 'any', text: "I'm running it through the app tonight. Just to be safe. Everything is fine." }
         ]
       },
@@ -2065,17 +2066,17 @@
   P.bandLines = {
     activity: {
       rehearse: ['We ran "Leather Pants at Forty Below" eleven times. On the twelfth, the nail salon clapped through the wall.',
-        '{nick:chase} made us rehearse the knee slide. The drummer does not slide. The drummer still had to rehearse it.',
+        '{nick:chase} made us rehearse the knee slide. Everyone. Even whoever is on drums.',
         'Tamara ran rehearsal with a stopwatch. We were done at 9:59:40. Twenty seconds of silence. Beautiful.',
         "Lenny played the riff until it sounded like nobody's. It took two hours. It was worth it.",
         'Gus tested vacuums all night in B flat. We rehearsed in B flat. It works, somehow.',
         'We tightened the ending. It had a knee slide, a key change and a fake ending. Now it has two of those.'],
       write: ['We wrote a riff. Lenny checked it on the app. Then checked it again. Then again. 11%. Keeper.',
         '{nick:chase} wrote the lyrics on a napkin at the poutine place. The napkin is now framed.',
-        'We built a song around your backbeat. Tamara timed it: 3:40. Radio length. Home by midnight.',
+        'We built a song around a groove you found on {instrument}. Tamara timed it: 3:40. Radio length. Home by midnight.',
         'We wrote a power ballad. It lasted ninety seconds before Chase added a key change and a wind machine.',
         'Lenny brought a riff from a dream. He described the dream. It was about a lawyer.',
-        'Tamara wrote a bass line so tidy you could eat off it. The song grew around it like a garden.'],
+        'Tamara wrote a part so tidy you could eat off it. The song grew around it like a garden.'],
       promote: ['We stapled flyers to every pole on Whyte Avenue. Three went over Chartbusters posters. Oops.',
         "Chase posted a video of a knee slide in the parking lot. Darrell the parking guy is in it. He's a star now.",
         'We chalked GRAVEL KINGS outside the Mega-Mall. Mall security hosed it off at 7 a.m. The mall-walkers saw it first.',
@@ -2132,12 +2133,12 @@
       'A cowboy hat hit the snare mid-fill. Chase put it on. He looked incredible. He kept it.'],
     countIn: ['ONE, TWO, ONE-TWO-THREE... ROCK!', 'Hit it!', '1985! Two! Three! Four!', 'A-one, a-two... knee slide!'],
     empty: { chat: 'No messages yet. Chase is at the payphone. Tamara is typing a very organised message.',
-      catalog: 'No songs yet. Lenny has riffs. Some of them might even be his. Write one on the kit.' },
+      catalog: 'No songs yet. Lenny has riffs. Some of them might even be his. Write one.' },
     exposure: ['Chase: "Exposure is basically radio play. Say yes."', 'Exposure! We are going to be SO exposed. In leather.',
       'Tamara: "Exposure does not pay for diesel." Chase: "It pays for the soul."'],
     noSolo: ['Where does my solo go? Nowhere? Cool. I will solo in the parking lot.', 'No solo section. Lenny is writing a letter. To the minutes.'],
     guilt: ["Your mom asks if you've thought about hygiene school. She has met Tamara.",
-      'Your dad leaves the oil-patch job ads on your snare. Rig hand is circled. Twice.',
+      'Your dad leaves the oil-patch job ads on your {gear}. Rig hand is circled. Twice.',
       "Your mom tells the neighbours you're 'in rock'. The neighbours ask which rock.",
       'Dad drives past Westgate Plaza, slows down at Unit 4B, and keeps going. Mom calls it progress.'],
     venueUp: ['The owner wants you back. Better money next time. Chase asks for a wind machine.', 'Handshake plus shoulder grab. Tamara confirms the date in writing.',
@@ -2330,7 +2331,7 @@
         { burnout: 6, mood: { all: -3 } }, 'Forty minutes of crescents. You pass the same garden gnome four times. It judges you.')],
       { once: false, cooldown: 6 }),
     card('road_gk_you_speeding', 'road', 'chase', 'Photo Radar on the Henday', rg({ driver: ['you'], minKm: 40 }),
-      'You drive like you drum: steady on the straights, too fast in the fills. A photo radar van blinks at you on the ring road. Chase ' +
+      'You drive like you play {instrument}: steady on the straights, too fast in the fills. A photo radar van blinks at you on the ring road. Chase ' +
       'strikes a pose.',
       [ch('Pay the ticket', { fund: -120 }, 'The photo is great. Chase is mid-pose, mullet up. It becomes the new press shot.', '−$120'),
        ch('Drive like T-Bone now', { burnout: 4, chemistry: 2 }, 'Exactly the limit, hands at ten and two. The band sits up straight. It feels like she is watching.', 'Burnout ↑ · safe')],
@@ -2422,7 +2423,7 @@
       'VIRAL: Chase holds a note so long the wind machine runs out of gas. {views} views.',
       "VIRAL: Lenny plays a riff so original the song-matching app crashes. {views} views.",
       'VIRAL: Lenny plays a solo through a vacuum motor at the sidewalk sale. Gus cries. {views} views.',
-      'VIRAL: Tamara flosses mid-bass-solo without missing a note. {views} views, mostly from dentists.',
+      'VIRAL: Tamara flosses mid-song without missing a note. {views} views, mostly from dentists.',
       'VIRAL: Tamara parallel-parks the van between two food trucks, first try. {views} views.'],
     cringe: [
       { who: 'chase', text: "Wrong kind of viral: Chase's eleven-minute hairspray review. {views} views, mostly laughing ones." },

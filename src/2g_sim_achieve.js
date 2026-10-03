@@ -126,9 +126,30 @@
       var ids = Object.keys(B).filter(function (id) { return B[id] && !B[id].locked; });
       return ids.length > 0 && ids.every(function (id) { return num(by[id]) > 0; });
     } },
-    careers: { m: 1, fn: function (s, t, x) { return num(x.careers && x.careers.finished) >= (t.min || 3); } }
+    careers: { m: 1, fn: function (s, t, x) { return num(x.careers && x.careers.finished) >= (t.min || 3); } },
+    // v1.1 "Seats" (handoff E12; plan_contract_1.1 §1.1 #12): Low End / The Engine Room = { kind: 'seatCareer', seat } (a
+    // finished career on that seat; when 'end'); Solo Too Long = { kind: 'soloTooLong', min?: 0.3, by?: 'notes'|'time' } (a
+    // live song on the lead seat with that share of your notes in the solo, the shred bar included: SONG_RESULT.soloNotes /
+    // .allNotes (a short song with a solo section gets there); by 'time': .solo / .dur seconds; when 'gig'); Musical Chairs
+    // = { kind: 'allSeats' } (META.careers.bySeat has every C.SEATS seat; when 'meta').
+    seatCareer: { s: 1, fn: function (s, t) { return seatOf(s) === (t.seat || seatOf(s)) && !!(s.ended || obj(s.legacy)); } },
+    soloTooLong: { x: 1, fn: function (s, t, x) {
+      var res = (x.r && x.r.songResults) || [], min = t.min != null ? num(t.min) : 0.3;   // retuned on lane D's real lead parts: a song with a solo section reaches 0.33-0.38 in metal, a song without one stays <= 0.21
+      return seatOf(s) === 'lead' && res.some(function (r) {
+        if (!r) return false;
+        var all = num(r.allNotes) || num(r.notes);
+        return t.by === 'time' ? num(r.dur) > 0 && num(r.solo) / num(r.dur) > min : all > 0 && num(r.soloNotes) / all > min;
+      });
+    } },
+    allSeats: { m: 1, fn: function (s, t, x) {
+      var by = (x.careers && x.careers.bySeat) || {};
+      return (CT.SEATS || ['drums', 'bass', 'rhythm', 'lead']).every(function (k) { return num(by[k]) > 0; });
+    } }
   };
-  A.KINDS = Object.keys(KIND);
+  // v1.1: the seat kinds join KINDS once the contracts list them (the lead folds them into C.ACH_KINDS at integration, like
+  // C.SEAT_GATE_KEYS); they evaluate either way (A.test). SEAT_KINDS lists them for content tests until then.
+  A.SEAT_KINDS = ['seatCareer', 'soloTooLong', 'allSeats'];
+  A.KINDS = Object.keys(KIND).filter(function (k) { return A.SEAT_KINDS.indexOf(k) < 0 || !CT.ACH_KINDS || CT.ACH_KINDS.indexOf(k) >= 0; });
   A.kindInfo = function (k) { var i = KIND[k]; return i ? { state: !!i.s, counter: !!i.c, ctx: !!i.x, meta: !!i.m } : null; };
   A.test = function (state, test, ctx) {
     var k = test && KIND[test.kind];

@@ -1,5 +1,5 @@
 // pw_recap.js (v0.8.1 LICRECAP): licensing offers (D1) and the year-end recap (D3) on a 390x844 phone viewport.
-// Sections (META_ONLY=offer|recap|bands, comma-separated; default all). Each fits `timeout 500`.
+// Sections (META_ONLY=offer|recap|bands|seat, comma-separated; default all). Each fits `timeout 500`.
 //   offer : a Signed band gets an offer → the Monday card (brand, song, fee, 4 choices with hints) → Take it: the fee (minus
 //           the label's cut) lands in the fund, the song is "in a commercial" (SONG.ad, stale), buzz up; a second offer →
 //           "Sleep on it" → it waits on the laptop's Offers line → the offer sheet → Counter (walks or lands at +40%) →
@@ -10,6 +10,10 @@
 //           good year looks like") → Start year 2 → week 25; the laptop's Years tab re-opens it. Layout audit on every
 //           page. Screenshots recap_p<0..5>.png, recap_years.png.
 //   bands : (v0.9) the band photo for Frost Heave, Gravel Kings and the Ramblers in their own tier-0 rooms (see below).
+//   seat  : (v1.1 "Seats", Lane C) a bass / rhythm / lead career: the year photo has you holding your own instrument (the
+//           gear string, no raised sticks) and the swapped drummer brings the sticks; a drum career keeps v0.9's sticks pose;
+//           the red carpet: you walk it with your instrument on (carpet.info().you), the drum seat has no gear. Screenshots
+//           recap_seat_<seat>.png, carpet_seat.png. No console errors.
 // Run: node build.js && META_ONLY=recap timeout 500 node tests/pw_recap.js
 const path = require('path'), fs = require('fs');
 const { open, checker } = require('./_pw');
@@ -255,9 +259,69 @@ async function bands() {
   c.done();
 }
 
+// ---- v1.1 seat: your instrument in the year photo and on the red carpet ----------------------------------------------------
+async function seatPhotos() {
+  const c = checker('recap:seat');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+    const CASES = [['drums', 'hail_damage'], ['bass', 'hail_damage'], ['rhythm', 'gravel_kings'], ['lead', 'grid_road_ramblers']];
+    for (const [seat, bandId] of CASES) {
+      const r = await page.evaluate(async ([seat, bandId]) => {
+        GG.main.quickStart({ seed: 7272, bandId, seat, openCard: false });
+        GG.ui.closeAll();
+        const s = GG.state;
+        s.player.gearLook = { shape: null, color: '#1f8a4c', guard: 'white', sticker: 'none' };
+        const url = GG.ui.recapPhoto(s, s.year), dbg = GG.debug('recapui').photo;
+        let photo = null;
+        if (url) {
+          const img = new Image(); img.src = url; await img.decode();
+          const cv = document.createElement('canvas'); cv.width = 60; cv.height = 38; const g = cv.getContext('2d'); g.drawImage(img, 0, 0, 60, 38);
+          const d = g.getImageData(0, 0, 60, 38).data, lum = []; for (let i = 0; i < d.length; i += 4) lum.push(d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11);
+          const m = lum.reduce((a, b) => a + b, 0) / lum.length, v = Math.sqrt(lum.reduce((a, b) => a + (b - m) * (b - m), 0) / lum.length);
+          photo = { w: img.naturalWidth, mean: Math.round(m), sd: Math.round(v) };
+          const el = document.createElement('img'); el.id = '__photo'; el.src = url; el.style.cssText = 'position:fixed;left:0;top:0;width:100%;z-index:2147483647;background:#000';
+          document.body.appendChild(el);
+        }
+        return { photo, dbg, drummer: GG.career.drummerId(s) };
+      }, [seat, bandId]);
+      await page.waitForTimeout(150);
+      if (seat !== 'drums') await shot(page, 'recap_seat_' + seat + '.png');
+      await page.evaluate(() => { const e = document.getElementById('__photo'); if (e) e.remove(); });
+      c.ok(r.photo && r.photo.w >= 500 && r.photo.mean > 20 && r.photo.sd > 12, seat + ': the year photo is a real 3D still ' + JSON.stringify(r.photo));
+      if (seat === 'drums') c.ok(r.dbg.seat === 'drums' && !r.dbg.gear && r.dbg.sticks.join() === 'player', 'drums: v0.9\'s photo (your sticks up) ' + JSON.stringify(r.dbg));
+      else c.ok(r.dbg.seat === seat && r.dbg.gear && r.dbg.gear.indexOf('seat|' + seat + '|') === 0 && r.dbg.gear.indexOf('#1f8a4c') > 0 && r.dbg.sticks.join() === r.drummer && r.dbg.ids.includes(r.drummer),
+        seat + ': you hold your ' + r.dbg.gear + ', ' + r.drummer + ' brings the sticks');
+    }
+    // The red carpet: your instrument on a string seat, nothing on drums.
+    const car = await page.evaluate(async () => {
+      const out = {};
+      for (const seat of ['drums', 'lead']) {
+        GG.main.quickStart({ seed: 7373, bandId: 'frost_heave', seat, openCard: false });
+        GG.ui.closeAll();
+        const s = GG.state;
+        s.player.gearLook = { shape: 'pointy', color: null, guard: 'black', sticker: 'none' };
+        GG.render.setPaused(false); GG.render.syncState(s); GG.render.setScene('carpet');
+        GG.render.carpet.setup({ members: s.members, player: s.player, flags: s.flags, genre: s.genre, year: 2, rival: { name: 'Mall Rats' } });
+        await new Promise(r => setTimeout(r, 3600));   // (the walk-in, then the photographers)
+        out[seat] = GG.render.carpet.info();
+      }
+      return out;
+    });
+    c.ok(car.drums.built && !car.drums.you && car.lead.built && car.lead.you && car.lead.you.seat === 'lead' && /^seat\|lead\|pointy\|/.test(car.lead.you.gear) && car.lead.band.includes('player'),
+      'the red carpet: your instrument on the lead seat, none on drums ' + JSON.stringify(car.lead.you));
+    await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; }));
+    await shot(page, 'carpet_seat.png');
+    c.ok(errors.length === 0, 'seat: no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e)); }
+  await close();
+  c.done();
+}
+
 (async () => {
   fs.mkdirSync(CACHE, { recursive: true });
   if (want('offer')) await offer();
   if (want('recap')) await recap();
   if (want('bands')) await bands();   // v0.9
+  if (want('seat')) await seatPhotos();   // v1.1
 })();

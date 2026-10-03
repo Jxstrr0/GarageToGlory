@@ -248,7 +248,7 @@
         el('p.deal-parties', { testid: 'deal-parties' }, ['Between ', el('b', def.name), ' (“the Label”) and ', el('b', band), ' (“the Band”), of ' + (st.city || 'town') + ', ' + ui.province(st) + '.']),
         el('ol.deal-clauses', clauses.map(function (c) { return el('li', [el('b', c[0] + '. '), c[1]]); })),
         el('div.deal-sign', [
-          el('div.sig', [el('span.ink', p.name || 'You'), el('span.sl', 'The Band (drums, founder)')]),
+          el('div.sig', [el('span.ink', p.name || 'You'), el('span.sl', 'The Band (' + ui.seatName(st).toLowerCase() + ', founder)')]),
           el('div.sig', [el('span.ink.label', def.name.split(' ')[0]), el('span.sl', 'The Label')])
         ]),
         el('div.deal-stamp', 'SIGNED')

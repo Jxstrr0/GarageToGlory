@@ -85,7 +85,7 @@
   function memberCard(st, m) {
     var D = Dr(), who = ui.who(m.id), stage = m.stage || 0, kids = [];
     kids.push(el('div.row', [ui.avatar(who), el('div.grow', [el('div', { style: 'font-weight:800' }, who.full || who.name + (who.nick ? ' "' + who.nick + '"' : '')),
-      el('div.small.dim', [m.role || '', m.recruit ? ' · recruit' : ''])]), ui.stageBadge(stage, m.id)]));
+      el('div.small.dim', [who.role || m.role || '', m.recruit ? ' · recruit' : ''])]), ui.stageBadge(stage, m.id)]));
     kids.push(kv('Skill', m.skill, 'var(--blue)'));
     kids.push(kv('Mood', m.mood, ui.moodColor(m.mood), ui.moodEmoji(ui.moodLabel(m.mood))));
     var w = D.want(st, m);

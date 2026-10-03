@@ -173,7 +173,10 @@ test('seat: the score is seat-neutral; the player card is keyed by seat (falls b
   const a = L.compute(s), b = L.compute(bass);
   ok(a.score === b.score && a.tier === b.tier && JSON.stringify(a.parts) === JSON.stringify(b.parts), 'the same score with seat: bass');
   eq([a.seat, b.seat], ['drums', 'bass']);
-  eq(b.epilogues.pop().text, a.epilogues.pop().text, 'no bass player card yet: the drums one');
+  const bassCard = GG.content.endings.player.bass, bt = b.epilogues.pop().text, at = a.epilogues.pop().text;
+  ok(bassCard && bassCard[b.tier], 'v1.1: endings.player.bass has a card for every tier (contract §5 A4)');
+  eq(bt, GG.career.fillText(bass, bassCard[b.tier]), 'the bass seat gets its own player card');
+  ok(bt !== at, 'the bass card differs from the drums one');
   // the matcher, with a synthetic member and a synthetic v1.1-style variant
   const kenji = mem(s, 'kenji');
   ok(!L.whenOk(s, kenji, { seatRole: 'drums' }) && L.whenOk(s, kenji, { seatRole: 'bass' }), 'seatRole matches member.role');
@@ -185,8 +188,10 @@ test('seat: the score is seat-neutral; the player card is keyed by seat (falls b
   const swapped = L.epilogues(s, 'arena_legends', []).find(e => e.id === 'kenji').text;
   list.shift(); delete kenji.seatRole;
   ok(!/drum kit/.test(real) && /drum kit/.test(swapped), 'the swapped-drummer variant fires only for a member in the drum seat');
-  const anySeat = Object.values(GG.content.endings.epilogues).some(l => l.some(v => v.when && 'seatRole' in v.when));
-  ok(!anySeat, 'no v1.0 content uses seatRole');
+  // v1.1: the swapped drummers' variants use seatRole (Lane A); they never fire on the drum seat (nobody's seatRole is drums)
+  const drumSeat = Object.keys(GG.content.endings.epilogues).filter(id => mem(s, id)).every(id => {
+    const t = L.epilogues(s, 'arena_legends', []).find(e => e.id === id); return !t || !/drum kit arrives/.test(t.text); });
+  ok(drumSeat, 'on the drum seat no swapped-drummer variant fires');
 });
 
 test('bonus years: World by week 120 → +3 (312), 121..144 → +2 (288), 145 → none; once; refused after the Sad Dome news / final / from year 10; noBonus', () => {

@@ -37,7 +37,23 @@ MAG_BY_ERA.world = MAG_BY_ERA.signed;
 const earliestEra = gate => C.ERAS.find(e => !gate || !gate.era || gate.era.includes(e)) || 'garage';
 const magFor = gate => MAG_BY_ERA[earliestEra(gate)];
 const CARD_KEYS = ['id', 'type', 'speaker', 'title', 'text', 'gate', 'weight', 'once', 'cooldown', 'chain', 'step', 'forceWeek', 'choices',
-  'cameo'];   // v0.9 (owner Q8): cameo: true = a cross-band cameo card (it may name another playable band; career.cardOk passes it)
+  'cameo',   // v0.9 (owner Q8): cameo: true = a cross-band cameo card (it may name another playable band; career.cardOk passes it)
+  'seat', 'swapped'];   // v1.1 "Seats" (plan_contract_1.1 §4.3): top-level seat / swapped gates (career.cardOk checks them)
+// v1.1: the seat gate keys (C.SEAT_GATE_KEYS) are valid in every gate until the lead folds them into C.GATE_KEYS
+const GATE_KEYS = C.GATE_KEYS.concat((C.SEAT_GATE_KEYS || []).filter(k => C.GATE_KEYS.indexOf(k) < 0));
+// A seat / swapped gate value: seat = a non-empty list of C.SEATS; swapped = true | false | memberId | [memberIds] (of the bands)
+function seatGateOk(o, bands) {
+  if (!o) return true;
+  if (o.seat != null && !(Array.isArray(o.seat) && o.seat.length && o.seat.every(x => C.SEATS.includes(x)))) return false;
+  if (o.swapped != null && typeof o.swapped !== 'boolean') {
+    const ids = [].concat(o.swapped), mem = (bands || Object.keys(K.bands)).map(b => K.bands[b]).filter(Boolean)
+      .reduce((a, b) => a.concat(b.members.map(m => m.id)), []);
+    if (!ids.length || !ids.every(id => mem.includes(id))) return false;
+  }
+  return true;
+}
+// v1.1: does a card fit a drum-seat career (the draw sim and the chain walk run as the drummer)?
+const drumSeat = c => [c, c.gate || {}].every(o => (o.seat == null || o.seat.includes('drums')) && (o.swapped == null || o.swapped === false));
 const CHOICE_KEYS = ['label', 'hint', 'effects', 'outcome', 'roll'];
 const ROLL_KEYS = ['chance', 'stat', 'statScale', 'success', 'fail'];
 
@@ -272,8 +288,9 @@ test('cards: gates use only GATE_KEYS with valid values; every card names its ba
   for (const c of CARDS) {
     const g = c.gate, w = 'card ' + c.id + ' gate';
     ok(g && typeof g === 'object', w + ' missing');
-    Object.keys(g).forEach(k => ok(C.GATE_KEYS.includes(k), w + ': unknown key ' + k));
-    ok(Array.isArray(g.era) && g.era.length > 0 && g.era.every(e => C.ERAS.includes(e) && e !== 'world'), w + ': era (world arrives in v0.7)');
+    Object.keys(g).forEach(k => ok(GATE_KEYS.includes(k), w + ': unknown key ' + k));
+    ok(Array.isArray(g.era) && g.era.length > 0 && g.era.every(e => C.ERAS.includes(e)), w + ': era');
+    ok(seatGateOk(g, impliedBands(c)) && seatGateOk(c, impliedBands(c)), w + ': seat / swapped (v1.1)');
     // v0.9: every Monday card names the bands it is for; a genre gate must fit every one of them
     ok(Array.isArray(g.band) && g.band.length > 0 && g.band.every(b => bandIds.includes(b)), w + ': band');
     if (g.genre) ok(Array.isArray(g.genre) && g.genre.every(e => C.GENRES.includes(e)) && (g.band || []).every(b => g.genre.includes(K.bands[b].genre)), w + ': genre fits the bands');
@@ -323,10 +340,11 @@ test('cards: effects use only EFFECT_KEYS, with valid targets and era-appropriat
     }
     if ('book' in fx) ok(BOOKABLE.includes(fx.book), where + ': book ' + fx.book + ' not in the allowed list');
     if (K.venues && 'book' in fx) ok(K.venues.some(v => v.id === fx.book), where + ': book ' + fx.book + ' missing from venues');
-    if (fx.chat) {
-      ok(speakerFits(fx.chat.who, impliedBands(c)), where + ': chat.who ' + fx.chat.who);
-      ok(str(fx.chat.text, LIMIT.chat), where + ': chat.text ≤' + LIMIT.chat);
-    }
+    if (fx.chat) [].concat(fx.chat).forEach(x => {   // v1.1: a list of lines (each may carry seat / swapped gates)
+      ok(x && speakerFits(x.who, impliedBands(c)), where + ': chat.who ' + (x && x.who));
+      ok(x && str(x.text, LIMIT.chat), where + ': chat.text ≤' + LIMIT.chat + ' ' + (x && x.text));
+      ok(seatGateOk(x, impliedBands(c)), where + ': chat seat / swapped');
+    });
   }
 });
 
@@ -451,7 +469,7 @@ function drawCareer(label, seed) {
   const s = { era: 'garage', genre: 'metal', region: 'canada', bandId: 'hail_damage', fund: 300, buzz: 20, chemistry: 50, gig: null,
     flags: {}, chains: {}, seen: {}, members: HD.members.map(m => ({ id: m.id, mood: m.mood })) };
   const eligible = c => {
-    if (c.forceWeek) return false;
+    if (c.forceWeek || !drumSeat(c)) return false;
     if (c.chain && (c.step !== 1 || s.chains[c.chain])) return false;
     const last = s.seen[c.id];
     if (last != null && (c.once !== false || s.totalWeek - last < (c.cooldown || 0))) return false;
@@ -466,8 +484,8 @@ function drawCareer(label, seed) {
     if (w === 40) s.flags.parentsLoan = true;
     if (w === 100) delete s.flags.parentsLoan;          // the loan gets paid off: later eras must not lean on guilt cards
     if (w % 30 === 0) s.members[w / 30 % 4].mood = 30; else if (w % 30 === 5) s.members.forEach(m => { m.mood = 60; });
-    let pool = CARDS.filter(c => c.forceWeek === w && s.seen[c.id] == null);
-    if (!pool.length) pool = CARDS.filter(c => c.chain && s.chains[c.chain] && s.chains[c.chain].step === c.step && s.chains[c.chain].due <= w && gatePasses(c.gate, s));
+    let pool = CARDS.filter(c => c.forceWeek === w && s.seen[c.id] == null && drumSeat(c));
+    if (!pool.length) pool = CARDS.filter(c => c.chain && s.chains[c.chain] && s.chains[c.chain].step === c.step && s.chains[c.chain].due <= w && gatePasses(c.gate, s) && drumSeat(c));
     if (!pool.length) pool = CARDS.filter(eligible);
     if (!pool.length) { out.dry.push(s.era + '@' + w); continue; }
     const card = rng.weighted(pool, c => c.weight || 1), ch = rng.pick(card.choices);
@@ -735,7 +753,7 @@ test('road cards: ~12, Monday-card schema, road gates, van effects, gamble hints
     ok(c.type === 'road' && speakerFits(c.speaker, impliedBands(c)) && c.speaker !== 'kenji', w + ': type/speaker');
     ok(str(c.title, LIMIT.title) && str(c.text, LIMIT.text), w + ': title/text length (' + c.text.length + ')');
     if (c.once === false) ok(isInt(c.cooldown) && c.cooldown >= 4, w + ': cooldown');
-    if (c.gate) Object.keys(c.gate).forEach(k => ok(C.GATE_KEYS.includes(k) || ROAD_GATES.includes(k), w + ': gate ' + k));
+    if (c.gate) Object.keys(c.gate).forEach(k => ok(GATE_KEYS.includes(k) || ROAD_GATES.includes(k), w + ': gate ' + k));
     if (c.gate && c.gate.season) ok(c.gate.season.every(x => SEASONS.includes(x)), w + ': season');
     if (c.gate && c.gate.driver) ok(c.gate.driver.every(x => x === 'you' || (K.drivers[x] && K.drivers[x].band)), w + ': driver');
     if (c.gate && c.gate.weather) ok(c.gate.weather.every(x => C.WEATHER.includes(x)), w + ': weather');
@@ -907,7 +925,7 @@ function cardProblems(c, extra) {
   push(str(c.title, LIMIT.title) && str(c.text, LIMIT.text), 'title/text length (text ' + (c.text || '').length + ')');
   if (c.once === false) push(isInt(c.cooldown) && c.cooldown >= 4, 'cooldown');
   push(Array.isArray(c.choices) && c.choices.length >= 2 && c.choices.length <= 3 && new Set(c.choices.map(x => x.label)).size === c.choices.length, 'choices');
-  Object.keys(c.gate || {}).forEach(k => push(C.GATE_KEYS.includes(k) || (extra.gates || []).includes(k), 'gate ' + k));
+  Object.keys(c.gate || {}).forEach(k => push(GATE_KEYS.includes(k) || (extra.gates || []).includes(k), 'gate ' + k));
   (c.choices || []).forEach((ch, i) => {
     const cw = '#' + i;
     Object.keys(ch).forEach(k => push(CHOICE_KEYS.includes(k), cw + ' key ' + k));
@@ -929,7 +947,7 @@ function cardProblems(c, extra) {
       for (const k of ['mood', 'skill']) if (k in fx) for (const id in fx[k]) {
         const m = extra.mag[k], v = fx[k][id]; push(memberKeyFits(id, bands) && isInt(v) && Math.abs(v) >= m.lo && Math.abs(v) <= m.hi, cw + ' ' + k + '.' + id);
       }
-      if (fx.chat) push(speakerFits(fx.chat.who, bands) && str(fx.chat.text, LIMIT.chat), cw + ' chat');
+      if (fx.chat) [].concat(fx.chat).forEach(x => push(x && speakerFits(x.who, bands) && str(x.text, LIMIT.chat) && seatGateOk(x, bands), cw + ' chat'));
       if (fx.flags) for (const f in fx.flags) push(/^[a-z][A-Za-z0-9]*$/.test(f) && ['string', 'number', 'boolean'].includes(typeof fx.flags[f]), cw + ' flag ' + f);
     });
   });

@@ -1092,6 +1092,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    home indicator (phoneqa: 10-20 px under it at 390x844). No change where --safe-bot is 0. */
 .sheet > .sheet-body:last-child, .sheet > .sheet-body:has(+ .sheet-foot:empty) { padding-bottom: calc(var(--safe-bot) + 14px); }
 /* } */
+/* v1.1 SEATS { */
+/* Lead: the new-career seat picker ('seat', 51). Four cards (>= 96 px tall), the picked one amber; the foot button is the
+   usual 48+ px primary. */
+.seat-card { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 96px; padding: 14px 14px 12px; border-radius: 16px;
+  text-align: left; border: 2px solid var(--line); background: var(--bg2); color: var(--text); cursor: pointer; }
+.seat-card.on { border-color: var(--amber); background: linear-gradient(135deg, #3a2a18, #1c2438 70%); box-shadow: 0 6px 22px rgba(255, 179, 71, .15); }
+.seat-card .ico { flex: 0 0 52px; height: 52px; border-radius: 14px; background: rgba(0, 0, 0, .3); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.seat-card .g { font: 900 20px/1 var(--display); text-transform: uppercase; padding-right: 74px; }
+.seat-card .b { font-weight: 700; margin-top: 4px; font-size: 14px; line-height: 1.3; }
+.seat-card .c { font-size: 13px; color: var(--dim); margin-top: 4px; } .seat-card .c .caps { margin-right: 2px; }
+.seat-card .tag { position: absolute; top: 10px; right: 10px; }
+/* } */
 </style>
 </head>
 <body>

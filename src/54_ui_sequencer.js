@@ -18,6 +18,12 @@
 // (Dana's spotlight), so the other cells are dimmed. The grid has as many lanes as the kit (gear.lanes, up to 6: toms, ride).
 // The arrangement cards keep the extras (withExtras); the guided flow gets a Solo / Outro step each when owned. The sketch
 // pad's 🛒 opens the drum shop (GG.ui.openGear).
+// v1.1 "Seats" (plan_contract_1.1 §4.4; handoff E6 "Your part + auto drums"): on a string seat the song carries your PART
+//   (pattern.part, GG.songs.part). Guided: {drummer} suggests the drums first (the genre's signature groove; "Tell {drummer}
+//   what to play" opens today's drum grid, unchanged) -> "Your part" per section (a progression / hook card, the 2-5 row
+//   grid, one-tap modifiers: lock to the kick, double time, let it ring, call and answer) -> tempo -> order -> name -> save.
+//   Advanced: a "Your part | Drums" switch over the same tabs. The meters rate both (GG.songs.rate reads the part); Play
+//   plays it (GG.audio.play { seat, part }). The drum seat is exactly as before.
 // ui.show('seq', { mode, pat, title, titleEn, song, index, total, tip: { who, text }, onSave(entry), onJam(), onCancel() })
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
@@ -35,7 +41,10 @@
     var names = D.mode === 'view' ? GG.songs.sectionsOf(D.pat) : GG.songs.allSections(gear());
     return names.map(function (n) { return { id: n, label: (isExtra(n) && !hasSec(D, n) ? '+' : '') + SEC_LABEL[n] }; }).concat([{ id: 'song', label: 'Song' }]);
   }
-  function extraDef(name) { return ((GG.content.shop && GG.content.shop.sections) || {})[name] || { name: SEC_LABEL[name], blurb: '' }; }
+  function extraDef(name) {   // v1.1 review: the seat's text (GG.shop.sectionDef), tokens filled
+    var d = GG.shop && GG.shop.sectionDef ? GG.shop.sectionDef(GG.state, name) : ((GG.content.shop && GG.content.shop.sections) || {})[name];
+    return d ? { name: d.name || SEC_LABEL[name], blurb: ui.fill(d.blurb || '') } : { name: SEC_LABEL[name], blurb: '' };
+  }
   // Arrangement presets keep the extras the song uses (a solo before the last chorus, an outro at the end).
   function withSongExtras(D, arr) { return GG.songs.withExtras(arr.slice(), gear(), { solo: hasSec(D, 'solo'), outro: hasSec(D, 'outro') }); }
   function baseArrangementId(p) { return GG.songs.arrangementId({ arrangement: (p.arrangement || []).filter(function (x) { return !isExtra(x); }) }); }
@@ -52,7 +61,8 @@
     return el('div.seq-extra.stack', { testid: 'seq-extra-' + name }, [
       el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
         el('p.small.dim', def.blurb),
-        el('p.small', name === 'solo' ? 'Goes in before the last chorus. Live, you only play the quarter notes: the rest is ' + soloWho().pos + '.' : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.')]),
+        el('p.small', name === 'solo' ? (soloWho().you ? 'Goes in before the last chorus. Live, the whole section is your spotlight.' : 'Goes in before the last chorus. Live, you only play ' + (strSeat() ? 'one note a beat' : 'the quarter notes') + ': the rest is ' + soloWho().pos + '.')
+          : (strSeat() ? ui.fill('Goes at the very end: the last chord rings out, and {drummer} gets a big fill to finish.') : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.'))]),
       D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
   }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
@@ -62,10 +72,131 @@
   function st() { return GG.state; }
   function gear() { return (st() && st().gear) || GG.songs.DEFAULT_GEAR; }
   function genre() { return (st() && st().genre) || 'metal'; }
+  /* ---- v1.1 "Seats": your part ------------------------------------------------------------------------------ */
+  function seat() { var s = st(); return s && GG.career && GG.career.seatOf ? GG.career.seatOf(s) : 'drums'; }
+  function strSeat() { return seat() !== 'drums'; }
+  // A working pattern for this seat: a string seat's always carries a part (the seat's suggestion where it is missing).
+  function withPart(p) {
+    if (!p || !GG.songs.part) return p;
+    if (!strSeat()) { if (p.part) delete p.part; return p; }
+    p.part = p.part && p.part.seat === seat() ? GG.songs.part.sanitize(p.part, GG.songs.sectionsOf(p), genre()) : GG.songs.part.full(genre(), seat(), p);
+    return p;
+  }
+  // {drummer}'s suggested groove (a string seat's new song): the genre's signature preset on the verse, the next presets
+  // (that need no pedal) on the chorus and the bridge, so the hook has some contrast to start from.
+  function drummerGroove(p) {
+    var list = GG.songs.presets(genre(), gear()).filter(function (x) { return !x.locked; }), sig = list.filter(function (x) { return x.signature; })[0] || list[0];
+    if (!sig) return p;
+    var rest = list.filter(function (x) { return x !== sig; });
+    p = GG.songs.applyPreset(p, 'verse', sig.id, gear(), genre());
+    if (rest[0]) p = GG.songs.applyPreset(p, 'chorus', rest[0].id, gear(), genre());
+    if (rest[1]) p = GG.songs.applyPreset(p, 'bridge', rest[1].id, gear(), genre());
+    return p;
+  }
+  function drummerName() { return st() && GG.career.tokenValue ? GG.career.tokenValue(st(), 'drummer') : 'the drummer'; }
+  function instrument() { return st() && GG.career.tokenValue ? GG.career.tokenValue(st(), 'instrument') : 'drums'; }
+  function partLayer(D) { return !!(D.pat && D.pat.part) && D.layer !== 'drums'; }
+  function seatPlay(D) { return D.pat && D.pat.part ? { seat: D.pat.part.seat, part: D.pat.part } : {}; }
+  var PART_COLORS = ['#57c77a', '#ff6b4a', '#ffd23f', '#4f8cff', '#b98cff'];
+  var PART_CSS = [
+    '.part-picks { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 4px; }',
+    '.part-picks .part-pick { flex: 1 1 auto; min-height: 48px; min-width: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 800 13px var(--font); cursor: pointer; }',
+    '.part-cycle { display: grid; grid-template-columns: 48px 1fr 48px; gap: 6px; align-items: center; margin-bottom: 4px; }',
+    '.part-cycle .icon-btn { width: 48px; height: 48px; }',
+    '.part-cycle .pc-name { text-align: center; font: 800 13px var(--font); line-height: 1.15; }',
+    '.part-picks .part-pick.on { border-color: var(--amber); box-shadow: inset 0 -3px 0 var(--amber); }',
+    '.seq-layers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }',
+    '.seq-layers .btn { min-height: 48px; }',
+    '.seq-layers .btn.on { border-color: var(--amber); background: var(--panel2); box-shadow: inset 0 -3px 0 var(--amber); }',
+    '.seq-grid.part .lh { flex-direction: column; gap: 0; line-height: 1.05; }',
+    '.part-drums { display: flex; flex-direction: column; gap: 6px; }',
+    '.part-drums .row { min-height: 40px; }'
+  ].join('\n');
+  (function inject() {
+    if (typeof document === 'undefined' || document.getElementById('gg-css-part')) return;
+    var css = document.createElement('style'); css.id = 'gg-css-part'; css.textContent = PART_CSS;
+    (document.head || document.documentElement).appendChild(css);
+  })();
+  // A tap on your grid plays that note (your instrument's voice; the genre's root, the row's interval / scale degree).
+  function partPreview(row) {
+    var A = GG.audio, sp = seat(); if (!A) return;
+    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9];
+    try {
+      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass' });
+      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row });
+      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead' });
+    } catch (e) { /* no sound: fine */ }
+  }
+  function buildPartGrid(s, D) {
+    var pt = D.pat.part, sec = pt.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.ROW_NAMES[pt.seat] || [];
+    var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pt.seat }, style: { gridTemplateColumns: '30px repeat(' + n + ', minmax(0, 1fr))' } });
+    grid.appendChild(el('div'));
+    for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.14) } }, [el('span', '♪'), names[r] || String(r + 1)]));
+    var cells = [], labels = [];
+    for (var step = 0; step < C.STEPS; step++) {
+      var q = step % 4 === 0, lab = el('div.bl' + (q ? '.q' : ''), q ? String(step / 4 + 1) : BEAT_LABELS[step % 4]);
+      grid.appendChild(lab); labels.push(lab);
+      var row = [];
+      for (r = 0; r < n; r++) {
+        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        c.style.setProperty('--lc', PART_COLORS[r]);
+        grid.appendChild(c); row.push(c);
+      }
+      cells.push(row);
+    }
+    D.view.cells = cells; D.view.labels = labels;
+    if (!ro) paintable(grid, D, true);
+    return grid;
+  }
+  // The advanced screen: one line, ‹ the progression / hook › (the grid keeps the room).
+  function partCycle(s, D, name) {
+    var pt = D.pat.part, key = GG.songs.part.key(pt.seat), list = GG.songs.part.choices(genre(), pt.seat, name), cur = pt.sections[name] ? pt.sections[name][key] : 0, ro = D.mode === 'view';
+    function go(d) {
+      var i = ((cur + d) % list.length + list.length) % list.length;
+      D.pat = GG.songs.part.pick(D.pat, name, i, gear(), genre()); D.change = null;
+      changed(D); if (D.playing) restart(s, D); s.rerender();
+    }
+    var label = (pt.seat === 'lead' ? 'Hook: ' : 'Chords: ') + (list[cur] ? list[cur].name : '?') + ' (' + (cur + 1) + '/' + list.length + ')';
+    return el('div.part-cycle', { testid: 'part-cycle' }, [
+      btn('.icon-btn', { testid: 'part-prev', 'aria-label': 'Previous', disabled: ro || list.length < 2, onclick: function () { go(-1); } }, '‹'),
+      el('div.pc-name', { testid: 'part-cycle-name' }, label),
+      btn('.icon-btn', { testid: 'part-next', 'aria-label': 'Next', disabled: ro || list.length < 2, onclick: function () { go(1); } }, '›')]);
+  }
+  // The progression (bass, rhythm) or hook (lead) for this section, in plain words.
+  function partPicker(s, D, name) {
+    var pt = D.pat.part, key = GG.songs.part.key(pt.seat), cur = pt.sections[name] ? pt.sections[name][key] : -1, ro = D.mode === 'view';
+    return el('div.part-picks', { testid: 'part-picks' }, GG.songs.part.choices(genre(), pt.seat, name).map(function (c) {
+      return btn('.part-pick' + (c.i === cur ? '.on' : ''), { testid: 'part-pick-' + c.i, disabled: ro && c.i !== cur, onclick: function () {
+        if (ro || c.i === cur) return;
+        D.pat = GG.songs.part.pick(D.pat, name, c.i, gear(), genre()); D.change = null;
+        changed(D); if (D.playing) restart(s, D); s.rerender();
+      } }, c.name);
+    }));
+  }
+  function partMods(s, D, name, after) {
+    return el('div.guide-mods', GG.songs.part.MODS.map(function (m) {
+      return btn('.guide-mod', { testid: 'part-mod-' + m.id, title: m.desc, onclick: function () {
+        if (after) after();
+        var r = GG.songs.part.modify(D.pat, name, m.id, gear(), genre());
+        if (JSON.stringify(r.pattern.part) === JSON.stringify(D.pat.part)) { D.change = { section: name, name: m.name, noop: true }; s.rerender(); return; }
+        D.pat = r.pattern; D.change = { section: name, name: m.name, desc: m.desc, before: r.before, after: r.after };
+        changed(D); if (D.playing) restart(s, D); s.rerender();
+      } }, m.name);
+    }));
+  }
+  // The advanced screen's "Your part | Drums" switch.
+  function layerSwitch(s, D) {
+    var on = partLayer(D);
+    return el('div.seq-layers', { testid: 'seq-layers' }, [
+      btn('.btn.small' + (on ? '.on' : ''), { testid: 'seq-layer-part', 'aria-pressed': on ? 'true' : 'false', onclick: function () { D.layer = 'part'; s.rerender(); } }, 'Your part'),
+      btn('.btn.small' + (on ? '' : '.on'), { testid: 'seq-layer-drums', 'aria-pressed': on ? 'false' : 'true', onclick: function () { D.layer = 'drums'; s.rerender(); } }, 'Drums (' + drummerName() + ')')]);
+  }
   // v0.9: who takes the solo (gig.roles solo: lead guitar > guitar > fiddle; the same resolver the gig and the audio use)
   // and who names the songs (band.roles.namer), for the songwriter's copy. { id, name, pos: "Dana's", verb }
   function soloWho() {
-    var id = st() ? ui.roleOf('soloist') : null, n = id ? ui.who(id).short : null, fiddle = id && /fiddle/.test(ui.who(id).role || '');
+    var id = st() ? ui.roleOf('soloist') : null;
+    if (id === 'player') return { id: id, name: 'You', pos: 'Your', verb: 'shred', you: true };   // v1.1: the lead seat's solo is yours
+    var n = id ? ui.who(id).short : null, fiddle = id && /fiddle/.test(ui.who(id).role || '');
     return { id: id, name: n || 'The guitarist', pos: n ? n + '’s' : 'The guitarist’s', verb: fiddle ? 'saws away' : 'shreds' };
   }
   function namer() { var id = st() ? ui.roleOf('namer') : null; return id ? ui.who(id).short : 'the band'; }
@@ -95,12 +226,12 @@
     setMeter(V.hook, r.hook, tone(r.hook));
     setMeter(V.diff, r.difficulty, r.difficulty > ability ? 'var(--bad)' : 'var(--blue)');
     V.ability.style.left = U.clamp(ability, 0, 99) + '%';
-    var tips = r.tips.slice();
+    var tips = (partLayer(D) && r.part && r.part.tips ? r.part.tips : r.tips).slice();   // v1.1: the part grid shows your part's tips
     if (r.difficulty > ability + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
     if (!V.tip) return r;
     ui.clear(V.tip);
     if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
-    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are ' + soloWho().pos + '.']);
+    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided && !partLayer(D)) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are ' + soloWho().pos + '.']);
     else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
     else ui.append(V.tip, [r.notes ? el('b.amber', GG.songs.verdict(genre(), r.groove) + ' ') : null, tips.slice(0, 2).join(' ')]);
     return r;
@@ -140,10 +271,21 @@
     return grid;
   }
   // Tap toggles; dragging paints the same value (on or off) across every cell the finger crosses.
-  function paintable(grid, D) {
+  function paintable(grid, D, isPart) {
     var paint = null;
     function cellOf(node) { return node && node.classList && node.classList.contains('cell') ? node : null; }
+    function rowsOf() { return isPart ? D.pat.part.sections[D.tab].rows : D.pat.sections[D.tab]; }
     function apply(c) {
+      if (isPart) {   // v1.1: your part's grid (rows, no kick rule)
+        var pr = +c.dataset.l, ps = +c.dataset.s, rows = rowsOf();
+        if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
+        rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
+        c.classList.toggle('on', paint.value);
+        if (paint.value && !(D.handle && D.handle.playing)) partPreview(pr);
+        D.hint = null; D.change = null;
+        changed(D);
+        return;
+      }
       var l = +c.dataset.l, step = +c.dataset.s, sec = D.pat.sections[D.tab], cur = GG.songs.isHit(sec[l], step);
       if (cur === paint.value) return;
       if (paint.value && l === 0 && GG.songs.kickBlocked(sec[0], step, gear())) {
@@ -160,7 +302,7 @@
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
-      var sec = D.pat.sections[D.tab];
+      var sec = rowsOf();
       paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       apply(c);
@@ -208,7 +350,7 @@
     var r = D.rating || rerate(D);
     var parts = [
       D.mode === 'write' ? el('div.row.small.dim', [el('span.grow', 'Rather go one step at a time?'), btn('.btn.small', { testid: 'btn-seq-guided', onclick: function () {
-        stopPlay(D); D.guided = true; D.step = 'verse'; setMode('guided'); s.rerender();
+        stopPlay(D); D.guided = true; D.step = strSeat() ? 'drums' : 'verse'; D.layer = null; setMode('guided'); s.rerender();
       } }, 'Guided steps')]) : null,
       el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
         : el('div.row', [
@@ -277,7 +419,7 @@
   }
   function startPlay(s, D, kind) {
     var section = kind === 'song' ? null : (D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab);
-    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, Object.assign({ genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }, sing())) : null;
+    var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, Object.assign({ genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }, sing(), seatPlay(D))) : null;   // v1.1: + your part
     if (!h) { ui.toast("No sound on this device. Imagine it. It's loud."); return; }
     D.handle = h; D.playing = kind;
     if (D.view && D.view.pos) D.view.pos.textContent = '';
@@ -323,6 +465,7 @@
     kind: 'full', cls: 'seq',
     build: function (s, D) {
       if (!D.pat) D.pat = GG.songs.starter(genre(), gear());
+      if (D.mode !== 'view' && !D.partReady) { withPart(D.pat); D.partReady = true; }   // v1.1: a string seat writes its part
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
@@ -334,15 +477,15 @@
         if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam();
       } }, 'Let the band jam one') : D.mode === 'sketch' && ui.openGear ? btn('.btn.small.seq-jam', { testid: 'btn-kit-shop', onclick: function () {   // v0.8: the drum shop
         stopPlay(D); ui.openGear();
-      } }, '🛒 Drum shop') : null;
+      } }, strSeat() ? '🛒 ' + cap(instrument()) + ' shop' : '🛒 Drum shop') : null;   // v1.1: your seat's shop
       if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
-      var present = D.tab === 'song' || hasSec(D, D.tab);
+      var present = D.tab === 'song' || hasSec(D, D.tab), layer = D.tab !== 'song' && present && partLayer(D);
       var tools = ro || D.tab === 'song' || !present ? null : btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'Copy or clear', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯');
       V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
       V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
       V.tip = el('div.seq-tip', { testid: 'seq-tip' });
       V.pos = el('span.seq-pos');
-      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
+      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : layer ? [partCycle(s, D, D.tab), buildPartGrid(s, D)] : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
       ui.append(s.body, [
         el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
           stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -351,6 +494,7 @@
           D.tab = id; s.rerender();
           if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);
         }, 'seq-tab-'), tools]),
+        D.pat.part && D.tab !== 'song' && present ? layerSwitch(s, D) : null,   // v1.1 "Your part | Drums"
         el('div.seq-meters', [V.groove, V.hook, V.diff]),
         el('div.seq-tipline', [V.tip, V.pos]),
         main
@@ -377,18 +521,19 @@
   });
 
   /* ---- v0.6.2 guided songwriter ---------------------------------------------------------------------------- */
-  var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'];
+  var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'], SECTIONS3 = ['verse', 'chorus', 'bridge'];
   var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', solo: 'Solo', outro: 'Outro', tempo: 'Tempo', order: 'Song order', name: 'Name' };
   // v0.8: an owned Solo / Outro gets its own step after the bridge.
-  function gsteps() { return GSTEPS.slice(0, 3).concat(GG.songs.allSections(gear()).filter(isExtra), GSTEPS.slice(3)); }
+  function gsteps() { return (strSeat() ? ['drums'] : []).concat(GSTEPS.slice(0, 3), GG.songs.allSections(gear()).filter(isExtra), GSTEPS.slice(3)); }   // v1.1: drums first on a string seat
+  GNAMES.drums = 'Drums';
   function extraStep(s, D, name) {
     var on = hasSec(D, name), def = extraDef(name);
     var sw = soloWho(), ns = ui.bandLines('noSolo'), noSolo = ui.fill((Array.isArray(ns) ? ns[0] : ns) || '{soloist} will mention it. Gently. Twice.');
-    var yes = name === 'solo' ? 'Yes: ' + sw.pos + ' solo before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
+    var yes = name === 'solo' ? 'Yes: ' + sw.pos + (sw.you ? ' solo' : ' solo') + ' before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
     return [el('div.guide-hint', { testid: 'guide-hint' }, def.blurb),
       el('div.guide-presets', [
         btn('.guide-preset' + (on ? '.on' : ''), { testid: 'guide-extra-' + name + '-yes', onclick: function () { if (!on) addExtra(s, D, name); } },
-          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? 'Live you play quarter notes while ' + sw.name + ' ' + sw.verb + '. Crowds love a solo after the first chorus.' : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
+          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? (sw.you ? 'Live the whole section is your spotlight. Crowds love a solo after the first chorus.' : 'Live you play ' + (strSeat() ? 'one note a beat' : 'quarter notes') + ' while ' + sw.name + ' ' + sw.verb + '. Crowds love a solo after the first chorus.') : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
         btn('.guide-preset' + (!on ? '.on' : ''), { testid: 'guide-extra-' + name + '-no', onclick: function () { if (on) removeExtra(s, D, name); } },
           [el('span.gp-top', [el('b', no), !on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? noSolo : 'Like a pickup truck hitting a snowbank.')])]),
       on ? el('div.small.dim', 'Tweak it in Advanced ⚙ if you like. It\'s already built from your ' + (name === 'solo' ? 'verse' : 'chorus') + '.') : null];
@@ -408,23 +553,61 @@
     order: [{ role: 'vocals', text: 'Verse, chorus, repeat. People like knowing where they are.' }, { role: 'bass', text: 'Short songs get played. Long songs get talked about.' }],
     name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }]
   };
+  // v1.1 string seats: coach[genre].bySeat[seat][step] and coach.bySeat[seat][step] come first (Lane A's lines; role
+  // 'drummer' = whoever is on the kit), then SEAT_COACH (neutral), then the drum-seat sets; a line's seat / swapped gates hold.
+  var SEAT_COACH = {
+    drums: [{ role: 'drummer', text: 'I picked a groove. Tell me if you want something else. Or do not. I will play it anyway.' }],
+    verse: [{ role: 'drummer', text: 'Lock in with my kick and we are a band. Wander off and we are two bands.' }, { role: 'vocals', text: 'Leave me some room to sing over {yourPart}.' }],
+    chorus: [{ role: 'vocals', text: 'The chorus needs a lift. Make {yourPart} bigger than the verse.' }, { role: 'drummer', text: 'Same chords as the verse? Bold. Wrong, but bold.' }],
+    bridge: [{ role: 'drummer', text: 'The bridge is where we get weird. Then we come home.' }]
+  };
   function coachFor(D, step) {
     // (coach[genre] || {})[step] || coach[step] (the neutral flat set), then the UI's own COACH; the first set with a talker wins
     var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
-    var sets = [mine[step], CO[step], COACH[step]].filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
-    var act = ui.talkers(state);
+    var sp = seat(), bySeat = function (o) { return o && o.bySeat && o.bySeat[sp] ? o.bySeat[sp][step] : null; };
+    var seatSets = sp !== 'drums' ? [bySeat(mine), bySeat(CO), SEAT_COACH[step]] : [];
+    var sets = seatSets.concat([mine[step], CO[step], COACH[step]]).filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
+    var act = ui.talkers(state), dr = sp !== 'drums' && GG.career.drummerId ? GG.career.drummerId(state) : null;
     for (var q = 0; q < sets.length; q++) {
       var lines = sets[q];
       for (var k = 0; k < lines.length; k++) {
         var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
-        if (!ui.ownLines([ln.text], state).length) continue;
-        for (var j = 0; j < act.length; j++) if (re.test(act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+        if (!ui.ownLines([ln.text], state).length || (GG.career.seatOk && !GG.career.seatOk(state, ln))) continue;
+        if (ln.role === 'drummer') { if (dr && act.some(function (m) { return m.id === dr; })) return { who: dr, text: ui.fill(ln.text, state) }; continue; }
+        for (var j = 0; j < act.length; j++) if (act[j].id !== dr && re.test(GG.career.stageRole ? GG.career.stageRole(state, act[j]) : act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
       }
     }
     var own = sets.length ? ui.ownLines(sets[0], state) : [];
     return own[0] ? { who: null, text: ui.fill(own[0].text, state) } : null;
   }
   function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }
+  // v1.1 string seats, guided: the swapped drummer's suggested groove (one line per section) + "Tell {drummer} what to play"
+  // (today's drum grid, unchanged) ; then "Your part" per section.
+  function drumsStep(s, D) {
+    var who = drummerName();
+    return [el('div.guide-hint', { testid: 'guide-hint' }, who + ' suggests a groove for every part. You write your ' + instrument() + ' part next.'),
+      el('div.part-drums.panel', { testid: 'part-drums' }, GG.songs.sectionsOf(D.pat).map(function (name) {
+        var pr = GG.songs.presetOf(D.pat, name, genre(), gear());
+        return el('div.row', [el('b.grow', SEC_LABEL[name] || cap(name)), el('span.small.dim', pr ? presetName(pr) : 'Something of their own')]);
+      })),
+      btn('.btn.block', { testid: 'btn-tell-drummer', onclick: function () {
+        stopPlay(D); D.guided = false; D.layer = 'drums'; D.tab = 'verse'; s.rerender();
+      } }, 'Tell ' + who + ' what to play'),
+      el('div.small.dim', 'The drum grid is the same one drummers use. "Guided steps" on the Song tab brings you back.')];
+  }
+  function partStep(s, D, name) {
+    var pt = D.pat.part, lead = pt.seat === 'lead', ch = D.change && D.change.section === name ? D.change : null;
+    var hint = name === 'chorus' ? (lead ? 'Pick the hook for the chorus, then make it repeat: that is what people sing back.' : 'Pick the chorus progression. Different from the verse = the lift.')
+      : name === 'bridge' ? 'The bridge goes somewhere else, then the last chorus hits harder.'
+      : lead ? 'Pick a hook, then tap where its notes land. Low notes on the left, high on the right.'
+      : 'Pick a progression, then tap your rhythm: ' + (pt.seat === 'bass' ? 'root, fifth or octave.' : 'chug (palm-muted) or open (ringing). Both = an accent.');
+    return [el('div.guide-hint', { testid: 'guide-hint' }, hint), partPicker(s, D, name),
+      el('div.guide-partgrid', buildPartGrid(s, D)),
+      el('div.caps', { style: 'margin-top:4px' }, 'One-tap tweaks'), partMods(s, D, name),
+      ch && ch.noop ? el('div.guide-change.small.dim', { testid: 'guide-change' }, '“' + ch.name + '” has nothing left to change here. Try another tweak.') :
+      ch ? el('div.guide-change', { testid: 'guide-change' }, [el('div', [el('b', ch.name + ': '), ch.desc]), el('div.chips', [
+        chip('Groove', ch.before.groove, ch.after.groove), chip('Hook', ch.before.hook, ch.after.hook), chip('Difficulty', ch.before.difficulty, ch.after.difficulty, true)])]) : null];
+  }
   function chip(label, a, b, neutral) {
     var d = b - a;
     return el('span.chip' + (!d ? '' : neutral ? '.gd' : d > 0 ? '.up' : '.down'), label + ' ' + a + ' → ' + b);
@@ -497,7 +680,8 @@
           var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
   }
   function buildGuided(s, D) {
-    var STEPS = gsteps(), step = STEPS.indexOf(D.step) >= 0 ? D.step : (D.step = 'verse'), i = STEPS.indexOf(step), ex = isExtra(step), sec = i < 3 || (ex && hasSec(D, step)), V = D.view = {};
+    var STEPS = gsteps(), step = STEPS.indexOf(D.step) >= 0 ? D.step : (D.step = STEPS[0]), i = STEPS.indexOf(step), ex = isExtra(step);
+    var sec = SECTIONS3.indexOf(step) >= 0 || (ex && hasSec(D, step)), V = D.view = {};
     D.tab = sec ? step : 'song';
     V.title = btn('.seq-title', { testid: 'seq-title', onclick: function () { if (!D.custom) { reroll(D); if (step === 'name') s.rerender(); else head(s, D); } } });
     var jam = btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () { if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam(); } }, 'Let the band jam one');
@@ -508,7 +692,8 @@
     V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
     V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
     var c = coachFor(D, step);
-    var body = step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D) : ex ? extraStep(s, D, step) : sectionStep(s, D, step);
+    var body = step === 'drums' ? drumsStep(s, D) : step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D)
+      : ex ? extraStep(s, D, step) : D.pat.part ? partStep(s, D, step) : sectionStep(s, D, step);   // v1.1: your part on a string seat
     ui.append(s.body, [
       el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': 'Back to the planner', onclick: function () {
         stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -520,7 +705,7 @@
     ]);
     function go(k) { stopPlay(D); D.step = STEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
     var back = btn('.btn', { testid: 'btn-guide-back', disabled: i === 0, onclick: function () { if (i > 0) go(i - 1); } }, '‹ Back');
-    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec ? 'loop' : 'song'); } });
+    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec || step === 'drums' ? 'loop' : 'song'); } });
     var next = i < STEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
       : btn('.btn.primary', { testid: 'btn-guide-save', onclick: function () { save(s, D); } }, 'Save ✓');
     ui.append(s.foot, [back, V.play, next]);
@@ -533,6 +718,21 @@
     build: function (s, d) {
       var owner = d.owner, D = owner && owner.data; if (!D) return;
       function done(fn) { fn(); ui.close(s.id); owner.rerender(); changed(D); }
+      if (partLayer(D) && D.pat.part.sections[D.tab]) {   // v1.1: your part's tools: the one-tap modifiers, copy, clear
+        s.setTitle('Your part');
+        s.body.appendChild(partMods(owner, D, D.tab, function () { ui.close(s.id); }));
+        GG.songs.sectionsOf(D.pat).forEach(function (name) {
+          if (name === D.tab || !D.pat.part.sections[name]) return;
+          s.body.appendChild(btn('.btn.block', { testid: 'part-copy-' + name, style: 'margin-top:8px', onclick: function () {
+            done(function () { D.pat.part.sections[D.tab] = U.clone(D.pat.part.sections[name]); });
+          } }, 'Copy your ' + cap(name) + ' part'));
+        });
+        s.body.appendChild(btn('.btn.danger.block', { testid: 'part-clear', style: 'margin-top:8px', onclick: function () {
+          done(function () { D.pat.part.sections[D.tab].rows = D.pat.part.sections[D.tab].rows.map(function () { return '................'; }); });
+        } }, 'Clear your ' + D.tab + ' part'));
+        s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: function () { ui.close(s.id); } }, 'Cancel'));
+        return;
+      }
       GG.songs.sectionsOf(D.pat).forEach(function (name) {   // v0.8: + the song's Solo / Outro
         if (name === D.tab) return;
         s.body.appendChild(btn('.btn.block', { testid: 'seq-copy-' + name, style: 'margin-bottom:8px', onclick: function () {
@@ -566,7 +766,7 @@
       var sketch = queued[k] || null, i = k;
       var tip = firstEver && i === 0 && !(GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(state)) ? firstTip(state) : null;   // v1.0: quiet while the w1_write lesson runs
       ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), hint: tip,
-        pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : GG.songs.starter(genre(), gear()),
+        pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : strSeat() ? drummerGroove(GG.songs.starter(genre(), gear())) : GG.songs.starter(genre(), gear()),   // v1.1: {drummer}'s groove
         title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,
         onSave: function (entry) { out[i] = entry; taken.push(entry.title); k++; next(); },
         onJam: function () { out[i] = null; if (sketch) keep.push(sketch); k++; next(); },
@@ -578,6 +778,10 @@
   // v0.9: writeTips are member-keyed (every band's members, genre-correct); a band without any gets a neutral grid tip.
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
+    if (strSeat()) {   // v1.1 review: the drum writeTips are the drum grid's; a string seat starts from the drummer's groove
+      var tk = ui.talkers(state)[0];
+      return tk ? { who: tk.id, text: ui.fill('{drummer} has a groove ready. Pick your ' + (GG.career.seatOf(state) === 'lead' ? 'hook' : 'chords') + ' for each section, then tap your part on the grid. Hit play to hear it.', state) } : null;
+    }
     var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
     var ids = Object.keys(tips).filter(function (id) { return ui.talkers(state).some(function (m) { return m.id === id; }); });
     var who = ui.pick(ids);
@@ -588,7 +792,7 @@
   // The kit hotspot: the sketch pad on state.draft.
   ui.openSketch = function () {
     var state = st(); if (!state) return;
-    ui.show('seq', { mode: 'sketch', pat: state.draft ? GG.songs.sanitize(state.draft, gear(), genre()) : GG.songs.starter(genre(), gear()) });
+    ui.show('seq', { mode: 'sketch', pat: state.draft ? GG.songs.sanitize(state.draft, gear(), genre()) : strSeat() ? drummerGroove(GG.songs.starter(genre(), gear())) : GG.songs.starter(genre(), gear()) });
   };
   function useSketch(s, D) {
     var state = st(); if (!state || D.done) return;
@@ -612,6 +816,6 @@
   GG.registerDebug('seq', function () {
     var e = ui.get && ui.get('seq'), D = e && e.data;
     return D ? { mode: D.mode, tab: D.tab, guided: !!D.guided, step: D.guided ? D.step : null, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
-      playhead: D.view ? D.view.ph : null } : null;
+      playhead: D.view ? D.view.ph : null, seat: seat(), layer: partLayer(D) ? 'part' : 'drums', part: D.pat && D.pat.part ? U.clone(D.pat.part) : null } : null;
   });
 })(window.GG);

@@ -9,6 +9,9 @@
 //            stepper inside item.range (setPrice), "Buy N boxes" (buyStock; the first shirt order comes back misprinted: a
 //            tease for Monday's card).
 //   'shop-collector' (full): the misprint turns into a collector's item (shop:misprint status 'collector', or wrap.shop).
+// v1.1 "Seats" (plan_contract_1.1 §4.6, owner E14b): on a string seat 'gear' is "{Instrument} shop": your rig now (amp tier,
+//   your lanes, runs, the lead's whammy), the amp tiers and your seat's line (parody names per genre at the drum prices;
+//   GG.shop.gearItems / kitTiers name them), a buy plays your instrument and says what the swapped drummer got.
 // Panels for 57_ui_van's garage-door sheet ('van-info' tabs Van / Space / Car lot): ui.vanSide(st) (an SVG side view of the
 // vehicle tier: rusted minivan, 15-passenger + trailer, sprinter, tour bus; the name on the door; a sticker per venue played,
 // banned ones crossed out), ui.vanUpgradesPanel, ui.spacePanel (spaces + move, this space's upgrades), ui.dealerPanel (vans:
@@ -79,7 +82,16 @@
     if (!GG.audio || !GG.audio.hit) return;
     list.forEach(function (lane, i) { setTimeout(function () { try { GG.audio.hit(lane); } catch (e) { /* no audio */ } }, 40 + i * (gap || 120)); });
   }
+  // v1.1: a string seat hears its instrument (a little run up the neck; the amp: a big open chord).
+  function seatHear(id) {
+    var A = GG.audio, st = S(), seat = GG.career.seatOf(st), f = A && (seat === 'bass' ? A.pluck : seat === 'lead' ? A.lead : A.strum);
+    if (!f) return;
+    var B = GG.songs.genre(st.genre).backing || {}, root = (B.root || 40) + (seat === 'bass' ? -12 : seat === 'lead' ? 12 : 0);
+    var notes = id === 'pedal' ? [0, 0, 0, 0, 0, 0, 0, 0] : id === 'toms' ? [0, 3, 5, 7, 12] : id === 'ride' ? [0, 7, 12, 15, 19] : [0, 7, 12];
+    notes.forEach(function (n, i) { setTimeout(function () { try { f(root + n, undefined, { len: id === 'pedal' ? 0.08 : 0.3, kind: seat === 'bass' ? 'bass' : seat === 'lead' ? 'lead' : 'gtr', power: seat !== 'lead' }); } catch (e) { /* no audio */ } }, 40 + i * (id === 'pedal' ? 70 : 130)); });
+  }
   function hear(id) {
+    if (S() && GG.career.seatOf(S()) !== 'drums') { seatHear(id); return; }
     if (id === 'toms') hits(['toms', 'toms', 'toms', 'kick'], 110);
     else if (id === 'ride') hits(['ride', 'ride', 'ride', 'ride'], 180);
     else if (id === 'pedal') hits(['kick', 'kick', 'kick', 'kick', 'kick', 'kick', 'cymbal'], 75);
@@ -97,17 +109,19 @@
      The drum shop
      ====================================================================================================== */
   function sectionRow(st, id) {
-    var def = (content().sections || {})[id] || { name: id, blurb: '' }, own = SH().ownsSection(st, id);
-    var how = fill(id === 'outro' ? 'Unlocks after 3 songs written. {filler} will have an idea.' : 'Local Heroes: {soloist} will insist. Your sticks are being held hostage.');
+    var def = SH().sectionDef(st, id), own = SH().ownsSection(st, id);   // v1.1 review: the seat's text
+    var how = fill(id === 'outro' ? 'Unlocks after 3 songs written. {filler} will have an idea.' : ui.roleOf('soloist', st) === 'player' ? 'Local Heroes: your solo section arrives. Your {sticks} have been ready for years.'
+      : 'Local Heroes: {soloist} will insist. Your {sticks} are being held hostage.');   // v1.1: {sticks}; the lead seat's solo is yours
     return el('div.shop-row' + (own ? '.own' : '.locked'), { testid: 'gear-section-' + id }, [
       el('span.shop-ico', id === 'outro' ? '🎬' : '🎸'),
-      el('div.grow', [el('b', def.name), el('div.small.dim', def.blurb), own ? null : el('div.tiny.amber', how)]),
+      el('div.grow', [el('b', def.name), el('div.small.dim', fill(def.blurb)), own ? null : el('div.tiny.amber', how)]),
       el('span.tag' + (own ? '.amber' : ''), own ? 'In your songs' : 'Locked')]);
   }
   ui.define('gear', {
     kind: 'sheet', tall: true, cls: 'shop',
     build: function (s) {
       var st = S(); if (!st || !SH()) return;
+      if (GG.career.seatOf(st) !== 'drums') { seatShop(s, st); return; }   // v1.1: your seat's line
       s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
       ui.append(s.body, el('div.stack', [
@@ -154,6 +168,57 @@
     onClose: function () { ui.clearToasts(); }
   });
   ui.openGear = function () { return S() && SH() ? ui.show('gear') : null; };
+  // v1.1 "Seats": the string seats' shop (same items, prices and eras as the kit; your rig's names). testids as the drum
+  // shop (gear-kit-<tier>, gear-buy-<id>, gear-item-<id>, gear-why-<id>) + gear-now (data-seat, data-lanes, data-runs).
+  var SEAT_ICON = { toms: '🎸', ride: '🎚️', pedal: '⚡' };
+  function seatShop(s, st) {
+    var seat = GG.career.seatOf(st), inst = GG.career.tokenValue(st, 'instrument'), lanes = GG.career.seatLanes(st), runs = GG.career.seatRuns(st), g = st.gear;
+    var kd = SH().kitDef(g.quality) || {}, items = SH().gearItems(st), mine = items.filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
+    s.setTitle(ui.cap(inst) + ' shop', 'PAWN SHOP ROW · ' + street(st));
+    ui.append(s.body, el('div.stack', [
+      el('div.panel.warm.shop-now', { testid: 'gear-now', data: { seat: seat, lanes: String(lanes), runs: runs ? '1' : '0' } }, [el('div.caps', 'Your rig now'), el('div.shop-big', SH().kitName(st, kd) || 'An amp'),
+        el('div.small.dim', [lanes + ' lanes on your highway' + (runs ? ' · runs' : '') + (SH().whammy(st) ? ' · whammy' : '') + (mine.length ? ' · ' + mine.join(', ') : ''),
+          ' · the amp tier changes how the whole band sounds']),
+        el('div.small', { style: 'margin-top:4px' }, SH().kitTiers(st)[g.quality] ? SH().kitTiers(st)[g.quality].blurb : '')]),
+      el('div.caps', 'Your amp (one at a time, in order)'),
+      el('div.stack.tight', SH().kitTiers(st).map(function (k) {
+        var state = k.current ? 'Playing it' : k.owned ? 'Sold it on' : null;
+        return el('div.shop-row' + (k.current ? '.own' : !k.can && !k.owned ? '.locked' : ''), { testid: 'gear-kit-' + k.tier }, [
+          el('span.shop-tier', String(k.tier + 1)),
+          el('div.grow', [el('b', k.name), k.whammy ? el('span.tag', { style: 'margin-left:6px' }, '+ whammy') : null, el('div.small.dim', k.blurb),
+            !k.can && k.why ? el('div.tiny.bad', { testid: 'gear-why-kit-' + k.tier }, k.why) : null]),
+          state ? el('span.tag' + (k.current ? '.amber' : ''), state)
+            : btn('.btn.small' + (k.can ? '.primary' : ''), { testid: 'gear-buy-kit-' + k.tier, disabled: !k.can, style: 'min-height:48px', onclick: function () {
+              var r = SH().buyKit(S(), k.tier);
+              if (!r.ok) return nope(r);
+              bought('kit', k.id, r); hear('kit'); dbg.gear++;
+              ui.clearToasts(); ui.toast(k.name + (k.whammy ? '. It came with a whammy bar. Bends score extra now.' : '. The whole band sounds bigger. Mostly you.'), { who: GG.career.drummerId && ui.isSilent(GG.career.drummerId(S()), S()) ? null : fill('{drummer}'), ms: 2600 });   // v1.1 review: a silent drummer (Kenji) says nothing
+              refreshSeq(); s.rerender();
+            } }, money(k.cost))]);
+      })),
+      el('div.caps', 'Your ' + inst),
+      el('div.stack.tight', items.map(function (x) {
+        var tag = x.lane ? 'Lane ' + x.lane : x.runs ? 'Runs' : x.cab ? 'Cab' : null;
+        return el('div.shop-row' + (x.owned ? '.own' : !x.can ? '.locked' : ''), { testid: 'gear-item-' + x.id, data: { lane: x.lane ? String(x.lane) : '', runs: x.runs ? '1' : '0' } }, [
+          el('span.shop-ico', x.cab ? '🧊' : SEAT_ICON[x.id] || '🎸'),
+          el('div.grow', [el('b', x.name), tag ? el('span.tag', { style: 'margin-left:6px' }, tag) : null,
+            el('div.small.dim', x.blurb), !x.owned && !x.can && x.why ? el('div.tiny.bad', { testid: 'gear-why-' + x.id }, x.why) : null]),
+          x.owned ? el('span.tag.amber', 'In your rig') : btn('.btn.small' + (x.can ? '.primary' : ''), { testid: 'gear-buy-' + x.id, disabled: !x.can, style: 'min-height:48px', onclick: function () {
+            var r = SH().buyGear(S(), x.id);
+            if (!r.ok) return nope(r);
+            bought('gear', x.id, r); hear(x.id); dbg.gear++;
+            ui.clearToasts();
+            ui.toast((x.lane ? 'Lane ' + x.lane + ' is on your highway now.' : x.runs ? 'Hold a run and it plays itself.' : 'Eight speakers in a fridge. The floor hums along.')
+              + fill(' {drummer} got a new drum to match.'), { who: x.name, ms: 2600 });
+            refreshSeq(); s.rerender();
+          } }, money(x.cost))]);
+      })),
+      el('div.caps', 'Song sections'),
+      el('div.stack.tight', [sectionRow(st, 'outro'), sectionRow(st, 'solo')]),
+      el('p.tiny.faint.center', 'Every price matches the drum shop. The drummer checked.')
+    ]));
+    s.foot.appendChild(btn('.btn.block', { testid: 'btn-gear-done', onclick: function () { ui.close(s.id); } }, 'Back to your rig'));
+  }
 
   /* ======================================================================================================
      The merch table
@@ -466,9 +531,9 @@
     if (sh.rent) out.push(el('div.line-list.panel', { testid: 'wrap-rent' }, [el('div', [el('span', 'Rent · ' + rentRoom + ' (in upkeep)'), el('span.bad', '−' + money(sh.rent))])]));
     (sh.unlocks || []).forEach(function (u) {
       if (u.kind === 'section') {
-        var sd = (content().sections || {})[u.id] || { name: u.id, blurb: '' };
+        var sd = SH().sectionDef(st, u.id);
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'section', id: u.id } }, [el('span', { style: 'font-size:24px' }, u.id === 'outro' ? '🎬' : '🎸'),
-          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', sd.blurb + ' New tab in the songwriter.')])]));
+          el('div.grow', [el('div', { style: 'font-weight:800' }, sd.name + ' section unlocked'), el('div.small.dim', fill(sd.blurb) + ' New tab in the songwriter.')])]));
       } else if (u.kind === 'merch') {
         var names = (u.ids || []).map(function (id) { var d = SH().merchDef(id); return d ? d.name : id; });
         out.push(el('div.panel.warm.row', { testid: 'wrap-shop-unlock', data: { kind: 'merch' } }, [el('span', { style: 'font-size:24px' }, '👕'),

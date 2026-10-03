@@ -6,6 +6,9 @@
 // API (GG.render.carpet): setup({ members:[{id,look,role}], player, flags, outfit:'cape'|'tux'|'jumpsuit'|null, rival:{name},
 //   genre, year, sign? (v0.7: the marquee text, default 'The Loonies'; the Global Gong uses 'The Global Gong') }) ; setMode('carpet'|'podium') ; flash(n) ; envelope(true|false|null) (won / lost / reset) ;
 //   setFrame({ top, bottom }) ; info().
+// v1.1 "Seats" (Lane C): on a string seat (state.seat) you walk the carpet with your own instrument on (player.gearLook ->
+//   R.seatGear; no extra draw call) and hold it for the photographers (the axe pose; arms up with it when you win); info().you
+//   = { seat, gear }. The drum seat is unchanged (no gear on anyone).
 // Draw calls ≈ set 1 + glow 1 + wall 1 + photographers 1 + flashes 1 + confetti 1 + band ≤6 + rival 4 + paint 4
 //   + presenter 1 + envelope 1 ≈ 22. Per frame: numbers only (preallocated dummies, typed arrays), no allocation.
 (function (GG) {
@@ -296,13 +299,14 @@
       var o = pending.o || {}, st = GG.state || {}, band = GG.content && GG.content.bands && GG.content.bands[st.bandId || 'hail_damage'];
       var flags = o.flags || st.flags || {}, cv = flags.cape, outfit = o.outfit || null;
       var cape = typeof cv === 'string' && cv !== 'none' ? (CAPE_OK[cv] ? cv : 'velvet') : outfit === 'cape' ? 'velvet' : null;
-      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null, painted: 0, wave: 'polite', rivalId: null };
+      P = { chars: [], geos: [], list: [], band: [], rival: [], host: null, env: null, painted: 0, wave: 'polite', rivalId: null, you: null };
       var mem = (o.members || st.members || (band && band.members) || []).filter(function (m) { return m && (!m.status || m.status === 'active'); }).slice(0, 5);
       var pl = o.player || st.player || {}, preset = GG.content && GG.content.presets && pl.presetId ? GG.content.presets.filter(function (x) { return x.id === pl.presetId; })[0] : null;
       var stageLook = function (m, cm) { return GG.creator ? GG.creator.stageLookFor(m, cm) : null; };   // v0.8: stage looks on the carpet
       var pLook = stageLook(pl) || pl.look || (preset && preset.look) || null;
       if (pLook && pLook.outfit && outfit && outfit !== 'cape') { pLook = copyLook(pLook); delete pLook.outfit; }   // the band's outfit card wins
       var roster = [{ id: 'player', look: pLook }].concat(mem);
+      if (mem.length && /^(bass|rhythm|lead)$/.test(o.seat || st.seat || '')) roster = [mem[0], roster[0]].concat(mem.slice(1));   // v1.1 review: with an instrument you walk second (the body stays in frame)
       var capeId = null;
       for (var i = 0; i < roster.length; i++) { var cmc = contentMember(band, roster[i].id); if (roster[i].cape || (cmc && cmc.cape)) capeId = roster[i].id; }   // v0.9: member.cape
       if (!capeId) for (i = 0; i < roster.length; i++) if (roster[i].id === 'marcel') capeId = 'marcel';
@@ -310,8 +314,10 @@
       var n = roster.length, spread = n > 5 ? 0.68 : 0.76;
       for (i = 0; i < n; i++) {
         var m = roster[i], cm = contentMember(band, m.id), look = outfitLook((m.id !== 'player' && stageLook(m, cm)) || m.look || (cm && cm.look) || null, outfit, i);
-        var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null }, 'band', i);
+        var yg = m.id === 'player' ? youGear(o, st, pl) : null;   // v1.1: your instrument on a string seat
+        var rec = person(look, { id: m.id, scale: SCALE, cape: m.id === capeId ? cape : null, gear: yg || undefined }, 'band', i);
         if (!rec) continue;
+        if (yg) { rec.axe = true; P.you = { seat: o.seat || st.seat, gear: yg }; }
         rec.cx = -3.05 + i * spread; rec.cz = 0.2 - (i % 2) * 0.28;
         rec.px = STAGE_X - 3.35 + i * 0.5; rec.pz = 0.5 - (i % 2) * 0.35;
         rec.x0 = -6.2 - i * 0.55; rec.delay = i * 0.14;
@@ -339,6 +345,12 @@
       if (h) { h.cx = h.px = STAGE_X; h.cz = h.pz = -0.25; h.x0 = STAGE_X; h.arrived = true; P.host = h; P.env = envelopeMesh(h.ch); }
       T.t = 0; T.envelope = null; T.envT = 0;
       placeAll(true);
+    }
+    function youGear(o, st, pl) {
+      var seat = o.seat || st.seat;
+      if (seat !== 'bass' && seat !== 'rhythm' && seat !== 'lead' || !R.seatGear) return null;
+      var kc = (pl.kit && pl.kit.color) || pl.kitColor || null, band = GG.content && GG.content.bands && GG.content.bands[st.bandId];
+      return R.seatGear(seat, pl.gearLook, kc, o.genre || st.genre || (band && band.genre));
     }
     function placeAll(snap) {
       if (!P) return;
@@ -410,7 +422,8 @@
         else if (pod && lost) { var c = Math.sin(t * 11 + r.ph); aLx = -1.1; aRx = -1.1; aLz = -0.35 - c * 0.12; aRz = 0.35 + c * 0.12; fL = -0.4; fR = -0.4; }
         else {
           var k = ((Math.floor((t + r.ph * 2) / 3.2) + r.i) % 4);            // photo poses: horns, point, hip, stand
-          if (k === 0) { aLz = 2.4; aRz = -2.4; }
+          if (r.axe) { aLx = 0.1 - (k === 0 ? 0.5 : 0); aLz = 0.14 + (k === 0 ? 0.3 : 0); fL = -2.05; aRx = -0.35; aRz = 0.12; fR = -0.95 + (k === 1 ? 0.2 * Math.sin(t * 14) : 0); }   // v1.1: your axe for the cameras
+          else if (k === 0) { aLz = 2.4; aRz = -2.4; }
           else if (k === 1) { aRx = -1.5; aRz = -0.2; }
           else if (k === 2) { aLz = 0.6; fL = -1.3; aRz = -0.6; fR = 1.3; }
           if (r.cape && T.mode === 'carpet') { r.ch.root.rotation.y = r.yaw + Math.sin(t * 1.6) * 0.9; aLz = 1.3; aRz = -1.3; }
@@ -530,7 +543,8 @@
         return { built: true, mode: T.mode, band: P ? P.band.map(function (r) { return r.id; }) : [], rival: P ? P.rival.length : 0, host: !!(P && P.host),
           rivalId: P ? P.rivalId : null, painted: P ? P.painted : 0, wave: P ? P.wave : null, mascot: !!(P && P.rival.some(function (r) { return r.mascot; })),   // v0.9
           cape: !!(P && P.band.some(function (r) { return r.cape; })), walking: P ? P.band.filter(function (r) { return !r.arrived; }).length : 0,
-          envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length };
+          envelope: T.envelope, confetti: K.conf.visible, sign: K.sign ? K.sign.text : null, geos: K.geos.length + (P ? P.geos.length : 0), mats: K.mats.length, texs: K.texs.length,
+          you: P && P.you ? { seat: P.you.seat, gear: P.you.gear } : null };   // v1.1
       }
     };
     return shell;

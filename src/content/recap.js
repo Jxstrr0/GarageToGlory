@@ -56,7 +56,7 @@
         bad: 'Baba says a real band plays {target} gigs a year. We played {n}. She\'s not mad. She\'s disappointed.' },
       { topic: 'loans', who: ['mom'], target: 0,
         good: 'A good year is one where you don\'t borrow from us. You didn\'t! I\'m framing the bank statement.',
-        bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your kit.' },
+        bad: 'A good year is one where you don\'t borrow from us. You borrowed {n} times. I left a brochure on your {gear}.' },
       { topic: 'chemistry', who: ['kenji'], target: 60,
         good: '(Kenji gives the year one slow, silent nod.)',
         bad: '(Kenji looks at the band for a long time. No nod.)' }

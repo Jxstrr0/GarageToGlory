@@ -98,6 +98,7 @@ async function flow(genre) {
     c.ok(!(await page.locator(tid('genre-punk')).isDisabled()), 'punk is playable (v0.9)');
     await tap(page, 'genre-' + genre);
     await tap(page, 'btn-intro-next');
+    await waitScreen(page, 'seat'); await tap(page, 'seat-next');   // v1.1: the seat picker (drums preselected)
     await waitScreen(page, 'logo'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker (5m_ui_logo)
     await waitScreen(page, 'creator');
     c.ok(await page.locator(tid('btn-create')).isDisabled(), 'create disabled until a name is typed');
@@ -291,7 +292,8 @@ async function layout() {
     await tap(page, 'btn-new'); await waitScreen(page, 'slots'); await check('slots');
     await tap(page, 'slot-1'); await waitScreen(page, 'genre'); await check('genre');
     await tap(page, 'genre-metal'); await waitScreen(page, 'intro'); await check('intro');
-    await tap(page, 'btn-intro-next'); await waitScreen(page, 'logo'); await check('logo', true);   // v0.8.1
+    await tap(page, 'btn-intro-next'); await waitScreen(page, 'seat'); await check('seat', true);   // v1.1 the seat picker
+    await tap(page, 'seat-next'); await waitScreen(page, 'logo'); await check('logo', true);   // v0.8.1
     await tap(page, 'btn-logo-done'); await waitScreen(page, 'creator');
     await page.fill(tid('creator-name'), 'Layla');
     await check('creator', true);

@@ -116,7 +116,7 @@
           changed: 'Back from being grounded. Baba approves (for now) and packs lunches for the whole band.',
           backLine: { who: 'baba', text: 'I heard you on the radio. It was loud. Jaxon may come back. Home by ten. — Baba' }
         },
-        epilogue: "Jaxon becomes a guitar teacher. Every student learns a sneaky fill. Baba approves."
+        epilogue: "Jaxon becomes a music teacher. Every student learns a sneaky fill. Baba approves."
       },
 
       kenji: {
@@ -127,7 +127,7 @@
           '(Kenji reacted 😐 to the pay sheet.)'
         ],
         passive: [
-          '(Kenji sent a photo of his bass case. It is closed.)',
+          '(Kenji sent a photo of his gear case. It is closed.)',
           "(Kenji changed the group name to 'Hail Damage (for now)'.)",
           '(Kenji sent a photo of the highway. No caption. Westbound.)'
         ],
@@ -185,7 +185,7 @@
         { label: 'He introduces every song', effects: fx({ buzz: -3, burnout: 4, mood: { marcel: 12 } }, 'marcel', 'settle'),
           outcome: 'Sets now run 40% longer. The introductions are in French and describe the lawn in detail. The crowd is baffled. Marcel is radiant.' },
         { label: 'Call his bluff', effects: fx({ chemistry: -4 }, 'marcel', 'quit'),
-          outcome: "Marcel folds the letter into a swan, sets it on your snare and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
+          outcome: "Marcel folds the letter into a swan, sets it on your {gear} and exits backwards through the side door. 'Adieu.' His cape catches in the door." }
       ] },
     { id: 'ult_dana', type: 'drama', speaker: 'dana', title: 'Terms and Conditions',
       text: "Dana has made a slideshow. Slide one: every solo she's been cut from, in minutes. Slide two: a 7-string with a 26.5-inch scale. " +
@@ -242,7 +242,7 @@
         { label: 'Audition first', effects: fx({ mood: { marcel: -8 }, skill: { marcel: 2 } }, 'marcel', 'return'),
           outcome: 'He auditions with a nine-minute song about hedges. He gets the gig. He would like everyone to know he was nervous.' },
         { label: 'Not yet, Marcel', effects: fx({ mood: { marcel: -5 } }, 'marcel', 'later'),
-          outcome: 'He nods gravely, leaves the album on your snare, and waits in his car. For weeks. Occasionally he honks.' }
+          outcome: 'He nods gravely, leaves the album on your {gear}, and waits in his car. For weeks. Occasionally he honks.' }
       ] },
     { id: 'ret_marcel_filled', type: 'drama', speaker: 'marcel', title: 'Two Frontmen',
       text: "Marcel is back from Quebec, cape over one arm. He sees {recruit} at his mic stand. 'Ah,' he says. 'I see.' " +

@@ -141,7 +141,7 @@
         "'I'm not heating the whole street so your screaming guy can be quiet.'",
       choices: [
         { label: 'Record in parkas', effects: { burnout: 6, production: 3 },
-          outcome: 'Everyone in toques and snow pants. Dana solos in mittens. Kenji looks exactly the same as always, which is unnerving.' },
+          outcome: 'Everyone in toques and snow pants. Dana plays in mittens. Kenji looks exactly the same as always, which is unnerving.' },
         { label: 'Time the takes', effects: { drumSkill: 1, production: 2 },
           outcome: 'You learn the furnace rhythm by heart and drop every take into the gaps. The whole album is exactly nineteen minutes a song.' },
         { label: 'Pay for a space heater', effects: { fund: -60, production: 1, mood: { all: 3 } },
@@ -177,11 +177,11 @@
 
     // ---- Grain Silo Studios ----------------------------------------------
     { id: 'studio_silo_echo', type: 'weird', speaker: 'dana', title: 'Nine Seconds of Snare', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: HD },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his bass down ' +
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. Kenji plays one low note, puts his gear down ' +
         'and leaves for lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. Deci-Hell will call it "THE SOUND OF THE HARVEST GODS".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of blankets from Cousin Dale. The echo comes down to three seconds. Dana misses the other six.' },
         { label: 'Record the ringing note', effects: { production: 3, mood: { kenji: 6 } },
@@ -189,14 +189,14 @@
       ] },
     { id: 'studio_silo_pigeons', type: 'weird', speaker: 'marcel', title: 'The Pigeons', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: 'Forty pigeons live in the top of the elevator. When you play, they coo. In time. Marcel is convinced they are a choir sent to ' +
-        "him. Dana is convinced they are going to land on her pedalboard.",
+        "him. Dana is convinced they are going to land on her gear.",
       choices: [
         { label: 'Mic the pigeons', effects: { production: 2, buzz: 4 },
           outcome: "'Featuring the Rosthern Pigeon Choir.' Pitchspork will call it the most daring choice of the year. It was Tuesday." },
         { label: 'Shoo them out', effects: { burnout: 5, production: 3 },
           outcome: 'Two hours with a broom. The pigeons leave and come back in a different order. Marcel says they have changed key.' },
         { label: 'Cover the gear', effects: { fund: -40, production: 1, mood: { dana: 5 } },
-          outcome: "Tarps over everything. Dana's pedalboard survives. Your hi-hat does not. $40 and a lot of wet wipes." }
+          outcome: "Tarps over everything. Dana's gear survives. The hi-hat does not. $40 and a lot of wet wipes." }
       ] },
     { id: 'studio_silo_harvest', type: 'scene', speaker: 'jaxon', title: 'Harvest Traffic', once: false, cooldown: 12, gate: { studio: ['grain_silo'], band: HD },
       text: "A farmer still uses the other half of the elevator. Right in the middle of the ballad, a grain truck backs up to the pit, " +
@@ -229,7 +229,7 @@
             fail: { effects: { fund: -150, burnout: 6 }, outcome: "Gerald takes it personally. He leaves with the cooler, a mic stand and Jaxon's lunch. $150 in gear." } } }
       ] },
     { id: 'studio_cabin_generator', type: 'money', speaker: 'dana', title: 'The Generator', once: false, cooldown: 10, gate: { producer: ['solveig_birch'], band: HD },
-      text: "The cabin's generator coughs and dies halfway through Dana's solo. The nearest gas is forty minutes away. Solveig lights " +
+      text: "The cabin's generator coughs and dies halfway through the solo. The nearest gas is forty minutes away. Solveig lights " +
         "a lantern and says the woods are telling you to play acoustic.",
       choices: [
         { label: 'Play it acoustic', effects: { production: 3, mood: { dana: -4 }, chemistry: 4 },
@@ -284,7 +284,7 @@
           outcome: 'Kenji listens to both versions, then silently moves one chorus back. It is exactly right. Chad never calls him "the tall one" again.' }
       ] },
     { id: 'studio_lyle_combine', type: 'weird', speaker: 'jaxon', title: 'The Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: HD },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         "He did not say from whom. It is idling in the parking lot.",
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',
@@ -308,7 +308,7 @@
         { label: 'Ask him for a second take', effects: { mood: { kenji: -6 }, production: 1 },
           outcome: 'Kenji returns, plays the exact same take note for note, hands you a sticky note that says "…" and leaves again.' },
         { label: 'Use the spare days', effects: { production: 2, skill: { all: 1 }, burnout: -3 },
-          outcome: 'With the bass done early, the band spends two days on everything else. Dana plays her solo only twice. Growth.' }
+          outcome: 'With the bass done early, the band spends two days on everything else. Dana does her part only twice. Growth.' }
       ] },
     { id: 'studio_dana_take_41', type: 'drama', speaker: 'dana', title: 'Take Forty-One', once: false, cooldown: 12, gate: { band: HD },
       text: "Dana is on take forty-one of her solo. Takes nine, twenty-two and thirty-five were perfect. She says she 'heard something' " +
@@ -370,11 +370,11 @@
           outcome: "'Engineered by Walt, landlord.' He wants his whole title in the liner notes. And the strip mall's phone number." }
       ] },
     { id: 'studio_any_echo', type: 'weird', speaker: '@soloist', title: 'Nine Seconds of Reverb', once: false, cooldown: 10, gate: { studio: ['grain_silo'], band: OTHERS },
-      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. {bassist} plays one low note, puts the bass down ' +
-        'and leaves for lunch. On Tuesday it is still faintly ringing.',
+      text: 'In the old elevator a snare hit rings for nine seconds. A cough lasts eleven. One low note from {bassist} hangs in the air ' +
+        'through lunch. On Tuesday it is still faintly ringing.',
       choices: [
         { label: 'Use the room. All of it.', effects: { production: 5, burnout: 3 },
-          outcome: 'Your drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
+          outcome: 'The drums sound like a thunderstorm in a cathedral. A critic will call it "the sound of the harvest gods".' },
         { label: 'Hang moving blankets', effects: { production: 2, fund: -80 },
           outcome: '$80 of moving blankets. The echo comes down to three seconds. {soloist} misses the other six.' }
       ] },
@@ -424,7 +424,7 @@
           outcome: "You fight for the bridges and win half of them. Chad says 'love the passion'. He means it as an insult." }
       ] },
     { id: 'studio_any_combine', type: 'weird', speaker: '@filler', title: 'Kick Drum in a Combine', once: false, cooldown: 12, gate: { producer: ['lyle_hnatiuk'], band: OTHERS },
-      text: "Lyle wants to record your kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
+      text: "Lyle wants to record the kick drum inside a combine harvester, 'for the resonance of labour'. He has borrowed a combine. " +
         'He did not say from whom. It is idling in the parking lot.',
       choices: [
         { label: 'Into the combine', hint: 'Gamble: genius, or a farmer',

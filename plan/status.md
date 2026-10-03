@@ -2,20 +2,33 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
+## Open owner questions (v1.1, asked 2026-10-03 after the merge; shipped with the recommended default)
+- Average-bot balance on string seats runs ~+7% fans / +8% fund over drums (5 of 12 cells > +10% at 60 seeds; drums vs
+  drums seed noise is 15–19%; good bot within ±10% everywhere). Default: leave it (re-check with paired seeds in 1.2 Tuning).
+- A lead part you write replaces the shared rhythm-guitar pair in those sections (metal/punk/rock), and an empty part section
+  is silent. Default: keep.
+
 ## Version
-- Current: **1.0.1.0** = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix (one touch on a lane seam hits both lanes only
-  when both have a note due; see the note below). 1.0 "Glory" = 0.9 "Genres" + endings (Legacy score, five tiers, eight
-  specials, epilogues, bonus years, the end sequence), achievements + the laptop Trophies tab, the Hall of Fame (title button,
-  entry sheet, backup code), meta unlocks (looks from finished careers), the guided tutorial (full week 1 + light weeks 2–4,
-  "?" replays) and the perf pass (frame governor, graphics "Auto", the global voice cap). **Update Current/Next at every merge.**
+- Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
+  moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
+  **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge).
-- Next: **1.1 "Seats"** (handoff Part E: play bass / rhythm / lead; draft contract `plan/plan_contract_1.1.md`, re-audit it at
-  its stage 0; the size gate leaves ~270 KB under 4.5 MB) → **1.2 "Tuning"** (D5).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
+- Next: **1.2 "Tuning"** (handoff D5; covers all four seats).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
+
+## Token budget rules (owner 2026-10-02: "less token burn")
+- **This file is the only must-read.** Keep it lean: history ("What's in v0.x", old hotfixes, Addendum 1/2 decisions + done
+  checklists, v0.9 owner decisions) lives in `plan/status_archive.md`; read it only for a specific old detail (grep it).
+- Never read `plan/handoff.md` whole: grep/read only the Part or section the task names (e.g. Part E for Seats).
+- Contracts: read only your lane's section plus §0 and §4. Lane reports and audits go to files; prompts point at file paths,
+  never paste them.
+- Workflows: ≤ 4 build agents, one review pass with ≤ 3 lenses, verify only blocker/major findings (one vote), low effort for
+  mechanical agents (fixtures, merges, reruns). Agents return short reports (≤ 40 lines).
+- The lead compacts the conversation at each milestone (owner runs `/compact`), and keeps check-in prompts self-contained.
 
 ## v1.0 review fixes (2026-10-02, on `v1.0-glory`)
 - Endings: Ramblers bonus cards no longer name Earl in text once he has left ({grumbler} tokens); `endings.bonus.byBand.*.chat`
@@ -108,6 +121,41 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
+## What's in v1.1 "Seats" (contract `plan/plan_contract_1.1.md`; lanes D, B, C, A + lead merged on `v1.1-seats` 2026-10-03)
+- **Pick a seat (lead, 51):** title → slot → genre → intro → **seat** → logo → creator → cold open. Four cards (drums preselected),
+  each says who moves to the drums (`bands.<id>.seatLines`) and your stage spot; a tap plays a ~3 s preview of that seat's
+  part (`GG.audio.seatPreview`); "Your seat is yours for the whole career". Swap table (E3): Hail Damage bass Kenji / rhythm
+  Jaxon / lead Dana; Frost Heave Moth / Rox / Benny; Gravel Kings Tamara / Chase / Lenny; Ramblers Duke / Travis Lee / Earl.
+  Rox, Chase and Travis Lee sing from the kit.
+- **Play it (B + D):** string lanes on the same highway (bass ≤ 5, guitar ≤ 6) by pitch contour; taps + holds (rings), 2-lane
+  chords on Hard/Expert rhythm, runs; your instrument plays through the band's sound (`pluck / strum / lead`, release gates a
+  hold); the backing mutes your kinds, so a miss is silence; the lead gets the solos (whammy bends with amp tier 2).
+- **Write it (B + D):** "Your part" in the songwriter: a progression (bass, rhythm) or hook (lead) per section + a 2–5 row grid;
+  the swapped drummer suggests the groove (drum layer you can tweak); the whole band follows your chords.
+- **See it (C):** the stage's over-the-shoulder spot camera (bass stage-left, rhythm stage-right, lead front-left), you with your
+  instrument (3–4 body shapes per seat, colour, guard, headstock logo sticker: the creator's "Your gear" tab), the swapped
+  drummer on the riser (boom mic when they sing; the fill-in drummer if they quit), "Your rig" in the garage, the carpet pose,
+  the recap photo and the van gig bag.
+- **Live it (A + B):** ~150 audit lines tokenised or gated (strict 10-year seat leak scan clean), 12 first-week + 48 Monday
+  cards for the swapped drummers, three role arcs (Nobody Hears the Bass · The Engine Room · Solo Too Long) + 12 band finales,
+  player epilogues per seat, swapped-drummer epilogue variants, the shop's parody gear names per seat at drum prices (one buy
+  grows your rig and the band's kit), coach lines per seat, four seat achievements (Low End, The Engine Room, Solo Too Long,
+  Musical Chairs).
+- **The drum seat is unchanged:** drum timelines byte-identical (1,212 fingerprints), drum-only balance identical to 1.0.1.0's,
+  every existing test green.
+- **§0 defaults (taken without a popup; the owner may object):** the seat is fixed for the career (old saves load as drummers);
+  `drumSkill` stays the chops stat for every seat; the swapped drummer keeps driving when they are the driver; metal rhythm =
+  Jaxon, metal lead = Dana; the title stays Hail Damage's garage with the drummer at the kit; seat gear = the drum gear economy
+  renamed per seat (bass's 350 item is "the fridge" cab, the lead's whammy comes with amp tier 2); `gear.seatLanes / runs` only
+  on string-seat careers; the backing mutes whole kinds; `{sticks}` reads "picks" on string seats, `{instrument}` "guitar" for
+  rhythm and lead; `'@drummer'` = the swapped drummer.
+- **Leftovers (back burner):** avg-bot balance tilt on string seats (+7 % fans, inside seed noise; good bot within ±10 %);
+  A's forceWeek-2 first-week cards, weekly mood chat not seat-aware, no string-seat tutorial walk/write twins; C's cosmetic
+  camera note (Ramblers rhythm: Clementine fills part of the view) (details: `plan/v11_integration_report.md` §4; the chip
+  overlap, the spot camera's cymbal and the review findings are fixed: §5).
+- **Open owner choices (D):** on metal/punk/rock lead your written part replaces the shared rhythm-guitar pair in the sections you
+  write; a part section with no hits is silent.
+
 ## What's in v1.0 "Glory" (contract `plan/plan_contract_1.0.md`; lanes P, E, M, T merged on `v1.0-glory` 2026-10-02)
 - **Legacy + endings (Lane E, `2f_sim_legacy.js`, `content/endings.js`, `5n_ui_ending.js`):** a 0–1000 Legacy score from seven
   parts (fans, units, awards, biggest venue headlined, regions, band unity, the Sad Dome); five tiers by score only (Arena
@@ -161,433 +209,6 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - **Seat-aware hooks (E12):** `HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}`, `seat` gates on lessons and
   achievements, epilogue `seatRole`, code reads `state.seat || 'drums'` (no `state.seat` field until v1.1).
 
-## What's in v0.9 "Genres" (contract `plan/plan_contract_0.9.md`; integrated on `v09-int`, 2026-10-01)
-All four bands are playable from the new-career screen. Each has its own rival (a fair-fight underdog curve, Q4), Q2 storyline,
-Q3 World payoff (a tour package + 3-card chain that counts for the Global Gong like the Moose Opera), first gig, home ring,
-tier-0 space (3D room, 2D fallback, room bed), driver + dashboard item, home superfan (Q5), misprint (Q6) and tier-0 van.
-
-| band | rival (cast) | storyline (chain → flag) | World payoff (package → payoff flag) | first gig | home ring |
-|---|---|---|---|---|---|
-| Hail Damage (metal, Saskatoon, parents' garage; Kenji, The Moose Hearse, Dale from Warman, HALE DAMAGE) | Tundra Wraith (Gord + 3 accountants) | The Cape Saga + the moose album | Moose Opera, Finland (`eu_moose_run` → mooseOpera 'platinum') | Buddy's House Party | sask |
-| Frost Heave (punk, Regina, Suds-O-Rama laundromat basement; Moth, The Pothole, Delphine, FROST HEAVY) | Mall Rats (Blaze, Siobhan, Dex, Brody; label Network Nine; kickflip every set) | Rox for City Council (`council` → won/lost/tie/withdrew/never) | squat anthem big in Berlin (`eu_squat_anthem_tour`: Amsterdam › Berlin › Wackelstein Open Air → squatAnthemPayoff) | Craig's Basement | sask |
-| Gravel Kings (rock, Edmonton, Westgate Plaza unit 4B; T-Bone, The Mullet Wagon, Gloria from the Mall-Walkers, GRAVY KINGS) | Chartbusters (Rex Glamour + scarf, Dusty, Moira, Steve #5; Airwave Dominion; the ballad) | The Riff (`riff` → settled/scrapped/original) | Mudstonbury main stage (`gk_mudstonbury_headline`: London › Mudstonbury › Manchester → mudHeadlinePayoff; the card sets mudstonbury 'headlined') | Mill Woods Basement Party | alberta (Q1a; Sask + West open at Local) |
-| The Grid Road Ramblers (country, Swift Current, Duke's uncle's Quonset; Earl, Grandpa's Suburban, Wilf from coffee row, THE GRID ROAD RUMBLERS) | Buckle & Boot (Brayden, Colt, Titan Tim the truck mascot, a hired session drummer; Titan Records; truck-ad fury) | Travis Lee's First Truck (`truck` → never/mine/ad/famous) | the Aussie country circuit (`au_country_circuit`: Melbourne › Alice Springs › Tumbleworth → outbackPayoff) | Quonset Yard Party | sask |
-
-- **Content:** neutral tokenised flat pools + `byBand` layers (Hail Damage keeps every line); three pack files
-  `src/content/zz_band_<id>.js` (100+ Monday cards each, drama wants/exits/epilogues for all ten new members, road/studio/World
-  cards, Bandbook, reviews, songs, albums, the rival casts). Q7 rented rooms named per city, Q8 cameos (`cameo: true` cards,
-  Scene rows, jam-room stickers). Alberta ring + rooms; south-west Saskatchewan; a Regina all-ages skate park.
-- **Sims:** §4.2 tokens and role aliases (`@front` …), `career.pool/variant/speakerOk/cardOk/talkers/roleOf` (the speaker
-  guard closes cross-band leaks), §4.4 genre moments (combo / chorus / peak) + member signatures (capeSpin, stageDive,
-  kneeSlide, hatTip), rival casts + per-rival fair-fight numbers, ten new drama rules, per-band demands/speech/outfits, band
-  envelope lines at the Loonies, the generic World payoff, home rings, `venue.reach`.
-- **UI / render:** genre card with a peek at each space, cold-open fx (hail/snow/neon/dust), three new tier-0 rooms (laundromat,
-  strip mall, Quonset) with all 7 hotspots, instruments per member (SG, strat, tele, acoustic, fiddle), 3-player layouts,
-  per-driver van + dashboard, rival stage/carpet casts (session drummer, truck mascot, Rex's scarf, the skateboard).
-- **Audio + vocal diversity (owner popup):** genre amps (punk/rock double-tracked, country Tele slapback, bowed fiddle, acoustic
-  strum), tempo styles (skate/hardcore, power ballad for Chartbusters, two-step/train beat), solos by the soloist, crowd one-shots
-  per moment, room beds + noodles per space; a voice profile per singer (Marcel, Rox, Chase, Travis Lee, Gord, Blaze, Rex,
-  Brayden), metal scream types per song/section, count-in yells, held notes, gang answers, whoa-ohs with harmony, varied shouted
-  words per genre (Marcel's odd French word). All on the beat grid, in key, under the voice caps.
-  Owner listened to the 18-singer reel (2026-10-01): **"Voices are good for now. Easy-ish to tweak later"** — per-singer
-  profiles (content/genres.js voices) are the knobs for any later tweak; v1.1 Tuning can revisit.
-- **Drum sync:** the v0.8.3 drum-sync code is intact: `11_settings.js` is unchanged since v0.8.3, and the v0.9 edits to
-  `30_audio.js` / `55_ui_gig.js` only add genre/vocal options around it (`GG.audio.play(pattern, { at, … })` still books the
-  song on the band's clock; 55 now also passes `singer` + `band`). `sync.test.js` and `pw_gig` sync/sync2 stay green.
-- **Balance** (`BAND=all node tools/balance.js 6 10` → `plan/balance_v09_all.txt`; 30 seeds → `plan/balance_v09_all_30seeds.txt`;
-  re-run after the fixer pass below). The World target now also needs the reach share (careers that got to the World era) within
-  15 points of Hail Damage's (it used to average only the careers that made it, so 2/30 passed as "ok"). At 30 seeds, avg bot:
-  Frost Heave fans@y3 95 %, fund 107 %, World 5/30 vs HD 10/30 (MISS by one career; it was 2/30); Gravel Kings fans 120 %, fund
-  135 % (MISS; 120 % at 60 seeds, so mostly noise), Local wk 19 (MISS by a week, as before at 10 seeds), World 18/30; the Ramblers
-  fans 96 %, fund 78 %, World 6/30 (was 0/30). Good bot: all targets hold except Gravel Kings' fund 130 % (122 % at 60 seeds) and
-  the Ramblers' World payoff (see the fixer pass). Recycled tracks per album (12 seeds × 6 years, avg bot): HD 0.47, FH 0.63,
-  GK 0.81, GRR 1.17 (were 0.47 / 2.78 / 2.29 / 3.84); average critic HD 77.8, FH 75.3, GK 74.0, GRR 75.5 (were 77.7 / 69.5 /
-  67.6 / 65.3). Over 9 years (integration run) all four bands reached World in 30/30 careers.
-  `plan/balance_baseline_v09_hd.txt` (the Hail Damage no-regression reference, `node tools/balance.js 6 10`) was re-recorded in
-  the fixer pass: the only change is year 6 of the avg bot (one career whose moose album was ready now books the Moose Run in
-  week 143: tours left 0.1 → 0.2, fund −$270, fans +0.2 %); everything else is byte-identical.
-- **Size budget:** `dist/game.html` is 4.42 MB (4,305 KiB as `node build.js` prints it; gzip 1.35 MB). The owner-facing budget
-  is relaxed from 3.8 MB to **4.5 MB** for v0.9 (the three band packs are ≈ +0.95 MB); v1.0 should not grow it much further.
-- **Tests at integration (2026-10-01):** `node tests/run.js` SUITE ALL PASS (21 files, 381 checks); `sim_bands` strict leak scan (default
-  on) clean for all four bands, also over full 10-year careers (`LEAK_YEARS=10`), plus the inverse check in Hail Damage's
-  career; Playwright **68/68 sections green at 390×844 and 68/68 at 440×956** (every META_ONLY section of every
-  `tests/pw_*.js`: bands ×4 + flat, bands_render, garage, stage/van, flow ×5, gig ×7, rival ×3, label ×3 + sheet, tour ×4 +
-  sheet, shop ×5 + sheet, recap ×3, world ×4, drama, fans ×2, seq ×6, logo ×2 + sheet, creator ×3 + sheet, settings ×3,
-  title ×3). The 440 run uses a scratch copy of tests/ with the viewport patched in `_pw.js` + the VERSION file
-  (`PW_TAG=_440 LOGO_VIEW=440x956`). Garage draw calls per room stay under HD × 1.15 (pw_bands_render).
-  **After the fixer pass:** `node tests/run.js` SUITE ALL PASS (21 files, 383 tests; + cape per song, homesick cooldown per
-  band, holiday / scandal order, fans_trucker per band, chart filler, train bass in key, Brayden vs Travis; `sim_bands`
-  clean with the wider leak vocabulary, also at `LEAK_YEARS=10`); Playwright 67
-  sections at 390×844 green (every section above; gig `double` needed a rerun under load, a timing flake that passes alone),
-  and at 440×956 pw_bands ×4 + flat (LEAK_STRICT=1) and pw_gig sync/sync2 (sync is load-sensitive: it failed twice while
-  three balance runs and the 390 lane shared the 4 cores, then passed alone, as does the pre-fix build).
-- **Fixer pass (2026-10-01, after the v0.9 review; findings in the review list):**
-  - Leaks: the merch panel names the band's own home superfan (the 'dale' slot) instead of "Dale"; the van repair is Cousin
-    Dale's Garage for Hail Damage only (`ui.mechanic(st)`, 57: Regina "Pothole Pete's Auto & Lube", Edmonton "Whyte Knuckle Auto",
-    Swift Current "Harv's Hitch & Hose"; a driver with `mods.repair` 0 (Moth) does it herself, free, and gets the toast); the car
-    lot is per city (5k `DEALER`: Cousin Dale's for Hail Damage, Prairie Lemon Motors, Henday Hank's Wheel Deals, Gully's Used
-    Trucks & Grain Augers); the Maple 100's filler rows draw from a neutral `albumWords.chartFiller` pool (the genre title
-    pools carry the packs' in-jokes) and never credit the rival (its record has its own row); the Snare tier says "the monthly
-    livestream from {space}" (filled by 5g).
-  - Leak tests: pw_bands opens the van-info Van and Car lot tabs and a gig result whose merch names the home superfan, for every
-    band, and checks the envelope's broadcast chip isn't squeezed; its vocabulary (and sim_bands') adds the other bands'
-    superfans, tier-0 vans, spaces, rivals and rival casts (plain-word nicknames and Lorne left out: the Ramblers' coffee row has
-    its own Lorne) and Cousin Dale / Dale from Warman / Hwy 11 (+ the Moose Opera in sim_bands; not bare "Warman": the Warman
-    curling rink is a shared venue). The genre screen's band cards are skipped (picking a band shows every band by design).
-  - Content: Gravel Kings' holiday cards go first in each holiday list (they were never dealt) and lic_scandal_leather goes in
-    before the neutral who:'band' sellout (it could never fire), like the other packs; `fans_trucker_gravel_kings` (Gravel
-    Kings met no trucker; `content_bands` now requires fans_trucker per band); punk / rock / country groove libraries padded
-    to metal's 5/4/3 (generated-song pairs at the recycled bar: metal 1.5 %, punk 1.3 %, rock 1.5 %, country 1.9 %, were 6-10 %).
-  - Sims: the homesick card's 12-week cooldown reads the variant id the band was dealt (Frost Heave, Gravel Kings and the
-    Ramblers got it every tour week); Marcel's cape spins once per song again (`member.signature.perSong`, contract §4.4
-    note; v0.9 had made it once a gig); the tour bot books a story payoff package whose needs are met in its departure window
-    without the 16-week gap, with a $500 cushion (`economy.tour.bot.payoffCushion`), the promoter's floor when hostels don't
-    fit and only a band over burnout 80 staying home (`payoffBurnout`). `tools/balance.js` reports `payoff a/b` (fired /
-    careers whose needs were met with a window left; good-bot target ≥ 30 %): 30 seeds FH 11/19, GK 16/18, GRR 3/18 (MISS: the
-    Australian circuit costs $6,950 up front, twice the others, and the good bot has $3-7k in week 11-12 or is in the studio).
-  - UI / render: the Loonies card's children never shrink (`.lo-card > *`; the broadcast chip was crushed to 16 px at 390×844,
-    Hail Damage included); the cold open's text and buttons sit above the fx layer (Gravel Kings' neon tinted the button);
-    the poach mood bar shows for every rival's `rv_poach_<rival>` variant; Gravel Kings' locked Sask tab says Local Heroes
-    (`world.ringEra`); no backpack inside Grandpa's Suburban's bench; the recap photo's sticks go straight up over the player's
-    head with 0.17 more room either side (an occlusion probe over 4 bands × 4 presets × 2 tiers: ≤ 0.3 % of a bandmate's face,
-    was ~40 %); the tier-0 upgrades are drawn as each space sold them (41 `buildUps(…, kind)`: the laundromat's orange couch,
-    lint bags, pop machine; the strip mall's waiting-room couch, ceiling foam tiles, salon mini-fridge, neon OPEN sign; the
-    Quonset's tailgate bench on hay bales, hay-bale baffles, chest freezer, yard lights); the van sheet's driver effect tag wraps.
-  - Audio: the rival spectator snippets start on their first chorus (`songPattern` rotates the arrangement; the stage drummer
-    walks 4 bars per entry like the audio), so their singer is heard (all 84 measured snippets have a sung hit inside 5.2 s, was
-    2); a song that opens on a chorus call skips the count-in yell on top of it; Brayden is dead flat with no yodel flip
-    (voice profile `yodel: false`; a zero-depth `vib` means no vibrato); the train beat's walking bass is snapped to the major
-    scale (no G#/C# under the bridge's vi/ii).
-- **v1.0 forward-compat (contract gap #11):** epilogues exist for all 14 originals; "The Original Five" must read the band size;
-  "a statue in Saskatoon" → `{city}`; the HD-flavoured achievement seeds (Ma Pelouse, Buddy) need per-band twins or `band` gates.
-
-## v0.8.3 drum sync (hotfix; owner 2026-09-30: "audible song notes and the played drum notes seem a touch off and not in time")
-- Cause (measured headless, see the lead's MEASURE_GRID/MEASURE_TAP runs): the backing band sits exactly on the chart grid; every
-  drum sound fired "now" was late. A tap judged PERFECT sounded calib.audio + G.lat + dispatch + 5 ms after the band's beat
-  (+75 ms p50 headless, iPhone model +25..115 ms); Auto-kick and the count-in hats played on frames (+40..570 ms); second kicks
-  inherited the tap's lag; the two-thumb auto notes were on the grid, so they flammed ahead of the tapped notes.
-- Model (`55_ui_gig.js` "drum sync" block): zeroBand = the band's start (A.play `opts.at` = the count-in's zero, so it never
-  moves); the game clock (highway + judgement) G.zero = zeroBand - D, D = latD + K frozen per song: latD = max(median of the last
-  9 G.lat, G.lat), K = `GG.prefs.syncLead(dispP90)` = clamp(dispatch p90, 10..40 ms) + 5 ms + M 15 ms. A tap at stamp S is
-  judged J = heard(S) - G.zero (no audio offset) and its drum is booked at ctx max(now + 5 ms, zeroBand + J'), J' =
-  `syncSnap(J, note.t)`: a hit within [-15, +15] ms snaps to its note (exactly on the band's grid), anything else sounds at J.
-  zeroBand + J = ctx(S) + K + (latD - lat), so the modelled latency cancels and unmodelled latency (Bluetooth, the rig's
-  compressors) delays band and drums alike. The highway draws game time + the light check's visual offset (30 ms if never
-  measured). Count-in hats, Auto-kick's kicks (the session's assist), auto notes and second kicks (chart spacing from the first
-  kick's booked time) are booked on the band grid by the 25 ms pump in both modes (up to PRE 250 ms further ahead before the
-  downbeat). The touch dispatch p90 (performance.now() - ev.timeStamp) blends into settings.syncDisp after each song.
-- Cost: every tap sounds ~K (30..60 ms) after the touch (0.8.2: dispatch + 5 ms); the highway leads the heard band by ~K +
-  latency; by-ear players are judged ~K + latency late: Settings → Play → "Drum sync" Off = classic 0.8.2 timing (judged minus
-  the click test's audio offset, taps sound "now"; the count-in / Auto-kick / auto notes stay on the grid).
-- Also fixed on the way: resume() snapped nothing (ctx.resume() is async) so the game ran the pause length ahead of the band
-  (now frozen until the context runs, then snapped); two clock checks < 100 ms apart read as "unhealthy" (sent the downbeat's
-  auto notes to the frame); a healthy clock > 30 ms off for two checks snaps (glitch); a band that started on a suspended
-  context re-anchors both zeros; Auto-kick doubles book their second kick without waiting for the frame's judgement.
-- Review fixes: beginCount pairs the clock fresh (G.aSample = null; a sample from before the between screen / a pause read as
-  unhealthy and froze the song in classic) and, on a suspended context (Restart after a mid-song pause), holds the count-in
-  (G.mode 'hold') until ctx.resume() resolves (1 s fallback); the count-in is a whole number of beats (2-4, lead = nb * spb) and
-  a numeral only shows from G.hb0 (< 92 bpm lost hats); pause() while Resume is waking cancels the wake (stays paused, overlay
-  back) and go() never un-pauses a hidden page.
-- Calibration: the light check (visual) drives Drum sync, the click test (audio) only classic; profiles keep `vat` (light check
-  ran). Results show a Bluetooth hint (`calib-bt`) when offset + outputLatency >= 120 ms. "Light check only" on the intro
-  (`calib-visual-only`), and `calib-visual-start` after a failed click test.
-- Debug gigui adds `sync, D, K, latD, zeroBand, zero, tBand, spb, drawT, vis, dispP90 (ms), dispN, snapN, hats, hatSkip, akN,
-  akSkip, waking`, `last.snap/due/disp`. songT stays game time. Ask the owner for these after a song on the iPhone.
-- Tests: `tests/sync.test.js` (helpers + a 2000-case booking property), `pw_gig.js` META_ONLY=sync (count-in hats +-2 ms,
-  band start = zeroBand, perfect/late taps on the grid +-3 ms, early taps keep their offset, auto notes + Auto-kick on the
-  16th grid, classic toggle), META_ONLY=sync2 (80 bpm count-in, measured-zero / unmeasured light check, Restart after pause,
-  suspended between screen, band started on a suspended context, same-lane booking order, dispatch p90 saved, pause while
-  waking); gig/double/settings/calib sections updated.
-- Not changed: band-voice onset compensation (country fiddle/vox 30-40 ms; defer to v0.9, which edits 30_audio vocals).
-
-## What's in v0.7.2 double kick (owner request 2026-09-30)
-- `22_sim_gig` chart: after the two-thumb rule and BEFORE difficulty thinning, a kick ≤ `gig.DOUBLE_GAP` (0.18 s) after the
-  previous kick merges into it: the earlier note gets `dbl: true, t2` and the later one leaves the highway. Runs pair in order
-  (1+2, 3+4, …; an odd last one stays single); freestyle kicks never merge. `chart.doubles`; `chart(song, { doubles: false })`.
-  0.18 (the lead asked ~0.16): with no pedal before v0.8 songs have no back-to-back 16th kicks, so 0.16 only reached 8th kicks
-  ≥ 188 BPM; 0.18 = 8ths from ~167 BPM (Thrash/Blast tempos, the 170 BPM metal signature) and 16th pairs from 84 BPM.
-  Session: judged on the first hit (one note for total/accuracy/combo; hit stamps `hitT`); an untapped double = one miss, the
-  second hit is never judged; tapping the second kick as well is forgiven (`echo`, no stray). Two-thumb rule unchanged (a kick
-  is never a thumb drop; the second kick keeps the kick's slot at t2, so a 3rd hit there stays auto).
-- `55_ui_gig`: double = a stacked pill + a "×2" badge in the kick lane; once the first is hit (tap or Auto-kick) the second kick
-  plays at max(t2, hit + 0.06 s) via `GG.audio.hit('kick', G.zero + t)` scheduled ahead on a healthy clock (frame-due otherwise,
-  never two at once); a missed double plays nothing extra; the kick zone flashes again + a ring when it's heard, and
-  `GG.render.stage.kick2()` kicks the drummer's left foot (`info().kick2s`). Debug gigui `doubles, doublesPlayed`, `soon/next.t2`.
-- Numbers: metal signature (170 BPM, 8th kicks) Hard/Expert 432 → 340 notes (−21%, kick lane 184 → 92, 12.8 → 10.0 notes/s),
-  Normal 322 → 230 (−29%), Easy 98 → 106 (thins by time; kicks 48 → 46); metal jams ≥ 175 BPM −23% on Hard; songs < 167 BPM
-  unchanged. Live bots (20 bands × 3 songs, before → after): perfect 90 = 90, avg/sloppy within ~1 score point on every
-  difficulty. `tools/balance.js 10 20` identical (careers auto-resolve with `gig.simulate`, which never builds charts).
-- Tests: sim_gig 22 (+2: merge rules/pairs/runs 3-4-5/threshold/determinism/difficulties/invariant notes + doubles + auto =
-  pattern hits; session tap/echo/miss/auto-kick) · pw_gig `double` (12; screenshot `tests/.cache/double.png`).
-- Review fixes: the second kick is placed `max(t2 - hitT, 0.06)` after the tap's HEARD kick (tap stamps `note.k1` on the song
-  clock = songTime + lat + 5 ms; Auto-kick: hitT + lat), so calibrated headphones (+200 ms) and output latency keep the
-  pair's spacing (was: flam at ~+150 ms, silent at ≥ ~+240 ms). tap() judges first; an echo tap plays no sound (the
-  scheduled kick is that hit) unless its second kick was dropped (`d2 = 2`). An echo tap that was also inside the next
-  kick note's window credits that note (`cur.echoFor`) if it's never tapped (was: an early tap for the next note → miss).
-  `GG.audio.hitCancel()` (scheduled hits use their own port) runs in stopAudio: no stray kick/auto note after a restart
-  or a hidden app. Tests: sim_gig 23 (+1 early-tap credit, hard/normal) · pw_gig `double` 17 (+echo silent, +headphones
-  +200 ms spacing, +hitCancel). Live bots: accuracy +0.0–1.0 pt (early taps no longer stolen); balance.js identical.
-
-## What's in v0.7.1 "Title" (owner patch from a parallel session, integrated 2026-09-30)
-- 3D title screen: `src/45_render_title.js` (GG.render scene 'title': night in Saskatoon, the garage in a hailstorm,
-  Hail Damage inside, Dad's hail-dented truck, the bungalow, an arena with searchlights on the horizon; instanced hail,
-  lightning + thunder; taps: kit = a real drum fill, Marcel = lightning, truck = horn + headlights, house = porch light).
-  API `GG.render.title.{setFrame, strike, tap, info}`. 51_ui_menu: title is `live3d` + transparent (`.title3d`), flat
-  title without WebGL; 60_main keeps drawing on the title with no career; 30_audio 'storm' ambience + thunder/honk sfx.
-- Lead fixes after a 3-lens review: reduced flashing / camera shake / graphics quality now apply live on the title
-  (read from the cached `R.prefs()` every frame; hail allocated at max, live count = quality); the title's framing is
-  skipped while hidden and re-measured when a screen above it closes. pw_settings lefty check made race-free (two-thumb
-  auto notes also call GG.audio.hit). Tests: `tests/pw_title.js` META_ONLY=scene|flow|prefs (15 + 10 + 7).
-
-## v0.7.2 audio (hotfix; owner 2026-09-30: "make the crowd sound better", metal: "heavier guitars, growls and screams, darker riffs")
-- Metal only (punk/rock/country untouched): two rhythm guitars (Jaxon L, Dana R: double-tracked, detuned, R 6-8 ms late)
-  each through a high-gain amp (pre-EQ: 110 Hz high-pass + 900 Hz push → asymmetric soft/hard clipper, oversample 4x →
-  cab: 78 Hz high-pass, 140 Hz shelf, 520 Hz scoop, 2.6 kHz presence, 5.4 + 6.8 kHz low-passes → pan); power chords as
-  one PeriodicWave oscillator (root + fifth + octave), so the voice count stays as before; gated palm mutes through a
-  480 Hz low-passed input; bass = one saw split into a clean sub + a driven grind (floor B0, `backing.bassFloor`).
-  Drop tuning by tempo band: root C2, `backing.tune` doom −1 / chug 0 / tremolo +1 (`keyFor(seed, genre, bpm)`;
-  no bpm = no shift). Riffs: phrygian; doom = ringing, drooping chords + b2/tritone answers + a chromatic step; chug =
-  kick-locked chugs (pedal on the low string in verses, the chord in choruses, a b2/tritone stab every other bar);
-  tremolo = each riff pitch picked twice (16ths), chromatic runs, power-chord blast riffs in choruses; breakdown = one
-  open low-string drop with space, a muted pair, a b2 stab, then 3-3-2 half-time chugs. Dana's solos: dark arpeggios,
-  quantized to the scale. Vocals: `scream` on chorus downbeats (+ a gang scream), `growl`s on the breakdown (the drop +
-  bar 2), both on the beat grid and in key, on their own channel; the guitars' presence band dips −9 dB under them.
-- Crowd (all genres): pre-rendered once per page in plain seeded JS (22.05 kHz stereo; babble of 14 formant voices,
-  roar of 12 shouting voices, applause for big and small rooms, on-beat clap hits, 4 "woo/yeah/hey"s, 2 whistles, a
-  boo), built after unlock in ~8 ms ticks of resumable steps (a voice renders 4096 samples a step, noise/gain loops
-  16384, applause a clapper, clap-along 10 hands: < 1 ms warm, ~4-6 ms cold; output bit-identical to the one-pass build),
-  paused during songs; the crowd fades in when ready, never stalls a gig.
-  Live: babble louder between songs than during; roar follows 'crowd:level'; claps on the beat when hot (every beat,
-  2 and 4 from 150 BPM, never in breakdowns); fans woo/whistle when hot; a grumble of boos when the meter is under 22;
-  cheers/boos on 'crowd:moment'; a song-end reaction on 'gig:song' scaled by score; Japan's silent crowds hush during
-  songs; ≤ 12 crowd one-shots; a 0.15 send into the venue reverb. SFX 'cheer'/'boo' (awards, studio) use the buffers.
-- `renderOffline` is stereo now (+ `buffer`, `crowd` tally; specs `probe`, `crowd`, `voxInvert`, crowd `song/silent/
-  small/moments/clapBpm`). Debug audio: `counts.claps/woos/whistles/applause/dropped`, `crowd.song/silent/clapping/ready`.
-- Numbers (OfflineAudioContext, same method on the v0.7.1 build; metal signature, verse/chorus/bridge, song s3):
-  - Metal band-only @140: energy < 150 Hz −27.4 → −21.1 dB (share 0.19 → 0.52); 150–500 Hz −22.7 → −24.3; 500 Hz–2 kHz
-    −26.5 → −26.6; 2–6 kHz −36.0 → −29.4; stereo side/mid 0 → 0.15; RMS 0.099 → 0.131, peak 0.52 → 0.56 (limiter).
-  - Lowest guitar 98 Hz (G2) → 65 / 69 / 73 Hz (doom/chug/tremolo); bass 49 → 33–37 Hz.
-  - One guitar note through the amp: THD 0.37 → 0.63, harmonic energy (re fundamental) 0.13 → 0.39. Odd harmonics
-    are *not* up relative to the fundamental (the asymmetric clipper and the tight pre-high-pass favour even ones).
-  - Vocal/band inside the hit windows (polarity split): chorus shouts +1.0 dB → screams +4.6 dB; breakdown growls
-    +7.4 dB over the (much heavier) breakdown (v0.7.1's lone growl was +10.4 over near-silent muted chugs).
-  - Every genre's song peak < 0.61 (limiter), RMS 0.10–0.15; punk/rock/country identical except stereo reverb now counts.
-  - Crowd: bed 0.027 / 0.031 / 0.043 RMS at meter 15/50/90 (0.014–0.043 during songs, 0.002 silent), events peak ≤ 0.72,
-    metal + a roaring crowd peak 0.84. v0.7.1's murmur was ~ −36 dBFS: effectively inaudible under the band.
-  - CPU: a full metal song (arena reverb + crowd) renders 2.1× real time headless (v0.7.1 metal ~6×, before the crowd).
-- Live taps (fix, pre-existing since v0.6.1): `hit` cuts off the lane's previous tap (lanes monophonic, like the timeline;
-  a gain per tap, its sources stopped) and SONG_VOICES = 18 = band 8 + the whole kit 10, so a metal chorus on Hard
-  (8th kick + 8th crash, snare 2/4) no longer loses snares to the cap (was ~half on Hard). `counts.tapDrops` (debug).
-- Tests: sim_audio 12 (new metal tuning/riffs/tremolo/solo/scream test; crowd build steps < 3 ms warm + slices = one pass);
-  pw_seq audio 39 (growls from the drop, live crowd ready + ≤ 18 song voices, every tap sounds over a full metal band) +
-  new `heavy` section (22: the numbers above as assertions against the v0.7.1 values).
-  WAVs (not committed): `tests/.cache/audio_before_*.wav` (v0.7.1) and `audio_after_*.wav` / `v072_*.wav`.
-- Gaps: nobody has listened on a phone yet (tuned by numbers). The pw_gig "setlist layout" hscroll was a real bug, not
-  load: long English titles (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }`.
-- pw_gig `gig` flakes, root-caused with CDP CPU throttling ×6 (headless rAF gaps 250 ms–5 s while a 25 ms timer keeps
-  pace; the main thread is mostly idle, frames wait on the GPU) — all real bugs a GPU-bound or slow phone would hit:
-  (1) auto notes / second kicks were booked only in the frame loop, so a late frame booked them in the past (played up to
-  110 ms late) or skipped them; now a 25 ms booking pump (`55_ui_gig` pump/book, like the band's setInterval scheduler)
-  books them too, and the booking horizon reads the audio clock (`heardSong`) so a game clock still drifting after an
-  audio hiccup can't book them ~0.7 s early (≥ 1 s = played at once). (2) "gig layout hscroll": the count-in numeral
-  (`.gig-count`, full-width box, `scale(1.35)` keyframe) stuck 68 px past the edge during every count-in, and Chrome kept
-  the 458 px scroll width into the song when frames were slow; the box is now 120 px, centred. (3) "song clock = AudioContext
-  time" (−35..−83 ms under load): `startAudio` resynced with a `performance.now()` taken BEFORE `GG.audio.play()` (slow on
-  a slow CPU), so the song clock ran ahead of the band by play()'s duration; it now resyncs with a fresh now.
-  Tests: pw_gig gig 31 (+2: count-in never widens the screen; rAF slowed to 600 ms → auto notes still ahead, none skipped;
-  debug gigui `autoSkipped`). Still frame-bound: Auto-kick's own kick (`ses.tick` in the frame) plays on the frame it's due.
-  Residual only under extreme load (3 parallel ×6-throttled runs): "song clock started" (< 2 s) when a rAF gap is > 2 s.
-- Gaps: nobody has listened on a phone yet (tuned by numbers); pw_gig `gig` "auto notes scheduled ahead" is flaky under
-  machine load (headless rAF gaps of 100-600 ms with software WebGL; HEAD and the fix both fail it ~half the time at
-  load avg 7-14; green when quiet). The pw_gig "setlist layout" hscroll was a real bug, not load: long English titles
-  (41-char starter) overflowed `.set-song` on every run; fixed by `.set-song > .row { min-width: 0 }` (the title
-  ellipsizes, chips stay on screen). "gig layout" (the play screen's full-body) still hscrolls now and then under load
-  (1 in 13 runs; never reproduced with diagnostics; the play screen shows no song titles).
-- pw_rival `botb` "btn-rs-go" 12 s timeout under load was a real bug, not load: the rival's set (59d `tick`) capped each
-  frame at 0.1 s, so below 10 fps their set played in slow motion (a 4.5 s set took 18-27 s at 300-1000 ms frames; their
-  drummer also drifted off the audio after any hitch). Their set now runs on wall time like the gig clock (v0.5.1); time
-  with the app hidden doesn't count (visibilitychange re-bases). Debug `rivalui.clock`; pw_rival botb +1 check (a 1 s
-  stall advances their set ~1 s; the old clock gave +0.2 s). Repro: CDP `Emulation.setCPUThrottlingRate` 6.
-  Same cap in the van (57 `frame`), the other botb timeout under load (the weekend's 8 s wait): the skip click missed its
-  2 s actionability wait, the helper never retried, and the drive crawled (39% after 26 s). The drive now runs on wall
-  time too (a long frame still stops at the road card, 45%), and pw_rival `weekend()` retries the skip until it lands.
-- Seen while reproducing (not fixed): with the song left to play to its end, the gig's `audio:end` handler compares the
-  last frame's `G.t` with the chart and can read the natural end as "stopped under us" → pause(true) (the song restarts
-  on resume). Headless audio runs ~0.5-1 s ahead of the gig clock by the end of an 18 s song, so it pauses every time
-  there; on a phone it needs a > ~0.27 s frame at that moment (or ~0.3 s output latency). pw_rival botb only hits it when
-  its screenshot outlasts song 1 (~18 s, 6x throttle + parallel runs).
-
-## v0.7.2 titles (hotfix, TITLES agent)
-- `content/song_titles.js` metal pool = `{ en, fr }` (46 entries; every v0.7.1 `fr` kept): `en` is the title (overtly metal,
-  always about the lawn: "Reign of Sod", "Requiem for a Lawn Mowed Too Short"); Hail Damage starters = "My Lawn, My Tomb" +
-  "Dandelions of the Apocalypse (On My Lawn)" (`titleEn: null`, `fr` = the old French title, which still seeds their patterns).
-- `GG.songs.pickTitle` → `{ title, titleEn, fr? }`: English (titleEn = title) or, ~1 in 8 (`songs.FR_CHANCE`, override
-  `economy.songs.frChance`), Marcel's French one (title = fr, titleEn = en, `fr: true`); only while Marcel is active; the
-  roll is seeded by career seed + song slot + fr (never the career RNG: balance/bot careers replay identically, verified).
-  An entry is used if its en OR fr is. `create` flags `song.fr` (a picked French title, or any title in `englishFor`).
-  Reactions: `lines.songReactions.marcel.nameFr` (he insists) + one `<dana|jaxon|kenji>.frSigh` right after (own seed).
-- Old saves: `GG.songs.migrateTitles` chained onto `GG.save.migrate` (no SAVE_SCHEMA bump): songs / pendingSongs whose title
-  is an old French title (`englishFor`, sequels too) and not `fr: true` become English (title = titleEn = en); follows into
-  liveGig song results, lastGig + lastWeek (setlist, songResults, new-song delta), wrap.tour.big, tour big/queue/ctx, the
-  Loonies single nomination. Chat/news/reviews/result lines/posts are history (unchanged). Idempotent.
-- API adds: `songs.englishFor(title)`, `isFrench(title)`, `frenchTitles()`, `migrateTitles(state)`, `FR_CHANCE`. Sequencer
-  queues `entry.fr` for Marcel's French titles; reroll button "🎲 Another title from Marcel". Content rewording: coach name
-  tips, Marcel's name lines, the Gord card ("translated the French lyrics of 'The Green Tomb'"), Monolith's English demand
-  ("Love the English titles… Now Marcel should sing in English too."). Album titles keep one French pitch (labels, unchanged).
-- Cards name songs by their English titles ('My Lawn, My Tomb', 'The Green Tomb (It Is the Lawn)'): 9 common cards fixed.
-- Tests: content 49 (English pool + v0.7.1 fr coverage + no "titles are French" text + no pool/starter `fr` in cards/lines), sim_songs 15 (picks/rate/seed,
-  reactions, old-save rename everywhere + idempotent + fr kept).
-
-## Owner feedback → v0.6.2 (2026-09-29)
-- "It plays very well." The song creator is "a bit tough to use and wrap your head around"; "not possible to hit 3 or
-  4 notes at once".
-- **Two-thumb rule** (owner pick): on EVERY gig difficulty (Easy → Expert) charts never ask for more than 2 notes at
-  once (priority kick > snare > cymbal > toms > ride > hat). The dropped hits still SOUND (auto-played in the drum audio,
-  not judged, no miss). Hard/Expert get harder through density and speed, never 3-finger chords.
-- **Songwriter** (owner picks): **groove presets** (start each section from a named beat per genre, then tweak; one-tap
-  "More metal" / "Make it catchier"-style buttons) + a **step-by-step flow** (one thing per screen: Verse → Chorus →
-  Bridge → Tempo → Song order → Name), with the full grid editor still available as "Advanced".
-
-## Addendum 1 (handoff Part C) — decisions (owner, 2026-09-29; locked unless marked open)
-- C1 Van: designated driver per band changes stats + road cards — Hail Damage **Kenji** (silent, perfect record, never
-  uses GPS, always exactly on time; fewer breakdowns), Frost Heave **Moth** (her apartment; free maintenance, terrible
-  comfort), Gravel Kings **T-Bone** (safe but slow; Chase begs to drive, blasts '80s cassettes), Grid Road Ramblers **Earl**
-  (20 under the limit, stops at every historical marker; slow, road stories boost chemistry). If the driver quits, **you**
-  drive and the road-card pool changes (wrong turns, gas-station arguments). Seating: driver up front, you shotgun, band
-  in the back rows, gear + merch piled behind. Dashboard item per driver (Kenji's tiny cactus, Moth's laundry, Chase's
-  cassettes, Earl's 1987 road atlas). Road events: deer on the Yellowhead, whiteout on the Trans-Canada, the fight over
-  shotgun, Marcel's cape shut in the sliding door. Vehicle names per band per tier (table in Part C1), renamable; venue
-  stickers on the van body (banned venues crossed out) → v0.8.
-- C2 Character creator (v0.8): separate everyday + stage looks (stage look auto for gigs/red carpet/stage scenes);
-  unlocks grow with the career; optional carry-over of unlocks within the same genre at a new career; full part lists
-  in Part C2 (knuckle tattoos: player types 4 letters per hand, A–Z). **No gong on the drum kit, ever** (the Global Gong
-  award stays — owner clarification).
-- C3 Audio: kit voices as specified; genre kit tuning (metal tight/clicky, punk loose/trashy, rock big/roomy, country
-  soft/dry + rim clicks + optional brushes); kit quality tiers (v0.8); generated band per genre with a new random key per
-  song and section density (sparse verses, full choruses, stripped breakdowns); synthesized vocal hits on the beat grid
-  (shouts on chorus downbeats, growls on breakdowns, pitched to the key, never off-beat); taps trigger drums (done);
-  venue reverb by size; crowd bed that swells with the meter + cheers/boos; garage hum with Dana noodling; van road
-  noise; van radio plays your charted song; mixer (drums/band/crowd/SFX) + metronome toggle in the sequencer.
-- C4 Settings: audio calibration runs on first launch (tap along to 8 clicks → offset; visual flash check; two profiles:
-  phone speaker / headphones, quick switch); career difficulty Chill / Normal / Brutal chosen at new career and locked;
-  gig difficulty Easy / Normal / Hard / Expert (stacked with drum skill) + independent note speed; assists: No-fail,
-  Auto-kick, Practice mode (any catalog song, slow-down); lefty mode, graphics low/med/high, camera shake toggle,
-  colourblind lane colours, bigger text, reduced flashing, skip van scenes / faster animations, save management.
-- C5 Bandbook (one parody social app on the laptop): Promote posts automatically (content picked from band state);
-  viral chance (good or cringe); generated comedic comments (Tundra Wraith leaves a supportive one on every post);
-  scandals → choice cards (Marcel's lawn is artificial turf); fan types superfans / casuals / haters (fans stay one global
-  count); recurring superfans (Dale from Warman, the jumper-cable trucker, the president of your Japanese fan club); fan
-  mail + gifts in the garage (macaroni portrait of Kenji); paid fan club later in the career on **Patreeon** (owner pick:
-  "support your favourite band's van repairs"; tiers Drumstick / Snare / Full Kit).
-- C6 Maps in rings: Saskatchewan from day one (Saskatoon, Regina, Prince Albert, Moose Jaw, Swift Current, North
-  Battleford, Yorkton, Humboldt, Gravelbourg, Estevan; Warman/Martensville stay as Saskatoon satellites since venues
-  shipped there); **the West** in Local Heroes (Winnipeg, Brandon, Calgary, Edmonton, Red Deer, Lethbridge, Kelowna,
-  Vancouver, Victoria); **the East and North** in Signed (Thunder Bay, Toronto, Ottawa, Montreal, Quebec City, Halifax,
-  St. John's, Whitehorse, Yellowknife); world regions + city lists in Part C6 (v0.7; Helsinki hosts the Moose Opera
-  ending). Starting cities: Hail Damage Saskatoon, Frost Heave Regina, Gravel Kings Edmonton, Ramblers a farm outside
-  Swift Current (v0.9).
-- C7 Calendar: two weeks per month, every week shows its month + season. Week 1–2 = July … 11–12 = Dec, 13–14 = Jan,
-  15–16 = Feb, 17–18 = Mar, 19–20 = Apr (Loonies, week 20), 21–22 = May, 23–24 = Jun. Winter Dec–Feb (weeks 11–16),
-  spring Mar–May (17–22), summer Jun–Aug (23–24, 1–4), fall Sep–Nov (5–10). Season effects + genre-season fit; weekly
-  weather by season/region (never cancels a gig); garage changes with the season; overseas seasons (v0.7); holidays:
-  NYE best-paying gig, St. Patrick's pub circuit, Canada Day free park shows, Halloween costume gigs, Thanksgiving dinner
-  (guilt cards if you owe), Remembrance Day (no Legion gigs that week), Christmas party circuit + the label's terrible
-  Christmas single, the Grey Mug halftime show (late-career moment).
-- C8: other rivals' members — DECIDED 2026-09-30 (see "v0.9 Genres — owner decisions"); balance numbers set in v0.9
-  (`economy.rival.byRival`, fair-fight underdog curves).
-
-## Addendum 1 — pending
-Already-shipped versions → **v0.6.1 catch-up**:
-- [x] C1 van drivers (effects, you-drive pool, seating, dashboard items, new road events) — WORLD, v0.6.1
-- [x] C3 genre kit tuning, per-genre generated band + random key + section density, vocal hits on the beat grid — AUDIO, v0.6.1
-- [x] C3 venue reverb, crowd bed + cheers/boos, garage hum, van road noise, van radio, mixer, sequencer metronome — AUDIO, v0.6.1
-- [x] C4 calibration (first launch + settings, 2 profiles), career difficulty (locked per career), gig difficulty
-      Expert + note speed, assists (No-fail, Auto-kick, Practice), accessibility/graphics/skip settings, settings screen — SETTINGS, v0.6.1
-- [x] C5 Bandbook, virality, comments, scandals, fan types, named superfans, fan mail + gifts, fan club (Signed era) — FANS, v0.6.1
-- [x] C6 Sask ring additions, West ring (Local Heroes), East & North ring (Signed), Canada map in rings — WORLD, v0.6.1
-- [x] C7 month/season calendar, weather, season effects + genre-season fit, garage seasons, Canadian holidays — WORLD, v0.6.1
-Later versions:
-- [x] v0.7: C6 world regions/cities, C7 overseas seasons + regional holidays, Japanese fan-club president, Global Gong — WORLDSIM + WORLDUI, v0.7.0
-- [x] v0.8: C1 vehicle names/rename/stickers/upgrades, C2 full creator + unlocks + carry-over, C3 kit quality tiers — KITSIM + SHOPUI (C1, C3), CREATOR (C2), v0.8.0
-- [x] v0.9: C1 other bands' drivers in play (Moth, T-Bone, Earl + per-band dash items), C6 starting cities (Regina, Edmonton
-      + the Alberta ring, Swift Current), rivals' members (Mall Rats, Chartbusters, Buckle & Boot casts) — v0.9 lanes, 2026-10-01
-
-## v0.9 "Genres" — owner decisions (popup 2026-09-30; locked)
-- **Mall Rats** (Frost Heave's rival, Toronto, manufactured TV-show punk): the "focus-group four" — talent-show
-  contestants assembled by a network exec: frontman "Blaze" (real name Kevin, from Oakville), a bassist who's never plugged
-  in, a drummer chosen for his jawline, and their stylist **Siobhan** who's the real leader; sponsor-mandated kickflips
-  every set; they throw sponsor money at everything, including you.
-- **Chartbusters** (Gravel Kings' rival, Vancouver, stadium radio rock): aging megastars — thirty years at the top;
-  frontman **Rex Glamour** wears a signature scarf in July; the drummer has been replaced four times (all named Steve);
-  the band quietly bought the radio conglomerate; every single is the same power ballad.
-- **Buckle & Boot** (the Ramblers' rival, Red Deer, bro-country duo): truck-ad cousins **Brayden and Colt**, ex-junior
-  hockey; one sings about tailgates, the other "plays" an unplugged guitar; their truck sponsor's mascot (a guy in a pickup
-  costume) is basically a third member; furious when a truck ad goes to the Ramblers (v0.8.1 licensing hook).
-- Plan answers (popups 2026-09-30, all the recommended picks; details in plan/plan_contract_0.9.md §0): Q1 an **Alberta** home
-  ring for Gravel Kings (open day one; Sask + West at Local); Q2 storylines **Rox for City Council / The Riff / Travis Lee's First
-  Truck**; Q3 **one World payoff per band** (Berlin squat anthem / Mudstonbury headline / Aussie country circuit; Gong credit);
-  Q4 **fair-fight** underdog rivals (fame = flavour); Q5 a **home superfan per band**; Q6 a **misprint per band**; Q7 **localised
-  rented-room names**; Q8 **cross-band cameos**.
-- **Vocal diversity (owner popup 2026-09-30, all four picked; v0.9 follow-up on top of the audio lane):** (1) more scream types —
-  high shrieks, mid screams, vocal fry, deep guttural growls, pig-squeal-style squeals, gang screams, varied per song + section;
-  (2) each singer sounds different — Marcel's French-flavoured shrieks, Rox's hoarse punk yells, Chase's '80s rock wails, Travis
-  Lee's country twang, plus the rivals' singers (Gord's growl, Blaze, Rex Glamour, Brayden); (3) more vocal moments —
-  call-and-response, long held screams at section ends, backing 'whoa-oh's + harmonies, a count-in yell, crowd-answered chants;
-  (4) more words + vowels — a varied shouted-word set per genre (the odd French word from Marcel) so no two choruses match.
-  Always on the beat grid, in key, under the voice caps; never free-running.
-- **All four bands playable from the start** (new-career screen offers all four; each with its own rival, driver, space,
-  city: Frost Heave — Regina laundromat basement (Suds-O-Rama), driver Moth; Gravel Kings — Edmonton strip-mall unit 4B,
-  driver T-Bone; the Grid Road Ramblers — Duke's uncle's Quonset outside Swift Current, driver Earl).
-
-## Addendum 2 (handoff Part D) — decisions (owner, 2026-09-29/30; locked unless marked open)
-- Timing: queued behind v0.8 (done); never expands a version in progress. **No share/screenshot button, ever.**
-- D1 Licensing deals (v0.8.1): offers from the Signed era, or earlier if a song charts on the Maple 100 or goes viral on
-  Bandbook; rare (~2–4 per career, more with fame); a Monday card that sits on the laptop ("Offers") for a few weeks.
-  Parody brands, genre-weighted: truck commercial (country/rock — Buckle & Boot furious when it goes to the Ramblers:
-  rival heat + a card), energy drink (metal/punk), hockey highlight package (any), regional insurance ad (metal — Marcel's
-  employer, mortified), video game trailer (any). Content `src/content/licensing.js` (brand, blurb, fee range, genre fit,
-  sellout weight). Choices: Take it (lump sum + buzz + streams for that song) / Decline (small superfan loyalty bump) /
-  Counter (better fee, chance the offer is withdrawn; odds improve with fans + label clout). Taking it: the song gets
-  an "in a commercial" tag that bumps staleness; sellout weight nudges haters up and can trigger a Bandbook scandal card;
-  recoupable labels take their cut. Achievement "Sold Out" (D4). **Money (owner popup 2026-09-30: "Nice bonus"): $1,500–
-  $6,000 per offer (hockey package low, truck commercial high), 2–4 offers per career, Counter +40% with ~30% walk-away
-  (~15% with lots of fans or a label).**
-- D2 Band logo (v0.8.1): picked on the new-career flow after the band intro, before the creator; editable later on the
-  laptop for a fee ("Rebrand": small cost + a little buzz). Three taps: emblem (skull, wheat sheaf, lightning bolt, moose,
-  maple leaf, gopher, anvil, hailstone, grain elevator, cowboy hat, safety pin, flaming tire), lettering style (spiky
-  unreadable metal, cut-out ransom punk, chrome '80s rock, western slab country — any genre may use any; default = the
-  band's), colour pair (~10 curated). Drawn procedurally to a cached canvas texture, reused everywhere: kick-drum head
-  art, merch, van stickers, Bandbook avatar, garage banner, Loonies broadcast card, Hall of Fame entry. No image files.
-  Save: `logo: { emblem, style, palette }`; carry-over follows the cosmetics rule. Rival bands get fixed logos from content
-  (same renderer) on the Scene leaderboard + BOTB screens. **D6 closed in v1.0:** palettes Arena Gold, Hockey Night, Cult Velvet,
-  One-Hit Teal, Garage Grey, Rival Red; emblems lantern, price_tag, handshake, globe_record (meta unlocks; no gong).
-- D3 Year-end recap (v0.8.1): at the week-24 wrap, before the next year: one swipeable screen — fund change (in vs out),
-  fans gained, best/worst gig (venue, grade, one-line quote), songs written + albums released, awards (Loonies, Global
-  Gong), who quit / came back, rival standing (leaderboard delta), regions unlocked, a Rolling Scone headline generated
-  from the year's biggest event; a band photo (the current lineup posed in the current space, a 3D still — not a share
-  image). Stored compactly in `history` (don't bloat the save code) so v1.0's Hall of Fame can show a career as a strip of
-  yearly recaps. Year 1's recap is where the bandmates explain what "a good year" looks like (tutorial tie-in).
-- D4 Achievements (v1.0, with Hall of Fame + meta unlocks): cross-career, meta storage, laptop "Trophies" + a toast on
-  unlock; ~30 as content (`src/content/achievements.js`: id, name, blurb, condition); never gate content. Seed list in
-  handoff Part D4 (Twelve People and a Dog, The Wall, Ma Pelouse, The Original Five, Kijiji All-Stars, Sold Out, Worst Van,
-  Block Heater, Buddy, Big in Japan, Frostbite, Chugging Along, Grey Mug, Night School, Sad Dome). Shipped in v1.0 with 36.
-- D5 **v1.1 "Tuning"** (new roadmap entry after v1.0): no new features; owner playtests years 3–6 on his phone → numbered
-  items in this file → small v1.1.x patches, `tools/balance.js` before/after each; bot probes (fund by year incl. the late
-  plateau, fans vs Steady targets, quits ≈ 1 per 1–2 years, rival gap, World ≈ year 5–6, bonus-year rate); back-burner
-  sweep (fix cheap, close the rest with a reason); phone QA at 390×844 (every screen, two-thumb on Hard/Expert, Bluetooth
-  calibration, save-code size, battery on a full gig). Start v1.1 with a popup: the owner's two biggest annoyances.
-
-## Addendum 2 — pending
-- [x] D0 housekeeping: Version section fixed (and kept current at every merge), Part D appended to handoff.md, decisions
-      + this checklist recorded, queued file retired — lead, 2026-09-30
-- [x] D1 licensing deals — v0.8.1 (popup: fee ranges + odds → "Nice bonus") — LICRECAP, 2026-09-30
-      (v0.9: the Buckle & Boot fury now plays with the real cast and truck mascot; employer brands per band: a Regina city-hall
-      PSA, Tamara's dental clinic, a seed dealer)
-- [x] D3 year-end recap (swipeable, band photo still, compact history) — v0.8.1 — LICRECAP, 2026-09-30
-- [x] D2 band logo (picker, renderer reused everywhere, rival logos, Rebrand) — v0.8.1 (LOGO agent, worktree; Hall of Fame entry waits for v1.0)
-- [x] D4 achievements (36, cross-career, laptop Trophies, toast on a fresh unlock) — v1.0 (Lane M), merged 2026-10-02
-- [ ] D5 v1.1 Tuning (playtest loop, bot probes, back-burner sweep, phone QA) — after v1.0
-
 ## Addendum 3 (handoff Part E "Seats") — decisions (owner popups, 2026-10-01; locked)
 - S1 **Seat swap**: pick drums / bass / rhythm / lead; the member whose seat you take moves to the drum kit (E3 table).
 - S2 **Taps + holds** on the same highway; lanes by pitch contour; **bass max 5 lanes, guitar max 6**.
@@ -599,8 +220,9 @@ Later versions:
 ## Addendum 3 — pending
 - [x] v1.0: seat-aware where E12 says (`HOF_ENTRY.seat`, `META.careers.bySeat`, `{instrument}` / `{drummer}` tokens, lessons
       and achievements gated `seat: ['drums']` for drum words, epilogue `seatRole` hooks, Legacy seat-neutral) — merged 2026-10-02
-- [ ] v1.1 stage 0: fresh audits, correct `plan/plan_contract_1.1.md`, popup for E14 open items (size budget, gear names, body shapes, picker preview)
-- [ ] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat
+- [x] v1.1 stage 0: fresh audits, `plan/plan_contract_1.1.md` finished (E14 popup DONE 2026-10-02: 5.0 MB; parody gear names at drum prices; 3–4 body shapes per seat; tap-to-hear seat preview) — 2026-10-02 on `v1.1-seats` (contract §3)
+- [x] v1.1 lanes A–D + lead integration (E3–E10), `pw_seats.js`, seat leak scan, balance per seat — integrated 2026-10-03 on
+      `v1.1-seats` (`plan/v11_integration_report.md`); review + PR to main pending
 - [ ] v1.2 Tuning (D5) covers all four seats
 
 ## Tech
@@ -609,608 +231,59 @@ Later versions:
 - Tests: `node tests/run.js` (all node tests). Playwright: `timeout 500 node tests/pw_flow.js` with `META_ONLY=<section>`; helper `tests/_pw.js` routes three.js to `tests/.cache/` (gitignored) and runs at 390×844.
 - Balance: `node tools/balance.js`.
 
-## What's in v0.1.0 "Garage"
-- Title → slot → genre (Metal playable; Punk/Rock/Country locked "v0.9") → band intro → basic creator (name, nickname,
-  6 presets) → 5-panel cold open → the 3D garage (tap-to-walk, 7 labelled hotspots, bandmates with idles/moods,
-  seasonal yard, Marcel's cape from `flags.cape`).
-- Week loop: Monday card (50 cards incl. forced `lord_abyssus` + 6-card Cape Saga; 13 gambles) → whiteboard (3 blocks,
-  6 activities; offers accept/decline) → results (block lines + auto-resolved gig) → wrap (deltas, milestones, moods,
-  group chat, parents' loan + guilt) → autosave (auto + career slot). Year rollover at 24 weeks; career ends at 240.
-- Laptop (chat / band / money), ☰ menu (save slots, save code backup/restore, sound, quit). Synth sfx.
-- Balance (5 seeds, year 1): avg bot fund min $140 end $531, 253 fans, 0.2 loans; good bot 458 fans, 0 loans.
-
-## What's in v0.2.0 "Sequencer"
-- Songs are drum patterns (`PATTERN`: 3 one-bar sections × 4 lanes × 16 steps, arrangement preset Short/Classic/Epic,
-  tempo in the genre range). `GG.songs.rate` → Groove (genre fit, rules in `content/genres.js`), Hook (chorus vs verse
-  sweet spot + catchiness), Difficulty (notes × tempo × syncopation). Quality = band part + craft − over-hard penalty.
-  All 4 genres' rules/signatures ship (signatures score 96–100 at home, ≤ 72 elsewhere); only metal is playable.
-- Write block: the planner's Go opens the full-screen sequencer once per Write block (first-ever Write = starter pattern
-  + a bandmate tip); Save queues into `state.pendingSongs`, "Let the band jam one" = `songs.jam` (bots always jam).
-  Results show the song + reactions (Marcel names it in French, Dana/no solo room, Jaxon/fills, Kenji/nod).
-- Sequencer: tap/drag painting, kick-adjacency rule (no double-kick pedal yet) shown kindly, Verse/Chorus/Bridge/Song
-  tabs, copy/clear, tempo slider (+ backing style label), arrangement chips, live meters + tips + ability tick,
-  Loop/Song playback with playhead. Kit hotspot = sketch pad on `state.draft` ("Use in next Write"). Laptop Band tab
-  catalog shows ratings/tags; tap = read-only sequencer with Play.
-- Audio: punchy synth kit (6 lanes), generated backing (metal: doom < 100 bpm, palm-muted chugs locked to the kick,
-  tremolo > 170; bass doubles; chords per section from the kick/snare skeleton), look-ahead scheduler on
-  `AudioContext.currentTime`, ≤ 12 song voices (per-lane choke + booking), glue comp + limiter (peaks ~0.6).
-- Gigs: plays add stale (decays 4/week off), stale lowers setlist score; 4 A/S gigs make a classic (results line).
-- Saves: schema 2. v1→v2 migration gives every song a pattern from an RNG seeded by career seed + song id (career RNG
-  untouched), rates it, keeps old quality/polish; adds `gear`, `pendingSongs`, `draft`. Fixture `tests/fixtures/save_v01.json`.
-- Balance (5 seeds, year 1): avg bot fund min $221 end $624, 288 fans, 0 loans; good bot 483 fans, 0 loans.
-  Over 40 seeds v0.2 vs v0.1-equivalent knobs: avg fund end 593 vs 542, fans 260 vs 266; good fans 425 vs 448
-  (staleness), both within seed noise of the v0.1 targets.
-
-## What's in v0.3.0 "Stage"
-- Weekend flow: planner (Book block → gig board) → runWeek → phase 'gig' → "Load the van" → van trip (3D windshield,
-  Kenji drives silently, road card + banter, skippable) → setlist picker → live rhythm gig (3D stage top ⅔, 2D-canvas
-  highway bottom ⅓, multitouch, taps play the drums, backing from the scheduler) → gig results → wrap.
-  Autosave on 'gig:pending' and after every song ('gig:song'); reload mid-gig resumes at the next song.
-- Gig sim (`22_sim_gig.js`): charts from `songs.toNotes`, Forgiving windows (0.060/0.130 s at drum skill 10, widening),
-  combos, crowd meter + levels + moments, band effects (cape spin, Dana's solo, Jaxon's fills, sulking members), genre
-  moments for all 4 genres, freestyle fill windows, setlist opener/closer bonuses, `botPlay` (perfect bot S, avg B).
-- World (`26_sim_world.js`): weekly listings across the Saskatchewan core (map pins + road km), tier 1–2 venues with
-  quirks/catches/kinds/set sizes, three deals, opening slots (rarely for Tundra Wraith), venue reputation + banned wall,
-  the Moose Hearse (condition/space/comfort/wear; no breakdowns while protected), ~12 road cards.
-- Scenes: `42_render_stage.js` (venue dressing per kind, instanced crowd ≤150 with all C.MOMENTS, band + your kit;
-  ~34 draw calls worst case), `43_render_van.js` (seasons × day/night, moose, bandmates lean in to talk; ≤29 draws).
-- Save schema 3 (v2→v3 migration in `GG.world.migrate`).
-- Tests: node content 26, save 7, sim_career 22, sim_gig 14, sim_songs 12, sim_world 15 · pw_flow flow/year/code/layout
-  · pw_garage · pw_seq seq/audio · pw_gig gig/e2e · pw_world board/van · pw_stage stage (incl. van).
-  v0.4: content 31, sim_drama 14 (new) · `pw_drama.js` META_ONLY=drama (19; screenshots `drama_band.png`, `drama_recruit.png`).
-
-## What's in v0.4.0 "Drama"
-- Garage-era protection ends at **250 fans** (wrap milestone "Local heroes on the horizon", `protection:ended`, van
-  breakdowns now fire). Era label stays 'garage' (v0.5).
-- Drama sim (`27_sim_drama.js`): weekly mood pushes from money (pay cut vs expected 25% → +10% with fans; recruits
-  expect their asking cut), overwork (burnout > 55), band success (4-week fans trend, gig grade) and wants (content;
-  Kenji = random drift). Stages 0 fine → 1 grumbling (chat) → 2 passive-aggressive (`tone:'pa'` chat, wrap warnings)
-  → 3 ultimatum (forced Monday card next week) → 4 quit; one step a week, back down as mood recovers; capped at 2 while
-  protected (and for Reliable recruits). Ultimatum fixes cost money/pay/burnout; refusing quits.
-- Quits: originals run an exit storyline (chat beats: Marcel in Rimouski, Dana in 13/8 prog, Jaxon grounded by Baba,
-  Kenji vanishes 'away' and walks back in on his own), a return card months later (empty slot: welcome / conditions /
-  not yet; filled slot: take them back or keep the recruit → original joins Tundra Wraith, `rivalDefectors` + rival
-  blurb). Returners come back changed (+5 skill, `changed` text). Recruits who quit just leave.
-- Holes: −14 gig score (−10 live crowd start) per open hole; fill-in = $40/gig, skill 38, −4 score, −1 chemistry/week.
-  Recruit ad $30 → 3 candidates (genre name pools, Sask hometowns, 1–5★ scaling with era/fans, 9 traits with real
-  effects, 12 quirks with quirk cards, asking cut, chemistry on the card); re-post $20. Generated LOOKs.
-- Pay the band: `payCut` default 30% (0–60%, step 5) of gig pay to members (`r.cut`); upkeep lowered 30 → 22 + 0.012/fan
-  to keep year 1. Parents' loan: 6 guilt cards with `repay` (never below the $100 cushion; paying off clears the flag).
-- UI (`58_ui_band.js`): laptop Band tab = pay slider + live preview, member cards (mood, stage badge, want / trait,
-  quirk, stars), holes (Post an ad / Hire a fill-in / Let go), departed storylines, rival watch; recruit sheet (3 cards,
-  Hire / Re-post / Close); tone-marked chat; wrap panels (protection, "Trouble in the band", "Meanwhile…"); ultimatum
-  card tag. Garage + stage show fill-ins. `.layer` now isolates stacking (sheets stack cleanly).
-- Save schema 4 (`GG.drama.migrate` wraps `GG.save.migrate`). Bots: `drama.botWeek` (good bot pays 40% when someone is
-  upset and fund > $600; both post ads and hire; good re-posts weak batches), avg refuses 45% of ultimatums.
-- Balance (`node tools/balance.js 10 12`): avg quits/yr after protection 0.65 (ultimatums 1.09, returns 0.42), good 0;
-  year 1 (30 seeds) avg fund min $100 end $383, 273 fans, 0.4 loans (v0.3-equivalent `NO_DRAMA=1`: 85/404/265/0.2);
-  good year 1 fund end $887 (was $1,338: members' cut), fans 557.
-
-## What's in v0.5.0 "Signed"
-- Eras: garage → local (250 fans) → signed (a deal or a DIY album); world threshold defined but off until v0.7
-  (`economy.eras.worldEnabled`). Balance (10y × 20): avg bot Local wk 23, first offer wk 47, signed wk 53, $9.7k at y10;
-  good bot signed wk 30, $23.6k at y10.
-- Labels (`24_sim_labels.js`, API in its header): Gopherwood / Monolith / DIY offers, recoupable advances (60% held as
-  recording budget), demands (cards or a demand sheet), deadlines, drops, fulfilment; studios + producers; sessions
-  replace the planner (studio event = Monday card); drum takes by skill or played (gig studio mode); release wizard
-  (tracklist, lead single, generated/typed title, procedural cover, release week, promo); reviews (5 outlets, recycled
-  patterns penalised), Maple 100, streams, royalties, gold/platinum trophies; Loonies at week 20 (3D red carpet
-  `44_render_carpet.js`, outfit card, envelopes, speech). Theatres (tier 3). Signed-era commission + crew costs.
-- UI: `59_ui_label.js`, `59b_ui_studio.js`, `59c_ui_awards.js`; laptop Label/Albums tabs; trophy wall + trophies sheet.
-- Save schema 5. Tests: sim_labels 15, content 39; pw_label label/studio/awards/sheet
-  (`META_ONLY=label,studio,awards,sheet`).
-
-## What's in v0.8.1 (licensing + recap) — LICRECAP (handoff D1 + D3; contract `plan/plan_contract_0.8.1.md`)
-- **Licensing (D1)** `GG.licensing` (`src/2c_sim_licensing.js`, API in its header; brands + numbers `content/licensing.js`
-  `tune`; the card buttons, fury + scandal cards `content/cards.js` `licenseChoices` / `licenseCards` / `licenseScandals`).
-  Offers roll at the week wrap (own seeded RNG, never the career RNG) from the Signed era, or earlier once a record charted
-  or a Bandbook post went viral (≥ 400 fans): weekly 1.2% + 1.4% × fame (fame 0 at 1k fans .. 1 at 30k), a 14-week gap,
-  a career cap 3 / 4 (fame ≥ 0.6) / 5 (≥ 0.9). Five parody brands, genre-weighted (a used brand weighs 0.2): Prairie Titan
-  Trucks ($3.5k–6k, country/rock), Riot Juice energy drink ($2.5k–4.5k, metal/punk), Saturday Night Puck on Sportsnut
-  ($1.5k–2.5k, any), Prairie Mutual Hail & Hardship (Marcel's employer; $2k–3.5k, metal; Marcel mood −6), Moosefall IV
-  game trailer ($2k–4k, any). Fee = brand range by fame ±10%, to $100. The offer is a Monday card (speaker per brand,
-  `state.card.who`) with Take it / Counter / Decline / Sleep on it (waits on the laptop's Offers line; expires after 3
-  weeks, a chat line + wrap news). Take: fee to the fund (an active label deal takes (1 − royalty)/2 clamped 15–40%:
-  Gopherwood 25%, Monolith 40%, counted toward the recoup), buzz, fans (reach × fans, ≤ 400), +max(1.5k, 0.6 × fans)
-  stream rate on the song's record, `SONG.ad` (+25 stale, kept ≥ 20 stale for 10 weeks), haters +0.04 × sellout, a
-  sellout scandal (odds 0.5 × sellout) queued through Bandbook (`GG.fans.queue`), Buckle & Boot fury for the Ramblers
-  (rival heat +20 + `lic_fury`; content ready for v0.9), `milestones.soldOut` (D4). Decline: superfans +0.004, Dale +4.
-  Counter: +40% (to $100) or they walk: 30% → 15% with fans (5k → 30k) or any label deal. Bots: the good bot counters when
-  the odds are ≤ 20%, declines a ≥ 0.8 sellout with haters ≥ 12%; the avg bot takes 70% / counters 15% / declines 15%.
-  Balance (`node tools/balance.js 10 5`, column `lic` + a licensing line): avg bot 3.0 offers (2–4), median $7.5k a
-  career; good bot 3.8 (3–5), median $12.6k. Earlier targets hold (loans after y1 0, quits/yr 0.38, World y7 / y5).
-- **Year-end recap (D3)** `GG.recap` (`src/2d_sim_recap.js`; words `content/recap.js`). At the week-24 wrap `endWeek`
-  builds a RECAP (`wrap.recap`, one per year in `state.recaps`; ~640 chars; 10 years grow the save code ~3.4%): money in
-  (every positive fund change but a parents' loan) vs out, fans, best / worst gig (a bandmate's reaction as the quote,
-  else a grade line), songs, records, awards won (Loonies by full name, Global Gong) + nominations, who left / came back
-  (first names), scene rank ▲▼ vs the rival's, regions unlocked, licensing income, a Rolling Scone headline from the
-  year's biggest event (final > Gong > Loonie > cert > World > signed > top-10 chart > crack > licensing > region > quit >
-  return > an S gig > bans > loans > fans > "survive; the van does not"). Year one: Marcel / Dana / Jaxon / Mom explain
-  what a good year looks like against the real numbers (Kenji nods, or doesn't).
-- **UI** `src/5l_ui_recap.js`: the wrap's button becomes "Year in review →" at week 24 → `recap` (full, swipeable
-  scroll-snap pages + dots + Next; the cover has the band photo) → Start year N+1 (or the end). The band photo: a render
-  hook in 5l (no 40/41 edits): the garage's own people + labels hidden for one render, the lineup (`R.buildCharacter`, the
-  player centre with sticks up, Marcel with his cape, Kenji arms crossed) in front of the kit, an offscreen target at 2x,
-  pixels → JPEG data URL, cached per session, never saved; a row of avatars without WebGL. Laptop: an "Offers" line above
-  the tabs (→ the `offer` sheet: Take / Counter / Decline → outcome + chips) and a 9th tab **Years** (tabs wrap 5 + 4) that
-  re-opens any recap. Wrap news: a new offer, offers that expired. No share / screenshot / download button anywhere.
-- Hooks: `20_sim_career` (fillText tokens, addStat money-in, cardById, startWeek licensing card before fan/shop cards,
-  resolveCard answer + outcome, settleGig best/worst, snapshotYear → `GG.recap.startYear`, endWeek licensing weekly + the
-  recap, bots), `29_sim_fans` (`queue`, licensing scandals in `cards()` / `isScandal`), `52_ui_week`, `53_ui_laptop`,
-  shell CSS `/* v0.8.1 RECAP */`. Saves: both modules chain onto `GG.save.migrate` (fill when missing; no `state.v`).
-- Tests: `sim_licensing` 9, `sim_recap` 6 (content 49 whitelists the new tokens); `pw_recap.js` META_ONLY=offer (13) |
-  recap (19), also run at 440×956; pw_rival scene expects nine laptop tabs. Screenshots `tests/.cache/recap_*.png`.
-
-## What's in v0.8.1 (logo) — Addendum 2 D2, LOGO agent (worktree branch, merged by the lead)
-- Content `content/logo.js` (`GG.content.logo`): 15 emblems (the owner's twelve in C.LOGO_EMBLEMS order + curling stone,
-  mosquito, toque; each with art params scale/dy/spin), the 4 lettering styles (Spiky / Ransom note / Chrome '80s / Western
-  slab, any genre may use any), 14 curated colour pairs `{ fg (letters), em (emblem), ground (outlines + badges) }`, a default
-  per band (Hail Damage hailstone·metal·Frostbite, Frost Heave safety pin·punk·Hazard tape, Gravel Kings bolt·rock·Chrome &
-  neon, Grid Road Ramblers cowboy hat·country·Prairie sunset), a fixed logo for every rival + every scene band (scene copies
-  alias the big rivals with `{ same }`), Rebrand price (garage $150 / local $300 / signed $600 / world $900 + 3 buzz), chat lines.
-- Sim `2e_sim_logo.js` (`GG.logo`, DOM-free, no career RNG): sanitize/defaults/rival logos, `prepare` (the picker's pick) →
-  'career:new' sets `state.logo` (band default otherwise), Rebrand, carry-over (this phone remembers the last logo per genre in
-  `gg.v1.unlocks.<genre>.logo`, next to the creator's carry key; the picker starts from it), migrate chained onto
-  GG.save.migrate (fills `state.logo` only when missing/broken; never `state.v`). Event 'logo:changed' { state, logo, source }.
-- Render `46_render_logo.js` (`GG.render.logo`): procedural canvas (no image files, cached LRU 72): the emblem (vector paths,
-  one ground-coloured outline round the union) under the name in its lettering — metal: serif caps growing symmetric seeded
-  spikes/roots/barbs from the glyph edges; punk: seeded ransom letters on torn paper patches with hard shadows; rock: skewed
-  italic with a block extrude, chrome gradient + sparkle; country: fattened slab caps on an arch, hard em-coloured drop shadow,
-  stars. "The" becomes a small prefix; long names split in two lines. Below 72 px it draws the emblem + initials (mini).
-  Options square/wide (+aspect), badge circle/round, plain (emblem only), textOnly. `head()` = kick-head art, `merch()` = the
-  item with the logo on it (the misprint prints crooked, as HALE DAMAGE).
-- UI `5m_ui_logo.js`: screen `logo` (full): sticky live preview (big + kick / shirt / Bandbook minis), 1 · emblem (5-col grid),
-  2 · lettering (the band's name in each style), 3 · colours (swatches), ↺ Band default, 🎲 Surprise me. New-career flow:
-  band intro → `logo` → creator (51; Back from the creator keeps the pick). Laptop Band tab: "The logo" card + ✏ Rebrand (same
-  screen in rebrand mode: cost + why, "Rebrand · $X"). No share/screenshot/download button.
-- Reuse (small hooks in shared files): kick-drum head 'logo' art (40 drawHead → `GG.render.logo.head`; 41's kit signature
-  includes the logo so a Rebrand rebuilds it; stage + creator preview get it for free), garage bedsheet banner (41, the wide
-  logo sprayed on the sheet; banner only), merch item art (5k itemCard), van side SVG decal (5k vanSide; the tour bus gets a big
-  one) + a windshield sticker in the 3D van (43, own vehicles, not the bus; `van.info().logo`), Bandbook avatar (5g), Loonies
-  broadcast card (59c: a TV lower third with the winner's logo; rival winners resolved by name), Scene leaderboard (a logo on
-  every row) + BotB announcement (both logos), rival-set bar and verdict (59d). CSS block `/* v0.8.1 LOGO */` (end of shell).
-- Tests: `tests/sim_logo.test.js` (7) · `tests/pw_logo.js` META_ONLY=picker (23) | reuse (14) + contact sheet
-  `tests/.cache/v081_logo_sheet.png`. pw_flow/pw_creator/pw_settings tap `btn-logo-done` after the band intro (pw_flow layout
-  audits + shoots the picker). Green at 390x844: node suite, pw_logo, pw_flow flow/layout, pw_garage, pw_shop merch/van,
-  pw_creator creator/kit, pw_label awards, pw_rival scene/botb, pw_settings difficulty; pw_logo picker/reuse at 440x956.
-- Gaps: the Hall of Fame entry (v1.0) will call `GG.render.logo.forState`; lettering uses system fonts (Georgia / Arial Black /
-  Rockwell fall back per device, so the exact look varies a little by phone); the kick head in the picker's mini preview and
-  avatars under 72 px show initials, not the name; rival kits on stage don't show the rival's logo; the 3D tour bus has no
-  interior logo (it's on the SVG side view).
-
-## v0.8 integration (lead, 2026-09-30)
-- Merged: KITSIM (sim) + SHOPUI (screens/3D, review-fixed) + CREATOR (worktree) + SPACES polish (4 distinct rooms: parents'
-  garage / Rent-A-Riff Jam Space 7 / Prairie Dog Sound / backstage at the Potash Place; van cabins with real seat backs;
-  art-critic loop) + main (v0.7.1 3D title, v0.7.2 English titles / layered crowd / heavier metal / double kick).
-- Timing root-causes (repro'd with CDP CPU throttling, fixed in the game, not the tests): gig auto notes + second kicks
-  booked by a 25 ms timer (not only per frame) against the audio clock; count-in numeral box no longer widens the page;
-  fresh timestamp at song start; rival BOTB set + van drive run on wall time (a slow phone played them in slow motion);
-  the van clock starts on its first drawn frame; `audio:end` carries `natural` so a song that played out never pauses the
-  gig (drift used to pause it at the very end and resume restarted the song) — pw_gig `songend`. Still open: Auto-kick
-  plays its own kick on the frame it comes due (can be late on a slow phone).
-
-## What's in v0.8 (sim) — KITSIM, lane A stage 1 (UI = stage 2, SHOPUI; creator = lane B)
-- `GG.shop` (`src/2a_sim_shop.js`, API in its header; catalogue `content/shop.js`; numbers `economy.shop`; forced cards
-  `GG.content.shopCards` at the bottom of `content/cards.js`). Save schema 9: `10_save` MIGRATIONS[8] + a chained
-  `GG.shop.ensure` on every load (fills only missing lane-A fields; old gear.lanes/doubleKick -> gear.owned; the venues in
-  `venueLast` become van stickers, banned ones crossed out).
-- Gear: toms $450 (lane 5), ride/china $350 (lane 6, needs the toms), double-kick pedal $300; kit quality 0..3 (milk
-  crate -> pawn shop $800 -> pro $2,800 Local Heroes -> arena $9,000 World). Gear shows on stage (performance +0..2 by
-  tier, +0.25 per lane/pedal), live crowd start (+0..2), new songs (+0..1.5 quality) and studio production (+0..1/week).
-- Songs (`21`): extra sections C.EXTRA_SECTIONS live in PATTERN.sections only when owned + used (sanitize/validate/rate/
-  generate/toNotes; `sectionsOf, allSections, addSection, removeSection, withExtras, extraBar`). Outro unlocks free after
-  3 songs written (Jaxon/Dana chat at the wrap); Solo via Dana's card in Local Heroes (4+ songs; refused -> again in 10
-  weeks; auto after 16 weeks without her). rate(): outro/solo count half toward groove, hook +3..4 for a tom fill / ride
-  chorus / ending on an outro / a solo after the first chorus (4-lane patterns rate exactly as before). With the pedal, kicks
-  on the in-between 16ths are a run, not syncopation (the pedal no longer lowers metal groove). Jams use owned gear.
-  Dana's reaction: a solo section makes her happy.
-- Gig (`22`): merch sells in applyResult (`r.merch = { sold, earned, boxes, space, items: { id: { hauled, sold, price,
-  earned } }, named }`, joins the gig's fund change), a sticker per venue (ban -> crossed out, in `26` afterGig); chart:
-  a 'solo' section is Dana's (quarter notes only + the solo cue + crowd +3), an 'outro' ends on a fill window; the two-thumb
-  rule holds with 6 lanes + the pedal on every difficulty (tested).
-- Spaces: tier by era (jam room Local $60/wk rehearse +8%; pro studio Signed $150/wk + write +1, record +1; arena backstage
-  World $300/wk + rest +20%, recover 1); offer card per new tier (`shop_space_1..3`) or `GG.shop.move` any time; rent is in
-  `career.upkeep`; 2 wraps with < 2 weeks' rent -> evicted one tier down (`wrap.shop.evicted`). 16 upgrades (4 per tier;
-  the curb couch + beer fridge move with you; chemistry/mood perks land every other week).
-- Van: minivan -> 15-passenger + trailer $3,500 (Local) -> sprinter $6,500 (Signed) -> tour bus $30,000 (World), 30% trade-in
-  x condition (min $150); Part C1 names per band per tier, `renameVan` (28 chars, no markup); space = merch boxes (3/6/9/14),
-  comfort 2..5 (trip burnout), wear/breakdown factors (`world.travel`); 7 upgrades (roof rack, cushions, winter tires, block
-  heater, tape deck +1 chemistry on long drives, bunks, merch pod).
-- Merch: tiers basics (stickers, shirts + genre: metal patches/longsleeves, punk patches/DIY tapes, country trucker hats) ->
-  warm in Local (hoodies, toques (winter x1.6), rock tour shirts) -> vinyl (Local + a record out) -> limited (Signed + 5k fans:
-  the Lord Abyssus bobblehead, capes; per-band items). Pick the table + prices (0.5..3x suggested), buy boxes up front; the
-  van hauls `van.space` boxes round-robin down the table (2 boxes abroad); sales = buyers (crowd^0.65 above 50 x 0.032 x grade
-  x fit x superfans x variety) split by appeal x season x price curve e^(-1.6 (p/suggested - 1)); Dale/Wendell/the president
-  buy one each (`GG.fans.merchMods`). Unsold stock = the garage box pile (`GG.shop.pile`). The first shirt order comes back
-  misprinted (`money_merch_misprint`, moved out of the deck): box it (-> collector's item after 8 weeks + 300 fans: $60,
-  appeal 2.5), reprint ($100) or wear them. Other shop cards: the merch table intro, the pawn-shop kit, Baba's church van.
-- Audio (`30`): kit quality tiers per C3 (body, sustain, saturation, box/low/high cut, reverb send; peaks < 0.55, arena ~2-6x
-  the energy of the milk crate), `kitFor(genre, tier)`, `kitQuality()`, `renderOffline({ quality, .. })` (+ `tail`); the
-  outro's last chord rings 2.5 beats past the end (the song waits for it), a solo is the genre's lead over a stripped kit.
-- Bots: gear/kit/van/space/upgrades/merch with cushions (big buys keep 8 weeks of bills, never mid-session), shop cards
-  answered by value, downsizing when rent bites. Rival set strength cap 87 -> 90 (they buy gear too).
-- Balance (10y x 20, before -> after): avg local/offer/signed/world wk 20/39/46/158 -> 22/43/47/155, y10 fans 42.9k -> 43.4k,
-  fund $11.1k -> $8.5k, loans after y1 0.10 -> 0.10, quits/yr 0.63 -> 0.53, Sad Dome 8/20 -> 13/20, merch 44% of gig pay
-  (net 26%), 6 lanes + pedal wk 67; good 15/27/28/103 -> 16/27/28/101, fans 63.7k -> 67.1k, fund $21.8k -> $19.5k, loans 0,
-  Sad Dome 20/20, 6 lanes + pedal wk 34 (y2), sprinter wk 100 (the World era wk 101), merch 38% (net 23%); invariants OK.
-- Tests: new `sim_shop.test.js` (16), sim_audio +2 (kit tiers, outro/solo), pw_seq audio +3 (tier renders clean + audible,
-  a 6-lane outro/solo song); sim_career/sim_songs/sim_world expectations follow the new gear/van fields.
-
-## What's in v0.8 (shop UI) — SHOPUI, lane A stage 2 (screens + render + integration for GG.shop)
-- `src/5k_ui_shop.js` (GG.ui v0.8, API in its header; CSS block `/* v0.8 SHOP */` in 00_shell after the CREATOR block).
-  Drum shop `gear` (tall sheet; the kit's sketch pad has "🛒 Drum shop"): kit tiers 0..3 in order, toms / ride / pedal, the
-  Outro / Solo rows (how they unlock); every disabled button shows the sim's `why`; a buy plays `GG.audio.hit` on the new
-  lane (a fill round the kit for a new kit, audio follows gear.quality) and an open sequencer grows its lanes.
-- Merch table `merch` (the merch hotspot; the v0.7 "Coming in v0.8" stub is gone): van haul vs space in boxes, the box pile
-  at home, the next gig's estimate, last gig's sales, the misprint status (pending → boxed with weeks/fans progress →
-  collector); per item: on the table (toggleTable), a price stepper inside item.range ($1/$2/$5 steps + a price word),
-  "Buy N boxes" (1..10, buyStock; the first shirt order comes back misprinted → Dana's tease for Monday). The gig board
-  shows "👕 merch ~$X" per flyer and the van's tier / boxes / stickers.
-- Garage door `van-info` (57) with tabs Van / Space / Car lot: an SVG van side per tier (rusted minivan, 15-passenger +
-  trailer, sprinter, tour bus) with the name on it and a sticker per venue played (banned ones crossed out in red), rename
-  (renameVan), driver, condition + Cousin Dale, merch space in boxes (was "space / 5"), van upgrades; Space: the room now
-  (rent, perks), rooms around town (move with a confirm, move back), this room's upgrades; Car lot: vans with price −
-  trade-in = net (buyVan, confirm).
-- Monday cards: `deltas.shop` chips (50 deltaChips → `ui.shopChips`). Gig results (55) + week results (52) show `r.merch`
-  in a panel (its "Merch table:" line folds in). The wrap: rent, Outro/Solo + merch unlocks, rent arrears, eviction, the
-  collector's item; the collector moment `shop-collector` (full: the box opens, the HALE DAMAGE shirt rises, $60, RARE)
-  plays once when the misprint turns (shop:misprint 'collector' / wrap.shop.misprint; "See it again" in the wrap).
-- Sequencer (54): tabs from `songs.allSections(gear)` ("+Solo" / "+Outro" until added → addSection; ⋯ removes), off-beat
-  cells dimmed in a Solo, arrangement cards keep the extras (withExtras), the Song tab adds/removes them and lists groove
-  per part; the guided Write gets Solo / Outro steps when owned (8 steps). 5–6 lanes + 6 tabs fit 390px. Gig (55): 6 lanes
-  = 65px each on a 390px phone, keys G / H = toms / ride. Laptop Money tab: merch sold / stock bought, rent.
-- 3D: 41 draws the space by `spaceTier` (tiers 1–3 hide the garage-only meshes: drywall, sectional door, pegboard, hockey
-  stick, mower, heater, moon shafts, window snow; draw their own walls, floor, door, props + a canvas sign; the banner moves
-  beside the door; the door hotspot reads "Door"), all 16 upgrades visible (the disco ball spins, green room paints the
-  walls), the unsold box pile (one box per box; the boxed misprint taped with a red X; since SPACES: back-left corner,
-  up to 15 + a MERCH sign); debug('render').space. 41's dead v0.7 character code is deleted (R.charGeometry in 40 is the only builder). 43: the
-  band's vehicle tier inside (15-passenger rows + hymnals, sprinter high roof + touchscreen, tour-bus lounge) + the newest
-  12 stickers on the hood (bus: over the driver's doorway, on the lounge partition); info() tier / vehicle / stickers / banned.
-- Review fixes (after SHOPUI): merch cards keep catalogue order (locked last; on the table = the amber .on style only) and a
-  second "Buy" tap on the same card within 400 ms is ignored (a double tap bought twice / the wrong item); the catering
-  table's walk footprint matches the table; the curb couch is a floral loveseat (0.8 m) and, while it's in the room, the
-  laptop / merch stand points step aside (`space.stand(action)`); the MERCH overflow sign stands behind the box pile (tall,
-  with a footprint); the backstage BAND ROOM sign follows the loaded band (debug space.signText, space.obstacles); the
-  eviction week's wrap rent names the room they left; van side: the name ink suits the paint (light on the minivan / bus),
-  7+ letter sticker labels squeeze to the sticker, "+N more" takes the last slot, the car lot paints each vehicle's own
-  name (`vanSide(st, { name })`); a long van name wraps in the sheet title; locked shop rows dim all but the why / how;
-  the garage-door tabs stick flush to the sheet top.
-- Tests: new `tests/pw_shop.js` META_ONLY=gear (30) | merch (24) | space (21) | van (20) + contact sheet
-  `tests/.cache/v08_shop_sheet.png`; pw_flow layout expects the merch table on the merch hotspot.
-- v0.8 polish SPACES (lead's contact-sheet finding: every rented tier read as the same garage). 41: each tier is its own place
-  from the fixed camera, hotspot layout + walk floor unchanged. The garage's signature bits (string lights, wooden top plates,
-  baseboards, gravel edge, corner trim, the beat-up couch, the red rug) moved into the garage-only meshes; a rented room hides
-  the yard (lawn, weather, lawn chair; the season is still tracked) and re-lights the scene (`MOODS`: hemisphere, key, fill,
-  bulb colour + flicker, accent light, background, dust). Tier 1 Rent-A-Riff, Jam Space 7 (strip-mall rehearsal complex):
-  painted cinder block (blue band, grey above), grey carpet tiles with stains, egg-crate foam patches (one orange), a buzzing
-  wall-mounted fluorescent strip (its own flicker material), a red steel door with a stencilled 7 + wired-glass lite, NO DRUMS
-  AFTER 11 PM across the top, other bands' stickers + marker graffiti, plastic chairs, an orange corduroy couch, the kit on a
-  grubby mat with neon spike tape; out front the corridor (VCT tiles, bilingual WET FLOOR, the next band's gear, lost + found).
-  Tier 2 Prairie Dog Sound: charcoal fabric panels, a wooden QRD diffuser, co-op timber beams (the name on the beam), warm
-  planks, the control-room window with the desk / meters / Gwen glowing behind the glass, track lights washing the walls, a
-  gear rack, the house gold record ('Curling Night in Canada', 1987), a chesterfield, the kit on a carpeted riser (people step
-  up: `space.floorAt`); out front the lobby (the organ + Leslie, a fern, the logo rug). Tier 3 backstage at the Potash Place:
-  navy painted block + gold stripe under bare concrete (form-tie holes), BAND ROOM — <band> stencilled, a cable tray, caged
-  work lights, stencilled road cases, a monitor showing the empty arena, the bulb mirror, a sad catering table (celery, water)
-  until hot catering is bought, a black leather couch, the kit on a black deck with hazard tape; out front the service
-  corridor (yellow lines, LOADING DOCK →, NO SKATES, cable ramps, the forklift, the home team's laundry, a cone). The bedsheet
-  banner hangs only at home and in the jam room. Every word/picture is one canvas atlas (2048 x 1024 since the review) (decals lit + glow, the corridor
-  floor faded out at its edges); light pools are one additive mesh. Seasons: window snow only at home; December lights are
-  the tier's own (the jam room's sad strand with dead bulbs, fairy lights on the control-room window, a strand round the road
-  cases); the box fan only at home + in the jam room. The box pile moved to the back-left corner behind Marcel's mirror by
-  Kenji's crate (three stacks, a staircase up to 15, a MERCH sign rising out of it past that) — clear of every label.
-  debug().space adds kind, wall, floor, bg, fixture, hall, hallProps, decals, riser, yard, banner, pileBox, pileSign; debug().labelAt.
-  43: the seat backs you stare at got detail (rolled top, bolsters, a ribbed velour insert, seams, a map pocket with a road
-  map / ketchup chips, a hoodie slung over the minivan's driver seat, cup holders, the minivan bench's belts + a set list);
-  the 15-passenger's church bench (headrest humps over the window seats, pleats, a grab rail, belts, sticks + a phone + a
-  double-double on the ledge, a ribbed rubber floor mat), the sprinter's captain chairs (bolsters, quilted channels, a
-  seatback pocket with a tablet, headrests on posts, armrests both sides, a cooler + gig bag in the aisle, a vinyl-plank
-  floor); each own vehicle's camera sits a touch higher / zoomed in (minivan CAM_MINI, 15-passenger over the bench with row 2
-  pulled into view, sprinter over the headrests); the tour bus is unchanged. info() adds cam, hfov. Content: the jam room is
-  'Rent-A-Riff, Jam Space 7' (blurb + offer card: cinder block, egg-crate foam).
-  Tests: pw_shop META_ONLY=spaces (17: four different room signatures, the kit on the deck, 10 boxes drawn on screen under no
-  label on every tier, December in a rented room, draw calls < 60, every cabin's lower third not one flat colour) + sheet
-  `tests/.cache/v08_spaces_sheet.png`; van +3 (tiers 0–2: the lower third's top colour ≤ 30%); space: the MERCH sign found
-  via debug space.pileSign.
-- SPACES review (visual critic on `v08_spaces_sheet.png`): every tier keeps the front-left corridor clear of the merch stack
-  (the jam room's next-band gear sits mid-corridor by WET FLOOR, the studio's organ + Leslie stand right of the logo rug, the
-  backstage cable ramps stop short and the laundry cart became the band's black drum case, white corners, HAIL DAMAGE / DRUMS);
-  the box pile is a staircase along the open left edge growing toward the camera (4 cells + a second column at the front, ≤ 3
-  high, white tape band on every box; the misprint's red X on the side we see), Marcel's mirror + his spot moved a step
-  forward-right so nothing stands in front of it; near-black clothes in the garage scene lift to #33333d (o.lift) so figures
-  with their backs to us keep their shape. Jam room: a wide two-tube fixture high in the middle of the back wall (cool bloom),
-  NO DRUMS / AFTER 11 PM big + condensed (canvas-squeezed lettering, no fine print) under the smaller banner, chunky die-cut
-  band stickers on the door and over the sign's corners, a GRAVEL KINGS spray tag right of the door; the corridor tiles 35%
-  darker + drab, fading out sooner, ending at a low cut wall with the neighbours' steel doors 6 and 8 and a lit EXIT → SORTIE;
-  the sad December strand droops over the sign. Studio: bevelled panels (charcoal / slate / burgundy, dark gaps; the right
-  wall's run covers the band poster), a stepped skyline diffuser in pale wood under a track light, the gold record on walnut
-  (#d4af37 disc, groove ring, label, brass plate), the control-room window a deep reveal (sill, lit jamb, mullion, a glare
-  streak) onto a dim blue-grey room with the console's meters + fader caps glowing over the sill and Gwen's silhouette (the
-  beam plaque is gone), pale oak planks with thin seams, key/fill/bulb ~30% less saturated, a cool control-room accent, the
-  lobby on charcoal carpet. Backstage: BAND ROOM → stencilled between the labels, the band's name big on a placard on its door
-  (the star moved up), the arena monitor bigger + brighter on an arm turned to the camera (seating rings, the lit stage, LIVE),
-  the forklift's pallet up on its forks with a shrink-wrapped stack. The laptop desk is per tier (cooler / walnut side desk /
-  stencilled flight case; the garage's cooler is garage-only) and without the curb loveseat the studio has a black office
-  chair, backstage a director's chair. The decal atlas is 2048 x 1024 with a best-fit guillotine packer (the shelf packer ran
-  out). Vans (43): every own cabin's headliner is broken up (overhead console + map lights, a CD wallet on the driver's visor,
-  a set list in the other, headliner seams; the minivan's sagging bit held up with thumbtacks), front seats get headrests on
-  posts + pocket elastic/stitching; minivan: buckets a touch inboard, a backpack slumped on the console, ketchup chips on the
-  bench, the hoodie is gone (it read as the driver's torso); 15-passenger: the bench back is three piped cushions with gaps +
-  two buckles, thin crossed tapered sticks on the ledge (only the bench's top lip in frame), grab handles; sprinter: a cab
-  shelf over the windshield (toque, set lists, gaff tape, laminates), lighter stitched centre panels, cup holders on the
-  armrests. Cameras tighter (hfov minivan 42 → 38, 15-passenger 43 → 37, sprinter 44 → 38 and 0.2 forward; look a touch
-  higher); the tour bus unchanged. pw_shop spaces: the sheet adds December in the jam room and backstage (spaces_dec_1/3).
-- Gaps (shop UI / spaces): the other bands' tier-0 starts (laundromat basement, strip-mall unit, Quonset) still draw the
-  parents' garage; the corridor props out front are static (no passers-by, no hockey players); the control-room window is a
-  painted picture (no parallax); sticker / graffiti text is only legible zoomed in (colour + shape read at phone size);
-  the wall-mounted tube is the jam room's only fluorescent (no ceiling fixture: the camera looks down); the band banner is
-  not shown in the studio (no bedsheets at Prairie Dog Sound) or backstage (the door placard names the band); the right wall is
-  seen edge-on, so most signature pieces live on the back wall and the floor; the neighbours' doors 6 + 8 are drawn on the
-  face of the corridor's cut wall we see (a diorama cheat); the curb loveseat (a bought upgrade that moves with the band)
-  still sits by the laptop in the rented rooms; with the tighter minivan camera the buckets' outer halves are off-frame.
-
-## What's in v0.8 (creator) — lane B, CREATOR (Addendum 1 C2; worktree branch, merged by the lead)
-- Content `content/creator.js` (`GG.content.creator`): 157 parts in 26 categories (every Part C2 list + a few legacy
-  looks kept drawable: short / top bun / gelled spikes, library specs, horseshoe 'stache, sweatband), each `{ id: '<cat>.<value>',
-  cat, value, name, gate?, hint?, color? }`; gates `era | fans | milestone | award | gigs` (+ `genreStart`: metal starts with the
-  battle jacket, corpse paint, the Viking beard; punk the mohawk, liberty spikes, green dye; rock the Canadian tuxedo, slicked
-  back; country the cowboy hat + boots, rhinestone suit, cowbell). Pyro = World era, your own cape = a Loonie, gold sticks =
-  a gold record, your face on the kick = platinum. Swatches: 12 skins, eyes, 18 clothes, 12 kit colours. No gong, ever.
-- Sim `2b_sim_creator.js` (`GG.creator`, DOM-free, no RNG): unlocks are pure functions of state (week-end hook on
-  'week:wrap' → one wrap milestone line "New look unlocked: … (☰ → Look)" + `wrap.creator`; events loonies:result / cert /
-  tour:gong / gig:done unlock now → 'creator:unlocked' (UI toast) and the next wrap lists them). New careers: stage look =
-  everyday look, `newKit` (milk crates, band logo on the kick); `prepare()` hands the creator's look/stage/kit + carry-over to
-  the 'career:new' hook. Carry-over per genre in `gg.v1.unlocks.<genre>` (wrapped storage). Save: chained onto
-  `GG.save.migrate` in this module (not 10_save): fills player.stageLook (= look), player.kit (`legacyKit`: the v0.7 kit),
-  unlocks (earned quietly + the stool throne) only when missing; never touches `state.v`.
-- Render: the character builder moved into `40_render_core.js` (`R.charGeometry`; 41 `makeCharacter` calls it). Legacy LOOKs
-  take the verbatim v0.7 path: 1,220 member/rival/recruit/preset/combo geometries hash-identical to v0.7, and the garage +
-  stage scenes are hash-identical for a v0.7 player. v0.8 LOOKs draw build/height/age, 4 face shapes, eyes (+ colour), brows,
-  noses, mouths, 8 facial hair, 5 glasses, 17 hair styles (hat-aware), 8 tops / 4 bottoms / 5 shoes / 7 headwear, stage
-  outfits + extras (cape, studded wristbands, corpse paint), pixel-art tattoos (forearms, sleeves, neck, chest, teardrop,
-  REGERTS down the forearm) and knuckle letters (3x5 font, readable in the Hands view), piercings. `R.kit`: shell finishes
-  (paint = v0.7, wood, black, sparkle, flames, camo), black hardware, thrones (crates, leather saddle), cowbell, hair fan
-  (spins on stage), pyro (arena shows only: capacity ≥ 5,000 / tier 4 / dome / festival / hall; bursts on moments and every
-  16 beats when hyped), kick-head art (CanvasTexture: band logo by genre, your face, a moose, custom text), stick colour.
-  41 `buildKit` = `R.kit.garage`; 42 kit builders + stage-look selection (drummer + members via `GG.creator.stageLookFor`),
-  `info().kit` / `drummerV8`; 44 the carpet uses stage looks (a band outfit card drops your stage outfit).
-- Preview `45_render_creator.js` (`GG.render.preview`): its own small WebGLRenderer inside the creator (the main loop is
-  paused / has no career there); views full (drag to turn) / face / hands (fists to the camera) / kit.
-- UI `5j_ui_creator.js`: screen `look` (full): preview, Everyday ↔ Stage toggle, tabs Body / Face / Hair / Clothes / Stage /
-  Ink / Kit, locked parts dashed with a one-line "what unlocks it" note over the preview, knuckle inputs (A–Z, 4 per hand),
-  🎲 Surprise. 51: the creator has "✂ Customize" (+ a "Your custom look" card) and the carry-over toggle; ☰ menu → Look.
-  CSS block `/* v0.8 CREATOR */` after the v0.7 block.
-- Tests: `sim_creator.test.js` 13 (new); `pw_creator.js` META_ONLY=creator (34) | kit (8) | stage (6) + contact sheet
-  `tests/.cache/v08_creator_sheet.png`. `_load.js` SIM_SAFE now takes `2\w_` (2a_sim_shop, 2b_sim_creator). Green:
-  node suite, pw_flow flow/layout/code, pw_garage, pw_stage, pw_label awards, pw_settings difficulty, pw_rival botb,
-  pw_tour gong, pw_gig gig, pw_world van at 390×844; pw_flow flow + pw_creator creator at 440×956 (preload override).
-- Gaps: (41's old `characterGeometry`/`hairParts`/`extraParts`/`guitarParts`/`capeParts`/`CAPES` were deleted by SHOPUI.) Formerly dead code (kept to
-  avoid touching 41 beyond buildKit; the lead can delete them after the merge). Members have no stage looks of their own
-  yet (they fall back to their look). The hair fan doesn't blow your hair. Look changes persist at the next autosave.
-
-## What's in v0.7 (sim) — WORLDSIM stage 1 (UI = stage 2, WORLDUI)
-- World era ON (`economy.eras.worldEnabled`) at the Steady threshold (25k fans + a charting record; labels.weekly). Home
-  scene stays 40k in World (Canada saturates); each region has its own scene (`world.scene` adds fans abroad).
-  World-era home costs: eraUpkeep 50, commission 15%. Abbot Lane (London) opens in World (`labels.studios`).
-- `GG.tour` (`25_sim_tour.js`, API in its header; content `content/world.js`; numbers `economy.tour`): 4 regions (C6 cities
-  with x/y pins, region `pin` on the world map, `canadaPin`), 43 parody venues (Mudstonbury Jun, Wackelstein Open Air Aug,
-  Summer Sonicboom Aug, Big Day Inn Jan, Siberian Frostfest Jan by Baikal, Budokhan Hall, the Finnish National Moose Opera),
-  17 preset packages (per region: showcase once, 2 tours, 1–2 festival tours whose festival stops fix the departure week),
-  8 rentals, 3 stays, 3 extras. Unlock at `threshold` = region.fans × (1.6 − genre fit) (×1.08 if the rival broke it first)
-  OR an invite (festival slot/showcase: story card, half flights for 10 weeks) OR "big in one place" (a song blows up).
-- Booking: flights (region $ × members + you + fill-ins) + rental + extra up front, hotels weekly; departs next Monday;
-  never over the Loonies week, the Sad Dome, a studio session or the career end; `cancel` before departure.
-- On tour (`away`): Monday = departure (jet lag) + this stop's show (open dates book from the regional board via the Book
-  pick or auto best); region Monday cards (75%) or quiet, never the home deck; no home offers/showdowns; blocks map
-  write→rehearse (hotel room, 70% gains), hustle→rest, book→promote (region fans); homesickness +15/wk (stay, low moods),
-  −6 per rest, −12/wk at home; ≥45 mood drag, ≥70 forced first-block rest, ≥75 the homesick card (fly home early), ≥80
-  burnout; members call home (chat tone 'home'). Gigs: crowd = walk-ins + region fans + buzz×fit (+ festival slice, hall),
-  flat fee × payMult, new fans toward the region scene; rental travel (burnout by comfort, breakdowns), no Moose Hearse wear.
-  Japan (not Osaka): silent crowd (meter frozen per song, reaction + 'applause' at the end, no boos/mosh). Region road cards.
-- Calendar abroad: `seasonIn(region,w)` (Australia reversed), `seasonAt(state)`, regional climates/temps + city offsets,
-  regional holidays replace Canada's (hanami, Golden Week, Bonfire Night, Novy God, white nights, Aussie Christmas…).
-- Story: the Japanese fan-club president (Emiko Tanabe; first Japan week: card, gifts, Japan shows, comments), big in one
-  place, the rival breaking regions (`state.tour.rival`), the Moose Opera (mooseAlbum ready/finland → Nordic Moose Run →
-  Helsinki → `flags.mooseOpera = 'platinum'`, trophy `platinum_fi`, card `wt_moose`), the Global Gong (week 22, World era,
-  nominated with a broken region or a festival; trophy `gong` + $5k), regional charts view. Save v7→v8 (`GG.tour.migrate`).
-- Balance (10y×20, before → after): good world wk 103 (y5) → 103; avg 158 (y7) → 158; good y10 fans 48.7k → 63.7k (15.6k
-  abroad, 5.2 tours, Gong 1.7 wins), fund $25.4k → $21.8k, Sad Dome 20/20 → 20/20, cracks 18 → 17; avg fans 39.5k → 42.9k,
-  fund $11.7k → $11.1k, 2.1 tours, Sad Dome 13/20 → 8/20 (v0.6.1 had 9), quits/yr 0.64 → 0.63; invariants OK.
-- Tests: `sim_tour.test.js` 17 (new); sim_calendar/sim_labels/sim_fans/content updated for World; pw_fans expects "Japan".
-
-## What's in v0.7 (UI) — WORLDUI stage 2
-- World map (`world`, full; laptop World tab + planner button "Plan a world tour 🌍"): a stylized world (Canada + the four
-  regions, no USA), flight arcs, region pins with lock state (Open / Invite! / 🔒 fans needed / Soon), a card per region
-  (genre fit, season, fans here vs breaks-at, threshold progress, broken / big / rival chips), status strip (none / booked
-  + cancel / on tour + homesick). Region screen (`tour-region`): SVG regional map with city pins (festival grounds amber,
-  the route dashed), tapped city's venues, season + holidays + flight cost chips, the packages. Package picker
-  (`tour-pkg`): rental / stay / extra with prices, live GG.tour.quote (route, flights, rental, hotels, extra, upfront,
-  estimates), Book (departs next Monday) or why not.
-- On tour: departure Monday = the flight moment (plane arcs over the world map; jet lag, the rental waiting); region
-  cards carry a region strip; the planner shows the stop + homesick bar and only rest / promote locally / hotel-room
-  rehearsal (forced rest locks slot 1); an open date opens the regional board (region map, its clubs, the rental strip);
-  the wrap shows hotels, homesickness, members calling home (chat tone `home`), unlocks, invites, broken regions, big in
-  one place, the Gong, the homecoming (`tour-home` recap sheet: shows, best night, fans, fees vs costs, net).
-- 3D: rentals + regional scenery in the van (UK & Europe hedgerows/castles/cottages/sheep, Japan neon streets/blossoms/
-  vending machines, Australia red outback/roadhouses/termite mounds/kangaroos, Russia birch taiga/izbas/onion domes/a bear;
-  the tiny European van packs the band three abreast with gear to the roof, its own camera; rail passes run on rails,
-  faster). Festival stages (Mudstonbury/Wackelstein mud + tents + a flying welly, Big Day Inn sun, Summer Sonicboom
-  beach, Siberian Frostfest snow + pines + frozen Baikal), Budokhan Hall (tiers, ring of lights), the Moose Opera's
-  antler chandelier; a silent (Japanese) crowd stands still during songs, claps then bows on 'applause'.
-- The Global Gong ceremony (week 22, nominated): the v0.5 red carpet reused in Amsterdam (marquee "The Global Gong"),
-  envelope = GG.tour.runGong, winner, a speech (loonie-card), after-party; the Moose Opera moment after the wrap.
-- Fixes: 42_render_stage `G/band/members/flags/player` were swallowed by a comment in the WIP (every stage build threw);
-  a legacy v0.1 `kind: 'hall'` still maps to a Canadian kind (world stages come only from venue ids / flags).
-  Driver lines in the flight/board/homecoming follow `GG.world.driver` (you drive if the driver quit).
-- Existing flows: laptop now has 8 tabs (pw_fans bandbook, pw_rival scene updated).
-- Tests: `pw_tour.js` META_ONLY=map (24) | tour (28) | gong (13), default also writes the contact sheet
-  `tests/.cache/v07_sheet.png`.
-
-## What's in v0.6.2 "Two thumbs" (owner feedback: chords + songwriter)
-- **Two-thumb rule** (`22_sim_gig`): every difficulty caps a moment at 2 judged notes (kick > snare > cymbal > toms >
-  ride > hat; `gig.THUMBS`, `gig.THUMB_PRIORITY`; all DIFFICULTIES `chord: 2`). Dropped hits go to `chart.auto`
-  (not judged, never a miss, not in total/accuracy). The live gig plays them via `GG.audio.hit(lane, ctxTime)` scheduled
-  `lat + 0.15 s` ahead at `G.zero + t` on a healthy audio clock (frame-due fallback when free-running) and draws them as
-  dashed ghost gems + a small ring. Free-style windows untouched. Hard/Expert stay harder via density + speed.
-- **Groove presets** (`content/grooves.js`): 5–6 named one-bar beats per genre with a one-line description (metal
-  Headbanger*, Blast beat, Thrash skank, Half-time doom, Gallop + Double-kick run locked until the pedal; punk Punk skank*,
-  D-beat, Four on the floor, Buzzsaw 8ths, Hardcore two-step; rock Rock backbeat*, Half-time, Shuffle, Four on the floor,
-  Bleacher stomp; country Train beat*, Two-step, Waltz feel, Brush shuffle, Hoedown; * = signature, Groove ≥ 70) +
-  4 one-tap mods per genre (More metal/punk/rock/twang, Make it catchier (chorus only), Simpler, Busier) as op lists,
-  tempo labels (metal Doom crawl/Headbang/Mosh/Thrash/Blast …) and per-step coach lines (picked by member role).
-- **Guided Write flow** (`54_ui_sequencer`, default; `settings.songwriterMode` 'guided'|'advanced'): Verse → Chorus
-  (contrast hint) → Bridge (preset cards + tweak buttons showing Groove/Hook/Difficulty before → after) → Tempo (big
-  BPM + label + slider) → Song order (Short/Classic/Epic cards) → Name (Marcel's reroll or type) → Save; Back / ▶ Play /
-  Next on every screen, "Let the band jam one" still in the header. "Advanced ⚙" opens the grid (remembered); the grid's
-  Song tab has "Guided steps" back. The kit sketch pad and catalog view always use the grid.
-- Tests: sim_gig two-thumb test (20), content grooves test (47), pw_seq new `guided` section (23; seq 34 checks the
-  Advanced switch + memory), pw_gig gig (29) checks auto notes play + are scheduled ahead. Sheet: `tests/.cache/v062_sheet.png`.
-
-## What's in v0.6.1 (world) — Addendum 1 C1/C6/C7 (WORLD agent, lane B1)
-- Calendar `src/28_sim_calendar.js` (`GG.calendar`): two weeks per month from July, C.SEASONS (winter 11–16, spring 17–22,
-  summer 23–4, fall 5–10; world/garage/van seasons follow it), weekly weather per season + city climate (coast/north) from
-  its own seeded RNG (`weatherAt` pure; `state.weather` cached Mondays; never cancels a gig), holidays (Canada Day 1,
-  Thanksgiving 7, Halloween 8, Remembrance 9, Grey Mug 10, Christmas 11–12, NYE 12, St. Paddy's 18, Loonies 20).
-  Effects: outdoor turnout by weather (`shape`), crowd/score/fans via `gigMods` (folded into `GG.drama.gigMods`), road
-  risk/wear/burnout (`roadMods`: winter ice, spring potholes, blizzards, hail), genre-season fit (metal owns winter,
-  country/punk the summer; doubled x1.5 at their rooms), venue availability (`venueOpen`: seasonal/holiday rooms, no
-  skate parks in winter, no Legion on Remembrance Day), holiday pay/weights (NYE x2 floor, pub + party circuits), holiday
-  Monday cards (`holidayCard`, priority order; guilt Thanksgiving if you owe, Halloween costumes -> flags.costume, the
-  label's Christmas single, the Grey Mug halftime once in Signed with 20k fans -> next Monday +5% fans + trophy
-  'greymug'), season news lines, season cards (cabin fever, frosh week, hail season, the festival lineups).
-- Rings (`content/map.js` rings + city.ring): Sask (+ Humboldt, Gravelbourg, Estevan), the West (Local Heroes), East &
-  North (Signed); `world.ring/ringOpen/cityOpen`; ≤1 far listing a week (`economy.world.farListings`); long hauls taper
-  burnout (`burnoutTaper`, `burnoutMax` 30) and cap breakdown km (`breakdownKmCap` 400). 37 new rooms:
-  parody venues per ring city (Frostbite Lounge, Commandant Ballroom, The Hoofprint, Messy Hall, …) + seasonal/holiday
-  rooms (Canada Day bandshells, fair grandstand, stampede beer gardens, frosh bowl, harvest dance, potash Christmas
-  party, the Bassborough NYE ballroom, Paddy O'Furniture's). Venue fields: outdoor, season, weeks, holiday.
-- Drivers (`content.drivers`, `world.driver/driverMods/syncDriver/driverFor`): Kenji (breakdowns x0.5, cactus), Moth
-  (free repairs, comfort −2, laundry), T-Bone (safe x0.6, slow, cassettes), Earl (slow, +2 chemistry on long drives,
-  atlas), you (x1.15 breakdowns, +25% road cards). Driver quits/poached -> you drive (drama hook + chat), returns -> back.
-  Road cards: Kenji-at-the-wheel cards gated `driver:['kenji']`; new gates driver/weather/holiday; 15 new cards (deer on
-  the Yellowhead, the fight over shotgun, cape in the sliding door, whiteout on the Trans-Canada, hail, heat, frozen van,
-  construction, mosquitoes, Christmas lights, long weekend; you-drive: wrong turn, gas-station argument, lead foot, music).
-- UI: HUD calendar strip (`hud-cal`, month · season · weather °C · holiday; week-chip toast explains it); board calendar
-  line (`board-cal`), ring tabs (`ring-<id>`), locked-ring teaser (`ring-locked`), tag chips (`board-tag`); van header
-  weather + driver (`van-weather`), van sheet driver panel (`van-driver`), 2D windshield weather + cactus; 3D van: setTrip
-  { weather, driver, dashboard } (blizzard whiteout, hail, heat haze), you ride shotgun / drive, band behind, gear + merch
-  piled behind, dash item; garage decor (window snow in winter, Christmas lights in December, box fan in July / heat).
-- Save: v6 -> v7 (`GG.calendar.migrate`: weather; van.driver via world.migrate); `state.v = 7`.
-- Tests: node sim_calendar 15 (new), sim_world 19, content 42 · pw_world calendar (19; screenshots hud_calendar.png,
-  board_rings.png, van_driver.png) + board 14 + van 13.
-- Balance (10y x 20): avg local wk 21 / offer 38 / signed 42 / world-ready y7; good 15 / 26 / 27 / y5; Sad Dome avg
-  9/20, good 18/20; quits 0.58/yr; loans after y1 avg 0.10, good 0.05 (before: 23/46/49/y7, 17/29/30/y5, 11/20, 20/20).
-
-## What's in v0.6.1 (fans) — Addendum 1 C5 (FANS agent, lane B2)
-- `GG.fans` (`29_sim_fans.js`, API in its header; content `content/bandbook.js`; numbers `economy.fans`). Own seeded RNG per
-  roll (seed + week + salt + post counter), never the career RNG. Events `fans:post|viral|scandal|gift|club`.
-- Bandbook: every Promote block posts automatically (kind from band state: gig announcement, song teaser, rehearsal clip,
-  behind the scenes, meme) → buzz, fans (one global count) and streams of the newest release. Small viral chance
-  (weirder kinds likelier): good, or the wrong kind (Marcel's "Abyssal Two-Step" dance tutorial: buzz up, his mood down,
-  haters up). 2–4 sentiment comments per post + Tundra Wraith's supportive comment on every post; Dale/Wendell/haters comment.
-- Fan types `state.fanTypes {super, casual, hater}` = shares of `state.fans`; drift weekly (superfans with chemistry and a
-  happy club, haters with fame and scandals). Superfans follow on tour (`gigShape`: crowd/buzz only; merch is v0.8).
-- Named superfans `state.superfans`: Dale from Warman (every show: crowd line + comments; his macaroni portrait of Kenji
-  via a card), Big Wendell the jumper-cable trucker (met via a fan card after long hauls), Japanese fan-club president
-  reserved for v0.7 (shown locked).
-- Scandals → choice cards next Monday (`scandal_turf`: Marcel's lawn is artificial turf, and more); fan cards are forced by
-  `GG.fans.forcedCard`, never drawn. Fan mail + gifts (`state.gifts`) weekly by chance; garage shows the portrait by the gig
-  board, a gift pile (1/3/6 boxes) and a letter stack.
-- Patreeon (`state.fanClub`, Signed era; tiers Drumstick $3 / Snare $8 / Full Kit $20): members from superfans × happiness;
-  a weekly exclusive post (Bandbook app) keeps them happy; payout every second week (12% platform cut).
-- UI: laptop tab "Bandbook" (7 tabs in two rows) → `GG.ui.bandbookPanel` (`5g_ui_bandbook.js`): Feed / Fans / Patreeon.
-- Save: `GG.fans.migrate` chained onto `GG.save.migrate` fills missing fields idempotently.
-- Tests: `sim_fans.test.js` 14, `content.test.js` 46, `pw_fans.js` bandbook 19 / fanclub 13; `pw_rival` scene now expects
-  7 laptop tabs. Balance (10y×20): avg LH/offer/signed wk 20/39/46 (was 21/38/42), good 15/27/28 (15/26/27), world-ready
-  y7/y5 unchanged, avg y10 fund 11.7k (8.9k; Patreeon), quits/yr 0.64 (0.58), Sad Dome 13/20 & 20/20 (9 & 18).
-
-## What's in v0.6.1 (settings) — Addendum 1 C4 (SETTINGS agent, lane B3)
-- `11_settings.js` (node-safe): `GG.prefs` (get/set → 'settings:changed', profile/setProfile, offsets, setCalib,
-  calibCompute, CB_COLOURS) and `GG.difficulty` (of/mul/add/text; wraps `GG.save.migrate`: missing = 'normal').
-  Settings defaults live in `GG.save.SETTINGS_DEFAULTS` (10_save; only changed keys are stored): gigDifficulty, noteSpeed,
-  noFail, autoKick, audioProfile, calib {speaker|headphones: {audio, visual, at}} (ms), calibSeen, lefty, colourblind,
-  bigText, reducedFlash, cameraShake, graphics (low|med|high, default high = the old look), skipVan, fastAnim.
-- Career difficulty (`state.careerDifficulty`, picked on the creator screen, locked): multipliers `economy.difficulty`
-  read only through `GG.difficulty` — start fund, gig pay (applyResult), hustle cash, upkeep, bandmates' mood losses
-  (drama), rival skill + how badly their off nights go, label advances + goodwill losses. Chill: +20% pay, −15% bills,
-  moods fall 35% slower, rival −5; Brutal: −15% pay, +20% bills, moods fall 40% faster, rival +4 and rarely off.
-- Gig: `GG.gig.DIFFICULTIES.expert` (windows ×0.8, misses ×1.3, faster scroll); session opts `noFail` (crowd floor 20,
-  no boos/drinks) and `autoKick` (kick notes play as Goods; kick taps ignored); results carry `difficulty` + `assists`.
-  55: note speed scales the scroll; lefty mirrors drawing/touch/keys; colourblind lane colours; the active profile's
-  audio offset is subtracted from taps and the highway draws (visual − audio) ahead (v0.5.1 clock untouched).
-  Setlist sheet: Expert, speaker/headphones quick switch, assists line → Settings.
-- `5h_ui_settings.js`: 'settings' (title ⚙ + ☰ menu), 'calib' (auto once on first launch, skippable; eight clicks on
-  the AudioContext mapped to performance time once, then the flashing light; saved per profile), 'practice' (any song at
-  50/75/100%, studio mode on a shadow state: nothing saved) from the laptop Band tab, Settings and the kit's sketch pad.
-  `<html>` classes gg-big / gg-calm / gg-fast; 40 `R.prefs()` (pixel ratio 1/1.5/2, crowd 40/70/100%, calm, shake);
-  42 calm = no strobing washes or hit flashes; 57 skipVan / fastAnim.
-- Tests: sim_career +2, sim_gig +4, save (defaults), new `pw_settings.js` (settings 44, calib 14, difficulty 17).
-- Gaps: no camera shake exists yet (the toggle is a hook for later scenes); the first-launch calibration is skipped under
-  automation (navigator.webdriver) unless `?calib=1`; kit practice is a button injected under the sketch pad (54 is lane A's).
-
-## What's in v0.6.1 (audio) — Addendum 1 C3 (AUDIO agent, lane A)
-- `30_audio.js`: per-genre generated band (genre kit tuning in `content/genres.js`, metal doom/chug/tremolo kept), a
-  random key per song (seeded by song id), section density (sparse verse, full chorus, stripped breakdown, solos),
-  formant vocal hits on the beat grid; a convolver per room class picked by the venue; crowd bed following the meter +
-  cheers/boos on 'crowd:moment'; garage hum, van road noise, van radio (your charting singles); 4-bus mixer
-  (settings.mix) + sequencer metronome (♩ in the sequencer header, settings.metronome); settings.brushes (country).
-- Settings screen: mixer sliders, metronome and brushes toggles drive GG.audio (VERIFY wired 'settings:changed').
-- Tests: new `sim_audio.test.js` (10); `pw_seq.js` audio 38, seq 31. Nobody has listened to it yet (offline renders only).
-- Gaps: kit quality tiers v0.8; v0.2 gear upgrades have sounds but no shop; garage hum waits on a 1 s scene poll.
-
-## v0.6.1 verify (Stage C)
-- All node + pw suites green at 390×844; flow/layout/gig e2e/touch also green at 440×956 (scratch viewport override).
-- Integration fixes: 'settings:changed' (mix/metronome/brushes/muted) → `GG.audio.applySettings()`; Brushes toggle in
-  Settings; toasts/sheets/scrim start below the new calendar strip; week chip `W12/24` no longer ellipsizes at 390;
-  "🔊 Speaker" label fits; Kenji's dash cactus 1.7× so it reads. Contact sheet `tests/.cache/v061_sheet.png`.
-
-## What's in v0.6.0 "Rivals" (stage 1 sim + content, stage 2 UI done)
-- Rival sim (`23_sim_rival.js`, API in its header): Tundra Wraith run a parallel career (fans chase `economy.rival.fansCurve`
-  × momentum from the head-to-head record; buzz; garage → local 250 → signed 1,100 with Monolith; one record a year timed
-  before the Loonie nominations, charting on the Maple 100 and shown in `labels.chartView`). Every roll is seeded by career
-  seed + tag + week: the career RNG is never touched. Set strength = 87 − 37·e^(−week/66) + form (± streaks) + crack penalty.
-- Heat 0..100 (start 12): + per clash (`economy.rival.heat.clash`), −max(0.4, 2.5%)/week; above 25 it feeds buzz to both
-  bands; the weekly showdown chance = 0.1 + 0.0035·heat (min gap 3 weeks, per-kind cooldowns, gates in `economy.rival.kinds`).
-- Showdowns (`state.showdowns`, SHOWDOWN + id/name/rival/lines): **botb** = a Monday gig offer (`offer.showdown`, prize by
-  era, winner steals 3% of the loser's fans; their set score deterministic per week), **sameNight** = your gig that weekend
-  loses crowd by buzz share (door pay + fans follow), **stolenSlot** = the best board listing at a venue that doesn't love you
-  is taken (`listing.stolen`, unbookable; rep 3 venues turn them down = a win), **festival** = a summer board listing
-  (festival grounds in `content/rivals.js`, they headline; outplay them for bonus fans + buzz), **loonies** = co-nominations
-  (won if you beat them in ≥ 1 shared category; rival Loonie strength = their records/skill/fans + an award-darling bonus),
-  **poach** = a forced Monday card for an unhappy member (stage ≥ 2, not protected): a bonus / the spotlight keeps them,
-  the gamble can lose them to the rival (member act `poach`, `stats.poached`), **final** = year 10 week 21, the Sad Dome
-  (Calgary, 620 km) is booked on Monday (+ a "Sad Dome eve" card); your score vs theirs → `state.finalShowdown`
-  `{ week, won, headliner: 'you'|'rival', score, rivalScore, rival }` (auto-resolved at the wrap if it wasn't played).
-  Unplayed showdowns close at the wrap with news (forfeit, missed festival, quiet same-night).
-- Cracking (net 7 wins, ≥ 9 wins, heat ≥ 30, from year 2): breakup / rebrand (new name, `{rival}` token follows) / opener
-  (they open for you: extra crowd now and then); a crack card next Monday; heat resets. Defectors (v0.4 + poached) join
-  their lineup in corpse paint (`rival.members[].defector`).
-- Content `content/rivals.js` (`GG.content.rivalry`): Gord "Grimnir" Penner (vocals) + Sheila "Hexenfrost" Wiebe (guitar),
-  Darryl "Vorthul" Klassen (bass), Lorne "Frostgrave" Dueck (drums): looks + `corpsePaint`, gags, 14 songs, 12 records, 5
-  rebrands, news pools, showdown texts (UI cards + verdicts), 5 rival cards, 14 scene bands, 3 festivals + the Sad Dome.
-- Hooks: career (newCareer init, startWeek → `rival.monday` after the board refresh, resolveCard → `afterCard`, settleGig →
-  `rival.shape` before applyResult, endWeek → `rival.weekly` → `wrap.rival`, botWeek → `rival.botWeek`, cardById, `{rival}`),
-  drama (forcedCard → `rival.forcedCard`, act `poach`), labels (rivalStrength, rivalName, runLoonies values + `rival.loonies`,
-  chartView), world (canBook skips stolen listings, a cracked rival stops headlining), gig (`gig.venue` finds rivalry venues).
-- Save schema 6 (`GG.rival.migrate` wraps `GG.save.migrate`: a missing rival is created and caught up quietly).
-- Balance (`node tools/balance.js 10 20`, new columns sd/sdW/heat/rvF + a rival line): avg bot 3.3–4.7 showdowns/yr
-  (y2+) at heat 20–69, wins 30–56%, never cracks them, headlines the Sad Dome 11/20; good bot 2.5–4.5/yr, wins 64–82%,
-  cracks them 19/20 (y3–9), headlines 20/20. Loonie wins ≈ v0.5 (avg ≈ 3.5/career). y10 avg fans 36.1k→37.3k, fund
-  $9.7k→$11.6k; good 43.9k→47.9k, $23.6k→$25.7k (prizes, the Sad Dome, heat buzz). Tests: sim_rival 15 (new).
-- UI (`59d_ui_rival.js`, API in its header): laptop **Scene** tab (rival card + head-to-head, heat meter + showdown odds,
-  Sad Dome countdown/result, top-10 scene leaderboard, news, recent showdowns, lineup with gags/defectors, their records);
-  Monday **showdown sheet** after the card (BotB Enter/Pass, same-night split bar, stolen slot verdict, festival → board,
-  Sad Dome); rival cards get a rival strip (poach: the member's mood) and `ui.who('wraith_frontman'|'tw_*')` = the cast;
-  **showdown weekend** (`ui.playShowdown`, from `main.playWeekend`): BotB/festival/final show **their set first** (screen
-  `rival-set`, live3d: `render.stage` spectator camera on a riser in the crowd, their lineup in corpse paint + black stage
-  shirts, their drummer on the throne, a banner, ticking per-song scores, their drummer plays the pattern, skippable) →
-  your live set (score to beat in the gig bar) → **verdict** (`rival-verdict`; also after a same-night split). Board
-  badges (stolen/defended/festival; stolen = "Taken" and unbookable), wrap rival panel (+ crack panel), end-screen Sad Dome
-  line, rival rows on the Maple 100. `GG.ui.showdownViews` (default: on unless `gigAutoplay`) keeps autoplay flows fast
-  (toasts instead). The van to Calgary shows "Saskatoon → Calgary" (world.startTrip: off-map cities keep their name).
-  Tests: `pw_rival.js` META_ONLY=scene|botb|final (+ contact sheet `tests/.cache/v06_sheet.png`).
-
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.1 review fixes** (report §5): `GG.shop.sectionDef(state, id)` (seat text of Solo / Outro), `ui.SEAT_NAME / seatName /
+  seatIcon / seatOf`, `R.labelScreenPos(action)`, seat chart notes may carry `with` (a same-voice partner; `o.with` on
+  pluck/strum/lead), `drama.members[id].kit[kind]` (kit variants, content/zz_seats_drama.js), content/zz_seats_gates.js (cards
+  off a member's swap seat), swapped gate id = that member on the kit now, `tests/seat_scan.js` `oldLeak` / `swappedNames`.
+- **v1.1 as merged, lanes C + A** (full list in `02_contracts.js` V1.1 SEATS "As merged (v1.1 lanes C render + A content)"):
+  - Render: `R.seatGear(seat, gearLook, kitColor, genre)` / `R.instrument`; `stage.setup({ ..., seat, lineup })` (55 passes both);
+    `stage.info()` + `seat, view ('drummer'|'spot'|'spectator'), camera, drummer, you, boom, mics, seatMode, autoHits`;
+    `van.info().gigBag`; `carpet.info().you`; garage `debug('render').seat` { seat, rig, drummer, gear, label, sticker }.
+  - `GG.creator`: `sanitizeGearLook(gl, seat?)`, `gearShapes`, `gearDefault`, `gearNames`, `stageLookFor`; `prepare/init/apply` take
+    `gearLook`. `ui.openLook({ ..., seat, gearLook, logo })` → "Your gear" tab on string seats (testids `lk-tab-gear`,
+    `lk-gear-shape-<id>`, `lk-gear-sw-<i>`, `lk-gear-color-kit`, `lk-gear-guard-<id>`, `lk-gear-sticker-none|logo`).
+  - Content keys: `bands.seatLines`, card/chat top-level `seat` / `swapped`, card prefixes `arc_` / `fin_` / `sw_`, flags
+    `bassArc|rhythmArc|leadArc` + `*ArcDone`, `shop.gear[i].bySeat` / `shop.kit[i].bySeat` / `shop.byBand[b].lines.drummerGear`,
+    `creator.gear`, `grooves.coach(.genre).bySeat`, `lines.songReactions[id].kit|bySeat`, `recruits.drummers`, `drama.fillIns.drums`,
+    `endings.player.<seat>`, epilogue `when.seatRole`, `content.seatAchievements`.
+  - Tests/tools: `tests/seat_scan.js` (strict leak scan; LEFT phrases also match in ALL CAPS), `SEAT=all LEAK_YEARS=10 node
+    tests/sim_bands.test.js`, `tests/content_seats.test.js`, `META_ONLY=seats node tests/pw_bands_render.js` (opt-in contact
+    sheet, ~3 min), `tools/phoneqa.js` sweeps the v1.1 screens, `tools/perf.js scenes` seats line.
+- **v1.1 as merged** (lanes D + B, lead folds; full list in `02_contracts.js` V1.1 SEATS "As merged"):
+  - Folds: `C.GATE_KEYS += seat, swapped` (`C.SEAT_GATE_KEYS` stays as the subset); `C.ACH_KINDS += seatCareer, soloTooLong,
+    allSeats` (= `GG.achieve.SEAT_KINDS`, now in `KINDS`). `C.SEAT_KINDS` unchanged.
+  - `GG.audio`: `seatVoiceFor(kind)`, `pluck|strum|lead(midi, when, o)` → handle `{ fn, kind, midi, t, end, len, hold, n, repeats,
+    released, cut }` (o adds `repeats`, `trem`, `ring`, `seat`), `release(h, when)` → true/false/null, `seatPreview(bandId, seat,
+    opts?)` → handle + `{ bandId, seat, secs, stopAt }`, `stopPreview()`; `play()` handle + `kinds/muted/mute/seat`; timeline +
+    `seat/part` (part notes `part: true`, last outro bar `ring: true`, `tl.tail`); `renderOffline({ seat, part, mute, seatNotes })`;
+    `soloFor(genre, 'player')`; `debug('audio').seat`; genres `backing.progNames` / `backing.hooks`.
+  - `GG.gig`: `STR_LANES`, `HOLD_BEATS`, `RUN_GAP` 0.18; chart opts `genre`, `soloist`; chart keys `holds, chords, runs, kinds,
+    genre, tail, fills[].cap/shred`; `S.release(lane, t)`, `S.holding`, `S.seat`; SONG_RESULT `seat, holds, rings, held, bends,
+    solo, dur, soloNotes, allNotes`; `roles().drummer` non-enumerable; `economy.gig.live` `flowGain, holdGain, ringGain, ringAt,
+    seatDensityClamp, bendGain`.
+  - `GG.songs.part.*` (ROWS, key, choices, suggest, sanitize, full, toggle, pick, MODS, modify, notes), `partRating`,
+    `PART_WEIGHT`, `rate().part`; `GG.career.stageRole / ARCS / arcOf`; `GG.drama.slotOf`; `GG.shop.seatGearEffect /
+    seatGearSync / kitName / whammy`.
+  - UI: 51 screen `seat` (testids `seat-drums|bass|rhythm|lead`, `seat-next`), 55 string lanes, 54 "Your part", 5k / 59b by seat.
+  - pw matrix adds `tests/pw_seat_audio.js` (voices | mute | preview | noodle) and `tests/pw_seats.js` (pick | write | gig |
+    studio | shop | garage | stage), both at 390x844 and `PW_VIEW=440x956`.
+- **v1.1 stage 0** (2026-10-02, `v1.1-seats`; shapes in `02_contracts.js` V1.1 SEATS, contract §3/§4):
+  - Contracts: `C.SEATS`, `C.SEAT_MAX_LANES { drums 6, bass 5, rhythm 6, lead 6 }`, `C.SEAT_KINDS` (confirmed on the real timeline:
+    metal rhythm gtr+gtr2 / lead gtr+lead; punk rhythm gtr / lead gtr+lead; rock rhythm gtr2+clean (Lane D adds a seat layer) /
+    lead gtr+lead; country rhythm clean (the acoustic strum) / lead twang; bass = bass; drums = drum), `C.SEAT_TOKENS`, `C.TOKENS +=
+    gear sticks yourPart seat`, `C.ROLE_ALIASES += '@drummer'`, `C.SEAT_GATE_KEYS ['seat', 'swapped']` (fold into GATE_KEYS once
+    sim_career's gate test covers them), `C.GEAR_SHAPES / GEAR_GUARDS / GEAR_LOOK`; events `gig:hold`, `seat:picked`. SAVE_SCHEMA 10.
+  - State (migrate fills, no events; newCareer the same): `seat` ('drums' for old saves), `members[].seatRole`, string seats only
+    `gear.seatLanes { bass, rhythm, lead }` + `gear.runs` (a drum career's gear stays v1.0's object), `player.gearLook`.
+  - `GG.career`: `seatOf, seatSwap(bandId, seat), swapped, seatRoleFor, lineup, drummerId, seatLanes, seatRuns, seatOk`,
+    `speakerOk(state, who, line)`; gates `seat` / `swapped` (gatePasses, cardOk top level + gate, cameo too); tokens per seat
+    (drums = v1.0: drums / you / kit / sticks / the beat / drums). `bands.<id>.seats` (E3). Recruits get `seatRole` at hire.
+  - Stubs: `gig.chart(song, { seat })` = the drum chart + `seat`, `stub`; `GG.audio.seatKinds`, `pluck/strum/lead/release` → null;
+    `GG.render.stage.setup({ seat })` stored (`info().seat`); `GG.main.newCareer/quickStart({ seat })`, `?quick=1&seat=bass`.
+  - Tools/tests: `tools/seat_audit.js` → `plan/seat_audit.txt` (530 lines); `tools/make_fixtures_v10.js` →
+    `tests/fixtures/v10_recruit.json.gz` (1.0.1.0 Ramblers, a recruit + a quit original); `tests/sim_seats.test.js`; save.test +2;
+    `tools/perf.js` size gate 5,000,000. Drum regression: 8 seeded 3-year bot careers byte-identical to 1.0.1.0.
 - **v1.0.1**: `GG.gig.session(...).due(lane, t)` -> bool: judge(lane, t) would hit a note (pure; the smart bridge asks it);
   `stats()` adds `stray`.
 - **v1.0 "Glory" (merged 2026-10-02; the lane APIs are folded into `02_contracts.js` "As merged")**:
@@ -1421,65 +494,3 @@ Later versions:
   then?), recapPhoto(state, year) → dataURL|null, openOffer(id, after?), offersLine(st, rerender), recapPanel(st),
   licenseWrap(wrap)`; screens `recap` (full), `offer` (sheet).
 
-## v0.5.1 hotfix (owner phone report: "the playing mini game is broken, it's also quite difficult")
-- Gig clock now free-runs on performance.now() and only drifts toward the audio clock while it's healthy (running, ~1x);
-  a stalled/suspended/erratic AudioContext (iOS silent switch, screen recording, Control Centre, headless) no longer
-  freezes, rewinds or fast-forwards the notes. Taps wake a suspended context; event timeStamps on another time base are
-  ignored; taps are caught on the document (capture) inside the highway's rectangle so no stray layer can swallow them;
-  any layer above the show is closed at "Start the show".
-- Gig difficulty (owner decision: new players get **Easy**): `GG.gig.DIFFICULTIES` easy / normal / hard, chosen on the
-  setlist sheet, saved in settings (`gigDifficulty`). Easy ≈ 3–4 notes/s (time-spaced lanes, ≤2-note chords, windows
-  ×1.45, misses hurt the crowd ×0.55, slower scroll); Normal ≈ 6–8/s; Hard = as written (the sim's default for bots).
-  Addendum C4 extends this (Expert, note speed, assists, settings screen) in v0.6.1.
-- Tests: sim_gig difficulty test; pw_gig `touch` section (real touchscreen taps under a stray layer, stalled clock).
-
-## Back-burner
-- v1.0 leftovers: the title scene is Hail Damage's garage for every band (HD-only title scene); A15 first-gig tempo — every
-  band's slowest starter jam sits above its genre's slowest preset (HD 7/10 seeds, the others 10/10; pinning a slow starter
-  tempo changes the songs and the balance baseline, so it waits for v1.2 Tuning; `A15_STRICT=1` makes it a gate); World-era
-  Monday decks have no home cards (deck gates stop at signed); bonus-year cards are appended at runtime, not at load (needs
-  content.test's World-gate rule relaxed for `minYear >= 11`); Minus Forty and Fine and each band's rival-streak twin are
-  earned by every average career; the handshake emblem reads abstract at small sizes; the rival epilogue is a line on
-  `end-final`, no `mooseMuse` / `babaMad` epilogue variants; `pw_ending bonus` plays 312 weeks in-page (3–4 min per size);
-  JS/frame at CPU ×4 in the gig peak ≈ the 0.9 build (report-only target ≤ 6 / 14 ms not met; SwiftShader-bound); the first
-  festival build didn't reach −40 %; next-scene shader pre-compile and the Sad Dome crowd dressing not done; sizes over the
-  soft lane targets (above); the 3D runs at 10 fps (not paused) behind a tall sheet; the dist is ~20 KB under the 4.25 MB gate
-  (v1.1 Seats needs the 4.5 MB ceiling or trimming: e.g. the 02_contracts doc block still ships, block comments aren't stripped).
-- v0.9 leftovers: Buckle & Boot's spectator view in a real BotB is mostly the crowd's big hats (render polish in 42's spectator
-  camera); Rock/punk leads incl. Benny's break still go through Dana's lead amp; the Chartbusters' ballad only plays when forced
-  (rock's slider floor is 90 BPM); country strums a major triad on every chord; nobody has listened to the v0.9 audio on a phone
-  yet (WAVs in tests/.cache); `GG.render.garage.peek` (genre-card still) not built; the Ramblers' fiddle sits in the rhythm
-  slot partly behind Duke from the drummer camera; small Hail Damage-only texts with no byBand reader stayed neutral
-  (licensing brand texts, the Full Kit perk, the cape venue quirk); the bots rarely see the Japan/Australia/Russia region cards
-  or the Gopherwood/DIY label cards; the 10-seed balance run is noisy (read the 30-seed file next to it).
-- v0.9 fixer leftovers: rock's walking bass (`30_audio` rock styles: root, +4, +7, next − 1) plays a major third over minor
-  chords and a chromatic approach that rubs a semitone against the guitars (the train-beat fix wasn't extended to rock);
-  `progression()` picks a section's progression with `hashSeed('bridge|' + kick + snare) % 2`, and drum rows are only 'x' /
-  '.' (both even char codes), so every genre always gets its first bridge progression; the Ramblers' Australian payoff costs
-  twice the others (the good bot fires it in 3/18 eligible careers); Gravel Kings' good bot fund@y3 is 122-130 % of Hail Damage;
-  Frost Heave reaches World in 5/30 avg careers vs Hail Damage's 10/30.
-- v0.6: the Sad Dome trip's `trip.to` is still the home city id (Calgary is off the Sask map; labels + km are right);
-  `npcs.wraith_frontman` is still named "Tundra Wraith's frontman" in content (the UI shows Gord); heat decays emit
-  'heat:changed' every week; the spectator view keeps crowd pits off (they'd run through the riser camera); rival banter
-  lines live in 59d (UI flavour, like 55's).
-- v0.5: rival strength for Loonies is a scripted curve (`labels.rivalStrength`) — v0.6 replaces it with the rival sim.
-- v0.5: DIY bands have no deal object (Label tab says "No label yet"); theatres use kind 'club' + `theatre:true` (club
-  dressing); producer `weird` unused; balance 10×20 takes ~39 s. (Save codes: a 312-week career ≈ 120–131k chars; see v1.0.)
-- v0.4: late-game avg-bot fund plateaus ~$3.5k (was $11k) because of the members' cut; the good bot never sees drama
-  (moods ~85). Both belong to the v0.5 era/economy pass. Pay-the-band money has no other use yet (members' savings).
-- v0.4: fill-ins have generic garage idles/tap lines; the van scene doesn't carry fill-ins.
-- v0.4: EFFECT_KEYS additions (`member`, `payCut`, `repay`) are pushed at runtime by 20_sim_career until the lead
-  folds them into 02_contracts.js.
-- v0.3: later years pay far more than v0.2 (good bot year 2 ≈ $7k fund, 2,000 fans) because of 250–300-cap rooms —
-  needs the era/economy pass in v0.5.
-- v0.3: no latency-calibration setting for players yet; `A.hit` has no per-lane choke.
-- v0.3: van space has no use yet (merch in v0.8). Gig banter lines live in 55_ui_gig.js, not content/lines.js.
-- Restoring a save code keeps the code's slot; its next autosave overwrites that slot without asking.
-- With the planner sheet open the room squeezes into a 150px band and hotspot labels overlap a little.
-- Once-only garage cards run out after ~1.5 years; later garage years lean on repeatables (eras/content in v0.5+).
-- Flags `mooseMuse` and `babaMad` are set by cards but unused yet (hooks for the moose album chain / baba storyline).
-- Marcel's mirror has no reflection.
-- v0.2: last week's plan stays on the whiteboard (v0.1 behaviour); Go with a kept Write opens the sequencer again.
-- v0.2: the mix was tuned by numbers (peaks/rms), not by ear on a phone; backing for punk/rock/country is basic.
-- v0.2: sketch-pad edits and queued sketches persist only at the next autosave (week wrap).
-- v0.2: gear upgrades (double kick, toms, ride) exist in the model/audio but nothing sells them yet (v0.8).

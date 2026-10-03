@@ -4,10 +4,16 @@
 // walks, every hotspot tap emits 'hotspot', bandmate taps emit 'member:tap', cape variants, sulking,
 // kit colour, draw calls < 60, pause, resize/orientation, insets, offline fallback, no console errors.
 // Saves one screenshot to tests/.cache/garage.png (cape = 'velvet').
+// v1.1 "Seats" (Lane C): META_ONLY=seat (also in the default run): every band x string seat: the swapped drummer sits at the
+// kit (pose 'drum', sticks), the 'kit' hotspot reads "Your rig" in the amp corner, a tap on it walks you there (the 'hotspot'
+// 'kit' event as today) and you noodle your own instrument (pose 'rig', the gear string, the logo sticker); draw calls <= the
+// band's drum garage x 1.15; back on drums the label is "Drum kit" again; no console errors. tests/.cache/garage_seat<TAG>.png.
 const path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, shotName } = require('./_pw');
 
-if (process.env.META_ONLY && !/garage/.test(process.env.META_ONLY)) { console.log('SKIP pw_garage (META_ONLY=' + process.env.META_ONLY + ')'); process.exit(0); }
+const ONLY = process.env.META_ONLY || 'garage,seat';
+if (!/garage|seat/.test(ONLY)) { console.log('SKIP pw_garage (META_ONLY=' + process.env.META_ONLY + ')'); process.exit(0); }
+const DO_GARAGE = /garage/.test(ONLY), DO_SEAT = /seat/.test(ONLY);
 
 const HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
 const SHOT = path.join(__dirname, '.cache', 'garage.png');
@@ -65,6 +71,12 @@ const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
 
 (async () => {
   const c = checker('garage');
+  if (DO_GARAGE) await garage(c);
+  if (DO_SEAT) await seat(c);
+  c.done();
+})();
+
+async function garage(c) {
   const { page, errors, close } = await open();
   try {
     await page.waitForFunction(() => window.GG && GG.render && GG.render.init, null, { timeout: 15000 });
@@ -239,5 +251,86 @@ const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
   } catch (e) {
     c.ok(false, 'offline exception: ' + (e && e.stack || e));
   }
-  c.done();
-})();
+}
+
+// ---- v1.1 seat: the swapped drummer at the kit, your rig, your instrument ---------------------------------------------------
+async function seat(c) {
+  const { page, errors, close } = await open();
+  const BANDS = ['hail_damage', 'frost_heave', 'gravel_kings', 'grid_road_ramblers'], SEATS = ['drums', 'bass', 'rhythm', 'lead'];
+  try {
+    await page.waitForFunction(() => window.GG && GG.render && GG.render.init && GG.main, null, { timeout: 15000 });
+    await page.evaluate(() => { window.__ev = []; GG.on('hotspot', p => window.__ev.push({ t: 'hotspot', v: p && p.action })); });
+    const base = {}, rows = [];
+    let shot = null;
+    for (const band of BANDS) for (const seat of SEATS) {
+      const setup = await page.evaluate(([band, seat]) => {
+        const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: band, seat });
+        st.player.gearLook = { shape: null, color: null, guard: 'tortoise', sticker: 'logo' };
+        if (!GG.render.available) GG.render.init(document.getElementById('scene'));
+        for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+        GG.render.setPaused(false); GG.render.setScene('garage'); GG.render.syncState(st);
+        return { seat: st.seat, drummer: GG.career.drummerId(st) };
+      }, [band, seat]);
+      const f0 = (await dbg(page)).frames;
+      await page.waitForFunction(x => GG.debug('render').frames >= x, f0 + 4, { timeout: 30000 });
+      const d = await dbg(page);
+      const label = await page.evaluate(() => GG.render.hotspotScreenPos('kit'));
+      if (seat === 'drums') {
+        base[band] = d.drawCalls;
+        c.ok(d.seat && d.seat.seat === 'drums' && d.seat.label === 'Drum kit' && !d.seat.rig && !d.members.some(m => m.pose === 'drum'), band + ' drums: the Drum kit label, nobody else at the kit ' + JSON.stringify(d.seat));
+        continue;
+      }
+      const atKit = d.members.filter(m => m.pose === 'drum').map(m => m.id);
+      const ratio = d.drawCalls / base[band];
+      rows.push(band + '/' + seat + ' ' + d.drawCalls + ' calls (x' + ratio.toFixed(2) + ')');
+      c.ok(setup.drummer && d.seat.drummer === setup.drummer && atKit.length === 1 && atKit[0] === setup.drummer,
+        band + ' ' + seat + ': ' + setup.drummer + ' sits at the kit (' + atKit.join(',') + ')');
+      c.ok(d.seat.rig && d.seat.label === 'Your rig' && inView(label, 390, 844) && label.y >= 56 && label.y <= 844 * 0.65, band + ' ' + seat + ': the kit hotspot reads "Your rig", on screen ' + JSON.stringify(label));
+      const lab = await page.evaluate(() => ({ rig: GG.render.labelScreenPos('kit'), tro: GG.render.labelScreenPos('trophies') }));   // v1.1 review
+      c.ok(lab.rig && lab.tro && (Math.abs(lab.rig.y - lab.tro.y) >= 28 || Math.abs(lab.rig.x - lab.tro.x) >= 80), band + ' ' + seat + ': the "Your rig" and "Trophies" labels do not overlap ' + JSON.stringify(lab));
+      c.ok(typeof d.seat.gear === 'string' && d.seat.gear.indexOf('seat|' + seat + '|') === 0 && /\|tortoise$/.test(d.seat.gear) && d.seat.sticker, band + ' ' + seat + ': your instrument + the logo sticker ' + d.seat.gear);
+      c.ok(ratio <= 1.15, band + ' ' + seat + ': draw calls ' + d.drawCalls + ' <= drum garage ' + base[band] + ' x 1.15');
+      if (band === 'hail_damage' || band === 'grid_road_ramblers') {   // a real tap on the rig: walk there, the hotspot fires, you noodle
+        await page.evaluate(() => { window.__ev.length = 0; });
+        await tapAt(page, label);
+        const got = await waitEvent(page, 'hotspot', 'kit', 12000);
+        await page.waitForFunction(() => !GG.debug('render').walking, null, { timeout: 8000 }).catch(() => {});
+        const d2 = await dbg(page);
+        c.ok(got && d2.seat.playerPose === 'rig' && Math.hypot(d2.player.x + 0.85, d2.player.z + 1.95) < 0.35, band + ' ' + seat + ': tap Your rig -> hotspot kit, you noodle at the rig ' + JSON.stringify(d2.player));
+        await page.evaluate(() => { for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} } GG.render.setPaused(false); });
+        if (band === 'hail_damage' && seat === 'bass') {
+          await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; }));
+          await page.waitForTimeout(400);
+          shot = path.join(__dirname, '.cache', shotName('garage_seat.png'));
+          await page.screenshot({ path: shot });
+          await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = ''; }));
+        }
+      }
+    }
+    console.log('seat garage: ' + rows.join(' | '));
+    // The swapped drummer quits (a 'drums' hole) and a drama fill-in covers it: the fill-in sits at the kit, not the quitter.
+    const fill = await page.evaluate(() => {
+      const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat: 'bass' });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      const sw = GG.career.drummerId(st), m = st.members.find(x => x.id === sw);
+      m.status = 'quit';
+      const hired = GG.drama.hireFillIn(st, 'drums');
+      GG.render.setPaused(false); GG.render.syncState(st);
+      const d = GG.debug('render');
+      return { sw, hired: !!hired, holes: GG.drama.holes(st), seat: d.seat, atKit: d.members.filter(x => x.pose === 'drum').map(x => x.id) };
+    });
+    c.ok(fill.hired && fill.seat.drummer === 'fill_drums' && fill.atKit.length === 1 && fill.atKit[0] === 'fill_drums',
+      'hail_damage bass: ' + fill.sw + ' quit, the fill-in drummer sits at the kit ' + JSON.stringify([fill.holes, fill.seat.drummer, fill.atKit]));
+    // Back to a drum career: the label and the kit are the drummer's again.
+    const back = await page.evaluate(() => {
+      const st = GG.main.quickStart({ seed: 77, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage' });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      GG.render.syncState(st); return GG.debug('render').seat;
+    });
+    c.ok(back.label === 'Drum kit' && !back.rig && back.seat === 'drums' && !back.sticker, 'back on drums: "Drum kit", no rig ' + JSON.stringify(back));
+    if (shot) console.log('screenshot: ' + shot);
+    c.ok(errors.length === 0, 'seat: no console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  } catch (e) {
+    c.ok(false, 'seat exception: ' + (e && e.stack || e));
+  } finally { await close(); }
+}

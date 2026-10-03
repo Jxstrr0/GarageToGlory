@@ -100,7 +100,7 @@
       { id: 'hockey', text: 'Speaks only in hockey metaphors.', chem: 4, cards: [
         card('qk_hockey', 'drama', 'Line Changes',
           "{recruit} has drawn the setlist like a line chart. 'Dump it in with the fast one, cycle the mid-tempo, then pull the goalie for the closer.' It might work.",
-          [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your sticks.',
+          [{ label: 'Run the hockey setlist', hint: 'Gamble: pull the goalie', outcome: 'You tape your stick.',
             roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
               success: { effects: { buzz: 5, fans: 10 }, outcome: "It works. The crowd chants like it's overtime. {recruit} taps your pads. You don't have pads." },
               fail: { effects: { burnout: 5 }, outcome: 'You pull the goalie. There is no goalie. The closer starts twice.' } } },
@@ -140,7 +140,7 @@
           [{ label: 'Play the tournament', effects: { chemistry: 5, burnout: -4 },
             outcome: "Kenji wins without speaking. The trophy is a hubcap. It's now the band's most prized possession." },
            { label: 'Rehearse. Now.', effects: { drumSkill: 1, mood: { recruit: -6 } },
-             outcome: 'You rehearse. {recruit} practises flicks on your snare head between songs. It is somehow in time.' }])] },
+             outcome: 'You rehearse. {recruit} practises flicks against your {gear} between songs. It is somehow in time.' }])] },
       { id: 'harvest', text: 'Vanishes every fall to help with harvest.', chem: 2, genres: ['metal'], cards: [
         card('qk_harvest', 'money', 'Harvest Call',
           "{recruit}'s uncle needs a hand with harvest near Rosetown. 'Two weeks,' says {recruit}. 'Three if it rains. Four if the combine does the thing.'",
@@ -175,9 +175,9 @@
       // ---- v0.9 genre quirks (genres: [..]; 27_sim_drama filters by the band's genre) ----
       { id: 'zine_maker', text: 'Makes a zine about every rehearsal. Every. Single. One.', chem: 2, genres: ['punk'], cards: [
         card('qk_zine', 'fame', 'Issue Forty-Seven',
-          '{recruit} has published issue 47 of their rehearsal zine. It reviews your hi-hat. Harshly. Three hundred copies are already at the record store.',
+          '{recruit} has published issue 47 of their rehearsal zine. It reviews {yourPart} you played on Tuesday. Harshly. Three hundred copies are already at the record store.',
           [{ label: 'Read it out loud', effects: { chemistry: 3, buzz: 2 },
-            outcome: 'The whole band reads it together. It is mean, accurate and very funny. Your hi-hat gets better.' },
+            outcome: 'The whole band reads it together. It is mean, accurate and very funny. Your playing gets better.' },
            { label: 'Ask for a better review', effects: { mood: { recruit: -5 } },
              outcome: 'Issue 48 reviews the request. It is worse.' }])] },
       { id: 'safety_pins', text: 'Holds their entire outfit together with safety pins.', chem: 1, genres: ['punk'], cards: [
@@ -260,7 +260,7 @@
           [{ label: 'Give them eight bars', hint: 'Gamble: magic, or mayhem', outcome: 'The yodel begins.',
             roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
               success: { effects: { buzz: 6, fans: 10 }, outcome: 'The crowd yodels back. A grandmother in the front row weeps. It is the moment of the night.' },
-              fail: { effects: { chemistry: -3 }, outcome: 'The yodel goes on for sixteen bars. Then thirty-two. You end it with a crash cymbal.' } } },
+              fail: { effects: { chemistry: -3 }, outcome: 'The yodel goes on for sixteen bars. Then thirty-two. The band ends it with a crash cymbal.' } } },
            { label: 'No yodelling', effects: { mood: { recruit: -5 } },
              outcome: '{recruit} agrees, then hums a yodel under every song for a week.' }])] }
     ],

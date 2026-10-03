@@ -106,7 +106,7 @@
         'Behind the scenes: {who} ironing the backdrop with a waffle iron. Don\'t ask how. Don\'t ask why.',
         'BTS: the band eating perogies off a kick drum case. Catering has arrived.',
         'Behind the scenes: tonight\'s setlist is written on a pizza box. The pizza box is now framed.',
-        'BTS: loading the van at −31. {who} carries the bass cab like a newborn.',
+        'BTS: loading the van at −31. {who} carries the heaviest case like a newborn.',
         'Behind the scenes: {player} practising on pillows at 2 a.m. so Mom can sleep. Mom cannot sleep.'
       ],
       exclusive: [
@@ -116,7 +116,7 @@
     },
     viral: {
       good: [
-        'VIRAL: {player} falls off the drum riser mid-fill and finishes the fill lying on the floor. {views} views.',
+        'VIRAL: {player} falls off the drum riser mid-song and finishes {yourPart} lying on the floor. {views} views.',
         'VIRAL: {who}\'s string snaps, hits a light, the light falls, the crowd thinks it\'s pyro. {views} views.'
       ],
       // who: a member id, a role alias ('@front') or 'any'. GG.fans reads pool('viral') as one object, so a layer's cringe
@@ -241,7 +241,7 @@
       ]
     },
     mail: [
-      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started drums because of you. My parents would like a word."' },
+      { id: 'mail_yorkton_kid', from: 'a 10-year-old in Yorkton', text: '"I started {instrument} because of you. My parents would like a word."' },
       { id: 'mail_nan', from: 'someone\'s nan in Melfort', text: '"Too loud. Lovely kids. Enclosed: a doughnut-hole coupon from 1998." It\'s expired. It\'s perfect.' },
       { id: 'mail_poem', from: 'a poet in Biggar', band: ['hail_damage'], text: 'A 12-page poem about the Moose Hearse. It rhymes "transmission" with "our mission". Twice.' },
       { id: 'mail_teacher', from: 'a music teacher in Unity', text: '"My students now play everything at double speed. Thank you. I think."' },
@@ -254,7 +254,7 @@
       { id: 'abyssus_doll', from: 'a crocheter in Kindersley', band: ['hail_damage'], text: 'A crocheted Lord Abyssus with a tiny felt cape. Marcel keeps it on his pillow. He\'d deny it.' },
       { id: 'pizza_art', from: 'an art student in Regina', text: 'Fan art on a pizza box: the band as gophers. It\'s accurate.' },
       { id: 'casserole', from: 'somebody\'s grandma', text: 'A frozen casserole with no note. Just "EAT" in marker on the foil.' },
-      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of drumsticks signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
+      { id: 'sticks', from: 'a school band in Lanigan', text: 'A pair of {sticks} signed by the entire Grade 7 band. Thirty-one signatures. One is a drawing of a horse.' }
     ],
     scriptedGifts: {
       macaroni_kenji: { from: 'Dale from Warman', text: 'A macaroni portrait of Kenji, spray-painted gold, glued to a cookie sheet. The eyes follow you. It hangs in the garage.' },
@@ -341,7 +341,7 @@
           cringe: [
             { who: 'marcel', text: 'Wrong kind of viral: Marcel\'s dance tutorial, "The Abyssal Two-Step". {views} views, mostly laughing ones.' },
             { who: 'marcel', text: 'Wrong kind of viral: Marcel reads his poetry over a smoke machine that will not stop. {views} views.' },
-            { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one guitar pick. {views} views.' },
+            { who: 'dana', text: 'Wrong kind of viral: Dana\'s eleven-minute unboxing of one tuning key. {views} views.' },
             { who: 'jaxon', text: 'Wrong kind of viral: Jaxon\'s "how to look metal at a wedding", filmed at a real wedding. {views} views.' },
             { who: 'any', text: 'Wrong kind of viral: {who}\'s pre-gig hype speech. It\'s just yelling the band\'s name. {views} views.' }
           ]
@@ -411,7 +411,7 @@
           'Threads are titled "IS HAIL DAMAGE COMPROMISED". Dana wants to know what to do. Kenji is eating a sandwich.',
         choices: [
           { label: 'Let Kenji handle it', effects: { buzz: 6, mood: { kenji: 5 } },
-            outcome: 'Kenji posts one photo: his bass, standing in a snowbank. No caption. It gets more likes than the band page.' },
+            outcome: 'Kenji posts one photo: his gear case, standing in a snowbank. No caption. It gets more likes than the band page.' },
           { label: 'Post a "we are still metal" video', effects: { buzz: 3, burnout: 4 },
             outcome: 'Marcel screams at a blizzard for four minutes. The forums accept it. The neighbours do not.' },
           { label: 'Admit it: the whole band likes jazz', effects: { chemistry: 5, fan: { hater: 0.03 } },

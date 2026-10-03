@@ -72,7 +72,7 @@
     // ======================================================================
     { id: 'cape_1_pitch', type: 'drama', speaker: 'marcel', title: 'A Cape for Lord Abyssus', chain: 'cape', step: 1,
       weight: 3, gate: g({ era: GLS, minWeek: 3 }),
-      text: "Marcel slides a costume catalogue across your snare. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
+      text: "Marcel slides a costume catalogue across your {gear}. Page 12: 'The Nocturne', crushed purple velvet, floor length, $120. " +
         "'Lord Abyssus cannot scream about the void in a hoodie from the Co-op.'",
       choices: [
         { label: 'Buy the velvet cape ($120)',
@@ -187,13 +187,13 @@
 
     { id: 'jaxon_baba_lunch', type: 'drama', speaker: 'baba', title: 'A Roaster of Perogies', weight: 2,
       gate: g({ minWeek: 2, maxWeek: 8 }),
-      text: "Jaxon's baba has sent a roaster of perogies 'for the band, because you are all too skinny and the drummer, " +
+      text: "Jaxon's baba has sent a roaster of perogies 'for the band, because you are all too skinny and the one on {instrument}, " +
         "{player}, looks tired.' Taped to the lid: 'JAXON HOME BY 10.'",
       choices: [
         { label: 'Eat together, thank Baba', effects: { chemistry: 4, burnout: -5, mood: { all: 4 } },
           outcome: 'Forty-eight perogies, sour cream, fried onions. Kenji eats nine without removing his sunglasses. The band has never felt closer.' },
         { label: 'Invite Baba to rehearsal', effects: { chemistry: 3, mood: { jaxon: -5 }, skill: { jaxon: 1 } },
-          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The drummer is nice.' Jaxon wants to evaporate." },
+          outcome: "Baba rates each song out of ten from a lawn chair. 'My Lawn, My Tomb' gets a four: 'Too much yelling. The one on {instrument} is nice.' Jaxon wants to evaporate." },
         { label: 'Rehearse past 10 anyway', effects: { skill: { all: 1 }, mood: { jaxon: -8 }, flags: { babaMad: true } },
           outcome: "Jaxon's phone rings at 10:01. And 10:02. And 10:03. He leaves at 10:04, head down. The riffs are tighter. Baba is not." }
       ] },
@@ -203,7 +203,7 @@
         'but only in her basement, next to the chest freezer, where she can hear.',
       choices: [
         { label: "Rehearse in Baba's basement", effects: { chemistry: 5, mood: { jaxon: 5 }, flags: { babaMad: false } },
-          outcome: "The basement acoustics are incredible. Baba's notes: 'Louder, the drummer. The French one, less.' She serves soup at the break." },
+          outcome: "The basement acoustics are incredible. Baba's notes: 'Louder, the one on {instrument}. The French one, less.' She serves soup at the break." },
         { label: 'Bring Baba flowers', effects: { fund: -30, mood: { jaxon: 8 }, flags: { babaMad: false } },
           outcome: 'You arrive with carnations from the Co-op. Baba inspects them, then you, then approves both. Jaxon is ungrounded by supper.' },
         { label: 'Sneak him out the window', hint: 'Gamble: Baba sees everything',
@@ -215,8 +215,8 @@
               outcome: 'Baba is waiting in the yard, in a lawn chair, in the dark. She says one word in Ukrainian. Everyone goes home.' } } }
       ] },
 
-    { id: 'kenji_silent_nod', type: 'drama', speaker: 'kenji', title: 'The Nod', weight: 2, gate: g({ minWeek: 3, maxWeek: 12 }),
-      text: 'Mid-song, Kenji turns to face you. Then it happens: a single, silent nod. Dana drops her pick. Marcel stops screaming. ' +
+    { id: 'kenji_silent_nod', type: 'drama', speaker: 'kenji', title: 'The Nod', weight: 2, seat: ['drums', 'rhythm', 'lead'], gate: g({ minWeek: 3, maxWeek: 12 }),
+      text: 'Mid-song, Kenji turns to face you. Then it happens: a single, silent nod. Dana stops mid-note. Marcel stops screaming. ' +
         'In the history of the band, nobody has ever received the nod.',
       choices: [
         { label: 'Nod back. Coolly.', effects: { chemistry: 5, mood: { kenji: 5 }, drumSkill: 1 },
@@ -225,11 +225,11 @@
           outcome: 'Kenji looks at you through his sunglasses for four full minutes, then leaves. His bass is still humming.' },
         { label: 'Tell the group chat',
           effects: { chemistry: 3, mood: { kenji: -3, jaxon: 5 },
-            chat: { who: 'jaxon', text: 'WAIT kenji NODDED?? at the DRUMMER?? screenshot or it didnt happen' } },
+            chat: { who: 'jaxon', text: 'WAIT kenji NODDED?? at {player}?? screenshot or it didnt happen' } },
           outcome: 'The group chat explodes. Kenji leaves it, then rejoins it. Everyone agrees that counts as a second nod.' }
       ] },
 
-    { id: 'jaxon_shred_fill', type: 'drama', speaker: 'jaxon', title: 'The Sneaky Fill', gate: g({ minWeek: 4, maxWeek: 16 }),
+    { id: 'jaxon_shred_fill', type: 'drama', speaker: 'jaxon', title: 'The Sneaky Fill', seat: ['drums', 'bass', 'lead'], gate: g({ minWeek: 4, maxWeek: 16 }),
       text: 'During the simplest chug in the set, Jaxon sneaks in a 32nd-note shred fill. Then another. He glances around ' +
         'like nobody noticed. Everybody noticed. Dana noticed the most.',
       choices: [
@@ -253,7 +253,7 @@
           outcome: "Marcel posts a 400-word denial in French. Gord translates it. It's about the lawn again." }
       ] },
 
-    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', gate: g({ era: GL, minFans: 40 }),
+    { id: 'dana_endless_solo', type: 'drama', speaker: 'dana', title: 'The Eleven-Minute Solo', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: GL, minFans: 40 }),
       text: "Dana's solo in 'The Green Tomb (It Is the Lawn)' is now eleven minutes long. The song is four minutes long. The math doesn't work, " +
         'but somehow she makes it work. Marcel has started bringing a book.',
       choices: [
@@ -261,21 +261,21 @@
           outcome: 'At the next show a man falls asleep during the solo and wakes up still in the solo. He buys a shirt.' },
         { label: 'Cap it at 90 seconds', effects: { mood: { dana: -8 }, chemistry: 4 },
           outcome: 'Dana agrees. Her 90 seconds somehow contain more notes than the eleven minutes did. Marcel finishes his book anyway.' },
-        { label: 'Duel her on drums', hint: 'Gamble: your arms vs her ten-hour days',
+        { label: 'Duel her on {instrument}', hint: 'Gamble: your arms vs her ten-hour days',
           outcome: 'You count it in. Dana smiles the smile of someone with calluses on her calluses.',
           roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.006,
             success: { effects: { drumSkill: 2, mood: { dana: 6 }, chemistry: 5 },
-              outcome: 'A fourteen-minute drum-guitar duel. Marcel lies on the floor in awe. Dana shakes your hand and quotes your tempo back to you.' },
+              outcome: 'A fourteen-minute duel, {instrument} against guitar. Marcel lies on the floor in awe. Dana shakes your hand and quotes your tempo back to you.' },
             fail: { effects: { burnout: 10, mood: { dana: 4 } },
               outcome: "You tap out at minute nine. Dana doesn't notice. She finishes at minute twenty-two, alone, triumphant." } } }
       ] },
 
-    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', gate: g({ era: GLS, minWeek: 14 }),
+    { id: 'kenji_vanishes', type: 'drama', speaker: 'kenji', title: 'The Empty Corner', seat: ['drums', 'rhythm', 'lead'], gate: g({ era: GLS, minWeek: 14 }),
       text: "Kenji hasn't been to rehearsal in two weeks. His bass is still in the corner, with a postcard propped against it " +
         'from Churchill, Manitoba. It is blank. The polar bear on the front looks smug.',
       choices: [
         { label: 'Learn his parts yourself', effects: { drumSkill: 2, burnout: 8 },
-          outcome: 'You play the bass lines on your floor tom for two weeks. It technically counts. Kenji returns Thursday as if nothing happened.' },
+          outcome: 'You play the bass lines on your {instrument} for two weeks. It technically counts. Kenji returns Thursday as if nothing happened.' },
         { label: 'Hire a fill-in bassist', effects: { fund: -60, chemistry: -3 },
           outcome: "The fill-in plays everything like a ska song. Kenji returns Thursday, silently carries the fill-in's amp to the curb, and plugs in." },
         { label: 'Leave his corner as is', effects: { mood: { kenji: 10 }, chemistry: 4 },
@@ -450,7 +450,7 @@
 
     { id: 'money_night_school', type: 'money', speaker: 'mom', title: 'Night School', once: false, cooldown: 8, weight: 2,
       gate: g({ era: GLS, flags: ['parentsLoan'] }),
-      text: "There's a Prairie Polytechnic pamphlet on your snare: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
+      text: "There's a Prairie Polytechnic pamphlet on your {gear}: 'Bookkeeping for Small Business, Thursdays.' A sticky note " +
         "from Mom: 'No pressure!! Love Mom.' Under it, a smaller one: 'Some pressure.'",
       choices: [
         { label: 'Promise to pay her back', effects: { burnout: 4, chemistry: 2 },
@@ -458,19 +458,19 @@
         { label: 'Take the night class', effects: { fund: 40, burnout: 8 },
           outcome: 'You learn double-entry bookkeeping. The band finances improve, mostly by accident. Marcel asks if capes are deductible.' },
         { label: 'Mow the lawn for her', effects: { burnout: 3, mood: { marcel: 4 } },
-          outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on the snare.' }
+          outcome: 'Marcel supervises from the driveway and critiques your stripes. Mom is thrilled. The pamphlet stays on your {gear}.' }
       ] },
 
     { id: 'money_dad_spreadsheet', type: 'money', speaker: 'dad', title: 'Where Did It Go', gate: g({ era: GLS, flags: ['parentsLoan'] }),
       text: "Dad has printed a spreadsheet and taped it to the garage door: 'HAIL DAMAGE: WHERE DID IT GO'. " +
-        "Column C is labelled 'drumsticks??'. There are a lot of drumsticks.",
+        "Column C is labelled '{sticks}??'. There are a lot of {sticks}.",
       choices: [
         { label: 'Walk Dad through it', effects: { burnout: 4, chemistry: 2 },
-          outcome: "You explain that drumsticks break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
+          outcome: "You explain that {sticks} break. Dad adds a column called 'breaks??' and hugs you on the way out. Weird. Nice." },
         { label: 'Hand the books to Dana', effects: { fund: 30, mood: { dana: -5 } },
           outcome: 'Dana cuts spending 12 percent and itemizes her string gauges. Dad is so impressed he asks her to do his taxes.' },
-        { label: 'Sell your spare cymbal', effects: { fund: 60, burnout: 3 },
-          outcome: 'The cymbal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
+        { label: 'Sell your spare pedal', effects: { fund: 60, burnout: 3 },
+          outcome: 'The pedal goes to a kid in Warman. Dad crosses off one line of the spreadsheet with a highlighter. It is a start.' }
       ] },
 
     // ======================================================================
@@ -513,7 +513,7 @@
         { label: 'Get a boost next door', effects: { chemistry: 3, burnout: 3 },
           outcome: "Mr. Lindqvist boosts the truck in his housecoat and lectures you on fog machines. He's weirdly into it. He asks about 'the haze'." },
         { label: 'Toboggan the gear over', effects: { burnout: 10, buzz: 4, fans: 3 },
-          outcome: "You drag the kick drum four blocks on a toboggan. Kenji carries his bass case like a coffin. People take pictures. Very metal." },
+          outcome: "You drag the kick drum four blocks on a toboggan. Kenji carries a cymbal case like a coffin. People take pictures. Very metal." },
         { label: 'Call a tow ($90)', effects: { fund: -90 },
           outcome: "The tow driver takes an hour, charges $90 and asks 'Hail Damage? Like the truck?' Yes. Exactly like the truck." }
       ] },
@@ -650,7 +650,7 @@
         "studio. The studio is a broom closet in a university basement. She whispers 'brutal' as a compliment.",
       choices: [
         { label: 'Play live on air', hint: 'Gamble: live radio, one take',
-          outcome: 'You squeeze the whole kit into the closet. The ON AIR light comes on.',
+          outcome: 'You squeeze the whole band and your {gear} into the closet. The ON AIR light comes on.',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.008,
             success: { effects: { fans: 20, buzz: 8 },
               outcome: "One take, no mistakes. Deb whispers 'brutal' four times. The phone line lights up: two night-shift nurses. Now fans." },
@@ -666,7 +666,7 @@
 
     { id: 'fame_fan_mail', type: 'fame', speaker: 'jaxon', title: 'Our First Fan Letter', gate: g({ era: GL, minFans: 40 }),
       text: "Your first fan letter, from a kid in Kindersley! It's a drawing: Marcel as a dragon, Dana with eight arms, Jaxon " +
-        "riding a lunch box, Kenji as a shadow, and you, a small circle labelled 'DRUMS'.",
+        "riding a lunch box, Kenji as a shadow, and you, a small circle labelled '{seat}'.",
       choices: [
         { label: 'Put it on the trophy shelf', effects: { mood: { all: 5 }, chemistry: 3 },
           outcome: "It's the first thing on the trophy shelf. Dana insists on a photo next to it. You add 'small circle' to your bio." },
@@ -693,11 +693,11 @@
 
     { id: 'fame_deci_hell', type: 'fame', speaker: 'zine', title: 'Four Skulls', gate: g({ era: GL, minFans: 100, minWeek: 10 }),
       text: "Deci-Hell, the metal zine photocopied at the downtown library, reviewed your last show: 'Four skulls out of five. " +
-        "Minus one skull for the drummer's facial expressions.' Everyone turns to look at you.",
+        "Minus one skull for the facial expressions of whoever plays {instrument}.' Everyone turns to look at you.",
       choices: [
         { label: 'Frame it', effects: { buzz: 5, chemistry: 3 },
           outcome: "It goes on the trophy shelf. Marcel adds a sticky note: 'The missing skull was yours, not mine.'" },
-        { label: 'Work on your drum face', effects: { drumSkill: 2, burnout: 4 },
+        { label: 'Work on your stage face', effects: { drumSkill: 2, burnout: 4 },
           outcome: "You practise a neutral face in Marcel's mirror all week. He says you're doing it wrong and demonstrates a face that frightens Jaxon." },
         { label: 'Write to the editor', effects: { buzz: 4, mood: { kenji: 5 } },
           outcome: "The next issue prints your letter with a reply: 'Fair. Five skulls.' Kenji looks unusually pleased. Suspicious." }
@@ -749,7 +749,7 @@
         { label: 'Offer earplugs and a perogy', effects: { chemistry: 2, burnout: -3 },
           outcome: "He accepts both. Then he stays for the chorus. Then he requests 'the lawn one'. He will never admit he's a fan." },
         { label: 'Turn it down', effects: { burnout: -4, mood: { dana: -4, marcel: -3 } },
-          outcome: "You play the rest of the night at library volume. Dana's solo is still twelve minutes. Just quieter." },
+          outcome: "You play the rest of the night at library volume. {soloist}'s solo is still twelve minutes. Just quieter." },
         { label: 'One more song, Mr. L', hint: 'Gamble: noise bylaw roulette',
           outcome: 'You count it in before he can answer.',
           roll: { chance: 0.5, stat: 'chemistry', statScale: 0.005,
@@ -773,8 +773,8 @@
 
     { id: 'weird_spring_melt', type: 'weird', speaker: 'dana', title: 'Spring Melt', once: false, cooldown: 12,
       gate: g({ era: GLS, weekOfYear: [19, 22] }),
-      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. Dana's pedalboard is floating. " +
-        'She is standing on an amp, holding her guitar over her head like a newborn.',
+      text: "The spring melt has turned the garage into a pond. Two centimetres of water and rising. {soloist}'s pedalboard is floating. " +
+        '{soloist} is standing on an amp, holding the guitar overhead like a newborn.',
       choices: [
         { label: 'Sandbag the door', effects: { burnout: 8, chemistry: 4 },
           outcome: "Dad brings sandbags and a lot of opinions. You finish at 2 a.m. The garage is saved. Jaxon's lunch box is not." },
@@ -806,12 +806,12 @@
       ] },
     { id: 'guilt_accountant', type: 'money', speaker: 'mom', title: 'Trevor the Accountant', once: false, cooldown: 10,
       gate: g({ era: GLS, flags: ['parentsLoan'] }),
-      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a drum kit he never plays. " +
+      text: "Mom's friend Linda's son Trevor is an accountant. Trevor has a house, a boat and a {gear} he never plays. " +
         'Mom has invited Trevor for supper. Trevor has brought a pamphlet.',
       choices: [
         { label: 'Let Trevor do the books', effects: { repay: 80, burnout: 4 },
-          outcome: "Trevor finds $80 of 'drumstick overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
-        { label: 'Challenge Trevor to a drum-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two kits in the driveway.',
+          outcome: "Trevor finds $80 of '{sticks} overspend' and hands it to Mom. He calls the band 'a fun little cash sink'. It stings. He's right." },
+        { label: 'Challenge Trevor to a jam-off', hint: 'Gamble: Trevor took lessons', outcome: 'You set up two {gear}s in the driveway.',
           roll: { chance: 0.6, stat: 'drumSkill', statScale: 0.008,
             success: { effects: { buzz: 4, chemistry: 3 }, outcome: 'You win. Trevor shakes your hand and books the band for his office party.' },
             fail: { effects: { burnout: 6 }, outcome: "Trevor wins. He had lessons. Mom says 'see?' and nothing else all evening." } } }
@@ -954,10 +954,10 @@
       ] },
     { id: 'local_copycats', type: 'scene', speaker: 'marcel', title: 'Hail Damage Jr.', gate: g({ era: LS, minFans: 350 }),
       text: 'There is a band of fifteen-year-olds in Warman called Hail Damage Jr. They wear bath-towel capes. Their singer screams ' +
-        'in French he learned from a cereal box. Their drummer does your drum face. Marcel is equal parts flattered and threatened.',
+        'in French he learned from a cereal box. The kid on {instrument} does your stage face. Marcel is equal parts flattered and threatened.',
       choices: [
         { label: 'Mentor them', effects: { chemistry: 5, fans: 30, burnout: 4 },
-          outcome: "You teach their drummer a proper blast beat. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
+          outcome: "You teach the kid on {instrument} your whole routine. Marcel teaches their singer to 'scream from the lawn of the soul'. Their parents send cookies." },
         { label: 'Book them as your opener', effects: { fans: 45, buzz: 6, mood: { marcel: -4 } },
           outcome: "They are good. They are too good. They do the Abyssal Spin better than Marcel. He watches from side stage, arms folded, cape very still." },
         { label: 'Dad writes them a letter', effects: { buzz: -4, mood: { marcel: 5 } },
@@ -970,7 +970,7 @@
         { label: 'Play it as a gift', effects: { chemistry: 6, fans: 30, mood: { all: 5 } },
           outcome: 'Gord and his bride slow-dance to a blast beat. The grandmother is first on the floor for the breakdown. It is the best wedding in Saskatchewan history.' },
         { label: 'Play the whole reception', effects: { fund: 350, burnout: 8, fans: 20 },
-          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji bass solo during the cake. $350 and a garbage bag of perogies.' },
+          outcome: 'Five hours, two polkas, a chicken dance and a four-minute Kenji solo during the cake. $350 and a garbage bag of perogies.' },
         { label: 'Record them a video', effects: { buzz: 5, mood: { marcel: 4 } },
           outcome: "Marcel records a toast in French from the garage. Gord translates it at the reception. It is, somehow, about the groom's lawn." }
       ] },
@@ -1080,7 +1080,7 @@
       ] },
     { id: 'local_kenji_maestro', type: 'weird', speaker: 'kenji', title: 'Maestro', gate: g({ era: LS, minFans: 300 }),
       text: "After a show in Prince Albert, an old man in a long coat walks up to Kenji, bows deeply and says 'Maestro.' Kenji bows " +
-        "back. The man leaves. Kenji packs his bass as if nothing happened. Everyone else is having a small crisis.",
+        "back. The man leaves. Kenji packs up as if nothing happened. Everyone else is having a small crisis.",
       choices: [
         { label: 'Follow the old man', hint: 'Gamble: answers, or a parking lot',
           outcome: 'Jaxon and Dana run after him into the parking lot.',
@@ -1206,7 +1206,7 @@
         'dentists, and a teenage harpist who only plays death metal covers. Wendell is flipping burgers in an apron that says LABEL BOSS.',
       choices: [
         { label: 'Jam with everyone', effects: { fans: 80, chemistry: 5, skill: { all: 1 } },
-          outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and your blast beat. It goes on a label sampler. It is weirdly the best song on it.' },
+          outcome: 'Death metal harp, polka-ska horns, two dentists on harmonies and you on {instrument}. It goes on a label sampler. It is weirdly the best song on it.' },
         { label: 'Talk shop with the dentists', effects: { mood: { all: 4 }, burnout: -5 },
           outcome: "They check everyone's teeth for free. Kenji has perfect teeth. This surprises no one and unsettles everyone." },
         { label: 'Recruit the harpist', effects: { buzz: 8, mood: { dana: -4 } },
@@ -1301,7 +1301,7 @@
         { label: 'Take the brochure', effects: { fund: -200, mood: { all: 3 }, chemistry: 4 },
           outcome: 'You open a small retirement savings plan with $200. Dad shakes your hand like you just won the provincial bonspiel. Mom takes a photo.' },
         { label: 'Play Dad the album', effects: { mood: { all: 5 }, chemistry: 5 },
-          outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "the drums were good". He has never said more.' },
+          outcome: 'Dad sits through the whole album in the truck with his eyes closed. At the end he says "you were good". He has never said more.' },
         { label: 'Sign the emergency copies', effects: { fans: 60, buzz: 4 },
           outcome: 'Mom gives the emergency copies to the dentist, the mail carrier, her hairdresser and Father Mykola. Father Mykola plays it at the church picnic.' }
       ] },
@@ -1417,7 +1417,7 @@
         { label: 'Answer every letter', effects: { fans: 150, burnout: 8 },
           outcome: 'Three nights at the kitchen table. Mom does the envelopes. Kenji signs his name with the small bird. A kid in Flin Flon frames hers.' },
         { label: 'Mom answers them', effects: { fans: 80, chemistry: 4, chat: { who: 'mom', text: 'Answered 212 letters. Told them all to wear a toque. Pickles are good!' } },
-          outcome: "Mom answers them all herself, signed 'The Drummer's Mom'. She now has more pen pals than you have fans in Regina." },
+          outcome: "Mom answers them all herself, signed 'A Proud Band Mom'. She now has more pen pals than you have fans in Regina." },
         { label: 'Marcel reads the fan fiction', effects: { mood: { marcel: 10 }, buzz: 4 },
           outcome: "Marcel reads it aloud in the van, all 90 pages. He is moved. He is the lawn. He has never felt so understood." }
       ] },
@@ -1573,7 +1573,7 @@
       text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
       choices: [
         { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
-          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your double kick.' },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your {instrument}.' },
         { label: 'The cape, the pyro, everything', hint: 'Gamble: history or a meme',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
             success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'Marcel spins, the pyro hits on the downbeat, four million people scream. It is replayed for years.' },
@@ -1684,7 +1684,7 @@
       text: 'Deb, very quietly: "The Grey Mug called. The big football final. They want you for the halftime show. Four million people. Twelve minutes. A stage on wheels. Say yes, sweetie."',
       choices: [
         { label: 'Three hits, twelve minutes', hint: 'Fans ↑↑ · buzz ↑↑', effects: { fans: 400, buzz: 18, burnout: 10, flags: { greyMug: 'played' } },
-          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your drums.' },
+          outcome: 'The stage rolls onto the fifty-yard line. You play three songs in a snowstorm. The whole country hears your {instrument}.' },
         { label: 'The pyro, everything', hint: 'Gamble: history or a meme',
           roll: { chance: 0.55, stat: 'chemistry', statScale: 0.005,
             success: { effects: { fans: 400, buzz: 18, flags: { greyMug: 'played' } }, outcome: 'The pyro hits on the downbeat, {front} hits the high note, four million people scream. It is replayed for years.' },
@@ -1765,13 +1765,13 @@
       text: "A hailstorm flattens the garden and dents Dad's new truck (again). Dad looks at the sky, then at your band shirt that says HAIL DAMAGE, then at you. For a long time.",
       choices: [
         { label: "'We had nothing to do with it'", hint: 'Moods ↓', effects: { mood: { all: -3 }, chemistry: 2 },
-          outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your drum kit. You are not sure what that means.' },
+          outcome: 'Dad says nothing. Dad puts a tarp over the truck and a second tarp over your {gear}. You are not sure what that means.' },
         { label: 'Film the band in the hail', hint: 'Gamble: content or concussion',
           roll: { chance: 0.55, success: { effects: { buzz: 8, fans: 10 }, outcome: 'Hail Damage, playing in actual hail damage. The clip goes around the province. Dad shares it. With a sigh.' },
             fail: { effects: { burnout: 5, fund: -40 }, outcome: 'A hailstone the size of a perogy takes out the ride cymbal. And the phone. Forty bucks.' } },
           outcome: 'Marcel grabs a hockey helmet.' },
         { label: 'Help fix the truck', hint: '−$50 · Dad ↑', effects: { fund: -50, burnout: 3, chemistry: 3 },
-          outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad a blast beat. Even trade.' }
+          outcome: 'Three weekends of popping out dents with a plunger. Dad teaches you a trick. You teach Dad to headbang. Even trade.' }
       ] },
 
     { id: 'fame_festival_lineups', type: 'fame', speaker: 'dj', title: 'The Lineups Are Out', once: false, cooldown: 20,
@@ -1821,7 +1821,7 @@
           outcome: 'Marcel hangs the design on the garage wall anyway. It watches you rehearse.' }
       ] },
 
-    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
+    { id: 'shop_pawn_kit', type: 'money', speaker: 'dana', title: 'The Pawn Shop Kit', seat: ['drums'], gate: g({ era: ['garage', 'local'], minWeek: 8, minFund: 1100 }),
       text: "Dana texts a photo from the pawn shop on 8th Street: a five-piece kit, shells that almost match, $800. Then: " +
         "'the guy says $650 if we take it today. the milk crate is embarrassing us.'",
       choices: [
@@ -1850,16 +1850,16 @@
           outcome: "A curling team buys it. You see it at every bonspiel for a year. The old van feels loved, briefly." }
       ] },
 
-    { id: 'shop_solo', type: 'drama', speaker: 'dana', title: 'Dana Insists', gate: g({ era: LSW }),
+    { id: 'shop_solo', type: 'drama', speaker: 'dana', title: 'Dana Insists', seat: ['drums', 'bass', 'rhythm'], gate: g({ era: LSW }),
       text: 'Dana has written a solo. It is eleven minutes long. She will cut it to one bar if she gets a real solo section, in every song that ' +
-        'wants one. She is holding your sticks hostage.',
+        'wants one. She is holding your {sticks} hostage.',
       choices: [
         { label: 'Fine. A solo section.', hint: 'Solo section unlocked · Dana ↑', effects: { mood: { dana: 8 }, shop: { section: 'solo' } },
-          outcome: 'Dana hands back your sticks and plays you the one-bar version. It is still somehow three minutes long.' },
+          outcome: 'Dana hands back your {sticks} and plays you the one-bar version. It is still somehow three minutes long.' },
         { label: 'Only with a cape spin', hint: 'Solo unlocked · Dana ↑ · Marcel ↑', effects: { mood: { dana: 5, marcel: 5 }, chemistry: -2, shop: { section: 'solo' } },
           outcome: 'Her solo, his spin, the same eight bars. Nobody can see her fingers behind the cape. Everyone is happy, loudly.' },
         { label: 'No solos in this band', hint: 'Dana ↓↓', effects: { mood: { dana: -10 } },
-          outcome: 'Dana returns your sticks. She plays the solo anyway, alone, in the driveway, facing the street.' }
+          outcome: 'Dana returns your {sticks}. She plays the solo anyway, alone, in the driveway, facing the street.' }
       ] },
 
     { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),

@@ -62,7 +62,7 @@ async function picker() {
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => { localStorage.removeItem('gg.v1.unlocks.metal.logo'); });
-    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next');   // v1.1 seat picker (drums)
     await waitScreen(page, 'logo');
     let d = await dbg(page);
     c.ok(d.open && d.mode === 'new' && d.logo.emblem === 'hailstone' && d.logo.style === 'metal' && d.logo.palette === 'frost' && !d.carried, 'the picker opens after the band intro on the band default ' + JSON.stringify(d.logo));
@@ -108,7 +108,7 @@ async function picker() {
     // A second new career in metal starts from the remembered one
     await page.evaluate(() => { GG.main.quitToTitle ? GG.main.quitToTitle() : null; });
     await page.waitForSelector(tid('btn-new'));
-    await tap(page, 'btn-new'); await tap(page, 'slot-2'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await tap(page, 'btn-new'); await tap(page, 'slot-2'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next');   // v1.1 seat picker (drums)
     await waitScreen(page, 'logo');
     d = await dbg(page);
     c.ok(d.carried && d.logo.emblem === 'moose' && /last metal logo/.test(await page.textContent(tid('logo-screen'))), 'carried over: the next metal career starts from it');
@@ -173,7 +173,7 @@ async function meta() {
     await page.evaluate(() => GG.main.quitToTitle());
     await page.waitForSelector(tid('btn-new'));
     // Pick them in a new metal career; the career keeps them.
-    await tap(page, 'btn-new'); await tap(page, 'slot-3'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next');
+    await tap(page, 'btn-new'); await tap(page, 'slot-3'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next');   // v1.1 seat picker (drums)
     await waitScreen(page, 'logo');
     await tap(page, 'logo-emblem-lantern'); await tap(page, 'logo-pal-arena_gold');
     await page.waitForTimeout(300);

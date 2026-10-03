@@ -58,6 +58,9 @@
         onclick: function () { var o = {}; o[key] = x[0]; set(o); s.rerender(); } }, x[1]);
     }));
   }
+  // v1.1 review: a string seat's words (Band sync, your chops, your notes) on the screens without a local strSeat
+  function strNow() { var st = GG.state; return !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums'); }
+  function syncName() { return strNow() ? 'Band sync' : 'Drum sync'; }
   function sec(title, id) { return el('div.caps.set-sec', id ? { id: id } : null, title); }
   function msText(ms) { return ms === 0 ? 'right on it' : Math.abs(ms) + ' ms ' + (ms > 0 ? 'late' : 'early'); }
   var PROFILE_NAME = { speaker: '🔊 Speaker', headphones: '🎧 Headphones' };
@@ -79,15 +82,17 @@
       // Play
       s.body.appendChild(sec('Play', 'set-play'));
       var gd = GG.gig && GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[pf.gigDifficulty] ? pf.gigDifficulty : 'easy';
-      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your drum skill. Change it any time.', null));
+      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
       s.body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
       s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
       s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
       s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
-      s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
-      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', 'Mirrors the lanes: kick on the right.'));
-      s.body.appendChild(toggle(s, 'drumSync', 'Drum sync', "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
-      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song'));
+      var strSeat = !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums');   // v1.1: a string seat has no kick lane
+      if (!strSeat) s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
+      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
+      s.body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
+        : "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
+      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
 
       // Audio
       s.body.appendChild(sec('Audio + timing', 'set-audio'));
@@ -234,7 +239,7 @@
         el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
       if (step === 'intro') {
         ui.append(s.body, [
-          el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (Drum sync); the click test is for classic timing."),
+          el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (" + syncName() + "); the click test is for classic timing."),
           el('div.caps.set-sec', 'Calibrating for'),
           el('div.set-seg', P.PROFILES.map(function (p) {
             return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
@@ -243,7 +248,7 @@
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
-          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (Drum sync)'),
+          btn('.btn.block', { testid: 'calib-visual-only', onclick: function () { startVisualTest(s); } }, 'Light check only (' + syncName() + ')'),
           btn('.btn.ghost.block', { testid: 'calib-skip', onclick: skip }, d.first ? 'Skip for now (Settings → Calibrate later)' : 'Cancel')]));
         return;
       }
@@ -263,8 +268,8 @@
       function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
       ui.append(s.body, [
         el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
-        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: Drum sync lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
-        a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). Drum sync keeps your drums with the band; watch the highway rather than your ears.") : null
+        el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: ' + syncName() + ' lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
+        a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). " + syncName() + (strNow() ? ' keeps your notes' : ' keeps your drums') + " with the band; watch the highway rather than your ears.") : null
       ]);
       var foot = [];
       if (step === 'audioDone') foot.push(btn('.btn.primary.big.block', { testid: 'calib-visual-start', onclick: function () { startVisualTest(s); } }, 'Next: the light check'));
@@ -326,7 +331,7 @@
       GG.songs.best(st).forEach(function (song) {
         var r = song.rating || {};
         list.appendChild(btn('.song', { testid: 'practice-song-' + song.id, onclick: function () { ui.practice(song.id, speed); } },
-          el('div.row', [el('span', { style: 'font-size:20px' }, '🥁'), el('div.grow', [el('b', song.title),
+          el('div.row', [el('span', { style: 'font-size:20px' }, GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums' ? '🎸' : '🥁'), el('div.grow', [el('b', song.title),
             el('div.tiny.dim', 'Diff ' + (r.difficulty || '?') + ' · ' + Math.round((song.pattern && song.pattern.bpm || 120) * speed) + ' bpm at this speed')])])));
       });
       s.body.appendChild(list);
@@ -338,7 +343,8 @@
     var e = ui.get('seq');
     if (!e || !e.data || e.data.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
     if (e.body.querySelector('[data-testid="kit-practice"]')) return;
-    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, '🥁 Practice a song instead'));
+    var strSeat = GG.career && GG.career.seatOf && GG.career.seatOf(GG.state) !== 'drums';   // v1.1: on a string seat this is your rig
+    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song instead'));
   });
 
   GG.registerDebug('settings', function () {

@@ -68,7 +68,7 @@
       blurb: 'No label. You book it, you pay for it, you mail the CDs from Mom\'s kitchen table. You also keep every loonie.',
       advance: [0, 0], royalty: 1, albums: 0, deadlineWeeks: 0, demands: [],
       offerMinFans: 0, offerMinBuzz: 0, dropOnFlop: 0,
-      rep: { name: 'You', blurb: 'The drummer, the founder, and now the label, the accountant and the shipping department.' },
+      rep: { name: 'You', blurb: 'The founder, and now also the label, the accountant and the shipping department.' },
       offer: 'No contract, no advance, no notes. Just a box of blank mailers and your mom asking who is paying for all these stamps.',
       perks: ['Keep every dollar', 'Nobody tells the singer what to sing about', 'Release whenever you like'],
       catches: ['You pay for the studio, the producer and the promo', 'No advance, no safety net', 'Distribution is a hockey bag']

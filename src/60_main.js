@@ -4,6 +4,7 @@
 //   loadState(state, { slot }) ; enterGarage() ; route() ; beginWeek() ; afterCard() ; wrapWeek() ; nextWeek()
 //   saveTo(slot) ; quitToTitle() ; sync()
 // URL: ?quick=1&seed=N skips the menus (tests/dev); v0.9: &band=<bandId> quick-starts that band (default Hail Damage).
+// v1.1: &seat=bass|rhythm|lead quick-starts that seat (GG.main.newCareer / quickStart pass o.seat; default drums).
 // v1.0: newCareer({ skipLessons }) sets state.tutorial.on (lessons: GG.lessons / GG.tutorial; off under automation unless ?tut=1).
 (function (GG) {
   var M = GG.main = GG.main || {};
@@ -110,7 +111,7 @@
   M.newCareer = function (o) {
     o = o || {};
     var st = GG.career.newCareer({ seed: o.seed, bandId: bandIdOk(o.bandId), slot: String(o.slot || '1'), player: o.player || { name: 'You' },
-      careerDifficulty: o.careerDifficulty });   // v0.6.1 C4: chill | normal | brutal, locked for the career
+      careerDifficulty: o.careerDifficulty, seat: o.seat });   // v0.6.1 C4: chill | normal | brutal, locked for the career; v1.1 seat
     if (st.tutorial) st.tutorial.on = !o.skipLessons;   // v1.0 (Q7): the lessons run unless the creator's "Skip the lessons" is on
     setState(st);
     write(st.slot, st); write('auto', st);   // the slot is claimed right away, so Continue works from week 1
@@ -123,7 +124,8 @@
     var presets = GG.content.presets || [];
     ui.closeAll();
     M.newCareer({ seed: o.seed != null ? (o.seed >>> 0) || 1 : GG.hashSeed(name + Date.now()), slot: o.slot || '1', bandId: o.bandId,
-      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty, skipLessons: o.skipLessons });
+      player: { name: name, nick: o.nick || '', presetId: o.presetId || (presets[0] && presets[0].id) }, careerDifficulty: o.careerDifficulty, skipLessons: o.skipLessons,
+      seat: o.seat });   // v1.1: quickStart({ seat }) / ?seat=bass (tests, lanes)
     if (o.openCard === false) { GG.career.startWeek(GG.state); M.sync(); }
     else M.enterGarage();
     return GG.state;
@@ -273,7 +275,7 @@
     document.addEventListener('visibilitychange', onVisibility);
     updatePause();
     var q = query();
-    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester', bandId: q.band });
+    if (q.quick) M.quickStart({ seed: q.seed != null ? Number(q.seed) : undefined, slot: q.slot || '1', name: q.name || 'Tester', bandId: q.band, seat: q.seat });
     else ui.show('title');
   };
 

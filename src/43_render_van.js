@@ -26,6 +26,8 @@
 //   stickers, banned. A rental abroad (look) ignores the tier. v0.8 SPACES review: own cabins get a busy headliner (overhead
 //   console, visor CD wallet + set list, seams), headrests + pocket stitching, per-vehicle clutter (the minivan's backpack, the
 //   15-passenger's piped bench + crossed sticks, the sprinter's cab shelf + cup holders) and tighter cameras.
+// v1.1 "Seats" (Lane C): on a string seat (state.seat) your instrument rides up front in its gig bag, wedged between the front
+//   seats, neck up (a patch in your instrument's colour; +1 draw call); info().gigBag = the seat or null. Drums: unchanged.
 // Draw calls ≈ sky 1 + sun/moon 1 + stars 1 + clouds 1 + ground 1 + road 1 + poles 1 + elevators 1 + farms 1
 //   + farm lights 1 + belts 1 + bales 1 + moose 1 + sign 2 + skyline 1 + weather 1-2 + glass 1 + wipers 1
 //   + headlight pool 1 + interior 2 + bobble 1 + freshener 1 + wheel 1 + people 4 ≈ 32.
@@ -136,6 +138,8 @@
         weather: WX[o.weather] ? o.weather : null, driver: driver,
         dashboard: o.dashboard !== undefined && !(o.dashboard === 'cactus' && driver !== 'kenji' && (designated ? designated !== 'kenji' : !hdVan)) ? o.dashboard : dashItem,
         playerLook: pl.look || (preset && preset.look) || null,
+        seat: st.seat === 'bass' || st.seat === 'rhythm' || st.seat === 'lead' ? st.seat : null,   // v1.1: your gig bag
+        gearColor: (pl.gearLook && pl.gearLook.color) || (pl.kit && pl.kit.color) || pl.kitColor || '#b3262b',
         region: REGION[o.region] ? o.region : null, look: o.look || null,   // v0.7: abroad
         // v0.8 (SHOPUI): the band's own vehicle tier at home (a rental abroad), and its venue stickers (banned ones crossed out)
         tier: o.look ? null : clamp(isFinite(o.tier) ? Math.round(o.tier) : (st.van && isFinite(st.van.tier) ? st.van.tier : 0), 0, 3),
@@ -194,6 +198,7 @@
       buildWeather(D);
       buildInterior(D);
       buildPeople(D);
+      buildGigBag(D);   // v1.1
       buildMirror(D);
       frame();
       return K;
@@ -959,6 +964,19 @@
       K.mirror = shadesOn ? 'sunglasses' : glasses ? 'glasses' : 'eyes';
     }
 
+    // ---- v1.1: your instrument in its gig bag between the front seats (string seats) ----------------------------------------
+    function buildGigBag(D) {
+      if (!D.seat) return;
+      var b = new ctx.Builder({ jitter: 0.04, seed: 23 }), bag = 0x232327, seam = 0x3a3a40, patch = parseInt(String(D.gearColor).replace('#', ''), 16) || 0xb3262b;
+      var bass = D.seat === 'bass', L = bass ? 0.62 : 0.5;
+      b.push(0.0, 0.08, -0.12, 0.18, 0, 0.12);                                          // standing in the gap, leaning back a touch
+      b.box(0.34, 0.46, 0.13, 0, 0.23, 0, bag); b.box(0.3, 0.02, 0.135, 0, 0.36, 0, seam);   // the body end, a zip seam
+      b.box(0.1, L, 0.08, 0, 0.46 + L / 2, 0, bag); b.box(0.15, 0.17, 0.09, 0, 0.55 + L, 0, bag);   // the neck, the headstock end
+      b.box(0.16, 0.12, 0.012, 0, 0.22, 0.07, patch); b.box(0.035, 0.6, 0.01, 0.09, 0.45, 0.072, seam);   // a patch in your colour, a strap
+      b.pop();
+      var m = mesh(b.build(), ctx.mats.vc);
+      K.gigBag = D.seat; return m;
+    }
     // ---- The band in the van -------------------------------------------------------------------------------------
     var HELD_VAN = { jaxon: 'sandwich', duke: 'sandwich', tamara: 'floss', earl: 'coffee' };
     function buildPeople(D) {
@@ -1281,6 +1299,7 @@
         return { built: true, season: K.D.season, night: K.D.night, from: K.D.from, to: K.D.to, km: K.D.km, progress: pending.progress,
           weather: K.weather.kind, weatherId: K.weather.id, dashboard: K.D.dashboard || null, region: K.D.region, look: K.D.look,
           tier: K.D.tier, vehicle: K.D.look ? K.D.look : (VTIER[K.D.tier || 0] || { id: 'minivan' }).id, stickers: K.D.look ? 0 : K.D.stickers.length, logo: !!K.logo, banned: K.D.look ? 0 : K.D.stickers.filter(function (x) { return x.banned; }).length,
+          gigBag: K.gigBag || null,   // v1.1
           people: K.people.map(function (r) { return r.id + ':' + r.role; }), driver: ((K.people[0] || {}).id === 'player' ? 'you' : (K.people[0] || {}).id) || null,
           driverExtras: K.driverLook && K.driverLook.extras ? K.driverLook.extras.slice() : [], mirror: K.mirror || null, ornaments: K.ornaments || null, bandId: K.D.bandId,   // v0.9
           talking: K.people.filter(function (r) { return r.talk > 0; }).map(function (r) { return r.id; }),

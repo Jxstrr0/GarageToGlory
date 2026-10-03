@@ -53,7 +53,7 @@
     var p = st.player || {};
     out.push(el('div.mem-card', [
       el('div.row', [ui.avatar(ui.who('player')), el('div.grow', [el('div', { style: 'font-weight:800' }, (p.name || 'You') + (p.nick ? ' "' + p.nick + '"' : '')),
-        el('div.small.dim', 'Drums · founder · unfireable')])]),
+        el('div.small.dim', ui.seatName(st) + ' · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
     if (ui.logoPanel) out.push(ui.logoPanel(st, rerender));   // v0.8.1 LOGO: the band logo + Rebrand (5m_ui_logo)
@@ -70,7 +70,7 @@
     }) : el('p.dim', { testid: 'laptop-songs-empty' }, empty('catalog')));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
     if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
-      onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
+      onclick: function () { ui.show('practice'); } }, ui.seatIcon(st) + ' Practice a song (no crowd, slow it down)'));
     return el('div', out);
   }
 
@@ -93,7 +93,7 @@
         GG.shop && GG.shop.rent(st) ? el('div', { 'data-testid': 'laptop-rent' }, [el('span', 'Rent · ' + ui.spaceName(st)), el('span.bad', '−' + U.fmtMoney(GG.shop.rent(st)) + '/wk')]) : null
       ]),
       el('div.panel', [el('div.caps', { style: 'margin-bottom:8px' }, 'Fund, last ' + hist.length + ' weeks'), bars]),
-      st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures on the drum throne.') : null
+      st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures ' + (ui.seatOf(st) === 'drums' ? 'on the drum throne.' : 'on your amp.')) : null
     ]);
   }
 

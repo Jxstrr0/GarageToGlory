@@ -17,6 +17,13 @@
 //   homeVenue ; tokenValue ; firstGigVenue ; rivalId ; migrateBand (a save's band defaults; save.migrate applies them). Role
 //   aliases (C.ROLE_ALIASES) work as card.speaker, chat.who and mood/skill/member keys (resolved at the draw: state.card.roles).
 //   The week-one gig is band.firstGig; activity / quietWeek / yearEnd / guilt / milestones lines are pools (+ byBand).
+// v1.1 "Seats" (plan_contract_1.1 §4, stage 0): state.seat (newCareer args.seat, default 'drums'), member.seatRole, the
+//   swap table (seatSwap / swapped / seatRoleFor / lineup / drummerId), seat tokens {instrument} {gear} {sticks} {drummer}
+//   {yourPart} {seat} (C.SEAT_TOKENS; drums = v1.0's words), gates seat / swapped (GATE + seatOk; cardOk and
+//   speakerOk(state, who, line) honour them), the '@drummer' alias (the swapped drummer; null on drums).
+// v1.1 Lane B: stageRole(state, m) (every role reader goes through it) ; '@bassist' / '@soloist' on your own seat = 'player'
+//   ({bassist} / {soloist} read "you"; such an alias never speaks, posts chat or moves a mood) ; ARCS + arcOf(state) (the
+//   seat's arc flag: bassArc / rhythmArc / leadArc) ; card chat effects honour a line's seat / swapped gates.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var career = GG.career = GG.career || {};
@@ -206,8 +213,9 @@
       case 'front': case 'singer': return front;
       case 'soloist': case 'solo': return g.solo || null;
       case 'filler': case 'fill': return g.fill || null;
-      case 'bassist': case 'bass': {
-        var bm = activeMembers(state).filter(function (m) { return /bass/.test(m.role || ''); })[0];
+      case 'bassist': case 'bass': {   // v1.1: by seatRole (the drum seat: = role); the bass seat = the player
+        if (career.seatOf(state) === 'bass') return 'player';
+        var bm = activeMembers(state).filter(function (m) { return /bass/.test(career.stageRole(state, m)); })[0];
         return bm ? bm.id : null;
       }
       case 'namer': case 'grumbler': return on(R[r]) ? R[r] : front;
@@ -222,6 +230,7 @@
         return d && !d.you && on(d.id) ? d.id : null;
       }
       case 'any': return weekPick(state, 'any', talk.length ? talk : act);
+      case 'drummer': return career.drummerId(state);   // v1.1: the swapped drummer (null on the drum seat)
     }
     return null;
   };
@@ -231,7 +240,7 @@
     if (cr && Object.prototype.hasOwnProperty.call(cr, who)) return cr[who];
     return career.roleOf(state, who);
   };
-  var ALIAS_RE = /@(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any)\b/g;
+  var ALIAS_RE = /@(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|any|drummer)\b/g;
   career.cardRoles = function (state, card) {
     if (!card) return null;
     var out = null, seen = {}, m, txt;
@@ -244,6 +253,95 @@
       (out = out || {})[a] = career.roleOf(state, a);
     }
     return out;
+  };
+
+  /* ======================================================================
+     v1.1 "Seats" (plan_contract_1.1 §4; 02_contracts V1.1 SEATS). Stage 0 (lead): the seat, the swap table, seat roles,
+     the lineup, the seat tokens and the seat / swapped gates. Lane B owns the rest (roles by seatRole, quits/returns into
+     the drum seat, arcs).
+       seatOf(state) -> C.SEATS ('drums' when missing) ; seatSwap(bandId, seat) -> memberId | null (bands.js seats; drums
+       -> null) ; swapped(state) -> the swapped drummer's id for this career | null ; seatRoleFor(state, member) ;
+       lineup(state) -> [{ id: 'player'|memberId, seatRole }] (player first, then active members in band order) ;
+       drummerId(state) -> the active member on the kit | null (the drum seat: null) ; seatOk(state, x) -> x.seat / x.swapped
+       hold (a card, a gate, a line) ; seatLanes(state) / seatRuns(state) (drums: gear.lanes / gear.doubleKick)
+     ====================================================================== */
+  var SEAT_FALLBACK = { bass: [/bass/], rhythm: [/rhythm/, /vocals\/(guitar|acoustic)/, /^vocals$/], lead: [/lead/, /^guitar$/] };
+  career.seatOf = function (state) { var s = state && state.seat; return C.SEATS.indexOf(s) >= 0 ? s : 'drums'; };
+  career.seatSwap = function (bandId, seat) {
+    if (!seat || seat === 'drums' || C.SEATS.indexOf(seat) < 0) return null;
+    var b = career.band(bandId);
+    if (!b) return null;
+    if (b.seats) return b.seats[seat] || null;
+    var list = b.members || [], pats = SEAT_FALLBACK[seat] || [];   // a band without a table (the fallback roster): by role
+    for (var p = 0; p < pats.length; p++) for (var i = 0; i < list.length; i++) if (pats[p].test(String(list[i].role || ''))) return list[i].id;
+    return null;
+  };
+  career.swapped = function (state) { return state ? career.seatSwap(state.bandId, career.seatOf(state)) : null; };
+  career.seatRoleFor = function (state, m) {
+    if (!m) return '';
+    var id = career.swapped(state);
+    if (id && m.id === id) return /vocals/.test(String(m.role || '')) ? 'drums/vocals' : 'drums';
+    // v1.1 review (S5/S6: the kit seat sings): a drummer recruit hired for a singing swapped member's hole (Rox, Chase,
+    // Travis Lee on the rhythm seat) sings from the kit too, so the band always has a front
+    if (id && m.role === 'drums' && !m.original) {
+      var b = career.band(state), sw = b && b.members ? b.members.filter(function (x) { return x.id === id; })[0] : null;
+      if (sw && /vocals/.test(String(sw.role || ''))) return 'drums/vocals';
+    }
+    return m.role || '';
+  };
+  // v1.1 (Lane B): a member's stage role this career: the drum seat = the content role exactly (v1.0); a string seat =
+  // seatRole ('drums' | 'drums/vocals' for whoever is on the kit). Every role reader (gig.roles, roleOf, drama holes,
+  // songs.reactions) goes through it.
+  career.stageRole = function (state, m) {
+    if (!m) return '';
+    if (career.seatOf(state) === 'drums') return m.role || '';
+    return m.seatRole || career.seatRoleFor(state, m);
+  };
+  // v1.1 role arcs (handoff E7; content chains by Lane A): the seat's arc flag and its values (state.flags[flag]).
+  career.ARCS = { bass: { flag: 'bassArc', values: ['legend', 'secret', 'quiet'] },
+    rhythm: { flag: 'rhythmArc', values: ['credited', 'unsung', 'engine'] },
+    lead: { flag: 'leadArc', values: ['guitarHero', 'bandFirst', 'soloAlbum'] } };
+  // -> { seat, flag, value|null } for a string seat (value = the arc's ending once its chain set it), null on drums.
+  career.arcOf = function (state) {
+    var a = career.ARCS[career.seatOf(state)];
+    if (!a) return null;
+    var v = state && state.flags ? state.flags[a.flag] : null;
+    return { seat: career.seatOf(state), flag: a.flag, value: a.values.indexOf(v) >= 0 ? v : null };
+  };
+  career.lineup = function (state) {
+    var out = [{ id: 'player', seatRole: career.seatOf(state) }];
+    if (state && Array.isArray(state.members)) activeMembers(state).forEach(function (m) { out.push({ id: m.id, seatRole: m.seatRole || career.seatRoleFor(state, m) }); });
+    return out;
+  };
+  career.drummerId = function (state) {
+    if (!state || career.seatOf(state) === 'drums' || !Array.isArray(state.members)) return null;
+    var act = activeMembers(state);
+    for (var i = 0; i < act.length; i++) if (/^drums/.test(act[i].seatRole || career.seatRoleFor(state, act[i]))) return act[i].id;
+    return null;
+  };
+  function seatGate(s, v) { return [].concat(v).indexOf(career.seatOf(s)) >= 0; }
+  // swapped: false = a drum career; true = any string seat; <id> | [ids] = that member is the swapped drummer AND is on the
+  // kit right now (v1.1 review: once they quit / are away and a recruit drums, their own lines and cards stop drawing).
+  function swappedGate(s, v) {
+    var id = career.swapped(s);
+    if (v === false) return !id;
+    if (v === true) return !!id;
+    return !!id && [].concat(v).indexOf(id) >= 0 && career.drummerId(s) === id;
+  }
+  // The highway lane count / run gear for the player's seat (drums: gear.lanes / gear.doubleKick, as v1.0).
+  career.seatLanes = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    if (seat === 'drums') return isFinite(g.lanes) ? g.lanes : 4;
+    var n = g.seatLanes && g.seatLanes[seat];
+    return isFinite(n) ? Math.max(4, Math.min(C.SEAT_MAX_LANES[seat], n)) : 4;
+  };
+  career.seatRuns = function (state) {
+    var g = (state && state.gear) || {}, seat = career.seatOf(state);
+    return seat === 'drums' ? !!g.doubleKick : !!(g.runs && g.runs[seat]);
+  };
+  career.seatOk = function (state, x) {
+    if (!x || typeof x !== 'object') return true;
+    return (x.seat == null || seatGate(state, x.seat)) && (x.swapped == null || swappedGate(state, x.swapped));
   };
 
   // Speaker guard. Rival casts (members + frontman) belong to their rival; npcs may carry band: [ids] / rival: id
@@ -267,10 +365,12 @@
   function rivalIdOf(state) { var b = career.band(state); return (state && state.rival && state.rival.id) || (b && b.rival) || null; }
   career.rivalId = rivalIdOf;
   function listHas(v, x) { return Array.isArray(v) ? v.indexOf(x) >= 0 : v === x; }
-  career.speakerOk = function (state, who) {
+  // v1.1: speakerOk(state, who, line) also checks the line's own seat / swapped gates (career.seatOk).
+  career.speakerOk = function (state, who, line) {
+    if (line && typeof line === 'object' && !career.seatOk(state, line)) return false;
     if (who == null || who === '' || who === 'player' || who === 'you' || who === 'recruit') return true;
     if (typeof who !== 'string') return false;
-    if (career.isAlias(who)) return who === '@driver' || career.resolveWho(state, who) != null;
+    if (career.isAlias(who)) { var rw = career.resolveWho(state, who); return who === '@driver' || (rw != null && rw !== 'player'); }   // v1.1: never the player
     if (who === 'rival_frontman') { var cf = GG.rival && GG.rival.cast ? GG.rival.cast(state) : null; return !!(cf && cf.frontman); }
     if (findMember(state, who) || /^fill_/.test(who)) return true;
     var mi = membersIndex()[who];
@@ -311,6 +411,7 @@
   }
   career.cardOk = function (state, card) {
     if (!card) return false;
+    if (!career.seatOk(state, card) || !career.seatOk(state, card.gate)) return false;   // v1.1: seat / swapped (top level or gate)
     if (card.cameo === true) return true;
     if (!career.speakerOk(state, card.speaker)) return false;
     var refs = memberRefs(card);
@@ -379,7 +480,7 @@
     if (!best) { var fg = career.firstGigVenue ? career.firstGigVenue(state, career.band(state) || {}) : null; best = fg ? GG.gig.venue(fg) : null; }
     return best ? { id: best.id, name: best.name } : null;
   };
-  function nameOr(state, id, fallback) { return id ? career.memberName(state, id) : fallback; }
+  function nameOr(state, id, fallback) { return id === 'player' ? 'you' : id ? career.memberName(state, id) : fallback; }   // v1.1: your own seat
   function roleToken(state, alias) {
     var cr = state.card && state.card.roles;
     return cr && Object.prototype.hasOwnProperty.call(cr, alias) ? cr[alias] : career.roleOf(state, alias);
@@ -404,8 +505,15 @@
       case 'homeVenue': { var hv = career.homeVenue(state); return hv ? hv.name : 'the local bar'; }
       case 'superfan': { var sf = GG.fans && GG.fans.homeSuperfan && state.bandId ? GG.fans.homeSuperfan(state) : null; return (sf && sf.name) || 'your first superfan'; }
       case 'rivalFront': return (GG.rival && GG.rival.frontName && state.bandId ? GG.rival.frontName(state) : '') || 'their singer';
-      case 'instrument': return 'drums';   // v1.0 (E12): the player's seat is always the kit; v1.1 "Seats" reads state.seat
-      case 'drummer': return 'you';
+      // v1.0 (E12) seat tokens; v1.1 "Seats" reads the seat (C.SEAT_TOKENS; the drum seat reads exactly as v1.0: 'drums',
+      // 'kit', 'sticks', 'the beat', 'drums', and {drummer} 'you'). {drummer} on a string seat: whoever is on the kit now.
+      case 'instrument': case 'gear': case 'sticks': case 'yourPart': case 'seat':
+        return ((C.SEAT_TOKENS || {})[career.seatOf(state)] || { instrument: 'drums', gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums' })[key];
+      case 'drummer': {
+        if (career.seatOf(state) === 'drums') return 'you';
+        var dr = career.drummerId(state);
+        return dr ? career.memberName(state, dr) : 'the drummer';
+      }
     }
     return null;
   };
@@ -415,24 +523,57 @@
   // v0.6: {rival} = the rival band's current name (GG.rival.name; follows a rebrand).
   // v0.9: the C.TOKENS role/band tokens ({front} {soloist} {filler} {bassist} {namer} {grumbler} {deadpan} {driver} {van}
   // {space} {spaceName} {door} {province} {homeVenue} {superfan} {rivalFront}); {rival} falls back to 'the other band',
-  // {city} to the career's city. v1.0: {instrument} 'drums', {drummer} 'you' (seat tokens; v1.1 fills them per seat).
-  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan|instrument|drummer)(?::([\w-]+))?\}/g;
+  // {city} to the career's city. v1.0: {instrument} 'drums', {drummer} 'you'. v1.1: + {gear} {sticks} {yourPart} {seat}, per seat
+  // (C.SEAT_TOKENS; the drum seat = v1.0's words).
+  var TOKEN_RE = /\{(player|band|city|nick|name|recruit|rival|rivalFront|front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|spaceName|space|door|province|homeVenue|superfan|instrument|drummer|gear|sticks|yourPart|seat)(?::([\w-]+))?\}/g;
   career.fillText = function (state, text) {
     if (text == null) return '';
     state = state || {};
     if (GG.licensing && GG.licensing.fillText) text = GG.licensing.fillText(state, String(text));   // v0.8.1: {brand} {adsong} {adfee} ...
     if (GG.tour && GG.tour.fillText) text = GG.tour.fillText(state, String(text));   // v0.7: {region} {song} {festival} {here}
-    return String(text).replace(TOKEN_RE, function (all, key, id) {
+    var out = String(text).replace(TOKEN_RE, function (all, key, id) {
       if (key === 'rival') return (GG.rival && (state.rival || state.bandId) ? GG.rival.name(state) : '') || 'the other band';   // v0.6: the rival's current name
       if (key === 'player') return (state.player && (state.player.nick || state.player.name)) || 'you';
       if (key === 'recruit') { var r = findMember(state, 'recruit'); return r ? shortName(r) : (state.card && state.card.whoName) || 'the new one'; }
       if (key === 'band') { var b = career.band(state); return b ? b.name : 'the band'; }
       if (key === 'city') { var hb = career.band(state); return state.city || (hb && hb.city) || 'town'; }
-      if (key !== 'name' && key !== 'nick') { if (id) return all; var tv = career.tokenValue(state, key); return tv == null ? all : tv; }
+      if (key !== 'name' && key !== 'nick') {
+        if (id) return all;
+        var tv = career.tokenValue(state, key);
+        if (tv === 'you' && YOU_KEYS[key]) return YOU;   // v1.1 review: a role token on your own seat ({soloist} on lead): grammar below
+        return tv == null ? all : tv;
+      }
       if (!id) return all;
       return key === 'nick' ? memberNick(state, id) : career.memberName(state, id);
     });
+    return out.indexOf(YOU) < 0 ? out : youGrammar(out);
   };
+  // v1.1 review: a role token that resolves to you (only on a string seat: {soloist} on lead, {bassist} on bass) was written
+  // as a third person ("{soloist} buys a pack of strings"). As a subject (a sentence start, or after and / but / then ...)
+  // its verb loses the -s (is -> are, has -> have, buys -> buy; an adverb in between is skipped), "{soloist}'s" -> your, and
+  // a sentence start is capitalised. The drum seat never gets here (no role token is you there; {driver} / {drummer} are left).
+  var YOU = '\u0001', YOU_KEYS = { front: 1, soloist: 1, filler: 1, bassist: 1, namer: 1, grumbler: 1, deadpan: 1 };
+  var YOU_IRR = { is: 'are', was: 'were', has: 'have', does: 'do', "isn't": "aren't", "wasn't": "weren't", "hasn't": "haven't", "doesn't": "don't" };
+  var YOU_ADV = /^(always|also|just|never|still|finally|only|then|already|sometimes|even|now|quietly|slowly|suddenly|simply|actually|really|immediately|nearly|almost|clearly|politely|gently|calmly|proudly|instantly|happily|loudly|softly|\w+ly)$/i;
+  function youVerb(w) {
+    var lw = w.toLowerCase();
+    if (YOU_IRR[lw]) return w.charAt(0) === lw.charAt(0) ? YOU_IRR[lw] : YOU_IRR[lw].charAt(0).toUpperCase() + YOU_IRR[lw].slice(1);
+    if (lw.length > 4 && /[^aeiou]ies$/.test(lw)) return w.slice(0, -3) + 'y';
+    if (/(ch|sh|x|ss|zz|o)es$/.test(lw)) return w.slice(0, -2);
+    if (lw.length > 2 && /[^su']s$/.test(lw)) return w.slice(0, -1);
+    return w;
+  }
+  function youGrammar(str) {
+    return str.replace(/\u0001('s\b)?(?:(\s+)([A-Za-z']+))?(?:(\s+)([A-Za-z']+))?/g, function (all, poss, s1, w1, s2, w2, off, whole) {
+      var before = whole.slice(Math.max(0, off - 14), off).replace(/\u0001/g, 'you');
+      var start = !before || /(^|[.!?…]["'”’)]*\s+|["“‘(—–]\s*|:\s+|\n\s*)$/.test(before);
+      var subj = start || /(\b(and|but|then|while|when|until|as|because|so|if|after|before|where|who)|[;,])\s+$/i.test(before);
+      var head = poss ? (start ? 'Your' : 'your') : (start ? 'You' : 'you');
+      if (poss || !w1 || !subj) return head + (s1 || '') + (w1 || '') + (s2 || '') + (w2 || '');
+      if (YOU_ADV.test(w1) && w2) return head + s1 + w1 + s2 + youVerb(w2);
+      return head + s1 + youVerb(w1) + (s2 || '') + (w2 || '');
+    });
+  }
 
   // GG.content.lines[a][b][c] if it is a non-empty array, else null.
   function contentLines(a, b, c) {
@@ -484,7 +625,7 @@
   // tone (v0.4): 'grumble' | 'pa' (passive-aggressive) | 'news' (drama storylines); plain chat has none.
   // v0.9: a role alias resolves to the member; a speaker from another band (or rival, or a scoped npc) posts nothing (null).
   function postChat(state, who, text, d, tone) {
-    if (career.isAlias(who)) { who = career.resolveWho(state, who); if (!who) return null; }
+    if (career.isAlias(who)) { who = career.resolveWho(state, who); if (!who || who === 'player') return null; }   // v1.1: an alias on your own seat
     if (!career.speakerOk(state, who)) return null;
     var msg = { week: state.totalWeek, who: who, text: career.fillText(state, text) };
     if (tone) msg.tone = tone;
@@ -538,7 +679,7 @@
     },
     chat: function (state, v, d) {
       var list = Array.isArray(v) ? v : [v];
-      for (var i = 0; i < list.length; i++) if (list[i] && list[i].text) postChat(state, list[i].who, list[i].text, d);
+      for (var i = 0; i < list.length; i++) if (list[i] && list[i].text && career.seatOk(state, list[i])) postChat(state, list[i].who, list[i].text, d);   // v1.1: a line's seat / swapped gates
     },
     // v0.4 (drama). member: { id: memberId|'recruit', act: 'settle'|'quit'|'return'|'later'|'rival' } (see 27_sim_drama).
     member: function (state, v, d) { v = resolveMemberSpec(state, v); if (GG.drama && v && (!Array.isArray(v) || v.length)) GG.drama.applyMember(state, v, d); },
@@ -597,7 +738,7 @@
         Object.keys(v).forEach(function (id) {
           if (!v[id]) return;
           var rid = career.isAlias(id) ? (state ? career.resolveWho(state, id) : null) : id;   // v0.9 role aliases
-          if (!rid) return;
+          if (!rid || rid === 'player') return;   // v1.1: an alias on your own seat moves nobody
           var who = id === 'all' ? (k === 'mood' ? 'Everyone' : 'Band') : career.memberName(state, rid);
           parts.push(who + (k === 'skill' ? ' skill ' : ' ') + arrows(v[id], BIG[k]));
         });
@@ -645,7 +786,8 @@
     },
     gigBooked: function (s, v) { return !!s.gig === !!v; },
     moodBelow: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m < v[id]; }); },
-    moodAbove: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m > v[id]; }); }
+    moodAbove: function (s, v) { return Object.keys(v).every(function (id) { var m = moodOf(s, id); return m != null && m > v[id]; }); },
+    seat: seatGate, swapped: swappedGate   // v1.1 (C.GATE_KEYS)
   };
   // True when every condition in the gate holds. Unknown keys fail closed (content tests catch typos).
   career.gatePasses = function (state, gate) {
@@ -749,7 +891,8 @@
     preset = preset || presets[0] || null;
     return { name: p.name || 'You', nick: p.nick || '', presetId: preset ? preset.id : (p.presetId || null),
       look: U.clone(p.look || (preset && preset.look) || DEFAULT_LOOK),
-      kitColor: p.kitColor || (preset && preset.kitColor) || DEFAULT_KIT };
+      kitColor: p.kitColor || (preset && preset.kitColor) || DEFAULT_KIT,
+      gearLook: Object.assign({}, C.GEAR_LOOK, p.gearLook || {}) };   // v1.1: a string seat's "your gear" (drums keep player.kit)
   }
   function makeMembers(band) {
     var src = band.members && band.members.length ? band.members : GENERIC_MEMBERS;
@@ -759,7 +902,8 @@
     });
   }
 
-  // args: { seed?, bandId?, slot?, player: { name, nick, presetId } }. Week one comes pre-booked at Buddy's.
+  // args: { seed?, bandId?, slot?, player: { name, nick, presetId, gearLook? }, seat? (v1.1: C.SEATS, default 'drums') }.
+  // Week one comes pre-booked at Buddy's.
   // Moves the band to `era` (forward only), logs eraHistory and emits 'era:changed' { era, from, week, why }.
   career.setEra = function (state, era, why) {
     if (C.ERAS.indexOf(era) <= C.ERAS.indexOf(state.era)) return false;
@@ -796,12 +940,14 @@
       v: C.SAVE_SCHEMA, createdVersion: GG.VERSION, slot: args.slot || 'auto', seed: seed, rng: seed,
       bandId: bandId, genre: band.genre || 'metal', region: band.region || 'canada', city: band.city || 'Saskatoon',
       space: band.space || 'parents_garage', player: makePlayer(p),
+      seat: C.SEATS.indexOf(args.seat) >= 0 ? args.seat : 'drums',   // v1.1 "Seats": fixed for the career
       totalWeek: 1, year: 1, week: 1, maxWeeks: C.WEEKS_PER_YEAR * C.CAREER_YEARS,
       phase: 'monday', era: 'garage', protected: true,
       careerDifficulty: GG.difficulty ? GG.difficulty.of({ careerDifficulty: args.careerDifficulty }) : 'normal',   // v0.6.1 C4: locked per career
       fund: Math.round(E.startFund * (GG.difficulty ? GG.difficulty.mul({ careerDifficulty: args.careerDifficulty }, 'startFund') : 1)), fans: E.startFans, buzz: E.startBuzz, chemistry: E.startChemistry,
       burnout: E.startBurnout, drumSkill: E.startDrumSkill, debtToParents: 0,
-      members: makeMembers(band), songs: [], pendingSongs: [], draft: null, gear: { lanes: 4, doubleKick: false },
+      members: makeMembers(band), songs: [], pendingSongs: [], draft: null,
+      gear: { lanes: 4, doubleKick: false },
       card: null, plan: [null, null, null], gig: null, offer: null,
       lastGig: null, lastWeek: null, wrap: null, quiet: null,
       chains: {}, flags: {}, seenCards: {}, milestones: {}, chat: [], history: [],
@@ -820,6 +966,11 @@
       // v1.0 "Glory" (02_contracts V1.0 GLORY; the same defaults GG.save.migrate fills on old saves)
       bonusYears: 0, legacyTrack: { bigHead: null }, legacy: null, ach: { got: {}, t: {} }, tutorial: { on: false, done: {}, past4: false }
     };
+    state.members.forEach(function (m) { m.seatRole = career.seatRoleFor(state, m); });   // v1.1: the swapped member drums
+    if (state.seat !== 'drums') {   // v1.1: string seats only (a drum career's gear stays v1.0's exact object)
+      state.gear.seatLanes = { bass: 4, rhythm: 4, lead: 4 };
+      state.gear.runs = { bass: false, rhythm: false, lead: false };
+    }
     if (GG.labels) GG.labels.init(state);
     if (GG.rival) GG.rival.init(state);   // v0.6: the rival's parallel career, heat, showdowns
     if (GG.fans) GG.fans.init(state);     // v0.6.1: fanTypes, bandbook, superfans (Dale), fanClub, gifts

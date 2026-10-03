@@ -76,7 +76,7 @@
   P('headwear', 'cowboy', 'Cowboy hat', { fans: 250, genreStart: ['country'] });
 
   // ---- Stage outfits (the stage look only) -------------------------------------------------------------------------
-  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Drummers run hot.');
+  P('outfit', 'none', 'Street clothes'); P('outfit', 'shirtless', 'Shirtless', null, 'Stage lights run hot.');
   P('outfit', 'battlejacket', 'Battle jacket', { milestone: 'firstGig', genreStart: ['metal'] }, 'Denim vest, forty patches, never washed.');
   P('outfit', 'leathervest', 'Leather vest', { fans: 250 });
   P('outfit', 'cdntux', 'Canadian tuxedo', { era: 'local', genreStart: ['rock'] }, 'Denim on denim. Formal wear.');

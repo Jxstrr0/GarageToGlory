@@ -1,5 +1,5 @@
 // pw_creator.js: the v0.8 full character creator + kit look (lane CREATOR) on a 390x844 phone viewport.
-// Sections (META_ONLY=creator|kit|stage|meta, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
+// Sections (META_ONLY=creator|kit|stage|meta|gear, comma-separated; default all + the contact sheet). Each fits `timeout 500`.
 //   meta:    (v1.0, Lane M) parts a finished career unlocked work in every genre with a 🏆 chip (punk + country new careers,
 //            a running rock career); the career's own unlock list is unchanged. Screenshot creator_meta.png.
 //   creator: new career with carried-over unlocks (carry-toggle) → "Customize" → the 'look' screen (live 3D preview, 7 tabs,
@@ -14,6 +14,11 @@
 //   stage:   the stage look switches on by itself (the stage, spectator view, the red carpet) while the garage keeps the
 //            everyday look; an old (v0.7) save migrates to stage look = everyday look and the v0.7 kit.
 //            Screenshots stage_look.png, carpet_look.png.
+//   gear:    (v1.1 "Seats", Lane C) a bass / rhythm / lead career: ☰ → Look has "Your gear" instead of Kit (the title asks
+//            who's on bass / guitar); every body shape (3-4 per seat), every pickguard, a colour + the kit colour, the logo
+//            sticker drive the preview's 'gear' mode; the controls are >= 48 px; Done saves player.gearLook and the garage
+//            draws it; the new-career creator hands { gearLook } to onDone; a drum career keeps the Kit tab (no gear tab).
+//            Screenshots creator_gear_bass/rhythm/lead.png.
 //   sheet:   tiles the screenshots into tests/.cache/v08_creator_sheet.png.
 // Run: node build.js && META_ONLY=creator timeout 500 node tests/pw_creator.js
 const path = require('path'), fs = require('fs');
@@ -66,7 +71,7 @@ async function creator() {
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => { localStorage.removeItem('gg.v1.unlocks.punk'); localStorage.setItem('gg.v1.unlocks.metal', JSON.stringify({ ids: ['tatSpot.knuckles', 'outfit.leathervest', 'hairStyle.mohawk'] })); });
-    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');   // v0.8.1: the logo picker
+    await tap(page, 'btn-new'); await tap(page, 'slot-1'); await tap(page, 'genre-metal'); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next'); await tap(page, 'btn-logo-done');   // v1.1 seat picker (drums)   // v0.8.1: the logo picker
     await waitScreen(page, 'creator');
     const carry = await page.evaluate(() => { const b = document.querySelector('[data-testid="carry-toggle"]'); return { on: b.checked, dis: b.disabled, t: b.parentNode.textContent }; });
     c.ok(carry.on && !carry.dis && /3 unlocks from past metal careers/.test(carry.t), 'carry-over toggle offered + on: ' + JSON.stringify(carry));
@@ -305,7 +310,7 @@ async function meta() {
     await page.evaluate(() => { ['punk', 'country', 'rock', 'metal'].forEach(g => localStorage.removeItem('gg.v1.unlocks.' + g)); GG.meta.unlock('parts', ['hairStyle.dreads', 'outfit.leathervest']); });
     for (const [genre, slot] of [['punk', 'slot-1'], ['country', 'slot-2']]) {
       await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('title'); });
-      await tap(page, 'btn-new'); await tap(page, slot); await tap(page, 'genre-' + genre); await tap(page, 'btn-intro-next'); await tap(page, 'btn-logo-done');
+      await tap(page, 'btn-new'); await tap(page, slot); await tap(page, 'genre-' + genre); await tap(page, 'btn-intro-next'); await tap(page, 'seat-next'); await tap(page, 'btn-logo-done');   // v1.1 seat picker (drums)
       await waitScreen(page, 'creator');
       const note = await page.evaluate(() => (document.querySelector('[data-testid="meta-parts"]') || {}).textContent || '');
       c.ok(/2 looks from finished careers/.test(note), genre + ': the creator notes the looks from finished careers ' + note);
@@ -335,11 +340,89 @@ async function meta() {
   await close(); c.done();
 }
 
+/* ---- v1.1 gear ---------------------------------------------------------------------------------------------------- */
+async function gear() {
+  const c = checker('gear');
+  const { page, errors, close } = await open();
+  const SEATS = { bass: ['hail_damage', 'Who’s on bass?'], rhythm: ['grid_road_ramblers', 'Who’s on guitar?'], lead: ['frost_heave', 'Who’s on guitar?'] };
+  try {
+    await page.waitForFunction(() => window.GG && GG.main && GG.creator && GG.ui.openLook, null, { timeout: 15000 });
+    for (const seat of Object.keys(SEATS)) {
+      const [band, title] = SEATS[seat];
+      await page.evaluate(([band, seat]) => { GG.main.quickStart({ seed: 909, openCard: false, bandId: band, seat }); GG.ui.closeAll(); GG.main.sync(); }, [band, seat]);
+      await page.evaluate(() => GG.ui.show('menu'));
+      await tap(page, 'menu-look');
+      await waitScreen(page, 'look');
+      let d = await dbg(page);
+      const tabs = await page.evaluate(() => Array.from(document.querySelectorAll('[data-testid^="lk-tab-"]')).map(e => e.dataset.testid));
+      const ttl = await page.evaluate(() => (document.querySelector('.lk-title') || {}).textContent);
+      c.ok(d.mode === 'career' && d.seat === seat && tabs.includes('lk-tab-gear') && !tabs.includes('lk-tab-kit') && tabs.length === 7, seat + ': Your gear replaces Kit ' + tabs.join(','));
+      c.ok(ttl === title, seat + ': the title asks ' + ttl);
+      await tap(page, 'lk-tab-gear');
+      await frames(page, 3);
+      d = await dbg(page);
+      const shapes = await page.evaluate(seat => GG.contracts.GEAR_SHAPES[seat], seat);
+      c.ok(d.tab === 'gear' && d.preview.mode === 'gear' && /^seat\|/.test(d.preview.gear || ''), seat + ': the preview plays your instrument ' + d.preview.gear);
+      const seen = [];
+      for (const sh of shapes) {
+        await tap(page, 'lk-gear-shape-' + sh); await frames(page, 2);
+        d = await dbg(page); seen.push(d.gearLook.shape + '>' + (d.preview.gear || '').split('|')[2]);
+      }
+      c.ok(shapes.length >= 3 && shapes.length <= 4 && seen.every((x, i) => x === shapes[i] + '>' + shapes[i]), seat + ': every body shape (' + shapes.length + ') reaches the preview ' + seen.join(' '));
+      const guards = await page.evaluate(() => GG.contracts.GEAR_GUARDS), gseen = [];
+      for (const g of guards) { await tap(page, 'lk-gear-guard-' + g); await frames(page, 2); d = await dbg(page); gseen.push((d.preview.gear || '').split('|')[4]); }
+      c.ok(gseen.join() === guards.join(), seat + ': every pickguard ' + gseen.join(','));
+      await tap(page, 'lk-gear-sw-3'); await frames(page, 2);
+      d = await dbg(page);
+      const sw3 = await page.evaluate(() => GG.content.creator.swatches.kit[3].toLowerCase());
+      c.ok(d.gearLook.color === sw3 && (d.preview.gear || '').split('|')[3] === sw3, seat + ': a colour swatch ' + d.gearLook.color);
+      await tap(page, 'lk-gear-color-kit'); await frames(page, 2);
+      d = await dbg(page);
+      c.ok(d.gearLook.color === null, seat + ': back to the kit colour (null)');
+      await tap(page, 'lk-gear-sw-1');
+      await tap(page, 'lk-gear-guard-tortoise');
+      await tap(page, 'lk-gear-sticker-logo'); await frames(page, 4);
+      d = await dbg(page);
+      c.ok(d.gearLook.sticker === 'logo' && d.preview.sticker === true, seat + ': the logo sticker on the headstock');
+      const small = await page.evaluate(() => Array.from(document.querySelectorAll('[data-testid^="lk-gear-"]')).map(e => { const r = e.getBoundingClientRect(); return [e.dataset.testid, Math.round(r.width), Math.round(r.height)]; }).filter(x => x[1] && (x[1] < 48 || x[2] < 48)));
+      c.ok(!small.length, seat + ': every gear control >= 48 px ' + JSON.stringify(small.slice(0, 4)));
+      const bad = await audit(page);
+      c.ok(!bad.length, seat + ': layout audit ' + bad.join(' | '));
+      await tap(page, 'lk-gear-shape-' + shapes[shapes.length - 1]); await frames(page, 6);
+      await page.locator('.lk-stagewrap').screenshot({ path: path.join(CACHE, 'creator_gear_' + seat + '.png') });
+      await tap(page, 'lk-done');
+      await page.waitForFunction(() => !GG.ui.isOpen('look'));
+      const after = await page.evaluate(() => ({ g: GG.state.player.gearLook, r: GG.debug('render').seat }));
+      c.ok(after.g.shape === shapes[shapes.length - 1] && after.g.guard === 'tortoise' && after.g.sticker === 'logo' && /^#/.test(after.g.color), seat + ': Done saves gearLook ' + JSON.stringify(after.g));
+      c.ok(after.r && after.r.gear && after.r.gear.split('|')[2] === after.g.shape && after.r.sticker, seat + ': the garage draws it ' + JSON.stringify(after.r));
+    }
+    // The new-career creator (51 opens it with { seat }): onDone gets the gear look.
+    const out = await page.evaluate(() => new Promise(res => {
+      GG.ui.closeAll();
+      GG.ui.openLook({ mode: 'new', seat: 'lead', genre: 'metal', bandId: 'hail_damage', band: 'Hail Damage', onDone: o => res(o) });
+      setTimeout(() => {
+        document.querySelector('[data-testid="lk-tab-gear"]').click();
+        setTimeout(() => { document.querySelector('[data-testid="lk-gear-shape-pointy"]').click(); setTimeout(() => document.querySelector('[data-testid="lk-done"]').click(), 120); }, 120);
+      }, 200);
+    }));
+    c.ok(out && out.gearLook && out.gearLook.shape === 'pointy' && out.look && out.kit, 'new career: onDone carries { gearLook } ' + JSON.stringify(out && out.gearLook));
+    // A drum career: the Kit tab, no gear tab (v1.0).
+    await page.evaluate(() => { GG.main.quickStart({ seed: 910, openCard: false }); GG.ui.closeAll(); GG.ui.show('menu'); });
+    await tap(page, 'menu-look'); await waitScreen(page, 'look');
+    const dt = await page.evaluate(() => ({ t: Array.from(document.querySelectorAll('[data-testid^="lk-tab-"]')).map(e => e.dataset.testid), title: (document.querySelector('.lk-title') || {}).textContent, d: GG.debug('creator-ui') }));
+    c.ok(dt.t.includes('lk-tab-kit') && !dt.t.includes('lk-tab-gear') && dt.title === 'Who’s on drums?' && dt.d.seat === 'drums', 'drums: the Kit tab and the v1.0 title ' + dt.t.join(','));
+    await tap(page, 'lk-cancel');
+    c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'gear threw: ' + (e.stack || e).toString().slice(0, 400)); }
+  await close(); c.done();
+}
+
 /* ---- the contact sheet ------------------------------------------------------------------------------------------- */
 async function sheet() {
   const names = [['creator_body', 'Creator: body'], ['creator_face', 'Creator: face'], ['creator_stage', 'Creator: stage look'], ['creator_knuckles', 'Knuckle tattoos'],
     ['creator_kit', 'Creator: kit'], ['garage_kit', 'Garage: kit look'], ['stage_pyro', 'Sad Dome: pyro'], ['stage_kick', 'Kick-head art (crowd view)'],
-    ['stage_look', 'Stage look on stage'], ['carpet_look', 'Stage look: red carpet'], ['kit_wood', 'Kit: wood'], ['kit_sparkle', 'Kit: sparkle'], ['kit_camo', 'Kit: camo']];
+    ['stage_look', 'Stage look on stage'], ['carpet_look', 'Stage look: red carpet'], ['kit_wood', 'Kit: wood'], ['kit_sparkle', 'Kit: sparkle'], ['kit_camo', 'Kit: camo'],
+    ['creator_gear_bass', 'v1.1 Your gear: bass'], ['creator_gear_rhythm', 'v1.1 Your gear: rhythm'], ['creator_gear_lead', 'v1.1 Your gear: lead']];
   const have = names.filter(n => fs.existsSync(path.join(CACHE, n[0] + '.png')));
   if (have.length < names.length) console.log('sheet: missing ' + names.filter(n => !have.includes(n)).map(n => n[0]).join(','));
   if (!have.length) return;
@@ -360,5 +443,6 @@ async function sheet() {
   if (want('kit')) await kit();
   if (want('stage')) await stage();
   if (want('meta')) await meta();
+  if (want('gear')) await gear();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();

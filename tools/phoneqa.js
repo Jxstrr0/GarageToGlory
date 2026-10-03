@@ -5,10 +5,13 @@
 // menu-lessons, tut-*, end-*, hof-*, lesson(s)-*, the Trophies tab, trophies-all) under 48 px FAIL; tappables inside the notch
 // or home-indicator strip FAIL; horizontal overflow FAIL; the smallest visible text is reported. The HUD stat labels must
 // grow with Bigger text. Console errors FAIL. Exit code 1 on any failure.
+// v1.1 "Seats": + the seat picker, the creator's Your gear tab, a lead-seat garage, the songwriter's part, the guitar shop and a
+// lead-seat gig; the v1.1 controls (seat-*, lk-gear-*, part-* but the grid cells, gear-buy-*, ...) are held to 48 px.
 // Run: node build.js && timeout 500 node tools/phoneqa.js   (PW_VIEW=440x956 for the owner's phone)
 const { open, VIEW } = require('../tests/_pw');
 const INS = VIEW.width >= 430 ? { top: 59, bot: 34 } : { top: 47, bot: 34 };
-const V10 = '^(btn-help|btn-hof|menu-hof|menu-lessons|tut-|end-|hof-|laptop-tab-trophies|lesson-|lessons-|trophies-all)';
+const V10 = '^(btn-help|btn-hof|menu-hof|menu-lessons|tut-|end-|hof-|laptop-tab-trophies|lesson-|lessons-|trophies-all' +
+  '|seat-|lk-gear-|lk-tab-gear|part-(?!cell)|btn-tell-drummer|seq-layer-|gear-buy-|kit-practice|set-practice)';   // v1.1 Seats controls: 48 px too
 
 const AUDIT = (ins, v10src) => {
   const V10 = new RegExp(v10src);
@@ -101,6 +104,35 @@ const AUDIT = (ins, v10src) => {
       await page.locator('[data-testid="btn-gig-start"]').last().click();
       await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 30000 });
       await audit('gig play');
+      await page.evaluate(() => { GG.ui.closeAll(); GG.main.quitToTitle(); });
+      // v1.1 "Seats": the seat picker in the new-career flow, Your gear, a string-seat garage, songwriter part, guitar shop, gig
+      await page.waitForSelector('[data-testid="btn-new"]', { timeout: 15000 });
+      await tapId('btn-new'); await tapId('slot-3'); await tapId('genre-punk'); await tapId('btn-intro-next');
+      await page.waitForFunction(() => GG.debug('ui').screen === 'seat', null, { timeout: 15000 });
+      await audit('seat picker', 500);
+      await tapId('seat-bass'); await audit('seat picker (bass)');
+      await page.evaluate(() => GG.audio && GG.audio.stopPreview && GG.audio.stopPreview());
+      await tapId('seat-next'); await page.waitForFunction(() => GG.debug('ui').screen === 'logo', null, { timeout: 15000 });
+      await tapId('btn-logo-done'); await page.waitForFunction(() => GG.debug('ui').screen === 'creator', null, { timeout: 15000 });
+      await audit('creator (bass)');
+      await tapId('btn-customize'); await page.waitForFunction(() => GG.debug('ui').screen === 'look', null, { timeout: 15000 });
+      await tapId('lk-tab-gear'); await audit('look: Your gear', 500);
+      await page.evaluate(() => { GG.ui.closeAll(); GG.main.quitToTitle(); });
+      await page.evaluate(() => { GG.main.quickStart({ seed: 91, slot: '2', bandId: 'frost_heave', seat: 'lead' }); GG.tutorial.skip && GG.tutorial.skip(); GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'plan'; s.fund = 20000; s.era = 'local'; s.protected = false;
+        if (!s.eraHistory.some(x => x.era === 'local')) s.eraHistory.push({ era: 'local', week: 1 }); GG.main.sync && GG.main.sync(); });
+      await audit('garage/HUD (lead)');
+      await page.evaluate(() => { GG.ui.closeAll(); GG.ui.openSketch(); });
+      await page.waitForFunction(() => GG.debug('ui').screen === 'seq', null, { timeout: 15000 });
+      await audit('songwriter: your part', 500);
+      await tapId('btn-kit-shop'); await page.waitForFunction(() => GG.debug('ui').screen === 'gear', null, { timeout: 15000 });
+      await audit('guitar shop (lead)');
+      await page.evaluate(() => { GG.ui.closeAll(); const s = GG.state; for (let i = 0; i < 3; i++) GG.songs.jam(s, GG.RNG(60 + i));
+        s.gig = GG.gig.makeGig(s, GG.content.venues[0].id, 'book'); GG.ui.gigAutoplay = false; GG.ui.playGig(s.gig, () => {}); });
+      await page.waitForFunction(() => GG.debug('ui').screen === 'gig-set', null, { timeout: 30000 });
+      await page.locator('[data-testid="btn-gig-start"]').last().click();
+      await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 30000 });
+      await audit('gig play (lead)');
       await page.evaluate(() => { GG.ui.closeAll(); GG.main.quitToTitle(); });
     }
     console.log('HUD label px (normal, Bigger text):', JSON.stringify(hud));

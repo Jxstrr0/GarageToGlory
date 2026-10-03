@@ -249,6 +249,11 @@
   function withText(w) { w.text = readable(w.color); return w; }
   ui.readable = readable;
   function bandOf(state) { var b = GG.content.bands; return b && state && b[state.bandId] || null; }
+  // v1.1 review: the player's seat in words ('Drums' on the drum seat, as v1.0) and the seat's icon
+  ui.SEAT_NAME = { drums: 'Drums', bass: 'Bass', rhythm: 'Rhythm guitar', lead: 'Lead guitar' };
+  ui.seatOf = function (state) { return GG.career && GG.career.seatOf ? GG.career.seatOf(state || GG.state) : 'drums'; };
+  ui.seatName = function (state) { return ui.SEAT_NAME[ui.seatOf(state)] || 'Drums'; };
+  ui.seatIcon = function (state) { return ui.seatOf(state) === 'drums' ? '🥁' : '🎸'; };
   // Resolves a speaker/chat id to { id, name, short, nick, color, text, role } (text: colour readable on dark panels). Works for members, npcs, 'player' and raw names.
   ui.who = function (id, state) {
     state = state || GG.state;
@@ -262,7 +267,7 @@
     if (id === 'player' || id === 'you') {
       var p = state && state.player || {};
       var pc = p.look && p.look.shirt;
-      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: 'Drums (you)' });
+      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: ui.seatName(state) + ' (you)' });
     }
     var mems = (state && state.members) || (band && band.members) || [];
     for (i = 0; i < mems.length; i++) if (mems[i].id === id) {
@@ -272,7 +277,7 @@
       var color = lum(shirt) > 0.12 ? shirt : PALETTE[i % PALETTE.length];
       var name = m.name || (cm && cm.name) || id;
       return withText({ id: id, name: name, short: String(name).split(' ')[0], nick: m.nick || (cm && cm.nick) || '', color: color,
-        full: m.fullName || (cm && cm.fullName) || '', role: m.role || (cm && cm.role) || '' });
+        full: m.fullName || (cm && cm.fullName) || '', role: (state && GG.career && GG.career.stageRole ? GG.career.stageRole(state, m) : m.role) || (cm && cm.role) || '' });   // v1.1 review: the stage role (the swapped member: drums)
     }
     var npc = GG.content.npcs && GG.content.npcs[id];
     if (npc) return withText({ id: id, name: npc.name, short: npc.name, color: npc.color || PALETTE[GG.hashSeed(id) % PALETTE.length], role: npc.role || '' });
@@ -331,9 +336,13 @@
     var act = {}, mine = {}, b = ui.band(st), out = [], ask = [], answered = 0;
     ui.active(st).forEach(function (m) { act[m.id] = 1; });
     ((b && b.members) || []).concat(st.members || []).forEach(function (m) { if (m && m.id) mine[m.id] = 1; });
+    var K = GG.career;
     list.forEach(function (x) {
       var who = x && typeof x === 'object' ? x.who : null;
-      if (!who || who === 'reporter' || (!mine[who] && String(who).charAt(0) !== '@')) { ask.push(x); return; }
+      var q = !who || who === 'reporter' || (!mine[who] && String(who).charAt(0) !== '@');
+      // v1.1: a line gated off this seat (seat / swapped, career.speakerOk) is gone; an answer takes its question with it
+      if (x && typeof x === 'object' && K && K.speakerOk && !K.speakerOk(st, q ? null : who, x)) { if (!q) ask = []; return; }
+      if (q) { ask.push(x); return; }
       if (act[ui.speaker(who, st)]) { out = out.concat(ask, [x]); answered++; }
       ask = [];
     });
@@ -441,10 +450,11 @@
       homeVenue: st ? homeVenue(st) : 'the first house party', superfan: ui.superfan(st), rivalFront: st ? rivalFront(st) : 'their singer',
       city: (st && st.city) || b.city || 'town', rival: st && GG.rival && GG.rival.name ? GG.rival.name(st) : 'the other band',
       band: b.name || 'the band', player: (st && st.player && (st.player.nick || st.player.name)) || 'you',
-      instrument: 'drums', drummer: 'you'   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      instrument: 'drums', drummer: 'you',   // v1.0 (E12) seat tokens, the no-state fallback (with a state, career.fillText fills them)
+      gear: 'kit', sticks: 'sticks', yourPart: 'the beat', seat: 'drums'   // v1.1: the drum seat's words (C.SEAT_TOKENS.drums)
     };
   };
-  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer)\}/g;
+  var TOKEN_RE = /\{(front|soloist|filler|bassist|namer|grumbler|deadpan|driver|van|space|spaceName|door|province|homeVenue|superfan|rivalFront|city|rival|band|player|instrument|drummer|gear|sticks|yourPart|seat)\}/g;
   ui.fill = function (text, st, vars) {
     if (text == null) return '';
     st = st || GG.state; text = String(text);
