@@ -176,3 +176,63 @@ avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). s
    machine; all green alone twice.
 6. Not done here (contract §6 items 6 "review" and 10): the one review pass, the PR `v1.1-seats` -> main, deleting the
    `wip-v11-*` branches, and the owner summary.
+
+## 5. Review fixes (2026-10-03, fixer, on `v1.1-seats`)
+Eight confirmed findings fixed, then the 12 minor (unverified) findings checked: all 12 were real; 11 fixed, 1 left by design
+(below). Commits `7528d45` .. (this section's commit); each group committed and pushed as it landed.
+
+### Confirmed (8)
+1. **2-lane chords went silent / played the fifth's chord** (55 `playSeat`). A chord is ONE sound now: the first lane's tap plays
+   the root with its power voicing (no `+7`), the handle is stashed on the note (`n.sh`), the completing tap plays nothing new
+   and the hold is kept under the session's hold lane `n.li` (either tap order). Verified with the reviewer's probe (GK rhythm
+   Hard, chord [2,3] and [0,1]: one call, the root, no release before the lift) and the new `pw_gig META_ONLY=chord`.
+2. **Swapped gate ignored quits** (20 `swappedGate`): `swapped: <id> | [ids]` also needs that member on the kit now
+   (`career.drummerId`); `swapped: true` keeps meaning "a string seat" (no content uses it; contract §4.3). `fin()` finales carry
+   `swapped: <that band's swapped member>`. sim_seats: quit + recruit per band x string seat -> no `sw_` / `fin_` card, no arc
+   line in the departed member's voice.
+3. **Quit / return cards were drum-seat only**: `content/zz_seats_drama.js` clones the 12 swapped members' forced ultimatum /
+   return / returnFilled cards into kit variants (33 cards: same choices and effects; stick bag, throne, "That's my kit", the
+   drum solo, the groove from 1979), `drama.members[id].kit[kind]`; 27 `cardFor` picks them while that member is the swapped
+   drummer on a string seat. content_seats forces all three per member and scans for old-instrument words. Wants / grumbles
+   stay the content role's (contract §1.1 / §4.1, by design).
+4. **UI role labels** (50 `ui.who`): the player's role is the seat ("Bass (you)"; drums unchanged), members show
+   `career.stageRole` (the swapped member: "drums"); 58 memberCard, 53 laptop row ("Bass · founder · unfireable"), the practice
+   icon, the brochures "on your amp", 59 deal signature "(bass, founder)". New `ui.SEAT_NAME / seatName / seatIcon / seatOf`.
+   pw_seats `pick` checks the laptop Band tab on a Hail Damage bass career.
+5. **Singing drummer's recruit didn't sing** (spec gap in §4.2): `career.seatRoleFor` gives a drummer recruit hired for a
+   singing swapped member's hole (Rox, Chase, Travis Lee on rhythm) `'drums/vocals'`, so `gig.roles().front` is the recruit
+   (02_contracts note). content_seats asserts it for FH / GK / GRR rhythm and that a bass-seat recruit just drums.
+6. **Old band content showed the swapped member on their old instrument**: a second scan pass (`tests/seat_scan.js` `oldLeak` /
+   `swappedNames`: the swapped member's name next to their old instrument's words in one sentence; `OLD_LEFT` / `OLD_SKIP` for
+   songwriting words: Benny's two chords, Lenny's riffs) runs in every string-seat career of sim_bands; `tools/seat_audit.js`
+   pass 2 (static) is appended to `plan/seat_audit.txt`. Fixes: 26 cards whose premise is the old instrument never draw on that
+   member's swap seat (`content/zz_seats_gates.js`: Dana's solo takes / signature guitar, Benny's guitar / third chord / Tokyo
+   two-string, Lenny playing riffs on guitar / his signature guitar, Earl's solo, Travis Lee's acoustic, Kenji's bass take,
+   Moth's bass booth); ~35 passing mentions reworded seat-neutral in their own files (Kenji packs up, his gear case, the
+   heaviest case, Dana does her part / plays in mittens, the court hears both riffs from the band, Jaxon the music teacher, ...).
+   The GK riff lawsuit chain stays on the lead seat (reworded), so the "Legally Distinct" trophy stays reachable.
+7. **Wrong instrument on the laptop Band tab / card heads**: same fix as 4 (who.role feeds the card heads, van, awards).
+8. **Solo / Outro blurbs were drum-seat only**: `shop.sections.*.bySeat` (bass / rhythm / lead), `GG.shop.sectionDef(state, id)`
+   used by 5k gear rows + the week-wrap unlock and 54 extraPanel / the guided extra step (tokens filled); "a big finish to
+   finish" is now "{drummer} gets a big fill to finish".
+
+### Minor (12 checked)
+- Fixed: same-lane hold killed by the other thumb (55: a tap only lets the OLD voice go; a lift ends only the hold its own
+  press started, pointers and keys remember their note; held / runs / pointers reset at every count-in); Hail Damage rhythm's
+  gtr2 partner cut your tap to 30 ms (22 + 30: a same-voice partner at the head's instant layers on the head's handle,
+  `n.with`, so it sounds only on a hit and stops on the lift); a half-tapped held chord rang out (22: a Good, no hold,
+  held 0); shop chat posting an alias as you (2a); "you is" grammar (20 `fillText`: a role token that resolves to you takes
+  second-person grammar: You buy / you are / your; string seats only, the drum seat reads as v1.0); UI drum words (5h
+  difficulty "your chops", calibration "Band sync" / "your notes", 53 / 59 above, shop section blurbs, the spare cymbal is a
+  spare pedal, 54 first write tip on a string seat is the drummer's groove); "Needs the the" (2a: string-seat names keep their
+  capitals and their own "The"); a silent drummer speaking in the amp toast (5k); the garage "Your rig" chip under "Trophies"
+  (41: the label moved right, `R.labelScreenPos`, pw_garage checks the gap on all 12 combos); the cymbal edge on the spot
+  camera (42: the kit's crash / ride / hi-hat top hide in the spot view; a near plane could not clip them without clipping
+  you); the carpet instrument off frame (44: with an instrument you walk second).
+- Left by design: the mixer's "Drums: your taps + the kit" bus label (the bus does carry your taps and the kit on every seat).
+
+### Verification
+- `node build.js`: **4,561,121 B** (gate 5,000,000; +23,133 B vs the integration build's 4,537,988).
+- `node tests/run.js`: SUITE ALL PASS (sim_seats 20, content_seats 11, sim_gig 24, sim_bands 17, ...).
+- `SEAT=all LEAK_YEARS=10 node tests/sim_bands.test.js` (strict, with the new old-instrument pass): **ALL PASS 24**, zero seat
+  leaks. `LEAK_YEARS=13 node tests/sim_bands.test.js` (drums): **ALL PASS 17**.
