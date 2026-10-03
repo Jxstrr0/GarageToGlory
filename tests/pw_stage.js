@@ -154,6 +154,20 @@ async function seatSection(page, c, notes) {
   await advance(page, 2);
   c.ok(fi.a.join() === 'rhythm,spot,' + fi.sw + ',true' && fi.b[0] === 'rhythm' && fi.b[2] === 'fill_drums' && !fi.b[3] && !fi.band.some(x => x.indexOf(fi.sw + ':') === 0),
     'the gig screen setup (no seat key) reads the seat from the state; ' + fi.sw + ' quit -> the fill-in drummer on the riser, no boom mic ' + JSON.stringify([fi.a, fi.b]));
+  // The van: your gig bag rides between the front seats on a string seat (+1 draw call at most); none on drums.
+  const vb = [];
+  for (const seat of ['drums', 'bass', 'rhythm', 'lead']) {
+    await page.evaluate(seat => {
+      const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage', seat });
+      for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+      st.player.gearLook = { shape: null, color: '#2a9d8f', guard: 'white', sticker: 'none' };
+      GG.render.setPaused(false); GG.render.syncState(st); GG.render.setScene('van');
+      GG.render.van.setTrip({ from: 'Moose Jaw', to: 'Swift Current', km: 175, season: 'summer', night: false });
+    }, seat);
+    await advance(page, 3);
+    vb.push(await page.evaluate(seat => ({ seat, bag: GG.render.van.info().gigBag, calls: GG.debug('render').drawCalls }), seat));
+  }
+  c.ok(vb[0].bag === null && vb.slice(1).every(v => v.bag === v.seat && v.calls <= vb[0].calls + 1), 'the van: your gig bag on a string seat (+1 call at most), none on drums ' + JSON.stringify(vb));
   // Per-frame allocations: the drum stage vs a seat stage, same venue + crowd, no test calls inside the window.
   const cdp = await page.context().newCDPSession(page);
   const measure = async seat => {
