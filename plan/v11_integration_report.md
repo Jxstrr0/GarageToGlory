@@ -155,7 +155,7 @@ avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). s
 ### Size and render (§6.7)
 - `dist/game.html` **4,537,936 B** at the perf run, **4,537,988 B** final after the shop fix (gate 5,000,000: ok, ~462 KB headroom); gzip-9 1,332,946 B (gzip -6 1,339,325 B).
   Delta vs stage 0 (4,247,084): **+290,852 B** (planned +660 KB). By lane: D +30,506 · B +72,015 · lead (51 picker) +7,489 ·
-  C +41,553 · A +138,898 · integration +391.
+  C +41,553 · A +138,898 · integration +443 (final, after the shop fix: +290,904 B in all).
 - `node tools/perf.js scenes` + `report` (390x844, SwiftShader): every scene's draw calls / triangles within its gate. Seats line:
   `stage_club_seat_bass` 32 calls, `stage_club_seat_lead` 35 (gate: stage_club 36 x 1.15 = 41.4); `garage_seat_rhythm` 44
   (gate: garage_hail_damage 43 x 1.15 = 49.5). Voice cap holds: peak sources 25 (x1) / 23 (x4) <= 32, tap drops 0, audio
