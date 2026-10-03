@@ -205,10 +205,10 @@ Eight confirmed findings fixed, then the 12 minor (unverified) findings checked:
 6. **Old band content showed the swapped member on their old instrument**: a second scan pass (`tests/seat_scan.js` `oldLeak` /
    `swappedNames`: the swapped member's name next to their old instrument's words in one sentence; `OLD_LEFT` / `OLD_SKIP` for
    songwriting words: Benny's two chords, Lenny's riffs) runs in every string-seat career of sim_bands; `tools/seat_audit.js`
-   pass 2 (static) is appended to `plan/seat_audit.txt`. Fixes: 26 cards whose premise is the old instrument never draw on that
+   pass 2 (static) is appended to `plan/seat_audit.txt`. Fixes: 34 cards whose premise is the old instrument never draw on that
    member's swap seat (`content/zz_seats_gates.js`: Dana's solo takes / signature guitar, Benny's guitar / third chord / Tokyo
    two-string, Lenny playing riffs on guitar / his signature guitar, Earl's solo, Travis Lee's acoustic, Kenji's bass take,
-   Moth's bass booth); ~35 passing mentions reworded seat-neutral in their own files (Kenji packs up, his gear case, the
+   Moth's bass booth); ~40 passing mentions reworded seat-neutral in their own files (Kenji packs up, his gear case, the
    heaviest case, Dana does her part / plays in mittens, the court hears both riffs from the band, Jaxon the music teacher, ...).
    The GK riff lawsuit chain stays on the lead seat (reworded), so the "Legally Distinct" trophy stays reachable.
 7. **Wrong instrument on the laptop Band tab / card heads**: same fix as 4 (who.role feeds the card heads, van, awards).

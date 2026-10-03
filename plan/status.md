@@ -2,7 +2,7 @@
 
 Read this first every session. Don't re-explore the codebase to rebuild context.
 
-## v1.1 integrated, in review (2026-10-03): all lanes merged on `v1.1-seats`, checklist green (`plan/v11_integration_report.md`); next: review pass, PR → main.
+## v1.1 integrated, reviewed (2026-10-03): all lanes merged on `v1.1-seats`, checklist green, review fixes applied (`plan/v11_integration_report.md` §5); next: PR → main.
 
 ## Version
 - Current: **1.1.0.0 "Seats"** (in review on `v1.1-seats`) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
@@ -147,7 +147,8 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   rhythm and lead; `'@drummer'` = the swapped drummer.
 - **Leftovers (back burner):** avg-bot balance tilt on string seats (+7 % fans, inside seed noise; good bot within ±10 %);
   A's forceWeek-2 first-week cards, weekly mood chat not seat-aware, no string-seat tutorial walk/write twins; C's cosmetic
-  camera notes + the garage "Trophies" / "Your rig" chip overlap (details: `plan/v11_integration_report.md` §4).
+  camera note (Ramblers rhythm: Clementine fills part of the view) (details: `plan/v11_integration_report.md` §4; the chip
+  overlap, the spot camera's cymbal and the review findings are fixed: §5).
 - **Open owner choices (D):** on metal/punk/rock lead your written part replaces the shared rhythm-guitar pair in the sections you
   write; a part section with no hits is silent.
 
