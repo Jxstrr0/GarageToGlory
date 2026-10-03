@@ -588,7 +588,7 @@ function report() {
     L.push('## v1.1 seats: ' + [seatLine('stage_club_seat_bass', 'stage_club'), seatLine('stage_club_seat_lead', 'stage_club'), sc.garage_hail_damage ? seatLine('garage_seat_rhythm', 'garage_hail_damage') : ''].join(' | '));
     L.push('');
   }
-  if (sz) L.push('## Size: dist/game.html ' + sz.bytes + ' B (gate <= 5,000,000 (v1.1, E14) ' + ok(sz.bytes <= 5000000) + '), gzip-9 ' + sz.gzip + ' B');
+  if (sz) L.push('## Size: dist/game.html ' + sz.bytes + ' B (gate <= 6,000,000 (v1.2, F17) ' + ok(sz.bytes <= 6000000) + '), gzip-9 ' + sz.gzip + ' B');
   const txt = L.join('\n') + '\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, txt);
