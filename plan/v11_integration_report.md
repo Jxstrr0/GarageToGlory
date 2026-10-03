@@ -51,6 +51,30 @@ Contract `plan/plan_contract_1.1.md` §5 Lead, cross-lane hand-overs, §6 checkl
 - `NO_BONUS=1 BAND=all node tools/balance.js 10 30` equals `plan/balance_v10_nobonus.txt` (1.0.1.0) line for line
   (`grep -v '^done in'`); only the header's deck size changes (444 -> 534 cards: the 90 new cards are all seat-gated).
 
+### Balance, string seats (§6.5) -> `plan/balance_v11_seats.txt`
+`SEAT=all BAND=all node tools/balance.js 6 30` (1,933 s) and `6 10`. Year-3 values as a share of the same band's drum seat
+(30 seeds; "ok" = within ±10 %):
+
+| band | bot | bass fans / fund | rhythm fans / fund | lead fans / fund |
+|---|---|---|---|---|
+| Hail Damage | avg | 104 / 97 | **90** / 92 | 103 / 102 |
+| Frost Heave | avg | **110** / 103 | 102 / 95 | **111** / **111** |
+| Gravel Kings | avg | **111** / 94 | 100 / **86** | 106 / **88** |
+| Grid Road Ramblers | avg | 107 / 98 | **111** / **135** | 109 / **116** |
+| Hail Damage | good | 93 / 96 | 91 / 103 | 90 / **85** |
+| Frost Heave | good | 101 / 102 | 102 / 99 | 101 / 101 |
+| Gravel Kings | good | 98 / 98 | 92 / 92 | 94 / 103 |
+| Grid Road Ramblers | good | 95 / **90** | 103 / 102 | 100 / 91 |
+
+Means over the 12 band x seat cells: avg bot fans 105 %, fund 101 %; good bot fans 97 %, fund 97 %.
+**Noise floor** (the drum seat against itself, `SEAT=drums SEED_OFFSET=500 ... 6 30` vs the default seeds): avg bot fans
+85-101 %, fund 81-110 %; good bot fans 94-100 %, fund 93-104 %. Every per-cell miss above is inside that seed noise (B saw the
+same: up to 19 % drum vs drum). World week: every string seat within 7 weeks of drums; reach differs by <= 17 points (a share
+of 30 seeds; the good bot reaches 100 % everywhere).
+
+**Live bots** (`LIVE BOTS`, 3 fresh careers per cell): perfect bot accuracy **1.000 on all 64 band x seat x difficulty cells**;
+avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). sim_seats ALL PASS 17.
+
 ### Size and render (§6.7)
 - `dist/game.html` **4,537,936 B** (gate 5,000,000: ok, 462,064 B headroom); gzip-9 1,332,946 B (gzip -6 1,339,325 B).
   Delta vs stage 0 (4,247,084): **+290,852 B** (planned +660 KB). By lane: D +30,506 · B +72,015 · lead (51 picker) +7,489 ·
