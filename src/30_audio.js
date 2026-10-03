@@ -564,7 +564,7 @@
   function setKit(r, genre, tier) {
     genre = genre || 'metal';
     tier = tier == null ? A.kitQuality() : Math.max(0, Math.min(QUALITY.length - 1, tier | 0));
-    if (r.genre === genre && r.kit && r.tier === tier) return;
+    if (r.genre === genre && r.kit && r.tier === tier) { if (r === rig) skWant(); return; }   // (v1.2 review: a career loaded on the same kit)
     r.genre = genre; r.tier = tier; r.kit = kitFor(genre, tier);
     if (r === rig) { preWant(); skWant(); pre2Want(); }   // v1.0: (re)render this kit's tap hits in the background (v1.2: + its sampled kit, the velocity sets)
     var t = r.ctx.currentTime, k = r.kit, q = QUALITY[tier];
@@ -1113,13 +1113,14 @@
       if (hb.kit) { KITUSE[lane]++; r.kitUsed = (r.kitUsed || 0) + 1; }
       return { t: t, end: t + d, n: 1, slot: sl, src: [s] };
     }
-    if (r === rig) {   // F3.6: not ready yet -> the 1.1 sound, at the hit's level
+    if (r.ctx === ctx) {   // F3.6: not ready yet -> the 1.1 sound, at the hit's level (any live rig: v1.2 review, the van radio too)
       n = typeof D.n === 'function' ? D.n(k, v) : D.n; d = Math.max(0.012, Math.min(D.len(k, v), cap));
       if (!book(r, t, d, n, false, cls)) return null;
       D.play(r, { drums: gainNode(c, velGain(vel), p.drums) }, t, d, k, v);
       return { t: t, end: t + d, n: n };
     }
-    // offline (renderOffline): the 1.2 recipe played live through the hit slot, booked as the one source it costs live
+    // offline (renderOffline: a rig on its own OfflineAudioContext): the 1.2 recipe played live through the hit slot, booked
+    // as the one source it costs live
     var R = A.realism(r.tier), D2 = DRUMS2[lane], ri = nextRR(r, 'o|' + lane + '|' + (v == null ? '' : v), R.rr), nat;
     nat = D2.len(k, v, R, ri); d = Math.max(0.012, Math.min(nat, cap));
     if (!book(r, t, d, 1, false, cls)) return null;
@@ -1284,8 +1285,9 @@
     }
     return out;
   }
-  function preVel(r, lane, v, vel) {
-    if (r !== rig || !PRE2.key || PRE2.key !== pre2Key()) { if (r === rig) pre2Want(); return null; }
+  function preVel(r, lane, v, vel) {   // (v1.2 review: any live rig on the set's genre | tier | rate, e.g. the van radio, shares it)
+    var key = r === rig ? pre2Key() : ctx && r.ctx === ctx ? (r.genre || 'metal') + '|' + r.tier + '|' + ctx.sampleRate : null;
+    if (!key || !PRE2.key || PRE2.key !== key) { if (r === rig) pre2Want(); return null; }
     var S = PRE2.sets[lane + '|' + (v == null ? '' : v)]; if (!S) return null;
     var li = 0, best = 9;
     for (var i = 0; i < S.vels.length; i++) { var dd = Math.abs(S.vels[i] - vel); if (dd < best) { best = dd; li = i; } }
@@ -1429,14 +1431,22 @@
     S.gain = S.gain || {}; S.gain[key] = Math.pow(10, (job[3] || 0) / 20);   // the lane's trim (dB), applied by the hit's slot
     S.onset = Math.max(S.onset, Math.min(tb.onset, 0.001 * tb.sampleRate) / tb.sampleRate * 1000);   // (where its onset now sits, ms)
   }
+  // v1.2 review (F17.2): only a loaded career's kit decodes (the title screen's unlock has no career: no decode, the seat
+  // preview there plays the synth); a kit change to one without samples releases the decoded clips.
+  function skFor() { return GG.state && rig ? A.sampleKit(rig.genre, rig.tier) : null; }
+  function skRelease() {
+    if (!SK.bufs && !SK.building) return;
+    Object.assign(SK, { id: null, bufs: null, have: {}, want: {}, gain: {}, ready: false, building: null, bytes: 0, onset: 0 });   // (a build in flight stops)
+  }
   function skWant() {
-    if (!ctx || !rig || SK.timer || typeof atob !== 'function') return;
-    var kit = A.sampleKit(rig.genre, rig.tier);
-    if (!kit || SK.errId === kit.id || (SK.id === kit.id && SK.sr === ctx.sampleRate && (SK.ready || SK.building === kit.id))) return;
+    if (!ctx || !rig || typeof atob !== 'function') return;
+    var kit = skFor();
+    if (!kit) { skRelease(); return; }
+    if (SK.timer || SK.errId === kit.id || (SK.id === kit.id && SK.sr === ctx.sampleRate && (SK.ready || SK.building === kit.id))) return;
     SK.timer = setTimeout(function () { SK.timer = 0; skBuild(kit); }, 300);
   }
   function skBuild(kit) {
-    if (!ctx) return;
+    if (!ctx || skFor() !== kit) return;   // (the career / kit changed while it waited)
     if (current && current.playing && !current.radio) { SK.timer = setTimeout(function () { SK.timer = 0; skBuild(kit); }, 1000); return; }   // never mid-song
     var J = skJobs(kit), t0 = performance.now();
     Object.assign(SK, { id: kit.id, sr: ctx.sampleRate, bufs: {}, have: {}, gain: {}, want: J.want, ready: false, building: kit.id, bytes: 0, err: null, onset: 0, slice: 0 });
@@ -1449,6 +1459,7 @@
     }
     function next(i) {
       if (SK.building !== kit.id) return;
+      if (skFor() !== kit) { skRelease(); return; }   // (the career's kit changed mid-decode)
       if (i >= J.jobs.length) { SK.ready = true; SK.building = null; SK.ms = Math.round(performance.now() - t0); return; }
       if (current && current.playing && !current.radio) { setTimeout(function () { next(i); }, 1000); return; }
       var job = J.jobs[i];
@@ -1480,7 +1491,7 @@
   function skBuf(r, lane, v) {
     if (lane !== 'kick' && lane !== 'toms' && !(lane === 'snare' && !v)) return null;
     var kit = A.sampleKit(r.genre, r.tier); if (!kit) return null;
-    var S = r === rig ? SK : SKOFF[kit.id];
+    var S = r.ctx === ctx ? SK : SKOFF[kit.id];   // (live rigs share the decoded kit: the van radio too)
     if (!S || S.id !== kit.id || !S.bufs) return null;
     var key = skKey(lane, v), list = S.bufs[key];
     if (!list || !S.want[key] || S.have[key] !== S.want[key]) return null;
@@ -2058,7 +2069,8 @@
     if (off < spec.n) ksAdd(acc, GG.dsp.pluck(ksOpts(spec, i, off)), off, spec.n);
   }
   function ksPut(c, spec, acc) {
-    var b = mkBuf(c, spec.n, spec.sr); b.getChannelData(0).set(acc);
+    var b = mkBuf(c, spec.n, spec.sr), prev = KS.map[spec.key]; b.getChannelData(0).set(acc);
+    if (prev) { KS.bytes -= prev.bytes; KS.n--; }   // (v1.2 review: a key put twice is counted once)
     var x = KS.map[spec.key] = { buf: b, bytes: spec.n * 4, used: ++KS.tick };
     KS.bytes += x.bytes; KS.n++;
     while (KS.bytes > KS_CAP) {   // LRU
@@ -2069,23 +2081,36 @@
     }
     return b;
   }
+  // (v1.2 review) KS needs AudioBufferSourceNode.detune (the per-note cents): Safari < 14.1 / iOS < 14.5 lack it, and setting
+  // it there throws after the note is booked (a silent note). Without it every string stays the 1.1 oscillator (F3.6).
+  var KS_DETUNE = null;
+  function ksOK(c) {
+    if (KS_DETUNE === null) { try { KS_DETUNE = !!(c && c.createBufferSource().detune); } catch (e) { KS_DETUNE = false; } }
+    return KS_DETUNE;
+  }
   function ksGet(r, spec) {
-    if (!spec) return null;
+    if (!spec || !ksOK(r.ctx)) return null;
     var x = KS.map[spec.key];
     if (x) { x.used = ++KS.tick; KS.hits++; return x.buf; }
     KS.misses++;
-    if (r !== rig) {   // offline: render it now
+    if (r.ctx !== ctx) {   // offline (renderOffline): render it now; any live rig (the van radio too) queues it (v1.2 review)
       var acc = new Float32Array(spec.n);
       for (var i = 0; i < spec.fs.length; i++) ksString(spec, acc, i);
       return ksPut(r.ctx, spec, acc);
     }
-    ksQueue(spec);
+    ksQueue(spec, true);
     return null;
   }
-  function ksQueue(spec) {
+  function ksQueue(spec, live) {   // live: a miss while playing (A.warm's jobs are not)
     if (KS.qset[spec.key] || KS.map[spec.key]) return;
-    KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0 });
+    KS.qset[spec.key] = 1; KS.queue.push({ spec: spec, acc: null, i: 0, live: !!live });
     if (!KS.busy) { KS.busy = true; soon(ksPump); }
+  }
+  // (v1.2 review, F3.5) a gig song never renders a live miss mid-song: A.warm's jobs go first, the misses wait for the song's
+  // end (a job already started finishes). Elsewhere (songwriter loops, the radio) a miss renders in the 1 ms slices.
+  function ksHeld(job) { return !!(job && job.live && !job.acc && current && current.playing && current.gig); }
+  function ksWake() {   // A.warm's promises: their jobs are all done
+    var w = KS.waiters; KS.waiters = []; w.forEach(function (x) { KS.warmMs = Math.round(performance.now() - x.t0); x.res({ n: x.n, ms: KS.warmMs }); });
   }
   // ~1 ms of string per slice: GG.dsp.pluckJob renders a string KS_STEP samples per step (then its gain pass, then its add into
   // the sum, the same per step: the same samples as one pluck call), so no slice runs long on a 4x-throttled phone.
@@ -2097,11 +2122,12 @@
   }
   function ksPump() {
     var job = KS.queue[0];
-    if (!job || !ctx) {
-      KS.busy = false;
-      var w = KS.waiters; KS.waiters = []; w.forEach(function (x) { KS.warmMs = Math.round(performance.now() - x.t0); x.res({ n: x.n, ms: KS.warmMs }); });
-      return;
+    if (job && ctx && ksHeld(job)) {
+      var j = 1; while (j < KS.queue.length && ksHeld(KS.queue[j])) j++;
+      if (j < KS.queue.length) { job = KS.queue.splice(j, 1)[0]; KS.queue.unshift(job); }
+      else { ksWake(); setTimeout(ksPump, 1000); return; }   // (only held misses left: look again in a second; KS.busy stays set)
     }
+    if (!job || !ctx) { KS.busy = false; ksWake(); return; }
     var t0 = performance.now();
     while (job) {
       var sp = job.spec;
@@ -2119,7 +2145,7 @@
         job.at = q1;
         if (q1 >= a1) { job.pj = null; job.at = null; job.i++; }
       }
-      if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; ksPut(ctx, sp, job.acc); job = KS.queue[0]; }
+      if (job.i >= sp.fs.length) { KS.queue.shift(); delete KS.qset[sp.key]; if (!KS.map[sp.key]) ksPut(ctx, sp, job.acc); job = KS.queue[0]; if (ksHeld(job)) break; }
       if (performance.now() - t0 >= KS_SLICE_MS) break;
     }
     sliceNote(KS, t0);
@@ -2144,16 +2170,23 @@
   }
   // A.warm(pattern, opts) -> Promise<{ n, ms }>: renders the song's KS buffers ahead (its timeline, pure), one string per slice.
   A.warm = function (pattern, opts) {
-    if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)
+    if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck || !ksOK(ctx)) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)
     opts = opts || {};
-    var genre = opts.genre || (GG.state && GG.state.genre) || 'metal', tl, n = 0;
+    var genre = opts.genre || (GG.state && GG.state.genre) || 'metal', tl, n = 0, P = null, mute = {};
     try { tl = A.timeline(pattern, opts); } catch (e) { return Promise.resolve({ n: 0, ms: 0 }); }
-    tl.events.forEach(function (ev) {
+    // v1.2 review: the layers the song will really play: pass 0's feel plan, the same pure plan player() makes from these
+    // opts (same seed), so its soft notes (vel < 0.7: KS layer 0) are warm too; your part's kinds (opts.mute: your taps play
+    // them, at any vel) get both layers, after the band's notes. In song order: the first sections render first.
+    try { P = feelPlanFor(feelOf(opts, opts.genre || 'metal', tl), tl, 0, opts); } catch (e) { P = null; }
+    (opts.mute || []).forEach(function (k) { mute[k] = 1; });
+    function q(ev, vel) {
       [0, 1].forEach(function (rr) {
-        var s = ksSpecFor(genre, ev, 0.9, rr);
+        var s = ksSpecFor(genre, ev, vel, rr);
         if (s && !KS.map[s.key] && !KS.qset[s.key]) { ksQueue(s); n++; }
       });
-    });
+    }
+    tl.events.forEach(function (ev, i) { q(ev, P && !mute[ev.kind] && P.vel[i] > 0 ? P.vel[i] : 0.9); });
+    tl.events.forEach(function (ev) { if (mute[ev.kind]) q(ev, KS_LAYERS[0]); });
     KS.warms++;
     if (!n) return Promise.resolve({ n: 0, ms: 0 });
     return new Promise(function (res) { KS.waiters.push({ t0: performance.now(), n: n, res: res }); });
@@ -2984,7 +3017,7 @@
     if (opts.mute && opts.mute.length) { mute = {}; for (var mi = 0; mi < opts.mute.length; mi++) mute[opts.mute[mi]] = 1; }
     var i = 0, pass = 0, lastBeat = -1;
     var h = { playing: true, loop: loop, section: opts.section || null, bpm: tl.bpm, beats: tl.beats, style: tl.style, key: tl.key,
-      genre: opts.genre || 'metal', timeline: tl, radio: !!R.quiet,   // v0.8.3 opts.at: start on the gig's count-in grid
+      genre: opts.genre || 'metal', timeline: tl, radio: !!R.quiet, gig: !!opts.gig,   // v0.8.3 opts.at: start on the gig's count-in grid
       start: opts.at > c.currentTime + LEAD_IN && opts.at < c.currentTime + 3 ? opts.at : c.currentTime + LEAD_IN,
       kinds: {}, muted: {}, mute: opts.mute ? opts.mute.slice() : [], seat: tl.seat || null };
     if (R.split) { genrePorts(r, port, h.genre); genrePorts(r, port2, h.genre); h.ports = [port, port2]; }
@@ -4337,6 +4370,14 @@
   A.prewarm = function () { prewarmCrowd(); return CROWD_PARTS.concat(CROWD_EXTRA).filter(function (k) { return CROWD_RAW[k]; }).length; };
   GG.on('career:new', prewarmCrowd);
   GG.on('career:loaded', prewarmCrowd);
+  // v1.2 review: a career loaded after the unlock: its kit (the sampled kit, the velocity sets) is wanted now, not on the first
+  // tap; a career without samples releases them (F17.2). Never mid-song or mid-preview; Classic: as 1.1 (on the first hit).
+  function kitCareer() {
+    if (!ctx || !rig || !GG.state || A.isClassic() || (current && current.playing) || (preview.h && preview.h.playing)) return;
+    setKit(rig, GG.state.genre || 'metal');
+  }
+  GG.on('career:new', function () { setTimeout(kitCareer, 0); });
+  GG.on('career:loaded', function () { setTimeout(kitCareer, 0); });
   GG.on('screen:open', refreshSoon);
   GG.on('screen:close', refreshSoon);
   GG.on('ui:stack', refreshSoon);

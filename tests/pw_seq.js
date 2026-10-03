@@ -1132,21 +1132,38 @@ async function kit() {
         specs.push({ genre: 'metal', pattern: GG.songs.signature('metal'), section: 'verse', bars: 2, quality: 1, vel: 0.85 });
         specs.push({ genre: 'punk', pattern: GG.songs.signature('punk'), section: 'verse', bars: 2, quality: 3, vel: 0.85 });
         const hashAll = async () => { const h = []; for (const s of specs) h.push(await W.sha1((await A.renderOffline(s)).buffer)); return h; };
+        // (v1.2 review) the absolute onset: kick + snare through the same chain with the kit and with the DRUMS2 synth (no kit
+        // module): a skipped MP3 trim would land the samples ~25 ms late
+        const abs = async () => { const o = []; for (const lane of ['kick', 'snare']) o.push(onset((await A.renderOffline({ genre: 'metal', lane, quality: 3, vel: 0.85, room: 'dry' })).buffer, 0.05)); return o; };
+        const absKit = await abs();
         const withKit = await hashAll(), K = GG.content.kits; GG.content.kits = {};
+        const absSynth = await abs();
         const without = await hashAll(); GG.content.kits = K;
+        out.abs = { kit: absKit.map(x => +x.toFixed(3)), synth: absSynth.map(x => +x.toFixed(3)) };
         out.leak = { n: specs.length, same: withKit.filter((h, i) => h === without[i]).length, diff: specs.filter((s, i) => withKit[i] !== without[i]).map(s => s.genre + '/' + (s.lane || 'song') + '/q' + s.quality) };
-        // the live decode (title screen: the pro kit, metal)
+        // the live decode (v1.2 review, F17.2): the title screen's unlock (no career) decodes nothing; a metal career on the pro
+        // kit decodes it; a punk career loaded after it releases it
+        const wait = ms => new Promise(res => setTimeout(res, ms)), kd = () => GG.debug('audio').kit;
         document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); A.unlock();
-        for (let i = 0; i < 200 && !GG.debug('audio').kit.ready; i++) await new Promise(res => setTimeout(res, 100));
-        const k = GG.debug('audio').kit; out.live = { ready: k.ready, n: k.n, onset: k.onset, bytes: k.bytes, ms: k.ms, err: k.err };
+        await wait(1500);
+        out.title = { n: kd().n, bytes: kd().bytes, id: kd().id, state: !!GG.state };
+        GG.main.quickStart({ seed: 5, bandId: 'hail_damage', openCard: false }); GG.state.gear.quality = 2;
+        for (let i = 0; i < 200 && !kd().ready; i++) await wait(100);
+        const k = kd(); out.live = { ready: k.ready, n: k.n, onset: k.onset, bytes: k.bytes, ms: k.ms, err: k.err, genre: GG.state.genre };
+        GG.main.quickStart({ seed: 5, bandId: 'frost_heave', openCard: false });
+        for (let i = 0; i < 50 && kd().n; i++) await wait(100);
+        out.punk = { genre: GG.state.genre, n: kd().n, bytes: kd().bytes, ready: kd().ready, pre: GG.debug('audio').pre.key };
         return out;
       });
       c.ok(r.used.one === 1 && r.used.song > 0 && r.used.song <= r.used.drums && !r.used.nan && r.used.peak < 1, 'metal tier 3 renders the sampled kit ' + JSON.stringify(r.used));
       // (a render's onset includes the kit chain's fixed latency, ~15 ms of compressor look-ahead + oversampling: the clips must
       // all land within 1 ms of each other, and each decoded clip starts at most 1 ms before its first sample over 2 % of its peak)
       const o0 = Math.min(...r.onsets), o1 = Math.max(...r.onsets);
-      c.ok(r.used.clipOnset != null && r.used.clipOnset <= 1 && o1 - o0 <= 1, 'onsets <= 1 ms: decoded clips ' + r.used.clipOnset + ' ms, 25 rendered clips within ' + (o1 - o0).toFixed(3) + ' ms of each other');
-      c.ok(r.live.ready && r.live.n === 25 && !r.live.err && r.live.onset <= 1, 'the live decode: 25 clips, onset <= 1 ms ' + JSON.stringify(r.live));
+      c.ok(r.used.clipOnset != null && r.used.clipOnset <= 1 && o1 - o0 <= 1, 'decoded clips start <= 1 ms before their onset (' + r.used.clipOnset + ' ms), 25 rendered clips within ' + (o1 - o0).toFixed(3) + ' ms of each other');
+      c.ok(r.abs.kit.every((x, i) => x != null && r.abs.synth[i] != null && Math.abs(x - r.abs.synth[i]) <= 1), 'onset <= 1 ms absolute: sampled kick / snare land within 1 ms of the synth\'s through the same chain ' + JSON.stringify(r.abs));
+      c.ok(!r.title.state && r.title.n === 0 && r.title.bytes === 0, 'the title screen unlock (no career) decodes nothing ' + JSON.stringify(r.title));
+      c.ok(r.live.genre === 'metal' && r.live.ready && r.live.n === 25 && !r.live.err && r.live.onset <= 1, 'the live decode (a metal career on the pro kit): 25 clips, onset <= 1 ms ' + JSON.stringify(r.live));
+      c.ok(r.punk.genre === 'punk' && r.punk.n === 0 && r.punk.bytes === 0 && !r.punk.ready, 'a punk career loaded after it releases the decoded kit ' + JSON.stringify(r.punk));
       c.ok(r.pairs.every(d => d > -40), '5 consecutive snares all differ (pairwise diff > -40 dB) ' + JSON.stringify(r.pairs));
       c.ok(r.leak.same === r.leak.n, 'Classic off: metal tier 1 + punk tier 3 renders identical with and without the kit ' + JSON.stringify(r.leak));
       c.ok(L.errors.length === 0, 'no console errors ' + L.errors.slice(0, 3).join(' | '));
