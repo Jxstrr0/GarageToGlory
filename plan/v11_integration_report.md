@@ -38,7 +38,57 @@ Contract `plan/plan_contract_1.1.md` §5 Lead, cross-lane hand-overs, §6 checkl
 - Not changed (documented as gaps): A5 forceWeek 2 collision, A6 weekly mood chat not seat-aware, D's two open choices.
 
 ## 3. Checklist §6
-(filled in as the runs finish)
+
+### Node (§6.1, §6.3)
+- After each merge and at the end: `node tests/run.js` **SUITE ALL PASS** (30 files; final run on 46a90a5). sim_seats 17,
+  content_seats 9, sim_legacy 13, save 21 (now also: a string seat's gearLook, arc flags and seat gear survive a code and a slot).
+- v0.9 / v1.0 fixtures migrate as drummers; a string-seat save round-trips (slot + code): save.test.
+
+### Playwright matrix (§6.6): every section of every `tests/pw_*.js`, 390x844 and `PW_VIEW=440x956`
+Both sizes ran as one sequential stream each, in parallel with each other and with the balance runs (heavy load).
+| file | 390x844 | 440x956 |
+|---|---|---|
+| pw_bands | bands:hail_damage 59, bands:frost_heave 57, bands:gravel_kings 58, bands:grid_road_ramblers 58, bands:flat 12 | bands:hail_damage 58, bands:frost_heave 58, bands:gravel_kings 57, bands:grid_road_ramblers 58, bands:flat 12 |
+| pw_bands_render | bands_render 106 | bands_render 106 |
+| pw_creator | creator 34, kit 8, stage 6, meta 12, gear 39 | creator 34, kit 8, **stage 1/6 FAIL***, meta 12, gear 39 |
+| pw_drama | drama 19 | drama 19 |
+| pw_ending | ten 15, bonus 10, fixture 4, preview 5 | ten 15, bonus 10, fixture 4, preview 5 |
+| pw_fans | bandbook 19, fanclub 13 | bandbook 19, fanclub 13 |
+| pw_flow | flow 16, flow:punk 16, flow:rock 16, flow:country 16, year 5, code 7, layout 34 | flow 16, flow:punk 16, flow:rock 16, flow:country 16, year 5, code 7, layout 34 |
+| pw_garage | garage 109 | garage 109 |
+| pw_gig | gig 32, e2e 15, touch 5, double 17, songend 5, sync 14, sync2 11, bridge 17, seat 33 | gig 32, **e2e 1/6 FAIL***, touch 5, double 17, songend 5, sync 14, sync2 11, bridge 17, seat 33 |
+| pw_hof | list 20, restore 10, empty 5 | list 20, restore 10, empty 5 |
+| pw_label | label 13, studio 30, awards 19, seat 6, sheet 1 | label 13, studio 30, awards 19, seat 6, sheet 1 |
+| pw_logo | picker 23, reuse 14, meta 13 | picker 23, reuse 14, meta 13 |
+| pw_perf | scenes 18, governor 12, **ratio 1/11 FAIL***, stalls 10, audio 7 | scenes 18, governor 12, ratio 11, stalls 10, audio 7 |
+| pw_recap | offer 13, recap 19, recap:bands 15, recap:seat 10 | offer 13, recap 19, recap:bands 15, recap:seat 10 |
+| pw_rival | scene 13, botb 16, final 10 | scene 13, botb 16, final 10 |
+| pw_seat_audio | voices 19, mute 4, preview 9, noodle 5 | **voices 1/19 FAIL***, mute 4, preview 9, noodle 5 |
+| pw_seats | pick 21, write 11, gig 8, studio 6, shop 7, garage 11, stage 4 | pick 21, write 11, gig 8, studio 6, shop 7, garage 11, stage 4 |
+| pw_seq | genres 25, voices 8, seq 34, guided 23, audio 42, heavy 22, part 30 | genres 25, voices 8, seq 34, guided 23, audio 42, heavy 22, part 30 |
+| pw_settings | settings 52, calib 18, difficulty 17 | settings 52, calib 18, difficulty 17 |
+| pw_shop | gear 30, merch 24, space 21, van 23, spaces 17, seat 26 | gear 30, merch 24, space 21, van 23, spaces 17, seat 26 |
+| pw_stage | stage 166 | stage 166 |
+| pw_title | scene 15, flow 10, prefs 7 | scene 15, flow 10, prefs 7 |
+| pw_tour | map 24, tour 27, gong 13, payoff 5 | map 24, tour 28, gong 13, payoff 5 |
+| pw_trophies | tab 15, toast 7 | tab 15, toast 7 |
+| pw_tutorial | tut_notch hail_damage 6, tut_notch frost_heave 6, tut_notch gravel_kings 6, tut_notch grid_road_ramblers 6, tut_w1:hail_damage 32, tut_w1:frost_heave 32, tut_w1:gravel_kings 32, tut_w1:grid_road_ramblers 32, tut_calib 6, tut_w24 14, tut_skip 11, tut_replay 20 | tut_notch hail_damage 6, tut_notch frost_heave 6, tut_notch gravel_kings 6, tut_notch grid_road_ramblers 6, tut_w1:hail_damage 32, tut_w1:frost_heave 32, tut_w1:gravel_kings 32, tut_w1:grid_road_ramblers 32, tut_calib 6, tut_w24 14, tut_skip 11, tut_replay 20 |
+| pw_world | board 14, **van 1/10 FAIL***, **calendar 1/19 FAIL***, drivers 22 | board 14, van 13, calendar 21, drivers 22 |
+
+\* Timing failures under load, each re-run **alone twice and green** (`tests/.cache/reruns.txt`): 390 pw_perf `ratio`
+(11, 11), pw_world `van` + `calendar` (13 + 21, twice); 440 pw_creator `stage` (the carpet walk, 6, 6), pw_gig `e2e` (a
+van-skip click, 15, 15), pw_seat_audio `voices` (one booking 2.9 ms late, 19, 19). No assertion was changed.
+- Opt-in: `META_ONLY=seats node tests/pw_bands_render.js` ALL PASS 46 at 390 and at 440 (contact sheet
+  `tests/.cache/v11_seat_sheet*.png`). Viewed once: the seat picker, a rhythm-seat garage, the lead-seat setlist.
+- `tools/phoneqa.js` (now also: seat picker, Your gear, lead-seat garage, songwriter part, guitar shop, lead-seat gig; the v1.1
+  controls held to 48 px): first 390 run FAILED on the guitar shop's buy buttons (44 px, the v0.8 `.btn.small`); fixed for the
+  string-seat shop (48 px; the drum shop unchanged); then **ALL PASS 390x844 and 440x956** (59 audits each).
+
+### Owner rules (§6.8)
+- Scanned the whole v1.1 diff (`git diff 829b059 -- src`): no USA place or brand (the one USA name, "Nashville Strings" in the
+  2a fallback, is gone), no real gear brands, no gong on the kit (only the rule comments), no share / screenshot / download
+  control (one chat line jokes "screenshot or it didnt happen"), no model identifiers in commits or code. New controls >= 48 px
+  (pw_seats + phoneqa).
 
 ### Leak scans (§6.4)
 - `LEAK_YEARS=13 node tests/sim_bands.test.js` (drums): ALL PASS 17.
