@@ -8,31 +8,27 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Leftovers for later: wip-v11-a / wip-v11-c / wip-v11-fix branches on origin (the session proxy can't delete branches; the
   owner can delete them on GitHub), cosmetic + content gaps in `plan/v11_integration_report.md`.
 
-## RESUME HERE (v1.2 "Soundcheck" in progress, 2026-10-03 15:05 UTC; delete when v1.2 merges)
-- Branch `v1.2-soundcheck`: stage 0 done (08789f4: 232-case classic hash fixture, 1.1 numbers, 1.1 clips); F17 kit source
-  (`local/` ignored, zip checked + unzipped to `local/kits/tmkd_vortex/src/`), kit LICENSE + 6,000,000 B gate (d6c09b2).
+## RESUME HERE (v1.2 "Soundcheck" integrated, 2026-10-03 evening; delete when v1.2 merges)
+- Branch `v1.2-soundcheck`: stage 0 + lanes F, I, V merged (F -> I -> V), hand-overs wired, F17 credits (title + README), tuning
+  by numbers (F13 met, no re-balance), matrix + perf + clips: `plan/v12_integration_report.md`.
 - Owner 2026-10-03: the TMKD samples SHIP IN THE GAME ("scrap the kit guard local kit. one build with the drum samples only").
-- Lanes (workflow run `wf_702275bb-3ab`, script `workflows/scripts/v12-soundcheck-build-wf_702275bb-3ab.js` in the session dir):
-  V vocals DONE (`wip-v12-v` bb32da9); I instruments + kit at its last task (`wip-v12-i`); F feel early (`wip-v12-f`).
-  Then integrate (merge F → I → V, credit line on title + README Credits, tuning by numbers, .m4a clips) → review (3 lenses) → fix.
-- After the run: send the owner the clips (1.1 vs 1.2 per genre, tap demo, sampled-kit metal clip), popup ship / tweak,
-  then PR → main, merge, status Current 1.2.0.0, owner deletes `wip-v12-*` (the proxy can't).
-- Container-only state (lost on restart): `local/kits/tmkd_vortex/src/` (re-attach Drums.zip, `tools/check_kit_zip.py`, unzip),
-  pip numpy/soundfile/imageio-ffmpeg + `/usr/local/bin/ffmpeg` symlink.
+- Next: review pass (<= 3 lenses: clock safety, perf, regression; verify blocker/major only) -> fix -> send the owner the clips
+  (`.m4a`: 1.1 vs 1.2 per genre, tap demo, sampled-kit metal clip; paths in the report §5), popup ship / tweak (which genre)
+  -> PR to main, merge, status Current 1.2.0.0 on main, owner deletes `wip-v12-*` + `wip-v12-lead` (the proxy can't).
+- Container-only state (lost on restart): `local/kits/tmkd_vortex/src/` (re-attach Drums.zip, `tools/check_kit_zip.py`, unzip;
+  only needed to re-make the kit module), pip numpy/soundfile/imageio-ffmpeg + `/usr/local/bin/ffmpeg` symlink, the clips in
+  the session scratchpad.
 
 ## Version
-- Current: **1.1.0.0 "Seats"** (merged to main 2026-10-03, PR #21) = 1.0.1.0 + play bass, rhythm or lead (the member whose seat you take
-  moves to the drum kit). See "What's in v1.1" below. 1.0.1.0 = 1.0 "Glory" + the v1.0.1 "Smart bridge" hotfix.
-  **Update Current/Next at every merge.**
+- Current: **1.2.0.0 "Soundcheck"** (in review on `v1.2-soundcheck`, integrated 2026-10-03; not yet merged to main) = 1.1.0.0 +
+  the band plays like people, real-feeling instruments + the TMKD sampled kit, human vocals. See "What's in v1.2" below.
+  Last on main: **1.1.0.0 "Seats"** (PR #21, 2026-10-03). **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats.
-- In progress: **1.2.0.0 "Soundcheck"** on `v1.2-soundcheck` (stage 0 done 2026-10-03: `plan/v12_stage0_report.md`; contract
-  `plan/plan_contract_1.2.md` finished; lanes F / I / V next).
-- Next: **1.2 "Soundcheck"** (handoff **Part F**: band feel by member skill, velocity + round robins, real-feeling drums,
-  Karplus-Strong strings, cab IRs, rooms v2, human vocals; draft contract `plan/plan_contract_1.2.md`, finish at stage 0).
-  Then **1.3 "Tuning"** (handoff D5; covers all four seats, played with the final sound).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · (1.2 Soundcheck in review).
+- Next: **1.3 "Tuning"** (handoff D5; covers all four seats, played with the final sound). Before it: the v1.2 review pass
+  (3 lenses: clock safety, perf, regression), the owner's clip popup (ship / tweak), PR to main.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -136,6 +132,32 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.2 "Soundcheck" (contract `plan/plan_contract_1.2.md`; lanes F, I, V + lead merged on `v1.2-soundcheck` 2026-10-03; in review)
+- **The band plays like people (F, `31_audio_feel.js`):** every player's timing + velocity from their skill (`A.tightness`: sloppy
+  garage band -> tight arena band; AR(1) drift per player, seeded, re-planned per loop pass) + a per-genre push (punk rushes,
+  rock lays back, metal locks in: `genres.js backing.feel`); accents by beat position and section (F4 map + ramps into a new
+  section); F16: mood < 30 -> spread x 1.25, studio takes (van radio, recorded songs) t + 0.25, rivals t + 0.15. The gig clock
+  is untouched: step events never move; band kick/snare +-6 ms, other kinds +-15 ms in gigs, +-25 ms outside, <= 25 % of a 16th.
+- **Your taps (F):** `A.tapVel` = judgement (Perfect 1 .. stray 0.62) x beat position (downbeat hardest) x alternating hands on
+  fast hats; auto strokes at `A.TAP_AUTO`. One gain law everywhere: `A.velGain(v) = min(1.333, (v / 0.85)^1.5)`.
+- **Real-feeling instruments (I, `32_audio_dsp.js` + 30):** drums by velocity (DRUMS2 recipes, round robins + velocity layers per
+  `C.REALISM[tier]`, kit stereo, the widened PRE serves taps AND song drum events, built in slices); Karplus-Strong guitars and
+  bass (KS cache, `A.warm` during the count-in, LRU 8 MB; a miss plays the 1.1 oscillator); cab IRs by kit tier (F16.3: milk
+  crate 1x8, pawn 1x12, pro/arena the genre cab); rooms v2 (pre-delay, early reflections, darker tails, a vocal plate); kick
+  ducks the bass; drum parallel crush by tier. Cheap gear still sounds cheap (N4).
+- **The TMKD "Vortex" sampled kit (I, F17):** metal at pro + arena tiers (kick, snare, 3 toms; DIRECT mics; MP3 in
+  `src/content/kit_tmkd_vortex.js`, 433 KB), credit line on the title screen + README Credits + `kit_tmkd_vortex.LICENSE.md`.
+- **Human vocals (V, `33_audio_voice.js` + 30):** glottal waves by press, 5 formants with F1 tracking, singer's ring, shimmer,
+  natural pitch curves (scoop, vibrato onset, 1/f wander), doubles on choruses, 3-voice gangs, a vocal chain (HP, comp, presence,
+  air), plate + tempo delay sends, the guitars' presence dips -3 dB under a lead vocal (`r.carve`).
+- **Safety:** `GG.audio.classic(true)` (hidden, debug-only; `settings.audioClassic`) = the 1.1 sound node for node (232-case hash
+  fixture equal); no `vel` = the 1.1 code path; `A.timeline()` unchanged (1,212 fingerprints); voice cap 32; no AudioWorklet.
+- **Numbers (F13, `plan/v12_audio_numbers.txt` "1.1 vs 1.2"):** full-mix RMS within +-1 dB of 1.1 per genre (metal +0.8, punk
+  +0.1, rock +0.2, country +0.2), 4k+ down 0.5-2.4 dB, peaks <= -4.7 dBFS. Size 5.12 MB (gate 6.0 MB).
+- **§0 defaults (no popup; the owner may object):** Classic hidden, default off; VEL_REF 0.85 = the 1.1 level; the gig clamps above.
+- **Leftovers:** see `plan/v12_integration_report.md` §7 (rival members have no skill -> t 0.65; metal gang centre + right;
+  voiced murmur before b/d/g; Classic off after on keeps the 1.1 vocals until reload; `opts.feel === false` unused).
 
 ## What's in v1.1 "Seats" (contract `plan/plan_contract_1.1.md`; lanes D, B, C, A + lead merged on `v1.1-seats` 2026-10-03)
 - **Pick a seat (lead, 51):** title → slot → genre → intro → **seat** → logo → creator → cold open. Four cards (drums preselected),
@@ -265,7 +287,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
       2026-10-03 (`plan/v12_stage0_report.md`; 232-case fixture `tests/fixtures/audio_v11_hashes.json`, numbers
       `plan/v12_audio_numbers.txt` "1.1")
 - [x] F17 kit source: `local/` git-ignored (raw WAVs, size), `tools/check_kit_zip.py` passed on the owner's Drums.zip (62 entries, 60 wav ok, 0 problems; the re-sent zip is byte-identical), unzipped to `local/kits/tmkd_vortex/src/` (2026-10-03). Owner 2026-10-03: "scrap the kit guard local kit. one build with the drum samples only".
-- [ ] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge, tuning by numbers, owner clip popup, PR to main
+- [x] v1.2 lanes F (feel), I (instruments), V (vocals) + lead merge (F -> I -> V), hand-overs, F17 credit line (title +
+      README Credits), tuning by numbers (F13 met), matrix + perf + size + clips — 2026-10-03 (`plan/v12_integration_report.md`)
+- [ ] v1.2 review pass (3 lenses) + fixes, owner clip popup (ship / tweak), PR to main
 - [ ] v1.3 Tuning (D5) covers all four seats
 
 ## Tech
@@ -275,6 +299,23 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.2 as merged** (lanes F -> I -> V + lead, 2026-10-03; full list in `02_contracts.js` V1.2 SOUNDCHECK "As merged"; lane
+  reports `plan/v12_lane_<f|i|v>_report.md`). Rule: every new path needs a `vel` AND Classic off; no vel = the 1.1 path.
+  - F (31): `A.velGain(v)`, `A.tightness(skill)`, `A.feelFor(state|null, genre, { rival, studio, seat })`, `A.feelPlan(tl, FEEL, seed,
+    { gig })` -> `{ dt, vel, dgap, stats }`, `A.accent`, `A.tapVel`, `A.TAP_AUTO`, `A.feelStats()`; `A.play` opts `gig / feel / studio`;
+    player() plays copies (`+ vel`, `t + dt`, `gap + dgap`), steps never move; 55 `bandOpts`, `warmSong` (A.warm), `tapVel` before
+    every tap sound; `debug('gigui').feel`. Content `genres.js backing.feel { slop, push }`.
+  - I (32 + 30): `GG.dsp.{ pluck, chord, strum, metal, biquad, impulse2, cabIR, irGain, irFromB64, pluckJob }`; `drumHit(.., cls, vel)`;
+    PRE2 (layers x round robins, 6 MB, serves song events), KS cache + `A.warm(pattern, { genre, songId })`, cab IRs by tier,
+    `A.impulse2`, `r.carve`, `r.duck`, `r.crush`, `A.sampleKit(genre, tier)`; renderOffline + `vel, hit, feel, studio, gig, hits,
+    gap` (-> `kitUsed, kitOnset`), prerenderHit + `vel, rr`. Kits: `GG.content.kits.<id>` `{ id, name, credit, terms, genres,
+    tiers, codec, sr, lanes, trim }` (`src/content/kit_tmkd_vortex.js` + `.LICENSE.md`).
+  - V (33 + 30): `GG.voice.{ glottal, WAVES, formants, track, pitchCurve, shimmer, press, pressAt, ring, envelope, sends, delayTime,
+    profile, .. }`; `A._buildVox(r)` -> `r.vx`, `r.voxDelay`, `r.voxTempo(spb)`; content `voices.sound` (a parallel table:
+    vocal events keep the 1.1 profile); `A.voxStats()`.
+  - Debug: `debug('audio')` + `classic, feel, vox, realism, pre, ks, kit`; `debug('feel')`, `debug('vox')`.
+  - Lead: `tools/audio_numbers.js --diff <a> <b>` (the F13 verdict), `tools/audio_clips.js --metal-kit`, `tools/perf.js gig KITQ=`;
+    title `[data-testid=title-kit-credit]` (every kit's credit).
 - **v1.2 stage 0** (2026-10-03, `v1.2-soundcheck`; shapes in `02_contracts.js` V1.2 SOUNDCHECK, contract §4):
   - Contracts: `C.VEL_REF` 0.85, `C.FEEL_CLAMP { gigDrum, gig, free, sixteenth }`, `C.REALISM[tier]` (F11 + `id, layerLanes, cymBloom,
     subKick`), F16 `C.FEEL_MOOD { below 30, spread 1.25 }`, `C.FEEL_STUDIO` 0.25, `C.FEEL_RIVAL` 0.15, `C.BAND_AMP_BY_TIER` true.
