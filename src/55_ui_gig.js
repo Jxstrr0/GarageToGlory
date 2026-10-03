@@ -292,7 +292,7 @@
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
-      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, keyHeld: [], laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
     readPrefs();
     listen(true);
     ui.show('gig', {});
@@ -373,6 +373,8 @@
     // v0.8.3: the count-in hats (booked by the pump) and Auto-kick's kicks (the SESSION's assist, fixed for the show)
     G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
+    for (q2 = 0; q2 < G.held.length; q2++) G.held[q2] = null;   // v1.1 review: a restart starts with nothing held
+    G.runs.length = 0; G.ptr = {}; G.keyHeld = [];
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
     G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
@@ -504,7 +506,7 @@
       var n = a[G.ap++];
       if (n.li >= G.lanes) continue;
       if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined, false);   // v1.1: your voice plays it
+      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined);   // v1.1: your voice plays it
       else if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
       G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - (t - G.D)) * 1000;   // the ring shows when it's heard
     }
@@ -597,13 +599,14 @@
   }
   // One of your notes (a tap's, an auto note, a run's) -> the voice handle (null without the voice). fifth: the chord's
   // second lane plays the fifth.
-  function seatSound(n, li, when, fifth) {
+  function seatSound(n, li, when) {
     var f = voiceFor(n && n.kind), midi = n && n.midi != null ? n.midi : laneMidi(li), o;
     if (!f) return null;
     if (n && n.midi != null) G.laneMidi[li] = n.midi;
     o = { len: n ? (n.run && n.seq && n.seq.length ? n.seq[0][0] : n.len || 0.25) : 0.25, hold: !!(n && n.hold && !n.run), kind: n && n.kind || null,
       power: !!(n && n.power), mute: !!(n && n.mute), strum: n && n.strum || null, up: !!(n && n.up), bend: !!(n && n.bend), chord: !!(n && n.chord) };
-    try { G.seatN++; return f(fifth ? midi + 7 : midi, when, o); } catch (e) { return null; }
+    if (n && n.with) o.with = n.with;   // v1.1 review: a same-voice partner (metal's chorus ring) layers on this note's handle
+    try { G.seatN++; return f(midi, when, o); } catch (e) { return null; }
   }
   function nowWhen(li, J) {   // the band-clock booking time for a sound at song time J (drum sync), else undefined ('now')
     var c = G.actx;
@@ -613,10 +616,22 @@
     return when;
   }
   function releaseLane(li, J) {   // lift: the session judges the hold, the voice stops
-    var h = G.held[li];
     if (G.ses && G.ses.release) G.ses.release(li, J);
+    dropVoice(li, J);
+  }
+  function dropVoice(li, J) {   // only the voice held under lane li stops (the session has already moved on)
+    var h = G.held[li];
     G.held[li] = null;
     if (h && h.h && GG.audio && GG.audio.release) { try { GG.audio.release(h.h, nowWhen(li, J)); G.relN++; } catch (e) { /* a voice that already ended */ } }
+  }
+  // v1.1 review: a lift ends only the hold its own press started (e = { li, n }: the lane pressed, the note it judged; a chord
+  // is held under its root lane n.li, whichever lane came last). A hold that already moved on to the next head in that lane
+  // (the other thumb) or rang out is left alone; a half chord's sound (never a hold) stops.
+  function lift(e, at) {
+    var n = e && e.n;
+    if (!n || !G.ses) return;
+    if (G.ses.holding && G.ses.holding(n.li) === n) { releaseLane(n.li, at); return; }
+    if (n.chord && n.sh && !(G.held[n.li] && G.held[n.li].n === n) && GG.audio && GG.audio.release) { try { GG.audio.release(n.sh, nowWhen(n.li, at)); } catch (x) { /* ended */ } }
   }
   // Runs play on the band grid while their lane is held; a hold that rang out lets its voice go at its end.
   function seatBook(t, p) {
@@ -626,7 +641,7 @@
       while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
         var q = n.seq[ru.i++], at = n.t + q[0];
         if (at < now - 0.08) continue;
-        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, false);
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined);
         G.runN++;
       }
       if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
@@ -642,13 +657,14 @@
     if (!ls) return;
     delete G.ptr[ev.pointerId];
     var at = tapTime(ev.timeStamp);
-    for (var i = 0; i < ls.length; i++) releaseLane(ls[i], at);
+    for (var i = 0; i < ls.length; i++) lift(ls[i], at);
   }
   function onKeyUp(ev) {
     if (!G || !strings()) return;
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
-    releaseLane(col(li), tapTime(ev.timeStamp));
+    var e = G.keyHeld[col(li)]; G.keyHeld[col(li)] = null;
+    lift(e, tapTime(ev.timeStamp));
   }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
@@ -705,14 +721,15 @@
     if (nb >= 0 && G.mode === 'play') {
       var at = tapTime(ev.timeStamp);
       if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) {
-        tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1;
-        if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li), col(nb)];   // v1.1: one finger holds both
+        var r1 = tap(col(li), ev.timeStamp, true), r2 = tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1;
+        if (G.seat !== 'drums') G.ptr[ev.pointerId] = [press(col(li), r1), press(col(nb), r2)];   // v1.1: one finger holds both
         return;
       }
     }
-    tap(col(li), ev.timeStamp, true);
-    if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li)];
+    var r0 = tap(col(li), ev.timeStamp, true);
+    if (G.seat !== 'drums') G.ptr[ev.pointerId] = [press(col(li), r0)];
   }
+  function press(li, r) { return { li: li, n: r && r.note && (r.judgement || r.partial) && r.judgement !== 'miss' ? r.note : null }; }   // v1.1 review: what a lift lets go
   // v1.0.1 smart bridge: a touch within BRIDGE lane widths of a lane boundary (the middle third of the gap between the two
   // lane centres) hits BOTH lanes only when both have a note judge() would hit at this touch's time (ses.due: pure); else
   // only the nearer lane (as before). Each lane is a normal tap (judged, its drum booked per lane), so a bridge never adds
@@ -727,22 +744,24 @@
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
     ev.preventDefault();
-    tap(col(li), ev.timeStamp, false);
+    var r = tap(col(li), ev.timeStamp, false);
+    if (G.seat !== 'drums') G.keyHeld[col(li)] = press(col(li), r);
   }
   function tap(li, stamp, touch) {
     var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
     if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
     var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
-    if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return; }   // noodling during the count-in
+    if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return null; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
     if (r) { r.at = at; r.disp = ok ? now - stamp : null; }
-    if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
+    if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return r;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
     var due = playTap(li, at, r && r.echo ? null : r);   // (a dropped 2nd kick's echo sounds at its own time, no snap)
     if (r && r.note && r.note.dbl) {   // the second kick follows this kick's sound (band time) by the chart's spacing
       if (G.sync) { r.note.k1 = due; r.note.sp = Math.max(r.note.t2 - r.note.t, DBL_MIN); }
       else { var h1 = r.note.hitT != null ? r.note.hitT : at; r.note.k1 = songTime(performance.now()) + G.lat + HIT_LEAD; r.note.sp = Math.max(r.note.t2 - h1, DBL_MIN); }   // classic: as 0.8.2
     }
+    return r;
   }
   // v0.8.3: plays a tap's drum and returns the band time it sounds at. Drum sync books it on the band's clock (snapped to
   // its note inside [-15, +15] ms), never before the lane's last booked tap (A.hit's choke expects time order); classic
@@ -765,11 +784,14 @@
     return when - G.zeroBand;
   }
 
-  // v1.1: a string seat's tap plays your note (a chord's second lane: the fifth; a stray: the lane's last pitch) on the same
-  // drum-sync booking; a hold keeps its handle for the lift, a run starts booking its notes while held.
+  // v1.1: a string seat's tap plays your note (a stray: the lane's last pitch) on the same drum-sync booking; a hold keeps its
+  // handle for the lift, a run starts booking its notes while held. v1.1 review: a 2-lane chord is ONE sound, the root with
+  // its power voicing (the fifth is in it): the first lane's tap plays it and stashes the handle on the note (n.sh), the
+  // completing tap plays nothing new, and the hold is kept under the session's hold lane (n.li) whichever lane came last.
+  // A tap in a lane whose old hold the session has just ended (judge) only lets that old voice go (never the new hold).
   function playSeat(li, J, r) {
-    var c = G.actx, n = r && r.note ? r.note : null, hit = !!(n && r.judgement && r.judgement !== 'miss'), when, Jp = J, out;
-    if (G.held[li]) releaseLane(li, J);
+    var c = G.actx, n = r && r.note ? r.note : null, hit = !!(n && r.judgement && r.judgement !== 'miss'), when, Jp = J, out, h;
+    if (G.held[li] && G.held[li].n !== n) dropVoice(li, J);
     if (!G.sync || !G.clockOk || !c || c.state !== 'running') { when = undefined; out = c ? c.currentTime + HIT_LEAD - G.zeroBand : J; if (r) r.snap = false; }
     else {
       Jp = GG.prefs.syncSnap(J, hit ? n.t : null, hit);
@@ -779,10 +801,12 @@
       if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
       out = when - G.zeroBand;
     }
-    var h = seatSound(n && (hit || r.partial) ? n : null, li, when, !!(n && n.chord && n.chord[1] === li && n.chord[0] !== li));
+    if (n && n.chord && (hit || r.partial)) h = n.sh || (n.sh = seatSound(n, n.li, when));
+    else h = seatSound(n && hit ? n : null, li, when);
     if (hit && n.hold) {
-      G.held[li] = { h: h, n: n };
-      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: li, i: 0 });
+      if (G.held[n.li] && G.held[n.li].n !== n) dropVoice(n.li, J);
+      G.held[n.li] = { h: h, n: n };
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0 });
     }
     return out;
   }
@@ -1193,7 +1217,7 @@
       var t = songTime(p);
       for (var i = 0; i < ch.notes.length && soon.length < 12; i++) {
         var n = ch.notes[i]; if (n.j !== 0 || n.free || n.li >= G.lanes) continue;
-        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : n.hold || n.chord ? { li: n.li, t: n.t, len: n.len, hold: !!n.hold, chord: n.chord || null, run: !!n.run } : { li: n.li, t: n.t });
+        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : n.hold || n.chord ? { li: n.li, t: n.t, len: n.len, hold: !!n.hold, chord: n.chord || null, run: !!n.run, midi: n.midi } : { li: n.li, t: n.t });
         if (!next && n.t > t + 0.35) next = n.dbl ? { lane: n.lane, li: n.li, t: n.t, t2: n.t2 } : { lane: n.lane, li: n.li, t: n.t };
       }
     }

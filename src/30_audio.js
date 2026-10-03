@@ -1998,8 +1998,13 @@
     var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
     var src = r.collect = [], b = seatBook = { n: 0, ends: [] };
     try {
-      if (!reps.length) playNote(r, sl.p, ev, t, 1);
-      else {
+      if (!reps.length) {
+        playNote(r, sl.p, ev, t, 1);
+        if (Array.isArray(o.with)) o.with.slice(0, 2).forEach(function (w) {   // v1.1 review: a same-voice partner (metal's chorus ring) on this handle
+          if (w && isFinite(w.midi)) playNote(r, sl.p, Object.assign({}, ev, { kind: w.kind || kind, midi: +w.midi, len: Math.min(len, +w.len > 0 ? +w.len : len), gap: Math.min(len, +w.len > 0 ? +w.len : len),
+            power: w.power != null ? !!w.power : ev.power, mute: !!w.mute, ring: !!w.ring, strum: undefined, up: false, bend: 0 }), t, 1);
+        });
+      } else {
         var at = [0].concat(reps);
         for (var i = 0; i < at.length; i++) { var d = (i + 1 < at.length ? at[i + 1] : len) - at[i]; playNote(r, sl.p, Object.assign({}, ev, { len: d, gap: d, bend: i ? 0 : ev.bend }), t + at[i], 1); }
       }

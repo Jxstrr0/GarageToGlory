@@ -457,7 +457,9 @@
       var entry = Math.min(arr.length - 1, Math.floor(e.beat / entryBeats + 1e-9)), inE = e.beat - entry * entryBeats;
       return { entry: entry, bar: Math.floor(inE / 4 + 1e-9), step: Math.round((inE % 4) * 4) % C.STEPS };
     }
-    function toAuto(n) { auto.push({ t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }); }
+    function toAuto(n) { var a = { t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }; if (n.with) a.with = n.with; auto.push(a); }
+    // v1.1 review: your voices (as 55 plays them); a same-voice partner at the head's instant layers on the head (n.with)
+    function voiceOf(k) { return k === 'bass' ? 'pluck' : k === 'lead' || k === 'twang' ? 'lead' : 'strum'; }
     // contour lanes per entry (every seat event of the entry, so lanes never depend on the difficulty)
     var pitches = {};
     ev.forEach(function (e) { var w = where(e); (pitches[w.entry] = pitches[w.entry] || {})[e.midi] = 1; });
@@ -491,6 +493,7 @@
         var sk = grp.filter(function (x) { return x.kind === soloKind; });
         if (sk.length) { grp = sk.concat(grp.filter(function (x) { return x.kind !== soloKind; })); e0 = grp[0]; }
       }
+      var head = null;
       grp.forEach(function (x, gi) {
         var sound = Math.min(x.len, x.gap), n = { t: x.beat * spb, lane: '', li: 0, section: x.section, entry: w.entry, bar: w.bar, step: w.step, j: 0,
           kind: x.kind, midi: x.midi, len: Math.max(0.05, sound * spb), beats: sound };
@@ -499,7 +502,12 @@
         var off = gi > 0 || (seat === 'lead' && inSolo && soloKind && x.kind !== soloKind)
           || (seat !== 'lead' && inSolo && w.step % 4 !== 0);   // someone else's solo: you lay back (one note per beat)
         if (!off && free && inFill(n.t)) n.free = true;       // a free window (as the drums): any tap there shows off
+        if (gi > 0 && head && voiceOf(x.kind) === voiceOf(head.kind)) {   // (same pool: as an auto note it cut your tap to 30 ms)
+          (head.with || (head.with = [])).push({ kind: x.kind, midi: x.midi, len: n.len, power: !!n.power, mute: !!n.mute, ring: !!n.ring });
+          return;
+        }
         if (off) toAuto(n); else notes.push(n);
+        if (gi === 0 && !off && !n.free) head = n;
       });
       i = j;
     }
@@ -711,7 +719,7 @@
       var x = cur.notes[k], c = cfg.gain[kind] * cur.dens * cur.staleMul;
       x.j = kind === 'perfect' ? 1 : 2;
       if (x.dbl) { x.hitT = t; cur.dblHit = k; }   // v0.7.2: the second kick plays at max(t2, just after this)
-      if (x.hold && cur.hold) { if (cur.hold[x.li] >= 0) endHold(x.li, t); cur.hold[x.li] = k; x.hitT = t; }   // v1.1: held from here
+      if (x.hold && cur.hold && !x.half) { if (cur.hold[x.li] >= 0) endHold(x.li, t); cur.hold[x.li] = k; x.hitT = t; }   // v1.1: held from here
       if (x.bend && whammy) { cur.bends++; crowdAdd((cfg.bendGain != null ? cfg.bendGain : 0.6) * cur.staleMul); }   // v1.1: the lead's whammy (amp tier 2): bends score
       if (kind === 'perfect') cur.perfect++; else cur.good++;
       if (x.extra) cur.extrasHit++;
@@ -870,7 +878,10 @@
         if (x.j === 0) {
           var ef = cur.echoFor;
           if (x.free) x.j = 4;
-          else if (x.cl) { hit(cur.mp - 1, 'good', x.ct); emit('gig:judge', { lane: x.lane, judgement: 'good', combo: S.combo, crowd: S.crowd }); }   // v1.1: one lane of a chord = a Good
+          else if (x.cl) {   // v1.1: one lane of a chord = a Good (review: never a hold; a held half chord counts as held 0)
+            x.half = true; hit(cur.mp - 1, 'good', x.ct); emit('gig:judge', { lane: x.lane, judgement: 'good', combo: S.combo, crowd: S.crowd });
+            if (x.hold && cur.hold) { cur.holds++; x.held = 0; emit('gig:hold', { lane: x.lane, held: 0, ring: false }); }
+          }
           else if (ef && ef.k === cur.mp - 1) {   // v0.7.2: an early tap read as a double's echo was this note's: credit it
             cur.echoFor = null; hit(ef.k, ef.kind, ef.t);
             emit('gig:judge', { lane: x.lane, judgement: ef.kind, combo: S.combo, crowd: S.crowd });

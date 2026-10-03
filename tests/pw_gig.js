@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -572,7 +572,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -896,6 +896,120 @@ async function seatGig() {
       c.ok(dn.seat === seat && dn.holds, seat + ': song results carry the seat + holds ' + JSON.stringify(dn));
       await page.evaluate(() => { GG.ui.gigAutoplay = false; });
     }
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// META_ONLY=chord (v1.1 review): held string notes keep sounding when they should. (1) Gravel Kings rhythm Hard: a held
+// 2-lane chord in both tap orders is ONE sound (the root, power voicing), kept under the chord's root lane: no release
+// before the lift, the session still holding. (2) Grid Road Ramblers rhythm Normal: the next same-lane hold tapped 30 ms
+// early by the other thumb while the first is still down, then the first thumb lifts: the new hold stays held and rings.
+// (3) Hail Damage rhythm Easy: a chorus hold whose same-voice partner (the gtr2 ring) shares its instant plays its whole length.
+async function chordGig() {
+  const c = checker('chord');
+  const { page, errors, close } = await open();
+  const start = (bandId, seat, diff, seed) => page.evaluate(([bandId, seat, diff, seed]) => {
+    GG.ui.closeAll();
+    GG.prefs.set({ gigDifficulty: diff, autoKick: false, lefty: false, noFail: false });
+    GG.main.quickStart({ seed, bandId, seat, openCard: false });
+    const s = GG.state; s.card = null; s.phase = 'plan'; GG.ui.gigAutoplay = false;
+    const A = GG.audio, v = window.__v = { calls: [], rel: [], holds: [] };
+    ['pluck', 'strum', 'lead'].forEach(k => { const f = A[k]; A[k] = function (midi, when, o) { const h = f.apply(this, arguments); v.calls.push({ k, midi, hold: !!(o && o.hold), len: o && o.len, h }); return h; }; });
+    const r0 = A.release; A.release = function (h) { v.rel.push({ midi: h && h.midi, songT: GG.debug('gigui').songT }); return r0.apply(this, arguments); };
+    GG.on('gig:hold', p => v.holds.push(Object.assign({ at: GG.debug('gigui').songT }, p)));
+    s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
+    window.__done = null;
+    GG.ui.playGig(s.gig, r => { window.__done = r; });
+  }, [bandId, seat, diff, seed]);
+  const go = async () => {
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play', null, { timeout: 8000 });
+  };
+  const upAll = ids => page.evaluate(ids => ids.forEach(id => document.dispatchEvent(new PointerEvent('pointerup', { pointerId: id, pointerType: 'touch', bubbles: true }))), ids);
+  const stop = () => page.evaluate(() => { GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; });
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    // (1) chords, both tap orders
+    await start('gravel_kings', 'rhythm', 'hard', 2024); await go();
+    for (const order of [[0, 1], [1, 0]]) {
+      const n = await page.waitForFunction(() => {
+        const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+        for (const n of d.soon) if (n.hold && n.chord && n.len >= 0.6 && n.t > d.songT + 0.6) return n;
+        return null;
+      }, null, { timeout: 30000 }).then(h => h.jsonValue());
+      const c0 = await page.evaluate(() => window.__v.calls.length);
+      const res = await page.evaluate(async ([n, order]) => {
+        const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+        const down = (li, id) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (li + 0.5) * r.width / lanes, clientY: r.bottom - 36, pointerId: id, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+        while (GG.debug('gigui').songT < n.t - 0.025) await new Promise(res => setTimeout(res, 3));
+        down(n.chord[order[0]], 31);
+        while (GG.debug('gigui').songT < n.t) { /* spin */ }
+        down(n.chord[order[1]], 32);
+        const j = GG.debug('gigui').last;
+        await new Promise(res => setTimeout(res, 250));
+        return { judgement: j && j.judgement, holding: GG.debug('gigui').holding };
+      }, [n, order]);
+      await page.waitForFunction(at => GG.debug('gigui').songT > at, n.t + n.len - 0.05);
+      const early = await page.evaluate(n => window.__v.rel.filter(x => x.songT > n.t - 0.01 && x.songT < n.t + n.len - 0.06).length, n);
+      await upAll([31, 32]);
+      const calls = await page.evaluate(c0 => window.__v.calls.slice(c0).filter(x => x.h).map(x => ({ midi: x.midi, hold: x.hold, cut: x.h.cut })), c0);
+      const tag = 'chord ' + JSON.stringify(n.chord) + ' order ' + order.join('');
+      c.ok(/^(perfect|good)$/.test(res.judgement) && res.holding.includes(n.li), tag + ': judged, held under its root lane ' + JSON.stringify(res));
+      c.ok(calls.length === 1 && calls[0].midi === n.midi && calls[0].hold, tag + ': one sound, the root (' + n.midi + ') ' + JSON.stringify(calls));
+      c.ok(early === 0 && calls.every(x => x.cut == null || x.cut >= 0), tag + ': not released before the lift (' + early + ')');
+    }
+    await stop();
+    // (2) legato: the next same-lane hold by the other thumb
+    await start('grid_road_ramblers', 'rhythm', 'normal', 4242); await go();
+    const pair = await page.waitForFunction(() => {
+      const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+      const s = d.soon;
+      for (let i = 0; i < s.length; i++) { const a = s[i]; if (!a.hold || a.chord || a.run || a.t < d.songT + 0.5) continue;
+        const b = s.slice(i + 1).find(x => x.li === a.li); if (b && b.hold && !b.chord && !b.run && b.len >= 0.4 && Math.abs(b.t - (a.t + a.len)) < 0.01) return [a, b]; }
+      return null;
+    }, null, { timeout: 60000, polling: 20 }).then(h => h.jsonValue());
+    const lg = await page.evaluate(async ([a, b]) => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const cv = document.querySelector('[data-testid="gig-highway"]'), rc = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+      const down = (li, id) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: rc.left + (li + 0.5) * rc.width / lanes, clientY: rc.bottom - 36, pointerId: id, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+      const up = id => document.dispatchEvent(new PointerEvent('pointerup', { pointerId: id, pointerType: 'touch', bubbles: true }));
+      const waitT = async at => { while (GG.debug('gigui').songT < at - 0.012) await sleep(3); while (GG.debug('gigui').songT < at) { } };
+      const h0 = window.__v.holds.length;
+      await waitT(a.t); down(a.li, 61);
+      await waitT(b.t - 0.03); down(b.li, 62); const jb = GG.debug('gigui').last.judgement;
+      up(61);
+      await sleep(120);
+      const holding = GG.debug('gigui').holding;
+      await waitT(b.t + b.len + 0.08); up(62);
+      return { jb, holding, holds: window.__v.holds.slice(h0) };
+    }, pair);
+    const hb = lg.holds[lg.holds.length - 1];
+    c.ok(/^(perfect|good)$/.test(lg.jb) && lg.holding.includes(pair[1].li), 'legato: the new hold stays held after the first thumb lifts ' + JSON.stringify({ jb: lg.jb, holding: lg.holding }));
+    c.ok(lg.holds.length >= 2 && hb.ring === true && hb.held >= 0.9 && !lg.holds.some(x => x.held === 0), 'legato: it rings out (no held-0 hold) ' + JSON.stringify(lg.holds));
+    await stop();
+    // (3) a same-voice partner at the head's instant: the tap plays its whole length
+    await start('hail_damage', 'rhythm', 'easy', 31); await go();
+    const n3 = await page.waitForFunction(() => {
+      const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+      for (const n of d.soon) if (n.hold && !n.chord && n.len >= 0.5 && n.t > d.songT + 0.5) return n;
+      return null;
+    }, null, { timeout: 40000 }).then(h => h.jsonValue());
+    const r3 = await page.evaluate(async (n) => {
+      const cv = document.querySelector('[data-testid="gig-highway"]'), rc = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+      while (GG.debug('gigui').songT < n.t - 0.012) await new Promise(res => setTimeout(res, 3));
+      while (GG.debug('gigui').songT < n.t) { }
+      const before = window.__v.calls.length;
+      cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: rc.left + (n.li + 0.5) * rc.width / lanes, clientY: rc.bottom - 36, pointerId: 41, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true }));
+      const j = GG.debug('gigui').last, tc = window.__v.calls[before];
+      while (GG.debug('gigui').songT < n.t + n.len + 0.1) await new Promise(res => setTimeout(res, 5));
+      document.dispatchEvent(new PointerEvent('pointerup', { pointerId: 41, pointerType: 'touch', bubbles: true }));
+      return { j: j && j.judgement, want: tc && +(+tc.len).toFixed(3), got: tc && tc.h ? +(tc.h.end - tc.h.t).toFixed(3) : null };
+    }, n3);
+    c.ok(/^(perfect|good)$/.test(r3.j) && r3.got != null && r3.got >= r3.want - 0.01, 'partner: an on-time chorus hold plays its whole length ' + JSON.stringify(r3));
+    await stop();
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
