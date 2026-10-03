@@ -33,7 +33,62 @@ Node suite after every merge: SUITE ALL PASS. Classic hash on the final tree: §
   rule stays in status.md Addendum 4.
 
 ## 3. Checklist §6 item 4 + the matrix
-MATRIX_PLACEHOLDER
+- **Node suite** (`node tests/run.js`): SUITE ALL PASS on the resumed tree (`2b2a542`, 33 files) and again after the re-balance
+  (`0909c6c`).
+- **Classic hash** (`pw_seq hash`, Classic on, 232 cases vs `tests/fixtures/audio_v11_hashes.json`): **232/232 equal** at 390x844
+  and 440x956 on the merged tree and again on the final build (299-327 s each, two browsers in parallel).
+- **Size gate:** `stat -c %s dist/game.html` = **5,115,270 B** <= 6,000,000 (owner F17). F17: `git ls-files '*.wav'` empty, nothing
+  under `local/` tracked, sim_kit attribution 5/5 (README + title line + LICENSE + the credit in the built game), pw_flow `flow`
+  sees the title kit credit.
+- **Owner rules** (scan of `git diff 369c9e1` over src / tools / tests / README): no USA place or brand, no share / screenshot /
+  download control, no model identifiers.
+- **Playwright** (runner: every `META_ONLY` section of every `tests/pw_*.js` at 390x844 with `timeout 500`; at 440x956 the §6
+  item-4 files: pw_seq, pw_gig, pw_seat_audio, pw_perf, pw_flow `flow`; two streams in parallel, pw_perf alone; "-> rerun" =
+  the same section re-run on the final build, alone where it was a timing failure):
+
+| file | 390x844 | 440x956 |
+|---|---|---|
+| pw_bands | hail_damage 57, frost_heave 58, gravel_kings 58, grid_road_ramblers 58, flat 12 | (390 only) |
+| pw_bands_render | bands_render 106 | (390 only) |
+| pw_creator | creator 34, kit 8, stage 6, meta 12, gear 39 | (390 only) |
+| pw_drama | drama 19 | (390 only) |
+| pw_ending | ten 15, bonus 10, fixture 4, preview 5 | (390 only) |
+| pw_fans | bandbook 19, fanclub 13 | (390 only) |
+| pw_flow | flow 17, bands 51, year 5, code 7, layout 34 | flow 17 |
+| pw_garage | garage 48, seat 73 | (390 only) |
+| pw_gig | gig 32, sync 14, bridge 17, feel 10 -> rerun 10, e2e 15, touch 5, double 17, songend 5, sync2 11, seat 33, chord 10, kit 7 -> rerun 7 | gig 32, **sync 1/14 FAIL** -> rerun 14 -> rerun 14, bridge 17, feel 10, e2e 15, touch 5, double 17, songend 5, sync2 11, **seat 1/33 FAIL** -> rerun 33 -> rerun 33, chord 10, kit 7 |
+| pw_hof | list 20, restore 10, empty 5 | (390 only) |
+| pw_label | label 13, studio 30, awards 19, seat 6, sheet 1 | (390 only) |
+| pw_logo | picker 23, reuse 14, meta 13 | (390 only) |
+| pw_perf | scenes 18, governor 12, ratio 11, stalls 10, audio 7, pre 9 | scenes 18, governor 12, ratio 11, stalls 10, audio 7, pre 9 |
+| pw_recap | offer 13, recap 19, bands 15, seat 10 | (390 only) |
+| pw_rival | scene 13, botb 16, final 10 | (390 only) |
+| pw_seat_audio | voices 19, mute 4, preview 9, noodle 5 | voices 19, mute 4, preview 9, noodle 5 |
+| pw_seats | pick 25, write 11, gig 8, studio 6, shop 7, garage 11, stage 4 | (390 only) |
+| pw_seq | hash 4 -> rerun 4, audio 42 -> rerun **1/39 FAIL** -> rerun 42 -> rerun 42, seq 57, **heavy 2/22 FAIL** -> rerun 22, genres 25 -> rerun 25, voices 8 -> rerun 8, part 30, kit 8 -> rerun 8, real 5 -> rerun 5, vox 17 -> rerun 17 | hash 4 -> rerun 4, audio 42 -> rerun 42, seq 57, **heavy 2/22 FAIL** -> rerun 22, genres 25 -> rerun **1/25 FAIL** -> rerun 25 -> rerun 25, voices 8 -> rerun 8, part 30, kit 8 -> rerun 8, real 5 -> rerun 5, vox 17 -> rerun 17 |
+| pw_settings | settings 52, calib 18, difficulty 17 | (390 only) |
+| pw_shop | gear 30, merch 24, space 21, van 23, spaces 17, seat 26 | (390 only) |
+| pw_stage | stage 37, van 20, seat 125 | (390 only) |
+| pw_title | scene 15, flow 10, prefs 7 | (390 only) |
+| pw_tour | map 24, tour 28, gong 13, payoff 5 | (390 only) |
+| pw_trophies | tab 15, toast 7 | (390 only) |
+| pw_tutorial | tut_w1 128, tut_calib 6, tut_w24 14, tut_skip 11, tut_replay 20, tut_notch 24 | (390 only) |
+| pw_world | board 14, van 13, calendar 21, drivers 22 | (390 only) |
+
+  Failures and what they were:
+  - `pw_seq heavy` 20/22 at both sizes on the merged build: (1) "heavier: energy below 150 Hz up" = a real regression (the KS
+    metal bass), fixed in `0909c6c` (§4), 22/22 alone at both sizes after it; (2) "a full metal song renders faster than real
+    time" xRT 0.79-0.83 with two browsers + other renders running; alone 2.40 (390) and 1.48 (440). Same check Lane V saw
+    fail under load (the stage-0 build fails it the same way under load).
+  - 440 `pw_gig sync` ("a tap is judged at the game time it was made", 8.3 ms) and `pw_gig seat` (a bass early lift): two
+    streams in parallel; alone twice each: 14/14, 33/33. No assertion changed.
+  - 390 `pw_seq audio` rerun (threw on a 4 s wait for the van ambience, 57_ui_van, under load; Lane I saw the same once): alone
+    twice 42/42. 440 `pw_seq genres` rerun ("punk, rock + country render faster than real time", punk 0.94 under load): alone
+    twice 25/25.
+  - The 390 "rest" files (UI flows) ran on the build before `0909c6c` (it changes only two KS bass voices, used by band notes
+    with a vel); every pw_seq audio section plus pw_gig feel / kit re-ran on the final build.
+- **No two hits the same** (pw_seq `real`, final build, both sizes 5/5): 8 consecutive hits at equal vel, every pair's
+  difference vs the first hit: snare min +1.7 dB, hat min +1.7 dB, metal KS chug min -25.1 dB (gate > -40 dB).
 
 ## 4. Numbers (F13 tuning by numbers; `plan/v12_audio_numbers.txt`)
 Section "1.2" = the merged build as the game plays it (feel on, null state t 0.5; signature songs, whole arrangement, kit tier 2
@@ -77,14 +132,15 @@ Folder `/tmp/claude-0/-home-user-GarageToGlory/ab4a625b-6080-5e92-a86d-0cde530c4
 - Every clip also as `.m4a` (`ffmpeg -c:a aac -b:a 160k`; AAC LC 22,050 Hz stereo, 15.00 s; ~0.3 MB each): `v11_metal.m4a`,
   `v11_punk.m4a`, `v11_rock.m4a`, `v11_country.m4a`, `v11_taps.m4a`, `v12_metal.m4a`, `v12_punk.m4a`, `v12_rock.m4a`,
   `v12_country.m4a`, `v12_metal_kit.m4a`, `v12_taps.m4a`.
-- Clip RMS 1.1 -> 1.2: metal 0.1487 -> 0.1583, punk 0.1238 -> 0.1273, rock 0.1629 -> 0.1620, country 0.1052 -> 0.1077 (metal
-  kit 0.1612); peaks 0.55-0.58 both.
+- Clip RMS 1.1 -> 1.2 (final build, after `0909c6c`; re-rendered + re-encoded): metal 0.1487 -> 0.1599 (+0.6 dB), punk 0.1238
+  -> 0.1274 (+0.3), rock 0.1629 -> 0.1620 (-0.05), country 0.1052 -> 0.1077 (+0.2); metal kit (tier 3) 0.1631; peaks 0.55-0.58.
 - Tap demo (metal, tier 2 = the sampled kit; first 100 ms per hit, RMS / peak dBFS, mono): 1.1 every kick -16.5 / -5.9, every
   snare -26.5 / -8.8 (identical hits). 1.2 vel (A.tapVel) Perfect bar 1.0 / 0.977 / 0.983 / 1.0, Good bar 0.875 / 0.88 /
   0.808 / 0.844; kicks Perfect -17.3, -17.1 vs Good -18.4, -18.9 dB RMS; snares Perfect -25.0, -24.6 vs Good -25.7, -26.2 dB
   RMS: the Perfect bar lands 1.1-1.6 dB harder and no two hits are the same. The sampled snare's peak is ~4.5 dB under the
   1.1 synth snare at the same RMS (a real snare's lower crest factor; `v12_clips.json` lists peaks, so read RMS there).
-- "No two hits the same" (pw_seq `real`, 8 consecutive hits at equal vel, every pair's RMS difference > -40 dB): REAL_PLACEHOLDER
+- "No two hits the same" (pw_seq `real`, 8 consecutive hits at equal vel, every pair's RMS difference > -40 dB): pass at both sizes (snare min +1.7 dB, hat +1.7 dB, metal KS chug -25.1 dB; §3). The
+  tap demo above also shows every hit differs.
 
 ## 6. Perf (F13 budgets, 4x CPU throttle)
 Gig frame vs 1.1.0.0 (`tools/perf.js gig`, THROTTLE=4, 390x844, Hail Damage (metal) at Mudstonbury, Expert, the bot tapping
@@ -115,14 +171,70 @@ every note, 40 s; `GAME=` the 1.1.0.0 dist from `369c9e1`; two trials each, alte
 | KS warm per song (metal, punk, rock, country) | 366, 109, 166, 155 ms; slices <= 7.3; 4.1-8.0 MB | 243, 142, 158, 197 ms; slices <= 5.1 |
 
   -> PRE build <= 2.5 s (max 1.4 s), slices <= 8 ms (max 6.0 work), PRE <= 6 MB, KS cache <= 8 MB (7.98 after 4 songs):
-  met. **KS warm <= 300 ms (F13): 7 of 8 songs; metal at 390x844 took 366 ms** (pw_perf gates warm at 1.2 s wall; the warm
-  runs during the count-in and a miss plays the 1.1 oscillator, so nothing is lost in a gig: a perf-lens item).
-- pw_perf sections at both sizes: PERF_MATRIX_PLACEHOLDER
+  met. **KS warm <= 300 ms (F13):** 7 of 8 songs in the first pass; metal at 390x844 took 366 ms there. Re-measured alone on the
+  final build: metal 223 and 291 ms (punk 66-78, rock 146-173, country 150-171; slices <= 6.9 ms work): met, with little
+  margin on metal (pw_perf gates warm at 1.2 s wall; the warm runs during the count-in and a miss plays the 1.1 oscillator).
+- pw_perf sections at both sizes: PERF_- **Node suite** (`node tests/run.js`): SUITE ALL PASS on the resumed tree (`2b2a542`, 33 files) and again after the re-balance
+  (`0909c6c`).
+- **Classic hash** (`pw_seq hash`, Classic on, 232 cases vs `tests/fixtures/audio_v11_hashes.json`): **232/232 equal** at 390x844
+  and 440x956 on the merged tree and again on the final build (299-327 s each, two browsers in parallel).
+- **Size gate:** `stat -c %s dist/game.html` = **5,115,270 B** <= 6,000,000 (owner F17). F17: `git ls-files '*.wav'` empty, nothing
+  under `local/` tracked, sim_kit attribution 5/5 (README + title line + LICENSE + the credit in the built game), pw_flow `flow`
+  sees the title kit credit.
+- **Owner rules** (scan of `git diff 369c9e1` over src / tools / tests / README): no USA place or brand, no share / screenshot /
+  download control, no model identifiers.
+- **Playwright** (runner: every `META_ONLY` section of every `tests/pw_*.js` at 390x844 with `timeout 500`; at 440x956 the §6
+  item-4 files: pw_seq, pw_gig, pw_seat_audio, pw_perf, pw_flow `flow`; two streams in parallel, pw_perf alone; "-> rerun" =
+  the same section re-run on the final build, alone where it was a timing failure):
+
+| file | 390x844 | 440x956 |
+|---|---|---|
+| pw_bands | hail_damage 57, frost_heave 58, gravel_kings 58, grid_road_ramblers 58, flat 12 | (390 only) |
+| pw_bands_render | bands_render 106 | (390 only) |
+| pw_creator | creator 34, kit 8, stage 6, meta 12, gear 39 | (390 only) |
+| pw_drama | drama 19 | (390 only) |
+| pw_ending | ten 15, bonus 10, fixture 4, preview 5 | (390 only) |
+| pw_fans | bandbook 19, fanclub 13 | (390 only) |
+| pw_flow | flow 17, bands 51, year 5, code 7, layout 34 | flow 17 |
+| pw_garage | garage 48, seat 73 | (390 only) |
+| pw_gig | gig 32, sync 14, bridge 17, feel 10 -> rerun 10, e2e 15, touch 5, double 17, songend 5, sync2 11, seat 33, chord 10, kit 7 -> rerun 7 | gig 32, **sync 1/14 FAIL** -> rerun 14 -> rerun 14, bridge 17, feel 10, e2e 15, touch 5, double 17, songend 5, sync2 11, **seat 1/33 FAIL** -> rerun 33 -> rerun 33, chord 10, kit 7 |
+| pw_hof | list 20, restore 10, empty 5 | (390 only) |
+| pw_label | label 13, studio 30, awards 19, seat 6, sheet 1 | (390 only) |
+| pw_logo | picker 23, reuse 14, meta 13 | (390 only) |
+| pw_perf | scenes 18, governor 12, ratio 11, stalls 10, audio 7, pre 9 | scenes 18, governor 12, ratio 11, stalls 10, audio 7, pre 9 |
+| pw_recap | offer 13, recap 19, bands 15, seat 10 | (390 only) |
+| pw_rival | scene 13, botb 16, final 10 | (390 only) |
+| pw_seat_audio | voices 19, mute 4, preview 9, noodle 5 | voices 19, mute 4, preview 9, noodle 5 |
+| pw_seats | pick 25, write 11, gig 8, studio 6, shop 7, garage 11, stage 4 | (390 only) |
+| pw_seq | hash 4 -> rerun 4, audio 42 -> rerun **1/39 FAIL** -> rerun 42 -> rerun 42, seq 57, **heavy 2/22 FAIL** -> rerun 22, genres 25 -> rerun 25, voices 8 -> rerun 8, part 30, kit 8 -> rerun 8, real 5 -> rerun 5, vox 17 -> rerun 17 | hash 4 -> rerun 4, audio 42 -> rerun 42, seq 57, **heavy 2/22 FAIL** -> rerun 22, genres 25 -> rerun **1/25 FAIL** -> rerun 25 -> rerun 25, voices 8 -> rerun 8, part 30, kit 8 -> rerun 8, real 5 -> rerun 5, vox 17 -> rerun 17 |
+| pw_settings | settings 52, calib 18, difficulty 17 | (390 only) |
+| pw_shop | gear 30, merch 24, space 21, van 23, spaces 17, seat 26 | (390 only) |
+| pw_stage | stage 37, van 20, seat 125 | (390 only) |
+| pw_title | scene 15, flow 10, prefs 7 | (390 only) |
+| pw_tour | map 24, tour 28, gong 13, payoff 5 | (390 only) |
+| pw_trophies | tab 15, toast 7 | (390 only) |
+| pw_tutorial | tut_w1 128, tut_calib 6, tut_w24 14, tut_skip 11, tut_replay 20, tut_notch 24 | (390 only) |
+| pw_world | board 14, van 13, calendar 21, drivers 22 | (390 only) |
+
+  Failures and what they were:
+  - `pw_seq heavy` 20/22 at both sizes on the merged build: (1) "heavier: energy below 150 Hz up" = a real regression (the KS
+    metal bass), fixed in `0909c6c` (§4), 22/22 alone at both sizes after it; (2) "a full metal song renders faster than real
+    time" xRT 0.79-0.83 with two browsers + other renders running; alone 2.40 (390) and 1.48 (440). Same check Lane V saw
+    fail under load (the stage-0 build fails it the same way under load).
+  - 440 `pw_gig sync` ("a tap is judged at the game time it was made", 8.3 ms) and `pw_gig seat` (a bass early lift): two
+    streams in parallel; alone twice each: 14/14, 33/33. No assertion changed.
+  - 390 `pw_seq audio` rerun (threw on a 4 s wait for the van ambience, 57_ui_van, under load; Lane I saw the same once): alone
+    twice 42/42. 440 `pw_seq genres` rerun ("punk, rock + country render faster than real time", punk 0.94 under load): alone
+    twice 25/25.
+  - The 390 "rest" files (UI flows) ran on the build before `0909c6c` (it changes only two KS bass voices, used by band notes
+    with a vel); every pw_seq audio section plus pw_gig feel / kit re-ran on the final build.
+- **No two hits the same** (pw_seq `real`, final build, both sizes 5/5): 8 consecutive hits at equal vel, every pair's
+  difference vs the first hit: snare min +1.7 dB, hat min +1.7 dB, metal KS chug min -25.1 dB (gate > -40 dB).
 
 ## 7. Gaps and notes for the review
 Lead (this pass):
-- **KS warm over 300 ms once** (metal at 390x844, 366 ms; 243 ms at 440x956; the other 6 songs 109-197 ms). The pw_perf gate
-  is 1.2 s wall; the warm runs during the count-in and a miss plays the 1.1 oscillator. Perf lens: decide whether to tighten.
+- **KS warm near 300 ms on metal** (366 ms once at 390x844 in the first pass; 223 / 291 ms alone on the final build; 243 ms
+  at 440x956). The pw_perf gate is 1.2 s wall; perf lens: decide whether to gate at the F13 300 ms.
 - **Only the gig warms songs.** `A.warm` is called from 55 (`warmSong`) only, as the contract asked; the songwriter, garage jam,
   van radio, a rival's set and the seat preview play their first pass with oscillators for any string note not yet cached
   (queued, KS from the next pass). Cheap fix if the ears mind: call `A.warm` before those `A.play` calls.
