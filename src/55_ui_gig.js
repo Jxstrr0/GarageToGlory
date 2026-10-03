@@ -397,6 +397,7 @@
   function bandOpts(song, at) {
     var po = { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
       singer: ui.roleOf('front', S()), band: S().bandId, gig: true };   // v0.9: who sings (for the audio's per-singer vocal voice)
+    if (G.opts && G.opts.studio) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO)
     if (strings()) {   // v1.1: the band (the swapped drummer) plays the drums; your part is muted, your taps play it
       po.drums = true; po.seat = G.seat; po.part = song.pattern && song.pattern.part;
       po.mute = GG.audio && GG.audio.seatKinds ? GG.audio.seatKinds(S().genre, G.seat) : null;
