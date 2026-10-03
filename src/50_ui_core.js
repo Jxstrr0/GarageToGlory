@@ -249,6 +249,11 @@
   function withText(w) { w.text = readable(w.color); return w; }
   ui.readable = readable;
   function bandOf(state) { var b = GG.content.bands; return b && state && b[state.bandId] || null; }
+  // v1.1 review: the player's seat in words ('Drums' on the drum seat, as v1.0) and the seat's icon
+  ui.SEAT_NAME = { drums: 'Drums', bass: 'Bass', rhythm: 'Rhythm guitar', lead: 'Lead guitar' };
+  ui.seatOf = function (state) { return GG.career && GG.career.seatOf ? GG.career.seatOf(state || GG.state) : 'drums'; };
+  ui.seatName = function (state) { return ui.SEAT_NAME[ui.seatOf(state)] || 'Drums'; };
+  ui.seatIcon = function (state) { return ui.seatOf(state) === 'drums' ? '🥁' : '🎸'; };
   // Resolves a speaker/chat id to { id, name, short, nick, color, text, role } (text: colour readable on dark panels). Works for members, npcs, 'player' and raw names.
   ui.who = function (id, state) {
     state = state || GG.state;
@@ -262,7 +267,7 @@
     if (id === 'player' || id === 'you') {
       var p = state && state.player || {};
       var pc = p.look && p.look.shirt;
-      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: 'Drums (you)' });
+      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: ui.seatName(state) + ' (you)' });
     }
     var mems = (state && state.members) || (band && band.members) || [];
     for (i = 0; i < mems.length; i++) if (mems[i].id === id) {
@@ -272,7 +277,7 @@
       var color = lum(shirt) > 0.12 ? shirt : PALETTE[i % PALETTE.length];
       var name = m.name || (cm && cm.name) || id;
       return withText({ id: id, name: name, short: String(name).split(' ')[0], nick: m.nick || (cm && cm.nick) || '', color: color,
-        full: m.fullName || (cm && cm.fullName) || '', role: m.role || (cm && cm.role) || '' });
+        full: m.fullName || (cm && cm.fullName) || '', role: (state && GG.career && GG.career.stageRole ? GG.career.stageRole(state, m) : m.role) || (cm && cm.role) || '' });   // v1.1 review: the stage role (the swapped member: drums)
     }
     var npc = GG.content.npcs && GG.content.npcs[id];
     if (npc) return withText({ id: id, name: npc.name, short: npc.name, color: npc.color || PALETTE[GG.hashSeed(id) % PALETTE.length], role: npc.role || '' });

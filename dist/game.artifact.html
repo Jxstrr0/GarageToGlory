@@ -48122,6 +48122,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function withText(w) { w.text = readable(w.color); return w; }
   ui.readable = readable;
   function bandOf(state) { var b = GG.content.bands; return b && state && b[state.bandId] || null; }
+  ui.SEAT_NAME = { drums: 'Drums', bass: 'Bass', rhythm: 'Rhythm guitar', lead: 'Lead guitar' };
+  ui.seatOf = function (state) { return GG.career && GG.career.seatOf ? GG.career.seatOf(state || GG.state) : 'drums'; };
+  ui.seatName = function (state) { return ui.SEAT_NAME[ui.seatOf(state)] || 'Drums'; };
+  ui.seatIcon = function (state) { return ui.seatOf(state) === 'drums' ? '🥁' : '🎸'; };
   ui.who = function (id, state) {
     state = state || GG.state;
     if (!id) return withText({ id: '', name: '???', short: '???', color: '#6f7a96', role: '' });
@@ -48134,7 +48138,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (id === 'player' || id === 'you') {
       var p = state && state.player || {};
       var pc = p.look && p.look.shirt;
-      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: 'Drums (you)' });
+      return withText({ id: 'player', name: p.name || 'You', short: p.nick || p.name || 'You', color: lum(pc) > 0.12 ? pc : '#ffb347', role: ui.seatName(state) + ' (you)' });
     }
     var mems = (state && state.members) || (band && band.members) || [];
     for (i = 0; i < mems.length; i++) if (mems[i].id === id) {
@@ -48144,7 +48148,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var color = lum(shirt) > 0.12 ? shirt : PALETTE[i % PALETTE.length];
       var name = m.name || (cm && cm.name) || id;
       return withText({ id: id, name: name, short: String(name).split(' ')[0], nick: m.nick || (cm && cm.nick) || '', color: color,
-        full: m.fullName || (cm && cm.fullName) || '', role: m.role || (cm && cm.role) || '' });
+        full: m.fullName || (cm && cm.fullName) || '', role: (state && GG.career && GG.career.stageRole ? GG.career.stageRole(state, m) : m.role) || (cm && cm.role) || '' });   // v1.1 review: the stage role (the swapped member: drums)
     }
     var npc = GG.content.npcs && GG.content.npcs[id];
     if (npc) return withText({ id: id, name: npc.name, short: npc.name, color: npc.color || PALETTE[GG.hashSeed(id) % PALETTE.length], role: npc.role || '' });
@@ -49661,7 +49665,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var p = st.player || {};
     out.push(el('div.mem-card', [
       el('div.row', [ui.avatar(ui.who('player')), el('div.grow', [el('div', { style: 'font-weight:800' }, (p.name || 'You') + (p.nick ? ' "' + p.nick + '"' : '')),
-        el('div.small.dim', 'Drums · founder · unfireable')])]),
+        el('div.small.dim', ui.seatName(st) + ' · founder · unfireable')])]),
       statRow('Chops', st.drumSkill, 'var(--amber)')
     ]));
     if (ui.logoPanel) out.push(ui.logoPanel(st, rerender));   // v0.8.1 LOGO: the band logo + Rebrand (5m_ui_logo)
@@ -49677,7 +49681,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }) : el('p.dim', { testid: 'laptop-songs-empty' }, empty('catalog')));
     out.push(el('div.caps', { style: 'margin:14px 0 6px' }, 'Song catalog (' + songs.length + ') · tap one to hear it'), list);
     if (songs.length && ui.defined('practice')) out.push(ui.btn('.btn.block', { testid: 'laptop-practice', style: 'margin-top:8px',   // v0.6.1 C4
-      onclick: function () { ui.show('practice'); } }, '🥁 Practice a song (no crowd, slow it down)'));
+      onclick: function () { ui.show('practice'); } }, ui.seatIcon(st) + ' Practice a song (no crowd, slow it down)'));
     return el('div', out);
   }
 
@@ -49700,7 +49704,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         GG.shop && GG.shop.rent(st) ? el('div', { 'data-testid': 'laptop-rent' }, [el('span', 'Rent · ' + ui.spaceName(st)), el('span.bad', '−' + U.fmtMoney(GG.shop.rent(st)) + '/wk')]) : null
       ]),
       el('div.panel', [el('div.caps', { style: 'margin-bottom:8px' }, 'Fund, last ' + hist.length + ' weeks'), bars]),
-      st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures on the drum throne.') : null
+      st.debtToParents ? el('p.small.dim.center', 'Your mom has started leaving night-school brochures ' + (ui.seatOf(st) === 'drums' ? 'on the drum throne.' : 'on your amp.')) : null
     ]);
   }
 
@@ -52376,7 +52380,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function memberCard(st, m) {
     var D = Dr(), who = ui.who(m.id), stage = m.stage || 0, kids = [];
     kids.push(el('div.row', [ui.avatar(who), el('div.grow', [el('div', { style: 'font-weight:800' }, who.full || who.name + (who.nick ? ' "' + who.nick + '"' : '')),
-      el('div.small.dim', [m.role || '', m.recruit ? ' · recruit' : ''])]), ui.stageBadge(stage, m.id)]));
+      el('div.small.dim', [who.role || m.role || '', m.recruit ? ' · recruit' : ''])]), ui.stageBadge(stage, m.id)]));
     kids.push(kv('Skill', m.skill, 'var(--blue)'));
     kids.push(kv('Mood', m.mood, ui.moodColor(m.mood), ui.moodEmoji(ui.moodLabel(m.mood))));
     var w = D.want(st, m);
@@ -52752,7 +52756,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         el('p.deal-parties', { testid: 'deal-parties' }, ['Between ', el('b', def.name), ' (“the Label”) and ', el('b', band), ' (“the Band”), of ' + (st.city || 'town') + ', ' + ui.province(st) + '.']),
         el('ol.deal-clauses', clauses.map(function (c) { return el('li', [el('b', c[0] + '. '), c[1]]); })),
         el('div.deal-sign', [
-          el('div.sig', [el('span.ink', p.name || 'You'), el('span.sl', 'The Band (drums, founder)')]),
+          el('div.sig', [el('span.ink', p.name || 'You'), el('span.sl', 'The Band (' + ui.seatName(st).toLowerCase() + ', founder)')]),
           el('div.sig', [el('span.ink.label', def.name.split(' ')[0]), el('span.sl', 'The Label')])
         ]),
         el('div.deal-stamp', 'SIGNED')

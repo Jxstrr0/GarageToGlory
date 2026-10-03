@@ -125,6 +125,17 @@ async function pick() {
     await page.waitForFunction(() => window.GG && GG.state, null, { timeout: 15000 });
     const q = await page.evaluate(() => ({ seat: GG.state.seat, kenji: GG.state.members.find(m => m.id === 'kenji').seatRole }));
     c.ok(q.seat === 'bass' && q.kenji === 'drums', '?quick=1&seat=bass ' + JSON.stringify(q));
+    // v1.1 review: the laptop Band tab and card heads name your seat, and the swapped drummer's kit
+    await toPlan(page);
+    await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('laptop', { tab: 'band' }); });
+    await waitScreen(page, 'laptop');
+    await page.waitForSelector('.mem-card');
+    const lb = await page.evaluate(() => ({ cards: [...document.querySelectorAll('.mem-card')].map(e => e.textContent), you: GG.ui.who('player').role, kenji: GG.ui.who('kenji').role }));
+    const kc = lb.cards.find(t => /Kenji/.test(t)) || '';
+    c.ok(lb.you === 'Bass (you)' && lb.kenji === 'drums', 'ui.who: you play bass, Kenji drums ' + JSON.stringify([lb.you, lb.kenji]));
+    c.ok(lb.cards.some(t => /Bass · founder · unfireable/.test(t)) && !lb.cards.some(t => /Drums · founder/.test(t)), 'laptop Band tab: your row reads Bass, no Drums row');
+    c.ok(/drums/.test(kc) && !/\bbass\b/.test(kc), 'laptop Band tab: Kenji is listed on drums ' + kc.slice(0, 80));
+    bad = await audit(page); c.ok(!bad.length, 'laptop Band tab layout ' + bad.join('; '));
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'pick threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
