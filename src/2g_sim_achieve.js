@@ -128,13 +128,13 @@
     } },
     careers: { m: 1, fn: function (s, t, x) { return num(x.careers && x.careers.finished) >= (t.min || 3); } },
     // v1.1 "Seats" (handoff E12; plan_contract_1.1 §1.1 #12): Low End / The Engine Room = { kind: 'seatCareer', seat } (a
-    // finished career on that seat; when 'end'); Solo Too Long = { kind: 'soloTooLong', min?: 0.4, by?: 'notes'|'time' } (a
+    // finished career on that seat; when 'end'); Solo Too Long = { kind: 'soloTooLong', min?: 0.3, by?: 'notes'|'time' } (a
     // live song on the lead seat with that share of your notes in the solo, the shred bar included: SONG_RESULT.soloNotes /
     // .allNotes (a short song with a solo section gets there); by 'time': .solo / .dur seconds; when 'gig'); Musical Chairs
     // = { kind: 'allSeats' } (META.careers.bySeat has every C.SEATS seat; when 'meta').
     seatCareer: { s: 1, fn: function (s, t) { return seatOf(s) === (t.seat || seatOf(s)) && !!(s.ended || obj(s.legacy)); } },
     soloTooLong: { x: 1, fn: function (s, t, x) {
-      var res = (x.r && x.r.songResults) || [], min = t.min != null ? num(t.min) : 0.4;
+      var res = (x.r && x.r.songResults) || [], min = t.min != null ? num(t.min) : 0.3;   // retuned on lane D's real lead parts: a song with a solo section reaches 0.33-0.38 in metal, a song without one stays <= 0.21
       return seatOf(s) === 'lead' && res.some(function (r) {
         if (!r) return false;
         var all = num(r.allNotes) || num(r.notes);

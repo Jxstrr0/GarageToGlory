@@ -429,7 +429,10 @@
   //     moment counting held notes (a chord under a hold plays one lane, a third thumb goes auto).
   // Dropped notes go to chart.auto (your voice plays them, never judged): the song always sounds whole.
   gig.RUN_GAP = 0.18;
-  var FLOW = { easy: 1.3, normal: 1, hard: 0.75, expert: 0.45, lead: 0.8 };   // the string seats' flow by difficulty (parity with the kit; the lead seat has its shred windows)
+  // The string seats' flow by difficulty (parity with the kit; the lead seat has its shred windows). Retuned at integration
+  // with lane D's real parts + seat layers (denser charts, many more holds): flow, hold and ring gains came down and the
+  // seat density clamp opened to 4, so the avg bot sits within ~1.5 of the drum seat per band x seat (sim_seats, 9 seeds).
+  var FLOW = gig.FLOW = { easy: 0.6, normal: 0.4, hard: 0.2, expert: 0.05, lead: 0.8 };
   gig.HOLD_BEATS = { easy: 2, normal: 1, hard: 1, expert: 1 };
   var STR_LANES = ['str0', 'str1', 'str2', 'str3', 'str4', 'str5'];
   STR_LANES.forEach(function (l, i) { LI[l] = i; });
@@ -683,7 +686,7 @@
         rng.shuffle(chart.sections).slice(0, k).forEach(function (s) { cues.push({ t: s.t0 + 4 * chart.spb, kind: 'flub', who: m.id }); });
       });
       cues.sort(function (a, b) { return a.t - b.t; });
-      var nps = chart.total / Math.max(1, chart.duration), dc = strings ? (cfg.seatDensityClamp || [0.4, 2.4]) : cfg.densityClamp;
+      var nps = chart.total / Math.max(1, chart.duration), dc = strings ? (cfg.seatDensityClamp || [0.4, 4]) : cfg.densityClamp;   // strings: per-second gains stay normalized down to ~1.1 notes/s
       cur = { i: i, song: song, chart: chart, notes: n, byLane: byLane, lp: [0, 0, 0, 0, 0, 0], mp: 0, cues: cues, ci: 0, dblHit: -1, echoFor: null,
         perfect: 0, good: 0, stray: 0, fills: 0, fillsIn: {}, maxCombo: 0, missStreak: 0, flubs: 0, extrasHit: 0,
         entryTotal: entryTotal, entryHits: entryTotal.map(function () { return 0; }), crowdSum: 0, crowdT: 0, lastT: 0,
@@ -744,7 +747,7 @@
       var x = cur.notes[k], held = U.clamp((t - x.t) / Math.max(0.001, x.len), 0, 1), ring = held >= (cfg.ringAt || 0.9);
       cur.hold[li] = -1; cur.holds++; cur.heldSum += held;
       x.held = Math.round(held * 1000) / 1000;
-      if (ring) { cur.rings++; crowdAdd((cfg.ringGain != null ? cfg.ringGain : 0.6) * cur.staleMul); }
+      if (ring) { cur.rings++; crowdAdd((cfg.ringGain != null ? cfg.ringGain : 0.1) * cur.staleMul); }
       var out = { lane: LN(li), held: x.held, ring: ring };
       emit('gig:hold', out);
       return out;
@@ -856,7 +859,7 @@
         var hk = cur.hold[hl]; if (hk < 0) continue;
         var hx = n[hk], hend = hx.t + hx.len;
         if (t >= hend) endHold(hl, hend);
-        else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.35) * dt * cur.staleMul);
+        else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.1) * dt * cur.staleMul);
       }
       // v1.1 flow (string seats): while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part
       // (country boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit.
