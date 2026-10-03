@@ -689,9 +689,32 @@ test('v1.2 stage-0 contracts + stubs (VEL_REF, FEEL_CLAMP, F16 constants, REALIS
   eq([0, 1, 2, 3, -1, 9].map(t => A.realism(t).id), ['milk_crate', 'pawn_shop', 'pro', 'arena', 'milk_crate', 'arena'], 'realism(tier), clamped');
   eq(A.realism().id, 'pro', 'outside a career: the reference tier');
   const tl = A.timeline(song('metal'), { genre: 'metal', songId: 's1' });
-  eq([A.feelFor(null, 'metal', {}), A.feelPlan(tl, null, 1, { gig: true }), A.tapVel({ judgement: 'perfect', step: 0, lane: 'kick' })], [null, null, undefined], 'feel stubs');
+  // Lane F filled feelFor / feelPlan / tapVel (31_audio_feel.js; full checks in sim_feel.test.js)
+  const FL = A.feelFor(null, 'metal', {}), tv = A.tapVel({ judgement: 'perfect', step: 0, lane: 'kick' });
+  ok(FL && FL.byKind && Object.values(FL.byKind).every(x => x.t === 0.5), 'feelFor(null): every player t = 0.5');
+  eq(A.feelPlan(tl, null, 1, { gig: true }), null, 'feelPlan without a FEEL: null (the 1.1 path)');
+  ok(typeof tv === 'number' && tv >= 0.97 - 1e-9 && tv <= 1, 'tapVel: a Perfect downbeat ~ 1');
   ok(A.warm() instanceof Promise, 'warm -> a Promise');
   ok(GG.dsp && typeof GG.dsp === 'object' && GG.voice && typeof GG.voice === 'object', 'GG.dsp / GG.voice exist');
+});
+
+// v1.2 Lane F (handoff F3.2 / F3.3): the feel plan rides beside the timeline; steps never move, lanes keep their order.
+test('v1.2 feelPlan never moves steps / keeps lane order at 60-260 bpm (the timeline untouched)', () => {
+  for (const g of C.GENRES) for (const bpm of [60, 120, 190, 260]) for (const gig of [false, true]) {
+    const p = fullSong(g, bpm), tl = A.timeline(p, { genre: g, songId: 's8' }), before = JSON.stringify(tl.events);
+    const FL = A.feelFor(null, g, {}), plan = A.feelPlan(tl, FL, GG.hashSeed('s8|0'), { gig }), w = g + '@' + bpm + (gig ? ' gig' : '');
+    eq(JSON.stringify(tl.events), before, w + ': events never mutated');
+    eq(plan.dt.length, tl.events.length, w + ': one entry per event');
+    const spb = 60 / tl.bpm, cap = Math.min(gig ? 0.015 : 0.025, 0.25 * spb / 4), last = {};
+    tl.events.forEach((e, i) => {
+      if (e.kind === 'step') { eq([plan.dt[i], plan.vel[i]], [0, 1], w + ': a step stays put'); return; }
+      ok(Math.abs(plan.dt[i]) <= cap + 1e-7, w + ': clamp ' + plan.dt[i]);
+      const key = e.kind === 'drum' ? e.lane : e.kind, at = e.beat * spb + plan.dt[i];
+      if (last[key] != null) ok(at >= last[key] - 1e-7, w + ': ' + key + ' keeps its order');
+      last[key] = at;
+    });
+  }
+  eq(fingerprints({ gig: true, feel: true, studio: true }), STAGE0, 'the 1,212 fingerprints with Lane F loaded');
 });
 
 done('sim_audio');
