@@ -52,7 +52,8 @@ async function write(force) {
   log(`writing ${cases.length} cases (VERSION ${VERSION}); pass A1 + A2 (one browser), pass B (a fresh browser)`);
   let A1, A2, B, info;
   const LA = await lab.openLab({ classic: true });
-  try { info = LA.info; A1 = await renderAll(LA.page, cases, 'A1'); A2 = await renderAll(LA.page, cases, 'A2'); }
+  let chromium = null;
+  try { info = LA.info; chromium = LA.browser.version(); A1 = await renderAll(LA.page, cases, 'A1'); A2 = await renderAll(LA.page, cases, 'A2'); }
   finally { await LA.close(); }
   const LB = await lab.openLab({ classic: true });
   try { B = await renderAll(LB.page, cases, 'B'); }
@@ -61,9 +62,10 @@ async function write(force) {
   if (diff.length) { log('NOT DETERMINISTIC: ' + diff.join(', ')); process.exitCode = 1; return; }
   const out = { version: VERSION, made: new Date().toISOString().slice(0, 10),
     method: 'SHA-1 of the rendered AudioBuffer Float32 samples as raw little-endian bytes, channel 0 then 1 (prerender: mono); ' +
-      'GG.audio.renderOffline (44.1 kHz) / prerenderHit on a fresh title screen (no career), Math.random seeded by the page (unused by 1.1 audio); ' +
+      'GG.audio.renderOffline (44.1 kHz) / prerenderHit on a fresh title screen (no career), Math.random seeded by the page (unused by 1.1 audio), ' +
+      'every fan-in summed in connection order (the lab SUM_ORDER patch: Chromium otherwise sums 3+ connections in pointer-hash order, last-bit noise); ' +
       'specs: tools/_audio_lab.js hashCases(); pattern {signature} = GG.songs.signature(genre), bars "song" = arrangement x 4',
-    determinism: { passes: ['A1', 'A2 (same browser)', 'B (fresh browser)'], cases: cases.length, identical: cases.length, chromium: info && info.version },
+    determinism: { passes: ['A1', 'A2 (same browser)', 'B (fresh browser)'], cases: cases.length, identical: cases.length, game: info && info.version, chromium },
     cases: {} };
   for (const c of cases) { const r = A1[c.key]; out.cases[c.key] = { spec: c.spec, sha1: r.sha1, n: r.n, ch: r.ch, sr: r.sr, peak: r.peak, rms: r.rms, nan: r.nan }; }
   const nan = cases.filter(c => A1[c.key].nan).map(c => c.key);

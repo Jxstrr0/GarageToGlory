@@ -1,0 +1,3694 @@
+{
+ "version": "1.1.0.0",
+ "made": "2026-10-03",
+ "method": "SHA-1 of the rendered AudioBuffer Float32 samples as raw little-endian bytes, channel 0 then 1 (prerender: mono); GG.audio.renderOffline (44.1 kHz) / prerenderHit on a fresh title screen (no career), Math.random seeded by the page (unused by 1.1 audio), every fan-in summed in connection order (the lab SUM_ORDER patch: Chromium otherwise sums 3+ connections in pointer-hash order, last-bit noise); specs: tools/_audio_lab.js hashCases(); pattern {signature} = GG.songs.signature(genre), bars \"song\" = arrangement x 4",
+ "determinism": {
+  "passes": [
+   "A1",
+   "A2 (same browser)",
+   "B (fresh browser)"
+  ],
+  "cases": 232,
+  "identical": 232,
+  "game": "1.1.0.0",
+  "chromium": "141.0.7390.37"
+ },
+ "cases": {
+  "song|metal|full": {
+   "spec": {
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash"
+   },
+   "sha1": "1ae7c1d61f42f34af20631f17a4ed668c2b22b1d",
+   "n": 1555952,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.583521,
+   "rms": 0.14433,
+   "nan": false
+  },
+  "song|metal|drums": {
+   "spec": {
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "backing": false
+   },
+   "sha1": "829bff47f132992e8d0f7edf2cddad251c5b2208",
+   "n": 1555952,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.572956,
+   "rms": 0.10536,
+   "nan": false
+  },
+  "song|metal|band": {
+   "spec": {
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "drums": false
+   },
+   "sha1": "3893623e560da812168ecdce340a9167194db684",
+   "n": 1555952,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.576734,
+   "rms": 0.139249,
+   "nan": false
+  },
+  "song|punk|full": {
+   "spec": {
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash"
+   },
+   "sha1": "4cda32355398087da7b0d2c63081d004796e6d9b",
+   "n": 908460,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.590823,
+   "rms": 0.121357,
+   "nan": false
+  },
+  "song|punk|drums": {
+   "spec": {
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "backing": false
+   },
+   "sha1": "c2543ac96af2b1ccd0950432c9318707dcfb14c6",
+   "n": 908460,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.571413,
+   "rms": 0.114857,
+   "nan": false
+  },
+  "song|punk|band": {
+   "spec": {
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "drums": false
+   },
+   "sha1": "5196d21966a4b137d25f91847dd7d65015953b47",
+   "n": 908460,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.527516,
+   "rms": 0.093824,
+   "nan": false
+  },
+  "song|rock|full": {
+   "spec": {
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash"
+   },
+   "sha1": "67dc9c43a8ac63898d6afa7d62854268c42ef871",
+   "n": 2178540,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.581474,
+   "rms": 0.154693,
+   "nan": false
+  },
+  "song|rock|drums": {
+   "spec": {
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "backing": false
+   },
+   "sha1": "be3cd972975501dece7b77a58bfb58a7943b6087",
+   "n": 2178540,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.57484,
+   "rms": 0.143385,
+   "nan": false
+  },
+  "song|rock|band": {
+   "spec": {
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "drums": false
+   },
+   "sha1": "bab8390dec013736d3a120194f71fd28f37d8e64",
+   "n": 2178540,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.540037,
+   "rms": 0.128857,
+   "nan": false
+  },
+  "song|country|full": {
+   "spec": {
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash"
+   },
+   "sha1": "22e28aa83a7d5a3dd2a5211f5618c41a462562cd",
+   "n": 2601900,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.565935,
+   "rms": 0.108882,
+   "nan": false
+  },
+  "song|country|drums": {
+   "spec": {
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "backing": false
+   },
+   "sha1": "c7b17d36d06165c1b22af8abfccb39d6beeeaea0",
+   "n": 2601900,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.559683,
+   "rms": 0.059176,
+   "nan": false
+  },
+  "song|country|band": {
+   "spec": {
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "full": true,
+    "bars": "song",
+    "songId": "v11hash",
+    "drums": false
+   },
+   "sha1": "91ac6c7f2fffebe24148eedbcd585691144d8e90",
+   "n": 2601900,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.532552,
+   "rms": 0.103586,
+   "nan": false
+  },
+  "tap|metal|kick|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "kick",
+    "quality": 0
+   },
+   "sha1": "be95aad402eb0fc89b2b8c9bf4ccd3ed1b902947",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.438425,
+   "rms": 0.026441,
+   "nan": false
+  },
+  "tap|metal|kick|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "kick",
+    "quality": 1
+   },
+   "sha1": "2caf7b28c777e307133556c3fd7e678cd6154679",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.488718,
+   "rms": 0.037536,
+   "nan": false
+  },
+  "tap|metal|kick|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "kick",
+    "quality": 2
+   },
+   "sha1": "99cd656a3d46bf5beb9bb2056b16b978007658be",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.530771,
+   "rms": 0.049551,
+   "nan": false
+  },
+  "tap|metal|kick|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "kick",
+    "quality": 3
+   },
+   "sha1": "bca8783c29e0041186b22da5035ae885ccd959af",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.531478,
+   "rms": 0.070007,
+   "nan": false
+  },
+  "tap|metal|snare|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "snare",
+    "quality": 0
+   },
+   "sha1": "1e16568fe29fd4b10a0c9383c9cbeb1759f83fac",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.502128,
+   "rms": 0.012501,
+   "nan": false
+  },
+  "tap|metal|snare|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "snare",
+    "quality": 1
+   },
+   "sha1": "03d0d9545ff1042385dec8d651f45d4d3cc43d41",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.529891,
+   "rms": 0.016353,
+   "nan": false
+  },
+  "tap|metal|snare|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "snare",
+    "quality": 2
+   },
+   "sha1": "2b02b396da3c9fae3db027e6508538f51e4ed392",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.553809,
+   "rms": 0.018241,
+   "nan": false
+  },
+  "tap|metal|snare|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "snare",
+    "quality": 3
+   },
+   "sha1": "d02a8ee1e3fd58986b51f9108325f801889da5ff",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.522937,
+   "rms": 0.028572,
+   "nan": false
+  },
+  "tap|metal|hat|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "hat",
+    "quality": 0
+   },
+   "sha1": "fe99633c0b94797ae0a4bfcdca8334a91c1ab471",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.129363,
+   "rms": 0.002197,
+   "nan": false
+  },
+  "tap|metal|hat|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "hat",
+    "quality": 1
+   },
+   "sha1": "978456828b82b7ea0a9c29517c2396d95b52260b",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.245826,
+   "rms": 0.00476,
+   "nan": false
+  },
+  "tap|metal|hat|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "hat",
+    "quality": 2
+   },
+   "sha1": "cf5bb2965931e89624f4e2060148e0e50ae12bfb",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.334052,
+   "rms": 0.007298,
+   "nan": false
+  },
+  "tap|metal|hat|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "hat",
+    "quality": 3
+   },
+   "sha1": "33e9f937dbd0ecbfe09925dbe21d557a27093f6e",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.461199,
+   "rms": 0.009179,
+   "nan": false
+  },
+  "tap|metal|cymbal|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "cymbal",
+    "quality": 0
+   },
+   "sha1": "90111838fd564d12caa8dde193a6a7559c176f56",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.133141,
+   "rms": 0.009477,
+   "nan": false
+  },
+  "tap|metal|cymbal|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "cymbal",
+    "quality": 1
+   },
+   "sha1": "240801354fcb3316064dd6cb4b37386ac0a4157c",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.316256,
+   "rms": 0.024067,
+   "nan": false
+  },
+  "tap|metal|cymbal|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "cymbal",
+    "quality": 2
+   },
+   "sha1": "d53763bdafd8a10daedf22105efcdba673fc6de8",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.457319,
+   "rms": 0.044992,
+   "nan": false
+  },
+  "tap|metal|cymbal|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "cymbal",
+    "quality": 3
+   },
+   "sha1": "ab5a58a40e1bf1a57bc1a21859c31593ac8ab919",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.524383,
+   "rms": 0.062548,
+   "nan": false
+  },
+  "tap|metal|toms|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "toms",
+    "quality": 0
+   },
+   "sha1": "62494d79dba8a72ebf125bba056f6d6210ea07d7",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.475066,
+   "rms": 0.030927,
+   "nan": false
+  },
+  "tap|metal|toms|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "toms",
+    "quality": 1
+   },
+   "sha1": "972a4c6c7fa1416667509131ad3b1ca66d241c8d",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.509859,
+   "rms": 0.037938,
+   "nan": false
+  },
+  "tap|metal|toms|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "toms",
+    "quality": 2
+   },
+   "sha1": "9756c5c3710b2a282beb29c624df6eddcbc09831",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.51238,
+   "rms": 0.046931,
+   "nan": false
+  },
+  "tap|metal|toms|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "toms",
+    "quality": 3
+   },
+   "sha1": "667652e5c71a53c53ebdf80f5dceacfa4ac7554f",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.509765,
+   "rms": 0.06571,
+   "nan": false
+  },
+  "tap|metal|ride|q0": {
+   "spec": {
+    "genre": "metal",
+    "lane": "ride",
+    "quality": 0
+   },
+   "sha1": "b9c0c1e5b401a82b1e1530caff017159ba83b2d1",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.26667,
+   "rms": 0.015731,
+   "nan": false
+  },
+  "tap|metal|ride|q1": {
+   "spec": {
+    "genre": "metal",
+    "lane": "ride",
+    "quality": 1
+   },
+   "sha1": "a671e155ab906b2490e5caeeafdda0590aceefd8",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.265785,
+   "rms": 0.019628,
+   "nan": false
+  },
+  "tap|metal|ride|q2": {
+   "spec": {
+    "genre": "metal",
+    "lane": "ride",
+    "quality": 2
+   },
+   "sha1": "9e2a403b795e92aabaa1a42ead85292db092b611",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.277371,
+   "rms": 0.024111,
+   "nan": false
+  },
+  "tap|metal|ride|q3": {
+   "spec": {
+    "genre": "metal",
+    "lane": "ride",
+    "quality": 3
+   },
+   "sha1": "6fe63057fd46c1c2abebcefbfd0871dea9fee4d1",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.344738,
+   "rms": 0.033423,
+   "nan": false
+  },
+  "tap|punk|kick|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "kick",
+    "quality": 0
+   },
+   "sha1": "3b00ba2c79086333cb3f5d1cebca1c077b15fef6",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.391049,
+   "rms": 0.026423,
+   "nan": false
+  },
+  "tap|punk|kick|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "kick",
+    "quality": 1
+   },
+   "sha1": "8b72d19dba02a8198b247cc880488774c486fb9c",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.501489,
+   "rms": 0.04658,
+   "nan": false
+  },
+  "tap|punk|kick|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "kick",
+    "quality": 2
+   },
+   "sha1": "676ee0b30baa176d857a8573ef481394becbff17",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.529781,
+   "rms": 0.060476,
+   "nan": false
+  },
+  "tap|punk|kick|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "kick",
+    "quality": 3
+   },
+   "sha1": "8b91f888ac0b056af60336cab0063b9b0abea97c",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.531606,
+   "rms": 0.078571,
+   "nan": false
+  },
+  "tap|punk|snare|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "snare",
+    "quality": 0
+   },
+   "sha1": "65937e0733e5a4dc05cc673c464a23db953b4c41",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.508824,
+   "rms": 0.016462,
+   "nan": false
+  },
+  "tap|punk|snare|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "snare",
+    "quality": 1
+   },
+   "sha1": "9189faf721fd8f8bc20c55c0e3393c99a843c30a",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.544276,
+   "rms": 0.020467,
+   "nan": false
+  },
+  "tap|punk|snare|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "snare",
+    "quality": 2
+   },
+   "sha1": "60f8576dd0506e88e88758b720bb5fdc2fcf0585",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.560377,
+   "rms": 0.025956,
+   "nan": false
+  },
+  "tap|punk|snare|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "snare",
+    "quality": 3
+   },
+   "sha1": "3a43ca455f2198aeec6f2a1a93a588d071f8a0b0",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.539645,
+   "rms": 0.038405,
+   "nan": false
+  },
+  "tap|punk|hat|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "hat",
+    "quality": 0
+   },
+   "sha1": "8d44240b50aad3bf05b6aee6762365af2feb6b3a",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.177873,
+   "rms": 0.004615,
+   "nan": false
+  },
+  "tap|punk|hat|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "hat",
+    "quality": 1
+   },
+   "sha1": "9d5c689eaafb635df4a5c05abff158e8f9fb7327",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.335159,
+   "rms": 0.007811,
+   "nan": false
+  },
+  "tap|punk|hat|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "hat",
+    "quality": 2
+   },
+   "sha1": "2be02ba5833a5e31e4aeafad44f021b7c33ec7f3",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.419993,
+   "rms": 0.010962,
+   "nan": false
+  },
+  "tap|punk|hat|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "hat",
+    "quality": 3
+   },
+   "sha1": "f168ad6117ed7f1b326e2f1a0f233e39844bb3c8",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.476743,
+   "rms": 0.014009,
+   "nan": false
+  },
+  "tap|punk|cymbal|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "cymbal",
+    "quality": 0
+   },
+   "sha1": "6ec31b84fe0091918897dfddd93b82eb02472b17",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.280019,
+   "rms": 0.022002,
+   "nan": false
+  },
+  "tap|punk|cymbal|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "cymbal",
+    "quality": 1
+   },
+   "sha1": "9ab91516da2d45f2715804bdfc3bdc656cf046db",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.432564,
+   "rms": 0.039677,
+   "nan": false
+  },
+  "tap|punk|cymbal|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "cymbal",
+    "quality": 2
+   },
+   "sha1": "14ea59a28b5132bec0303f0d750f7762d1b19820",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.49774,
+   "rms": 0.058473,
+   "nan": false
+  },
+  "tap|punk|cymbal|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "cymbal",
+    "quality": 3
+   },
+   "sha1": "f4d024a65ce55f7a5905cc5c45ab986aa6917186",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.526932,
+   "rms": 0.081478,
+   "nan": false
+  },
+  "tap|punk|toms|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "toms",
+    "quality": 0
+   },
+   "sha1": "f6db80e3aa56000c76044cf4a9fc812ec72ebb86",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.450954,
+   "rms": 0.035126,
+   "nan": false
+  },
+  "tap|punk|toms|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "toms",
+    "quality": 1
+   },
+   "sha1": "058d33517ee7e0d546bf6a6bf33e59416afb4073",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.489931,
+   "rms": 0.047715,
+   "nan": false
+  },
+  "tap|punk|toms|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "toms",
+    "quality": 2
+   },
+   "sha1": "2701b57d0315443c9cb1d8f72cd84c805b3fb2f2",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.514019,
+   "rms": 0.056904,
+   "nan": false
+  },
+  "tap|punk|toms|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "toms",
+    "quality": 3
+   },
+   "sha1": "bc8836b436641e11dbcca406b15860b3f72e44c3",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.525784,
+   "rms": 0.071984,
+   "nan": false
+  },
+  "tap|punk|ride|q0": {
+   "spec": {
+    "genre": "punk",
+    "lane": "ride",
+    "quality": 0
+   },
+   "sha1": "b018bbc2390602a0bc44764d2ce6911f7180ec09",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.2658,
+   "rms": 0.015849,
+   "nan": false
+  },
+  "tap|punk|ride|q1": {
+   "spec": {
+    "genre": "punk",
+    "lane": "ride",
+    "quality": 1
+   },
+   "sha1": "a4cabde03ddd1d0f32f50594595e32d4d8c33a1c",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.265039,
+   "rms": 0.019874,
+   "nan": false
+  },
+  "tap|punk|ride|q2": {
+   "spec": {
+    "genre": "punk",
+    "lane": "ride",
+    "quality": 2
+   },
+   "sha1": "2724ec77cb64c9e3c81a166e5abcdf299e88f63a",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.27842,
+   "rms": 0.024526,
+   "nan": false
+  },
+  "tap|punk|ride|q3": {
+   "spec": {
+    "genre": "punk",
+    "lane": "ride",
+    "quality": 3
+   },
+   "sha1": "823461d71fd17721db26cb9655ea3f4055ecea37",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.35425,
+   "rms": 0.034284,
+   "nan": false
+  },
+  "tap|rock|kick|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "kick",
+    "quality": 0
+   },
+   "sha1": "2e362cea9a8aab0eed03de8942af26c191b493b7",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.407677,
+   "rms": 0.04005,
+   "nan": false
+  },
+  "tap|rock|kick|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "kick",
+    "quality": 1
+   },
+   "sha1": "36395ff28b0b4339a0460ade9dfdd3563ce6b273",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.528058,
+   "rms": 0.085412,
+   "nan": false
+  },
+  "tap|rock|kick|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "kick",
+    "quality": 2
+   },
+   "sha1": "79866f4e291234a213f972d9160b0779d3afa957",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.528367,
+   "rms": 0.11222,
+   "nan": false
+  },
+  "tap|rock|kick|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "kick",
+    "quality": 3
+   },
+   "sha1": "cc1260eb4aa06bc1ac8d4c8f7c8946d5d1d941bd",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.537635,
+   "rms": 0.137835,
+   "nan": false
+  },
+  "tap|rock|snare|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "snare",
+    "quality": 0
+   },
+   "sha1": "629b3c65c9df1b7a2f45ab981223d7a896764df1",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.503439,
+   "rms": 0.02447,
+   "nan": false
+  },
+  "tap|rock|snare|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "snare",
+    "quality": 1
+   },
+   "sha1": "303a3ae2453ab23fe6469aa4510984a1b64e7368",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.52753,
+   "rms": 0.035674,
+   "nan": false
+  },
+  "tap|rock|snare|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "snare",
+    "quality": 2
+   },
+   "sha1": "3c05a4f3c597e540bd81da8c46f51cfc62e8bf49",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.549638,
+   "rms": 0.04637,
+   "nan": false
+  },
+  "tap|rock|snare|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "snare",
+    "quality": 3
+   },
+   "sha1": "3cf1854f3d40d40a7b11ad90fe292b0f6fc09ebc",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.543201,
+   "rms": 0.066733,
+   "nan": false
+  },
+  "tap|rock|hat|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "hat",
+    "quality": 0
+   },
+   "sha1": "d5b7bfd093dd92fcddedf7a878915103e974915d",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.155859,
+   "rms": 0.00352,
+   "nan": false
+  },
+  "tap|rock|hat|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "hat",
+    "quality": 1
+   },
+   "sha1": "9891c1a61a5c628266adbbe966ae20ece64082bc",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.303826,
+   "rms": 0.00717,
+   "nan": false
+  },
+  "tap|rock|hat|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "hat",
+    "quality": 2
+   },
+   "sha1": "24ab61e3940de823e5f4099cf291981a1f0b9b59",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.428264,
+   "rms": 0.010504,
+   "nan": false
+  },
+  "tap|rock|hat|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "hat",
+    "quality": 3
+   },
+   "sha1": "150b3baadd4aabdacd8b4255bc4b973f4f51721f",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.480386,
+   "rms": 0.014235,
+   "nan": false
+  },
+  "tap|rock|cymbal|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "cymbal",
+    "quality": 0
+   },
+   "sha1": "395152c4bef8e04e06a3f0967b9db576230290ae",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.170843,
+   "rms": 0.016214,
+   "nan": false
+  },
+  "tap|rock|cymbal|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "cymbal",
+    "quality": 1
+   },
+   "sha1": "aa06f263099d677a01c525c29680217a6075c1e6",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.339682,
+   "rms": 0.038932,
+   "nan": false
+  },
+  "tap|rock|cymbal|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "cymbal",
+    "quality": 2
+   },
+   "sha1": "f5dd1e7845914f14fda39257821ebea190cd366d",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.482123,
+   "rms": 0.065921,
+   "nan": false
+  },
+  "tap|rock|cymbal|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "cymbal",
+    "quality": 3
+   },
+   "sha1": "ffcb51e9bcd6aae90abf95749d7bc0b622946acc",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.527831,
+   "rms": 0.081537,
+   "nan": false
+  },
+  "tap|rock|toms|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "toms",
+    "quality": 0
+   },
+   "sha1": "35a32342e7c39ab7b3d486625dd41495b544e542",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.445196,
+   "rms": 0.053665,
+   "nan": false
+  },
+  "tap|rock|toms|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "toms",
+    "quality": 1
+   },
+   "sha1": "f7c593632f9cd8f827a7284a22f6f847b959fc63",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.485703,
+   "rms": 0.073017,
+   "nan": false
+  },
+  "tap|rock|toms|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "toms",
+    "quality": 2
+   },
+   "sha1": "ed03a72e8845cf32a8c7ce55dcf26cb05775bd71",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.519116,
+   "rms": 0.092482,
+   "nan": false
+  },
+  "tap|rock|toms|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "toms",
+    "quality": 3
+   },
+   "sha1": "1a25999f54c7e24f583a3bac1f2ae848478759ff",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.533951,
+   "rms": 0.119185,
+   "nan": false
+  },
+  "tap|rock|ride|q0": {
+   "spec": {
+    "genre": "rock",
+    "lane": "ride",
+    "quality": 0
+   },
+   "sha1": "e56bc8245bc00d879589bc558216266097e4a3d2",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.161797,
+   "rms": 0.008011,
+   "nan": false
+  },
+  "tap|rock|ride|q1": {
+   "spec": {
+    "genre": "rock",
+    "lane": "ride",
+    "quality": 1
+   },
+   "sha1": "d673349f5153be19c16f3580c3641f2e4b1312b3",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.18175,
+   "rms": 0.012136,
+   "nan": false
+  },
+  "tap|rock|ride|q2": {
+   "spec": {
+    "genre": "rock",
+    "lane": "ride",
+    "quality": 2
+   },
+   "sha1": "de98367d656cc9014cb4d10413a4238f0dc68b5d",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.215013,
+   "rms": 0.016109,
+   "nan": false
+  },
+  "tap|rock|ride|q3": {
+   "spec": {
+    "genre": "rock",
+    "lane": "ride",
+    "quality": 3
+   },
+   "sha1": "a24b2443066d17c035329c68a8a7c371f21e65bf",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.269778,
+   "rms": 0.025239,
+   "nan": false
+  },
+  "tap|country|kick|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "kick",
+    "quality": 0
+   },
+   "sha1": "f0b9b644988ed1992d4fc8a6591a761e9b438941",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.181149,
+   "rms": 0.011739,
+   "nan": false
+  },
+  "tap|country|kick|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "kick",
+    "quality": 1
+   },
+   "sha1": "f03ef500d4d3e5ded6569fe542169e2b2ca623f3",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.397561,
+   "rms": 0.031829,
+   "nan": false
+  },
+  "tap|country|kick|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "kick",
+    "quality": 2
+   },
+   "sha1": "3ace7aced09ad827ed1477c98db125abdfd09229",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.480162,
+   "rms": 0.041112,
+   "nan": false
+  },
+  "tap|country|kick|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "kick",
+    "quality": 3
+   },
+   "sha1": "a23d7596d65ba5c6fec5e4a284f2916ea25668f8",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.520653,
+   "rms": 0.052125,
+   "nan": false
+  },
+  "tap|country|snare|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "snare",
+    "quality": 0
+   },
+   "sha1": "27fb2b1c871a505ca777b93d0d30eb4016d6cdfb",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.244563,
+   "rms": 0.007502,
+   "nan": false
+  },
+  "tap|country|snare|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "snare",
+    "quality": 1
+   },
+   "sha1": "28eb0f036000610a4702a0bc431b768bef227ebe",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.389381,
+   "rms": 0.01084,
+   "nan": false
+  },
+  "tap|country|snare|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "snare",
+    "quality": 2
+   },
+   "sha1": "8a2f74ad67ad794965fd53e71093ff6bdbb44567",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.474105,
+   "rms": 0.014288,
+   "nan": false
+  },
+  "tap|country|snare|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "snare",
+    "quality": 3
+   },
+   "sha1": "073b7fb1b8e1201c87bd4e3a6caf34ddb57a7f90",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.483497,
+   "rms": 0.019895,
+   "nan": false
+  },
+  "tap|country|hat|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "hat",
+    "quality": 0
+   },
+   "sha1": "a72603b89e35ec3967fc6ea29c6dfccc442dbd2f",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.090414,
+   "rms": 0.001639,
+   "nan": false
+  },
+  "tap|country|hat|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "hat",
+    "quality": 1
+   },
+   "sha1": "0bc930eb904dad4c4f0aea6c7d163c5709126f17",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.175944,
+   "rms": 0.003243,
+   "nan": false
+  },
+  "tap|country|hat|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "hat",
+    "quality": 2
+   },
+   "sha1": "9ae37344c0b0799eb3eded2e41d61debef3a8f84",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.259628,
+   "rms": 0.004399,
+   "nan": false
+  },
+  "tap|country|hat|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "hat",
+    "quality": 3
+   },
+   "sha1": "92b42a19c263f04e3a575037e88dd0d311062ad5",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.310048,
+   "rms": 0.005867,
+   "nan": false
+  },
+  "tap|country|cymbal|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "cymbal",
+    "quality": 0
+   },
+   "sha1": "3bcaefc1a60352a19702363af4ca4169d9e73c89",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.092699,
+   "rms": 0.006168,
+   "nan": false
+  },
+  "tap|country|cymbal|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "cymbal",
+    "quality": 1
+   },
+   "sha1": "f84b53d3a5dc537a46fa8ec47ebc3805413ee32a",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.206559,
+   "rms": 0.01475,
+   "nan": false
+  },
+  "tap|country|cymbal|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "cymbal",
+    "quality": 2
+   },
+   "sha1": "b9f4127a3b409f7680a9e15edbcc141716417d0b",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.300405,
+   "rms": 0.027266,
+   "nan": false
+  },
+  "tap|country|cymbal|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "cymbal",
+    "quality": 3
+   },
+   "sha1": "f0aaf3317e51c81105ce229b051159ea7d873a61",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.423723,
+   "rms": 0.04369,
+   "nan": false
+  },
+  "tap|country|toms|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "toms",
+    "quality": 0
+   },
+   "sha1": "1b2fd51c664dffa1fdcc45cab493e3123f9149af",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.351842,
+   "rms": 0.024563,
+   "nan": false
+  },
+  "tap|country|toms|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "toms",
+    "quality": 1
+   },
+   "sha1": "6fd90602dc13683dbaa1b621af53643a9195a2ae",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.441211,
+   "rms": 0.032984,
+   "nan": false
+  },
+  "tap|country|toms|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "toms",
+    "quality": 2
+   },
+   "sha1": "c0833aba933f431f3f0017609b80b540f8f3a7fa",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.49467,
+   "rms": 0.038454,
+   "nan": false
+  },
+  "tap|country|toms|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "toms",
+    "quality": 3
+   },
+   "sha1": "5312c2add0174ef95c4304e5534126b11b5cd886",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.519452,
+   "rms": 0.049233,
+   "nan": false
+  },
+  "tap|country|ride|q0": {
+   "spec": {
+    "genre": "country",
+    "lane": "ride",
+    "quality": 0
+   },
+   "sha1": "e9c987ece97d6e30f21454071aebd73f0c8c7127",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.129303,
+   "rms": 0.005723,
+   "nan": false
+  },
+  "tap|country|ride|q1": {
+   "spec": {
+    "genre": "country",
+    "lane": "ride",
+    "quality": 1
+   },
+   "sha1": "3c052ca13f1ea92d8506515d3e2396de17e16eb7",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.145869,
+   "rms": 0.00797,
+   "nan": false
+  },
+  "tap|country|ride|q2": {
+   "spec": {
+    "genre": "country",
+    "lane": "ride",
+    "quality": 2
+   },
+   "sha1": "2f4ea551e3432c8a83134794f7a6c1c21687f756",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.173114,
+   "rms": 0.009845,
+   "nan": false
+  },
+  "tap|country|ride|q3": {
+   "spec": {
+    "genre": "country",
+    "lane": "ride",
+    "quality": 3
+   },
+   "sha1": "51d45c46646c51e335e3d3570613338eff1ce32c",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.192476,
+   "rms": 0.013507,
+   "nan": false
+  },
+  "pre|metal|kick|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "kick",
+     "quality": 0
+    }
+   },
+   "sha1": "f6eda505e84a388847d5199bc13b8735a8681473",
+   "n": 6571,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.100148,
+   "rms": 0.102987,
+   "nan": false
+  },
+  "pre|metal|kick|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "kick",
+     "quality": 1
+    }
+   },
+   "sha1": "adedddcaa64456c3601b795f886603027a091c45",
+   "n": 9209,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.1016,
+   "rms": 0.132161,
+   "nan": false
+  },
+  "pre|metal|kick|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "kick",
+     "quality": 2
+    }
+   },
+   "sha1": "04683f31dda3ef8c89b0681ac64cc58bd69998d7",
+   "n": 11731,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.134953,
+   "rms": 0.162452,
+   "nan": false
+  },
+  "pre|metal|kick|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "kick",
+     "quality": 3
+    }
+   },
+   "sha1": "accd2686d6f6045e7a8a4b59bcee76d4d6c6b20f",
+   "n": 14598,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.33403,
+   "rms": 0.193054,
+   "nan": false
+  },
+  "pre|metal|snare|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "snare",
+     "quality": 0
+    }
+   },
+   "sha1": "b2751e53543545edfe82c8a854678d90efa248d8",
+   "n": 3903,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.23089,
+   "rms": 0.104916,
+   "nan": false
+  },
+  "pre|metal|snare|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "snare",
+     "quality": 1
+    }
+   },
+   "sha1": "4a4c03f5b18573137676a083721f5d07045fbde6",
+   "n": 5425,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.33528,
+   "rms": 0.10823,
+   "nan": false
+  },
+  "pre|metal|snare|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "snare",
+     "quality": 2
+    }
+   },
+   "sha1": "ae73bc3a69520b1ea0e85388b67c1b0957d4e2e2",
+   "n": 6880,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.44245,
+   "rms": 0.112269,
+   "nan": false
+  },
+  "pre|metal|snare|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "snare",
+     "quality": 3
+    }
+   },
+   "sha1": "8f4a2e5b693e47a24ed1d6313424e7e0d8abbc48",
+   "n": 8534,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.542377,
+   "rms": 0.117091,
+   "nan": false
+  },
+  "pre|metal|hat|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "hat",
+     "quality": 0
+    }
+   },
+   "sha1": "3da317d7108c158e70deb20d3192745249b5a775",
+   "n": 1737,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.46072,
+   "rms": 0.050276,
+   "nan": false
+  },
+  "pre|metal|hat|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "hat",
+     "quality": 1
+    }
+   },
+   "sha1": "31495f30141ec6b33886be000bfcfbc980660b65",
+   "n": 2018,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.462429,
+   "rms": 0.050335,
+   "nan": false
+  },
+  "pre|metal|hat|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "hat",
+     "quality": 2
+    }
+   },
+   "sha1": "ad7c25831642adf954eb9e31c6ed6dab82a43659",
+   "n": 2250,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.463469,
+   "rms": 0.050331,
+   "nan": false
+  },
+  "pre|metal|hat|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "hat",
+     "quality": 3
+    }
+   },
+   "sha1": "7349610d4d07101987de9ccbee67ac0d88bb2b28",
+   "n": 2484,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.464297,
+   "rms": 0.05031,
+   "nan": false
+  },
+  "pre|metal|cymbal|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "cymbal",
+     "quality": 0
+    }
+   },
+   "sha1": "9c2a6771689670b9868eabf9df32a7a3e084ff3e",
+   "n": 29371,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.408141,
+   "rms": 0.039781,
+   "nan": false
+  },
+  "pre|metal|cymbal|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "cymbal",
+     "quality": 1
+    }
+   },
+   "sha1": "d803182439cfcbc2d3a749b91414c1750947af5c",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.479322,
+   "rms": 0.045517,
+   "nan": false
+  },
+  "pre|metal|cymbal|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "cymbal",
+     "quality": 2
+    }
+   },
+   "sha1": "35932a32e9244e498e7065224f5632a5bf7ef12f",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.535252,
+   "rms": 0.050365,
+   "nan": false
+  },
+  "pre|metal|cymbal|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "cymbal",
+     "quality": 3
+    }
+   },
+   "sha1": "c075f04527c47f3a6911e84f7c3cf0e2ceb33d2c",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.585788,
+   "rms": 0.054703,
+   "nan": false
+  },
+  "pre|metal|toms|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "toms",
+     "quality": 0
+    }
+   },
+   "sha1": "7ca72413a047de68447faf8a8373de129124bcd1",
+   "n": 7542,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.495946,
+   "rms": 0.086445,
+   "nan": false
+  },
+  "pre|metal|toms|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "toms",
+     "quality": 1
+    }
+   },
+   "sha1": "3d19b2c7d68dc78314cb97bfd96f1b88eb1e37c4",
+   "n": 10584,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.661363,
+   "rms": 0.113267,
+   "nan": false
+  },
+  "pre|metal|toms|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "toms",
+     "quality": 2
+    }
+   },
+   "sha1": "e87394a2f3a2f3dbfb1ce52c1c891816a116536f",
+   "n": 13495,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.827273,
+   "rms": 0.139738,
+   "nan": false
+  },
+  "pre|metal|toms|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "toms",
+     "quality": 3
+    }
+   },
+   "sha1": "83f56d6376434ac5e72bcbd324897bd09268969f",
+   "n": 16803,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.912657,
+   "rms": 0.153035,
+   "nan": false
+  },
+  "pre|metal|ride|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "ride",
+     "quality": 0
+    }
+   },
+   "sha1": "198660f9d2558711de66174ae32149d1a19d7ceb",
+   "n": 22095,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279966,
+   "rms": 0.025438,
+   "nan": false
+  },
+  "pre|metal|ride|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "ride",
+     "quality": 1
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|metal|ride|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "ride",
+     "quality": 2
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|metal|ride|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "metal",
+     "lane": "ride",
+     "quality": 3
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|punk|kick|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "kick",
+     "quality": 0
+    }
+   },
+   "sha1": "e2b616f2612bcddcd212302775602effdeeb3806",
+   "n": 8997,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.71427,
+   "rms": 0.095474,
+   "nan": false
+  },
+  "pre|punk|kick|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "kick",
+     "quality": 1
+    }
+   },
+   "sha1": "a8b0141b78742b71205a6ad1205de7f5cdfcbbf0",
+   "n": 12648,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.931637,
+   "rms": 0.125494,
+   "nan": false
+  },
+  "pre|punk|kick|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "kick",
+     "quality": 2
+    }
+   },
+   "sha1": "84c2946cb4d67441f57c152a81dd27b4b1bbb40a",
+   "n": 16141,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.145278,
+   "rms": 0.155408,
+   "nan": false
+  },
+  "pre|punk|kick|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "kick",
+     "quality": 3
+    }
+   },
+   "sha1": "002a137f4f242017b1a34eefa66d5c4686b836f2",
+   "n": 20110,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.345274,
+   "rms": 0.185055,
+   "nan": false
+  },
+  "pre|punk|snare|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "snare",
+     "quality": 0
+    }
+   },
+   "sha1": "dbe883dc16f3778834cf3f1844ddc1fbd910c3cc",
+   "n": 6814,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.160265,
+   "rms": 0.122493,
+   "nan": false
+  },
+  "pre|punk|snare|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "snare",
+     "quality": 1
+    }
+   },
+   "sha1": "82f10df253e20553ee1d154959d2eccb7e2dd9de",
+   "n": 9553,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.254403,
+   "rms": 0.124494,
+   "nan": false
+  },
+  "pre|punk|snare|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "snare",
+     "quality": 2
+    }
+   },
+   "sha1": "78208f65ff3739f5e66ca8368b6b00cc018f482c",
+   "n": 12172,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.331196,
+   "rms": 0.127293,
+   "nan": false
+  },
+  "pre|punk|snare|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "snare",
+     "quality": 3
+    }
+   },
+   "sha1": "7d60f8fa9caf6a83b126d34ebdee6ef071bef38d",
+   "n": 15149,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.450498,
+   "rms": 0.13053,
+   "nan": false
+  },
+  "pre|punk|hat|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "hat",
+     "quality": 0
+    }
+   },
+   "sha1": "5d924e06e109534f1c07409eb063ea45f1024fdc",
+   "n": 3536,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.500956,
+   "rms": 0.050471,
+   "nan": false
+  },
+  "pre|punk|hat|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "hat",
+     "quality": 1
+    }
+   },
+   "sha1": "899621739385b255d3e20bb59270aa612fc30d47",
+   "n": 4160,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.512823,
+   "rms": 0.050305,
+   "nan": false
+  },
+  "pre|punk|hat|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "hat",
+     "quality": 2
+    }
+   },
+   "sha1": "af570a12f3393eaf943fd58d1b12bb96d43c3844",
+   "n": 4675,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.520197,
+   "rms": 0.05019,
+   "nan": false
+  },
+  "pre|punk|hat|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "hat",
+     "quality": 3
+    }
+   },
+   "sha1": "a15507e4d3bde98dbb570b34e8c3da052bb819a8",
+   "n": 5196,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.526145,
+   "rms": 0.050089,
+   "nan": false
+  },
+  "pre|punk|cymbal|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "cymbal",
+     "quality": 0
+    }
+   },
+   "sha1": "761cc5e07b25d1556e12418b82e3790adc9f270a",
+   "n": 39073,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.521153,
+   "rms": 0.047117,
+   "nan": false
+  },
+  "pre|punk|cymbal|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "cymbal",
+     "quality": 1
+    }
+   },
+   "sha1": "8587f71e61c961218dcd0132b0033863747cefe0",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.601852,
+   "rms": 0.053953,
+   "nan": false
+  },
+  "pre|punk|cymbal|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "cymbal",
+     "quality": 2
+    }
+   },
+   "sha1": "29f02dfb32c5ab12538451b684f1dee14bff6677",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.672919,
+   "rms": 0.059957,
+   "nan": false
+  },
+  "pre|punk|cymbal|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "cymbal",
+     "quality": 3
+    }
+   },
+   "sha1": "d681e13c3895e6bb188e52474e9bbc47948d1a4a",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.737168,
+   "rms": 0.065354,
+   "nan": false
+  },
+  "pre|punk|toms|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "toms",
+     "quality": 0
+    }
+   },
+   "sha1": "7980bec070b4924d8812ec9418875d6bde372708",
+   "n": 8997,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.486878,
+   "rms": 0.085413,
+   "nan": false
+  },
+  "pre|punk|toms|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "toms",
+     "quality": 1
+    }
+   },
+   "sha1": "be4ea0ba63f3ef75a35270edf25cae15d3de52e3",
+   "n": 12648,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.652444,
+   "rms": 0.112295,
+   "nan": false
+  },
+  "pre|punk|toms|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "toms",
+     "quality": 2
+    }
+   },
+   "sha1": "af2153308df3a2acb4ea03be7772a3b6dd483cc3",
+   "n": 16141,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.81839,
+   "rms": 0.138944,
+   "nan": false
+  },
+  "pre|punk|toms|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "toms",
+     "quality": 3
+    }
+   },
+   "sha1": "5d5f451a2da5c6abd94ee627cc16f64c32c9af21",
+   "n": 20110,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.904753,
+   "rms": 0.152453,
+   "nan": false
+  },
+  "pre|punk|ride|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "ride",
+     "quality": 0
+    }
+   },
+   "sha1": "198660f9d2558711de66174ae32149d1a19d7ceb",
+   "n": 22095,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279966,
+   "rms": 0.025438,
+   "nan": false
+  },
+  "pre|punk|ride|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "ride",
+     "quality": 1
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|punk|ride|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "ride",
+     "quality": 2
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|punk|ride|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "punk",
+     "lane": "ride",
+     "quality": 3
+    }
+   },
+   "sha1": "332697a93ab388060d2a6d15e61360bbea9d8ce0",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.279967,
+   "rms": 0.025432,
+   "nan": false
+  },
+  "pre|rock|kick|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "kick",
+     "quality": 0
+    }
+   },
+   "sha1": "18699c03799721b400d52255be47d42bb6b574ce",
+   "n": 13605,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.712357,
+   "rms": 0.100436,
+   "nan": false
+  },
+  "pre|rock|kick|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "kick",
+     "quality": 1
+    }
+   },
+   "sha1": "3fc3769bbba39f8737b8ed4fa580ed125feeda9b",
+   "n": 19184,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.935409,
+   "rms": 0.132393,
+   "nan": false
+  },
+  "pre|rock|kick|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "kick",
+     "quality": 2
+    }
+   },
+   "sha1": "c0730643dc31ef83dd92ad04bf4a140a02a4524b",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.151862,
+   "rms": 0.163873,
+   "nan": false
+  },
+  "pre|rock|kick|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "kick",
+     "quality": 3
+    }
+   },
+   "sha1": "2ddbc31ee04c1b6920503f87fe93850fee80f42e",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.358568,
+   "rms": 0.194897,
+   "nan": false
+  },
+  "pre|rock|snare|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "snare",
+     "quality": 0
+    }
+   },
+   "sha1": "1c445f3f4a0e3edb7a3c401d2ad39f4c69a3b97d",
+   "n": 8027,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.083385,
+   "rms": 0.101026,
+   "nan": false
+  },
+  "pre|rock|snare|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "snare",
+     "quality": 1
+    }
+   },
+   "sha1": "5c61d6d5cdb661debc6de03e9656b207de3144b9",
+   "n": 11272,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.191394,
+   "rms": 0.106253,
+   "nan": false
+  },
+  "pre|rock|snare|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "snare",
+     "quality": 2
+    }
+   },
+   "sha1": "961764ff7f1cf7094d4c0ef882a12b45a5db0155",
+   "n": 14377,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.323736,
+   "rms": 0.111997,
+   "nan": false
+  },
+  "pre|rock|snare|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "snare",
+     "quality": 3
+    }
+   },
+   "sha1": "b404d41bc07769328d5c73fdfe4bc818c9d22a72",
+   "n": 17905,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.394786,
+   "rms": 0.118395,
+   "nan": false
+  },
+  "pre|rock|hat|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "hat",
+     "quality": 0
+    }
+   },
+   "sha1": "3e3abd401b275bd6e471ea8da7b735d081388554",
+   "n": 2227,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.452245,
+   "rms": 0.052626,
+   "nan": false
+  },
+  "pre|rock|hat|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "hat",
+     "quality": 1
+    }
+   },
+   "sha1": "ccc7374ce07c74f79ed88a00b72ca5bebe6cdb4f",
+   "n": 2602,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.45448,
+   "rms": 0.052485,
+   "nan": false
+  },
+  "pre|rock|hat|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "hat",
+     "quality": 2
+    }
+   },
+   "sha1": "064ea7a7580a248c1ad539263a7c5c6a82675ef2",
+   "n": 2911,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.46566,
+   "rms": 0.052367,
+   "nan": false
+  },
+  "pre|rock|hat|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "hat",
+     "quality": 3
+    }
+   },
+   "sha1": "b0eb55a11c4dcfc23a99ff87b4a7c2669a0ee2f1",
+   "n": 3223,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.474744,
+   "rms": 0.052254,
+   "nan": false
+  },
+  "pre|rock|cymbal|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "cymbal",
+     "quality": 0
+    }
+   },
+   "sha1": "2082609534461218270289d4b5453e7285403c01",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.430746,
+   "rms": 0.042264,
+   "nan": false
+  },
+  "pre|rock|cymbal|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "cymbal",
+     "quality": 1
+    }
+   },
+   "sha1": "1f48b63b8f337c69a5e84cfc42545df0adf82636",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.497421,
+   "rms": 0.048142,
+   "nan": false
+  },
+  "pre|rock|cymbal|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "cymbal",
+     "quality": 2
+    }
+   },
+   "sha1": "f40441d2dd10b7528c6e8e91355fbd7bbaa3e29a",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.556163,
+   "rms": 0.053337,
+   "nan": false
+  },
+  "pre|rock|cymbal|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "cymbal",
+     "quality": 3
+    }
+   },
+   "sha1": "3212fb66ceb05dab7fb788b1be785a8c03196811",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.609272,
+   "rms": 0.058109,
+   "nan": false
+  },
+  "pre|rock|toms|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "toms",
+     "quality": 0
+    }
+   },
+   "sha1": "ac491eac0181423fb89c192dc2705393f2c6a30e",
+   "n": 11180,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.484546,
+   "rms": 0.085249,
+   "nan": false
+  },
+  "pre|rock|toms|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "toms",
+     "quality": 1
+    }
+   },
+   "sha1": "b7e0cc8491ad41d3acefe824743141fa8ede920d",
+   "n": 15744,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.650662,
+   "rms": 0.112384,
+   "nan": false
+  },
+  "pre|rock|toms|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "toms",
+     "quality": 2
+    }
+   },
+   "sha1": "0c72ff058b28df2406f465405415b4e0a9438155",
+   "n": 20110,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.816889,
+   "rms": 0.139227,
+   "nan": false
+  },
+  "pre|rock|toms|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "toms",
+     "quality": 3
+    }
+   },
+   "sha1": "ebfaad51b88892ca8b35493ee4f4f285f078f959",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.899815,
+   "rms": 0.15257,
+   "nan": false
+  },
+  "pre|rock|ride|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "ride",
+     "quality": 0
+    }
+   },
+   "sha1": "c32ec2478e3f80ca08c92eecd2a9bdc7fdd5aefa",
+   "n": 12393,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.183459,
+   "rms": 0.017504,
+   "nan": false
+  },
+  "pre|rock|ride|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "ride",
+     "quality": 1
+    }
+   },
+   "sha1": "5640095bb82abe34528d3aa667e0aafb2b6b0c66",
+   "n": 17464,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.18535,
+   "rms": 0.017538,
+   "nan": false
+  },
+  "pre|rock|ride|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "ride",
+     "quality": 2
+    }
+   },
+   "sha1": "43ea7da7524a00fec01d8a18acec9fc7a35c30a3",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.186352,
+   "rms": 0.017579,
+   "nan": false
+  },
+  "pre|rock|ride|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "rock",
+     "lane": "ride",
+     "quality": 3
+    }
+   },
+   "sha1": "43ea7da7524a00fec01d8a18acec9fc7a35c30a3",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.186352,
+   "rms": 0.017579,
+   "nan": false
+  },
+  "pre|country|kick|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "kick",
+     "quality": 0
+    }
+   },
+   "sha1": "cf00dcf0c6d4eeb1abfc087f09dad9eaba79c80d",
+   "n": 7057,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.521841,
+   "rms": 0.08128,
+   "nan": false
+  },
+  "pre|country|kick|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "kick",
+     "quality": 1
+    }
+   },
+   "sha1": "26995e7b218c6578f2269a3ddf877807306dabf7",
+   "n": 9897,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.687184,
+   "rms": 0.107578,
+   "nan": false
+  },
+  "pre|country|kick|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "kick",
+     "quality": 2
+    }
+   },
+   "sha1": "c2c7c5439ef0b174ee112497d73daf16f535b7a4",
+   "n": 12613,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.845846,
+   "rms": 0.133393,
+   "nan": false
+  },
+  "pre|country|kick|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "kick",
+     "quality": 3
+    }
+   },
+   "sha1": "d79b5299c609fe5f1a460f4c54a12c0800e76180",
+   "n": 15700,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 1.001769,
+   "rms": 0.158727,
+   "nan": false
+  },
+  "pre|country|snare|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "snare",
+     "quality": 0
+    }
+   },
+   "sha1": "8f24ef00ee49efa4590682a17ad329df32706c80",
+   "n": 4146,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.765771,
+   "rms": 0.065917,
+   "nan": false
+  },
+  "pre|country|snare|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "snare",
+     "quality": 1
+    }
+   },
+   "sha1": "9bed6f82fd919f1e86f3de1c7bd5c4c3d8dd63f6",
+   "n": 5769,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.813825,
+   "rms": 0.068731,
+   "nan": false
+  },
+  "pre|country|snare|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "snare",
+     "quality": 2
+    }
+   },
+   "sha1": "9d6ba26ae804ddf1cc036e3cac6b109bb46e4b68",
+   "n": 7321,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.859814,
+   "rms": 0.072012,
+   "nan": false
+  },
+  "pre|country|snare|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "snare",
+     "quality": 3
+    }
+   },
+   "sha1": "c580c94ca8cc507a696c408b40274413fc00fb7c",
+   "n": 9085,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.909249,
+   "rms": 0.075682,
+   "nan": false
+  },
+  "pre|country|hat|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "hat",
+     "quality": 0
+    }
+   },
+   "sha1": "321dcc30456a597905f4c7583b4bae31729d04cd",
+   "n": 1573,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.326499,
+   "rms": 0.0396,
+   "nan": false
+  },
+  "pre|country|hat|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "hat",
+     "quality": 1
+    }
+   },
+   "sha1": "e226ff98ac53a5a0d4fd9beb881c96d57f9fb15b",
+   "n": 1823,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.327821,
+   "rms": 0.039637,
+   "nan": false
+  },
+  "pre|country|hat|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "hat",
+     "quality": 2
+    }
+   },
+   "sha1": "1708f973b62850e935e63d94f6d6f66f4de3e23a",
+   "n": 2029,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.328625,
+   "rms": 0.039618,
+   "nan": false
+  },
+  "pre|country|hat|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "hat",
+     "quality": 3
+    }
+   },
+   "sha1": "56544b7a7f5699fd2789cb69b55ffee410f25b53",
+   "n": 2237,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.334782,
+   "rms": 0.039577,
+   "nan": false
+  },
+  "pre|country|cymbal|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "cymbal",
+     "quality": 0
+    }
+   },
+   "sha1": "3742eaa7296ee924c7e0cf597cc9d25122f143b3",
+   "n": 24520,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.319978,
+   "rms": 0.030962,
+   "nan": false
+  },
+  "pre|country|cymbal|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "cymbal",
+     "quality": 1
+    }
+   },
+   "sha1": "a1f0c893470d8d47fce97cf277a32809b0b8c33e",
+   "n": 34663,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.369661,
+   "rms": 0.035442,
+   "nan": false
+  },
+  "pre|country|cymbal|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "cymbal",
+     "quality": 2
+    }
+   },
+   "sha1": "9c70ad136537458bd8cccfd973620cf30aff9fd6",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.413376,
+   "rms": 0.039302,
+   "nan": false
+  },
+  "pre|country|cymbal|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "cymbal",
+     "quality": 3
+    }
+   },
+   "sha1": "5503f8ec28beff0bfa1f0c3b82557a57d870e51c",
+   "n": 39955,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.452854,
+   "rms": 0.042677,
+   "nan": false
+  },
+  "pre|country|toms|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "toms",
+     "quality": 0
+    }
+   },
+   "sha1": "0f655f721c60f2a633083c802c46271777a71d17",
+   "n": 7542,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.465012,
+   "rms": 0.083981,
+   "nan": false
+  },
+  "pre|country|toms|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "toms",
+     "quality": 1
+    }
+   },
+   "sha1": "06b14ea047fde616c666d1a30ec0a262a9db3fe8",
+   "n": 10584,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.628721,
+   "rms": 0.11132,
+   "nan": false
+  },
+  "pre|country|toms|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "toms",
+     "quality": 2
+    }
+   },
+   "sha1": "a6182c1f8eb54f3fd20df306070a8432b198bfbe",
+   "n": 13495,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.792657,
+   "rms": 0.138321,
+   "nan": false
+  },
+  "pre|country|toms|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "toms",
+     "quality": 3
+    }
+   },
+   "sha1": "91c5b55a5d328f4a2ad7dbf39f436da9d45bf416",
+   "n": 16803,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.88073,
+   "rms": 0.152067,
+   "nan": false
+  },
+  "pre|country|ride|q0": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "ride",
+     "quality": 0
+    }
+   },
+   "sha1": "c32ec2478e3f80ca08c92eecd2a9bdc7fdd5aefa",
+   "n": 12393,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.183459,
+   "rms": 0.017504,
+   "nan": false
+  },
+  "pre|country|ride|q1": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "ride",
+     "quality": 1
+    }
+   },
+   "sha1": "5640095bb82abe34528d3aa667e0aafb2b6b0c66",
+   "n": 17464,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.18535,
+   "rms": 0.017538,
+   "nan": false
+  },
+  "pre|country|ride|q2": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "ride",
+     "quality": 2
+    }
+   },
+   "sha1": "43ea7da7524a00fec01d8a18acec9fc7a35c30a3",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.186352,
+   "rms": 0.017579,
+   "nan": false
+  },
+  "pre|country|ride|q3": {
+   "spec": {
+    "prerender": {
+     "genre": "country",
+     "lane": "ride",
+     "quality": 3
+    }
+   },
+   "sha1": "43ea7da7524a00fec01d8a18acec9fc7a35c30a3",
+   "n": 22315,
+   "ch": 1,
+   "sr": 44100,
+   "peak": 0.186352,
+   "rms": 0.017579,
+   "nan": false
+  },
+  "sec|metal|q0arena": {
+   "spec": {
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 0,
+    "room": "arena",
+    "songId": "v11hash"
+   },
+   "sha1": "ab843d2be7881f47af814405b36a326658e30964",
+   "n": 345018,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.571166,
+   "rms": 0.094088,
+   "nan": false
+  },
+  "sec|metal|q3dry": {
+   "spec": {
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 3,
+    "room": "dry",
+    "songId": "v11hash"
+   },
+   "sha1": "b0d2a4d4bf6048116a80a3d2b3c878b0c53c7e2c",
+   "n": 206103,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.564839,
+   "rms": 0.11559,
+   "nan": false
+  },
+  "seat|metal": {
+   "spec": {
+    "genre": "metal",
+    "quality": 2,
+    "seatNotes": [
+     {
+      "fn": "pluck",
+      "midi": 40,
+      "at": 0
+     },
+     {
+      "fn": "pluck",
+      "midi": 43,
+      "at": 0.25
+     },
+     {
+      "fn": "strum",
+      "midi": 52,
+      "at": 0.5,
+      "o": {
+       "len": 0.45
+      }
+     },
+     {
+      "fn": "lead",
+      "midi": 64,
+      "at": 1,
+      "o": {
+       "hold": true,
+       "len": 2
+      },
+      "release": 1.6
+     }
+    ]
+   },
+   "sha1": "4e17e729e28d135f4be8e48c8eb090d90729eaed",
+   "n": 186258,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.516866,
+   "rms": 0.077314,
+   "nan": false
+  },
+  "vox|metal": {
+   "spec": {
+    "probe": "vox",
+    "genre": "metal"
+   },
+   "sha1": "fbe4b35c4fab20a338360f5bb43c5ead477ae168",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.443296,
+   "rms": 0.09535,
+   "nan": false
+  },
+  "probe|metal|gtr": {
+   "spec": {
+    "probe": "gtr",
+    "genre": "metal",
+    "midi": 40,
+    "seconds": 1.2
+   },
+   "sha1": "ea1fefd10e1b0b2a2c3718b64b9ced5266d7340c",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.420937,
+   "rms": 0.161299,
+   "nan": false
+  },
+  "probe|metal|bass": {
+   "spec": {
+    "probe": "bass",
+    "genre": "metal",
+    "midi": 28,
+    "seconds": 1.2
+   },
+   "sha1": "75190d0b26a2c5fe354d667ab273bbc8f0a06a85",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.485884,
+   "rms": 0.089812,
+   "nan": false
+  },
+  "radio|metal": {
+   "spec": {
+    "ambience": "radio",
+    "genre": "metal",
+    "pattern": {
+     "signature": "metal"
+    },
+    "songId": "v11hash"
+   },
+   "sha1": "50c093ab4f532c583c716a50cb30addef53c3e04",
+   "n": 114660,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.24091,
+   "rms": 0.052127,
+   "nan": false
+  },
+  "sec|punk|q0arena": {
+   "spec": {
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 0,
+    "room": "arena",
+    "songId": "v11hash"
+   },
+   "sha1": "af0cbdd385dae5e80acafae2f6055af3f46fbc42",
+   "n": 326340,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.548014,
+   "rms": 0.061137,
+   "nan": false
+  },
+  "sec|punk|q3dry": {
+   "spec": {
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 3,
+    "room": "dry",
+    "songId": "v11hash"
+   },
+   "sha1": "d505696615d3cf4c2421a8b2f12ad576e944bd26",
+   "n": 187425,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.554957,
+   "rms": 0.094784,
+   "nan": false
+  },
+  "seat|punk": {
+   "spec": {
+    "genre": "punk",
+    "quality": 2,
+    "seatNotes": [
+     {
+      "fn": "pluck",
+      "midi": 40,
+      "at": 0
+     },
+     {
+      "fn": "pluck",
+      "midi": 43,
+      "at": 0.25
+     },
+     {
+      "fn": "strum",
+      "midi": 52,
+      "at": 0.5,
+      "o": {
+       "len": 0.45
+      }
+     },
+     {
+      "fn": "lead",
+      "midi": 64,
+      "at": 1,
+      "o": {
+       "hold": true,
+       "len": 2
+      },
+      "release": 1.6
+     }
+    ]
+   },
+   "sha1": "6be18db97eb0c8ad4c3774af5871cb68175f2207",
+   "n": 167580,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.363497,
+   "rms": 0.05315,
+   "nan": false
+  },
+  "vox|punk": {
+   "spec": {
+    "probe": "vox",
+    "genre": "punk"
+   },
+   "sha1": "483b11fdca626b8b14ad1eb342adb854f46d63ab",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.473585,
+   "rms": 0.101612,
+   "nan": false
+  },
+  "probe|punk|gtr": {
+   "spec": {
+    "probe": "gtr",
+    "genre": "punk",
+    "midi": 40,
+    "seconds": 1.2
+   },
+   "sha1": "e6ccee1a2fafe6583381f7cfda7bb1f339a06997",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.169523,
+   "rms": 0.051594,
+   "nan": false
+  },
+  "probe|punk|bass": {
+   "spec": {
+    "probe": "bass",
+    "genre": "punk",
+    "midi": 28,
+    "seconds": 1.2
+   },
+   "sha1": "640db11a0554bd7e6bf7ccc1d195110b242dfd55",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.274929,
+   "rms": 0.076735,
+   "nan": false
+  },
+  "radio|punk": {
+   "spec": {
+    "ambience": "radio",
+    "genre": "punk",
+    "pattern": {
+     "signature": "punk"
+    },
+    "songId": "v11hash"
+   },
+   "sha1": "6aaca1de6786384ac9f31d60d598b7eed56a6002",
+   "n": 114660,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.241905,
+   "rms": 0.041455,
+   "nan": false
+  },
+  "sec|rock|q0arena": {
+   "spec": {
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 0,
+    "room": "arena",
+    "songId": "v11hash"
+   },
+   "sha1": "af4185a3762fb1ad07928a22706d7931da2ecdc5",
+   "n": 396900,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.540358,
+   "rms": 0.102968,
+   "nan": false
+  },
+  "sec|rock|q3dry": {
+   "spec": {
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 3,
+    "room": "dry",
+    "songId": "v11hash"
+   },
+   "sha1": "d66c9cde2a5e6ae318d866a90b347f283e44c1e8",
+   "n": 257986,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.553501,
+   "rms": 0.122724,
+   "nan": false
+  },
+  "seat|rock": {
+   "spec": {
+    "genre": "rock",
+    "quality": 2,
+    "seatNotes": [
+     {
+      "fn": "pluck",
+      "midi": 40,
+      "at": 0
+     },
+     {
+      "fn": "pluck",
+      "midi": 43,
+      "at": 0.25
+     },
+     {
+      "fn": "strum",
+      "midi": 52,
+      "at": 0.5,
+      "o": {
+       "len": 0.45
+      }
+     },
+     {
+      "fn": "lead",
+      "midi": 64,
+      "at": 1,
+      "o": {
+       "hold": true,
+       "len": 2
+      },
+      "release": 1.6
+     }
+    ]
+   },
+   "sha1": "1fd862bf40e5be543d8eca87ff3eed31cc039dfe",
+   "n": 238141,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.406054,
+   "rms": 0.050489,
+   "nan": false
+  },
+  "vox|rock": {
+   "spec": {
+    "probe": "vox",
+    "genre": "rock"
+   },
+   "sha1": "4cd4024f0f17908798250f051b438a918ea81da8",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.443921,
+   "rms": 0.088957,
+   "nan": false
+  },
+  "probe|rock|gtr": {
+   "spec": {
+    "probe": "gtr",
+    "genre": "rock",
+    "midi": 40,
+    "seconds": 1.2
+   },
+   "sha1": "f14d56435bee4ea046e9764e91963582f6cda2be",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.188451,
+   "rms": 0.043933,
+   "nan": false
+  },
+  "probe|rock|bass": {
+   "spec": {
+    "probe": "bass",
+    "genre": "rock",
+    "midi": 28,
+    "seconds": 1.2
+   },
+   "sha1": "836da17539173884304dbefd3de187b79589236f",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.368801,
+   "rms": 0.085719,
+   "nan": false
+  },
+  "radio|rock": {
+   "spec": {
+    "ambience": "radio",
+    "genre": "rock",
+    "pattern": {
+     "signature": "rock"
+    },
+    "songId": "v11hash"
+   },
+   "sha1": "4728fe835f8a78cfd4eef335e38f649025b5fa9b",
+   "n": 114660,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.245501,
+   "rms": 0.055518,
+   "nan": false
+  },
+  "sec|country|q0arena": {
+   "spec": {
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 0,
+    "room": "arena",
+    "songId": "v11hash"
+   },
+   "sha1": "252d5bb7d14856c5542724211ce6eae13c08b84d",
+   "n": 432180,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.527785,
+   "rms": 0.088554,
+   "nan": false
+  },
+  "sec|country|q3dry": {
+   "spec": {
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "section": "chorus",
+    "bars": 2,
+    "quality": 3,
+    "room": "dry",
+    "songId": "v11hash"
+   },
+   "sha1": "8270a35843caff92fa04937e47daa6d309674d37",
+   "n": 293265,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.546759,
+   "rms": 0.110285,
+   "nan": false
+  },
+  "seat|country": {
+   "spec": {
+    "genre": "country",
+    "quality": 2,
+    "seatNotes": [
+     {
+      "fn": "pluck",
+      "midi": 40,
+      "at": 0
+     },
+     {
+      "fn": "pluck",
+      "midi": 43,
+      "at": 0.25
+     },
+     {
+      "fn": "strum",
+      "midi": 52,
+      "at": 0.5,
+      "o": {
+       "len": 0.45
+      }
+     },
+     {
+      "fn": "lead",
+      "midi": 64,
+      "at": 1,
+      "o": {
+       "hold": true,
+       "len": 2
+      },
+      "release": 1.6
+     }
+    ]
+   },
+   "sha1": "3b03abc6ca3f8771ed9f6896a2c7d47f6a337530",
+   "n": 273420,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.350525,
+   "rms": 0.02975,
+   "nan": false
+  },
+  "vox|country": {
+   "spec": {
+    "probe": "vox",
+    "genre": "country"
+   },
+   "sha1": "b0694af79a3306051160e92ee0e17b75ea506ecd",
+   "n": 70560,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.474301,
+   "rms": 0.109628,
+   "nan": false
+  },
+  "probe|country|gtr": {
+   "spec": {
+    "probe": "gtr",
+    "genre": "country",
+    "midi": 40,
+    "seconds": 1.2
+   },
+   "sha1": "275b5db1f9e34b6b06378454f8c00f22bd2309b0",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.339367,
+   "rms": 0.083801,
+   "nan": false
+  },
+  "probe|country|bass": {
+   "spec": {
+    "probe": "bass",
+    "genre": "country",
+    "midi": 28,
+    "seconds": 1.2
+   },
+   "sha1": "4b10b716cab4a6d3549418c987e785d8aada0e0d",
+   "n": 52920,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.261067,
+   "rms": 0.081426,
+   "nan": false
+  },
+  "radio|country": {
+   "spec": {
+    "ambience": "radio",
+    "genre": "country",
+    "pattern": {
+     "signature": "country"
+    },
+    "songId": "v11hash"
+   },
+   "sha1": "96712252767b38f72b8f4761cbeaf2e959531582",
+   "n": 114660,
+   "ch": 2,
+   "sr": 44100,
+   "peak": 0.280224,
+   "rms": 0.070621,
+   "nan": false
+  }
+ }
+}
