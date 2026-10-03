@@ -201,3 +201,85 @@ From the lanes (still open; details in their reports):
   (0.221 -> 0.194; ~0.21 with the plate); Classic switched off after it was on keeps the 1.1 vocals until the next page load;
   with Lane I's rooms v2 the vocals-only render differs from 1.1 by up to 0.65 (rooms, not vocals; logged only).
 - Owner items: the clip popup (ship / tweak, which genre) and the ear check of plate level, double width, belt brightness.
+
+## 8. Review fixes (fixer, 2026-10-03; commits `f6187c7`..HEAD on `v1.2-soundcheck`)
+The review pass (3 lenses: clock, perf, regression) confirmed 5 major findings and listed 12 unverified minors. All 5 majors
+are fixed; 10 of the 12 minors were real and fixed, the other 2 are duplicates of majors.
+
+**Confirmed (major)**
+1. **Tap chokes on the velocity path** (`30 A.hit`). A velocity hit longer than the tap cap (crash 0.9 s, ride / kick / toms on
+   the upper tiers) queues a decay ramp (`chokeEnv`). The next tap's `setTargetAtTime(0)` could not override it, so the old
+   hit rang on (the slot gain even jumped up) and was then cut hard at +50 ms, which clicks. Fix: `chokeSlot` cancels first
+   (`cancelAndHoldAtTime`; where that is missing, `cancelScheduledValues` + the level computed from the slot's envelope
+   `sl.env`), then fades in 6 ms. Only velocity taps take it (`taps[lane].vel`); the 1.1 tap choke is unchanged. New check in
+   pw_gig `kit`: two arena crash taps 0.25 s apart, the first slot reads 1.30 just before the choke and < 5 % of that at
+   +20 ms (before the fix: 1.12 at +20 ms, the check FAILS).
+2. **The van radio took the offline paths** (`ksGet`, `drumVel`, `preVel`, `skBuf`). "Offline" is now `r.ctx !== ctx` (a rig on
+   its own OfflineAudioContext), so `radioRig` is a live rig. A KS miss queues (the oscillator plays), there are no synchronous
+   plucks, and drums use the shared PRE2 set / sampled kit when the radio's genre | tier is the set's key. Otherwise they use
+   the 1.1 recipe at velGain, booked `D.n`. Probe (metal tier 3, 6 s of radio): 0 synchronous plucks (was 17-20), 19.8
+   sources/s against Classic's 21.5 (F3.4 holds), with the kit used for kick 19 / snare 9 and PRE2 for the rest.
+   renderOffline is unchanged (21 non-Classic renders hash-identical to `cc69f7a`).
+3. **A.warm warmed only KS layer 1.** It now builds pass 0's feel plan, the same pure plan `player()` makes from these opts
+   (`feelOf` + `feelPlanFor`, same seed), and queues every band event at its planned vel, in song order. Your part's kinds
+   (`opts.mute`) get both layers, after the band. A live miss during a gig song (`h.gig`) is held until the song ends (F3.5),
+   with warm jobs going first; elsewhere (songwriter loops, radio) misses still render in the 1 ms slices. Gig-opts play after
+   the warm, 15 s: misses metal 0 (was 5), punk 0 (was 12); keys warmed metal 44 (33), punk 25 (16).
+4. **AudioBufferSourceNode.detune on old WebKit** (`ksSrc`). `ksOK(ctx)` tests `createBufferSource().detune` once. Without it,
+   `ksGet` returns null and `A.warm` is a no-op, so every string stays the 1.1 oscillator (F3.6) instead of throwing after
+   `book()` (silent guitars and bass on iOS < 14.5).
+5. **The TMKD kit decoded on the title screen and was never released** (F17.2). `skWant` only decodes the kit of a loaded
+   career (`skFor`: `GG.state` + `A.sampleKit(rig.genre, rig.tier)`). A kit without samples releases the decoded clips
+   (`skRelease`). `skBuild` / `next()` stop when the career's kit changed mid-decode. A career loaded after the unlock wants
+   its kit at once (`career:new` / `career:loaded` -> `setKit`, not mid-song, not mid-preview, not Classic), and `setKit` on
+   an unchanged kit still asks. Follow-up: the PRE2 key carries `|kit` when the samples apply, so the title's set renders
+   kick / snare / toms itself and a career's set is rebuilt without them (no PRE2 + kit double count over the 6 MB cap).
+   pw_seq `kit` now checks: the title unlock decodes nothing; a metal career on the pro kit decodes 25 clips (3.79 MB); a punk
+   career loaded after it releases them (n 0, 0 B). Trade-off (accepted): the new-career seat preview on the title (no career,
+   REF tier 2) plays the synth kit, not the samples.
+
+**Minors**
+- Fixed: a string seat's run notes reuse the head tap's vo (55 `seatBook`, `G.runs[].vo`). Practice is no studio take
+  (`!G.opts.practice`). `ksPut` counts a key once and the pump skips keys already put. pw_perf gates the KS warm on F7's CPU
+  budget: the traced CPU of the warm's slices summed, <= 300 ms on the 4x throttle, plus wall <= 1.2 s (was wall 1.2 s
+  only). The shop demo (`hits`, `seatHear`), songwriter pads, the part grid and the title fill pass `{ vel: TAP_AUTO.other }`;
+  the shop waits (<= 1.5 s) on `A.kitReady()`, so a new kit tier is heard as itself. First-use DSP: `A.warm` builds the
+  genre's amp (cab IR + convolvers) before the song (`warmRig`) instead of on its first band note in the pump. The live plate
+  impulse comes ~1.2 s after the unlock (never mid-song) instead of inside the touch; offline renders are unchanged. Not
+  done: pre-making the glottal waves. All 9 open quotients cost ~180 ms of CPU and a ~24 ms slice on the 4x throttle (pw_perf
+  `pre` failed with them), for the 1-3 waves a song uses, so they stay lazy (0.6-5.5 ms each in the pump). The pw_seq kit
+  onset is now an absolute check: sampled kick / snare land within 1 ms of the DRUMS2 synth through the same chain (15.08 /
+  14.88 vs 15.47 / 15.44 ms); the relative checks are relabelled. Report §6 de-duplicated (the pw_perf line restored).
+- Documented, not rebuilt: `GG.audio.classic(bool)` at runtime applies at once to renderOffline and to every new note's
+  path, but the live rig keeps its graph (crush, duck, stereo kit chain, built amps, room IR) until a reload. For a by-ear
+  A/B: flip it and reload (comment at `A.classic`).
+- Duplicates: the two "A.warm only layer 1" minors (= major 3) and the title-decode minor (= major 5).
+
+**Sound:** renderOffline 1.2 output is unchanged by every fix (21 non-Classic renders, 4 genres x song / feel / 3 lanes + radio,
+hash-identical to `cc69f7a`), so the clips and `plan/v12_audio_numbers.txt` stand as they are (not re-rendered). The changes
+are live-only: chokes, radio, warm coverage, practice feel, the 1.2 kit in the shop / songwriter / title.
+
+**Verification** (390x844 and PW_VIEW=440x956; timing failures re-run alone)
+- `node build.js`: 5,120,731 B (gate 6,000,000). `node tests/run.js`: SUITE ALL PASS.
+- Matrix on `3cd4b7a`, two browsers in parallel (one per size):
+  - pw_seq: hash 4 (Classic 232/232 equal), audio 42, kit 11, real 5, seq 34 + guided 23, part 30, vox 17, voices 8, genres
+    25, heavy 22.
+  - pw_gig: sync 14, bridge 17, feel 10, kit 8, seat 33, chord 10, gig 32, double 17.
+  - pw_seat_audio: voices 19, mute 4, preview 9, noodle 5.
+  - Other files: pw_shop gear 30 / seat 26, pw_title scene 15 / flow 10, pw_settings settings 52, pw_flow flow 17.
+  - Timing-only failures under that parallel load, each passed when re-run alone:
+    - pw_seq `heavy` "renders faster than real time" (xRT 0.80 / 0.76): 22/22 alone twice at each size.
+    - 390 pw_seq `genres` (same render-speed check): 25/25 alone twice.
+    - 440 pw_seat_audio `voices` ("'now' = ctx + 5 ms", one read 2.9 ms off): 19/19 alone twice.
+- Final tree (`A.warm` without the waves), both sizes: pw_gig sync 14 / feel 10 / kit 8, pw_seq kit 11 / vox 17, pw_seat_audio
+  voices 19: all pass.
+- pw_perf alone, both sizes: scenes 18, governor 12, ratio 11, stalls 10, audio 7.
+- pw_perf `pre` 9, final tree: 390 passed 3 of 4 runs, 440 passed 2 of 5. The failures are 4x-throttle slice maxima:
+  - one 45 ms KS-warm slice;
+  - PRE2 build slices metal|1 10.8, country|2 8.2 and rock|0 13.4 ms work. These fixes add nothing to those slices beyond the
+    key compare in `stale()`.
+  - The pre-review tree (`cc69f7a`, same test file) flakes the same way: 2 of 3 at 440, one 30 ms metal warm slice.
+- KS warm per song on the final tree (traced CPU, 4x): metal 217-266 ms with 48 keys (was 36), punk 64-81, rock 135-143,
+  country 127-163. Wall: metal 311-412 ms.
+- Next for whoever owns perf: the warm's slice maxima (a single `pluckJob` create / step is up to 4-5 ms at 4x, on the base
+  too) and the PRE2 build-slice outliers.
