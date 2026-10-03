@@ -1,5 +1,9 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+//   hash  : v1.2 stage 0 (handoff F3.1): with GG.audio.classic(true), every case of tests/fixtures/audio_v11_hashes.json (4 genres x
+//           full / drums / band songs, 4 genres x 6 tap lanes x 4 kit tiers live + pre-rendered, sections, seat notes, vocals,
+//           probes, radio) renders bit-identical to 1.1.0.0 (tools/audio_hashes.js verify; deterministic summing: tools/_audio_lab.js).
+//           HASH_ONLY=<key prefixes> narrows it (e.g. HASH_ONLY=tap,pre). ~4-5 min alone.
 //   genres, voices: v0.9 (see the functions: genre amps, styles, solos, beds, crowd one-shots, in-career songs; singers).
 //   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
 //           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
@@ -838,6 +842,7 @@ async function voices() {
   if (want('audio')) await audio();
   if (want('heavy')) await heavy();
   if (want('part')) await part();
+  if (want('hash')) await hash();
 })();
 
 // v1.1 "Seats" (plan_contract_1.1 §4.4): the string-seat songwriter. A bass Write (Hail Damage): guided step 1 = Kenji's
@@ -942,5 +947,21 @@ async function part() {
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'part threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
+  c.done();
+}
+
+// v1.2 stage 0 (handoff F3.1 / F13): the Classic switch is the regression baseline. With it on, renderOffline / prerenderHit
+// output must equal the 1.1.0.0 fixture bit for bit (SHA-1 of the Float32 samples; method + cases in tools/_audio_lab.js).
+async function hash() {
+  const c = checker('hash');
+  try {
+    const { verify } = require('../tools/audio_hashes');
+    const r = await verify({ quiet: true, only: (process.env.HASH_ONLY || '').split(',').filter(Boolean) });
+    console.log('hash: ' + (r.n - r.bad.length) + '/' + r.n + ' equal in ' + Math.round(r.ms / 1000) + ' s ' + JSON.stringify(r.info));
+    c.ok(r.info.classicApi && r.info.classic === true, 'GG.audio.classic(true) switches the Classic sound on ' + JSON.stringify(r.info));
+    c.ok(r.n >= 200 || (process.env.HASH_ONLY || '') !== '', 'the whole fixture was rendered (' + r.n + ' cases)');
+    c.ok(r.bad.length === 0, 'classic on: every render equals 1.1.0.0 ' + (r.bad.length ? r.bad.length + ' differ: ' + r.bad.slice(0, 6).map(b => b.key + ' rms ' + b.want.rms + ' -> ' + b.got.rms).join(', ') : ''));
+    c.ok(r.errors.length === 0, 'no console errors ' + r.errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'hash threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   c.done();
 }
