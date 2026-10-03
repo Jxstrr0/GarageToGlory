@@ -10,6 +10,10 @@ Contract `plan/plan_contract_1.1.md` §5 Lead, cross-lane hand-overs, §6 checkl
 | merge `origin/wip-v11-a` (a9ec142) | 8d4b9a0 | no conflicts (dist rebuilt): 4,537,545 B; node SUITE ALL PASS after the sim_legacy fix below |
 | handovers | 2caa2e4 | see §2 |
 | phoneqa v1.1 sweep | 99167a5 | see §3 |
+| seat_scan ALL CAPS LEFT phrases | 7aaec78 | strict seat leak scan green |
+| save.test v1.1 round trip | c25e816 | gearLook + arc flags + seat gear survive code + slot |
+| string-seat shop buttons 48 px | 46a90a5 | phoneqa green; dist 4,537,988 B |
+| status.md, balance file, report | 43f55d6, 4e5c1ad, d8cc463 (+ report commits) | — |
 
 ## 2. Hand-overs applied (lead / unowned files)
 - **A0** `tests/sim_legacy.test.js`: the bass seat now expects `endings.player.bass[tier]` (its own card, different from the
@@ -149,7 +153,7 @@ of 30 seeds; the good bot reaches 100 % everywhere).
 avg bot (0.9, 40 ms) within **-2.4 .. +1.8** points of the drum seat (gate 3). sim_seats ALL PASS 17.
 
 ### Size and render (§6.7)
-- `dist/game.html` **4,537,936 B** (gate 5,000,000: ok, 462,064 B headroom); gzip-9 1,332,946 B (gzip -6 1,339,325 B).
+- `dist/game.html` **4,537,936 B** at the perf run, **4,537,988 B** final after the shop fix (gate 5,000,000: ok, ~462 KB headroom); gzip-9 1,332,946 B (gzip -6 1,339,325 B).
   Delta vs stage 0 (4,247,084): **+290,852 B** (planned +660 KB). By lane: D +30,506 · B +72,015 · lead (51 picker) +7,489 ·
   C +41,553 · A +138,898 · integration +391.
 - `node tools/perf.js scenes` + `report` (390x844, SwiftShader): every scene's draw calls / triangles within its gate. Seats line:
