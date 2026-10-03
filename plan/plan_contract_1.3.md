@@ -25,7 +25,7 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 | S5 | Ratings | **Rate by the notes only**; a slider-built song can reach top ratings. |
 | S6 | UI | **One flow** (no separate Guided / Advanced modes; tips inline). Meters = **one slim strip** of 3 mini bars under the header (+/- flash on change). Coach = **one-line bubble** with the bandmate's avatar, tap for the full tip. "Let the band jam one", the metronome and the tools go in the header's ⋯ menu. |
 | S7 | Look | **Option A "Clean sheet"** (`?opt=A`, `_A.png`; the owner first tapped B, then: "Sorry, A was my answer"). Flat and quiet; underline section tabs (Verse / Chorus / Bridge / Song); recipe cards in 2 columns; horizontal sliders with end labels + a value label; "Your part \| Drums" toggle with "Chords: <progression> ▾" beside it; 4 chord chips (BAR n + chord name; home chord outlined green) above the grid; the grid fills the screen (no scroll at 440x956); footer ▶ Loop / ▶ Song / Save ✓ (Quick song: ▶ Play / Tweak ✎ / Save ✓). Same navy background as the rest of the game. |
-| Q1–Q3 | §8 | Asked at stage 0 in ONE popup; the answers are recorded here before the lanes fork. §4 marks the branches. |
+| Q1–Q4 | §8 | Asked at stage 0 in ONE popup; the answers are recorded here before the lanes fork. §4 marks the branches. |
 
 ### Defaults (taken without a popup; they stand unless the owner objects — list them in the merge summary)
 - D1 Chords live on the PATTERN (`p.chords`): every seat hears them; drum-seat recipes carry Mood chords with no part (create
@@ -33,17 +33,20 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 - D2 Chips on all three string seats only (mockup 3: none on drums; hidden on the Drums layer); the lead's ▾ is "Hook: <name>".
 - D3 Mood = the parallel key: same key note (`A.keyFor`, 30:2405), new mode/scale/thirds (E ↔ Em); native rung = 1.2. No key picker.
 - D4 Ranges: rhythm 6 rows (S2 order), bass 6 (Low 5th, Root, 3rd, 5th, 7th, Oct), lead 7 (one scale step under the hook, the
-  hook's 5 degrees, one over). Columns ≥ 47 px at 390 px (6 rows ≈ 53, 7 ≈ 47).
+  hook's 5 degrees, one over). Columns at 390 px: 6 rows ≈ 52, 7 ≈ 44 (366 − 30 label − 7 × 4 gap; cells are not audited buttons).
 - D5 Scratch = a dead strum at the chord root: charted like a muted chug on the root's lane (same gem).
 - D6 Feel = 8th-note shuffle up to a full triplet; 16ths ride inside their 8th; steps, bar lines and count-ins never move.
-- D7 `break` bars (metal/punk/rock bridge bars 1–2) and the outro ring bar: chips locked on home. Solo/Outro tabs: no chips (1.2).
+- D7 Solo/Outro tabs: no chips (1.2), so the outro ring bar keeps the tonic. `break` bars (metal/punk/rock bridge bars 1–2, 30:2953
+  plays the tonic there): **Q4** (S2 says "each bar"; a lock there would narrow a locked answer, so the owner decides).
 - D8 The 0.6.2 groove presets survive as ⋯ → "Beat for this section" (a sheet; pedal ones locked). No extra row on the grid.
 - D9 Part grid rows min 26 px (was 30): no scroll at either size with 0 safe areas; a notched 390 phone may scroll a little.
 - D10 Kit sketch pad: the editor when a draft exists, else Quick song. View mode: editor only, read-only, ⋯ = metronome only.
 - D11 Metal recipes add double-kick variants (`dk`) once the pedal is owned, so they stay ≥ 80 groove under loDK (genres.js:38).
 - D12 Rock stays inside 90–160 bpm (no forced ballad style); "Lighter-waver" at 100 plays as "Big open chords".
 - D13 Band jams, bots, rivals, starters, career songs: 1.2 exactly (`generate`/`jamGear`/`jam` untouched, v1 parts, no v1.3 fields).
-- D14 "Surprise me" = `songs.surprise(…, seed)` seeded by the song slot + tap count; it stores concrete values (never `state.rng`).
+- D14 Seeds (54 computes, 21 stays pure): compose seed = `GG.hashSeed(state.seed + '|' + songSeed(D))` (54:389: the next song
+  slot, or the sketch week), stored in `p.recipe.seed`; a fresh block, a card tap and every slider recompose reuse it. "Surprise
+  me" = `songs.surprise(…, GG.hashSeed(seed + '|surprise|' + taps))`. Both store concrete values (never `state.rng`).
 - D15 Feel and Tempo never rewrite notes. Energy, Fills, Mood or another recipe recompose (with hand edits: Q3).
 - D16 Save writes v1.3 fields only when set: compose sets them; an old song/draft opened and saved untouched stays 1.2 JSON. A v1
   part renders through `part.view` (v2 layout) and becomes v2 on its first part edit (write/sketch); view mode never writes.
@@ -52,7 +55,7 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 
 ## 1. Scope
 ### 1.1 Must
-- M1 Quick song screen (S4, S7): 5 recipes per genre + "Surprise me", 5 sliders, ▶ Play / Tweak ✎ / Save ✓. A fresh Write block
+- M1 Quick song screen (S4, S7): exactly 5 recipes per genre + "Surprise me", 5 sliders, ▶ Play / Tweak ✎ / Save ✓. A fresh Write block
   opens it with the genre's signature recipe (Save works at once). Replaces the guided steps (54:523–713, deleted).
 - M2 Pure seeded generator `songs.compose` (best of K by `rate`), recipe + slider content for 4 genres, seat-safe words.
 - M3 Part v2 rows (D4) with sound (30), rating (21), charts (22); v1 parts upgrade with identical sound and ratings.
@@ -73,12 +76,12 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 | suggestion | `21:461 SUGGEST`, `484 SOLO_HITS`, `493 suggest` | v2 suggestion = v1 rows mapped through `UP` |
 | part cleaning | `21:508 cleanSection`, `521 part.sanitize`, `532 full`, `539 toggle`, `545 pick` | n from `LAYOUT[v]`; `v` written only when 2 |
 | part mods | `21:551 MODS`, `556 modRows`, `582 modify` | v2 rules: `ring` → Open row, `call` → next pitched row, skip Scratch |
-| part rating | `21:606 partFeat`, `624 PART_FULL`, `630 partGroove`, `644 rateWithPart`, `656–663` hook, `672 PART_WEIGHT` | v2 role map; chord-array hook rule |
+| part rating | `21:606 partFeat`, `624 PART_FULL`, `630 partGroove`, `644 rateWithPart`, `656–663` hook, `672 PART_WEIGHT` | v2 role map + gated hook rule (stage 0, §4.4) |
 | drum rating | `21:106 features`, `140 barGroove`, `160 hookOf`, `192 rate` | Q2=1: fill bar weighting; else untouched |
 | generators | `21:293 generate`, `309 jamGear`, `383 patternFor`, `841 jam` | **untouched** (STAGE0 + balance pin the RNG draw order) |
 | groove ops | `21:997–1053` presets / applyPreset / presetOf / modify / tempoLabel | compose building blocks (genre passed explicitly) |
 | arrangement | `21:37 ARRANGEMENTS`, `369 withExtras` | compose step 3 |
-| similarity | `21:388` | parts compared in `part.view`; chord arrays when either side has chords |
+| similarity | `21:388` | parts compared in `part.view`; the 0.2 term as the §4.4 hook gate (arrays only with `p.chords`, bass/rhythm) |
 | chart grid | `21:676 toNotes` | stays straight (no swing); Q2=1 bar-4 fills |
 | create | `21:812` (part 819–820) | unchanged: a matching part is kept, drum seat drops the part |
 | key / chords | `30:2405 A.keyFor`, `30:2430 progression` | chip names; `songs.chordsOf` mirrors the hash pick |
@@ -99,16 +102,23 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 
 ## 3. Stage 0 (lead, one commit on `v1.3-songwriter` before the lanes fork)
 1. **Re-audit** the §2 lines on the tree; fix the table.
-2. **Fixtures FIRST (before ANY `src/` edit):** `tools/make_fixtures_v12.js` (node, DOM-free via `tests/_load.js`) →
+2. **Fixtures FIRST (before ANY `src/` edit):** `tools/make_fixtures_v12.js` (node: `tests/_load.js`, whose SIM_SAFE skips 30/31,
+   plus `30_audio.js` + `31_audio_feel.js` evaluated as sim_audio.test.js:10 does; `compat_v12` loads the same way) →
    `tests/fixtures/v12_songs.json`:
    - corpus per genre: signature (+ solo + outro), starter, `generate(RNG(101..103))`, `generate(RNG(7), full gear)`, 3 jammed
      careers per seat (`songs.jam`, v1 parts), part edge cases (every prog/hook index per section, empty rows, all-x rows, a
      4-row bass, prog 99), and every song in `tests/fixtures/save_v01.json` + the `v09_*/v10_*.json.gz` saves;
    - per entry: **SAN** H16 of `JSON(sanitize(p, gear, genre))` (4-lane no pedal + full gear), **RATE** the whole `rate()`
      object (tips included) + `partRating`, **NOTES** H16 `toNotes`, **CHART0** H16 `gig.chart` (4 difficulties × lanes {4, gear
-     cap}, fixed extras rng) + `seatChart` per string seat, **PART0** H16 `A.timeline({ seat, part })` per seat at the song's bpm
-     and 80/140/200, **SIM** H16 of the per-genre similarity matrix;
-   - **SAVE0**: every fixture save loads through `10_save`; per song H16 of `JSON(pattern)` and the stored rating.
+     cap}, fixed extras rng) + `seatChart` per string seat, **PART0** H16 `A.timeline({ seat, part })` per seat (+ seat 'drums'
+     and no seat for songs that carry a part) at the song's bpm and 80/140/200, **SIM** H16 of the per-genre similarity matrix;
+   - **1.2 saves** (the old fixtures hold no part, no draft, no pendingSongs: 0 `part` keys, `draft: null`): the tool also
+     writes `tests/fixtures/v12_<drums|bass|rhythm|lead>.json.gz`, a real 1.2 career per seat (`newCareer({ seat })`, slot record
+     via `GG.save.write` on a fake storage, `savedAt` fixed) with written songs whose parts use non-default prog/hook indexes, a
+     raw 4-row bass, owned solo + outro, `state.draft` with a part and 2 `pendingSongs`;
+   - **SAVE0**: every fixture save (old + `v12_*`) loads through `10_save`; per song H16 of `JSON(pattern)` and the stored
+     rating; H16 of `JSON(draft)` and `JSON(pendingSongs)` after load, and their SAN (what 1.2 stores when they are opened and
+     saved untouched).
    - `tests/compat_v12.test.js` recomputes all of it == fixture (in the suite forever). STAGE0 (sim_audio:497) stays as is.
    - Classic: `META_ONLY=hash timeout 500 node tests/pw_seq.js` → 232/232 equal to `audio_v11_hashes.json`.
    - Optional: `tools/audio_hashes.js --classic-off --out tests/fixtures/audio_v12_off.json` (4 signatures, full mix): keep it
@@ -120,9 +130,13 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 5. **21 contract code** (gated; `compat_v12` green after it): the §4.1 sanitize cleaners; `part.LAYOUT/UP/rowsOf/rowNames/upgrade/
    view/rowPitch`; `songs.swingBeat`; `songs.chordsOf`; `songs.NOTE` + `chordLabel`; stubs with the final signatures: `compose`
    (signature + requested bpm + fields, no K), `recipes` (the signature as one recipe + surprise), `surprise`, `sliders`,
-   `progName`, `moodOf` → null, `nativeMood` → 0. Lanes S/A/U build on these from minute one.
-6. **One owner popup** with §8 Q1–Q3 → record in §0 and status Addendum 5.
-7. **Tests:** `compat_v12`; `sim_songs` + "v1.3 fields survive sanitize only when present; absent → the 1.2 JSON; idempotent";
+   `progName`, `progChords`. **For real at stage 0:** `part.ROLE` + v2 `partFeat` roles + the gated hook / similarity rules (§4.4),
+   so the upgrade gate holds from minute one; `songs.moodOf` / `nativeMood` over **`backing.moods` + `moodNative` in genres.js**
+   (5 rungs × 4 genres, scale lengths 7/7/6/5, native rung == today's `mode/scale`: metal 2, punk 1, rock 2, country 1; third,
+   seventh per rung), so `rowPitch`, `chordLabel` and Lane A's mood code run on real data. Lanes S/A/U build on these from minute one.
+6. **One owner popup** with §8 Q1–Q4 → record in §0 and status Addendum 5.
+7. **Tests:** `compat_v12` (+ the upgrade gate: `rate()` with `part.upgrade(pt)` deep-equals `rate()` with `pt`, tips included, and
+   `partRating`, for every corpus entry × string seat); `sim_songs` + "v1.3 fields survive sanitize only when present; absent → the 1.2 JSON; idempotent";
    full node suite; `pw_seq hash`. Report `plan/v13_stage0_report.md` (≤ 40 lines). Commit, push, fork the lanes.
 
 ## 4. Shared contract (every lane codes against this)
@@ -150,7 +164,9 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 - `songs.chordsOf(p, name, genre, { part, seat }?)` → [4]: `p.chords[name]` > the part's prog (when the part applies to that seat
   and seat ≠ lead, as 30:2936; a raw part is read defensively like 30:2833–2849) > the 1.2 hash pick (= 30:2430). Never writes.
 - `songs.chordLabel(genre, mood, tonic, semi)` → `'E5' | 'Em' | 'E'` (power-chord genres '5'; else the triad in the rung's scale).
-  `songs.progName(genre, seat, name, p, opts)` → the progNames/hook name whose array equals `chordsOf`, else 'Custom'.
+  `songs.progChords(genre, name, i, mood)` → [4] = `progressions[name][i]` remapped by the rung, `break`-role bars 0 when Q4 = 1
+  (compose step 5, the picker and `chord-reset` all write this). `songs.progName(genre, seat, name, p, opts)` → bass/rhythm: the progNames entry i whose
+  `progChords(…, i, p.mood)` equals `p.chords[name]` (present) or the index `chordsOf` used (absent), else 'Custom'; lead: the hook's name.
 - `songs.moodOf(genre, mood)` → rung | null (null = absent/native). `songs.nativeMood(genre)` → int.
 - `part.rowsOf(pt)`, `part.rowNames(pt)`, `part.upgrade(pt)` → v2 copy (same sound, same ratings), `part.view(pt)` (v2 as is, else
   upgrade), `part.rowPitch(genre, seat, row, { mood, deg })` → semitones over the bar root (bass/rhythm), scale degree (lead), or
@@ -161,17 +177,20 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 - `songs.surprise(genre, gear, seat, seed)` → `{ recipe, energy, mood, swing, fills, bpm }` (unlocked recipes only).
 - `songs.compose(genre, { recipe, energy, mood, swing, fills, bpm, seed, gear, seat })` → sanitized PATTERN with `chords, mood,
   swing, recipe` (+ `fillBars` if Q2 = 1, + a v2 part on string seats). Steps: (1) recipe (locked/unknown → the signature recipe);
-  `rng = GG.RNG(GG.hashSeed('compose|' + genre + '|' + id + '|' + seed))`; (2) bpm rounded to 5, clamped to the genre tempo;
+  `rng = GG.RNG(GG.hashSeed('compose|' + genre + '|' + id + '|' + seed))` (seed: D14); (2) bpm rounded to 5, clamped to the genre tempo;
   (3) arrangement `ARRANGEMENTS[arr]` + `withExtras(gear)`; (4) drums: preset bar + recipe mods (+ `dk` when the pedal is owned),
-  `grooveFx.energy[energy]`, fills per Q2; (5) chords = `progressions[sec][parts.prog[sec]]` remapped by the rung → `p.chords`;
+  `grooveFx.energy[energy]`, fills per Q2; (5) chords = `progChords(genre, sec, parts.prog[sec], mood)` → `p.chords`;
   (6) string seat: v2 part = SUGGEST through `UP` + recipe part mods + `grooveFx.partEnergy[energy]`, onset caps 12/14/12
-  (bass/rhythm/lead; PART_FULL stays); (7) K = `C.QUICK.k` variants (0 = no nudge, i > 0 = one seeded hit/row nudge) → keep the
-  best groove + hook by `rate` (ties → lowest i). Same args → same JSON; a slider moved and moved back → the same song.
+  (bass/rhythm/lead; PART_FULL stays); (7) K = `C.QUICK.k` variants that differ musically (per section a seeded pick from the
+  recipe's `alt` drums, a hat ↔ ride swap, the fill bar, the part mod alternates); among those with groove ≥ 80 and hook ≥ 65
+  (none → the best groove + hook) `rng` picks one, never "lowest i", so the default recipe on two song slots gives two songs
+  (§4.4 variety). Same args → same JSON; a slider moved and moved back → the same song.
 
 ### 4.3 Content (new keys only)
 - `grooves[g].recipes = [{ id, name, desc (≤ 28 chars, seat-safe), pedal?, bpm, arr: 'short'|'classic'|'epic', drums: {
-  verse|chorus|bridge: [presetId, ...modIds] }, dk?: { <section>: [modIds] }, sliders: { energy, mood, swing, fills }, parts: {
-  prog: { verse, chorus, bridge }, hook: { verse, chorus, bridge }, mods?: { <section>: partModId } } }]`, ≥ 5 per genre:
+  verse|chorus|bridge: [presetId, ...modIds] }, alt: { <section>: [[presetId, ...modIds], …] } (variety, §4.2 step 7), dk?: {
+  <section>: [modIds] }, sliders: { energy, mood, swing, fills }, parts: { prog: { verse, chorus, bridge }, hook: { verse, chorus,
+  bridge }, mods?: { <section>: partModId } } }]`, exactly 5 per genre (cards: 5 + Surprise = 3 rows):
   metal Neck-snapper 180, Doom crawl 75, Thrash attack 200, Stadium anthem 140, Gallop 165 (pedal); punk Three-chord sprint 190,
   Laundromat D-beat 185, Pogo party 175, Circle pit 220, Skate rat 205; rock Arena anthem 125, Lighter-waver 100, Bar boogie 115,
   Bleacher stomp 118, Highway driver 145; country Train song 112, Legion two-step 95, Sad waltz 85, Barn burner 120, Porch swing 88.
@@ -182,22 +201,35 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
   (Energy 0 keeps ≥ 8 drum hits per bar and a chorus ≥ 8: rating floors 21:149, 21:172).
 - `backing.moods = [5 × { id, mode, scale (length == backing.scale: metal 7, punk 7, rock 6, country 5), third, seventh, remap?:
   { <semi>: semi } }]`, `backing.moodNative` = the rung equal to today's `mode/scale` (metal 2, punk 1, rock 2, country 1).
-- Coach: `grooves.coach.quick` (neutral; never /lawn|French|neck/) + `grooves[g].coach.quick` + `zz_seats` `coach.bySeat.quick`.
+  Landed at stage 0 (§3.5); Lane S tunes `id` names and `remap` only (scale, third, seventh of every rung are the contract).
+- Coach: `grooves.coach.quick` (neutral; never /lawn|French|neck/) + `grooves[g].coach.quick` + `zz_seats` `coach.bySeat.quick`;
+  these are also the Quick bubble's first-Write line (colon-free, pw_tutorial). `lines.writeTips` (grid instructions) show only
+  when the editor opens (Tweak, or a fromSketch block).
 
 ### 4.4 Rating rules (S5)
 - `rate()` reads notes only: sections, arrangement, bpm, lanes, part rows, chords (only via the part hook's contrast rule), fillBars
   (Q2 = 1: a section counts ¾ main bar + ¼ fill bar in groove/difficulty features; hook unchanged). Never recipe/mood/swing.
 - v1 path verbatim (RATE fixture). v2 `partFeat` reads roles through `part.ROLE[seat]` = sets of v2 rows (the UP image of the v1
-  row + new ones: rhythm root += Root, fifth += 5th, chug += Root/5th/Oct; bass fifth += Low 5th). Gate: `rate(upgrade) == rate`
-  over the whole corpus.
-- Scratch is an onset (fit/busy), never `odd`; a bar of only Scratch × 0.6 (no pitch). Hook contrast with v2 or chords: compare
-  `chordsOf(verse)` vs `chordsOf(chorus)` arrays (1.2 compares indexes, 21:662). Similarity: chord arrays when either side has them.
-- Ceiling (content.test): every recipe at its default sliders groove ≥ 80 and hook ≥ 65 on 4 lanes without pedal AND full gear;
-  per genre ≥ 2 recipes reach groove ≥ 90 + hook ≥ 85 at some setting; no single-slider extreme drops groove below 55.
+  row + new ones: rhythm root += Root, fifth += 5th, chug += Root/5th/Oct; bass fifth += Low 5th). Gate (stage 0, compat_v12):
+  `rate()` with `part.upgrade(pt)` deep-equals `rate()` with `pt` (tips included) + `partRating`, every corpus entry × string seat.
+- Scratch is an onset (fit/busy), never `odd`; a bar of only Scratch × 0.6 (no pitch).
+- Hook floor (21:662, the 0.6): **bass/rhythm** compare `chordsOf(verse)` vs `chordsOf(chorus)` arrays only when `p.chords` has
+  verse or chorus; otherwise the 1.2 index rule, v2 parts included (verse and chorus use different lists, so arrays differ even at
+  the same index: an array rule keyed on `v === 2` breaks the gate). **Lead:** always the 1.2 hook-index rule (`chordsOf` ignores
+  the lead's part). Similarity's 0.2 part term (21:399): the same gate.
+- **Top** = groove ≥ 90 and hook ≥ 85. Ceiling (sim_songs, table in Lane S's report), per genre × seat (drums, bass, rhythm,
+  lead) × gear (4 lanes no pedal; full): (a) every recipe at its default sliders groove ≥ 80, hook ≥ 65; (b) ≥ 2 recipes reach
+  top at the max of `rate(compose(…))` over energy × fills (25 points) at the recipe's mood + bpm, plus mood 0 and 4 at the
+  defaults; (c) no single-slider extreme drops groove below 55; every output validates; the drum seat carries no part.
+- Variety (sim_songs): the default recipe on 5 consecutive song slots of one career (D14 seeds) per genre × seat: no two
+  JSON-equal; pairwise similarity < 0.9 (tracklist `adjacentAt`; critic `recycledAt` 0.93); at most 1 of the 10 pairs ≥ 0.8
+  (drama `lawsuit`, 27:211). Baseline: 1.2 jams (`generate`, RNG 1001..1020, 4 lanes) have 7–12 % of pairs ≥ 0.8, median ≈ 0.6.
 
 ### 4.5 Audio rules (30, 31)
 - Chords: after 30:2936 `if (CH && CH[name]) prog = CH[name]` for every seat incl. lead and drums (precedence chords > part prog >
-  hash); `break` and ring bars keep the tonic (D7). 30 calls `songs.chordsOf` so 54's chips never disagree.
+  hash); the outro ring bar keeps the tonic (D7); `break` bars: **Q4 = 1** with `p.chords[name]` present a break bar's root is its
+  chip (compose / pick write home there, so recipes still break down on home; Lane A's neutral-chords test uses sections without
+  break bars), absent → the tonic (1.2); **Q4 = 2** the tonic always. 30 calls `songs.chordsOf` so 54's chips never disagree.
 - Mood (non-native only): `B = Object.assign({}, B, rung overrides)`, `key = Object.assign({}, key, { mode, name })`, `o.third`
   set; the hard-coded thirds read `o.third` with the old literal as fallback. Native/absent: `B`, `key`, `o` untouched.
 - Swing (`p.swing > 0` only): after the events are built and before the sort (30:2970), every non-`step` event with a moved
@@ -211,15 +243,19 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 ### 4.6 Gig rules (22, 55)
 - **Q1 = 1 (contour):** lanes stay the pitch contour (22:463–470) on the rig's 4–6 lanes (= gear, never rows); new rows are just
   pitches; Scratch has `midi` = root (+ `mute`, `dead`), so it charts on the root's lane; singles are `power: false`, so Hard+
-  never turns them into 2-lane chords (22:538). Copy `dead` at 22:460, 22:500, 22:503 and 55:623. **Q1 = 2/3:** v2 part events
+  never turns them into 2-lane chords (22:538). Copy `dead` at 22:460, 22:500, 22:503 and 55:623; a `dead` note never joins or
+  starts a run (22:519 also compares `!!dead`), so Scratch stays its own tap. **Q1 = 2/3:** v2 part events
   carry `row`; `seatChart` maps row → lane (2: `floor(row·L/rows)`; 3: L = rows) for v2 only; "same pitch = same lane" gated to v1.
 - Swing: drum chart `t = swingBeat(n.beat, p.swing) * spb` (22:384, extras 22:395); `where()` uses `e.g ?? e.beat`. Windows follow
-  `note.t`; doubles/thin/two-thumbs see the real gaps; beat lines, count-ins, sections, fill windows never move.
+  `note.t`; doubles/thin/two-thumbs see the real gaps; beat lines, count-ins, sections, fill windows never move. Accepted (list in
+  the merge summary): the swapped drummer (42:231) animates on straight `audio:step`; Feel 4 at 220–240 bpm squeezes 16th pairs to
+  ~42 ms while `rating.difficulty` stays notes-only (S5).
 - Fills (Q2 = 1): toNotes brings them into the drum chart; extras skip a bar with a fill; free windows (last bar of bridge/outro)
   stay free. Rivals (59d:327, 407–411) never carry swing or fills: unchanged.
 
 ### 4.7 UI contract (54, 00_shell CSS)
-- `D.screen = 'quick' | 'edit'`. write: fresh block → quick (signature recipe composed, first-Write tip in the bubble), a queued
+- `D.screen = 'quick' | 'edit'`. write: fresh block → quick (signature recipe composed with the D14 seed; the bubble's first-Write
+  line from `coach.quick`, §4.3), a queued
   sketch (`fromSketch`) → edit. sketch: D10. view: edit only. `D.mode` values stay (5p:297, tutorial.js:111); listeners stay on the
   screen entry (54:510–516); `e.rerender()` keeps `screen/layer/tab` (5k refreshSeq).
 - **Header 48 px:** ✕ `btn-seq-close`, title `seq-title` + subtitle ("Write block n of m · <part>"), ⋯ `btn-seq-tools`.
@@ -238,16 +274,24 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
   rung's chord roots + `chord-reset` "Back to <name>"), grid `seq-grid` / `part-grid` (`cell-<lane>-<step>`, `part-cell-<row>-<step>`,
   `data-lanes`), foot ▶ Loop `btn-seq-loop`, ▶ Song `btn-seq-song`, Save ✓ `btn-seq-save` | Use in next Write `btn-seq-use`.
   Playhead = the grid row + the current bar's chip. Old part, no chords → chips derived, nothing written until a chip/picker edit.
+- **Picker + chips write rules.** Bass/rhythm `part-pick-<i>`: `p.chords[tab]` present → `p.chords[tab] = progChords(genre, tab,
+  i, p.mood)` and `part.prog = i`; absent (an old song) → `part.pick` only (1.2 JSON until a chip edit). Lead `part-pick-<i>`
+  (Hook) writes `part.hook` only. A chip writes `p.chords[tab]` (seeded from `chordsOf` when absent). `chord-reset` "Back to
+  <progName>": a song with `p.recipe` or `p.mood` → `progChords` of `part.prog` (bass/rhythm) or of the recipe's `parts.prog[tab]`
+  (lead); otherwise delete `p.chords[tab]` (and `p.chords` when empty) → the 1.2 chords (part prog > hash).
 - **⋯ menu** (modal id `seq-tools`, opener `btn-seq-tools`): `btn-seq-jam` (write), `btn-seq-metro` (all modes; `dataset.on` +
   `aria-pressed` kept), `btn-kit-shop` + `kit-practice` (sketch; 5h listens on this modal's `ui:layout`), `btn-seq-quick`,
   `btn-seq-beat` → sheet `seq-beat-<presetId>`, `seq-copy-<from>`, `seq-clear`, `part-mod-<id>`, `part-clear`, `seq-remove-<extra>`,
-  Q2 = 1: `btn-seq-fill` ("Bar 4 fill": the grid edits `p.fillBars[tab]`, the tab reads "Chorus · fill").
+  Q2 = 1: `btn-seq-fill` ("Bar 4 fill": the grid edits `p.fillBars[tab]`, the tab shows a small fill badge, no extra text).
 - Gone: guided steps, `btn-guide-*` except Play, `guide-*` testids, `btn-tell-drummer`, `btn-seq-guided`, prefMode/GSTEPS/
   GNAMES/ORDER_BLURB, the `.full.seq` background (00_shell:334), guide-* CSS except the card styles (reused by recipe + Beat cards).
-- Sizes (0 safe areas): every `#screens` button ≥ 44 × 44 (pw audit 43.5); header 48, tabs 45, meters 18, coach 44, toggle 44,
-  chips 44; part grid rows `minmax(26px, 1fr)`; drum seat cells ≥ 60 × 30 at 390 (~33.6 px rows); no scroll in any editor case at
-  440x956; `.seq-main` scroll ≤ 1 at 390x844 (drum seat, string part layer ~27 px rows, Drums layer ~30 px); Quick ≈ 752 / 780 px at
-  390 (3 card rows × 58, 5 sliders × 72): > 6 cards scroll. PART_COLORS ≥ 7.
+- Sizes (0 safe areas): every `#screens` button ≥ 44 × 44 (pw audit 43.5); header 48, tabs 45, meters 18, coach 44, toggle 48
+  (phoneqa V10 holds `seq-layer-` to 48), chips 44; part grid rows `minmax(26px, 1fr)`; drum seat cells ≥ 60 × 30 at 390 (~33.6 px
+  rows); no scroll in any editor case at 440x956; `.seq-main` scroll ≤ 1 at 390x844 (drum seat, string part layer ~27 px rows,
+  Drums layer ~30 px). `seq-chords` `min-width: 0` + ellipsis (progNames run to 30 chars). PART_COLORS ≥ 7.
+- **Quick scrolls, never clips** (`.full.seq .full-body` is `overflow: hidden`, 00_shell:335): header, strip and bubble fixed;
+  the cards + sliders sit in `quick-main` (`overflow-y: auto`, bottom padding ≥ 16 px) above the fixed foot. ≈ 752 / 780 px at 390
+  with 0 insets (3 card rows × 58, 5 sliders × 72), so a notched phone or Bigger text scrolls it.
 - Tutorial: `tutorial.js` w1_write points at `btn-guide-play` (every layer) and at `btn-seq-tools` for the jam ("Stuck? Tap ⋯ and
   let the band jam one"); never at `seq-grid` or a button inside the closed menu. `T.suppressWriteTip` still gates `firstTip`.
 
@@ -258,7 +302,7 @@ fills, bpm }, chords: { <section>: [4] } (effective), chips: [names], edited, co
 
 ### 4.9 Size + perf budgets
 `dist/game.html` ≤ 6,000,000 B (today 5,120,731; v1.3 net ≤ +80 KB after the guided flow goes). `compose` ≤ 20 ms (node, median
-of 50); slider release → new loop audible ≤ 300 ms at 4× CPU throttle (pw_perf probe `quick`); gig frame p95 ≤ 1.1 × 1.2.0.0;
+of 50); slider release → new loop audible ≤ 300 ms at 4× CPU throttle (`tests/pw_perf.js` section `quick`, Lane U); gig frame p95 ≤ 1.1 × 1.2.0.0;
 KS cache cap unchanged; no new console errors.
 
 ## 5. Lanes (3 agents, medium effort; isolated copies; never publish)
@@ -268,45 +312,56 @@ anything outside your files is a hand-over request. Return: the branch (pushed a
 
 ### Lane S — SIM + CONTENT
 - Owns: `src/21_sim_songs.js` (after stage 0), `content/grooves.js` (recipes, sliders, grooveFx, coach.quick), `content/genres.js`
-  (`moods`, `moodNative` keys only), `content/zz_seats.js` (coach.bySeat.quick, lock labels); tests `sim_songs`, `sim_seats`,
+  (`moods` names + `remap` only; rungs land at stage 0), `content/zz_seats.js` (coach.bySeat.quick, lock labels); tests `sim_songs`, `sim_seats`,
   `content.test`, `content_seats.test`; `tools/seat_audit.js` word lists.
-- Tasks: S1 v2 suggest / modRows / partFeat roles / hook + similarity chord rules; S2 compose / recipes / surprise / sliders /
-  chordLabel / progName / moodOf for real; S3 Q2 fillBars in sanitize / validate / toNotes / rate; S4 the 20 recipes, 4 × 5 rungs,
-  slider labels, coach lines (no USA, no drum words on string seats, neutral lines never /lawn|French|neck/).
+- Tasks: S1 v2 suggest / modRows / Scratch rating (roles + the hook / similarity gate are stage 0's); S2 compose (seeded variety)
+  / recipes / surprise / sliders / chordLabel / progName / progChords for real; S3 Q2 fillBars in sanitize / validate / toNotes /
+  rate; S4 the 20 recipes (+ `alt`), rung names + remaps, slider labels, coach lines incl. the Quick first-Write line (no USA, no
+  drum words on string seats, colon-free first-Write lines, neutral lines never /lawn|French|neck/).
 - Tests: `compat_v12` green; `rate(upgrade(pt)) == rate(pt)` and SAN idempotent over the corpus; compose pure / deterministic /
   slider round trip / no `GG.state` read (state null) / drum seat has no part / locked recipe falls back; Surprise determinism;
-  swingBeat (integers fixed, monotonic, s = 0 identity); §4.4 ceiling numbers per recipe (log them in the report).
+  swingBeat (integers fixed, monotonic, s = 0 identity); §4.4 ceiling (a)–(c) per genre × seat × gear and variety (table in the
+  report); the hook gate both ways (a v2 part without `p.chords` rates as its v1 source; with `p.chords` the arrays decide).
 
 ### Lane A — AUDIO + GIG
 - Owns: `src/30_audio.js` (timeline, partSec / partBar2, `o.third` sites, ksSpecFor / seatPlay `dead`), `src/31_audio_feel.js`
   (grid beat), `src/22_sim_gig.js` (swing, `where()`, `dead`, fills × extras / free windows, Q1 branch), `src/55_ui_gig.js`
-  (seatSound `dead` only); tests `sim_audio`, `sim_feel`, `sim_gig`, `pw_gig` (new section `swing`), `pw_seat_audio`.
+  (seatSound `dead` only); tests `sim_audio`, `sim_feel`, `sim_gig`, `pw_gig` (new section `swing`), `pw_seat_audio`. Seat-chart
+  tests go in `sim_gig` (sim_seats' chart sections are S's and must stay green).
 - Tests: STAGE0 + PART0 + CHART0 equal; neutral fields (mood native, swing 0, chords == the auto progression, no fillBars) ==
   STAGE0; chords move the root for every seat incl. lead; mood changes mode/scale/thirds, not the key note; swing: integer beats
   fixed, steps unmoved, `g` only on moved events, gaps in swung beats; every swung drum-chart `t` == its timeline time;
-  `timeline(upgrade(pt))` == `timeline(pt)` per seat × genre; Scratch carries `dead` + midi; singles never chords on Hard+;
+  `timeline(upgrade(pt))` == `timeline(pt)` per seat × genre; Scratch carries `dead` + midi, never in a run; singles never chords on Hard+;
   `pw_gig swing` (bot perfect = 1, sync green) + `sync`, `feel`, `bridge`, `seat`, `chord` green.
 
 ### Lane U — UI
 - Owns: `src/54_ui_sequencer.js`, `src/00_shell.html` (seq CSS only), `src/5h_ui_settings.js` (practice hook), `src/5k_ui_shop.js`
   (refreshSeq), `src/5p_ui_tutorial.js`, `content/tutorial.js`; tests `pw_seq`, `pw_seats`, `pw_shop`, `pw_flow`, `pw_tutorial`,
-  `pw_settings`, `content_tutorial.test`, `tests/_pw.js` (helper `openTools(page)`), `tools/phoneqa.js`.
+  `pw_settings`, `pw_perf` (section `quick`), `content_tutorial.test`, `tests/_pw.js` (helper `openTools(page)`), `tools/phoneqa.js`.
 - Tasks: U1 Quick screen; U2 edit layout + bubble + strip + chips + chord sheet + picker; U3 ⋯ menu (ids above, 5h hook); U4
   partPreview via `rowPitch`, PART_COLORS 7, `part.view` + upgrade on first edit; U5 CSS (Clean sheet, navy, 26 px rows); U6
   tutorial content + tests.
 - Tests: `pw_seq` sections `seq` (open ⋯ for metro / jam; drum geometry; save byte-equality: saved pattern ===
-  `sanitize(D.pat)`, view pat === saved), `quick` (replaces `guided`: recipes, lock, sliders, Surprise twice = same, Play, Tweak,
-  Save, Q3 flow), `part` (6/6/7 rows, chips, chord sheet, picker, mods in ⋯, upgrade on first edit only, view read-only), new
-  `layout` (both sizes: every editor case and Quick, no scroll at 440x956, ≥ 44 buttons, no h-scroll, shots tagged `_440`);
-  `pw_seats write`, `pw_shop gear` (quick instead of guided steps), `pw_flow` jam via ⋯, `pw_tutorial` w1_write, `pw_settings`
-  kit-practice via ⋯, `content_tutorial` (btn-guide-play in every layer, no seq-grid point), `phoneqa` (⋯ before btn-kit-shop).
+  `sanitize(D.pat)`, view pat === saved; the `v12_*` fixture draft and a queued song opened and saved untouched == their SAN
+  fixture), `quick` (replaces `guided`: recipes, lock, sliders, Surprise twice = same, Play, Tweak, Save, Q3 flow, two song slots →
+  two songs), `part` (6/6/7 rows, chips, chord sheet, picker, mods in ⋯, upgrade on first edit only, view read-only; a pick on a
+  composed song moves the timeline roots and the label = the picked name; on an old song it writes `part.prog` only), new `layout`
+  (both sizes: every editor case and Quick, no scroll at 440x956, ≥ 44 buttons, no h-scroll, shots tagged `_440`; then insets
+  47/34 at 390 and 59/34 at 440 with Bigger text on: every Quick slider and foot button reachable through `quick-main`, nothing
+  clipped, the longest progName and 6 tabs fit); `pw_perf quick`.
+- Migrations: `pw_seats write` + `shop` (314: `openTools` before `btn-kit-shop`), `pw_shop gear` (quick instead of guided; 112/145
+  count `.seq-grid .lh` only after Tweak or with a draft) + `seat` (633: `openTools`), `pw_flow` jam via ⋯, `pw_tutorial` w1_write
+  (:123 keeps its intent: no first-Write tip while w1_write runs, not "no colon" — rating tips have colons), `pw_settings`
+  kit-practice via ⋯, `content_tutorial` (btn-guide-play in every layer, no seq-grid point), `phoneqa` (audits Quick AND the part
+  editor after Tweak; ⋯ before btn-kit-shop).
 
 ### Lead — stage 0, wiring, review
 - Owns: `02_contracts`, `11_settings`, `build.js`, `VERSION`, `tests/fixtures`, `tests/compat_v12.test.js`, `tools/` (except
   `seat_audit.js`, `phoneqa.js`), `plan/`, the merge, the clips, the owner popups, status.
 
 ### Cross-lane hand-overs (files stay single-owner)
-- A → S: `part.rowPitch` / `moodOf` semantics are the stage-0 contract (a change is a request, never an edit in 21). U → S: compose
+- A → S: `part.rowPitch` / `moodOf` semantics and the rungs' scale / third / seventh are the stage-0 contract (a change is a
+  request, never an edit in 21 or genres.js). U → S: compose
   timing (§4.9) + the debug `compose` numbers. U → A: none expected (U calls `A.warm` after compose).
 - Requests go in the report's "Hand-overs" with the function, the behaviour and a test; the lead applies them at the merge.
 
@@ -328,13 +383,15 @@ anything outside your files is a hand-over request. Return: the branch (pushed a
 - **Taps and band drift apart under swing** → one pure warp in 21 used by the timeline and the chart; the per-note equality test.
 - **Rating inflation** (slider songs too easy to top) → difficulty stays honest (same features); ratings logged per recipe; the
   career impact goes to v1.4 Tuning (player songs only; bots unchanged by D13).
-- **Phone height** (notch ≈ 81 px at 390) → 26 px rows, a small scroll there is accepted (D9). **Test + tutorial churn** → ids
-  kept, `openTools` helper, U owns every affected test.
+- **Phone height** (notch ≈ 81 px at 390) → 26 px rows, a small scroll there is accepted (D9); Quick scrolls in `quick-main`.
+  **Test + tutorial churn** → ids kept, `openTools` helper, U owns every affected test (§5 migrations list).
+- **Samey quick songs** (one tap of Save per block: drama `lawsuit` ≥ 0.8, critic `recycledAt` 0.93, tracklist 0.9) → the D14
+  seed, seeded variants (§4.2 step 7) and the §4.4 variety test.
 - **Chip names move with tempo** (metal tuning per band, genres.js:82) → chips always read `keyFor(seed, genre, bpm)`. **New
   pitches play the oscillator first** (only the gig warms KS) → `A.warm` after compose. **Low 5th folds** (bassFloor, 30:2569) →
   the v2-only allowance (§4.5) + a test in low metal keys. **Size** → content ≈ 15 KB, the guided flow goes, gate at every merge.
 
-## 8. Owner questions (stage 0, ONE popup, recommended first)
+## 8. Owner questions (stage 0, ONE popup with Q1–Q4, recommended first)
 **Q1. Your new guitar rows in a gig: which highway lane does a note land on?**
 1. *(recommended)* Keep the pitch shape: low notes left, high notes right, folded onto the lanes your rig has (4–6). The gig code
    needs no change; new rows just add pitches. Why: zero risk to the 1.2 charts, playable at 390 px, the 4-lane start still works.
@@ -353,3 +410,9 @@ anything outside your files is a hand-over request. Return: the branch (pushed a
    nothing is lost by surprise, and the generator stays simple (Feel and Tempo never ask: they don't touch notes).
 2. Rebuild only the sections you have not touched (keeps edits silently; harder to explain, more state to track).
 3. The sliders lock after a hand edit until you tap "Start over".
+
+**Q4. Breakdown bars (the first two bars of the bridge in metal, punk and rock always sit on the home chord today): can you pick
+their chord too?**
+1. *(recommended)* Yes, every bar takes a chord, as you asked. New songs still start their breakdown on the home chord; old songs
+   sound exactly as before (only a chord you pick moves it). Why: "pick each bar's chord" holds everywhere; ~15 lines + a test.
+2. No: the breakdown bars stay on the home chord (their chips show home with a lock). Why: the breakdown keeps its slam; less to test.
