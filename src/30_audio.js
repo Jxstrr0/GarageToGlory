@@ -1068,7 +1068,9 @@
     sl.g.gain.cancelScheduledValues(t);
     var gv = velGain(vel) * (hb.gain || 1) * (sl.pan ? Math.SQRT2 : 1) * (1 + 0.02 * ((n * 0.7548776662) % 1 - 0.5));   // (x SQRT2: the panner's -3 dB centre)
     sl.g.gain.setValueAtTime(gv, t);
-    if (d < hb.d - 0.002) { if (hb.kit) sl.g.gain.setTargetAtTime(0, t + d, 0.006); else chokeEnv(sl.g.gain, t, d, hb.d, gv); }   // (a sample: just cut at the next hit)
+    var g1 = gv;
+    if (d < hb.d - 0.002) { if (hb.kit) sl.g.gain.setTargetAtTime(0, t + d, 0.006); else g1 = chokeEnv(sl.g.gain, t, d, hb.d, gv); }   // (a sample: just cut at the next hit)
+    sl.env = [t, gv, t + d, g1];   // (v1.2 review: the slot's envelope, for a later choke where cancelAndHoldAtTime is missing)
     s.start(t); s.stop(t + d + 0.04); sl.until = t + d + 0.04;
     if (r.collect) r.collect.push(s);
     return s;
@@ -1076,10 +1078,24 @@
   // A choked hit (the next hit of its lane comes at t + d, before its natural end nat): as the 1.1 recipe squeezes its
   // envelope into d, the slot adds the missing decay (the buffer's exponential decay reaches -80 dB at nat; squeezed, at d),
   // then the 6 ms fade at the next hit.
-  function chokeEnv(gp, t, d, nat, g) {   // (g: the level the slot was set to at t)
-    var lvl = Math.max(1e-4, Math.pow(1e-4, Math.max(0, 1 - d / nat)));
-    if (lvl < 0.999 && g > 0) gp.exponentialRampToValueAtTime(Math.max(1e-6, g * lvl), t + d);
+  function chokeEnv(gp, t, d, nat, g) {   // (g: the level the slot was set to at t) -> the level it reaches at t + d
+    var lvl = Math.max(1e-4, Math.pow(1e-4, Math.max(0, 1 - d / nat))), end = g;
+    if (lvl < 0.999 && g > 0) gp.exponentialRampToValueAtTime(end = Math.max(1e-6, g * lvl), t + d);
     gp.setTargetAtTime(0, t + d, 0.006);
+    return end;
+  }
+  // v1.2 review: a tap choking a velocity hit's slot at t. A setTarget added after a queued ramp never overrides it (the ramp
+  // then starts at t, so the old hit kept sounding and was cut hard 50 ms later: a click), so the pending decay is cancelled
+  // first, holding the level the slot has at t (cancelAndHoldAtTime; where it is missing, the level is computed from the
+  // slot's envelope sl.env = [t0, g0, t1, g1], exponential from g0 to g1), then the 6 ms fade.
+  function chokeSlot(sl, t) {
+    var gp = sl.g.gain, e = sl.env;
+    if (gp.cancelAndHoldAtTime) gp.cancelAndHoldAtTime(t);
+    else {
+      var v = !e ? gp.value : e[2] > e[0] && e[1] > 0 && e[3] > 0 ? e[1] * Math.pow(e[3] / e[1], Math.max(0, Math.min(1, (t - e[0]) / (e[2] - e[0])))) : e[1];
+      gp.cancelScheduledValues(t); gp.setValueAtTime(v, t);
+    }
+    gp.setTargetAtTime(0, t, 0.006);
   }
   var KITUSE = { kick: 0, snare: 0, toms: 0 }, KITLAST = null;   // (debug: sampled-kit hits per lane, the last velocity tap)
   function velBuf(r, lane, v, vel) { return skBuf(r, lane, v) || preVel(r, lane, v, vel); }
@@ -3283,7 +3299,7 @@
     }
     var last = taps[lane];
     if (last && last.t < t && last.end > t) {   // lanes are monophonic, as in the timeline: this tap cuts off the last one
-      last.g.gain.setTargetAtTime(0, t, 0.006);
+      if (last.vel) chokeSlot(last.slot, t); else last.g.gain.setTargetAtTime(0, t, 0.006);   // (v1.2: a velocity hit's decay ramp is cancelled first)
       var stopAt = Math.min(last.end, t + 0.05);
       last.src.forEach(function (s) { try { s.stop(stopAt); } catch (e) { /* old Safari: one stop() only */ } });
       if (last.slot) last.slot.until = stopAt;
@@ -3297,7 +3313,7 @@
       book(rig, t, dv, 1, false, 'tap');
       if (pre.kit) KITUSE[lane]++;
       KITLAST = { lane: lane, t: t, kit: !!pre.kit, rr: pre.rr, vel: vel };
-      taps[lane] = { t: t, end: t + dv, n: 1, g: vsl.g, src: [vs], slot: vsl };
+      taps[lane] = { t: t, end: t + dv, n: 1, g: vsl.g, src: [vs], slot: vsl, vel: true };
       PRE.hits++;
       return true;
     }
@@ -3319,6 +3335,7 @@
     if (b) { b.g = g; b.src = src; taps[lane] = b; } else { counts.tapDrops++; g.disconnect(); }
     return true;
   };
+  A._tapGain = function (lane) { var x = taps[lane]; return x ? x.g : null; };   // (tests: the gain the lane's last tap plays through)
   // A lane's choke gains on a port, reused round robin once their last source has stopped (a fresh one if all are busy).
   function laneSlot(port, lane, t) {
     var pool = port.slots || (port.slots = {}), L = pool[lane] || (pool[lane] = []), i;

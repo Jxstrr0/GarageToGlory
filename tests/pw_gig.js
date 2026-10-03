@@ -1177,6 +1177,22 @@ async function kitGig() {
     const k0 = await page.evaluate(() => GG.debug('audio').kit);
     c.ok(k0.id === 'tmkd_vortex' && k0.n === 25 && k0.err === null && k0.onset <= 1 && k0.bytes > 1e6 && k0.bytes < 6e6,
       'the kit decoded after the unlock: 25 clips, onset <= 1 ms, under the 6 MB cap ' + JSON.stringify({ n: k0.n, onset: k0.onset, bytes: k0.bytes, ms: k0.ms }));
+    // v1.2 review: a velocity tap longer than the tap cap (the arena crash: ~1.95 s vs the 0.9 s cap) has a decay ramp queued
+    // on its slot; the next tap of the lane 0.25 s later must still choke it in ~6 ms (level near 0 by +20 ms), not let it ring
+    // on until the hard stop at +50 ms.
+    const ch = await page.evaluate(async () => {
+      const A = GG.audio, c = A.context(), wait = ms => new Promise(r => setTimeout(r, ms));
+      for (let i = 0; i < 150 && !GG.debug('audio').pre.first; i++) await wait(100);
+      const t1 = c.currentTime + 0.2, t2 = t1 + 0.25;
+      A.hit('cymbal', t1, { vel: 0.8 }); const g = A._tapGain('cymbal'), last = GG.debug('audio').kit.last;
+      A.hit('cymbal', t2, { vel: 0.8 });
+      while (c.currentTime < t2 - 0.03) await wait(4);
+      const v0 = g ? g.gain.value : null;
+      while (c.currentTime < t2 + 0.02) await wait(4);
+      return { first: GG.debug('audio').pre.first, last, v0: v0 == null ? null : +v0.toFixed(4), v: g ? +g.gain.value.toFixed(4) : null, at: +((c.currentTime - t2) * 1000).toFixed(1) };
+    });
+    c.ok(ch.first && ch.last && ch.last.lane === 'cymbal' && !ch.last.kit && ch.v0 > 0.2 && ch.v < 0.05 * ch.v0,
+      'a velocity crash tap is choked by the next one in ~6 ms (slot level near 0 by +20 ms) ' + JSON.stringify(ch));
     await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; GG.ui.playGig(GG.state.gig, () => {}); });
     await waitScreen(page, 'gig-set');
     await tap(page, 'btn-gig-start');
