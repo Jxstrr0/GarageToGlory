@@ -131,6 +131,53 @@ test('every swapped member: first-week card, ≥4 Monday cards with chat, a kit 
   });
 });
 
+test('v1.1 review: forced ultimatum / return / returnFilled for every swapped member on their seat: the kit variant, no old-instrument words', () => {
+  const D = GG.drama, OLD = /\b(bass|bassist|guitar|guitarist|guitars|7-string|pedalboard|strap|riffs?|plugs? in|acoustic|amp settings)\b|(^|[^m] )solos?\b/i;
+  let n = 0;
+  SWAPPED.forEach(({ band, seat, id }) => {
+    const w = id + ' (' + band + '@' + seat + ')', kit = (K.drama.members[id] || {}).kit || {};
+    const look = (c, kind) => {
+      if (!c) return;
+      n++;
+      eq(c.card.id, (K.drama.members[id] || {})[kind] + '_kit', w + ' ' + kind + ': the kit variant');
+      const txt = [c.card.title, c.card.text].concat(...(c.card.choices || []).map(ch => [ch.label, ch.outcome])).join(' | ').replace('Duke hums the bass', '');   // (Duke is the Ramblers' bassist on the rhythm seat)
+      ok(!OLD.test(txt), w + ' ' + kind + ': no old-instrument words: ' + (txt.match(OLD) || [])[0]);
+    };
+    // ultimatum
+    let s = career(band, seat, 31); s.totalWeek = 30; s.protected = false;
+    let m = s.members.find(x => x.id === id); m.stage = 3; m.ultimatum = 30;
+    if (kit.ultimatum) look(D.forcedCard(s, GG.RNG(1)), 'ultimatum');
+    // quit -> return (nobody on the kit) and quit -> hire -> returnFilled
+    s = career(band, seat, 31); s.totalWeek = 30; s.protected = false; s.fund = 5000; s.buzz = 100;
+    D.applyMember(s, { id, act: 'quit' });
+    m = s.members.find(x => x.id === id);
+    if (m.exit) m.exit.returnDue = 30;
+    if (kit.return && m.status !== 'away') look(D.forcedCard(s, GG.RNG(1)), 'return');
+    D.postAd(s); D.hire(s, 0);
+    if (kit.returnFilled) look(D.forcedCard(s, GG.RNG(1)), 'returnFilled');
+    // the drum seat keeps the v1.0 cards
+    const d = career(band, 'drums', 31); d.totalWeek = 30; d.protected = false;
+    const dm = d.members.find(x => x.id === id); dm.stage = 3; dm.ultimatum = 30;
+    const dc = D.forcedCard(d, GG.RNG(1));
+    ok(!dc || !/_kit$/.test(dc.card.id), w + ': the drum seat keeps the v1.0 card');
+  });
+  ok(n >= 30, 'kit variants forced: ' + n);
+});
+
+test('v1.1 review: a singing swapped drummer (Rox, Chase, Travis Lee) quits on the rhythm seat: the recruit drums AND sings (front)', () => {
+  ['frost_heave', 'gravel_kings', 'grid_road_ramblers'].forEach(band => {
+    const s = career(band, 'rhythm', 31), id = K.bands[band].seats.rhythm;
+    s.fund = 5000; s.protected = false;
+    GG.drama.applyMember(s, { id, act: 'quit' });
+    GG.drama.postAd(s); const rec = GG.drama.hire(s, 0);
+    eq([rec.role, rec.seatRole, GG.career.drummerId(s), GG.gig.roles(s).front], ['drums', 'drums/vocals', rec.id, rec.id], band + ': the recruit drums and fronts');
+    const k = career(band, 'bass', 31), kid = K.bands[band].seats.bass;
+    k.fund = 5000; k.protected = false;
+    GG.drama.applyMember(k, { id: kid, act: 'quit' });
+    GG.drama.postAd(k); eq(GG.drama.hire(k, 0).seatRole, 'drums', band + ' bass seat: a non-singing swapped drummer\'s recruit just drums');
+  });
+});
+
 test('seatLines, bySeat reactions, drummer recruits and fill-ins', () => {
   BANDS.forEach(b => {
     const L = K.bands[b].seatLines;

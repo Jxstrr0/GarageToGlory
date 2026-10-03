@@ -281,6 +281,12 @@
     if (!m) return '';
     var id = career.swapped(state);
     if (id && m.id === id) return /vocals/.test(String(m.role || '')) ? 'drums/vocals' : 'drums';
+    // v1.1 review (S5/S6: the kit seat sings): a drummer recruit hired for a singing swapped member's hole (Rox, Chase,
+    // Travis Lee on the rhythm seat) sings from the kit too, so the band always has a front
+    if (id && m.role === 'drums' && !m.original) {
+      var b = career.band(state), sw = b && b.members ? b.members.filter(function (x) { return x.id === id; })[0] : null;
+      if (sw && /vocals/.test(String(sw.role || ''))) return 'drums/vocals';
+    }
     return m.role || '';
   };
   // v1.1 (Lane B): a member's stage role this career: the drum seat = the content role exactly (v1.0); a string seat =

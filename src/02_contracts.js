@@ -434,7 +434,8 @@
    missing, no events; GG.career.newCareer starts with the same values, args.seat default 'drums')
      seat: C.SEATS                          the player's seat, fixed for the career (old saves: 'drums')
      members[i].seatRole: string            the member's stage role this career: 'drums' | 'drums/vocals' for the swapped
-                                            member (a singer keeps singing from the kit), else the content role. Content
+                                            member (a singer keeps singing from the kit; v1.1 review: a drummer recruit
+                                            hired for a singing swapped member's hole sings too: 'drums/vocals'), else the content role. Content
                                             `role` stays the source of truth for everything else (wants, quits, recruits).
      gear.seatLanes: { bass: 4..5, rhythm: 4..6, lead: 4..6 }   gear.runs: { bass, rhythm, lead }: bool (the seat's run gear)
        STRING SEATS ONLY: a drum-seat career keeps v1.0's exact gear object (the regression baseline; four v1.0 tests

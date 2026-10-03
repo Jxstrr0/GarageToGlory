@@ -361,6 +361,9 @@
   // v0.9: the recruit ultimatum and the generic return go through career.variant ('<id>_<bandId>' first).
   function cardFor(m, kind, state) {
     var d = m.original ? mdef(m.id) : null;
+    // v1.1 review: the swapped member on a string seat left (and comes back to) the kit: their kit variant (drama.members
+    // [id].kit[kind], content/zz_seats_drama.js), else the v1.0 card
+    if (d && d.kit && d.kit[kind] && state && seatOn(state) !== 'drums' && GG.career.swapped(state) === m.id && card(d.kit[kind])) return card(d.kit[kind]);
     if (d && d[kind]) return card(d[kind]);
     if (kind === 'ultimatum') {
       var base = D().recruit && D().recruit.ultimatum;
