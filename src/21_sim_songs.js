@@ -466,7 +466,10 @@
       country: { v: [[0, 0], [8, 1]], c: [[0, 0], [4, 0], [8, 1], [12, 2]], b: [[0, 0], [6, 1], [8, 1], [14, 2]] }
     },
     rhythm: {
-      metal: { v: stepsOf(E8, 0).concat([[0, 1]]), c: stepsOf('..x.x.x...x.x.x.', 0).concat([[0, 1], [8, 1]]), b: stepsOf('x..x..x.x..x..x.', 0) },
+      // metal: verse chugs locked to the kick with an open push on 4 that rings into the next bar; chorus = Jaxon's chorus
+      // ring (§0): a stab on 1, chugs, then the accent chord on 3 rings out the bar (open = ringing; before, a written metal
+      // part never rang, so a doom-tempo song had no holds)
+      metal: { v: stepsOf('x.x.x.x.x.x.....', 0).concat([[12, 1]]), c: [[0, 1], [2, 0], [4, 0], [6, 0], [8, 0], [8, 1]], b: stepsOf('x..x..x.x..x..x.', 0) },
       punk: { v: stepsOf(E8, 1), c: stepsOf(E8, 1), b: stepsOf('x.x.x.x.........', 1).concat(stepsOf('........x.x.x.x.', 0)) },
       rock: { v: stepsOf(E8, 0), c: [[0, 1], [6, 1], [8, 1], [14, 1]], b: [[0, 1], [8, 1]] },
       country: { v: [[0, 1], [4, 0], [8, 1], [12, 0]], c: stepsOf(Q4, 1).concat([[2, 0], [10, 0]]), b: [[0, 1], [6, 1], [8, 1], [12, 0]] }
