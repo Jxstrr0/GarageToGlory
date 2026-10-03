@@ -384,6 +384,11 @@ test('v1.1: a string seat fills its gear + the swapped seatRole; existing values
   ok(same(GG.save.migrate(JSON.parse(JSON.stringify(rh))), rh), 'a new string-seat career is already migrated');
   eq(GG.save.fromCode(GG.save.toCode(rh)).seat, 'rhythm', 'the seat survives a save code');
   GG.save.write('2', rh); eq([GG.save.read('2').seat, GG.save.read('2').members.find(x => x.id === 'rox').seatRole], ['rhythm', 'drums/vocals'], 'and a slot');
+  // v1.1 integration: Lane C's gear look and Lane A's arc flags survive both (a part-way Engine Room career)
+  rh.player.gearLook = { shape: 'offset', color: '#2a6f97', guard: 'black', sticker: 'logo' }; rh.flags.rhythmArc = 'unsung'; rh.flags.rhythmArcDone = true;
+  const viaCode = GG.save.fromCode(GG.save.toCode(rh)); GG.save.write('2', rh); const viaSlot = GG.save.read('2');
+  ok([viaCode, viaSlot].every(x => same(x.player.gearLook, rh.player.gearLook) && x.flags.rhythmArc === 'unsung' && x.flags.rhythmArcDone === true && same(x.gear, rh.gear)),
+    'gearLook, the arc flags and the seat gear survive a code and a slot');
 });
 
 done('save');
