@@ -204,7 +204,8 @@ From the lanes (still open; details in their reports):
 
 ## 8. Review fixes (fixer, 2026-10-03; commits `f6187c7`..HEAD on `v1.2-soundcheck`)
 The review pass (3 lenses: clock, perf, regression) confirmed 5 major findings and listed 12 unverified minors. All 5 majors
-are fixed; 10 of the 12 minors were real and fixed, the other 2 are duplicates of majors.
+are fixed. Of the 12 minors, 3 duplicate majors 3 and 5, 7 are fixed, 1 is partly fixed (first-use DSP: the amp and the
+plate, not the glottal waves) and 1 is documented (the Classic runtime switch).
 
 **Confirmed (major)**
 1. **Tap chokes on the velocity path** (`30 A.hit`). A velocity hit longer than the tap cap (crash 0.9 s, ride / kick / toms on
