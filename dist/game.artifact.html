@@ -21481,7 +21481,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ==== The 12 band finales (one per band x string seat, after <arc>Done) ========================================= */
   function fin(seat, b, id, speaker, title, text, choices) {
     var flag = { bass: 'bassArcDone', rhythm: 'rhythmArcDone', lead: 'leadArcDone' }[seat];
-    return { id: id, type: 'drama', speaker: speaker, title: title, seat: [seat], once: true, weight: 6,
+    return { id: id, type: 'drama', speaker: speaker, title: title, seat: [seat], swapped: SWAP[seat][b], once: true, weight: 6,   // (review: only while they drum)
       gate: bandGate(b, LSW, { flags: [flag] }), text: text, choices: choices };
   }
   cards.push(
@@ -23349,7 +23349,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function swappedGate(s, v) {
     var id = career.swapped(s);
     if (v === false) return !id;
-    return !!id && (v === true || [].concat(v).indexOf(id) >= 0);
+    if (v === true) return !!id;
+    return !!id && [].concat(v).indexOf(id) >= 0 && career.drummerId(s) === id;
   }
   career.seatLanes = function (state) {
     var g = (state && state.gear) || {}, seat = career.seatOf(state);
@@ -25786,7 +25787,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var entry = Math.min(arr.length - 1, Math.floor(e.beat / entryBeats + 1e-9)), inE = e.beat - entry * entryBeats;
       return { entry: entry, bar: Math.floor(inE / 4 + 1e-9), step: Math.round((inE % 4) * 4) % C.STEPS };
     }
-    function toAuto(n) { auto.push({ t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }); }
+    function toAuto(n) { var a = { t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }; if (n.with) a.with = n.with; auto.push(a); }
+    function voiceOf(k) { return k === 'bass' ? 'pluck' : k === 'lead' || k === 'twang' ? 'lead' : 'strum'; }
     var pitches = {};
     ev.forEach(function (e) { var w = where(e); (pitches[w.entry] = pitches[w.entry] || {})[e.midi] = 1; });
     var laneOf = {};
@@ -25817,6 +25819,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var sk = grp.filter(function (x) { return x.kind === soloKind; });
         if (sk.length) { grp = sk.concat(grp.filter(function (x) { return x.kind !== soloKind; })); e0 = grp[0]; }
       }
+      var head = null;
       grp.forEach(function (x, gi) {
         var sound = Math.min(x.len, x.gap), n = { t: x.beat * spb, lane: '', li: 0, section: x.section, entry: w.entry, bar: w.bar, step: w.step, j: 0,
           kind: x.kind, midi: x.midi, len: Math.max(0.05, sound * spb), beats: sound };
@@ -25825,7 +25828,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var off = gi > 0 || (seat === 'lead' && inSolo && soloKind && x.kind !== soloKind)
           || (seat !== 'lead' && inSolo && w.step % 4 !== 0);   // someone else's solo: you lay back (one note per beat)
         if (!off && free && inFill(n.t)) n.free = true;       // a free window (as the drums): any tap there shows off
+        if (gi > 0 && head && voiceOf(x.kind) === voiceOf(head.kind)) {   // (same pool: as an auto note it cut your tap to 30 ms)
+          (head.with || (head.with = [])).push({ kind: x.kind, midi: x.midi, len: n.len, power: !!n.power, mute: !!n.mute, ring: !!n.ring });
+          return;
+        }
         if (off) toAuto(n); else notes.push(n);
+        if (gi === 0 && !off && !n.free) head = n;
       });
       i = j;
     }
@@ -26016,7 +26024,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var x = cur.notes[k], c = cfg.gain[kind] * cur.dens * cur.staleMul;
       x.j = kind === 'perfect' ? 1 : 2;
       if (x.dbl) { x.hitT = t; cur.dblHit = k; }   // v0.7.2: the second kick plays at max(t2, just after this)
-      if (x.hold && cur.hold) { if (cur.hold[x.li] >= 0) endHold(x.li, t); cur.hold[x.li] = k; x.hitT = t; }   // v1.1: held from here
+      if (x.hold && cur.hold && !x.half) { if (cur.hold[x.li] >= 0) endHold(x.li, t); cur.hold[x.li] = k; x.hitT = t; }   // v1.1: held from here
       if (x.bend && whammy) { cur.bends++; crowdAdd((cfg.bendGain != null ? cfg.bendGain : 0.6) * cur.staleMul); }   // v1.1: the lead's whammy (amp tier 2): bends score
       if (kind === 'perfect') cur.perfect++; else cur.good++;
       if (x.extra) cur.extrasHit++;
@@ -26167,7 +26175,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (x.j === 0) {
           var ef = cur.echoFor;
           if (x.free) x.j = 4;
-          else if (x.cl) { hit(cur.mp - 1, 'good', x.ct); emit('gig:judge', { lane: x.lane, judgement: 'good', combo: S.combo, crowd: S.crowd }); }   // v1.1: one lane of a chord = a Good
+          else if (x.cl) {   // v1.1: one lane of a chord = a Good (review: never a hold; a held half chord counts as held 0)
+            x.half = true; hit(cur.mp - 1, 'good', x.ct); emit('gig:judge', { lane: x.lane, judgement: 'good', combo: S.combo, crowd: S.crowd });
+            if (x.hold && cur.hold) { cur.holds++; x.held = 0; emit('gig:hold', { lane: x.lane, held: 0, ring: false }); }
+          }
           else if (ef && ef.k === cur.mp - 1) {   // v0.7.2: an early tap read as a double's echo was this note's: credit it
             cur.echoFor = null; hit(ef.k, ef.kind, ef.t);
             emit('gig:judge', { lane: x.lane, judgement: ef.kind, combo: S.combo, crowd: S.crowd });
@@ -36166,8 +36177,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
     var src = r.collect = [], b = seatBook = { n: 0, ends: [] };
     try {
-      if (!reps.length) playNote(r, sl.p, ev, t, 1);
-      else {
+      if (!reps.length) {
+        playNote(r, sl.p, ev, t, 1);
+        if (Array.isArray(o.with)) o.with.slice(0, 2).forEach(function (w) {   // v1.1 review: a same-voice partner (metal's chorus ring) on this handle
+          if (w && isFinite(w.midi)) playNote(r, sl.p, Object.assign({}, ev, { kind: w.kind || kind, midi: +w.midi, len: Math.min(len, +w.len > 0 ? +w.len : len), gap: Math.min(len, +w.len > 0 ? +w.len : len),
+            power: w.power != null ? !!w.power : ev.power, mute: !!w.mute, ring: !!w.ring, strum: undefined, up: false, bend: 0 }), t, 1);
+        });
+      } else {
         var at = [0].concat(reps);
         for (var i = 0; i < at.length; i++) { var d = (i + 1 < at.length ? at[i + 1] : len) - at[i]; playNote(r, sl.p, Object.assign({}, ev, { len: d, gap: d, bend: i ? 0 : ev.bend }), t + at[i], 1); }
       }
@@ -50566,7 +50582,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
-      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, keyHeld: [], laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
     readPrefs();
     listen(true);
     ui.show('gig', {});
@@ -50643,6 +50659,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     for (var k = 0; k < ch.notes.length; k++) if (ch.notes[k].dbl) G.dq.push(k);
     G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
+    for (q2 = 0; q2 < G.held.length; q2++) G.held[q2] = null;   // v1.1 review: a restart starts with nothing held
+    G.runs.length = 0; G.ptr = {}; G.keyHeld = [];
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
     G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
@@ -50761,7 +50779,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var n = a[G.ap++];
       if (n.li >= G.lanes) continue;
       if (n.t < now - 0.08) { G.autoSkip = (G.autoSkip || 0) + 1; continue; }   // skipped past (a resync jump): stay quiet rather than flam
-      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined, false);   // v1.1: your voice plays it
+      if (strings()) seatSound(n, n.li, sched ? G.zeroBand + n.t : undefined);   // v1.1: your voice plays it
       else if (GG.audio && GG.audio.hit) GG.audio.hit(n.lane, sched ? G.zeroBand + n.t : undefined);
       G.autoN++; G.autoAt[n.li] = p + Math.max(0, n.t - (t - G.D)) * 1000;   // the ring shows when it's heard
     }
@@ -50842,13 +50860,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     for (var k = 0; k < n.length; k++) if (n[k].li === li && n[k].midi != null) return (G.laneMidi[li] = n[k].midi);
     return 40 + li * 5;
   }
-  function seatSound(n, li, when, fifth) {
+  function seatSound(n, li, when) {
     var f = voiceFor(n && n.kind), midi = n && n.midi != null ? n.midi : laneMidi(li), o;
     if (!f) return null;
     if (n && n.midi != null) G.laneMidi[li] = n.midi;
     o = { len: n ? (n.run && n.seq && n.seq.length ? n.seq[0][0] : n.len || 0.25) : 0.25, hold: !!(n && n.hold && !n.run), kind: n && n.kind || null,
       power: !!(n && n.power), mute: !!(n && n.mute), strum: n && n.strum || null, up: !!(n && n.up), bend: !!(n && n.bend), chord: !!(n && n.chord) };
-    try { G.seatN++; return f(fifth ? midi + 7 : midi, when, o); } catch (e) { return null; }
+    if (n && n.with) o.with = n.with;   // v1.1 review: a same-voice partner (metal's chorus ring) layers on this note's handle
+    try { G.seatN++; return f(midi, when, o); } catch (e) { return null; }
   }
   function nowWhen(li, J) {   // the band-clock booking time for a sound at song time J (drum sync), else undefined ('now')
     var c = G.actx;
@@ -50858,10 +50877,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return when;
   }
   function releaseLane(li, J) {   // lift: the session judges the hold, the voice stops
-    var h = G.held[li];
     if (G.ses && G.ses.release) G.ses.release(li, J);
+    dropVoice(li, J);
+  }
+  function dropVoice(li, J) {   // only the voice held under lane li stops (the session has already moved on)
+    var h = G.held[li];
     G.held[li] = null;
     if (h && h.h && GG.audio && GG.audio.release) { try { GG.audio.release(h.h, nowWhen(li, J)); G.relN++; } catch (e) { /* a voice that already ended */ } }
+  }
+  function lift(e, at) {
+    var n = e && e.n;
+    if (!n || !G.ses) return;
+    if (G.ses.holding && G.ses.holding(n.li) === n) { releaseLane(n.li, at); return; }
+    if (n.chord && n.sh && !(G.held[n.li] && G.held[n.li].n === n) && GG.audio && GG.audio.release) { try { GG.audio.release(n.sh, nowWhen(n.li, at)); } catch (x) { /* ended */ } }
   }
   function seatBook(t, p) {
     var c = G.actx, sched = G.clockOk && G.handle && c && c.state === 'running', now = heardSong(c, sched, t), ahead = aheadOf(sched, now);
@@ -50870,7 +50898,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
         var q = n.seq[ru.i++], at = n.t + q[0];
         if (at < now - 0.08) continue;
-        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, false);
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined);
         G.runN++;
       }
       if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
@@ -50886,13 +50914,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!ls) return;
     delete G.ptr[ev.pointerId];
     var at = tapTime(ev.timeStamp);
-    for (var i = 0; i < ls.length; i++) releaseLane(ls[i], at);
+    for (var i = 0; i < ls.length; i++) lift(ls[i], at);
   }
   function onKeyUp(ev) {
     if (!G || !strings()) return;
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
-    releaseLane(col(li), tapTime(ev.timeStamp));
+    var e = G.keyHeld[col(li)]; G.keyHeld[col(li)] = null;
+    lift(e, tapTime(ev.timeStamp));
   }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
@@ -50945,14 +50974,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (nb >= 0 && G.mode === 'play') {
       var at = tapTime(ev.timeStamp);
       if (G.ses.due(col(li), at) && G.ses.due(col(nb), at)) {
-        tap(col(li), ev.timeStamp, true); tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1;
-        if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li), col(nb)];   // v1.1: one finger holds both
+        var r1 = tap(col(li), ev.timeStamp, true), r2 = tap(col(nb), ev.timeStamp, 'bridge'); G.bridgeN = (G.bridgeN || 0) + 1;
+        if (G.seat !== 'drums') G.ptr[ev.pointerId] = [press(col(li), r1), press(col(nb), r2)];   // v1.1: one finger holds both
         return;
       }
     }
-    tap(col(li), ev.timeStamp, true);
-    if (G.seat !== 'drums') G.ptr[ev.pointerId] = [col(li)];
+    var r0 = tap(col(li), ev.timeStamp, true);
+    if (G.seat !== 'drums') G.ptr[ev.pointerId] = [press(col(li), r0)];
   }
+  function press(li, r) { return { li: li, n: r && r.note && (r.judgement || r.partial) && r.judgement !== 'miss' ? r.note : null }; }   // v1.1 review: what a lift lets go
   var BRIDGE = 1 / 6;
   function tapTime(stamp) {
     var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
@@ -50963,22 +50993,24 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var li = KEYS[ev.key && ev.key.toLowerCase()];
     if (li == null || li >= G.lanes) return;
     ev.preventDefault();
-    tap(col(li), ev.timeStamp, false);
+    var r = tap(col(li), ev.timeStamp, false);
+    if (G.seat !== 'drums') G.keyHeld[col(li)] = press(col(li), r);
   }
   function tap(li, stamp, touch) {
     var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
     if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
     var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
-    if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return; }   // noodling during the count-in
+    if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return null; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
     if (r) { r.at = at; r.disp = ok ? now - stamp : null; }
-    if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
+    if (r && r.echo && !(r.dbl && r.dbl.d2 === 2)) return r;   // v0.7.2: an echo tap IS the double's (scheduled) 2nd kick: no flam
     var due = playTap(li, at, r && r.echo ? null : r);   // (a dropped 2nd kick's echo sounds at its own time, no snap)
     if (r && r.note && r.note.dbl) {   // the second kick follows this kick's sound (band time) by the chart's spacing
       if (G.sync) { r.note.k1 = due; r.note.sp = Math.max(r.note.t2 - r.note.t, DBL_MIN); }
       else { var h1 = r.note.hitT != null ? r.note.hitT : at; r.note.k1 = songTime(performance.now()) + G.lat + HIT_LEAD; r.note.sp = Math.max(r.note.t2 - h1, DBL_MIN); }   // classic: as 0.8.2
     }
+    return r;
   }
   function playTap(li, J, r) {
     if (G.seat !== 'drums') return playSeat(li, J, r);   // v1.1
@@ -50999,8 +51031,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
 
   function playSeat(li, J, r) {
-    var c = G.actx, n = r && r.note ? r.note : null, hit = !!(n && r.judgement && r.judgement !== 'miss'), when, Jp = J, out;
-    if (G.held[li]) releaseLane(li, J);
+    var c = G.actx, n = r && r.note ? r.note : null, hit = !!(n && r.judgement && r.judgement !== 'miss'), when, Jp = J, out, h;
+    if (G.held[li] && G.held[li].n !== n) dropVoice(li, J);
     if (!G.sync || !G.clockOk || !c || c.state !== 'running') { when = undefined; out = c ? c.currentTime + HIT_LEAD - G.zeroBand : J; if (r) r.snap = false; }
     else {
       Jp = GG.prefs.syncSnap(J, hit ? n.t : null, hit);
@@ -51010,10 +51042,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (r) { r.snap = Jp !== J; r.due = when - G.zeroBand; }
       out = when - G.zeroBand;
     }
-    var h = seatSound(n && (hit || r.partial) ? n : null, li, when, !!(n && n.chord && n.chord[1] === li && n.chord[0] !== li));
+    if (n && n.chord && (hit || r.partial)) h = n.sh || (n.sh = seatSound(n, n.li, when));
+    else h = seatSound(n && hit ? n : null, li, when);
     if (hit && n.hold) {
-      G.held[li] = { h: h, n: n };
-      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: li, i: 0 });
+      if (G.held[n.li] && G.held[n.li].n !== n) dropVoice(n.li, J);
+      G.held[n.li] = { h: h, n: n };
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0 });
     }
     return out;
   }
@@ -51423,7 +51457,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var t = songTime(p);
       for (var i = 0; i < ch.notes.length && soon.length < 12; i++) {
         var n = ch.notes[i]; if (n.j !== 0 || n.free || n.li >= G.lanes) continue;
-        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : n.hold || n.chord ? { li: n.li, t: n.t, len: n.len, hold: !!n.hold, chord: n.chord || null, run: !!n.run } : { li: n.li, t: n.t });
+        if (n.t > t + 0.03) soon.push(n.dbl ? { li: n.li, t: n.t, t2: n.t2 } : n.hold || n.chord ? { li: n.li, t: n.t, len: n.len, hold: !!n.hold, chord: n.chord || null, run: !!n.run, midi: n.midi } : { li: n.li, t: n.t });
         if (!next && n.t > t + 0.35) next = n.dbl ? { lane: n.lane, li: n.li, t: n.t, t2: n.t2 } : { lane: n.lane, li: n.li, t: n.t };
       }
     }

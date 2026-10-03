@@ -275,7 +275,7 @@
   /* ==== The 12 band finales (one per band x string seat, after <arc>Done) ========================================= */
   function fin(seat, b, id, speaker, title, text, choices) {
     var flag = { bass: 'bassArcDone', rhythm: 'rhythmArcDone', lead: 'leadArcDone' }[seat];
-    return { id: id, type: 'drama', speaker: speaker, title: title, seat: [seat], once: true, weight: 6,
+    return { id: id, type: 'drama', speaker: speaker, title: title, seat: [seat], swapped: SWAP[seat][b], once: true, weight: 6,   // (review: only while they drum)
       gate: bandGate(b, LSW, { flags: [flag] }), text: text, choices: choices };
   }
   cards.push(

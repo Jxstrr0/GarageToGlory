@@ -314,10 +314,13 @@
     return null;
   };
   function seatGate(s, v) { return [].concat(v).indexOf(career.seatOf(s)) >= 0; }
+  // swapped: false = a drum career; true = any string seat; <id> | [ids] = that member is the swapped drummer AND is on the
+  // kit right now (v1.1 review: once they quit / are away and a recruit drums, their own lines and cards stop drawing).
   function swappedGate(s, v) {
     var id = career.swapped(s);
     if (v === false) return !id;
-    return !!id && (v === true || [].concat(v).indexOf(id) >= 0);
+    if (v === true) return !!id;
+    return !!id && [].concat(v).indexOf(id) >= 0 && career.drummerId(s) === id;
   }
   // The highway lane count / run gear for the player's seat (drums: gear.lanes / gear.doubleKick, as v1.0).
   career.seatLanes = function (state) {

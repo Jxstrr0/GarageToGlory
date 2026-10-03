@@ -201,6 +201,27 @@ test('quits / returns into the drum seat: the hole is the drums, a drummer recru
   eq(D.holes(gk), ['drums'], 'Chase quits from the kit: the drums');
 });
 
+test('v1.1 review: once the swapped drummer quits and a recruit drums, their sw_ / fin_ cards and arc lines stop drawing', () => {
+  const D = GG.drama, cards = GG.content.cards;
+  BANDS.forEach(b => STR.forEach(seat => {
+    const s = career(b, seat, 41), id = SWAP[b][seat], tag = b + '/' + seat;
+    s.era = 'world'; s.flags = s.flags || {}; s.flags[{ bass: 'bassArcDone', rhythm: 'rhythmArcDone', lead: 'leadArcDone' }[seat]] = true;
+    const fin = cards.find(c => c.id === 'fin_' + seat + '_' + b), own = cards.filter(c => c.id.indexOf('sw_' + id + '_') === 0);
+    const arcLines = [];
+    cards.filter(c => /^arc_/.test(c.id)).forEach(c => (c.choices || []).forEach(ch => ((ch.effects && ch.effects.chat) || []).forEach(l => { if (l.swapped === id) arcLines.push(l); })));
+    ok(fin && own.length && arcLines.length, tag + ': content to gate');
+    ok(K.cardOk(s, fin) && own.some(c => K.cardOk(s, c)) && arcLines.every(l => K.speakerOk(s, l.who, l)), tag + ': while ' + id + ' drums, they draw');
+    s.fund = 5000; s.protected = false;
+    D.applyMember(s, { id, act: 'quit' });
+    D.postAd(s); const rec = D.hire(s, 0);
+    eq(K.drummerId(s), rec.id, tag + ': the recruit drums');
+    ok(!K.cardOk(s, fin), tag + ': no finale');
+    eq(own.filter(c => K.cardOk(s, c)).map(c => c.id), [], tag + ': no sw_' + id + ' card');
+    eq(arcLines.filter(l => K.speakerOk(s, l.who, l)).length, 0, tag + ': no arc line in ' + id + '’s voice');
+    ok(K.gatePasses(s, { swapped: true }) && !K.gatePasses(s, { swapped: false }), tag + ': swapped: true still reads "a string seat"');
+  }));
+});
+
 test('PART: sanitize keeps the part (rows clipped / padded, indexes clamped), suggest is deterministic, rate + similarity read it', () => {
   const P = GG.songs.part;
   eq(P.ROWS, { bass: 3, rhythm: 2, lead: 5 });
@@ -340,9 +361,37 @@ test('the session: holds (release gates, ring at the end, a new head ends a hold
   const cd = ch2.notes.find(n => n.chord);
   S2.tick(cd.t - 0.01); S2.judge(cd.chord[0], cd.t); S2.tick(cd.t + 1);
   eq(cd.j, 2, 'one lane of a chord = a Good');
+  // v1.1 review: a held chord tapped on one lane only (then lifted) never opens a hold: a Good, held 0, no ring
+  const s4 = jammed('gravel_kings', 'rhythm', 4242);
+  const S4 = GG.gig.session(s4, GG.gig.makeGig(s4, 'legion_63', 'book'), null, { emit: true, difficulty: 'hard' }), ch4 = S4.startSong(), ev4 = [];
+  const hc = ch4.notes.find(n => n.chord && n.hold && n.len > 0.4);
+  ok(hc, 'a held chord');
+  const off4 = GG.on('gig:hold', p => ev4.push(p));
+  let t4 = 0; while (t4 < hc.t - 0.05) { S4.tick(t4); t4 += 0.02; }
+  const p4 = S4.judge(hc.chord[0], hc.t);
+  eq(S4.release(hc.chord[0], hc.t + 0.05), null, 'the lift: nothing held yet');
+  while (t4 < hc.t + hc.len + 0.3) { S4.tick(t4); t4 += 0.02; }
+  off4();
+  ok(p4.partial && hc.j === 2 && hc.held === 0 && ev4.length === 1 && ev4[0].held === 0 && !ev4[0].ring && !S4.holding(hc.li), 'a half chord: a Good, held 0, no ring ' + JSON.stringify(ev4));
   // drums: no new SONG_RESULT keys
   const d = GG.gig.botPlay(GG.gig.session(jammed('hail_damage', 'drums'), GG.gig.makeGig(s, 'legion_63', 'book'), null, { emit: false }), { accuracy: 1, one: true }, GG.RNG(1));
   ok(!('holds' in d) && !('seat' in d), 'drum song results: v1.0 keys');
+});
+
+test('v1.1 review: a same-voice partner at a judged note\'s instant layers on it (n.with), never an auto note in the same pool', () => {
+  const VO = k => k === 'bass' ? 'pluck' : k === 'lead' || k === 'twang' ? 'lead' : 'strum';
+  let withN = 0;
+  BANDS.forEach(b => STR.forEach(seat => ['easy', 'hard'].forEach(diff => {
+    const st = jammed(b, seat, 31);
+    st.songs.forEach(song => {
+      const ch = GG.gig.chart(song, { seat, genre: st.genre, difficulty: diff, lanes: 4, runs: false, solo: true, soloist: seat === 'lead' ? 'player' : undefined });
+      const at = {}; ch.auto.forEach(a => { (at[a.t.toFixed(4)] = at[a.t.toFixed(4)] || []).push(a); });
+      const clash = ch.notes.filter(n => !n.free && (at[n.t.toFixed(4)] || []).some(x => VO(x.kind) === VO(n.kind)));
+      eq(clash.length, 0, b + '/' + seat + '/' + diff + ' ' + song.id + ': no same-pool auto note at a judged note\'s instant');
+      ch.notes.forEach(n => { if (n.with) { withN++; ok(n.with.every(w => VO(w.kind) === VO(n.kind) && isFinite(w.midi) && w.len > 0), 'partner shape'); } });
+    });
+  })));
+  ok(withN > 0, 'Hail Damage rhythm: the chorus ring layers on your notes (' + withN + ')');
 });
 
 test('perfect bot = 100 % on every band x seat x difficulty; the avg bot within 3 points of the drum seat (layered seats)', () => {

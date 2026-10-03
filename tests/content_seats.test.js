@@ -98,7 +98,7 @@ test('the 12 band finales: one per band x string seat, once, band + seat + arcDo
   eq(fins.length, BANDS.length * STRING.length, '12 finales');
   BANDS.forEach(b => STRING.forEach(seat => {
     const c = card('fin_' + seat + '_' + b), w = 'fin_' + seat + '_' + b;
-    ok(c && c.once === true && c.seat.join() === seat && c.gate.band.join() === b && c.gate.flags.includes(ARC[seat] + 'Done'), w + ': gates');
+    ok(c && c.once === true && c.seat.join() === seat && c.gate.band.join() === b && c.gate.flags.includes(ARC[seat] + 'Done') && c.swapped === GG.career.seatSwap(b, seat), w + ': gates (+ swapped: only while that member drums)');
     const txt = strings(c).map(([, s]) => s).join(' ');
     ok(!otherNames(b).test(txt), w + ': names another band\'s member ' + (txt.match(otherNames(b)) || [])[0]);
   }));
@@ -115,7 +115,7 @@ test('every swapped member: first-week card, ≥4 Monday cards with chat, a kit 
     ok(first && GG.career.gatePasses(s, first.gate) && GG.career.cardOk(s, first), w + ': the first-week card draws on that seat');
     const drum = career(band, 'drums');
     ok(first && !GG.career.cardOk(drum, first), w + ': never on the drum seat');
-    const monday = K.cards.filter(c => c.swapped === id && !c.forceWeek);
+    const monday = K.cards.filter(c => c.swapped === id && !c.forceWeek && /^sw_/.test(c.id));   // (fin_ cards carry swapped too: v1.1 review)
     ok(monday.length >= 4 && monday.length <= 6, w + ': 4-6 Monday cards (' + monday.length + ')');
     ok(monday.every(c => c.seat.join() === seat && c.gate.band.join() === band && c.choices.some(ch => ch.effects && ch.effects.chat)), w + ': gated + a chat line');
     ok(monday.every(c => GG.career.cardOk(s, c)), w + ': speakers and effects fit');
