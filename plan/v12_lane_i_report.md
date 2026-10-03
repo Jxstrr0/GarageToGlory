@@ -56,12 +56,12 @@ samples ship in the one build (no local-only kit, no guard); raw WAVs stay in gi
   sum of their strings; pluckJob stepped = one pluck, sample for sample; cab IRs; impulse v2 + plate; metal cluster > 6 kHz;
   RBJ biquads; irFromB64), `sim_kit` 5/5 (module shape 5 / 5 / 3x5, metal tiers 2-3, credit names The Metal Kick Drum and
   Rafa Prieto, LICENSE file, the credit inside the built dist/game.html, `git ls-files '*.wav'` empty), `sim_audio` 34/34
-  (timeline fingerprints untouched). Full suite: SUITE_RESULT.
+  (timeline fingerprints untouched). Full suite (`node tests/run.js`): SUITE ALL PASS, 33 files.
 - `pw_seq` (390x844): `hash` 232/232 equal to the 1.1.0.0 fixture (run before every push), `kit` 8/8 (metal tier 3 plays the
   kit, decoded clips onset <= 1 ms, 5 consecutive snares differ, per-lane loudness within +-1 dB of the synth, metal tier 1 +
   punk tier 3 identical with and without the kit, Classic metal + punk taps = fixture), `audio` 42/42 (incl. "no two hits
-  the same": 8 snares / hats / KS chugs pairwise > -40 dB), SEQ_REST.
-- `pw_gig` `kit` GIG_RESULT (taps play samples, round robins in order, booked times unchanged, 0 tap drops).
+  the same": 8 snares / hats / KS chugs pairwise > -40 dB), genres 25/25, voices 8/8, heavy 22/22, part 30/30.
+- `pw_gig` `kit` 7/7, twice (taps play samples, round robins in order, booked times unchanged, 0 tap drops).
 - `pw_perf` `pre` 9/9 twice at 390x844 and twice at 440x956; `audio` 7/7 twice at 440x956 and once at 390x844.
 - One `pw_seq audio` run failed on a 4 s van-ambience wait (57_ui_van, not audio code) at load 14; it passed alone.
 
@@ -71,6 +71,12 @@ samples ship in the one build (no local-only kit, no guard); raw WAVs stay in gi
   crush / cab / bus work after F17 had moved them (deltas kick 0.70, snare -1.45, toms -1.42 / 0.54 / 2.48 dB: pw_seq kit
   FAIL). Re-measured in 3 iterations (the parallel crush halves each step): trims kick -4.67, snare -15.38, toms 4.37 / 6.87
   / 4.33 dB -> deltas 0.06 / -0.04 / -0.22 / 0.05 / 0.44 dB. The MP3 payload is byte-identical (only the trim line moved).
+- F13 band-energy table (`plan/v12_audio_numbers.txt`, section "1.2 Lane I": signature songs, tier 2, every note at vel
+  0.85 = KS + velocity drums + the kit on metal; no feel): full-mix RMS metal -16.1 (1.1: -16.8), punk -18.4 (-18.3), rock
+  -16.2 (-16.2), country -19.7 (-19.3) dBFS, mean -17.60 vs -17.65 (target +-1 dB: met); 4k+ down in every genre (-0.5 to
+  -1.8 dB; cap +3: met); peaks -4.9 to -5.1 dBFS; width 0.184 vs 0.191 (metal 0.111 -> 0.076). For the lead: the metal
+  drums stem is +2.3 dB (-17.2 vs -19.5; the kit's per-hit first-100 ms RMS matches, its longer tails add up over a song)
+  and punk / rock band 0-150 Hz is -2.6 to -2.9 dB (the KS bass vs the 1.1 oscillator): ears first, then LV2 / KS lvl.
 - Levels (commits 5c94998 / a1869dc; 4-bar chorus, tier 2, 1.2 minus 1.1 classic): band RMS metal ~0.0, punk +0.1, rock
   -0.2, country -0.3 dB; 4k+ metal -10.7, punk -10.1, rock -7.0, country +2.7 dB (all under the +3 dB cap). Drums at vel
   0.85 within ~1 dB of 1.1 on most lanes / tiers (worst -1.9 dB). pw_seq heavy, vocals over the band: screams 3.7 dB and
@@ -101,6 +107,8 @@ samples ship in the one build (no local-only kit, no guard); raw WAVs stay in gi
 - After merge: re-run `tools/kit_trim.js` whenever the drum bus / crush / rooms change (pw_seq kit catches drift);
   `SPEC_EXTRA='{"vel":0.85}' node tools/audio_numbers.js --section "1.2"` for the F13 table.
 - Hand-overs: only `A.hit` (above); nothing else outside the Lane I list.
+- For the lead to confirm: `pw_perf pre` keeps the 8 ms slice threshold but now measures a slice as trace CPU minus V8's
+  own pauses (method + calibration in `sliceTrace`, numbers in commit d7d6c68); wall maxima stay in the log.
 - Gaps: F13 "ears" clips + the ship / tweak popup are the lead's; gig frame p95 vs 1.1.0.0 needs Lanes F + V merged (not
   measured here); if a phone needs more headroom, a pre-rendered `GG.dsp.metal` buffer would cut the cymbal's graph build
   (the floor of a PRE slice).
