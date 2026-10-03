@@ -65,7 +65,10 @@ Contract `plan/plan_contract_1.2.md` §3 items 1–9, done in order: hashes, 1.1
 ## 6. Tests
 - Node `tests/run.js`: SUITE ALL PASS (sim_audio 34: + "v1.2 classic: stubs change nothing" — the 1,212 fingerprints equal
   stage 0 with Classic off, on, and with `gig / feel / studio` opts — + "v1.2 stage-0 contracts + stubs").
-- `pw_seq` section `hash`: RESULT_HASH. Playwright regression: RESULT_PW.
+- `pw_seq` section `hash` on 1.2.0.0 with Classic on: 232/232 equal to the 1.1 fixture, ALL PASS 4, 335 s alone (inside
+  `timeout 500`; under heavy load from other agents it can get close: narrow with HASH_ONLY or use the tool in the background).
+- Playwright at 390×844, all green: pw_seq seq 34 + guided 23, audio 42, heavy 22, genres 25, voices 8, part 30; pw_gig sync 14,
+  bridge 17; pw_seat_audio voices 19, mute 4, preview 9, noodle 5. No console errors.
 
 ## 7. What the lanes must know
 1. **Classic means the 1.1 graph, node for node.** The hash is taken with summing in connection order, so with Classic on a
