@@ -78,9 +78,14 @@
   function bought(kind, id, r) { dbg.lastBuy = { kind: kind, id: id, cost: r.cost }; if (r.cost) sfx('cash'); sync(); }
 
   /* ---- Hits after a purchase (the new drum, heard) ------------------------------------------------------- */
+  function tapO() { var A = GG.audio; return A && A.TAP_AUTO ? { vel: A.TAP_AUTO.other } : undefined; }   // v1.2: the 1.2 kit (Classic ignores it)
   function hits(list, gap) {
     if (!GG.audio || !GG.audio.hit) return;
-    list.forEach(function (lane, i) { setTimeout(function () { try { GG.audio.hit(lane); } catch (e) { /* no audio */ } }, 40 + i * (gap || 120)); });
+    var A = GG.audio, o = tapO(), t0 = Date.now();
+    (function go() {   // v1.2 review: a new kit tier is heard once its velocity set (+ samples) is in (<= 1.5 s), not as the 1.1 fallback
+      if (A.kitReady && !A.kitReady() && Date.now() - t0 < 1500) { setTimeout(go, 100); return; }
+      list.forEach(function (lane, i) { setTimeout(function () { try { A.hit(lane, undefined, o); } catch (e) { /* no audio */ } }, 40 + i * (gap || 120)); });
+    })();
   }
   // v1.1: a string seat hears its instrument (a little run up the neck; the amp: a big open chord).
   function seatHear(id) {
@@ -88,7 +93,8 @@
     if (!f) return;
     var B = GG.songs.genre(st.genre).backing || {}, root = (B.root || 40) + (seat === 'bass' ? -12 : seat === 'lead' ? 12 : 0);
     var notes = id === 'pedal' ? [0, 0, 0, 0, 0, 0, 0, 0] : id === 'toms' ? [0, 3, 5, 7, 12] : id === 'ride' ? [0, 7, 12, 15, 19] : [0, 7, 12];
-    notes.forEach(function (n, i) { setTimeout(function () { try { f(root + n, undefined, { len: id === 'pedal' ? 0.08 : 0.3, kind: seat === 'bass' ? 'bass' : seat === 'lead' ? 'lead' : 'gtr', power: seat !== 'lead' }); } catch (e) { /* no audio */ } }, 40 + i * (id === 'pedal' ? 70 : 130)); });
+    var vo = tapO();
+    notes.forEach(function (n, i) { setTimeout(function () { try { f(root + n, undefined, { len: id === 'pedal' ? 0.08 : 0.3, kind: seat === 'bass' ? 'bass' : seat === 'lead' ? 'lead' : 'gtr', power: seat !== 'lead', vel: vo && vo.vel }); } catch (e) { /* no audio */ } }, 40 + i * (id === 'pedal' ? 70 : 130)); });
   }
   function hear(id) {
     if (S() && GG.career.seatOf(S()) !== 'drums') { seatHear(id); return; }

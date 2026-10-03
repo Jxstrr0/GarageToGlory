@@ -120,11 +120,11 @@
   // A tap on your grid plays that note (your instrument's voice; the genre's root, the row's interval / scale degree).
   function partPreview(row) {
     var A = GG.audio, sp = seat(); if (!A) return;
-    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9];
+    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9], v = A.TAP_AUTO ? A.TAP_AUTO.other : undefined;   // (v1.2: the 1.2 voice, as Play plays it)
     try {
-      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass' });
-      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row });
-      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead' });
+      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass', vel: v });
+      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row, vel: v });
+      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead', vel: v });
     } catch (e) { /* no sound: fine */ }
   }
   function buildPartGrid(s, D) {
@@ -295,7 +295,7 @@
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
-      if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l]);
+      if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       D.hint = null;
       changed(D);
     }

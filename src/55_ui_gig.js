@@ -397,7 +397,7 @@
   function bandOpts(song, at) {
     var po = { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
       singer: ui.roleOf('front', S()), band: S().bandId, gig: true };   // v0.9: who sings (for the audio's per-singer vocal voice)
-    if (G.opts && G.opts.studio) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO)
+    if (G.opts && G.opts.studio && !G.opts.practice) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO; practice runs in studio mode but is no take)
     if (strings()) {   // v1.1: the band (the swapped drummer) plays the drums; your part is muted, your taps play it
       po.drums = true; po.seat = G.seat; po.part = song.pattern && song.pattern.part;
       po.mute = GG.audio && GG.audio.seatKinds ? GG.audio.seatKinds(S().genre, G.seat) : null;
@@ -659,7 +659,7 @@
       while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
         var q = n.seq[ru.i++], at = n.t + q[0];
         if (at < now - 0.08) continue;
-        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined);
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, ru.vo || autoVel('other'));   // (v1.2 review: the head tap's vel, so the run stays one string sound)
         G.runN++;
       }
       if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
@@ -852,7 +852,7 @@
     if (hit && n.hold) {
       if (G.held[n.li] && G.held[n.li].n !== n) dropVoice(n.li, J);
       G.held[n.li] = { h: h, n: n };
-      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0 });
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0, vo: vo });
     }
     return out;
   }

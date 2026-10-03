@@ -36467,13 +36467,17 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     X.fx = gainNode(c, 1, null); X.out.connect(X.fx);
     X.roomSend = gainNode(c, 0, r.send); X.fx.connect(X.roomSend);
     if (GG.dsp && typeof GG.dsp.impulse2 === 'function') {
-      try {
-        var sr = c.sampleRate, ir = plateIR[sr] || (plateIR[sr] = GG.dsp.impulse2('plate', sr, 1201)), L = ir[0], R = ir[1] || ir[0];
-        var buf = c.createBuffer(2, L.length, sr); buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
-        var conv = c.createConvolver(); conv.buffer = buf; conv.connect(gainNode(c, VXL.plate, r.glue));
-        X.plateSend = gainNode(c, 0, conv); X.fx.connect(X.plateSend);
-        X.plate = conv;
-      } catch (e) { X.plate = null; }
+      var plateOn = function () {
+        try {
+          var sr = c.sampleRate, ir = plateIR[sr] || (plateIR[sr] = GG.dsp.impulse2('plate', sr, 1201)), L = ir[0], R = ir[1] || ir[0];
+          var buf = c.createBuffer(2, L.length, sr); buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
+          var conv = c.createConvolver(); conv.buffer = buf; conv.connect(gainNode(c, VXL.plate, r.glue));
+          X.plateSend = gainNode(c, 0, conv); X.fx.connect(X.plateSend);
+          X.plate = conv;
+        } catch (e) { X.plate = null; }
+      };
+      if (c === ctx && !plateIR[c.sampleRate]) setTimeout(function later() { if (current && current.playing && !current.radio) { setTimeout(later, 1000); return; } plateOn(); }, 1200);
+      else plateOn();
     }
     var d = r.voxDelay = X.delay = c.createDelay(GV.DELAY.max + 0.05), lp = filterNode(c, 'lowpass', GV.DELAY.lp, 0.7, r.busBand);
     d.connect(lp); lp.connect(gainNode(c, GV.DELAY.feedback, d));
@@ -36667,6 +36671,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
     return null;
   }
+  function warmRig(genre) {
+    if (!rig || A.isClassic()) return;
+    try { if (genre === 'metal') metalRig(rig); else ampRig(rig, genre); } catch (e) { /* built on its first note then */ }
+    if (!rig.vx || !GG.voice || !GG.voice.glottal || !GG.voice.oq) return;
+    (function wave(k) {
+      if (k > 8 || !rig.vx) return;
+      try { voxWave(rig, GG.voice.oq(k / 8)); } catch (e) { return; }
+      soon(function () { wave(k + 1); });
+    })(0);
+  }
   A.warm = function (pattern, opts) {
     if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck || !ksOK(ctx)) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)
     opts = opts || {};
@@ -36682,6 +36696,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
     tl.events.forEach(function (ev, i) { q(ev, P && !mute[ev.kind] && P.vel[i] > 0 ? P.vel[i] : 0.9); });
     tl.events.forEach(function (ev) { if (mute[ev.kind]) q(ev, KS_LAYERS[0]); });
+    warmRig(genre);
     KS.warms++;
     if (!n) return Promise.resolve({ n: 0, ms: 0 });
     return new Promise(function (res) { KS.waiters.push({ t0: performance.now(), n: n, res: res }); });
@@ -38648,6 +38663,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!ctx || !rig || !GG.state || A.isClassic() || (current && current.playing) || (preview.h && preview.h.playing)) return;
     setKit(rig, GG.state.genre || 'metal');
   }
+  A.kitReady = function () {
+    if (!ctx || !rig || A.isClassic() || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return true;
+    kitCareer();
+    return !!(PRE2.key === pre2Key() && PRE2.first && (!skFor() || SK.ready || SK.errId));
+  };
   GG.on('career:new', function () { setTimeout(kitCareer, 0); });
   GG.on('career:loaded', function () { setTimeout(kitCareer, 0); });
   GG.on('screen:open', refreshSoon);
@@ -49133,7 +49153,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         for (var j = 0; j < K.people.length; j++) if (K.people[j].pose === 'noodle' || K.people[j].pose === 'lean') K.people[j].react = 0;   // the band reacts
         var ac = audio && audio.context && audio.context(), t0 = ac ? ac.currentTime + 0.02 : 0;
         var FILL = [['snare', 0], ['snare', 0.09], ['toms', 0.18], ['toms', 0.27], ['toms', 0.36], ['kick', 0.46], ['cymbal', 0.46]];
-        if (ac && audio.hit) for (var i = 0; i < FILL.length; i++) audio.hit(FILL[i][0], t0 + FILL[i][1]);
+        var vo = audio.TAP_AUTO ? { vel: audio.TAP_AUTO.other } : undefined;   // (v1.2: the velocity kit; Classic ignores it)
+        if (ac && audio.hit) for (var i = 0; i < FILL.length; i++) audio.hit(FILL[i][0], t0 + FILL[i][1], vo);
         return true;
       }
       if (action === 'marcel') { T.taps.marcel++; T.summon = 0; strike(0.7); return true; }
@@ -51769,11 +51790,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   })();
   function partPreview(row) {
     var A = GG.audio, sp = seat(); if (!A) return;
-    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9];
+    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9], v = A.TAP_AUTO ? A.TAP_AUTO.other : undefined;   // (v1.2: the 1.2 voice, as Play plays it)
     try {
-      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass' });
-      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row });
-      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead' });
+      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass', vel: v });
+      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row, vel: v });
+      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead', vel: v });
     } catch (e) { /* no sound: fine */ }
   }
   function buildPartGrid(s, D) {
@@ -51936,7 +51957,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
-      if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l]);
+      if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       D.hint = null;
       changed(D);
     }
@@ -52754,7 +52775,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function bandOpts(song, at) {
     var po = { genre: S().genre, section: null, loop: false, backing: true, drums: false, at: at,
       singer: ui.roleOf('front', S()), band: S().bandId, gig: true };   // v0.9: who sings (for the audio's per-singer vocal voice)
-    if (G.opts && G.opts.studio) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO)
+    if (G.opts && G.opts.studio && !G.opts.practice) po.studio = true;   // v1.2 (F16.2): a studio take, the band tighter (t + C.FEEL_STUDIO; practice runs in studio mode but is no take)
     if (strings()) {   // v1.1: the band (the swapped drummer) plays the drums; your part is muted, your taps play it
       po.drums = true; po.seat = G.seat; po.part = song.pattern && song.pattern.part;
       po.mute = GG.audio && GG.audio.seatKinds ? GG.audio.seatKinds(S().genre, G.seat) : null;
@@ -52987,7 +53008,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       while (live && ru.i < n.seq.length && n.t + n.seq[ru.i][0] <= now + ahead) {
         var q = n.seq[ru.i++], at = n.t + q[0];
         if (at < now - 0.08) continue;
-        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined);
+        seatSound({ kind: n.kind, midi: q[1], len: q[2], power: n.power, mute: n.mute }, ru.li, sched ? G.zeroBand + at : undefined, ru.vo || autoVel('other'));   // (v1.2 review: the head tap's vel, so the run stays one string sound)
         G.runN++;
       }
       if (!live || ru.i >= n.seq.length) G.runs.splice(r, 1);
@@ -53160,7 +53181,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (hit && n.hold) {
       if (G.held[n.li] && G.held[n.li].n !== n) dropVoice(n.li, J);
       G.held[n.li] = { h: h, n: n };
-      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0 });
+      if (n.run && n.seq && n.seq.length) G.runs.push({ n: n, li: n.li, i: 0, vo: vo });
     }
     return out;
   }
@@ -58121,16 +58142,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function bought(kind, id, r) { dbg.lastBuy = { kind: kind, id: id, cost: r.cost }; if (r.cost) sfx('cash'); sync(); }
 
   /* ---- Hits after a purchase (the new drum, heard) ------------------------------------------------------- */
+  function tapO() { var A = GG.audio; return A && A.TAP_AUTO ? { vel: A.TAP_AUTO.other } : undefined; }   // v1.2: the 1.2 kit (Classic ignores it)
   function hits(list, gap) {
     if (!GG.audio || !GG.audio.hit) return;
-    list.forEach(function (lane, i) { setTimeout(function () { try { GG.audio.hit(lane); } catch (e) { /* no audio */ } }, 40 + i * (gap || 120)); });
+    var A = GG.audio, o = tapO(), t0 = Date.now();
+    (function go() {   // v1.2 review: a new kit tier is heard once its velocity set (+ samples) is in (<= 1.5 s), not as the 1.1 fallback
+      if (A.kitReady && !A.kitReady() && Date.now() - t0 < 1500) { setTimeout(go, 100); return; }
+      list.forEach(function (lane, i) { setTimeout(function () { try { A.hit(lane, undefined, o); } catch (e) { /* no audio */ } }, 40 + i * (gap || 120)); });
+    })();
   }
   function seatHear(id) {
     var A = GG.audio, st = S(), seat = GG.career.seatOf(st), f = A && (seat === 'bass' ? A.pluck : seat === 'lead' ? A.lead : A.strum);
     if (!f) return;
     var B = GG.songs.genre(st.genre).backing || {}, root = (B.root || 40) + (seat === 'bass' ? -12 : seat === 'lead' ? 12 : 0);
     var notes = id === 'pedal' ? [0, 0, 0, 0, 0, 0, 0, 0] : id === 'toms' ? [0, 3, 5, 7, 12] : id === 'ride' ? [0, 7, 12, 15, 19] : [0, 7, 12];
-    notes.forEach(function (n, i) { setTimeout(function () { try { f(root + n, undefined, { len: id === 'pedal' ? 0.08 : 0.3, kind: seat === 'bass' ? 'bass' : seat === 'lead' ? 'lead' : 'gtr', power: seat !== 'lead' }); } catch (e) { /* no audio */ } }, 40 + i * (id === 'pedal' ? 70 : 130)); });
+    var vo = tapO();
+    notes.forEach(function (n, i) { setTimeout(function () { try { f(root + n, undefined, { len: id === 'pedal' ? 0.08 : 0.3, kind: seat === 'bass' ? 'bass' : seat === 'lead' ? 'lead' : 'gtr', power: seat !== 'lead', vel: vo && vo.vel }); } catch (e) { /* no audio */ } }, 40 + i * (id === 'pedal' ? 70 : 130)); });
   }
   function hear(id) {
     if (S() && GG.career.seatOf(S()) !== 'drums') { seatHear(id); return; }

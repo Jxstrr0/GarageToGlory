@@ -175,6 +175,9 @@
   A.isMuted = function () { if (muted === null) muted = !!settings().muted; return muted; };
   // v1.2 "Soundcheck" (F3.1): the Classic switch (settings.audioClassic; hidden, debug only: owner F16.4). On, every Soundcheck
   // path is bypassed and the 1.1 sound plays byte for byte (tests/fixtures/audio_v11_hashes.json). Cached; applySettings re-reads.
+  // (v1.2 review) Flipped at runtime it applies at once to renderOffline and to every new note's path, but the live rig keeps
+  // the graph it was built with (the parallel crush + duck, the stereo kit chain, built amps, the room's impulse) until a
+  // reload: for a by-ear A/B, flip it and reload.
   var classic = null;
   A.isClassic = function () { if (classic === null) classic = !!settings().audioClassic; return classic; };
   A.classic = function (on) { if (on === undefined) return A.isClassic(); classic = !!on; persist({ audioClassic: classic }); return classic; };
@@ -1941,13 +1944,19 @@
     X.fx = gainNode(c, 1, null); X.out.connect(X.fx);
     X.roomSend = gainNode(c, 0, r.send); X.fx.connect(X.roomSend);
     if (GG.dsp && typeof GG.dsp.impulse2 === 'function') {
-      try {
-        var sr = c.sampleRate, ir = plateIR[sr] || (plateIR[sr] = GG.dsp.impulse2('plate', sr, 1201)), L = ir[0], R = ir[1] || ir[0];
-        var buf = c.createBuffer(2, L.length, sr); buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
-        var conv = c.createConvolver(); conv.buffer = buf; conv.connect(gainNode(c, VXL.plate, r.glue));
-        X.plateSend = gainNode(c, 0, conv); X.fx.connect(X.plateSend);
-        X.plate = conv;
-      } catch (e) { X.plate = null; }
+      var plateOn = function () {
+        try {
+          var sr = c.sampleRate, ir = plateIR[sr] || (plateIR[sr] = GG.dsp.impulse2('plate', sr, 1201)), L = ir[0], R = ir[1] || ir[0];
+          var buf = c.createBuffer(2, L.length, sr); buf.getChannelData(0).set(L); buf.getChannelData(1).set(R);
+          var conv = c.createConvolver(); conv.buffer = buf; conv.connect(gainNode(c, VXL.plate, r.glue));
+          X.plateSend = gainNode(c, 0, conv); X.fx.connect(X.plateSend);
+          X.plate = conv;
+        } catch (e) { X.plate = null; }
+      };
+      // (v1.2 review) live, the plate's impulse (~70-150 ms of JS on a 4x-throttled phone) is no longer computed inside the
+      // unlock's touch: it comes ~1 s later, never mid-song; until then voxSetup uses the room send. Offline: right away.
+      if (c === ctx && !plateIR[c.sampleRate]) setTimeout(function later() { if (current && current.playing && !current.radio) { setTimeout(later, 1000); return; } plateOn(); }, 1200);
+      else plateOn();
     }
     var d = r.voxDelay = X.delay = c.createDelay(GV.DELAY.max + 0.05), lp = filterNode(c, 'lowpass', GV.DELAY.lp, 0.7, r.busBand);
     d.connect(lp); lp.connect(gainNode(c, GV.DELAY.feedback, d));
@@ -2168,6 +2177,19 @@
     }
     return null;
   }
+  // (v1.2 review) the rest of a song's first-use DSP, built before it starts instead of on its first notes in the scheduler
+  // pump: the genre's amp (its cab IR + convolvers) at once, then the glottal waves (the 9 open quotients GG.voice.oq gives),
+  // one per slice.
+  function warmRig(genre) {
+    if (!rig || A.isClassic()) return;
+    try { if (genre === 'metal') metalRig(rig); else ampRig(rig, genre); } catch (e) { /* built on its first note then */ }
+    if (!rig.vx || !GG.voice || !GG.voice.glottal || !GG.voice.oq) return;
+    (function wave(k) {
+      if (k > 8 || !rig.vx) return;
+      try { voxWave(rig, GG.voice.oq(k / 8)); } catch (e) { return; }
+      soon(function () { wave(k + 1); });
+    })(0);
+  }
   // A.warm(pattern, opts) -> Promise<{ n, ms }>: renders the song's KS buffers ahead (its timeline, pure), one string per slice.
   A.warm = function (pattern, opts) {
     if (A.isClassic() || !ctx || !GG.dsp || !GG.dsp.pluck || !ksOK(ctx)) return Promise.resolve({ n: 0, ms: 0 });   // (no live audio yet: nothing to warm)
@@ -2187,6 +2209,7 @@
     }
     tl.events.forEach(function (ev, i) { q(ev, P && !mute[ev.kind] && P.vel[i] > 0 ? P.vel[i] : 0.9); });
     tl.events.forEach(function (ev) { if (mute[ev.kind]) q(ev, KS_LAYERS[0]); });
+    warmRig(genre);
     KS.warms++;
     if (!n) return Promise.resolve({ n: 0, ms: 0 });
     return new Promise(function (res) { KS.waiters.push({ t0: performance.now(), n: n, res: res }); });
@@ -4376,6 +4399,14 @@
     if (!ctx || !rig || !GG.state || A.isClassic() || (current && current.playing) || (preview.h && preview.h.playing)) return;
     setKit(rig, GG.state.genre || 'metal');
   }
+  // A.kitReady() -> true once the career's kit plays its 1.2 sound (the velocity set's first phase, + the sampled kit where it
+  // applies), or when there is nothing to wait for (Classic, no audio); asking also wants the career's kit (the shop's demo
+  // after a kit upgrade waits on it, <= 1.5 s, so the new kit is what is heard).
+  A.kitReady = function () {
+    if (!ctx || !rig || A.isClassic() || !(window.OfflineAudioContext || window.webkitOfflineAudioContext)) return true;
+    kitCareer();
+    return !!(PRE2.key === pre2Key() && PRE2.first && (!skFor() || SK.ready || SK.errId));
+  };
   GG.on('career:new', function () { setTimeout(kitCareer, 0); });
   GG.on('career:loaded', function () { setTimeout(kitCareer, 0); });
   GG.on('screen:open', refreshSoon);
