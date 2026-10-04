@@ -53,14 +53,22 @@ test('{instrument} reads right as a plural ("drums"): no "{instrument} lives", "
   })));
 });
 
-test('w1_write teaches the guided writer the player sees by default: no step-grid squares, no seq-grid point', () => {
+// v1.3 "Songwriter" (plan_contract_1.3 §4.7): a Write block opens Quick song; the jam and the tools live in the header's ⋯ menu.
+const IN_MENU = ['btn-seq-jam', 'btn-seq-metro', 'btn-seq-quick', 'btn-seq-beat', 'btn-seq-fill', 'btn-kit-shop', 'kit-practice', 'seq-clear'];
+test('w1_write teaches Quick song: Play in every layer (for every seat), the jam via ⋯, no grid squares, nothing inside the closed menu', () => {
   const w = T.find(l => l.id === 'w1_write');
   allSteps(w).forEach(([b, steps]) => steps.forEach((s, i) => {
     ok(!/\bsquares?\b/i.test(s.text), 'w1_write/' + b + '#' + i + ': talks about squares');
     const ids = s.point && s.point.testid ? [].concat(s.point.testid) : [];
-    ok(!ids.includes('seq-grid'), 'w1_write/' + b + '#' + i + ': points at seq-grid (Advanced only)');
+    ok(!ids.includes('seq-grid') && !ids.some(id => /^(part-|cell-|chord-)/.test(id)), 'w1_write/' + b + '#' + i + ': points at the editor grid (Quick song opens first)');
+    ok(!ids.some(id => IN_MENU.includes(id)), 'w1_write/' + b + '#' + i + ': points inside the closed ⋯ menu ' + ids);
   }));
-  ok(allSteps(w).every(([, steps]) => steps.some(s => s.point && [].concat(s.point.testid || []).includes('btn-guide-play'))), 'every layer points at the guided Play button');
+  allSteps(w).forEach(([b, steps]) => ['drums', 'bass', 'rhythm', 'lead'].forEach(seat => {
+    const mine = steps.filter(s => !s.seat || s.seat.includes(seat));
+    ok(mine.some(s => s.point && [].concat(s.point.testid || []).includes('btn-guide-play')), 'w1_write/' + b + ' points at Play for the ' + seat + ' seat');
+    ok(mine.some(s => s.point && [].concat(s.point.testid || []).includes('btn-seq-tools') && /⋯/.test(s.text) && /jam/i.test(s.text)), 'w1_write/' + b + ': "Tap ⋯ and let the band jam one" for the ' + seat + ' seat');
+  }));
+  ok(allSteps(w).every(([, steps]) => steps.some(s => s.point && [].concat(s.point.testid || []).includes('btn-guide-play'))), 'every layer points at the Quick song Play button');
 });
 
 test('E12: drum words appear only in steps gated seat: [\'drums\'] (titles too)', () => {

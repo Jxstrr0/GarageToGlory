@@ -330,85 +330,173 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .tag.gold { color: #1d1204; background: #e8c547; border-color: #e8c547; } .tag.mine { color: var(--amber); border-color: rgba(255, 179, 71, .5); }
 .song-res { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .22); border: 1px solid rgba(255, 179, 71, .25); }
 
-/* ---- Sequencer (54_ui_sequencer): fits 390x844 without scrolling; rows ~34px, lanes ~80px wide ---- */
-.full.seq { background: radial-gradient(120% 50% at 50% 0%, #1d2740 0%, #0c111c 70%); }
-.full.seq .full-body { display: flex; flex-direction: column; gap: 6px; overflow: hidden; padding: calc(var(--safe-top) + 6px) 12px 4px; }
-.full.seq .full-foot { flex-direction: row; gap: 8px; padding: 6px 12px calc(var(--safe-bot) + 10px); }
-.full.seq .full-foot .btn { flex: 1 1 0; min-width: 0; padding: 0 8px; font-size: 14px; white-space: nowrap; }
-.full.seq .full-foot .btn.on { background: var(--panel2); border-color: var(--amber); color: var(--amber); }
-.seq-head { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.seq-title { flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 0 4px; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; }
-.seq-title .caps { font-size: 10px; } .seq-title:disabled { cursor: default; }
-.seq-title .fr { font-weight: 800; font-style: italic; font-size: 16px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* ---- Songwriter (54_ui_sequencer), v1.3 "Clean sheet" (plan_contract_1.3 §4.7): one flow, Quick song -> editor. Flat and quiet:
+   the game's navy, no boxes inside boxes; header 48, tabs 45, meters 18, coach 44, toggle 48, chips 44; the grid fills the rest. ---- */
+.full.seq .full-body { display: flex; flex-direction: column; gap: 6px; overflow: hidden; padding: calc(var(--safe-top) + 2px) 14px 0; }
+.full.seq .full-foot { flex-direction: row; gap: 10px; padding: 8px 14px calc(var(--safe-bot) + 12px); }
+.full.seq .full-foot .btn { flex: 1 1 0; min-width: 0; min-height: 52px; padding: 0 8px; border-radius: 14px; border: 1.5px solid transparent; background: var(--panel); box-shadow: none;
+  font: 900 14px/1.1 var(--font); letter-spacing: .06em; white-space: normal; }
+.full.seq .full-foot .btn.primary { background: var(--amber); color: #1b1206; border-color: var(--amber); box-shadow: none; }
+.full.seq .full-foot .btn.ghost { background: transparent; border-color: var(--line); color: var(--dim); font-size: 13px; }
+.full.seq .full-foot .btn.on { background: var(--panel2); color: var(--amber); }
+.full.seq .full-foot .btn:disabled { opacity: .45; }
+.seq-head { display: flex; align-items: center; gap: 6px; flex: 0 0 48px; height: 48px; margin: 0 -6px; }
+.seq-head .icon-btn { width: 44px; height: 44px; flex: 0 0 44px; border: 0; background: transparent; color: var(--dim); font-size: 20px; }
+.seq-title { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 2px; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: center; }
+.seq-title:disabled { cursor: default; }
+.seq-title .caps { font-size: 11px; letter-spacing: .1em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seq-title .fr { font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.btn.seq-jam { flex: 0 0 auto; max-width: 104px; min-height: 44px; padding: 0 10px; font-size: 12px; line-height: 1.15; white-space: normal; }
-.seq-tabs { display: flex; gap: 6px; flex: 0 0 auto; } .seq-tabs .tabs { flex: 1 1 auto; padding: 3px; }
-.seq-tabs .icon-btn { width: 44px; height: 44px; flex-basis: 44px; font-size: 20px; }
-.seq-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex: 0 0 auto; }
-.meter .mh { display: flex; justify-content: space-between; align-items: baseline; }
-.meter .mh b { font: 900 16px var(--display); }
-.meter .bar { height: 7px; margin-top: 2px; } .meter .bar > i { transition: width .12s, background .12s; }
-.meter .bar > i.ab { left: auto; width: 2px; border-radius: 0; background: rgba(255, 255, 255, .8) !important; transition: none; }
-.seq-tipline { display: flex; gap: 8px; align-items: flex-start; flex: 0 0 auto; min-height: 32px; }
-.seq-tip { flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 1.3; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* underline section tabs */
+.seq-tabs { flex: 0 0 auto; margin: -2px -14px 0; padding: 0 12px; border-bottom: 1px solid #222b44; }
+.full.seq .seq-tabs .tabs { background: none; border: 0; border-radius: 0; padding: 0; gap: 2px; }
+.full.seq .seq-tabs .tab.tab { position: relative; min-height: 44px; min-width: 0; padding: 0 2px; border-radius: 0; background: none; box-shadow: none; color: var(--faint);
+  font: 900 13px var(--font); letter-spacing: .08em; text-transform: uppercase; border-bottom: 3px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+.full.seq .seq-tabs .tab.tab.on { color: var(--text); border-bottom-color: var(--amber); }
+.full.seq .seq-tabs.many .tab.tab { font-size: 11px; letter-spacing: .02em; }
+.seq-fb { position: absolute; top: 9px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+/* the slim meter strip (+/- flash on change) */
+.seq-meters { display: flex; gap: 12px; flex: 0 0 18px; height: 18px; align-items: center; }
+.meter { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; font: 800 11px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); position: relative; }
+.meter .mt { flex: 1 1 auto; min-width: 16px; height: 4px; border-radius: 2px; background: #2a3350; position: relative; overflow: hidden; }
+.meter .mt > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--amber); transition: width .12s, background .12s; }
+.meter .mt > i.ab { left: auto; width: 2px; border-radius: 0; background: rgba(255, 255, 255, .8) !important; transition: none; }
+.meter b { color: var(--text); font: 900 13px var(--font); min-width: 20px; text-align: right; }
+.meter .md { position: absolute; right: -2px; top: -12px; font: 900 10px var(--font); letter-spacing: 0; opacity: 0; transition: opacity .2s; }
+.meter.flash .md { opacity: 1; } .meter.up .md { color: var(--good); } .meter.down .md { color: var(--bad); } .meter.gd .md { color: #a9c4ff; }
+.meter.flash b { animation: gg-seqflash 1.2s ease-out; }
+@keyframes gg-seqflash { 0%, 30% { color: var(--amber); } 100% { color: var(--text); } }
+/* the one-line coach bubble (tap: the full tip) */
+.seq-coach { flex: 0 0 44px; height: 44px; display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 12px 0 7px; border: 0; border-radius: 22px; background: var(--bg2);
+  color: var(--dim); font: 14px var(--font); text-align: left; cursor: pointer; }
+.seq-coach .sc-av { flex: 0 0 auto; display: flex; }
+.seq-coach .avatar.sm { width: 28px; height: 28px; font-size: 11px; border-width: 0; box-shadow: none; }
+.seq-coach .sc-none { background: var(--panel2); color: var(--dim); }
+.seq-coach .sc-line { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; white-space: nowrap; overflow: hidden; }
+.seq-coach .seq-tip { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.seq-coach .sc-who { flex: 0 0 auto; color: var(--text); margin-right: 5px; } .seq-coach .sc-who:empty { display: none; }
+.seq-coach .sc-who:not(:empty)::after { content: ':'; }
 .seq-tip b { color: var(--text); }
-.seq-pos { flex: 0 0 auto; font: 800 11px var(--font); color: var(--amber); white-space: nowrap; }
-.seq-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
-.seq-grid { flex: 1 1 auto; display: grid; grid-template-rows: 22px repeat(16, minmax(30px, 1fr)); gap: 2px 4px; -webkit-user-select: none; user-select: none; }
-.seq-grid .lh { display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px; font: 800 10px var(--font); text-transform: uppercase; letter-spacing: .05em; }
-.seq-grid .bl { display: flex; align-items: center; justify-content: center; font: 700 10px var(--font); color: var(--faint); border-radius: 6px; }
-.seq-grid .bl.q { color: var(--text); font: 900 13px var(--display); }
+.seq-coach .sc-more { flex: 0 0 auto; color: var(--faint); font-weight: 900; font-size: 18px; }
+.seq-tipfull { display: flex; gap: 12px; align-items: flex-start; } .seq-tipfull p { line-height: 1.4; }
+/* Your part | Drums + Chords: <name> ▾ */
+.seq-toggle { display: flex; align-items: center; gap: 10px; flex: 0 0 48px; height: 48px; }
+.seq-layers { display: flex; flex: 0 0 auto; background: var(--bg2); border-radius: 12px; padding: 0; gap: 0; }
+.seq-layers .seg { min-height: 48px; min-width: 64px; padding: 0 12px; border: 0; border-radius: 12px; background: transparent; color: var(--faint);
+  font: 900 12px var(--font); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.seq-layers .seg.on { background: var(--panel2); color: var(--text); }
+.seq-chords { flex: 1 1 auto; min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 0 2px; border: 0; background: none;
+  color: var(--dim); font: 13px var(--font); cursor: pointer; white-space: nowrap; }
+.seq-chords b { color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.seq-chords .sc-k, .seq-chords .sc-dn { flex: 0 0 auto; } .seq-chords:disabled { cursor: default; } .seq-chords:disabled .sc-dn { display: none; }
+/* four chord chips (bar n + chord; the home chord outlined green; the playing bar lit) */
+.seq-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; flex: 0 0 44px; height: 44px; }
+.seq-chip { min-height: 44px; min-width: 0; padding: 0 4px; border: 1.5px solid transparent; border-radius: 10px; background: var(--panel); color: var(--text); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+.seq-chip .cb { font: 900 9px var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.seq-chip b { font: 900 16px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.seq-chip.home { border-color: var(--green); }
+.seq-chip.ph { background: var(--panel2); box-shadow: inset 0 -3px 0 var(--amber); }
+.seq-chip:disabled { cursor: default; opacity: 1; }
+/* the grid: lanes / part rows left->right x 16 steps top->bottom, filling the screen */
+.seq-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; margin: 0 -6px 0 -10px; padding: 0 6px 0 0; }
+.seq-grid { flex: 1 1 auto; display: grid; grid-template-rows: 22px repeat(16, minmax(30px, 1fr)); gap: 3px; -webkit-user-select: none; user-select: none; }
+.seq-grid.part, .seq-grid.tight { grid-template-rows: 22px repeat(16, minmax(26px, 1fr)); }
+.seq-grid .gc { display: flex; align-items: center; justify-content: center; font: 900 9px var(--font); color: var(--amber); }
+.seq-grid .lh { display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 0; overflow: hidden; border-radius: 6px; font: 900 10px var(--font); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.seq-grid .lh .ln { overflow: hidden; text-overflow: ellipsis; }
+.seq-grid .bl { display: flex; align-items: center; justify-content: center; font: 800 11px var(--font); color: var(--faint); border-radius: 6px; }
+.seq-grid .bl.q { color: var(--text); font: 900 13px var(--font); }
 .seq-grid .bl.ph { background: var(--amber); color: #1d1204; }
-.seq-grid .cell { border-radius: 7px; background: #141a29; border: 1px solid #222b41; touch-action: none; cursor: pointer; }
-.seq-grid .cell.sh { background: #1a2234; }
-.seq-grid .cell.on { background: var(--lc); border-color: transparent; box-shadow: 0 0 12px -3px var(--lc), inset 0 -3px 0 rgba(0, 0, 0, .28); }
-.seq-grid .cell.ph { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .85); }
-.seq-grid .cell.on.ph { box-shadow: 0 0 16px 0 var(--lc), inset 0 0 0 2px #fff; filter: brightness(1.25); }
+.seq-grid .cell { border-radius: 6px; background: #161d30; touch-action: none; cursor: pointer; }
+.seq-grid .cell.sh { background: #1b2338; }
+.seq-grid .cell.on { background: var(--lc); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25); }
+.seq-grid .cell.ph { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7); }
+.seq-grid .cell.on.ph { box-shadow: inset 0 0 0 2px #fff; filter: brightness(1.2); }
 .seq-grid .cell.nope { animation: gg-nope .5s ease-out; }
 .seq-grid.ro .cell { cursor: default; }
-@keyframes gg-nope { 0%, 100% { background: #141a29; } 25% { background: #8a2f3a; transform: scale(.94); } }
-.seq-song { padding-bottom: 8px; }
+.seq-grid.fill .cell { background: #1f1c2a; } .seq-grid.fill .cell.sh { background: #262235; } .seq-grid.fill .cell.on { background: var(--lc); }
+@keyframes gg-nope { 0%, 100% { background: #161d30; } 25% { background: #8a2f3a; transform: scale(.94); } }
+.seq-grid.wide { column-gap: 3px; }
+.seq-grid.wide .lh { flex-direction: column; gap: 0; font-size: 8.5px; letter-spacing: 0; line-height: 1; }
+.seq-grid.wide .lh span { font-size: 11px; } .seq-grid.wide .lh .ln { font-size: 8.5px; }
+.seq-grid.part[data-lanes="7"] .lh { font-size: 9px; letter-spacing: 0; }
+@media (max-width: 410px) { .seq-grid.part .lh { font-size: 9.5px; letter-spacing: .01em; } .seq-grid.part[data-lanes="7"] .lh { font-size: 9px; letter-spacing: 0; } }
+.seq-grid.solo .cell.soff { opacity: .32; }
+.seq-grid.solo .cell.soff.on { opacity: .55; }
+.seq-extra { display: flex; flex-direction: column; gap: 8px; padding: 10px 4px 10px 10px; } .seq-extra-name { font-weight: 900; font-size: 20px; }
+/* the Song tab */
+.seq-song { display: flex; flex-direction: column; gap: 16px; padding: 8px 4px 12px 10px; }
+.seq-song .ss-row { display: flex; flex-direction: column; gap: 6px; }
+.seq-song .ss-extra { flex-direction: row; min-height: 52px; border-top: 1px solid #222b44; padding-top: 6px; }
+.seq-song .ss-groove { display: block; line-height: 1.6; color: var(--dim); } .seq-song .ss-groove b { color: var(--text); }
+.seq-song .qs-range { margin: -6px 0; }
 .seq-name { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
 .seq-tempo { width: 100%; height: 44px; accent-color: var(--amber); }
 .seq-arr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.seq-arr .arr { min-height: 64px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
+.seq-arr .arr { min-height: 64px; border-radius: 12px; border: 1.5px solid transparent; background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 1px; font: 700 13px var(--font); cursor: pointer; padding: 4px; }
-.seq-arr .arr.on { border-color: var(--amber); box-shadow: inset 0 -2px 0 var(--amber); background: var(--panel2); }
+.seq-arr .arr.on { border-color: var(--amber); background: #2a2a35; }
 .seq-arr .arr .seqs { font: 800 10px var(--font); color: var(--dim); letter-spacing: .08em; }
 .seq-arr .arr:disabled { opacity: .4; }
-/* v0.6.2 guided songwriter */
-.guide-top { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-.guide-prog { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.guide-prog .caps { font-size: 11px; color: var(--amber); }
-.guide-dots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
-.guide-dots i { height: 5px; border-radius: 3px; background: #26304a; } .guide-dots i.done { background: #7a6a45; } .guide-dots i.on { background: var(--amber); }
-.btn.guide-adv { flex: 0 0 auto; min-height: 44px; padding: 0 12px; font-size: 13px; }
-.guide-coach { flex: 0 0 auto; font-size: 13px; line-height: 1.35; color: var(--dim); background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
-.guide-coach b { color: var(--text); }
-.guide-main { gap: 8px; padding-bottom: 8px; }
-.guide-hint { font-size: 13px; color: var(--text); line-height: 1.35; }
-.guide-presets, .guide-orders { display: flex; flex-direction: column; gap: 8px; }
-.guide-preset { min-height: 56px; width: 100%; border-radius: 14px; border: 1px solid var(--line); background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
+/* Quick song: cards + sliders scroll inside quick-main (header, strip, bubble and the foot stay put) */
+.quick-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; margin: 0 -14px; padding: 4px 14px 16px; }
+.qs-title { font: 900 21px var(--display); text-transform: uppercase; letter-spacing: .02em; margin: 2px 0 10px; }
+.quick-recipes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.qr { min-height: 58px; min-width: 0; padding: 9px 12px; border-radius: 12px; border: 1.5px solid transparent; background: var(--bg2); color: var(--text); text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px; font: inherit; }
+.qr b { font-size: 15px; line-height: 1.2; } .qr > span { font-size: 12px; line-height: 1.3; color: var(--dim); }
+.qr.on { border-color: var(--amber); background: #2a2a35; }
+.qr.locked b { color: var(--dim); } .qr-lock { color: var(--faint); }
+.quick-sliders { display: flex; flex-direction: column; gap: 10px; }
+.qs-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.qs-top b { font-size: 15px; } .qs-top em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--amber); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.qs-ends { display: flex; justify-content: space-between; font: 700 11px var(--font); color: var(--faint); }
+/* the range is a 44 px touch target that only takes 30 px of the column (the label rows above / below let taps through) */
+.qs-range { -webkit-appearance: none; appearance: none; display: block; position: relative; width: 100%; height: 44px; margin: -5px 0 -9px; background: transparent; cursor: pointer; touch-action: pan-y; }
+.qs-top, .qs-ends { position: relative; z-index: 1; pointer-events: none; }
+.qs-range::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--c) 0 var(--p, 50%), #2a3350 var(--p, 50%) 100%); }
+.qs-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; margin-top: -9px; border-radius: 50%; background: var(--text); border: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.qs-range::-moz-range-track { height: 8px; border-radius: 4px; background: #2a3350; } .qs-range::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--c); }
+.qs-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--text); border: 0; }
+/* the ⋯ menu, the chord sheet, the picker */
+.modal.seq-menu { max-height: calc(100% - var(--safe-top) - var(--safe-bot) - 24px); }
+.modal.seq-menu .modal-body { overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; margin: 0 -6px; padding: 0 6px; }
+.sm-group { display: flex; flex-direction: column; gap: 4px; }
+.seq-menu-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: 12px; background: var(--bg2); color: var(--text);
+  font: 800 15px var(--font); text-align: left; cursor: pointer; }
+.seq-menu-row .tm-i { flex: 0 0 22px; text-align: center; font-size: 17px; } .seq-menu-row .tm-v { color: var(--faint); font-size: 13px; }
+.seq-menu-row.on { box-shadow: inset 3px 0 0 var(--amber); } .seq-menu-row.on .tm-v { color: var(--amber); }
+.seq-menu-row.danger { color: #ffb3aa; }
+.sm-copy, .sm-mods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; } .sm-copy:empty { display: none; }
+.sm-copy .btn, .sm-mods .btn { min-height: 48px; padding: 0 8px; border-color: transparent; background: var(--bg2); font: 800 14px/1.15 var(--font); text-transform: none; letter-spacing: 0; box-shadow: none; }
+html.gg-big .sm-copy .btn, html.gg-big .sm-mods .btn { font-size: 15.5px; }
+.seq-picks { display: flex; flex-direction: column; gap: 6px; }
+.seq-pickrow { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 14px; border: 1.5px solid transparent; border-radius: 12px; background: var(--bg2);
+  color: var(--text); font: 700 15px var(--font); text-align: left; cursor: pointer; } .seq-pickrow b { flex: 1 1 auto; min-width: 0; }
+.seq-pickrow.on { border-color: var(--amber); background: #2a2a35; }
+.seq-chordopts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.seq-chordopt { min-height: 56px; min-width: 0; border: 1.5px solid transparent; border-radius: 12px; background: var(--bg2); color: var(--text); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; } .seq-chordopt b { font: 900 17px var(--display); }
+.seq-chordopt .tiny { color: var(--green); } .seq-chordopt.on { border-color: var(--amber); background: #2a2a35; }
+/* Bigger text (5h gg-big): the songwriter's small print grows too (Quick song scrolls inside quick-main; the editor keeps its fixed rows) */
+html.gg-big .seq-coach { font-size: 15.5px; } html.gg-big .seq-title .caps { font-size: 11.5px; } html.gg-big .seq-title .fr { font-size: 19px; }
+html.gg-big .meter { font-size: 12px; } html.gg-big .meter b { font-size: 14px; } html.gg-big .seq-chords { font-size: 14.5px; }
+html.gg-big .seq-layers .seg { font-size: 13.5px; } html.gg-big .seq-chip .cb { font-size: 10px; } html.gg-big .seq-grid .lh { font-size: 11px; } html.gg-big .seq-grid .bl { font-size: 12px; }
+html.gg-big .qr b { font-size: 17px; } html.gg-big .qr > span { font-size: 13.5px; } html.gg-big .qs-top b { font-size: 17px; } html.gg-big .qs-top em { font-size: 14.5px; }
+html.gg-big .qs-ends { font-size: 12.5px; } html.gg-big .qs-title { font-size: 23px; } html.gg-big .seq-menu-row { font-size: 16.5px; } html.gg-big .seq-pickrow { font-size: 16.5px; }
+html.gg-big .full.seq .seq-tabs .tab.tab { font-size: 14px; } html.gg-big .full.seq .seq-tabs.many .tab.tab { font-size: 11.5px; }
+/* the 0.6.2 groove cards, reused by "Beat for this section" (D8) */
+.guide-presets { display: flex; flex-direction: column; gap: 8px; }
+.guide-preset { min-height: 56px; width: 100%; border-radius: 12px; border: 1.5px solid transparent; background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
   align-items: stretch; gap: 3px; padding: 9px 14px; text-align: left; cursor: pointer; font: inherit; }
-.guide-preset.on { border-color: var(--amber); background: var(--panel2); box-shadow: inset 3px 0 0 var(--amber); }
+.guide-preset.on { border-color: var(--amber); background: #2a2a35; }
 .guide-preset:disabled { opacity: .5; cursor: default; }
 .gp-top { display: flex; align-items: center; gap: 8px; } .gp-top b { flex: 1 1 auto; font-size: 16px; }
 .gp-tag { flex: 0 0 auto; font: 800 10px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
 .gp-tag.on { color: #1d1204; background: var(--amber); border-color: var(--amber); }
 .gp-desc { font-size: 12.5px; line-height: 1.3; color: var(--dim); }
-.gp-seq { font: 800 11px var(--font); letter-spacing: .04em; color: var(--text); }
-.guide-mods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.guide-mod { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 800 14px var(--font); padding: 0 8px; cursor: pointer; }
-.guide-change { font-size: 12.5px; color: var(--dim); background: var(--bg2); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
-.guide-change b { color: var(--text); } .chip.gd { color: #a9c4ff; background: rgba(79, 140, 255, .12); border-color: rgba(79, 140, 255, .35); }
-.guide-tempo { text-align: center; padding: 14px 0 4px; }
-.guide-bignum b { font: 900 56px/1 var(--display); color: var(--text); } .guide-bignum span { font: 800 16px var(--font); color: var(--dim); }
-.guide-tlabel { font: 900 26px var(--display); color: var(--amber); margin: 6px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
-.guide-range { height: 52px; margin: 0; flex: 0 0 auto; }
-.guide-main .seq-name { flex: 0 0 auto; min-height: 48px; }
-.guide-name { text-align: center; padding: 18px 8px 10px; background: var(--bg2); border-radius: 14px; }
-.guide-name .fr { font-weight: 800; font-style: italic; font-size: 24px; line-height: 1.2; margin: 6px 0 4px; overflow-wrap: anywhere; }
-.full.seq .full-foot .btn:disabled { opacity: .45; }
 
 /* ---- 2D fallback garage (no WebGL / three.js) ---- */
 .fallback { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #1b2236 0%, #151b2b 58%, #2a2a2e 58%, #1d1d22 100%); }
@@ -871,16 +959,6 @@ html.gg-calm .tw-disc, html.gg-calm .tw-pin.invite .ic { animation: none; }
 .van-side { margin: 2px 0 4px; padding: 6px 4px 0; border-radius: 14px; background: linear-gradient(180deg, #2c4a6e 0%, #6b88a8 62%, #3a3f4a 62%); border: 1px solid var(--line); overflow: hidden; }
 .van-side svg { display: block; width: 100%; height: auto; }
 .shop-row.dealer .van-side { margin: 6px 0; }
-/* the sequencer with 5–6 lanes and 5–6 tabs still fits a 390px phone */
-.seq-tabs.many .tabs .tab.tab { flex: 1 1 auto; font-size: 10px; letter-spacing: 0; padding: 0 3px; min-width: 44px; }
-.seq-tabs.many .tabs { min-width: 0; gap: 2px; } .seq-tabs.many .tabs .tab.tab { overflow: hidden; text-overflow: clip; white-space: nowrap; }
-.full.seq .full-foot .btn { white-space: normal; line-height: 1.1; font-size: 13px; }   /* "Use in next Write" / "Loop chorus" wrap instead of spilling */
-.seq-grid.wide { column-gap: 3px; }
-.seq-grid.wide .lh { flex-direction: column; gap: 0; font-size: 8.5px; letter-spacing: 0; line-height: 1; }
-.seq-grid.wide .lh span { font-size: 11px; }
-.seq-grid.solo .cell.soff { opacity: .32; }
-.seq-grid.solo .cell.soff.on { opacity: .55; }
-.seq-extra { padding-top: 6px; }
 /* the collector moment */
 .full.collector { background: radial-gradient(90% 60% at 50% 40%, #3a2a18 0%, #120d08 70%); }
 .col-wrap { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
@@ -10625,7 +10703,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 <script>/* content/tutorial.js */
 (function (GG) {
   var D = ['drums'];   // the drum-mechanics gate (E12)
-  var S = ['bass', 'rhythm', 'lead'];   // v1.1 Seats: the string-seat twin of the gig's lane step (Lane A; walk/write keep their drum-only steps: 54 explains your part)
+  var S = ['bass', 'rhythm', 'lead'];   // v1.1 Seats: the string-seat twin of the gig's lane step (Lane A); v1.3: and of w1_write's Play step
   GG.content.tutorial = [
     /* ---- Week one (A15: taught by playing, by bandmates in character) ------------------------------------------ */
     { id: 'w1_card', title: 'The Monday card', when: { week: 1, screen: 'card' },
@@ -10723,31 +10801,36 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       } },
     { id: 'w1_write', title: 'Writing a song', when: { week: 1, screen: 'seq', mode: 'write' },
       steps: [
-        { who: '@soloist', text: 'A Write block makes a song. Go one step at a time: pick a part, play it, tweak it, next.' },
-        { who: '@soloist', text: 'Each card is a groove. Tap one, then hit Play to hear it. The tweaks underneath change it a little.', seat: D, point: { testid: 'btn-guide-play' } },
-        { who: '@front', text: 'Stuck? Let the band jam one. You get a song either way.', point: { testid: 'btn-seq-jam' } }
+        { who: '@soloist', text: 'A Write block makes a song. Pick a recipe, push the sliders, hear it. Tweak it by hand after, or don\'t.', seat: D },
+        { who: '@soloist', text: 'Each recipe is a groove. Tap one, hit Play, then push Energy while it plays. The kick and the snare follow you.', seat: D, point: { testid: 'btn-guide-play' } },
+        { who: '@soloist', text: 'A Write block makes a song. Each recipe has your {instrument} part in it already: tap one, hit Play, push the sliders.', seat: S, point: { testid: 'btn-guide-play' } },
+        { who: '@front', text: 'Stuck? Tap ⋯ and let the band jam one. You get a song either way.', point: { testid: 'btn-seq-tools' } }
       ],
       byBand: {
         hail_damage: { steps: [
-          { who: 'dana', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Like a solo, but shorter. Much shorter.' },
-          { who: 'dana', text: 'Each card is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'dana', text: 'Write block. Pick a recipe, push the sliders, hit Play. Like a solo, but shorter. Much shorter.', seat: D },
+          { who: 'dana', text: 'Each recipe is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'dana', text: 'Write block. Each recipe has your {instrument} part in it already: tap one, hit Play, slide Mood toward Abyss. Play it before you judge it.', seat: S, point: { testid: 'btn-guide-play' } },
           { who: 'marcel', text: 'When it is done, I will name it. In French. It will be about darkness. (It will be about my lawn.)' },
-          { who: 'jaxon', text: 'or just let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-jam' } }
+          { who: 'jaxon', text: 'or tap ⋯ and let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-tools' } }
         ] },
         frost_heave: { steps: [
-          { who: 'rox', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Faster than council.' },
-          { who: 'moth', text: 'Each card is a groove. Tap one, hit Play. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'benny', text: 'Or let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-jam' } }
+          { who: 'rox', text: 'Write block. Pick a recipe, push the sliders, hit Play. Faster than council.', seat: D },
+          { who: 'moth', text: 'Each recipe is a groove. Tap one, hit Play. Try the Laundromat D-beat. The snare sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'moth', text: 'Write block. Each recipe has your {instrument} part in it: tap one, hit Play. Try the Laundromat D-beat. Sounds like the dryers.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'benny', text: 'Or tap ⋯ and let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-tools' } }
         ] },
         gravel_kings: { steps: [
-          { who: 'chase', text: 'Write block! One part at a time: pick a groove, play it, tweak it, next. Then I add the slide.' },
-          { who: 'tamara', text: 'Each card is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. Steady hats. I colour-coded them.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'lenny', text: 'Or let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-jam' } }
+          { who: 'chase', text: 'Write block! Pick a recipe, push the sliders, hit Play. Then I add the slide.', seat: D },
+          { who: 'tamara', text: 'Each recipe is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. I colour-coded the sliders.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'tamara', text: 'Write block! Each recipe has your {instrument} part in it already: tap one, hit Play, slide Energy up. I colour-coded the sliders.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'lenny', text: 'Or tap ⋯ and let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-tools' } }
         ] },
         grid_road_ramblers: { steps: [
-          { who: 'travis', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. I\'ll bring the heartbreak.' },
-          { who: 'earl', text: 'Each card is a groove. Tap one, hit Play to hear it. Train beat\'s the one. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'clementine', text: 'Or let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-jam' } }
+          { who: 'travis', text: 'Write block. Pick a recipe, push the sliders, hit Play. I\'ll bring the heartbreak.', seat: D },
+          { who: 'earl', text: 'Each recipe is a groove. The Train song is the one: a train beat on the snare. Tap it, hit Play. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'earl', text: 'Write block. Each recipe has your {instrument} part in it. The Train song is the one: tap it, hit Play. I\'ll wait. I have stories.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'clementine', text: 'Or tap ⋯ and let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-tools' } }
         ] }
       } },
     { id: 'w1_rehearse', title: 'The week\'s results', when: { week: 1, screen: 'results' },
@@ -52531,8 +52614,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     toms: { name: 'Toms', icon: '🛢️', color: '#57c77a' }, ride: { name: 'Ride', icon: '🔔', color: '#4f8cff' }
   };
   var SEC_LABEL = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', solo: 'Solo', outro: 'Outro', song: 'Song' };
+  var SECTIONS3 = ['verse', 'chorus', 'bridge'];
   function isExtra(name) { return name === 'solo' || name === 'outro'; }
   function hasSec(D, name) { return !!(D.pat && D.pat.sections && D.pat.sections[name]); }
+  function chipSec(name) { return SECTIONS3.indexOf(name) >= 0; }
   function tabsFor(D) {
     var names = D.mode === 'view' ? GG.songs.sectionsOf(D.pat) : GG.songs.allSections(gear());
     return names.map(function (n) { return { id: n, label: (isExtra(n) && !hasSec(D, n) ? '+' : '') + SEC_LABEL[n] }; }).concat([{ id: 'song', label: 'Song' }]);
@@ -52544,20 +52629,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function withSongExtras(D, arr) { return GG.songs.withExtras(arr.slice(), gear(), { solo: hasSec(D, 'solo'), outro: hasSec(D, 'outro') }); }
   function baseArrangementId(p) { return GG.songs.arrangementId({ arrangement: (p.arrangement || []).filter(function (x) { return !isExtra(x); }) }); }
   function addExtra(s, D, name) {
-    D.pat = GG.songs.addSection(D.pat, name, gear()); D.change = null;
-    changed(D); if (D.playing) restart(s, D); s.rerender();
+    D.pat = GG.songs.addSection(D.pat, name, gear()); D.edited = true;
+    if (D.pat.part) withPart(D.pat);
+    s.rerender(); changed(D); if (D.playing) restart(s, D);
   }
   function removeExtra(s, D, name) {
-    D.pat = GG.songs.removeSection(D.pat, name); D.change = null;
-    changed(D); if (D.playing) restart(s, D); s.rerender();
+    D.pat = GG.songs.removeSection(D.pat, name); D.edited = true;
+    s.rerender(); changed(D); if (D.playing) restart(s, D);
   }
   function extraPanel(s, D, name) {
     var def = extraDef(name);
-    return el('div.seq-extra.stack', { testid: 'seq-extra-' + name }, [
-      el('div.panel.warm.stack.tight', [el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div', { style: 'font-weight:900;font-size:20px' }, def.name),
-        el('p.small.dim', def.blurb),
-        el('p.small', name === 'solo' ? (soloWho().you ? 'Goes in before the last chorus. Live, the whole section is your spotlight.' : 'Goes in before the last chorus. Live, you only play ' + (strSeat() ? 'one note a beat' : 'the quarter notes') + ': the rest is ' + soloWho().pos + '.')
-          : (strSeat() ? ui.fill('Goes at the very end: the last chord rings out, and {drummer} gets a big fill to finish.') : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.'))]),
+    return el('div.seq-extra', { testid: 'seq-extra-' + name }, [
+      el('div.caps', name === 'solo' ? soloWho().pos + ' spotlight' : 'The big finish'), el('div.seq-extra-name', def.name),
+      el('p.small.dim', def.blurb),
+      el('p.small', name === 'solo' ? (soloWho().you ? 'Goes in before the last chorus. Live, the whole section is your spotlight.' : 'Goes in before the last chorus. Live, you only play ' + (strSeat() ? 'one note a beat' : 'the quarter notes') + ': the rest is ' + soloWho().pos + '.')
+        : (strSeat() ? ui.fill('Goes at the very end: the last chord rings out, and {drummer} gets a big fill to finish.') : 'Goes at the very end: the last chord rings out, and you get a big fill to finish.')),
       D.mode === 'view' ? null : btn('.btn.primary.block', { testid: 'seq-add-' + name, onclick: function () { addExtra(s, D, name); } }, 'Add ' + (name === 'outro' ? 'an Outro' : 'a Solo') + ' to this song')]);
   }
   var ARR_NAMES = { short: 'Short', classic: 'Classic', epic: 'Epic' };
@@ -52576,60 +52662,228 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     p.part = p.part && p.part.seat === seat() ? GG.songs.part.sanitize(p.part, GG.songs.sectionsOf(p), genre()) : GG.songs.part.full(genre(), seat(), p);
     return p;
   }
-  function drummerGroove(p) {
-    var list = GG.songs.presets(genre(), gear()).filter(function (x) { return !x.locked; }), sig = list.filter(function (x) { return x.signature; })[0] || list[0];
-    if (!sig) return p;
-    var rest = list.filter(function (x) { return x !== sig; });
-    p = GG.songs.applyPreset(p, 'verse', sig.id, gear(), genre());
-    if (rest[0]) p = GG.songs.applyPreset(p, 'chorus', rest[0].id, gear(), genre());
-    if (rest[1]) p = GG.songs.applyPreset(p, 'bridge', rest[1].id, gear(), genre());
-    return p;
+  function partV2(D) {
+    var pt = D.pat && D.pat.part;
+    if (pt && pt.v !== 2) D.pat.part = GG.songs.part.sanitize(GG.songs.part.upgrade(pt), GG.songs.sectionsOf(D.pat), genre());
+    return D.pat.part;
   }
   function drummerName() { return st() && GG.career.tokenValue ? GG.career.tokenValue(st(), 'drummer') : 'the drummer'; }
   function instrument() { return st() && GG.career.tokenValue ? GG.career.tokenValue(st(), 'instrument') : 'drums'; }
   function partLayer(D) { return !!(D.pat && D.pat.part) && D.layer !== 'drums'; }
+  function partHas(D, name) { var pv = D.pat && D.pat.part ? GG.songs.part.view(D.pat.part) : null; return !!(pv && pv.sections[name]); }
   function seatPlay(D) { return D.pat && D.pat.part ? { seat: D.pat.part.seat, part: D.pat.part } : {}; }
-  var PART_COLORS = ['#57c77a', '#ff6b4a', '#ffd23f', '#4f8cff', '#b98cff'];
-  var PART_CSS = [
-    '.part-picks { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 4px; }',
-    '.part-picks .part-pick { flex: 1 1 auto; min-height: 48px; min-width: 48px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: 800 13px var(--font); cursor: pointer; }',
-    '.part-cycle { display: grid; grid-template-columns: 48px 1fr 48px; gap: 6px; align-items: center; margin-bottom: 4px; }',
-    '.part-cycle .icon-btn { width: 48px; height: 48px; }',
-    '.part-cycle .pc-name { text-align: center; font: 800 13px var(--font); line-height: 1.15; }',
-    '.part-picks .part-pick.on { border-color: var(--amber); box-shadow: inset 0 -3px 0 var(--amber); }',
-    '.seq-layers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }',
-    '.seq-layers .btn { min-height: 48px; }',
-    '.seq-layers .btn.on { border-color: var(--amber); background: var(--panel2); box-shadow: inset 0 -3px 0 var(--amber); }',
-    '.seq-grid.part .lh { flex-direction: column; gap: 0; line-height: 1.05; }',
-    '.part-drums { display: flex; flex-direction: column; gap: 6px; }',
-    '.part-drums .row { min-height: 40px; }'
-  ].join('\n');
-  (function inject() {
-    if (typeof document === 'undefined' || document.getElementById('gg-css-part')) return;
-    var css = document.createElement('style'); css.id = 'gg-css-part'; css.textContent = PART_CSS;
-    (document.head || document.documentElement).appendChild(css);
-  })();
-  function partPreview(row) {
-    var A = GG.audio, sp = seat(); if (!A) return;
-    var B = GG.songs.genre(genre()).backing || {}, root = B.root || 40, sc = B.scale || [0, 2, 4, 7, 9], v = A.TAP_AUTO ? A.TAP_AUTO.other : undefined;   // (v1.2: the 1.2 voice, as Play plays it)
+  function playSeat(D) { return D.pat && D.pat.part ? D.pat.part.seat : seat(); }
+  var PART_COLORS = ['#57c77a', '#ff6b4a', '#ffd23f', '#3cd0c0', '#4f8cff', '#b98cff', '#ff8fc7'];
+  function tint(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  /* ---- Chords: the song's key, the chips' names -------------------------------------------------------------- */
+  function backing() { return GG.songs.genre(genre()).backing || {}; }
+  function tonicOf(D) {
+    var A = GG.audio;
+    try { if (A && A.keyFor) return A.keyFor(songSeed(D), genre(), D.pat.bpm).tonic; } catch (e) { /* fall through */ }
+    return backing().root || 40;
+  }
+  function effChords(D, name) { return GG.songs.chordsOf(D.pat, name, genre(), { seat: playSeat(D) }); }
+  function chordName(D, semi, tonic) { return GG.songs.chordLabel(genre(), D.pat.mood, tonic == null ? tonicOf(D) : tonic, semi); }
+  function rungScale(D) {
+    var B = backing(), r = GG.songs.moodOf(genre(), D.pat.mood) || (Array.isArray(B.moods) ? B.moods[GG.songs.nativeMood(genre())] : null);
+    return (r && r.scale) || B.scale || [0, 2, 3, 5, 7, 8, 10];
+  }
+  function progLabel(D, name) {
+    var sp = playSeat(D);
+    return (sp === 'lead' ? 'Hook: ' : 'Chords: ') + GG.songs.progName(genre(), sp, name, D.pat);
+  }
+  function recipeDef(id) { var r = null; (GG.songs.grooves(genre()).recipes || []).forEach(function (x) { if (x.id === id) r = x; }); return r; }
+  function resetTarget(D, name) {
+    var p = D.pat, pt = p.part, sp = playSeat(D);
+    if (p.recipe || p.mood != null) {
+      var i = 0, rd;
+      if (sp !== 'lead' && pt && pt.sections[name] && isFinite(pt.sections[name].prog)) i = pt.sections[name].prog | 0;
+      else if (p.recipe && (rd = recipeDef(p.recipe.id)) && rd.parts && rd.parts.prog && rd.parts.prog[name] != null) i = rd.parts.prog[name] | 0;
+      var ch = GG.songs.part.choices(genre(), sp === 'lead' ? 'rhythm' : sp, name);
+      return { chords: GG.songs.progChords(genre(), name, i, p.mood), name: ch[Math.min(i, ch.length - 1)] ? ch[Math.min(i, ch.length - 1)].name : 'the start' };
+    }
+    var q = U.clone(p); if (q.chords) { delete q.chords[name]; if (!Object.keys(q.chords).length) delete q.chords; }
+    return { chords: null, name: GG.songs.progName(genre(), sp === 'lead' ? 'rhythm' : sp, name, q) };
+  }
+  function partPreview(D, row) {
+    var A = GG.audio, sp = playSeat(D); if (!A) return;
+    var v = A.TAP_AUTO ? A.TAP_AUTO.other : undefined, tonic = tonicOf(D), semi = chipSec(D.tab) ? effChords(D, D.tab)[0] : 0;
     try {
-      if (sp === 'bass' && A.pluck) A.pluck(root - 12 + [0, 7, 12][row], undefined, { len: 0.4, kind: 'bass', vel: v });
-      else if (sp === 'rhythm' && A.strum) A.strum(root, undefined, { len: row ? 0.6 : 0.2, kind: 'gtr', power: true, mute: !row, vel: v });
-      else if (A.lead) A.lead(root + 12 + sc[row % sc.length] + 12 * Math.floor(row / sc.length), undefined, { len: 0.35, kind: 'lead', vel: v });
+      if (sp === 'bass' && A.pluck) A.pluck(tonic - 12 + semi + (GG.songs.part.rowPitch(genre(), 'bass', row, { mood: D.pat.mood }) || 0), undefined, { len: 0.4, kind: 'bass', vel: v });
+      else if (sp === 'rhythm' && A.strum) {
+        var x = GG.songs.part.rowPitch(genre(), 'rhythm', row, { mood: D.pat.mood });
+        if (x === 'dead' || row === 0) A.strum(tonic + semi, undefined, { len: 0.15, kind: 'gtr', power: true, mute: true, vel: v });
+        else A.strum(tonic + semi + (x || 0), undefined, { len: row === 1 ? 0.6 : 0.35, kind: 'gtr', power: row === 1, vel: v });
+      } else if (A.lead) {
+        var sc = rungScale(D), hk = leadHook(D), d = GG.songs.part.rowPitch(genre(), 'lead', row, { deg: hk }) | 0, n = sc.length;
+        A.lead(tonic + 12 + sc[((d % n) + n) % n] + 12 * Math.floor(d / n), undefined, { len: 0.35, kind: 'lead', vel: v });
+      }
     } catch (e) { /* no sound: fine */ }
   }
-  function buildPartGrid(s, D) {
-    var pt = D.pat.part, sec = pt.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.ROW_NAMES[pt.seat] || [];
-    var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pt.seat }, style: { gridTemplateColumns: '30px repeat(' + n + ', minmax(0, 1fr))' } });
-    grid.appendChild(el('div'));
-    for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.14) } }, [el('span', '♪'), names[r] || String(r + 1)]));
+  function leadHook(D) {
+    var B = backing(), pt = D.pat.part, x = pt && pt.sections[D.tab], list = B.hooks && (B.hooks[D.tab] || B.hooks.verse), h = list && x ? list[Math.min(list.length - 1, x.hook | 0)] : null;
+    return h && Array.isArray(h.deg) ? h.deg : null;
+  }
+
+  /* ---- Who talks ------------------------------------------------------------------------------------------- */
+  function soloWho() {
+    var id = st() ? ui.roleOf('soloist') : null;
+    if (id === 'player') return { id: id, name: 'You', pos: 'Your', verb: 'shred', you: true };   // v1.1: the lead seat's solo is yours
+    var n = id ? ui.who(id).short : null, fiddle = id && /fiddle/.test(ui.who(id).role || '');
+    return { id: id, name: n || 'The guitarist', pos: n ? n + '’s' : 'The guitarist’s', verb: fiddle ? 'saws away' : 'shreds' };
+  }
+  function namer() { var id = st() ? ui.roleOf('namer') : null; return id ? ui.who(id).short : 'the band'; }
+  function sing() { var s = st(); return s ? { singer: ui.roleOf('front', s), band: s.bandId } : {}; }   // v0.9: who sings
+  var COACH = {
+    verse: [{ role: 'guitar|fiddle', text: 'Start with the kick and the snare. Keep it steady; I will do the fancy stuff.' }, { role: 'vocals', text: 'Give me room to sing. Steady is good. Steady is great.' }],
+    chorus: [{ role: 'vocals', text: 'The chorus should hit harder than the verse. A crash on the one. Trust me.' }, { role: 'guitar|fiddle', text: 'Bigger than the verse. More cymbal, more everything.' }],
+    bridge: [{ role: 'guitar|fiddle', text: 'The bridge is my spot. Something different, not too busy.' }, { role: 'bass', text: 'Change it up here. Then we come back home.' }],
+    tempo: [{ role: 'vocals', text: 'Pick a speed I can sing at. Or at least yell at.' }, { role: 'guitar|fiddle', text: 'Fast is fun. Tight is better.' }],
+    order: [{ role: 'vocals', text: 'Verse, chorus, repeat. People like knowing where they are.' }, { role: 'bass', text: 'Short songs get played. Long songs get talked about.' }],
+    name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }],
+    quick: [{ role: 'guitar|fiddle|vocals', text: 'Pick a recipe, push the sliders around and hit Play.' }]
+  };
+  var SEAT_COACH = {
+    verse: [{ role: 'drummer', text: 'Lock in with my kick and we are a band. Wander off and we are two bands.' }, { role: 'vocals', text: 'Leave me some room to sing over {yourPart}.' }],
+    chorus: [{ role: 'vocals', text: 'The chorus needs a lift. Make {yourPart} bigger than the verse.' }, { role: 'drummer', text: 'Same chords as the verse? Bold. Wrong, but bold.' }],
+    bridge: [{ role: 'drummer', text: 'The bridge is where we get weird. Then we come home.' }]
+  };
+  function coachFor(D, step) {
+    var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
+    var sp = seat(), bySeat = function (o) { return o && o.bySeat && o.bySeat[sp] ? o.bySeat[sp][step] : null; };
+    var seatSets = sp !== 'drums' ? [bySeat(mine), bySeat(CO), SEAT_COACH[step]] : [];
+    var sets = seatSets.concat([mine[step], CO[step], COACH[step]]).filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
+    var act = ui.talkers(state), dr = sp !== 'drums' && GG.career.drummerId ? GG.career.drummerId(state) : null;
+    for (var q = 0; q < sets.length; q++) {
+      var lines = sets[q];
+      for (var k = 0; k < lines.length; k++) {
+        var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
+        if (!ui.ownLines([ln.text], state).length || (GG.career.seatOk && !GG.career.seatOk(state, ln))) continue;
+        if (ln.role === 'drummer') { if (dr && act.some(function (m) { return m.id === dr; })) return { who: dr, text: ui.fill(ln.text, state) }; continue; }
+        for (var j = 0; j < act.length; j++) if (act[j].id !== dr && re.test(GG.career.stageRole ? GG.career.stageRole(state, act[j]) : act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
+      }
+    }
+    var own = sets.length ? ui.ownLines(sets[0], state) : [];
+    return own[0] ? { who: null, text: ui.fill(own[0].text, state) } : null;
+  }
+  function coachStep(D) { return D.screen === 'quick' ? 'quick' : D.tab === 'song' ? 'order' : chipSec(D.tab) ? D.tab : 'bridge'; }
+
+  /* ---- Meter strip + coach bubble ------------------------------------------------------------------------- */
+  function meter(label, testid, key) {
+    var v = el('b', '0'), fill = el('i'), track = el('span.mt', [fill]), d = el('span.md'), node = el('div.meter', { testid: testid, data: { key: key } }, [el('span.ml', label), track, v, d]);
+    node._v = v; node._fill = fill; node._track = track; node._d = d;
+    return node;
+  }
+  function setMeter(D, m, value, color) {
+    var key = m.dataset.key, prev = D.mv ? D.mv[key] : null;
+    m._v.textContent = String(value); m.dataset.value = String(value);
+    m._fill.style.width = U.clamp(value, 0, 100) + '%'; m._fill.style.background = color;
+    D.mv = D.mv || {}; D.mv[key] = value;
+    if (prev == null || prev === value) return;
+    var dv = value - prev, txt = (dv > 0 ? '+' : '−') + Math.abs(dv);
+    m.dataset.delta = (dv > 0 ? '+' : '-') + Math.abs(dv); m._d.textContent = txt;
+    m.classList.remove('up', 'down'); m.classList.add('flash', key === 'difficulty' ? 'gd' : dv > 0 ? 'up' : 'down');
+    clearTimeout(m._t);
+    m._t = setTimeout(function () { delete m.dataset.delta; m._d.textContent = ''; m.classList.remove('flash', 'up', 'down', 'gd'); }, 1200);
+  }
+  function tone(v) { return v >= 70 ? 'var(--good)' : v >= 45 ? 'var(--amber)' : 'var(--bad)'; }
+  function meterStrip(D) {
+    var V = D.view;
+    V.groove = meter('Groove', 'meter-groove', 'groove'); V.hook = meter('Hook', 'meter-hook', 'hook'); V.diff = meter('Diff', 'meter-difficulty', 'difficulty');
+    V.ability = el('i.ab'); V.diff._track.appendChild(V.ability);
+    return el('div.seq-meters', [V.groove, V.hook, V.diff]);
+  }
+  function ability() { return st() ? GG.songs.ability(st()) : 100; }
+  function bubbleOf(D, r) {
+    var c = coachFor(D, coachStep(D)), who = c ? c.who : null;
+    if (D.screen === 'quick') return { who: who, text: c ? c.text : 'Pick a recipe, push the sliders around and hit Play.', full: [] };
+    if (D.hint) return { who: D.hint.who || who, text: D.hint.text, full: c ? [c.text] : [] };
+    r = r || D.rating;
+    var extra = c ? [c.text] : [];
+    if (!r) return { who: who, text: c ? c.text : '', full: [] };
+    if (D.tab === 'solo' && hasSec(D, 'solo') && !partLayer(D)) return { who: who, lead: 'Solo:', text: 'live you only play the beat (the lit rows). The dimmed steps are ' + soloWho().pos + '.', full: extra };
+    if (D.tab === 'song') return { who: who, lead: GG.songs.verdict(genre(), r.groove), text: r.notes + ' hits in the whole song.', full: extra };
+    var tips = (partLayer(D) && r.part && r.part.tips ? r.part.tips : r.tips).slice();   // v1.1: the part grid shows your part's tips
+    if (r.difficulty > ability() + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
+    if (!r.notes) return { who: who, text: c ? c.text : 'Tap a cell to add a note, drag to paint.', full: [] };
+    if (!tips.length) return { who: who, lead: GG.songs.verdict(genre(), r.groove), text: 'Nothing to fix. Hit play and enjoy it.', full: extra };
+    return { who: who, lead: GG.songs.verdict(genre(), r.groove), text: tips.join(' '), full: tips.concat(extra) };
+  }
+  function coachBubble(s, D) {
+    var V = D.view;
+    V.av = el('span.sc-av'); V.who = el('b.sc-who'); V.tip = el('span.seq-tip', { testid: 'seq-tip' });
+    V.coach = btn('.seq-coach', { testid: 'seq-coach', 'aria-label': 'The full tip', onclick: function () { ui.show('seq-tip-full', { owner: s }); } },
+      [V.av, el('span.sc-line', [V.who, V.tip]), el('span.sc-more', '›')]);
+    return V.coach;
+  }
+  function paintBubble(D, r) {
+    var V = D.view; if (!V || !V.tip) return;
+    var b = D.bubble = bubbleOf(D, r), w = b.who ? ui.who(b.who) : null;
+    ui.clear(V.av); V.av.appendChild(w ? ui.avatar(w, 'sm') : el('span.avatar.sm.sc-none', '♪'));
+    V.who.textContent = w ? w.short : '';
+    ui.clear(V.tip); ui.append(V.tip, [b.lead ? el('b.amber', b.lead + ' ') : null, b.text]);
+  }
+  function rerate(D) {
+    var r = GG.songs.rate(D.pat, genre(), gear()), V = D.view, ab = ability();
+    D.rating = r;
+    if (!V || !V.groove) return r;
+    setMeter(D, V.groove, r.groove, tone(r.groove));
+    setMeter(D, V.hook, r.hook, tone(r.hook));
+    setMeter(D, V.diff, r.difficulty, r.difficulty > ab ? 'var(--bad)' : 'var(--blue)');
+    V.ability.style.left = U.clamp(ab, 0, 99) + '%';
+    paintBubble(D, r);
+    return r;
+  }
+  function changed(D) {
+    rerate(D);
+    if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
+    if (D.mode === 'sketch' && st()) st().draft = U.clone(D.pat);
+  }
+  function handEdit(D) { D.edited = true; D.hint = null; }
+
+  /* ---- The grids ------------------------------------------------------------------------------------------- */
+  function stepLabel(step) { var q = step % 4 === 0; return el('div.bl' + (q ? '.q' : ''), q ? String(step / 4 + 1) : BEAT_LABELS[step % 4]); }
+  function fillOn(D) { return !!(D.fill && chipSec(D.tab) && D.pat.fillBars && D.pat.fillBars[D.tab]); }
+  function buildGrid(s, D) {
+    var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
+    var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
+      { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    grid.appendChild(el('div.gc', fill ? 'B4' : ''));
+    for (var l = 0; l < lanes; l++) {
+      var L = ui.LANES[C.LANES[l]];
+      grid.appendChild(el('div.lh', { style: { color: L.color, background: tint(L.color, 0.13) } }, [el('span', L.icon), el('span.ln', L.name)]));
+    }
     var cells = [], labels = [];
     for (var step = 0; step < C.STEPS; step++) {
-      var q = step % 4 === 0, lab = el('div.bl' + (q ? '.q' : ''), q ? String(step / 4 + 1) : BEAT_LABELS[step % 4]);
-      grid.appendChild(lab); labels.push(lab);
+      var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
+      var row = [];
+      for (l = 0; l < lanes; l++) {
+        var hit = GG.songs.isHit(sec[l], step), name = C.LANES[l];
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
+          { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
+        c.style.setProperty('--lc', ui.LANES[name].color);
+        grid.appendChild(c); row.push(c);
+      }
+      cells.push(row);
+    }
+    D.view.cells = cells; D.view.labels = labels;
+    if (!ro) paintable(grid, D, false);
+    return grid;
+  }
+  function buildPartGrid(s, D) {
+    var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
+    var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
+      style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
+    grid.appendChild(el('div.gc'));
+    for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
+    var cells = [], labels = [];
+    for (var step = 0; step < C.STEPS; step++) {
+      var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
       var row = [];
       for (r = 0; r < n; r++) {
-        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
         c.style.setProperty('--lc', PART_COLORS[r]);
         grid.appendChild(c); row.push(c);
       }
@@ -52639,137 +52893,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!ro) paintable(grid, D, true);
     return grid;
   }
-  function partCycle(s, D, name) {
-    var pt = D.pat.part, key = GG.songs.part.key(pt.seat), list = GG.songs.part.choices(genre(), pt.seat, name), cur = pt.sections[name] ? pt.sections[name][key] : 0, ro = D.mode === 'view';
-    function go(d) {
-      var i = ((cur + d) % list.length + list.length) % list.length;
-      D.pat = GG.songs.part.pick(D.pat, name, i, gear(), genre()); D.change = null;
-      changed(D); if (D.playing) restart(s, D); s.rerender();
-    }
-    var label = (pt.seat === 'lead' ? 'Hook: ' : 'Chords: ') + (list[cur] ? list[cur].name : '?') + ' (' + (cur + 1) + '/' + list.length + ')';
-    return el('div.part-cycle', { testid: 'part-cycle' }, [
-      btn('.icon-btn', { testid: 'part-prev', 'aria-label': 'Previous', disabled: ro || list.length < 2, onclick: function () { go(-1); } }, '‹'),
-      el('div.pc-name', { testid: 'part-cycle-name' }, label),
-      btn('.icon-btn', { testid: 'part-next', 'aria-label': 'Next', disabled: ro || list.length < 2, onclick: function () { go(1); } }, '›')]);
-  }
-  function partPicker(s, D, name) {
-    var pt = D.pat.part, key = GG.songs.part.key(pt.seat), cur = pt.sections[name] ? pt.sections[name][key] : -1, ro = D.mode === 'view';
-    return el('div.part-picks', { testid: 'part-picks' }, GG.songs.part.choices(genre(), pt.seat, name).map(function (c) {
-      return btn('.part-pick' + (c.i === cur ? '.on' : ''), { testid: 'part-pick-' + c.i, disabled: ro && c.i !== cur, onclick: function () {
-        if (ro || c.i === cur) return;
-        D.pat = GG.songs.part.pick(D.pat, name, c.i, gear(), genre()); D.change = null;
-        changed(D); if (D.playing) restart(s, D); s.rerender();
-      } }, c.name);
-    }));
-  }
-  function partMods(s, D, name, after) {
-    return el('div.guide-mods', GG.songs.part.MODS.map(function (m) {
-      return btn('.guide-mod', { testid: 'part-mod-' + m.id, title: m.desc, onclick: function () {
-        if (after) after();
-        var r = GG.songs.part.modify(D.pat, name, m.id, gear(), genre());
-        if (JSON.stringify(r.pattern.part) === JSON.stringify(D.pat.part)) { D.change = { section: name, name: m.name, noop: true }; s.rerender(); return; }
-        D.pat = r.pattern; D.change = { section: name, name: m.name, desc: m.desc, before: r.before, after: r.after };
-        changed(D); if (D.playing) restart(s, D); s.rerender();
-      } }, m.name);
-    }));
-  }
-  function layerSwitch(s, D) {
-    var on = partLayer(D);
-    return el('div.seq-layers', { testid: 'seq-layers' }, [
-      btn('.btn.small' + (on ? '.on' : ''), { testid: 'seq-layer-part', 'aria-pressed': on ? 'true' : 'false', onclick: function () { D.layer = 'part'; s.rerender(); } }, 'Your part'),
-      btn('.btn.small' + (on ? '' : '.on'), { testid: 'seq-layer-drums', 'aria-pressed': on ? 'false' : 'true', onclick: function () { D.layer = 'drums'; s.rerender(); } }, 'Drums (' + drummerName() + ')')]);
-  }
-  function soloWho() {
-    var id = st() ? ui.roleOf('soloist') : null;
-    if (id === 'player') return { id: id, name: 'You', pos: 'Your', verb: 'shred', you: true };   // v1.1: the lead seat's solo is yours
-    var n = id ? ui.who(id).short : null, fiddle = id && /fiddle/.test(ui.who(id).role || '');
-    return { id: id, name: n || 'The guitarist', pos: n ? n + '’s' : 'The guitarist’s', verb: fiddle ? 'saws away' : 'shreds' };
-  }
-  function namer() { var id = st() ? ui.roleOf('namer') : null; return id ? ui.who(id).short : 'the band'; }
-  var TITLE_HINT = { metal: 'Crabgrass of the Damned', punk: 'Parking Ticket Riot', rock: 'Leather Pants Forever', country: 'My Truck Left Me' };
-  function sing() { var s = st(); return s ? { singer: ui.roleOf('front', s), band: s.bandId } : {}; }   // v0.9: who sings (the audio's vocal voice, if it keys on it)
-  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-  function tint(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
-
-  /* ---- Rating display ------------------------------------------------------------------------------------ */
-  function meter(label, testid) {
-    var v = el('b', '0'), bar = ui.bar(0, 100), node = el('div.meter', { testid: testid }, [el('div.mh', [el('span.caps', label), v]), bar]);
-    node._v = v; node._bar = bar;
-    return node;
-  }
-  function setMeter(m, value, color) {
-    m._v.textContent = String(value); m.dataset.value = String(value);
-    m._bar.firstChild.style.width = U.clamp(value, 0, 100) + '%';
-    m._bar.firstChild.style.background = color;
-  }
-  function tone(v) { return v >= 70 ? 'var(--good)' : v >= 45 ? 'var(--amber)' : 'var(--bad)'; }
-  function rerate(D) {
-    var r = GG.songs.rate(D.pat, genre(), gear()), V = D.view, ability = st() ? GG.songs.ability(st()) : 100;
-    D.rating = r;
-    if (!V) return r;
-    setMeter(V.groove, r.groove, tone(r.groove));
-    setMeter(V.hook, r.hook, tone(r.hook));
-    setMeter(V.diff, r.difficulty, r.difficulty > ability ? 'var(--bad)' : 'var(--blue)');
-    V.ability.style.left = U.clamp(ability, 0, 99) + '%';
-    var tips = (partLayer(D) && r.part && r.part.tips ? r.part.tips : r.tips).slice();   // v1.1: the part grid shows your part's tips
-    if (r.difficulty > ability + 5) tips.unshift('Harder than the band can play yet: it will start rough.');
-    if (!V.tip) return r;
-    ui.clear(V.tip);
-    if (D.hint) ui.append(V.tip, [el('b', D.hint.who ? ui.who(D.hint.who).short + ': ' : ''), D.hint.text]);
-    else if (D.tab === 'solo' && hasSec(D, 'solo') && !D.guided && !partLayer(D)) ui.append(V.tip, [el('b.amber', 'Solo: '), 'live you only play the beat (the lit rows). The dimmed steps are ' + soloWho().pos + '.']);
-    else if (r.notes && !tips.length) ui.append(V.tip, [el('b.good', GG.songs.verdict(genre(), r.groove) + ' '), 'Nothing to fix. Hit play and enjoy it.']);
-    else ui.append(V.tip, [r.notes ? el('b.amber', GG.songs.verdict(genre(), r.groove) + ' ') : null, tips.slice(0, 2).join(' ')]);
-    return r;
-  }
-  function changed(D) {
-    rerate(D);
-    if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
-    if (D.mode === 'sketch' && st()) st().draft = U.clone(D.pat);
-  }
-
-  /* ---- The grid -------------------------------------------------------------------------------------------- */
-  function buildGrid(s, D) {
-    var sec = D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
-    var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : ''), { testid: 'seq-grid', data: { lanes: String(lanes) }, style: { gridTemplateColumns: '30px repeat(' + lanes + ', minmax(0, 1fr))' } });
-    grid.appendChild(el('div'));
-    for (var l = 0; l < lanes; l++) {
-      var L = ui.LANES[C.LANES[l]];
-      grid.appendChild(el('div.lh', { style: { color: L.color, background: tint(L.color, 0.14) } }, [el('span', L.icon), L.name]));
-    }
-    var cells = [], labels = [];
-    for (var step = 0; step < C.STEPS; step++) {
-      var q = step % 4 === 0, lab = el('div.bl' + (q ? '.q' : ''), q ? String(step / 4 + 1) : BEAT_LABELS[step % 4]);
-      grid.appendChild(lab); labels.push(lab);
-      var row = [];
-      for (l = 0; l < lanes; l++) {
-        var hit = GG.songs.isHit(sec[l], step), name = C.LANES[l];
-        var c = el('div.cell' + (Math.floor(step / 4) % 2 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
-          { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
-        c.style.setProperty('--lc', ui.LANES[name].color);
-        grid.appendChild(c); row.push(c);
-      }
-      cells.push(row);
-    }
-    D.view.cells = cells; D.view.labels = labels;
-    if (!ro) paintable(grid, D);
-    return grid;
-  }
   function paintable(grid, D, isPart) {
     var paint = null;
     function cellOf(node) { return node && node.classList && node.classList.contains('cell') ? node : null; }
-    function rowsOf() { return isPart ? D.pat.part.sections[D.tab].rows : D.pat.sections[D.tab]; }
+    function rowsOf() { return isPart ? D.pat.part.sections[D.tab].rows : fillOn(D) ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab]; }
     function apply(c) {
       if (isPart) {   // v1.1: your part's grid (rows, no kick rule)
         var pr = +c.dataset.l, ps = +c.dataset.s, rows = rowsOf();
         if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
         rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
         c.classList.toggle('on', paint.value);
-        if (paint.value && !(D.handle && D.handle.playing)) partPreview(pr);
-        D.hint = null; D.change = null;
-        changed(D);
+        if (paint.value && !(D.handle && D.handle.playing)) partPreview(D, pr);
+        handEdit(D); changed(D);
         return;
       }
-      var l = +c.dataset.l, step = +c.dataset.s, sec = D.pat.sections[D.tab], cur = GG.songs.isHit(sec[l], step);
+      var l = +c.dataset.l, step = +c.dataset.s, sec = rowsOf(), cur = GG.songs.isHit(sec[l], step);
       if (cur === paint.value) return;
       if (paint.value && l === 0 && GG.songs.kickBlocked(sec[0], step, gear())) {
         c.classList.remove('nope'); void c.offsetWidth; c.classList.add('nope');   // restart the flash
@@ -52779,12 +52917,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
       if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
-      D.hint = null;
-      changed(D);
+      handEdit(D); changed(D);
     }
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
+      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
       var sec = rowsOf();
       paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
@@ -52800,21 +52938,91 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     grid.addEventListener('pointercancel', end);
   }
   function playhead(D, ev) {
-    var V = D.view; if (!V || !V.cells) return;
-    if (V.ph != null) { V.labels[V.ph].classList.remove('ph'); V.cells[V.ph].forEach(function (c) { c.classList.remove('ph'); }); V.ph = null; }
-    if (ev && ev.section === D.tab) { V.ph = ev.step; V.labels[ev.step].classList.add('ph'); V.cells[ev.step].forEach(function (c) { c.classList.add('ph'); }); }
-    if (ev && ev.step === 0 && V.pos) V.pos.textContent = '▶ ' + cap(ev.section) + ' · bar ' + (ev.bar + 1) + '/' + C.BARS_PER_SECTION;
+    var V = D.view; if (!V) return;
+    if (V.cells && V.ph != null && V.labels[V.ph]) { V.labels[V.ph].classList.remove('ph'); V.cells[V.ph].forEach(function (c) { c.classList.remove('ph'); }); }
+    V.ph = null;
+    if (V.chips) V.chips.forEach(function (b) { b.classList.remove('ph'); });
+    if (!ev || ev.section !== D.tab) return;
+    if (V.cells && V.labels[ev.step]) { V.ph = ev.step; V.labels[ev.step].classList.add('ph'); V.cells[ev.step].forEach(function (c) { c.classList.add('ph'); }); }
+    if (V.chips && V.chips[ev.bar]) V.chips[ev.bar].classList.add('ph');
   }
+
+  /* ---- Your part | Drums, the progression / hook picker, the chord chips -------------------------------------- */
+  function toggleRow(s, D) {
+    var on = partLayer(D), ro = D.mode === 'view';
+    var seg = el('div.seq-layers', { testid: 'seq-layers', role: 'tablist' }, [
+      btn('.seg' + (on ? '.on' : ''), { testid: 'seq-layer-part', role: 'tab', 'aria-pressed': on ? 'true' : 'false', onclick: function () { if (on) return; D.layer = 'part'; D.fill = false; s.rerender(); } }, 'Your part'),
+      btn('.seg' + (on ? '' : '.on'), { testid: 'seq-layer-drums', role: 'tab', 'aria-pressed': on ? 'false' : 'true', title: drummerName() + ' plays these', onclick: function () { if (!on) return; D.layer = 'drums'; s.rerender(); } }, 'Drums')]);
+    var pick = on ? btn('.seq-chords', { testid: 'seq-chords', disabled: ro, onclick: function () { ui.show('seq-pick', { owner: s }); } },
+      [el('span.sc-k', progLabel(D, D.tab).replace(/:.*/, ':')), el('b', progLabel(D, D.tab).replace(/^[^:]*: /, '')), el('span.sc-dn', '▾')]) : null;
+    return el('div.seq-toggle', [seg, pick]);
+  }
+  function chipsRow(s, D) {
+    var ch = effChords(D, D.tab), tonic = tonicOf(D), ro = D.mode === 'view';
+    D.view.chips = ch.map(function (semi, i) {
+      return btn('.seq-chip' + (semi === 0 ? '.home' : ''), { testid: 'chord-chip-' + i, disabled: ro, data: { semi: String(semi), home: semi === 0 ? '1' : '0', locked: ro ? '1' : '0' },
+        'aria-label': 'Bar ' + (i + 1) + ': ' + chordName(D, semi, tonic), onclick: function () { ui.show('seq-chord', { owner: s, bar: i }); } },
+        [el('span.cb', 'Bar ' + (i + 1)), el('b', chordName(D, semi, tonic))]);
+    });
+    return el('div.seq-chips', { testid: 'seq-chips' }, D.view.chips);
+  }
+  ui.define('seq-pick', {
+    kind: 'sheet', title: function (d) { var D = d.owner && d.owner.data; return D && playSeat(D) === 'lead' ? 'The hook' : 'The chords'; },
+    build: function (s, d) {
+      var owner = d.owner, D = owner && owner.data; if (!D || !D.pat.part) return;
+      var sp = playSeat(D), key = GG.songs.part.key(sp), name = D.tab, pt = D.pat.part, cur = pt.sections[name] ? pt.sections[name][key] : -1;
+      var label = GG.songs.progName(genre(), sp, name, D.pat);
+      s.setTitle(sp === 'lead' ? 'Hook for the ' + name : 'Chords for the ' + name, SEC_LABEL[name]);
+      s.body.appendChild(el('div.seq-picks', { testid: 'part-picks' }, GG.songs.part.choices(genre(), sp, name).map(function (c) {
+        var on = sp === 'lead' ? c.i === cur : c.name === label;
+        return btn('.seq-pickrow' + (on ? '.on' : ''), { testid: 'part-pick-' + c.i, 'aria-pressed': on ? 'true' : 'false', onclick: function () {
+          var withChords = sp !== 'lead' && chipSec(name) && D.pat.chords && D.pat.chords[name];
+          D.pat = GG.songs.part.pick(D.pat, name, c.i, gear(), genre());
+          if (withChords) { D.pat.chords[name] = GG.songs.progChords(genre(), name, c.i, D.pat.mood); D.pat = GG.songs.sanitize(D.pat, gear(), genre()); }
+          handEdit(D); ui.close(s.id); owner.rerender(); changed(D);
+        } }, [el('b', c.name), on ? el('span.tag.amber', 'now') : null]);
+      })));
+    }
+  });
+  ui.define('seq-chord', {
+    kind: 'sheet',
+    build: function (s, d) {
+      var owner = d.owner, D = owner && owner.data, bar = d.bar | 0; if (!D) return;
+      var name = D.tab, ch = effChords(D, name), tonic = tonicOf(D), opts = rungScale(D).slice();
+      if (opts.indexOf(ch[bar]) < 0) opts.push(ch[bar]);
+      opts.sort(function (a, b) { return a - b; });
+      s.setTitle('Bar ' + (bar + 1) + ' chord', SEC_LABEL[name]);
+      function write(fn) { handEdit(D); fn(); D.pat = GG.songs.sanitize(D.pat, gear(), genre()); ui.close(s.id); owner.rerender(); changed(D); }
+      s.body.appendChild(el('div.seq-chordopts', opts.map(function (semi) {
+        return btn('.seq-chordopt' + (semi === ch[bar] ? '.on' : '') + (semi === 0 ? '.home' : ''), { testid: 'chord-opt-' + semi, 'aria-pressed': semi === ch[bar] ? 'true' : 'false', onclick: function () {
+          if (semi === ch[bar]) { ui.close(s.id); return; }
+          write(function () {
+            var cur = effChords(D, name).slice(); cur[bar] = semi;
+            D.pat.chords = D.pat.chords || {}; D.pat.chords[name] = cur;
+          });
+        } }, [el('b', chordName(D, semi, tonic)), semi === 0 ? el('span.tiny', 'home') : null]);
+      })));
+      var rt = resetTarget(D, name);
+      s.foot.appendChild(btn('.btn.ghost.block', { testid: 'chord-reset', onclick: function () {
+        write(function () {
+          if (rt.chords) { D.pat.chords = D.pat.chords || {}; D.pat.chords[name] = rt.chords.slice(); }
+          else if (D.pat.chords) { delete D.pat.chords[name]; if (!Object.keys(D.pat.chords).length) delete D.pat.chords; }
+        });
+      } }, 'Back to ' + rt.name));
+    }
+  });
 
   /* ---- The Song tab: title, tempo, arrangement ---------------------------------------------------------------- */
   function songPanel(s, D) {
     var ro = D.mode === 'view', G = GG.songs.genre(genre()), p = D.pat;
     var style = GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm) : { label: '' };
     var bpmLabel = el('b', p.bpm + ' BPM'), styleLabel = el('span.dim', ' · ' + style.label);
-    var tempo = el('input.seq-tempo', { type: 'range', testid: 'seq-tempo', disabled: ro,
+    var tempo = el('input.seq-tempo.qs-range', { type: 'range', testid: 'seq-tempo', disabled: ro,
       min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
+    function pct() { tempo.style.setProperty('--p', ((+tempo.value - G.tempo[0]) / Math.max(1, G.tempo[1] - G.tempo[0]) * 100).toFixed(1) + '%'); }
+    tempo.style.setProperty('--c', 'var(--blue)'); pct();
     tempo.addEventListener('input', function () {
-      p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
+      pct(); p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
       styleLabel.textContent = ' · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '');
       rerate(D);
       arrRow.querySelectorAll('[data-secs]').forEach(function (n) { n.textContent = '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: withSongExtras(D, GG.songs.ARRANGEMENTS[n.dataset.secs]) })) + ' s'; });
@@ -52825,35 +53033,31 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);   // v0.8: the extras come along
       return btn('.arr' + (id === cur ? '.on' : ''), { testid: 'seq-arr-' + id, disabled: ro && id !== cur, onclick: function () {
         if (ro || id === cur) return;
-        p.arrangement = a.slice(); changed(D); if (D.playing === 'song') restart(s, D); s.rerender();
+        p.arrangement = a.slice(); handEdit(D); changed(D); if (D.playing === 'song') restart(s, D); s.rerender();
       } }, [el('b', ARR_NAMES[id]), el('span.seqs', a.map(function (x) { return x.charAt(0).toUpperCase(); }).join(' ')),
         el('span.small.dim', { data: { secs: id } }, '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]);
     }));
     var extras = ro ? [] : GG.songs.allSections(gear()).filter(isExtra);
     var r = D.rating || rerate(D);
-    var parts = [
-      D.mode === 'write' ? el('div.row.small.dim', [el('span.grow', 'Rather go one step at a time?'), btn('.btn.small', { testid: 'btn-seq-guided', onclick: function () {
-        stopPlay(D); D.guided = true; D.step = strSeat() ? 'drums' : 'verse'; D.layer = null; setMode('guided'); s.rerender();
-      } }, 'Guided steps')]) : null,
-      el('div.panel.stack.tight', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
+    return el('div.seq-song', [
+      el('div.ss-row', [el('div.caps', 'Title'), ro ? el('div', { style: 'font-weight:800;font-style:italic' }, D.title)
         : el('div.row', [
           el('input.seq-name', { testid: 'seq-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: 'Type your own, or let ' + namer(),
             oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D); } }),
           btn('.btn.small', { testid: 'btn-seq-reroll', 'aria-label': 'New title from ' + namer(), onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲')
         ]), D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
-      el('div.panel.stack.tight', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
+      el('div.ss-row', [el('div.row', [el('span.caps.grow', 'Tempo'), el('span', [bpmLabel, styleLabel])]), tempo,
         el('div.row.tiny.faint', [el('span.grow', G.tempo[0]), el('span', G.tempo[1])])]),
-      el('div.stack.tight', [el('div.caps', 'Arrangement (each part plays ' + C.BARS_PER_SECTION + ' bars)'), arrRow]),
-      extras.length ? el('div.stack.tight', extras.map(function (name) {   // v0.8: owned extras, in or out of this song
+      el('div.ss-row', [el('div.caps', 'Arrangement (each part plays ' + C.BARS_PER_SECTION + ' bars)'), arrRow]),
+      extras.length ? el('div.ss-row', extras.map(function (name) {   // v0.8: owned extras, in or out of this song
         var on = hasSec(D, name), def = extraDef(name);
-        return el('div.row.panel.small', { testid: 'seq-song-extra-' + name }, [el('div.grow', [el('b', def.name + (on ? ' ✓' : '')), el('div.tiny.dim', on ? (name === 'solo' ? 'Before the last chorus' : 'At the very end') : def.blurb)]),
+        return el('div.row.ss-extra', { testid: 'seq-song-extra-' + name }, [el('div.grow', [el('b', def.name + (on ? ' ✓' : '')), el('div.tiny.dim', on ? (name === 'solo' ? 'Before the last chorus' : 'At the very end') : def.blurb)]),
           btn('.btn.small' + (on ? '' : '.primary'), { testid: 'seq-song-' + (on ? 'remove-' : 'add-') + name, onclick: function () { if (on) removeExtra(s, D, name); else addExtra(s, D, name); } }, on ? 'Take out' : 'Add')]);
       })) : null,
-      el('div.panel.small', { testid: 'seq-sections' }, ['Groove by part: '].concat(GG.songs.sectionsOf(p).map(function (n, i) {
+      el('div.ss-row.ss-groove.small', { testid: 'seq-sections' }, ['Groove by part: '].concat(GG.songs.sectionsOf(p).map(function (n, i) {
         return [i ? ' · ' : '', el('b', SEC_LABEL[n] + ' ' + (r.sections[n] != null ? r.sections[n] : '–'))];
       })).concat([el('div.tiny.faint', { style: 'margin-top:4px' }, r.notes + ' hits in the whole song.')]))
-    ];
-    return el('div.seq-song.stack', parts);
+    ]);
   }
   function reroll(D) {
     if (!st()) return;
@@ -52878,14 +53082,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
     return (D.seed = 'sketch|' + ((state && state.totalWeek) || 0));
   }
+  function composeSeed(D) { return GG.hashSeed(String(st() && st().seed != null ? st().seed : 0) + '|' + songSeed(D)); }
   function metroOn() { try { return !!(GG.audio && GG.audio.metronome && GG.audio.metronome()); } catch (e) { return false; } }
   function metroButton() {
-    var b = btn('.icon-btn', { testid: 'btn-seq-metro', 'aria-label': 'Metronome click', title: 'Metronome click',
-      style: 'width:48px;height:48px;flex:0 0 48px;font-size:22px', onclick: function () {
-        var on = GG.audio && GG.audio.toggleMetronome ? GG.audio.toggleMetronome() : false;
-        paintMetro(b, on);
-        ui.toast(on ? countIn() : 'Click off. Feel it.');
-      } }, '♩');
+    var state = el('span.tm-v'), b = btn('.seq-menu-row', { testid: 'btn-seq-metro', 'aria-label': 'Metronome click', onclick: function () {
+      var on = GG.audio && GG.audio.toggleMetronome ? GG.audio.toggleMetronome() : false;
+      paintMetro(b, on);
+      ui.toast(on ? countIn() : 'Click off. Feel it.');
+    } }, [el('span.tm-i', '♩'), el('span.grow', 'Metronome click'), state]);
+    b._state = state;
     paintMetro(b, metroOn());
     return b;
   }
@@ -52895,14 +53100,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function paintMetro(b, on) {
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.dataset.on = on ? '1' : '0';
-    b.style.background = on ? 'var(--amber)' : ''; b.style.color = on ? '#1d1204' : '';
+    if (b._state) b._state.textContent = on ? 'On' : 'Off';
   }
   function startPlay(s, D, kind) {
-    var section = kind === 'song' ? null : (D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab);
+    var section = kind === 'loop' ? (D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab) : null;
     var h = GG.audio && GG.audio.play ? GG.audio.play(D.pat, Object.assign({ genre: genre(), section: section, loop: kind !== 'song', songId: songSeed(D), metronome: true }, sing(), seatPlay(D))) : null;   // v1.1: + your part
     if (!h) { ui.toast("No sound on this device. Imagine it. It's loud."); return; }
     D.handle = h; D.playing = kind;
-    if (D.view && D.view.pos) D.view.pos.textContent = '';
     playButtons(D);
   }
   function restart(s, D) { var k = D.playing; if (k) startPlay(s, D, k); }
@@ -52911,81 +53115,199 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var V = D.view; if (!V) return;
     if (V.play) { V.play.textContent = D.playing ? '■ Stop' : '▶ Play'; V.play.classList.toggle('on', !!D.playing); return; }
     if (!V.loop) return;
-    var sec = D.tab === 'song' || !hasSec(D, D.tab) ? 'verse' : D.tab;
-    V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop ' + sec;
+    V.loop.textContent = D.playing === 'loop' ? '■ Stop' : '▶ Loop';
     V.song.textContent = D.playing === 'song' ? '■ Stop' : '▶ Song';
     V.loop.classList.toggle('on', D.playing === 'loop'); V.song.classList.toggle('on', D.playing === 'song');
   }
+  function warmSoon(D) {
+    clearTimeout(D.warmT);
+    if (!GG.audio || !GG.audio.warm) return;
+    D.warmT = setTimeout(function () { try { GG.audio.warm(D.pat, Object.assign({ genre: genre(), songId: songSeed(D) }, seatPlay(D))); } catch (e) { /* fine */ } }, (C.QUICK && C.QUICK.warmMs) || 400);
+  }
+
+  /* ---- Quick song (U1) ------------------------------------------------------------------------------------- */
+  var SLIDER_TID = { energy: 'energy', mood: 'mood', swing: 'feel', fills: 'fills', tempo: 'tempo' };
+  var SLIDER_COLOR = { energy: 'var(--amber)', mood: 'var(--purple)', swing: '#3cd0c0', fills: '#ff6b4a', tempo: 'var(--blue)' };
+  function recipesNow() { return GG.songs.recipes(genre(), gear(), seat()); }
+  function qsOf(D) {
+    var p = D.pat || {}, rec = p.recipe, list = recipesNow(), r = null;
+    if (rec) list.forEach(function (x) { if (x.id === rec.id) r = x; });
+    r = r || list[0];
+    return { recipe: r.id, energy: rec ? rec.energy : r.sliders.energy, fills: rec ? rec.fills : r.sliders.fills,
+      mood: p.mood != null ? p.mood : rec ? r.sliders.mood : GG.songs.nativeMood(genre()), swing: p.swing != null ? p.swing : rec ? r.sliders.swing : 0,
+      bpm: p.bpm || r.bpm, seed: rec ? rec.seed : composeSeed(D) };
+  }
+  function composeNow(D) {
+    var q = D.qs, t0 = (typeof performance !== 'undefined' ? performance : Date).now();
+    var p = GG.songs.compose(genre(), { recipe: q.recipe, energy: q.energy, mood: q.mood, swing: q.swing, fills: q.fills, bpm: q.bpm, seed: q.seed, gear: gear(), seat: seat() });
+    D.compose = { ms: Math.round(((typeof performance !== 'undefined' ? performance : Date).now() - t0) * 10) / 10, k: (C.QUICK && C.QUICK.k) || 8 };
+    if (p.recipe) q.recipe = p.recipe.id;   // a locked / unknown recipe fell back to the signature one
+    return p;
+  }
+  function editedNow(D) {
+    if (!D.pat || !D.pat.recipe) return true;
+    try { return JSON.stringify(composeNow(D)) !== JSON.stringify(GG.songs.sanitize(D.pat, gear(), genre())); } catch (e) { return true; }
+  }
+  function freshQuick(D) {
+    var r = recipesNow()[0];
+    D.qs = { recipe: r.id, energy: r.sliders.energy, mood: r.sliders.mood, swing: r.sliders.swing, fills: r.sliders.fills, bpm: r.bpm, seed: composeSeed(D) };
+    D.pat = composeNow(D); D.edited = false; D.taps = 0;
+  }
+  function enterQuick(D) {
+    D.qs = qsOf(D); D.taps = D.taps || 0;
+    if (D.edited == null) D.edited = editedNow(D);
+    D.screen = 'quick';
+  }
+  function askFirst(D, fn, undo) {
+    if (!D.edited) { fn(); return; }
+    ui.confirm({ title: 'Start over from this recipe?', text: 'Your hand edits go.', yes: 'Start over', no: 'Keep my edits', danger: true })
+      .then(function (ok) { if (ok) fn(); else if (undo) undo(); });
+  }
+  function recompose(s, D, rerender) {
+    var keep = D.view && D.view.qmain ? D.view.qmain.scrollTop : 0;
+    D.pat = composeNow(D); D.partReady = true; D.edited = false;
+    if (rerender) { s.rerender(); if (D.view && D.view.qmain) D.view.qmain.scrollTop = keep; }
+    changed(D); warmSoon(D);
+  }
+  function sliderLabel(sd, v) {
+    if (sd.id === 'tempo') return v + ' bpm · ' + GG.songs.tempoLabel(genre(), v);
+    return (sd.stops && sd.stops[v]) || String(v);
+  }
+  function quickSlider(s, D, sd) {
+    var key = sd.id === 'tempo' ? 'bpm' : sd.id, tid = 'quick-' + SLIDER_TID[sd.id], tempo = sd.id === 'tempo';
+    var min = tempo ? sd.min : 0, max = tempo ? sd.max : 4, cur = U.clamp(D.qs[key], min, max);
+    var val = el('em', { testid: tid + '-val' }, sliderLabel(sd, cur));
+    var input = el('input.qs-range', { type: 'range', testid: tid, min: min, max: max, step: tempo ? 5 : 1, value: cur, 'aria-label': sd.name, disabled: D.mode === 'view' });
+    input.style.setProperty('--c', SLIDER_COLOR[sd.id]);
+    function pct() { input.style.setProperty('--p', ((+input.value - min) / Math.max(1, max - min) * 100).toFixed(1) + '%'); }
+    pct();
+    function commit(fromIdle) {
+      var v = +input.value;
+      if (v === D.qs[key]) return;
+      if (key === 'swing' || key === 'bpm') {   // Feel + Tempo never rewrite notes, never ask (D15, Q3)
+        D.qs[key] = v; D.pat[key] = v; changed(D);
+        return;
+      }
+      if (fromIdle && D.edited) return;   // ask on release only
+      askFirst(D, function () { D.qs[key] = v; recompose(s, D, false); },
+        function () { input.value = D.qs[key]; val.textContent = sliderLabel(sd, D.qs[key]); pct(); });
+    }
+    input.addEventListener('input', function () {
+      val.textContent = sliderLabel(sd, +input.value); pct();
+      clearTimeout(D.qT); D.qT = setTimeout(function () { commit(true); }, (C.QUICK && C.QUICK.debounceMs) || 150);
+    });
+    input.addEventListener('change', function () { clearTimeout(D.qT); commit(false); });
+    return el('div.qs', { data: { id: sd.id } }, [el('div.qs-top', [el('b', sd.name), val]), input, el('div.qs-ends', [el('span', sd.lo), el('span', sd.hi)])]);
+  }
+  function recipeCard(s, D, r) {
+    var on = !r.surprise && D.qs.recipe === r.id;
+    return btn('.qr' + (on ? '.on' : '') + (r.locked ? '.locked' : ''), { testid: 'quick-recipe-' + r.id, 'aria-pressed': on ? 'true' : 'false', data: { locked: r.locked ? '1' : '0' },
+      disabled: D.mode === 'view', onclick: function () {
+        if (r.locked) { ui.toast('🔒 Needs the ' + (r.lockLabel || 'double-kick pedal') + '.'); return; }
+        var x;
+        if (r.surprise) {
+          D.taps = (D.taps || 0) + 1;
+          var z = GG.songs.surprise(genre(), gear(), seat(), GG.hashSeed(D.qs.seed + '|surprise|' + D.taps));
+          x = { recipe: z.recipe, energy: z.energy, mood: z.mood, swing: z.swing, fills: z.fills, bpm: z.bpm };
+        } else x = { recipe: r.id, energy: r.sliders.energy, mood: r.sliders.mood, swing: r.sliders.swing, fills: r.sliders.fills, bpm: r.bpm };
+        askFirst(D, function () { Object.assign(D.qs, x); recompose(s, D, true); }, r.surprise ? function () { D.taps--; } : null);
+      } }, [el('b', r.name), el('span', r.locked ? [r.desc + ' ', el('span.qr-lock', '🔒 ' + (r.lockLabel || 'Double kick'))] : r.desc)]);
+  }
+  function buildQuick(s, D) {
+    var V = D.view = {}, ro = D.mode === 'view';
+    ui.append(s.body, [header(s, D), meterStrip(D), coachBubble(s, D),
+      V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
+        el('div.qs-title', 'Start from a recipe'),
+        el('div.quick-recipes', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
+        el('div.quick-sliders', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
+    var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
+      stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
+      if (D.editHint) { D.hint = D.editHint; D.editHint = null; }   // the first Write's grid tip shows once, when the editor opens
+      s.rerender();
+    } }, 'Tweak ✎');
+    ui.append(s.foot, [V.play, ro ? null : tweak, doneButton(s, D)]);
+    head(s, D); rerate(D); playButtons(D);
+  }
 
   /* ---- Screen ---------------------------------------------------------------------------------------------- */
+  function header(s, D) {
+    var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
+    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
+    return el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
+      stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
+    } }, '✕'), V.title, btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+  }
   function head(s, D) {
     var V = D.view; if (!V || !V.title) return;
     ui.clear(V.title);
-    ui.append(V.title, [el('div.caps', D.sub || ''), el('div.fr', D.title || 'Untitled'),
-      D.titleEn && D.titleEn !== D.title ? el('div.en', D.titleEn) : null]);
+    ui.append(V.title, [el('div.caps', D.sub || ''), el('div.fr', D.screen === 'quick' ? 'Quick song' : D.title || 'Untitled')]);   // (the English title: the Song tab)
+    V.title.title = D.titleEn && D.titleEn !== D.title ? D.titleEn : '';
   }
   function subFor(D) {
-    if (D.mode === 'write') return 'Write block ' + (D.index + 1) + ' of ' + D.total + (D.fromSketch ? ' · from your sketch pad' : '');
-    if (D.mode === 'sketch') return 'Sketch pad · tap the title for a name';
+    var who = ui.SEAT_NAME[seat()] || 'Drums';
+    if (D.mode === 'write') return 'Write block ' + (D.index + 1) + ' of ' + D.total + (D.fromSketch ? ' · from your sketch pad' : ' · ' + who);
+    if (D.mode === 'sketch') return 'Sketch pad · ' + who;
     var s = D.song || {};
     return (s.auto ? 'Band jam' : 'Your song') + (s.written ? ' · week ' + s.written : ' · came with the band') + (s.classic ? ' · classic' : s.stale >= 50 ? ' · going stale' : '');
+  }
+  function doneButton(s, D) {
+    return D.mode === 'write' ? btn('.btn.primary', { testid: 'btn-seq-save', onclick: function () { save(s, D); } }, 'Save ✓')
+      : D.mode === 'sketch' ? btn('.btn.primary', { testid: 'btn-seq-use', onclick: function () { useSketch(s, D); } }, 'Use in next Write')
+      : null;
   }
   function save(s, D) {
     if (D.done) return;
     var r = rerate(D);
     if (!r.notes) { ui.toast('Nothing to save yet. Tap some hits in, or let the band jam one.'); return; }
-    D.done = true; stopPlay(D);
+    D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);
     var entry = GG.songs.sanitize(D.pat, gear(), genre());
     entry.title = D.title; entry.titleEn = D.titleEn || D.title;
     if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;   // v0.7.2: Marcel's French one stays French on load
     if (D.onSave) D.onSave(entry);
   }
+  function buildEdit(s, D) {
+    var ro = D.mode === 'view', V = D.view = {};
+    if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
+    var present = D.tab === 'song' || hasSec(D, D.tab), sec = D.tab !== 'song' && present, layer = sec && partLayer(D) && partHas(D, D.tab);
+    if (!sec || layer || !chipSec(D.tab)) D.fill = false;
+    var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : layer ? buildPartGrid(s, D) : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
+    var tabs = ui.tabs(tabsFor(D), D.tab, function (id) {
+      D.tab = id; D.fill = false; s.rerender();
+      if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);
+    }, 'seq-tab-');
+    if (D.pat.fillBars) tabs.querySelectorAll('.tab').forEach(function (t) {   // Q2: a section with a bar 4 fill wears a small badge
+      var id = String(t.dataset.testid).replace('seq-tab-', '');
+      if (D.pat.fillBars[id]) t.appendChild(el('i.seq-fb', { title: 'Bar 4 fill', 'aria-label': 'with a bar 4 fill' }));
+    });
+    ui.append(s.body, [
+      header(s, D),
+      el('div.seq-tabs' + (tabsFor(D).length > 4 ? '.many' : ''), [tabs]),
+      meterStrip(D),
+      coachBubble(s, D),
+      sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
+      layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
+      main
+    ]);
+    V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
+    V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
+    ui.append(s.foot, [V.loop, V.song, doneButton(s, D)]);
+    head(s, D); rerate(D); playButtons(D);
+  }
 
   ui.define('seq', {
     kind: 'full', cls: 'seq',
     build: function (s, D) {
-      if (!D.pat) D.pat = GG.songs.starter(genre(), gear());
+      if (D.mode === 'view') D.screen = 'edit';
+      if (!D.screen) D.screen = D.pat ? 'edit' : 'quick';
+      if (!D.pat) freshQuick(D);
       if (D.mode !== 'view' && !D.partReady) { withPart(D.pat); D.partReady = true; }   // v1.1: a string seat writes its part
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
-      if (D.mode === 'write' && D.guided == null) D.guided = prefMode() === 'guided';
-      if (D.mode === 'write' && D.guided) { buildGuided(s, D); return; }
-      var ro = D.mode === 'view', V = D.view = {};
-      V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro, onclick: function () { if (!ro && !D.custom) { reroll(D); head(s, D); } } });
-      var right = D.mode === 'write' ? btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () {
-        if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam();
-      } }, 'Let the band jam one') : D.mode === 'sketch' && ui.openGear ? btn('.btn.small.seq-jam', { testid: 'btn-kit-shop', onclick: function () {   // v0.8: the drum shop
-        stopPlay(D); ui.openGear();
-      } }, strSeat() ? '🛒 ' + cap(instrument()) + ' shop' : '🛒 Drum shop') : null;   // v1.1: your seat's shop
-      if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
-      var present = D.tab === 'song' || hasSec(D, D.tab), layer = D.tab !== 'song' && present && partLayer(D);
-      var tools = ro || D.tab === 'song' || !present ? null : btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'Copy or clear', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯');
-      V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
-      V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
-      V.tip = el('div.seq-tip', { testid: 'seq-tip' });
-      V.pos = el('span.seq-pos');
-      var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : layer ? [partCycle(s, D, D.tab), buildPartGrid(s, D)] : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
-      ui.append(s.body, [
-        el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
-          stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-        } }, '✕'), V.title, metroButton(), right]),
-        el('div.seq-tabs' + (tabsFor(D).length > 4 ? '.many' : ''), [ui.tabs(tabsFor(D), D.tab, function (id) {
-          D.tab = id; s.rerender();
-          if (D.playing === 'loop' && id !== 'song') startPlay(s, D, 'loop'); else playButtons(D);
-        }, 'seq-tab-'), tools]),
-        D.pat.part && D.tab !== 'song' && present ? layerSwitch(s, D) : null,   // v1.1 "Your part | Drums"
-        el('div.seq-meters', [V.groove, V.hook, V.diff]),
-        el('div.seq-tipline', [V.tip, V.pos]),
-        main
-      ]);
-      V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
-      V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
-      var done = D.mode === 'write' ? btn('.btn.primary', { testid: 'btn-seq-save', onclick: function () { save(s, D); } }, 'Save ✓')
-        : D.mode === 'sketch' ? btn('.btn.primary', { testid: 'btn-seq-use', onclick: function () { useSketch(s, D); } }, 'Use in next Write')
-        : null;
-      ui.append(s.foot, [V.loop, V.song, done]);
-      head(s, D); rerate(D); playButtons(D);
+      if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
+      if (D.fromSketch && D.editHint) { D.hint = D.editHint; D.editHint = null; }
+      buildEdit(s, D);
     },
     onShow: function (s) {
       s.off = [
@@ -52994,226 +53316,102 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ];
     },
     onClose: function (s) {
-      stopPlay(s.data);
+      stopPlay(s.data); clearTimeout(s.data.qT); clearTimeout(s.data.warmT);
       (s.off || []).forEach(function (off) { off(); });
     }
   });
 
-  /* ---- v0.6.2 guided songwriter ---------------------------------------------------------------------------- */
-  var GSTEPS = ['verse', 'chorus', 'bridge', 'tempo', 'order', 'name'], SECTIONS3 = ['verse', 'chorus', 'bridge'];
-  var GNAMES = { verse: 'Verse', chorus: 'Chorus', bridge: 'Bridge', solo: 'Solo', outro: 'Outro', tempo: 'Tempo', order: 'Song order', name: 'Name' };
-  function gsteps() { return (strSeat() ? ['drums'] : []).concat(GSTEPS.slice(0, 3), GG.songs.allSections(gear()).filter(isExtra), GSTEPS.slice(3)); }   // v1.1: drums first on a string seat
-  GNAMES.drums = 'Drums';
-  function extraStep(s, D, name) {
-    var on = hasSec(D, name), def = extraDef(name);
-    var sw = soloWho(), ns = ui.bandLines('noSolo'), noSolo = ui.fill((Array.isArray(ns) ? ns[0] : ns) || '{soloist} will mention it. Gently. Twice.');
-    var yes = name === 'solo' ? 'Yes: ' + sw.pos + (sw.you ? ' solo' : ' solo') + ' before the last chorus' : 'Yes: a big finish at the end', no = name === 'solo' ? 'No solo in this one' : 'No outro: stop dead';
-    return [el('div.guide-hint', { testid: 'guide-hint' }, def.blurb),
-      el('div.guide-presets', [
-        btn('.guide-preset' + (on ? '.on' : ''), { testid: 'guide-extra-' + name + '-yes', onclick: function () { if (!on) addExtra(s, D, name); } },
-          [el('span.gp-top', [el('b', yes), on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? (sw.you ? 'Live the whole section is your spotlight. Crowds love a solo after the first chorus.' : 'Live you play ' + (strSeat() ? 'one note a beat' : 'quarter notes') + ' while ' + sw.name + ' ' + sw.verb + '. Crowds love a solo after the first chorus.') : 'The last chord rings out. Ending on an outro makes the hook stick.')]),
-        btn('.guide-preset' + (!on ? '.on' : ''), { testid: 'guide-extra-' + name + '-no', onclick: function () { if (on) removeExtra(s, D, name); } },
-          [el('span.gp-top', [el('b', no), !on ? el('span.gp-tag.on', '✓ picked') : null]), el('span.gp-desc', name === 'solo' ? noSolo : 'Like a pickup truck hitting a snowbank.')])]),
-      on ? el('div.small.dim', 'Tweak it in Advanced ⚙ if you like. It\'s already built from your ' + (name === 'solo' ? 'verse' : 'chorus') + '.') : null];
-  }
-  var ORDER_BLURB = { short: 'Verse, chorus, twice. In and out before the fries get cold.',
-    classic: 'Adds a bridge: the solo spot. Crowds like a bridge.', epic: 'Double verses, double bridges. Pack a lunch.' };
-  function prefMode() { try { return GG.prefs && GG.prefs.get().songwriterMode === 'advanced' ? 'advanced' : 'guided'; } catch (e) { return 'guided'; } }
-  function setMode(m) { try { if (GG.prefs && prefMode() !== m) GG.prefs.set({ songwriterMode: m }); } catch (e) { /* storage off */ } }
-  var COACH = {
-    verse: [{ role: 'guitar|fiddle', text: 'Start with the kick and the snare. Keep it steady; I will do the fancy stuff.' }, { role: 'vocals', text: 'Give me room to sing. Steady is good. Steady is great.' }],
-    chorus: [{ role: 'vocals', text: 'The chorus should hit harder than the verse. A crash on the one. Trust me.' }, { role: 'guitar|fiddle', text: 'Bigger than the verse. More cymbal, more everything.' }],
-    bridge: [{ role: 'guitar|fiddle', text: 'The bridge is my spot. Something different, not too busy.' }, { role: 'bass', text: 'Change it up here. Then we come back home.' }],
-    tempo: [{ role: 'vocals', text: 'Pick a speed I can sing at. Or at least yell at.' }, { role: 'guitar|fiddle', text: 'Fast is fun. Tight is better.' }],
-    order: [{ role: 'vocals', text: 'Verse, chorus, repeat. People like knowing where they are.' }, { role: 'bass', text: 'Short songs get played. Long songs get talked about.' }],
-    name: [{ role: 'vocals', text: 'I will name it. You drum it. That is the deal.' }, { role: 'guitar|fiddle', text: 'Let {namer} name it. It is faster than arguing.' }]
-  };
-  var SEAT_COACH = {
-    drums: [{ role: 'drummer', text: 'I picked a groove. Tell me if you want something else. Or do not. I will play it anyway.' }],
-    verse: [{ role: 'drummer', text: 'Lock in with my kick and we are a band. Wander off and we are two bands.' }, { role: 'vocals', text: 'Leave me some room to sing over {yourPart}.' }],
-    chorus: [{ role: 'vocals', text: 'The chorus needs a lift. Make {yourPart} bigger than the verse.' }, { role: 'drummer', text: 'Same chords as the verse? Bold. Wrong, but bold.' }],
-    bridge: [{ role: 'drummer', text: 'The bridge is where we get weird. Then we come home.' }]
-  };
-  function coachFor(D, step) {
-    var CO = (GG.content.grooves || {}).coach || {}, g = genre(), mine = CO[g] && !Array.isArray(CO[g]) && typeof CO[g] === 'object' ? CO[g] : {};
-    var sp = seat(), bySeat = function (o) { return o && o.bySeat && o.bySeat[sp] ? o.bySeat[sp][step] : null; };
-    var seatSets = sp !== 'drums' ? [bySeat(mine), bySeat(CO), SEAT_COACH[step]] : [];
-    var sets = seatSets.concat([mine[step], CO[step], COACH[step]]).filter(function (x) { return Array.isArray(x) && x.length; }), state = st();
-    var act = ui.talkers(state), dr = sp !== 'drums' && GG.career.drummerId ? GG.career.drummerId(state) : null;
-    for (var q = 0; q < sets.length; q++) {
-      var lines = sets[q];
-      for (var k = 0; k < lines.length; k++) {
-        var ln = lines[(k + (D.index || 0)) % lines.length], re = new RegExp(ln.role);
-        if (!ui.ownLines([ln.text], state).length || (GG.career.seatOk && !GG.career.seatOk(state, ln))) continue;
-        if (ln.role === 'drummer') { if (dr && act.some(function (m) { return m.id === dr; })) return { who: dr, text: ui.fill(ln.text, state) }; continue; }
-        for (var j = 0; j < act.length; j++) if (act[j].id !== dr && re.test(GG.career.stageRole ? GG.career.stageRole(state, act[j]) : act[j].role || '')) return { who: act[j].id, text: ui.fill(ln.text, state) };
-      }
+  /* ---- The full tip (tap the bubble) ------------------------------------------------------------------------ */
+  ui.define('seq-tip-full', {
+    kind: 'modal',
+    build: function (s, d) {
+      var D = d.owner && d.owner.data, b = D && (D.bubble || bubbleOf(D)); if (!b) return;
+      var w = b.who ? ui.who(b.who) : null;
+      s.setTitle(w ? w.short : 'Tip');
+      s.body.appendChild(el('div.seq-tipfull', { testid: 'seq-tip-full' }, [w ? ui.avatar(w) : null,
+        el('div.stack.tight', [el('p', [b.lead ? el('b.amber', b.lead + ' ') : null, b.full && b.full.length > 1 && !D.hint ? b.full[0] : b.text])]
+          .concat((b.full || []).slice(b.full && b.full.length > 1 && !D.hint ? 1 : 0).filter(function (t) { return t !== b.text; }).map(function (t) { return el('p.small.dim', t); })))]));
+      s.foot.appendChild(btn('.btn.primary', { testid: 'btn-seq-tip-ok', onclick: function () { ui.close(s.id); } }, 'Got it'));
     }
-    var own = sets.length ? ui.ownLines(sets[0], state) : [];
-    return own[0] ? { who: null, text: ui.fill(own[0].text, state) } : null;
-  }
-  function presetName(id) { var n = null; GG.songs.presets(genre(), gear()).forEach(function (p) { if (p.id === id) n = p.name; }); return n; }
-  function drumsStep(s, D) {
-    var who = drummerName();
-    return [el('div.guide-hint', { testid: 'guide-hint' }, who + ' suggests a groove for every part. You write your ' + instrument() + ' part next.'),
-      el('div.part-drums.panel', { testid: 'part-drums' }, GG.songs.sectionsOf(D.pat).map(function (name) {
-        var pr = GG.songs.presetOf(D.pat, name, genre(), gear());
-        return el('div.row', [el('b.grow', SEC_LABEL[name] || cap(name)), el('span.small.dim', pr ? presetName(pr) : 'Something of their own')]);
-      })),
-      btn('.btn.block', { testid: 'btn-tell-drummer', onclick: function () {
-        stopPlay(D); D.guided = false; D.layer = 'drums'; D.tab = 'verse'; s.rerender();
-      } }, 'Tell ' + who + ' what to play'),
-      el('div.small.dim', 'The drum grid is the same one drummers use. "Guided steps" on the Song tab brings you back.')];
-  }
-  function partStep(s, D, name) {
-    var pt = D.pat.part, lead = pt.seat === 'lead', ch = D.change && D.change.section === name ? D.change : null;
-    var hint = name === 'chorus' ? (lead ? 'Pick the hook for the chorus, then make it repeat: that is what people sing back.' : 'Pick the chorus progression. Different from the verse = the lift.')
-      : name === 'bridge' ? 'The bridge goes somewhere else, then the last chorus hits harder.'
-      : lead ? 'Pick a hook, then tap where its notes land. Low notes on the left, high on the right.'
-      : 'Pick a progression, then tap your rhythm: ' + (pt.seat === 'bass' ? 'root, fifth or octave.' : 'chug (palm-muted) or open (ringing). Both = an accent.');
-    return [el('div.guide-hint', { testid: 'guide-hint' }, hint), partPicker(s, D, name),
-      el('div.guide-partgrid', buildPartGrid(s, D)),
-      el('div.caps', { style: 'margin-top:4px' }, 'One-tap tweaks'), partMods(s, D, name),
-      ch && ch.noop ? el('div.guide-change.small.dim', { testid: 'guide-change' }, '“' + ch.name + '” has nothing left to change here. Try another tweak.') :
-      ch ? el('div.guide-change', { testid: 'guide-change' }, [el('div', [el('b', ch.name + ': '), ch.desc]), el('div.chips', [
-        chip('Groove', ch.before.groove, ch.after.groove), chip('Hook', ch.before.hook, ch.after.hook), chip('Difficulty', ch.before.difficulty, ch.after.difficulty, true)])]) : null];
-  }
-  function chip(label, a, b, neutral) {
-    var d = b - a;
-    return el('span.chip' + (!d ? '' : neutral ? '.gd' : d > 0 ? '.up' : '.down'), label + ' ' + a + ' → ' + b);
-  }
-  function sectionStep(s, D, name) {
-    var list = GG.songs.presets(genre(), gear()), cur = GG.songs.presetOf(D.pat, name, genre(), gear());
-    var verseP = name === 'verse' ? null : GG.songs.presetOf(D.pat, 'verse', genre(), gear());
-    var hint = name === 'chorus' ? 'Pick something different from the verse' + (verseP ? ' (' + presetName(verseP) + ')' : '') + ': the contrast is the hook.'
-      : name === 'bridge' ? 'The bridge is the detour: go somewhere new, then the last chorus hits harder.'
-      : 'Pick a beat to start from. Tap ▶ Play to hear it.';
-    var cards = list.map(function (pr) {
-      var tag = pr.id === cur ? el('span.gp-tag.on', '✓ picked') : pr.id === verseP ? el('span.gp-tag', 'verse') : pr.signature ? el('span.gp-tag', 'signature') : null;
-      return btn('.guide-preset' + (pr.id === cur ? '.on' : ''), { testid: 'guide-preset-' + pr.id, disabled: pr.locked, onclick: function () {
-        D.pat = GG.songs.applyPreset(D.pat, name, pr.id, gear(), genre()); D.change = null; changed(D); s.rerender();
-      } }, [el('span.gp-top', [el('b', pr.name), tag]), el('span.gp-desc', pr.locked ? '🔒 Needs a double-kick pedal. ' + pr.desc : pr.desc)]);
-    });
-    var mods = GG.songs.grooves(genre()).mods.filter(function (m) { return !m.sections || m.sections.indexOf(name) >= 0; });
-    var ch = D.change && D.change.section === name ? D.change : null;
-    return [
-      el('div.guide-hint', { testid: 'guide-hint' }, hint),
-      el('div.guide-presets', cards),
-      el('div.caps', { style: 'margin-top:4px' }, cur ? 'Tweak it (optional)' : 'Tweaked · tap a beat above to start over'),
-      el('div.guide-mods', mods.map(function (m) {
-        return btn('.guide-mod', { testid: 'guide-mod-' + m.id, title: m.desc, onclick: function () {
-          var r = GG.songs.modify(D.pat, name, m.id, gear(), genre());
-          if (JSON.stringify(r.pattern) === JSON.stringify(GG.songs.sanitize(D.pat, gear()))) { D.change = { section: name, name: m.name, noop: true }; s.rerender(); return; }
-          D.pat = r.pattern; D.change = { section: name, name: m.name, desc: m.desc, before: r.before, after: r.after };
-          changed(D); s.rerender();
-        } }, m.name);
-      })),
-      ch && ch.noop ? el('div.guide-change.small.dim', { testid: 'guide-change' }, '“' + ch.name + '” has nothing left to change here. Try another tweak.') :
-      ch ? el('div.guide-change', { testid: 'guide-change' }, [el('div', [el('b', ch.name + ': '), ch.desc]), el('div.chips', [
-        chip('Groove', ch.before.groove, ch.after.groove), chip('Hook', ch.before.hook, ch.after.hook), chip('Difficulty', ch.before.difficulty, ch.after.difficulty, true)])]) : null
-    ];
-  }
-  function tempoStep(s, D) {
-    var G = GG.songs.genre(genre()), p = D.pat;
-    function style() { return GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : ''; }
-    var num = el('b', { testid: 'guide-bpm' }, String(p.bpm)), lab = el('div.guide-tlabel', { testid: 'guide-tempo-label' }, GG.songs.tempoLabel(genre(), p.bpm));
-    var sty = el('div.small.dim', style() ? 'The band plays: ' + style() : '');
-    var r = el('input.seq-tempo.guide-range', { type: 'range', testid: 'guide-tempo', min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
-    r.addEventListener('input', function () {
-      p.bpm = +r.value; num.textContent = String(p.bpm); lab.textContent = GG.songs.tempoLabel(genre(), p.bpm);
-      sty.textContent = style() ? 'The band plays: ' + style() : ''; rerate(D);
-    });
-    r.addEventListener('change', function () { changed(D); if (D.handle && D.handle.playing) restart(s, D); });
-    var marks = (GG.songs.grooves(genre()).tempo || []).filter(function (t) { return t[0] <= G.tempo[1]; });
-    return [el('div.guide-tempo', [el('div.guide-bignum', [num, el('span', ' BPM')]), lab, sty]), r,
-      el('div.row.tiny.faint', [el('span.grow', G.tempo[0] + ' · ' + (marks[0] ? marks[0][1] : '')), el('span', (marks.length ? marks[marks.length - 1][1] : '') + ' · ' + G.tempo[1])]),
-      el('div.small.dim', 'Faster songs are harder to play live. Slower ones feel heavier. Neither pays more.')];
-  }
-  function orderStep(s, D) {
-    var p = D.pat, cur = baseArrangementId(p);
-    return [el('div.guide-orders', GG.songs.ARRANGEMENT_IDS.map(function (id) {
-      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);   // v0.8: the Solo / Outro stay in
-      return btn('.guide-preset' + (id === cur ? '.on' : ''), { testid: 'guide-order-' + id, onclick: function () {
-        p.arrangement = a.slice(); changed(D); if (D.playing) restart(s, D); s.rerender();
-      } }, [el('span.gp-top', [el('b', ARR_NAMES[id]), el('span.gp-tag' + (id === cur ? '.on' : ''), '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: a })) + ' s')]),
-        el('span.gp-seq', a.map(function (x) { return cap(x); }).join(' · ')), el('span.gp-desc', ORDER_BLURB[id])]);
-    }))];
-  }
-  function nameStep(s, D) {
-    return [el('div.guide-name', [el('div.caps', 'Your song'), el('div.fr', { testid: 'guide-title' }, D.title || 'Untitled'),
-        D.titleEn && D.titleEn !== D.title ? el('div.small.dim', '“' + D.titleEn + '” (nobody knows yet)') : null]),
-      btn('.btn.block', { testid: 'btn-guide-reroll', onclick: function () { D.custom = false; reroll(D); s.rerender(); } }, '🎲 Another title from ' + namer()),
-      el('div.caps', { style: 'margin-top:6px' }, 'Or type your own'),
-      el('input.seq-name', { testid: 'guide-title-input', maxLength: 40, value: D.custom ? D.title : '', placeholder: TITLE_HINT[genre()] || 'Your song title',
-        oninput: function (e) { var v = e.target.value.trim(); if (v) { D.title = v; D.titleEn = v; D.custom = true; } else { D.custom = false; reroll(D); } head(s, D);
-          var t = s.body.querySelector('[data-testid="guide-title"]'); if (t) t.textContent = D.title; } })];
-  }
-  function buildGuided(s, D) {
-    var STEPS = gsteps(), step = STEPS.indexOf(D.step) >= 0 ? D.step : (D.step = STEPS[0]), i = STEPS.indexOf(step), ex = isExtra(step);
-    var sec = SECTIONS3.indexOf(step) >= 0 || (ex && hasSec(D, step)), V = D.view = {};
-    D.tab = sec ? step : 'song';
-    V.title = btn('.seq-title', { testid: 'seq-title', onclick: function () { if (!D.custom) { reroll(D); if (step === 'name') s.rerender(); else head(s, D); } } });
-    var jam = btn('.btn.small.seq-jam', { testid: 'btn-seq-jam', onclick: function () { if (D.done) return; D.done = true; stopPlay(D); if (D.onJam) D.onJam(); } }, 'Let the band jam one');
-    var adv = btn('.btn.small.guide-adv', { testid: 'btn-guide-advanced', onclick: function () {
-      stopPlay(D); D.guided = false; D.tab = sec ? step : 'verse'; setMode('advanced'); s.rerender();
-    } }, 'Advanced ⚙');
-    var dots = el('div.guide-dots', { style: { gridTemplateColumns: 'repeat(' + STEPS.length + ', 1fr)' } }, STEPS.map(function (x, k) { return el('i' + (k === i ? '.on' : k < i ? '.done' : '')); }));
-    V.groove = meter('Groove', 'meter-groove'); V.hook = meter('Hook', 'meter-hook'); V.diff = meter('Difficulty', 'meter-diff');
-    V.ability = el('i.ab'); V.diff._bar.appendChild(V.ability);
-    var c = coachFor(D, step);
-    var body = step === 'drums' ? drumsStep(s, D) : step === 'tempo' ? tempoStep(s, D) : step === 'order' ? orderStep(s, D) : step === 'name' ? nameStep(s, D)
-      : ex ? extraStep(s, D, step) : D.pat.part ? partStep(s, D, step) : sectionStep(s, D, step);   // v1.1: your part on a string seat
-    ui.append(s.body, [
-      el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': 'Back to the planner', onclick: function () {
-        stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-      } }, '✕'), V.title, jam]),
-      el('div.guide-top', [el('div.guide-prog', [el('div.caps', { testid: 'guide-step' }, 'Step ' + (i + 1) + ' of ' + STEPS.length + ' · ' + GNAMES[step]), dots]), adv]),
-      el('div.seq-meters', [V.groove, V.hook, V.diff]),
-      c ? el('div.guide-coach', { testid: 'guide-coach' }, [el('b', c.who ? ui.who(c.who).short + ': ' : ''), c.text]) : null,
-      el('div.seq-main.guide-main', { testid: 'guide-screen-' + step }, body)
-    ]);
-    function go(k) { stopPlay(D); D.step = STEPS[k]; D.change = null; s.rerender(); s.body.scrollTop = 0; }
-    var back = btn('.btn', { testid: 'btn-guide-back', disabled: i === 0, onclick: function () { if (i > 0) go(i - 1); } }, '‹ Back');
-    V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, sec || step === 'drums' ? 'loop' : 'song'); } });
-    var next = i < STEPS.length - 1 ? btn('.btn.primary', { testid: 'btn-guide-next', onclick: function () { go(i + 1); } }, 'Next ›')
-      : btn('.btn.primary', { testid: 'btn-guide-save', onclick: function () { save(s, D); } }, 'Save ✓');
-    ui.append(s.foot, [back, V.play, next]);
-    head(s, D); rerate(D); playButtons(D);
-  }
+  });
 
+  /* ---- ⋯ menu (U3): the band, the click, Quick song, the shop; this section's tools; your part's tweaks ------- */
   ui.define('seq-tools', {
-    kind: 'modal', title: 'This section',
+    kind: 'modal', cls: 'seq-menu', title: 'More',
     build: function (s, d) {
       var owner = d.owner, D = owner && owner.data; if (!D) return;
-      function done(fn) { fn(); ui.close(s.id); owner.rerender(); changed(D); }
-      if (partLayer(D) && D.pat.part.sections[D.tab]) {   // v1.1: your part's tools: the one-tap modifiers, copy, clear
-        s.setTitle('Your part');
-        s.body.appendChild(partMods(owner, D, D.tab, function () { ui.close(s.id); }));
-        GG.songs.sectionsOf(D.pat).forEach(function (name) {
-          if (name === D.tab || !D.pat.part.sections[name]) return;
-          s.body.appendChild(btn('.btn.block', { testid: 'part-copy-' + name, style: 'margin-top:8px', onclick: function () {
-            done(function () { D.pat.part.sections[D.tab] = U.clone(D.pat.part.sections[name]); });
-          } }, 'Copy your ' + cap(name) + ' part'));
-        });
-        s.body.appendChild(btn('.btn.danger.block', { testid: 'part-clear', style: 'margin-top:8px', onclick: function () {
-          done(function () { D.pat.part.sections[D.tab].rows = D.pat.part.sections[D.tab].rows.map(function () { return '................'; }); });
-        } }, 'Clear your ' + D.tab + ' part'));
-        s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: function () { ui.close(s.id); } }, 'Cancel'));
-        return;
+      if (s.body.parentNode) s.body.parentNode.classList.add('seq-menu');
+      var ro = D.mode === 'view', quick = D.screen === 'quick', sec = !quick && D.tab !== 'song' && hasSec(D, D.tab), layer = sec && partLayer(D) && partHas(D, D.tab), drums = sec && !layer;
+      s.setTitle('More');
+      function close() { ui.close(s.id); }
+      function done(fn) { handEdit(D); fn(); close(); owner.rerender(); changed(D); }
+      var body = [];
+      function group(label, kids) { kids = kids.filter(Boolean); if (kids.length) body.push(el('div.sm-group', [label ? el('div.caps', label) : null].concat(kids))); }
+      function row(testid, icon, label, fn, cls) { return btn('.seq-menu-row' + (cls || ''), { testid: testid, onclick: fn }, [el('span.tm-i', icon), el('span.grow', label)]); }
+      group(null, [
+        D.mode === 'write' ? row('btn-seq-jam', '🎸', 'Let the band jam one', function () { if (D.done) return; D.done = true; close(); stopPlay(D); if (D.onJam) D.onJam(); }) : null,
+        metroButton(),
+        !ro && !quick ? row('btn-seq-quick', '🎚', 'Back to Quick song', function () { close(); stopPlay(D); enterQuick(D); owner.rerender(); }) : null,
+        D.mode === 'sketch' && ui.openGear ? row('btn-kit-shop', '🛒', strSeat() ? cap(instrument()) + ' shop' : 'Drum shop', function () { close(); stopPlay(D); ui.openGear(); }) : null   // v0.8 / v1.1: your seat's shop
+      ]);
+      if (!ro && drums) {
+        var fills = chipSec(D.tab), hasFill = !!(D.pat.fillBars && D.pat.fillBars[D.tab]);
+        group('This ' + (SEC_LABEL[D.tab] || D.tab).toLowerCase(), [
+          row('btn-seq-beat', '🥁', 'Beat for this section', function () { close(); ui.show('seq-beat', { owner: owner }); }),
+          fills ? row('btn-seq-fill', '✨', D.fill ? 'Back to the main bar' : hasFill ? 'Edit the bar 4 fill' : 'Bar 4 fill', function () {   // Q2: the grid edits p.fillBars[tab]
+            if (!D.fill && !hasFill) { D.pat.fillBars = D.pat.fillBars || {}; D.pat.fillBars[D.tab] = D.pat.sections[D.tab].slice(); }
+            D.fill = !D.fill; close(); owner.rerender(); changed(D);
+          }, D.fill ? '.on' : '') : null,
+          fills && hasFill ? row('seq-fill-remove', '🧹', 'Take the bar 4 fill out', function () {
+            done(function () { delete D.pat.fillBars[D.tab]; if (!Object.keys(D.pat.fillBars).length) delete D.pat.fillBars; D.fill = false; });
+          }) : null,
+          el('div.sm-copy', GG.songs.sectionsOf(D.pat).filter(function (n) { return n !== D.tab; }).map(function (name) {   // v0.8: + the song's Solo / Outro
+            return btn('.btn.small', { testid: 'seq-copy-' + name, onclick: function () { done(function () { D.fill = false; D.pat.sections[D.tab] = D.pat.sections[name].slice(); }); } }, 'Copy ' + cap(name));
+          })),
+          row('seq-clear', '✕', 'Clear the ' + D.tab, function () { done(function () { if (fillOn(D)) D.pat.fillBars[D.tab] = GG.songs.blankSection(D.pat.lanes); else D.pat.sections[D.tab] = GG.songs.blankSection(D.pat.lanes); }); }, '.danger')
+        ]);
       }
-      GG.songs.sectionsOf(D.pat).forEach(function (name) {   // v0.8: + the song's Solo / Outro
-        if (name === D.tab) return;
-        s.body.appendChild(btn('.btn.block', { testid: 'seq-copy-' + name, style: 'margin-bottom:8px', onclick: function () {
-          done(function () { D.pat.sections[D.tab] = D.pat.sections[name].slice(); });
-        } }, 'Copy from ' + cap(name)));
-      });
-      s.body.appendChild(btn('.btn.danger.block', { testid: 'seq-clear', onclick: function () {
-        done(function () { D.pat.sections[D.tab] = GG.songs.blankSection(D.pat.lanes); });
-      } }, 'Clear ' + D.tab));
-      if (isExtra(D.tab)) s.body.appendChild(btn('.btn.danger.block', { testid: 'seq-remove-' + D.tab, style: 'margin-top:8px', onclick: function () {
-        var tab = D.tab; ui.close(s.id); D.tab = 'song'; removeExtra(owner, D, tab);
-      } }, 'Take the ' + SEC_LABEL[D.tab] + ' out of the song'));
-      s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: function () { ui.close(s.id); } }, 'Cancel'));
+      if (!ro && layer && D.pat.part.sections[D.tab]) {   // v1.1: your part's one-tap tweaks, copy, clear
+        group('Your part', [
+          el('div.sm-mods', GG.songs.part.MODS.map(function (m) {
+            return btn('.btn.small.sm-mod', { testid: 'part-mod-' + m.id, title: m.desc, onclick: function () {
+              var before = JSON.stringify(D.pat.part);
+              partV2(D);
+              var r = GG.songs.part.modify(D.pat, D.tab, m.id, gear(), genre());
+              close();
+              if (JSON.stringify(r.pattern.part) === JSON.stringify(D.pat.part)) {
+                if (JSON.stringify(D.pat.part) !== before) { owner.rerender(); changed(D); }
+                ui.toast('“' + m.name + '” has nothing left to change here. Try another tweak.'); return;
+              }
+              D.pat = r.pattern; handEdit(D); owner.rerender(); changed(D);
+            } }, m.name);
+          })),
+          el('div.sm-copy', GG.songs.sectionsOf(D.pat).filter(function (n) { return n !== D.tab && D.pat.part.sections[n]; }).map(function (name) {
+            return btn('.btn.small', { testid: 'part-copy-' + name, onclick: function () { done(function () { partV2(D); D.pat.part.sections[D.tab] = U.clone(D.pat.part.sections[name]); }); } }, 'Copy ' + cap(name));
+          })),
+          row('part-clear', '✕', 'Clear your ' + D.tab + ' part', function () { done(function () { partV2(D); D.pat.part.sections[D.tab].rows = D.pat.part.sections[D.tab].rows.map(function () { return '................'; }); }); }, '.danger')
+        ]);
+      }
+      if (!ro && sec && isExtra(D.tab)) group(null, [row('seq-remove-' + D.tab, '↩', 'Take the ' + SEC_LABEL[D.tab] + ' out of the song', function () {
+        var tab = D.tab; close(); D.tab = 'song'; removeExtra(owner, D, tab);
+      }, '.danger')]);
+      ui.append(s.body, body);
+      s.foot.appendChild(btn('.btn.ghost', { testid: 'btn-seq-tools-cancel', onclick: close }, 'Close'));
+    }
+  });
+  ui.define('seq-beat', {
+    kind: 'sheet', title: 'Beat for this section',
+    build: function (s, d) {
+      var owner = d.owner, D = owner && owner.data; if (!D) return;
+      var cur = GG.songs.presetOf(D.pat, D.tab, genre(), gear());
+      s.setTitle('Beat for the ' + D.tab, SEC_LABEL[D.tab]);
+      s.body.appendChild(el('div.guide-presets', GG.songs.presets(genre(), gear()).map(function (pr) {
+        return btn('.guide-preset' + (pr.id === cur ? '.on' : ''), { testid: 'seq-beat-' + pr.id, disabled: pr.locked, onclick: function () {
+          D.pat = GG.songs.applyPreset(D.pat, D.tab, pr.id, gear(), genre()); if (D.pat.part) withPart(D.pat);
+          handEdit(D); ui.close(s.id); owner.rerender(); changed(D);
+        } }, [el('span.gp-top', [el('b', pr.name), pr.id === cur ? el('span.gp-tag.on', '✓ now') : pr.signature ? el('span.gp-tag', 'signature') : null]),
+          el('span.gp-desc', pr.locked ? '🔒 Needs a double-kick pedal. ' + pr.desc : pr.desc)]);
+      })));
     }
   });
 
@@ -53230,8 +53428,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       var sketch = queued[k] || null, i = k;
       var tip = firstEver && i === 0 && !(GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(state)) ? firstTip(state) : null;   // v1.0: quiet while the w1_write lesson runs
-      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), hint: tip,
-        pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : strSeat() ? drummerGroove(GG.songs.starter(genre(), gear())) : GG.songs.starter(genre(), gear()),   // v1.1: {drummer}'s groove
+      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), editHint: tip, screen: sketch ? 'edit' : 'quick',
+        pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : null,
         title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,
         onSave: function (entry) { out[i] = entry; taken.push(entry.title); k++; next(); },
         onJam: function () { out[i] = null; if (sketch) keep.push(sketch); k++; next(); },
@@ -53242,8 +53440,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
     if (strSeat()) {   // v1.1 review: the drum writeTips are the drum grid's; a string seat starts from the drummer's groove
-      var tk = ui.talkers(state)[0];
-      return tk ? { who: tk.id, text: ui.fill('{drummer} has a groove ready. Pick your ' + (GG.career.seatOf(state) === 'lead' ? 'hook' : 'chords') + ' for each section, then tap your part on the grid. Hit play to hear it.', state) } : null;
+      var dr = GG.career.drummerId ? GG.career.drummerId(state) : null, tl = ui.talkers(state), tk = tl.filter(function (m) { return m.id !== dr; })[0] || tl[0];
+      return tk ? { who: tk.id, text: ui.fill('{drummer} has the groove. ' + (GG.career.seatOf(state) === 'lead' ? 'Tap Hook ▾ for another hook' : 'Tap Chords ▾ or a bar to change the chords') + ', then tap your notes on the grid. Hit Loop to hear it.', state) } : null;
     }
     var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
     var ids = Object.keys(tips).filter(function (id) { return ui.talkers(state).some(function (m) { return m.id === id; }); });
@@ -53254,13 +53452,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   ui.openSketch = function () {
     var state = st(); if (!state) return;
-    ui.show('seq', { mode: 'sketch', pat: state.draft ? GG.songs.sanitize(state.draft, gear(), genre()) : strSeat() ? drummerGroove(GG.songs.starter(genre(), gear())) : GG.songs.starter(genre(), gear()) });
+    ui.show('seq', { mode: 'sketch', pat: state.draft ? GG.songs.sanitize(state.draft, gear(), genre()) : null, screen: state.draft ? 'edit' : 'quick' });
   };
   function useSketch(s, D) {
     var state = st(); if (!state || D.done) return;
     var r = rerate(D);
     if (!r.notes) { ui.toast('The sketch pad is empty. Tap some hits in first.'); return; }
-    D.done = true; stopPlay(D);
+    D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);
     var entry = GG.songs.sanitize(D.pat, gear(), genre());
     entry.title = D.title; entry.titleEn = D.titleEn || D.title;
     if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;
@@ -53271,13 +53469,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   ui.openSong = function (id) {
     var state = st(), song = state && GG.songs.byId(state, id); if (!song) return;
-    ui.show('seq', { mode: 'view', song: song, pat: U.clone(song.pattern), title: song.title, titleEn: song.titleEn });
+    ui.show('seq', { mode: 'view', screen: 'edit', song: song, pat: U.clone(song.pattern), title: song.title, titleEn: song.titleEn });
+  };
+  ui.seqGear = function (e) {
+    var D = e && e.data; if (!D || !D.pat || D.mode === 'view') return;
+    D.pat = GG.songs.sanitize(D.pat, gear(), genre());
+    if (D.screen === 'quick' && D.qs && !D.edited) { D.pat = composeNow(D); D.partReady = false; }
+    e.rerender();
   };
 
   GG.registerDebug('seq', function () {
-    var e = ui.get && ui.get('seq'), D = e && e.data;
-    return D ? { mode: D.mode, tab: D.tab, guided: !!D.guided, step: D.guided ? D.step : null, playing: D.playing || null, title: D.title, rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
-      playhead: D.view ? D.view.ph : null, seat: seat(), layer: partLayer(D) ? 'part' : 'drums', part: D.pat && D.pat.part ? U.clone(D.pat.part) : null } : null;
+    var e = ui.get && ui.get('seq'), D = e && e.data; if (!D || !D.pat) return null;
+    var q = D.qs || qsOf(D), chords = {}, tonic = tonicOf(D);
+    GG.songs.sectionsOf(D.pat).filter(chipSec).forEach(function (n) { chords[n] = effChords(D, n); });
+    return { mode: D.mode, screen: D.screen, tab: D.tab, layer: partLayer(D) ? 'part' : 'drums', seat: seat(), playing: D.playing || null, title: D.title,
+      rating: D.rating ? { groove: D.rating.groove, hook: D.rating.hook, difficulty: D.rating.difficulty } : null,
+      playhead: D.view ? D.view.ph : null, part: D.pat.part ? U.clone(D.pat.part) : null, recipe: D.pat.recipe ? U.clone(D.pat.recipe) : null,
+      sliders: { energy: q.energy, mood: q.mood, feel: q.swing, fills: q.fills, bpm: q.bpm }, chords: chords,
+      chips: chipSec(D.tab) && chords[D.tab] ? chords[D.tab].map(function (x) { return chordName(D, x, tonic); }) : [],
+      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null };
   });
 })(window.GG);
 
@@ -57941,12 +58151,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
   });
   GG.on('ui:layout', function (p) {
-    if (!p || p.id !== 'seq' || !ui.get) return;
-    var e = ui.get('seq');
-    if (!e || !e.data || e.data.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
-    if (e.body.querySelector('[data-testid="kit-practice"]')) return;
+    if (!p || p.id !== 'seq-tools' || !ui.get) return;
+    var m = ui.get('seq-tools'), owner = m && m.data && m.data.owner, d = owner && owner.data;
+    if (!d || d.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
+    if (m.body.querySelector('[data-testid="kit-practice"]')) return;
     var strSeat = GG.career && GG.career.seatOf && GG.career.seatOf(GG.state) !== 'drums';   // v1.1: on a string seat this is your rig
-    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song instead'));
+    var row = btn('.seq-menu-row', { testid: 'kit-practice', onclick: function () { ui.close('seq-tools'); ui.show('practice'); } },
+      [el('span.tm-i', strSeat ? '🎸' : '🥁'), el('span.grow', 'Practice a song instead')]);
+    var shop = m.body.querySelector('[data-testid="btn-kit-shop"]');
+    if (shop && shop.parentNode) shop.parentNode.insertBefore(row, shop.nextSibling); else m.body.appendChild(row);
   });
 
   GG.registerDebug('settings', function () {
@@ -58991,6 +59204,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function refreshSeq() {
     var e = ui.get && ui.get('seq'), st = S();
     if (!e || !e.data || !e.data.pat || !st || e.data.mode === 'view') return;
+    if (ui.seqGear) { ui.seqGear(e); return; }
     e.data.pat = GG.songs.sanitize(e.data.pat, st.gear, st.genre);
     e.rerender();
   }
@@ -60576,7 +60790,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var id = p && p.id; if (!id) return;
     if (!T.running()) { refresh(); return; }
     var ctx = { screen: id, host: id };
-    if (id === 'seq') { var e = ui.get('seq'); ctx.mode = e && e.data ? e.data.mode : null; }
+    if (id === 'seq') { var e = ui.get('seq'); ctx.mode = e && e.data ? e.data.mode : null; ctx.seqScreen = e && e.data ? e.data.screen : null; }   // v1.3: 'quick' | 'edit'
     if (id === 'laptop') ctx.tab = laptopTab();
     if (id === 'wrap') {
       var we = ui.get('wrap'), w = we && we.data && we.data.wrap;

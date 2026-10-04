@@ -48,4 +48,10 @@ function checker(label) {
     done() { const f = res.filter(r => !r[1]).length; console.log((f ? 'FAILED ' + f + '/' : 'ALL PASS ') + res.length + ' (' + label + ')'); if (f) process.exitCode = 1; }
   };
 }
-module.exports = { open, checker, pw, ROOT, THREE_FILE, VIEW, TAG, shotName };
+// v1.3 "Songwriter": the songwriter's tools (the jam, the metronome, the shop, copy / clear, part tweaks, ...) live in the header's
+// ⋯ menu (modal 'seq-tools'). openTools(page) taps ⋯ and waits for the menu; tap a tool inside it afterwards.
+async function openTools(page) {
+  await page.locator('[data-testid="btn-seq-tools"]').last().click();
+  await page.waitForFunction(() => GG.debug('ui').screen === 'seq-tools', null, { timeout: 5000 });
+}
+module.exports = { open, checker, pw, ROOT, THREE_FILE, VIEW, TAG, shotName, openTools };

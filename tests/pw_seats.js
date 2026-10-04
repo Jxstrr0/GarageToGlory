@@ -6,8 +6,8 @@
 //           stops it, emits 'seat:picked' { seat, swapped }, → logo → the creator asks "Who's on rhythm guitar?" → the career
 //           is a rhythm career (Rox on the kit, singing). A second career through the same screens stays a drummer with
 //           v1.0's gear object; ?quick=1&seat=bass still quick-starts a bass career. Layout audit; screenshot seats.png.
-//   write : a country rhythm Write in the guided songwriter: the drums step (Travis Lee suggests), your part (2-row grid),
-//           Play plays { seat, part }, tempo → order → name → save: the song keeps your rhythm part and charts on str lanes.
+//   write : a country rhythm Write (v1.3): Quick song with your v2 part, Tweak → your part (6-row grid, Travis Lee on the kit),
+//           Loop plays { seat, part }, Song tab title → save: the song keeps your rhythm part and charts on str lanes.
 //   gig   : a Gravel Kings rhythm gig through GG.ui.playGig: the string highway (4 lanes), the band plays the drums with your
 //           kinds muted, live taps judged on time (holds lifted at their end), autoplay to the results, the done() result
 //           carries the seat. Also run at PW_VIEW=440x956.
@@ -21,7 +21,7 @@
 // Every section asserts no console errors.
 // Run: node build.js && META_ONLY=pick timeout 500 node tests/pw_seats.js
 const path = require('path');
-const { open, checker, shotName } = require('./_pw');
+const { open, checker, shotName, openTools } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const SCAN = require('./seat_scan');
 const AWARE = SCAN.seatAware(require('./_load')());   // the seat-aware content lines (node-loaded content)
@@ -142,15 +142,13 @@ async function pick() {
   c.done();
 }
 
-/* ---- write: a rhythm part in the guided songwriter ------------------------------------------------------------------ */
+/* ---- write: a rhythm part in the songwriter (v1.3: Quick song, then Tweak ✎ for your part) ------------------------------- */
 async function write() {
   const c = checker('write');
   const { page, errors, close } = await open();
-  const step = () => page.evaluate(() => GG.debug('seq').step);
   try {
     await page.waitForSelector(tid('btn-new'));
     await page.evaluate(() => {
-      GG.prefs.set({ songwriterMode: 'guided' });
       GG.main.quickStart({ seed: 5150, bandId: 'grid_road_ramblers', seat: 'rhythm' });
       const A = GG.audio, p0 = A.play; window.__play = [];
       A.play = function (pat, o) { window.__play.push({ seat: o && o.seat, part: !!(o && o.part) }); return p0.apply(this, arguments); };
@@ -159,27 +157,27 @@ async function write() {
     await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
     for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
     await tap(page, 'btn-go'); await waitScreen(page, 'seq');
-    const d0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), tell: (document.querySelector('[data-testid="btn-tell-drummer"]') || {}).textContent || '' }));
-    c.ok(d0.dbg.seat === 'rhythm' && d0.dbg.step === 'drums', 'a rhythm Write opens on the drums step ' + d0.dbg.step);
-    c.ok(/Travis/.test(d0.tell), 'Travis Lee is on the kit: ' + d0.tell);
-    let bad = await audit(page); c.ok(!bad.length, 'drums step layout ' + bad.join('; '));
-    await tap(page, 'btn-guide-next');
-    const v0 = await page.evaluate(() => ({ step: GG.debug('seq').step, cols: (document.querySelector('[data-testid="part-grid"]') || { dataset: {} }).dataset.lanes, picks: document.querySelectorAll('[data-testid^="part-pick-"]').length }));
-    c.ok(v0.step === 'verse' && v0.cols === '2' && v0.picks >= 2, 'your verse: the chug/open grid + progressions ' + JSON.stringify(v0));
+    const d0 = await page.evaluate(() => ({ dbg: GG.debug('seq') }));
+    c.ok(d0.dbg.seat === 'rhythm' && d0.dbg.screen === 'quick' && d0.dbg.part && d0.dbg.part.seat === 'rhythm' && d0.dbg.part.v === 2, 'a rhythm Write opens Quick song with your (v2) rhythm part');
+    let bad = await audit(page); c.ok(!bad.length, 'Quick song layout ' + bad.join('; '));
+    await tap(page, 'btn-quick-tweak');
+    const v0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), cols: (document.querySelector('[data-testid="part-grid"]') || { dataset: {} }).dataset.lanes,
+      drummer: (document.querySelector('[data-testid="seq-layer-drums"]') || {}).title || '', chords: (document.querySelector('[data-testid="seq-chords"]') || {}).textContent || '' }));
+    c.ok(v0.dbg.layer === 'part' && v0.cols === '6' && /^Chords:/.test(v0.chords), 'Tweak: your verse on the 6-row rhythm grid + ' + v0.chords);
+    c.ok(/Travis/.test(v0.drummer), 'Travis Lee is on the kit: ' + v0.drummer);
     const r0 = await page.evaluate(() => GG.ui.get('seq').data.pat.part.sections.verse.rows[1]);
     await page.locator(tid('part-cell-1-6')).click();
     const r1 = await page.evaluate(() => GG.ui.get('seq').data.pat.part.sections.verse.rows[1]);
     c.ok(r0 !== r1, 'a grid tap changes your open row ' + r0 + ' -> ' + r1);
-    await tap(page, 'btn-guide-play');
+    await tap(page, 'btn-seq-loop');
     await page.waitForFunction(() => GG.debug('seq').playing, null, { timeout: 5000 });
     const pl = await page.evaluate(() => window.__play[window.__play.length - 1]);
-    c.ok(pl && pl.seat === 'rhythm' && pl.part, 'Play plays your part ' + JSON.stringify(pl));
-    await tap(page, 'btn-guide-play');
-    bad = await audit(page); c.ok(!bad.length, 'part step layout ' + bad.join('; '));
-    for (let k = 0; k < 6 && (await step()) !== 'name'; k++) await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'name', 'chorus → bridge → tempo → order → name');
-    await page.locator(tid('guide-title-input')).fill('Idling Truck Blues');
-    await tap(page, 'btn-guide-save');
+    c.ok(pl && pl.seat === 'rhythm' && pl.part, 'Loop plays your part ' + JSON.stringify(pl));
+    await tap(page, 'btn-seq-loop');
+    bad = await audit(page); c.ok(!bad.length, 'part editor layout ' + bad.join('; '));
+    await tap(page, 'seq-tab-song');
+    await page.locator(tid('seq-title-input')).fill('Idling Truck Blues');
+    await tap(page, 'btn-seq-save');
     await waitScreen(page, 'results', 15000);
     const last = await page.evaluate(() => { const s = GG.state, x = s.songs[s.songs.length - 1], ch = GG.gig.chart(x, { seat: 'rhythm', genre: 'country', difficulty: 'normal' });
       return { title: x.title, part: x.pattern.part, open: x.pattern.part && x.pattern.part.sections.verse.rows[1], lane: ch.notes[0] && ch.notes[0].lane, seat: ch.seat }; });
@@ -311,6 +309,7 @@ async function shop() {
       GG.ui.openSketch();
     });
     await waitScreen(page, 'seq');
+    await openTools(page);   // v1.3: the shop lives in the songwriter's ⋯ menu
     const shopBtn = await page.locator(tid('btn-kit-shop')).textContent();
     c.ok(/Guitar shop/.test(shopBtn), 'the sketch pad opens the guitar shop: ' + shopBtn);
     await tap(page, 'btn-kit-shop'); await waitScreen(page, 'gear');

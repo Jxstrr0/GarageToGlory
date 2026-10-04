@@ -1,5 +1,5 @@
 // pw_seq.js: the v0.2 sequencer and the song audio on a 390x844 phone viewport.
-// Sections (META_ONLY=seq|guided|audio|heavy|genres|voices|part|hash|kit|real|vox, comma-separated; default all; seq also runs guided). Each must finish inside `timeout 500`.
+// Sections (META_ONLY=seq|quick|part|layout|audio|heavy|genres|voices|hash|kit|real|vox, comma-separated; default all; seq also runs quick). Each must finish inside `timeout 500`.
 //   real  : v1.2 Lane I (handoff F13 "no two hits the same"): 8 consecutive snares, 8 hats (one render each, equal vel, the
 //           pro kit, punk's synth kit) and 8 metal palm-muted chugs (KS, 2 round robins) all differ pairwise (RMS diff > -40 dB);
 //           the KS cache / PRE / realism debug fields exist; renders with vel stay finite and under the ceiling. ~1 min.
@@ -14,15 +14,24 @@
 //           probes, radio) renders bit-identical to 1.1.0.0 (tools/audio_hashes.js verify; deterministic summing: tools/_audio_lab.js).
 //           HASH_ONLY=<key prefixes> narrows it (e.g. HASH_ONLY=tap,pre). ~4-5 min alone.
 //   genres, voices: v0.9 (see the functions: genre amps, styles, solos, beds, crowd one-shots, in-career songs; singers).
-//   seq   : quickStart → plan Write + 2 others → Go → sequencer (first Write: starter + tip) → tap / drag / kick rule →
-//           meters change → Play (context running, playhead advances) → Stop → Save → results show the song + reactions
-//           → laptop catalog lists it and opens its pattern read-only; kit sketch pad queues a song; in-page
-//           GG.songs.rate equals the node result for the same fixtures; layout audit + screenshot tests/.cache/seq.png
-//           + v0.6.1 metronome toggle (♩, settings.metronome, clicks while looping).
-//           v0.6.2: the first Write opens the guided flow; "Advanced ⚙" jumps to the grid and the next Write remembers it.
-//   guided: v0.6.2 step-by-step Write: verse preset (+ pedal presets locked) + "More metal" shows the meter change →
-//           chorus (contrast hint, "Make it catchier") → Back keeps the verse → bridge → tempo slider + label → song order
-//           → name (reroll, type your own) → Save → the song lands with exactly those parts; layout audit on every screen.
+//   seq   : v1.3 "Songwriter" (plan_contract_1.3 §4.7): quickStart → plan Write + 2 others → Go → Quick song (the signature recipe
+//           composed with the D14 seed; the old songwriterMode pref ignored) → Tweak → the drum editor (first-Write grid tip; cells
+//           ≥ 60x30, the whole grid fits) → ⋯ Clear / tap / drag / kick rule → meters + ± flash → ⋯ Copy → Loop + playhead → ⋯
+//           metronome (settings.metronome, clicks while looping) → Song tab → Save (the saved pattern === sanitize(D.pat)) →
+//           results → the laptop catalog opens it read-only (view pat === saved; ⋯ = metronome only) → the kit sketch pad opens
+//           Quick song (no draft), a slider move is the draft, Use queues it → the next Write opens it in the editor; block 2 jams
+//           via ⋯; in-page GG.songs.rate equals node; then seq-compat: each v12_<seat> career's draft and a queued song, opened
+//           and saved untouched, are their 1.2 SAN fixture (D16). Screenshot tests/.cache/seq.png.
+//   quick : (replaces guided) recipes (5 + Surprise, the pedal recipe locked: a toast), Surprise me twice (same slot) = the same
+//           song, a card = its defaults, Energy recomposes + round trip, Feel / Tempo never rewrite notes, Mood moves the chords,
+//           ▶ Play keeps looping through slider moves, Tweak → hand edit → ⋯ Back to Quick song → Q3 (Keep my edits / Start
+//           over; Feel never asks), two Write blocks → two songs.
+//   part  : bass / rhythm / lead: v2 rows (6 / 6 / 7), "Chords: <name> ▾" / "Hook: <name> ▾", 4 chips (home outlined), the picker
+//           (p.chords + part.prog, the roots move), the chord sheet + "Back to <name>", the tweaks in ⋯, the playing chip, the
+//           Drums layer, save, view read-only, an old v1 part (view only until the first edit; a pick writes part.prog only).
+//   layout: every editor case + Quick song per seat (+ full gear: 6 lanes, 6 tabs) at PW_VIEW (440x956: no scroll anywhere),
+//           buttons ≥ 44, no h-scroll, shots tagged by size; then notch insets (47/34 at 390, 59/34 at 440) + Bigger text: the
+//           sliders reachable through quick-main, the foot above the home bar, the longest hook name + 6 tabs fit.
 //   audio : OfflineAudioContext render of every lane voice and 2 bars of every backing style: non-silent, peak < 1.0,
 //           no NaN; a fast song stays within the 12-voice cap. v0.6.1: every genre's kit (all lanes + country rim/brush)
 //           and full band (verse/chorus/bridge) render clean with their own parts and vocal hits; vocal hits on whole
@@ -40,7 +49,7 @@
 //           Writes tests/.cache/v072_<genre>.wav and v072_crowd.wav (not committed).
 // Run: node build.js && timeout 500 node tests/pw_seq.js
 const fs = require('fs'), path = require('path');
-const { open, checker, shotName } = require('./_pw');
+const { open, checker, shotName, openTools, VIEW } = require('./_pw');
 const load = require('./_load');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -50,7 +59,7 @@ const tid = id => `[data-testid="${id}"]`;
 const tap = (page, id) => page.locator(tid(id)).last().click();
 const screen = page => page.evaluate(() => GG.debug('ui').screen);
 const waitScreen = (page, id, timeout) => page.waitForFunction(i => GG.debug('ui').screen === i, id, { timeout: timeout || 10000 });
-const meters = page => page.evaluate(() => ['groove', 'hook', 'diff'].map(k => +document.querySelector('[data-testid="meter-' + k + '"]').dataset.value));
+const meters = page => page.evaluate(() => ['groove', 'hook', 'difficulty'].map(k => +document.querySelector('[data-testid="meter-' + k + '"]').dataset.value));
 const lane = (page, sec, l) => page.evaluate(a => GG.ui.get('seq').data.pat.sections[a[0]][a[1]], [sec, l]);
 // Fixtures for the node/browser parity check.
 const FIXTURES = [
@@ -73,115 +82,71 @@ function audit(page) {
   });
 }
 
-async function guided() {
-  const c = checker('guided');
-  const { page, errors, close } = await open();
-  const ev = (f, a) => page.evaluate(f, a);
-  const secOf = name => page.evaluate(n => JSON.stringify(GG.ui.get('seq').data.pat.sections[n]), name);
-  const presetBar = id => page.evaluate(i => JSON.stringify(GG.songs.presets(GG.state.genre, GG.state.gear).find(p => p.id === i).bar), id);
-  const step = () => page.evaluate(() => GG.debug('seq').step);
-  try {
-    await page.waitForSelector(tid('btn-new'));
-    await ev(() => GG.main.quickStart({ seed: 777 }));
-    await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
-    if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
-    await page.waitForFunction(() => GG.state.phase === 'plan' && GG.debug('ui').stack.length === 0);
-    await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
-    for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
-    await tap(page, 'btn-go'); await waitScreen(page, 'seq');
-    const v0 = await ev(() => ({ dbg: GG.debug('seq'), n: document.querySelectorAll('[data-testid^="guide-preset-"]').length,
-      locked: [...document.querySelectorAll('[data-testid^="guide-preset-"]:disabled')].map(b => b.dataset.testid),
-      coach: document.querySelector('[data-testid="guide-coach"]').textContent, back: document.querySelector('[data-testid="btn-guide-back"]').disabled,
-      step: document.querySelector('[data-testid="guide-step"]').textContent, catchy: !!document.querySelector('[data-testid="guide-mod-catchy"]') }));
-    c.ok(v0.dbg.guided && v0.dbg.step === 'verse' && /Step 1 of 6/.test(v0.step), 'guided flow opens on the verse ' + v0.step);
-    c.ok(v0.n >= 5 && v0.locked.join() === 'guide-preset-gallop,guide-preset-dkrun', 'metal presets; pedal beats locked without a double kick ' + v0.locked);
-    c.ok(/^\S.*: \S/.test(v0.coach) && v0.back && !v0.catchy, 'a bandmate coach line; Back off on step 1; "catchier" is a chorus tweak: ' + v0.coach);
-    c.ok((await audit(page)).length === 0, 'verse screen layout ' + (await audit(page)).join('; '));
-    await tap(page, 'guide-preset-thrash');
-    c.ok(await secOf('verse') === await presetBar('thrash') && await ev(() => !!document.querySelector('[data-testid="guide-preset-thrash"].on')), 'picking a preset sets the verse');
-    const g1 = (await meters(page))[0];
-    await tap(page, 'guide-mod-more');
-    const ch = await ev(() => document.querySelector('[data-testid="guide-change"]').textContent);
-    const g2 = (await meters(page))[0];
-    c.ok(/More metal/.test(ch) && /Groove \d+ → \d+/.test(ch) && /Hook/.test(ch) && /Difficulty/.test(ch) && g2 > g1, '"More metal" shows the Groove/Hook/Difficulty change ' + g1 + '→' + g2 + ' ' + ch);
-    const verse = await secOf('verse');
-    c.ok(verse !== await presetBar('thrash'), 'the tweak changed the verse');
-    await tap(page, 'btn-guide-play');
-    await page.waitForFunction(() => GG.debug('seq').playing === 'loop' && GG.debug('audio').playing, null, { timeout: 5000 });
-    await tap(page, 'btn-guide-play');
-    c.ok(await ev(() => !GG.debug('seq').playing), 'Play previews the verse loop, tap again to stop');
-    await tap(page, 'btn-guide-next');
-    const cs = await ev(() => ({ hint: document.querySelector('[data-testid="guide-hint"]').textContent, catchy: !!document.querySelector('[data-testid="guide-mod-catchy"]') }));
-    c.ok(await step() === 'chorus' && /different from the verse/.test(cs.hint) && cs.catchy, 'chorus: contrast hint + "Make it catchier" ' + cs.hint);
-    await tap(page, 'guide-preset-headbanger');
-    await tap(page, 'guide-mod-catchy');
-    const chorus = await secOf('chorus');
-    await tap(page, 'btn-guide-back');
-    c.ok(await step() === 'verse' && await secOf('verse') === verse, 'Back returns to the verse, tweak kept');
-    await tap(page, 'btn-guide-next'); await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'bridge' && await secOf('chorus') === chorus, 'Next, Next: bridge (chorus kept)');
-    await tap(page, 'guide-preset-blast');
-    await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'tempo', 'tempo screen');
-    const setT = v => ev(v => { const r = document.querySelector('[data-testid="guide-tempo"]'); r.value = v; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change'));
-      return { bpm: GG.ui.get('seq').data.pat.bpm, label: document.querySelector('[data-testid="guide-tempo-label"]').textContent, num: document.querySelector('[data-testid="guide-bpm"]').textContent }; }, v);
-    const t1 = await setT(225), t2 = await setT(150);
-    c.ok(t1.bpm === 225 && t1.label === 'Blast' && t2.bpm === 150 && t2.label === 'Mosh' && t2.num === '150', 'tempo slider + plain label ' + JSON.stringify([t1, t2]));
-    c.ok((await audit(page)).length === 0, 'tempo screen layout ' + (await audit(page)).join('; '));
-    await tap(page, 'btn-guide-next');
-    await tap(page, 'guide-order-epic');
-    c.ok(await step() === 'order' && await ev(() => GG.songs.arrangementId(GG.ui.get('seq').data.pat)) === 'epic', 'song order: Epic');
-    c.ok((await audit(page)).length === 0, 'order screen layout ' + (await audit(page)).join('; '));
-    await tap(page, 'btn-guide-next');
-    const n0 = await ev(() => GG.debug('seq').title);
-    await tap(page, 'btn-guide-reroll');
-    const n1 = await ev(() => ({ t: GG.debug('seq').title, shown: document.querySelector('[data-testid="guide-title"]').textContent }));
-    c.ok(await step() === 'name' && n0 && n1.t !== n0 && n1.shown === n1.t, 'name: Marcel rerolls the title ' + n0 + ' → ' + n1.t);
-    await page.locator(tid('guide-title-input')).fill('Le Test Guidé');
-    c.ok(await ev(() => GG.debug('seq').title) === 'Le Test Guidé', 'type your own title');
-    c.ok((await audit(page)).length === 0, 'name screen layout ' + (await audit(page)).join('; '));
-    await tap(page, 'btn-guide-save');
-    await waitScreen(page, 'results');
-    const last = await ev(() => GG.state.songs[GG.state.songs.length - 1]);
-    c.ok(last.title === 'Le Test Guidé' && !last.auto && last.pattern.bpm === 150 && GG_arr(last) === 'epic', 'the song lands: title, tempo, order');
-    c.ok(JSON.stringify(last.pattern.sections.verse) === verse && JSON.stringify(last.pattern.sections.chorus) === chorus
-      && JSON.stringify(last.pattern.sections.bridge) === await presetBar('blast'), 'with exactly the picked + tweaked parts');
-    c.ok(await ev(() => GG.prefs.get().songwriterMode) === 'guided', 'guided stays the preference');
-    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
-  } catch (e) { c.ok(false, 'guided threw: ' + (e.stack || e)); }
-  await close();
-  c.done();
+// ---- v1.3 "Songwriter" (plan_contract_1.3 §4.7, §5 Lane U): helpers shared by seq / quick / part / layout ----
+const H16 = x => require('crypto').createHash('sha1').update(JSON.stringify(x === undefined ? null : x)).digest('hex').slice(0, 16);
+const dbgSeq = page => page.evaluate(() => GG.debug('seq'));
+const patJSON = page => page.evaluate(() => JSON.stringify(GG.ui.get('seq').data.pat));
+// Moves a Quick song slider like a finger lets go of it (input, then change).
+const slide = (page, id, v) => page.evaluate(a => { const r = document.querySelector('[data-testid="quick-' + a[0] + '"]'); r.value = a[1]; r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); }, [id, v]);
+async function bootPlan(page, opts, acts) {
+  await page.waitForSelector(tid('btn-new'));
+  await page.evaluate(o => GG.main.quickStart(o), opts);
+  await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
+  if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
+  await page.waitForFunction(() => GG.state.phase === 'plan' && GG.debug('ui').stack.length === 0);
+  await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
+  for (const a of acts || ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
+  await tap(page, 'btn-go'); await waitScreen(page, 'seq');
 }
-function GG_arr(song) { return song.pattern.arrangement.join(',') === 'verse,verse,chorus,verse,chorus,bridge,bridge,chorus,chorus' ? 'epic' : song.pattern.arrangement.join(','); }
+// Straight into a Write block (a fresh career on `seat`, no planner): composeWeek(n).
+async function writeBlock(page, opts, n) {
+  await page.evaluate(a => {
+    GG.ui.closeAll(); GG.main.quickStart(Object.assign({ openCard: false }, a[0])); GG.state.card = null; GG.state.phase = 'plan';
+    GG.ui.closeAll(); GG.ui.composeWeek(a[1] || 1, function () { window.__weekDone = true; });
+  }, [opts, n]);
+  await page.waitForFunction(() => GG.debug('ui').screen === 'seq' && GG.debug('seq'));
+}
 
 async function seq() {
   const c = checker('seq');
   const { page, errors, close } = await open();
   try {
     await page.waitForSelector(tid('btn-new'));
-    await page.evaluate(() => GG.main.quickStart({ seed: 4242 }));
-    await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
-    if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
-    await page.waitForFunction(() => GG.state.phase === 'plan' && GG.debug('ui').stack.length === 0);
-    await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
-    for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
-    await tap(page, 'btn-go');
-    await waitScreen(page, 'seq');
-    const g0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), mode: GG.prefs.get().songwriterMode }));
-    c.ok(g0.dbg.guided && g0.dbg.step === 'verse' && g0.mode === 'guided', 'v0.6.2: a Write block opens the guided flow by default');
-    await tap(page, 'btn-guide-advanced');
-    c.ok(await page.evaluate(() => !GG.debug('seq').guided && GG.prefs.get().songwriterMode === 'advanced' && !!document.querySelector('[data-testid="cell-kick-0"]')),
-      'Advanced jumps to the full grid and the choice is remembered');
-    const d0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), phase: GG.state.phase, starter: JSON.stringify(GG.songs.starter(GG.state.genre)),
-      pat: JSON.stringify(GG.ui.get('seq').data.pat), sub: document.querySelector('[data-testid="seq-title"]').textContent,
-      tip: document.querySelector('[data-testid="seq-tip"]').textContent, render: GG.debug('render') && GG.debug('render').paused }));
-    c.ok(d0.dbg && d0.dbg.mode === 'write' && d0.phase === 'plan', 'Go opens the sequencer before the week runs');
-    c.ok(d0.pat === d0.starter, 'first-ever Write opens with starter(genre)');
-    c.ok(/Write block 1 of 1/i.test(d0.sub) && d0.dbg.title, 'header: block count + a title from Marcel: ' + d0.sub);
-    c.ok(/(Dana|Marcel|Jaxon):/.test(d0.tip), 'a bandmate tip on the first Write: ' + d0.tip);
+    await page.evaluate(() => GG.prefs.set({ songwriterMode: 'advanced' }));   // D18: the 0.6.2 preference is ignored now
+    await bootPlan(page, { seed: 4242 });
+    // A fresh Write block opens Quick song with the genre's signature recipe, composed with the D14 seed (Save works at once).
+    const q0 = await page.evaluate(() => {
+      const D = GG.ui.get('seq').data, r = GG.songs.recipes(GG.state.genre, GG.state.gear, 'drums')[0], dbg = GG.debug('seq');
+      const want = GG.songs.compose(GG.state.genre, { recipe: r.id, energy: r.sliders.energy, mood: r.sliders.mood, swing: r.sliders.swing, fills: r.sliders.fills, bpm: r.bpm,
+        seed: GG.hashSeed(String(GG.state.seed) + '|' + D.seed), gear: GG.state.gear, seat: 'drums' });
+      const q = s => document.querySelector(s);
+      return { dbg, phase: GG.state.phase, same: JSON.stringify(want) === JSON.stringify(D.pat), r: { id: r.id, s: r.sliders, bpm: r.bpm },
+        title: q('[data-testid="seq-title"]').textContent, cards: [...document.querySelectorAll('[data-testid^="quick-recipe-"]')].map(b => b.dataset.testid),
+        sliders: ['energy', 'mood', 'feel', 'fills', 'tempo'].map(k => !!q('[data-testid="quick-' + k + '"]') && !!q('[data-testid="quick-' + k + '-val"]')),
+        tip: q('[data-testid="seq-tip"]').textContent, who: q('.seq-coach .sc-who').textContent, play: !!q('[data-testid="btn-guide-play"]'), tweak: !!q('[data-testid="btn-quick-tweak"]'),
+        save: !!q('[data-testid="btn-seq-save"]'), guide: [...document.querySelectorAll('[data-testid^="guide-"], [data-testid^="btn-guide-"]')].map(b => b.dataset.testid) };
+    });
+    c.ok(q0.dbg.mode === 'write' && q0.dbg.screen === 'quick' && q0.phase === 'plan', 'Go opens Quick song before the week runs (the old songwriterMode pref is ignored)');
+    c.ok(q0.same && q0.dbg.recipe.id === q0.r.id && q0.dbg.sliders.energy === q0.r.s.energy && q0.dbg.sliders.bpm === q0.r.bpm, 'the signature recipe at its default sliders, composed with the D14 seed ' + JSON.stringify(q0.dbg.recipe));
+    c.ok(q0.cards.length === 6 && q0.cards[5] === 'quick-recipe-surprise' && q0.sliders.every(Boolean), '5 recipe cards + Surprise me, 5 sliders with value labels ' + q0.cards.join());
+    c.ok(/Write block 1 of 1/.test(q0.title) && /Quick song/.test(q0.title), 'header: block count + "Quick song": ' + q0.title);
+    c.ok(q0.who && q0.tip && !/:/.test(q0.tip), 'the bubble: a bandmate + the Quick line (colon-free, D17): ' + q0.who + ' / ' + q0.tip);
+    c.ok(q0.play && q0.tweak && q0.save && q0.guide.join() === 'btn-guide-play', 'foot: Play / Tweak / Save; no guided steps left ' + q0.guide.join());
+    c.ok((await audit(page)).length === 0, 'Quick song layout ' + (await audit(page)).join(' ; '));
+    // Tweak ✎ -> the editor (the drum seat): the first Write's grid tip shows now.
+    await tap(page, 'btn-quick-tweak');
+    const d0 = await page.evaluate(() => ({ dbg: GG.debug('seq'), tip: document.querySelector('[data-testid="seq-tip"]').textContent, who: document.querySelector('.seq-coach .sc-who').textContent,
+      sub: document.querySelector('[data-testid="seq-title"]').textContent, chips: !!document.querySelector('[data-testid="seq-chips"]'), layers: !!document.querySelector('[data-testid="seq-layers"]') }));
+    c.ok(d0.dbg.screen === 'edit' && d0.dbg.tab === 'verse' && !d0.chips && !d0.layers, 'Tweak opens the editor on the verse (drum seat: no chips, no layer toggle)');
+    c.ok(/(Dana|Marcel|Jaxon)/.test(d0.who) && d0.tip.length > 10 && !/^(Dana|Marcel|Jaxon):/.test(d0.tip), 'the first-Write grid tip, the name on the avatar (D17): ' + d0.who + ' / ' + d0.tip);
+    // the one-line bubble opens the full tip
+    await tap(page, 'seq-coach'); await waitScreen(page, 'seq-tip-full');
+    const full = await page.evaluate(() => document.querySelector('[data-testid="seq-tip-full"]').textContent);
+    c.ok(full.indexOf(d0.tip.replace(/…$/, '').slice(0, 20)) >= 0, 'tap the bubble: the full tip ' + full.slice(0, 80));
+    await tap(page, 'btn-seq-tip-ok'); await waitScreen(page, 'seq');
     await page.waitForTimeout(250);
     const bad = await audit(page);
-    c.ok(bad.length === 0, 'sequencer layout: no overflow, buttons ≥ 44px ' + bad.join(' ; '));
+    c.ok(bad.length === 0, 'editor layout: no overflow, buttons ≥ 44px ' + bad.join(' ; '));
     const geo = await page.evaluate(() => {
       const r = s => document.querySelector(s).getBoundingClientRect();
       const cell = r('[data-testid="cell-kick-0"]'), last = r('[data-testid="cell-cymbal-15"]'), foot = r('[data-testid="btn-seq-save"]');
@@ -189,16 +154,18 @@ async function seq() {
     });
     c.ok(geo.w >= 60 && geo.h >= 30 && geo.lastBottom <= geo.footTop && geo.scroll <= 1, 'whole grid fits, cells ' + Math.round(geo.w) + 'x' + Math.round(geo.h) + ' (scroll ' + geo.scroll + ')');
     fs.mkdirSync(CACHE, { recursive: true });
-    await page.waitForTimeout(700);   // let the fade-in finish (swiftshader is slow)
-    await page.screenshot({ path: path.join(CACHE, 'seq.png') });
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: path.join(CACHE, shotName('seq.png')) });
 
-    // Tap, drag-paint, the kick rule, meters.
+    // ⋯ -> Clear, then tap, drag-paint, the kick rule, meters (+ the ± flash).
+    await openTools(page); await tap(page, 'seq-clear');
+    c.ok(await page.evaluate(() => GG.debug('ui').screen === 'seq' && GG.ui.get('seq').data.pat.sections.verse.every(l => l === '................')), '⋯ → Clear the verse');
     const m0 = await meters(page);
-    await tap(page, 'cell-kick-2');
-    c.ok((await lane(page, 'verse', 0))[2] === 'x', 'tap toggles a cell on');
-    await tap(page, 'cell-kick-6'); await tap(page, 'cell-kick-10'); await tap(page, 'cell-kick-14');
-    const m1 = await meters(page);
-    c.ok(m1[0] > m0[0], 'busier kick raises Groove instantly ' + m0 + ' -> ' + m1);
+    for (const s of [0, 2, 4, 6, 8, 10, 12, 14]) await tap(page, 'cell-kick-' + s);
+    await tap(page, 'cell-snare-4'); await tap(page, 'cell-snare-12');
+    const m1 = await meters(page), fl = await page.evaluate(() => document.querySelector('[data-testid="meter-groove"]').dataset.delta);
+    c.ok((await lane(page, 'verse', 0)) === 'x.x.x.x.x.x.x.x.' && m1[0] > m0[0], 'taps toggle cells; a busier kick raises Groove instantly ' + m0 + ' -> ' + m1);
+    c.ok(/^[+-]\d+$/.test(fl || ''), 'the meter strip flashes the change: ' + fl);
     await tap(page, 'cell-kick-1');
     const tip = await page.textContent(tid('seq-tip'));
     c.ok((await lane(page, 'verse', 0))[1] === '.' && /double kick/i.test(tip), 'kick adjacency is refused kindly: ' + tip);
@@ -208,12 +175,30 @@ async function seq() {
     c.ok((await lane(page, 'verse', 3)).slice(4, 8) === 'xxxx', 'drag paints a run of cells: ' + await lane(page, 'verse', 3));
     await tap(page, 'seq-tab-chorus');
     const beforeCopy = await lane(page, 'chorus', 3);
-    await tap(page, 'btn-seq-tools'); await tap(page, 'seq-copy-verse');
-    c.ok(await lane(page, 'chorus', 3) === await lane(page, 'verse', 3) && beforeCopy !== await lane(page, 'chorus', 3), 'copy from verse');
+    await openTools(page); await tap(page, 'seq-copy-verse');
+    c.ok(await lane(page, 'chorus', 3) === await lane(page, 'verse', 3) && beforeCopy !== await lane(page, 'chorus', 3), '⋯ → Copy Verse');
     const hookCopy = (await meters(page))[1];
-    await tap(page, 'cell-cymbal-0'); await tap(page, 'cell-cymbal-8'); await tap(page, 'cell-hat-2'); await tap(page, 'cell-hat-10');
-    await tap(page, 'cell-kick-12');
+    await tap(page, 'cell-cymbal-0'); await tap(page, 'cell-cymbal-8'); await tap(page, 'cell-hat-2'); await tap(page, 'cell-hat-10'); await tap(page, 'cell-snare-14');
     c.ok((await meters(page))[1] > hookCopy, 'a contrasting chorus raises Hook ' + hookCopy + ' -> ' + (await meters(page))[1]);
+    // ⋯ → Bar 4 fill (Q2): the grid edits p.fillBars.chorus (starting from the main bar), the tab wears a badge; back to the main bar.
+    const hadFill = await page.evaluate(() => !!(GG.ui.get('seq').data.pat.fillBars && GG.ui.get('seq').data.pat.fillBars.chorus));
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    const f0 = await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return { fill: document.querySelector('[data-testid="seq-grid"]').dataset.fill, fb: JSON.stringify(p.fillBars.chorus), main: JSON.stringify(p.sections.chorus), badge: !!document.querySelector('[data-testid="seq-tab-chorus"] .seq-fb') }; });
+    const sn15 = await page.evaluate(() => GG.ui.get('seq').data.pat.fillBars.chorus[1][15]);
+    await tap(page, 'cell-snare-15');
+    const f1 = await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return { fb: p.fillBars.chorus[1][15], main: JSON.stringify(p.sections.chorus) }; });
+    c.ok(f0.fill === '1' && f0.badge && (hadFill || f0.fb === f0.main) && f1.fb !== sn15 && f1.main === f0.main, '⋯ → Bar 4 fill: the grid edits the fill bar only, the tab wears a badge ' + JSON.stringify({ fill: f0.fill, badge: f0.badge, hadFill }));
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    c.ok(await page.evaluate(() => document.querySelector('[data-testid="seq-grid"]').dataset.fill === '0' && !GG.debug('seq').fill), '⋯ → Back to the main bar');
+    // ⋯ → Beat for this section (D8): the 0.6.2 grooves as a sheet, pedal ones locked.
+    await openTools(page); await tap(page, 'btn-seq-beat'); await waitScreen(page, 'seq-beat');
+    const bt = await page.evaluate(() => ({ all: [...document.querySelectorAll('[data-testid^="seq-beat-"]')].map(b => ({ id: b.dataset.testid.replace('seq-beat-', ''), dis: b.disabled })),
+      want: GG.songs.presets(GG.state.genre, GG.state.gear).map(p => ({ id: p.id, locked: !!p.locked })) }));
+    c.ok(bt.all.length === bt.want.length && bt.all.every((x, i) => x.id === bt.want[i].id && x.dis === bt.want[i].locked) && bt.all.some(x => x.dis), 'the Beat sheet lists the grooves, pedal ones locked ' + bt.all.map(x => x.id + (x.dis ? '🔒' : '')).join(' '));
+    const pick = bt.all.find(x => !x.dis && x.id !== 'headbanger') || bt.all.find(x => !x.dis);
+    await tap(page, 'seq-beat-' + pick.id); await waitScreen(page, 'seq');
+    c.ok(await page.evaluate(id => JSON.stringify(GG.ui.get('seq').data.pat.sections.chorus) === JSON.stringify(GG.songs.applyPreset(GG.ui.get('seq').data.pat, 'chorus', id, GG.state.gear, GG.state.genre).sections.chorus), pick.id), 'a Beat card sets the chorus (' + pick.id + ')');
+    await tap(page, 'cell-cymbal-0'); await tap(page, 'cell-cymbal-8');
 
     // Play / stop with a moving playhead.
     await tap(page, 'btn-seq-loop');
@@ -223,21 +208,26 @@ async function seq() {
     await page.waitForTimeout(600);
     const s2 = await page.evaluate(() => ({ n: GG.debug('audio').steps, ph: GG.debug('seq').playhead, sec: GG.debug('audio').lastStep.section }));
     c.ok(s2.n > s1 && s2.ph != null && s2.sec === 'chorus', 'playhead advances on the looped section ' + s1 + ' -> ' + JSON.stringify(s2));
-    // v0.6.1 metronome: off by default; ♩ turns it on (saved), the loop clicks quarter notes; ♩ again turns it off.
+    // v0.6.1 metronome, v1.3 in the ⋯ menu: off by default; on (saved), the loop clicks quarter notes; off again.
     const mtr = () => page.evaluate(() => { const b = document.querySelector('[data-testid="btn-seq-metro"]');
       return { on: GG.audio.metronome(), saved: GG.save.settings().metronome, btn: b && b.dataset.on, pressed: b && b.getAttribute('aria-pressed'), clicks: GG.debug('audio').counts.clicks }; });
+    await openTools(page);
     const k0 = await mtr();
     await tap(page, 'btn-seq-metro');
+    const k1a = await mtr();
+    await tap(page, 'btn-seq-tools-cancel');
     await page.waitForTimeout(900);
     const k1 = await mtr();
-    c.ok(!k0.on && k0.btn === '0' && k1.on && k1.saved === true && k1.btn === '1' && k1.pressed === 'true' && k1.clicks > k0.clicks,
-      'metronome toggle clicks while looping ' + JSON.stringify([k0, k1]));
-    await tap(page, 'btn-seq-metro');
-    await page.waitForTimeout(300);
+    c.ok(!k0.on && k0.btn === '0' && k1a.on && k1a.saved === true && k1a.btn === '1' && k1a.pressed === 'true' && k1.clicks > k0.clicks,
+      '⋯ → metronome toggle clicks while looping ' + JSON.stringify([k0, k1a, k1.clicks]));
+    await openTools(page); await tap(page, 'btn-seq-metro');
     const k2 = await mtr();
+    await tap(page, 'btn-seq-tools-cancel');
+    await page.waitForTimeout(300);
+    const k2b = await mtr();
     await page.waitForTimeout(600);
     const k3 = await mtr();
-    c.ok(!k2.on && k2.saved === false && k2.btn === '0' && k3.clicks === k2.clicks, 'metronome off: saved, silent ' + JSON.stringify([k2.clicks, k3.clicks]));
+    c.ok(!k2.on && k2.saved === false && k2.btn === '0' && k3.clicks === k2b.clicks, 'metronome off: saved, silent ' + JSON.stringify([k2b.clicks, k3.clicks]));
     await tap(page, 'seq-tab-song');
     await page.fill(tid('seq-title-input'), 'Mon Gazon Test');
     await page.locator(tid('seq-tempo')).fill('170');
@@ -247,15 +237,18 @@ async function seq() {
     await tap(page, 'btn-seq-loop');
     await page.waitForFunction(() => !GG.debug('audio').playing, null, { timeout: 3000 });
     c.ok(true, 'stop');
+    // Save: the saved pattern is sanitize(D.pat), byte for byte.
     const saved = await page.evaluate(() => JSON.stringify(GG.songs.sanitize(GG.ui.get('seq').data.pat, GG.state.gear, GG.state.genre)));
+    await page.evaluate(() => { const e = GG.ui.get('seq'), f = e.data.onSave; e.data.onSave = x => { window.__saved = JSON.stringify(x); f(x); }; });
     await tap(page, 'btn-seq-save');
     await waitScreen(page, 'results');
     await tap(page, 'btn-results-skip');
     const res = await page.evaluate(() => ({ song: !!document.querySelector('[data-testid="result-song"]'), text: document.querySelector('[data-testid="result-song"]').textContent,
-      reacts: document.querySelectorAll('[data-testid^="song-react-"]').length, last: GG.state.songs[GG.state.songs.length - 1], pending: GG.state.pendingSongs.length }));
+      reacts: document.querySelectorAll('[data-testid^="song-react-"]').length, last: GG.state.songs[GG.state.songs.length - 1], pending: GG.state.pendingSongs.length, entry: window.__saved }));
+    const ent = JSON.parse(res.entry); delete ent.title; delete ent.titleEn; delete ent.fr;
+    c.ok(JSON.stringify(ent) === saved, 'Save hands over sanitize(D.pat), byte for byte');
     c.ok(res.song && /Mon Gazon Test/.test(res.text) && res.reacts >= 1, 'results show the new song + ' + res.reacts + ' reactions');
-    c.ok(res.last.title === 'Mon Gazon Test' && !res.last.auto && JSON.stringify(res.last.pattern) === saved && res.pending === 0, 'the saved pattern became the song');
-    c.ok(/Marcel|Abyssus/.test(res.text) && /Mon Gazon Test/.test(res.text), 'Marcel names it');
+    c.ok(res.last.title === 'Mon Gazon Test' && !res.last.auto && JSON.stringify(res.last.pattern) === saved && res.pending === 0 && res.last.pattern.recipe, 'the saved pattern became the song (with its Quick-song recipe)');
     await page.evaluate(() => { GG.ui.gigAutoplay = true; });   // v0.3: week 1's gig is played live; the bot plays it
     await tap(page, 'btn-results-ok');
     await page.waitForFunction(() => ['wrap', 'gig-results'].includes(GG.debug('ui').screen), null, { timeout: 15000 });
@@ -265,25 +258,31 @@ async function seq() {
     if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
     await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
 
-    // Laptop catalog -> read-only sequencer.
+    // Laptop catalog -> the editor, read-only (⋯ = the metronome only).
     await page.evaluate(() => GG.emit('hotspot', { action: 'laptop' }));
     await waitScreen(page, 'laptop'); await tap(page, 'laptop-tab-band');
     const id = res.last.id;
     c.ok(await page.locator(tid('song-' + id)).count() === 1, 'catalog lists the new song');
     await tap(page, 'song-' + id);
     await waitScreen(page, 'seq');
-    const view = await page.evaluate(() => ({ mode: GG.debug('seq').mode, pat: JSON.stringify(GG.ui.get('seq').data.pat), save: !!document.querySelector('[data-testid="btn-seq-save"]') }));
-    c.ok(view.mode === 'view' && view.pat === saved && !view.save, 'catalog opens the song read-only with its pattern');
+    const view = await page.evaluate(() => ({ dbg: GG.debug('seq'), pat: JSON.stringify(GG.ui.get('seq').data.pat), save: !!document.querySelector('[data-testid="btn-seq-save"]') }));
+    c.ok(view.dbg.mode === 'view' && view.dbg.screen === 'edit' && view.pat === saved && !view.save, 'catalog opens the song read-only in the editor with its pattern');
     await tap(page, 'cell-snare-0');
     c.ok((await lane(page, 'verse', 1))[0] === JSON.parse(saved).sections.verse[1][0], 'read-only grid ignores taps');
+    await openTools(page);
+    const vm = await page.evaluate(() => [...document.querySelectorAll('[data-screen="seq-tools"] button[data-testid]')].map(b => b.dataset.testid).filter(t => t !== 'btn-seq-tools-cancel'));
+    c.ok(vm.join() === 'btn-seq-metro', 'view mode: ⋯ holds the metronome only ' + vm.join());
+    await tap(page, 'btn-seq-tools-cancel');
+    c.ok(await page.evaluate(() => JSON.stringify(GG.ui.get('seq').data.pat)) === saved, 'view never writes');
     await tap(page, 'btn-seq-close'); await waitScreen(page, 'laptop'); await tap(page, 'btn-close');
 
-    // Kit hotspot: sketch pad -> queued for the next Write block.
+    // Kit hotspot: no draft -> Quick song (D10); a slider move is the draft; Use -> queued for the next Write block.
     await page.evaluate(() => GG.emit('hotspot', { action: 'kit' }));
     await waitScreen(page, 'seq');
-    c.ok((await page.evaluate(() => GG.debug('seq').mode)) === 'sketch', 'kit opens the sketch pad');
-    await tap(page, 'cell-snare-2');
-    c.ok(await page.evaluate(() => GG.state.draft && GG.state.draft.sections.verse[1][2] === 'x'), 'sketch edits live in state.draft');
+    const sk = await page.evaluate(() => ({ dbg: GG.debug('seq'), use: !!document.querySelector('[data-testid="btn-seq-use"]'), draft: GG.state.draft }));
+    c.ok(sk.dbg.mode === 'sketch' && sk.dbg.screen === 'quick' && sk.use && !sk.draft, 'kit opens the sketch pad on Quick song (no draft yet)');
+    await slide(page, 'energy', 4);
+    c.ok(await page.evaluate(() => GG.state.draft && GG.state.draft.recipe && GG.state.draft.recipe.energy === 4), 'a slider move is the sketch (state.draft)');
     await tap(page, 'btn-seq-use');
     await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
     const q = await page.evaluate(() => ({ n: GG.state.pendingSongs.length, draft: GG.state.draft, title: GG.state.pendingSongs[0] && GG.state.pendingSongs[0].title }));
@@ -292,15 +291,15 @@ async function seq() {
     for (const i of [0, 1, 2]) await tap(page, 'plan-slot-' + i);   // last week's plan is kept: clear it
     for (const x of ['write', 'hustle', 'write']) await tap(page, 'act-' + x);
     await tap(page, 'btn-go'); await waitScreen(page, 'seq');
-    const w1 = await page.evaluate(() => ({ sub: document.querySelector('[data-testid="seq-title"]').textContent, title: GG.debug('seq').title }));
-    c.ok(/1 of 2/.test(w1.sub) && /sketch/i.test(w1.sub) && w1.title === q.title, 'Write block 1 of 2 opens the queued sketch');
-    c.ok(await page.evaluate(() => !GG.debug('seq').guided && !!document.querySelector('[data-testid="cell-kick-0"]')), 'the next Write remembers Advanced');
+    const w1 = await page.evaluate(() => ({ sub: document.querySelector('[data-testid="seq-title"]').textContent, dbg: GG.debug('seq') }));
+    c.ok(/1 of 2/.test(w1.sub) && /sketch/i.test(w1.sub) && w1.dbg.title === q.title && w1.dbg.screen === 'edit', 'Write block 1 of 2 opens the queued sketch in the editor');
     await tap(page, 'btn-seq-save');
     await page.waitForFunction(() => /2 of 2/.test(document.querySelector('[data-testid="seq-title"]').textContent));
-    await tap(page, 'btn-seq-jam');
+    c.ok(await page.evaluate(() => GG.debug('seq').screen) === 'quick', 'block 2 is a fresh block: Quick song');
+    await openTools(page); await tap(page, 'btn-seq-jam');
     await waitScreen(page, 'results');
     const two = await page.evaluate(() => GG.state.songs.slice(-2).map(s => ({ t: s.title, auto: s.auto })));
-    c.ok(two[0].t === q.title && !two[0].auto && two[1].auto, 'block 1 = your sketch, block 2 = band jam: ' + JSON.stringify(two));
+    c.ok(two[0].t === q.title && !two[0].auto && two[1].auto, 'block 1 = your sketch, block 2 = band jam (⋯ → Let the band jam one): ' + JSON.stringify(two));
     c.ok(await page.evaluate(() => !GG.debug('audio').playing), 'no song playing on the results screen');
 
     // Rating parity: the browser rates exactly like node.
@@ -311,6 +310,143 @@ async function seq() {
     c.ok(JSON.stringify(node) === JSON.stringify(web), 'GG.songs.rate: browser === node for ' + fx.length + ' fixtures x 4 genres');
     c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
   } catch (e) { c.ok(false, 'seq threw: ' + (e.stack || e)); }
+  await close();
+  // D16: the 1.2 fixture careers' draft and a queued song, opened and saved untouched, are their SAN fixture (1.2 JSON).
+  const c2 = checker('seq-compat');
+  const o2 = await open();
+  try {
+    const FX = require('../tools/make_fixtures_v12'), fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'v12_songs.json'), 'utf8')), careers = FX.careerStrings();
+    await o2.page.waitForSelector(tid('btn-new'));
+    for (const seat of FX.SEATS) {
+      const want = fixture.save['v12_' + seat];
+      const got = await o2.page.evaluate(async raw => {
+        GG.ui.closeAll();
+        localStorage.setItem(GG.save.KEYS.slot('3'), raw); GG.main.load('3'); GG.ui.closeAll();
+        const s = GG.state, draft = JSON.parse(JSON.stringify(s.draft)), p0 = JSON.parse(JSON.stringify(s.pendingSongs[0]));
+        GG.ui.openSketch();
+        const sk = GG.debug('seq'), chips = document.querySelectorAll('[data-testid^="chord-chip-"]').length, grid = document.querySelector('[data-testid="part-grid"]');
+        document.querySelector('[data-testid="btn-seq-use"]').click();
+        const used = s.pendingSongs[s.pendingSongs.length - 1];
+        GG.ui.composeWeek(1, () => {});
+        const D = GG.ui.get('seq').data, w = { screen: D.screen, fromSketch: D.fromSketch }; let saved = null; const f = D.onSave; D.onSave = x => { saved = JSON.parse(JSON.stringify(x)); f(x); };
+        document.querySelector('[data-testid="btn-seq-save"]').click();
+        GG.ui.closeAll();
+        return { sk: { mode: sk.mode, screen: sk.screen, chips, gridV: grid ? grid.dataset.v : null }, used, draft, w, saved, p0 };
+      }, careers[seat]);
+      const entry = Object.assign({}, got.used); delete entry.title; delete entry.titleEn; delete entry.fr;
+      if (got.draft && got.draft.title != null) { entry.title = got.draft.title; entry.titleEn = got.draft.titleEn || got.draft.title; if (got.used.fr && got.draft.title === got.used.title) entry.fr = true; }
+      c2.ok(got.sk.mode === 'sketch' && got.sk.screen === 'edit', seat + ': a draft opens the sketch pad in the editor (D10) ' + JSON.stringify(got.sk));
+      c2.ok(H16(entry) === want.draftSan, seat + ': the draft opened + used untouched = its 1.2 open-and-save SAN ' + H16(entry) + ' / ' + want.draftSan);
+      c2.ok(got.w.screen === 'edit' && got.w.fromSketch && H16(got.saved) === want.pendingSan[0], seat + ': a queued 1.2 song opened + saved untouched = its SAN ' + H16(got.saved) + ' / ' + want.pendingSan[0]);
+      c2.ok(!['chords', 'mood', 'swing', 'recipe', 'fillBars'].some(k => k in got.saved) && !(got.saved.part && got.saved.part.v), seat + ': no v1.3 key appears (' + Object.keys(got.saved).join(',') + ')');
+    }
+    c2.ok(o2.errors.length === 0, 'no console errors ' + o2.errors.slice(0, 3).join(' | '));
+  } catch (e) { c2.ok(false, 'seq-compat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await o2.close();
+  c2.done();
+  c.done();
+}
+
+// Quick song (U1; replaces the 0.6.2 guided section): recipes, the lock, sliders, Surprise twice = same, Play, Tweak, Save, the Q3
+// ask-first flow, two song slots -> two songs.
+async function quick() {
+  const c = checker('quick');
+  const { page, errors, close } = await open();
+  const ev = (f, a) => page.evaluate(f, a);
+  try {
+    await bootPlan(page, { seed: 777 }, ['write', 'write', 'rest']);
+    const R = await ev(() => GG.songs.recipes(GG.state.genre, GG.state.gear, 'drums'));
+    const SL = await ev(() => GG.songs.sliders(GG.state.genre, 'drums'));
+    const cards = await ev(() => [...document.querySelectorAll('[data-testid^="quick-recipe-"]')].map(b => ({ id: b.dataset.testid, pressed: b.getAttribute('aria-pressed'), locked: b.dataset.locked })));
+    c.ok(cards.length === 6 && cards.map(x => x.id.replace('quick-recipe-', '')).join() === R.map(r => r.id).join(), 'the cards are songs.recipes (5 + Surprise) ' + cards.map(x => x.id).join());
+    c.ok(cards[0].pressed === 'true' && cards.filter(x => x.pressed === 'true').length === 1, 'the signature recipe is picked');
+    const gal = cards.find(x => x.id === 'quick-recipe-gallop');
+    c.ok(gal && gal.locked === '1' && R.find(r => r.id === 'gallop').locked, 'the pedal recipe is locked without a double kick');
+    const p0 = await patJSON(page);
+    await tap(page, 'quick-recipe-gallop');
+    const toast = await ev(() => [...document.querySelectorAll('#toast .toast')].map(t => t.textContent).join(' | '));
+    c.ok(await patJSON(page) === p0 && toast.indexOf(R.find(r => r.id === 'gallop').lockLabel) >= 0, 'a locked tap is a toast with the pedal name: ' + toast);
+    // Surprise me twice = the same song (same slot, same taps): tap, ✕ back to the planner, Go again, tap.
+    await tap(page, 'quick-recipe-surprise');
+    const sA = await ev(() => ({ p: JSON.stringify(GG.ui.get('seq').data.pat), dbg: GG.debug('seq'), seed: GG.ui.get('seq').data.qs.seed }));
+    const sWant = await ev(seed => { const z = GG.songs.surprise(GG.state.genre, GG.state.gear, 'drums', GG.hashSeed(seed + '|surprise|1'));
+      return Object.assign({ p: JSON.stringify(GG.songs.compose(GG.state.genre, Object.assign({}, z, { seed: seed, gear: GG.state.gear, seat: 'drums' }))) }, z); }, sA.seed);
+    c.ok(sA.p === sWant.p && sA.dbg.recipe.id === sWant.recipe && sA.dbg.sliders.energy === sWant.energy && sA.dbg.sliders.bpm === sWant.bpm, 'Surprise me = songs.surprise(seed|surprise|1) composed ' + JSON.stringify(sA.dbg.sliders));
+    await tap(page, 'btn-seq-close');
+    await page.waitForFunction(() => GG.debug('ui').screen !== 'seq');
+    if (await screen(page) !== 'plan') { await tap(page, 'btn-primary'); await waitScreen(page, 'plan'); }
+    await tap(page, 'btn-go'); await waitScreen(page, 'seq');
+    c.ok(await patJSON(page) === p0, 'a reopened block starts from the same signature song');
+    await tap(page, 'quick-recipe-surprise');
+    c.ok(await patJSON(page) === sA.p, 'Surprise me twice (same slot) = the same song');
+    await tap(page, 'quick-recipe-surprise');
+    c.ok(await patJSON(page) !== sA.p, 'a second roll is another song');
+    // A card -> that recipe's default sliders.
+    await tap(page, 'quick-recipe-doom-crawl');
+    const dc = await ev(() => ({ dbg: GG.debug('seq'), pressed: document.querySelector('[data-testid="quick-recipe-doom-crawl"]').getAttribute('aria-pressed') }));
+    const dR = R.find(r => r.id === 'doom-crawl');
+    c.ok(dc.dbg.recipe.id === 'doom-crawl' && dc.pressed === 'true' && dc.dbg.sliders.bpm === dR.bpm && dc.dbg.sliders.mood === dR.sliders.mood && dc.dbg.sliders.energy === dR.sliders.energy, 'a card picks the recipe at its defaults ' + JSON.stringify(dc.dbg.sliders));
+    const base = await patJSON(page), secs = JSON.stringify(JSON.parse(base).sections);
+    // Energy: recomposes; the label is the genre's stop; back = the same song (round trip).
+    await slide(page, 'energy', 4);
+    const e4 = await ev(() => ({ dbg: GG.debug('seq'), val: document.querySelector('[data-testid="quick-energy-val"]').textContent, p: JSON.stringify(GG.ui.get('seq').data.pat) }));
+    c.ok(e4.dbg.recipe.energy === 4 && e4.val === SL[0].stops[4] && e4.p !== base, 'Energy recomposes, its label reads "' + e4.val + '"');
+    await slide(page, 'energy', dR.sliders.energy);
+    c.ok(await patJSON(page) === base, 'Energy moved and moved back = the same song');
+    // Feel + Tempo never rewrite the notes.
+    await slide(page, 'feel', 3);
+    const f3 = await ev(() => ({ p: GG.ui.get('seq').data.pat, val: document.querySelector('[data-testid="quick-feel-val"]').textContent }));
+    c.ok(f3.p.swing === 3 && JSON.stringify(f3.p.sections) === secs && f3.val === SL[2].stops[3], 'Feel sets the swing, never the notes: ' + f3.val);
+    await slide(page, 'tempo', 90);
+    const t1 = await ev(() => ({ p: GG.ui.get('seq').data.pat, val: document.querySelector('[data-testid="quick-tempo-val"]').textContent, lab: GG.songs.tempoLabel(GG.state.genre, 90) }));
+    c.ok(t1.p.bpm === 90 && JSON.stringify(t1.p.sections) === secs && t1.val === '90 bpm · ' + t1.lab, 'Tempo sets the bpm, never the notes: ' + t1.val);
+    await slide(page, 'feel', dR.sliders.swing); await slide(page, 'tempo', dR.bpm);
+    c.ok(await patJSON(page) === base, 'Feel + Tempo back = the same song');
+    await slide(page, 'mood', 0);
+    const md = await ev(() => GG.ui.get('seq').data.pat);
+    c.ok(md.mood === 0 && JSON.stringify(md.chords) !== JSON.stringify(JSON.parse(base).chords), 'Mood recomposes the chords (mood ' + md.mood + ')');
+    // Play, then a slider while it plays: the loop keeps going with the new song.
+    await tap(page, 'btn-guide-play');
+    await page.waitForFunction(() => GG.debug('seq').playing === 'quick' && GG.debug('audio').playing, null, { timeout: 5000 });
+    await slide(page, 'energy', 3);
+    await page.waitForTimeout(300);
+    c.ok(await ev(() => GG.debug('audio').playing && GG.debug('seq').playing === 'quick'), '▶ Play loops the song; a slider move keeps it playing');
+    await tap(page, 'btn-guide-play');
+    c.ok(await ev(() => !GG.debug('seq').playing), 'tap again to stop');
+    // Q3: after a hand edit a recipe / Energy / Mood / Fills change asks first; Feel + Tempo never ask.
+    await tap(page, 'btn-quick-tweak');
+    await tap(page, 'cell-snare-2');
+    const edited = await patJSON(page);
+    await openTools(page); await tap(page, 'btn-seq-quick');
+    c.ok(await ev(() => GG.debug('seq').screen === 'quick' && GG.debug('seq').edited), '⋯ → Back to Quick song, edited');
+    await slide(page, 'energy', 1);
+    await page.waitForFunction(() => GG.debug('ui').screen === 'confirm', null, { timeout: 3000 });
+    const ask = await ev(() => document.querySelector('[data-screen="confirm"]').textContent);
+    c.ok(/Start over/.test(ask) && /Keep my edits/.test(ask) && /hand edits/.test(ask), 'Energy after a hand edit asks: ' + ask.replace(/\s+/g, ' '));
+    await tap(page, 'btn-confirm-no');
+    const kept = await ev(() => ({ p: JSON.stringify(GG.ui.get('seq').data.pat), v: +document.querySelector('[data-testid="quick-energy"]').value, e: GG.debug('seq').sliders.energy }));
+    c.ok(kept.p === edited && kept.v === kept.e && kept.v !== 1, 'Keep my edits: the song and the slider stay ' + kept.v);
+    await slide(page, 'feel', 2);
+    c.ok(await screen(page) === 'seq' && await ev(() => GG.ui.get('seq').data.pat.swing === 2 && GG.ui.get('seq').data.pat.sections.verse[1][2] === 'x'), 'Feel never asks and keeps the edit');
+    await slide(page, 'energy', 1);
+    await page.waitForFunction(() => GG.debug('ui').screen === 'confirm', null, { timeout: 3000 });
+    await tap(page, 'btn-confirm-yes');
+    const so = await ev(() => { const D = GG.ui.get('seq').data, q = D.qs;
+      return { dbg: GG.debug('seq'), same: JSON.stringify(D.pat) === JSON.stringify(GG.songs.compose(GG.state.genre, { recipe: q.recipe, energy: q.energy, mood: q.mood, swing: q.swing, fills: q.fills, bpm: q.bpm, seed: q.seed, gear: GG.state.gear, seat: 'drums' })) }; });
+    c.ok(so.same && !so.dbg.edited && so.dbg.sliders.energy === 1, 'Start over: the recipe at the new sliders, no longer edited');
+    c.ok((await audit(page)).length === 0, 'Quick song layout ' + (await audit(page)).join(' ; '));
+    // Save -> block 2: another song slot, another song (D14), Save again.
+    const s1 = await ev(() => JSON.stringify(GG.songs.sanitize(GG.ui.get('seq').data.pat, GG.state.gear, GG.state.genre)));
+    await tap(page, 'btn-seq-save');
+    await page.waitForFunction(() => /2 of 2/.test(document.querySelector('[data-testid="seq-title"]').textContent));
+    const b2 = await ev(() => ({ dbg: GG.debug('seq'), p: GG.ui.get('seq').data.pat }));
+    c.ok(b2.dbg.screen === 'quick' && b2.dbg.recipe.id === R[0].id && b2.dbg.recipe.seed !== JSON.parse(s1).recipe.seed, 'block 2: Quick song again, a new seed ' + b2.dbg.recipe.seed);
+    await tap(page, 'btn-seq-save');
+    await waitScreen(page, 'results');
+    const two = await ev(() => GG.state.songs.slice(-2).map(s => s.pattern));
+    c.ok(JSON.stringify(two[0]) === s1 && two[1].recipe && JSON.stringify(two[0].sections) !== JSON.stringify(two[1].sections), 'two Write blocks, two different songs');
+    c.ok(errors.length === 0, 'no console errors ' + errors.join(' | '));
+  } catch (e) { c.ok(false, 'quick threw: ' + (e.stack || e)); }
   await close();
   c.done();
 }
@@ -975,10 +1111,11 @@ async function vox() {
   if (want('genres')) await genres();
   if (want('voices')) await voices();
   if (want('seq')) await seq();
-  if (want('seq') || want('guided')) await guided();
+  if (want('seq') || want('quick') || want('guided')) await quick();
   if (want('audio')) await audio();
   if (want('heavy')) await heavy();
   if (want('part')) await part();
+  if (want('layout')) await layout();
   if (want('hash')) await hash();
   if (want('kit')) await kit();
   if (want('real')) await real();
@@ -991,19 +1128,22 @@ async function vox() {
 // plays your part (GG.audio.play { seat, part }) -> tempo -> order -> name -> Save: the song lands with exactly that part.
 // Advanced: the "Your part | Drums" switch. A lead sketch pad: the 5-row hook grid + "Guitar shop". Layout audit on every
 // screen; no console errors.
+// Your part (string seats, U2 + U4): 6 / 6 / 7 rows, the chips, the chord sheet, the picker, the tweaks in ⋯, upgrade on first
+// edit only, view read-only; a pick on a composed song moves the roots and names the picked progression; on an old song it
+// writes part.prog only.
 async function part() {
   const c = checker('part');
   const { page, errors, close } = await open();
   const ev = (f, a) => page.evaluate(f, a);
-  const step = () => page.evaluate(() => GG.debug('seq').step);
-  const partOf = () => page.evaluate(() => GG.ui.get('seq').data.pat.part);
+  const partOf = () => ev(() => GG.ui.get('seq').data.pat.part);
+  const roots = () => ev(() => { const D = GG.ui.get('seq').data, tl = GG.audio.timeline(D.pat, { genre: GG.state.genre, seat: D.pat.part.seat, part: D.pat.part });
+    return JSON.stringify(tl.events.filter(e => e.section === 'verse' && /bass/.test(e.kind || '')).slice(0, 24).map(e => e.midi)); });
   try {
     await page.waitForSelector(tid('btn-new'));
     await ev(() => {
-      GG.prefs.set({ songwriterMode: 'guided' });
       GG.main.quickStart({ seed: 4242, bandId: 'hail_damage', seat: 'bass' });
       const A = GG.audio, p0 = A.play; window.__play = [];
-      A.play = function (pat, o) { window.__play.push({ seat: o && o.seat, part: !!(o && o.part), drums: o && o.drums }); return p0.apply(this, arguments); };
+      A.play = function (pat, o) { window.__play.push({ seat: o && o.seat, part: !!(o && o.part) }); return p0.apply(this, arguments); };
     });
     await page.waitForFunction(() => GG.state && (GG.state.phase === 'plan' || GG.debug('ui').screen === 'card'));
     if (await screen(page) === 'card') { await tap(page, 'choice-0'); await tap(page, 'btn-card-ok'); }
@@ -1011,81 +1151,203 @@ async function part() {
     await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
     for (const a of ['write', 'rehearse', 'rest']) await tap(page, 'act-' + a);
     await tap(page, 'btn-go'); await waitScreen(page, 'seq');
-    const d0 = await ev(() => ({ dbg: GG.debug('seq'), step: document.querySelector('[data-testid="guide-step"]').textContent,
-      drums: document.querySelector('[data-testid="part-drums"]').textContent, tell: document.querySelector('[data-testid="btn-tell-drummer"]').textContent }));
-    c.ok(d0.dbg.seat === 'bass' && d0.dbg.step === 'drums' && /Step 1 of 7 · Drums/.test(d0.step), 'a bass Write opens on the drums step ' + d0.step);
-    c.ok(/Verse/.test(d0.drums) && /Chorus/.test(d0.drums) && /Bridge/.test(d0.drums) && /Headbanger/.test(d0.drums), 'Kenji suggests the signature groove per section ' + d0.drums);
-    c.ok(d0.tell === 'Tell Kenji what to play', 'Tell {drummer} what to play: ' + d0.tell);
-    c.ok(d0.dbg.part && d0.dbg.part.seat === 'bass' && Object.keys(d0.dbg.part.sections).join() === 'verse,chorus,bridge', 'the song carries a bass part for every section');
-    c.ok((await audit(page)).length === 0, 'drums step layout ' + (await audit(page)).join('; '));
-    // Tell Kenji: today's drum grid, then back to the guided steps from the Song tab
-    await tap(page, 'btn-tell-drummer');
-    const g0 = await ev(() => ({ dbg: GG.debug('seq'), kick: !!document.querySelector('[data-testid="cell-kick-0"]'), sw: !!document.querySelector('[data-testid="seq-layers"]'),
-      label: document.querySelector('[data-testid="seq-layer-drums"]').textContent }));
-    c.ok(!g0.dbg.guided && g0.dbg.layer === 'drums' && g0.kick && g0.sw && /Kenji/.test(g0.label), 'the drum grid (unchanged) under a Your part | Drums switch ' + g0.label);
-    const k0 = await ev(() => GG.ui.get('seq').data.pat.sections.verse[1]);
-    await page.locator(tid('cell-snare-2')).click();
-    c.ok(await ev(() => GG.ui.get('seq').data.pat.sections.verse[1]) !== k0, 'a drum cell still toggles');
-    await tap(page, 'seq-layer-part');
-    c.ok(await ev(() => GG.debug('seq').layer === 'part' && !!document.querySelector('[data-testid="part-grid"]') && document.querySelectorAll('[data-testid^="part-cell-"]').length === 48), 'Your part: 3 rows x 16 steps');
-    c.ok((await audit(page)).length === 0, 'advanced part layout ' + (await audit(page)).join('; '));
-    await tap(page, 'seq-tab-song'); await tap(page, 'btn-seq-guided');
-    c.ok(await step() === 'drums', 'Guided steps returns to the drums step');
-    await tap(page, 'btn-guide-next');
-    const v0 = await ev(() => ({ step: GG.debug('seq').step, picks: document.querySelectorAll('[data-testid^="part-pick-"]').length, mods: [...document.querySelectorAll('[data-testid^="part-mod-"]')].map(b => b.dataset.testid),
-      cols: document.querySelector('[data-testid="part-grid"]').dataset.lanes, hint: document.querySelector('[data-testid="guide-hint"]').textContent }));
-    c.ok(v0.step === 'verse' && v0.picks >= 3 && v0.cols === '3' && /root, fifth or octave/.test(v0.hint), 'your verse: progressions + the root/fifth/octave grid ' + JSON.stringify(v0));
-    c.ok(v0.mods.join() === 'part-mod-lock,part-mod-double,part-mod-ring,part-mod-call', 'the four one-tap tweaks ' + v0.mods);
-    c.ok((await audit(page)).length === 0, 'part step layout ' + (await audit(page)).join('; '));
-    await tap(page, 'part-pick-1');
-    c.ok((await partOf()).sections.verse.prog === 1 && await ev(() => !!document.querySelector('[data-testid="part-pick-1"].on')), 'picking a progression sets the verse');
+    const q0 = await dbgSeq(page);
+    c.ok(q0.seat === 'bass' && q0.screen === 'quick' && q0.part && q0.part.v === 2 && Object.keys(q0.part.sections).every(n => q0.part.sections[n].rows.length === 6), 'a bass Write: Quick song with a v2 bass part (6 rows)');
+    await tap(page, 'btn-quick-tweak');
+    const e0 = await ev(() => { const q = s => document.querySelector(s), g = q('[data-testid="part-grid"]');
+      return { dbg: GG.debug('seq'), lanes: g.dataset.lanes, v: g.dataset.v, cells: document.querySelectorAll('[data-testid^="part-cell-"]').length,
+        names: [...g.querySelectorAll('.lh')].map(x => x.textContent), label: q('[data-testid="seq-chords"]').textContent,
+        name: GG.songs.progName(GG.state.genre, 'bass', 'verse', GG.ui.get('seq').data.pat),
+        chips: [...document.querySelectorAll('[data-testid^="chord-chip-"]')].map(b => ({ semi: +b.dataset.semi, home: b.dataset.home, cls: b.className, text: b.textContent })) }; });
+    c.ok(e0.dbg.screen === 'edit' && e0.dbg.layer === 'part' && e0.lanes === '6' && e0.v === '2' && e0.cells === 96, 'Tweak: your part, 6 rows x 16 steps');
+    c.ok(e0.names.join() === 'Low 5th,Root,3rd,5th,7th,Oct', 'bass rows: ' + e0.names.join());
+    c.ok(e0.label === 'Chords: ' + e0.name + '▾' || e0.label.replace(/\s/g, '') === ('Chords:' + e0.name + '▾').replace(/\s/g, ''), 'the picker reads "Chords: <progName> ▾": ' + e0.label);
+    c.ok(e0.chips.length === 4 && e0.chips.map(x => x.semi).join() === e0.dbg.chords.verse.join() && e0.chips.every(x => (x.semi === 0) === (x.home === '1' && /home/.test(x.cls))), 'four chips = the verse chords, home outlined ' + JSON.stringify(e0.chips.map(x => x.text)));
+    c.ok((await audit(page)).length === 0, 'part editor layout ' + (await audit(page)).join('; '));
+    // The picker on a composed song: p.chords[verse] = progChords(i), part.prog = i, the label = the picked name, the roots move.
+    const r0 = await roots(), cur = (await partOf()).sections.verse.prog;
+    await tap(page, 'seq-chords'); await waitScreen(page, 'seq-pick');
+    const picks = await ev(() => document.querySelectorAll('[data-testid^="part-pick-"]').length);
+    const pi = (cur + 1) % picks;
+    await tap(page, 'part-pick-' + pi); await waitScreen(page, 'seq');
+    const pk = await ev(i => { const D = GG.ui.get('seq').data, ch = GG.songs.part.choices(GG.state.genre, 'bass', 'verse');
+      return { chords: D.pat.chords.verse, want: GG.songs.progChords(GG.state.genre, 'verse', i, D.pat.mood), prog: D.pat.part.sections.verse.prog, label: document.querySelector('[data-testid="seq-chords"]').textContent, name: ch[i].name }; }, pi);
+    c.ok(picks >= 3 && pk.prog === pi && JSON.stringify(pk.chords) === JSON.stringify(pk.want) && pk.label.indexOf(pk.name) >= 0, 'a pick writes p.chords + part.prog; the label = "' + pk.name + '"');
+    c.ok(await roots() !== r0, 'the pick moves the timeline roots');
+    // A chip: the chord sheet writes one bar; Back to <progression> resets it.
+    await tap(page, 'chord-chip-2'); await waitScreen(page, 'seq-chord');
+    const opts = await ev(() => [...document.querySelectorAll('[data-testid^="chord-opt-"]')].map(b => +b.dataset.testid.replace('chord-opt-', '')));
+    const was = pk.chords[2], to = opts.find(x => x !== was && x !== 0);
+    await tap(page, 'chord-opt-' + to); await waitScreen(page, 'seq');
+    const ch1 = await ev(() => ({ c: GG.ui.get('seq').data.pat.chords.verse, chip: document.querySelector('[data-testid="chord-chip-2"]').dataset.semi, label: document.querySelector('[data-testid="seq-chords"]').textContent }));
+    c.ok(opts.length >= 5 && ch1.c[2] === to && +ch1.chip === to && ch1.c[0] === pk.chords[0], 'a chip writes its bar (' + was + ' -> ' + to + '), the others stay; label ' + ch1.label);
+    await tap(page, 'chord-chip-2'); await waitScreen(page, 'seq-chord');
+    const rs = await ev(() => document.querySelector('[data-testid="chord-reset"]').textContent);
+    await tap(page, 'chord-reset'); await waitScreen(page, 'seq');
+    c.ok(JSON.stringify(await ev(() => GG.ui.get('seq').data.pat.chords.verse)) === JSON.stringify(pk.want) && rs.indexOf(pk.name) >= 0, '"' + rs + '" resets the bar');
+    // The grid + the tweaks in ⋯.
     const m0 = await meters(page);
-    await page.locator(tid('part-cell-2-15')).click();
-    const pv = await partOf();
-    c.ok(pv.sections.verse.rows[2][15] === 'x', 'a tap on the grid adds an octave note ' + pv.sections.verse.rows[2]);
-    await tap(page, 'part-mod-lock');
-    const ch = await ev(() => document.querySelector('[data-testid="guide-change"]').textContent);
-    c.ok(/Lock to the kick/.test(ch) && /Groove \d+ → \d+/.test(ch), '"Lock to the kick" shows the meter change ' + ch);
+    await page.locator(tid('part-cell-5-15')).click();
+    c.ok((await partOf()).sections.verse.rows[5][15] === 'x', 'a tap on the grid adds an octave note');
+    await openTools(page);
+    const mods = await ev(() => [...document.querySelectorAll('[data-testid^="part-mod-"]')].map(b => b.dataset.testid));
+    c.ok(mods.join() === 'part-mod-lock,part-mod-double,part-mod-ring,part-mod-call' && await ev(() => !!document.querySelector('[data-testid="part-clear"]')), '⋯ holds your part\'s tweaks + clear ' + mods);
+    const before = JSON.stringify((await partOf()).sections.verse);
+    await tap(page, 'part-mod-double');
+    await waitScreen(page, 'seq');
     const m1 = await meters(page);
-    c.ok(m0.join() !== m1.join() || /→/.test(ch), 'the meters follow your part ' + m0 + ' / ' + m1);
-    const verse = JSON.stringify((await partOf()).sections.verse);
-    await tap(page, 'btn-guide-play');
+    c.ok(JSON.stringify((await partOf()).sections.verse) !== before && m1.join() !== m0.join(), 'Double time changes your part; the meters follow ' + m0 + ' / ' + m1);
+    await tap(page, 'btn-seq-loop');
     await page.waitForFunction(() => GG.debug('seq').playing === 'loop', null, { timeout: 5000 });
     const pl = await ev(() => window.__play[window.__play.length - 1]);
-    c.ok(pl && pl.seat === 'bass' && pl.part, 'Play plays your part (seat + part) ' + JSON.stringify(pl));
-    await tap(page, 'btn-guide-play');
-    await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'chorus', 'chorus');
-    await tap(page, 'part-mod-double');
-    const chorus = JSON.stringify((await partOf()).sections.chorus);
-    await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'bridge', 'bridge');
-    await tap(page, 'part-mod-ring');
-    const bridge = JSON.stringify((await partOf()).sections.bridge);
-    for (let k = 0; k < 3; k++) await tap(page, 'btn-guide-next');
-    c.ok(await step() === 'name', 'tempo -> order -> name');
-    await page.locator(tid('guide-title-input')).fill('Low End Theory of Doom');
-    await tap(page, 'btn-guide-save');
+    c.ok(pl && pl.seat === 'bass' && pl.part, 'Loop plays your part (seat + part) ' + JSON.stringify(pl));
+    await page.waitForTimeout(700);
+    c.ok(await ev(() => document.querySelectorAll('.seq-chip.ph').length === 1), 'the playing bar\'s chip lights up');
+    await tap(page, 'btn-seq-loop');
+    // The Drums layer: the drum grid, no chips.
+    await tap(page, 'seq-layer-drums');
+    c.ok(await ev(() => GG.debug('seq').layer === 'drums' && !!document.querySelector('[data-testid="cell-kick-0"]') && !document.querySelector('[data-testid="seq-chips"]') && !document.querySelector('[data-testid="seq-chords"]')), 'Drums layer: the drum grid, chips hidden');
+    c.ok((await audit(page)).length === 0, 'drums layer layout ' + (await audit(page)).join('; '));
+    await tap(page, 'seq-layer-part');
+    const verse = JSON.stringify((await partOf()).sections.verse);
+    await tap(page, 'btn-seq-save');
     await waitScreen(page, 'results');
     const last = await ev(() => GG.state.songs[GG.state.songs.length - 1]);
-    c.ok(last.title === 'Low End Theory of Doom' && last.pattern.part && last.pattern.part.seat === 'bass', 'the song lands with your bass part');
-    c.ok(JSON.stringify(last.pattern.part.sections.verse) === verse && JSON.stringify(last.pattern.part.sections.chorus) === chorus && JSON.stringify(last.pattern.part.sections.bridge) === bridge,
-      'with exactly the part you wrote');
-    c.ok(last.rating && last.rating.groove > 0 && await ev(() => !!GG.songs.partRating(GG.state.songs[GG.state.songs.length - 1].pattern, 'metal')), 'rated with your part');
-    // the lead seat's sketch pad: 5 hook rows, the guitar shop
-    await ev(() => { GG.ui.closeAll(); GG.main.quickStart({ seed: 4343, bandId: 'grid_road_ramblers', seat: 'lead', openCard: false }); GG.state.card = null; GG.state.phase = 'plan'; GG.ui.openSketch(); });
+    c.ok(last.pattern.part && last.pattern.part.seat === 'bass' && last.pattern.part.v === 2 && JSON.stringify(last.pattern.part.sections.verse) === verse && last.pattern.chords, 'the song lands with your v2 part and its chords');
+    // View: read-only (part grid, chips, ⋯ = metronome).
+    await ev(id => { GG.ui.closeAll(); GG.ui.openSong(id); }, last.id);
     await waitScreen(page, 'seq');
-    const sk = await ev(() => ({ dbg: GG.debug('seq'), cols: document.querySelector('[data-testid="part-grid"]').dataset.lanes, shop: document.querySelector('[data-testid="btn-kit-shop"]').textContent }));
-    c.ok(sk.dbg.mode === 'sketch' && sk.dbg.layer === 'part' && sk.cols === '5' && sk.dbg.part.seat === 'lead', 'lead sketch pad: the 5-row hook grid ' + sk.cols);
-    c.ok(/Guitar shop/.test(sk.shop), 'the sketch pad shop is your seat’s: ' + sk.shop);
-    c.ok((await audit(page)).length === 0, 'lead sketch layout ' + (await audit(page)).join('; '));
-    await tap(page, 'btn-seq-tools');
-    c.ok(await ev(() => !!document.querySelector('[data-testid="part-mod-call"]') && !!document.querySelector('[data-testid="part-clear"]')), 'the ⋯ tools hold your part’s tweaks');
-    await tap(page, 'part-mod-call');
-    c.ok((await audit(page)).length === 0, 'after a tweak from the tools ' + (await audit(page)).join('; '));
+    const vw = await ev(() => ({ dbg: GG.debug('seq'), ro: !!document.querySelector('.seq-grid.part.ro'), chips: [...document.querySelectorAll('[data-testid^="chord-chip-"]')].every(b => b.disabled), p: JSON.stringify(GG.ui.get('seq').data.pat) }));
+    await page.locator(tid('part-cell-0-1')).click();
+    c.ok(vw.dbg.mode === 'view' && vw.ro && vw.chips && await patJSON(page) === vw.p, 'view: your part read-only (grid ignores taps, chips disabled)');
+    // An old song (a v1 part, no chords): the grid shows its v2 view, nothing written; a pick writes part.prog only; the first
+    // grid edit upgrades it.
+    await ev(() => { GG.ui.closeAll(); const p = GG.songs.sanitize(GG.songs.starter(GG.state.genre, GG.state.gear), GG.state.gear, GG.state.genre); p.part = GG.songs.part.full(GG.state.genre, 'bass', p); GG.state.draft = p; GG.ui.openSketch(); });
+    await waitScreen(page, 'seq');
+    const o0 = await ev(() => ({ dbg: GG.debug('seq'), v: document.querySelector('[data-testid="part-grid"]').dataset.v, lanes: document.querySelector('[data-testid="part-grid"]').dataset.lanes, p: GG.ui.get('seq').data.pat }));
+    c.ok(o0.dbg.screen === 'edit' && o0.v === '1' && o0.lanes === '6' && !o0.p.part.v && !o0.p.chords && o0.dbg.chips.length === 4, 'an old v1 part shows through part.view (6 rows), nothing written; chips derived');
+    await tap(page, 'seq-chords'); await waitScreen(page, 'seq-pick');
+    await tap(page, 'part-pick-2'); await waitScreen(page, 'seq');
+    const o1 = await ev(() => GG.ui.get('seq').data.pat);
+    c.ok(o1.part.sections.verse.prog === 2 && !o1.chords && !o1.part.v, 'an old song: a pick writes part.prog only (no chords, still v1)');
+    await page.locator(tid('part-cell-1-3')).click();
+    const o2 = await ev(() => GG.ui.get('seq').data.pat.part);
+    c.ok(o2.v === 2 && o2.sections.verse.rows.length === 6 && o2.sections.verse.rows[1][3] === 'x', 'the first grid edit upgrades the part to v2 (D16)');
+    // Rhythm: 6 rows; lead: 7 rows + "Hook: <name> ▾".
+    for (const [seat, rows, names, key] of [['rhythm', '6', 'Chug,Open,Root,5th,Oct,Scratch', 'Chords:'], ['lead', '7', 'Low,1,2,3,4,5,High', 'Hook:']]) {
+      await writeBlock(page, { seed: 4343, bandId: 'grid_road_ramblers', seat });
+      await tap(page, 'btn-quick-tweak');
+      const x = await ev(() => { const g = document.querySelector('[data-testid="part-grid"]'); return { lanes: g.dataset.lanes, names: [...g.querySelectorAll('.lh')].map(e => e.textContent).join(), label: document.querySelector('[data-testid="seq-chords"]').textContent, chips: document.querySelectorAll('[data-testid^="chord-chip-"]').length }; });
+      c.ok(x.lanes === rows && x.names === names && x.label.indexOf(key) === 0 && x.chips === 4, seat + ': ' + rows + ' rows (' + x.names + '), ' + x.label);
+      c.ok((await audit(page)).length === 0, seat + ' editor layout ' + (await audit(page)).join('; '));
+    }
     await page.screenshot({ path: path.join(CACHE, shotName('seq_part.png')) });
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'part threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// Layout (§4.7 sizes): Quick song + every editor case per seat at this viewport (PW_VIEW=440x956: no scroll anywhere; 390x844:
+// .seq-main scroll <= 1), buttons >= 44, no h-scroll, shots tagged by size; then the notch insets (47/34 at 390, 59/34 at 440)
+// with Bigger text: every Quick slider + foot button reachable through quick-main, nothing clipped, the longest progName and 6
+// tabs fit.
+async function layout() {
+  const c = checker('layout');
+  const { page, errors, close } = await open();
+  const ev = (f, a) => page.evaluate(f, a);
+  const W = VIEW.width, BIG = W >= 430;
+  const scrollOf = sel => ev(s => { const m = document.querySelector(s); return m ? m.scrollHeight - m.clientHeight : -1; }, sel);
+  const shot = async n => { await page.waitForTimeout(450); await page.screenshot({ path: path.join(CACHE, shotName(n + '.png')) }); };
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    const FULL = { lanes: 6, doubleKick: true, sections: ['solo', 'outro'] };
+    for (const [seat, full] of [['drums', false], ['bass', false], ['rhythm', false], ['lead', false], ['drums', true], ['rhythm', true]]) {
+      const tag = seat + (full ? '_full' : '');
+      await writeBlock(page, { seed: 515, bandId: seat === 'drums' ? 'hail_damage' : 'gravel_kings', seat });
+      if (full) { await ev(g => { Object.assign(GG.state.gear, g); GG.ui.seqGear(GG.ui.get('seq')); }, FULL); await page.waitForTimeout(150); }
+      c.ok((await audit(page)).length === 0, tag + ' Quick song: no overflow, buttons ≥ 44 ' + (await audit(page)).join('; '));
+      if (BIG) c.ok(await scrollOf('.quick-main') <= 1, tag + ' Quick song fits at ' + W + ' (scroll ' + await scrollOf('.quick-main') + ')');
+      await shot('seq_quick_' + tag);
+      await tap(page, 'btn-quick-tweak');
+      const layers = seat === 'drums' ? ['drums'] : ['part', 'drums'];
+      for (const L of layers) {
+        if (seat !== 'drums') await tap(page, 'seq-layer-' + L);
+        for (const tab of full ? ['verse', 'solo', 'outro'] : ['verse', 'chorus']) {
+          await tap(page, 'seq-tab-' + tab);
+          if (await page.locator(tid('seq-add-' + tab)).count()) await tap(page, 'seq-add-' + tab);
+          const sc = await scrollOf('.seq-main'), bad = await audit(page);
+          c.ok(sc <= 1 && bad.length === 0, tag + ' ' + L + ' layer, ' + tab + ': no scroll (' + sc + '), buttons ≥ 44 ' + bad.join('; '));
+          if (tab === 'verse' || tab === 'solo') await shot('seq_edit_' + tag + '_' + L + '_' + tab);
+        }
+        if (full) {
+          const t6 = await ev(() => [...document.querySelectorAll('.seq-tabs .tab')].map(t => ({ w: t.getBoundingClientRect().width, o: t.scrollWidth > t.clientWidth + 1, t: t.textContent })));
+          c.ok(t6.length === 6 && t6.every(t => t.w >= 43.5 && !t.o), tag + ': 6 tabs fit ' + t6.map(t => t.t + ' ' + Math.round(t.w)).join(', '));
+        }
+      }
+      if (!full && (seat === 'rhythm' || seat === 'drums')) {   // the ⋯ menu on the verse (your part's tools / the drum tools)
+        await tap(page, 'seq-tab-verse'); if (seat !== 'drums') await tap(page, 'seq-layer-part');
+        await openTools(page);
+        c.ok((await audit(page)).length === 0, tag + ' ⋯ menu layout ' + (await audit(page)).join('; '));
+        await shot('seq_menu_' + tag); await tap(page, 'btn-seq-tools-cancel');
+      }
+      await tap(page, 'seq-tab-song');
+      c.ok((await audit(page)).length === 0, tag + ' Song tab ' + (await audit(page)).join('; '));
+      if (!full && seat === 'rhythm') await shot('seq_song_' + tag);
+    }
+    // The chord sheet + the picker (shots for the owner check).
+    await writeBlock(page, { seed: 515, bandId: 'gravel_kings', seat: 'rhythm' });
+    await tap(page, 'btn-quick-tweak');
+    await tap(page, 'chord-chip-1'); await waitScreen(page, 'seq-chord');
+    c.ok((await audit(page)).length === 0, 'chord sheet layout ' + (await audit(page)).join('; '));
+    await shot('seq_chord_sheet');
+    await page.evaluate(() => GG.ui.close('seq-chord'));
+    await tap(page, 'seq-chords'); await waitScreen(page, 'seq-pick');
+    c.ok((await audit(page)).length === 0, 'picker layout ' + (await audit(page)).join('; '));
+    await shot('seq_picker');
+    await page.evaluate(() => GG.ui.close('seq-pick'));
+
+    // Notch + home bar insets, Bigger text on.
+    const INS = BIG ? { top: 59, bot: 34 } : { top: 47, bot: 34 };
+    await page.addStyleTag({ content: `:root{--safe-top:${INS.top}px !important;--safe-bot:${INS.bot}px !important}` });
+    await ev(() => GG.prefs.set({ bigText: true }));
+    await page.waitForFunction(() => document.documentElement.classList.contains('gg-big'));
+    for (const seat of ['drums', 'lead']) {
+      await writeBlock(page, { seed: 616, bandId: 'hail_damage', seat });
+      await page.waitForTimeout(250);
+      const r = await ev(ins => {
+        const H = document.documentElement.clientHeight, qm = document.querySelector('.quick-main'), rect = e => e.getBoundingClientRect();
+        qm.scrollTop = qm.scrollHeight;
+        const qr = rect(qm), out = { sliders: [], foot: [], head: [], pad: parseFloat(getComputedStyle(qm).paddingBottom) };
+        ['energy', 'mood', 'feel', 'fills', 'tempo'].forEach(k => { const s = rect(document.querySelector('[data-testid="quick-' + k + '"]')); out.sliders.push(k + ':' + (s.height > 0 && s.top >= qr.top - 1 && s.bottom <= qr.bottom + 1 ? 'ok' : Math.round(s.top) + '-' + Math.round(s.bottom) + ' vs ' + Math.round(qr.top) + '-' + Math.round(qr.bottom))); });
+        document.querySelectorAll('.full.seq .full-foot .btn').forEach(b => { const x = rect(b); out.foot.push(x.bottom <= H - ins.bot + 1 && x.top >= qr.bottom - 1 ? 'ok' : b.dataset.testid + '@' + Math.round(x.bottom)); });
+        document.querySelectorAll('.seq-head button').forEach(b => { const x = rect(b); out.head.push(x.top >= ins.top - 1 ? 'ok' : b.dataset.testid + '@' + Math.round(x.top)); });
+        out.scrolls = qm.scrollHeight > qm.clientHeight + 1;
+        return out;
+      }, INS);
+      // every slider reachable: scrolled to the end, the last one sits inside quick-main (they scroll, never clip)
+      c.ok(r.sliders.slice(-1)[0] === 'tempo:ok' && r.foot.every(x => x === 'ok') && r.head.every(x => x === 'ok') && r.pad >= 16,
+        seat + ' Quick song with insets + Bigger text: sliders reachable through quick-main (' + r.sliders.join(' ') + '), foot ' + r.foot.join() + ', header ' + r.head.join() + ', pad ' + r.pad);
+      await ev(() => { document.querySelector('.quick-main').scrollTop = 0; });
+      await shot('seq_quick_insets_big_' + seat);
+      await tap(page, 'btn-quick-tweak');
+      if (seat === 'lead') {
+        // the longest progression name of the genre (bass/rhythm lists) on the verse: the picker label ellipsizes inside the row
+        await ev(() => { const D = GG.ui.get('seq').data, B = GG.songs.genre(GG.state.genre).backing; let best = 0, n = 0;
+          (B.hooks.verse || []).forEach((h, i) => { const l = String(h.name || '').length; if (l > n) { n = l; best = i; } }); D.pat.part.sections.verse.hook = best; GG.ui.get('seq').rerender(); });
+      }
+      const e = await ev(ins => {
+        const W2 = document.documentElement.clientWidth, H = document.documentElement.clientHeight, q = s => document.querySelector(s), rect = el => el.getBoundingClientRect();
+        const ch = q('[data-testid="seq-chords"]'), tg = q('.seq-toggle'), tabs = [...document.querySelectorAll('.seq-tabs .tab')];
+        return { chords: ch ? rect(ch).right <= W2 + 1 && tg.scrollWidth <= tg.clientWidth + 1 : true, label: ch ? ch.textContent : '', tabs: tabs.every(t => t.scrollWidth <= t.clientWidth + 1),
+          head: rect(q('[data-testid="btn-seq-close"]')).top >= ins.top - 1, foot: [...document.querySelectorAll('.full.seq .full-foot .btn')].every(b => rect(b).bottom <= H - ins.bot + 1),
+          over: [...document.querySelectorAll('#screens *')].filter(x => { const r = rect(x); return r.width && (r.right > W2 + 1 || r.left < -1); }).length };
+      }, INS);
+      c.ok(e.chords && e.tabs && e.head && e.foot && !e.over, seat + ' editor with insets + Bigger text: header clear of the notch, foot above the home bar, tabs + "' + e.label + '" fit, no overflow ' + JSON.stringify(e));
+      await shot('seq_edit_insets_big_' + seat);
+    }
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'layout threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
 }

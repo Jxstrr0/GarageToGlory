@@ -3,8 +3,8 @@
 //   gear : the kit hotspot (sketch pad) → 🛒 Drum shop: kit tiers (the pro kit waits for Local Heroes, the why shows), toms →
 //          lane 5, ride → lane 6 (needs the toms first), the pedal, the pawn-shop kit (GG.audio.kitQuality 1); each buy is
 //          heard (GG.audio.hit on the new lane); the open grid grows to 6 lanes; Outro / Solo tabs ("+Solo" → Add → the
-//          off-beat cells dim), arrangement presets keep the extras, the tools take one out; the guided Write gets Solo +
-//          Outro steps (8 steps); a 6-lane gig: 6 highway lanes ≥ 60px each, keys G / H hit toms / ride. Screenshots
+//          off-beat cells dim), arrangement presets keep the extras, the ⋯ tools take one out; v1.3: the kit opens Quick song
+//          (no draft; Tweak for the grid, the shop in ⋯), a Write block's Quick song uses 6 lanes + Solo + Outro; a 6-lane gig: 6 highway lanes ≥ 60px each, keys G / H hit toms / ride. Screenshots
 //          shop_gear.png, shop_seq.png, shop_gig6.png.
 //   merch: the merch hotspot → the merch table: toggles, the price stepper (clamped to the range), Buy N boxes (the first
 //          shirt order comes back misprinted: the tease + the pending panel), the van haul / pile / estimate; the gig board's
@@ -28,7 +28,7 @@
 //   sheet: tiles the screenshots into tests/.cache/v08_shop_sheet.png.
 // Run: node build.js && META_ONLY=gear timeout 500 node tests/pw_shop.js
 const path = require('path'), fs = require('fs');
-const { open, checker } = require('./_pw');
+const { open, checker, openTools } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
@@ -109,8 +109,12 @@ async function gear() {
     await boot(page, 808, { fund: 20000 });
     await page.evaluate(() => GG.emit('hotspot', { action: 'kit' }));
     await waitScreen(page, 'seq');
+    // v1.3: no draft yet -> Quick song (D10); Tweak opens the grid; the shop lives in the ⋯ menu
+    c.ok(await page.evaluate(() => GG.debug('seq').screen === 'quick'), 'the kit opens the sketch pad on Quick song (no draft yet)');
+    await tap(page, 'btn-quick-tweak');
+    await openTools(page);
     const s0 = await page.evaluate(() => ({ mode: GG.debug('seq').mode, lanes: document.querySelectorAll('.seq-grid .lh').length, shop: !!document.querySelector('[data-testid="btn-kit-shop"]') }));
-    c.ok(s0.mode === 'sketch' && s0.lanes === 4 && s0.shop, 'the kit opens the sketch pad (4 lanes) with a 🛒 Drum shop button ' + JSON.stringify(s0));
+    c.ok(s0.mode === 'sketch' && s0.lanes === 4 && s0.shop, 'Tweak: the sketch pad grid (4 lanes); ⋯ has a 🛒 Drum shop row ' + JSON.stringify(s0));
     await tap(page, 'btn-kit-shop'); await waitScreen(page, 'gear');
     const g0 = await page.evaluate(() => {
       const q = s => document.querySelector('[data-testid="' + s + '"]');
@@ -166,24 +170,21 @@ async function gear() {
     const fit = await page.evaluate(() => { const g = document.querySelector('[data-testid="seq-grid"]'), cell = document.querySelector('[data-testid="cell-ride-0"]').getBoundingClientRect(); return { sw: g.scrollWidth, cw: g.clientWidth, w: Math.round(cell.width), h: Math.round(cell.height) }; });
     c.ok(fit.sw <= fit.cw + 1 && fit.w >= 40, '6-lane cells are thumb-sized ' + JSON.stringify(fit));
     await shot(page, 'shop_seq.png');
-    await tap(page, 'btn-seq-tools'); await tap(page, 'seq-remove-solo');
+    await openTools(page); await tap(page, 'seq-remove-solo');
     c.ok(await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return !p.sections.solo && p.arrangement.indexOf('solo') < 0 && GG.debug('seq').tab === 'song'; }), 'the tools take the solo out again');
     await tap(page, 'btn-seq-close');
-    // the guided Write: Solo + Outro steps
-    await page.evaluate(() => { window.__composed = false; GG.ui.composeWeek(1, () => { window.__composed = true; }); });
+    // v1.3: a Write block's Quick song uses the whole kit: 6 lanes, a Solo and an Outro (withExtras); Epic keeps them
+    await page.evaluate(() => { window.__composed = false; GG.state.draft = null; GG.ui.composeWeek(1, () => { window.__composed = true; }); });
     await waitScreen(page, 'seq');
-    c.ok(/Step 1 of 8/.test(await text(page, 'guide-step')), 'guided Write: 8 steps with Solo + Outro');
-    for (let i = 0; i < 3; i++) await tap(page, 'btn-guide-next');
-    c.ok(await count(page, 'guide-screen-solo') === 1, 'step 4 is the Solo');
-    await tap(page, 'guide-extra-solo-yes');
-    await tap(page, 'btn-guide-next');
-    c.ok(await count(page, 'guide-screen-outro') === 1, 'step 5 is the Outro');
-    await tap(page, 'guide-extra-outro-yes');
-    await tap(page, 'btn-guide-next'); await tap(page, 'btn-guide-next');
-    await tap(page, 'guide-order-epic');
+    const qk = await page.evaluate(() => ({ dbg: GG.debug('seq'), p: GG.ui.get('seq').data.pat }));
+    c.ok(qk.dbg.screen === 'quick' && qk.p.lanes === 6 && qk.p.sections.solo && qk.p.sections.outro && / outro$/.test(qk.p.arrangement.join(' ')), 'Quick song with the full kit: 6 lanes, a Solo + an Outro ' + qk.p.arrangement.join(' '));
+    await tap(page, 'btn-quick-tweak');
+    const tabs2 = await page.evaluate(() => [...document.querySelectorAll('.seq-tabs .tab')].map(t => t.textContent));
+    c.ok(tabs2.join(',') === 'Verse,Chorus,Bridge,Solo,Outro,Song', 'Tweak: the Solo + Outro tabs are in: ' + tabs2.join(','));
+    await tap(page, 'seq-tab-song'); await tap(page, 'seq-arr-epic');
     const ep = await page.evaluate(() => GG.ui.get('seq').data.pat.arrangement.join(' '));
     c.ok(/solo/.test(ep) && / outro$/.test(ep), 'the Epic order keeps them: ' + ep);
-    await tap(page, 'btn-guide-next'); await tap(page, 'btn-guide-save');
+    await tap(page, 'btn-seq-save');
     await page.waitForFunction(() => window.__composed === true, null, { timeout: 5000 });
     const ps = await page.evaluate(() => { const p = GG.state.pendingSongs[0]; return { solo: !!p.sections.solo, outro: !!p.sections.outro, lanes: p.lanes }; });
     c.ok(ps.solo && ps.outro && ps.lanes === 6, 'the saved song has 6 lanes, a solo and an outro ' + JSON.stringify(ps));
@@ -630,6 +631,7 @@ async function seatShop() {
         GG.ui.openSketch();
       }, [bandId, seatId]);
       await waitScreen(page, 'seq');
+      await openTools(page);   // v1.3: the shop row lives in the songwriter's ⋯ menu
       const shopBtn = await text(page, 'btn-kit-shop');
       c.ok(seatId === 'bass' ? /Bass shop/.test(shopBtn) : /Guitar shop/.test(shopBtn), seatId + ': the sketch pad opens your seat’s shop: ' + shopBtn);
       await tap(page, 'btn-kit-shop'); await waitScreen(page, 'gear');
@@ -667,8 +669,10 @@ async function seatShop() {
       const b2 = await page.evaluate(() => ({ seatLanes: GG.career.seatLanes(GG.state), runs: GG.career.seatRuns(GG.state), lanes: GG.state.gear.lanes, dk: GG.state.gear.doubleKick, now: document.querySelector('[data-testid="gear-now"]').dataset }));
       c.ok(b2.seatLanes === (seatId === 'bass' ? 5 : 6) && b2.lanes === 6 && b2.runs && b2.dk && b2.now.runs === '1', seatId + ': ride/cab + run gear: your lanes ' + b2.seatLanes + ', kit 6 + double kick, runs on ' + JSON.stringify(b2));
       await tap(page, 'btn-gear-done');
+      await page.waitForFunction(() => GG.debug('ui').screen === 'seq', null, { timeout: 10000 });
+      if (await page.evaluate(() => GG.debug('seq').screen === 'quick')) await tap(page, 'btn-quick-tweak');   // v1.3: the sketch pad sat on Quick song
       const grid = await page.evaluate(() => ({ cols: document.querySelector('[data-testid="part-grid"]') ? document.querySelector('[data-testid="part-grid"]').dataset.lanes : null }));
-      c.ok(grid.cols === (seatId === 'bass' ? '3' : '5'), seatId + ': back to your part’s grid ' + JSON.stringify(grid));
+      c.ok(grid.cols === (seatId === 'bass' ? '6' : '7'), seatId + ': back to your part’s grid (v1.3 rows) ' + JSON.stringify(grid));
     }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }

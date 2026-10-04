@@ -22,6 +22,9 @@
 //             velocity tap is one buffer source (+ its slot the first time) from the set; the 1.1 tap path is untouched;
 //             KS warm (F7) per song <= 300 ms of traced CPU on the 4x throttle (wall <= 1.2 s), slices <= 8 ms, cache <= 8 MB. A slice = its main-thread CPU time from
 //             a trace, less the GC inside it (see sliceTrace; the wall numbers are logged next to it).
+//   quick   : v1.3 Lane U (plan_contract_1.3 §4.9): Quick song looping on a 4x CPU throttle: a slider release re-composes, re-rates
+//             and hands the new song to the playing loop (handle.update) in one task; the new notes sound within that task + the
+//             player's look-ahead (0.12 s) + one scheduler tick (25 ms): <= 300 ms. The loop never stops; compose ms is logged.
 // Run: node build.js && META_ONLY=governor timeout 500 node tests/pw_perf.js
 const { open, checker, VIEW } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -545,7 +548,47 @@ async function pre() {
   finally { await o.close(); c.done(); }
 }
 
+// v1.3: slider release -> new loop audible (see the header, section quick)
+async function quickSong() {
+  const c = checker('quick');
+  const o = await open();
+  const { page, errors } = o;
+  let cdp = null;
+  try {
+    await boot(page);
+    await page.evaluate(() => { GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: 'hail_damage' }); GG.ui.closeAll(); GG.state.card = null; GG.state.phase = 'plan'; GG.ui.composeWeek(1, () => {}); });
+    await page.waitForFunction(() => GG.debug('ui').screen === 'seq' && GG.debug('seq').screen === 'quick', null, { timeout: 30000 });
+    await page.locator(tid('btn-guide-play')).click();   // a real tap: the audio unlock
+    await page.waitForFunction(() => GG.debug('audio').playing && GG.debug('seq').playing === 'quick', null, { timeout: 10000 });
+    await sleep(600);
+    cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const rows = [];
+    for (const [id, v] of [['energy', 4], ['energy', 1], ['fills', 4], ['mood', 0], ['fills', 0], ['energy', 3]]) {
+      rows.push(Object.assign({ id, v }, await page.evaluate(async a => {
+        const D = GG.ui.get('seq').data, inp = document.querySelector('[data-testid="quick-' + a[0] + '"]'), before = JSON.stringify(D.pat);
+        const t0 = performance.now();
+        inp.value = a[1]; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change'));
+        const t1 = performance.now();
+        const fresh = D.handle && D.handle.playing && D.handle.timeline && D.handle.timeline.events.length === GG.audio.timeline(D.pat, Object.assign({ genre: GG.state.genre, songId: D.seed }, D.pat.part ? { seat: D.pat.part.seat, part: D.pat.part } : {})).events.length;
+        let step = null;
+        await new Promise(res => { const off = GG.on('audio:step', () => { off(); step = performance.now(); res(); }); setTimeout(res, 2000); });
+        return { task: Math.round(t1 - t0), audible: Math.round(t1 - t0 + 120 + 25), nextStep: step ? Math.round(step - t0) : null, compose: D.compose ? D.compose.ms : null,
+          changed: JSON.stringify(D.pat) !== before, fresh: !!fresh, playing: !!(D.handle && D.handle.playing) };
+      }, [id, v])));
+      await sleep(350);
+    }
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    console.log('INFO quick (4x throttle) ' + JSON.stringify(rows));
+    c.ok(rows.every(r => r.changed && r.fresh && r.playing), 'every slider release re-composes and hands the new song to the playing loop');
+    c.ok(rows.every(r => r.audible <= 300), 'slider release -> the new loop audible <= 300 ms on a 4x throttle (task + look-ahead + tick) ' + rows.map(r => r.id + r.v + ' ' + r.audible + 'ms (task ' + r.task + ', compose ' + r.compose + ')').join(' · '));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'quick threw: ' + (e.stack || e)); }
+  finally { try { if (cdp) await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }); } catch (e) { /* closed */ } await o.close(); c.done(); }
+}
+
 (async () => {
+  if (want('quick')) await quickSong();
   if (want('scenes')) await scenes();
   if (want('governor')) await governor();
   if (want('ratio')) await ratio();

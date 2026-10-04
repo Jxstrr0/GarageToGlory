@@ -16,7 +16,7 @@
 //               crowd) → the kit's sketch pad links to practice. No console errors.
 // Run: node build.js && META_ONLY=settings timeout 500 node tests/pw_settings.js
 const path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, openTools } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
@@ -314,7 +314,8 @@ async function difficulty() {
     // The kit (sketch pad) links to practice
     await page.evaluate(() => GG.emit('hotspot', { action: 'kit' }));
     await waitScreen(page, 'seq');
-    c.ok(await page.locator(tid('kit-practice')).count() === 1, 'the drum kit offers practice');
+    await openTools(page);   // v1.3: the sketch pad's practice row lives in the songwriter's ⋯ menu (5h listens on its ui:layout)
+    c.ok(await page.locator(tid('kit-practice')).count() === 1, 'the drum kit offers practice (⋯)');
     await tap(page, 'kit-practice'); await waitScreen(page, 'practice');
     c.ok(!errors.length, 'no console errors ' + errors.slice(0, 3));
   } finally { await close(); c.done(); }

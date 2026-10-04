@@ -12,7 +12,7 @@
 // SHOTS=1 saves tests/.cache/tut_<label>.png at every bubble check.
 // Every section: no console errors, every bubble button >= 48 px, the bubble stays on screen. PW_VIEW=440x956 for the owner's phone.
 // Run: node build.js && timeout 500 node tests/pw_tutorial.js
-const { open, checker, VIEW, shotName } = require('./_pw');
+const { open, checker, VIEW, shotName, openTools } = require('./_pw');
 const SHOTS = process.env.SHOTS ? require('path').join(__dirname, '.cache') : null;   // SHOTS=1: a screenshot per bubble checked
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
 const want = s => !ONLY.length || ONLY.includes(s);
@@ -119,8 +119,13 @@ async function weekOne(band) {
     await waitScreen(page, 'seq');
     await bubbleOf(page, 'w1_write');
     await cardChecks(page, c, 'w1_write');
-    const tip = await page.evaluate(() => { const t = document.querySelector('[data-testid="seq-tip"]'); return t ? t.textContent.trim() : ''; });
-    c.ok(!/:/.test(tip), 'the first-Write tip stays quiet while w1_write runs: "' + tip + '"');
+    // v1.3: a fresh Write opens Quick song; the first-Write grid tip (lines.writeTips) is held for the editor, and stays quiet
+    // while w1_write runs (the bubble shows the colon-free Quick line); the jam lives behind ⋯.
+    const tip = await page.evaluate(() => { const t = document.querySelector('[data-testid="seq-tip"]'), D = GG.ui.get('seq').data;
+      return { text: t ? t.textContent.trim() : '', hint: D.editHint || D.hint || null, screen: D.screen }; });
+    c.ok(tip.screen === 'quick' && !tip.hint && !/:/.test(tip.text), 'the first-Write tip stays quiet while w1_write runs: "' + tip.text + '"');
+    c.ok(await page.evaluate(() => { const r = document.querySelector('[data-testid="btn-seq-tools"]').getBoundingClientRect(); return r.width >= 43.5; }), 'the ⋯ button the jam step points at is there');
+    await openTools(page);
     await tap(page, 'btn-seq-jam');
     await waitScreen(page, 'results');
     await bubbleOf(page, 'w1_rehearse');
