@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V1.2.0.0</title>
+<title>Garage to Glory - V1.3.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -1114,12 +1114,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.2.0.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.3.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '1.2.0.0';
+  GG.VERSION = '1.3.0.0';
   GG.content = GG.content || {};
 
   var handlers = {};
@@ -1540,6 +1540,55 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    WRAP gains legacy (LEGACY, the career's last wrap only). Modules: GG.legacy (2f), GG.meta (12), GG.achieve (2g),
      GG.lessons (2h), GG.tutorial (5p); GG.rival.finalAt(state) -> { year, week } (the Sad Dome in the career's last year).
   ====================================================================== */
+
+  /* ======================================================================
+   V1.3 SONGWRITER (plan/plan_contract_1.3.md §4; status.md Addendum 5 S1-S8; SAVE_SCHEMA stays 10: every v1.3 key is optional)
+   Compatibility law: a song / pattern / part / save WITHOUT the v1.3 fields sanitizes, rates, charts, renders and saves exactly
+   as 1.2 (tests/compat_v12.test.js + tests/fixtures/v12_*; STAGE0; Classic hashes). Every v1.3 branch is gated on its own field
+   being present (and non-neutral); absent -> the 1.2 code runs and no new key appears on any object.
+   PATTERN (all optional ints; sanitize writes each only when present and valid, in this order after part, the loose path too):
+     chords: { verse?|chorus?|bridge?: [s0, s1, s2, s3] }   s = 0..11 semitones above the tonic per bar (never solo / outro)
+     fillBars: { <section>: [laneStr x lanes] }             bar 4 of every entry of that section (Q2 = 1; cleaned like a section)
+     mood: 0..4                                             Mood stop; absent or == songs.nativeMood(genre) -> the 1.2 sound
+     swing: 0..4                                            Feel stop (C.SWING); absent / 0 -> straight
+     recipe: { id: /^[a-z0-9-]{1,24}$/, seed: int >= 0, energy: 0..4, fills: 0..4 }   Quick-song provenance; never rated / played
+   PART v2 = { seat, v: 2, sections: { <name>: { prog|hook: int, rows: [16 chars x C.PART_V2[seat]] } } } (v written only when
+     2: a v1 part's JSON is 1.2's). songs.part.LAYOUT[1] = ROW_NAMES (v1), LAYOUT[2] = { rhythm: Chug, Open, Root, 5th, Oct,
+     Scratch ; bass: Low 5th, Root, 3rd, 5th, 7th, Oct ; lead: Low, 1, 2, 3, 4, 5, High }; part.UP = { rhythm: [0, 1], bass:
+     [1, 3, 5], lead: [1, 2, 3, 4, 5] } (v1 row i -> v2 row UP[i]); part.ROLE[seat] = { root, fifth, chug } (v2 rows the rating
+     reads per role: the UP image of the v1 row + rhythm root += Root, fifth += 5th, chug += Root / 5th / Oct; bass fifth += Low 5th).
+     Rows per 16th: rhythm mask & 3 = the v1 rule (1 chug, 2 open, 3 accent), Root / 5th / Oct single notes (power: false),
+     Scratch alone = a dead strum at the root (mute, dead: true); bass the lowest set row -> root + [-5, 0, third, 7, seventh,
+     12]; lead the highest set row -> scale degree [deg0 - 1, deg0..deg4, deg4 + 1] of the mood's scale.
+   Sim (21, pure, genre explicit): swingBeat(beat, s) ; chordsOf(p, name, genre, { part, seat }?) -> [4] (p.chords > the part's
+     prog (seat != lead) > the 1.2 hash pick) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
+     progChords(genre, name, i, mood) -> [4] (break bars home, Q4 = 1) ; progName(genre, seat, name, p, opts) ;
+     moodOf(genre, mood) -> rung | null (null = absent / native) ; nativeMood(genre) ; part.rowsOf(pt) -> row count ;
+     part.rowNames(pt) ; part.upgrade(pt) -> v2 copy (same sound, same ratings) ; part.view(pt) (v2 as is, else upgrade) ;
+     part.rowPitch(genre, seat, row, { mood, deg }) -> semitones over the bar root | lead scale degree | 'dead' ;
+     recipes(genre, gear, seat) ; sliders(genre, seat) ; surprise(genre, gear, seat, seed) ; compose(genre, { recipe, energy,
+     mood, swing, fills, bpm, seed, gear, seat }) -> sanitized PATTERN (shapes: contract §4.2; stage 0 ships stubs, Lane S fills).
+   Rating (S5): notes only; chords count only through the part hook (bass / rhythm compare chordsOf(verse) vs chordsOf(chorus)
+     only when p.chords has verse or chorus, else the 1.2 index rule; lead: always the index rule; similarity's part term: the
+     same gate); v2 partFeat reads roles through part.ROLE. rate(upgrade(pt)) deep-equals rate(pt) (compat_v12 gate).
+   Content: genres backing.moods = [5 x { id, mode, scale (length == backing.scale), third, seventh, remap? }], backing.moodNative
+     (the rung == today's mode / scale: metal 2, punk 1, rock 2, country 1); grooves[g].recipes / sliders, grooveFx, coach.quick.
+   Audio / gig (Lane A): chords > part prog > hash for every seat; mood (non-native) = B + rung, key.mode / name, o.third; swing
+     warps non-step events (e.g = the grid beat) before the sort; the drum chart t = swingBeat(beat) * spb; v2 parts via partBar2.
+   UI (Lane U): one-flow editor + Quick song; debug('seq') = { mode, screen, tab, layer, seat, playing, title, rating, playhead,
+     part, recipe, sliders: { energy, mood, feel, fills, bpm }, chords, chips, edited, compose: { ms, k } }.
+  ====================================================================== */
+  C.SWING = [0, 0.04, 0.083, 0.125, 0.1667];   // Feel stops: beats added to the off-8th (stop 4 = a full triplet)
+  C.SONG_SLIDERS = [                            // the Quick song sliders (songs.sliders adds each genre's stop labels)
+    { id: 'energy', name: 'Energy', lo: 'Sparse · easy', hi: 'Busy · show-off' },
+    { id: 'mood', name: 'Mood', lo: 'Bright', hi: 'Dark' },
+    { id: 'swing', name: 'Feel', lo: 'Straight', hi: 'Swing' },
+    { id: 'fills', name: 'Fills & surprises', lo: 'None', hi: 'Lots' },
+    { id: 'tempo', name: 'Tempo', lo: 'Slow', hi: 'Fast' }
+  ];
+  C.PART_V2 = { bass: 6, rhythm: 6, lead: 7 };   // v2 part rows per seat (songs.part.LAYOUT[2])
+  C.QUICK = { k: 8, debounceMs: 150, warmMs: 400 };   // compose variants, slider debounce, A.warm budget after a compose
+  C.SEQ_PART_ROW_MIN = 26;                       // px: the part grid's minimum row height (D9)
 
   /* ======================================================================
    V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)
@@ -6461,6 +6510,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         stabs: [1, 6, 1, 3],        // chug accents / doom answers above the low string: b2, tritone, minor third
         arps: [[0, 3, 7, 12, 15, 12, 7, 3], [1, 5, 8, 13, 17, 13, 8, 5], [0, 3, 5, 8, 12, 8, 5, 3], [0, 3, 7, 10, 12, 10, 7, 3]],   // Dana's solos
         keys: [-2, 2], mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10],
+        moods: [{ id: 'heroic', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 11 },
+          { id: 'minor', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
+          { id: 'phrygian', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
+          { id: 'sinister', mode: 'phrygian dominant', scale: [0, 1, 4, 5, 7, 8, 10], third: 4, seventh: 10 },
+          { id: 'abyss', mode: 'locrian', scale: [0, 1, 3, 5, 6, 8, 10], third: 3, seventh: 10 }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         vox: { hits: [[0, 0, 'scream', 24], [2, 0, 'scream', 24], [3, 8, 'scream', 19, true]], drop: ['growl', 12], brk: [[1, 8, 'growl', 7]],
           resp: [[1, 8, 'gang', 19]], held: [3, 8, 'held', 19, 8], count: ['shout', 12], whoa: [] }
@@ -6533,6 +6587,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
+        moods: [{ id: 'sunny', mode: 'lydian', scale: [0, 2, 4, 6, 7, 9, 11], third: 4, seventh: 11 },
+          { id: 'major', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 10 },
+          { id: 'gritty', mode: 'mixolydian', scale: [0, 2, 4, 5, 7, 9, 10], third: 4, seventh: 10 },
+          { id: 'bitter', mode: 'dorian', scale: [0, 2, 3, 5, 7, 9, 10], third: 3, seventh: 10 },
+          { id: 'gloomy', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10 }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         twoChords: [0, 5],   // Benny's entire vocabulary, relative to the bar's chord (I and IV)
         amp: { gain: 9, level: 0.085, pan: 0.62, preHp: 120, mid: [1100, 0.9, 5], presence: [3000, 1.1, 2], lp: 5200, detune: 6, lag: 0.009 },
@@ -6607,6 +6666,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
+        moods: [{ id: 'sunny', mode: 'major', scale: [0, 2, 4, 5, 7, 9], third: 4, seventh: 11 },
+          { id: 'bright', mode: 'major blues', scale: [0, 2, 3, 4, 7, 9], third: 4, seventh: 10 },
+          { id: 'bluesy', mode: 'major', scale: [0, 3, 5, 6, 7, 10], third: 4, seventh: 10 },
+          { id: 'moody', mode: 'minor', scale: [0, 2, 3, 5, 7, 10], third: 3, seventh: 10 },
+          { id: 'dark', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8], third: 3, seventh: 10 }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         amp: { gain: 5.5, level: 0.09, pan: 0.45, preHp: 90, mid: [800, 0.8, 3], presence: [2800, 1, 3], lp: 6000, detune: 4, lag: 0.012, ring: 0.2 },
         vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null,
@@ -6679,6 +6743,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
+        moods: [{ id: 'sweet', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 11 },
+          { id: 'major', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 10 },
+          { id: 'dusty', mode: 'mixolydian', scale: [0, 2, 4, 7, 10], third: 4, seventh: 10 },
+          { id: 'lonesome', mode: 'minor', scale: [0, 3, 5, 7, 10], third: 3, seventh: 10 },
+          { id: 'heartbreak', mode: 'minor', scale: [0, 2, 3, 7, 8], third: 3, seventh: 10 }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
         amp: { gain: 1.6, level: 0.2, pan: 0.3, bright: [2800, 1.2, 6], lp: 7000, slap: 0.11, slapFb: 0.18, slapLv: 0.5, slapPan: -0.35 },
         fiddle: { body: [[290, 4, 1.3], [520, 3.5, 1], [1150, 3, 0.8], [2700, 2.5, 0.55]], bow: 0.22, vib: [5.6, 0.009], pan: -0.35 },
@@ -25012,8 +25081,35 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var arr = srcArr.filter(function (s) { return ok.indexOf(s) >= 0; });
     out.arrangement = arr.length ? arr.slice(0, 16) : songs.ARRANGEMENTS.classic.slice();
     if (src.part != null) { var pt = songs.part.sanitize(src.part, ok, genre); if (pt) out.part = pt; }   // v1.1: your part (string seats)
+    cleanV13(src, out, g, loose);   // v1.3: chords, fillBars, mood, swing, recipe (each only when present and valid)
     return out;
   };
+  function intIn(v, lo, hi) { return typeof v === 'number' && v % 1 === 0 && v >= lo && v <= hi; }
+  var RECIPE_ID = /^[a-z0-9-]{1,24}$/;
+  function cleanV13(src, out, g, loose) {
+    var c = src.chords, fb = src.fillBars, r = src.recipe, ch = null, fo = null;
+    if (c && typeof c === 'object' && !Array.isArray(c)) SECTIONS.forEach(function (name) {   // never solo / outro
+      var a = c[name];
+      if (out.sections[name] && Array.isArray(a) && a.length === BARS && a.every(function (x) { return intIn(x, 0, 11); })) (ch = ch || {})[name] = a.slice();
+    });
+    if (ch) out.chords = ch;
+    if (fb && typeof fb === 'object' && !Array.isArray(fb)) Object.keys(out.sections).forEach(function (name) {   // cleaned like a section
+      var sec = fb[name], clean = [];
+      if (!Array.isArray(sec)) return;
+      for (var l = 0; l < out.lanes; l++) {
+        var s = typeof sec[l] === 'string' ? sec[l].replace(/[^x]/g, '.').slice(0, STEPS) : '';
+        s = (s + BLANK).slice(0, STEPS);
+        clean.push(l === KICK && !g.doubleKick && !loose ? oneFoot(s) : s);
+      }
+      (fo = fo || {})[name] = clean;
+    });
+    if (fo) out.fillBars = fo;
+    if (intIn(src.mood, 0, 4)) out.mood = src.mood;
+    if (intIn(src.swing, 0, 4)) out.swing = src.swing;
+    if (r && typeof r === 'object' && typeof r.id === 'string' && RECIPE_ID.test(r.id) && intIn(r.seed, 0, 9007199254740991) && intIn(r.energy, 0, 4) && intIn(r.fills, 0, 4)) {
+      out.recipe = { id: r.id, seed: r.seed, energy: r.energy, fills: r.fills };
+    }
+  }
 
   /* ---- Making patterns --------------------------------------------------------------------------------- */
   function padBar(bar, lanes) { var a = []; for (var l = 0; l < lanes; l++) a.push(bar[l] || BLANK); return a; }
@@ -25108,16 +25204,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return songs.generate(state.genre || 'metal', GG.RNG(GG.hashSeed((state.seed || 1) + '|' + key)), { gear: state.gear });
   };
 
-  songs.similarity = function (a, b) {
+  songs.similarity = function (a, b, genre) {
     var pa = songs.sanitize(a && a.pattern || a, null, null, true), pb = songs.sanitize(b && b.pattern || b, null, null, true);
     var lanes = Math.max(pa.lanes, pb.lanes), sum = 0;
     SECTIONS.forEach(function (name) { sum += jaccard(pa.sections[name], pb.sections[name], lanes, -1); });
     var d = sum / SECTIONS.length;
     if (pa.part && pb.part && pa.part.seat === pb.part.seat) {
-      var ps = 0, k = songs.part.key(pa.part.seat);
+      var ps = 0, k = songs.part.key(pa.part.seat), va = songs.part.view(pa.part), vb = songs.part.view(pb.part);
+      var arr = pa.part.seat !== 'lead' && (hasChords(pa) || hasChords(pb));
       SECTIONS.forEach(function (name) {
-        var x = pa.part.sections[name], y = pb.part.sections[name];
-        ps += 0.8 * jaccard(x.rows, y.rows, x.rows.length, -1) + (x[k] === y[k] ? 0.2 : 0);
+        var x = va.sections[name], y = vb.sections[name];
+        var same = arr ? String(songs.chordsOf(pa, name, genre)) === String(songs.chordsOf(pb, name, genre)) : x[k] === y[k];
+        ps += 0.8 * jaccard(x.rows, y.rows, x.rows.length, -1) + (same ? 0.2 : 0);
       });
       d = d * (0.6 + 0.4 * ps / SECTIONS.length);
     }
@@ -25131,6 +25229,43 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   part.SEATS = ['bass', 'rhythm', 'lead'];
   part.ROW_NAMES = { bass: ['Root', 'Fifth', 'Octave'], rhythm: ['Chug', 'Open'], lead: ['Low', '2', '3', '4', 'High'] };
   part.key = function (seat) { return seat === 'lead' ? 'hook' : 'prog'; };
+  var V2N = C.PART_V2 || { bass: 6, rhythm: 6, lead: 7 };
+  part.LAYOUT = { 1: part.ROW_NAMES, 2: { rhythm: ['Chug', 'Open', 'Root', '5th', 'Oct', 'Scratch'],
+    bass: ['Low 5th', 'Root', '3rd', '5th', '7th', 'Oct'], lead: ['Low', '1', '2', '3', '4', '5', 'High'] } };
+  part.UP = { rhythm: [0, 1], bass: [1, 3, 5], lead: [1, 2, 3, 4, 5] };
+  part.ROLE = { rhythm: { root: [0, 2], fifth: [1, 3], chug: [0, 2, 3, 4] }, bass: { root: [1], fifth: [0, 3], chug: [1] },
+    lead: { root: [1], fifth: [2], chug: [1] } };
+  part.SCRATCH = 5;   // the rhythm's Scratch row (v2): a dead strum at the root
+  part.rowsOf = function (pt) { var seat = pt && pt.seat; return PART_ROWS[seat] ? (pt.v === 2 ? V2N[seat] : PART_ROWS[seat]) : 0; };
+  part.rowNames = function (pt) { var seat = pt && pt.seat; return PART_ROWS[seat] ? part.LAYOUT[pt.v === 2 ? 2 : 1][seat].slice() : []; };
+  function upRows(rows, seat) {
+    var out = [], i, up = part.UP[seat];
+    for (i = 0; i < V2N[seat]; i++) out.push(BLANK);
+    for (i = 0; i < PART_ROWS[seat]; i++) { var s = rows && typeof rows[i] === 'string' ? rows[i].replace(/[^x]/g, '.').slice(0, STEPS) : ''; out[up[i]] = (s + BLANK).slice(0, STEPS); }
+    return out;
+  }
+  function upSection(x, seat) {   // a v1 section -> v2 (the index floors at 0, as the loose path cleans it)
+    var k = part.key(seat), o = {}, v = Math.floor(Number(x && x[k]));
+    o[k] = isFinite(v) && v >= 0 ? v : 0;
+    o.rows = upRows(x && x.rows, seat);
+    return o;
+  }
+  part.upgrade = function (pt) {
+    if (!pt || typeof pt !== 'object' || !PART_ROWS[pt.seat]) return null;
+    if (pt.v === 2) return U.clone(pt);
+    var seat = pt.seat, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {}, out = { seat: seat, v: 2, sections: {} };
+    Object.keys(src).forEach(function (name) { var x = src[name]; if (x && typeof x === 'object' && Array.isArray(x.rows)) out.sections[name] = upSection(x, seat); });
+    return out;
+  };
+  part.view = function (pt) { return pt && pt.v === 2 ? pt : part.upgrade(pt); };
+  part.rowPitch = function (genre, seat, row, o) {
+    o = o || {};
+    if (!(row >= 0 && row < (V2N[seat] || 0)) || row % 1) return null;
+    if (seat === 'rhythm') return row === part.SCRATCH ? 'dead' : [0, 0, 0, 7, 12][row];
+    if (seat === 'bass') { var r = rungOf(genre, o.mood); return [-5, 0, r.third, 7, r.seventh, 12][row]; }
+    var deg = Array.isArray(o.deg) && o.deg.length >= 5 ? o.deg : [0, 1, 2, 3, 4];
+    return row === 0 ? (deg[0] | 0) - 1 : row === 6 ? (deg[4] | 0) + 1 : deg[row - 1] | 0;
+  };
   function partList(genre, seat, section) {
     var B = songs.genre(genre || 'metal').backing || {}, P = B.progressions || {};
     var list = seat === 'lead' && B.hooks ? B.hooks[section] : P[section];
@@ -25208,8 +25343,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     out.rows = rows;
     return out;
   };
-  function cleanSection(x, seat, list) {
-    var n = PART_ROWS[seat], k = part.key(seat), rows = [], src = x && Array.isArray(x.rows) ? x.rows : [];
+  function cleanSection(x, seat, list, n2) {   // v1.3: n2 = the v2 row count (a v2 part), else the v1 rows
+    var n = n2 || PART_ROWS[seat], k = part.key(seat), rows = [], src = x && Array.isArray(x.rows) ? x.rows : [];
     for (var r = 0; r < n; r++) {
       var s = typeof src[r] === 'string' ? src[r].replace(/[^x]/g, '.').slice(0, STEPS) : '';
       rows.push((s + BLANK).slice(0, STEPS));
@@ -25221,11 +25356,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   part.sanitize = function (pt, names, genre) {
     if (!pt || typeof pt !== 'object' || !PART_ROWS[pt.seat]) return null;
-    var seat = pt.seat, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {}, out = { seat: seat, sections: {} };
+    var seat = pt.seat, v2 = pt.v === 2, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {};
+    var out = v2 ? { seat: seat, v: 2, sections: {} } : { seat: seat, sections: {} };
     (names || SECTIONS).forEach(function (name) {
       var x = src[name];
       out.sections[name] = x && typeof x === 'object' && Array.isArray(x.rows)
-        ? cleanSection(x, seat, genre ? partList(genre, seat, name) : null) : part.suggest(genre, seat, name);
+        ? cleanSection(x, seat, genre ? partList(genre, seat, name) : null, v2 ? V2N[seat] : 0) : v2 ? upSection(part.suggest(genre, seat, name), seat) : part.suggest(genre, seat, name);
     });
     return out;
   };
@@ -25315,6 +25451,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       rep: union ? inter / union : 0, root1: on(rows[0], 0) ? 1 : 0, fifth3: seat === 'bass' && on(rows[1], 8) ? 1 : 0,
       chug: seat === 'rhythm' ? count(rows[0]) : 0 };
   }
+  function anyOn(rows, set, i) { for (var q = 0; q < set.length; q++) if (rows[set[q]] && on(rows[set[q]], i)) return true; return false; }
+  function partFeat2(sec, kick, seat) {
+    var rows = sec.rows, n = rows.length, R = part.ROLE[seat] || part.ROLE.bass, hits = 0, lock = 0, kicks = count(kick), s8 = 0, odd = 0, used = 0, chug = 0;
+    var inter = 0, union = 0, i, r;
+    for (r = 0; r < n; r++) if (count(rows[r])) used++;
+    for (i = 0; i < STEPS; i++) {
+      var any = false;
+      for (r = 0; r < n; r++) if (on(rows[r], i)) any = true;
+      if (seat === 'rhythm' && anyOn(rows, R.chug, i)) chug++;
+      if (!any) continue;
+      hits++;
+      if (on(kick, i)) lock++;
+      if (i % 2 === 0) s8++; else odd++;
+    }
+    for (r = 0; r < n; r++) for (i = 0; i < STEPS / 2; i++) { var a = on(rows[r], i), b = on(rows[r], i + STEPS / 2); if (a && b) inter++; if (a || b) union++; }
+    return { hits: hits, lock: hits ? lock / hits : 0, cover: kicks ? lock / kicks : 0, steady8: s8 / 8, odd: odd, rows: used,
+      rep: union ? inter / union : 0, root1: anyOn(rows, R.root, 0) ? 1 : 0, fifth3: seat === 'bass' && anyOn(rows, R.fifth, 8) ? 1 : 0,
+      chug: seat === 'rhythm' ? chug : 0 };
+  }
   function band01(v, lo, hi, soft) { return v >= lo && v <= hi ? 1 : Math.max(0, 1 - (v < lo ? lo - v : v - hi) / soft); }
   var PART_FULL = { bass: [2, 12], rhythm: [2, 14], lead: [3, 12] };
   var PART_TIPS = { empty: 'Your part is nearly empty. Give the band something to lean on.', busy: 'Your part is too busy. Leave some air.',
@@ -25338,7 +25493,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var pt = p.part;
     if (!pt) return null;
     var seat = pt.seat, sumG = 0, sumW = 0, raw = 0, notes = 0, feats = {};
-    songs.sectionsOf(p).forEach(function (name) { if (pt.sections[name]) feats[name] = partFeat(pt.sections[name], lane(p.sections[name], KICK), seat); });
+    var feat = pt.v === 2 ? partFeat2 : partFeat;   // v1.3: a v2 part reads its roles (part.ROLE)
+    songs.sectionsOf(p).forEach(function (name) { if (pt.sections[name]) feats[name] = feat(pt.sections[name], lane(p.sections[name], KICK), seat); });
     p.arrangement.forEach(function (name) {
       var f = feats[name]; if (!f) return;
       var w = name === 'bridge' ? 0.5 : name === 'outro' ? X.outroWeight : name === 'solo' ? (seat === 'lead' ? 1 : X.soloWeight) : 1;
@@ -25352,7 +25508,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       for (var r = 0; r < v.rows.length; r++) for (var i = 0; i < STEPS; i++) { var a = on(v.rows[r], i), b = on(c.rows[r], i); if (a && b) inter++; if (a || b) union++; }
       var d = union ? 1 - inter / union : 0, contrast = d < 0.05 ? 0 : d < 0.25 ? (d - 0.05) / 0.2 : d <= 0.7 ? 1 : 1 - 0.6 * (d - 0.7) / 0.3;
       var fc = feats.chorus || { rep: 0, hits: 0 }, fv = feats.verse || { hits: 0 };
-      hook = 0.45 * Math.max(contrast, v[k] !== c[k] ? 0.6 : 0) + 0.35 * U.clamp((fc.rep - 0.2) / 0.6, 0, 1) + 0.2 * (fv.hits ? Math.min(1, fc.hits / fv.hits) : fc.hits ? 1 : 0);
+      var moved = seat !== 'lead' && p.chords && (p.chords.verse || p.chords.chorus)
+        ? String(songs.chordsOf(p, 'verse', genre)) !== String(songs.chordsOf(p, 'chorus', genre)) : v[k] !== c[k];
+      hook = 0.45 * Math.max(contrast, moved ? 0.6 : 0) + 0.35 * U.clamp((fc.rep - 0.2) / 0.6, 0, 1) + 0.2 * (fv.hits ? Math.min(1, fc.hits / fv.hits) : fc.hits ? 1 : 0);
     }
     var n = p.arrangement.length || 1;
     return { groove: sumW ? sumG / sumW : 0, hook: hook, raw: raw / n * p.bpm / 120, notes: notes };
@@ -25362,6 +25520,122 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r ? { groove: Math.round(100 * r.groove), hook: Math.round(100 * r.hook), notes: r.notes } : null;
   };
   songs.PART_WEIGHT = { groove: 0.35, hook: 0.25, difficulty: 0.5 };
+
+  /* ---- v1.3 "Songwriter": chords, mood, swing, quick songs (plan_contract_1.3 §4.2) ---------------------------------- */
+  songs.swingBeat = function (beat, s) {
+    var sw = s ? (C.SWING || [])[s] : 0;
+    if (!sw) return beat;
+    var b = Math.floor(beat), f = beat - b, m = 0.5 + sw;
+    if (!f) return beat;
+    return b + (f <= 0.5 ? f * 2 * m : m + (f - 0.5) * 2 * (1 - m));
+  };
+  function hasChords(p) { var c = p && p.chords; return !!(c && (c.verse || c.chorus || c.bridge)); }
+  songs.nativeMood = function (genre) { var B = songs.genre(genre).backing || {}; return intIn(B.moodNative, 0, 4) ? B.moodNative : 0; };
+  songs.moodOf = function (genre, mood) {
+    var M = (songs.genre(genre).backing || {}).moods;
+    if (!Array.isArray(M) || !intIn(mood, 0, M.length - 1) || mood === songs.nativeMood(genre)) return null;
+    return U.clone(M[mood]);
+  };
+  function rungOf(genre, mood) {
+    var B = songs.genre(genre).backing || {}, r = songs.moodOf(genre, mood) || (Array.isArray(B.moods) ? B.moods[songs.nativeMood(genre)] : null);
+    return r || { mode: B.mode || 'minor', scale: B.scale || [0, 2, 3, 5, 7, 8, 10], third: genre === 'metal' ? 3 : 4, seventh: 10 };
+  }
+  function chordSource(p, name, genre, opts) {
+    var q = songs.sanitize(p && p.pattern || p, null, null, true), B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name] || [[0, 0, 0, 0]];
+    if (q.chords && q.chords[name]) return { chords: q.chords[name].slice(), from: 'chords', i: null, q: q };
+    opts = opts || {};
+    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: list[i].slice(), from: 'hash', i: i, q: q };
+    var pt = opts.part !== undefined ? opts.part : q.part, want = opts.seat !== undefined ? opts.seat : null;
+    if (want === 'drums' || !pt || typeof pt !== 'object' || !pt.sections || typeof pt.sections !== 'object') return out;   // (30 partOf)
+    var seat = PART_ROWS[want] ? want : pt.seat, x = pt.sections[name];
+    if (!PART_ROWS[seat] || (pt.seat && pt.seat !== seat) || seat === 'lead' || !x || typeof x !== 'object') return out;
+    if (!(isFinite(x.prog) && x.prog !== null)) return out;   // (30 partSec)
+    var pl = (B.progressions || {})[name];
+    if (!pl || !pl.length) return out;
+    var j = Math.max(0, Math.min(pl.length - 1, x.prog | 0));
+    return { chords: pl[j].slice(), from: 'part', i: j, q: q };
+  }
+  songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
+  songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)
+  var POWER_GENRES = { metal: 1, punk: 1, rock: 1 };
+  songs.chordLabel = function (genre, mood, tonic, semi) {
+    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
+    if (POWER_GENRES[gid]) return name + '5';
+    var r = rungOf(gid, mood), sc = r.scale || [];
+    if (!s) return name + (r.third === 3 ? 'm' : '');
+    var maj = sc.indexOf((s + 4) % 12) >= 0, min = sc.indexOf((s + 3) % 12) >= 0;
+    if (maj !== min) return name + (min ? 'm' : '');
+    var parent = r.third === 3 ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];   // the third isn't in a gapped scale: the parent key's
+    return name + (parent.indexOf((s + 3) % 12) >= 0 ? 'm' : '');
+  };
+  songs.progChords = function (genre, name, i, mood) {
+    var B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name], roles = (B.roles || {})[name] || [];
+    if (!Array.isArray(list) || !list.length) list = [[0, 0, 0, 0]];
+    var a = list[Math.max(0, Math.min(list.length - 1, Math.floor(Number(i)) || 0))], r = songs.moodOf(genre, mood), map = r && r.remap, out = [];
+    for (var bar = 0; bar < BARS; bar++) {
+      var x = a[bar % a.length] | 0;
+      if (map && map[x] != null) x = map[x] | 0;
+      out.push(roles.length && roles[bar % roles.length] === 'break' ? 0 : ((x % 12) + 12) % 12);
+    }
+    return out;
+  };
+  songs.progName = function (genre, seat, name, p, opts) {
+    opts = opts || {};
+    var ch = part.choices(genre, seat === 'lead' ? 'lead' : seat === 'rhythm' ? 'rhythm' : 'bass', name), src;
+    if (seat === 'lead') {
+      var q = songs.sanitize(p && p.pattern || p, null, null, true), pt = opts.part !== undefined ? opts.part : q.part, x = pt && pt.sections && pt.sections[name];
+      var hi = x && isFinite(x.hook) && x.hook !== null ? Math.max(0, Math.min(ch.length - 1, x.hook | 0)) : 0;
+      return ch[hi] ? ch[hi].name : '';
+    }
+    src = chordSource(p, name, genre, { part: opts.part, seat: opts.seat !== undefined ? opts.seat : seat });
+    if (src.from === 'chords') {
+      var want = String(src.chords);
+      for (var i = 0; i < ch.length; i++) if (String(songs.progChords(genre, name, i, src.q.mood)) === want) return ch[i].name;
+      return 'Custom';
+    }
+    return ch[src.i] ? ch[src.i].name : 'Custom';
+  };
+
+  function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
+  var STUB_STOPS = { energy: ['Lazy', 'Easy', 'Steady', 'Busy', 'Show-off'], mood: ['Sunny', 'Bright', 'Home', 'Moody', 'Dark'],
+    swing: ['Straight', 'A lilt', 'Shuffle', 'Swung', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Lots'] };
+  songs.recipes = function (genre, gear, seat) {
+    var G = songs.genre(genre), sl = { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 };
+    return [{ id: 'signature', name: 'Signature', desc: 'The band’s own sound.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: sl },
+      { id: 'surprise', name: 'Surprise me', desc: 'Roll the dice.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: U.clone(sl), surprise: true }];
+  };
+  songs.sliders = function (genre, seat) {
+    var G = songs.genre(genre), GS = songs.grooves(genre).sliders || {};
+    return (C.SONG_SLIDERS || []).map(function (x) {
+      var o = { id: x.id, name: x.name, lo: x.lo, hi: x.hi };
+      if (x.id === 'tempo') { o.min = G.tempo[0]; o.max = G.tempo[1]; o.step = 5; o.stops = null; }
+      else o.stops = (Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
+      return o;
+    });
+  };
+  songs.surprise = function (genre, gear, seat, seed) {
+    var rng = GG.RNG((Number(seed) >>> 0) || 1), G = songs.genre(genre);
+    var list = songs.recipes(genre, gear, seat).filter(function (r) { return !r.locked && !r.surprise; });
+    return { recipe: list.length ? rng.pick(list).id : 'signature', energy: rng.int(0, 4), mood: rng.int(0, 4), swing: rng.int(0, 4),
+      fills: rng.int(0, 4), bpm: U.clamp(5 * Math.round(rng.int(G.tempo[0], G.tempo[1]) / 5), G.tempo[0], G.tempo[1]) };
+  };
+  songs.compose = function (genre, o) {
+    o = o || {};
+    var G = songs.genre(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', p = songs.signature(genre, g);
+    var bpm = Number(o.bpm) || G.tempo[2], mood = int04(o.mood, songs.nativeMood(genre)), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
+    p.bpm = U.clamp(5 * Math.round(bpm / 5), G.tempo[0], G.tempo[1]);
+    var idx = {};
+    p.chords = {};
+    SECTIONS.forEach(function (name) { var s = chordSource(p, name, genre, { part: null }); idx[name] = s.i; p.chords[name] = songs.progChords(genre, name, s.i, mood); });
+    if (seat !== 'drums') {
+      var pt = part.full(genre, seat, p);
+      if (seat !== 'lead') SECTIONS.forEach(function (name) { pt.sections[name].prog = idx[name]; });
+      p.part = part.upgrade(pt);
+    }
+    p.mood = mood; p.swing = int04(o.swing, 0);
+    p.recipe = { id: typeof o.recipe === 'string' && RECIPE_ID.test(o.recipe) ? o.recipe : 'signature', seed: seed, energy: int04(o.energy, 2), fills: int04(o.fills, 1) };
+    return songs.sanitize(p, g, genre);
+  };
 
   songs.toNotes = function (x) {
     var p = songs.sanitize(x && x.pattern || x, null, null, true), out = [], beat = 0;

@@ -320,7 +320,9 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 
 ## Addendum 5 — pending
 - [x] v1.3 contract `plan/plan_contract_1.3.md` (5 readers, writer, critic: 1 blocker + 6 majors applied) — 2026-10-03
-- [ ] v1.3 stage 0 (1.2 compat fixtures FIRST), lanes S / A / U, integrate, review, owner check (440x956 screenshots + slider clips)
+- [x] v1.3 stage 0 (1.2 compat fixtures FIRST: `tools/make_fixtures_v12.js`, `tests/compat_v12.test.js`; VERSION 1.3.0.0; 21 contract
+  code + moods; report `plan/v13_stage0_report.md`) — 2026-10-04
+- [ ] lanes S / A / U, integrate, review, owner check (440x956 screenshots + slider clips)
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
