@@ -8,14 +8,21 @@
 // kit (pose 'drum', sticks), the 'kit' hotspot reads "Your rig" in the amp corner, a tap on it walks you there (the 'hotspot'
 // 'kit' event as today) and you noodle your own instrument (pose 'rig', the gear string, the logo sticker); draw calls <= the
 // band's drum garage x 1.15; back on drums the label is "Drum kit" again; no console errors. tests/.cache/garage_seat<TAG>.png.
+// v1.3.1 (Lane S): META_ONLY=shop (also in the default run): the green "Gear shop" label (the 8th hotspot, C.HOTSPOTS 'shop') in
+// every room (tiers 0-3 + the other bands' tier-0 rooms) on drums and on a string seat: on screen between the HUD and a sheet,
+// its label rect clear of every other label (debug labelBox) and of the merch box pile (10 boxes), under "Drum kit" (drums,
+// nudged right of the pile) / "Your rig" (string seats),
+// hotspotScreenPos('shop') picks 'shop', 8 labels, draw calls < 60; a real tap walks you to the throne / your rig (pose drum /
+// rig) and opens the gear sheet ("Drum shop" / "Bass shop" / "Guitar shop"); the 2D fallback's hs-shop (8 spots, no horizontal
+// overflow, >= 44 px) opens it too. Screenshots tests/.cache/garage_shop_<seat><TAG>.png. Also run at PW_VIEW=440x956.
 const path = require('path');
-const { open, checker, shotName } = require('./_pw');
+const { open, checker, shotName, VIEW } = require('./_pw');
 
-const ONLY = process.env.META_ONLY || 'garage,seat';
-if (!/garage|seat/.test(ONLY)) { console.log('SKIP pw_garage (META_ONLY=' + process.env.META_ONLY + ')'); process.exit(0); }
-const DO_GARAGE = /garage/.test(ONLY), DO_SEAT = /seat/.test(ONLY);
+const ONLY = process.env.META_ONLY || 'garage,seat,shop';
+if (!/garage|seat|shop/.test(ONLY)) { console.log('SKIP pw_garage (META_ONLY=' + process.env.META_ONLY + ')'); process.exit(0); }
+const DO_GARAGE = /garage/.test(ONLY), DO_SEAT = /seat/.test(ONLY), DO_SHOP = /shop/.test(ONLY);
 
-const HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
+const HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door', 'shop'];   // (= C.HOTSPOTS; v1.3.1 + 'shop')
 const SHOT = path.join(__dirname, '.cache', 'garage.png');
 
 // A career state shaped like 02_contracts.js (what GG.career.newCareer would return in week 1).
@@ -73,6 +80,7 @@ const inView = (p, w, h) => !!p && p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
   const c = checker('garage');
   if (DO_GARAGE) await garage(c);
   if (DO_SEAT) await seat(c);
+  if (DO_SHOP) await shop(c);
   c.done();
 })();
 
@@ -108,7 +116,8 @@ async function garage(c) {
     const f0 = (await dbg(page)).frames; await sleep(800); const d1 = await dbg(page);
     c.ok(d1.frames > f0, 'frames advance (' + f0 + ' -> ' + d1.frames + ')');
     c.ok(d1.scene === 'garage' && d1.available === true, 'scene is garage and available');
-    c.ok(Array.isArray(d1.hotspots) && HOTSPOTS.every(a => d1.hotspots.includes(a)), 'debug lists all 7 hotspots');
+    const CH = await page.evaluate(() => GG.contracts.HOTSPOTS);
+    c.ok(Array.isArray(d1.hotspots) && d1.hotspots.length === CH.length && CH.every(a => d1.hotspots.includes(a)) && HOTSPOTS.every(a => CH.includes(a)), 'debug lists all ' + CH.length + ' hotspots (C.HOTSPOTS)');
     c.ok(d1.drawCalls > 0 && d1.drawCalls < 60, 'draw calls < 60 (' + d1.drawCalls + ', ' + d1.triangles + ' tris)');
     const mids = (await page.evaluate(() => (window.__st.members || []).map(m => m.id)));
     c.ok(d1.members.length === mids.length, 'one figure per active member (' + d1.members.map(m => m.id + ':' + m.pose).join(', ') + ')');
@@ -122,7 +131,7 @@ async function garage(c) {
     // Pick a floor point that nothing stands in front of (pickAt reports what a tap would hit).
     const p0 = d1.player;
     const free = await page.evaluate(() => {
-      const C = [[1.3, -0.5], [0.3, -0.2], [1.5, 0.9], [-0.3, 1.4], [1.0, -1.0]];
+      const C = [[1.3, -0.5], [0.3, -0.2], [1.5, 0.9], [-0.3, 1.4], [1.0, -1.0], [1.2, 0.3], [0.6, 0.9], [-0.6, 0.6], [1.4, -1.5]];   // (v1.3.1: the Gear shop label covers [1, -1])
       for (const [x, z] of C) { const s = GG.render.worldToScreen(x, 0, z), h = s && GG.render.pickAt(s.x, s.y); if (h && h.type === 'floor') return { x, z, s }; }
       return null;
     });
@@ -333,4 +342,104 @@ async function seat(c) {
   } catch (e) {
     c.ok(false, 'seat exception: ' + (e && e.stack || e));
   } finally { await close(); }
+}
+
+// ---- v1.3.1 shop: the Gear shop label in every room, drums + a string seat; a tap opens your seat's shop ---------------------
+async function shop(c) {
+  const W = VIEW.width, H = VIEW.height;
+  const ROOMS = [['hail_damage', 0], ['hail_damage', 1], ['hail_damage', 2], ['hail_damage', 3], ['frost_heave', 0], ['gravel_kings', 0], ['grid_road_ramblers', 0]];
+  const CASES = [];
+  for (const [band, tier] of ROOMS) CASES.push([band, tier, 'drums'], [band, tier, band === 'hail_damage' ? ['bass', 'bass', 'rhythm', 'lead'][tier] : 'bass']);
+  const TAPS = { 'hail_damage|0|drums': 1, 'hail_damage|0|bass': 1, 'grid_road_ramblers|0|bass': 1, 'hail_damage|3|lead': 1 };
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForFunction(() => window.GG && GG.render && GG.render.init && GG.main, null, { timeout: 15000 });
+    await page.evaluate(() => { window.__ev = []; GG.on('hotspot', p => window.__ev.push({ t: 'hotspot', v: p && p.action, stack: GG.ui.stackIds().join(',') })); GG.on('screen:close', p => window.__ev.push({ t: 'close', v: p && p.id, at: new Error().stack.split('\n').slice(2, 9).map(x => x.trim().split(' ')[1]).join('<') }));
+      GG.on('screen:open', p => { if (p && p.id === 'gear') window.__ev.push({ t: 'open', v: p.id, head: (document.querySelector('.sheet.shop .sheet-head') || {}).textContent || '' }); }); });
+    for (const [band, tier, seat] of CASES) {
+      const tag = band + '/' + tier + '/' + seat;
+      const want = await page.evaluate(([band, tier, seat]) => {
+        const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: band, seat });
+        st.spaceTier = tier; st.space = GG.shop.spaceDef(st, tier).id;   // (a rented room from the same camera)
+        st.merch.stock = { shirt: 24 * 8, sticker: 200 * 2 };              // the unsold box pile along the left edge (10 boxes)
+        if (!GG.render.available) GG.render.init(document.getElementById('scene'));
+        for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
+        GG.render.setPaused(false); GG.render.setScene('garage'); GG.render.syncState(st);
+        return { shop: GG.career.seatOf(st) === 'drums' ? 'Drum shop' : GG.ui.cap(GG.career.tokenValue(st, 'instrument')) + ' shop', hs: GG.contracts.HOTSPOTS.length };
+      }, [band, tier, seat]);
+      const f0 = (await dbg(page)).frames;
+      await page.waitForFunction(x => GG.debug('render').frames >= x, f0 + 4, { timeout: 30000 });
+      await settle(page);
+      const d = await dbg(page);
+      const B = d.labelBox || [], S = B.find(b => b.action === 'shop'), K = B.find(b => b.action === 'kit');
+      const pile = await page.evaluate(() => { const P0 = GG.debug('render').space.pileBox; if (!P0) return null; const P = [];
+        for (const x of [P0[0], P0[3]]) for (const y of [P0[1], P0[4]]) for (const z of [P0[2], P0[5]]) P.push(GG.render.worldToScreen(x, y, z));
+        return [Math.min(...P.map(p => p.x)), Math.min(...P.map(p => p.y)), Math.max(...P.map(p => p.x)), Math.max(...P.map(p => p.y))].map(Math.round); });
+      c.ok(d.space.boxes >= 10 && pile && S && (S.x - S.w / 2 > pile[2] || S.x + S.w / 2 < pile[0] || S.y - S.h / 2 > pile[3] || S.y + S.h / 2 < pile[1]), tag + ': the Gear shop label is clear of the box pile ' + JSON.stringify([d.space.boxes, pile, S]));
+      c.ok(d.hotspots.length === want.hs && d.hotspots.includes('shop') && B.length === want.hs && d.drawCalls < 60, tag + ': ' + want.hs + ' hotspots + labels incl. the Gear shop, ' + d.drawCalls + ' draw calls');
+      c.ok(S && S.x - S.w / 2 >= 0 && S.x + S.w / 2 <= W && S.y >= 56 && S.y <= H * 0.65, tag + ': the Gear shop label on screen between the HUD and a sheet ' + JSON.stringify(S));
+      const over = B.filter(b => b !== S && Math.abs(b.x - S.x) < (b.w + S.w) / 2 + 2 && Math.abs(b.y - S.y) < (b.h + S.h) / 2 + 2).map(b => b.action);
+      c.ok(S && !over.length, tag + ': the Gear shop label overlaps no other label ' + JSON.stringify(over));
+      c.ok(S && K && S.y - K.y >= (S.h + K.h) / 2 + 4 && S.y - K.y <= 60 && S.x - K.x >= -30 && S.x - K.x <= 50 && d.seat.label === (seat === 'drums' ? 'Drum kit' : 'Your rig'), tag + ': just under "' + d.seat.label + '" ' + JSON.stringify([K, S]));
+      const pk = await page.evaluate(() => { const p = GG.render.hotspotScreenPos('shop'), h = p && GG.render.pickAt(p.x, p.y); return { p, h }; });
+      c.ok(pk.h && pk.h.type === 'hotspot' && pk.h.action === 'shop', tag + ': a tap on it picks the shop ' + JSON.stringify(pk));
+      if (!TAPS[band + '|' + tier + '|' + seat]) continue;
+      await page.evaluate(() => { window.__ev.length = 0; });
+      await tapAt(page, pk.p);
+      const got = await waitEvent(page, 'hotspot', 'shop', 12000);
+      await page.waitForFunction(() => window.__ev.some(e => e.t === 'open'), null, { timeout: 8000 }).catch(() => {});
+      const g = await page.evaluate(() => ({ ev: window.__ev.slice(), r: GG.debug('render') }));
+      const op = g.ev.find(e => e.t === 'open');   // (the sheet as it opened; a late close is logged with its caller)
+      g.ev.filter(e => e.t === 'close').forEach(e => console.log('note: ' + tag + ': ' + e.v + ' closed before the check by ' + e.at));
+      c.ok(got && op && op.head.includes(want.shop), tag + ': tap -> walk -> the gear sheet "' + want.shop + '" ' + JSON.stringify([got, g.ev]));
+      c.ok(!g.r.walking && g.r.seat.playerPose === (seat === 'drums' ? 'drum' : 'rig'), tag + ': you use it from the ' + (seat === 'drums' ? 'throne' : 'rig') + ' (' + g.r.seat.playerPose + ')');
+      if (band === 'hail_damage' && tier === 0) {   // again from where you sit: the sheet opens and stays open (the tap's click never closes it)
+        await settle(page);
+        await page.evaluate(() => { window.__ev.length = 0; });
+        const p2 = await page.evaluate(() => GG.render.hotspotScreenPos('shop'));
+        await tapAt(page, p2);
+        await page.waitForFunction(() => window.__ev.some(e => e.t === 'open'), null, { timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        const g2 = await page.evaluate(() => ({ ev: window.__ev.slice(), screen: GG.debug('ui').screen }));
+        c.ok(g2.screen === 'gear' && !g2.ev.some(e => e.t === 'close'), tag + ': tapped again from the ' + (seat === 'drums' ? 'throne' : 'rig') + ', the gear sheet opens and stays open ' + JSON.stringify(g2));
+      }
+      if (tier === 0 && band === 'hail_damage') {
+        await settle(page);
+        await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; }));
+        await page.waitForTimeout(500);
+        const f = path.join(__dirname, '.cache', shotName('garage_shop_' + seat + '.png'));
+        await page.screenshot({ path: f }); console.log('screenshot: ' + f);
+        await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = ''; }));
+      }
+      await settle(page);
+    }
+    c.ok(errors.length === 0, 'shop: no console errors' + (errors.length ? ': ' + errors.slice(0, 5).join(' | ') : ''));
+  } catch (e) {
+    c.ok(false, 'shop exception: ' + (e && e.stack || e));
+  } finally { await close(); }
+
+  // The 2D fallback (no three.js): an 8th spot, hs-shop "Gear shop", opens your seat's shop.
+  for (const seat of ['drums', 'bass']) {
+    const o = await open({ noGoto: true });
+    try {
+      await o.page.route('**/three.min.js', r => r.abort());
+      await o.page.goto(o.url + '?quick=1&seed=9' + (seat === 'drums' ? '' : '&seat=' + seat));
+      await o.page.waitForFunction(() => window.GG && GG.state && GG.main.booted, null, { timeout: 20000 });
+      const f = await o.page.evaluate(() => {
+        GG.ui.closeAll(); GG.main.sync();
+        const sp = document.querySelector('[data-testid="fallback-garage"] .spots'), b = document.querySelector('[data-testid="hs-shop"]'), r = b && b.getBoundingClientRect();
+        return { ok: GG.main.renderOk, n: sp ? sp.children.length : 0, text: b ? b.textContent : '', w: r ? r.width : 0, h: r ? r.height : 0,
+          over: sp ? [...sp.children].some(x => { const q = x.getBoundingClientRect(); return q.left < -1 || q.right > innerWidth + 1; }) || document.documentElement.scrollWidth > innerWidth : true };
+      });
+      c.ok(!f.ok && f.n === 8 && /Gear shop/.test(f.text) && f.w >= 44 && f.h >= 44 && !f.over, seat + ' 2D fallback: 8 spots incl. hs-shop "' + f.text + '" ' + Math.round(f.w) + 'x' + Math.round(f.h) + ', no horizontal overflow');
+      await o.page.locator('[data-testid="hs-shop"]').click();
+      await o.page.waitForFunction(() => GG.debug('ui').screen === 'gear', null, { timeout: 8000 }).catch(() => {});
+      const g = await o.page.evaluate(() => ({ screen: GG.debug('ui').screen, head: (document.querySelector('.sheet.shop .sheet-head') || {}).textContent || '' }));
+      c.ok(g.screen === 'gear' && (seat === 'drums' ? /Drum shop/ : /Bass shop/).test(g.head), seat + ' 2D fallback: hs-shop opens the gear sheet ' + JSON.stringify(g));
+      const pageErrors = o.errors.filter(e => /^pageerror/.test(e));
+      c.ok(!pageErrors.length, seat + ' 2D fallback: no page errors ' + pageErrors.slice(0, 2).join(' | '));
+    } catch (e) {
+      c.ok(false, seat + ' fallback exception: ' + (e && e.stack || e));
+    } finally { await o.close(); }
+  }
 }

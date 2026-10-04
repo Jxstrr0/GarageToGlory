@@ -26,6 +26,11 @@
 //          (the lower third is not one flat slab); December in the jam room + backstage. Screenshots spaces_<0..3>.png,
 //          spaces_van_<0..3>.png, spaces_dec_<1,3>.png, tiled into tests/.cache/v08_spaces_sheet.png.
 //   sheet: tiles the screenshots into tests/.cache/v08_shop_sheet.png.
+//   button: (v1.3.1, Lane S) the sketch pad's own shop button btn-seq-shop (green-ringed 🛒 SHOP in the header, >= 44 px,
+//          aria-label "Drum shop" / "Bass shop") on Quick song and in the editor, drums + bass: it stops playback and opens
+//          the gear sheet; Back returns to the songwriter on the same screen; a buy from it grows the open grid (4 -> 5
+//          lanes); the head (✕ · title · shop · ⋯) fits with "Sketch pad · <seat>" whole, no horizontal scroll; the ⋯ row
+//          btn-kit-shop stays; no header shop in a Write block or a catalog song. Screenshot shop_button<TAG>.png.
 // Run: node build.js && META_ONLY=gear timeout 500 node tests/pw_shop.js
 const path = require('path'), fs = require('fs');
 const { open, checker, openTools } = require('./_pw');
@@ -602,6 +607,7 @@ async function sheet() {
   if (want('van')) await van();
   if (want('spaces')) await spaces();
   if (want('seat')) await seatShop();
+  if (want('button')) await shopButton();
   if (!ONLY.length || ONLY.includes('sheet')) await sheet();
 })();
 
@@ -676,6 +682,79 @@ async function seatShop() {
     }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+/* ---- button (v1.3.1, Lane S): the sketch pad's header shop button ------------------------------------------------------ */
+// The head's layout: every child inside the viewport, the caps line ("Sketch pad · Bass") whole, the shop button >= 44 px.
+function headInfo(page) {
+  return page.evaluate(() => {
+    const h = [...document.querySelectorAll('.seq-head')].pop(); if (!h) return null;
+    const r = e => e.getBoundingClientRect(), b = h.querySelector('[data-testid="btn-seq-shop"]'), cap = h.querySelector('.seq-title .caps');
+    return { shop: b ? { w: r(b).width, h: r(b).height, aria: b.getAttribute('aria-label'), text: b.textContent, right: r(b).right, left: r(b).left } : null,
+      order: [...h.children].map(k => k.dataset.testid || k.className), caps: cap ? cap.textContent : '', capsCut: cap ? cap.scrollWidth > cap.clientWidth + 1 : true,
+      out: [...h.children].some(k => r(k).left < -1 || r(k).right > innerWidth + 1), hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+  });
+}
+async function shopButton() {
+  const c = checker('button');
+  const { page, errors, close } = await open();
+  try {
+    await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+    for (const seat of ['drums', 'bass']) {
+      const name = seat === 'drums' ? 'Drum shop' : 'Bass shop';
+      await page.evaluate(seat => {
+        GG.ui.closeAll();
+        GG.main.quickStart({ seed: 808, bandId: 'hail_damage', seat, openCard: false });
+        GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'plan'; s.fund = 20000;
+        GG.main.sync();
+        GG.emit('hotspot', { action: 'kit' });
+      }, seat);
+      await waitScreen(page, 'seq');
+      for (const scr of ['quick', 'edit']) {
+        if (scr === 'edit') await tap(page, 'btn-quick-tweak');
+        await page.waitForFunction(x => GG.debug('seq') && GG.debug('seq').screen === x, scr, { timeout: 5000 });
+        const h = await headInfo(page);
+        c.ok(h && h.shop && h.shop.w >= 44 && h.shop.h >= 44 && h.shop.aria === name && /shop/i.test(h.shop.text), seat + ' ' + scr + ': the header shop button (' + name + ') ' + JSON.stringify(h && h.shop));
+        c.ok(h && h.order.join(',') === 'btn-seq-close,seq-title,btn-seq-shop,btn-seq-tools' && !h.out && !h.hscroll && !h.capsCut && /Sketch pad/.test(h.caps),
+          seat + ' ' + scr + ': ✕ · title · shop · ⋯ fit, "' + (h && h.caps) + '" whole ' + JSON.stringify(h));
+        if (scr === 'quick') {   // playback stops when the shop opens
+          await tap(page, 'btn-guide-play');
+          await page.waitForFunction(() => !!GG.debug('seq').playing, null, { timeout: 5000 }).catch(() => {});
+        }
+        const p0 = await page.evaluate(() => GG.debug('seq').playing);
+        await tap(page, 'btn-seq-shop'); await waitScreen(page, 'gear');
+        const g = await page.evaluate(() => ({ head: (document.querySelector('.sheet.shop .sheet-head') || {}).textContent || '', playing: GG.debug('seq') && GG.debug('seq').playing, stack: GG.debug('ui').stack }));
+        c.ok(g.head.includes(name) && g.stack.join(',') === 'seq,gear' && !g.playing && (scr === 'edit' || p0), seat + ' ' + scr + ': tap -> the gear sheet over the songwriter, playback stopped ' + JSON.stringify([p0, g]));
+        if (seat === 'drums' && scr === 'edit') {   // a buy from here grows the open grid
+          const l0 = await page.evaluate(() => document.querySelectorAll('.seq-grid .lh').length);
+          await tap(page, 'gear-buy-toms');
+          await page.waitForFunction(() => GG.state.gear.lanes === 5, null, { timeout: 4000 }).catch(() => {});
+          await tap(page, 'btn-gear-done'); await waitScreen(page, 'seq');
+          const l1 = await page.evaluate(() => ({ lanes: document.querySelectorAll('.seq-grid .lh').length, screen: GG.debug('seq').screen }));
+          c.ok(l0 === 4 && l1.lanes === 5 && l1.screen === 'edit', 'drums: the toms from the header shop grow the open grid ' + JSON.stringify([l0, l1]));
+        } else {
+          await tap(page, 'btn-gear-done'); await waitScreen(page, 'seq');
+          c.ok(await page.evaluate(x => GG.debug('seq').screen === x, scr), seat + ' ' + scr + ': Back returns to the songwriter on the same screen');
+        }
+        if (seat === 'bass' && scr === 'quick') { await page.waitForTimeout(300); await shot(page, require('./_pw').shotName('shop_button.png')); }
+      }
+      await openTools(page);
+      c.ok(await count(page, 'btn-kit-shop') === 1 && new RegExp(name).test(await text(page, 'btn-kit-shop')), seat + ': the ⋯ row btn-kit-shop stays (' + await text(page, 'btn-kit-shop') + ')');
+      await tap(page, 'btn-seq-tools-cancel');
+      c.ok((await audit(page)).length === 0, seat + ': songwriter layout ' + (await audit(page)).join('; '));
+    }
+    // Not in a Write block, not in a catalog song (D7).
+    await page.evaluate(() => { GG.ui.closeAll(); GG.main.quickStart({ seed: 808, openCard: false }); GG.state.card = null; GG.state.phase = 'plan'; GG.ui.closeAll(); GG.ui.composeWeek(1, function () {}); });
+    await page.waitForFunction(() => GG.debug('ui').screen === 'seq' && GG.debug('seq') && GG.debug('seq').mode === 'write', null, { timeout: 8000 });
+    c.ok(await count(page, 'btn-seq-shop') === 0, 'a Write block has no header shop button');
+    await page.evaluate(() => { GG.ui.closeAll(); const s = GG.state.songs[0]; if (s) GG.ui.openSong(s.id); });
+    const view = await page.evaluate(() => ({ mode: GG.debug('seq') && GG.debug('seq').mode, n: document.querySelectorAll('[data-testid="btn-seq-shop"]').length }));
+    c.ok(view.mode === 'view' && view.n === 0, 'a catalog song has no header shop button ' + JSON.stringify(view));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'button threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
 }
