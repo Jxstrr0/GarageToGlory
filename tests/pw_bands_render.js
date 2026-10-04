@@ -2,7 +2,7 @@
 // Run: node build.js && META_ONLY=bands_render timeout 500 node tests/pw_bands_render.js
 //   (META_ONLY=garage | stage | van | carpet | rival | recap narrows it; 'bands_render' or unset = all.)
 // Per band (Hail Damage, Frost Heave, Gravel Kings, the Grid Road Ramblers):
-//   garage: space.kind = C.SPACE_KINDS[band.space], the door label, all 7 hotspots on screen + labelled, members on distinct
+//   garage: space.kind = C.SPACE_KINDS[band.space], the door label, all C.HOTSPOTS (8 since v1.3.1's Gear shop) on screen + labelled, members on distinct
 //     spots holding their member.gear (no V on the fiddle or the acoustic), draw calls <= Hail Damage x 1.15, 4 seasons of
 //     decor (the tier-0 rooms dress their exterior per season), the room's seat props are the band's;
 //   stage: the lineup strings (travis:vocals:acoustic + a mic stand, clementine's fiddle, rox:vocals:guitar + a mic stand, a
@@ -162,8 +162,9 @@ async function seatSheet(page, c, notes) {
         const door = await page.evaluate(b => { const x = GG.content.bands[b].door.replace(/^the\s+/i, ''); return x.charAt(0).toUpperCase() + x.slice(1); }, b);
         c.ok(d.space.door === door, b + ': the door hotspot is labelled "' + d.space.door + '"');
         const hs = await page.evaluate(() => GG.contracts.HOTSPOTS.map(a => ({ a, p: GG.render.hotspotScreenPos(a) })));
-        const vis = hs.filter(h => h.p && h.p.x > 0 && h.p.x < 390 && h.p.y > 0 && h.p.y < 844);
-        c.ok(vis.length === 7 && d.hotspots.length === 7 && (d.labelAt || []).length === 7, b + ': all 7 hotspots on screen + labelled (' + vis.map(h => h.a).join(',') + ')');
+        const VW = await page.evaluate(() => [innerWidth, innerHeight]), N = C.hotspots.length;   // (v1.3.1: 8 with the Gear shop)
+        const vis = hs.filter(h => h.p && h.p.x > 0 && h.p.x < VW[0] && h.p.y > 0 && h.p.y < VW[1]);
+        c.ok(C.hotspots.includes('shop') && vis.length === N && d.hotspots.length === N && (d.labelAt || []).length === N, b + ': all ' + N + ' hotspots on screen + labelled (' + vis.map(h => h.a).join(',') + ')');
         const spots = d.members.map(m => m.x + ',' + m.z);
         c.ok(new Set(spots).size === spots.length, b + ': members on distinct spots ' + d.members.map(m => m.id + '@' + m.pose).join(' '));
         const gear = await page.evaluate(() => { const o = {}; GG.state.members.forEach(m => { const cm = (GG.content.bands[GG.state.bandId].members || []).filter(x => x.id === m.id)[0]; o[m.id] = cm && cm.gear || null; }); return o; });

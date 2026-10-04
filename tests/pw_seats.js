@@ -13,7 +13,9 @@
 //           carries the seat. Also run at PW_VIEW=440x956.
 //   studio: a Frost Heave lead EP session: "Guitar takes", a 🎸 take runs your seat's chart and counts.
 //   shop  : a Hail Damage rhythm sketch pad → "Guitar shop": parody names at the drum prices, a buy grows your rig and the
-//           band's kit, Jaxon (on the kit) posts about it, no drum names, no gong.
+//           band's kit, Jaxon (on the kit) posts about it, no drum names, no gong. v1.3.1 (Lane S), every seat: the garage's
+//           green "Gear shop" label (render labelBox 'shop', 'hotspot' shop -> the gear sheet "<Instrument> shop" / "Drum shop")
+//           and the sketch pad's header button btn-seq-shop (aria-label = the ⋯ row's text) open the same shop.
 //   garage: (needs Lane C) the swapped drummer at the kit, "Your rig" on the 'kit' hotspot, your instrument; skipped with a
 //           log line while GG.render.seatGear / the garage's seat debug are missing.
 //   stage : (needs Lane C) a string-seat gig stage: view 'spot', the swapped drummer on the riser; skipped with a log line
@@ -299,6 +301,30 @@ async function shop() {
   const { page, errors, close } = await open();
   try {
     await page.waitForSelector(tid('btn-new'), { timeout: 20000 });
+    // v1.3.1: per seat, the garage label and the sketch pad's header button open your seat's shop
+    for (const seat of ['drums', 'bass', 'rhythm', 'lead']) {
+      const g = await page.evaluate(seat => {
+        GG.ui.closeAll(); GG.main.quickStart({ seed: 808, bandId: 'hail_damage', seat, openCard: false }); GG.ui.closeAll();
+        const s = GG.state; s.card = null; s.phase = 'plan'; GG.main.sync();
+        const want = GG.career.seatOf(s) === 'drums' ? 'Drum shop' : GG.ui.cap(GG.career.tokenValue(s, 'instrument')) + ' shop';
+        const d = GG.debug('render'), box = d && d.available ? (d.labelBox || []).find(b => b.action === 'shop') : null;
+        GG.emit('hotspot', { action: 'shop' });
+        const head = (document.querySelector('.sheet.shop .sheet-head') || {}).textContent || '';
+        return { want, avail: !!(d && d.available), box, hs: d && d.hotspots, screen: GG.debug('ui').screen, head };
+      }, seat);
+      c.ok(!g.avail || (g.box && g.hs.includes('shop')), seat + ': the garage has the Gear shop label ' + JSON.stringify(g.box));
+      c.ok(g.screen === 'gear' && g.head.includes(g.want), seat + ': the Gear shop hotspot opens "' + g.want + '" ' + JSON.stringify([g.screen, g.head.slice(0, 40)]));
+      await page.evaluate(() => { GG.ui.closeAll(); GG.ui.openSketch(); });
+      await waitScreen(page, 'seq');
+      const aria = await page.locator(tid('btn-seq-shop')).getAttribute('aria-label');
+      await openTools(page);
+      const row = (await page.locator(tid('btn-kit-shop')).textContent()).trim();
+      await tap(page, 'btn-seq-tools-cancel');
+      c.ok(aria === g.want && row.includes(g.want), seat + ': the sketch pad header button "' + aria + '" = the ⋯ row "' + row + '"');
+      await tap(page, 'btn-seq-shop'); await waitScreen(page, 'gear');
+      c.ok((await page.locator('.sheet.shop .sheet-head').textContent()).includes(g.want), seat + ': the header button opens "' + g.want + '"');
+      const bad = await audit(page); c.ok(!bad.length, seat + ': shop layout ' + bad.join('; '));
+    }
     await page.evaluate(() => {
       GG.ui.closeAll();
       GG.main.quickStart({ seed: 808, bandId: 'hail_damage', seat: 'rhythm', openCard: false });
