@@ -33,6 +33,8 @@
 //   2-lane chords (one note, both lanes in the window; one lane = a Good), a flow crowd (economy.gig.live flowGain,
 //   holdGain, ringGain, ringAt, seatDensityClamp), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
 //   soloNotes, allNotes) ; botPlay holds every hold to its end and taps both lanes of a chord.
+// v1.3.1 "Simulate" (plan_1.3.1 §1.1): canSimulate / simReason / simBot / simSong / simFinish / simShow (see the block at the
+//   end): a regular gig played headlessly at your own recent average; applyResult logs PLAYED live gigs in state.playLog.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var gig = GG.gig = GG.gig || {};
@@ -175,6 +177,7 @@
     r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
     state.stats.gigs++;
     state.stats.earned += r.pay;
+    if (r.live && !r.simulated && !(state.liveGig && state.liveGig.sim) && r.songResults && r.songResults.length) logPlay(state, r);   // v1.3.1
     if (GG.shop && state.van) GG.shop.sticker(state, state.gig || r);   // v0.8: a sticker on the van for every venue played
     var best = state.stats.bestGrade;
     if (!best || C.GRADES.indexOf(r.grade) < C.GRADES.indexOf(best)) state.stats.bestGrade = r.grade;
@@ -183,6 +186,15 @@
     if (state.liveGig) state.liveGig = null;   // a live gig is over once its result lands
     return r.deltas;
   };
+
+  // v1.3.1: a PLAYED live gig joins state.playLog ("your own average" for a simulated one; the last C.PLAY_LOG_MAX, lazy key).
+  // Rounded like GG.save.playLog, so a reload simulates the same gig.
+  function logPlay(state, r) {
+    var hit = (r.perfect || 0) + (r.good || 0), log = Array.isArray(state.playLog) ? state.playLog : (state.playLog = []);
+    log.push({ acc: Math.round(U.clamp(r.accuracy || 0, 0, 1) * 1000) / 1000, ps: hit ? Math.round(r.perfect / hit * 1000) / 1000 : 1,
+      seat: GG.career.seatOf(state), diff: gig.DIFFICULTIES[r.difficulty] ? r.difficulty : 'hard', wk: state.totalWeek || 0 });
+    if (log.length > (C.PLAY_LOG_MAX || 5)) log.splice(0, log.length - (C.PLAY_LOG_MAX || 5));
+  }
 
   // v0.1: simulate + apply the booked gig. Returns the GIG_RESULT (null if nothing is booked).
   gig.autoResolve = function (state, rng) {
@@ -1044,6 +1056,147 @@
       if (o.one) return out;
     }
     return S.finish();
+  };
+
+  /* ==== v1.3.1 Simulate (plan_1.3.1 §1.1; 02_contracts V1.3.1) ============================================== */
+  // A simulated gig is the REAL live session played headlessly by botPlay at "your own average" (the last played gigs of
+  // this seat in state.playLog), finished into the normal GIG_RESULT (+ simulated, sim) and applied through the normal
+  // path by the caller (career.finishGig -> settleGig): everything counts. Played gigs are untouched: they only append
+  // to state.playLog in applyResult (the result itself gains no field).
+  //   simReason(state, g?) -> null | 'phase' | 'gig' | 'showdown' | 'festival' | 'rival' | 'lesson'  (canSimulate = null)
+  //   simBot(state, difficulty) -> { accuracy, jitterMs, from: 'own'|'band', n, acc, ps }   pure
+  //   simSong(S, bot) -> SONG_RESULT (the next song; seeded per career / gig / song; marks state.liveGig.sim = bot)
+  //   simFinish(S, bot) -> GIG_RESULT + simulated: true, sim: { from, n, acc }   ;   simShow(S, bot) = the rest + simFinish
+  // bot.acc is the hit share aimed at; each song's tap chance + draw are fitted to its own chart (simTap), so the gig
+  // lands within a point or two of it on every seat, difficulty and assist (tests/sim_gig 'simulate: your average').
+  function erf(x) {   // Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7)
+    var s = x < 0 ? -1 : 1; x = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * x);
+    return s * (1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x));
+  }
+  function inWin(ms, w) { return erf(w / (Math.max(0.5, ms) / 1000 * Math.SQRT2)); }   // P(|N(0, ms)| <= w s)
+  function r4(x) { return Math.round(x * 10000) / 10000; }
+  gig.simReason = function (state, g) {
+    if (!state || state.phase !== 'gig' || !state.gig) return 'phase';
+    g = g || state.gig;
+    if (g !== state.gig && g.venueId !== state.gig.venueId) return 'gig';
+    if (g.showdown || state.gig.showdown) return 'showdown';   // botb / festival / final: story shows are played
+    if (g.festival || state.gig.festival) return 'festival';   // a tour festival slot
+    if (GG.rival && GG.rival.pending && GG.rival.pending(state)) return 'rival';   // the same routing as GG.main.playWeekend
+    if (state.tutorial && state.tutorial.on && !(state.stats && state.stats.gigs)) return 'lesson';   // w1_gig teaches Start
+    return null;
+  };
+  gig.canSimulate = function (state, g) { return gig.simReason(state, g) === null; };
+  gig.simBot = function (state, difficulty) {
+    var diff = gig.DIFFICULTIES[difficulty] ? difficulty : 'hard', seat = GG.career.seatOf(state), min = C.SIM_MIN_PLAYED || 2;
+    var log = (Array.isArray(state.playLog) ? state.playLog : []).filter(function (e) { return e && e.seat === seat && isFinite(e.acc) && isFinite(e.ps); });
+    var same = log.filter(function (e) { return e.diff === diff; }), use = same.length >= min ? same : log.length >= min ? log : null;
+    var W = gig.windows(state, diff);
+    if (!use) {   // the band's level: your skill stat (between the tests' average bot 0.82 / 55 ms and balance's 0.93 / 25 ms)
+      var k = U.clamp(((state.drumSkill || 10) - 10) / 70, 0, 1), a = r4(0.75 + 0.18 * k), j = Math.round((65 - 40 * k) * 10) / 10;
+      var qg = inWin(j, W.good);
+      return { accuracy: a, jitterMs: j, from: 'band', n: log.length, acc: Math.round(a * qg * 1000) / 1000, ps: Math.round(inWin(j, W.perfect) / qg * 1000) / 1000 };
+    }
+    var A = use.reduce(function (t, e) { return t + e.acc; }, 0) / use.length, P = use.reduce(function (t, e) { return t + e.ps; }, 0) / use.length;
+    A = Math.round(U.clamp(A, 0, 1) * 1000) / 1000; P = Math.round(U.clamp(P, 0, 1) * 1000) / 1000;
+    function ratio(ms) { return inWin(ms, W.perfect) / inWin(ms, W.good); }   // Perfects among hits at this spread (falls as ms grows)
+    function solve(f, v) {   // f falls as ms grows: the ms in 5..150 where f(ms) = v
+      var lo = 5, hi = 150;
+      if (v >= f(lo)) return lo;
+      if (v <= f(hi)) return hi;
+      for (var it = 0; it < 40; it++) { var mid = (lo + hi) / 2; if (f(mid) > v) lo = mid; else hi = mid; }
+      return (lo + hi) / 2;
+    }
+    var sig = P >= 0.995 ? 5 : solve(ratio, P);
+    // Your hits come first: a spread so wide that A can't be reached (a late-but-steady player: few Perfects, few misses)
+    // narrows until A is reachable with a little headroom (the Perfect share then reads a bit above yours).
+    var cap = solve(function (ms) { return inWin(ms, W.good); }, Math.min(0.999, A / 0.97));
+    sig = Math.round(Math.min(sig, cap) * 10) / 10;
+    return { accuracy: r4(U.clamp(A / inWin(sig, W.good), 0.05, 1)), jitterMs: sig, from: 'own', n: use.length, acc: A, ps: P };
+  };
+  // The tap chance that lands bot.acc of this song's judged notes. A first guess from the chart (Auto-kick notes play
+  // themselves; a non-Perfect tap inside a fill window is a fill tap, not a hit), then dry runs of this very song on a
+  // scratch session (same chart and rng as the real run, no events, state untouched) home in on it (simTap): in a dense
+  // lane a tap often catches its neighbour, so the guess alone runs a few points hot on drums; a short song is lumpy.
+  var SIM_PROBES = 8, SIM_TOL = 0.01;   // dry runs per song at most; close enough (or half a note on a short song)
+  function simGuess(S, bot) {
+    var ch = S.chart, W = S.windows, qg = inWin(bot.jitterMs, W.good), qp = inWin(bot.jitterMs, W.perfect);
+    var n = 0, auto = 0, q = 0, kick = LI.kick, fills = ch.fills || [];
+    for (var i = 0; i < ch.notes.length; i++) {
+      var x = ch.notes[i]; if (x.free) continue;
+      n++;
+      if (S.assists.autoKick && x.li === kick && S.seat === 'drums') { auto++; continue; }
+      var inFill = false;
+      for (var f = 0; f < fills.length; f++) if (x.t >= fills[f].t0 && x.t < fills[f].t1 - 1e-6) { inFill = true; break; }
+      q += inFill ? qp : qg;
+    }
+    if (!n || q <= 0) return { p: bot.accuracy, base: 0 };
+    var m = Math.max(1, n - auto), want = U.clamp((bot.acc * n - auto) / m, 0, 1);
+    return { p: r4(U.clamp(want / (q / m), 0.05, 1)), base: auto / n };
+  }
+  // botPlay's song loop (same taps, same rng use) on a scratch session T: the share of T's judged notes hit. No endSong.
+  function dryRun(T, p, jit, rng) {
+    function gauss() { var u = Math.max(1e-9, rng.next()), v = rng.next(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+    var ch = T.startSong(), taps = [];
+    ch.notes.forEach(function (n) {
+      if (n.j !== 0 || n.t < -0.001 || !rng.chance(p)) return;
+      var off = jit ? U.clamp(gauss(), -3, 3) * jit : 0, at = Math.max(0, n.t + off);
+      taps.push({ t: at, li: n.li });
+      if (n.chord) taps.push({ t: at, li: n.chord[1] });
+      if (n.hold) taps.push({ t: Math.max(at, n.t + n.len), li: n.li, up: true });
+    });
+    taps.sort(function (a, b) { return a.t - b.t; });
+    var end = ch.duration + 0.4, k = 0;
+    for (var t = 0.05; ; t += 0.05) {
+      var now = Math.min(t, end);
+      while (k < taps.length && taps[k].t <= now) { if (taps[k].up) T.release(taps[k].li, taps[k].t); else T.judge(taps[k].li, taps[k].t); k++; }
+      T.tick(now);
+      if (now >= end) break;
+    }
+    var st = T.stats();
+    return ch.total ? (st.perfect + st.good) / ch.total : 1;
+  }
+  // -> { p, seed }: the tap chance and the draw whose dry run of this song lands nearest bot.acc. Each probe takes the next
+  // seed of `key` (career seed | gig start | venue | song) at the chance the last probe asks for (scaled by want / got,
+  // past Auto-kick's share), so the probes both correct the guess and sample the luck.
+  function simTap(S, bot, key) {
+    var live = S.live, i = S.index, want = bot.acc, g = simGuess(S, bot), p = g.p;
+    if (want == null) return { p: p, seed: GG.hashSeed(key) };
+    function probe(x, sd) {
+      var sh = Object.assign({}, S.state);   // a shallow scratch copy: the session writes only sh.liveGig
+      sh.liveGig = { gig: live.gig, setlist: live.setlist, index: i, songs: [], crowd: live.crowd, started: live.started,
+        attendance: live.attendance, difficulty: live.difficulty };
+      var T = gig.session(sh, S.gig, null, { emit: false, difficulty: S.difficulty, noFail: S.assists.noFail, autoKick: S.assists.autoKick });
+      return dryRun(T, x, bot.jitterMs / 1000, GG.RNG(sd));
+    }
+    var best = null, tol = Math.max(SIM_TOL, 0.5 / Math.max(1, S.chart.total));
+    for (var k = 0; k < SIM_PROBES; k++) {
+      var sd = GG.hashSeed(k ? key + '|' + k : key), a = probe(p, sd), e = Math.abs(a - want);
+      if (!best || e < best.err) best = { p: p, seed: sd, err: e };
+      if (best.err <= tol) break;
+      p = r4(U.clamp(p * (want - g.base) / Math.max(0.01, a - g.base), 0.05, 1));
+    }
+    return best;
+  }
+  gig.simSong = function (S, bot) {
+    if (S.done && !S.playing) return null;
+    var live = S.live, i = S.playing ? S.index : live.index;
+    if (!live.sim) live.sim = { accuracy: bot.accuracy, jitterMs: bot.jitterMs, from: bot.from, n: bot.n, acc: bot.acc, ps: bot.ps };   // a reload finishes it simulated
+    var fresh = !S.playing;
+    if (fresh) S.startSong();
+    var key = [S.state.seed, live.started, S.gig.venueId, 'sim', i].join('|');
+    var t = fresh ? simTap(S, bot, key) : { p: simGuess(S, bot).p, seed: GG.hashSeed(key) };
+    return gig.botPlay(S, { accuracy: t.p, jitterMs: bot.jitterMs, one: true }, GG.RNG(t.seed));
+  };
+  gig.simFinish = function (S, bot) {
+    bot = bot || S.live.sim || {};
+    var r = S.finish();
+    r.simulated = true; r.sim = { from: bot.from || 'band', n: bot.n || 0, acc: bot.acc != null ? bot.acc : null };
+    return r;
+  };
+  gig.simShow = function (S, bot) {
+    while (!S.done || S.playing) gig.simSong(S, bot);
+    return gig.simFinish(S, bot);
   };
 
   GG.registerDebug('gig', function () {
