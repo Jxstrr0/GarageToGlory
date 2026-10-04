@@ -431,6 +431,55 @@
   //   crowdRaw. Voice-cap priority: band notes are never dropped; crowd one-shots go first.
 
   /* ======================================================================
+   V1.3 SONGWRITER (plan/plan_contract_1.3.md §4; status.md Addendum 5 S1-S8; SAVE_SCHEMA stays 10: every v1.3 key is optional)
+   Compatibility law: a song / pattern / part / save WITHOUT the v1.3 fields sanitizes, rates, charts, renders and saves exactly
+   as 1.2 (tests/compat_v12.test.js + tests/fixtures/v12_*; STAGE0; Classic hashes). Every v1.3 branch is gated on its own field
+   being present (and non-neutral); absent -> the 1.2 code runs and no new key appears on any object.
+   PATTERN (all optional ints; sanitize writes each only when present and valid, in this order after part, the loose path too):
+     chords: { verse?|chorus?|bridge?: [s0, s1, s2, s3] }   s = 0..11 semitones above the tonic per bar (never solo / outro)
+     fillBars: { <section>: [laneStr x lanes] }             bar 4 of every entry of that section (Q2 = 1; cleaned like a section)
+     mood: 0..4                                             Mood stop; absent or == songs.nativeMood(genre) -> the 1.2 sound
+     swing: 0..4                                            Feel stop (C.SWING); absent / 0 -> straight
+     recipe: { id: /^[a-z0-9-]{1,24}$/, seed: int >= 0, energy: 0..4, fills: 0..4 }   Quick-song provenance; never rated / played
+   PART v2 = { seat, v: 2, sections: { <name>: { prog|hook: int, rows: [16 chars x C.PART_V2[seat]] } } } (v written only when
+     2: a v1 part's JSON is 1.2's). songs.part.LAYOUT[1] = ROW_NAMES (v1), LAYOUT[2] = { rhythm: Chug, Open, Root, 5th, Oct,
+     Scratch ; bass: Low 5th, Root, 3rd, 5th, 7th, Oct ; lead: Low, 1, 2, 3, 4, 5, High }; part.UP = { rhythm: [0, 1], bass:
+     [1, 3, 5], lead: [1, 2, 3, 4, 5] } (v1 row i -> v2 row UP[i]); part.ROLE[seat] = { root, fifth, chug } (v2 rows the rating
+     reads per role: the UP image of the v1 row + rhythm root += Root, fifth += 5th, chug += Root / 5th / Oct; bass fifth += Low 5th).
+     Rows per 16th: rhythm mask & 3 = the v1 rule (1 chug, 2 open, 3 accent), Root / 5th / Oct single notes (power: false),
+     Scratch alone = a dead strum at the root (mute, dead: true); bass the lowest set row -> root + [-5, 0, third, 7, seventh,
+     12]; lead the highest set row -> scale degree [deg0 - 1, deg0..deg4, deg4 + 1] of the mood's scale.
+   Sim (21, pure, genre explicit): swingBeat(beat, s) ; chordsOf(p, name, genre, { part, seat }?) -> [4] (p.chords > the part's
+     prog (seat != lead) > the 1.2 hash pick) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
+     progChords(genre, name, i, mood) -> [4] (break bars home, Q4 = 1) ; progName(genre, seat, name, p, opts) ;
+     moodOf(genre, mood) -> rung | null (null = absent / native) ; nativeMood(genre) ; part.rowsOf(pt) -> row count ;
+     part.rowNames(pt) ; part.upgrade(pt) -> v2 copy (same sound, same ratings) ; part.view(pt) (v2 as is, else upgrade) ;
+     part.rowPitch(genre, seat, row, { mood, deg }) -> semitones over the bar root | lead scale degree | 'dead' ;
+     recipes(genre, gear, seat) ; sliders(genre, seat) ; surprise(genre, gear, seat, seed) ; compose(genre, { recipe, energy,
+     mood, swing, fills, bpm, seed, gear, seat }) -> sanitized PATTERN (shapes: contract §4.2; stage 0 ships stubs, Lane S fills).
+   Rating (S5): notes only; chords count only through the part hook (bass / rhythm compare chordsOf(verse) vs chordsOf(chorus)
+     only when p.chords has verse or chorus, else the 1.2 index rule; lead: always the index rule; similarity's part term: the
+     same gate); v2 partFeat reads roles through part.ROLE. rate(upgrade(pt)) deep-equals rate(pt) (compat_v12 gate).
+   Content: genres backing.moods = [5 x { id, mode, scale (length == backing.scale), third, seventh, remap? }], backing.moodNative
+     (the rung == today's mode / scale: metal 2, punk 1, rock 2, country 1); grooves[g].recipes / sliders, grooveFx, coach.quick.
+   Audio / gig (Lane A): chords > part prog > hash for every seat; mood (non-native) = B + rung, key.mode / name, o.third; swing
+     warps non-step events (e.g = the grid beat) before the sort; the drum chart t = swingBeat(beat) * spb; v2 parts via partBar2.
+   UI (Lane U): one-flow editor + Quick song; debug('seq') = { mode, screen, tab, layer, seat, playing, title, rating, playhead,
+     part, recipe, sliders: { energy, mood, feel, fills, bpm }, chords, chips, edited, compose: { ms, k } }.
+  ====================================================================== */
+  C.SWING = [0, 0.04, 0.083, 0.125, 0.1667];   // Feel stops: beats added to the off-8th (stop 4 = a full triplet)
+  C.SONG_SLIDERS = [                            // the Quick song sliders (songs.sliders adds each genre's stop labels)
+    { id: 'energy', name: 'Energy', lo: 'Sparse · easy', hi: 'Busy · show-off' },
+    { id: 'mood', name: 'Mood', lo: 'Bright', hi: 'Dark' },
+    { id: 'swing', name: 'Feel', lo: 'Straight', hi: 'Swing' },
+    { id: 'fills', name: 'Fills & surprises', lo: 'None', hi: 'Lots' },
+    { id: 'tempo', name: 'Tempo', lo: 'Slow', hi: 'Fast' }
+  ];
+  C.PART_V2 = { bass: 6, rhythm: 6, lead: 7 };   // v2 part rows per seat (songs.part.LAYOUT[2])
+  C.QUICK = { k: 8, debounceMs: 150, warmMs: 400 };   // compose variants, slider debounce, A.warm budget after a compose
+  C.SEQ_PART_ROW_MIN = 26;                       // px: the part grid's minimum row height (D9)
+
+  /* ======================================================================
    V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)
    Ground rules (F3): Classic on = 1.1 byte for byte (tests/fixtures/audio_v11_hashes.json, tools/audio_hashes.js); A.timeline()
    pure and unchanged; 'step' events never move (feel is applied in player() from a pure plan); voice cap 32; no AudioWorklet;

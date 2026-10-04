@@ -71,7 +71,7 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 ### 1.3 Deferred
 - Hold-length drag, per-note techniques (S2). Key picker. Recipes, swing, fills for jams / bots / rivals. Rock ballad (D12). v1.4.
 
-## 2. Reuse map (`0a2c3b8`; stage 0 re-audits)
+## 2. Reuse map (`0a2c3b8`; re-audited at stage 0 on `a608fe5`: all refs hold except 22 with 506 / chords 540, 30 bassFloor 2564, 55 flags 624, fixed here)
 | thing | where | reuse how |
 |---|---|---|
 | pattern whitelist | `21:254 sanitize` (part at 277) | + cleaners after 277 for chords/fillBars/mood/swing/recipe, only when present |
@@ -94,7 +94,7 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 | KS / taps | `30:2167 ksSpecFor`, `2191 A.warm`, `3192 seatPlay` | `dead` articulation; 54 calls `A.warm` after compose |
 | feel | `31:177` accent step from `beat*4` | use `e.g` (grid beat) when present |
 | drum chart | `22:367–411 gig.chart` (t 384, extras 388–397) | `t = swingBeat(beat)*spb`; extras skip fill bars |
-| seat chart | `22:446–583` (where 456, toAuto 460, contour 463–470, flags 500, with 503, chords 536–539) | `e.g`; copy `dead`; singles power:false |
+| seat chart | `22:446–583` (where 456, toAuto 460, contour 463–470, flags 500, with 506, runs 519, chords 536–540) | `e.g`; copy `dead`; singles power:false |
 | gig sound | `55:619 seatSound` | copy `dead` |
 | seq UI keep | `54:31 ui.LANES` (shared with 55:119/897, 5h:133), `36–67` tabs/extras, `76–99` seat helpers, `130 buildPartGrid`, `166 partPicker`, `188 layerSwitch`, `209–238` meters, `240 changed`, `247 buildGrid`, `274 paintable`, `327–374 songPanel` (minus 352–354), `382–438` playback, `389 songSeed`, `441 head`, `453 save`, `564 coachFor`, `756 composeWeek`, `780 firstTip`, `793 openSketch`, `811 openSong` | as is or lightly edited |
 | seq UI rewrite | `54:100 PART_COLORS` (5 → 7), `121 partPreview` (hard rows → `rowPitch`), `152 partCycle` (→ toggle row), `176 partMods` (→ ⋯), `319 playhead` (→ chip highlight), `466–509 build`, `523–713` guided (delete), `716–750 seq-tools` (→ ⋯ menu), `816 debug` | §4.7 |
@@ -246,7 +246,7 @@ verbatim and no new key appears on any object (pattern, part, event, timeline, c
 ### 4.6 Gig rules (22, 55)
 - **Q1 = 1 (contour):** lanes stay the pitch contour (22:463–470) on the rig's 4–6 lanes (= gear, never rows); new rows are just
   pitches; Scratch has `midi` = root (+ `mute`, `dead`), so it charts on the root's lane; singles are `power: false`, so Hard+
-  never turns them into 2-lane chords (22:538). Copy `dead` at 22:460, 22:500, 22:503 and 55:623; a `dead` note never joins or
+  never turns them into 2-lane chords (22:540). Copy `dead` at 22:460, 22:500, 22:506 and 55:624; a `dead` note never joins or
   starts a run (22:519 also compares `!!dead`), so Scratch stays its own tap. **Q1 = 2/3:** v2 part events
   carry `row`; `seatChart` maps row → lane (2: `floor(row·L/rows)`; 3: L = rows) for v2 only; "same pitch = same lane" gated to v1.
 - Swing: drum chart `t = swingBeat(n.beat, p.swing) * spb` (22:384, extras 22:395); `where()` uses `e.g ?? e.beat`. Windows follow
@@ -391,7 +391,7 @@ anything outside your files is a hand-over request. Return: the branch (pushed a
 - **Samey quick songs** (one tap of Save per block: drama `lawsuit` ≥ 0.8, critic `recycledAt` 0.93, tracklist 0.9) → the D14
   seed, seeded variants (§4.2 step 7) and the §4.4 variety test.
 - **Chip names move with tempo** (metal tuning per band, genres.js:82) → chips always read `keyFor(seed, genre, bpm)`. **New
-  pitches play the oscillator first** (only the gig warms KS) → `A.warm` after compose. **Low 5th folds** (bassFloor, 30:2569) →
+  pitches play the oscillator first** (only the gig warms KS) → `A.warm` after compose. **Low 5th folds** (bassFloor, 30:2564) →
   the v2-only allowance (§4.5) + a test in low metal keys. **Size** → content ≈ 15 KB, the guided flow goes, gate at every merge.
 
 ## 8. Owner questions — ANSWERED 2026-10-03 (one popup): Q1–Q4 all option 1 (recommended); recorded in §0. Take the option-1 branch everywhere §4 forks.
