@@ -138,6 +138,10 @@ async function governor() {
     // a tall sheet: the glide at 60, then 10 fps behind it
     await page.evaluate(() => GG.ui.show('laptop'));
     await page.waitForFunction(() => GG.debug('render').insets.bottom > 0 && GG.debug('perf').covered && GG.debug('perf').mode === 'covered', null, { timeout: 20000 });   // (the sheet's insets arrive a frame later: then the glide, then 10 fps)
+    // v1.3 merge: the insets rAF can run after the render tick of the same frame, so 'covered' above may be that tick's stale
+    // mode with the glide starting on the next one (390x844 hit it every run): two frames on, wait for 'covered' again.
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForFunction(() => GG.debug('perf').mode === 'covered', null, { timeout: 20000 });
     g = await gov(page, 2000);
     c.ok(g.mode === 'covered' && g.cap === 10 && g.fps <= 11, 'behind the laptop (tall sheet) after the glide: <= 10 fps ' + JSON.stringify(g));
     // a preview call under the sheet still draws (any change renders the next frame)
