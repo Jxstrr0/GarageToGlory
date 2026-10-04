@@ -341,4 +341,187 @@ test('v0.7.2 titles: old saves turn English on load, everywhere the title is sto
   ok(back && back.songs[0].title === 'My Lawn, My Tomb' && back.songs.find(x => x.id === keep.id).title === 'Trèfle Maudit', 'save.read renames too');
 });
 
+/* ---- v1.3 "Songwriter" stage 0 (plan_contract_1.3 §3.5, §4.1, §4.2, §4.4) ------------------------------------------ */
+const V13 = ['chords', 'fillBars', 'mood', 'swing', 'recipe'];
+const FULL = { lanes: 6, doubleKick: true, sections: ['outro', 'solo'] };
+const J = x => JSON.stringify(x);
+function bases(g) {
+  const sig = S.signature(g), withPart = Object.assign(JSON.parse(J(sig)), { part: S.part.full(g, 'rhythm', sig, GG.RNG(4)) });
+  return [sig, S.starter(g), S.generate(g, GG.RNG(1), {}), S.generate(g, GG.RNG(2), { gear: FULL }), withPart];
+}
+test('v1.3 fields survive sanitize only when present; absent -> the 1.2 JSON; idempotent', () => {
+  for (const g of GENRES) bases(g).forEach((b, bi) => {
+    [[null, null, true], [{ lanes: 4 }, g, false], [FULL, g, false]].forEach(([gear, genre, loose]) => {
+      const a = S.sanitize(JSON.parse(J(b)), gear, genre, loose);
+      ok(V13.every(k => !(k in a)), g + ' ' + bi + ': no v1.3 key appears');
+      eq(J(S.sanitize(JSON.parse(J(a)), gear, genre, loose)), J(a), g + ' ' + bi + ' idempotent');
+      const kick = 'xx..x...x.x.....';
+      const q = Object.assign(JSON.parse(J(b)), {
+        chords: { verse: [0, 5, 7, 0], chorus: [3, 3, 10, 0], bridge: [0, 12, 0, 0], solo: [0, 0, 0, 0] },
+        fillBars: { verse: [kick, '....x.xx', 'x.x.x.x.x.x.x.x.x.x', 'abc'], nope: [kick] }, mood: 3, swing: 2,
+        recipe: { id: 'neck-snapper', seed: 12, energy: 4, fills: 0, extra: 1 } });
+      const c = S.sanitize(q, gear, genre, loose);
+      eq(Object.keys(c).slice(Object.keys(c).indexOf('arrangement') + 1), (b.part ? ['part'] : []).concat(V13), g + ' ' + bi + ' key order after part');
+      eq(c.chords, { verse: [0, 5, 7, 0], chorus: [3, 3, 10, 0] }, 'chords: valid sections only (bar 12 and solo dropped)');
+      eq(Object.keys(c.fillBars), ['verse'], 'fillBars: sections the pattern has');
+      eq(c.fillBars.verse.length, c.lanes, 'fill bar = one lane string per lane');
+      eq(c.fillBars.verse[0], loose || (gear && gear.doubleKick) ? kick : 'x...x...x.x.....', 'fill bar kick rule (one foot without the pedal, unless loose)');
+      eq(c.fillBars.verse[1], '....x.xx........'); eq(c.fillBars.verse[2], 'x.x.x.x.x.x.x.x.');
+      ok(c.mood === 3 && c.swing === 2, 'mood / swing kept');
+      eq(c.recipe, { id: 'neck-snapper', seed: 12, energy: 4, fills: 0 }, 'recipe: the four keys');
+      eq(J(S.sanitize(JSON.parse(J(c)), gear, genre, loose)), J(c), 'idempotent with v1.3 keys');
+      const strip = JSON.parse(J(c)); V13.forEach(k => delete strip[k]);
+      eq(J(strip), J(a), 'without its v1.3 keys the pattern is the 1.2 JSON');
+    });
+    const bad = S.sanitize(Object.assign(JSON.parse(J(b)), { chords: { verse: [0, 5, 7], chorus: [0, 1.5, 0, 0], bridge: 'x' }, fillBars: [['x']],
+      mood: 5, swing: -1, recipe: { id: 'Neck Snapper', seed: 1, energy: 1, fills: 1 } }), null, g);
+    ok(V13.every(k => !(k in bad)), g + ' invalid v1.3 values are dropped');
+    ['2', 2.5, null, NaN].forEach(v => ok(!('mood' in S.sanitize(Object.assign(JSON.parse(J(b)), { mood: v }), null, g)), 'mood ' + v));
+    [{ id: 'x', seed: -1, energy: 0, fills: 0 }, { id: 'x', seed: 0, energy: 5, fills: 0 }, { id: 'x'.repeat(25), seed: 0, energy: 0, fills: 0 }, { id: 'x', seed: 0, energy: 0 }]
+      .forEach(r => ok(!('recipe' in S.sanitize(Object.assign(JSON.parse(J(b)), { recipe: r }), null, g)), 'recipe ' + J(r)));
+    // never rated: recipe / mood / swing change nothing; chords change nothing without a bass / rhythm part
+    const r0 = S.rate(b, g, FULL), plus = Object.assign(JSON.parse(J(b)), { mood: 4, swing: 4, recipe: { id: 'a', seed: 1, energy: 1, fills: 1 } });
+    eq(S.rate(plus, g, FULL), r0, g + ' ' + bi + ' mood / swing / recipe are never rated');
+    if (!b.part) eq(S.rate(Object.assign(JSON.parse(J(b)), { chords: { verse: [0, 1, 2, 3], chorus: [0, 1, 2, 3] } }), g, FULL), r0, g + ' chords never touch a drum-only rating');
+  });
+});
+
+test('part v2: 6 / 6 / 7 rows and v: 2 kept by sanitize; a v1 part never gains v; upgrade / view / rowsOf / rowNames', () => {
+  eq(C.PART_V2, { bass: 6, rhythm: 6, lead: 7 });
+  for (const seat of ['bass', 'rhythm', 'lead']) {
+    eq(S.part.LAYOUT[2][seat].length, C.PART_V2[seat], seat + ' layout');
+    eq(S.part.LAYOUT[1][seat], S.part.ROW_NAMES[seat], seat + ' v1 layout = ROW_NAMES');
+    eq(S.part.UP[seat].length, S.part.ROWS[seat], seat + ' UP covers every v1 row');
+    for (const g of GENRES) {
+      const sig = S.signature(g), v1 = S.part.full(g, seat, sig, GG.RNG(9)), up = S.part.upgrade(v1);
+      ok(up.v === 2 && Object.keys(up)[1] === 'v', seat + ' upgrade -> { seat, v: 2, sections }');
+      eq(S.part.rowsOf(v1), S.part.ROWS[seat]); eq(S.part.rowsOf(up), C.PART_V2[seat]); eq(S.part.rowNames(up), S.part.LAYOUT[2][seat]);
+      Object.keys(v1.sections).forEach(name => S.part.UP[seat].forEach((r2, r1) => eq(up.sections[name].rows[r2], v1.sections[name].rows[r1], seat + ' row ' + r1 + ' -> ' + r2)));
+      const a = S.sanitize(Object.assign(JSON.parse(J(sig)), { part: up }), null, g);
+      ok(a.part.v === 2 && Object.values(a.part.sections).every(x => x.rows.length === C.PART_V2[seat]), seat + ' v2 rows kept');
+      eq(J(S.sanitize(JSON.parse(J(a)), null, g)), J(a), 'v2 sanitize idempotent');
+      eq(S.part.view(a.part), a.part, 'view of a v2 part = itself');
+      ok(!('v' in S.sanitize(Object.assign(JSON.parse(J(sig)), { part: v1 }), null, g).part), 'v1 part: no v key');
+      ok(!('v' in S.sanitize(Object.assign(JSON.parse(J(sig)), { part: Object.assign({}, v1, { v: 1 }) }), null, g).part), 'v: 1 is a v1 part');
+      const miss = S.sanitize(Object.assign(JSON.parse(J(sig)), { part: { seat: seat, v: 2, sections: {} } }), null, g).part;
+      eq(miss.sections.verse, S.part.upgrade({ seat: seat, sections: { verse: S.part.suggest(g, seat, 'verse') } }).sections.verse, 'a missing v2 section = the v1 suggestion through UP');
+    }
+  }
+  eq(S.part.upgrade({ seat: 'drums', sections: {} }), null); eq(S.part.rowsOf(null), 0);
+});
+
+test('swingBeat: identity at s 0 and on whole beats; 1/2 -> 1/2 + C.SWING[s]; monotonic, inside the beat', () => {
+  eq(C.SWING, [0, 0.04, 0.083, 0.125, 0.1667]);
+  for (let s = 0; s <= 4; s++) {
+    let prev = -1;
+    for (let q = 0; q <= 32; q++) {
+      const b = q / 4, w = S.swingBeat(b, s);
+      if (q % 4 === 0 || !s) eq(w, b, 's' + s + ' fixed ' + b);
+      ok(w > prev && w >= Math.floor(b) && w <= Math.floor(b) + 1, 's' + s + ' monotonic at ' + b);
+      prev = w;
+    }
+    ok(Math.abs(S.swingBeat(3.5, s) - (3.5 + C.SWING[s])) < 1e-12, 's' + s + ' off-8th');
+  }
+  eq(S.swingBeat(1.25, undefined), 1.25);
+});
+
+test('moods: 5 rungs per genre, the native rung is today\'s mode / scale (metal 2, punk 1, rock 2, country 1); moodOf / rowPitch', () => {
+  const NATIVE = { metal: 2, punk: 1, rock: 2, country: 1 }, LEN = { metal: 7, punk: 7, rock: 6, country: 5 };
+  for (const g of GENRES) {
+    const B = GG.content.genres[g].backing, n = S.nativeMood(g);
+    eq(n, NATIVE[g], g + ' native rung'); eq(B.moods.length, 5);
+    eq([B.moods[n].mode, B.moods[n].scale], [B.mode, B.scale], g + ' native rung == backing mode / scale');
+    ok(B.moods.every(m => m.scale.length === LEN[g] && m.scale[0] === 0 && (m.third === 3 || m.third === 4) && (m.seventh === 10 || m.seventh === 11) && m.id && m.mode), g + ' rungs');
+    eq([B.moods[n].third, B.moods[n].seventh], [g === 'metal' ? 3 : 4, 10], g + ' native third / seventh = what 1.2 plays');
+    ok(S.moodOf(g, n) === null && S.moodOf(g, undefined) === null && S.moodOf(g, 7) === null && S.moodOf(g, 1.5) === null, g + ' moodOf null');
+    const other = n === 0 ? 4 : 0, r = S.moodOf(g, other);
+    eq(r, B.moods[other], g + ' moodOf = the rung'); r.third = 99; ok(B.moods[other].third !== 99, 'moodOf returns a copy');
+    eq([0, 1, 2, 3, 4, 5].map(i => S.part.rowPitch(g, 'bass', i, {})), [-5, 0, B.moods[n].third, 7, 10, 12], g + ' bass rows (native)');
+    eq(S.part.rowPitch(g, 'bass', 2, { mood: other }), B.moods[other].third); eq(S.part.rowPitch(g, 'bass', 4, { mood: other }), B.moods[other].seventh);
+    eq([0, 1, 2, 3, 4, 5].map(i => S.part.rowPitch(g, 'rhythm', i)), [0, 0, 0, 7, 12, 'dead'], g + ' rhythm rows');
+    eq([0, 1, 2, 3, 4, 5, 6].map(i => S.part.rowPitch(g, 'lead', i, { deg: [2, 4, 5, 7, 8] })), [1, 2, 4, 5, 7, 8, 9], g + ' lead degrees');
+    ok(S.part.rowPitch(g, 'rhythm', 6) === null && S.part.rowPitch(g, 'lead', -1) === null, 'bad rows');
+  }
+});
+
+// The timeline's chords (30:2430 progression + 30:2936 the part's prog), mirrored: chordsOf must agree when p.chords is absent.
+function chords12(p, name, g, part, seat) {
+  const B = GG.content.genres[g].backing, q = S.sanitize(p, null, null, true), sec = q.sections[name], list = B.progressions[name] || [[0, 0, 0, 0]];
+  let prog = list[GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length];
+  const pt = part && part.sections && (!part.seat || part.seat === seat) ? part.sections[name] : null;
+  if (seat !== 'lead' && seat !== 'drums' && pt && isFinite(pt.prog) && pt.prog !== null) prog = list[Math.max(0, Math.min(list.length - 1, pt.prog | 0))];
+  return prog;
+}
+test('chordsOf: p.chords > the part\'s prog (not lead / drums) > the 1.2 hash pick; chordLabel; progChords (break bars home); progName', () => {
+  for (const g of GENRES) {
+    const pats = [S.signature(g), S.starter(g), S.generate(g, GG.RNG(3), {}), S.generate(g, GG.RNG(4), { gear: FULL })];
+    pats.forEach(p => ['verse', 'chorus', 'bridge'].forEach(name => {
+      eq(S.chordsOf(p, name, g), chords12(p, name, g, null, null), g + ' hash pick ' + name);
+      ['bass', 'rhythm', 'lead'].forEach(seat => {
+        const pt = S.part.full(g, seat, p, GG.RNG(7));
+        eq(S.chordsOf(p, name, g, { part: pt, seat: seat }), chords12(p, name, g, pt, seat), g + ' ' + seat + ' ' + name);
+        eq(S.chordsOf(Object.assign({}, p, { part: pt }), name, g), chords12(p, name, g, pt, seat), g + ' ' + seat + ' own part ' + name);
+        eq(S.chordsOf(p, name, g, { part: pt, seat: 'drums' }), chords12(p, name, g, null, null), 'the drum seat ignores a part');
+      });
+      eq(S.chordsOf(Object.assign({}, p, { chords: { verse: [1, 2, 3, 4], chorus: [5, 6, 7, 8], bridge: [9, 10, 11, 0] } }), name, g, { part: S.part.full(g, 'bass', p), seat: 'bass' }),
+        { verse: [1, 2, 3, 4], chorus: [5, 6, 7, 8], bridge: [9, 10, 11, 0] }[name], 'p.chords wins');
+    }));
+    const B = GG.content.genres[g].backing;
+    B.progressions.bridge.forEach((pr, i) => {
+      const pc = S.progChords(g, 'bridge', i, S.nativeMood(g));
+      pc.forEach((x, bar) => eq(x, B.roles.bridge[bar] === 'break' ? 0 : pr[bar], g + ' progChords bridge ' + i + ' bar ' + bar));
+    });
+    eq(S.progChords(g, 'verse', 99), S.progChords(g, 'verse', B.progressions.verse.length - 1), 'index clamps');
+    const p = S.signature(g), names = S.part.choices(g, 'bass', 'chorus');
+    names.forEach((c, i) => eq(S.progName(g, 'bass', 'chorus', Object.assign({}, p, { chords: { chorus: S.progChords(g, 'chorus', i) } })), c.name, g + ' progName ' + i));
+    eq(S.progName(g, 'rhythm', 'chorus', Object.assign({}, p, { chords: { chorus: [1, 1, 1, 6] } })), 'Custom');
+    const pt = S.part.full(g, 'bass', p); pt.sections.verse.prog = 1;
+    eq(S.progName(g, 'bass', 'verse', Object.assign({}, p, { part: pt })), names.length && S.part.choices(g, 'bass', 'verse')[1].name, g + ' progName from the part');
+    const lp = S.part.full(g, 'lead', p); lp.sections.chorus.hook = 2;
+    eq(S.progName(g, 'lead', 'chorus', Object.assign({}, p, { part: lp })), S.part.choices(g, 'lead', 'chorus')[2].name, g + ' lead: the hook name');
+  }
+  eq(['metal', 'punk', 'rock'].map(g => S.chordLabel(g, null, 40, 0)), ['E5', 'E5', 'E5'], 'power-chord genres');
+  eq([S.chordLabel('country', null, 43, 0), S.chordLabel('country', null, 43, 5), S.chordLabel('country', null, 43, 7), S.chordLabel('country', null, 43, 9), S.chordLabel('country', null, 43, 2)],
+    ['G', 'C', 'D', 'Em', 'Am'], 'country triads in G (native rung)');
+  eq(S.chordLabel('country', 3, 43, 0), 'Gm', 'a minor rung'); eq(S.chordLabel('metal', 0, 41, 1), 'F♯5'); eq(S.NOTE.length, 12);
+});
+
+test('hook gate: a v2 part without p.chords rates as its v1 source; with p.chords (bass / rhythm) the chord arrays decide; the lead keeps the index rule', () => {
+  for (const g of GENRES) for (const seat of ['bass', 'rhythm', 'lead']) {
+    const p = S.signature(g), k = S.part.key(seat), pt = S.part.full(g, seat, p);
+    pt.sections.chorus.rows = pt.sections.verse.rows.slice();   // no row contrast: only the progression / hook floor lifts the hook
+    pt.sections.verse[k] = 0; pt.sections.chorus[k] = 1;
+    const v1 = Object.assign({}, p, { part: pt }), v2 = Object.assign({}, p, { part: S.part.upgrade(pt) });
+    eq(S.rate(v2, g), S.rate(v1, g), g + ' ' + seat + ' v2 = v1'); eq(S.partRating(v2, g), S.partRating(v1, g));
+    const same = Object.assign({}, v2, { chords: { verse: [0, 5, 7, 0], chorus: [0, 5, 7, 0] } }), moved = Object.assign({}, v2, { chords: { verse: [0, 5, 7, 0], chorus: [0, 3, 5, 0] } });
+    const flat = JSON.parse(J(v2)); flat.part.sections.chorus[k] = 0;
+    const movedFlat = Object.assign({}, flat, { chords: moved.chords });
+    if (seat === 'lead') {
+      eq(S.partRating(same, g), S.partRating(v2, g), 'lead: chords never touch the hook'); eq(S.partRating(movedFlat, g), S.partRating(flat, g));
+    } else {
+      ok(S.partRating(same, g).hook < S.partRating(v2, g).hook, g + ' ' + seat + ': same chords, different index -> no floor');
+      ok(S.partRating(movedFlat, g).hook > S.partRating(flat, g).hook, g + ' ' + seat + ': different chords, same index -> the floor');
+      eq(S.partRating(moved, g), S.partRating(v2, g), g + ' ' + seat + ': moved chords = a moved index');
+    }
+  }
+});
+
+test('stage-0 stubs: compose (pure, sanitized, drum seat no part, v2 part on string seats), recipes (Surprise last), sliders, surprise', () => {
+  GG.state = null;
+  for (const g of GENRES) {
+    const o = { recipe: 'signature', energy: 3, mood: 0, swing: 2, fills: 1, bpm: 133, seed: 77, gear: { lanes: 4 }, seat: 'rhythm' };
+    const a = S.compose(g, o), b = S.compose(g, JSON.parse(J(o)));
+    eq(J(a), J(b), g + ' compose deterministic'); eq(J(S.sanitize(JSON.parse(J(a)), { lanes: 4 }, g)), J(a), g + ' compose output is sanitized');
+    eq(S.validate(a, { lanes: 4 }), [], g + ' compose validates');
+    ok(a.part && a.part.v === 2 && a.part.seat === 'rhythm' && a.mood === 0 && a.swing === 2 && a.recipe.seed === 77 && a.bpm % 5 === 0, g + ' compose fields');
+    ok(['verse', 'chorus', 'bridge'].every(n => a.chords[n].length === 4), g + ' chords per section');
+    ok(!('part' in S.compose(g, Object.assign({}, o, { seat: 'drums' }))), g + ' drum seat: no part');
+    const R = S.recipes(g, { lanes: 4 }, 'drums');
+    ok(R.length >= 2 && R[R.length - 1].surprise && R.every(r => r.id && r.name && 'locked' in r && r.sliders), g + ' recipes');
+    eq(S.sliders(g, 'bass').map(x => x.id), ['energy', 'mood', 'swing', 'fills', 'tempo']);
+    ok(S.sliders(g, 'bass').every(x => x.id === 'tempo' ? x.step === 5 && x.min < x.max : x.stops.length === 5), g + ' sliders');
+    eq(S.surprise(g, { lanes: 4 }, 'lead', 5), S.surprise(g, { lanes: 4 }, 'lead', 5), g + ' surprise deterministic');
+  }
+});
+
 done('sim_songs');
