@@ -479,4 +479,124 @@ test('calibration maths: nearest click, trimmed mean, needs four taps', () => {
   eq(GG.prefs.get().calibSeen, true);
 });
 
+// ---- v1.3 "Songwriter" (plan_contract_1.3 §4.6, Lane A): swing + fills in the charts, Scratch / singles on the string
+// highway. A second GG with 30_audio's pure timeline (the seat charts read it; the tests above keep the stub-free drum path).
+const GA = (() => { const g = load({ localStorage: load.fakeStorage() }); g.content.cards = [];
+  new Function('window', require('fs').readFileSync(require('path').join(__dirname, '..', 'src', '30_audio.js'), 'utf8'))({ GG: g }); return g; })();
+const CA = GA.contracts, E13 = '................', BANDS13 = { metal: 'hail_damage', punk: 'frost_heave', rock: 'gravel_kings', country: 'grid_road_ramblers' };
+const full13 = (g, bpm) => { const p = JSON.parse(JSON.stringify(GA.songs.signature(g))); if (bpm) p.bpm = bpm; p.sections.solo = p.sections.verse.slice(); p.sections.outro = p.sections.chorus.slice(); p.arrangement = ['verse', 'chorus', 'bridge', 'solo', 'chorus', 'outro']; return p; };
+const song13 = (p, id) => ({ id: id || 'v13', title: 'V13', pattern: p, quality: 60, polish: 60 });
+const grid13 = n => n.entry * CA.BARS_PER_SECTION * 4 + n.bar * 4 + n.step / 4;
+const brk13 = g => { const R = GA.songs.genre(g).backing.roles || {}; return CA.SECTIONS.filter(n => (R[n] || []).indexOf('break') >= 0); };
+// does toNotes bring the bar-4 fills in yet (Lane S, Q2)? the drum-chart fill checks need it; the timeline side is in sim_audio
+const fillsInNotes = (() => { const p = full13('punk'); p.arrangement = ['verse']; p.fillBars = { verse: [E13, E13, E13, 'x..............x'] };
+  return GA.songs.toNotes(p).some(n => n.bar === 3 && n.lane === 'cymbal' && n.step === 15); })();
+
+test('v1.3 swing: every swung drum-chart note sounds at its timeline time (4 genres x Feel 1-4, extras too); steps / bars stay', () => {
+  for (const g of CA.GENRES) for (const sw of [1, 2, 3, 4]) {
+    const p = full13(g); p.swing = sw;
+    const ch = GA.gig.chart(song13(p), { thumbs: false, doubles: false }), tl = GA.audio.timeline(p, { genre: g, songId: 'v13', backing: false, vocals: false });
+    const at = {}; tl.events.filter(e => e.kind === 'drum').forEach(e => { at[e.lane + '@' + (e.g != null ? e.g : e.beat)] = e.beat; });
+    const w = g + ' Feel ' + sw;
+    eq(ch.notes.length, tl.events.filter(e => e.kind === 'drum').length, w + ': one note per drum hit');
+    let moved = 0;
+    ch.notes.forEach(n => {
+      const b = at[n.lane + '@' + grid13(n)];
+      ok(b != null && Math.abs(n.t - b * ch.spb) < 1e-9, w + ': note t == timeline time ' + JSON.stringify([n.lane, grid13(n), n.t, b]));
+      if (Math.abs(n.t - grid13(n) * ch.spb) > 1e-9) moved++;
+    });
+    ok(moved > 0, w + ': the off-beats swing');
+    const straight = GA.gig.chart(song13(full13(g)), { thumbs: false, doubles: false });
+    eq(ch.notes.map(n => [n.lane, n.section, n.entry, n.bar, n.step, !!n.free]), straight.notes.map(n => [n.lane, n.section, n.entry, n.bar, n.step, !!n.free]).sort(() => 0), w + ': same notes, same grid');
+    eq([ch.fills, ch.sections, ch.duration], [straight.fills, straight.sections, straight.duration], w + ': windows, sections, length never move');
+    const ex = GA.gig.chart(song13(p), { extras: GA.RNG(4), thumbs: false, doubles: false });
+    ex.notes.filter(n => n.extra).forEach(n => ok(Math.abs(n.t - GA.songs.swingBeat(grid13(n), sw) * ch.spb) < 1e-9, w + ': extras swing too'));
+  }
+});
+
+test('v1.3 neutral fields chart exactly as 1.2 (drum chart x difficulties, seat charts x seats); swing 0 = straight', () => {
+  for (const g of CA.GENRES) {
+    const p = full13(g), q = JSON.parse(JSON.stringify(p)), ch = {};
+    q.mood = GA.songs.nativeMood(g); q.swing = 0;
+    CA.SECTIONS.forEach(n => { if (brk13(g).indexOf(n) < 0) ch[n] = GA.songs.chordsOf(q, n, g); });
+    q.chords = ch;
+    for (const d of ['easy', 'normal', 'hard', 'expert']) {
+      eq(JSON.stringify(GA.gig.chart(song13(q), { difficulty: d, extras: GA.RNG(3) })), JSON.stringify(GA.gig.chart(song13(p), { difficulty: d, extras: GA.RNG(3) })), g + ' drums ' + d);
+      for (const seat of ['bass', 'rhythm', 'lead']) {
+        const o = { seat, genre: g, difficulty: d, lanes: 5, runs: true };
+        eq(JSON.stringify(GA.gig.chart(song13(q), o)), JSON.stringify(GA.gig.chart(song13(p), o)), g + ' ' + seat + ' ' + d);
+      }
+    }
+  }
+});
+
+test('v1.3 fills: extras skip a section with a bar-4 fill, free windows stay free; toNotes brings the fill into the drum chart', () => {
+  for (const g of CA.GENRES) {
+    const p = full13(g), fill = ['x...x...x...x...', '....x.x.x.xxxxxx', '................', 'x...............'].slice(0, p.lanes);
+    const q = JSON.parse(JSON.stringify(p)); q.fillBars = { verse: fill, bridge: fill };
+    let inVerse = 0, total = 0;
+    for (let i = 1; i <= 40; i++) {
+      const ex = GA.gig.chart(song13(q), { extras: GA.RNG(i) });
+      ex.notes.filter(n => n.extra).forEach(n => { total++; if (n.section === 'verse') inVerse++; });
+    }
+    let base = 0; for (let i = 1; i <= 40; i++) base += GA.gig.chart(song13(p), { extras: GA.RNG(i) }).extras;
+    ok(inVerse === 0 && (total > 0 || base === 0), g + ': extras only where no fill sits ' + total + '/' + inVerse + ' (straight ' + base + ')');
+    const a = GA.gig.chart(song13(p)), b = GA.gig.chart(song13(q));
+    eq(b.fills, a.fills, g + ': the free windows never move');
+    ok(b.notes.filter(n => n.section === 'bridge' && n.bar === 3).every(n => n.free), g + ': a bridge fill bar is still a free window');
+    if (fillsInNotes) {
+      const tl = GA.audio.timeline(q, { genre: g, songId: 'v13', backing: false, vocals: false }), ch = GA.gig.chart(song13(q), { thumbs: false, doubles: false });
+      eq(ch.notes.map(n => n.lane + '@' + grid13(n)).sort(), tl.events.filter(e => e.kind === 'drum').map(e => e.lane + '@' + e.beat).sort(), g + ': the drum chart has the fill bar the band plays');
+    }
+  }
+  if (!fillsInNotes) console.log('  (v1.3 fills: toNotes has no bar-4 fills yet: Lane S S3; the chart = timeline check runs once it lands)');
+});
+
+test('v1.3 seat charts: swing keeps every note on its grid step (where() reads e.g), t = the swung time; Q1 lanes = the pitch shape', () => {
+  for (const g of CA.GENRES) for (const seat of ['bass', 'rhythm', 'lead']) {
+    const p = full13(g), q = JSON.parse(JSON.stringify(p)); q.swing = 4;
+    const o = { seat, genre: g, difficulty: 'expert', lanes: 6, thumbs: false }, a = GA.gig.chart(song13(p), o), b = GA.gig.chart(song13(q), o), w = g + '/' + seat;
+    const cnt = c => c.notes.length + c.auto.length + c.notes.concat(c.auto).reduce((t, n) => t + (n.with ? n.with.length : 0), 0);
+    eq(cnt(b), cnt(a), w + ': every event still charts');
+    let moved = 0;
+    b.notes.concat(b.auto).forEach(n => {
+      ok(Math.abs(n.t - GA.songs.swingBeat(grid13(n), 4) * b.spb) < 1e-9, w + ': t = swingBeat(grid) ' + JSON.stringify([n.entry, n.bar, n.step, n.t]));
+      if (grid13(n) % 1) moved++;
+    });
+    ok(moved > 0 || !a.notes.concat(a.auto).some(n => grid13(n) % 1), w + ': off-beat notes swing');
+    eq(b.notes.map(n => n.li).length, b.notes.length, w + ': lanes');
+  }
+});
+
+test('v1.3 Scratch + singles on the highway: dead copies through, root lane, never a run or a chord; singles never chord on Hard+', () => {
+  const blank = n => Array(n).fill(E13);
+  for (const g of CA.GENRES) {
+    const p = full13(g, 200); p.arrangement = ['verse', 'chorus'];
+    const rows = blank(6); rows[0] = 'x.......x.......'; rows[5] = '..xxxx....xxxx..'; rows[2] = '................'; rows[3] = '................x'.slice(0, 16);
+    const r2 = blank(6); r2[2] = 'x.......x.......'; r2[3] = '....x.......x...'; r2[4] = '..x...x...x...x.';   // singles only, on downbeats too
+    p.part = { seat: 'rhythm', v: 2, sections: { verse: { prog: 0, rows }, chorus: { prog: 0, rows: r2 } } };
+    for (const d of ['hard', 'expert']) for (const runs of [false, true]) {
+      const c = GA.gig.chart(song13(p), { seat: 'rhythm', genre: g, difficulty: d, lanes: 5, runs, thumbs: false }), all = c.notes.concat(c.auto), w = g + ' ' + d + (runs ? ' runs' : '');
+      const dead = all.filter(n => n.dead), chug = all.filter(n => n.section === 'verse' && !n.dead && n.step % 8 === 0);
+      ok(dead.length >= 16, w + ': Scratch notes carry dead ' + dead.length);
+      ok(dead.every(n => n.mute && chug.some(x => x.entry === n.entry && x.midi === n.midi && x.li === n.li)), w + ': dead at the root, on the root lane');
+      ok(c.notes.filter(n => n.dead).every(n => !n.run && !n.chord), w + ': a dead strum is never a run or a chord');
+      ok(c.notes.filter(n => n.run).every(n => n.seq.every(x => x[1] === n.midi)) && !c.notes.some(n => n.run && n.dead), w + ': runs never swallow Scratch');
+      ok(c.notes.filter(n => n.section === 'chorus').every(n => !n.chord), w + ': singles never chord');
+    }
+  }
+});
+
+test('v1.3 perfect bot = 100 % on swung songs with fills + Scratch (drum seat and every string seat)', () => {
+  for (const g of CA.GENRES) for (const seat of CA.SEATS) {
+    const s = GA.career.newCareer({ seed: 5, bandId: BANDS13[g], seat, player: { name: 'Swing' } }); s.gig = null;
+    s.songs.forEach((x, i) => { x.pattern.swing = 1 + (i % 4); x.pattern.fillBars = { chorus: x.pattern.sections.verse.slice() };
+      if (seat === 'rhythm') x.pattern.part = { seat: 'rhythm', v: 2, sections: { verse: { prog: 0, rows: ['x.......x.......', E13, '....x...........', E13, E13, '..x.....xx....xx'] } } }; });
+    for (const d of ['normal', 'expert']) {
+      const r = GA.gig.botPlay(GA.gig.session(s, GA.gig.makeGig(s, 'legion_63', 'book'), null, { emit: false, difficulty: d }), { accuracy: 1, jitterMs: 0 }, GA.RNG(2));
+      ok(r.accuracy === 1 && r.miss === 0, g + '/' + seat + '/' + d + ': perfect bot ' + r.accuracy + ' miss ' + r.miss);
+    }
+  }
+});
+
 done('sim_gig');

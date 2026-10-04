@@ -3,7 +3,8 @@
 // A.feelPlan(tl, FEEL, seed, { gig }) -> { dt, vel, dgap, stats } (steps never move; clamps C.FEEL_CLAMP), A.accent(...),
 // A.tapVel(...), A.velGain(v) (C.VEL_REF). Loads after 30_audio.js (build ORDER by name) and replaces 30's stage-0 stubs by
 // assignment. F16: C.FEEL_MOOD (mood < 30: spread x 1.25), C.FEEL_STUDIO (t + 0.25), C.FEEL_RIVAL (t + 0.15). Classic on: 30
-// never asks (player() / 55 skip every call), so the 1.1 path is untouched.
+// never asks (player() / 55 skip every call), so the 1.1 path is untouched. v1.3 (Lane A): a swung event (tl event e.g = its
+// grid beat, plan_contract_1.3 §4.5) takes the accent of its grid step; FEEL_CLAMP is untouched (swing is not feel).
 //
 // Who plays what (F4): each event kind belongs to one player this career. drum lanes -> the kit (you on the drum seat: no
 // timing feel, accents only; the swapped drummer on a string seat), bass -> bass, gtr / gtr2 / clean -> rhythm guitar, lead /
@@ -174,7 +175,7 @@
       e = E[i];
       if (e.kind === 'step') { cx = e; vel[i] = 1; continue; }
       var key = e.kind === 'drum' ? e.lane : e.kind, F = by[key];
-      var pos = e.beat * 4, st = Math.round(pos), step = Math.abs(pos - st) < 1e-6 ? ((st % 16) + 16) % 16 : -1;
+      var pos = (e.g != null ? e.g : e.beat) * 4, st = Math.round(pos), step = Math.abs(pos - st) < 1e-6 ? ((st % 16) + 16) % 16 : -1;   // (v1.3: a swung note accents by its grid step)
       var role = cx ? cx.role : 'full';
       if (role === 'ring' || (role === 'solo' && solo[key])) role = 'full';
       var variant = e.kind === 'drum' ? e.v : e.mute && CHUG_KINDS[key] ? 'mute' : null;

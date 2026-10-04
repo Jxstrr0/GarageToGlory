@@ -199,4 +199,26 @@ test('debug(feel): the last FEEL and the last plan', () => {
   ok(d && d.genre === 'punk' && d.studio === true && d.byKind && d.byKind.snare.pushMs < 0 && d.lastPlan && d.lastPlan.gig === true && d.lastPlan.n === tl.events.length, JSON.stringify(d).slice(0, 300));
 });
 
+// v1.3 "Songwriter" (plan_contract_1.3 §4.5, Lane A): a swung event (e.g = its grid beat) takes the accent of its grid step;
+// FEEL_CLAMP and the step events never change; the straight plan is untouched.
+test('v1.3 swing: the plan accents by the grid beat (e.g), same vel as straight for every event; steps 0; clamps hold', () => {
+  for (const g of C.GENRES) for (const sw of [2, 4]) {
+    const p = fullSong(g), q = JSON.parse(JSON.stringify(p)); q.swing = sw;
+    const a = A.timeline(p, { genre: g, songId: 'sw' }), b = A.timeline(q, { genre: g, songId: 'sw' }), FL = A.feelFor(null, g, {});
+    // a steady band (no wander, no noise) makes the accent map visible: vel depends on the grid step only
+    const flat = JSON.parse(JSON.stringify(FL)); Object.keys(flat.byKind).forEach(k => { flat.byKind[k].spread = 0; flat.byKind[k].velSd = 0; flat.byKind[k].push = 0; });
+    const pa = A.feelPlan(a, flat, 7, { gig: true }), pb = A.feelPlan(b, flat, 7, { gig: true }), w = g + ' Feel ' + sw;
+    const va = {}, vb = {};
+    a.events.forEach((e, i) => { if (e.kind !== 'step') va[(e.kind === 'drum' ? e.lane : e.kind) + '@' + e.beat + '@' + (e.midi || 0)] = pa.vel[i]; });
+    b.events.forEach((e, i) => { if (e.kind !== 'step') vb[(e.kind === 'drum' ? e.lane : e.kind) + '@' + (e.g != null ? e.g : e.beat) + '@' + (e.midi || 0)] = pb.vel[i]; });
+    let n = 0;
+    Object.keys(va).forEach(k => { if (Math.floor((+k.split('@')[1] % 16) / 4) === 3) return;   // (the last bar leans into the change by time)
+      ok(near(vb[k], va[k], 1e-6), w + ': ' + k + ' ' + va[k] + ' vs ' + vb[k]); n++; });
+    ok(n > 100, w + ': events ' + n);
+    b.events.forEach((e, i) => { if (e.kind === 'step') eq([pb.dt[i], pb.vel[i]], [0, 1], w + ': steps stay'); });
+    const spb = 60 / b.bpm;
+    ok(Array.from(pb.dt).every(d => Math.abs(d) <= Math.min(0.015, 0.25 * spb / 4) + 1e-7), w + ': gig clamps');
+  }
+});
+
 done('sim_feel');

@@ -12,6 +12,8 @@
 //   preview: A.seatPreview(band, seat): ~3 s, the seat's kinds at +6 dB / the rest -6 dB, the seat's kinds heard, quiet (not
 //            the current song), one at a time (a second preview stops the first), stops itself, A.stopPreview().
 //   noodle : a string seat's garage noodle is yours (A.noodleFor -> { who: 'player', style }), it plays in the garage.
+//   dead   : (v1.3) a Scratch dead strum (A.strum o.dead): plays, the short KS 'dead' buffer once warm (a chug keeps 0.35 s),
+//            debug seat.last.dead, Classic on = the mute recipe; a swung song with a v2 Scratch part warms + plays.
 // Run: node build.js && META_ONLY=voices timeout 500 node tests/pw_seat_audio.js
 const { open, checker, VIEW } = require('./_pw');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -321,9 +323,72 @@ async function noodle() {
   finally { await o.close(); c.done(); }
 }
 
+/* ---- dead (v1.3 "Songwriter", Lane A) ---------------------------------------------------------------------------------- */
+// A.strum(midi, when, { dead: true }) (a part v2 Scratch note, as 55 passes it): it plays (sources = voices booked) and is
+// the dead articulation: the KS buffer, once warm, is the short 'dead' one (~0.12 s, vs a palm-muted chug's 0.35 s) on the
+// rock rhythm and the country acoustic; debug(audio).seat.last.dead; Classic on: the 1.1 mute recipe (oscillators only, no
+// buffer); a song with a v2 Scratch part warms the dead buffers (A.warm) and plays them with no console errors.
+async function dead() {
+  const c = checker('dead');
+  const o = await open({ noGoto: true });
+  const { page, errors } = o;
+  try {
+    await o.context.addInitScript(SPY);
+    await o.context.addInitScript(() => {   // every buffer source's buffer length at start
+      const st = AudioBufferSourceNode.prototype.start;
+      window.__bufLen = [];
+      AudioBufferSourceNode.prototype.start = function () { if (!(window.OfflineAudioContext && this.context instanceof OfflineAudioContext)) window.__bufLen.push(this.buffer ? Math.round(this.buffer.duration * 1000) : null); return st.apply(this, arguments); };
+    });
+    await page.goto(o.url);
+    await boot(page);
+    const out = {};
+    for (const [band, midi] of [['gravel_kings', 52], ['grid_road_ramblers', 55]]) {
+      await career(page, band, 'rhythm');
+      out[band] = await page.evaluate(async m => {
+        const A = GG.audio, ctx = A.context(), S = window.__src, B = window.__bufLen, wait = ms => new Promise(r => setTimeout(r, ms)), r = {};
+        A.classic(false);
+        const play = async (o) => { const s0 = S.length, b0 = B.length, h = A.strum(m, ctx.currentTime + 0.1, Object.assign({ len: 0.25, vel: 0.9 }, o)); await wait(30);
+          return { kind: h && h.kind, n: h && h.n, srcs: S.length - s0, bufs: B.slice(b0), last: Object.assign({}, GG.debug('audio').seat.last) }; };
+        // (a live miss plays the oscillator and queues the buffer; muted strums alternate 2 round robins: queue both first)
+        r.first = await play({ dead: true }); await wait(300); await play({ dead: true }); await wait(900);
+        r.dead = await play({ dead: true }); await wait(300); const d2 = await play({ dead: true }); r.dead.bufs = r.dead.bufs.concat(d2.bufs); await wait(600);
+        r.chug = await play({ mute: true }); await wait(300); await play({ mute: true }); await wait(900);
+        r.chug2 = await play({ mute: true }); await wait(300); const c2 = await play({ mute: true }); r.chug2.bufs = r.chug2.bufs.concat(c2.bufs); await wait(600);
+        A.classic(true);
+        r.classic = await play({ dead: true }); await wait(400);
+        A.classic(false);
+        return r;
+      }, midi);
+    }
+    console.log('INFO dead ' + JSON.stringify(out));
+    for (const [band, r] of Object.entries(out)) {
+      c.ok(r.first.kind && r.first.n >= 1 && r.first.srcs >= 1 && r.first.last.dead === true, band + ': a dead strum plays (debug seat.last.dead) ' + JSON.stringify(r.first));
+      c.ok(r.dead.bufs.length >= 1 && r.dead.bufs.every(ms => ms != null && ms <= 130), band + ': warm, it plays the short dead KS buffer ' + JSON.stringify(r.dead.bufs));
+      c.ok(r.chug2.bufs.length >= 1 && r.chug2.bufs.every(ms => ms >= 300), band + ': a palm-muted chug keeps its own 0.35 s buffer ' + JSON.stringify(r.chug2.bufs));
+      c.ok(r.classic.srcs >= 1 && r.classic.bufs.length === 0 && r.chug.last.dead === undefined, band + ': Classic on = the mute recipe (oscillators), no dead flag on a chug ' + JSON.stringify({ c: r.classic, chug: r.chug.last }));
+    }
+    // a swung song with a v2 Scratch part warms + plays its dead strums
+    const song = await page.evaluate(async () => {
+      const s = GG.state, E = '................', A = GG.audio;
+      const p = JSON.parse(JSON.stringify(s.songs[0].pattern)); p.swing = 3;
+      p.part = { seat: 'rhythm', v: 2, sections: { verse: { prog: 0, rows: ['x.......x.......', E, '....x.......x...', E, E, '..x...x...x...x.'] } } };
+      const w = await A.warm(p, { genre: s.genre, seat: 'rhythm', part: p.part });
+      const h = A.play(p, { genre: s.genre, section: 'verse', seat: 'rhythm', part: p.part });
+      await new Promise(r => setTimeout(r, 1500));
+      const tl = h && h.timeline, out = { warm: w, swing: tl && tl.swing, dead: tl ? tl.events.filter(e => e.dead).length : 0, kinds: h ? Object.assign({}, h.kinds) : null };
+      A.stop();
+      return out;
+    });
+    c.ok(song.warm && song.warm.n > 0 && song.swing === 3 && song.dead >= 4 && song.kinds && Object.keys(song.kinds).length > 0, 'a swung Scratch song warms and plays ' + JSON.stringify(song));
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'dead threw: ' + (e.stack || e)); }
+  finally { await o.close(); c.done(); }
+}
+
 (async () => {
   if (want('voices')) await voices();
   if (want('mute')) await mute();
   if (want('preview')) await preview();
   if (want('noodle')) await noodle();
+  if (want('dead')) await dead();
 })();

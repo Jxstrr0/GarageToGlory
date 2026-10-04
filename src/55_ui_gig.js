@@ -623,6 +623,7 @@
     o = { len: n ? (n.run && n.seq && n.seq.length ? n.seq[0][0] : n.len || 0.25) : 0.25, hold: !!(n && n.hold && !n.run), kind: n && n.kind || null,
       power: !!(n && n.power), mute: !!(n && n.mute), strum: n && n.strum || null, up: !!(n && n.up), bend: !!(n && n.bend), chord: !!(n && n.chord) };
     if (n && n.with) o.with = n.with;   // v1.1 review: a same-voice partner (metal's chorus ring) layers on this note's handle
+    if (n && n.dead) o.dead = true;   // v1.3: a Scratch note plays a dead strum
     if (vo) o.vel = vo.vel;   // v1.2 (F5): the tap's velocity (no vo: the 1.1 call)
     try { G.seatN++; return f(midi, when, o); } catch (e) { return null; }
   }
