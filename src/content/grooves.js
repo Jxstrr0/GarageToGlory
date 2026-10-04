@@ -352,7 +352,7 @@
       sliders: { energy: 2, mood: 1, swing: 0, fills: 1 },
       parts: { prog: { verse: 0, chorus: 0, bridge: 1 }, hook: { verse: 0, chorus: 0, bridge: 1 },
         alt: { verse: [{ bass: 'walk', rhythm: 'fifths', lead: 'call' }, null], chorus: [{ lead: 'double', bass: 'octave' }, null], bridge: [{ rhythm: 'ring', lead: 'pickup' }, null] } } },
-    { id: 'legion-two-step', name: 'Legion two-step', desc: 'Grab a partner, mind the punch', bpm: 95, arr: 'classic',
+    { id: 'legion-two-step', name: 'Legion two-step', desc: 'Partners up, mind the punch', bpm: 95, arr: 'classic',
       drums: { verse: ['tw'], chorus: ['twc'], bridge: ['tr12'] },
       alt: { verse: [['tw', 'kick3']], chorus: [['trc']], bridge: [['trg']] }, sliders: { energy: 1, mood: 1, swing: 2, fills: 1 },
       parts: { prog: { verse: 1, chorus: 1, bridge: 1 }, hook: { verse: 1, chorus: 2, bridge: 0 }, mods: { verse: { bass: 'walk' } } } },

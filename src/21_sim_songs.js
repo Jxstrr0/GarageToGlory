@@ -960,7 +960,7 @@
   //     partEnergy / partFills, onsets capped 12 / 14 / 12; (7) K = C.QUICK.k seeded variants (a pick from the recipe's alt
   //     drums per section, a hat -> ride swap (4 lanes: hat -> crash where grooveFx.swap4 allows), the fill's alternate, the part
   //     mod's alternates, two flavours per section = grooveFx.flavors[i] then flavors2[j]); the rng picks one of those rated groove >= 80
-  //     and hook >= 65 (none: the best groove + hook). The plans
+  //     and hook >= 65 at the recipe's tempo (none: the best groove + hook), so Feel and Tempo never rewrite notes (D15). The plans
   //     are drawn before any slider is read, so the same args give the same JSON and a slider moved and moved back gives the same
   //     song. Pure: never reads GG.state; genre always explicit.
   function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
@@ -1120,9 +1120,10 @@
     for (k = 0; k < K; k++) plans.push(drawPlan(rng));
     var s = { energy: int04(o.energy, d.energy), mood: int04(o.mood, d.mood), swing: int04(o.swing, d.swing), fills: int04(o.fills, d.fills) };
     var bpm = tempoOf(gid, o.bpm != null ? o.bpm : R.bpm), arr = songs.withExtras((songs.ARRANGEMENTS[R.arr] || songs.ARRANGEMENTS.classic).slice(), g);
-    var pass = [], best = null;
-    plans.forEach(function (plan) {
-      var p = composeOne(gid, R, g, seat, s, bpm, arr, plan, seed), r = songs.rate(p, gid, g), c = { p: p, score: r.groove + r.hook };
+    var pass = [], best = null, rb = tempoOf(gid, R.bpm);
+    plans.forEach(function (plan) {   // rated at the recipe's tempo: Feel and Tempo never change which notes win (D15)
+      var p = composeOne(gid, R, g, seat, s, bpm, arr, plan, seed), r = songs.rate(bpm === rb ? p : Object.assign({}, p, { bpm: rb }), gid, g);
+      var c = { p: p, score: r.groove + r.hook };
       if (r.groove >= QUICK_MIN.groove && r.hook >= QUICK_MIN.hook) pass.push(c);
       if (!best || c.score > best.score) best = c;
     });
