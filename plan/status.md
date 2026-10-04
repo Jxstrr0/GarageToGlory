@@ -23,9 +23,10 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.3.0.0 "Songwriter"** (PR #24, merged 2026-10-04) = 1.2.0.0 + quick song recipes + 5 sliders for every
-  seat, more note rows + per-bar chords, the one-flow "Clean sheet" songwriter. See "What's in v1.3" below.
-  **Update Current/Next at every merge.**
+- Current: **1.3.1.0 (in progress on `v1.3.1-simulate`)**: 1.3.0.0 + Simulate a regular gig at your own average + a "Gear
+  shop" garage label and a visible shop button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6). Last shipped on `main`:
+  **1.3.0.0 "Songwriter"** (PR #24, merged 2026-10-04) = 1.2.0.0 + quick song recipes + 5 sliders for every seat, more note rows +
+  per-bar chords, the one-flow "Clean sheet" songwriter. See "What's in v1.3" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
@@ -365,6 +366,23 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 - [x] integrate on `v1.3-songwriter` (merges S -> A -> U, hand-overs, matrix 390 + 440, phoneqa, size, owner shots + clips;
   `plan/v13_integration_report.md`) — 2026-10-04
 - [x] review pass (3 lenses; 3 majors + 7 minors fixed), owner check: ship, PR #24 to `main` — 2026-10-04
+
+## Addendum 6 (v1.3.1) — decisions (owner popup, 2026-10-04; locked)
+Owner words: "if i don't want to okay specific gig can we add a simulate option? also lets make the bass shop button more obvious"
+(read: "if I don't want to play a specific gig"). Plan: `plan/plan_1.3.1.md` (§0 has the lead's defaults D1-D8).
+- G1 Simulated result: **"Your own average"**: how well you actually played your recent gigs (`state.playLog`, the last 5 PLAYED
+  gigs, seat-aware; simulated gigs never count); falls back to the band's level when you haven't played many (< 2 on this seat).
+- G2 Which gigs: **all but story shows**: any regular gig can be simulated; rival showdowns (`C.SHOWDOWNS`), the festival and the
+  final must be played.
+- G3 Rewards: **"Everything counts"**: a simulated gig applies exactly like a played one (pay, fans, buzz, awards / achievements
+  through the normal result path: the real live session played by `GG.gig.botPlay`, then `career.finishGig`).
+- G4 Shop: **own garage label + rig button**: a "Gear shop" floating label in the garage you tap directly (drums = the kit shop,
+  string seats = their instrument shop) + a visible shop button on the rig / kit sketch-pad screen (the ⋯ entry stays).
+
+## Addendum 6 — pending
+- [x] plan `plan/plan_1.3.1.md` + lead edits (VERSION 1.3.1.0, `02_contracts` V1.3.1, `10_save` playLog, save test) — 2026-10-04
+- [ ] lanes G (gig simulate) + S (gear shop) -> `plan/v131_lane_<g|s>_report.md`
+- [ ] merge G -> S, matrix 390 + 440, phoneqa, size, owner shots; review; PR to `main`
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.

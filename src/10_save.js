@@ -240,6 +240,8 @@
     });
     if (s.seat !== 'drums') seatGear(s.gear);   // string seats only: a drum career's gear stays v1.0's exact object
     if (s.player && typeof s.player === 'object' && !Array.isArray(s.player)) s.player.gearLook = gearLook(s.player.gearLook);
+    if (s.playLog !== undefined) s.playLog = playLog(s.playLog);   // v1.3.1: sanitized when present, never added
+    if (s.playLog === null) delete s.playLog;
     return s;   // v0.8: GG.shop (2a_sim_shop) chains onto this migrate and fills the lane-A fields last, on every load
   };
   // v1.1: gear.seatLanes { bass, rhythm, lead } (4..C.SEAT_MAX_LANES[seat], default 4) and gear.runs (bool, default false).
@@ -262,6 +264,20 @@
     return out;
   }
   save.gearLook = gearLook;
+  // v1.3.1: state.playLog (the last C.PLAY_LOG_MAX played gigs, "your own average" for a simulated gig). Keeps the valid
+  // entries in order (acc / ps clamped 0..1 to 3 decimals, a known seat + difficulty, an integer week), the newest last.
+  // Not an array -> null (the caller drops the key). Idempotent.
+  var PLAY_DIFFS = ['easy', 'normal', 'hard', 'expert'];
+  function playLog(a) {
+    if (!Array.isArray(a)) return null;
+    function r3(x) { return Math.round(Math.max(0, Math.min(1, x)) * 1000) / 1000; }
+    return a.filter(function (e) {
+      return e && typeof e === 'object' && isFinite(e.acc) && isFinite(e.ps) && C.SEATS.indexOf(e.seat) >= 0 && PLAY_DIFFS.indexOf(e.diff) >= 0;
+    }).slice(-C.PLAY_LOG_MAX).map(function (e) {
+      return { acc: r3(+e.acc), ps: r3(+e.ps), seat: e.seat, diff: e.diff, wk: isFinite(e.wk) ? Math.max(0, Math.round(e.wk)) : 0 };
+    });
+  }
+  save.playLog = playLog;
 
   /* ---- Save codes: UTF-8 -> LZW (9..16-bit codes) -> base64url ------------------ */
   var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';

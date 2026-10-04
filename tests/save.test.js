@@ -391,4 +391,23 @@ test('v1.1: a string seat fills its gear + the swapped seatRole; existing values
     'gearLook, the arc flags and the seat gear survive a code and a slot');
 });
 
+test('v1.3.1: state.playLog is never added on load; when present it is sanitized (valid entries, last 5, clamped), idempotent', () => {
+  const GG = load({ localStorage: load.fakeStorage() }), C = GG.contracts;
+  const v01 = () => JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'save_v01.json'), 'utf8')).state;
+  ok(!('playLog' in GG.save.migrate(v01())), 'an old save gains no playLog key');
+  const fresh = GG.career.newCareer({ seed: 5, bandId: 'frost_heave', player: { name: 'New' } });
+  ok(!('playLog' in fresh), 'a new career has no playLog yet');
+  eq(C.PLAY_LOG_MAX, 5); eq(C.SIM_MIN_PLAYED, 2); ok(C.HOTSPOTS[C.HOTSPOTS.length - 1] === 'shop' && C.HOTSPOTS.indexOf('kit') === 1, "C.HOTSPOTS appends 'shop'");
+  const e = (acc, seat, diff, wk) => ({ acc, ps: 0.5, seat, diff, wk });
+  const s = Object.assign(v01(), { playLog: [e(0.9, 'drums', 'easy', 1), null, e(0.8, 'vocals', 'easy', 2), e('x', 'drums', 'easy', 3),
+    e(0.7, 'bass', 'expert', 4), e(0.6, 'drums', 'legendary', 5), e(1.4, 'lead', 'hard', 6.6), e(0.55555, 'rhythm', 'normal', 7),
+    e(0.5, 'drums', 'normal', 8), e(-1, 'drums', 'hard', 9)] });
+  const m = GG.save.migrate(s);
+  eq(m.playLog.map(x => [x.acc, x.seat, x.diff, x.wk]), [[0.7, 'bass', 'expert', 4], [1, 'lead', 'hard', 7], [0.556, 'rhythm', 'normal', 7],
+    [0.5, 'drums', 'normal', 8], [0, 'drums', 'hard', 9]], 'valid entries only, the newest 5, clamped + rounded');
+  ok(same(GG.save.migrate(JSON.parse(JSON.stringify(m))), m), 'idempotent');
+  ok(!('playLog' in GG.save.migrate(Object.assign(v01(), { playLog: 'nope' }))), 'a broken playLog is dropped');
+  eq(GG.save.fromCode(GG.save.toCode(m)).playLog, m.playLog, 'survives a save code');
+});
+
 done('save');
