@@ -6,7 +6,7 @@
 // or home-indicator strip FAIL; horizontal overflow FAIL; the smallest visible text is reported. The HUD stat labels must
 // grow with Bigger text. Console errors FAIL. Exit code 1 on any failure.
 // v1.1 "Seats": + the seat picker, the creator's Your gear tab, a lead-seat garage, the songwriter's part, the guitar shop and a
-// lead-seat gig; the v1.1 controls (seat-*, lk-gear-*, part-* but the grid cells, gear-buy-*, ...) are held to 48 px.
+// lead-seat gig (v1.3: the songwriter's Quick song, then its part editor after Tweak and the ⋯ menu before the shop); the v1.1 controls (seat-*, lk-gear-*, part-* but the grid cells, gear-buy-*, ...) are held to 48 px.
 // Run: node build.js && timeout 500 node tools/phoneqa.js   (PW_VIEW=440x956 for the owner's phone)
 const { open, VIEW } = require('../tests/_pw');
 const INS = VIEW.width >= 430 ? { top: 59, bot: 34 } : { top: 47, bot: 34 };
@@ -124,7 +124,11 @@ const AUDIT = (ins, v10src) => {
       await audit('garage/HUD (lead)');
       await page.evaluate(() => { GG.ui.closeAll(); GG.ui.openSketch(); });
       await page.waitForFunction(() => GG.debug('ui').screen === 'seq', null, { timeout: 15000 });
+      await audit('songwriter: Quick song', 500);   // v1.3: no draft -> Quick song; Tweak -> your part; the shop lives in ⋯
+      await tapId('btn-quick-tweak');
       await audit('songwriter: your part', 500);
+      await tapId('btn-seq-tools'); await page.waitForFunction(() => GG.debug('ui').screen === 'seq-tools', null, { timeout: 15000 });
+      await audit('songwriter: ⋯ menu', 500);
       await tapId('btn-kit-shop'); await page.waitForFunction(() => GG.debug('ui').screen === 'gear', null, { timeout: 15000 });
       await audit('guitar shop (lead)');
       await page.evaluate(() => { GG.ui.closeAll(); const s = GG.state; for (let i = 0; i < 3; i++) GG.songs.jam(s, GG.RNG(60 + i));

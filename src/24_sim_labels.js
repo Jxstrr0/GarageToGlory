@@ -650,7 +650,7 @@
       if (list.indexOf(single) <= 2) score += K.frontSingle || 5;
     }
     for (var i = 1; i < list.length; i++) {
-      if (GG.songs.similarity(list[i - 1], list[i]) >= (K.adjacentAt || 0.9)) {
+      if (GG.songs.similarity(list[i - 1], list[i], state.genre) >= (K.adjacentAt || 0.9)) {
         score -= K.adjacent || 8; notes.push('"' + list[i - 1].title + '" and "' + list[i].title + '" sound the same back to back.');
       }
     }
@@ -670,11 +670,11 @@
     var old = recentTracks(state, albumId), hit = {}, pairs = [];
     for (var i = 0; i < list.length; i++) {
       for (var j = i + 1; j < list.length; j++) {
-        var v = GG.songs.similarity(list[i], list[j]);
+        var v = GG.songs.similarity(list[i], list[j], state.genre);
         if (v >= at) { hit[list[i].id] = hit[list[j].id] = true; pairs.push([list[i].id, list[j].id, v]); }
       }
       for (var k = 0; k < old.length; k++) {
-        var w = GG.songs.similarity(list[i], old[k]);
+        var w = GG.songs.similarity(list[i], old[k], state.genre);
         if (w >= at) { hit[list[i].id] = true; pairs.push([list[i].id, old[k].id, w]); }
       }
     }
@@ -1372,7 +1372,7 @@
     var old = recentTracks(state, null), out = [];
     fresh.forEach(function (x) {
       if (out.length >= n) return;
-      var clash = out.concat(old).some(function (y) { return GG.songs.similarity(x, y) >= at; });
+      var clash = out.concat(old).some(function (y) { return GG.songs.similarity(x, y, state.genre) >= at; });
       if (!clash) out.push(x);
     });
     fresh.forEach(function (x) { if (out.length < n && out.indexOf(x) < 0) out.push(x); });
@@ -1388,7 +1388,7 @@
     var mid = rest.filter(function (x) { return x !== closer; });
     var order = [opener], at = (cfg().tracklist || {}).adjacentAt || 0.9;
     while (mid.length) {
-      var prev = order[order.length - 1], pick = mid.filter(function (x) { return GG.songs.similarity(prev, x) < at; })[0] || mid[0];
+      var prev = order[order.length - 1], pick = mid.filter(function (x) { return GG.songs.similarity(prev, x, state.genre) < at; })[0] || mid[0];
       order.push(pick); mid.splice(mid.indexOf(pick), 1);
     }
     order.push(closer);

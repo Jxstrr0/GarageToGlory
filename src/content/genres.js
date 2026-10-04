@@ -19,7 +19,12 @@
 //                    hooks { verse|chorus|bridge: [HOOK] } (the lead picks one; PART.sections[s].hook indexes it),
 //                    HOOK = { name (plain words), deg: [5 scale degrees, low -> high: the five rows of the lead grid; indexes
 //                    into backing.scale, wrapping an octave up past its end], rows: [5 x 16-char 'x'/'.'] (the hook's own
-//                    melody, row 0 = the lowest degree; a starting point for songs.part.suggest) } },
+//                    melody, row 0 = the lowest degree; a starting point for songs.part.suggest) },
+//              v1.3 "Songwriter" (plan_contract_1.3 §4.3, the Mood slider): moods [5 x { id, mode, scale (length ==
+//                    backing.scale), third, seventh (semitones the bass 3rd / 7th rows and the hard-coded thirds play),
+//                    remap?: { <semi>: semi } (progression chords per rung) }] bright -> dark, and moodNative (the rung equal
+//                    to today's mode / scale: the 1.2 sound). scale / third / seventh are the stage-0 contract (Lane S tunes
+//                    id names and remap only). },
 //   kit: { room, verb, level, six: 'ride'|'china', train (country rim/brush snare), kick, snare, hat, cymbal, toms, tomDec }
 //        (v0.6.1 genre kit tuning, played by 30_audio; voc = hey | shout | growl | scream | yeah | yeehaw | ooh),
 //   reactions: { great, good, meh, bad }  (one-word verdicts under the Groove meter) } }
@@ -116,6 +121,11 @@
         stabs: [1, 6, 1, 3],        // chug accents / doom answers above the low string: b2, tritone, minor third
         arps: [[0, 3, 7, 12, 15, 12, 7, 3], [1, 5, 8, 13, 17, 13, 8, 5], [0, 3, 5, 8, 12, 8, 5, 3], [0, 3, 7, 10, 12, 10, 7, 3]],   // Dana's solos
         keys: [-2, 2], mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10],
+        moods: [{ id: 'heroic', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 11, remap: { 1: 5, 3: 4, 6: 7, 8: 9 } },
+          { id: 'grim', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10, remap: { 1: 3, 6: 7 } },
+          { id: 'midnight', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
+          { id: 'sinister', mode: 'phrygian dominant', scale: [0, 1, 4, 5, 7, 8, 10], third: 4, seventh: 10 },
+          { id: 'abyss', mode: 'locrian', scale: [0, 1, 3, 5, 6, 8, 10], third: 3, seventh: 10, remap: { 7: 6 } }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         // brk: [[bar of the breakdown run, step, voc, semis above the tonic]] (growls after the drop)
         // v0.9 vocal diversity: 'scream' / 'growl' here are slots; each song (seeded by its id) and each chorus / breakdown
@@ -196,6 +206,11 @@
           ]
         },
         riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
+        moods: [{ id: 'sunny', mode: 'lydian', scale: [0, 2, 4, 6, 7, 9, 11], third: 4, seventh: 11, remap: { 3: 2 } },
+          { id: 'cheery', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 10 },
+          { id: 'gritty', mode: 'mixolydian', scale: [0, 2, 4, 5, 7, 9, 10], third: 4, seventh: 10, remap: { 7: 10 } },
+          { id: 'bitter', mode: 'dorian', scale: [0, 2, 3, 5, 7, 9, 10], third: 3, seventh: 10, remap: { 5: 3, 7: 10 } },
+          { id: 'gloomy', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10, remap: { 5: 8, 7: 10 } }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         twoChords: [0, 5],   // Benny's entire vocabulary, relative to the bar's chord (I and IV)
         amp: { gain: 9, level: 0.085, pan: 0.62, preHp: 120, mid: [1100, 0.9, 5], presence: [3000, 1.1, 2], lp: 5200, detune: 6, lag: 0.009 },
@@ -277,6 +292,11 @@
           ]
         },
         riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
+        moods: [{ id: 'sunny', mode: 'major', scale: [0, 2, 4, 5, 7, 9], third: 4, seventh: 11, remap: { 3: 4, 10: 7 } },
+          { id: 'bright', mode: 'major blues', scale: [0, 2, 3, 4, 7, 9], third: 4, seventh: 10, remap: { 10: 9 } },
+          { id: 'bluesy', mode: 'major', scale: [0, 3, 5, 6, 7, 10], third: 4, seventh: 10 },
+          { id: 'moody', mode: 'minor', scale: [0, 2, 3, 5, 7, 10], third: 3, seventh: 10, remap: { 9: 8 } },
+          { id: 'dark', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8], third: 3, seventh: 10, remap: { 5: 1, 9: 8 } }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         amp: { gain: 5.5, level: 0.09, pan: 0.45, preHp: 90, mid: [800, 0.8, 3], presence: [2800, 1, 3], lp: 6000, detune: 4, lag: 0.012, ring: 0.2 },
         vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null,
@@ -355,6 +375,11 @@
           ]
         },
         riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
+        moods: [{ id: 'sweet', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 11, remap: { 7: 2, 9: 5 } },
+          { id: 'sunny', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 10 },
+          { id: 'dusty', mode: 'mixolydian', scale: [0, 2, 4, 7, 10], third: 4, seventh: 10, remap: { 7: 10 } },
+          { id: 'lonesome', mode: 'minor', scale: [0, 3, 5, 7, 10], third: 3, seventh: 10, remap: { 2: 3, 9: 8 } },
+          { id: 'heartbreak', mode: 'minor', scale: [0, 2, 3, 7, 8], third: 3, seventh: 10, remap: { 5: 8, 9: 8 } }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
         amp: { gain: 1.6, level: 0.2, pan: 0.3, bright: [2800, 1.2, 6], lp: 7000, slap: 0.11, slapFb: 0.18, slapLv: 0.5, slapPan: -0.35 },
         fiddle: { body: [[290, 4, 1.3], [520, 3.5, 1], [1150, 3, 0.8], [2700, 2.5, 0.55]], bow: 0.22, vib: [5.6, 0.009], pan: -0.35 },

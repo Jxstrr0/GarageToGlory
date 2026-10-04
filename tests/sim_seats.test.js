@@ -506,4 +506,29 @@ test('songs.reactions by seat: the swapped drummer reacts from the kit, never on
   ok(d.songs.map(x => GG.songs.reactions(d, x, GG.RNG(1))).every(l => l.every(x => !x.seat)), 'the drum seat: no seat reactions');
 });
 
+
+// v1.3 Lane S: the v2 part the Quick song writes is a normal part for every 1.1 tool (toggle, pick, modify, notes, rating, create).
+test('v1.3 v2 parts from compose: toggle / pick / modify keep v: 2 and the row count; notes / partRating read them; create keeps a matching v2 part', () => {
+  const S = GG.songs, G4 = { lanes: 4 };
+  for (const g of C.GENRES) for (const seat of ['bass', 'rhythm', 'lead']) {
+    const p = S.compose(g, { seed: 31, gear: G4, seat }), n = C.PART_V2[seat], k = S.part.key(seat);
+    eq(S.part.rowsOf(p.part), n, g + ' ' + seat + ' rows');
+    const t = S.part.toggle(p, 'verse', n - 1, 3, G4, g);
+    ok(t.part.v === 2 && t.part.sections.verse.rows[n - 1][3] !== p.part.sections.verse.rows[n - 1][3], 'toggle the top row');
+    const pk = S.part.pick(p, 'chorus', 1, G4, g);
+    ok(pk.part.v === 2 && pk.part.sections.chorus[k] === 1, 'pick keeps v2');
+    S.part.MODS.forEach(m => { const x = S.part.modify(p, 'verse', m.id, G4, g).pattern.part; ok(x.v === 2 && x.sections.verse.rows.length === n, m.id + ' keeps v2 rows'); });
+    ok(S.part.notes(p.part, 'verse').every(o => o.rows.every(r => r >= 0 && r < n)), 'notes in range');
+    const pr = S.partRating(p, g);
+    ok(pr && pr.groove >= 0 && pr.groove <= 100 && pr.notes > 0, 'partRating reads a v2 part');
+    ok(S.rate(p, g, G4).part, 'rate().part');
+  }
+  const st = K.newCareer({ seed: 5, bandId: 'hail_damage', seat: 'rhythm', player: { name: 'T' } });
+  const p = S.compose('metal', { seed: 1, gear: st.gear, seat: 'rhythm' }), song = S.create(st, p, 'Quick One');
+  eq(song.pattern.part, S.sanitize(p, st.gear, 'metal').part, 'create keeps the composed v2 part');
+  ok(song.pattern.recipe && song.pattern.chords, 'and the v1.3 keys');
+  const ds = K.newCareer({ seed: 5, bandId: 'hail_damage', seat: 'drums', player: { name: 'T' } });
+  ok(!('part' in S.create(ds, S.compose('metal', { seed: 1, gear: ds.gear, seat: 'rhythm' }), 'Q').pattern), 'the drum seat drops a part');
+});
+
 done('sim_seats');

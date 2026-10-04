@@ -44,7 +44,7 @@
     s.drumSync = s.drumSync !== false;                                // v0.8.3: default on
     s.syncDisp = U.clamp(Math.round(num(s.syncDisp, 25)), 10, 40);   // v0.8.3: ms, this device's touch dispatch p90
     s.audioClassic = !!s.audioClassic;                                // v1.2: the Classic sound (hidden; GG.audio.classic)
-    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2: the Write flow's step-by-step screens (default)
+    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2 Write flow mode; ignored since 1.3 (one flow, D18): kept so old saves / tests round-trip
     return s;
   };
   P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };

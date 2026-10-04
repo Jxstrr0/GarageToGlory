@@ -31,7 +31,8 @@
   T.offerSkip = function () {
     try { var m = GG.meta && GG.meta.get ? GG.meta.get() : null; return !!(m && m.careers && m.careers.past4 > 0); } catch (e) { return false; }
   };
-  // 54_ui_sequencer: the first-Write tips stay quiet while the w1_write lesson runs (or is about to).
+  // 54_ui_sequencer: the first-Write tips stay quiet while the w1_write lesson runs (or is about to). v1.3: the grid tip is held for
+  // the editor (Tweak, or a queued sketch); a fresh Write opens Quick song, whose bubble is the colon-free coach.quick line.
   T.suppressWriteTip = function (st) {
     st = st || S();
     if (cur && cur.id === 'w1_write') return true;
@@ -294,7 +295,7 @@
     var id = p && p.id; if (!id) return;
     if (!T.running()) { refresh(); return; }
     var ctx = { screen: id, host: id };
-    if (id === 'seq') { var e = ui.get('seq'); ctx.mode = e && e.data ? e.data.mode : null; }
+    if (id === 'seq') { var e = ui.get('seq'); ctx.mode = e && e.data ? e.data.mode : null; ctx.seqScreen = e && e.data ? e.data.screen : null; }   // v1.3: 'quick' | 'edit'
     if (id === 'laptop') ctx.tab = laptopTab();
     if (id === 'wrap') {
       var we = ui.get('wrap'), w = we && we.data && we.data.wrap;

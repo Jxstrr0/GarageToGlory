@@ -10,7 +10,7 @@
 // open the gig board (these flows book the first listing they can).
 // Run: node build.js && timeout 500 node tests/pw_flow.js
 const fs = require('fs'), path = require('path');
-const { open, checker } = require('./_pw');
+const { open, checker, openTools } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const VERSION = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
@@ -41,7 +41,7 @@ async function jamWrites(page) {
   await page.waitForFunction(() => ['seq', 'board', 'results'].includes(GG.debug('ui').screen), null, { timeout: 10000 });
   while (await screen(page) === 'seq') {
     const i = await page.evaluate(() => GG.ui.get('seq').data.index);
-    await tap(page, 'btn-seq-jam');
+    await openTools(page); await tap(page, 'btn-seq-jam');   // v1.3: the jam lives in the songwriter's ⋯ menu
     await page.waitForFunction(i => GG.debug('ui').screen !== 'seq' || GG.ui.get('seq').data.index !== i, i, { timeout: 10000 });
   }
   if (await screen(page) === 'board') {
@@ -314,7 +314,7 @@ async function layout() {
     await tap(page, 'act-promote');
     await tap(page, 'btn-go'); await waitScreen(page, 'seq');
     await check('seq', true);
-    await tap(page, 'btn-seq-jam'); await waitScreen(page, 'results');
+    await openTools(page); await tap(page, 'btn-seq-jam'); await waitScreen(page, 'results');
     await tap(page, 'btn-results-skip');
     await check('results', true);
     await toWrap(page);

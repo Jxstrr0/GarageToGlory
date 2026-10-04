@@ -273,4 +273,24 @@ test('the seat leak scan pieces: [left] phrases are not leaks, a drum word aimed
   ok(SCAN.leak(card('sw_tamara_3').text, aware) === null, 'a swapped card\'s text (title inside it) is seat-aware');
 });
 
+
+test('v1.3 Quick song coach lines per seat (coach.bySeat[seat].quick, coach[genre].bySeat[seat].quick): colon-free, no drum words, the neutral ones name nobody', () => {
+  const CO = K.grooves.coach, line = l => l && str(l.text, 120) && typeof l.role === 'string' && new RegExp(l.role) && !/:/.test(l.text) && !SCAN.drumWords(l.text);
+  STRING.forEach(seat => {
+    ok((CO.bySeat[seat].quick || []).length && CO.bySeat[seat].quick.every(line), 'coach.bySeat.' + seat + '.quick');
+    ok(CO.bySeat[seat].quick.every(l => !anyName.test(l.text) && !USA.test(l.text)), 'coach.bySeat.' + seat + '.quick names nobody');
+    C.GENRES.forEach(g => ok((CO[g].bySeat[seat].quick || []).length && CO[g].bySeat[seat].quick.every(l => line(l) && !USA.test(l.text)), 'coach.' + g + '.bySeat.' + seat + '.quick'));
+  });
+  // somebody in each band can say it: the role matches a member who is not the one moved by the seat
+  BANDS.forEach(b => { const g = K.bands[b].genre, moved = K.bands[b].seats; if (!CO[g]) return;
+    STRING.forEach(seat => ok(CO[g].bySeat[seat].quick.some(l => K.bands[b].members.some(m => m.id !== moved[seat] && new RegExp(l.role).test(m.role))), b + ' ' + seat + ': a speaker for the Quick line'));
+  });
+  // the recipe cards and the slider stops are read on every seat
+  C.GENRES.forEach(g => {
+    ok(K.grooves[g].recipes.every(r => !SCAN.drumWords(r.name + ' ' + r.desc)), g + ': recipe words are seat-safe');
+    ['energy', 'mood', 'swing', 'fills'].forEach(k => ok(K.grooves[g].sliders[k].every(t => !SCAN.drumWords(t)), g + ' ' + k + ' stops are seat-safe'));
+    STRING.forEach(seat => ok(GG.songs.sliders(g, seat).every(x => !x.stops || x.stops.every(t => !SCAN.drumWords(t))), g + ' ' + seat + ': no drum-seat stop leaks'));
+  });
+});
+
 done('content_seats');

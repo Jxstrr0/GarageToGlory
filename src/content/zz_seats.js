@@ -446,19 +446,25 @@
       drums: [{ role: 'drummer', text: 'I picked a groove for every part. Lock your bass to my kick and nobody can stop us.' }],
       verse: [{ role: 'vocals', text: 'Keep the verse low and steady. Roots on the one. Leave me room to sing.' }, { role: 'guitar', text: 'Pick a progression and stay under me. The low end is the floor we stand on.' }],
       chorus: [{ role: 'vocals', text: 'Chorus: jump to the octave. People feel it in their chests before they hear it.' }],
-      bridge: [{ role: 'drummer', text: 'Bridge: try a different progression. Then walk us home to the last chorus.' }]
+      bridge: [{ role: 'drummer', text: 'Bridge: try a different progression. Then walk us home to the last chorus.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe and your bass line comes with it. Tweak it after, or just hit Play.' },
+        { role: 'guitar', text: 'Every recipe already has a bass line. Push Energy if it needs to walk around more.' }]
     },
     rhythm: {
       drums: [{ role: 'drummer', text: 'Groove picked. Your riff and my kick should agree on where the one is.' }],
       verse: [{ role: 'vocals', text: 'The verse riff carries the song. Chug it, so the words sit on top.' }, { role: 'bass', text: 'Pick a progression and I will follow your right hand.' }],
       chorus: [{ role: 'vocals', text: 'Chorus: let it ring. Open chords. Big. The kind you can see from the back.' }],
-      bridge: [{ role: 'lead guitar|guitar', text: 'The bridge is my solo spot. Give me something to stand on. Sustained chords.' }]
+      bridge: [{ role: 'lead guitar|guitar', text: 'The bridge is my solo spot. Give me something to stand on. Sustained chords.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe and the riff comes with it. Move Energy and Mood until it sounds like us.' },
+        { role: 'bass', text: 'Start from a recipe. Each bar gets its own chord later, if you want to fuss.' }]
     },
     lead: {
       drums: [{ role: 'drummer', text: 'Groove picked. Your hook goes on top. Try not to solo through my fills.' }],
       verse: [{ role: 'vocals', text: 'Keep the verse hook small. The verse is mine. The chorus is ours.' }, { role: 'bass', text: 'Pick a hook and leave some gaps. Gaps are where the hook lives.' }],
       chorus: [{ role: 'vocals', text: 'The chorus hook should repeat. That is what people sing back on the bus home.' }],
-      bridge: [{ role: 'bass|rhythm guitar|guitar', text: 'Bridge: go somewhere else. High and short, then land it.' }]
+      bridge: [{ role: 'bass|rhythm guitar|guitar', text: 'Bridge: go somewhere else. High and short, then land it.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe. Your hook is already in there. Slide Mood around and hear it change colour.' },
+        { role: 'bass', text: 'Start from a recipe and keep the gaps. The hook lives in the gaps.' }]
     }
   };
   var GC = {
@@ -466,57 +472,69 @@
       bass: { drums: [{ role: 'drummer', text: 'Groove picked. Gallop with my kick. Two hands, two feet, one bass line. One beast.' }],
         verse: [{ role: 'vocals', text: 'Under my screaming the bass must be dark. Like a lawn at midnight. Try "the tritone drop".' }, { role: 'guitar', text: 'Double my riff an octave down. Low-end spec: everything.' }],
         chorus: [{ role: 'vocals', text: 'The chorus: "the big dark lift". The windows must shake. The neighbours must wonder.' }],
-        bridge: [{ role: 'lead guitar', text: 'Bridge: hold the root and let me shred. One note, held for my whole solo. You can do it.' }] },
+        bridge: [{ role: 'lead guitar', text: 'Bridge: hold the root and let me shred. One note, held for my whole solo. You can do it.' }],
+        quick: [{ role: 'vocals', text: 'Choose a recipe. Doom crawl, for the low end. The windows must shake, the neighbours must wonder.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'ok i picked a groove. there are fills in it. your riff goes between the fills' }],
         verse: [{ role: 'vocals', text: 'Chug the verse. Palm-muted, like a storm far away. I will be the lightning.' }, { role: 'lead guitar', text: 'Lock the chug to the kick. Every hit. I will double you on the right.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: let the chords ring out over everything. "The big dark lift". Magnifique.' }],
-        bridge: [{ role: 'lead guitar', text: 'Bridge is my solo. Sustained chords under it, please. Gain at seven. Not eight.' }] },
+        bridge: [{ role: 'lead guitar', text: 'Bridge is my solo. Sustained chords under it, please. Gain at seven. Not eight.' }],
+        quick: [{ role: 'lead guitar', text: 'Pick a recipe and the riff comes with it. Neck-snapper, then slide Mood toward Abyss.' }] },
       lead: { drums: [{ role: 'drummer', text: 'Groove picked: 210 bpm, the blast on the chorus. Your hook goes on top. Specs on request.' }],
         verse: [{ role: 'vocals', text: 'The verse hook: something cold, like a wind off the slough. Then get out of my way.' }, { role: 'rhythm guitar', text: 'pick a hook and i will chug under it. no fills. ok one fill' }],
         chorus: [{ role: 'vocals', text: 'The chorus hook must lift. "The big chorus lift". Repeat it until the crowd surrenders.' }],
-        bridge: [{ role: 'rhythm guitar', text: 'bridge is ur solo now. go nuts. i will hold the riff. baba says do not go too long' }] }
+        bridge: [{ role: 'rhythm guitar', text: 'bridge is ur solo now. go nuts. i will hold the riff. baba says do not go too long' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Your hook rides on top. Slide Mood to Heroic if you want the crowd to weep.' }] }
     },
     punk: {
       bass: { drums: [{ role: 'drummer', text: 'groove picked. the fast one. lock to it. permission granted' }],
         verse: [{ role: 'vocals', text: 'Verse: "three chords and a grudge". Root notes, eighths, no mercy.' }, { role: '^guitar$', text: 'two chords from me. you play the low end of both. that is the whole song' }],
         chorus: [{ role: 'vocals', text: 'Chorus: faster and louder. If council can hear the bass, we did it right.' }],
-        bridge: [{ role: '^guitar$', text: 'bridge: half-time so the pit can breathe. then we go fast again' }] },
+        bridge: [{ role: '^guitar$', text: 'bridge: half-time so the pit can breathe. then we go fast again' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Three-chord sprint. Push Energy until the dryers upstairs complain.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'Groove picked. The chair moves that you play the riff. Seconded. Carried.' }],
         verse: [{ role: 'drummer', text: 'Steady eighths in the verse. I will scream the bylaw over it.' }, { role: 'bass', text: 'pick a progression. i will follow your right hand. it is a good hand' }],
         chorus: [{ role: '^guitar$', text: 'chorus: same chords, angrier. that is songwriting' }],
-        bridge: [{ role: '^guitar$', text: 'bridge is my solo. it is two chords. very fast. just hold something under it' }] },
+        bridge: [{ role: '^guitar$', text: 'bridge is my solo. it is two chords. very fast. just hold something under it' }],
+        quick: [{ role: 'bass', text: 'pick a recipe. the riff is already in it. two chords. you are welcome' }] },
       lead: { drums: [{ role: 'drummer', text: 'groove picked. two beats. the fast one and the other fast one. hook goes on top' }],
         verse: [{ role: 'vocals', text: 'Verse hook: short and loud, like a good heckle. Then let me yell.' }, { role: 'bass', text: 'leave gaps in the hook. the van likes gaps' }],
         chorus: [{ role: 'vocals', text: 'Chorus hook: one you can chant outside city hall. Repeat it. Repeat it.' }],
-        bridge: [{ role: 'bass', text: 'bridge: go high, go short. no third chord. i am told that matters' }] }
+        bridge: [{ role: 'bass', text: 'bridge: go high, go short. no third chord. i am told that matters' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Your hook goes on top. Short and loud, like a good heckle at city hall.' }] }
     },
     rock: {
       bass: { drums: [{ role: 'drummer', text: 'Groove scheduled. Kick on one and three. Lock in with it and we are home by midnight.' }],
         verse: [{ role: 'vocals', text: 'The verse bass line should strut, like leather pants walking into 1985. Try "the highway".' }, { role: 'guitar', text: 'Pick a line that is legally distinct. I will check with my people.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: the octave jump! The lighters go up! It is 1985 in every chest in the room!' }],
-        bridge: [{ role: 'guitar', text: 'Bridge is my solo. Hold the root. If it sounds familiar, that is a coincidence.' }] },
+        bridge: [{ role: 'guitar', text: 'Bridge is my solo. Hold the root. If it sounds familiar, that is a coincidence.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe! Arena anthem! Your bass line is already strutting. Hit Play!' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'I picked a groove! A big one! I will sing over it and also drum! Very 1985!' }],
         verse: [{ role: 'drummer', text: 'Verse: chug it under me so I can sing from the kit. I have a headset now.' }, { role: 'bass', text: 'Pick a progression. I have colour-coded the chords. Blue is safe.' }],
         chorus: [{ role: 'guitar', text: 'Chorus: big open chords. Let them ring. Totally original chords. Probably.' }],
-        bridge: [{ role: 'guitar', text: 'Bridge: sustained chords under my solo. My lawyers prefer sustained chords.' }] },
+        bridge: [{ role: 'guitar', text: 'Bridge: sustained chords under my solo. My lawyers prefer sustained chords.' }],
+        quick: [{ role: 'bass', text: 'Pick a recipe and slide Energy. I have already colour-coded your chords. Blue is safe.' }] },
       lead: { drums: [{ role: 'drummer', text: 'I picked a groove. It sounds like a famous groove, so it is good. Hook on top.' }],
         verse: [{ role: 'vocals', text: 'The verse hook: something to hum in a convertible in 1985. In January. In Edmonton.' }, { role: 'bass', text: 'Leave gaps in the hook. Gaps are healthy. Like flossing.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: "the big chorus lift". Repeat it. The arena must sing it back!' }],
-        bridge: [{ role: 'bass', text: 'Bridge: your solo. Keep it under a minute. I have a cleaning at 8.' }] }
+        bridge: [{ role: 'bass', text: 'Bridge: your solo. Keep it under a minute. I have a cleaning at 8.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. The hook is in there. Make it big enough to see from the parking lot.' }] }
     },
     country: {
       bass: { drums: [{ role: 'drummer', text: 'Groove picked. Slow and steady, how the hat likes it. Root and fifth on one and three.' }],
         verse: [{ role: 'vocals', text: 'Verse: walk it like a man going home. "Home on the grid road", actually.' }, { role: 'lead guitar', text: 'Boom-chick. Root, fifth. Played behind a line like that in 1979.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: walk up to it. Make the crowd feel like they are coming home.' }],
-        bridge: [{ role: 'fiddle', text: 'The bridge is mine. Keep it simple underneath. I will make it sound expensive.' }] },
+        bridge: [{ role: 'fiddle', text: 'The bridge is mine. Keep it simple underneath. I will make it sound expensive.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Train song walks itself home. Slide Feel toward Swing and the boots start tapping.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'Picked a train beat. I sing from the kit now. Strum like a truck idling and we are set.' }],
         verse: [{ role: 'drummer', text: 'Verse strum: steady. Like a truck idling. I mean it kindly.' }, { role: 'bass', text: 'Pick a progression. "Back and forth to town" is a good one. The hat agrees.' }],
         chorus: [{ role: 'lead guitar', text: 'Chorus: open chords, let them ring. Every great one I backed let the chorus ring.' }],
-        bridge: [{ role: 'fiddle', text: 'Bridge is the fiddle break. Hold the chords still. Do not watch me enjoy it.' }] },
+        bridge: [{ role: 'fiddle', text: 'Bridge is the fiddle break. Hold the chords still. Do not watch me enjoy it.' }],
+        quick: [{ role: 'lead guitar', text: 'Pick a recipe and the strum comes with it. Sad waltz if you want the whole Legion crying.' }] },
       lead: { drums: [{ role: 'drummer', text: 'Picked a groove. Drummed one like it in 1974 on a cardboard box. Your lick goes on top.' }],
         verse: [{ role: 'vocals', text: 'Verse lick: small. Answer my lines, do not sing over them. Like a duet with a truck.' }, { role: 'fiddle', text: 'Leave gaps in your lick. I will fill them. Tastefully.' }],
         chorus: [{ role: 'vocals', text: 'Chorus lick: the one people hum at the gas station. Repeat it. Make me cry.' }],
-        bridge: [{ role: 'fiddle', text: 'Bridge: trade bars with me. For the music. Not because it is fun.' }] }
+        bridge: [{ role: 'fiddle', text: 'Bridge: trade bars with me. For the music. Not because it is fun.' }],
+        quick: [{ role: 'fiddle', text: 'Pick a recipe. Your lick is already in it. I will answer it. Tastefully. Mostly.' }] }
     }
   };
   Object.keys(GC).forEach(function (g) { var o = CO[g] = CO[g] || {}; o.bySeat = GC[g]; });

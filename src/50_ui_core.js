@@ -169,6 +169,8 @@
       if (d.text) s.body.appendChild(el('p.dim', d.text));
       var answered = false;
       function answer(v) { if (answered) return; answered = true; s.data._answer = v; ui.close(s.id); }
+      // v1.3: two long labels (e.g. Keep my edits / Start over) wrap to 2 lines side by side at 147 px: stack them full width instead.
+      if (Math.max(String(d.no || 'Nope').length, String(d.yes || 'Yes').length) > 10) s.foot.classList.add('stack');
       ui.append(s.foot, [
         ui.btn('.btn.ghost', { testid: 'btn-confirm-no', onclick: function () { answer(false); } }, d.no || 'Nope'),
         ui.btn('.btn' + (d.danger ? '.danger' : '.primary'), { testid: 'btn-confirm-yes', onclick: function () { answer(true); } }, d.yes || 'Yes')
