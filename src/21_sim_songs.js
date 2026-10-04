@@ -27,7 +27,9 @@
 // v1.3 "Songwriter" (plan_contract_1.3 §4): optional PATTERN keys chords / fillBars / mood / swing / recipe (sanitize writes
 //   each only when present and valid), part v2 (part.LAYOUT / UP / ROLE / rowsOf / rowNames / upgrade / view / rowPitch),
 //   swingBeat, chordsOf, chordLabel, progChords, progName, moodOf, nativeMood, recipes, sliders, surprise, compose (see the
-//   v1.3 block below). Without the v1.3 keys every number is 1.2's (tests/compat_v12.test.js).
+//   v1.3 block below). Without the v1.3 keys every number is 1.2's (tests/compat_v12.test.js). Lane S: part v2 suggest / full
+//   (v = 2) and the v2 part mods, Scratch in the part rating, fillBars (Q2 = 1) in validate / toNotes / rate, the Quick song
+//   (recipes, sliders, surprise, compose) over content/grooves.js recipes + grooveFx.
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};
@@ -707,6 +709,9 @@
       for (r = 0; r < n; r++) for (i = 0; i < 8; i++) if (on(rows[r], i)) { var to = seat2 ? CALL2[seat2][r] : Math.min(n - 1, r + 1); out[to] = set(out[to], i + 8, true); }
     } else if (!seat2) {
       return out;
+    } else if (id === 'eighths') {   // the 16th off-beats go
+      for (i = 1; i < STEPS; i += 2) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
+      if (!out.some(function (x, q) { return q !== sc && count(x); })) out[HOME2[seat2]] = 'x.......x.......';
     } else if (id === 'sparse') {
       for (i = 0; i < STEPS; i++) if (i % 4) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
       if (!out.some(function (x, q) { return q !== sc && count(x); })) out[HOME2[seat2]] = 'x.......x.......';
@@ -853,8 +858,7 @@
 
   /* ---- v1.3 "Songwriter": chords, mood, swing, quick songs (plan_contract_1.3 §4.2) ---------------------------------- */
   // Pure, genre always explicit, never GG.state. Stage 0 landed swingBeat, chordsOf, NOTE, chordLabel, moodOf, nativeMood,
-  // progChords and progName for real; recipes / sliders / surprise / compose are stage-0 stubs with the final signatures
-  // (Lane S fills them).
+  // progChords and progName; Lane S the Quick song (recipes / sliders / surprise / compose, below the chord helpers).
   //   swingBeat(beat, s) -> the swung beat (identity when !s or the beat is whole; per beat 0 -> 0, 1/2 -> 1/2 + C.SWING[s], 1 -> 1)
   //   chordsOf(p, name, genre, { part, seat }?) -> [4] semitones: p.chords[name] > the part's prog (seat != lead, as the
   //     timeline) > the 1.2 hash pick (30 progression). Never writes.
@@ -939,51 +943,181 @@
     return ch[src.i] ? ch[src.i].name : 'Custom';
   };
 
-  // ---- Stage-0 stubs (final signatures; Lane S replaces the bodies) ----
+  // ---- Quick song (plan_contract_1.3 §4.2 recipes / sliders / surprise / compose, §4.3 content) ----
+  //   recipes(genre, gear, seat) -> [{ id, name, desc, locked, lockLabel, bpm, sliders: { energy, mood, swing, fills } }], then the
+  //     "Surprise me" card ({ id: 'surprise', surprise: true }). locked = a pedal recipe without the double kick; lockLabel = the
+  //     pedal's name for the seat (content shop gear 'pedal', its zz_seats bySeat names), null on recipes without the pedal.
+  //   sliders(genre, seat) -> [{ id, name, lo, hi, stops: [5 labels] }] in C.SONG_SLIDERS order (grooves[g].sliders[id];
+  //     sliders.bySeat[seat][id] wins); tempo: { min, max, step: 5, stops: null }.
+  //   surprise(genre, gear, seat, seed) -> { recipe, energy, mood, swing, fills, bpm } (unlocked recipes only; seeded).
+  //   compose(genre, { recipe, energy, mood, swing, fills, bpm, seed, gear, seat }) -> a sanitized PATTERN + chords, mood, swing,
+  //     recipe (+ fillBars when the Fills stop writes one, + a v2 part on a string seat). Steps (§4.2): (1) the recipe (locked /
+  //     unknown -> the genre's first = signature recipe), rng = GG.RNG(hashSeed('compose|' + genre + '|' + id + '|' + seed));
+  //     (2) bpm rounded to 5 and clamped to the genre; (3) ARRANGEMENTS[arr] + withExtras(gear); (4) drums: the section's block
+  //     ([barId, ...opIds]: a preset or grooves[g].bars, then grooves[g].mods / .ops / grooveFx.ops), the recipe's dk ops with the
+  //     pedal, grooveFx.energy[energy], the bar-4 fill (grooveFx.fills[fills], Q2 = 1); (5) chords = progChords of the recipe's
+  //     parts.prog at the mood; (6) a string seat: part.full(.., 2) + parts.prog / hook + the recipe's part mod + grooveFx
+  //     partEnergy / partFills, onsets capped 12 / 14 / 12; (7) K = C.QUICK.k seeded variants (a pick from the recipe's alt
+  //     drums per section, a hat -> ride swap (4 lanes: hat -> crash where grooveFx.swap4 allows), the fill's alternate, the part
+  //     mod's alternates); the rng picks one of those rated groove >= 80 and hook >= 65 (none: the best groove + hook). The plans
+  //     are drawn before any slider is read, so the same args give the same JSON and a slider moved and moved back gives the same
+  //     song. Pure: never reads GG.state; genre always explicit.
   function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
   var STUB_STOPS = { energy: ['Lazy', 'Easy', 'Steady', 'Busy', 'Show-off'], mood: ['Sunny', 'Bright', 'Home', 'Moody', 'Dark'],
     swing: ['Straight', 'A lilt', 'Shuffle', 'Swung', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Lots'] };
-  // -> [{ id, name, desc, locked, lockLabel, bpm, sliders: { energy, mood, swing, fills } }], "Surprise me" last (surprise: true).
+  var QUICK_MIN = { groove: 80, hook: 65 }, PART_CAP = { bass: 12, rhythm: 14, lead: 12 };
+  function genreId(genre) { return (GG.content.genres || {})[genre] ? genre : 'metal'; }
+  function FX(genre, key) { var F = GG.content.grooveFx || {}, b = F.byGenre && F.byGenre[genre]; return b && b[key] != null ? b[key] : F[key]; }
+  function stopOf(list, i) { var x = Array.isArray(list) ? list[i] : null; return x == null ? [] : Array.isArray(x) ? x : [x]; }
+  function recipeList(genre) { var R = songs.grooves(genre).recipes; return Array.isArray(R) && R.length ? R : null; }
+  function fallbackRecipe(genre) {   // no recipe content: the signature pattern's drums
+    var G = songs.genre(genre);
+    return { id: 'signature', name: 'Signature', desc: 'The band’s own sound', bpm: G.tempo[2], arr: songs.arrangementId(G.signature) || 'classic',
+      sliders: { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 }, parts: {} };
+  }
+  function recipeFor(genre, id, g) {
+    var list = recipeList(genre), r = null;
+    if (!list) return fallbackRecipe(genre);
+    list.forEach(function (x) { if (!r && x.id === id) r = x; });
+    return r && !(r.pedal && !g.doubleKick) ? r : list[0];
+  }
+  function lockLabel(genre, seat) {
+    var d = null;
+    ((GG.content.shop && GG.content.shop.gear) || []).forEach(function (x) { if (x.id === 'pedal') d = x; });
+    var bs = d && seat !== 'drums' && d.bySeat && d.bySeat[seat];
+    return (bs && ((bs.names && bs.names[genre]) || bs.name)) || (d && d.name) || 'Double-kick pedal';
+  }
+  function slidersOf(genre, r) {
+    var s = r.sliders || {};
+    return { energy: int04(s.energy, 2), mood: int04(s.mood, songs.nativeMood(genre)), swing: int04(s.swing, 0), fills: int04(s.fills, 1) };
+  }
+  function tempoOf(genre, bpm) { var t = songs.genre(genre).tempo; return U.clamp(5 * Math.round((Number(bpm) || t[2]) / 5), t[0], t[1]); }
   songs.recipes = function (genre, gear, seat) {
-    var G = songs.genre(genre), sl = { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 };
-    return [{ id: 'signature', name: 'Signature', desc: 'The band’s own sound.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: sl },
-      { id: 'surprise', name: 'Surprise me', desc: 'Roll the dice.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: U.clone(sl), surprise: true }];
+    var gid = genreId(genre), g = gearOf(gear), list = recipeList(gid) || [fallbackRecipe(gid)], sp = (GG.content.grooves || {}).surprise || {};
+    var out = list.map(function (r) {
+      return { id: r.id, name: r.name, desc: r.desc, locked: !!r.pedal && !g.doubleKick, lockLabel: r.pedal ? lockLabel(gid, seat) : null,
+        bpm: tempoOf(gid, r.bpm), sliders: slidersOf(gid, r) };
+    });
+    out.push({ id: 'surprise', name: sp.name || 'Surprise me', desc: sp.desc || 'Roll the dice', locked: false, lockLabel: null,
+      bpm: tempoOf(gid, null), sliders: slidersOf(gid, list[0]), surprise: true });
+    return out;
   };
-  // -> [{ id, name, lo, hi, stops: [5 labels] }] in C.SONG_SLIDERS order; tempo: { ..., min, max, step: 5, stops: null }.
   songs.sliders = function (genre, seat) {
-    var G = songs.genre(genre), GS = songs.grooves(genre).sliders || {};
+    var gid = genreId(genre), G = songs.genre(gid), GS = songs.grooves(gid).sliders || {}, BS = (GS.bySeat && GS.bySeat[seat]) || {};
     return (C.SONG_SLIDERS || []).map(function (x) {
       var o = { id: x.id, name: x.name, lo: x.lo, hi: x.hi };
       if (x.id === 'tempo') { o.min = G.tempo[0]; o.max = G.tempo[1]; o.step = 5; o.stops = null; }
-      else o.stops = (Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
+      else o.stops = (Array.isArray(BS[x.id]) ? BS[x.id] : Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
       return o;
     });
   };
-  // -> { recipe, energy, mood, swing, fills, bpm } (unlocked recipes only; deterministic per seed).
   songs.surprise = function (genre, gear, seat, seed) {
-    var rng = GG.RNG((Number(seed) >>> 0) || 1), G = songs.genre(genre);
-    var list = songs.recipes(genre, gear, seat).filter(function (r) { return !r.locked && !r.surprise; });
-    return { recipe: list.length ? rng.pick(list).id : 'signature', energy: rng.int(0, 4), mood: rng.int(0, 4), swing: rng.int(0, 4),
-      fills: rng.int(0, 4), bpm: U.clamp(5 * Math.round(rng.int(G.tempo[0], G.tempo[1]) / 5), G.tempo[0], G.tempo[1]) };
+    var gid = genreId(genre), rng = GG.RNG(GG.hashSeed('surprise|' + gid + '|' + ((Number(seed) >>> 0) || 0)));
+    var list = songs.recipes(gid, gear, seat).filter(function (r) { return !r.locked && !r.surprise; }), r = rng.pick(list), d = r.sliders;
+    return { recipe: r.id, energy: rng.int(1, 4), mood: rng.int(0, 4), swing: rng.chance(0.5) ? d.swing : rng.int(0, 4), fills: rng.int(0, 4),
+      bpm: tempoOf(gid, r.bpm + 5 * rng.int(-3, 3)) };
   };
-  // -> a sanitized PATTERN with chords, mood, swing, recipe (+ a v2 part on a string seat). Stub: the signature at the asked
-  // tempo, chords = the hash pick's progression through progChords (break bars home), no variants (K).
+  // Recipe building blocks: a block = [barId, ...opIds]; ops resolve in grooves[g].mods, grooves[g].ops, then grooveFx.ops ('bpm'
+  // ops are skipped: the Tempo slider owns the tempo).
+  function opsById(GR, id) {
+    var m = null, F = GG.content.grooveFx || {};
+    (GR.mods || []).forEach(function (x) { if (!m && x.id === id) m = x.ops; });
+    if (!m && GR.ops && Array.isArray(GR.ops[id])) m = GR.ops[id];
+    if (!m && F.ops && Array.isArray(F.ops[id])) m = F.ops[id];
+    return m || [];
+  }
+  function applyAll(bar, ops, g, gid) {
+    var out = bar.slice(), dummy = { bpm: 120 };
+    (ops || []).forEach(function (op) { if (op && op.op !== 'bpm') applyOp(out, op, g, dummy, gid); });
+    return out;
+  }
+  function blockBar(GR, spec, g, gid) {
+    if (!Array.isArray(spec) || !spec.length) return null;
+    var src = null;
+    (GR.presets || []).forEach(function (x) { if (!src && x.id === spec[0]) src = x.bar; });
+    if (!src && GR.bars && Array.isArray(GR.bars[spec[0]])) src = GR.bars[spec[0]];
+    if (!src) return null;
+    var bar = padBar(src, g.lanes).slice(0, g.lanes);
+    spec.slice(1).forEach(function (id) { bar = applyAll(bar, opsById(GR, id), g, gid); });
+    return bar;
+  }
+  function drawPlan(rng) {   // one variant's seeded choices (drawn before the sliders are read)
+    return { v: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)], swap: rng.int(0, 999), fill: rng.int(0, 999),
+      pm: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)] };
+  }
+  function orLane(a, b) { var s = ''; for (var i = 0; i < STEPS; i++) s += on(a, i) || on(b, i) ? 'x' : '.'; return s; }
+  function capRows(rows, cap) {   // too many onsets: drop the odd 16ths first, then the off-beat 8ths, latest first
+    var steps = [], i, r, out = rows.slice();
+    for (i = 0; i < STEPS; i++) for (r = 0; r < rows.length; r++) if (on(rows[r], i)) { steps.push(i); break; }
+    if (steps.length <= cap) return out;
+    function rank(st) { return st % 2 ? 2 : st % 4 ? 1 : 0; }
+    steps.sort(function (a, b) { return rank(b) - rank(a) || b - a; });
+    for (i = 0; i < steps.length - cap; i++) for (r = 0; r < out.length; r++) out[r] = set(out[r], steps[i], false);
+    return out;
+  }
+  function composePart(gid, R, seat, p, s, plan) {
+    var pt = part.full(gid, seat, p, null, 2), P = R.parts || {}, k = part.key(seat), src = seat === 'lead' ? P.hook : P.prog;
+    var mods = P.mods || {}, alt = P.alt || {}, fe = (FX(gid, 'fills') || [])[s.fills], fillSecs = (fe && (fe.partSections || fe.sections)) || [];
+    var pe = stopOf(FX(gid, 'partEnergy'), s.energy), pf = stopOf(FX(gid, 'partFills'), s.fills);
+    Object.keys(pt.sections).forEach(function (name) {
+      var x = pt.sections[name], si = SECTIONS.indexOf(name), kick = lane(p.sections[name], KICK), ids = [];
+      if (src && intIn(src[name], 0, 99)) x[k] = src[name];
+      if (si >= 0) {
+        var opts = [mods[name] || null].concat(alt[name] || []), m = opts[plan.pm[si] % opts.length];
+        if (m && typeof m === 'object') m = m[seat] || null;   // a { <seat>: modId } entry
+        ids = (m ? [m] : []).concat(pe, fillSecs.indexOf(name) >= 0 ? pf : []);
+      }
+      ids.forEach(function (id) { x.rows = modRows(x.rows, id, kick, x.rows.length, seat); });
+      x.rows = capRows(x.rows, PART_CAP[seat]);
+    });
+    return pt;
+  }
+  function composeOne(gid, R, g, seat, s, bpm, arr, plan, seed) {
+    var GR = songs.grooves(gid), sig = songs.signature(gid, g), p = { bpm: bpm, lanes: g.lanes, sections: {}, arrangement: arr.slice() };
+    var en = stopOf(FX(gid, 'energy'), s.energy);
+    SECTIONS.forEach(function (name, si) {
+      var opts = [R.drums && R.drums[name]].concat((R.alt && R.alt[name]) || []).filter(Array.isArray);
+      var bar = (opts.length && blockBar(GR, opts[plan.v[si] % opts.length], g, gid)) || sig.sections[name].slice();
+      if (g.doubleKick && R.dk && R.dk[name]) R.dk[name].forEach(function (id) { bar = applyAll(bar, opsById(GR, id), g, gid); });
+      p.sections[name] = applyAll(bar, en, g, gid);
+    });
+    var sw = plan.swap % 5, swName = SECTIONS[sw], swOk = FX(gid, g.lanes > RIDE ? 'swap6' : 'swap4') || [];
+    var to = swName && swOk.indexOf(swName) >= 0 ? (g.lanes > RIDE ? RIDE : CYM) : -1;
+    if (to >= 0 && count(p.sections[swName][HAT])) { var b = p.sections[swName]; b[to] = orLane(b[to], b[HAT]); b[HAT] = BLANK; }
+    var fe = (FX(gid, 'fills') || [])[s.fills];
+    if (fe && Array.isArray(fe.sections) && fe.sections.length) {
+      var alts = [fe.ops].concat(fe.alt || []).filter(Array.isArray), ops = alts.length ? alts[plan.fill % alts.length] : null;
+      if (ops && ops.length) fe.sections.forEach(function (name) {
+        if (SECTIONS.indexOf(name) >= 0) (p.fillBars = p.fillBars || {})[name] = applyAll(p.sections[name], ops, g, gid);
+      });
+    }
+    EXTRAS.forEach(function (x) { if (arr.indexOf(x) >= 0) p.sections[x] = songs.extraBar(p, x); });
+    var PR = (R.parts && R.parts.prog) || {};
+    p.chords = {};
+    SECTIONS.forEach(function (name) {
+      var i = intIn(PR[name], 0, 99) ? PR[name] : chordSource(p, name, gid, { part: null }).i;
+      p.chords[name] = songs.progChords(gid, name, i, s.mood);
+    });
+    if (seat !== 'drums') p.part = composePart(gid, R, seat, p, s, plan);
+    p.mood = s.mood; p.swing = s.swing;
+    p.recipe = { id: R.id, seed: seed, energy: s.energy, fills: s.fills };
+    return songs.sanitize(p, g, gid);
+  }
   songs.compose = function (genre, o) {
     o = o || {};
-    var G = songs.genre(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', p = songs.signature(genre, g);
-    var bpm = Number(o.bpm) || G.tempo[2], mood = int04(o.mood, songs.nativeMood(genre)), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
-    p.bpm = U.clamp(5 * Math.round(bpm / 5), G.tempo[0], G.tempo[1]);
-    var idx = {};
-    p.chords = {};
-    SECTIONS.forEach(function (name) { var s = chordSource(p, name, genre, { part: null }); idx[name] = s.i; p.chords[name] = songs.progChords(genre, name, s.i, mood); });
-    if (seat !== 'drums') {
-      var pt = part.full(genre, seat, p);
-      if (seat !== 'lead') SECTIONS.forEach(function (name) { pt.sections[name].prog = idx[name]; });
-      p.part = part.upgrade(pt);
-    }
-    p.mood = mood; p.swing = int04(o.swing, 0);
-    p.recipe = { id: typeof o.recipe === 'string' && RECIPE_ID.test(o.recipe) ? o.recipe : 'signature', seed: seed, energy: int04(o.energy, 2), fills: int04(o.fills, 1) };
-    return songs.sanitize(p, g, genre);
+    var gid = genreId(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', R = recipeFor(gid, o.recipe, g);
+    var d = slidersOf(gid, R), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
+    var rng = GG.RNG(GG.hashSeed('compose|' + gid + '|' + R.id + '|' + seed)), K = Math.max(1, (C.QUICK && C.QUICK.k) || 8), plans = [], k;
+    for (k = 0; k < K; k++) plans.push(drawPlan(rng));
+    var s = { energy: int04(o.energy, d.energy), mood: int04(o.mood, d.mood), swing: int04(o.swing, d.swing), fills: int04(o.fills, d.fills) };
+    var bpm = tempoOf(gid, o.bpm != null ? o.bpm : R.bpm), arr = songs.withExtras((songs.ARRANGEMENTS[R.arr] || songs.ARRANGEMENTS.classic).slice(), g);
+    var pass = [], best = null;
+    plans.forEach(function (plan) {
+      var p = composeOne(gid, R, g, seat, s, bpm, arr, plan, seed), r = songs.rate(p, gid, g), c = { p: p, score: r.groove + r.hook };
+      if (r.groove >= QUICK_MIN.groove && r.hook >= QUICK_MIN.hook) pass.push(c);
+      if (!best || c.score > best.score) best = c;
+    });
+    return (pass.length ? pass[rng.int(0, pass.length - 1)] : best).p;
   };
 
   // Every hit of a song in order: [{ beat, lane, section, entry, bar, step }] (beat = quarter notes from the start).
@@ -1339,6 +1473,18 @@
     return hit;
   };
   function applyOp(bar, op, g, out, genre) {
+    if (op.op === 'roll') {   // v1.3 fills: a roll from step `from` (toms when the kit has them, else the snare), time-keeping stops under it
+      var tl = bar.length > TOMS ? TOMS : SNARE, to = op.to || STEPS, i0;
+      [HAT, CYM, RIDE].forEach(function (l) { if (l < bar.length) for (i0 = op.from || 0; i0 < to; i0++) bar[l] = set(bar[l], i0, false); });
+      for (i0 = op.from || 0; i0 < to; i0 += op.every || 1) bar[tl] = set(bar[tl], i0, true);
+      return;
+    }
+    if (op.op === 'swap') {   // v1.3: one lane's hits move to another (op.alt when the kit lacks op.to)
+      var fl = LANE_IX[op.from], tl2 = LANE_IX[op.to];
+      if (!(tl2 < bar.length) && op.alt) tl2 = LANE_IX[op.alt];
+      if (fl < bar.length && tl2 < bar.length && fl !== tl2) { bar[tl2] = orLane(bar[tl2], bar[fl]); bar[fl] = BLANK; }
+      return;
+    }
     var lanes = op.lane === 'all' ? bar.map(function (_, i) { return i; }) : [LANE_IX[op.lane]];
     lanes.forEach(function (l) {
       if (l == null || l >= bar.length) return;
