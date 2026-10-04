@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing (default all); each inside `timeout 500`.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -578,7 +578,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); if (want('swing')) await swingGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -1212,6 +1212,141 @@ async function kitGig() {
     c.ok(r.drops === 0, 'tap drops 0');
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'kit threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  await close();
+  c.done();
+}
+
+// META_ONLY=swing (v1.3 "Songwriter", Lane A, plan_contract_1.3 §4.6): a Feel 4 song (a full triplet shuffle) on the drum
+// seat with a bar-4 fill: the chart's off-beat notes sit at songs.swingBeat(grid) x spb and the band's timeline plays the
+// same drums at the same times (its swing = 4); perfect taps on swung notes are judged Perfect and the drum books exactly
+// at zeroBand + t (+-3 ms, drum sync); 10 ms late still snaps; two-thumb auto notes book ahead on their swung times (none
+// from the frame); a perfect autoplay gig = S, 100 %. Then a rock rhythm-seat show on a swung song with Scratch: a tapped
+// Scratch note plays your strum as a dead strum (A.strum o.dead), the perfect autoplay = 100 %; no console errors.
+async function swingGig() {
+  const c = checker('swing');
+  const { page, errors, close } = await open();
+  const tapS = (li, at) => page.evaluate(async ([li, at]) => {
+    const cv = document.querySelector('[data-testid="gig-highway"]'), r = cv.getBoundingClientRect(), lanes = GG.debug('gigui').lanes;
+    while (GG.debug('gigui').songT < at - 0.012) await new Promise(res => setTimeout(res, 4));
+    while (GG.debug('gigui').songT < at) { /* spin */ }
+    const x = r.left + (li + 0.5) * r.width / lanes, y = r.bottom - 36, n0 = (window.__h || []).length;
+    window.__inTap = true;
+    try { cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, pointerId: 7 + li, pointerType: 'touch', isPrimary: false, bubbles: true, cancelable: true })); }
+    finally { window.__inTap = false; }
+    cv.dispatchEvent(new PointerEvent('pointerup', { pointerId: 7 + li, pointerType: 'touch', bubbles: true, cancelable: true }));
+    return { last: GG.debug('gigui').last, h: (window.__h || []).slice(n0).find(e => e.tap) || null };
+  }, [li, at]);
+  // the next unjudged swung note (off the straight 16th grid), far enough ahead to aim at
+  const nextSwung = () => page.waitForFunction(() => {
+    const d = GG.debug('gigui'); if (d.mode !== 'play' || !d.soon) return null;
+    for (const n of d.soon) { const q = n.t / (d.spb / 4); if (Math.abs(q - Math.round(q)) > 0.05 && n.t > d.songT + 0.4 && n.t < d.dur - 1) return n; }
+    return null;
+  }, null, { timeout: 12000 }).then(h => h.jsonValue());
+  const startShow = async () => {
+    await page.evaluate(() => { GG.ui.closeAll(); GG.state.liveGig = null; window.__h = []; GG.ui.playGig(GG.state.gig, () => {}); });
+    await waitScreen(page, 'gig-set');
+    await tap(page, 'btn-gig-start');
+    await page.waitForFunction(() => GG.debug('gigui').mode === 'play' && GG.debug('gigui').tBand > 0.3, null, { timeout: 8000 });
+  };
+  const perfectGig = () => page.evaluate(() => new Promise(res => {
+    GG.ui.closeAll(); const s = GG.state; s.liveGig = null; s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 };
+    GG.ui.playGig(s.gig, r => { GG.ui.gigAutoplay = false; res({ grade: r.grade, acc: r.accuracy, n: r.songResults.length, miss: r.songResults.reduce((t, x) => t + (x.miss || 0), 0) }); });
+    const iv = setInterval(() => { const b = document.querySelector('[data-testid="btn-gig-done"]'); if (b) { clearInterval(iv); b.click(); } }, 20);
+  }));
+  const ms = x => Math.round(x * 10000) / 10;
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await page.evaluate(() => {
+      GG.audio.classic(false);
+      GG.prefs.set({ gigDifficulty: 'hard', autoKick: false, lefty: false, drumSync: true, noFail: true });
+      GG.main.quickStart({ seed: 8313, openCard: false });
+      const s = GG.state, E = '................'; s.card = null; s.phase = 'plan';
+      const bar = ['x..x..x.x..x....', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'];   // off-beat kicks, 8th hats (swung)
+      const fill = ['x...x...x.......', '....x...x.x.xxxx', 'x.x.x.x.........', E];
+      const song = GG.songs.create(s, { bpm: 110, lanes: 4, swing: 4, arrangement: ['verse', 'chorus', 'verse', 'chorus'],
+        sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] }, fillBars: { chorus: fill } }, 'Swing Test', { quality: 60, polish: 60 });
+      s.songs = [song];
+      GG.prefs.set({ audioProfile: 'speaker' }); GG.prefs.setCalib('speaker', { audio: 60, visual: 40 });
+      window.__h = []; const h0 = GG.audio.hit;
+      GG.audio.hit = function (l, w) {
+        const now = GG.audio.context().currentTime, d = GG.debug('gigui');
+        window.__h.push({ l, w, now, zb: d.zeroBand, tap: !!window.__inTap, snd: w != null && w > now + 0.005 && w < now + 1.005 ? w : now + 0.005 });
+        return h0.apply(this, arguments);
+      };
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); GG.ui.gigAutoplay = false;
+      window.__song = song; window.__ch = GG.gig.chart(song, { difficulty: 'hard' });
+    });
+    // (1) the chart: swung off-beats at swingBeat(grid) x spb, the fields kept on the song
+    const ch = await page.evaluate(() => {
+      const ch = window.__ch, s = window.__song, all = ch.notes.concat(ch.auto), g = n => n.entry * 16 + n.bar * 4 + n.step / 4;
+      return { swing: s.pattern.swing, fill: !!(s.pattern.fillBars && s.pattern.fillBars.chorus), n: all.length, spb: ch.spb,
+        bad: all.filter(n => Math.abs(n.t - GG.songs.swingBeat(g(n), 4) * ch.spb) > 1e-9).length, swung: all.filter(n => g(n) % 1).length };
+    });
+    c.ok(ch.swing === 4 && ch.fill && ch.n > 100 && ch.bad === 0 && ch.swung > 30, 'chart: every note at swingBeat(grid) x spb, off-beats swung ' + JSON.stringify(ch));
+    await startShow();
+    // (2) the band plays the same drums at the same times (its timeline swing = 4)
+    const band = await page.evaluate(() => {
+      const h = GG.audio.current(), tl = h && h.timeline, ch = window.__ch, spb = ch.spb;
+      // (until Lane S's toNotes brings the bar-4 fills into charts, the chorus fill bars are compared on the band side only)
+      const tn = GG.songs.toNotes(window.__song), cnt = bar => tn.filter(n => n.section === 'chorus' && n.bar === bar).length, fillsIn = cnt(3) !== cnt(0);
+      const keep = (sec, bar) => fillsIn || !(sec === 'chorus' && bar === 3);
+      const want = ch.notes.concat(ch.auto).filter(n => keep(n.section, n.bar)).map(n => n.lane + '@' + (Math.round(n.t * 1e6) / 1e6)).sort();
+      const dl = GG.audio.timeline(window.__song.pattern, { genre: GG.state.genre, songId: window.__song.id, backing: false, vocals: false });   // (the drum seat: the band plays no drums, you do)
+      const got = dl.events.filter(e => e.kind === 'drum' && keep(e.section, Math.floor(((e.g != null ? e.g : e.beat) % 16) / 4))).map(e => e.lane + '@' + (Math.round(e.beat * spb * 1e6) / 1e6)).sort();
+      return { swing: tl.swing, drums: tl.events.filter(e => e.kind === 'drum').length, same: JSON.stringify(want) === JSON.stringify(got), n: got.length, m: want.length, fillsIn, dbg: GG.debug('audio').swing };
+    });
+    c.ok(band.swing === 4 && band.dbg === 4 && band.drums === 0 && band.same, 'the band plays swung (swing 4; you have the drums), the song\'s drums sit at the chart\'s (swung) times ' + JSON.stringify(band));
+    // (3) perfect taps on swung notes: judged perfect, the drum books on the band's swung grid (zeroBand + t)
+    const per = [];
+    for (let k = 0; k < 6; k++) { const n = await nextSwung(); const r = await tapS(n.li, n.t); per.push({ n, r }); }
+    const rule = ({ n, r }) => { const e = r.last.at - n.t, inWin = e >= -0.015 && e <= 0.015;
+      return r.last.snap === inWin && r.h && r.h.w != null && Math.abs(r.h.snd - (r.h.zb + (inWin ? n.t : r.last.at))) <= 0.003; };
+    c.ok(per.filter(x => x.r.last && x.r.last.judgement === 'perfect' && rule(x)).length === 6 && per.filter(x => x.r.last.snap).length >= 5,
+      'swung notes: perfect taps judged perfect, snapped, the drum books at zeroBand + t ' + JSON.stringify(per.map(({ n, r }) => [r.last && r.last.judgement, r.last && r.last.snap, r.h && ms(r.h.snd - (r.h.zb + n.t))])));
+    const late = [];
+    for (let k = 0; k < 3; k++) { const n = await nextSwung(); const r = await tapS(n.li, n.t + 0.010); late.push({ n, r }); }
+    c.ok(late.every(x => x.r.last && /^(perfect|good)$/.test(x.r.last.judgement) && rule(x)) && late.filter(x => x.r.last.snap).length >= 2,
+      'swung notes 10 ms late snap onto the swung grid ' + JSON.stringify(late.map(({ n, r }) => [r.last && r.last.judgement, r.last && r.last.snap, r.h && ms(r.h.snd - (r.h.zb + n.t))])));
+    // (4) two-thumb auto notes: booked ahead, each on a chart auto note's (swung) time, none from the frame
+    await page.waitForTimeout(600);
+    const au = await page.evaluate(() => { const d = GG.debug('gigui'), ts = window.__ch.auto.map(n => n.t);
+      const a = window.__h.filter(e => !e.tap && e.w != null && e.w - e.zb > -0.05);
+      return { n: a.length, played: d.autoPlayed, off: a.filter(e => !ts.some(t => Math.abs(e.w - e.zb - t) <= 0.001)).length, late: a.filter(e => !(e.w - e.now > 0.005)).length,
+        frame: window.__h.filter(e => !e.tap && e.w == null).length };
+    });
+    c.ok(au.n > 0 && au.n === au.played && au.off === 0 && au.late === 0 && au.frame === 0, 'auto notes booked ahead on their swung times, none from the frame ' + JSON.stringify(au));
+    // (5) a perfect autoplay gig on the swung song = S, 100 %
+    const pg = await perfectGig();
+    c.ok(pg.acc === 1 && pg.miss === 0 && pg.grade === 'S', 'drum seat: the perfect bot on a swung song with a fill = S, 100 % ' + JSON.stringify(pg));
+    // (6) rock rhythm seat: a swung song with Scratch (part v2); a tapped Scratch note plays a dead strum, perfect bot = 100 %
+    await page.evaluate(() => {
+      GG.ui.closeAll();
+      GG.main.quickStart({ seed: 8314, bandId: 'gravel_kings', seat: 'rhythm', openCard: false });
+      const s = GG.state, E = '................'; s.card = null; s.phase = 'plan'; GG.ui.gigAutoplay = false;
+      const bar = ['x...x...x...x...', '....x.......x...', 'x.x.x.x.x.x.x.x.', 'x...............'];
+      const rows = ['x.......x.......', E, '....x.......x...', E, E, '..x...x...x...x.'];   // chugs, Root singles, Scratch on the swung 8ths
+      const song = GG.songs.create(s, { bpm: 100, lanes: 4, swing: 3, arrangement: ['verse', 'chorus', 'verse', 'chorus'], sections: { verse: bar, chorus: bar, bridge: [E, E, E, E] },
+        part: { seat: 'rhythm', v: 2, sections: { verse: { prog: 0, rows }, chorus: { prog: 0, rows } } } }, 'Scratch Swing', { quality: 60, polish: 60 });
+      s.songs = [song]; window.__song = song;
+      const A = GG.audio, v = window.__v = { strums: [] }, f = A.strum;
+      A.strum = function (midi, when, o) { v.strums.push({ midi, dead: !!(o && o.dead) }); return f.apply(this, arguments); };
+      s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
+    });
+    await startShow();
+    const sc = await page.evaluate(() => { const d = GG.debug('gigui'); window.__sc = GG.gig.chart(window.__song, { seat: 'rhythm', genre: GG.state.genre, difficulty: 'hard', lanes: d.lanes });
+      return { seat: d.seat, lanes: d.lanes, dead: window.__sc.notes.filter(n => n.dead).length, part: !!window.__song.pattern.part, v: window.__song.pattern.part && window.__song.pattern.part.v }; });
+    c.ok(sc.seat === 'rhythm' && sc.dead > 4 && sc.v === 2, 'rhythm seat: the part keeps v2, its Scratch notes chart as dead ' + JSON.stringify(sc));
+    const dn = await page.waitForFunction(() => { const d = GG.debug('gigui'); if (d.mode !== 'play') return null;
+      return window.__sc.notes.find(n => n.dead && n.li < d.lanes && n.t > d.songT + 0.5 && n.t < d.dur - 1) || null; }, null, { timeout: 12000 }).then(h => h.jsonValue());
+    const s0 = await page.evaluate(() => window.__v.strums.length);
+    const tr = await tapS(dn.li, dn.t);
+    const st = await page.evaluate(n0 => window.__v.strums.slice(n0), s0);
+    c.ok(tr.last && /^(perfect|good)$/.test(tr.last.judgement) && st.some(x => x.dead && x.midi === dn.midi), 'a tapped Scratch note plays your strum as a dead strum ' + JSON.stringify({ j: tr.last && tr.last.judgement, st, midi: dn.midi }));
+    const rg = await perfectGig();
+    c.ok(rg.acc === 1 && rg.miss === 0, 'rhythm seat: the perfect bot on a swung Scratch song = 100 % ' + JSON.stringify(rg));
+    await page.evaluate(() => { GG.ui.closeAll(); GG.prefs.set({ noFail: false }); GG.prefs.setCalib('speaker', { audio: 0, visual: 0 }); });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
 }
