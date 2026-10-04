@@ -65,6 +65,36 @@ test('SIM: the per-genre similarity matrices (as is; with a part per string seat
   ['metal', 'punk', 'rock', 'country'].forEach(g => eq(FX.simMatrix(GG, entries.filter(e => e.genre === g)), fixture.sim[g], g + ' similarity'));
 });
 
+// v1.3 upgrade gate (plan_contract_1.3 §3.7, §4.4): a v1 part and its v2 upgrade rate the same (the whole rate() object, tips
+// included, both gears) and partRating the same, for every corpus entry x string seat; similarity sees no difference either.
+test('upgrade gate: rate(p + part.upgrade(pt)) deep-equals rate(p + pt) (tips, both gears) + partRating, every entry x string seat; similarity too', () => {
+  const S = GG.songs, bad = [];
+  let n = 0;
+  entries.forEach(e => {
+    const V = FX.variants(GG, e);
+    FX.STR.forEach(seat => {
+      const pv = V[seat], up = Object.assign(FX.clone(pv), { part: S.part.upgrade(FX.clone(pv.part)) });
+      const sv = S.sanitize(FX.clone(pv), null, null, true).part;
+      if (sv && !(up.part && up.part.v === 2)) bad.push(e.id + ' ' + seat + ' not upgraded');
+      [FX.G4, FX.GF].forEach(gear => { n++; if (JSON.stringify(S.rate(FX.clone(up), e.genre, gear)) !== JSON.stringify(S.rate(FX.clone(pv), e.genre, gear))) bad.push(e.id + ' ' + seat + ' rate'); });
+      if (JSON.stringify(S.partRating(FX.clone(up), e.genre)) !== JSON.stringify(S.partRating(FX.clone(pv), e.genre))) bad.push(e.id + ' ' + seat + ' partRating');
+    });
+  });
+  ok(n === entries.length * 6, 'compared ' + n);
+  // similarity: neighbouring entries of one genre, v1 parts vs both upgraded vs one upgraded (parts compare in part.view)
+  for (let i = 1; i < entries.length; i++) {
+    const a = entries[i - 1], b = entries[i];
+    if (a.genre !== b.genre) continue;
+    const Va = FX.variants(GG, a), Vb = FX.variants(GG, b);
+    FX.STR.forEach(seat => {
+      const upA = Object.assign(FX.clone(Va[seat]), { part: S.part.upgrade(Va[seat].part) }), upB = Object.assign(FX.clone(Vb[seat]), { part: S.part.upgrade(Vb[seat].part) });
+      const s0 = S.similarity(Va[seat], Vb[seat]);
+      if (S.similarity(upA, upB) !== s0 || S.similarity(upA, Vb[seat]) !== s0) bad.push(a.id + ' ~ ' + b.id + ' ' + seat + ' similarity');
+    });
+  }
+  if (bad.length) throw new Error(bad.length + ' upgrade mismatches, e.g. ' + bad.slice(0, 8).join(', '));
+});
+
 test('SAVE0: every fixture save loads through 10_save to the 1.2 songs, ratings, draft and pendingSongs (+ their open-and-save SAN)', () => {
   FX.OLD_SAVES.forEach(n => eq(FX.save0(GG, store, FX.slotString(n)), fixture.save[n], n));
   FX.SEATS.forEach(s => eq(FX.save0(GG, store, careers[s]), fixture.save['v12_' + s], 'v12_' + s));

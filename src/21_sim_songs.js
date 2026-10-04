@@ -24,6 +24,10 @@
 //   { groove, hook, tips }) ; partRating ; similarity scales by how alike the parts are ; create gives a string seat's song
 //   its part (a seeded suggestion per song id when none was written) ; reactions add the swapped drummer's kit line and a
 //   bandmate's bySeat line (own seed).
+// v1.3 "Songwriter" (plan_contract_1.3 §4): optional PATTERN keys chords / fillBars / mood / swing / recipe (sanitize writes
+//   each only when present and valid), part v2 (part.LAYOUT / UP / ROLE / rowsOf / rowNames / upgrade / view / rowPitch),
+//   swingBeat, chordsOf, chordLabel, progChords, progName, moodOf, nativeMood, recipes, sliders, surprise, compose (see the
+//   v1.3 block below). Without the v1.3 keys every number is 1.2's (tests/compat_v12.test.js).
 (function (GG) {
   var C = GG.contracts, U = GG.util;
   var songs = GG.songs = GG.songs || {};
@@ -275,8 +279,37 @@
     var arr = srcArr.filter(function (s) { return ok.indexOf(s) >= 0; });
     out.arrangement = arr.length ? arr.slice(0, 16) : songs.ARRANGEMENTS.classic.slice();
     if (src.part != null) { var pt = songs.part.sanitize(src.part, ok, genre); if (pt) out.part = pt; }   // v1.1: your part (string seats)
+    cleanV13(src, out, g, loose);   // v1.3: chords, fillBars, mood, swing, recipe (each only when present and valid)
     return out;
   };
+  // v1.3 "Songwriter" (plan_contract_1.3 §4.1): the optional Quick-song keys, written after part in this order and only when
+  // present and valid (the loose path keeps them too). A pattern without them comes out exactly as 1.2's.
+  function intIn(v, lo, hi) { return typeof v === 'number' && v % 1 === 0 && v >= lo && v <= hi; }
+  var RECIPE_ID = /^[a-z0-9-]{1,24}$/;
+  function cleanV13(src, out, g, loose) {
+    var c = src.chords, fb = src.fillBars, r = src.recipe, ch = null, fo = null;
+    if (c && typeof c === 'object' && !Array.isArray(c)) SECTIONS.forEach(function (name) {   // never solo / outro
+      var a = c[name];
+      if (out.sections[name] && Array.isArray(a) && a.length === BARS && a.every(function (x) { return intIn(x, 0, 11); })) (ch = ch || {})[name] = a.slice();
+    });
+    if (ch) out.chords = ch;
+    if (fb && typeof fb === 'object' && !Array.isArray(fb)) Object.keys(out.sections).forEach(function (name) {   // cleaned like a section
+      var sec = fb[name], clean = [];
+      if (!Array.isArray(sec)) return;
+      for (var l = 0; l < out.lanes; l++) {
+        var s = typeof sec[l] === 'string' ? sec[l].replace(/[^x]/g, '.').slice(0, STEPS) : '';
+        s = (s + BLANK).slice(0, STEPS);
+        clean.push(l === KICK && !g.doubleKick && !loose ? oneFoot(s) : s);
+      }
+      (fo = fo || {})[name] = clean;
+    });
+    if (fo) out.fillBars = fo;
+    if (intIn(src.mood, 0, 4)) out.mood = src.mood;
+    if (intIn(src.swing, 0, 4)) out.swing = src.swing;
+    if (r && typeof r === 'object' && typeof r.id === 'string' && RECIPE_ID.test(r.id) && intIn(r.seed, 0, 9007199254740991) && intIn(r.energy, 0, 4) && intIn(r.fills, 0, 4)) {
+      out.recipe = { id: r.id, seed: r.seed, energy: r.energy, fills: r.fills };
+    }
+  }
 
   /* ---- Making patterns --------------------------------------------------------------------------------- */
   function padBar(bar, lanes) { var a = []; for (var l = 0; l < lanes; l++) a.push(bar[l] || BLANK); return a; }
@@ -385,7 +418,10 @@
   };
 
   // 0..1 how alike two patterns are, section by section (v0.5 reviews flag recycled drum patterns).
-  songs.similarity = function (a, b) {
+  // v1.3: genre (optional) names the progressions the chord gate falls back on (default metal); parts compare in part.view
+  // (v1 and v2 alike); bass / rhythm compare the chord arrays (chordsOf) only when either pattern has p.chords, else the
+  // 1.2 index rule (the lead: always the index rule).
+  songs.similarity = function (a, b, genre) {
     var pa = songs.sanitize(a && a.pattern || a, null, null, true), pb = songs.sanitize(b && b.pattern || b, null, null, true);
     var lanes = Math.max(pa.lanes, pb.lanes), sum = 0;
     SECTIONS.forEach(function (name) { sum += jaccard(pa.sections[name], pb.sections[name], lanes, -1); });
@@ -393,10 +429,12 @@
     // v1.1: two parts for the same seat compare too (rows per section + the same progression / hook): a song is as recycled
     // as its drums only when your part is recycled too (a fresh part over an old beat reads 60 % as recycled).
     if (pa.part && pb.part && pa.part.seat === pb.part.seat) {
-      var ps = 0, k = songs.part.key(pa.part.seat);
+      var ps = 0, k = songs.part.key(pa.part.seat), va = songs.part.view(pa.part), vb = songs.part.view(pb.part);
+      var arr = pa.part.seat !== 'lead' && (hasChords(pa) || hasChords(pb));
       SECTIONS.forEach(function (name) {
-        var x = pa.part.sections[name], y = pb.part.sections[name];
-        ps += 0.8 * jaccard(x.rows, y.rows, x.rows.length, -1) + (x[k] === y[k] ? 0.2 : 0);
+        var x = va.sections[name], y = vb.sections[name];
+        var same = arr ? String(songs.chordsOf(pa, name, genre)) === String(songs.chordsOf(pb, name, genre)) : x[k] === y[k];
+        ps += 0.8 * jaccard(x.rows, y.rows, x.rows.length, -1) + (same ? 0.2 : 0);
       });
       d = d * (0.6 + 0.4 * ps / SECTIONS.length);
     }
@@ -420,6 +458,53 @@
   part.SEATS = ['bass', 'rhythm', 'lead'];
   part.ROW_NAMES = { bass: ['Root', 'Fifth', 'Octave'], rhythm: ['Chug', 'Open'], lead: ['Low', '2', '3', '4', 'High'] };
   part.key = function (seat) { return seat === 'lead' ? 'hook' : 'prog'; };
+  // v1.3 "Songwriter" (plan_contract_1.3 §4.1): part v2 = { seat, v: 2, sections } with C.PART_V2[seat] rows (LAYOUT[2]); a v1
+  // part (no v) is 1.2's. UP maps v1 row i -> v2 row UP[i] (upgrade: same sound, same ratings). ROLE: the v2 rows the rating
+  // reads per v1 feature (root1, fifth3, chug): the UP image of the v1 row + the new rows that play that role.
+  var V2N = C.PART_V2 || { bass: 6, rhythm: 6, lead: 7 };
+  part.LAYOUT = { 1: part.ROW_NAMES, 2: { rhythm: ['Chug', 'Open', 'Root', '5th', 'Oct', 'Scratch'],
+    bass: ['Low 5th', 'Root', '3rd', '5th', '7th', 'Oct'], lead: ['Low', '1', '2', '3', '4', '5', 'High'] } };
+  part.UP = { rhythm: [0, 1], bass: [1, 3, 5], lead: [1, 2, 3, 4, 5] };
+  part.ROLE = { rhythm: { root: [0, 2], fifth: [1, 3], chug: [0, 2, 3, 4] }, bass: { root: [1], fifth: [0, 3], chug: [1] },
+    lead: { root: [1], fifth: [2], chug: [1] } };
+  part.SCRATCH = 5;   // the rhythm's Scratch row (v2): a dead strum at the root
+  // Row count / row names of a part (v-aware): rowsOf(pt) -> int (0 = not a part).
+  part.rowsOf = function (pt) { var seat = pt && pt.seat; return PART_ROWS[seat] ? (pt.v === 2 ? V2N[seat] : PART_ROWS[seat]) : 0; };
+  part.rowNames = function (pt) { var seat = pt && pt.seat; return PART_ROWS[seat] ? part.LAYOUT[pt.v === 2 ? 2 : 1][seat].slice() : []; };
+  function upRows(rows, seat) {
+    var out = [], i, up = part.UP[seat];
+    for (i = 0; i < V2N[seat]; i++) out.push(BLANK);
+    for (i = 0; i < PART_ROWS[seat]; i++) { var s = rows && typeof rows[i] === 'string' ? rows[i].replace(/[^x]/g, '.').slice(0, STEPS) : ''; out[up[i]] = (s + BLANK).slice(0, STEPS); }
+    return out;
+  }
+  function upSection(x, seat) {   // a v1 section -> v2 (the index floors at 0, as the loose path cleans it)
+    var k = part.key(seat), o = {}, v = Math.floor(Number(x && x[k]));
+    o[k] = isFinite(v) && v >= 0 ? v : 0;
+    o.rows = upRows(x && x.rows, seat);
+    return o;
+  }
+  // v1 -> v2 copy (a v2 part: a copy as is; not a part: null). Sections that are not { rows: [] } are left out (sanitize fills
+  // them with the suggestion, as it does for the v1 part), so rate(upgrade(pt)) deep-equals rate(pt).
+  part.upgrade = function (pt) {
+    if (!pt || typeof pt !== 'object' || !PART_ROWS[pt.seat]) return null;
+    if (pt.v === 2) return U.clone(pt);
+    var seat = pt.seat, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {}, out = { seat: seat, v: 2, sections: {} };
+    Object.keys(src).forEach(function (name) { var x = src[name]; if (x && typeof x === 'object' && Array.isArray(x.rows)) out.sections[name] = upSection(x, seat); });
+    return out;
+  };
+  // The part as the v2 grid shows it (v2 as is, else its upgrade). Never writes.
+  part.view = function (pt) { return pt && pt.v === 2 ? pt : part.upgrade(pt); };
+  // What a v2 row plays (one source of truth for 30 partBar2 and 54 partPreview): bass / rhythm -> semitones over the bar's
+  // root (bass: [-5, 0, third, 7, seventh, 12] with the mood rung's third / seventh, the native rung when absent); rhythm
+  // Scratch -> 'dead'; lead -> the scale degree [deg0 - 1, deg0..deg4, deg4 + 1] (o.deg = the hook's 5 degrees). Bad row: null.
+  part.rowPitch = function (genre, seat, row, o) {
+    o = o || {};
+    if (!(row >= 0 && row < (V2N[seat] || 0)) || row % 1) return null;
+    if (seat === 'rhythm') return row === part.SCRATCH ? 'dead' : [0, 0, 0, 7, 12][row];
+    if (seat === 'bass') { var r = rungOf(genre, o.mood); return [-5, 0, r.third, 7, r.seventh, 12][row]; }
+    var deg = Array.isArray(o.deg) && o.deg.length >= 5 ? o.deg : [0, 1, 2, 3, 4];
+    return row === 0 ? (deg[0] | 0) - 1 : row === 6 ? (deg[4] | 0) + 1 : deg[row - 1] | 0;
+  };
   function partList(genre, seat, section) {
     var B = songs.genre(genre || 'metal').backing || {}, P = B.progressions || {};
     var list = seat === 'lead' && B.hooks ? B.hooks[section] : P[section];
@@ -505,8 +590,8 @@
     out.rows = rows;
     return out;
   };
-  function cleanSection(x, seat, list) {
-    var n = PART_ROWS[seat], k = part.key(seat), rows = [], src = x && Array.isArray(x.rows) ? x.rows : [];
+  function cleanSection(x, seat, list, n2) {   // v1.3: n2 = the v2 row count (a v2 part), else the v1 rows
+    var n = n2 || PART_ROWS[seat], k = part.key(seat), rows = [], src = x && Array.isArray(x.rows) ? x.rows : [];
     for (var r = 0; r < n; r++) {
       var s = typeof src[r] === 'string' ? src[r].replace(/[^x]/g, '.').slice(0, STEPS) : '';
       rows.push((s + BLANK).slice(0, STEPS));
@@ -518,13 +603,16 @@
   }
   // A clean PART for these sections (missing ones = the seat's suggestion), or null (not a part / not a string seat).
   // genre null (the loose rating path): indexes only floor at 0 (stored songs were cleaned with their genre).
+  // v1.3: a v2 part (pt.v === 2) keeps C.PART_V2[seat] rows and writes v: 2 (missing sections: the v1 suggestion through UP);
+  // any other part is the 1.2 code path (no v key).
   part.sanitize = function (pt, names, genre) {
     if (!pt || typeof pt !== 'object' || !PART_ROWS[pt.seat]) return null;
-    var seat = pt.seat, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {}, out = { seat: seat, sections: {} };
+    var seat = pt.seat, v2 = pt.v === 2, src = pt.sections && typeof pt.sections === 'object' ? pt.sections : {};
+    var out = v2 ? { seat: seat, v: 2, sections: {} } : { seat: seat, sections: {} };
     (names || SECTIONS).forEach(function (name) {
       var x = src[name];
       out.sections[name] = x && typeof x === 'object' && Array.isArray(x.rows)
-        ? cleanSection(x, seat, genre ? partList(genre, seat, name) : null) : part.suggest(genre, seat, name);
+        ? cleanSection(x, seat, genre ? partList(genre, seat, name) : null, v2 ? V2N[seat] : 0) : v2 ? upSection(part.suggest(genre, seat, name), seat) : part.suggest(genre, seat, name);
     });
     return out;
   };
@@ -620,6 +708,26 @@
       rep: union ? inter / union : 0, root1: on(rows[0], 0) ? 1 : 0, fifth3: seat === 'bass' && on(rows[1], 8) ? 1 : 0,
       chug: seat === 'rhythm' ? count(rows[0]) : 0 };
   }
+  // v1.3: the same features for a v2 part, roles read through part.ROLE[seat] (an upgraded v1 part gives the v1 numbers).
+  function anyOn(rows, set, i) { for (var q = 0; q < set.length; q++) if (rows[set[q]] && on(rows[set[q]], i)) return true; return false; }
+  function partFeat2(sec, kick, seat) {
+    var rows = sec.rows, n = rows.length, R = part.ROLE[seat] || part.ROLE.bass, hits = 0, lock = 0, kicks = count(kick), s8 = 0, odd = 0, used = 0, chug = 0;
+    var inter = 0, union = 0, i, r;
+    for (r = 0; r < n; r++) if (count(rows[r])) used++;
+    for (i = 0; i < STEPS; i++) {
+      var any = false;
+      for (r = 0; r < n; r++) if (on(rows[r], i)) any = true;
+      if (seat === 'rhythm' && anyOn(rows, R.chug, i)) chug++;
+      if (!any) continue;
+      hits++;
+      if (on(kick, i)) lock++;
+      if (i % 2 === 0) s8++; else odd++;
+    }
+    for (r = 0; r < n; r++) for (i = 0; i < STEPS / 2; i++) { var a = on(rows[r], i), b = on(rows[r], i + STEPS / 2); if (a && b) inter++; if (a || b) union++; }
+    return { hits: hits, lock: hits ? lock / hits : 0, cover: kicks ? lock / kicks : 0, steady8: s8 / 8, odd: odd, rows: used,
+      rep: union ? inter / union : 0, root1: anyOn(rows, R.root, 0) ? 1 : 0, fifth3: seat === 'bass' && anyOn(rows, R.fifth, 8) ? 1 : 0,
+      chug: seat === 'rhythm' ? chug : 0 };
+  }
   function band01(v, lo, hi, soft) { return v >= lo && v <= hi ? 1 : Math.max(0, 1 - (v < lo ? lo - v : v - hi) / soft); }
   var PART_FULL = { bass: [2, 12], rhythm: [2, 14], lead: [3, 12] };
   var PART_TIPS = { empty: 'Your part is nearly empty. Give the band something to lean on.', busy: 'Your part is too busy. Leave some air.',
@@ -645,7 +753,8 @@
     var pt = p.part;
     if (!pt) return null;
     var seat = pt.seat, sumG = 0, sumW = 0, raw = 0, notes = 0, feats = {};
-    songs.sectionsOf(p).forEach(function (name) { if (pt.sections[name]) feats[name] = partFeat(pt.sections[name], lane(p.sections[name], KICK), seat); });
+    var feat = pt.v === 2 ? partFeat2 : partFeat;   // v1.3: a v2 part reads its roles (part.ROLE)
+    songs.sectionsOf(p).forEach(function (name) { if (pt.sections[name]) feats[name] = feat(pt.sections[name], lane(p.sections[name], KICK), seat); });
     p.arrangement.forEach(function (name) {
       var f = feats[name]; if (!f) return;
       var w = name === 'bridge' ? 0.5 : name === 'outro' ? X.outroWeight : name === 'solo' ? (seat === 'lead' ? 1 : X.soloWeight) : 1;
@@ -659,7 +768,11 @@
       for (var r = 0; r < v.rows.length; r++) for (var i = 0; i < STEPS; i++) { var a = on(v.rows[r], i), b = on(c.rows[r], i); if (a && b) inter++; if (a || b) union++; }
       var d = union ? 1 - inter / union : 0, contrast = d < 0.05 ? 0 : d < 0.25 ? (d - 0.05) / 0.2 : d <= 0.7 ? 1 : 1 - 0.6 * (d - 0.7) / 0.3;
       var fc = feats.chorus || { rep: 0, hits: 0 }, fv = feats.verse || { hits: 0 };
-      hook = 0.45 * Math.max(contrast, v[k] !== c[k] ? 0.6 : 0) + 0.35 * U.clamp((fc.rep - 0.2) / 0.6, 0, 1) + 0.2 * (fv.hits ? Math.min(1, fc.hits / fv.hits) : fc.hits ? 1 : 0);
+      // v1.3 chord gate (§4.4): bass / rhythm compare the verse vs chorus chord arrays only when p.chords has verse or chorus;
+      // otherwise (v2 parts included) and always for the lead: the 1.2 rule (different progression / hook index)
+      var moved = seat !== 'lead' && p.chords && (p.chords.verse || p.chords.chorus)
+        ? String(songs.chordsOf(p, 'verse', genre)) !== String(songs.chordsOf(p, 'chorus', genre)) : v[k] !== c[k];
+      hook = 0.45 * Math.max(contrast, moved ? 0.6 : 0) + 0.35 * U.clamp((fc.rep - 0.2) / 0.6, 0, 1) + 0.2 * (fv.hits ? Math.min(1, fc.hits / fv.hits) : fc.hits ? 1 : 0);
     }
     var n = p.arrangement.length || 1;
     return { groove: sumW ? sumG / sumW : 0, hook: hook, raw: raw / n * p.bpm / 120, notes: notes };
@@ -670,6 +783,141 @@
   };
   // How much your part counts in a string-seat song's rating (the band's drums are the rest).
   songs.PART_WEIGHT = { groove: 0.35, hook: 0.25, difficulty: 0.5 };
+
+  /* ---- v1.3 "Songwriter": chords, mood, swing, quick songs (plan_contract_1.3 §4.2) ---------------------------------- */
+  // Pure, genre always explicit, never GG.state. Stage 0 landed swingBeat, chordsOf, NOTE, chordLabel, moodOf, nativeMood,
+  // progChords and progName for real; recipes / sliders / surprise / compose are stage-0 stubs with the final signatures
+  // (Lane S fills them).
+  //   swingBeat(beat, s) -> the swung beat (identity when !s or the beat is whole; per beat 0 -> 0, 1/2 -> 1/2 + C.SWING[s], 1 -> 1)
+  //   chordsOf(p, name, genre, { part, seat }?) -> [4] semitones: p.chords[name] > the part's prog (seat != lead, as the
+  //     timeline) > the 1.2 hash pick (30 progression). Never writes.
+  //   chordLabel(genre, mood, tonic, semi) -> 'E5' (power-chord genres) | 'Em' | 'E' (the triad in the rung's scale)
+  //   progChords(genre, name, i, mood) -> [4]: backing.progressions[name][i] remapped by the rung, break bars home (Q4 = 1)
+  //   progName(genre, seat, name, p, opts) -> the chip menu's label: bass / rhythm the progNames entry whose progChords equal
+  //     p.chords[name] (present) or the index chordsOf used (absent), else 'Custom'; lead: the hook's name
+  //   moodOf(genre, mood) -> rung (a copy) | null (absent / invalid / native) ; nativeMood(genre) -> int
+  songs.swingBeat = function (beat, s) {
+    var sw = s ? (C.SWING || [])[s] : 0;
+    if (!sw) return beat;
+    var b = Math.floor(beat), f = beat - b, m = 0.5 + sw;
+    if (!f) return beat;
+    return b + (f <= 0.5 ? f * 2 * m : m + (f - 0.5) * 2 * (1 - m));
+  };
+  function hasChords(p) { var c = p && p.chords; return !!(c && (c.verse || c.chorus || c.bridge)); }
+  songs.nativeMood = function (genre) { var B = songs.genre(genre).backing || {}; return intIn(B.moodNative, 0, 4) ? B.moodNative : 0; };
+  songs.moodOf = function (genre, mood) {
+    var M = (songs.genre(genre).backing || {}).moods;
+    if (!Array.isArray(M) || !intIn(mood, 0, M.length - 1) || mood === songs.nativeMood(genre)) return null;
+    return U.clone(M[mood]);
+  };
+  // The rung that plays (the mood's, else the native one; a genre without moods: 1.2's third / seventh).
+  function rungOf(genre, mood) {
+    var B = songs.genre(genre).backing || {}, r = songs.moodOf(genre, mood) || (Array.isArray(B.moods) ? B.moods[songs.nativeMood(genre)] : null);
+    return r || { mode: B.mode || 'minor', scale: B.scale || [0, 2, 3, 5, 7, 8, 10], third: genre === 'metal' ? 3 : 4, seventh: 10 };
+  }
+  // The chords one section plays and where they came from: { chords: [4], from: 'chords'|'part'|'hash', i (progression index | null) }.
+  function chordSource(p, name, genre, opts) {
+    var q = songs.sanitize(p && p.pattern || p, null, null, true), B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name] || [[0, 0, 0, 0]];
+    if (q.chords && q.chords[name]) return { chords: q.chords[name].slice(), from: 'chords', i: null, q: q };
+    opts = opts || {};
+    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: list[i].slice(), from: 'hash', i: i, q: q };
+    var pt = opts.part !== undefined ? opts.part : q.part, want = opts.seat !== undefined ? opts.seat : null;
+    if (want === 'drums' || !pt || typeof pt !== 'object' || !pt.sections || typeof pt.sections !== 'object') return out;   // (30 partOf)
+    var seat = PART_ROWS[want] ? want : pt.seat, x = pt.sections[name];
+    if (!PART_ROWS[seat] || (pt.seat && pt.seat !== seat) || seat === 'lead' || !x || typeof x !== 'object') return out;
+    if (!(isFinite(x.prog) && x.prog !== null)) return out;   // (30 partSec)
+    var pl = (B.progressions || {})[name];
+    if (!pl || !pl.length) return out;
+    var j = Math.max(0, Math.min(pl.length - 1, x.prog | 0));
+    return { chords: pl[j].slice(), from: 'part', i: j, q: q };
+  }
+  songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
+  songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)
+  var POWER_GENRES = { metal: 1, punk: 1, rock: 1 };
+  songs.chordLabel = function (genre, mood, tonic, semi) {
+    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
+    if (POWER_GENRES[gid]) return name + '5';
+    var r = rungOf(gid, mood), sc = r.scale || [];
+    if (!s) return name + (r.third === 3 ? 'm' : '');
+    var maj = sc.indexOf((s + 4) % 12) >= 0, min = sc.indexOf((s + 3) % 12) >= 0;
+    if (maj !== min) return name + (min ? 'm' : '');
+    var parent = r.third === 3 ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];   // the third isn't in a gapped scale: the parent key's
+    return name + (parent.indexOf((s + 3) % 12) >= 0 ? 'm' : '');
+  };
+  songs.progChords = function (genre, name, i, mood) {
+    var B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name], roles = (B.roles || {})[name] || [];
+    if (!Array.isArray(list) || !list.length) list = [[0, 0, 0, 0]];
+    var a = list[Math.max(0, Math.min(list.length - 1, Math.floor(Number(i)) || 0))], r = songs.moodOf(genre, mood), map = r && r.remap, out = [];
+    for (var bar = 0; bar < BARS; bar++) {
+      var x = a[bar % a.length] | 0;
+      if (map && map[x] != null) x = map[x] | 0;
+      out.push(roles.length && roles[bar % roles.length] === 'break' ? 0 : ((x % 12) + 12) % 12);
+    }
+    return out;
+  };
+  songs.progName = function (genre, seat, name, p, opts) {
+    opts = opts || {};
+    var ch = part.choices(genre, seat === 'lead' ? 'lead' : seat === 'rhythm' ? 'rhythm' : 'bass', name), src;
+    if (seat === 'lead') {
+      var q = songs.sanitize(p && p.pattern || p, null, null, true), pt = opts.part !== undefined ? opts.part : q.part, x = pt && pt.sections && pt.sections[name];
+      var hi = x && isFinite(x.hook) && x.hook !== null ? Math.max(0, Math.min(ch.length - 1, x.hook | 0)) : 0;
+      return ch[hi] ? ch[hi].name : '';
+    }
+    src = chordSource(p, name, genre, { part: opts.part, seat: opts.seat !== undefined ? opts.seat : seat });
+    if (src.from === 'chords') {
+      var want = String(src.chords);
+      for (var i = 0; i < ch.length; i++) if (String(songs.progChords(genre, name, i, src.q.mood)) === want) return ch[i].name;
+      return 'Custom';
+    }
+    return ch[src.i] ? ch[src.i].name : 'Custom';
+  };
+
+  // ---- Stage-0 stubs (final signatures; Lane S replaces the bodies) ----
+  function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
+  var STUB_STOPS = { energy: ['Lazy', 'Easy', 'Steady', 'Busy', 'Show-off'], mood: ['Sunny', 'Bright', 'Home', 'Moody', 'Dark'],
+    swing: ['Straight', 'A lilt', 'Shuffle', 'Swung', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Lots'] };
+  // -> [{ id, name, desc, locked, lockLabel, bpm, sliders: { energy, mood, swing, fills } }], "Surprise me" last (surprise: true).
+  songs.recipes = function (genre, gear, seat) {
+    var G = songs.genre(genre), sl = { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 };
+    return [{ id: 'signature', name: 'Signature', desc: 'The band’s own sound.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: sl },
+      { id: 'surprise', name: 'Surprise me', desc: 'Roll the dice.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: U.clone(sl), surprise: true }];
+  };
+  // -> [{ id, name, lo, hi, stops: [5 labels] }] in C.SONG_SLIDERS order; tempo: { ..., min, max, step: 5, stops: null }.
+  songs.sliders = function (genre, seat) {
+    var G = songs.genre(genre), GS = songs.grooves(genre).sliders || {};
+    return (C.SONG_SLIDERS || []).map(function (x) {
+      var o = { id: x.id, name: x.name, lo: x.lo, hi: x.hi };
+      if (x.id === 'tempo') { o.min = G.tempo[0]; o.max = G.tempo[1]; o.step = 5; o.stops = null; }
+      else o.stops = (Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
+      return o;
+    });
+  };
+  // -> { recipe, energy, mood, swing, fills, bpm } (unlocked recipes only; deterministic per seed).
+  songs.surprise = function (genre, gear, seat, seed) {
+    var rng = GG.RNG((Number(seed) >>> 0) || 1), G = songs.genre(genre);
+    var list = songs.recipes(genre, gear, seat).filter(function (r) { return !r.locked && !r.surprise; });
+    return { recipe: list.length ? rng.pick(list).id : 'signature', energy: rng.int(0, 4), mood: rng.int(0, 4), swing: rng.int(0, 4),
+      fills: rng.int(0, 4), bpm: U.clamp(5 * Math.round(rng.int(G.tempo[0], G.tempo[1]) / 5), G.tempo[0], G.tempo[1]) };
+  };
+  // -> a sanitized PATTERN with chords, mood, swing, recipe (+ a v2 part on a string seat). Stub: the signature at the asked
+  // tempo, chords = the hash pick's progression through progChords (break bars home), no variants (K).
+  songs.compose = function (genre, o) {
+    o = o || {};
+    var G = songs.genre(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', p = songs.signature(genre, g);
+    var bpm = Number(o.bpm) || G.tempo[2], mood = int04(o.mood, songs.nativeMood(genre)), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
+    p.bpm = U.clamp(5 * Math.round(bpm / 5), G.tempo[0], G.tempo[1]);
+    var idx = {};
+    p.chords = {};
+    SECTIONS.forEach(function (name) { var s = chordSource(p, name, genre, { part: null }); idx[name] = s.i; p.chords[name] = songs.progChords(genre, name, s.i, mood); });
+    if (seat !== 'drums') {
+      var pt = part.full(genre, seat, p);
+      if (seat !== 'lead') SECTIONS.forEach(function (name) { pt.sections[name].prog = idx[name]; });
+      p.part = part.upgrade(pt);
+    }
+    p.mood = mood; p.swing = int04(o.swing, 0);
+    p.recipe = { id: typeof o.recipe === 'string' && RECIPE_ID.test(o.recipe) ? o.recipe : 'signature', seed: seed, energy: int04(o.energy, 2), fills: int04(o.fills, 1) };
+    return songs.sanitize(p, g, genre);
+  };
 
   // Every hit of a song in order: [{ beat, lane, section, entry, bar, step }] (beat = quarter notes from the start).
   // v0.3 builds gig charts from this. Count = sum over arrangement entries of (hits in that section x BARS_PER_SECTION).
