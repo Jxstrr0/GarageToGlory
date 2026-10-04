@@ -423,7 +423,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-grid .cell.on.ph { box-shadow: inset 0 0 0 2px #fff; filter: brightness(1.2); }
 .seq-grid .cell.nope { animation: gg-nope .5s ease-out; }
 .seq-grid.ro .cell { cursor: default; }
-.seq-grid.fill .cell { background: #1f1c2a; } .seq-grid.fill .cell.sh { background: #262235; } .seq-grid.fill .cell.on { background: var(--lc); }
+.seq-grid.fill .gc { font-size: 11px; } .seq-grid.fill .cell { background: #1f1c2a; } .seq-grid.fill .cell.sh { background: #262235; } .seq-grid.fill .cell.on { background: var(--lc); }
 @keyframes gg-nope { 0%, 100% { background: #161d30; } 25% { background: #8a2f3a; transform: scale(.94); } }
 .seq-grid.wide { column-gap: 3px; }
 .seq-grid.wide .lh { flex-direction: column; gap: 0; font-size: 8.5px; letter-spacing: 0; line-height: 1; }
@@ -491,6 +491,7 @@ html.gg-big .sm-copy .btn, html.gg-big .sm-mods .btn { font-size: 15.5px; }
 html.gg-big .seq-coach { font-size: 15.5px; } html.gg-big .seq-title .caps { font-size: 11.5px; } html.gg-big .seq-title .fr { font-size: 19px; }
 html.gg-big .meter { font-size: 12px; } html.gg-big .meter b { font-size: 14px; } html.gg-big .seq-chords { font-size: 14.5px; }
 html.gg-big .seq-layers .seg { font-size: 13.5px; } html.gg-big .seq-chip .cb { font-size: 10px; } html.gg-big .seq-grid .lh { font-size: 11px; } html.gg-big .seq-grid .bl { font-size: 12px; }
+@media (max-width: 410px) { html.gg-big .seq-grid.part .lh { font-size: 10px; letter-spacing: 0; } }   /* v1.3 review: "Low 5th" / "Scratch" fit at 390 */
 html.gg-big .qr b { font-size: 17px; } html.gg-big .qr > span { font-size: 13.5px; } html.gg-big .qs-top b { font-size: 17px; } html.gg-big .qs-top em { font-size: 14.5px; }
 html.gg-big .qs-ends { font-size: 12.5px; } html.gg-big .qs-title { font-size: 23px; } html.gg-big .seq-menu-row { font-size: 16.5px; } html.gg-big .seq-pickrow { font-size: 16.5px; }
 html.gg-big .full.seq .seq-tabs .tab.tab { font-size: 14px; } html.gg-big .full.seq .seq-tabs.many .tab.tab { font-size: 11.5px; }

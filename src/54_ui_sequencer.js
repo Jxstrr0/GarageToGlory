@@ -226,6 +226,7 @@
     var c = coachFor(D, coachStep(D)), who = c ? c.who : null;
     if (D.screen === 'quick') return { who: who, text: c ? c.text : 'Pick a recipe, push the sliders around and hit Play.', full: [] };
     if (D.hint) return { who: D.hint.who || who, text: D.hint.text, full: c ? [c.text] : [] };
+    if (fillOn(D)) return { who: who, lead: 'Bar 4 fill.', text: 'Done? ⋯ → Back to the main bar.', full: ['You are painting bar 4 of every ' + D.tab + ' (the fill). Tap ⋯ → Back to the main bar to edit the main beat again.'].concat(c ? [c.text] : []) };   // (v1.3 review)
     r = r || D.rating;
     var extra = c ? [c.text] : [];
     if (!r) return { who: who, text: c ? c.text : '', full: [] };
@@ -265,9 +266,22 @@
   }
   // Every edit: re-rate, keep playback in sync, keep the sketch pad saved.
   function changed(D) {
+    pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
     if (D.mode === 'sketch' && st()) st().draft = U.clone(D.pat);
+  }
+  // v1.3 review (D16): "Bar 4 fill" copies the main bar to start from; a copy still equal to its bar once you leave it (Back to
+  // the main bar, another tab or layer, save) goes again, so an old song that only peeked at the fill stays 1.2 JSON.
+  function pruneFill(D) {
+    var fb = D.pat && D.pat.fillBars, nw = D.fillNew;
+    if (!fb || !nw) return;
+    Object.keys(nw).forEach(function (n) {
+      if (D.fill && n === D.tab) return;
+      if (fb[n] && D.pat.sections[n] && JSON.stringify(fb[n]) === JSON.stringify(D.pat.sections[n])) delete fb[n];
+      delete nw[n];
+    });
+    if (!Object.keys(fb).length) delete D.pat.fillBars;
   }
   // A hand edit (grid, chips, picker, tweaks, Beat, copy / clear, arrangement): Q3 asks before a recompose drops it.
   function handEdit(D) { D.edited = true; D.hint = null; }
@@ -666,7 +680,7 @@
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
       stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
-      if (D.editHint) { D.hint = D.editHint; D.editHint = null; }   // the first Write's grid tip shows once, when the editor opens
+      firstHint(D);   // the first Write's grid tip shows once, when the editor opens
       s.rerender();
     } }, 'Tweak ✎');
     ui.append(s.foot, [V.play, ro ? null : tweak, doneButton(s, D)]);
@@ -701,6 +715,7 @@
   }
   function save(s, D) {
     if (D.done) return;
+    D.fill = false; pruneFill(D);
     var r = rerate(D);
     if (!r.notes) { ui.toast('Nothing to save yet. Tap some hits in, or let the band jam one.'); return; }
     D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);
@@ -714,6 +729,7 @@
     if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
     var present = D.tab === 'song' || hasSec(D, D.tab), sec = D.tab !== 'song' && present, layer = sec && partLayer(D) && partHas(D, D.tab);
     if (!sec || layer || !chipSec(D.tab)) D.fill = false;
+    pruneFill(D);
     var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : layer ? buildPartGrid(s, D) : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
     var tabs = ui.tabs(tabsFor(D), D.tab, function (id) {
       D.tab = id; D.fill = false; s.rerender();
@@ -749,7 +765,7 @@
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
-      if (D.fromSketch && D.editHint) { D.hint = D.editHint; D.editHint = null; }
+      if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
     },
     // Listeners live on the screen entry (s), not its data: composeWeek swaps the data for each Write block.
@@ -803,7 +819,7 @@
         group('This ' + (SEC_LABEL[D.tab] || D.tab).toLowerCase(), [
           row('btn-seq-beat', '🥁', 'Beat for this section', function () { close(); ui.show('seq-beat', { owner: owner }); }),
           fills ? row('btn-seq-fill', '✨', D.fill ? 'Back to the main bar' : hasFill ? 'Edit the bar 4 fill' : 'Bar 4 fill', function () {   // Q2: the grid edits p.fillBars[tab]
-            if (!D.fill && !hasFill) { D.pat.fillBars = D.pat.fillBars || {}; D.pat.fillBars[D.tab] = D.pat.sections[D.tab].slice(); }
+            if (!D.fill && !hasFill) { D.pat.fillBars = D.pat.fillBars || {}; D.pat.fillBars[D.tab] = D.pat.sections[D.tab].slice(); (D.fillNew = D.fillNew || {})[D.tab] = 1; }
             D.fill = !D.fill; close(); owner.rerender(); changed(D);
           }, D.fill ? '.on' : '') : null,
           fills && hasFill ? row('seq-fill-remove', '🧹', 'Take the bar 4 fill out', function () {
@@ -824,7 +840,7 @@
               var r = GG.songs.part.modify(D.pat, D.tab, m.id, gear(), genre());
               close();
               if (JSON.stringify(r.pattern.part) === JSON.stringify(D.pat.part)) {
-                if (JSON.stringify(D.pat.part) !== before) { owner.rerender(); changed(D); }
+                D.pat.part = JSON.parse(before);   // v1.3 review (D16): nothing changed, so a v1 part stays v1
                 ui.toast('“' + m.name + '” has nothing left to change here. Try another tweak.'); return;
               }
               D.pat = r.pattern; handEdit(D); owner.rerender(); changed(D);
@@ -876,7 +892,7 @@
       }
       var sketch = queued[k] || null, i = k;
       var tip = firstEver && i === 0 && !(GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(state)) ? firstTip(state) : null;   // v1.0: quiet while the w1_write lesson runs
-      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), editHint: tip, screen: sketch ? 'edit' : 'quick',
+      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), editHint: tip, firstWrite: firstEver && i === 0, screen: sketch ? 'edit' : 'quick',
         pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : null,
         title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,
         onSave: function (entry) { out[i] = entry; taken.push(entry.title); k++; next(); },
@@ -886,6 +902,13 @@
     }
     next();
   };
+  // v1.3 review: the tip is worked out when the editor first opens, so a player who finished the w1_write lesson on Quick song
+  // (its Got it ends the lesson) still gets the grid / chords instructions on the first Tweak; quiet while the lesson runs.
+  function firstHint(D) {
+    if (D.editHint) { D.hint = D.editHint; D.editHint = null; D.firstWrite = false; return; }
+    if (!D.firstWrite || !st() || (GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(st()))) return;
+    D.firstWrite = false; D.hint = firstTip(st());
+  }
   // v0.9: writeTips are member-keyed (every band's members, genre-correct); a band without any gets a neutral grid tip.
   // v1.3: they are the grid's instructions, so they show when the editor opens (Tweak, or a queued sketch), never on Quick song.
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
@@ -908,6 +931,7 @@
   };
   function useSketch(s, D) {
     var state = st(); if (!state || D.done) return;
+    D.fill = false; pruneFill(D);
     var r = rerate(D);
     if (!r.notes) { ui.toast('The sketch pad is empty. Tap some hits in first.'); return; }
     D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);

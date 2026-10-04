@@ -389,7 +389,7 @@
       { sections: ['verse', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 12, every: 2 }, { op: 'roll', from: 14 }]] },
       { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]] },
       { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 8 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]], partSections: ['verse'] }],
-    partFills: [null, null, null, 'pickup', 'pickup'],
+    partFills: [null, null, null, null, null],   // v1.3 review (Q2 = 1): no every-bar pickup on your part; Fills = the bar-4 drum fill on every seat
     swap4: ['chorus', 'bridge'], swap6: ['chorus', 'bridge'],
     flavors: [[], ['t-h8'], ['t-c8'], ['t-hq']],
     ops: {   // the time-keeping shapes the flavours use: everything on the hats first, then one shape, a crash on the one

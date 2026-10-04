@@ -188,8 +188,18 @@ async function seq() {
     await tap(page, 'cell-snare-15');
     const f1 = await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return { fb: p.fillBars.chorus[1][15], main: JSON.stringify(p.sections.chorus) }; });
     c.ok(f0.fill === '1' && f0.badge && (hadFill || f0.fb === f0.main) && f1.fb !== sn15 && f1.main === f0.main, '⋯ → Bar 4 fill: the grid edits the fill bar only, the tab wears a badge ' + JSON.stringify({ fill: f0.fill, badge: f0.badge, hadFill }));
+    c.ok(/Bar 4 fill/.test(await page.evaluate(() => document.querySelector('[data-testid="seq-coach"]').textContent)), 'the bubble says the grid is on the bar 4 fill');
     await openTools(page); await tap(page, 'btn-seq-fill');
     c.ok(await page.evaluate(() => document.querySelector('[data-testid="seq-grid"]').dataset.fill === '0' && !GG.debug('seq').fill), '⋯ → Back to the main bar');
+    // v1.3 review (D16): a peek (Bar 4 fill, then back, nothing painted) leaves no fillBars entry behind and no badge
+    await page.evaluate(() => { const D = GG.ui.get('seq').data; if (D.pat.fillBars) { delete D.pat.fillBars.verse; if (!Object.keys(D.pat.fillBars).length) delete D.pat.fillBars; } });
+    await tap(page, 'seq-tab-verse');
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    const pk0 = await page.evaluate(() => !!(GG.ui.get('seq').data.pat.fillBars && GG.ui.get('seq').data.pat.fillBars.verse) && GG.debug('seq').fill);
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    const pk1 = await page.evaluate(() => ({ fb: !!(GG.ui.get('seq').data.pat.fillBars && GG.ui.get('seq').data.pat.fillBars.verse), badge: !!document.querySelector('[data-testid="seq-tab-verse"] .seq-fb'), chorus: !!GG.ui.get('seq').data.pat.fillBars.chorus }));
+    c.ok(pk0 && !pk1.fb && !pk1.badge && pk1.chorus, 'a fill peek leaves nothing behind (the painted chorus fill stays) ' + JSON.stringify({ pk0, pk1 }));
+    await tap(page, 'seq-tab-chorus');
     // ⋯ → Beat for this section (D8): the 0.6.2 grooves as a sheet, pedal ones locked.
     await openTools(page); await tap(page, 'btn-seq-beat'); await waitScreen(page, 'seq-beat');
     const bt = await page.evaluate(() => ({ all: [...document.querySelectorAll('[data-testid^="seq-beat-"]')].map(b => ({ id: b.dataset.testid.replace('seq-beat-', ''), dis: b.disabled })),
@@ -1332,7 +1342,7 @@ async function layout() {
     await page.addStyleTag({ content: `:root{--safe-top:${INS.top}px !important;--safe-bot:${INS.bot}px !important}` });
     await ev(() => GG.prefs.set({ bigText: true }));
     await page.waitForFunction(() => document.documentElement.classList.contains('gg-big'));
-    for (const seat of ['drums', 'lead']) {
+    for (const seat of ['drums', 'rhythm', 'lead']) {   // (v1.3 review: + rhythm, the 6-row grid's header labels)
       await writeBlock(page, { seed: 616, bandId: 'hail_damage', seat });
       await page.waitForTimeout(250);
       const r = await ev(ins => {
@@ -1364,9 +1374,10 @@ async function layout() {
         const ch = q('[data-testid="seq-chords"]'), tg = q('.seq-toggle'), tabs = [...document.querySelectorAll('.seq-tabs .tab')];
         return { chords: ch ? rect(ch).right <= W2 + 1 && tg.scrollWidth <= tg.clientWidth + 1 : true, label: ch ? ch.textContent : '', tabs: tabs.every(t => t.scrollWidth <= t.clientWidth + 1),
           head: rect(q('[data-testid="btn-seq-close"]')).top >= ins.top - 1, foot: [...document.querySelectorAll('.full.seq .full-foot .btn')].every(b => rect(b).bottom <= H - ins.bot + 1),
-          over: [...document.querySelectorAll('#screens *')].filter(x => { const r = rect(x); return r.width && (r.right > W2 + 1 || r.left < -1); }).length };
+          over: [...document.querySelectorAll('#screens *')].filter(x => { const r = rect(x); return r.width && (r.right > W2 + 1 || r.left < -1); }).length,
+          lh: [...document.querySelectorAll('.seq-grid .lh')].filter(x => x.scrollWidth > x.clientWidth + 1).map(x => x.textContent) };
       }, INS);
-      c.ok(e.chords && e.tabs && e.head && e.foot && !e.over, seat + ' editor with insets + Bigger text: header clear of the notch, foot above the home bar, tabs + "' + e.label + '" fit, no overflow ' + JSON.stringify(e));
+      c.ok(e.chords && e.tabs && e.head && e.foot && !e.over && !e.lh.length, seat + ' editor with insets + Bigger text: header clear of the notch, foot above the home bar, tabs + "' + e.label + '" + grid column names fit, no overflow ' + JSON.stringify(e));
       await shot('seq_edit_insets_big_' + seat);
     }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));

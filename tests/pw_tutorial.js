@@ -125,6 +125,14 @@ async function weekOne(band) {
       return { text: t ? t.textContent.trim() : '', hint: D.editHint || D.hint || null, screen: D.screen }; });
     c.ok(tip.screen === 'quick' && !tip.hint && !/:/.test(tip.text), 'the first-Write tip stays quiet while w1_write runs: "' + tip.text + '"');
     c.ok(await page.evaluate(() => { const r = document.querySelector('[data-testid="btn-seq-tools"]').getBoundingClientRect(); return r.width >= 43.5; }), 'the ⋯ button the jam step points at is there');
+    // v1.3 review: after the lesson's Got it, the first Tweak shows the grid / chords instructions (the tip is worked out then)
+    await nextUntilLast(page, 'w1_write');
+    await tap(page, 'tut-next');
+    await page.waitForFunction(() => GG.debug('tutorial').active !== 'w1_write');
+    await tap(page, 'btn-quick-tweak');
+    const tw = await page.evaluate(() => { const t = document.querySelector('[data-testid="seq-tip"]'), D = GG.ui.get('seq').data;
+      return { text: t ? t.textContent.trim() : '', hint: D.hint ? D.hint.text : null, screen: D.screen }; });
+    c.ok(tw.screen === 'edit' && tw.hint && tw.text === tw.hint, 'the first Tweak after the lesson shows the grid tip: "' + tw.text + '"');
     await openTools(page);
     await tap(page, 'btn-seq-jam');
     await waitScreen(page, 'results');

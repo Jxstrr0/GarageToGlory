@@ -750,7 +750,9 @@ test('variety: the default recipe on 5 consecutive song slots of one career (D14
   for (const g of GENRES) for (const seat of SEATS) {
     const songs = [6, 7, 8, 9, 10].map(n => S.compose(g, { seed: songSeed(12345, n), gear: G4, seat })), sims = [];
     for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) {
-      if (J(songs[i]) === J(songs[j])) bad.push(`${g} ${seat} ${i}=${j}`);
+      // (v1.3 review: the notes only; p.recipe.seed differs per slot, so whole-pattern JSON could never be equal)
+      const notes = p => J([p.sections, p.part || null, p.fillBars || null, p.chords || null, p.arrangement]);
+      if (notes(songs[i]) === notes(songs[j])) bad.push(`${g} ${seat} ${i}=${j}`);
       sims.push(S.similarity(songs[i], songs[j], g));
     }
     if (Math.max(...sims) >= 0.9 || sims.filter(x => x >= 0.8).length > 1) bad.push(`${g} ${seat} ${sims.join(' ')}`);
