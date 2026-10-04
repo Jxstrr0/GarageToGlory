@@ -1520,4 +1520,59 @@ test('grooves: every preset validates for its gear; each signature preset groove
   ok(!/\b(USA|U\.S\.|America|American|United States|Texas|Nashville|Las Vegas|New York|California)\b/i.test(txt), 'no USA content');
 });
 
+// ---- v1.3 "Songwriter" (Lane S, plan_contract_1.3 §4.3): recipes, recipe bars / ops, slider labels, grooveFx, Quick coach lines, moods
+test('v1.3 grooves: 5 recipes per genre whose every block resolves; seat-safe words; slider labels; grooveFx shape; Quick coach lines; mood names + remaps', () => {
+  const GR = K.grooves, GENRES = ['metal', 'punk', 'rock', 'country'], SCAN = require('./seat_scan'), FX = K.grooveFx;
+  const SEC = ['verse', 'chorus', 'bridge'], LANES = Object.keys({ kick: 0, snare: 1, hat: 2, cymbal: 3, toms: 4, ride: 5 });
+  const OPS = ['fill', 'hits', 'clear', 'thin', 'mirror', 'bpm', 'pedal', 'roll', 'swap'];
+  const opOk = op => op && OPS.includes(op.op) && (op.lane == null || op.lane === 'all' || LANES.includes(op.lane)) && (op.op !== 'swap' || (LANES.includes(op.from) && LANES.includes(op.to)));
+  const MODS = ['lock', 'double', 'ring', 'call', 'sparse', 'eighths', 'busy', 'pickup', 'scratch', 'walk', 'octave', 'fifths'];
+  const opsFor = g => id => (GR[g].mods.find(m => m.id === id) || {}).ops || (GR[g].ops || {})[id] || ((FX.byGenre[g] || {}).ops || {})[id] || FX.ops[id];
+  const opList = (g, list) => (list || []).every(x => typeof x === 'string' ? !!opsFor(g)(x) && opsFor(g)(x).every(opOk) : opOk(x));
+  GENRES.forEach(g => {
+    const G = GR[g], R = G.recipes, bars = G.bars || {};
+    eq(R.length, 5, g + ': exactly 5 recipes');
+    eq(new Set(R.map(r => r.id)).size, 5, g + ': unique ids');
+    Object.keys(bars).forEach(id => ok(bars[id].length >= 4 && bars[id].every(l => /^[x.]{16}$/.test(l)) && !G.presets.some(p => p.id === id), g + ' bar ' + id));
+    const block = b => Array.isArray(b) && b.length && (G.presets.some(p => p.id === b[0]) || !!bars[b[0]]) && b.slice(1).every(id => !!opsFor(g)(id));
+    R.forEach(r => {
+      ok(/^[a-z0-9-]{1,24}$/.test(r.id) && r.name && r.desc && r.desc.length <= 28, g + ' ' + r.id + ': id / name / desc <= 28');
+      ok(!SCAN.drumWords(r.name + ' ' + r.desc), g + ' ' + r.id + ': seat-safe words (string seats see every card)');
+      const t = GG.songs.genre(g).tempo;
+      ok(r.bpm >= t[0] && r.bpm <= t[1] && ['short', 'classic', 'epic'].includes(r.arr), r.id + ': tempo inside the genre, arrangement');
+      ok(SEC.every(s => block(r.drums[s])), r.id + ': drums blocks resolve');
+      ok(Object.keys(r.alt || {}).every(s => SEC.includes(s) && r.alt[s].every(block)), r.id + ': alt blocks resolve');
+      ok(!r.dk || Object.keys(r.dk).every(s => SEC.includes(s) && r.dk[s].every(id => !!opsFor(g)(id))), r.id + ': dk ops resolve');
+      ok(['energy', 'mood', 'swing', 'fills'].every(k => Number.isInteger(r.sliders[k]) && r.sliders[k] >= 0 && r.sliders[k] <= 4), r.id + ': default stops');
+      const B = GG.songs.genre(g).backing, P = r.parts;
+      ok(SEC.every(s => Number.isInteger(P.prog[s]) && P.prog[s] < B.progressions[s].length && Number.isInteger(P.hook[s]) && P.hook[s] < B.hooks[s].length), r.id + ': prog / hook index into backing');
+      const modOk = m => m == null || (typeof m === 'string' ? MODS.includes(m) : Object.keys(m).every(seat => ['bass', 'rhythm', 'lead'].includes(seat) && MODS.includes(m[seat])));
+      ok(Object.values(P.mods || {}).every(modOk) && Object.values(P.alt || {}).every(a => a.every(modOk)), r.id + ': part mods are known');
+    });
+    eq(R.filter(r => r.pedal).length, g === 'metal' ? 1 : 0, g + ': pedal recipes (Gallop)');
+    ok(!R[0].pedal, g + ': the signature recipe needs no pedal');
+    ['energy', 'mood', 'swing', 'fills'].forEach(k => ok(G.sliders[k].length === 5 && G.sliders[k].every(x => x && x.length <= 20 && !SCAN.drumWords(x)), g + ' slider ' + k + ': 5 seat-safe labels'));
+    Object.keys(G.sliders.bySeat || {}).forEach(seat => { ok(seat === 'drums', g + ': only the drum seat gets its own labels'); });
+    ok(K.grooves.coach[g].quick.length && K.grooves.coach[g].quick.every(l => l.text.length <= 120 && !/:/.test(l.text) && new RegExp(l.role)), g + ': Quick coach lines (colon-free)');
+    const M = GG.songs.genre(g).backing.moods;
+    eq(new Set(M.map(m => m.id)).size, 5, g + ': five mood names');
+    M.forEach((m, i) => ok(!m.remap || (i !== GG.songs.nativeMood(g) && Object.keys(m.remap).every(k => +k >= 0 && +k <= 11 && Number.isInteger(m.remap[k]) && m.remap[k] >= 0 && m.remap[k] <= 11)), g + ' mood ' + m.id + ' remap'));
+    ok(M.some((m, i) => i !== GG.songs.nativeMood(g) && m.remap), g + ': moods remap chords');
+    ok(JSON.stringify(M[0].scale) !== JSON.stringify(M[GG.songs.nativeMood(g)].scale) || M[0].remap, g + ': rung 0 differs from the native one (scale or remap)');
+  });
+  ok(GR.coach.quick.length && GR.coach.quick.every(l => l.text.length <= 120 && !/:/.test(l.text) && !/lawn|French|neck/i.test(l.text) && new RegExp(l.role)), 'neutral Quick coach lines');
+  ok(GR.surprise && GR.surprise.name === 'Surprise me' && GR.surprise.desc.length <= 28 && !SCAN.drumWords(GR.surprise.desc), 'the Surprise me card');
+  // grooveFx: energy / partEnergy / fills / partFills x 5, flavours, ops; byGenre overrides the same keys
+  [FX].concat(GENRES.map(g => FX.byGenre[g] || {})).forEach((F, i) => {
+    const g = i ? GENRES[i - 1] : 'metal', at = i ? GENRES[i - 1] : 'global';
+    if (F.energy) ok(F.energy.length === 5 && F.energy.every(l => opList(g, l)), at + ' energy: 5 stops of known ops');
+    if (F.fills) ok(F.fills.length === 5 && !F.fills[0].sections.length && F.fills.every(f => f.sections.every(s => SEC.includes(s)) && opList(g, f.ops) && (f.alt || []).every(a => opList(g, a))), at + ' fills: 5 stops (stop 0 none)');
+    ['flavors', 'flavors2'].forEach(k => { if (F[k]) ok(F[k].length >= 2 && F[k].every(l => opList(g, l)), at + ' ' + k); });
+    if (F.ops) ok(Object.values(F.ops).every(l => l.every(opOk)), at + ' ops');
+    ['swap4', 'swap6'].forEach(k => { if (F[k]) ok(F[k].every(s => SEC.includes(s)), at + ' ' + k); });
+  });
+  ['partEnergy', 'partFills'].forEach(k => ok(FX[k].length === 5 && FX[k].every(x => x == null || [].concat(x).every(id => MODS.includes(id))), k + ': 5 stops of part mods'));
+  ok(FX.energy[2].length === 0, 'energy stop 2 = the recipe as written');
+});
+
 done('content');

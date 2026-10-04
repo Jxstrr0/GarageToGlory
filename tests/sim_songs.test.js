@@ -666,6 +666,21 @@ test('surprise: deterministic per seed, unlocked recipes only, values in range; 
   }
 });
 
+test('Q4: breakdown bars take a chord (a chip there is kept, played by chordsOf, named Custom); new songs start the breakdown on home', () => {
+  for (const g of GENRES) {
+    const B = GG.content.genres[g].backing, roles = B.roles.bridge, brk = roles.map((r, i) => r === 'break' ? i : -1).filter(i => i >= 0);
+    const a = S.compose(g, { seed: 3, gear: G4, seat: 'bass' });
+    brk.forEach(i => eq(a.chords.bridge[i], 0, g + ' compose: break bar ' + i + ' starts on home'));
+    if (!brk.length) continue;
+    const q = JSON.parse(J(a)); q.chords.bridge = q.chords.bridge.map((x, i) => brk.includes(i) ? 5 : x);
+    const c = S.sanitize(q, G4, g);
+    eq(c.chords.bridge, q.chords.bridge, g + ' a chip on a break bar is kept');
+    eq(S.chordsOf(c, 'bridge', g), q.chords.bridge, g + ' chordsOf plays it');
+    eq(S.progName(g, 'bass', 'bridge', c), 'Custom', g + ' named Custom');
+    eq(S.rate(c, g, G4).groove, S.rate(a, g, G4).groove, 'chords never move the groove');
+  }
+});
+
 // The §4.4 ceiling (S5 "rate by the notes only"), per genre x seat x gear; the table is in plan/v13_lane_s_report.md.
 test('ceiling (S5): (a) every recipe at its defaults >= 80 / 65; (b) >= 2 recipes reach top (90 / 85) over energy x fills (+ mood 0 / 4); (c) no single-slider extreme under 55 groove', () => {
   const seed = songSeed(7, 3), bad = [];
@@ -678,7 +693,7 @@ test('ceiling (S5): (a) every recipe at its defaults >= 80 / 65; (b) >= 2 recipe
       const pts = [{ mood: 0 }, { mood: 4 }];
       for (let e = 0; e <= 4; e++) for (let f = 0; f <= 4; f++) pts.push({ energy: e, fills: f });
       if (pts.some(pt => { const x = S.rate(S.compose(g, Object.assign({}, base, pt)), g, gear); return x.groove >= 90 && x.hook >= 85; })) tops++;
-      [['energy', 0], ['energy', 4], ['mood', 0], ['mood', 4], ['swing', 0], ['swing', 4], ['fills', 0], ['fills', 4], ['bpm', 0], ['bpm', 999]].forEach(([k, v]) => {
+      [['energy', 0], ['energy', 4], ['mood', 0], ['mood', 4], ['swing', 0], ['swing', 4], ['fills', 0], ['fills', 4], ['bpm', 1], ['bpm', 999]].forEach(([k, v]) => {
         const p = S.compose(g, Object.assign({}, base, { [k]: v })), x = S.rate(p, g, gear);
         if (x.groove < 55) bad.push(`(c) ${g} ${seat} ${gn} ${r.id} ${k}=${v} ${x.groove}`);
         if (S.validate(p, gear).length) bad.push(`valid (c) ${g} ${seat} ${gn} ${r.id} ${k}=${v}`);
