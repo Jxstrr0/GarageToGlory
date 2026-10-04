@@ -483,7 +483,9 @@ test('chordsOf: p.chords > the part\'s prog (not lead / drums) > the 1.2 hash pi
   eq(['metal', 'punk', 'rock'].map(g => S.chordLabel(g, null, 40, 0)), ['E5', 'E5', 'E5'], 'power-chord genres');
   eq([S.chordLabel('country', null, 43, 0), S.chordLabel('country', null, 43, 5), S.chordLabel('country', null, 43, 7), S.chordLabel('country', null, 43, 9), S.chordLabel('country', null, 43, 2)],
     ['G', 'C', 'D', 'E', 'A'], 'country in G (native rung): the band strums the rung third on every chord, the label says so (merge, Lane A hand-over 1)');
-  eq(S.chordLabel('country', 3, 43, 0), 'Gm', 'a minor rung'); eq(S.chordLabel('metal', 0, 41, 1), 'F♯5'); eq(S.NOTE.length, 12);
+  eq(S.chordLabel('country', 3, 43, 0), 'Gm', 'a minor rung'); eq(S.chordLabel('metal', 0, 41, 1), 'G♭5', 'F major rung: flats (merge: one spelling per song)'); eq(S.NOTE.length, 12);
+  eq([5, 7, 10, 4].map(s => S.chordLabel('rock', null, 44, s)), ['D♭5', 'E♭5', 'G♭5', 'C5'], 'an A♭ song spells with flats');
+  eq([1, 6, 8].map(s => S.chordLabel('metal', null, 40, s)), ['F5', 'A♯5', 'C5'], 'an E song spells with sharps');
 });
 
 test('hook gate: a v2 part without p.chords rates as its v1 source; with p.chords (bass / rhythm) the chord arrays decide; the lead keeps the index rule', () => {

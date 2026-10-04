@@ -905,8 +905,21 @@
   songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
   songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)
   var POWER_GENRES = { metal: 1, punk: 1, rock: 1 };
+  // v1.3 merge (owner check, readability): one spelling per song, so a progression never mixes sharps and flats (A♭ D♭ E♭, not
+  // A♭ C♯ E♭). The tonic keeps its NOTE name (= the key the game shows); a natural tonic spells by its major key (the relative
+  // major on a minor rung): F B♭ E♭ A♭ D♭ flats, G D A E B sharps, C as NOTE.
+  var SHARPS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'], FLATS = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
+  var FLAT_MAJ = { 5: 1, 10: 1, 3: 1, 8: 1, 1: 1 }, SHARP_MAJ = { 7: 1, 2: 1, 9: 1, 4: 1, 11: 1 };
+  function spelling(tonic, third) {
+    var t = ((tonic | 0) % 12 + 12) % 12, tn = songs.NOTE[t];
+    if (tn.indexOf('♭') >= 0) return FLATS;
+    if (tn.indexOf('♯') >= 0) return SHARPS;
+    var rel = third === 3 ? (t + 3) % 12 : t;
+    return FLAT_MAJ[rel] ? FLATS : SHARP_MAJ[rel] ? SHARPS : songs.NOTE;
+  }
   songs.chordLabel = function (genre, mood, tonic, semi) {
-    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
+    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12;
+    var name = spelling(tonic, rungOf(gid, mood).third)[(((tonic | 0) + s) % 12 + 12) % 12];
     if (POWER_GENRES[gid]) return name + '5';
     // v1.3 merge (Lane A hand-over 1): the band strums the rung's third on EVERY chord (30 third(o, 4), = part.rowPitch), so the
     // chip names what you hear: native country = major triads on every bar (as 1.2 plays vi), a minor rung = minor on every bar.

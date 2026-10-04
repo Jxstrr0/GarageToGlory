@@ -115,6 +115,7 @@ h1, h2, h3, p { margin: 0; }
 .modal h2 { font: 900 20px/1.15 var(--display); text-transform: uppercase; }
 .modal .sheet-foot, .modal .modal-foot { padding: 0; border: 0; display: flex; gap: 10px; }
 .modal-foot > .btn { flex: 1 1 0; }
+.modal .modal-foot.stack { flex-direction: column; align-items: stretch; } .modal-foot.stack > .btn { flex: 0 0 auto; }
 @keyframes gg-up { from { transform: translateY(40%); opacity: .4; } to { transform: none; opacity: 1; } }
 @keyframes gg-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes gg-pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -346,6 +347,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   display: flex; flex-direction: column; justify-content: center; }
 .seq-title:disabled { cursor: default; }
 .seq-title .caps { font-size: 11px; letter-spacing: .1em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 420px) { .seq-title .caps { letter-spacing: .03em; } }
 .seq-title .fr { font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* underline section tabs */
@@ -26001,8 +26003,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
   songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)
   var POWER_GENRES = { metal: 1, punk: 1, rock: 1 };
+  var SHARPS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'], FLATS = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
+  var FLAT_MAJ = { 5: 1, 10: 1, 3: 1, 8: 1, 1: 1 }, SHARP_MAJ = { 7: 1, 2: 1, 9: 1, 4: 1, 11: 1 };
+  function spelling(tonic, third) {
+    var t = ((tonic | 0) % 12 + 12) % 12, tn = songs.NOTE[t];
+    if (tn.indexOf('♭') >= 0) return FLATS;
+    if (tn.indexOf('♯') >= 0) return SHARPS;
+    var rel = third === 3 ? (t + 3) % 12 : t;
+    return FLAT_MAJ[rel] ? FLATS : SHARP_MAJ[rel] ? SHARPS : songs.NOTE;
+  }
   songs.chordLabel = function (genre, mood, tonic, semi) {
-    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
+    var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12;
+    var name = spelling(tonic, rungOf(gid, mood).third)[(((tonic | 0) + s) % 12 + 12) % 12];
     if (POWER_GENRES[gid]) return name + '5';
     return name + (rungOf(gid, mood).third === 3 ? 'm' : '');
   };
@@ -50939,6 +50951,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (d.text) s.body.appendChild(el('p.dim', d.text));
       var answered = false;
       function answer(v) { if (answered) return; answered = true; s.data._answer = v; ui.close(s.id); }
+      if (Math.max(String(d.no || 'Nope').length, String(d.yes || 'Yes').length) > 10) s.foot.classList.add('stack');
       ui.append(s.foot, [
         ui.btn('.btn.ghost', { testid: 'btn-confirm-no', onclick: function () { answer(false); } }, d.no || 'Nope'),
         ui.btn('.btn' + (d.danger ? '.danger' : '.primary'), { testid: 'btn-confirm-yes', onclick: function () { answer(true); } }, d.yes || 'Yes')
