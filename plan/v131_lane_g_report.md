@@ -26,8 +26,7 @@
   drums + bass, 2 bands: all within 0.05; determinism + reload between songs = uninterrupted; everything counts (finishGig state ==
   the same result played, minus the flags; 'gig:done' + achieve.gig ran; playLog untouched); playLog append / last 5 / auto-resolve
   not logged; **1.3.0 fingerprint**: played drums/bass x easy/hard results + states hash-equal to the 1.3.0 `22_sim_gig.js`.
-- Probe (768 gigs, 4 seats x 4 difficulties x 3 A x 2 ps x 8 careers, 2-song sets): worst |acc - A| 0.036, means within 0.02;
-  Auto-kick on drums worst 0.024. Cost: 5-65 ms per song in node (5-song gopher_hole sets).
+- Probe (768 gigs: 4 seats x 4 difficulties x 3 A x 2 ps x 8 careers): worst |acc - A| 0.036 (Auto-kick 0.024); 5-65 ms/song in node.
 - `pw_gig simulate` 18/18 at 390x844 + 440x956. Still green: node suite SUITE ALL PASS (compat_v12, save, build); pw_gig gig (390 +
   440), e2e, sync, bridge, seat, feel; pw_tutorial tut_w1 (4 bands); pw_rival scene/botb/final; Classic `META_ONLY=hash` pw_seq
   232/232. dist (local build, not committed) 5,231,223 B.
@@ -36,8 +35,7 @@
 - Lead / 02_contracts: document `simReason`, `simShow`, `liveGig.sim` ({ accuracy, jitterMs, from, n, acc, ps } while a simulation
   runs; liveGig has no sanitizer, it round-trips), `ui.gigSimMs`, testids `btn-gig-sim`, `gig-sim-no`, `gig-sim-why`,
   `gig-sim-progress`, `gig-simulated`, debug `gigui.sim`.
-- Owner shots: `tests/.cache/sim_set*.png`, `sim_progress*.png`, `sim_results*.png`, `sim_showdown*.png` (390 + `_440`).
+- Owner shots: `tests/.cache/sim_{set,progress,results,showdown}{,_440}.png`. No CSS hand-over (inline flex column in the foot).
 
 ## Gaps
-- Matching is by hit share; the Perfect share is fitted by timing spread and reads a few points high for a late-but-steady player.
-- No cancel once started (D4 / D8); a short set is lumpy per song (half a note), the gig lands within ~2 points.
+- Matched on hit share; the Perfect share reads a few points high for a late-but-steady player. No cancel once started (D4/D8).
