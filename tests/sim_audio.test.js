@@ -721,7 +721,8 @@ test('v1.2 feelPlan never moves steps / keeps lane order at 60-260 bpm (the time
 // ---- v1.3 "Songwriter" (plan_contract_1.3 §4.5, Lane A): chords, mood, swing, fills, part v2 in the timeline ------------
 const S13 = GG.songs, PT13 = GG.songs.part, FX13 = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'v12_songs.json'), 'utf8'));
 const brkSecs = g => { const R = G[g].backing.roles || {}; return C.SECTIONS.filter(n => (R[n] || []).indexOf('break') >= 0); };
-// neutral v1.3 fields: the native mood, swing 0, chords == the auto progression (sections without break bars), no fillBars
+// neutral v1.3 fields: the native mood, swing 0, chords == the auto progression (sections without break bars: there the last bar's
+// walk aims at the chips' home, see the Q4 breakdown test), no fillBars
 function neutral(q, g, o) {
   q.mood = S13.nativeMood(g); q.swing = 0;
   const ch = {}; C.SECTIONS.forEach(n => { if (q.sections[n] && brkSecs(g).indexOf(n) < 0) ch[n] = S13.chordsOf(q, n, g, o || { part: null }); });
@@ -774,6 +775,40 @@ test('v1.3 chords: the timeline plays songs.chordsOf (corpus x seat, parts too);
     eq(semi(first(a).midi, a.key.tonic), 0, g + ': 1.2 breakdown on the tonic');
     eq(semi(first(b).midi, b.key.tonic), 5, g + ': the chip moves the breakdown bar');
   }
+});
+
+// v1.3 review (Q4): an old metal / punk / rock song's breakdown bars play the tonic, so chordsOf reads home there; chips = chordsOf
+// then play bars 1-3 of the breakdown section exactly as 1.2 (bar 4: same notes, only the walk's lead-in may aim at the chips' home
+// instead of the unplayed raw chord), and one chip edit on bar 3 or 4 never moves bars 1-2.
+const barEv = (t, name, bars, shape) => {
+  const at = new Map(); t.events.forEach(e => { if (e.kind === 'step') at.set(Math.round(e.beat * 4), e); });
+  return t.events.filter(e => { if (e.kind === 'step') return false; const s = at.get(Math.floor(e.beat * 4 + 1e-6)); return s && s.section === name && bars.indexOf(s.bar) >= 0; })
+    .map(e => shape ? JSON.stringify([e.beat, e.kind, e.len, e.lane]) : JSON.stringify(e)).sort();
+};
+test('v1.3 chords Q4: breakdown sections: chips = chordsOf play the 1.2 bars; a chip edit on bar 3 / 4 keeps bars 1-2 as 1.2 (corpus x seat)', () => {
+  let n = 0, e = 0;
+  FX13.corpus.forEach((c, ci) => {
+    const g = c.genre, p = c.pat, part = p.part || null;
+    brkSecs(g).forEach(name => {
+      if (!p.sections[name] || p.arrangement.indexOf(name) < 0) return;
+      const brk = G[g].backing.roles[name].map((r, i) => r === 'break' ? i : -1).filter(i => i >= 0);
+      [undefined, 'drums', 'bass', 'rhythm', 'lead'].forEach(seat => {
+        const o = { genre: g, songId: 'c' + ci, seat, part: part || undefined }, q = JSON.parse(JSON.stringify(p));
+        q.chords = { [name]: S13.chordsOf(q, name, g, { part, seat }) };
+        brk.forEach(i => eq(q.chords[name][i], 0, c.id + ' ' + name + ' bar ' + (i + 1) + ': the breakdown reads home'));
+        const tp = A.timeline(p, o), tq = A.timeline(q, o), w = c.id + ' seat ' + seat + ' ' + name;
+        eq(barEv(tq, name, [0, 1, 2]), barEv(tp, name, [0, 1, 2]), w + ': chips = chordsOf play bars 1-3 as 1.2');
+        eq(barEv(tq, name, [3], true), barEv(tp, name, [3], true), w + ': bar 4 keeps its notes');
+        n++;
+        [2, 3].forEach(k => {
+          const q2 = JSON.parse(JSON.stringify(q)); q2.chords[name][k] = (q2.chords[name][k] + 5) % 12;
+          eq(barEv(A.timeline(q2, o), name, brk), barEv(tp, name, brk), w + ': editing bar ' + (k + 1) + ' keeps the breakdown bars as 1.2');
+          e++;
+        });
+      });
+    });
+  });
+  ok(n >= 500 && e === 2 * n, 'breakdown cases: ' + n + ', edits: ' + e);
 });
 
 test('v1.3 mood: non-native = the parallel key (mode, scale, thirds move; the key note stays); native = absent', () => {

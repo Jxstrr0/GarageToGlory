@@ -444,13 +444,15 @@ test('moods: 5 rungs per genre, the native rung is today\'s mode / scale (metal 
   }
 });
 
-// The timeline's chords (30:2430 progression + 30:2936 the part's prog), mirrored: chordsOf must agree when p.chords is absent.
+// The timeline's chords (30:2430 progression + 30:2936 the part's prog + 30 'break' bars on the tonic without chips), mirrored:
+// chordsOf must agree when p.chords is absent (v1.3 review: the break mask, so an old metal / punk / rock bridge's chips are home there).
 function chords12(p, name, g, part, seat) {
   const B = GG.content.genres[g].backing, q = S.sanitize(p, null, null, true), sec = q.sections[name], list = B.progressions[name] || [[0, 0, 0, 0]];
   let prog = list[GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length];
   const pt = part && part.sections && (!part.seat || part.seat === seat) ? part.sections[name] : null;
   if (seat !== 'lead' && seat !== 'drums' && pt && isFinite(pt.prog) && pt.prog !== null) prog = list[Math.max(0, Math.min(list.length - 1, pt.prog | 0))];
-  return prog;
+  const roles = (B.roles || {})[name] || [];
+  return prog.map((x, bar) => roles.length && roles[bar % roles.length] === 'break' ? 0 : x);
 }
 test('chordsOf: p.chords > the part\'s prog (not lead / drums) > the 1.2 hash pick; chordLabel; progChords (break bars home); progName', () => {
   for (const g of GENRES) {
@@ -467,6 +469,12 @@ test('chordsOf: p.chords > the part\'s prog (not lead / drums) > the 1.2 hash pi
         { verse: [1, 2, 3, 4], chorus: [5, 6, 7, 8], bridge: [9, 10, 11, 0] }[name], 'p.chords wins');
     }));
     const B = GG.content.genres[g].backing;
+    // v1.3 review (Q4): an old song's breakdown bars read home (30 plays the tonic there without chips), from the hash and the part
+    pats.forEach(p => (B.roles.bridge || []).forEach((r, bar) => { if (r !== 'break') return;
+      eq(S.chordsOf(p, 'bridge', g)[bar], 0, g + ' hash: breakdown bar ' + (bar + 1) + ' home');
+      const pt = S.part.full(g, 'rhythm', p); pt.sections.bridge.prog = B.progressions.bridge.length - 1;
+      eq(S.chordsOf(p, 'bridge', g, { part: pt, seat: 'rhythm' })[bar], 0, g + ' part: breakdown bar ' + (bar + 1) + ' home');
+    }));
     B.progressions.bridge.forEach((pr, i) => {
       const pc = S.progChords(g, 'bridge', i, S.nativeMood(g));
       pc.forEach((x, bar) => eq(x, B.roles.bridge[bar] === 'break' ? 0 : pr[bar], g + ' progChords bridge ' + i + ' bar ' + bar));

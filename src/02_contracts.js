@@ -450,7 +450,7 @@
      Scratch alone = a dead strum at the root (mute, dead: true); bass the lowest set row -> root + [-5, 0, third, 7, seventh,
      12]; lead the highest set row -> scale degree [deg0 - 1, deg0..deg4, deg4 + 1] of the mood's scale.
    Sim (21, pure, genre explicit): swingBeat(beat, s) ; chordsOf(p, name, genre, { part, seat }?) -> [4] (p.chords > the part's
-     prog (seat != lead) > the 1.2 hash pick) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
+     prog (seat != lead) > the 1.2 hash pick; without p.chords break bars read 0 = the tonic 30 plays there) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
      progChords(genre, name, i, mood) -> [4] (break bars home, Q4 = 1) ; progName(genre, seat, name, p, opts) ;
      moodOf(genre, mood) -> rung | null (null = absent / native) ; nativeMood(genre) ; part.rowsOf(pt) -> row count ;
      part.rowNames(pt) ; part.upgrade(pt) -> v2 copy (same sound, same ratings) ; part.view(pt) (v2 as is, else upgrade) ;

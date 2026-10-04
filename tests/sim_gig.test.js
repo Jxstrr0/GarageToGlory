@@ -518,13 +518,20 @@ test('v1.3 neutral fields chart exactly as 1.2 (drum chart x difficulties, seat 
   for (const g of CA.GENRES) {
     const p = full13(g), q = JSON.parse(JSON.stringify(p)), ch = {};
     q.mood = GA.songs.nativeMood(g); q.swing = 0;
-    CA.SECTIONS.forEach(n => { if (brk13(g).indexOf(n) < 0) ch[n] = GA.songs.chordsOf(q, n, g); });
+    // v1.3 review (Q4): break sections too (chordsOf reads home on their breakdown bars); the drum chart is exact; a seat chart is
+    // exact except the breakdown section's bar 4, where the walk's lead-in may aim at the chips' home (same notes, same times).
+    CA.SECTIONS.forEach(n => { ch[n] = GA.songs.chordsOf(q, n, g); });
     q.chords = ch;
+    brk13(g).forEach(n => { const R = GA.songs.genre(g).backing.roles[n]; R.forEach((r, i) => { if (r === 'break') eq(ch[n][i], 0, g + ' ' + n + ' bar ' + (i + 1) + ' reads home'); }); });
+    const lastBrk = n => brk13(g).indexOf(n.section) >= 0 && n.bar === CA.BARS_PER_SECTION - 1;
+    const exact = c => JSON.stringify(Object.assign({}, c, { notes: c.notes.filter(n => !lastBrk(n)) }));
+    const shape = c => JSON.stringify(c.notes.filter(lastBrk).map(n => [n.t, n.section, n.entry, n.bar, n.step, n.kind, n.len]));
     for (const d of ['easy', 'normal', 'hard', 'expert']) {
       eq(JSON.stringify(GA.gig.chart(song13(q), { difficulty: d, extras: GA.RNG(3) })), JSON.stringify(GA.gig.chart(song13(p), { difficulty: d, extras: GA.RNG(3) })), g + ' drums ' + d);
       for (const seat of ['bass', 'rhythm', 'lead']) {
-        const o = { seat, genre: g, difficulty: d, lanes: 5, runs: true };
-        eq(JSON.stringify(GA.gig.chart(song13(q), o)), JSON.stringify(GA.gig.chart(song13(p), o)), g + ' ' + seat + ' ' + d);
+        const o = { seat, genre: g, difficulty: d, lanes: 5, runs: true }, cq = GA.gig.chart(song13(q), o), cp = GA.gig.chart(song13(p), o);
+        eq(exact(cq), exact(cp), g + ' ' + seat + ' ' + d);
+        eq(shape(cq), shape(cp), g + ' ' + seat + ' ' + d + ': the breakdown section\'s last bar keeps its notes');
       }
     }
   }

@@ -392,6 +392,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   color: var(--dim); font: 13px var(--font); cursor: pointer; white-space: nowrap; }
 .seq-chords b { color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .seq-chords .sc-k, .seq-chords .sc-dn { flex: 0 0 auto; } .seq-chords:disabled { cursor: default; } .seq-chords:disabled .sc-dn { display: none; }
+/* v1.3 review: the name reads in full (two lines inside the 48 px row, a slimmer toggle; Bigger text on a narrow phone drops the
+   "Chords:" / "Hook:" prefix), so "the tritone drop" never ends in an ellipsis at 390 */
+.seq-chords b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; text-align: right; overflow-wrap: anywhere; }
+.seq-layers .seg { min-width: 0; padding: 0 10px; } .seq-toggle { gap: 8px; }
+@media (max-width: 420px) { html.gg-big .seq-chords .sc-k { display: none; } }
 /* four chord chips (bar n + chord; the home chord outlined green; the playing bar lit) */
 .seq-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; flex: 0 0 44px; height: 44px; }
 .seq-chip { min-height: 44px; min-width: 0; padding: 0 4px; border: 1.5px solid transparent; border-radius: 10px; background: var(--panel); color: var(--text); cursor: pointer;

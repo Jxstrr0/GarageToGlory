@@ -861,7 +861,7 @@
   // progChords and progName; Lane S the Quick song (recipes / sliders / surprise / compose, below the chord helpers).
   //   swingBeat(beat, s) -> the swung beat (identity when !s or the beat is whole; per beat 0 -> 0, 1/2 -> 1/2 + C.SWING[s], 1 -> 1)
   //   chordsOf(p, name, genre, { part, seat }?) -> [4] semitones: p.chords[name] > the part's prog (seat != lead, as the
-  //     timeline) > the 1.2 hash pick (30 progression). Never writes.
+  //     timeline) > the 1.2 hash pick (30 progression); without p.chords 'break' bars read 0 (the tonic 30 plays). Never writes.
   //   chordLabel(genre, mood, tonic, semi) -> 'E5' (power-chord genres) | 'Em' | 'E' (the triad in the rung's scale)
   //   progChords(genre, name, i, mood) -> [4]: backing.progressions[name][i] remapped by the rung, break bars home (Q4 = 1)
   //   progName(genre, seat, name, p, opts) -> the chip menu's label: bass / rhythm the progNames entry whose progChords equal
@@ -887,11 +887,19 @@
     return r || { mode: B.mode || 'minor', scale: B.scale || [0, 2, 3, 5, 7, 8, 10], third: genre === 'metal' ? 3 : 4, seventh: 10 };
   }
   // The chords one section plays and where they came from: { chords: [4], from: 'chords'|'part'|'hash', i (progression index | null) }.
+  // v1.3 review: without p.chords, a 'break'-role bar (metal / punk / rock bridge bars 1-2) plays the tonic (30: root = role ===
+  // 'break' && !chips ? key.tonic : ...), so the hash / part chords read 0 there (= progChords' mask; .i unchanged), and the chips
+  // and a chip edit's seed name what the band plays (Q4: only the bar you pick moves).
+  function breakMask(B, name, a) {
+    var roles = (B.roles || {})[name] || [], out = [];
+    for (var bar = 0; bar < a.length; bar++) out.push(roles.length && roles[bar % roles.length] === 'break' ? 0 : a[bar]);
+    return out;
+  }
   function chordSource(p, name, genre, opts) {
     var q = songs.sanitize(p && p.pattern || p, null, null, true), B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name] || [[0, 0, 0, 0]];
     if (q.chords && q.chords[name]) return { chords: q.chords[name].slice(), from: 'chords', i: null, q: q };
     opts = opts || {};
-    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: list[i].slice(), from: 'hash', i: i, q: q };
+    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: breakMask(B, name, list[i]), from: 'hash', i: i, q: q };
     var pt = opts.part !== undefined ? opts.part : q.part, want = opts.seat !== undefined ? opts.seat : null;
     if (want === 'drums' || !pt || typeof pt !== 'object' || !pt.sections || typeof pt.sections !== 'object') return out;   // (30 partOf)
     var seat = PART_ROWS[want] ? want : pt.seat, x = pt.sections[name];
@@ -900,7 +908,7 @@
     var pl = (B.progressions || {})[name];
     if (!pl || !pl.length) return out;
     var j = Math.max(0, Math.min(pl.length - 1, x.prog | 0));
-    return { chords: pl[j].slice(), from: 'part', i: j, q: q };
+    return { chords: breakMask(B, name, pl[j]), from: 'part', i: j, q: q };
   }
   songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
   songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)

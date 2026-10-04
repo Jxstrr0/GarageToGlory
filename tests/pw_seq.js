@@ -1306,6 +1306,26 @@ async function layout() {
     c.ok((await audit(page)).length === 0, 'picker layout ' + (await audit(page)).join('; '));
     await shot('seq_picker');
     await page.evaluate(() => GG.ui.close('seq-pick'));
+    // v1.3 review: every progression / hook name the game can show (4 genres x 3 sections x bass / rhythm / lead) reads in full in
+    // the real "Chords: <name> ▾" / "Hook: <name> ▾" button (two lines at most inside the 48 px row, no ellipsis); segments >= 44 px.
+    const FIT = () => {
+      const ch = document.querySelector('[data-testid="seq-chords"]'), b = ch.querySelector('b'), k = ch.querySelector('.sc-k'), keep = [k.textContent, b.textContent], cut = [];
+      let n = 0;
+      [['Chords:', 'rhythm'], ['Chords:', 'bass'], ['Hook:', 'lead']].forEach(([pre, seat]) => {
+        k.textContent = pre;
+        GG.contracts.GENRES.forEach(g => ['verse', 'chorus', 'bridge'].forEach(sec => GG.songs.part.choices(g, seat, sec).forEach(c => {
+          b.textContent = c.name; n++;
+          if (b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1) cut.push(pre + ' ' + c.name);
+        })));
+      });
+      k.textContent = keep[0]; b.textContent = keep[1];
+      const tg = document.querySelector('.seq-toggle');
+      return { n, cut: [...new Set(cut)], btn: Math.round(ch.getBoundingClientRect().height), row: Math.round(tg.getBoundingClientRect().height), fits: tg.scrollWidth <= tg.clientWidth + 1,
+        segs: [...document.querySelectorAll('.seq-layers .seg')].map(x => Math.round(Math.min(x.getBoundingClientRect().width, x.getBoundingClientRect().height))) };
+    };
+    const fit0 = await ev(FIT);
+    c.ok(fit0.n >= 60 && fit0.cut.length === 0 && fit0.btn >= 44 && fit0.row === 48 && fit0.fits && fit0.segs.every(x => x >= 44),
+      W + ' every chords / hook name reads in full (' + fit0.n + ' names, cut: ' + fit0.cut.slice(0, 4).join(' | ') + ') ' + JSON.stringify(Object.assign({}, fit0, { cut: fit0.cut.length })));
 
     // Notch + home bar insets, Bigger text on.
     const INS = BIG ? { top: 59, bot: 34 } : { top: 47, bot: 34 };
@@ -1332,9 +1352,12 @@ async function layout() {
       await shot('seq_quick_insets_big_' + seat);
       await tap(page, 'btn-quick-tweak');
       if (seat === 'lead') {
-        // the longest progression name of the genre (bass/rhythm lists) on the verse: the picker label ellipsizes inside the row
+        // the longest hook name of the genre on the verse (the real label), then every chords / hook name in the button (Bigger text)
         await ev(() => { const D = GG.ui.get('seq').data, B = GG.songs.genre(GG.state.genre).backing; let best = 0, n = 0;
           (B.hooks.verse || []).forEach((h, i) => { const l = String(h.name || '').length; if (l > n) { n = l; best = i; } }); D.pat.part.sections.verse.hook = best; GG.ui.get('seq').rerender(); });
+        const fb = await ev(FIT);
+        c.ok(fb.n >= 60 && fb.cut.length === 0 && fb.btn >= 44 && fb.row === 48 && fb.fits && fb.segs.every(x => x >= 44),
+          W + ' Bigger text + insets: every chords / hook name reads in full (cut: ' + fb.cut.slice(0, 4).join(' | ') + ') ' + JSON.stringify(Object.assign({}, fb, { cut: fb.cut.length })));
       }
       const e = await ev(ins => {
         const W2 = document.documentElement.clientWidth, H = document.documentElement.clientHeight, q = s => document.querySelector(s), rect = el => el.getBoundingClientRect();
