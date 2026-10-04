@@ -37910,7 +37910,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       mute: !!o.mute, trem: !!o.trem, ring: !!o.ring, up: !!o.up, bend: +o.bend || 0 };
     if (o.dead) { ev.dead = true; ev.mute = true; }   // v1.3 Scratch: a dead strum (KS art 'dead'; Classic: the mute recipe)
     if (Array.isArray(o.strum)) ev.strum = o.strum.slice(0, 4);
-    else if (kind === 'clean' && g === 'country') ev.strum = o.mute ? [0, 7] : [0, o.third === 3 ? 3 : 4, 7];   // (v1.3: o.third, a minor mood's preview)
+    else if (kind === 'clean' && g === 'country') ev.strum = ev.mute ? [0, 7] : [0, o.third === 3 ? 3 : 4, 7];   // (v1.3: a dead strum mutes; o.third, a minor mood's preview)
     if (o.vel != null && !A.isClassic()) ev.vel = clamp01(o.vel);   // v1.2 (F5, Lane F): your tap's velocity rides on the note (playNote's velocity path; partners + repeats copy it)
     var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
     var src = r.collect = [], b = seatBook = { n: 0, ends: [] };
@@ -37956,6 +37956,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       SEATS.notes[fn]++;
       SEATS.last = { fn: fn, kind: h.kind, midi: h.midi, when: when == null ? null : when, t: h.t, end: h.end, hold: h.hold, n: h.n,
         vel: o.vel != null && !A.isClassic() ? clamp01(o.vel) : null };   // (v1.2: the note's vel, null = the 1.1 path)
+      if (o.dead) SEATS.last.dead = true;   // (v1.3: a Scratch note)
       return h;
     };
   }
