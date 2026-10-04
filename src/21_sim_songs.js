@@ -959,7 +959,8 @@
   //     parts.prog at the mood; (6) a string seat: part.full(.., 2) + parts.prog / hook + the recipe's part mod + grooveFx
   //     partEnergy / partFills, onsets capped 12 / 14 / 12; (7) K = C.QUICK.k seeded variants (a pick from the recipe's alt
   //     drums per section, a hat -> ride swap (4 lanes: hat -> crash where grooveFx.swap4 allows), the fill's alternate, the part
-  //     mod's alternates); the rng picks one of those rated groove >= 80 and hook >= 65 (none: the best groove + hook). The plans
+  //     mod's alternates, two flavours per section = grooveFx.flavors[i] then flavors2[j]); the rng picks one of those rated groove >= 80
+  //     and hook >= 65 (none: the best groove + hook). The plans
   //     are drawn before any slider is read, so the same args give the same JSON and a slider moved and moved back gives the same
   //     song. Pure: never reads GG.state; genre always explicit.
   function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
@@ -1017,18 +1018,22 @@
     return { recipe: r.id, energy: rng.int(1, 4), mood: rng.int(0, 4), swing: rng.chance(0.5) ? d.swing : rng.int(0, 4), fills: rng.int(0, 4),
       bpm: tempoOf(gid, r.bpm + 5 * rng.int(-3, 3)) };
   };
-  // Recipe building blocks: a block = [barId, ...opIds]; ops resolve in grooves[g].mods, grooves[g].ops, then grooveFx.ops ('bpm'
+  // Recipe building blocks: a block = [barId, ...opIds]; ops resolve in grooves[g].mods, grooves[g].ops, grooveFx.byGenre[g].ops, then grooveFx.ops ('bpm'
   // ops are skipped: the Tempo slider owns the tempo).
-  function opsById(GR, id) {
-    var m = null, F = GG.content.grooveFx || {};
+  function opsById(GR, id, gid) {
+    var m = null, F = GG.content.grooveFx || {}, B = F.byGenre && F.byGenre[gid];
     (GR.mods || []).forEach(function (x) { if (!m && x.id === id) m = x.ops; });
     if (!m && GR.ops && Array.isArray(GR.ops[id])) m = GR.ops[id];
+    if (!m && B && B.ops && Array.isArray(B.ops[id])) m = B.ops[id];
     if (!m && F.ops && Array.isArray(F.ops[id])) m = F.ops[id];
     return m || [];
   }
-  function applyAll(bar, ops, g, gid) {
-    var out = bar.slice(), dummy = { bpm: 120 };
-    (ops || []).forEach(function (op) { if (op && op.op !== 'bpm') applyOp(out, op, g, dummy, gid); });
+  function applyAll(bar, ops, g, gid) {   // ops: OPs, or op ids (strings) resolved by opsById
+    var out = bar.slice(), dummy = { bpm: 120 }, GR = null;
+    (ops || []).forEach(function (op) {
+      if (typeof op === 'string') { out = applyAll(out, opsById(GR = GR || songs.grooves(gid), op, gid), g, gid); return; }
+      if (op && op.op !== 'bpm') applyOp(out, op, g, dummy, gid);
+    });
     return out;
   }
   function blockBar(GR, spec, g, gid) {
@@ -1038,12 +1043,13 @@
     if (!src && GR.bars && Array.isArray(GR.bars[spec[0]])) src = GR.bars[spec[0]];
     if (!src) return null;
     var bar = padBar(src, g.lanes).slice(0, g.lanes);
-    spec.slice(1).forEach(function (id) { bar = applyAll(bar, opsById(GR, id), g, gid); });
+    spec.slice(1).forEach(function (id) { bar = applyAll(bar, opsById(GR, id, gid), g, gid); });
     return bar;
   }
   function drawPlan(rng) {   // one variant's seeded choices (drawn before the sliders are read)
     return { v: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)], swap: rng.int(0, 999), fill: rng.int(0, 999),
-      pm: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)] };
+      pm: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)], fl: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)],
+      fl2: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)] };
   }
   function orLane(a, b) { var s = ''; for (var i = 0; i < STEPS; i++) s += on(a, i) || on(b, i) ? 'x' : '.'; return s; }
   function capRows(rows, cap) {   // too many onsets: drop the odd 16ths first, then the off-beat 8ths, latest first
@@ -1074,11 +1080,14 @@
   }
   function composeOne(gid, R, g, seat, s, bpm, arr, plan, seed) {
     var GR = songs.grooves(gid), sig = songs.signature(gid, g), p = { bpm: bpm, lanes: g.lanes, sections: {}, arrangement: arr.slice() };
-    var en = stopOf(FX(gid, 'energy'), s.energy);
+    var en = stopOf(FX(gid, 'energy'), s.energy), FL = FX(gid, 'flavors'), FL2 = FX(gid, 'flavors2');
     SECTIONS.forEach(function (name, si) {
       var opts = [R.drums && R.drums[name]].concat((R.alt && R.alt[name]) || []).filter(Array.isArray);
       var bar = (opts.length && blockBar(GR, opts[plan.v[si] % opts.length], g, gid)) || sig.sections[name].slice();
-      if (g.doubleKick && R.dk && R.dk[name]) R.dk[name].forEach(function (id) { bar = applyAll(bar, opsById(GR, id), g, gid); });
+      var fl = Array.isArray(FL) && FL.length ? FL[plan.fl[si] % FL.length] : null, fl2 = Array.isArray(FL2) && FL2.length ? FL2[plan.fl2[si] % FL2.length] : null;
+      if (Array.isArray(fl)) bar = applyAll(bar, fl, g, gid);   // the section's flavours (seeded picks per variant: the time shape, then
+      if (Array.isArray(fl2)) bar = applyAll(bar, fl2, g, gid);   // a kick / snare touch)
+      if (g.doubleKick && R.dk && R.dk[name]) R.dk[name].forEach(function (id) { bar = applyAll(bar, opsById(GR, id, gid), g, gid); });
       p.sections[name] = applyAll(bar, en, g, gid);
     });
     var sw = plan.swap % 5, swName = SECTIONS[sw], swOk = FX(gid, g.lanes > RIDE ? 'swap6' : 'swap4') || [];
