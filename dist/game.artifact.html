@@ -6510,11 +6510,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         stabs: [1, 6, 1, 3],        // chug accents / doom answers above the low string: b2, tritone, minor third
         arps: [[0, 3, 7, 12, 15, 12, 7, 3], [1, 5, 8, 13, 17, 13, 8, 5], [0, 3, 5, 8, 12, 8, 5, 3], [0, 3, 7, 10, 12, 10, 7, 3]],   // Dana's solos
         keys: [-2, 2], mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10],
-        moods: [{ id: 'heroic', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 11 },
-          { id: 'minor', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
-          { id: 'phrygian', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
+        moods: [{ id: 'heroic', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 11, remap: { 1: 5, 3: 4, 6: 7, 8: 9 } },
+          { id: 'grim', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10, remap: { 1: 3, 6: 7 } },
+          { id: 'midnight', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8, 10], third: 3, seventh: 10 },
           { id: 'sinister', mode: 'phrygian dominant', scale: [0, 1, 4, 5, 7, 8, 10], third: 4, seventh: 10 },
-          { id: 'abyss', mode: 'locrian', scale: [0, 1, 3, 5, 6, 8, 10], third: 3, seventh: 10 }], moodNative: 2,   // v1.3 Mood
+          { id: 'abyss', mode: 'locrian', scale: [0, 1, 3, 5, 6, 8, 10], third: 3, seventh: 10, remap: { 7: 6 } }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         vox: { hits: [[0, 0, 'scream', 24], [2, 0, 'scream', 24], [3, 8, 'scream', 19, true]], drop: ['growl', 12], brk: [[1, 8, 'growl', 7]],
           resp: [[1, 8, 'gang', 19]], held: [3, 8, 'held', 19, 8], count: ['shout', 12], whoa: [] }
@@ -6587,11 +6587,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 0, 0, 7, 7, 5, 5]], keys: [-5, 2], mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11],
-        moods: [{ id: 'sunny', mode: 'lydian', scale: [0, 2, 4, 6, 7, 9, 11], third: 4, seventh: 11 },
-          { id: 'major', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 10 },
-          { id: 'gritty', mode: 'mixolydian', scale: [0, 2, 4, 5, 7, 9, 10], third: 4, seventh: 10 },
-          { id: 'bitter', mode: 'dorian', scale: [0, 2, 3, 5, 7, 9, 10], third: 3, seventh: 10 },
-          { id: 'gloomy', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10 }], moodNative: 1,   // v1.3 Mood
+        moods: [{ id: 'sunny', mode: 'lydian', scale: [0, 2, 4, 6, 7, 9, 11], third: 4, seventh: 11, remap: { 3: 2 } },
+          { id: 'cheery', mode: 'major', scale: [0, 2, 4, 5, 7, 9, 11], third: 4, seventh: 10 },
+          { id: 'gritty', mode: 'mixolydian', scale: [0, 2, 4, 5, 7, 9, 10], third: 4, seventh: 10, remap: { 7: 10 } },
+          { id: 'bitter', mode: 'dorian', scale: [0, 2, 3, 5, 7, 9, 10], third: 3, seventh: 10, remap: { 5: 3, 7: 10 } },
+          { id: 'gloomy', mode: 'minor', scale: [0, 2, 3, 5, 7, 8, 10], third: 3, seventh: 10, remap: { 5: 8, 7: 10 } }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         twoChords: [0, 5],   // Benny's entire vocabulary, relative to the bar's chord (I and IV)
         amp: { gain: 9, level: 0.085, pan: 0.62, preHp: 120, mid: [1100, 0.9, 5], presence: [3000, 1.1, 2], lp: 5200, detune: 6, lag: 0.009 },
@@ -6666,11 +6666,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 7, 0, 10, 0, 7, 5]], keys: [-5, 2], mode: 'major', scale: [0, 3, 5, 6, 7, 10],
-        moods: [{ id: 'sunny', mode: 'major', scale: [0, 2, 4, 5, 7, 9], third: 4, seventh: 11 },
-          { id: 'bright', mode: 'major blues', scale: [0, 2, 3, 4, 7, 9], third: 4, seventh: 10 },
+        moods: [{ id: 'sunny', mode: 'major', scale: [0, 2, 4, 5, 7, 9], third: 4, seventh: 11, remap: { 3: 4, 10: 7 } },
+          { id: 'bright', mode: 'major blues', scale: [0, 2, 3, 4, 7, 9], third: 4, seventh: 10, remap: { 10: 9 } },
           { id: 'bluesy', mode: 'major', scale: [0, 3, 5, 6, 7, 10], third: 4, seventh: 10 },
-          { id: 'moody', mode: 'minor', scale: [0, 2, 3, 5, 7, 10], third: 3, seventh: 10 },
-          { id: 'dark', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8], third: 3, seventh: 10 }], moodNative: 2,   // v1.3 Mood
+          { id: 'moody', mode: 'minor', scale: [0, 2, 3, 5, 7, 10], third: 3, seventh: 10, remap: { 9: 8 } },
+          { id: 'dark', mode: 'phrygian', scale: [0, 1, 3, 5, 7, 8], third: 3, seventh: 10, remap: { 5: 1, 9: 8 } }], moodNative: 2,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['break', 'break', 'solo', 'solo'] },
         amp: { gain: 5.5, level: 0.09, pan: 0.45, preHp: 90, mid: [800, 0.8, 3], presence: [2800, 1, 3], lp: 6000, detune: 4, lag: 0.012, ring: 0.2 },
         vox: { hits: [[0, 0, 'yeah', 12], [2, 0, 'yeah', 19]], drop: null,
@@ -6743,11 +6743,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           ]
         },
         riffs: [[0, 0, 7, 0, 5, 0, 7, 0]], keys: [-3, 4], mode: 'major', scale: [0, 2, 4, 7, 9],
-        moods: [{ id: 'sweet', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 11 },
-          { id: 'major', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 10 },
-          { id: 'dusty', mode: 'mixolydian', scale: [0, 2, 4, 7, 10], third: 4, seventh: 10 },
-          { id: 'lonesome', mode: 'minor', scale: [0, 3, 5, 7, 10], third: 3, seventh: 10 },
-          { id: 'heartbreak', mode: 'minor', scale: [0, 2, 3, 7, 8], third: 3, seventh: 10 }], moodNative: 1,   // v1.3 Mood
+        moods: [{ id: 'sweet', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 11, remap: { 7: 2, 9: 5 } },
+          { id: 'sunny', mode: 'major', scale: [0, 2, 4, 7, 9], third: 4, seventh: 10 },
+          { id: 'dusty', mode: 'mixolydian', scale: [0, 2, 4, 7, 10], third: 4, seventh: 10, remap: { 7: 10 } },
+          { id: 'lonesome', mode: 'minor', scale: [0, 3, 5, 7, 10], third: 3, seventh: 10, remap: { 2: 3, 9: 8 } },
+          { id: 'heartbreak', mode: 'minor', scale: [0, 2, 3, 7, 8], third: 3, seventh: 10, remap: { 5: 8, 9: 8 } }], moodNative: 1,   // v1.3 Mood
         roles: { verse: ['sparse', 'sparse', 'sparse', 'sparse'], chorus: ['full', 'full', 'full', 'full'], bridge: ['sparse', 'sparse', 'solo', 'solo'] },
         amp: { gain: 1.6, level: 0.2, pan: 0.3, bright: [2800, 1.2, 6], lp: 7000, slap: 0.11, slapFb: 0.18, slapLv: 0.5, slapPan: -0.35 },
         fiddle: { body: [[290, 4, 1.3], [520, 3.5, 1], [1150, 3, 0.8], [2700, 2.5, 0.55]], bow: 0.22, vib: [5.6, 0.009], pan: -0.35 },
@@ -6999,6 +6999,254 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         name: [{ role: 'acoustic', text: 'Name it after a highway. Or a truck. Or a highway a truck is on.' },
           { role: 'fiddle', text: 'Let Travis name it. It will have a truck in it. I have made my peace with this.' }]
       }
+    }
+  };
+  /* ---- v1.3 "Songwriter" (plan_contract_1.3 §4.3, Lane S): the Quick song. New keys only (presets, mods, tempo and the
+     coach steps above are 1.2's). Per genre:
+       recipes: [{ id, name, desc (<= 28 chars, seat-safe), pedal?, bpm, arr: 'short'|'classic'|'epic',
+                   drums: { verse|chorus|bridge: [barId, ...opIds] }, alt: { <section>: [[barId, ...opIds], ...] } (the seeded
+                   variants compose picks from), dk?: { <section>: [opIds] } (added once the double kick is owned),
+                   sliders: { energy, mood, swing, fills } (the card's defaults),
+                   parts: { prog: { verse, chorus, bridge }, hook: { verse, chorus, bridge }, mods?: { <section>: modId | { <seat>: modId } },
+                            alt?: { <section>: [modId | { <seat>: modId } | null, ...] } } }]   exactly 5; the first = the signature recipe
+       bars: { id: [laneStr x 4..6] }   recipe-only bars (barId resolves in presets first, then here)
+       ops: { id: [OP] }                recipe-only OP lists (opId resolves in mods, then here, then grooveFx.ops)
+       sliders: { energy|mood|swing|fills: [5 stop labels], bySeat?: { <seat>: { <slider>: [5] } } }
+     OPs: the 0.6.2 ones + { op: 'roll', from, to?, every? } (a fill: toms when the kit has them, else the snare; the hats, ride
+     and crash stop under it) + { op: 'swap', from, to, alt? } (one lane's hits move to another). Coach: coach.quick (neutral)
+     + coach[genre].quick (+ zz_seats bySeat.quick): the Quick song bubble (colon-free: the first Write shows it). ---- */
+  var X = '................', Q = GG.content.grooves;
+  var K8 = 'x.x.x.x.x.x.x.x.', S24 = '....x.......x...', H8 = 'x.x.x.x.x.x.x.x.', H16 = 'xxxxxxxxxxxxxxxx', HQ = 'x...x...x...x...', C1 = 'x...............';
+  Q.surprise = { name: 'Surprise me', desc: 'Roll the dice' };
+  Q.coach.quick = [{ role: 'guitar', text: 'Pick a recipe, push the sliders around and hit Play. Save it when it makes you nod.' },
+    { role: 'bass', text: 'Start from a recipe and tweak it after, or do not. It already works.' }];
+
+  Q.metal.bars = {
+    cr: [K8, S24, X, H8], crq: [K8, S24, H8, HQ], hb16: [K8, S24, H16, 'x.......x.......'], hbq: [K8, S24, HQ, 'x.......x.......'],
+    blasth: [K8, H8, H8, C1], blast16: [K8, H8, H16, C1], doomc: [K8, S24, H8, HQ], doomv: [K8, S24, HQ, 'x.......x.......'],
+    doomb: [K8, '....x.......x...', X, HQ], push: [K8, '....x.......x.x.', H8, C1], thrc: [K8, H8, X, 'x.x.x.x.x.x.x.x.'],
+    gal: ['x.xxx.xxx.xxx.xx', S24, H8, C1], galc: ['x.xxx.xxx.xxx.xx', S24, X, H8], galb: [H16, S24, HQ, 'x.......x.......']
+  };
+  Q.metal.ops = { hat16: [{ op: 'fill', lane: 'hat', every: 1 }], hatq: [{ op: 'thin', lane: 'hat', keep: 4 }], crash3: [{ op: 'hits', lane: 'cymbal', steps: [8] }],
+    ghost: [{ op: 'hits', lane: 'snare', steps: [14] }], dk: [{ op: 'pedal', lane: 'kick' }], crashride: [{ op: 'swap', from: 'hat', to: 'cymbal' }],
+    gallop: [{ op: 'clear', lane: 'kick' }, { op: 'hits', lane: 'kick', steps: [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15] }] };
+  Q.metal.recipes = [
+    { id: 'neck-snapper', name: 'Neck-snapper', desc: 'Fast, tight, furious', bpm: 180, arr: 'classic',
+      drums: { verse: ['headbanger'], chorus: ['cr'], bridge: ['blast'] },
+      alt: { verse: [['hb16'], ['hbq'], ['blasth'], ['headbanger', 'crash3']], chorus: [['crq'], ['blast'], ['headbanger', 'hat16'], ['cr', 'ghost']],
+        bridge: [['blasth'], ['doomc'], ['blast16']] },
+      dk: { verse: ['dk'], chorus: ['dk'], bridge: ['dk'] }, sliders: { energy: 2, mood: 2, swing: 0, fills: 1 },
+      parts: { prog: { verse: 1, chorus: 0, bridge: 0 }, hook: { verse: 1, chorus: 0, bridge: 0 }, mods: { verse: { rhythm: 'lock', bass: 'lock' } },
+        alt: { verse: [{ rhythm: 'scratch', bass: 'double', lead: 'call' }, null], chorus: [{ bass: 'octave', lead: 'call' }, null], bridge: [{ rhythm: 'ring', lead: 'pickup' }, null] } } },
+    { id: 'doom-crawl', name: 'Doom crawl', desc: 'Slow, heavy, no mercy', bpm: 75, arr: 'classic',
+      drums: { verse: ['doomv'], chorus: ['doomc'], bridge: ['doomb'] },
+      alt: { verse: [['doomv', 'ghost'], ['hbq', 'crash3']], chorus: [['cr'], ['crq', 'ghost']], bridge: [['blast'], ['doomc', 'hatq']] },
+      dk: { verse: ['dk'], chorus: ['dk'], bridge: ['dk'] }, sliders: { energy: 1, mood: 4, swing: 0, fills: 1 },
+      parts: { prog: { verse: 0, chorus: 1, bridge: 3 }, hook: { verse: 0, chorus: 2, bridge: 2 }, mods: { verse: { rhythm: 'ring', bass: 'ring' }, bridge: { rhythm: 'ring' } },
+        alt: { verse: [{ lead: 'sparse' }, null], chorus: [{ rhythm: 'lock' }, null] } } },
+    { id: 'thrash-attack', name: 'Thrash attack', desc: 'Breakneck and proud of it', bpm: 200, arr: 'short',
+      drums: { verse: ['headbanger'], chorus: ['thrc'], bridge: ['blasth'] },
+      alt: { verse: [['push'], ['hb16']], chorus: [['blast'], ['cr', 'ghost']], bridge: [['blast'], ['blast16']] },
+      dk: { verse: ['dk'], chorus: ['dk'], bridge: ['dk'] }, sliders: { energy: 3, mood: 3, swing: 0, fills: 2 },
+      parts: { prog: { verse: 4, chorus: 4, bridge: 1 }, hook: { verse: 2, chorus: 1, bridge: 1 }, mods: { verse: { rhythm: 'lock', bass: 'lock' } },
+        alt: { verse: [{ rhythm: 'scratch', lead: 'double' }, null], chorus: [{ bass: 'double' }, null] } } },
+    { id: 'stadium-anthem', name: 'Stadium anthem', desc: 'Fists up, lighters out', bpm: 140, arr: 'epic',
+      drums: { verse: ['headbanger'], chorus: ['crq'], bridge: ['doomc'] },
+      alt: { verse: [['hbq'], ['headbanger', 'crash3']], chorus: [['cr'], ['crq', 'ghost']], bridge: [['blasth'], ['doomb']] },
+      dk: { verse: ['dk'], chorus: ['dk'], bridge: ['dk'] }, sliders: { energy: 2, mood: 0, swing: 0, fills: 2 },
+      parts: { prog: { verse: 2, chorus: 2, bridge: 2 }, hook: { verse: 0, chorus: 0, bridge: 2 }, mods: { chorus: { rhythm: 'ring' } },
+        alt: { verse: [{ lead: 'call', bass: 'walk' }, null], bridge: [{ rhythm: 'ring' }, null] } } },
+    { id: 'gallop', name: 'Gallop', desc: 'Da-ga-da at full tilt', pedal: true, bpm: 165, arr: 'classic',
+      drums: { verse: ['gal'], chorus: ['galc'], bridge: ['galb'] },
+      alt: { verse: [['gal', 'hatq'], ['gal', 'crash3']], chorus: [['galc', 'ghost'], ['gal', 'hat16']], bridge: [['blast', 'gallop'], ['galb', 'crash3']] },
+      sliders: { energy: 3, mood: 1, swing: 0, fills: 1 },
+      parts: { prog: { verse: 3, chorus: 3, bridge: 1 }, hook: { verse: 2, chorus: 1, bridge: 1 }, mods: { verse: { rhythm: 'lock', bass: 'lock' }, chorus: { rhythm: 'lock' } },
+        alt: { verse: [{ lead: 'double' }, null], chorus: [{ bass: 'lock' }, null] } } }
+  ];
+  Q.metal.sliders = { energy: ['Lumbering', 'Steady chug', 'Headbang', 'Frenzied', 'Unholy'], mood: ['Heroic', 'Grim', 'Midnight', 'Sinister', 'Abyss'],
+    swing: ['Straight', 'Slight lurch', 'Lurch', 'Shuffle', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'All of them'] };
+  Q.coach.metal.quick = [{ role: 'vocals', text: 'Pick a recipe. Neck-snapper is the one. Slide Mood toward Abyss and I bring the screams.' },
+    { role: 'guitar', text: 'Doom crawl if you are tired, Thrash attack if you had coffee. Then hit Play.' }];
+
+  Q.punk.bars = {
+    sk8: ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', X, 'x.x.x.x.x.x.x.x.'], skr: ['x...x...x...x...', '..x...x...x...x.', X, 'x.x.x.x.x.x.x.x.'],
+    db4: ['x.x...x.x.x...x.', '....x.x.....x.x.', H8, C1], db4c: ['x.x...x.x.x...x.', '....x.x.....x.x.', X, 'x.x.x.x.x.x.x.x.'],
+    two: ['x...x...x...x...', '..x.x.....x.x...', H8, C1], twoc: ['x...x...x...x...', '..x.x.....x.x...', X, 'x.x.x.x.x.x.x.x.'],
+    pogo: ['x...x...x...x...', 'x.x.x.x.x.x.x.x.', H8, C1], pogoc: ['x.x.x...x.x.x...', '..x...x...x...x.', H8, 'x.......x.......'],
+    pit: ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', H8, C1], pitc: ['x.x...x.x.x...x.', '..x.x.x...x.x.x.', X, 'x.x.x.x.x.x.x.x.'],
+    skq: ['x...x...x...x...', '..x...x...x...x.', HQ, C1]
+  };
+  Q.punk.ops = { crash3: [{ op: 'hits', lane: 'cymbal', steps: [8] }], hatq: [{ op: 'thin', lane: 'hat', keep: 4 }], crashride: [{ op: 'swap', from: 'hat', to: 'cymbal' }],
+    kick8: [{ op: 'hits', lane: 'kick', steps: [2, 10] }] };
+  Q.punk.recipes = [
+    { id: 'three-chord-sprint', name: 'Three-chord sprint', desc: 'Loud, fast, done by lunch', bpm: 190, arr: 'short',
+      drums: { verse: ['skank'], chorus: ['sk8'], bridge: ['two'] },
+      alt: { verse: [['db4'], ['two'], ['skank', 'kick8'], ['pit']], chorus: [['skr'], ['db4c'], ['pogo', 'crash3'], ['twoc']], bridge: [['skq'], ['db4'], ['hardcore']] },
+      sliders: { energy: 2, mood: 1, swing: 0, fills: 1 },
+      parts: { prog: { verse: 0, chorus: 0, bridge: 0 }, hook: { verse: 0, chorus: 0, bridge: 1 },
+        alt: { verse: [{ rhythm: 'scratch', bass: 'octave', lead: 'call' }, null], chorus: [{ lead: 'double', bass: 'pickup' }, null], bridge: [{ rhythm: 'ring' }, null] } } },
+    { id: 'laundromat-d-beat', name: 'Laundromat D-beat', desc: 'Spin cycle on high', bpm: 185, arr: 'classic',
+      drums: { verse: ['db4'], chorus: ['db4c'], bridge: ['skq'] },
+      alt: { verse: [['db4', 'crash3']], chorus: [['pitc']], bridge: [['two']] }, sliders: { energy: 2, mood: 3, swing: 0, fills: 1 },
+      parts: { prog: { verse: 2, chorus: 1, bridge: 1 }, hook: { verse: 2, chorus: 0, bridge: 0 }, alt: { verse: [{ bass: 'double' }, null] } } },
+    { id: 'pogo-party', name: 'Pogo party', desc: 'Everybody up and bouncing', bpm: 175, arr: 'short',
+      drums: { verse: ['pogo'], chorus: ['pogoc'], bridge: ['floor'] },
+      alt: { verse: [['pogo', 'crash3']], chorus: [['sk8']], bridge: [['skq']] }, sliders: { energy: 2, mood: 0, swing: 1, fills: 2 },
+      parts: { prog: { verse: 1, chorus: 2, bridge: 0 }, hook: { verse: 1, chorus: 1, bridge: 0 }, mods: { chorus: { lead: 'call' } } } },
+    { id: 'circle-pit', name: 'Circle pit', desc: 'Faster than the bylaw allows', bpm: 220, arr: 'short',
+      drums: { verse: ['pit'], chorus: ['pitc'], bridge: ['hardcore'] },
+      alt: { verse: [['skank']], chorus: [['sk8']], bridge: [['two']] }, sliders: { energy: 3, mood: 2, swing: 0, fills: 2 },
+      parts: { prog: { verse: 0, chorus: 1, bridge: 1 }, hook: { verse: 0, chorus: 2, bridge: 1 }, alt: { verse: [{ rhythm: 'scratch' }, null] } } },
+    { id: 'skate-rat', name: 'Skate rat', desc: 'Kickflips and scraped knees', bpm: 205, arr: 'classic',
+      drums: { verse: ['two'], chorus: ['twoc'], bridge: ['skank'] },
+      alt: { verse: [['skank']], chorus: [['skr']], bridge: [['db4']] }, sliders: { energy: 3, mood: 1, swing: 0, fills: 3 },
+      parts: { prog: { verse: 1, chorus: 2, bridge: 0 }, hook: { verse: 1, chorus: 2, bridge: 1 }, mods: { verse: { bass: 'walk' } } } }
+  ];
+  Q.punk.sliders = { energy: ['Lazy Sunday', 'Downstrokes', 'Fast', 'Faster', 'Fastest'], mood: ['Sunny', 'Cheery', 'Gritty', 'Bitter', 'Gloomy'],
+    swing: ['Straight', 'Bouncy', 'Skanking', 'Swinging', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Chaos'] };
+  Q.coach.punk.quick = [{ role: 'vocals', text: 'Pick a recipe. Three-chord sprint, obviously. Push Energy up until the landlord knocks.' },
+    { role: '^guitar$', text: 'All five recipes have two chords in them somewhere. I checked. Hit Play.' }];
+
+  Q.rock.bars = {
+    arv: ['x.......x.......', S24, H8, C1], arc: ['x.....x.x.......', S24, X, 'x.x.x.x.x.x.x.x.'], arc2: ['x.......x.x.....', S24, H8, 'x.......x.......'],
+    ghost: ['x.......x.......', '....x.......x.x.', H8, C1], push: ['x.....x.x.......', S24, H8, C1], lift: ['x.......x.x.....', S24, X, 'x.x.x.x.x.x.x.x.'],
+    lw: ['x.......x.......', S24, H8, X], lwc: ['x.......x.......', S24, X, 'x.x.x.x.x.x.x.x.'], lwb: ['x.......x.......', S24, HQ, '..x...x...x...x.'],
+    boog: ['x.....x.x.....x.', S24, H8, C1], boogc: ['x.....x.x.....x.', S24, X, 'x.x.x.x.x.x.x.x.'],
+    st: ['x.x.....x.x.....', S24, H8, C1], stc: ['x.x.....x.x.....', S24, X, 'x.x.x.x.x.x.x.x.'], split: ['x.......x.......', S24, HQ, '..x...x...x...x.'],
+    hw: ['x.......x.x.....', S24, H8, C1], hwc: ['x.x.....x.x.....', S24, X, 'x.x.x.x.x.x.x.x.']
+  };
+  Q.rock.ops = { crash3: [{ op: 'hits', lane: 'cymbal', steps: [8] }], crashride: [{ op: 'swap', from: 'hat', to: 'cymbal' }], ghost: [{ op: 'hits', lane: 'snare', steps: [14] }] };
+  Q.rock.recipes = [
+    { id: 'arena-anthem', name: 'Arena anthem', desc: 'Big chorus, bigger hair', bpm: 125, arr: 'classic',
+      drums: { verse: ['arv'], chorus: ['arc'], bridge: ['split'] },
+      alt: { verse: [['ghost'], ['push'], ['hw'], ['split', 'crash3']], chorus: [['lift'], ['arc2', 'crashride'], ['stc'], ['boogc']], bridge: [['arv', 'crashride'], ['halftime'], ['st']] },
+      sliders: { energy: 2, mood: 2, swing: 0, fills: 1 },
+      parts: { prog: { verse: 0, chorus: 0, bridge: 0 }, hook: { verse: 0, chorus: 0, bridge: 1 }, mods: { chorus: { rhythm: 'ring' } },
+        alt: { verse: [{ rhythm: 'fifths', bass: 'walk', lead: 'call' }, null], chorus: [{ bass: 'octave', lead: 'double' }, null], bridge: [{ rhythm: 'ring', lead: 'pickup' }, null] } } },
+    { id: 'lighter-waver', name: 'Lighter-waver', desc: 'Slow, huge, a bit teary', bpm: 100, arr: 'epic',
+      drums: { verse: ['lw'], chorus: ['lwc'], bridge: ['lwb'] },
+      alt: { verse: [['lw', 'ghost']], chorus: [['arc']], bridge: [['split']] }, sliders: { energy: 1, mood: 3, swing: 0, fills: 1 },
+      parts: { prog: { verse: 1, chorus: 1, bridge: 1 }, hook: { verse: 1, chorus: 2, bridge: 1 }, mods: { verse: { rhythm: 'ring', bass: 'ring' }, chorus: { rhythm: 'ring' } } } },
+    { id: 'bar-boogie', name: 'Bar boogie', desc: 'Sticky floors, loose hips', bpm: 115, arr: 'classic',
+      drums: { verse: ['boog'], chorus: ['boogc'], bridge: ['arv'] },
+      alt: { verse: [['boog', 'crash3']], chorus: [['arc']], bridge: [['split']] }, sliders: { energy: 2, mood: 1, swing: 3, fills: 1 },
+      parts: { prog: { verse: 1, chorus: 2, bridge: 1 }, hook: { verse: 2, chorus: 1, bridge: 0 }, mods: { verse: { bass: 'walk' } } } },
+    { id: 'bleacher-stomp', name: 'Bleacher stomp', desc: 'Boom-boom-clap, all of you', bpm: 118, arr: 'short',
+      drums: { verse: ['st'], chorus: ['stc'], bridge: ['arv'] },
+      alt: { verse: [['st', 'crash3']], chorus: [['lift']], bridge: [['split']] }, sliders: { energy: 2, mood: 2, swing: 0, fills: 2 },
+      parts: { prog: { verse: 2, chorus: 1, bridge: 0 }, hook: { verse: 0, chorus: 1, bridge: 0 }, mods: { verse: { rhythm: 'lock', bass: 'lock' } } } },
+    { id: 'highway-driver', name: 'Highway driver', desc: 'Windows down, eyes front', bpm: 145, arr: 'classic',
+      drums: { verse: ['hw'], chorus: ['hwc'], bridge: ['arv'] },
+      alt: { verse: [['arv']], chorus: [['lift']], bridge: [['split']] }, sliders: { energy: 3, mood: 1, swing: 0, fills: 2 },
+      parts: { prog: { verse: 0, chorus: 1, bridge: 0 }, hook: { verse: 1, chorus: 1, bridge: 1 }, mods: { verse: { rhythm: 'double' } } } }
+  ];
+  Q.rock.sliders = { energy: ['Slow burn', 'Cruising', 'Arena', 'Big', 'Showboat'], mood: ['Sunny', 'Bright', 'Bluesy', 'Moody', 'Dark'],
+    swing: ['Straight', 'A strut', 'Boogie', 'Shuffle', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Big finish'],
+    bySeat: { drums: { fills: ['None', 'A few', 'Some', 'Plenty', 'Drum solo, sorry'] } } };
+  Q.coach.rock.quick = [{ role: 'vocals', text: 'Pick a recipe. Arena anthem. It is always Arena anthem. Then make it louder.' },
+    { role: 'bass', text: 'Pick one, slide Energy, hit Play. If it sounds like 1985, Chase will be happy.' }];
+
+  Q.country.bars = {
+    tr12: ['x.......x.......', 'xxx.xxx.xxx.xxx.', '....x.......x...', X], tr12b: ['x.......x.......', '.xxx.xxx.xxx.xxx', '....x.......x...', X],
+    trc: ['x...x...x...x...', H16, H8, C1], trc2: ['x.....x.x.......', H16, H8, C1], trg: ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', X],
+    trgc: ['x.......x.....x.', H16, 'x.x.x.x.x.x.x.x.', C1], tw: ['x.......x.......', 'xx.xxx.xxx.xxx.x', '....x.......x...', X],
+    twc: ['x...x...x...x...', 'xxxxxxxx.xxxxxxx', H8, C1], sw: ['x.......x.......', 'xxx.xxx.xxx.xxx.', 'x...x...x...x...', X],
+    swc: ['x.......x.....x.', H16, H8, C1], bb: ['x...x...x...x...', H16, '....x.......x...', X], bbc: ['x...x...x...x...', H16, H8, C1],
+    ps: ['x.......x.......', 'x.xxx.xxx.xxx.xx', '....x.......x...', X], psc: ['x.....x.x.......', 'xxxxxxxxxxxxxxxx', H8, C1]
+  };
+  Q.country.ops = { kick3: [{ op: 'hits', lane: 'kick', steps: [14] }], hat8: [{ op: 'fill', lane: 'hat', every: 2 }] };
+  Q.country.recipes = [
+    { id: 'train-song', name: 'Train song', desc: 'Chugga-chugga, all aboard', bpm: 112, arr: 'classic',
+      drums: { verse: ['tr12'], chorus: ['trc'], bridge: ['trg'] },
+      alt: { verse: [['tr12b'], ['train'], ['tw'], ['trg', 'kick3']], chorus: [['trc2'], ['trgc'], ['twc'], ['bbc']], bridge: [['tr12b'], ['train', 'hat8'], ['sw']] },
+      sliders: { energy: 2, mood: 1, swing: 0, fills: 1 },
+      parts: { prog: { verse: 0, chorus: 0, bridge: 1 }, hook: { verse: 0, chorus: 0, bridge: 1 },
+        alt: { verse: [{ bass: 'walk', rhythm: 'fifths', lead: 'call' }, null], chorus: [{ lead: 'double', bass: 'octave' }, null], bridge: [{ rhythm: 'ring', lead: 'pickup' }, null] } } },
+    { id: 'legion-two-step', name: 'Legion two-step', desc: 'Partners up, mind the punch', bpm: 95, arr: 'classic',
+      drums: { verse: ['tw'], chorus: ['twc'], bridge: ['tr12'] },
+      alt: { verse: [['tw', 'kick3']], chorus: [['trc']], bridge: [['trg']] }, sliders: { energy: 1, mood: 1, swing: 2, fills: 1 },
+      parts: { prog: { verse: 1, chorus: 1, bridge: 1 }, hook: { verse: 1, chorus: 2, bridge: 0 }, mods: { verse: { bass: 'walk' } } } },
+    { id: 'sad-waltz', name: 'Sad waltz', desc: 'Slow dance, wet eyes', bpm: 85, arr: 'classic',
+      drums: { verse: ['sw'], chorus: ['swc'], bridge: ['tr12b'] },
+      alt: { verse: [['tr12']], chorus: [['trc2']], bridge: [['ps']] }, sliders: { energy: 0, mood: 3, swing: 1, fills: 0 },
+      parts: { prog: { verse: 2, chorus: 2, bridge: 0 }, hook: { verse: 2, chorus: 2, bridge: 0 }, mods: { verse: { rhythm: 'ring' }, chorus: { rhythm: 'ring' } } } },
+    { id: 'barn-burner', name: 'Barn burner', desc: 'Fiddle on fire, boots on', bpm: 120, arr: 'short',
+      drums: { verse: ['bb'], chorus: ['bbc'], bridge: ['train'] },
+      alt: { verse: [['train']], chorus: [['twc']], bridge: [['trg']] }, sliders: { energy: 3, mood: 2, swing: 0, fills: 2 },
+      parts: { prog: { verse: 2, chorus: 1, bridge: 0 }, hook: { verse: 1, chorus: 1, bridge: 1 }, mods: { verse: { rhythm: 'double' } } } },
+    { id: 'porch-swing', name: 'Porch swing', desc: 'Iced tea and a slow creak', bpm: 88, arr: 'short',
+      drums: { verse: ['ps'], chorus: ['psc'], bridge: ['tw'] },
+      alt: { verse: [['tr12b']], chorus: [['swc']], bridge: [['sw']] }, sliders: { energy: 1, mood: 0, swing: 3, fills: 1 },
+      parts: { prog: { verse: 0, chorus: 2, bridge: 1 }, hook: { verse: 1, chorus: 0, bridge: 1 }, mods: { verse: { lead: 'sparse' } } } }
+  ];
+  Q.country.sliders = { energy: ['Porch', 'Easy', 'Two-step', 'Rolling', 'Barn burner'], mood: ['Sweet', 'Sunny', 'Dusty', 'Lonesome', 'Heartbreak'],
+    swing: ['Straight', 'A lilt', 'Shuffle', 'Swing', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Hoedown'] };
+  Q.coach.country.quick = [{ role: 'acoustic', text: 'Pick a recipe. Train song if you want them dancing, Sad waltz if you want them calling their mothers.' },
+    { role: 'lead guitar', text: 'Slide Feel toward Swing. Back in 1979 everything swung. Even the tractors.' }];
+
+  GG.content.grooveFx = {
+    energy: [[{ op: 'thin', lane: 'hat', keep: 4 }, { op: 'thin', lane: 'ride', keep: 4 }, { op: 'clear', lane: 'toms' }],
+      [{ op: 'thin', lane: 'hat', keep: 2 }, { op: 'thin', lane: 'ride', keep: 2 }], [],
+      [{ op: 'hits', lane: 'cymbal', steps: [8] }, { op: 'hits', lane: 'toms', steps: [14, 15] }],
+      [{ op: 'hits', lane: 'cymbal', steps: [8] }, { op: 'hits', lane: 'snare', steps: [14] }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }]],
+    partEnergy: ['sparse', 'eighths', null, 'double', ['double', 'octave']],
+    fills: [{ sections: [], ops: [] },
+      { sections: ['verse'], ops: [{ op: 'roll', from: 14 }], alt: [[{ op: 'roll', from: 12, every: 2 }]] },
+      { sections: ['verse', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 12, every: 2 }, { op: 'roll', from: 14 }]] },
+      { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]] },
+      { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 8 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]], partSections: ['verse'] }],
+    partFills: [null, null, null, 'pickup', 'pickup'],
+    swap4: ['chorus', 'bridge'], swap6: ['chorus', 'bridge'],
+    flavors: [[], ['t-h8'], ['t-c8'], ['t-hq']],
+    ops: {   // the time-keeping shapes the flavours use: everything on the hats first, then one shape, a crash on the one
+      't-h8': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'thin', lane: 'hat', keep: 2 }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'hits', lane: 'cymbal', steps: [0] }],
+      't-c8': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'thin', lane: 'hat', keep: 2 }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'swap', from: 'hat', to: 'ride', alt: 'cymbal' },
+        { op: 'hits', lane: 'cymbal', steps: [0] }],
+      't-h16': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'fill', lane: 'hat', every: 1 }, { op: 'hits', lane: 'cymbal', steps: [0] }],
+      't-hq': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'thin', lane: 'hat', keep: 4 }, { op: 'fill', lane: 'hat', every: 4 }, { op: 'hits', lane: 'cymbal', steps: [0, 2, 6, 10, 14] }],
+      't-off': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'clear', lane: 'hat', steps: [0, 4, 8, 12] }, { op: 'hits', lane: 'cymbal', steps: [0, 4, 8, 12] }],
+      't-h8c4': [{ op: 'swap', from: 'cymbal', to: 'hat' }, { op: 'thin', lane: 'hat', keep: 2 }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'hits', lane: 'cymbal', steps: [0, 4, 8, 12] }]
+    },
+    byGenre: {
+      metal: { energy: [[{ op: 'thin', lane: 'hat', keep: 4 }, { op: 'thin', lane: 'ride', keep: 4 }, { op: 'thin', lane: 'snare', keep: 4 }, { op: 'clear', lane: 'toms' }],
+        [{ op: 'thin', lane: 'hat', keep: 2 }, { op: 'thin', lane: 'snare', keep: 2 }], [],
+        [{ op: 'hits', lane: 'cymbal', steps: [8] }, { op: 'hits', lane: 'snare', steps: [14] }],
+        [{ op: 'fill', lane: 'hat', every: 1 }, { op: 'pedal', lane: 'kick' }, { op: 'hits', lane: 'snare', steps: [14] }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }]],
+        flavors: [['t-h8'], ['t-c8'], ['t-h16'], ['t-hq'], ['t-off']],
+        flavors2: [[], [{ op: 'fill', lane: 'snare', every: 2 }], [{ op: 'hits', lane: 'snare', steps: [14] }], [{ op: 'clear', lane: 'kick', steps: [14] }, { op: 'hits', lane: 'snare', steps: [10] }],
+          [{ op: 'thin', lane: 'snare', keep: 4 }, { op: 'hits', lane: 'snare', steps: [0, 8] }]] },
+      punk: { energy: [[{ op: 'thin', lane: 'hat', keep: 4 }, { op: 'thin', lane: 'ride', keep: 4 }, { op: 'thin', lane: 'kick', keep: 4 }, { op: 'clear', lane: 'toms' }],
+        [{ op: 'thin', lane: 'kick', keep: 4 }, { op: 'thin', lane: 'snare', keep: 2 }], [],
+        [{ op: 'hits', lane: 'cymbal', steps: [8] }, { op: 'hits', lane: 'kick', steps: [10] }],
+        [{ op: 'hits', lane: 'cymbal', steps: [0, 8] }, { op: 'fill', lane: 'snare', every: 2, from: 0 }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }]],
+        flavors: [['t-h8'], ['t-c8'], ['t-hq'], ['t-off']],
+        flavors2: [[], [{ op: 'hits', lane: 'kick', steps: [10] }], [{ op: 'hits', lane: 'snare', steps: [0, 8] }], [{ op: 'clear', lane: 'kick', steps: [4, 12] }, { op: 'hits', lane: 'kick', steps: [6, 14] }]] },
+      rock: { energy: [[{ op: 'thin', lane: 'kick', keep: 8 }, { op: 'thin', lane: 'snare', keep: 4 }, { op: 'clear', lane: 'toms' }],
+        [{ op: 'thin', lane: 'kick', keep: 4 }, { op: 'thin', lane: 'snare', keep: 4 }], [],
+        [{ op: 'hits', lane: 'kick', steps: [10] }, { op: 'hits', lane: 'cymbal', steps: [8] }],
+        [{ op: 'hits', lane: 'kick', steps: [6, 10] }, { op: 'hits', lane: 'cymbal', steps: [0, 8] }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }]],
+        swap4: ['chorus'],
+        flavors: [['t-h8'], ['t-c8'], ['t-hq'], ['t-off']],
+        flavors2: [[], [{ op: 'hits', lane: 'kick', steps: [10] }], [{ op: 'hits', lane: 'kick', steps: [6] }], [{ op: 'hits', lane: 'kick', steps: [2, 10] }], [{ op: 'thin', lane: 'kick', keep: 8 }],
+          [{ op: 'hits', lane: 'snare', steps: [14] }]] },
+      country: { energy: [[{ op: 'clear', lane: 'snare', steps: [3, 7, 11, 15] }, { op: 'thin', lane: 'kick', keep: 8 }, { op: 'thin', lane: 'hat', keep: 4 }, { op: 'clear', lane: 'cymbal' }],
+        [{ op: 'clear', lane: 'snare', steps: [7, 15] }, { op: 'thin', lane: 'kick', keep: 4 }], [],
+        [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'hits', lane: 'kick', steps: [14] }],
+        [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'hits', lane: 'kick', steps: [6, 14] }, { op: 'fill', lane: 'hat', every: 2 }, { op: 'hits', lane: 'toms', steps: [12, 13, 14, 15] }]],
+        fills: [{ sections: [], ops: [] },
+          { sections: ['verse'], ops: [{ op: 'roll', from: 14 }, { op: 'hits', lane: 'kick', steps: [14] }] },
+          { sections: ['verse', 'bridge'], ops: [{ op: 'roll', from: 12 }, { op: 'hits', lane: 'kick', steps: [12] }], alt: [[{ op: 'clear', lane: 'snare', steps: [13, 15] }, { op: 'hits', lane: 'kick', steps: [14] }]] },
+          { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 12 }, { op: 'hits', lane: 'kick', steps: [12] }], alt: [[{ op: 'clear', lane: 'snare', steps: [13, 15] }, { op: 'hits', lane: 'kick', steps: [14] }]] },
+          { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 8 }, { op: 'hits', lane: 'kick', steps: [12] }], alt: [[{ op: 'roll', from: 12 }, { op: 'hits', lane: 'kick', steps: [12, 14] }]], partSections: ['verse'] }],
+        swap4: [],
+        flavors: [[], ['s-16'], ['s-12a'], ['s-12b'], ['s-12c'], ['s-12d']],
+        flavors2: [[], [{ op: 'fill', lane: 'hat', every: 2 }], [{ op: 'thin', lane: 'kick', keep: 8 }, { op: 'hits', lane: 'kick', steps: [0, 6, 8] }], [{ op: 'hits', lane: 'kick', steps: [4, 12] }],
+          [{ op: 'hits', lane: 'kick', steps: [14] }, { op: 'hits', lane: 'hat', steps: [2, 6, 10, 14] }], [{ op: 'clear', lane: 'hat' }, { op: 'hits', lane: 'hat', steps: [0, 4, 8, 12] }],
+          [{ op: 'fill', lane: 'hat', every: 1 }], [{ op: 'clear', lane: 'hat' }, { op: 'hits', lane: 'hat', steps: [4, 12] }, { op: 'hits', lane: 'kick', steps: [6] }]],
+        ops: { 's-16': [{ op: 'fill', lane: 'snare', every: 1 }], 's-12a': [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'clear', lane: 'snare', steps: [3, 7, 11, 15] }],
+          's-12b': [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'clear', lane: 'snare', steps: [1, 5, 9, 13] }],
+          's-12c': [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'clear', lane: 'snare', steps: [2, 6, 10, 14] }],
+          's-12d': [{ op: 'fill', lane: 'snare', every: 1 }, { op: 'clear', lane: 'snare', steps: [0, 4, 8, 12] }] } }
     }
   };
 })(window.GG);
@@ -21848,19 +22096,25 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       drums: [{ role: 'drummer', text: 'I picked a groove for every part. Lock your bass to my kick and nobody can stop us.' }],
       verse: [{ role: 'vocals', text: 'Keep the verse low and steady. Roots on the one. Leave me room to sing.' }, { role: 'guitar', text: 'Pick a progression and stay under me. The low end is the floor we stand on.' }],
       chorus: [{ role: 'vocals', text: 'Chorus: jump to the octave. People feel it in their chests before they hear it.' }],
-      bridge: [{ role: 'drummer', text: 'Bridge: try a different progression. Then walk us home to the last chorus.' }]
+      bridge: [{ role: 'drummer', text: 'Bridge: try a different progression. Then walk us home to the last chorus.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe and your bass line comes with it. Tweak it after, or just hit Play.' },
+        { role: 'guitar', text: 'Every recipe already has a bass line. Push Energy if it needs to walk around more.' }]
     },
     rhythm: {
       drums: [{ role: 'drummer', text: 'Groove picked. Your riff and my kick should agree on where the one is.' }],
       verse: [{ role: 'vocals', text: 'The verse riff carries the song. Chug it, so the words sit on top.' }, { role: 'bass', text: 'Pick a progression and I will follow your right hand.' }],
       chorus: [{ role: 'vocals', text: 'Chorus: let it ring. Open chords. Big. The kind you can see from the back.' }],
-      bridge: [{ role: 'lead guitar|guitar', text: 'The bridge is my solo spot. Give me something to stand on. Sustained chords.' }]
+      bridge: [{ role: 'lead guitar|guitar', text: 'The bridge is my solo spot. Give me something to stand on. Sustained chords.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe and the riff comes with it. Move Energy and Mood until it sounds like us.' },
+        { role: 'bass', text: 'Start from a recipe. Each bar gets its own chord later, if you want to fuss.' }]
     },
     lead: {
       drums: [{ role: 'drummer', text: 'Groove picked. Your hook goes on top. Try not to solo through my fills.' }],
       verse: [{ role: 'vocals', text: 'Keep the verse hook small. The verse is mine. The chorus is ours.' }, { role: 'bass', text: 'Pick a hook and leave some gaps. Gaps are where the hook lives.' }],
       chorus: [{ role: 'vocals', text: 'The chorus hook should repeat. That is what people sing back on the bus home.' }],
-      bridge: [{ role: 'bass|rhythm guitar|guitar', text: 'Bridge: go somewhere else. High and short, then land it.' }]
+      bridge: [{ role: 'bass|rhythm guitar|guitar', text: 'Bridge: go somewhere else. High and short, then land it.' }],
+      quick: [{ role: 'drummer', text: 'Pick a recipe. Your hook is already in there. Slide Mood around and hear it change colour.' },
+        { role: 'bass', text: 'Start from a recipe and keep the gaps. The hook lives in the gaps.' }]
     }
   };
   var GC = {
@@ -21868,57 +22122,69 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       bass: { drums: [{ role: 'drummer', text: 'Groove picked. Gallop with my kick. Two hands, two feet, one bass line. One beast.' }],
         verse: [{ role: 'vocals', text: 'Under my screaming the bass must be dark. Like a lawn at midnight. Try "the tritone drop".' }, { role: 'guitar', text: 'Double my riff an octave down. Low-end spec: everything.' }],
         chorus: [{ role: 'vocals', text: 'The chorus: "the big dark lift". The windows must shake. The neighbours must wonder.' }],
-        bridge: [{ role: 'lead guitar', text: 'Bridge: hold the root and let me shred. One note, held for my whole solo. You can do it.' }] },
+        bridge: [{ role: 'lead guitar', text: 'Bridge: hold the root and let me shred. One note, held for my whole solo. You can do it.' }],
+        quick: [{ role: 'vocals', text: 'Choose a recipe. Doom crawl, for the low end. The windows must shake, the neighbours must wonder.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'ok i picked a groove. there are fills in it. your riff goes between the fills' }],
         verse: [{ role: 'vocals', text: 'Chug the verse. Palm-muted, like a storm far away. I will be the lightning.' }, { role: 'lead guitar', text: 'Lock the chug to the kick. Every hit. I will double you on the right.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: let the chords ring out over everything. "The big dark lift". Magnifique.' }],
-        bridge: [{ role: 'lead guitar', text: 'Bridge is my solo. Sustained chords under it, please. Gain at seven. Not eight.' }] },
+        bridge: [{ role: 'lead guitar', text: 'Bridge is my solo. Sustained chords under it, please. Gain at seven. Not eight.' }],
+        quick: [{ role: 'lead guitar', text: 'Pick a recipe and the riff comes with it. Neck-snapper, then slide Mood toward Abyss.' }] },
       lead: { drums: [{ role: 'drummer', text: 'Groove picked: 210 bpm, the blast on the chorus. Your hook goes on top. Specs on request.' }],
         verse: [{ role: 'vocals', text: 'The verse hook: something cold, like a wind off the slough. Then get out of my way.' }, { role: 'rhythm guitar', text: 'pick a hook and i will chug under it. no fills. ok one fill' }],
         chorus: [{ role: 'vocals', text: 'The chorus hook must lift. "The big chorus lift". Repeat it until the crowd surrenders.' }],
-        bridge: [{ role: 'rhythm guitar', text: 'bridge is ur solo now. go nuts. i will hold the riff. baba says do not go too long' }] }
+        bridge: [{ role: 'rhythm guitar', text: 'bridge is ur solo now. go nuts. i will hold the riff. baba says do not go too long' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Your hook rides on top. Slide Mood to Heroic if you want the crowd to weep.' }] }
     },
     punk: {
       bass: { drums: [{ role: 'drummer', text: 'groove picked. the fast one. lock to it. permission granted' }],
         verse: [{ role: 'vocals', text: 'Verse: "three chords and a grudge". Root notes, eighths, no mercy.' }, { role: '^guitar$', text: 'two chords from me. you play the low end of both. that is the whole song' }],
         chorus: [{ role: 'vocals', text: 'Chorus: faster and louder. If council can hear the bass, we did it right.' }],
-        bridge: [{ role: '^guitar$', text: 'bridge: half-time so the pit can breathe. then we go fast again' }] },
+        bridge: [{ role: '^guitar$', text: 'bridge: half-time so the pit can breathe. then we go fast again' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Three-chord sprint. Push Energy until the dryers upstairs complain.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'Groove picked. The chair moves that you play the riff. Seconded. Carried.' }],
         verse: [{ role: 'drummer', text: 'Steady eighths in the verse. I will scream the bylaw over it.' }, { role: 'bass', text: 'pick a progression. i will follow your right hand. it is a good hand' }],
         chorus: [{ role: '^guitar$', text: 'chorus: same chords, angrier. that is songwriting' }],
-        bridge: [{ role: '^guitar$', text: 'bridge is my solo. it is two chords. very fast. just hold something under it' }] },
+        bridge: [{ role: '^guitar$', text: 'bridge is my solo. it is two chords. very fast. just hold something under it' }],
+        quick: [{ role: 'bass', text: 'pick a recipe. the riff is already in it. two chords. you are welcome' }] },
       lead: { drums: [{ role: 'drummer', text: 'groove picked. two beats. the fast one and the other fast one. hook goes on top' }],
         verse: [{ role: 'vocals', text: 'Verse hook: short and loud, like a good heckle. Then let me yell.' }, { role: 'bass', text: 'leave gaps in the hook. the van likes gaps' }],
         chorus: [{ role: 'vocals', text: 'Chorus hook: one you can chant outside city hall. Repeat it. Repeat it.' }],
-        bridge: [{ role: 'bass', text: 'bridge: go high, go short. no third chord. i am told that matters' }] }
+        bridge: [{ role: 'bass', text: 'bridge: go high, go short. no third chord. i am told that matters' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Your hook goes on top. Short and loud, like a good heckle at city hall.' }] }
     },
     rock: {
       bass: { drums: [{ role: 'drummer', text: 'Groove scheduled. Kick on one and three. Lock in with it and we are home by midnight.' }],
         verse: [{ role: 'vocals', text: 'The verse bass line should strut, like leather pants walking into 1985. Try "the highway".' }, { role: 'guitar', text: 'Pick a line that is legally distinct. I will check with my people.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: the octave jump! The lighters go up! It is 1985 in every chest in the room!' }],
-        bridge: [{ role: 'guitar', text: 'Bridge is my solo. Hold the root. If it sounds familiar, that is a coincidence.' }] },
+        bridge: [{ role: 'guitar', text: 'Bridge is my solo. Hold the root. If it sounds familiar, that is a coincidence.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe! Arena anthem! Your bass line is already strutting. Hit Play!' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'I picked a groove! A big one! I will sing over it and also drum! Very 1985!' }],
         verse: [{ role: 'drummer', text: 'Verse: chug it under me so I can sing from the kit. I have a headset now.' }, { role: 'bass', text: 'Pick a progression. I have colour-coded the chords. Blue is safe.' }],
         chorus: [{ role: 'guitar', text: 'Chorus: big open chords. Let them ring. Totally original chords. Probably.' }],
-        bridge: [{ role: 'guitar', text: 'Bridge: sustained chords under my solo. My lawyers prefer sustained chords.' }] },
+        bridge: [{ role: 'guitar', text: 'Bridge: sustained chords under my solo. My lawyers prefer sustained chords.' }],
+        quick: [{ role: 'bass', text: 'Pick a recipe and slide Energy. I have already colour-coded your chords. Blue is safe.' }] },
       lead: { drums: [{ role: 'drummer', text: 'I picked a groove. It sounds like a famous groove, so it is good. Hook on top.' }],
         verse: [{ role: 'vocals', text: 'The verse hook: something to hum in a convertible in 1985. In January. In Edmonton.' }, { role: 'bass', text: 'Leave gaps in the hook. Gaps are healthy. Like flossing.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: "the big chorus lift". Repeat it. The arena must sing it back!' }],
-        bridge: [{ role: 'bass', text: 'Bridge: your solo. Keep it under a minute. I have a cleaning at 8.' }] }
+        bridge: [{ role: 'bass', text: 'Bridge: your solo. Keep it under a minute. I have a cleaning at 8.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. The hook is in there. Make it big enough to see from the parking lot.' }] }
     },
     country: {
       bass: { drums: [{ role: 'drummer', text: 'Groove picked. Slow and steady, how the hat likes it. Root and fifth on one and three.' }],
         verse: [{ role: 'vocals', text: 'Verse: walk it like a man going home. "Home on the grid road", actually.' }, { role: 'lead guitar', text: 'Boom-chick. Root, fifth. Played behind a line like that in 1979.' }],
         chorus: [{ role: 'vocals', text: 'Chorus: walk up to it. Make the crowd feel like they are coming home.' }],
-        bridge: [{ role: 'fiddle', text: 'The bridge is mine. Keep it simple underneath. I will make it sound expensive.' }] },
+        bridge: [{ role: 'fiddle', text: 'The bridge is mine. Keep it simple underneath. I will make it sound expensive.' }],
+        quick: [{ role: 'vocals', text: 'Pick a recipe. Train song walks itself home. Slide Feel toward Swing and the boots start tapping.' }] },
       rhythm: { drums: [{ role: 'drummer', text: 'Picked a train beat. I sing from the kit now. Strum like a truck idling and we are set.' }],
         verse: [{ role: 'drummer', text: 'Verse strum: steady. Like a truck idling. I mean it kindly.' }, { role: 'bass', text: 'Pick a progression. "Back and forth to town" is a good one. The hat agrees.' }],
         chorus: [{ role: 'lead guitar', text: 'Chorus: open chords, let them ring. Every great one I backed let the chorus ring.' }],
-        bridge: [{ role: 'fiddle', text: 'Bridge is the fiddle break. Hold the chords still. Do not watch me enjoy it.' }] },
+        bridge: [{ role: 'fiddle', text: 'Bridge is the fiddle break. Hold the chords still. Do not watch me enjoy it.' }],
+        quick: [{ role: 'lead guitar', text: 'Pick a recipe and the strum comes with it. Sad waltz if you want the whole Legion crying.' }] },
       lead: { drums: [{ role: 'drummer', text: 'Picked a groove. Drummed one like it in 1974 on a cardboard box. Your lick goes on top.' }],
         verse: [{ role: 'vocals', text: 'Verse lick: small. Answer my lines, do not sing over them. Like a duet with a truck.' }, { role: 'fiddle', text: 'Leave gaps in your lick. I will fill them. Tastefully.' }],
         chorus: [{ role: 'vocals', text: 'Chorus lick: the one people hum at the gas station. Repeat it. Make me cry.' }],
-        bridge: [{ role: 'fiddle', text: 'Bridge: trade bars with me. For the music. Not because it is fun.' }] }
+        bridge: [{ role: 'fiddle', text: 'Bridge: trade bars with me. For the music. Not because it is fun.' }],
+        quick: [{ role: 'fiddle', text: 'Pick a recipe. Your lick is already in it. I will answer it. Tastefully. Mostly.' }] }
     }
   };
   Object.keys(GC).forEach(function (g) { var o = CO[g] = CO[g] || {}; o.bySeat = GC[g]; });
@@ -25002,13 +25268,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return h;
   }
 
+  var FILL_W = 0.25;   // v1.3 (Q2 = 1): the fill bar's share of a section (bar 4 of 4)
   songs.rate = function (pattern, genre, gear) {
     var G = songs.genre(genre), g = gearOf(gear), p = songs.sanitize(pattern, g, null, true), lanes = p.lanes, X = SH().songs;
-    var tips = {}, per = {}, feats = {}, names = songs.sectionsOf(p);
+    var tips = {}, per = {}, feats = {}, names = songs.sectionsOf(p), fills = {};
     names.forEach(function (name) { feats[name] = features(p.sections[name], lanes, p.bpm, g); });
+    if (p.fillBars) Object.keys(p.fillBars).forEach(function (name) { if (feats[name]) fills[name] = features(p.fillBars[name], lanes, p.bpm, g); });
     var sumG = 0, sumW = 0, effort = 0, odd = 0, notes = 0;
     p.arrangement.forEach(function (name) {   // bridges (breakdowns, solo spots), v0.8 outros and solos count half toward the groove
-      var w = name === 'bridge' ? 0.5 : name === 'outro' ? X.outroWeight : name === 'solo' ? X.soloWeight : 1, f = feats[name];
+      var w = name === 'bridge' ? 0.5 : name === 'outro' ? X.outroWeight : name === 'solo' ? X.soloWeight : 1, f = feats[name], ff = fills[name];
+      if (ff) {
+        per[name] = (1 - FILL_W) * barGroove(G, f, g, tips, w * (1 - FILL_W)) + FILL_W * barGroove(G, ff, g, tips, w * FILL_W);
+        sumG += per[name] * w; sumW += w;
+        var fe = (1 - FILL_W) * f.effort + FILL_W * ff.effort;
+        effort += name === 'solo' ? fe / 2 : fe; odd += (1 - FILL_W) * f.odd + FILL_W * ff.odd; notes += f.hits * (BARS - 1) + ff.hits;
+        return;
+      }
       per[name] = barGroove(G, f, g, tips, w);
       sumG += per[name] * w; sumW += w;
       effort += name === 'solo' ? f.effort / 2 : f.effort; odd += f.odd; notes += f.hits * BARS;   // a solo: you lay back
@@ -25027,7 +25302,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var hook = Math.min(1, hookD + extrasHook(p, lanes, X));
     var list = Object.keys(tips).sort(function (a, b) { return tips[b] - tips[a] || (a < b ? -1 : 1); });
     var sections = {};
-    names.forEach(function (name) { sections[name] = Math.round(100 * (per[name] != null ? per[name] : barGroove(G, feats[name], g, {}, 0))); });
+    names.forEach(function (name) {
+      var ff = fills[name], v = per[name] != null ? per[name] : ff ? (1 - FILL_W) * barGroove(G, feats[name], g, {}, 0) + FILL_W * barGroove(G, ff, g, {}, 0) : barGroove(G, feats[name], g, {}, 0);
+      sections[name] = Math.round(100 * v);
+    });
     var out = { groove: Math.round(100 * groove), hook: Math.round(100 * hook),
       difficulty: Math.round(100 * (1 - Math.exp(-raw / 28))), notes: notes, tips: list.slice(0, 2), sections: sections };
     if (pr) out.part = { groove: Math.round(100 * pr.groove), hook: Math.round(100 * pr.hook),
@@ -25056,6 +25334,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (!Array.isArray(sec) || sec.length !== p.lanes || sec.some(function (s) { return !/^[x.]{16}$/.test(s); })) { errs.push(name + ': bad lanes'); return; }
       if (!g.doubleKick && kickPairs(sec[KICK])) errs.push(name + ': two kicks in a row need a double-kick pedal');
     });
+    if (p.fillBars != null) {
+      if (typeof p.fillBars !== 'object' || Array.isArray(p.fillBars)) errs.push('bad fill bars');
+      else Object.keys(p.fillBars).forEach(function (name) {
+        var fb = p.fillBars[name];
+        if (!p.sections || !Array.isArray(p.sections[name])) { errs.push(name + ': a fill bar without its section'); return; }
+        if (!Array.isArray(fb) || fb.length !== p.lanes || fb.some(function (s) { return !/^[x.]{16}$/.test(s); })) { errs.push(name + ': bad fill bar'); return; }
+        if (!g.doubleKick && kickPairs(fb[KICK])) errs.push(name + ' fill: two kicks in a row need a double-kick pedal');
+      });
+    }
     return errs;
   };
   songs.sanitize = function (p, gear, genre, loose) {
@@ -25328,7 +25615,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (section === 'outro') return t.c.filter(function (h) { return h[0] < 8; }).concat([[8, seat === 'rhythm' ? 1 : 0]]);
     return section === 'chorus' ? t.c : section === 'bridge' ? t.b : t.v;
   }
-  part.suggest = function (genre, seat, section, rng) {
+  part.suggest = function (genre, seat, section, rng, v) {
+    if (v === 2) return upSection(part.suggest(genre, seat, section, rng), PART_ROWS[seat] ? seat : 'bass');
     seat = PART_ROWS[seat] ? seat : 'bass';
     var n = PART_ROWS[seat], list = partList(genre, seat, section), rows = rowsFrom(sigFor(seat, genre, section), n), out = {};
     out[part.key(seat)] = rng ? rng.int(0, list.length - 1) : GG.hashSeed((genre || 'metal') + '|' + seat + '|' + section) % list.length;
@@ -25365,10 +25653,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
     return out;
   };
-  part.full = function (genre, seat, pattern, rng) {
+  part.full = function (genre, seat, pattern, rng, v) {
     if (!PART_ROWS[seat]) return null;
-    var out = { seat: seat, sections: {} };
-    songs.sectionsOf(pattern || {}).forEach(function (name) { out.sections[name] = part.suggest(genre, seat, name, rng); });
+    var out = v === 2 ? { seat: seat, v: 2, sections: {} } : { seat: seat, sections: {} };
+    songs.sectionsOf(pattern || {}).forEach(function (name) { out.sections[name] = part.suggest(genre, seat, name, rng, v === 2 ? 2 : undefined); });
     return out;
   };
   part.toggle = function (p, section, row, step, gear, genre) {
@@ -25387,29 +25675,64 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { id: 'double', name: 'Double time', desc: 'Twice the notes, same tempo. Your wrist files a complaint.' },
     { id: 'ring', name: 'Let it ring', desc: 'Fewer, longer notes. Big open chords and room to breathe.' },
     { id: 'call', name: 'Call and answer', desc: 'The first half asks, the second half answers a step higher.' }];
-  function modRows(rows, id, kick, n) {
-    var out = rows.slice(), i, r;
+  var HOME2 = { rhythm: 0, bass: 1, lead: 1 }, RING2 = { rhythm: 1, bass: 1, lead: 1 };
+  var CALL2 = { rhythm: [1, 3, 3, 4, 4, 5], bass: [1, 2, 3, 4, 5, 5], lead: [1, 2, 3, 4, 5, 6, 6] };
+  var TOP2 = { rhythm: 4, bass: 5, lead: 6 };
+  function modRows(rows, id, kick, n, seat2) {
+    var out = rows.slice(), i, r, sc = seat2 === 'rhythm' ? part.SCRATCH : -1;
     function at(st) { for (var q = 0; q < n; q++) if (on(out[q], st)) return q; return -1; }
+    function pitchedAt(st) { for (var q = 0; q < n; q++) if (q !== sc && on(out[q], st)) return q; return -1; }
     if (id === 'lock') {
-      var counts = rows.map(count), busy = counts.indexOf(Math.max.apply(null, counts));
+      var counts = rows.map(function (x, q) { return q === sc ? -1 : count(x); }), top = Math.max.apply(null, counts);
+      var busy = seat2 && top <= 0 ? HOME2[seat2] : counts.indexOf(top);
       for (i = 0; i < STEPS; i++) {
         var row = at(i);
         if (on(kick, i) && row < 0) out[busy] = set(out[busy], i, true);
         else if (!on(kick, i) && row >= 0) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
       }
-    } else if (id === 'double') {   // a new note halfway to the next one (same row): twice the notes
+    } else if (id === 'double' || (seat2 && id === 'busy')) {   // a new note halfway to the next one (same row): twice the notes
       var ons = [];
-      for (i = 0; i < STEPS; i++) if (at(i) >= 0) ons.push([i, at(i)]);
+      for (i = 0; i < STEPS; i++) if (at(i) >= 0) ons.push([i, seat2 ? pitchedAt(i) : at(i)]);
       ons.forEach(function (o, k) {
         var nx = k + 1 < ons.length ? ons[k + 1][0] : STEPS, mid = o[0] + Math.floor((nx - o[0]) / 2);
-        if (nx - o[0] >= 2) out[o[1]] = set(out[o[1]], mid, true);
+        if (nx - o[0] >= 2 && o[1] >= 0) out[o[1]] = set(out[o[1]], mid, true);
       });
     } else if (id === 'ring') {
       for (i = 0; i < STEPS; i++) if (i % 8) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
-      if (!out.some(function (x) { return count(x); })) out[0] = 'x.......x.......';
+      if (seat2) {
+        if (sc >= 0) out[sc] = BLANK;
+        if (seat2 === 'rhythm') for (i = 0; i < STEPS; i += 8) if (on(out[0], i)) { out[0] = set(out[0], i, false); out[1] = set(out[1], i, true); }
+        if (!out.some(function (x) { return count(x); })) out[RING2[seat2]] = 'x.......x.......';
+      } else if (!out.some(function (x) { return count(x); })) out[0] = 'x.......x.......';
     } else if (id === 'call') {
       for (r = 0; r < n; r++) out[r] = rows[r].slice(0, 8) + BLANK.slice(8);
-      for (r = 0; r < n; r++) for (i = 0; i < 8; i++) if (on(rows[r], i)) { var to = Math.min(n - 1, r + 1); out[to] = set(out[to], i + 8, true); }
+      for (r = 0; r < n; r++) for (i = 0; i < 8; i++) if (on(rows[r], i)) { var to = seat2 ? CALL2[seat2][r] : Math.min(n - 1, r + 1); out[to] = set(out[to], i + 8, true); }
+    } else if (!seat2) {
+      return out;
+    } else if (id === 'eighths') {   // the 16th off-beats go
+      for (i = 1; i < STEPS; i += 2) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
+      if (!out.some(function (x, q) { return q !== sc && count(x); })) out[HOME2[seat2]] = 'x.......x.......';
+    } else if (id === 'sparse') {
+      for (i = 0; i < STEPS; i++) if (i % 4) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
+      if (!out.some(function (x, q) { return q !== sc && count(x); })) out[HOME2[seat2]] = 'x.......x.......';
+    } else if (id === 'pickup') {   // the last beat climbs into the next bar: three notes on the way up
+      var climb = seat2 === 'rhythm' ? [2, 3, 4] : seat2 === 'bass' ? [2, 3, 5] : [3, 4, 5];
+      for (i = 12; i < STEPS; i++) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
+      [12, 14, 15].forEach(function (st, k) { out[climb[k]] = set(out[climb[k]], st, true); });
+    } else if (id === 'scratch' && sc >= 0) {   // dead strums on the empty off-8ths (the chug's shadow)
+      for (i = 2; i < STEPS; i += 4) if (at(i) < 0) out[sc] = set(out[sc], i, true);
+    } else if (id === 'walk' && seat2 === 'bass') {   // root, 3rd, 5th up to the next bar
+      for (i = 12; i < STEPS; i++) for (r = 0; r < n; r++) out[r] = set(out[r], i, false);
+      out[1] = set(out[1], 12, true); out[2] = set(out[2], 14, true); out[3] = set(out[3], 15, true);
+    } else if (id === 'octave') {   // every other onset jumps up to the top row
+      var k2 = 0, topRow = TOP2[seat2];
+      for (i = 0; i < STEPS; i++) {
+        var pr = pitchedAt(i);
+        if (pr < 0) continue;
+        if (k2++ % 2) { for (r = 0; r < n; r++) if (r !== sc) out[r] = set(out[r], i, false); out[topRow] = set(out[topRow], i, true); }
+      }
+    } else if (id === 'fifths' && seat2 === 'rhythm') {   // a 5th answers on each empty off-8th of the second half
+      for (i = 10; i < STEPS; i += 4) if (at(i) < 0) out[3] = set(out[3], i, true);
     }
     return out;
   }
@@ -25417,7 +25740,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var out = songs.sanitize(U.clone(p), gear, genre), sec = out.part && out.part.sections[section];
     var before = songs.rate(out, genre, gear);
     if (sec && part.MODS.some(function (m) { return m.id === modId; })) {
-      sec.rows = modRows(sec.rows, modId, lane(out.sections[section], KICK), PART_ROWS[out.part.seat]);
+      sec.rows = out.part.v === 2 ? modRows(sec.rows, modId, lane(out.sections[section], KICK), sec.rows.length, out.part.seat)
+        : modRows(sec.rows, modId, lane(out.sections[section], KICK), PART_ROWS[out.part.seat]);
       out = songs.sanitize(out, gear, genre);
     }
     return { pattern: out, before: before, after: songs.rate(out, genre, gear) };
@@ -25454,21 +25778,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function anyOn(rows, set, i) { for (var q = 0; q < set.length; q++) if (rows[set[q]] && on(rows[set[q]], i)) return true; return false; }
   function partFeat2(sec, kick, seat) {
     var rows = sec.rows, n = rows.length, R = part.ROLE[seat] || part.ROLE.bass, hits = 0, lock = 0, kicks = count(kick), s8 = 0, odd = 0, used = 0, chug = 0;
-    var inter = 0, union = 0, i, r;
+    var inter = 0, union = 0, i, r, sc = seat === 'rhythm' ? part.SCRATCH : -1, pitched = 0;
     for (r = 0; r < n; r++) if (count(rows[r])) used++;
     for (i = 0; i < STEPS; i++) {
-      var any = false;
-      for (r = 0; r < n; r++) if (on(rows[r], i)) any = true;
+      var any = false, pit = false;
+      for (r = 0; r < n; r++) if (on(rows[r], i)) { any = true; if (r !== sc) pit = true; }
       if (seat === 'rhythm' && anyOn(rows, R.chug, i)) chug++;
       if (!any) continue;
       hits++;
+      if (pit) pitched++;
       if (on(kick, i)) lock++;
-      if (i % 2 === 0) s8++; else odd++;
+      if (i % 2 === 0) s8++; else if (pit) odd++;   // Scratch is an onset (fit / busy), never odd (§4.4)
     }
     for (r = 0; r < n; r++) for (i = 0; i < STEPS / 2; i++) { var a = on(rows[r], i), b = on(rows[r], i + STEPS / 2); if (a && b) inter++; if (a || b) union++; }
     return { hits: hits, lock: hits ? lock / hits : 0, cover: kicks ? lock / kicks : 0, steady8: s8 / 8, odd: odd, rows: used,
       rep: union ? inter / union : 0, root1: anyOn(rows, R.root, 0) ? 1 : 0, fifth3: seat === 'bass' && anyOn(rows, R.fifth, 8) ? 1 : 0,
-      chug: seat === 'rhythm' ? chug : 0 };
+      chug: seat === 'rhythm' ? chug : 0, scratchOnly: hits && !pitched ? 1 : 0 };
   }
   function band01(v, lo, hi, soft) { return v >= lo && v <= hi ? 1 : Math.max(0, 1 - (v < lo ? lo - v : v - hi) / soft); }
   var PART_FULL = { bass: [2, 12], rhythm: [2, 14], lead: [3, 12] };
@@ -25487,6 +25812,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     else if (seat === 'lead') { sig = f.rows >= 3 ? 1 : f.rows === 2 ? 0.75 : 0.4; if (sig < 0.8) tip(tips, PART_TIPS.melody, (1 - sig) * 3 * weight); }
     else { sig = U.clamp(0.55 + f.cover * 0.6, 0, 1); if (sig < 0.8) tip(tips, PART_TIPS.kick, (1 - sig) * 2 * weight); }
     var steady = 0.85 + 0.15 * U.clamp(f.rep / 0.5, 0, 1);
+    if (f.scratchOnly) return fit * (0.55 + 0.45 * sig) * steady * 0.6;   // v1.3: a bar of only Scratch has no pitch (x 0.6)
     return fit * (0.55 + 0.45 * sig) * steady;
   }
   function rateWithPart(p, genre, tips, X) {
@@ -25599,52 +25925,180 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function int04(v, d) { return intIn(v, 0, 4) ? v : d; }
   var STUB_STOPS = { energy: ['Lazy', 'Easy', 'Steady', 'Busy', 'Show-off'], mood: ['Sunny', 'Bright', 'Home', 'Moody', 'Dark'],
     swing: ['Straight', 'A lilt', 'Shuffle', 'Swung', 'Triplets'], fills: ['None', 'A few', 'Some', 'Plenty', 'Lots'] };
+  var QUICK_MIN = { groove: 80, hook: 65 }, PART_CAP = { bass: 12, rhythm: 14, lead: 12 };
+  function genreId(genre) { return (GG.content.genres || {})[genre] ? genre : 'metal'; }
+  function FX(genre, key) { var F = GG.content.grooveFx || {}, b = F.byGenre && F.byGenre[genre]; return b && b[key] != null ? b[key] : F[key]; }
+  function stopOf(list, i) { var x = Array.isArray(list) ? list[i] : null; return x == null ? [] : Array.isArray(x) ? x : [x]; }
+  function recipeList(genre) { var R = songs.grooves(genre).recipes; return Array.isArray(R) && R.length ? R : null; }
+  function fallbackRecipe(genre) {   // no recipe content: the signature pattern's drums
+    var G = songs.genre(genre);
+    return { id: 'signature', name: 'Signature', desc: 'The band’s own sound', bpm: G.tempo[2], arr: songs.arrangementId(G.signature) || 'classic',
+      sliders: { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 }, parts: {} };
+  }
+  function recipeFor(genre, id, g) {
+    var list = recipeList(genre), r = null;
+    if (!list) return fallbackRecipe(genre);
+    list.forEach(function (x) { if (!r && x.id === id) r = x; });
+    return r && !(r.pedal && !g.doubleKick) ? r : list[0];
+  }
+  function lockLabel(genre, seat) {
+    var d = null;
+    ((GG.content.shop && GG.content.shop.gear) || []).forEach(function (x) { if (x.id === 'pedal') d = x; });
+    var bs = d && seat !== 'drums' && d.bySeat && d.bySeat[seat];
+    return (bs && ((bs.names && bs.names[genre]) || bs.name)) || (d && d.name) || 'Double-kick pedal';
+  }
+  function slidersOf(genre, r) {
+    var s = r.sliders || {};
+    return { energy: int04(s.energy, 2), mood: int04(s.mood, songs.nativeMood(genre)), swing: int04(s.swing, 0), fills: int04(s.fills, 1) };
+  }
+  function tempoOf(genre, bpm) { var t = songs.genre(genre).tempo; return U.clamp(5 * Math.round((Number(bpm) || t[2]) / 5), t[0], t[1]); }
   songs.recipes = function (genre, gear, seat) {
-    var G = songs.genre(genre), sl = { energy: 2, mood: songs.nativeMood(genre), swing: 0, fills: 1 };
-    return [{ id: 'signature', name: 'Signature', desc: 'The band’s own sound.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: sl },
-      { id: 'surprise', name: 'Surprise me', desc: 'Roll the dice.', locked: false, lockLabel: null, bpm: G.tempo[2], sliders: U.clone(sl), surprise: true }];
+    var gid = genreId(genre), g = gearOf(gear), list = recipeList(gid) || [fallbackRecipe(gid)], sp = (GG.content.grooves || {}).surprise || {};
+    var out = list.map(function (r) {
+      return { id: r.id, name: r.name, desc: r.desc, locked: !!r.pedal && !g.doubleKick, lockLabel: r.pedal ? lockLabel(gid, seat) : null,
+        bpm: tempoOf(gid, r.bpm), sliders: slidersOf(gid, r) };
+    });
+    out.push({ id: 'surprise', name: sp.name || 'Surprise me', desc: sp.desc || 'Roll the dice', locked: false, lockLabel: null,
+      bpm: tempoOf(gid, null), sliders: slidersOf(gid, list[0]), surprise: true });
+    return out;
   };
   songs.sliders = function (genre, seat) {
-    var G = songs.genre(genre), GS = songs.grooves(genre).sliders || {};
+    var gid = genreId(genre), G = songs.genre(gid), GS = songs.grooves(gid).sliders || {}, BS = (GS.bySeat && GS.bySeat[seat]) || {};
     return (C.SONG_SLIDERS || []).map(function (x) {
       var o = { id: x.id, name: x.name, lo: x.lo, hi: x.hi };
       if (x.id === 'tempo') { o.min = G.tempo[0]; o.max = G.tempo[1]; o.step = 5; o.stops = null; }
-      else o.stops = (Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
+      else o.stops = (Array.isArray(BS[x.id]) ? BS[x.id] : Array.isArray(GS[x.id]) ? GS[x.id] : STUB_STOPS[x.id] || []).slice();
       return o;
     });
   };
   songs.surprise = function (genre, gear, seat, seed) {
-    var rng = GG.RNG((Number(seed) >>> 0) || 1), G = songs.genre(genre);
-    var list = songs.recipes(genre, gear, seat).filter(function (r) { return !r.locked && !r.surprise; });
-    return { recipe: list.length ? rng.pick(list).id : 'signature', energy: rng.int(0, 4), mood: rng.int(0, 4), swing: rng.int(0, 4),
-      fills: rng.int(0, 4), bpm: U.clamp(5 * Math.round(rng.int(G.tempo[0], G.tempo[1]) / 5), G.tempo[0], G.tempo[1]) };
+    var gid = genreId(genre), rng = GG.RNG(GG.hashSeed('surprise|' + gid + '|' + ((Number(seed) >>> 0) || 0)));
+    var list = songs.recipes(gid, gear, seat).filter(function (r) { return !r.locked && !r.surprise; }), r = rng.pick(list), d = r.sliders;
+    return { recipe: r.id, energy: rng.int(1, 4), mood: rng.int(0, 4), swing: rng.chance(0.5) ? d.swing : rng.int(0, 4), fills: rng.int(0, 4),
+      bpm: tempoOf(gid, r.bpm + 5 * rng.int(-3, 3)) };
   };
+  function opsById(GR, id, gid) {
+    var m = null, F = GG.content.grooveFx || {}, B = F.byGenre && F.byGenre[gid];
+    (GR.mods || []).forEach(function (x) { if (!m && x.id === id) m = x.ops; });
+    if (!m && GR.ops && Array.isArray(GR.ops[id])) m = GR.ops[id];
+    if (!m && B && B.ops && Array.isArray(B.ops[id])) m = B.ops[id];
+    if (!m && F.ops && Array.isArray(F.ops[id])) m = F.ops[id];
+    return m || [];
+  }
+  function applyAll(bar, ops, g, gid) {   // ops: OPs, or op ids (strings) resolved by opsById
+    var out = bar.slice(), dummy = { bpm: 120 }, GR = null;
+    (ops || []).forEach(function (op) {
+      if (typeof op === 'string') { out = applyAll(out, opsById(GR = GR || songs.grooves(gid), op, gid), g, gid); return; }
+      if (op && op.op !== 'bpm') applyOp(out, op, g, dummy, gid);
+    });
+    return out;
+  }
+  function blockBar(GR, spec, g, gid) {
+    if (!Array.isArray(spec) || !spec.length) return null;
+    var src = null;
+    (GR.presets || []).forEach(function (x) { if (!src && x.id === spec[0]) src = x.bar; });
+    if (!src && GR.bars && Array.isArray(GR.bars[spec[0]])) src = GR.bars[spec[0]];
+    if (!src) return null;
+    var bar = padBar(src, g.lanes).slice(0, g.lanes);
+    spec.slice(1).forEach(function (id) { bar = applyAll(bar, opsById(GR, id, gid), g, gid); });
+    return bar;
+  }
+  function drawPlan(rng) {   // one variant's seeded choices (drawn before the sliders are read)
+    return { v: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)], swap: rng.int(0, 999), fill: rng.int(0, 999),
+      pm: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)], fl: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)],
+      fl2: [rng.int(0, 999), rng.int(0, 999), rng.int(0, 999)] };
+  }
+  function orLane(a, b) { var s = ''; for (var i = 0; i < STEPS; i++) s += on(a, i) || on(b, i) ? 'x' : '.'; return s; }
+  function capRows(rows, cap) {   // too many onsets: drop the odd 16ths first, then the off-beat 8ths, latest first
+    var steps = [], i, r, out = rows.slice();
+    for (i = 0; i < STEPS; i++) for (r = 0; r < rows.length; r++) if (on(rows[r], i)) { steps.push(i); break; }
+    if (steps.length <= cap) return out;
+    function rank(st) { return st % 2 ? 2 : st % 4 ? 1 : 0; }
+    steps.sort(function (a, b) { return rank(b) - rank(a) || b - a; });
+    for (i = 0; i < steps.length - cap; i++) for (r = 0; r < out.length; r++) out[r] = set(out[r], steps[i], false);
+    return out;
+  }
+  function composePart(gid, R, seat, p, s, plan) {
+    var pt = part.full(gid, seat, p, null, 2), P = R.parts || {}, k = part.key(seat), src = seat === 'lead' ? P.hook : P.prog;
+    var mods = P.mods || {}, alt = P.alt || {}, fe = (FX(gid, 'fills') || [])[s.fills], fillSecs = (fe && (fe.partSections || fe.sections)) || [];
+    var pe = stopOf(FX(gid, 'partEnergy'), s.energy), pf = stopOf(FX(gid, 'partFills'), s.fills);
+    Object.keys(pt.sections).forEach(function (name) {
+      var x = pt.sections[name], si = SECTIONS.indexOf(name), kick = lane(p.sections[name], KICK), ids = [];
+      if (src && intIn(src[name], 0, 99)) x[k] = src[name];
+      if (si >= 0) {
+        var opts = [mods[name] || null].concat(alt[name] || []), m = opts[plan.pm[si] % opts.length];
+        if (m && typeof m === 'object') m = m[seat] || null;   // a { <seat>: modId } entry
+        ids = (m ? [m] : []).concat(pe, fillSecs.indexOf(name) >= 0 ? pf : []);
+      }
+      ids.forEach(function (id) { x.rows = modRows(x.rows, id, kick, x.rows.length, seat); });
+      x.rows = capRows(x.rows, PART_CAP[seat]);
+    });
+    return pt;
+  }
+  function composeOne(gid, R, g, seat, s, bpm, arr, plan, seed) {
+    var GR = songs.grooves(gid), sig = songs.signature(gid, g), p = { bpm: bpm, lanes: g.lanes, sections: {}, arrangement: arr.slice() };
+    var en = stopOf(FX(gid, 'energy'), s.energy), FL = FX(gid, 'flavors'), FL2 = FX(gid, 'flavors2');
+    SECTIONS.forEach(function (name, si) {
+      var opts = [R.drums && R.drums[name]].concat((R.alt && R.alt[name]) || []).filter(Array.isArray);
+      var bar = (opts.length && blockBar(GR, opts[plan.v[si] % opts.length], g, gid)) || sig.sections[name].slice();
+      var fl = Array.isArray(FL) && FL.length ? FL[plan.fl[si] % FL.length] : null, fl2 = Array.isArray(FL2) && FL2.length ? FL2[plan.fl2[si] % FL2.length] : null;
+      if (Array.isArray(fl)) bar = applyAll(bar, fl, g, gid);   // the section's flavours (seeded picks per variant: the time shape, then
+      if (Array.isArray(fl2)) bar = applyAll(bar, fl2, g, gid);   // a kick / snare touch)
+      if (g.doubleKick && R.dk && R.dk[name]) R.dk[name].forEach(function (id) { bar = applyAll(bar, opsById(GR, id, gid), g, gid); });
+      p.sections[name] = applyAll(bar, en, g, gid);
+    });
+    var sw = plan.swap % 5, swName = SECTIONS[sw], swOk = FX(gid, g.lanes > RIDE ? 'swap6' : 'swap4') || [];
+    var to = swName && swOk.indexOf(swName) >= 0 ? (g.lanes > RIDE ? RIDE : CYM) : -1;
+    if (to >= 0 && count(p.sections[swName][HAT])) { var b = p.sections[swName]; b[to] = orLane(b[to], b[HAT]); b[HAT] = BLANK; }
+    var fe = (FX(gid, 'fills') || [])[s.fills];
+    if (fe && Array.isArray(fe.sections) && fe.sections.length) {
+      var alts = [fe.ops].concat(fe.alt || []).filter(Array.isArray), ops = alts.length ? alts[plan.fill % alts.length] : null;
+      if (ops && ops.length) fe.sections.forEach(function (name) {
+        if (SECTIONS.indexOf(name) >= 0) (p.fillBars = p.fillBars || {})[name] = applyAll(p.sections[name], ops, g, gid);
+      });
+    }
+    EXTRAS.forEach(function (x) { if (arr.indexOf(x) >= 0) p.sections[x] = songs.extraBar(p, x); });
+    var PR = (R.parts && R.parts.prog) || {};
+    p.chords = {};
+    SECTIONS.forEach(function (name) {
+      var i = intIn(PR[name], 0, 99) ? PR[name] : chordSource(p, name, gid, { part: null }).i;
+      p.chords[name] = songs.progChords(gid, name, i, s.mood);
+    });
+    if (seat !== 'drums') p.part = composePart(gid, R, seat, p, s, plan);
+    p.mood = s.mood; p.swing = s.swing;
+    p.recipe = { id: R.id, seed: seed, energy: s.energy, fills: s.fills };
+    return songs.sanitize(p, g, gid);
+  }
   songs.compose = function (genre, o) {
     o = o || {};
-    var G = songs.genre(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', p = songs.signature(genre, g);
-    var bpm = Number(o.bpm) || G.tempo[2], mood = int04(o.mood, songs.nativeMood(genre)), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
-    p.bpm = U.clamp(5 * Math.round(bpm / 5), G.tempo[0], G.tempo[1]);
-    var idx = {};
-    p.chords = {};
-    SECTIONS.forEach(function (name) { var s = chordSource(p, name, genre, { part: null }); idx[name] = s.i; p.chords[name] = songs.progChords(genre, name, s.i, mood); });
-    if (seat !== 'drums') {
-      var pt = part.full(genre, seat, p);
-      if (seat !== 'lead') SECTIONS.forEach(function (name) { pt.sections[name].prog = idx[name]; });
-      p.part = part.upgrade(pt);
-    }
-    p.mood = mood; p.swing = int04(o.swing, 0);
-    p.recipe = { id: typeof o.recipe === 'string' && RECIPE_ID.test(o.recipe) ? o.recipe : 'signature', seed: seed, energy: int04(o.energy, 2), fills: int04(o.fills, 1) };
-    return songs.sanitize(p, g, genre);
+    var gid = genreId(genre), g = gearOf(o.gear), seat = part.SEATS.indexOf(o.seat) >= 0 ? o.seat : 'drums', R = recipeFor(gid, o.recipe, g);
+    var d = slidersOf(gid, R), seed = intIn(o.seed, 0, 9007199254740991) ? o.seed : 0;
+    var rng = GG.RNG(GG.hashSeed('compose|' + gid + '|' + R.id + '|' + seed)), K = Math.max(1, (C.QUICK && C.QUICK.k) || 8), plans = [], k;
+    for (k = 0; k < K; k++) plans.push(drawPlan(rng));
+    var s = { energy: int04(o.energy, d.energy), mood: int04(o.mood, d.mood), swing: int04(o.swing, d.swing), fills: int04(o.fills, d.fills) };
+    var bpm = tempoOf(gid, o.bpm != null ? o.bpm : R.bpm), arr = songs.withExtras((songs.ARRANGEMENTS[R.arr] || songs.ARRANGEMENTS.classic).slice(), g);
+    var pass = [], best = null, rb = tempoOf(gid, R.bpm);
+    plans.forEach(function (plan) {   // rated at the recipe's tempo: Feel and Tempo never change which notes win (D15)
+      var p = composeOne(gid, R, g, seat, s, bpm, arr, plan, seed), r = songs.rate(bpm === rb ? p : Object.assign({}, p, { bpm: rb }), gid, g);
+      var c = { p: p, score: r.groove + r.hook };
+      if (r.groove >= QUICK_MIN.groove && r.hook >= QUICK_MIN.hook) pass.push(c);
+      if (!best || c.score > best.score) best = c;
+    });
+    return (pass.length ? pass[rng.int(0, pass.length - 1)] : best).p;
   };
 
   songs.toNotes = function (x) {
     var p = songs.sanitize(x && x.pattern || x, null, null, true), out = [], beat = 0;
     p.arrangement.forEach(function (name, entry) {
-      var sec = p.sections[name];
+      var sec = p.sections[name], fb = p.fillBars && p.fillBars[name];   // v1.3 (Q2 = 1): bar 4 plays the fill (notes get fill: true)
       for (var bar = 0; bar < BARS; bar++, beat += 4) {
+        var src = fb && bar === BARS - 1 ? fb : sec;
         for (var step = 0; step < STEPS; step++) {
           for (var l = 0; l < p.lanes; l++) {
-            if (on(sec[l], step)) out.push({ beat: beat + step / 4, lane: C.LANES[l], section: name, entry: entry, bar: bar, step: step });
+            if (!on(src[l], step)) continue;
+            var n = { beat: beat + step / 4, lane: C.LANES[l], section: name, entry: entry, bar: bar, step: step };
+            if (src === fb) n.fill = true;
+            out.push(n);
           }
         }
       }
@@ -25934,6 +26388,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return hit;
   };
   function applyOp(bar, op, g, out, genre) {
+    if (op.op === 'roll') {   // v1.3 fills: a roll from step `from` (toms when the kit has them, else the snare), time-keeping stops under it
+      var tl = bar.length > TOMS ? TOMS : SNARE, to = op.to || STEPS, i0;
+      [HAT, CYM, RIDE].forEach(function (l) { if (l < bar.length) for (i0 = op.from || 0; i0 < to; i0++) bar[l] = set(bar[l], i0, false); });
+      for (i0 = op.from || 0; i0 < to; i0 += op.every || 1) bar[tl] = set(bar[tl], i0, true);
+      return;
+    }
+    if (op.op === 'swap') {   // v1.3: one lane's hits move to another (op.alt when the kit lacks op.to)
+      var fl = LANE_IX[op.from], tl2 = LANE_IX[op.to];
+      if (!(tl2 < bar.length) && op.alt) tl2 = LANE_IX[op.alt];
+      if (fl < bar.length && tl2 < bar.length && fl !== tl2) { bar[tl2] = orLane(bar[tl2], bar[fl]); bar[fl] = BLANK; }
+      return;
+    }
     var lanes = op.lane === 'all' ? bar.map(function (_, i) { return i; }) : [LANE_IX[op.lane]];
     lanes.forEach(function (l) {
       if (l == null || l >= bar.length) return;
