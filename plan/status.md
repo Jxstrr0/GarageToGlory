@@ -16,16 +16,15 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   players share one tightness, gang vocals centre + right, Classic-off keeps 1.1 vocals until reload).
 
 ## Version
-- Current: **1.2.0.0 "Soundcheck"** (PR #23, merged 2026-10-03) = 1.1.0.0 +
-  the band plays like people, real-feeling instruments + the TMKD sampled kit, human vocals. See "What's in v1.2" below.
-  **Update Current/Next at every merge.**
+- Current: **1.3.0.0 "Songwriter"** (in review on `v1.3-songwriter`; lanes S, A, U + lead integrated 2026-10-04; owner check
+  pending) = 1.2.0.0 + quick song recipes + 5 sliders for every seat, more note rows + per-bar chords, the one-flow
+  "Clean sheet" songwriter. See "What's in v1.3" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck.
-- Next: **1.3 "Songwriter"** (owner 2026-10-03; decisions in "Addendum 5" below: quick song recipes + sliders, more note
-  rows + per-bar chords, one-flow "Clean sheet" UI). Then **1.4 "Tuning"** (handoff D5; covers all four seats, played with
-  the final sound and the final songwriter).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23).
+- Next: **1.4 "Tuning"** (handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
+  the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -129,6 +128,39 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.3 "Songwriter" (contract `plan/plan_contract_1.3.md`; lanes S, A, U + lead merged on `v1.3-songwriter` 2026-10-04)
+- **Quick song, then tweak (U + S, S4):** a fresh Write block opens Quick song: 5 recipes per genre + "Surprise me" in 2 columns
+  (metal Neck-snapper, Doom crawl, Thrash attack, Stadium anthem, Gallop (pedal); punk Three-chord sprint, Laundromat D-beat,
+  Pogo party, Circle pit, Skate rat; rock Arena anthem, Lighter-waver, Bar boogie, Bleacher stomp, Highway driver; country Train
+  song, Legion two-step, Sad waltz, Barn burner, Porch swing), pedal recipes locked (toast names the pedal) until the double kick
+  is owned; ▶ Play loops it, Tweak ✎ opens the editor, Save ✓ is one tap. A queued sketch opens the editor; the sketch pad = the
+  editor when a draft exists, else Quick song (D10).
+- **Sliders for every seat (S + A, S3):** Energy (sparse ↔ busy: drum ops + part mods), Mood (5 rungs, the parallel key: same key
+  note, new mode / scale / thirds; native rung = 1.2), Feel (straight ↔ full triplet shuffle; steps, bar lines and count-ins never
+  move; the chart warps with the band), Fills & surprises (none ↔ a real fill on bar 4 of each section, Q2), Tempo (on a 5).
+  Energy / Mood / Fills / a recipe recompose (seeded, D14: two song slots give two songs); after hand edits they ask first (Q3:
+  "Start over from this recipe? Your hand edits go." Keep my edits / Start over); Feel + Tempo never rewrite notes.
+- **More rows + per-bar chords (S + A + U, S2):** rhythm Chug / Open / Root / 5th / Oct / Scratch (a dead strum), bass Low 5th /
+  Root / 3rd / 5th / 7th / Oct, lead Low / 1-5 / High (part v2; a v1 part plays and rates as 1.2 until its first edit); 4 chord
+  chips per section (BAR n + the chord, home outlined green) with a chord sheet (the mood's roots + "Back to <progression>");
+  "Chords: <progression> ▾" / "Hook: <name> ▾" picker; chips name what the band strums (rung third on every bar) and spell one
+  way per song (flats in flat keys). Gig lanes keep the pitch shape (Q1); Scratch charts on the root's lane; break bars take a
+  chord too (Q4; new songs still start them on home).
+- **One flow, Clean sheet (U, S6 / S7):** header ✕ / title + "Write block n of m · <seat>" / ⋯; underline tabs (Verse / Chorus /
+  Bridge / Song, a dot on a tab with a fill bar); one slim meter strip (Groove / Hook / Diff, ± flash); a one-line coach bubble with
+  the bandmate's avatar (tap for the full tip); "Your part | Drums" toggle; the grid fills the screen (no scroll at 440x956, part
+  rows ≥ 26 px); foot ▶ Loop / ▶ Song / Save ✓. ⋯ holds the band jam, the metronome, Back to Quick song, the shop + practice
+  (sketch), Beat for this section (the 0.6.2 grooves, D8), Bar 4 fill, copy / clear, part tweaks, remove Solo / Outro. Guided /
+  Advanced modes are gone (`settings.songwriterMode` ignored, D18). Same navy as the rest of the game.
+- **Ratings (S5):** notes only (a section with a fill counts 3/4 main + 1/4 fill); a slider-built song can reach the top (every
+  genre x seat x gear: ≥ 2 recipes reach groove ≥ 90 + hook ≥ 85; table in `plan/v13_lane_s_report.md`).
+- **Compatibility law:** a song / pattern / part / save without the v1.3 fields sanitizes, rates, charts, renders and saves as 1.2
+  (`tests/compat_v12.test.js` over 708 corpus entries x seats; STAGE0 1,212 timeline fingerprints; Classic 232/232).
+- **§0 defaults (no popup; the owner may object):** D1-D18 in the contract §0 (chords on the pattern, chips on string seats only,
+  Mood = parallel key, Feel = 8th shuffle, Solo / Outro no chips, Beat sheet in ⋯, rows ≥ 26 px, seeded compose, view read-only).
+- **Leftovers:** `plan/v13_integration_report.md` §8 (weakest defaults: country Sad waltz / Legion two-step groove 80-88, punk
+  Three-chord sprint hook 68-78; strict variety 0-4 % of careers; per-chord thirds; swapped drummer on straight steps).
 
 ## What's in v1.2 "Soundcheck" (contract `plan/plan_contract_1.2.md`; lanes F, I, V + lead merged on `v1.2-soundcheck` 2026-10-03; shipped PR #23)
 - **The band plays like people (F, `31_audio_feel.js`):** every player's timing + velocity from their skill (`A.tightness`: sloppy
@@ -322,7 +354,10 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 - [x] v1.3 contract `plan/plan_contract_1.3.md` (5 readers, writer, critic: 1 blocker + 6 majors applied) — 2026-10-03
 - [x] v1.3 stage 0 (1.2 compat fixtures FIRST: `tools/make_fixtures_v12.js`, `tests/compat_v12.test.js`; VERSION 1.3.0.0; 21 contract
   code + moods; report `plan/v13_stage0_report.md`) — 2026-10-04
-- [ ] lanes S / A / U, integrate, review, owner check (440x956 screenshots + slider clips)
+- [x] lanes S / A / U (`plan/v13_lane_<s|a|u>_report.md`) — 2026-10-04
+- [x] integrate on `v1.3-songwriter` (merges S -> A -> U, hand-overs, matrix 390 + 440, phoneqa, size, owner shots + clips;
+  `plan/v13_integration_report.md`) — 2026-10-04
+- [ ] review pass (<= 3 lenses: compatibility, layout / UX, determinism), owner check (ship / tweak), PR to `main`
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
@@ -331,6 +366,23 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 - Balance: `node tools/balance.js`.
 
 ## APIs (full shapes in `src/02_contracts.js`)
+- **v1.3 as merged** (lanes S -> A -> U + lead, 2026-10-04; full list in `02_contracts.js` V1.3 SONGWRITER "As merged"; lane
+  reports `plan/v13_lane_<s|a|u>_report.md`). Rule: every v1.3 branch is gated on its own field; absent = the 1.2 code, no new key.
+  - Data (all optional, sanitize writes them only when valid, after `part`): `p.chords { verse|chorus|bridge: [4 semis] }`,
+    `p.fillBars { <section>: [lanes] }` (bar 4), `p.mood` 0..4, `p.swing` 0..4, `p.recipe { id, seed, energy, fills }`; part v2
+    `{ seat, v: 2, sections }` (`C.PART_V2` rows; v written only when 2).
+  - Sim (21): `songs.swingBeat, chordsOf, chordLabel (rung third, one spelling per song), progChords, progName, moodOf, nativeMood,
+    NOTE, recipes(genre, gear, seat), sliders(genre, seat), surprise(genre, gear, seat, seed), compose(genre, { recipe, energy,
+    mood, swing, fills, bpm, seed, gear, seat })`; `part.LAYOUT / UP / ROLE / rowsOf / rowNames / upgrade / view / rowPitch`;
+    `part.suggest / full(.., v)`; toNotes `fill: true`; OPs `roll`, `swap`; `similarity(a, b, genre)` (callers pass the genre).
+  - Audio / gig (30 / 31 / 22 / 55): events `g` (grid beat), `dead`, `single`; timeline `swing`, `key.mood`; `third(o, lit)`; KS art
+    `dead`; `A.strum(m, w, { dead, third })`; drum chart `t = swingBeat(beat) * spb`; `debug('audio') + swing, mood, seat.last.dead`.
+  - UI (54): `ui.show('seq', { mode, screen: 'quick'|'edit', .., editHint })`, `ui.seqGear(entry)`; testids in contract §4.7
+    (`quick-recipe-<id>`, `quick-<slider>`, `btn-quick-tweak`, `chord-chip-<n>`, `chord-opt-<semi>`, `seq-chords`, `part-pick-<i>`,
+    `btn-seq-tools` -> `seq-tools`, `btn-seq-fill`, `btn-seq-beat`); `debug('seq')` (§4.8 + `fill`); `tests/_pw.js openTools(page)`.
+  - Constants: `C.SWING`, `C.SONG_SLIDERS`, `C.PART_V2`, `C.QUICK { k 8, debounceMs 150, warmMs 400 }`, `C.SEQ_PART_ROW_MIN` 26.
+  - Content: `grooves[g].recipes / sliders / bars / ops`, `grooves.surprise`, `grooveFx`, `coach.quick` (+ per genre, + bySeat),
+    `genres backing.moods` x 5 + `moodNative`. Lead tools: `tools/make_fixtures_v12.js`, `tools/audio_clips.js --v13`.
 - **v1.2 as merged** (lanes F -> I -> V + lead, 2026-10-03; full list in `02_contracts.js` V1.2 SOUNDCHECK "As merged"; lane
   reports `plan/v12_lane_<f|i|v>_report.md`). Rule: every new path needs a `vel` AND Classic off; no vel = the 1.1 path.
   - F (31): `A.velGain(v)`, `A.tightness(skill)`, `A.feelFor(state|null, genre, { rival, studio, seat })`, `A.feelPlan(tl, FEEL, seed,
