@@ -350,6 +350,14 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 @media (max-width: 420px) { .seq-title .caps { letter-spacing: .03em; } }
 .seq-title .fr { font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v1.3.1: the sketch pad's shop button (green like the garage's Gear shop label) */
+/* (stacked 🛒 over SHOP, 52 px wide: "Sketch pad · Rhythm guitar" still fits the title at 390) */
+.seq-shop { flex: 0 0 52px; width: 52px; height: 44px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  border-radius: 12px; border: 2px solid var(--green); background: rgba(87, 199, 122, .16); color: var(--text); cursor: pointer;
+  box-shadow: 0 0 12px rgba(87, 199, 122, .22); }
+.seq-shop .i { font-size: 17px; line-height: 1; }
+.seq-shop .t { font: 800 9.5px/1 var(--font); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+.seq-shop:active { filter: brightness(1.25); }
 /* underline section tabs */
 .seq-tabs { flex: 0 0 auto; margin: -2px -14px 0; padding: 0 12px; border-bottom: 1px solid #222b44; }
 .full.seq .seq-tabs .tabs { background: none; border: 0; border-radius: 0; padding: 0; gap: 2px; }
@@ -26790,6 +26798,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     r.classics = GG.songs.played(state, r.songIds, r.grade).map(function (s) { return s.id; });   // plays, stale, classics
     state.stats.gigs++;
     state.stats.earned += r.pay;
+    if (r.live && !r.simulated && !(state.liveGig && state.liveGig.sim) && r.songResults && r.songResults.length) logPlay(state, r);   // v1.3.1
     if (GG.shop && state.van) GG.shop.sticker(state, state.gig || r);   // v0.8: a sticker on the van for every venue played
     var best = state.stats.bestGrade;
     if (!best || C.GRADES.indexOf(r.grade) < C.GRADES.indexOf(best)) state.stats.bestGrade = r.grade;
@@ -26798,6 +26807,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (state.liveGig) state.liveGig = null;   // a live gig is over once its result lands
     return r.deltas;
   };
+
+  function logPlay(state, r) {
+    var hit = (r.perfect || 0) + (r.good || 0), log = Array.isArray(state.playLog) ? state.playLog : (state.playLog = []);
+    log.push({ acc: Math.round(U.clamp(r.accuracy || 0, 0, 1) * 1000) / 1000, ps: hit ? Math.round(r.perfect / hit * 1000) / 1000 : 1,
+      seat: GG.career.seatOf(state), diff: gig.DIFFICULTIES[r.difficulty] ? r.difficulty : 'hard', wk: state.totalWeek || 0 });
+    if (log.length > (C.PLAY_LOG_MAX || 5)) log.splice(0, log.length - (C.PLAY_LOG_MAX || 5));
+  }
 
   gig.autoResolve = function (state, rng) {
     if (!state.gig) return null;
@@ -27555,6 +27571,127 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (o.one) return out;
     }
     return S.finish();
+  };
+
+  /* ==== v1.3.1 Simulate (plan_1.3.1 §1.1; 02_contracts V1.3.1) ============================================== */
+  function erf(x) {   // Abramowitz & Stegun 7.1.26 (|error| < 1.5e-7)
+    var s = x < 0 ? -1 : 1; x = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * x);
+    return s * (1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x));
+  }
+  function inWin(ms, w) { return erf(w / (Math.max(0.5, ms) / 1000 * Math.SQRT2)); }   // P(|N(0, ms)| <= w s)
+  function r4(x) { return Math.round(x * 10000) / 10000; }
+  gig.simReason = function (state, g) {
+    if (!state || state.phase !== 'gig' || !state.gig) return 'phase';
+    g = g || state.gig;
+    if (g !== state.gig && g.venueId !== state.gig.venueId) return 'gig';
+    if (g.showdown || state.gig.showdown) return 'showdown';   // botb / festival / final: story shows are played
+    if (g.festival || state.gig.festival) return 'festival';   // a tour festival slot
+    if (GG.rival && GG.rival.pending && GG.rival.pending(state)) return 'rival';   // the same routing as GG.main.playWeekend
+    if (state.tutorial && state.tutorial.on && !(state.stats && state.stats.gigs)) return 'lesson';   // w1_gig teaches Start
+    return null;
+  };
+  gig.canSimulate = function (state, g) { return gig.simReason(state, g) === null; };
+  gig.simBot = function (state, difficulty) {
+    var diff = gig.DIFFICULTIES[difficulty] ? difficulty : 'hard', seat = GG.career.seatOf(state), min = C.SIM_MIN_PLAYED || 2;
+    var log = (Array.isArray(state.playLog) ? state.playLog : []).filter(function (e) { return e && e.seat === seat && isFinite(e.acc) && isFinite(e.ps); });
+    var same = log.filter(function (e) { return e.diff === diff; }), use = same.length >= min ? same : log.length >= min ? log : null;
+    var W = gig.windows(state, diff);
+    if (!use) {   // the band's level: your skill stat (between the tests' average bot 0.82 / 55 ms and balance's 0.93 / 25 ms)
+      var k = U.clamp(((state.drumSkill || 10) - 10) / 70, 0, 1), a = r4(0.75 + 0.18 * k), j = Math.round((65 - 40 * k) * 10) / 10;
+      var qg = inWin(j, W.good);
+      return { accuracy: a, jitterMs: j, from: 'band', n: log.length, acc: Math.round(a * qg * 1000) / 1000, ps: Math.round(inWin(j, W.perfect) / qg * 1000) / 1000 };
+    }
+    var A = use.reduce(function (t, e) { return t + e.acc; }, 0) / use.length, P = use.reduce(function (t, e) { return t + e.ps; }, 0) / use.length;
+    A = Math.round(U.clamp(A, 0, 1) * 1000) / 1000; P = Math.round(U.clamp(P, 0, 1) * 1000) / 1000;
+    function ratio(ms) { return inWin(ms, W.perfect) / inWin(ms, W.good); }   // Perfects among hits at this spread (falls as ms grows)
+    function solve(f, v) {   // f falls as ms grows: the ms in 5..150 where f(ms) = v
+      var lo = 5, hi = 150;
+      if (v >= f(lo)) return lo;
+      if (v <= f(hi)) return hi;
+      for (var it = 0; it < 40; it++) { var mid = (lo + hi) / 2; if (f(mid) > v) lo = mid; else hi = mid; }
+      return (lo + hi) / 2;
+    }
+    var sig = P >= 0.995 ? 5 : solve(ratio, P);
+    var cap = solve(function (ms) { return inWin(ms, W.good); }, Math.min(0.999, A / 0.97));
+    sig = Math.round(Math.min(sig, cap) * 10) / 10;
+    return { accuracy: r4(U.clamp(A / inWin(sig, W.good), 0.05, 1)), jitterMs: sig, from: 'own', n: use.length, acc: A, ps: P };
+  };
+  var SIM_PROBES = 8, SIM_TOL = 0.01;   // dry runs per song at most; close enough (or half a note on a short song)
+  function simGuess(S, bot) {
+    var ch = S.chart, W = S.windows, qg = inWin(bot.jitterMs, W.good), qp = inWin(bot.jitterMs, W.perfect);
+    var n = 0, auto = 0, q = 0, kick = LI.kick, fills = ch.fills || [];
+    for (var i = 0; i < ch.notes.length; i++) {
+      var x = ch.notes[i]; if (x.free) continue;
+      n++;
+      if (S.assists.autoKick && x.li === kick && S.seat === 'drums') { auto++; continue; }
+      var inFill = false;
+      for (var f = 0; f < fills.length; f++) if (x.t >= fills[f].t0 && x.t < fills[f].t1 - 1e-6) { inFill = true; break; }
+      q += inFill ? qp : qg;
+    }
+    if (!n || q <= 0) return { p: bot.accuracy, base: 0 };
+    var m = Math.max(1, n - auto), want = U.clamp((bot.acc * n - auto) / m, 0, 1);
+    return { p: r4(U.clamp(want / (q / m), 0.05, 1)), base: auto / n };
+  }
+  function dryRun(T, p, jit, rng) {
+    function gauss() { var u = Math.max(1e-9, rng.next()), v = rng.next(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+    var ch = T.startSong(), taps = [];
+    ch.notes.forEach(function (n) {
+      if (n.j !== 0 || n.t < -0.001 || !rng.chance(p)) return;
+      var off = jit ? U.clamp(gauss(), -3, 3) * jit : 0, at = Math.max(0, n.t + off);
+      taps.push({ t: at, li: n.li });
+      if (n.chord) taps.push({ t: at, li: n.chord[1] });
+      if (n.hold) taps.push({ t: Math.max(at, n.t + n.len), li: n.li, up: true });
+    });
+    taps.sort(function (a, b) { return a.t - b.t; });
+    var end = ch.duration + 0.4, k = 0;
+    for (var t = 0.05; ; t += 0.05) {
+      var now = Math.min(t, end);
+      while (k < taps.length && taps[k].t <= now) { if (taps[k].up) T.release(taps[k].li, taps[k].t); else T.judge(taps[k].li, taps[k].t); k++; }
+      T.tick(now);
+      if (now >= end) break;
+    }
+    var st = T.stats();
+    return ch.total ? (st.perfect + st.good) / ch.total : 1;
+  }
+  function simTap(S, bot, key) {
+    var live = S.live, i = S.index, want = bot.acc, g = simGuess(S, bot), p = g.p;
+    if (want == null) return { p: p, seed: GG.hashSeed(key) };
+    function probe(x, sd) {
+      var sh = Object.assign({}, S.state);   // a shallow scratch copy: the session writes only sh.liveGig
+      sh.liveGig = { gig: live.gig, setlist: live.setlist, index: i, songs: [], crowd: live.crowd, started: live.started,
+        attendance: live.attendance, difficulty: live.difficulty };
+      var T = gig.session(sh, S.gig, null, { emit: false, difficulty: S.difficulty, noFail: S.assists.noFail, autoKick: S.assists.autoKick });
+      return dryRun(T, x, bot.jitterMs / 1000, GG.RNG(sd));
+    }
+    var best = null, tol = Math.max(SIM_TOL, 0.5 / Math.max(1, S.chart.total));
+    for (var k = 0; k < SIM_PROBES; k++) {
+      var sd = GG.hashSeed(k ? key + '|' + k : key), a = probe(p, sd), e = Math.abs(a - want);
+      if (!best || e < best.err) best = { p: p, seed: sd, err: e };
+      if (best.err <= tol) break;
+      p = r4(U.clamp(p * (want - g.base) / Math.max(0.01, a - g.base), 0.05, 1));
+    }
+    return best;
+  }
+  gig.simSong = function (S, bot) {
+    if (S.done && !S.playing) return null;
+    var live = S.live, i = S.playing ? S.index : live.index;
+    if (!live.sim) live.sim = { accuracy: bot.accuracy, jitterMs: bot.jitterMs, from: bot.from, n: bot.n, acc: bot.acc, ps: bot.ps };   // a reload finishes it simulated
+    var fresh = !S.playing;
+    if (fresh) S.startSong();
+    var key = [S.state.seed, live.started, S.gig.venueId, 'sim', i].join('|');
+    var t = fresh ? simTap(S, bot, key) : { p: simGuess(S, bot).p, seed: GG.hashSeed(key) };
+    return gig.botPlay(S, { accuracy: t.p, jitterMs: bot.jitterMs, one: true }, GG.RNG(t.seed));
+  };
+  gig.simFinish = function (S, bot) {
+    bot = bot || S.live.sim || {};
+    var r = S.finish();
+    r.simulated = true; r.sim = { from: bot.from || 'band', n: bot.n || 0, acc: bot.acc != null ? bot.acc : null };
+    return r;
+  };
+  gig.simShow = function (S, bot) {
+    while (!S.done || S.playing) gig.simSong(S, bot);
+    return gig.simFinish(S, bot);
   };
 
   GG.registerDebug('gig', function () {
@@ -42556,6 +42693,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var KIT = PROPS.kit, X1 = ROOM.x1, Z0 = ROOM.z0, KIT_SCALE = 1.15;   // kit scaled like the people
   var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [0.05, 1.95, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
+  var GHOST_S = 0.35;
+  var SHOP = { label: 'Gear shop', kit: [0.61, -0.78, 0.23], rig: [0, -0.78, 0], px: 22, box: [0.95, 0.42, 0.3], color: '#57c77a' };   // (a touch bigger than the rest: px 22)
+  function shopAt(at, rig) { var o = rig ? SHOP.rig : SHOP.kit; return [at[0] + o[0], at[1] + o[1], at[2] + o[2]]; }
+  function shopBox(at, rig) { var a = shopAt(at, rig); return [a[0], a[1], a[2], SHOP.box[0], SHOP.box[1], SHOP.box[2]]; }
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
   var HOTSPOTS = [
@@ -42567,6 +42708,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { action: 'laptop', label: 'Laptop', box: [PROPS.cooler.x, 0.5, PROPS.cooler.z, 0.8, 1.0, 0.65], at: [PROPS.cooler.x, 1.08, PROPS.cooler.z - 0.05], stand: [PROPS.cooler.x, 2.38], face: Math.PI },
     { action: 'merch', label: 'Merch', box: [PROPS.merch.x, 0.55, PROPS.merch.z, 0.85, 1.1, 0.85], at: [PROPS.merch.x, 1.32, PROPS.merch.z - 0.05], stand: [-1.2, 2.2], face: -Math.PI / 2 }
   ];
+  (function () {   // v1.3.1: the Gear shop (appended; index 4 stays the kit): stand + face = the kit's (set with the throne below)
+    var K = HOTSPOTS[4];
+    HOTSPOTS.push({ action: 'shop', label: SHOP.label, box: shopBox(K.at), at: shopAt(K.at), stand: null, face: K.face, stroke: SHOP.color, dot: SHOP.color, px: SHOP.px });
+  })();
 
   var SPOTS = {
     mirror: { x: -0.82, z: 1.1, yaw: -2.6 },           // back to us, facing the mirror (clear of the pile, off every riser)
@@ -42926,6 +43071,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var kit = { mesh: null, color: null, sig: null, art: null };
     var throne = rotLocal(KIT, 0, -0.72 * KIT_SCALE);
     HOTSPOTS[4].stand = [throne.x, throne.z];
+    HOTSPOTS[7].stand = HOTSPOTS[4].stand;            // v1.3.1: the Gear shop: you walk to the throne
 
     var shGeo = new THREE.PlaneGeometry(1, 1); shGeo.rotateX(-Math.PI / 2);
     var shadows = new THREE.InstancedMesh(shGeo, new THREE.MeshBasicMaterial({ map: ctx.radialTexture('shadow'), transparent: true, depthWrite: false }), shadowSpots.length + MAX_PEOPLE);
@@ -42943,7 +43089,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var H = HOTSPOTS[hi], box = new THREE.Mesh(unitBox, ctx.mats.hidden);
       box.position.set(H.box[0], H.box[1], H.box[2]); box.scale.set(H.box[3], H.box[4], H.box[5]);
       box.userData.action = H.action; scene.add(box); box.updateMatrixWorld();
-      var lab = ctx.makeLabel(H.label, { px: 20 });
+      var lab = ctx.makeLabel(H.label, { px: H.px || 20, stroke: H.stroke, dot: H.dot });
       lab.position.set(H.at[0], H.at[1], H.at[2]); lab.userData.action = H.action; scene.add(lab);
       hs[H.action] = { def: H, box: box, label: lab, y: H.at[1], i: hi, fade: 1 };
       hsList.push(hs[H.action]);
@@ -43110,6 +43256,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       lab.position.set(D.at[0], D.at[1], D.at[2]); lab.userData.action = 'kit'; scene.add(lab);
       if (li >= 0) labels[li] = lab;
       ctx.disposeLabel(old); h.label = lab; h.y = D.at[1]; h.text = text;
+      var sh = hs.shop;   // v1.3.1: the Gear shop label follows the kit hotspot (under "Drum kit" / under "Your rig")
+      if (sh) {
+        var B = shopBox(D.at, on), A = shopAt(D.at, on);
+        sh.box.position.set(B[0], B[1], B[2]); sh.box.scale.set(B[3], B[4], B[5]); sh.box.updateMatrixWorld();
+        sh.label.position.set(A[0], A[1], A[2]); sh.y = A[1];
+      }
     }
     function syncSticker(st, band, gear, want, rebuilt) {
       var S0 = player.sticker, sig = want && gear ? gear + '|' + JSON.stringify(st.logo || null) + '|' + ((band && band.name) || '') : '';
@@ -43188,11 +43340,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var h = hs[action];
       if (!h || !state || !player.p) return false;
       var st = standOf(h.def);
-      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && action === 'kit' ? RIG.face : h.def.face;
+      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && atKit(action) ? RIG.face : h.def.face;
       startWalk(st[0], st[1]);
       return true;
     }
-    function standOf(def) { if (rigOn && def.action === 'kit') return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
+    function standOf(def) { if (rigOn && atKit(def.action)) return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
+    function atKit(action) { return action === 'kit' || action === 'shop'; }   // v1.3.1: the Gear shop is used from the throne / your rig
     function clampX(x) { return clamp(x, ROOM.x0 + WALK.margin, ROOM.x1 - WALK.margin); }
     function clampZ(z) { return clamp(z, ROOM.z0 + WALK.margin, ROOM.z1 - WALK.margin); }
     function pushOut(x, z) {
@@ -43212,9 +43365,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var p = player, dx = tx - p.x, dz = tz - p.z;
       if (dx * dx + dz * dz < 0.0025) {          // already there: just turn (and fire the hotspot)
         p.walking = false; p.x = tx; p.z = tz;
-        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = 0; }
+        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = -GHOST_S; }   // v1.3.1: already there: wait out the tap's own click
         var kp = rigOn ? 'rig' : 'drum';   // v1.1: your rig on a string seat
-        p.pose = p.pending === 'kit' ? kp : p.pose === kp && !p.pending ? kp : 'stand';
+        p.pose = atKit(p.pending) ? kp : p.pose === kp && !p.pending ? kp : 'stand';
         ctx.ring.hide();
         return;
       }
@@ -43297,7 +43450,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       p.yaw = ctx.approachAngle(p.yaw, p.goalYaw, p.walking ? 9 : 7, dt);
       if (p.pending && !p.walking) {
         p.faceT += dt;
-        if (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7) {
+        if (p.faceT >= 0 && (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7)) {
           var action = p.pending; p.pending = null;
           ctx.emit('hotspot', { action: action });
         }
@@ -43318,7 +43471,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ctx.ring.hide();
       if (p.pending) {
         p.goalYaw = p.faceYaw; p.faceT = 0;
-        if (p.pending === 'kit') p.pose = rigOn ? 'rig' : 'drum';
+        if (atKit(p.pending)) p.pose = rigOn ? 'rig' : 'drum';
       }
     }
     function playerIdle(bn, t, idleT) {
@@ -43387,7 +43540,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       for (i = 0; i < hsList.length; i++) {
         var h = hsList[i], k = h.i * 0.9, big = player.pending === h.def.action ? 1.12 : 1, st = standOf(h.def);
         var here = !player.walking && Math.abs(player.x - st[0]) < 0.3 && Math.abs(player.z - st[1]) < 0.3;
-        h.fade += ((here ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));
+        h.fade += ((here && h.def.action !== 'shop' ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));   // (v1.3.1: the Gear shop never fades)
         h.label.material.opacity = h.fade;
         ctx.scaleLabel(h.label, big * (1 + 0.035 * Math.sin(t * 2.4 + k)));
         h.label.position.y = h.y + 0.025 * Math.sin(t * 1.7 + k);
@@ -43424,11 +43577,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
         hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         labelAt: hsList.map(function (h) { var p = h.label.position; return { action: h.def.action, x: rnd(p.x), y: rnd(h.y), z: rnd(p.z) }; }),   // v0.8 polish: for label/prop overlap checks
+        labelBox: hsList.map(labelBox),   // v1.3.1: each label's screen rect (CSS px, centre x / y + w / h at rest) for label/label overlap checks
         trophyWall: trophyWall.counts, bandProps: bandProps.state(),
         seat: Object.assign({}, seatInfo, { label: hs.kit ? hs.kit.text || HOTSPOTS[4].label : null, sticker: !!player.sticker, playerPose: player.walking ? 'walk' : player.pose })   // v1.1
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
+    function labelBox(h) {
+      var p = h.label.position, s = R.worldToScreen ? R.worldToScreen(p.x, h.y, p.z) : null, u = h.label.userData;
+      return { action: h.def.action, x: s ? Math.round(s.x) : null, y: s ? Math.round(s.y) : null, w: Math.round(u.px * u.aspect), h: Math.round(u.px * 58 / 64) };
+    }
 
     function rotLocal(F, lx, lz) {                  // frame-local (x, z) -> world, frame = { x, z, yaw }
       var c = Math.cos(F.yaw), s = Math.sin(F.yaw);
@@ -52510,7 +52668,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         text: 'The full gig board arrives in v0.3. For now: put Book in a slot and hope.' });
     },
     plan: function () { ui.openPlanner(); },
-    laptop: function () { ui.show('laptop'); }
+    laptop: function () { ui.show('laptop'); },
+    shop: function () { if (ui.openGear) return ui.openGear(); }   // v1.3.1: the Gear shop label -> your seat's shop (Drum shop / <Instrument> shop)
   };
   ui.hotspot = function (action) {
     if (!S() || ui.stackIds().length) return false;   // ignore walks that finish while a screen is up
@@ -52534,7 +52693,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      2D fallback garage (three.js or WebGL missing): hotspot + bandmate buttons over a CSS backdrop
      ====================================================================================================== */
   var SPOTS = [['plan', '📋', 'Whiteboard'], ['laptop', '💻', 'Laptop'], ['kit', '🥁', 'Drum kit'], ['gigboard', '📌', 'Gig board'],
-    ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door']];
+    ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door'], ['shop', '🛒', 'Gear shop']];   // v1.3.1: + the Gear shop
   function spotOf(action, st) {
     var x = SPOTS.filter(function (y) { return y[0] === action; })[0], seat = GG.career && GG.career.seatOf && st ? GG.career.seatOf(st) : 'drums';
     if (action === 'kit' && seat !== 'drums') return ['kit', '🎸', 'Your rig', seat];
@@ -53335,7 +53494,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
     return el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-    } }, '✕'), V.title, btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+    } }, '✕'), V.title, shopButton(D), btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+  }
+  function shopName() { return strSeat() ? cap(instrument()) + ' shop' : 'Drum shop'; }
+  function openShop(D) { stopPlay(D); ui.openGear(); }
+  function shopButton(D) {
+    if (D.mode !== 'sketch' || !ui.openGear) return null;
+    return btn('.seq-shop', { testid: 'btn-seq-shop', 'aria-label': shopName(), title: shopName(), onclick: function () { openShop(D); } }, [el('span.i', '🛒'), el('span.t', 'Shop')]);
   }
   function head(s, D) {
     var V = D.view; if (!V || !V.title) return;
@@ -53453,7 +53618,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         D.mode === 'write' ? row('btn-seq-jam', '🎸', 'Let the band jam one', function () { if (D.done) return; D.done = true; close(); stopPlay(D); if (D.onJam) D.onJam(); }) : null,
         metroButton(),
         !ro && !quick ? row('btn-seq-quick', '🎚', 'Back to Quick song', function () { close(); stopPlay(D); enterQuick(D); owner.rerender(); }) : null,
-        D.mode === 'sketch' && ui.openGear ? row('btn-kit-shop', '🛒', strSeat() ? cap(instrument()) + ' shop' : 'Drum shop', function () { close(); stopPlay(D); ui.openGear(); }) : null   // v0.8 / v1.1: your seat's shop
+        D.mode === 'sketch' && ui.openGear ? row('btn-kit-shop', '🛒', shopName(), function () { close(); openShop(D); }) : null   // v0.8 / v1.1: your seat's shop (v1.3.1: also in the header)
       ]);
       if (!ro && drums) {
         var fills = chipSec(D.tab), hasFill = !!(D.pat.fillBars && D.pat.fillBars[D.tab]);
@@ -53821,7 +53986,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     setupStage();
     if (G.opts.studio) { startSession([G.opts.studio.songId]); if (auto()) nextSong(); else showBetween(null); return true; }   // v0.5 studio take
     var live = st.liveGig && st.liveGig.gig && st.liveGig.gig.venueId === gig.venueId ? st.liveGig : null;
-    if (live) { startSession(null); if (G.ses.done) finishShow(); else { showBetween(null); if (auto()) G.autoT = setTimeout(nextSong, 30); } }
+    if (live) {
+      startSession(null);
+      if (live.sim) { G.sim = live.sim; startSim(); }   // v1.3.1: a simulated show finishes simulated
+      else if (G.ses.done) finishShow(); else { showBetween(null); if (auto()) G.autoT = setTimeout(nextSong, 30); }
+    }
     else if (auto()) { startSession(GG.gig.defaultSetlist(st, gig)); nextSong(); }
     else { G.pick = GG.gig.defaultSetlist(st, gig); ui.show('gig-set', {}); }
     return true;
@@ -54541,7 +54710,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (cb) setTimeout(function () { cb(take); }, 0);
       return;
     }
-    var st = S(), r = G.ses.finish(), before = st.venueRep ? st.venueRep[r.venueId] : undefined;
+    var st = S(), r = G.sim ? GG.gig.simFinish(G.ses, G.sim) : G.ses.finish(), before = st.venueRep ? st.venueRep[r.venueId] : undefined;   // v1.3.1
     stopAudio();
     G.mode = 'results';
     try { (G.opts.apply || defaultApply)(st, r); } catch (e) { console.error('[gig] applying the result failed', e); }
@@ -54567,6 +54736,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
           el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0))])
       ]));
+      if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       s.body.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Crowd'), el('b', r.crowd + '/' + r.capacity)]),
         el('div', [el('span.caps', 'Pay'), el('b', pay)]),
@@ -54694,17 +54864,80 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           el('div.tiny.dim', 'Q ' + song.quality + ' · Groove ' + (r.groove || '?') + ' · Hook ' + (r.hook || '?') + ' · Diff ' + (r.difficulty || '?'))]), tags(song)])));
       });
       s.body.appendChild(list);
-      s.foot.appendChild(el('div.row', [
-        ui.btn('.btn', { testid: 'btn-gig-auto', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
-        ui.btn('.btn.primary.grow', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
+      var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
+      s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
+        el('div.row', [
+          ui.btn('.btn.small', { testid: 'btn-gig-auto', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
+          bot ? ui.btn('.btn.small.grow', { testid: 'btn-gig-sim', disabled: !ids.length, 'aria-label': 'Simulate this gig', onclick: simulateShow }, '⏩ Simulate this gig')
+            : el('div.tiny.dim.grow', { testid: 'gig-sim-no' }, SIM_NO[why] || SIM_NO.phase)]),
+        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot)) : null,
+        ui.btn('.btn.primary.big.block', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
-          ui.close('gig-set');
-          for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
+          closeOverShow();
           startSession(G.pick.slice());
           nextSong();
         } }, 'Start the show')]));
     }
   });
+  function closeOverShow() {
+    ui.close('gig-set');
+    for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
+  }
+
+  /* ---- v1.3.1 Simulate: the real show played by a bot at your recent average (GG.gig.simSong per song) ------------ */
+  var SIM_NO = { showdown: 'Showdown night. This one you play.', rival: 'Showdown night. This one you play.',
+    festival: 'A festival slot. This one you play.', lesson: 'Play your first one. The band insists.', phase: 'This one you play.', gig: 'This one you play.' };
+  ui.gigSimMs = ui.gigSimMs != null ? ui.gigSimMs : 350;
+  function pct(x) { return Math.round((x || 0) * 100); }
+  function simWhy(bot) {
+    return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits'
+      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+  }
+  function simDone(r) {
+    var m = r.sim || {};
+    return m.from === 'own' ? '⏩ Simulated at your average (last ' + m.n + ' gigs, ' + pct(m.acc) + '% hit)'
+      : '⏩ Simulated at the band’s level (play a couple to set your own)';
+  }
+  function simulateShow() {
+    if (!G || !G.pick.length || G.ses || !GG.gig.canSimulate(S(), G.gig)) return;
+    closeOverShow();
+    startSession(G.pick.slice());
+    G.sim = GG.gig.simBot(S(), G.ses.difficulty);
+    startSim();
+  }
+  function startSim() {
+    G.mode = 'sim';
+    if (G.dom) G.dom.pauseBtn.hidden = true;   // nothing to pause
+    showSim(null);
+    G.autoT = setTimeout(simStep, ui.gigSimMs);
+  }
+  function simStep() {
+    if (!G || G.mode !== 'sim') return;
+    if (G.ses.done) { finishShow(); return; }
+    var r = null;
+    G.ses.emit = false;   // no per-note events ('gig:song' still fires: main saves between songs)
+    try { r = GG.gig.simSong(G.ses, G.sim); } finally { if (G && G.ses) G.ses.emit = true; }
+    if (!G) return;
+    var ses = G.ses, d = G.dom;
+    stageCall('setCrowdLevel', ses.crowd);
+    if (d) { d.meter.style.width = Math.round(ses.crowd) + '%'; d.level.textContent = LEVEL_TEXT[ses.level] || ses.level; d.crowd.dataset.level = ses.level; d.back.dataset.level = ses.level; }
+    G.crowdN = Math.round(ses.crowd);
+    showSim(r);
+    if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
+    G.autoT = setTimeout(simStep, ui.gigSimMs);
+  }
+  function showSim(r) {
+    var d = G.dom; if (!d) return;
+    var n = G.ses.setlist.length, i = G.ses.index;   // i = songs simulated so far
+    ui.clear(d.mid);
+    d.mid.appendChild(el('div.gig-mid-card', { testid: 'gig-sim-progress' }, [
+      el('div.caps', '⏩ Simulated show'),
+      el('b', i < n ? 'Simulating the show… song ' + (i + 1) + ' of ' + n : 'That’s the set. Counting the take…'),
+      r ? el('div.small', '“' + r.title + '”: ' + pct(r.accuracy) + '% hit · ' + r.perfect + ' perfect / ' + r.good + ' good / ' + r.miss + ' missed') : null,
+      el('div.tiny.dim', simWhy(G.sim))
+    ]));
+    d.mid.hidden = false;
+  }
   function tags(song) {
     return el('div.chips', [song.classic ? el('span.tag.gold', 'Classic') : null, (song.stale || 0) >= 30 ? el('span.tag', 'Stale') : null,
       song.hits ? el('span.tag.mine', song.hits + ' great') : null]);
@@ -54743,6 +54976,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
       dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
       akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null,
+      sim: G.sim ? { on: true, from: G.sim.from, n: G.sim.n, accuracy: G.sim.accuracy, jitterMs: G.sim.jitterMs, acc: G.sim.acc } : { on: false },   // v1.3.1
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
       seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
