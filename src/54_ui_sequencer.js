@@ -452,10 +452,12 @@
     var ro = D.mode === 'view', G = GG.songs.genre(genre()), p = D.pat;
     var style = GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm) : { label: '' };
     var bpmLabel = el('b', p.bpm + ' BPM'), styleLabel = el('span.dim', ' · ' + style.label);
-    var tempo = el('input.seq-tempo', { type: 'range', testid: 'seq-tempo', disabled: ro,
+    var tempo = el('input.seq-tempo.qs-range', { type: 'range', testid: 'seq-tempo', disabled: ro,
       min: G.tempo[0], max: G.tempo[1], step: 5, value: p.bpm, 'aria-label': 'Tempo' });
+    function pct() { tempo.style.setProperty('--p', ((+tempo.value - G.tempo[0]) / Math.max(1, G.tempo[1] - G.tempo[0]) * 100).toFixed(1) + '%'); }
+    tempo.style.setProperty('--c', 'var(--blue)'); pct();
     tempo.addEventListener('input', function () {
-      p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
+      pct(); p.bpm = +tempo.value; bpmLabel.textContent = p.bpm + ' BPM';
       styleLabel.textContent = ' · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '');
       rerate(D);
       arrRow.querySelectorAll('[data-secs]').forEach(function (n) { n.textContent = '~' + Math.round(GG.songs.seconds({ bpm: p.bpm, arrangement: withSongExtras(D, GG.songs.ARRANGEMENTS[n.dataset.secs]) })) + ' s'; });
@@ -487,7 +489,7 @@
         return el('div.row.ss-extra', { testid: 'seq-song-extra-' + name }, [el('div.grow', [el('b', def.name + (on ? ' ✓' : '')), el('div.tiny.dim', on ? (name === 'solo' ? 'Before the last chorus' : 'At the very end') : def.blurb)]),
           btn('.btn.small' + (on ? '' : '.primary'), { testid: 'seq-song-' + (on ? 'remove-' : 'add-') + name, onclick: function () { if (on) removeExtra(s, D, name); else addExtra(s, D, name); } }, on ? 'Take out' : 'Add')]);
       })) : null,
-      el('div.ss-row.small', { testid: 'seq-sections' }, ['Groove by part: '].concat(GG.songs.sectionsOf(p).map(function (n, i) {
+      el('div.ss-row.ss-groove.small', { testid: 'seq-sections' }, ['Groove by part: '].concat(GG.songs.sectionsOf(p).map(function (n, i) {
         return [i ? ' · ' : '', el('b', SEC_LABEL[n] + ' ' + (r.sections[n] != null ? r.sections[n] : '–'))];
       })).concat([el('div.tiny.faint', { style: 'margin-top:4px' }, r.notes + ' hits in the whole song.')]))
     ]);

@@ -40,16 +40,21 @@ Look: `plan/v13_songwriter_mockup.html?opt=A` matched (shots below); same navy (
   ⋯ modal on its `ui:layout` (sketch + songs). 5p: `ctx.seqScreen`. `debug('seq')` = §4.8 + `fill`.
 
 ## Tests + results (node build.js; `node tests/run.js` SUITE ALL PASS incl. compat_v12 10/10 + STAGE0)
-- `pw_seq` seq 46 + seq-compat 17 (each v12_<seat> draft opened + used untouched and a queued 1.2 song opened + saved untouched = its SAN
-  fixture, no v1.3 key), quick 26, part 27, layout 45 (390x844) / 51 (440x956: no scroll in any editor case, Quick fits; insets 47/34 and
-  59/34 + Bigger text: every slider reachable in quick-main, foot above the home bar, header clear of the notch, 6 tabs + the longest hook fit).
+- `pw_seq` seq 45 (incl. ⋯ Clear / Copy / Bar 4 fill / Beat sheet / metronome, the full-tip modal, save byte-equality, view read-only) +
+  seq-compat 17 (each v12_<seat> draft opened + used untouched and a queued 1.2 song opened + saved untouched = its SAN fixture, no v1.3
+  key), quick 26, part 27, layout 45 (390x844) / 53 (440x956: no scroll in any editor case, Quick fits; insets 47/34 and 59/34 + Bigger
+  text: every slider reachable in quick-main, foot above the home bar, header clear of the notch, 6 tabs + the longest hook fit). Both sizes.
+- Classic `META_ONLY=hash pw_seq` 232/232 equal (204 s). phoneqa ALL PASS at 390x844 and 440x956 (Quick song, part editor, ⋯ menu audited).
 - Migrations green: `pw_seats` write 10 / gig 8 / shop 7; `pw_shop` gear 30 / seat 26; `pw_flow` flow 17 / layout 34; `pw_tutorial` tut_w1 33 x 4;
-  `pw_settings` difficulty 17; `content_tutorial` 10; `pw_perf quick` 3; phoneqa 390 + 440 (see below).
+  `pw_settings` difficulty 17; `content_tutorial` 10; `pw_perf quick` 3.
 
 ## Numbers
 - Slider release -> new loop audible (4x CPU throttle, playing): task 16-31 ms, + look-ahead 120 + tick 25 = 161-176 ms (gate 300). Compose
-  in page 1.5-9.7 ms (k = 8). dist/game.html 5,201,232 B (Lane S 5,186,786: +14 KB net with the guided flow gone; gate 6,000,000).
-- Layout 390x844 (0 insets): drum seat rows ≈ 33 px (cells 82 x 33), string part layer ≈ 27 px, Drums layer ≈ 30 px, `.seq-main` scroll 0.
+  in page 1.5-9.7 ms (k = 8). dist/game.html 5,202,228 B (Lane S 5,186,786: +15 KB net with the guided flow gone; gate 6,000,000).
+- Layout, 0 insets (`.seq-main` scroll 0 everywhere): 390x844 drum seat cells 84 x 32.7, string part rows 26.2 (47-55 wide), Drums layer
+  29.3; Quick `quick-main` 648 / 642 (scrolls 6 px). 440x956: drum 97 x 39.7, part rows 33.2, Drums layer 36.3; Quick 754 / 754 (fits).
+- Shots (440x956, 30): `seq_quick_<seat>`, `seq_edit_<seat>_<layer>_<tab>`, `seq_menu_rhythm|drums`, `seq_chord_sheet`, `seq_picker`, `seq_song_rhythm`,
+  full gear (6 lanes, 6 tabs), insets + Bigger text; in `tests/.cache/*_440.png` (pw_seq layout writes them).
 
 ## Hand-overs
 - Lead: document in 02_contracts (V1.3 UI) `ui.seqGear`, the `seq` data keys `screen` / `editHint`, `debug('seq').fill`, `_pw.openTools`; 11:47
