@@ -10,7 +10,8 @@
 // band's drum garage x 1.15; back on drums the label is "Drum kit" again; no console errors. tests/.cache/garage_seat<TAG>.png.
 // v1.3.1 (Lane S): META_ONLY=shop (also in the default run): the green "Gear shop" label (the 8th hotspot, C.HOTSPOTS 'shop') in
 // every room (tiers 0-3 + the other bands' tier-0 rooms) on drums and on a string seat: on screen between the HUD and a sheet,
-// its label rect clear of every other label (debug labelBox), right under "Drum kit" (drums) / "Your rig" (string seats),
+// its label rect clear of every other label (debug labelBox) and of the merch box pile (10 boxes), under "Drum kit" (drums,
+// nudged right of the pile) / "Your rig" (string seats),
 // hotspotScreenPos('shop') picks 'shop', 8 labels, draw calls < 60; a real tap walks you to the throne / your rig (pose drum /
 // rig) and opens the gear sheet ("Drum shop" / "Bass shop" / "Guitar shop"); the 2D fallback's hs-shop (8 spots, no horizontal
 // overflow, >= 44 px) opens it too. Screenshots tests/.cache/garage_shop_<seat><TAG>.png. Also run at PW_VIEW=440x956.
@@ -359,7 +360,8 @@ async function shop(c) {
       const tag = band + '/' + tier + '/' + seat;
       const want = await page.evaluate(([band, tier, seat]) => {
         const st = GG.main.quickStart({ seed: 4242, slot: '1', openCard: false, name: 'Sam', bandId: band, seat });
-        st.spaceTier = tier;   // (a rented room from the same camera: the room only reads state.spaceTier)
+        st.spaceTier = tier; st.space = GG.shop.spaceDef(st, tier).id;   // (a rented room from the same camera)
+        st.merch.stock = { shirt: 24 * 8, sticker: 200 * 2 };              // the unsold box pile along the left edge (10 boxes)
         if (!GG.render.available) GG.render.init(document.getElementById('scene'));
         for (let i = 0; i < 4; i++) { try { GG.ui.close(); } catch (e) {} }
         GG.render.setPaused(false); GG.render.setScene('garage'); GG.render.syncState(st);
@@ -370,11 +372,15 @@ async function shop(c) {
       await settle(page);
       const d = await dbg(page);
       const B = d.labelBox || [], S = B.find(b => b.action === 'shop'), K = B.find(b => b.action === 'kit');
+      const pile = await page.evaluate(() => { const P0 = GG.debug('render').space.pileBox; if (!P0) return null; const P = [];
+        for (const x of [P0[0], P0[3]]) for (const y of [P0[1], P0[4]]) for (const z of [P0[2], P0[5]]) P.push(GG.render.worldToScreen(x, y, z));
+        return [Math.min(...P.map(p => p.x)), Math.min(...P.map(p => p.y)), Math.max(...P.map(p => p.x)), Math.max(...P.map(p => p.y))].map(Math.round); });
+      c.ok(d.space.boxes >= 10 && pile && S && (S.x - S.w / 2 > pile[2] || S.x + S.w / 2 < pile[0] || S.y - S.h / 2 > pile[3] || S.y + S.h / 2 < pile[1]), tag + ': the Gear shop label is clear of the box pile ' + JSON.stringify([d.space.boxes, pile, S]));
       c.ok(d.hotspots.length === want.hs && d.hotspots.includes('shop') && B.length === want.hs && d.drawCalls < 60, tag + ': ' + want.hs + ' hotspots + labels incl. the Gear shop, ' + d.drawCalls + ' draw calls');
       c.ok(S && S.x - S.w / 2 >= 0 && S.x + S.w / 2 <= W && S.y >= 56 && S.y <= H * 0.65, tag + ': the Gear shop label on screen between the HUD and a sheet ' + JSON.stringify(S));
       const over = B.filter(b => b !== S && Math.abs(b.x - S.x) < (b.w + S.w) / 2 + 2 && Math.abs(b.y - S.y) < (b.h + S.h) / 2 + 2).map(b => b.action);
       c.ok(S && !over.length, tag + ': the Gear shop label overlaps no other label ' + JSON.stringify(over));
-      c.ok(S && K && S.y - K.y >= (S.h + K.h) / 2 + 4 && Math.abs(S.x - K.x) <= 30 && d.seat.label === (seat === 'drums' ? 'Drum kit' : 'Your rig'), tag + ': right under "' + d.seat.label + '" ' + JSON.stringify([K, S]));
+      c.ok(S && K && S.y - K.y >= (S.h + K.h) / 2 + 4 && S.y - K.y <= 60 && S.x - K.x >= -30 && S.x - K.x <= 50 && d.seat.label === (seat === 'drums' ? 'Drum kit' : 'Your rig'), tag + ': just under "' + d.seat.label + '" ' + JSON.stringify([K, S]));
       const pk = await page.evaluate(() => { const p = GG.render.hotspotScreenPos('shop'), h = p && GG.render.pickAt(p.x, p.y); return { p, h }; });
       c.ok(pk.h && pk.h.type === 'hotspot' && pk.h.action === 'shop', tag + ': a tap on it picks the shop ' + JSON.stringify(pk));
       if (!TAPS[band + '|' + tier + '|' + seat]) continue;
@@ -387,6 +393,16 @@ async function shop(c) {
       g.ev.filter(e => e.t === 'close').forEach(e => console.log('note: ' + tag + ': ' + e.v + ' closed before the check by ' + e.at));
       c.ok(got && op && op.head.includes(want.shop), tag + ': tap -> walk -> the gear sheet "' + want.shop + '" ' + JSON.stringify([got, g.ev]));
       c.ok(!g.r.walking && g.r.seat.playerPose === (seat === 'drums' ? 'drum' : 'rig'), tag + ': you use it from the ' + (seat === 'drums' ? 'throne' : 'rig') + ' (' + g.r.seat.playerPose + ')');
+      if (band === 'hail_damage' && tier === 0) {   // again from where you sit: the sheet opens and stays open (the tap's click never closes it)
+        await settle(page);
+        await page.evaluate(() => { window.__ev.length = 0; });
+        const p2 = await page.evaluate(() => GG.render.hotspotScreenPos('shop'));
+        await tapAt(page, p2);
+        await page.waitForFunction(() => window.__ev.some(e => e.t === 'open'), null, { timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        const g2 = await page.evaluate(() => ({ ev: window.__ev.slice(), screen: GG.debug('ui').screen }));
+        c.ok(g2.screen === 'gear' && !g2.ev.some(e => e.t === 'close'), tag + ': tapped again from the ' + (seat === 'drums' ? 'throne' : 'rig') + ', the gear sheet opens and stays open ' + JSON.stringify(g2));
+      }
       if (tier === 0 && band === 'hail_damage') {
         await settle(page);
         await page.evaluate(() => ['hud', 'screens', 'toast'].forEach(id => { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; }));

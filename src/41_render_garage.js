@@ -70,10 +70,14 @@
   // noodler goes instead.
   var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [0.05, 1.95, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
-  // v1.3.1: the Gear shop label sits SHOP.dy under the kit's label (drums) or the rig's (string seats); its hit box is the label.
-  var SHOP = { label: 'Gear shop', dy: -0.78, px: 22, box: [0.95, 0.42, 0.3], color: '#57c77a' };   // (a touch bigger than the rest: px 22)
-  function shopAt(at) { return [at[0], at[1] + SHOP.dy, at[2]]; }
-  function shopBox(at) { var a = shopAt(at); return [a[0], a[1], a[2], SHOP.box[0], SHOP.box[1], SHOP.box[2]]; }
+  // v1.3.1: a hotspot tapped where you already stand (the Gear shop from the throne) fires after this many seconds, not on the
+  // next frame: the tap's own synthesized click lands on the canvas, never on the scrim of the sheet it opens (which closed it).
+  var GHOST_S = 0.35;
+  // v1.3.1: the Gear shop label sits under the kit's label (drums; nudged right, clear of the merch box pile on the left edge)
+  // or the rig's (string seats); its hit box is the label.
+  var SHOP = { label: 'Gear shop', kit: [0.61, -0.78, 0.23], rig: [0, -0.78, 0], px: 22, box: [0.95, 0.42, 0.3], color: '#57c77a' };   // (a touch bigger than the rest: px 22)
+  function shopAt(at, rig) { var o = rig ? SHOP.rig : SHOP.kit; return [at[0] + o[0], at[1] + o[1], at[2] + o[2]]; }
+  function shopBox(at, rig) { var a = shopAt(at, rig); return [a[0], a[1], a[2], SHOP.box[0], SHOP.box[1], SHOP.box[2]]; }
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
   // Hotspots: hit box [cx, cy, cz, w, h, d] (world, generous for thumbs), label position, where the
@@ -690,7 +694,7 @@
       ctx.disposeLabel(old); h.label = lab; h.y = D.at[1]; h.text = text;
       var sh = hs.shop;   // v1.3.1: the Gear shop label follows the kit hotspot (under "Drum kit" / under "Your rig")
       if (sh) {
-        var B = shopBox(D.at), A = shopAt(D.at);
+        var B = shopBox(D.at, on), A = shopAt(D.at, on);
         sh.box.position.set(B[0], B[1], B[2]); sh.box.scale.set(B[3], B[4], B[5]); sh.box.updateMatrixWorld();
         sh.label.position.set(A[0], A[1], A[2]); sh.y = A[1];
       }
@@ -800,7 +804,7 @@
       var p = player, dx = tx - p.x, dz = tz - p.z;
       if (dx * dx + dz * dz < 0.0025) {          // already there: just turn (and fire the hotspot)
         p.walking = false; p.x = tx; p.z = tz;
-        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = 0; }
+        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = -GHOST_S; }   // v1.3.1: already there: wait out the tap's own click
         var kp = rigOn ? 'rig' : 'drum';   // v1.1: your rig on a string seat
         p.pose = atKit(p.pending) ? kp : p.pose === kp && !p.pending ? kp : 'stand';
         ctx.ring.hide();
@@ -888,7 +892,7 @@
       p.yaw = ctx.approachAngle(p.yaw, p.goalYaw, p.walking ? 9 : 7, dt);
       if (p.pending && !p.walking) {
         p.faceT += dt;
-        if (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7) {
+        if (p.faceT >= 0 && (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7)) {
           var action = p.pending; p.pending = null;
           ctx.emit('hotspot', { action: action });
         }
