@@ -669,8 +669,10 @@ async function seatShop() {
       const b2 = await page.evaluate(() => ({ seatLanes: GG.career.seatLanes(GG.state), runs: GG.career.seatRuns(GG.state), lanes: GG.state.gear.lanes, dk: GG.state.gear.doubleKick, now: document.querySelector('[data-testid="gear-now"]').dataset }));
       c.ok(b2.seatLanes === (seatId === 'bass' ? 5 : 6) && b2.lanes === 6 && b2.runs && b2.dk && b2.now.runs === '1', seatId + ': ride/cab + run gear: your lanes ' + b2.seatLanes + ', kit 6 + double kick, runs on ' + JSON.stringify(b2));
       await tap(page, 'btn-gear-done');
+      await page.waitForFunction(() => GG.debug('ui').screen === 'seq', null, { timeout: 10000 });
+      if (await page.evaluate(() => GG.debug('seq').screen === 'quick')) await tap(page, 'btn-quick-tweak');   // v1.3: the sketch pad sat on Quick song
       const grid = await page.evaluate(() => ({ cols: document.querySelector('[data-testid="part-grid"]') ? document.querySelector('[data-testid="part-grid"]').dataset.lanes : null }));
-      c.ok(grid.cols === (seatId === 'bass' ? '3' : '5'), seatId + ': back to your part’s grid ' + JSON.stringify(grid));
+      c.ok(grid.cols === (seatId === 'bass' ? '6' : '7'), seatId + ': back to your part’s grid (v1.3 rows) ' + JSON.stringify(grid));
     }
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'seat threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }

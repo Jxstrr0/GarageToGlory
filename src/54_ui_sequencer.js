@@ -889,8 +889,8 @@
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
     if (strSeat()) {   // v1.1 review: the drum writeTips are the drum grid's; a string seat starts from the drummer's groove
-      var tk = ui.talkers(state)[0];
-      return tk ? { who: tk.id, text: ui.fill('{drummer} has a groove ready. Pick your ' + (GG.career.seatOf(state) === 'lead' ? 'hook' : 'chords') + ' for each section, then tap your part on the grid. Hit play to hear it.', state) } : null;
+      var dr = GG.career.drummerId ? GG.career.drummerId(state) : null, tl = ui.talkers(state), tk = tl.filter(function (m) { return m.id !== dr; })[0] || tl[0];
+      return tk ? { who: tk.id, text: ui.fill('{drummer} has the groove. ' + (GG.career.seatOf(state) === 'lead' ? 'Tap Hook ▾ for another hook' : 'Tap Chords ▾ or a bar to change the chords') + ', then tap your notes on the grid. Hit Loop to hear it.', state) } : null;
     }
     var tips = (GG.content.lines && GG.content.lines.writeTips) || {};
     var ids = Object.keys(tips).filter(function (id) { return ui.talkers(state).some(function (m) { return m.id === id; }); });

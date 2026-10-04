@@ -175,6 +175,25 @@ async function seq() {
     const hookCopy = (await meters(page))[1];
     await tap(page, 'cell-cymbal-0'); await tap(page, 'cell-cymbal-8'); await tap(page, 'cell-hat-2'); await tap(page, 'cell-hat-10'); await tap(page, 'cell-snare-14');
     c.ok((await meters(page))[1] > hookCopy, 'a contrasting chorus raises Hook ' + hookCopy + ' -> ' + (await meters(page))[1]);
+    // ⋯ → Bar 4 fill (Q2): the grid edits p.fillBars.chorus (starting from the main bar), the tab wears a badge; back to the main bar.
+    const hadFill = await page.evaluate(() => !!(GG.ui.get('seq').data.pat.fillBars && GG.ui.get('seq').data.pat.fillBars.chorus));
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    const f0 = await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return { fill: document.querySelector('[data-testid="seq-grid"]').dataset.fill, fb: JSON.stringify(p.fillBars.chorus), main: JSON.stringify(p.sections.chorus), badge: !!document.querySelector('[data-testid="seq-tab-chorus"] .seq-fb') }; });
+    const sn15 = await page.evaluate(() => GG.ui.get('seq').data.pat.fillBars.chorus[1][15]);
+    await tap(page, 'cell-snare-15');
+    const f1 = await page.evaluate(() => { const p = GG.ui.get('seq').data.pat; return { fb: p.fillBars.chorus[1][15], main: JSON.stringify(p.sections.chorus) }; });
+    c.ok(f0.fill === '1' && f0.badge && (hadFill || f0.fb === f0.main) && f1.fb !== sn15 && f1.main === f0.main, '⋯ → Bar 4 fill: the grid edits the fill bar only, the tab wears a badge ' + JSON.stringify({ fill: f0.fill, badge: f0.badge, hadFill }));
+    await openTools(page); await tap(page, 'btn-seq-fill');
+    c.ok(await page.evaluate(() => document.querySelector('[data-testid="seq-grid"]').dataset.fill === '0' && !GG.debug('seq').fill), '⋯ → Back to the main bar');
+    // ⋯ → Beat for this section (D8): the 0.6.2 grooves as a sheet, pedal ones locked.
+    await openTools(page); await tap(page, 'btn-seq-beat'); await waitScreen(page, 'seq-beat');
+    const bt = await page.evaluate(() => ({ all: [...document.querySelectorAll('[data-testid^="seq-beat-"]')].map(b => ({ id: b.dataset.testid.replace('seq-beat-', ''), dis: b.disabled })),
+      want: GG.songs.presets(GG.state.genre, GG.state.gear).map(p => ({ id: p.id, locked: !!p.locked })) }));
+    c.ok(bt.all.length === bt.want.length && bt.all.every((x, i) => x.id === bt.want[i].id && x.dis === bt.want[i].locked) && bt.all.some(x => x.dis), 'the Beat sheet lists the grooves, pedal ones locked ' + bt.all.map(x => x.id + (x.dis ? '🔒' : '')).join(' '));
+    const pick = bt.all.find(x => !x.dis && x.id !== 'headbanger') || bt.all.find(x => !x.dis);
+    await tap(page, 'seq-beat-' + pick.id); await waitScreen(page, 'seq');
+    c.ok(await page.evaluate(id => JSON.stringify(GG.ui.get('seq').data.pat.sections.chorus) === JSON.stringify(GG.songs.applyPreset(GG.ui.get('seq').data.pat, 'chorus', id, GG.state.gear, GG.state.genre).sections.chorus), pick.id), 'a Beat card sets the chorus (' + pick.id + ')');
+    await tap(page, 'cell-cymbal-0'); await tap(page, 'cell-cymbal-8');
 
     // Play / stop with a moving playhead.
     await tap(page, 'btn-seq-loop');

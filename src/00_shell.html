@@ -345,7 +345,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-title { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 2px; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer;
   display: flex; flex-direction: column; justify-content: center; }
 .seq-title:disabled { cursor: default; }
-.seq-title .caps { font-size: 10px; letter-spacing: .12em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seq-title .caps { font-size: 11px; letter-spacing: .1em; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .fr { font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* underline section tabs */
@@ -422,6 +422,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-grid.wide .lh { flex-direction: column; gap: 0; font-size: 8.5px; letter-spacing: 0; line-height: 1; }
 .seq-grid.wide .lh span { font-size: 11px; } .seq-grid.wide .lh .ln { font-size: 8.5px; }
 .seq-grid.part[data-lanes="7"] .lh { font-size: 9px; letter-spacing: 0; }
+@media (max-width: 410px) { .seq-grid.part .lh { font-size: 9.5px; letter-spacing: .01em; } .seq-grid.part[data-lanes="7"] .lh { font-size: 9px; letter-spacing: 0; } }
 .seq-grid.solo .cell.soff { opacity: .32; }
 .seq-grid.solo .cell.soff.on { opacity: .55; }
 .seq-extra { display: flex; flex-direction: column; gap: 8px; padding: 10px 4px 10px 10px; } .seq-extra-name { font-weight: 900; font-size: 20px; }
@@ -450,7 +451,9 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .qs-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .qs-top b { font-size: 15px; } .qs-top em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--amber); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .qs-ends { display: flex; justify-content: space-between; font: 700 11px var(--font); color: var(--faint); }
-.qs-range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 30px; margin: 2px 0 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+/* the range is a 44 px touch target that only takes 30 px of the column (the label rows above / below let taps through) */
+.qs-range { -webkit-appearance: none; appearance: none; display: block; position: relative; width: 100%; height: 44px; margin: -5px 0 -9px; background: transparent; cursor: pointer; touch-action: pan-y; }
+.qs-top, .qs-ends { position: relative; z-index: 1; pointer-events: none; }
 .qs-range::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--c) 0 var(--p, 50%), #2a3350 var(--p, 50%) 100%); }
 .qs-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; margin-top: -9px; border-radius: 50%; background: var(--text); border: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
 .qs-range::-moz-range-track { height: 8px; border-radius: 4px; background: #2a3350; } .qs-range::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--c); }
@@ -474,6 +477,13 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-chordopt { min-height: 56px; min-width: 0; border: 1.5px solid transparent; border-radius: 12px; background: var(--bg2); color: var(--text); cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; } .seq-chordopt b { font: 900 17px var(--display); }
 .seq-chordopt .tiny { color: var(--green); } .seq-chordopt.on { border-color: var(--amber); background: #2a2a35; }
+/* Bigger text (5h gg-big): the songwriter's small print grows too (Quick song scrolls inside quick-main; the editor keeps its fixed rows) */
+html.gg-big .seq-coach { font-size: 15.5px; } html.gg-big .seq-title .caps { font-size: 11.5px; } html.gg-big .seq-title .fr { font-size: 19px; }
+html.gg-big .meter { font-size: 12px; } html.gg-big .meter b { font-size: 14px; } html.gg-big .seq-chords { font-size: 14.5px; }
+html.gg-big .seq-layers .seg { font-size: 13.5px; } html.gg-big .seq-chip .cb { font-size: 10px; } html.gg-big .seq-grid .lh { font-size: 11px; } html.gg-big .seq-grid .bl { font-size: 12px; }
+html.gg-big .qr b { font-size: 17px; } html.gg-big .qr > span { font-size: 13.5px; } html.gg-big .qs-top b { font-size: 17px; } html.gg-big .qs-top em { font-size: 14.5px; }
+html.gg-big .qs-ends { font-size: 12.5px; } html.gg-big .qs-title { font-size: 23px; } html.gg-big .seq-menu-row { font-size: 16.5px; } html.gg-big .seq-pickrow { font-size: 16.5px; }
+html.gg-big .full.seq .seq-tabs .tab.tab { font-size: 14px; } html.gg-big .full.seq .seq-tabs.many .tab.tab { font-size: 11.5px; }
 /* the 0.6.2 groove cards, reused by "Beat for this section" (D8) */
 .guide-presets { display: flex; flex-direction: column; gap: 8px; }
 .guide-preset { min-height: 56px; width: 100%; border-radius: 12px; border: 1.5px solid transparent; background: var(--bg2); color: var(--text); display: flex; flex-direction: column;
