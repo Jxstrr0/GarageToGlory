@@ -103,10 +103,12 @@
     else if (id === 'pedal') hits(['kick', 'kick', 'kick', 'kick', 'kick', 'kick', 'cymbal'], 75);
     else hits(['kick', 'snare', 'hat', 'hat', 'snare', 'toms', 'toms', 'kick', 'cymbal'], 115);   // a new kit: a fill round it
   }
-  // An open sequencer (the sketch pad, a Write block) grows its lanes with the new gear.
+  // An open songwriter (the sketch pad, a Write block) grows its lanes with the new gear. v1.3: GG.ui.seqGear (54) keeps the
+  // screen / tab / layer and re-composes an untouched Quick song for the new kit (a newly owned pedal recipe unlocks).
   function refreshSeq() {
     var e = ui.get && ui.get('seq'), st = S();
     if (!e || !e.data || !e.data.pat || !st || e.data.mode === 'view') return;
+    if (ui.seqGear) { ui.seqGear(e); return; }
     e.data.pat = GG.songs.sanitize(e.data.pat, st.gear, st.genre);
     e.rerender();
   }

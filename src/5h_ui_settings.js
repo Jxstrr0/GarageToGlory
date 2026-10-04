@@ -337,14 +337,17 @@
       s.body.appendChild(list);
     }
   });
-  // The drum kit (the sketch pad) gets a way into practice mode too.
+  // The drum kit (the sketch pad) gets a way into practice mode too. v1.3: it lives in the songwriter's ⋯ menu (modal 'seq-tools').
   GG.on('ui:layout', function (p) {
-    if (!p || p.id !== 'seq' || !ui.get) return;
-    var e = ui.get('seq');
-    if (!e || !e.data || e.data.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
-    if (e.body.querySelector('[data-testid="kit-practice"]')) return;
+    if (!p || p.id !== 'seq-tools' || !ui.get) return;
+    var m = ui.get('seq-tools'), owner = m && m.data && m.data.owner, d = owner && owner.data;
+    if (!d || d.mode !== 'sketch' || !GG.state || !(GG.state.songs || []).length) return;
+    if (m.body.querySelector('[data-testid="kit-practice"]')) return;
     var strSeat = GG.career && GG.career.seatOf && GG.career.seatOf(GG.state) !== 'drums';   // v1.1: on a string seat this is your rig
-    e.body.appendChild(btn('.btn.ghost.block', { testid: 'kit-practice', style: 'margin-top:10px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song instead'));
+    var row = btn('.seq-menu-row', { testid: 'kit-practice', onclick: function () { ui.close('seq-tools'); ui.show('practice'); } },
+      [el('span.tm-i', strSeat ? '🎸' : '🥁'), el('span.grow', 'Practice a song instead')]);
+    var shop = m.body.querySelector('[data-testid="btn-kit-shop"]');
+    if (shop && shop.parentNode) shop.parentNode.insertBefore(row, shop.nextSibling); else m.body.appendChild(row);
   });
 
   GG.registerDebug('settings', function () {

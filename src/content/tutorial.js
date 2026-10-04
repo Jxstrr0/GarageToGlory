@@ -12,7 +12,7 @@
 // gated seat: ['drums']; no USA places, parody names, nobody from another band.
 (function (GG) {
   var D = ['drums'];   // the drum-mechanics gate (E12)
-  var S = ['bass', 'rhythm', 'lead'];   // v1.1 Seats: the string-seat twin of the gig's lane step (Lane A; walk/write keep their drum-only steps: 54 explains your part)
+  var S = ['bass', 'rhythm', 'lead'];   // v1.1 Seats: the string-seat twin of the gig's lane step (Lane A); v1.3: and of w1_write's Play step
   GG.content.tutorial = [
     /* ---- Week one (A15: taught by playing, by bandmates in character) ------------------------------------------ */
     { id: 'w1_card', title: 'The Monday card', when: { week: 1, screen: 'card' },
@@ -109,32 +109,38 @@
         ] }
       } },
     { id: 'w1_write', title: 'Writing a song', when: { week: 1, screen: 'seq', mode: 'write' },
+      // v1.3 "Songwriter": the Write block opens Quick song (recipes + sliders); the jam lives in the header's ⋯ menu.
       steps: [
-        { who: '@soloist', text: 'A Write block makes a song. Go one step at a time: pick a part, play it, tweak it, next.' },
-        { who: '@soloist', text: 'Each card is a groove. Tap one, then hit Play to hear it. The tweaks underneath change it a little.', seat: D, point: { testid: 'btn-guide-play' } },
-        { who: '@front', text: 'Stuck? Let the band jam one. You get a song either way.', point: { testid: 'btn-seq-jam' } }
+        { who: '@soloist', text: 'A Write block makes a song. Pick a recipe, push the sliders, hear it. Tweak it by hand after, or don\'t.', seat: D },
+        { who: '@soloist', text: 'Each recipe is a groove. Tap one, hit Play, then push Energy while it plays. The kick and the snare follow you.', seat: D, point: { testid: 'btn-guide-play' } },
+        { who: '@soloist', text: 'A Write block makes a song. Each recipe has your {instrument} part in it already: tap one, hit Play, push the sliders.', seat: S, point: { testid: 'btn-guide-play' } },
+        { who: '@front', text: 'Stuck? Tap ⋯ and let the band jam one. You get a song either way.', point: { testid: 'btn-seq-tools' } }
       ],
       byBand: {
         hail_damage: { steps: [
-          { who: 'dana', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Like a solo, but shorter. Much shorter.' },
-          { who: 'dana', text: 'Each card is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'dana', text: 'Write block. Pick a recipe, push the sliders, hit Play. Like a solo, but shorter. Much shorter.', seat: D },
+          { who: 'dana', text: 'Each recipe is a groove. Metal wants a busy kick and a crash on the one. Tap one, hit Play. Play it before you judge it.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'dana', text: 'Write block. Each recipe has your {instrument} part in it already: tap one, hit Play, slide Mood toward Abyss. Play it before you judge it.', seat: S, point: { testid: 'btn-guide-play' } },
           { who: 'marcel', text: 'When it is done, I will name it. In French. It will be about darkness. (It will be about my lawn.)' },
-          { who: 'jaxon', text: 'or just let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-jam' } }
+          { who: 'jaxon', text: 'or tap ⋯ and let the band jam one. we jam. it\'s fine. i add fills', point: { testid: 'btn-seq-tools' } }
         ] },
         frost_heave: { steps: [
-          { who: 'rox', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. Faster than council.' },
-          { who: 'moth', text: 'Each card is a groove. Tap one, hit Play. Try the D-beat. Sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'benny', text: 'Or let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-jam' } }
+          { who: 'rox', text: 'Write block. Pick a recipe, push the sliders, hit Play. Faster than council.', seat: D },
+          { who: 'moth', text: 'Each recipe is a groove. Tap one, hit Play. Try the Laundromat D-beat. The snare sounds like the dryers.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'moth', text: 'Write block. Each recipe has your {instrument} part in it: tap one, hit Play. Try the Laundromat D-beat. Sounds like the dryers.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'benny', text: 'Or tap ⋯ and let the band jam one. I\'ll play my two chords. They go with everything.', point: { testid: 'btn-seq-tools' } }
         ] },
         gravel_kings: { steps: [
-          { who: 'chase', text: 'Write block! One part at a time: pick a groove, play it, tweak it, next. Then I add the slide.' },
-          { who: 'tamara', text: 'Each card is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. Steady hats. I colour-coded them.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'lenny', text: 'Or let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-jam' } }
+          { who: 'chase', text: 'Write block! Pick a recipe, push the sliders, hit Play. Then I add the slide.', seat: D },
+          { who: 'tamara', text: 'Each recipe is a groove. Tap one, hit Play. Kick on one and three, snare on two and four is always safe. I colour-coded the sliders.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'tamara', text: 'Write block! Each recipe has your {instrument} part in it already: tap one, hit Play, slide Energy up. I colour-coded the sliders.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'lenny', text: 'Or tap ⋯ and let the band jam one. Don\'t worry, I\'ll make the riff original. Mostly.', point: { testid: 'btn-seq-tools' } }
         ] },
         grid_road_ramblers: { steps: [
-          { who: 'travis', text: 'Write block. One part at a time: pick a groove, play it, tweak it, next. I\'ll bring the heartbreak.' },
-          { who: 'earl', text: 'Each card is a groove. Tap one, hit Play to hear it. Train beat\'s the one. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
-          { who: 'clementine', text: 'Or let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-jam' } }
+          { who: 'travis', text: 'Write block. Pick a recipe, push the sliders, hit Play. I\'ll bring the heartbreak.', seat: D },
+          { who: 'earl', text: 'Each recipe is a groove. The Train song is the one: a train beat on the snare. Tap it, hit Play. I\'ll wait. I have stories.', seat: D, point: { testid: 'btn-guide-play' } },
+          { who: 'earl', text: 'Write block. Each recipe has your {instrument} part in it. The Train song is the one: tap it, hit Play. I\'ll wait. I have stories.', seat: S, point: { testid: 'btn-guide-play' } },
+          { who: 'clementine', text: 'Or tap ⋯ and let the band jam one. I will play something tasteful. Then something less tasteful. Crowds like that.', point: { testid: 'btn-seq-tools' } }
         ] }
       } },
     { id: 'w1_rehearse', title: 'The week\'s results', when: { week: 1, screen: 'results' },
