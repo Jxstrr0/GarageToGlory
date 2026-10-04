@@ -1735,6 +1735,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    GIG_RESULT (simulated only) gains simulated: true, sim: { from, n, acc }.
    C.HOTSPOTS gains 'shop' (appended): the "Gear shop" label beside the kit (drums) or your rig (string seats) -> GG.ui.openGear
    (the seat's own shop). The sketch pad header gains a visible shop button (testid btn-seq-shop); the ⋯ row btn-kit-shop stays.
+   As merged (lanes G -> S, 2026-10-04; lane reports plan/v131_lane_<g|s>_report.md):
+     G (22 + 55): GG.gig.simReason(state, g?) -> null | 'phase' | 'gig' | 'showdown' | 'festival' | 'rival' | 'lesson'
+       (canSimulate = simReason === null); GG.gig.simSong(S, bot) -> SONG_RESULT; simFinish(S, bot) -> GIG_RESULT;
+       GG.gig.simShow(S, bot) = the remaining songs + simFinish (node / tests). state.liveGig.sim = { accuracy, jitterMs, from,
+       n, acc, ps } while a simulation runs (liveGig has no save sanitizer: it survives a save + reload and the resume branch
+       finishes it simulated). ui.gigSimMs (default 350): the pause between simulated songs (tests set 0). Testids
+       btn-gig-sim, gig-sim-no (story show / lesson note), gig-sim-why (what it plays at), gig-sim-progress (between card),
+       gig-simulated (results line). debug('gigui').sim = { on, from, n, accuracy, jitterMs, acc }.
+     S (41 + 52 + 54 + shell): the Gear shop label is green #57c77a at px 22 (the other labels px 20), under the kit's label
+       (drums) or in the amp corner (string seats, follows setRig); box 0.95 x 0.42 x 0.3 m. A hotspot tapped where you already
+       stand fires 0.35 s later (the tap's own click no longer lands on the sheet it opens). debug('render').labelBox =
+       [{ action, x, y, w, h }] (every label's screen rect: CSS px, centre x / y + w / h at rest). 2D fallback button hs-shop. Garage labels 8 (draw calls +1).
   ====================================================================== */
   C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
