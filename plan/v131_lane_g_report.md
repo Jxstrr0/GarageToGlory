@@ -19,7 +19,6 @@
   show… song 2 of 4", last song's hits), crowd meter + stage follow, pause button hidden; then `finishShow` -> `simFinish` ->
   the normal apply + results with `gig-simulated` ("⏩ Simulated at your average (last 3 gigs, 80% hit)"). Reload: playGig's resume
   branch sees `live.sim` and finishes it simulated. Debug `gigui.sim = { on, from, n, accuracy, jitterMs, acc }`. No new CSS.
-
 ## Tests + results
 - `tests/sim_gig.test.js` +6 (36 total ALL PASS): canSimulate per story kind / pending sameNight, stolenSlot, final / lesson /
   phase; simBot band vs own, other seat ignored, same-difficulty first, pure; match logs 0.6/0.8/0.95 x ps 0.5/0.8 at easy + hard,
