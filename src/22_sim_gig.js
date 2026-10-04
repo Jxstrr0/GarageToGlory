@@ -360,6 +360,9 @@
   // Freestyle windows (the last bar of each bridge entry; the last bar of the song if there's no bridge) mark their notes
   // `free` (any taps there score a show-off bonus). o.solo eases bridge bars to quarter notes; o.extras (an rng) lets the
   // filler sneak 2-3 snare notes (`extra`) into the last bar of some verses/choruses.
+  // v1.3 (plan_contract_1.3 §4.6, Lane A): p.swing > 0 swings the notes (t = songs.swingBeat(beat, swing) x spb: the same
+  // warp as the band's timeline, so every swung note sounds where the band plays it; step / bar / windows never move); a
+  // section with a bar-4 fill (p.fillBars, Q2: toNotes brings its notes in) takes no extras. Without both: 1.2 exactly.
   gig.chart = function (song, o) {
     o = o || {};
     var p = GG.songs.sanitize(song && song.pattern || song, null, null, true), spb = 60 / p.bpm, barLen = 4 * spb;
@@ -377,22 +380,24 @@
       if (o.solo && name === soloSec) solos.push({ entry: e, t0: t0, t1: t0 + (fr ? last : C.BARS_PER_SECTION) * barLen });
     });
     function isFree(n) { return free && n.section !== 'solo' && freeEntry(n.section, n.entry) && n.bar === last; }
-    var notes = [], extras = 0;
+    var notes = [], extras = 0, sw = p.swing > 0 ? p.swing : 0, swing = GG.songs.swingBeat;
     GG.songs.toNotes(p).forEach(function (n) {
       var f = isFree(n);
       if (eased(n.section) && !f && n.step % LIVE.soloStep !== 0) return;
-      var x = { t: n.beat * spb, lane: n.lane, li: LI[n.lane], section: n.section, entry: n.entry, bar: n.bar, step: n.step, j: 0 };
+      var x = { t: (sw ? swing(n.beat, sw) : n.beat) * spb, lane: n.lane, li: LI[n.lane], section: n.section, entry: n.entry, bar: n.bar, step: n.step, j: 0 };
       if (f) x.free = true;
       notes.push(x);
     });
     if (o.extras && p.lanes >= 2) {
       arr.forEach(function (name, e) {
         if (name === 'bridge' || name === 'solo' || name === 'outro' || isFree({ section: name, entry: e, bar: last }) || !o.extras.chance(LC().fillsChance)) return;
+        if (p.fillBars && p.fillBars[name]) return;   // (v1.3: the drummer's own fill has that bar; the rng draw above stays)
         var snare = p.sections[name][1], open = [];
         for (var s = 10; s < C.STEPS; s++) if (!GG.songs.isHit(snare, s)) open.push(s);
         o.extras.shuffle(open).slice(0, o.extras.int(2, 3)).forEach(function (s) {
           extras++;
-          notes.push({ t: (e * C.BARS_PER_SECTION * 4 + last * 4 + s / 4) * spb, lane: 'snare', li: 1, section: name, entry: e, bar: last, step: s, j: 0, extra: true });
+          var b = e * C.BARS_PER_SECTION * 4 + last * 4 + s / 4;
+          notes.push({ t: (sw ? swing(b, sw) : b) * spb, lane: 'snare', li: 1, section: name, entry: e, bar: last, step: s, j: 0, extra: true });
         });
       });
     }
@@ -428,6 +433,10 @@
   //   thinning: DIFFICULTIES by lane index (laneGap = the kick's for every lane) ; two thumbs: never more than 2 heads at a
   //     moment counting held notes (a chord under a hold plays one lane, a third thumb goes auto).
   // Dropped notes go to chart.auto (your voice plays them, never judged): the song always sounds whole.
+  // v1.3 (Q1 = 1, pitch shape): part v2's new rows are just pitches on the same contour lanes (no row -> lane map); a swung
+  // event is placed by its grid beat (e.g) and timed by its swung beat; Scratch (dead: true, midi = the root) charts on the
+  // root's lane, copies dead to its note / auto / with partner, never joins or starts a run and never chords; singles
+  // (power: false, one-string picks) never chord on Hard+.
   gig.RUN_GAP = 0.18;
   // The string seats' flow by difficulty (parity with the kit; the lead seat has its shred windows). Retuned at integration
   // with lane D's real parts + seat layers (denser charts, many more holds): flow, hold and ring gains came down and the
@@ -453,11 +462,11 @@
     var soloKind = tl.solo && kinds.indexOf(tl.solo) >= 0 ? tl.solo : kinds.length > 1 ? kinds[kinds.length - 1] : null;
     var ev = tl.events.filter(function (e) { return kinds.indexOf(e.kind) >= 0 && e.midi != null; });
     var auto = [], fills = base.fills.slice(), solos = [];
-    function where(e) {
-      var entry = Math.min(arr.length - 1, Math.floor(e.beat / entryBeats + 1e-9)), inE = e.beat - entry * entryBeats;
+    function where(e) {   // (v1.3: a swung event's grid beat, e.g)
+      var b = e.g != null ? e.g : e.beat, entry = Math.min(arr.length - 1, Math.floor(b / entryBeats + 1e-9)), inE = b - entry * entryBeats;
       return { entry: entry, bar: Math.floor(inE / 4 + 1e-9), step: Math.round((inE % 4) * 4) % C.STEPS };
     }
-    function toAuto(n) { var a = { t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }; if (n.with) a.with = n.with; auto.push(a); }
+    function toAuto(n) { var a = { t: n.t, lane: n.lane, li: n.li, section: n.section, entry: n.entry, bar: n.bar, step: n.step, auto: true, kind: n.kind, midi: n.midi, len: n.len, power: n.power, mute: n.mute, strum: n.strum, up: n.up, trem: n.trem, bend: n.bend }; if (n.dead) a.dead = true; if (n.with) a.with = n.with; auto.push(a); }
     // v1.1 review: your voices (as 55 plays them); a same-voice partner at the head's instant layers on the head (n.with)
     function voiceOf(k) { return k === 'bass' ? 'pluck' : k === 'lead' || k === 'twang' ? 'lead' : 'strum'; }
     // contour lanes per entry (every seat event of the entry, so lanes never depend on the difficulty)
@@ -497,13 +506,15 @@
       grp.forEach(function (x, gi) {
         var sound = Math.min(x.len, x.gap), n = { t: x.beat * spb, lane: '', li: 0, section: x.section, entry: w.entry, bar: w.bar, step: w.step, j: 0,
           kind: x.kind, midi: x.midi, len: Math.max(0.05, sound * spb), beats: sound };
-        ['power', 'mute', 'strum', 'up', 'trem', 'bend', 'ring'].forEach(function (k) { if (x[k] != null && x[k] !== false) n[k] = x[k]; });
+        ['power', 'mute', 'strum', 'up', 'trem', 'bend', 'ring', 'dead'].forEach(function (k) { if (x[k] != null && x[k] !== false) n[k] = x[k]; });   // (v1.3: + dead, Scratch)
         n.li = (laneOf[w.entry] || {})[x.midi] || 0; n.lane = STR_LANES[n.li];
         var off = gi > 0 || (seat === 'lead' && inSolo && soloKind && x.kind !== soloKind)
           || (seat !== 'lead' && inSolo && w.step % 4 !== 0);   // someone else's solo: you lay back (one note per beat)
         if (!off && free && inFill(n.t)) n.free = true;       // a free window (as the drums): any tap there shows off
         if (gi > 0 && head && voiceOf(x.kind) === voiceOf(head.kind)) {   // (same pool: as an auto note it cut your tap to 30 ms)
-          (head.with || (head.with = [])).push({ kind: x.kind, midi: x.midi, len: n.len, power: !!n.power, mute: !!n.mute, ring: !!n.ring });
+          var wv = { kind: x.kind, midi: x.midi, len: n.len, power: !!n.power, mute: !!n.mute, ring: !!n.ring };
+          if (n.dead) wv.dead = true;
+          (head.with || (head.with = [])).push(wv);
           return;
         }
         if (off) toAuto(n); else notes.push(n);
@@ -515,9 +526,9 @@
     var out = [], runs = 0, k = 0;
     while (k < notes.length) {
       var h = notes[k], m = k + 1;
-      if (h.free) { out.push(h); k++; continue; }
+      if (h.free || h.dead) { out.push(h); k++; continue; }   // (v1.3: a dead strum never starts a run)
       while (m < notes.length && !notes[m].free && notes[m].midi === h.midi && notes[m].kind === h.kind && notes[m].entry === h.entry
-        && notes[m].t - notes[m - 1].t <= gig.RUN_GAP + 1e-6) m++;
+        && !!notes[m].dead === !!h.dead && notes[m].t - notes[m - 1].t <= gig.RUN_GAP + 1e-6) m++;
       if (m - k >= 2) {
         if (o.runs) {
           var lastN = notes[m - 1];
@@ -537,7 +548,8 @@
     notes.forEach(function (n) {
       if (n.free) { delete n.beats; return; }
       if (!n.run) { if (n.beats >= holdMin) n.hold = true; }
-      if (chordsOk && !n.run && n.li + 1 < L && n.step % 8 === 0 && ((n.power && !n.mute) || Array.isArray(n.strum))) n.chord = [n.li, n.li + 1];
+      // (v1.3: a dead strum and a one-string pick (part v2 singles) never chord; singles have no power either)
+      if (chordsOk && !n.run && !n.dead && n.li + 1 < L && n.step % 8 === 0 && ((n.power && !n.mute) || (Array.isArray(n.strum) && n.strum.length > 1))) n.chord = [n.li, n.li + 1];
       delete n.beats;
     });
     // difficulty thinning (by lane index) ; a hold / run / chord counts at its head

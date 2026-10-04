@@ -76,6 +76,15 @@
 //     never dropped), in the band's own sound for that kind; A.release(handle, when) gates a hold; A.hitCancel() cuts them.
 //   A.seatPreview(bandId, seat) -> handle (~3 s of the band's first starter song's chorus, your kinds +6 dB, the rest -6 dB),
 //     A.stopPreview(). The garage noodle plays your instrument on a string seat (A.noodleFor -> { who: 'player', style }).
+// v1.3 "Songwriter" (plan_contract_1.3 §4.5, Lane A). Every branch is gated on its own pattern field (absent / neutral: the
+//   1.2 code runs verbatim and no new key appears): p.chords[name] (the bar chips) drive every seat's chords, the lead and
+//   the drum seat included (chords > part prog > hash), and a breakdown bar's root (Q4); p.mood (non-native: the parallel
+//   key: B.mode / B.scale from the rung, key.mode / name / mood, o.third for the hard-coded thirds; the key note never
+//   moves); p.swing (> 0: every non-step event warps by songs.swingBeat, e.g = its grid beat, len warps, steps never move;
+//   the result carries swing); p.fillBars[name] (the drums of bar 4). Part v2 (part.v === 2): partBar2 plays the v2 rows
+//   through songs.part.rowPitch (an upgraded v1 part plays exactly as the v1 part); rhythm Root / 5th / Oct are single
+//   notes (power: false, single: true), Scratch a dead strum (mute + dead, <= 1 step; KS art 'dead'). debug('audio') +=
+//   swing, mood (the last timeline's).
 (function (GG) {
   var A = GG.audio = GG.audio || {};
   var C = GG.contracts;
@@ -2057,22 +2066,24 @@
   };
 
 
-  // -> spec { key, fs, offs (s), sr, n, opts, period (samples, for loops) }. o: { power, fs (Hz), mute, trem, vel, rr, strum, up, side }
+  // -> spec { key, fs, offs (s), sr, n, opts, period (samples, for loops) }. o: { power, fs (Hz), mute, trem, vel, rr, strum, up, side,
+  // dead (v1.3 Scratch: art 'dead', a muted strum that dies at once: short buffer, t60 0.06 s) }
   function ksSpec(genre, kind, midi, o) {
     var vk = kind === 'bass' || kind === 'gtr' ? (KS_VOICE[genre + '|' + kind] ? genre + '|' + kind : 'metal|' + kind) : kind, V = KS_VOICE[vk];
     if (!V || !GG.dsp || !GG.dsp.pluck) return null;
-    var f = mtof(midi), art = o.mute ? 'mute' : o.trem ? 'trem' : 'open', layer = (o.vel == null ? 0.9 : o.vel) < 0.7 ? 0 : 1, fs, offs = [], shape = '';
+    var f = mtof(midi), art = o.dead ? 'dead' : o.mute ? 'mute' : o.trem ? 'trem' : 'open', layer = (o.vel == null ? 0.9 : o.vel) < 0.7 ? 0 : 1, fs, offs = [], shape = '';
     if (o.strum) {   // the strings of this side (even / odd), in strum order (an upstroke runs high to low)
       fs = []; var k = o.strum.length;
       for (var j = 0; j < k; j++) { var st = o.up ? k - 1 - j : j; if (o.side == null || st % 2 === o.side) { fs.push(mtof(midi + o.strum[st])); offs.push(j * 0.011); } }
       shape = 's' + o.strum.join('.') + (o.up ? 'u' : 'd') + (o.side == null ? '' : o.side);
     } else if (o.fs) { fs = o.fs; shape = 'f' + o.fs.length; } else if (o.power) { fs = [f, f * 1.5, f * 2]; shape = 'p'; } else fs = [f];
     if (!o.strum) for (var i = 0; i < fs.length; i++) offs.push(i * 0.003);
-    var dur = art === 'mute' ? 0.35 : art === 'trem' ? 0.45 : V.dur, rr = o.rr | 0;
+    if (!fs.length) return null;   // (v1.3: a one-string pick has no string on the other side)
+    var dur = art === 'dead' ? 0.12 : art === 'mute' ? 0.35 : art === 'trem' ? 0.45 : V.dur, rr = o.rr | 0;
     return { key: [vk, midi, art, layer, rr, shape].join('|'), fs: fs, offs: offs, sr: V.sr, n: Math.ceil(dur * V.sr), lvl: V.lvl,
       period: V.sr / fs[0] * (shape === 'p' ? 2 : 1),
-      opts: { sr: V.sr, vel: KS_LAYERS[layer], pick: V.pick, bright: art === 'trem' ? Math.min(0.9, V.bright + 0.2) : V.bright, t60: art === 'trem' ? 0.5 : V.t60,
-        mute: art === 'mute', exLp: V.exLp, thump: V.thump, click: V.click, seed: 1 + midi * 7 + rr * 101 } };
+      opts: { sr: V.sr, vel: KS_LAYERS[layer], pick: V.pick, bright: art === 'trem' ? Math.min(0.9, V.bright + 0.2) : V.bright, t60: art === 'trem' ? 0.5 : art === 'dead' ? 0.06 : V.t60,
+        mute: art === 'mute' || art === 'dead', exLp: V.exLp, thump: V.thump, click: V.click, seed: 1 + midi * 7 + rr * 101 } };
   }
   function ksOpts(spec, i, off) { return Object.assign({}, spec.opts, { f: spec.fs[i], dur: (spec.n - off) / spec.sr, seed: spec.opts.seed + i, norm: 0.5 / Math.max(1, spec.fs.length) }); }
   function ksAdd(acc, s, off, n) { for (var j = 0; j < s.length && off + j < n; j++) acc[off + j] += s[j]; }
@@ -2164,17 +2175,19 @@
     soon(ksPump);
   }
   // The KS spec a timeline event plays (null: not a plucked string / a voice that stays an oscillator).
+  // v1.3: a dead strum (ev.dead, Scratch) asks for art 'dead' (the key gains nothing without it).
   function ksSpecFor(genre, ev, vel, rr) {
     var k = ev.kind, o = { vel: vel, mute: ev.mute, trem: ev.trem };
+    if (ev.dead) o.dead = true;
     if (k === 'vox' || k === 'bvox' || k === 'drum' || k === 'step' || k === 'fiddle' || k === 'dlead') return null;
     if (genre === 'metal' && (k === 'gtr' || k === 'gtr2')) return ksSpec('metal', 'gtr', ev.midi, Object.assign(o, { power: ev.power, rr: ev.mute ? rr : 0 }));
     if (k === 'bass') return ksSpec(genre, 'bass', ev.midi, o);
-    if (genre === 'country' && ev.strum) return ksSpec('country', 'acoustic', ev.midi, { vel: vel, strum: ev.strum, up: ev.up, side: rr & 1 });
-    if (ev.strum) return ksSpec(genre, 'clean', ev.midi, { vel: vel, strum: ev.strum, up: ev.up });
+    if (genre === 'country' && ev.strum) return ksSpec('country', 'acoustic', ev.midi, { vel: vel, strum: ev.strum, up: ev.up, side: rr & 1, dead: o.dead });
+    if (ev.strum) return ksSpec(genre, 'clean', ev.midi, { vel: vel, strum: ev.strum, up: ev.up, dead: o.dead });
     if (k === 'twang') return ksSpec(genre, 'twang', ev.midi, o);
     if (k === 'lead') return ksSpec(genre, 'lead', ev.midi, { vel: vel, power: ev.power });
     if (genre === 'punk' || genre === 'rock') {
-      if (k === 'gtr2' && ev.mute) { var f = mtof(ev.midi) / 2; return ksSpec(genre, 'gtr', ev.midi, { vel: vel, mute: true, fs: [f, f * 1.5, f * 2], rr: rr }); }
+      if (k === 'gtr2' && ev.mute) { var f = mtof(ev.midi) / 2; return ksSpec(genre, 'gtr', ev.midi, { vel: vel, mute: true, fs: [f, f * 1.5, f * 2], rr: rr, dead: o.dead }); }
       if (k === 'gtr2' || k === 'clean') return ksSpec(genre, ev.power ? 'gtr' : 'clean', ev.midi, { vel: vel, power: ev.power });
       if (k === 'gtr') return ksSpec(genre, 'gtr', ev.midi, Object.assign(o, { power: ev.power, rr: ev.mute ? rr : 0 }));
     }
@@ -2265,12 +2278,13 @@
         return true;
       }
       if (ev.strum) {   // one buffer per side (even strings left, odd right): 2 sources instead of 6 oscillators
-        var specs = [0, 1].map(function (sd) { return ksSpec('country', 'acoustic', ev.midi, { vel: ev.vel, strum: ev.strum, up: ev.up, side: sd }); });
+        var sides = ev.strum.length > 1 ? [0, 1] : [0];   // (v1.3: a part v2 single picks one string: one buffer)
+        var specs = sides.map(function (sd) { return ksSpec('country', 'acoustic', ev.midi, { vel: ev.vel, strum: ev.strum, up: ev.up, side: sd, dead: ev.dead }); });
         var bufs = specs.map(function (sp2) { return ksGet(r, sp2); });
-        if (!bufs[0] || !bufs[1]) return false;
-        if (!book(r, t, dur, 2, true)) return true;
+        if (!bufs[0] || (sides.length > 1 && !bufs[1])) return false;
+        if (!book(r, t, dur, sides.length, true)) return true;
         ampPort(r, p, g);
-        [0, 1].forEach(function (sd) {
+        sides.forEach(function (sd) {
           var s1 = ksSrc(r, bufs[sd], specs[sd], dur, sd ? 3 : -3);
           s1.connect(decay(c, t, 0.002, (ev.ring ? 0.3 : 0.26) * velGain(ev.vel) * specs[sd].lvl * 1.6, dur, sd ? p.aAcR : p.aAcL)); run(r, s1, t, dur);
         });
@@ -2434,7 +2448,8 @@
   function riffFor(B, sec) { var list = B.riffs || [[0]]; return list[GG.hashSeed('riff|' + (sec[0] || '')) % list.length]; }
   var HIT = 120;   // 'x'
   // Nearest note of the key's scale (ties go down): sung and shouted hits always fit the song.
-  var MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+  var MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11], MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];   // (v1.3: a minor mood walks the minor one)
+  function third(o, lit) { return o.third != null ? o.third : lit; }   // v1.3: the mood's third (non-native only), else 1.2's literal
   function inKey(midi, tonic, scale) {
     if (!scale || !scale.length) return midi;
     for (var d = 0; d < 12; d++) {
@@ -2641,17 +2656,18 @@
     // Breakdown (any tempo): the drop is one open low-string hit with space around it, a muted pair, a b2 stab; the bars
     // after chug half-time on the kicks that land on a 3-3-2 grid (or that grid itself) with a b2 / tritone at the end.
     brk: function (o, w) {
-      var kick = o.sec[0] || '', hits = [], i;
+      // (v1.3 Q4: a break bar's root is the tonic unless p.chords picks its chip, so o.root == o.key in every 1.2 song)
+      var kick = o.sec[0] || '', hits = [], i, k0 = o.root;
       if (o.brk === 0) {
-        w.gtr(0, 8, { power: true, midi: o.key }); w.bass(0, 8, o.key);
-        [10, 11].forEach(function (s) { w.gtr(s, 1, { power: true, mute: true, midi: o.key }); w.bass(s, 1, o.key); });
-        w.gtr(14, 2, { power: true, midi: o.key + 1 }); w.bass(14, 2, o.key + 1);
+        w.gtr(0, 8, { power: true, midi: k0 }); w.bass(0, 8, k0);
+        [10, 11].forEach(function (s) { w.gtr(s, 1, { power: true, mute: true, midi: k0 }); w.bass(s, 1, k0); });
+        w.gtr(14, 2, { power: true, midi: k0 + 1 }); w.bass(14, 2, k0 + 1);
         return;
       }
       for (i = 0; i < 16; i++) if (kick.charCodeAt(i) === HIT && [0, 3, 6].indexOf(i % 8) >= 0) hits.push(i);
       if (hits.length < 2) hits = [0, 3, 6, 8, 11, 14];
       hits.forEach(function (s) {
-        var open = s % 8 === 0, m = s >= 14 ? o.key + o.rng.pick([1, 6]) : o.key, len = open ? 2.5 : 1.25;
+        var open = s % 8 === 0, m = s >= 14 ? k0 + o.rng.pick([1, 6]) : k0, len = open ? 2.5 : 1.25;
         w.gtr(s, len, { power: true, mute: !open, midi: m }); w.bass(s, len, m);
       });
     }
@@ -2706,7 +2722,7 @@
       }
       if (o.style === 'drive') for (i = 0; i < 16; i += 2) w.gtr(i, 1.8, { power: true });
       else [[0, 3], [3, 3], [6, 2], [8, 8]].forEach(function (x) { w.gtr(x[0], x[1], { power: true }); });   // big open chords
-      [o.root, o.root + 4, o.root + 7, o.next === o.root ? o.root + 9 : o.next - 1].forEach(function (b, k) { w.bass(k * 4, 3.6, b); });   // walking
+      [o.root, o.root + third(o, 4), o.root + 7, o.next === o.root ? o.root + 9 : o.next - 1].forEach(function (b, k) { w.bass(k * 4, 3.6, b); });   // walking
       if (o.role === 'full' && o.seat !== 'rhythm') w.gtr2(0, 16, { power: true, open: true });   // (v1.1: the rhythm seat plays its own)
       if (o.role === 'solo' && o.solo) (SOLOS[o.solo] || SOLOS.lead)(o, w);
     },
@@ -2716,18 +2732,18 @@
       var i, full = o.role !== 'sparse', sc = o.B.scale || [0, 2, 4, 7, 9], train = o.style === 'train';
       // walking (root, 3rd, 5th, 6th), snapped to the full major scale (not o.B.scale: that's the pentatonic) so the bridge's vi / ii
       // walk their own minor third instead of a G#/C# under a G-major song; ties go down
-      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, inKey(o.root + [0, 4, 7, 9][k], o.key, MAJOR_SCALE)); });
+      if (train) [0, 4, 8, 12].forEach(function (s, k) { w.bass(s, 3.6, inKey(o.root + [0, third(o, 4), 7, 9][k], o.key, o.third === 3 ? MINOR_SCALE : MAJOR_SCALE)); });
       else { w.bass(0, 4); w.bass(8, 4, o.root + 7); }                   // boom on 1 and 3: root, fifth
       (train ? (full ? [2, 6, 10, 14] : [4, 12]) : full ? [4, 6, 12, 14] : [4, 12]).forEach(function (s) {
-        w.note('clean', s, 1.5, o.root + 12, { strum: full ? [0, 4, 7] : [0, 7], up: s % 4 === 2 });
+        w.note('clean', s, 1.5, o.root + 12, { strum: full ? [0, third(o, 4), 7] : [0, 7], up: s % 4 === 2 });
       });
       var lick = function (kind, from) { [from, from + 2, from + 4].forEach(function (s, k) { w.note(kind, s, 2, o.key + 24 + sc[o.rng.int(0, sc.length - 1)], k ? null : { bend: kind === 'twang' ? 2 : 0, slide: kind === 'fiddle' }); }); };
       if (o.role === 'sparse' && o.bar % 2 === 1) lick(o.bar % 4 === 1 ? 'twang' : 'fiddle', 10);   // phrase ends: Earl, then the fiddle
       if (o.role === 'full' && o.name === 'outro') {                    // the fiddle takes the outro
         for (i = 0; i < 16; i += 2) w.note('fiddle', i, 2, o.key + 24 + sc[(o.bar * 3 + i / 2) % sc.length] + (i >= 8 ? 12 : 0), i ? null : { slide: true });
       } else if (o.role === 'full') {
-        w.note('fiddle', 0, 8, o.root + 24 + [0, 4, 7, 12][o.rng.int(0, 3)]);
-        if (o.bar % 2 === 0) w.note('fiddle', 8, 8, o.root + 24 + [0, 4, 7, 12][o.rng.int(0, 3)]);
+        w.note('fiddle', 0, 8, o.root + 24 + [0, third(o, 4), 7, 12][o.rng.int(0, 3)]);
+        if (o.bar % 2 === 0) w.note('fiddle', 8, 8, o.root + 24 + [0, third(o, 4), 7, 12][o.rng.int(0, 3)]);
         else if (o.bar % 4 === 1) { lick('fiddle', 8); w.note('fiddle', 14, 2, o.key + 24 + sc[0]); }   // a fill into the next bar
         else lick('twang', 10);                                                                          // Earl answers
       }
@@ -2834,19 +2850,21 @@
     if (!part || typeof part !== 'object' || !part.sections || typeof part.sections !== 'object') return null;
     var s = seat || part.seat;
     if (!PART_ROWS[s] || (part.seat && part.seat !== s)) return null;
-    return { seat: s, sections: part.sections };
+    return part.v === 2 ? { seat: s, sections: part.sections, v: 2 } : { seat: s, sections: part.sections };   // (v1.3: a v2 part)
   }
   function pick(list, i) { return list && list.length ? list[Math.max(0, Math.min(list.length - 1, i | 0))] : null; }
   function partSec(P, name) {   // -> { prog, hook, rows } (defensive: songs.sanitize keeps parts clean)
     var x = P && P.sections[name];
     if (!x || typeof x !== 'object') return null;
-    var n = PART_ROWS[P.seat], rows = [], hits = 0;
+    var n = P.v === 2 ? GG.songs.part.LAYOUT[2][P.seat].length : PART_ROWS[P.seat], rows = [], hits = 0;   // (v1.3: n from part.LAYOUT)
     for (var i = 0; i < n; i++) {
       var r = x.rows && typeof x.rows[i] === 'string' ? x.rows[i] : '', s = '';
       for (var j = 0; j < 16; j++) { s += r.charAt(j) === 'x' ? 'x' : '.'; if (r.charAt(j) === 'x') hits++; }
       rows.push(s);
     }
-    return { prog: isFinite(x.prog) && x.prog !== null ? x.prog | 0 : null, hook: isFinite(x.hook) && x.hook !== null ? x.hook | 0 : null, rows: rows, hits: hits };
+    var out = { prog: isFinite(x.prog) && x.prog !== null ? x.prog | 0 : null, hook: isFinite(x.hook) && x.hook !== null ? x.hook | 0 : null, rows: rows, hits: hits };
+    if (P.v === 2) out.v = 2;
+    return out;
   }
   function scaleDeg(sc, deg) { var n = sc.length; return sc[((deg % n) + n) % n] + 12 * Math.floor(deg / n); }
   function partBar(o, w, genre, seat, ps) {
@@ -2864,10 +2882,67 @@
         continue;
       }
       var chug = mask === 1, accent = mask === 3, cl = chug ? Math.min(1.5, len) : len;   // rhythm
-      if (genre === 'country') { w.note('clean', s, chug ? Math.min(1, len) : len, o.root + 12, { strum: chug ? [0, 7] : [0, 4, 7], mute: chug, up: s % 4 === 2, accent: accent, part: true }); continue; }
+      if (genre === 'country') { w.note('clean', s, chug ? Math.min(1, len) : len, o.root + 12, { strum: chug ? [0, 7] : [0, third(o, 4), 7], mute: chug, up: s % 4 === 2, accent: accent, part: true }); continue; }
       if (genre === 'rock') { w.gtr2(s, cl, { power: true, mute: chug, open: !chug, accent: accent, part: true }); continue; }
       w.gtr(s, cl, { power: true, mute: chug, accent: accent, part: true });
       if (accent && genre === 'metal') w.gtr2(s, len, { power: true, part: true });
+    }
+  }
+  // v1.3 part v2 (plan_contract_1.3 §4.1, §4.5): the rows of songs.part.LAYOUT[2], pitched by songs.part.rowPitch (the one
+  // source of truth with 54's preview). Rhythm: Chug / Open = the v1 rule verbatim (mask & 3); Root / 5th / Oct add single
+  // notes (power: false, single: true: their own voice for the gaps; country picks one string, strum [0]); Scratch alone = a
+  // dead strum at the root (mute + dead, <= 1 step), ignored when another row is set. Bass: the lowest set row -> root +
+  // [-5, 0, third, 7, seventh, 12] (the mood's rung); Low 5th sits a fourth under the bass root as it sounds (at most 7 under
+  // bassFloor). Lead: the highest set row -> the hook's degree, one under / over (the v1 bend rule). An upgraded v1 part plays
+  // exactly as its source (sim_audio: timeline(upgrade(pt)) === timeline(pt)).
+  function lowFifth(o) {
+    var F = o.B.bassFloor, r = o.root - 12;
+    if (F && r < F) r += 12;   // (the root as w.bass plays it)
+    var m = r - 5;
+    if (F && m < F - 7) m += 12;
+    return m;
+  }
+  function rhythmHit(o, w, genre, s, len, mask) {   // = partBar's rhythm rule
+    var chug = mask === 1, accent = mask === 3, cl = chug ? Math.min(1.5, len) : len;
+    if (genre === 'country') { w.note('clean', s, chug ? Math.min(1, len) : len, o.root + 12, { strum: chug ? [0, 7] : [0, third(o, 4), 7], mute: chug, up: s % 4 === 2, accent: accent, part: true }); return; }
+    if (genre === 'rock') { w.gtr2(s, cl, { power: true, mute: chug, open: !chug, accent: accent, part: true }); return; }
+    w.gtr(s, cl, { power: true, mute: chug, accent: accent, part: true });
+    if (accent && genre === 'metal') w.gtr2(s, len, { power: true, part: true });
+  }
+  function partBar2(o, w, genre, seat, ps) {
+    var PT = GG.songs.part, rows = ps.rows, n = rows.length, steps = [], s, k, i, r, sc = null, deg = null, pt = { part: true }, mo = { mood: o.mood };
+    for (s = 0; s < 16; s++) { var m = 0; for (k = 0; k < n; k++) if (rows[k].charCodeAt(s) === HIT) m |= 1 << k; if (m) steps.push([s, m]); }
+    if (seat === 'lead') {
+      var hook = pick(((o.B.hooks || {})[o.name] || (o.B.hooks || {}).chorus), ps.hook == null ? 0 : ps.hook);
+      sc = o.B.scale || [0, 2, 4, 5, 7, 9, 11]; deg = (hook && hook.deg) || [0, 1, 2, 3, 4];
+    }
+    var hi = genre === 'country' || genre === 'rock' ? 12 : 0, rk = genre === 'country' ? 'clean' : genre === 'rock' ? 'gtr2' : 'gtr';
+    for (i = 0; i < steps.length; i++) {
+      s = steps[i][0]; var mask = steps[i][1], len = (i + 1 < steps.length ? steps[i + 1][0] : 16) - s;
+      if (seat === 'bass') {
+        for (r = 0; r < n - 1 && !(mask & (1 << r)); r++) { /* the lowest set row */ }
+        if (r === 0) w.note('bass', s, len, lowFifth(o), pt);
+        else w.bass(s, len, o.root + PT.rowPitch(genre, 'bass', r, mo), pt);
+        continue;
+      }
+      if (seat === 'lead') {
+        for (r = n - 1; r > 0 && !(mask & (1 << r)); r--) { /* the highest set row */ }
+        w.note(genre === 'country' ? 'twang' : 'lead', s, len, inKey(o.key + 24 + scaleDeg(sc, PT.rowPitch(genre, 'lead', r, { deg: deg })), o.key, sc), len >= 3 ? { bend: 2, part: true } : pt);
+        continue;
+      }
+      var m1 = mask & 3, single = false;   // rhythm
+      if (m1) rhythmHit(o, w, genre, s, len, m1);
+      for (r = 2; r < PT.SCRATCH; r++) {
+        if (!(mask & (1 << r))) continue;
+        single = true;
+        var e = { midi: o.root + hi + PT.rowPitch(genre, 'rhythm', r, mo), power: false, single: true, part: true };
+        if (genre === 'country') e.strum = [0];
+        w.note(rk, s, len, e.midi, e);
+      }
+      if (!m1 && !single && (mask & (1 << PT.SCRATCH))) {
+        w.note(rk, s, Math.min(1, len), o.root + hi, genre === 'country' ? { strum: [0, 7], mute: true, dead: true, up: s % 4 === 2, part: true }
+          : { power: true, mute: true, dead: true, part: true });
+      }
     }
   }
   var KIND_RANK = { step: 0, drum: 1, vox: 2, bvox: 2.5, gtr: 3, bass: 4, gtr2: 5, lead: 6, fiddle: 7, clean: 8, twang: 9 };
@@ -2877,7 +2952,7 @@
   function ringBar(o, w, genre) {
     var len = 16 + RING_BEATS * 4;
     if (genre === 'country') {   // v0.9: the fiddle holds the tonic over the last strum
-      w.note('clean', 0, len, o.key + 12, { strum: [0, 4, 7], ring: true }); w.bass(0, len, o.key).ring = true;
+      w.note('clean', 0, len, o.key + 12, { strum: [0, third(o, 4), 7], ring: true }); w.bass(0, len, o.key).ring = true;
       w.note('fiddle', 0, len, o.key + 24, { ring: true });
       return;
     }
@@ -2920,6 +2995,12 @@
     var G = GG.songs.genre(genre), B = G.backing || {}, kit = G.kit || DEFAULT_KIT;
     var style = opts.style ? { id: opts.style, label: opts.style } : A.styleFor(genre, p.bpm);
     var key = A.keyFor(opts.songId != null ? opts.songId : songIdOf(pattern), genre, p.bpm), band = BANDS[genre] || BANDS.metal;
+    // v1.3 (§4.5): the mood (non-native only: the parallel key, the key note stays), the chips, the bar-4 fills, the swing
+    var MR = GG.songs.moodOf ? GG.songs.moodOf(genre, p.mood) : null, CH = p.chords || null, FB = p.fillBars || null, SW = p.swing > 0 ? p.swing : 0;
+    if (MR) {
+      B = Object.assign({}, B, { mode: MR.mode, scale: MR.scale });
+      key = Object.assign({}, key, { mode: MR.mode, name: NOTE[key.tonic % 12] + ' ' + MR.mode, mood: p.mood });
+    }
     var V = opts.vocals === false ? null : B.vox, R = B.roles || {};
     var order = opts.section ? [opts.section] : p.arrangement, events = [], beat = 0, bars = 0, maxBars = opts.bars || Infinity, tail = 0;
     // v0.9: who solos (non-metal: the soloist's instrument, or nobody), who sings (a voice profile) and how (the song's plan).
@@ -2934,15 +3015,17 @@
       var nth = seen[name] = seen[name] == null ? 0 : seen[name] + 1;   // the how-manyth entry of this section
       var ps = P ? partSec(P, name) : null;
       if (ps && ps.prog != null && seat !== 'lead') prog = pick((B.progressions || {})[name], ps.prog) || prog;   // the band follows your chords
+      var chips = CH && CH[name] ? CH[name] : null, fill = FB && FB[name] ? FB[name] : null;
+      if (chips) prog = chips;   // v1.3: the bar chips (every seat, the lead and drums too; = songs.chordsOf)
       for (var bar = 0; bar < C.BARS_PER_SECTION && bars < maxBars; bar++, bars++, beat += 4) {
-        var role = roles[bar % roles.length], tomAt = -9, ti = 0;
+        var role = roles[bar % roles.length], tomAt = -9, ti = 0, dsec = fill && bar === C.BARS_PER_SECTION - 1 ? fill : sec;   // (v1.3: bar 4's fill)
         for (var step = 0; step < C.STEPS; step++) {
           var at = beat + step / 4;
           events.push({ beat: at, kind: 'step', section: name, entry: e, bar: bar, step: step, role: role });
           if (opts.drums === false) continue;
           if (name === 'solo' && step % 4) continue;   // v0.8: Dana's solo: you lay back on a stripped kit (the beat only, like the gig chart)
           for (var l = 0; l < p.lanes; l++) {
-            if (sec[l].charCodeAt(step) !== HIT) continue;
+            if (dsec[l].charCodeAt(step) !== HIT) continue;
             var ev = { beat: at, kind: 'drum', lane: C.LANES[l], li: l, section: name };
             if (ev.lane === 'toms') { ti = step - tomAt <= 3 ? Math.min(2, ti + 1) : 0; tomAt = step; ev.v = ti; }   // fills roll down the toms
             else if (ev.lane === 'snare' && kit.train) ev.v = snareVariant(step, role);
@@ -2950,13 +3033,15 @@
           }
         }
         if (opts.backing === false) continue;
-        var root = role === 'break' ? key.tonic : key.tonic + prog[bar % prog.length], brk = 0;
+        var root = role === 'break' && !chips ? key.tonic : key.tonic + prog[bar % prog.length], brk = 0;   // (v1.3 Q4: a chip moves a break bar)
         for (var j = bar - 1; role === 'break' && j >= 0 && roles[j % roles.length] === 'break'; j--) brk++;
         if (role === 'solo' && !solo) role = 'full';   // v0.9: nobody to solo: the band plays on
         var o = { out: events, style: style.id, sec: sec, root: root, next: key.tonic + prog[(bar + 1) % prog.length], key: key.tonic,
           riff: riff, beat: beat, name: name, bar: bar, role: role, brk: brk, bpm: p.bpm, B: B, rng: GG.RNG(GG.hashSeed(key.seed + '|' + name + '|' + bar)),
           solo: solo, vp: vp };
         if (seat) { o.seat = seat; if (layer) o.srng = GG.RNG(GG.hashSeed(key.seed + '|seat|' + seat + '|' + name + '|' + bar)); }
+        if (MR) o.third = MR.third;
+        if (p.mood != null) o.mood = p.mood;   // (part v2: rowPitch's rung)
         var w = writer(o), mark = events.length;
         if (role === 'ring' && e === order.length - 1) { ringBar(o, w, genre); tail = RING_BEATS; if (seat) seatRing(o, w, genre, seat); continue; }   // v0.8 outro (v1.1: + the seat's held note)
         if (role === 'ring') { band(Object.assign(o, { role: 'full' }), w); if (layer) layer(o, w); if (ps) seatPart(events, mark, mine, o, w, genre, seat, ps); continue; }
@@ -2967,28 +3052,45 @@
         sing(S, V, o, w, e, nth, name, role, brk, key, e === lastChorus);
       }
     }
+    if (SW) swingEvents(events, SW);   // v1.3 Feel: before the sort; gaps follow the swung beats
     events.sort(function (a, b) { return a.beat - b.beat || KIND_RANK[a.kind] - KIND_RANK[b.kind] || (a.li || 0) - (b.li || 0); });
     // Gap to the next event of the same voice (drum lane / guitar / bass / ...), wrapping around for loops.
+    // (v1.3: a part v2 single note is its own voice per pitch, so a chug and a Root on one step both keep their length)
     var next = {};
     for (var i = events.length - 1; i >= 0; i--) {
       var x = events[i]; if (x.kind === 'step') continue;
-      var k = x.kind === 'drum' ? x.lane : x.kind;
+      var k = voiceKey(x);
       x.gap = next[k] != null ? next[k] - x.beat : Infinity;
       next[k] = x.beat;
       if (x.len == null) x.len = Infinity;
     }
     events.forEach(function (x) {
-      if (x.gap === Infinity) { var k = x.kind === 'drum' ? x.lane : x.kind; x.gap = beat - x.beat + next[k]; }
+      if (x.gap === Infinity) { var k = voiceKey(x); x.gap = beat - x.beat + next[k]; }
       if (x.ring) x.gap = Math.max(x.gap, x.len);   // v0.8: the outro's last chord rings over the end
     });
     var out = { bpm: p.bpm, beats: beat, tail: tail, style: style.id, styleLabel: style.label, key: key, events: events, solo: solo, voice: vp ? vp.id : null };
     if (seat) { out.seat = seat; if (P) out.part = true; }
+    if (SW) out.swing = SW;
+    TL_LAST.swing = SW; TL_LAST.mood = MR ? p.mood : null;   // (debug('audio'))
     return out;
   };
+  var TL_LAST = { swing: 0, mood: null };
+  function voiceKey(x) { return x.kind === 'drum' ? x.lane : x.single ? x.kind + '|' + x.midi : x.kind; }
+  // v1.3 Feel (§4.5, D6): every non-step event on a swung position moves (e.g = its grid beat, e.beat = songs.swingBeat);
+  // lengths follow (warped end - warped start); 'step' events, whole beats and bar lines never move.
+  function swingEvents(events, sw) {
+    var swing = GG.songs.swingBeat;
+    for (var i = 0; i < events.length; i++) {
+      var x = events[i]; if (x.kind === 'step') continue;
+      var b0 = x.beat, b1 = swing(b0, sw);
+      if (x.len != null && isFinite(x.len)) x.len = swing(b0 + x.len, sw) - b1;
+      if (b1 !== b0) { x.g = b0; x.beat = b1; }
+    }
+  }
   // The bar's events of your kinds (written since `mark`) make way for your part's.
   function seatPart(events, mark, mine, o, w, genre, seat, ps) {
     for (var k = events.length - 1; k >= mark; k--) if (mine[events[k].kind]) events.splice(k, 1);
-    partBar(o, w, genre, seat, ps);
+    if (ps.v === 2) partBar2(o, w, genre, seat, ps); else partBar(o, w, genre, seat, ps);
   }
 
   /* ---- Playback: the look-ahead scheduler --------------------------------------------------------------- */
@@ -3199,8 +3301,9 @@
     var sl = seatSlot(r, pool, t);
     var ev = { beat: 0, kind: kind, midi: midi, len: len, gap: len, power: o.power != null ? !!o.power : kind === 'gtr' || kind === 'gtr2',
       mute: !!o.mute, trem: !!o.trem, ring: !!o.ring, up: !!o.up, bend: +o.bend || 0 };
+    if (o.dead) { ev.dead = true; ev.mute = true; }   // v1.3 Scratch: a dead strum (KS art 'dead'; Classic: the mute recipe)
     if (Array.isArray(o.strum)) ev.strum = o.strum.slice(0, 4);
-    else if (kind === 'clean' && g === 'country') ev.strum = o.mute ? [0, 7] : [0, 4, 7];
+    else if (kind === 'clean' && g === 'country') ev.strum = o.mute ? [0, 7] : [0, o.third === 3 ? 3 : 4, 7];   // (v1.3: o.third, a minor mood's preview)
     if (o.vel != null && !A.isClassic()) ev.vel = clamp01(o.vel);   // v1.2 (F5, Lane F): your tap's velocity rides on the note (playNote's velocity path; partners + repeats copy it)
     // o.repeats [seconds after t] (a run: the repeats on the band grid, one note; a release stops the rest)
     var reps = Array.isArray(o.repeats) ? o.repeats.filter(function (x) { return x > 0.02 && x < len - 0.02; }).sort(function (a, b) { return a - b; }) : [];
@@ -3210,7 +3313,7 @@
         playNote(r, sl.p, ev, t, 1);
         if (Array.isArray(o.with)) o.with.slice(0, 2).forEach(function (w) {   // v1.1 review: a same-voice partner (metal's chorus ring) on this handle
           if (w && isFinite(w.midi)) playNote(r, sl.p, Object.assign({}, ev, { kind: w.kind || kind, midi: +w.midi, len: Math.min(len, +w.len > 0 ? +w.len : len), gap: Math.min(len, +w.len > 0 ? +w.len : len),
-            power: w.power != null ? !!w.power : ev.power, mute: !!w.mute, ring: !!w.ring, strum: undefined, up: false, bend: 0 }), t, 1);
+            power: w.power != null ? !!w.power : ev.power, mute: !!w.mute || !!w.dead, ring: !!w.ring, strum: undefined, up: false, bend: 0, dead: !!w.dead }), t, 1);
         });
       } else {
         var at = [0].concat(reps);
@@ -4600,6 +4703,7 @@
       songVoices: rig ? rig.busy.filter(function (e) { return e > ctx.currentTime; }).length : 0,
       bandVoices: rig ? rig.band.filter(function (e) { return e > ctx.currentTime; }).length : 0,
       steps: stepCount, lastStep: lastStep, style: current ? current.style : null, key: current && current.key ? current.key.name : null,
+      swing: TL_LAST.swing, mood: TL_LAST.mood,   // v1.3: the last timeline's Feel stop (0 = straight) and non-native mood (null = native)
       genre: rig ? rig.genre : null, room: rig ? rig.room : null, ambience: amb.mode, radio: amb.radioSong,
       crowd: { on: crowd.on, level: Math.round(crowd.level), size: Math.round(crowd.size * 100) / 100, song: crowd.song, silent: crowd.silent,
         clapping: crowd.clapping, ready: crowdReady(CB), waiting: !!crowd.waiting },
