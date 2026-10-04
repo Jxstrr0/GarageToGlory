@@ -350,6 +350,14 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 @media (max-width: 420px) { .seq-title .caps { letter-spacing: .03em; } }
 .seq-title .fr { font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seq-title .en { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v1.3.1: the sketch pad's shop button (green like the garage's Gear shop label) */
+/* (stacked 🛒 over SHOP, 52 px wide: "Sketch pad · Rhythm guitar" still fits the title at 390) */
+.seq-shop { flex: 0 0 52px; width: 52px; height: 44px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0;
+  border-radius: 12px; border: 2px solid var(--green); background: rgba(87, 199, 122, .16); color: var(--text); cursor: pointer;
+  box-shadow: 0 0 12px rgba(87, 199, 122, .22); }
+.seq-shop .i { font-size: 17px; line-height: 1; }
+.seq-shop .t { font: 800 9.5px/1 var(--font); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+.seq-shop:active { filter: brightness(1.25); }
 /* underline section tabs */
 .seq-tabs { flex: 0 0 auto; margin: -2px -14px 0; padding: 0 12px; border-bottom: 1px solid #222b44; }
 .full.seq .seq-tabs .tabs { background: none; border: 0; border-radius: 0; padding: 0; gap: 2px; }
