@@ -131,7 +131,7 @@ async function garage(c) {
     // Pick a floor point that nothing stands in front of (pickAt reports what a tap would hit).
     const p0 = d1.player;
     const free = await page.evaluate(() => {
-      const C = [[1.3, -0.5], [0.3, -0.2], [1.5, 0.9], [-0.3, 1.4], [1.0, -1.0]];
+      const C = [[1.3, -0.5], [0.3, -0.2], [1.5, 0.9], [-0.3, 1.4], [1.0, -1.0], [1.2, 0.3], [0.6, 0.9], [-0.6, 0.6], [1.4, -1.5]];   // (v1.3.1: the Gear shop label covers [1, -1])
       for (const [x, z] of C) { const s = GG.render.worldToScreen(x, 0, z), h = s && GG.render.pickAt(s.x, s.y); if (h && h.type === 'floor') return { x, z, s }; }
       return null;
     });
