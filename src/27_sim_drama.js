@@ -208,7 +208,7 @@
     lawsuit: function (s) {
       if (!wrote(s)) return 0;
       var n = newestSong(s), sim = 0;
-      (s.songs || []).forEach(function (x) { if (x !== n) sim = Math.max(sim, GG.songs.similarity(n, x)); });
+      (s.songs || []).forEach(function (x) { if (x !== n) sim = Math.max(sim, GG.songs.similarity(n, x, s.genre)); });
       return sim >= 0.8 ? -1 : sim < 0.5 ? 1 : 0;
     },
     // Tamara: everyone home by midnight, teeth flossed, taxes filed. Low burnout, short drives, money in the fund.

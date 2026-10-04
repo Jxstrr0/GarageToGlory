@@ -1655,6 +1655,40 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      warps non-step events (e.g = the grid beat) before the sort; the drum chart t = swingBeat(beat) * spb; v2 parts via partBar2.
    UI (Lane U): one-flow editor + Quick song; debug('seq') = { mode, screen, tab, layer, seat, playing, title, rating, playhead,
      part, recipe, sliders: { energy, mood, feel, fills, bpm }, chords, chips, edited, compose: { ms, k } }.
+   As merged (lanes S -> A -> U, 2026-10-04; reports plan/v13_lane_<s|a|u>_report.md, plan/v13_integration_report.md):
+     S (21 + content): part.suggest(genre, seat, section, rng?, v?) / part.full(genre, seat, pattern, rng?, v?): v === 2 -> the
+       same notes through UP (no v = 1.2 byte for byte, IN fixture); part.modify on a v2 part uses v2 rules (CALL2; lock / double /
+       ring skip Scratch); compose-only v2 part mods sparse, eighths, busy, pickup, scratch, walk, octave, fifths (not in MODS).
+       toNotes: the notes of a p.fillBars bar 4 carry fill: true (the key exists only then). rate: a section with a fill bar counts
+       3/4 main + 1/4 fill (FILL_W) in groove + difficulty; hook unchanged; no fillBars = the 1.2 arithmetic. recipes() cards: bpm
+       on a 5, lockLabel = the seat's pedal NAME (null without a pedal), 6th card { id: 'surprise', name, surprise: true };
+       surprise() rng = hashSeed('surprise|' + genre + '|' + seed); compose rates its K variants at the recipe tempo (Feel + Tempo
+       never change the winner, D15). OPs (grooves / grooveFx op lists; strings name op ids in grooves[g].mods | grooves[g].ops |
+       grooveFx.byGenre[g].ops | grooveFx.ops): { op: 'roll', from, to?, every? } (toms if the kit has them, else snare; the time
+       keeping stops under it), { op: 'swap', from, to, alt? }. chordLabel: power genres '5'; country = root + 'm' when the rung's
+       third is 3, else major on EVERY bar (= what the band strums; per-chord thirds are v1.4). Mood ids (key on index / mode, never
+       id): metal heroic grim midnight* sinister abyss; punk sunny cheery* gritty bitter gloomy; rock sunny bright bluesy* moody dark;
+       country sweet sunny* dusty lonesome heartbreak (* native). Content keys: grooves[g].recipes (+ alt, dk, parts.mods may be
+       { <seat>: id }, parts.alt), grooves[g].sliders (+ bySeat), grooves[g].bars, grooves[g].ops, grooves.surprise { name, desc },
+       grooves.coach.quick + grooves[g].coach.quick, zz_seats coach.bySeat[seat].quick + coach[g].bySeat[seat].quick (priority
+       coach[g].bySeat[seat].quick > coach.bySeat[seat].quick > coach[g].quick > coach.quick); GG.content.grooveFx = { energy[5],
+       partEnergy[5], fills[5] { sections, ops, alt?, partSections? }, partFills[5], swap4, swap6, flavors, ops (time shapes t-h8,
+       t-c8, t-h16, t-hq, t-off, t-h8c4), byGenre { <g>: { energy, fills, swap4, flavors, flavors2, ops } } }.
+       similarity(a, b, genre): every caller passes the career's genre (21 custom triggers, 24 tracklist / recycled / bot picks,
+       27 lawsuit); it only matters when a pattern has p.chords.
+     A (30 / 31 / 22 / 55): timeline events may carry g (the grid beat of a swung event; e.beat = swingBeat), dead (Scratch: a dead
+       strum, + mute), single (a v2 Root / 5th / Oct single note, power: false); result.swing (the p.swing used); key.mood (the
+       rung index, non-native only); o.third read by third(o, literal) at every hard-coded third (rock walk, country train walk +
+       strums, fiddle, partBar strum, ring bar, seatPlay fallback). KS art 'dead' (0.12 s, t60 0.06, mute) via ksSpec(.., { dead }) /
+       ksSpecFor(ev.dead); A.strum(midi, when, { dead, third }). debug('audio') += swing, mood, seat.last.dead. 31: the
+       accent step from e.g ?? e.beat. 22: drum chart + extras t = swingBeat(beat, swing) * spb; extras skip a section with a fill;
+       seatChart where() reads e.g; dead copied to notes / auto / with; a dead note never starts or joins a run; no chord on dead or
+       one-string notes; Q1 = 1 (lanes = the pitch contour on the rig's lanes). 55 seatSound: o.dead.
+     U (54 / 00_shell / 5h / 5k / 5p / tutorial): ui.show('seq', { mode, screen: 'quick'|'edit', pat, title, titleEn, song, index,
+       total, fromSketch, taken, editHint: { who, text } (the grid tip, shown once when the editor opens), onSave, onJam, onCancel });
+       ui.seqGear(entry) (5k refreshSeq: re-sanitize with the new gear, re-compose an untouched Quick song, rerender); 5h kit-practice
+       joins the ⋯ modal 'seq-tools' on its ui:layout; 5p ctx.seqScreen; debug('seq') + fill (true while the grid edits the tab's Bar 4 fill).
+       settings.songwriterMode is never read (D18). Tests: tests/_pw.js openTools(page) taps ⋯ and waits for 'seq-tools'.
   ====================================================================== */
   C.SWING = [0, 0.04, 0.083, 0.125, 0.1667];   // Feel stops: beats added to the off-8th (stop 4 = a full triplet)
   C.SONG_SLIDERS = [                            // the Quick song sliders (songs.sliders adds each genre's stop labels)
@@ -23373,7 +23407,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     s.drumSync = s.drumSync !== false;                                // v0.8.3: default on
     s.syncDisp = U.clamp(Math.round(num(s.syncDisp, 25)), 10, 40);   // v0.8.3: ms, this device's touch dispatch p90
     s.audioClassic = !!s.audioClassic;                                // v1.2: the Classic sound (hidden; GG.audio.classic)
-    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2: the Write flow's step-by-step screens (default)
+    if (s.songwriterMode !== 'advanced') s.songwriterMode = 'guided';   // v0.6.2 Write flow mode; ignored since 1.3 (one flow, D18): kept so old saves / tests round-trip
     return s;
   };
   P.get = function () { return P.normalize(GG.save && GG.save.settings ? GG.save.settings() : {}); };
@@ -25970,12 +26004,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   songs.chordLabel = function (genre, mood, tonic, semi) {
     var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
     if (POWER_GENRES[gid]) return name + '5';
-    var r = rungOf(gid, mood), sc = r.scale || [];
-    if (!s) return name + (r.third === 3 ? 'm' : '');
-    var maj = sc.indexOf((s + 4) % 12) >= 0, min = sc.indexOf((s + 3) % 12) >= 0;
-    if (maj !== min) return name + (min ? 'm' : '');
-    var parent = r.third === 3 ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];   // the third isn't in a gapped scale: the parent key's
-    return name + (parent.indexOf((s + 3) % 12) >= 0 ? 'm' : '');
+    return name + (rungOf(gid, mood).third === 3 ? 'm' : '');
   };
   songs.progChords = function (genre, name, i, mood) {
     var B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name], roles = (B.roles || {})[name] || [];
@@ -26431,7 +26460,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (c.when === 'difficultyHigh') return r.difficulty >= CUSTOM.difficultyHigh;
         if (c.when === 'similarityHigh') {
           if (sim == null) sim = state.songs.filter(function (x) { return x && x.id !== song.id; })
-            .reduce(function (mx, x) { return Math.max(mx, songs.similarity(song, x)); }, 0);
+            .reduce(function (mx, x) { return Math.max(mx, songs.similarity(song, x, state.genre)); }, 0);
           return sim >= CUSTOM.similarityHigh;
         }
         return c.when === 'any';
@@ -28809,7 +28838,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (list.indexOf(single) <= 2) score += K.frontSingle || 5;
     }
     for (var i = 1; i < list.length; i++) {
-      if (GG.songs.similarity(list[i - 1], list[i]) >= (K.adjacentAt || 0.9)) {
+      if (GG.songs.similarity(list[i - 1], list[i], state.genre) >= (K.adjacentAt || 0.9)) {
         score -= K.adjacent || 8; notes.push('"' + list[i - 1].title + '" and "' + list[i].title + '" sound the same back to back.');
       }
     }
@@ -28827,11 +28856,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var old = recentTracks(state, albumId), hit = {}, pairs = [];
     for (var i = 0; i < list.length; i++) {
       for (var j = i + 1; j < list.length; j++) {
-        var v = GG.songs.similarity(list[i], list[j]);
+        var v = GG.songs.similarity(list[i], list[j], state.genre);
         if (v >= at) { hit[list[i].id] = hit[list[j].id] = true; pairs.push([list[i].id, list[j].id, v]); }
       }
       for (var k = 0; k < old.length; k++) {
-        var w = GG.songs.similarity(list[i], old[k]);
+        var w = GG.songs.similarity(list[i], old[k], state.genre);
         if (w >= at) { hit[list[i].id] = true; pairs.push([list[i].id, old[k].id, w]); }
       }
     }
@@ -29476,7 +29505,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var old = recentTracks(state, null), out = [];
     fresh.forEach(function (x) {
       if (out.length >= n) return;
-      var clash = out.concat(old).some(function (y) { return GG.songs.similarity(x, y) >= at; });
+      var clash = out.concat(old).some(function (y) { return GG.songs.similarity(x, y, state.genre) >= at; });
       if (!clash) out.push(x);
     });
     fresh.forEach(function (x) { if (out.length < n && out.indexOf(x) < 0) out.push(x); });
@@ -29491,7 +29520,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var mid = rest.filter(function (x) { return x !== closer; });
     var order = [opener], at = (cfg().tracklist || {}).adjacentAt || 0.9;
     while (mid.length) {
-      var prev = order[order.length - 1], pick = mid.filter(function (x) { return GG.songs.similarity(prev, x) < at; })[0] || mid[0];
+      var prev = order[order.length - 1], pick = mid.filter(function (x) { return GG.songs.similarity(prev, x, state.genre) < at; })[0] || mid[0];
       order.push(pick); mid.splice(mid.indexOf(pick), 1);
     }
     order.push(closer);
@@ -31345,7 +31374,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     lawsuit: function (s) {
       if (!wrote(s)) return 0;
       var n = newestSong(s), sim = 0;
-      (s.songs || []).forEach(function (x) { if (x !== n) sim = Math.max(sim, GG.songs.similarity(n, x)); });
+      (s.songs || []).forEach(function (x) { if (x !== n) sim = Math.max(sim, GG.songs.similarity(n, x, s.genre)); });
       return sim >= 0.8 ? -1 : sim < 0.5 ? 1 : 0;
     },
     adulting: function (s, a, g) {

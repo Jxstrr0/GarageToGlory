@@ -908,12 +908,10 @@
   songs.chordLabel = function (genre, mood, tonic, semi) {
     var gid = (GG.content.genres || {})[genre] ? genre : 'metal', s = (((semi | 0) % 12) + 12) % 12, name = songs.NOTE[(((tonic | 0) + s) % 12 + 12) % 12];
     if (POWER_GENRES[gid]) return name + '5';
-    var r = rungOf(gid, mood), sc = r.scale || [];
-    if (!s) return name + (r.third === 3 ? 'm' : '');
-    var maj = sc.indexOf((s + 4) % 12) >= 0, min = sc.indexOf((s + 3) % 12) >= 0;
-    if (maj !== min) return name + (min ? 'm' : '');
-    var parent = r.third === 3 ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];   // the third isn't in a gapped scale: the parent key's
-    return name + (parent.indexOf((s + 3) % 12) >= 0 ? 'm' : '');
+    // v1.3 merge (Lane A hand-over 1): the band strums the rung's third on EVERY chord (30 third(o, 4), = part.rowPitch), so the
+    // chip names what you hear: native country = major triads on every bar (as 1.2 plays vi), a minor rung = minor on every bar.
+    // Per-chord thirds (rowPitch + o.third together) are v1.4.
+    return name + (rungOf(gid, mood).third === 3 ? 'm' : '');
   };
   songs.progChords = function (genre, name, i, mood) {
     var B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name], roles = (B.roles || {})[name] || [];
@@ -1440,7 +1438,7 @@
         if (c.when === 'difficultyHigh') return r.difficulty >= CUSTOM.difficultyHigh;
         if (c.when === 'similarityHigh') {
           if (sim == null) sim = state.songs.filter(function (x) { return x && x.id !== song.id; })
-            .reduce(function (mx, x) { return Math.max(mx, songs.similarity(song, x)); }, 0);
+            .reduce(function (mx, x) { return Math.max(mx, songs.similarity(song, x, state.genre)); }, 0);
           return sim >= CUSTOM.similarityHigh;
         }
         return c.when === 'any';

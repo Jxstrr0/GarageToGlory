@@ -482,7 +482,7 @@ test('chordsOf: p.chords > the part\'s prog (not lead / drums) > the 1.2 hash pi
   }
   eq(['metal', 'punk', 'rock'].map(g => S.chordLabel(g, null, 40, 0)), ['E5', 'E5', 'E5'], 'power-chord genres');
   eq([S.chordLabel('country', null, 43, 0), S.chordLabel('country', null, 43, 5), S.chordLabel('country', null, 43, 7), S.chordLabel('country', null, 43, 9), S.chordLabel('country', null, 43, 2)],
-    ['G', 'C', 'D', 'Em', 'Am'], 'country triads in G (native rung)');
+    ['G', 'C', 'D', 'E', 'A'], 'country in G (native rung): the band strums the rung third on every chord, the label says so (merge, Lane A hand-over 1)');
   eq(S.chordLabel('country', 3, 43, 0), 'Gm', 'a minor rung'); eq(S.chordLabel('metal', 0, 41, 1), 'F♯5'); eq(S.NOTE.length, 12);
 });
 
