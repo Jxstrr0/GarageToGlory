@@ -392,6 +392,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
   color: var(--dim); font: 13px var(--font); cursor: pointer; white-space: nowrap; }
 .seq-chords b { color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .seq-chords .sc-k, .seq-chords .sc-dn { flex: 0 0 auto; } .seq-chords:disabled { cursor: default; } .seq-chords:disabled .sc-dn { display: none; }
+/* v1.3 review: the name reads in full (two lines inside the 48 px row, a slimmer toggle; Bigger text on a narrow phone drops the
+   "Chords:" / "Hook:" prefix), so "the tritone drop" never ends in an ellipsis at 390 */
+.seq-chords b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; text-align: right; overflow-wrap: anywhere; }
+.seq-layers .seg { min-width: 0; padding: 0 10px; } .seq-toggle { gap: 8px; }
+@media (max-width: 420px) { html.gg-big .seq-chords .sc-k { display: none; } }
 /* four chord chips (bar n + chord; the home chord outlined green; the playing bar lit) */
 .seq-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; flex: 0 0 44px; height: 44px; }
 .seq-chip { min-height: 44px; min-width: 0; padding: 0 4px; border: 1.5px solid transparent; border-radius: 10px; background: var(--panel); color: var(--text); cursor: pointer;
@@ -418,7 +423,7 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-grid .cell.on.ph { box-shadow: inset 0 0 0 2px #fff; filter: brightness(1.2); }
 .seq-grid .cell.nope { animation: gg-nope .5s ease-out; }
 .seq-grid.ro .cell { cursor: default; }
-.seq-grid.fill .cell { background: #1f1c2a; } .seq-grid.fill .cell.sh { background: #262235; } .seq-grid.fill .cell.on { background: var(--lc); }
+.seq-grid.fill .gc { font-size: 11px; } .seq-grid.fill .cell { background: #1f1c2a; } .seq-grid.fill .cell.sh { background: #262235; } .seq-grid.fill .cell.on { background: var(--lc); }
 @keyframes gg-nope { 0%, 100% { background: #161d30; } 25% { background: #8a2f3a; transform: scale(.94); } }
 .seq-grid.wide { column-gap: 3px; }
 .seq-grid.wide .lh { flex-direction: column; gap: 0; font-size: 8.5px; letter-spacing: 0; line-height: 1; }
@@ -486,6 +491,7 @@ html.gg-big .sm-copy .btn, html.gg-big .sm-mods .btn { font-size: 15.5px; }
 html.gg-big .seq-coach { font-size: 15.5px; } html.gg-big .seq-title .caps { font-size: 11.5px; } html.gg-big .seq-title .fr { font-size: 19px; }
 html.gg-big .meter { font-size: 12px; } html.gg-big .meter b { font-size: 14px; } html.gg-big .seq-chords { font-size: 14.5px; }
 html.gg-big .seq-layers .seg { font-size: 13.5px; } html.gg-big .seq-chip .cb { font-size: 10px; } html.gg-big .seq-grid .lh { font-size: 11px; } html.gg-big .seq-grid .bl { font-size: 12px; }
+@media (max-width: 410px) { html.gg-big .seq-grid.part .lh { font-size: 10px; letter-spacing: 0; } }   /* v1.3 review: "Low 5th" / "Scratch" fit at 390 */
 html.gg-big .qr b { font-size: 17px; } html.gg-big .qr > span { font-size: 13.5px; } html.gg-big .qs-top b { font-size: 17px; } html.gg-big .qs-top em { font-size: 14.5px; }
 html.gg-big .qs-ends { font-size: 12.5px; } html.gg-big .qs-title { font-size: 23px; } html.gg-big .seq-menu-row { font-size: 16.5px; } html.gg-big .seq-pickrow { font-size: 16.5px; }
 html.gg-big .full.seq .seq-tabs .tab.tab { font-size: 14px; } html.gg-big .full.seq .seq-tabs.many .tab.tab { font-size: 11.5px; }
@@ -1641,7 +1647,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      Scratch alone = a dead strum at the root (mute, dead: true); bass the lowest set row -> root + [-5, 0, third, 7, seventh,
      12]; lead the highest set row -> scale degree [deg0 - 1, deg0..deg4, deg4 + 1] of the mood's scale.
    Sim (21, pure, genre explicit): swingBeat(beat, s) ; chordsOf(p, name, genre, { part, seat }?) -> [4] (p.chords > the part's
-     prog (seat != lead) > the 1.2 hash pick) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
+     prog (seat != lead) > the 1.2 hash pick; without p.chords break bars read 0 = the tonic 30 plays there) ; NOTE ; chordLabel(genre, mood, tonic, semi) -> 'E5' | 'Em' | 'E' ;
      progChords(genre, name, i, mood) -> [4] (break bars home, Q4 = 1) ; progName(genre, seat, name, p, opts) ;
      moodOf(genre, mood) -> rung | null (null = absent / native) ; nativeMood(genre) ; part.rowsOf(pt) -> row count ;
      part.rowNames(pt) ; part.upgrade(pt) -> v2 copy (same sound, same ratings) ; part.view(pt) (v2 as is, else upgrade) ;
@@ -7309,7 +7315,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { sections: ['verse', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 12, every: 2 }, { op: 'roll', from: 14 }]] },
       { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 12 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]] },
       { sections: ['verse', 'chorus', 'bridge'], ops: [{ op: 'roll', from: 8 }], alt: [[{ op: 'roll', from: 8, every: 2 }, { op: 'roll', from: 12 }]], partSections: ['verse'] }],
-    partFills: [null, null, null, 'pickup', 'pickup'],
+    partFills: [null, null, null, null, null],   // v1.3 review (Q2 = 1): no every-bar pickup on your part; Fills = the bar-4 drum fill on every seat
     swap4: ['chorus', 'bridge'], swap6: ['chorus', 'bridge'],
     flavors: [[], ['t-h8'], ['t-c8'], ['t-hq']],
     ops: {   // the time-keeping shapes the flavours use: everything on the hats first, then one shape, a crash on the one
@@ -25985,11 +25991,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var B = songs.genre(genre).backing || {}, r = songs.moodOf(genre, mood) || (Array.isArray(B.moods) ? B.moods[songs.nativeMood(genre)] : null);
     return r || { mode: B.mode || 'minor', scale: B.scale || [0, 2, 3, 5, 7, 8, 10], third: genre === 'metal' ? 3 : 4, seventh: 10 };
   }
+  function breakMask(B, name, a) {
+    var roles = (B.roles || {})[name] || [], out = [];
+    for (var bar = 0; bar < a.length; bar++) out.push(roles.length && roles[bar % roles.length] === 'break' ? 0 : a[bar]);
+    return out;
+  }
   function chordSource(p, name, genre, opts) {
     var q = songs.sanitize(p && p.pattern || p, null, null, true), B = songs.genre(genre).backing || {}, list = (B.progressions || {})[name] || [[0, 0, 0, 0]];
     if (q.chords && q.chords[name]) return { chords: q.chords[name].slice(), from: 'chords', i: null, q: q };
     opts = opts || {};
-    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: list[i].slice(), from: 'hash', i: i, q: q };
+    var sec = q.sections[name] || [], i = GG.hashSeed(name + '|' + (sec[0] || '') + (sec[1] || '')) % list.length, out = { chords: breakMask(B, name, list[i]), from: 'hash', i: i, q: q };
     var pt = opts.part !== undefined ? opts.part : q.part, want = opts.seat !== undefined ? opts.seat : null;
     if (want === 'drums' || !pt || typeof pt !== 'object' || !pt.sections || typeof pt.sections !== 'object') return out;   // (30 partOf)
     var seat = PART_ROWS[want] ? want : pt.seat, x = pt.sections[name];
@@ -25998,7 +26009,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var pl = (B.progressions || {})[name];
     if (!pl || !pl.length) return out;
     var j = Math.max(0, Math.min(pl.length - 1, x.prog | 0));
-    return { chords: pl[j].slice(), from: 'part', i: j, q: q };
+    return { chords: breakMask(B, name, pl[j]), from: 'part', i: j, q: q };
   }
   songs.chordsOf = function (p, name, genre, opts) { return chordSource(p, name, genre, opts).chords; };
   songs.NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];   // = 30 NOTE (key names)
@@ -52842,6 +52853,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var c = coachFor(D, coachStep(D)), who = c ? c.who : null;
     if (D.screen === 'quick') return { who: who, text: c ? c.text : 'Pick a recipe, push the sliders around and hit Play.', full: [] };
     if (D.hint) return { who: D.hint.who || who, text: D.hint.text, full: c ? [c.text] : [] };
+    if (fillOn(D)) return { who: who, lead: 'Bar 4 fill.', text: 'Done? ⋯ → Back to the main bar.', full: ['You are painting bar 4 of every ' + D.tab + ' (the fill). Tap ⋯ → Back to the main bar to edit the main beat again.'].concat(c ? [c.text] : []) };   // (v1.3 review)
     r = r || D.rating;
     var extra = c ? [c.text] : [];
     if (!r) return { who: who, text: c ? c.text : '', full: [] };
@@ -52879,9 +52891,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r;
   }
   function changed(D) {
+    pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
     if (D.mode === 'sketch' && st()) st().draft = U.clone(D.pat);
+  }
+  function pruneFill(D) {
+    var fb = D.pat && D.pat.fillBars, nw = D.fillNew;
+    if (!fb || !nw) return;
+    Object.keys(nw).forEach(function (n) {
+      if (D.fill && n === D.tab) return;
+      if (fb[n] && D.pat.sections[n] && JSON.stringify(fb[n]) === JSON.stringify(D.pat.sections[n])) delete fb[n];
+      delete nw[n];
+    });
+    if (!Object.keys(fb).length) delete D.pat.fillBars;
   }
   function handEdit(D) { D.edited = true; D.hint = null; }
 
@@ -53265,7 +53288,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
       stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
-      if (D.editHint) { D.hint = D.editHint; D.editHint = null; }   // the first Write's grid tip shows once, when the editor opens
+      firstHint(D);   // the first Write's grid tip shows once, when the editor opens
       s.rerender();
     } }, 'Tweak ✎');
     ui.append(s.foot, [V.play, ro ? null : tweak, doneButton(s, D)]);
@@ -53300,6 +53323,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function save(s, D) {
     if (D.done) return;
+    D.fill = false; pruneFill(D);
     var r = rerate(D);
     if (!r.notes) { ui.toast('Nothing to save yet. Tap some hits in, or let the band jam one.'); return; }
     D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);
@@ -53313,6 +53337,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
     var present = D.tab === 'song' || hasSec(D, D.tab), sec = D.tab !== 'song' && present, layer = sec && partLayer(D) && partHas(D, D.tab);
     if (!sec || layer || !chipSec(D.tab)) D.fill = false;
+    pruneFill(D);
     var main = el('div.seq-main', D.tab === 'song' ? songPanel(s, D) : layer ? buildPartGrid(s, D) : present ? buildGrid(s, D) : extraPanel(s, D, D.tab));
     var tabs = ui.tabs(tabsFor(D), D.tab, function (id) {
       D.tab = id; D.fill = false; s.rerender();
@@ -53348,7 +53373,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
-      if (D.fromSketch && D.editHint) { D.hint = D.editHint; D.editHint = null; }
+      if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
     },
     onShow: function (s) {
@@ -53401,7 +53426,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         group('This ' + (SEC_LABEL[D.tab] || D.tab).toLowerCase(), [
           row('btn-seq-beat', '🥁', 'Beat for this section', function () { close(); ui.show('seq-beat', { owner: owner }); }),
           fills ? row('btn-seq-fill', '✨', D.fill ? 'Back to the main bar' : hasFill ? 'Edit the bar 4 fill' : 'Bar 4 fill', function () {   // Q2: the grid edits p.fillBars[tab]
-            if (!D.fill && !hasFill) { D.pat.fillBars = D.pat.fillBars || {}; D.pat.fillBars[D.tab] = D.pat.sections[D.tab].slice(); }
+            if (!D.fill && !hasFill) { D.pat.fillBars = D.pat.fillBars || {}; D.pat.fillBars[D.tab] = D.pat.sections[D.tab].slice(); (D.fillNew = D.fillNew || {})[D.tab] = 1; }
             D.fill = !D.fill; close(); owner.rerender(); changed(D);
           }, D.fill ? '.on' : '') : null,
           fills && hasFill ? row('seq-fill-remove', '🧹', 'Take the bar 4 fill out', function () {
@@ -53422,7 +53447,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
               var r = GG.songs.part.modify(D.pat, D.tab, m.id, gear(), genre());
               close();
               if (JSON.stringify(r.pattern.part) === JSON.stringify(D.pat.part)) {
-                if (JSON.stringify(D.pat.part) !== before) { owner.rerender(); changed(D); }
+                D.pat.part = JSON.parse(before);   // v1.3 review (D16): nothing changed, so a v1 part stays v1
                 ui.toast('“' + m.name + '” has nothing left to change here. Try another tweak.'); return;
               }
               D.pat = r.pattern; handEdit(D); owner.rerender(); changed(D);
@@ -53470,7 +53495,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       var sketch = queued[k] || null, i = k;
       var tip = firstEver && i === 0 && !(GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(state)) ? firstTip(state) : null;   // v1.0: quiet while the w1_write lesson runs
-      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), editHint: tip, screen: sketch ? 'edit' : 'quick',
+      ui.show('seq', { mode: 'write', index: i, total: count, fromSketch: !!sketch, taken: taken.slice(), editHint: tip, firstWrite: firstEver && i === 0, screen: sketch ? 'edit' : 'quick',
         pat: sketch ? GG.songs.sanitize(sketch, gear(), genre()) : null,
         title: sketch && sketch.title, titleEn: sketch && sketch.titleEn,
         onSave: function (entry) { out[i] = entry; taken.push(entry.title); k++; next(); },
@@ -53479,6 +53504,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
     next();
   };
+  function firstHint(D) {
+    if (D.editHint) { D.hint = D.editHint; D.editHint = null; D.firstWrite = false; return; }
+    if (!D.firstWrite || !st() || (GG.tutorial && GG.tutorial.suppressWriteTip && GG.tutorial.suppressWriteTip(st()))) return;
+    D.firstWrite = false; D.hint = firstTip(st());
+  }
   var TIP_BEAT = { metal: 'Metal wants a busy kick.', punk: 'Punk: fast snare on every other 8th.', rock: 'Rock: kick on 1 and 3, snare on 2 and 4.', country: 'Country: a train beat on the snare.' };
   function firstTip(state) {
     if (strSeat()) {   // v1.1 review: the drum writeTips are the drum grid's; a string seat starts from the drummer's groove
@@ -53498,6 +53528,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   };
   function useSketch(s, D) {
     var state = st(); if (!state || D.done) return;
+    D.fill = false; pruneFill(D);
     var r = rerate(D);
     if (!r.notes) { ui.toast('The sketch pad is empty. Tap some hits in first.'); return; }
     D.done = true; stopPlay(D); clearTimeout(D.qT); clearTimeout(D.warmT);
