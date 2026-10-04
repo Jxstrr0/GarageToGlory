@@ -226,7 +226,7 @@
     var c = coachFor(D, coachStep(D)), who = c ? c.who : null;
     if (D.screen === 'quick') return { who: who, text: c ? c.text : 'Pick a recipe, push the sliders around and hit Play.', full: [] };
     if (D.hint) return { who: D.hint.who || who, text: D.hint.text, full: c ? [c.text] : [] };
-    if (fillOn(D)) return { who: who, lead: 'Bar 4 fill.', text: 'Done? ⋯ → Back to the main bar.', full: ['You are painting bar 4 of every ' + D.tab + ' (the fill). Tap ⋯ → Back to the main bar to edit the main beat again.'].concat(c ? [c.text] : []) };   // (v1.3 review)
+    if (fillOn(D)) return { who: null, lead: 'Bar 4 fill.', text: '⋯ → Back to the main bar.', full: ['You are painting bar 4 of every ' + D.tab + ' (the fill). Tap ⋯ → Back to the main bar to edit the main beat again.'].concat(c ? [c.text] : []) };   // (v1.3 review)
     r = r || D.rating;
     var extra = c ? [c.text] : [];
     if (!r) return { who: who, text: c ? c.text : '', full: [] };

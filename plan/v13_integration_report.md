@@ -122,8 +122,8 @@ third (Lane A hand-over 1) and one spelling per song (both label-only; the sound
 
 ## 8. Gaps / leftovers (for the review and v1.4 Tuning)
 - Weakest defaults (Lane S): country Sad waltz / Legion two-step groove 80-88; punk Three-chord sprint hook 68-78 (top only via
-  the sliders). Strict variety rule fails for 0-4 % of random careers (the fixed test career passes). partFills only uses `pickup`;
-  flavours can replace a recipe's own hat / snare shape.
+  the sliders). Strict variety rule fails for 0-4 % of random careers (the fixed test career passes). partFills is now all null
+  (review fix M6); flavours can replace a recipe's own hat / snare shape.
 - Per-chord thirds (a iii / vi chord strums the rung third today; the chips now say so): v1.4 changes `rowPitch` + `o.third` together.
 - Lane A accepted: the swapped drummer animates on straight steps; Feel 4 at 220+ bpm squeezes 16th pairs to ~42 ms; rivals / jams /
   bots never swing or fill (D13).
@@ -131,3 +131,50 @@ third (Lane A hand-over 1) and one spelling per song (both label-only; the sound
   grows text, not grid rows; Q3 uses the shared confirm dialog (now stacked for long labels).
 - Size: +84 KB code + content vs the +80 KB soft budget (gate fine); the build could strip the `/* */` blocks of 02_contracts (52.5 KB in dist) later.
 - Not run here: §6 item 8 review pass and item 9 PR / publish; the owner popup (ship / tweak) with the shots + clips above.
+
+## 9. Review fixes (fixer, 2026-10-04; commits 0ff715a confirmed, 0ced682 minor, 1e1c93d dist, + this one)
+Review pass: 3 lenses (compatibility, layout / UX, determinism); 3 confirmed findings (2 are the same bug) + 8 unverified minors.
+
+**Confirmed (fixed)**
+1. **Q4, old songs' breakdown chords** (compat + determinism lenses, major). Without `p.chords`, `chordSource` (behind
+   `songs.chordsOf`) returned the raw progression, but 30 plays the tonic on `break` bars (metal / punk / rock bridge bars 1-2), so
+   the chips, the chord sheet's seed, partPreview, the view and `debug('seq').chords` named chords the band does not play, and one
+   chip edit moved bars 1-2. Fix: the 'hash' and 'part' results zero every `break`-role bar (= `progChords`' mask; `.i` unchanged,
+   so progName / compose / resetTarget are untouched; 30 untouched, so STAGE0 + Classic hold). Probe over the corpus x 5 seats:
+   935 breakdown cases, chips = chordsOf now play bars 1-3 exactly as 1.2 and bar 4 with the same notes; 1,870 single-chip edits
+   (bar 3 or 4) keep bars 1-2 identical to 1.2 (before the fix: 935 / 935 and 1,870 / 1,870 differed).
+   **Residue (accepted):** with chips present, the bridge's last bar aims its walk lead-in (30 `o.next`, which wraps to bar 1) at
+   the chips' home instead of the raw progression chord 1.2 named there but never played (rock bridge bar 4 bass walk, a few metal
+   bar-4 guitar / bass notes; same notes, same times, one lead-in pitch). It shows only after the player edits a bridge chip on an
+   old song. Exact parity would need 30 to aim at the hash chord even for composed songs, whose chips have nothing to do with it.
+   Tests: `chords12` (sim_songs) mirrors the mask + explicit hash / part breakdown-home asserts; sim_audio "v1.3 chords Q4:
+   breakdown sections" (corpus x 5 seats, the two invariants above); sim_gig's neutral test now includes break sections (drum
+   chart exact; seat charts exact except the breakdown section's last bar, same notes and times there). No fixture touched.
+2. **"Chords: <name> ▾" cut** (UX lens, major; verifier: closer to moderate, the contract chose ellipsis). 00_shell: the name
+   wraps to 2 lines inside the 48 px row (line-clamp 2), the toggle segments drop min-width 64 -> 0 (padding 10), gap 8, and
+   Bigger text under 420 px hides the "Chords:" / "Hook:" prefix. pw_seq layout now puts every progression / hook name (4 genres x
+   3 sections x bass / rhythm / lead) in the real button and asserts no overflow: 0 cut at 390 and 440, normal text and Bigger
+   text + insets; row 48, button >= 44, segments >= 44. "the minor turn" / "the tritone drop" read in full at 390.
+
+**Minor (checked one by one)**
+| # | finding | verdict | what changed |
+|---|---|---|---|
+| M1 | Opening Bar 4 fill writes `fillBars` into an old song | real, fixed | `pruneFill`: a copy made by opening and still equal to its bar goes when you leave it (Back to the main bar, tab / layer change, Save, Use); pw_seq seq "a fill peek leaves nothing behind" |
+| M2 | A no-op part tweak upgrades a v1 part | real, fixed | the no-op branch restores the part as it was (no rerender / changed) |
+| M3 | Bigger text at 390 cuts "Low 5th" / "Scratch" | real, fixed | `html.gg-big .seq-grid.part .lh` 10 px under 410 px; pw_seq layout's Bigger-text pass adds the rhythm seat and measures every column name |
+| M4 | First-Write grid tip never shows on the default path | real, fixed | `firstHint(D)` works the tip out when the editor first opens (`firstWrite` passed by composeWeek), so it shows on the first Tweak after the w1_write Got it; pw_tutorial tut_w1 checks it (4 bands x 2 sizes) |
+| M5 | Bar 4 fill mode has almost no cue | real, fixed | the bubble says "Bar 4 fill. ⋯ → Back to the main bar." (♪ avatar so it fits at 390; tap = full tip) while the grid edits the fill; corner "B4" 11 px |
+| M6 | Fills 3-4 put a pickup on every bar of your part | real, fixed | `grooveFx.partFills` = null x 5: Fills is the bar-4 drum fill on every seat (Q2 = 1); sim_songs ceiling + variety pass |
+| M7 | A higher Energy stop sometimes gives fewer notes | real, not changed | tried the suggested start-index pick: 1,024 adjacent Energy steps (256 random genre x seat x gear x recipe x seed) kept the same dips (4 fewer notes, 3 lower difficulty = 0.4 % / 0.3 %); the dips come from which plans pass at each stop, so the change would move every Quick song and the owner clips for no gain. v1.4 Tuning |
+| M8 | Variety "no two JSON-equal" can never fail | real, fixed | compares the notes only (sections, part, fillBars, chords, arrangement) |
+
+**Verification (after both groups):** `node build.js` 5,216,163 B (gate 6,000,000); `node tests/run.js` SUITE ALL PASS (35 files);
+Classic `META_ONLY=hash pw_seq` 232/232 at 390 (204 s) and 440x956 (210 s). Playwright, all ALL PASS at 390x844 and 440x956:
+pw_seq seq 47 + seq-compat 17 + quick 26, part 27, layout 51 / 57; pw_gig swing 10, sync 14; pw_tutorial tut_w1 34 x 4 bands
+(pw_seq seq re-run at both sizes after the last cue-text edit). Sequential runs, no browser of mine left open.
+**Owner material** (`.../scratchpad/v13_owner/`): 01-09 re-taken (same names; the toggle is slimmer, the label reads in full) +
+`10_old_bridge_rhythm_390.png` (an old rock song's bridge: bars 1-2 A♭5 home outlined, "Chords: the minor turn ▾" whole),
+`11_drums_fill_390.png` (the fill cue), `12_big_rhythm_390.png` (Bigger text: column names whole, prefix dropped); looked at
+03, 04, 09, 10, 11, 12. Clips: only `v13_metal_fills4` / `v13_rock_fills4` changed notes (metal guitar events 56 -> 44, hook
+87 -> 89; rock 90 / 91 -> 91 / 92), re-encoded; the other 18 render the same notes (rms within 1e-6), kept; `v13_clips.json` updated.
+
