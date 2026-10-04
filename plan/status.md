@@ -15,15 +15,22 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   GitHub (the session proxy can't). Open gaps: `plan/v12_integration_report.md` §8 (strings warm only in gigs, rival
   players share one tightness, gang vocals centre + right, Classic-off keeps 1.1 vocals until reload).
 
+## v1.3 owner answer (2026-10-04, LOCKED)
+- Saw the 440x956 screenshots (Quick song, editor rhythm/lead/drums, ⋯ menu, chord sheet, start-over ask, 390 editor) and
+  heard the slider-extreme clips: **ship** as built.
+- Leftovers: owner deletes `wip-v13-s`, `wip-v13-a`, `wip-v13-u`, `wip-v13-lead` (+ any `wip-v12-*` / `wip-v11-*` left) on
+  GitHub. Open gaps: `plan/v13_integration_report.md` §8/§9 (per-chord thirds, slider-song career balance, swapped drummer
+  animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
+
 ## Version
-- Current: **1.3.0.0 "Songwriter"** (in review on `v1.3-songwriter`; lanes S, A, U + lead integrated 2026-10-04; owner check
-  pending) = 1.2.0.0 + quick song recipes + 5 sliders for every seat, more note rows + per-bar chords, the one-flow
-  "Clean sheet" songwriter. See "What's in v1.3" below. **Update Current/Next at every merge.**
+- Current: **1.3.0.0 "Songwriter"** (PR #24, merged 2026-10-04) = 1.2.0.0 + quick song recipes + 5 sliders for every
+  seat, more note rows + per-bar chords, the one-flow "Clean sheet" songwriter. See "What's in v1.3" below.
+  **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23).
-- Next: **1.4 "Tuning"** (handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24).
+- Next: **1.4 "Tuning"** (only when the owner asks; handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
   the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
@@ -357,7 +364,7 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 - [x] lanes S / A / U (`plan/v13_lane_<s|a|u>_report.md`) — 2026-10-04
 - [x] integrate on `v1.3-songwriter` (merges S -> A -> U, hand-overs, matrix 390 + 440, phoneqa, size, owner shots + clips;
   `plan/v13_integration_report.md`) — 2026-10-04
-- [ ] review pass (<= 3 lenses: compatibility, layout / UX, determinism), owner check (ship / tweak), PR to `main`
+- [x] review pass (3 lenses; 3 majors + 7 minors fixed), owner check: ship, PR #24 to `main` — 2026-10-04
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
