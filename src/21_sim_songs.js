@@ -1130,7 +1130,8 @@
     return (pass.length ? pass[rng.int(0, pass.length - 1)] : best).p;
   };
 
-  // Every hit of a song in order: [{ beat, lane, section, entry, bar, step }] (beat = quarter notes from the start).
+  // Every hit of a song in order: [{ beat, lane, section, entry, bar, step, fill? }] (beat = quarter notes from the start;
+  // v1.3: fill: true on the notes of a p.fillBars bar 4, the key only exists then).
   // v0.3 builds gig charts from this. Count = sum over arrangement entries of (hits in that section x BARS_PER_SECTION).
   songs.toNotes = function (x) {
     var p = songs.sanitize(x && x.pattern || x, null, null, true), out = [], beat = 0;

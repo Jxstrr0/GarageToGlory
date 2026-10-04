@@ -48,11 +48,13 @@ Branch `wip-v13-s` (from `v1.3-songwriter` stage 0 `0d42d53`). Files: `src/21_si
   member the seat moves.
 
 ## Tests and results
-- `sim_songs` 31 (22 stage-0 + 9 Lane S): v2 suggest / full / mods + Scratch; fillBars; recipes + sliders; compose pure (a `GG.state` trap
+- `sim_songs` 32 (22 stage-0 + 10 Lane S): the 708-entry 1.2 corpus (SAN idempotent on 3 paths, no v1.3 key, rate(upgrade) == rate, no
+  `fill` key); v2 suggest / full / mods + Scratch; fillBars; recipes + sliders; compose pure (a `GG.state` trap
   that throws on any read) / deterministic (fresh load) / sanitized / valid / fields / drum seat no part / locked + unknown fall back / tempo
   clamps; slider round trip, Feel + Tempo never rewrite notes, Energy recomposes, chords from the recipe; surprise; Q4 break-bar chips; the
   S5 ceiling (a)-(c) per genre x seat x gear; energy 0 >= 8 hits/bar; compose median <= 20 ms; variety. `content` 54 (+1), `content_seats`
-  12 (+1), `sim_seats` 21 (+1: v2 parts through toggle / pick / modify / notes / rate / create). `compat_v12` 10/10; suite: see the commit.
+  12 (+1), `sim_seats` 21 (+1: v2 parts through toggle / pick / modify / notes / rate / create). `compat_v12` 10/10; `node tests/run.js` SUITE ALL PASS
+  (35 files, after `node build.js`). Classic: `META_ONLY=hash pw_seq` 232/232 equal (317 s).
 
 ## Numbers
 - compose (node): median 3.1 ms, p95 ~10 ms (200 calls, full gear, all seats). dist/game.html 5,186,786 B (stage 0 5,142,167: +44.6 KB,
@@ -113,4 +115,6 @@ Branch `wip-v13-s` (from `v1.3-songwriter` stage 0 `0d42d53`). Files: `src/21_si
 ## Gaps
 - The strict variety rule fails for 0-4 % of random careers (the fixed test career passes); 1.2 jams would fail far more often.
 - Weakest defaults: country Sad waltz / Legion two-step (groove 80-88), punk Three-chord sprint hook 68-78 at defaults (top only via sliders).
+- One final suite run flagged `sim_audio` "crowd pre-render ... slowest 3.05 ms" under machine load (other browsers running); it passed
+  alone twice (30_audio is untouched by this lane).
 - `partFills` only uses `pickup`; flavours can override a recipe's own hats / snare shape (variety over identity, D14 + §4.2 step 7).

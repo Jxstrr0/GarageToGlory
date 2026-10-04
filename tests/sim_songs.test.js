@@ -681,6 +681,26 @@ test('Q4: breakdown bars take a chord (a chip there is kept, played by chordsOf,
   }
 });
 
+test('the 1.2 corpus (tests/fixtures, 708 entries): SAN idempotent on every path, no v1.3 key appears; rate(upgrade(part)) == rate(part); toNotes has no fill key', () => {
+  const FX = require('../tools/make_fixtures_v12.js'), fixture = JSON.parse(fs.readFileSync(path.join(FX.FIXDIR, 'v12_songs.json'), 'utf8'));
+  const { GG: G2, store } = FX.loadGG(), entries = FX.corpus(G2, store, fixture.corpus, FX.careerStrings()), S2 = G2.songs, bad = [];
+  eq(entries.length, 708, 'corpus size');
+  entries.forEach(e => {
+    [[null, null, true], [{ lanes: 4 }, e.genre, false], [FULL, e.genre, false]].forEach(([gear, genre, loose]) => {
+      const a = S2.sanitize(JSON.parse(J(e.pat)), gear, genre, loose);
+      if (J(S2.sanitize(JSON.parse(J(a)), gear, genre, loose)) !== J(a)) bad.push(e.id + ' SAN not idempotent');
+      if (V13.some(k => k in a) || (a.part && 'v' in a.part)) bad.push(e.id + ' a v1.3 key appeared');
+    });
+    if (S2.toNotes(e.pat).some(n => 'fill' in n)) bad.push(e.id + ' fill key');
+    const q = S2.sanitize(JSON.parse(J(e.pat)), null, null, true);
+    if (q.part) {
+      const up = Object.assign(JSON.parse(J(q)), { part: S2.part.upgrade(q.part) });
+      if (J(S2.rate(up, e.genre, FULL)) !== J(S2.rate(q, e.genre, FULL))) bad.push(e.id + ' rate(upgrade) differs');
+    }
+  });
+  eq(bad.slice(0, 10), [], 'corpus');
+});
+
 // The §4.4 ceiling (S5 "rate by the notes only"), per genre x seat x gear; the table is in plan/v13_lane_s_report.md.
 test('ceiling (S5): (a) every recipe at its defaults >= 80 / 65; (b) >= 2 recipes reach top (90 / 85) over energy x fills (+ mood 0 / 4); (c) no single-slider extreme under 55 groove', () => {
   const seed = songSeed(7, 3), bad = [];
