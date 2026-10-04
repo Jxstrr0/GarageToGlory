@@ -139,6 +139,11 @@ async function seq() {
       sub: document.querySelector('[data-testid="seq-title"]').textContent, chips: !!document.querySelector('[data-testid="seq-chips"]'), layers: !!document.querySelector('[data-testid="seq-layers"]') }));
     c.ok(d0.dbg.screen === 'edit' && d0.dbg.tab === 'verse' && !d0.chips && !d0.layers, 'Tweak opens the editor on the verse (drum seat: no chips, no layer toggle)');
     c.ok(/(Dana|Marcel|Jaxon)/.test(d0.who) && d0.tip.length > 10 && !/^(Dana|Marcel|Jaxon):/.test(d0.tip), 'the first-Write grid tip, the name on the avatar (D17): ' + d0.who + ' / ' + d0.tip);
+    // the one-line bubble opens the full tip
+    await tap(page, 'seq-coach'); await waitScreen(page, 'seq-tip-full');
+    const full = await page.evaluate(() => document.querySelector('[data-testid="seq-tip-full"]').textContent);
+    c.ok(full.indexOf(d0.tip.replace(/…$/, '').slice(0, 20)) >= 0, 'tap the bubble: the full tip ' + full.slice(0, 80));
+    await tap(page, 'btn-seq-tip-ok'); await waitScreen(page, 'seq');
     await page.waitForTimeout(250);
     const bad = await audit(page);
     c.ok(bad.length === 0, 'editor layout: no overflow, buttons ≥ 44px ' + bad.join(' ; '));
@@ -1280,9 +1285,15 @@ async function layout() {
           c.ok(t6.length === 6 && t6.every(t => t.w >= 43.5 && !t.o), tag + ': 6 tabs fit ' + t6.map(t => t.t + ' ' + Math.round(t.w)).join(', '));
         }
       }
+      if (!full && (seat === 'rhythm' || seat === 'drums')) {   // the ⋯ menu on the verse (your part's tools / the drum tools)
+        await tap(page, 'seq-tab-verse'); if (seat !== 'drums') await tap(page, 'seq-layer-part');
+        await openTools(page);
+        c.ok((await audit(page)).length === 0, tag + ' ⋯ menu layout ' + (await audit(page)).join('; '));
+        await shot('seq_menu_' + tag); await tap(page, 'btn-seq-tools-cancel');
+      }
       await tap(page, 'seq-tab-song');
       c.ok((await audit(page)).length === 0, tag + ' Song tab ' + (await audit(page)).join('; '));
-      if (!full && seat === 'rhythm') { await openTools(page); await shot('seq_menu_' + tag); await tap(page, 'btn-seq-tools-cancel'); }
+      if (!full && seat === 'rhythm') await shot('seq_song_' + tag);
     }
     // The chord sheet + the picker (shots for the owner check).
     await writeBlock(page, { seed: 515, bandId: 'gravel_kings', seat: 'rhythm' });
