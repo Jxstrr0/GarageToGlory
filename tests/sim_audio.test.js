@@ -510,7 +510,7 @@ function fpPatterns(g) {   // the signature (+ a solo and an outro), the starter
   pats.push(GG.songs.generate(g, GG.RNG(7), { gear: { lanes: 6, doubleKick: true, owned: ['toms', 'ride', 'pedal'], sections: ['outro', 'solo'], quality: 3 } }));
   return pats;
 }
-function fingerprints(extra) {   // -> { 'genre|pN': hash } with `extra` opts merged into every timeline call
+function fingerprints(extra, mut) {   // -> { 'genre|pN': hash } with `extra` opts merged into every timeline call (v1.3: mut(pattern, genre) edits each pattern first)
   const OPTS = [{}, { section: 'chorus' }, { vocals: false }, { drums: false }, { backing: false }, { bars: 3 }, { soloist: null },
     { soloist: 'benny' }, { soloist: 'earl' }, { style: 'ballad' }, { singer: 'rox' }, { rival: 'mall_rats' }, { section: 'solo' }, { section: 'outro' }];
   const groups = {}, add = (k, h) => { const p = k.split('|').slice(0, 2).join('|'); (groups[p] = groups[p] || []).push(k + '=' + h); };
@@ -518,11 +518,12 @@ function fingerprints(extra) {   // -> { 'genre|pN': hash } with `extra` opts me
   for (const g of C.GENRES) {
     fpPatterns(g).forEach((p, pi) => [undefined, 80, 140, 200].forEach(bpm => {
       const q = JSON.parse(JSON.stringify(p)); if (bpm) q.bpm = bpm;
+      if (mut) mut(q, g);
       OPTS.forEach((o, oi) => { if (!o.section || q.sections[o.section]) add(g + '|p' + pi + '|' + (bpm || '-') + '|o' + oi, H16(A.timeline(q, Object.assign({ genre: g, songId: 's' + pi }, o, extra)))); });
     }));
     const st = GG.career.newCareer({ seed: 11, bandId: FP_BANDS[g], seat: 'drums', player: { name: 'Fp' } });
     GG.state = st;
-    st.songs.slice(0, 2).forEach((s, si) => add(g + '|career|' + si, H16(A.timeline(s.pattern, Object.assign({ genre: g }, extra)))));
+    st.songs.slice(0, 2).forEach((s, si) => { let q = s.pattern; if (mut) { q = JSON.parse(JSON.stringify(q)); mut(q, g); } add(g + '|career|' + si, H16(A.timeline(q, Object.assign({ genre: g, songId: mut ? s.id : undefined }, extra)))); });
     GG.state = null;
   }
   const out = {};
@@ -715,6 +716,231 @@ test('v1.2 feelPlan never moves steps / keeps lane order at 60-260 bpm (the time
     });
   }
   eq(fingerprints({ gig: true, feel: true, studio: true }), STAGE0, 'the 1,212 fingerprints with Lane F loaded');
+});
+
+// ---- v1.3 "Songwriter" (plan_contract_1.3 §4.5, Lane A): chords, mood, swing, fills, part v2 in the timeline ------------
+const S13 = GG.songs, PT13 = GG.songs.part, FX13 = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'v12_songs.json'), 'utf8'));
+const brkSecs = g => { const R = G[g].backing.roles || {}; return C.SECTIONS.filter(n => (R[n] || []).indexOf('break') >= 0); };
+// neutral v1.3 fields: the native mood, swing 0, chords == the auto progression (sections without break bars), no fillBars
+function neutral(q, g, o) {
+  q.mood = S13.nativeMood(g); q.swing = 0;
+  const ch = {}; C.SECTIONS.forEach(n => { if (q.sections[n] && brkSecs(g).indexOf(n) < 0) ch[n] = S13.chordsOf(q, n, g, o || { part: null }); });
+  if (Object.keys(ch).length) q.chords = ch;
+  return q;
+}
+const evJ = t => JSON.stringify(t.events);
+const nonStep = t => t.events.filter(e => e.kind !== 'step');
+const ROWS13 = { bass: ['x.......x.......', '....x.......x...', '..............x.'], rhythm: ['x.x.x.x.....x.x.', '........x.......'], lead: ['x...............', '...x............', '......x.........', '........x.x.....', '............x...'] };
+const partOf13 = (g, seat, p, prog) => { const sections = {}; ['verse', 'chorus', 'bridge', 'solo', 'outro'].forEach(n => { if (!p.sections[n]) return; sections[n] = { rows: ROWS13[seat] }; if (seat === 'lead') sections[n].hook = 1; else sections[n].prog = prog; }); return { seat, sections }; };
+const semi = (m, t) => ((m - t) % 12 + 12) % 12;
+
+test('v1.3 neutral fields (native mood, swing 0, chords == the auto progression, no fillBars) == STAGE0; every seat + part too', () => {
+  eq(fingerprints({}, (q, g) => neutral(q, g)), STAGE0, 'the 1,212 stage-0 fingerprints with neutral fields');
+  for (const g of C.GENRES) for (const seat of ['drums', 'bass', 'rhythm', 'lead']) {
+    const p = fullSong(g), part = seat === 'drums' ? undefined : partOf13(g, seat, p, 1), o = { genre: g, songId: 's7', seat, part };
+    const q = neutral(JSON.parse(JSON.stringify(p)), g, { part: part === undefined ? null : part, seat });
+    eq(evJ(A.timeline(q, o)), evJ(A.timeline(p, o)), g + '/' + seat + ': neutral fields with your part change nothing');
+  }
+});
+
+test('v1.3 chords: the timeline plays songs.chordsOf (corpus x seat, parts too); chips move the root for every seat incl. lead + drums; Q4', () => {
+  let n = 0;
+  FX13.corpus.forEach(c => {
+    const g = c.genre, p = c.pat, part = p.part || null;
+    [undefined, 'drums', 'bass', 'rhythm', 'lead'].forEach(seat => {
+      const o = { genre: g, songId: 'c' + n, seat, part: part || undefined }, q = JSON.parse(JSON.stringify(p)), ch = {};
+      C.SECTIONS.forEach(nm => { if (q.sections[nm] && brkSecs(g).indexOf(nm) < 0) ch[nm] = S13.chordsOf(q, nm, g, { part, seat }); });
+      q.chords = ch;
+      eq(H16(A.timeline(q, o)), H16(A.timeline(p, o)), c.id + ' seat ' + seat + ': p.chords = chordsOf plays exactly the 1.2 chords');
+      n++;
+    });
+  });
+  ok(n >= 1500, 'corpus x 5 seats: ' + n);
+  // chips win over the part's prog and the hash, for every seat (the lead and the drum seat too)
+  const want = [5, 7, 3, 10];
+  for (const seat of [undefined, 'drums', 'bass', 'rhythm', 'lead']) {
+    const p = fullSong('punk', 170); p.chords = { verse: want.slice() };
+    const part = seat && seat !== 'drums' ? partOf13('punk', seat, p, 2) : undefined, t = A.timeline(p, { genre: 'punk', songId: 's3', seat, part });
+    const kind = seat === 'bass' ? 'gtr' : 'bass';   // (the band's own notes: your part replaces your kinds)
+    const roots = [0, 1, 2, 3].map(b => { const e = t.events.find(x => x.kind === kind && x.section === 'verse' && !x.part && Math.abs(x.beat - b * 4) < 1e-9); return e ? semi(e.midi, t.key.tonic) : null; });
+    eq(roots, want, 'seat ' + seat + ': the verse plays the chips bar by bar');
+  }
+  // Q4: a chip moves a breakdown bar (absent: the tonic, as 1.2)
+  for (const g of ['metal', 'punk', 'rock']) {
+    const p = fullSong(g, 150), at = p.arrangement.indexOf('bridge') * 16, q = JSON.parse(JSON.stringify(p)); q.chords = { bridge: [5, 5, 5, 5] };
+    const first = tl => tl.events.find(e => e.kind === 'bass' && e.section === 'bridge' && Math.abs(e.beat - at) < 1e-9);
+    const a = A.timeline(p, { genre: g, songId: 's2' }), b = A.timeline(q, { genre: g, songId: 's2' });
+    ok(brkSecs(g).indexOf('bridge') >= 0 && G[g].backing.roles.bridge[0] === 'break', g + ' has a breakdown');
+    eq(semi(first(a).midi, a.key.tonic), 0, g + ': 1.2 breakdown on the tonic');
+    eq(semi(first(b).midi, b.key.tonic), 5, g + ': the chip moves the breakdown bar');
+  }
+});
+
+test('v1.3 mood: non-native = the parallel key (mode, scale, thirds move; the key note stays); native = absent', () => {
+  for (const g of C.GENRES) {
+    const nat = S13.nativeMood(g), p = fullSong(g, g === 'country' ? 95 : 120), base = A.timeline(p, { genre: g, songId: 's5' });
+    const pn = JSON.parse(JSON.stringify(p)); pn.mood = nat;
+    eq(evJ(A.timeline(pn, { genre: g, songId: 's5' })), evJ(base), g + ': the native mood is the 1.2 sound');
+    eq(A.timeline(pn, { genre: g, songId: 's5' }).key, base.key, g + ': native key (no mood key)');
+    for (let m = 0; m < 5; m++) {
+      if (m === nat) continue;
+      const R = G[g].backing.moods[m], q = JSON.parse(JSON.stringify(p)); q.mood = m;
+      const t = A.timeline(q, { genre: g, songId: 's5' }), w = g + ' mood ' + m + ' (' + R.id + ')';
+      eq([t.key.tonic, t.key.offset, t.key.mode, t.key.mood], [base.key.tonic, base.key.offset, R.mode, m], w + ': same key note, new mode');
+      ok(t.key.name === base.key.name.split(' ')[0] + ' ' + R.mode, w + ': name ' + t.key.name);
+      eq(t.events.filter(e => e.kind === 'drum').length, base.events.filter(e => e.kind === 'drum').length, w + ': drums untouched');
+      const voc = t.events.filter(e => e.kind === 'vox' || e.kind === 'bvox');
+      ok(voc.length > 0 && voc.every(e => R.scale.includes(semi(e.midi, t.key.tonic))), w + ': vocals in the mood scale');
+      if (g === 'country') {
+        const strums = t.events.filter(e => e.kind === 'clean' && Array.isArray(e.strum) && e.strum.length === 3);
+        ok(strums.length > 10 && strums.every(e => e.strum[1] === R.third), w + ': strums take the mood third ' + R.third);
+      }
+      if (g === 'rock') {   // the chorus walk: root, third, fifth, ...
+        const walk = t.events.filter(e => e.kind === 'bass' && e.section === 'chorus' && Math.abs(e.len - 0.9) < 1e-9);
+        const b0 = base.events.filter(e => e.kind === 'bass' && e.section === 'chorus' && Math.abs(e.len - 0.9) < 1e-9);
+        ok(walk.length === b0.length && walk.length >= 8, w + ': same walk ' + walk.length);
+        ok(walk.every((e, i) => i % 4 !== 1 || e.midi - walk[i - 1].midi === R.third), w + ': the walk climbs the mood third');
+      }
+    }
+  }
+});
+
+test('v1.3 swing: whole beats + steps never move, e.g only on moved events, len + gaps in swung beats, swing 0 = straight', () => {
+  for (const g of C.GENRES) for (const sw of [1, 2, 3, 4]) {
+    const p = fullSong(g), q = JSON.parse(JSON.stringify(p)); q.swing = sw;
+    for (const seat of [undefined, 'rhythm']) {
+      const o = { genre: g, songId: 's6', seat }, a = A.timeline(p, o), b = A.timeline(q, o), w = g + ' swing ' + sw + ' seat ' + seat;
+      eq(b.swing, sw, w + ': result.swing'); eq(a.swing, undefined, 'straight: no swing key');
+      eq(JSON.stringify(b.events.filter(e => e.kind === 'step')), JSON.stringify(a.events.filter(e => e.kind === 'step')), w + ': steps never move');
+      const A1 = nonStep(a), B1 = nonStep(b);
+      eq(A1.length, B1.length, w + ': same events');
+      let moved = 0;
+      const strip = e => { const c = Object.assign({}, e); delete c.beat; delete c.g; delete c.len; delete c.gap; return c; };
+      A1.forEach((x, i) => {
+        const y = B1[i], sb = S13.swingBeat(x.beat, sw);
+        if (y.g != null) { moved++; ok(y.g === x.beat && y.beat === sb && sb !== x.beat, w + ': moved ' + JSON.stringify([x.beat, y.g, y.beat])); }
+        else ok(y.beat === x.beat && sb === x.beat, w + ': unmoved = on a whole beat ' + x.beat);
+        if (x.beat % 1 === 0) ok(y.g == null, w + ': whole beats keep no g');
+        if (isFinite(x.len)) ok(Math.abs(y.len - (S13.swingBeat(x.beat + x.len, sw) - y.beat)) < 1e-9, w + ': len warps');
+        eq(strip(y), strip(x), w + ': only beat / g / len / gap change');
+      });
+      ok(moved > 0, w + ': some notes swing');
+      const last = {};   // gaps in swung beats (same voice, wrapping)
+      for (let i = b.events.length - 1; i >= 0; i--) {
+        const e = b.events[i]; if (e.kind === 'step') continue;
+        const k = e.kind === 'drum' ? e.lane : e.single ? e.kind + '|' + e.midi : e.kind;
+        if (last[k] != null && !e.ring) ok(Math.abs(e.gap - (last[k] - e.beat)) < 1e-9, w + ': gap ' + k);
+        last[k] = e.beat;
+      }
+    }
+    const z = JSON.parse(JSON.stringify(p)); z.swing = 0;
+    eq(evJ(A.timeline(z, { genre: g, songId: 's6' })), evJ(A.timeline(p, { genre: g, songId: 's6' })), g + ': swing 0 = straight');
+  }
+});
+
+test('v1.3 fills: bar 4 of a section plays p.fillBars[name]; the band, the hash + the riff stay on the main bar', () => {
+  for (const g of C.GENRES) {
+    const p = fullSong(g), q = JSON.parse(JSON.stringify(p)), fill = ['x...x...x...x...', '....x.x.x.xxxxxx', '................', 'x...............'].slice(0, p.lanes);
+    q.fillBars = { verse: fill, chorus: fill };
+    const a = A.timeline(p, { genre: g, songId: 's9' }), b = A.timeline(q, { genre: g, songId: 's9' });
+    const band = t => JSON.stringify(t.events.filter(e => e.kind !== 'drum' && e.kind !== 'step').map(e => { const c = Object.assign({}, e); delete c.gap; return c; }));
+    eq(band(b), band(a), g + ': every band / vocal event as without the fill');
+    const drums = (t, nm, bar) => t.events.filter(e => e.kind === 'step' && e.section === nm && e.bar === bar && e.step === 0).map(st =>
+      t.events.filter(e => e.kind === 'drum' && e.beat >= st.beat - 1e-9 && e.beat < st.beat + 4 - 1e-9).map(e => e.li + '@' + Math.round((e.beat - st.beat) * 4)).join());
+    const want = []; fill.forEach((s, l) => { for (let i = 0; i < 16; i++) if (s[i] === 'x') want.push([i, l]); });
+    want.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+    for (const nm of ['verse', 'chorus']) {
+      const d3 = drums(b, nm, 3);
+      ok(d3.length >= 1, g + ' ' + nm + ' entries');
+      d3.forEach(d => eq(d, want.map(x => x[1] + '@' + x[0]).join(), g + ' ' + nm + ': bar 4 is the fill'));
+      eq(drums(b, nm, 0), drums(a, nm, 0), g + ' ' + nm + ': bar 1 the main bar');
+      eq(drums(b, nm, 2), drums(a, nm, 2), g + ' ' + nm + ': bar 3 the main bar');
+    }
+    eq(drums(b, 'bridge', 3), drums(a, 'bridge', 3), g + ': a section without a fill keeps its bar 4');
+  }
+});
+
+test('v1.3 part v2: timeline(upgrade(pt)) == timeline(pt) (corpus + every index x mood, per seat x genre)', () => {
+  let n = 0;
+  FX13.corpus.forEach((c, ci) => {
+    const g = c.genre;
+    ['bass', 'rhythm', 'lead'].forEach(seat => {
+      const raw = c.pat.part && c.pat.part.seat === seat ? c.pat.part : PT13.full(g, seat, c.pat, GG.RNG(ci + 1));
+      const pt = S13.sanitize(Object.assign({}, c.pat, { part: raw }), null, null, true).part, up = PT13.upgrade(pt), o = { genre: g, songId: 'u' + ci, seat };
+      ok(up.v === 2 && PT13.rowsOf(up) === C.PART_V2[seat], c.id + ' upgraded');
+      eq(H16(A.timeline(c.pat, Object.assign({ part: up }, o))), H16(A.timeline(c.pat, Object.assign({ part: pt }, o))), c.id + ' ' + seat + ': upgrade plays the same');
+      n++;
+    });
+  });
+  ok(n >= 900, 'corpus x 3 seats: ' + n);
+  for (const g of C.GENRES) for (const seat of ['bass', 'rhythm', 'lead']) {
+    const p = fullSong(g), L = seat === 'lead' ? G[g].backing.hooks.verse.length : G[g].backing.progressions.verse.length;
+    for (let i = 0; i < L; i++) for (const mood of [undefined, 0, 4]) {
+      const q = JSON.parse(JSON.stringify(p)); if (mood != null) q.mood = mood;
+      const pt = partOf13(g, seat, q, i); if (seat === 'lead') Object.keys(pt.sections).forEach(k => { pt.sections[k].hook = i; });
+      const o = { genre: g, songId: 'v' + i, seat };
+      eq(evJ(A.timeline(q, Object.assign({ part: PT13.upgrade(pt) }, o))), evJ(A.timeline(q, Object.assign({ part: pt }, o))), g + '/' + seat + ' #' + i + ' mood ' + mood);
+    }
+  }
+});
+
+test('v1.3 part v2 rows: rhythm singles (power false) + Scratch (dead, midi = root, <= 1 step); bass 3rd / 7th / Low 5th; lead Low / High', () => {
+  const blank = n => Array(n).fill(E16);
+  for (const g of C.GENRES) {
+    const p = fullSong(g); p.arrangement = ['verse', 'chorus'];
+    // rhythm: chug on 0 + 14, Root + Oct singles on 4, 5th alone on 8, Scratch alone on 12, 13, 15 (under the chug on 14: ignored)
+    const rows = blank(6); rows[0] = 'x.............x.'; rows[2] = '....x...........'; rows[4] = '....x...........'; rows[3] = '........x.......'; rows[5] = '............xxxx';
+    const pt = { seat: 'rhythm', v: 2, sections: { verse: { prog: 0, rows }, chorus: { prog: 0, rows } } };
+    const t = A.timeline(p, { genre: g, songId: 'r1', seat: 'rhythm', part: pt }), K = A.seatKinds(g, 'rhythm');
+    const mine = t.events.filter(e => e.part && e.section === 'verse' && e.beat < 4), at = s => mine.filter(e => Math.abs(e.beat - s / 4) < 1e-9);
+    const hi = g === 'rock' || g === 'country' ? 12 : 0, root = at(0)[0].midi - hi, w = g + ' rhythm';
+    ok(mine.every(e => K.includes(e.kind)), w + ': your kinds');
+    eq(at(4).filter(e => e.single).map(e => e.midi - root - hi).sort((a, b) => a - b), [0, 12], w + ': Root + Oct singles on one step');
+    ok(at(4).every(e => e.power === false && e.single === true && !e.dead), w + ': singles are power: false');
+    if (g === 'country') ok(at(4).every(e => e.strum.length === 1), w + ': country picks one string');
+    eq(at(8).map(e => e.midi - root - hi), [7], w + ': 5th alone');
+    eq(at(12).map(e => [e.dead, e.mute, e.midi - hi, e.len]), [[true, true, root, 0.25]], w + ': Scratch = a dead strum at the root (1 step)');
+    eq(at(13).map(e => e.len), [0.25], w + ': a Scratch run stays 16ths');
+    ok(at(14).length >= 1 && at(14).every(e => !e.dead), w + ': Scratch under a chug is ignored');
+    ok(at(15).length === 1 && at(15)[0].dead, w + ': Scratch on 15');
+    ok(t.events.filter(e => e.part).every(e => e.gap > 0), w + ': no zero gaps (a single is its own voice)');
+  }
+  // bass: Low 5th a fourth under the root as it sounds (also under bassFloor in a low metal key), 3rd + 7th from the mood rung
+  for (const g of C.GENRES) for (const mood of [undefined, 0, 3]) {
+    const p = fullSong(g); p.arrangement = ['verse']; if (mood != null) p.mood = mood;
+    const rows = blank(6); rows[0] = 'x...............'; rows[1] = '....x...........'; rows[2] = '........x.......'; rows[4] = '............x...';
+    const fl = G[g].backing.bassFloor || 0, R = S13.moodOf(g, mood) || G[g].backing.moods[S13.nativeMood(g)];
+    let under = 0;
+    for (let k = 1; k <= 12; k++) {
+      const t = A.timeline(p, { genre: g, songId: 'b' + k, seat: 'bass', part: { seat: 'bass', v: 2, sections: { verse: { prog: 0, rows } } } });
+      const b = t.events.filter(e => e.part && e.beat < 4), r = b[1].midi, w = g + ' bass b' + k + ' mood ' + mood;
+      eq(b.length, 4, w + ': four notes');
+      eq(b[0].midi, r - 5, w + ': Low 5th = root - 5');
+      ok(!fl || b[0].midi >= fl - 7, w + ': at most 7 under the floor');
+      if (fl && b[0].midi < fl) under++;
+      eq([b[2].midi - r, b[3].midi - r], [R.third, R.seventh], w + ': 3rd / 7th from the rung');
+    }
+    if (g === 'metal') ok(under > 0, 'metal: some keys put the Low 5th under bassFloor (the v2 allowance) ' + under);
+  }
+  // lead: Low = one scale step under the hook, High = one over (the mood's scale)
+  for (const g of C.GENRES) {
+    const p = fullSong(g); p.arrangement = ['verse'];
+    const rows = blank(7); rows[0] = 'x...............'; rows[1] = '....x...........'; rows[5] = '........x.......'; rows[6] = '............x...';
+    const t = A.timeline(p, { genre: g, songId: 'l1', seat: 'lead', part: { seat: 'lead', v: 2, sections: { verse: { hook: 0, rows } } } });
+    const nn = t.events.filter(e => e.part && e.beat < 4).map(e => e.midi), sc = G[g].backing.scale;
+    eq(nn.length, 4, g + ' lead: four notes');
+    ok(nn[0] < nn[1] && nn[2] < nn[3], g + ' lead: Low under row 1, High over row 5 ' + nn);
+    ok(nn.every(m => sc.includes(semi(m, t.key.tonic))), g + ' lead: in the scale');
+  }
+});
+
+test('v1.3 debug + voices: debug(audio) reports swing / mood; a dead strum fails soft without Web Audio', () => {
+  const p = fullSong('rock'); p.swing = 3; p.mood = 0;
+  A.timeline(p, { genre: 'rock', songId: 's1' });
+  const d = GG.debug('audio'); eq([d.swing, d.mood], [3, 0]);
+  A.timeline(fullSong('rock'), { genre: 'rock', songId: 's1' });
+  const d2 = GG.debug('audio'); eq([d2.swing, d2.mood], [0, null]);
+  ok(A.strum(40, undefined, { dead: true }) === null, 'no context: the voice fails soft');
 });
 
 done('sim_audio');
