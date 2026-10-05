@@ -6,7 +6,8 @@
   Classic `META_ONLY=hash` pw_seq 232/232.
 - `d611141` hand-overs in `src/02_contracts.js` V1.3.1 block (comment only): gig.simReason / simShow, state.liveGig.sim, ui.gigSimMs,
   testids btn-gig-sim / gig-sim-no / gig-sim-why / gig-sim-progress / gig-simulated, debug('gigui').sim; Lane S labelBox, the
-  green #57c77a px 22 "Gear shop" label, the 0.35 s wait for a hotspot tapped where you stand. `f1e8393` status.
+  green #57c77a px 22 "Gear shop" label, the 0.35 s wait for a hotspot tapped where you stand. `f1e8393` status; `b059906` +
+  the next commit: this report (after a container restart at ~23:05 UTC cut the first matrix run).
 - Files vs main `d085cc3`: src 00_shell, 02_contracts, 10_save, 22_sim_gig, 41_render_garage, 52_ui_week, 54_ui_sequencer,
   55_ui_gig; tests pw_bands_render, pw_garage, pw_gig, pw_seats, pw_seq, pw_shop, save, sim_gig (834+ / 35-).
 
@@ -17,8 +18,13 @@
   - 390x844: 109 / 113 PASS first time; 440x956: 110 / 113 PASS first time.
   - New v1.3.1 sections green at both: `pw_gig simulate` 18/18, `pw_garage shop` 101/101, `pw_shop button` 23/23,
     `pw_seats shop` 27/27, `pw_bands_render` (C.HOTSPOTS), `pw_seq` layout (sketch heads) 67 / 73, e2e + gig (Start the show) green.
-  - First-run failures, all timing under two parallel browsers, none in v1.3.1 code: reruns alone in progress.
-- pw_perf (scenes, governor, ratio, stalls, audio, pre, quick), alone, one size at a time: in progress.
+  - First-run failures (timing / stalls under two parallel browsers; none in v1.3.1 code), each PASSED ALONE TWICE:
+    390: `pw_seq heavy` (xRT 0.83 < 1), `pw_gig sync` (a 65 ms "good"), `pw_flow bands` (punk: btn-create click stalled),
+    `pw_world van` (a road sheet over Skip the drive); 440: `pw_seq heavy` (xRT 0.79), `pw_gig sync`, `pw_seat_audio voices`
+    ('now' 11.6 ms off once). Alone: 22/22, 14/14, 51/51, 13/13, 19/19 twice at their size.
+- pw_perf (scenes, governor, ratio, stalls, audio, pre, quick), alone, one size at a time: 7/7 PASS at 390 and at 440.
+- Node suite on HEAD: `node tests/run.js` SUITE ALL PASS (35 suites; compat_v12 10, save 22, sim_gig 36, sim_audio 44 incl.
+  STAGE0 fingerprints). Classic `META_ONLY=hash` pw_seq 4/4 at both sizes (232/232, `216ad65`).
 - `tools/phoneqa.js` at 390x844 and 440x956: ALL PASS (no horizontal scroll, no button under 44 px, gig setlist with the Simulate
   row: small [] / overflow []; sketch pad with the 🛒 Shop button: small []).
 
