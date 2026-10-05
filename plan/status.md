@@ -23,15 +23,13 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.3.1.0 (in review on `v1.3.1-simulate`)**: 1.3.0.0 + Simulate a regular gig at your own average + a "Gear
-  shop" garage label and a visible shop button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6, lanes G + S merged
-  2026-10-04, `plan/v131_integration_report.md`). Last shipped on `main`:
-  **1.3.0.0 "Songwriter"** (PR #24, merged 2026-10-04) = 1.2.0.0 + quick song recipes + 5 sliders for every seat, more note rows +
-  per-bar chords, the one-flow "Clean sheet" songwriter. See "What's in v1.3.1" / "What's in v1.3" below. **Update Current/Next at every merge.**
+- Current: **1.3.1.0** (PR #25, merged 2026-10-05) = 1.3.0.0 "Songwriter" + Simulate a regular gig at your own average + a
+  "Gear shop" garage label and a SHOP button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6,
+  `plan/v131_integration_report.md`). See "What's in v1.3.1" / "What's in v1.3" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25).
 - Next: **1.4 "Tuning"** (only when the owner asks; handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
   the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -396,7 +394,8 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] plan `plan/plan_1.3.1.md` + lead edits (VERSION 1.3.1.0, `02_contracts` V1.3.1, `10_save` playLog, save test) — 2026-10-04
 - [x] lanes G (gig simulate) + S (gear shop) -> `plan/v131_lane_<g|s>_report.md` — 2026-10-04
 - [x] merge G -> S on `v1.3.1-simulate`, hand-overs, matrix 390 + 440, phoneqa, size, owner shots (`plan/v131_integration_report.md`) — 2026-10-04
-- [ ] review; owner check; PR to `main`
+- [x] review (2 lenses: 1 major + 3 minors fixed); owner check: ship (7 screenshots); PR #25 to `main` — 2026-10-05
+- Leftovers: owner deletes `wip-v131-g`, `wip-v131-s` (+ `wip-v13-*`, `wip-v12-*`, `wip-v11-*` if still there) on GitHub.
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
