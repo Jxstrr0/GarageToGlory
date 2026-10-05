@@ -39,7 +39,7 @@
   C.LOGO_STYLES = ['metal', 'punk', 'rock', 'country'];   // spiky unreadable / cut-out ransom / chrome '80s / western slab (any genre may use any)
   C.LICENSE_CHOICES = ['take', 'decline', 'counter'];
   C.BARS_PER_SECTION = 4;        // each arrangement entry plays its one-bar pattern this many times
-  C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door'];
+  C.HOTSPOTS = ['plan', 'kit', 'gigboard', 'laptop', 'merch', 'trophies', 'door', 'shop'];   // v1.3.1: + 'shop' (the Gear shop label; appended)
   C.SLOTS = ['auto', '1', '2', '3'];
   C.LABELS = ['gopherwood', 'monolith', 'diy'];      // indie, major, do-it-yourself (no 360 deals, ever)
   C.RELEASE_KINDS = ['ep', 'album'];                  // EP 4–5 songs (Local Heroes), album 8–10 (Signed / DIY)
@@ -512,6 +512,40 @@
   C.PART_V2 = { bass: 6, rhythm: 6, lead: 7 };   // v2 part rows per seat (songs.part.LAYOUT[2])
   C.QUICK = { k: 8, debounceMs: 150, warmMs: 400 };   // compose variants, slider debounce, A.warm budget after a compose
   C.SEQ_PART_ROW_MIN = 26;                       // px: the part grid's minimum row height (D9)
+
+  /* ======================================================================
+   V1.3.1 SIMULATE + GEAR SHOP (plan/plan_1.3.1.md; status.md Addendum 6; SAVE_SCHEMA stays 10: state.playLog is optional)
+   Played gigs score exactly as 1.3.0 (a played result gains no new field). A simulated gig is the REAL live session played
+   headlessly by GG.gig.botPlay at "your own average", finished into the normal GIG_RESULT and applied through the normal path
+   (career.finishGig -> settleGig: pay, fans, buzz, venue rep, rival opener, recap, legacy, achievements: everything counts).
+   state.playLog?: [ { acc 0..1, ps 0..1, seat: C.SEATS, diff: 'easy'|'normal'|'hard'|'expert', wk: totalWeek } ]
+     the last C.PLAY_LOG_MAX PLAYED live gigs (never a simulated one, never a studio take / practice); created lazily by the
+     first played gig; GG.save.migrate sanitizes it when present and never adds it. acc = (perfect + good) / notes, ps =
+     perfect / (perfect + good) (1 when nothing was hit).
+   GG.gig.canSimulate(state, g?) -> bool   phase 'gig', g is the booked gig, not a story show: no g.showdown (botb / festival /
+     final), no tour festival slot (g.festival), no unresolved rival same-night (or final) pending this weekend (GG.rival.pending
+     kind 'sameNight' | 'final', status != 'done': the entries R.shape applies to a regular gig; a passed botb, an unbooked
+     festival listing, a stolen slot or a poach card leave the gig simulable), not the career's first gig while the lessons run.
+   GG.gig.simBot(state, difficulty) -> { accuracy, jitterMs, from: 'own'|'band', n, acc, ps }   pure; "own" when this seat has
+     >= C.SIM_MIN_PLAYED log entries (same difficulty first), else "band" (your skill stat, state.drumSkill).
+   GIG_RESULT (simulated only) gains simulated: true, sim: { from, n, acc }.
+   C.HOTSPOTS gains 'shop' (appended): the "Gear shop" label beside the kit (drums) or your rig (string seats) -> GG.ui.openGear
+   (the seat's own shop). The sketch pad header gains a visible shop button (testid btn-seq-shop); the ⋯ row btn-kit-shop stays.
+   As merged (lanes G -> S, 2026-10-04; lane reports plan/v131_lane_<g|s>_report.md):
+     G (22 + 55): GG.gig.simReason(state, g?) -> null | 'phase' | 'gig' | 'showdown' | 'festival' | 'rival' | 'lesson'
+       (canSimulate = simReason === null); GG.gig.simSong(S, bot) -> SONG_RESULT; simFinish(S, bot) -> GIG_RESULT;
+       GG.gig.simShow(S, bot) = the remaining songs + simFinish (node / tests). state.liveGig.sim = { accuracy, jitterMs, from,
+       n, acc, ps } while a simulation runs (liveGig has no save sanitizer: it survives a save + reload and the resume branch
+       finishes it simulated). ui.gigSimMs (default 350): the pause between simulated songs (tests set 0). Testids
+       btn-gig-sim, gig-sim-no (story show / lesson note), gig-sim-why (what it plays at), gig-sim-progress (between card),
+       gig-simulated (results line). debug('gigui').sim = { on, from, n, accuracy, jitterMs, acc }.
+     S (41 + 52 + 54 + shell): the Gear shop label is green #57c77a at px 22 (the other labels px 20), under the kit's label
+       (drums) or in the amp corner (string seats, follows setRig); box 0.95 x 0.42 x 0.3 m. A hotspot tapped where you already
+       stand fires 0.35 s later (the tap's own click no longer lands on the sheet it opens). debug('render').labelBox =
+       [{ action, x, y, w, h }] (every label's screen rect: CSS px, centre x / y + w / h at rest). 2D fallback button hs-shop. Garage labels 8 (draw calls +1).
+  ====================================================================== */
+  C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
+  C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
 
   /* ======================================================================
    V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)

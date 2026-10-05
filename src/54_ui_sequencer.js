@@ -11,6 +11,9 @@
 //     drag to paint. Foot: ▶ Loop / ▶ Song / Save ✓ (sketch pad: Use in next Write).
 //   Header ⋯ (modal 'seq-tools'): Let the band jam one, the metronome, Quick song, the drum / guitar shop (sketch pad),
 //     Beat for this section, Bar 4 fill (Q2), copy / clear, your part's one-tap tweaks, take an extra out.
+//   v1.3.1 (Lane S): the sketch pad's header also shows the shop itself (btn-seq-shop, a green-ringed 🛒 Shop between the title
+//     and ⋯; aria-label "Drum shop" / "<Instrument> shop"), Quick song and the editor alike; never in a Write block or a catalog
+//     song (D7). Same handler as the ⋯ row btn-kit-shop (which stays).
 // Modes: write (one per Write block, opened by the planner's Go via GG.ui.composeWeek: a fresh block opens Quick song with the
 //   genre's signature recipe, a queued sketch opens the editor), sketch (the kit hotspot on state.draft: the editor when a draft
 //   exists, else Quick song; D10), view (a catalog song: the editor, read-only; ⋯ = the metronome only).
@@ -691,9 +694,17 @@
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
     V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
-    return el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
+    var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
+    return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-    } }, '✕'), V.title, btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+    } }, '✕'), V.title, shop, btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+  }
+  // v1.3.1: the sketch pad's own shop button (D7: the kit / rig hotspot only).
+  function shopName() { return strSeat() ? cap(instrument()) + ' shop' : 'Drum shop'; }
+  function openShop(D) { stopPlay(D); ui.openGear(); }
+  function shopButton(D) {
+    if (D.mode !== 'sketch' || !ui.openGear) return null;
+    return btn('.seq-shop', { testid: 'btn-seq-shop', 'aria-label': shopName(), title: shopName(), onclick: function () { openShop(D); } }, [el('span.i', '🛒'), el('span.t', 'Shop')]);
   }
   function head(s, D) {
     var V = D.view; if (!V || !V.title) return;
@@ -812,7 +823,7 @@
         D.mode === 'write' ? row('btn-seq-jam', '🎸', 'Let the band jam one', function () { if (D.done) return; D.done = true; close(); stopPlay(D); if (D.onJam) D.onJam(); }) : null,
         metroButton(),
         !ro && !quick ? row('btn-seq-quick', '🎚', 'Back to Quick song', function () { close(); stopPlay(D); enterQuick(D); owner.rerender(); }) : null,
-        D.mode === 'sketch' && ui.openGear ? row('btn-kit-shop', '🛒', strSeat() ? cap(instrument()) + ' shop' : 'Drum shop', function () { close(); stopPlay(D); ui.openGear(); }) : null   // v0.8 / v1.1: your seat's shop
+        D.mode === 'sketch' && ui.openGear ? row('btn-kit-shop', '🛒', shopName(), function () { close(); openShop(D); }) : null   // v0.8 / v1.1: your seat's shop (v1.3.1: also in the header)
       ]);
       if (!ro && drums) {
         var fills = chipSec(D.tab), hasFill = !!(D.pat.fillBars && D.pat.fillBars[D.tab]);

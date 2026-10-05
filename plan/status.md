@@ -23,13 +23,13 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.3.0.0 "Songwriter"** (PR #24, merged 2026-10-04) = 1.2.0.0 + quick song recipes + 5 sliders for every
-  seat, more note rows + per-bar chords, the one-flow "Clean sheet" songwriter. See "What's in v1.3" below.
-  **Update Current/Next at every merge.**
+- Current: **1.3.1.0** (PR #25, merged 2026-10-05) = 1.3.0.0 "Songwriter" + Simulate a regular gig at your own average + a
+  "Gear shop" garage label and a SHOP button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6,
+  `plan/v131_integration_report.md`). See "What's in v1.3.1" / "What's in v1.3" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25).
 - Next: **1.4 "Tuning"** (only when the owner asks; handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
   the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -135,6 +135,18 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.3.1 "Simulate" (plan `plan/plan_1.3.1.md`; lanes G, S + lead merged on `v1.3.1-simulate` 2026-10-04)
+- **Simulate this gig (G):** the setlist sheet's foot has [Auto-pick] [⏩ Simulate this gig] above the big "Start the show". One tap
+  plays the REAL show headlessly (`GG.gig.botPlay`, a song every 350 ms, "Simulating the show… song 2 of 4") at your own average
+  (`state.playLog`: the last 5 PLAYED gigs on this seat, same difficulty first; < 2 -> the band's level), then the normal results
+  (+ "⏩ Simulated at your average (last 3 gigs, 83% hit)") and the normal apply (pay, fans, buzz, rep, trophies: everything counts).
+  Story shows are played: rival showdowns, the festival (botb / tour slot), the final, a pending rival night, the first lesson gig
+  (a dim note instead). Simulated gigs never enter the average; a reload mid-simulation finishes it simulated. Played gigs score as 1.3.0.
+- **Gear shop (S):** a green "Gear shop" label in the garage (under Drum kit / Your rig; tap = walk there + your seat's shop; 2D
+  fallback `hs-shop`) and a "🛒 Shop" button in the sketch pad header (Quick song + editor; the ⋯ row stays). A hotspot tapped where
+  you already stand opens 0.35 s later (the tap's own click no longer closes the new sheet).
+- Saves: `state.playLog` optional (SAVE_SCHEMA 10); old saves load unchanged. dist 5,236,063 B.
 
 ## What's in v1.3 "Songwriter" (contract `plan/plan_contract_1.3.md`; lanes S, A, U + lead merged on `v1.3-songwriter` 2026-10-04)
 - **Quick song, then tweak (U + S, S4):** a fresh Write block opens Quick song: 5 recipes per genre + "Surprise me" in 2 columns
@@ -365,6 +377,25 @@ like less 'layer stacked on top of each other'. Just make it a more seamless pro
 - [x] integrate on `v1.3-songwriter` (merges S -> A -> U, hand-overs, matrix 390 + 440, phoneqa, size, owner shots + clips;
   `plan/v13_integration_report.md`) — 2026-10-04
 - [x] review pass (3 lenses; 3 majors + 7 minors fixed), owner check: ship, PR #24 to `main` — 2026-10-04
+
+## Addendum 6 (v1.3.1) — decisions (owner popup, 2026-10-04; locked)
+Owner words: "if i don't want to okay specific gig can we add a simulate option? also lets make the bass shop button more obvious"
+(read: "if I don't want to play a specific gig"). Plan: `plan/plan_1.3.1.md` (§0 has the lead's defaults D1-D8).
+- G1 Simulated result: **"Your own average"**: how well you actually played your recent gigs (`state.playLog`, the last 5 PLAYED
+  gigs, seat-aware; simulated gigs never count); falls back to the band's level when you haven't played many (< 2 on this seat).
+- G2 Which gigs: **all but story shows**: any regular gig can be simulated; rival showdowns (`C.SHOWDOWNS`), the festival and the
+  final must be played.
+- G3 Rewards: **"Everything counts"**: a simulated gig applies exactly like a played one (pay, fans, buzz, awards / achievements
+  through the normal result path: the real live session played by `GG.gig.botPlay`, then `career.finishGig`).
+- G4 Shop: **own garage label + rig button**: a "Gear shop" floating label in the garage you tap directly (drums = the kit shop,
+  string seats = their instrument shop) + a visible shop button on the rig / kit sketch-pad screen (the ⋯ entry stays).
+
+## Addendum 6 — pending
+- [x] plan `plan/plan_1.3.1.md` + lead edits (VERSION 1.3.1.0, `02_contracts` V1.3.1, `10_save` playLog, save test) — 2026-10-04
+- [x] lanes G (gig simulate) + S (gear shop) -> `plan/v131_lane_<g|s>_report.md` — 2026-10-04
+- [x] merge G -> S on `v1.3.1-simulate`, hand-overs, matrix 390 + 440, phoneqa, size, owner shots (`plan/v131_integration_report.md`) — 2026-10-04
+- [x] review (2 lenses: 1 major + 3 minors fixed); owner check: ship (7 screenshots); PR #25 to `main` — 2026-10-05
+- Leftovers: owner deletes `wip-v131-g`, `wip-v131-s` (+ `wip-v13-*`, `wip-v12-*`, `wip-v11-*` if still there) on GitHub.
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.

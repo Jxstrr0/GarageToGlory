@@ -20,6 +20,10 @@
 //   sound 'now'; the count-in / Auto-kick / auto notes stay on the band grid). See the "drum sync" block below.
 // v1.0.1 smart bridge: one touch on the seam between two lanes hits both only when both have a note due (see onDown).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
+// v1.3.1 Simulate (plan_1.3.1 §1.1): the setlist sheet's foot = [Auto-pick] [⏩ Simulate this gig] (btn-gig-sim; a story show
+//   or the lesson's first gig: a dim note gig-sim-no) + what it plays at (gig-sim-why), then the big "Start the show". A tap
+//   plays the real session headlessly at your recent average (GG.gig.simSong per song, ui.gigSimMs apart, card
+//   gig-sim-progress), then the normal results (+ gig-simulated) and the normal apply. live.sim resumes it after a reload.
 // v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6); the results show r.merch.
 // v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
 //   (session opts; auto kicks play the kick voice); the active calibration profile's audio offset is subtracted from every
@@ -299,7 +303,11 @@
     setupStage();
     if (G.opts.studio) { startSession([G.opts.studio.songId]); if (auto()) nextSong(); else showBetween(null); return true; }   // v0.5 studio take
     var live = st.liveGig && st.liveGig.gig && st.liveGig.gig.venueId === gig.venueId ? st.liveGig : null;
-    if (live) { startSession(null); if (G.ses.done) finishShow(); else { showBetween(null); if (auto()) G.autoT = setTimeout(nextSong, 30); } }
+    if (live) {
+      startSession(null);
+      if (live.sim) { G.sim = live.sim; startSim(); }   // v1.3.1: a simulated show finishes simulated
+      else if (G.ses.done) finishShow(); else { showBetween(null); if (auto()) G.autoT = setTimeout(nextSong, 30); }
+    }
     else if (auto()) { startSession(GG.gig.defaultSetlist(st, gig)); nextSong(); }
     else { G.pick = GG.gig.defaultSetlist(st, gig); ui.show('gig-set', {}); }
     return true;
@@ -1075,7 +1083,7 @@
       if (cb) setTimeout(function () { cb(take); }, 0);
       return;
     }
-    var st = S(), r = G.ses.finish(), before = st.venueRep ? st.venueRep[r.venueId] : undefined;
+    var st = S(), r = G.sim ? GG.gig.simFinish(G.ses, G.sim) : G.ses.finish(), before = st.venueRep ? st.venueRep[r.venueId] : undefined;   // v1.3.1
     stopAudio();
     G.mode = 'results';
     try { (G.opts.apply || defaultApply)(st, r); } catch (e) { console.error('[gig] applying the result failed', e); }
@@ -1101,6 +1109,7 @@
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
           el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0))])
       ]));
+      if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       s.body.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Crowd'), el('b', r.crowd + '/' + r.capacity)]),
         el('div', [el('span.caps', 'Pay'), el('b', pay)]),
@@ -1228,17 +1237,88 @@
           el('div.tiny.dim', 'Q ' + song.quality + ' · Groove ' + (r.groove || '?') + ' · Hook ' + (r.hook || '?') + ' · Diff ' + (r.difficulty || '?'))]), tags(song)])));
       });
       s.body.appendChild(list);
-      s.foot.appendChild(el('div.row', [
-        ui.btn('.btn', { testid: 'btn-gig-auto', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
-        ui.btn('.btn.primary.grow', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
+      // v1.3.1: [Auto-pick] [⏩ Simulate this gig] + what it plays at, then the big "Start the show" (the w1 lesson points at it).
+      // A story show (or the lesson's first gig) keeps a dim note in the Simulate slot instead.
+      var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
+      s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
+        el('div.row', [
+          ui.btn('.btn.small', { testid: 'btn-gig-auto', style: 'white-space:nowrap', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
+          bot ? ui.btn('.btn.small.grow', { testid: 'btn-gig-sim', disabled: !ids.length, 'aria-label': 'Simulate this gig', onclick: simulateShow }, '⏩ Simulate this gig')
+            : el('div.tiny.dim.grow', { testid: 'gig-sim-no' }, SIM_NO[why] || SIM_NO.phase)]),
+        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot, true)) : null,
+        ui.btn('.btn.primary.big.block', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
-          ui.close('gig-set');
-          for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
+          closeOverShow();
           startSession(G.pick.slice());
           nextSong();
         } }, 'Start the show')]));
     }
   });
+  function closeOverShow() {
+    ui.close('gig-set');
+    for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
+  }
+
+  /* ---- v1.3.1 Simulate: the real show played by a bot at your recent average (GG.gig.simSong per song) ------------ */
+  // One tap, no confirm (D4): the sheet closes, the session starts on your pick, and each song is simulated on a timer
+  // (ui.gigSimMs apart; the card reads "Simulating the show… song 2 of 4", the stage crowd follows), then the normal
+  // results (+ a "Simulated" line) and the normal apply. state.liveGig.sim marks it, so a reload finishes it simulated.
+  var SIM_NO = { showdown: 'Showdown night. This one you play.', rival: 'Showdown night. This one you play.',
+    festival: 'A festival slot. This one you play.', lesson: 'Play your first one. The band insists.', phase: 'This one you play.', gig: 'This one you play.' };
+  ui.gigSimMs = ui.gigSimMs != null ? ui.gigSimMs : 350;
+  function pct(x) { return Math.round((x || 0) * 100); }
+  // The sheet's line says what it uses and what you get (long); the progress card keeps the short form.
+  function simWhy(bot, long) {
+    if (!long) return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits' : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+    var min = C.SIM_MIN_PLAYED || 2;
+    return (bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits (last ' + bot.n + ' gigs).'
+      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits, until you’ve played ' + min + ' gigs yourself.') + ' Pay, fans and buzz count as usual.';
+  }
+  function simDone(r) {
+    var m = r.sim || {};
+    return m.from === 'own' ? '⏩ Simulated at your average (last ' + m.n + ' gigs, ' + pct(m.acc) + '% hit)'
+      : '⏩ Simulated at the band’s level (play a couple to set your own)';
+  }
+  function simulateShow() {
+    if (!G || !G.pick.length || G.ses || !GG.gig.canSimulate(S(), G.gig)) return;
+    closeOverShow();
+    startSession(G.pick.slice());
+    G.sim = GG.gig.simBot(S(), G.ses.difficulty);
+    startSim();
+  }
+  function startSim() {
+    G.mode = 'sim';
+    if (G.dom) G.dom.pauseBtn.hidden = true;   // nothing to pause
+    showSim(null);
+    G.autoT = setTimeout(simStep, ui.gigSimMs);
+  }
+  function simStep() {
+    if (!G || G.mode !== 'sim') return;
+    if (G.ses.done) { finishShow(); return; }
+    var r = null;
+    G.ses.emit = false;   // no per-note events ('gig:song' still fires: main saves between songs)
+    try { r = GG.gig.simSong(G.ses, G.sim); } finally { if (G && G.ses) G.ses.emit = true; }
+    if (!G) return;
+    var ses = G.ses, d = G.dom;
+    stageCall('setCrowdLevel', ses.crowd);
+    if (d) { d.meter.style.width = Math.round(ses.crowd) + '%'; d.level.textContent = LEVEL_TEXT[ses.level] || ses.level; d.crowd.dataset.level = ses.level; d.back.dataset.level = ses.level; }
+    G.crowdN = Math.round(ses.crowd);
+    showSim(r);
+    if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
+    G.autoT = setTimeout(simStep, ui.gigSimMs);
+  }
+  function showSim(r) {
+    var d = G.dom; if (!d) return;
+    var n = G.ses.setlist.length, i = G.ses.index;   // i = songs simulated so far
+    ui.clear(d.mid);
+    d.mid.appendChild(el('div.gig-mid-card', { testid: 'gig-sim-progress' }, [
+      el('div.caps', '⏩ Simulated show'),
+      el('b', i < n ? 'Simulating the show… song ' + (i + 1) + ' of ' + n : 'That’s the set. Counting the take…'),
+      r ? el('div.small', '“' + r.title + '”: ' + pct(r.accuracy) + '% hit · ' + r.perfect + ' perfect / ' + r.good + ' good / ' + r.miss + ' missed') : null,
+      el('div.tiny.dim', simWhy(G.sim))
+    ]));
+    d.mid.hidden = false;
+  }
   function tags(song) {
     return el('div.chips', [song.classic ? el('span.tag.gold', 'Classic') : null, (song.stale || 0) >= 30 ? el('span.tag', 'Stale') : null,
       song.hits ? el('span.tag.mine', song.hits + ' great') : null]);
@@ -1277,6 +1357,7 @@
       tBand: ch ? (G.paused ? G.pauseT : songTime(p)) - G.D : null, drawT: ch ? (G.paused ? G.pauseT : G.t) + G.drawOff : null,
       dispP90: G.dispP90 != null ? Math.round(G.dispP90 * 1000) : null, dispN: G.disp.length, snapN: G.snapN, bridgeN: G.bridgeN || 0, hats: G.hatN, hatSkip: G.hatSkip,
       akN: G.akN, akSkip: G.akSkip, waking: G.waking, result: G.result ? { grade: G.result.grade, score: G.result.score } : null,
+      sim: G.sim ? { on: true, from: G.sim.from, n: G.sim.n, accuracy: G.sim.accuracy, jitterMs: G.sim.jitterMs, acc: G.sim.acc } : { on: false },   // v1.3.1
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
       seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),

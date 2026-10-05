@@ -584,7 +584,8 @@
         text: 'The full gig board arrives in v0.3. For now: put Book in a slot and hope.' });
     },
     plan: function () { ui.openPlanner(); },
-    laptop: function () { ui.show('laptop'); }
+    laptop: function () { ui.show('laptop'); },
+    shop: function () { if (ui.openGear) return ui.openGear(); }   // v1.3.1: the Gear shop label -> your seat's shop (Drum shop / <Instrument> shop)
   };
   ui.hotspot = function (action) {
     if (!S() || ui.stackIds().length) return false;   // ignore walks that finish while a screen is up
@@ -608,7 +609,7 @@
      2D fallback garage (three.js or WebGL missing): hotspot + bandmate buttons over a CSS backdrop
      ====================================================================================================== */
   var SPOTS = [['plan', '📋', 'Whiteboard'], ['laptop', '💻', 'Laptop'], ['kit', '🥁', 'Drum kit'], ['gigboard', '📌', 'Gig board'],
-    ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door']];
+    ['merch', '📦', 'Merch'], ['trophies', '🏆', 'Trophies'], ['door', '🚪', 'Door'], ['shop', '🛒', 'Gear shop']];   // v1.3.1: + the Gear shop
   // v1.1 SPOTS by seat: the 'kit' spot opens the songwriter on every seat; on a string seat it is "Your rig" (the swapped
   // drummer has the kit). -> [action, icon, label, seat]
   function spotOf(action, st) {

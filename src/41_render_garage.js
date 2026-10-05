@@ -1,11 +1,11 @@
 // 41_render_garage.js: the parents' garage — the band's home base and the game's main menu.
 // A cutaway diorama (floor slab + back and right walls) seen from the front-left: one warm bulb inside,
-// cool moonlight through the garage-door windows, the yard outside changing with the seasons. Seven hotspots (C.HOTSPOTS) each get a
+// cool moonlight through the garage-door windows, the yard outside changing with the seasons. Eight hotspots (C.HOTSPOTS) each get a
 // floating label; tap the floor to walk, a hotspot to walk there and open it, a bandmate to chat.
 // Characters are blocky low-poly people built from LOOK as ONE skinned mesh each (buildCharacter is
 // exported for later scenes: stage, van, red carpet). Everything static is merged by material.
 // Draw calls ≈ room 1 + glows 1 + moon shafts 1 + dust 1 + banner 1 + bulb 3 + kit 1 + people 5 + blob shadows 1
-//              + yard (ground, weather, seasonal prop) 3 + labels 7 + walk ring 1 = 26
+//              + yard (ground, weather, seasonal prop) 3 + labels 8 + walk ring 1 = 27
 //              + v0.8: garage-only 2 (or a rented room's lit + glow + fixture + light wash + decals lit/glow + corridor floor
 //              = 7, with the yard's 3 hidden) + upgrades ≤ 2 + disco ball 1 + box pile 1.
 // v0.8 (SHOPUI): the rehearsal space by state.spaceTier (0 = the band's own start: the parents' garage; 1 Rent-A-Riff, Jam
@@ -21,6 +21,10 @@
 // (player.gearLook -> R.seatGear; the headstock sticker when gearLook.sticker is 'logo'); whoever noodled in that corner takes
 // the spare noodle spot. You wear your instrument everywhere. No extra draw call but the sticker. debug().seat = { seat, rig,
 // drummer, label, gear, sticker, playerPose }.
+// v1.3.1 (Lane S, plan_1.3.1 §1.2): an 8th hotspot 'shop', the "Gear shop" label in green (it reads as new) under the kit's
+// label (drums) or under "Your rig" (string seats; setRig moves it with the kit hotspot). A tap walks you to the throne / your
+// rig and fires 'hotspot' { action: 'shop' } (52 opens ui.openGear: the Drum shop / your instrument's shop). It never fades
+// while you sit there. Draw calls +1. debug().labelBox = [{ action, x, y, w, h }] (CSS px screen rects of every label).
 (function (GG) {
   var R = GG.render;
   if (!R || !R.defineScene) return;
@@ -66,6 +70,14 @@
   // noodler goes instead.
   var RIG = { label: 'Your rig', box: [-0.72, 0.72, Z0 + 0.62, 1.25, 1.3, 1.0], at: [0.05, 1.95, Z0 + 0.55], stand: [-0.85, -1.95], face: -0.2 };
   var NOODLE2 = { x: 0.6, z: -1.2, yaw: -0.55 };
+  // v1.3.1: a hotspot tapped where you already stand (the Gear shop from the throne) fires after this many seconds, not on the
+  // next frame: the tap's own synthesized click lands on the canvas, never on the scrim of the sheet it opens (which closed it).
+  var GHOST_S = 0.35;
+  // v1.3.1: the Gear shop label sits under the kit's label (drums; nudged right, clear of the merch box pile on the left edge)
+  // or the rig's (string seats); its hit box is the label.
+  var SHOP = { label: 'Gear shop', kit: [0.61, -0.78, 0.23], rig: [0, -0.78, 0], px: 22, box: [0.95, 0.42, 0.3], color: '#57c77a' };   // (a touch bigger than the rest: px 22)
+  function shopAt(at, rig) { var o = rig ? SHOP.rig : SHOP.kit; return [at[0] + o[0], at[1] + o[1], at[2] + o[2]]; }
+  function shopBox(at, rig) { var a = shopAt(at, rig); return [a[0], a[1], a[2], SHOP.box[0], SHOP.box[1], SHOP.box[2]]; }
   var DOOR_SEC = 2.15 / 4;                            // height of one garage-door section (4 sections)
 
   // Hotspots: hit box [cx, cy, cz, w, h, d] (world, generous for thumbs), label position, where the
@@ -79,6 +91,10 @@
     { action: 'laptop', label: 'Laptop', box: [PROPS.cooler.x, 0.5, PROPS.cooler.z, 0.8, 1.0, 0.65], at: [PROPS.cooler.x, 1.08, PROPS.cooler.z - 0.05], stand: [PROPS.cooler.x, 2.38], face: Math.PI },
     { action: 'merch', label: 'Merch', box: [PROPS.merch.x, 0.55, PROPS.merch.z, 0.85, 1.1, 0.85], at: [PROPS.merch.x, 1.32, PROPS.merch.z - 0.05], stand: [-1.2, 2.2], face: -Math.PI / 2 }
   ];
+  (function () {   // v1.3.1: the Gear shop (appended; index 4 stays the kit): stand + face = the kit's (set with the throne below)
+    var K = HOTSPOTS[4];
+    HOTSPOTS.push({ action: 'shop', label: SHOP.label, box: shopBox(K.at), at: shopAt(K.at), stand: null, face: K.face, stroke: SHOP.color, dot: SHOP.color, px: SHOP.px });
+  })();
 
   // Where bandmates hang out, by idle type (content: member.idle). seat = seat height (sitting).
   var SPOTS = {
@@ -480,6 +496,7 @@
     var kit = { mesh: null, color: null, sig: null, art: null };
     var throne = rotLocal(KIT, 0, -0.72 * KIT_SCALE);
     HOTSPOTS[4].stand = [throne.x, throne.z];
+    HOTSPOTS[7].stand = HOTSPOTS[4].stand;            // v1.3.1: the Gear shop: you walk to the throne
 
     // ---- Blob shadows: one InstancedMesh for props + people ----
     var shGeo = new THREE.PlaneGeometry(1, 1); shGeo.rotateX(-Math.PI / 2);
@@ -499,7 +516,7 @@
       var H = HOTSPOTS[hi], box = new THREE.Mesh(unitBox, ctx.mats.hidden);
       box.position.set(H.box[0], H.box[1], H.box[2]); box.scale.set(H.box[3], H.box[4], H.box[5]);
       box.userData.action = H.action; scene.add(box); box.updateMatrixWorld();
-      var lab = ctx.makeLabel(H.label, { px: 20 });
+      var lab = ctx.makeLabel(H.label, { px: H.px || 20, stroke: H.stroke, dot: H.dot });
       lab.position.set(H.at[0], H.at[1], H.at[2]); lab.userData.action = H.action; scene.add(lab);
       hs[H.action] = { def: H, box: box, label: lab, y: H.at[1], i: hi, fade: 1 };
       hsList.push(hs[H.action]);
@@ -675,6 +692,12 @@
       lab.position.set(D.at[0], D.at[1], D.at[2]); lab.userData.action = 'kit'; scene.add(lab);
       if (li >= 0) labels[li] = lab;
       ctx.disposeLabel(old); h.label = lab; h.y = D.at[1]; h.text = text;
+      var sh = hs.shop;   // v1.3.1: the Gear shop label follows the kit hotspot (under "Drum kit" / under "Your rig")
+      if (sh) {
+        var B = shopBox(D.at, on), A = shopAt(D.at, on);
+        sh.box.position.set(B[0], B[1], B[2]); sh.box.scale.set(B[3], B[4], B[5]); sh.box.updateMatrixWorld();
+        sh.label.position.set(A[0], A[1], A[2]); sh.y = A[1];
+      }
     }
     function syncSticker(st, band, gear, want, rebuilt) {
       var S0 = player.sticker, sig = want && gear ? gear + '|' + JSON.stringify(st.logo || null) + '|' + ((band && band.name) || '') : '';
@@ -756,11 +779,12 @@
       var h = hs[action];
       if (!h || !state || !player.p) return false;
       var st = standOf(h.def);
-      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && action === 'kit' ? RIG.face : h.def.face;
+      player.pending = action; player.faceT = 0; player.faceYaw = rigOn && atKit(action) ? RIG.face : h.def.face;
       startWalk(st[0], st[1]);
       return true;
     }
-    function standOf(def) { if (rigOn && def.action === 'kit') return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
+    function standOf(def) { if (rigOn && atKit(def.action)) return RIG.stand; return (def.stand && space.stand(def.action)) || def.stand; }   // v0.8: a space can move a stand (the curb couch); v1.1: your rig
+    function atKit(action) { return action === 'kit' || action === 'shop'; }   // v1.3.1: the Gear shop is used from the throne / your rig
     function clampX(x) { return clamp(x, ROOM.x0 + WALK.margin, ROOM.x1 - WALK.margin); }
     function clampZ(z) { return clamp(z, ROOM.z0 + WALK.margin, ROOM.z1 - WALK.margin); }
     function pushOut(x, z) {
@@ -780,9 +804,9 @@
       var p = player, dx = tx - p.x, dz = tz - p.z;
       if (dx * dx + dz * dz < 0.0025) {          // already there: just turn (and fire the hotspot)
         p.walking = false; p.x = tx; p.z = tz;
-        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = 0; }
+        if (p.pending) { p.goalYaw = p.faceYaw; p.faceT = -GHOST_S; }   // v1.3.1: already there: wait out the tap's own click
         var kp = rigOn ? 'rig' : 'drum';   // v1.1: your rig on a string seat
-        p.pose = p.pending === 'kit' ? kp : p.pose === kp && !p.pending ? kp : 'stand';
+        p.pose = atKit(p.pending) ? kp : p.pose === kp && !p.pending ? kp : 'stand';
         ctx.ring.hide();
         return;
       }
@@ -868,7 +892,7 @@
       p.yaw = ctx.approachAngle(p.yaw, p.goalYaw, p.walking ? 9 : 7, dt);
       if (p.pending && !p.walking) {
         p.faceT += dt;
-        if (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7) {
+        if (p.faceT >= 0 && (Math.abs(ctx.wrapAngle(p.goalYaw - p.yaw)) < 0.12 || p.faceT > 0.7)) {
           var action = p.pending; p.pending = null;
           ctx.emit('hotspot', { action: action });
         }
@@ -890,7 +914,7 @@
       ctx.ring.hide();
       if (p.pending) {
         p.goalYaw = p.faceYaw; p.faceT = 0;
-        if (p.pending === 'kit') p.pose = rigOn ? 'rig' : 'drum';
+        if (atKit(p.pending)) p.pose = rigOn ? 'rig' : 'drum';
       }
     }
     function playerIdle(bn, t, idleT) {
@@ -963,7 +987,7 @@
       for (i = 0; i < hsList.length; i++) {
         var h = hsList[i], k = h.i * 0.9, big = player.pending === h.def.action ? 1.12 : 1, st = standOf(h.def);
         var here = !player.walking && Math.abs(player.x - st[0]) < 0.3 && Math.abs(player.z - st[1]) < 0.3;
-        h.fade += ((here ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));
+        h.fade += ((here && h.def.action !== 'shop' ? 0.3 : 1) - h.fade) * (1 - Math.exp(-5 * dt));   // (v1.3.1: the Gear shop never fades)
         h.label.material.opacity = h.fade;
         ctx.scaleLabel(h.label, big * (1 + 0.035 * Math.sin(t * 2.4 + k)));
         h.label.position.y = h.y + 0.025 * Math.sin(t * 1.7 + k);
@@ -1004,11 +1028,17 @@
         target: w ? { x: rnd(w.x), z: rnd(w.z) } : null, walking: player.walking, pending: player.pending,
         hotspots: hotspotActions.slice(), members: ms, cape: capeShown, kitColor: kit.color, banner: banner.text, season: yard.season, decor: decor.state(), fanMail: fanMail.state(), space: space.state(),
         labelAt: hsList.map(function (h) { var p = h.label.position; return { action: h.def.action, x: rnd(p.x), y: rnd(h.y), z: rnd(p.z) }; }),   // v0.8 polish: for label/prop overlap checks
+        labelBox: hsList.map(labelBox),   // v1.3.1: each label's screen rect (CSS px, centre x / y + w / h at rest) for label/label overlap checks
         trophyWall: trophyWall.counts, bandProps: bandProps.state(),
         seat: Object.assign({}, seatInfo, { label: hs.kit ? hs.kit.text || HOTSPOTS[4].label : null, sticker: !!player.sticker, playerPose: player.walking ? 'walk' : player.pose })   // v1.1
       };
     }
     function rnd(v) { return Math.round(v * 100) / 100; }
+    // A label is a constant-pixel sprite: userData.px tall (the pill is 58 / 64 of it), px * aspect wide, centred on its position.
+    function labelBox(h) {
+      var p = h.label.position, s = R.worldToScreen ? R.worldToScreen(p.x, h.y, p.z) : null, u = h.label.userData;
+      return { action: h.def.action, x: s ? Math.round(s.x) : null, y: s ? Math.round(s.y) : null, w: Math.round(u.px * u.aspect), h: Math.round(u.px * 58 / 64) };
+    }
 
     // ======================================================================================================
     // Builders (run once, at scene build time).

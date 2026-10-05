@@ -32,6 +32,8 @@
 //   layout: every editor case + Quick song per seat (+ full gear: 6 lanes, 6 tabs) at PW_VIEW (440x956: no scroll anywhere),
 //           buttons ≥ 44, no h-scroll, shots tagged by size; then notch insets (47/34 at 390, 59/34 at 440) + Bigger text: the
 //           sliders reachable through quick-main, the foot above the home bar, the longest hook name + 6 tabs fit.
+//           v1.3.1 (Lane S): the sketch pad's head (✕ · title · 🛒 SHOP · ⋯) fits per seat on Quick song + the editor, plain and
+//           with Bigger text + insets: every button >= 44 inside the viewport, "Sketch pad · <seat>" whole (no ellipsis).
 //   audio : OfflineAudioContext render of every lane voice and 2 bars of every backing style: non-silent, peak < 1.0,
 //           no NaN; a fast song stays within the 12-voice cap. v0.6.1: every genre's kit (all lanes + country rim/brush)
 //           and full band (verse/chorus/bridge) render clean with their own parts and vocal hits; vocal hits on whole
@@ -1305,6 +1307,8 @@ async function layout() {
       c.ok((await audit(page)).length === 0, tag + ' Song tab ' + (await audit(page)).join('; '));
       if (!full && seat === 'rhythm') await shot('seq_song_' + tag);
     }
+    // v1.3.1: the sketch pad's head with the shop button, every seat, Quick song + the editor.
+    await sketchHeads(page, c, W, '');
     // The chord sheet + the picker (shots for the owner check).
     await writeBlock(page, { seed: 515, bandId: 'gravel_kings', seat: 'rhythm' });
     await tap(page, 'btn-quick-tweak');
@@ -1380,10 +1384,49 @@ async function layout() {
       c.ok(e.chords && e.tabs && e.head && e.foot && !e.over && !e.lh.length, seat + ' editor with insets + Bigger text: header clear of the notch, foot above the home bar, tabs + "' + e.label + '" + grid column names fit, no overflow ' + JSON.stringify(e));
       await shot('seq_edit_insets_big_' + seat);
     }
+    await sketchHeads(page, c, W, ' (Bigger text + insets)');
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'layout threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
   c.done();
+}
+
+// v1.3.1 (Lane S): the sketch pad (the kit / rig hotspot) per seat: ✕ · title · shop · ⋯ in the viewport, each >= 44, the caps whole.
+async function sketchHeads(page, c, W, note) {
+  for (const seat of ['drums', 'bass', 'rhythm', 'lead']) {
+    await page.evaluate(seat => {
+      GG.ui.closeAll(); GG.main.quickStart({ seed: 717, bandId: 'hail_damage', seat, openCard: false });
+      GG.state.card = null; GG.state.phase = 'plan'; GG.ui.closeAll(); GG.ui.openSketch();
+    }, seat);
+    await page.waitForFunction(() => GG.debug('ui').screen === 'seq' && GG.debug('seq') && GG.debug('seq').mode === 'sketch');
+    for (const scr of ['quick', 'edit']) {
+      if (scr === 'edit') { await tap(page, 'btn-quick-tweak'); await page.waitForFunction(() => GG.debug('seq').screen === 'edit'); }
+      const h = await page.evaluate(() => {
+        const hd = [...document.querySelectorAll('.seq-head')].pop(), r = e => e.getBoundingClientRect(), cap = hd.querySelector('.seq-title .caps');
+        return { ids: [...hd.children].map(k => k.dataset.testid || ''), caps: cap.textContent, cut: cap.scrollWidth > cap.clientWidth + 1,
+          small: [...hd.querySelectorAll('button')].filter(b => r(b).width < 43.5 || r(b).height < 43.5).map(b => b.dataset.testid),
+          out: [...hd.children].filter(k => r(k).left < -1 || r(k).right > innerWidth + 1).map(k => k.dataset.testid), hscroll: document.documentElement.scrollWidth > innerWidth + 1 };
+      });
+      c.ok(h.ids.join() === 'btn-seq-close,seq-title,btn-seq-shop,btn-seq-tools' && !h.cut && !h.small.length && !h.out.length && !h.hscroll,
+        W + ' ' + seat + ' sketch pad ' + scr + note + ': ✕ · title · shop · ⋯ fit, "' + h.caps + '" whole ' + JSON.stringify(h));
+      // v1.3.1 review fix: beside the shop button the editor's song name wraps to two lines: every 30-36 character name in
+      // the title pools reads whole (none cut), the title stays inside the 48 px head; the SHOP label grows with Bigger text
+      if (scr === 'edit') {
+        const t = await page.evaluate(() => {
+          const all = new Set(), base = GG.state;
+          for (const g of GG.contracts.GENRES) { const x = JSON.parse(JSON.stringify(base)); x.genre = g; x.songs = []; x.pendingSongs = []; for (let i = 0; i < 300; i++) all.add(GG.songs.pickTitle(x, GG.RNG(i), []).title); }
+          const hd = [...document.querySelectorAll('.seq-head')].pop(), fr = hd.querySelector('.seq-title .fr'), tb = hd.querySelector('.seq-title'), keep = fr.textContent, hr = hd.getBoundingClientRect();
+          const names = [...all].filter(n => n.length >= 30 && n.length <= 36), cut = [], out = [];
+          for (const n of names) { fr.textContent = n; const b = tb.getBoundingClientRect();
+            if (fr.scrollHeight > fr.clientHeight + 1 || fr.scrollWidth > fr.clientWidth + 1) cut.push(n); if (b.top < hr.top - 1 || b.bottom > hr.bottom + 1) out.push(n); }
+          fr.textContent = keep;
+          return { n: names.length, cut, out, wrap: hd.classList.contains('wrap-title'), shopT: parseFloat(getComputedStyle(hd.querySelector('.seq-shop .t')).fontSize), big: document.documentElement.classList.contains('gg-big') };
+        });
+        c.ok(t.wrap && t.n >= 10 && !t.cut.length && !t.out.length && t.shopT >= (t.big ? 10.5 : 9.5),
+          W + ' ' + seat + ' sketch editor' + note + ': ' + t.n + ' song names of 30-36 characters read whole on two lines, SHOP ' + t.shopT + ' px ' + JSON.stringify({ cut: t.cut.slice(0, 3), out: t.out.slice(0, 3) }));
+      }
+    }
+  }
 }
 
 // v1.2 stage 0 (handoff F3.1 / F13): the Classic switch is the regression baseline. With it on, renderOffline / prerenderHit

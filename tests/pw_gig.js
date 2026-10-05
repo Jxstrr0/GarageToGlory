@@ -1,4 +1,8 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing|simulate (default all); each inside `timeout 500`.
+//   simulate (v1.3.1): the setlist's "⏩ Simulate this gig" on a regular gig (>= 44 px, says what it uses + what you get) -> simulated
+//         song by song -> results with the Simulated line -> Wrap up (phase wrap, gigs + 1, playLog untouched); Battle of the Bands,
+//         a same-night week and the lesson's first gig: a dim note, no button; a passed-BotB week: the button; a reload
+//         mid-simulation finishes it simulated; no console errors.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -578,7 +582,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); if (want('swing')) await swingGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); if (want('swing')) await swingGig(); if (want('simulate')) await simulateGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -1348,5 +1352,103 @@ async function swingGig() {
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
   await close();
+  c.done();
+}
+
+// v1.3.1 Simulate (plan_1.3.1 §3, Lane G): a booked regular gig -> the setlist sheet shows "⏩ Simulate this gig" (>= 44 px,
+// what it plays at, no horizontal scroll) -> one tap -> "Simulating the show… song 1 of N" -> the normal results with the
+// "Simulated" line -> Wrap up -> the week goes on (phase 'wrap', stats.gigs + 1, playLog untouched); a Battle of the Bands
+// setlist and the lesson's first gig show a dim note instead; a reload mid-simulation finishes it simulated.
+async function simulateGig() {
+  const c = checker('simulate');
+  const { page, errors, close } = await open();
+  const setup = (seed, slot, extra) => page.evaluate(([seed, slot, extra]) => {
+    GG.main.quickStart({ seed, slot, openCard: false });
+    const s = GG.state; GG.ui.closeAll();
+    s.card = null; s.phase = 'gig'; s.offer = null; s.stats.gigs = 3; s.tutorial.on = false;
+    for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(seed + i));
+    s.playLog = [0.78, 0.8, 0.82].map((acc, i) => ({ acc, ps: 0.7, seat: GG.career.seatOf(s), diff: 'easy', wk: i + 1 }));
+    GG.save.saveSettings({ gigDifficulty: 'easy' });
+    s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
+    if (extra === 'botb') s.gig.showdown = { kind: 'botb', id: 'pw-botb' };
+    if (extra === 'lesson') { s.tutorial.on = true; s.stats.gigs = 0; }
+    if (extra === 'passed' || extra === 'sameNight') GG.rival.get(s).pending = { kind: extra === 'passed' ? 'botb' : 'sameNight', week: s.totalWeek, id: 'pw-p', status: extra === 'passed' ? 'passed' : 'set', venue: 'The Gopher Hole' };
+    GG.ui.gigAutoplay = false; window.__done = null; window.__songs = [];
+    if (!window.__songsOn) { window.__songsOn = true; GG.on('gig:song', p => window.__songs.push(p.index)); }
+    GG.main.sync();
+    GG.ui.playGig(s.gig, r => { window.__done = r; GG.main.wrapWeek(); });
+  }, [seed, slot, extra || null]);
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    await setup(4242, '2');
+    await waitScreen(page, 'gig-set');
+    await page.waitForFunction(() => { const e = document.querySelector('[data-testid="btn-gig-sim"]'), r = e && e.getBoundingClientRect(); return r && r.bottom <= window.innerHeight; }, null, { timeout: 4000 }).catch(() => {});   // the sheet slides in
+    const b = await page.evaluate(() => {
+      const e = document.querySelector('[data-testid="btn-gig-sim"]'), r = e && e.getBoundingClientRect(), st = document.querySelector('[data-testid="btn-gig-start"]').getBoundingClientRect();
+      const why = document.querySelector('[data-testid="gig-sim-why"]');
+      return { ok: !!e && !e.disabled, w: r && r.width, h: r && r.height, text: e && e.textContent, why: why && why.textContent, startH: st.height,
+        on: !!r && r.top >= 0 && r.bottom <= window.innerHeight, y: r && [Math.round(r.top), Math.round(r.bottom), window.innerHeight], can: GG.gig.canSimulate(GG.state, GG.state.gig), bot: GG.gig.simBot(GG.state, 'easy') };
+    });
+    c.ok(b.ok && b.w >= 44 && b.h >= 44 && b.on && /Simulate this gig/.test(b.text), 'setlist: a clear Simulate button >= 44 px on screen ' + JSON.stringify({ w: b.w, h: b.h, text: b.text, y: b.y }));
+    c.ok(b.can && b.bot.from === 'own' && b.bot.n === 3 && /your recent level: ~80% hits \(last 3 gigs\)\. Pay, fans and buzz count as usual\./.test(b.why || ''), 'it says what it uses + what you get: ' + b.why);
+    c.ok(b.startH >= 44, 'Start the show stays the big button (' + b.startH + ' px)');
+    c.ok((await audit(page)).length === 0, 'setlist layout with Simulate ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('sim_set.png')) });
+    const before = await page.evaluate(() => ({ gigs: GG.state.stats.gigs, log: JSON.stringify(GG.state.playLog), fans: GG.state.fans }));
+    await page.evaluate(() => { GG.ui.gigSimMs = 400; });
+    await tap(page, 'btn-gig-sim');
+    await page.waitForSelector(tid('gig-sim-progress'), { state: 'visible', timeout: 3000 });
+    const prog = await page.evaluate(() => ({ t: document.querySelector('[data-testid="gig-sim-progress"]').textContent, d: GG.debug('gigui') }));
+    c.ok(/Simulating the show… song 1 of \d/.test(prog.t) && prog.d.mode === 'sim' && prog.d.sim.on && prog.d.sim.from === 'own', 'tap: the show simulates song by song ' + JSON.stringify({ t: prog.t.slice(0, 80), mode: prog.d.mode }));
+    await page.screenshot({ path: path.join(CACHE, shotName('sim_progress.png')) });
+    await waitScreen(page, 'gig-results', 20000);
+    const res = await page.evaluate(() => ({ line: (document.querySelector('[data-testid="gig-simulated"]') || {}).textContent, r: GG.state.lastGig, phase: GG.state.phase,
+      gigs: GG.state.stats.gigs, log: JSON.stringify(GG.state.playLog), songs: window.__songs.slice(), fans: GG.state.fans, live: GG.state.liveGig }));
+    c.ok(/Simulated at your average \(last 3 gigs, 80% hit\)/.test(res.line || ''), 'results: the Simulated line ' + res.line);
+    c.ok(res.r && res.r.simulated && res.r.live && res.r.sim.from === 'own' && Math.abs(res.r.accuracy - 0.8) <= 0.06 && res.r.songResults.length === res.songs.length,
+      'a real GIG_RESULT at your average ' + JSON.stringify({ acc: res.r && res.r.accuracy, grade: res.r && res.r.grade, songs: res.songs }));
+    c.ok(res.phase === 'wrap' && res.gigs === before.gigs + 1 && !res.live && res.log === before.log, 'applied like a played gig (phase wrap, gigs +1); the average is untouched');
+    c.ok(res.r.fans >= 0 && res.fans >= before.fans, 'fans counted: +' + (res.fans - before.fans) + ' (result +' + res.r.fans + ')');
+    c.ok((await audit(page)).length === 0, 'results layout ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('sim_results.png')) });
+    await tap(page, 'btn-gig-done');
+    await waitScreen(page, 'wrap', 10000);
+    const wk = await page.evaluate(() => ({ sim: !!window.__done && window.__done.simulated, phase: GG.state.phase, gig: !!GG.state.gig, live: !!GG.state.liveGig }));
+    c.ok(wk.sim && wk.phase !== 'gig' && !wk.gig && !wk.live, 'Wrap up: the week continues ' + JSON.stringify(wk));
+
+    // story shows, a same-night rival week + the lesson's first gig are played: a dim note in the Simulate slot;
+    // a regular gig in a week whose BotB you passed simulates (review fix: only a rival entry riding on your gig blocks)
+    for (const kind of ['botb', 'lesson', 'sameNight', 'passed']) {
+      await setup(5151, '2', kind);
+      await waitScreen(page, 'gig-set');
+      const n = await page.evaluate(() => ({ btn: !!document.querySelector('[data-testid="btn-gig-sim"]'), note: (document.querySelector('[data-testid="gig-sim-no"]') || {}).textContent,
+        start: !!document.querySelector('[data-testid="btn-gig-start"]') }));
+      if (kind === 'passed') { c.ok(n.btn && !n.note && n.start, 'passed BotB week: the regular gig can be simulated ' + JSON.stringify(n)); continue; }
+      c.ok(!n.btn && n.start && (kind === 'lesson' ? /Play your first one/ : /Showdown night/).test(n.note || ''), kind + ': no Simulate, a note instead: ' + n.note);
+      c.ok((await audit(page)).length === 0, kind + ' setlist layout ' + (await audit(page)).join('; '));
+      if (kind === 'botb') { await page.waitForFunction(() => { const r = document.querySelector('[data-testid="btn-gig-start"]').getBoundingClientRect(); return r.bottom <= window.innerHeight; }, null, { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(200); await page.screenshot({ path: path.join(CACHE, shotName('sim_showdown.png')) }); }
+    }
+
+    // a reload between simulated songs: Continue finishes the set simulated (and the average stays untouched)
+    await setup(6262, '2');
+    await waitScreen(page, 'gig-set');
+    await page.evaluate(() => { GG.ui.gigSimMs = 4000; });
+    await tap(page, 'btn-gig-sim');
+    await page.waitForFunction(() => GG.state.liveGig && GG.state.liveGig.index === 1 && GG.state.liveGig.sim, null, { timeout: 12000 });
+    await page.waitForFunction(() => { const r = GG.save.read('auto'); return r && r.liveGig && r.liveGig.index === 1 && r.liveGig.sim; }, null, { timeout: 3000 }).catch(() => {});
+    const saved = await page.evaluate(() => { const r = GG.save.read('auto'); return r && r.liveGig && { index: r.liveGig.index, sim: !!r.liveGig.sim, phase: r.phase }; });
+    c.ok(saved && saved.index === 1 && saved.sim && saved.phase === 'gig', 'autosaved between simulated songs ' + JSON.stringify(saved));
+    await page.reload();
+    await page.waitForSelector(tid('btn-continue'));
+    await tap(page, 'btn-continue');
+    await waitScreen(page, 'gig-results', 20000);
+    const back = await page.evaluate(() => ({ line: (document.querySelector('[data-testid="gig-simulated"]') || {}).textContent, r: GG.state.lastGig, phase: GG.state.phase, log: GG.state.playLog }));
+    c.ok(/Simulated at your average/.test(back.line || '') && back.r.simulated && back.phase === 'wrap' && back.log.length === 3,
+      'reload mid-simulation: finished simulated ' + JSON.stringify({ line: back.line, n: back.r && back.r.songResults.length }));
+    await tap(page, 'btn-gig-done');
+    await waitScreen(page, 'wrap', 10000);
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  finally { await close(); }
   c.done();
 }

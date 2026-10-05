@@ -606,4 +606,140 @@ test('v1.3 perfect bot = 100 % on swung songs with fills + Scratch (drum seat an
   }
 });
 
+// ---- v1.3.1 "Simulate" (plan_1.3.1 §1.1 / §3, Lane G): a regular gig played headlessly at your own recent average.
+// GA (30_audio's pure timeline) so the string seats chart their own parts, like the browser.
+const simCareer = (seat, seed, bandId) => { const s = GA.career.newCareer({ seed: seed || 7, bandId: bandId || 'hail_damage', seat: seat || 'drums', player: { name: 'Sim' } });
+  s.phase = 'gig'; s.gig = GA.gig.makeGig(s, 'legion_63', 'book'); return s; };
+const logOf = (seat, diff, accs, ps) => accs.map((acc, i) => ({ acc, ps: ps == null ? 0.8 : ps, seat, diff, wk: i + 1 }));
+const simGig = (s, diff, set) => { const S = GA.gig.session(s, s.gig, set || null, { emit: false, difficulty: diff || 'easy' }); return GA.gig.simShow(S, GA.gig.simBot(s, S.difficulty)); };
+
+test('v1.3.1 canSimulate: a booked regular gig yes; every story show, a pending same-night / final, the lesson gig, off-phase no', () => {
+  const G = GA.gig, s = simCareer();
+  eq([G.canSimulate(s), G.canSimulate(s, s.gig), G.simReason(s)], [true, true, null]);
+  for (const kind of ['botb', 'festival', 'final']) { const t = simCareer(); t.gig.showdown = { kind, id: 'x' }; eq([G.canSimulate(t), G.simReason(t)], [false, 'showdown'], kind); }
+  const f = simCareer(); f.gig.festival = true; eq([G.canSimulate(f), G.simReason(f)], [false, 'festival'], 'tour festival slot');
+  for (const kind of ['sameNight', 'final']) {
+    const p = simCareer(); GA.rival.get(p).pending = { kind, week: p.totalWeek, id: 'p', status: 'set' };
+    eq([G.canSimulate(p), G.simReason(p)], [false, 'rival'], 'pending ' + kind);
+    GA.rival.get(p).pending.week = p.totalWeek - 1; ok(G.canSimulate(p), 'last week\'s pending is gone: ' + kind);
+  }
+  // review fix: a rival entry that does not ride on your regular gig never blocks it (owner A2: any regular gig)
+  for (const [kind, status] of [['stolenSlot', 'done'], ['stolenSlot', 'set'], ['botb', 'passed'], ['botb', 'offered'], ['festival', 'listed'], ['poach', 'card'], ['poach', 'done'], ['sameNight', 'done']]) {
+    const p = simCareer(); GA.rival.get(p).pending = { kind, week: p.totalWeek, id: 'p', status };
+    eq([G.canSimulate(p), G.simReason(p)], [true, null], 'regular gig with a ' + kind + '/' + status + ' entry this week');
+  }
+  const off = simCareer(); off.phase = 'plan'; eq(G.simReason(off), 'phase');
+  const none = simCareer(); none.gig = null; eq(G.simReason(none), 'phase');
+  const other = simCareer(); eq(G.simReason(other, GA.gig.makeGig(other, 'gopher_hole', 'book')), 'gig');
+  const les = simCareer(); les.tutorial = { on: true, done: {}, past4: false }; les.stats.gigs = 0; eq(G.simReason(les), 'lesson');
+  les.stats.gigs = 1; ok(G.canSimulate(les), 'the lessons run, but this is not the first gig');
+  les.tutorial.on = false; les.stats.gigs = 0; ok(G.canSimulate(les), 'lessons off: the first gig can be simulated');
+});
+
+test('v1.3.1 canSimulate (review fix): real weeks: a passed BotB, an unbooked festival, a stolen slot, a poach card leave the regular gig simulable; a same-night blocks', () => {
+  for (const kind of ['botb', 'festival', 'stolenSlot', 'poach', 'sameNight']) {
+    const s = GA.career.newCareer({ seed: 606, player: { name: 'Pat' } });
+    GA.career.startWeek(s); GA.career.setPlan(s, ['rest', 'rest', 'rest']); GA.career.runWeek(s, { autoGig: true }); GA.career.endWeek(s);
+    Object.assign(s, { gig: null, fans: 800, buzz: 30, fund: 3000, protected: false, era: 'local', totalWeek: 40, year: 2, week: 16, weekStart: null });
+    if (s.tutorial) s.tutorial.on = false;
+    GA.career.startWeek(s); if (s.card && !s.card.resolved) GA.career.resolveCard(s, 0);
+    GA.rival.schedule(s, kind, kind === 'poach' ? s.members.find(m => !m.isPlayer).id : undefined);
+    if (s.card && !s.card.resolved) GA.career.resolveCard(s, 0);
+    if (kind === 'botb') ok(GA.rival.pass(s), 'pass the battle');
+    GA.career.pickListing(s, s.listings.find(l => !l.showdown && !l.festival).id); GA.career.setPlan(s, ['book', 'rest', 'rest']); GA.career.runWeek(s);
+    ok(s.phase === 'gig' && !s.gig.showdown && GA.rival.pending(s), kind + ': a regular gig booked in a rival week');
+    if (kind === 'sameNight') { eq(GA.gig.simReason(s), 'rival', 'same-night rides on your gig'); continue; }
+    eq(GA.gig.simReason(s), null, kind + '/' + GA.rival.pending(s).status + ': simulable');
+    const S = GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'easy' }), n = (s.showdowns || []).length;
+    GA.career.finishGig(s, GA.gig.simShow(S, GA.gig.simBot(s, S.difficulty)));
+    ok(s.phase === 'wrap' && s.lastGig.simulated && !s.lastGig.showdown && (s.showdowns || []).length === n, kind + ': applied as a regular gig, no showdown');
+  }
+});
+
+test('v1.3.1 simBot: the band\'s level with < 2 played gigs of this seat, your own average with >= 2; same difficulty first; pure', () => {
+  const G = GA.gig, s = simCareer('drums');
+  const b0 = G.simBot(s, 'easy'); eq([b0.from, b0.n, b0.accuracy, b0.jitterMs], ['band', 0, 0.75, 65]);
+  ok(b0.acc > 0.6 && b0.acc < 0.75 && b0.ps > 0 && b0.ps < 1, 'band: the expected hit share ' + JSON.stringify(b0));
+  s.drumSkill = 80; const b1 = G.simBot(s, 'hard'); eq([b1.from, b1.accuracy, b1.jitterMs], ['band', 0.93, 25]);
+  s.drumSkill = 10;
+  s.playLog = logOf('drums', 'easy', [0.9]); eq([G.simBot(s, 'easy').from, G.simBot(s, 'easy').n], ['band', 1], 'one played gig is not an average yet');
+  s.playLog = logOf('bass', 'easy', [0.9, 0.9, 0.9]).concat(logOf('drums', 'easy', [0.5])); eq(G.simBot(s, 'easy').from, 'band', 'another seat\'s gigs never count');
+  s.playLog = logOf('drums', 'easy', [0.7, 0.9]); const o = G.simBot(s, 'easy');
+  eq([o.from, o.n, o.acc, o.ps], ['own', 2, 0.8, 0.8]); ok(o.accuracy >= 0.8 && o.accuracy <= 1 && o.jitterMs >= 5 && o.jitterMs <= 150, 'own bot ' + JSON.stringify(o));
+  s.playLog = logOf('drums', 'easy', [0.9, 0.9]).concat(logOf('drums', 'hard', [0.6, 0.6]));
+  eq([G.simBot(s, 'hard').acc, G.simBot(s, 'hard').n], [0.6, 2], 'Hard: your Hard gigs'); eq([G.simBot(s, 'easy').acc, G.simBot(s, 'easy').n], [0.9, 2], 'Easy: your Easy gigs');
+  eq([G.simBot(s, 'normal').acc, G.simBot(s, 'normal').n], [0.75, 4], 'no Normal gigs yet: every difficulty');
+  const json = JSON.stringify(s); G.simBot(s, 'expert'); G.simBot(s, 'easy'); eq(JSON.stringify(s), json, 'pure');
+  s.playLog = logOf('drums', 'hard', [0.95, 0.95], 0.5); const w = G.simBot(s, 'hard');
+  ok(w.accuracy <= 1 && w.ps === 0.5, 'a wide-but-steady player stays reachable ' + JSON.stringify(w));
+});
+
+test('v1.3.1 simulate: your average (logs 0.6 / 0.8 / 0.95 x ps 0.5 / 0.8) -> the gig lands within 0.05, easy + hard, drums + bass', () => {
+  const bad = [];
+  for (const seat of ['drums', 'bass']) for (const diff of ['easy', 'hard']) for (const A of [0.6, 0.8, 0.95]) for (const P of [0.5, 0.8])
+    for (const [band, seed] of [['hail_damage', 3], ['grid_road_ramblers', 7]]) {
+      const s = simCareer(seat, seed, band); s.playLog = logOf(seat, diff, [A, A, A], P);
+      const r = simGig(s, diff);
+      if (!(Math.abs(r.accuracy - A) <= 0.05)) bad.push([seat, diff, A, P, band, r.accuracy].join('/'));
+      if (!(r.simulated && r.sim.from === 'own' && r.sim.n === 3 && r.sim.acc === A && r.difficulty === diff)) bad.push('flags ' + JSON.stringify(r.sim));
+    }
+  eq(bad, [], 'off by more than 0.05');
+  const lo = simCareer('drums'); lo.playLog = logOf('drums', 'easy', [0.55, 0.55]); const hi = simCareer('drums'); hi.playLog = logOf('drums', 'easy', [0.97, 0.97], 0.9);
+  const rl = simGig(lo), rh = simGig(hi);
+  ok(rh.score > rl.score && GA.contracts.GRADES.indexOf(rh.grade) <= GA.contracts.GRADES.indexOf(rl.grade), 'a better average plays a better show ' + rl.grade + rl.score + ' < ' + rh.grade + rh.score);
+});
+
+test('v1.3.1 simulate: deterministic; a reload between songs finishes the same show; the band level when you have not played', () => {
+  const mk = () => { const s = simCareer('bass', 9); s.playLog = logOf('bass', 'hard', [0.7, 0.85, 0.8], 0.6); return s; };
+  const a = mk(), b = mk(), ra = simGig(a, 'hard'), rb = simGig(b, 'hard');
+  eq(JSON.stringify(ra), JSON.stringify(rb)); eq(JSON.stringify(a), JSON.stringify(b));
+  const c = mk(), S = GA.gig.session(c, c.gig, null, { emit: false, difficulty: 'hard' }), bot = GA.gig.simBot(c, 'hard');
+  GA.gig.simSong(S, bot); eq([c.liveGig.index, c.liveGig.sim.from, c.liveGig.sim.acc], [1, 'own', bot.acc], 'live.sim marks it');
+  const saved = GA.save.migrate(JSON.parse(JSON.stringify(c)));   // "reload": the saved liveGig resumes
+  const S2 = GA.gig.session(saved, saved.gig, null, { emit: false });
+  const rc = GA.gig.simShow(S2, saved.liveGig.sim);
+  eq(JSON.stringify(rc), JSON.stringify(ra), 'resumed = uninterrupted');
+  const n = simCareer('drums', 4); n.drumSkill = 45; const rn = simGig(n, 'normal');
+  ok(rn.simulated && rn.sim.from === 'band' && rn.sim.n === 0 && Math.abs(rn.accuracy - rn.sim.acc) <= 0.06, 'band level ' + JSON.stringify(rn.sim) + ' ' + rn.accuracy);
+});
+
+test('v1.3.1 simulate: everything counts (applied through career.finishGig exactly like the same result played); the average never moves', () => {
+  const s = simCareer('drums', 12); s.playLog = logOf('drums', 'easy', [0.8, 0.85]);
+  const S = GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'easy' }), r = GA.gig.simShow(S, GA.gig.simBot(s, 'easy'));
+  const twin = JSON.parse(JSON.stringify(s)), rp = JSON.parse(JSON.stringify(r)); delete rp.simulated; delete rp.sim;   // the same show, played
+  delete twin.liveGig.sim;
+  const done = []; const off = GA.on('gig:done', p => done.push(p.result)); let ach = 0; const g0 = GA.achieve.gig; GA.achieve.gig = function () { ach++; return g0.apply(this, arguments); };
+  const fund = s.fund, fans = s.fans, buzz = s.buzz, gigs = s.stats.gigs, log = JSON.stringify(s.playLog);
+  try { GA.career.finishGig(s, r); GA.career.finishGig(twin, rp); } finally { off(); GA.achieve.gig = g0; }
+  eq([s.phase, s.gig, s.liveGig, s.stats.gigs, s.lastGig === r, done.length, done[0] === r, ach], ['wrap', null, null, gigs + 1, true, 2, true, 2]);
+  ok(r.deltas && s.fans !== fans && s.fund !== fund && s.buzz !== buzz, 'pay, fans and buzz landed ' + JSON.stringify(r.deltas));
+  eq(JSON.stringify(s.playLog), log, 'a simulated gig never joins the average');
+  const strip = x => { const t = JSON.parse(JSON.stringify(x)); delete t.lastGig.simulated; delete t.lastGig.sim; if (t.lastWeek && t.lastWeek.gig) { delete t.lastWeek.gig.simulated; delete t.lastWeek.gig.sim; } delete t.playLog; return JSON.stringify(t); };
+  eq(strip(s), strip(twin), 'the same state as the same result played (pay, fans, buzz, rep, recap, legacy, achievements)');
+  eq(twin.playLog.length, 2 + 1, 'the played twin joins the average');
+});
+
+test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the oldest); a played result gains no field; 1.3.0 fingerprint', () => {
+  const s = simCareer('drums', 21); ok(!('playLog' in s), 'no key before the first played gig');
+  const S = GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'normal' }), r = GA.gig.botPlay(S, AVG, GA.RNG(3));
+  ok(!('simulated' in r) && !('sim' in r), 'a played GIG_RESULT has no new field');
+  GA.career.finishGig(s, r);
+  const hit = r.perfect + r.good;
+  eq(s.playLog, [{ acc: r.accuracy, ps: Math.round(r.perfect / hit * 1000) / 1000, seat: 'drums', diff: 'normal', wk: s.totalWeek }]);
+  eq(GA.save.playLog(s.playLog), s.playLog, 'stored as the save sanitizer keeps it');
+  for (let i = 0; i < 5; i++) { s.phase = 'gig'; s.gig = GA.gig.makeGig(s, 'legion_63', 'book'); s.totalWeek++;
+    GA.career.finishGig(s, GA.gig.botPlay(GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'hard' }), AVG, GA.RNG(10 + i))); }
+  eq([s.playLog.length, s.playLog[0].diff, s.playLog[4].wk], [GA.contracts.PLAY_LOG_MAX, 'hard', s.totalWeek], 'the last 5 played, newest last');
+  const q = simCareer('drums', 22); GA.gig.autoResolve(q, GA.RNG(1)); ok(!('playLog' in q), 'the v0.1 auto-resolve (bots, balance) is not a played gig');
+  // played gigs are byte-identical to 1.3.0 (fingerprint computed with the 1.3.0 22_sim_gig.js; playLog aside)
+  const fp = [];
+  for (const seat of ['drums', 'bass']) for (const d of ['easy', 'hard']) {
+    const t = GA.career.newCareer({ seed: 11, bandId: 'hail_damage', seat, player: { name: 'Fp' } }); t.phase = 'gig'; t.gig = GA.gig.makeGig(t, 'legion_63', 'book');
+    const rr = GA.gig.botPlay(GA.gig.session(t, t.gig, null, { emit: false, difficulty: d }), { accuracy: 0.82, jitterMs: 55 }, GA.RNG(5));
+    GA.career.finishGig(t, rr); const u = JSON.parse(JSON.stringify(t)); delete u.playLog;
+    fp.push(seat + '/' + d + ':' + GA.hashSeed(JSON.stringify(rr) + '|' + JSON.stringify(u)));
+  }
+  eq(fp.join(' '), 'drums/easy:1042753566 drums/hard:74364012 bass/easy:1477014130 bass/hard:222861556');
+});
+
 done('sim_gig');
