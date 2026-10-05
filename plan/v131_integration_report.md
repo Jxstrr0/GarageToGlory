@@ -50,3 +50,28 @@
 
 ## 5. Next
 - Review (<= 3 lenses: compatibility, determinism, layout); owner check of the 7 shots; PR to `main`.
+
+## 6. Review fixes (fixer, 2026-10-05, on `v1.3.1-simulate`; commits `8f4f05b`, `e1c5208`)
+- CONFIRMED (major) simReason blocked a regular gig in any week with a rival `pending` entry: fixed in 22. Only an entry that
+  rides on your gig blocks now: an unresolved `sameNight` (R.shape splits the crowd and the verdict shows) or the `final`
+  (`kind` + `status !== 'done'`, the same test R.shape uses). A passed or offered BotB, an unbooked festival listing, a stolen
+  slot (settled when it is scheduled) and a poach card leave the gig regular, so Simulate shows (owner A2). Story shows stay
+  blocked by `g.showdown` / `g.festival`. 02_contracts text updated. Tests: sim_gig `canSimulate` now has sameNight/final =
+  'rival', plus 8 non-blocking kind/status pairs = null (this replaces the stolenSlot = 'rival' case, which tested the wrong
+  intent), and a new real-week flow per rival kind (startWeek, R.schedule, pass, book a listing, runWeek, simReason, simShow,
+  finishGig: simulated, no showdown, no new state.showdowns). pw_gig simulate: same-night week = note, passed-BotB week = button.
+- MINOR Simulate line (fixed): the setlist now says "Plays it at your recent level: ~83% hits (last 3 gigs). Pay, fans and buzz
+  count as usual." / band level "..., until you've played 2 gigs yourself. ..." The progress card keeps the short form.
+- MINOR sketch-pad name cut (fixed): `.seq-head.wrap-title` (sketch editor only, beside 🛒 Shop) lets the name use two lines at
+  16 px (Bigger text 16.5 px) inside the 48 px head. Cut names out of the 190 in the title pools: 390 104 -> 5, Bigger text
+  116 -> 7, 440 54 -> 0. The 5 still cut are 38-45 character names with a bracket, cut with an ellipsis on line 2. Quick song
+  is unchanged. pw_seq layout: every 30-36 character name in the pools reads whole in the sketch editor for each seat, both
+  sizes, with and without Bigger text.
+- MINOR SHOP label (fixed): `html.gg-big .seq-shop .t` 10.5 px. btn-gig-auto is nowrap, so 'Auto-pick' no longer splits at
+  its hyphen.
+- Verify (dist 5,237,340 B): node build; `node tests/run.js` SUITE ALL PASS (sim_gig 37). At 390x844 and 440x956: pw_seq
+  hash 232/232 (4/4), layout 75 / 81, seq + quick + seq-compat; pw_gig simulate 21/21, sync 14/14; pw_garage 223; pw_shop all
+  7 sections. pw_rival 390 (scene, botb, final) pass. phoneqa ALL PASS at both sizes. All first runs, no reruns.
+- Owner shots retaken at 440 (same names) and looked at: 03 unchanged (Quick song head), 05 shows the new line on two short
+  lines above Start the show, 06 unchanged ("⏩ Simulated at your average (last 3 gigs, 83% hit)"), 07 "Showdown night. This
+  one you play." with Auto-pick on one line. A scratch 390 editor shot shows a long name on two lines beside SHOP.
