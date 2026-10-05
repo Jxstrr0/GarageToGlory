@@ -358,6 +358,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-shop .i { font-size: 17px; line-height: 1; }
 .seq-shop .t { font: 800 9.5px/1 var(--font); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
 .seq-shop:active { filter: brightness(1.25); }
+html.gg-big .seq-shop .t { font-size: 10.5px; letter-spacing: .04em; }
+/* v1.3.1 review fix: beside the shop button the sketch editor's song name (also the reroll button) wraps to two lines (fits the 48 px head) */
+.seq-head.wrap-title .seq-title .caps { line-height: 1.2; }
+.seq-head.wrap-title .seq-title .fr { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.05; }
+html.gg-big .seq-head.wrap-title .seq-title .fr { font-size: 16.5px; line-height: 1.02; }
 /* underline section tabs */
 .seq-tabs { flex: 0 0 auto; margin: -2px -14px 0; padding: 0 12px; border-bottom: 1px solid #222b44; }
 .full.seq .seq-tabs .tabs { background: none; border: 0; border-radius: 0; padding: 0; gap: 2px; }
@@ -1728,8 +1733,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      first played gig; GG.save.migrate sanitizes it when present and never adds it. acc = (perfect + good) / notes, ps =
      perfect / (perfect + good) (1 when nothing was hit).
    GG.gig.canSimulate(state, g?) -> bool   phase 'gig', g is the booked gig, not a story show: no g.showdown (botb / festival /
-     final), no tour festival slot (g.festival), no rival showdown pending this weekend (GG.rival.pending: the same routing as
-     GG.main.playWeekend -> ui.playShowdown), not the career's first gig while the lessons run.
+     final), no tour festival slot (g.festival), no unresolved rival same-night (or final) pending this weekend (GG.rival.pending
+     kind 'sameNight' | 'final', status != 'done': the entries R.shape applies to a regular gig; a passed botb, an unbooked
+     festival listing, a stolen slot or a poach card leave the gig simulable), not the career's first gig while the lessons run.
    GG.gig.simBot(state, difficulty) -> { accuracy, jitterMs, from: 'own'|'band', n, acc, ps }   pure; "own" when this seat has
      >= C.SIM_MIN_PLAYED log entries (same difficulty first), else "band" (your skill stat, state.drumSkill).
    GIG_RESULT (simulated only) gains simulated: true, sim: { from, n, acc }.
@@ -27599,7 +27605,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (g !== state.gig && g.venueId !== state.gig.venueId) return 'gig';
     if (g.showdown || state.gig.showdown) return 'showdown';   // botb / festival / final: story shows are played
     if (g.festival || state.gig.festival) return 'festival';   // a tour festival slot
-    if (GG.rival && GG.rival.pending && GG.rival.pending(state)) return 'rival';   // the same routing as GG.main.playWeekend
+    var rp = GG.rival && GG.rival.pending ? GG.rival.pending(state) : null;
+    if (rp && (rp.kind === 'sameNight' || rp.kind === 'final') && rp.status !== 'done') return 'rival';
     if (state.tutorial && state.tutorial.on && !(state.stats && state.stats.gigs)) return 'lesson';   // w1_gig teaches Start
     return null;
   };
@@ -53504,9 +53511,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
     V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
-    return el('div.seq-head', [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
+    var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
+    return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
-    } }, '✕'), V.title, shopButton(D), btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
+    } }, '✕'), V.title, shop, btn('.icon-btn', { testid: 'btn-seq-tools', 'aria-label': 'More', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⋯')]);
   }
   function shopName() { return strSeat() ? cap(instrument()) + ' shop' : 'Drum shop'; }
   function openShop(D) { stopPlay(D); ui.openGear(); }
@@ -54879,10 +54887,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
       s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
         el('div.row', [
-          ui.btn('.btn.small', { testid: 'btn-gig-auto', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
+          ui.btn('.btn.small', { testid: 'btn-gig-auto', style: 'white-space:nowrap', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
           bot ? ui.btn('.btn.small.grow', { testid: 'btn-gig-sim', disabled: !ids.length, 'aria-label': 'Simulate this gig', onclick: simulateShow }, '⏩ Simulate this gig')
             : el('div.tiny.dim.grow', { testid: 'gig-sim-no' }, SIM_NO[why] || SIM_NO.phase)]),
-        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot)) : null,
+        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot, true)) : null,
         ui.btn('.btn.primary.big.block', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
           closeOverShow();
@@ -54901,9 +54909,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     festival: 'A festival slot. This one you play.', lesson: 'Play your first one. The band insists.', phase: 'This one you play.', gig: 'This one you play.' };
   ui.gigSimMs = ui.gigSimMs != null ? ui.gigSimMs : 350;
   function pct(x) { return Math.round((x || 0) * 100); }
-  function simWhy(bot) {
-    return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits'
-      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+  function simWhy(bot, long) {
+    if (!long) return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits' : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+    var min = C.SIM_MIN_PLAYED || 2;
+    return (bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits (last ' + bot.n + ' gigs).'
+      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits, until you’ve played ' + min + ' gigs yourself.') + ' Pay, fans and buzz count as usual.';
   }
   function simDone(r) {
     var m = r.sim || {};

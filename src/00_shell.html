@@ -358,6 +358,11 @@ button.song:first-child { border-top: 0; } button.song:active { background: rgba
 .seq-shop .i { font-size: 17px; line-height: 1; }
 .seq-shop .t { font: 800 9.5px/1 var(--font); text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
 .seq-shop:active { filter: brightness(1.25); }
+html.gg-big .seq-shop .t { font-size: 10.5px; letter-spacing: .04em; }
+/* v1.3.1 review fix: beside the shop button the sketch editor's song name (also the reroll button) wraps to two lines (fits the 48 px head) */
+.seq-head.wrap-title .seq-title .caps { line-height: 1.2; }
+.seq-head.wrap-title .seq-title .fr { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.05; }
+html.gg-big .seq-head.wrap-title .seq-title .fr { font-size: 16.5px; line-height: 1.02; }
 /* underline section tabs */
 .seq-tabs { flex: 0 0 auto; margin: -2px -14px 0; padding: 0 12px; border-bottom: 1px solid #222b44; }
 .full.seq .seq-tabs .tabs { background: none; border: 0; border-radius: 0; padding: 0; gap: 2px; }

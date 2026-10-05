@@ -1242,10 +1242,10 @@
       var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
       s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
         el('div.row', [
-          ui.btn('.btn.small', { testid: 'btn-gig-auto', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
+          ui.btn('.btn.small', { testid: 'btn-gig-auto', style: 'white-space:nowrap', onclick: function () { G.pick = GG.gig.defaultSetlist(st, g); s.rerender(); } }, 'Auto-pick'),
           bot ? ui.btn('.btn.small.grow', { testid: 'btn-gig-sim', disabled: !ids.length, 'aria-label': 'Simulate this gig', onclick: simulateShow }, '⏩ Simulate this gig')
             : el('div.tiny.dim.grow', { testid: 'gig-sim-no' }, SIM_NO[why] || SIM_NO.phase)]),
-        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot)) : null,
+        bot ? el('div.tiny.dim', { testid: 'gig-sim-why' }, simWhy(bot, true)) : null,
         ui.btn('.btn.primary.big.block', { testid: 'btn-gig-start', disabled: !ids.length, onclick: function () {
           if (!G || !G.pick.length || G.ses) return;
           closeOverShow();
@@ -1267,9 +1267,12 @@
     festival: 'A festival slot. This one you play.', lesson: 'Play your first one. The band insists.', phase: 'This one you play.', gig: 'This one you play.' };
   ui.gigSimMs = ui.gigSimMs != null ? ui.gigSimMs : 350;
   function pct(x) { return Math.round((x || 0) * 100); }
-  function simWhy(bot) {
-    return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits'
-      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+  // The sheet's line says what it uses and what you get (long); the progress card keeps the short form.
+  function simWhy(bot, long) {
+    if (!long) return bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits' : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits';
+    var min = C.SIM_MIN_PLAYED || 2;
+    return (bot.from === 'own' ? 'Plays it at your recent level: ~' + pct(bot.acc) + '% hits (last ' + bot.n + ' gigs).'
+      : 'Plays it at the band’s level: ~' + pct(bot.acc) + '% hits, until you’ve played ' + min + ' gigs yourself.') + ' Pay, fans and buzz count as usual.';
   }
   function simDone(r) {
     var m = r.sim || {};

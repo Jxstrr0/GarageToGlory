@@ -1,7 +1,8 @@
 // pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing|simulate (default all); each inside `timeout 500`.
-//   simulate (v1.3.1): the setlist's "⏩ Simulate this gig" on a regular gig (>= 44 px, says what it uses) -> simulated song by
-//         song -> results with the Simulated line -> Wrap up (phase wrap, gigs + 1, playLog untouched); Battle of the Bands and
-//         the lesson's first gig: a dim note, no button; a reload mid-simulation finishes it simulated; no console errors.
+//   simulate (v1.3.1): the setlist's "⏩ Simulate this gig" on a regular gig (>= 44 px, says what it uses + what you get) -> simulated
+//         song by song -> results with the Simulated line -> Wrap up (phase wrap, gigs + 1, playLog untouched); Battle of the Bands,
+//         a same-night week and the lesson's first gig: a dim note, no button; a passed-BotB week: the button; a reload
+//         mid-simulation finishes it simulated; no console errors.
 //   gig : quickStart + a booked gig → GG.ui.playGig: setlist sheet (slots = setSize, drop/auto-pick, opener/closer hints)
 //         → Start → count-in (the numeral never widens the screen) → backing plays on the audio clock → timed in-page taps on
 //         lane zones judge Perfect/Good → two-thumb auto notes booked ahead, also with frames 600 ms apart (timer pump) →
@@ -1371,6 +1372,7 @@ async function simulateGig() {
     s.gig = GG.gig.makeGig(s, 'legion_63', 'book');
     if (extra === 'botb') s.gig.showdown = { kind: 'botb', id: 'pw-botb' };
     if (extra === 'lesson') { s.tutorial.on = true; s.stats.gigs = 0; }
+    if (extra === 'passed' || extra === 'sameNight') GG.rival.get(s).pending = { kind: extra === 'passed' ? 'botb' : 'sameNight', week: s.totalWeek, id: 'pw-p', status: extra === 'passed' ? 'passed' : 'set', venue: 'The Gopher Hole' };
     GG.ui.gigAutoplay = false; window.__done = null; window.__songs = [];
     if (!window.__songsOn) { window.__songsOn = true; GG.on('gig:song', p => window.__songs.push(p.index)); }
     GG.main.sync();
@@ -1388,7 +1390,7 @@ async function simulateGig() {
         on: !!r && r.top >= 0 && r.bottom <= window.innerHeight, y: r && [Math.round(r.top), Math.round(r.bottom), window.innerHeight], can: GG.gig.canSimulate(GG.state, GG.state.gig), bot: GG.gig.simBot(GG.state, 'easy') };
     });
     c.ok(b.ok && b.w >= 44 && b.h >= 44 && b.on && /Simulate this gig/.test(b.text), 'setlist: a clear Simulate button >= 44 px on screen ' + JSON.stringify({ w: b.w, h: b.h, text: b.text, y: b.y }));
-    c.ok(b.can && b.bot.from === 'own' && b.bot.n === 3 && /your recent level: ~80% hits/.test(b.why || ''), 'it says what it uses: ' + b.why);
+    c.ok(b.can && b.bot.from === 'own' && b.bot.n === 3 && /your recent level: ~80% hits \(last 3 gigs\)\. Pay, fans and buzz count as usual\./.test(b.why || ''), 'it says what it uses + what you get: ' + b.why);
     c.ok(b.startH >= 44, 'Start the show stays the big button (' + b.startH + ' px)');
     c.ok((await audit(page)).length === 0, 'setlist layout with Simulate ' + (await audit(page)).join('; '));
     await page.screenshot({ path: path.join(CACHE, shotName('sim_set.png')) });
@@ -1414,13 +1416,15 @@ async function simulateGig() {
     const wk = await page.evaluate(() => ({ sim: !!window.__done && window.__done.simulated, phase: GG.state.phase, gig: !!GG.state.gig, live: !!GG.state.liveGig }));
     c.ok(wk.sim && wk.phase !== 'gig' && !wk.gig && !wk.live, 'Wrap up: the week continues ' + JSON.stringify(wk));
 
-    // story shows + the lesson's first gig are played: a dim note in the Simulate slot
-    for (const kind of ['botb', 'lesson']) {
+    // story shows, a same-night rival week + the lesson's first gig are played: a dim note in the Simulate slot;
+    // a regular gig in a week whose BotB you passed simulates (review fix: only a rival entry riding on your gig blocks)
+    for (const kind of ['botb', 'lesson', 'sameNight', 'passed']) {
       await setup(5151, '2', kind);
       await waitScreen(page, 'gig-set');
       const n = await page.evaluate(() => ({ btn: !!document.querySelector('[data-testid="btn-gig-sim"]'), note: (document.querySelector('[data-testid="gig-sim-no"]') || {}).textContent,
         start: !!document.querySelector('[data-testid="btn-gig-start"]') }));
-      c.ok(!n.btn && n.start && (kind === 'botb' ? /Showdown night/ : /Play your first one/).test(n.note || ''), kind + ': no Simulate, a note instead: ' + n.note);
+      if (kind === 'passed') { c.ok(n.btn && !n.note && n.start, 'passed BotB week: the regular gig can be simulated ' + JSON.stringify(n)); continue; }
+      c.ok(!n.btn && n.start && (kind === 'lesson' ? /Play your first one/ : /Showdown night/).test(n.note || ''), kind + ': no Simulate, a note instead: ' + n.note);
       c.ok((await audit(page)).length === 0, kind + ' setlist layout ' + (await audit(page)).join('; '));
       if (kind === 'botb') { await page.waitForFunction(() => { const r = document.querySelector('[data-testid="btn-gig-start"]').getBoundingClientRect(); return r.bottom <= window.innerHeight; }, null, { timeout: 4000 }).catch(() => {}); await page.waitForTimeout(200); await page.screenshot({ path: path.join(CACHE, shotName('sim_showdown.png')) }); }
     }

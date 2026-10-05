@@ -1409,6 +1409,22 @@ async function sketchHeads(page, c, W, note) {
       });
       c.ok(h.ids.join() === 'btn-seq-close,seq-title,btn-seq-shop,btn-seq-tools' && !h.cut && !h.small.length && !h.out.length && !h.hscroll,
         W + ' ' + seat + ' sketch pad ' + scr + note + ': ✕ · title · shop · ⋯ fit, "' + h.caps + '" whole ' + JSON.stringify(h));
+      // v1.3.1 review fix: beside the shop button the editor's song name wraps to two lines: every 30-36 character name in
+      // the title pools reads whole (none cut), the title stays inside the 48 px head; the SHOP label grows with Bigger text
+      if (scr === 'edit') {
+        const t = await page.evaluate(() => {
+          const all = new Set(), base = GG.state;
+          for (const g of GG.contracts.GENRES) { const x = JSON.parse(JSON.stringify(base)); x.genre = g; x.songs = []; x.pendingSongs = []; for (let i = 0; i < 300; i++) all.add(GG.songs.pickTitle(x, GG.RNG(i), []).title); }
+          const hd = [...document.querySelectorAll('.seq-head')].pop(), fr = hd.querySelector('.seq-title .fr'), tb = hd.querySelector('.seq-title'), keep = fr.textContent, hr = hd.getBoundingClientRect();
+          const names = [...all].filter(n => n.length >= 30 && n.length <= 36), cut = [], out = [];
+          for (const n of names) { fr.textContent = n; const b = tb.getBoundingClientRect();
+            if (fr.scrollHeight > fr.clientHeight + 1 || fr.scrollWidth > fr.clientWidth + 1) cut.push(n); if (b.top < hr.top - 1 || b.bottom > hr.bottom + 1) out.push(n); }
+          fr.textContent = keep;
+          return { n: names.length, cut, out, wrap: hd.classList.contains('wrap-title'), shopT: parseFloat(getComputedStyle(hd.querySelector('.seq-shop .t')).fontSize), big: document.documentElement.classList.contains('gg-big') };
+        });
+        c.ok(t.wrap && t.n >= 10 && !t.cut.length && !t.out.length && t.shopT >= (t.big ? 10.5 : 9.5),
+          W + ' ' + seat + ' sketch editor' + note + ': ' + t.n + ' song names of 30-36 characters read whole on two lines, SHOP ' + t.shopT + ' px ' + JSON.stringify({ cut: t.cut.slice(0, 3), out: t.out.slice(0, 3) }));
+      }
     }
   }
 }
