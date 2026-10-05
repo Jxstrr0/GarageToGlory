@@ -1082,7 +1082,11 @@
     if (g !== state.gig && g.venueId !== state.gig.venueId) return 'gig';
     if (g.showdown || state.gig.showdown) return 'showdown';   // botb / festival / final: story shows are played
     if (g.festival || state.gig.festival) return 'festival';   // a tour festival slot
-    if (GG.rival && GG.rival.pending && GG.rival.pending(state)) return 'rival';   // the same routing as GG.main.playWeekend
+    // A rival entry this week blocks only when it rides on THIS gig: an unresolved same-night (R.shape splits your crowd and
+    // the verdict follows) or the final. A passed / unbooked botb or festival, a stolen slot (settled when scheduled) or a
+    // poach card leave a regular gig regular (ui.playShowdown just plays it), so it can be simulated (owner A2).
+    var rp = GG.rival && GG.rival.pending ? GG.rival.pending(state) : null;
+    if (rp && (rp.kind === 'sameNight' || rp.kind === 'final') && rp.status !== 'done') return 'rival';
     if (state.tutorial && state.tutorial.on && !(state.stats && state.stats.gigs)) return 'lesson';   // w1_gig teaches Start
     return null;
   };

@@ -523,8 +523,9 @@
      first played gig; GG.save.migrate sanitizes it when present and never adds it. acc = (perfect + good) / notes, ps =
      perfect / (perfect + good) (1 when nothing was hit).
    GG.gig.canSimulate(state, g?) -> bool   phase 'gig', g is the booked gig, not a story show: no g.showdown (botb / festival /
-     final), no tour festival slot (g.festival), no rival showdown pending this weekend (GG.rival.pending: the same routing as
-     GG.main.playWeekend -> ui.playShowdown), not the career's first gig while the lessons run.
+     final), no tour festival slot (g.festival), no unresolved rival same-night (or final) pending this weekend (GG.rival.pending
+     kind 'sameNight' | 'final', status != 'done': the entries R.shape applies to a regular gig; a passed botb, an unbooked
+     festival listing, a stolen slot or a poach card leave the gig simulable), not the career's first gig while the lessons run.
    GG.gig.simBot(state, difficulty) -> { accuracy, jitterMs, from: 'own'|'band', n, acc, ps }   pure; "own" when this seat has
      >= C.SIM_MIN_PLAYED log entries (same difficulty first), else "band" (your skill stat, state.drumSkill).
    GIG_RESULT (simulated only) gains simulated: true, sim: { from, n, acc }.

@@ -613,15 +613,20 @@ const simCareer = (seat, seed, bandId) => { const s = GA.career.newCareer({ seed
 const logOf = (seat, diff, accs, ps) => accs.map((acc, i) => ({ acc, ps: ps == null ? 0.8 : ps, seat, diff, wk: i + 1 }));
 const simGig = (s, diff, set) => { const S = GA.gig.session(s, s.gig, set || null, { emit: false, difficulty: diff || 'easy' }); return GA.gig.simShow(S, GA.gig.simBot(s, S.difficulty)); };
 
-test('v1.3.1 canSimulate: a booked regular gig yes; every story show, a pending rival night, the lesson gig, off-phase no', () => {
+test('v1.3.1 canSimulate: a booked regular gig yes; every story show, a pending same-night / final, the lesson gig, off-phase no', () => {
   const G = GA.gig, s = simCareer();
   eq([G.canSimulate(s), G.canSimulate(s, s.gig), G.simReason(s)], [true, true, null]);
   for (const kind of ['botb', 'festival', 'final']) { const t = simCareer(); t.gig.showdown = { kind, id: 'x' }; eq([G.canSimulate(t), G.simReason(t)], [false, 'showdown'], kind); }
   const f = simCareer(); f.gig.festival = true; eq([G.canSimulate(f), G.simReason(f)], [false, 'festival'], 'tour festival slot');
-  for (const kind of ['sameNight', 'stolenSlot', 'final']) {
+  for (const kind of ['sameNight', 'final']) {
     const p = simCareer(); GA.rival.get(p).pending = { kind, week: p.totalWeek, id: 'p', status: 'set' };
     eq([G.canSimulate(p), G.simReason(p)], [false, 'rival'], 'pending ' + kind);
     GA.rival.get(p).pending.week = p.totalWeek - 1; ok(G.canSimulate(p), 'last week\'s pending is gone: ' + kind);
+  }
+  // review fix: a rival entry that does not ride on your regular gig never blocks it (owner A2: any regular gig)
+  for (const [kind, status] of [['stolenSlot', 'done'], ['stolenSlot', 'set'], ['botb', 'passed'], ['botb', 'offered'], ['festival', 'listed'], ['poach', 'card'], ['poach', 'done'], ['sameNight', 'done']]) {
+    const p = simCareer(); GA.rival.get(p).pending = { kind, week: p.totalWeek, id: 'p', status };
+    eq([G.canSimulate(p), G.simReason(p)], [true, null], 'regular gig with a ' + kind + '/' + status + ' entry this week');
   }
   const off = simCareer(); off.phase = 'plan'; eq(G.simReason(off), 'phase');
   const none = simCareer(); none.gig = null; eq(G.simReason(none), 'phase');
@@ -629,6 +634,26 @@ test('v1.3.1 canSimulate: a booked regular gig yes; every story show, a pending 
   const les = simCareer(); les.tutorial = { on: true, done: {}, past4: false }; les.stats.gigs = 0; eq(G.simReason(les), 'lesson');
   les.stats.gigs = 1; ok(G.canSimulate(les), 'the lessons run, but this is not the first gig');
   les.tutorial.on = false; les.stats.gigs = 0; ok(G.canSimulate(les), 'lessons off: the first gig can be simulated');
+});
+
+test('v1.3.1 canSimulate (review fix): real weeks: a passed BotB, an unbooked festival, a stolen slot, a poach card leave the regular gig simulable; a same-night blocks', () => {
+  for (const kind of ['botb', 'festival', 'stolenSlot', 'poach', 'sameNight']) {
+    const s = GA.career.newCareer({ seed: 606, player: { name: 'Pat' } });
+    GA.career.startWeek(s); GA.career.setPlan(s, ['rest', 'rest', 'rest']); GA.career.runWeek(s, { autoGig: true }); GA.career.endWeek(s);
+    Object.assign(s, { gig: null, fans: 800, buzz: 30, fund: 3000, protected: false, era: 'local', totalWeek: 40, year: 2, week: 16, weekStart: null });
+    if (s.tutorial) s.tutorial.on = false;
+    GA.career.startWeek(s); if (s.card && !s.card.resolved) GA.career.resolveCard(s, 0);
+    GA.rival.schedule(s, kind, kind === 'poach' ? s.members.find(m => !m.isPlayer).id : undefined);
+    if (s.card && !s.card.resolved) GA.career.resolveCard(s, 0);
+    if (kind === 'botb') ok(GA.rival.pass(s), 'pass the battle');
+    GA.career.pickListing(s, s.listings.find(l => !l.showdown && !l.festival).id); GA.career.setPlan(s, ['book', 'rest', 'rest']); GA.career.runWeek(s);
+    ok(s.phase === 'gig' && !s.gig.showdown && GA.rival.pending(s), kind + ': a regular gig booked in a rival week');
+    if (kind === 'sameNight') { eq(GA.gig.simReason(s), 'rival', 'same-night rides on your gig'); continue; }
+    eq(GA.gig.simReason(s), null, kind + '/' + GA.rival.pending(s).status + ': simulable');
+    const S = GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'easy' }), n = (s.showdowns || []).length;
+    GA.career.finishGig(s, GA.gig.simShow(S, GA.gig.simBot(s, S.difficulty)));
+    ok(s.phase === 'wrap' && s.lastGig.simulated && !s.lastGig.showdown && (s.showdowns || []).length === n, kind + ': applied as a regular gig, no showdown');
+  }
 });
 
 test('v1.3.1 simBot: the band\'s level with < 2 played gigs of this seat, your own average with >= 2; same difficulty first; pure', () => {
