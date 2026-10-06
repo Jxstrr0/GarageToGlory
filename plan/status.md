@@ -397,6 +397,16 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] review (2 lenses: 1 major + 3 minors fixed); owner check: ship (7 screenshots); PR #25 to `main` — 2026-10-05
 - Leftovers: owner deletes `wip-v131-g`, `wip-v131-s` (+ `wip-v13-*`, `wip-v12-*`, `wip-v11-*` if still there) on GitHub.
 
+## Addendum 7 (v1.4 "Tuning") — decisions (owner popups, 2026-10-06; locked)
+- Next = **v1.4 Tuning** (handoff D5: balance + playtest pass, no new features). Pain point #1: **money**: **too tight early**
+  (years 1-2) and **gig pay feels off**. Plays mostly bass + drums ("A/B"); tuning still covers all four seats.
+- Method: measure first (money map + bot probes per seat, years 1-3; scratch `v14/` reports), then 3 options (gentle /
+  medium / strong) re-measured, owner picks in a popup, then build. Must not make years 3+ too easy.
+
+## Addendum 7 — pending
+- [ ] money map + bot probes + 3 options (workflow `v14-money-probe`) -> owner popup
+- [ ] build the chosen option, re-probe, full tests, owner check, PR
+
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
 - Build: `node build.js` → dist/. ORDER rule: 01_ns, 02_contracts, content/*.js, then other src/*.js by name.
