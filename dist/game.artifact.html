@@ -27455,7 +27455,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (t >= hend) endHold(hl, hend);
         else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.1) * dt * cur.staleMul);
       }
-      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
+      if (dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];

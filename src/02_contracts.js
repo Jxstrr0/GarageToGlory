@@ -663,7 +663,7 @@
   //     chart keys holds, chords, runs, kinds, genre, tail, fills[].cap / shred; S.release(lane, t), S.holding, S.seat; SONG_RESULT
   //     adds seat, holds, rings, held, bends (lead seat at amp tier 2), and on the lead seat solo, dur, soloNotes, allNotes;
   //     roles(state).drummer is non-enumerable (the drum seat's roles object equals v1.0's). economy.gig.live adds flowGain,
-  //     holdGain, ringGain, ringAt, seatDensityClamp, bendGain.
+  //     holdGain, ringGain, ringAt, seatDensityClamp, bendGain. (v1.4 M2: flowGain applies on every seat, the drums too.)
   //   GG.songs (21): part.{ ROWS, key(seat), choices(genre, seat, section), suggest, sanitize, full, toggle, pick, MODS, modify
   //     (lock | double | ring | call), notes }, partRating(pattern, genre), PART_WEIGHT { groove, hook, difficulty }, rate().part =
   //     { groove, hook, tips }; similarity scales by part likeness; create gives string-seat songs a part (seeded per song id).

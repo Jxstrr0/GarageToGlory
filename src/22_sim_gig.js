@@ -31,7 +31,7 @@
 //   chart.holds / chords / runs / kinds / genre / tail, fills[].cap (+ shred) ; RUN_GAP, HOLD_BEATS, STR_LANES ; the
 //   session on a string seat: S.release(lane, t) -> { lane, held, ring } ('gig:hold'), S.holding(lane) -> NOTE|null, S.seat,
 //   2-lane chords (one note, both lanes in the window; one lane = a Good), a flow crowd (economy.gig.live flowGain,
-//   holdGain, ringGain, ringAt, seatDensityClamp), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
+//   holdGain, ringGain, ringAt, seatDensityClamp; v1.4: the flow warms the crowd on every seat), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
 //   soloNotes, allNotes) ; botPlay holds every hold to its end and taps both lanes of a chord.
 // v1.3.1 "Simulate" (plan_1.3.1 §1.1): canSimulate / simReason / simBot / simSong / simFinish / simShow (see the block at the
 //   end): a regular gig played headlessly at your own recent average; applyResult logs PLAYED live gigs in state.playLog.
@@ -911,9 +911,11 @@
         if (t >= hend) endHold(hl, hend);
         else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.1) * dt * cur.staleMul);
       }
-      // v1.1 flow (string seats): while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part
-      // (country boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit.
-      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
+      // v1.1 flow: while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part (country
+      // boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit. v1.4 (M2 "Fair
+      // grades"): every seat, the drums too (it was string seats only, so the same hit share drew a smaller crowd and a
+      // lower grade on the kit: about -1.2 score, up to -3.2 at 72% on Easy); per-note gains were already per second.
+      if (dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];

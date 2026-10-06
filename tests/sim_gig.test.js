@@ -733,7 +733,8 @@ test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the old
   eq([s.playLog.length, s.playLog[0].diff, s.playLog[4].wk], [GA.contracts.PLAY_LOG_MAX, 'hard', s.totalWeek], 'the last 5 played, newest last');
   const q = simCareer('drums', 22); GA.gig.autoResolve(q, GA.RNG(1)); ok(!('playLog' in q), 'the v0.1 auto-resolve (bots, balance) is not a played gig');
   // played-gig fingerprint (playLog aside). v1.4 re-pin (intended, supersedes v1.3.1's "played gigs match 1.3.0"): the
-  // v1.4 money rules move pay and fund (Legion card pay $80 -> $130, grade pay, start fund $450).
+  // v1.4 money rules move pay and fund (Legion card pay $80 -> $130, grade pay, start fund $450); v1.4 M2 (the crowd's
+  // flow on every seat) moves the drum rows only: drums/easy 72 -> 75 (= bass 75), drums/hard 64 B -> 65 A (= bass 65 A).
   const fp = [];
   for (const seat of ['drums', 'bass']) for (const d of ['easy', 'hard']) {
     const t = GA.career.newCareer({ seed: 11, bandId: 'hail_damage', seat, player: { name: 'Fp' } }); t.phase = 'gig'; t.gig = GA.gig.makeGig(t, 'legion_63', 'book');
@@ -741,7 +742,7 @@ test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the old
     GA.career.finishGig(t, rr); const u = JSON.parse(JSON.stringify(t)); delete u.playLog;
     fp.push(seat + '/' + d + ':' + GA.hashSeed(JSON.stringify(rr) + '|' + JSON.stringify(u)));
   }
-  eq(fp.join(' '), 'drums/easy:2392819971 drums/hard:369121013 bass/easy:398286011 bass/hard:2109029357');
+  eq(fp.join(' '), 'drums/easy:1973364824 drums/hard:1896319776 bass/easy:398286011 bass/hard:2109029357');
 });
 
 done('sim_gig');
