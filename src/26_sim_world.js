@@ -41,6 +41,10 @@
     maxTier: 2,                  // v0.3: DIY + bars & clubs
     kmSoft: 150,                 // a venue this far from home is half as likely to be listed
     gasPerKm: 0.25, gasMin: 5,   // $ per km driven (there and back); city driving costs gasMin
+    // v1.4 (M1; economy.world sets them): gas x gasEra.garage in the garage era, from Local Heroes x (1 - (1 - gasEra.local)
+    // x career.earlyMoney) (fades to x1); exposure deals take exposureGas off the gas; tier pay x tierPay[tier]; tierStep
+    // { flat, door }: a boosted tier-1 pay stops at the step, tier-2 pay starts at it (moving up never pays less).
+    gasEra: { garage: 1, local: 1 }, exposureGas: 0, tierPay: { 1: 1, 2: 1, 3: 1 }, tierStep: null,
     repPay: 0.06, repWeight: 0.35,
     repDelta: { S: 2, A: 1, B: 0, C: 0, D: -2 },
     repRange: [-3, 3], banAt: -3, rebookAt: 2,
@@ -130,9 +134,26 @@
     return r.length > 1 ? paths().hw[r[r.length - 2]][r[r.length - 1]] || paths().hw[r[0]][r[1]] || '' : '';
   };
   world.home = function (state) { return world.cityId(state && state.city) || 'saskatoon'; };
+  // v1.4 (M1): the early-money gas factor (1 = full price). Garage: gasEra.garage; from Local Heroes: gasEra.local fading
+  // to 1 with career.earlyMoney (no cliff at signing).
+  world.gasMult = function (state) {
+    var E = cfg().gasEra || {}, era = state && state.era;
+    if (!era || era === 'garage') return E.garage != null ? E.garage : 1;
+    var e = GG.career && GG.career.earlyMoney ? GG.career.earlyMoney(state) : 0;
+    return 1 - (1 - (E.local != null ? E.local : 1)) * e;
+  };
   world.gasFor = function (state, city) {
     var K = cfg();
-    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm));
+    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm * world.gasMult(state)));
+  };
+  // v1.4 (M1): a headline deal's pay at a venue tier: x tierPay[tier] (small rooms pay more), then the tier step (when
+  // set for the deal): a boosted tier-1 pay never passes max(its own pay, the step) and a tier-2 pay never falls below
+  // the step, so moving up a tier never pays less. Unrounded (callers round as before). Opening slots don't use it.
+  world.tierPay = function (tier, deal, pay) {
+    var K = cfg(), m = (K.tierPay || {})[tier] || 1, step = K.tierStep && K.tierStep[deal], p = (pay || 0) * m;
+    if (step == null || deal === 'exposure' || !(pay > 0)) return p;
+    if (tier <= 1) return m > 1 ? Math.min(p, Math.max(pay, step)) : p;
+    return tier === 2 ? Math.max(p, step) : p;
   };
   // Seasons by week of year (v0.6.1 contracts C.SEASONS via GG.calendar): summer 23–4, fall 5–10, winter 11–16, spring 17–22.
   world.season = function (week) {
@@ -230,6 +251,7 @@
     var v = venueById(g.venueId) || {}, fit = fitOf(v, state.genre);
     g.km = world.km(world.home(state), g.city);
     g.gas = world.gasFor(state, g.city);
+    if (g.deal === 'exposure' && cfg().exposureGas) g.gas = Math.max(0, g.gas - cfg().exposureGas);   // v1.4 (M1): the host chips in for gas
     if (g.catch == null) g.catch = v.catch || '';
     if (g.minFans == null) g.minFans = v.minFans >= CARD_ONLY ? 0 : (v.minFans || 0);
     g.fit = Math.round(fit * 100) / 100;
@@ -254,8 +276,9 @@
       var range = (v.payRange && v.payRange[deal]) || [v.pay || 0, v.pay || 0];
       var mult = Math.max(0.5, 1 + K.repPay * rep) * (fit < K.clashFit && deal === 'flat' ? K.hazardPay : 1)
         * (GG.calendar ? GG.calendar.payMult(state, v) : 1);   // v0.6.1: NYE double pay, party + pub circuits
-      pay = deal === 'door' ? Math.round(rng.range(range[0], range[1]) * mult * 2) / 2
-        : Math.round(rng.int(range[0], range[1]) * mult / 5) * 5;
+      // v1.4 (M1): the tier rule (world.tierPay) on the rolled pay, before rep / hazard / calendar (same rng draws as 1.3)
+      pay = deal === 'door' ? Math.round(world.tierPay(v.tier, deal, rng.range(range[0], range[1])) * mult * 2) / 2
+        : Math.round(world.tierPay(v.tier, deal, rng.int(range[0], range[1])) * mult / 5) * 5;
     }
     var g = { id: opts.id || null, venueId: v.id, name: v.name, city: v.city, tier: v.tier, kind: v.kind, capacity: v.capacity,
       deal: deal, pay: pay, gas: 0, quirk: v.quirk || '', source: opts.source || 'book', catch: v.catch || '',

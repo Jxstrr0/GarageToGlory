@@ -339,12 +339,19 @@
     var cid = GG.world && GG.world.cityId ? GG.world.cityId(s.city) : null;
     return by[s.city] || (cid && by[cid]) || by[String(s.city).toLowerCase()] || null;
   }
+  // v1.4 (M3): a room with rentEarly costs that much a week until the band signs (garage / Local Heroes eras), then its
+  // rent: spaceDef(s, tier).rent is the price this week, .rentLater the price after signing (0 = no change ahead).
+  function rentNow(s, def) { return def.rentEarly != null && eraIdx(s && s.era) < eraIdx('signed') ? def.rentEarly : def.rent || 0; }
   S.spaceDef = function (s, tier) {
     var list = K().spaces, def = null;
     for (var i = 0; i < list.length; i++) if (list[i].tier === tier) def = list[i];
     def = def || list[0] || EMPTY.spaces[0];
     var loc = localOf(s, def.byCity) || {};
-    if (tier !== 0) return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier], name: loc.name || def.name, blurb: loc.blurb || def.blurb });
+    if (tier !== 0) {
+      var rn = rentNow(s, def);
+      return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier], name: loc.name || def.name, blurb: loc.blurb || def.blurb,
+        rent: rn, rentLater: rn !== (def.rent || 0) ? def.rent || 0 : 0 });
+    }
     var b = GG.career && GG.career.band ? GG.career.band(s) : null;
     return Object.assign({}, def, { id: (b && b.space) || 'parents_garage', name: (b && b.spaceName) || loc.name || def.name, blurb: loc.blurb || def.blurb });
   };
@@ -358,6 +365,7 @@
   S.canMove = function (s, tier) {
     var def = K().spaces.filter(function (x) { return x.tier === tier; })[0];
     if (!def) return fail('No such space.');
+    def = S.spaceDef(s, tier);   // v1.4 (M3): this week's rent
     if (tier === (s.spaceTier || 0)) return fail('You rehearse here already.');
     if (tier > S.availableTier(s)) return fail('Opens in ' + eraName(def.era) + '.');
     if (def.rent && s.fund < def.rent) return fail('You need the first week\'s rent (' + money(def.rent) + ').');
@@ -379,7 +387,7 @@
     var avail = S.availableTier(s);
     return K().spaces.map(function (x) {
       var def = S.spaceDef(s, x.tier), c = S.canMove(s, x.tier);
-      return { tier: x.tier, id: def.id, name: def.name, blurb: def.blurb, rent: def.rent || 0, era: def.era, perk: U.clone(def.perk || {}),
+      return { tier: x.tier, id: def.id, name: def.name, blurb: def.blurb, rent: def.rent || 0, rentLater: def.rentLater || 0, era: def.era, perk: U.clone(def.perk || {}),
         current: x.tier === (s.spaceTier || 0), available: x.tier <= avail, can: c.ok, why: c.ok || x.tier === s.spaceTier ? '' : c.why };
     });
   };

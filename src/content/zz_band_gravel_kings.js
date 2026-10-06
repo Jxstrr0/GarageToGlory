@@ -1413,10 +1413,10 @@
        ch('No solos in this band', { mood: { lenny: -10 } },
         'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')], { seat: ['drums', 'bass', 'rhythm'] }),
     card('shop_space_1_gravel_kings', 'money', 'gk_landlord', 'A Room with a Real Door', g({ era: LSW }),
-      "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $60 a week, and no nail salon on the other side " +
+      "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60), and no nail salon on the other side " +
       "of the wall. Mr. Petrenko says Unit 4B 'will always be here'. He means it as a threat and a comfort.",
-      [ch('Move in ($60/week)', { mood: { all: 4 }, shop: { move: 1 } },
-        "One van trip and three trips for Chase's mirrors. Trinh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $60/wk · rehearsals count more'),
+      [ch('Move in ($35/week)', { mood: { all: 4 }, shop: { move: 1 } },
+        "One van trip and three trips for Chase's mirrors. Trinh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $35/wk ($60 once signed) · rehearse better'),
        ch('Stay in Unit 4B for now', { chemistry: 2, mood: { chase: 3 } },
         "Chase is relieved. It stays 1985 in here. Gus brings over a space heater he 'fixed'. It works. It hums in B flat.", 'Free · move later from the shop door')]),
     card('shop_space_2_gravel_kings', 'money', 'tamara', 'A Studio of Our Own', g({ era: SW }),

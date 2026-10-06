@@ -1104,20 +1104,29 @@
     kind: 'full', cls: 'gigres', sticky: true,
     build: function (s, d) {
       var r = d.result, pay = r.deal === 'exposure' && !r.pay ? 'Exposure' : U.fmtMoney(r.pay || 0), rep = repText(r);
+      var moments = (r.moments || []).filter(function (k) { return k !== 'solo'; }).length;
       s.body.appendChild(el('div.gigres-head', [
         el('div.grade.big.' + r.grade, { testid: 'gig-grade' }, r.grade),
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
-          el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0))])
+          el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0)
+            + ' · ' + moments + (moments === 1 ? ' moment' : ' moments'))])
       ]));
       if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
+      // v1.4 (M1): the money row says where the pay goes: Pay (gross, a great show's bonus included) - the band's cut (the
+      // members' share, GG.drama.split) - gas; "Into the fund" = what actually landed (fill-ins, merch, management too).
+      var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
       s.body.appendChild(el('div.stat-grid', [
+        el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
+        el('div', [el('span.caps', 'Band\'s cut'), el('b', { testid: 'gig-cut' }, minus(r.cut || 0))]),
+        el('div', [el('span.caps', 'Gas'), el('b', minus(r.gas || 0))]),
         el('div', [el('span.caps', 'Crowd'), el('b', r.crowd + '/' + r.capacity)]),
-        el('div', [el('span.caps', 'Pay'), el('b', pay)]),
-        el('div', [el('span.caps', 'Gas'), el('b', r.gas ? '−' + U.fmtMoney(r.gas).replace('−', '') : '$0')]),
         el('div', [el('span.caps', 'Fans'), el('b.good', U.signed(r.fans || 0))]),
-        el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))]),
-        el('div', [el('span.caps', 'Moments'), el('b', String((r.moments || []).filter(function (k) { return k !== 'solo'; }).length))])
+        el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))])
       ]));
+      var net = r.deltas && r.deltas.fund != null ? r.deltas.fund : null;
+      if (net != null) s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net)),
+        el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
+          + (r.pay > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))]));
       if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
       s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),

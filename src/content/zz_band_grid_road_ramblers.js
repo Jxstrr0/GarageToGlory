@@ -1872,10 +1872,10 @@
           outcome: 'Earl returns the {sticks}. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
       ] },
     { id: 'shop_space_1_grid_road_ramblers', type: 'money', speaker: 'duke', title: 'A Room in Town', gate: g({ era: LSW }),
-      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $60 a week, " +
+      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $35 a week until you sign (then $60), " +
         "no horse. Uncle Vern is pretending not to listen from the tractor. Vern is listening.",
       choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One trip in {van}, three trips in Vern\'s grain truck. Vern waves from the yard. He sends Biscuit along "for security".' },
         { label: 'Stay in the Quonset', hint: 'Free · move later from the Quonset door', effects: { chemistry: 2, mood: { duke: -3 } },
           outcome: 'The Quonset it is. Vern brings out a new heater without a word, like a peace treaty. Doris is visibly relieved.' }

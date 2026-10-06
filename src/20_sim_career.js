@@ -1260,6 +1260,15 @@
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
+  // v1.4 (M1): how much of the early money help still applies (era gas, grade pay): 1 in the garage era, then a straight
+  // fade to 0 over economy.earlyTaper weeks after Local Heroes (milestones.localHeroes), whatever the era: no cliff at
+  // signing. A non-garage career without a Local Heroes week (should not happen) gets 0.
+  career.earlyMoney = function (state) {
+    if (!state || !state.era || state.era === 'garage') return 1;
+    var T = econ().earlyTaper, lh = state.milestones && state.milestones.localHeroes;
+    if (!(T > 0) || !(lh > 0)) return 0;
+    return U.clamp(1 - ((state.totalWeek || 0) - lh) / T, 0, 1);
+  };
   // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep) + v0.8 the
   // rehearsal space's rent (GG.shop.rent; tier 0 is free).
   career.upkeep = function (state) {

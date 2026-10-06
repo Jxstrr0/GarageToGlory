@@ -4,7 +4,7 @@
 (function (GG) {
   GG.content.economy = {
     // ---- Career start ----------------------------------------------------
-    startFund: 300, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts
+    startFund: 450, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts (v1.4 M1: $300 -> $450)
     startChemistry: 50, startBurnout: 10, startDrumSkill: 10,
     starterSongQuality: [30, 40], starterSongPolish: 25,
 
@@ -64,6 +64,10 @@
       // new fans = crowd * conversion[grade] * (0.5 + 0.5 * fit) * exposure bonus * local-scene headroom
       conversion: { S: 0.55, A: 0.4, B: 0.28, C: 0.15, D: 0.05 },
       exposureFanBonus: 1.3,
+      // v1.4 (M1, owner "Gigs pay, side jobs less"): a great show pays more: pay x gradePay[grade] (S x1.25, A x1.1; B, C
+      // and D x1: nobody is docked). Full in the garage era, then it fades with the rest of the early help (earlyTaper);
+      // a prize (BotB) is not scaled. 22_sim_gig gig.gradePayMult.
+      gradePay: { S: 1.25, A: 1.1 },
       localScene: 6000,                     // the garage-era scene isn't infinite
       buzz: { S: 6, A: 4, B: 2, C: 1, D: -2 },
       mood: { S: 3, A: 2, B: 1, C: -1, D: -3 },
@@ -121,7 +125,12 @@
     // ---- Eras (v0.5): garage -> local (250 fans, the v0.4 protection line) -> signed (a deal or a DIY album) -> world ----
     eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: true },   // v0.7: the World stage era is on (Steady pace)
     eraUpkeep: { garage: 0, local: 6, signed: 40, world: 50 },   // extra $/week: jam-space rent, a manager, insurance
-    hustleEra: { garage: 1, local: 1.3, signed: 2.2, world: 3 },   // hustle cash x: drum lessons and session work pay more once you're known
+    // hustle cash x: drum lessons and session work pay more once you're known. v1.4 (M1): side jobs pay less until Local
+    // Heroes and get no raise there (garage 1 -> 0.7, local 1.3 -> 1); signed and world unchanged.
+    hustleEra: { garage: 0.7, local: 1, signed: 2.2, world: 3 },
+    // v1.4 (M1, critic: no pay cliff at signing): the early help (era gas, grade pay) is full in the garage era, then fades
+    // in a straight line over this many weeks after Local Heroes (GG.career.earlyMoney 1 -> 0), whatever the era.
+    earlyTaper: 24,
 
     // ---- World (26_sim_world.js overrides, merged over its DEFAULTS) ----------------------------------------------
     world: {
@@ -132,7 +141,13 @@
       crew: { 3: 150 },          // $ per show by venue tier: sound, lights and a merch person (theatres)
       // v0.9 (owner Q1): the band's home ring is open from week 1, every other ring from Local Heroes. A home ring with fewer
       // than `min` small rooms (tier <= `tier`, minFans <= `minFans`) can't carry a garage band: the garage-era rings open too.
-      homeRooms: { min: 3, tier: 1, minFans: 60 }
+      homeRooms: { min: 3, tier: 1, minFans: 60 },
+      // v1.4 (M1) money (26_sim_world): small rooms pay more (tierPay: tier-1 pay x1.6, every era); moving up a venue tier
+      // never pays less (tierStep: a boosted tier-1 pay stops at the step, tier-2 pay starts at it: $150 flat, $2 a head);
+      // gas: x0.5 in the garage era, x0.8 at Local Heroes fading to x1 (earlyTaper); exposure gigs (open mics, house
+      // parties) cover exposureGas of the gas.
+      tierPay: { 1: 1.6 }, tierStep: { flat: 150, door: 2 },
+      gasEra: { garage: 0.5, local: 0.8 }, exposureGas: 40
     },
 
     // ---- Touring abroad (25_sim_tour.js, v0.7; merged over its DEFAULTS) --------------------------------------------
