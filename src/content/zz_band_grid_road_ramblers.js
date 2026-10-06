@@ -500,7 +500,7 @@
     { id: 'grr_truck_5_star', type: 'drama', speaker: 'bb_colt', title: 'Colt Comes Alone', chain: 'truck', step: 5,
       gate: g({ era: GLS, notFlags: ['truckWar'], flagEquals: { truckAd: 'star' } }),
       text: "Colt from Buckle & Boot shows up at the Quonset alone, on foot, carrying his guitar. It has never been plugged in. 'Brayden's real " +
-        "mad about the ad,' he says. 'Can Earl show me a G chord? Don't tell Brayden.'",
+        "mad about the ad,' he says. 'Can one of you show me a G chord? Don't tell Brayden.'",   // v1.4: seat-neutral (on the lead seat Earl is on the kit)
       choices: [
         { label: 'Earl teaches him a G', hint: 'Earl ↑ · a truce', effects: { mood: { earl: 8 }, chemistry: 3, flags: { truckWar: 'truce' }, chain: NEXT('truck', 6, 2) },
           outcome: 'Earl plugs Colt in for the first time. The G is loud. Colt jumps a foot. Then he plays it again. Then he cries. Duke hugs him.' },
