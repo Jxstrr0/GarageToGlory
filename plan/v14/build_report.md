@@ -127,4 +127,7 @@ Raw: `scratchpad/v14b/` (out_base, out_new, y6_*, bal10_*.txt, fair_final.txt).
 
 ## 8. Final suite run
 
-(filled below by the final run)
+`node build.js && node tests/run.js` at bee4cf7 (all source changes in): **SUITE ALL PASS** (36 files, incl. sim_money 8/8,
+sim_gig 37/37, sim_world 21/21, sim_shop 17/17, sim_career 25/25, sim_recap 6/6, sim_bands 17/17, compat_v12 10/10, save 22/22).
+Results screen screenshot check (Legion, S grade): 390x844 and 440x956, no horizontal scroll, "Into the fund: +$109 · the
+band takes 30% of the pay · a great show paid 25% more".
