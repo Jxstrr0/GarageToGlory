@@ -35,6 +35,7 @@ const path = require('path');
 const { open, checker, shotName } = require('./_pw');
 const CACHE = path.join(__dirname, '.cache');
 const ONLY = (process.env.META_ONLY || '').split(',').filter(Boolean);
+const GG_fmt = n => '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');   // U.fmtMoney for n >= 0
 const want = s => !ONLY.length || ONLY.includes(s);
 const tid = id => `[data-testid="${id}"]`;
 const tap = (page, id) => page.locator(tid(id)).last().click();
@@ -175,6 +176,11 @@ async function gig() {
     c.ok(res.r && res.r.live && res.r.songResults.length === 4 && res.r.songResults[0].perfect >= 2, 'live GIG_RESULT with my taps in song 1');
     c.ok(res.live === null && res.gigs === 1 && res.grade === res.r.grade && res.reacts === 4 && !res.playing, 'results: applied, grade shown, 4 reactions, audio stopped');
     c.ok((await audit(page)).length === 0, 'results layout ' + (await audit(page)).join('; '));
+    // v1.4 (M1): the money row says where the pay goes: Pay, the band's cut (members' share), gas, and what landed in the fund
+    const money = await page.evaluate(() => { const q = id => (document.querySelector('[data-testid="' + id + '"]') || {}).textContent || null, r = GG.state.lastGig;
+      return { pay: q('gig-pay'), cut: q('gig-cut'), net: q('gig-net'), r: { pay: r.pay, cut: r.cut, fund: r.deltas && r.deltas.fund } }; });
+    c.ok(money.cut === (money.r.cut ? '−' + GG_fmt(money.r.cut) : '$0') && money.net && money.net.indexOf('Into the fund') === 0 && money.net.indexOf(GG_fmt(Math.abs(money.r.fund)).slice(1)) > 0,
+      "results: Pay, the band's cut and what went into the fund " + JSON.stringify(money));
     await tap(page, 'btn-gig-done');
     await page.waitForFunction(() => window.__done !== null, null, { timeout: 3000 });
     const after = await page.evaluate(() => ({ stack: GG.debug('ui').stack, open: GG.debug('gigui').open, grade: window.__done.grade, gig: GG.state.gig }));
