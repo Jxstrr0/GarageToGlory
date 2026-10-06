@@ -406,8 +406,22 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - Method: measure first (money map + bot probes per seat, years 1-3; scratch `v14/` reports), then 3 options (gentle /
   medium / strong) re-measured, owner picks in a popup, then build. Must not make years 3+ too easy.
 
+- Study (2026-10-06, `plan/v14/`: money_map, probe_baseline, proposal, critic + `human.js` gig-first persona): bots dodge the
+  squeeze by Hustling (~11 blocks/yr); a gig-first player is broke (year-1 parents' loan: drums 98%, bass 95%). No money rule
+  differs by seat: drums trail because the drum chart has ~2x the notes, so the same accuracy earns a lower grade + less pay.
+- Owner popup (2026-10-06, all recommended): **M1 = "Gigs pay, side jobs less"** (the critic's B+): start $450; small rooms
+  pay +60%; gas half price until Local Heroes and 80% until signed; open mics cover $40 of gas; a great show pays up to +25%,
+  nobody docked; ride $200, pedal $250; Hustle pays 30% less until Local Heroes (no raise there); the results screen shows the
+  band's cut. Target (gig-first, year 1): drums ~53% loans / 4.5 weeks < $100, bass ~40% / 3.5; Hustle-heavy ~0% / 0.5;
+  years 4-6 unchanged. **M2 = "Fair grades"**: the gig grade compares you to what's possible on YOUR instrument, so the same
+  accuracy earns the same grade and pay on any seat; charts unchanged. **M3 = jam room cheaper until signed** (~$35/wk, then
+  the normal $60).
+- Also from the critic (no popup needed, fix in the build): moving up a venue tier must never pay less (tier-1 x1.6 overlaps
+  tier-2); no visible pay drop at signing (taper the early boosts across Local Heroes -> signed); re-pinning the played-gig
+  fingerprint is now intended (supersedes v1.3.1's "played gigs match 1.3.0") and must be logged.
+
 ## Addendum 7 — pending
-- [ ] money map + bot probes + 3 options (workflow `v14-money-probe`) -> owner popup
+- [x] money map + bot probes + 3 options + critic (`plan/v14/`) -> owner popup M1-M3 (2026-10-06)
 - [ ] build the chosen option, re-probe, full tests, owner check, PR
 
 ## Tech

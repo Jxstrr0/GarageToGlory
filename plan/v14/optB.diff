@@ -1,0 +1,99 @@
+diff --git a/src/22_sim_gig.js b/src/22_sim_gig.js
+index f116243..46f74a4 100644
+--- a/src/22_sim_gig.js
++++ b/src/22_sim_gig.js
+@@ -167,6 +167,8 @@
+   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
+   gig.applyResult = function (state, r) {
+     if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
++    var gp = G().gradePay;   // v1.4: a great show pays more than a bad one (the prize is not scaled)
++    if (r.pay > 0 && gp && !r.gradePaid && (!G().gradePayEras || G().gradePayEras.indexOf(state.era) >= 0)) { var pz = r.prize || 0; r.pay = Math.round((r.pay - pz) * (gp[r.grade] || 1)) + pz; r.gradePaid = true; }
+     if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
+     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
+     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
+diff --git a/src/26_sim_world.js b/src/26_sim_world.js
+index 6f663c7..af5f47b 100644
+--- a/src/26_sim_world.js
++++ b/src/26_sim_world.js
+@@ -40,7 +40,7 @@
+     listings: [3, 6],            // gigs on the board each week (fewer when not enough venues are in reach)
+     maxTier: 2,                  // v0.3: DIY + bars & clubs
+     kmSoft: 150,                 // a venue this far from home is half as likely to be listed
+-    gasPerKm: 0.25, gasMin: 5,   // $ per km driven (there and back); city driving costs gasMin
++    gasPerKm: 0.25, gasMin: 5, gasEra: { garage: 1, local: 1, signed: 1, world: 1 }, tierPay: { 1: 1, 2: 1, 3: 1 }, exposureGas: 0,   // $ per km driven (there and back); city driving costs gasMin
+     repPay: 0.06, repWeight: 0.35,
+     repDelta: { S: 2, A: 1, B: 0, C: 0, D: -2 },
+     repRange: [-3, 3], banAt: -3, rebookAt: 2,
+@@ -132,7 +132,7 @@
+   world.home = function (state) { return world.cityId(state && state.city) || 'saskatoon'; };
+   world.gasFor = function (state, city) {
+     var K = cfg();
+-    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm));
++    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm * ((K.gasEra || {})[state && state.era] || 1)));
+   };
+   // Seasons by week of year (v0.6.1 contracts C.SEASONS via GG.calendar): summer 23–4, fall 5–10, winter 11–16, spring 17–22.
+   world.season = function (week) {
+@@ -230,6 +230,7 @@
+     var v = venueById(g.venueId) || {}, fit = fitOf(v, state.genre);
+     g.km = world.km(world.home(state), g.city);
+     g.gas = world.gasFor(state, g.city);
++    if (g.deal === 'exposure' && cfg().exposureGas) g.gas = Math.max(0, g.gas - cfg().exposureGas);   // v1.4: the host chips in for gas
+     if (g.catch == null) g.catch = v.catch || '';
+     if (g.minFans == null) g.minFans = v.minFans >= CARD_ONLY ? 0 : (v.minFans || 0);
+     g.fit = Math.round(fit * 100) / 100;
+@@ -253,7 +254,8 @@
+     else if (deal !== 'exposure') {
+       var range = (v.payRange && v.payRange[deal]) || [v.pay || 0, v.pay || 0];
+       var mult = Math.max(0.5, 1 + K.repPay * rep) * (fit < K.clashFit && deal === 'flat' ? K.hazardPay : 1)
+-        * (GG.calendar ? GG.calendar.payMult(state, v) : 1);   // v0.6.1: NYE double pay, party + pub circuits
++        * (GG.calendar ? GG.calendar.payMult(state, v) : 1)   // v0.6.1: NYE double pay, party + pub circuits
++        * ((K.tierPay || {})[v.tier] || 1);   // v1.4: small rooms pay more
+       pay = deal === 'door' ? Math.round(rng.range(range[0], range[1]) * mult * 2) / 2
+         : Math.round(rng.int(range[0], range[1]) * mult / 5) * 5;
+     }
+diff --git a/src/content/economy.js b/src/content/economy.js
+index 630d5db..59a44f7 100644
+--- a/src/content/economy.js
++++ b/src/content/economy.js
+@@ -4,7 +4,7 @@
+ (function (GG) {
+   GG.content.economy = {
+     // ---- Career start ----------------------------------------------------
+-    startFund: 300, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts
++    startFund: 400, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts
+     startChemistry: 50, startBurnout: 10, startDrumSkill: 10,
+     starterSongQuality: [30, 40], starterSongPolish: 25,
+ 
+@@ -64,6 +64,7 @@
+       // new fans = crowd * conversion[grade] * (0.5 + 0.5 * fit) * exposure bonus * local-scene headroom
+       conversion: { S: 0.55, A: 0.4, B: 0.28, C: 0.15, D: 0.05 },
+       exposureFanBonus: 1.3,
++      gradePay: {S: 1.25, A: 1.1, B: 1, C: 1, D: 0.9}, gradePayEras: ['garage','local'],   // v1.4: gig pay x by grade
+       localScene: 6000,                     // the garage-era scene isn't infinite
+       buzz: { S: 6, A: 4, B: 2, C: 1, D: -2 },
+       mood: { S: 3, A: 2, B: 1, C: -1, D: -3 },
+@@ -132,7 +133,8 @@
+       crew: { 3: 150 },          // $ per show by venue tier: sound, lights and a merch person (theatres)
+       // v0.9 (owner Q1): the band's home ring is open from week 1, every other ring from Local Heroes. A home ring with fewer
+       // than `min` small rooms (tier <= `tier`, minFans <= `minFans`) can't carry a garage band: the garage-era rings open too.
+-      homeRooms: { min: 3, tier: 1, minFans: 60 }
++      homeRooms: { min: 3, tier: 1, minFans: 60 },
++      tierPay: {1: 1.4, 2: 1, 3: 1}, gasEra: {garage: 0.6, local: 0.8, signed: 1, world: 1}, exposureGas: 25   // v1.4 money
+     },
+ 
+     // ---- Touring abroad (25_sim_tour.js, v0.7; merged over its DEFAULTS) --------------------------------------------
+diff --git a/src/content/shop.js b/src/content/shop.js
+index b3c823f..69c1150 100644
+--- a/src/content/shop.js
++++ b/src/content/shop.js
+@@ -30,8 +30,8 @@
+       { id: 'toms', name: 'Rack tom + floor tom', lane: 5, cost: 450, era: 'garage',
+         blurb: 'Two pawn-shop toms from two different kits. Lane 5: fills that roll down the kit.' },
+       { id: 'ride', name: 'Ride cymbal', names: { metal: 'China cymbal', punk: 'China cymbal', rock: 'Ride cymbal', country: 'Ride cymbal' },
+-        lane: 6, needs: 'toms', cost: 350, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
+-      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 300, era: 'garage',
++        lane: 6, needs: 'toms', cost: 200, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
++      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 250, era: 'garage',
+         blurb: 'Both feet on the kick. The kick lane can hit every 16th. Your calves file a complaint.' }
+     ],
+     kit: [
