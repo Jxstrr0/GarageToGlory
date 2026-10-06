@@ -400,6 +400,9 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 ## Addendum 7 (v1.4 "Tuning") — decisions (owner popups, 2026-10-06; locked)
 - Next = **v1.4 Tuning** (handoff D5: balance + playtest pass, no new features). Pain point #1: **money**: **too tight early**
   (years 1-2) and **gig pay feels off**. Plays mostly bass + drums ("A/B"); tuning still covers all four seats.
+- Owner follow-up (2026-10-06, verbatim): **"Drums felt worse tbh"**: the early money squeeze is worse on the DRUM seat than on
+  bass. Proposals must explain the drums-vs-bass gap (e.g. drum gear/kit prices, lanes/pedal costs, drum-seat pay or costs)
+  and fix drums first; every option's tables show drums and bass side by side.
 - Method: measure first (money map + bot probes per seat, years 1-3; scratch `v14/` reports), then 3 options (gentle /
   medium / strong) re-measured, owner picks in a popup, then build. Must not make years 3+ too easy.
 
