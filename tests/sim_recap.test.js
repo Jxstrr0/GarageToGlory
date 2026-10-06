@@ -85,7 +85,9 @@ test('awards, quits and returns, regions, licensing, a new era: all in the recap
 });
 
 test('year one: the bandmates explain a good year (Marcel, Dana, Jaxon, Mom; Kenji nods); later years don\'t', () => {
-  const GG = fresh(), s = GG.career.newCareer({ seed: 12, player: { name: 'T' } });
+  // v1.4 re-pin: seed 12 -> 13 (with the v1.4 money the seed-12 avg bot hits Local Heroes in week 19 and Marcel + Dana quit
+  // in weeks 22-24, so no full band is left to explain the year; seeds 1-30: 25 give all five lines)
+  const GG = fresh(), s = GG.career.newCareer({ seed: 13, player: { name: 'T' } });
   const r = botYear(GG, s).recap, gy = GG.recap.goodYear(s, r);
   eq(gy.map(g => g.who), ['marcel', 'dana', 'jaxon', 'mom', 'kenji']);
   ok(gy.every(g => g.text && !/\{/.test(g.text) && typeof g.good === 'boolean'), 'filled lines');
