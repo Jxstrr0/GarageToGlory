@@ -40904,7 +40904,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return PREFS;
   };
   function devRatio() { return (typeof window !== 'undefined' && window.devicePixelRatio) || 1; }
-  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio()); }
+  function wideNow() { return !!(GG.ui && GG.ui.wide && GG.ui.wide()); }
+  function pxCap() {
+    if (!wideNow() || !GG.prefs || !GG.prefs.pxBudget || typeof window === 'undefined') return Infinity;
+    var w = (container && container.clientWidth) || window.innerWidth || 1, h = (container && container.clientHeight) || window.innerHeight || 1;
+    return GG.prefs.pxBudget(w, h, true);
+  }
+  function pixelRatio() { return Math.min(R.prefs().pixelRatio, devRatio(), pxCap()); }
   R.applySettings = function () {
     var was = R.available && renderer ? renderer.getPixelRatio() : null;
     PREFS = null; R.prefs();
@@ -40915,6 +40921,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   if (GG.on) GG.on('settings:changed', function (p) {
     var k = (p && p.keys) || [];
     if (!k.length || k.indexOf('graphics') >= 0 || k.indexOf('cameraShake') >= 0 || k.indexOf('reducedFlash') >= 0) R.applySettings();
+  });
+  if (GG.on) GG.on('ui:wide', function () {
+    if (!R.available || !renderer) return;
+    var was = renderer.getPixelRatio();
+    needsResize = true; applyResize(); invalidate(2);
+    if (renderer.getPixelRatio() !== was) GG.emit('perf:quality', { pixelRatio: renderer.getPixelRatio(), reason: 'layout' });
   });
   R.RATIO_STEPS = RATIO_STEPS.slice();
   R.nextRatio = function (cur, p95, heldMs) {
@@ -40936,7 +40948,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var cur = null, curName = 'none';
   var paused = false, rafId = 0, lastTs = 0, clock = 0, frames = 0;
   var W = 1, H = 1, needsResize = true, contextLost = false;
-  var insets = { top: 56, bottom: -1 };   // bottom -1 = default (30% of the height, where UI sheets sit)
+  var insets = { top: 56, bottom: -1, left: 0, right: 0 };   // bottom -1 = default (30% of the height, where UI sheets sit); v1.5 left / right
   var lastState = null;
   var drawCalls = 0, triangles = 0;
   var labels = [];                        // every label sprite made by makeLabel (rescaled on resize)
@@ -41058,6 +41070,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     o = o || {};
     if (typeof o.top === 'number') insets.top = Math.max(0, o.top);
     if (typeof o.bottom === 'number') insets.bottom = o.bottom;
+    if (typeof o.left === 'number') insets.left = Math.max(0, o.left);     // v1.5
+    if (typeof o.right === 'number') insets.right = Math.max(0, o.right);
     if (R.available && cur && cur.resize) { cur.resize(W, H, true); invalidate(2); }
   };
 
@@ -41275,16 +41289,17 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     camera.clearViewOffset(); camera.updateProjectionMatrix();
     var pad = o.pad == null ? 14 : o.pad, top = insets.top;
     var bottom = insets.bottom < 0 ? Math.round(H * 0.3) : insets.bottom;
-    if (W > H) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape: little room for sheets
+    var wide = wideNow(), left = Math.min(insets.left, W / 2), right = Math.min(insets.right, W / 2), bandW = Math.max(80, W - left - right);
+    if (W > H && !wide) bottom = Math.min(bottom, Math.round(H * 0.12));    // landscape (a phone on its side): little room for sheets
     var bandH = Math.max(80, H - top - bottom);
     var lo = 1, hi = 150, box = measureBox;
     for (var i = 0; i < 26; i++) {
       var mid = (lo + hi) / 2;
-      if (measure(mid, o.points) && box.w <= W - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
+      if (measure(mid, o.points) && box.w <= bandW - 2 * pad && box.h <= bandH - 2 * pad) hi = mid; else lo = mid;
     }
     measure(hi, o.points);
     rig.goalDist = hi;
-    rig.goalOffX = (box.x0 + box.x1) / 2 - W / 2;
+    rig.goalOffX = (box.x0 + box.x1) / 2 - (left + bandW / 2);
     rig.goalOffY = (box.y0 + box.y1) / 2 - (top + bandH / 2);
     if (!o.animate || rig.snap) { rig.dist = rig.goalDist; rig.offX = rig.goalOffX; rig.offY = rig.goalOffY; rig.snap = false; }
     applyRig(rig.target.x, rig.target.y, rig.target.z);
@@ -42924,7 +42939,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   GG.registerDebug('render', function () {
     var d = { available: R.available, scene: cur ? curName : 'none', paused: paused, frames: frames, drawCalls: drawCalls, triangles: triangles };
-    if (R.available) { d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom }; }
+    if (R.available) {
+      d.viewport = { w: W, h: H }; d.insets = { top: insets.top, bottom: insets.bottom };
+      if (wideNow()) { d.insets.left = insets.left; d.insets.right = insets.right; }   // v1.5 (the phone fixtures keep { top, bottom })
+    }
+    var cap = pxCap(); d.pxBudget = isFinite(cap) ? Math.round(cap * 1000) / 1000 : null;   // v1.5
     if (cur && cur.debug) { var x = cur.debug(); for (var k in x) d[k] = x[k]; }
     return d;
   });
@@ -47411,6 +47430,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var tb = Math.tan(CF.bandFov * Math.PI / 360), minT = Math.tan(CF.minHFov * Math.PI / 360) * bandH / W;
       if (minT > tb) tb = minT;
       var tFull = tb * H / bandH;
+      if (GG.ui && GG.ui.wide && GG.ui.wide()) tFull = Math.min(tFull, Math.tan(50 * Math.PI / 180) * H / W);   // v1.5: hFov <= 100 deg (PC layout)
       cam.fov = 2 * Math.atan(tFull) * 180 / Math.PI; cam.aspect = W / H; cam.near = 0.1; cam.far = 90;
       if (K) ['crash', 'ride', 'hatTop'].forEach(function (k) { if (K[k]) K[k].visible = view !== 'spot'; });   // v1.1 review: the spot camera sits over the kit: its cymbals would fill the frame's edge
       camOffY = Math.round(H / 2 - (top + bandH / 2)); camFov = cam.fov;
@@ -48090,7 +48110,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           at: K.band.map(function (r) { return { id: r.id, x: +(r.x || 0).toFixed(2), y: +((r.y || K.hs) - K.hs).toFixed(2), z: +(r.z || 0).toFixed(2), tilt: +(r.tilt || 0).toFixed(2) }; }),
           kit: K.kitLook ? { shell: K.kitLook.shell, head: K.kitLook.head, throne: K.kitLook.throne, extras: K.kitLook.extras.slice(), art: !!K.kickArt,
             fan: !!K.fanBlades, arena: isArena(K.D), pyro: !!K.pyro, bursts: K.pyro ? K.pyro.bursts : 0 } : null,
-          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)) };   // v0.8
+          drummerV8: !!(GG.creator && K.drummerLook && GG.creator.isV8(K.drummerLook)),   // v0.8
+          vFov: +ctx.camera.fov.toFixed(1), hFov: +(2 * Math.atan(Math.tan(ctx.camera.fov * Math.PI / 360) * ctx.camera.aspect) * 180 / Math.PI).toFixed(1) };   // v1.5
       }
     };
     return shell;
@@ -61789,6 +61810,116 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 })(window.GG);
 
 </script>
+<script>/* 5w_ui_wide.js */
+(function (GG) {
+  if (typeof document === 'undefined') return;
+  var CSS = [
+    'html.gg-desk * { scrollbar-width: thin; scrollbar-color: #34426a transparent; }',
+    'html.gg-desk ::-webkit-scrollbar { width: 10px; height: 10px; }',
+    'html.gg-desk ::-webkit-scrollbar-track { background: transparent; }',
+    'html.gg-desk ::-webkit-scrollbar-thumb { background: #34426a; border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }',
+    'html.gg-desk button:not(:disabled):hover { filter: brightness(1.14); }',
+    'html.gg-desk button:not(:disabled):active { filter: brightness(.92); }',
+    'html.gg-desk .seq-grid .cell:hover { filter: brightness(1.35); }',
+    'html.gg-desk .tab:not(.on):hover { color: var(--text); }',
+
+    'html.gg-wide .hud-bar { max-width: 1120px; margin: 0 auto; }',
+    'html.gg-wide .hud-bar::after { content: ""; order: 8; flex: 0 0 100%; height: 0; margin-top: -4px; }',
+    'html.gg-wide .hud-cal { flex: 0 1 auto; margin: 0 auto; max-width: 100%; padding: 3px 14px; }',
+    'html.gg-wide .dock { left: max(16px, calc((100% - 1120px) / 2)); right: max(16px, calc((100% - 1120px) / 2)); align-items: center; }',
+    'html.gg-wide .dock > .btn { width: 480px; max-width: 100%; }',
+
+    'html.gg-wide .sheet { left: max(0px, calc((100% - 1120px) / 2)); right: max(0px, calc((100% - 1120px) / 2)); }',
+    'html.gg-wide .sheet-grip { display: none; }',
+    'html.gg-wide .sheet-head { padding: 14px 16px 8px 24px; min-height: 64px; }',
+    'html.gg-wide .sheet-head .sub { display: inline-block; margin: 0 12px 0 0; vertical-align: 3px; }',
+    'html.gg-wide .sheet-body { padding: 4px 24px 16px; }',
+    'html.gg-wide .sheet-foot { padding: 12px 24px 16px; justify-content: flex-end; }',
+    'html.gg-wide .sheet-foot > .btn.block { width: auto; flex: 0 1 420px; }',
+    'html.gg-wide .sheet-foot > .kb-hints { order: -1; flex: 0 1 auto; width: auto; margin-right: auto; text-align: left; }',
+    'html.gg-wide .modal { max-width: 420px; }',
+
+    'html.gg-wide .w2 { display: flow-root; --w2a: calc(50% - 12px); }',
+    'html.gg-wide .w2 > .w2-a { float: left; clear: left; width: var(--w2a); margin-top: 0; margin-bottom: 12px; }',
+    'html.gg-wide .w2 > .w2-b { width: auto; margin-left: calc(var(--w2a) + 24px); margin-top: 0; margin-bottom: 12px; }',
+    'html.gg-wide .w2 > span.w2-b, html.gg-wide .w2 > .w2-b.btn:not(.block) { display: flex; width: fit-content; }',
+    'html.gg-wide .gb-list.w2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }',
+    'html.gg-wide .gb-list.w2 > * { margin: 0; }',
+    'html.gg-wide .sheet-body > .stack.w2:has(> .acts) { --w2a: 400px; }',
+    'html.gg-wide .w2 > .acts { grid-template-columns: repeat(3, minmax(0, 1fr)); }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) { display: grid; grid-template-columns: 172px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); column-gap: 20px; align-content: start; }',
+    'html.gg-wide .sheet-body > .lt-tabs { grid-column: 1; grid-row: 1 / -1; align-self: start; position: sticky !important; top: 0 !important; padding: 0 !important; background: none !important; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) > :not(.lt-tabs) { grid-column: 2; min-width: 0; }',
+    'html.gg-wide .lt-tabs .tabs { flex-direction: column; gap: 2px; }',
+    'html.gg-wide .lt-tabs .tab { flex: 0 0 auto; min-height: 40px; padding: 0 14px; text-align: left; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; align-items: start; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > :not(.mem-card) { grid-column: 1 / -1; }',
+    'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > .mem-card { margin-bottom: 0; }',
+
+    'html.gg-wide .full:not(.gig):not(.title3d):not(.van):not(.loonies):not(.rvset) > .full-body,'
+      + ' html.gg-wide .full:not(.gig):not(.title3d):not(.van):not(.loonies):not(.rvset) > .full-foot { padding-left: max(16px, calc((100% - 1120px) / 2)); padding-right: max(16px, calc((100% - 1120px) / 2)); }',
+    'html.gg-wide .full:not(.seq) > .full-foot { align-items: center; }',
+    'html.gg-wide .full:not(.seq) > .full-foot > .btn.block { width: min(100%, 560px); }',
+    'html.gg-wide .full:not(.seq) > .full-foot > .kb-hints { width: 100%; }',
+    'html.gg-wide .title-wrap { max-width: 520px; margin-left: auto; margin-right: auto; }',
+    'html.gg-wide .presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }',
+
+    'html.gg-wide .full.seq .full-body.w2 { display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-rows: auto repeat(8, auto) minmax(0, 1fr);'
+      + ' column-gap: 24px; row-gap: 0; align-content: stretch; overflow-y: auto; }',
+    'html.gg-wide .full.seq .full-body.w2 > .w2-a { float: none; clear: none; width: auto; grid-column: 1; margin: 0 0 8px; min-width: 0; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-head { grid-column: 1 / -1; grid-row: 1; margin: 0 -6px 4px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .w2-b { grid-column: 2; grid-row: 2 / -1; margin: 0; min-height: 0; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-tabs { margin: 0; padding: 0; }',
+    'html.gg-wide .seq-grid[data-lanes="4"] { width: 100%; max-width: 516px; margin: 0 auto; }',
+    'html.gg-wide .seq-grid[data-lanes="5"] { width: 100%; max-width: 639px; margin: 0 auto; }',
+    'html.gg-wide .seq-grid[data-lanes="6"] { width: 100%; max-width: 762px; margin: 0 auto; }',
+    'html.gg-wide .full.seq:has(.seq-main) > .full-foot { padding-left: calc(max(16px, calc((100% - 1120px) / 2)) + 384px); }',
+    'html.gg-wide .quick-main.w2 > .qs-title { margin-bottom: 8px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach { flex: 0 0 auto; height: auto; min-height: 44px; padding: 8px 12px 8px 7px; border-radius: 16px; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach .sc-line { display: block; white-space: normal; line-height: 1.35; }',
+    'html.gg-wide .full.seq .full-body.w2 > .seq-coach .seq-tip { overflow: visible; }',
+
+    'html.gg-wide .set-wide { display: grid; grid-template-columns: 196px minmax(0, 1fr); column-gap: 28px; align-items: start; }',
+    'html.gg-wide .set-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 76px; }',
+    'html.gg-wide .set-rail > .btn { justify-content: flex-start; width: 100%; padding: 0 14px; border-color: transparent; text-transform: none; letter-spacing: .01em; font-size: 15px; }',
+    'html.gg-wide .set-main { min-width: 0; }',
+    'html.gg-wide .set-keys > .w2 > .w2-b > .set-keys-timing { margin-top: 0; }',
+    'html.gg-wide .layer.calib-docked { left: auto; right: max(16px, calc((100% - 1120px) / 2)); top: 16px; bottom: 16px; width: min(440px, calc(100% - 32px)); }',
+    'html.gg-wide .layer.calib-docked > .full { border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden; }',
+    'html.gg-wide.gg-keys .back-row > [data-testid="btn-back"] { margin-right: 34px; }',
+
+    'html.gg-wide .full.gig .full-body { align-items: center; }',
+    'html.gg-wide .full.gig .gig-top { align-self: stretch; }',
+    'html.gg-wide .full.gig .gig-hw { flex: 0 0 auto; width: clamp(calc(var(--lanes, 4) * 110px), 46vw, calc(var(--lanes, 4) * 140px)); max-width: calc(100% - 32px); height: clamp(300px, 48vh, 540px); min-height: 0; max-height: none;'
+      + ' margin: 0 0 16px; padding-bottom: 0; background: transparent; border: 0; border-radius: 16px; overflow: hidden; }',
+    'html.gg-wide .full.gig .gig-hw canvas { height: 100%; }',
+    'html.gg-wide .full.gig .gig-bar, html.gg-wide .full.gig .gig-crowd { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.gig .gig-mid { left: max(16px, calc((100% - 720px) / 2)); right: max(16px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.gig .gig-hint { right: auto; bottom: calc(16px + clamp(300px, 48vh, 540px) * .42); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="4"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(220px, 23vw, 280px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
+    'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
+
+    'html.gg-wide .full.van .full-body > .van-top, html.gg-wide .full.van .full-body > .van-says, html.gg-wide .full.van .full-body > .van-arrive { width: 100%; max-width: 440px; }',
+    'html.gg-wide .full.van > .full-foot { max-width: 472px; }',
+    'html.gg-wide .tw-map { width: min(100%, calc((100vh - 170px) * 100 / 72)); margin-left: auto; margin-right: auto; flex: 0 0 auto; }'
+  ].join('\n');
+
+  var tag = document.getElementById('gg-wide-css');
+  if (!tag) {
+    tag = document.createElement('style'); tag.id = 'gg-wide-css'; tag.textContent = CSS;
+    (document.head || document.documentElement).appendChild(tag);
+  }
+  function last() { var h = document.head; if (h && tag.parentNode === h && h.lastElementChild !== tag) h.appendChild(tag); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(last, 0); });
+  else setTimeout(last, 0);
+  GG.registerDebug('wide', function () {
+    var c = document.documentElement.classList;
+    return { wide: c.contains('gg-wide'), desk: c.contains('gg-desk'), css: !!document.getElementById('gg-wide-css'), last: !!(document.head && document.head.lastElementChild === tag) };
+  });
+})(window.GG);
+
+</script>
 <script>/* 60_main.js */
 (function (GG) {
   var M = GG.main = GG.main || {};
@@ -61826,6 +61957,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   GG.on('ui:stack', updateInsets);
   GG.on('ui:layout', updateInsets);
+  GG.on('ui:wide', function () { lastInsets = ''; updateInsets(); });
 
   M.sync = function () {
     if (GG.state) render('syncState', GG.state);

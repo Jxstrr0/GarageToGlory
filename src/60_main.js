@@ -48,6 +48,8 @@
   }
   GG.on('ui:stack', updateInsets);
   GG.on('ui:layout', updateInsets);
+  // v1.5 (Lane W): the PC layout came or went (html.gg-wide): the sheets changed width / height, so measure again
+  GG.on('ui:wide', function () { lastInsets = ''; updateInsets(); });
 
   // After any state change: 3D garage, HUD, dock.
   M.sync = function () {
