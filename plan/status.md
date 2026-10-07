@@ -458,8 +458,10 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - Owner: "Can we make an option to play on PC / Keyboard as well?"
 - K1 Scope: **gigs + menus** on the keyboard (Enter/Space confirm, Esc back/close, arrows/Tab move focus); the mouse keeps
   working everywhere; touch on phones unchanged.
-- K2 Gig keys: **rebindable**: home-row defaults (D F J K for 4 lanes, S and L added for 5-6 lanes, Space = kick on drums)
-  plus a Settings screen to set your own key per lane.
+- K2 Gig keys: **rebindable** (a Settings screen to set your own key per lane). Owner follow-up (verbatim): "Rebindable keys
+  but I like the idea of ASDF, Space, and maybe shift being default?" -> default set **A S D F + Space + Shift** (one hand on
+  ASDF, thumb on Space, pinky on Shift); the plan proposes the exact lane order per seat (e.g. drums: Space = kick) for the
+  owner to confirm. Replaces the D F J K popup default.
 - K3 Layout: **a wider PC layout** that uses the extra width (wider gig highway + stage view, menus side by side); phones
   keep today's layout exactly.
 - K4 Fairness: **same rules** for keys and touch (same timing windows and grades) + a keyboard lag calibration step.
