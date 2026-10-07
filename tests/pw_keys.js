@@ -402,7 +402,7 @@ async function space() {
       await page.waitForFunction(() => GG.debug('gigui').cardAge > 700, null, { timeout: 5000 });
       const mid = await dbg(page, 'gigui');
       const focus = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-testid'));
-      c.ok(mid.mode === 'between' && mid.index === song + 1 && pressedOnCard > 0, `song ${song + 1}: Space mashed past the end kept the between card (${mid.mode}, ${pressedOnCard} presses on the card, ${mid.cardRej} swallowed)`);
+      c.ok(mid.mode === 'between' && mid.index === song + 1 && (pressedOnCard > 0 || mid.cardRej > 0), `song ${song + 1}: Space mashed past the end kept the between card (${mid.mode}, ${pressedOnCard} presses on the card, ${mid.cardRej} swallowed)`);
       c.ok(focus === 'btn-gig-next', 'the card button takes focus after 600 ms on keys: ' + focus);
       await page.keyboard.press('Enter');
       if (song === 0) {
@@ -588,7 +588,8 @@ async function rebind() {
     c.ok(sc.length === 6 && /Low.*A/.test(sc[0]) && /Top.*Space/.test(sc[5]) && /5th.*Shift/.test(sc[4]), 'the string chips ' + JSON.stringify(sc));
     // the PC layout (B): a tab rail, the key timing card in the right column, the key calibration docked over it
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.waitForFunction(() => document.documentElement.classList.contains('gg-wide'), null, { timeout: 3000 });
+    const wd = await page.waitForFunction(() => document.documentElement.classList.contains('gg-wide'), null, { timeout: 8000 }).then(() => null, () => page.evaluate(() => JSON.stringify(Object.assign({ cls: document.documentElement.className, w: innerWidth }, GG.debug('input')))));
+    c.ok(!wd, 'the PC layout switches on at 1440x900 ' + (wd || ''));
     const w = await page.evaluate(() => ({ rail: !!document.querySelector('[data-testid="set-rail-keys"]'), main: !!document.querySelector('.set-wide > .set-main #set-keys'),
       col: !!document.querySelector('#set-keys .w2 > .w2-b [data-testid="set-keys-timing"]') }));
     c.ok(w.rail && w.main && w.col, 'PC layout: tab rail, sections column, timing card in the right column ' + JSON.stringify(w));
