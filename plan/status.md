@@ -30,8 +30,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26).
-- Next: **1.4 owner check + review + PR** (440x956 shots in the verifier's scratch `v14_owner/`). Still open from v1.3
-  (`plan/v13_integration_report.md` §8, not part of the owner's money picks): per-chord thirds, slider-song career balance.
+- Next: **1.5 "Desktop"** on `v1.5-desktop` (Addendum 8; contract `plan/plan_contract_1.5.md`): stage 0 done (VERSION 1.5.0.0,
+  `plan/v15_stage0_report.md`), lanes I / N / W next. Still open from v1.3 (`plan/v13_integration_report.md` §8): per-chord
+  thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -474,7 +475,11 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 
 ## Addendum 8 — pending
 - [x] plan `plan/plan_contract_1.5.md` (4 readers, writer, mockups, critic: 1 blocker + 8 majors applied) -> owner popup (2026-10-07)
-- [ ] build, verify (phone matrix unchanged + new desktop sizes), review, owner check, PR
+- [x] stage 0 (2026-10-07, `plan/v15_stage0_report.md`): phone freeze FIRST on the untouched 1.4.0.0 tree (`tools/phone_freeze.js`
+  -> `tests/fixtures/phone_freeze_390 / _440 / _844l.json`, `tests/pw_freeze.js`; a fixture change needs the lead + a reason logged
+  here), §2 re-audit, VERSION 1.5.0.0, 02 V1.5 block, 11 keys / calibKb / layout, `GG.input` (50b), `_pw` desktop, `keys.test`,
+  `wide_css.test`; package A deleted from the contract (B is the build)
+- [ ] lanes I, N, W -> merge, verify (phone matrix unchanged + new desktop sizes), review, owner check, PR
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
