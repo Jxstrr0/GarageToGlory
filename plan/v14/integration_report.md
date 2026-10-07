@@ -89,3 +89,49 @@ the $35 jam room, ride $200 / pedal $250 and an early-year fund all read right.
 
 ## 6. Next
 - Lead: fix finding 1 (or accept it), then owner check with the 440x956 shots (verifier scratch `v14_owner/`), review, PR.
+
+## 7. Review fixes (fixer, 2026-10-07; commits 50194e3 2cc7b57 4fa4464 a383a53 c74fe1d b707cbf a1316ed + this one)
+
+Review: 2 confirmed (major) + 6 minor (two are the same BotB line). All fixed or answered; plus integration finding 1 (the
+Hall of Fame overflow), which the money fix pushed to 440 as well.
+
+| finding | what was wrong | fix | test |
+|---|---|---|---|
+| **C1 (major)** early help on a fixed 24-week clock from Local Heroes | `career.earlyMoney` ignored signing: in half the gig-first drum careers (18 of 36) the 80% gas and the S/A bonus were gone before they signed; owner M1 says "80% until signed" | `earlyMoney = clamp((min(LH + 48, signed + 12) - week) / 12, 0, 1)`: full through the garage and Local Heroes eras, a 12-week fade after signing (the first 'signed' / 'world' eraHistory week, so a deal and a DIY album alike; else milestones.signed), a 48-week backstop for a band that never signs; at most 1/12 a week (no cliff). Content `economy.earlyTaper` 24 -> 12, new `earlyBackstop` 48 (content, not state; SAVE_SCHEMA 10; old saves read eraHistory / milestones) | `sim_money` "until signed, then no cliff" replaces "no pay cliff at signing" (before/after logged in 50194e3): deal + DIY walks over weeks 22-80, milestone and eraHistory fallbacks, the backstop, a late signing inside the backstop fade; gas + grade-pay tests read the new timing |
+| **C2 (major)** the results money row did not add up | "Into the fund" (r.deltas.fund) also held the fill-in fee, management 15%, crew, tow and merch; none was next to it, the fill-in fee nowhere on screen | `ui.gigFundParts(r)` names every part beside the net, right under the grid ("Into the fund: +$412 · management 15% −$155 · crew −$150 · the band takes 30% ..."); any rest shows as "other", so Pay − cut − gas + parts = the net always; "$0" shows when the fund did not move | new `pw_gig money` (21 checks): a signed theatre, a Local Heroes fill-in night and a garage BotB win played through `GG.ui.playGig`: the sum = the shown net = r.deltas.fund, each part shows its own amount, the line is above the fold, layout clean |
+| minor (x2) a BotB win claimed "a great show paid 25% more" | the bonus never scales a prize | the note needs `pay - prize > 0` (applyResult's base) | `pw_gig money` BotB case |
+| minor: BotB gas cover depended on the venue's deal roll | the listing was decorated with the rolled deal before `deal = 'exposure'` | gas recomputed after the deal is set (no rng draw) | `sim_rival` BotB asserts the $40 cover |
+| minor: "small rooms pay 60% more" ships as less | the tier step caps the boost (moving up never pays less) | accepted, no code (raising tierStep lifts tier-2 floors in every era, years 4-10). status.md and the owner check now state the measured averages: **+47% flat (28 rooms), +29% door (11 rooms; a $2-a-head room gets +0% at the top)** | node grid over every tier-1 range |
+| minor: HUD fund chip clipped "$1,0…" at 390 | pre-existing ellipsis (fans "9,999" too) | full amount at 14 px, then 12 px, else compact ($12.3k / $2.5M, 11 px last); exact amount in the chip's title and its toast | `pw_flow layout`: 7 fund and 3 fans values never clip |
+| minor: years 4-10 on one seed set | - | re-run on seeds 301-340 for all three trees (base, 1.4 pre-fix, fix) and pooled 80 seeds | below |
+| integration finding 1: HOF "Biggest room" overflow | latent; the until-signed money moved pw_hof's seeded career to "Northern Gateway Performing Arts Barn", overflowing at 440 too (span 95..459) | the row's value wraps, right-aligned (`.hof-wrap`) | `pw_hof list` ALL PASS 20 at 390 and 440 (was 19/20 at both) |
+
+**Money after the fixes** (`plan/v14/probe_after.md` §12; base 1.3.1 → 1.4 pre-fix → fix):
+- Year 1 within noise of the pre-fix build: gig-first drums h12 **53% loans / 5.0 weeks < $100** (target ~53% / 4.5), bass
+  **45% / 3.4** (~40% / 3.5), Hustle-heavy drums 3% / 0.5, bass 0% / 0.4.
+- Years 2-3, the owner's seat: gig-first drums h12 Y2 loans 60% → **55%**, Y3 43% → **35%**, Y3 median fund $509 → $724; help
+  left at the signing week: median 0.02 (18 / 36 at zero) → 0.92 (none at zero).
+- Signing: gross pay per gig flat across it (+4% / -3%, z 0.5 / -0.5); no factor moves more than 0.017 (gas) / 0.021 (S pay)
+  in a week. Net per gig still drops ~$43-52 at signing: the 15% management + crew, now named on the results screen.
+- Years 4-10, 80 seeds, every seat x bot cell vs 1.3.1: fund -5% to +8%, late gig pay -3% to +6%, all |z| <= 1.6 (the avg
+  drummer's late gig pay +13.5% on seeds 301-340 pre-fix was trajectory noise: +4.3%, z 1.3 pooled).
+- **Watch (unchanged in kind):** year 3 richer than 1.3.1 for the bots (avg bass +54% z 3.1, avg lead +33% z 3.0 over 80
+  seeds); vs the pre-fix build every bot cell is within |z| <= 1.5, the gig-first bass row +41% (z 1.9). Owner check: say it.
+
+**Verification (after the fixes, dist 5,248,626 B, gate 6,000,000):**
+- `node tests/run.js`: SUITE ALL PASS (incl. sim_money 8/8, sim_rival 17/17, compat_v12, save).
+- Classic audio `META_ONLY=hash` pw_seq: **232/232 equal** at 390x844 and 440x956.
+- Every pw section the fixes touch, alone, one browser at a time, at **390x844 and 440x956**: pw_gig gig 33, money 21,
+  simulate 21, e2e 15; pw_flow layout 39, flow 17; pw_rival botb 16, scene 13, final 10; pw_recap bands 15; pw_hof list 20
+  (after the wrap fix; 19/20 before it at both sizes); pw_shop space 22, spaces 17, gear 30; pw_seats gig 8; pw_trophies tab
+  15, toast 7; pw_tutorial tut_w1 34; pw_bands bands (4 bands 57-58 each + flat 12); pw_drama 19; pw_ending ten 15; pw_tour
+  tour 28: **all ALL PASS at both sizes**. One timing failure: pw_flow layout's first run right after a build timed out
+  tapping btn-go (390); then 3 passes alone in a row.
+- `tools/phoneqa.js`: ALL PASS 390x844 and 440x956 (HUD chip change).
+- Owner shots re-taken at 440x956 (verifier scratch `v14_owner/`, same names) and looked at: 01/02 unchanged ($143 · −$43 ·
+  −$5 → +$95; drums = bass), 03 the $35 card, 04 ride $200 / pedal $250, 05/05b fund $280 week 7 (HUD reads "$280"). New:
+  **01b_results_signed_parts.png** (Broadway Bijou, signed: $1,031 − $309 − $5 − management 15% $155 − crew $150 = +$412)
+  and **01c_results_fillin.png** (Legion, a fill-in: $163 − $49 − $5 − fill-in $40 = +$69).
+
+**For the owner check:** gas 80% and the great-show bonus now last until you sign, then fade over 12 weeks; small rooms pay
+about +47% (flat) / +29% (door), never more than the next tier; year 3 is richer than 1.3.1 (watch item).
