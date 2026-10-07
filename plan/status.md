@@ -150,8 +150,9 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
 - **M3**: the jam room costs $35/wk until you sign, then $60 (card `shop_space_1` + band variants and the shop say both).
 - Seat line: the swapped member on a string seat no longer wants "solos". No new state key (SAVE_SCHEMA 10), old saves load;
   the played-gig fingerprint was re-pinned on purpose (logged). dist 5,244,808 B.
-- Measured (`plan/v14/probe_after.md`): gig-first year-1 parents' loans drums 98% -> 55%, bass 95% -> 45%; Hustle-heavy bots
-  ~0%; drums-minus-bass score at equal accuracy -1.22 -> +0.36; years 4-10 within seed noise; year 3 richer for bots (watch).
+- Measured (`plan/v14/probe_after.md`, §12 after the review fixes): gig-first year-1 parents' loans drums 98% -> 53%, bass
+  95% -> 45%; Hustle-heavy bots ~0%; gig-first drums Y3 loans 60% -> 35%; drums-minus-bass score at equal accuracy -1.22 ->
+  +0.36; years 4-10 within seed noise over 80 seeds (|z| <= 1.6); year 3 richer for bots (watch: avg bass +54%, z 3.1).
 
 ## What's in v1.3.1 "Simulate" (plan `plan/plan_1.3.1.md`; lanes G, S + lead merged on `v1.3.1-simulate` 2026-10-04)
 - **Simulate this gig (G):** the setlist sheet's foot has [Auto-pick] [⏩ Simulate this gig] above the big "Start the show". One tap
