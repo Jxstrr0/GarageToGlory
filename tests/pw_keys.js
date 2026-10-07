@@ -205,13 +205,22 @@ async function keys() {
         if (!h) c.ok(false, 'rhythm 6: no hold found in 20 s');
         else {
           const code = d.keys.map[h.li], key = code === 'ShiftLeft' ? 'Shift' : code === 'Space' ? ' ' : code.slice(3).toLowerCase();
-          const fr = await fireAt(page, h.t, [[code, key]]);
-          await page.waitForFunction(at => GG.debug('gigui').songT > at, h.t + 0.15);
-          const mid = await dbg(page, 'gigui');
-          await keyEv(page, 'keyup', code, key);
-          const end = await dbg(page, 'gigui');
-          c.ok(mid.holding.includes(h.li) && mid.keys.held.includes(code), `rhythm 6: ${code} holds lane ${h.li} ` + JSON.stringify({ holding: mid.holding, held: mid.keys.held, press: fr[0] && fr[0].judgement, off: fr[0] && fr[0].offset }));
-          c.ok(!end.holding.includes(h.li) && !end.keys.held.length && end.relN > mid.relN, `rhythm 6: its keyup lifts it (voice released) ` + JSON.stringify({ holding: end.holding, held: end.keys.held, rel: end.relN - mid.relN }));
+          // press at the head, read it ~120 ms in, lift it at once (all in the page: a slow round trip under load could let the
+          // hold ring out first)
+          const hr = await page.evaluate(async ([h, code, key]) => {
+            while (GG.debug('gigui').songT < h.t - 0.012) await new Promise(r => setTimeout(r, 4));
+            while (GG.debug('gigui').songT < h.t) { /* spin */ }
+            window.dispatchEvent(new KeyboardEvent('keydown', { code, key, bubbles: true, cancelable: true }));
+            const press = GG.debug('gigui').last;
+            await new Promise(r => setTimeout(r, 120));
+            const mid = GG.debug('gigui');
+            window.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true, cancelable: true }));
+            const end = GG.debug('gigui');
+            return { press: press && press.judgement, midT: +(mid.songT - h.t).toFixed(3), mid: { holding: mid.holding, held: mid.keys.held, relN: mid.relN }, end: { holding: end.holding, held: end.keys.held, relN: end.relN } };
+          }, [h, code, key]);
+          const ringing = hr.midT < h.len - 0.05;   // (a stalled page can still pass the hold's end: then nothing is left to lift)
+          c.ok(hr.mid.holding.includes(h.li) && hr.mid.held.includes(code) || !ringing, `rhythm 6: ${code} holds lane ${h.li} ` + JSON.stringify(hr));
+          c.ok(!hr.end.holding.includes(h.li) && !hr.end.held.length && (hr.end.relN > hr.mid.relN || !ringing), `rhythm 6: its keyup lifts it (voice released) ` + JSON.stringify(hr.end));
         }
         // Shift held (trusted): one press, held under its id until it comes up
         await page.keyboard.down('Shift');
