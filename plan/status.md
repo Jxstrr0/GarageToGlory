@@ -437,7 +437,9 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 ## Addendum 7 — pending
 - [x] money map + bot probes + 3 options + critic (`plan/v14/`) -> owner popup M1-M3 (2026-10-06)
 - [x] build M1-M3 + critic fixes, re-probe (`plan/v14/build_report.md`, `probe_after.md`) — 2026-10-06/07
-- [ ] full verify at 390 + 440 (`plan/v14/integration_report.md`; running)
+- [x] full verify at 390 + 440 (`plan/v14/integration_report.md`): node suite, Classic hash 232/232, compat + save, matrix
+  (118 sections per size), pw_perf, phoneqa, size 5,244,808 B; owner shots 01-05 at 440x956 — 2026-10-07
+- [ ] lead: Hall of Fame "Biggest room" overflows at 390 when the name is long (`pw_hof list`; report finding 1, a CSS fix)
 - [ ] owner check (440x956 shots) + review + PR
 
 ## Tech

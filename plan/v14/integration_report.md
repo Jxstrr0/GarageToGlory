@@ -1,7 +1,13 @@
 # v1.4 "Tuning" integration report (verifier, branch `v1.4-tuning`, 2026-10-07)
 
-DRAFT: the verify run is in progress (started 00:14 UTC after a container restart cut the first verifier at ~00:12; nothing of
-that run was used). Sections fill in as the matrix streams finish.
+Verify run 00:14-02:16 UTC (a container restart at ~00:12 cut the first verifier; nothing of that run was used).
+
+**Verdict: green except one layout finding.** Node suite ALL PASS; Classic audio 232/232; compat_v12 + save green; size
+5,244,808 B; phoneqa ALL PASS at both sizes; every Playwright section passes at 440x956 and every section but `pw_hof list`
+passes at 390x844 (first-run failures were timing under two parallel browsers and passed alone twice, plus one test whose
+expectation M1/M3 moved, fixed and logged). `pw_hof list` at 390 exposes a latent Hall of Fame overflow (finding 1, a source
+fix for the lead). Owner shots 01-05 (+05b) taken at 440x956 and looked at: the money row, same grade/pay on drums and bass,
+the $35 jam room, ride $200 / pedal $250 and an early-year fund all read right.
 
 ## 1. What was verified
 - Branch `v1.4-tuning` at 476ee4e (build + re-probe). Owner picks (status.md Addendum 7): M1 "Gigs pay, side jobs less" (the
@@ -18,14 +24,22 @@ that run was used). Sections fill in as the matrix streams finish.
 - Full Playwright matrix: every META_ONLY section of every `tests/pw_*.js` (118 per size, incl. the contact sheets and the
   opt-in `pw_bands_render seats`), two streams in parallel (390x844 + 440x956), 00:15-01:39 UTC, logs in the verifier scratch
   `v14m/logs/`. First run: **390: 108 PASS + 4 contact sheets OK** (creator / logo / shop / tour sheets have no checks: exit 0,
-  sheet written) **+ 6 FAIL; 440: 112 PASS + 4 sheets OK + 2 FAIL.** Reruns alone, twice each, nothing else running:
-  - 390: `pw_seq audio` (first run: the van ambience wait timed out at 4 s) 42/42 twice; `pw_seq heavy` (xRT 0.84) 22/22 twice;
-    `pw_seq genres` (punk xRT 0.99) 25/25 twice; `pw_gig e2e` (Skip the drive gone before the click) 15/15 twice: timing under
-    two parallel browsers (the same three render-speed / van flakes as the v1.3.1 run). `pw_recap bands`: fixed test, 15/15
-    twice (section 4). `pw_hof list`: fails the same way twice (deterministic: finding 1).
-  - 440: in progress.
+  sheet written) **+ 6 FAIL; 440: 112 PASS + 4 sheets OK + 2 FAIL.**
   v1.4 sections green first time at both sizes: `pw_gig gig` 33/33 (results money row), `pw_gig simulate` 21/21, `pw_shop space`
   22/22 ($35 + "$60/week once you sign"), `pw_shop spaces` 17/17, `pw_flow layout` 34/34, `pw_bands_render` 106/106 + seats 46/46.
+  Reruns alone, twice each, nothing else running:
+  - 390: `pw_seq audio` (first run: the van ambience wait timed out at 4 s) 42/42 twice; `pw_seq heavy` (xRT 0.84) 22/22 twice;
+    `pw_seq genres` (punk xRT 0.99) 25/25 twice; `pw_gig e2e` (Skip the drive gone before the click) 15/15 twice: timing under
+    two parallel browsers (the same kinds as the v1.3.1 run's first-run failures: render speed and van timing). `pw_recap bands`: fixed test, 15/15
+    twice (section 4). `pw_hof list`: fails the same way twice (deterministic: finding 1).
+  - 440: `pw_seq heavy` (xRT 0.84) 22/22 twice; `pw_recap bands`: fixed test, 15/15 twice.
+  - The 4 contact sheets re-ran clean (exit 0) both times at both sizes.
+- pw_perf (scenes, governor, ratio, stalls, audio, pre, quick), alone, one size at a time after the streams: **440: 7/7 PASS**;
+  **390: 6/7 first time**, `pre` failed "no build slice over 8 ms" (punk 10.8 ms wall) with the load average still ~4 from
+  the streams, then alone: fail once more (another budget: metal KS warm 338 ms CPU > 300), then **4 passes in a row**. No
+  audio or render code changed in v1.4 (Classic hash 232/232), so this is the CPU-budget noise of the 4x-throttle trace.
+- `tools/phoneqa.js` (insets, Bigger text, 44/48 px, no horizontal overflow, console errors): **ALL PASS 390x844** and
+  **ALL PASS 440x956** (the same screen list as v1.3.1, every screen ok both with and without Bigger text).
 
 ## 3. Owner check shots (440x956; verifier scratch `v14_owner/`, not committed; script `v14_owner/shots.js`), looked at each
 - `01_results_band_cut.png`: Hail Damage on **bass**, the Legion (Saskatoon, tier 1, flat), a PLAYED live gig (the autoplay bot
@@ -64,3 +78,14 @@ that run was used). Sections fill in as the matrix streams finish.
    Bijou, 550). A real player whose best room is that casino sees it on a 390 phone too. Suggested fix: let that one value
    wrap (e.g. the stats row's value `white-space: normal; text-align: right; min-width: 0`), then re-run `pw_hof list` at both
    sizes; the test itself is right and should not move.
+2. **Watch (balance, from `probe_after.md`, unchanged by this verify):** year 3 is richer for the bots (11 of 12 cells up,
+   avg bass +39%); the 10-year `tools/balance.js` good bot shows Y4 +34% (it carries the Y3 savings; Y5-10 within noise);
+   net into the fund per gig drops $47-58 at signing (the 1.3 15% management commission, no longer masked); a gig-first
+   player who buys gear in week 1 and rents the jam room is still broke in year 3 (45-78% loans). Owner's playtest is the check.
+3. **Minor, test fragility (not a bug):** two bot-driven pw tests depend on the bot's money path (pw_recap `bands`: fixed
+   here; pw_hof seedMeta: finding 1). Any later money change can move them again; they now say why in their messages/comments.
+4. **Cosmetic, pre-existing (not v1.4):** the laptop Money tab labels the start baseline "W0" (`20_sim_career.js:984` pushes
+   a week-0 history point; `53_ui_laptop.js:82` prints it), visible in 05b.
+
+## 6. Next
+- Lead: fix finding 1 (or accept it), then owner check with the 440x956 shots (verifier scratch `v14_owner/`), review, PR.
