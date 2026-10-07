@@ -60,7 +60,8 @@
     E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
-    E.snap = lookSnap();   // v1.5: Esc asks first once a pick changed this
+    // v1.5: Esc asks first once a pick changed this
+    E.snap = lookSnap();
   }
   function lookSnap() { try { return JSON.stringify([E.look, E.stage, E.kit, E.gearLook || null]); } catch (e) { return ''; } }
   ui.lookDirty = function () { return !!(E && E.snap != null && lookSnap() !== E.snap); };

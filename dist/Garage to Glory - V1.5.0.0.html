@@ -51360,7 +51360,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function render(e) {
     var keep = e.body && e.body.scrollTop;
-    var fk = focusKey(e);   // v1.5: keyboard focus inside this screen survives the rebuild (no-op without gg-kbnav)
+    var fk = focusKey(e);
     ui.clear(e.body); ui.clear(e.foot);
     var t = e.def.title;
     e.setTitle(typeof t === 'function' ? t(e.data) : t || '');
@@ -51389,7 +51389,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       stack[i].root.classList.toggle('hidden', i < coveredBelow);
       if (top) stack[i].root.removeAttribute('inert'); else stack[i].root.setAttribute('inert', '');
       stack[i].root.setAttribute('aria-hidden', top ? 'false' : 'true');
-      if (!top) syncHints(stack[i]);   // v1.5: kb-hints sit in the top layer's foot only
+      if (!top) syncHints(stack[i]);
     }
     if (stack.length) syncHints(stack[stack.length - 1]);
     GG.emit('ui:stack', { ids: ui.stackIds() });
@@ -51401,11 +51401,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (at >= 0) {
       while (stack.length - 1 > at) ui.close();
       var ex = stack[at]; ex.data = data || ex.data; render(ex); afterChange();
-      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);   // v1.5
+      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);
       return ex;
     }
     var e = makeEntry(id, data);
-    e.opener = openerOf();   // v1.5: where the keyboard focus was (close() goes back there)
+    e.opener = openerOf();
     ui.clearToasts();   // a new screen makes old hints stale (and they'd sit on its header)
     frame(e);
     stack.push(e);
@@ -51414,14 +51414,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     afterChange();
     GG.emit('screen:open', { id: id });
     if (e.def.onShow) e.def.onShow(e);
-    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);   // v1.5 (no-op without gg-kbnav)
+    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);
     return e;
   };
   ui.close = function (id) {
     if (!stack.length) return;
     var at = id ? indexOf(id) : stack.length - 1;
     if (at < 0) return;
-    var opener = stack[at].opener;   // v1.5: the lowest closed screen's opener
+    var opener = stack[at].opener;
     while (stack.length > at) {
       var e = stack.pop();
       if (e.def.onClose) { try { e.def.onClose(e); } catch (err) { console.warn('[ui] onClose', err); } }
@@ -51436,9 +51436,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ui.get = function (id) { var i = indexOf(id); return i >= 0 ? stack[i] : null; };
 
   /* ---- v1.5 (Lane N): keyboard focus (no-op unless html.gg-kbnav) ------------------------------------------------- */
-  var NO_FOCUS = { gig: 1, 'gig-results': 1 };   // 55 owns focus on the gig screens (also def.focus === false)
+  var NO_FOCUS = { gig: 1, 'gig-results': 1 };
   function now() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
-  ui.focusAt = -1e9;   // performance.now() of the last programmatic focus move (50k: Enter / Space within 200 ms are stale)
+  ui.focusAt = -1e9;
   ui.kbnav = function () { return typeof document !== 'undefined' && document.documentElement.classList.contains('gg-kbnav'); };
   ui.isTyping = function (n) {
     if (!n || n.nodeType !== 1) return false;
@@ -51451,7 +51451,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var cs = getComputedStyle(n);
     return cs.visibility !== 'hidden' && cs.display !== 'none';
   };
-  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }   // text inputs are never auto-focused
+  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }
   ui.focusEl = function (n, opts) {
     if (!n || !n.focus) return false;
     if (!(opts && opts.nav)) ui.focusAt = now();
@@ -51470,7 +51470,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     else if (typeof f === 'string' && (n = firstUsable(byTid(r, f)))) return n;
     if ((n = firstUsable(e.foot ? e.foot.querySelectorAll('.btn.primary') : []))) return n;
     var btns = [].slice.call(e.body ? e.body.querySelectorAll('button') : []).concat([].slice.call(e.foot ? e.foot.querySelectorAll('button') : []));
-    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;   // a screen's ← / ✕ only when it has nothing else
+    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;
     return firstUsable(btns) || firstUsable(byTid(r, 'btn-close'));
   };
   function isBackBtn(b) { var t = b.getAttribute('data-testid') || '', l = b.getAttribute('aria-label') || ''; return /^(btn-back|btn-close)$/.test(t) || (b.classList.contains('icon-btn') && /^(Back|Close)\b/.test(l)); }
@@ -51499,15 +51499,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function restoreFocus(e, fk) {
     var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
-    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });   // the same control again: not a move, so never stale
+    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });
     else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
   }
   function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }
   function focusAfterClose(opener) {
-    if (focusOk(document.activeElement)) return;   // something (a new screen) already holds the focus
+    if (focusOk(document.activeElement)) return;
     var top = stack[stack.length - 1];
     if (top && noFocus(top)) return;
-    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }   // (an opener under a lower layer is inert: not usable)
+    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }
     if (opener && opener.key && top) {
       var list = byTid(top.root, opener.key.tid), n = list.length ? list[Math.min(opener.key.idx, list.length - 1)] : null;
       if (usable(n)) { ui.focusEl(n); return; }
@@ -51541,7 +51541,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
   ui.define('confirm', {
     kind: 'modal',
-    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },   // v1.5: a danger ask starts on No
+    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },
     title: function (d) { return d.title || 'Sure?'; },
     build: function (s, d) {
       if (d.text) s.body.appendChild(el('p.dim', d.text));
@@ -52061,14 +52061,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]';
   var STALE_MS = 200;
   var D = { lastEsc: null, nav: null, repeat: 0, stale: 0 };
-  var down = {};   // code -> the element its (unswallowed) keydown was on
+  var down = {};
 
   function kbnavOn(on) {
     if (root.classList.contains('gg-kbnav') === !!on) return;
     root.classList.toggle('gg-kbnav', !!on);
     GG.emit('ui:kbnav', { on: !!on });
   }
-  ui.setKbnav = kbnavOn;   // (tests / Settings)
+  ui.setKbnav = kbnavOn;
   function swallow(ev, why) {
     ev.preventDefault(); ev.stopPropagation();
     if (why) D[why]++;
@@ -52156,13 +52156,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function back() {
     var e = topEntry(), id = e && e.id, d = e && e.def, n;
     if (!e) {
-      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }   // the garage with nothing open: ☰
+      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }
       return 'none';
     }
     if (id === 'confirm') { n = clickable(e, 'btn-confirm-no'); if (n) n.click(); else ui.close(id); return 'confirm-no'; }
     if (typeof d.back === 'function') { d.back(e); return 'fn'; }
     if (typeof d.back === 'string' && (n = clickable(e, d.back))) { n.click(); return 'back:' + d.back; }
-    var kb = KEY_BACK[id];   // (before the sticky check: calib and recap are sticky screens with their own way out)
+    var kb = KEY_BACK[id];
     if (kb === 'close') { ui.close(id); return 'close'; }
     if (kb && (n = clickable(e, kb))) { n.click(); return 'back:' + kb; }
     if (STICKY[id] || d.sticky) return 'sticky';
@@ -52170,7 +52170,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
     return 'none';
   }
-  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };   // (tests: what Esc does on the top screen)
+  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };
   function spotKey(code) {
     var m = /^(?:Digit|Numpad)([1-8])$/.exec(code || '');
     return m ? +m[1] - 1 : -1;
@@ -52200,21 +52200,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (isTab) { swallow(ev); cycle(ev.shiftKey); }
       return;
     }
-    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }   // (3)
-    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }   // (5)
+    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }
+    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }
     var a = document.activeElement;
-    if (dir) {   // (4)
+    if (dir) {
       if (isOwnArrows(t) && !badFocus(a)) return;
       if (move(dir)) ev.preventDefault();
       return;
     }
-    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {   // (6) (a control under the top layer never clicks)
+    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {
       swallow(ev);
       delete down[code || k];
       if (isEnter) { focusDefaultNow(); D.nav = 'enter:' + tidOf(document.activeElement); }
       return;
     }
-    var i = spotKey(code);   // (7)
+    var i = spotKey(code);
     if (i >= 0 && !ui.stackIds().length && GG.state) {
       var spots = ui.kbSpots ? ui.kbSpots() : [];
       if (spots[i]) { ev.preventDefault(); ui.walkToSpot(spots[i]); }
@@ -52353,11 +52353,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
-  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });   // v1.5: the PC layout moves the logo + menu
+  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });
   GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
-    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },   // v1.5: Continue, else New career
+    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },
     onShow: function () {
       if (!want3d()) return;
       try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
@@ -52685,7 +52685,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         ])
       ]);
       s.foot.appendChild(create);
-      if (s.data._snap == null) s.data._snap = creatorSnap();   // v1.5 (after the defaults above are filled in)
+      if (s.data._snap == null) s.data._snap = creatorSnap();
     }
   });
 
@@ -52697,7 +52697,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ];
   var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
-    kind: 'full', focus: 'btn-coldopen-next',   // v1.5: Enter reads on (Skip is one Tab away)
+    kind: 'full', focus: 'btn-coldopen-next',
     build: function (s, d) {
       var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
@@ -52730,7 +52730,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
             .then(function (ok) { if (ok) go(); });
         }, mine));
       });
-      ui.append(s.body, [ui.w2(el('div.stack', [   // v1.5 (B): Resume + saves left, the rest right
+      ui.append(s.body, [ui.w2(el('div.stack', [
         btn('.btn.primary.block', { testid: 'menu-resume', onclick: function () { ui.close(s.id); } }, 'Resume'),
         el('div.caps', 'Save to a slot'),
         saves,
@@ -52920,7 +52920,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
         + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
         + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }\n'
-        + '.kb-spots { display: none; }';   // v1.5: shown by 50k under html.gg-kbnav / html.gg-wide
+        + '.kb-spots { display: none; }';
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -52986,7 +52986,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
-    refreshKbSpots();   // v1.5 ("Your rig" on a string seat)
+    refreshKbSpots();
   };
 
   /* ======================================================================================================
@@ -53017,7 +53017,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
         ui.rivalCardNote ? ui.rivalCardNote(st, card) : null, ui.tourCardNote ? ui.tourCardNote(st, card) : null]);   // v0.7: region strip   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
-      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });   // v1.5 (B): the story left, the answers / outcome right
+      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });
       s.body.classList.add('w2');
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
@@ -53152,10 +53152,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
       var tph = ui.tourPlanHead ? ui.tourPlanHead(st) : null, gb = gigBox(st, true, function () { s.rerender(); }), note = el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'), sb = studioBtn(st);
-      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });   // v1.5 (B): left column; the activity cards right
+      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });
       acts.classList.add('w2-b');
       ui.append(s.body, [el('div.stack.w2', [
-        tph,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
+        tph,
         gb,
         slots,
         acts,
@@ -53228,7 +53228,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var steps = [], gigEl = null;   // steps: [node, delayBeforeMs, onReveal]
       (r.blocks || []).forEach(function (b, i) {
         var a = ui.act(b.activity);
-        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);   // v1.5 (B): blocks left
+        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) {   // v0.9: the leak net (a line naming another band's people reads neutral)
@@ -53252,7 +53252,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
         s.body.appendChild(none); steps.push([none, 300]);
       }
-      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });   // (the gig right)
+      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });
       s.body.classList.add('w2');
       steps.forEach(function (st2) { st2[0].hidden = true; });
       var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: next }, nextLabel);
@@ -53268,7 +53268,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       function done() {
         var had = document.activeElement === skip || !document.activeElement || document.activeElement === document.body;
         skip.hidden = true; ok.hidden = false;
-        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);   // v1.5: the keyboard focus moves Skip -> OK
+        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);
       }
       function tick() {
         s.data._timer = null;
@@ -53356,7 +53356,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
       if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
-      var wcol = el('div.stack', parts);   // v1.5 (B): the numbers left; the band, the chat and the year right
+      var wcol = el('div.stack', parts);
       [].forEach.call(wcol.children, function (n) {
         var right = n.getAttribute('data-testid') === 'wrap-moods' || n.classList.contains('year-end') || !!(n.firstChild && n.firstChild.textContent === 'Group chat');
         n.classList.add(right ? 'w2-b' : 'w2-a');
@@ -53626,14 +53626,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
-      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },   // v1.5 (B): .lt-tabs = the left rail (PC layout only)
+      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
-  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });   // v1.5: the tab rail comes and goes with the PC layout
+  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });
 })(window.GG);
 
 </script>
@@ -53870,7 +53870,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r;
   }
   function changed(D) {
-    D.dirty = true;   // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
+    D.dirty = true;
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -53895,7 +53895,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
-    var keys = !ro && keyGrid();   // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -53924,7 +53924,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
-    var keys = !ro && keyGrid();   // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -53957,7 +53957,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
     if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
     function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
-    grid.addEventListener('focusin', function (e) {   // a click / a restore lands on a cell: it becomes the roving one
+    grid.addEventListener('focusin', function (e) {
       var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
       if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
       var old = cellAt(D.kbFocus.l, D.kbFocus.s);
@@ -54014,7 +54014,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       handEdit(D); changed(D);
     }
     function start(c, id) {
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
+      if (isPart) partV2(D);
       var sec = rowsOf();
       paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
       apply(c);
@@ -54317,7 +54317,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
         el('div.qs-title', 'Start from a recipe'),
         el('div.quick-recipes.w2-a', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
-        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);   // v1.5 (B): recipes left, sliders right
+        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
     V.qmain.classList.add('w2'); s.body.classList.remove('w2');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
@@ -54412,7 +54412,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       btn('.btn.small', { testid: 'side-tempo-up', 'aria-label': 'Faster', onclick: function () { bpm(5); } }, '+')]));
     return el('div.seq-side', { testid: 'seq-side' }, kids);
   }
-  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {   // (PC layout only: html.gg-wide)
+  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {
     var sideCss = document.createElement('style'); sideCss.id = 'gg-seq-side-css';
     sideCss.textContent = 'html.gg-wide .seq-side { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }\n'
       + 'html.gg-wide .seq-side .seq-side-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }\n'
@@ -54447,10 +54447,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       coachBubble(s, D),
       sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
       layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
-      sidePanel(s, D),   // v1.5 (B): PC layout only
+      sidePanel(s, D),
       main
     ]);
-    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });   // v1.5 (B): tools left, the grid right
+    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });
     s.body.classList.add('w2');
     V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
     V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
@@ -54464,7 +54464,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
-    hints: function (s) {   // (the axes as on the grid: lanes across, time down)
+    hints: function (s) {
       var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
       return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
     },
@@ -54480,7 +54480,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
-      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }   // v1.5: what "changed since open" compares with
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
@@ -60110,7 +60110,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
-    E.snap = lookSnap();   // v1.5: Esc asks first once a pick changed this
+    E.snap = lookSnap();
   }
   function lookSnap() { try { return JSON.stringify([E.look, E.stage, E.kit, E.gearLook || null]); } catch (e) { return ''; } }
   ui.lookDirty = function () { return !!(E && E.snap != null && lookSnap() !== E.snap); };
@@ -60511,7 +60511,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       if (GG.career.seatOf(st) !== 'drums') { seatShop(s, st); return; }   // v1.1: your seat's line
       s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
-      ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the kit left, add-ons + sections right
+      ui.append(s.body, ui.w2(el('div.stack', [
         el('div.panel.warm.shop-now', { testid: 'gear-now' }, [el('div.caps', 'On the riser now'), el('div.shop-big', kd.name || 'A kit'),
           el('div.small.dim', [g.lanes + ' lanes' + (g.doubleKick ? ' · double kick' : '') + (extra.length ? ' · ' + extra.join(', ') : ''),
             ' · the kit tier changes how everything sounds']),
@@ -60560,7 +60560,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var seat = GG.career.seatOf(st), inst = GG.career.tokenValue(st, 'instrument'), lanes = GG.career.seatLanes(st), runs = GG.career.seatRuns(st), g = st.gear;
     var kd = SH().kitDef(g.quality) || {}, items = SH().gearItems(st), mine = items.filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
     s.setTitle(ui.cap(inst) + ' shop', 'PAWN SHOP ROW · ' + street(st));
-    ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the amp left, your instrument + sections right
+    ui.append(s.body, ui.w2(el('div.stack', [
       el('div.panel.warm.shop-now', { testid: 'gear-now', data: { seat: seat, lanes: String(lanes), runs: runs ? '1' : '0' } }, [el('div.caps', 'Your rig now'), el('div.shop-big', SH().kitName(st, kd) || 'An amp'),
         el('div.small.dim', [lanes + ' lanes on your highway' + (runs ? ' · runs' : '') + (SH().whammy(st) ? ' · whammy' : '') + (mine.length ? ' · ' + mine.join(', ') : ''),
           ' · the amp tier changes how the whole band sounds']),

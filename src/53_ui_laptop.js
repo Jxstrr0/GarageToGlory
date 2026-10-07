@@ -114,12 +114,14 @@
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
-      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },   // v1.5 (B): .lt-tabs = the left rail (PC layout only)
+      // v1.5 (B): .lt-tabs = the left rail (PC layout only)
+      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
-  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });   // v1.5: the tab rail comes and goes with the PC layout
+  // v1.5: the tab rail comes and goes with the PC layout
+  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });
 })(window.GG);

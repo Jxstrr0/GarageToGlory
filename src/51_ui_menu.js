@@ -114,11 +114,13 @@
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
-  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });   // v1.5: the PC layout moves the logo + menu
+  // v1.5: the PC layout moves the logo + menu
+  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });
   GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
-    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },   // v1.5: Continue, else New career
+    // v1.5: Continue, else New career
+    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },
     onShow: function () {
       if (!want3d()) return;
       try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
@@ -451,7 +453,8 @@
         ])
       ]);
       s.foot.appendChild(create);
-      if (s.data._snap == null) s.data._snap = creatorSnap();   // v1.5 (after the defaults above are filled in)
+      // v1.5 (after the defaults above are filled in)
+      if (s.data._snap == null) s.data._snap = creatorSnap();
     }
   });
 
@@ -465,7 +468,8 @@
   ];
   var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
-    kind: 'full', focus: 'btn-coldopen-next',   // v1.5: Enter reads on (Skip is one Tab away)
+    // v1.5: Enter reads on (Skip is one Tab away)
+    kind: 'full', focus: 'btn-coldopen-next',
     build: function (s, d) {
       var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
@@ -498,7 +502,8 @@
             .then(function (ok) { if (ok) go(); });
         }, mine));
       });
-      ui.append(s.body, [ui.w2(el('div.stack', [   // v1.5 (B): Resume + saves left, the rest right
+      // v1.5 (B): Resume + saves left, the rest right
+      ui.append(s.body, [ui.w2(el('div.stack', [
         btn('.btn.primary.block', { testid: 'menu-resume', onclick: function () { ui.close(s.id); } }, 'Resume'),
         el('div.caps', 'Save to a slot'),
         saves,

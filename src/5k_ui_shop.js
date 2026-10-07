@@ -133,7 +133,8 @@
       if (GG.career.seatOf(st) !== 'drums') { seatShop(s, st); return; }   // v1.1: your seat's line
       s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
-      ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the kit left, add-ons + sections right
+      // v1.5 (B): the kit left, add-ons + sections right
+      ui.append(s.body, ui.w2(el('div.stack', [
         el('div.panel.warm.shop-now', { testid: 'gear-now' }, [el('div.caps', 'On the riser now'), el('div.shop-big', kd.name || 'A kit'),
           el('div.small.dim', [g.lanes + ' lanes' + (g.doubleKick ? ' · double kick' : '') + (extra.length ? ' · ' + extra.join(', ') : ''),
             ' · the kit tier changes how everything sounds']),
@@ -184,7 +185,8 @@
     var seat = GG.career.seatOf(st), inst = GG.career.tokenValue(st, 'instrument'), lanes = GG.career.seatLanes(st), runs = GG.career.seatRuns(st), g = st.gear;
     var kd = SH().kitDef(g.quality) || {}, items = SH().gearItems(st), mine = items.filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
     s.setTitle(ui.cap(inst) + ' shop', 'PAWN SHOP ROW · ' + street(st));
-    ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the amp left, your instrument + sections right
+    // v1.5 (B): the amp left, your instrument + sections right
+    ui.append(s.body, ui.w2(el('div.stack', [
       el('div.panel.warm.shop-now', { testid: 'gear-now', data: { seat: seat, lanes: String(lanes), runs: runs ? '1' : '0' } }, [el('div.caps', 'Your rig now'), el('div.shop-big', SH().kitName(st, kd) || 'An amp'),
         el('div.small.dim', [lanes + ' lanes on your highway' + (runs ? ' · runs' : '') + (SH().whammy(st) ? ' · whammy' : '') + (mine.length ? ' · ' + mine.join(', ') : ''),
           ' · the amp tier changes how the whole band sounds']),

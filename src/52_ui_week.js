@@ -110,7 +110,8 @@
         + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
         + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
         + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }\n'
-        + '.kb-spots { display: none; }';   // v1.5: shown by 50k under html.gg-kbnav / html.gg-wide
+        // v1.5: shown by 50k under html.gg-kbnav / html.gg-wide
+        + '.kb-spots { display: none; }';
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -178,7 +179,8 @@
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
-    refreshKbSpots();   // v1.5 ("Your rig" on a string seat)
+    // v1.5 ("Your rig" on a string seat)
+    refreshKbSpots();
   };
 
   /* ======================================================================================================
@@ -209,7 +211,8 @@
       }
       ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
         ui.rivalCardNote ? ui.rivalCardNote(st, card) : null, ui.tourCardNote ? ui.tourCardNote(st, card) : null]);   // v0.7: region strip   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
-      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });   // v1.5 (B): the story left, the answers / outcome right
+      // v1.5 (B): the story left, the answers / outcome right
+      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });
       s.body.classList.add('w2');
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
@@ -347,10 +350,12 @@
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
       var tph = ui.tourPlanHead ? ui.tourPlanHead(st) : null, gb = gigBox(st, true, function () { s.rerender(); }), note = el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'), sb = studioBtn(st);
-      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });   // v1.5 (B): left column; the activity cards right
+      // v1.5 (B): left column; the activity cards right
+      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });
       acts.classList.add('w2-b');
       ui.append(s.body, [el('div.stack.w2', [
-        tph,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
+        // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
+        tph,
         gb,
         slots,
         acts,
@@ -424,7 +429,8 @@
       var steps = [], gigEl = null;   // steps: [node, delayBeforeMs, onReveal]
       (r.blocks || []).forEach(function (b, i) {
         var a = ui.act(b.activity);
-        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);   // v1.5 (B): blocks left
+        // v1.5 (B): blocks left
+        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) {   // v0.9: the leak net (a line naming another band's people reads neutral)
@@ -448,7 +454,8 @@
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
         s.body.appendChild(none); steps.push([none, 300]);
       }
-      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });   // (the gig right)
+      // (the gig right)
+      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });
       s.body.classList.add('w2');
       steps.forEach(function (st2) { st2[0].hidden = true; });
       var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: next }, nextLabel);
@@ -464,7 +471,8 @@
       function done() {
         var had = document.activeElement === skip || !document.activeElement || document.activeElement === document.body;
         skip.hidden = true; ok.hidden = false;
-        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);   // v1.5: the keyboard focus moves Skip -> OK
+        // v1.5: the keyboard focus moves Skip -> OK
+        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);
       }
       function tick() {
         s.data._timer = null;
@@ -552,7 +560,8 @@
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
       if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
-      var wcol = el('div.stack', parts);   // v1.5 (B): the numbers left; the band, the chat and the year right
+      // v1.5 (B): the numbers left; the band, the chat and the year right
+      var wcol = el('div.stack', parts);
       [].forEach.call(wcol.children, function (n) {
         var right = n.getAttribute('data-testid') === 'wrap-moods' || n.classList.contains('year-end') || !!(n.firstChild && n.firstChild.textContent === 'Group chat');
         n.classList.add(right ? 'w2-b' : 'w2-a');

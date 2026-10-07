@@ -276,7 +276,8 @@
   }
   // Every edit: re-rate, keep playback in sync, keep the sketch pad saved.
   function changed(D) {
-    D.dirty = true;   // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
+    // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
+    D.dirty = true;
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -304,7 +305,8 @@
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
-    var keys = !ro && keyGrid();   // v1.5
+    // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -334,7 +336,8 @@
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
-    var keys = !ro && keyGrid();   // v1.5
+    // v1.5
+    var keys = !ro && keyGrid();
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -368,7 +371,8 @@
     f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
     if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
     function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
-    grid.addEventListener('focusin', function (e) {   // a click / a restore lands on a cell: it becomes the roving one
+    // a click / a restore lands on a cell: it becomes the roving one
+    grid.addEventListener('focusin', function (e) {
       var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
       if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
       var old = cellAt(D.kbFocus.l, D.kbFocus.s);
@@ -427,7 +431,8 @@
     }
     // One tap on a cell (a pointer press, or v1.5 Space / Enter on the focused cell): the v2 upgrade, then toggle it.
     function start(c, id) {
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
+      // D16: the first edit upgrades a v1 part
+      if (isPart) partV2(D);
       var sec = rowsOf();
       paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
       apply(c);
@@ -742,7 +747,8 @@
       V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
         el('div.qs-title', 'Start from a recipe'),
         el('div.quick-recipes.w2-a', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
-        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);   // v1.5 (B): recipes left, sliders right
+        // v1.5 (B): recipes left, sliders right
+        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
     V.qmain.classList.add('w2'); s.body.classList.remove('w2');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
@@ -841,7 +847,8 @@
       btn('.btn.small', { testid: 'side-tempo-up', 'aria-label': 'Faster', onclick: function () { bpm(5); } }, '+')]));
     return el('div.seq-side', { testid: 'seq-side' }, kids);
   }
-  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {   // (PC layout only: html.gg-wide)
+  // (PC layout only: html.gg-wide)
+  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {
     var sideCss = document.createElement('style'); sideCss.id = 'gg-seq-side-css';
     sideCss.textContent = 'html.gg-wide .seq-side { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }\n'
       + 'html.gg-wide .seq-side .seq-side-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }\n'
@@ -876,10 +883,12 @@
       coachBubble(s, D),
       sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
       layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
-      sidePanel(s, D),   // v1.5 (B): PC layout only
+      // v1.5 (B): PC layout only
+      sidePanel(s, D),
       main
     ]);
-    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });   // v1.5 (B): tools left, the grid right
+    // v1.5 (B): tools left, the grid right
+    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });
     s.body.classList.add('w2');
     V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
     V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
@@ -894,7 +903,8 @@
   function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
-    hints: function (s) {   // (the axes as on the grid: lanes across, time down)
+    // (the axes as on the grid: lanes across, time down)
+    hints: function (s) {
       var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
       return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
     },
@@ -911,7 +921,8 @@
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
-      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }   // v1.5: what "changed since open" compares with
+      // v1.5: what "changed since open" compares with
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);

@@ -104,7 +104,8 @@
   }
   function render(e) {
     var keep = e.body && e.body.scrollTop;
-    var fk = focusKey(e);   // v1.5: keyboard focus inside this screen survives the rebuild (no-op without gg-kbnav)
+    // v1.5: keyboard focus inside this screen survives the rebuild (no-op without gg-kbnav)
+    var fk = focusKey(e);
     ui.clear(e.body); ui.clear(e.foot);
     var t = e.def.title;
     e.setTitle(typeof t === 'function' ? t(e.data) : t || '');
@@ -133,7 +134,8 @@
       stack[i].root.classList.toggle('hidden', i < coveredBelow);
       if (top) stack[i].root.removeAttribute('inert'); else stack[i].root.setAttribute('inert', '');
       stack[i].root.setAttribute('aria-hidden', top ? 'false' : 'true');
-      if (!top) syncHints(stack[i]);   // v1.5: kb-hints sit in the top layer's foot only
+      // v1.5: kb-hints sit in the top layer's foot only
+      if (!top) syncHints(stack[i]);
     }
     if (stack.length) syncHints(stack[stack.length - 1]);
     GG.emit('ui:stack', { ids: ui.stackIds() });
@@ -146,11 +148,13 @@
     if (at >= 0) {
       while (stack.length - 1 > at) ui.close();
       var ex = stack[at]; ex.data = data || ex.data; render(ex); afterChange();
-      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);   // v1.5
+      // v1.5
+      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);
       return ex;
     }
     var e = makeEntry(id, data);
-    e.opener = openerOf();   // v1.5: where the keyboard focus was (close() goes back there)
+    // v1.5: where the keyboard focus was (close() goes back there)
+    e.opener = openerOf();
     ui.clearToasts();   // a new screen makes old hints stale (and they'd sit on its header)
     frame(e);
     stack.push(e);
@@ -159,7 +163,8 @@
     afterChange();
     GG.emit('screen:open', { id: id });
     if (e.def.onShow) e.def.onShow(e);
-    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);   // v1.5 (no-op without gg-kbnav)
+    // v1.5 (no-op without gg-kbnav)
+    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);
     return e;
   };
   // Closes the top screen, or the screen `id` plus everything stacked above it.
@@ -167,7 +172,8 @@
     if (!stack.length) return;
     var at = id ? indexOf(id) : stack.length - 1;
     if (at < 0) return;
-    var opener = stack[at].opener;   // v1.5: the lowest closed screen's opener
+    // v1.5: the lowest closed screen's opener
+    var opener = stack[at].opener;
     while (stack.length > at) {
       var e = stack.pop();
       if (e.def.onClose) { try { e.def.onClose(e); } catch (err) { console.warn('[ui] onClose', err); } }
@@ -182,9 +188,11 @@
   ui.get = function (id) { var i = indexOf(id); return i >= 0 ? stack[i] : null; };
 
   /* ---- v1.5 (Lane N): keyboard focus (no-op unless html.gg-kbnav) ------------------------------------------------- */
-  var NO_FOCUS = { gig: 1, 'gig-results': 1 };   // 55 owns focus on the gig screens (also def.focus === false)
+  // 55 owns focus on the gig screens (also def.focus === false)
+  var NO_FOCUS = { gig: 1, 'gig-results': 1 };
   function now() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
-  ui.focusAt = -1e9;   // performance.now() of the last programmatic focus move (50k: Enter / Space within 200 ms are stale)
+  // performance.now() of the last programmatic focus move (50k: Enter / Space within 200 ms are stale)
+  ui.focusAt = -1e9;
   ui.kbnav = function () { return typeof document !== 'undefined' && document.documentElement.classList.contains('gg-kbnav'); };
   ui.isTyping = function (n) {
     if (!n || n.nodeType !== 1) return false;
@@ -198,7 +206,8 @@
     var cs = getComputedStyle(n);
     return cs.visibility !== 'hidden' && cs.display !== 'none';
   };
-  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }   // text inputs are never auto-focused
+  // text inputs are never auto-focused
+  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }
   // Focus n (stamped unless opts.nav: a Tab / arrow move is the player's own, never stale).
   ui.focusEl = function (n, opts) {
     if (!n || !n.focus) return false;
@@ -218,7 +227,8 @@
     else if (typeof f === 'string' && (n = firstUsable(byTid(r, f)))) return n;
     if ((n = firstUsable(e.foot ? e.foot.querySelectorAll('.btn.primary') : []))) return n;
     var btns = [].slice.call(e.body ? e.body.querySelectorAll('button') : []).concat([].slice.call(e.foot ? e.foot.querySelectorAll('button') : []));
-    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;   // a screen's ← / ✕ only when it has nothing else
+    // a screen's ← / ✕ only when it has nothing else
+    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;
     return firstUsable(btns) || firstUsable(byTid(r, 'btn-close'));
   };
   function isBackBtn(b) { var t = b.getAttribute('data-testid') || '', l = b.getAttribute('aria-label') || ''; return /^(btn-back|btn-close)$/.test(t) || (b.classList.contains('icon-btn') && /^(Back|Close)\b/.test(l)); }
@@ -247,15 +257,18 @@
   }
   function restoreFocus(e, fk) {
     var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
-    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });   // the same control again: not a move, so never stale
+    // the same control again: not a move, so never stale
+    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });
     else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
   }
   function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }
   function focusAfterClose(opener) {
-    if (focusOk(document.activeElement)) return;   // something (a new screen) already holds the focus
+    // something (a new screen) already holds the focus
+    if (focusOk(document.activeElement)) return;
     var top = stack[stack.length - 1];
     if (top && noFocus(top)) return;
-    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }   // (an opener under a lower layer is inert: not usable)
+    // (an opener under a lower layer is inert: not usable)
+    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }
     if (opener && opener.key && top) {
       var list = byTid(top.root, opener.key.tid), n = list.length ? list[Math.min(opener.key.idx, list.length - 1)] : null;
       if (usable(n)) { ui.focusEl(n); return; }
@@ -292,7 +305,8 @@
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
   ui.define('confirm', {
     kind: 'modal',
-    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },   // v1.5: a danger ask starts on No
+    // v1.5: a danger ask starts on No
+    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },
     title: function (d) { return d.title || 'Sure?'; },
     build: function (s, d) {
       if (d.text) s.body.appendChild(el('p.dim', d.text));

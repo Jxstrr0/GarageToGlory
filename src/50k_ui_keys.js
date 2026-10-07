@@ -33,14 +33,16 @@
   var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]';
   var STALE_MS = 200;
   var D = { lastEsc: null, nav: null, repeat: 0, stale: 0 };
-  var down = {};   // code -> the element its (unswallowed) keydown was on
+  // code -> the element its (unswallowed) keydown was on
+  var down = {};
 
   function kbnavOn(on) {
     if (root.classList.contains('gg-kbnav') === !!on) return;
     root.classList.toggle('gg-kbnav', !!on);
     GG.emit('ui:kbnav', { on: !!on });
   }
-  ui.setKbnav = kbnavOn;   // (tests / Settings)
+  // (tests / Settings)
+  ui.setKbnav = kbnavOn;
   function swallow(ev, why) {
     ev.preventDefault(); ev.stopPropagation();
     if (why) D[why]++;
@@ -134,13 +136,15 @@
   function back() {
     var e = topEntry(), id = e && e.id, d = e && e.def, n;
     if (!e) {
-      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }   // the garage with nothing open: ☰
+      // the garage with nothing open: ☰
+      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }
       return 'none';
     }
     if (id === 'confirm') { n = clickable(e, 'btn-confirm-no'); if (n) n.click(); else ui.close(id); return 'confirm-no'; }
     if (typeof d.back === 'function') { d.back(e); return 'fn'; }
     if (typeof d.back === 'string' && (n = clickable(e, d.back))) { n.click(); return 'back:' + d.back; }
-    var kb = KEY_BACK[id];   // (before the sticky check: calib and recap are sticky screens with their own way out)
+    // (before the sticky check: calib and recap are sticky screens with their own way out)
+    var kb = KEY_BACK[id];
     if (kb === 'close') { ui.close(id); return 'close'; }
     if (kb && (n = clickable(e, kb))) { n.click(); return 'back:' + kb; }
     if (STICKY[id] || d.sticky) return 'sticky';
@@ -148,7 +152,8 @@
     if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
     return 'none';
   }
-  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };   // (tests: what Esc does on the top screen)
+  // (tests: what Esc does on the top screen)
+  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };
   // (7) the garage spots by number
   function spotKey(code) {
     var m = /^(?:Digit|Numpad)([1-8])$/.exec(code || '');
@@ -182,21 +187,26 @@
       if (isTab) { swallow(ev); cycle(ev.shiftKey); }
       return;
     }
-    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }   // (3)
-    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }   // (5)
+    // (3)
+    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }
+    // (5)
+    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }
     var a = document.activeElement;
-    if (dir) {   // (4)
+    // (4)
+    if (dir) {
       if (isOwnArrows(t) && !badFocus(a)) return;
       if (move(dir)) ev.preventDefault();
       return;
     }
-    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {   // (6) (a control under the top layer never clicks)
+    // (6) (a control under the top layer never clicks)
+    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {
       swallow(ev);
       delete down[code || k];
       if (isEnter) { focusDefaultNow(); D.nav = 'enter:' + tidOf(document.activeElement); }
       return;
     }
-    var i = spotKey(code);   // (7)
+    // (7)
+    var i = spotKey(code);
     if (i >= 0 && !ui.stackIds().length && GG.state) {
       var spots = ui.kbSpots ? ui.kbSpots() : [];
       if (spots[i]) { ev.preventDefault(); ui.walkToSpot(spots[i]); }
