@@ -23,13 +23,13 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.4.0.0** "Tuning" (in review on `v1.4-tuning`; `main` is still 1.3.1.0, PR #25, merged 2026-10-05) = 1.3.1.0 +
+- Current: **1.4.0.0** "Tuning" (PR #26, merged 2026-10-07) = 1.3.1.0 +
   the money pass (Addendum 7 M1-M3: `plan/v14/build_report.md`, `plan/v14/probe_after.md`, `plan/v14/integration_report.md`).
   See "What's in v1.4" / "What's in v1.3.1" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26).
 - Next: **1.4 owner check + review + PR** (440x956 shots in the verifier's scratch `v14_owner/`). Still open from v1.3
   (`plan/v13_integration_report.md` §8, not part of the owner's money picks): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
@@ -449,7 +449,10 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] Hall of Fame "Biggest room" overflowed at 390 when the name is long (`pw_hof list`; report finding 1): the value wraps
   (`.hof-wrap`); fixed with the review fixes because the until-signed money moved the seeded career to a longer room name that
   overflowed at 440 too — 2026-10-07
-- [ ] owner check (440x956 shots) + review + PR
+- [x] owner check (440x956 shots + year-1 numbers): **ship**; PR #26 to `main` — 2026-10-07
+- Next (handoff D5): the owner playtests years 1-3 on drums (then 3-6) and reports in plain words; each report becomes a
+  numbered item here and a small v1.4.x patch. Watch: year 3 a bit richer for bots; gear-in-week-1 + jam-room player still
+  tight in year 3. Owner deletes the `wip-*` leftovers (incl. `wip-v14-lead`) on GitHub.
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
