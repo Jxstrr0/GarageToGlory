@@ -23,15 +23,15 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.3.1.0** (PR #25, merged 2026-10-05) = 1.3.0.0 "Songwriter" + Simulate a regular gig at your own average + a
-  "Gear shop" garage label and a SHOP button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6,
-  `plan/v131_integration_report.md`). See "What's in v1.3.1" / "What's in v1.3" below. **Update Current/Next at every merge.**
+- Current: **1.4.0.0** "Tuning" (in review on `v1.4-tuning`; `main` is still 1.3.1.0, PR #25, merged 2026-10-05) = 1.3.1.0 +
+  the money pass (Addendum 7 M1-M3: `plan/v14/build_report.md`, `plan/v14/probe_after.md`, `plan/v14/integration_report.md`).
+  See "What's in v1.4" / "What's in v1.3.1" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
   0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25).
-- Next: **1.4 "Tuning"** (only when the owner asks; handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
-  the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
+- Next: **1.4 owner check + review + PR** (440x956 shots in the verifier's scratch `v14_owner/`). Still open from v1.3
+  (`plan/v13_integration_report.md` §8, not part of the owner's money picks): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -135,6 +135,20 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.4 "Tuning" (Addendum 7; build `plan/v14/build_report.md`; on `v1.4-tuning` 2026-10-06/07)
+- **M1 "Gigs pay, side jobs less"** (content numbers): start fund $450 (was $300); tier-1 rooms pay up to +60% but never more
+  than tier 2 (`GG.world.tierPay` + tierStep); gas half price in the garage era, 80% after Local Heroes fading to full over 24
+  weeks (`GG.career.earlyMoney`, no cliff at signing); open mics cover $40 of gas; a great show pays more (S +25%, A +10%,
+  same fade; nobody docked); ride $200 (was $350), pedal $250 (was $300); Hustle x0.7 in the garage, x1 at Local Heroes (was
+  1 / 1.3). The gig results show **Pay / Band's cut / Gas** and "Into the fund" (testids gig-pay, gig-cut, gig-net).
+- **M2 "Fair grades"**: the crowd's flow (a running combo warms the room) runs on every seat (was string seats only): the same
+  hit share earns the same score, grade and pay on the kit as on bass. Charts unchanged.
+- **M3**: the jam room costs $35/wk until you sign, then $60 (card `shop_space_1` + band variants and the shop say both).
+- Seat line: the swapped member on a string seat no longer wants "solos". No new state key (SAVE_SCHEMA 10), old saves load;
+  the played-gig fingerprint was re-pinned on purpose (logged). dist 5,244,808 B.
+- Measured (`plan/v14/probe_after.md`): gig-first year-1 parents' loans drums 98% -> 55%, bass 95% -> 45%; Hustle-heavy bots
+  ~0%; drums-minus-bass score at equal accuracy -1.22 -> +0.36; years 4-10 within seed noise; year 3 richer for bots (watch).
 
 ## What's in v1.3.1 "Simulate" (plan `plan/plan_1.3.1.md`; lanes G, S + lead merged on `v1.3.1-simulate` 2026-10-04)
 - **Simulate this gig (G):** the setlist sheet's foot has [Auto-pick] [⏩ Simulate this gig] above the big "Start the show". One tap
@@ -422,7 +436,9 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 
 ## Addendum 7 — pending
 - [x] money map + bot probes + 3 options + critic (`plan/v14/`) -> owner popup M1-M3 (2026-10-06)
-- [ ] build the chosen option, re-probe, full tests, owner check, PR
+- [x] build M1-M3 + critic fixes, re-probe (`plan/v14/build_report.md`, `probe_after.md`) — 2026-10-06/07
+- [ ] full verify at 390 + 440 (`plan/v14/integration_report.md`; running)
+- [ ] owner check (440x956 shots) + review + PR
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.

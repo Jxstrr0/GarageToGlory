@@ -15,7 +15,8 @@ that run was used). Sections fill in as the matrix streams finish.
 - Node suite `node tests/run.js`: **SUITE ALL PASS** (36 files; incl. sim_money 8/8, sim_gig 37/37, sim_world 21/21,
   sim_shop 17/17, sim_career, sim_recap 6/6, sim_bands 17/17, **compat_v12 10/10** (songwriter law), **save 22/22** (old saves)).
 - Classic audio: `META_ONLY=hash` pw_seq **232/232 equal** at 390x844 and at 440x956 (inside the matrix streams).
-- Full Playwright matrix (390x844 + 440x956), pw_perf, phoneqa: running.
+- Full Playwright matrix (390x844 + 440x956), pw_perf, phoneqa: running (00:56 UTC: 38 + 40 sections passed so far; the
+  first-run failures so far are render-speed / van timing under two parallel browsers, to be rerun alone).
 
 ## 3. Owner check shots (440x956; verifier scratch `v14_owner/`, not committed; script `v14_owner/shots.js`), looked at each
 - `01_results_band_cut.png`: Hail Damage on **bass**, the Legion (Saskatoon, tier 1, flat), a PLAYED live gig (the autoplay bot
