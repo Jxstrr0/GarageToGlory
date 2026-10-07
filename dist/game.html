@@ -1764,8 +1764,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    M1 "Gigs pay, side jobs less" (content/economy.js; every value below is content):
      startFund 300 -> 450; shop ride (lane 6 / the string seats' lane-6 item) 350 -> 200, pedal (runs) 300 -> 250;
      hustleEra { garage 0.7, local 1, signed 2.2, world 3 } (was 1 / 1.3 / 2.2 / 3).
-     GG.career.earlyMoney(state) -> 0..1: 1 in the garage era, then 1 - (totalWeek - milestones.localHeroes) / economy.earlyTaper
-       (24), clamped; any later era too (no cliff at signing); a non-garage career without a Local Heroes week -> 0.
+     GG.career.earlyMoney(state) -> 0..1 (owner "until signed"; review fix): 1 in the garage era; else clamp((end - totalWeek)
+       / economy.earlyTaper (12), 0, 1) with end = min(Local Heroes + economy.earlyBackstop (48), signed + earlyTaper): full
+       through Local Heroes, a 12-week fade after signing (the first 'signed' / 'world' eraHistory week: a deal or a DIY album;
+       else milestones.signed), and a band that never signs loses it 48 weeks after Local Heroes. At most 1/12 a week (no
+       cliff). Local Heroes week = milestones.localHeroes, else the 'local' eraHistory week; signed without a week -> 0.
      GG.world.gasMult(state): garage economy.world.gasEra.garage (0.5); from Local Heroes 1 - (1 - gasEra.local (0.8)) x earlyMoney.
      GG.world.gasFor(state, city) = max(gasMin, round(km x 2 x gasPerKm x gasMult)); world.decorate: an exposure deal's gas
        -= economy.world.exposureGas (40), never below 0.
@@ -6056,7 +6059,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: true },   // v0.7: the World stage era is on (Steady pace)
     eraUpkeep: { garage: 0, local: 6, signed: 40, world: 50 },   // extra $/week: jam-space rent, a manager, insurance
     hustleEra: { garage: 0.7, local: 1, signed: 2.2, world: 3 },
-    earlyTaper: 24,
+    earlyTaper: 12, earlyBackstop: 48,
 
     world: {
       eraTier: { garage: 2, local: 2, signed: 3, world: 3 },   // tier-3 theatres (500–2,000) open in the Signed era
@@ -25055,11 +25058,23 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
+  function eraWeek(state, eras) {
+    var h = state.eraHistory || [];
+    for (var i = 0; i < h.length; i++) if (h[i] && eras.indexOf(h[i].era) >= 0 && h[i].week > 0) return h[i].week;
+    return 0;
+  }
   career.earlyMoney = function (state) {
     if (!state || !state.era || state.era === 'garage') return 1;
-    var T = econ().earlyTaper, lh = state.milestones && state.milestones.localHeroes;
-    if (!(T > 0) || !(lh > 0)) return 0;
-    return U.clamp(1 - ((state.totalWeek || 0) - lh) / T, 0, 1);
+    var E = econ(), T = E.earlyTaper, B = E.earlyBackstop, ms = state.milestones || {}, now = state.totalWeek || 0;
+    if (!(T > 0)) return 0;
+    var lh = ms.localHeroes || eraWeek(state, ['local']), end = Infinity;
+    if (B > 0 && lh > 0) end = lh + B;
+    if (state.era !== 'local') {
+      var sw = eraWeek(state, ['signed', 'world']) || ms.signed || 0;
+      if (!(sw > 0)) return 0;
+      end = Math.min(end, sw + T);
+    }
+    return end === Infinity ? 1 : U.clamp((end - now) / T, 0, 1);
   };
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
@@ -28102,6 +28117,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var g = GG.world.makeListing(state, v, rng, { source: 'offer', id: id });
       var S = texts('botb', state);
       g.name = 'Battle of the Bands @ ' + v.name; g.deal = 'exposure'; g.pay = 0; g.minFans = 0; g.setSize = 3;
+      g.gas = Math.max(0, GG.world.gasFor(state, g.city) - (GG.world.cfg().exposureGas || 0));
       g.capacity = Math.max(v.capacity, k.botb.capacity); g.opening = null;
       g.quirk = fill(state, S.text || '{rival} are in. Winner takes {prize}.', { venue: v.name, city: v.city, prize: money(prize) });
       g.catch = 'Winner takes ' + money(prize) + ' and some of the loser\'s fans.';
@@ -52247,9 +52263,26 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return L.monthName + ', ' + L.seasonName.toLowerCase() + ': ' + L.weatherLabel.toLowerCase() + ', ' + L.temp + '°C. '
       + (L.holiday ? L.holiday.icon + ' ' + L.holiday.name + ': ' + L.holiday.blurb + ' ' : L.seasonBlurb + ' ') + (L.fit ? L.fit : '');
   }
+  function compactMoney(n) {
+    var a = Math.abs(Math.round(n)), t = a >= 1e6 ? (a / 1e6).toFixed(a >= 1e7 ? 0 : 1) + 'M' : a >= 1000 ? (a / 1000).toFixed(a >= 1e5 ? 0 : 1) + 'k' : String(a);
+    return (n < 0 ? '−$' : '$') + t;
+  }
+  function fitChip(v, full, short) {
+    var over = function () { return v.clientWidth > 0 && v.scrollWidth > v.clientWidth + 0.5; };
+    v.textContent = full; v.style.fontSize = ''; v.parentNode.title = full;
+    if (!over()) return;
+    v.style.fontSize = '12px';
+    if (!over()) return;
+    v.textContent = short; v.style.fontSize = '';
+    if (over()) v.style.fontSize = '12px';
+    if (over()) v.style.fontSize = '11px';
+  }
   function hudChip(key, testid, label) {
     var v = el('span.v'), l = el('span.l', label), extra = key === 'buzz' || key === 'chem' ? ui.bar(0, 100) : null;
-    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () { ui.toast(key === 'week' ? weekHelp() : STAT_HELP[key]); } }, [l, v, extra]);
+    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () {
+      var st = S();
+      ui.toast(key === 'week' ? weekHelp() : key === 'fund' && st ? STAT_HELP.fund.replace('Band fund:', 'Band fund ' + U.fmtMoney(st.fund) + ':') : STAT_HELP[key]);
+    } }, [l, v, extra]);
     b._v = v; b._l = l; b._bar = extra;
     return b;
   }
@@ -52322,9 +52355,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     hud.week._l.textContent = 'Y' + st.year;
     hud.week._v.textContent = 'W' + st.week;   // v0.6.1 verify: '/24' in a smaller span so W12/24 fits a 390px chip
     hud.week._v.appendChild(el('small.wk-of', '/' + C.WEEKS_PER_YEAR));
-    hud.fund._v.textContent = U.fmtMoney(st.fund);
+    fitChip(hud.fund._v, U.fmtMoney(st.fund), compactMoney(st.fund));   // v1.4 review: $1,018 no longer clips to "$1,0…" at 390
     hud.fund.classList.toggle('neg', st.fund < 0);
-    hud.fans._v.textContent = U.fmtNum(st.fans);
+    fitChip(hud.fans._v, U.fmtNum(st.fans), st.fans >= 1000 && st.fans < 10000 ? (st.fans / 1000).toFixed(1) + 'k' : U.fmtNum(st.fans));   // "9,999" fits at 390 too
     hud.buzz._v.textContent = String(Math.round(st.buzz));
     hud.chem._v.textContent = String(Math.round(st.chemistry));
     setBar(hud.buzz._bar, st.buzz); setBar(hud.chem._bar, st.chemistry);
@@ -54825,6 +54858,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (d == null) return r.repNow != null ? 'Venue rep: ' + U.signed(r.repNow) : null;
     return d > 0 ? 'Venue rep ▲ ' + d + ': they want you back.' : d < 0 ? 'Venue rep ▼ ' + (-d) + ': the owner is not returning calls.' : 'Venue rep unchanged.';
   }
+  ui.gigFundParts = function (r) {
+    var out = [], net = r && r.deltas ? r.deltas.fund || 0 : 0, tow = r && r.travel && r.travel.breakdown ? r.travel.breakdown.cost || 0 : 0;
+    if (!r) return out;
+    if (r.fillInCost) out.push({ label: 'fill-in', v: -r.fillInCost });
+    if (r.commission) out.push({ label: 'management ' + Math.round(r.commission / Math.max(1, r.pay) * 100) + '%', v: -r.commission });
+    if (r.crew) out.push({ label: 'crew', v: -r.crew });
+    if (tow) out.push({ label: 'tow', v: -tow });
+    if (r.merch && r.merch.earned) out.push({ label: 'merch', v: r.merch.earned });
+    var rest = Math.round(net - ((r.pay || 0) - (r.cut || 0) - (r.gas || 0)) - out.reduce(function (a, p) { return a + p.v; }, 0));
+    if (rest) out.push({ label: 'other', v: rest });
+    return out;
+  };
   ui.define('gig-results', {
     kind: 'full', cls: 'gigres', sticky: true,
     build: function (s, d) {
@@ -54846,10 +54891,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         el('div', [el('span.caps', 'Fans'), el('b.good', U.signed(r.fans || 0))]),
         el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))])
       ]));
-      var net = r.deltas && r.deltas.fund != null ? r.deltas.fund : null;
-      if (net != null) s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net)),
-        el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
-          + (r.pay > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))]));
+      var net = r.deltas ? r.deltas.fund || 0 : null;
+      if (net != null) {
+        var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
+        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+          .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
+          .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
+            + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
+      }
       if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
       s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
