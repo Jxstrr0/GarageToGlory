@@ -32,7 +32,7 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
 
 | Q1 | Drum keys | **"Strong fingers"** (popup 2026-10-07): Space kick, D snare, F hats, S crash; toms (5th) on Shift; ride (6th) on A. |
 | Q2 | String keys | **A S D F + thumb on top**: A S D F for the first four; 5 strings: Space = top; 6 strings: Shift = 5th, Space = top. |
-| Q3 | PC look | **B "Centred wide column"**: a bigger phone, menus in 2-3 columns, a wider highway centred under the stage. Package A is dropped (stage 0 deletes A-only extras from §4.6). |
+| Q3 | PC look | **B "Centred wide column"**: a bigger phone, menus in 2-3 columns, a wider highway centred under the stage. Package A is dropped (stage 0 deleted its table and tests from §4.6 / §5). |
 
 ### Defaults (taken without a popup; they stand unless the owner objects — list them in the merge summary)
 - D1 Keys are **physical** (`KeyboardEvent.code`: AZERTY/QWERTZ get their own home row). Labels: `getLayoutMap()` where it exists
@@ -78,7 +78,7 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
 - M3 Menus (K1): router (Esc / Tab / arrows / Enter / Space / digits), repeat + stale-press guard, focus memory across re-renders,
   opener restore, Tab trap, ring only in keyboard mode, unsaved-edit confirm, songwriter grid keys, typing guard, `kb-spots`,
   `kb-hints`.
-- M4 PC layout (K3, §4.6): the package picked in §8 Q3 (B recommended / A), 3D insets, pixel budget (PC layout only), hover +
+- M4 PC layout (K3, §4.6): package B (§8 Q3, picked), 3D insets, pixel budget (PC layout only), hover +
   scrollbars, every drawn extra of the picked mockup (§4.6 tables).
 - M5 Phone law proof (stage-0 freeze + full matrix + phoneqa at both sizes + soft-keyboard checks). M6 New tests: `keys.test.js`,
   `wide_css.test.js`, `pw_keys.js`, `pw_nav.js`, `pw_wide.js` (1280x720 / 1440x900 / 1920x1080 / 800x900, desktop contexts),
@@ -89,18 +89,19 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
 - Gamepad / MIDI. Per-seat or per-lane-count maps. Rebinding menu keys. Keyboard van drive. Tablet layout. The package not
   picked in §8 Q3.
 
-## 2. Reuse map (`421e496`; re-audit at stage 0, fix this table)
+## 2. Reuse map (`421e496`; re-audited at stage 0: `src/` is unchanged since `421e496`; fixed: judge 815 / release 805, drumSync
+default 11:44, bridge 747 + 760-764, infinite animations; every other line checked as written)
 | thing | where | reuse how |
 |---|---|---|
 | v1.4 key table | `55:60 KEYS {d0 f1 j2 k3 s0 l3 g4 h5}` (columns; `col()` 55:127) | verbatim → `P.CLASSIC_KEYS` (11): the D2 extras |
 | gig listeners | `55:276-283 listen` (window keydown/keyup; document pointer capture), teardown 330-337 | keys → window capture phase; + window blur |
 | key handlers | `55:769-776 onKey`, `689-695 onKeyUp`, `keyHeld[col]` 775/693; reset only in beginCount 55:386 | rewritten on `P.keyLane` (§4.3); holds by id |
 | timing / tap | `55:765-768 tapTime` (sync → no audio offset, 767; 1000 ms stamp rule, `heardAt` 169); `777-792 tap(li, stamp, touch)`, dispatch sample 779 | Classic offset by tap source; `'key'` samples (D4) |
-| touch path | `55:740-758 onDown`, bridge 763-764, `onUp` 681-688 | **untouched** |
-| drum sync | `55:358-403 beginCount` (K, drawOff 389-393 = `syncVisual(G.off, G.visM)`), `G.visM` 55:318 (from `pf.calib` vat), `playTap` 822-839, `playSeat` 846-867; `11:89-107` (`syncVisual` 107: VIS0 30 ms when unmeasured and 0); drumSync default on 11:45 | visual + visM from the song's input (§4.3) |
+| touch path | `55:740-758 onDown`, bridge 747 (+ `BRIDGE` 760-764), `onUp` 681-688 | **untouched** |
+| drum sync | `55:358-403 beginCount` (K, drawOff 389-393 = `syncVisual(G.off, G.visM)`), `G.visM` 55:318 (from `pf.calib` vat), `playTap` 822-839, `playSeat` 846-867; `11:89-107` (`syncVisual` 107: VIS0 30 ms when unmeasured and 0); drumSync default on 11:44 | visual + visM from the song's input (§4.3) |
 | pause / end | `55:471-485 pause` (`pause(true)` sets `G.restart` 474/481 → "The song starts over"), `491 resume`, 275 visibility, `endSong` 448, buttons 1193-1203 (`btn-gig-resume`, `btn-gig-restart`); `btn-gig-next` 1065, `btn-gig-done` 1169 | Esc; blur → `pause(false)`; 600 ms arm |
 | setlist / highway | `55:1220-1284 gig-set` (prefs 1240-1248), `readPrefs` 315-320; `871 onResize` (layout() at once), `872-887 layout` (laneW = W/lanes), `893-919 buildBg` (cached), `221 guard` (setFrame 227); contextmenu blocked on the canvas only 1206 | `gig-keys`; keycaps in buildBg; wide hooks; whole-layer contextmenu |
-| judging | `22:817 judge`, `862 due`, `801 release`; windows 344-348; THUMBS 285-307 | **untouched** (K4) |
+| judging | `22:815 judge`, `862 due`, `805 release`; windows 344-348; THUMBS 285-307 | **untouched** (K4) |
 | lanes | `02:25 C.LANES`, `02:87-88 C.SEATS / SEAT_MAX_LANES` (bass 5), `20:332-337 seatLanes`, `22:476 STR_LANES`, adjacent chords 22:582 | key slots (§4.4) |
 | prefs / store | `11:33 prof`, `34-49 normalize`, `58 offsets`, `59-66 setCalib` (`c.at = o.at` on every save), `10:17-19 DEFAULT_SETTINGS`, `10:141-152` (merge 147) | + keymap / calibKb / layout; DEFAULT_SETTINGS **unchanged** (save.test 78-84) |
 | settings / calib | `5h:46-60` helpers, sections 79-148, tab scroll 150; calib 159-290 (screen 231: `full`, sticky; `padTap` 224, pads 256/259, `calib-visual-only` 251, save 276-284 always passes `at: Date.now()`, first launch 293-300) | `#set-keys`, Layout seg; calib input seg + capture, both steps |
@@ -110,7 +111,7 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
 | typing / title | `51:535` textarea focus (+ creator-name 51:364, creator-nick 366, code-text 523, seq-title-input 54:497, van-name-input 57:390, lk-*); `51:100 frameTitle` | guard + `real(ev)`; `ui:wide` |
 | songwriter grid | `54:310-343` (div.cell, pointer paint 343); child order 54:678/753 | role=grid, roving tabindex |
 | render / stage | `40:39 QUALITY` (high px 2), `40:50 pixelRatio`, `86 insets`, `222 setViewInsets`, governor 100-104/300-330 (`readStack` covered 314-329), `462 fitCamera`; `42:209 setFrame({top,bottom})`; `42:1465-1475`; `debug('render').labelBox` (41:1031, merged by 40:2245) | L/R insets, budget (wide only), hFov cap; freeze probes |
-| insets / CSS | `60:38-50 updateInsets` (bottom = top sheet height); shell `00:89-124`, scrim `00:94-96` (.28 sheets / .66 modals); 12 injected blocks (52:98 … 5q:41); infinite animations `00:158 gg-glow` (dock primary), `00:581-583 gg-bob`, `00:839 twPulse`, `5p:57 tutPulse` | wide branch; `html.gg-wide`, 5w last |
+| insets / CSS | `60:38-50 updateInsets` (bottom = top sheet height); shell `00:89-124`, scrim `00:94-96` (.28 sheets / .66 modals); 12 injected blocks (52:98 … 5q:41); infinite animations `00:158 gg-glow` (dock primary), `00:581-583 gg-bob`, `00:839 twPulse`, `5p:57 tutPulse`, weather `00:246 gg-hail` / `1117` / `1124` | wide branch; `html.gg-wide`, 5w last |
 | mockups | `plan/v15_desktop_mockup.html?opt=A|B` (`&s=1..4` one 1440x900 screen), contact sheets `_A.png` / `_B.png` | §8 Q3 pictures |
 | tests | `_pw.js:32` (isMobile + hasTouch); `pw_gig.js:789-794`; `pw_shop.js:209-212`; `pw_settings.js:159-260`; `phoneqa.js` | additive `opts.desktop`; pins unchanged |
 
@@ -260,7 +261,7 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
   `scrollIntoView({ block: 'nearest' })`; (5) Tab / Shift+Tab cycle the top layer + `.tut-card`; nothing open → HUD → dock →
   `kb-spots`; (6) focus on body / hidden / inert: Enter focuses the default (no click), Space swallowed; (7) garage: digits by
   **`ev.code` Digit1–8 / Numpad1–8** (never `ev.key`; Shift/AltGr ignored) → `R.goToHotspot(SPOTS[i])` (no 3D → emit
-  `'hotspot'`) with nothing open (package A: also beside non-sticky docked panels, §4.6). Ctrl/Meta/Alt and `isComposing` ignored.
+  `'hotspot'`) with nothing open. Ctrl/Meta/Alt and `isComposing` ignored.
 - **Esc → back:** `def.back` (testid | fn) or `KEY_BACK` (genre/settings `btn-back`, board `btn-board-close`, world
   `btn-world-close`, tour-region `btn-region-back`, logo `btn-logo-back`, hof `hof-back`, calib `btn-back`, recap `recap-close`;
   intro/seat → `ui.close`) clicked if present, enabled, visible → confirm: `btn-confirm-no` → non-sticky sheet/modal:
@@ -280,18 +281,18 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
   top's default, else the dock's primary. Every programmatic focus stamps the focus-move time for (0b). Text inputs are never
   auto-focused.
 - **`kb-spots`** (52): `kb-hs-<action>` buttons with digits, SPOTS order + `spotOf()` labels; shown only with (`gg-kbnav` or
-  `gg-wide`) in the garage with nothing open (package A: also beside non-sticky docked panels), else `display: none`; `hs-*`
-  never reused. **`kb-hints`** (50k): one line of key hints ("Tab move · Enter pick · Esc close", or `def.hints`; garage panels
-  in A add "1–8 walk"; songwriter "←→ step · ↑↓ drum · Space add/remove · Tab leave the grid" (axes per package)) at the end of
+  `gg-wide`) in the garage with nothing open, else `display: none`; `hs-*`
+  never reused. **`kb-hints`** (50k): one line of key hints ("Tab move · Enter pick · Esc close", or `def.hints`;
+  songwriter "←→ step · ↑↓ drum · Space add/remove · Tab leave the grid") at the end of
   the top layer's foot, **inserted only while `html.gg-wide.gg-keys`** (render() re-runs on `'ui:wide'` / `'input:mode'`; never
   in the phone DOM), plus an "Esc" cap after `btn-close` / `btn-back` (CSS `::after` under the same classes).
 - **Seq grid** (54): `role=grid`, cells `role=gridcell` (never button: phoneqa), `aria-selected`, roving tabindex from
-  `D.view.focus { l, s }`; ←/→ lane, ↑/↓ step (package A's sideways grid: ←/→ step, ↑/↓ lane), Home/End, PgUp/PgDn ±4;
+  `D.view.focus { l, s }`; ←/→ lane, ↑/↓ step, Home/End, PgUp/PgDn ±4;
   Space/Enter toggle via the tap path (`paint = { value }` refactor keeps the kick rule, partV2 upgrade, preview).
   `debug('keys') = { top, focus, opener, lastEsc, nav, swallowed: { repeat, stale } }`.
 ### 4.6 PC layout (Lane W: new `src/5w_ui_wide.js` CSS block (injected last) + 40/42/60; DOM hooks by each file's owner)
-The package picked in §8 Q3 (pictures `plan/v15_desktop_mockup_B.png` / `_A.png`, 1440x900): **B recommended**, A alternative.
-Stage 0 step 8 deletes the unpicked table. Each table row covers what its picture draws.
+Package **B "Centred wide column"** (owner Q3, 2026-10-07; picture `plan/v15_desktop_mockup_B.png`, 1440x900). Package A
+(stage + sidebar) was dropped at stage 0 with its table and tests. Each table row covers what its picture draws.
 - **Common:** every rule prefixed `html.gg-wide` (or `html.gg-desk` for hover + thin themed scrollbars), checked against per-screen
   rules up to (0,3,0) (`.full.seq .full-body`, `.full.van .full-body`). 1280x720, 1440x900, 1920x1080 are wide; 800x900 = phone
   layout + `gg-desk` niceties. Centred column `padding-inline: max(16px, (100% − 1120px) / 2)` for full screens (not gig, title,
@@ -303,7 +304,7 @@ Stage 0 step 8 deletes the unpicked table. Each table row covers what its pictur
   null when not wide; a tablet in the phone layout keeps today's ratio). Crossing the threshold re-runs `updateInsets` (W),
   `frameTitle` (N), 55's `layout()` + `guard()` (I, any mode).
 
-**Package B "Centred wide column" (recommended):** like a bigger phone; same sheet behaviour as the phone (light scrim, a click
+**Package B "Centred wide column" (picked):** like a bigger phone; same sheet behaviour as the phone (light scrim, a click
 outside closes, `setViewInsets({ bottom })` keeps the room in view above the panel); 60's updateInsets unchanged.
 
 | screen | B rule | hook (owner) |
@@ -315,24 +316,12 @@ outside closes, `setViewInsets({ bottom })` keeps the room in view above the pan
 | gig play **G1** | highway centred, width `clamp(lanes×110px, 46vw, lanes×140px)`, height `clamp(300px, 48vh, 540px)`, translucent bg, gem `min(laneW − 20, 100)`; stage frame bottom = 0.45 × highway (stage on both sides); song header centred top (max 720); score card right of the highway with `gig-hint`; crowd / cards max 720 | `data-lanes`, gem, bg alpha, guard() (I) |
 | gig-set / gig-results | bottom panel 1120 / 2 columns | classes (I) |
 
-**Package A "Stage + sidebar" (alternative):** the 3D room / stage on the left, one column on the right.
-
-| screen | A rule | hook (owner) |
-|---|---|---|
-| HUD | in the right column (top, panel width) | — |
-| sheets (as B's list) | right panel (below the HUD, bottom 0, right 0, width `clamp(440px, 36vw, 600px)`, `.tall` too, grip hidden, slides from the right); a docked sheet's `.sheet-layer` + `.scrim` are transparent and `pointer-events: none` (the `.sheet` itself `auto`), so the room is undimmed and clickable; modals keep their scrim | 60 (W): `setViewInsets({ right: panel width, bottom: −1 })`; a docked tall sheet is not `covered` (idle 30; phones keep 10) (40, W) |
-| room beside a panel | a hotspot click or digit with only non-sticky docked panels open → `ui.close(top)` then the hotspot (the panels swap); a sticky panel open → ignored; a floor click walks; member taps bubble; `kb-spots` stays visible | `ui.hotspot` + `member:tap` guards allow "only non-sticky docked panels open" (52, N) |
-| laptop | panel `clamp(640px, 52vw, 900px)`; tabs = left rail; cards + trophy rows 2 across | `.lt-tabs` at 53:116 (N) |
-| songwriter (54) | grid on the left, **sideways** (lanes = rows, time across: CSS `grid-auto-flow: column` on the same cell order); song order + coach under it; header, meters, tools, Loop / Song / Save in a right column 500 | arrow axes by package (N); CSS (W) |
-| settings (5h) | right column 500 (tabs across, as the phone); Keys tab: left area `set-keys-map` (a drawn keyboard: bound keys in lane colours, Esc/Tab/Enter striped, the key being changed dashed; display only) + `set-keys-timing` card | 5h (I) |
-| gig play **G2** | stage left: 42 `setFrame({ left: 0, right: column width })` + X view offset; full-height highway in a right column `clamp(lanes×80px, 38vw, lanes×100px)` with the song header (song, streak, score, pause) on top and keycaps + `gig-hint` ("Esc pause · Change keys in Settings › Keys") under it; note travel time = phone | 42 setFrame left/right (W); layout / guard() (I) |
-| gig-set / gig-results | right panel / 2 columns | classes (I) |
 ### 4.7 Key UI: binding + calibration (5h; Lane I)
 - **`#set-keys`** (tab `keys`, between Play and Audio; `showKeyUI()` only): seg `set-keys-kind-drums|strings` (starts on the seat's
   kind); 6 chips `set-key-<kind>-<slot>` (lane colour + name + keycap; lanes past the gear dimmed but bindable; string slots Low,
   2, 3, 4, 5th (6-lane), Top); `set-keys-msg` (aria-live); `set-keys-pos` ("Keys go by their position on the keyboard");
   `set-keys-reset`; `set-keys-sticky`; `set-keys-timing` card (per profile: click test and light check "18 ms late ✓" / "not
-  tested yet" + `set-calibrate-keys` "Key timing"); package A only: `set-keys-map` (§4.6).
+  tested yet" + `set-calibrate-keys` "Key timing").
 - **Bind:** click / Enter / Space on a chip → "Press a key…" → next tick `GG.input.capture` (only a fresh keydown binds: the chip's
   own Enter/Space keyup and repeats are swallowed, never bound or refused) → `P.bindKey` → saved + message ("Swapped: Hats is now
   S", "Tab is for menus — pick another key"); Esc, a click elsewhere or 8 s cancel. **Layout** seg `set-layout-auto|phone|wide`
@@ -344,14 +333,13 @@ outside closes, `setViewInsets({ bottom })` keeps the room in view above the pan
   on (the default), the light check is the one that lines up your keys."
 ### 4.8 Test ids (new; every existing id kept; never `hs-*`)
 `set-keys`, `set-keys-kind-drums|strings`, `set-key-<drums|strings>-<0..5>`, `set-keys-msg`, `set-keys-pos`, `set-keys-reset`,
-`set-keys-timing`, `set-calibrate-keys`, `set-keys-sticky`, `set-keys-map` (A), `set-layout-auto|phone|wide`,
+`set-keys-timing`, `set-calibrate-keys`, `set-keys-sticky`, `set-layout-auto|phone|wide`,
 `calib-input-touch|keys`, `gig-keys`, `gig-keys-change`, `gig-pause-keys`, `gig-hint`, `kb-spots`, `kb-hs-<action>`, `kb-hints`.
 ### 4.9 Debug, size + perf budgets
 `debug('input')` §4.2; `debug('keys')` §4.5; `debug('gigui')` += `keys: { kind, map, input, caps, down: [ids], held, last: { code,
 key, lane, col, at } }, keyTaps, keySwallowed, lostKeyups`; `debug('render')` += `insets.left/right`, `pxBudget`; `debug('calib')`
 += `input`. `dist/game.html` ≤ 6,000,000 B (today 5,248,626; v1.5 net ≤ +60 KB). Router + input: listeners only; keycaps: cached
-canvas. Phone `pw_perf` unchanged; 1920x1080 at dpr 2 ≤ 2.4 MP drawn, gig frame p95 ≤ 1.2 × the 1440x900 p95; docked panel ≤ 30
-fps idle (A).
+canvas. Phone `pw_perf` unchanged; 1920x1080 at dpr 2 ≤ 2.4 MP drawn, gig frame p95 ≤ 1.2 × the 1440x900 p95.
 
 ## 5. Lanes (3 agents, medium effort; isolated copies; never publish)
 Isolation: `cp -r repo /work/<lane>`, branch `v15-<lane>` from stage 0. **Single file ownership**; anything else is a hand-over
@@ -361,7 +349,7 @@ request. Before reporting, each lane runs the full existing pw matrix + `pw_free
 ### Lane I — INPUT (gig keys, calibration, settings)
 - Owns: `src/55_ui_gig.js` (§4.3 + its §4.6 hooks: `data-lanes`, gem width, bg alpha, guard() wide frame, results classes,
   `ui:wide` → layout()/guard() in every mode, `gig-hint`), `src/5h_ui_settings.js` (§4.7, settings layout hooks + calib docking
-  (B) or `set-keys-map` (A)); `tests/pw_keys.js` (new).
+  (B)); `tests/pw_keys.js` (new).
 - `pw_keys` (desktop 1280x720 unless noted): `keys` (each default key per seat × 4/5/6 lanes hits its lane; Space on a 4-lane string
   rig swallowed; J K L G H; code-less `d` = v1.4; Shift held + D; string holds, Shift-held keyup releases; repeat; Ctrl+D);
   `fair` (`calibKb` ≠ `calib`, e.g. keys audio 60 / visual 40 vs touch 0 / 0: Drum sync on → a key song's drawOff uses the key
@@ -374,13 +362,13 @@ request. Before reporting, each lane runs the full existing pw matrix + `pw_free
   false, held strings released; after resume songT continues from pauseT); `rebind` (bind, swap, Tab/Escape/Enter/F5 refused,
   reset, reload, used in the gig, keycap; a rebind started with Enter shows no "Enter is for menus"); `calib-keys` (both steps
   write `calibKb`, touch untouched, fallback; light-check-only keeps the touch audio; a key held 1 s = one tap); `phone` (390
-  phone context: no Keyboard section, Layout row, calib seg, `gig-keys`, keycaps); `wide-gig` (highway bounds per package, 4 and
+  phone context: no Keyboard section, Layout row, calib seg, `gig-keys`, keycaps); `wide-gig` (B highway bounds, 4 and
   6 lanes, 3 sizes; note travel time == phone; resize 1440 → 800 while paused → resume → highway bounds + `laneW` right).
 
 ### Lane N — NAV (menus: focus, Esc, Tab, arrows, garage, songwriter grid)
 - Owns: `src/50_ui_core.js`, `src/50k_ui_keys.js` (new: router, `KEY_BACK`, `gg-kbnav`, ring + `kb-spots` + `kb-hints` CSS),
   `51_ui_menu` (title default, intro/seat, creator back fn, `frameTitle` on `ui:wide`), `52_ui_week` (`kb-spots`, planner, Monday
-  card, results Skip → OK, `.w2` hooks (B) or the docked-panel hotspot guards (A)), `53_ui_laptop` (`.lt-tabs`),
+  card, results Skip → OK, `.w2` hooks (B)), `53_ui_laptop` (`.lt-tabs`),
   `54_ui_sequencer` (grid, `D.dirty`, back fn, arrow axes), small `def.back` / `focus` / `hints` / autofocus hooks in 56, 58, 59*,
   5g, 5i–5q (5j look back fn; `.tut-card` joins the Tab cycle); `tests/pw_nav.js` (new).
 - `pw_nav` (desktop 1280x720 + 800x900; phone passes, no keys): `career` (creator name typing "asdf " only types → seat → digit 1
@@ -393,16 +381,14 @@ request. Before reporting, each lane runs the full existing pw matrix + `pw_free
   look the same); `phone` (390x844 and 844x390 phone contexts: `kb-spots` and `kb-hints` absent, no `gg-kbnav`;
   `pressSequentially('Tanner')` + `press('Enter')` in `creator-name` and `seq-title-input` → `html.className` unchanged,
   `debug('input').kbSeen === false`, mode `'touch'`, no `set-keys` / `gig-keys` / `calib-input-*` in the DOM; a CDP keydown with
-  key `Unidentified`, keyCode 229, code `''` on body counts for nothing); package A only: `room` (planner open → digit 2 opens the
-  laptop and the planner closes; a floor click walks; the room is not dimmed; Esc closes the panel).
+  key `Unidentified`, keyCode 229, code `''` on body counts for nothing).
 
 ### Lane W — WIDE (CSS, layout, 3D framing)
 - Owns: `src/5w_ui_wide.js` (new CSS block + small layout JS), `src/40_render_core.js`, `src/42_render_stage.js`, `src/60_main.js`
   (updateInsets, `ui:wide`), `00_shell.html` CSS only if a shell rule can't be beaten; `tests/pw_wide.js`, `tools/desktopqa.js` (new).
 - `pw_wide` (desktop 1280x720, 1440x900, 1920x1080, 800x900): `layout` (classes; no horizontal overflow on every §4.6 screen;
-  panel / column bounds of the picked package; garage hotspots on screen beside or above an open planner; B: `insets.bottom` =
-  panel height; A: `insets.right` = panel width, not covered, room undimmed); `gig` (highway bounds, stage visible (B both sides,
-  A left), hFov ≤ 100°); `switch` (1440 → 800 → 1440 re-runs insets; mid-song resize deferred); `perf` (≤ 2.4 MP at 1920x1080
+  B's panel / column bounds; garage hotspots on screen above an open planner; `insets.bottom` = panel height); `gig` (highway
+  bounds, stage visible on both sides, hFov ≤ 100°); `switch` (1440 → 800 → 1440 re-runs insets; mid-song resize deferred); `perf` (≤ 2.4 MP at 1920x1080
   dpr 2; p95 budget; 1024x1366 desktop context in the phone layout keeps ratio 2 on high); `pref` (Layout Phone / PC).
   `desktopqa`: overflow, clipped or < 32 px controls, hover.
 
@@ -420,7 +406,7 @@ request. Before reporting, each lane runs the full existing pw matrix + `pw_free
    and 440x956 (`PW_VIEW=440x956`); no existing test edited (only the additive `_pw.js`); no horizontal scroll; button audit.
    6. **Desktop:** `pw_keys`, `pw_nav`, `pw_wide`, `desktopqa` at 1280x720, 1440x900, 1920x1080 (+ 800x900). 7. Size gate
    (`tools/perf.js`) ≤ 6,000,000; `pw_perf`; no-USA scan.
-8. Owner check (one popup: ship / tweak): 1440x900 shots of the picked package (garage + planner panel, laptop Band, songwriter
+8. Owner check (one popup: ship / tweak): 1440x900 shots of package B (garage + planner panel, laptop Band, songwriter
    editor, gig-set legend, gig play 4 and 6 lanes with keycaps, pause card, results, Settings → Keyboard mid-rebind, key
    calibration), 1920x1080 gig, 1280x720 garage, 800x900 garage, and 440x956 proof shots (garage, gig, settings) identical to v1.4.
 9. Review (≤ 3 lenses: phone-unchanged, input timing/fairness, keyboard UX); verify only blocker/major findings.
