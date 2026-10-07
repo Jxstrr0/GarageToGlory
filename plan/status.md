@@ -446,7 +446,9 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] review (2 confirmed + 6 minor) fixed on `v1.4-tuning` (`plan/v14/integration_report.md` "Review fixes"): early help
   until signed (was a 24-week clock from Local Heroes), the results money row adds up, BotB gas cover, HUD chips, no bonus
   line on a prize — 2026-10-07
-- [ ] lead: Hall of Fame "Biggest room" overflows at 390 when the name is long (`pw_hof list`; report finding 1, a CSS fix)
+- [x] Hall of Fame "Biggest room" overflowed at 390 when the name is long (`pw_hof list`; report finding 1): the value wraps
+  (`.hof-wrap`); fixed with the review fixes because the until-signed money moved the seeded career to a longer room name that
+  overflowed at 440 too — 2026-10-07
 - [ ] owner check (440x956 shots) + review + PR
 
 ## Tech
