@@ -4,13 +4,18 @@ Branch `v1.4-tuning` at 84e42ed (VERSION 1.4.0.0; M1 "Gigs pay, side jobs less",
 until signed). Base = d9411a3 (1.3.1.0 money; no `src/` change since the baseline's fdecb74). Both trees were exported
 read-only (`git archive`) to scratch; nothing in `src/` or `content/` was edited. Same drivers, seeds and bot styles as
 `plan/v14/probe_baseline.md` (drive.js: seed x 7919, seeds 1-40, Hail Damage, Normal; weak = the avg bot with 20% smart picks
-and 50% offer accepts) and the critic's persona driver `plan/v14/human.js`. The base runs reproduce the baseline and critic
-files byte for byte, so every pair below is the same seed under the two rule sets. Cells read **base → after**.
+and 50% offer accepts) and the critic's persona driver `plan/v14/human.js`. The base tree reproduces the earlier runs (drive.js careers checked week
+by week on sample seeds, the critic's persona files byte for byte), so every pair below is the same seed under the two rule sets. Cells read **base → after**.
 Seed noise: a loan share over 40 careers has a standard error of about 8 points near 50%; fund means carry their own ± SE.
 
 ## Verdict
 
-Draft (years 4-10, T11 and X1 still running; this section is rewritten when they land).
+1. **Met, year-1 targets:** gig-first drums h12 **55% loans / 4.7 wks < $100** (target ~53% / 4.5: +2 pts, +0.2 wk), bass **45% / 3.3** (~40% / 3.5: loans +5 pts, inside ±8-pt seed noise), Hustle-heavy drums **3% / 0.5**, bass **0% / 0.4** (~0% / 0.5); base 98% / 11.8, 95% / 9.0, 25% / 1.4, 30% / 1.9.
+2. **Met, "Drums felt worse":** at equal accuracy drums score +0.4 vs bass (was -1.2, worst cell -3.2 → +1.3), the same grade pays the same on every seat (0 of 397 pairs differ), and a gig-first drummer at bass's level of play borrows no more than bass in year 1 (30% vs 45%); same hands on the ~2x denser chart (h12) still trail (Y3 fund $509 vs $1,470).
+3. **Met, gig pay:** a year-1 gig leaves $30-35 in the fund (base $0-6) vs $52 a Hustle block (base $73); year-1 gas -43% to -64%; tier 2 nets more than tier 1 per paid gig in 9 of 9 bot x year rows, but by only +$16 (weak) / +$30 (avg) in year 1.
+4. **Met, one watch item, signing:** no pay cliff (gross per gig +1% / -6% across signing; after Local Heroes every early-money factor moves <= 0.011 a week), but net into the fund per gig drops $47-58 at signing (1.3.1: $18-26) as the 1.3 15% commission is no longer masked.
+5. **Met (one borderline cell), years 4-10:** pooled Y4-6 fund within ±5% (|z| <= 0.6) in 7 of 8 seat x bot cells, avg rhythm +8% over 80 seeds (z 1.9); Y7-10 -7% to 0%; late gig pay per year -11% to +4%; late loans 0-3% of career-years.
+6. **Missed / not targeted:** year 3 is richer for the bots (mean fund -7% to +39%, 11 of 12 cells up, avg bass +39% z 2.5), and the gig-first player who buys gear in week 1 and rents the jam room is still broke in year 3 (P1 45-78% loans; base 73-90%).
 
 ## 1. Targets (status.md Addendum 7)
 
@@ -23,7 +28,7 @@ Draft (years 4-10, T11 and X1 still running; this section is rewritten when they
 | Same accuracy → same grade and pay on any seat (M2) | drums - bass -1.22 pts, worst -3.2 | **+0.36, worst +1.3; 0 / 397 same-grade pairs paid differently** | met |
 | Tier 2 nets >= tier 1 per paid gig | yes (+$60 to +$130) | **yes in 9 / 9 rows (+$16 to +$128)** | met (thin in year 1) |
 | No pay cliff at signing | gross +19-20% | **gross +1% / -6% (noise); factors move <= 0.011 a week** | met (net dips with the 1.3 commission, see 7) |
-| Years 4-6 unchanged (within seed noise, not richer) | - | {{Y46}} | {{Y46V}} |
+| Years 4-6 unchanged (within seed noise, not richer) | - | **7 / 8 cells within ±5% (|z| <= 0.6); avg rhythm +8% over 80 seeds (z 1.9); Y7-10 -7% to 0%** | met (one borderline cell, not richer in gig pay) |
 
 ## 2. Drums vs bass side by side (bot careers, Hail Damage, 40 paired seeds per cell)
 
@@ -50,8 +55,9 @@ Draft (years 4-10, T11 and X1 still running; this section is rewritten when they
 
 - The early squeeze is gone for every bot on both seats: year-1 loans 25-48% → 0-10% (avg), 40-65% → 3-13% (weak); weeks under
   $100 in year 1 0.0-0.6; the median fund at week 6 is $256-333 (was $137-223). All four seats in C1/C2 (section 5).
-- Gas carries most of it: year-1 gas -43% to -56% for the weak and avg bots (half price in the garage era, open mics cover $40);
-  gig pay +21% to +82%; Hustle pay -31% to -77% (the good bots now Hustle 1.9-2.0 blocks a year, was 4.8-6.0).
+- Gas carries most of it: year-1 gas -43% to -64% for the weak and avg bots on all four seats (half price in the garage era, open
+  mics cover $40); gig pay +17% to +82%; Hustle pay -31% to -47% (weak/avg) and -70% to -77% (good: drums and bass good bots now
+  Hustle 1.9-2.0 blocks a year, was 4.8-6.0). Seat detail in C3 (section 5).
 - No seat penalty in the bots (they can't see the chart); section 4 checks the played gig.
 
 ## 3. The gig-first persona (human.js; Hail Damage, 40 seeds, 3 years)
@@ -191,7 +197,7 @@ on all four seats, pay settled through `gig.applyResult` (the v1.4 grade pay inc
 | lead | good | -$97 → -$177 | $247 → $428 | $109 → $168 | $335 → $304 | $54 → $134 | $212 → $34 | $2,385 → $3,324 | $463 → $108 | $783 → $1,068 | $812 → $651 |
 
 - Q1 still loses money (-$128 to -$177 per career; the good bots spend on merch and gear sooner), but from the $450 start the
-  week-6 fund is higher than base in every cell; Q2-Q4 are positive in every cell but one (bass weak Q4 +$6).
+  week-6 fund is higher than base in every cell; Q2-Q4 are positive in every cell (smallest: bass weak Q4 +$6).
 
 ### C4. What one block earns (mean per career-year, base → after): a Hustle block vs one gig (net to the fund, merch excluded)
 gig net = pay - members' cut - gas - fill-ins - commission - crew - tow.
@@ -265,7 +271,7 @@ Gross pay per gig in 2-week bins around signing (all seats pooled; bins -8/-7 ·
   booking commission ($36-40 a gig, a 1.3 rule, shown on the results screen) is no longer masked by a gross rise, because the
   pre-signing gigs already pay more. Owner check: "Into the fund" shrinks by about a third in the first signed weeks.
 - Steps by design: at Local Heroes the gas factor goes 0.50 → 0.81 (garage half price ends) as Hustle goes 0.7 → 1.0; at signing
-  the jam room goes $35 → $60 for renters (35 of 316 careers were renting that week; 2 moved up to the $150 space that week).
+  the jam room goes $35 → $60 for renters (37 of 316 careers were renting that week; 2 of them moved up to the $150 space).
 
 ## 8. Jam-room renters, year-3 loans
 
@@ -288,7 +294,46 @@ Personas P1 / P2 / P4 (table 3b) and the bot careers that rented in year 3:
 
 human.js avg + good bots, 40 seeds, both trees: drums + bass 10 years, rhythm + lead 6 years.
 
-(pending: probe still running)
+Pooled (mean of the yearly year-end funds per career; z = difference / combined standard error, |z| < 2 = within seed noise):
+
+| bot | seat | years | mean fund base → after (± SE) | change | z | gig pay per year | gigs per year | career-years with a loan |
+|---|---|---|---|---|---|---|---|---|
+| avg | drums | Y4-6 | $4,425 ± 279 → $4,632 ± 204 | 5% | 0.6 | $7,665 → $7,615 (-1%) | 12.1 → 12.1 | 0% → 3% |
+| avg | drums | Y7-10 | $7,415 ± 313 → $7,449 ± 340 | 0% | 0.1 | $14,983 → $14,614 (-2%) | 13.1 → 12.9 | 0% → 0% |
+| avg | drums | Y4-10 | $6,134 ± 222 → $6,242 ± 213 | 2% | 0.4 | $11,847 → $11,614 (-2%) | 12.7 → 12.6 | 0% → 1% |
+| avg | bass | Y4-6 | $4,403 ± 249 → $4,396 ± 233 | -0% | -0.0 | $7,769 → $8,013 (3%) | 12.2 → 12.4 | 1% → 3% |
+| avg | bass | Y7-10 | $6,980 ± 427 → $6,772 ± 378 | -3% | -0.4 | $15,696 → $14,002 (-11%) | 13.3 → 12.9 | 0% → 1% |
+| avg | bass | Y4-10 | $5,876 ± 275 → $5,754 ± 246 | -2% | -0.3 | $12,299 → $11,435 (-7%) | 12.8 → 12.7 | 0% → 1% |
+| avg | rhythm | Y4-6 | $4,130 ± 180 → $4,710 ± 193 | 14% | 2.2 | $6,947 → $7,059 (2%) | 12.3 → 12.3 | 1% → 2% |
+| avg | lead | Y4-6 | $4,926 ± 231 → $4,794 ± 174 | -3% | -0.5 | $7,856 → $8,135 (4%) | 12.1 → 12.2 | 2% → 0% |
+| good | drums | Y4-6 | $6,282 ± 286 → $6,343 ± 249 | 1% | 0.2 | $28,389 → $27,949 (-2%) | 21.4 → 21.4 | 3% → 0% |
+| good | drums | Y7-10 | $15,142 ± 860 → $14,010 ± 791 | -7% | -1.0 | $35,752 → $36,519 (2%) | 21.2 → 21.4 | 1% → 0% |
+| good | drums | Y4-10 | $11,345 ± 557 → $10,724 ± 487 | -5% | -0.8 | $32,596 → $32,846 (1%) | 21.3 → 21.4 | 2% → 0% |
+| good | bass | Y4-6 | $6,183 ± 256 → $6,271 ± 261 | 1% | 0.2 | $27,395 → $27,887 (2%) | 21.1 → 21.2 | 0% → 0% |
+| good | bass | Y7-10 | $15,012 ± 821 → $14,470 ± 796 | -4% | -0.5 | $35,860 → $36,011 (0%) | 21.3 → 21.3 | 0% → 1% |
+| good | bass | Y4-10 | $11,228 ± 519 → $10,956 ± 502 | -2% | -0.4 | $32,232 → $32,529 (1%) | 21.2 → 21.2 | 0% → 1% |
+| good | rhythm | Y4-6 | $6,033 ± 268 → $5,875 ± 260 | -3% | -0.4 | $27,509 → $27,295 (-1%) | 21.3 → 21.1 | 1% → 2% |
+| good | lead | Y4-6 | $6,665 ± 377 → $6,838 ± 347 | 3% | 0.3 | $27,712 → $28,939 (4%) | 21.6 → 21.2 | 0% → 0% |
+
+Per year:
+
+| bot | seat | Y4 fund (mean) base → after (z) | Y5 fund (mean) base → after (z) | Y6 fund (mean) base → after (z) | Y7 fund (mean) base → after (z) | Y8 fund (mean) base → after (z) | Y9 fund (mean) base → after (z) | Y10 fund (mean) base → after (z) |
+|---|---|---|---|---|---|---|---|---|
+| avg | drums | $3,547 → $3,806 (0.6) | $5,120 → $4,859 (-0.6) | $4,609 → $5,230 (1.1) | $6,088 → $6,084 (-0.0) | $6,737 → $7,352 (0.8) | $7,677 → $7,751 (0.1) | $9,158 → $8,610 (-0.6) |
+| avg | bass | $3,701 → $3,804 (0.3) | $4,849 → $4,444 (-0.8) | $4,659 → $4,941 (0.5) | $5,657 → $5,391 (-0.4) | $6,677 → $6,265 (-0.6) | $6,722 → $7,479 (0.8) | $8,863 → $7,952 (-0.9) |
+| avg | rhythm | $3,653 → $3,968 (0.8) | $3,976 → $4,738 (2.0) | $4,762 → $5,425 (1.4) | - | - | - | - |
+| avg | lead | $3,857 → $3,981 (0.3) | $5,011 → $5,272 (0.6) | $5,912 → $5,130 (-1.5) | - | - | - | - |
+| good | drums | $5,259 → $6,434 (2.0) | $4,718 → $5,695 (2.1) | $8,870 → $6,902 (-2.4) | $9,920 → $9,349 (-0.4) | $13,827 → $11,620 (-1.3) | $18,443 → $16,939 (-0.8) | $18,378 → $18,132 (-0.1) |
+| good | bass | $5,973 → $6,225 (0.4) | $5,329 → $5,776 (0.8) | $7,246 → $6,812 (-0.6) | $9,529 → $9,029 (-0.4) | $12,821 → $12,448 (-0.2) | $17,192 → $18,014 (0.5) | $20,505 → $18,389 (-1.2) |
+| good | rhythm | $5,422 → $5,738 (0.5) | $5,639 → $5,012 (-1.4) | $7,037 → $6,875 (-0.2) | - | - | - | - |
+| good | lead | $6,578 → $6,730 (0.2) | $5,889 → $5,912 (0.0) | $7,527 → $7,871 (0.3) | - | - | - | - |
+
+- Years 4-6, pooled: 7 of 8 seat x bot cells are within ±5% of base with |z| <= 0.6 (avg drums +5%, bass -0%, lead -3%; good
+  drums +1%, bass +1%, rhythm -3%, lead +3%). The one outlier is avg rhythm: +14% (z 2.2) on seeds 1-40; a second seed set
+  (41-80, `human2.js SEEDOFF=40`) gives +3% (z 0.5); all 80 seeds +8% (z 1.9, paired z 2.0): borderline, carried from year 3
+  (rhythm avg Y3 +28%), not from late gig pay (+2-3%).
+- Years 7-10 (drums + bass): -7% to 0%, |z| <= 1.0; gig pay per year -11% to +2%. Late-game loans stay at 0-3% of career-years.
+- Single years swing more (good drums Y4 +22% z 2.0, Y6 -22% z -2.4: the timing of big buys), the pooled spans do not.
 
 ## 10. Pace and seat parity (bots)
 
@@ -325,12 +370,80 @@ human.js avg + good bots, 40 seeds, both trees: drums + bass 10 years, rhythm + 
 | lead | good | $2,434 → $2,482 (0.2) | $4,039 ± 288 → $4,426 ± 279 | 10% | 1.0 |
 
 - Pace is a little faster: Local Heroes wk 20-25 → 20-23 (avg/weak), 16 → 14 (good); signed avg wk 39-48 → 39-42, good 26-29 →
-  26-27. First gear is bought earlier on every seat (cheaper ride and pedal).
+  26-27. First gear is bought earlier or in the same week on every seat (cheaper ride and pedal).
 - Year 3 is richer for the bots: mean fund -7% to +39% (11 of 12 cells up; one cell beyond noise: avg bass +39%, z 2.5); the good
   bots carry their year-1/2 savings. Year-3 loans stay rare (0-10%); the year-3 loans in both trees are weeks with one far booking
   ($865-$2,340 gas), the same pattern as base.
 
-(pending: probe still running)
+## 11. The other baseline probes
+
+### T12. One grade worse / better (drums, avg bot, 40 seeds; human.js PERF -12 / 0 / +12 = the baseline T12 shift)
+
+| performance (drums, avg bot) | fund Y1 (median) | weeks < $100 Y1 | loan Y1 | gig pay Y1 | fund Y2 | loan Y2 | fund Y3 | loan Y3 |
+|---|---|---|---|---|---|---|---|---|
+| -12 (about one grade lower) | $244 → $494 | 3.1 → 0.8 | 48% → 3% | $670 → $1,020 | $632 → $944 | 28% → 5% | $1,061 → $1,903 | 18% → 10% |
+| no shift | $410 → $590 | 1.4 → 0.5 | 25% → 3% | $960 → $1,159 | $1,031 → $1,061 | 5% → 3% | $2,160 → $2,257 | 0% → 8% |
+| +12 (about one grade higher) | $553 → $674 | 1.9 → 0.3 | 25% → 3% | $1,388 → $1,614 | $1,668 → $1,482 | 3% → 0% | $3,568 → $3,775 | 3% → 0% |
+
+- A grade better still earns more (year-1 gig pay $1,614 vs $1,020 a grade worse; base $1,388 vs $670), and the grade-worse drummer
+  who Hustles is no longer broke in year 1 (48% → 3% loans, 3.1 → 0.8 weeks under $100).
+
+### T11. Simulate vs the same gig played (4 seeds x 4 seats; 140 fans / tier-1 rooms, garage era; 700 fans / tier-2 rooms, "local" era forced)
+
+| seat | tier | deal | played pay at 55% / 85% / 100% hit (base) | (after) | played grades at 85% (base → after) | played net to fund at 85% (base → after) | Simulate pay = played pay (base → after) |
+|---|---|---|---|---|---|---|---|
+| drums | T1 | door | $104 / $104 / $104 | $130 / $143 / $162 | 4A → 4A | -$32 → $47 | 20/20 → 20/20 |
+| drums | T1 | flat | $118 / $118 / $118 | $165 / $182 / $207 | 4A → 4A | $46 → $108 | 20/20 → 20/20 |
+| drums | T2 | door | $326 / $326 / $326 | $326 / $326 / $326 | 4A → 4A | $138 → $138 | 20/20 → 20/20 |
+| drums | T2 | flat | $189 / $189 / $189 | $189 / $189 / $189 | 4A → 4A | $43 → $43 | 20/20 → 20/20 |
+| bass | T1 | door | $104 / $104 / $104 | $130 / $143 / $162 | 4A → 4A | -$32 → $47 | 20/20 → 20/20 |
+| bass | T1 | flat | $118 / $118 / $118 | $165 / $182 / $207 | 4A → 4A | $46 → $108 | 20/20 → 20/20 |
+| bass | T2 | door | $326 / $326 / $326 | $326 / $326 / $326 | 1A 3S → 1A 3S | $138 → $138 | 20/20 → 20/20 |
+| bass | T2 | flat | $189 / $189 / $189 | $189 / $189 / $189 | 1A 3S → 1A 3S | $43 → $43 | 20/20 → 20/20 |
+| rhythm | T1 | door | $104 / $104 / $104 | $130 / $143 / $162 | 4A → 4A | -$32 → $47 | 20/20 → 20/20 |
+| rhythm | T1 | flat | $118 / $118 / $118 | $165 / $182 / $207 | 4A → 4A | $46 → $108 | 20/20 → 20/20 |
+| rhythm | T2 | door | $326 / $326 / $326 | $326 / $326 / $326 | 2A 2S → 2A 2S | $138 → $138 | 20/20 → 20/20 |
+| rhythm | T2 | flat | $189 / $189 / $189 | $189 / $189 / $189 | 2A 2S → 2A 2S | $43 → $43 | 20/20 → 20/20 |
+| lead | T1 | door | $104 / $104 / $104 | $130 / $143 / $162 | 4A → 4A | -$32 → $47 | 20/20 → 20/20 |
+| lead | T1 | flat | $118 / $118 / $118 | $165 / $182 / $207 | 4A → 4A | $46 → $108 | 20/20 → 20/20 |
+| lead | T2 | door | $326 / $326 / $326 | $326 / $326 / $326 | 2A 2S → 2A 2S | $138 → $138 | 20/20 → 20/20 |
+| lead | T2 | flat | $189 / $189 / $189 | $189 / $189 / $189 | 2A 2S → 2A 2S | $43 → $43 | 20/20 → 20/20 |
+
+- Played vs Simulate, identical pay and net to the fund: 320/320 → 320/320 rows. Setups where the pay is the same at 55% and 100% hit: 64/64 → 32/64.
+- Playing well now pays on the night: tier-1 rooms in the garage era pay $130 / $143 / $162 (door) and $165 / $182 / $207 (flat)
+  at 55% / 85% / 100% hit (base: the same $104 / $118 at any accuracy). Simulate still pays exactly what the same accuracy pays
+  when played (320 / 320 rows, pay and net).
+- The tier-2 rows show no grade pay because this probe forces era 'local' on a fresh career with no Local Heroes week, so
+  `career.earlyMoney` is 0 (a probe artifact; real careers carry the milestone, see section 7). Drum scores rose +1 to +2.6 at
+  55-85% hit (M2) on both tiers; at the 85% aim bass still gets 3 S / 1 A at tier 2 because its realised hit share was higher
+  (0.863 vs 0.851 drums), not because of the seat.
+
+### X1. Drums vs bass in every band (weak + avg bot; Hail Damage 40 seeds, the other bands 30 seeds; fund = median, money = mean per career)
+
+| band | bot | seat | fund Y1 med | fund Y2 med | fund Y3 med | weeks < $100 Y1 | loan Y1 | loan Y2 | gig pay Y1 | gas Y1 | Hustle Y1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| hail_damage | weak | drums | 358 → 522 | 764 → 879 | 1067 → 1259 | 4.0 → 0.3 | 40% → 5% | 15% → 5% | $548 → $997 | $532 → $270 | $859 → $489 |
+| hail_damage | weak | bass | 276 → 435 | 867 → 837 | 1386 → 1504 | 2.6 → 0.6 | 48% → 3% | 10% → 13% | $611 → $833 | $536 → $237 | $820 → $504 |
+| hail_damage | avg | drums | 410 → 590 | 1031 → 1061 | 2160 → 2257 | 1.4 → 0.5 | 25% → 3% | 5% → 3% | $863 → $1,047 | $474 → $268 | $789 → $488 |
+| hail_damage | avg | bass | 387 → 603 | 886 → 1174 | 1858 → 2739 | 1.9 → 0.4 | 30% → 0% | 18% → 10% | $827 → $1,045 | $537 → $255 | $771 → $534 |
+| frost_heave | weak | drums | 236 → 453 | 717 → 871 | 1127 → 1346 | 4.8 → 1.0 | 67% → 7% | 23% → 13% | $707 → $944 | $734 → $340 | $821 → $489 |
+| frost_heave | weak | bass | 214 → 441 | 752 → 876 | 1403 → 1675 | 4.5 → 1.0 | 63% → 7% | 27% → 13% | $655 → $862 | $787 → $351 | $837 → $523 |
+| frost_heave | avg | drums | 424 → 510 | 870 → 851 | 2132 → 2537 | 3.2 → 0.8 | 47% → 7% | 17% → 0% | $911 → $1,029 | $737 → $392 | $835 → $488 |
+| frost_heave | avg | bass | 279 → 633 | 1060 → 1040 | 1800 → 2492 | 2.7 → 0.1 | 53% → 0% | 13% → 3% | $809 → $1,196 | $728 → $360 | $838 → $520 |
+| gravel_kings | weak | drums | 536 → 656 | 1007 → 827 | 2063 → 1796 | 0.8 → 0.2 | 17% → 0% | 17% → 10% | $663 → $836 | $330 → $143 | $713 → $456 |
+| gravel_kings | weak | bass | 520 → 705 | 848 → 966 | 1840 → 2149 | 0.9 → 0.1 | 13% → 0% | 20% → 10% | $594 → $893 | $329 → $212 | $725 → $501 |
+| gravel_kings | avg | drums | 704 → 765 | 1279 → 1284 | 3227 → 2789 | 0.9 → 0.1 | 0% → 0% | 13% → 7% | $938 → $1,066 | $374 → $228 | $730 → $466 |
+| gravel_kings | avg | bass | 593 → 773 | 1169 → 1388 | 1957 → 2641 | 0.8 → 0.1 | 10% → 3% | 27% → 10% | $856 → $1,058 | $452 → $202 | $722 → $475 |
+| grid_road_ramblers | weak | drums | 237 → 461 | 620 → 948 | 810 → 1441 | 3.9 → 0.8 | 63% → 3% | 23% → 3% | $859 → $1,033 | $904 → $392 | $854 → $462 |
+| grid_road_ramblers | weak | bass | 322 → 524 | 623 → 772 | 843 → 898 | 2.1 → 0.3 | 60% → 0% | 17% → 13% | $862 → $1,069 | $782 → $353 | $802 → $490 |
+| grid_road_ramblers | avg | drums | 421 → 698 | 714 → 1240 | 1179 → 1984 | 3.0 → 0.4 | 40% → 0% | 20% → 10% | $981 → $1,368 | $785 → $394 | $837 → $508 |
+| grid_road_ramblers | avg | bass | 320 → 696 | 863 → 1000 | 1086 → 2605 | 2.6 → 0.1 | 47% → 0% | 20% → 10% | $1,069 → $1,297 | $849 → $371 | $775 → $502 |
+
+- Every band: year-1 loans 0-67% → 0-7%, weeks under $100 in year 1 <= 1.0, year-1 gas roughly halved. Drums and bass move
+  together in every band (no seat gap opens). Gravel Kings (the shortest drives, so the least gas to save) gains least: its drum
+  medians end years 2-3 a little lower than base (weak Y2 $1,007 → $827; avg Y3 $3,227 → $2,789) while bass ends higher; the
+  means are within noise (drums z -1.3 to -0.1, bass z -0.1 to +1.5).
+- Chart density (baseline D1) is unchanged by design (M2 changes the crowd flow, not the charts).
 
 ## Setup and reproduce
 
