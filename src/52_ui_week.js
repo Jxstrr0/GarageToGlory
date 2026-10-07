@@ -5,6 +5,10 @@
 // its "Merch table:" line is folded in); the wrap shows wrap.shop (GG.ui.shopWrap) and plays the collector moment once.
 // v1.0 (Lane T): HUD "?" (btn-help → GG.tutorial.openLessons); wrap testids for the lessons: wrap-deltas, wrap-d-<stat>
 // (fund/fans/buzz/chemistry/...), wrap-upkeep, wrap-buzz-fade, wrap-owed, wrap-moods, wrap-mood-<memberId>.
+// v1.5 (Lane N; plan_contract_1.5 §4.5 / §4.6): kb-spots (a strip of kb-hs-<action> buttons with digits 1-8, SPOTS order +
+// spotOf() labels, in the dock; built the first time gg-kbnav or gg-wide turns on, so never in a phone DOM; CSS 50k) and
+// ui.kbSpots() (the digit -> action order for 50k); the results sheet moves the keyboard focus from Skip to OK when the
+// reveal ends; package B column hooks: .w2 on the planner's stack with .w2-a (booked + blocks) / .w2-b (activity cards).
 // Flow commands (start/run/end the week, save) go through GG.main; this file only reads GG.state and calls
 // GG.career for the per-screen actions (resolve a card, edit the plan, accept an offer).
 (function (GG) {
@@ -105,7 +109,8 @@
         // v0.6.1 verify: the calendar strip adds ~24px to the HUD, so sheets, their scrim and toasts start below it.
         + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
         + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
-        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }';
+        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }\n'
+        + '.kb-spots { display: none; }';   // v1.5: shown by 50k under html.gg-kbnav / html.gg-wide
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -173,6 +178,7 @@
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
+    refreshKbSpots();   // v1.5 ("Your rig" on a string seat)
   };
 
   /* ======================================================================================================
@@ -337,13 +343,16 @@
           s.rerender();
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
-      ui.append(s.body, [el('div.stack', [
-        ui.tourPlanHead ? ui.tourPlanHead(st) : null,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
-        gigBox(st, true, function () { s.rerender(); }),
+      var tph = ui.tourPlanHead ? ui.tourPlanHead(st) : null, gb = gigBox(st, true, function () { s.rerender(); }), note = el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'), sb = studioBtn(st);
+      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });   // v1.5 (B): left column; the activity cards right
+      acts.classList.add('w2-b');
+      ui.append(s.body, [el('div.stack.w2', [
+        tph,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
+        gb,
         slots,
         acts,
-        el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'),
-        studioBtn(st)
+        note,
+        sb
       ])]);
       var full = plan.every(Boolean);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-go', disabled: !full, onclick: goWeek }, full ? 'Go! Play the week' : 'Fill all three blocks'));
@@ -447,7 +456,11 @@
         if (step[2]) step[2]();
         if (step[0].scrollIntoView) step[0].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
-      function done() { skip.hidden = true; ok.hidden = false; }
+      function done() {
+        var had = document.activeElement === skip || !document.activeElement || document.activeElement === document.body;
+        skip.hidden = true; ok.hidden = false;
+        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);   // v1.5: the keyboard focus moves Skip -> OK
+      }
       function tick() {
         s.data._timer = null;
         if (k >= steps.length) return done();
@@ -670,8 +683,33 @@
     refreshFallback();
   };
 
+  /* ---- v1.5 (Lane N): the spots on the keyboard ------------------------------------------------------------- */
+  // Digits 1-8 (50k, by ev.code) and the kb-spots strip walk to a spot like a tap (the 3D walk, then 'hotspot'). The strip
+  // lives in the dock (hidden with it whenever a screen is up) and is built only once gg-kbnav or gg-wide is on.
+  ui.kbSpots = function () { return SPOTS.map(function (x) { return x[0]; }); };
+  var kbSpots = null;
+  function kbSpotsWanted() { var c = document.documentElement.classList; return c.contains('gg-kbnav') || c.contains('gg-wide'); }
+  function refreshKbSpots() {
+    if (!kbSpots) return;
+    var st = S();
+    SPOTS.forEach(function (x, i) {
+      var b = kbSpots.children[i], sp = spotOf(x[0], st), label = sp[1] + ' ' + sp[2];
+      if (b && b._label !== label) { b._label = label; ui.clear(b); ui.append(b, [el('b', String(i + 1)), label]); b.setAttribute('aria-label', sp[2] + ' (' + (i + 1) + ')'); }
+    });
+  }
+  function ensureKbSpots() {
+    if (kbSpots || !dock || !kbSpotsWanted()) return;
+    kbSpots = el('div.kb-spots', { testid: 'kb-spots', role: 'toolbar', 'aria-label': 'Spots' }, SPOTS.map(function (x) {
+      return btn('', { testid: 'kb-hs-' + x[0], onclick: function () { if (ui.walkToSpot) ui.walkToSpot(x[0]); else GG.emit('hotspot', { action: x[0] }); } });
+    }));
+    dock.root.insertBefore(kbSpots, dock.root.firstChild);
+    refreshKbSpots();
+  }
+  GG.on('ui:kbnav', function (p) { if (p && p.on) ensureKbSpots(); });
+  GG.on('ui:wide', function (p) { if (p && p.wide) ensureKbSpots(); });
+
   /* ---- Init + listeners ------------------------------------------------------------------------------------- */
-  ui.initWeek = function () { buildHud(); ui.refreshHud(); };
+  ui.initWeek = function () { buildHud(); ensureKbSpots(); ui.refreshHud(); };
   // Called by GG.main.sync() after every state change: HUD, dock and the fallback garage's bandmates.
   ui.refreshGarage = function () { ui.refreshHud(); refreshFallback(); };
   GG.on('stats:changed', ui.refreshHud);

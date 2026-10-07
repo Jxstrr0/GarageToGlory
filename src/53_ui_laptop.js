@@ -10,6 +10,7 @@
 // v0.8 (SHOPUI): the Money tab adds merch sold / stock bought and the rehearsal space's weekly rent.
 // v0.8.1 (LICRECAP): an "Offers" line above the tabs while a licensing offer is open (GG.ui.offersLine -> the offer sheet)
 // and a Years tab (past year-end recaps: GG.ui.recapPanel in 5l_ui_recap; nine tabs wrap 5 + 4).
+// v1.5 (Lane N, package B): the tab bar carries .lt-tabs only in the PC layout (5w draws it as a left rail); re-rendered on 'ui:wide'.
 // v1.0: a 10th tab, Trophies (achievements across careers: GG.ui.trophiesPanel in 5o_ui_trophies; ten tabs wrap 5 + 5);
 // every tab switch emits 'ui:tab' { sheet: 'laptop', tab } (the tutorial's money / chat lessons listen to it).
 // Read-only views of GG.state; later versions add socials as more tabs.
@@ -113,11 +114,12 @@
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
-      ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
+      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },   // v1.5 (B): .lt-tabs = the left rail (PC layout only)
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
+  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });   // v1.5: the tab rail comes and goes with the PC layout
 })(window.GG);

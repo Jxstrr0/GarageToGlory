@@ -51360,11 +51360,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function render(e) {
     var keep = e.body && e.body.scrollTop;
+    var fk = focusKey(e);   // v1.5: keyboard focus inside this screen survives the rebuild (no-op without gg-kbnav)
     ui.clear(e.body); ui.clear(e.foot);
     var t = e.def.title;
     e.setTitle(typeof t === 'function' ? t(e.data) : t || '');
     e.def.build(e, e.data);
     if (keep) e.body.scrollTop = keep;
+    if (fk) restoreFocus(e, fk);
+    syncHints(e);
     GG.emit('ui:layout', { id: e.id });
   }
   function makeEntry(id, data) {
@@ -51386,7 +51389,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       stack[i].root.classList.toggle('hidden', i < coveredBelow);
       if (top) stack[i].root.removeAttribute('inert'); else stack[i].root.setAttribute('inert', '');
       stack[i].root.setAttribute('aria-hidden', top ? 'false' : 'true');
+      if (!top) syncHints(stack[i]);   // v1.5: kb-hints sit in the top layer's foot only
     }
+    if (stack.length) syncHints(stack[stack.length - 1]);
     GG.emit('ui:stack', { ids: ui.stackIds() });
   }
 
@@ -51396,9 +51401,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (at >= 0) {
       while (stack.length - 1 > at) ui.close();
       var ex = stack[at]; ex.data = data || ex.data; render(ex); afterChange();
+      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);   // v1.5
       return ex;
     }
     var e = makeEntry(id, data);
+    e.opener = openerOf();   // v1.5: where the keyboard focus was (close() goes back there)
     ui.clearToasts();   // a new screen makes old hints stale (and they'd sit on its header)
     frame(e);
     stack.push(e);
@@ -51407,12 +51414,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     afterChange();
     GG.emit('screen:open', { id: id });
     if (e.def.onShow) e.def.onShow(e);
+    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);   // v1.5 (no-op without gg-kbnav)
     return e;
   };
   ui.close = function (id) {
     if (!stack.length) return;
     var at = id ? indexOf(id) : stack.length - 1;
     if (at < 0) return;
+    var opener = stack[at].opener;   // v1.5: the lowest closed screen's opener
     while (stack.length > at) {
       var e = stack.pop();
       if (e.def.onClose) { try { e.def.onClose(e); } catch (err) { console.warn('[ui] onClose', err); } }
@@ -51420,15 +51429,113 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       afterChange();
       GG.emit('screen:close', { id: e.id });
     }
+    if (ui.kbnav()) focusAfterClose(opener);
   };
   ui.closeAll = function () { if (stack.length) ui.close(stack[0].id); };
   ui.replace = function (id, data) { if (stack.length) ui.close(); return ui.show(id, data); };
   ui.get = function (id) { var i = indexOf(id); return i >= 0 ? stack[i] : null; };
 
+  /* ---- v1.5 (Lane N): keyboard focus (no-op unless html.gg-kbnav) ------------------------------------------------- */
+  var NO_FOCUS = { gig: 1, 'gig-results': 1 };   // 55 owns focus on the gig screens (also def.focus === false)
+  function now() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
+  ui.focusAt = -1e9;   // performance.now() of the last programmatic focus move (50k: Enter / Space within 200 ms are stale)
+  ui.kbnav = function () { return typeof document !== 'undefined' && document.documentElement.classList.contains('gg-kbnav'); };
+  ui.isTyping = function (n) {
+    if (!n || n.nodeType !== 1) return false;
+    if (n.nodeName === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(n.type || 'text');
+    return n.nodeName === 'TEXTAREA' || n.nodeName === 'SELECT' || !!n.isContentEditable;
+  };
+  ui.reachable = function (n) {
+    if (!n || n.nodeType !== 1 || !n.isConnected || n.disabled) return false;
+    if (!n.getClientRects().length || (n.closest && n.closest('[inert], .hidden, [hidden]'))) return false;
+    var cs = getComputedStyle(n);
+    return cs.visibility !== 'hidden' && cs.display !== 'none';
+  };
+  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }   // text inputs are never auto-focused
+  ui.focusEl = function (n, opts) {
+    if (!n || !n.focus) return false;
+    if (!(opts && opts.nav)) ui.focusAt = now();
+    try { n.focus({ preventScroll: !!(opts && opts.preventScroll) }); } catch (err) { n.focus(); }
+    return document.activeElement === n;
+  };
+  function noFocus(e) { return !e || e.def.focus === false || !!NO_FOCUS[e.id]; }
+  ui.noFocus = function (id) { return noFocus(id ? ui.get(id) : stack[stack.length - 1]); };
+  function byTid(rootEl, tid) { return rootEl && tid ? rootEl.querySelectorAll('[data-testid="' + String(tid).replace(/"/g, '\\"') + '"]') : []; }
+  function firstUsable(list) { for (var i = 0; i < list.length; i++) if (usable(list[i])) return list[i]; return null; }
+  ui.defaultFocus = function (e) {
+    if (!e) return null;
+    var r = e.root, f = e.def.focus, n = firstUsable(r.querySelectorAll('[data-autofocus]'));
+    if (n) return n;
+    if (typeof f === 'function') { try { n = f(e); } catch (err) { n = null; } if (usable(n)) return n; }
+    else if (typeof f === 'string' && (n = firstUsable(byTid(r, f)))) return n;
+    if ((n = firstUsable(e.foot ? e.foot.querySelectorAll('.btn.primary') : []))) return n;
+    var btns = [].slice.call(e.body ? e.body.querySelectorAll('button') : []).concat([].slice.call(e.foot ? e.foot.querySelectorAll('button') : []));
+    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;   // a screen's ← / ✕ only when it has nothing else
+    return firstUsable(btns) || firstUsable(byTid(r, 'btn-close'));
+  };
+  function isBackBtn(b) { var t = b.getAttribute('data-testid') || '', l = b.getAttribute('aria-label') || ''; return /^(btn-back|btn-close)$/.test(t) || (b.classList.contains('icon-btn') && /^(Back|Close)\b/.test(l)); }
+  function dockPrimary() { return firstUsable(byTid(document.getElementById('hud'), 'btn-primary')); }
+  ui.focusDefault = function (id) {
+    if (!ui.kbnav()) return false;
+    var e = id ? ui.get(id) : stack[stack.length - 1];
+    if (!e) return stack.length ? false : ui.focusEl(dockPrimary());
+    if (noFocus(e)) return false;
+    return ui.focusEl(ui.defaultFocus(e));
+  };
+  function keyOf(n, rootEl) {
+    var tid = n && n.getAttribute && n.getAttribute('data-testid');
+    if (!tid) return null;
+    return { tid: tid, idx: Math.max(0, [].indexOf.call(byTid(rootEl || document, tid), n)) };
+  }
+  function openerOf() {
+    var a = typeof document !== 'undefined' ? document.activeElement : null;
+    if (!a || a === document.body || a === document.documentElement) return null;
+    return { el: a, key: keyOf(a) };
+  }
+  function focusKey(e) {
+    if (!ui.kbnav() || !e.root) return null;
+    var a = document.activeElement;
+    return a && a !== e.root && e.root.contains(a) ? keyOf(a, e.root) || { tid: null } : null;
+  }
+  function restoreFocus(e, fk) {
+    var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
+    if (usable(n)) ui.focusEl(n, { preventScroll: true });
+    else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
+  }
+  function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }
+  function focusAfterClose(opener) {
+    if (focusOk(document.activeElement)) return;   // something (a new screen) already holds the focus
+    var top = stack[stack.length - 1];
+    if (top && noFocus(top)) return;
+    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }   // (an opener under a lower layer is inert: not usable)
+    if (opener && opener.key && top) {
+      var list = byTid(top.root, opener.key.tid), n = list.length ? list[Math.min(opener.key.idx, list.length - 1)] : null;
+      if (usable(n)) { ui.focusEl(n); return; }
+    }
+    if (top) ui.focusDefault(top.id); else ui.focusEl(dockPrimary());
+  }
+  ui.openerOf = function (id) { var e = id ? ui.get(id) : stack[stack.length - 1], o = e && e.opener; return o ? (o.key ? o.key.tid : o.el.nodeName.toLowerCase()) : null; };
+  var HINTS = 'Tab move · Enter pick · Esc close';
+  function wantHints(e) {
+    var c = document.documentElement.classList;
+    return !!(e && e.foot && c.contains('gg-wide') && c.contains('gg-keys') && !noFocus(e) && stack[stack.length - 1] === e);
+  }
+  function syncHints(e) {
+    if (!e || !e.foot || typeof document === 'undefined') return;
+    var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
+    if (!want) { if (has) has.parentNode.removeChild(has); return; }
+    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || HINTS;
+    if (has && has.textContent === text) return;
+    if (has) has.parentNode.removeChild(has);
+    e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
+  }
+  ui.syncHints = function () { stack.forEach(syncHints); };
+
   /* ---- Confirm dialog ----------------------------------------------------------------------------
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
   ui.define('confirm', {
     kind: 'modal',
+    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },   // v1.5: a danger ask starts on No
     title: function (d) { return d.title || 'Sure?'; },
     build: function (s, d) {
       if (d.text) s.body.appendChild(el('p.dim', d.text));
@@ -51936,6 +52043,224 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 })(window.GG);
 
 </script>
+<script>/* 50k_ui_keys.js */
+(function (GG) {
+  var ui = GG.ui, I = GG.input || {};
+  var root = document.documentElement;
+  var KEY_BACK = { genre: 'btn-back', settings: 'btn-back', calib: 'btn-back', board: 'btn-board-close', world: 'btn-world-close',
+    'tour-region': 'btn-region-back', logo: 'btn-logo-back', hof: 'hof-back', recap: 'recap-close', intro: 'close', seat: 'close' };
+  var STICKY = { results: 1, wrap: 1, gig: 1, 'gig-set': 1, 'gig-results': 1, road: 1, 'label-demand': 1, cert: 1, loonies: 1, 'loonie-card': 1,
+    'rival-set': 1, 'rival-verdict': 1, 'tour-flight': 1, 'moose-opera': 1, 'tour-payoff': 1, gong: 1, title: 1, end: 1 };
+  var ARROWS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]';
+  var STALE_MS = 200;
+  var D = { lastEsc: null, nav: null, repeat: 0, stale: 0 };
+  var down = {};   // code -> the element its (unswallowed) keydown was on
+
+  function kbnavOn(on) {
+    if (root.classList.contains('gg-kbnav') === !!on) return;
+    root.classList.toggle('gg-kbnav', !!on);
+    GG.emit('ui:kbnav', { on: !!on });
+  }
+  ui.setKbnav = kbnavOn;   // (tests / Settings)
+  function swallow(ev, why) {
+    ev.preventDefault(); ev.stopPropagation();
+    if (why) D[why]++;
+  }
+  function tidOf(n) { return n && n.getAttribute ? n.getAttribute('data-testid') || (n === document.body ? 'body' : n.nodeName.toLowerCase()) : null; }
+  function topEntry() { var id = ui.top(); return id ? ui.get(id) : null; }
+  function tutCard() { var c = document.querySelector('#tut .tut-card'); return c && ui.reachable(c) ? c : null; }
+  function own(n) { return !!(n && n.closest && n.closest('[data-keys="own"]')); }
+  function isOwnArrows(n) { return !!n && (own(n) || n.nodeName === 'SELECT' || (n.nodeName === 'INPUT' && /^range$/i.test(n.type))); }
+  function altGr(ev) { return !!(ev.getModifierState && ev.getModifierState('AltGraph')); }
+
+  function scope() {
+    var e = topEntry(), out = [], seen = [];
+    function add(rootEl) {
+      if (!rootEl) return;
+      var list = rootEl.querySelectorAll(FOCUSABLE);
+      for (var i = 0; i < list.length; i++) {
+        var n = list[i];
+        if (seen.indexOf(n) >= 0) continue;
+        if (n.getAttribute('tabindex') === '-1' || !ui.reachable(n)) continue;
+        if (n.classList && n.classList.contains('scrim')) continue;
+        seen.push(n); out.push(n);
+      }
+    }
+    if (e) add(e.root);
+    else if (GG.state) add(document.getElementById('hud'));
+    add(tutCard());
+    out.sort(function (a, b) { return a === b ? 0 : a.compareDocumentPosition(b) & 4 ? -1 : 1; });
+    return out;
+  }
+  function badFocus(a) { return !a || a === document.body || a === root || !ui.reachable(a); }
+  function inScope(a) {
+    var e = topEntry(), c = tutCard(), h = document.getElementById('hud');
+    return !!a && ((e ? e.root.contains(a) : !!(h && h.contains(a))) || !!(c && c.contains(a)));
+  }
+  function indexIn(list, a) {
+    var i = list.indexOf(a);
+    if (i >= 0 || !a) return i;
+    var box = a.closest && a.closest('[data-keys="own"]');
+    for (var k = 0; box && k < list.length; k++) if (box.contains(list[k])) return k;
+    return -1;
+  }
+  function navFocus(n) {
+    ui.focusEl(n, { nav: true, preventScroll: true });
+    try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+  }
+  function focusDefaultNow() {
+    var e = topEntry();
+    if (e) return ui.focusDefault(e.id);
+    return ui.focusDefault();
+  }
+
+  function cycle(back) {
+    var list = scope();
+    if (!list.length) return false;
+    var a = document.activeElement, i = indexIn(list, a);
+    var n = i < 0 ? list[back ? list.length - 1 : 0] : list[(i + (back ? -1 : 1) + list.length) % list.length];
+    navFocus(n); D.nav = (back ? 'shift-tab:' : 'tab:') + tidOf(n);
+    return true;
+  }
+  function move(dir) {
+    var a = document.activeElement, list = scope();
+    if (badFocus(a) || !inScope(a)) return focusDefaultNow();
+    var r = a.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, best = null, bestS = Infinity;
+    list.forEach(function (n) {
+      if (n === a || n.contains(a) || a.contains(n)) return;
+      var q = n.getBoundingClientRect(), qx = (q.left + q.right) / 2, qy = (q.top + q.bottom) / 2, main, gap;
+      if (dir === 'down') { if (qy <= cy + 1 || q.bottom <= r.bottom - 1) return; main = Math.max(0, q.top - r.bottom); gap = Math.max(0, Math.max(q.left, r.left) - Math.min(q.right, r.right)); }
+      else if (dir === 'up') { if (qy >= cy - 1 || q.top >= r.top + 1) return; main = Math.max(0, r.top - q.bottom); gap = Math.max(0, Math.max(q.left, r.left) - Math.min(q.right, r.right)); }
+      else if (dir === 'right') { if (qx <= cx + 1 || q.right <= r.right - 1) return; main = Math.max(0, q.left - r.right); gap = Math.max(0, Math.max(q.top, r.top) - Math.min(q.bottom, r.bottom)); }
+      else { if (qx >= cx - 1 || q.left >= r.left + 1) return; main = Math.max(0, r.left - q.right); gap = Math.max(0, Math.max(q.top, r.top) - Math.min(q.bottom, r.bottom)); }
+      var off = dir === 'up' || dir === 'down' ? Math.abs(qx - cx) : Math.abs(qy - cy);
+      var s = main + gap * 4 + off * 0.1 + (gap > 0 ? 1000 : 0);
+      if (s < bestS) { bestS = s; best = n; }
+    });
+    if (!best) return false;
+    navFocus(best); D.nav = dir + ':' + tidOf(best);
+    return true;
+  }
+  function clickable(e, tid) {
+    var list = e.root.querySelectorAll('[data-testid="' + tid + '"]');
+    for (var i = 0; i < list.length; i++) if (ui.reachable(list[i])) return list[i];
+    return null;
+  }
+  function back() {
+    var e = topEntry(), id = e && e.id, d = e && e.def, n;
+    if (!e) {
+      if (GG.state && ui.defined('menu')) { ui.show('menu'); return 'menu'; }   // the garage with nothing open: ☰
+      return 'none';
+    }
+    if (id === 'confirm') { n = clickable(e, 'btn-confirm-no'); if (n) n.click(); else ui.close(id); return 'confirm-no'; }
+    if (typeof d.back === 'function') { d.back(e); return 'fn'; }
+    if (typeof d.back === 'string' && (n = clickable(e, d.back))) { n.click(); return 'back:' + d.back; }
+    if (STICKY[id] || d.sticky) return 'sticky';
+    var kb = KEY_BACK[id];
+    if (kb === 'close') { ui.close(id); return 'close'; }
+    if (kb && (n = clickable(e, kb))) { n.click(); return 'back:' + kb; }
+    if (d.kind !== 'full') { ui.close(id); return 'close'; }
+    if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
+    return 'none';
+  }
+  ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };   // (tests: what Esc does on the top screen)
+  function spotKey(code) {
+    var m = /^(?:Digit|Numpad)([1-8])$/.exec(code || '');
+    return m ? +m[1] - 1 : -1;
+  }
+  ui.walkToSpot = function (action) {
+    if (!action || !GG.state || ui.stackIds().length) return false;
+    var R = GG.render, ok = false;
+    try { ok = !!(R && R.goToHotspot && R.goToHotspot(action)); } catch (err) { ok = false; }
+    if (!ok) GG.emit('hotspot', { action: action });
+    D.nav = 'spot:' + action;
+    return true;
+  };
+
+  function onKeyDown(ev) {
+    if (I.captured && I.captured()) return;
+    if (ev.isComposing || ev.keyCode === 229 || ev.key === 'Unidentified' || ev.key === 'Process') return;
+    if (ev.ctrlKey || ev.metaKey || (ev.altKey && !altGr(ev))) return;
+    var k = ev.key, code = ev.code || '', t = ev.target, typing = ui.isTyping(t);
+    var isEnter = k === 'Enter', isSpace = k === ' ' || code === 'Space', isEsc = k === 'Escape', isTab = k === 'Tab', dir = ARROWS[k];
+    if ((isEsc || ((isEnter || isSpace) && !typing)) && ev.repeat) { swallow(ev, 'repeat'); return; }
+    if ((isEnter || isSpace) && !typing && ev.timeStamp < ui.focusAt + STALE_MS) { swallow(ev, 'stale'); return; }
+    if (isEnter || isSpace) down[code || k] = t;
+    if (I.gigLive && I.gigLive()) { if (isTab) ev.preventDefault(); return; }
+    if ((isTab || isEnter || isEsc || dir || spotKey(code) >= 0) && I.real && I.real(ev)) kbnavOn(true);
+    if (typing) {
+      if (isEsc) { swallow(ev); t.blur(); D.lastEsc = 'blur'; return; }
+      if (isTab) { swallow(ev); cycle(ev.shiftKey); }
+      return;
+    }
+    if (isEsc) { swallow(ev); D.lastEsc = back(); return; }   // (3)
+    if (isTab) { swallow(ev); cycle(ev.shiftKey); return; }   // (5)
+    var a = document.activeElement;
+    if (dir) {   // (4)
+      if (isOwnArrows(t) && !badFocus(a)) return;
+      if (move(dir)) ev.preventDefault();
+      return;
+    }
+    if ((isEnter || isSpace) && (badFocus(a) || !inScope(a))) {   // (6) (a control under the top layer never clicks)
+      swallow(ev);
+      delete down[code || k];
+      if (isEnter) { focusDefaultNow(); D.nav = 'enter:' + tidOf(document.activeElement); }
+      return;
+    }
+    var i = spotKey(code);   // (7)
+    if (i >= 0 && !ui.stackIds().length && GG.state) {
+      var spots = ui.kbSpots ? ui.kbSpots() : [];
+      if (spots[i]) { ev.preventDefault(); ui.walkToSpot(spots[i]); }
+    }
+  }
+  function onKeyUp(ev) {
+    if (I.captured && I.captured()) return;
+    var k = ev.key, code = ev.code || '', key = code || k;
+    if (!(k === 'Enter' || k === ' ' || code === 'Space')) return;
+    var was = down[key];
+    delete down[key];
+    if (I.gigLive && I.gigLive()) return;
+    if (ui.isTyping(ev.target)) return;
+    if (was !== ev.target) swallow(ev, was ? 'stale' : null);
+  }
+  document.addEventListener('keydown', onKeyDown, true);
+  document.addEventListener('keyup', onKeyUp, true);
+  document.addEventListener('pointerdown', function () { kbnavOn(false); }, { capture: true, passive: true });
+  window.addEventListener('blur', function () { down = {}; });
+  GG.on('ui:wide', function () { if (ui.syncHints) ui.syncHints(); });
+  GG.on('input:mode', function () { if (ui.syncHints) ui.syncHints(); });
+
+  var CSS = 'html.gg-kbnav :focus-visible:not(input):not(textarea) { outline: 3px solid var(--amber); outline-offset: 2px; }\n'
+    + 'html.gg-kbnav .seq-grid .cell:focus-visible { outline-offset: -2px; }\n'
+    + 'html.gg-kbnav .kb-spots, html.gg-wide .kb-spots { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }\n'
+    + 'html.gg-kbnav .kb-spots > button, html.gg-wide .kb-spots > button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px;'
+    + ' padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(13, 18, 30, .82); color: var(--text);'
+    + ' font: 700 13px/1.1 var(--font); cursor: pointer; }\n'
+    + 'html.gg-kbnav .kb-spots > button b, html.gg-wide .kb-spots > button b { display: inline-grid; place-items: center; min-width: 20px; height: 20px;'
+    + ' padding: 0 4px; border-radius: 5px; background: var(--panel2); border: 1px solid var(--line); color: var(--amber); font-size: 12px; }\n'
+    + 'html.gg-wide .kb-hints { flex: 1 1 100%; order: 99; margin: 0; color: var(--faint); font: 600 12px/1.4 var(--font); text-align: center;'
+    + ' letter-spacing: .02em; pointer-events: none; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"], html.gg-wide.gg-keys [data-testid="btn-back"] { position: relative; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after, html.gg-wide.gg-keys [data-testid="btn-back"]::after { content: "Esc"; position: absolute;'
+    + ' top: 50%; transform: translateY(-50%); padding: 1px 5px; border-radius: 4px; background: var(--panel2); border: 1px solid var(--line);'
+    + ' color: var(--dim); font: 700 10px/1.4 var(--font); letter-spacing: .04em; pointer-events: none; white-space: nowrap; }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after { right: calc(100% + 6px); }\n'
+    + 'html.gg-wide.gg-keys [data-testid="btn-back"]::after { left: calc(100% + 6px); }\n';
+  (function inject() {
+    if (document.getElementById('gg-keys-css')) return;
+    var s = document.createElement('style'); s.id = 'gg-keys-css'; s.textContent = CSS;
+    document.head.appendChild(s);
+  })();
+
+  GG.registerDebug('keys', function () {
+    var a = document.activeElement;
+    return { top: ui.top(), focus: badFocus(a) ? null : tidOf(a), opener: ui.openerOf ? ui.openerOf() : null, lastEsc: D.lastEsc, nav: D.nav,
+      kbnav: root.classList.contains('gg-kbnav'), swallowed: { repeat: D.repeat, stale: D.stale } };
+  });
+})(window.GG);
+
+</script>
 <script>/* 51_ui_menu.js */
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -52021,9 +52346,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });   // v1.5: the PC layout moves the logo + menu
   GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
+    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },   // v1.5: Continue, else New career
     onShow: function () {
       if (!want3d()) return;
       try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
@@ -52260,8 +52587,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       el('div.kit', { style: { background: p.kitColor || '#c33' }, title: 'Kit colour' })
     ]);
   }
+  function creatorSnap() {
+    try { return JSON.stringify([draft.name || '', draft.nick || '', draft.presetId, !!draft.useCustom, draft.custom || null, !!draft.carry, !!draft.skipLessons, draft.careerDifficulty]); }
+    catch (e) { return ''; }
+  }
+  ui.creatorDirty = function () { var e = ui.get('creator'); return !!(e && e.data._snap != null && creatorSnap() !== e.data._snap); };
   ui.define('creator', {
     kind: 'full',
+    back: function (s) {
+      function leave() { var b = s.root.querySelector('[data-testid="btn-back"]'); if (b) b.click(); else ui.close(s.id); }
+      if (!ui.creatorDirty()) { leave(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(); });
+    },
     build: function (s) {
       var list = presets();
       if (!draft.presetId || !list.some(function (p) { return p.id === draft.presetId; })) draft.presetId = list[0].id;
@@ -52341,6 +52678,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         ])
       ]);
       s.foot.appendChild(create);
+      if (s.data._snap == null) s.data._snap = creatorSnap();   // v1.5 (after the defaults above are filled in)
     }
   });
 
@@ -52352,7 +52690,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ];
   var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
-    kind: 'full',
+    kind: 'full', focus: 'btn-coldopen-next',   // v1.5: Enter reads on (Skip is one Tab away)
     build: function (s, d) {
       var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
@@ -52574,7 +52912,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         + '.hud-chip.week .v { letter-spacing: -.04em; } .hud-chip.week .wk-of { font-size: 10px; opacity: .8; letter-spacing: 0; }\n'
         + '#app.hud-on .sheet-layer .scrim { top: calc(var(--safe-top) + 88px); }\n'
         + '#app.hud-on .sheet { max-height: calc(100% - var(--safe-top) - 92px); } #app.hud-on .sheet.tall { height: calc(100% - var(--safe-top) - 92px); }\n'
-        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }';
+        + '#app.hud-on #toast { top: calc(var(--safe-top) + 90px); }\n'
+        + '.kb-spots { display: none; }';   // v1.5: shown by 50k under html.gg-kbnav / html.gg-wide
       document.head.appendChild(css);
     }
     dock = { hint: el('div.hint') };
@@ -52640,6 +52979,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     dock.btn.textContent = st.phase === 'plan' && GG.labels && GG.labels.inSession && GG.labels.inSession(st) ? 'Studio week' : PRIMARY[st.phase] || 'Continue';
     var h = dockHint(st);
     dock.hint.textContent = h; dock.hint.classList.toggle('hidden', !h);
+    refreshKbSpots();   // v1.5 ("Your rig" on a string seat)
   };
 
   /* ======================================================================================================
@@ -52801,13 +53141,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           s.rerender();
         } }, [el('span.ai', a.icon), el('span.grow', [el('div.an', a.name), el('div.ab', a.blurb)]), n ? el('span.cnt', '×' + n) : null]));
       });
-      ui.append(s.body, [el('div.stack', [
-        ui.tourPlanHead ? ui.tourPlanHead(st) : null,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
-        gigBox(st, true, function () { s.rerender(); }),
+      var tph = ui.tourPlanHead ? ui.tourPlanHead(st) : null, gb = gigBox(st, true, function () { s.rerender(); }), note = el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'), sb = studioBtn(st);
+      [tph, gb, slots, note, sb].forEach(function (n) { if (n) n.classList.add('w2-a'); });   // v1.5 (B): left column; the activity cards right
+      acts.classList.add('w2-b');
+      ui.append(s.body, [el('div.stack.w2', [
+        tph,   // v0.7: the tour stop, homesickness (or a "plan a world tour" button)
+        gb,
         slots,
         acts,
-        el('p.tiny.faint.center', 'Doing the same thing twice in one week gets you less the second time.'),
-        studioBtn(st)
+        note,
+        sb
       ])]);
       var full = plan.every(Boolean);
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-go', disabled: !full, onclick: goWeek }, full ? 'Go! Play the week' : 'Fill all three blocks'));
@@ -52910,7 +53253,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (step[2]) step[2]();
         if (step[0].scrollIntoView) step[0].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
-      function done() { skip.hidden = true; ok.hidden = false; }
+      function done() {
+        var had = document.activeElement === skip || !document.activeElement || document.activeElement === document.body;
+        skip.hidden = true; ok.hidden = false;
+        if (had && ui.kbnav && ui.kbnav() && ui.top() === s.id) ui.focusEl(ok);   // v1.5: the keyboard focus moves Skip -> OK
+      }
       function tick() {
         s.data._timer = null;
         if (k >= steps.length) return done();
@@ -53128,8 +53475,31 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     refreshFallback();
   };
 
+  /* ---- v1.5 (Lane N): the spots on the keyboard ------------------------------------------------------------- */
+  ui.kbSpots = function () { return SPOTS.map(function (x) { return x[0]; }); };
+  var kbSpots = null;
+  function kbSpotsWanted() { var c = document.documentElement.classList; return c.contains('gg-kbnav') || c.contains('gg-wide'); }
+  function refreshKbSpots() {
+    if (!kbSpots) return;
+    var st = S();
+    SPOTS.forEach(function (x, i) {
+      var b = kbSpots.children[i], sp = spotOf(x[0], st), label = sp[1] + ' ' + sp[2];
+      if (b && b._label !== label) { b._label = label; ui.clear(b); ui.append(b, [el('b', String(i + 1)), label]); b.setAttribute('aria-label', sp[2] + ' (' + (i + 1) + ')'); }
+    });
+  }
+  function ensureKbSpots() {
+    if (kbSpots || !dock || !kbSpotsWanted()) return;
+    kbSpots = el('div.kb-spots', { testid: 'kb-spots', role: 'toolbar', 'aria-label': 'Spots' }, SPOTS.map(function (x) {
+      return btn('', { testid: 'kb-hs-' + x[0], onclick: function () { if (ui.walkToSpot) ui.walkToSpot(x[0]); else GG.emit('hotspot', { action: x[0] }); } });
+    }));
+    dock.root.insertBefore(kbSpots, dock.root.firstChild);
+    refreshKbSpots();
+  }
+  GG.on('ui:kbnav', function (p) { if (p && p.on) ensureKbSpots(); });
+  GG.on('ui:wide', function (p) { if (p && p.wide) ensureKbSpots(); });
+
   /* ---- Init + listeners ------------------------------------------------------------------------------------- */
-  ui.initWeek = function () { buildHud(); ui.refreshHud(); };
+  ui.initWeek = function () { buildHud(); ensureKbSpots(); ui.refreshHud(); };
   ui.refreshGarage = function () { ui.refreshHud(); refreshFallback(); };
   GG.on('stats:changed', ui.refreshHud);
   GG.on('ui:stack', ui.refreshHud);
@@ -53238,13 +53608,14 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         : tab === 'years' ? (ui.recapPanel ? ui.recapPanel(st) : el('p.dim', 'No years in the books yet.'))   // v0.8.1
         : tab === 'trophies' ? (ui.trophiesPanel ? ui.trophiesPanel(st) : el('p.dim', { testid: 'laptop-trophies-empty' }, 'The trophy case is still in the box.'))   // v1.0
         : chatTab(st);
-      ui.append(s.body, [el('div', { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },
+      ui.append(s.body, [el('div' + (ui.wide && ui.wide() ? '.lt-tabs' : ''), { style: 'position:sticky;top:0;z-index:2;padding:2px 0 10px;background:var(--panel)' },   // v1.5 (B): .lt-tabs = the left rail (PC layout only)
         ui.tabs(TABS, tab, function (id) { s.rerender({ tab: id }); s.body.scrollTop = 0; if (id === 'chat') toBottom(s); GG.emit('ui:tab', { sheet: 'laptop', tab: id }); }, 'laptop-tab-')),
         ui.offersLine ? ui.offersLine(st, function () { s.rerender({ tab: tab }); }) : null, body]);   // v0.8.1: open licensing offers
       if (tab === 'chat') toBottom(s);
     }
   });
   function toBottom(s) { setTimeout(function () { s.body.scrollTop = s.body.scrollHeight; }, 0); }
+  GG.on('ui:wide', function () { var e = ui.get('laptop'); if (e) e.rerender(); });   // v1.5: the tab rail comes and goes with the PC layout
 })(window.GG);
 
 </script>
@@ -53481,6 +53852,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r;
   }
   function changed(D) {
+    D.dirty = true;   // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -53505,6 +53877,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();   // v1.5
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -53519,18 +53892,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
           { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
         c.style.setProperty('--lc', ui.LANES[name].color);
+        if (keys) cellKeys(c, hit, L.name + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, false);
+    if (keys) gridKeys(grid, D);
     return grid;
   }
   function buildPartGrid(s, D) {
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();   // v1.5
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -53538,15 +53914,58 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
       var row = [];
       for (r = 0; r < n; r++) {
-        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        var phit = GG.songs.isHit(sec.rows[r], step);
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (phit ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
         c.style.setProperty('--lc', PART_COLORS[r]);
+        if (keys) cellKeys(c, phit, (names[r] || String(r + 1)) + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, true);
+    if (keys) gridKeys(grid, D);
     return grid;
+  }
+  function keyGrid() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function cellKeys(c, hit, label) {
+    c.setAttribute('role', 'gridcell'); c.setAttribute('aria-selected', hit ? 'true' : 'false'); c.setAttribute('aria-label', label); c.tabIndex = -1;
+  }
+  var GRID_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], PageUp: [0, -4], PageDown: [0, 4], Home: [0, -99], End: [0, 99] };
+  function gridKeys(grid, D) {
+    var V = D.view, rows = V.cells, nL = rows[0] ? rows[0].length : 0;
+    grid.setAttribute('role', 'grid'); grid.setAttribute('data-keys', 'own'); grid.setAttribute('aria-label', 'Beat grid: arrows move, Space adds or removes');
+    var f = D.kbFocus || { l: 0, s: 0 };
+    f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
+    if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
+    function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
+    grid.addEventListener('focusin', function (e) {   // a click / a restore lands on a cell: it becomes the roving one
+      var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
+      if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
+      var old = cellAt(D.kbFocus.l, D.kbFocus.s);
+      if (old && old !== c) old.tabIndex = -1;
+      c.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+    });
+    grid.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      var c = e.target; if (!c.classList || !c.classList.contains('cell')) return;
+      var mv = GRID_KEYS[e.key];
+      if (mv) {
+        e.preventDefault();
+        var l = U.clamp(+c.dataset.l + mv[0], 0, nL - 1), st = U.clamp(+c.dataset.s + mv[1], 0, rows.length - 1), n = cellAt(l, st);
+        if (n && n !== c) {
+          c.tabIndex = -1; n.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+          if (ui.focusEl) ui.focusEl(n, { nav: true, preventScroll: true }); else n.focus();
+          try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+        }
+        return;
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (grid._toggle) grid._toggle(c);
+      }
+    });
   }
   function paintable(grid, D, isPart) {
     var paint = null;
@@ -53558,6 +53977,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
         rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
         c.classList.toggle('on', paint.value);
+        if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
         if (paint.value && !(D.handle && D.handle.playing)) partPreview(D, pr);
         handEdit(D); changed(D);
         return;
@@ -53571,17 +53991,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
+      if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
       if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       handEdit(D); changed(D);
     }
+    function start(c, id) {
+      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
+      var sec = rowsOf();
+      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
+      apply(c);
+    }
+    grid._toggle = function (c) { if (!cellOf(c)) return; start(c, 'key'); paint = null; };
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
-      var sec = rowsOf();
-      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
+      start(c, e.pointerId);
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      apply(c);
     });
     grid.addEventListener('pointermove', function (e) {
       if (!paint || e.pointerId !== paint.id) return;
@@ -53888,7 +54313,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- Screen ---------------------------------------------------------------------------------------------- */
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
-    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
+    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); D.dirty = true; head(s, D); } } });
     var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
     return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -53959,8 +54384,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     head(s, D); rerate(D); playButtons(D);
   }
 
+  function snapOf(D) { try { return JSON.stringify([D.pat, D.title]); } catch (e) { return ''; } }
+  function dirty(D) { return !!(D && D.mode !== 'view' && D.dirty && D._snap != null && snapOf(D) !== D._snap); }
+  ui.seqDirty = function () { var e = ui.get('seq'); return dirty(e && e.data); };
+  function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
+    hints: function (s) {   // (the axes as on the grid: lanes across, time down)
+      var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
+      return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
+    },
+    back: function (s) {
+      if (!dirty(s.data)) { leave(s); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(s); });
+    },
     build: function (s, D) {
       if (D.mode === 'view') D.screen = 'edit';
       if (!D.screen) D.screen = D.pat ? 'edit' : 'quick';
@@ -53969,6 +54406,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }   // v1.5: what "changed since open" compares with
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
@@ -54157,7 +54595,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       playhead: D.view ? D.view.ph : null, part: D.pat.part ? U.clone(D.pat.part) : null, recipe: D.pat.recipe ? U.clone(D.pat.recipe) : null,
       sliders: { energy: q.energy, mood: q.mood, feel: q.swing, fills: q.fills, bpm: q.bpm }, chords: chords,
       chips: chipSec(D.tab) && chords[D.tab] ? chords[D.tab].map(function (x) { return chordName(D, x, tonic); }) : [],
-      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null };
+      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null, dirty: dirty(D), kbFocus: D.kbFocus ? U.clone(D.kbFocus) : null };
   });
 })(window.GG);
 
@@ -59598,12 +60036,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
+    E.snap = lookSnap();   // v1.5: Esc asks first once a pick changed this
   }
+  function lookSnap() { try { return JSON.stringify([E.look, E.stage, E.kit, E.gearLook || null]); } catch (e) { return ''; } }
+  ui.lookDirty = function () { return !!(E && E.snap != null && lookSnap() !== E.snap); };
   function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'The band'; }
 
   /* ---- Screen ------------------------------------------------------------------------------------------------------ */
   ui.define('look', {
     kind: 'full', cls: 'lookx',
+    back: function () {
+      if (!ui.lookDirty()) { cancel(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === 'look') cancel(); });
+    },
     build: function (s) {
       if (!E) init({ mode: GG.state ? 'career' : 'new' });
       E.s = s;

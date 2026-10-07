@@ -11,6 +11,16 @@
 // visible above it, 'modal' is a centred dialog. sticky: no close button and the scrim doesn't dismiss it.
 // Local events (UI-internal, not in the contract): 'ui:stack' { ids } after every open/close (HUD visibility),
 // 'ui:layout' { id } after a screen (re)renders (60_main re-frames the 3D garage above the topmost sheet).
+// v1.5 "Desktop" (Lane N; plan_contract_1.5 §4.5): the focus manager. Every part is a no-op unless html.gg-kbnav is on
+// (50k_ui_keys turns it on with a real Tab / arrow / Enter / Esc / digit and off on any pointerdown), so phones and the mouse
+// never see a programmatic focus. ui.define(id, { …, back, focus, hints }): back = testid | fn(entry) (Esc, 50k);
+// focus = testid | fn(entry) -> element | false (false: never focused by show(), the gig screens: 55 owns them);
+// hints = text | fn(entry) (the kb-hints line). ui.focusDefault(id?): [data-autofocus] -> def.focus -> the foot's enabled
+// .btn.primary -> the first enabled button -> btn-close (text inputs never). show() remembers the opener and focuses the
+// default; render() restores the focused data-testid (+ index, preventScroll); close() -> the opener (connected, not
+// inert; else the same testid in the new top), else the new top's default, else the dock's primary. Every programmatic
+// focus stamps ui.focusAt (performance.now()) for 50k's stale-press guard. kb-hints (one line at the end of the top
+// layer's foot) only while html.gg-wide.gg-keys, synced on render / stack changes / 'ui:wide' / 'input:mode'.
 (function (GG) {
   var ui = GG.ui = GG.ui || {};
   var U = GG.util;
@@ -93,11 +103,14 @@
   }
   function render(e) {
     var keep = e.body && e.body.scrollTop;
+    var fk = focusKey(e);   // v1.5: keyboard focus inside this screen survives the rebuild (no-op without gg-kbnav)
     ui.clear(e.body); ui.clear(e.foot);
     var t = e.def.title;
     e.setTitle(typeof t === 'function' ? t(e.data) : t || '');
     e.def.build(e, e.data);
     if (keep) e.body.scrollTop = keep;
+    if (fk) restoreFocus(e, fk);
+    syncHints(e);
     GG.emit('ui:layout', { id: e.id });
   }
   function makeEntry(id, data) {
@@ -119,7 +132,9 @@
       stack[i].root.classList.toggle('hidden', i < coveredBelow);
       if (top) stack[i].root.removeAttribute('inert'); else stack[i].root.setAttribute('inert', '');
       stack[i].root.setAttribute('aria-hidden', top ? 'false' : 'true');
+      if (!top) syncHints(stack[i]);   // v1.5: kb-hints sit in the top layer's foot only
     }
+    if (stack.length) syncHints(stack[stack.length - 1]);
     GG.emit('ui:stack', { ids: ui.stackIds() });
   }
 
@@ -130,9 +145,11 @@
     if (at >= 0) {
       while (stack.length - 1 > at) ui.close();
       var ex = stack[at]; ex.data = data || ex.data; render(ex); afterChange();
+      if (ui.kbnav() && !ex.root.contains(document.activeElement)) ui.focusDefault(id);   // v1.5
       return ex;
     }
     var e = makeEntry(id, data);
+    e.opener = openerOf();   // v1.5: where the keyboard focus was (close() goes back there)
     ui.clearToasts();   // a new screen makes old hints stale (and they'd sit on its header)
     frame(e);
     stack.push(e);
@@ -141,6 +158,7 @@
     afterChange();
     GG.emit('screen:open', { id: id });
     if (e.def.onShow) e.def.onShow(e);
+    if (ui.kbnav() && ui.top() === id && stack[stack.length - 1] === e) ui.focusDefault(id);   // v1.5 (no-op without gg-kbnav)
     return e;
   };
   // Closes the top screen, or the screen `id` plus everything stacked above it.
@@ -148,6 +166,7 @@
     if (!stack.length) return;
     var at = id ? indexOf(id) : stack.length - 1;
     if (at < 0) return;
+    var opener = stack[at].opener;   // v1.5: the lowest closed screen's opener
     while (stack.length > at) {
       var e = stack.pop();
       if (e.def.onClose) { try { e.def.onClose(e); } catch (err) { console.warn('[ui] onClose', err); } }
@@ -155,15 +174,116 @@
       afterChange();
       GG.emit('screen:close', { id: e.id });
     }
+    if (ui.kbnav()) focusAfterClose(opener);
   };
   ui.closeAll = function () { if (stack.length) ui.close(stack[0].id); };
   ui.replace = function (id, data) { if (stack.length) ui.close(); return ui.show(id, data); };
   ui.get = function (id) { var i = indexOf(id); return i >= 0 ? stack[i] : null; };
 
+  /* ---- v1.5 (Lane N): keyboard focus (no-op unless html.gg-kbnav) ------------------------------------------------- */
+  var NO_FOCUS = { gig: 1, 'gig-results': 1 };   // 55 owns focus on the gig screens (also def.focus === false)
+  function now() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
+  ui.focusAt = -1e9;   // performance.now() of the last programmatic focus move (50k: Enter / Space within 200 ms are stale)
+  ui.kbnav = function () { return typeof document !== 'undefined' && document.documentElement.classList.contains('gg-kbnav'); };
+  ui.isTyping = function (n) {
+    if (!n || n.nodeType !== 1) return false;
+    if (n.nodeName === 'INPUT') return !/^(button|submit|reset|checkbox|radio|range|color|file|image)$/i.test(n.type || 'text');
+    return n.nodeName === 'TEXTAREA' || n.nodeName === 'SELECT' || !!n.isContentEditable;
+  };
+  // A control a key can reach: connected, rendered, visible, enabled, not under [inert] / .hidden / [hidden].
+  ui.reachable = function (n) {
+    if (!n || n.nodeType !== 1 || !n.isConnected || n.disabled) return false;
+    if (!n.getClientRects().length || (n.closest && n.closest('[inert], .hidden, [hidden]'))) return false;
+    var cs = getComputedStyle(n);
+    return cs.visibility !== 'hidden' && cs.display !== 'none';
+  };
+  function usable(n) { return ui.reachable(n) && !ui.isTyping(n); }   // text inputs are never auto-focused
+  // Focus n (stamped unless opts.nav: a Tab / arrow move is the player's own, never stale).
+  ui.focusEl = function (n, opts) {
+    if (!n || !n.focus) return false;
+    if (!(opts && opts.nav)) ui.focusAt = now();
+    try { n.focus({ preventScroll: !!(opts && opts.preventScroll) }); } catch (err) { n.focus(); }
+    return document.activeElement === n;
+  };
+  function noFocus(e) { return !e || e.def.focus === false || !!NO_FOCUS[e.id]; }
+  ui.noFocus = function (id) { return noFocus(id ? ui.get(id) : stack[stack.length - 1]); };
+  function byTid(rootEl, tid) { return rootEl && tid ? rootEl.querySelectorAll('[data-testid="' + String(tid).replace(/"/g, '\\"') + '"]') : []; }
+  function firstUsable(list) { for (var i = 0; i < list.length; i++) if (usable(list[i])) return list[i]; return null; }
+  ui.defaultFocus = function (e) {
+    if (!e) return null;
+    var r = e.root, f = e.def.focus, n = firstUsable(r.querySelectorAll('[data-autofocus]'));
+    if (n) return n;
+    if (typeof f === 'function') { try { n = f(e); } catch (err) { n = null; } if (usable(n)) return n; }
+    else if (typeof f === 'string' && (n = firstUsable(byTid(r, f)))) return n;
+    if ((n = firstUsable(e.foot ? e.foot.querySelectorAll('.btn.primary') : []))) return n;
+    var btns = [].slice.call(e.body ? e.body.querySelectorAll('button') : []).concat([].slice.call(e.foot ? e.foot.querySelectorAll('button') : []));
+    if ((n = firstUsable(btns.filter(function (b) { return !isBackBtn(b); })))) return n;   // a screen's ← / ✕ only when it has nothing else
+    return firstUsable(btns) || firstUsable(byTid(r, 'btn-close'));
+  };
+  function isBackBtn(b) { var t = b.getAttribute('data-testid') || '', l = b.getAttribute('aria-label') || ''; return /^(btn-back|btn-close)$/.test(t) || (b.classList.contains('icon-btn') && /^(Back|Close)\b/.test(l)); }
+  function dockPrimary() { return firstUsable(byTid(document.getElementById('hud'), 'btn-primary')); }
+  ui.focusDefault = function (id) {
+    if (!ui.kbnav()) return false;
+    var e = id ? ui.get(id) : stack[stack.length - 1];
+    if (!e) return stack.length ? false : ui.focusEl(dockPrimary());
+    if (noFocus(e)) return false;
+    return ui.focusEl(ui.defaultFocus(e));
+  };
+  function keyOf(n, rootEl) {
+    var tid = n && n.getAttribute && n.getAttribute('data-testid');
+    if (!tid) return null;
+    return { tid: tid, idx: Math.max(0, [].indexOf.call(byTid(rootEl || document, tid), n)) };
+  }
+  function openerOf() {
+    var a = typeof document !== 'undefined' ? document.activeElement : null;
+    if (!a || a === document.body || a === document.documentElement) return null;
+    return { el: a, key: keyOf(a) };
+  }
+  function focusKey(e) {
+    if (!ui.kbnav() || !e.root) return null;
+    var a = document.activeElement;
+    return a && a !== e.root && e.root.contains(a) ? keyOf(a, e.root) || { tid: null } : null;
+  }
+  function restoreFocus(e, fk) {
+    var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
+    if (usable(n)) ui.focusEl(n, { preventScroll: true });
+    else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
+  }
+  function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }
+  function focusAfterClose(opener) {
+    if (focusOk(document.activeElement)) return;   // something (a new screen) already holds the focus
+    var top = stack[stack.length - 1];
+    if (top && noFocus(top)) return;
+    if (opener && usable(opener.el)) { ui.focusEl(opener.el); return; }   // (an opener under a lower layer is inert: not usable)
+    if (opener && opener.key && top) {
+      var list = byTid(top.root, opener.key.tid), n = list.length ? list[Math.min(opener.key.idx, list.length - 1)] : null;
+      if (usable(n)) { ui.focusEl(n); return; }
+    }
+    if (top) ui.focusDefault(top.id); else ui.focusEl(dockPrimary());
+  }
+  ui.openerOf = function (id) { var e = id ? ui.get(id) : stack[stack.length - 1], o = e && e.opener; return o ? (o.key ? o.key.tid : o.el.nodeName.toLowerCase()) : null; };
+  // kb-hints: one line of key hints at the end of the top layer's foot, only while html.gg-wide.gg-keys (never on a phone).
+  var HINTS = 'Tab move · Enter pick · Esc close';
+  function wantHints(e) {
+    var c = document.documentElement.classList;
+    return !!(e && e.foot && c.contains('gg-wide') && c.contains('gg-keys') && !noFocus(e) && stack[stack.length - 1] === e);
+  }
+  function syncHints(e) {
+    if (!e || !e.foot || typeof document === 'undefined') return;
+    var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
+    if (!want) { if (has) has.parentNode.removeChild(has); return; }
+    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || HINTS;
+    if (has && has.textContent === text) return;
+    if (has) has.parentNode.removeChild(has);
+    e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
+  }
+  ui.syncHints = function () { stack.forEach(syncHints); };
+
   /* ---- Confirm dialog ----------------------------------------------------------------------------
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
   ui.define('confirm', {
     kind: 'modal',
+    focus: function (s) { return s.data.danger ? s.foot.querySelector('[data-testid="btn-confirm-no"]') : null; },   // v1.5: a danger ask starts on No
     title: function (d) { return d.title || 'Sure?'; },
     build: function (s, d) {
       if (d.text) s.body.appendChild(el('p.dim', d.text));

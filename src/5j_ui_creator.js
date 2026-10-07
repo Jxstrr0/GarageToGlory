@@ -16,6 +16,8 @@
 //   lk-gear-color-kit), pickguard (C.GEAR_GUARDS: lk-gear-guard-<id>), headstock sticker (lk-gear-sticker-none|logo); the
 //   preview's 'gear' mode shows it played. onDone gets { look, stageLook, kit, gearLook } (string seats); career mode applies it
 //   (GG.creator.apply). The drum seat is exactly v1.0 (the Kit tab, KIT_LOOK). New controls are >= 48 px (CSS injected here).
+// v1.5 (Lane N): Esc (50k) = the ← (lk-cancel), after a "Leave without saving?" ask when any pick changed since it opened
+// (ui.lookDirty(): a snapshot of look / stage look / kit / gear; Esc on the ask = Keep editing).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn;
   var TABS = [
@@ -58,12 +60,20 @@
     E.logo = o.logo || (st && GG.logo ? GG.logo.get(st) : GG.logo && bandDef ? (GG.logo.pending(bandDef.id) || GG.logo.defaultFor(bandDef.id)) : null);
     delete E.look.outfit; E.look.stageExtras = [];
     C().syncPerson(E.look, E.stage);
+    E.snap = lookSnap();   // v1.5: Esc asks first once a pick changed this
   }
+  function lookSnap() { try { return JSON.stringify([E.look, E.stage, E.kit, E.gearLook || null]); } catch (e) { return ''; } }
+  ui.lookDirty = function () { return !!(E && E.snap != null && lookSnap() !== E.snap); };
   function bandName(st) { var b = st && GG.content.bands && GG.content.bands[st.bandId]; return (b && b.name) || 'The band'; }
 
   /* ---- Screen ------------------------------------------------------------------------------------------------------ */
   ui.define('look', {
     kind: 'full', cls: 'lookx',
+    // v1.5 (Lane N): Esc = ←, but any pick since opening asks "Leave without saving?" first (Esc = Keep editing).
+    back: function () {
+      if (!ui.lookDirty()) { cancel(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === 'look') cancel(); });
+    },
     build: function (s) {
       if (!E) init({ mode: GG.state ? 'career' : 'new' });
       E.s = s;

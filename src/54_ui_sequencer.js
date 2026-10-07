@@ -21,6 +21,13 @@
 // on a chip / picker edit; a v1 part renders through part.view and becomes v2 on its first grid / tweak edit; view never writes.
 // ui.show('seq', { mode, pat, screen, title, titleEn, song, index, total, fromSketch, editHint: { who, text }, onSave(entry),
 //   onJam(), onCancel() })
+// v1.5 "Desktop" (Lane N; plan_contract_1.5 §4.5): the grid on the keyboard. With GG.input.showKeyUI() (a computer, a key
+//   seen, or the PC layout; never a plain phone) the editable grid is role=grid + data-keys=own, cells role=gridcell with
+//   aria-selected and a roving tabindex from D.view.focus { l, s } (kept in D.kbFocus): ←/→ lane, ↑/↓ step, Home/End the first /
+//   last step, PgUp/PgDn ±4 steps, Space/Enter toggle through the tap path (toggleCell: the kick rule, the v2 part upgrade, the
+//   preview). Esc = the screen's back fn: a change since the screen opened (dirty(D): D.dirty, set by hand edits / recomposes /
+//   the title, and the pattern + title differ from the snapshot D._snap) asks "Leave without saving?" (Esc = Keep editing),
+//   else btn-seq-close. debug('seq').dirty.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, C = GG.contracts, U = GG.util;
   // Lane look, left to right. v0.3's note highway uses the same colours and icons.
@@ -269,6 +276,7 @@
   }
   // Every edit: re-rate, keep playback in sync, keep the sketch pad saved.
   function changed(D) {
+    D.dirty = true;   // v1.5: an edit since the screen opened (dirty(D) also compares the snapshot)
     pruneFill(D);
     rerate(D);
     if (D.handle && D.handle.playing) D.handle = D.handle.update(D.pat) || D.handle;
@@ -296,6 +304,7 @@
     var fill = fillOn(D), sec = fill ? D.pat.fillBars[D.tab] : D.pat.sections[D.tab], lanes = D.pat.lanes, ro = D.mode === 'view', solo = D.tab === 'solo';
     var grid = el('div.seq-grid' + (ro ? '.ro' : '') + (lanes > 4 ? '.wide' : '') + (solo ? '.solo' : '') + (fill ? '.fill' : '') + (strSeat() ? '.tight' : ''),
       { testid: 'seq-grid', data: { lanes: String(lanes), fill: fill ? '1' : '0' }, style: { gridTemplateColumns: '24px repeat(' + lanes + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();   // v1.5
     grid.appendChild(el('div.gc', fill ? 'B4' : ''));
     for (var l = 0; l < lanes; l++) {
       var L = ui.LANES[C.LANES[l]];
@@ -310,12 +319,14 @@
         var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (hit ? '.on' : '') + (solo && step % 4 ? '.soff' : ''),   // v0.8: a solo charts the beat only
           { testid: 'cell-' + name + '-' + step, data: { l: l, s: step } });
         c.style.setProperty('--lc', ui.LANES[name].color);
+        if (keys) cellKeys(c, hit, L.name + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, false);
+    if (keys) gridKeys(grid, D);
     return grid;
   }
   // Your part's grid: the v2 rows (part.view: a v1 part shows its upgrade and is never written until you edit it).
@@ -323,6 +334,7 @@
     var pv = GG.songs.part.view(D.pat.part), sec = pv.sections[D.tab], n = sec.rows.length, ro = D.mode === 'view', names = GG.songs.part.rowNames(pv);
     var grid = el('div.seq-grid.part' + (ro ? '.ro' : ''), { testid: 'part-grid', data: { lanes: String(n), seat: pv.seat, v: String(D.pat.part.v === 2 ? 2 : 1) },
       style: { gridTemplateColumns: '24px repeat(' + n + ', minmax(0, 1fr))' } });
+    var keys = !ro && keyGrid();   // v1.5
     grid.appendChild(el('div.gc'));
     for (var r = 0; r < n; r++) grid.appendChild(el('div.lh', { style: { color: PART_COLORS[r], background: tint(PART_COLORS[r], 0.13) } }, [el('span.ln', names[r] || String(r + 1))]));
     var cells = [], labels = [];
@@ -330,15 +342,59 @@
       var lab = stepLabel(step); grid.appendChild(lab); labels.push(lab);
       var row = [];
       for (r = 0; r < n; r++) {
-        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (GG.songs.isHit(sec.rows[r], step) ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
+        var phit = GG.songs.isHit(sec.rows[r], step);
+        var c = el('div.cell' + (step % 4 === 0 ? '.sh' : '') + (phit ? '.on' : ''), { testid: 'part-cell-' + r + '-' + step, data: { l: r, s: step } });
         c.style.setProperty('--lc', PART_COLORS[r]);
+        if (keys) cellKeys(c, phit, (names[r] || String(r + 1)) + ', ' + (step + 1));
         grid.appendChild(c); row.push(c);
       }
       cells.push(row);
     }
     D.view.cells = cells; D.view.labels = labels;
     if (!ro) paintable(grid, D, true);
+    if (keys) gridKeys(grid, D);
     return grid;
+  }
+  // v1.5 (Lane N): the grid on the keyboard. Only with GG.input.showKeyUI() (never a plain phone: the phone DOM stays 1.4's).
+  function keyGrid() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function cellKeys(c, hit, label) {
+    c.setAttribute('role', 'gridcell'); c.setAttribute('aria-selected', hit ? 'true' : 'false'); c.setAttribute('aria-label', label); c.tabIndex = -1;
+  }
+  var GRID_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], PageUp: [0, -4], PageDown: [0, 4], Home: [0, -99], End: [0, 99] };
+  function gridKeys(grid, D) {
+    var V = D.view, rows = V.cells, nL = rows[0] ? rows[0].length : 0;
+    grid.setAttribute('role', 'grid'); grid.setAttribute('data-keys', 'own'); grid.setAttribute('aria-label', 'Beat grid: arrows move, Space adds or removes');
+    var f = D.kbFocus || { l: 0, s: 0 };
+    f = D.kbFocus = V.focus = { l: U.clamp(f.l, 0, Math.max(0, nL - 1)), s: U.clamp(f.s, 0, rows.length - 1) };
+    if (rows[f.s] && rows[f.s][f.l]) rows[f.s][f.l].tabIndex = 0;
+    function cellAt(l, st) { return rows[st] && rows[st][l] || null; }
+    grid.addEventListener('focusin', function (e) {   // a click / a restore lands on a cell: it becomes the roving one
+      var c = e.target, l = +c.dataset.l, st = +c.dataset.s;
+      if (!c.classList.contains('cell') || isNaN(l) || isNaN(st)) return;
+      var old = cellAt(D.kbFocus.l, D.kbFocus.s);
+      if (old && old !== c) old.tabIndex = -1;
+      c.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+    });
+    grid.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      var c = e.target; if (!c.classList || !c.classList.contains('cell')) return;
+      var mv = GRID_KEYS[e.key];
+      if (mv) {
+        e.preventDefault();
+        var l = U.clamp(+c.dataset.l + mv[0], 0, nL - 1), st = U.clamp(+c.dataset.s + mv[1], 0, rows.length - 1), n = cellAt(l, st);
+        if (n && n !== c) {
+          c.tabIndex = -1; n.tabIndex = 0; D.kbFocus = V.focus = { l: l, s: st };
+          if (ui.focusEl) ui.focusEl(n, { nav: true, preventScroll: true }); else n.focus();
+          try { n.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* ignore */ }
+        }
+        return;
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (e.repeat) return;
+        if (grid._toggle) grid._toggle(c);
+      }
+    });
   }
   // Tap toggles; dragging paints the same value (on or off) across every cell the finger crosses.
   function paintable(grid, D, isPart) {
@@ -351,6 +407,7 @@
         if (GG.songs.isHit(rows[pr], ps) === paint.value) return;
         rows[pr] = GG.songs.setHit(rows[pr], ps, paint.value);
         c.classList.toggle('on', paint.value);
+        if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
         if (paint.value && !(D.handle && D.handle.playing)) partPreview(D, pr);
         handEdit(D); changed(D);
         return;
@@ -364,17 +421,23 @@
       }
       sec[l] = GG.songs.setHit(sec[l], step, paint.value);
       c.classList.toggle('on', paint.value);
+      if (c.hasAttribute('aria-selected')) c.setAttribute('aria-selected', paint.value ? 'true' : 'false');
       if (paint.value && !(D.handle && D.handle.playing) && GG.audio && GG.audio.hit) GG.audio.hit(C.LANES[l], undefined, GG.audio.TAP_AUTO ? { vel: GG.audio.TAP_AUTO.other } : undefined);   // (v1.2: the kit Play plays)
       handEdit(D); changed(D);
     }
+    // One tap on a cell (a pointer press, or v1.5 Space / Enter on the focused cell): the v2 upgrade, then toggle it.
+    function start(c, id) {
+      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
+      var sec = rowsOf();
+      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: id };
+      apply(c);
+    }
+    grid._toggle = function (c) { if (!cellOf(c)) return; start(c, 'key'); paint = null; };
     grid.addEventListener('pointerdown', function (e) {
       var c = cellOf(e.target); if (!c) return;
       e.preventDefault();
-      if (isPart) partV2(D);   // D16: the first edit upgrades a v1 part
-      var sec = rowsOf();
-      paint = { value: !GG.songs.isHit(sec[+c.dataset.l], +c.dataset.s), last: c, id: e.pointerId };
+      start(c, e.pointerId);
       try { grid.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-      apply(c);
     });
     grid.addEventListener('pointermove', function (e) {
       if (!paint || e.pointerId !== paint.id) return;
@@ -693,7 +756,7 @@
   /* ---- Screen ---------------------------------------------------------------------------------------------- */
   function header(s, D) {
     var V = D.view, ro = D.mode === 'view', quick = D.screen === 'quick';
-    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); head(s, D); } } });
+    V.title = btn('.seq-title', { testid: 'seq-title', disabled: ro || quick, onclick: function () { if (!ro && !quick && !D.custom) { reroll(D); D.dirty = true; head(s, D); } } });
     var shop = shopButton(D);   // v1.3.1 review fix: beside it the editor's song name wraps to two lines (00_shell .wrap-title)
     return el('div.seq-head' + (shop && !quick ? '.wrap-title' : ''), [btn('.icon-btn', { testid: 'btn-seq-close', 'aria-label': D.mode === 'write' ? 'Back to the planner' : 'Close', onclick: function () {
       stopPlay(D); if (D.onCancel) D.onCancel(); ui.close(s.id);
@@ -765,8 +828,22 @@
     head(s, D); rerate(D); playButtons(D);
   }
 
+  // v1.5 (Lane N): "changed since the screen opened" = an edit (D.dirty) that left the pattern or the title different.
+  function snapOf(D) { try { return JSON.stringify([D.pat, D.title]); } catch (e) { return ''; } }
+  function dirty(D) { return !!(D && D.mode !== 'view' && D.dirty && D._snap != null && snapOf(D) !== D._snap); }
+  ui.seqDirty = function () { var e = ui.get('seq'); return dirty(e && e.data); };
+  function leave(s) { var b = s.root.querySelector('[data-testid="btn-seq-close"]'); if (b && !b.disabled) b.click(); else ui.close(s.id); }
   ui.define('seq', {
     kind: 'full', cls: 'seq',
+    hints: function (s) {   // (the axes as on the grid: lanes across, time down)
+      var D = s.data; if (!D || D.screen !== 'edit' || D.mode === 'view') return null;
+      return '←→ ' + (D.pat && D.pat.part && partLayer(D) ? 'string' : 'drum') + ' · ↑↓ step · Space add/remove · Tab leave the grid · Esc close';
+    },
+    // Esc (50k): the ⋯ menu / pickers close first (they are the top layer); a change since opening asks first (Esc = keep editing).
+    back: function (s) {
+      if (!dirty(s.data)) { leave(s); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(s); });
+    },
     build: function (s, D) {
       if (D.mode === 'view') D.screen = 'edit';
       if (!D.screen) D.screen = D.pat ? 'edit' : 'quick';
@@ -775,6 +852,7 @@
       D.tab = D.tab || 'verse';
       if (!D.title && D.mode !== 'view') reroll(D);
       D.sub = subFor(D);
+      if (D._snap == null) { D._snap = snapOf(D); D.dirty = false; }   // v1.5: what "changed since open" compares with
       if (D.screen === 'quick') { if (!D.qs) enterQuick(D); buildQuick(s, D); return; }
       if (D.fromSketch) firstHint(D);
       buildEdit(s, D);
@@ -976,6 +1054,6 @@
       playhead: D.view ? D.view.ph : null, part: D.pat.part ? U.clone(D.pat.part) : null, recipe: D.pat.recipe ? U.clone(D.pat.recipe) : null,
       sliders: { energy: q.energy, mood: q.mood, feel: q.swing, fills: q.fills, bpm: q.bpm }, chords: chords,
       chips: chipSec(D.tab) && chords[D.tab] ? chords[D.tab].map(function (x) { return chordName(D, x, tonic); }) : [],
-      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null };
+      edited: !!D.edited, fill: fillOn(D), compose: D.compose || null, dirty: dirty(D), kbFocus: D.kbFocus ? U.clone(D.kbFocus) : null };
   });
 })(window.GG);
