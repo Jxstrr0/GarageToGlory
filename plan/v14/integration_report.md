@@ -15,8 +15,12 @@ that run was used). Sections fill in as the matrix streams finish.
 - Node suite `node tests/run.js`: **SUITE ALL PASS** (36 files; incl. sim_money 8/8, sim_gig 37/37, sim_world 21/21,
   sim_shop 17/17, sim_career, sim_recap 6/6, sim_bands 17/17, **compat_v12 10/10** (songwriter law), **save 22/22** (old saves)).
 - Classic audio: `META_ONLY=hash` pw_seq **232/232 equal** at 390x844 and at 440x956 (inside the matrix streams).
-- Full Playwright matrix (390x844 + 440x956), pw_perf, phoneqa: running (00:56 UTC: 38 + 40 sections passed so far; the
-  first-run failures so far are render-speed / van timing under two parallel browsers, to be rerun alone).
+- Full Playwright matrix: every META_ONLY section of every `tests/pw_*.js` (118 per size, incl. the contact sheets and the
+  opt-in `pw_bands_render seats`), two streams in parallel (390x844 + 440x956), 00:15-01:39 UTC, logs in the verifier scratch
+  `v14m/logs/`. First run: **390: 108 PASS + 4 contact sheets OK** (creator / logo / shop / tour sheets have no checks: exit 0,
+  sheet written) **+ 6 FAIL; 440: 112 PASS + 4 sheets OK + 2 FAIL.** Reruns alone: in progress (section 2a).
+  v1.4 sections green first time at both sizes: `pw_gig gig` 33/33 (results money row), `pw_gig simulate` 21/21, `pw_shop space`
+  22/22 ($35 + "$60/week once you sign"), `pw_shop spaces` 17/17, `pw_flow layout` 34/34, `pw_bands_render` 106/106 + seats 46/46.
 
 ## 3. Owner check shots (440x956; verifier scratch `v14_owner/`, not committed; script `v14_owner/shots.js`), looked at each
 - `01_results_band_cut.png`: Hail Damage on **bass**, the Legion (Saskatoon, tier 1, flat), a PLAYED live gig (the autoplay bot
@@ -38,5 +42,20 @@ that run was used). Sections fill in as the matrix streams finish.
 - `05b_laptop_money.png`: the laptop Money tab at the same point: fund $280, owed $0, loans 0, earned $405, 5 gigs, the
   7-week fund bars (W0 = the start baseline, as in 1.3.1).
 
-## 4. Findings
-Pending.
+## 4. Test moved by this verify (logged in its commit)
+- `tests/pw_recap.js` `bands` (commit 1ea1959): with the v1.4 money (M1) and the $35 jam room (M3) the avg bot in the test
+  career (quickStart seed 7171, Grid Road Ramblers, 24 bot weeks) now rents the jam room in week 19 (fund $1,018; 1.3.1 stayed
+  in the Quonset all year). A rented room is posed on the garage footprint by design (`5l_ui_recap` photoKind), so "posed in
+  its own quonset" compared 'garage' with 'quonset'. Before: expected = the band's home kind always (14/15 at 390 and 440).
+  After: 'garage' when spaceTier > 0, else the home kind (15/15). No source change.
+
+## 5. Findings (for the lead; not fixed here: source changes)
+1. **MAJOR (layout, 390x844): Hall of Fame entry overflows when the biggest room has a long name.** `pw_hof list` fails at
+   390x844 (deterministic; passes at 440): "entry layout overflow SPAN 95..393; hscroll sheet-body". The span is the "Biggest
+   room" value "Lucky Buffalo Casino Showroom (950)" in `hof-stats` (`src/5q_ui_hof.js:120-124`), which `.line-list > div >
+   span:last-child { white-space: nowrap }` (`src/00_shell.html:305`) keeps on one line, 3 px past a 390 screen, so the sheet
+   scrolls sideways. Latent since v1.0 (CSS unchanged in v1.4); v1.4 money exposes it in the test: the seeded good-bot
+   Hail Damage career (seed 777, 50 weeks, `pw_hof` seedMeta) now plays the Lucky Buffalo (cap 950; 1.3.1: The Broadway
+   Bijou, 550). A real player whose best room is that casino sees it on a 390 phone too. Suggested fix: let that one value
+   wrap (e.g. the stats row's value `white-space: normal; text-align: right; min-width: 0`), then re-run `pw_hof list` at both
+   sizes; the test itself is right and should not move.
