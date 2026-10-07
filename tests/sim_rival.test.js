@@ -116,6 +116,7 @@ test('Battle of the Bands: a Monday offer, their set first, prize + stolen fans 
   const p = R.schedule(s, 'botb');
   ok(p && p.kind === 'botb' && s.offer && s.offer.showdown.kind === 'botb' && s.offer.prize > 0, 'offer with a prize');
   ok(/Battle of the Bands/.test(s.offer.name) && /Tundra Wraith/.test(s.offer.quirk), 'offer reads as a battle: ' + s.offer.quirk);
+  eq(s.offer.gas, Math.max(0, GG.world.gasFor(s, s.offer.city) - GG.world.cfg().exposureGas), 'v1.4: the exposure gas cover, whatever the venue roll');
   const set = R.showdown(s);
   ok(set.kind === 'botb' && set.setlist.length === 3 && set.score === R.setScore(s, 'botb'), 'setup: their setlist + set score');
   eq(Math.round(set.setlist.reduce((t, x) => t + x.score, 0) / 3), set.score, 'song scores average to the set score');

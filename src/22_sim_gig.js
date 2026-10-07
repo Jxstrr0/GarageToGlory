@@ -31,7 +31,7 @@
 //   chart.holds / chords / runs / kinds / genre / tail, fills[].cap (+ shred) ; RUN_GAP, HOLD_BEATS, STR_LANES ; the
 //   session on a string seat: S.release(lane, t) -> { lane, held, ring } ('gig:hold'), S.holding(lane) -> NOTE|null, S.seat,
 //   2-lane chords (one note, both lanes in the window; one lane = a Good), a flow crowd (economy.gig.live flowGain,
-//   holdGain, ringGain, ringAt, seatDensityClamp), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
+//   holdGain, ringGain, ringAt, seatDensityClamp; v1.4: the flow warms the crowd on every seat), no Auto-kick; SONG_RESULT + seat, holds, rings, held (+ lead: solo, dur,
 //   soloNotes, allNotes) ; botPlay holds every hold to its end and taps both lanes of a chord.
 // v1.3.1 "Simulate" (plan_1.3.1 §1.1): canSimulate / simReason / simBot / simSong / simFinish / simShow (see the block at the
 //   end): a regular gig played headlessly at your own recent average; applyResult logs PLAYED live gigs in state.playLog.
@@ -66,11 +66,16 @@
   };
 
   // A GIG for a venue id (null if the venue doesn't exist). source: 'forced'|'book'|'offer'|'card'.
+  // v1.4 (M1): the venue's pay goes through the tier rule (GG.world.tierPay: small rooms pay more, moving up never pays
+  // less), rounded like a board listing (flat to $5, door to 50 cents a head).
   gig.makeGig = function (state, venueId, source) {
     var v = gig.venue(venueId);
     if (!v) return null;
+    var pay = v.deal === 'exposure' ? 0 : (v.pay || 0);
+    if (pay > 0 && GG.world && GG.world.tierPay && v.tier) pay = v.deal === 'door' ? Math.round(GG.world.tierPay(v.tier, 'door', pay) * 2) / 2
+      : Math.round(GG.world.tierPay(v.tier, v.deal, pay) / 5) * 5;
     return { venueId: v.id, name: v.name, city: v.city, tier: v.tier, kind: v.kind, capacity: v.capacity,
-      deal: v.deal, pay: v.deal === 'exposure' ? 0 : (v.pay || 0), gas: v.gas || 0, quirk: v.quirk || '',
+      deal: v.deal, pay: pay, gas: v.gas || 0, quirk: v.quirk || '',
       source: source || 'book' };
   };
   // Venues you can be booked into: tier <= maxTier and enough fans (card-only venues use minFans 99999).
@@ -165,9 +170,22 @@
 
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
+  // v1.4 (M1): a great show pays more: economy.gig.gradePay[grade] (S x1.25, A x1.1; never below x1: nobody is docked),
+  // full until you sign, then fading with GG.career.earlyMoney. Same rule for played, simulated and
+  // bot gigs (applyResult serves them all).
+  gig.gradePayMult = function (state, grade) {
+    var gp = G().gradePay, m = (gp && gp[grade]) || 1, e = GG.career && GG.career.earlyMoney ? GG.career.earlyMoney(state) : 1;
+    return m > 1 ? 1 + (m - 1) * e : 1;
+  };
   gig.applyResult = function (state, r) {
     if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
-    if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
+    // v0.6.1 C4 the career difficulty's money x, v1.4 grade pay first (the prize is not scaled); one guard flag (diffPay)
+    if (r.pay > 0 && !r.diffPay) {
+      var pz = r.prize || 0, gm = gig.gradePayMult(state, r.grade);
+      if (gm !== 1) r.pay = Math.round((r.pay - pz) * gm) + pz;
+      if (GG.difficulty) r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money'));
+      r.diffPay = true;
+    }
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     if (GG.shop && state.merch && !r.merch) GG.shop.gigMerch(state, state.gig, r);   // v0.8: the merch table (r.merch; own seeded RNG)
@@ -893,9 +911,11 @@
         if (t >= hend) endHold(hl, hend);
         else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.1) * dt * cur.staleMul);
       }
-      // v1.1 flow (string seats): while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part
-      // (country boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit.
-      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
+      // v1.1 flow: while you are in it (a combo going), the crowd warms at a steady rate, so a sparse part (country
+      // boom-chick, ringing chords) moves a room like a busy one; a miss stops the flow until your next hit. v1.4 (M2 "Fair
+      // grades"): every seat, the drums too (it was string seats only, so the same hit share drew a smaller crowd and a
+      // lower grade on the kit: about -1.2 score, up to -3.2 at 72% on Easy); per-note gains were already per second.
+      if (dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];

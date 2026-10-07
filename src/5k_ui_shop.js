@@ -434,6 +434,7 @@
     return el('div.stack', [
       el('div.panel.warm', { testid: 'space-now' }, [el('div.caps', 'You rehearse at'), el('div.shop-big', cur.name),
         el('div.small.dim', fill(cur.blurb)), el('div.chips', { style: 'margin-top:6px' }, [el('span.chip', cur.rent ? 'Rent ' + money(cur.rent) + '/week' : BENEFACTOR[ui.spaceKind(st)] || 'Free')]
+          .concat(cur.rentLater ? [el('span.chip', { testid: 'space-rent-later' }, money(cur.rentLater) + '/week once you sign')] : [])   // v1.4 (M3)
           .concat(perks.map(function (p) { return el('span.chip.up', p); }))),
         st.rentLate ? el('div.small.bad', { testid: 'space-late', style: 'margin-top:6px' }, 'Behind on rent: two weeks short and the landlord changes the locks.') : null]),
       el('div.caps', 'Rooms around town'),
@@ -442,9 +443,10 @@
         return el('div.shop-row' + (x.current ? '.own' : !x.available ? '.locked' : ''), { testid: 'space-' + x.tier }, [
           el('span.shop-tier', String(x.tier + 1)),
           el('div.grow', [el('b', x.name), el('div.small.dim', x.blurb), el('div.chips', { style: 'margin-top:4px' }, [el('span.chip', x.rent ? money(x.rent) + '/wk' : 'Free')]
+            .concat(x.rentLater ? [el('span.chip', money(x.rentLater) + '/wk once signed')] : [])   // v1.4 (M3): the price after signing, shown up front
             .concat(perkText(x.perk).map(function (p) { return el('span.chip', p); }))), !x.current && !x.can && x.why ? el('div.tiny.bad', x.why) : null]),
           x.current ? el('span.tag.amber', 'Here') : btn('.btn.small' + (x.can ? '.primary' : ''), { testid: 'space-move-' + x.tier, disabled: !x.can, onclick: function () {
-            ui.confirm({ title: 'Move to ' + x.name + '?', text: (x.rent ? 'Rent: ' + money(x.rent) + ' a week, from the fund. ' : 'Free. ')
+            ui.confirm({ title: 'Move to ' + x.name + '?', text: (x.rent ? 'Rent: ' + money(x.rent) + ' a week, from the fund' + (x.rentLater ? ' (' + money(x.rentLater) + ' once you sign). ' : '. ') : 'Free. ')
               + 'Upgrades stay behind (the couch and the beer fridge come along).', yes: 'Move in', no: 'Stay' }).then(function (yes) {
               if (!yes) return;
               var r = SH().move(S(), x.tier);

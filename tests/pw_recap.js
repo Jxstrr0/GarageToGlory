@@ -243,13 +243,15 @@ async function bands() {
         }
         const s = GG.state, dbg = GG.debug('recapui').photo, act = s.members.filter(m => m.status === 'active').map(m => m.id);
         const foreign = Object.keys(GG.content.bands).filter(k => k !== s.bandId).reduce((a, k) => a.concat(GG.content.bands[k].members.map(m => m.id)), []);
-        return { photo, dbg, act, foreign, kind: GG.ui.spaceKind(s), cap: (document.querySelector('[data-testid="recap-photo"]') || {}).textContent || '', space: GG.ui.spaceName(s),
+        // v1.4: with the M1 money + the M3 $35 jam room, the avg bot can rent a room in year 1 (Ramblers seed 7171: week 19);
+        // a rented room is posed on the garage footprint (5l photoKind), the home space (quonset, basement, ...) otherwise.
+        return { photo, dbg, act, foreign, tier: s.spaceTier | 0, kind: (s.spaceTier | 0) > 0 ? 'garage' : GG.ui.spaceKind(s), cap: (document.querySelector('[data-testid="recap-photo"]') || {}).textContent || '', space: GG.ui.spaceName(s),
           band: GG.content.bands[s.bandId].name, cover: (document.querySelector('[data-testid="recap-page-0"]') || {}).textContent || '' };
       });
       c.ok(r.photo && r.photo.w >= 500 && r.photo.mean > 20 && r.photo.sd > 12, bandId + ': the band photo is a real 3D still (not blank): ' + JSON.stringify(r.photo));
       const posed = r.dbg ? r.dbg.ids.filter(id => id !== 'player') : [];
       c.ok(r.dbg && r.dbg.n === Math.min(7, r.act.length + 1) && r.act.slice(0, 6).every(id => posed.includes(id)), bandId + ': the whole lineup + you in the photo (' + (r.dbg && r.dbg.n) + ' for ' + r.act.length + '+1): ' + posed.join(','));
-      c.ok(r.dbg && r.dbg.kind === r.kind && !posed.some(id => r.foreign.includes(id)), bandId + ': posed in its own ' + r.kind + ', nobody from another band');
+      c.ok(r.dbg && r.dbg.kind === r.kind && !posed.some(id => r.foreign.includes(id)), bandId + ': posed in its own ' + (r.tier ? 'rented room (' + r.space + ', the garage rig)' : r.kind) + ', nobody from another band');
       c.ok(r.cap.includes(r.band) && r.cap.includes(r.space), bandId + ': the caption is ' + r.band + ' · ' + r.space + ': ' + r.cap);
       await shot(page, 'recap_band_' + bandId + '.png');
       c.ok(errors.length === 0, bandId + ': no console errors ' + errors.join(' | '));

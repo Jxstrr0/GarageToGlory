@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1420">
-<title>Garage to Glory - V1.3.1.0</title>
+<title>Garage to Glory - V1.4.0.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js"></script>
 <style>
 :root {
@@ -1213,12 +1213,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   <div id="hud"></div>
   <div id="screens"></div>
   <div id="toast"></div>
-  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.3.1.0</div></div>
+  <div id="boot"><div class="t">GARAGE TO GLORY</div><div class="s">a game by Prairie Blue Studio &middot; V1.4.0.0</div></div>
 </div>
 <script>/* 01_ns.js */
 (function (root) {
   var GG = root.GG = root.GG || {};
-  GG.VERSION = '1.3.1.0';
+  GG.VERSION = '1.4.0.0';
   GG.content = GG.content || {};
 
   var handlers = {};
@@ -1725,7 +1725,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
   /* ======================================================================
    V1.3.1 SIMULATE + GEAR SHOP (plan/plan_1.3.1.md; status.md Addendum 6; SAVE_SCHEMA stays 10: state.playLog is optional)
-   Played gigs score exactly as 1.3.0 (a played result gains no new field). A simulated gig is the REAL live session played
+   Played gigs score exactly as 1.3.0 (a played result gains no new field; v1.4 Tuning re-pinned the played-gig fingerprint on
+   purpose: see V1.4 below). A simulated gig is the REAL live session played
    headlessly by GG.gig.botPlay at "your own average", finished into the normal GIG_RESULT and applied through the normal path
    (career.finishGig -> settleGig: pay, fans, buzz, venue rep, rival opener, recap, legacy, achievements: everything counts).
    state.playLog?: [ { acc 0..1, ps 0..1, seat: C.SEATS, diff: 'easy'|'normal'|'hard'|'expert', wk: totalWeek } ]
@@ -1756,6 +1757,43 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   ====================================================================== */
   C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
+
+  /* ======================================================================
+   V1.4 TUNING (status.md Addendum 7, owner picks M1-M3; plan/v14/; build report plan/v14/build_report.md). Numbers only, no new
+   feature, no new state key, no new GIG_RESULT field (SAVE_SCHEMA stays 10; old saves load as they are).
+   M1 "Gigs pay, side jobs less" (content/economy.js; every value below is content):
+     startFund 300 -> 450; shop ride (lane 6 / the string seats' lane-6 item) 350 -> 200, pedal (runs) 300 -> 250;
+     hustleEra { garage 0.7, local 1, signed 2.2, world 3 } (was 1 / 1.3 / 2.2 / 3).
+     GG.career.earlyMoney(state) -> 0..1 (owner "until signed"; review fix): 1 in the garage era; else clamp((end - totalWeek)
+       / economy.earlyTaper (12), 0, 1) with end = min(Local Heroes + economy.earlyBackstop (48), signed + earlyTaper): full
+       through Local Heroes, a 12-week fade after signing (the first 'signed' / 'world' eraHistory week: a deal or a DIY album;
+       else milestones.signed), and a band that never signs loses it 48 weeks after Local Heroes. At most 1/12 a week (no
+       cliff). Local Heroes week = milestones.localHeroes, else the 'local' eraHistory week; signed without a week -> 0.
+     GG.world.gasMult(state): garage economy.world.gasEra.garage (0.5); from Local Heroes 1 - (1 - gasEra.local (0.8)) x earlyMoney.
+     GG.world.gasFor(state, city) = max(gasMin, round(km x 2 x gasPerKm x gasMult)); world.decorate: an exposure deal's gas
+       -= economy.world.exposureGas (40), never below 0.
+     GG.world.tierPay(tier, deal, pay) (unrounded): pay x tierPay[tier] (economy.world.tierPay { 1: 1.6 }); with
+       tierStep[deal] (economy.world.tierStep { flat: 150, door: 2 }): tier 1 boosted -> min(boosted, max(pay, step)), tier 2
+       -> max(pay, step): every tier-1 headline pay <= every tier-2 one (moving up never pays less). Used by makeListing (the
+       rolled pay, before rep / hazard / calendar; the same rng draws) and GG.gig.makeGig (card bookings: flat rounded to $5,
+       door to 50 cents). Opening slots keep their $20-45.
+     GG.gig.gradePayMult(state, grade) = 1 + (economy.gig.gradePay[grade] - 1) x earlyMoney (gradePay { S: 1.25, A: 1.1 };
+       B / C / D x1: nobody is docked). gig.applyResult, once per result under the existing r.diffPay flag:
+       r.pay = round((pay - prize) x gradePayMult) + prize, then x the career difficulty's money (as before).
+     Results screen (55): Pay | Band's cut (r.cut, the members' share) | Gas, then Crowd | Fans | Buzz, and an "Into the fund"
+       line (r.deltas.fund, "$0" when unchanged) naming every other part of it (review fix; ui.gigFundParts(r) -> [{ label, v }]:
+       fill-in -r.fillInCost, management N% -r.commission, crew -r.crew, tow -r.travel.breakdown.cost, merch +r.merch.earned,
+       any rest "other"), so Pay - cut - gas + parts = the net; + the great-show % when gradePayMult > 1 and pay - prize > 0;
+       the Moments count moves to the score line. Testids gig-pay, gig-cut, gig-net, gig-net-part (data-v = the signed $).
+     BotB (23 SCHEDULE.botb, review fix): the listing's gas is recomputed after deal = 'exposure' (the exposureGas cover always).
+   M2 "Fair grades": the v1.1 flow (crowd += flowGain x FLOW[diff] (x FLOW.lead on the lead seat) x dt while a combo runs) now
+     runs on every seat (was string seats only), so the same hit share draws the same crowd, song score and gig grade on the
+     kit as on bass / rhythm / lead. Charts, judgement windows and per-note gains unchanged. Simulate and bot sessions alike.
+   M3: content shop.spaces[i].rentEarly ($/week until the band signs; the jam room 35, rent 60). GG.shop.spaceDef(s, tier).rent
+     = this week's price (rentEarly before the Signed era), .rentLater = the price after signing (0 = no change ahead);
+     spaces(s) rows + rentLater; canMove checks this week's rent. Card shop_space_1 (+ band variants) and the shop rows say both.
+   Seat language: GG.drama.want skips rule 'solos' for the swapped member on a string seat (they sit on the kit now).
+  ====================================================================== */
 
   /* ======================================================================
    V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)
@@ -5415,10 +5453,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       ] },
 
     { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),
-      text: 'Rent-A-Riff has a jam space free: cinder block, egg-crate foam, a door that locks, $60 a week. Your mom has already measured the garage for ' +
-        'the car. Dad is pretending not to listen. Dad is listening.',
-      choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+      text: 'Rent-A-Riff has a jam space free: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60). Your mom has already ' +
+        'measured the garage for the car. Dad is pretending not to listen. Dad is listening.',
+      choices: [   // v1.4 (M3): $35/wk until signed (shop.spaces jam_room rentEarly), then $60
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One van trip and three couch trips. Mom parks the car in the garage and sits in it for a while.' },
         { label: 'Stay home for now', hint: 'Free · move later from the garage door', effects: { chemistry: 2, mood: { marcel: -3 } },
           outcome: 'The garage it is. Dad brings out a space heater without a word, like a peace treaty.' }
@@ -5924,7 +5962,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 <script>/* content/economy.js */
 (function (GG) {
   GG.content.economy = {
-    startFund: 300, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts
+    startFund: 450, startFans: 12, startBuzz: 5,        // twelve fans: your mom counts (v1.4 M1: $300 -> $450)
     startChemistry: 50, startBurnout: 10, startDrumSkill: 10,
     starterSongQuality: [30, 40], starterSongPolish: 25,
 
@@ -5975,6 +6013,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       fanDraw: 0.3, buzzDraw: 0.4, crowdNoise: [0.8, 1.15],
       conversion: { S: 0.55, A: 0.4, B: 0.28, C: 0.15, D: 0.05 },
       exposureFanBonus: 1.3,
+      gradePay: { S: 1.25, A: 1.1 },
       localScene: 6000,                     // the garage-era scene isn't infinite
       buzz: { S: 6, A: 4, B: 2, C: 1, D: -2 },
       mood: { S: 3, A: 2, B: 1, C: -1, D: -3 },
@@ -6022,7 +6061,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 
     eras: { localFans: 250, worldFans: 25000, worldNeedsChart: true, worldEnabled: true },   // v0.7: the World stage era is on (Steady pace)
     eraUpkeep: { garage: 0, local: 6, signed: 40, world: 50 },   // extra $/week: jam-space rent, a manager, insurance
-    hustleEra: { garage: 1, local: 1.3, signed: 2.2, world: 3 },   // hustle cash x: drum lessons and session work pay more once you're known
+    hustleEra: { garage: 0.7, local: 1, signed: 2.2, world: 3 },
+    earlyTaper: 12, earlyBackstop: 48,
 
     world: {
       eraTier: { garage: 2, local: 2, signed: 3, world: 3 },   // tier-3 theatres (500–2,000) open in the Signed era
@@ -6030,7 +6070,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       theatreFans: 0.4,          // new-fan factor at theatres: most of that crowd already knows you
       commission: { garage: 0, local: 0, signed: 0.15, world: 0.15 },  // management + booking agent, off the top of gig pay
       crew: { 3: 150 },          // $ per show by venue tier: sound, lights and a merch person (theatres)
-      homeRooms: { min: 3, tier: 1, minFans: 60 }
+      homeRooms: { min: 3, tier: 1, minFans: 60 },
+      tierPay: { 1: 1.6 }, tierStep: { flat: 150, door: 2 },
+      gasEra: { garage: 0.5, local: 0.8 }, exposureGas: 40
     },
 
     tour: {
@@ -10468,8 +10510,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       { id: 'toms', name: 'Rack tom + floor tom', lane: 5, cost: 450, era: 'garage',
         blurb: 'Two pawn-shop toms from two different kits. Lane 5: fills that roll down the kit.' },
       { id: 'ride', name: 'Ride cymbal', names: { metal: 'China cymbal', punk: 'China cymbal', rock: 'Ride cymbal', country: 'Ride cymbal' },
-        lane: 6, needs: 'toms', cost: 350, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
-      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 300, era: 'garage',
+        lane: 6, needs: 'toms', cost: 200, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
+      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 250, era: 'garage',   // v1.4 (M1): ride 350 -> 200, pedal 300 -> 250 (every seat's line)
         blurb: 'Both feet on the kick. The kick lane can hit every 16th. Your calves file a complaint.' }
     ],
     kit: [
@@ -10497,7 +10539,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
         blurb: 'Where it all started. Free, cold, and the neighbours have opinions.' },
-      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Space 7', rent: 60, era: 'local', perk: { rehearse: 0.08 },
+      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Space 7', rent: 60, rentEarly: 35, era: 'local', perk: { rehearse: 0.08 },   // v1.4 (M3): $35 a week until you sign
         blurb: 'A cinder-block room in a strip mall, next to a tire shop. Egg-crate foam, a light that buzzes, a sign that says NO DRUMS AFTER 11.',
         byCity: {
           Saskatoon: { name: 'Rent-A-Riff, Jam Space 7',
@@ -14073,10 +14115,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Benny returns the {sticks}. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
       ] },
     { id: 'shop_space_1_frost_heave', type: 'money', speaker: 'rox', title: 'A Room With a Lock', gate: g({ era: LSW }),
-      text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $60 a week, no dryers. Irma is " +
+      text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60), no dryers. Irma is " +
         "pretending not to listen at the top of the basement stairs. Irma is listening.",
       choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One van trip and three couch trips. Irma watches from the laundromat window. She sends a mop along "in case".' },
         { label: 'Stay in the basement', hint: 'Free · move later from the stairs', effects: { chemistry: 2, mood: { rox: -3 } },
           outcome: 'The basement it is. Irma brings down a space heater without a word, like a peace treaty. The dryers thump approval.' }
@@ -17033,10 +17075,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
        ch('No solos in this band', { mood: { lenny: -10 } },
         'Lenny plays the solo anyway, alone, in the loading dock, facing the dumpster. The dumpster is a good listener.', 'Lenny ↓↓')], { seat: ['drums', 'bass', 'rhythm'] }),
     card('shop_space_1_gravel_kings', 'money', 'gk_landlord', 'A Room with a Real Door', g({ era: LSW }),
-      "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $60 a week, and no nail salon on the other side " +
+      "A proper jam space across town: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60), and no nail salon on the other side " +
       "of the wall. Mr. Petrenko says Unit 4B 'will always be here'. He means it as a threat and a comfort.",
-      [ch('Move in ($60/week)', { mood: { all: 4 }, shop: { move: 1 } },
-        "One van trip and three trips for Chase's mirrors. Trinh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $60/wk · rehearsals count more'),
+      [ch('Move in ($35/week)', { mood: { all: 4 }, shop: { move: 1 } },
+        "One van trip and three trips for Chase's mirrors. Trinh and Gus wave from the plaza. Mr. Petrenko hangs a FOR LEASE sign. He takes it down that night.", 'Rent $35/wk ($60 once signed) · rehearse better'),
        ch('Stay in Unit 4B for now', { chemistry: 2, mood: { chase: 3 } },
         "Chase is relieved. It stays 1985 in here. Gus brings over a space heater he 'fixed'. It works. It hums in B flat.", 'Free · move later from the shop door')]),
     card('shop_space_2_gravel_kings', 'money', 'tamara', 'A Studio of Our Own', g({ era: SW }),
@@ -18800,7 +18842,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     { id: 'grr_truck_5_star', type: 'drama', speaker: 'bb_colt', title: 'Colt Comes Alone', chain: 'truck', step: 5,
       gate: g({ era: GLS, notFlags: ['truckWar'], flagEquals: { truckAd: 'star' } }),
       text: "Colt from Buckle & Boot shows up at the Quonset alone, on foot, carrying his guitar. It has never been plugged in. 'Brayden's real " +
-        "mad about the ad,' he says. 'Can Earl show me a G chord? Don't tell Brayden.'",
+        "mad about the ad,' he says. 'Can one of you show me a G chord? Don't tell Brayden.'",   // v1.4: seat-neutral (on the lead seat Earl is on the kit)
       choices: [
         { label: 'Earl teaches him a G', hint: 'Earl ↑ · a truce', effects: { mood: { earl: 8 }, chemistry: 3, flags: { truckWar: 'truce' }, chain: NEXT('truck', 6, 2) },
           outcome: 'Earl plugs Colt in for the first time. The G is loud. Colt jumps a foot. Then he plays it again. Then he cries. Duke hugs him.' },
@@ -20161,10 +20203,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           outcome: 'Earl returns the {sticks}. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
       ] },
     { id: 'shop_space_1_grid_road_ramblers', type: 'money', speaker: 'duke', title: 'A Room in Town', gate: g({ era: LSW }),
-      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $60 a week, " +
+      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $35 a week until you sign (then $60), " +
         "no horse. Uncle Vern is pretending not to listen from the tractor. Vern is listening.",
       choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One trip in {van}, three trips in Vern\'s grain truck. Vern waves from the yard. He sends Biscuit along "for security".' },
         { label: 'Stay in the Quonset', hint: 'Free · move later from the Quonset door', effects: { chemistry: 2, mood: { duke: -3 } },
           outcome: 'The Quonset it is. Vern brings out a new heater without a word, like a peace treaty. Doris is visibly relieved.' }
@@ -25019,6 +25061,24 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
+  function eraWeek(state, eras) {
+    var h = state.eraHistory || [];
+    for (var i = 0; i < h.length; i++) if (h[i] && eras.indexOf(h[i].era) >= 0 && h[i].week > 0) return h[i].week;
+    return 0;
+  }
+  career.earlyMoney = function (state) {
+    if (!state || !state.era || state.era === 'garage') return 1;
+    var E = econ(), T = E.earlyTaper, B = E.earlyBackstop, ms = state.milestones || {}, now = state.totalWeek || 0;
+    if (!(T > 0)) return 0;
+    var lh = ms.localHeroes || eraWeek(state, ['local']), end = Infinity;
+    if (B > 0 && lh > 0) end = lh + B;
+    if (state.era !== 'local') {
+      var sw = eraWeek(state, ['signed', 'world']) || ms.signed || 0;
+      if (!(sw > 0)) return 0;
+      end = Math.min(end, sw + T);
+    }
+    return end === Infinity ? 1 : U.clamp((end - now) / T, 0, 1);
+  };
   career.upkeep = function (state) {
     var E = econ(), cap = E.upkeepFanCap || Infinity, f = Math.min(state.fans, cap) + Math.max(0, state.fans - cap) * (E.upkeepFanTail != null ? E.upkeepFanTail : 1);
     return Math.round((E.weeklyUpkeep + f * E.upkeepPerFan + ((E.eraUpkeep || {})[state.era] || 0) + (GG.shop ? GG.shop.rent(state) : 0)) * (GG.difficulty ? GG.difficulty.mul(state, 'upkeep') : 1));
@@ -26718,8 +26778,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   gig.makeGig = function (state, venueId, source) {
     var v = gig.venue(venueId);
     if (!v) return null;
+    var pay = v.deal === 'exposure' ? 0 : (v.pay || 0);
+    if (pay > 0 && GG.world && GG.world.tierPay && v.tier) pay = v.deal === 'door' ? Math.round(GG.world.tierPay(v.tier, 'door', pay) * 2) / 2
+      : Math.round(GG.world.tierPay(v.tier, v.deal, pay) / 5) * 5;
     return { venueId: v.id, name: v.name, city: v.city, tier: v.tier, kind: v.kind, capacity: v.capacity,
-      deal: v.deal, pay: v.deal === 'exposure' ? 0 : (v.pay || 0), gas: v.gas || 0, quirk: v.quirk || '',
+      deal: v.deal, pay: pay, gas: v.gas || 0, quirk: v.quirk || '',
       source: source || 'book' };
   };
   gig.qualifying = function (state, maxTier) {
@@ -26804,9 +26867,18 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     };
   };
 
+  gig.gradePayMult = function (state, grade) {
+    var gp = G().gradePay, m = (gp && gp[grade]) || 1, e = GG.career && GG.career.earlyMoney ? GG.career.earlyMoney(state) : 1;
+    return m > 1 ? 1 + (m - 1) * e : 1;
+  };
   gig.applyResult = function (state, r) {
     if (GG.fans) GG.fans.gigShape(state, state.gig, r);   // v0.6.1: superfans follow on tour, Dale at every show (crowd/buzz; own RNG)
-    if (r.pay > 0 && GG.difficulty && !r.diffPay) { r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money')); r.diffPay = true; }   // v0.6.1 C4
+    if (r.pay > 0 && !r.diffPay) {
+      var pz = r.prize || 0, gm = gig.gradePayMult(state, r.grade);
+      if (gm !== 1) r.pay = Math.round((r.pay - pz) * gm) + pz;
+      if (GG.difficulty) r.pay = Math.round(r.pay * GG.difficulty.mul(state, 'money'));
+      r.diffPay = true;
+    }
     r.cut = GG.drama ? GG.drama.split(state, r.pay).cut : 0;
     r.fillInCost = GG.drama ? GG.drama.fillInCost(state) : 0;
     if (GG.shop && state.merch && !r.merch) GG.shop.gigMerch(state, state.gig, r);   // v0.8: the merch table (r.merch; own seeded RNG)
@@ -27433,7 +27505,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         if (t >= hend) endHold(hl, hend);
         else if (dt > 0) crowdAdd((cfg.holdGain != null ? cfg.holdGain : 0.1) * dt * cur.staleMul);
       }
-      if (cur.hold && dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
+      if (dt > 0 && S.combo > 0) crowdAdd((cfg.flowGain != null ? cfg.flowGain : 2) * (FLOW[diff] || 1) * (seat === 'lead' ? FLOW.lead : 1) * dt * cur.staleMul * (1.15 - real() / 200));
       var lim = t - W.good - cfg.grace;
       while (cur.mp < n.length && n[cur.mp].t < lim) {
         var x = n[cur.mp++];
@@ -28048,6 +28120,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var g = GG.world.makeListing(state, v, rng, { source: 'offer', id: id });
       var S = texts('botb', state);
       g.name = 'Battle of the Bands @ ' + v.name; g.deal = 'exposure'; g.pay = 0; g.minFans = 0; g.setSize = 3;
+      g.gas = Math.max(0, GG.world.gasFor(state, g.city) - (GG.world.cfg().exposureGas || 0));
       g.capacity = Math.max(v.capacity, k.botb.capacity); g.opening = null;
       g.quirk = fill(state, S.text || '{rival} are in. Winner takes {prize}.', { venue: v.name, city: v.city, prize: money(prize) });
       g.catch = 'Winner takes ' + money(prize) + ' and some of the loser\'s fans.';
@@ -30755,6 +30828,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     maxTier: 2,                  // v0.3: DIY + bars & clubs
     kmSoft: 150,                 // a venue this far from home is half as likely to be listed
     gasPerKm: 0.25, gasMin: 5,   // $ per km driven (there and back); city driving costs gasMin
+    gasEra: { garage: 1, local: 1 }, exposureGas: 0, tierPay: { 1: 1, 2: 1, 3: 1 }, tierStep: null,
     repPay: 0.06, repWeight: 0.35,
     repDelta: { S: 2, A: 1, B: 0, C: 0, D: -2 },
     repRange: [-3, 3], banAt: -3, rebookAt: 2,
@@ -30841,9 +30915,21 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return r.length > 1 ? paths().hw[r[r.length - 2]][r[r.length - 1]] || paths().hw[r[0]][r[1]] || '' : '';
   };
   world.home = function (state) { return world.cityId(state && state.city) || 'saskatoon'; };
+  world.gasMult = function (state) {
+    var E = cfg().gasEra || {}, era = state && state.era;
+    if (!era || era === 'garage') return E.garage != null ? E.garage : 1;
+    var e = GG.career && GG.career.earlyMoney ? GG.career.earlyMoney(state) : 0;
+    return 1 - (1 - (E.local != null ? E.local : 1)) * e;
+  };
   world.gasFor = function (state, city) {
     var K = cfg();
-    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm));
+    return Math.max(K.gasMin, Math.round(world.km(world.home(state), city) * 2 * K.gasPerKm * world.gasMult(state)));
+  };
+  world.tierPay = function (tier, deal, pay) {
+    var K = cfg(), m = (K.tierPay || {})[tier] || 1, step = K.tierStep && K.tierStep[deal], p = (pay || 0) * m;
+    if (step == null || deal === 'exposure' || !(pay > 0)) return p;
+    if (tier <= 1) return m > 1 ? Math.min(p, Math.max(pay, step)) : p;
+    return tier === 2 ? Math.max(p, step) : p;
   };
   world.season = function (week) {
     if (GG.calendar) return GG.calendar.season(week);
@@ -30925,6 +31011,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var v = venueById(g.venueId) || {}, fit = fitOf(v, state.genre);
     g.km = world.km(world.home(state), g.city);
     g.gas = world.gasFor(state, g.city);
+    if (g.deal === 'exposure' && cfg().exposureGas) g.gas = Math.max(0, g.gas - cfg().exposureGas);   // v1.4 (M1): the host chips in for gas
     if (g.catch == null) g.catch = v.catch || '';
     if (g.minFans == null) g.minFans = v.minFans >= CARD_ONLY ? 0 : (v.minFans || 0);
     g.fit = Math.round(fit * 100) / 100;
@@ -30948,8 +31035,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var range = (v.payRange && v.payRange[deal]) || [v.pay || 0, v.pay || 0];
       var mult = Math.max(0.5, 1 + K.repPay * rep) * (fit < K.clashFit && deal === 'flat' ? K.hazardPay : 1)
         * (GG.calendar ? GG.calendar.payMult(state, v) : 1);   // v0.6.1: NYE double pay, party + pub circuits
-      pay = deal === 'door' ? Math.round(rng.range(range[0], range[1]) * mult * 2) / 2
-        : Math.round(rng.int(range[0], range[1]) * mult / 5) * 5;
+      pay = deal === 'door' ? Math.round(world.tierPay(v.tier, deal, rng.range(range[0], range[1])) * mult * 2) / 2
+        : Math.round(world.tierPay(v.tier, deal, rng.int(range[0], range[1])) * mult / 5) * 5;
     }
     var g = { id: opts.id || null, venueId: v.id, name: v.name, city: v.city, tier: v.tier, kind: v.kind, capacity: v.capacity,
       deal: deal, pay: pay, gas: 0, quirk: v.quirk || '', source: opts.source || 'book', catch: v.catch || '',
@@ -31548,6 +31635,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   drama.want = function (state, m) {
     var d = m && m.original ? mdef(m.id) : null, w = d && d.wants;
     if (!w || !w.length) return null;
+    if (state && seatOn(state) !== 'drums' && GG.career.swapped && GG.career.swapped(state) === m.id) {
+      var w2 = w.filter(function (x) { return x.rule !== 'solos'; });
+      if (w2.length) w = w2;
+    }
     return w[(Math.floor((state.totalWeek - 1) / cfg().wantWeeks) + GG.hashSeed(m.id) % w.length) % w.length];
   };
   function count(a, id) { return a.filter(function (x) { return x === id; }).length; }
@@ -33317,12 +33408,17 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var cid = GG.world && GG.world.cityId ? GG.world.cityId(s.city) : null;
     return by[s.city] || (cid && by[cid]) || by[String(s.city).toLowerCase()] || null;
   }
+  function rentNow(s, def) { return def.rentEarly != null && eraIdx(s && s.era) < eraIdx('signed') ? def.rentEarly : def.rent || 0; }
   S.spaceDef = function (s, tier) {
     var list = K().spaces, def = null;
     for (var i = 0; i < list.length; i++) if (list[i].tier === tier) def = list[i];
     def = def || list[0] || EMPTY.spaces[0];
     var loc = localOf(s, def.byCity) || {};
-    if (tier !== 0) return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier], name: loc.name || def.name, blurb: loc.blurb || def.blurb });
+    if (tier !== 0) {
+      var rn = rentNow(s, def);
+      return Object.assign({}, def, { id: def.id || C.SPACE_TIERS[tier], name: loc.name || def.name, blurb: loc.blurb || def.blurb,
+        rent: rn, rentLater: rn !== (def.rent || 0) ? def.rent || 0 : 0 });
+    }
     var b = GG.career && GG.career.band ? GG.career.band(s) : null;
     return Object.assign({}, def, { id: (b && b.space) || 'parents_garage', name: (b && b.spaceName) || loc.name || def.name, blurb: loc.blurb || def.blurb });
   };
@@ -33335,6 +33431,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   S.canMove = function (s, tier) {
     var def = K().spaces.filter(function (x) { return x.tier === tier; })[0];
     if (!def) return fail('No such space.');
+    def = S.spaceDef(s, tier);   // v1.4 (M3): this week's rent
     if (tier === (s.spaceTier || 0)) return fail('You rehearse here already.');
     if (tier > S.availableTier(s)) return fail('Opens in ' + eraName(def.era) + '.');
     if (def.rent && s.fund < def.rent) return fail('You need the first week\'s rent (' + money(def.rent) + ').');
@@ -33356,7 +33453,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var avail = S.availableTier(s);
     return K().spaces.map(function (x) {
       var def = S.spaceDef(s, x.tier), c = S.canMove(s, x.tier);
-      return { tier: x.tier, id: def.id, name: def.name, blurb: def.blurb, rent: def.rent || 0, era: def.era, perk: U.clone(def.perk || {}),
+      return { tier: x.tier, id: def.id, name: def.name, blurb: def.blurb, rent: def.rent || 0, rentLater: def.rentLater || 0, era: def.era, perk: U.clone(def.perk || {}),
         current: x.tier === (s.spaceTier || 0), available: x.tier <= avail, can: c.ok, why: c.ok || x.tier === s.spaceTier ? '' : c.why };
     });
   };
@@ -52169,9 +52266,26 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return L.monthName + ', ' + L.seasonName.toLowerCase() + ': ' + L.weatherLabel.toLowerCase() + ', ' + L.temp + '°C. '
       + (L.holiday ? L.holiday.icon + ' ' + L.holiday.name + ': ' + L.holiday.blurb + ' ' : L.seasonBlurb + ' ') + (L.fit ? L.fit : '');
   }
+  function compactMoney(n) {
+    var a = Math.abs(Math.round(n)), t = a >= 1e6 ? (a / 1e6).toFixed(a >= 1e7 ? 0 : 1) + 'M' : a >= 1000 ? (a / 1000).toFixed(a >= 1e5 ? 0 : 1) + 'k' : String(a);
+    return (n < 0 ? '−$' : '$') + t;
+  }
+  function fitChip(v, full, short) {
+    var over = function () { return v.clientWidth > 0 && v.scrollWidth > v.clientWidth + 0.5; };
+    v.textContent = full; v.style.fontSize = ''; v.parentNode.title = full;
+    if (!over()) return;
+    v.style.fontSize = '12px';
+    if (!over()) return;
+    v.textContent = short; v.style.fontSize = '';
+    if (over()) v.style.fontSize = '12px';
+    if (over()) v.style.fontSize = '11px';
+  }
   function hudChip(key, testid, label) {
     var v = el('span.v'), l = el('span.l', label), extra = key === 'buzz' || key === 'chem' ? ui.bar(0, 100) : null;
-    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () { ui.toast(key === 'week' ? weekHelp() : STAT_HELP[key]); } }, [l, v, extra]);
+    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () {
+      var st = S();
+      ui.toast(key === 'week' ? weekHelp() : key === 'fund' && st ? STAT_HELP.fund.replace('Band fund:', 'Band fund ' + U.fmtMoney(st.fund) + ':') : STAT_HELP[key]);
+    } }, [l, v, extra]);
     b._v = v; b._l = l; b._bar = extra;
     return b;
   }
@@ -52244,9 +52358,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     hud.week._l.textContent = 'Y' + st.year;
     hud.week._v.textContent = 'W' + st.week;   // v0.6.1 verify: '/24' in a smaller span so W12/24 fits a 390px chip
     hud.week._v.appendChild(el('small.wk-of', '/' + C.WEEKS_PER_YEAR));
-    hud.fund._v.textContent = U.fmtMoney(st.fund);
+    fitChip(hud.fund._v, U.fmtMoney(st.fund), compactMoney(st.fund));   // v1.4 review: $1,018 no longer clips to "$1,0…" at 390
     hud.fund.classList.toggle('neg', st.fund < 0);
-    hud.fans._v.textContent = U.fmtNum(st.fans);
+    fitChip(hud.fans._v, U.fmtNum(st.fans), st.fans >= 1000 && st.fans < 10000 ? (st.fans / 1000).toFixed(1) + 'k' : U.fmtNum(st.fans));   // "9,999" fits at 390 too
     hud.buzz._v.textContent = String(Math.round(st.buzz));
     hud.chem._v.textContent = String(Math.round(st.chemistry));
     setBar(hud.buzz._bar, st.buzz); setBar(hud.chem._bar, st.chemistry);
@@ -54747,24 +54861,47 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (d == null) return r.repNow != null ? 'Venue rep: ' + U.signed(r.repNow) : null;
     return d > 0 ? 'Venue rep ▲ ' + d + ': they want you back.' : d < 0 ? 'Venue rep ▼ ' + (-d) + ': the owner is not returning calls.' : 'Venue rep unchanged.';
   }
+  ui.gigFundParts = function (r) {
+    var out = [], net = r && r.deltas ? r.deltas.fund || 0 : 0, tow = r && r.travel && r.travel.breakdown ? r.travel.breakdown.cost || 0 : 0;
+    if (!r) return out;
+    if (r.fillInCost) out.push({ label: 'fill-in', v: -r.fillInCost });
+    if (r.commission) out.push({ label: 'management ' + Math.round(r.commission / Math.max(1, r.pay) * 100) + '%', v: -r.commission });
+    if (r.crew) out.push({ label: 'crew', v: -r.crew });
+    if (tow) out.push({ label: 'tow', v: -tow });
+    if (r.merch && r.merch.earned) out.push({ label: 'merch', v: r.merch.earned });
+    var rest = Math.round(net - ((r.pay || 0) - (r.cut || 0) - (r.gas || 0)) - out.reduce(function (a, p) { return a + p.v; }, 0));
+    if (rest) out.push({ label: 'other', v: rest });
+    return out;
+  };
   ui.define('gig-results', {
     kind: 'full', cls: 'gigres', sticky: true,
     build: function (s, d) {
       var r = d.result, pay = r.deal === 'exposure' && !r.pay ? 'Exposure' : U.fmtMoney(r.pay || 0), rep = repText(r);
+      var moments = (r.moments || []).filter(function (k) { return k !== 'solo'; }).length;
       s.body.appendChild(el('div.gigres-head', [
         el('div.grade.big.' + r.grade, { testid: 'gig-grade' }, r.grade),
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
-          el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0))])
+          el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0)
+            + ' · ' + moments + (moments === 1 ? ' moment' : ' moments'))])
       ]));
       if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
+      var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
       s.body.appendChild(el('div.stat-grid', [
+        el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
+        el('div', [el('span.caps', 'Band\'s cut'), el('b', { testid: 'gig-cut' }, minus(r.cut || 0))]),
+        el('div', [el('span.caps', 'Gas'), el('b', minus(r.gas || 0))]),
         el('div', [el('span.caps', 'Crowd'), el('b', r.crowd + '/' + r.capacity)]),
-        el('div', [el('span.caps', 'Pay'), el('b', pay)]),
-        el('div', [el('span.caps', 'Gas'), el('b', r.gas ? '−' + U.fmtMoney(r.gas).replace('−', '') : '$0')]),
         el('div', [el('span.caps', 'Fans'), el('b.good', U.signed(r.fans || 0))]),
-        el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))]),
-        el('div', [el('span.caps', 'Moments'), el('b', String((r.moments || []).filter(function (k) { return k !== 'solo'; }).length))])
+        el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))])
       ]));
+      var net = r.deltas ? r.deltas.fund || 0 : null;
+      if (net != null) {
+        var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
+        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+          .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
+          .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
+            + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
+      }
       if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
       s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
@@ -59885,6 +60022,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return el('div.stack', [
       el('div.panel.warm', { testid: 'space-now' }, [el('div.caps', 'You rehearse at'), el('div.shop-big', cur.name),
         el('div.small.dim', fill(cur.blurb)), el('div.chips', { style: 'margin-top:6px' }, [el('span.chip', cur.rent ? 'Rent ' + money(cur.rent) + '/week' : BENEFACTOR[ui.spaceKind(st)] || 'Free')]
+          .concat(cur.rentLater ? [el('span.chip', { testid: 'space-rent-later' }, money(cur.rentLater) + '/week once you sign')] : [])   // v1.4 (M3)
           .concat(perks.map(function (p) { return el('span.chip.up', p); }))),
         st.rentLate ? el('div.small.bad', { testid: 'space-late', style: 'margin-top:6px' }, 'Behind on rent: two weeks short and the landlord changes the locks.') : null]),
       el('div.caps', 'Rooms around town'),
@@ -59893,9 +60031,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return el('div.shop-row' + (x.current ? '.own' : !x.available ? '.locked' : ''), { testid: 'space-' + x.tier }, [
           el('span.shop-tier', String(x.tier + 1)),
           el('div.grow', [el('b', x.name), el('div.small.dim', x.blurb), el('div.chips', { style: 'margin-top:4px' }, [el('span.chip', x.rent ? money(x.rent) + '/wk' : 'Free')]
+            .concat(x.rentLater ? [el('span.chip', money(x.rentLater) + '/wk once signed')] : [])   // v1.4 (M3): the price after signing, shown up front
             .concat(perkText(x.perk).map(function (p) { return el('span.chip', p); }))), !x.current && !x.can && x.why ? el('div.tiny.bad', x.why) : null]),
           x.current ? el('span.tag.amber', 'Here') : btn('.btn.small' + (x.can ? '.primary' : ''), { testid: 'space-move-' + x.tier, disabled: !x.can, onclick: function () {
-            ui.confirm({ title: 'Move to ' + x.name + '?', text: (x.rent ? 'Rent: ' + money(x.rent) + ' a week, from the fund. ' : 'Free. ')
+            ui.confirm({ title: 'Move to ' + x.name + '?', text: (x.rent ? 'Rent: ' + money(x.rent) + ' a week, from the fund' + (x.rentLater ? ' (' + money(x.rentLater) + ' once you sign). ' : '. ') : 'Free. ')
               + 'Upgrades stay behind (the couch and the beer fridge come along).', yes: 'Move in', no: 'Stay' }).then(function (yes) {
               if (!yes) return;
               var r = SH().move(S(), x.tier);
@@ -61240,7 +61379,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     '.hof-yr.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}',
     '.hof-yearcard{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--panel2)}',
     '.hof-sec{font:800 11px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:16px 0 6px}',
-    '.hof-tro{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);margin:0 6px 6px 0}'
+    '.hof-tro{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);margin:0 6px 6px 0}',
+    '.line-list>div.hof-wrap>span:first-child{flex:0 0 auto}.line-list>div.hof-wrap>span:last-child{white-space:normal;text-align:right;min-width:0;overflow-wrap:anywhere}'
   ].join('');
   if (typeof document !== 'undefined' && !document.getElementById('css-hof')) {
     var st0 = document.createElement('style'); st0.id = 'css-hof'; st0.textContent = CSS; document.head.appendChild(st0);
@@ -61328,7 +61468,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var s = e.stats || {}, rows = [['Fans', U.fmtNum(s.fans || 0)], ['Records sold', U.fmtNum(s.units || 0)], ['Gigs', s.gigs || 0], ['Songs', s.songs || 0],
       ['Albums', s.albums || 0], ['Loonies', s.loonies || 0], ['Global Gongs', s.gongs || 0], ["Parents' loans", s.loans || 0],
       ['Biggest room', s.venue ? s.venue.name + ' (' + U.fmtNum(s.venue.cap || 0) + ')' : 'The garage'], ['Regions broken', s.broken || 0]];
-    return el('div.line-list.panel', { testid: 'hof-stats' }, rows.map(function (r) { return el('div', [el('span', r[0]), el('span', String(r[1]))]); }));
+    return el('div.line-list.panel', { testid: 'hof-stats' }, rows.map(function (r) { return el(r[0] === 'Biggest room' ? 'div.hof-wrap' : 'div', [el('span', r[0]), el('span', String(r[1]))]); }));
   }
   function rivalLine(e) {
     var rv = (e.rival && e.rival.name) || 'The rival', f = e.final;

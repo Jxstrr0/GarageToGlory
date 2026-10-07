@@ -159,6 +159,12 @@
   drama.want = function (state, m) {
     var d = m && m.original ? mdef(m.id) : null, w = d && d.wants;
     if (!w || !w.length) return null;
+    // v1.4 (seat-language fix): on a string seat the swapped member sits on the kit; a want about their old instrument's
+    // spotlight (rule 'solos': Dana, Earl, ...) is the player's now, so they want their other things.
+    if (state && seatOn(state) !== 'drums' && GG.career.swapped && GG.career.swapped(state) === m.id) {
+      var w2 = w.filter(function (x) { return x.rule !== 'solos'; });
+      if (w2.length) w = w2;
+    }
     return w[(Math.floor((state.totalWeek - 1) / cfg().wantWeeks) + GG.hashSeed(m.id) % w.length) % w.length];
   };
   function count(a, id) { return a.filter(function (x) { return x === id; }).length; }

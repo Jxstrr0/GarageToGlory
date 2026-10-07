@@ -1745,10 +1745,10 @@
           outcome: 'Benny returns the {sticks}. He plays the solo anyway, alone, in the laundromat, for Delphine. She claps both times.' }
       ] },
     { id: 'shop_space_1_frost_heave', type: 'money', speaker: 'rox', title: 'A Room With a Lock', gate: g({ era: LSW }),
-      text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $60 a week, no dryers. Irma is " +
+      text: "A real jam room across town has opened up: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60), no dryers. Irma is " +
         "pretending not to listen at the top of the basement stairs. Irma is listening.",
       choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One van trip and three couch trips. Irma watches from the laundromat window. She sends a mop along "in case".' },
         { label: 'Stay in the basement', hint: 'Free · move later from the stairs', effects: { chemistry: 2, mood: { rox: -3 } },
           outcome: 'The basement it is. Irma brings down a space heater without a word, like a peace treaty. The dryers thump approval.' }

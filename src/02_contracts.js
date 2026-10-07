@@ -515,7 +515,8 @@
 
   /* ======================================================================
    V1.3.1 SIMULATE + GEAR SHOP (plan/plan_1.3.1.md; status.md Addendum 6; SAVE_SCHEMA stays 10: state.playLog is optional)
-   Played gigs score exactly as 1.3.0 (a played result gains no new field). A simulated gig is the REAL live session played
+   Played gigs score exactly as 1.3.0 (a played result gains no new field; v1.4 Tuning re-pinned the played-gig fingerprint on
+   purpose: see V1.4 below). A simulated gig is the REAL live session played
    headlessly by GG.gig.botPlay at "your own average", finished into the normal GIG_RESULT and applied through the normal path
    (career.finishGig -> settleGig: pay, fans, buzz, venue rep, rival opener, recap, legacy, achievements: everything counts).
    state.playLog?: [ { acc 0..1, ps 0..1, seat: C.SEATS, diff: 'easy'|'normal'|'hard'|'expert', wk: totalWeek } ]
@@ -546,6 +547,43 @@
   ====================================================================== */
   C.PLAY_LOG_MAX = 5;                            // played gigs remembered for "your own average"
   C.SIM_MIN_PLAYED = 2;                          // fewer played gigs on this seat -> the band's level
+
+  /* ======================================================================
+   V1.4 TUNING (status.md Addendum 7, owner picks M1-M3; plan/v14/; build report plan/v14/build_report.md). Numbers only, no new
+   feature, no new state key, no new GIG_RESULT field (SAVE_SCHEMA stays 10; old saves load as they are).
+   M1 "Gigs pay, side jobs less" (content/economy.js; every value below is content):
+     startFund 300 -> 450; shop ride (lane 6 / the string seats' lane-6 item) 350 -> 200, pedal (runs) 300 -> 250;
+     hustleEra { garage 0.7, local 1, signed 2.2, world 3 } (was 1 / 1.3 / 2.2 / 3).
+     GG.career.earlyMoney(state) -> 0..1 (owner "until signed"; review fix): 1 in the garage era; else clamp((end - totalWeek)
+       / economy.earlyTaper (12), 0, 1) with end = min(Local Heroes + economy.earlyBackstop (48), signed + earlyTaper): full
+       through Local Heroes, a 12-week fade after signing (the first 'signed' / 'world' eraHistory week: a deal or a DIY album;
+       else milestones.signed), and a band that never signs loses it 48 weeks after Local Heroes. At most 1/12 a week (no
+       cliff). Local Heroes week = milestones.localHeroes, else the 'local' eraHistory week; signed without a week -> 0.
+     GG.world.gasMult(state): garage economy.world.gasEra.garage (0.5); from Local Heroes 1 - (1 - gasEra.local (0.8)) x earlyMoney.
+     GG.world.gasFor(state, city) = max(gasMin, round(km x 2 x gasPerKm x gasMult)); world.decorate: an exposure deal's gas
+       -= economy.world.exposureGas (40), never below 0.
+     GG.world.tierPay(tier, deal, pay) (unrounded): pay x tierPay[tier] (economy.world.tierPay { 1: 1.6 }); with
+       tierStep[deal] (economy.world.tierStep { flat: 150, door: 2 }): tier 1 boosted -> min(boosted, max(pay, step)), tier 2
+       -> max(pay, step): every tier-1 headline pay <= every tier-2 one (moving up never pays less). Used by makeListing (the
+       rolled pay, before rep / hazard / calendar; the same rng draws) and GG.gig.makeGig (card bookings: flat rounded to $5,
+       door to 50 cents). Opening slots keep their $20-45.
+     GG.gig.gradePayMult(state, grade) = 1 + (economy.gig.gradePay[grade] - 1) x earlyMoney (gradePay { S: 1.25, A: 1.1 };
+       B / C / D x1: nobody is docked). gig.applyResult, once per result under the existing r.diffPay flag:
+       r.pay = round((pay - prize) x gradePayMult) + prize, then x the career difficulty's money (as before).
+     Results screen (55): Pay | Band's cut (r.cut, the members' share) | Gas, then Crowd | Fans | Buzz, and an "Into the fund"
+       line (r.deltas.fund, "$0" when unchanged) naming every other part of it (review fix; ui.gigFundParts(r) -> [{ label, v }]:
+       fill-in -r.fillInCost, management N% -r.commission, crew -r.crew, tow -r.travel.breakdown.cost, merch +r.merch.earned,
+       any rest "other"), so Pay - cut - gas + parts = the net; + the great-show % when gradePayMult > 1 and pay - prize > 0;
+       the Moments count moves to the score line. Testids gig-pay, gig-cut, gig-net, gig-net-part (data-v = the signed $).
+     BotB (23 SCHEDULE.botb, review fix): the listing's gas is recomputed after deal = 'exposure' (the exposureGas cover always).
+   M2 "Fair grades": the v1.1 flow (crowd += flowGain x FLOW[diff] (x FLOW.lead on the lead seat) x dt while a combo runs) now
+     runs on every seat (was string seats only), so the same hit share draws the same crowd, song score and gig grade on the
+     kit as on bass / rhythm / lead. Charts, judgement windows and per-note gains unchanged. Simulate and bot sessions alike.
+   M3: content shop.spaces[i].rentEarly ($/week until the band signs; the jam room 35, rent 60). GG.shop.spaceDef(s, tier).rent
+     = this week's price (rentEarly before the Signed era), .rentLater = the price after signing (0 = no change ahead);
+     spaces(s) rows + rentLater; canMove checks this week's rent. Card shop_space_1 (+ band variants) and the shop rows say both.
+   Seat language: GG.drama.want skips rule 'solos' for the swapped member on a string seat (they sit on the kit now).
+  ====================================================================== */
 
   /* ======================================================================
    V1.2 SOUNDCHECK (plan/plan_contract_1.2.md §4; handoff Part F; SAVE_SCHEMA stays 10: settings.audioClassic missing = false)
@@ -663,7 +701,7 @@
   //     chart keys holds, chords, runs, kinds, genre, tail, fills[].cap / shred; S.release(lane, t), S.holding, S.seat; SONG_RESULT
   //     adds seat, holds, rings, held, bends (lead seat at amp tier 2), and on the lead seat solo, dur, soloNotes, allNotes;
   //     roles(state).drummer is non-enumerable (the drum seat's roles object equals v1.0's). economy.gig.live adds flowGain,
-  //     holdGain, ringGain, ringAt, seatDensityClamp, bendGain.
+  //     holdGain, ringGain, ringAt, seatDensityClamp, bendGain. (v1.4 M2: flowGain applies on every seat, the drums too.)
   //   GG.songs (21): part.{ ROWS, key(seat), choices(genre, seat, section), suggest, sanitize, full, toggle, pick, MODS, modify
   //     (lock | double | ring | call), notes }, partRating(pattern, genre), PART_WEIGHT { groove, hook, difficulty }, rate().part =
   //     { groove, hook, tips }; similarity scales by part likeness; create gives string-seat songs a part (seeded per song id).

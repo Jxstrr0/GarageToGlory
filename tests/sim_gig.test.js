@@ -41,12 +41,13 @@ test('makeGig / pay rules per deal', () => {
   eq(GG.gig.makeGig(s, 'nope', 'book'), null);
   const ex = GG.gig.makeGig(s, 'buddys_house_party', 'forced'), fl = GG.gig.makeGig(s, 'legion_63', 'card'), dr = GG.gig.makeGig(s, 'gopher_hole', 'offer');
   eq([ex.pay, ex.source], [0, 'forced']);
-  eq(GG.gig.payFor(ex, 15), 0); eq(GG.gig.payFor(fl, 3), fl.pay); eq(GG.gig.payFor(fl, 60), 80);
+  // v1.4 (M1) re-pin: a card booking goes through the tier rule: Legion $80 x1.6 = $128 -> $130 (was $80)
+  eq(fl.pay, 130); eq(GG.gig.payFor(ex, 15), 0); eq(GG.gig.payFor(fl, 3), fl.pay); eq(GG.gig.payFor(fl, 60), 130);
   eq(GG.gig.payFor(dr, 100), 100 * GG.gig.venue('gopher_hole').pay);
   for (let i = 1; i <= 40; i++) {
     const r = GG.gig.simulate(s, dr, GG.RNG(i));
     eq(r.pay, GG.gig.payFor(dr, r.crowd)); ok(r.crowd >= 1 && r.crowd <= 150, 'crowd within capacity');
-    const r2 = GG.gig.simulate(s, fl, GG.RNG(i)); eq(r2.pay, 80);
+    const r2 = GG.gig.simulate(s, fl, GG.RNG(i)); eq(r2.pay, 130);
   }
 });
 
@@ -719,7 +720,7 @@ test('v1.3.1 simulate: everything counts (applied through career.finishGig exact
   eq(twin.playLog.length, 2 + 1, 'the played twin joins the average');
 });
 
-test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the oldest); a played result gains no field; 1.3.0 fingerprint', () => {
+test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the oldest); a played result gains no field; played fingerprint (v1.4)', () => {
   const s = simCareer('drums', 21); ok(!('playLog' in s), 'no key before the first played gig');
   const S = GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'normal' }), r = GA.gig.botPlay(S, AVG, GA.RNG(3));
   ok(!('simulated' in r) && !('sim' in r), 'a played GIG_RESULT has no new field');
@@ -731,7 +732,9 @@ test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the old
     GA.career.finishGig(s, GA.gig.botPlay(GA.gig.session(s, s.gig, null, { emit: false, difficulty: 'hard' }), AVG, GA.RNG(10 + i))); }
   eq([s.playLog.length, s.playLog[0].diff, s.playLog[4].wk], [GA.contracts.PLAY_LOG_MAX, 'hard', s.totalWeek], 'the last 5 played, newest last');
   const q = simCareer('drums', 22); GA.gig.autoResolve(q, GA.RNG(1)); ok(!('playLog' in q), 'the v0.1 auto-resolve (bots, balance) is not a played gig');
-  // played gigs are byte-identical to 1.3.0 (fingerprint computed with the 1.3.0 22_sim_gig.js; playLog aside)
+  // played-gig fingerprint (playLog aside). v1.4 re-pin (intended, supersedes v1.3.1's "played gigs match 1.3.0"): the
+  // v1.4 money rules move pay and fund (Legion card pay $80 -> $130, grade pay, start fund $450); v1.4 M2 (the crowd's
+  // flow on every seat) moves the drum rows only: drums/easy 72 -> 75 (= bass 75), drums/hard 64 B -> 65 A (= bass 65 A).
   const fp = [];
   for (const seat of ['drums', 'bass']) for (const d of ['easy', 'hard']) {
     const t = GA.career.newCareer({ seed: 11, bandId: 'hail_damage', seat, player: { name: 'Fp' } }); t.phase = 'gig'; t.gig = GA.gig.makeGig(t, 'legion_63', 'book');
@@ -739,7 +742,7 @@ test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the old
     GA.career.finishGig(t, rr); const u = JSON.parse(JSON.stringify(t)); delete u.playLog;
     fp.push(seat + '/' + d + ':' + GA.hashSeed(JSON.stringify(rr) + '|' + JSON.stringify(u)));
   }
-  eq(fp.join(' '), 'drums/easy:1042753566 drums/hard:74364012 bass/easy:1477014130 bass/hard:222861556');
+  eq(fp.join(' '), 'drums/easy:1973364824 drums/hard:1896319776 bass/easy:398286011 bass/hard:2109029357');
 });
 
 done('sim_gig');

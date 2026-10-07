@@ -178,7 +178,8 @@ test('spaces: era opens tiers, moving is a choice, rent in the bills, perks, upg
   const evs = []; GG.on('shop:move', e => evs.push(e.to));
   ok(S.move(s, 1).ok && s.spaceTier === 1 && s.space === 'jam_room', 'moved to the jam room');
   eq(s.spaceUpgrades, ['curb_couch'], 'the couch came along, the foam stayed on the old walls');
-  eq(GG.career.upkeep(s) - bills0, 60 + 6, 'rent $60 + the Local Heroes era upkeep');
+  // v1.4 (M3) re-pin: was 60 + 6; the jam room is $35 a week until you sign
+  eq(GG.career.upkeep(s) - bills0, 35 + 6, 'rent $35 (until signed) + the Local Heroes era upkeep');
   ok(S.perkFactor(s, 'rehearse') >= 1.08, 'jam room: rehearsals count more');
   ok(S.buyUpgrade(s, 'real_pa').ok && S.perks(s).write === 1, 'PA: +write');
   s.era = 'world';

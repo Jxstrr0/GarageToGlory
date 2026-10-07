@@ -500,7 +500,7 @@
     { id: 'grr_truck_5_star', type: 'drama', speaker: 'bb_colt', title: 'Colt Comes Alone', chain: 'truck', step: 5,
       gate: g({ era: GLS, notFlags: ['truckWar'], flagEquals: { truckAd: 'star' } }),
       text: "Colt from Buckle & Boot shows up at the Quonset alone, on foot, carrying his guitar. It has never been plugged in. 'Brayden's real " +
-        "mad about the ad,' he says. 'Can Earl show me a G chord? Don't tell Brayden.'",
+        "mad about the ad,' he says. 'Can one of you show me a G chord? Don't tell Brayden.'",   // v1.4: seat-neutral (on the lead seat Earl is on the kit)
       choices: [
         { label: 'Earl teaches him a G', hint: 'Earl ↑ · a truce', effects: { mood: { earl: 8 }, chemistry: 3, flags: { truckWar: 'truce' }, chain: NEXT('truck', 6, 2) },
           outcome: 'Earl plugs Colt in for the first time. The G is loud. Colt jumps a foot. Then he plays it again. Then he cries. Duke hugs him.' },
@@ -1872,10 +1872,10 @@
           outcome: 'Earl returns the {sticks}. He plays the solo anyway, alone, in the Quonset, for Doris. She stays for the whole thing.' }
       ] },
     { id: 'shop_space_1_grid_road_ramblers', type: 'money', speaker: 'duke', title: 'A Room in Town', gate: g({ era: LSW }),
-      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $60 a week, " +
+      text: "A real jam room has opened up in Swift Current, above the seed-cleaning plant: foam on the walls, a door that locks, $35 a week until you sign (then $60), " +
         "no horse. Uncle Vern is pretending not to listen from the tractor. Vern is listening.",
       choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One trip in {van}, three trips in Vern\'s grain truck. Vern waves from the yard. He sends Biscuit along "for security".' },
         { label: 'Stay in the Quonset', hint: 'Free · move later from the Quonset door', effects: { chemistry: 2, mood: { duke: -3 } },
           outcome: 'The Quonset it is. Vern brings out a new heater without a word, like a peace treaty. Doris is visibly relieved.' }

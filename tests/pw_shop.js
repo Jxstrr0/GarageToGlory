@@ -351,6 +351,7 @@ async function space() {
     await page.waitForTimeout(300);
     const m1 = await page.evaluate(() => ({ tier: GG.state.spaceTier, ups: GG.state.spaceUpgrades.slice(), r: GG.debug('render').space, now: document.querySelector('[data-testid="space-now"]').textContent }));
     c.ok(m1.tier === 1 && m1.r.tier === 1 && m1.r.door === 'Door' && !m1.r.garage && /Rent-A-Riff/.test(m1.now), 'moved into the jam room: the 3D room changes, the door hotspot is a door ' + JSON.stringify(m1.r));
+    c.ok(/Rent \$35\/week/.test(m1.now) && /\$60\/week once you sign/.test(m1.now), 'v1.4 (M3): $35 a week until you sign, the $60 shown up front: ' + m1.now.slice(0, 200));
     c.ok(m1.ups.join() === 'beer_fridge', 'the beer fridge came along, the foam stayed behind: ' + m1.ups.join());
     await tap(page, 'space-up-disco_ball');
     await page.waitForTimeout(200);
@@ -393,9 +394,10 @@ async function space() {
     // rent in the wrap + the laptop
     await page.evaluate(() => { const s = GG.state; s.spaceTier = 1; s.space = 'jam_room'; s.spaceUpgrades = []; s.fund = 2000; s.rentLate = 0; GG.main.sync(); });
     await toWrap(page);
-    c.ok(/Rent-A-Riff/.test(await text(page, 'wrap-rent')) && /\$60/.test(await text(page, 'wrap-rent')), 'the wrap shows the rent: ' + await text(page, 'wrap-rent'));
+    // v1.4 (M3) re-pin: $60 -> $35 (the jam room costs $35 a week until you sign; this career is Local Heroes)
+    c.ok(/Rent-A-Riff/.test(await text(page, 'wrap-rent')) && /\$35/.test(await text(page, 'wrap-rent')), 'the wrap shows the rent: ' + await text(page, 'wrap-rent'));
     await page.evaluate(() => { GG.ui.closeAll(); GG.ui.show('laptop', { tab: 'money' }); });
-    c.ok(/\$60\/wk/.test(await text(page, 'laptop-rent')), 'the laptop Money tab shows the rent');
+    c.ok(/\$35\/wk/.test(await text(page, 'laptop-rent')), 'the laptop Money tab shows the rent: ' + await text(page, 'laptop-rent'));
     // eviction
     await page.evaluate(() => { GG.ui.closeAll(); const s = GG.state; s.fund = 20; s.rentLate = 1; GG.main.sync(); });
     await toWrap(page);

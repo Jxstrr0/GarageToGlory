@@ -1260,6 +1260,30 @@
   /* ======================================================================
      Week wrap: upkeep, drift, chat, parents' loan, milestones, year end
      ====================================================================== */
+  // v1.4 (M1): how much of the early money help still applies (era gas, grade pay), 0..1. Owner pick "until signed":
+  // 1 in the garage and Local Heroes eras, then a straight fade to 0 over economy.earlyTaper weeks (12) after the band
+  // signs (the first 'signed' / 'world' eraHistory entry: a deal or a DIY album; else milestones.signed), so there is
+  // no cliff at signing. Backstop for a band that never signs: the help is gone economy.earlyBackstop weeks (48) after
+  // Local Heroes, fading over the same earlyTaper weeks before that. So earlyMoney = clamp((end - totalWeek) / T, 0, 1)
+  // with end = min(Local Heroes + backstop, signed + T): continuous week to week (at most 1/T a week).
+  function eraWeek(state, eras) {
+    var h = state.eraHistory || [];
+    for (var i = 0; i < h.length; i++) if (h[i] && eras.indexOf(h[i].era) >= 0 && h[i].week > 0) return h[i].week;
+    return 0;
+  }
+  career.earlyMoney = function (state) {
+    if (!state || !state.era || state.era === 'garage') return 1;
+    var E = econ(), T = E.earlyTaper, B = E.earlyBackstop, ms = state.milestones || {}, now = state.totalWeek || 0;
+    if (!(T > 0)) return 0;
+    var lh = ms.localHeroes || eraWeek(state, ['local']), end = Infinity;
+    if (B > 0 && lh > 0) end = lh + B;
+    if (state.era !== 'local') {
+      var sw = eraWeek(state, ['signed', 'world']) || ms.signed || 0;
+      if (!(sw > 0)) return 0;
+      end = Math.min(end, sw + T);
+    }
+    return end === Infinity ? 1 : U.clamp((end - now) / T, 0, 1);
+  };
   // Weekly bills: base + per fan (saturating past upkeepFanCap, v0.5) + the era's extras (economy.eraUpkeep) + v0.8 the
   // rehearsal space's rent (GG.shop.rent; tier 0 is free).
   career.upkeep = function (state) {

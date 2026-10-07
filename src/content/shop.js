@@ -5,7 +5,7 @@
 //     (toms = lane 5, ride/china = lane 6 (needs the toms), the double-kick pedal adds no lane)
 //   kit: [{ tier 0..3, id (C.KIT_QUALITY), name, cost, era, blurb }]   (bought in order; tier 0 is what you start with)
 //   sections: { outro: { name, blurb }, solo: { name, blurb } }   (C.EXTRA_SECTIONS; unlocked by the career, never bought)
-//   spaces: [{ tier 0..3, id (C.SPACE_TIERS), name, rent ($/week), era, perk: PERK, blurb }]   (tier 0 = the band's own
+//   spaces: [{ tier 0..3, id (C.SPACE_TIERS), name, rent ($/week), rentEarly? ($/week until you sign: v1.4 M3), era, perk: PERK, blurb }]   (tier 0 = the band's own
 //     start space: name + id come from content.bands[bandId].space / spaceName)
 //   upgrades: [{ id, tier (the space tier it belongs to), name, cost, perk: PERK, moves?: true (comes along when you move), blurb }]
 //   vanTiers: [{ tier 0..3, id (C.VAN_TIERS), kind, price, era, space (merch boxes hauled), comfort 1..5, condition (new), wear, breakdown, blurb }]
@@ -30,8 +30,8 @@
       { id: 'toms', name: 'Rack tom + floor tom', lane: 5, cost: 450, era: 'garage',
         blurb: 'Two pawn-shop toms from two different kits. Lane 5: fills that roll down the kit.' },
       { id: 'ride', name: 'Ride cymbal', names: { metal: 'China cymbal', punk: 'China cymbal', rock: 'Ride cymbal', country: 'Ride cymbal' },
-        lane: 6, needs: 'toms', cost: 350, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
-      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 300, era: 'garage',
+        lane: 6, needs: 'toms', cost: 200, era: 'garage', blurb: 'Lane 6: a pinging bell (or a trashy china) for accents and big choruses.' },
+      { id: 'pedal', name: 'Double-kick pedal', pedal: true, cost: 250, era: 'garage',   // v1.4 (M1): ride 350 -> 200, pedal 300 -> 250 (every seat's line)
         blurb: 'Both feet on the kick. The kick lane can hit every 16th. Your calves file a complaint.' }
     ],
     kit: [
@@ -59,7 +59,7 @@
     spaces: [
       { tier: 0, id: 'start', name: 'Home', rent: 0, era: 'garage', perk: {},
         blurb: 'Where it all started. Free, cold, and the neighbours have opinions.' },
-      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Space 7', rent: 60, era: 'local', perk: { rehearse: 0.08 },
+      { tier: 1, id: 'jam_room', name: 'Rent-A-Riff, Jam Space 7', rent: 60, rentEarly: 35, era: 'local', perk: { rehearse: 0.08 },   // v1.4 (M3): $35 a week until you sign
         blurb: 'A cinder-block room in a strip mall, next to a tire shop. Egg-crate foam, a light that buzzes, a sign that says NO DRUMS AFTER 11.',
         byCity: {
           Saskatoon: { name: 'Rent-A-Riff, Jam Space 7',

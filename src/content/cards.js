@@ -1863,10 +1863,10 @@
       ] },
 
     { id: 'shop_space_1', type: 'money', speaker: 'mom', title: 'A Room of Your Own', gate: g({ era: LSW }),
-      text: 'Rent-A-Riff has a jam space free: cinder block, egg-crate foam, a door that locks, $60 a week. Your mom has already measured the garage for ' +
-        'the car. Dad is pretending not to listen. Dad is listening.',
-      choices: [
-        { label: 'Move in ($60/week)', hint: 'Rent $60/wk · rehearsals count more', effects: { mood: { all: 4 }, shop: { move: 1 } },
+      text: 'Rent-A-Riff has a jam space free: cinder block, egg-crate foam, a door that locks, $35 a week until you sign (then $60). Your mom has already ' +
+        'measured the garage for the car. Dad is pretending not to listen. Dad is listening.',
+      choices: [   // v1.4 (M3): $35/wk until signed (shop.spaces jam_room rentEarly), then $60
+        { label: 'Move in ($35/week)', hint: 'Rent $35/wk ($60 once signed) · rehearse better', effects: { mood: { all: 4 }, shop: { move: 1 } },
           outcome: 'One van trip and three couch trips. Mom parks the car in the garage and sits in it for a while.' },
         { label: 'Stay home for now', hint: 'Free · move later from the garage door', effects: { chemistry: 2, mood: { marcel: -3 } },
           outcome: 'The garage it is. Dad brings out a space heater without a word, like a peace treaty.' }

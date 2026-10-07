@@ -261,7 +261,8 @@ test('activities: each does its job; repeats have diminishing returns', () => {
   [s, r] = run(['book', 'rest', 'rest'], t => { t.gig = GG.gig.makeGig(t, 'legion_63', 'card'); });
   ok(r.blocks[0].deltas.buzz > 0 && !r.blocks[0].deltas.book, 'already booked: buzz');
   [s, r] = run(['hustle', 'rest', 'rest']);
-  const h = r.blocks[0].deltas; ok(h.fund >= 50 && h.fund <= 100 && h.mood.marcel === -3 && s.stats.hustles === 1, 'hustle ' + JSON.stringify(h));
+  // v1.4 (M1) re-pin: was $50-100; garage-era Hustle pays 30% less (hustleEra.garage 0.7): $35-70
+  const h = r.blocks[0].deltas; ok(h.fund >= 35 && h.fund <= 70 && h.mood.marcel === -3 && s.stats.hustles === 1, 'hustle ' + JSON.stringify(h));
   [s, r] = run(['rest', 'rest', 'rest'], t => { t.burnout = 80; t.members.forEach(m => { m.mood = 40; }); });
   const bs = r.blocks.map(x => -x.deltas.burnout);
   ok(bs[0] === 14 && bs[1] < bs[0] && bs[2] < bs[1], 'diminishing rest ' + bs); ok(r.blocks[0].deltas.mood.dana > 0);

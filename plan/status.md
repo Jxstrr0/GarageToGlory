@@ -23,15 +23,15 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   animates straight, Feel 4 at 220+ bpm squeezes 16ths, chip long-press preview, Energy monotonicity minor M7).
 
 ## Version
-- Current: **1.3.1.0** (PR #25, merged 2026-10-05) = 1.3.0.0 "Songwriter" + Simulate a regular gig at your own average + a
-  "Gear shop" garage label and a SHOP button on the sketch pad (plan `plan/plan_1.3.1.md`, Addendum 6,
-  `plan/v131_integration_report.md`). See "What's in v1.3.1" / "What's in v1.3" below. **Update Current/Next at every merge.**
+- Current: **1.4.0.0** "Tuning" (PR #26, merged 2026-10-07) = 1.3.1.0 +
+  the money pass (Addendum 7 M1-M3: `plan/v14/build_report.md`, `plan/v14/probe_after.md`, `plan/v14/integration_report.md`).
+  See "What's in v1.4" / "What's in v1.3.1" below. **Update Current/Next at every merge.**
 - Shipped: 0.1 Garage · 0.2 Sequencer · 0.3 Stage · 0.4 Drama · 0.5 Signed (+ 0.5.1 gig-clock hotfix) · 0.6 Rivals
   (+ 0.6.1 Addendum 1 catch-up, 0.6.2 two thumbs + guided songwriter) · 0.7 World (+ 0.7.1 3D title, 0.7.2 Heavier:
   English titles, layered crowd, heavier metal, double kick) · 0.8 Kit (+ 0.8.1 licensing deals, band logo, year-end recap,
-  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25).
-- Next: **1.4 "Tuning"** (only when the owner asks; handoff D5; covers all four seats, played with the final sound and the final songwriter; also takes
-  the v1.3 leftovers in `plan/v13_integration_report.md` §8: per-chord thirds, slider-song career balance).
+  0.8.3 drum sync) · 0.9 Genres · 1.0 Glory (+ 1.0.1 smart bridge) · 1.1 Seats · 1.2 Soundcheck (PR #23) · 1.3 Songwriter (PR #24, + 1.3.1 Simulate + Gear shop, PR #25) · 1.4 Tuning (PR #26).
+- Next: **1.4 owner check + review + PR** (440x956 shots in the verifier's scratch `v14_owner/`). Still open from v1.3
+  (`plan/v13_integration_report.md` §8, not part of the owner's money picks): per-chord thirds, slider-song career balance.
 - Repo: https://github.com/Jxstrr0/GarageToGlory (branch `main`; work lands through PRs that are merged and their branches deleted)
 - Play: `dist/game.html` (standalone), `dist/game.artifact.html` (Artifact host copy), `dist/Garage to Glory - V<ver>.html`
 
@@ -135,6 +135,24 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   (slow → doom sludge, mid → palm-muted chugs locked to the kick, fast → tremolo blast riffs; bass doubles guitar).
 - 2026-09-30 (for v0.7.2): song titles = **English, Marcel rarely French** (starter + new metal songs get English titles,
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
+
+## What's in v1.4 "Tuning" (Addendum 7; build `plan/v14/build_report.md`; on `v1.4-tuning` 2026-10-06/07)
+- **M1 "Gigs pay, side jobs less"** (content numbers): start fund $450 (was $300); tier-1 rooms pay x1.6 but never more than
+  tier 2 (`GG.world.tierPay` + tierStep: on average **+47% flat, +29% door**, not the popup's flat +60%); gas half price in the
+  garage era, **80% until signed**, then fading to full over 12 weeks (`GG.career.earlyMoney`; no cliff at signing; a band that
+  never signs loses it 48 weeks after Local Heroes); open mics (and BotB) cover $40 of gas; a great show pays more (S +25%,
+  A +10%, same fade; nobody docked; never on a BotB prize); ride $200 (was $350), pedal $250 (was $300); Hustle x0.7 in the
+  garage, x1 at Local Heroes (was 1 / 1.3). The gig results show **Pay / Band's cut / Gas** and "Into the fund" naming every
+  other part of it (fill-in, management 15%, crew, tow, merch) so the row adds up (testids gig-pay, gig-cut, gig-net,
+  gig-net-part). The HUD fund chip never clips ($1,018 in full, $12.3k compact; exact amount in its toast).
+- **M2 "Fair grades"**: the crowd's flow (a running combo warms the room) runs on every seat (was string seats only): the same
+  hit share earns the same score, grade and pay on the kit as on bass. Charts unchanged.
+- **M3**: the jam room costs $35/wk until you sign, then $60 (card `shop_space_1` + band variants and the shop say both).
+- Seat line: the swapped member on a string seat no longer wants "solos". No new state key (SAVE_SCHEMA 10), old saves load;
+  the played-gig fingerprint was re-pinned on purpose (logged). dist 5,244,808 B.
+- Measured (`plan/v14/probe_after.md`, §12 after the review fixes): gig-first year-1 parents' loans drums 98% -> 53%, bass
+  95% -> 45%; Hustle-heavy bots ~0%; gig-first drums Y3 loans 60% -> 35%; drums-minus-bass score at equal accuracy -1.22 ->
+  +0.36; years 4-10 within seed noise over 80 seeds (|z| <= 1.6); year 3 richer for bots (watch: avg bass +54%, z 3.1).
 
 ## What's in v1.3.1 "Simulate" (plan `plan/plan_1.3.1.md`; lanes G, S + lead merged on `v1.3.1-simulate` 2026-10-04)
 - **Simulate this gig (G):** the setlist sheet's foot has [Auto-pick] [⏩ Simulate this gig] above the big "Start the show". One tap
@@ -396,6 +414,45 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] merge G -> S on `v1.3.1-simulate`, hand-overs, matrix 390 + 440, phoneqa, size, owner shots (`plan/v131_integration_report.md`) — 2026-10-04
 - [x] review (2 lenses: 1 major + 3 minors fixed); owner check: ship (7 screenshots); PR #25 to `main` — 2026-10-05
 - Leftovers: owner deletes `wip-v131-g`, `wip-v131-s` (+ `wip-v13-*`, `wip-v12-*`, `wip-v11-*` if still there) on GitHub.
+
+## Addendum 7 (v1.4 "Tuning") — decisions (owner popups, 2026-10-06; locked)
+- Next = **v1.4 Tuning** (handoff D5: balance + playtest pass, no new features). Pain point #1: **money**: **too tight early**
+  (years 1-2) and **gig pay feels off**. Plays mostly bass + drums ("A/B"); tuning still covers all four seats.
+- Owner follow-up (2026-10-06, verbatim): **"Drums felt worse tbh"**: the early money squeeze is worse on the DRUM seat than on
+  bass. Proposals must explain the drums-vs-bass gap (e.g. drum gear/kit prices, lanes/pedal costs, drum-seat pay or costs)
+  and fix drums first; every option's tables show drums and bass side by side.
+- Method: measure first (money map + bot probes per seat, years 1-3; scratch `v14/` reports), then 3 options (gentle /
+  medium / strong) re-measured, owner picks in a popup, then build. Must not make years 3+ too easy.
+
+- Study (2026-10-06, `plan/v14/`: money_map, probe_baseline, proposal, critic + `human.js` gig-first persona): bots dodge the
+  squeeze by Hustling (~11 blocks/yr); a gig-first player is broke (year-1 parents' loan: drums 98%, bass 95%). No money rule
+  differs by seat: drums trail because the drum chart has ~2x the notes, so the same accuracy earns a lower grade + less pay.
+- Owner popup (2026-10-06, all recommended): **M1 = "Gigs pay, side jobs less"** (the critic's B+): start $450; small rooms
+  pay +60%; gas half price until Local Heroes and 80% until signed; open mics cover $40 of gas; a great show pays up to +25%,
+  nobody docked; ride $200, pedal $250; Hustle pays 30% less until Local Heroes (no raise there); the results screen shows the
+  band's cut. Target (gig-first, year 1): drums ~53% loans / 4.5 weeks < $100, bass ~40% / 3.5; Hustle-heavy ~0% / 0.5;
+  years 4-6 unchanged. **M2 = "Fair grades"**: the gig grade compares you to what's possible on YOUR instrument, so the same
+  accuracy earns the same grade and pay on any seat; charts unchanged. **M3 = jam room cheaper until signed** (~$35/wk, then
+  the normal $60).
+- Also from the critic (no popup needed, fix in the build): moving up a venue tier must never pay less (tier-1 x1.6 overlaps
+  tier-2); no visible pay drop at signing (taper the early boosts across Local Heroes -> signed); re-pinning the played-gig
+  fingerprint is now intended (supersedes v1.3.1's "played gigs match 1.3.0") and must be logged.
+
+## Addendum 7 — pending
+- [x] money map + bot probes + 3 options + critic (`plan/v14/`) -> owner popup M1-M3 (2026-10-06)
+- [x] build M1-M3 + critic fixes, re-probe (`plan/v14/build_report.md`, `probe_after.md`) — 2026-10-06/07
+- [x] full verify at 390 + 440 (`plan/v14/integration_report.md`): node suite, Classic hash 232/232, compat + save, matrix
+  (118 sections per size), pw_perf, phoneqa, size 5,244,808 B; owner shots 01-05 at 440x956 — 2026-10-07
+- [x] review (2 confirmed + 6 minor) fixed on `v1.4-tuning` (`plan/v14/integration_report.md` "Review fixes"): early help
+  until signed (was a 24-week clock from Local Heroes), the results money row adds up, BotB gas cover, HUD chips, no bonus
+  line on a prize — 2026-10-07
+- [x] Hall of Fame "Biggest room" overflowed at 390 when the name is long (`pw_hof list`; report finding 1): the value wraps
+  (`.hof-wrap`); fixed with the review fixes because the until-signed money moved the seeded career to a longer room name that
+  overflowed at 440 too — 2026-10-07
+- [x] owner check (440x956 shots + year-1 numbers): **ship**; PR #26 to `main` — 2026-10-07
+- Next (handoff D5): the owner playtests years 1-3 on drums (then 3-6) and reports in plain words; each report becomes a
+  numbered item here and a small v1.4.x patch. Watch: year 3 a bit richer for bots; gear-in-week-1 + jam-room player still
+  tight in year 3. Owner deletes the `wip-*` leftovers (incl. `wip-v14-lead`) on GitHub.
 
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.

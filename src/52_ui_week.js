@@ -58,9 +58,28 @@
     return L.monthName + ', ' + L.seasonName.toLowerCase() + ': ' + L.weatherLabel.toLowerCase() + ', ' + L.temp + '°C. '
       + (L.holiday ? L.holiday.icon + ' ' + L.holiday.name + ': ' + L.holiday.blurb + ' ' : L.seasonBlurb + ' ') + (L.fit ? L.fit : '');
   }
+  // v1.4 review: the fund (and fans) chip shows the full amount when it fits (14 px, then 12 px), else a compact one
+  // ($12.3k, then 11 px); the exact amount is in the chip's title (and the fund's toast).
+  function compactMoney(n) {
+    var a = Math.abs(Math.round(n)), t = a >= 1e6 ? (a / 1e6).toFixed(a >= 1e7 ? 0 : 1) + 'M' : a >= 1000 ? (a / 1000).toFixed(a >= 1e5 ? 0 : 1) + 'k' : String(a);
+    return (n < 0 ? '−$' : '$') + t;
+  }
+  function fitChip(v, full, short) {
+    var over = function () { return v.clientWidth > 0 && v.scrollWidth > v.clientWidth + 0.5; };
+    v.textContent = full; v.style.fontSize = ''; v.parentNode.title = full;
+    if (!over()) return;
+    v.style.fontSize = '12px';
+    if (!over()) return;
+    v.textContent = short; v.style.fontSize = '';
+    if (over()) v.style.fontSize = '12px';
+    if (over()) v.style.fontSize = '11px';
+  }
   function hudChip(key, testid, label) {
     var v = el('span.v'), l = el('span.l', label), extra = key === 'buzz' || key === 'chem' ? ui.bar(0, 100) : null;
-    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () { ui.toast(key === 'week' ? weekHelp() : STAT_HELP[key]); } }, [l, v, extra]);
+    var b = btn('.hud-chip.' + key, { testid: testid, onclick: function () {
+      var st = S();
+      ui.toast(key === 'week' ? weekHelp() : key === 'fund' && st ? STAT_HELP.fund.replace('Band fund:', 'Band fund ' + U.fmtMoney(st.fund) + ':') : STAT_HELP[key]);
+    } }, [l, v, extra]);
     b._v = v; b._l = l; b._bar = extra;
     return b;
   }
@@ -136,9 +155,9 @@
     hud.week._l.textContent = 'Y' + st.year;
     hud.week._v.textContent = 'W' + st.week;   // v0.6.1 verify: '/24' in a smaller span so W12/24 fits a 390px chip
     hud.week._v.appendChild(el('small.wk-of', '/' + C.WEEKS_PER_YEAR));
-    hud.fund._v.textContent = U.fmtMoney(st.fund);
+    fitChip(hud.fund._v, U.fmtMoney(st.fund), compactMoney(st.fund));   // v1.4 review: $1,018 no longer clips to "$1,0…" at 390
     hud.fund.classList.toggle('neg', st.fund < 0);
-    hud.fans._v.textContent = U.fmtNum(st.fans);
+    fitChip(hud.fans._v, U.fmtNum(st.fans), st.fans >= 1000 && st.fans < 10000 ? (st.fans / 1000).toFixed(1) + 'k' : U.fmtNum(st.fans));   // "9,999" fits at 390 too
     hud.buzz._v.textContent = String(Math.round(st.buzz));
     hud.chem._v.textContent = String(Math.round(st.chemistry));
     setBar(hud.buzz._bar, st.buzz); setBar(hud.chem._bar, st.chemistry);

@@ -23,7 +23,8 @@ test('listings: 3–6 bookable gigs, deterministic per seed + week, career RNG u
     ok(v && v.tier <= 2 && v.minFans < 99999, l.venueId + ' listed venue');
     ok(a.fans >= l.minFans, l.venueId + ' in reach');
     ok(GG.contracts.DEALS.includes(l.deal) && l.pay >= 0 && (l.deal !== 'exposure' || l.pay === 0), l.venueId + ' deal');
-    eq(l.gas, Math.max(5, Math.round(l.km * 2 * 0.25)), l.venueId + ' gas from road km');
+    // v1.4 (M1) re-pin: was max(5, round(km x 2 x 0.25)); now x0.5 in the garage era and exposure deals take $40 off
+    eq(l.gas, Math.max(0, Math.max(5, Math.round(l.km * 2 * 0.25 * 0.5)) - (l.deal === 'exposure' ? 40 : 0)), l.venueId + ' gas from road km');
     ok(typeof l.catch === 'string' && l.catch && isFinite(l.fit) && l.setSize >= 2, l.venueId + ' board fields');
   });
   for (let i = 1; i < la.length; i++) ok(la[i - 1].km <= la[i].km, 'sorted by distance');
@@ -51,7 +52,8 @@ test('deals: all three appear; pay ranges, rep pay and hazard pay', () => {
   eq(Object.keys(seen).sort(), ['door', 'exposure', 'flat']);
   const v = GG.gig.venue('bingo_palace'), rng = () => GG.RNG(99);
   const base = W.makeListing(s, v, rng(), { deal: 'flat' });
-  ok(base.pay >= 80 && base.pay <= 120 && base.pay % 5 === 0, 'flat in range: ' + base.pay);
+  // v1.4 (M1) re-pin: was $80-120; tier-1 pay x1.6, stopped at the $150 tier step: $128-150
+  ok(base.pay >= 125 && base.pay <= 150 && base.pay % 5 === 0, 'flat in range: ' + base.pay);
   s.venueRep.bingo_palace = 3;
   const loved = W.makeListing(s, v, rng(), { deal: 'flat' });
   ok(loved.pay > base.pay && loved.rebook && loved.repLevel === 3, 'rebooked at better pay: ' + base.pay + ' -> ' + loved.pay);
