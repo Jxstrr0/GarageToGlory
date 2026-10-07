@@ -467,8 +467,13 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - K4 Fairness: **same rules** for keys and touch (same timing windows and grades) + a keyboard lag calibration step.
 - Method: plan + PC mockups first (owner picks), then build; phone layouts at 390x844 / 440x956 must not change.
 
+- Plan popup (2026-10-07, all recommended): **Q1 drum keys "strong fingers"** (Space kick, D snare, F hats, S crash, Shift toms,
+  A ride); **Q2 string keys** A S D F for strings 1-4, 5 strings: Space = top, 6 strings: Shift = 5th + Space = top; **Q3 PC
+  look B "Centred wide column"** (`plan/v15_desktop_mockup.html?opt=B`, `_B.png`): menus in 2-3 columns, wider highway under
+  the stage; phones unchanged.
+
 ## Addendum 8 — pending
-- [ ] plan `plan/plan_contract_1.5.md` + PC mockups -> owner popup
+- [x] plan `plan/plan_contract_1.5.md` (4 readers, writer, mockups, critic: 1 blocker + 8 majors applied) -> owner popup (2026-10-07)
 - [ ] build, verify (phone matrix unchanged + new desktop sizes), review, owner check, PR
 
 ## Tech

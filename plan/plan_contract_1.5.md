@@ -30,6 +30,10 @@ career state, save codes and HoF backups unchanged; SAVE_SCHEMA unchanged.
 | K4 | Fairness | **Same rules** for keys and touch (same timing windows and grades) + **a keyboard lag calibration step**. |
 | — | Method | Plan + PC mockups first (owner picks), then build; phone layouts at 390x844 / 440x956 must not change. |
 
+| Q1 | Drum keys | **"Strong fingers"** (popup 2026-10-07): Space kick, D snare, F hats, S crash; toms (5th) on Shift; ride (6th) on A. |
+| Q2 | String keys | **A S D F + thumb on top**: A S D F for the first four; 5 strings: Space = top; 6 strings: Shift = 5th, Space = top. |
+| Q3 | PC look | **B "Centred wide column"**: a bigger phone, menus in 2-3 columns, a wider highway centred under the stage. Package A is dropped (stage 0 deletes A-only extras from §4.6). |
+
 ### Defaults (taken without a popup; they stand unless the owner objects — list them in the merge summary)
 - D1 Keys are **physical** (`KeyboardEvent.code`: AZERTY/QWERTZ get their own home row). Labels: `getLayoutMap()` where it exists
   (Chromium, secure origin), else the key this session saw for that code (§4.2 `learned`), else the code; Settings → Keyboard says
@@ -443,7 +447,7 @@ request. Before reporting, each lane runs the full existing pw matrix + `pw_free
 - **Mid-song resize** → `gigLive` defers; paused resize re-lays out. **AZERTY / IME** → codes, digits by code, `getLayoutMap` +
   `learned` labels, `isComposing`. **Size** → +60 KB of ~750 KB.
 
-## 8. Owner questions (one popup at stage 0 step 8; record answers in §0)
+## 8. Owner questions — ANSWERED 2026-10-07 (one popup): Q1 strong fingers, Q2 A S D F + thumb on top, Q3 B (all recommended); recorded in §0. Stage 0 step 8 is done.
 **Q1. Drum keys (you can change any key later in Settings): which drum on which key?**
 1. *(recommended)* "Strong fingers": Space kick, D snare, F hats, S crash; a 5th drum (toms) on Shift; a 6th drum (ride) on A.
    Why: the busiest drums on the strongest fingers, every common two-drum hit on two fingers, Shift only on the rarely-hit toms.
