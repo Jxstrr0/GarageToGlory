@@ -739,10 +739,12 @@ test('v1.3.1 playLog: a played live gig appends one entry (the 6th drops the old
   for (const seat of ['drums', 'bass']) for (const d of ['easy', 'hard']) {
     const t = GA.career.newCareer({ seed: 11, bandId: 'hail_damage', seat, player: { name: 'Fp' } }); t.phase = 'gig'; t.gig = GA.gig.makeGig(t, 'legion_63', 'book');
     const rr = GA.gig.botPlay(GA.gig.session(t, t.gig, null, { emit: false, difficulty: d }), { accuracy: 0.82, jitterMs: 55 }, GA.RNG(5));
-    GA.career.finishGig(t, rr); const u = JSON.parse(JSON.stringify(t)); delete u.playLog;
+    GA.career.finishGig(t, rr); const u = JSON.parse(JSON.stringify(t)); delete u.playLog; delete u.createdVersion;   // v1.5: the VERSION string is not gameplay
     fp.push(seat + '/' + d + ':' + GA.hashSeed(JSON.stringify(rr) + '|' + JSON.stringify(u)));
   }
-  eq(fp.join(' '), 'drums/easy:1973364824 drums/hard:1896319776 bass/easy:398286011 bass/hard:2109029357');
+  // v1.5 (stage 0): the same results without state.createdVersion (a version bump moved the hash, nothing else: 1.4's pins held
+  // on the 1.5 code with VERSION 1.4.0.0); the new pins hold on 1.4.0.0 and 1.5.0.0 alike.
+  eq(fp.join(' '), 'drums/easy:2124863341 drums/hard:741733331 bass/easy:853137612 bass/hard:321192660');
 });
 
 done('sim_gig');
