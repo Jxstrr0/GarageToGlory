@@ -16,11 +16,12 @@
 // never see a programmatic focus. ui.define(id, { …, back, focus, hints }): back = testid | fn(entry) (Esc, 50k);
 // focus = testid | fn(entry) -> element | false (false: never focused by show(), the gig screens: 55 owns them);
 // hints = text | fn(entry) (the kb-hints line). ui.focusDefault(id?): [data-autofocus] -> def.focus -> the foot's enabled
-// .btn.primary -> the first enabled button -> btn-close (text inputs never). show() remembers the opener and focuses the
-// default; render() restores the focused data-testid (+ index, preventScroll); close() -> the opener (connected, not
-// inert; else the same testid in the new top), else the new top's default, else the dock's primary. Every programmatic
-// focus stamps ui.focusAt (performance.now()) for 50k's stale-press guard. kb-hints (one line at the end of the top
-// layer's foot) only while html.gg-wide.gg-keys, synced on render / stack changes / 'ui:wide' / 'input:mode'.
+// .btn.primary -> the first enabled button (← / ✕ last) -> btn-close (text inputs never). show() remembers the opener and
+// focuses the default; render() restores the focused data-testid (+ index, preventScroll); close() -> the opener
+// (connected, not inert; else the same testid in the new top), else the new top's default, else the dock's primary.
+// Every programmatic focus move stamps ui.focusAt (performance.now()) for 50k's stale-press guard (a render restore onto
+// the same control is no move). kb-hints: one line at the end of the top layer's foot, only while html.gg-wide.gg-keys,
+// synced on render / stack changes / 'ui:wide' / 'input:mode'.
 (function (GG) {
   var ui = GG.ui = GG.ui || {};
   var U = GG.util;
@@ -246,7 +247,7 @@
   }
   function restoreFocus(e, fk) {
     var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
-    if (usable(n)) ui.focusEl(n, { preventScroll: true });
+    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });   // the same control again: not a move, so never stale
     else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
   }
   function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }

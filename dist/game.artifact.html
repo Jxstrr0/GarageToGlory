@@ -51499,7 +51499,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function restoreFocus(e, fk) {
     var list = byTid(e.root, fk.tid), n = list.length ? list[Math.min(fk.idx, list.length - 1)] : null;
-    if (usable(n)) ui.focusEl(n, { preventScroll: true });
+    if (usable(n)) ui.focusEl(n, { preventScroll: true, nav: true });   // the same control again: not a move, so never stale
     else if (!noFocus(e) && stack[stack.length - 1] === e) ui.focusDefault(e.id);
   }
   function focusOk(a) { return a && a !== document.body && a !== document.documentElement && ui.reachable(a); }

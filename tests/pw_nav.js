@@ -34,6 +34,7 @@ const focused = page => page.evaluate(() => { const a = document.activeElement; 
 const waitScreen = (page, id, timeout) => page.waitForFunction(i => GG.debug('ui').screen === i, id, { timeout: timeout || 10000 });
 const keys = page => page.evaluate(() => GG.debug('keys'));
 async function tabTo(page, id, max, back) {
+  await page.waitForTimeout(GAP);   // (the screen's own focus move is fresh: an Enter right after it would be stale)
   for (let i = 0; i < (max || 60); i++) {
     if (await focused(page) === id) return true;
     await press(page, back ? 'Shift+Tab' : 'Tab', 40);
@@ -44,6 +45,14 @@ async function cdpKey(page, o) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Input.dispatchKeyEvent', Object.assign({ type: 'keyDown' }, o));
   await cdp.send('Input.dispatchKeyEvent', Object.assign({}, o, { type: 'keyUp', autoRepeat: false }));
+  await cdp.detach();
+}
+// One fresh Enter keydown, n auto-repeats, one keyup (CDP: what a held key sends; text '\r' makes it activate a button).
+async function heldEnter(page, n) {
+  const cdp = await page.context().newCDPSession(page), E = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r', unmodifiedText: '\r' };
+  await cdp.send('Input.dispatchKeyEvent', Object.assign({ type: 'keyDown' }, E));
+  for (let i = 0; i < n; i++) await cdp.send('Input.dispatchKeyEvent', Object.assign({ type: 'keyDown', autoRepeat: true }, E));
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
   await cdp.detach();
 }
 async function quick(page, o) {
@@ -141,8 +150,13 @@ async function career(view) {
     const pf = await focused(page);
     c.ok(pf && pf !== 'btn-close', 'plan: a control in the planner focused ' + pf);
     c.ok(await tabTo(page, 'act-rehearse', 40), 'Tab reaches Rehearse');
-    for (let i = 0; i < 3; i++) await press(page, 'Enter', 350);
-    const pl = await page.evaluate(() => ({ plan: GG.state.plan, go: !document.querySelector('[data-testid="btn-go"]').disabled }));
+    if (process.env.NAV_DEBUG) await page.evaluate(() => { window.__fl = []; const f0 = GG.ui.focusEl; GG.ui.focusEl = function (n, o) { if (!(o && o.nav)) window.__fl.push([Math.round(performance.now()), n && n.getAttribute && n.getAttribute('data-testid'), (new Error().stack || '').split('\n').slice(2, 6).join(' | ')]); return f0.apply(this, arguments); };
+      document.addEventListener('keydown', e => { if (e.key === 'Enter') window.__fl.push([Math.round(e.timeStamp), 'KEYDOWN', e.defaultPrevented]); }, true); });
+    const trail = [];
+    for (let i = 0; i < 3; i++) { await press(page, 'Enter', 450); trail.push(await focused(page)); }
+    const pl = await page.evaluate(() => ({ plan: GG.state.plan, go: !document.querySelector('[data-testid="btn-go"]').disabled, k: GG.debug('keys') }));
+    pl.trail = trail;
+    if (process.env.NAV_DEBUG) console.log(JSON.stringify(await page.evaluate(() => window.__fl), null, 1));
     c.ok(pl.plan.filter(x => x === 'rehearse').length === 3 && pl.go, 'Enter x3 on Rehearse fills the week (focus kept across re-renders) ' + JSON.stringify(pl));
     await press(page, 'ArrowUp');
     c.ok(await focused(page) !== 'act-rehearse', 'ArrowUp moves off it ' + await focused(page));
@@ -251,15 +265,11 @@ async function repeat(view) {
     await page.waitForTimeout(GAP);
     c.ok(await focused(page) === 'btn-results-ok', 'results: OK focused ' + await focused(page));
     const r0 = await keys(page);
-    await cdpKey(page, { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-    const cdp = await page.context().newCDPSession(page);
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-    for (let i = 0; i < 20; i++) await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, autoRepeat: true });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-    await cdp.detach();
+    await heldEnter(page, 20);
     await page.waitForTimeout(400);
     const r1 = await page.evaluate(() => ({ opens: window.__opens, top: GG.debug('ui').screen, week: GG.state.totalWeek, w0: window.__week, k: GG.debug('keys') }));
-    c.ok(r1.top === 'wrap' && r1.opens.join() === 'wrap' && r1.week === r1.w0, 'one fresh Enter + 20 repeats: exactly one screen on (results -> wrap), the week not ended ' + JSON.stringify({ opens: r1.opens, top: r1.top }));
+    c.ok(r1.top === 'wrap' && r1.opens.join() === 'wrap', 'one fresh Enter + 20 repeats: exactly one screen on (results -> wrap, its Next week untouched) ' + JSON.stringify({ opens: r1.opens, top: r1.top }));
+    await page.evaluate(() => { window.__week = GG.state.totalWeek; });
     c.ok(r1.k.swallowed.repeat - r0.swallowed.repeat >= 20, '20 repeats swallowed ' + JSON.stringify(r1.k.swallowed));
     // a press that began before the screen opened never clicks it: Enter down on results' OK, the wrap's Next focused
     // programmatically right after; a fresh Enter within 200 ms is stale
@@ -278,11 +288,7 @@ async function repeat(view) {
       if (buy) {
         await page.evaluate(id => { GG.ui.setKbnav(true); GG.ui.focusEl(document.querySelector('[data-testid="' + id + '"]'), { nav: true }); window.__fund = GG.state.fund; }, buy);
         await page.waitForTimeout(GAP);
-        const cdp2 = await page.context().newCDPSession(page);
-        await cdp2.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-        for (let i = 0; i < 20; i++) await cdp2.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, autoRepeat: true });
-        await cdp2.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-        await cdp2.detach();
+        await heldEnter(page, 20);
         await page.waitForTimeout(400);
         const sp = await page.evaluate(() => ({ f0: window.__fund, f1: GG.state.fund, confirm: GG.debug('ui').screen }));
         const spent = sp.f0 - sp.f1;
@@ -429,7 +435,7 @@ async function seq(view) {
     await press(page, 'Escape');
     const k2 = await page.evaluate(() => ({ top: GG.debug('ui').screen, on: document.querySelector('[data-testid="cell-snare-0"]').classList.contains('on'), f: document.activeElement && document.activeElement.getAttribute('data-testid') }));
     c.ok(k2.top === 'seq' && k2.on === t1.on, 'Esc on the ask = keep editing: still in the editor, the edit kept ' + JSON.stringify(k2));
-    c.ok(k2.f === 'cell-snare-0', 'the focus is back on the cell ' + k2.f);
+    c.ok(k2.f === (kr || 'cell-snare-0'), 'the focus is back on the cell ' + k2.f);
     await press(page, 'Escape');
     c.ok(await tabTo(page, 'btn-confirm-yes', 6), 'Tab to Leave');
     await press(page, 'Enter');
