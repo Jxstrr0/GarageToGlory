@@ -308,6 +308,28 @@ async function layout() {
     await page.waitForFunction(() => GG.debug('ui').stack.length === 0);
     await check('garage');
     await tap(page, 'hud-fund'); await check('stat-toast');
+    // v1.4 review: the fund chip never clips ("$1,0…"): the full amount when it fits (14 px, then 12 px), else compact
+    // ($12.3k); the exact amount is the chip's title and in its toast
+    const fundFit = await page.evaluate(async () => {
+      const v = document.querySelector('[data-testid="hud-fund"] .v'), keep = GG.state.fund, out = [];
+      for (const n of [1018, 5000, 9999, 12345, 123456, -1500, 2500000]) {
+        GG.state.fund = n; GG.main.sync(); await new Promise(r => requestAnimationFrame(r));
+        out.push({ n, t: v.textContent, over: v.scrollWidth > v.clientWidth + 0.5, title: v.parentNode.title, px: getComputedStyle(v).fontSize, w: v.clientWidth });
+      }
+      const fv = document.querySelector('[data-testid="hud-fans"] .v'), fk = GG.state.fans;
+      for (const n of [999, 9999, 23456]) { GG.state.fans = n; GG.main.sync(); await new Promise(r => requestAnimationFrame(r)); out.push({ fans: n, t: fv.textContent, over: fv.scrollWidth > fv.clientWidth + 0.5 }); }
+      GG.state.fans = fk;
+      GG.state.fund = 1018; GG.main.sync(); document.querySelector('[data-testid="hud-fund"]').click(); await new Promise(r => setTimeout(r, 200));
+      const toast = (document.getElementById('toast') || {}).textContent || '';
+      GG.state.fund = keep; GG.main.sync();
+      return { out, toast };
+    });
+    const money = n => (n < 0 ? '−$' : '$') + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    c.ok(fundFit.out.filter(f => f.n != null).every(f => !f.over && f.title === money(f.n) && /^−?\$[\d.,]+[kM]?$/.test(f.t)), 'HUD fund chip: never clipped, exact amount in the title ' + JSON.stringify(fundFit.out));
+    c.ok(fundFit.out.filter(f => f.fans != null).every(f => !f.over), 'HUD fans chip: never clipped ' + JSON.stringify(fundFit.out.filter(f => f.fans != null)));
+    c.ok(fundFit.out[0].t === '$1,018' && fundFit.out[1].t === '$5,000', '$1,018 and $5,000 show in full ' + JSON.stringify(fundFit.out.slice(0, 2)));
+    c.ok(/Band fund \$1,018:/.test(fundFit.toast), 'the fund toast says the exact amount: ' + fundFit.toast.slice(0, 60));
+    await check('hud-fund-fit');
     await tap(page, 'btn-primary'); await waitScreen(page, 'plan');
     await tap(page, 'act-rehearse'); await tap(page, 'act-write');
     await check('plan', true);

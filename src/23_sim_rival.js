@@ -378,6 +378,8 @@
       var g = GG.world.makeListing(state, v, rng, { source: 'offer', id: id });
       var S = texts('botb', state);
       g.name = 'Battle of the Bands @ ' + v.name; g.deal = 'exposure'; g.pay = 0; g.minFans = 0; g.setSize = 3;
+      // v1.4 (M1, review fix): an exposure night always gets the host's gas cover, whatever deal the venue's roll was (no rng)
+      g.gas = Math.max(0, GG.world.gasFor(state, g.city) - (GG.world.cfg().exposureGas || 0));
       g.capacity = Math.max(v.capacity, k.botb.capacity); g.opening = null;
       g.quirk = fill(state, S.text || '{rival} are in. Winner takes {prize}.', { venue: v.name, city: v.city, prize: money(prize) });
       g.catch = 'Winner takes ' + money(prize) + ' and some of the loser\'s fans.';
