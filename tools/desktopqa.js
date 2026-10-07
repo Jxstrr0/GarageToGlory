@@ -233,7 +233,7 @@ async function walk(page, snap, opts) {
   });
   await block('to title 4', toTitle);
   await block('tutorial', async () => {
-    await page.goto(page.url().replace(/\?.*$/, '') + '?tut=1');
+    await page.goto(page.url().replace(/\?.*$/, '') + '?tut=1', { timeout: 90000 });
     await page.waitForSelector('[data-testid="btn-new"]', { timeout: 60000 });
     await ev(() => { GG.prefs.set({ calibSeen: true, bigText: false }); GG.ui.rng = GG.RNG(1506); GG.main.quickStart({ seed: 4243, slot: '3', bandId: 'hail_damage' }); });
     await page.waitForSelector('#tut [data-testid="tut-bubble"]', { timeout: 15000 });
@@ -256,7 +256,7 @@ async function main() {
       class FD extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() + off); } static now() { return D.now() + off; } }
       window.Date = FD;
     }, PIN);
-    await page.goto(url);
+    await page.goto(url, { timeout: 90000 });
     // hover: the top layer's first enabled, unobstructed .btn must look different under the mouse (gg-desk)
     const hover = async name => {
       const sel = await page.evaluate(() => {

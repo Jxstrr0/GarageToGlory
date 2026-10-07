@@ -47,6 +47,8 @@
     'html.gg-wide .sheet-foot { padding: 12px 24px 16px; justify-content: flex-end; }',
     'html.gg-wide .sheet-foot > .btn.block, html.gg-wide .sheet-foot > .btn.primary { width: auto; flex: 0 1 420px; }',
     'html.gg-wide .sheet-foot > .kb-hints { order: -1; flex: 0 1 auto; width: auto; margin-right: auto; text-align: left; }',
+    // (the setlist's foot is one column of its own: Auto-pick / Simulate over Start the show)
+    'html.gg-wide .gigset .sheet-foot > div:has(> [data-testid="btn-gig-start"]) { flex: 0 1 520px !important; }',
     'html.gg-wide .modal { max-width: 420px; }',
 
     // ---- two columns (.w2: the screens' hooks; .w2-a left, .w2-b right; either may come first in the DOM) ----
@@ -105,6 +107,7 @@
     'html.gg-wide .set-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 76px; }',
     'html.gg-wide .set-rail > .btn { justify-content: flex-start; width: 100%; padding: 0 14px; border-color: transparent; text-transform: none; letter-spacing: .01em; font-size: 15px; }',
     'html.gg-wide .set-main { min-width: 0; }',
+    'html.gg-wide .set-main [id^="set-"] { scroll-margin-top: 20px; }',
     'html.gg-wide .set-keys > .w2 > .w2-b > .set-keys-timing { margin-top: 0; }',
     'html.gg-wide .layer.calib-docked { left: auto; right: max(16px, calc((100% - 1120px) / 2)); top: 16px; bottom: 16px; width: min(440px, calc(100% - 32px)); }',
     'html.gg-wide .layer.calib-docked > .full { border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); overflow: hidden; }',
