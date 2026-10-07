@@ -55597,7 +55597,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
         plan: G.handle && G.handle.plan ? G.handle.plan.stats : null },   // v1.2 (Lane F)
       keys: { kind: G.kind || null, map: G.keymap || null, input: G.input, caps: !!G.caps, labels: G.capL || null, down: Object.keys(G.down),
-        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej,
+        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, restart: !!G.restart,
       off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
       offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
       laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
@@ -58993,6 +58993,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- Settings screen ---------------------------------------------------------------------------------- */
   ui.define('settings', {
     kind: 'full',
+    onClose: function () { endBind(null); },   // v1.5: a rebind never outlives the screen (its capture slot goes back)
     build: function (s, d) {
       var pf = prefs(), st = GG.state, A = GG.audio;
       var wide = wideNow(), body = wide ? el('div.set-main') : s.body;

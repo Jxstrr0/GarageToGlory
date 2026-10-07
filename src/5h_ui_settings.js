@@ -227,6 +227,7 @@
   /* ---- Settings screen ---------------------------------------------------------------------------------- */
   ui.define('settings', {
     kind: 'full',
+    onClose: function () { endBind(null); },   // v1.5: a rebind never outlives the screen (its capture slot goes back)
     build: function (s, d) {
       var pf = prefs(), st = GG.state, A = GG.audio;
       // v1.5 PC layout (B): a tab rail on the left + the sections in a centred column (set-main); the phone keeps one body
