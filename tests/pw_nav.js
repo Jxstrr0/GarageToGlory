@@ -292,7 +292,7 @@ async function repeat(view) {
       const buy = await page.evaluate(() => { const b = Array.from(document.querySelectorAll('[data-testid^="gear-buy-"]')).find(x => !x.disabled && x.getClientRects().length); return b ? b.getAttribute('data-testid') : null; });
       c.ok(!!buy, 'the shop has a Buy button ' + buy);
       if (buy) {
-        await page.evaluate(id => { GG.ui.setKbnav(true); GG.ui.focusEl(document.querySelector('[data-testid="' + id + '"]'), { nav: true }); window.__fund = GG.state.fund; }, buy);
+        await page.evaluate(id => { GG.ui.setKbnav(true); GG.ui.focusEl(document.querySelector('[data-testid="' + id + '"]'), { nav: true }); window.__fund = GG.state.fund; window.__buys = (GG.debug('shopui') || {}).gear || 0; }, buy);
         await page.waitForTimeout(GAP);
         await heldEnter(page, 20);
         await page.waitForTimeout(400);
@@ -300,8 +300,8 @@ async function repeat(view) {
         const spent = sp.f0 - sp.f1;
         c.ok(spent > 0 || sp.confirm === 'confirm', 'Enter on Buy buys (or asks) ' + JSON.stringify(sp));
         if (sp.confirm === 'confirm') { await press(page, 'Escape'); }
-        const prices = await page.evaluate(() => (GG.shop && GG.shop.items ? GG.shop.items(GG.state) : []).map(x => x.price || 0));
-        c.ok(spent <= Math.max.apply(null, prices.concat([spent])) && (await keys(page)).swallowed.repeat >= 40, 'the repeats bought nothing more ' + spent);
+        const buys = await page.evaluate(() => ((GG.debug('shopui') || {}).gear || 0) - window.__buys);
+        c.ok(buys === 1 && (await keys(page)).swallowed.repeat >= 40, 'one fresh Enter + 20 repeats = exactly one purchase ' + JSON.stringify({ buys, spent }));
       }
       await page.evaluate(() => GG.ui.closeAll());
     }
