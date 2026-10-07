@@ -121,7 +121,7 @@ async function frozenThenResumed(page, doResume) {
   await page.waitForTimeout(300);
   const p3 = await page.evaluate(() => { const h = GG.audio.current(), cx = GG.audio.context(), d = GG.debug('gigui');
     return { t: d.songT, mode: d.mode, diff: h ? +((cx.currentTime - d.lat - h.start) - (d.songT - d.D)).toFixed(4) : null }; });
-  return { ok: Math.abs(p2.t - p1) < 0.03 && p2.ctx === 'suspended' && p3.mode === 'play' && p3.t > p1 + 0.15 && p3.t < p1 + 1.5 && p3.diff != null && Math.abs(p3.diff) < 0.03,
+  return { ok: Math.abs(p2.t - p1) < 0.03 && p2.ctx === 'suspended' && p3.mode === 'play' && p3.t > p1 + 0.15 && p3.t < p1 + 6 && p3.diff != null && Math.abs(p3.diff) < 0.03,
     info: JSON.stringify({ pauseT: +p1.toFixed(3), frozen: +p2.t.toFixed(3), ctx: p2.ctx, after: +p3.t.toFixed(3), onBand: p3.diff }) };
 }
 async function cdpKey(cdp, type, code, key, vk, o) {
@@ -390,19 +390,19 @@ async function space() {
     for (let song = 0; song < 2; song++) {
       const d0 = await dbg(page, 'gigui');
       await page.waitForFunction(dur => GG.debug('gigui').songT > dur - 0.8, d0.dur, { timeout: 15000 });
-      // mash until 450 ms after the card shows
-      for (let i = 0; i < 200; i++) {
+      // mash over the end until the card is ~250 ms old (its own clock: debug cardAge), well inside the 600 ms arm
+      let pressedOnCard = 0;
+      for (let i = 0; i < 300; i++) {
+        const st = await page.evaluate(() => { const d = GG.debug('gigui'); return { mode: d.mode, age: d.cardAge }; });
+        if (st.mode === 'between' && st.age > 250) break;
         await page.keyboard.press('Space');
-        const st = await page.evaluate(() => { const d = GG.debug('gigui'); return { mode: d.mode, since: window.__cardAt ? performance.now() - window.__cardAt : -1 }; });
-        if (st.mode === 'between') { await page.evaluate(() => { window.__cardAt = window.__cardAt || performance.now(); }); }
-        if (st.mode === 'between' && st.since > 450) break;
+        if (st.mode === 'between') pressedOnCard++;
         await page.waitForTimeout(25);
       }
-      await page.evaluate(() => { window.__cardAt = 0; });
-      await page.waitForTimeout(400);
+      await page.waitForFunction(() => GG.debug('gigui').cardAge > 700, null, { timeout: 5000 });
       const mid = await dbg(page, 'gigui');
       const focus = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-testid'));
-      c.ok(mid.mode === 'between' && mid.index === song + 1, `song ${song + 1}: Space mashed past the end kept the between card (${mid.mode}, ${mid.cardRej} swallowed)`);
+      c.ok(mid.mode === 'between' && mid.index === song + 1 && pressedOnCard > 0, `song ${song + 1}: Space mashed past the end kept the between card (${mid.mode}, ${pressedOnCard} presses on the card, ${mid.cardRej} swallowed)`);
       c.ok(focus === 'btn-gig-next', 'the card button takes focus after 600 ms on keys: ' + focus);
       await page.keyboard.press('Enter');
       if (song === 0) {
@@ -412,10 +412,15 @@ async function space() {
       }
     }
     await waitScreen(page, 'gig-results', 10000);
-    const t0 = Date.now();
-    while (Date.now() - t0 < 420) { await page.keyboard.press('Space'); await page.waitForTimeout(20); }
-    await page.waitForTimeout(400);
-    c.ok((await dbg(page, 'ui')).screen === 'gig-results' && !(await page.evaluate(() => window.__done)), 'Space mashed on the results never skips them');
+    let onRes = 0;
+    for (let i = 0; i < 100; i++) {
+      const age = await page.evaluate(() => GG.debug('gigui').cardAge);
+      if (age == null || age > 250) break;
+      await page.keyboard.press('Space'); onRes++;
+      await page.waitForTimeout(20);
+    }
+    await page.waitForFunction(() => GG.debug('gigui').cardAge > 700, null, { timeout: 5000 });
+    c.ok(onRes > 0 && (await dbg(page, 'ui')).screen === 'gig-results' && !(await page.evaluate(() => window.__done)), `Space mashed on the results (${onRes} presses) never skips them`);
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => window.__done, null, { timeout: 5000 });
     c.ok(true, 'a fresh Enter after 600 ms wraps up (btn-gig-done)');

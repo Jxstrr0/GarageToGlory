@@ -1633,7 +1633,7 @@
         plan: G.handle && G.handle.plan ? G.handle.plan.stats : null },   // v1.2 (Lane F)
       // v1.5 (Lane I): the gig keys as frozen at count-in, what is down now, the last key; the highway's geometry
       keys: { kind: G.kind || null, map: G.keymap || null, input: G.input, caps: !!G.caps, labels: G.capL || null, down: Object.keys(G.down),
-        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, restart: !!G.restart,
+        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, cardAge: G.cardAt ? Math.round(performance.now() - G.cardAt) : null, restart: !!G.restart,
       off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
       offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
       laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
