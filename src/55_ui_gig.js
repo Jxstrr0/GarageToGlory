@@ -1,7 +1,7 @@
 // 55_ui_gig.js: the live gig (v0.3). GG.ui.playGig(gig, done, opts):
 //   setlist sheet ('gig-set') -> the show ('gig', full): top 2/3 = the 3D stage (GG.render.stage; a 2D backdrop when it's
 //   missing), bottom 1/3 = a 2D-canvas note highway (lanes in the sequencer colours, notes fall to tap zones; multitouch
-//   pointer events, D F J K on a keyboard). Between songs: "Song 2 of 3 - saved" + banter (the session keeps
+//   pointer events; v1.5: rebindable gig keys, see "v1.5 Desktop" below). Between songs: "Song 2 of 3 - saved" + banter (the session keeps
 //   state.liveGig and fires 'gig:song'; main autosaves). Results ('gig-results', full) -> "Wrap up the week" -> done(result).
 //   A pending state.liveGig for this gig resumes at its next song. opts.apply(state, result) applies the result
 //   (default: GG.career.finishGig in phase 'gig', else GG.gig.applyResult).
@@ -20,14 +20,30 @@
 //   sound 'now'; the count-in / Auto-kick / auto notes stay on the band grid). See the "drum sync" block below.
 // v1.0.1 smart bridge: one touch on the seam between two lanes hits both only when both have a note due (see onDown).
 // GG.ui.gigAutoplay = true | { accuracy, jitterMs }: a bot plays each song instantly (tests, flows).
+// v1.5 "Desktop" (plan_contract_1.5 §4.3, Lane I; owner K2 / K4 / Q1 / Q2): gig keys are physical (KeyboardEvent.code) and
+//   rebindable (Settings > Keys; GG.prefs.keyLane: the kit by drum role, one map for bass / rhythm / lead by pitch slot; the
+//   v1.4 table D F J K S L G H stays for code-less events, J K L G H as hidden extras while unbound). Frozen at count-in:
+//   G.kind, G.keymap, G.input (GG.input.mode()), G.offT / G.offK (GG.prefs.offsets touch / keys), G.off (the song's input),
+//   G.visM, G.caps (keycaps on the highway). Window capture keydown / keyup: press = a tap (same windows, chord rule, booking;
+//   Classic subtracts the tap source's audio offset; key taps feed the dispatch estimate), a string hold lasts until that key
+//   id comes up; repeats are ignored; a second keydown of an id that is still down = a lost keyup (lifted first). Esc pauses
+//   (the pause card: Esc / Enter resume), Tab and Ctrl/Cmd+S/D/F/P are blocked mid-song, Meta / blur / pause / song end /
+//   teardown release every key-held lane (releaseAll), a window blur on keys pauses frozen mid-riff (pause(false)); only a
+//   hidden page restarts the song. The between card / results take Enter / Space only from a fresh press 600 ms after they
+//   show (focused then when playing on keys or in gg-kbnav). Keycaps in the zones (G.caps), legends gig-keys (setlist),
+//   gig-pause-keys (pause card) when GG.input.showKeyUI(), gig-hint ("Esc pause") in the PC layout. PC layout (package B):
+//   data-lanes on .gig-hw, wider gems, a translucent highway, the stage frame down to 0.45 of the highway, w2 columns in the
+//   setlist + results; 'ui:wide' re-lays the highway out in every mode. GG.input.gigLive(true) at count-in / resume.
 // v1.3.1 Simulate (plan_1.3.1 §1.1): the setlist sheet's foot = [Auto-pick] [⏩ Simulate this gig] (btn-gig-sim; a story show
 //   or the lesson's first gig: a dim note gig-sim-no) + what it plays at (gig-sim-why), then the big "Start the show". A tap
 //   plays the real session headlessly at your recent average (GG.gig.simSong per song, ui.gigSimMs apart, card
 //   gig-sim-progress), then the normal results (+ gig-simulated) and the normal apply. live.sim resumes it after a reload.
-// v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6); the results show r.merch.
+// v0.8 (SHOPUI): up to 6 lanes (toms, ride) fit a 390px phone (65px lanes; keys G / H for lanes 5 / 6, v1.5: hidden extras);
+//   the results show r.merch.
 // v0.6.1 (Addendum C4, SETTINGS): Expert; note speed (settings.noteSpeed scales the scroll); assists No-fail + Auto-kick
 //   (session opts; auto kicks play the kick voice); the active calibration profile's audio offset is subtracted from every
-//   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, keys);
+//   tap before judgement and the highway draws (visual - audio) ahead; lefty mirrors lanes (drawing, touch, the v1.4 keys;
+//   v1.5: a bound key stays with its lane);
 //   colourblind lane colours (GG.prefs.CB_COLOURS); the setlist sheet has Expert, the speaker/headphones quick switch
 //   (gig-profile-<id>) and an assists line (btn-gig-settings). opts.practice = { speed } relabels a studio-mode run as practice.
 // v0.7.2 double kicks (owner): a chart note with dbl/t2 stands for two kicks. It draws as a stacked pill with a ×2 badge;
@@ -41,7 +57,7 @@
 // v1.1 "Seats" (plan_contract_1.1 §4.5): a string seat (bass / rhythm / lead) plays its own chart (GG.gig.chart with the seat:
 //   lanes 'str0'..'str5', low -> high, sized by GG.career.seatLanes) in its own colours; a tap plays your instrument
 //   (GG.audio.pluck / strum / lead, booked on the band clock exactly like a drum hit: syncSnap, never before the lane's last
-//   booking); a hold sounds until you lift (pointerup / keyup -> ses.release + GG.audio.release); a run (the run gear) plays
+//   booking); a hold sounds until you lift (pointerup / keyup of that key id -> ses.release + GG.audio.release); a run (the run gear) plays
 //   its notes on the band grid while you hold it; a 2-lane chord draws as two gems on a bar (tap both); auto notes play
 //   through your voice. The band plays the drums from the song (GG.audio.play { drums: true, seat, part, mute: your kinds }).
 //   The drum seat's path is unchanged.
@@ -57,7 +73,7 @@
     return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
   }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
-  var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // v0.8: toms (lane 5) = G, ride (lane 6) = H
+  var P = GG.prefs;   // v1.5: the key map + timing helpers (11_settings); the v1.4 KEYS table is P.CLASSIC_KEYS
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   // v0.9: every §4.4 genre moment and band action has a banner (content lines.moments[kind].label may rename one); an
@@ -103,6 +119,23 @@
   }
 
   var G = null;   // the show in progress (one at a time)
+  // v1.5 (Lane I): the key legends' look (new elements only, shown with GG.input.showKeyUI(); 5w places them in the PC layout)
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-gigkeys-css')) {
+    var kcss = document.createElement('style'); kcss.id = 'gg-gigkeys-css';
+    kcss.textContent = [
+      '.kcap { display: inline-block; min-width: 1.9em; padding: 0 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .35); border-bottom-width: 2px;',
+      '  background: rgba(255, 255, 255, .08); color: var(--text, #fff); font: 800 12px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; white-space: nowrap; }',
+      '.gig-keys { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }',
+      '.gig-keys .gk-row { display: flex; flex-wrap: wrap; gap: 6px 12px; }',
+      '.gig-keys .gk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }',
+      '.gig-keys .gk-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }',
+      '.gig-keys .gk-foot { align-items: center; gap: 8px; }',
+      '.gig-pause-keys { margin: 0; }',
+      '.gig-hint { position: absolute; right: 16px; bottom: calc(34% + 12px); z-index: 2; padding: 6px 10px; border-radius: 10px; background: rgba(15, 20, 32, .82);',
+      '  color: var(--dim, #aab); font-size: 13px; pointer-events: none; }'
+    ].join('\n');
+    document.head.appendChild(kcss);
+  }
   function S() { return GG.state; }
   function fill(t) { return t && S() ? ui.fill(t, S()) : t; }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
@@ -224,7 +257,8 @@
       guardRaf = 0;
       if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
       var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top) });
+      // v1.5 PC layout (B): the stage runs down behind the highway's translucent top (0.45 of it), showing on both sides
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.45 * hw.height : 0)) });
     });
   }
   function restoreScene() {   // back to the garage (the stage hands its GPU memory back)
@@ -270,19 +304,27 @@
       var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
       if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) - G.D < G.chart.duration - 0.1) pause(true);
     },
-    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
+    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard,
+    // v1.5: the PC layout switched (never while a song is live; a paused song re-lays out its highway at once)
+    'ui:wide': function () { if (!G || !G.dom) return; layout(); guard(); gigHint(); if (!G.raf) still(); }
   };
   function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count' || G.mode === 'hold' || G.waking)) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
-    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
-    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
+    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
+    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); document.removeEventListener('pointerdown', onDown, { capture: true }); }
     // v1.1: lifting a finger (or a key) ends a hold
-    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); window.addEventListener('keyup', onKeyUp); }
-    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); window.removeEventListener('keyup', onKeyUp); }
+    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); }
+    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); }
+    // v1.5: the gig keys on the window's capture phase (after GG.input's capture slot, before the menu router), + window blur
+    if (on) { window.addEventListener('keydown', onKey, true); window.addEventListener('keyup', onKeyUp, true); window.addEventListener('blur', onBlur); }
+    else { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKeyUp, true); window.removeEventListener('blur', onBlur); }
   }
 
   GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
+  // v1.5: the setlist sheet + results re-render for the PC layout's columns (and the setlist's key legend after a first key press)
+  GG.on('ui:wide', function () { ['gig-set', 'gig-results'].forEach(function (id) { var e = ui.get && ui.get(id); if (e && G) e.rerender(); }); });
+  GG.on('input:mode', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
@@ -296,8 +338,11 @@
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
-      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, keyHeld: [], laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0,
+      down: {}, keyDown: {}, keyTaps: 0, keySwallowed: 0, lostKeyups: 0, keyUsed: false, keyLast: null, input: null, caps: false, capL: null,   // v1.5 gig keys
+      cardAt: 0, cardArm: 0, cardOk: {}, cardT: 0, cardRej: 0, wideHw: false };
     readPrefs();
+    if (keyUI()) askLayoutMap();
     listen(true);
     ui.show('gig', {});
     setupStage();
@@ -313,10 +358,12 @@
     return true;
   };
   function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
-    var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
-    var cp = pf.calib && pf.calib[pf.audioProfile];
-    G.visM = !!(cp && cp.vat > 0);   // v0.8.3: the light check ran for this profile
-    G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+    var pf = prefs(), none = { audio: 0, visual: 0, visM: false };
+    // v1.5: both timings (touch = v1.4's calibration; keys = calibKb, falling back per field); the song's input picks G.off
+    G.offT = P ? P.offsets(pf, 'touch') : none; G.offK = P ? P.offsets(pf, 'keys') : G.offT;
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;   // v0.8.3: the light check ran for this profile (v1.5: for this input)
+    G.pf = pf; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
   }
   function startSession(ids) {
     readPrefs();
@@ -329,9 +376,10 @@
   }
   function teardown() {
     if (!G) return;
+    releaseAll(true); setLive(false);   // v1.5
     stopAudio();
     if (G.raf) cancelAnimationFrame(G.raf);
-    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT);
+    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT); clearTimeout(G.cardT);
     listen(false);
     G = null;
   }
@@ -349,6 +397,7 @@
   function nextSong() {
     if (!G) return;
     if (G.ses.done) { finishShow(); return; }
+    disarmCard();   // v1.5
     hideBetween();
     G.chart = G.ses.startSong();
     if (auto()) { playAuto(); return; }
@@ -356,6 +405,7 @@
     beginCount();
   }
   function beginCount(held) {
+    setLive(true); blurFocus();   // v1.5: no PC-layout switch mid-song (GG.input defers it); Space / Enter never press a button
     // v0.8.3: a suspended context (Restart right after a mid-song pause: stopAudio's resume() is async) would decide the
     // song's timing on a clock that isn't running yet: hold the count-in until it runs (1 s at most), like resume()'s go()
     var c0 = G.actx || (G.actx = audioCtx());
@@ -371,6 +421,7 @@
       }
     }
     readPrefs();   // v0.8.3: the Drum sync toggle / calibration as of this song
+    freezeKeys();   // v1.5: the song's input (keys / touch), its timing, the key map and keycaps
     // v0.8.3: a whole number of count-in beats (2-4), so every numeral shown has its hat on the grid (< 92 bpm lost some)
     var p = performance.now(), ch = G.chart, nb = Math.min(4, Math.max(2, Math.ceil(U.clamp(4 * ch.spb, 1.6, 2.6) / ch.spb - 1e-6))), lead = nb * ch.spb;
     G.aSample = null;   // pair fresh: a sample from before the between screen / a pause would read the clock as unhealthy
@@ -383,7 +434,7 @@
     G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
     for (q2 = 0; q2 < G.held.length; q2++) G.held[q2] = null;   // v1.1 review: a restart starts with nothing held
-    G.runs.length = 0; G.ptr = {}; G.keyHeld = [];
+    G.runs.length = 0; G.ptr = {}; releaseAll(true); G.keyUsed = false;   // v1.5: a new chart: nothing key-held
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
     G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
@@ -399,6 +450,7 @@
     book(G.t, p);   // the first hat goes out now
     if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
+    gigHint();   // v1.5
     loop();
   }
   // The band's play() options for this song (v1.2: + gig, the gig clamps of the band's feel, F3.3; also what A.warm renders).
@@ -446,6 +498,7 @@
     beginCount();
   }
   function endSong() {
+    releaseAll(); setLive(false);   // v1.5: key-held strings let go at the end; the PC-layout switch may run
     stopAudio();
     var q = GG.prefs && GG.prefs.syncP90 ? GG.prefs.syncP90(G.disp) : null;   // v0.8.3: this device's touch dispatch p90
     if (q != null) {
@@ -469,6 +522,7 @@
     G.autoT = setTimeout(nextSong, 30);
   }
   function pause(interrupted) {
+    if (G) { releaseAll(); setLive(false); }   // v1.5: every cause lets every key-held lane go (no stuck notes)
     if (G && G.paused && G.waking) {   // v0.8.3: hidden / paused while resume() waits for the context: stay frozen, try again
       G.waking = false; clearTimeout(G.wakeT);
       G.restart = G.restart || !!interrupted;
@@ -487,9 +541,14 @@
   function pauseShow() {
     G.dom.pause.hidden = false;
     G.dom.pauseNote.textContent = G.restart ? 'The song starts over when you come back.' : 'The band is frozen mid-riff.';
+    // v1.5: "Esc to resume" under the note, only when the key UI shows (a computer, the PC layout, or a key pressed)
+    var k = G.dom.pauseKeys;
+    if (keyUI()) { if (!k) k = G.dom.pauseKeys = el('p.small.dim.gig-pause-keys', { testid: 'gig-pause-keys' }, [kcap('Esc'), ' to resume']); if (!k.parentNode) G.dom.pauseNote.parentNode.insertBefore(k, G.dom.pauseNote.nextSibling); }
+    else if (k && k.parentNode) k.parentNode.removeChild(k);
   }
   function resume(restart) {
     if (!G || !G.paused) return;
+    blurFocus();   // v1.5: Space / Enter never land on a button mid-song
     G.dom.pause.hidden = true;
     if (restart || G.restart) { G.paused = false; restartSong(); return; }
     G.ctxPaused = false;
@@ -503,7 +562,7 @@
       G.waking = false; clearTimeout(G.wakeT);
       if (document.hidden) { G.restart = true; pauseShow(); return; }   // never un-pause a hidden page (the band is suspended)
       G.offset = G.zero + G.pauseT - performance.now() / 1000; G.aSample = null;
-      G.paused = false;
+      G.paused = false; setLive(true);
       resync(performance.now(), true);
     }
     G.waking = true;
@@ -686,13 +745,6 @@
     var at = tapTime(ev.timeStamp);
     for (var i = 0; i < ls.length; i++) lift(ls[i], at);
   }
-  function onKeyUp(ev) {
-    if (!G || !strings()) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
-    var e = G.keyHeld[col(li)]; G.keyHeld[col(li)] = null;
-    lift(e, tapTime(ev.timeStamp));
-  }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
     var p = performance.now(), c = G.actx, h = G.handle;
@@ -762,22 +814,148 @@
   // only the nearer lane (as before). Each lane is a normal tap (judged, its drum booked per lane), so a bridge never adds
   // a stray. The second tap ('bridge') skips the dispatch sample (one touch, one sample). Keys never bridge.
   var BRIDGE = 1 / 6;
-  function tapTime(stamp) {
-    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
-    return heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);
+  // v1.5 (K4): Classic timing subtracts the tap source's own audio offset ('key' -> the key click test, else touch's);
+  // Drum sync subtracts nothing (keys line up through drawOff: the song input's light check). Same 1000 ms stamp rule.
+  function tapTime(stamp, src) {
+    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now, o = src === 'key' ? G.offK : G.offT;
+    return heardAt(s0) - G.zero - (G.sync ? 0 : o ? o.audio : 0);
+  }
+
+  /* ---- v1.5 "Desktop": gig keys (plan_contract_1.5 §4.3) ---------------------------------------------------- */
+  // Resolve (GG.prefs.keyLane): a bound code -> its lane on this rig ({ lane: -1 } off the rig: swallowed); a code-less event
+  // -> the v1.4 table (a column, mirrored for lefty); J K L G H while unbound -> the v1.4 columns; anything else is native.
+  // A key id is ev.code (code-less: GG.prefs.codeOf(key)), so 'A' down / 'a' up is one press. G.down = the trusted ids
+  // down now; G.keyDown[id] = { lane, hold } for a string press (what its keyup lifts).
+  var CARD_ARM = 600, CTRL_BLOCK = { KeyS: 1, KeyD: 1, KeyF: 1, KeyP: 1 };
+  var LMAP = null, lmapAsked = false;
+  function askLayoutMap() {   // navigator.keyboard.getLayoutMap() (Chromium, secure origin) names the keycaps (AZERTY: A is Q)
+    if (lmapAsked) return; lmapAsked = true;
+    try { var k = navigator.keyboard; if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; }, function () {}); } catch (e) { /* none */ }
+  }
+  // A keycap's text: the layout map > what this session saw the key print (GG.input.learned) > the code (5h uses it too).
+  ui.keyLabel = function (code) { askLayoutMap(); return P.keyLabel(code, LMAP, GG.input && GG.input.learned ? GG.input.learned() : null); };
+  function kcap(text) { return el('span.kcap', text); }
+  ui.kcap = kcap;
+  function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function wideNow() { return !!(ui.wide && ui.wide()); }
+  function setLive(on) { if (GG.input && GG.input.gigLive) GG.input.gigLive(!!on); }
+  function blurFocus() { var a = document.activeElement; if (a && a !== document.body && a.blur) { try { a.blur(); } catch (e) { /* ignore */ } } }
+  function liveMode() { return G.mode === 'play' || G.mode === 'count' || G.mode === 'hold'; }
+  function keyId(ev) { return ev.code || P.codeOf(ev.key) || ''; }
+  function stampOf(ev) { var now = performance.now(), t = ev.timeStamp; return t > 0 && Math.abs(t - now) < 1000 ? t : now; }
+  function typingIn(t) { if (!t || t.nodeType !== 1) return false; var n = t.nodeName; return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable; }
+  function confirmKey(ev, id) { return ev.key === 'Enter' || ev.key === ' ' || id === 'Space' || id === 'Enter' || id === 'NumpadEnter'; }
+  function lanesNow() { return G.chart ? Math.max(G.chart.lanes || 4, 1) : G.lanes; }
+  // Frozen at count-in (like drawOff): the song's input, its timing and the key map; keycaps when it is played on keys.
+  function freezeKeys() {
+    var I = GG.input;
+    G.kind = P.keyKind(G.seat);
+    G.kmS = { keymap: G.pf.keymap };
+    G.keymap = P.keysFor(G.kmS, G.kind, lanesNow());
+    G.input = I && I.mode ? I.mode() : 'touch';
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;
+    G.caps = G.input === 'keys';
+    G.capL = G.caps ? G.keymap.map(function (c) { return ui.keyLabel(c); }) : null;
   }
   function onKey(ev) {
-    if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
+    if (!G) return;
+    var id = keyId(ev);
+    if (G.paused) {   // (a) the pause card: Esc resumes; Enter too with nothing (or Resume) focused; the rest is native
+      var a = document.activeElement, onResume = !a || a === document.body || (a.getAttribute && a.getAttribute('data-testid') === 'btn-gig-resume');
+      if (ev.key === 'Escape' || (ev.key === 'Enter' && onResume)) {
+        ev.preventDefault(); ev.stopPropagation();
+        if (!ev.repeat && !G.waking) resume(false);
+      }
+      return;
+    }
+    if (!liveMode()) { cardKey(ev, id); return; }   // (b) cards, the setlist, results: native (+ the card arm)
+    if (ev.isComposing || ev.keyCode === 229 || typingIn(ev.target)) return;   // (c)
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); if (!ev.repeat) pause(false); return; }
+    if (ev.key === 'Tab') { ev.preventDefault(); return; }
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) {   // never a tap; no bookmark / save / find / print mid-song
+      if ((ev.ctrlKey || ev.metaKey) && CTRL_BLOCK[id]) ev.preventDefault();
+      if (ev.metaKey || ev.key === 'Meta') releaseAll();   // macOS drops the keyups of keys held under Cmd
+      return;
+    }
+    var r = P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key);   // (d)
+    if (!r) return;
     ev.preventDefault();
-    var r = tap(col(li), ev.timeStamp, false);
-    if (G.seat !== 'drums') G.keyHeld[col(li)] = press(col(li), r);
+    if (ev.repeat) return;
+    if (G.down[id]) { G.lostKeyups++; liftKey(id, ev.timeStamp); }   // still down = its keyup was lost: lift it first
+    if (ev.isTrusted) G.down[id] = 1;   // (synthetic events never wait for a keyup)
+    if (r.lane === -1) { G.keySwallowed++; return; }   // bound in this map, not on this rig (Space on a 4-string bass)
+    var li = r.lane != null ? r.lane : col(r.col);
+    G.keyLast = { code: ev.code || '', key: ev.key, lane: li, col: col(li), at: Math.round(stampOf(ev)) };
+    if (G.mode === 'hold' || !G.chart) return;   // the count-in waits for the audio clock: nothing to judge on yet
+    G.keyUsed = true; G.keyTaps++;
+    wake();
+    var res = tap(li, ev.timeStamp, 'key');
+    if (strings()) G.keyDown[id] = { lane: li, hold: press(li, res) };
   }
+  // Keyups are never gated on the mode or the pause: an id always leaves the down-set (no stuck lane).
+  function onKeyUp(ev) {
+    if (!G) return;
+    var id = keyId(ev);
+    if (!G.paused && !liveMode()) cardKeyUp(ev, id);
+    if (!id) return;
+    delete G.down[id];
+    if (G.keyDown[id]) liftKey(id, ev.timeStamp);
+    // Space never reaches a button mid-song (on the pause card it presses the focused one)
+    if (!G.paused && liveMode() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key)) ev.preventDefault();
+  }
+  // A string press lets go: its hold ends at the stamp, unless another key id still down holds the same lane (it takes over).
+  function liftKey(id, stamp) {
+    var e = G.keyDown[id]; if (!e) return;
+    delete G.keyDown[id];
+    for (var o in G.keyDown) if (G.keyDown[o].lane === e.lane) { if (!G.keyDown[o].hold || !G.keyDown[o].hold.n) G.keyDown[o].hold = e.hold; return; }
+    if (strings() && G.ses && G.chart && (G.mode === 'play' || G.mode === 'count')) lift(e.hold, tapTime(stamp, 'key'));
+  }
+  // Every key-held lane lets go now; the down-set and G.keyDown clear (pause, count-in, song end, teardown, blur, Meta).
+  function releaseAll(noLift) {
+    if (!G) return;
+    if (!noLift) { var p = performance.now(); for (var id in G.keyDown) liftKey(id, p); }
+    G.keyDown = {}; G.down = {};
+  }
+  // Focus left the window mid-song (alt-tab, a click elsewhere, the Sticky Keys box): let go of everything; a song played on
+  // keys (or with a key tapped) pauses frozen mid-riff. Only a hidden page restarts it (onVisibility).
+  function onBlur() {
+    if (!G) return;
+    var was = liveMode() && !G.paused;
+    releaseAll();
+    if (was && (G.input === 'keys' || G.keyUsed)) pause(false);
+  }
+  // The between card / results take Enter / Space only from a fresh press CARD_ARM ms after they show; a press that began
+  // earlier (a Space mashed past the song's end) is swallowed down and up. Playing on keys (or gg-kbnav): the card's button
+  // takes focus at the arm.
+  function armCard(testid) {
+    if (!G) return;
+    G.cardAt = performance.now(); G.cardArm = G.cardAt + CARD_ARM; G.cardOk = {};
+    clearTimeout(G.cardT);
+    G.cardT = setTimeout(function () {
+      if (!G || !G.cardAt) return;
+      var I = GG.input, keys = (G.input || (I && I.mode ? I.mode() : 'touch')) === 'keys' || document.documentElement.classList.contains('gg-kbnav');
+      if (!keys) return;
+      var b = document.querySelector('[data-testid="' + testid + '"]');
+      if (b && !b.disabled && b.getClientRects().length) { try { b.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+    }, CARD_ARM);
+  }
+  function disarmCard() { if (G) { G.cardAt = 0; G.cardOk = {}; clearTimeout(G.cardT); } }
+  function cardKey(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (ev.repeat || stampOf(ev) < G.cardArm) { ev.preventDefault(); ev.stopPropagation(); delete G.cardOk[id]; G.cardRej++; return; }
+    G.cardOk[id] = 1;
+  }
+  function cardKeyUp(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (G.cardOk[id]) { delete G.cardOk[id]; return; }
+    ev.preventDefault(); ev.stopPropagation(); G.cardRej++;   // its keydown came before the arm (or during the song)
+  }
+
   function tap(li, stamp, touch) {
     var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
-    if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
-    var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
+    if (ok && (touch === true || touch === 'key') && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch (v1.5 D4: + key taps)
+    var at = tapTime(stamp, touch === 'key' ? 'key' : 'touch');   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
     if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return null; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
@@ -871,12 +1049,15 @@
   function onResize() { if (G && G.dom) { layout(); guard(); } }
   function layout() {
     var c = G.canvas; if (!c) return;
-    var box = c.parentNode.getBoundingClientRect();
+    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
+    G.wideHw = wideNow();   // v1.5 PC layout (B): 5w sizes .gig-hw by data-lanes; wider gems, a translucent highway
+    var hwEl = c.parentNode;
+    if (hwEl && hwEl.dataset && hwEl.dataset.lanes !== String(G.lanes)) { hwEl.dataset.lanes = String(G.lanes); hwEl.style.setProperty('--lanes', String(G.lanes)); }
+    var box = hwEl.getBoundingClientRect();
     DPR = Math.min(2, window.devicePixelRatio || 1);
     W = Math.max(200, box.width); H = Math.max(160, box.height);
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
-    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
     LOOK = ((GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15) / (G.speed || 1);   // seconds of highway visible: Easy scrolls slower; v0.6.1 note speed
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
@@ -894,7 +1075,9 @@
     var b = G.bg || (G.bg = document.createElement('canvas')), x;
     b.width = G.canvas.width; b.height = G.canvas.height;
     x = b.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
-    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c');
+    var g = x.createLinearGradient(0, 0, 0, H);
+    if (G.wideHw) { g.addColorStop(0, 'rgba(10,14,24,.35)'); g.addColorStop(0.22, 'rgba(12,17,32,.86)'); g.addColorStop(1, 'rgba(18,26,44,.92)'); }   // v1.5 B: the stage shows through the top
+    else { g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c'); }
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     for (var l = 0; l < G.lanes; l++) {
       var lx = col(l) * laneW, lc = laneColor(l);
@@ -903,24 +1086,35 @@
       x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
-      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]];
+      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]], cap = G.capL && G.capL[l];
       x.textAlign = 'center'; x.textBaseline = 'middle';
       if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
-        x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1;
-        x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key instead
+        else { x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1; }
+        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
       } else {
-        x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
+        else { x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12); }
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
       }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
     G.fade = fade;
   }
+  // v1.5: a lane's keycap in its zone (cached in the backdrop; built at count-in from the frozen map)
+  function keycap(x, cx, cy, text, lc) {
+    var big = G.wideHw, h = big ? 24 : 19;
+    x.font = (big ? '800 13px ' : '800 11px ') + FONT;
+    var w = Math.min(laneW - 12, Math.max(big ? 28 : 22, x.measureText(text).width + (big ? 16 : 12)));
+    rr(x, cx - w / 2, cy - h / 2, w, h, 5);
+    x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.12)'; x.fill(); x.lineWidth = 1.5; x.strokeStyle = lc; x.globalAlpha = 0.9; x.stroke();
+    x.globalAlpha = 1; x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, cx, cy + 1);
+  }
   function yOf(nt, t) { return hitY - (nt - t) * speed; }
   function draw(t, p) {
     var x = G.x, ch = G.chart, n = ch.notes, k, l, a, y;
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.drawImage(G.bg, 0, 0);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
     for (l = 0; l < G.lanes; l++) {   // tap flashes (v0.7.2: the kick zone flashes again when a double's second kick lands)
       a = 1 - (p - G.press[l]) / 140;
@@ -937,7 +1131,7 @@
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', G.seat === 'lead' ? 'SOLO · YOUR SPOTLIGHT' : 'SOLO · KEEP IT SIMPLE');
     if (G.seat !== 'drums') drawHeld(x, t);   // v1.1: the tails of the notes you are holding
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    var gw = G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
     x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
     for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
       var an = au[k]; if (an.t > t + LOOK + 0.05) break;
@@ -990,7 +1184,9 @@
         x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
       }
     }
-    x.globalAlpha = 1; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46);
+    x.globalAlpha = 1;
+    if (G.wideHw) { x.globalCompositeOperation = 'destination-out'; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); x.globalCompositeOperation = 'source-over'; }   // v1.5 B: fade to the stage
+    else { x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); }
     a = 1 - (p - G.popAt) / 520;   // judgement pop
     if (a > 0 && POP_TEXT[G.popKind]) {
       x.globalAlpha = a < 0.6 ? a / 0.6 : 1; x.fillStyle = POP_COLOR[G.popKind]; x.font = G.fonts.pop;
@@ -1066,6 +1262,7 @@
         pr ? (next ? 'Count me in' : 'Done practising') : studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
+    armCard('btn-gig-next');   // v1.5: Enter / Space from a fresh press 600 ms on (focused then, on keys)
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
   }
   function hideBetween() { if (G.dom) { G.dom.mid.hidden = true; ui.clear(G.dom.mid); } }
@@ -1092,6 +1289,7 @@
     if (GG.main && GG.main.sync) GG.main.sync();
     sfx(/[SAB]/.test(r.grade) ? 'cheer' : r.grade === 'D' ? 'boo' : 'tap');
     ui.show('gig-results', { result: r });
+    armCard('btn-gig-done');   // v1.5
   }
   var HEADLINE = { S: 'Legendary.', A: 'Crushed it.', B: 'Solid set.', C: 'You survived.', D: 'Rough night.' };
   function repText(r) {
@@ -1115,22 +1313,24 @@
     return out;
   };
   ui.define('gig-results', {
-    kind: 'full', cls: 'gigres', sticky: true,
+    kind: 'full', cls: 'gigres', sticky: true, focus: false,   // v1.5: 55 owns focus here (btn-gig-done after the 600 ms arm)
     build: function (s, d) {
       var r = d.result, pay = r.deal === 'exposure' && !r.pay ? 'Exposure' : U.fmtMoney(r.pay || 0), rep = repText(r);
       var moments = (r.moments || []).filter(function (k) { return k !== 'solo'; }).length;
-      s.body.appendChild(el('div.gigres-head', [
+      // v1.5 PC layout (B): two columns (the grade + money | the songs + lines); the phone keeps one body (A === B === s.body)
+      var cols = w2(s), A = cols[0], B = cols[1];
+      A.appendChild(el('div.gigres-head', [
         el('div.grade.big.' + r.grade, { testid: 'gig-grade' }, r.grade),
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
           el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0)
             + ' · ' + moments + (moments === 1 ? ' moment' : ' moments'))])
       ]));
-      if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
+      if (r.simulated) A.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       // v1.4 (M1): the money row says where the pay goes: Pay (gross, a great show's bonus included) - the band's cut (the
       // members' share, GG.drama.split) - gas, then "Into the fund" (r.deltas.fund) with every other part of it named next
       // to it (review fix: fill-in fee, management, crew, tow, merch; anything left over as "other"), so the row adds up.
       var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
-      s.body.appendChild(el('div.stat-grid', [
+      A.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
         el('div', [el('span.caps', 'Band\'s cut'), el('b', { testid: 'gig-cut' }, minus(r.cut || 0))]),
         el('div', [el('span.caps', 'Gas'), el('b', minus(r.gas || 0))]),
@@ -1141,13 +1341,13 @@
       var net = r.deltas ? r.deltas.fund || 0 : null;
       if (net != null) {
         var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
-        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+        A.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
           .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
           .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
             + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
       }
-      if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
-      s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
+      if (rep) A.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
+      B.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
           el('div.tiny.dim', x.perfect + ' perfect · ' + x.good + ' good · ' + x.miss + ' missed · combo ' + x.maxCombo
             + (x.fills ? ' · ' + x.fills + ' fill taps' : '') + (x.holds ? ' · ' + (x.rings || 0) + ' of ' + x.holds + ' holds rang out' : ''))]),
@@ -1155,16 +1355,16 @@
       })));
       (r.lines || []).forEach(function (t) {   // v0.9: a line about another band's people is dropped (the leak net, 50_ui_core)
         var tx = r.merch && ui.isMerchLine && ui.isMerchLine(t) ? null : ui.safeLine(t, null, S());
-        if (tx) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
+        if (tx) B.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
       });
-      if (r.merch && ui.merchResult) s.body.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
+      if (r.merch && ui.merchResult) B.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
       (r.classics || []).forEach(function (id) {
         var song = GG.songs.byId(S(), id);
-        if (song) s.body.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
+        if (song) B.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
       });
       (r.reactions || []).forEach(function (x) {
         var who = ui.who(x.who);
-        s.body.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
+        B.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
       });
       s.foot.appendChild(ui.btn('.btn.primary.big.block', { testid: 'btn-gig-done', onclick: function () {
         var g = G, res = r;
@@ -1177,12 +1377,23 @@
     }
   });
 
+  // v1.5 PC layout (B): a sheet / full body in two columns (.w2 > .w2-a + .w2-b; 5w styles them under html.gg-wide). The phone
+  // layout never gets the wrappers: both columns are the body itself, so its DOM is v1.4's.
+  function w2(s) {
+    if (!wideNow()) return [s.body, s.body];
+    var a = el('div.w2-a'), b = el('div.w2-b');
+    s.body.appendChild(el('div.w2', [a, b]));
+    return [a, b];
+  }
+
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
-    kind: 'full', cls: 'gig', sticky: true, live3d: true,
+    kind: 'full', cls: 'gig', sticky: true, live3d: true, focus: false,   // v1.5: 55 owns focus on the show (cards: armCard)
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
+      // v1.5: no context menu anywhere on the show while it runs (a right-click / long-press loses a keyup)
+      s.root.addEventListener('contextmenu', function (e) { if (G) e.preventDefault(); });
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
       d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),
@@ -1213,7 +1424,17 @@
     onClose: function () { if (G) { restoreScene(); teardown(); } }
   });
   function drawIdle() {
-    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(G.bg, 0, 0);
+    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
+  }
+  // v1.5: redraw a highway that isn't animating (a paused song or a card, after a re-layout)
+  function still() { if (!G || !G.x || !G.bg) return; if (G.chart && G.fonts) draw((G.paused ? G.pauseT : G.t) + G.drawOff, performance.now()); else drawIdle(); }
+  // v1.5: "Esc pause" by the highway, in the PC layout when the song is played on keys (5w places it)
+  function gigHint() {
+    if (!G || !G.dom) return;
+    var on = !!(G.caps && wideNow() && G.chart), h = G.dom.hint;
+    if (on && !h) h = G.dom.hint = el('div.gig-hint', { testid: 'gig-hint' }, [kcap('Esc'), ' pause']);
+    if (on && h && !h.parentNode && G.dom.hw.parentNode) G.dom.hw.parentNode.insertBefore(h, G.dom.hw.nextSibling);
+    else if (!on && h && h.parentNode) h.parentNode.removeChild(h);
   }
 
   /* ---- Setlist picker ------------------------------------------------------------------------------------- */
@@ -1225,33 +1446,35 @@
       var st = S(), g = G.gig, size = GG.gig.setSize(st, g), ids = G.pick;
       var v = GG.gig.venue(g.venueId) || {}, deal = g.deal === 'exposure' ? 'Exposure' : g.deal === 'door' ? 'Door $' + g.pay + '/head' : U.fmtMoney(g.pay) + ' flat';
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
-      s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
+      var cols = w2(s), A = cols[0], B = cols[1];   // v1.5 PC layout (B): the night + options | the setlist (phone: both = the body)
+      A.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
       var cur = difficulty(), pf = prefs();
-      s.body.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
-      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
+      A.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
+      A.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
         return ui.btn('.btn.small.grow' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, style: 'padding:0 6px', onclick: function () {
           GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
       })));
-      s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
+      A.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
         : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
-        s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
         var on = [pf.noFail ? 'No-fail' : null, pf.autoKick && seatOf(st) === 'drums' ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
-        s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
+        A.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
           '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
       }
+      if (keyUI()) A.appendChild(keysLegend(st, pf));   // v1.5: your keys (a computer, the PC layout, or a key pressed)
       var bo = GG.gig.setlistBonuses(st, ids);
-      s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
+      B.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
       for (var k = 0; k < size; k++) slots.appendChild(slotRow(s, k, size, ids, bo));
-      s.body.appendChild(slots);
-      s.body.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
+      B.appendChild(slots);
+      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
       var list = el('div.panel', { style: 'padding:0 12px' });
       GG.songs.best(st).forEach(function (song) {
         var at = ids.indexOf(song.id), r = song.rating || {};
@@ -1264,7 +1487,7 @@
         } }, el('div.row', [el('span.num', at >= 0 ? String(at + 1) : '+'), el('div.grow', [el('b', song.title),
           el('div.tiny.dim', 'Q ' + song.quality + ' · Groove ' + (r.groove || '?') + ' · Hook ' + (r.hook || '?') + ' · Diff ' + (r.difficulty || '?'))]), tags(song)])));
       });
-      s.body.appendChild(list);
+      B.appendChild(list);
       // v1.3.1: [Auto-pick] [⏩ Simulate this gig] + what it plays at, then the big "Start the show" (the w1 lesson points at it).
       // A story show (or the lesson's first gig) keeps a dim note in the Simulate slot instead.
       var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
@@ -1282,6 +1505,24 @@
         } }, 'Start the show')]));
     }
   });
+  // v1.5: the setlist's key legend: each lane's dot + keycap + name, left to right as the highway draws them, "Esc pauses",
+  // and a way to Settings > Keys. Drums: your kit's lanes; bass / rhythm / lead: your rig's strings.
+  function keysLegend(st, pf) {
+    var seat = seatOf(st), kind = P.keyKind(seat), n = lanesOf(st), codes = P.keysFor(pf, kind, n), lefty = !!pf.lefty, items = [];
+    var strc = pf.colourblind ? STR_CB : STR_COLORS;
+    for (var c = 0; c < n; c++) {
+      var l = lefty ? n - 1 - c : c, name, colr;
+      if (kind === 'strings') { name = l === 0 ? 'Low' : l === n - 1 ? 'Top' : String(l + 1); colr = strc[l] || '#8899bb'; }
+      else { var L = ui.LANES && ui.LANES[C.LANES[l]]; name = L ? L.name : C.LANES[l]; colr = pf.colourblind && P.CB_COLOURS[C.LANES[l]] ? P.CB_COLOURS[C.LANES[l]] : L ? L.color : '#8899bb'; }
+      items.push(el('span.gk', [el('i.gk-dot', { style: { background: colr } }), kcap(ui.keyLabel(codes[l])), el('span', name)]));
+    }
+    return el('div.gig-keys', { testid: 'gig-keys' }, [
+      el('div.caps', 'Your keys'),
+      el('div.gk-row', items),
+      el('div.row.gk-foot', [el('span.tiny.dim.grow', [kcap('Esc'), ' pauses the song']),
+        ui.btn('.btn.ghost.small', { testid: 'gig-keys-change', onclick: function () { ui.show('settings', { tab: 'keys' }); } }, 'Change keys')])
+    ]);
+  }
   function closeOverShow() {
     ui.close('gig-set');
     for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
@@ -1389,6 +1630,12 @@
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
       seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
-        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null } };   // v1.2 (Lane F)
+        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null },   // v1.2 (Lane F)
+      // v1.5 (Lane I): the gig keys as frozen at count-in, what is down now, the last key; the highway's geometry
+      keys: { kind: G.kind || null, map: G.keymap || null, input: G.input, caps: !!G.caps, labels: G.capL || null, down: Object.keys(G.down),
+        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej,
+      off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
+      offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
+      laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
   });
 })(window.GG);
