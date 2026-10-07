@@ -454,6 +454,23 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
   numbered item here and a small v1.4.x patch. Watch: year 3 a bit richer for bots; gear-in-week-1 + jam-room player still
   tight in year 3. Owner deletes the `wip-*` leftovers (incl. `wip-v14-lead`) on GitHub.
 
+## Addendum 8 (v1.5 "Desktop") — decisions (owner popups, 2026-10-07; locked)
+- Owner: "Can we make an option to play on PC / Keyboard as well?"
+- K1 Scope: **gigs + menus** on the keyboard (Enter/Space confirm, Esc back/close, arrows/Tab move focus); the mouse keeps
+  working everywhere; touch on phones unchanged.
+- K2 Gig keys: **rebindable** (a Settings screen to set your own key per lane). Owner follow-up (verbatim): "Rebindable keys
+  but I like the idea of ASDF, Space, and maybe shift being default?" -> default set **A S D F + Space + Shift** (one hand on
+  ASDF, thumb on Space, pinky on Shift); the plan proposes the exact lane order per seat (e.g. drums: Space = kick) for the
+  owner to confirm. Replaces the D F J K popup default.
+- K3 Layout: **a wider PC layout** that uses the extra width (wider gig highway + stage view, menus side by side); phones
+  keep today's layout exactly.
+- K4 Fairness: **same rules** for keys and touch (same timing windows and grades) + a keyboard lag calibration step.
+- Method: plan + PC mockups first (owner picks), then build; phone layouts at 390x844 / 440x956 must not change.
+
+## Addendum 8 — pending
+- [ ] plan `plan/plan_contract_1.5.md` + PC mockups -> owner popup
+- [ ] build, verify (phone matrix unchanged + new desktop sizes), review, owner check, PR
+
 ## Tech
 - three.js **0.149.0** from cdnjs (last UMD build without the r150 deprecation warning). Only external dependency.
 - Build: `node build.js` → dist/. ORDER rule: 01_ns, 02_contracts, content/*.js, then other src/*.js by name.
