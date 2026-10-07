@@ -51836,6 +51836,106 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
 })(window.GG);
 
 </script>
+<script>/* 50b_ui_input.js */
+(function (GG) {
+  var ui = GG.ui = GG.ui || {};
+  var I = GG.input = GG.input || {};
+  var root = document.documentElement;
+  var MODS = { Shift: 1, Control: 1, Alt: 1, AltGraph: 1, Meta: 1, OS: 1, CapsLock: 1, Fn: 1, FnLock: 1, Hyper: 1, Super: 1, Symbol: 1, SymbolLock: 1, NumLock: 1, ScrollLock: 1 };
+  var NOKEY = { Unidentified: 1, Process: 1, Dead: 1 };
+  var mq = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  var st = { desk: !!(mq && mq.matches), mode: 'touch', kbSeen: false, learned: {}, nLearned: 0, lastReal: null, live: false, wide: false,
+    cap: null, capStale: null, down: {}, resizeT: 0, pending: false };
+  st.mode = st.desk ? 'keys' : 'touch';
+
+  function prefs() { try { return GG.prefs ? GG.prefs.get() : {}; } catch (e) { return {}; } }
+  function typing(t) {
+    if (!t || t.nodeType !== 1) return false;
+    var n = t.nodeName;
+    return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable;
+  }
+  I.real = function (ev) {
+    return !!(ev && ev.isTrusted && ev.code && !ev.isComposing && ev.keyCode !== 229 && !NOKEY[ev.key] && !typing(ev.target));
+  };
+  function cls(name, on) { if (root.classList.contains(name) !== !!on) root.classList.toggle(name, !!on); }
+  function setMode(m) {
+    if (st.mode === m) return;
+    st.mode = m; cls('gg-keys', m === 'keys');
+    GG.emit('input:mode', { mode: m });
+  }
+  I.layoutPref = function () { var l = prefs().layout; return l === 'phone' || l === 'wide' ? l : 'auto'; };
+  function wideNow() { return GG.prefs && GG.prefs.layoutFor ? GG.prefs.layoutFor(window.innerWidth, window.innerHeight, st.desk, I.layoutPref()) : false; }
+  function checkWide() {
+    if (st.live) { st.pending = true; return; }
+    st.pending = false;
+    var w = !!wideNow();
+    if (w === st.wide) return;
+    st.wide = w; cls('gg-wide', w);
+    GG.emit('ui:wide', { wide: w });
+  }
+
+  function onKeyDown(ev) {
+    if (ev.isTrusted && ev.code) st.down[ev.code] = 1;
+    if (I.real(ev) && !MODS[ev.key]) {
+      st.lastReal = ev.code;
+      if (!st.kbSeen) st.kbSeen = true;
+      if (!ev.ctrlKey && !ev.altKey && !ev.metaKey && typeof ev.key === 'string' && ev.key.length === 1 && st.learned[ev.code] !== ev.key) {
+        if (!(ev.code in st.learned)) st.nLearned++;
+        st.learned[ev.code] = ev.key;
+      }
+      setMode('keys');
+    }
+    if (st.cap) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      if (!ev.isTrusted || ev.repeat || ev.isComposing || ev.keyCode === 229 || (st.capStale && st.capStale[ev.code])) return;
+      var fn = st.cap.fn;
+      try { fn(ev); } catch (e) { console.error('[input] capture', e); }
+    }
+  }
+  function onKeyUp(ev) {
+    if (ev.code) { delete st.down[ev.code]; if (st.capStale) delete st.capStale[ev.code]; }
+    if (st.cap) { ev.preventDefault(); ev.stopImmediatePropagation(); }
+  }
+  window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('blur', function () { st.down = {}; if (st.capStale) st.capStale = {}; });
+  window.addEventListener('pointerdown', function (ev) { if (ev.pointerType === 'touch' || ev.pointerType === 'pen') setMode('touch'); }, { capture: true, passive: true });
+  window.addEventListener('resize', function () { clearTimeout(st.resizeT); st.resizeT = setTimeout(checkWide, 200); });
+  if (mq) {
+    var onMq = function () { st.desk = !!mq.matches; cls('gg-desk', st.desk); checkWide(); };
+    if (mq.addEventListener) mq.addEventListener('change', onMq); else if (mq.addListener) mq.addListener(onMq);
+  }
+  GG.on('settings:changed', function (p) { if (p && p.keys && p.keys.indexOf('layout') >= 0) checkWide(); });
+
+  I.capture = function (fn) {
+    var tok = { fn: fn };
+    st.cap = tok; st.capStale = {};
+    for (var c in st.down) st.capStale[c] = 1;
+    return function release() { if (st.cap === tok) { st.cap = null; st.capStale = null; } };
+  };
+  I.captured = function () { return !!st.cap; };
+  I.gigLive = function (on) {
+    if (on != null) { st.live = !!on; if (!st.live && st.pending) checkWide(); }
+    return st.live;
+  };
+  I.mode = function () { return st.mode; };
+  I.desk = function () { return st.desk; };
+  I.kbSeen = function () { return st.kbSeen; };
+  I.learned = function () { return Object.assign({}, st.learned); };
+  I.wide = function () { return st.wide; };
+  I.showKeyUI = function () { return st.desk || st.kbSeen || st.wide; };
+  ui.wide = I.wide;
+
+  cls('gg-desk', st.desk); cls('gg-keys', st.mode === 'keys');
+  st.wide = !!wideNow(); cls('gg-wide', st.wide);
+
+  GG.registerDebug('input', function () {
+    return { mode: st.mode, desk: st.desk, wide: st.wide, layout: I.layoutPref(), kbSeen: st.kbSeen, kbnav: root.classList.contains('gg-kbnav'),
+      live: st.live, captured: !!st.cap, learned: st.nLearned, lastReal: st.lastReal };
+  });
+})(window.GG);
+
+</script>
 <script>/* 51_ui_menu.js */
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;

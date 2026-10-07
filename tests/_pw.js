@@ -1,5 +1,6 @@
 // Playwright helper: phone-portrait Chromium, local three.js cache, console-error capture.
 // const { open } = require('./_pw'); const { page, errors, close } = await open(); ... await close();
+// v1.5: open({ desktop: true }) -> isMobile: false, hasTouch: false (pw_keys / pw_nav / pw_wide; viewport via opts.viewport).
 // v1.0: PW_VIEW=<w>x<h> sets the viewport (default 390x844; the owner's iPhone is 440x956). PW_TAG is a suffix for screenshot
 // names (shotName('x.png') -> 'x' + TAG + '.png'); with a non-default PW_VIEW and no PW_TAG it defaults to '_<w>' (also set
 // in process.env.PW_TAG, so sections that read it directly keep the 390 shots).
@@ -29,7 +30,9 @@ async function open(opts) {
   opts = opts || {};
   ensureThree();
   const browser = await pw.chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
-  const context = await browser.newContext({ viewport: opts.viewport || { width: VIEW.width, height: VIEW.height }, deviceScaleFactor: opts.dpr || 1, isMobile: true, hasTouch: true });
+  // v1.5: open({ desktop: true }) = a computer (no touch, fine pointer + hover); the default stays the phone context
+  const phone = !opts.desktop;
+  const context = await browser.newContext({ viewport: opts.viewport || { width: VIEW.width, height: VIEW.height }, deviceScaleFactor: opts.dpr || 1, isMobile: phone, hasTouch: phone });
   await context.route('**/three.min.js', r => r.fulfill({ path: THREE_FILE, contentType: 'application/javascript' }));
   const page = await context.newPage();
   const errors = [];
