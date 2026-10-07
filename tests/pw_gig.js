@@ -1,4 +1,4 @@
-// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing|simulate (default all); each inside `timeout 500`.
+// pw_gig.js: the v0.3 live gig on a 390x844 phone viewport. Sections META_ONLY=gig|e2e|touch|double|songend|sync|sync2|bridge|seat|chord|feel|kit|swing|simulate|money (default all); each inside `timeout 500`.
 //   simulate (v1.3.1): the setlist's "⏩ Simulate this gig" on a regular gig (>= 44 px, says what it uses + what you get) -> simulated
 //         song by song -> results with the Simulated line -> Wrap up (phase wrap, gigs + 1, playLog untouched); Battle of the Bands,
 //         a same-night week and the lesson's first gig: a dim note, no button; a passed-BotB week: the button; a reload
@@ -30,6 +30,10 @@
 //         builds on the pre-rendered path: the kit's hit -> a gain at A.velGain(vel)); the band plays with the gig's feel
 //         (po.gig: plan.stats.gig, every |dt| <= 15 ms) while the 'step' events stay on the 16th grid; a string seat's taps
 //         carry vel to A.pluck / strum / lead; the Classic switch = no vel, no plan; no console errors.
+//   money (v1.4 review fix): the results money row adds up on three real gigs played through GG.ui.playGig (autoplay):
+//         a signed-era theatre (management 15% + crew), a Local Heroes gig with a fill-in ($40), and a Battle of the Bands
+//         win in the garage (the prize; no "great show" bonus line, the bonus never scales a prize): Pay - cut - gas + every
+//         named part (data-v) = "Into the fund" = r.deltas.fund, the line sits above the fold, layout audit clean.
 // Run: node build.js && timeout 500 node tests/pw_gig.js
 const path = require('path');
 const { open, checker, shotName } = require('./_pw');
@@ -588,7 +592,7 @@ async function sync() {
   await close();
   c.done();
 }
-(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); if (want('swing')) await swingGig(); if (want('simulate')) await simulateGig(); })();
+(async () => { if (want('gig')) await gig(); if (want('e2e')) await e2e(); if (want('touch')) await touch(); if (want('double')) await double(); if (want('songend')) await songend(); if (want('sync')) await sync(); if (want('sync2')) await sync2(); if (want('bridge')) await bridge(); if (want('seat')) await seatGig(); if (want('chord')) await chordGig(); if (want('feel')) await feelGig(); if (want('kit')) await kitGig(); if (want('swing')) await swingGig(); if (want('simulate')) await simulateGig(); if (want('money')) await moneyGig(); })();
 
 // v0.8.3 drum sync, the paths around it: an 80 BPM count-in (a hat for every numeral), a measured-zero light check,
 // Restart after a mid-song pause, the between screen after a suspended context, a band that starts on a suspended
@@ -1455,6 +1459,76 @@ async function simulateGig() {
     await waitScreen(page, 'wrap', 10000);
     c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
   } catch (e) { c.ok(false, 'threw: ' + (e.stack || e).toString().split('\n').slice(0, 3).join(' | ')); }
+  finally { await close(); }
+  c.done();
+}
+
+// META_ONLY=money (v1.4 review fix): "Into the fund" names every part of the fund change, so the row adds up.
+async function moneyGig() {
+  const c = checker('money');
+  const { page, errors, close } = await open();
+  const play = (kind) => page.evaluate(kind => new Promise(res => {
+    GG.main.quickStart({ seed: 7300 + kind.length, slot: '2', openCard: false });
+    const s = GG.state, K = GG.career; GG.ui.closeAll();
+    s.card = null; s.offer = null; s.stats.gigs = 3; s.tutorial.on = false;
+    for (let i = 0; i < 2; i++) GG.songs.jam(s, GG.RNG(60 + i));
+    if (kind === 'signed') { s.fans = 30000; s.buzz = 70; s.protected = false; s.milestones.localHeroes = 2; K.setEra(s, 'local', 'pw'); K.setEra(s, 'signed', 'pw'); s.gig = GG.gig.makeGig(s, 'broadway_bijou', 'book'); }
+    if (kind === 'fillin') { s.fans = 600; s.protected = false; s.milestones.localHeroes = 2; K.setEra(s, 'local', 'pw');
+      const m = s.members.filter(x => x.status === 'active' && x.id !== 'player' && !x.player)[0]; m.status = 'quit';
+      window.__role = GG.drama.holes(s)[0]; GG.drama.hireFillIn(s, window.__role); s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); }
+    if (kind === 'botb') { s.gig = GG.gig.makeGig(s, 'legion_63', 'book'); s.gig.name = 'Battle of the Bands @ The Legion'; s.gig.deal = 'exposure'; s.gig.pay = 0;
+      s.gig.showdown = { kind: 'botb', id: 'pw-botb' }; s.gig.prize = 300; GG.world.decorate(s, s.gig);
+      GG.rival.get(s).pending = { kind: 'botb', week: s.totalWeek, id: 'pw-botb', status: 'entered', prize: 300, venue: 'The Legion', city: s.gig.city }; }
+    s.phase = 'gig'; s.fund = 1000;
+    GG.ui.gigAutoplay = { accuracy: 1, jitterMs: 0 }; GG.main.sync();
+    GG.ui.playGig(s.gig, () => {});
+    const iv = setInterval(() => { if (GG.debug('ui').screen === 'gig-results') { clearInterval(iv); res(true); } }, 30);
+  }), kind).then(() => page.waitForTimeout(1800));   // the stage behind fades out
+  const read = () => page.evaluate(() => {
+    const q = id => document.querySelector('[data-testid="' + id + '"]'), r = GG.state.lastGig, net = q('gig-net'), rc = net && net.getBoundingClientRect();
+    const num = t => { const m = /([+−-]?)\$([\d,]+)/.exec(t || ''); return m ? (m[1] === '−' || m[1] === '-' ? -1 : 1) * +m[2].replace(/,/g, '') : null; };
+    const payT = q('gig-pay').textContent, cutT = q('gig-cut').textContent, gasT = [...document.querySelectorAll('.gigres .stat-grid > div')].find(d => /Gas/.test(d.textContent)).querySelector('b').textContent;
+    const parts = [...document.querySelectorAll('[data-testid="gig-net-part"]')].map(e => ({ t: e.textContent, v: +e.dataset.v, shown: num(e.textContent) }));
+    return { payT, cutT, gasT, netT: net && net.textContent, net: num(net && net.querySelector('b').textContent), parts, pay: /Exposure/.test(payT) ? 0 : num(payT), cut: num(cutT) || 0, gas: num(gasT) || 0,
+      fold: rc ? [Math.round(rc.bottom), window.innerHeight] : null,
+      r: { pay: r.pay, cut: r.cut, gas: r.gas, fund: r.deltas && r.deltas.fund, prize: r.prize || 0, commission: r.commission || 0, crew: r.crew || 0, fillInCost: r.fillInCost || 0, grade: r.grade,
+        won: r.showdown && r.showdown.won, merch: r.merch ? r.merch.earned : 0, tow: r.travel && r.travel.breakdown ? r.travel.breakdown.cost : 0 } };
+  });
+  const adds = (m, label) => {
+    const sum = m.pay - Math.abs(m.cut) - Math.abs(m.gas) + m.parts.reduce((a, p) => a + p.v, 0);
+    c.ok(m.pay === m.r.pay && Math.abs(m.cut) === (m.r.cut || 0) && Math.abs(m.gas) === (m.r.gas || 0), label + ': Pay / cut / gas match the result ' + JSON.stringify([m.payT, m.cutT, m.gasT]));
+    c.ok(m.parts.every(p => p.v === p.shown), label + ': each named part shows its own amount ' + JSON.stringify(m.parts.map(p => p.t)));
+    c.ok(sum === m.net && m.net === (m.r.fund || 0), label + ': Pay - cut - gas + parts = Into the fund = r.deltas.fund ' + JSON.stringify({ sum, net: m.net, fund: m.r.fund, line: m.netT }));
+    c.ok(m.fold && m.fold[0] <= m.fold[1], label + ': the line is above the fold ' + JSON.stringify(m.fold));
+  };
+  try {
+    await page.waitForSelector(tid('btn-new'));
+    // 1. Signed era, a theatre: management 15% and crew are named next to the net
+    await play('signed');
+    let m = await read();
+    adds(m, 'signed theatre');
+    c.ok(m.r.commission > 0 && m.r.crew > 0 && m.parts.some(p => /^ · management 15% −\$/.test(p.t) && p.v === -m.r.commission) && m.parts.some(p => /crew −\$/.test(p.t) && p.v === -m.r.crew),
+      'signed: management 15% + crew in the line ' + m.netT);
+    c.ok(!m.parts.some(p => /other/.test(p.t)), 'signed: nothing left over as "other" ' + m.netT);
+    c.ok((await audit(page)).length === 0, 'signed results layout ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('money_signed.png')) });
+    // 2. Local Heroes with a fill-in: the $40 fee is on the screen
+    await play('fillin');
+    m = await read();
+    adds(m, 'fill-in');
+    c.ok(m.r.fillInCost > 0 && m.parts.some(p => /^ · fill-in −\$/.test(p.t) && p.v === -m.r.fillInCost), 'fill-in: the fee is named ' + m.netT);
+    c.ok((await audit(page)).length === 0, 'fill-in results layout ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('money_fillin.png')) });
+    // 3. Battle of the Bands in the garage: the prize is the pay, no "great show" bonus is claimed
+    await play('botb');
+    m = await read();
+    adds(m, 'BotB');
+    c.ok(m.r.won && m.r.prize === 300 && m.r.pay === 300 && /[SA]/.test(m.r.grade), 'BotB: won at ' + m.r.grade + ', the $300 prize is the pay ' + JSON.stringify(m.r));
+    c.ok(!/great show/.test(m.netT), 'BotB: no "a great show paid more" line on a prize ' + m.netT);
+    c.ok((await audit(page)).length === 0, 'BotB results layout ' + (await audit(page)).join('; '));
+    await page.screenshot({ path: path.join(CACHE, shotName('money_botb.png')) });
+    c.ok(errors.length === 0, 'no console errors ' + errors.slice(0, 3).join(' | '));
+  } catch (e) { c.ok(false, 'money threw: ' + (e && e.stack || e)); }
   finally { await close(); }
   c.done();
 }

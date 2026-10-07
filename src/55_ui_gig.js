@@ -1100,6 +1100,20 @@
     if (d == null) return r.repNow != null ? 'Venue rep: ' + U.signed(r.repNow) : null;
     return d > 0 ? 'Venue rep ▲ ' + d + ': they want you back.' : d < 0 ? 'Venue rep ▼ ' + (-d) + ': the owner is not returning calls.' : 'Venue rep unchanged.';
   }
+  // v1.4 review fix: the parts of a gig's fund change beyond Pay - cut - gas, each { label, v } (v signed $): the fill-in's
+  // fee, management + booking (signed era), crew (theatres), the tow, merch, and any rest as "other" (so it always adds up).
+  ui.gigFundParts = function (r) {
+    var out = [], net = r && r.deltas ? r.deltas.fund || 0 : 0, tow = r && r.travel && r.travel.breakdown ? r.travel.breakdown.cost || 0 : 0;
+    if (!r) return out;
+    if (r.fillInCost) out.push({ label: 'fill-in', v: -r.fillInCost });
+    if (r.commission) out.push({ label: 'management ' + Math.round(r.commission / Math.max(1, r.pay) * 100) + '%', v: -r.commission });
+    if (r.crew) out.push({ label: 'crew', v: -r.crew });
+    if (tow) out.push({ label: 'tow', v: -tow });
+    if (r.merch && r.merch.earned) out.push({ label: 'merch', v: r.merch.earned });
+    var rest = Math.round(net - ((r.pay || 0) - (r.cut || 0) - (r.gas || 0)) - out.reduce(function (a, p) { return a + p.v; }, 0));
+    if (rest) out.push({ label: 'other', v: rest });
+    return out;
+  };
   ui.define('gig-results', {
     kind: 'full', cls: 'gigres', sticky: true,
     build: function (s, d) {
@@ -1113,7 +1127,8 @@
       ]));
       if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       // v1.4 (M1): the money row says where the pay goes: Pay (gross, a great show's bonus included) - the band's cut (the
-      // members' share, GG.drama.split) - gas; "Into the fund" = what actually landed (fill-ins, merch, management too).
+      // members' share, GG.drama.split) - gas, then "Into the fund" (r.deltas.fund) with every other part of it named next
+      // to it (review fix: fill-in fee, management, crew, tow, merch; anything left over as "other"), so the row adds up.
       var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
       s.body.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
@@ -1123,10 +1138,14 @@
         el('div', [el('span.caps', 'Fans'), el('b.good', U.signed(r.fans || 0))]),
         el('div', [el('span.caps', 'Buzz'), el('b', U.signed(r.buzz || 0))])
       ]));
-      var net = r.deltas && r.deltas.fund != null ? r.deltas.fund : null;
-      if (net != null) s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net)),
-        el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
-          + (r.pay > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))]));
+      var net = r.deltas ? r.deltas.fund || 0 : null;
+      if (net != null) {
+        var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
+        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+          .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
+          .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
+            + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
+      }
       if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
       s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
