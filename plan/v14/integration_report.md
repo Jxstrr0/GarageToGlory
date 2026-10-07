@@ -18,7 +18,12 @@ that run was used). Sections fill in as the matrix streams finish.
 - Full Playwright matrix: every META_ONLY section of every `tests/pw_*.js` (118 per size, incl. the contact sheets and the
   opt-in `pw_bands_render seats`), two streams in parallel (390x844 + 440x956), 00:15-01:39 UTC, logs in the verifier scratch
   `v14m/logs/`. First run: **390: 108 PASS + 4 contact sheets OK** (creator / logo / shop / tour sheets have no checks: exit 0,
-  sheet written) **+ 6 FAIL; 440: 112 PASS + 4 sheets OK + 2 FAIL.** Reruns alone: in progress (section 2a).
+  sheet written) **+ 6 FAIL; 440: 112 PASS + 4 sheets OK + 2 FAIL.** Reruns alone, twice each, nothing else running:
+  - 390: `pw_seq audio` (first run: the van ambience wait timed out at 4 s) 42/42 twice; `pw_seq heavy` (xRT 0.84) 22/22 twice;
+    `pw_seq genres` (punk xRT 0.99) 25/25 twice; `pw_gig e2e` (Skip the drive gone before the click) 15/15 twice: timing under
+    two parallel browsers (the same three render-speed / van flakes as the v1.3.1 run). `pw_recap bands`: fixed test, 15/15
+    twice (section 4). `pw_hof list`: fails the same way twice (deterministic: finding 1).
+  - 440: in progress.
   v1.4 sections green first time at both sizes: `pw_gig gig` 33/33 (results money row), `pw_gig simulate` 21/21, `pw_shop space`
   22/22 ($35 + "$60/week once you sign"), `pw_shop spaces` 17/17, `pw_flow layout` 34/34, `pw_bands_render` 106/106 + seats 46/46.
 
