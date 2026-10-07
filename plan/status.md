@@ -137,11 +137,14 @@ Read this first every session. Don't re-explore the codebase to rebuild context.
   still secretly about Marcel's lawn; now and then Marcel sneaks a French one in as a joke). He still SINGS in French.
 
 ## What's in v1.4 "Tuning" (Addendum 7; build `plan/v14/build_report.md`; on `v1.4-tuning` 2026-10-06/07)
-- **M1 "Gigs pay, side jobs less"** (content numbers): start fund $450 (was $300); tier-1 rooms pay up to +60% but never more
-  than tier 2 (`GG.world.tierPay` + tierStep); gas half price in the garage era, 80% after Local Heroes fading to full over 24
-  weeks (`GG.career.earlyMoney`, no cliff at signing); open mics cover $40 of gas; a great show pays more (S +25%, A +10%,
-  same fade; nobody docked); ride $200 (was $350), pedal $250 (was $300); Hustle x0.7 in the garage, x1 at Local Heroes (was
-  1 / 1.3). The gig results show **Pay / Band's cut / Gas** and "Into the fund" (testids gig-pay, gig-cut, gig-net).
+- **M1 "Gigs pay, side jobs less"** (content numbers): start fund $450 (was $300); tier-1 rooms pay x1.6 but never more than
+  tier 2 (`GG.world.tierPay` + tierStep: on average **+47% flat, +29% door**, not the popup's flat +60%); gas half price in the
+  garage era, **80% until signed**, then fading to full over 12 weeks (`GG.career.earlyMoney`; no cliff at signing; a band that
+  never signs loses it 48 weeks after Local Heroes); open mics (and BotB) cover $40 of gas; a great show pays more (S +25%,
+  A +10%, same fade; nobody docked; never on a BotB prize); ride $200 (was $350), pedal $250 (was $300); Hustle x0.7 in the
+  garage, x1 at Local Heroes (was 1 / 1.3). The gig results show **Pay / Band's cut / Gas** and "Into the fund" naming every
+  other part of it (fill-in, management 15%, crew, tow, merch) so the row adds up (testids gig-pay, gig-cut, gig-net,
+  gig-net-part). The HUD fund chip never clips ($1,018 in full, $12.3k compact; exact amount in its toast).
 - **M2 "Fair grades"**: the crowd's flow (a running combo warms the room) runs on every seat (was string seats only): the same
   hit share earns the same score, grade and pay on the kit as on bass. Charts unchanged.
 - **M3**: the jam room costs $35/wk until you sign, then $60 (card `shop_space_1` + band variants and the shop say both).
@@ -439,6 +442,9 @@ Owner words: "if i don't want to okay specific gig can we add a simulate option?
 - [x] build M1-M3 + critic fixes, re-probe (`plan/v14/build_report.md`, `probe_after.md`) — 2026-10-06/07
 - [x] full verify at 390 + 440 (`plan/v14/integration_report.md`): node suite, Classic hash 232/232, compat + save, matrix
   (118 sections per size), pw_perf, phoneqa, size 5,244,808 B; owner shots 01-05 at 440x956 — 2026-10-07
+- [x] review (2 confirmed + 6 minor) fixed on `v1.4-tuning` (`plan/v14/integration_report.md` "Review fixes"): early help
+  until signed (was a 24-week clock from Local Heroes), the results money row adds up, BotB gas cover, HUD chips, no bonus
+  line on a prize — 2026-10-07
 - [ ] lead: Hall of Fame "Biggest room" overflows at 390 when the name is long (`pw_hof list`; report finding 1, a CSS fix)
 - [ ] owner check (440x956 shots) + review + PR
 

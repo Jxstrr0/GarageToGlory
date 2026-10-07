@@ -571,8 +571,11 @@
        B / C / D x1: nobody is docked). gig.applyResult, once per result under the existing r.diffPay flag:
        r.pay = round((pay - prize) x gradePayMult) + prize, then x the career difficulty's money (as before).
      Results screen (55): Pay | Band's cut (r.cut, the members' share) | Gas, then Crowd | Fans | Buzz, and an "Into the fund"
-       line (r.deltas.fund; + the great-show % when gradePayMult > 1); the Moments count moves to the score line. Testids
-       gig-pay, gig-cut, gig-net.
+       line (r.deltas.fund, "$0" when unchanged) naming every other part of it (review fix; ui.gigFundParts(r) -> [{ label, v }]:
+       fill-in -r.fillInCost, management N% -r.commission, crew -r.crew, tow -r.travel.breakdown.cost, merch +r.merch.earned,
+       any rest "other"), so Pay - cut - gas + parts = the net; + the great-show % when gradePayMult > 1 and pay - prize > 0;
+       the Moments count moves to the score line. Testids gig-pay, gig-cut, gig-net, gig-net-part (data-v = the signed $).
+     BotB (23 SCHEDULE.botb, review fix): the listing's gas is recomputed after deal = 'exposure' (the exposureGas cover always).
    M2 "Fair grades": the v1.1 flow (crowd += flowGain x FLOW[diff] (x FLOW.lead on the lead seat) x dt while a combo runs) now
      runs on every seat (was string seats only), so the same hit share draws the same crowd, song score and gig grade on the
      kit as on bass / rhythm / lead. Charts, judgement windows and per-note gains unchanged. Simulate and bot sessions alike.
