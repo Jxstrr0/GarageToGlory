@@ -146,6 +146,12 @@ async function career(view) {
     const tut1 = await page.evaluate(() => ({ t: GG.debug('tutorial'), hs: window.__hs }));
     c.ok(tut1.hs[0] === 'plan', "digit 1 walks to the whiteboard and opens it through 'hotspot' " + JSON.stringify(tut1.hs));
     c.ok(!tut0.active || tut1.t.active !== tut0.active || tut1.t.step !== tut0.step || (tut1.t.done || []).length > (tut0.done || []).length, 'the tutorial moves on ' + JSON.stringify({ a: tut0.active, s: tut0.step, a1: tut1.t.active, s1: tut1.t.step }));
+    // the tutorial card joins the Tab cycle (when a lesson bubble is up over the planner)
+    if (await page.evaluate(() => { const t = document.querySelector('#tut .tut-card'); return !!(t && t.getClientRects().length); })) {
+      let inTut = false;
+      for (let i = 0; i < 40 && !inTut; i++) { await press(page, 'Tab', 30); inTut = await page.evaluate(() => { const t = document.querySelector('#tut .tut-card'); return !!(t && t.contains(document.activeElement)); }); }
+      c.ok(inTut, 'Tab reaches the tutorial card buttons');
+    }
     // fill the week on the keyboard
     const pf = await focused(page);
     c.ok(pf && pf !== 'btn-close', 'plan: a control in the planner focused ' + pf);
