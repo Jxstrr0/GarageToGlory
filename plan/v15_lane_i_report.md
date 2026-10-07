@@ -31,11 +31,10 @@ Edited: `src/55_ui_gig.js`, `src/5h_ui_settings.js`, `tests/pw_keys.js` (new), t
 - pw_freeze 390 / 440 / 844l EQUAL (no META_ONLY: `META_ONLY=all` runs nothing). Under load `results` + `tutorial` differ at
   random: same diffs on the untouched stage-0 build (2 of 3 runs at 440), so not this lane.
 - Phone matrix (all sections of pw_gig, shop, settings, seats, rival, label, tutorial, flow, title + phoneqa): 390x844 54/54 +
-  phoneqa PASS (pw_shop space timed out once at load 17, then 2 passes alone). 440x956: RESULT440
+  phoneqa PASS (pw_shop space timed out once at load 17, then 2 passes alone). 440x956 54/54 first run + phoneqa PASS.
 ## Hand-overs
 - W: size `html.gg-wide .gig-hw[data-lanes]` per B, `.gig-hw` background transparent, place `.gig-hint`, style `.w2`, `.set-wide`
   (rail | main), `.calib-docked`; pw_keys wide-gig checks B bounds once 5w is in the tree.
 - N: `.kcap` can be the shared keycap; pause-card arrows are the router's (pw_keys esc falls back to focus()); 55 stops Esc /
   Enter on the pause card before the router. Lead: 02 "as built" (debug fields, ui.keyLabel/kcap, set-rail-*, set-layout).
-## Gaps
-- B bounds unverified until 5w. Card arm is D7 exactly (a Space 600 ms after a card is fresh: it clicks). No getLayoutMap on file://.
+- Gaps: B bounds unverified until 5w. Card arm is D7 exactly (a Space 600 ms after a card is fresh: it clicks). No getLayoutMap on file://.
