@@ -115,7 +115,7 @@ Hall of Fame overflow), which the money fix pushed to 440 as well.
   in a week. Net per gig still drops ~$43-52 at signing: the 15% management + crew, now named on the results screen.
 - Years 4-10, 80 seeds, every seat x bot cell vs 1.3.1: fund -5% to +8%, late gig pay -3% to +6%, all |z| <= 1.6 (the avg
   drummer's late gig pay +13.5% on seeds 301-340 pre-fix was trajectory noise: +4.3%, z 1.3 pooled).
-- **Watch (unchanged in kind):** year 3 richer than 1.3.1 for the bots (avg bass +54% z 3.1, avg lead +33% z 3.0 over 80
+- **Watch (unchanged in kind):** year 3 richer than 1.3.1 for the bots (avg bass +54% z 3.1 on 40 seeds, avg lead +33% z 3.0 on 80
   seeds); vs the pre-fix build every bot cell is within |z| <= 1.5, the gig-first bass row +41% (z 1.9). Owner check: say it.
 
 **Verification (after the fixes, dist 5,248,626 B, gate 6,000,000):**
