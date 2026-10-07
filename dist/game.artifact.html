@@ -61835,14 +61835,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     'html.gg-wide .sheet-head .sub { display: inline-block; margin: 0 12px 0 0; vertical-align: 3px; }',
     'html.gg-wide .sheet-body { padding: 4px 24px 16px; }',
     'html.gg-wide .sheet-foot { padding: 12px 24px 16px; justify-content: flex-end; }',
-    'html.gg-wide .sheet-foot > .btn.block { width: auto; flex: 0 1 420px; }',
+    'html.gg-wide .sheet-foot > .btn.block, html.gg-wide .sheet-foot > .btn.primary { width: auto; flex: 0 1 420px; }',
     'html.gg-wide .sheet-foot > .kb-hints { order: -1; flex: 0 1 auto; width: auto; margin-right: auto; text-align: left; }',
     'html.gg-wide .modal { max-width: 420px; }',
 
     'html.gg-wide .w2 { display: flow-root; --w2a: calc(50% - 12px); }',
     'html.gg-wide .w2 > .w2-a { float: left; clear: left; width: var(--w2a); margin-top: 0; margin-bottom: 12px; }',
-    'html.gg-wide .w2 > .w2-b { width: auto; margin-left: calc(var(--w2a) + 24px); margin-top: 0; margin-bottom: 12px; }',
-    'html.gg-wide .w2 > span.w2-b, html.gg-wide .w2 > .w2-b.btn:not(.block) { display: flex; width: fit-content; }',
+    'html.gg-wide .w2 > .w2-b { width: calc(100% - var(--w2a) - 24px); margin-left: calc(var(--w2a) + 24px); margin-top: 0; margin-bottom: 12px; }',
+    'html.gg-wide .w2 > .w2-b.btn:not(.block) { display: flex; }',
+    'html.gg-wide .w2 > span.w2-b { display: flex; width: fit-content; }',
     'html.gg-wide .gb-list.w2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }',
     'html.gg-wide .gb-list.w2 > * { margin: 0; }',
     'html.gg-wide .sheet-body > .stack.w2:has(> .acts) { --w2a: 400px; }',
@@ -61856,8 +61857,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > :not(.mem-card) { grid-column: 1 / -1; }',
     'html.gg-wide .sheet-body:has(> .lt-tabs) .stack.tight:has(> .mem-card) > .mem-card { margin-bottom: 0; }',
 
-    'html.gg-wide .full:not(.gig):not(.title3d):not(.van):not(.loonies):not(.rvset) > .full-body,'
-      + ' html.gg-wide .full:not(.gig):not(.title3d):not(.van):not(.loonies):not(.rvset) > .full-foot { padding-left: max(16px, calc((100% - 1120px) / 2)); padding-right: max(16px, calc((100% - 1120px) / 2)); }',
+    'html.gg-wide .full:where(:not(.gig, .title3d, .van, .loonies, .rvset)) > .full-body,'
+      + ' html.gg-wide .full:where(:not(.gig, .title3d, .van, .loonies, .rvset)) > .full-foot { padding-left: max(16px, calc((100% - 1120px) / 2)); padding-right: max(16px, calc((100% - 1120px) / 2)); }',
     'html.gg-wide .full:not(.seq) > .full-foot { align-items: center; }',
     'html.gg-wide .full:not(.seq) > .full-foot > .btn.block { width: min(100%, 560px); }',
     'html.gg-wide .full:not(.seq) > .full-foot > .kb-hints { width: 100%; }',
@@ -61900,9 +61901,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="5"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(275px, 23vw, 350px)) + 20px); }',
     'html.gg-wide .full.gig .full-body:has(> .gig-hw[data-lanes="6"]) > .gig-hint { left: calc(50% + min(calc((100% - 32px) / 2), clamp(330px, 23vw, 420px)) + 20px); }',
 
+    'html.gg-wide .full.rvset .rs-bar, html.gg-wide .full.rvset .rs-banner { left: max(12px, calc((100% - 720px) / 2)); right: max(12px, calc((100% - 720px) / 2)); }',
+    'html.gg-wide .full.rvset .rs-panel { left: max(0px, calc((100% - 720px) / 2)); right: max(0px, calc((100% - 720px) / 2)); bottom: 16px; padding-bottom: 14px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; }',
+    'html.gg-wide .full.loonies .lo-top { align-self: center; width: min(100%, 720px); }',
+    'html.gg-wide .full.loonies .lo-card { align-self: center; width: min(calc(100% - 32px), 720px); border-radius: 18px 18px 0 0; }',
+
     'html.gg-wide .full.van .full-body > .van-top, html.gg-wide .full.van .full-body > .van-says, html.gg-wide .full.van .full-body > .van-arrive { width: 100%; max-width: 440px; }',
     'html.gg-wide .full.van > .full-foot { max-width: 472px; }',
-    'html.gg-wide .tw-map { width: min(100%, calc((100vh - 170px) * 100 / 72)); margin-left: auto; margin-right: auto; flex: 0 0 auto; }'
+    'html.gg-wide .tw-map { width: min(100%, calc((100vh - 170px) * 100 / 72)); margin-left: auto; margin-right: auto; flex: 0 0 auto; }',
+    'html.gg-wide .layer[data-screen="tour-region"] .tw-map { width: min(100%, calc((100vh - 290px) * 100 / 72)); }',
+    'html.gg-wide .van-side { max-width: 560px; margin-left: auto; margin-right: auto; }'
   ].join('\n');
 
   var tag = document.getElementById('gg-wide-css');
