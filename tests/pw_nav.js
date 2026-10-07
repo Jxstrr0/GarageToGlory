@@ -202,6 +202,12 @@ async function esc(view) {
     await page.evaluate(() => GG.ui.show('genre'));
     await press(page, 'Escape');
     c.ok(await stackOf(page) === 'title', 'genre (full): Esc = its back');
+    await page.evaluate(() => { GG.ui.show('settings'); GG.ui.show('calib', { profile: GG.prefs.get().audioProfile || 'speaker' }); });
+    await waitScreen(page, 'calib');
+    await page.waitForTimeout(GAP);
+    await press(page, 'Escape', 400);
+    c.ok(await screen(page) === 'settings', 'calib (sticky, KEY_BACK): Esc = its back ' + await stackOf(page));
+    await page.evaluate(() => GG.ui.close('settings'));
     await page.evaluate(() => GG.ui.show('slots'));
     await press(page, 'Escape');
     c.ok(await stackOf(page) === 'title', 'a sheet closes on Esc');

@@ -23,6 +23,7 @@
 // merch-misprint, merch-item-<id>, merch-toggle-<id>, merch-price-<id>, merch-price-down|up-<id>, merch-n-<id>,
 // merch-n-down|up-<id>, merch-buy-<id>; van-side, van-side-name, van-sticker (data-banned), van-sticker-more, van-name-input, van-rename, van-up-<id>,
 // space-move-<tier>, space-up-<id>, van-buy-<tier>; wrap-shop-*, btn-collector-ok. Debug: GG.debug('shopui').
+// v1.5 (Lane N, package B hook): the drum / seat shop's stack is .w2 (GG.ui.w2: the kit / amp left, add-ons + sections right).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
@@ -132,7 +133,7 @@
       if (GG.career.seatOf(st) !== 'drums') { seatShop(s, st); return; }   // v1.1: your seat's line
       s.setTitle('Drum shop', 'PAWN SHOP ROW · ' + street(st));
       var g = st.gear, kd = SH().kitDef(g.quality) || {}, extra = SH().gearItems(st).filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
-      ui.append(s.body, el('div.stack', [
+      ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the kit left, add-ons + sections right
         el('div.panel.warm.shop-now', { testid: 'gear-now' }, [el('div.caps', 'On the riser now'), el('div.shop-big', kd.name || 'A kit'),
           el('div.small.dim', [g.lanes + ' lanes' + (g.doubleKick ? ' · double kick' : '') + (extra.length ? ' · ' + extra.join(', ') : ''),
             ' · the kit tier changes how everything sounds']),
@@ -170,7 +171,7 @@
         el('div.caps', 'Song sections'),
         el('div.stack.tight', [sectionRow(st, 'outro'), sectionRow(st, 'solo')]),
         el('p.tiny.faint.center', 'No gong. Not now, not ever. The Global Gong is an award, not a drum.')
-      ]));
+      ]), 3));
       s.foot.appendChild(btn('.btn.block', { testid: 'btn-gear-done', onclick: function () { ui.close(s.id); } }, 'Back to the kit'));
     },
     onClose: function () { ui.clearToasts(); }
@@ -183,7 +184,7 @@
     var seat = GG.career.seatOf(st), inst = GG.career.tokenValue(st, 'instrument'), lanes = GG.career.seatLanes(st), runs = GG.career.seatRuns(st), g = st.gear;
     var kd = SH().kitDef(g.quality) || {}, items = SH().gearItems(st), mine = items.filter(function (x) { return x.owned; }).map(function (x) { return x.name; });
     s.setTitle(ui.cap(inst) + ' shop', 'PAWN SHOP ROW · ' + street(st));
-    ui.append(s.body, el('div.stack', [
+    ui.append(s.body, ui.w2(el('div.stack', [   // v1.5 (B): the amp left, your instrument + sections right
       el('div.panel.warm.shop-now', { testid: 'gear-now', data: { seat: seat, lanes: String(lanes), runs: runs ? '1' : '0' } }, [el('div.caps', 'Your rig now'), el('div.shop-big', SH().kitName(st, kd) || 'An amp'),
         el('div.small.dim', [lanes + ' lanes on your highway' + (runs ? ' · runs' : '') + (SH().whammy(st) ? ' · whammy' : '') + (mine.length ? ' · ' + mine.join(', ') : ''),
           ' · the amp tier changes how the whole band sounds']),
@@ -224,7 +225,7 @@
       el('div.caps', 'Song sections'),
       el('div.stack.tight', [sectionRow(st, 'outro'), sectionRow(st, 'solo')]),
       el('p.tiny.faint.center', 'Every price matches the drum shop. The drummer checked.')
-    ]));
+    ]), 3));
     s.foot.appendChild(btn('.btn.block', { testid: 'btn-gear-done', onclick: function () { ui.close(s.id); } }, 'Back to your rig'));
   }
 

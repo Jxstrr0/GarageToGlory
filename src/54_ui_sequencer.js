@@ -741,8 +741,9 @@
     ui.append(s.body, [header(s, D), meterStrip(D), coachBubble(s, D),
       V.qmain = el('div.quick-main', { testid: 'quick-main' }, [
         el('div.qs-title', 'Start from a recipe'),
-        el('div.quick-recipes', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
-        el('div.quick-sliders', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);
+        el('div.quick-recipes.w2-a', { testid: 'quick-recipes' }, recipesNow().map(function (r) { return recipeCard(s, D, r); })),
+        el('div.quick-sliders.w2-b', GG.songs.sliders(genre(), seat()).map(function (sd) { return quickSlider(s, D, sd); }))])]);   // v1.5 (B): recipes left, sliders right
+    V.qmain.classList.add('w2'); s.body.classList.remove('w2');
     V.play = btn('.btn', { testid: 'btn-guide-play', onclick: function () { toggle(s, D, 'quick'); } });
     var tweak = btn('.btn.ghost', { testid: 'btn-quick-tweak', onclick: function () {
       stopPlay(D); D.screen = 'edit'; D.tab = 'verse'; D.layer = null; D.fill = false;
@@ -798,6 +799,61 @@
     if (GG.songs.isFrench && GG.songs.isFrench(entry.title)) entry.fr = true;   // v0.7.2: Marcel's French one stays French on load
     if (D.onSave) D.onSave(entry);
   }
+  /* ---- v1.5 (Lane N, package B): the tools column, PC layout only ------------------------------------------------ */
+  // The mockup's left column under the meters: this section's tools (Copy to… = the ⋯ menu, Clear, Fill on bar 4, Swap a
+  // beat), Feel, Song order and Tempo, beside the grid. Built only when ui.wide() (re-rendered on 'ui:wide'), so a phone
+  // never has it; its testids are side-* (the ⋯ menu's own rows keep theirs). Same edits as the ⋯ rows / the Song tab.
+  var FEEL_STOPS = [[0, 'Straight'], [2, 'Light swing'], [4, 'Swing']];
+  function sidePanel(s, D) {
+    if (!(ui.wide && ui.wide()) || D.mode === 'view' || D.tab === 'song') return null;
+    var sec = hasSec(D, D.tab), drums = sec && !(partLayer(D) && partHas(D, D.tab)), p = D.pat, G = GG.songs.genre(genre());
+    function edit(fn) { handEdit(D); fn(); s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    var kids = [];
+    if (drums) {
+      var fills = chipSec(D.tab), hasFill = !!(p.fillBars && p.fillBars[D.tab]);
+      kids.push(el('div.caps', 'This section'), el('div.seq-side-tools', [
+        btn('.btn.small', { testid: 'side-copy', onclick: function () { ui.show('seq-tools', { owner: s }); } }, '⧉ Copy to…'),
+        btn('.btn.small', { testid: 'side-clear', onclick: function () { edit(function () { if (fillOn(D)) p.fillBars[D.tab] = GG.songs.blankSection(p.lanes); else p.sections[D.tab] = GG.songs.blankSection(p.lanes); }); } }, '✕ Clear'),
+        fills ? btn('.btn.small' + (D.fill ? '.on' : ''), { testid: 'side-fill', 'aria-pressed': D.fill ? 'true' : 'false', onclick: function () {
+          if (!D.fill && !hasFill) { p.fillBars = p.fillBars || {}; p.fillBars[D.tab] = p.sections[D.tab].slice(); (D.fillNew = D.fillNew || {})[D.tab] = 1; }
+          D.fill = !D.fill; s.rerender(); changed(D);
+        } }, D.fill ? '✨ Main bar' : '✨ Fill on bar 4') : null,
+        btn('.btn.small', { testid: 'side-beat', onclick: function () { ui.show('seq-beat', { owner: s }); } }, '🥁 Swap a beat')]));
+    }
+    var sw = p.swing || 0;
+    kids.push(el('div.caps', 'Feel'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Feel' }, FEEL_STOPS.map(function (f) {
+      var on = sw === f[0] || (f[0] === 2 && sw > 0 && sw < 4);
+      return btn('.seg' + (on ? '.on' : ''), { testid: 'side-feel-' + f[0], 'aria-pressed': on ? 'true' : 'false', onclick: function () {
+        if (p.swing === f[0]) return;
+        p.swing = f[0]; if (D.qs) D.qs.swing = f[0]; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D);
+      } }, f[1]);
+    })));
+    var cur = baseArrangementId(p);
+    kids.push(el('div.caps', 'Song order'), el('div.seq-side-seg', { role: 'group', 'aria-label': 'Song order' }, GG.songs.ARRANGEMENT_IDS.map(function (id) {
+      var a = withSongExtras(D, GG.songs.ARRANGEMENTS[id]);
+      return btn('.seg' + (id === cur ? '.on' : ''), { testid: 'side-arr-' + id, 'aria-pressed': id === cur ? 'true' : 'false', title: a.map(function (x) { return SEC_LABEL[x] || x; }).join(' · '),
+        onclick: function () { if (id === cur) return; edit(function () { p.arrangement = a.slice(); }); } }, ARR_NAMES[id]);
+    })));
+    function bpm(d) { var v = U.clamp(p.bpm + d, G.tempo[0], G.tempo[1]); if (v === p.bpm) return; p.bpm = v; if (D.qs) D.qs.bpm = v; s.rerender(); changed(D); if (D.handle && D.handle.playing) restart(s, D); }
+    kids.push(el('div.caps', 'Tempo'), el('div.seq-side-tempo', [
+      btn('.btn.small', { testid: 'side-tempo-down', 'aria-label': 'Slower', onclick: function () { bpm(-5); } }, '−'),
+      el('span.grow', { testid: 'side-tempo' }, [el('b', String(p.bpm)), ' bpm · ' + (GG.audio && GG.audio.styleFor ? GG.audio.styleFor(genre(), p.bpm).label : '')]),
+      btn('.btn.small', { testid: 'side-tempo-up', 'aria-label': 'Faster', onclick: function () { bpm(5); } }, '+')]));
+    return el('div.seq-side', { testid: 'seq-side' }, kids);
+  }
+  if (typeof document !== 'undefined' && !document.getElementById('gg-seq-side-css')) {   // (PC layout only: html.gg-wide)
+    var sideCss = document.createElement('style'); sideCss.id = 'gg-seq-side-css';
+    sideCss.textContent = 'html.gg-wide .seq-side { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg { display: flex; gap: 4px; flex-wrap: wrap; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg { flex: 1 1 0; min-height: 36px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--dim); font: 700 12px/1.1 var(--font); cursor: pointer; }\n'
+      + 'html.gg-wide .seq-side .seq-side-seg .seg.on { background: var(--panel2); color: var(--text); border-color: var(--amber); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 12px; background: var(--panel); }\n'
+      + 'html.gg-wide .seq-side .seq-side-tempo b { font-size: 18px; }\n';
+    document.head.appendChild(sideCss);
+  }
+  GG.on('ui:wide', function () { var e = ui.get('seq'); if (e && e.data && e.data.screen === 'edit') e.rerender(); });
+
   function buildEdit(s, D) {
     var ro = D.mode === 'view', V = D.view = {};
     if (D.tab !== 'song' && !tabsFor(D).some(function (t) { return t.id === D.tab; })) D.tab = 'verse';
@@ -820,8 +876,11 @@
       coachBubble(s, D),
       sec && D.pat.part ? toggleRow(s, D) : null,   // v1.1 "Your part | Drums" (+ v1.3 "Chords: <name> ▾")
       layer && chipSec(D.tab) ? chipsRow(s, D) : null,   // v1.3: 4 chord chips (never on Solo / Outro: D7)
+      sidePanel(s, D),   // v1.5 (B): PC layout only
       main
     ]);
+    [].forEach.call(s.body.children, function (n) { n.classList.add(n === main ? 'w2-b' : 'w2-a'); });   // v1.5 (B): tools left, the grid right
+    s.body.classList.add('w2');
     V.loop = btn('.btn', { testid: 'btn-seq-loop', onclick: function () { toggle(s, D, 'loop'); } });
     V.song = btn('.btn', { testid: 'btn-seq-song', onclick: function () { toggle(s, D, 'song'); } });
     ui.append(s.foot, [V.loop, V.song, doneButton(s, D)]);

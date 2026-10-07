@@ -498,7 +498,7 @@
             .then(function (ok) { if (ok) go(); });
         }, mine));
       });
-      ui.append(s.body, [el('div.stack', [
+      ui.append(s.body, [ui.w2(el('div.stack', [   // v1.5 (B): Resume + saves left, the rest right
         btn('.btn.primary.block', { testid: 'menu-resume', onclick: function () { ui.close(s.id); } }, 'Resume'),
         el('div.caps', 'Save to a slot'),
         saves,
@@ -519,7 +519,7 @@
               .then(function (ok) { if (ok) GG.main.quitToTitle(); });
           } }, 'Quit to title')
         ])
-      ])]);
+      ]), 5)]);
     }
   });
 

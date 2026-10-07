@@ -8,8 +8,8 @@
 //       element -> swallowed (Space clicks a button on keyup: a press from the last screen never clicks the new one).
 //   (1) a live song (GG.input.gigLive()): only Tab is blocked (55 owns every other key).
 //   (2) typing (input / textarea / select / contenteditable): Esc blurs, Tab moves on, every other key is native.
-//   (3) Esc -> back(): def.back (testid | fn) -> KEY_BACK -> the confirm's No -> a non-sticky sheet / modal closes ->
-//       a full screen's btn-back / btn-close -> sticky: nothing -> nothing open in the garage: the ☰ menu -> title: nothing.
+//   (3) Esc -> back(): the confirm's No -> def.back (testid | fn) -> KEY_BACK -> sticky: nothing -> a sheet / modal closes ->
+//       a full screen's btn-back / btn-close -> nothing open in the garage: the ☰ menu -> title / end: nothing.
 //   (4) arrows: the nearest reachable control that way (rects) in the top layer + the tutorial card (not inside
 //       [data-keys=own], a range or a select: those keep their arrows), scrollIntoView({ block: 'nearest' }).
 //   (5) Tab / Shift+Tab cycle the top layer + the tutorial card (a focus trap); nothing open: HUD -> dock -> kb-spots.
@@ -140,10 +140,10 @@
     if (id === 'confirm') { n = clickable(e, 'btn-confirm-no'); if (n) n.click(); else ui.close(id); return 'confirm-no'; }
     if (typeof d.back === 'function') { d.back(e); return 'fn'; }
     if (typeof d.back === 'string' && (n = clickable(e, d.back))) { n.click(); return 'back:' + d.back; }
-    if (STICKY[id] || d.sticky) return 'sticky';
-    var kb = KEY_BACK[id];
+    var kb = KEY_BACK[id];   // (before the sticky check: calib and recap are sticky screens with their own way out)
     if (kb === 'close') { ui.close(id); return 'close'; }
     if (kb && (n = clickable(e, kb))) { n.click(); return 'back:' + kb; }
+    if (STICKY[id] || d.sticky) return 'sticky';
     if (d.kind !== 'full') { ui.close(id); return 'close'; }
     if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
     return 'none';
@@ -229,8 +229,9 @@
     + ' font: 700 13px/1.1 var(--font); cursor: pointer; }\n'
     + 'html.gg-kbnav .kb-spots > button b, html.gg-wide .kb-spots > button b { display: inline-grid; place-items: center; min-width: 20px; height: 20px;'
     + ' padding: 0 4px; border-radius: 5px; background: var(--panel2); border: 1px solid var(--line); color: var(--amber); font-size: 12px; }\n'
-    + 'html.gg-wide .kb-hints { flex: 1 1 100%; order: 99; margin: 0; color: var(--faint); font: 600 12px/1.4 var(--font); text-align: center;'
+    + 'html.gg-wide .kb-hints { order: 99; flex: 0 0 auto; width: 100%; margin: 0; color: var(--faint); font: 600 12px/1.4 var(--font); text-align: center;'
     + ' letter-spacing: .02em; pointer-events: none; }\n'
+    + 'html.gg-wide .sheet-foot:has(> .kb-hints), html.gg-wide .modal-foot:has(> .kb-hints), html.gg-wide .full-foot:has(> .kb-hints) { flex-wrap: wrap; }\n'
     + 'html.gg-wide.gg-keys [data-testid="btn-close"], html.gg-wide.gg-keys [data-testid="btn-back"] { position: relative; }\n'
     + 'html.gg-wide.gg-keys [data-testid="btn-close"]::after, html.gg-wide.gg-keys [data-testid="btn-back"]::after { content: "Esc"; position: absolute;'
     + ' top: 50%; transform: translateY(-50%); padding: 1px 5px; border-radius: 4px; background: var(--panel2); border: 1px solid var(--line);'

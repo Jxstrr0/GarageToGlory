@@ -209,9 +209,11 @@
       }
       ui.append(s.body, [cardHead(card), el('h3.card-title', fill(card.title)), el('p.card-text', fill(card.text)),
         ui.rivalCardNote ? ui.rivalCardNote(st, card) : null, ui.tourCardNote ? ui.tourCardNote(st, card) : null]);   // v0.7: region strip   // v0.6: the rival's cards (poach, crack, Sad Dome eve)
+      [].forEach.call(s.body.children, function (n) { n.classList.add('w2-a'); });   // v1.5 (B): the story left, the answers / outcome right
+      s.body.classList.add('w2');
       if (!res) {
         (card.choices || []).forEach(function (ch, i) {
-          s.body.appendChild(btn('.choice', { testid: 'choice-' + i, onclick: function () {
+          s.body.appendChild(btn('.choice.w2-b', { testid: 'choice-' + i, onclick: function () {
             var cur = S();
             if (!cur || cur.phase !== 'monday' || !cur.card || cur.card.resolved) return;   // double-tap guard
             var r = GG.career.resolveCard(cur, i);
@@ -223,13 +225,14 @@
         });
         return;
       }
-      var chosen = card.choices && card.choices[res.choice];
+      var chosen = card.choices && card.choices[res.choice], nOut = s.body.children.length;
       ui.append(s.body, [
         chosen ? el('div.you', ['You picked: ', el('b', fill(chosen.label))]) : null,
         lastSuccess === true ? el('span.tag.amber', { style: 'margin-bottom:8px' }, 'It worked!') : lastSuccess === false ? el('span.tag', { style: 'margin-bottom:8px;color:var(--bad)' }, 'Welp.') : null,
         el('div.quote', fill(res.outcome || '')),
         el('div', { style: 'margin-top:12px' }, ui.deltaChips(res.deltas, { emptyText: 'Nothing changed. Somehow.' }))
       ]);
+      for (var oi = nOut; oi < s.body.children.length; oi++) s.body.children[oi].classList.add('w2-b');
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'btn-card-ok', onclick: function () { ui.close(s.id); } }, 'OK'));
     },
     onShow: function () { sfx('card'); },
@@ -421,7 +424,7 @@
       var steps = [], gigEl = null;   // steps: [node, delayBeforeMs, onReveal]
       (r.blocks || []).forEach(function (b, i) {
         var a = ui.act(b.activity);
-        var box = el('div.blk', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);
+        var box = el('div.blk.w2-a', [el('div.blk-h', [el('span.i', a.icon), el('span.n.grow', a.name), el('span.tag', C.BLOCK_LABELS[i] || '')])]);   // v1.5 (B): blocks left
         s.body.appendChild(box);
         steps.push([box, 250]);
         (b.lines || []).forEach(function (t) {   // v0.9: the leak net (a line naming another band's people reads neutral)
@@ -445,6 +448,8 @@
         var none = el('p.small.dim.center', { style: 'margin:6px 0 4px' }, 'No gig this weekend. The neighbours send their thanks.');
         s.body.appendChild(none); steps.push([none, 300]);
       }
+      [].forEach.call(s.body.children, function (n) { if (!n.classList.contains('w2-a')) n.classList.add('w2-b'); });   // (the gig right)
+      s.body.classList.add('w2');
       steps.forEach(function (st2) { st2[0].hidden = true; });
       var ok = btn('.btn.primary.big.block', { testid: 'btn-results-ok', hidden: true, onclick: next }, nextLabel);
       var skip = btn('.btn.ghost.block', { testid: 'btn-results-skip', onclick: function (e) { e.stopPropagation(); revealAll(); } }, 'Skip ▸▸');
@@ -547,7 +552,13 @@
       if (w.chat && w.chat.length) parts.push(el('div', [el('div.caps', 'Group chat'), chatList(w.chat)]));
       if (w.yearEnd) parts.push(yearPanel(w));
       if (w.ended) parts.push(el('div.year-end', [el('div.yh', "That's a career"), el('p', (GG.legacy ? GG.legacy.yearsText(st) : 'Ten years.') + ' One ' + ui.space(st).replace(/^the /i, '') + '. Let\'s see how it went.')]));   // v1.0: bonus years
-      ui.append(s.body, el('div.stack', parts));
+      var wcol = el('div.stack', parts);   // v1.5 (B): the numbers left; the band, the chat and the year right
+      [].forEach.call(wcol.children, function (n) {
+        var right = n.getAttribute('data-testid') === 'wrap-moods' || n.classList.contains('year-end') || !!(n.firstChild && n.firstChild.textContent === 'Group chat');
+        n.classList.add(right ? 'w2-b' : 'w2-a');
+      });
+      wcol.classList.add('w2');
+      ui.append(s.body, wcol);
       var t = savedText();
       var ind = el('span.saved' + (t[1] ? '.' + t[1] : ''), { testid: 'saved-indicator' }, t[0]);
       s.data._off = [GG.on('save:done', function () { ind.textContent = '✓ Saved'; ind.className = 'saved ok'; }),

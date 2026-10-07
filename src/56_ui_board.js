@@ -13,6 +13,7 @@
 //   space in boxes and the sticker count.
 // v0.7 (WORLDUI): on tour (GG.ui.tourBoard from 5i_ui_tour) the board is the region's: its listings (GG.tour.listings via
 //   world.board), the regional map with city pins (city-pin-<id>, board-map data-region) and the rental instead of the van.
+// v1.5 (Lane N, package B hook): every listing list (.gb-list) is also .w2 (cards 2 across in the PC layout only).
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
   function S() { return GG.state; }
@@ -271,7 +272,7 @@
         s.body.appendChild(tm.map);
         s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', tm.city ? tm.city.name : tm.sel),
           el('div.small.dim', ((tm.city && tm.city.blurb) || '') + (tm.km ? ' · ' + U.fmtNum(tm.km) + ' km from this stop' : '')),
-          tm.here.length ? el('div.gb-list', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
+          tm.here.length ? el('div.gb-list.w2', tm.here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No open dates in ' + (tm.city ? tm.city.name : tm.sel) + ' this week.')]));
       } else if (tab === 'map') {
         var sel = d.city || W().home(st), ringId = d.ring || W().ring(sel) || homeRing(st);
@@ -283,10 +284,10 @@
         s.body.appendChild(el('div.gb-city', { testid: 'board-city' }, [el('h3', c ? c.name : sel),
           el('div.small.dim', (c && c.blurb || '') + (sel === W().home(st) ? '' : ' · ' + U.fmtNum(W().km(W().home(st), sel)) + ' km from home')
             + (W().cityOpen(st, sel) ? '' : ' · Not open to you yet.')),
-          here.length ? el('div.gb-list', here.map(function (l) { return listingCard(st, l, mode, pick); }))
+          here.length ? el('div.gb-list.w2', here.map(function (l) { return listingCard(st, l, mode, pick); }))
             : el('div.gb-empty', 'No gigs in ' + (c ? c.name : sel) + ' this week.')]));
       } else {
-        s.body.appendChild(list.length ? el('div.gb-list', list.map(function (l) { return listingCard(st, l, mode, pick); }))
+        s.body.appendChild(list.length ? el('div.gb-list.w2', list.map(function (l) { return listingCard(st, l, mode, pick); }))
           : el('div.gb-empty', "Nobody's booking this week. The corkboard is just a flyer for a lost cat."));
       }
       if (mode === 'view') ui.append(s.body, TB ? [el('div.caps.gb-sec', 'The rental'), TB.strip(st)] : [el('div.caps.gb-sec', 'The van'), vanStrip(st)].concat(bannedWall(st)));

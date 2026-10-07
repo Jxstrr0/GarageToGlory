@@ -279,6 +279,14 @@
     e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
   }
   ui.syncHints = function () { stack.forEach(syncHints); };
+  // v1.5 (package B hooks for 5w): node becomes .w2 (two columns in the PC layout only; no rule anywhere else), its first
+  // nLeft element children .w2-a (left column), the rest .w2-b (right). Classes only: the phone DOM keeps its geometry.
+  ui.w2 = function (node, nLeft) {
+    if (!node || !node.classList) return node;
+    node.classList.add('w2');
+    for (var i = 0, k = 0; i < node.children.length; i++) node.children[i].classList.add(k++ < nLeft ? 'w2-a' : 'w2-b');
+    return node;
+  };
 
   /* ---- Confirm dialog ----------------------------------------------------------------------------
      GG.ui.confirm({ title, text, yes: 'Overwrite', no: 'Cancel', danger: true }).then(function (ok) { ... }) */
