@@ -1,6 +1,6 @@
 // sim_money.test.js (v1.4 "Tuning", Addendum 7): the owner's money picks.
 //   M1 "Gigs pay, side jobs less" (the critic's B+): start $450, small rooms x1.6 (with the tier step: moving up a venue
-//      tier never pays less), gas x0.5 in the garage era and x0.8 at Local Heroes fading to x1 (no cliff at signing),
+//      tier never pays less), gas x0.5 in the garage era and x0.8 until signed, then fading to x1 (no cliff at signing),
 //      exposure gigs cover $40 of gas, grade pay S x1.25 / A x1.1 (nobody docked), ride $200 + pedal $250, Hustle x0.7 in
 //      the garage era and x1 at Local Heroes, the band's cut on the results screen (pw), the early help fades with
 //      career.earlyMoney.
@@ -13,6 +13,8 @@ const fs = require('fs'), path = require('path');
 const fresh = () => { const g = load({ localStorage: load.fakeStorage() }); g.content.cards = []; return g; };
 const career = (GG, o) => { const s = GG.career.newCareer(Object.assign({ seed: 7, player: { name: 'T' } }, o || {})); s.gig = null; return s; };
 const atLocal = (s, lh, week, era) => { s.era = era || 'local'; s.milestones.localHeroes = lh; s.totalWeek = week; return s; };
+// signed at week sw through GG.career.setEra (eraHistory, as a deal or a DIY album does), then on to `week`
+const atSigned = (GG, s, lh, sw, week, why) => { atLocal(s, lh, sw); GG.career.setEra(s, 'signed', why || 'deal'); s.totalWeek = week; return s; };
 
 test('M1 levers: start $450, Hustle x0.7 garage / x1 Local Heroes, ride $200 + pedal $250 on every seat\'s line', () => {
   const GG = fresh(), E = GG.content.economy;
@@ -29,13 +31,15 @@ test('M1 levers: start $450, Hustle x0.7 garage / x1 Local Heroes, ride $200 + p
   ok(g >= 35 && g <= 70, 'garage hustle $35-70: ' + g); ok(l >= 50 && l <= 100, 'Local Heroes hustle $50-100 (no raise): ' + l);
 });
 
-test('M1 gas: x0.5 in the garage era, x0.8 at Local Heroes fading to x1 over 24 weeks; exposure gigs take $40 off', () => {
+test('M1 gas: x0.5 in the garage era, x0.8 at Local Heroes until signed, fading to x1 over 12 weeks after; exposure gigs take $40 off', () => {
   const GG = fresh(), W = GG.world, s = career(GG), km = W.km(W.home(s), 'Regina'), full = Math.max(5, Math.round(km * 2 * 0.25));
   ok(km > 100, 'Saskatoon to Regina is a drive: ' + km);
   eq(W.gasMult(s), 0.5); eq(W.gasFor(s, 'Regina'), Math.max(5, Math.round(km * 2 * 0.25 * 0.5)), 'garage: half price');
   atLocal(s, 20, 20); eq(W.gasMult(s), 0.8); eq(W.gasFor(s, 'Regina'), Math.max(5, Math.round(km * 2 * 0.25 * 0.8)), 'Local Heroes: 80%');
-  s.totalWeek = 32; ok(Math.abs(W.gasMult(s) - 0.9) < 1e-9, 'half way: x0.9');
-  s.totalWeek = 44; eq(W.gasMult(s), 1); eq(W.gasFor(s, 'Regina'), full, 'full price 24 weeks after Local Heroes');
+  s.totalWeek = 50; eq(W.gasMult(s), 0.8, 'still 80% 30 weeks after Local Heroes: until signed');
+  atSigned(GG, s, 20, 50, 50); eq(W.gasMult(s), 0.8, 'the signing week: still 80%');
+  s.totalWeek = 56; ok(Math.abs(W.gasMult(s) - 0.9) < 1e-9, 'half way through the 12-week fade: x0.9');
+  s.totalWeek = 62; eq(W.gasMult(s), 1); eq(W.gasFor(s, 'Regina'), full, 'full price 12 weeks after signing');
   s.era = 'world'; s.totalWeek = 300; eq(W.gasMult(s), 1);
   // exposure: the host chips in $40 (never below $0); a paid deal pays its gas
   const t = career(GG); t.fans = 200;
@@ -84,27 +88,44 @@ test('M1 grade pay: S x1.25, A x1.1, B/C/D x1 (nobody docked); the prize is not 
   const pr = pay(career(GG), 'S', 150, { prize: 50 }); eq(pr.pay, 175, 'BotB prize $50 unscaled'); ok(pr.diffPay && !('gradePaid' in pr), 'the existing diffPay flag guards it');
   eq(pay(career(GG), 'S', 100, { diffPay: true }).pay, 100, 'an already-paid result is never scaled twice');
   eq(Object.keys(pay(career(GG), 'S', 100)).sort(), Object.keys(pay(career(GG), 'B', 100)).sort(), 'grade pay adds no result field');
-  const t = atLocal(career(GG), 20, 32); ok(Math.abs(G.gradePayMult(t, 'S') - 1.125) < 1e-9 && Math.abs(G.gradePayMult(t, 'A') - 1.05) < 1e-9, 'half faded 12 weeks after Local Heroes');
-  t.totalWeek = 44; eq([G.gradePayMult(t, 'S'), G.gradePayMult(t, 'A')], [1, 1]);
+  eq([G.gradePayMult(atLocal(career(GG), 20, 50), 'S'), G.gradePayMult(atLocal(career(GG), 20, 50), 'A')], [1.25, 1.1], 'full until signed');
+  const t = atSigned(GG, career(GG), 20, 40, 46); ok(Math.abs(G.gradePayMult(t, 'S') - 1.125) < 1e-9 && Math.abs(G.gradePayMult(t, 'A') - 1.05) < 1e-9, 'half faded 6 weeks after signing');
+  t.totalWeek = 52; eq([G.gradePayMult(t, 'S'), G.gradePayMult(t, 'A')], [1, 1]);
   // the career difficulty still applies on top (chill x1.2)
   const c = career(GG, { careerDifficulty: 'chill' }); eq(pay(c, 'S', 100).pay, Math.round(125 * GG.difficulty.mul(c, 'money')));
 });
 
-test('no pay cliff at signing: the early help fades by the week, never by the era (grade pay, gas, Hustle never drops)', () => {
-  const GG = fresh(), G = GG.gig, W = GG.world, K = GG.career;
-  const s = atLocal(career(GG), 22, 22);
-  eq(K.earlyMoney(career(GG)), 1, 'garage era: full'); eq(K.earlyMoney(s), 1, 'Local Heroes week: full');
-  let prev = null;
-  for (let w = 22; w <= 60; w++) {
-    const a = atLocal(career(GG), 22, w, 'local'), b = atLocal(career(GG), 22, w, 'signed');
-    const va = [K.earlyMoney(a), G.gradePayMult(a, 'S'), G.gradePayMult(a, 'A'), W.gasMult(a), W.gasFor(a, 'Regina')];
-    const vb = [K.earlyMoney(b), G.gradePayMult(b, 'S'), G.gradePayMult(b, 'A'), W.gasMult(b), W.gasFor(b, 'Regina')];
-    eq(vb, va, 'week ' + w + ': signing changes none of the early help');
-    if (prev) ok(va[0] <= prev[0] && prev[0] - va[0] <= 1 / 24 + 1e-9 && va[1] <= prev[1] && prev[1] - va[1] <= 0.25 / 24 + 1e-9, 'week ' + w + ': fades at most 1/24 a week');
-    prev = va;
-  }
-  eq(prev[0], 0, 'gone 24 weeks after Local Heroes');
-  const E = GG.content.economy.hustleEra; ok(E.local >= E.garage && E.signed >= E.local && E.world >= E.signed, 'Hustle never pays less in a later era');
+test('until signed, then no cliff: full help through Local Heroes, a 12-week fade after signing (deal or DIY), gone 48 weeks after Local Heroes unsigned', () => {
+  const GG = fresh(), G = GG.gig, W = GG.world, K = GG.career, E = GG.content.economy;
+  eq([E.earlyTaper, E.earlyBackstop], [12, 48]);
+  eq(K.earlyMoney(career(GG)), 1, 'garage era: full'); eq(K.earlyMoney(atLocal(career(GG), 22, 22)), 1, 'Local Heroes week: full');
+  const vals = s => [K.earlyMoney(s), G.gradePayMult(s, 'S'), G.gradePayMult(s, 'A'), W.gasMult(s), W.gasFor(s, 'Regina')];
+  // signing at week 40 (18 weeks after Local Heroes): full through the signing week, then down by 1/12 a week, 0 from week 52
+  const walk = (mk, label) => {
+    let prev = null;
+    for (let w = 22; w <= 80; w++) {
+      const v = vals(mk(w));
+      if (w <= 40) eq(v[0], 1, label + ' week ' + w + ': full until signed');
+      if (w >= 52) eq(v[0], 0, label + ' week ' + w + ': gone 12 weeks after signing');
+      if (prev) ok(v[0] <= prev[0] && prev[0] - v[0] <= 1 / 12 + 1e-9 && v[1] <= prev[1] && prev[1] - v[1] <= 0.25 / 12 + 1e-9 && v[3] >= prev[3] && v[3] - prev[3] <= 0.2 / 12 + 1e-9,
+        label + ' week ' + w + ': fades at most 1/12 a week, never up');
+      prev = v;
+    }
+  };
+  walk(w => w < 40 ? atLocal(career(GG), 22, w) : atSigned(GG, career(GG), 22, 40, w, 'deal'), 'deal');
+  walk(w => w < 40 ? atLocal(career(GG), 22, w) : atSigned(GG, career(GG), 22, 40, w, 'diy'), 'DIY album');
+  // an old save with only milestones.signed (no 'signed' eraHistory entry) reads the milestone
+  const m = atLocal(career(GG), 22, 46, 'signed'); m.milestones.signed = 40; eq(K.earlyMoney(m), 0.5, 'milestones.signed fallback');
+  // a signed era without any signing week: no help (never a stuck x1)
+  eq(K.earlyMoney(atLocal(career(GG), 22, 46, 'signed')), 0, 'signed, no week: 0');
+  // never signed: full for 36 weeks after Local Heroes, then down over 12, 0 from 48 weeks after
+  const u = w => K.earlyMoney(atLocal(career(GG), 22, w));
+  eq([u(58), u(64), u(70), u(200)], [1, 0.5, 0, 0], 'the backstop: Local Heroes + 36 .. + 48');
+  // signing late, in the backstop fade, changes nothing that week (min of the two clocks: no jump either way)
+  eq(K.earlyMoney(atSigned(GG, career(GG), 22, 64, 64)), 0.5, 'late signing: same value'); eq(K.earlyMoney(atSigned(GG, career(GG), 22, 64, 70)), 0, 'and still the backstop');
+  // a Local Heroes era from an old save without the milestone uses the 'local' eraHistory week
+  const o = career(GG); o.era = 'local'; o.eraHistory.push({ era: 'local', week: 22 }); o.totalWeek = 64; eq(K.earlyMoney(o), 0.5, 'eraHistory local fallback');
+  const H = E.hustleEra; ok(H.local >= H.garage && H.signed >= H.local && H.world >= H.signed, 'Hustle never pays less in a later era');
 });
 
 test('M3 jam room: $35 a week until you sign, then $60, and the card + shop say so up front', () => {

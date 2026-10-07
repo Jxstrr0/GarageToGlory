@@ -134,8 +134,8 @@
     return r.length > 1 ? paths().hw[r[r.length - 2]][r[r.length - 1]] || paths().hw[r[0]][r[1]] || '' : '';
   };
   world.home = function (state) { return world.cityId(state && state.city) || 'saskatoon'; };
-  // v1.4 (M1): the early-money gas factor (1 = full price). Garage: gasEra.garage; from Local Heroes: gasEra.local fading
-  // to 1 with career.earlyMoney (no cliff at signing).
+  // v1.4 (M1): the early-money gas factor (1 = full price). Garage: gasEra.garage; from Local Heroes: gasEra.local until
+  // signed, then fading to 1 with career.earlyMoney (no cliff at signing).
   world.gasMult = function (state) {
     var E = cfg().gasEra || {}, era = state && state.era;
     if (!era || era === 'garage') return E.garage != null ? E.garage : 1;

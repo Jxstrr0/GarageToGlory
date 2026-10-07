@@ -554,8 +554,11 @@
    M1 "Gigs pay, side jobs less" (content/economy.js; every value below is content):
      startFund 300 -> 450; shop ride (lane 6 / the string seats' lane-6 item) 350 -> 200, pedal (runs) 300 -> 250;
      hustleEra { garage 0.7, local 1, signed 2.2, world 3 } (was 1 / 1.3 / 2.2 / 3).
-     GG.career.earlyMoney(state) -> 0..1: 1 in the garage era, then 1 - (totalWeek - milestones.localHeroes) / economy.earlyTaper
-       (24), clamped; any later era too (no cliff at signing); a non-garage career without a Local Heroes week -> 0.
+     GG.career.earlyMoney(state) -> 0..1 (owner "until signed"; review fix): 1 in the garage era; else clamp((end - totalWeek)
+       / economy.earlyTaper (12), 0, 1) with end = min(Local Heroes + economy.earlyBackstop (48), signed + earlyTaper): full
+       through Local Heroes, a 12-week fade after signing (the first 'signed' / 'world' eraHistory week: a deal or a DIY album;
+       else milestones.signed), and a band that never signs loses it 48 weeks after Local Heroes. At most 1/12 a week (no
+       cliff). Local Heroes week = milestones.localHeroes, else the 'local' eraHistory week; signed without a week -> 0.
      GG.world.gasMult(state): garage economy.world.gasEra.garage (0.5); from Local Heroes 1 - (1 - gasEra.local (0.8)) x earlyMoney.
      GG.world.gasFor(state, city) = max(gasMin, round(km x 2 x gasPerKm x gasMult)); world.decorate: an exposure deal's gas
        -= economy.world.exposureGas (40), never below 0.

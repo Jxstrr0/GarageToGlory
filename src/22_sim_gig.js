@@ -171,7 +171,7 @@
   // Applies a GIG_RESULT to the career: money, fans, buzz, moods, song plays, stats. Clears state.gig.
   // v0.4: members take their cut of the pay (state.payCut, GG.drama.split) and fill-ins get paid per gig.
   // v1.4 (M1): a great show pays more: economy.gig.gradePay[grade] (S x1.25, A x1.1; never below x1: nobody is docked),
-  // full in the garage era and fading with GG.career.earlyMoney after Local Heroes. Same rule for played, simulated and
+  // full until you sign, then fading with GG.career.earlyMoney. Same rule for played, simulated and
   // bot gigs (applyResult serves them all).
   gig.gradePayMult = function (state, grade) {
     var gp = G().gradePay, m = (gp && gp[grade]) || 1, e = GG.career && GG.career.earlyMoney ? GG.career.earlyMoney(state) : 1;
