@@ -54171,7 +54171,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[d] ? d : (GG.gig.DEFAULT_DIFFICULTY || 'normal');
   }
   var AUTO_BOT = { accuracy: 0.9, jitterMs: 40 };
-  var KEYS = { d: 0, f: 1, j: 2, k: 3, s: 0, l: 3, g: 4, h: 5 };   // v0.8: toms (lane 5) = G, ride (lane 6) = H
+  var P = GG.prefs;   // v1.5: the key map + timing helpers (11_settings); the v1.4 KEYS table is P.CLASSIC_KEYS
   var POP_TEXT = { perfect: 'PERFECT', good: 'GOOD', miss: 'MISS', fill: 'FILL!' };
   var POP_COLOR = { perfect: '#ffe27a', good: '#6fe39a', miss: '#ff6b5e', fill: '#c9a4ff' };
   var MOMENT_TEXT = { mosh: 'Mosh pit!', lighters: 'Lighters up', boo: 'Boooo', drinks: 'Incoming drinks!', wallOfDeath: 'Wall of death!',
@@ -54213,6 +54213,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
 
   var G = null;   // the show in progress (one at a time)
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-gigkeys-css')) {
+    var kcss = document.createElement('style'); kcss.id = 'gg-gigkeys-css';
+    kcss.textContent = [
+      '.kcap { display: inline-block; min-width: 1.9em; padding: 0 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .35); border-bottom-width: 2px;',
+      '  background: rgba(255, 255, 255, .08); color: var(--text, #fff); font: 800 12px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; white-space: nowrap; }',
+      '.gig-keys { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }',
+      '.gig-keys .gk-row { display: flex; flex-wrap: wrap; gap: 6px 12px; }',
+      '.gig-keys .gk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }',
+      '.gig-keys .gk-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }',
+      '.gig-keys .gk-foot { align-items: center; gap: 8px; }',
+      '.gig-pause-keys { margin: 0; }',
+      '.gig-hint { position: absolute; right: 16px; bottom: calc(34% + 12px); z-index: 2; padding: 6px 10px; border-radius: 10px; background: rgba(15, 20, 32, .82);',
+      '  color: var(--dim, #aab); font-size: 13px; pointer-events: none; }'
+    ].join('\n');
+    document.head.appendChild(kcss);
+  }
   function S() { return GG.state; }
   function fill(t) { return t && S() ? ui.fill(t, S()) : t; }
   function sfx(n) { if (GG.audio && GG.audio.sfx) GG.audio.sfx(n); }
@@ -54309,7 +54325,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       guardRaf = 0;
       if (!G || !G.stageOn || !G.dom || ui.top() !== 'gig') return;
       var H = window.innerHeight || 844, hw = G.dom.hw.getBoundingClientRect();
-      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top) });
+      if (hw.height) stageCall('setFrame', { top: Math.round(G.dom.bar.getBoundingClientRect().bottom), bottom: Math.round(H - hw.top - (wideNow() ? 0.45 * hw.height : 0)) });
     });
   }
   function restoreScene() {   // back to the garage (the stage hands its GPU memory back)
@@ -54352,18 +54368,23 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var now = G.synced && G.zero != null ? songTime(performance.now()) : G.t;
       if ((G.mode === 'play' || G.mode === 'count') && G.chart && Math.max(G.t, now) - G.D < G.chart.duration - 0.1) pause(true);
     },
-    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard
+    'ui:stack': guard, 'ui:layout': guard, 'screen:open': guard, 'screen:close': guard,
+    'ui:wide': function () { if (!G || !G.dom) return; layout(); guard(); gigHint(); if (!G.raf) still(); }
   };
   function onVisibility() { if (document.hidden) { if (G && (G.mode === 'play' || G.mode === 'count' || G.mode === 'hold' || G.waking)) pause(true); } else guard(); }
   function listen(on) {
     Object.keys(HANDLERS).forEach(function (ev) { if (on) GG.on(ev, HANDLERS[ev]); else GG.off(ev, HANDLERS[ev]); });
-    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); window.addEventListener('keydown', onKey); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
-    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); window.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown, { capture: true }); }
-    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); window.addEventListener('keyup', onKeyUp); }
-    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); window.removeEventListener('keyup', onKeyUp); }
+    if (on) { document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', onResize); document.addEventListener('pointerdown', onDown, { capture: true, passive: false }); }
+    else { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('resize', onResize); document.removeEventListener('pointerdown', onDown, { capture: true }); }
+    if (on) { document.addEventListener('pointerup', onUp, true); document.addEventListener('pointercancel', onUp, true); }
+    else { document.removeEventListener('pointerup', onUp, true); document.removeEventListener('pointercancel', onUp, true); }
+    if (on) { window.addEventListener('keydown', onKey, true); window.addEventListener('keyup', onKeyUp, true); window.addEventListener('blur', onBlur); }
+    else { window.removeEventListener('keydown', onKey, true); window.removeEventListener('keyup', onKeyUp, true); window.removeEventListener('blur', onBlur); }
   }
 
   GG.on('settings:changed', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });   // v0.6.1
+  GG.on('ui:wide', function () { ['gig-set', 'gig-results'].forEach(function (id) { var e = ui.get && ui.get(id); if (e && G) e.rerender(); }); });
+  GG.on('input:mode', function () { var e = ui.get && ui.get('gig-set'); if (e && G && !G.ses) e.rerender(); });
 
   /* ---- Entry --------------------------------------------------------------------------------------------- */
   ui.gigAutoplay = ui.gigAutoplay || false;
@@ -54377,8 +54398,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       hb: 0, hatN: 0, hatSkip: 0, kq: [], kp: 0, akN: 0, akSkip: 0, snapN: 0, lastBook: [-1e9, -1e9, -1e9, -1e9, -1e9, -1e9],
       press: [0, 0, 0, 0, 0, 0], popKind: '', popLane: 0, popAt: -1e9, comboStr: '', comboN: -1, crowdN: -1, lanes: lanesOf((opts && opts.studio && opts.studio.state) || st),
       attendance: GG.gig.expectCrowd(st, gig), pick: null, result: null,
-      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, keyHeld: [], laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0 };
+      seat: seatOf((opts && opts.studio && opts.studio.state) || st), held: [null, null, null, null, null, null], ptr: {}, laneMidi: [], runs: [], seatN: 0, relN: 0, runN: 0,
+      down: {}, keyDown: {}, keyTaps: 0, keySwallowed: 0, lostKeyups: 0, keyUsed: false, keyLast: null, input: null, caps: false, capL: null,   // v1.5 gig keys
+      cardAt: 0, cardArm: 0, cardOk: {}, cardT: 0, cardRej: 0, wideHw: false };
     readPrefs();
+    if (keyUI()) askLayoutMap();
     listen(true);
     ui.show('gig', {});
     setupStage();
@@ -54394,10 +54418,11 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return true;
   };
   function readPrefs() {   // v0.6.1: read once per show / session (never in the frame loop)
-    var pf = prefs(), off = GG.prefs ? GG.prefs.offsets(pf) : { audio: 0, visual: 0 };
-    var cp = pf.calib && pf.calib[pf.audioProfile];
-    G.visM = !!(cp && cp.vat > 0);   // v0.8.3: the light check ran for this profile
-    G.pf = pf; G.off = off; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
+    var pf = prefs(), none = { audio: 0, visual: 0, visM: false };
+    G.offT = P ? P.offsets(pf, 'touch') : none; G.offK = P ? P.offsets(pf, 'keys') : G.offT;
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;   // v0.8.3: the light check ran for this profile (v1.5: for this input)
+    G.pf = pf; G.lefty = !!pf.lefty; G.cb = !!pf.colourblind; G.speed = pf.noteSpeed > 0 ? pf.noteSpeed : 1;
   }
   function startSession(ids) {
     readPrefs();
@@ -54410,9 +54435,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function teardown() {
     if (!G) return;
+    releaseAll(true); setLive(false);   // v1.5
     stopAudio();
     if (G.raf) cancelAnimationFrame(G.raf);
-    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT);
+    clearTimeout(G.startTimer); clearTimeout(G.bannerT); clearTimeout(G.autoT); clearTimeout(G.wakeT); clearTimeout(G.holdT); clearTimeout(G.cardT);
     listen(false);
     G = null;
   }
@@ -54430,6 +54456,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function nextSong() {
     if (!G) return;
     if (G.ses.done) { finishShow(); return; }
+    disarmCard();   // v1.5
     hideBetween();
     G.chart = G.ses.startSong();
     if (auto()) { playAuto(); return; }
@@ -54437,6 +54464,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     beginCount();
   }
   function beginCount(held) {
+    setLive(true); blurFocus();   // v1.5: no PC-layout switch mid-song (GG.input defers it); Space / Enter never press a button
     var c0 = G.actx || (G.actx = audioCtx());
     if (!held && c0 && c0.state !== 'running' && c0.resume && !document.hidden) {
       var pr = null; try { pr = c0.resume(); } catch (e) { pr = null; }
@@ -54450,6 +54478,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       }
     }
     readPrefs();   // v0.8.3: the Drum sync toggle / calibration as of this song
+    freezeKeys();   // v1.5: the song's input (keys / touch), its timing, the key map and keycaps
     var p = performance.now(), ch = G.chart, nb = Math.min(4, Math.max(2, Math.ceil(U.clamp(4 * ch.spb, 1.6, 2.6) / ch.spb - 1e-6))), lead = nb * ch.spb;
     G.aSample = null;   // pair fresh: a sample from before the between screen / a pause would read the clock as unhealthy
     resync(p, true);
@@ -54460,7 +54489,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     G.hb = G.hb0 = -nb; G.hatN = 0; G.hatSkip = 0; G.kp = 0; G.kq = [];
     for (var q2 = 0; q2 < G.lastBook.length; q2++) G.lastBook[q2] = -1e9;
     for (q2 = 0; q2 < G.held.length; q2++) G.held[q2] = null;   // v1.1 review: a restart starts with nothing held
-    G.runs.length = 0; G.ptr = {}; G.keyHeld = [];
+    G.runs.length = 0; G.ptr = {}; releaseAll(true); G.keyUsed = false;   // v1.5: a new chart: nothing key-held
     if (G.ses.assists && G.ses.assists.autoKick && KICK < G.lanes) for (k = 0; k < ch.notes.length; k++) if (ch.notes[k].lane === 'kick' && !ch.notes[k].free) G.kq.push(k);
     var c = G.actx, live = !!(c && c.state === 'running' && G.clockOk);
     G.sync = G.pf.drumSync !== false && live;   // no Web Audio / a suspended or unhealthy clock at the count-in: classic
@@ -54475,6 +54504,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     book(G.t, p);   // the first hat goes out now
     if (!G.pumpT) G.pumpT = setInterval(pump, PUMP_MS);   // booking ahead never waits for a frame
     layout();
+    gigHint();   // v1.5
     loop();
   }
   function bandOpts(song, at) {
@@ -54518,6 +54548,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     beginCount();
   }
   function endSong() {
+    releaseAll(); setLive(false);   // v1.5: key-held strings let go at the end; the PC-layout switch may run
     stopAudio();
     var q = GG.prefs && GG.prefs.syncP90 ? GG.prefs.syncP90(G.disp) : null;   // v0.8.3: this device's touch dispatch p90
     if (q != null) {
@@ -54541,6 +54572,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     G.autoT = setTimeout(nextSong, 30);
   }
   function pause(interrupted) {
+    if (G) { releaseAll(); setLive(false); }   // v1.5: every cause lets every key-held lane go (no stuck notes)
     if (G && G.paused && G.waking) {   // v0.8.3: hidden / paused while resume() waits for the context: stay frozen, try again
       G.waking = false; clearTimeout(G.wakeT);
       G.restart = G.restart || !!interrupted;
@@ -54559,9 +54591,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function pauseShow() {
     G.dom.pause.hidden = false;
     G.dom.pauseNote.textContent = G.restart ? 'The song starts over when you come back.' : 'The band is frozen mid-riff.';
+    var k = G.dom.pauseKeys;
+    if (keyUI()) { if (!k) k = G.dom.pauseKeys = el('p.small.dim.gig-pause-keys', { testid: 'gig-pause-keys' }, [kcap('Esc'), ' to resume']); if (!k.parentNode) G.dom.pauseNote.parentNode.insertBefore(k, G.dom.pauseNote.nextSibling); }
+    else if (k && k.parentNode) k.parentNode.removeChild(k);
   }
   function resume(restart) {
     if (!G || !G.paused) return;
+    blurFocus();   // v1.5: Space / Enter never land on a button mid-song
     G.dom.pause.hidden = true;
     if (restart || G.restart) { G.paused = false; restartSong(); return; }
     G.ctxPaused = false;
@@ -54572,7 +54608,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       G.waking = false; clearTimeout(G.wakeT);
       if (document.hidden) { G.restart = true; pauseShow(); return; }   // never un-pause a hidden page (the band is suspended)
       G.offset = G.zero + G.pauseT - performance.now() / 1000; G.aSample = null;
-      G.paused = false;
+      G.paused = false; setLive(true);
       resync(performance.now(), true);
     }
     G.waking = true;
@@ -54732,13 +54768,6 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var at = tapTime(ev.timeStamp);
     for (var i = 0; i < ls.length; i++) lift(ls[i], at);
   }
-  function onKeyUp(ev) {
-    if (!G || !strings()) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
-    var e = G.keyHeld[col(li)]; G.keyHeld[col(li)] = null;
-    lift(e, tapTime(ev.timeStamp));
-  }
   function pump() {
     if (!G || !G.chart || G.paused || (G.mode !== 'play' && G.mode !== 'count') || auto()) return;
     var p = performance.now(), c = G.actx, h = G.handle;
@@ -54800,22 +54829,131 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function press(li, r) { return { li: li, n: r && r.note && (r.judgement || r.partial) && r.judgement !== 'miss' ? r.note : null }; }   // v1.1 review: what a lift lets go
   var BRIDGE = 1 / 6;
-  function tapTime(stamp) {
-    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now;
-    return heardAt(s0) - G.zero - (G.sync ? 0 : G.off ? G.off.audio : 0);
+  function tapTime(stamp, src) {
+    var now = performance.now(), s0 = stamp > 0 && Math.abs(stamp - now) < 1000 ? stamp : now, o = src === 'key' ? G.offK : G.offT;
+    return heardAt(s0) - G.zero - (G.sync ? 0 : o ? o.audio : 0);
+  }
+
+  /* ---- v1.5 "Desktop": gig keys (plan_contract_1.5 §4.3) ---------------------------------------------------- */
+  var CARD_ARM = 600, CTRL_BLOCK = { KeyS: 1, KeyD: 1, KeyF: 1, KeyP: 1 };
+  var LMAP = null, lmapAsked = false;
+  function askLayoutMap() {   // navigator.keyboard.getLayoutMap() (Chromium, secure origin) names the keycaps (AZERTY: A is Q)
+    if (lmapAsked) return; lmapAsked = true;
+    try { var k = navigator.keyboard; if (k && k.getLayoutMap) k.getLayoutMap().then(function (m) { LMAP = m; }, function () {}); } catch (e) { /* none */ }
+  }
+  ui.keyLabel = function (code) { askLayoutMap(); return P.keyLabel(code, LMAP, GG.input && GG.input.learned ? GG.input.learned() : null); };
+  function kcap(text) { return el('span.kcap', text); }
+  ui.kcap = kcap;
+  function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function wideNow() { return !!(ui.wide && ui.wide()); }
+  function setLive(on) { if (GG.input && GG.input.gigLive) GG.input.gigLive(!!on); }
+  function blurFocus() { var a = document.activeElement; if (a && a !== document.body && a.blur) { try { a.blur(); } catch (e) { /* ignore */ } } }
+  function liveMode() { return G.mode === 'play' || G.mode === 'count' || G.mode === 'hold'; }
+  function keyId(ev) { return ev.code || P.codeOf(ev.key) || ''; }
+  function stampOf(ev) { var now = performance.now(), t = ev.timeStamp; return t > 0 && Math.abs(t - now) < 1000 ? t : now; }
+  function typingIn(t) { if (!t || t.nodeType !== 1) return false; var n = t.nodeName; return n === 'INPUT' || n === 'TEXTAREA' || n === 'SELECT' || !!t.isContentEditable; }
+  function confirmKey(ev, id) { return ev.key === 'Enter' || ev.key === ' ' || id === 'Space' || id === 'Enter' || id === 'NumpadEnter'; }
+  function lanesNow() { return G.chart ? Math.max(G.chart.lanes || 4, 1) : G.lanes; }
+  function freezeKeys() {
+    var I = GG.input;
+    G.kind = P.keyKind(G.seat);
+    G.kmS = { keymap: G.pf.keymap };
+    G.keymap = P.keysFor(G.kmS, G.kind, lanesNow());
+    G.input = I && I.mode ? I.mode() : 'touch';
+    G.off = G.input === 'keys' ? G.offK : G.offT;
+    G.visM = !!G.off.visM;
+    G.caps = G.input === 'keys';
+    G.capL = G.caps ? G.keymap.map(function (c) { return ui.keyLabel(c); }) : null;
   }
   function onKey(ev) {
-    if (!G || ev.repeat || G.paused || (G.mode !== 'play' && G.mode !== 'count')) return;
-    var li = KEYS[ev.key && ev.key.toLowerCase()];
-    if (li == null || li >= G.lanes) return;
+    if (!G) return;
+    var id = keyId(ev);
+    if (G.paused) {   // (a) the pause card: Esc resumes; Enter too with nothing (or Resume) focused; the rest is native
+      var a = document.activeElement, onResume = !a || a === document.body || (a.getAttribute && a.getAttribute('data-testid') === 'btn-gig-resume');
+      if (ev.key === 'Escape' || (ev.key === 'Enter' && onResume)) {
+        ev.preventDefault(); ev.stopPropagation();
+        if (!ev.repeat && !G.waking) resume(false);
+      }
+      return;
+    }
+    if (!liveMode()) { cardKey(ev, id); return; }   // (b) cards, the setlist, results: native (+ the card arm)
+    if (ev.isComposing || ev.keyCode === 229 || typingIn(ev.target)) return;   // (c)
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); if (!ev.repeat) pause(false); return; }
+    if (ev.key === 'Tab') { ev.preventDefault(); return; }
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) {   // never a tap; no bookmark / save / find / print mid-song
+      if ((ev.ctrlKey || ev.metaKey) && CTRL_BLOCK[id]) ev.preventDefault();
+      if (ev.metaKey || ev.key === 'Meta') releaseAll();   // macOS drops the keyups of keys held under Cmd
+      return;
+    }
+    var r = P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key);   // (d)
+    if (!r) return;
     ev.preventDefault();
-    var r = tap(col(li), ev.timeStamp, false);
-    if (G.seat !== 'drums') G.keyHeld[col(li)] = press(col(li), r);
+    if (ev.repeat) return;
+    if (G.down[id]) { G.lostKeyups++; liftKey(id, ev.timeStamp); }   // still down = its keyup was lost: lift it first
+    if (ev.isTrusted) G.down[id] = 1;   // (synthetic events never wait for a keyup)
+    if (r.lane === -1) { G.keySwallowed++; return; }   // bound in this map, not on this rig (Space on a 4-string bass)
+    var li = r.lane != null ? r.lane : col(r.col);
+    G.keyLast = { code: ev.code || '', key: ev.key, lane: li, col: col(li), at: Math.round(stampOf(ev)) };
+    if (G.mode === 'hold' || !G.chart) return;   // the count-in waits for the audio clock: nothing to judge on yet
+    G.keyUsed = true; G.keyTaps++;
+    wake();
+    var res = tap(li, ev.timeStamp, 'key');
+    if (strings()) G.keyDown[id] = { lane: li, hold: press(li, res) };
   }
+  function onKeyUp(ev) {
+    if (!G) return;
+    var id = keyId(ev);
+    if (!G.paused && !liveMode()) cardKeyUp(ev, id);
+    if (!id) return;
+    delete G.down[id];
+    if (G.keyDown[id]) liftKey(id, ev.timeStamp);
+    if (!G.paused && liveMode() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && P.keyLane(G.kmS, G.kind, G.lanes, ev.code, ev.key)) ev.preventDefault();
+  }
+  function liftKey(id, stamp) {
+    var e = G.keyDown[id]; if (!e) return;
+    delete G.keyDown[id];
+    for (var o in G.keyDown) if (G.keyDown[o].lane === e.lane) { if (!G.keyDown[o].hold || !G.keyDown[o].hold.n) G.keyDown[o].hold = e.hold; return; }
+    if (strings() && G.ses && G.chart && (G.mode === 'play' || G.mode === 'count')) lift(e.hold, tapTime(stamp, 'key'));
+  }
+  function releaseAll(noLift) {
+    if (!G) return;
+    if (!noLift) { var p = performance.now(); for (var id in G.keyDown) liftKey(id, p); }
+    G.keyDown = {}; G.down = {};
+  }
+  function onBlur() {
+    if (!G) return;
+    var was = liveMode() && !G.paused;
+    releaseAll();
+    if (was && (G.input === 'keys' || G.keyUsed)) pause(false);
+  }
+  function armCard(testid) {
+    if (!G) return;
+    G.cardAt = performance.now(); G.cardArm = G.cardAt + CARD_ARM; G.cardOk = {};
+    clearTimeout(G.cardT);
+    G.cardT = setTimeout(function () {
+      if (!G || !G.cardAt) return;
+      var I = GG.input, keys = (G.input || (I && I.mode ? I.mode() : 'touch')) === 'keys' || document.documentElement.classList.contains('gg-kbnav');
+      if (!keys) return;
+      var b = document.querySelector('[data-testid="' + testid + '"]');
+      if (b && !b.disabled && b.getClientRects().length) { try { b.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+    }, CARD_ARM);
+  }
+  function disarmCard() { if (G) { G.cardAt = 0; G.cardOk = {}; clearTimeout(G.cardT); } }
+  function cardKey(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (ev.repeat || stampOf(ev) < G.cardArm) { ev.preventDefault(); ev.stopPropagation(); delete G.cardOk[id]; G.cardRej++; return; }
+    G.cardOk[id] = 1;
+  }
+  function cardKeyUp(ev, id) {
+    if (!G.cardAt || !confirmKey(ev, id)) return;
+    if (G.cardOk[id]) { delete G.cardOk[id]; return; }
+    ev.preventDefault(); ev.stopPropagation(); G.cardRej++;   // its keydown came before the arm (or during the song)
+  }
+
   function tap(li, stamp, touch) {
     var now = performance.now(), ok = stamp > 0 && Math.abs(stamp - now) < 1000, r;   // some browsers stamp events on another time base: trust it only if it's recent
-    if (ok && touch === true && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch
-    var at = tapTime(stamp);   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
+    if (ok && (touch === true || touch === 'key') && G.sync && G.mode === 'play') { G.disp.push((now - stamp) / 1000); if (G.disp.length > 256) G.disp.shift(); }   // v0.8.3 dispatch (v1.5 D4: + key taps)
+    var at = tapTime(stamp, touch === 'key' ? 'key' : 'touch');   // v0.6.1: calibration (classic only, v0.8.3); v1.0.1: shared with the smart bridge
     G.press[li] = now;
     if (at < -0.4) { playTap(li, at, null); stageCall('hit', laneName(li), 'good'); return null; }   // noodling during the count-in
     r = G.lastTap = G.ses.judge(li, at);   // judged first (synchronous, well under a ms) so an echo can stay quiet
@@ -54897,12 +55035,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   function onResize() { if (G && G.dom) { layout(); guard(); } }
   function layout() {
     var c = G.canvas; if (!c) return;
-    var box = c.parentNode.getBoundingClientRect();
+    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
+    G.wideHw = wideNow();   // v1.5 PC layout (B): 5w sizes .gig-hw by data-lanes; wider gems, a translucent highway
+    var hwEl = c.parentNode;
+    if (hwEl && hwEl.dataset && hwEl.dataset.lanes !== String(G.lanes)) { hwEl.dataset.lanes = String(G.lanes); hwEl.style.setProperty('--lanes', String(G.lanes)); }
+    var box = hwEl.getBoundingClientRect();
     DPR = Math.min(2, window.devicePixelRatio || 1);
     W = Math.max(200, box.width); H = Math.max(160, box.height);
     c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
     G.rect = c.getBoundingClientRect();
-    G.lanes = G.chart ? Math.max(G.chart.lanes || 4, 1) : lanesOf(S());
     LOOK = ((GG.gig.DIFFICULTIES[G.diff] || {}).look || 1.15) / (G.speed || 1);   // seconds of highway visible: Easy scrolls slower; v0.6.1 note speed
     laneW = W / G.lanes; hitY = H - ZONE / 2 - 8; speed = (hitY + 24) / LOOK;
     var gap = 1, last = [-9, -9, -9, -9, -9, -9], n = G.chart ? G.chart.notes : [];   // gems slim down for fast 16ths
@@ -54920,7 +55061,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     var b = G.bg || (G.bg = document.createElement('canvas')), x;
     b.width = G.canvas.width; b.height = G.canvas.height;
     x = b.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
-    var g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c');
+    var g = x.createLinearGradient(0, 0, 0, H);
+    if (G.wideHw) { g.addColorStop(0, 'rgba(10,14,24,.35)'); g.addColorStop(0.22, 'rgba(12,17,32,.86)'); g.addColorStop(1, 'rgba(18,26,44,.92)'); }   // v1.5 B: the stage shows through the top
+    else { g.addColorStop(0, '#05070d'); g.addColorStop(0.35, '#0c1120'); g.addColorStop(1, '#121a2c'); }
     x.fillStyle = g; x.fillRect(0, 0, W, H);
     for (var l = 0; l < G.lanes; l++) {
       var lx = col(l) * laneW, lc = laneColor(l);
@@ -54929,24 +55072,34 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.08)'; if (lx) x.fillRect(lx, 0, 1, H);
       rr(x, lx + 5, H - ZONE - 4, laneW - 10, ZONE - 2, 12);
       x.fillStyle = '#0a0e18'; x.fill(); x.lineWidth = 2; x.strokeStyle = lc; x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
-      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]];
+      var L = strings() ? null : ui.LANES && ui.LANES[C.LANES[l]], cap = G.capL && G.capL[l];
       x.textAlign = 'center'; x.textBaseline = 'middle';
       if (strings()) {   // v1.1: string lanes run low -> high (a pitch dot that grows up the neck)
-        x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1;
-        x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key instead
+        else { x.globalAlpha = 0.9; x.fillStyle = lc; x.beginPath(); x.arc(lx + laneW / 2, H - ZONE / 2 - 12, 5 + l, 0, 6.2832); x.fill(); x.globalAlpha = 1; }
+        x.fillStyle = lc; x.font = '800 10px ' + FONT; x.fillText(l === 0 ? 'LOW' : l === G.lanes - 1 ? 'HIGH' : '·', lx + laneW / 2, H - 18);
       } else {
-        x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12);
-        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
+        if (cap) keycap(x, lx + laneW / 2, H - ZONE / 2 - 12, cap, lc);   // v1.5: the lane's key (G.caps: played on keys)
+        else { x.font = '20px ' + FONT; x.fillText(L ? L.icon : '•', lx + laneW / 2, H - ZONE / 2 - 12); }
+        x.font = '800 10px ' + FONT; x.fillStyle = lc; x.fillText((cap && L ? L.icon + ' ' : '') + (L ? L.name : C.LANES[l]).toUpperCase(), lx + laneW / 2, H - 18);
       }
     }
     x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, hitY - 1, W, 2);
     var fade = x.createLinearGradient(0, 0, 0, 46); fade.addColorStop(0, 'rgba(5,7,13,1)'); fade.addColorStop(1, 'rgba(5,7,13,0)');
     G.fade = fade;
   }
+  function keycap(x, cx, cy, text, lc) {
+    var big = G.wideHw, h = big ? 24 : 19;
+    x.font = (big ? '800 13px ' : '800 11px ') + FONT;
+    var w = Math.min(laneW - 12, Math.max(big ? 28 : 22, x.measureText(text).width + (big ? 16 : 12)));
+    rr(x, cx - w / 2, cy - h / 2, w, h, 5);
+    x.globalAlpha = 1; x.fillStyle = 'rgba(255,255,255,.12)'; x.fill(); x.lineWidth = 1.5; x.strokeStyle = lc; x.globalAlpha = 0.9; x.stroke();
+    x.globalAlpha = 1; x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, cx, cy + 1);
+  }
   function yOf(nt, t) { return hitY - (nt - t) * speed; }
   function draw(t, p) {
     var x = G.x, ch = G.chart, n = ch.notes, k, l, a, y;
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.drawImage(G.bg, 0, 0);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
     x.setTransform(DPR, 0, 0, DPR, 0, 0);
     for (l = 0; l < G.lanes; l++) {   // tap flashes (v0.7.2: the kick zone flashes again when a double's second kick lands)
       a = 1 - (p - G.press[l]) / 140;
@@ -54963,7 +55116,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     for (k = 0; k < ch.solos.length; k++) band(x, ch.solos[k], t, 'rgba(87,199,122,.07)', '#6fe39a', G.seat === 'lead' ? 'SOLO · YOUR SPOTLIGHT' : 'SOLO · KEEP IT SIMPLE');
     if (G.seat !== 'drums') drawHeld(x, t);   // v1.1: the tails of the notes you are holding
     while (G.drawFrom < n.length && n[G.drawFrom].t < t - 0.4) G.drawFrom++;
-    var gw = Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
+    var gw = G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), gh = G.gemH, gr = gh / 2 - 1, au = ch.auto || [];
     x.lineWidth = 2; x.setLineDash(G.dash);   // v0.6.2 auto notes: dashed ghosts ("the band's got this one")
     for (k = Math.max(0, (G.ap || 0) - 8); k < au.length; k++) {
       var an = au[k]; if (an.t > t + LOOK + 0.05) break;
@@ -55016,7 +55169,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         x.beginPath(); x.arc(col(l) * laneW + laneW / 2, hitY, 14 + (1 - a) * 26, 0, 6.2832); x.stroke();
       }
     }
-    x.globalAlpha = 1; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46);
+    x.globalAlpha = 1;
+    if (G.wideHw) { x.globalCompositeOperation = 'destination-out'; x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); x.globalCompositeOperation = 'source-over'; }   // v1.5 B: fade to the stage
+    else { x.fillStyle = G.fade; x.fillRect(0, 0, W, 46); }
     a = 1 - (p - G.popAt) / 520;   // judgement pop
     if (a > 0 && POP_TEXT[G.popKind]) {
       x.globalAlpha = a < 0.6 ? a / 0.6 : 1; x.fillStyle = POP_COLOR[G.popKind]; x.font = G.fonts.pop;
@@ -55091,6 +55246,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         pr ? (next ? 'Count me in' : 'Done practising') : studio ? (next ? 'Roll tape' : 'Keep this take') : next ? (i ? 'Next song' : 'Start the show') : 'See how it went')
     ]));
     d.mid.hidden = false;
+    armCard('btn-gig-next');   // v1.5: Enter / Space from a fresh press 600 ms on (focused then, on keys)
     if (r) sfx(r.score >= 65 ? 'cheer' : r.score < 35 ? 'boo' : 'tap');
   }
   function hideBetween() { if (G.dom) { G.dom.mid.hidden = true; ui.clear(G.dom.mid); } }
@@ -55117,6 +55273,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (GG.main && GG.main.sync) GG.main.sync();
     sfx(/[SAB]/.test(r.grade) ? 'cheer' : r.grade === 'D' ? 'boo' : 'tap');
     ui.show('gig-results', { result: r });
+    armCard('btn-gig-done');   // v1.5
   }
   var HEADLINE = { S: 'Legendary.', A: 'Crushed it.', B: 'Solid set.', C: 'You survived.', D: 'Rough night.' };
   function repText(r) {
@@ -55138,19 +55295,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     return out;
   };
   ui.define('gig-results', {
-    kind: 'full', cls: 'gigres', sticky: true,
+    kind: 'full', cls: 'gigres', sticky: true, focus: false,   // v1.5: 55 owns focus here (btn-gig-done after the 600 ms arm)
     build: function (s, d) {
       var r = d.result, pay = r.deal === 'exposure' && !r.pay ? 'Exposure' : U.fmtMoney(r.pay || 0), rep = repText(r);
       var moments = (r.moments || []).filter(function (k) { return k !== 'solo'; }).length;
-      s.body.appendChild(el('div.gigres-head', [
+      var cols = w2(s), A = cols[0], B = cols[1];
+      A.appendChild(el('div.gigres-head', [
         el('div.grade.big.' + r.grade, { testid: 'gig-grade' }, r.grade),
         el('div.grow', [el('div.caps', r.name + ' · ' + r.city), el('h1.display', HEADLINE[r.grade] || ''),
           el('div.small.dim', 'Score ' + r.score + ' · ' + Math.round((r.accuracy || 0) * 100) + '% of notes hit · best combo ' + (r.maxCombo || 0)
             + ' · ' + moments + (moments === 1 ? ' moment' : ' moments'))])
       ]));
-      if (r.simulated) s.body.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
+      if (r.simulated) A.appendChild(el('p.small.dim', { testid: 'gig-simulated', style: 'margin:2px 0 6px' }, simDone(r)));   // v1.3.1
       var minus = function (x) { return x ? '−' + U.fmtMoney(x).replace('−', '') : '$0'; }, gm = GG.gig.gradePayMult ? GG.gig.gradePayMult(S(), r.grade) : 1;
-      s.body.appendChild(el('div.stat-grid', [
+      A.appendChild(el('div.stat-grid', [
         el('div', [el('span.caps', 'Pay'), el('b', { testid: 'gig-pay' }, pay)]),
         el('div', [el('span.caps', 'Band\'s cut'), el('b', { testid: 'gig-cut' }, minus(r.cut || 0))]),
         el('div', [el('span.caps', 'Gas'), el('b', minus(r.gas || 0))]),
@@ -55161,13 +55319,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var net = r.deltas ? r.deltas.fund || 0 : null;
       if (net != null) {
         var parts = ui.gigFundParts(r), signedM = function (x) { return (x > 0 ? '+' : '−') + U.fmtMoney(Math.abs(x)); };
-        s.body.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
+        A.appendChild(el('p.small', { testid: 'gig-net', style: 'margin:0 0 6px' }, [el('b', 'Into the fund: ' + (net > 0 ? '+' : '') + U.fmtMoney(net))]
           .concat(parts.map(function (p) { return el('span', { testid: 'gig-net-part', data: { v: String(p.v) } }, ' · ' + p.label + ' ' + signedM(p.v)); }))
           .concat([el('span.dim', (r.cut ? ' · the band takes ' + Math.round(r.cut / Math.max(1, r.pay) * 100) + '% of the pay' : '')
             + ((r.pay || 0) - (r.prize || 0) > 0 && gm > 1 ? ' · a great show paid ' + Math.round((gm - 1) * 100) + '% more' : ''))])));
       }
-      if (rep) s.body.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
-      s.body.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
+      if (rep) A.appendChild(el('p.small.amber', { testid: 'gig-rep' }, rep));
+      B.appendChild(el('div.gigres-songs', (r.songResults || []).map(function (x, i) {
         return el('div.gigres-song', [el('span.n', String(i + 1)), el('div.grow', [el('b', x.title),
           el('div.tiny.dim', x.perfect + ' perfect · ' + x.good + ' good · ' + x.miss + ' missed · combo ' + x.maxCombo
             + (x.fills ? ' · ' + x.fills + ' fill taps' : '') + (x.holds ? ' · ' + (x.rings || 0) + ' of ' + x.holds + ' holds rang out' : ''))]),
@@ -55175,16 +55333,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       })));
       (r.lines || []).forEach(function (t) {   // v0.9: a line about another band's people is dropped (the leak net, 50_ui_core)
         var tx = r.merch && ui.isMerchLine && ui.isMerchLine(t) ? null : ui.safeLine(t, null, S());
-        if (tx) s.body.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
+        if (tx) B.appendChild(el('p.small', { style: 'margin:6px 0' }, tx));
       });
-      if (r.merch && ui.merchResult) s.body.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
+      if (r.merch && ui.merchResult) B.appendChild(ui.merchResult(r.merch));   // v0.8: the merch table
       (r.classics || []).forEach(function (id) {
         var song = GG.songs.byId(S(), id);
-        if (song) s.body.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
+        if (song) B.appendChild(el('p.small.amber', '🏆 “' + song.title + '” is a classic now. The crowd will want it every night.'));
       });
       (r.reactions || []).forEach(function (x) {
         var who = ui.who(x.who);
-        s.body.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
+        B.appendChild(el('div.react', [ui.avatar(who, 'sm'), el('div.t', [el('b', who.short + ': '), fill(x.text)])]));
       });
       s.foot.appendChild(ui.btn('.btn.primary.big.block', { testid: 'btn-gig-done', onclick: function () {
         var g = G, res = r;
@@ -55197,12 +55355,20 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     }
   });
 
+  function w2(s) {
+    if (!wideNow()) return [s.body, s.body];
+    var a = el('div.w2-a'), b = el('div.w2-b');
+    s.body.appendChild(el('div.w2', [a, b]));
+    return [a, b];
+  }
+
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
-    kind: 'full', cls: 'gig', sticky: true, live3d: true,
+    kind: 'full', cls: 'gig', sticky: true, live3d: true, focus: false,   // v1.5: 55 owns focus on the show (cards: armCard)
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};
+      s.root.addEventListener('contextmenu', function (e) { if (G) e.preventDefault(); });
       s.root.classList.toggle('studio', !!G.opts.studio);   // v0.5: studio take (no crowd)
       var lineupN = (GG.drama && GG.drama.lineup ? GG.drama.lineup(S()) : ui.active(S())).length;   // v0.9: one silhouette per bandmate
       d.back = el('div.gig-back', { data: { level: 'warm', n: String(lineupN) } }, [el('div.lights'),
@@ -55233,7 +55399,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     onClose: function () { if (G) { restoreScene(); teardown(); } }
   });
   function drawIdle() {
-    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(G.bg, 0, 0);
+    var x = G.x; x.setTransform(1, 0, 0, 1, 0, 0); if (G.wideHw) x.clearRect(0, 0, G.canvas.width, G.canvas.height); x.drawImage(G.bg, 0, 0);
+  }
+  function still() { if (!G || !G.x || !G.bg) return; if (G.chart && G.fonts) draw((G.paused ? G.pauseT : G.t) + G.drawOff, performance.now()); else drawIdle(); }
+  function gigHint() {
+    if (!G || !G.dom) return;
+    var on = !!(G.caps && wideNow() && G.chart), h = G.dom.hint;
+    if (on && !h) h = G.dom.hint = el('div.gig-hint', { testid: 'gig-hint' }, [kcap('Esc'), ' pause']);
+    if (on && h && !h.parentNode && G.dom.hw.parentNode) G.dom.hw.parentNode.insertBefore(h, G.dom.hw.nextSibling);
+    else if (!on && h && h.parentNode) h.parentNode.removeChild(h);
   }
 
   /* ---- Setlist picker ------------------------------------------------------------------------------------- */
@@ -55245,33 +55419,35 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var st = S(), g = G.gig, size = GG.gig.setSize(st, g), ids = G.pick;
       var v = GG.gig.venue(g.venueId) || {}, deal = g.deal === 'exposure' ? 'Exposure' : g.deal === 'door' ? 'Door $' + g.pay + '/head' : U.fmtMoney(g.pay) + ' flat';
       s.setTitle('Tonight’s set', g.name + ' · ' + g.city);
-      s.body.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
+      var cols = w2(s), A = cols[0], B = cols[1];   // v1.5 PC layout (B): the night + options | the setlist (phone: both = the body)
+      A.appendChild(el('div.panel.warm.small', [el('div', [el('b', (G.attendance || '?') + ' expected'), ' · holds ' + g.capacity + ' · ' + deal]),
         g.quirk || v.quirk ? el('div.dim', fill(g.quirk || v.quirk)) : null]));
       var cur = difficulty(), pf = prefs();
-      s.body.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
-      s.body.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
+      A.appendChild(el('div.caps', { style: 'margin-top:10px' }, 'Difficulty'));
+      A.appendChild(el('div.row.gig-diff', { style: 'margin-top:4px' }, ['easy', 'normal', 'hard', 'expert'].map(function (d) {
         return ui.btn('.btn.small.grow' + (d === cur ? '.primary' : ''), { testid: 'gig-diff-' + d, style: 'padding:0 6px', onclick: function () {
           GG.save.saveSettings({ gigDifficulty: d }); s.rerender(); } }, d.charAt(0).toUpperCase() + d.slice(1));
       })));
-      s.body.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
+      A.appendChild(el('div.tiny.dim', { style: 'margin-top:4px' }, cur === 'easy'
         ? 'Easy: the main hits only, a big timing window, slower scroll.' : cur === 'normal'
         ? 'Normal: most of what you wrote, no impossible bursts.' : cur === 'hard' ? 'Hard: every hit exactly as written, tight timing.'
         : fill('Expert: every hit as written, a razor-thin window, and misses sting. {deadpan} nods, once.')));
       if (GG.prefs) {   // v0.6.1: the calibration profile quick switch + what's on
-        s.body.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
+        A.appendChild(el('div.row.gig-prof', { style: 'margin-top:8px' }, [['speaker', '🔊 Phone speaker'], ['headphones', '🎧 Headphones']].map(function (x) {
           return ui.btn('.btn.small.grow' + (pf.audioProfile === x[0] ? '.primary' : ''), { testid: 'gig-profile-' + x[0], 'aria-pressed': pf.audioProfile === x[0] ? 'true' : 'false',
             onclick: function () { GG.prefs.setProfile(x[0]); s.rerender(); } }, x[1]);
         })));
         var on = [pf.noFail ? 'No-fail' : null, pf.autoKick && seatOf(st) === 'drums' ? 'Auto-kick' : null, pf.noteSpeed !== 1 ? 'Note speed ×' + pf.noteSpeed : null, pf.lefty ? 'Lefty' : null].filter(Boolean);
-        s.body.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
+        A.appendChild(ui.btn('.btn.ghost.small.block', { testid: 'btn-gig-settings', style: 'margin-top:6px', onclick: function () { ui.show('settings', { tab: 'play' }); } },
           '⚙ ' + (on.length ? on.join(' · ') : 'Assists, note speed, calibration')));
       }
+      if (keyUI()) A.appendChild(keysLegend(st, pf));   // v1.5: your keys (a computer, the PC layout, or a key pressed)
       var bo = GG.gig.setlistBonuses(st, ids);
-      s.body.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
+      B.appendChild(el('div.caps', { style: 'margin:12px 0 6px' }, 'Setlist · ' + ids.length + ' of ' + size + ' songs'));
       var slots = el('div.set-slots', { testid: 'set-slots' });
       for (var k = 0; k < size; k++) slots.appendChild(slotRow(s, k, size, ids, bo));
-      s.body.appendChild(slots);
-      s.body.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
+      B.appendChild(slots);
+      B.appendChild(el('div.caps', { style: 'margin:14px 0 4px' }, 'Your songs · tap to add or drop'));
       var list = el('div.panel', { style: 'padding:0 12px' });
       GG.songs.best(st).forEach(function (song) {
         var at = ids.indexOf(song.id), r = song.rating || {};
@@ -55284,7 +55460,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         } }, el('div.row', [el('span.num', at >= 0 ? String(at + 1) : '+'), el('div.grow', [el('b', song.title),
           el('div.tiny.dim', 'Q ' + song.quality + ' · Groove ' + (r.groove || '?') + ' · Hook ' + (r.hook || '?') + ' · Diff ' + (r.difficulty || '?'))]), tags(song)])));
       });
-      s.body.appendChild(list);
+      B.appendChild(list);
       var why = GG.gig.simReason ? GG.gig.simReason(st, g) : 'phase', bot = why ? null : GG.gig.simBot(st, cur);
       s.foot.appendChild(el('div', { style: 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px' }, [
         el('div.row', [
@@ -55300,6 +55476,22 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         } }, 'Start the show')]));
     }
   });
+  function keysLegend(st, pf) {
+    var seat = seatOf(st), kind = P.keyKind(seat), n = lanesOf(st), codes = P.keysFor(pf, kind, n), lefty = !!pf.lefty, items = [];
+    var strc = pf.colourblind ? STR_CB : STR_COLORS;
+    for (var c = 0; c < n; c++) {
+      var l = lefty ? n - 1 - c : c, name, colr;
+      if (kind === 'strings') { name = l === 0 ? 'Low' : l === n - 1 ? 'Top' : String(l + 1); colr = strc[l] || '#8899bb'; }
+      else { var L = ui.LANES && ui.LANES[C.LANES[l]]; name = L ? L.name : C.LANES[l]; colr = pf.colourblind && P.CB_COLOURS[C.LANES[l]] ? P.CB_COLOURS[C.LANES[l]] : L ? L.color : '#8899bb'; }
+      items.push(el('span.gk', [el('i.gk-dot', { style: { background: colr } }), kcap(ui.keyLabel(codes[l])), el('span', name)]));
+    }
+    return el('div.gig-keys', { testid: 'gig-keys' }, [
+      el('div.caps', 'Your keys'),
+      el('div.gk-row', items),
+      el('div.row.gk-foot', [el('span.tiny.dim.grow', [kcap('Esc'), ' pauses the song']),
+        ui.btn('.btn.ghost.small', { testid: 'gig-keys-change', onclick: function () { ui.show('settings', { tab: 'keys' }); } }, 'Change keys')])
+    ]);
+  }
   function closeOverShow() {
     ui.close('gig-set');
     for (var k = 0; k < 8 && ui.top() && ui.top() !== 'gig'; k++) ui.close(ui.top());   // nothing may sit over the show
@@ -55403,7 +55595,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       seat: G.seat, holding: ses && ses.holding ? [0, 1, 2, 3, 4, 5].filter(function (l) { return !!ses.holding(l); }) : [],   // v1.1
       seatN: G.seatN, relN: G.relN, runN: G.runN, tailN: G.tailN || 0, holds: ch ? ch.holds || 0 : 0, chords: ch ? ch.chords || 0 : 0, runs: ch ? ch.runs || 0 : 0,
       feel: { velN: G.velN || 0, autoVelN: G.autoVelN || 0, last: G.velLast || null, warm: G.warm || null, gig: !!(G.handle && G.handle.plan && G.handle.plan.stats && G.handle.plan.stats.gig),
-        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null } };   // v1.2 (Lane F)
+        plan: G.handle && G.handle.plan ? G.handle.plan.stats : null },   // v1.2 (Lane F)
+      keys: { kind: G.kind || null, map: G.keymap || null, input: G.input, caps: !!G.caps, labels: G.capL || null, down: Object.keys(G.down),
+        held: Object.keys(G.keyDown), last: G.keyLast }, keyTaps: G.keyTaps, keySwallowed: G.keySwallowed, lostKeyups: G.lostKeyups, cardRej: G.cardRej, cardAge: G.cardAt ? Math.round(performance.now() - G.cardAt) : null, restart: !!G.restart,
+      off: G.off ? { audio: Math.round(G.off.audio * 1000), visual: Math.round(G.off.visual * 1000), visM: !!G.off.visM } : null, visM: !!G.visM,
+      offT: G.offT ? Math.round(G.offT.audio * 1000) : null, offK: G.offK ? Math.round(G.offK.audio * 1000) : null,
+      laneW: laneW, hitY: hitY, hwW: W, hwH: H, gemW: G.wideHw ? Math.min(laneW - 20, 100) : Math.min(laneW - 16, 70), look: LOOK, wide: !!G.wideHw };
   });
 })(window.GG);
 
@@ -58653,85 +58850,236 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   var PROFILE_NAME = { speaker: '🔊 Speaker', headphones: '🎧 Headphones' };
   var BUS_NAME = { drums: ['Drums', 'your taps + the kit'], band: ['Band', 'backing + vocals'], crowd: ['Crowd', 'cheers, boos, the murmur'], sfx: ['SFX', 'UI sounds, ambience, van radio'] };
 
+  /* ---- v1.5 "Desktop": Settings > Keys, the Layout row, the key timing (plan_contract_1.5 §4.7; Lane I) ---------------- */
+  function keyUI() { return !!(GG.input && GG.input.showKeyUI && GG.input.showKeyUI()); }
+  function wideNow() { return !!(ui.wide && ui.wide()); }
+  function keyLabel(code) { return ui.keyLabel ? ui.keyLabel(code) : P.keyLabel(code, null, GG.input && GG.input.learned ? GG.input.learned() : null); }
+  function kcap(t) { return el('span.kcap', t); }
+  var STR_SLOT = ['Low', '2nd', '3rd', '4th', '5th', 'Top'];
+  var STR_COL = ['#57c77a', '#ff6b4a', '#ffd23f', '#4f8cff', '#ff9f43', '#b98cff'], STR_CB = ['#009E73', '#D55E00', '#F0E442', '#56B4E9', '#E69F00', '#CC79A7'];
+  function slotName(kind, slot) {
+    if (kind === 'strings') return STR_SLOT[slot] + ' string';
+    var L = ui.LANES && ui.LANES[GG.contracts.LANES[slot]]; return L ? L.name : GG.contracts.LANES[slot];
+  }
+  function slotColour(kind, slot, pf) {
+    if (kind === 'strings') return (pf.colourblind ? STR_CB : (ui.STR_COLORS || STR_COL))[slot];
+    var lane = GG.contracts.LANES[slot], L = ui.LANES && ui.LANES[lane];
+    return pf.colourblind && P.CB_COLOURS[lane] ? P.CB_COLOURS[lane] : L ? L.color : '#8899bb';
+  }
+  function usedSlots(kind, st) {
+    if (!st || !GG.career || !GG.career.seatOf) return null;
+    var seat = GG.career.seatOf(st); if (P.keyKind(seat) !== kind) return null;
+    var n = kind === 'strings' ? (GG.career.seatLanes ? GG.career.seatLanes(st) : 4) : Math.min(6, st.gear && st.gear.lanes >= 1 ? st.gear.lanes : 4), out = {};
+    for (var l = 0; l < n; l++) out[P.keySlot(kind, l, n)] = 1;
+    return out;
+  }
+  function refusedText(code) {
+    if (code === 'Tab') return 'Tab is for menus — pick another key.';
+    if (/Enter$/.test(code)) return 'Enter is for menus — pick another key.';
+    if (/^F\d/.test(code)) return code + ' belongs to the browser — pick another key.';
+    var lbl = /^(Control|Alt|Meta|OS)/.test(code) ? keyLabel(code) : code === 'CapsLock' ? 'Caps Lock' : null;
+    return (lbl || 'That key') + ' can’t play a lane — pick another key.';
+  }
+  var RB = null;   // the rebind in progress { s, kind, slot, chip, label, release, startT, timer, onDown }
+  function bindMsg(text) { var m = RB && RB.s.body.querySelector('[data-testid="set-keys-msg"]'); if (m) m.textContent = text; }
+  function endBind(msg) {
+    var r = RB; if (!r) return;
+    RB = null;
+    clearTimeout(r.startT); clearTimeout(r.timer);
+    if (r.release) r.release();
+    document.removeEventListener('pointerdown', r.onDown, true);
+    if (msg == null) { r.chip.classList.remove('wait'); var k = r.chip.querySelector('.kcap'); if (k) k.textContent = r.label; return; }
+    r.s.data.keysMsg = msg;
+    if (ui.isOpen(r.s.id)) r.s.rerender();
+  }
+  function startBind(s, kind, slot, chip) {
+    if (RB && RB.chip === chip) return;
+    endBind(null);
+    var k = chip.querySelector('.kcap');
+    RB = { s: s, kind: kind, slot: slot, chip: chip, label: k ? k.textContent : '' };
+    chip.classList.add('wait'); if (k) k.textContent = 'Press a key…';
+    bindMsg('Press the new key for ' + slotName(kind, slot) + '. Esc cancels.');
+    RB.startT = setTimeout(function () { if (RB && RB.chip === chip && GG.input && GG.input.capture) RB.release = GG.input.capture(onBindKey); }, 0);
+    RB.timer = setTimeout(function () { endBind('No key pressed. Nothing changed.'); }, 8000);
+    RB.onDown = function (ev) { if (!chip.contains(ev.target)) endBind(null); };
+    document.addEventListener('pointerdown', RB.onDown, true);
+  }
+  function onBindKey(ev) {
+    if (!RB) return;
+    var code = ev.code || P.codeOf(ev.key) || '';
+    if (ev.key === 'Escape' || code === 'Escape') { endBind('Cancelled. Nothing changed.'); return; }
+    var pf = prefs(), kind = RB.kind, slot = RB.slot, old = pf.keymap[kind][slot], r = P.bindKey(pf, kind, slot, code);
+    if (r.refused) { bindMsg(refusedText(code)); return; }   // the chip keeps waiting
+    P.set({ keymap: r.keymap });
+    var msg = slotName(kind, slot) + ' is now ' + keyLabel(code) + '.';
+    if (r.swapped != null) msg = 'Swapped: ' + slotName(kind, r.swapped) + ' is now ' + keyLabel(old) + '. ' + msg;
+    endBind(msg);
+  }
+  function keysSection(s, d, pf, st, wide) {
+    var seat = st && GG.career && GG.career.seatOf ? GG.career.seatOf(st) : 'drums';
+    var kind = P.KEY_KINDS.indexOf(d.keysKind) >= 0 ? d.keysKind : P.keyKind(seat), map = pf.keymap[kind], used = usedSlots(kind, st);
+    var wrap = el('div.set-keys', { id: 'set-keys', testid: 'set-keys' }), A = wrap, B = wrap;
+    if (wide) { A = el('div.w2-a'); B = el('div.w2-b'); }
+    wrap.appendChild(el('div.caps.set-sec', 'Keys'));
+    A.appendChild(el('p.small.dim', kind === 'drums' ? 'Left hand on A S D F, thumb on Space, little finger on Shift. Pick a drum, then press its new key.'
+      : 'One map for bass, rhythm and lead, low string first. Pick a string, then press its new key.'));
+    A.appendChild(el('div.set-seg', [['drums', '🥁 Drums'], ['strings', '🎸 Strings']].map(function (x) {
+      var on = kind === x[0];
+      return btn('.btn.small' + (on ? '.primary' : ''), { testid: 'set-keys-kind-' + x[0], 'aria-pressed': on ? 'true' : 'false',
+        onclick: function () { endBind(null); s.data.keysKind = x[0]; s.data.keysMsg = ''; s.rerender(); } }, x[1]);
+    })));
+    A.appendChild(el('div.set-keys-chips', map.map(function (code, slot) {
+      var name = slotName(kind, slot) + (kind === 'strings' && slot === 4 ? ' (6 strings)' : ''), dim = used && !used[slot], c = slotColour(kind, slot, pf);
+      var chip = btn('.set-key-chip' + (dim ? '.dim' : ''), { testid: 'set-key-' + kind + '-' + slot, style: { borderColor: c },
+        'aria-label': name + ': ' + keyLabel(code) + '. Press to change.' }, [el('i.sk-dot', { style: { background: c } }), el('span.sk-name', name), kcap(keyLabel(code))]);
+      chip.onclick = function () { startBind(s, kind, slot, chip); };
+      return chip;
+    })));
+    A.appendChild(el('p.small.set-keys-msg', { testid: 'set-keys-msg', 'aria-live': 'polite' }, d.keysMsg || ''));
+    A.appendChild(el('p.tiny.dim', { testid: 'set-keys-pos' }, 'Keys go by their position on the keyboard, so A S D F is the same spot on any layout. Esc, Tab and Enter stay for the menus.'));
+    var shift = P.KEY_KINDS.some(function (k) { return pf.keymap[k].some(function (c) { return /^Shift/.test(c); }); });
+    if (shift) A.appendChild(el('p.tiny.amber', { testid: 'set-keys-sticky' }, 'On Windows, Shift pressed five times in a row can pop up the Sticky Keys box. Turn its shortcut off in Settings › Accessibility › Keyboard, or put another key on that lane.'));
+    A.appendChild(btn('.btn.small', { testid: 'set-keys-reset', style: 'margin-top:6px', onclick: function () {
+      endBind(null);
+      P.set({ keymap: P.resetKeys(prefs(), kind) });
+      s.data.keysMsg = (kind === 'drums' ? 'Drum' : 'String') + ' keys are back to the defaults.';
+      s.rerender();
+    } }, 'Reset ' + (kind === 'drums' ? 'drum' : 'string') + ' keys'));
+    B.appendChild(el('div.panel.set-keys-timing', { testid: 'set-keys-timing' }, [
+      el('b', 'Key timing'),
+      el('div.tiny.dim', 'With ' + syncName() + ' on (the default), the light check is the one that lines up your keys.')
+    ].concat(P.PROFILES.map(function (p) {
+      var k = pf.calibKb[p];
+      return el('div.small', { data: { profile: p } }, PROFILE_NAME[p] + ': click test ' + (k.at ? msText(k.audio) + ' ✓' : 'not tested yet')
+        + ' · light check ' + (k.vat ? msText(k.visual) + ' ✓' : 'not tested yet'));
+    })).concat([btn('.btn.small', { testid: 'set-calibrate-keys', style: 'margin-top:6px', onclick: function () {
+      endBind(null);
+      ui.show('calib', { profile: pf.audioProfile, input: 'keys', docked: wideNow() });
+    } }, '⌨ Key timing')])));
+    if (wide) wrap.appendChild(el('div.w2', [A, B]));
+    return wrap;
+  }
+  function rail(s, keys) {
+    var tabs = [['play', 'Play'], keys ? ['keys', 'Keys'] : null, ['audio', 'Audio + timing'], ['look', 'Look + feel'], ['saves', 'Saves']].filter(Boolean);
+    return el('nav.set-rail', tabs.map(function (t) {
+      return btn('.btn.ghost.small.set-rail-btn', { testid: 'set-rail-' + t[0], onclick: function () {
+        var x = s.body.querySelector('#set-' + t[0]); if (x) { try { x.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ } }
+      } }, t[1]);
+    }));
+  }
+  function rebuild() { if (RB) return; var e = ui.get && ui.get('settings'); if (e) e.rerender(); }
+  GG.on('ui:wide', rebuild);
+  GG.on('input:mode', rebuild);
+  GG.on('ui:stack', function () {
+    var c = ui.get && ui.get('calib'), st = ui.get && ui.get('settings');
+    if (c && st && ui.top() === 'calib' && c.data && c.data.docked && wideNow()) st.root.classList.remove('hidden');
+  });
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('gg-set-keys-css')) {
+    var kss = document.createElement('style'); kss.id = 'gg-set-keys-css';
+    kss.textContent = [
+      '.set-keys-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0 6px; }',
+      '.set-key-chip { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 10px; border-radius: 12px; border: 2px solid var(--line);',
+      '  background: rgba(10, 14, 24, .6); color: var(--text, #fff); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }',
+      '.set-key-chip.dim { opacity: .55; }',
+      '.set-key-chip.wait { border-style: dashed; }',
+      '.set-key-chip .sk-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }',
+      '.set-key-chip .sk-name { flex: 1 1 auto; min-width: 0; }',
+      '.set-keys-msg { min-height: 1.4em; margin: 4px 0; }',
+      '.set-keys-timing { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }'
+    ].join('\n');
+    document.head.appendChild(kss);
+  }
+
   /* ---- Settings screen ---------------------------------------------------------------------------------- */
   ui.define('settings', {
     kind: 'full',
+    onClose: function () { endBind(null); },   // v1.5: a rebind never outlives the screen (its capture slot goes back)
     build: function (s, d) {
       var pf = prefs(), st = GG.state, A = GG.audio;
-      ui.append(s.body, [el('div.back-row', [btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
+      var wide = wideNow(), body = wide ? el('div.set-main') : s.body;
+      ui.append(body, [el('div.back-row', [btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { ui.close(s.id); } }, '←'),
         el('div', [el('div.caps', 'Garage to Glory'), el('h1.display', 'Settings')])])]);
 
       var cd = GG.difficulty ? GG.difficulty.of(st) : 'normal', ct = GG.difficulty ? GG.difficulty.text(cd) : { name: cd, blurb: '' };
-      s.body.appendChild(sec('Career'));
-      s.body.appendChild(row(st ? 'Career difficulty: ' + ct.name + ' 🔒' : 'Career difficulty', st ? 'Locked for this career. ' + ct.blurb : 'Chill, Normal or Brutal: you pick it when you start a new career.', null, 'set-career-diff'));
+      body.appendChild(sec('Career'));
+      body.appendChild(row(st ? 'Career difficulty: ' + ct.name + ' 🔒' : 'Career difficulty', st ? 'Locked for this career. ' + ct.blurb : 'Chill, Normal or Brutal: you pick it when you start a new career.', null, 'set-career-diff'));
 
-      s.body.appendChild(sec('Play', 'set-play'));
+      body.appendChild(sec('Play', 'set-play'));
       var gd = GG.gig && GG.gig.DIFFICULTIES && GG.gig.DIFFICULTIES[pf.gigDifficulty] ? pf.gigDifficulty : 'easy';
-      s.body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
-      s.body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
-      s.body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
-      s.body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
-      s.body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
+      body.appendChild(row('Gig difficulty', 'Timing window, stacked with your ' + (strNow() ? 'chops' : 'drum skill') + '. Change it any time.', null));
+      body.appendChild(seg(s, 'gigDifficulty', ['easy', 'normal', 'hard', 'expert'].map(function (x) { return [x, x.charAt(0).toUpperCase() + x.slice(1), x]; }), 'set-gigdiff-', gd));
+      body.appendChild(row('Note speed', 'How fast the highway scrolls. Separate from difficulty.', null));
+      body.appendChild(seg(s, 'noteSpeed', P.NOTE_SPEEDS.map(function (v) { return [v, '×' + v, String(Math.round(v * 100))]; }), 'set-speed-', pf.noteSpeed));
+      body.appendChild(toggle(s, 'noFail', 'No-fail', "The crowd can't turn hostile. Nobody gets booed off."));
       var strSeat = !!(st && GG.career && GG.career.seatOf && GG.career.seatOf(st) !== 'drums');   // v1.1: a string seat has no kick lane
-      if (!strSeat) s.body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
-      s.body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
-      s.body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
+      if (!strSeat) body.appendChild(toggle(s, 'autoKick', 'Auto-kick', 'The kick lane plays itself (as Goods). Your right foot can rest.'));
+      body.appendChild(toggle(s, 'lefty', 'Lefty mode', strSeat ? 'Mirrors the lanes: low notes on the right.' : 'Mirrors the lanes: kick on the right.'));
+      body.appendChild(toggle(s, 'drumSync', strSeat ? 'Band sync' : 'Drum sync', strSeat ? "Your notes land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."
         : "Your drums land right on the band's beat. Play by the highway. Off: classic timing, judged by your calibration's click test (for playing by ear)."));
-      if (st && (st.songs || []).length) s.body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
+      if (st && (st.songs || []).length) body.appendChild(btn('.btn.block', { testid: 'set-practice', style: 'margin-top:8px', onclick: function () { ui.show('practice'); } }, (strSeat ? '🎸' : '🥁') + ' Practice a song'));
 
-      s.body.appendChild(sec('Audio + timing', 'set-audio'));
-      s.body.appendChild(row('Listening on', 'Bluetooth adds delay: each profile keeps its own calibration.', null));
-      s.body.appendChild(seg(s, 'audioProfile', P.PROFILES.map(function (p) { return [p, PROFILE_NAME[p], p]; }), 'set-profile-', pf.audioProfile));
+      var keys = keyUI();
+      if (keys) body.appendChild(keysSection(s, d, pf, st, wide));
+
+      body.appendChild(sec('Audio + timing', 'set-audio'));
+      body.appendChild(row('Listening on', 'Bluetooth adds delay: each profile keeps its own calibration.', null));
+      body.appendChild(seg(s, 'audioProfile', P.PROFILES.map(function (p) { return [p, PROFILE_NAME[p], p]; }), 'set-profile-', pf.audioProfile));
       var c = pf.calib[pf.audioProfile];
-      s.body.appendChild(row('Calibration', c.at ? 'Taps ' + msText(c.audio) + ' · eyes ' + msText(c.visual) : 'Not calibrated yet on this profile.',
+      body.appendChild(row('Calibration', c.at ? 'Taps ' + msText(c.audio) + ' · eyes ' + msText(c.visual) : 'Not calibrated yet on this profile.',
         btn('.btn.small', { testid: 'set-calibrate', onclick: function () { ui.show('calib', { profile: pf.audioProfile }); } }, c.at ? 'Redo' : 'Calibrate')));
-      if (A && A.isMuted) s.body.appendChild(row('Sound', null, btn('.btn.small.set-toggle' + (A.isMuted() ? '' : '.primary'), { testid: 'set-muted',
+      if (A && A.isMuted) body.appendChild(row('Sound', null, btn('.btn.small.set-toggle' + (A.isMuted() ? '' : '.primary'), { testid: 'set-muted',
         onclick: function () { A.toggleMuted(); s.rerender(); } }, A.isMuted() ? 'Off' : 'On')));
       if (A && typeof A.setVolume === 'function' && typeof A.getVolume === 'function') {   // lane A's mixer
         ((GG.contracts && GG.contracts.MIX_BUSES) || ['drums', 'band', 'crowd', 'sfx']).forEach(function (bus) {
           var v = A.getVolume(bus); v = v == null ? 1 : v;
           var n = BUS_NAME[bus] || [bus, ''];
-          s.body.appendChild(el('div.set-row', { style: 'flex-wrap:wrap' }, [el('div.lbl', [el('b', n[0]), el('span', n[1])]),
+          body.appendChild(el('div.set-row', { style: 'flex-wrap:wrap' }, [el('div.lbl', [el('b', n[0]), el('span', n[1])]),
             el('input.set-slider', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(v * 100), testid: 'set-mix-' + bus, 'aria-label': n[0] + ' volume',
               oninput: function (e) { try { A.setVolume(bus, (+e.target.value) / 100); } catch (err) { /* ignore */ } } })]));
         });
       }
       if (A && typeof A.setMetronome === 'function' && typeof A.metronome === 'function') {
         var mo = !!A.metronome();
-        s.body.appendChild(row('Metronome', 'A click under the sequencer while you write.', btn('.btn.small.set-toggle' + (mo ? '.primary' : ''), { testid: 'set-metronome',
+        body.appendChild(row('Metronome', 'A click under the sequencer while you write.', btn('.btn.small.set-toggle' + (mo ? '.primary' : ''), { testid: 'set-metronome',
           'aria-pressed': mo ? 'true' : 'false', onclick: function () { A.setMetronome(!mo); s.rerender(); } }, mo ? 'On' : 'Off')));
       }
       if (A && typeof A.applySettings === 'function') {   // country brushed snare (off = ghost notes)
         var br = (GG.save && GG.save.settings && GG.save.settings().brushes) !== false;
-        s.body.appendChild(row('Brushes', 'Country snare: brushes, or ghost notes when off.', btn('.btn.small.set-toggle' + (br ? '.primary' : ''), { testid: 'set-brushes',
+        body.appendChild(row('Brushes', 'Country snare: brushes, or ghost notes when off.', btn('.btn.small.set-toggle' + (br ? '.primary' : ''), { testid: 'set-brushes',
           'aria-pressed': br ? 'true' : 'false', onclick: function () { GG.prefs.set({ brushes: !br }); s.rerender(); } }, br ? 'On' : 'Off')));
       }
 
-      s.body.appendChild(sec('Look + feel', 'set-look'));
-      s.body.appendChild(row('Graphics', 'Auto picks the sharpness and backs off when frames run slow. Low saves battery: fewer pixels, a smaller crowd.', null));
-      s.body.appendChild(seg(s, 'graphics', [['auto', 'Auto', 'auto'], ['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics, 'set-gfx'));
-      s.body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
-      if (pf.colourblind) s.body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
+      body.appendChild(sec('Look + feel', 'set-look'));
+      body.appendChild(row('Graphics', 'Auto picks the sharpness and backs off when frames run slow. Low saves battery: fewer pixels, a smaller crowd.', null));
+      body.appendChild(seg(s, 'graphics', [['auto', 'Auto', 'auto'], ['low', 'Low', 'low'], ['med', 'Medium', 'med'], ['high', 'High', 'high']], 'set-gfx-', pf.graphics, 'set-gfx'));
+      body.appendChild(toggle(s, 'colourblind', 'Colourblind lanes', 'Lane colours anyone can tell apart.'));
+      if (pf.colourblind) body.appendChild(el('div.row', { testid: 'set-cb-preview', style: 'gap:4px;margin:6px 0' }, GG.contracts.LANES.map(function (l) {
         return el('span.tag', { style: { background: P.CB_COLOURS[l], color: '#111', flex: '1 1 0', textAlign: 'center' } }, (ui.LANES && ui.LANES[l] ? ui.LANES[l].name : l));
       })));
-      s.body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
-      s.body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
-      s.body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
-      s.body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
-      s.body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));
+      body.appendChild(toggle(s, 'bigText', 'Bigger text', null));
+      body.appendChild(toggle(s, 'reducedFlash', 'Reduced flashing', 'Calmer stage lights, no hit flashes, no pyro strobe.'));
+      body.appendChild(toggle(s, 'cameraShake', 'Camera shake', null));
+      body.appendChild(toggle(s, 'skipVan', 'Skip van scenes', 'Straight to the load-in (road cards still happen).'));
+      body.appendChild(toggle(s, 'fastAnim', 'Faster animations', 'Snappier screens, shorter drives.'));
+      if (keys) {   // v1.5 (D9): Auto = the PC layout on a computer with a big window; Phone / PC force either
+        body.appendChild(row('Layout', 'Auto uses the PC layout on a computer with a big window. Never mid-song.', null, 'set-layout'));
+        body.appendChild(seg(s, 'layout', [['auto', 'Auto', 'auto'], ['phone', 'Phone', 'phone'], ['wide', 'PC', 'wide']], 'set-layout-', pf.layout));
+      }
 
-      s.body.appendChild(sec('Saves'));
-      s.body.appendChild(el('div.row', [
+      body.appendChild(sec('Saves', 'set-saves'));
+      body.appendChild(el('div.row', [
         btn('.btn.grow', { testid: 'set-save-load', onclick: function () { ui.show('load'); } }, 'Slots'),
         btn('.btn.grow', { testid: 'set-save-backup', disabled: !st, onclick: function () { ui.show('code', { mode: 'backup' }); } }, 'Back up'),
         btn('.btn.grow', { testid: 'set-save-restore', onclick: function () { ui.show('code', { mode: 'restore' }); } }, 'Restore')
       ]));
-      s.body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
+      body.appendChild(el('p.tiny.dim', { style: 'margin-top:8px' }, st ? 'Save into a slot from the ☰ menu. Back up = a save code you can paste anywhere.' : 'Back ups are save codes: paste one in to restore a career.'));
       s.foot.appendChild(btn('.btn.primary.big.block', { testid: 'set-done', onclick: function () { ui.close(s.id); } }, 'Done'));
+      if (wide) s.body.appendChild(el('div.set-wide', [rail(s, keys), body]));
       if (d && d.tab && !d._scrolled) {
         d._scrolled = true;
         var target = s.body.querySelector('#set-' + d.tab);
-        if (target) setTimeout(function () { try { s.body.scrollTop = target.offsetTop - 12; } catch (e) { /* ignore */ } }, 0);
+        if (target && wide) setTimeout(function () { try { target.scrollIntoView({ block: 'start' }); } catch (e) { /* ignore */ } }, 0);
+        else if (target) setTimeout(function () { try { s.body.scrollTop = target.offsetTop - 12; } catch (e) { /* ignore */ } }, 0);
       }
     }
   });
@@ -58739,12 +59087,28 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- Calibration ------------------------------------------------------------------------------------------ */
   var N_CLICKS = 8, GAP = 600, LEAD = 1000;
   var K = null;   // the test in progress
-  var dbg = { open: false, step: null, clicks: [], taps: [], audio: null, visual: null, profile: null, clock: null };
+  var dbg = { open: false, step: null, clicks: [], taps: [], audio: null, visual: null, profile: null, clock: null, input: 'touch' };
   function stopTest() {
     if (!K) return;
     K.timers.forEach(clearTimeout); K.timers = [];
     K.running = false;
+    if (K.release) { K.release(); K.release = null; }   // v1.5: the key test's capture slot
   }
+  function keyTest(s) {
+    var k = K;
+    k.timers.push(setTimeout(function () {
+      if (K !== k || !k.running || !GG.input || !GG.input.capture) return;
+      k.release = GG.input.capture(function (ev) {
+        if (K !== k || !k.running) return;
+        if (ev.key === 'Escape' || ev.code === 'Escape') { stopTest(); if (ui.isOpen('calib')) s.rerender({ profile: s.data.profile, first: s.data.first, input: 'keys', docked: s.data.docked }); return; }
+        var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
+        k.taps.push(t);
+        var pad = s.body && s.body.querySelector('[data-testid="calib-pad"]');
+        if (pad) { pad.classList.add('hit'); setTimeout(function () { pad.classList.remove('hit'); }, 90); }
+      });
+    }, 0));   // next tick: the Enter / Space that started the test is already down, so it never counts
+  }
+  function inputOf(d) { return d && (d.input === 'keys' || d.input === 'touch') ? d.input : GG.input && GG.input.mode ? GG.input.mode() : 'touch'; }
   function ctxNow() { try { return GG.audio && GG.audio.context ? GG.audio.context() : null; } catch (e) { return null; } }
   function beep(c, when, hi) {
     var o = c.createOscillator(), g = c.createGain();
@@ -58754,7 +59118,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function startAudioTest(s) {
     stopTest();
-    K = { kind: 'audio', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    K = { kind: 'audio', clicks: [], taps: [], timers: [], running: true, n: 0, input: inputOf(s.data) };
     try { if (GG.audio && GG.audio.unlock) GG.audio.unlock(); } catch (e) { /* ignore */ }
     var c = ctxNow(), p0 = performance.now(), i;
     if (c && c.state !== 'running' && c.resume) { try { c.resume(); } catch (e) { /* ignore */ } }
@@ -58771,11 +59135,13 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     K.clicks.forEach(function (t, k) { K.timers.push(setTimeout(function () { K.n = k + 1; count(s); }, Math.max(0, t - performance.now()))); });
     K.timers.push(setTimeout(function () { finishTest(s); }, K.clicks[N_CLICKS - 1] - p0 + 700));
     dbg.clicks = K.clicks.slice(); dbg.taps = K.taps;
-    s.rerender({ step: 'audio', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+    s.rerender(carry(s, { step: 'audio', audio: s.data.audio }));
+    if (K.input === 'keys') keyTest(s);   // v1.5
   }
+  function carry(s, o) { return Object.assign({ profile: s.data.profile, first: s.data.first, input: s.data.input, docked: s.data.docked }, o); }
   function startVisualTest(s) {
     stopTest();
-    K = { kind: 'visual', clicks: [], taps: [], timers: [], running: true, n: 0 };
+    K = { kind: 'visual', clicks: [], taps: [], timers: [], running: true, n: 0, input: inputOf(s.data) };
     var p0 = performance.now();
     for (var i = 0; i < N_CLICKS; i++) (function (k) {
       K.timers.push(setTimeout(function () {
@@ -58787,7 +59153,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     })(i);
     K.timers.push(setTimeout(function () { finishTest(s); }, LEAD + (N_CLICKS - 1) * GAP + 700));
     dbg.clicks = []; dbg.taps = K.taps;
-    s.rerender({ step: 'visual', profile: s.data.profile, first: s.data.first, audio: s.data.audio });
+    s.rerender(carry(s, { step: 'visual', audio: s.data.audio }));
+    if (K.input === 'keys') keyTest(s);   // v1.5
   }
   function count(s) { var e = s.body && s.body.querySelector('[data-testid="calib-count"]'); if (e && K) e.textContent = (K.kind === 'audio' ? 'Click ' : 'Flash ') + Math.min(K.n, N_CLICKS) + ' of ' + N_CLICKS; }
   function finishTest(s) {
@@ -58796,12 +59163,12 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     stopTest();
     if (kind === 'audio') r.lat = K.lat || 0;
     dbg[kind] = r;
-    var d = { profile: s.data.profile, first: s.data.first, audio: s.data.audio, visual: s.data.visual };
+    var d = carry(s, { audio: s.data.audio, visual: s.data.visual });
     d[kind] = r; d.step = kind + 'Done';
     if (ui.isOpen('calib')) s.rerender(d);
   }
   function padTap(ev) {
-    if (!K || !K.running) return;
+    if (!K || !K.running || K.input === 'keys') return;   // v1.5: the key test counts keys only
     if (ev.cancelable) ev.preventDefault();
     var now = performance.now(), t = ev.timeStamp > 0 && Math.abs(ev.timeStamp - now) < 1000 ? ev.timeStamp : now;
     K.taps.push(t);
@@ -58812,7 +59179,9 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     build: function (s, d) {
       var pf = prefs(), profile = P.PROFILES.indexOf(d.profile) >= 0 ? d.profile : pf.audioProfile, step = d.step || 'intro';
       d.profile = profile;
-      dbg.open = true; dbg.step = step; dbg.profile = profile;
+      var input = d.input = inputOf(d), keys = input === 'keys';   // v1.5: the input being calibrated (starts on GG.input.mode())
+      dbg.open = true; dbg.step = step; dbg.profile = profile; dbg.input = input;
+      s.root.classList.toggle('calib-docked', !!(d.docked && wideNow()));   // v1.5 B: over Settings > Keys' timing column
       function skip() { stopTest(); set({ calibSeen: true }); ui.close(s.id); }
       ui.append(s.body, [el('div.back-row', [d.first ? null : btn('.icon-btn', { testid: 'btn-back', 'aria-label': 'Back', onclick: function () { stopTest(); ui.close(s.id); } }, '←'),
         el('div', [el('div.caps', d.first ? 'Before the first gig' : 'Settings'), el('h1.display', 'Calibrate')])])]);
@@ -58821,9 +59190,16 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
           el('p.screen-sub', "Phones are late. Bluetooth is later. The light check lines the highway up with your eyes (" + syncName() + "); the click test is for classic timing."),
           el('div.caps.set-sec', 'Calibrating for'),
           el('div.set-seg', P.PROFILES.map(function (p) {
-            return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender({ profile: p, first: d.first }); } }, PROFILE_NAME[p]);
+            return btn('.btn.small' + (p === profile ? '.primary' : ''), { testid: 'calib-profile-' + p, onclick: function () { s.rerender(carry(s, { profile: p })); } }, PROFILE_NAME[p]);
           })),
-          el('p.small.dim', { style: 'margin-top:10px' }, 'Step 1: tap the pad on each of eight clicks. Step 2: tap when the light flashes. Takes twenty seconds.'),
+          keyUI() ? el('div.caps.set-sec', 'Playing on') : null,   // v1.5: touch and keys keep their own timing
+          keyUI() ? el('div.set-seg', [['touch', '👆 Touch'], ['keys', '⌨ Keys']].map(function (x) {
+            return btn('.btn.small' + (x[0] === input ? '.primary' : ''), { testid: 'calib-input-' + x[0], 'aria-pressed': x[0] === input ? 'true' : 'false',
+              onclick: function () { s.rerender(carry(s, { input: x[0] })); } }, x[1]);
+          })) : null,
+          el('p.small.dim', { style: 'margin-top:10px' }, keys ? 'Step 1: press any key on each of eight clicks. Step 2: press a key when the light flashes. Esc stops. Takes twenty seconds.'
+            : 'Step 1: tap the pad on each of eight clicks. Step 2: tap when the light flashes. Takes twenty seconds.'),
+          keys ? el('p.small.dim', 'With ' + syncName() + ' on (the default), the light check is the one that lines up your keys.') : null,
           GG.audio && GG.audio.isMuted && GG.audio.isMuted() ? el('p.small.amber', 'Your sound is off. The clicks play anyway; turn your phone up.') : null
         ]);
         s.foot.appendChild(el('div.stack', [btn('.btn.primary.big.block', { testid: 'calib-start', onclick: function () { startAudioTest(s); } }, 'Start the tap test'),
@@ -58832,9 +59208,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         return;
       }
       if (step === 'audio' || step === 'visual') {
-        var pad = el('div.calib-pad', { testid: 'calib-pad', onpointerdown: padTap }, step === 'audio' ? 'Tap on the click' : 'Tap on the flash');
+        var pad = el('div.calib-pad', { testid: 'calib-pad', onpointerdown: padTap }, keys ? (step === 'audio' ? 'Press a key on the click' : 'Press a key on the flash') : step === 'audio' ? 'Tap on the click' : 'Tap on the flash');
         ui.append(s.body, [
-          el('p.screen-sub', step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
+          el('p.screen-sub', keys ? (step === 'audio' ? 'Listen. Press any key exactly on each click (Space works well). Esc stops.' : 'Watch the light. Press a key the moment it flashes. Esc stops.')
+            : step === 'audio' ? 'Listen. Tap the pad exactly on each click. Eyes closed works best.' : 'Watch the light. Tap the moment it flashes.'),
           step === 'visual' ? el('div.calib-light', { testid: 'calib-light', onpointerdown: padTap }) : null,
           el('div.caps.center', { testid: 'calib-count', style: 'margin:10px 0' }, 'Get ready…'),
           pad
@@ -58845,7 +59222,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
       var a = d.audio, v = d.visual;
       function line(r, what) { return r ? (r.ok ? what + ': ' + msText(r.offset) + ' (' + r.n + ' taps)' : what + ": didn't catch enough taps.") : null; }
       ui.append(s.body, [
-        el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile]), el('div', line(a, 'You hear + tap')), v ? el('div', line(v, 'You see + tap')) : null]),
+        el('div.panel', { testid: 'calib-result' }, [el('b', PROFILE_NAME[profile] + (keys ? ' · keys' : '')), el('div', line(a, keys ? 'You hear + press' : 'You hear + tap')), v ? el('div', line(v, keys ? 'You see + press' : 'You see + tap')) : null]),
         el('p.small.dim', { style: 'margin-top:8px' }, step === 'audioDone' ? 'Next, the light check: ' + syncName() + ' lines the highway up with it.' : 'Saved per profile. Switch profiles from Settings or the setlist sheet.'),
         a && a.ok && a.offset + (a.lat || 0) >= 120 ? el('p.small.amber', { testid: 'calib-bt' }, "That's a big delay (Bluetooth?). " + syncName() + (strNow() ? ' keeps your notes' : ' keeps your drums') + " with the band; watch the highway rather than your ears.") : null
       ]);
@@ -58855,9 +59232,10 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
         var o = { at: Date.now() };
         if (a && a.ok) o.audio = a.offset;
         if (v && v.ok) o.visual = v.offset;
-        P.setCalib(profile, o);
+        if (keys) { delete o.at; P.setCalib(profile, o, 'keys'); }   // v1.5: calibKb (at only with the click test, vat only with the light check)
+        else P.setCalib(profile, o);
         ui.close(s.id);
-        ui.toast('Calibrated for ' + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. '   // v0.9: first launch has no band yet
+        ui.toast((keys ? 'Key timing set for ' : 'Calibrated for ') + PROFILE_NAME[profile].replace(/^\S+ /, '').toLowerCase() + '. '   // v0.9: first launch has no band yet
           + (GG.state ? ui.fill('{deadpan} gives a slow thumbs-up.', GG.state) : 'Somebody at the back gives a slow thumbs-up.'));
       } }, 'Save calibration'));
       foot.push(btn('.btn.ghost.block', { testid: 'calib-retry', onclick: function () { if (step === 'visualDone') startVisualTest(s); else startAudioTest(s); } }, 'Try again'));
@@ -58865,7 +59243,8 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     },
     onClose: function () { stopTest(); K = null; dbg.open = false; dbg.step = null; GG.emit('settings:changed', { keys: ['calib'] }); }
   });
-  GG.registerDebug('calib', function () { return { open: dbg.open, step: dbg.step, profile: dbg.profile, clock: dbg.clock, clicks: dbg.clicks.slice(), taps: (dbg.taps || []).slice(), audio: dbg.audio, visual: dbg.visual }; });
+  GG.registerDebug('calib', function () { return { open: dbg.open, step: dbg.step, profile: dbg.profile, clock: dbg.clock, clicks: dbg.clicks.slice(), taps: (dbg.taps || []).slice(), audio: dbg.audio, visual: dbg.visual,
+    input: dbg.input, capturing: !!(K && K.release) }; });   // v1.5: + input
 
   var firstDone = false;
   GG.on('screen:open', function (p) {
