@@ -1798,6 +1798,19 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
    Debug: input { mode, desk, wide, layout, kbSeen, kbnav, live, captured, learned: n, lastReal } ; keys { top, focus, opener,
      lastEsc, nav, swallowed: { repeat, stale } } ; gigui += keys { kind, map, input, caps, down, held, last }, keyTaps,
      keySwallowed, lostKeyups ; render += insets.left / right, pxBudget ; calib += input.
+   As merged (lanes I -> N -> W + lead, 2026-10-08; lane reports plan/v15_lane_<i|n|w>_report.md, plan/v15_integration_report.md):
+     55: ui.keyLabel(code) (getLayoutMap -> learned -> code), ui.kcap(text) (the shared keycap, CSS .kcap in #gg-gigkeys-css);
+       debug('gigui') also cardRej, cardAge (ms since a card appeared), restart, off / offT / offK (ms), visM, laneW, hitY, hwW,
+       hwH, gemW, look, wide, keys.labels. The PC-layout stage frame runs to 0.1 of the highway (the kit just above it).
+     5h: debug('calib') += input ('touch'|'keys'), capturing. Test ids set-rail-<section> (the Settings rail), set-layout.
+     50k / 50: ui.setKbnav(on), ui.keyBack(), ui.kbnav(), ui.focusDefault(id?), ui.defaultFocus(el), ui.focusEl(n, { nav,
+       preventScroll }), ui.focusAt, ui.isTyping(n), ui.reachable(n), ui.noFocus(id), ui.openerOf(), ui.syncHints(), ui.w2(node,
+       nLeft), ui.walkToSpot(action); screen defs { back, focus, hints, focus: false }; event 'ui:kbnav' { on }; debug('keys')
+       += kbnav. 54: ui.seqDirty(), debug('seq').dirty / kbFocus; 51 / 5j: ui.creatorDirty(), ui.lookDirty(). Test ids seq-side,
+       side-* (the songwriter tools column).
+     5w / 40 / 42 / 60: R.setViewInsets({ left, right }); debug('render').pxBudget (null off-wide) and insets.left / right (only
+       when wide; the stage-0 fixtures pin { top, bottom }); 'perf:quality' reason 'layout' on 'ui:wide'; R.stage.info().hFov /
+       vFov (hFov <= 100 when wide); debug('wide').
   ====================================================================== */
 
   /* ======================================================================
