@@ -29,7 +29,15 @@ fn, B tools column), `56` / `5k` (`.w2`), `5j` (look back fn); `tests/pw_nav.js`
   kb-hints (testid `kb-hints`) in the top layer's foot only under `html.gg-wide.gg-keys`; seq hint "←→ drum · ↑↓ step · Space
   add/remove · Tab leave the grid · Esc close" (the contract's text swaps the axes; the mockup's order used).
 ## Tests (all on the final build)
-RESULTS_PLACEHOLDER
+- Node suite: SUITE ALL PASS (incl. keys 13, wide_css 4) on the final build.
+- `tests/pw_nav.js` (all sections, one run): career 39, esc 15, repeat 9, focus 16, seq 24 at 1280x720 AND 800x900 (all pass);
+  phone 9 at 390x844 and 9 at 844x390 (typing / keys on a phone context never flips gg-kbnav, nothing moves). 'room' not needed.
+- Phone freeze `tests/pw_freeze.js` META_ONLY=390 / 440 / 844l: ALL PASS 5 each (equal to the stage-0 fixtures; none edited).
+- Phone matrix 390x844: every existing pw section green. 440x956 (`PW_VIEW=440x956`): green; world van/calendar and gig/seat
+  failed once under load and passed alone (twice); pw_seq seq 47 (+ seq-compat 17, quick 26), part 27, layout 81, genres 25,
+  voices 8, kit 11, real 5, vox 17 all pass at 440 (final build).
+- **Pre-existing, for the lead:** pw_shop 'space' at 440x956 fails ALSO on the stage-0 dist (`dc74dcb`), so not this lane;
+  not chased.
 ## Hand-overs
 - Lane I (55): define `gig` / `gig-results` with `focus: false` (50 already treats them so); set `GG.input.gigLive()` (the router
   only blocks Tab while live); stopPropagation on keys 55 handles on the pause card (Esc / Enter) so the router never sees them.
@@ -38,6 +46,6 @@ RESULTS_PLACEHOLDER
 - Lead: 02_contracts V1.5 + the APIs above, event `'ui:kbnav'`, testids `seq-side`, `side-*`; status: `META_ONLY=all` runs
   nothing in pw_freeze (use `390,440,844l`).
 ## Gaps
-SIZE_PLACEHOLDER
+- Size: 5,297,789 B (stage 0 5,265,575 B; +32.2 KB for 50k + hooks + pw-only nothing), gate 6.0 MB.
 - pw_freeze is timing-sensitive under load (results reveal, gig_between song text, count-in numeral, wrap HUD ±1 px): with load
   15-20 on 4 cores it failed intermittently on screens this lane does not touch; every size passed alone twice at lower load.
