@@ -112,7 +112,9 @@ async function layout() {
       await page.evaluate(() => GG.ui.openPlanner()); await waitScreen(page, 'plan'); await page.waitForTimeout(500); await settle3d(page);
       await ov('plan');
       const p = await page.evaluate(() => {
-        const sh = document.querySelector('.sheet-layer:not(.hidden) .sheet'), r = sh.getBoundingClientRect(), d = GG.debug('render'), H = innerHeight;
+        // (the layout box, not the painted one: a slide-in still running under load would move getBoundingClientRect)
+        const sh = document.querySelector('.sheet-layer:not(.hidden) .sheet'), d = GG.debug('render'), H = innerHeight;
+        const r = { left: sh.offsetLeft, width: sh.offsetWidth, bottom: sh.offsetTop + sh.offsetHeight };
         const top = Math.round(document.querySelector('#hud .hud-bar').getBoundingClientRect().bottom);
         const grip = document.querySelector('.sheet-layer:not(.hidden) .sheet-grip'), acts = document.querySelector('.sheet-layer:not(.hidden) .acts'), gb = document.querySelector('.sheet-layer:not(.hidden) .w2 > .w2-a');
         const hot = GG.contracts.HOTSPOTS.map(a => [a, GG.render.hotspotScreenPos(a)]);
