@@ -446,6 +446,7 @@ async function esc() {
     // to Restart: the menu router's arrows when it is in the tree, else focus() (Lane N owns the arrows)
     await page.keyboard.press('ArrowDown');
     let f = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-testid'));
+    c.ok(f === 'btn-gig-resume' || f === 'btn-gig-restart', 'v1.5 review: ArrowDown with nothing focused on the pause card reaches its buttons (' + f + ')');
     if (f !== 'btn-gig-restart') { await page.keyboard.press('ArrowDown'); f = await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-testid')); }
     const viaRouter = f === 'btn-gig-restart';
     if (!viaRouter) await page.evaluate(() => document.querySelector('[data-testid="btn-gig-restart"]').focus());

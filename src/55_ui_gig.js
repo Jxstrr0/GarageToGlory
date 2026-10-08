@@ -1393,6 +1393,8 @@
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
     kind: 'full', cls: 'gig', sticky: true, live3d: true, focus: false,   // v1.5: 55 owns focus on the show (cards: armCard)
+    // v1.5 review: arrows with nothing focused start inside the card on top (50k move): the pause card, a between-songs card
+    keysIn: function () { var d = G && G.dom; return !d ? null : d.pause && !d.pause.hidden ? d.pause : d.mid && !d.mid.hidden ? d.mid : null; },
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};

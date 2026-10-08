@@ -51574,7 +51574,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if (!e || !e.foot || typeof document === 'undefined') return;
     var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
     if (!want) { if (has) has.parentNode.removeChild(has); return; }
-    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || HINTS;
+    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || (ui.escActs && !ui.escActs(e) ? 'Tab move · Enter pick' : HINTS);   // v1.5 review: no 'Esc close' where Esc does nothing
     if (has && has.textContent === text) return;
     if (has) has.parentNode.removeChild(has);
     e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));
@@ -52199,7 +52199,15 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   }
   function move(dir) {
     var a = document.activeElement, list = scope();
-    if (badFocus(a) || !inScope(a)) return focusDefaultNow();
+    if (badFocus(a) || !inScope(a)) {
+      if (focusDefaultNow()) return true;
+      var te = topEntry(), box = te && typeof te.def.keysIn === 'function' ? te.def.keysIn(te) : null;   // the card on top (55: pause / between songs)
+      if (box) { var inBox = list.filter(function (n) { return box.contains(n); }); if (inBox.length) list = inBox; }
+      if (!list.length) return false;
+      var first = list[dir === 'up' || dir === 'left' ? list.length - 1 : 0];
+      navFocus(first); D.nav = dir + ':' + tidOf(first);
+      return true;
+    }
     var r = a.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, best = null, bestS = Infinity;
     list.forEach(function (n) {
       if (n === a || n.contains(a) || a.contains(n)) return;
@@ -52238,6 +52246,17 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
     if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
     return 'none';
   }
+  ui.escActs = function (e) {
+    var id = e && e.id, d = e && e.def;
+    if (!e || !d) return false;
+    if (id === 'confirm' || typeof d.back === 'function') return true;
+    if (typeof d.back === 'string' && clickable(e, d.back)) return true;
+    var kb = KEY_BACK[id];
+    if (kb === 'close' || (kb && clickable(e, kb))) return true;
+    if (STICKY[id] || d.sticky) return false;
+    if (d.kind !== 'full') return true;
+    return !!(clickable(e, 'btn-back') || clickable(e, 'btn-close'));
+  };
   ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };
   function spotKey(code) {
     var m = /^(?:Digit|Numpad)([1-8])$/.exec(code || '');
@@ -55946,6 +55965,7 @@ html.gg-big .hud-chip .l { font-size: 11px; letter-spacing: .08em; }
   /* ---- The show screen ------------------------------------------------------------------------------------ */
   ui.define('gig', {
     kind: 'full', cls: 'gig', sticky: true, live3d: true, focus: false,   // v1.5: 55 owns focus on the show (cards: armCard)
+    keysIn: function () { var d = G && G.dom; return !d ? null : d.pause && !d.pause.hidden ? d.pause : d.mid && !d.mid.hidden ? d.mid : null; },
     build: function (s) {
       if (!G) return;
       var g = G.gig, d = G.dom = {};

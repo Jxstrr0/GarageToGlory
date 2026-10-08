@@ -286,7 +286,7 @@
     if (!e || !e.foot || typeof document === 'undefined') return;
     var has = e.foot.querySelector(':scope > .kb-hints'), want = wantHints(e);
     if (!want) { if (has) has.parentNode.removeChild(has); return; }
-    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || HINTS;
+    var h = e.def.hints, text = (typeof h === 'function' ? h(e) : h) || (ui.escActs && !ui.escActs(e) ? 'Tab move · Enter pick' : HINTS);   // v1.5 review: no 'Esc close' where Esc does nothing
     if (has && has.textContent === text) return;
     if (has) has.parentNode.removeChild(has);
     e.foot.appendChild(el('div.kb-hints', { testid: 'kb-hints', 'aria-hidden': 'true' }, text));

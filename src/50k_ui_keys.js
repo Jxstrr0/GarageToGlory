@@ -110,7 +110,16 @@
   // (4) arrows: the nearest control that way; overlap on the other axis wins, then distance.
   function move(dir) {
     var a = document.activeElement, list = scope();
-    if (badFocus(a) || !inScope(a)) return focusDefaultNow();
+    if (badFocus(a) || !inScope(a)) {
+      // v1.5 review: a screen that takes no default focus (the gig's pause card, a gig card) -> the first control that way
+      if (focusDefaultNow()) return true;
+      var te = topEntry(), box = te && typeof te.def.keysIn === 'function' ? te.def.keysIn(te) : null;   // the card on top (55: pause / between songs)
+      if (box) { var inBox = list.filter(function (n) { return box.contains(n); }); if (inBox.length) list = inBox; }
+      if (!list.length) return false;
+      var first = list[dir === 'up' || dir === 'left' ? list.length - 1 : 0];
+      navFocus(first); D.nav = dir + ':' + tidOf(first);
+      return true;
+    }
     var r = a.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, best = null, bestS = Infinity;
     list.forEach(function (n) {
       if (n === a || n.contains(a) || a.contains(n)) return;
@@ -152,6 +161,18 @@
     if ((n = clickable(e, 'btn-back') || clickable(e, 'btn-close'))) { n.click(); return 'back:' + n.getAttribute('data-testid'); }
     return 'none';
   }
+  // v1.5 review: would Esc do anything on entry e (back() without acting)? kb-hints drops 'Esc close' when not.
+  ui.escActs = function (e) {
+    var id = e && e.id, d = e && e.def;
+    if (!e || !d) return false;
+    if (id === 'confirm' || typeof d.back === 'function') return true;
+    if (typeof d.back === 'string' && clickable(e, d.back)) return true;
+    var kb = KEY_BACK[id];
+    if (kb === 'close' || (kb && clickable(e, kb))) return true;
+    if (STICKY[id] || d.sticky) return false;
+    if (d.kind !== 'full') return true;
+    return !!(clickable(e, 'btn-back') || clickable(e, 'btn-close'));
+  };
   // (tests: what Esc does on the top screen)
   ui.keyBack = function () { D.lastEsc = back(); return D.lastEsc; };
   // (7) the garage spots by number
