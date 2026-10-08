@@ -16,6 +16,9 @@
 // v1.1 (SEATS): band intro → the seat picker ('seat': seat-drums|bass|rhythm|lead + seat-next; tap a card = a ~3 s
 // preview, GG.audio.seatPreview; leaving = GG.audio.stopPreview; Drums preselected; fixed for the career; emits
 // 'seat:picked' { seat, swapped }) → the logo → the creator (copy by seat; ui.openLook({ seat })) → newCareer({ seat }).
+// v1.5 (Lane N; plan_contract_1.5 §4.5): keyboard hooks. The title's default focus is its primary (Continue / New career)
+// and its 3D frame is re-measured on 'ui:wide'; intro / seat close on Esc (50k KEY_BACK); the creator's Esc (back fn) asks
+// "Leave without saving?" when any pick changed since it opened (a snapshot of the draft; Esc = Keep editing), else ←.
 // Career creation, loading and saving are delegated to GG.main (60_main); this file only builds screens.
 (function (GG) {
   var ui = GG.ui, el = ui.el, btn = ui.btn, U = GG.util;
@@ -111,9 +114,13 @@
     });
   }
   if (typeof window !== 'undefined') window.addEventListener('resize', function () { if (ui.isOpen('title')) frameTitle(); });
+  // v1.5: the PC layout moves the logo + menu
+  GG.on('ui:wide', function () { if (ui.isOpen('title')) frameTitle(); });
   GG.on('screen:close', function () { if (!GG.state && ui.isOpen('title')) frameTitle(); });   // back from Settings / calibration
   ui.define('title', {
     kind: 'full', live3d: true,
+    // v1.5: Continue, else New career
+    focus: function (s) { return s.body.querySelector('.menu-list .btn.primary'); },
     onShow: function () {
       if (!want3d()) return;
       try { GG.render.setScene('title'); } catch (e) { console.error('[ui] title scene failed', e); }
@@ -354,8 +361,19 @@
       el('div.kit', { style: { background: p.kitColor || '#c33' }, title: 'Kit colour' })
     ]);
   }
+  // v1.5: what the creator's Esc compares with (every pick lives in the draft).
+  function creatorSnap() {
+    try { return JSON.stringify([draft.name || '', draft.nick || '', draft.presetId, !!draft.useCustom, draft.custom || null, !!draft.carry, !!draft.skipLessons, draft.careerDifficulty]); }
+    catch (e) { return ''; }
+  }
+  ui.creatorDirty = function () { var e = ui.get('creator'); return !!(e && e.data._snap != null && creatorSnap() !== e.data._snap); };
   ui.define('creator', {
     kind: 'full',
+    back: function (s) {
+      function leave() { var b = s.root.querySelector('[data-testid="btn-back"]'); if (b) b.click(); else ui.close(s.id); }
+      if (!ui.creatorDirty()) { leave(); return; }
+      ui.confirm({ text: 'Leave without saving?', yes: 'Leave', no: 'Keep editing', danger: true }).then(function (ok) { if (ok && ui.top() === s.id) leave(); });
+    },
     build: function (s) {
       var list = presets();
       if (!draft.presetId || !list.some(function (p) { return p.id === draft.presetId; })) draft.presetId = list[0].id;
@@ -435,6 +453,8 @@
         ])
       ]);
       s.foot.appendChild(create);
+      // v1.5 (after the defaults above are filled in)
+      if (s.data._snap == null) s.data._snap = creatorSnap();
     }
   });
 
@@ -448,7 +468,8 @@
   ];
   var COLD_FX = { hail: 1, snow: 1, neon: 1, dust: 1 };
   ui.define('coldopen', {
-    kind: 'full',
+    // v1.5: Enter reads on (Skip is one Tab away)
+    kind: 'full', focus: 'btn-coldopen-next',
     build: function (s, d) {
       var band = GG.state ? ui.band(GG.state) : null, fx = band && COLD_FX[band.coldOpenFx] ? band.coldOpenFx : 'hail';
       var panels = (band && band.coldOpen && band.coldOpen.length) ? band.coldOpen : COLD_FALLBACK;
@@ -481,7 +502,8 @@
             .then(function (ok) { if (ok) go(); });
         }, mine));
       });
-      ui.append(s.body, [el('div.stack', [
+      // v1.5 (B): Resume + saves left, the rest right
+      ui.append(s.body, [ui.w2(el('div.stack', [
         btn('.btn.primary.block', { testid: 'menu-resume', onclick: function () { ui.close(s.id); } }, 'Resume'),
         el('div.caps', 'Save to a slot'),
         saves,
@@ -502,7 +524,7 @@
               .then(function (ok) { if (ok) GG.main.quitToTitle(); });
           } }, 'Quit to title')
         ])
-      ])]);
+      ]), 5)]);
     }
   });
 
