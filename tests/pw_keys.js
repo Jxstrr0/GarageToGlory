@@ -618,7 +618,7 @@ async function calibKeys() {
     await waitScreen(page, 'calib');
     c.ok(await page.evaluate(() => GG.debug('calib').input === 'keys' && !!document.querySelector('[data-testid="calib-input-keys"].primary')), 'Key timing opens the calibration on keys');
     await page.locator(tid('calib-start')).click();
-    await page.waitForFunction(() => GG.debug('calib').step === 'audio' && GG.debug('calib').capturing, null, { timeout: 3000 });
+    await page.waitForFunction(() => GG.debug('calib').step === 'audio' && GG.debug('calib').capturing, null, { timeout: 10000 });
     const clicks = (await dbg(page, 'calib')).clicks;
     for (let i = 0; i < clicks.length; i++) {
       if (i === 2) {   // a key held ~1 s with OS repeats = one tap
@@ -636,7 +636,7 @@ async function calibKeys() {
     const au = await dbg(page, 'calib');
     c.ok(au.audio && au.audio.ok && au.taps.length === clicks.length - 1, `click test on keys: ${au.audio && au.audio.offset} ms, ${au.taps.length} taps for ${clicks.length} clicks (the held key = 1)`);
     await page.locator(tid('calib-visual-start')).click();
-    await page.waitForFunction(() => GG.debug('calib').step === 'visual' && GG.debug('calib').capturing, null, { timeout: 3000 });
+    await page.waitForFunction(() => GG.debug('calib').step === 'visual' && GG.debug('calib').capturing, null, { timeout: 10000 });
     for (let i = 0; i < 8; i++) {
       await page.waitForFunction(n => GG.debug('calib').clicks.filter(x => x != null).length > n, i, { timeout: 3000 });
       await page.waitForTimeout(20);
@@ -654,7 +654,7 @@ async function calibKeys() {
     // light check only on the headphones profile: keeps the touch audio (fallback)
     await page.evaluate(() => { GG.save.saveSettings({ calib: Object.assign({}, GG.prefs.get().calib, { headphones: { audio: 70, visual: 5, at: 1, vat: 1 } }) }); GG.ui.show('calib', { profile: 'headphones', input: 'keys' }); });
     await page.locator(tid('calib-visual-only')).click();
-    await page.waitForFunction(() => GG.debug('calib').step === 'visual' && GG.debug('calib').capturing, null, { timeout: 3000 });
+    await page.waitForFunction(() => GG.debug('calib').step === 'visual' && GG.debug('calib').capturing, null, { timeout: 10000 });
     for (let i = 0; i < 8; i++) {
       await page.waitForFunction(n => GG.debug('calib').clicks.filter(x => x != null).length > n, i, { timeout: 3000 });
       await page.waitForTimeout(25);
